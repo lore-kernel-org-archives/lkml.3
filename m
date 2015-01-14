@@ -1,92 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754426AbbANTVP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 14:21:15 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:39892 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754384AbbANTVM (ORCPT
+	id S1752621AbbANT1T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 14:27:19 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:57454 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751225AbbANT1S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 14:21:12 -0500
-Date: Wed, 14 Jan 2015 11:20:32 -0800
-From: tip-bot for Heiko Carstens <tipbot@zytor.com>
-Message-ID: <tip-0f1ba9a2cea52896448ef4e14a4cb1880b8e5bee@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        hpa@zytor.com, tglx@linutronix.de, paulmck@linux.vnet.ibm.com,
-        mingo@kernel.org, heiko.carstens@de.ibm.com
-Reply-To: tglx@linutronix.de, hpa@zytor.com, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        linux-kernel@vger.kernel.org, heiko.carstens@de.ibm.com,
-        mingo@kernel.org, paulmck@linux.vnet.ibm.com
-In-Reply-To: <20150107090441.GC4365@osiris>
-References: <20150107090441.GC4365@osiris>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:locking/core] softirq/preempt: Add missing current->
- preempt_disable_ip update
-Git-Commit-ID: 0f1ba9a2cea52896448ef4e14a4cb1880b8e5bee
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Wed, 14 Jan 2015 14:27:18 -0500
+Date: Wed, 14 Jan 2015 19:27:03 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Zidan Wang <zidan.wang@freescale.com>
+Cc: lgirdwood@gmail.com, perex@perex.cz, tiwai@suse.de, lars@metafoo.de,
+        ckeepax@opensource.wolfsonmicro.com,
+        patches@opensource.wolfsonmicro.com, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org, Zidan Wang <b50113@freescale.com>
+Message-ID: <20150114192703.GH3043@sirena.org.uk>
+References: <1420615905-4078-1-git-send-email-zidan.wang@freescale.com>
+ <1420615905-4078-2-git-send-email-zidan.wang@freescale.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="qM81t570OJUP5TU/"
 Content-Disposition: inline
+In-Reply-To: <1420615905-4078-2-git-send-email-zidan.wang@freescale.com>
+X-Cookie: To program is to be.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [alsa-devel][PATCH v2 2/2] ASoC: wm8960: Let wm8960 driver
+ configure its bit clock and frame clock
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0f1ba9a2cea52896448ef4e14a4cb1880b8e5bee
-Gitweb:     http://git.kernel.org/tip/0f1ba9a2cea52896448ef4e14a4cb1880b8e5bee
-Author:     Heiko Carstens <heiko.carstens@de.ibm.com>
-AuthorDate: Wed, 7 Jan 2015 10:04:41 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 14 Jan 2015 15:16:21 +0100
 
-softirq/preempt: Add missing current->preempt_disable_ip update
+--qM81t570OJUP5TU/
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-While debugging some "sleeping function called from invalid context" bug I
-realized that the debugging message "Preemption disabled at:" pointed to
-an incorrect function.
+On Wed, Jan 07, 2015 at 03:31:45PM +0800, Zidan Wang wrote:
 
-In particular if the last function/action that disabled preemption was
-spin_lock_bh() then current->preempt_disable_ip won't be updated.
+> +	for (i = 0; i < ARRAY_SIZE(dac_divs); ++i) {
+> +		if (wm8960->sysclk == lrclk * dac_divs[i]) {
+> +			for (j = 0; j < ARRAY_SIZE(bclk_divs); ++j) {
+> +				if (wm8960->sysclk ==  wm8960->bclk *
+> +						bclk_divs[j] / 10) {
+> +					goto config_clock;
+> +				}
+> +			}
+> +		}
+> +	}
+> +
+> +	dev_err(codec->dev, "Unsupported sysclk %d\n", wm8960->sysclk);
+> +	return;
 
-The reason for this is that __local_bh_disable_ip() will increase
-preempt_count manually instead of calling preempt_count_add(), which
-would handle the update correctly.
+It's a bit awkward using the goto like this.  A more common way of
+writing this is to change the above block to be
 
-It look like the manual handling was done to work around some lockdep issue.
+	if (i == ARRAY_SIZE(dac_divs))
+		/* return error */
 
-So add the missing update of current->preempt_disable_ip to
-__local_bh_disable_ip() as well.
+rather than skipping over the error.  Otherwise this looks good.
 
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/20150107090441.GC4365@osiris
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- kernel/softirq.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+--qM81t570OJUP5TU/
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 501baa9..b9ae816 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -114,8 +114,12 @@ void __local_bh_disable_ip(unsigned long ip, unsigned int cnt)
- 		trace_softirqs_off(ip);
- 	raw_local_irq_restore(flags);
- 
--	if (preempt_count() == cnt)
-+	if (preempt_count() == cnt) {
-+#ifdef CONFIG_DEBUG_PREEMPT
-+		current->preempt_disable_ip = get_parent_ip(CALLER_ADDR1);
-+#endif
- 		trace_preempt_off(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
-+	}
- }
- EXPORT_SYMBOL(__local_bh_disable_ip);
- #endif /* CONFIG_TRACE_IRQFLAGS */
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBCAAGBQJUtsMGAAoJECTWi3JdVIfQBeIIAIApk5/8lxqW70m4OHwYO63P
+0fcxNQlfwlVV+Koc72loUnT066+21KLrbGU7kz43VPvH298OLWVNv+Htk9f007Gu
+2BU2B4S1cVNlC156FvMVzZnK1lZL4TvMGdsbCFwYBNhbkjIY6+KlE8TW/QM+QaDR
+2SFMSW7Bqi/TcKb2RJID62i8gDePFyJvwyp5nfXfW5uzES6dVmnl2p5GdztUrRQn
+AeJ4t261pvJXlbPC8FPIMg3X6HvIA7QM/yVuYu77OuwxixiMOjFdSZoLUz9IixRj
+phXYwadnQqd1KsX9dnwb8+69nJ4yQ8soC48SDS2J/zeCgpnpTHohO8pzKBZNW2E=
+=bhPf
+-----END PGP SIGNATURE-----
+
+--qM81t570OJUP5TU/--
