@@ -1,103 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753807AbbANPSL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 10:18:11 -0500
-Received: from mail.kernel.org ([198.145.29.136]:45057 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751004AbbANPSJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 10:18:09 -0500
-Message-ID: <54B688A6.9090902@kernel.org>
-Date: Thu, 15 Jan 2015 00:17:58 +0900
-From: Kukjin Kim <kgene@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	id S1753408AbbANPWb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 10:22:31 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:51401 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751182AbbANPW3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 10:22:29 -0500
+Date: Wed, 14 Jan 2015 15:22:25 +0000
+From: Petr Cermak <petrcermak@chromium.org>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Primiano Tucci <primiano@chromium.org>,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH v2 2/2] task_mmu: Add user-space support for resetting
+ mm->hiwater_rss (peak RSS)
+Message-ID: <20150114152225.GB31484@google.com>
 MIME-Version: 1.0
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-CC: Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        Doug Anderson <dianders@chromium.org>, linux-kernel@vger.kernel.org,
-        Kevin Hilman <khilman@linaro.org>, Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH RESEND 1/4] ARM: dts: Add power and lid GPIO keys pinctrl
- for exynos5250-snow
-References: <1420212257-22443-1-git-send-email-javier.martinez@collabora.co.uk> <1420212257-22443-2-git-send-email-javier.martinez@collabora.co.uk>
-In-Reply-To: <1420212257-22443-2-git-send-email-javier.martinez@collabora.co.uk>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150107172452.GA7922@node.dhcp.inet.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/03/15 00:24, Javier Martinez Canillas wrote:
-> The Exynos5250 Snow Chromebook has GPIO keys for power and lid
-> so the SoC I/O pins have to be configured in external interrupt
-> mode. Currently, this is working without setting the pinctrl
-> lines but is better to set it explicitly instead of relying on
-> the previous state of the I/O pins.
-> 
-> The DTS snippets were taken from the downstream ChromeOS tree.
-> 
-> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> ---
->  arch/arm/boot/dts/exynos5250-snow.dts | 16 ++++++++++++++++
->  1 file changed, 16 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/exynos5250-snow.dts b/arch/arm/boot/dts/exynos5250-snow.dts
-> index effaf2a..b9aeec4 100644
-> --- a/arch/arm/boot/dts/exynos5250-snow.dts
-> +++ b/arch/arm/boot/dts/exynos5250-snow.dts
-> @@ -33,6 +33,8 @@
->  
->  	gpio-keys {
->  		compatible = "gpio-keys";
-> +		pinctrl-names = "default";
-> +		pinctrl-0 = <&power_key_irq &lid_irq>;
->  
->  		power {
->  			label = "Power";
-> @@ -540,6 +542,13 @@
->  };
->  
->  &pinctrl_0 {
-> +	power_key_irq: power-key-irq {
-> +		samsung,pins = "gpx1-3";
-> +		samsung,pin-function = <0xf>;
+On Wed, Jan 07, 2015 at 07:24:52PM +0200, Kirill A. Shutemov wrote:
+> And how it's not an ABI break?
+I don't think this is an ABI break because the current behaviour is not
+changed unless you write "5" to /proc/pid/clear_refs. If you do, you are
+explicitly requesting the new functionality.
 
-I think, this setting should be same with exynos5250-spring but different.
+> We have never-lowering VmHWM for 9+ years. How can you know that nobody
+> expects this behaviour?
+This is why we sent an RFC [1] several weeks ago. We expect this to be
+used mainly by performance-related tools (e.g. profilers) and from the
+comments in the code [2] VmHWM seems to be a best-effort counter. If this
+is strictly a no-go, I can only think of the following two alternatives:
 
-from: arch/arm/boot/dts/exynos5250-spring.dts
-491         power_key_irq: power-key-irq {
-492                 samsung,pins = "gpx1-3";
-493                 samsung,pin-function = <0>;
-494                 samsung,pin-pud = <0>;
-495                 samsung,pin-drv = <0>;
-496         };
+  1. Add an extra resettable field to /proc/pid/status (e.g.
+     resettable_hiwater_rss). While this doesn't violate the current
+     definition of VmHWM, it adds an extra line to /proc/pid/status,
+     which I think is a much bigger issue.
+  2. Introduce a new proc fs file to task_mmu (e.g.
+     /proc/pid/profiler_stats), but this feels like overengineering.
 
-Hmm...0xf should be correct so need to fix the spring DT?
+> And why do you reset hiwater_rss, but not hiwater_vm?
+This is a good point. Should we reset both using the same flag, or
+introduce a new one ("6")?
 
-> +		samsung,pin-pud = <0>;
-> +		samsung,pin-drv = <0>;
-> +	};
-> +
->  	ec_irq: ec-irq {
->  		samsung,pins = "gpx1-6";
->  		samsung,pin-function = <0>;
-> @@ -575,6 +584,13 @@
->  		samsung,pin-drv = <0>;
->  	};
->  
-> +	lid_irq: lid-irq {
-> +		samsung,pins = "gpx3-5";
-> +		samsung,pin-function = <0xf>;
+[1] lkml.iu.edu/hypermail/linux/kernel/1412.1/01877.html
+[2] task_mmu.c:32: "... such snapshots can always be inconsistent."
 
-Same as above.
-
-> +		samsung,pin-pud = <0>;
-> +		samsung,pin-drv = <0>;
-> +	};
-> +
->  	hdmi_hpd_irq: hdmi-hpd-irq {
->  		samsung,pins = "gpx3-7";
->  		samsung,pin-function = <0>;
-
-Thanks,
-Kukjin
+Petr
