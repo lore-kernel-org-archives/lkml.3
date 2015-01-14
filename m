@@ -1,182 +1,327 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752424AbbANBRc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 20:17:32 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:44665 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751558AbbANBRa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 20:17:30 -0500
-Date: Tue, 13 Jan 2015 19:16:36 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
-        <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        Brian Hutchinson <b.hutchman@gmail.com>, Felipe Balbi <balbi@ti.com>
-Subject: Re: [PATCH 1/2] irqchip: omap-intc: Fix support for dm814 and dm816
-Message-ID: <20150114011636.GB18523@saruman>
-Reply-To: <balbi@ti.com>
-References: <1421187806-6804-1-git-send-email-tony@atomide.com>
- <1421187806-6804-2-git-send-email-tony@atomide.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="tjCHc7DPkfUGtrlw"
-Content-Disposition: inline
-In-Reply-To: <1421187806-6804-2-git-send-email-tony@atomide.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751759AbbANBQw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 20:16:52 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:62088 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751122AbbANBQv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 20:16:51 -0500
+From: "Felipe F. Tonello" <eu@felipetonello.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>
+Cc: linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        "Felipe F. Tonello" <eu@felipetonello.com>
+Subject: [PATCH] char: Added support for u-blox 6 i2c gps driver
+Date: Tue, 13 Jan 2015 17:16:42 -0800
+Message-Id: <1421198202-4042-1-git-send-email-eu@felipetonello.com>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---tjCHc7DPkfUGtrlw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This driver will basically translate serial communication to i2c communication
+between the user-space and the GPS module.
 
-On Tue, Jan 13, 2015 at 02:23:25PM -0800, Tony Lindgren wrote:
-> On dm81xx we have 128 interrupts like am33xx has. Let's add
-> compatible flags for dm814x and dm816x, and document the
-> existing binding.
->=20
-> As the dm81xx are booting in device tree only mode, we can now
-> also remove ti81xx_init_irq() legacy function.
->=20
-> Cc: Brian Hutchinson <b.hutchman@gmail.com>
-> Cc: Felipe Balbi <balbi@ti.com>
-> Signed-off-by: Tony Lindgren <tony@atomide.com>
+It creates a /dev/ttyS device node.
 
-Thanks for documenting the binding :-s
+There are specific tty termios flags in order to the tty line discipliner not
+to change the date it is pushed to user space. That is necessary so the NMEA
+data is not corrupted.
+* iflags: added IGNCR: Ignore carriage return on input.
+* oflags: removed ONLCR: (XSI) Map NL to CR-NL on output.
 
-Reviewed-by: Felipe Balbi <balbi@ti.com>
-Acked-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Felipe F. Tonello <eu@felipetonello.com>
+---
+ drivers/tty/serial/Kconfig          |   9 ++
+ drivers/tty/serial/Makefile         |   1 +
+ drivers/tty/serial/ublox6-gps-i2c.c | 245 ++++++++++++++++++++++++++++++++++++
+ 3 files changed, 255 insertions(+)
+ create mode 100644 drivers/tty/serial/ublox6-gps-i2c.c
 
-> ---
->  .../interrupt-controller/ti,omap-intc-irq.txt      | 28 ++++++++++++++++=
-++++++
->  drivers/irqchip/irq-omap-intc.c                    | 14 ++++-------
->  include/linux/irqchip/irq-omap-intc.h              |  1 -
->  3 files changed, 33 insertions(+), 10 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/interrupt-controlle=
-r/ti,omap-intc-irq.txt
->=20
-> diff --git a/Documentation/devicetree/bindings/interrupt-controller/ti,om=
-ap-intc-irq.txt b/Documentation/devicetree/bindings/interrupt-controller/ti=
-,omap-intc-irq.txt
-> new file mode 100644
-> index 0000000..38ce5d03
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/interrupt-controller/ti,omap-intc=
--irq.txt
-> @@ -0,0 +1,28 @@
-> +Omap2/3 intc controller
-> +
-> +On TI omap2 and 3 the intc interrupt controller can provide
-> +96 or 128 IRQ signals to the ARM host depending on the SoC.
-> +
-> +Required Properties:
-> +- compatible: should be one of
-> +			"ti,omap2-intc"
-> +			"ti,omap3-intc"
-> +			"ti,dm814-intc"
-> +			"ti,dm816-intc"
-> +			"ti,am33xx-intc"
-> +
-> +- interrupt-controller : Identifies the node as an interrupt controller
-> +- #interrupt-cells : Specifies the number of cells needed to encode inte=
-rrupt
-> +		     source, should be 1 for intc
-> +- interrupts: interrupt reference to primary interrupt controller
-> +
-> +Please refer to interrupts.txt in this directory for details of the comm=
-on
-> +Interrupt Controllers bindings used by client devices.
-> +
-> +Example:
-> +	intc: interrupt-controller@48200000 {
-> +		compatible =3D "ti,omap3-intc";
-> +		interrupt-controller;
-> +		#interrupt-cells =3D <1>;
-> +		reg =3D <0x48200000 0x1000>;
-> +	};
-> diff --git a/drivers/irqchip/irq-omap-intc.c b/drivers/irqchip/irq-omap-i=
-ntc.c
-> index 28718d3..b75a44a 100644
-> --- a/drivers/irqchip/irq-omap-intc.c
-> +++ b/drivers/irqchip/irq-omap-intc.c
-> @@ -364,14 +364,6 @@ void __init omap3_init_irq(void)
->  	set_handle_irq(omap_intc_handle_irq);
->  }
-> =20
-> -void __init ti81xx_init_irq(void)
-> -{
-> -	omap_nr_irqs =3D 96;
-> -	omap_nr_pending =3D 4;
-> -	omap_init_irq(OMAP34XX_IC_BASE, NULL);
-> -	set_handle_irq(omap_intc_handle_irq);
-> -}
-> -
->  static int __init intc_of_init(struct device_node *node,
->  			     struct device_node *parent)
->  {
-> @@ -383,7 +375,9 @@ static int __init intc_of_init(struct device_node *no=
-de,
->  	if (WARN_ON(!node))
->  		return -ENODEV;
-> =20
-> -	if (of_device_is_compatible(node, "ti,am33xx-intc")) {
-> +	if (of_device_is_compatible(node, "ti,dm814-intc") ||
-> +	    of_device_is_compatible(node, "ti,dm816-intc") ||
-> +	    of_device_is_compatible(node, "ti,am33xx-intc")) {
->  		omap_nr_irqs =3D 128;
->  		omap_nr_pending =3D 4;
->  	}
-> @@ -399,4 +393,6 @@ static int __init intc_of_init(struct device_node *no=
-de,
-> =20
->  IRQCHIP_DECLARE(omap2_intc, "ti,omap2-intc", intc_of_init);
->  IRQCHIP_DECLARE(omap3_intc, "ti,omap3-intc", intc_of_init);
-> +IRQCHIP_DECLARE(dm814x_intc, "ti,dm814-intc", intc_of_init);
-> +IRQCHIP_DECLARE(dm816x_intc, "ti,dm816-intc", intc_of_init);
->  IRQCHIP_DECLARE(am33xx_intc, "ti,am33xx-intc", intc_of_init);
-> diff --git a/include/linux/irqchip/irq-omap-intc.h b/include/linux/irqchi=
-p/irq-omap-intc.h
-> index e06b370..bda426a 100644
-> --- a/include/linux/irqchip/irq-omap-intc.h
-> +++ b/include/linux/irqchip/irq-omap-intc.h
-> @@ -20,7 +20,6 @@
-> =20
->  void omap2_init_irq(void);
->  void omap3_init_irq(void);
-> -void ti81xx_init_irq(void);
-> =20
->  int omap_irq_pending(void);
->  void omap_intc_save_context(void);
-> --=20
-> 2.1.4
->=20
+diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+index 26cec64..49913eb 100644
+--- a/drivers/tty/serial/Kconfig
++++ b/drivers/tty/serial/Kconfig
+@@ -1552,6 +1552,15 @@ config SERIAL_MEN_Z135
+ 	  This driver can also be build as a module. If so, the module will be called
+ 	  men_z135_uart.ko
+ 
++config SERIAL_UBLOX_GPS
++	tristate "u-blox 6 I2C GPS support"
++	depends on I2C
++	default n
++	help
++	  This driver uses i2c to communicate with the u-blox 6 GPS module
++	  and has a serial tty device interface to the user-space, making
++	  it easy to read/write data from/to the GPS.
++
+ endmenu
+ 
+ config SERIAL_MCTRL_GPIO
+diff --git a/drivers/tty/serial/Makefile b/drivers/tty/serial/Makefile
+index 0080cc3..cba2b5c 100644
+--- a/drivers/tty/serial/Makefile
++++ b/drivers/tty/serial/Makefile
+@@ -92,6 +92,7 @@ obj-$(CONFIG_SERIAL_ARC)	+= arc_uart.o
+ obj-$(CONFIG_SERIAL_RP2)	+= rp2.o
+ obj-$(CONFIG_SERIAL_FSL_LPUART)	+= fsl_lpuart.o
+ obj-$(CONFIG_SERIAL_MEN_Z135)	+= men_z135_uart.o
++obj-$(CONFIG_SERIAL_UBLOX_GPS) += ublox6-gps-i2c.o
+ 
+ # GPIOLIB helpers for modem control lines
+ obj-$(CONFIG_SERIAL_MCTRL_GPIO)	+= serial_mctrl_gpio.o
+diff --git a/drivers/tty/serial/ublox6-gps-i2c.c b/drivers/tty/serial/ublox6-gps-i2c.c
+new file mode 100644
+index 0000000..16dd1cf
+--- /dev/null
++++ b/drivers/tty/serial/ublox6-gps-i2c.c
+@@ -0,0 +1,245 @@
++/* u-blox 6 I2C GPS driver
++ *
++ * Copyright (C) 2015 Felipe F. Tonello <eu@felipetonello.com>
++ *
++ * Driver that translates a serial tty GPS device to a i2c GPS device
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/tty.h>
++#include <linux/tty_flip.h>
++#include <linux/i2c.h>
++#include <linux/workqueue.h>
++
++/*
++ * Version Information
++ */
++#define DRIVER_VERSION "v0.1"
++#define DRIVER_DESC "u-blox 6 I2C GPS driver"
++
++#define UBLOX_GPS_MAJOR 0
++#define UBLOX_GPS_NUM 1 /* Only support 1 GPS at a time */
++
++/* By default u-blox GPS fill its buffer every 1 second (1000 msecs) */
++#define READ_TIME 1000
++
++static struct tty_port *ublox_gps_tty_port;
++static struct i2c_client *ublox_gps_i2c_client;
++static int ublox_gps_is_open;
++static struct file *ublox_gps_filp;
++
++static void ublox_gps_read_worker(struct work_struct *private);
++
++static DECLARE_DELAYED_WORK(ublox_gps_wq, ublox_gps_read_worker);
++
++static void ublox_gps_read_worker(struct work_struct *private)
++{
++	s32 gps_buf_size, buf_size = 0;
++	u8 *buf;
++
++	if (!ublox_gps_is_open)
++		return;
++
++	/* check if driver was removed */
++	if (!ublox_gps_i2c_client)
++		return;
++
++	gps_buf_size = i2c_smbus_read_word_data(ublox_gps_i2c_client, 0xfd);
++	if (gps_buf_size < 0) {
++		dev_warn(&ublox_gps_i2c_client->dev, KBUILD_MODNAME ": couldn't read register(0xfd) from GPS.\n");
++		/* try one more time */
++		goto end;
++	}
++
++	/* 0xfd is the MSB and 0xfe is the LSB */
++	gps_buf_size = ((gps_buf_size & 0xf) << 8) | ((gps_buf_size & 0xf0) >> 8);
++
++	if (gps_buf_size > 0) {
++
++		buf = kcalloc(gps_buf_size, sizeof(*buf), GFP_KERNEL);
++		if (!buf) {
++			dev_warn(&ublox_gps_i2c_client->dev, KBUILD_MODNAME ": couldn't allocate memory.\n");
++			/* try one more time */
++			goto end;
++		}
++
++		do {
++			buf_size = i2c_master_recv(ublox_gps_i2c_client, (char *)buf, gps_buf_size);
++			if (buf_size < 0) {
++				dev_warn(&ublox_gps_i2c_client->dev, KBUILD_MODNAME ": couldn't read data from GPS.\n");
++				kfree(buf);
++				/* try one more time */
++				goto end;
++			}
++
++			tty_insert_flip_string(ublox_gps_tty_port, buf, buf_size);
++
++			gps_buf_size -= buf_size;
++
++			/* There is a small chance that we need to split the data over
++			   several buffers. If this is the case we must loop */
++		} while (unlikely(gps_buf_size > 0));
++
++		tty_flip_buffer_push(ublox_gps_tty_port);
++
++		kfree(buf);
++	}
++
++end:
++	/* resubmit the workqueue again */
++	schedule_delayed_work(&ublox_gps_wq, msecs_to_jiffies(READ_TIME)); /* 1 sec delay */
++}
++
++static int ublox_gps_serial_open(struct tty_struct *tty, struct file *filp)
++{
++	if (ublox_gps_is_open)
++		return -EBUSY;
++
++	ublox_gps_filp = filp;
++	ublox_gps_tty_port = tty->port;
++	ublox_gps_tty_port->low_latency = true; /* make sure we push data immediately */
++	ublox_gps_is_open = true;
++
++	schedule_delayed_work(&ublox_gps_wq, 0);
++
++	return 0;
++}
++
++static void ublox_gps_serial_close(struct tty_struct *tty, struct file *filp)
++{
++	if (!ublox_gps_is_open)
++		return;
++
++	/* avoid stop when the denied (in open) file structure closes itself */
++	if (ublox_gps_filp != filp)
++		return;
++
++	ublox_gps_is_open = false;
++	ublox_gps_filp = NULL;
++	ublox_gps_tty_port = NULL;
++}
++
++static int ublox_gps_serial_write(struct tty_struct *tty, const unsigned char *buf,
++	int count)
++{
++	if (!ublox_gps_is_open)
++		return 0;
++
++	/* check if driver was removed */
++	if (!ublox_gps_i2c_client)
++		return 0;
++
++	/* we don't write back to the GPS so just return same value here */
++	return count;
++}
++
++static int ublox_gps_write_room(struct tty_struct *tty)
++{
++	if (!ublox_gps_is_open)
++		return 0;
++
++	/* check if driver was removed */
++	if (!ublox_gps_i2c_client)
++		return 0;
++
++	/* we don't write back to the GPS so just return some value here */
++	return 1024;
++}
++
++static const struct tty_operations ublox_gps_serial_ops = {
++	.open = ublox_gps_serial_open,
++	.close = ublox_gps_serial_close,
++	.write = ublox_gps_serial_write,
++	.write_room = ublox_gps_write_room,
++};
++
++static struct tty_driver *ublox_gps_tty_driver;
++
++static int ublox_gps_probe(struct i2c_client *client,
++	const struct i2c_device_id *id)
++{
++	int result = 0;
++
++	ublox_gps_tty_driver = alloc_tty_driver(UBLOX_GPS_NUM);
++	if (!ublox_gps_tty_driver)
++		return -ENOMEM;
++
++	ublox_gps_tty_driver->owner = THIS_MODULE;
++	ublox_gps_tty_driver->driver_name = "ublox_gps";
++	ublox_gps_tty_driver->name = "ttyS";
++	ublox_gps_tty_driver->major = UBLOX_GPS_MAJOR;
++	ublox_gps_tty_driver->minor_start = 0;
++	ublox_gps_tty_driver->type = TTY_DRIVER_TYPE_SERIAL;
++	ublox_gps_tty_driver->subtype = SERIAL_TYPE_NORMAL;
++	ublox_gps_tty_driver->flags = TTY_DRIVER_REAL_RAW;
++	ublox_gps_tty_driver->init_termios = tty_std_termios;
++	ublox_gps_tty_driver->init_termios.c_iflag = IGNCR | IXON;
++	ublox_gps_tty_driver->init_termios.c_oflag = OPOST;
++	ublox_gps_tty_driver->init_termios.c_cflag = B9600 | CS8 | CREAD |
++		HUPCL | CLOCAL;
++	ublox_gps_tty_driver->init_termios.c_ispeed = 9600;
++	ublox_gps_tty_driver->init_termios.c_ospeed = 9600;
++	tty_set_operations(ublox_gps_tty_driver, &ublox_gps_serial_ops);
++	result = tty_register_driver(ublox_gps_tty_driver);
++	if (result) {
++		dev_err(&ublox_gps_i2c_client->dev, KBUILD_MODNAME ": %s - tty_register_driver failed\n",
++			__func__);
++		goto err;
++	}
++
++	ublox_gps_i2c_client = client;
++	ublox_gps_filp = NULL;
++	ublox_gps_tty_port = NULL;
++	ublox_gps_is_open = false;
++
++	/* i2c_set_clientdata(client, NULL); */
++
++	dev_info(&ublox_gps_i2c_client->dev, KBUILD_MODNAME ": " DRIVER_VERSION ": "
++		DRIVER_DESC "\n");
++
++	return result;
++
++err:
++	dev_err(&ublox_gps_i2c_client->dev, KBUILD_MODNAME ": %s - returning with error %d\n",
++		__func__, result);
++
++	put_tty_driver(ublox_gps_tty_driver);
++
++	return result;
++}
++
++static int ublox_gps_remove(struct i2c_client *client)
++{
++	tty_unregister_driver(ublox_gps_tty_driver);
++	put_tty_driver(ublox_gps_tty_driver);
++
++	ublox_gps_i2c_client = NULL;
++
++	return 0;
++}
++
++static const struct i2c_device_id ublox_gps_id[] = {
++	{ "ublox_gps", 0 },
++	{ }
++};
++
++MODULE_DEVICE_TABLE(i2c, ublox_gps_id);
++
++static struct i2c_driver ublox_gps_i2c_driver = {
++	.driver = {
++		.name  = "ublox_gps",
++		.owner = THIS_MODULE,
++	},
++	.id_table  = ublox_gps_id,
++	.probe     = ublox_gps_probe,
++	.remove    = ublox_gps_remove,
++};
++
++module_i2c_driver(ublox_gps_i2c_driver);
++
++MODULE_AUTHOR("Felipe F. Tonello <eu@felipetonello.com>");
++MODULE_DESCRIPTION(DRIVER_DESC);
++MODULE_VERSION(DRIVER_VERSION);
++MODULE_LICENSE("GPL");
+-- 
+1.9.3
 
---=20
-balbi
-
---tjCHc7DPkfUGtrlw
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUtcN0AAoJEIaOsuA1yqRES1EP/jdHBqs8/FeYgCb9wWyAcZE6
-0SOfEpXqDBBDt8V7G3+lzmRgBrXxTLgaSpQTwMYeCIQuGg5T+7Ty+jTaZ1OnOAAK
-R6q6uk3iRKMkjxHN+nH/peFmaFCz9BDFKfQC7UiRsDVOx4kgab9P1XITM7mxszzR
-HQOdkC2NXSSzRpLHEdbgzIYbD0t1BRxIXw7NT0zdw2DdX8fO0qctZjJawrI1L3VD
-xeHYUea223JptOcNNibhQL7HsAbl+6a8nYhj6ZZvDNkgF8D7yOS9cwZVSn+E6Hgw
-LJaQIH6ajXQGmsHC81ZgmonYgc84ozodO+1CRFcq06ilYxM9AdGiJvqB098Bz19S
-/0XyImlRjRJwjpFO+eQVMRg1NslZPjc6Qlv7tWKANH2Y3lSvp7y7rPbRfi6SFJvQ
-5SWKZ/1865IVxYyrqxfXKEWLoM8Hd4IRm0IUbMg1OM/zPJKwnEtww2aTarIa/o26
-YT2y8qk8IdaMf7nB+QX0mZJPN14h+HW6ipxtU1jTn6gT2RHClNp1BZZqHe2U5tU/
-v36lTebcOhPpBgfE6USfcYkh27jzMi9PfK4V1WbXHdlk1fBfPFctS6ZshPTSX6cT
-OGVzR5lm5mdR3kGQV0ME++vEZ7yY3el+3g7ntapI2+I9FcV3ecC87dkiMkj8knrT
-J5X61iJshAufpwmItWJh
-=ZywO
------END PGP SIGNATURE-----
-
---tjCHc7DPkfUGtrlw--
