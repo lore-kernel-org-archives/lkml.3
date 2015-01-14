@@ -1,108 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753267AbbANOnd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 09:43:33 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:48659 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752774AbbANOnb (ORCPT
+	id S1753544AbbANOpx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 09:45:53 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:33917 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752933AbbANOpg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 09:43:31 -0500
-Message-ID: <54B68091.7080109@atmel.com>
-Date: Wed, 14 Jan 2015 15:43:29 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2 1/5] irqchip: add dumb demultiplexer implementation
-References: <1421174781-4340-1-git-send-email-boris.brezillon@free-electrons.com>	<1421174781-4340-2-git-send-email-boris.brezillon@free-electrons.com>	<54B670EA.1010800@atmel.com> <20150114150332.09fecbea@bbrezillon>
-In-Reply-To: <20150114150332.09fecbea@bbrezillon>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.161.30.18]
+	Wed, 14 Jan 2015 09:45:36 -0500
+From: Marc Zyngier <marc.zyngier@arm.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+        Jiang Liu <jiang.liu@linux.intel.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 0/2] genirq: Make irqchip flags work with stacked irq domains
+Date: Wed, 14 Jan 2015 14:45:15 +0000
+Message-Id: <1421246717-11640-1-git-send-email-marc.zyngier@arm.com>
+X-Mailer: git-send-email 2.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 14/01/2015 15:03, Boris Brezillon a écrit :
-> On Wed, 14 Jan 2015 14:36:42 +0100
-> Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
-> 
->> Le 13/01/2015 19:46, Boris Brezillon a écrit :
->>> Some interrupt controllers are multiplexing several peripheral IRQs on
->>> a single interrupt line.
->>> While this is not a problem for most IRQs (as long as all peripherals
->>> request the interrupt with IRQF_SHARED flag set), multiplexing timers and
->>> other type of peripherals will generate a WARNING (mixing IRQF_NO_SUSPEND
->>> and !IRQF_NO_SUSPEND is prohibited).
->>>
->>> Create a dumb irq demultiplexer which simply forwards interrupts to all
->>> peripherals (exactly what's happening with IRQ_SHARED) but keep a unique
->>> irq number for each peripheral, thus preventing the IRQF_NO_SUSPEND
->>> and !IRQF_NO_SUSPEND mix on a given interrupt.
->>>
->>> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
->>> ---
->>>  drivers/irqchip/Kconfig          |   4 ++
->>>  drivers/irqchip/Makefile         |   1 +
->>>  drivers/irqchip/irq-dumb-demux.c |  70 ++++++++++++++++++++
->>>  include/linux/irq.h              |  49 ++++++++++++++
->>>  include/linux/irqdomain.h        |   1 +
->>>  kernel/irq/Kconfig               |   5 ++
->>>  kernel/irq/Makefile              |   1 +
->>>  kernel/irq/chip.c                |  41 ++++++++++++
->>>  kernel/irq/dumb-demux-chip.c     | 140 +++++++++++++++++++++++++++++++++++++++
->>>  kernel/irq/handle.c              |  31 ++++++++-
->>>  kernel/irq/internals.h           |   3 +
->>>  11 files changed, 344 insertions(+), 2 deletions(-)
->>>  create mode 100644 drivers/irqchip/irq-dumb-demux.c
->>>  create mode 100644 kernel/irq/dumb-demux-chip.c
+With the landing of stacked irq domains in 3.19, we have ended up in a
+situation where we have a stack of IRQ controllers, each with their
+set of flags, but the core code is only able to look at the top-most,
+which is not very helpful. This small series is trying to fix this.
 
-[..]
+The first patch converts all access to desc->irq_data.chip->flags to
+using an accessor, without changing anything else. The second patch
+adds some logic to combine these flags as we allocate the interrupts,
+ultimately storing the resulting set as part of the irq_desc
+structure.
 
->>> +static void irq_dumb_demux_mask(struct irq_data *d)
->>> +{
->>> +	struct irq_chip_dumb_demux *demux = irq_data_get_irq_chip_data(d);
->>> +
->>> +	clear_bit(d->hwirq, &demux->unmasked);
->>> +
->>> +	if (!demux->unmasked)
->>> +		disable_irq_nosync(demux->src_irq);
->>> +}
->>> +
->>> +static void irq_dumb_demux_unmask(struct irq_data *d)
->>> +{
->>> +	struct irq_chip_dumb_demux *demux = irq_data_get_irq_chip_data(d);
->>> +	bool enable_src_irq = !demux->unmasked;
->>
->> Why this additional "bool" unlike the other function above?
-> 
-> Because set_bit will modify the unmasked status and we must check if it
-> is equal to 0 (in other terms, all irqs are masked) before modifying it
-> in order to know whether we should enable the src irq or not.
+We end-up with a configuration where the flags can either be located
+in the irq_chip structure (non stacked case), or in the irq_desc
+(stacked case). While this isn't really ideal, this gives at least the
+right level of information to the rest of the IRQ framework, and is
+only computed at allocation time, instead of parsing the irqchip stack
+at runtime.
 
-pfffff! ok, sorry for the noise then ;-)
+Based on 3.19-rc3, and available at:
+git://git.kernel.org/pub/scm/linux/kernel/git/maz/arm-platforms.git irq/stacked-irqchip-flags
 
+>From v1 [1]:
+- fix one last occurence of desc->irq_data.chip->flags, spotted by Jiang
 
->>> +
->>> +	set_bit(d->hwirq, &demux->unmasked);
->>> +
->>> +	if (enable_src_irq)
->>> +		enable_irq(demux->src_irq);
->>> +}
->>> +
+[1]: https://lkml.org/lkml/2015/1/8/387
 
-[...]
+Marc Zyngier (2):
+  genirq: Abstract access to irq_chip flags
+  genirq: Allow irq_desc to carry the union of stacked irq_chip flags
 
-Bye,
+ include/linux/irq.h     |  4 ++++
+ include/linux/irqdesc.h | 12 ++++++++++++
+ kernel/irq/chip.c       | 10 +++++-----
+ kernel/irq/irqdesc.c    |  3 +++
+ kernel/irq/irqdomain.c  | 20 +++++++++++++++++++-
+ kernel/irq/manage.c     |  8 ++++----
+ kernel/irq/pm.c         |  2 +-
+ 7 files changed, 48 insertions(+), 11 deletions(-)
+
 -- 
-Nicolas Ferre
+2.1.4
+
