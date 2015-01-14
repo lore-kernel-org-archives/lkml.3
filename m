@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617AbbANLyZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 06:54:25 -0500
-Received: from mail.lysator.liu.se ([130.236.254.3]:56153 "EHLO
+	id S1752584AbbANLx7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 06:53:59 -0500
+Received: from mail.lysator.liu.se ([130.236.254.3]:37956 "EHLO
 	mail.lysator.liu.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752414AbbANLxy (ORCPT
+	with ESMTP id S1752406AbbANLx5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 06:53:54 -0500
+	Wed, 14 Jan 2015 06:53:57 -0500
 From: Peter Rosin <peda@lysator.liu.se>
 To: alsa-devel@alsa-project.org
 Cc: Peter Rosin <peda@axentia.se>, Liam Girdwood <lgirdwood@gmail.com>,
         Mark Brown <broonie@linaro.org>, Jaroslav Kysela <perex@perex.cz>,
         Takashi Iwai <tiwai@suse.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH 6/7] ASoC: pcm512x: Avoid the PLL for the DAC clock, if possible
-Date: Wed, 14 Jan 2015 12:52:49 +0100
-Message-Id: <1421236370-19826-7-git-send-email-peda@lysator.liu.se>
+Subject: [PATCH 7/7] ASoC: pcm512x: Support SND_SOC_DAIFMT_CBM_CFS
+Date: Wed, 14 Jan 2015 12:52:50 +0100
+Message-Id: <1421236370-19826-8-git-send-email-peda@lysator.liu.se>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1421236370-19826-1-git-send-email-peda@lysator.liu.se>
 References: <1421236370-19826-1-git-send-email-peda@lysator.liu.se>
@@ -24,228 +24,63 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Peter Rosin <peda@axentia.se>
 
-The PLL introduces jitter, which in turn introduces noice if used
-to clock the DAC. Thus, avoid the PLL output, and use the PLL input
-to drive the DAC clock, if possible.
-
-This is described for the PCM5142/PCM5242 chips in the answers to the
-forum post "PCM5142/PCM5242 DAC clock source" at the TI E2E community
-pages (1).
-
-(1) http://e2e.ti.com/support/data_converters/audio_converters/f/64/t/389994
-
 Signed-off-by: Peter Rosin <peda@axentia.se>
 ---
- sound/soc/codecs/pcm512x.c |  119 ++++++++++++++++++++++++++++++++++----------
- sound/soc/codecs/pcm512x.h |    4 +-
- 2 files changed, 96 insertions(+), 27 deletions(-)
+ sound/soc/codecs/pcm512x.c |   13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
 
 diff --git a/sound/soc/codecs/pcm512x.c b/sound/soc/codecs/pcm512x.c
-index df8948b4e848..2a50c58a2fb1 100644
+index 2a50c58a2fb1..511d98b3afa4 100644
 --- a/sound/soc/codecs/pcm512x.c
 +++ b/sound/soc/codecs/pcm512x.c
-@@ -105,6 +105,7 @@ static const struct reg_default pcm512x_reg_defaults[] = {
- 	{ PCM512x_VCOM_CTRL_2,       0x01 },
- 	{ PCM512x_BCLK_LRCLK_CFG,    0x00 },
- 	{ PCM512x_MASTER_MODE,       0x7c },
-+	{ PCM512x_GPIO_DACIN,        0x00 },
- 	{ PCM512x_GPIO_PLLIN,        0x00 },
- 	{ PCM512x_SYNCHRONIZE,       0x10 },
- 	{ PCM512x_PLL_COEFF_0,       0x00 },
-@@ -138,6 +139,7 @@ static bool pcm512x_readable(struct device *dev, unsigned int reg)
- 	case PCM512x_MASTER_MODE:
- 	case PCM512x_PLL_REF:
- 	case PCM512x_DAC_REF:
-+	case PCM512x_GPIO_DACIN:
- 	case PCM512x_GPIO_PLLIN:
- 	case PCM512x_SYNCHRONIZE:
- 	case PCM512x_PLL_COEFF_0:
-@@ -681,6 +683,37 @@ done:
- 	return 0;
- }
+@@ -486,6 +486,7 @@ static int pcm512x_dai_startup(struct snd_pcm_substream *substream,
  
-+static unsigned long pcm512x_pllin_dac_rate(struct snd_soc_dai *dai,
-+					    unsigned long osr_rate,
-+					    unsigned long pllin_rate)
-+{
-+	struct snd_soc_codec *codec = dai->codec;
-+	struct pcm512x_priv *pcm512x = snd_soc_codec_get_drvdata(codec);
-+	unsigned long dac_rate;
-+
-+	if (!pcm512x->pll_out)
-+		return 0; /* no PLL to bypass, force SCK as DAC input */
-+
-+	if (pllin_rate % osr_rate)
-+		return 0; /* futile, quit early */
-+
-+	/* run DAC no faster than 6144000 Hz */
-+	for (dac_rate = rounddown(6144000, osr_rate);
-+	     dac_rate;
-+	     dac_rate -= osr_rate) {
-+
-+		if (pllin_rate / dac_rate > 128)
-+			return 0; /* DAC divider would be too big */
-+
-+		if (!(pllin_rate % dac_rate))
-+			return dac_rate;
-+
-+		dac_rate -= osr_rate;
-+	}
-+
-+	return 0;
-+}
-+
- static int pcm512x_set_dividers(struct snd_soc_dai *dai,
- 				struct snd_pcm_hw_params *params)
- {
-@@ -694,6 +727,7 @@ static int pcm512x_set_dividers(struct snd_soc_dai *dai,
- 	unsigned long bclk_rate;
- 	unsigned long sample_rate;
- 	unsigned long osr_rate;
-+	unsigned long dacsrc_rate;
- 	int bclk_div;
- 	int lrclk_div;
- 	int dsp_div;
-@@ -701,11 +735,10 @@ static int pcm512x_set_dividers(struct snd_soc_dai *dai,
- 	unsigned long dac_rate;
- 	int ncp_div;
- 	int osr_div;
--	unsigned long dac_mul;
--	unsigned long sck_mul;
+ 	switch (pcm512x->fmt & SND_SOC_DAIFMT_MASTER_MASK) {
+ 	case SND_SOC_DAIFMT_CBM_CFM:
++	case SND_SOC_DAIFMT_CBM_CFS:
+ 		return pcm512x_dai_startup_master(substream, dai);
+ 
+ 	case SND_SOC_DAIFMT_CBS_CFS:
+@@ -992,6 +993,8 @@ static int pcm512x_hw_params(struct snd_pcm_substream *substream,
+ 	struct pcm512x_priv *pcm512x = snd_soc_codec_get_drvdata(codec);
+ 	int alen;
+ 	int gpio;
++	int clock_output;
++	int master_mode;
  	int ret;
- 	int idac;
- 	int fssp;
-+	int gpio;
  
- 	lrclk_div = pcm512x_params_to_frame_size(params);
- 	if (lrclk_div == 0) {
-@@ -794,31 +827,72 @@ static int pcm512x_set_dividers(struct snd_soc_dai *dai,
- 	/* run DSP no faster than 50 MHz */
- 	dsp_div = mck_rate > 50000000 ? 2 : 1;
- 
--	/* run DAC no faster than 6144000 Hz */
--	dac_mul = 6144000 / osr_rate;
--	sck_mul = sck_rate / osr_rate;
--	for (; dac_mul; dac_mul--) {
--		if (!(sck_mul % dac_mul))
--			break;
--	}
--	if (!dac_mul) {
--		dev_err(dev, "Failed to find DAC rate\n");
--		return -EINVAL;
--	}
-+	dac_rate = pcm512x_pllin_dac_rate(dai, osr_rate, pllin_rate);
-+	if (dac_rate) {
-+		/* the desired clock rate is "compatible" with the pll input
-+		 * clock, so use that clock as dac input instead of the pll
-+		 * output clock since the pll will introduce jitter and thus
-+		 * noise.
-+		 */
-+		dev_dbg(dev, "using pll input as dac input\n");
-+		ret = regmap_update_bits(pcm512x->regmap, PCM512x_DAC_REF,
-+					 PCM512x_SDAC, PCM512x_SDAC_GPIO);
-+		if (ret != 0) {
-+			dev_err(codec->dev,
-+				"Failed to set gpio as dacref: %d\n", ret);
-+			return ret;
-+		}
- 
--	dac_rate = dac_mul * osr_rate;
--	dev_dbg(dev, "dac_rate %lu sample_rate %lu\n", dac_rate, sample_rate);
-+		gpio = PCM512x_GREF_GPIO1 + pcm512x->pll_in - 1;
-+		ret = regmap_update_bits(pcm512x->regmap, PCM512x_GPIO_DACIN,
-+					 PCM512x_GREF, gpio);
-+		if (ret != 0) {
-+			dev_err(codec->dev,
-+				"Failed to set gpio %d as dacin: %d\n",
-+				pcm512x->pll_in, ret);
-+			return ret;
-+		}
-+
-+		dacsrc_rate = pllin_rate;
-+	} else {
-+		/* run DAC no faster than 6144000 Hz */
-+		unsigned long dac_mul = 6144000 / osr_rate;
-+		unsigned long sck_mul = sck_rate / osr_rate;
-+
-+		for (; dac_mul; dac_mul--) {
-+			if (!(sck_mul % dac_mul))
-+				break;
-+		}
-+		if (!dac_mul) {
-+			dev_err(dev, "Failed to find DAC rate\n");
-+			return -EINVAL;
-+		}
- 
--	dac_div = DIV_ROUND_CLOSEST(sck_rate, dac_rate);
-+		dac_rate = dac_mul * osr_rate;
-+		dev_dbg(dev, "dac_rate %lu sample_rate %lu\n",
-+			dac_rate, sample_rate);
-+
-+		ret = regmap_update_bits(pcm512x->regmap, PCM512x_DAC_REF,
-+					 PCM512x_SDAC, PCM512x_SDAC_SCK);
-+		if (ret != 0) {
-+			dev_err(codec->dev,
-+				"Failed to set sck as dacref: %d\n", ret);
-+			return ret;
-+		}
-+
-+		dacsrc_rate = sck_rate;
-+	}
-+
-+	dac_div = DIV_ROUND_CLOSEST(dacsrc_rate, dac_rate);
- 	if (dac_div > 128) {
- 		dev_err(dev, "Failed to find DAC divider\n");
+ 	dev_dbg(codec->dev, "hw_params %u Hz, %u channels\n",
+@@ -1040,6 +1043,12 @@ static int pcm512x_hw_params(struct snd_pcm_substream *substream,
+ 		}
+ 		return 0;
+ 	case SND_SOC_DAIFMT_CBM_CFM:
++		clock_output = PCM512x_BCKO | PCM512x_LRKO;
++		master_mode = PCM512x_RLRK | PCM512x_RBCK;
++		break;
++	case SND_SOC_DAIFMT_CBM_CFS:
++		clock_output = PCM512x_BCKO;
++		master_mode = PCM512x_RBCK;
+ 		break;
+ 	default:
  		return -EINVAL;
- 	}
+@@ -1136,7 +1145,7 @@ static int pcm512x_hw_params(struct snd_pcm_substream *substream,
  
--	ncp_div = DIV_ROUND_CLOSEST(sck_rate / dac_div, 1536000);
--	if (ncp_div > 128 || sck_rate / dac_div / ncp_div > 2048000) {
-+	ncp_div = DIV_ROUND_CLOSEST(dacsrc_rate / dac_div, 1536000);
-+	if (ncp_div > 128 || dacsrc_rate / dac_div / ncp_div > 2048000) {
- 		/* run NCP no faster than 2048000 Hz, but why? */
--		ncp_div = DIV_ROUND_UP(sck_rate / dac_div, 2048000);
-+		ncp_div = DIV_ROUND_UP(dacsrc_rate / dac_div, 2048000);
- 		if (ncp_div > 128) {
- 			dev_err(dev, "Failed to find NCP divider\n");
- 			return -EINVAL;
-@@ -1033,13 +1107,6 @@ static int pcm512x_hw_params(struct snd_pcm_substream *substream,
- 	if (ret != 0)
+ 	ret = regmap_update_bits(pcm512x->regmap, PCM512x_BCLK_LRCLK_CFG,
+ 				 PCM512x_BCKP | PCM512x_BCKO | PCM512x_LRKO,
+-				 PCM512x_BCKO | PCM512x_LRKO);
++				 clock_output);
+ 	if (ret != 0) {
+ 		dev_err(codec->dev, "Failed to enable clock output: %d\n", ret);
  		return ret;
+@@ -1144,7 +1153,7 @@ static int pcm512x_hw_params(struct snd_pcm_substream *substream,
  
--	ret = regmap_update_bits(pcm512x->regmap, PCM512x_DAC_REF,
--				 PCM512x_SDAC, PCM512x_SDAC_SCK);
--	if (ret != 0) {
--		dev_err(codec->dev, "Failed to set sck as dacref: %d\n", ret);
--		return ret;
--	}
--
- 	if (pcm512x->pll_out) {
- 		ret = regmap_update_bits(pcm512x->regmap, PCM512x_PLL_REF,
- 					 PCM512x_SREF, PCM512x_SREF_GPIO);
-diff --git a/sound/soc/codecs/pcm512x.h b/sound/soc/codecs/pcm512x.h
-index eba5adc2cdb1..b7c310207223 100644
---- a/sound/soc/codecs/pcm512x.h
-+++ b/sound/soc/codecs/pcm512x.h
-@@ -38,6 +38,7 @@
- #define PCM512x_MASTER_MODE       (PCM512x_PAGE_BASE(0) +  12)
- #define PCM512x_PLL_REF           (PCM512x_PAGE_BASE(0) +  13)
- #define PCM512x_DAC_REF           (PCM512x_PAGE_BASE(0) +  14)
-+#define PCM512x_GPIO_DACIN        (PCM512x_PAGE_BASE(0) +  16)
- #define PCM512x_GPIO_PLLIN        (PCM512x_PAGE_BASE(0) +  18)
- #define PCM512x_SYNCHRONIZE       (PCM512x_PAGE_BASE(0) +  19)
- #define PCM512x_PLL_COEFF_0       (PCM512x_PAGE_BASE(0) +  20)
-@@ -162,8 +163,9 @@
- #define PCM512x_SDAC_PLL    (1 << 4)
- #define PCM512x_SDAC_SCK    (3 << 4)
- #define PCM512x_SDAC_BCK    (4 << 4)
-+#define PCM512x_SDAC_GPIO   (5 << 4)
- 
--/* Page 0, Register 18 - GPIO source for PLL */
-+/* Page 0, Register 16, 18 - GPIO source for DAC, PLL */
- #define PCM512x_GREF        (7 << 0)
- #define PCM512x_GREF_SHIFT  0
- #define PCM512x_GREF_GPIO1  (0 << 0)
+ 	ret = regmap_update_bits(pcm512x->regmap, PCM512x_MASTER_MODE,
+ 				 PCM512x_RLRK | PCM512x_RBCK,
+-				 PCM512x_RLRK | PCM512x_RBCK);
++				 master_mode);
+ 	if (ret != 0) {
+ 		dev_err(codec->dev, "Failed to enable master mode: %d\n", ret);
+ 		return ret;
 -- 
 1.7.10.4
 
