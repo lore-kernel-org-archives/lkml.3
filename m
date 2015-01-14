@@ -1,114 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732AbbANQHD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 11:07:03 -0500
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:58320 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751286AbbANQHA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 11:07:00 -0500
-Message-ID: <54B69418.4050502@hurleysoftware.com>
-Date: Wed, 14 Jan 2015 11:06:48 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1753498AbbANQHk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 11:07:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56362 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751065AbbANQHj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 11:07:39 -0500
+Message-ID: <54B69431.8090702@redhat.com>
+Date: Wed, 14 Jan 2015 11:07:13 -0500
+From: Don Dutile <ddutile@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.8.0
 MIME-Version: 1.0
-To: Prashant Sreedharan <prashant@broadcom.com>
-CC: Michael Chan <mchan@broadcom.com>, netdev@vger.kernel.org,
-        Linux kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [3.19-rc3] tg3: BUG: sleeping function called from invalid context
-References: <54B46DD5.9050802@hurleysoftware.com> <1421116255.16485.14.camel@prashant>
-In-Reply-To: <1421116255.16485.14.camel@prashant>
-Content-Type: text/plain; charset=utf-8
+To: Jon Masters <jcm@redhat.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: sysfs topology for arm64 cluster_id
+References: <54B5BC84.8090603@redhat.com>
+In-Reply-To: <54B5BC84.8090603@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12/2015 09:30 PM, Prashant Sreedharan wrote:
-> On Mon, 2015-01-12 at 19:59 -0500, Peter Hurley wrote:
->> On 3.19-rc3, I'm seeing this might_sleep() warning [1] from the tg3_open()
->> call stack. Let me know if I need to bisect this.
->>
->> Regards,
->> Peter Hurley
->>
->> [1]
->>
->> [   17.203009] BUG: sleeping function called from invalid context at /home/peter/src/kernels/mainline/kernel/irq/manage.c:104
->> [   17.203067] in_atomic(): 1, irqs_disabled(): 0, pid: 1106, name: ip
->> [   17.203092] 2 locks held by ip/1106:
->> [   17.205255]  #0:  (rtnl_mutex){+.+.+.}, at: [<ffffffff816adf1f>] rtnetlink_rcv+0x1f/0x40
->> [   17.207445]  #1:  (&(&tp->lock)->rlock){+.....}, at: [<ffffffffa01073e6>] tg3_start+0xc06/0x11f0 [tg3]
->> [   17.209725] CPU: 2 PID: 1106 Comm: ip Not tainted 3.19.0-rc3+wip-xeon+lockdep #rc3+wip
->> [   17.211900] Hardware name: Dell Inc. Precision WorkStation T5400  /0RW203, BIOS A11 04/30/2012
->> [   17.214086]  0000000000000068 ffff8802ac823498 ffffffff817af7e8 0000000000000005
->> [   17.216265]  ffffffff81a9be78 ffff8802ac8234a8 ffffffff810998a5 ffff8802ac8234d8
->> [   17.218446]  ffffffff8109991a ffff8802ac8234c8 ffff8802af0aae00 ffffffffa00ed000
->> [   17.220636] Call Trace:
->> [   17.222743]  [<ffffffff817af7e8>] dump_stack+0x4f/0x7b
->> [   17.224808]  [<ffffffff810998a5>] ___might_sleep+0x105/0x140
->> [   17.226842]  [<ffffffff8109991a>] __might_sleep+0x3a/0xa0
->> [   17.228869]  [<ffffffffa00ed000>] ? 0xffffffffa00ed000
->> [   17.230939]  [<ffffffff810d7d78>] synchronize_irq+0x38/0xa0
->> [   17.232967]  [<ffffffffa00ed000>] ? 0xffffffffa00ed000
->> [   17.234991]  [<ffffffffa010105f>] tg3_chip_reset+0x13f/0x9c0 [tg3]
->> [   17.236988]  [<ffffffffa01020ae>] tg3_reset_hw+0x7e/0x2d20 [tg3]
->> [   17.238996]  [<ffffffff813bfaff>] ? __udelay+0x2f/0x40
->> [   17.241007]  [<ffffffffa00ef2f7>] ? _tw32_flush+0x47/0x80 [tg3]
->> [   17.243066]  [<ffffffffa0104dac>] tg3_init_hw+0x5c/0x70 [tg3]
->> [   17.245438]  [<ffffffffa010740b>] tg3_start+0xc2b/0x11f0 [tg3]
->> [   17.247444]  [<ffffffffa0107ad7>] ? tg3_open+0x107/0x2e0 [tg3]
->> [   17.249556]  [<ffffffff810c338d>] ? trace_hardirqs_on+0xd/0x10
->> [   17.251581]  [<ffffffff8107806f>] ? __local_bh_enable_ip+0x6f/0x100
->> [   17.253710]  [<ffffffffa0107af8>] tg3_open+0x128/0x2e0 [tg3]
->> [   17.255758]  [<ffffffff816ba3f5>] ? netpoll_poll_disable+0x5/0xa0
->> [   17.257932]  [<ffffffff816a14af>] __dev_open+0xbf/0x140
->> [   17.260091]  [<ffffffff816a17c1>] __dev_change_flags+0xa1/0x160
->> [   17.262222]  [<ffffffff816a18a9>] dev_change_flags+0x29/0x60
->> [   17.264360]  [<ffffffff816b0e02>] do_setlink+0x2f2/0xa30
->> [   17.266431]  [<ffffffff816b1b7f>] rtnl_newlink+0x51f/0x750
->> [   17.268485]  [<ffffffff816b1749>] ? rtnl_newlink+0xe9/0x750
->> [   17.270483]  [<ffffffff811869c2>] ? free_pages_prepare+0x1d2/0x270
->> [   17.272507]  [<ffffffff810c32bd>] ? trace_hardirqs_on_caller+0x11d/0x1e0
->> [   17.274531]  [<ffffffff813dd1b2>] ? nla_parse+0x32/0x120
->> [   17.276531]  [<ffffffff81021ab5>] ? native_sched_clock+0x35/0xa0
->> [   17.278514]  [<ffffffff816adfd5>] rtnetlink_rcv_msg+0x95/0x250
->> [   17.280485]  [<ffffffff8109f699>] ? preempt_count_sub+0x49/0x50
->> [   17.282448]  [<ffffffff817b4a02>] ? mutex_lock_nested+0x382/0x530
->> [   17.284402]  [<ffffffff816adf1f>] ? rtnetlink_rcv+0x1f/0x40
->> [   17.286290]  [<ffffffff816adf1f>] ? rtnetlink_rcv+0x1f/0x40
->> [   17.288142]  [<ffffffff816adf40>] ? rtnetlink_rcv+0x40/0x40
->> [   17.290031]  [<ffffffff816cedc1>] netlink_rcv_skb+0xc1/0xe0
->> [   17.291836]  [<ffffffff816adf2e>] rtnetlink_rcv+0x2e/0x40
->> [   17.293615]  [<ffffffff816ce473>] netlink_unicast+0xf3/0x1d0
->> [   17.295420]  [<ffffffff816ce863>] netlink_sendmsg+0x313/0x690
->> [   17.297132]  [<ffffffff811ada4f>] ? might_fault+0x5f/0xb0
->> [   17.298799]  [<ffffffff8168253c>] do_sock_sendmsg+0x8c/0x100
->> [   17.300493]  [<ffffffff81681e3e>] ? copy_msghdr_from_user+0x15e/0x1f0
->> [   17.302173]  [<ffffffff81682aeb>] ___sys_sendmsg+0x30b/0x320
->> [   17.303798]  [<ffffffff81021ab5>] ? native_sched_clock+0x35/0xa0
->> [   17.305431]  [<ffffffff810bdee0>] ? cpuacct_account_field+0x80/0xb0
->> [   17.307085]  [<ffffffff81021ab5>] ? native_sched_clock+0x35/0xa0
->> [   17.308744]  [<ffffffff810a4f35>] ? sched_clock_local+0x25/0x90
->> [   17.310375]  [<ffffffff810a5dc1>] ? vtime_account_user+0x91/0xa0
->> [   17.311948]  [<ffffffff810a5198>] ? sched_clock_cpu+0xb8/0xe0
->> [   17.313509]  [<ffffffff810bf8be>] ? put_lock_stats.isra.26+0xe/0x30
->> [   17.315069]  [<ffffffff810c007e>] ? lock_release_holdtime.part.27+0x12e/0x1b0
->> [   17.316618]  [<ffffffff810a5dc1>] ? vtime_account_user+0x91/0xa0
->> [   17.318162]  [<ffffffff8109f5d1>] ? get_parent_ip+0x11/0x50
->> [   17.319703]  [<ffffffff8109f699>] ? preempt_count_sub+0x49/0x50
->> [   17.321235]  [<ffffffff811807e5>] ? context_tracking_user_exit+0x55/0x130
->> [   17.322732]  [<ffffffff811807e5>] ? context_tracking_user_exit+0x55/0x130
->> [   17.324197]  [<ffffffff816834f2>] __sys_sendmsg+0x42/0x80
->> [   17.325634]  [<ffffffff81683542>] SyS_sendmsg+0x12/0x20
->> [   17.327048]  [<ffffffff817ba12d>] system_call_fastpath+0x16/0x1b
-> 
-> Please bisect, there hasn't been tg3 code changes in this path that
-> might cause this.
+On 01/13/2015 07:47 PM, Jon Masters wrote:
+> Hi Folks,
+>
+> TLDR: I would like to consider the value of adding something like
+> "cluster_siblings" or similar in sysfs to describe ARM topology.
+>
+> A quick question on intended data representation in /sysfs topology
+> before I ask the team on this end to go down the (wrong?) path. On ARM
+> systems today, we have a hierarchical CPU topology:
+>
+>                   Socket ---- Coherent Interonnect ---- Socket
+>                     |                                    |
+>           Cluster0 ... ClusterN                Cluster0 ... ClusterN
+>              |             |                      |             |
+>        Core0...CoreN  Core0...CoreN        Core0...CoreN  Core0...CoreN
+>          |       |      |        |           |       |      |       |
+>       T0..TN  T0..Tn  T0..TN  T0..TN       T0..TN T0..TN  T0..TN  T0..TN
+>
+> Where we might (or might not) have threads in individual cores (a la SMT
+> - it's allowed in the architecture at any rate) and we group cores
+> together into units of clusters usually 2-4 cores in size (though this
+> varies between implementations, some of which have different but similar
+> concepts, such as AppliedMicro Potenza PMDs CPU complexes of dual
+> cores). There are multiple clusters per "socket", and there might be an
+> arbitrary number of sockets. We'll start to enable NUMA soon.
+>
+> The existing ARM architectural code understands expressing topology in
+> terms of the above, but it doesn't quite map these concepts directly in
+> sysfs (does not expose cluster_ids as an example). Currently, a cpu-map
+> in DeviceTree can expose hierarchies (included nested clusters) and this
+> is parsed at boot time to populate scheduler information, as well as the
+> topology files in sysfs (if that is provided - none of the reference
+> devicetrees upstream do this today, but some exist). But the cluster
+> information itself isn't quite exposed (whereas other whacky
+> architectural concepts such as s390 books are exposed already today).
+>
+> Anyway. We have a small problem with tools such as those in util-linux
+> (lscpu) getting confused as a result of translating x86-isms to ARM. For
+> example, the lscpu utility calculates the number of sockets using the
+> following computation:
+>
+> nsockets = desc->ncpus / nthreads / ncores
+>
+> (number of sockets = total number of online processing elements /
+> threads within a single core / cores within a single socket)
+>
+> If you're not careful, you can end up with something like:
+>
+> # lscpu
+> Architecture:          aarch64
+> Byte Order:            Little Endian
+> CPU(s):                8
+> On-line CPU(s) list:   0-7
+> Thread(s) per core:    1
+> Core(s) per socket:    2
+> Socket(s):             4
+>
+Basically, in the top-most diagram, lscpu (& hwloc) are equating Cluster<N>
+as socket<N>.  I'm curious what the sysfs numa info will be interpreted
+as when/if that is turned on for arm64.
 
-What triggers this is the new debugging code added to catch nested
-sleeps; specifically e22b886 ("sched/wait: Add might_sleep() checks").
+> Now we can argue that the system in question needs an updated cpu-map
+> (it'll actually be something ACPI but I'm keeping this discussion to DT
+> to avoid that piece further in discussion, and you can assume I'm
+> booting any test boxes in further work on this using DeviceTree prior to
+> switching the result over to ACPI) but either way, util-linux is
+> thinking in an x86-centric sense of what these files mean. And I think
+> the existing topology/cpu-map stuff in arm64 is doing the same.
+>
+The above values are extracted from the MPIDR:Affx fields and is currently
+independent of DT & ACPI.
+The Aff1 field is the 'cluster-id' and is being used to associated cpu's (via cpu masks)
+to siblings. lscpu & hwloc associate cpu-nums & siblings to sockets via the above
+calculation, which doesn't quite show how siblings enter the equation
+       ncores = CPU_COUNT_S(setsize, core_siblings) / nthreads;
 
-Regards,
-Peter Hurley
+Note: in the arm(32) tree, what was 'socket-id' is 'cluster-id' in arm64;
+       I believe this 'mapping' (backporting/association) is one root problem
+       in the arch/arm64/kernel/topology.c code.
+
+Now, a simple, yet requiring lots of fun, cross-architecture testing, would
+be to change lscpu to use the sysfs physical_package_id to get Socket correct.  Yet,
+that won't fix the above 'Core(s) per socket' because that's being created
+via the sibling masks, which are generated from the cluster-id.
+This change would require arm(64) to implement DT & ACPI methods to
+extract pcpu's to sockets (missing at the moment).
+
+And modifying the cluster-id and/or the siblings masks creates non-topology
+(non-lscpu, non-hwloc) issues like breaking gic init code paths which use
+the cluster-id information as well. ... some 'empirical data' to note
+if anyone thinks it's just a topology-presentation issue.
+
+> Is it not a good idea to expose the cluster details directly in sysfs
+> and have these utilities understand the possible extra level in the
+> calculation? Or do we want to just fudge the numbers (as seems to be the
+> case in some systems I am seeing) to make the x86 model add up?
+>
+Short-term, I'm trying to develop a reasonable 'fudge' for lscpu & hwloc,
+that doesn't impact the (proper) operation of the gic code.
+I haven't dug deep enough yet, but this also requires a check on how
+the scheduler associates cpu-cache-sibling associativity when selecting
+optimal cpu to schedule threads on.
+
+> Let me know the preferred course...
+>
+> Jon.
+>
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>
 
