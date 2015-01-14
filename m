@@ -1,20 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932292AbbANHbd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:31:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58249 "EHLO
+	id S932309AbbANHbn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:31:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58255 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932278AbbANHb3 (ORCPT
+	with ESMTP id S932277AbbANHbk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:31:29 -0500
+	Wed, 14 Jan 2015 02:31:40 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christopher Chavez <chrischavez@gmx.us>,
-        Johannes Berg <johannes.berg@intel.com>
-Subject: [PATCH 3.18 136/150] Revert "mac80211: Fix accounting of the tailroom-needed counter"
-Date: Tue, 13 Jan 2015 23:23:27 -0800
-Message-Id: <20150114072102.008620061@linuxfoundation.org>
+        Vince Weaver <vince@deater.net>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.18 137/150] perf/x86/intel/uncore: Make sure only uncore events are collected
+Date: Tue, 13 Jan 2015 23:23:28 -0800
+Message-Id: <20150114072102.050416971@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -29,88 +34,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Jiri Olsa <jolsa@kernel.org>
 
-commit 1e359a5de861a57aa04d92bb620f52a5c1d7f8b1 upstream.
+commit af91568e762d04931dcbdd6bef4655433d8b9418 upstream.
 
-This reverts commit ca34e3b5c808385b175650605faa29e71e91991b.
+The uncore_collect_events functions assumes that event group
+might contain only uncore events which is wrong, because it
+might contain any type of events.
 
-It turns out that the p54 and cw2100 drivers assume that there's
-tailroom even when they don't say they really need it. However,
-there's currently no way for them to explicitly say they do need
-it, so for now revert this.
+This bug leads to uncore framework touching 'not' uncore events,
+which could end up all sorts of bugs.
 
-This fixes https://bugzilla.kernel.org/show_bug.cgi?id=90331.
+One was triggered by Vince's perf fuzzer, when the uncore code
+touched breakpoint event private event space as if it was uncore
+event and caused BUG:
 
-Fixes: ca34e3b5c808 ("mac80211: Fix accounting of the tailroom-needed counter")
-Reported-by: Christopher Chavez <chrischavez@gmx.us>
-Bisected-by: Larry Finger <Larry.Finger@lwfinger.net>
-Debugged-by: Christian Lamparter <chunkeey@googlemail.com>
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+   BUG: unable to handle kernel paging request at ffffffff82822068
+   IP: [<ffffffff81020338>] uncore_assign_events+0x188/0x250
+   ...
+
+The code in uncore_assign_events() function was looking for
+event->hw.idx data while the event was initialized as a
+breakpoint with different members in event->hw union.
+
+This patch forces uncore_collect_events() to collect only uncore
+events.
+
+Reported-by: Vince Weaver <vince@deater.net>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Yan, Zheng <zheng.z.yan@intel.com>
+Link: http://lkml.kernel.org/r/1418243031-20367-2-git-send-email-jolsa@kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- include/net/mac80211.h |    7 ++-----
- net/mac80211/key.c     |   12 +++++++++---
- 2 files changed, 11 insertions(+), 8 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c |   22 +++++++++++++++++++---
+ 1 file changed, 19 insertions(+), 3 deletions(-)
 
---- a/include/net/mac80211.h
-+++ b/include/net/mac80211.h
-@@ -1227,8 +1227,7 @@ struct ieee80211_vif *wdev_to_ieee80211_
-  *
-  * @IEEE80211_KEY_FLAG_GENERATE_IV: This flag should be set by the
-  *	driver to indicate that it requires IV generation for this
-- *	particular key. Setting this flag does not necessarily mean that SKBs
-- *	will have sufficient tailroom for ICV or MIC.
-+ *	particular key.
-  * @IEEE80211_KEY_FLAG_GENERATE_MMIC: This flag should be set by
-  *	the driver for a TKIP key if it requires Michael MIC
-  *	generation in software.
-@@ -1240,9 +1239,7 @@ struct ieee80211_vif *wdev_to_ieee80211_
-  * @IEEE80211_KEY_FLAG_PUT_IV_SPACE: This flag should be set by the driver
-  *	if space should be prepared for the IV, but the IV
-  *	itself should not be generated. Do not set together with
-- *	@IEEE80211_KEY_FLAG_GENERATE_IV on the same key. Setting this flag does
-- *	not necessarily mean that SKBs will have sufficient tailroom for ICV or
-- *	MIC.
-+ *	@IEEE80211_KEY_FLAG_GENERATE_IV on the same key.
-  * @IEEE80211_KEY_FLAG_RX_MGMT: This key will be used to decrypt received
-  *	management frames. The flag can help drivers that have a hardware
-  *	crypto implementation that doesn't deal with management frames
---- a/net/mac80211/key.c
-+++ b/net/mac80211/key.c
-@@ -131,7 +131,9 @@ static int ieee80211_key_enable_hw_accel
- 	if (!ret) {
- 		key->flags |= KEY_FLAG_UPLOADED_TO_HARDWARE;
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -276,6 +276,17 @@ static struct intel_uncore_box *uncore_a
+ 	return box;
+ }
  
--		if (!(key->conf.flags & IEEE80211_KEY_FLAG_GENERATE_MMIC))
-+		if (!((key->conf.flags & IEEE80211_KEY_FLAG_GENERATE_MMIC) ||
-+		      (key->conf.flags & IEEE80211_KEY_FLAG_GENERATE_IV) ||
-+		      (key->conf.flags & IEEE80211_KEY_FLAG_PUT_IV_SPACE)))
- 			sdata->crypto_tx_tailroom_needed_cnt--;
++/*
++ * Using uncore_pmu_event_init pmu event_init callback
++ * as a detection point for uncore events.
++ */
++static int uncore_pmu_event_init(struct perf_event *event);
++
++static bool is_uncore_event(struct perf_event *event)
++{
++	return event->pmu->event_init == uncore_pmu_event_init;
++}
++
+ static int
+ uncore_collect_events(struct intel_uncore_box *box, struct perf_event *leader, bool dogrp)
+ {
+@@ -290,13 +301,18 @@ uncore_collect_events(struct intel_uncor
+ 		return -EINVAL;
  
- 		WARN_ON((key->conf.flags & IEEE80211_KEY_FLAG_PUT_IV_SPACE) &&
-@@ -179,7 +181,9 @@ static void ieee80211_key_disable_hw_acc
- 	sta = key->sta;
- 	sdata = key->sdata;
+ 	n = box->n_events;
+-	box->event_list[n] = leader;
+-	n++;
++
++	if (is_uncore_event(leader)) {
++		box->event_list[n] = leader;
++		n++;
++	}
++
+ 	if (!dogrp)
+ 		return n;
  
--	if (!(key->conf.flags & IEEE80211_KEY_FLAG_GENERATE_MMIC))
-+	if (!((key->conf.flags & IEEE80211_KEY_FLAG_GENERATE_MMIC) ||
-+	      (key->conf.flags & IEEE80211_KEY_FLAG_GENERATE_IV) ||
-+	      (key->conf.flags & IEEE80211_KEY_FLAG_PUT_IV_SPACE)))
- 		increment_tailroom_need_count(sdata);
+ 	list_for_each_entry(event, &leader->sibling_list, group_entry) {
+-		if (event->state <= PERF_EVENT_STATE_OFF)
++		if (!is_uncore_event(event) ||
++		    event->state <= PERF_EVENT_STATE_OFF)
+ 			continue;
  
- 	ret = drv_set_key(key->local, DISABLE_KEY, sdata,
-@@ -875,7 +879,9 @@ void ieee80211_remove_key(struct ieee802
- 	if (key->flags & KEY_FLAG_UPLOADED_TO_HARDWARE) {
- 		key->flags &= ~KEY_FLAG_UPLOADED_TO_HARDWARE;
- 
--		if (!(key->conf.flags & IEEE80211_KEY_FLAG_GENERATE_MMIC))
-+		if (!((key->conf.flags & IEEE80211_KEY_FLAG_GENERATE_MMIC) ||
-+		      (key->conf.flags & IEEE80211_KEY_FLAG_GENERATE_IV) ||
-+		      (key->conf.flags & IEEE80211_KEY_FLAG_PUT_IV_SPACE)))
- 			increment_tailroom_need_count(key->sdata);
- 	}
- 
+ 		if (n >= max_count)
 
 
