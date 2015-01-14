@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754685AbbANH2w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:28:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58013 "EHLO
+	id S932381AbbANHdI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:33:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58399 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754553AbbANH2u (ORCPT
+	with ESMTP id S1754297AbbANHdD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:28:50 -0500
+	Wed, 14 Jan 2015 02:33:03 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vitaly Kuznetsov <vkuznets@redhat.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 3.18 100/150] Drivers: hv: vmbus: Fix a race condition when unregistering a device
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 3.14 11/77] swiotlb-xen: call xen_dma_sync_single_for_device when appropriate
 Date: Tue, 13 Jan 2015 23:22:51 -0800
-Message-Id: <20150114072100.396672249@linuxfoundation.org>
+Message-Id: <20150114072224.803994726@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
-References: <20150114072055.842408181@linuxfoundation.org>
+In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
+References: <20150114072224.182299947@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,60 +25,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-commit 04a258c162a85c0f4ae56be67634dc43c9a4fa9b upstream.
+commit 9490c6c67e2f41760de8ece4e4f56f75f84ceb9e upstream.
 
-When build with Debug the following crash is sometimes observed:
-Call Trace:
- [<ffffffff812b9600>] string+0x40/0x100
- [<ffffffff812bb038>] vsnprintf+0x218/0x5e0
- [<ffffffff810baf7d>] ? trace_hardirqs_off+0xd/0x10
- [<ffffffff812bb4c1>] vscnprintf+0x11/0x30
- [<ffffffff8107a2f0>] vprintk+0xd0/0x5c0
- [<ffffffffa0051ea0>] ? vmbus_process_rescind_offer+0x0/0x110 [hv_vmbus]
- [<ffffffff8155c71c>] printk+0x41/0x45
- [<ffffffffa004ebac>] vmbus_device_unregister+0x2c/0x40 [hv_vmbus]
- [<ffffffffa0051ecb>] vmbus_process_rescind_offer+0x2b/0x110 [hv_vmbus]
-...
+In xen_swiotlb_sync_single we always call xen_dma_sync_single_for_cpu,
+even when we should call xen_dma_sync_single_for_device. Fix that.
 
-This happens due to the following race: between 'if (channel->device_obj)' check
-in vmbus_process_rescind_offer() and pr_debug() in vmbus_device_unregister() the
-device can disappear. Fix the issue by taking an additional reference to the
-device before proceeding to vmbus_device_unregister().
-
-Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hv/channel_mgmt.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ drivers/xen/swiotlb-xen.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/hv/channel_mgmt.c
-+++ b/drivers/hv/channel_mgmt.c
-@@ -216,9 +216,16 @@ static void vmbus_process_rescind_offer(
- 	unsigned long flags;
- 	struct vmbus_channel *primary_channel;
- 	struct vmbus_channel_relid_released msg;
-+	struct device *dev;
-+
-+	if (channel->device_obj) {
-+		dev = get_device(&channel->device_obj->device);
-+		if (dev) {
-+			vmbus_device_unregister(channel->device_obj);
-+			put_device(dev);
-+		}
-+	}
+--- a/drivers/xen/swiotlb-xen.c
++++ b/drivers/xen/swiotlb-xen.c
+@@ -500,7 +500,7 @@ xen_swiotlb_sync_single(struct device *h
+ 		swiotlb_tbl_sync_single(hwdev, paddr, size, dir, target);
  
--	if (channel->device_obj)
--		vmbus_device_unregister(channel->device_obj);
- 	memset(&msg, 0, sizeof(struct vmbus_channel_relid_released));
- 	msg.child_relid = channel->offermsg.child_relid;
- 	msg.header.msgtype = CHANNELMSG_RELID_RELEASED;
+ 	if (target == SYNC_FOR_DEVICE)
+-		xen_dma_sync_single_for_cpu(hwdev, dev_addr, size, dir);
++		xen_dma_sync_single_for_device(hwdev, dev_addr, size, dir);
+ 
+ 	if (dir != DMA_FROM_DEVICE)
+ 		return;
 
 
