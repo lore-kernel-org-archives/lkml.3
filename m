@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933120AbbANHiQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:38:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58849 "EHLO
+	id S932686AbbANHfO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:35:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58571 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933097AbbANHiI (ORCPT
+	with ESMTP id S932669AbbANHfK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:38:08 -0500
+	Wed, 14 Jan 2015 02:35:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 3.10 06/44] swiotlb-xen: pass dev_addr to swiotlb_tbl_unmap_single
+        Robert Baldyga <r.baldyga@samsung.com>
+Subject: [PATCH 3.14 47/77] serial: samsung: wait for transfer completion before clock disable
 Date: Tue, 13 Jan 2015 23:23:27 -0800
-Message-Id: <20150114072227.801434030@linuxfoundation.org>
+Message-Id: <20150114072226.853361314@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
-References: <20150114072227.419663002@linuxfoundation.org>
+In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
+References: <20150114072224.182299947@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,36 +24,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+From: Robert Baldyga <r.baldyga@samsung.com>
 
-commit 2c3fc8d26dd09b9d7069687eead849ee81c78e46 upstream.
+commit 1ff383a4c3eda8893ec61b02831826e1b1f46b41 upstream.
 
-Need to pass the pointer within the swiotlb internal buffer to the
-swiotlb library, that in the case of xen_unmap_single is dev_addr, not
-paddr.
+This patch adds waiting until transmit buffer and shifter will be empty
+before clock disabling.
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Without this fix it's possible to have clock disabled while data was
+not transmited yet, which causes unproper state of TX line and problems
+in following data transfers.
+
+Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/xen/swiotlb-xen.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/tty/serial/samsung.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/xen/swiotlb-xen.c
-+++ b/drivers/xen/swiotlb-xen.c
-@@ -390,7 +390,7 @@ static void xen_unmap_single(struct devi
+--- a/drivers/tty/serial/samsung.c
++++ b/drivers/tty/serial/samsung.c
+@@ -544,11 +544,15 @@ static void s3c24xx_serial_pm(struct uar
+ 			      unsigned int old)
+ {
+ 	struct s3c24xx_uart_port *ourport = to_ourport(port);
++	int timeout = 10000;
  
- 	/* NOTE: We use dev_addr here, not paddr! */
- 	if (is_xen_swiotlb_buffer(dev_addr)) {
--		swiotlb_tbl_unmap_single(hwdev, paddr, size, dir);
-+		swiotlb_tbl_unmap_single(hwdev, dev_addr, size, dir);
- 		return;
- 	}
+ 	ourport->pm_level = level;
+ 
+ 	switch (level) {
+ 	case 3:
++		while (--timeout && !s3c24xx_serial_txempty_nofifo(port))
++			udelay(100);
++
+ 		if (!IS_ERR(ourport->baudclk))
+ 			clk_disable_unprepare(ourport->baudclk);
  
 
 
