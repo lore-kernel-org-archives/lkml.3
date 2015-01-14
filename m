@@ -1,151 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751946AbbANIY5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:24:57 -0500
-Received: from mail-we0-f171.google.com ([74.125.82.171]:43560 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751060AbbANIYy (ORCPT
+	id S1752234AbbANIZn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:25:43 -0500
+Received: from relay1.mentorg.com ([192.94.38.131]:59044 "EHLO
+	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751759AbbANIZ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 03:24:54 -0500
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-To: LFBDEV <linux-fbdev@vger.kernel.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH] fbdev: ssd1307fb: return proper error code if write command fails
-Date: Wed, 14 Jan 2015 08:24:49 +0000
-Message-Id: <1421223889-9448-1-git-send-email-prabhakar.csengg@gmail.com>
-X-Mailer: git-send-email 1.9.1
+	Wed, 14 Jan 2015 03:25:26 -0500
+Message-ID: <54B627F0.90207@mentor.com>
+Date: Wed, 14 Jan 2015 17:25:20 +0900
+From: jiwang <jiada_wang@mentor.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+MIME-Version: 1.0
+To: Lars-Peter Clausen <lars@metafoo.de>, Takashi Iwai <tiwai@suse.de>,
+        Mark Brown <broonie@kernel.org>
+CC: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "Frkuska, Joshua" <Joshua_Frkuska@mentor.com>
+Subject: Re: [alsa-devel] unload Audio drivers while playback stream is active
+ case kernel crash
+References: <857E9EDCA6C0904DB3357321AA9123EB0108B66919@NA-MBX-01.mgc.mentorg.com> <s5h1tmyiof7.wl-tiwai@suse.de> <20150113215412.GS4160@sirena.org.uk> <s5hr3ux24em.wl-tiwai@suse.de> <54B625A8.8090406@metafoo.de>
+In-Reply-To: <54B625A8.8090406@metafoo.de>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-this patch fixes ssd1307fb_ssd1306_init() function to return
-proper error codes in case of failures.
+Hi
 
-Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
----
- drivers/video/fbdev/ssd1307fb.c | 54 ++++++++++++++++++++++++++++++-----------
- 1 file changed, 40 insertions(+), 14 deletions(-)
+On 01/14/2015 05:15 PM, Lars-Peter Clausen wrote:
+> On 01/14/2015 08:43 AM, Takashi Iwai wrote:
+>> At Tue, 13 Jan 2015 21:54:12 +0000,
+>> Mark Brown wrote:
+>>>
+>>> On Tue, Jan 13, 2015 at 06:24:44PM +0100, Takashi Iwai wrote:
+>>>> Wang, Jiada (ESD) wrote:
+>>>
+>>>>> I am using i.MX6Q sabreSD board, which have imx_wm892 machine 
+>>>>> driver, wm8962 codec and SSI CPU DAI,
+>>>
+>>>>> I got Kernel crash when unloading audio drivers (playback stream 
+>>>>> is active)
+>>>>> modprobe -r snd_soc_imx_wm8962
+>>>>> modprobe -r snd_soc_fsl_ssi
+>>>>> modprobe -r snd_soc_wm8962
+>>>
+>>>> The root problem is that you can unload the module while playing.
+>>>> The corresponding module refcounts should have been increased during
+>>>> used.
+>>>
+>>>> Do we miss [try_]module_get() somewhere in ASoC?
+>>>
+>>> That doesn't help, users can still forcibly unbind the driver at 
+>>> runtime
+>>> without loading the module - and there's always the potential for
+>>> actually hotpluggable hardware.  The teardown paths should be able to
+>>> cope somewhat gracefully.
+>>
+>> The module refcount has to be handled while being used for stopping
+>> module unload.  That's irrelevant from the dynamic unbinding support
+>> itself.  Of course, the module refcount doesn't save the world, but
+>> it's the right fix for this particular scenario.
+>
+> Refcounting won't help in this case. The issue is caused by a delayed 
+> work item that gets launched when the PCM stream is stopped. So if you 
+> decrease the refcount when the stream is stopped you still have a 
+> window where it is possible to remove the module while the work is 
+> still being scheduled.
+>
+> And while we do flush the scheduled work when we remove the ASoC card 
+> this is done before snd_card_free() is called. So when snd_card_free() 
+> is called it gets re-scheduled again. I think the correct fix is to 
+> add a snd_card_disconnect() at the very top of 
+> soc_cleanup_card_resources().
+>
+when stream is active, snd_card_disconnect() will trigger pcm_close() be 
+executed by another thread,
+we can't ensure the pcm_close() is executed before the rest of 
+soc_cleanup_card_resources().
 
-diff --git a/drivers/video/fbdev/ssd1307fb.c b/drivers/video/fbdev/ssd1307fb.c
-index f4daa59..528ea16 100644
---- a/drivers/video/fbdev/ssd1307fb.c
-+++ b/drivers/video/fbdev/ssd1307fb.c
-@@ -320,7 +320,9 @@ static int ssd1307fb_ssd1306_init(struct ssd1307fb_par *par)
- 
- 	/* Set initial contrast */
- 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_CONTRAST);
--	ret = ret & ssd1307fb_write_cmd(par->client, 0x7f);
-+	if (ret < 0)
-+		return ret;
-+	ret = ssd1307fb_write_cmd(par->client, 0x7f);
- 	if (ret < 0)
- 		return ret;
- 
-@@ -336,63 +338,87 @@ static int ssd1307fb_ssd1306_init(struct ssd1307fb_par *par)
- 
- 	/* Set multiplex ratio value */
- 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_MULTIPLEX_RATIO);
--	ret = ret & ssd1307fb_write_cmd(par->client, par->height - 1);
-+	if (ret < 0)
-+		return ret;
-+	ret = ssd1307fb_write_cmd(par->client, par->height - 1);
- 	if (ret < 0)
- 		return ret;
- 
- 	/* set display offset value */
- 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_DISPLAY_OFFSET);
-+	if (ret < 0)
-+		return ret;
- 	ret = ssd1307fb_write_cmd(par->client, 0x20);
- 	if (ret < 0)
- 		return ret;
- 
- 	/* Set clock frequency */
- 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_CLOCK_FREQ);
--	ret = ret & ssd1307fb_write_cmd(par->client, 0xf0);
-+	if (ret < 0)
-+		return ret;
-+	ret = ssd1307fb_write_cmd(par->client, 0xf0);
- 	if (ret < 0)
- 		return ret;
- 
- 	/* Set precharge period in number of ticks from the internal clock */
- 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_PRECHARGE_PERIOD);
--	ret = ret & ssd1307fb_write_cmd(par->client, 0x22);
-+	if (ret < 0)
-+		return ret;
-+	ret = ssd1307fb_write_cmd(par->client, 0x22);
- 	if (ret < 0)
- 		return ret;
- 
- 	/* Set COM pins configuration */
- 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_COM_PINS_CONFIG);
--	ret = ret & ssd1307fb_write_cmd(par->client, 0x22);
-+	if (ret < 0)
-+		return ret;
-+	ret = ssd1307fb_write_cmd(par->client, 0x22);
- 	if (ret < 0)
- 		return ret;
- 
- 	/* Set VCOMH */
- 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_VCOMH);
--	ret = ret & ssd1307fb_write_cmd(par->client, 0x49);
-+	if (ret < 0)
-+		return ret;
-+	ret = ssd1307fb_write_cmd(par->client, 0x49);
- 	if (ret < 0)
- 		return ret;
- 
- 	/* Turn on the DC-DC Charge Pump */
- 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_CHARGE_PUMP);
--	ret = ret & ssd1307fb_write_cmd(par->client, 0x14);
-+	if (ret < 0)
-+		return ret;
-+	ret = ssd1307fb_write_cmd(par->client, 0x14);
- 	if (ret < 0)
- 		return ret;
- 
- 	/* Switch to horizontal addressing mode */
- 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_ADDRESS_MODE);
--	ret = ret & ssd1307fb_write_cmd(par->client,
--					SSD1307FB_SET_ADDRESS_MODE_HORIZONTAL);
-+	if (ret < 0)
-+		return ret;
-+	ret = ssd1307fb_write_cmd(par->client,
-+				  SSD1307FB_SET_ADDRESS_MODE_HORIZONTAL);
- 	if (ret < 0)
- 		return ret;
- 
- 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_COL_RANGE);
--	ret = ret & ssd1307fb_write_cmd(par->client, 0x0);
--	ret = ret & ssd1307fb_write_cmd(par->client, par->width - 1);
-+	if (ret < 0)
-+		return ret;
-+	ret = ssd1307fb_write_cmd(par->client, 0x0);
-+	if (ret < 0)
-+		return ret;
-+	ret = ssd1307fb_write_cmd(par->client, par->width - 1);
- 	if (ret < 0)
- 		return ret;
- 
- 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_PAGE_RANGE);
--	ret = ret & ssd1307fb_write_cmd(par->client, 0x0);
--	ret = ret & ssd1307fb_write_cmd(par->client,
--					par->page_offset + (par->height / 8) - 1);
-+	if (ret < 0)
-+		return ret;
-+	ret = ssd1307fb_write_cmd(par->client, 0x0);
-+	if (ret < 0)
-+		return ret;
-+	ret = ssd1307fb_write_cmd(par->client,
-+				  par->page_offset + (par->height / 8) - 1);
- 	if (ret < 0)
- 		return ret;
- 
--- 
-1.9.1
+- Jiada
+
+> - Lars
 
