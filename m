@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933281AbbANHsw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:48:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58823 "EHLO
+	id S1755261AbbANHhJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:37:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58743 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933033AbbANHhj (ORCPT
+	with ESMTP id S1754235AbbANHhC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:37:39 -0500
+	Wed, 14 Jan 2015 02:37:02 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Rob Herring <robherring2@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Anton Vorontsov <anton@enomsg.org>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
-        Kees Cook <keescook@chromium.org>, Tony Lindgren <tony@atomide.com>,
-        Tony Luck <tony.luck@intel.com>
-Subject: [PATCH 3.10 13/44] pstore-ram: Allow optional mapping with pgprot_noncached
-Date: Tue, 13 Jan 2015 23:23:34 -0800
-Message-Id: <20150114072228.243117366@linuxfoundation.org>
+        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.14 55/77] nilfs2: fix the nilfs_iget() vs. nilfs_new_inode() races
+Date: Tue, 13 Jan 2015 23:23:35 -0800
+Message-Id: <20150114072227.283460822@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
-References: <20150114072227.419663002@linuxfoundation.org>
+In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
+References: <20150114072224.182299947@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -29,236 +27,180 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tony Lindgren <tony@atomide.com>
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
 
-commit 027bc8b08242c59e19356b4b2c189f2d849ab660 upstream.
+commit 705304a863cc41585508c0f476f6d3ec28cf7e00 upstream.
 
-On some ARMs the memory can be mapped pgprot_noncached() and still
-be working for atomic operations. As pointed out by Colin Cross
-<ccross@android.com>, in some cases you do want to use
-pgprot_noncached() if the SoC supports it to see a debug printk
-just before a write hanging the system.
+Same story as in commit 41080b5a2401 ("nfsd race fixes: ext2") (similar
+ext2 fix) except that nilfs2 needs to use insert_inode_locked4() instead
+of insert_inode_locked() and a bug of a check for dead inodes needs to
+be fixed.
 
-On ARMs, the atomic operations on strongly ordered memory are
-implementation defined. So let's provide an optional kernel parameter
-for configuring pgprot_noncached(), and use pgprot_writecombine() by
-default.
+If nilfs_iget() is called from nfsd after nilfs_new_inode() calls
+insert_inode_locked4(), nilfs_iget() will wait for unlock_new_inode() at
+the end of nilfs_mkdir()/nilfs_create()/etc to unlock the inode.
 
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Rob Herring <robherring2@gmail.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Anton Vorontsov <anton@enomsg.org>
-Cc: Colin Cross <ccross@android.com>
-Cc: Olof Johansson <olof@lixom.net>
-Cc: Russell King <linux@arm.linux.org.uk>
-Acked-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
+If nilfs_iget() is called before nilfs_new_inode() calls
+insert_inode_locked4(), it will create an in-core inode and read its
+data from the on-disk inode.  But, nilfs_iget() will find i_nlink equals
+zero and fail at nilfs_read_inode_common(), which will lead it to call
+iget_failed() and cleanly fail.
+
+However, this sanity check doesn't work as expected for reused on-disk
+inodes because they leave a non-zero value in i_mode field and it
+hinders the test of i_nlink.  This patch also fixes the issue by
+removing the test on i_mode that nilfs2 doesn't need.
+
+Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/ramoops.txt  |   13 +++++++++++--
- fs/pstore/ram.c            |   13 +++++++++++--
- fs/pstore/ram_core.c       |   31 ++++++++++++++++++++++---------
- include/linux/pstore_ram.h |    4 +++-
- 4 files changed, 47 insertions(+), 14 deletions(-)
+ fs/nilfs2/inode.c |   32 ++++++++++++++++++++++++--------
+ fs/nilfs2/namei.c |   15 ++++++++++++---
+ 2 files changed, 36 insertions(+), 11 deletions(-)
 
---- a/Documentation/ramoops.txt
-+++ b/Documentation/ramoops.txt
-@@ -14,11 +14,19 @@ survive after a restart.
- 
- 1. Ramoops concepts
- 
--Ramoops uses a predefined memory area to store the dump. The start and size of
--the memory area are set using two variables:
-+Ramoops uses a predefined memory area to store the dump. The start and size
-+and type of the memory area are set using three variables:
-   * "mem_address" for the start
-   * "mem_size" for the size. The memory size will be rounded down to a
-   power of two.
-+  * "mem_type" to specifiy if the memory type (default is pgprot_writecombine).
-+
-+Typically the default value of mem_type=0 should be used as that sets the pstore
-+mapping to pgprot_writecombine. Setting mem_type=1 attempts to use
-+pgprot_noncached, which only works on some platforms. This is because pstore
-+depends on atomic operations. At least on ARM, pgprot_noncached causes the
-+memory to be mapped strongly ordered, and atomic operations on strongly ordered
-+memory are implementation defined, and won't work on many ARMs such as omaps.
- 
- The memory area is divided into "record_size" chunks (also rounded down to
- power of two) and each oops/panic writes a "record_size" chunk of
-@@ -55,6 +63,7 @@ Setting the ramoops parameters can be do
- static struct ramoops_platform_data ramoops_data = {
-         .mem_size               = <...>,
-         .mem_address            = <...>,
-+        .mem_type               = <...>,
-         .record_size            = <...>,
-         .dump_oops              = <...>,
-         .ecc                    = <...>,
---- a/fs/pstore/ram.c
-+++ b/fs/pstore/ram.c
-@@ -61,6 +61,11 @@ module_param(mem_size, ulong, 0400);
- MODULE_PARM_DESC(mem_size,
- 		"size of reserved RAM used to store oops/panic logs");
- 
-+static unsigned int mem_type;
-+module_param(mem_type, uint, 0600);
-+MODULE_PARM_DESC(mem_type,
-+		"set to 1 to try to use unbuffered memory (default 0)");
-+
- static int dump_oops = 1;
- module_param(dump_oops, int, 0600);
- MODULE_PARM_DESC(dump_oops,
-@@ -79,6 +84,7 @@ struct ramoops_context {
- 	struct persistent_ram_zone *fprz;
- 	phys_addr_t phys_addr;
- 	unsigned long size;
-+	unsigned int memtype;
- 	size_t record_size;
- 	size_t console_size;
- 	size_t ftrace_size;
-@@ -331,7 +337,8 @@ static int ramoops_init_przs(struct devi
- 		size_t sz = cxt->record_size;
- 
- 		cxt->przs[i] = persistent_ram_new(*paddr, sz, 0,
--						  &cxt->ecc_info);
-+						  &cxt->ecc_info,
-+						  cxt->memtype);
- 		if (IS_ERR(cxt->przs[i])) {
- 			err = PTR_ERR(cxt->przs[i]);
- 			dev_err(dev, "failed to request mem region (0x%zx@0x%llx): %d\n",
-@@ -361,7 +368,7 @@ static int ramoops_init_prz(struct devic
- 		return -ENOMEM;
- 	}
- 
--	*prz = persistent_ram_new(*paddr, sz, sig, &cxt->ecc_info);
-+	*prz = persistent_ram_new(*paddr, sz, sig, &cxt->ecc_info, cxt->memtype);
- 	if (IS_ERR(*prz)) {
- 		int err = PTR_ERR(*prz);
- 
-@@ -411,6 +418,7 @@ static int ramoops_probe(struct platform
- 	cxt->dump_read_cnt = 0;
- 	cxt->size = pdata->mem_size;
- 	cxt->phys_addr = pdata->mem_address;
-+	cxt->memtype = pdata->mem_type;
- 	cxt->record_size = pdata->record_size;
- 	cxt->console_size = pdata->console_size;
- 	cxt->ftrace_size = pdata->ftrace_size;
-@@ -541,6 +549,7 @@ static void ramoops_register_dummy(void)
- 
- 	dummy_data->mem_size = mem_size;
- 	dummy_data->mem_address = mem_address;
-+	dummy_data->mem_type = 0;
- 	dummy_data->record_size = record_size;
- 	dummy_data->console_size = ramoops_console_size;
- 	dummy_data->ftrace_size = ramoops_ftrace_size;
---- a/fs/pstore/ram_core.c
-+++ b/fs/pstore/ram_core.c
-@@ -333,7 +333,8 @@ void persistent_ram_zap(struct persisten
- 	persistent_ram_update_header_ecc(prz);
- }
- 
--static void *persistent_ram_vmap(phys_addr_t start, size_t size)
-+static void *persistent_ram_vmap(phys_addr_t start, size_t size,
-+		unsigned int memtype)
- {
- 	struct page **pages;
- 	phys_addr_t page_start;
-@@ -345,7 +346,10 @@ static void *persistent_ram_vmap(phys_ad
- 	page_start = start - offset_in_page(start);
- 	page_count = DIV_ROUND_UP(size + offset_in_page(start), PAGE_SIZE);
- 
--	prot = pgprot_writecombine(PAGE_KERNEL);
-+	if (memtype)
-+		prot = pgprot_noncached(PAGE_KERNEL);
-+	else
-+		prot = pgprot_writecombine(PAGE_KERNEL);
- 
- 	pages = kmalloc(sizeof(struct page *) * page_count, GFP_KERNEL);
- 	if (!pages) {
-@@ -364,27 +368,35 @@ static void *persistent_ram_vmap(phys_ad
- 	return vaddr;
- }
- 
--static void *persistent_ram_iomap(phys_addr_t start, size_t size)
-+static void *persistent_ram_iomap(phys_addr_t start, size_t size,
-+		unsigned int memtype)
- {
-+	void *va;
-+
- 	if (!request_mem_region(start, size, "persistent_ram")) {
- 		pr_err("request mem region (0x%llx@0x%llx) failed\n",
- 			(unsigned long long)size, (unsigned long long)start);
- 		return NULL;
- 	}
- 
--	return ioremap_wc(start, size);
-+	if (memtype)
-+		va = ioremap(start, size);
-+	else
-+		va = ioremap_wc(start, size);
-+
-+	return va;
- }
- 
- static int persistent_ram_buffer_map(phys_addr_t start, phys_addr_t size,
--		struct persistent_ram_zone *prz)
-+		struct persistent_ram_zone *prz, int memtype)
- {
- 	prz->paddr = start;
- 	prz->size = size;
- 
- 	if (pfn_valid(start >> PAGE_SHIFT))
--		prz->vaddr = persistent_ram_vmap(start, size);
-+		prz->vaddr = persistent_ram_vmap(start, size, memtype);
- 	else
--		prz->vaddr = persistent_ram_iomap(start, size);
-+		prz->vaddr = persistent_ram_iomap(start, size, memtype);
- 
- 	if (!prz->vaddr) {
- 		pr_err("%s: Failed to map 0x%llx pages at 0x%llx\n", __func__,
-@@ -452,7 +464,8 @@ void persistent_ram_free(struct persiste
- }
- 
- struct persistent_ram_zone *persistent_ram_new(phys_addr_t start, size_t size,
--			u32 sig, struct persistent_ram_ecc_info *ecc_info)
-+			u32 sig, struct persistent_ram_ecc_info *ecc_info,
-+			unsigned int memtype)
- {
- 	struct persistent_ram_zone *prz;
- 	int ret = -ENOMEM;
-@@ -463,7 +476,7 @@ struct persistent_ram_zone *persistent_r
- 		goto err;
- 	}
- 
--	ret = persistent_ram_buffer_map(start, size, prz);
-+	ret = persistent_ram_buffer_map(start, size, prz, memtype);
- 	if (ret)
- 		goto err;
- 
---- a/include/linux/pstore_ram.h
-+++ b/include/linux/pstore_ram.h
-@@ -53,7 +53,8 @@ struct persistent_ram_zone {
+--- a/fs/nilfs2/inode.c
++++ b/fs/nilfs2/inode.c
+@@ -49,6 +49,8 @@ struct nilfs_iget_args {
+ 	int for_gc;
  };
  
- struct persistent_ram_zone *persistent_ram_new(phys_addr_t start, size_t size,
--			u32 sig, struct persistent_ram_ecc_info *ecc_info);
-+			u32 sig, struct persistent_ram_ecc_info *ecc_info,
-+			unsigned int memtype);
- void persistent_ram_free(struct persistent_ram_zone *prz);
- void persistent_ram_zap(struct persistent_ram_zone *prz);
++static int nilfs_iget_test(struct inode *inode, void *opaque);
++
+ void nilfs_inode_add_blocks(struct inode *inode, int n)
+ {
+ 	struct nilfs_root *root = NILFS_I(inode)->i_root;
+@@ -347,6 +349,17 @@ const struct address_space_operations ni
+ 	.is_partially_uptodate  = block_is_partially_uptodate,
+ };
  
-@@ -76,6 +77,7 @@ ssize_t persistent_ram_ecc_string(struct
- struct ramoops_platform_data {
- 	unsigned long	mem_size;
- 	unsigned long	mem_address;
-+	unsigned int	mem_type;
- 	unsigned long	record_size;
- 	unsigned long	console_size;
- 	unsigned long	ftrace_size;
++static int nilfs_insert_inode_locked(struct inode *inode,
++				     struct nilfs_root *root,
++				     unsigned long ino)
++{
++	struct nilfs_iget_args args = {
++		.ino = ino, .root = root, .cno = 0, .for_gc = 0
++	};
++
++	return insert_inode_locked4(inode, ino, nilfs_iget_test, &args);
++}
++
+ struct inode *nilfs_new_inode(struct inode *dir, umode_t mode)
+ {
+ 	struct super_block *sb = dir->i_sb;
+@@ -382,7 +395,7 @@ struct inode *nilfs_new_inode(struct ino
+ 	if (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode)) {
+ 		err = nilfs_bmap_read(ii->i_bmap, NULL);
+ 		if (err < 0)
+-			goto failed_bmap;
++			goto failed_after_creation;
+ 
+ 		set_bit(NILFS_I_BMAP, &ii->i_state);
+ 		/* No lock is needed; iget() ensures it. */
+@@ -398,21 +411,24 @@ struct inode *nilfs_new_inode(struct ino
+ 	spin_lock(&nilfs->ns_next_gen_lock);
+ 	inode->i_generation = nilfs->ns_next_generation++;
+ 	spin_unlock(&nilfs->ns_next_gen_lock);
+-	insert_inode_hash(inode);
++	if (nilfs_insert_inode_locked(inode, root, ino) < 0) {
++		err = -EIO;
++		goto failed_after_creation;
++	}
+ 
+ 	err = nilfs_init_acl(inode, dir);
+ 	if (unlikely(err))
+-		goto failed_acl; /* never occur. When supporting
++		goto failed_after_creation; /* never occur. When supporting
+ 				    nilfs_init_acl(), proper cancellation of
+ 				    above jobs should be considered */
+ 
+ 	return inode;
+ 
+- failed_acl:
+- failed_bmap:
++ failed_after_creation:
+ 	clear_nlink(inode);
++	unlock_new_inode(inode);
+ 	iput(inode);  /* raw_inode will be deleted through
+-			 generic_delete_inode() */
++			 nilfs_evict_inode() */
+ 	goto failed;
+ 
+  failed_ifile_create_inode:
+@@ -460,8 +476,8 @@ int nilfs_read_inode_common(struct inode
+ 	inode->i_atime.tv_nsec = le32_to_cpu(raw_inode->i_mtime_nsec);
+ 	inode->i_ctime.tv_nsec = le32_to_cpu(raw_inode->i_ctime_nsec);
+ 	inode->i_mtime.tv_nsec = le32_to_cpu(raw_inode->i_mtime_nsec);
+-	if (inode->i_nlink == 0 && inode->i_mode == 0)
+-		return -EINVAL; /* this inode is deleted */
++	if (inode->i_nlink == 0)
++		return -ESTALE; /* this inode is deleted */
+ 
+ 	inode->i_blocks = le64_to_cpu(raw_inode->i_blocks);
+ 	ii->i_flags = le32_to_cpu(raw_inode->i_flags);
+--- a/fs/nilfs2/namei.c
++++ b/fs/nilfs2/namei.c
+@@ -51,9 +51,11 @@ static inline int nilfs_add_nondir(struc
+ 	int err = nilfs_add_link(dentry, inode);
+ 	if (!err) {
+ 		d_instantiate(dentry, inode);
++		unlock_new_inode(inode);
+ 		return 0;
+ 	}
+ 	inode_dec_link_count(inode);
++	unlock_new_inode(inode);
+ 	iput(inode);
+ 	return err;
+ }
+@@ -182,6 +184,7 @@ out:
+ out_fail:
+ 	drop_nlink(inode);
+ 	nilfs_mark_inode_dirty(inode);
++	unlock_new_inode(inode);
+ 	iput(inode);
+ 	goto out;
+ }
+@@ -201,11 +204,15 @@ static int nilfs_link(struct dentry *old
+ 	inode_inc_link_count(inode);
+ 	ihold(inode);
+ 
+-	err = nilfs_add_nondir(dentry, inode);
+-	if (!err)
++	err = nilfs_add_link(dentry, inode);
++	if (!err) {
++		d_instantiate(dentry, inode);
+ 		err = nilfs_transaction_commit(dir->i_sb);
+-	else
++	} else {
++		inode_dec_link_count(inode);
++		iput(inode);
+ 		nilfs_transaction_abort(dir->i_sb);
++	}
+ 
+ 	return err;
+ }
+@@ -243,6 +250,7 @@ static int nilfs_mkdir(struct inode *dir
+ 
+ 	nilfs_mark_inode_dirty(inode);
+ 	d_instantiate(dentry, inode);
++	unlock_new_inode(inode);
+ out:
+ 	if (!err)
+ 		err = nilfs_transaction_commit(dir->i_sb);
+@@ -255,6 +263,7 @@ out_fail:
+ 	drop_nlink(inode);
+ 	drop_nlink(inode);
+ 	nilfs_mark_inode_dirty(inode);
++	unlock_new_inode(inode);
+ 	iput(inode);
+ out_dir:
+ 	drop_nlink(dir);
 
 
