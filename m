@@ -1,206 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703AbbANMnQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 07:43:16 -0500
-Received: from forward18.mail.yandex.net ([95.108.253.143]:60535 "EHLO
-	forward18.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752285AbbANMnO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 07:43:14 -0500
-From: Kirill Tkhai <tkhai@yandex.ru>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Juri Lelli <juri.lelli@arm.com>, Luca Abeni <luca.abeni@unitn.it>,
-        Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "juri.lelli@gmail.com" <juri.lelli@gmail.com>
-In-Reply-To: <20150113140436.GI25256@twins.programming.kicks-ass.net>
-References: <20141230002738.6c12db31@utopia>
-	 <2629881420411885@web9m.yandex.ru>
-	 <54AAABFB.3060109@unitn.it>
-	 <1420499241.3361.14.camel@yandex.ru>
-	 <20150107080155.1d42d123@luca-1225C>
-	 <1420633741.12772.10.camel@yandex.ru>
-	 <54B4D2DF.9010308@arm.com>
-	 <4500351421141200@web2m.yandex.ru> <20150113140436.GI25256@twins.programming.kicks-ass.net>
-Subject: Re: Another SCHED_DEADLINE bug (with bisection and possible fix)
+	id S1752805AbbANMnc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 07:43:32 -0500
+Received: from mga11.intel.com ([192.55.52.93]:56411 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752706AbbANMna (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 07:43:30 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,755,1413270000"; 
+   d="scan'208";a="669722619"
+From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <rric@kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
+        kan.liang@intel.com, adrian.hunter@intel.com,
+        markus.t.metzger@intel.com, mathieu.poirier@linaro.org,
+        Kaixu Xia <kaixu.xia@linaro.org>, acme@infradead.org
+Subject: Re: [PATCH v9 00/14] perf: Add infrastructure and support for Intel PT
+In-Reply-To: <1421237903-181015-1-git-send-email-alexander.shishkin@linux.intel.com>
+References: <1421237903-181015-1-git-send-email-alexander.shishkin@linux.intel.com>
+User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/24.4.1 (x86_64-pc-linux-gnu)
+Date: Wed, 14 Jan 2015 14:43:25 +0200
+Message-ID: <87h9vtmt1u.fsf@ashishki-desk.ger.corp.intel.com>
 MIME-Version: 1.0
-Message-Id: <4632021421239387@web25g.yandex.ru>
-X-Mailer: Yamail [ http://yandex.ru ] 5.0
-Date: Wed, 14 Jan 2015 15:43:07 +0300
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=koi8-r
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-13.01.2015, 17:04, "Peter Zijlstra" <peterz@infradead.org>:
-> On Tue, Jan 12, 2015 at 12:26:40PM +0300, Kirill Tkhai wrote:
->>> šWell, I'm inclined to agree to Luca's viewpoint. We should not change
->>> šparameters of a throttled task or we may affect other tasks.
->> šCould you explain your viewpoint more? How does this affects other tasks?
->
-> I agree with Juri and Luca here. Luca gave an example that DoS's
-> SCHED_DEADLINE.
->
-> In Luca's example we'd constantly call sched_setattr() on a task, which
-> results in it never throttling and that will affect other tasks, because
-> if we're running, they cannot be.
->> šAs I understand, in __setparam_dl() we are sure that there is enough
->> šdl_bw. In __sched_setscheduler() we call it after dl_overflow() check.
->
-> Yes, _but_, as per the above. BW includes the sleep time, if we fail to
-> sleep its all pointless.
->
-> We got the runtime (before the throttle) under the promise that we'd go
-> sleep. When we change our parameters while being throttled we should
-> adjust the throttle time accordingly. If say we changed from 30% to 35%
-> we are allowed to sleep less. Now sleeping more than strictly required
-> is only detrimental to ourselves, so that is not (too) critical.
->
-> However, the other way around, if we change from 35% to 30% we should
-> now effectively sleep longer (for the same runtime we already consumed),
-> and we must do this, because admission control will instantly assume the
-> 5% change in bandwidth to be available. If we sleep short, this BW is
-> not in fact available and we break our guarantees.
->>>>> ššAnyway, I am fine with every patch that fixes the bug :)
->>>> ššDeadline class requires root privileges. So, I do not see a problem
->>>> ššhere. Please, see __sched_setscheduler().
->
-> Its not a priv issue, not doing this makes it impossible to use
-> SCHED_DEADLINE in the intended way, even for root.
->
-> Say we have a userspace task that evaluates and changes runtime
-> parameters for other tasks (basically what Luca is doing IIRC), and the
-> changes keep resetting the sleep time, the whole guarantee system comes
-> down, rendering the deadline system useless.
->>>> ššIf in the future we allow non-privileged users to increase deadline,
->>>> ššwe will reflect that in __setparam_dl() too.
->>> šI'd say it is better to implement the right behavior even for root, so
->>> šthat we will find it right when we'll grant access to non root users
->>> štoo. Also, even if root can do everything, we always try not to break
->>> šguarantees that come with admission control (root or non root that is).
->
-> Just so.
+Alexander Shishkin <alexander.shishkin@linux.intel.com> writes:
 
-How about something like this?
+>   * added a comment for the ITRACE_START record.
 
- include/linux/sched/deadline.h |  2 ++
- kernel/sched/core.c            | 33 +++++++++++++++++++++++++++++----
- kernel/sched/deadline.c        | 10 +---------
- kernel/sched/sched.h           |  1 -
- 4 files changed, 32 insertions(+), 14 deletions(-)
-diff --git a/include/linux/sched/deadline.h b/include/linux/sched/deadline.h
-index 9d303b8..c70a7fc 100644
---- a/include/linux/sched/deadline.h
-+++ b/include/linux/sched/deadline.h
-@@ -21,4 +21,6 @@ static inline int dl_task(struct task_struct *p)
- 	return dl_prio(p->prio);
- }
- 
-+extern enum hrtimer_restart dl_task_timer(struct hrtimer *timer);
-+
- #endif /* _SCHED_DEADLINE_H */
-diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index c0accc0..edf9d91 100644
---- a/kernel/sched/core.c
-+++ b/kernel/sched/core.c
-@@ -1809,6 +1809,8 @@ void __dl_clear_params(struct task_struct *p)
- {
- 	struct sched_dl_entity *dl_se = &p->dl;
- 
-+	dl_se->dl_throttled = 0;
-+	dl_se->dl_yielded = 0;
- 	dl_se->dl_runtime = 0;
- 	dl_se->dl_deadline = 0;
- 	dl_se->dl_period = 0;
-@@ -1840,6 +1842,7 @@ static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
- 
- 	RB_CLEAR_NODE(&p->dl.rb_node);
- 	hrtimer_init(&p->dl.dl_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-+	p->dl.dl_timer.function = dl_task_timer;
- 	__dl_clear_params(p);
- 
- 	INIT_LIST_HEAD(&p->rt.run_list);
-@@ -3250,16 +3253,38 @@ static void
- __setparam_dl(struct task_struct *p, const struct sched_attr *attr)
- {
- 	struct sched_dl_entity *dl_se = &p->dl;
-+	struct hrtimer *timer = &dl_se->dl_timer;
-+	struct rq *rq = task_rq(p);
-+	int pending = 0;
-+
-+	if (hrtimer_is_queued(timer)) {
-+		/*
-+		 * Not need smp_rmb() here, synchronization points
-+		 * are rq lock in our caller and in dl_task_timer().
-+		 */
-+		pending = 1;
-+	} else if (hrtimer_callback_running(timer)) {
-+		smp_rmb(); /* Pairs with rq lock in timer handler */
-+
-+		/* Has the timer handler already finished? */
-+		if (dl_se->dl_throttled)
-+			pending = 1; /* No */
-+	}
-+
-+	if (!pending) {
-+		BUG_ON(dl_se->dl_throttled);
-+		dl_se->dl_new = 1;
-+	} else {
-+		dl_se->deadline = rq_clock(rq) + attr->sched_deadline;
-+		dl_se->runtime = attr->sched_runtime;
-+	}
- 
--	init_dl_task_timer(dl_se);
-+	dl_se->dl_yielded = 0;
- 	dl_se->dl_runtime = attr->sched_runtime;
- 	dl_se->dl_deadline = attr->sched_deadline;
- 	dl_se->dl_period = attr->sched_period ?: dl_se->dl_deadline;
- 	dl_se->flags = attr->sched_flags;
- 	dl_se->dl_bw = to_ratio(dl_se->dl_period, dl_se->dl_runtime);
--	dl_se->dl_throttled = 0;
--	dl_se->dl_new = 1;
--	dl_se->dl_yielded = 0;
- }
- 
- /*
-diff --git a/kernel/sched/deadline.c b/kernel/sched/deadline.c
-index b52092f..b457ca7 100644
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -500,7 +500,7 @@ static int start_dl_timer(struct sched_dl_entity *dl_se, bool boosted)
-  * updating (and the queueing back to dl_rq) will be done by the
-  * next call to enqueue_task_dl().
-  */
--static enum hrtimer_restart dl_task_timer(struct hrtimer *timer)
-+enum hrtimer_restart dl_task_timer(struct hrtimer *timer)
- {
- 	struct sched_dl_entity *dl_se = container_of(timer,
- 						     struct sched_dl_entity,
-@@ -559,14 +559,6 @@ static enum hrtimer_restart dl_task_timer(struct hrtimer *timer)
- 	return HRTIMER_NORESTART;
- }
- 
--void init_dl_task_timer(struct sched_dl_entity *dl_se)
--{
--	struct hrtimer *timer = &dl_se->dl_timer;
--
--	hrtimer_init(timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
--	timer->function = dl_task_timer;
--}
--
- static
- int dl_runtime_exceeded(struct rq *rq, struct sched_dl_entity *dl_se)
- {
-diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-index 9a2a45c..ad3a2f0 100644
---- a/kernel/sched/sched.h
-+++ b/kernel/sched/sched.h
-@@ -1257,7 +1257,6 @@ extern void init_rt_bandwidth(struct rt_bandwidth *rt_b, u64 period, u64 runtime
- 
- extern struct dl_bandwidth def_dl_bandwidth;
- extern void init_dl_bandwidth(struct dl_bandwidth *dl_b, u64 period, u64 runtime);
--extern void init_dl_task_timer(struct sched_dl_entity *dl_se);
- 
- unsigned long to_ratio(u64 period, u64 runtime);
- 
+...and I messed it up so the last change didn't make it,
+apologies. Should I resend the whole series as v10, for consistency?
+
+Regards,
+--
+Alex
