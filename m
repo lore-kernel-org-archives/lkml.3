@@ -1,106 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828AbbANJcu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 04:32:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47317 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752501AbbANJcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 04:32:45 -0500
-Subject: [RFC PATCH 1/5] nsproxy - refactor setns()
-From: Ian Kent <ikent@redhat.com>
-To: Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: David Howells <dhowells@redhat.com>, Oleg Nesterov <onestero@redhat.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Benjamin Coddington <bcodding@redhat.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Jeff Layton <jeff.layton@primarydata.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Date: Wed, 14 Jan 2015 17:32:29 +0800
-Message-ID: <20150114093228.30252.30091.stgit@pluto.fritz.box>
-In-Reply-To: <20150114092704.30252.60446.stgit@pluto.fritz.box>
-References: <20150114092704.30252.60446.stgit@pluto.fritz.box>
-User-Agent: StGit/0.17-dirty
+	id S1752590AbbANJcf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 04:32:35 -0500
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:64351 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752501AbbANJcd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 04:32:33 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1420949002-3726-5-git-send-email-dave.long@linaro.org>
+References: <1420949002-3726-1-git-send-email-dave.long@linaro.org>
+	<1420949002-3726-5-git-send-email-dave.long@linaro.org>
+Date: Wed, 14 Jan 2015 15:02:32 +0530
+Message-ID: <CAHM4w1n6wCUSX1QjP8EyA9zkJBZTM=6Vc32Vjm3wPuDv=FXZzw@mail.gmail.com>
+Subject: Re: [PATCH v4 4/6] arm64: Kprobes instruction simulation support
+From: Pratyush Anand <pratyush.anand@gmail.com>
+To: David Long <dave.long@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        William Cohen <wcohen@redhat.com>,
+        Steve Capper <steve.capper@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        davem@davemloft.net, linux-kernel@vger.kernel.org,
+        Pratyush Anand <panand@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For usermode helpers to execute within a namspace a slightly different
-entry point to setns() that takes a namspace inode is needed.
+On Sun, Jan 11, 2015 at 9:33 AM, David Long <dave.long@linaro.org> wrote:
+> From: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
+>
+> Add support for AArch64 instruction simulation in kprobes.
+>
+> Kprobes needs simulation of instructions that cannot be stepped
+> from different memory location, e.g.: those instructions
+> that uses PC-relative addressing. In simulation, the behaviour
+> of the instruction is implemented using a copy of pt_regs.
+>
+> Following instruction catagories are simulated:
+>  - All branching instructions(conditional, register, and immediate)
+>  - Literal access instructions(load-literal, adr/adrp)
+>
+> Conditional execution is limited to branching instructions in
+> ARM v8. If conditions at PSTATE do not match the condition fields
+> of opcode, the instruction is effectively NOP. Kprobes considers
+> this case as 'miss'.
+> changes since v3:
+> from David A. Long:
+> 1) Fix incorrect simulate_ldrsw_literal() semantics.
+> 2) Use instruction test functions instead of private parse table.
+> from Will Cohen:
+> 3) Remove PC adjustments when simulating an instruction.
+> 4) Fix displacement calculations.
+>
+> Signed-off-by: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
+> Signed-off-by: William Cohen <wcohen@redhat.com>
+> Signed-off-by: David A. Long <dave.long@linaro.org>
+> ---
 
-Signed-off-by: Ian Kent <ikent@redhat.com>
-Cc: Benjamin Coddington <bcodding@redhat.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: J. Bruce Fields <bfields@fieldses.org>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Trond Myklebust <trond.myklebust@primarydata.com>
-Cc: Oleg Nesterov <onestero@redhat.com>
-Cc: Eric W. Biederman <ebiederm@xmission.com>
-Cc: Jeff Layton <jeff.layton@primarydata.com>
----
- include/linux/nsproxy.h |    1 +
- kernel/nsproxy.c        |   21 ++++++++++++++-------
- 2 files changed, 15 insertions(+), 7 deletions(-)
+[...]
 
-diff --git a/include/linux/nsproxy.h b/include/linux/nsproxy.h
-index 35fa08f..c75bf12 100644
---- a/include/linux/nsproxy.h
-+++ b/include/linux/nsproxy.h
-@@ -62,6 +62,7 @@ extern struct nsproxy init_nsproxy;
-  *
-  */
- 
-+int setns_inode(struct inode *inode, int nstype);
- int copy_namespaces(unsigned long flags, struct task_struct *tsk);
- void exit_task_namespaces(struct task_struct *tsk);
- void switch_task_namespaces(struct task_struct *tsk, struct nsproxy *new);
-diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
-index 49746c8..27cc544 100644
---- a/kernel/nsproxy.c
-+++ b/kernel/nsproxy.c
-@@ -218,20 +218,15 @@ void exit_task_namespaces(struct task_struct *p)
- 	switch_task_namespaces(p, NULL);
- }
- 
--SYSCALL_DEFINE2(setns, int, fd, int, nstype)
-+int setns_inode(struct inode *inode, int nstype)
- {
- 	struct task_struct *tsk = current;
- 	struct nsproxy *new_nsproxy;
--	struct file *file;
- 	struct ns_common *ns;
- 	int err;
- 
--	file = proc_ns_fget(fd);
--	if (IS_ERR(file))
--		return PTR_ERR(file);
--
- 	err = -EINVAL;
--	ns = get_proc_ns(file_inode(file));
-+	ns = get_proc_ns(inode);
- 	if (nstype && (ns->ops->type != nstype))
- 		goto out;
- 
-@@ -248,6 +243,18 @@ SYSCALL_DEFINE2(setns, int, fd, int, nstype)
- 	}
- 	switch_task_namespaces(tsk, new_nsproxy);
- out:
-+	return err;
-+}
-+
-+SYSCALL_DEFINE2(setns, int, fd, int, nstype)
-+{
-+	struct file *file;
-+	int err;
-+
-+	file = proc_ns_fget(fd);
-+	if (IS_ERR(file))
-+		return PTR_ERR(file);
-+	err = setns_inode(file_inode(file), nstype);
- 	fput(file);
- 	return err;
- }
+>  static bool aarch64_insn_is_steppable(u32 insn)
+>  {
+> @@ -60,6 +130,32 @@ arm_kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi)
+>          */
+>         if (aarch64_insn_is_steppable(insn))
+>                 return INSN_GOOD;
+> +
+> +       asi->prepare = prepare_none;
+> +
+> +       if (aarch64_insn_is_bcond(insn)) {
+> +               asi->prepare = prepare_bcond;
+> +               asi->handler = simulate_b_cond;
+> +       } else if (aarch64_insn_is_cb(insn)) {
+> +               asi->prepare = prepare_cbz_cbnz;
+> +               asi->handler = simulate_cbz_cbnz;
+> +       } else if (aarch64_insn_is_tb(insn)) {
+> +               asi->prepare = prepare_tbz_tbnz;
+> +               asi->handler = simulate_tbz_tbnz;
+> +       } else if (aarch64_insn_is_adr(insn))
 
+aarch64_insn_is_adr should be modified to aarch64_insn_is_adr_adrp
+
+> +               asi->handler = simulate_adr_adrp;
+> +       else if (aarch64_insn_is_b_bl(insn))
+> +               asi->handler = simulate_b_bl;
+> +       else if (aarch64_insn_is_ldr_lit(insn))
+> +               asi->handler = simulate_ldr_literal;
+> +       else if (aarch64_insn_is_ldrsw_lit(insn))
+> +               asi->handler = simulate_ldrsw_literal;
+
+also
+
+else if (aarch64_insn_is_br_blr(insn) || aarch64_insn_is_ret(insn))
+               asi->handler = simulate_br_blr_ret;
+
+
+~Pratyush
