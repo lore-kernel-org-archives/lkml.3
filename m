@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932182AbbANHgS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:36:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58655 "EHLO
+	id S933270AbbANHjs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:39:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59008 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932154AbbANHgN (ORCPT
+	with ESMTP id S932166AbbANHjq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:36:13 -0500
+	Wed, 14 Jan 2015 02:39:46 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH 3.14 64/77] ACPI / PM: Fix PM initialization for devices that are not present
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH 3.10 23/44] x86, vdso: Use asm volatile in __getcpu
 Date: Tue, 13 Jan 2015 23:23:44 -0800
-Message-Id: <20150114072227.799658764@linuxfoundation.org>
+Message-Id: <20150114072228.813980507@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-References: <20150114072224.182299947@linuxfoundation.org>
+In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
+References: <20150114072227.419663002@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,103 +26,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit 1b1f3e1699a9886f1070f94171097ab4ccdbfc95 upstream.
+commit 1ddf0b1b11aa8a90cef6706e935fc31c75c406ba upstream.
 
-If an ACPI device object whose _STA returns 0 (not present and not
-functional) has _PR0 or _PS0, its power_manageable flag will be set
-and acpi_bus_init_power() will return 0 for it.  Consequently, if
-such a device object is passed to the ACPI device PM functions, they
-will attempt to carry out the requested operation on the device,
-although they should not do that for devices that are not present.
+In Linux 3.18 and below, GCC hoists the lsl instructions in the
+pvclock code all the way to the beginning of __vdso_clock_gettime,
+slowing the non-paravirt case significantly.  For unknown reasons,
+presumably related to the removal of a branch, the performance issue
+is gone as of
 
-To fix that problem make acpi_bus_init_power() return an error code
-for devices that are not present which will cause power_manageable to
-be cleared for them as appropriate in acpi_bus_get_power_flags().
-However, the lists of power resources should not be freed for the
-device in that case, so modify acpi_bus_get_power_flags() to keep
-those lists even if acpi_bus_init_power() returns an error.
-Accordingly, when deciding whether or not the lists of power
-resources need to be freed, acpi_free_power_resources_lists()
-should check the power.flags.power_resources flag instead of
-flags.power_manageable, so make that change too.
+e76b027e6408 x86,vdso: Use LSL unconditionally for vgetcpu
 
-Furthermore, if acpi_bus_attach() sees that flags.initialized is
-unset for the given device, it should reset the power management
-settings of the device and re-initialize them from scratch instead
-of relying on the previous settings (the device may have appeared
-after being not present previously, for example), so make it use
-the 'valid' flag of the D0 power state as the initial value of
-flags.power_manageable for it and call acpi_bus_init_power() to
-discover its current power state.
+but I don't trust GCC enough to expect the problem to stay fixed.
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+There should be no correctness issue, because the __getcpu calls in
+__vdso_vlock_gettime were never necessary in the first place.
+
+Note to stable maintainers: In 3.18 and below, depending on
+configuration, gcc 4.9.2 generates code like this:
+
+     9c3:       44 0f 03 e8             lsl    %ax,%r13d
+     9c7:       45 89 eb                mov    %r13d,%r11d
+     9ca:       0f 03 d8                lsl    %ax,%ebx
+
+This patch won't apply as is to any released kernel, but I'll send a
+trivial backported version if needed.
+
+[
+ Backported by Andy Lutomirski.  Should apply to all affected
+ versions.  This fixes a functionality bug as well as a performance
+ bug: buggy kernels can infinite loop in __vdso_clock_gettime on
+ affected compilers.  See, for exammple:
+
+ https://bugzilla.redhat.com/show_bug.cgi?id=1178975
+]
+
+Fixes: 51c19b4f5927 x86: vdso: pvclock gettime support
+Cc: Marcelo Tosatti <mtosatti@redhat.com>
+Acked-by: Paolo Bonzini <pbonzini@redhat.com>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/device_pm.c |    2 +-
- drivers/acpi/scan.c      |   13 ++++++++-----
- 2 files changed, 9 insertions(+), 6 deletions(-)
+ arch/x86/include/asm/vsyscall.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/acpi/device_pm.c
-+++ b/drivers/acpi/device_pm.c
-@@ -257,7 +257,7 @@ int acpi_bus_init_power(struct acpi_devi
- 
- 	device->power.state = ACPI_STATE_UNKNOWN;
- 	if (!acpi_device_is_present(device))
--		return 0;
-+		return -ENXIO;
- 
- 	result = acpi_device_get_power(device, &state);
- 	if (result)
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -865,7 +865,7 @@ static void acpi_free_power_resources_li
- 	if (device->wakeup.flags.valid)
- 		acpi_power_resources_list_free(&device->wakeup.resources);
- 
--	if (!device->flags.power_manageable)
-+	if (!device->power.flags.power_resources)
- 		return;
- 
- 	for (i = ACPI_STATE_D0; i <= ACPI_STATE_D3_HOT; i++) {
-@@ -1554,10 +1554,8 @@ static void acpi_bus_get_power_flags(str
- 			device->power.flags.power_resources)
- 		device->power.states[ACPI_STATE_D3_COLD].flags.os_accessible = 1;
- 
--	if (acpi_bus_init_power(device)) {
--		acpi_free_power_resources_lists(device);
-+	if (acpi_bus_init_power(device))
- 		device->flags.power_manageable = 0;
--	}
- }
- 
- static void acpi_bus_get_flags(struct acpi_device *device)
-@@ -2043,13 +2041,18 @@ static void acpi_bus_attach(struct acpi_
- 	/* Skip devices that are not present. */
- 	if (!acpi_device_is_present(device)) {
- 		device->flags.visited = false;
-+		device->flags.power_manageable = 0;
- 		return;
+--- a/arch/x86/include/asm/vsyscall.h
++++ b/arch/x86/include/asm/vsyscall.h
+@@ -34,7 +34,7 @@ static inline unsigned int __getcpu(void
+ 		native_read_tscp(&p);
+ 	} else {
+ 		/* Load per CPU data from GDT */
+-		asm("lsl %1,%0" : "=r" (p) : "r" (__PER_CPU_SEG));
++		asm volatile ("lsl %1,%0" : "=r" (p) : "r" (__PER_CPU_SEG));
  	}
- 	if (device->handler)
- 		goto ok;
  
- 	if (!device->flags.initialized) {
--		acpi_bus_update_power(device, NULL);
-+		device->flags.power_manageable =
-+			device->power.states[ACPI_STATE_D0].flags.valid;
-+		if (acpi_bus_init_power(device))
-+			device->flags.power_manageable = 0;
-+
- 		device->flags.initialized = true;
- 	}
- 	device->flags.visited = false;
+ 	return p;
 
 
