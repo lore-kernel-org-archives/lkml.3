@@ -1,30 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933237AbbANHja (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:39:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58968 "EHLO
+	id S1755147AbbANHmj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:42:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58977 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755075AbbANHj0 (ORCPT
+	with ESMTP id S1755388AbbANHj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:39:26 -0500
+	Wed, 14 Jan 2015 02:39:27 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Olsa <jolsa@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Zhiqiang Zhang <zhangzhiqiang.zhang@huawei.com>
-Subject: [PATCH 3.10 41/44] perf session: Do not fail on processing out of order event
-Date: Tue, 13 Jan 2015 23:24:02 -0800
-Message-Id: <20150114072229.621552825@linuxfoundation.org>
+        Vlastimil Babka <vbabka@suse.cz>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Mel Gorman <mgorman@suse.de>, Johannes Weiner <hannes@cmpxchg.org>,
+        Michal Hocko <mhocko@suse.cz>, Rik van Riel <riel@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.10 42/44] mm, vmscan: prevent kswapd livelock due to pfmemalloc-throttled process being killed
+Date: Tue, 13 Jan 2015 23:24:03 -0800
+Message-Id: <20150114072229.666436842@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
 References: <20150114072227.419663002@linuxfoundation.org>
@@ -39,86 +33,109 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Olsa <jolsa@kernel.org>
+From: Vlastimil Babka <vbabka@suse.cz>
 
-commit f61ff6c06dc8f32c7036013ad802c899ec590607 upstream.
+commit 9e5e3661727eaf960d3480213f8e87c8d67b6956 upstream.
 
-Linus reported perf report command being interrupted due to processing
-of 'out of order' event, with following error:
+Charles Shirron and Paul Cassella from Cray Inc have reported kswapd
+stuck in a busy loop with nothing left to balance, but
+kswapd_try_to_sleep() failing to sleep.  Their analysis found the cause
+to be a combination of several factors:
 
-  Timestamp below last timeslice flush
-  0x5733a8 [0x28]: failed to process type: 3
+1. A process is waiting in throttle_direct_reclaim() on pgdat->pfmemalloc_wait
 
-I could reproduce the issue and in my case it was caused by one CPU
-(mmap) being behind during record and userspace mmap reader seeing the
-data after other CPUs data were already stored.
+2. The process has been killed (by OOM in this case), but has not yet been
+   scheduled to remove itself from the waitqueue and die.
 
-This is expected under some circumstances because we need to limit the
-number of events that we queue for reordering when we receive a
-PERF_RECORD_FINISHED_ROUND or when we force flush due to memory
-pressure.
+3. kswapd checks for throttled processes in prepare_kswapd_sleep():
 
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Matt Fleming <matt.fleming@intel.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1417016371-30249-1-git-send-email-jolsa@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-[zhangzhiqiang: backport to 3.10:
- - adjust context
- - commit f61ff6c06d struct events_stats was defined in tools/perf/util/event.h
-   while 3.10 stable defined in tools/perf/util/hist.h.
- - 3.10 stable there is no pr_oe_time() which used for debug.
- - After the above adjustments, becomes same to the original patch:
-   https://github.com/torvalds/linux/commit/f61ff6c06dc8f32c7036013ad802c899ec590607
-]
-Signed-off-by: Zhiqiang Zhang <zhangzhiqiang.zhang@huawei.com>
+        if (waitqueue_active(&pgdat->pfmemalloc_wait)) {
+                wake_up(&pgdat->pfmemalloc_wait);
+		return false; // kswapd will not go to sleep
+	}
+
+   However, for a process that was already killed, wake_up() does not remove
+   the process from the waitqueue, since try_to_wake_up() checks its state
+   first and returns false when the process is no longer waiting.
+
+4. kswapd is running on the same CPU as the only CPU that the process is
+   allowed to run on (through cpus_allowed, or possibly single-cpu system).
+
+5. CONFIG_PREEMPT_NONE=y kernel is used. If there's nothing to balance, kswapd
+   encounters no voluntary preemption points and repeatedly fails
+   prepare_kswapd_sleep(), blocking the process from running and removing
+   itself from the waitqueue, which would let kswapd sleep.
+
+So, the source of the problem is that we prevent kswapd from going to
+sleep until there are processes waiting on the pfmemalloc_wait queue,
+and a process waiting on a queue is guaranteed to be removed from the
+queue only when it gets scheduled.  This was done to make sure that no
+process is left sleeping on pfmemalloc_wait when kswapd itself goes to
+sleep.
+
+However, it isn't necessary to postpone kswapd sleep until the
+pfmemalloc_wait queue actually empties.  To prevent processes from being
+left sleeping, it's actually enough to guarantee that all processes
+waiting on pfmemalloc_wait queue have been woken up by the time we put
+kswapd to sleep.
+
+This patch therefore fixes this issue by substituting 'wake_up' with
+'wake_up_all' and removing 'return false' in the code snippet from
+prepare_kswapd_sleep() above.  Note that if any process puts itself in
+the queue after this waitqueue_active() check, or after the wake up
+itself, it means that the process will also wake up kswapd - and since
+we are under prepare_to_wait(), the wake up won't be missed.  Also we
+update the comment prepare_kswapd_sleep() to hopefully more clearly
+describe the races it is preventing.
+
+Fixes: 5515061d22f0 ("mm: throttle direct reclaimers if PF_MEMALLOC reserves are low and swap is backed by network storage")
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Michal Hocko <mhocko@suse.cz>
+Acked-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- tools/perf/util/hist.h    |    1 +
- tools/perf/util/session.c |    5 +++--
- 2 files changed, 4 insertions(+), 2 deletions(-)
 
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -34,6 +34,7 @@ struct events_stats {
- 	u32 nr_invalid_chains;
- 	u32 nr_unknown_id;
- 	u32 nr_unprocessable_samples;
-+	u32 nr_unordered_events;
- };
+---
+ mm/vmscan.c |   24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
+
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2631,18 +2631,20 @@ static bool prepare_kswapd_sleep(pg_data
+ 		return false;
  
- enum hist_column {
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -656,8 +656,7 @@ static int perf_session_queue_event(stru
- 		return -ETIME;
+ 	/*
+-	 * There is a potential race between when kswapd checks its watermarks
+-	 * and a process gets throttled. There is also a potential race if
+-	 * processes get throttled, kswapd wakes, a large process exits therby
+-	 * balancing the zones that causes kswapd to miss a wakeup. If kswapd
+-	 * is going to sleep, no process should be sleeping on pfmemalloc_wait
+-	 * so wake them now if necessary. If necessary, processes will wake
+-	 * kswapd and get throttled again
++	 * The throttled processes are normally woken up in balance_pgdat() as
++	 * soon as pfmemalloc_watermark_ok() is true. But there is a potential
++	 * race between when kswapd checks the watermarks and a process gets
++	 * throttled. There is also a potential race if processes get
++	 * throttled, kswapd wakes, a large process exits thereby balancing the
++	 * zones, which causes kswapd to exit balance_pgdat() before reaching
++	 * the wake up checks. If kswapd is going to sleep, no process should
++	 * be sleeping on pfmemalloc_wait, so wake them now if necessary. If
++	 * the wake up is premature, processes will wake kswapd and get
++	 * throttled again. The difference from wake ups in balance_pgdat() is
++	 * that here we are under prepare_to_wait().
+ 	 */
+-	if (waitqueue_active(&pgdat->pfmemalloc_wait)) {
+-		wake_up(&pgdat->pfmemalloc_wait);
+-		return false;
+-	}
++	if (waitqueue_active(&pgdat->pfmemalloc_wait))
++		wake_up_all(&pgdat->pfmemalloc_wait);
  
- 	if (timestamp < s->ordered_samples.last_flush) {
--		printf("Warning: Timestamp below last timeslice flush\n");
--		return -EINVAL;
-+		s->stats.nr_unordered_events++;
- 	}
- 
- 	if (!list_empty(sc)) {
-@@ -1057,6 +1056,8 @@ static void perf_session__warn_about_err
- 			    "Do you have a KVM guest running and not using 'perf kvm'?\n",
- 			    session->stats.nr_unprocessable_samples);
- 	}
-+	if (session->stats.nr_unordered_events != 0)
-+		ui__warning("%u out of order events recorded.\n", session->stats.nr_unordered_events);
+ 	return pgdat_balanced(pgdat, order, classzone_idx);
  }
- 
- #define session_done()	(*(volatile int *)(&session_done))
 
 
