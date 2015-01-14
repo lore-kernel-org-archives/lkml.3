@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756297AbbANIwz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:52:55 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57605 "EHLO
+	id S1752265AbbANHZQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:25:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57611 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751416AbbANHY7 (ORCPT
+	with ESMTP id S1750719AbbANHZL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:24:59 -0500
+	Wed, 14 Jan 2015 02:25:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Junxiao Bi <junxiao.bi@oracle.com>,
-        Wengang Wang <wen.gang.wang@oracle.com>, Mark Fasheh <mfasheh@suse.de>,
-        Joel Becker <jlbec@evilplan.org>,
+        "joyce.xue" <xuejiufei@huawei.com>, Szabo Aron - UBIT <aron@ubit.hu>,
+        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.18 005/150] ocfs2: fix journal commit deadlock
-Date: Tue, 13 Jan 2015 23:21:16 -0800
-Message-Id: <20150114072056.098412638@linuxfoundation.org>
+Subject: [PATCH 3.18 006/150] ocfs2: fix the wrong directory passed to ocfs2_lookup_ino_from_name() when link file
+Date: Tue, 13 Jan 2015 23:21:17 -0800
+Message-Id: <20150114072056.139063044@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -32,84 +31,164 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Junxiao Bi <junxiao.bi@oracle.com>
+From: Xue jiufei <xuejiufei@huawei.com>
 
-commit 136f49b9171074872f2a14ad0ab10486d1ba13ca upstream.
+commit 53dc20b9a3d928b0744dad5aee65b610de1cc85d upstream.
 
-For buffer write, page lock will be got in write_begin and released in
-write_end, in ocfs2_write_end_nolock(), before it unlock the page in
-ocfs2_free_write_ctxt(), it calls ocfs2_run_deallocs(), this will ask
-for the read lock of journal->j_trans_barrier.  Holding page lock and
-ask for journal->j_trans_barrier breaks the locking order.
+In ocfs2_link(), the parent directory inode passed to function
+ocfs2_lookup_ino_from_name() is wrong.  Parameter dir is the parent of
+new_dentry not old_dentry.  We should get old_dir from old_dentry and
+lookup old_dentry in old_dir in case another node remove the old dentry.
 
-This will cause a deadlock with journal commit threads, ocfs2cmt will
-get write lock of journal->j_trans_barrier first, then it wakes up
-kjournald2 to do the commit work, at last it waits until done.  To
-commit journal, kjournald2 needs flushing data first, it needs get the
-cache page lock.
+With this change, hard linking works again, when paths are relative with
+at least one subdirectory.  This is how the problem was reproducable:
 
-Since some ocfs2 cluster locks are holding by write process, this
-deadlock may hung the whole cluster.
+  # mkdir a
+  # mkdir b
+  # touch a/test
+  # ln a/test b/test
+  ln: failed to create hard link `b/test' => `a/test': No such file or  directory
 
-unlock pages before ocfs2_run_deallocs() can fix the locking order, also
-put unlock before ocfs2_commit_trans() to make page lock is unlocked
-before j_trans_barrier to preserve unlocking order.
+However when creating links in the same dir, it worked well.
 
-Signed-off-by: Junxiao Bi <junxiao.bi@oracle.com>
-Reviewed-by: Wengang Wang <wen.gang.wang@oracle.com>
-Reviewed-by: Mark Fasheh <mfasheh@suse.de>
+Now the link gets created.
+
+Fixes: 0e048316ff57 ("ocfs2: check existence of old dentry in ocfs2_link()")
+Signed-off-by: joyce.xue <xuejiufei@huawei.com>
+Reported-by: Szabo Aron - UBIT <aron@ubit.hu>
+Cc: Mark Fasheh <mfasheh@suse.com>
 Cc: Joel Becker <jlbec@evilplan.org>
+Tested-by: Aron Szabo <aron@ubit.hu>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ocfs2/aops.c |   16 ++++++++++++++--
- 1 file changed, 14 insertions(+), 2 deletions(-)
+ fs/ocfs2/namei.c |   43 +++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 35 insertions(+), 8 deletions(-)
 
---- a/fs/ocfs2/aops.c
-+++ b/fs/ocfs2/aops.c
-@@ -894,7 +894,7 @@ void ocfs2_unlock_and_free_pages(struct
- 	}
- }
+--- a/fs/ocfs2/namei.c
++++ b/fs/ocfs2/namei.c
+@@ -94,6 +94,14 @@ static int ocfs2_create_symlink_data(str
+ 				     struct inode *inode,
+ 				     const char *symname);
  
--static void ocfs2_free_write_ctxt(struct ocfs2_write_ctxt *wc)
-+static void ocfs2_unlock_pages(struct ocfs2_write_ctxt *wc)
- {
- 	int i;
- 
-@@ -915,7 +915,11 @@ static void ocfs2_free_write_ctxt(struct
- 		page_cache_release(wc->w_target_page);
- 	}
- 	ocfs2_unlock_and_free_pages(wc->w_pages, wc->w_num_pages);
-+}
- 
-+static void ocfs2_free_write_ctxt(struct ocfs2_write_ctxt *wc)
-+{
-+	ocfs2_unlock_pages(wc);
- 	brelse(wc->w_di_bh);
- 	kfree(wc);
- }
-@@ -2042,11 +2046,19 @@ out_write_size:
- 	ocfs2_update_inode_fsync_trans(handle, inode, 1);
- 	ocfs2_journal_dirty(handle, wc->w_di_bh);
- 
-+	/* unlock pages before dealloc since it needs acquiring j_trans_barrier
-+	 * lock, or it will cause a deadlock since journal commit threads holds
-+	 * this lock and will ask for the page lock when flushing the data.
-+	 * put it here to preserve the unlock order.
-+	 */
-+	ocfs2_unlock_pages(wc);
++static int ocfs2_double_lock(struct ocfs2_super *osb,
++			     struct buffer_head **bh1,
++			     struct inode *inode1,
++			     struct buffer_head **bh2,
++			     struct inode *inode2,
++			     int rename);
 +
- 	ocfs2_commit_trans(osb, handle);
++static void ocfs2_double_unlock(struct inode *inode1, struct inode *inode2);
+ /* An orphan dir name is an 8 byte value, printed as a hex string */
+ #define OCFS2_ORPHAN_NAMELEN ((int)(2 * sizeof(u64)))
  
- 	ocfs2_run_deallocs(osb, &wc->w_dealloc);
+@@ -678,8 +686,10 @@ static int ocfs2_link(struct dentry *old
+ {
+ 	handle_t *handle;
+ 	struct inode *inode = old_dentry->d_inode;
++	struct inode *old_dir = old_dentry->d_parent->d_inode;
+ 	int err;
+ 	struct buffer_head *fe_bh = NULL;
++	struct buffer_head *old_dir_bh = NULL;
+ 	struct buffer_head *parent_fe_bh = NULL;
+ 	struct ocfs2_dinode *fe = NULL;
+ 	struct ocfs2_super *osb = OCFS2_SB(dir->i_sb);
+@@ -696,19 +706,33 @@ static int ocfs2_link(struct dentry *old
  
--	ocfs2_free_write_ctxt(wc);
-+	brelse(wc->w_di_bh);
-+	kfree(wc);
+ 	dquot_initialize(dir);
  
- 	return copied;
+-	err = ocfs2_inode_lock_nested(dir, &parent_fe_bh, 1, OI_LS_PARENT);
++	err = ocfs2_double_lock(osb, &old_dir_bh, old_dir,
++			&parent_fe_bh, dir, 0);
+ 	if (err < 0) {
+ 		if (err != -ENOENT)
+ 			mlog_errno(err);
+ 		return err;
+ 	}
+ 
++	/* make sure both dirs have bhs
++	 * get an extra ref on old_dir_bh if old==new */
++	if (!parent_fe_bh) {
++		if (old_dir_bh) {
++			parent_fe_bh = old_dir_bh;
++			get_bh(parent_fe_bh);
++		} else {
++			mlog(ML_ERROR, "%s: no old_dir_bh!\n", osb->uuid_str);
++			err = -EIO;
++			goto out;
++		}
++	}
++
+ 	if (!dir->i_nlink) {
+ 		err = -ENOENT;
+ 		goto out;
+ 	}
+ 
+-	err = ocfs2_lookup_ino_from_name(dir, old_dentry->d_name.name,
++	err = ocfs2_lookup_ino_from_name(old_dir, old_dentry->d_name.name,
+ 			old_dentry->d_name.len, &old_de_ino);
+ 	if (err) {
+ 		err = -ENOENT;
+@@ -801,10 +825,11 @@ out_unlock_inode:
+ 	ocfs2_inode_unlock(inode, 1);
+ 
+ out:
+-	ocfs2_inode_unlock(dir, 1);
++	ocfs2_double_unlock(old_dir, dir);
+ 
+ 	brelse(fe_bh);
+ 	brelse(parent_fe_bh);
++	brelse(old_dir_bh);
+ 
+ 	ocfs2_free_dir_lookup_result(&lookup);
+ 
+@@ -1072,14 +1097,15 @@ static int ocfs2_check_if_ancestor(struc
  }
+ 
+ /*
+- * The only place this should be used is rename!
++ * The only place this should be used is rename and link!
+  * if they have the same id, then the 1st one is the only one locked.
+  */
+ static int ocfs2_double_lock(struct ocfs2_super *osb,
+ 			     struct buffer_head **bh1,
+ 			     struct inode *inode1,
+ 			     struct buffer_head **bh2,
+-			     struct inode *inode2)
++			     struct inode *inode2,
++			     int rename)
+ {
+ 	int status;
+ 	int inode1_is_ancestor, inode2_is_ancestor;
+@@ -1127,7 +1153,7 @@ static int ocfs2_double_lock(struct ocfs
+ 		}
+ 		/* lock id2 */
+ 		status = ocfs2_inode_lock_nested(inode2, bh2, 1,
+-						 OI_LS_RENAME1);
++				rename == 1 ? OI_LS_RENAME1 : OI_LS_PARENT);
+ 		if (status < 0) {
+ 			if (status != -ENOENT)
+ 				mlog_errno(status);
+@@ -1136,7 +1162,8 @@ static int ocfs2_double_lock(struct ocfs
+ 	}
+ 
+ 	/* lock id1 */
+-	status = ocfs2_inode_lock_nested(inode1, bh1, 1, OI_LS_RENAME2);
++	status = ocfs2_inode_lock_nested(inode1, bh1, 1,
++			rename == 1 ?  OI_LS_RENAME2 : OI_LS_PARENT);
+ 	if (status < 0) {
+ 		/*
+ 		 * An error return must mean that no cluster locks
+@@ -1252,7 +1279,7 @@ static int ocfs2_rename(struct inode *ol
+ 
+ 	/* if old and new are the same, this'll just do one lock. */
+ 	status = ocfs2_double_lock(osb, &old_dir_bh, old_dir,
+-				   &new_dir_bh, new_dir);
++				   &new_dir_bh, new_dir, 1);
+ 	if (status < 0) {
+ 		mlog_errno(status);
+ 		goto bail;
 
 
