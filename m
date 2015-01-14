@@ -1,87 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752234AbbANIZn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:25:43 -0500
-Received: from relay1.mentorg.com ([192.94.38.131]:59044 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751759AbbANIZ0 (ORCPT
+	id S1754882AbbANIbh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:31:37 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:41233 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754357AbbANIbe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 03:25:26 -0500
-Message-ID: <54B627F0.90207@mentor.com>
-Date: Wed, 14 Jan 2015 17:25:20 +0900
-From: jiwang <jiada_wang@mentor.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
+	Wed, 14 Jan 2015 03:31:34 -0500
+Date: Wed, 14 Jan 2015 09:31:30 +0100
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Jason Cooper <jason@lakedaemon.net>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 1/5] irqchip: add dumb demultiplexer implementation
+Message-ID: <20150114093130.3923a89a@bbrezillon>
+In-Reply-To: <alpine.DEB.2.11.1501132153210.5526@nanos>
+References: <1421174781-4340-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1421174781-4340-2-git-send-email-boris.brezillon@free-electrons.com>
+	<alpine.DEB.2.11.1501132153210.5526@nanos>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>, Takashi Iwai <tiwai@suse.de>,
-        Mark Brown <broonie@kernel.org>
-CC: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
-        "Frkuska, Joshua" <Joshua_Frkuska@mentor.com>
-Subject: Re: [alsa-devel] unload Audio drivers while playback stream is active
- case kernel crash
-References: <857E9EDCA6C0904DB3357321AA9123EB0108B66919@NA-MBX-01.mgc.mentorg.com> <s5h1tmyiof7.wl-tiwai@suse.de> <20150113215412.GS4160@sirena.org.uk> <s5hr3ux24em.wl-tiwai@suse.de> <54B625A8.8090406@metafoo.de>
-In-Reply-To: <54B625A8.8090406@metafoo.de>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Hi Thomas,
 
-On 01/14/2015 05:15 PM, Lars-Peter Clausen wrote:
-> On 01/14/2015 08:43 AM, Takashi Iwai wrote:
->> At Tue, 13 Jan 2015 21:54:12 +0000,
->> Mark Brown wrote:
->>>
->>> On Tue, Jan 13, 2015 at 06:24:44PM +0100, Takashi Iwai wrote:
->>>> Wang, Jiada (ESD) wrote:
->>>
->>>>> I am using i.MX6Q sabreSD board, which have imx_wm892 machine 
->>>>> driver, wm8962 codec and SSI CPU DAI,
->>>
->>>>> I got Kernel crash when unloading audio drivers (playback stream 
->>>>> is active)
->>>>> modprobe -r snd_soc_imx_wm8962
->>>>> modprobe -r snd_soc_fsl_ssi
->>>>> modprobe -r snd_soc_wm8962
->>>
->>>> The root problem is that you can unload the module while playing.
->>>> The corresponding module refcounts should have been increased during
->>>> used.
->>>
->>>> Do we miss [try_]module_get() somewhere in ASoC?
->>>
->>> That doesn't help, users can still forcibly unbind the driver at 
->>> runtime
->>> without loading the module - and there's always the potential for
->>> actually hotpluggable hardware.  The teardown paths should be able to
->>> cope somewhat gracefully.
->>
->> The module refcount has to be handled while being used for stopping
->> module unload.  That's irrelevant from the dynamic unbinding support
->> itself.  Of course, the module refcount doesn't save the world, but
->> it's the right fix for this particular scenario.
->
-> Refcounting won't help in this case. The issue is caused by a delayed 
-> work item that gets launched when the PCM stream is stopped. So if you 
-> decrease the refcount when the stream is stopped you still have a 
-> window where it is possible to remove the module while the work is 
-> still being scheduled.
->
-> And while we do flush the scheduled work when we remove the ASoC card 
-> this is done before snd_card_free() is called. So when snd_card_free() 
-> is called it gets re-scheduled again. I think the correct fix is to 
-> add a snd_card_disconnect() at the very top of 
-> soc_cleanup_card_resources().
->
-when stream is active, snd_card_disconnect() will trigger pcm_close() be 
-executed by another thread,
-we can't ensure the pcm_close() is executed before the rest of 
-soc_cleanup_card_resources().
+On Tue, 13 Jan 2015 22:00:55 +0100 (CET)
+Thomas Gleixner <tglx@linutronix.de> wrote:
 
-- Jiada
+> On Tue, 13 Jan 2015, Boris Brezillon wrote:
+> > +	ret = irq_set_handler_data(irq, demux);
+> > +	if (ret) {
+> > +		pr_err("Failed to assign handler data\n");
+> > +		goto err_free_domain;
+> > +	}
+> > +
+> > +	irq_set_chained_handler(irq, irq_dumb_demux_handler);
+> > +
+> > +	/*
+> > +	 * Disable the src irq (automatically enabled by
+> > +	 * irq_set_chained_handler) to prevent irqs from happening while
+> > +	 * nobody requested any of the demuxed irqs.
+> > +	 */
+> > +	disable_irq(irq);
+> 
+> We rather prevent the startup of the irq line right away.
 
-> - Lars
+Yep, the comment was here to draw the attention, since I wasn't sure
+modifying core code was the best solution.
+Anyway I agree that keeping the src_irq disabled when registering the
+chained handler is better than doing it afterwards.
 
+> 
+> enum {
+>      IRQ_CHAINED_NONE,
+>      IRQ_CHAINED_STARTUP,
+>      IRQ_CHAINED_NOSTARTUP,
+> };
+> 
+> -__irq_set_handler(unsigned int irq, irq_flow_handler_t handle, int is_chained,
+> -                  const char *name);
+> +__irq_set_handler(unsigned int irq, irq_flow_handler_t handle, int chained_mode,
+> +                  const char *name);
+> 
+> {
+> ....
+>         if (handle != handle_bad_irq && chained_mode) {
+>                 irq_settings_set_noprobe(desc);
+>                 irq_settings_set_norequest(desc);
+>                 irq_settings_set_nothread(desc);
+> -               irq_startup(desc, true);
+> +               if (chained_mode == IRQ_CHAINED_STARTUP)
+> +                       irq_startup(desc, true);
+> 	}
+> ....
+> }
+> 
+> Hmm?
+
+I'm fine with this approach, with a static inline helper:
+
+static inline void
+irq_set_chained_handler_nostartup(unsigned int irq,
+				  irq_flow_handler_t handle)
+{
+	__irq_set_handler(irq, handle, IRQ_CHAINED_NOSTARTUP, NULL);
+}
+
+Anyway, I'll wait a clear decision regarding which approach should be
+taken (see my answer to Rob) before sending a new version.
+
+Thanks for your reviews.
+
+Best Regards,
+
+Boris
+
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
