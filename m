@@ -1,56 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753048AbbANQpQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 11:45:16 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:45159 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752186AbbANQpN (ORCPT
+	id S1753814AbbANQxr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 11:53:47 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:65055 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159AbbANQxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 11:45:13 -0500
-Date: Wed, 14 Jan 2015 22:14:58 +0530
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Paul Clements <paul.clements@us.sios.com>
-Cc: Andrey Utkin <andrey.krieger.utkin@gmail.com>,
-        kernel list <linux-kernel@vger.kernel.org>,
-        "nbd-general@lists.sourceforge.net" 
-	<nbd-general@lists.sourceforge.net>
-Subject: Re: NBD Maintainer
-Message-ID: <20150114164458.GA2152@fool>
-References: <CAECXXi7Ax3t2b7x=KqUF1udNKWgQnGebVtkyLHnjhxEZ2o=M5g@mail.gmail.com>
- <CANZNk812oKH3k+bW8Jb2fQHxOS+pF=ghHpekB4X8QtQm67X-hQ@mail.gmail.com>
- <CAECXXi4mEV2=-w95LJCDA=zf6f8_SCRBHYkp2tTwUuAJiOjaQQ@mail.gmail.com>
+	Wed, 14 Jan 2015 11:53:46 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAECXXi4mEV2=-w95LJCDA=zf6f8_SCRBHYkp2tTwUuAJiOjaQQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CAMuHMdW0_mCXPEJUrsOfY6-ev1qroQ57B72KTTOr3k0f3jzX1w@mail.gmail.com>
+References: <20141221011409.9D8546604A3@gitolite.kernel.org> <CAMuHMdW0_mCXPEJUrsOfY6-ev1qroQ57B72KTTOr3k0f3jzX1w@mail.gmail.com>
+From: Mike Turquette <mturquette@linaro.org>
+Date: Wed, 14 Jan 2015 08:46:26 -0800
+Message-ID: <CAPtuhThYJs+z5zrMxqRHrO1Zd2wu6M6srtq-AbBt-Qjbgb2EQQ@mail.gmail.com>
+Subject: Re: MAINTAINERS: clk framework git tree moved to kernel.org
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 02:26:01PM -0500, Paul Clements wrote:
-> On Tue, Jan 13, 2015 at 11:14 AM, Andrey Utkin
-> <andrey.krieger.utkin@gmail.com> wrote:
-> > Hi Paul,
-> > could you please describe
-> 
-> > - how wide is NBD usage today (any estimation is ok),
-> 
-> It depends somewhat on who you consider to be users. There are two
-> groups of NBD "users":
-> 
-> 1) integrators and admins (who work directly with nbd)
-> 2) users of the systems and software that the first group creates
+On Sun, Dec 21, 2014 at 1:47 AM, Geert Uytterhoeven
+<geert@linux-m68k.org> wrote:
+> Hi Mike, Stephen,
+>
+> On Sun, Dec 21, 2014 at 2:14 AM, Linux Kernel Mailing List
+> <linux-kernel@vger.kernel.org> wrote:
+>> Gitweb:     http://git.kernel.org/linus/;a=commit;h=baeb0d9b98c3450e22f8f8e4a6619b8b1d5106ff
+>> Commit:     baeb0d9b98c3450e22f8f8e4a6619b8b1d5106ff
+>> Parent:     f956165f07839a0643e4e01081787190692a7c29
+>> Refname:    refs/heads/master
+>> Author:     Michael Turquette <mturquette@linaro.org>
+>> AuthorDate: Thu Nov 13 17:18:20 2014 -0800
+>> Committer:  Michael Turquette <mturquette@linaro.org>
+>> CommitDate: Thu Nov 13 17:18:20 2014 -0800
+>>
+>>     MAINTAINERS: clk framework git tree moved to kernel.org
+>>
+>>     Signed-off-by: Michael Turquette <mturquette@linaro.org>
+>> ---
+>>  MAINTAINERS | 2 +-
+>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>
+>> diff --git a/MAINTAINERS b/MAINTAINERS
+>> index 46d652f..9244992 100644
+>> --- a/MAINTAINERS
+>> +++ b/MAINTAINERS
+>> @@ -2493,7 +2493,7 @@ COMMON CLK FRAMEWORK
+>>  M:     Mike Turquette <mturquette@linaro.org>
+>>  M:     Stephen Boyd <sboyd@codeaurora.org>
+>>  L:     linux-kernel@vger.kernel.org
+>> -T:     git git://git.linaro.org/people/mturquette/linux.git
+>> +T:     git git://git.kernel.org/pub/scm/linux/kernel/git/clk/linux.git
+>
+> This doesn't seem to exist?
+> Is there an error in the URL, or am I just too early?
 
-Hi Paul,
-studied the driver code. looks like the driver is simple and the main work is being done by the nbd-client and nbd-server.
-i was thinking of putting in my name for consideration, but being a newbie in lkml (have worked with drivers and server-client codes in my dayjob)
-and seeing the vast user base i am not sure anymore. But will like to try if you are there for guidance.
+Hi Geert,
 
-sudip
+It exists now (for a few days now). I accidentally merged this patch
+and the patch introducing Stephen Boyd as clk co-maintainer into
+clk-next and did not realize it until a day before I sent my PR for
+3.19. At that point I did not want to risk rebasing it and blowing
+everything up. For the short term we can keep using git.linaro.org OR
+the new tree, as they will be mirrors of each other. I will request
+Stephen R. to switch to the kernel.org tree after 3.20 is released for
+linux-next integration.
 
-> 
-> My guess is that the first group is in the hundreds. The second in the
-> thousands. NBD usage tends to fall into one the following classes:
-> 
+Thanks,
+Mike
 
+>
+> Gr{oetje,eeting}s,
+>
+>                         Geert
+>
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+>
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                 -- Linus Torvalds
