@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933366AbbANH7P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:59:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58576 "EHLO
+	id S1755106AbbANHid (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:38:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58862 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932701AbbANHfQ (ORCPT
+	with ESMTP id S1752033AbbANHi3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:35:16 -0500
+	Wed, 14 Jan 2015 02:38:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vitaly Kuznetsov <vkuznets@redhat.com>,
-        "K. Y. Srinivasan" <kys@microsoft.com>
-Subject: [PATCH 3.14 49/77] Drivers: hv: vmbus: Fix a race condition when unregistering a device
-Date: Tue, 13 Jan 2015 23:23:29 -0800
-Message-Id: <20150114072226.952052618@linuxfoundation.org>
+        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.10 09/44] ASoC: max98090: Fix ill-defined sidetone route
+Date: Tue, 13 Jan 2015 23:23:30 -0800
+Message-Id: <20150114072227.982477874@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-References: <20150114072224.182299947@linuxfoundation.org>
+In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
+References: <20150114072227.419663002@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,60 +25,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
+From: Jarkko Nikula <jarkko.nikula@linux.intel.com>
 
-commit 04a258c162a85c0f4ae56be67634dc43c9a4fa9b upstream.
+commit 48826ee590da03e9882922edf96d8d27bdfe9552 upstream.
 
-When build with Debug the following crash is sometimes observed:
-Call Trace:
- [<ffffffff812b9600>] string+0x40/0x100
- [<ffffffff812bb038>] vsnprintf+0x218/0x5e0
- [<ffffffff810baf7d>] ? trace_hardirqs_off+0xd/0x10
- [<ffffffff812bb4c1>] vscnprintf+0x11/0x30
- [<ffffffff8107a2f0>] vprintk+0xd0/0x5c0
- [<ffffffffa0051ea0>] ? vmbus_process_rescind_offer+0x0/0x110 [hv_vmbus]
- [<ffffffff8155c71c>] printk+0x41/0x45
- [<ffffffffa004ebac>] vmbus_device_unregister+0x2c/0x40 [hv_vmbus]
- [<ffffffffa0051ecb>] vmbus_process_rescind_offer+0x2b/0x110 [hv_vmbus]
-...
+Commit 5fe5b767dc6f ("ASoC: dapm: Do not pretend to support controls for non
+mixer/mux widgets") revealed ill-defined control in a route between
+"STENL Mux" and DACs in max98090.c:
 
-This happens due to the following race: between 'if (channel->device_obj)' check
-in vmbus_process_rescind_offer() and pr_debug() in vmbus_device_unregister() the
-device can disappear. Fix the issue by taking an additional reference to the
-device before proceeding to vmbus_device_unregister().
+max98090 i2c-193C9890:00: Control not supported for path STENL Mux -> [NULL] -> DACL
+max98090 i2c-193C9890:00: ASoC: no dapm match for STENL Mux --> NULL --> DACL
+max98090 i2c-193C9890:00: ASoC: Failed to add route STENL Mux -> NULL -> DACL
+max98090 i2c-193C9890:00: Control not supported for path STENL Mux -> [NULL] -> DACR
+max98090 i2c-193C9890:00: ASoC: no dapm match for STENL Mux --> NULL --> DACR
+max98090 i2c-193C9890:00: ASoC: Failed to add route STENL Mux -> NULL -> DACR
 
-Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+Since there is no control between "STENL Mux" and DACs the control name must
+be NULL not "NULL".
+
+Signed-off-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hv/channel_mgmt.c |   11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
+ sound/soc/codecs/max98090.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/hv/channel_mgmt.c
-+++ b/drivers/hv/channel_mgmt.c
-@@ -202,9 +202,16 @@ static void vmbus_process_rescind_offer(
- 	unsigned long flags;
- 	struct vmbus_channel *primary_channel;
- 	struct vmbus_channel_relid_released msg;
-+	struct device *dev;
-+
-+	if (channel->device_obj) {
-+		dev = get_device(&channel->device_obj->device);
-+		if (dev) {
-+			vmbus_device_unregister(channel->device_obj);
-+			put_device(dev);
-+		}
-+	}
+--- a/sound/soc/codecs/max98090.c
++++ b/sound/soc/codecs/max98090.c
+@@ -1364,8 +1364,8 @@ static const struct snd_soc_dapm_route m
+ 	{"STENL Mux", "Sidetone Left", "DMICL"},
+ 	{"STENR Mux", "Sidetone Right", "ADCR"},
+ 	{"STENR Mux", "Sidetone Right", "DMICR"},
+-	{"DACL", "NULL", "STENL Mux"},
+-	{"DACR", "NULL", "STENL Mux"},
++	{"DACL", NULL, "STENL Mux"},
++	{"DACR", NULL, "STENL Mux"},
  
--	if (channel->device_obj)
--		vmbus_device_unregister(channel->device_obj);
- 	memset(&msg, 0, sizeof(struct vmbus_channel_relid_released));
- 	msg.child_relid = channel->offermsg.child_relid;
- 	msg.header.msgtype = CHANNELMSG_RELID_RELEASED;
+ 	{"AIFINL", NULL, "SHDN"},
+ 	{"AIFINR", NULL, "SHDN"},
 
 
