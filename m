@@ -1,57 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752137AbbANArd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 19:47:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54378 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751064AbbANAr2 (ORCPT
+	id S1751920AbbANAxB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 19:53:01 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:53767 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750921AbbANAxA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 19:47:28 -0500
-Date: Tue, 13 Jan 2015 16:47:26 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Arnd Bergmann <arnd@arndb.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Maximilian Attems <max@stro.at>, Geoff Levand <geoff@infradead.org>,
-        Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH] headers_check: don't warn about kexec.h
-Message-Id: <20150113164726.72ab8dec58aabf332fd4e1a0@linux-foundation.org>
-In-Reply-To: <1421183111.15397.34.camel@x220>
-References: <12825174.7oxZXDxNhV@wuerfel>
-	<1421169212.15397.22.camel@x220>
-	<2363197.VbAKlSiQLX@wuerfel>
-	<1421183111.15397.34.camel@x220>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 13 Jan 2015 19:53:00 -0500
+MIME-Version: 1.0
+In-Reply-To: <20141031150911.GO23531@worktop.programming.kicks-ass.net>
+References: <cover.1414190806.git.luto@amacapital.net> <20141031150911.GO23531@worktop.programming.kicks-ass.net>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 13 Jan 2015 16:52:38 -0800
+Message-ID: <CALCETrWMh0G9=vC3A8565y9hKdUYDKsrO6CcsEyVB5ULTv0ZOA@mail.gmail.com>
+Subject: Re: [PATCH v2 0/8] CR4 handling improvements
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, Kees Cook <keescook@chromium.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Vince Weaver <vince@deater.net>, "hillf.zj" <hillf.zj@alibaba-inc.com>,
+        X86 ML <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Jan 2015 22:05:11 +0100 Paul Bolle <pebolle@tiscali.nl> wrote:
+On Fri, Oct 31, 2014 at 8:09 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>
+>
+> This looks ok I suppose, although the x86 people should pass verdict on
+> the first few patches.
 
-> [Dragging Andrew, Linus, and Maximilian into this thread.]
-> 
-> On Tue, 2015-01-13 at 21:27 +0100, Arnd Bergmann wrote:
-> > On Tuesday 13 January 2015 18:13:32 Paul Bolle wrote:
-> > > The last time that Geoff has been trying to get that patch applied
-> > > should be
-> > > http://lkml.kernel.org/r/b0702fc4186db21820d686e89afd6480560823db.1415837218.git.geoff@infradead.org> 
-> > > I'd rather see that go in.
-> > 
-> > Fine with me as well. As long as we can find someone to take one of 
-> > the patches, I'm happy.
-> 
-> Since Geoff's patch (and my preceding, identical patch) basically is a
-> partial revert of commit 29a5c67e7a78 ("kexec: export kexec.h to user
-> space") that should probably be done by either Andrew or Linus. 
-> 
-> (This short thread starts at
-> http://lkml.kernel.org/r/12825174.7oxZXDxNhV@wuerfel .)
+Hi all-
 
-hm, sorry, I can't imagine why I didn't process Geoff's patch series
-back in November.  They all look good - I grabbed them.
+What's the status of this series?
 
-
+Thanks,
+Andy
