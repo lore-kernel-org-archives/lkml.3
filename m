@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932778AbbANHft (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:35:49 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58637 "EHLO
+	id S932509AbbANHeQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:34:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58464 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932170AbbANHfp (ORCPT
+	with ESMTP id S932456AbbANHeF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:35:45 -0500
+	Wed, 14 Jan 2015 02:34:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.14 14/77] ath5k: fix hardware queue index assignment
-Date: Tue, 13 Jan 2015 23:22:54 -0800
-Message-Id: <20150114072224.959767986@linuxfoundation.org>
+        Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.14 15/77] ASoC: sigmadsp: Refuse to load firmware files with a non-supported version
+Date: Tue, 13 Jan 2015 23:22:55 -0800
+Message-Id: <20150114072225.016168825@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
 References: <20150114072224.182299947@linuxfoundation.org>
@@ -29,38 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit 9e4982f6a51a2442f1bb588fee42521b44b4531c upstream.
+commit 50c0f21b42dd4cd02b51f82274f66912d9a7fa32 upstream.
 
-Like with ath9k, ath5k queues also need to be ordered by priority.
-queue_info->tqi_subtype already contains the correct index, so use it
-instead of relying on the order of ath5k_hw_setup_tx_queue calls.
+Make sure to check the version field of the firmware header to make sure to
+not accidentally try to parse a firmware file with a different layout.
+Trying to do so can result in loading invalid firmware code to the device.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath5k/qcu.c |    8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
+ sound/soc/codecs/sigmadsp.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/drivers/net/wireless/ath/ath5k/qcu.c
-+++ b/drivers/net/wireless/ath/ath5k/qcu.c
-@@ -225,13 +225,7 @@ ath5k_hw_setup_tx_queue(struct ath5k_hw
- 	} else {
- 		switch (queue_type) {
- 		case AR5K_TX_QUEUE_DATA:
--			for (queue = AR5K_TX_QUEUE_ID_DATA_MIN;
--				ah->ah_txq[queue].tqi_type !=
--				AR5K_TX_QUEUE_INACTIVE; queue++) {
--
--				if (queue > AR5K_TX_QUEUE_ID_DATA_MAX)
--					return -EINVAL;
--			}
-+			queue = queue_info->tqi_subtype;
- 			break;
- 		case AR5K_TX_QUEUE_UAPSD:
- 			queue = AR5K_TX_QUEUE_ID_UAPSD;
+--- a/sound/soc/codecs/sigmadsp.c
++++ b/sound/soc/codecs/sigmadsp.c
+@@ -176,6 +176,13 @@ static int _process_sigma_firmware(struc
+ 		goto done;
+ 	}
+ 
++	if (ssfw_head->version != 1) {
++		dev_err(dev,
++			"Failed to load firmware: Invalid version %d. Supported firmware versions: 1\n",
++			ssfw_head->version);
++		goto done;
++	}
++
+ 	crc = crc32(0, fw->data + sizeof(*ssfw_head),
+ 			fw->size - sizeof(*ssfw_head));
+ 	pr_debug("%s: crc=%x\n", __func__, crc);
 
 
