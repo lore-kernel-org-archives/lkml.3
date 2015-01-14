@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754203AbbANH0w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:26:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57802 "EHLO
+	id S1755616AbbANIuz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:50:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57639 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751204AbbANH0s (ORCPT
+	with ESMTP id S1752299AbbANHZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:26:48 -0500
+	Wed, 14 Jan 2015 02:25:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>, Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.18 019/150] ASoC: eukrea-tlv320: Fix of_node_put() call with uninitialized object
-Date: Tue, 13 Jan 2015 23:21:30 -0800
-Message-Id: <20150114072056.739714778@linuxfoundation.org>
+        Lars-Peter Clausen <lars@metafoo.de>, Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.18 020/150] ASoC: sigmadsp: Refuse to load firmware files with a non-supported version
+Date: Tue, 13 Jan 2015 23:21:31 -0800
+Message-Id: <20150114072056.784170348@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -28,36 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-commit 077661b6ed24e530dabc9db3ab3ae48fbaf19679 upstream.
+commit 50c0f21b42dd4cd02b51f82274f66912d9a7fa32 upstream.
 
-The of_node_put() call in eukrea_tlv320_probe() may take an
-uninitialized pointer, as compiler spotted out:
-  sound/soc/fsl/eukrea-tlv320.c:221:14: warning: 'ssi_np' may be used uninitialized in this function [-Wuninitialized]
+Make sure to check the version field of the firmware header to make sure to
+not accidentally try to parse a firmware file with a different layout.
+Trying to do so can result in loading invalid firmware code to the device.
 
-This patch adds the proper NULL initializations as a fix.
-(codec_np is also NULL initialized just for consistency.)
-
-Fixes: 66f232908de2 ('ASoC: eukrea-tlv320: Add DT support')
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/fsl/eukrea-tlv320.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/soc/codecs/sigmadsp.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
 
---- a/sound/soc/fsl/eukrea-tlv320.c
-+++ b/sound/soc/fsl/eukrea-tlv320.c
-@@ -105,7 +105,7 @@ static int eukrea_tlv320_probe(struct pl
- 	int ret;
- 	int int_port = 0, ext_port;
- 	struct device_node *np = pdev->dev.of_node;
--	struct device_node *ssi_np, *codec_np;
-+	struct device_node *ssi_np = NULL, *codec_np = NULL;
+--- a/sound/soc/codecs/sigmadsp.c
++++ b/sound/soc/codecs/sigmadsp.c
+@@ -159,6 +159,13 @@ int _process_sigma_firmware(struct devic
+ 		goto done;
+ 	}
  
- 	eukrea_tlv320.dev = &pdev->dev;
- 	if (np) {
++	if (ssfw_head->version != 1) {
++		dev_err(dev,
++			"Failed to load firmware: Invalid version %d. Supported firmware versions: 1\n",
++			ssfw_head->version);
++		goto done;
++	}
++
+ 	crc = crc32(0, fw->data + sizeof(*ssfw_head),
+ 			fw->size - sizeof(*ssfw_head));
+ 	pr_debug("%s: crc=%x\n", __func__, crc);
 
 
