@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932740AbbANHff (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:35:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58594 "EHLO
+	id S932860AbbANITu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:19:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58049 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754029AbbANHfd (ORCPT
+	with ESMTP id S932112AbbANH3Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:35:33 -0500
+	Wed, 14 Jan 2015 02:29:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>,
-        Michael Ellerman <mpe@ellerman.id.au>
-Subject: [PATCH 3.14 19/77] powerpc/book3s: Fix partial invalidation of TLBs in MCE code.
+        Brian Norris <computersforpeace@gmail.com>,
+        Akinobu Mita <akinobu.mita@gmail.com>
+Subject: [PATCH 3.18 108/150] mtd: tests: abort torturetest on erase errors
 Date: Tue, 13 Jan 2015 23:22:59 -0800
-Message-Id: <20150114072225.242791904@linuxfoundation.org>
+Message-Id: <20150114072100.752869485@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-References: <20150114072224.182299947@linuxfoundation.org>
+In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
+References: <20150114072055.842408181@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,46 +25,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
+From: Brian Norris <computersforpeace@gmail.com>
 
-commit 682e77c861c4c60f79ffbeae5e1938ffed24a575 upstream.
+commit 68f29815034e9dc9ed53cad85946c32b07adc8cc upstream.
 
-The existing MCE code calls flush_tlb hook with IS=0 (single page) resulting
-in partial invalidation of TLBs which is not right. This patch fixes
-that by passing IS=0xc00 to invalidate whole TLB for successful recovery
-from TLB and ERAT errors.
+The torture test should quit once it actually induces an error in the
+flash. This step was accidentally removed during refactoring.
 
-Signed-off-by: Mahesh Salgaonkar <mahesh@linux.vnet.ibm.com>
-Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+Without this fix, the torturetest just continues infinitely, or until
+the maximum cycle count is reached. e.g.:
+
+   ...
+   [ 7619.218171] mtd_test: error -5 while erasing EB 100
+   [ 7619.297981] mtd_test: error -5 while erasing EB 100
+   [ 7619.377953] mtd_test: error -5 while erasing EB 100
+   [ 7619.457998] mtd_test: error -5 while erasing EB 100
+   [ 7619.537990] mtd_test: error -5 while erasing EB 100
+   ...
+
+Fixes: 6cf78358c94f ("mtd: mtd_torturetest: use mtd_test helpers")
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/kernel/mce_power.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/mtd/tests/torturetest.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/arch/powerpc/kernel/mce_power.c
-+++ b/arch/powerpc/kernel/mce_power.c
-@@ -78,7 +78,7 @@ static long mce_handle_derror(uint64_t d
- 	}
- 	if (dsisr & P7_DSISR_MC_TLB_MULTIHIT_MFTLB) {
- 		if (cur_cpu_spec && cur_cpu_spec->flush_tlb)
--			cur_cpu_spec->flush_tlb(TLBIEL_INVAL_PAGE);
-+			cur_cpu_spec->flush_tlb(TLBIEL_INVAL_SET);
- 		/* reset error bits */
- 		dsisr &= ~P7_DSISR_MC_TLB_MULTIHIT_MFTLB;
- 	}
-@@ -109,7 +109,7 @@ static long mce_handle_common_ierror(uin
- 		break;
- 	case P7_SRR1_MC_IFETCH_TLB_MULTIHIT:
- 		if (cur_cpu_spec && cur_cpu_spec->flush_tlb) {
--			cur_cpu_spec->flush_tlb(TLBIEL_INVAL_PAGE);
-+			cur_cpu_spec->flush_tlb(TLBIEL_INVAL_SET);
- 			handled = 1;
- 		}
- 		break;
+--- a/drivers/mtd/tests/torturetest.c
++++ b/drivers/mtd/tests/torturetest.c
+@@ -264,7 +264,9 @@ static int __init tort_init(void)
+ 		int i;
+ 		void *patt;
+ 
+-		mtdtest_erase_good_eraseblocks(mtd, bad_ebs, eb, ebcnt);
++		err = mtdtest_erase_good_eraseblocks(mtd, bad_ebs, eb, ebcnt);
++		if (err)
++			goto out;
+ 
+ 		/* Check if the eraseblocks contain only 0xFF bytes */
+ 		if (check) {
 
 
