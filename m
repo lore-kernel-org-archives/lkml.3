@@ -1,52 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753528AbbANPlm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 10:41:42 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:53246 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752366AbbANPll (ORCPT
+	id S1753651AbbANPmP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 10:42:15 -0500
+Received: from mail-wi0-f176.google.com ([209.85.212.176]:60363 "EHLO
+	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753579AbbANPmN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 10:41:41 -0500
-Message-ID: <54B68E2F.7060102@collabora.co.uk>
-Date: Wed, 14 Jan 2015 16:41:35 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	Wed, 14 Jan 2015 10:42:13 -0500
+Date: Wed, 14 Jan 2015 16:42:10 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Vladimir Davydov <vdavydov@parallels.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch] mm: memcontrol: fold move_anon() and move_file()
+Message-ID: <20150114154210.GG4706@dhcp22.suse.cz>
+References: <1421175592-14179-1-git-send-email-hannes@cmpxchg.org>
 MIME-Version: 1.0
-To: Kukjin Kim <kgene@kernel.org>
-CC: linux-samsung-soc@vger.kernel.org, Kevin Hilman <khilman@linaro.org>,
-        Doug Anderson <dianders@chromium.org>, linux-kernel@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>, Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH RESEND 0/4] Small updates to Snow and Peach Pit/Pi DTS
-References: <1420212257-22443-1-git-send-email-javier.martinez@collabora.co.uk> <54B3A4C2.8070304@collabora.co.uk> <54B68773.10805@kernel.org> <54B68B17.1070604@kernel.org>
-In-Reply-To: <54B68B17.1070604@kernel.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421175592-14179-1-git-send-email-hannes@cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Kukjin,
-
-On 01/14/2015 04:28 PM, Kukjin Kim wrote:
->>>
->>> I saw that you collected some DTS patches for 3.20 but these are not
->>> included. Any comments about this series?
->>>
->> Yeah, but I don't think I checked all of submitted patches including
->> this at that time and I'll have a look at this series soon.
->> 
->> Thanks for your gentle reminder.
->> 
-> This series looks good to me, applied ;-)
+On Tue 13-01-15 13:59:52, Johannes Weiner wrote:
+> Turn the move type enum into flags and give the flags field a shorter
+> name.  Once that is done, move_anon() and move_file() are simple
+> enough to just fold them into the callsites.
 > 
+> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
 
-Great, thanks a lot for your help!
+Acked-by: Michal Hocko <mhocko@suse.cz>
 
-> Thanks,
-> Kukjin
+one nit below
+
+> ---
+>  mm/memcontrol.c | 49 ++++++++++++++++++-------------------------------
+>  1 file changed, 18 insertions(+), 31 deletions(-)
 > 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 5a5769e8b12c..692e96407627 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -360,21 +360,18 @@ static bool memcg_kmem_is_active(struct mem_cgroup *memcg)
+>  
+>  /* Stuffs for move charges at task migration. */
+>  /*
+> - * Types of charges to be moved. "move_charge_at_immitgrate" and
+> - * "immigrate_flags" are treated as a left-shifted bitmap of these types.
+> + * Types of charges to be moved.
+>   */
+> -enum move_type {
+> -	MOVE_CHARGE_TYPE_ANON,	/* private anonymous page and swap of it */
+> -	MOVE_CHARGE_TYPE_FILE,	/* file page(including tmpfs) and swap of it */
+> -	NR_MOVE_TYPE,
+> -};
+> +#define MOVE_ANON	0x1U
+> +#define MOVE_FILE	0x2U
+> +#define MOVE_MASK	0x3U
 
-Best regards,
-Javier
+#define MOVE_MASK	(MOVE_ANON | MOVE_FILE)
 
+would be probably better
+[...]
+-- 
+Michal Hocko
+SUSE Labs
