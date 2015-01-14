@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932590AbbANHea (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:34:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58522 "EHLO
+	id S1754990AbbANHcV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:32:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58353 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932565AbbANHe1 (ORCPT
+	with ESMTP id S1754965AbbANHcS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:34:27 -0500
+	Wed, 14 Jan 2015 02:32:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Alex Williamson <alex.williamson@redhat.com>
-Subject: [PATCH 3.14 36/77] driver core: Fix unbalanced device reference in drivers_probe
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: [PATCH 3.18 125/150] ACPI / PM: Fix PM initialization for devices that are not present
 Date: Tue, 13 Jan 2015 23:23:16 -0800
-Message-Id: <20150114072226.214732797@linuxfoundation.org>
+Message-Id: <20150114072101.507199259@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-References: <20150114072224.182299947@linuxfoundation.org>
+In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
+References: <20150114072055.842408181@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -24,84 +25,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Alex Williamson <alex.williamson@redhat.com>
+From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
 
-commit bb34cb6bbd287b57e955bc5cfd42fcde6aaca279 upstream.
+commit 1b1f3e1699a9886f1070f94171097ab4ccdbfc95 upstream.
 
-bus_find_device_by_name() acquires a device reference which is never
-released.  This results in an object leak, which on older kernels
-results in failure to release all resources of PCI devices.  libvirt
-uses drivers_probe to re-attach devices to the host after assignment
-and is therefore a common trigger for this leak.
+If an ACPI device object whose _STA returns 0 (not present and not
+functional) has _PR0 or _PS0, its power_manageable flag will be set
+and acpi_bus_init_power() will return 0 for it.  Consequently, if
+such a device object is passed to the ACPI device PM functions, they
+will attempt to carry out the requested operation on the device,
+although they should not do that for devices that are not present.
 
-Example:
+To fix that problem make acpi_bus_init_power() return an error code
+for devices that are not present which will cause power_manageable to
+be cleared for them as appropriate in acpi_bus_get_power_flags().
+However, the lists of power resources should not be freed for the
+device in that case, so modify acpi_bus_get_power_flags() to keep
+those lists even if acpi_bus_init_power() returns an error.
+Accordingly, when deciding whether or not the lists of power
+resources need to be freed, acpi_free_power_resources_lists()
+should check the power.flags.power_resources flag instead of
+flags.power_manageable, so make that change too.
 
-# cd /sys/bus/pci/
-# dmesg -C
-# echo 1 > devices/0000\:01\:00.0/sriov_numvfs
-# echo 0 > devices/0000\:01\:00.0/sriov_numvfs
-# dmesg | grep 01:10
- pci 0000:01:10.0: [8086:10ca] type 00 class 0x020000
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_add_internal: parent: '0000:00:01.0', set: 'devices'
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_uevent_env
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_uevent_env
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_uevent_env
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): kobject_cleanup, parent           (null)
- kobject: '0000:01:10.0' (ffff8801d79cd0a8): calling ktype release
- kobject: '0000:01:10.0': free name
+Furthermore, if acpi_bus_attach() sees that flags.initialized is
+unset for the given device, it should reset the power management
+settings of the device and re-initialize them from scratch instead
+of relying on the previous settings (the device may have appeared
+after being not present previously, for example), so make it use
+the 'valid' flag of the D0 power state as the initial value of
+flags.power_manageable for it and call acpi_bus_init_power() to
+discover its current power state.
 
-[kobject freed as expected]
-
-# dmesg -C
-# echo 1 > devices/0000\:01\:00.0/sriov_numvfs
-# echo 0000:01:10.0 > drivers_probe
-# echo 0 > devices/0000\:01\:00.0/sriov_numvfs
-# dmesg | grep 01:10
- pci 0000:01:10.0: [8086:10ca] type 00 class 0x020000
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): kobject_add_internal: parent: '0000:00:01.0', set: 'devices'
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): kobject_uevent_env
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): kobject_uevent_env
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): kobject_uevent_env
- kobject: '0000:01:10.0' (ffff8801d79ce0a8): fill_kobj_path: path = '/devices/pci0000:00/0000:00:01.0/0000:01:10.0'
-
-[no free]
-
-Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/base/bus.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
+ drivers/acpi/device_pm.c |    2 +-
+ drivers/acpi/scan.c      |   13 ++++++++-----
+ 2 files changed, 9 insertions(+), 6 deletions(-)
 
---- a/drivers/base/bus.c
-+++ b/drivers/base/bus.c
-@@ -254,13 +254,15 @@ static ssize_t store_drivers_probe(struc
- 				   const char *buf, size_t count)
- {
- 	struct device *dev;
-+	int err = -EINVAL;
+--- a/drivers/acpi/device_pm.c
++++ b/drivers/acpi/device_pm.c
+@@ -257,7 +257,7 @@ int acpi_bus_init_power(struct acpi_devi
  
- 	dev = bus_find_device_by_name(bus, NULL, buf);
- 	if (!dev)
- 		return -ENODEV;
--	if (bus_rescan_devices_helper(dev, NULL) != 0)
--		return -EINVAL;
--	return count;
-+	if (bus_rescan_devices_helper(dev, NULL) == 0)
-+		err = count;
-+	put_device(dev);
-+	return err;
+ 	device->power.state = ACPI_STATE_UNKNOWN;
+ 	if (!acpi_device_is_present(device))
+-		return 0;
++		return -ENXIO;
+ 
+ 	result = acpi_device_get_power(device, &state);
+ 	if (result)
+--- a/drivers/acpi/scan.c
++++ b/drivers/acpi/scan.c
+@@ -909,7 +909,7 @@ static void acpi_free_power_resources_li
+ 	if (device->wakeup.flags.valid)
+ 		acpi_power_resources_list_free(&device->wakeup.resources);
+ 
+-	if (!device->flags.power_manageable)
++	if (!device->power.flags.power_resources)
+ 		return;
+ 
+ 	for (i = ACPI_STATE_D0; i <= ACPI_STATE_D3_HOT; i++) {
+@@ -1631,10 +1631,8 @@ static void acpi_bus_get_power_flags(str
+ 			device->power.flags.power_resources)
+ 		device->power.states[ACPI_STATE_D3_COLD].flags.os_accessible = 1;
+ 
+-	if (acpi_bus_init_power(device)) {
+-		acpi_free_power_resources_lists(device);
++	if (acpi_bus_init_power(device))
+ 		device->flags.power_manageable = 0;
+-	}
  }
  
- static struct device *next_device(struct klist_iter *i)
+ static void acpi_bus_get_flags(struct acpi_device *device)
+@@ -2202,13 +2200,18 @@ static void acpi_bus_attach(struct acpi_
+ 	/* Skip devices that are not present. */
+ 	if (!acpi_device_is_present(device)) {
+ 		device->flags.visited = false;
++		device->flags.power_manageable = 0;
+ 		return;
+ 	}
+ 	if (device->handler)
+ 		goto ok;
+ 
+ 	if (!device->flags.initialized) {
+-		acpi_bus_update_power(device, NULL);
++		device->flags.power_manageable =
++			device->power.states[ACPI_STATE_D0].flags.valid;
++		if (acpi_bus_init_power(device))
++			device->flags.power_manageable = 0;
++
+ 		device->flags.initialized = true;
+ 	}
+ 	device->flags.visited = false;
 
 
