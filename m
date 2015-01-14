@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932305AbbANHbf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:31:35 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58246 "EHLO
+	id S933060AbbANHrv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:47:51 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58846 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932277AbbANHb3 (ORCPT
+	with ESMTP id S933089AbbANHiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:31:29 -0500
+	Wed, 14 Jan 2015 02:38:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Mason <clm@fb.com>
-Subject: [PATCH 3.18 135/150] Btrfs: dont delay inode ref updates during log replay
+        Stephane Grosjean <s.grosjean@peak-system.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [PATCH 3.10 05/44] can: peak_usb: fix memset() usage
 Date: Tue, 13 Jan 2015 23:23:26 -0800
-Message-Id: <20150114072101.962065526@linuxfoundation.org>
+Message-Id: <20150114072227.743205769@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
-References: <20150114072055.842408181@linuxfoundation.org>
+In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
+References: <20150114072227.419663002@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -24,54 +25,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Chris Mason <clm@fb.com>
+From: Stephane Grosjean <s.grosjean@peak-system.com>
 
-commit 6f8960541b1eb6054a642da48daae2320fddba93 upstream.
+commit dc50ddcd4c58a5a0226038307d6ef884bec9f8c2 upstream.
 
-Commit 1d52c78afbb (Btrfs: try not to ENOSPC on log replay) added a
-check to skip delayed inode updates during log replay because it
-confuses the enospc code.  But the delayed processing will end up
-ignoring delayed refs from log replay because the inode itself wasn't
-put through the delayed code.
+This patchs fixes a misplaced call to memset() that fills the request
+buffer with 0. The problem was with sending PCAN_USBPRO_REQ_FCT
+requests, the content set by the caller was thus lost.
 
-This can end up triggering a warning at commit time:
+With this patch, the memory area is zeroed only when requesting info
+from the device.
 
-WARNING: CPU: 2 PID: 778 at fs/btrfs/delayed-inode.c:1410 btrfs_assert_delayed_root_empty+0x32/0x34()
-
-Which is repeated for each commit because we never process the delayed
-inode ref update.
-
-The fix used here is to change btrfs_delayed_delete_inode_ref to return
-an error if we're currently in log replay.  The caller will do the ref
-deletion immediately and everything will work properly.
-
-Signed-off-by: Chris Mason <clm@fb.com>
+Signed-off-by: Stephane Grosjean <s.grosjean@peak-system.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/delayed-inode.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/net/can/usb/peak_usb/pcan_usb_pro.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/fs/btrfs/delayed-inode.c
-+++ b/fs/btrfs/delayed-inode.c
-@@ -1857,6 +1857,14 @@ int btrfs_delayed_delete_inode_ref(struc
- {
- 	struct btrfs_delayed_node *delayed_node;
+--- a/drivers/net/can/usb/peak_usb/pcan_usb_pro.c
++++ b/drivers/net/can/usb/peak_usb/pcan_usb_pro.c
+@@ -333,8 +333,6 @@ static int pcan_usb_pro_send_req(struct
+ 	if (!(dev->state & PCAN_USB_STATE_CONNECTED))
+ 		return 0;
  
-+	/*
-+	 * we don't do delayed inode updates during log recovery because it
-+	 * leads to enospc problems.  This means we also can't do
-+	 * delayed inode refs
-+	 */
-+	if (BTRFS_I(inode)->root->fs_info->log_root_recovering)
-+		return -EAGAIN;
-+
- 	delayed_node = btrfs_get_or_create_delayed_node(inode);
- 	if (IS_ERR(delayed_node))
- 		return PTR_ERR(delayed_node);
+-	memset(req_addr, '\0', req_size);
+-
+ 	req_type = USB_TYPE_VENDOR | USB_RECIP_OTHER;
+ 
+ 	switch (req_id) {
+@@ -345,6 +343,7 @@ static int pcan_usb_pro_send_req(struct
+ 	default:
+ 		p = usb_rcvctrlpipe(dev->udev, 0);
+ 		req_type |= USB_DIR_IN;
++		memset(req_addr, '\0', req_size);
+ 		break;
+ 	}
+ 
 
 
