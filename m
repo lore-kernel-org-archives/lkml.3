@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754604AbbANH2i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:28:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57985 "EHLO
+	id S1755860AbbANIhs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:37:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57810 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754552AbbANH2b (ORCPT
+	with ESMTP id S1754205AbbANH0y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:28:31 -0500
+	Wed, 14 Jan 2015 02:26:54 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Bart Van Assche <bvanassche@acm.org>, Christoph Hellwig <hch@lst.de>,
         Robert Elliott <elliott@hp.com>, Ming Lei <ming.lei@canonical.com>,
         Alexander Gordeev <agordeev@redhat.com>, Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.18 047/150] blk-mq: Fix a use-after-free
-Date: Tue, 13 Jan 2015 23:21:58 -0800
-Message-Id: <20150114072058.010672123@linuxfoundation.org>
+Subject: [PATCH 3.18 048/150] blk-mq: Avoid that __bt_get_word() wraps multiple times
+Date: Tue, 13 Jan 2015 23:21:59 -0800
+Message-Id: <20150114072058.052335987@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -32,51 +32,15 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Bart Van Assche <bvanassche@acm.org>
 
-commit 45a9c9d909b24c6ad0e28a7946e7486e73010319 upstream.
+commit 9e98e9d7cf6e9d2ec1cce45e8d5ccaf3f9b386f3 upstream.
 
-blk-mq users are allowed to free the memory request_queue.tag_set
-points at after blk_cleanup_queue() has finished but before
-blk_release_queue() has started. This can happen e.g. in the SCSI
-core. The SCSI core namely embeds the tag_set structure in a SCSI
-host structure. The SCSI host structure is freed by
-scsi_host_dev_release(). This function is called after
-blk_cleanup_queue() finished but can be called before
-blk_release_queue().
-
-This means that it is not safe to access request_queue.tag_set from
-inside blk_release_queue(). Hence remove the blk_sync_queue() call
-from blk_release_queue(). This call is not necessary - outstanding
-requests must have finished before blk_release_queue() is
-called. Additionally, move the blk_mq_free_queue() call from
-blk_release_queue() to blk_cleanup_queue() to avoid that struct
-request_queue.tag_set gets accessed after it has been freed.
-
-This patch avoids that the following kernel oops can be triggered
-when deleting a SCSI host for which scsi-mq was enabled:
-
-Call Trace:
- [<ffffffff8109a7c4>] lock_acquire+0xc4/0x270
- [<ffffffff814ce111>] mutex_lock_nested+0x61/0x380
- [<ffffffff812575f0>] blk_mq_free_queue+0x30/0x180
- [<ffffffff8124d654>] blk_release_queue+0x84/0xd0
- [<ffffffff8126c29b>] kobject_cleanup+0x7b/0x1a0
- [<ffffffff8126c140>] kobject_put+0x30/0x70
- [<ffffffff81245895>] blk_put_queue+0x15/0x20
- [<ffffffff8125c409>] disk_release+0x99/0xd0
- [<ffffffff8133d056>] device_release+0x36/0xb0
- [<ffffffff8126c29b>] kobject_cleanup+0x7b/0x1a0
- [<ffffffff8126c140>] kobject_put+0x30/0x70
- [<ffffffff8125a78a>] put_disk+0x1a/0x20
- [<ffffffff811d4cb5>] __blkdev_put+0x135/0x1b0
- [<ffffffff811d56a0>] blkdev_put+0x50/0x160
- [<ffffffff81199eb4>] kill_block_super+0x44/0x70
- [<ffffffff8119a2a4>] deactivate_locked_super+0x44/0x60
- [<ffffffff8119a87e>] deactivate_super+0x4e/0x70
- [<ffffffff811b9833>] cleanup_mnt+0x43/0x90
- [<ffffffff811b98d2>] __cleanup_mnt+0x12/0x20
- [<ffffffff8107252c>] task_work_run+0xac/0xe0
- [<ffffffff81002c01>] do_notify_resume+0x61/0xa0
- [<ffffffff814d2c58>] int_signal+0x12/0x17
+If __bt_get_word() is called with last_tag != 0, if the first
+find_next_zero_bit() fails, if after wrap-around the
+test_and_set_bit() call fails and find_next_zero_bit() succeeds,
+if the next test_and_set_bit() call fails and subsequently
+find_next_zero_bit() does not find a zero bit, then another
+wrap-around will occur. Avoid this by introducing an additional
+local variable.
 
 Signed-off-by: Bart Van Assche <bvanassche@acm.org>
 Cc: Christoph Hellwig <hch@lst.de>
@@ -87,55 +51,30 @@ Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/blk-core.c  |    3 +++
- block/blk-sysfs.c |   12 ++++--------
- 2 files changed, 7 insertions(+), 8 deletions(-)
+ block/blk-mq-tag.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -525,6 +525,9 @@ void blk_cleanup_queue(struct request_qu
- 	del_timer_sync(&q->backing_dev_info.laptop_mode_wb_timer);
- 	blk_sync_queue(q);
- 
-+	if (q->mq_ops)
-+		blk_mq_free_queue(q);
-+
- 	spin_lock_irq(lock);
- 	if (q->queue_lock != &q->__queue_lock)
- 		q->queue_lock = &q->__queue_lock;
---- a/block/blk-sysfs.c
-+++ b/block/blk-sysfs.c
-@@ -492,17 +492,15 @@ static void blk_free_queue_rcu(struct rc
-  *     Currently, its primary task it to free all the &struct request
-  *     structures that were allocated to the queue and the queue itself.
-  *
-- * Caveat:
-- *     Hopefully the low level driver will have finished any
-- *     outstanding requests first...
-+ * Note:
-+ *     The low level driver must have finished any outstanding requests first
-+ *     via blk_cleanup_queue().
-  **/
- static void blk_release_queue(struct kobject *kobj)
+--- a/block/blk-mq-tag.c
++++ b/block/blk-mq-tag.c
+@@ -137,6 +137,7 @@ static inline bool hctx_may_queue(struct
+ static int __bt_get_word(struct blk_align_bitmap *bm, unsigned int last_tag)
  {
- 	struct request_queue *q =
- 		container_of(kobj, struct request_queue, kobj);
+ 	int tag, org_last_tag, end;
++	bool wrap = last_tag != 0;
  
--	blk_sync_queue(q);
--
- 	blkcg_exit_queue(q);
- 
- 	if (q->elevator) {
-@@ -517,9 +515,7 @@ static void blk_release_queue(struct kob
- 	if (q->queue_tags)
- 		__blk_queue_free_tags(q);
- 
--	if (q->mq_ops)
--		blk_mq_free_queue(q);
--	else
-+	if (!q->mq_ops)
- 		blk_free_flush_queue(q->fq);
- 
- 	blk_trace_shutdown(q);
+ 	org_last_tag = last_tag;
+ 	end = bm->depth;
+@@ -148,8 +149,9 @@ restart:
+ 			 * We started with an offset, start from 0 to
+ 			 * exhaust the map.
+ 			 */
+-			if (org_last_tag && last_tag) {
+-				end = last_tag;
++			if (wrap) {
++				wrap = false;
++				end = org_last_tag;
+ 				last_tag = 0;
+ 				goto restart;
+ 			}
 
 
