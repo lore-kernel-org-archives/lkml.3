@@ -1,50 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754471AbbANSop (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 13:44:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:57193 "EHLO mx1.redhat.com"
+	id S1753464AbbANSr0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 13:47:26 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:47297 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752922AbbANSoo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 13:44:44 -0500
-Date: Wed, 14 Jan 2015 19:43:43 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: riel@redhat.com
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        matt.fleming@intel.com, bp@suse.de, pbonzini@redhat.com,
-        tglx@linutronix.de, luto@amacapital.net
-Subject: Re: [RFC PATCH 08/11] x86,fpu: restore user FPU state lazily after
-	__kernel_fpu_end
-Message-ID: <20150114184343.GA17640@redhat.com>
-References: <1421012793-30106-1-git-send-email-riel@redhat.com> <1421012793-30106-9-git-send-email-riel@redhat.com>
+	id S1752108AbbANSrZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 13:47:25 -0500
+Date: Wed, 14 Jan 2015 19:47:14 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Matt Fleming <matt@console-pimps.org>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: EFI mixed mode + perf = rampant triple faults
+Message-ID: <20150114184714.GD6902@pd.tnic>
+References: <5491B4A8.905@amacapital.net>
+ <CALCETrUyw5_E+FN8o8ZsOxN5XG81-Q8MVzeUHPZ_XBM+ifi6_w@mail.gmail.com>
+ <20141231183739.GA28946@console-pimps.org>
+ <20150114165151.GA3479@codeblueprint.co.uk>
+ <CALCETrWOxPwoL0zo0UZMk=05uAEqgY-Xovk1=JHwbVtinx3u3w@mail.gmail.com>
+ <20150114183546.GC6902@pd.tnic>
+ <CALCETrUEfQY-hnmNV9-PfDbEYLa7bVoRcsZc2X0V+mEAbfNH2g@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1421012793-30106-9-git-send-email-riel@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CALCETrUEfQY-hnmNV9-PfDbEYLa7bVoRcsZc2X0V+mEAbfNH2g@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/11, riel@redhat.com wrote:
->
-> --- a/arch/x86/kernel/i387.c
-> +++ b/arch/x86/kernel/i387.c
-> @@ -89,13 +89,11 @@ void __kernel_fpu_end(void)
->  	if (use_eager_fpu()) {
->  		/*
->  		 * For eager fpu, most the time, tsk_used_math() is true.
-> -		 * Restore the user math as we are done with the kernel usage.
-> -		 * At few instances during thread exit, signal handling etc,
-> -		 * tsk_used_math() is false. Those few places will take proper
-> -		 * actions, so we don't need to restore the math here.
-> +		 * Make sure the user math state is restored on return to
-> +		 * userspace.
->  		 */
->  		if (likely(tsk_used_math(current)))
-> -			math_state_restore();
-> +			set_thread_flag(TIF_LOAD_FPU);
+On Wed, Jan 14, 2015 at 10:38:25AM -0800, Andy Lutomirski wrote:
+> That's not a real MCE, though -- it happens synchronously instead of
 
-Hmm. And this looks obviously wrong if interrupted_user_mode().
+MCE can be synchronous in a sense too, as a result of executing an insn,
+for example, i.e., EIPV bit set.
 
-Oleg.
+> at MCE priority with all the associated messiness.  Or is the idea to
+> just stick that in after switching to the 32-bit mode being tested?
 
+Yes, the idea was to simply trigger a real exception after switching to
+32-bit while still with 64-bit IDT handlers.
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
