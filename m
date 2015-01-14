@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932177AbbANH3m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:29:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58063 "EHLO
+	id S932806AbbANHfw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:35:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58616 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752031AbbANH3c (ORCPT
+	with ESMTP id S932743AbbANHfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:29:32 -0500
+	Wed, 14 Jan 2015 02:35:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.18 111/150] nilfs2: fix the nilfs_iget() vs. nilfs_new_inode() races
+        Arnd Bergmann <arnd@arndb.de>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Kees Cook <keescook@chromium.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Tony Lindgren <tony@atomide.com>, Tony Luck <tony.luck@intel.com>
+Subject: [PATCH 3.14 22/77] pstore-ram: Fix hangs by using write-combine mappings
 Date: Tue, 13 Jan 2015 23:23:02 -0800
-Message-Id: <20150114072100.889874175@linuxfoundation.org>
+Message-Id: <20150114072225.403010442@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
-References: <20150114072055.842408181@linuxfoundation.org>
+In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
+References: <20150114072224.182299947@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -27,180 +29,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+From: Rob Herring <robherring2@gmail.com>
 
-commit 705304a863cc41585508c0f476f6d3ec28cf7e00 upstream.
+commit 7ae9cb81933515dc7db1aa3c47ef7653717e3090 upstream.
 
-Same story as in commit 41080b5a2401 ("nfsd race fixes: ext2") (similar
-ext2 fix) except that nilfs2 needs to use insert_inode_locked4() instead
-of insert_inode_locked() and a bug of a check for dead inodes needs to
-be fixed.
+Currently trying to use pstore on at least ARMs can hang as we're
+mapping the peristent RAM with pgprot_noncached().
 
-If nilfs_iget() is called from nfsd after nilfs_new_inode() calls
-insert_inode_locked4(), nilfs_iget() will wait for unlock_new_inode() at
-the end of nilfs_mkdir()/nilfs_create()/etc to unlock the inode.
+On ARMs, pgprot_noncached() will actually make the memory strongly
+ordered, and as the atomic operations pstore uses are implementation
+defined for strongly ordered memory, they may not work. So basically
+atomic operations have undefined behavior on ARM for device or strongly
+ordered memory types.
 
-If nilfs_iget() is called before nilfs_new_inode() calls
-insert_inode_locked4(), it will create an in-core inode and read its
-data from the on-disk inode.  But, nilfs_iget() will find i_nlink equals
-zero and fail at nilfs_read_inode_common(), which will lead it to call
-iget_failed() and cleanly fail.
+Let's fix the issue by using write-combine variants for mappings. This
+corresponds to normal, non-cacheable memory on ARM. For many other
+architectures, this change does not change the mapping type as by
+default we have:
 
-However, this sanity check doesn't work as expected for reused on-disk
-inodes because they leave a non-zero value in i_mode field and it
-hinders the test of i_nlink.  This patch also fixes the issue by
-removing the test on i_mode that nilfs2 doesn't need.
+#define pgprot_writecombine pgprot_noncached
 
-Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+The reason why pgprot_noncached() was originaly used for pstore
+is because Colin Cross <ccross@android.com> had observed lost
+debug prints right before a device hanging write operation on some
+systems. For the platforms supporting pgprot_noncached(), we can
+add a an optional configuration option to support that. But let's
+get pstore working first before adding new features.
+
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: Colin Cross <ccross@android.com>
+Cc: Olof Johansson <olof@lixom.net>
+Cc: linux-kernel@vger.kernel.org
+Acked-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+[tony@atomide.com: updated description]
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nilfs2/inode.c |   32 ++++++++++++++++++++++++--------
- fs/nilfs2/namei.c |   15 ++++++++++++---
- 2 files changed, 36 insertions(+), 11 deletions(-)
+ fs/pstore/ram_core.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/nilfs2/inode.c
-+++ b/fs/nilfs2/inode.c
-@@ -49,6 +49,8 @@ struct nilfs_iget_args {
- 	int for_gc;
- };
+--- a/fs/pstore/ram_core.c
++++ b/fs/pstore/ram_core.c
+@@ -392,7 +392,7 @@ static void *persistent_ram_vmap(phys_ad
+ 	page_start = start - offset_in_page(start);
+ 	page_count = DIV_ROUND_UP(size + offset_in_page(start), PAGE_SIZE);
  
-+static int nilfs_iget_test(struct inode *inode, void *opaque);
-+
- void nilfs_inode_add_blocks(struct inode *inode, int n)
- {
- 	struct nilfs_root *root = NILFS_I(inode)->i_root;
-@@ -348,6 +350,17 @@ const struct address_space_operations ni
- 	.is_partially_uptodate  = block_is_partially_uptodate,
- };
+-	prot = pgprot_noncached(PAGE_KERNEL);
++	prot = pgprot_writecombine(PAGE_KERNEL);
  
-+static int nilfs_insert_inode_locked(struct inode *inode,
-+				     struct nilfs_root *root,
-+				     unsigned long ino)
-+{
-+	struct nilfs_iget_args args = {
-+		.ino = ino, .root = root, .cno = 0, .for_gc = 0
-+	};
-+
-+	return insert_inode_locked4(inode, ino, nilfs_iget_test, &args);
-+}
-+
- struct inode *nilfs_new_inode(struct inode *dir, umode_t mode)
- {
- 	struct super_block *sb = dir->i_sb;
-@@ -383,7 +396,7 @@ struct inode *nilfs_new_inode(struct ino
- 	if (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode)) {
- 		err = nilfs_bmap_read(ii->i_bmap, NULL);
- 		if (err < 0)
--			goto failed_bmap;
-+			goto failed_after_creation;
+ 	pages = kmalloc(sizeof(struct page *) * page_count, GFP_KERNEL);
+ 	if (!pages) {
+@@ -422,7 +422,7 @@ static void *persistent_ram_iomap(phys_a
+ 	buffer_start_add = buffer_start_add_locked;
+ 	buffer_size_add = buffer_size_add_locked;
  
- 		set_bit(NILFS_I_BMAP, &ii->i_state);
- 		/* No lock is needed; iget() ensures it. */
-@@ -399,21 +412,24 @@ struct inode *nilfs_new_inode(struct ino
- 	spin_lock(&nilfs->ns_next_gen_lock);
- 	inode->i_generation = nilfs->ns_next_generation++;
- 	spin_unlock(&nilfs->ns_next_gen_lock);
--	insert_inode_hash(inode);
-+	if (nilfs_insert_inode_locked(inode, root, ino) < 0) {
-+		err = -EIO;
-+		goto failed_after_creation;
-+	}
- 
- 	err = nilfs_init_acl(inode, dir);
- 	if (unlikely(err))
--		goto failed_acl; /* never occur. When supporting
-+		goto failed_after_creation; /* never occur. When supporting
- 				    nilfs_init_acl(), proper cancellation of
- 				    above jobs should be considered */
- 
- 	return inode;
- 
-- failed_acl:
-- failed_bmap:
-+ failed_after_creation:
- 	clear_nlink(inode);
-+	unlock_new_inode(inode);
- 	iput(inode);  /* raw_inode will be deleted through
--			 generic_delete_inode() */
-+			 nilfs_evict_inode() */
- 	goto failed;
- 
-  failed_ifile_create_inode:
-@@ -461,8 +477,8 @@ int nilfs_read_inode_common(struct inode
- 	inode->i_atime.tv_nsec = le32_to_cpu(raw_inode->i_mtime_nsec);
- 	inode->i_ctime.tv_nsec = le32_to_cpu(raw_inode->i_ctime_nsec);
- 	inode->i_mtime.tv_nsec = le32_to_cpu(raw_inode->i_mtime_nsec);
--	if (inode->i_nlink == 0 && inode->i_mode == 0)
--		return -EINVAL; /* this inode is deleted */
-+	if (inode->i_nlink == 0)
-+		return -ESTALE; /* this inode is deleted */
- 
- 	inode->i_blocks = le64_to_cpu(raw_inode->i_blocks);
- 	ii->i_flags = le32_to_cpu(raw_inode->i_flags);
---- a/fs/nilfs2/namei.c
-+++ b/fs/nilfs2/namei.c
-@@ -51,9 +51,11 @@ static inline int nilfs_add_nondir(struc
- 	int err = nilfs_add_link(dentry, inode);
- 	if (!err) {
- 		d_instantiate(dentry, inode);
-+		unlock_new_inode(inode);
- 		return 0;
- 	}
- 	inode_dec_link_count(inode);
-+	unlock_new_inode(inode);
- 	iput(inode);
- 	return err;
+-	return ioremap(start, size);
++	return ioremap_wc(start, size);
  }
-@@ -182,6 +184,7 @@ out:
- out_fail:
- 	drop_nlink(inode);
- 	nilfs_mark_inode_dirty(inode);
-+	unlock_new_inode(inode);
- 	iput(inode);
- 	goto out;
- }
-@@ -201,11 +204,15 @@ static int nilfs_link(struct dentry *old
- 	inode_inc_link_count(inode);
- 	ihold(inode);
  
--	err = nilfs_add_nondir(dentry, inode);
--	if (!err)
-+	err = nilfs_add_link(dentry, inode);
-+	if (!err) {
-+		d_instantiate(dentry, inode);
- 		err = nilfs_transaction_commit(dir->i_sb);
--	else
-+	} else {
-+		inode_dec_link_count(inode);
-+		iput(inode);
- 		nilfs_transaction_abort(dir->i_sb);
-+	}
- 
- 	return err;
- }
-@@ -243,6 +250,7 @@ static int nilfs_mkdir(struct inode *dir
- 
- 	nilfs_mark_inode_dirty(inode);
- 	d_instantiate(dentry, inode);
-+	unlock_new_inode(inode);
- out:
- 	if (!err)
- 		err = nilfs_transaction_commit(dir->i_sb);
-@@ -255,6 +263,7 @@ out_fail:
- 	drop_nlink(inode);
- 	drop_nlink(inode);
- 	nilfs_mark_inode_dirty(inode);
-+	unlock_new_inode(inode);
- 	iput(inode);
- out_dir:
- 	drop_nlink(dir);
+ static int persistent_ram_buffer_map(phys_addr_t start, phys_addr_t size,
 
 
