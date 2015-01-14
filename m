@@ -1,70 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028AbbANImN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:42:13 -0500
-Received: from smtprelay0114.hostedemail.com ([216.40.44.114]:39958 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755979AbbANIl1 (ORCPT
+	id S1756059AbbANImr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:42:47 -0500
+Received: from mailapp01.imgtec.com ([195.59.15.196]:29158 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754679AbbANImo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 03:41:27 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::,RULES_HIT:41:355:379:541:599:960:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1801:2194:2199:2393:2551:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:3871:3873:3874:4321:4605:5007:6261:7903:9108:10004:10400:10848:11026:11232:11658:11914:12043:12050:12296:12517:12519:12740:13069:13161:13229:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: join97_80c54f805ce24
-X-Filterd-Recvd-Size: 2325
-Message-ID: <1421224883.2847.3.camel@perches.com>
-Subject: Re: [PATCH] staging: android: fix coding style error
-From: Joe Perches <joe@perches.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Patrick Boettcher <patrick.boettcher@posteo.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Peter Senna Tschudin <peter.senna@gmail.com>,
-        Daniel Vetter <daniel@ffwll.ch>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Tapasweni Pathak <tapaswenipathak@gmail.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Date: Wed, 14 Jan 2015 00:41:23 -0800
-In-Reply-To: <1839300.4mCDOMkO8E@wuerfel>
-References: <1421223642-4465-1-git-send-email-patrick.boettcher@posteo.de>
-	 <1839300.4mCDOMkO8E@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Jan 2015 03:42:44 -0500
+From: Qais Yousef <qais.yousef@imgtec.com>
+To: <alsa-devel@alsa-project.org>
+CC: Qais Yousef <qais.yousef@imgtec.com>, Vinod Koul <vinod.koul@intel.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3] ALSA: ASoC: soc-compress.c: fix NULL dereference
+Date: Wed, 14 Jan 2015 08:42:22 +0000
+Message-ID: <1421224942-19083-1-git-send-email-qais.yousef@imgtec.com>
+X-Mailer: git-send-email 2.1.0
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [192.168.154.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2015-01-14 at 09:32 +0100, Arnd Bergmann wrote:
-> On Wednesday 14 January 2015 09:20:42 Patrick Boettcher wrote:
-> > diff --git a/drivers/staging/android/sync_debug.c b/drivers/staging/android/sync_debug.c
-[]
-> > @@ -96,7 +96,8 @@ static void sync_print_pt(struct seq_file *s, struct sync_pt *pt, bool fence)
-> >                    sync_status_str(status));
-> >  
-> >         if (status <= 0) {
-> > -               struct timespec64 ts64 = ktime_to_timespec64(pt->base.timestamp);
-> > +               struct timespec64 ts64 =
-> > +                   ktime_to_timespec64(pt->base.timestamp);
-> >  
-> >                 seq_printf(s, "@%lld.%09ld", (s64)ts64.tv_sec, ts64.tv_nsec);
-> >         }
-> > 
-> 
-> You are not really improving readability by just wrapping the line
-> arbitrarily though.
-> 
-> If you're offended by the long line, better rework the code so the long
-> line is not needed.
+In soc_new_compress() when rtd->dai_link->daynamic is set, we create the pcm
+substreams with this call:
 
-Generally the best way to do that is to separate
-the declaration from the initialization like:
+   ret = snd_pcm_new_internal(rtd->card->snd_card, new_name, num,
+                                   1, 0, &be_pcm);
 
-	if (status <= 0) {
-		struct timespec64 ts64;
+which passes 0 as capture_count leading to
 
-		ts64 = ktime_to_timespec64(pt->base.timestamp);
-		seq_printf(s, "@%lld.%09ld", (s64)ts64.tv_sec, ts64.tv_nsec);
-	}
+   be_pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream
 
+being NULL, hence when trying to set rtd a few lines below we get an oops.
+
+Fix by using rtd->dai_link->dpcm_playback and rtd->dai_link->dpcm_capture as
+playback_count and capture_count to snd_pcm_new_internal().
+
+Signed-off-by: Qais Yousef <qais.yousef@imgtec.com>
+Cc: Vinod Koul <vinod.koul@intel.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>
+Cc: Mark Brown <broonie@kernel.org>
+Cc: Jaroslav Kysela <perex@perex.cz>
+Cc: Takashi Iwai <tiwai@suse.de>
+Cc: linux-kernel@vger.kernel.org
+---
+v3->v2:
+  - fix a typo s/dynmic/dynamic/ in commit message
+  - use if else if because either dpcm_playback or dpcm_capture should be on
+    for compressed devices
+
+v2->v1:
+   - use better way to fix it than just removing the line that caused the oops
+
+ sound/soc/soc-compress.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/sound/soc/soc-compress.c b/sound/soc/soc-compress.c
+index 590a82f01d0b..025c38fbe3c0 100644
+--- a/sound/soc/soc-compress.c
++++ b/sound/soc/soc-compress.c
+@@ -659,7 +659,8 @@ int soc_new_compress(struct snd_soc_pcm_runtime *rtd, int num)
+ 			rtd->dai_link->stream_name);
+ 
+ 		ret = snd_pcm_new_internal(rtd->card->snd_card, new_name, num,
+-				1, 0, &be_pcm);
++				rtd->dai_link->dpcm_playback,
++				rtd->dai_link->dpcm_capture, &be_pcm);
+ 		if (ret < 0) {
+ 			dev_err(rtd->card->dev, "ASoC: can't create compressed for %s\n",
+ 				rtd->dai_link->name);
+@@ -668,8 +669,10 @@ int soc_new_compress(struct snd_soc_pcm_runtime *rtd, int num)
+ 
+ 		rtd->pcm = be_pcm;
+ 		rtd->fe_compr = 1;
+-		be_pcm->streams[SNDRV_PCM_STREAM_PLAYBACK].substream->private_data = rtd;
+-		be_pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream->private_data = rtd;
++		if (rtd->dai_link->dpcm_playback)
++			be_pcm->streams[SNDRV_PCM_STREAM_PLAYBACK].substream->private_data = rtd;
++		else if (rtd->dai_link->dpcm_capture)
++			be_pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream->private_data = rtd;
+ 		memcpy(compr->ops, &soc_compr_dyn_ops, sizeof(soc_compr_dyn_ops));
+ 	} else
+ 		memcpy(compr->ops, &soc_compr_ops, sizeof(soc_compr_ops));
+-- 
+2.1.0
 
