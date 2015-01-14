@@ -1,54 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753704AbbANTJW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 14:09:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38615 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751975AbbANTJV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 14:09:21 -0500
-Date: Wed, 14 Jan 2015 20:08:01 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: riel@redhat.com
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        matt.fleming@intel.com, bp@suse.de, pbonzini@redhat.com,
-        tglx@linutronix.de, luto@amacapital.net
-Subject: Re: [RFC PATCH 08/11] x86,fpu: restore user FPU state lazily after
-	__kernel_fpu_end
-Message-ID: <20150114190801.GA18860@redhat.com>
-References: <1421012793-30106-1-git-send-email-riel@redhat.com> <1421012793-30106-9-git-send-email-riel@redhat.com> <20150114184343.GA17640@redhat.com>
+	id S1752919AbbANTIR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 14:08:17 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:46975 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751241AbbANTIP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 14:08:15 -0500
+Date: Wed, 14 Jan 2015 20:08:09 +0100
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 2/5] irqchip: Add DT binding doc for dumb demuxer
+ chips
+Message-ID: <20150114200809.0c16baae@bbrezillon>
+In-Reply-To: <20150114185619.GB24989@titan.lakedaemon.net>
+References: <1421174781-4340-1-git-send-email-boris.brezillon@free-electrons.com>
+	<1421174781-4340-3-git-send-email-boris.brezillon@free-electrons.com>
+	<20150113190050.GZ24989@titan.lakedaemon.net>
+	<20150113215207.185d92b4@bbrezillon>
+	<20150114185619.GB24989@titan.lakedaemon.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150114184343.GA17640@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14, Oleg Nesterov wrote:
->
-> On 01/11, riel@redhat.com wrote:
-> >
-> > --- a/arch/x86/kernel/i387.c
-> > +++ b/arch/x86/kernel/i387.c
-> > @@ -89,13 +89,11 @@ void __kernel_fpu_end(void)
-> >  	if (use_eager_fpu()) {
-> >  		/*
-> >  		 * For eager fpu, most the time, tsk_used_math() is true.
-> > -		 * Restore the user math as we are done with the kernel usage.
-> > -		 * At few instances during thread exit, signal handling etc,
-> > -		 * tsk_used_math() is false. Those few places will take proper
-> > -		 * actions, so we don't need to restore the math here.
-> > +		 * Make sure the user math state is restored on return to
-> > +		 * userspace.
-> >  		 */
-> >  		if (likely(tsk_used_math(current)))
-> > -			math_state_restore();
-> > +			set_thread_flag(TIF_LOAD_FPU);
->
-> Hmm. And this looks obviously wrong if interrupted_user_mode().
+Hi Jason,
 
-OOPS, sorry, I misread this change.
+On Wed, 14 Jan 2015 13:56:19 -0500
+Jason Cooper <jason@lakedaemon.net> wrote:
 
-Oleg.
+> Hey Boris,
+> 
+> On Tue, Jan 13, 2015 at 09:52:07PM +0100, Boris Brezillon wrote:
+> > On Tue, 13 Jan 2015 14:00:50 -0500 Jason Cooper <jason@lakedaemon.net> wrote:
+> > > On Tue, Jan 13, 2015 at 07:46:18PM +0100, Boris Brezillon wrote:
+> > > > Add documentation for the dumb demuxer.
+> > > > 
+> > > > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> > > > ---
+> > > >  .../bindings/interrupt-controller/dumb-demux.txt   | 34 ++++++++++++++++++++++
+> > > >  1 file changed, 34 insertions(+)
+> > > >  create mode 100644 Documentation/devicetree/bindings/interrupt-controller/dumb-demux.txt
+> > > > 
+> > > > diff --git a/Documentation/devicetree/bindings/interrupt-controller/dumb-demux.txt b/Documentation/devicetree/bindings/interrupt-controller/dumb-demux.txt
+> > > > new file mode 100644
+> > > > index 0000000..1c777ef
+> > > > --- /dev/null
+> > > > +++ b/Documentation/devicetree/bindings/interrupt-controller/dumb-demux.txt
+> > > > @@ -0,0 +1,34 @@
+> > > > +* Generic Dumb Interrupt Demultiplexer
+> > > > +
+> > > > +This Dumb demultiplixer simply forward all incoming interrupts to its
+> > > > +enabled/unmasked children.
+> > > 
+> > > Please forgive the potentially naïve question, but what hardware is this
+> > > describing?
+> > 
+> > That's not a real hardware per se, but on some hardware (like at91 SoCs)
+> > some IRQ line are shared by several peripherals, and this dumb
+> > demultiplex is here to represent such shared irq lines which cannot be
+> > easily demultiplexed (because they do not provide a 'cause'
+> > register).
+> > 
+> > You can see it as a virtual irqchip provided to address broken hardware
+> > designs.
+> 
+> Hmm.  Well, given tglx's recent reply, I suppose I'll *not* go down the
+> rabbit hole of "the DT is for describing hardware."  :-P
 
+Actually I'm a bit surprised no one else already mentioned that :-) (I
+thought this would be the first complain regarding this dumb irq
+demux chip).
+
+Anyway, IMHO, this can be considered as hardware description since
+these irq-lines are really multiplexed into a single one...
+
+> 
+> However, it would probably be a lot more palatable to the DT maintainers
+> if we at least change the compatible to prepend "linux,".  This way, if
+> someone does come up with a better solution down the road, it will be
+> much easier to deprecate the binding.
+> 
+> I would also be amenable to "virt,", or "hack,", or even
+> "work-around-piss-poor-hw,".  Basically, anything that would indicate to
+> consumers of the DT that this is not a true reflection of the hardware,
+> and that it may be superseded by a better solution later.
+
+Actually I thought about changing it to "virtual,dumb-irq-demux" :-).
+
+> 
+> It would also be helpful to explain the situation more fully in the
+> binding document.
+
+Sure, I'll add a few lines to describe what this irqchip really is.
+
+Regards,
+
+Boris
+
+-- 
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
