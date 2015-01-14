@@ -1,19 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755194AbbANHnm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:43:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58936 "EHLO
+	id S933357AbbANHnC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:43:02 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58945 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933204AbbANHjU (ORCPT
+	with ESMTP id S933212AbbANHjU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Jan 2015 02:39:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Mason <clm@fb.com>
-Subject: [PATCH 3.10 38/44] Btrfs: dont delay inode ref updates during log replay
-Date: Tue, 13 Jan 2015 23:23:59 -0800
-Message-Id: <20150114072229.483142327@linuxfoundation.org>
+        Vince Weaver <vince@deater.net>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.10 39/44] perf/x86/intel/uncore: Make sure only uncore events are collected
+Date: Tue, 13 Jan 2015 23:24:00 -0800
+Message-Id: <20150114072229.528845000@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
 References: <20150114072227.419663002@linuxfoundation.org>
@@ -28,50 +34,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chris Mason <clm@fb.com>
+From: Jiri Olsa <jolsa@kernel.org>
 
-commit 6f8960541b1eb6054a642da48daae2320fddba93 upstream.
+commit af91568e762d04931dcbdd6bef4655433d8b9418 upstream.
 
-Commit 1d52c78afbb (Btrfs: try not to ENOSPC on log replay) added a
-check to skip delayed inode updates during log replay because it
-confuses the enospc code.  But the delayed processing will end up
-ignoring delayed refs from log replay because the inode itself wasn't
-put through the delayed code.
+The uncore_collect_events functions assumes that event group
+might contain only uncore events which is wrong, because it
+might contain any type of events.
 
-This can end up triggering a warning at commit time:
+This bug leads to uncore framework touching 'not' uncore events,
+which could end up all sorts of bugs.
 
-WARNING: CPU: 2 PID: 778 at fs/btrfs/delayed-inode.c:1410 btrfs_assert_delayed_root_empty+0x32/0x34()
+One was triggered by Vince's perf fuzzer, when the uncore code
+touched breakpoint event private event space as if it was uncore
+event and caused BUG:
 
-Which is repeated for each commit because we never process the delayed
-inode ref update.
+   BUG: unable to handle kernel paging request at ffffffff82822068
+   IP: [<ffffffff81020338>] uncore_assign_events+0x188/0x250
+   ...
 
-The fix used here is to change btrfs_delayed_delete_inode_ref to return
-an error if we're currently in log replay.  The caller will do the ref
-deletion immediately and everything will work properly.
+The code in uncore_assign_events() function was looking for
+event->hw.idx data while the event was initialized as a
+breakpoint with different members in event->hw union.
 
-Signed-off-by: Chris Mason <clm@fb.com>
+This patch forces uncore_collect_events() to collect only uncore
+events.
+
+Reported-by: Vince Weaver <vince@deater.net>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Yan, Zheng <zheng.z.yan@intel.com>
+Link: http://lkml.kernel.org/r/1418243031-20367-2-git-send-email-jolsa@kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/delayed-inode.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c |   22 +++++++++++++++++++---
+ 1 file changed, 19 insertions(+), 3 deletions(-)
 
---- a/fs/btrfs/delayed-inode.c
-+++ b/fs/btrfs/delayed-inode.c
-@@ -1843,6 +1843,14 @@ int btrfs_delayed_update_inode(struct bt
- 	struct btrfs_delayed_node *delayed_node;
- 	int ret = 0;
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -2657,6 +2657,17 @@ static struct intel_uncore_box *uncore_e
+ 	return uncore_pmu_to_box(uncore_event_to_pmu(event), smp_processor_id());
+ }
  
-+	/*
-+	 * we don't do delayed inode updates during log recovery because it
-+	 * leads to enospc problems.  This means we also can't do
-+	 * delayed inode refs
-+	 */
-+	if (BTRFS_I(inode)->root->fs_info->log_root_recovering)
-+		return -EAGAIN;
++/*
++ * Using uncore_pmu_event_init pmu event_init callback
++ * as a detection point for uncore events.
++ */
++static int uncore_pmu_event_init(struct perf_event *event);
 +
- 	delayed_node = btrfs_get_or_create_delayed_node(inode);
- 	if (IS_ERR(delayed_node))
- 		return PTR_ERR(delayed_node);
++static bool is_uncore_event(struct perf_event *event)
++{
++	return event->pmu->event_init == uncore_pmu_event_init;
++}
++
+ static int
+ uncore_collect_events(struct intel_uncore_box *box, struct perf_event *leader, bool dogrp)
+ {
+@@ -2671,13 +2682,18 @@ uncore_collect_events(struct intel_uncor
+ 		return -EINVAL;
+ 
+ 	n = box->n_events;
+-	box->event_list[n] = leader;
+-	n++;
++
++	if (is_uncore_event(leader)) {
++		box->event_list[n] = leader;
++		n++;
++	}
++
+ 	if (!dogrp)
+ 		return n;
+ 
+ 	list_for_each_entry(event, &leader->sibling_list, group_entry) {
+-		if (event->state <= PERF_EVENT_STATE_OFF)
++		if (!is_uncore_event(event) ||
++		    event->state <= PERF_EVENT_STATE_OFF)
+ 			continue;
+ 
+ 		if (n >= max_count)
 
 
