@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755433AbbANIdq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:33:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57918 "EHLO
+	id S1753066AbbANI0j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:26:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57953 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752115AbbANH15 (ORCPT
+	with ESMTP id S1754520AbbANH2R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:27:57 -0500
+	Wed, 14 Jan 2015 02:28:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>, Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.18 050/150] blk-mq: Fix uninitialized kobject at CPU hotplugging
-Date: Tue, 13 Jan 2015 23:22:01 -0800
-Message-Id: <20150114072058.150474270@linuxfoundation.org>
+        Oliver Neukum <oneukum@suse.de>, Bryan Poling <poli0048@umn.edu>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.18 051/150] HID: yet another buggy ELAN touchscreen
+Date: Tue, 13 Jan 2015 23:22:02 -0800
+Message-Id: <20150114072058.193245351@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -28,80 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Oliver Neukum <oneukum@suse.de>
 
-commit 06a41a99d13d8e919e9a00a4849e6b85ae492592 upstream.
+commit a32c99e7ab8410bae7c276a7e94ca84d108de034 upstream.
 
-When a CPU is hotplugged, the current blk-mq spews a warning like:
+The touchscreen needs the same quirk as the other models.
 
-  kobject '(null)' (ffffe8ffffc8b5d8): tried to add an uninitialized object, something is seriously wrong.
-  CPU: 1 PID: 1386 Comm: systemd-udevd Not tainted 3.18.0-rc7-2.g088d59b-default #1
-  Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.7.5-20140531_171129-lamiak 04/01/2014
-   0000000000000000 0000000000000002 ffffffff81605f07 ffffe8ffffc8b5d8
-   ffffffff8132c7a0 ffff88023341d370 0000000000000020 ffff8800bb05bd58
-   ffff8800bb05bd08 000000000000a0a0 000000003f441940 0000000000000007
-  Call Trace:
-   [<ffffffff81005306>] dump_trace+0x86/0x330
-   [<ffffffff81005644>] show_stack_log_lvl+0x94/0x170
-   [<ffffffff81006d21>] show_stack+0x21/0x50
-   [<ffffffff81605f07>] dump_stack+0x41/0x51
-   [<ffffffff8132c7a0>] kobject_add+0xa0/0xb0
-   [<ffffffff8130aee1>] blk_mq_register_hctx+0x91/0xb0
-   [<ffffffff8130b82e>] blk_mq_sysfs_register+0x3e/0x60
-   [<ffffffff81309298>] blk_mq_queue_reinit_notify+0xf8/0x190
-   [<ffffffff8107cfdc>] notifier_call_chain+0x4c/0x70
-   [<ffffffff8105fd23>] cpu_notify+0x23/0x50
-   [<ffffffff81060037>] _cpu_up+0x157/0x170
-   [<ffffffff810600d9>] cpu_up+0x89/0xb0
-   [<ffffffff815fa5b5>] cpu_subsys_online+0x35/0x80
-   [<ffffffff814323cd>] device_online+0x5d/0xa0
-   [<ffffffff81432485>] online_store+0x75/0x80
-   [<ffffffff81236a5a>] kernfs_fop_write+0xda/0x150
-   [<ffffffff811c5532>] vfs_write+0xb2/0x1f0
-   [<ffffffff811c5f42>] SyS_write+0x42/0xb0
-   [<ffffffff8160c4ed>] system_call_fastpath+0x16/0x1b
-   [<00007f0132fb24e0>] 0x7f0132fb24e0
-
-This is indeed because of an uninitialized kobject for blk_mq_ctx.
-The blk_mq_ctx kobjects are initialized in blk_mq_sysfs_init(), but it
-goes loop over hctx_for_each_ctx(), i.e. it initializes only for
-online CPUs.  Thus, when a CPU is hotplugged, the ctx for the newly
-onlined CPU is registered without initialization.
-
-This patch fixes the issue by initializing the all ctx kobjects
-belonging to each queue.
-
-Bugzilla: https://bugzilla.novell.com/show_bug.cgi?id=908794
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Reported-by: Bryan Poling <poli0048@umn.edu>
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- block/blk-mq-sysfs.c |    9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
+ drivers/hid/hid-ids.h           |    1 +
+ drivers/hid/usbhid/hid-quirks.c |    1 +
+ drivers/usb/core/quirks.c       |    3 +++
+ 3 files changed, 5 insertions(+)
 
---- a/block/blk-mq-sysfs.c
-+++ b/block/blk-mq-sysfs.c
-@@ -390,16 +390,15 @@ static void blk_mq_sysfs_init(struct req
- {
- 	struct blk_mq_hw_ctx *hctx;
- 	struct blk_mq_ctx *ctx;
--	int i, j;
-+	int i;
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -300,6 +300,7 @@
+ #define USB_DEVICE_ID_ELAN_TOUCHSCREEN	0x0089
+ #define USB_DEVICE_ID_ELAN_TOUCHSCREEN_009B	0x009b
+ #define USB_DEVICE_ID_ELAN_TOUCHSCREEN_0103	0x0103
++#define USB_DEVICE_ID_ELAN_TOUCHSCREEN_010c	0x010c
+ #define USB_DEVICE_ID_ELAN_TOUCHSCREEN_016F	0x016f
  
- 	kobject_init(&q->mq_kobj, &blk_mq_ktype);
+ #define USB_VENDOR_ID_ELECOM		0x056e
+--- a/drivers/hid/usbhid/hid-quirks.c
++++ b/drivers/hid/usbhid/hid-quirks.c
+@@ -73,6 +73,7 @@ static const struct hid_blacklist {
+ 	{ USB_VENDOR_ID_ELAN, USB_DEVICE_ID_ELAN_TOUCHSCREEN, HID_QUIRK_ALWAYS_POLL },
+ 	{ USB_VENDOR_ID_ELAN, USB_DEVICE_ID_ELAN_TOUCHSCREEN_009B, HID_QUIRK_ALWAYS_POLL },
+ 	{ USB_VENDOR_ID_ELAN, USB_DEVICE_ID_ELAN_TOUCHSCREEN_0103, HID_QUIRK_ALWAYS_POLL },
++	{ USB_VENDOR_ID_ELAN, USB_DEVICE_ID_ELAN_TOUCHSCREEN_010c, HID_QUIRK_ALWAYS_POLL },
+ 	{ USB_VENDOR_ID_ELAN, USB_DEVICE_ID_ELAN_TOUCHSCREEN_016F, HID_QUIRK_ALWAYS_POLL },
+ 	{ USB_VENDOR_ID_ELO, USB_DEVICE_ID_ELO_TS2700, HID_QUIRK_NOGET },
+ 	{ USB_VENDOR_ID_FORMOSA, USB_DEVICE_ID_FORMOSA_IR_RECEIVER, HID_QUIRK_NO_INIT_REPORTS },
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -103,6 +103,9 @@ static const struct usb_device_id usb_qu
+ 	{ USB_DEVICE(0x04f3, 0x009b), .driver_info =
+ 			USB_QUIRK_DEVICE_QUALIFIER },
  
--	queue_for_each_hw_ctx(q, hctx, i) {
-+	queue_for_each_hw_ctx(q, hctx, i)
- 		kobject_init(&hctx->kobj, &blk_mq_hw_ktype);
++	{ USB_DEVICE(0x04f3, 0x010c), .driver_info =
++			USB_QUIRK_DEVICE_QUALIFIER },
++
+ 	{ USB_DEVICE(0x04f3, 0x016f), .driver_info =
+ 			USB_QUIRK_DEVICE_QUALIFIER },
  
--		hctx_for_each_ctx(hctx, ctx, j)
--			kobject_init(&ctx->kobj, &blk_mq_ctx_ktype);
--	}
-+	queue_for_each_ctx(q, ctx, i)
-+		kobject_init(&ctx->kobj, &blk_mq_ctx_ktype);
- }
- 
- /* see blk_register_queue() */
 
 
