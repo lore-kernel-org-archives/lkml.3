@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932834AbbANHgG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:36:06 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58651 "EHLO
+	id S1755099AbbANHlH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:41:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59003 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932154AbbANHgC (ORCPT
+	with ESMTP id S933234AbbANHjf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:36:02 -0500
+	Wed, 14 Jan 2015 02:39:35 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.14 63/77] ARM: mvebu: disable I/O coherency on non-SMP situations on Armada 370/375/38x/XP
+        Kees Cook <keescook@chromium.org>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH 3.10 22/44] x86_64, vdso: Fix the vdso address randomization algorithm
 Date: Tue, 13 Jan 2015 23:23:43 -0800
-Message-Id: <20150114072227.740202453@linuxfoundation.org>
+Message-Id: <20150114072228.756892904@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-References: <20150114072224.182299947@linuxfoundation.org>
+In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
+References: <20150114072227.419663002@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,104 +25,128 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit e55355453600a33bb5ca4f71f2d7214875f3b061 upstream.
+commit 394f56fe480140877304d342dec46d50dc823d46 upstream.
 
-Enabling the hardware I/O coherency on Armada 370, Armada 375, Armada
-38x and Armada XP requires a certain number of conditions:
+The theory behind vdso randomization is that it's mapped at a random
+offset above the top of the stack.  To avoid wasting a page of
+memory for an extra page table, the vdso isn't supposed to extend
+past the lowest PMD into which it can fit.  Other than that, the
+address should be a uniformly distributed address that meets all of
+the alignment requirements.
 
- - On Armada 370, the cache policy must be set to write-allocate.
+The current algorithm is buggy: the vdso has about a 50% probability
+of being at the very end of a PMD.  The current algorithm also has a
+decent chance of failing outright due to incorrect handling of the
+case where the top of the stack is near the top of its PMD.
 
- - On Armada 375, 38x and XP, the cache policy must be set to
-   write-allocate, the pages must be mapped with the shareable
-   attribute, and the SMP bit must be set
+This fixes the implementation.  The paxtest estimate of vdso
+"randomisation" improves from 11 bits to 18 bits.  (Disclaimer: I
+don't know what the paxtest code is actually calculating.)
 
-Currently, on Armada XP, when CONFIG_SMP is enabled, those conditions
-are met. However, when Armada XP is used in a !CONFIG_SMP kernel, none
-of these conditions are met. With Armada 370, the situation is worse:
-since the processor is single core, regardless of whether CONFIG_SMP
-or !CONFIG_SMP is used, the cache policy will be set to write-back by
-the kernel and not write-allocate.
+It's worth noting that this algorithm is inherently biased: the vdso
+is more likely to end up near the end of its PMD than near the
+beginning.  Ideally we would either nix the PMD sharing requirement
+or jointly randomize the vdso and the stack to reduce the bias.
 
-Since solving this problem turns out to be quite complicated, and we
-don't want to let users with a mainline kernel known to have
-infrequent but existing data corruptions, this commit proposes to
-simply disable hardware I/O coherency in situations where it is known
-not to work.
+In the mean time, this is a considerable improvement with basically
+no risk of compatibility issues, since the allowed outputs of the
+algorithm are unchanged.
 
-And basically, the is_smp() function of the kernel tells us whether it
-is OK to enable hardware I/O coherency or not, so this commit slightly
-refactors the coherency_type() function to return
-COHERENCY_FABRIC_TYPE_NONE when is_smp() is false, or the appropriate
-type of the coherency fabric in the other case.
+As an easy test, doing this:
 
-Thanks to this, the I/O coherency fabric will no longer be used at all
-in !CONFIG_SMP configurations. It will continue to be used in
-CONFIG_SMP configurations on Armada XP, Armada 375 and Armada 38x
-(which are multiple cores processors), but will no longer be used on
-Armada 370 (which is a single core processor).
+for i in `seq 10000`
+  do grep -P vdso /proc/self/maps |cut -d- -f1
+done |sort |uniq -d
 
-In the process, it simplifies the implementation of the
-coherency_type() function, and adds a missing call to of_node_put().
+used to produce lots of output (1445 lines on my most recent run).
+A tiny subset looks like this:
 
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Fixes: e60304f8cb7bb545e79fe62d9b9762460c254ec2 ("arm: mvebu: Add hardware I/O Coherency support")
-Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Link: https://lkml.kernel.org/r/1415871540-20302-3-git-send-email-thomas.petazzoni@free-electrons.com
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+7fffdfffe000
+7fffe01fe000
+7fffe05fe000
+7fffe07fe000
+7fffe09fe000
+7fffe0bfe000
+7fffe0dfe000
+
+Note the suspicious fe000 endings.  With the fix, I get a much more
+palatable 76 repeated addresses.
+
+Reviewed-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-
 ---
- arch/arm/mach-mvebu/coherency.c |   26 ++++++++++++++++++++++++++
- 1 file changed, 26 insertions(+)
+ arch/x86/vdso/vma.c |   43 +++++++++++++++++++++++++++++--------------
+ 1 file changed, 29 insertions(+), 14 deletions(-)
 
---- a/arch/arm/mach-mvebu/coherency.c
-+++ b/arch/arm/mach-mvebu/coherency.c
-@@ -125,6 +125,29 @@ int __init coherency_init(void)
- {
- 	struct device_node *np;
+--- a/arch/x86/vdso/vma.c
++++ b/arch/x86/vdso/vma.c
+@@ -117,30 +117,45 @@ subsys_initcall(init_vdso);
  
+ struct linux_binprm;
+ 
+-/* Put the vdso above the (randomized) stack with another randomized offset.
+-   This way there is no hole in the middle of address space.
+-   To save memory make sure it is still in the same PTE as the stack top.
+-   This doesn't give that many random bits */
++/*
++ * Put the vdso above the (randomized) stack with another randomized
++ * offset.  This way there is no hole in the middle of address space.
++ * To save memory make sure it is still in the same PTE as the stack
++ * top.  This doesn't give that many random bits.
++ *
++ * Note that this algorithm is imperfect: the distribution of the vdso
++ * start address within a PMD is biased toward the end.
++ *
++ * Only used for the 64-bit and x32 vdsos.
++ */
+ static unsigned long vdso_addr(unsigned long start, unsigned len)
+ {
+ 	unsigned long addr, end;
+ 	unsigned offset;
+-	end = (start + PMD_SIZE - 1) & PMD_MASK;
++
 +	/*
-+	 * The coherency fabric is needed:
-+	 * - For coherency between processors on Armada XP, so only
-+	 *   when SMP is enabled.
-+	 * - For coherency between the processor and I/O devices, but
-+	 *   this coherency requires many pre-requisites (write
-+	 *   allocate cache policy, shareable pages, SMP bit set) that
-+	 *   are only meant in SMP situations.
-+	 *
-+	 * Note that this means that on Armada 370, there is currently
-+	 * no way to use hardware I/O coherency, because even when
-+	 * CONFIG_SMP is enabled, is_smp() returns false due to the
-+	 * Armada 370 being a single-core processor. To lift this
-+	 * limitation, we would have to find a way to make the cache
-+	 * policy set to write-allocate (on all Armada SoCs), and to
-+	 * set the shareable attribute in page tables (on all Armada
-+	 * SoCs except the Armada 370). Unfortunately, such decisions
-+	 * are taken very early in the kernel boot process, at a point
-+	 * where we don't know yet on which SoC we are running.
++	 * Round up the start address.  It can start out unaligned as a result
++	 * of stack start randomization.
 +	 */
-+	if (!is_smp())
-+		return 0;
++	start = PAGE_ALIGN(start);
 +
- 	np = of_find_matching_node(NULL, of_coherency_table);
- 	if (np) {
- 		struct resource res;
-@@ -151,6 +174,9 @@ static int __init coherency_late_init(vo
- {
- 	struct device_node *np;
++	/* Round the lowest possible end address up to a PMD boundary. */
++	end = (start + len + PMD_SIZE - 1) & PMD_MASK;
+ 	if (end >= TASK_SIZE_MAX)
+ 		end = TASK_SIZE_MAX;
+ 	end -= len;
+-	/* This loses some more bits than a modulo, but is cheaper */
+-	offset = get_random_int() & (PTRS_PER_PTE - 1);
+-	addr = start + (offset << PAGE_SHIFT);
+-	if (addr >= end)
+-		addr = end;
++
++	if (end > start) {
++		offset = get_random_int() % (((end - start) >> PAGE_SHIFT) + 1);
++		addr = start + (offset << PAGE_SHIFT);
++	} else {
++		addr = start;
++	}
  
-+	if (!is_smp())
-+		return 0;
-+
- 	np = of_find_matching_node(NULL, of_coherency_table);
- 	if (np) {
- 		bus_register_notifier(&platform_bus_type,
+ 	/*
+-	 * page-align it here so that get_unmapped_area doesn't
+-	 * align it wrongfully again to the next page. addr can come in 4K
+-	 * unaligned here as a result of stack start randomization.
++	 * Forcibly align the final address in case we have a hardware
++	 * issue that requires alignment for performance reasons.
+ 	 */
+-	addr = PAGE_ALIGN(addr);
+ 	addr = align_vdso_addr(addr);
+ 
+ 	return addr;
 
 
