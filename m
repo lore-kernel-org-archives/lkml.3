@@ -1,53 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751272AbbANEoM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 23:44:12 -0500
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:54154 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751119AbbANEoK (ORCPT
+	id S1751004AbbANFAG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 00:00:06 -0500
+Received: from mail-we0-f173.google.com ([74.125.82.173]:52971 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750921AbbANFAD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 23:44:10 -0500
-Message-ID: <54B5F410.2030002@linux.vnet.ibm.com>
-Date: Wed, 14 Jan 2015 10:14:00 +0530
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Wed, 14 Jan 2015 00:00:03 -0500
 MIME-Version: 1.0
-To: Edjunior Barbosa Machado <emachado@linux.vnet.ibm.com>,
-        Michael Ellerman <mpe@ellerman.id.au>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org
-CC: mikey@neuling.org, james.hogan@imgtec.com, avagin@openvz.org,
-        Paul.Clothier@imgtec.com, peterz@infradead.org, palves@redhat.com,
-        Ulrich Weigand <uweigand@de.ibm.com>, shuahkh@osg.samsung.com,
-        akpm@linux-foundation.org, oleg@redhat.com, dhowells@redhat.com,
-        kirjanov@gmail.com, davej@redhat.com, tglx@linutronix.de,
-        sukadev@linux.vnet.ibm.com, davem@davemloft.net,
-        sam.bobroff@au1.ibm.com
-Subject: Re: [V6,1/9] elf: Add new powerpc specifc core note sections
-References: <20141203052204.9DA8F1400DD@ozlabs.org> <547EB253.5050307@linux.vnet.ibm.com> <548578A8.5020901@linux.vnet.ibm.com> <54947C64.4030206@linux.vnet.ibm.com> <54A50094.5070902@linux.vnet.ibm.com>
-In-Reply-To: <54A50094.5070902@linux.vnet.ibm.com>
+In-Reply-To: <CAD7vxxJy2sE1os+ipJZV7_GvEyhu8cE-0QLBS5SVHUqfjkYBwQ@mail.gmail.com>
+References: <54584260.8030602@nvidia.com>
+	<CAD7vxxKb668Y0hpYRhwMjQnNrDCQMzn=XGtLEU+ZAtY=OFjHLg@mail.gmail.com>
+	<545895B2.2000101@nvidia.com>
+	<CAD7vxxLmLsRpxrYqc30nV0m6atO7jyNgv1Wh4R8GCAy3+y-1dw@mail.gmail.com>
+	<CAJAp7OgmrEX1XQcwvwf4jzW3eK9TUgde2MQQOp7fOJzvmO=tCQ@mail.gmail.com>
+	<CAD7vxxJaCdKiG9h_32OUSUkQMQk6AAwi6d0v01KEnSVTF8cN1w@mail.gmail.com>
+	<CAJAp7Oh+ziadeEDWsus_k_2w33vPJxGGcGZyMNQkpLemf7SAhg@mail.gmail.com>
+	<CAJAp7OhWKoAoZfq+zWspLnqUkoJb3izMD41Vyfn0AW4Jni8HAQ@mail.gmail.com>
+	<CAD7vxxLe5COSrsnVZ2G_uhtUXfjFnDA45HSG2dNT1LrxcyFcQw@mail.gmail.com>
+	<CAJAp7OhAP-rDM2zyo0Yr0-7erUp4ewKJ+tC=vyU-YMP_MzXJbA@mail.gmail.com>
+	<CAD7vxxJy2sE1os+ipJZV7_GvEyhu8cE-0QLBS5SVHUqfjkYBwQ@mail.gmail.com>
+Date: Tue, 13 Jan 2015 21:00:01 -0800
+Message-ID: <CAD7vxxJsrq2DQ=pDNn3yv=dMPK7vE=aoW9m36hBRdGypL2_i7g@mail.gmail.com>
+Subject: Re: Possible regression with commit 52221610d
+From: Tim Kryger <tim.kryger@gmail.com>
+To: Bjorn Andersson <bjorn@kryo.se>
+Cc: Ulf Hansson <ulf.hansson@linaro.org>,
+        Alexandre Courbot <acourbot@nvidia.com>,
+        Sachin Kamat <spk.linux@gmail.com>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15011404-0013-0000-0000-00000354E349
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/01/2015 01:38 PM, Anshuman Khandual wrote:
->> > Also, we've noticed that the 'misc' regset contains registers from different ISA
->> > versions (dscr and ppr appear in ISA 2.05, tar is from 2.07). I'm not sure if
->> > there is a way to detect presence/validity of such registers, but perhaps it
->> > might be a good idea to separate registers from different ISAs in different
->> > regsets.
-> Thats right, will use feature CPU_FTR_ARCH_207S (which checks whether we are v2.07
-> compliant) to detect whether TAR register is available or not. 
-> 
+On Sun, Dec 21, 2014 at 7:01 PM, Tim Kryger <tim.kryger@gmail.com> wrote:
+> On Wed, Dec 17, 2014 at 11:57 AM, Bjorn Andersson <bjorn@kryo.se> wrote:
+>
+>> I'm somewhat puzzled to what benefit 52221610d brings after bringing
+>> back the write of BIT(0). Is it just that we don't hit the BUG() on
+>> non-standard voltages?
+>
+> It is to allow the use of external regulators that are capable of
+> supplying a standard SD/MMC voltage but none of the standard SDHCI
+> voltages.
+>
+>> The full paragraph regarding BIT(0) reads:
+>>
+>> Before setting this bit, the SD Host Driver shall set SD Bus Voltage
+>> Select. If the
+>> Host Controller detects the No Card state, this bit shall be cleared.
+>> If this bit is cleared, the Host Controller shall immediately stop
+>> driving CMD and
+>> DAT[3:0] (tri-state) and drive SDCLK to low level (Refer to Section 2.2.14).
+>>
+>> So the Qualcomm HW engineers implemented the last "shall", but if
+>> someone else (what did nvidia do here?) also implemented the first
+>> "shall"s then we're back at needing a full revert of 52221610d.
+>
+> It is difficult to predict how non-compliant host controllers will
+> behave in the area where they have chosen to deviate from the
+> standard.
+>
+> Do controllers that lack internal regulators claim to support 1.8,
+> 3.0, or 3.3v in the host capabilities register?  Or will they set none
+> of these bits?
+>
+> They lack the ability to influence the externally supplied VDD but
+> will they place requirements on the values of the SD Bus Voltage
+> Select field?
+>
+> "If the Host Driver selects an unsupported voltage in the SD Bus
+> Voltage Select field, the Host Controller may ignore writes to SD Bus
+> Power and keep its value at zero."
+>
+> I would hope that controllers that fail to implement the regulator
+> would allow the SD Bus Voltage Select field to be set to any value.
+>
+> We have established that it is okay to leave the Voltage Select as
+> zero in the Broadcom, Qualcomm, and Samsung implementations.
+>
+> It would be nice to get confirmation that this is also the case for
+> other implementations that rely on an external regulator.
 
-Need to correct something here. Run time detection of the presence of TAR register
-through the feature bit CPU_FTR_ARCH_207S as I had mentioned before is not required.
-Right now we take care of the compile time availability of the individual registers
-the same way it is present on the thread struct. In the systems which do not have the
-TAR register, thread.tar is always going to be 0 which is exactly the same value we
-would get by excluding tar register copy after the run time detection of the feature.
+I took a look at Nvidia's host controller in the Tegra124 SoC on a
+Jetson TK1 board.
 
+Fortunately, it behaves like the Qualcomm chip and only requires the LSB be set.
