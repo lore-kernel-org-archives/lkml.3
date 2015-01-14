@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755387AbbANIuy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:50:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57646 "EHLO
+	id S1756232AbbANIuK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:50:10 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57652 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752356AbbANHZS (ORCPT
+	with ESMTP id S1752387AbbANHZT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:25:18 -0500
+	Wed, 14 Jan 2015 02:25:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
+        David Binderman <dcb314@hotmail.com>, Jyri Sarha <jsarha@ti.com>,
         Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.18 021/150] ASoC: max98090: Fix ill-defined sidetone route
-Date: Tue, 13 Jan 2015 23:21:32 -0800
-Message-Id: <20150114072056.826486000@linuxfoundation.org>
+Subject: [PATCH 3.18 022/150] ASoC: tlv320aic31xx: Fix off by one error in the loop stucture.
+Date: Tue, 13 Jan 2015 23:21:33 -0800
+Message-Id: <20150114072056.868795797@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -29,44 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+From: Jyri Sarha <jsarha@ti.com>
 
-commit 48826ee590da03e9882922edf96d8d27bdfe9552 upstream.
+commit bbc686b34650b0f54affe9d9a637ccbe02b03760 upstream.
 
-Commit 5fe5b767dc6f ("ASoC: dapm: Do not pretend to support controls for non
-mixer/mux widgets") revealed ill-defined control in a route between
-"STENL Mux" and DACs in max98090.c:
+Fix off by one read beyond the end of a table.
 
-max98090 i2c-193C9890:00: Control not supported for path STENL Mux -> [NULL] -> DACL
-max98090 i2c-193C9890:00: ASoC: no dapm match for STENL Mux --> NULL --> DACL
-max98090 i2c-193C9890:00: ASoC: Failed to add route STENL Mux -> NULL -> DACL
-max98090 i2c-193C9890:00: Control not supported for path STENL Mux -> [NULL] -> DACR
-max98090 i2c-193C9890:00: ASoC: no dapm match for STENL Mux --> NULL --> DACR
-max98090 i2c-193C9890:00: ASoC: Failed to add route STENL Mux -> NULL -> DACR
-
-Since there is no control between "STENL Mux" and DACs the control name must
-be NULL not "NULL".
-
-Signed-off-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+Reported-by: David Binderman <dcb314@hotmail.com>
+Signed-off-by: Jyri Sarha <jsarha@ti.com>
 Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/max98090.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/soc/codecs/tlv320aic31xx.c |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
---- a/sound/soc/codecs/max98090.c
-+++ b/sound/soc/codecs/max98090.c
-@@ -1395,8 +1395,8 @@ static const struct snd_soc_dapm_route m
- 	{"STENL Mux", "Sidetone Left", "DMICL"},
- 	{"STENR Mux", "Sidetone Right", "ADCR"},
- 	{"STENR Mux", "Sidetone Right", "DMICR"},
--	{"DACL", "NULL", "STENL Mux"},
--	{"DACR", "NULL", "STENL Mux"},
-+	{"DACL", NULL, "STENL Mux"},
-+	{"DACR", NULL, "STENL Mux"},
+--- a/sound/soc/codecs/tlv320aic31xx.c
++++ b/sound/soc/codecs/tlv320aic31xx.c
+@@ -911,12 +911,13 @@ static int aic31xx_set_dai_sysclk(struct
+ 	}
+ 	aic31xx->p_div = i;
  
- 	{"AIFINL", NULL, "SHDN"},
- 	{"AIFINR", NULL, "SHDN"},
+-	for (i = 0; aic31xx_divs[i].mclk_p != freq/aic31xx->p_div; i++) {
+-		if (i == ARRAY_SIZE(aic31xx_divs)) {
+-			dev_err(aic31xx->dev, "%s: Unsupported frequency %d\n",
+-				__func__, freq);
+-			return -EINVAL;
+-		}
++	for (i = 0; i < ARRAY_SIZE(aic31xx_divs) &&
++		     aic31xx_divs[i].mclk_p != freq/aic31xx->p_div; i++)
++		;
++	if (i == ARRAY_SIZE(aic31xx_divs)) {
++		dev_err(aic31xx->dev, "%s: Unsupported frequency %d\n",
++			__func__, freq);
++		return -EINVAL;
+ 	}
+ 
+ 	/* set clock on MCLK, BCLK, or GPIO1 as PLL input */
 
 
