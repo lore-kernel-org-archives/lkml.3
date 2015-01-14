@@ -1,82 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756220AbbANIsg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:48:36 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52808 "EHLO mx2.suse.de"
+	id S932321AbbANIyC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:54:02 -0500
+Received: from mga09.intel.com ([134.134.136.24]:47996 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752694AbbANIsd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 03:48:33 -0500
-Date: Wed, 14 Jan 2015 09:48:30 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Steven Rostedt <rostedt@goodmis.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Josh Poimboeuf <jpoimboe@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        live-patching@vger.kernel.org, linux-next@vger.kernel.org
-Subject: [PATCH 2/2] kprobes: compile out IPMODIFY support if ftrace doesn't
- support it
-In-Reply-To: <alpine.LNX.2.00.1501140945520.4162@pobox.suse.cz>
-Message-ID: <alpine.LNX.2.00.1501140947540.4162@pobox.suse.cz>
-References: <alpine.LNX.2.00.1412221412360.1680@pobox.suse.cz> <20141223094607.GA16445@infradead.org> <20141223151056.GA4789@treble.redhat.com> <20141226155613.36dd95b9@canb.auug.org.au> <20150107144317.61ab2080877a4d8227990551@linux-foundation.org>
- <alpine.LNX.2.00.1501072346400.15299@pobox.suse.cz> <20150107153006.60ed354e3458f402e6819b9e@linux-foundation.org> <alpine.LNX.2.00.1501080037030.15299@pobox.suse.cz> <20150107155701.4839545f63701412003edd88@linux-foundation.org>
- <alpine.LNX.2.00.1501080104190.15299@pobox.suse.cz> <54B3C1DD.6090400@hitachi.com> <alpine.LNX.2.00.1501132345080.4162@pobox.suse.cz> <20150113211223.18908f21@grimm.local.home> <alpine.LNX.2.00.1501140945520.4162@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S932183AbbANIx7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 03:53:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,754,1413270000"; 
+   d="scan'208";a="637068576"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        "Moore, Robert" <robert.moore@intel.com>
+CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        Len Brown <lenb@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "devel@acpica.org" <devel@acpica.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] ACPICA: tbinstal: Remove unused function
+Thread-Topic: [PATCH] ACPICA: tbinstal: Remove unused function
+Thread-Index: AQHQL2Eo5SmcfiFb/U+4cOD3X8YWWJy/TvXA
+Date: Wed, 14 Jan 2015 08:49:51 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E88026B7443@SHSMSX101.ccr.corp.intel.com>
+References: <1421174925-5796-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+In-Reply-To: <1421174925-5796-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If ftrace doesn't claim to support IPMODIFY support, there is no need to 
-compile IPMODIFY support in kprobes either.
+Hi, Rickard
 
-Suggested-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
----
- kernel/kprobes.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+This function contains logic that is only correct to iasl.
+It seems we can move it to a separate file that can only be linked by iasl to avoid releasing this function to the kernel.
+Let me do this in the ACPICA upstream.
 
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 06f5830..49a69d7 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -912,7 +912,7 @@ static struct kprobe *alloc_aggr_kprobe(struct kprobe *p)
- }
- #endif /* CONFIG_OPTPROBES */
- 
--#ifdef CONFIG_KPROBES_ON_FTRACE
-+#if defined(CONFIG_KPROBES_ON_FTRACE) && (ftrace_ipmodify_supported == 1)
- static struct ftrace_ops kprobe_ftrace_ops __read_mostly = {
- 	.func = kprobe_ftrace_handler,
- 	.flags = FTRACE_OPS_FL_SAVE_REGS | FTRACE_OPS_FL_IPMODIFY,
-@@ -957,7 +957,7 @@ static void disarm_kprobe_ftrace(struct kprobe *p)
- 			   (unsigned long)p->addr, 1, 0);
- 	WARN(ret < 0, "Failed to disarm kprobe-ftrace at %p (%d)\n", p->addr, ret);
- }
--#else	/* !CONFIG_KPROBES_ON_FTRACE */
-+#else	/* !CONFIG_KPROBES_ON_FTRACE || ftrace_ipmodify_supported == 0 */
- #define prepare_kprobe(p)	arch_prepare_kprobe(p)
- #define arm_kprobe_ftrace(p)	do {} while (0)
- #define disarm_kprobe_ftrace(p)	do {} while (0)
-@@ -1416,12 +1416,12 @@ int __weak arch_check_ftrace_location(struct kprobe *p)
- 
- 	ftrace_addr = ftrace_location((unsigned long)p->addr);
- 	if (ftrace_addr) {
--#ifdef CONFIG_KPROBES_ON_FTRACE
-+#if defined(CONFIG_KPROBES_ON_FTRACE) && (ftrace_ipmodify_supported == 1)
- 		/* Given address is not on the instruction boundary */
- 		if ((unsigned long)p->addr != ftrace_addr)
- 			return -EILSEQ;
- 		p->flags |= KPROBE_FLAG_FTRACE;
--#else	/* !CONFIG_KPROBES_ON_FTRACE */
-+#else	/* !CONFIG_KPROBES_ON_FTRACE || ftrace_ipmodify_supported == 0 */
- 		return -EINVAL;
- #endif
- 	}
+Thanks
+-Lv
 
--- 
-Jiri Kosina
-SUSE Labs
+> From: Rickard Strandqvist [mailto:rickard_strandqvist@spectrumdigital.se]
+> Sent: Wednesday, January 14, 2015 2:49 AM
+> To: Moore, Robert; Zheng, Lv
+> Cc: Rickard Strandqvist; Wysocki, Rafael J; Len Brown; linux-acpi@vger.kernel.org; devel@acpica.org; linux-kernel@vger.kernel.org
+> Subject: [PATCH] ACPICA: tbinstal: Remove unused function
+> 
+> Remove the function acpi_tb_store_table() that is not used anywhere.
+> 
+> This was partially found by using a static code analysis program called cppcheck.
+> 
+> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+> ---
+>  drivers/acpi/acpica/actables.h |    5 -----
+>  drivers/acpi/acpica/tbinstal.c |   37 -------------------------------------
+>  2 files changed, 42 deletions(-)
+> 
+> diff --git a/drivers/acpi/acpica/actables.h b/drivers/acpi/acpica/actables.h
+> index 1afe46e..7d65cac 100644
+> --- a/drivers/acpi/acpica/actables.h
+> +++ b/drivers/acpi/acpica/actables.h
+> @@ -119,11 +119,6 @@ acpi_tb_install_standard_table(acpi_physical_address address,
+>  			       u8 flags,
+>  			       u8 reload, u8 override, u32 *table_index);
+> 
+> -acpi_status
+> -acpi_tb_store_table(acpi_physical_address address,
+> -		    struct acpi_table_header *table,
+> -		    u32 length, u8 flags, u32 *table_index);
+> -
+>  void acpi_tb_uninstall_table(struct acpi_table_desc *table_desc);
+> 
+>  void acpi_tb_terminate(void);
+> diff --git a/drivers/acpi/acpica/tbinstal.c b/drivers/acpi/acpica/tbinstal.c
+> index 755b90c..a998e8c 100644
+> --- a/drivers/acpi/acpica/tbinstal.c
+> +++ b/drivers/acpi/acpica/tbinstal.c
+> @@ -455,43 +455,6 @@ finish_override:
+> 
+>  /*******************************************************************************
+>   *
+> - * FUNCTION:    acpi_tb_store_table
+> - *
+> - * PARAMETERS:  address             - Table address
+> - *              table               - Table header
+> - *              length              - Table length
+> - *              flags               - Install flags
+> - *              table_index         - Where the table index is returned
+> - *
+> - * RETURN:      Status and table index.
+> - *
+> - * DESCRIPTION: Add an ACPI table to the global table list
+> - *
+> - ******************************************************************************/
+> -
+> -acpi_status
+> -acpi_tb_store_table(acpi_physical_address address,
+> -		    struct acpi_table_header * table,
+> -		    u32 length, u8 flags, u32 *table_index)
+> -{
+> -	acpi_status status;
+> -	struct acpi_table_desc *table_desc;
+> -
+> -	status = acpi_tb_get_next_root_index(table_index);
+> -	if (ACPI_FAILURE(status)) {
+> -		return (status);
+> -	}
+> -
+> -	/* Initialize added table */
+> -
+> -	table_desc = &acpi_gbl_root_table_list.tables[*table_index];
+> -	acpi_tb_init_table_descriptor(table_desc, address, flags, table);
+> -	table_desc->pointer = table;
+> -	return (AE_OK);
+> -}
+> -
+> -/*******************************************************************************
+> - *
+>   * FUNCTION:    acpi_tb_uninstall_table
+>   *
+>   * PARAMETERS:  table_desc          - Table descriptor
+> --
+> 1.7.10.4
 
