@@ -1,25 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933219AbbANHjU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:39:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58917 "EHLO
+	id S932920AbbANHgy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:36:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58732 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755034AbbANHjM (ORCPT
+	with ESMTP id S932901AbbANHgv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:39:12 -0500
+	Wed, 14 Jan 2015 02:36:51 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 35/44] nilfs2: fix the nilfs_iget() vs. nilfs_new_inode() races
+Subject: [PATCH 3.14 76/77] mm: propagate error from stack expansion even for guard page
 Date: Tue, 13 Jan 2015 23:23:56 -0800
-Message-Id: <20150114072229.350293555@linuxfoundation.org>
+Message-Id: <20150114072228.563624960@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
-References: <20150114072227.419663002@linuxfoundation.org>
+In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
+References: <20150114072224.182299947@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -27,180 +24,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 705304a863cc41585508c0f476f6d3ec28cf7e00 upstream.
+commit fee7e49d45149fba60156f5b59014f764d3e3728 upstream.
 
-Same story as in commit 41080b5a2401 ("nfsd race fixes: ext2") (similar
-ext2 fix) except that nilfs2 needs to use insert_inode_locked4() instead
-of insert_inode_locked() and a bug of a check for dead inodes needs to
-be fixed.
+Jay Foad reports that the address sanitizer test (asan) sometimes gets
+confused by a stack pointer that ends up being outside the stack vma
+that is reported by /proc/maps.
 
-If nilfs_iget() is called from nfsd after nilfs_new_inode() calls
-insert_inode_locked4(), nilfs_iget() will wait for unlock_new_inode() at
-the end of nilfs_mkdir()/nilfs_create()/etc to unlock the inode.
+This happens due to an interaction between RLIMIT_STACK and the guard
+page: when we do the guard page check, we ignore the potential error
+from the stack expansion, which effectively results in a missing guard
+page, since the expected stack expansion won't have been done.
 
-If nilfs_iget() is called before nilfs_new_inode() calls
-insert_inode_locked4(), it will create an in-core inode and read its
-data from the on-disk inode.  But, nilfs_iget() will find i_nlink equals
-zero and fail at nilfs_read_inode_common(), which will lead it to call
-iget_failed() and cleanly fail.
+And since /proc/maps explicitly ignores the guard page (commit
+d7824370e263: "mm: fix up some user-visible effects of the stack guard
+page"), the stack pointer ends up being outside the reported stack area.
 
-However, this sanity check doesn't work as expected for reused on-disk
-inodes because they leave a non-zero value in i_mode field and it
-hinders the test of i_nlink.  This patch also fixes the issue by
-removing the test on i_mode that nilfs2 doesn't need.
+This is the minimal patch: it just propagates the error.  It also
+effectively makes the guard page part of the stack limit, which in turn
+measn that the actual real stack is one page less than the stack limit.
 
-Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Let's see if anybody notices.  We could teach acct_stack_growth() to
+allow an extra page for a grow-up/grow-down stack in the rlimit test,
+but I don't want to add more complexity if it isn't needed.
+
+Reported-and-tested-by: Jay Foad <jay.foad@gmail.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nilfs2/inode.c |   32 ++++++++++++++++++++++++--------
- fs/nilfs2/namei.c |   15 ++++++++++++---
- 2 files changed, 36 insertions(+), 11 deletions(-)
+ include/linux/mm.h |    2 +-
+ mm/memory.c        |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
---- a/fs/nilfs2/inode.c
-+++ b/fs/nilfs2/inode.c
-@@ -49,6 +49,8 @@ struct nilfs_iget_args {
- 	int for_gc;
- };
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1866,7 +1866,7 @@ extern int expand_downwards(struct vm_ar
+ #if VM_GROWSUP
+ extern int expand_upwards(struct vm_area_struct *vma, unsigned long address);
+ #else
+-  #define expand_upwards(vma, address) do { } while (0)
++  #define expand_upwards(vma, address) (0)
+ #endif
  
-+static int nilfs_iget_test(struct inode *inode, void *opaque);
-+
- void nilfs_inode_add_blocks(struct inode *inode, int n)
- {
- 	struct nilfs_root *root = NILFS_I(inode)->i_root;
-@@ -347,6 +349,17 @@ const struct address_space_operations ni
- 	.is_partially_uptodate  = block_is_partially_uptodate,
- };
+ /* Look up the first VMA which satisfies  addr < vm_end,  NULL if none. */
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -3204,7 +3204,7 @@ static inline int check_stack_guard_page
+ 		if (prev && prev->vm_end == address)
+ 			return prev->vm_flags & VM_GROWSDOWN ? 0 : -ENOMEM;
  
-+static int nilfs_insert_inode_locked(struct inode *inode,
-+				     struct nilfs_root *root,
-+				     unsigned long ino)
-+{
-+	struct nilfs_iget_args args = {
-+		.ino = ino, .root = root, .cno = 0, .for_gc = 0
-+	};
-+
-+	return insert_inode_locked4(inode, ino, nilfs_iget_test, &args);
-+}
-+
- struct inode *nilfs_new_inode(struct inode *dir, umode_t mode)
- {
- 	struct super_block *sb = dir->i_sb;
-@@ -382,7 +395,7 @@ struct inode *nilfs_new_inode(struct ino
- 	if (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode)) {
- 		err = nilfs_bmap_read(ii->i_bmap, NULL);
- 		if (err < 0)
--			goto failed_bmap;
-+			goto failed_after_creation;
- 
- 		set_bit(NILFS_I_BMAP, &ii->i_state);
- 		/* No lock is needed; iget() ensures it. */
-@@ -398,21 +411,24 @@ struct inode *nilfs_new_inode(struct ino
- 	spin_lock(&nilfs->ns_next_gen_lock);
- 	inode->i_generation = nilfs->ns_next_generation++;
- 	spin_unlock(&nilfs->ns_next_gen_lock);
--	insert_inode_hash(inode);
-+	if (nilfs_insert_inode_locked(inode, root, ino) < 0) {
-+		err = -EIO;
-+		goto failed_after_creation;
-+	}
- 
- 	err = nilfs_init_acl(inode, dir);
- 	if (unlikely(err))
--		goto failed_acl; /* never occur. When supporting
-+		goto failed_after_creation; /* never occur. When supporting
- 				    nilfs_init_acl(), proper cancellation of
- 				    above jobs should be considered */
- 
- 	return inode;
- 
-- failed_acl:
-- failed_bmap:
-+ failed_after_creation:
- 	clear_nlink(inode);
-+	unlock_new_inode(inode);
- 	iput(inode);  /* raw_inode will be deleted through
--			 generic_delete_inode() */
-+			 nilfs_evict_inode() */
- 	goto failed;
- 
-  failed_ifile_create_inode:
-@@ -460,8 +476,8 @@ int nilfs_read_inode_common(struct inode
- 	inode->i_atime.tv_nsec = le32_to_cpu(raw_inode->i_mtime_nsec);
- 	inode->i_ctime.tv_nsec = le32_to_cpu(raw_inode->i_ctime_nsec);
- 	inode->i_mtime.tv_nsec = le32_to_cpu(raw_inode->i_mtime_nsec);
--	if (inode->i_nlink == 0 && inode->i_mode == 0)
--		return -EINVAL; /* this inode is deleted */
-+	if (inode->i_nlink == 0)
-+		return -ESTALE; /* this inode is deleted */
- 
- 	inode->i_blocks = le64_to_cpu(raw_inode->i_blocks);
- 	ii->i_flags = le32_to_cpu(raw_inode->i_flags);
---- a/fs/nilfs2/namei.c
-+++ b/fs/nilfs2/namei.c
-@@ -51,9 +51,11 @@ static inline int nilfs_add_nondir(struc
- 	int err = nilfs_add_link(dentry, inode);
- 	if (!err) {
- 		d_instantiate(dentry, inode);
-+		unlock_new_inode(inode);
- 		return 0;
+-		expand_downwards(vma, address - PAGE_SIZE);
++		return expand_downwards(vma, address - PAGE_SIZE);
  	}
- 	inode_dec_link_count(inode);
-+	unlock_new_inode(inode);
- 	iput(inode);
- 	return err;
- }
-@@ -182,6 +184,7 @@ out:
- out_fail:
- 	drop_nlink(inode);
- 	nilfs_mark_inode_dirty(inode);
-+	unlock_new_inode(inode);
- 	iput(inode);
- 	goto out;
- }
-@@ -201,11 +204,15 @@ static int nilfs_link(struct dentry *old
- 	inode_inc_link_count(inode);
- 	ihold(inode);
+ 	if ((vma->vm_flags & VM_GROWSUP) && address + PAGE_SIZE == vma->vm_end) {
+ 		struct vm_area_struct *next = vma->vm_next;
+@@ -3213,7 +3213,7 @@ static inline int check_stack_guard_page
+ 		if (next && next->vm_start == address + PAGE_SIZE)
+ 			return next->vm_flags & VM_GROWSUP ? 0 : -ENOMEM;
  
--	err = nilfs_add_nondir(dentry, inode);
--	if (!err)
-+	err = nilfs_add_link(dentry, inode);
-+	if (!err) {
-+		d_instantiate(dentry, inode);
- 		err = nilfs_transaction_commit(dir->i_sb);
--	else
-+	} else {
-+		inode_dec_link_count(inode);
-+		iput(inode);
- 		nilfs_transaction_abort(dir->i_sb);
-+	}
- 
- 	return err;
+-		expand_upwards(vma, address + PAGE_SIZE);
++		return expand_upwards(vma, address + PAGE_SIZE);
+ 	}
+ 	return 0;
  }
-@@ -243,6 +250,7 @@ static int nilfs_mkdir(struct inode *dir
- 
- 	nilfs_mark_inode_dirty(inode);
- 	d_instantiate(dentry, inode);
-+	unlock_new_inode(inode);
- out:
- 	if (!err)
- 		err = nilfs_transaction_commit(dir->i_sb);
-@@ -255,6 +263,7 @@ out_fail:
- 	drop_nlink(inode);
- 	drop_nlink(inode);
- 	nilfs_mark_inode_dirty(inode);
-+	unlock_new_inode(inode);
- 	iput(inode);
- out_dir:
- 	drop_nlink(dir);
 
 
