@@ -1,26 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932990AbbANHh0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:37:26 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58755 "EHLO
+	id S932301AbbANHkj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:40:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59020 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754235AbbANHhS (ORCPT
+	with ESMTP id S932173AbbANHjx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:37:18 -0500
+	Wed, 14 Jan 2015 02:39:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Luca Abeni <luca.abeni@unitn.it>,
-        "Peter Zijlstra (Intel)" <peterz@infradead.org>,
-        Juri Lelli <juri.lelli@gmail.com>, Dario Faggioli <raistlin@linux.it>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.14 57/77] sched/deadline: Fix migration of SCHED_DEADLINE tasks
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Joerg Roedel <jroedel@suse.de>
+Subject: [PATCH 3.10 16/44] iommu/vt-d: Fix an off-by-one bug in __domain_mapping()
 Date: Tue, 13 Jan 2015 23:23:37 -0800
-Message-Id: <20150114072227.379419073@linuxfoundation.org>
+Message-Id: <20150114072228.421900683@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-References: <20150114072224.182299947@linuxfoundation.org>
+In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
+References: <20150114072227.419663002@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -28,66 +26,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Luca Abeni <luca.abeni@unitn.it>
+From: Jiang Liu <jiang.liu@linux.intel.com>
 
-commit 6a503c3be937d275113b702e0421e5b0720abe8a upstream.
+commit cc4f14aa170d895c9a43bdb56f62070c8a6da908 upstream.
 
-According to global EDF, tasks should be migrated between runqueues
-without checking if their scheduling deadlines and runtimes are valid.
-However, SCHED_DEADLINE currently performs such a check:
-a migration happens doing:
+There's an off-by-one bug in function __domain_mapping(), which may
+trigger the BUG_ON(nr_pages < lvl_pages) when
+	(nr_pages + 1) & superpage_mask == 0
 
-	deactivate_task(rq, next_task, 0);
-	set_task_cpu(next_task, later_rq->cpu);
-	activate_task(later_rq, next_task, 0);
+The issue was introduced by commit 9051aa0268dc "intel-iommu: Combine
+domain_pfn_mapping() and domain_sg_mapping()", which sets sg_res to
+"nr_pages + 1" to avoid some of the 'sg_res==0' code paths.
 
-which ends up calling dequeue_task_dl(), setting the new CPU, and then
-calling enqueue_task_dl().
+It's safe to remove extra "+1" because sg_res is only used to calculate
+page size now.
 
-enqueue_task_dl() then calls enqueue_dl_entity(), which calls
-update_dl_entity(), which can modify scheduling deadline and runtime,
-breaking global EDF scheduling.
-
-As a result, some of the properties of global EDF are not respected:
-for example, a taskset {(30, 80), (40, 80), (120, 170)} scheduled on
-two cores can have unbounded response times for the third task even
-if 30/80+40/80+120/170 = 1.5809 < 2
-
-This can be fixed by invoking update_dl_entity() only in case of
-wakeup, or if this is a new SCHED_DEADLINE task.
-
-Signed-off-by: Luca Abeni <luca.abeni@unitn.it>
-Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Acked-by: Juri Lelli <juri.lelli@gmail.com>
-Cc: Dario Faggioli <raistlin@linux.it>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1418813432-20797-2-git-send-email-luca.abeni@unitn.it
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Reported-And-Tested-by: Sudeep Dutt <sudeep.dutt@intel.com>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Acked-By: David Woodhouse <David.Woodhouse@intel.com>
+Signed-off-by: Joerg Roedel <jroedel@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched/deadline.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/iommu/intel-iommu.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -806,10 +806,10 @@ enqueue_dl_entity(struct sched_dl_entity
- 	 * parameters of the task might need updating. Otherwise,
- 	 * we want a replenishment of its runtime.
- 	 */
--	if (!dl_se->dl_new && flags & ENQUEUE_REPLENISH)
--		replenish_dl_entity(dl_se, pi_se);
--	else
-+	if (dl_se->dl_new || flags & ENQUEUE_WAKEUP)
- 		update_dl_entity(dl_se, pi_se);
-+	else if (flags & ENQUEUE_REPLENISH)
-+		replenish_dl_entity(dl_se, pi_se);
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -1796,7 +1796,7 @@ static int __domain_mapping(struct dmar_
+ 	struct dma_pte *first_pte = NULL, *pte = NULL;
+ 	phys_addr_t uninitialized_var(pteval);
+ 	int addr_width = agaw_to_width(domain->agaw) - VTD_PAGE_SHIFT;
+-	unsigned long sg_res;
++	unsigned long sg_res = 0;
+ 	unsigned int largepage_lvl = 0;
+ 	unsigned long lvl_pages = 0;
  
- 	__enqueue_dl_entity(dl_se);
- }
+@@ -1807,10 +1807,8 @@ static int __domain_mapping(struct dmar_
+ 
+ 	prot &= DMA_PTE_READ | DMA_PTE_WRITE | DMA_PTE_SNP;
+ 
+-	if (sg)
+-		sg_res = 0;
+-	else {
+-		sg_res = nr_pages + 1;
++	if (!sg) {
++		sg_res = nr_pages;
+ 		pteval = ((phys_addr_t)phys_pfn << VTD_PAGE_SHIFT) | prot;
+ 	}
+ 
 
 
