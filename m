@@ -1,179 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752212AbbANXsf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 18:48:35 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:39368 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751257AbbANXsd (ORCPT
+	id S1753647AbbANXsp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 18:48:45 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:42598 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752657AbbANXsn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 18:48:33 -0500
+	Wed, 14 Jan 2015 18:48:43 -0500
 From: Namhyung Kim <namhyung@kernel.org>
 To: Arnaldo Carvalho de Melo <acme@kernel.org>
 Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         David Ahern <dsahern@gmail.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [PATCH v3 1/3] perf tools: Add from argument to dso__find_symbol_by_name()
-Date: Thu, 15 Jan 2015 08:48:20 +0900
-Message-Id: <1421279302-7105-1-git-send-email-namhyung@kernel.org>
+Subject: [PATCH v3 2/3] perf probe: Do not rely on map__load() filter to find symbols
+Date: Thu, 15 Jan 2015 08:48:21 +0900
+Message-Id: <1421279302-7105-2-git-send-email-namhyung@kernel.org>
 X-Mailer: git-send-email 2.2.1
+In-Reply-To: <1421279302-7105-1-git-send-email-namhyung@kernel.org>
+References: <1421279302-7105-1-git-send-email-namhyung@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a dso contains multiple symbols which have same name, current
-dso__find_symbol_by_name() only finds an one of them and there's no way
-to get the all symbols without going through the rbtree.
+The find_probe_trace_events_from_map() searches matching symbol from a
+map (so from a backing dso).  For uprobes, it'll create a new map (and
+dso) and loads it using a filter.  It's a little bit inefficient in that
+it'll read out the symbol table everytime but works well anyway.
 
-So add the new 'from' argument to dso__find_symbol_by_name() to remember
-current symbol position and returns next symbol if it provided.  For the
-first call the from should be NULL and the returned symbol should be
-used as from to the next call.  It will return NULL if there's no symbol
-that has given name anymore.
+For kprobes however, it'll reuse existing kernel map which might be
+loaded before.  In this case map__load() just returns with no result.
+It makes kprobes always failed to find symbol even if it exists in the
+map (dso).
 
+To fix it, use map__find_symbol_by_name_from() instead.  It'll load a
+map with full symbols and sorts them by name.  It needs to search sibing
+nodes since there can be multiple (local) symbols with same name.
+
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 ---
- tools/perf/util/map.c    | 13 ++++++++++---
- tools/perf/util/map.h    |  3 +++
- tools/perf/util/symbol.c | 41 ++++++++++++++++++++++++++++++++++++-----
- tools/perf/util/symbol.h |  2 +-
- 4 files changed, 50 insertions(+), 9 deletions(-)
+ tools/perf/util/probe-event.c | 31 ++++++++++++++-----------------
+ 1 file changed, 14 insertions(+), 17 deletions(-)
 
-diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-index 62ca9f2607d5..01e2696ca8b5 100644
---- a/tools/perf/util/map.c
-+++ b/tools/perf/util/map.c
-@@ -301,8 +301,9 @@ struct symbol *map__find_symbol(struct map *map, u64 addr,
- 	return dso__find_symbol(map->dso, map->type, addr);
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index 94a717bf007d..3cfad9c74faf 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -2193,18 +2193,17 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
+ 	return ret;
  }
  
--struct symbol *map__find_symbol_by_name(struct map *map, const char *name,
--					symbol_filter_t filter)
-+struct symbol *map__find_symbol_by_name_from(struct map *map, const char *name,
-+					     symbol_filter_t filter,
-+					     struct symbol *from)
+-static char *looking_function_name;
+-static int num_matched_functions;
+-
+-static int probe_function_filter(struct map *map __maybe_unused,
+-				      struct symbol *sym)
++static int find_probe_functions(struct map *map, char *name)
  {
- 	if (map__load(map, filter) < 0)
- 		return NULL;
-@@ -310,7 +311,13 @@ struct symbol *map__find_symbol_by_name(struct map *map, const char *name,
- 	if (!dso__sorted_by_name(map->dso, map->type))
- 		dso__sort_by_name(map->dso, map->type);
- 
--	return dso__find_symbol_by_name(map->dso, map->type, name);
-+	return dso__find_symbol_by_name(map->dso, map->type, name, from);
-+}
+-	if ((sym->binding == STB_GLOBAL || sym->binding == STB_LOCAL) &&
+-	    strcmp(looking_function_name, sym->name) == 0) {
+-		num_matched_functions++;
+-		return 0;
++	struct symbol *sym = NULL;
++	int found = 0;
 +
-+struct symbol *map__find_symbol_by_name(struct map *map, const char *name,
-+					symbol_filter_t filter)
-+{
-+	return map__find_symbol_by_name_from(map, name, filter, NULL);
++	while ((sym = map__find_symbol_by_name_from(map, name, NULL, sym))) {
++		if (sym->binding == STB_GLOBAL || sym->binding == STB_LOCAL)
++			found++;
+ 	}
+-	return 1;
++
++	return found;
  }
  
- struct map *map__clone(struct map *map)
-diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-index 6951a9d42339..69acc58e6f9a 100644
---- a/tools/perf/util/map.h
-+++ b/tools/perf/util/map.h
-@@ -138,6 +138,9 @@ struct symbol *map__find_symbol(struct map *map,
- 				u64 addr, symbol_filter_t filter);
- struct symbol *map__find_symbol_by_name(struct map *map, const char *name,
- 					symbol_filter_t filter);
-+struct symbol *map__find_symbol_by_name_from(struct map *map, const char *name,
-+					     symbol_filter_t filter,
-+					     struct symbol *from);
- void map__fixup_start(struct map *map);
- void map__fixup_end(struct map *map);
+ #define strdup_or_goto(str, label)	\
+@@ -2221,11 +2220,11 @@ static int find_probe_trace_events_from_map(struct perf_probe_event *pev,
+ 	struct map *map = NULL;
+ 	struct kmap *kmap = NULL;
+ 	struct ref_reloc_sym *reloc_sym = NULL;
+-	struct symbol *sym;
+-	struct rb_node *nd;
++	struct symbol *sym = NULL;
+ 	struct probe_trace_event *tev;
+ 	struct perf_probe_point *pp = &pev->point;
+ 	struct probe_trace_point *tp;
++	int num_matched_functions;
+ 	int ret, i;
  
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index c24c5b83156c..e5800497ca61 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -396,6 +396,7 @@ static struct symbol *symbols__find_by_name(struct rb_root *symbols,
- 					    const char *name)
- {
- 	struct rb_node *n;
-+	struct symbol_name_rb_node *s;
- 
- 	if (symbols == NULL)
- 		return NULL;
-@@ -403,7 +404,6 @@ static struct symbol *symbols__find_by_name(struct rb_root *symbols,
- 	n = symbols->rb_node;
- 
- 	while (n) {
--		struct symbol_name_rb_node *s;
- 		int cmp;
- 
- 		s = rb_entry(n, struct symbol_name_rb_node, rb_node);
-@@ -414,10 +414,24 @@ static struct symbol *symbols__find_by_name(struct rb_root *symbols,
- 		else if (cmp > 0)
- 			n = n->rb_right;
- 		else
--			return &s->sym;
-+			break;
+ 	/* Init maps of given executable or kernel */
+@@ -2242,10 +2241,8 @@ static int find_probe_trace_events_from_map(struct perf_probe_event *pev,
+ 	 * Load matched symbols: Since the different local symbols may have
+ 	 * same name but different addresses, this lists all the symbols.
+ 	 */
+-	num_matched_functions = 0;
+-	looking_function_name = pp->function;
+-	ret = map__load(map, probe_function_filter);
+-	if (ret || num_matched_functions == 0) {
++	num_matched_functions = find_probe_functions(map, pp->function);
++	if (num_matched_functions == 0) {
+ 		pr_err("Failed to find symbol %s in %s\n", pp->function,
+ 			target ? : "kernel");
+ 		ret = -ENOENT;
+@@ -2275,7 +2272,7 @@ static int find_probe_trace_events_from_map(struct perf_probe_event *pev,
  	}
  
--	return NULL;
-+	if (n == NULL)
-+		return NULL;
-+
-+	/* return first symbol that has same name (if any) */
-+	for (n = rb_prev(n); n; n = rb_prev(n)) {
-+		struct symbol_name_rb_node *tmp;
-+
-+		tmp = rb_entry(n, struct symbol_name_rb_node, rb_node);
-+		if (strcmp(tmp->sym.name, s->sym.name))
-+			break;
-+
-+		s = tmp;
-+	}
-+
-+	return &s->sym;
- }
- 
- struct symbol *dso__find_symbol(struct dso *dso,
-@@ -436,10 +450,27 @@ struct symbol *dso__next_symbol(struct symbol *sym)
- 	return symbols__next(sym);
- }
- 
-+/*
-+ * When @from is NULL, returns first symbol that matched with @name.
-+ * Otherwise, returns next symbol after @from in case some (local) symbols
-+ * have same name, or NULL.
-+ */
- struct symbol *dso__find_symbol_by_name(struct dso *dso, enum map_type type,
--					const char *name)
-+					const char *name, struct symbol *from)
- {
--	return symbols__find_by_name(&dso->symbol_names[type], name);
-+	struct rb_node *n;
-+	struct symbol_name_rb_node *s;
-+
-+	if (from == NULL)
-+		return symbols__find_by_name(&dso->symbol_names[type], name);
-+
-+	s = container_of(from, struct symbol_name_rb_node, sym);
-+	n = rb_prev(&s->rb_node);
-+	if (n == NULL)
-+		return NULL;
-+
-+	s = rb_entry(n, struct symbol_name_rb_node, rb_node);
-+	return strcmp(s->sym.name, name) ? NULL : &s->sym;
- }
- 
- void dso__sort_by_name(struct dso *dso, enum map_type type)
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 9d602e9c6f59..cd4f51d95bd0 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -230,7 +230,7 @@ int dso__load_kallsyms(struct dso *dso, const char *filename, struct map *map,
- struct symbol *dso__find_symbol(struct dso *dso, enum map_type type,
- 				u64 addr);
- struct symbol *dso__find_symbol_by_name(struct dso *dso, enum map_type type,
--					const char *name);
-+					const char *name, struct symbol *from);
- 
- struct symbol *dso__first_symbol(struct dso *dso, enum map_type type);
- struct symbol *dso__next_symbol(struct symbol *sym);
+ 	ret = 0;
+-	map__for_each_symbol(map, sym, nd) {
++	while ((sym = map__find_symbol_by_name_from(map, pp->function, NULL, sym))) {
+ 		tev = (*tevs) + ret;
+ 		tp = &tev->point;
+ 		if (ret == num_matched_functions) {
 -- 
 2.2.1
 
