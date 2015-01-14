@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755106AbbANHid (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:38:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58862 "EHLO
+	id S933342AbbANH6y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:58:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58581 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752033AbbANHi3 (ORCPT
+	with ESMTP id S932706AbbANHfQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:38:29 -0500
+	Wed, 14 Jan 2015 02:35:16 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jarkko Nikula <jarkko.nikula@linux.intel.com>,
-        Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.10 09/44] ASoC: max98090: Fix ill-defined sidetone route
+        Jeff Layton <jlayton@primarydata.com>,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        "J. Bruce Fields" <bfields@redhat.com>
+Subject: [PATCH 3.14 50/77] fs: nfsd: Fix signedness bug in compare_blob
 Date: Tue, 13 Jan 2015 23:23:30 -0800
-Message-Id: <20150114072227.982477874@linuxfoundation.org>
+Message-Id: <20150114072227.002494977@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
-References: <20150114072227.419663002@linuxfoundation.org>
+In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
+References: <20150114072224.182299947@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,48 +26,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 
-commit 48826ee590da03e9882922edf96d8d27bdfe9552 upstream.
+commit ef17af2a817db97d42dd2ec0a425231748e23dbc upstream.
 
-Commit 5fe5b767dc6f ("ASoC: dapm: Do not pretend to support controls for non
-mixer/mux widgets") revealed ill-defined control in a route between
-"STENL Mux" and DACs in max98090.c:
+Bugs similar to the one in acbbe6fbb240 (kcmp: fix standard comparison
+bug) are in rich supply.
 
-max98090 i2c-193C9890:00: Control not supported for path STENL Mux -> [NULL] -> DACL
-max98090 i2c-193C9890:00: ASoC: no dapm match for STENL Mux --> NULL --> DACL
-max98090 i2c-193C9890:00: ASoC: Failed to add route STENL Mux -> NULL -> DACL
-max98090 i2c-193C9890:00: Control not supported for path STENL Mux -> [NULL] -> DACR
-max98090 i2c-193C9890:00: ASoC: no dapm match for STENL Mux --> NULL --> DACR
-max98090 i2c-193C9890:00: ASoC: Failed to add route STENL Mux -> NULL -> DACR
+In this variant, the problem is that struct xdr_netobj::len has type
+unsigned int, so the expression o1->len - o2->len _also_ has type
+unsigned int; it has completely well-defined semantics, and the result
+is some non-negative integer, which is always representable in a long
+long. But this means that if the conditional triggers, we are
+guaranteed to return a positive value from compare_blob.
 
-Since there is no control between "STENL Mux" and DACs the control name must
-be NULL not "NULL".
+In this case it could be fixed by
 
-Signed-off-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+-       res = o1->len - o2->len;
++       res = (long long)o1->len - (long long)o2->len;
+
+but I'd rather eliminate the usually broken 'return a - b;' idiom.
+
+Reviewed-by: Jeff Layton <jlayton@primarydata.com>
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/max98090.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/nfsd/nfs4state.c |   15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
 
---- a/sound/soc/codecs/max98090.c
-+++ b/sound/soc/codecs/max98090.c
-@@ -1364,8 +1364,8 @@ static const struct snd_soc_dapm_route m
- 	{"STENL Mux", "Sidetone Left", "DMICL"},
- 	{"STENR Mux", "Sidetone Right", "ADCR"},
- 	{"STENR Mux", "Sidetone Right", "DMICR"},
--	{"DACL", "NULL", "STENL Mux"},
--	{"DACR", "NULL", "STENL Mux"},
-+	{"DACL", NULL, "STENL Mux"},
-+	{"DACR", NULL, "STENL Mux"},
+--- a/fs/nfsd/nfs4state.c
++++ b/fs/nfsd/nfs4state.c
+@@ -1209,15 +1209,14 @@ static int copy_cred(struct svc_cred *ta
+ 	return 0;
+ }
  
- 	{"AIFINL", NULL, "SHDN"},
- 	{"AIFINR", NULL, "SHDN"},
+-static long long
++static int
+ compare_blob(const struct xdr_netobj *o1, const struct xdr_netobj *o2)
+ {
+-	long long res;
+-
+-	res = o1->len - o2->len;
+-	if (res)
+-		return res;
+-	return (long long)memcmp(o1->data, o2->data, o1->len);
++	if (o1->len < o2->len)
++		return -1;
++	if (o1->len > o2->len)
++		return 1;
++	return memcmp(o1->data, o2->data, o1->len);
+ }
+ 
+ static int same_name(const char *n1, const char *n2)
+@@ -1401,7 +1400,7 @@ add_clp_to_name_tree(struct nfs4_client
+ static struct nfs4_client *
+ find_clp_in_name_tree(struct xdr_netobj *name, struct rb_root *root)
+ {
+-	long long cmp;
++	int cmp;
+ 	struct rb_node *node = root->rb_node;
+ 	struct nfs4_client *clp;
+ 
 
 
