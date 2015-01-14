@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755307AbbANHiu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:38:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58881 "EHLO
+	id S1755337AbbANHiz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:38:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58886 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755287AbbANHis (ORCPT
+	with ESMTP id S1755041AbbANHis (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Jan 2015 02:38:48 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.10 27/44] ALSA: hda - Fix wrong gpio_dir & gpio_mask hint setups for IDT/STAC codecs
-Date: Tue, 13 Jan 2015 23:23:48 -0800
-Message-Id: <20150114072229.008565202@linuxfoundation.org>
+        Simon Schubert <2+kernel@0x2c.org>
+Subject: [PATCH 3.10 28/44] USB: cdc-acm: check for valid interfaces
+Date: Tue, 13 Jan 2015 23:23:49 -0800
+Message-Id: <20150114072229.050091354@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
 References: <20150114072227.419663002@linuxfoundation.org>
@@ -29,35 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-commit c507de88f6a336bd7296c9ec0073b2d4af8b4f5e upstream.
+commit 403dff4e2c94f275e24fd85f40b2732ffec268a1 upstream.
 
-stac_store_hints() does utterly wrong for masking the values for
-gpio_dir and gpio_data, likely due to copy&paste errors.  Fortunately,
-this feature is used very rarely, so the impact must be really small.
+We need to check that we have both a valid data and control inteface for both
+types of headers (union and not union.)
 
-Reported-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+References: https://bugzilla.kernel.org/show_bug.cgi?id=83551
+Reported-by: Simon Schubert <2+kernel@0x2c.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_sigmatel.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/class/cdc-acm.c |    9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -573,9 +573,9 @@ static void stac_store_hints(struct hda_
- 			spec->gpio_mask;
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1087,10 +1087,11 @@ next_desc:
+ 	} else {
+ 		control_interface = usb_ifnum_to_if(usb_dev, union_header->bMasterInterface0);
+ 		data_interface = usb_ifnum_to_if(usb_dev, (data_interface_num = union_header->bSlaveInterface0));
+-		if (!control_interface || !data_interface) {
+-			dev_dbg(&intf->dev, "no interfaces\n");
+-			return -ENODEV;
+-		}
++	}
++
++	if (!control_interface || !data_interface) {
++		dev_dbg(&intf->dev, "no interfaces\n");
++		return -ENODEV;
  	}
- 	if (get_int_hint(codec, "gpio_dir", &spec->gpio_dir))
--		spec->gpio_mask &= spec->gpio_mask;
--	if (get_int_hint(codec, "gpio_data", &spec->gpio_data))
- 		spec->gpio_dir &= spec->gpio_mask;
-+	if (get_int_hint(codec, "gpio_data", &spec->gpio_data))
-+		spec->gpio_data &= spec->gpio_mask;
- 	if (get_int_hint(codec, "eapd_mask", &spec->eapd_mask))
- 		spec->eapd_mask &= spec->gpio_mask;
- 	if (get_int_hint(codec, "gpio_mute", &spec->gpio_mute))
+ 
+ 	if (data_interface_num != call_interface_num)
 
 
