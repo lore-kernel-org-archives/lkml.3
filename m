@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286AbbANOCa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 09:02:30 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36859 "EHLO
+	id S1753380AbbANOCs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 09:02:48 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:36868 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753172AbbANOC2 (ORCPT
+	with ESMTP id S1752785AbbANOCq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 09:02:28 -0500
-Date: Wed, 14 Jan 2015 06:01:50 -0800
-From: tip-bot for Eric Sandeen <tipbot@zytor.com>
-Message-ID: <tip-a8b686b3af4419f92e0ea5be1c76fb68363df8e6@git.kernel.org>
-Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        torvalds@linux-foundation.org, peterz@infradead.org, hpa@zytor.com,
-        sandeen@redhat.com
-Reply-To: sandeen@redhat.com, tglx@linutronix.de, mingo@kernel.org,
-        linux-kernel@vger.kernel.org, hpa@zytor.com,
-        torvalds@linux-foundation.org, peterz@infradead.org
-In-Reply-To: <5490B158.4060005@redhat.com>
-References: <5490B158.4060005@redhat.com>
+	Wed, 14 Jan 2015 09:02:46 -0500
+Date: Wed, 14 Jan 2015 06:02:10 -0800
+From: tip-bot for Tetsuo Handa <tipbot@zytor.com>
+Message-ID: <tip-1f8a7633094b7886c0677b78ba60b82e501f3ce6@git.kernel.org>
+Cc: peterz@infradead.org, hpa@zytor.com, mingo@kernel.org, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, penguin-kernel@I-love.SAKURA.ne.jp,
+        torvalds@linux-foundation.org
+Reply-To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        penguin-kernel@I-love.SAKURA.ne.jp, tglx@linutronix.de,
+        mingo@kernel.org, peterz@infradead.org, hpa@zytor.com
+In-Reply-To: <201412052131.GCE35924.FVHFOtLOJOMQFS@I-love.SAKURA.ne.jp>
+References: <201412052131.GCE35924.FVHFOtLOJOMQFS@I-love.SAKURA.ne.jp>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/debug:
-  Check for stack overflow in ___might_sleep()
-Git-Commit-ID: a8b686b3af4419f92e0ea5be1c76fb68363df8e6
+Subject: [tip:sched/core] sched/debug: Fix potential call to __ffs(0)
+  in sched_show_task()
+Git-Commit-ID: 1f8a7633094b7886c0677b78ba60b82e501f3ce6
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,46 +34,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a8b686b3af4419f92e0ea5be1c76fb68363df8e6
-Gitweb:     http://git.kernel.org/tip/a8b686b3af4419f92e0ea5be1c76fb68363df8e6
-Author:     Eric Sandeen <sandeen@redhat.com>
-AuthorDate: Tue, 16 Dec 2014 16:25:28 -0600
+Commit-ID:  1f8a7633094b7886c0677b78ba60b82e501f3ce6
+Gitweb:     http://git.kernel.org/tip/1f8a7633094b7886c0677b78ba60b82e501f3ce6
+Author:     Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+AuthorDate: Fri, 5 Dec 2014 21:22:22 +0900
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 14 Jan 2015 13:34:14 +0100
+CommitDate: Wed, 14 Jan 2015 13:34:15 +0100
 
-sched/debug: Check for stack overflow in ___might_sleep()
+sched/debug: Fix potential call to __ffs(0) in sched_show_task()
 
-Sometimes a "BUG: sleeping function called from invalid context"
-message is not indicative of locking problems, but is the result
-of a stack overflow corrupting the thread info.
+"struct task_struct"->state is "volatile long" and __ffs() warns that
+"Undefined if no bit exists, so code should check against 0 first."
 
-Witness http://oss.sgi.com/archives/xfs/2014-02/msg00325.html
-for example, which took a few go-rounds to sort out.
+Therefore, at expression
 
-If we're printing the warning, things are wonky already, and
-it'd be informative to check for the stack end corruption at this
-point, too.
+  state = p->state ? __ffs(p->state) + 1 : 0;
 
-Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+in sched_show_task(), CPU might see "p->state" before "?" as "non-zero"
+but "p->state" after "?" as "zero", which could result in
+"state >= sizeof(stat_nam)" being true and bogus '?' is printed.
+
+This patch changes "state" from "unsigned int" to "unsigned long" and
+save "p->state" before calling __ffs(), in order to avoid potential call
+to __ffs(0).
+
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/5490B158.4060005@redhat.com
+Link: http://lkml.kernel.org/r/201412052131.GCE35924.FVHFOtLOJOMQFS@I-love.SAKURA.ne.jp
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/core.c | 3 +++
- 1 file changed, 3 insertions(+)
+ kernel/sched/core.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index c0accc0..56c9b79 100644
+index 56c9b79..816c172 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -7325,6 +7325,9 @@ void ___might_sleep(const char *file, int line, int preempt_offset)
- 			in_atomic(), irqs_disabled(),
- 			current->pid, current->comm);
+@@ -4508,9 +4508,10 @@ void sched_show_task(struct task_struct *p)
+ {
+ 	unsigned long free = 0;
+ 	int ppid;
+-	unsigned state;
++	unsigned long state = p->state;
  
-+	if (task_stack_end_corrupted(current))
-+		printk(KERN_EMERG "Thread overran stack, or stack corrupted\n");
-+
- 	debug_show_held_locks(current);
- 	if (irqs_disabled())
- 		print_irqtrace_events(current);
+-	state = p->state ? __ffs(p->state) + 1 : 0;
++	if (state)
++		state = __ffs(state) + 1;
+ 	printk(KERN_INFO "%-15.15s %c", p->comm,
+ 		state < sizeof(stat_nam) - 1 ? stat_nam[state] : '?');
+ #if BITS_PER_LONG == 32
