@@ -1,99 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753328AbbANPBI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 10:01:08 -0500
-Received: from smtprelay0139.hostedemail.com ([216.40.44.139]:50840 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752902AbbANPBG (ORCPT
+	id S1753510AbbANPBU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 10:01:20 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:54951 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752957AbbANPBQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 10:01:06 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::::,RULES_HIT:41:355:379:541:599:800:960:968:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2693:2904:3138:3139:3140:3141:3142:3355:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4250:5007:6119:6261:7875:7903:8660:9010:10004:10400:10848:10967:11026:11232:11658:11914:12043:12296:12438:12517:12519:12740:13148:13161:13229:13230:13255:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: fang84_6084956571c0c
-X-Filterd-Recvd-Size: 3584
-Date: Wed, 14 Jan 2015 10:01:02 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 3/7] wait.[ch]: Introduce the simple waitqueue (swait)
- implementation
-Message-ID: <20150114100102.55c78715@gandalf.local.home>
-In-Reply-To: <20150114143102.GE22386@worktop.programming.kicks-ass.net>
-References: <1413591782-23453-1-git-send-email-paul.gortmaker@windriver.com>
-	<1413591782-23453-4-git-send-email-paul.gortmaker@windriver.com>
-	<20150114103834.GN23965@worktop.programming.kicks-ass.net>
-	<20150114091849.501a0a72@gandalf.local.home>
-	<20150114143102.GE22386@worktop.programming.kicks-ass.net>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Jan 2015 10:01:16 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-cf-54b684b9a763
+Date: Wed, 14 Jan 2015 16:01:06 +0100
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: Kamil Debski <k.debski@samsung.com>, Jean Delvare <jdelvare@suse.de>,
+        Guenter Roeck <linux@roeck-us.net>, lm-sensors@lm-sensors.org,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        devicetree@vger.kernel.org, Lukasz Majewski <l.majewski@majess.pl>,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>
+Subject: Re: [PATCH v2 1/8] thermal: Provide stub for
+ thermal_of_cooling_device_register() function
+Message-id: <20150114160106.20aa160b@amdc2363>
+In-reply-to: <20150102190339.GA22356@developer>
+References: <1418897591-18332-1-git-send-email-l.majewski@samsung.com>
+ <1419265668-32283-1-git-send-email-l.majewski@samsung.com>
+ <1419265668-32283-2-git-send-email-l.majewski@samsung.com>
+ <20150102185426.GC12485@developer> <20150102190339.GA22356@developer>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIIsWRmVeSWpSXmKPExsVy+t9jAd2dLdtCDK7MsLF4vGYxk8X8I+dY
+	LeZfucZqsfTuJzaLH68vsFms+atk0bvgKpvFm0fcFpd3zWGz+Nx7hNFixvl9TBZPFp5hsrgz
+	bS+bxeE37awOfB47Z91l93gwcTebx7ppb5k9dn5vYPfo27KK0WPz6WqPz5vkAtijuGxSUnMy
+	y1KL9O0SuDKWtq1mL5ikWPG99QNTA+M3qS5GTg4JAROJAw9eMEHYYhIX7q1nA7GFBBYxSny8
+	5Q9h/2KUePeiEsRmEVCVuL9+K1gNm4CexOe7T8F6RQS0JE5c2g5kc3EwC0xjkVh9vZcdJCEs
+	kCpx+e5msAZeoIbVk1tZuxg5ODgF9CXWfpcHqRcS6GCSmDqlA2wQv4CkRPu/H8wQB9lJnPu0
+	gR2iV1Dix+R7LCA2s4C6xKR5i5ghbG2JJ+8usE5gFJyFpGwWkrJZSMoWMDKvYhRNLUguKE5K
+	zzXSK07MLS7NS9dLzs/dxAiOqGfSOxhXNVgcYhTgYFTi4XU4sjVEiDWxrLgy9xCjBAezkgjv
+	0/JtIUK8KYmVValF+fFFpTmpxYcYpTlYlMR5lezbQoQE0hNLUrNTUwtSi2CyTBycUg2MTPtE
+	7/7pnT2xqdvR8lzkYvNb19/ZpxZ/71adPXXH2nVcNzel6fqkZ1uInOt4+jRx6pSL/+9+Yt5g
+	zHL0t4HgxA1t4d8XOk9NWJ6iofz+oMeyfReeV+kb+q7v5f/+ZXPI/osfDQOtIm25vU4k/bje
+	weq8/4pumz6n2NYvopfcXq5ccfNGIHPudCWW4oxEQy3mouJEALyxwCakAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Jan 2015 15:31:02 +0100
-Peter Zijlstra <peterz@infradead.org> wrote:
+Hi Eduardo,
 
-> On Wed, Jan 14, 2015 at 09:18:49AM -0500, Steven Rostedt wrote:
-> > > +/*
-> > > + * Does not allow usage from IRQ disabled, since we must be able to
-> > > + * release IRQs to guarantee bounded hold time.
+> On Fri, Jan 02, 2015 at 02:54:28PM -0400, Eduardo Valentin wrote:
+> > On Mon, Dec 22, 2014 at 05:27:41PM +0100, Lukasz Majewski wrote:
+> > > Odroid U3 fan can work without being registered as OF cooling
+> > > device (with CONFIG_THERMAL_OF disabled).
+> > > In this situation it can be controlled via PWM entry at
+> > > /sys/class/hwmon/hwmon0/pwm1.
+> > > 
+> > > Therefore, the thermal_of_cooling_device_register() function
+> > > needs a stub to allow clean compilation.
+> > > 
+> > > Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
 > > 
-> > Actually we (-rt people) don't care if it's done with irq disabled, as
-> > long is it was disabled via spin_lock_irq*() and not
-> > raw_spin_lock_irq() or local_irq_save/disable().
-> > 
-> > Because in that case, in -rt, irqs would not be disabled. We could add a
-> > check in -rt that makes sure that's the case. I would think this is OK
-> > to call from an interrupt handler as long as it is a thread in -rt.
-> > 
-> > But, we can keep this restriction for now and change it if we find that
-> > the restriction is preventing us from using it someplace where its
-> > needed for -rt.
+> > Acked-by: Eduardo Valentin <edubezval@gmail.com>
 > 
-> One of the reasons for the swait thing is to be able to use
-> raw_spinlock_t, and iirc raw_spin_lock_irq() will still disable IRQs
-> even on RT.
-
-Right, but that's in the internals of swait. The comment is saying that
-swait can't be called with irqs disabled. non -rt shouldn't care, and
-in -rt, we only care if it was called with real interrupts disabled.
-
+> Sorry, too fast,
 > 
-> > > + */
-> > > +void __swake_up_all(struct swait_queue_head *q, unsigned int state)
-> > > +{
-> > > +	struct swait_queue *curr, *next;
-> > > +	LIST_HEAD(tmp);
-> > > +
-> > > +	__swait_wakeup_debug(q, state);
-> > > +
-> > > +	if (!swait_active(q))
-> > > +		return;
-> > > +
-> > > +	raw_spin_lock_irq(&q->lock);
-> > > +	list_splice_init(&q->task_list, &tmp);
-> > > +	while (!list_empty(&tmp)) {
-> > > +		curr = list_first_entry(&tmp, typeof(curr), task_list);
-> > > +
-> > > +		wake_up_state(curr->task, state);
-> > > +		list_del_init(&curr->task_list);
+> This is actually
+> Nacked-by: Eduardo Valentin <edubezval@gmail.com>
+> 
+> :-)
+> 
+> I get this error:
+> drivers/thermal/thermal_core.c:1210:1: error: redefinition of
+> ‘thermal_of_cooling_device_register’
+>  thermal_of_cooling_device_register(struct device_node *np,
+>   ^
+>   In file included from drivers/thermal/thermal_core.c:34:0:
+>   include/linux/thermal.h:321:1: note: previous definition of
+>   ‘thermal_of_cooling_device_register’ was here
+>    thermal_of_cooling_device_register(struct device_node *np,
+>     ^
+> 
+> 
+> We provide the function in thermal core even if CONFIG_THERMAL_OF is
+> not set.
+
+Unfortunately the PWM fan subsystem can work perfectly fine without
+CONFIG_THERMAL.
+
+I think that it would be enough to make something like this in
+the ./include/linux/thermal.h:
+
+#ifdef CONFIG_THERMAL
+	static inline struct thermal_cooling_device *
+		thermal_of_cooling_device_register(struct device_node
+		*np, char *type, void *devdata,
+				   const struct
+		thermal_cooling_device_ops *ops) {
+		return NULL;
+	}
+#else
+	[ already present declaration of
+	thermal_of_cooling_device_register() ]
+#endif /* CONFIG_THERMAL */
+
+
+
 > > 
-> > What happens if curr->task does not match state? We just removed it
-> > from the list and never woke it up, didn't we?
+> > > ---
+> > > Changes for v2:
+> > > - None
+> > > ---
+> > >  include/linux/thermal.h | 14 +++++++++++---
+> > >  1 file changed, 11 insertions(+), 3 deletions(-)
+> > > 
+> > > diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+> > > index 2de3d9e..871123c 100644
+> > > --- a/include/linux/thermal.h
+> > > +++ b/include/linux/thermal.h
+> > > @@ -328,6 +328,10 @@ thermal_zone_of_sensor_register(struct
+> > > device *dev, int id, void *data, const struct
+> > > thermal_zone_of_device_ops *ops); void
+> > > thermal_zone_of_sensor_unregister(struct device *dev, struct
+> > > thermal_zone_device *tz); +struct thermal_cooling_device *
+> > > +thermal_of_cooling_device_register(struct device_node *np,
+> > > +				   char *type, void *devdata,
+> > > +				   const struct
+> > > thermal_cooling_device_ops *); #else
+> > >  static inline struct thermal_zone_device *
+> > >  thermal_zone_of_sensor_register(struct device *dev, int id, void
+> > > *data, @@ -342,6 +346,13 @@ void
+> > > thermal_zone_of_sensor_unregister(struct device *dev, {
+> > >  }
+> > >  
+> > > +static inline struct thermal_cooling_device *
+> > > +thermal_of_cooling_device_register(struct device_node *np,
+> > > +				   char *type, void *devdata,
+> > > +				   const struct
+> > > thermal_cooling_device_ops *ops) +{
+> > > +	return NULL;
+> > > +}
+> > >  #endif
+> > >  struct thermal_zone_device *thermal_zone_device_register(const
+> > > char *, int, int, void *, struct thermal_zone_device_ops *,
+> > > @@ -357,9 +368,6 @@ void thermal_zone_device_update(struct
+> > > thermal_zone_device *); 
+> > >  struct thermal_cooling_device
+> > > *thermal_cooling_device_register(char *, void *, const struct
+> > > thermal_cooling_device_ops *); -struct thermal_cooling_device *
+> > > -thermal_of_cooling_device_register(struct device_node *np, char
+> > > *, void *,
+> > > -				   const struct
+> > > thermal_cooling_device_ops *); void
+> > > thermal_cooling_device_unregister(struct thermal_cooling_device
+> > > *); struct thermal_zone_device
+> > > *thermal_zone_get_zone_by_name(const char *name); int
+> > > thermal_zone_get_temp(struct thermal_zone_device *tz, unsigned
+> > > long *temp); -- 2.0.0.rc2
+> > > 
 > 
-> Then you've messed up. One should not mix and match states with swait
-> queues, there's some debug code that tries to make sure you don't do
-> this.
+> 
 
-Then why even bother with the wake_up_state, and not just call
-wake_up_process()?
 
-I bad wakeup is easier to debug than no wakeup.
 
--- Steve
+-- 
+Best regards,
+
+Lukasz Majewski
+
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
