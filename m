@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755170AbbANHeA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:34:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58446 "EHLO
+	id S1752121AbbANIZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:25:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57990 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754418AbbANHd5 (ORCPT
+	with ESMTP id S1754558AbbANH2d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:33:57 -0500
+	Wed, 14 Jan 2015 02:28:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephane Grosjean <s.grosjean@peak-system.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH 3.14 07/77] can: peak_usb: fix cleanup sequence order in case of error during init
+        Robert Baldyga <r.baldyga@samsung.com>
+Subject: [PATCH 3.18 096/150] serial: samsung: wait for transfer completion before clock disable
 Date: Tue, 13 Jan 2015 23:22:47 -0800
-Message-Id: <20150114072224.564450562@linuxfoundation.org>
+Message-Id: <20150114072100.222863241@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-References: <20150114072224.182299947@linuxfoundation.org>
+In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
+References: <20150114072055.842408181@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,81 +24,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Stephane Grosjean <s.grosjean@peak-system.com>
+From: Robert Baldyga <r.baldyga@samsung.com>
 
-commit af35d0f1cce7a990286e2b94c260a2c2d2a0e4b0 upstream.
+commit 1ff383a4c3eda8893ec61b02831826e1b1f46b41 upstream.
 
-This patch sets the correct reverse sequence order to the instructions
-set to run, when any failure occurs during the initialization steps.
-It also adds the missing unregistration call of the can device if the
-failure appears after having been registered.
+This patch adds waiting until transmit buffer and shifter will be empty
+before clock disabling.
 
-Signed-off-by: Stephane Grosjean <s.grosjean@peak-system.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Without this fix it's possible to have clock disabled while data was
+not transmited yet, which causes unproper state of TX line and problems
+in following data transfers.
+
+Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/usb/peak_usb/pcan_usb_core.c |   17 ++++++++++-------
- 1 file changed, 10 insertions(+), 7 deletions(-)
+ drivers/tty/serial/samsung.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/drivers/net/can/usb/peak_usb/pcan_usb_core.c
-+++ b/drivers/net/can/usb/peak_usb/pcan_usb_core.c
-@@ -734,7 +734,7 @@ static int peak_usb_create_dev(struct pe
- 	dev->cmd_buf = kmalloc(PCAN_USB_MAX_CMD_LEN, GFP_KERNEL);
- 	if (!dev->cmd_buf) {
- 		err = -ENOMEM;
--		goto lbl_set_intf_data;
-+		goto lbl_free_candev;
- 	}
+--- a/drivers/tty/serial/samsung.c
++++ b/drivers/tty/serial/samsung.c
+@@ -559,11 +559,15 @@ static void s3c24xx_serial_pm(struct uar
+ 			      unsigned int old)
+ {
+ 	struct s3c24xx_uart_port *ourport = to_ourport(port);
++	int timeout = 10000;
  
- 	dev->udev = usb_dev;
-@@ -773,7 +773,7 @@ static int peak_usb_create_dev(struct pe
- 	err = register_candev(netdev);
- 	if (err) {
- 		dev_err(&intf->dev, "couldn't register CAN device: %d\n", err);
--		goto lbl_free_cmd_buf;
-+		goto lbl_restore_intf_data;
- 	}
+ 	ourport->pm_level = level;
  
- 	if (dev->prev_siblings)
-@@ -786,14 +786,14 @@ static int peak_usb_create_dev(struct pe
- 	if (dev->adapter->dev_init) {
- 		err = dev->adapter->dev_init(dev);
- 		if (err)
--			goto lbl_free_cmd_buf;
-+			goto lbl_unregister_candev;
- 	}
- 
- 	/* set bus off */
- 	if (dev->adapter->dev_set_bus) {
- 		err = dev->adapter->dev_set_bus(dev, 0);
- 		if (err)
--			goto lbl_free_cmd_buf;
-+			goto lbl_unregister_candev;
- 	}
- 
- 	/* get device number early */
-@@ -805,11 +805,14 @@ static int peak_usb_create_dev(struct pe
- 
- 	return 0;
- 
--lbl_free_cmd_buf:
--	kfree(dev->cmd_buf);
-+lbl_unregister_candev:
-+	unregister_candev(netdev);
- 
--lbl_set_intf_data:
-+lbl_restore_intf_data:
- 	usb_set_intfdata(intf, dev->prev_siblings);
-+	kfree(dev->cmd_buf);
+ 	switch (level) {
+ 	case 3:
++		while (--timeout && !s3c24xx_serial_txempty_nofifo(port))
++			udelay(100);
 +
-+lbl_free_candev:
- 	free_candev(netdev);
+ 		if (!IS_ERR(ourport->baudclk))
+ 			clk_disable_unprepare(ourport->baudclk);
  
- 	return err;
 
 
