@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754521AbbANVnF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 16:43:05 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:46605 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754486AbbANVnD (ORCPT
+	id S1754445AbbANVrh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 16:47:37 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:45658 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752694AbbANVrf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 16:43:03 -0500
-Date: Wed, 14 Jan 2015 23:46:49 +0200
-From: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
-To: devel@driverdev.osuosl.org
-Cc: mchehab@osg.samsung.com, gregkh@linuxfoundation.org,
-        hans.verkuil@cisco.com, prabhakar.csengg@gmail.com,
-        boris.brezillon@free-electrons.com, sakari.ailus@linux.intel.com,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: davinci_vpfe: fix space prohibited before semicolon
- warning
-Message-ID: <20150114214649.GA20302@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 14 Jan 2015 16:47:35 -0500
+Date: Wed, 14 Jan 2015 16:47:32 -0500 (EST)
+Message-Id: <20150114.164732.1058665183210615359.davem@davemloft.net>
+To: Zubair.Kakakhel@imgtec.com
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, s.hauer@pengutronix.de,
+        sergei.shtylyov@cogentembedded.com
+Subject: Re: [PATCH_V4] dm9000: Add regulator and reset support to dm9000
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1421231777-12589-1-git-send-email-Zubair.Kakakhel@imgtec.com>
+References: <1421231777-12589-1-git-send-email-Zubair.Kakakhel@imgtec.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 14 Jan 2015 13:47:35 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the following checkpatch.pl warning:
+From: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
+Date: Wed, 14 Jan 2015 10:36:17 +0000
 
-space prohibited before semicolon
+> +	power = devm_regulator_get(dev, "vcc");
+> +	if (PTR_ERR(power) == -EPROBE_DEFER)
+> +		return -EPROBE_DEFER;
+> +	if (IS_ERR(power)) {
+> +		dev_dbg(dev, "no regulator provided\n");
 
-Signed-off-by: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
----
-v1: This patch applies to Greg's tree.
+I know it may seem silly, but to me it is more logical to always
+guard PTR_ERR() uses with IS_ERR().
 
- drivers/staging/media/davinci_vpfe/dm365_ipipe.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Therefore could you please restructure this as:
 
-diff --git a/drivers/staging/media/davinci_vpfe/dm365_ipipe.c b/drivers/staging/media/davinci_vpfe/dm365_ipipe.c
-index 704fa20..a425f71 100644
---- a/drivers/staging/media/davinci_vpfe/dm365_ipipe.c
-+++ b/drivers/staging/media/davinci_vpfe/dm365_ipipe.c
-@@ -901,7 +901,7 @@ static int ipipe_set_gbce_params(struct vpfe_ipipe_device *ipipe, void *param)
- 	struct device *dev = ipipe->subdev.v4l2_dev->dev;
- 
- 	if (!gbce_param) {
--		memset(gbce, 0 , sizeof(struct vpfe_ipipe_gbce));
-+		memset(gbce, 0, sizeof(struct vpfe_ipipe_gbce));
- 	} else {
- 		memcpy(gbce, gbce_param, sizeof(struct vpfe_ipipe_gbce));
- 		if (ipipe_validate_gbce_params(gbce) < 0) {
-@@ -1086,7 +1086,7 @@ static int ipipe_set_car_params(struct vpfe_ipipe_device *ipipe, void *param)
- 	struct vpfe_ipipe_car *car = &ipipe->config.car;
- 
- 	if (!car_param) {
--		memset(car , 0, sizeof(struct vpfe_ipipe_car));
-+		memset(car, 0, sizeof(struct vpfe_ipipe_car));
- 	} else {
- 		memcpy(car, car_param, sizeof(struct vpfe_ipipe_car));
- 		if (ipipe_validate_car_params(car) < 0) {
--- 
-1.9.3
+	if (IS_ERR(power)) {
+		if (PTR_ERR(power) == -EPROBE_DEFER)
+			return -EPROBE_DEFER;
+		else
+			dev_dbg(dev, "no regulator provided\n");
+	} else {
 
+Thanks.
