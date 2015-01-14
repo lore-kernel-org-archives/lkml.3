@@ -1,94 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753143AbbANW26 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 17:28:58 -0500
-Received: from us01smtprelay-2.synopsys.com ([198.182.47.9]:34427 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751016AbbANW24 convert rfc822-to-8bit (ORCPT
+	id S1754108AbbANWaD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 17:30:03 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:65357 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751031AbbANWaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 17:28:56 -0500
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: "balbi@ti.com" <balbi@ti.com>, Alan Stern <stern@rowland.harvard.edu>
-CC: Robert Baldyga <r.baldyga@samsung.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dinguyen@opensource.altera.com" <dinguyen@opensource.altera.com>,
-        "yousaf.kaukab@intel.com" <yousaf.kaukab@intel.com>,
-        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>
-Subject: RE: [PATCH v2] usb: dwc2: call dwc2_is_controller_alive() under
- spinlock
-Thread-Topic: [PATCH v2] usb: dwc2: call dwc2_is_controller_alive() under
- spinlock
-Thread-Index: AQHQL8W5lMCdaYrjlUuC2oTfEkhvI5zAib4AgAAICYCAABL6AIAAB36AgAABTYD//4F/UA==
-Date: Wed, 14 Jan 2015 22:28:54 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E03048450771B@US01WEMBX2.internal.synopsys.com>
-References: <20150114211434.GT16533@saruman>
- <Pine.LNX.4.44L0.1501141636590.1464-100000@iolanthe.rowland.org>
- <20150114214603.GU16533@saruman>
-In-Reply-To: <20150114214603.GU16533@saruman>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.13.184.19]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 14 Jan 2015 17:30:00 -0500
 MIME-Version: 1.0
+In-Reply-To: <CAK1hOcMZKpcLVWffv_L9DoaK5-V2qSHkm3N2=mo8wKZfEMLyWA@mail.gmail.com>
+References: <1421272101-16847-1-git-send-email-dvlasenk@redhat.com> <CAK1hOcMZKpcLVWffv_L9DoaK5-V2qSHkm3N2=mo8wKZfEMLyWA@mail.gmail.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 14 Jan 2015 14:29:39 -0800
+Message-ID: <CALCETrXBKnXzhhtvv5o_jAQnShrBJ1v8jCn7dXhDdiOOcZAp+g@mail.gmail.com>
+Subject: Re: [PATCH 01/11] x86: entry_64.S: always allocate complete "struct pt_regs"
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Oleg Nesterov <oleg@redhat.com>, Borislav Petkov <bp@alien8.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
+        Will Drewry <wad@chromium.org>, Kees Cook <keescook@chromium.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Felipe Balbi [mailto:balbi@ti.com]
-> Sent: Wednesday, January 14, 2015 1:46 PM
-> 
-> On Wed, Jan 14, 2015 at 04:41:23PM -0500, Alan Stern wrote:
-> > > > > This is really, really odd. Register accesses are atomic, so the lock
-> > > > > isn't really doing anything. Besides, you're calling
-> > > > > dwc2_is_controller_alive() from within the IRQ handler, so IRQs are
-> > > > > already disabled.
-> > > >
-> > > > Spinlocks sometimes do more than you think.  For instance, here the
-> > > > lock prevents the register access from happening while some other CPU
-> > > > is holding the lock.  If a silicon quirk causes the register access to
-> > > > interfere with other activities, this could be important.
-> > >
-> > > readl() (which is used by dwc2_is_controller_alive()) adds a memory
-> > > barrier to the register accesses, that should force all register
-> > > accesses the be correctly ordered.
-> >
-> > Memory barriers will order accesses that are all made on the same CPU
-> > with respect to each other.  They do not order these accesses against
-> > accesses made from another CPU -- that's why we have spinlocks.  :-)
-> 
-> a fair point :-) The register is still read-only, so that shouldn't
-> matter either :-)
-> 
-> > >  I fail to see how a silicon quirk
-> > > could cause this and if, indeed, it does, I'd be more comfortable with a
-> > > proper STARS tickect number from synopsys :-s
-> >
-> > Maybe accessing this register somehow resets something else.  I don't
-> > know.  It seems unlikely, but at least it explains how adding a
-> > spinlock could fix the problem.
-> 
-> I would really need Paul (or someone at Synopsys) to confirm this
-> somehow. Maybe it has something to do with how the register is
-> implemented, dunno.
-> 
-> Paul, do you have any idea what could cause this ? Could the HW into
-> some weird state if we read GSNPSID at random locations or when data is
-> being transferred, or anything like that ?
+On Wed, Jan 14, 2015 at 2:17 PM, Denys Vlasenko
+<vda.linux@googlemail.com> wrote:
+> On Wed, Jan 14, 2015 at 10:48 PM, Denys Vlasenko <dvlasenk@redhat.com> wrote:
+>> Macros which manipulate "struct pt_regs" on stack are reworked:
+>> ALLOC_PT_GPREGS_ON_STACK allocates the structure.
+>> SAVE_C_REGS saves to it those registers which are clobbered by C code.
+>> SAVE_EXTRA_REGS saves to it all other registers.
+>> Corresponding RESTORE_* and REMOVE_PT_GPREGS_FROM_STACK macros reverse it.
+>
+> Andy,
+>
+> Please note that this patch set also needs the previously posted patch:
+>
+> [PATCH 3/4] x86: open-code register save/restore in trace_hardirqs thunks
+>
+> which is not present in your tree - otherwise arch/x86/lib/thunk_64.S
+> will not compile (no SAVE_ARGS anymore).
 
-Only thing I can think of is that there is some silicon bug in Robert's
-platform. But I am not aware of any STARs that mention accesses to the
-GSNPSID register as being problematic.
+I need to go through Linus' and everyone else's comments on that to
+figure out what to do first.
 
-Funny thing is, this code has been basically the same since at least
-November 2013. So I think some other recent change must have modified
-the timing of the register accesses, or something like that. But that's
-just handwaving, really.
+--Andy
+
+>
+> --
+> vda
+
+
 
 -- 
-Paul
-
+Andy Lutomirski
+AMA Capital Management, LLC
