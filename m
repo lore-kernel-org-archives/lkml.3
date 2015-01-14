@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853AbbANXgj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 18:36:39 -0500
-Received: from mta-out1.inet.fi ([62.71.2.195]:51611 "EHLO kirsi1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752099AbbANXgi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 18:36:38 -0500
-Date: Thu, 15 Jan 2015 01:36:30 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Petr Cermak <petrcermak@chromium.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Primiano Tucci <primiano@chromium.org>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH v2 2/2] task_mmu: Add user-space support for resetting
- mm->hiwater_rss (peak RSS)
-Message-ID: <20150114233630.GA14615@node.dhcp.inet.fi>
-References: <20150107172452.GA7922@node.dhcp.inet.fi>
- <20150114152225.GB31484@google.com>
+	id S1753398AbbANXi0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 18:38:26 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:41591 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221AbbANXiY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 18:38:24 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150114152225.GB31484@google.com>
-User-Agent: Mutt/1.5.23.1 (2014-03-12)
+In-Reply-To: <1409322659-17693-5-git-send-email-pramod.gurav@smartplayin.com>
+References: <1409322659-17693-1-git-send-email-pramod.gurav@smartplayin.com>
+	<1409322659-17693-5-git-send-email-pramod.gurav@smartplayin.com>
+Date: Wed, 14 Jan 2015 17:38:22 -0600
+Message-ID: <CAOZdJXXRgrYUEcX4f5zRuKgX-Dtbpvf-SV4-8rjuohv3=0NJhQ@mail.gmail.com>
+Subject: Re: [PATCH v3 4/4] pinctrl: qcom: Add support for reset for apq8064
+From: Timur Tabi <timur@codeaurora.org>
+To: Pramod Gurav <pramod.gurav@smartplayin.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-arm-msm@vger.kernel.org,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
+        Andy Gross <agross@codeaurora.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 14, 2015 at 03:22:25PM +0000, Petr Cermak wrote:
-> On Wed, Jan 07, 2015 at 07:24:52PM +0200, Kirill A. Shutemov wrote:
-> > And how it's not an ABI break?
-> I don't think this is an ABI break because the current behaviour is not
-> changed unless you write "5" to /proc/pid/clear_refs. If you do, you are
-> explicitly requesting the new functionality.
+On Fri, Aug 29, 2014 at 9:30 AM, Pramod Gurav
+<pramod.gurav@smartplayin.com> wrote:
+>
+> +static void msm_pinctrl_setup_pm_reset(struct msm_pinctrl *pctrl)
+> +{
+> +       int i = 0;
+> +       const struct msm_function *func = pctrl->soc->functions;
+> +
+> +       for (; i <= pctrl->soc->nfunctions; i++)
 
-I'm not sure if it should be considered ABI break or not. Just asking.
+Shouldn't this be
 
-I would like to hear opinion from other people.
- 
-> > We have never-lowering VmHWM for 9+ years. How can you know that nobody
-> > expects this behaviour?
-> This is why we sent an RFC [1] several weeks ago. We expect this to be
-> used mainly by performance-related tools (e.g. profilers) and from the
-> comments in the code [2] VmHWM seems to be a best-effort counter. If this
-> is strictly a no-go, I can only think of the following two alternatives:
-> 
->   1. Add an extra resettable field to /proc/pid/status (e.g.
->      resettable_hiwater_rss). While this doesn't violate the current
->      definition of VmHWM, it adds an extra line to /proc/pid/status,
->      which I think is a much bigger issue.
+            i < pctrl->soc->nfunctions
 
-I don't think extra line is bigger issue. Sane applications would look for
-a key, not line number. We do add lines there. I've posted patch which
-adds one more just today ;)
+As it stands, if nfunctions == 0, this function crashes.
 
->   2. Introduce a new proc fs file to task_mmu (e.g.
->      /proc/pid/profiler_stats), but this feels like overengineering.
-> 
-> > And why do you reset hiwater_rss, but not hiwater_vm?
-> This is a good point. Should we reset both using the same flag, or
-> introduce a new one ("6")?
-> 
-> [1] lkml.iu.edu/hypermail/linux/kernel/1412.1/01877.html
-> [2] task_mmu.c:32: "... such snapshots can always be inconsistent."
 -- 
- Kirill A. Shutemov
+Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+a Linux Foundation Collaborative Project.
