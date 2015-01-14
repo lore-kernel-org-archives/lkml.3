@@ -1,147 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754379AbbANSil (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 13:38:41 -0500
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:38588 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751902AbbANSij (ORCPT
+	id S932087AbbANSjI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 13:39:08 -0500
+Received: from mail-we0-f176.google.com ([74.125.82.176]:50573 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752184AbbANSjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 13:38:39 -0500
+	Wed, 14 Jan 2015 13:39:05 -0500
 MIME-Version: 1.0
-In-Reply-To: <20150114112210.GF4050@arm.com>
-References: <1421168344-5363-1-git-send-email-victor.kamensky@linaro.org>
-	<20150114112210.GF4050@arm.com>
-Date: Wed, 14 Jan 2015 10:38:38 -0800
-Message-ID: <CAA3XUr2KUyafcnUggN7=xGNGSeRkkRtYtxZmwm4UC8sRCGup3g@mail.gmail.com>
-Subject: Re: [PATCH 1/2] perf symbols: Ignore mapping symbols on aarch64
-From: Victor Kamensky <victor.kamensky@linaro.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
-        Adrian Hunter <adrian.hunter@intel.com>, Jiri Olsa <jolsa@redhat.com>,
-        Avi Kivity <avi@cloudius-systems.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Anton Blanchard <anton@samba.org>, David Ahern <dsahern@gmail.com>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <20150114154816.58b0f9c7@lxorguk.ukuu.org.uk>
+References: <1421198202-4042-1-git-send-email-eu@felipetonello.com>
+	<20150114154816.58b0f9c7@lxorguk.ukuu.org.uk>
+Date: Wed, 14 Jan 2015 10:39:04 -0800
+Message-ID: <CAGrhNMysmq==Y0naNki0z5usmMwUErj-FOTy=8KH0V=R7=VFwA@mail.gmail.com>
+Subject: Re: [PATCH] char: Added support for u-blox 6 i2c gps driver
+From: Felipe Tonello <eu@felipetonello.com>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 January 2015 at 03:22, Will Deacon <will.deacon@arm.com> wrote:
-> On Tue, Jan 13, 2015 at 04:59:03PM +0000, Victor Kamensky wrote:
->> Aarch64 ELF files use mapping symbols with special names $x, $d
->> to identify regions of Aarch64 code (see Aarch64 ELF ABI - "ARM
->> IHI 0056B", section "4.5.4 Mapping symbols").
->>
->> The patch filters out these symbols at load time, similar to
->> "696b97a perf symbols: Ignore mapping symbols on ARM" changes
->> done for ARM before V8.
->>
->> Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
->> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
->> Cc: Paul Mackerras <paulus@samba.org>
->> Cc: Ingo Molnar <mingo@redhat.com>
->> Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
->> Cc: Adrian Hunter <adrian.hunter@intel.com>
->> Cc: Jiri Olsa <jolsa@redhat.com>
->> Cc: Namhyung Kim <namhyung@kernel.org>
->> Cc: Avi Kivity <avi@cloudius-systems.com>
->> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->> Cc: Anton Blanchard <anton@samba.org>
->> Cc: David Ahern <dsahern@gmail.com>
->> Cc: Will Deacon <will.deacon@arm.com>
->> Cc: Dave Martin <Dave.Martin@arm.com>
->> ---
->>  tools/perf/util/symbol-elf.c | 8 ++++++++
->>  1 file changed, 8 insertions(+)
->>
->> diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
->> index 06fcd1b..1e188dd 100644
->> --- a/tools/perf/util/symbol-elf.c
->> +++ b/tools/perf/util/symbol-elf.c
->> @@ -862,6 +862,14 @@ int dso__load_sym(struct dso *dso, struct map *map,
->>                           !strcmp(elf_name, "$t"))
->>                               continue;
->>               }
->> +             /* Reject Aarch64 ELF "mapping symbols": these aren't unique and
->> +              * don't identify functions, so will confuse the profile
->> +              * output: */
->> +             if (ehdr.e_machine == EM_AARCH64) {
->> +                     if (!strcmp(elf_name, "$x") ||
->> +                         !strcmp(elf_name, "$d"))
->> +                             continue;
->> +             }
+Hi Alan,
+
+On Wed, Jan 14, 2015 at 7:48 AM, One Thousand Gnomes
+<gnomes@lxorguk.ukuu.org.uk> wrote:
+> On Tue, 13 Jan 2015 17:16:42 -0800
+> "Felipe F. Tonello" <eu@felipetonello.com> wrote:
 >
-> Do we need to skip $x.* and $d.* too? I doubt GCC generates them, but they
-> are permitted by the ELF ABI.
+>> This driver will basically translate serial communication to i2c communication
+>> between the user-space and the GPS module.
+>>
+>> It creates a /dev/ttyS device node.
+>
+> It shouldn't. It should use its own name. (ttyubl or something .. )
 
-Fair enough. But I think it would need to be done for both EM_ARM and
-EM_AARCH64. My above patch follows EM_ARM current case. Also it
-seems that it would be quite rare case, as ABI suggests symbols
-with dot notation should be used in manual asm where assembler does not
-support multiple definitions of the same symbol.
+Ok.
 
-Will something like the following suffice? I can add that as separate follow up
-patch in this small series. Tested with explicit "$x.func1" symbol introduced in
-manual asm.
+>
+>
+>> There are specific tty termios flags in order to the tty line discipliner not
+>> to change the date it is pushed to user space. That is necessary so the NMEA
+>> data is not corrupted.
+>> * iflags: added IGNCR: Ignore carriage return on input.
+>> * oflags: removed ONLCR: (XSI) Map NL to CR-NL on output.
+>
+> The user space should probably set these but if its a single purpose
+> device then it's not unreasonable to just set defaults I guess.
 
->From fed6caab410ddcaf487ff23a3908eca129e50b89 Mon Sep 17 00:00:00 2001
-From: Victor Kamensky <victor.kamensky@linaro.org>
-Date: Wed, 14 Jan 2015 07:42:41 -0800
-Subject: [PATCH 3/3] perf symbols: improve abi compliance in arm mapping
- symbols handling
+Yes, that was my idea.
 
-Both Arm and Aarch64 ELF ABI allow mapping symbols be in from
-either "$d" or "$d.<any>". But current code that handles mapping
-symbols only deals with the first, dollar character and a single
-letter, case.
+>
+>> +static DECLARE_DELAYED_WORK(ublox_gps_wq, ublox_gps_read_worker);
+>> +
+>> +static void ublox_gps_read_worker(struct work_struct *private)
+>> +{
+>> +     s32 gps_buf_size, buf_size = 0;
+>> +     u8 *buf;
+>> +
+>> +     if (!ublox_gps_is_open)
+>> +             return;
+>> +
+>> +     /* check if driver was removed */
+>> +     if (!ublox_gps_i2c_client)
+>> +             return;
+>
+>
+> Greg has pointed out your locking is nonsensical - you want to be
+> refcounting. In the tty side case it's done for you for the most part,
+> but for the i2c side it's your problem and you need to ensure that you
+> hold suitable references between tty open and close, and on the close you
+> kill and wait for any work queues.
+>
+>
+>> +static int ublox_gps_serial_open(struct tty_struct *tty, struct file *filp)
+>> +{
+>> +     if (ublox_gps_is_open)
+>> +             return -EBUSY;
+>> +
+>> +     ublox_gps_filp = filp;
+>> +     ublox_gps_tty_port = tty->port;
+>> +     ublox_gps_tty_port->low_latency = true; /* make sure we push data immediately */
+>> +     ublox_gps_is_open = true;
+>
+> tty semantics for exclusive are standardised in POSIX and this is not the
+> expected behaviour. See the TIOCEXCL ioctl.
+>
+>> +static void ublox_gps_serial_close(struct tty_struct *tty, struct file *filp)
+>> +{
+>> +     if (!ublox_gps_is_open)
+>> +             return;
+>> +
+>> +     /* avoid stop when the denied (in open) file structure closes itself */
+>> +     if (ublox_gps_filp != filp)
+>> +             return;
+>
+> That should never be possible. If it can happen you've got a locking bug
+> that needs fixing instead
+>
+>> +static int ublox_gps_serial_write(struct tty_struct *tty, const unsigned char *buf,
+>> +     int count)
+>> +{
+>> +     if (!ublox_gps_is_open)
+>> +             return 0;
+>> +
+>> +     /* check if driver was removed */
+>> +     if (!ublox_gps_i2c_client)
+>> +             return 0;
+>> +
+>> +     /* we don't write back to the GPS so just return same value here */
+>> +     return count;
+>
+> Just omit the serial_write method, or return -EIO; don't pretend it
+> worked.
 
-The patch adds handling of the second case with period
-followed by any characters.
+Ok. I had to write the write because the tty layer was calling
+write_room without testing if the pointer was NULL. That was causing a
+segmentation fault. And If you implement the write_room you have to
+implement the write too.
 
-Suggested-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
----
- tools/perf/util/symbol-elf.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+Maybe more recent versions fixed this bug.
 
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index 1e188dd..ae92c27 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -859,7 +859,10 @@ int dso__load_sym(struct dso *dso, struct map *map,
-         if (ehdr.e_machine == EM_ARM) {
-             if (!strcmp(elf_name, "$a") ||
-                 !strcmp(elf_name, "$d") ||
--                !strcmp(elf_name, "$t"))
-+                !strcmp(elf_name, "$t") ||
-+                !strncmp(elf_name, "$a.", 3) ||
-+                !strncmp(elf_name, "$d.", 3) ||
-+                !strncmp(elf_name, "$t.", 3))
-                 continue;
-         }
-         /* Reject Aarch64 ELF "mapping symbols": these aren't unique and
-@@ -867,7 +870,9 @@ int dso__load_sym(struct dso *dso, struct map *map,
-          * output: */
-         if (ehdr.e_machine == EM_AARCH64) {
-             if (!strcmp(elf_name, "$x") ||
--                !strcmp(elf_name, "$d"))
-+                !strcmp(elf_name, "$d") ||
-+                !strncmp(elf_name, "$x.", 3) ||
-+                !strncmp(elf_name, "$d.", 3))
-                 continue;
-         }
+>
+>> +     ublox_gps_tty_driver->driver_name = "ublox_gps";
+>> +     ublox_gps_tty_driver->name = "ttyS";
+>> +     ublox_gps_tty_driver->major = UBLOX_GPS_MAJOR;
+>
+> Not ttyS and use dynamic numbering
+>
+>> +     ublox_gps_tty_driver->minor_start = 0;
+>> +     ublox_gps_tty_driver->type = TTY_DRIVER_TYPE_SERIAL;
+>> +     ublox_gps_tty_driver->subtype = SERIAL_TYPE_NORMAL;
+>> +     ublox_gps_tty_driver->flags = TTY_DRIVER_REAL_RAW;
+>> +     ublox_gps_tty_driver->init_termios = tty_std_termios;
+>> +     ublox_gps_tty_driver->init_termios.c_iflag = IGNCR | IXON;
+>> +     ublox_gps_tty_driver->init_termios.c_oflag = OPOST;
+>> +     ublox_gps_tty_driver->init_termios.c_cflag = B9600 | CS8 | CREAD |
+>> +             HUPCL | CLOCAL;
+>> +     ublox_gps_tty_driver->init_termios.c_ispeed = 9600;
+>> +     ublox_gps_tty_driver->init_termios.c_ospeed = 9600;
+>> +     tty_set_operations(ublox_gps_tty_driver, &ublox_gps_serial_ops);
+>> +     result = tty_register_driver(ublox_gps_tty_driver);
+>> +     if (result) {
+>> +             dev_err(&ublox_gps_i2c_client->dev, KBUILD_MODNAME ": %s - tty_register_driver failed\n",
+>> +                     __func__);
+>> +             goto err;
+>> +     }
+>> +
+>> +     ublox_gps_i2c_client = client;
+>> +     ublox_gps_filp = NULL;
+>> +     ublox_gps_tty_port = NULL;
+>> +     ublox_gps_is_open = false;
+>
+> There are some other i2c based tty drivers in the kernel - notably those
+> in drivers/tty/serial that use the uart layer to deal with most of the
+> awkward locking cases.
+>
+> You can do it by hand but it's fairly hairy (see
+> drivers/mmc/card/sdio_uart.c, so it might be simplest to tweak the driver
+> to use the uart layer. You don't really gain much from it for your driver
+> except easier locking - but the locking is rather handy.
+>
+> Alan
 
--- 
-1.9.3
+Ok.
 
-Thanks,
-Victor
+The thing is that: I wrote this driver to work with only one gps
+module, because that's my configuration here. I cannot really test
+multiple i2c gps at the same time. If you guys really want a driver
+that works for multiple gps drivers, I cannot test it.
 
-> Will
+So my question is, can I leave the driver working for one gps only and
+then improve what needs to be improved?
