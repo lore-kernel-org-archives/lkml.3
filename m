@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932209AbbANHaq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:30:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58189 "EHLO
+	id S1755196AbbANHel (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:34:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58507 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751414AbbANHam (ORCPT
+	with ESMTP id S932562AbbANHeZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:30:42 -0500
+	Wed, 14 Jan 2015 02:34:25 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nishanth Menon <nm@ti.com>, Tony Lindgren <tony@atomide.com>
-Subject: [PATCH 3.18 121/150] ARM: OMAP4: PM: Only do static dependency configuration in omap4_init_static_deps
-Date: Tue, 13 Jan 2015 23:23:12 -0800
-Message-Id: <20150114072101.328860984@linuxfoundation.org>
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.14 33/77] kvm: x86: drop severity of "generation wraparound" message
+Date: Tue, 13 Jan 2015 23:23:13 -0800
+Message-Id: <20150114072226.066999436@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
-References: <20150114072055.842408181@linuxfoundation.org>
+In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
+References: <20150114072224.182299947@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -24,81 +24,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Nishanth Menon <nm@ti.com>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit 9008d83fe9dc2e0f19b8ba17a423b3759d8e0fd7 upstream.
+commit a629df7eadffb03e6ce4a8616e62ea29fdf69b6b upstream.
 
-Commit 705814b5ea6f ("ARM: OMAP4+: PM: Consolidate OMAP4 PM code to
-re-use it for OMAP5")
+Since most virtual machines raise this message once, it is a bit annoying.
+Make it KERN_DEBUG severity.
 
-Moved logic generic for OMAP5+ as part of the init routine by
-introducing omap4_pm_init. However, the patch left the powerdomain
-initial setup, an unused omap4430 es1.0 check and a spurious log
-"Power Management for TI OMAP4." in the original code.
-
-Remove the duplicate code which is already present in omap4_pm_init from
-omap4_init_static_deps.
-
-As part of this change, also move the u-boot version print out of the
-static dependency function to the omap4_pm_init function.
-
-Fixes: 705814b5ea6f ("ARM: OMAP4+: PM: Consolidate OMAP4 PM code to re-use it for OMAP5")
-Signed-off-by: Nishanth Menon <nm@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Fixes: 7a2e8aaf0f6873b47bc2347f216ea5b0e4c258ab
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-omap2/pm44xx.c |   29 +++++++++--------------------
- 1 file changed, 9 insertions(+), 20 deletions(-)
+ arch/x86/kvm/mmu.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/mach-omap2/pm44xx.c
-+++ b/arch/arm/mach-omap2/pm44xx.c
-@@ -160,26 +160,6 @@ static inline int omap4_init_static_deps
- 	struct clockdomain *ducati_clkdm, *l3_2_clkdm;
- 	int ret = 0;
- 
--	if (omap_rev() == OMAP4430_REV_ES1_0) {
--		WARN(1, "Power Management not supported on OMAP4430 ES1.0\n");
--		return -ENODEV;
--	}
--
--	pr_err("Power Management for TI OMAP4.\n");
--	/*
--	 * OMAP4 chip PM currently works only with certain (newer)
--	 * versions of bootloaders. This is due to missing code in the
--	 * kernel to properly reset and initialize some devices.
--	 * http://www.spinics.net/lists/arm-kernel/msg218641.html
--	 */
--	pr_warn("OMAP4 PM: u-boot >= v2012.07 is required for full PM support\n");
--
--	ret = pwrdm_for_each(pwrdms_setup, NULL);
--	if (ret) {
--		pr_err("Failed to setup powerdomains\n");
--		return ret;
--	}
--
- 	/*
- 	 * The dynamic dependency between MPUSS -> MEMIF and
- 	 * MPUSS -> L4_PER/L3_* and DUCATI -> L3_* doesn't work as
-@@ -272,6 +252,15 @@ int __init omap4_pm_init(void)
- 
- 	pr_info("Power Management for TI OMAP4+ devices.\n");
- 
-+	/*
-+	 * OMAP4 chip PM currently works only with certain (newer)
-+	 * versions of bootloaders. This is due to missing code in the
-+	 * kernel to properly reset and initialize some devices.
-+	 * http://www.spinics.net/lists/arm-kernel/msg218641.html
-+	 */
-+	if (cpu_is_omap44xx())
-+		pr_warn("OMAP4 PM: u-boot >= v2012.07 is required for full PM support\n");
-+
- 	ret = pwrdm_for_each(pwrdms_setup, NULL);
- 	if (ret) {
- 		pr_err("Failed to setup powerdomains.\n");
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -4384,7 +4384,7 @@ void kvm_mmu_invalidate_mmio_sptes(struc
+ 	 * zap all shadow pages.
+ 	 */
+ 	if (unlikely(kvm_current_mmio_generation(kvm) == 0)) {
+-		printk_ratelimited(KERN_INFO "kvm: zapping shadow pages for mmio generation wraparound\n");
++		printk_ratelimited(KERN_DEBUG "kvm: zapping shadow pages for mmio generation wraparound\n");
+ 		kvm_mmu_invalidate_zap_all_pages(kvm);
+ 	}
+ }
 
 
