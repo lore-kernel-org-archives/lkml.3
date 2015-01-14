@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756212AbbANIs2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:48:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57676 "EHLO
+	id S1753069AbbANHZp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:25:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57683 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752694AbbANHZh (ORCPT
+	with ESMTP id S1752733AbbANHZi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:25:37 -0500
+	Wed, 14 Jan 2015 02:25:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Paul Mackerras <paulus@samba.org>,
-        "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Michael Ellerman <mpe@ellerman.id.au>, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH 3.18 028/150] powerpc/powernv: Switch off MMU before entering nap/sleep/rvwinkle mode
-Date: Tue, 13 Jan 2015 23:21:39 -0800
-Message-Id: <20150114072057.151125275@linuxfoundation.org>
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Michael Ellerman <mpe@ellerman.id.au>
+Subject: [PATCH 3.18 029/150] powerpc/perf/hv-24x7: Use per-cpu page buffer
+Date: Tue, 13 Jan 2015 23:21:40 -0800
+Message-Id: <20150114072057.199794064@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -31,76 +29,88 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Mackerras <paulus@samba.org>
+From: "sukadev@linux.vnet.ibm.com" <sukadev@linux.vnet.ibm.com>
 
-commit 8117ac6a6c2fa0f847ff6a21a1f32c8d2c8501d0 upstream.
+commit f34b6c72c3ebaa286d3311a825ef79eccbcca82f upstream.
 
-Currently, when going idle, we set the flag indicating that we are in
-nap mode (paca->kvm_hstate.hwthread_state) and then execute the nap
-(or sleep or rvwinkle) instruction, all with the MMU on.  This is bad
-for two reasons: (a) the architecture specifies that those instructions
-must be executed with the MMU off, and in fact with only the SF, HV, ME
-and possibly RI bits set, and (b) this introduces a race, because as
-soon as we set the flag, another thread can switch the MMU to a guest
-context.  If the race is lost, this thread will typically start looping
-on relocation-on ISIs at 0xc...4400.
+The 24x7 counters are continuously running and not updated on an
+interrupt. So we record the event counts when stopping the event or
+deleting it.
 
-This fixes it by setting the MSR as required by the architecture before
-setting the flag or executing the nap/sleep/rvwinkle instruction.
+But to "read" a single counter in 24x7, we allocate a page and pass it
+into the hypervisor (The HV returns the page full of counters from which
+we extract the specific counter for this event).
 
-[ shreyas@linux.vnet.ibm.com: Edited to handle LE ]
-Signed-off-by: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Shreyas B. Prabhu <shreyas@linux.vnet.ibm.com>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Michael Ellerman <mpe@ellerman.id.au>
-Cc: linuxppc-dev@lists.ozlabs.org
+We allocate a page using GFP_USER and when deleting the event, we end up
+with the following warning because we are blocking in interrupt context.
+
+  [  698.641709] BUG: scheduling while atomic: swapper/0/0/0x10010000
+
+We could use GFP_ATOMIC but that could result in failures. Pre-allocate
+a buffer so we don't have to allocate in interrupt context. Further as
+Michael Ellerman suggested, use Per-CPU buffer so we only need to
+allocate once per CPU.
+
+Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
 Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/include/asm/reg.h    |    2 ++
- arch/powerpc/kernel/idle_power7.S |   18 +++++++++++++++++-
- 2 files changed, 19 insertions(+), 1 deletion(-)
+ arch/powerpc/perf/hv-24x7.c |   21 +++++++++------------
+ 1 file changed, 9 insertions(+), 12 deletions(-)
 
---- a/arch/powerpc/include/asm/reg.h
-+++ b/arch/powerpc/include/asm/reg.h
-@@ -118,8 +118,10 @@
- #define __MSR		(MSR_ME | MSR_RI | MSR_IR | MSR_DR | MSR_ISF |MSR_HV)
- #ifdef __BIG_ENDIAN__
- #define MSR_		__MSR
-+#define MSR_IDLE	(MSR_ME | MSR_SF | MSR_HV)
- #else
- #define MSR_		(__MSR | MSR_LE)
-+#define MSR_IDLE	(MSR_ME | MSR_SF | MSR_HV | MSR_LE)
- #endif
- #define MSR_KERNEL	(MSR_ | MSR_64BIT)
- #define MSR_USER32	(MSR_ | MSR_PR | MSR_EE)
---- a/arch/powerpc/kernel/idle_power7.S
-+++ b/arch/powerpc/kernel/idle_power7.S
-@@ -101,7 +101,23 @@ _GLOBAL(power7_powersave_common)
- 	std	r9,_MSR(r1)
- 	std	r1,PACAR1(r13)
+--- a/arch/powerpc/perf/hv-24x7.c
++++ b/arch/powerpc/perf/hv-24x7.c
+@@ -217,11 +217,14 @@ static bool is_physical_domain(int domai
+ 		domain == HV_24X7_PERF_DOMAIN_PHYSICAL_CORE;
+ }
  
--_GLOBAL(power7_enter_nap_mode)
-+	/*
-+	 * Go to real mode to do the nap, as required by the architecture.
-+	 * Also, we need to be in real mode before setting hwthread_state,
-+	 * because as soon as we do that, another thread can switch
-+	 * the MMU context to the guest.
-+	 */
-+	LOAD_REG_IMMEDIATE(r5, MSR_IDLE)
-+	li	r6, MSR_RI
-+	andc	r6, r9, r6
-+	LOAD_REG_ADDR(r7, power7_enter_nap_mode)
-+	mtmsrd	r6, 1		/* clear RI before setting SRR0/1 */
-+	mtspr	SPRN_SRR0, r7
-+	mtspr	SPRN_SRR1, r5
-+	rfid
++DEFINE_PER_CPU(char, hv_24x7_reqb[4096]) __aligned(4096);
++DEFINE_PER_CPU(char, hv_24x7_resb[4096]) __aligned(4096);
 +
-+	.globl	power7_enter_nap_mode
-+power7_enter_nap_mode:
- #ifdef CONFIG_KVM_BOOK3S_HV_POSSIBLE
- 	/* Tell KVM we're napping */
- 	li	r4,KVM_HWTHREAD_IN_NAP
+ static unsigned long single_24x7_request(u8 domain, u32 offset, u16 ix,
+ 					 u16 lpar, u64 *res,
+ 					 bool success_expected)
+ {
+-	unsigned long ret = -ENOMEM;
++	unsigned long ret;
+ 
+ 	/*
+ 	 * request_buffer and result_buffer are not required to be 4k aligned,
+@@ -243,13 +246,11 @@ static unsigned long single_24x7_request
+ 	BUILD_BUG_ON(sizeof(*request_buffer) > 4096);
+ 	BUILD_BUG_ON(sizeof(*result_buffer) > 4096);
+ 
+-	request_buffer = kmem_cache_zalloc(hv_page_cache, GFP_USER);
+-	if (!request_buffer)
+-		goto out;
++	request_buffer = (void *)get_cpu_var(hv_24x7_reqb);
++	result_buffer = (void *)get_cpu_var(hv_24x7_resb);
+ 
+-	result_buffer = kmem_cache_zalloc(hv_page_cache, GFP_USER);
+-	if (!result_buffer)
+-		goto out_free_request_buffer;
++	memset(request_buffer, 0, 4096);
++	memset(result_buffer, 0, 4096);
+ 
+ 	*request_buffer = (struct reqb) {
+ 		.buf = {
+@@ -278,15 +279,11 @@ static unsigned long single_24x7_request
+ 				domain, offset, ix, lpar, ret, ret,
+ 				result_buffer->buf.detailed_rc,
+ 				result_buffer->buf.failing_request_ix);
+-		goto out_free_result_buffer;
++		goto out;
+ 	}
+ 
+ 	*res = be64_to_cpu(result_buffer->result);
+ 
+-out_free_result_buffer:
+-	kfree(result_buffer);
+-out_free_request_buffer:
+-	kfree(request_buffer);
+ out:
+ 	return ret;
+ }
 
 
