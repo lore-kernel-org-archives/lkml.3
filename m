@@ -1,79 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752312AbbANAXj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 19:23:39 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:52673 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751086AbbANAXh (ORCPT
+	id S1753932AbbANAXx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 19:23:53 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:4345 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753402AbbANAXw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 19:23:37 -0500
-Message-ID: <54B5B6E4.4020400@fb.com>
-Date: Tue, 13 Jan 2015 17:23:00 -0700
-From: Jens Axboe <axboe@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Tue, 13 Jan 2015 19:23:52 -0500
+Date: Tue, 13 Jan 2015 16:23:41 -0800
+From: Calvin Owens <calvinowens@fb.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Peter Feiner <pfeiner@google.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+CC: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <kernel-team@fb.com>,
+        <calvinowens@fb.com>
+Subject: Re: [RFC][PATCH] procfs: Add /proc/<pid>/mapped_files
+Message-ID: <20150114002341.GA6469@mail.thefacebook.com>
+References: <1421194829-28696-1-git-send-email-calvinowens@fb.com>
 MIME-Version: 1.0
-To: Richard Weinberger <richard@nod.at>, Christoph Hellwig <hch@infradead.org>
-CC: <dedekind1@gmail.com>, <dwmw2@infradead.org>,
-        <computersforpeace@gmail.com>, <linux-mtd@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <tom.leiming@gmail.com>
-Subject: Re: [PATCH 2/2 v2] UBI: Block: Add blk-mq support
-References: <1420926734-16417-1-git-send-email-richard@nod.at> <1420926734-16417-2-git-send-email-richard@nod.at> <20150113162553.GA24351@infradead.org> <54B5A188.2000001@nod.at> <54B5A213.1090502@fb.com> <54B5A77C.9040405@nod.at> <54B5AA84.9010306@fb.com> <54B5AC10.6070102@nod.at>
-In-Reply-To: <54B5AC10.6070102@nod.at>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.57.29]
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <1421194829-28696-1-git-send-email-calvinowens@fb.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Originating-IP: [192.168.16.4]
 X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
  definitions=2015-01-13_08:2015-01-13,2015-01-13,1970-01-01 signatures=0
 X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
- kscore.compositescore=0 circleOfTrustscore=0
- compositescore=0.160988131301636 urlsuspect_oldscore=0.160988131301636
+ kscore.compositescore=0 circleOfTrustscore=51.5900229690472
+ compositescore=0.165369342820785 urlsuspect_oldscore=0.165369342820785
  suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
  bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
  recipient_domain_to_sender_domain_totalscore=1996008
- rbsscore=0.160988131301636 spamscore=0
- recipient_to_sender_domain_totalscore=4 urlsuspectscore=0.9 adultscore=0
+ rbsscore=0.165369342820785 spamscore=0
+ recipient_to_sender_domain_totalscore=12 urlsuspectscore=0.9 adultscore=0
  classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1501140003
+ definitions=main-1501140002
 X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2015 04:36 PM, Richard Weinberger wrote:
-> 
-> 
-> Am 14.01.2015 um 00:30 schrieb Jens Axboe:
->>> If I understand you correctly it can happen that blk_rq_bytes() returns
->>> more bytes than blk_rq_map_sg() allocated, right?
->>
->> No, the number of bytes will be the same, no magic is involved :-)
-> 
-> Good to know. :)
-> 
->> But lets say the initial request has 4 bios, with each 2 pages, for a
->> total of 8 segments. Lets further assume that the pages in each bio are
->> contiguous, so that blk_rq_map_sg() will map this to 4 sg elements, each
->> 2xpages long.
->>
->> Now, this may already be handled just fine, and you don't need to
->> update/store the actual sg count. I just looked at the source, and I'm
->> assuming it'll do the right thing (ubi_read_sg() will bump the active sg
->> element, when that size has been consumed), but I don't have
->> ubi_read_sg() in my tree to verify.
-> 
-> Currently the sg count is hard coded to UBI_MAX_SG_COUNT.
+Here's a simple program to trigger the issue with /proc/<pid>/maps.
 
-The max count doesn't matter, that just provides you a guarantee that
-you'll never receive a request that maps to more than that. The point
-I'm trying to make is that if you receive 8 segments and it maps to 4,
-then you better not look at segments 5..8 after it being mapped.
-Whatever the max is, doesn't matter in this conversation.
+Thanks,
+Calvin
 
-> I'm sorry, I forgot to CC you and hch to this patch:
+/* Simple program to reproduce O(N^2) behavior reading /proc/<pid>/maps
+ *
+ * Example on a random server:
+ *
+ * 	$ ./map_repro 0
+ * 	Spawning 0 threads
+ * 	Reading /proc/self/maps... read 2189 bytes in 1 syscalls in 33us!
+ * 	$ ./map_repro 10
+ * 	Spawning 10 threads
+ * 	Reading /proc/self/maps... read 3539 bytes in 1 syscalls in 55us!
+ * 	$ ./map_repro 100
+ * 	Spawning 100 threads
+ * 	Reading /proc/self/maps... read 15689 bytes in 4 syscalls in 373us!
+ * 	$ ./map_repro 1000
+ * 	Spawning 1000 threads
+ * 	Reading /proc/self/maps... read 137189 bytes in 34 syscalls in 32376us!
+ * 	$ ./map_repro 2000
+ * 	Spawning 2000 threads
+ * 	Reading /proc/self/maps... read 272189 bytes in 68 syscalls in 119980us!
+ * 	$ ./map_repro 4000
+ * 	Spawning 4000 threads
+ * 	Reading /proc/self/maps... read 544912 bytes in 134 syscalls in 712200us!
+ * 	$ ./map_repro 8000
+ * 	Spawning 8000 threads
+ * 	Reading /proc/self/maps... read 1090189 bytes in 268 syscalls in 3650718us!
+ * 	$ ./map_repro 16000
+ * 	Spawning 16000 threads
+ * 	Reading /proc/self/maps... read 2178189 bytes in 534 syscalls in 42701311us!
+ */
 
-Which is as I suspected, you'll do each segment to the length specified,
-hence you don't need to track the returned count from blk_rq_map_sg().
+#include <stdlib.h>
+#include <stdio.h>
+#include <errno.h>
+#include <string.h>
+#include <limits.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <time.h>
+#include <fcntl.h>
 
--- 
-Jens Axboe
+static char buf[65536] = {0};
+static void time_maps_read(void)
+{
+	struct timespec then, now;
+	long usec_elapsed;
+	int ret, fd;
+	int count = 0;
+	int rd = 0;
 
+	fd = open("/proc/self/maps", O_RDONLY);
+	if (fd == -1) {
+		printf("Couldn't open /proc/self/maps, bailing...\n");
+		return;
+	}
+
+	printf("Reading /proc/self/maps... ");
+	ret = clock_gettime(CLOCK_MONOTONIC, &then);
+
+	while (1) {
+		ret = read(fd, &buf, 65536);
+		if (!ret || ret == -1)
+			break;
+		rd += ret;
+		count++;
+	}
+
+	ret = clock_gettime(CLOCK_MONOTONIC, &now); 
+	usec_elapsed = (now.tv_sec - then.tv_sec) * 1000000L;
+	usec_elapsed += (now.tv_nsec - then.tv_nsec) / 1000L;
+
+	printf("read %d bytes in %d syscalls in %ldus!\n", rd, count, usec_elapsed);
+	close(fd);
+}
+
+static void *do_nothing_forever(void *unused)
+{
+	while (1)
+		sleep(60);
+
+	return NULL;
+}
+
+int main(int args, char **argv)
+{
+	int i, ret, threads_to_spawn = 0;	
+	pthread_t tmp;
+
+	if (args != 1) {
+		threads_to_spawn = atoi(argv[1]);
+		printf("Spawning %d threads\n", threads_to_spawn);
+	}
+
+	for (i = 0; i < threads_to_spawn; i++) {
+		ret = pthread_create(&tmp, NULL, do_nothing_forever, NULL);
+		if (ret)
+			printf("Thread %d failed to spawn?\n", i);
+	}
+
+	time_maps_read();
+	return 0;
+}
