@@ -1,62 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752221AbbANXew (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 18:34:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43482 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221AbbANXev (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 18:34:51 -0500
-Date: Wed, 14 Jan 2015 15:34:49 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Vlastimil Babka <vbabka@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -mm] vmscan: move reclaim_state handling to shrink_slab
-Message-Id: <20150114153449.038bc61b1bd6fc262f9cea01@linux-foundation.org>
-In-Reply-To: <1421243736-21367-1-git-send-email-vdavydov@parallels.com>
-References: <1421243736-21367-1-git-send-email-vdavydov@parallels.com>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752853AbbANXgj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 18:36:39 -0500
+Received: from mta-out1.inet.fi ([62.71.2.195]:51611 "EHLO kirsi1.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752099AbbANXgi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 18:36:38 -0500
+Date: Thu, 15 Jan 2015 01:36:30 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Petr Cermak <petrcermak@chromium.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Primiano Tucci <primiano@chromium.org>,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH v2 2/2] task_mmu: Add user-space support for resetting
+ mm->hiwater_rss (peak RSS)
+Message-ID: <20150114233630.GA14615@node.dhcp.inet.fi>
+References: <20150107172452.GA7922@node.dhcp.inet.fi>
+ <20150114152225.GB31484@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150114152225.GB31484@google.com>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Jan 2015 16:55:36 +0300 Vladimir Davydov <vdavydov@parallels.com> wrote:
+On Wed, Jan 14, 2015 at 03:22:25PM +0000, Petr Cermak wrote:
+> On Wed, Jan 07, 2015 at 07:24:52PM +0200, Kirill A. Shutemov wrote:
+> > And how it's not an ABI break?
+> I don't think this is an ABI break because the current behaviour is not
+> changed unless you write "5" to /proc/pid/clear_refs. If you do, you are
+> explicitly requesting the new functionality.
 
-> current->reclaim_state is only used to count the number of slab pages
-> reclaimed by shrink_slab(). So instead of initializing it before we are
-> going to call try_to_free_pages() or shrink_zone(), let's set in
-> directly in shrink_slab().
+I'm not sure if it should be considered ABI break or not. Just asking.
+
+I would like to hear opinion from other people.
+ 
+> > We have never-lowering VmHWM for 9+ years. How can you know that nobody
+> > expects this behaviour?
+> This is why we sent an RFC [1] several weeks ago. We expect this to be
+> used mainly by performance-related tools (e.g. profilers) and from the
+> comments in the code [2] VmHWM seems to be a best-effort counter. If this
+> is strictly a no-go, I can only think of the following two alternatives:
 > 
-> This patch also makes shrink_slab() return the number of reclaimed slab
-> pages (obtained from reclaim_state) instead of the number of reclaimed
-> objects, because the latter is not of much use - it was only checked by
-> drop_slab() to decide whether it should continue reclaim or abort. The
-> number of reclaimed pages is more appropriate, because it also can be
-> used by shrink_zone() to accumulate scan_control->nr_reclaimed.
+>   1. Add an extra resettable field to /proc/pid/status (e.g.
+>      resettable_hiwater_rss). While this doesn't violate the current
+>      definition of VmHWM, it adds an extra line to /proc/pid/status,
+>      which I think is a much bigger issue.
 
-Not sure that this is a good change.  If shrink_slab() managed to free
-some objects but didn't free any pages then that's a good sign that
-additional calls to shrink_slab() *will* free some pages.  With this
-change, drop_slab_node() can give up too early.
+I don't think extra line is bigger issue. Sane applications would look for
+a key, not line number. We do add lines there. I've posted patch which
+adds one more just today ;)
 
-The general philosophy throughout here is: "pass it nr_to_scan, it
-returns nr_scanned/nr_freed".  Switching the return value to
-nr_pages_freed kinda breaks that paradigm.
-
-> Note that after this patch try_to_free_mem_cgroup_pages() will count not
-> only reclaimed user pages, but also slab pages, which is expected,
-> because it can reclaim kmem from kmem-active sub cgroups.
+>   2. Introduce a new proc fs file to task_mmu (e.g.
+>      /proc/pid/profiler_stats), but this feels like overengineering.
 > 
->  mm/page_alloc.c |    4 ---
->  mm/vmscan.c     |   73 ++++++++++++++++++++-----------------------------------
->  2 files changed, 27 insertions(+), 50 deletions(-)
-
-That's nice though.
-
-
+> > And why do you reset hiwater_rss, but not hiwater_vm?
+> This is a good point. Should we reset both using the same flag, or
+> introduce a new one ("6")?
+> 
+> [1] lkml.iu.edu/hypermail/linux/kernel/1412.1/01877.html
+> [2] task_mmu.c:32: "... such snapshots can always be inconsistent."
+-- 
+ Kirill A. Shutemov
