@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932845AbbANHgP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:36:15 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58658 "EHLO
+	id S933288AbbANHjy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:39:54 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:59016 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932157AbbANHgN (ORCPT
+	with ESMTP id S932168AbbANHjw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:36:13 -0500
+	Wed, 14 Jan 2015 02:39:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [PATCH 3.14 65/77] arm64: kernel: add missing __init section marker to cpu_suspend_init
-Date: Tue, 13 Jan 2015 23:23:45 -0800
-Message-Id: <20150114072227.881090635@linuxfoundation.org>
+        Jiri Jaburek <jjaburek@redhat.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.10 25/44] ALSA: usb-audio: extend KEF X300A FU 10 tweak to Arcam rPAC
+Date: Tue, 13 Jan 2015 23:23:46 -0800
+Message-Id: <20150114072228.917847798@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-References: <20150114072224.182299947@linuxfoundation.org>
+In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
+References: <20150114072227.419663002@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,36 +24,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>
+From: Jiri Jaburek <jjaburek@redhat.com>
 
-commit 18ab7db6b749ac27aac08d572afbbd2f4d937934 upstream.
+commit d70a1b9893f820fdbcdffac408c909c50f2e6b43 upstream.
 
-Suspend init function must be marked as __init, since it is not needed
-after the kernel has booted. This patch moves the cpu_suspend_init()
-function to the __init section.
+The Arcam rPAC seems to have the same problem - whenever anything
+(alsamixer, udevd, 3.9+ kernel from 60af3d037eb8c, ..) attempts to
+access mixer / control interface of the card, the firmware "locks up"
+the entire device, resulting in
+  SNDRV_PCM_IOCTL_HW_PARAMS failed (-5): Input/output error
+from alsa-lib.
 
-Signed-off-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Other operating systems can somehow read the mixer (there seems to be
+playback volume/mute), but any manipulation is ignored by the device
+(which has hardware volume controls).
+
+Signed-off-by: Jiri Jaburek <jjaburek@redhat.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm64/kernel/suspend.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/usb/mixer_maps.c |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
---- a/arch/arm64/kernel/suspend.c
-+++ b/arch/arm64/kernel/suspend.c
-@@ -119,7 +119,7 @@ int cpu_suspend(unsigned long arg)
- extern struct sleep_save_sp sleep_save_sp;
- extern phys_addr_t sleep_idmap_phys;
+--- a/sound/usb/mixer_maps.c
++++ b/sound/usb/mixer_maps.c
+@@ -322,8 +322,11 @@ static struct usbmix_name_map hercules_u
+ 	{ 0 }				/* terminator */
+ };
  
--static int cpu_suspend_init(void)
-+static int __init cpu_suspend_init(void)
- {
- 	void *ctx_ptr;
+-static const struct usbmix_name_map kef_x300a_map[] = {
+-	{ 10, NULL }, /* firmware locks up (?) when we try to access this FU */
++/* some (all?) SCMS USB3318 devices are affected by a firmware lock up
++ * when anything attempts to access FU 10 (control)
++ */
++static const struct usbmix_name_map scms_usb3318_map[] = {
++	{ 10, NULL },
+ 	{ 0 }
+ };
  
+@@ -415,8 +418,14 @@ static struct usbmix_ctl_map usbmix_ctl_
+ 		.map = ebox44_map,
+ 	},
+ 	{
++		/* KEF X300A */
+ 		.id = USB_ID(0x27ac, 0x1000),
+-		.map = kef_x300a_map,
++		.map = scms_usb3318_map,
++	},
++	{
++		/* Arcam rPAC */
++		.id = USB_ID(0x25c4, 0x0003),
++		.map = scms_usb3318_map,
+ 	},
+ 	{ 0 } /* terminator */
+ };
 
 
