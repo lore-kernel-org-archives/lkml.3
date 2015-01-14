@@ -1,94 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753131AbbANOV5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 09:21:57 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:24884 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753299AbbANOVw (ORCPT
+	id S1753288AbbANOXo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 09:23:44 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:39740 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751272AbbANOXn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 09:21:52 -0500
-Message-ID: <54B67B5E.9030002@oracle.com>
-Date: Wed, 14 Jan 2015 09:21:18 -0500
-From: Boris Ostrovsky <boris.ostrovsky@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Wed, 14 Jan 2015 09:23:43 -0500
+Date: Wed, 14 Jan 2015 14:23:27 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Mark Brown <broonie@kernel.org>
+Cc: Philipp Zabel <p.zabel@pengutronix.de>, Jyri Sarha <jsarha@ti.com>,
+        Jean-Francois Moine <moinejf@free.fr>,
+        Andrew Jackson <Andrew.Jackson@arm.com>,
+        Dave Airlie <airlied@gmail.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v9 1/4] drm/i2c: tda998x: Add DT support for audio
+Message-ID: <20150114142327.GX12302@n2100.arm.linux.org.uk>
+References: <1421151718.4519.24.camel@pengutronix.de>
+ <20150113122715.GP12302@n2100.arm.linux.org.uk>
+ <20150113165411.5469930d@armhf>
+ <20150113160313.GR12302@n2100.arm.linux.org.uk>
+ <20150113200252.3dbfab14@armhf>
+ <20150113192648.GU12302@n2100.arm.linux.org.uk>
+ <54B574CD.9020905@ti.com>
+ <20150113195415.GV12302@n2100.arm.linux.org.uk>
+ <1421232418.3155.31.camel@pengutronix.de>
+ <20150114125056.GU4160@sirena.org.uk>
 MIME-Version: 1.0
-To: David Vrabel <david.vrabel@citrix.com>, Imre Palik <imrep.amz@gmail.com>,
-        xen-devel@lists.xenproject.org
-CC: "Palik, Imre" <imrep@amazon.de>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Anthony Liguori <aliguori@amazon.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Xen-devel] [PATCH] xen-time: decreasing the rating of the xen
- clocksource below that of the tsc clocksource for dom0's
-References: <1421136862-15083-1-git-send-email-imrep.amz@gmail.com> <54B4EAC7.2080105@citrix.com> <54B53CDD.7070400@oracle.com> <54B542C0.4070701@citrix.com> <54B54513.8060604@oracle.com> <54B548DA.60402@oracle.com>
-In-Reply-To: <54B548DA.60402@oracle.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150114125056.GU4160@sirena.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2015 11:33 AM, Boris Ostrovsky wrote:
-> On 01/13/2015 11:17 AM, Boris Ostrovsky wrote:
->> On 01/13/2015 11:07 AM, David Vrabel wrote:
->>> On 13/01/15 15:42, Boris Ostrovsky wrote:
->>>> On 01/13/2015 04:52 AM, David Vrabel wrote:
->>>>> On 13/01/15 08:14, Imre Palik wrote:
->>>>>> From: "Palik, Imre" <imrep@amazon.de>
->>>>>>
->>>>>> In Dom0's the use of the TSC clocksource (whenever it is stable
->>>>>> enough to
->>>>>> be used) instead of the Xen clocksource should not cause any 
->>>>>> issues, as
->>>>>> Dom0 VMs never live-migrated.  The TSC clocksource is somewhat more
->>>>>> efficient than the Xen paravirtualised clocksource, thus it 
->>>>>> should have
->>>>>> higher rating.
->>>>>>
->>>>>> This patch decreases the rating of the Xen clocksource in Dom0s 
->>>>>> to 275.
->>>>>> Which is half-way between the rating of the TSC clocksource (300) 
->>>>>> and
->>>>>> the
->>>>>> hpet clocksource (250).
->>>>> I'm happy with this but would like to see acks from those who 
->>>>> objected
->>>>> to v1.
->>>>>
->>>>> David
->>>>>
->>>>>> --- a/arch/x86/xen/time.c
->>>>>> +++ b/arch/x86/xen/time.c
->>>>>> @@ -487,6 +487,10 @@ static void __init xen_time_init(void)
->>>>>>        int cpu = smp_processor_id();
->>>>>>        struct timespec tp;
->>>>>>    +    /* As Dom0 is never moved, no penalty on using TSC there */
->>>> Again, why not any PV guest with TSC_MODE_NEVER_EMULATE?
->>> Surely if TSC_MODE_NEVER_EMULATE is set then the TSC is /not/ stable
->>> across a guest save/restore thus the PV clocksource must be used?
->>
->> TSC is declared stable when !d->disable_migrate && !d->arch.vtsc, 
->> with vtsc being 0 with TSC_MODE_NEVER_EMULATE (per domain_cpuid()).
->
-> I think I inverted domain_cpuid's logic here but my point was that we 
-> use'd use combination of TSC_MODE_NEVER_EMULATE and CPUID flag 
-> indicating TSC stability to pick the clocksource.
->
->
-> -boris
->
->>
->> And if TSC is not stable as seen by CPUID (which would be the case if 
->> disable_migrate is not set) then kernel won't use TSC as clocksource 
->> anyway, regardless of rating value, won't it?
+On Wed, Jan 14, 2015 at 12:50:56PM +0000, Mark Brown wrote:
+> Trying to hook up a controller that doesn't natively support this format
+> to a device that uses it is definitely tricky, as well as describing the
+> physical hookup we also need to worry about how things look to userspace
+> - it's ideally going to want a single multi-channel audio stream.
 
+Trying to get the synchronisation correct for proper surround audio
+reproduction would also be interesting.  I suspect that userspace
+would have to be taught specifically about a hardware setup like this -
+in order to ensure that the slave I2S blocks are ready before the master
+starts outputting the I2S clocks.
 
-So this is not going to work because early_init_intel() may set 
-X86_FEATURE_CONSTANT_TSC unconditionally, without consulting CPUID.
+I'm /not/ that thrilled with the whole idea; I'd much rather suggest
+that we should concentrate on sane setups, but we know that hardware
+engineers do create some silly setups "because they can".
 
-Imre, you can ignore my question about non-dom0 guests then.
+> I think from a binding point of view we need a way to say "this endpoint
+> on the link is constructed from these DAIs on the device side" and say
+> if this is TDM or multi-data, and what's driving the clocks.
 
--boris
+This seems to favour the "one DT port for I2S" model - possibly with
+multiple endpoints for each I2S channel (if desired).  There's nothing
+in that model which would prevent having one end point for all four
+channels.  To put that another way, we can remain flexible.
 
+Maybe we should document the binding indicating that for I2S, one port
+and one endpoint connected to one I2S block which supplies all I2S
+channels is the preferred model, but others are permitted but not
+necessarily guaranteed to work correctly.
 
+-- 
+FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
+according to speedtest.net.
