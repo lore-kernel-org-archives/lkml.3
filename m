@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754620AbbANH2k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:28:40 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57963 "EHLO
+	id S1754589AbbANH2h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:28:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57968 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751945AbbANH23 (ORCPT
+	with ESMTP id S1754548AbbANH23 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Jan 2015 02:28:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hans Spath <inbox-546@hans-spath.de>,
+        Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>,
+        Antonio Borneo <borneo.antonio@gmail.com>,
         Benjamin Tissoires <benjamin.tissoires@redhat.com>,
         Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.18 053/150] HID: wacom: fix freeze on open when autosuspend is on
-Date: Tue, 13 Jan 2015 23:22:04 -0800
-Message-Id: <20150114072058.276516595@linuxfoundation.org>
+Subject: [PATCH 3.18 054/150] HID: i2c-hid: fix race condition reading reports
+Date: Tue, 13 Jan 2015 23:22:05 -0800
+Message-Id: <20150114072058.325833319@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -30,100 +31,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+From: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
 
-commit dff674168878fe7b6d8b9ad60d62295ec517de79 upstream.
+commit 6296f4a8eb86f9abcc370fb7a1a116b8441c17fd upstream.
 
-Since the conversion from USB to HID (in v3.17), some people reported a
-freeze on boot with the wacom driver. Hans managed to get a stacktrace:
+Current driver uses a common buffer for reading reports either
+synchronously in i2c_hid_get_raw_report() and asynchronously in
+the interrupt handler.
+There is race condition if an interrupt arrives immediately after
+the report is received in i2c_hid_get_raw_report(); the common
+buffer is modified by the interrupt handler with the new report
+and then i2c_hid_get_raw_report() proceed using wrong data.
 
-[  240.272331] Call Trace:
-[  240.272338]  [<ffffffff813de7b9>] ? usb_hcd_submit_urb+0xa9/0xb10
-[  240.272347]  [<ffffffff81555579>] schedule+0x29/0x70
-[  240.272355]  [<ffffffff815559e6>] schedule_preempt_disabled+0x16/0x20
-[  240.272363]  [<ffffffff81557365>] __mutex_lock_slowpath+0xe5/0x230
-[  240.272372]  [<ffffffff815574c7>] mutex_lock+0x17/0x30
-[  240.272380]  [<ffffffffa063c1d2>] wacom_resume+0x22/0x50 [wacom]
-[  240.272396]  [<ffffffffa01aea8a>] hid_resume_common+0xba/0x110 [usbhid]
-[  240.272404]  [<ffffffff813e5890>] ? usb_runtime_suspend+0x80/0x80
-[  240.272417]  [<ffffffffa01aeb1d>] hid_resume+0x3d/0x70 [usbhid]
-[  240.272425]  [<ffffffff813e44a6>] usb_resume_interface.isra.6+0xb6/0x120
-[  240.272432]  [<ffffffff813e4774>] usb_resume_both+0x74/0x140
-[  240.272439]  [<ffffffff813e58aa>] usb_runtime_resume+0x1a/0x20
-[  240.272446]  [<ffffffff813b1912>] __rpm_callback+0x32/0x70
-[  240.272453]  [<ffffffff813b1976>] rpm_callback+0x26/0xa0
-[  240.272460]  [<ffffffff813b2d71>] rpm_resume+0x4b1/0x690
-[  240.272468]  [<ffffffff812ab992>] ? radix_tree_lookup_slot+0x22/0x50
-[  240.272475]  [<ffffffff813b2c1a>] rpm_resume+0x35a/0x690
-[  240.272482]  [<ffffffff8116e9c9>] ? zone_statistics+0x89/0xa0
-[  240.272489]  [<ffffffff813b2f90>] __pm_runtime_resume+0x40/0x60
-[  240.272497]  [<ffffffff813e4272>] usb_autopm_get_interface+0x22/0x60
-[  240.272509]  [<ffffffffa01ae8d9>] usbhid_open+0x59/0xe0 [usbhid]
-[  240.272517]  [<ffffffffa063ac85>] wacom_open+0x35/0x50 [wacom]
-[  240.272525]  [<ffffffff813f37b9>] input_open_device+0x79/0xa0
-[  240.272534]  [<ffffffffa048d1c1>] evdev_open+0x1b1/0x200 [evdev]
-[  240.272543]  [<ffffffff811c899e>] chrdev_open+0xae/0x1f0
-[  240.272549]  [<ffffffff811c88f0>] ? cdev_put+0x30/0x30
-[  240.272556]  [<ffffffff811c17e2>] do_dentry_open+0x1d2/0x320
-[  240.272562]  [<ffffffff811c1cd1>] finish_open+0x31/0x50
-[  240.272571]  [<ffffffff811d2202>] do_last.isra.36+0x652/0xe50
-[  240.272579]  [<ffffffff811d2ac7>] path_openat+0xc7/0x6f0
-[  240.272586]  [<ffffffff811cf012>] ? final_putname+0x22/0x50
-[  240.272594]  [<ffffffff811d42d2>] ? user_path_at_empty+0x72/0xd0
-[  240.272602]  [<ffffffff811d43fd>] do_filp_open+0x4d/0xc0
-[...]
+Fix it by using a separate buffers for synchronous reports.
 
-So here, wacom_open is called, and then wacom_resume is called by the
-PM system. However, wacom_open already took the lock when wacom_resume
-tries to get it. Freeze.
-
-A little bit of history shows that this already happened in the past
-- commit f6cd378372bf ("Input: wacom - fix runtime PM related deadlock"),
-and the solution was to call first the PM function before taking the lock.
-
-The lock was introduced in commit commit e722409445fb ("Input: wacom -
-implement suspend and autosuspend") when the autosuspend feature has
-been added. Given that usbhid already takes care of this very same
-locking between suspend/resume, I think we can simply kill the lock
-in open/close.
-
-The lock is now used also with LEDs, so we can not remove it completely.
-
-Reported-by: Hans Spath <inbox-546@hans-spath.de>
-Tested-by: Hans Spath <inbox-546@hans-spath.de>
-Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
+[Antonio Borneo: cleanup, rebase to v3.17, submit mainline]
+Signed-off-by: Antonio Borneo <borneo.antonio@gmail.com>
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
 Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/wacom_sys.c |    9 +--------
- 1 file changed, 1 insertion(+), 8 deletions(-)
+ drivers/hid/i2c-hid/i2c-hid.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
---- a/drivers/hid/wacom_sys.c
-+++ b/drivers/hid/wacom_sys.c
-@@ -70,22 +70,15 @@ static int wacom_raw_event(struct hid_de
- static int wacom_open(struct input_dev *dev)
+--- a/drivers/hid/i2c-hid/i2c-hid.c
++++ b/drivers/hid/i2c-hid/i2c-hid.c
+@@ -137,6 +137,7 @@ struct i2c_hid {
+ 						   * descriptor. */
+ 	unsigned int		bufsize;	/* i2c buffer size */
+ 	char			*inbuf;		/* Input buffer */
++	char			*rawbuf;	/* Raw Input buffer */
+ 	char			*cmdbuf;	/* Command buffer */
+ 	char			*argsbuf;	/* Command arguments buffer */
+ 
+@@ -504,9 +505,11 @@ static void i2c_hid_find_max_report(stru
+ static void i2c_hid_free_buffers(struct i2c_hid *ihid)
  {
- 	struct wacom *wacom = input_get_drvdata(dev);
--	int retval;
+ 	kfree(ihid->inbuf);
++	kfree(ihid->rawbuf);
+ 	kfree(ihid->argsbuf);
+ 	kfree(ihid->cmdbuf);
+ 	ihid->inbuf = NULL;
++	ihid->rawbuf = NULL;
+ 	ihid->cmdbuf = NULL;
+ 	ihid->argsbuf = NULL;
+ 	ihid->bufsize = 0;
+@@ -522,10 +525,11 @@ static int i2c_hid_alloc_buffers(struct
+ 		       report_size; /* report */
  
--	mutex_lock(&wacom->lock);
--	retval = hid_hw_open(wacom->hdev);
--	mutex_unlock(&wacom->lock);
--
--	return retval;
-+	return hid_hw_open(wacom->hdev);
+ 	ihid->inbuf = kzalloc(report_size, GFP_KERNEL);
++	ihid->rawbuf = kzalloc(report_size, GFP_KERNEL);
+ 	ihid->argsbuf = kzalloc(args_len, GFP_KERNEL);
+ 	ihid->cmdbuf = kzalloc(sizeof(union command) + args_len, GFP_KERNEL);
+ 
+-	if (!ihid->inbuf || !ihid->argsbuf || !ihid->cmdbuf) {
++	if (!ihid->inbuf || !ihid->rawbuf || !ihid->argsbuf || !ihid->cmdbuf) {
+ 		i2c_hid_free_buffers(ihid);
+ 		return -ENOMEM;
+ 	}
+@@ -552,12 +556,12 @@ static int i2c_hid_get_raw_report(struct
+ 
+ 	ret = i2c_hid_get_report(client,
+ 			report_type == HID_FEATURE_REPORT ? 0x03 : 0x01,
+-			report_number, ihid->inbuf, ask_count);
++			report_number, ihid->rawbuf, ask_count);
+ 
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	ret_count = ihid->inbuf[0] | (ihid->inbuf[1] << 8);
++	ret_count = ihid->rawbuf[0] | (ihid->rawbuf[1] << 8);
+ 
+ 	if (ret_count <= 2)
+ 		return 0;
+@@ -566,7 +570,7 @@ static int i2c_hid_get_raw_report(struct
+ 
+ 	/* The query buffer contains the size, dropping it in the reply */
+ 	count = min(count, ret_count - 2);
+-	memcpy(buf, ihid->inbuf + 2, count);
++	memcpy(buf, ihid->rawbuf + 2, count);
+ 
+ 	return count;
  }
- 
- static void wacom_close(struct input_dev *dev)
- {
- 	struct wacom *wacom = input_get_drvdata(dev);
- 
--	mutex_lock(&wacom->lock);
- 	hid_hw_close(wacom->hdev);
--	mutex_unlock(&wacom->lock);
- }
- 
- /*
 
 
