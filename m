@@ -1,132 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752352AbbANMWR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 07:22:17 -0500
-Received: from mga11.intel.com ([192.55.52.93]:32518 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751868AbbANMWQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 07:22:16 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,755,1413270000"; 
-   d="scan'208";a="650957777"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com, adrian.hunter@intel.com,
-        markus.t.metzger@intel.com, mathieu.poirier@linaro.org,
-        Kaixu Xia <kaixu.xia@linaro.org>, acme@infradead.org,
-        Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Subject: [PATCH v9 00/14] perf: Add infrastructure and support for Intel PT
-Date: Wed, 14 Jan 2015 14:18:09 +0200
-Message-Id: <1421237903-181015-1-git-send-email-alexander.shishkin@linux.intel.com>
-X-Mailer: git-send-email 2.1.4
+	id S1752716AbbANMSg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 07:18:36 -0500
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:41299 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752603AbbANMSe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 07:18:34 -0500
+From: Helene Gsaenger <helene.gsaenger@studium.fau.de>
+To: helene.gsaenger@studium.fau.de
+Cc: Michael.Hennerich@analog.com, jic23@kernel.org, knaack.h@gmx.de,
+        pmeerw@pmeerw.net, gregkh@linuxfoundation.org,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, simone.weiss@fau.de,
+        linux-kernel@i4.cs.fau.de
+Subject: [PATCH] staging/iio/accel: checkpatch: fixed long lines by putting comments in seperate lines
+Date: Wed, 14 Jan 2015 13:18:10 +0100
+Message-Id: <1421237890-18422-1-git-send-email-helene.gsaenger@studium.fau.de>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <20141227072400.GB4780@sudip-PC>
+References: <20141227072400.GB4780@sudip-PC>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter and all,
+Signed-off-by: Helene Gsaenger <helene.gsaenger@studium.fau.de>
+Signed-off-by: Simone Weiss <simone.weiss@fau.de>
+---
+ drivers/staging/iio/accel/adis16203.h | 99 +++++++++++++++++++++++------------
+ 1 file changed, 66 insertions(+), 33 deletions(-)
 
-Here's version 9 of PT support, addressing comments to the previous
-version. This series applies to tip perf/core branch and to v3.18, but
-has one trivial conflict with Linus' master in cpu features department.
-
-[full description below the changelog]
-
-Changes since v8:
-  * refuse to load if PT is enabled during driver initialization,
-    issue a warning,
-  * added more elaborate comments about handle_nmi in the PT driver,
-  * added a comment for the ITRACE_START record.
-
-This patchset adds support for Intel Processor Trace (PT) extension [1] of
-Intel Architecture that allows the capture of information about software
-execution flow, to the perf kernel infrastructure.
-
-The single most notable thing is that while PT outputs trace data in a
-compressed binary format, it will still generate hundreds of megabytes
-of trace data per second per core. Decoding this binary stream takes
-2-3 orders of magnitude the cpu time that it takes to generate
-it. These considerations make it impossible to carry out decoding in
-kernel space. Therefore, the trace data is exported to userspace as a
-zero-copy mapping that userspace can collect and store for later
-decoding. To address this, this patchset extends perf ring buffer with
-an "AUX space", which is allocated for hardware blocks such as PT to
-export their trace data with minimal overhead. This space can be
-configured via buffer's user page and mmapped from the same file
-descriptor with a given offset. Data can then be collected from it
-by reading the aux_head (write) pointer from the user page and updating
-aux_tail (read) pointer similarly to data_{head,tail} of the
-traditional perf buffer. There is an api between perf core and pmu
-drivers that wish to make use of this AUX space to export their data.
-
-For tracing blocks that don't support hardware scatter-gather tables,
-we provide high-order physically contiguous allocations to minimize
-the overhead needed for software double buffering and PMI pressure.
-
-This way we get a normal perf data stream that provides sideband
-information that is required to decode the trace data, such as MMAPs,
-COMMs etc, plus the actual trace in its own logical space.
-
-If the trace buffer is mapped writable, the driver will stop tracing
-when it fills up (aux_head approaches aux_tail), till data is read,
-aux_tail pointer is moved forward and an ioctl() is issued to
-re-enable tracing. If the trace buffer is mapped read only, the
-tracing will continue, overwriting older data, so that the buffer
-always contains the most recent data. Tracing can be stopped with an
-ioctl() and restarted once the data is collected.
-
-This patchset consists of necessary changes to the perf kernel
-infrastructure, and PT and BTS pmu drivers. The tooling support is not
-included in this series, however, it can be found in my github tree [2].
-
-[1] chapter 36 of
-http://www.intel.com/content/dam/www/public/us/en/documents/manuals/64-ia-32-architectures-software-developer-manual-325462.pdf
-[2] http://github.com/virtuoso/linux-perf/tree/intel_pt
-
-Alexander Shishkin (13):
-  perf: Add data_{offset,size} to user_page
-  perf: Support high-order allocations for AUX space
-  perf: Add a capability for AUX_NO_SG pmus to do software double
-    buffering
-  perf: Add a pmu capability for "exclusive" events
-  perf: Add AUX record
-  perf: Add api for pmus to write to AUX area
-  perf: Support overwrite mode for AUX area
-  perf: Add wakeup watermark control to AUX area
-  x86: Add Intel Processor Trace (INTEL_PT) cpu feature detection
-  x86: perf: Intel PT and LBR/BTS are mutually exclusive
-  x86: perf: intel_pt: Intel PT PMU driver
-  x86: perf: intel_bts: Add BTS PMU driver
-  perf: add ITRACE_START record to indicate that tracing has started
-
-Peter Zijlstra (1):
-  perf: Add AUX area to ring buffer for raw data streams
-
- arch/x86/include/asm/cpufeature.h          |    1 +
- arch/x86/include/uapi/asm/msr-index.h      |   18 +
- arch/x86/kernel/cpu/Makefile               |    1 +
- arch/x86/kernel/cpu/intel_pt.h             |  131 ++++
- arch/x86/kernel/cpu/perf_event.c           |   43 ++
- arch/x86/kernel/cpu/perf_event.h           |   49 ++
- arch/x86/kernel/cpu/perf_event_intel.c     |   40 +-
- arch/x86/kernel/cpu/perf_event_intel_bts.c |  525 +++++++++++++
- arch/x86/kernel/cpu/perf_event_intel_ds.c  |    3 +-
- arch/x86/kernel/cpu/perf_event_intel_pt.c  | 1095 ++++++++++++++++++++++++++++
- arch/x86/kernel/cpu/scattered.c            |    1 +
- include/linux/perf_event.h                 |   47 +-
- include/uapi/linux/perf_event.h            |   60 +-
- kernel/events/core.c                       |  268 ++++++-
- kernel/events/internal.h                   |   33 +
- kernel/events/ring_buffer.c                |  327 ++++++++-
- 16 files changed, 2591 insertions(+), 51 deletions(-)
- create mode 100644 arch/x86/kernel/cpu/intel_pt.h
- create mode 100644 arch/x86/kernel/cpu/perf_event_intel_bts.c
- create mode 100644 arch/x86/kernel/cpu/perf_event_intel_pt.c
-
+diff --git a/drivers/staging/iio/accel/adis16203.h b/drivers/staging/iio/accel/adis16203.h
+index acc688d..8d1e200 100644
+--- a/drivers/staging/iio/accel/adis16203.h
++++ b/drivers/staging/iio/accel/adis16203.h
+@@ -3,43 +3,76 @@
+ 
+ #define ADIS16203_STARTUP_DELAY	220 /* ms */
+ 
+-#define ADIS16203_FLASH_CNT      0x00 /* Flash memory write count */
+-#define ADIS16203_SUPPLY_OUT     0x02 /* Output, power supply */
+-#define ADIS16203_AUX_ADC        0x08 /* Output, auxiliary ADC input */
+-#define ADIS16203_TEMP_OUT       0x0A /* Output, temperature */
+-#define ADIS16203_XINCL_OUT      0x0C /* Output, x-axis inclination */
+-#define ADIS16203_YINCL_OUT      0x0E /* Output, y-axis inclination */
+-#define ADIS16203_INCL_NULL      0x18 /* Incline null calibration */
+-#define ADIS16203_ALM_MAG1       0x20 /* Alarm 1 amplitude threshold */
+-#define ADIS16203_ALM_MAG2       0x22 /* Alarm 2 amplitude threshold */
+-#define ADIS16203_ALM_SMPL1      0x24 /* Alarm 1, sample period */
+-#define ADIS16203_ALM_SMPL2      0x26 /* Alarm 2, sample period */
+-#define ADIS16203_ALM_CTRL       0x28 /* Alarm control */
+-#define ADIS16203_AUX_DAC        0x30 /* Auxiliary DAC data */
+-#define ADIS16203_GPIO_CTRL      0x32 /* General-purpose digital input/output control */
+-#define ADIS16203_MSC_CTRL       0x34 /* Miscellaneous control */
+-#define ADIS16203_SMPL_PRD       0x36 /* Internal sample period (rate) control */
+-#define ADIS16203_AVG_CNT        0x38 /* Operation, filter configuration */
+-#define ADIS16203_SLP_CNT        0x3A /* Operation, sleep mode control */
+-#define ADIS16203_DIAG_STAT      0x3C /* Diagnostics, system status register */
+-#define ADIS16203_GLOB_CMD       0x3E /* Operation, system command register */
++/* Flash memory write count */
++#define ADIS16203_FLASH_CNT      0x00
++/* Output, power supply */
++#define ADIS16203_SUPPLY_OUT     0x02
++/* Output, auxiliary ADC input */
++#define ADIS16203_AUX_ADC        0x08
++/* Output, temperature */
++#define ADIS16203_TEMP_OUT       0x0A
++/* Output, x-axis inclination */
++#define ADIS16203_XINCL_OUT      0x0C
++/* Output, y-axis inclination */
++#define ADIS16203_YINCL_OUT      0x0E
++/* Incline null calibration */
++#define ADIS16203_INCL_NULL      0x18
++/* Alarm 1 amplitude threshold */
++#define ADIS16203_ALM_MAG1       0x20
++/* Alarm 2 amplitude threshold */
++#define ADIS16203_ALM_MAG2       0x22
++/* Alarm 1, sample period */
++#define ADIS16203_ALM_SMPL1      0x24
++/* Alarm 2, sample period */
++#define ADIS16203_ALM_SMPL2      0x26
++/* Alarm control */
++#define ADIS16203_ALM_CTRL       0x28
++/* Auxiliary DAC data */
++#define ADIS16203_AUX_DAC        0x30
++/* General-purpose digital input/output control */
++#define ADIS16203_GPIO_CTRL      0x32
++/* Miscellaneous control */
++#define ADIS16203_MSC_CTRL       0x34
++/* Internal sample period (rate) control */
++#define ADIS16203_SMPL_PRD       0x36
++/* Operation, filter configuration */
++#define ADIS16203_AVG_CNT        0x38
++/* Operation, sleep mode control */
++#define ADIS16203_SLP_CNT        0x3A
++/* Diagnostics, system status register */
++#define ADIS16203_DIAG_STAT      0x3C
++/* Operation, system command register */
++#define ADIS16203_GLOB_CMD       0x3E
+ 
+ /* MSC_CTRL */
+-#define ADIS16203_MSC_CTRL_PWRUP_SELF_TEST	(1 << 10) /* Self-test at power-on: 1 = disabled, 0 = enabled */
+-#define ADIS16203_MSC_CTRL_REVERSE_ROT_EN	(1 << 9)  /* Reverses rotation of both inclination outputs */
+-#define ADIS16203_MSC_CTRL_SELF_TEST_EN	        (1 << 8)  /* Self-test enable */
+-#define ADIS16203_MSC_CTRL_DATA_RDY_EN	        (1 << 2)  /* Data-ready enable: 1 = enabled, 0 = disabled */
+-#define ADIS16203_MSC_CTRL_ACTIVE_HIGH	        (1 << 1)  /* Data-ready polarity: 1 = active high, 0 = active low */
+-#define ADIS16203_MSC_CTRL_DATA_RDY_DIO1	(1 << 0)  /* Data-ready line selection: 1 = DIO1, 0 = DIO0 */
++/* Self-test at power-on: 1 = disabled, 0 = enabled */
++#define ADIS16203_MSC_CTRL_PWRUP_SELF_TEST	(1 << 10)
++/* Reverses rotation of both inclination outputs */
++#define ADIS16203_MSC_CTRL_REVERSE_ROT_EN	(1 << 9)
++/* Self-test enable */
++#define ADIS16203_MSC_CTRL_SELF_TEST_EN	        (1 << 8)
++/* Data-ready enable: 1 = enabled, 0 = disabled */
++#define ADIS16203_MSC_CTRL_DATA_RDY_EN	        (1 << 2)
++/* Data-ready polarity: 1 = active high, 0 = active low */
++#define ADIS16203_MSC_CTRL_ACTIVE_HIGH	        (1 << 1)
++/* Data-ready line selection: 1 = DIO1, 0 = DIO0 */
++#define ADIS16203_MSC_CTRL_DATA_RDY_DIO1	(1 << 0)
+ 
+ /* DIAG_STAT */
+-#define ADIS16203_DIAG_STAT_ALARM2        (1<<9) /* Alarm 2 status: 1 = alarm active, 0 = alarm inactive */
+-#define ADIS16203_DIAG_STAT_ALARM1        (1<<8) /* Alarm 1 status: 1 = alarm active, 0 = alarm inactive */
+-#define ADIS16203_DIAG_STAT_SELFTEST_FAIL_BIT 5 /* Self-test diagnostic error flag */
+-#define ADIS16203_DIAG_STAT_SPI_FAIL_BIT      3 /* SPI communications failure */
+-#define ADIS16203_DIAG_STAT_FLASH_UPT_BIT     2 /* Flash update failure */
+-#define ADIS16203_DIAG_STAT_POWER_HIGH_BIT    1 /* Power supply above 3.625 V */
+-#define ADIS16203_DIAG_STAT_POWER_LOW_BIT     0 /* Power supply below 3.15 V */
++/* Alarm 2 status: 1 = alarm active, 0 = alarm inactive */
++#define ADIS16203_DIAG_STAT_ALARM2        (1<<9)
++/* Alarm 1 status: 1 = alarm active, 0 = alarm inactive */
++#define ADIS16203_DIAG_STAT_ALARM1        (1<<8)
++/* Self-test diagnostic error flag */
++#define ADIS16203_DIAG_STAT_SELFTEST_FAIL_BIT 5
++/* SPI communications failure */
++#define ADIS16203_DIAG_STAT_SPI_FAIL_BIT      3
++/* Flash update failure */
++#define ADIS16203_DIAG_STAT_FLASH_UPT_BIT     2
++/* Power supply above 3.625 V */
++#define ADIS16203_DIAG_STAT_POWER_HIGH_BIT    1
++/* Power supply below 3.15 V */
++#define ADIS16203_DIAG_STAT_POWER_LOW_BIT     0
+ 
+ /* GLOB_CMD */
+ #define ADIS16203_GLOB_CMD_SW_RESET	(1<<7)
 -- 
-2.1.4
+1.9.1
 
