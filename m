@@ -1,76 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751991AbbANCqL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 21:46:11 -0500
-Received: from cn.fujitsu.com ([59.151.112.132]:44050 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751086AbbANCqK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 21:46:10 -0500
-X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
-   d="scan'208";a="56023549"
-Message-ID: <54B5D8B4.7010708@cn.fujitsu.com>
-Date: Wed, 14 Jan 2015 10:47:16 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+	id S1752418AbbANCzQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 21:55:16 -0500
+Received: from smtp.mei.co.jp ([133.183.100.20]:43958 "EHLO smtp.mei.co.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752082AbbANCzP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 21:55:15 -0500
+Date: Wed, 14 Jan 2015 11:53:42 +0900
+From: Masahiro Yamada <yamada.m@jp.panasonic.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: Re: [PATCH v2] ARM: mm: fix size rounding-down of arm_add_memory() function
+Cc: Daniel Thompson <daniel.thompson@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?UTF-8?B?IklzaGltYXRzdSwgWWFzdWFraS/nn7Pmnb4g6Z2W56ugIg==?= 
-	<isimatu.yasuaki@jp.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        "guz.fnst@cn.fujitsu.com" <guz.fnst@cn.fujitsu.com>
-Subject: Re: [PATCH 1/2] workqueue: update numa affinity info at node hotplug
-References: <54905F87.2030302@jp.fujitsu.com> <549061BD.3040802@jp.fujitsu.com> <5490DE23.9000602@cn.fujitsu.com> <5490F70E.4010703@jp.fujitsu.com> <54910CFD.4070203@jp.fujitsu.com> <20141225201156.GA22951@htj.dyndns.org> <54B4C6ED.9060501@cn.fujitsu.com> <20150113152224.GA2976@htj.dyndns.org>
-In-Reply-To: <20150113152224.GA2976@htj.dyndns.org>
-Content-Type: text/plain; charset="utf-8"
+        Laura Abbott <lauraa@codeaurora.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Olof Johansson <olof@lixom.net>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <CAKv+Gu8QSSC32VVwBzSiDL_3t_dd=2Oa+Xp5r8mtDrGBW9E0ow@mail.gmail.com>
+References: <1419218249-5744-1-git-send-email-yamada.m@jp.panasonic.com> <CAKv+Gu8QSSC32VVwBzSiDL_3t_dd=2Oa+Xp5r8mtDrGBW9E0ow@mail.gmail.com>
+X-BkSecure-Plugin: BkSecure.dll Ver 1, 2, 7, 0
+Message-Id: <20150114115342.70FB.AA925319@jp.panasonic.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
+X-Mailer: Becky! ver. 2.64.06 [ja]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2015 11:22 PM, Tejun Heo wrote:
-> Hello,
+Hello Russell King,
+
+Could you apply this patch for arm_add_memory() fix, please ?
+
+
+Thanks,
+Masahiro Yamada
+
+
+On Mon, 22 Dec 2014 10:09:32 +0100
+Ard Biesheuvel <ard.biesheuvel@linaro.org> wrote:
+
+> On 22 December 2014 at 04:17, Masahiro Yamada <yamada.m@jp.panasonic.com> wrote:
+> > The current rounding of "size" is wrong:
+> >
+> >  - If "start" is sufficiently near the next page boundary, "size"
+> >    is decremented by more than enough and the last page is lost.
+> >
+> >  - If "size" is sufficiently small, it is wrapped around and gets
+> >    a bogus value.
+> >
+> > Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
+> > Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
 > 
-> On Tue, Jan 13, 2015 at 03:19:09PM +0800, Lai Jiangshan wrote:
->> The Mapping of the *online* cpus to nodes is already maintained by numa code.
->>
->> What the workqueue needs is a special Mapping:
->> 	The Mapping of the *possible* cpus to nodes
->>
->> But this mapping (if the numa code maintain it) is a trouble:
->> 	"possible" implies the mapping is stable/constant/immutable, it is hard to
->> 	ensure it in the numa code.
->>
->> if mutability of this mapping is acceptable, we just move 20~40 LOC
->> of code from workqueue to numa code, all the other complexities
->> about it are still in workqueue.c.
+> Acked-by: Ard Biesheuvel <ard.biesheuvel@linaro.org>
 > 
-> Make numa code maintain the mapping to the best of its knowledge and
-> invoke notification callbacks when it changes.  
-
-The best of its knowledge is the physical onlined nodes and CPUs.
-The cpu_present_mask can represent this knowledge. But it lacks of
-the per-node cpu_present_mask and the notification callbacks.
-
-> Even if that involves slightly more code, that's the right thing to do at this point.
-
-Right, but in currently, the workqueue will be the only user, and I don't known
-asking who to do it, so I may keep it in the workqueue.c.
-
-> This puts the logic which is complicated by the fact that the mapping may
-> change where it's caused not some random unrelated place.  
-
-
-> It'd be
-> awesome if somebody more familiar with the numa side can chime in and
-> explain why this mapping change can't be avoided.
-
-I'm also looking for someone answer it.
-
 > 
-> Thanks.
+> > ---
+> >
+> > Changes in v2:
+> >  - Avoid wrap around of "size"
+> >
+> >  arch/arm/kernel/setup.c | 7 +++++--
+> >  1 file changed, 5 insertions(+), 2 deletions(-)
+> >
+> > diff --git a/arch/arm/kernel/setup.c b/arch/arm/kernel/setup.c
+> > index f9c8639..d13f185 100644
+> > --- a/arch/arm/kernel/setup.c
+> > +++ b/arch/arm/kernel/setup.c
+> > @@ -657,10 +657,13 @@ int __init arm_add_memory(u64 start, u64 size)
+> >
+> >         /*
+> >          * Ensure that start/size are aligned to a page boundary.
+> > -        * Size is appropriately rounded down, start is rounded up.
+> > +        * Size is rounded down, start is rounded up.
+> >          */
+> > -       size -= start & ~PAGE_MASK;
+> >         aligned_start = PAGE_ALIGN(start);
+> > +       if (aligned_start > start + size)
+> > +               size = 0;
+> > +       else
+> > +               size -= aligned_start - start;
+> >
+> >  #ifndef CONFIG_ARCH_PHYS_ADDR_T_64BIT
+> >         if (aligned_start > ULONG_MAX) {
+> > --
+> > 1.9.1
+> >
 > 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+
 
