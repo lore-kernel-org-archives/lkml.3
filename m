@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932186AbbANHaJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:30:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58131 "EHLO
+	id S933318AbbANIEr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:04:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58481 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751414AbbANHaF (ORCPT
+	with ESMTP id S932456AbbANHeR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:30:05 -0500
+	Wed, 14 Jan 2015 02:34:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, Felipe Balbi <balbi@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: [PATCH 3.18 116/150] ARM: dts: am437x-sk: fix lcd enable pin mux data
+        Jens Axboe <axboe@fb.com>
+Subject: [PATCH 3.14 27/77] blk-mq: use nr_cpu_ids as highest CPU ID count for hwq <-> cpu map
 Date: Tue, 13 Jan 2015 23:23:07 -0800
-Message-Id: <20150114072101.109927124@linuxfoundation.org>
+Message-Id: <20150114072225.687619367@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
-References: <20150114072055.842408181@linuxfoundation.org>
+In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
+References: <20150114072224.182299947@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,45 +24,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Felipe Balbi <balbi@ti.com>
+From: Jens Axboe <axboe@fb.com>
 
-commit 58230c2c443bc9801293f6535144d04ceaf731e0 upstream.
+commit a33c1ba2913802b6fb23e974bb2f6a4e73c8b7ce upstream.
 
-Caused by a copy & paste error. Note that even with
-this bug AM437x SK display still works because GPIO
-mux mode is always enabled. It's still wrong to mux
-somebody else's pin.
+We currently use num_possible_cpus(), but that breaks on sparc64 where
+the CPU ID space is discontig. Use nr_cpu_ids as the highest CPU ID
+instead, so we don't end up reading from invalid memory.
 
-Luckily ball D25 (offset 0x238 - gpio5_8) on AM437x
-isn't used for anything.
-
-While at that, also replace a pullup with a pulldown
-as that gpio should be normally low, not high.
-
-Acked-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Signed-off-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/am437x-sk-evm.dts |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ block/blk-mq-cpumap.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/arch/arm/boot/dts/am437x-sk-evm.dts
-+++ b/arch/arm/boot/dts/am437x-sk-evm.dts
-@@ -320,8 +320,7 @@
+--- a/block/blk-mq-cpumap.c
++++ b/block/blk-mq-cpumap.c
+@@ -95,7 +95,7 @@ unsigned int *blk_mq_make_queue_map(stru
+ 	unsigned int *map;
  
- 	lcd_pins: lcd_pins {
- 		pinctrl-single,pins = <
--			/* GPIO 5_8 to select LCD / HDMI */
--			0x238 (PIN_OUTPUT_PULLUP | MUX_MODE7)
-+			0x1c (PIN_OUTPUT_PULLDOWN | MUX_MODE7) /* gpcm_ad7.gpio1_7 */
- 		>;
- 	};
- };
+ 	/* If cpus are offline, map them to first hctx */
+-	map = kzalloc_node(sizeof(*map) * num_possible_cpus(), GFP_KERNEL,
++	map = kzalloc_node(sizeof(*map) * nr_cpu_ids, GFP_KERNEL,
+ 				reg->numa_node);
+ 	if (!map)
+ 		return NULL;
 
 
