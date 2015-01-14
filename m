@@ -1,79 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751276AbbANFq1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 00:46:27 -0500
-Received: from mail-oi0-f48.google.com ([209.85.218.48]:50723 "EHLO
-	mail-oi0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750719AbbANFqZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 00:46:25 -0500
+	id S1751216AbbANF5J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 00:57:09 -0500
+Received: from guitar.tcltek.co.il ([192.115.133.116]:42888 "EHLO
+	mx.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750719AbbANF5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 00:57:07 -0500
+Date: Wed, 14 Jan 2015 07:57:01 +0200
+From: Baruch Siach <baruch@tkos.co.il>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: gregkh@linuxfoundation.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org
+Subject: Re: [PATCH] serial: digicolor: fix sysrq handling
+Message-ID: <20150114055701.GX2481@sapphire.tkos.co.il>
+References: <1730002.vWGOEymGdz@wuerfel>
 MIME-Version: 1.0
-In-Reply-To: <35FD53F367049845BC99AC72306C23D103EDAF89E1A3@CNBJMBX05.corpusers.net>
-References: <35FD53F367049845BC99AC72306C23D103EDAF89E1A3@CNBJMBX05.corpusers.net>
-Date: Tue, 13 Jan 2015 21:46:25 -0800
-X-Google-Sender-Auth: qdcPsmWJDOnY9uASe3P9VseTyWU
-Message-ID: <CAGXu5jKz_ZT=FWg5MuFh1sz3uXx0mHEc_zNu=OSZi7noHZZ7oA@mail.gmail.com>
-Subject: Re: [RFC] export module parameters even the permission is zero
-From: Kees Cook <keescook@chromium.org>
-To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-Cc: "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "jani.nikula@intel.com" <jani.nikula@intel.com>,
-        "hch@infradead.org" <hch@infradead.org>, "hare@suse.de" <hare@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1730002.vWGOEymGdz@wuerfel>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 6:16 PM, Wang, Yalin <Yalin.Wang@sonymobile.com> wrote:
-> This patch make sure to export module parameters even the permission
-> is zero, this is useful for some platforms like Android,
-> the init process can change the parameter mode/owner by
-> chmod/chown during bootup
->
-> Signed-off-by: Yalin Wang <yalin.wang@sonymobile.com>
+Hi Arnd,
 
-NAK. No sorry, these parameters are explicitly being removed from
-sysfs by the various things that use perm==0. This would potentially
-expose sensitive values to sysfs. If a value should be exposed, the
-perm argument on the specific thing should be changed.
+On Tue, Jan 13, 2015 at 03:37:11PM +0100, Arnd Bergmann wrote:
+> Trying to build the digicolor-usart driver when sysrq is disabled
+> results in a compile error:
+> 
+> drivers/tty/serial/digicolor-usart.c: In function 'digicolor_uart_console_write':
+> drivers/tty/serial/digicolor-usart.c:407:33: error: 'struct uart_port' has no member named 'sysrq'
+> 
+> Like a lot of other drivers, this one requires an #ifdef to avoid
+> accessing the sysrq field here. While looking into this, I noticed
+> that the case where sysrq support is enabled is also broken, because
+> the driver fails to set the SUPPORT_SYSRQ macro.
+> 
+> This patch hopefully fixes both, but I do not hardware to test if sysrq
+> is actually working now.
 
--Kees
+Unfortunately the hardware is not able to detect the BREAK condition, so it is 
+not possible to support sysrq on this hardware. I'll send a patch removing 
+sysrq reference.
 
-> ---
->  kernel/params.c | 6 ------
->  1 file changed, 6 deletions(-)
->
-> diff --git a/kernel/params.c b/kernel/params.c
-> index bd65d136..aa80c04 100644
-> --- a/kernel/params.c
-> +++ b/kernel/params.c
-> @@ -607,9 +607,6 @@ static __modinit int add_sysfs_param(struct module_kobject *mk,
->         struct attribute **new_attrs;
->         unsigned int i;
->
-> -       /* We don't bother calling this with invisible parameters. */
-> -       BUG_ON(!kp->perm);
-> -
->         if (!mk->mp) {
->                 /* First allocation. */
->                 mk->mp = kzalloc(sizeof(*mk->mp), GFP_KERNEL);
-> @@ -812,9 +809,6 @@ static void __init param_sysfs_builtin(void)
->         for (kp = __start___param; kp < __stop___param; kp++) {
->                 char *dot;
->
-> -               if (kp->perm == 0)
-> -                       continue;
-> -
->                 dot = strchr(kp->name, '.');
->                 if (!dot) {
->                         /* This happens for core_param() */
-> --
-> 2.1.3
+Thanks for build testing and reporting.
 
-
+baruch
 
 -- 
-Kees Cook
-Chrome OS Security
+     http://baruch.siach.name/blog/                  ~. .~   Tk Open Systems
+=}------------------------------------------------ooO--U--Ooo------------{=
+   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
