@@ -1,156 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752007AbbANBoR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 20:44:17 -0500
-Received: from mail-bn1bon0116.outbound.protection.outlook.com ([157.56.111.116]:33926
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751167AbbANBoP convert rfc822-to-8bit (ORCPT
+	id S1752039AbbANBrj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 20:47:39 -0500
+Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:43173 "EHLO
+	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052AbbANBri (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 20:44:15 -0500
-From: Dexuan Cui <decui@microsoft.com>
-To: Vitaly Kuznetsov <vkuznets@redhat.com>, KY Srinivasan <kys@microsoft.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH v3] hv: hv_fcopy: drop the obsolete message on transfer
- failure
-Thread-Topic: [PATCH v3] hv: hv_fcopy: drop the obsolete message on transfer
- failure
-Thread-Index: AQHQLzg4w1QfDLsS1EmuRLAXowpA7Zy+1h1g
-Date: Wed, 14 Jan 2015 01:43:45 +0000
-Message-ID: <F792CF86EFE20D4AB8064279AFBA51C61EA7CFF9@SIXPRD3002MB028.064d.mgd.msft.net>
-References: <1417093747-21073-1-git-send-email-decui@microsoft.com>
- <8761caeqjp.fsf@vitty.brq.redhat.com>
-In-Reply-To: <8761caeqjp.fsf@vitty.brq.redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [141.251.55.68]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 13 Jan 2015 20:47:38 -0500
+X-Original-SENDERIP: 10.177.220.203
+X-Original-MAILFROM: namhyung@kernel.org
+Date: Wed, 14 Jan 2015 10:45:06 +0900
+From: Namhyung Kim <namhyung@kernel.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 2/4] perf probe: Do not rely on map__load() filter to
+ find symbols
+Message-ID: <20150114014506.GC800@sejong>
+References: <1420886028-15135-1-git-send-email-namhyung@kernel.org>
+ <1420886028-15135-2-git-send-email-namhyung@kernel.org>
+ <54B3BEA2.3020700@hitachi.com>
 MIME-Version: 1.0
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=fail (sender IP is 206.191.249.68)
- smtp.mailfrom=decui@microsoft.com; 
-X-Forefront-Antispam-Report: CIP:206.191.249.68;CTRY:US;IPV:CAL;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(377454003)(199003)(13464003)(164054003)(51704005)(189002)(81156004)(106466001)(85426001)(106116001)(105606002)(97736003)(69596002)(6806004)(19580405001)(19580395003)(86612001)(551934003)(46102003)(86362001)(97756001)(2561002)(217423001)(16796002)(33656002)(87936001)(2656002)(50986999)(76176999)(54356999)(23726002)(86146001)(46406003)(55846006)(50466002)(64706001)(66066001)(47776003)(102836002)(26826002)(2421001)(1511001)(92566002)(62966003)(77156002)(68736005)(2900100001)(2920100001)(2950100001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0775;H:064-smtp-out.microsoft.com;FPR:;SPF:Fail;MLV:ovrnspm;PTR:ErrorRetry;A:1;MX:1;LANG:en;
-X-DmarcStatus-Test: Failed
-X-DmarcAction-Test: None
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3004003)(3005003);SRVR:BY2PR0301MB0775;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR0301MB0775;
-X-Forefront-PRVS: 04569283F9
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0775;
-X-OriginatorOrg: microsoft.onmicrosoft.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 14 Jan 2015 01:44:09.1379
- (UTC)
-X-MS-Exchange-CrossTenant-Id: 72f988bf-86f1-41af-91ab-2d7cd011db47
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=72f988bf-86f1-41af-91ab-2d7cd011db47;Ip=[206.191.249.68]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR0301MB0775
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <54B3BEA2.3020700@hitachi.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Vitaly Kuznetsov [mailto:vkuznets@redhat.com]
-> Sent: Tuesday, January 13, 2015 21:52 PM
-> To: Dexuan Cui; KY Srinivasan
-> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org; driverdev-
-> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
-> jasowang@redhat.com; Haiyang Zhang
-> Subject: Re: [PATCH v3] hv: hv_fcopy: drop the obsolete message on transfer
-> failure
-> 
-> Dexuan Cui <decui@microsoft.com> writes:
-> 
-> > In the case the user-space daemon crashes, hangs or is killed, we
-> > need to down the semaphore, otherwise, after the daemon starts next
-> > time, the obsolete data in fcopy_transaction.message or
-> > fcopy_transaction.fcopy_msg will be used immediately.
-> 
-> It seems this patch got lost and I don't see it in recent 'resend'
-> series. K.Y., Dexuan, can you please take a look?
-Hi Vitaly, Jason,
-The patch can't fix all the corner cases (it would need non-trivial efforts for that)
-as we discussed, but I think it would be better for us to have it as it can indeed fix
-an obvious issue and doesn't introduce new issues.
-
-I think I can document the known discussed corner cases in the patch as TODOs
-and resend the patch.
-
-Please let me know if you have different opinions. :-) 
-
-Thanks,
--- Dexuan
-
-> 
-> >
-> > Cc: Jason Wang <jasowang@redhat.com>
-> > Cc: Vitaly Kuznetsov <vkuznets@redhat.com>
-> > Cc: K. Y. Srinivasan <kys@microsoft.com>
-> > Signed-off-by: Dexuan Cui <decui@microsoft.com>
+On Mon, Jan 12, 2015 at 09:31:30PM +0900, Masami Hiramatsu wrote:
+> (2015/01/10 19:33), Namhyung Kim wrote:
+> > The find_probe_trace_events_from_map() searches matching symbol from a
+> > map (so from a backing dso).  For uprobes, it'll create a new map (and
+> > dso) and loads it using a filter.  It's a little bit inefficient in that
+> > it'll read out the symbol table everytime but works well anyway.
+> > 
+> > For kprobes however, it'll reuse existing kernel map which might be
+> > loaded before.  In this case map__load() just returns with no result.
+> > It makes kprobes always failed to find symbol even if it exists in the
+> > map (dso).
+> > 
+> > To fix it, use map__find_symbol_by_name() instead.  It'll load a map
+> > with full symbols and sorts them by name.  It needs to search sibing
+> > nodes since there can be multiple (local) symbols with same name.  Now
+> > resulting symbol references are saved in the funcs list.
+> > 
+> > Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> > Signed-off-by: Namhyung Kim <namhyung@kernel.org>
 > > ---
-> >
-> > v2: I removed the "FCP" prefix as Greg asked.
-> >
-> >     I also updated the output message a little:
-> >     "FCP: failed to acquire the semaphore" -->
-> >     "can not acquire the semaphore: it is benign"
-> >
-> > v3: I added the code in fcopy_release() as Jason Wang suggested.
-> >     I removed the pr_debug (it isn't so meaningful)and added a comment
-> instead.
-> >
-> >  drivers/hv/hv_fcopy.c | 19 +++++++++++++++++++
-> >  1 file changed, 19 insertions(+)
-> >
-> > diff --git a/drivers/hv/hv_fcopy.c b/drivers/hv/hv_fcopy.c
-> > index 23b2ce2..faa6ba6 100644
-> > --- a/drivers/hv/hv_fcopy.c
-> > +++ b/drivers/hv/hv_fcopy.c
-> > @@ -86,6 +86,18 @@ static void fcopy_work_func(struct work_struct
-> *dummy)
-> >  	 * process the pending transaction.
-> >  	 */
-> >  	fcopy_respond_to_host(HV_E_FAIL);
-> > +
-> > +	/* In the case the user-space daemon crashes, hangs or is killed, we
-> > +	 * need to down the semaphore, otherwise, after the daemon starts
-> next
-> > +	 * time, the obsolete data in fcopy_transaction.message or
-> > +	 * fcopy_transaction.fcopy_msg will be used immediately.
-> > +	 *
-> > +	 * NOTE: fcopy_read() happens to get the semaphore (very rare)? We're
-> > +	 * still OK, because we've reported the failure to the host.
-> > +	 */
-> > +	if (down_trylock(&fcopy_transaction.read_sema))
-> > +		;
-> > +
+> >  tools/perf/util/probe-event.c | 101 ++++++++++++++++++++++++++++++++++++------
+> >  1 file changed, 87 insertions(+), 14 deletions(-)
+> > 
+> > diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+> > index 7f9b8632e433..e5af16988791 100644
+> > --- a/tools/perf/util/probe-event.c
+> > +++ b/tools/perf/util/probe-event.c
+> > @@ -2191,20 +2191,86 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
+> >  	return ret;
 > >  }
-> >
-> >  static int fcopy_handle_handshake(u32 version)
-> > @@ -351,6 +363,13 @@ static int fcopy_release(struct inode *inode, struct
-> file *f)
-> >  	 */
-> >  	in_hand_shake = true;
-> >  	opened = false;
+> >  
+> > -static char *looking_function_name;
+> > -static int num_matched_functions;
+> > +struct symbol_entry {
+> > +	struct list_head node;
+> > +	struct symbol *sym;
+> > +};
+> >  
+> > -static int probe_function_filter(struct map *map __maybe_unused,
+> > -				      struct symbol *sym)
+> > +/* returns 1 if symbol was added, 0 if symbol was skipped, -1 if error */
+> > +static int add_symbol_entry(struct symbol *sym, struct list_head *head)
+> >  {
+> > -	if ((sym->binding == STB_GLOBAL || sym->binding == STB_LOCAL) &&
+> > -	    strcmp(looking_function_name, sym->name) == 0) {
+> > -		num_matched_functions++;
+> > +	struct symbol_entry *ent;
 > > +
-> > +	if (cancel_delayed_work_sync(&fcopy_work)) {
-> > +		/* We haven't up()-ed the semaphore(very rare)? */
-> > +		if (down_trylock(&fcopy_transaction.read_sema))
-> > +			;
-> > +		fcopy_respond_to_host(HV_E_FAIL);
-> > +	}
-> >  	return 0;
-> >  }
+> > +	if (sym->binding != STB_GLOBAL && sym->binding != STB_LOCAL)
+> >  		return 0;
+> > -	}
+> > +
+> > +	ent = malloc(sizeof(*ent));
+> > +	if (ent == NULL)
+> > +		return -1;
 > 
-> --
->   Vitaly
+> return -ENOMEM; ?
+
+Okay, will change.
+
+
+> 
+> > +
+> > +	ent->sym = sym;
+> > +	list_add(&ent->node, head);
+> >  	return 1;
+> >  }
+> >  
+> > +static int find_probe_functions(struct map *map, char *name, struct list_head *head)
+> > +{
+> > +	struct symbol *sym, *orig_sym;
+> > +	struct symbol_entry *ent;
+> > +	struct rb_node *node;
+> > +	int found = 0;
+> > +	int ret;
+> > +
+> > +	sym = map__find_symbol_by_name(map, name, NULL);
+> > +	if (sym == NULL)
+> > +		return 0;
+> > +
+> > +	ret = add_symbol_entry(sym, head);
+> > +	if (ret < 0)
+> > +		goto err;
+> > +
+> > +	found += ret;
+> 
+> If ret always be 1 in successful case, we'd better do "found++" here.
+> And it also means we can do it shorter as below.
+> 
+> if (add_symbol_entry(sym, head) < 0)
+> 	goto err;
+> found++;
+
+But it can return 0 in successful case like STB_WEAK..  I'm not sure
+how we can handle the weak functions properly, but anyway the original
+code already ignored the weak functions.
+
+
+> 
+> > +
+> > +	/* search back and forth to find symbols that have same name */
+> 
+> Hmm, I see. but this code looks no-good sign... Can we have any generic
+> synonym handling routine?
+
+Like what?  I guess we can change map__find_symbol_by_name() to return
+a list of symbols or add a new function to do it.  Is it okay to you?
+
+
+> 
+> Other parts looks good to me:)
+
+Thanks for your review!
+Namhyung
