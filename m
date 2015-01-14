@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755650AbbANIMU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:12:20 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58314 "EHLO
+	id S933068AbbANHhw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:37:52 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58830 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754441AbbANHb7 (ORCPT
+	with ESMTP id S933036AbbANHhu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:31:59 -0500
+	Wed, 14 Jan 2015 02:37:50 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.18 144/150] regulator: s2mps11: Fix dw_mmc failure on Gear 2
-Date: Tue, 13 Jan 2015 23:23:35 -0800
-Message-Id: <20150114072102.369913101@linuxfoundation.org>
+        Richard Weinberger <richard@nod.at>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [PATCH 3.10 15/44] UBI: Fix double free after do_sync_erase()
+Date: Tue, 13 Jan 2015 23:23:36 -0800
+Message-Id: <20150114072228.369774848@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
-References: <20150114072055.842408181@linuxfoundation.org>
+In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
+References: <20150114072227.419663002@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,82 +25,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+From: Richard Weinberger <richard@nod.at>
 
-commit 1222d8fe578cd28a6c7f5e4e6c6b664c56abfdc0 upstream.
+commit aa5ad3b6eb8feb2399a5d26c8fb0060561bb9534 upstream.
 
-Invalid buck4 configuration for linear mapping of voltage in S2MPS14
-regulators caused boot failure on Gear 2 (dw_mmc-exynos):
+If the erase worker is unable to erase a PEB it will
+free the ubi_wl_entry itself.
+The failing ubi_wl_entry must not free()'d again after
+do_sync_erase() returns.
 
-[    3.569137] EXT4-fs (mmcblk0p15): mounted filesystem with ordered data mode. Opts: (null)
-[    3.571716] VFS: Mounted root (ext4 filesystem) readonly on device 179:15.
-[    3.629842] mmcblk0: error -110 sending status command, retrying
-[    3.630244] mmcblk0: error -110 sending status command, retrying
-[    3.636292] mmcblk0: error -110 sending status command, aborting
-
-Buck4 voltage regulator has different minimal voltage value than other
-bucks. Commit merging multiple regulator description macros caused to
-use linear_min_sel from buck[1235] regulators as value for buck4. This
-lead to lower voltage of buck4 than required.
-
-Output of the buck4 is used internally as power source for
-LDO{3,4,7,11,19,20,21,23}. On Gear 2 board LDO11 is used as MMC
-regulator (V_EMMC_1.8V).
-
-Fixes: 5a867cf28893 ("regulator: s2mps11: Optimize the regulator description macro")
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Signed-off-by: Mark Brown <broonie@kernel.org>
+Signed-off-by: Richard Weinberger <richard@nod.at>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/regulator/s2mps11.c |   19 ++++++++++++-------
- 1 file changed, 12 insertions(+), 7 deletions(-)
+ drivers/mtd/ubi/wl.c |   10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
 
---- a/drivers/regulator/s2mps11.c
-+++ b/drivers/regulator/s2mps11.c
-@@ -479,7 +479,7 @@ static struct regulator_ops s2mps14_reg_
- 	.enable_mask	= S2MPS14_ENABLE_MASK		\
- }
+--- a/drivers/mtd/ubi/wl.c
++++ b/drivers/mtd/ubi/wl.c
+@@ -1209,7 +1209,6 @@ static int wear_leveling_worker(struct u
  
--#define regulator_desc_s2mps14_buck(num, min, step) {		\
-+#define regulator_desc_s2mps14_buck(num, min, step, min_sel) {	\
- 	.name		= "BUCK"#num,				\
- 	.id		= S2MPS14_BUCK##num,			\
- 	.ops		= &s2mps14_reg_ops,			\
-@@ -488,7 +488,7 @@ static struct regulator_ops s2mps14_reg_
- 	.min_uV		= min,					\
- 	.uV_step	= step,					\
- 	.n_voltages	= S2MPS14_BUCK_N_VOLTAGES,		\
--	.linear_min_sel = S2MPS14_BUCK1235_START_SEL,		\
-+	.linear_min_sel = min_sel,				\
- 	.ramp_delay	= S2MPS14_BUCK_RAMP_DELAY,		\
- 	.vsel_reg	= S2MPS14_REG_B1CTRL2 + (num - 1) * 2,	\
- 	.vsel_mask	= S2MPS14_BUCK_VSEL_MASK,		\
-@@ -522,11 +522,16 @@ static const struct regulator_desc s2mps
- 	regulator_desc_s2mps14_ldo(23, MIN_800_MV, STEP_25_MV),
- 	regulator_desc_s2mps14_ldo(24, MIN_1800_MV, STEP_25_MV),
- 	regulator_desc_s2mps14_ldo(25, MIN_1800_MV, STEP_25_MV),
--	regulator_desc_s2mps14_buck(1, MIN_600_MV, STEP_6_25_MV),
--	regulator_desc_s2mps14_buck(2, MIN_600_MV, STEP_6_25_MV),
--	regulator_desc_s2mps14_buck(3, MIN_600_MV, STEP_6_25_MV),
--	regulator_desc_s2mps14_buck(4, MIN_1400_MV, STEP_12_5_MV),
--	regulator_desc_s2mps14_buck(5, MIN_600_MV, STEP_6_25_MV),
-+	regulator_desc_s2mps14_buck(1, MIN_600_MV, STEP_6_25_MV,
-+				    S2MPS14_BUCK1235_START_SEL),
-+	regulator_desc_s2mps14_buck(2, MIN_600_MV, STEP_6_25_MV,
-+				    S2MPS14_BUCK1235_START_SEL),
-+	regulator_desc_s2mps14_buck(3, MIN_600_MV, STEP_6_25_MV,
-+				    S2MPS14_BUCK1235_START_SEL),
-+	regulator_desc_s2mps14_buck(4, MIN_1400_MV, STEP_12_5_MV,
-+				    S2MPS14_BUCK4_START_SEL),
-+	regulator_desc_s2mps14_buck(5, MIN_600_MV, STEP_6_25_MV,
-+				    S2MPS14_BUCK1235_START_SEL),
- };
+ 	err = do_sync_erase(ubi, e1, vol_id, lnum, 0);
+ 	if (err) {
+-		kmem_cache_free(ubi_wl_entry_slab, e1);
+ 		if (e2)
+ 			kmem_cache_free(ubi_wl_entry_slab, e2);
+ 		goto out_ro;
+@@ -1223,10 +1222,8 @@ static int wear_leveling_worker(struct u
+ 		dbg_wl("PEB %d (LEB %d:%d) was put meanwhile, erase",
+ 		       e2->pnum, vol_id, lnum);
+ 		err = do_sync_erase(ubi, e2, vol_id, lnum, 0);
+-		if (err) {
+-			kmem_cache_free(ubi_wl_entry_slab, e2);
++		if (err)
+ 			goto out_ro;
+-		}
+ 	}
  
- static int s2mps14_pmic_enable_ext_control(struct s2mps11_info *s2mps11,
+ 	dbg_wl("done");
+@@ -1262,10 +1259,9 @@ out_not_moved:
+ 
+ 	ubi_free_vid_hdr(ubi, vid_hdr);
+ 	err = do_sync_erase(ubi, e2, vol_id, lnum, torture);
+-	if (err) {
+-		kmem_cache_free(ubi_wl_entry_slab, e2);
++	if (err)
+ 		goto out_ro;
+-	}
++
+ 	mutex_unlock(&ubi->move_mutex);
+ 	return 0;
+ 
 
 
