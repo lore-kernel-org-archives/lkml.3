@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755003AbbANHcW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:32:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58348 "EHLO
+	id S1755132AbbANH4r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:56:47 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58645 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754964AbbANHcR (ORCPT
+	with ESMTP id S932273AbbANHfw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:32:17 -0500
+	Wed, 14 Jan 2015 02:35:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jay Foad <jay.foad@gmail.com>,
+        Pavel Machek <pavel@ucw.cz>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.18 150/150] mm: Dont count the stack guard page towards RLIMIT_STACK
-Date: Tue, 13 Jan 2015 23:23:41 -0800
-Message-Id: <20150114072102.622132230@linuxfoundation.org>
+Subject: [PATCH 3.14 62/77] Revert "ARM: 7830/1: delay: dont bother reporting bogomips in /proc/cpuinfo"
+Date: Tue, 13 Jan 2015 23:23:42 -0800
+Message-Id: <20150114072227.663682356@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
-References: <20150114072055.842408181@linuxfoundation.org>
+In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
+References: <20150114072224.182299947@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,58 +25,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Pavel Machek <pavel@ucw.cz>
 
-commit 690eac53daff34169a4d74fc7bfbd388c4896abb upstream.
+commit 4bf9636c39ac70da091d5a2e28d3448eaa7f115c upstream.
 
-Commit fee7e49d4514 ("mm: propagate error from stack expansion even for
-guard page") made sure that we return the error properly for stack
-growth conditions.  It also theorized that counting the guard page
-towards the stack limit might break something, but also said "Let's see
-if anybody notices".
+Commit 9fc2105aeaaf ("ARM: 7830/1: delay: don't bother reporting
+bogomips in /proc/cpuinfo") breaks audio in python, and probably
+elsewhere, with message
 
-Somebody did notice.  Apparently android-x86 sets the stack limit very
-close to the limit indeed, and including the guard page in the rlimit
-check causes the android 'zygote' process problems.
+  FATAL: cannot locate cpu MHz in /proc/cpuinfo
 
-So this adds the (fairly trivial) code to make the stack rlimit check be
-against the actual real stack size, rather than the size of the vma that
-includes the guard page.
+I'm not the first one to hit it, see for example
 
-Reported-and-tested-by: Chih-Wei Huang <cwhuang@android-x86.org>
-Cc: Jay Foad <jay.foad@gmail.com>
+  https://theredblacktree.wordpress.com/2014/08/10/fatal-cannot-locate-cpu-mhz-in-proccpuinfo/
+  https://devtalk.nvidia.com/default/topic/765800/workaround-for-fatal-cannot-locate-cpu-mhz-in-proc-cpuinf/?offset=1
+
+Reading original changelog, I have to say "Stop breaking working setups.
+You know who you are!".
+
+Signed-off-by: Pavel Machek <pavel@ucw.cz>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/mmap.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ arch/arm/kernel/setup.c |    9 +++++++++
+ arch/arm/kernel/smp.c   |   13 +++++++++++--
+ 2 files changed, 20 insertions(+), 2 deletions(-)
 
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -2099,14 +2099,17 @@ static int acct_stack_growth(struct vm_a
+--- a/arch/arm/kernel/setup.c
++++ b/arch/arm/kernel/setup.c
+@@ -1021,6 +1021,15 @@ static int c_show(struct seq_file *m, vo
+ 		seq_printf(m, "model name\t: %s rev %d (%s)\n",
+ 			   cpu_name, cpuid & 15, elf_platform);
+ 
++#if defined(CONFIG_SMP)
++		seq_printf(m, "BogoMIPS\t: %lu.%02lu\n",
++			   per_cpu(cpu_data, i).loops_per_jiffy / (500000UL/HZ),
++			   (per_cpu(cpu_data, i).loops_per_jiffy / (5000UL/HZ)) % 100);
++#else
++		seq_printf(m, "BogoMIPS\t: %lu.%02lu\n",
++			   loops_per_jiffy / (500000/HZ),
++			   (loops_per_jiffy / (5000/HZ)) % 100);
++#endif
+ 		/* dump out the processor features */
+ 		seq_puts(m, "Features\t: ");
+ 
+--- a/arch/arm/kernel/smp.c
++++ b/arch/arm/kernel/smp.c
+@@ -388,8 +388,17 @@ asmlinkage void secondary_start_kernel(v
+ 
+ void __init smp_cpus_done(unsigned int max_cpus)
  {
- 	struct mm_struct *mm = vma->vm_mm;
- 	struct rlimit *rlim = current->signal->rlim;
--	unsigned long new_start;
-+	unsigned long new_start, actual_size;
+-	printk(KERN_INFO "SMP: Total of %d processors activated.\n",
+-	       num_online_cpus());
++	int cpu;
++	unsigned long bogosum = 0;
++
++	for_each_online_cpu(cpu)
++		bogosum += per_cpu(cpu_data, cpu).loops_per_jiffy;
++
++	printk(KERN_INFO "SMP: Total of %d processors activated "
++	       "(%lu.%02lu BogoMIPS).\n",
++	       num_online_cpus(),
++	       bogosum / (500000/HZ),
++	       (bogosum / (5000/HZ)) % 100);
  
- 	/* address space limit tests */
- 	if (!may_expand_vm(mm, grow))
- 		return -ENOMEM;
- 
- 	/* Stack limit test */
--	if (size > ACCESS_ONCE(rlim[RLIMIT_STACK].rlim_cur))
-+	actual_size = size;
-+	if (size && (vma->vm_flags & (VM_GROWSUP | VM_GROWSDOWN)))
-+		actual_size -= PAGE_SIZE;
-+	if (actual_size > ACCESS_ONCE(rlim[RLIMIT_STACK].rlim_cur))
- 		return -ENOMEM;
- 
- 	/* mlock limit tests */
+ 	hyp_mode_check();
+ }
 
 
