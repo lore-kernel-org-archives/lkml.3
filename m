@@ -1,25 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933341AbbANHnA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:43:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58952 "EHLO
+	id S933237AbbANHja (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:39:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58968 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933220AbbANHjV (ORCPT
+	with ESMTP id S1755075AbbANHj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:39:21 -0500
+	Wed, 14 Jan 2015 02:39:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Vince Weaver <vince@deater.net>, Jiri Olsa <jolsa@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
+        Jiri Olsa <jolsa@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Matt Fleming <matt.fleming@intel.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Stephane Eranian <eranian@google.com>,
-        "Yan, Zheng" <zheng.z.yan@intel.com>, Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.10 40/44] perf: Fix events installation during moving group
-Date: Tue, 13 Jan 2015 23:24:01 -0800
-Message-Id: <20150114072229.572991912@linuxfoundation.org>
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Zhiqiang Zhang <zhangzhiqiang.zhang@huawei.com>
+Subject: [PATCH 3.10 41/44] perf session: Do not fail on processing out of order event
+Date: Tue, 13 Jan 2015 23:24:02 -0800
+Message-Id: <20150114072229.621552825@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
 References: <20150114072227.419663002@linuxfoundation.org>
@@ -36,74 +41,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jiri Olsa <jolsa@kernel.org>
 
-commit 9fc81d87420d0d3fd62d5e5529972c0ad9eab9cc upstream.
+commit f61ff6c06dc8f32c7036013ad802c899ec590607 upstream.
 
-We allow PMU driver to change the cpu on which the event
-should be installed to. This happened in patch:
+Linus reported perf report command being interrupted due to processing
+of 'out of order' event, with following error:
 
-  e2d37cd213dc ("perf: Allow the PMU driver to choose the CPU on which to install events")
+  Timestamp below last timeslice flush
+  0x5733a8 [0x28]: failed to process type: 3
 
-This patch also forces all the group members to follow
-the currently opened events cpu if the group happened
-to be moved.
+I could reproduce the issue and in my case it was caused by one CPU
+(mmap) being behind during record and userspace mmap reader seeing the
+data after other CPUs data were already stored.
 
-This and the change of event->cpu in perf_install_in_context()
-function introduced in:
+This is expected under some circumstances because we need to limit the
+number of events that we queue for reordering when we receive a
+PERF_RECORD_FINISHED_ROUND or when we force flush due to memory
+pressure.
 
-  0cda4c023132 ("perf: Introduce perf_pmu_migrate_context()")
-
-forces group members to change their event->cpu,
-if the currently-opened-event's PMU changed the cpu
-and there is a group move.
-
-Above behaviour causes problem for breakpoint events,
-which uses event->cpu to touch cpu specific data for
-breakpoints accounting. By changing event->cpu, some
-breakpoints slots were wrongly accounted for given
-cpu.
-
-Vinces's perf fuzzer hit this issue and caused following
-WARN on my setup:
-
-   WARNING: CPU: 0 PID: 20214 at arch/x86/kernel/hw_breakpoint.c:119 arch_install_hw_breakpoint+0x142/0x150()
-   Can't find any breakpoint slot
-   [...]
-
-This patch changes the group moving code to keep the event's
-original cpu.
-
-Reported-by: Vince Weaver <vince@deater.net>
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Cc: Andi Kleen <ak@linux.intel.com>
+Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: David Ahern <dsahern@gmail.com>
 Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Matt Fleming <matt.fleming@intel.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Stephane Eranian <eranian@google.com>
-Cc: Vince Weaver <vince@deater.net>
-Cc: Yan, Zheng <zheng.z.yan@intel.com>
-Link: http://lkml.kernel.org/r/1418243031-20367-3-git-send-email-jolsa@kernel.org
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Link: http://lkml.kernel.org/r/1417016371-30249-1-git-send-email-jolsa@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+[zhangzhiqiang: backport to 3.10:
+ - adjust context
+ - commit f61ff6c06d struct events_stats was defined in tools/perf/util/event.h
+   while 3.10 stable defined in tools/perf/util/hist.h.
+ - 3.10 stable there is no pr_oe_time() which used for debug.
+ - After the above adjustments, becomes same to the original patch:
+   https://github.com/torvalds/linux/commit/f61ff6c06dc8f32c7036013ad802c899ec590607
+]
+Signed-off-by: Zhiqiang Zhang <zhangzhiqiang.zhang@huawei.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-
 ---
- kernel/events/core.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ tools/perf/util/hist.h    |    1 +
+ tools/perf/util/session.c |    5 +++--
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -6887,11 +6887,11 @@ SYSCALL_DEFINE5(perf_event_open,
+--- a/tools/perf/util/hist.h
++++ b/tools/perf/util/hist.h
+@@ -34,6 +34,7 @@ struct events_stats {
+ 	u32 nr_invalid_chains;
+ 	u32 nr_unknown_id;
+ 	u32 nr_unprocessable_samples;
++	u32 nr_unordered_events;
+ };
  
- 	if (move_group) {
- 		synchronize_rcu();
--		perf_install_in_context(ctx, group_leader, event->cpu);
-+		perf_install_in_context(ctx, group_leader, group_leader->cpu);
- 		get_ctx(ctx);
- 		list_for_each_entry(sibling, &group_leader->sibling_list,
- 				    group_entry) {
--			perf_install_in_context(ctx, sibling, event->cpu);
-+			perf_install_in_context(ctx, sibling, sibling->cpu);
- 			get_ctx(ctx);
- 		}
+ enum hist_column {
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -656,8 +656,7 @@ static int perf_session_queue_event(stru
+ 		return -ETIME;
+ 
+ 	if (timestamp < s->ordered_samples.last_flush) {
+-		printf("Warning: Timestamp below last timeslice flush\n");
+-		return -EINVAL;
++		s->stats.nr_unordered_events++;
  	}
+ 
+ 	if (!list_empty(sc)) {
+@@ -1057,6 +1056,8 @@ static void perf_session__warn_about_err
+ 			    "Do you have a KVM guest running and not using 'perf kvm'?\n",
+ 			    session->stats.nr_unprocessable_samples);
+ 	}
++	if (session->stats.nr_unordered_events != 0)
++		ui__warning("%u out of order events recorded.\n", session->stats.nr_unordered_events);
+ }
+ 
+ #define session_done()	(*(volatile int *)(&session_done))
 
 
