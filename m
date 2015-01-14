@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753069AbbANHZp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:25:45 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57683 "EHLO
+	id S1752825AbbANHZl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:25:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57695 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752733AbbANHZi (ORCPT
+	with ESMTP id S1752739AbbANHZj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:25:38 -0500
+	Wed, 14 Jan 2015 02:25:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Richard Guy Briggs <rgb@redhat.com>, Paul Moore <paul@paul-moore.com>,
         Michael Ellerman <mpe@ellerman.id.au>
-Subject: [PATCH 3.18 029/150] powerpc/perf/hv-24x7: Use per-cpu page buffer
-Date: Tue, 13 Jan 2015 23:21:40 -0800
-Message-Id: <20150114072057.199794064@linuxfoundation.org>
+Subject: [PATCH 3.18 030/150] powerpc: add little endian flag to syscall_get_arch()
+Date: Tue, 13 Jan 2015 23:21:41 -0800
+Message-Id: <20150114072057.242062799@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -29,88 +29,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "sukadev@linux.vnet.ibm.com" <sukadev@linux.vnet.ibm.com>
+From: Richard Guy Briggs <rgb@redhat.com>
 
-commit f34b6c72c3ebaa286d3311a825ef79eccbcca82f upstream.
+commit 63f13448d81c910a284b096149411a719cbed501 upstream.
 
-The 24x7 counters are continuously running and not updated on an
-interrupt. So we record the event counts when stopping the event or
-deleting it.
+Since both ppc and ppc64 have LE variants which are now reported by uname, add
+that flag (__AUDIT_ARCH_LE) to syscall_get_arch() and add AUDIT_ARCH_PPC64LE
+variant.
 
-But to "read" a single counter in 24x7, we allocate a page and pass it
-into the hypervisor (The HV returns the page full of counters from which
-we extract the specific counter for this event).
+Without this,  perf trace and auditctl fail.
 
-We allocate a page using GFP_USER and when deleting the event, we end up
-with the following warning because we are blocking in interrupt context.
+Mainline kernel reports ppc64le (per a058801) but there is no matching
+AUDIT_ARCH_PPC64LE.
 
-  [  698.641709] BUG: scheduling while atomic: swapper/0/0/0x10010000
+Since 32-bit PPC LE is not supported by audit, don't advertise it in
+AUDIT_ARCH_PPC* variants.
 
-We could use GFP_ATOMIC but that could result in failures. Pre-allocate
-a buffer so we don't have to allocate in interrupt context. Further as
-Michael Ellerman suggested, use Per-CPU buffer so we only need to
-allocate once per CPU.
+See:
+	https://www.redhat.com/archives/linux-audit/2014-August/msg00082.html
+	https://www.redhat.com/archives/linux-audit/2014-December/msg00004.html
 
-Signed-off-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Signed-off-by: Richard Guy Briggs <rgb@redhat.com>
+Acked-by: Paul Moore <paul@paul-moore.com>
 Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/powerpc/perf/hv-24x7.c |   21 +++++++++------------
- 1 file changed, 9 insertions(+), 12 deletions(-)
+ arch/powerpc/include/asm/syscall.h |    6 +++++-
+ include/uapi/linux/audit.h         |    2 ++
+ 2 files changed, 7 insertions(+), 1 deletion(-)
 
---- a/arch/powerpc/perf/hv-24x7.c
-+++ b/arch/powerpc/perf/hv-24x7.c
-@@ -217,11 +217,14 @@ static bool is_physical_domain(int domai
- 		domain == HV_24X7_PERF_DOMAIN_PHYSICAL_CORE;
- }
+--- a/arch/powerpc/include/asm/syscall.h
++++ b/arch/powerpc/include/asm/syscall.h
+@@ -90,6 +90,10 @@ static inline void syscall_set_arguments
  
-+DEFINE_PER_CPU(char, hv_24x7_reqb[4096]) __aligned(4096);
-+DEFINE_PER_CPU(char, hv_24x7_resb[4096]) __aligned(4096);
-+
- static unsigned long single_24x7_request(u8 domain, u32 offset, u16 ix,
- 					 u16 lpar, u64 *res,
- 					 bool success_expected)
+ static inline int syscall_get_arch(void)
  {
--	unsigned long ret = -ENOMEM;
-+	unsigned long ret;
- 
- 	/*
- 	 * request_buffer and result_buffer are not required to be 4k aligned,
-@@ -243,13 +246,11 @@ static unsigned long single_24x7_request
- 	BUILD_BUG_ON(sizeof(*request_buffer) > 4096);
- 	BUILD_BUG_ON(sizeof(*result_buffer) > 4096);
- 
--	request_buffer = kmem_cache_zalloc(hv_page_cache, GFP_USER);
--	if (!request_buffer)
--		goto out;
-+	request_buffer = (void *)get_cpu_var(hv_24x7_reqb);
-+	result_buffer = (void *)get_cpu_var(hv_24x7_resb);
- 
--	result_buffer = kmem_cache_zalloc(hv_page_cache, GFP_USER);
--	if (!result_buffer)
--		goto out_free_request_buffer;
-+	memset(request_buffer, 0, 4096);
-+	memset(result_buffer, 0, 4096);
- 
- 	*request_buffer = (struct reqb) {
- 		.buf = {
-@@ -278,15 +279,11 @@ static unsigned long single_24x7_request
- 				domain, offset, ix, lpar, ret, ret,
- 				result_buffer->buf.detailed_rc,
- 				result_buffer->buf.failing_request_ix);
--		goto out_free_result_buffer;
-+		goto out;
- 	}
- 
- 	*res = be64_to_cpu(result_buffer->result);
- 
--out_free_result_buffer:
--	kfree(result_buffer);
--out_free_request_buffer:
--	kfree(request_buffer);
- out:
- 	return ret;
+-	return is_32bit_task() ? AUDIT_ARCH_PPC : AUDIT_ARCH_PPC64;
++	int arch = is_32bit_task() ? AUDIT_ARCH_PPC : AUDIT_ARCH_PPC64;
++#ifdef __LITTLE_ENDIAN__
++	arch |= __AUDIT_ARCH_LE;
++#endif
++	return arch;
  }
+ #endif	/* _ASM_SYSCALL_H */
+--- a/include/uapi/linux/audit.h
++++ b/include/uapi/linux/audit.h
+@@ -365,7 +365,9 @@ enum {
+ #define AUDIT_ARCH_PARISC	(EM_PARISC)
+ #define AUDIT_ARCH_PARISC64	(EM_PARISC|__AUDIT_ARCH_64BIT)
+ #define AUDIT_ARCH_PPC		(EM_PPC)
++/* do not define AUDIT_ARCH_PPCLE since it is not supported by audit */
+ #define AUDIT_ARCH_PPC64	(EM_PPC64|__AUDIT_ARCH_64BIT)
++#define AUDIT_ARCH_PPC64LE	(EM_PPC64|__AUDIT_ARCH_64BIT|__AUDIT_ARCH_LE)
+ #define AUDIT_ARCH_S390		(EM_S390)
+ #define AUDIT_ARCH_S390X	(EM_S390|__AUDIT_ARCH_64BIT)
+ #define AUDIT_ARCH_SH		(EM_SH)
 
 
