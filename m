@@ -1,319 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128AbbANJ6m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 04:58:42 -0500
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:60153 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753111AbbANJ6i (ORCPT
+	id S1753895AbbANKAx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 05:00:53 -0500
+Received: from smtp-out-243.synserver.de ([212.40.185.243]:1062 "EHLO
+	smtp-out-243.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751112AbbANKAu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 04:58:38 -0500
+	Wed, 14 Jan 2015 05:00:50 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@metafoo.de
+X-SynServer-PPID: 17920
+Message-ID: <54B63E4F.2010506@metafoo.de>
+Date: Wed, 14 Jan 2015 11:00:47 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <1419409345-8297-3-git-send-email-thloh@altera.com>
-References: <1419409345-8297-1-git-send-email-thloh@altera.com>
-	<1419409345-8297-3-git-send-email-thloh@altera.com>
-Date: Wed, 14 Jan 2015 10:58:34 +0100
-Message-ID: <CACRpkdZ1kTjq979RbxzUSsb88v8XKjXRhRCpPkgS2wHrCcPGkg@mail.gmail.com>
-Subject: Re: [PATCH v8 2/2] drivers/gpio: Altera soft IP GPIO driver
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Tien Hock Loh <thloh@altera.com>
-Cc: Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Joe Perches <joe@perches.com>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        Antti Palosaari <crope@iki.fi>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+To: Takashi Iwai <tiwai@suse.de>
+CC: Mark Brown <broonie@kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "Wang, Jiada (ESD)" <Jiada_Wang@mentor.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Dinh Nguyen <dinguyen@altera.com>
-Content-Type: text/plain; charset=UTF-8
+        "lgirdwood@gmail.com" <lgirdwood@gmail.com>,
+        "Frkuska, Joshua" <Joshua_Frkuska@mentor.com>
+Subject: Re: [alsa-devel] unload Audio drivers while playback stream is active
+ case kernel crash
+References: <857E9EDCA6C0904DB3357321AA9123EB0108B66919@NA-MBX-01.mgc.mentorg.com>	<s5h1tmyiof7.wl-tiwai@suse.de>	<20150113215412.GS4160@sirena.org.uk>	<s5hr3ux24em.wl-tiwai@suse.de>	<54B625A8.8090406@metafoo.de> <s5hoaq121gh.wl-tiwai@suse.de>
+In-Reply-To: <s5hoaq121gh.wl-tiwai@suse.de>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Dec 24, 2014 at 9:22 AM,  <thloh@altera.com> wrote:
-
-> From: Tien Hock Loh <thloh@altera.com>
+On 01/14/2015 09:47 AM, Takashi Iwai wrote:
+> At Wed, 14 Jan 2015 09:15:36 +0100,
+> Lars-Peter Clausen wrote:
+>>
+>> On 01/14/2015 08:43 AM, Takashi Iwai wrote:
+>>> At Tue, 13 Jan 2015 21:54:12 +0000,
+>>> Mark Brown wrote:
+>>>>
+>>>> On Tue, Jan 13, 2015 at 06:24:44PM +0100, Takashi Iwai wrote:
+>>>>> Wang, Jiada (ESD) wrote:
+>>>>
+>>>>>> I am using i.MX6Q sabreSD board, which have imx_wm892 machine driver, wm8962 codec and SSI CPU DAI,
+>>>>
+>>>>>> I got Kernel crash when unloading audio drivers (playback stream is active)
+>>>>>> modprobe -r snd_soc_imx_wm8962
+>>>>>> modprobe -r snd_soc_fsl_ssi
+>>>>>> modprobe -r snd_soc_wm8962
+>>>>
+>>>>> The root problem is that you can unload the module while playing.
+>>>>> The corresponding module refcounts should have been increased during
+>>>>> used.
+>>>>
+>>>>> Do we miss [try_]module_get() somewhere in ASoC?
+>>>>
+>>>> That doesn't help, users can still forcibly unbind the driver at runtime
+>>>> without loading the module - and there's always the potential for
+>>>> actually hotpluggable hardware.  The teardown paths should be able to
+>>>> cope somewhat gracefully.
+>>>
+>>> The module refcount has to be handled while being used for stopping
+>>> module unload.  That's irrelevant from the dynamic unbinding support
+>>> itself.  Of course, the module refcount doesn't save the world, but
+>>> it's the right fix for this particular scenario.
+>>
+>> Refcounting won't help in this case. The issue is caused by a delayed work
+>> item that gets launched when the PCM stream is stopped. So if you decrease
+>> the refcount when the stream is stopped you still have a window where it is
+>> possible to remove the module while the work is still being scheduled.
 >
-> Adds a new driver for Altera soft GPIO IP. The driver is able to
-> do read/write and allows GPIO to be a interrupt controller.
->
-> Tested on Altera GHRD on interrupt handling and IO.
->
-> Signed-off-by: Tien Hock Loh <thloh@altera.com>
+> OK, so it's not about active stream.  From the reporter's description,
+> I supposed that the module gets unloaded while playing a stream, which
+> shouldn't be allowed.
 
-(...)
-> +config GPIO_ALTERA
-> +       tristate "Altera GPIO"
-> +       depends on OF_GPIO
+Well one of the ways to trigger this is to remove the module while the 
+stream is active. But it is not exclusively a problem module unload problem. 
+E.g. the same happens if you hot-unplug the ASoC card.
 
-select GPIOLIB_IRQCHIP
+I don't think that we need to prevent module unload when a stream is active. 
+ From a framework point of view is not different from hot-unplug. I don't 
+see a reason why we'd jump through hoops to actively forbid removing the 
+module once it works just fine.
 
-Also, I think (see below)
-
-select GENERIC_GPIO
-
-> +#include <linux/gpio.h>
-
-#include <linux/gpio/driver.h>
-
-should be just fine instead of this old header.
-
-> +#include <linux/init.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/io.h>
-> +#include <linux/irq.h>
-
-Should not be needed.
-
-> +#include <linux/irqchip/chained_irq.h>
-> +#include <linux/irqdomain.h>
-
-None of these should be needed.
-
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/of_irq.h>
-> +#include <linux/of_gpio.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/slab.h>
-
-#include <linux/basic_mmio_gpio.h>
-
-with GENERIC_GPIO (see below).
-
-> +
-> +#define ALTERA_GPIO_MAX_NGPIO          32
-> +#define ALTERA_GPIO_DATA               0x0
-> +#define ALTERA_GPIO_DIR                        0x4
-> +#define ALTERA_GPIO_IRQ_MASK           0x8
-> +#define ALTERA_GPIO_EDGE_CAP           0xc
-> +
-> +/**
-> +* struct altera_gpio_chip
-> +* @mmchip              : memory mapped chip structure.
-> +* @gpio_lock           : synchronization lock so that new irq/set/get requests
-> +                         will be blocked until the current one completes.
-> +* @interrupt_trigger   : specifies the hardware configured IRQ trigger type
-> +                         (rising, falling, both, high)
-> +* @mapped_irq          : kernel mapped irq number.
-> +*/
-> +struct altera_gpio_chip {
-> +       struct of_mm_gpio_chip mmchip;
-> +       spinlock_t gpio_lock;
-> +       int interrupt_trigger;
-> +       int mapped_irq;
-> +};
-> +
-> +static void altera_gpio_irq_unmask(struct irq_data *d)
-> +{
-> +       struct altera_gpio_chip *altera_gc;
-> +       struct of_mm_gpio_chip *mm_gc;
-> +       unsigned long flags;
-> +       u32 intmask;
-> +
-> +       altera_gc = irq_data_get_irq_chip_data(d);
-> +       mm_gc = &altera_gc->mmchip;
-> +
-> +       spin_lock_irqsave(&altera_gc->gpio_lock, flags);
-> +       intmask = readl(mm_gc->regs + ALTERA_GPIO_IRQ_MASK);
-> +       /* Set ALTERA_GPIO_IRQ_MASK bit to unmask */
-> +       intmask |= BIT(irqd_to_hwirq(d));
-> +       writel(intmask, mm_gc->regs + ALTERA_GPIO_IRQ_MASK);
-> +       spin_unlock_irqrestore(&altera_gc->gpio_lock, flags);
-> +}
-> +
-> +static void altera_gpio_irq_mask(struct irq_data *d)
-> +{
-> +       struct altera_gpio_chip *altera_gc;
-> +       struct of_mm_gpio_chip *mm_gc;
-> +       unsigned long flags;
-> +       u32 intmask;
-> +
-> +       altera_gc = irq_data_get_irq_chip_data(d);
-> +       mm_gc = &altera_gc->mmchip;
-> +
-> +       spin_lock_irqsave(&altera_gc->gpio_lock, flags);
-> +       intmask = readl(mm_gc->regs + ALTERA_GPIO_IRQ_MASK);
-> +       /* Clear ALTERA_GPIO_IRQ_MASK bit to mask */
-> +       intmask &= ~BIT(irqd_to_hwirq(d));
-> +       writel(intmask, mm_gc->regs + ALTERA_GPIO_IRQ_MASK);
-> +       spin_unlock_irqrestore(&altera_gc->gpio_lock, flags);
-> +}
-> +
-> +static int altera_gpio_irq_set_type(struct irq_data *d,
-> +                                  unsigned int type)
-> +{
-> +       struct altera_gpio_chip *altera_gc = irq_data_get_irq_chip_data(d);
-> +
-> +       altera_gc = irq_data_get_irq_chip_data(d);
-> +
-> +       if (type == IRQ_TYPE_NONE)
-> +               return 0;
-> +       if (type == IRQ_TYPE_LEVEL_HIGH &&
-> +               altera_gc->interrupt_trigger == IRQ_TYPE_LEVEL_HIGH)
-> +               return 0;
-> +       if (type == IRQ_TYPE_EDGE_RISING &&
-> +               altera_gc->interrupt_trigger == IRQ_TYPE_EDGE_RISING)
-> +               return 0;
-> +       if (type == IRQ_TYPE_EDGE_FALLING &&
-> +               altera_gc->interrupt_trigger == IRQ_TYPE_EDGE_FALLING)
-> +               return 0;
-> +       if (type == IRQ_TYPE_EDGE_BOTH &&
-> +               altera_gc->interrupt_trigger == IRQ_TYPE_EDGE_BOTH)
-> +               return 0;
-> +
-> +       return -EINVAL;
-> +}
-
-It took me a while to understand this. Write in a comment that
-this is a hardware that is synthesized for a specific trigger
-type, and that there is no way to software-configure the
-trigger type.
-
-> +
-> +static unsigned int altera_gpio_irq_startup(struct irq_data *d)
-> +{
-> +       altera_gpio_irq_unmask(d);
-> +
-> +       return 0;
-> +}
-> +
-> +static void altera_gpio_irq_shutdown(struct irq_data *d)
-> +{
-> +       altera_gpio_irq_mask(d);
-> +}
-
-Instead of those pointless functions just assign
-the unmask/mask functions in the vtable right below.
-
-> +
-> +static struct irq_chip altera_irq_chip = {
-> +       .name           = "altera-gpio",
-> +       .irq_mask       = altera_gpio_irq_mask,
-> +       .irq_unmask     = altera_gpio_irq_unmask,
-> +       .irq_set_type   = altera_gpio_irq_set_type,
-> +       .irq_startup    = altera_gpio_irq_startup,
-> +       .irq_shutdown   = altera_gpio_irq_shutdown,
-
-i.e. here.
-
-> +static int altera_gpio_get(struct gpio_chip *gc, unsigned offset)
-> +{
-> +       struct of_mm_gpio_chip *mm_gc;
-> +
-> +       mm_gc = to_of_mm_gpio_chip(gc);
-> +
-> +       return !!(readl(mm_gc->regs + ALTERA_GPIO_DATA) >> offset);
-> +}
-> +
-> +static void altera_gpio_set(struct gpio_chip *gc, unsigned offset, int value)
-> +{
-> +       struct of_mm_gpio_chip *mm_gc;
-> +       struct altera_gpio_chip *chip;
-> +       unsigned long flags;
-> +       unsigned int data_reg;
-> +
-> +       mm_gc = to_of_mm_gpio_chip(gc);
-> +       chip = container_of(mm_gc, struct altera_gpio_chip, mmchip);
-> +
-> +       spin_lock_irqsave(&chip->gpio_lock, flags);
-> +       data_reg = readl(mm_gc->regs + ALTERA_GPIO_DATA);
-> +       if (value)
-> +               data_reg |= BIT(offset);
-> +       else
-> +               data_reg &= ~BIT(offset);
-> +       writel(data_reg, mm_gc->regs + ALTERA_GPIO_DATA);
-> +       spin_unlock_irqrestore(&chip->gpio_lock, flags);
-> +}
-> +
-> +static int altera_gpio_direction_input(struct gpio_chip *gc, unsigned offset)
-> +{
-> +       struct of_mm_gpio_chip *mm_gc;
-> +       struct altera_gpio_chip *chip;
-> +       unsigned long flags;
-> +       unsigned int gpio_ddr;
-> +
-> +       mm_gc = to_of_mm_gpio_chip(gc);
-> +       chip = container_of(mm_gc, struct altera_gpio_chip, mmchip);
-> +
-> +       spin_lock_irqsave(&chip->gpio_lock, flags);
-> +       /* Set pin as input, assumes software controlled IP */
-> +       gpio_ddr = readl(mm_gc->regs + ALTERA_GPIO_DIR);
-> +       gpio_ddr &= ~BIT(offset);
-> +       writel(gpio_ddr, mm_gc->regs + ALTERA_GPIO_DIR);
-> +       spin_unlock_irqrestore(&chip->gpio_lock, flags);
-> +
-> +       return 0;
-> +}
-> +
-> +static int altera_gpio_direction_output(struct gpio_chip *gc,
-> +               unsigned offset, int value)
-> +{
-> +       struct of_mm_gpio_chip *mm_gc;
-> +       struct altera_gpio_chip *chip;
-> +       unsigned long flags;
-> +       unsigned int data_reg, gpio_ddr;
-> +
-> +       mm_gc = to_of_mm_gpio_chip(gc);
-> +       chip = container_of(mm_gc, struct altera_gpio_chip, mmchip);
-> +
-> +       spin_lock_irqsave(&chip->gpio_lock, flags);
-> +       /* Sets the GPIO value */
-> +       data_reg = readl(mm_gc->regs + ALTERA_GPIO_DATA);
-> +       if (value)
-> +               data_reg |= BIT(offset);
-> +       else
-> +               data_reg &= ~BIT(offset);
-> +       writel(data_reg, mm_gc->regs + ALTERA_GPIO_DATA);
-> +
-> +       /* Set pin as output, assumes software controlled IP */
-> +       gpio_ddr = readl(mm_gc->regs + ALTERA_GPIO_DIR);
-> +       gpio_ddr |= BIT(offset);
-> +       writel(gpio_ddr, mm_gc->regs + ALTERA_GPIO_DIR);
-> +       spin_unlock_irqrestore(&chip->gpio_lock, flags);
-> +
-> +       return 0;
-> +}
-
-These calls seem like pretty vanilla generic GPIO functions.
-Use GENERIC_GPIO with bgpio_init() and override the default
-functions only when really needed.
-
-See e.g. drivers/gpio/gpio-74xx-mmio.c
-
-> +static int altera_gpio_irq_map(struct irq_domain *h, unsigned int irq,
-> +                             irq_hw_number_t hw_irq_num)
-> +{
-> +       irq_set_chip_data(irq, h->host_data);
-> +       irq_set_chip_and_handler(irq, &altera_irq_chip, handle_level_irq);
-> +
-> +       return 0;
-> +}
-> +
-> +static const struct irq_domain_ops altera_gpio_irq_ops = {
-> +       .map    = altera_gpio_irq_map,
-> +       .xlate = irq_domain_xlate_onecell,
-> +};
-
-This looks like some leftover garbage. You don't need them with
-GPIOLIB_IRQCHIP so delete these two.
-
-> +static int altera_gpio_remove(struct platform_device *pdev)
-> +{
-> +       struct altera_gpio_chip *altera_gc = platform_get_drvdata(pdev);
-> +
-> +       gpiochip_remove(&altera_gc->mmchip.gc);
-> +
-> +       irq_set_handler_data(altera_gc->mapped_irq, NULL);
-> +       irq_set_chained_handler(altera_gc->mapped_irq, NULL);
-
-These two calls should not be needed either.
-
-Yours,
-Linus Walleij
+- Lars
