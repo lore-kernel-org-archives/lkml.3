@@ -1,162 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753304AbbANOkY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 09:40:24 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:35546 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751971AbbANOkX (ORCPT
+	id S1753504AbbANOl2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 09:41:28 -0500
+Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:34644 "EHLO
+	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753446AbbANOlL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 09:40:23 -0500
-Date: Wed, 14 Jan 2015 09:40:09 -0500
-From: Sowmini Varadhan <sowmini.varadhan@oracle.com>
-To: sowmini.varadhan@oracle.com, jeffrey.t.kirsher@intel.com,
-        jesse.brandeburg@intel.com, bruce.w.allan@intel.com,
-        carolyn.wyborny@intel.com, donald.c.skidmore@intel.com,
-        gregory.v.rose@intel.com, matthew.vick@intel.com,
-        john.ronciak@intel.com, mitch.a.williams@intel.com
-Cc: linux.nics@intel.com, e1000-devel@lists.sourceforge.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sparclinux@vger.kernel.org, emil.s.tantilov@intel.com
-Subject: [PATCH] ixgbe: Re-enable relaxed ordering as part of init/restart
- sequence for non-DCA config
-Message-ID: <20150114144009.GG19534@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Wed, 14 Jan 2015 09:41:11 -0500
+From: Jiri Slaby <jslaby@suse.cz>
+To: stable@vger.kernel.org
+Cc: Rob Herring <robherring2@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        linux-kernel@vger.kernel.org, Rob Herring <rob.herring@calxeda.com>,
+        Tony Lindgren <tony@atomide.com>, Tony Luck <tony.luck@intel.com>,
+        Jiri Slaby <jslaby@suse.cz>
+Subject: [patch added to the 3.12 stable tree] pstore-ram: Fix hangs by using write-combine mappings
+Date: Wed, 14 Jan 2015 15:40:28 +0100
+Message-Id: <1421246468-25187-16-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 2.2.1
+In-Reply-To: <1421246468-25187-1-git-send-email-jslaby@suse.cz>
+References: <1421246468-25187-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Rob Herring <robherring2@gmail.com>
 
-Relaxed ordering is disabled by default at driver initialization
-and re-enabled when DCA is used. The reason it is disabled  was
-due to an issue on some chipsets (see comments in ixgbe_update_tx_dca()).
-But when DCA is not used, RO needs to be re-enabled, else we have
-a serialization bottleneck on platforms like SPARC.
+This patch has been added to the 3.12 stable tree. If you have any
+objections, please let us know.
 
-This patch eliminates the bottleneck for ixgbe when DCA is not configured.
+===============
 
-Signed-off-by: Sowmini Varadhan <sowmini.varadhan@oracle.com>
-Cc: Emil Tantilov <emil.s.tantilov@intel.com>
+commit 7ae9cb81933515dc7db1aa3c47ef7653717e3090 upstream.
+
+Currently trying to use pstore on at least ARMs can hang as we're
+mapping the peristent RAM with pgprot_noncached().
+
+On ARMs, pgprot_noncached() will actually make the memory strongly
+ordered, and as the atomic operations pstore uses are implementation
+defined for strongly ordered memory, they may not work. So basically
+atomic operations have undefined behavior on ARM for device or strongly
+ordered memory types.
+
+Let's fix the issue by using write-combine variants for mappings. This
+corresponds to normal, non-cacheable memory on ARM. For many other
+architectures, this change does not change the mapping type as by
+default we have:
+
+#define pgprot_writecombine pgprot_noncached
+
+The reason why pgprot_noncached() was originaly used for pstore
+is because Colin Cross <ccross@android.com> had observed lost
+debug prints right before a device hanging write operation on some
+systems. For the platforms supporting pgprot_noncached(), we can
+add a an optional configuration option to support that. But let's
+get pstore working first before adding new features.
+
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: Colin Cross <ccross@android.com>
+Cc: Olof Johansson <olof@lixom.net>
+Cc: linux-kernel@vger.kernel.org
+Acked-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+[tony@atomide.com: updated description]
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 ---
- drivers/net/ethernet/intel/ixgbe/ixgbe_82598.c  |    1 +
- drivers/net/ethernet/intel/ixgbe/ixgbe_common.c |   20 ++++++++++++++++++++
- drivers/net/ethernet/intel/ixgbe/ixgbe_common.h |    1 +
- drivers/net/ethernet/intel/ixgbe/ixgbe_main.c   |   11 +++++++++++
- drivers/net/ethernet/intel/ixgbe/ixgbe_type.h   |    1 +
- drivers/net/ethernet/intel/ixgbe/ixgbe_x540.c   |    1 +
- 6 files changed, 35 insertions(+), 0 deletions(-)
+ fs/pstore/ram_core.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_82598.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_82598.c
-index c5c97b4..85c7a28 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_82598.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_82598.c
-@@ -1161,6 +1161,7 @@ static struct ixgbe_mac_operations mac_ops_82598 = {
- 	.clear_hw_cntrs		= &ixgbe_clear_hw_cntrs_generic,
- 	.get_media_type		= &ixgbe_get_media_type_82598,
- 	.enable_rx_dma          = &ixgbe_enable_rx_dma_generic,
-+	.enable_relaxed_ordering = &ixgbe_enable_relaxed_ordering,
- 	.get_mac_addr		= &ixgbe_get_mac_addr_generic,
- 	.stop_adapter		= &ixgbe_stop_adapter_generic,
- 	.get_bus_info           = &ixgbe_get_bus_info_generic,
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_common.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_common.c
-index 9c66bab..4453d92 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_common.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_common.c
-@@ -338,6 +338,26 @@ s32 ixgbe_start_hw_gen2(struct ixgbe_hw *hw)
- 	return 0;
+diff --git a/fs/pstore/ram_core.c b/fs/pstore/ram_core.c
+index de272d426763..d058428ccd10 100644
+--- a/fs/pstore/ram_core.c
++++ b/fs/pstore/ram_core.c
+@@ -392,7 +392,7 @@ static void *persistent_ram_vmap(phys_addr_t start, size_t size)
+ 	page_start = start - offset_in_page(start);
+ 	page_count = DIV_ROUND_UP(size + offset_in_page(start), PAGE_SIZE);
+ 
+-	prot = pgprot_noncached(PAGE_KERNEL);
++	prot = pgprot_writecombine(PAGE_KERNEL);
+ 
+ 	pages = kmalloc(sizeof(struct page *) * page_count, GFP_KERNEL);
+ 	if (!pages) {
+@@ -422,7 +422,7 @@ static void *persistent_ram_iomap(phys_addr_t start, size_t size)
+ 	buffer_start_add = buffer_start_add_locked;
+ 	buffer_size_add = buffer_size_add_locked;
+ 
+-	return ioremap(start, size);
++	return ioremap_wc(start, size);
  }
  
-+void ixgbe_enable_relaxed_ordering(struct ixgbe_hw *hw)
-+{
-+	u32 i;
-+	u32 regval;
-+
-+	/* Enable relaxed ordering */
-+	for (i = 0; i < hw->mac.max_tx_queues; i++) {
-+		regval = IXGBE_READ_REG(hw, IXGBE_DCA_TXCTRL_82599(i));
-+		regval |= IXGBE_DCA_TXCTRL_DESC_WRO_EN;
-+		IXGBE_WRITE_REG(hw, IXGBE_DCA_TXCTRL_82599(i), regval);
-+	}
-+
-+	for (i = 0; i < hw->mac.max_rx_queues; i++) {
-+		regval = IXGBE_READ_REG(hw, IXGBE_DCA_RXCTRL(i));
-+		regval |= (IXGBE_DCA_RXCTRL_DATA_WRO_EN |
-+			    IXGBE_DCA_RXCTRL_HEAD_WRO_EN);
-+		IXGBE_WRITE_REG(hw, IXGBE_DCA_RXCTRL(i), regval);
-+	}
-+}
-+
- /**
-  *  ixgbe_init_hw_generic - Generic hardware initialization
-  *  @hw: pointer to hardware structure
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_common.h b/drivers/net/ethernet/intel/ixgbe/ixgbe_common.h
-index 8cfadcb..c399c18 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_common.h
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_common.h
-@@ -37,6 +37,7 @@ s32 ixgbe_init_ops_generic(struct ixgbe_hw *hw);
- s32 ixgbe_init_hw_generic(struct ixgbe_hw *hw);
- s32 ixgbe_start_hw_generic(struct ixgbe_hw *hw);
- s32 ixgbe_start_hw_gen2(struct ixgbe_hw *hw);
-+void ixgbe_enable_relaxed_ordering(struct ixgbe_hw *hw);
- s32 ixgbe_clear_hw_cntrs_generic(struct ixgbe_hw *hw);
- s32 ixgbe_read_pba_string_generic(struct ixgbe_hw *hw, u8 *pba_num,
- 				  u32 pba_num_size);
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-index 2ed2c7d..dec815b 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_main.c
-@@ -4898,6 +4898,12 @@ void ixgbe_reset(struct ixgbe_adapter *adapter)
- 
- 	if (test_bit(__IXGBE_PTP_RUNNING, &adapter->state))
- 		ixgbe_ptp_reset(adapter);
-+
-+#ifndef CONFIG_IXGBE_DCA
-+	/* ixgbe_update_tx_dca() will re-enable RO when DCA is enabled */
-+	if (hw->mac.ops.enable_relaxed_ordering)
-+		hw->mac.ops.enable_relaxed_ordering(hw);
-+#endif
- }
- 
- /**
-@@ -8470,6 +8476,11 @@ skip_sriov:
- 			   "representative who provided you with this "
- 			   "hardware.\n");
- 	}
-+#ifndef CONFIG_IXGBE_DCA
-+	/* ixgbe_update_tx_dca() will re-enable RO when DCA is enabled */
-+	if (hw->mac.ops.enable_relaxed_ordering)
-+		hw->mac.ops.enable_relaxed_ordering(hw);
-+#endif
- 	strcpy(netdev->name, "eth%d");
- 	err = register_netdev(netdev);
- 	if (err)
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h b/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
-index d101b25..b967241 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_type.h
-@@ -3013,6 +3013,7 @@ struct ixgbe_mac_operations {
- 	void (*release_swfw_sync)(struct ixgbe_hw *, u32);
- 	s32 (*prot_autoc_read)(struct ixgbe_hw *, bool *, u32 *);
- 	s32 (*prot_autoc_write)(struct ixgbe_hw *, u32, bool);
-+	void (*enable_relaxed_ordering)(struct ixgbe_hw *);
- 
- 	/* Link */
- 	void (*disable_tx_laser)(struct ixgbe_hw *);
-diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_x540.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_x540.c
-index ba54ff0..88adad2 100644
---- a/drivers/net/ethernet/intel/ixgbe/ixgbe_x540.c
-+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_x540.c
-@@ -781,6 +781,7 @@ static struct ixgbe_mac_operations mac_ops_X540 = {
- 	.clear_hw_cntrs         = &ixgbe_clear_hw_cntrs_generic,
- 	.get_media_type         = &ixgbe_get_media_type_X540,
- 	.enable_rx_dma          = &ixgbe_enable_rx_dma_generic,
-+	.enable_relaxed_ordering = &ixgbe_enable_relaxed_ordering,
- 	.get_mac_addr           = &ixgbe_get_mac_addr_generic,
- 	.get_san_mac_addr       = &ixgbe_get_san_mac_addr_generic,
- 	.get_device_caps        = &ixgbe_get_device_caps_generic,
+ static int persistent_ram_buffer_map(phys_addr_t start, phys_addr_t size,
 -- 
-1.7.1
+2.2.1
 
