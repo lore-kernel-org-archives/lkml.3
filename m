@@ -1,49 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754005AbbANSfv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 13:35:51 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:36382 "EHLO mail.skyhub.de"
+	id S1754281AbbANShM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 13:37:12 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45919 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753445AbbANSft (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 13:35:49 -0500
-Date: Wed, 14 Jan 2015 19:35:46 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Matt Fleming <matt@console-pimps.org>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: EFI mixed mode + perf = rampant triple faults
-Message-ID: <20150114183546.GC6902@pd.tnic>
-References: <5491B4A8.905@amacapital.net>
- <CALCETrUyw5_E+FN8o8ZsOxN5XG81-Q8MVzeUHPZ_XBM+ifi6_w@mail.gmail.com>
- <20141231183739.GA28946@console-pimps.org>
- <20150114165151.GA3479@codeblueprint.co.uk>
- <CALCETrWOxPwoL0zo0UZMk=05uAEqgY-Xovk1=JHwbVtinx3u3w@mail.gmail.com>
+	id S1754235AbbANShH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 13:37:07 -0500
+Date: Wed, 14 Jan 2015 19:36:06 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: riel@redhat.com
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        matt.fleming@intel.com, bp@suse.de, pbonzini@redhat.com,
+        tglx@linutronix.de, luto@amacapital.net
+Subject: Re: [RFC PATCH 06/11] x86,fpu: lazily skip fpu restore with eager
+	fpu mode, too
+Message-ID: <20150114183606.GA16024@redhat.com>
+References: <1421012793-30106-1-git-send-email-riel@redhat.com> <1421012793-30106-7-git-send-email-riel@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CALCETrWOxPwoL0zo0UZMk=05uAEqgY-Xovk1=JHwbVtinx3u3w@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1421012793-30106-7-git-send-email-riel@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 14, 2015 at 10:27:47AM -0800, Andy Lutomirski wrote:
-> How are you manually triggering an MCE?  I've been playing with some
-> MCE stuff recently, but the only reasonably reliable way I know of to
-> trigger an MCE is using WHEA, and I don't have a box with WHEA, and I
-> assume your ASUS T100 doesn't either.
+On 01/11, riel@redhat.com wrote:
+>
+> If the next task still has its FPU state present in the FPU registers,
+> there is no need to restore it from memory.
 
-asm volatile("int $18");
+Another patch I can't understand...
 
-> Tianocore makes assumptions about the kernel's GDT layout?  Yuck.
+> --- a/arch/x86/include/asm/fpu-internal.h
+> +++ b/arch/x86/include/asm/fpu-internal.h
+> @@ -435,13 +435,9 @@ static inline void switch_fpu_prepare(struct task_struct *old, struct task_struc
+>  		old->thread.fpu.last_cpu = ~0;
+>  		if (preload) {
+>  			new->thread.fpu_counter++;
+> -			if (!use_eager_fpu() && fpu_lazy_restore(new, cpu))
+> -				/* XXX: is this safe against ptrace??? */
+> -				__thread_fpu_begin(new);
+> -			else {
+> +			set_thread_flag(TIF_LOAD_FPU);
+> +			if (!fpu_lazy_restore(new, cpu))
+>  				prefetch(new->thread.fpu.state);
+> -				set_thread_flag(TIF_LOAD_FPU);
+> -			}
 
-Yuck indeed.
+It is not clear to me why do we set TIF_LOAD_FPU if fpu_lazy_restore()
+succeeds. __thread_fpu_begin() is cheap.
 
--- 
-Regards/Gruss,
-    Boris.
+At the same time, if switch_fpu_finish() does fpu_lazy_restore() anyway,
+why this patch doesn't remove it from switch_fpu_prepare() ?
 
-Sent from a fat crate under my desk. Formatting is fine.
---
+However,
+
+> @@ -466,6 +462,10 @@ static inline void switch_fpu_finish(void)
+>
+>  	__thread_fpu_begin(tsk);
+>
+> +	/* The FPU registers already have this task's FPU state. */
+> +	if (fpu_lazy_restore(tsk, raw_smp_processor_id()))
+> +		return;
+> +
+
+Now that this is called before return to user-mode, I am not sure this is
+correct. Note that __kernel_fpu_begin() doesn't clear fpu_owner_task if
+use_eager_fpu().
+
+OK, interrupted_kernel_fpu_idle() should fail in this case... but as we
+already discussed this means the perfomance regression, so this should
+be changed.
+
+Oleg.
+
