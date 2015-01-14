@@ -1,38 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753531AbbANOHZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 09:07:25 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:54127 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752601AbbANOHY (ORCPT
+	id S1753132AbbANOJF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 09:09:05 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:41752 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752406AbbANOJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 09:07:24 -0500
-From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
-To: dvhart@infradead.org
-Cc: mjg59@srcf.ucam.org, pali.rohar@gmail.com, linux-kernel@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org, A.Sloman@cs.bham.ac.uk,
-        computersforpeace@gmail.com
-Subject: Re: [PATCH] dell-laptop: use dedicated sysfs file for ALS
-Date: Wed, 14 Jan 2015 15:07:21 +0100
-Message-ID: <9352624.oIKUSW0aDp@xps13>
-In-Reply-To: <1421244357-31103-1-git-send-email-gabriele.mzt@gmail.com>
-References: <1421244357-31103-1-git-send-email-gabriele.mzt@gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	Wed, 14 Jan 2015 09:09:03 -0500
+From: Colin King <colin.king@canonical.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] x86/time/rtc: remove duplicate const specifier
+Date: Wed, 14 Jan 2015 14:07:55 +0000
+Message-Id: <1421244475-313-1-git-send-email-colin.king@canonical.com>
+X-Mailer: git-send-email 2.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Colin Ian King <colin.king@canonical.com>
 
-I decided to remove "als" from input_triggers and created a dedicated
-sysfs file for it. Having it there was wrong and misleading.
-I also updated the documentation to reflect this change and fixed the
-wrong description of als_setting, now used for als_enabled.
+Building with clang:
 
-Is returning -ENODEV only when writing to als_enabled the right thing
-to do or should it be returned also when reading als_enabled?
+  CC      arch/x86/kernel/rtc.o
+arch/x86/kernel/rtc.c:173:29: warning: duplicate 'const' declaration
+  specifier [-Wduplicate-decl-specifier]
+        static const char * const  const ids[] __initconst =
 
-Thanks,
-Gabriele
+Remove the duplicate const, it is not needed and causes a warning.
+
+Signed-off-by: Colin Ian King <colin.king@canonical.com>
+---
+ arch/x86/kernel/rtc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/x86/kernel/rtc.c b/arch/x86/kernel/rtc.c
+index ca9622a..fe3dbfe 100644
+--- a/arch/x86/kernel/rtc.c
++++ b/arch/x86/kernel/rtc.c
+@@ -170,7 +170,7 @@ static struct platform_device rtc_device = {
+ static __init int add_rtc_cmos(void)
+ {
+ #ifdef CONFIG_PNP
+-	static const char * const  const ids[] __initconst =
++	static const char * const ids[] __initconst =
+ 	    { "PNP0b00", "PNP0b01", "PNP0b02", };
+ 	struct pnp_dev *dev;
+ 	struct pnp_id *id;
+-- 
+2.1.4
+
