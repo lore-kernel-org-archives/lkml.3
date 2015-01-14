@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932609AbbANHec (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:34:32 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58511 "EHLO
+	id S932339AbbANHbz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:31:55 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58301 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932564AbbANHe0 (ORCPT
+	with ESMTP id S932326AbbANHbx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:34:26 -0500
+	Wed, 14 Jan 2015 02:31:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Andy Lutomirski <luto@amacapital.net>
-Subject: [PATCH 3.14 35/77] x86, vdso: Use asm volatile in __getcpu
+        Vitaliy Filippov <vitalif@yourcmc.ru>,
+        Laszlo KREKACS <laszlo.krekacs.list@gmail.com>,
+        Vladimir Perepechin <vovochka13@gmail.com>,
+        Aaron Lu <aaron.lu@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Subject: [PATCH 3.18 124/150] ACPI / video: Add some Samsung models to disable_native_backlight list
 Date: Tue, 13 Jan 2015 23:23:15 -0800
-Message-Id: <20150114072226.173152462@linuxfoundation.org>
+Message-Id: <20150114072101.455194899@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-References: <20150114072224.182299947@linuxfoundation.org>
+In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
+References: <20150114072055.842408181@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,66 +28,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: Aaron Lu <aaron.lu@intel.com>
 
-commit 1ddf0b1b11aa8a90cef6706e935fc31c75c406ba upstream.
+commit 7d0b93499f4879ddbc75d594f4ea216ba964f78e upstream.
 
-In Linux 3.18 and below, GCC hoists the lsl instructions in the
-pvclock code all the way to the beginning of __vdso_clock_gettime,
-slowing the non-paravirt case significantly.  For unknown reasons,
-presumably related to the removal of a branch, the performance issue
-is gone as of
+Several Samsung laptop models (SAMSUNG 870Z5E/880Z5E/680Z5E and
+SAMSUNG 370R4E/370R4V/370R5E/3570RE/370R5V) do not have a working
+native backlight control interface so restore their acpi_videoX
+interface.
 
-e76b027e6408 x86,vdso: Use LSL unconditionally for vgetcpu
-
-but I don't trust GCC enough to expect the problem to stay fixed.
-
-There should be no correctness issue, because the __getcpu calls in
-__vdso_vlock_gettime were never necessary in the first place.
-
-Note to stable maintainers: In 3.18 and below, depending on
-configuration, gcc 4.9.2 generates code like this:
-
-     9c3:       44 0f 03 e8             lsl    %ax,%r13d
-     9c7:       45 89 eb                mov    %r13d,%r11d
-     9ca:       0f 03 d8                lsl    %ax,%ebx
-
-This patch won't apply as is to any released kernel, but I'll send a
-trivial backported version if needed.
-
-[
- Backported by Andy Lutomirski.  Should apply to all affected
- versions.  This fixes a functionality bug as well as a performance
- bug: buggy kernels can infinite loop in __vdso_clock_gettime on
- affected compilers.  See, for exammple:
-
- https://bugzilla.redhat.com/show_bug.cgi?id=1178975
-]
-
-Fixes: 51c19b4f5927 x86: vdso: pvclock gettime support
-Cc: Marcelo Tosatti <mtosatti@redhat.com>
-Acked-by: Paolo Bonzini <pbonzini@redhat.com>
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=84221
+Link: https://bugzilla.kernel.org/show_bug.cgi?id=84651
+For SAMSUNG 870Z5E/880Z5E/680Z5E:
+Reported-and-tested-by: Brent Saner <brent.saner@gmail.com>
+Reported-by: Vitaliy Filippov <vitalif@yourcmc.ru>
+Reported-by: Laszlo KREKACS <laszlo.krekacs.list@gmail.com>
+For SAMSUNG 370R4E/370R4V/370R5E/3570RE/370R5V:
+Reported-by: Vladimir Perepechin <vovochka13@gmail.com>
+Signed-off-by: Aaron Lu <aaron.lu@intel.com>
+Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/x86/include/asm/vsyscall.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/acpi/video.c |   17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
 
---- a/arch/x86/include/asm/vsyscall.h
-+++ b/arch/x86/include/asm/vsyscall.h
-@@ -34,7 +34,7 @@ static inline unsigned int __getcpu(void
- 		native_read_tscp(&p);
- 	} else {
- 		/* Load per CPU data from GDT */
--		asm("lsl %1,%0" : "=r" (p) : "r" (__PER_CPU_SEG));
-+		asm volatile ("lsl %1,%0" : "=r" (p) : "r" (__PER_CPU_SEG));
- 	}
+--- a/drivers/acpi/video.c
++++ b/drivers/acpi/video.c
+@@ -505,6 +505,23 @@ static struct dmi_system_id video_dmi_ta
+ 		DMI_MATCH(DMI_PRODUCT_NAME, "HP ENVY 15 Notebook PC"),
+ 		},
+ 	},
++
++	{
++	 .callback = video_disable_native_backlight,
++	 .ident = "SAMSUNG 870Z5E/880Z5E/680Z5E",
++	 .matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
++		DMI_MATCH(DMI_PRODUCT_NAME, "870Z5E/880Z5E/680Z5E"),
++		},
++	},
++	{
++	 .callback = video_disable_native_backlight,
++	 .ident = "SAMSUNG 370R4E/370R4V/370R5E/3570RE/370R5V",
++	 .matches = {
++		DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG ELECTRONICS CO., LTD."),
++		DMI_MATCH(DMI_PRODUCT_NAME, "370R4E/370R4V/370R5E/3570RE/370R5V"),
++		},
++	},
+ 	{}
+ };
  
- 	return p;
 
 
