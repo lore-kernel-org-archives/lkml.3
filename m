@@ -1,62 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258AbbANPh4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 10:37:56 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:53233 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751182AbbANPhz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 10:37:55 -0500
-Message-ID: <54B68D4D.2040309@collabora.co.uk>
-Date: Wed, 14 Jan 2015 16:37:49 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	id S1753275AbbANP5i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 10:57:38 -0500
+Received: from mail-by2on0055.outbound.protection.outlook.com ([207.46.100.55]:43819
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751801AbbANP5h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 10:57:37 -0500
+From: <dinguyen@opensource.altera.com>
+To: <computersforpeace@gmail.com>
+CC: <dinh.linux@gmail.com>, <dwmw2@infradead.org>, <yamada.m@jp.panasonic.com>,
+        <josh@joshtriplett.org>, <linux-mtd@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>,
+        Graham Moore <grmoore@opensource.altera.com>,
+        Dinh Nguyen <dinguyen@opensource.altera.com>
+Subject: [PATCH] mtd: denali: Disable sub-page writes in Denali NAND driver
+Date: Wed, 14 Jan 2015 09:38:50 -0600
+Message-ID: <1421249930-21229-1-git-send-email-dinguyen@opensource.altera.com>
+X-Mailer: git-send-email 2.2.1
 MIME-Version: 1.0
-To: Kukjin Kim <kgene@kernel.org>
-CC: Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        Doug Anderson <dianders@chromium.org>, linux-kernel@vger.kernel.org,
-        Kevin Hilman <khilman@linaro.org>, Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH RESEND 1/4] ARM: dts: Add power and lid GPIO keys pinctrl
- for exynos5250-snow
-References: <1420212257-22443-1-git-send-email-javier.martinez@collabora.co.uk> <1420212257-22443-2-git-send-email-javier.martinez@collabora.co.uk> <54B688A6.9090902@kernel.org>
-In-Reply-To: <54B688A6.9090902@kernel.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [64.129.157.38]
+X-ClientProxiedBy: DM2PR10CA0056.namprd10.prod.outlook.com (10.141.241.24) To
+ BN3PR0301MB1188.namprd03.prod.outlook.com (25.160.156.15)
+Authentication-Results: spf=none (sender IP is )
+ smtp.mailfrom=dinguyen@opensource.altera.com; 
+X-DmarcAction-Test: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BN3PR0301MB1188;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BN3PR0301MB1188;
+X-Forefront-PRVS: 04569283F9
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(6009001)(199003)(189002)(62966003)(50226001)(66066001)(64706001)(47776003)(122386002)(40100003)(97736003)(46102003)(77156002)(50986999)(19580395003)(86362001)(19580405001)(33646002)(92566002)(86152002)(87976001)(110136001)(229853001)(48376002)(42186005)(2351001)(68736005)(69596002)(81156004)(53416004)(105586002)(50466002)(106356001)(101416001);DIR:OUT;SFP:1101;SCL:1;SRVR:BN3PR0301MB1188;H:linux-builds1.altera.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:0;MX:1;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1188;
+X-OriginatorOrg: opensource.altera.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 14 Jan 2015 15:43:14.7439 (UTC)
+X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN3PR0301MB1188
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Kukjin,
+From: Graham Moore <grmoore@opensource.altera.com>
 
-On 01/14/2015 04:17 PM, Kukjin Kim wrote:
->>  
->>  &pinctrl_0 {
->> +	power_key_irq: power-key-irq {
->> +		samsung,pins = "gpx1-3";
->> +		samsung,pin-function = <0xf>;
-> 
-> I think, this setting should be same with exynos5250-spring but different.
-> 
-> from: arch/arm/boot/dts/exynos5250-spring.dts
-> 491         power_key_irq: power-key-irq {
-> 492                 samsung,pins = "gpx1-3";
-> 493                 samsung,pin-function = <0>;
-> 494                 samsung,pin-pud = <0>;
-> 495                 samsung,pin-drv = <0>;
-> 496         };
-> 
-> Hmm...0xf should be correct so need to fix the spring DT?
-> 
+The Denali Controller IP does not support sub-page writes.
 
-Yes, the same problem has exynos5250-snow.dts. This is less relevant now
-after commit f6a8249f9e55 ("pinctrl: exynos: Lock GPIOs as interrupts
-when used as EINTs") that moved the pinmux reconfiguration to
-.irq_{request,release}_resources() preventing the pads to be reconfigured
-as regulator input/output.
+Signed-off-by: Graham Moore <grmoore@opensource.altera.com>
+Signed-off-by: Dinh Nguyen <dinguyen@opensource.altera.com>
+---
+ drivers/mtd/nand/denali.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-But still for correctness we should audit spring / snow and change to 0xf.
-
-Best regards,
-Javier
+diff --git a/drivers/mtd/nand/denali.c b/drivers/mtd/nand/denali.c
+index b3b7ca1..b16b040 100644
+--- a/drivers/mtd/nand/denali.c
++++ b/drivers/mtd/nand/denali.c
+@@ -1565,6 +1565,9 @@ int denali_init(struct denali_nand_info *denali)
+ 	denali->nand.options |= NAND_SKIP_BBTSCAN;
+ 	denali->nand.ecc.mode = NAND_ECC_HW_SYNDROME;
+ 
++	/* no subpage writes on denali */
++	denali->nand.options |= NAND_NO_SUBPAGE_WRITE;
++
+ 	/*
+ 	 * Denali Controller only support 15bit and 8bit ECC in MRST,
+ 	 * so just let controller do 15bit ECC for MLC and 8bit ECC for
+-- 
+2.2.1
 
