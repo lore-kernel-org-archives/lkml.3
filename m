@@ -1,146 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754099AbbANTeP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 14:34:15 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:48040 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752994AbbANTeL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 14:34:11 -0500
-From: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-To: hpa@zytor.com, josh@joshtriplett.org, sam@ravnborg.org,
-        stefano.stabellini@eu.citrix.com
-Cc: bpoirier@suse.de, x86@kernel.org, kvm@vger.kernel.org,
-        xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org,
-        julien.grall@linaro.org, rientjes@google.com, mcgrof@suse.com,
-        Borislav Petkov <bp@suse.de>, Pekka Enberg <penberg@kernel.org>,
-        Michal Marek <mmarek@suse.cz>, Randy Dunlap <rdunlap@infradead.org>,
-        levinsasha928@gmail.com, mtosatti@redhat.com, fengguang.wu@intel.com,
-        David Vrabel <david.vrabel@citrix.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH v3 2/2] x86, arm, platform, xen, kconfig: add xen defconfig helper
-Date: Wed, 14 Jan 2015 11:33:47 -0800
-Message-Id: <1421264027-10706-3-git-send-email-mcgrof@do-not-panic.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1421264027-10706-1-git-send-email-mcgrof@do-not-panic.com>
-References: <1421264027-10706-1-git-send-email-mcgrof@do-not-panic.com>
+	id S1751655AbbANUOP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 15:14:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:39368 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750968AbbANUON (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 15:14:13 -0500
+From: Paul Moore <pmoore@redhat.com>
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Cc: Rob Landley <rob@landley.net>, Josh Boyer <jwboyer@fedoraproject.org>,
+        initramfs <initramfs@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        linux-ima-devel@lists.sourceforge.net,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Fionnuala Gunter <fin@linux.vnet.ibm.com>,
+        "casey.schaufler" <casey.schaufler@intel.com>, selinux@tycho.nsa.gov
+Subject: Re: [RFC][PATCH 6/9] gen_initramfs_list.sh: include xattrs
+Date: Wed, 14 Jan 2015 14:36:46 -0500
+Message-ID: <1584934.WkKQGAFadF@sifl>
+Organization: Red Hat
+User-Agent: KMail/4.14.3 (Linux/3.16.7-gentoo; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <1421205803.2119.110.camel@dhcp-9-2-203-236.watson.ibm.com>
+References: <1420663980-20842-1-git-send-email-zohar@linux.vnet.ibm.com> <54B5913C.5050109@landley.net> <1421205803.2119.110.camel@dhcp-9-2-203-236.watson.ibm.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Luis R. Rodriguez" <mcgrof@suse.com>
+On Tuesday, January 13, 2015 10:23:23 PM Mimi Zohar wrote:
+> I would assume only 'security.evm' is not portable as it attempts to
+> tightly bind the file metadata to the file data.  Casey?  Paul?
 
-This lets you build a kernel which can support xen dom0
-or xen guests by just using:
+[NOTE: Added the SELinux mailing list to the CC line.]
 
-   make xenconfig
+The SELinux xattr should be portable assuming the security label's semantics 
+remain constant across the different security policies.  If the label is 
+completely unknown SELinux should handle it correctly, it will be treated as 
+unlabeled until a module is loaded which defines the label.
 
-on both x86 and arm64 kernels. This also splits out the
-options which are available currently to be built with x86
-and 'make ARCH=arm64' under a shared config.
+Although, this is just for initramfs, yes?  If so, I'm not sure this matters 
+that much from a practical point of view; Stephen or someone else from the 
+SELinux list may have some thoughts on this.
 
-Technically xen supports a dom0 kernel and also a guest
-kernel configuration but upon review with the xen team
-since we don't have many dom0 options its best to just
-combine these two into one.
-
-Cc: Josh Triplett <josh@joshtriplett.org>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: penberg@kernel.org
-Cc: levinsasha928@gmail.com
-Cc: mtosatti@redhat.com
-Cc: fengguang.wu@intel.com
-Cc: David Vrabel <david.vrabel@citrix.com>
-Cc: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: xen-devel@lists.xenproject.org
-Acked-by: Julien Grall <julien.grall@linaro.org>
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
----
- arch/x86/configs/xen.config | 10 ++++++++++
- kernel/configs/xen.config   | 26 ++++++++++++++++++++++++++
- scripts/kconfig/Makefile    |  5 +++++
- 3 files changed, 41 insertions(+)
- create mode 100644 arch/x86/configs/xen.config
- create mode 100644 kernel/configs/xen.config
-
-diff --git a/arch/x86/configs/xen.config b/arch/x86/configs/xen.config
-new file mode 100644
-index 0000000..fa7d214
---- /dev/null
-+++ b/arch/x86/configs/xen.config
-@@ -0,0 +1,10 @@
-+# x86 xen specific config options
-+CONFIG_XEN_PVHVM=y
-+CONFIG_XEN_MAX_DOMAIN_MEMORY=500
-+CONFIG_XEN_SAVE_RESTORE=y
-+# CONFIG_XEN_DEBUG_FS is not set
-+CONFIG_XEN_PVH=y
-+CONFIG_XEN_MCE_LOG=y
-+CONFIG_PCI_XEN=y
-+CONFIG_XEN_PCIDEV_FRONTEND=m
-+CONFIG_XEN_ACPI_PROCESSOR=m
-diff --git a/kernel/configs/xen.config b/kernel/configs/xen.config
-new file mode 100644
-index 0000000..476fcf0
---- /dev/null
-+++ b/kernel/configs/xen.config
-@@ -0,0 +1,26 @@
-+# generic config
-+CONFIG_XEN=y
-+CONFIG_XEN_DOM0=y
-+CONFIG_XEN_BLKDEV_FRONTEND=m
-+CONFIG_XEN_BLKDEV_BACKEND=m
-+CONFIG_XEN_NETDEV_FRONTEND=m
-+CONFIG_XEN_NETDEV_BACKEND=m
-+CONFIG_INPUT_XEN_KBDDEV_FRONTEND=y
-+CONFIG_HVC_XEN=y
-+CONFIG_HVC_XEN_FRONTEND=y
-+CONFIG_XEN_WDT=m
-+CONFIG_XEN_FBDEV_FRONTEND=y
-+CONFIG_XEN_BALLOON=y
-+CONFIG_XEN_BALLOON_MEMORY_HOTPLUG=y
-+CONFIG_XEN_SCRUB_PAGES=y
-+CONFIG_XEN_DEV_EVTCHN=m
-+CONFIG_XEN_BACKEND=y
-+CONFIG_XENFS=m
-+CONFIG_XEN_COMPAT_XENFS=y
-+CONFIG_XEN_SYS_HYPERVISOR=y
-+CONFIG_XEN_XENBUS_FRONTEND=y
-+CONFIG_XEN_GNTDEV=m
-+CONFIG_XEN_GRANT_DEV_ALLOC=m
-+CONFIG_SWIOTLB_XEN=y
-+CONFIG_XEN_PCIDEV_BACKEND=m
-+CONFIG_XEN_PRIVCMD=m
-diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-index ff612b0..f4a8f89 100644
---- a/scripts/kconfig/Makefile
-+++ b/scripts/kconfig/Makefile
-@@ -117,6 +117,10 @@ PHONY += kvmconfig
- kvmconfig:
- 	$(call mergeconfig,kvm_guest)
- 
-+PHONY += xenconfig
-+xenconfig:
-+	$(call mergeconfig,xen)
-+
- PHONY += tinyconfig
- tinyconfig: allnoconfig
- 	$(call mergeconfig,tiny)
-@@ -142,6 +146,7 @@ help:
- 	@echo  '  listnewconfig   - List new options'
- 	@echo  '  olddefconfig	  - Same as silentoldconfig but sets new symbols to their default value'
- 	@echo  '  kvmconfig	  - Enable additional options for kvm guest kernel support'
-+	@echo  '  xenconfig       - Enable additional options for xen dom0 and guest kernel support'
- 	@echo  '  tinyconfig	  - Configure the tiniest possible kernel'
- 
- # lxdialog stuff
 -- 
-2.1.1
+paul moore
+security @ redhat
 
