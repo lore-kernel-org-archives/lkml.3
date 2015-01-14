@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181AbbANC7r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 21:59:47 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:38435 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751175AbbANC7q (ORCPT
+	id S1752368AbbANDJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 22:09:59 -0500
+Received: from 60-248-182-7.HINET-IP.hinet.net ([60.248.182.7]:51110 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751573AbbANDJ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 21:59:46 -0500
-Date: Tue, 13 Jan 2015 21:59:44 -0500 (EST)
-Message-Id: <20150113.215944.1703977685948196746.davem@davemloft.net>
-To: lambert.quentin@gmail.com
-Cc: chas@cmf.nrl.navy.mil, linux-atm-general@lists.sourceforge.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/1] atm: remove deprecated use of pci api
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20150112161042.GA11374@sloth>
-References: <20150112161042.GA11374@sloth>
-X-Mailer: Mew version 6.6 on Emacs 24.4 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Tue, 13 Jan 2015 18:59:45 -0800 (PST)
+	Tue, 13 Jan 2015 22:09:57 -0500
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID t0E39C7S009378, This message is accepted by code: ctloc85258
+From: <micky_ching@realsil.com.cn>
+To: <chris@printf.net>, <ulf.hansson@linaro.org>, <sameo@linux.intel.com>
+CC: <gregkh@linuxfoundation.org>, <dan.carpenter@oracle.com>,
+        <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mmc@vger.kernel.org>, <rogerable@realtek.com>,
+        <wei_wang@realsil.com.cn>, Micky Ching <micky_ching@realsil.com.cn>
+Subject: [PATCH 0/2] mmc: rtsx: add check before sending request
+Date: Wed, 14 Jan 2015 11:09:10 +0800
+Message-ID: <cover.1421204431.git.micky_ching@realsil.com.cn>
+X-Mailer: git-send-email 1.9.1
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Quentin Lambert <lambert.quentin@gmail.com>
-Date: Mon, 12 Jan 2015 17:10:42 +0100
+From: Micky Ching <micky_ching@realsil.com.cn>
 
-> @@ -2246,7 +2246,8 @@ static int eni_init_one(struct pci_dev *pci_dev,
->  		goto err_disable;
->  
->  	zero = &eni_dev->zero;
-> -	zero->addr = pci_alloc_consistent(pci_dev, ENI_ZEROES_SIZE, &zero->dma);
-> +	zero->addr = dma_alloc_coherent(&pci_dev->dev, ENI_ZEROES_SIZE,
-> +					&zero->dma, GFP_ATOMIC);
->  	if (!zero->addr)
->  		goto err_kfree;
->  
+Add check before sending request can make request return faster.
+- finish request if no card exist
+  This can make request finish faster, especial for some sdio card,
+  when card removed, there still a lot of command pending,
+  if we check card exist and stop request, the card will disappear
+  faster in user space.
 
-I really would like you to look at these locations and see if
-GFP_KERNEL can be used instead of GFP_ATOMIC.  I bet that nearly
-all of these can, and it is preferred.
+- check sg_count before long data xfer
+  modify sg_count type unsigned -> int, because dma_map_sg() return
+  int, and this value can be negative to indicate some error occurs.
 
-Thanks.
+Micky Ching (2):
+  mmc: rtsx: finish request if no card exist
+  mmc: rtsx: check sg_count before long data xfer
+
+ drivers/mmc/host/rtsx_pci_sdmmc.c | 20 ++++++++++++++++----
+ 1 file changed, 16 insertions(+), 4 deletions(-)
+
+-- 
+1.9.1
+
