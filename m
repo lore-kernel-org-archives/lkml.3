@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932977AbbANHhY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:37:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58765 "EHLO
+	id S1755284AbbANHio (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:38:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58872 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754316AbbANHhT (ORCPT
+	with ESMTP id S1754531AbbANHim (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:37:19 -0500
+	Wed, 14 Jan 2015 02:38:42 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Luca Abeni <luca.abeni@unitn.it>,
-        "Peter Zijlstra (Intel)" <peterz@infradead.org>,
-        Juri Lelli <juri.lelli@gmail.com>, Dario Faggioli <raistlin@linux.it>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@kernel.org>
-Subject: [PATCH 3.14 58/77] sched/deadline: Avoid double-accounting in case of missed deadlines
+        Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>,
+        Antonio Borneo <borneo.antonio@gmail.com>,
+        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.10 17/44] HID: i2c-hid: fix race condition reading reports
 Date: Tue, 13 Jan 2015 23:23:38 -0800
-Message-Id: <20150114072227.434081650@linuxfoundation.org>
+Message-Id: <20150114072228.481827679@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-References: <20150114072224.182299947@linuxfoundation.org>
+In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
+References: <20150114072227.419663002@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -28,76 +27,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Luca Abeni <luca.abeni@unitn.it>
+From: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
 
-commit 269ad8015a6b2bb1cf9e684da4921eb6fa0a0c88 upstream.
+commit 6296f4a8eb86f9abcc370fb7a1a116b8441c17fd upstream.
 
-The dl_runtime_exceeded() function is supposed to ckeck if
-a SCHED_DEADLINE task must be throttled, by checking if its
-current runtime is <= 0. However, it also checks if the
-scheduling deadline has been missed (the current time is
-larger than the current scheduling deadline), further
-decreasing the runtime if this happens.
-This "double accounting" is wrong:
+Current driver uses a common buffer for reading reports either
+synchronously in i2c_hid_get_raw_report() and asynchronously in
+the interrupt handler.
+There is race condition if an interrupt arrives immediately after
+the report is received in i2c_hid_get_raw_report(); the common
+buffer is modified by the interrupt handler with the new report
+and then i2c_hid_get_raw_report() proceed using wrong data.
 
-- In case of partitioned scheduling (or single CPU), this
-  happens if task_tick_dl() has been called later than expected
-  (due to small HZ values). In this case, the current runtime is
-  also negative, and replenish_dl_entity() can take care of the
-  deadline miss by recharging the current runtime to a value smaller
-  than dl_runtime
+Fix it by using a separate buffers for synchronous reports.
 
-- In case of global scheduling on multiple CPUs, scheduling
-  deadlines can be missed even if the task did not consume more
-  runtime than expected, hence penalizing the task is wrong
-
-This patch fix this problem by throttling a SCHED_DEADLINE task
-only when its runtime becomes negative, and not modifying the runtime
-
-Signed-off-by: Luca Abeni <luca.abeni@unitn.it>
-Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Acked-by: Juri Lelli <juri.lelli@gmail.com>
-Cc: Dario Faggioli <raistlin@linux.it>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1418813432-20797-3-git-send-email-luca.abeni@unitn.it
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
+Signed-off-by: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
+[Antonio Borneo: cleanup, rebase to v3.17, submit mainline]
+Signed-off-by: Antonio Borneo <borneo.antonio@gmail.com>
+Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- kernel/sched/deadline.c |   19 +------------------
- 1 file changed, 1 insertion(+), 18 deletions(-)
+ drivers/hid/i2c-hid/i2c-hid.c |   12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
 
---- a/kernel/sched/deadline.c
-+++ b/kernel/sched/deadline.c
-@@ -550,24 +550,7 @@ void init_dl_task_timer(struct sched_dl_
- static
- int dl_runtime_exceeded(struct rq *rq, struct sched_dl_entity *dl_se)
- {
--	int dmiss = dl_time_before(dl_se->deadline, rq_clock(rq));
--	int rorun = dl_se->runtime <= 0;
--
--	if (!rorun && !dmiss)
--		return 0;
--
--	/*
--	 * If we are beyond our current deadline and we are still
--	 * executing, then we have already used some of the runtime of
--	 * the next instance. Thus, if we do not account that, we are
--	 * stealing bandwidth from the system at each deadline miss!
--	 */
--	if (dmiss) {
--		dl_se->runtime = rorun ? dl_se->runtime : 0;
--		dl_se->runtime -= rq_clock(rq) - dl_se->deadline;
--	}
--
--	return 1;
-+	return (dl_se->runtime <= 0);
- }
+--- a/drivers/hid/i2c-hid/i2c-hid.c
++++ b/drivers/hid/i2c-hid/i2c-hid.c
+@@ -134,6 +134,7 @@ struct i2c_hid {
+ 						   * descriptor. */
+ 	unsigned int		bufsize;	/* i2c buffer size */
+ 	char			*inbuf;		/* Input buffer */
++	char			*rawbuf;	/* Raw Input buffer */
+ 	char			*cmdbuf;	/* Command buffer */
+ 	char			*argsbuf;	/* Command arguments buffer */
  
- extern bool sched_rt_bandwidth_account(struct rt_rq *rt_rq);
+@@ -471,9 +472,11 @@ static void i2c_hid_find_max_report(stru
+ static void i2c_hid_free_buffers(struct i2c_hid *ihid)
+ {
+ 	kfree(ihid->inbuf);
++	kfree(ihid->rawbuf);
+ 	kfree(ihid->argsbuf);
+ 	kfree(ihid->cmdbuf);
+ 	ihid->inbuf = NULL;
++	ihid->rawbuf = NULL;
+ 	ihid->cmdbuf = NULL;
+ 	ihid->argsbuf = NULL;
+ 	ihid->bufsize = 0;
+@@ -489,10 +492,11 @@ static int i2c_hid_alloc_buffers(struct
+ 		       report_size; /* report */
+ 
+ 	ihid->inbuf = kzalloc(report_size, GFP_KERNEL);
++	ihid->rawbuf = kzalloc(report_size, GFP_KERNEL);
+ 	ihid->argsbuf = kzalloc(args_len, GFP_KERNEL);
+ 	ihid->cmdbuf = kzalloc(sizeof(union command) + args_len, GFP_KERNEL);
+ 
+-	if (!ihid->inbuf || !ihid->argsbuf || !ihid->cmdbuf) {
++	if (!ihid->inbuf || !ihid->rawbuf || !ihid->argsbuf || !ihid->cmdbuf) {
+ 		i2c_hid_free_buffers(ihid);
+ 		return -ENOMEM;
+ 	}
+@@ -519,12 +523,12 @@ static int i2c_hid_get_raw_report(struct
+ 
+ 	ret = i2c_hid_get_report(client,
+ 			report_type == HID_FEATURE_REPORT ? 0x03 : 0x01,
+-			report_number, ihid->inbuf, ask_count);
++			report_number, ihid->rawbuf, ask_count);
+ 
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	ret_count = ihid->inbuf[0] | (ihid->inbuf[1] << 8);
++	ret_count = ihid->rawbuf[0] | (ihid->rawbuf[1] << 8);
+ 
+ 	if (ret_count <= 2)
+ 		return 0;
+@@ -533,7 +537,7 @@ static int i2c_hid_get_raw_report(struct
+ 
+ 	/* The query buffer contains the size, dropping it in the reply */
+ 	count = min(count, ret_count - 2);
+-	memcpy(buf, ihid->inbuf + 2, count);
++	memcpy(buf, ihid->rawbuf + 2, count);
+ 
+ 	return count;
+ }
 
 
