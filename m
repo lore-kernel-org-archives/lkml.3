@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754516AbbANR3I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 12:29:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60294 "EHLO mx1.redhat.com"
+	id S1753219AbbANRfq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 12:35:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35173 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754432AbbANR2a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 12:28:30 -0500
-Date: Wed, 14 Jan 2015 19:28:21 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>, cornelia.huck@de.ibm.com,
-        virtualization@lists.linux-foundation.org
-Subject: [PATCH v3 16/16] virtio_pci_modern: support devices with no config
-Message-ID: <1421256142-11512-17-git-send-email-mst@redhat.com>
-References: <1421256142-11512-1-git-send-email-mst@redhat.com>
+	id S1751145AbbANRfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 12:35:44 -0500
+Message-ID: <54B6A8DF.3070806@redhat.com>
+Date: Wed, 14 Jan 2015 18:35:27 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421256142-11512-1-git-send-email-mst@redhat.com>
-X-Mutt-Fcc: =sent
+To: Marcelo Tosatti <mtosatti@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-rt-users@vger.kernel.org
+CC: Luiz Capitulino <lcapitulino@redhat.com>, Rik van Riel <riel@redhat.com>,
+        Steven Rostedt <srostedt@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, kvm@vger.kernel.org
+Subject: Re: [patch -rt 0/2] use simple waitqueue for kvm vcpu waitqueue (v3)
+References: <20150114171251.882318257@redhat.com>
+In-Reply-To: <20150114171251.882318257@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Virtio 1.0 spec lists device config as optional.
-Set get/set callbacks to NULL. Drivers can check that
-and fail gracefully.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/virtio/virtio_pci_modern.c | 21 +++++++++++++++++++--
- 1 file changed, 19 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/virtio/virtio_pci_modern.c b/drivers/virtio/virtio_pci_modern.c
-index 9c000e9a..b877705 100644
---- a/drivers/virtio/virtio_pci_modern.c
-+++ b/drivers/virtio/virtio_pci_modern.c
-@@ -425,6 +425,21 @@ static void del_vq(struct virtio_pci_vq_info *info)
- 	free_pages_exact(info->queue, vring_pci_size(info->num));
- }
- 
-+static const struct virtio_config_ops virtio_pci_config_nodev_ops = {
-+	.get		= NULL,
-+	.set		= NULL,
-+	.generation	= vp_generation,
-+	.get_status	= vp_get_status,
-+	.set_status	= vp_set_status,
-+	.reset		= vp_reset,
-+	.find_vqs	= vp_modern_find_vqs,
-+	.del_vqs	= vp_del_vqs,
-+	.get_features	= vp_get_features,
-+	.finalize_features = vp_finalize_features,
-+	.bus_name	= vp_bus_name,
-+	.set_vq_affinity = vp_set_vq_affinity,
-+};
-+
- static const struct virtio_config_ops virtio_pci_config_ops = {
- 	.get		= vp_get,
- 	.set		= vp_set,
-@@ -655,9 +670,11 @@ int virtio_pci_modern_probe(struct virtio_pci_device *vp_dev)
- 						&vp_dev->device_len);
- 		if (!vp_dev->device)
- 			goto err_map_device;
--	}
- 
--	vp_dev->vdev.config = &virtio_pci_config_ops;
-+		vp_dev->vdev.config = &virtio_pci_config_ops;
-+	} else {
-+		vp_dev->vdev.config = &virtio_pci_config_nodev_ops;
-+	}
- 
- 	vp_dev->config_vector = vp_config_vector;
- 	vp_dev->setup_vq = setup_vq;
--- 
-MST
+On 14/01/2015 18:12, Marcelo Tosatti wrote:
+> Against v3.14-rt branch of 
+> git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
+> 
+> The problem:
+> 
+> On -RT, an emulated LAPIC timer instance has the following path:
+> 
+> 1) hard interrupt
+> 2) ksoftirqd is scheduled
+> 3) ksoftirqd wakes up vcpu thread
+> 4) vcpu thread is scheduled
+> 
+> This extra context switch introduces unnecessary latency in the
+> LAPIC path for a KVM guest.
+> 
+> The solution:
+> 
+> Allow waking up vcpu thread from hardirq context,
+> thus avoiding the need for ksoftirqd to be scheduled.
+> 
+> Normal waitqueues make use of spinlocks, which on -RT
+> are sleepable locks. Therefore, waking up a waitqueue
+> waiter involves locking a sleeping lock, which
+> is not allowed from hard interrupt context.
+> 
+> cyclictest command line:
+> # cyclictest -m -n -q -p99 -l 1000000 -h60  -D 1m
+> 
+> This patch reduces the average latency in my tests from 14us to 11us.
+> 
+> v2: improve changelog (Rik van Riel)
+> v3: limit (once) guest triggered printk and WARN_ON (Paolo Bonzini)
+> 
+> 
 
+Looks good.
+
+Reviewed-by: Paolo Bonzini <pbonzini@redhat.com>
