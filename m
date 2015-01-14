@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754150AbbANH0i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:26:38 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57788 "EHLO
+	id S1755919AbbANIjm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:39:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57791 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754004AbbANH0f (ORCPT
+	with ESMTP id S1754115AbbANH0g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:26:35 -0500
+	Wed, 14 Jan 2015 02:26:36 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
+        Johannes Berg <johannes.berg@intel.com>,
         Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: [PATCH 3.18 015/150] iwlwifi: dvm: fix flush support for old firmware
-Date: Tue, 13 Jan 2015 23:21:26 -0800
-Message-Id: <20150114072056.562383441@linuxfoundation.org>
+Subject: [PATCH 3.18 016/150] iwlwifi: mvm: update values for Smart Fifo
+Date: Tue, 13 Jan 2015 23:21:27 -0800
+Message-Id: <20150114072056.606551582@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -30,184 +31,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 
-commit 5a12a07e4495d1e4d79382e05c9d6e8b4d9fa4ec upstream.
+commit b4c82adcba8cb4b23068a6b800ca98da3bee6888 upstream.
 
-Since the commit below, iwldvm sends the FLUSH command to
-the firmware. All the devices that use iwldvm have a
-firmware that expects the _v3 version of this command,
-besides 5150.
-5150's latest available firmware still expects a _v2 version
-of the FLUSH command.
-This means that since the commit below, we had a mismatch for
-this specific device only.
-This mismatch led to the NMI below:
+Interoperability issues were identified and root caused to
+the Smart Fifo watermarks. These issues arose with
+NetGear R7000. Fix this.
 
-Loaded firmware version: 8.24.2.2
-Start IWL Error Log Dump:
-Status: 0x0000004C, count: 5
-0x00000004 | NMI_INTERRUPT_WDG
-0x000006F4 | uPc
-0x000005BA | branchlink1
-0x000006F8 | branchlink2
-0x000008C2 | interruptlink1
-0x00005B02 | interruptlink2
-0x00000002 | data1
-0x07030000 | data2
-0x00000068 | line
-0x3E80510C | beacon time
-0x728A0EF4 | tsf low
-0x0000002A | tsf hi
-0x00000000 | time gp1
-0x01BDC977 | time gp2
-0x00000000 | time gp3
-0x00010818 | uCode version
-0x00000000 | hw version
-0x00484704 | board version
-0x00000002 | hcmd
-0x2FF23080 | isr0
-0x0103E000 | isr1
-0x0000001A | isr2
-0x1443FCC3 | isr3
-0x11800112 | isr4
-0x00000068 | isr_pref
-0x000000D4 | wait_event
-0x00000000 | l2p_control
-0x00000007 | l2p_duration
-0x00103040 | l2p_mhvalid
-0x00000007 | l2p_addr_match
-0x00000000 | lmpm_pmg_sel
-0x00000000 | timestamp
-0x00000200 | flow_handler
-
-This was reported here:
-https://bugzilla.kernel.org/show_bug.cgi?id=88961
-
-Fixes: a0855054e59b ("iwlwifi: dvm: drop non VO frames when flushing")
+Fixes: 1f3b0ff8ecce ("iwlwifi: mvm: Add Smart FIFO support")
+Reviewed-by: Johannes Berg <johannes.berg@intel.com>
 Signed-off-by: Emmanuel Grumbach <emmanuel.grumbach@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/iwlwifi/dvm/commands.h |   31 +++++++++++--------
- drivers/net/wireless/iwlwifi/dvm/lib.c      |   45 ++++++++++++++--------------
- 2 files changed, 41 insertions(+), 35 deletions(-)
+ drivers/net/wireless/iwlwifi/mvm/fw-api.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/iwlwifi/dvm/commands.h
-+++ b/drivers/net/wireless/iwlwifi/dvm/commands.h
-@@ -966,21 +966,21 @@ struct iwl_rem_sta_cmd {
+--- a/drivers/net/wireless/iwlwifi/mvm/fw-api.h
++++ b/drivers/net/wireless/iwlwifi/mvm/fw-api.h
+@@ -1589,7 +1589,7 @@ enum iwl_sf_scenario {
+ #define SF_NUM_TIMEOUT_TYPES 2		/* Aging timer and Idle timer */
  
- 
- /* WiFi queues mask */
--#define IWL_SCD_BK_MSK			cpu_to_le32(BIT(0))
--#define IWL_SCD_BE_MSK			cpu_to_le32(BIT(1))
--#define IWL_SCD_VI_MSK			cpu_to_le32(BIT(2))
--#define IWL_SCD_VO_MSK			cpu_to_le32(BIT(3))
--#define IWL_SCD_MGMT_MSK		cpu_to_le32(BIT(3))
-+#define IWL_SCD_BK_MSK			BIT(0)
-+#define IWL_SCD_BE_MSK			BIT(1)
-+#define IWL_SCD_VI_MSK			BIT(2)
-+#define IWL_SCD_VO_MSK			BIT(3)
-+#define IWL_SCD_MGMT_MSK		BIT(3)
- 
- /* PAN queues mask */
--#define IWL_PAN_SCD_BK_MSK		cpu_to_le32(BIT(4))
--#define IWL_PAN_SCD_BE_MSK		cpu_to_le32(BIT(5))
--#define IWL_PAN_SCD_VI_MSK		cpu_to_le32(BIT(6))
--#define IWL_PAN_SCD_VO_MSK		cpu_to_le32(BIT(7))
--#define IWL_PAN_SCD_MGMT_MSK		cpu_to_le32(BIT(7))
--#define IWL_PAN_SCD_MULTICAST_MSK	cpu_to_le32(BIT(8))
-+#define IWL_PAN_SCD_BK_MSK		BIT(4)
-+#define IWL_PAN_SCD_BE_MSK		BIT(5)
-+#define IWL_PAN_SCD_VI_MSK		BIT(6)
-+#define IWL_PAN_SCD_VO_MSK		BIT(7)
-+#define IWL_PAN_SCD_MGMT_MSK		BIT(7)
-+#define IWL_PAN_SCD_MULTICAST_MSK	BIT(8)
- 
--#define IWL_AGG_TX_QUEUE_MSK		cpu_to_le32(0xffc00)
-+#define IWL_AGG_TX_QUEUE_MSK		0xffc00
- 
- #define IWL_DROP_ALL			BIT(1)
- 
-@@ -1005,12 +1005,17 @@ struct iwl_rem_sta_cmd {
-  *	1: Dump multiple MSDU according to PS, INVALID STA, TTL, TID disable.
-  *	2: Dump all FIFO
-  */
--struct iwl_txfifo_flush_cmd {
-+struct iwl_txfifo_flush_cmd_v3 {
- 	__le32 queue_control;
- 	__le16 flush_control;
- 	__le16 reserved;
- } __packed;
- 
-+struct iwl_txfifo_flush_cmd_v2 {
-+	__le16 queue_control;
-+	__le16 flush_control;
-+} __packed;
-+
- /*
-  * REPLY_WEP_KEY = 0x20
-  */
---- a/drivers/net/wireless/iwlwifi/dvm/lib.c
-+++ b/drivers/net/wireless/iwlwifi/dvm/lib.c
-@@ -137,37 +137,38 @@ int iwlagn_manage_ibss_station(struct iw
-  */
- int iwlagn_txfifo_flush(struct iwl_priv *priv, u32 scd_q_msk)
- {
--	struct iwl_txfifo_flush_cmd flush_cmd;
--	struct iwl_host_cmd cmd = {
--		.id = REPLY_TXFIFO_FLUSH,
--		.len = { sizeof(struct iwl_txfifo_flush_cmd), },
--		.data = { &flush_cmd, },
-+	struct iwl_txfifo_flush_cmd_v3 flush_cmd_v3 = {
-+		.flush_control = cpu_to_le16(IWL_DROP_ALL),
-+	};
-+	struct iwl_txfifo_flush_cmd_v2 flush_cmd_v2 = {
-+		.flush_control = cpu_to_le16(IWL_DROP_ALL),
- 	};
- 
--	memset(&flush_cmd, 0, sizeof(flush_cmd));
-+	u32 queue_control = IWL_SCD_VO_MSK | IWL_SCD_VI_MSK |
-+			    IWL_SCD_BE_MSK | IWL_SCD_BK_MSK | IWL_SCD_MGMT_MSK;
- 
--	flush_cmd.queue_control = IWL_SCD_VO_MSK | IWL_SCD_VI_MSK |
--				  IWL_SCD_BE_MSK | IWL_SCD_BK_MSK |
--				  IWL_SCD_MGMT_MSK;
- 	if ((priv->valid_contexts != BIT(IWL_RXON_CTX_BSS)))
--		flush_cmd.queue_control |= IWL_PAN_SCD_VO_MSK |
--					   IWL_PAN_SCD_VI_MSK |
--					   IWL_PAN_SCD_BE_MSK |
--					   IWL_PAN_SCD_BK_MSK |
--					   IWL_PAN_SCD_MGMT_MSK |
--					   IWL_PAN_SCD_MULTICAST_MSK;
-+		queue_control |= IWL_PAN_SCD_VO_MSK | IWL_PAN_SCD_VI_MSK |
-+				 IWL_PAN_SCD_BE_MSK | IWL_PAN_SCD_BK_MSK |
-+				 IWL_PAN_SCD_MGMT_MSK |
-+				 IWL_PAN_SCD_MULTICAST_MSK;
- 
- 	if (priv->nvm_data->sku_cap_11n_enable)
--		flush_cmd.queue_control |= IWL_AGG_TX_QUEUE_MSK;
-+		queue_control |= IWL_AGG_TX_QUEUE_MSK;
- 
- 	if (scd_q_msk)
--		flush_cmd.queue_control = cpu_to_le32(scd_q_msk);
--
--	IWL_DEBUG_INFO(priv, "queue control: 0x%x\n",
--		       flush_cmd.queue_control);
--	flush_cmd.flush_control = cpu_to_le16(IWL_DROP_ALL);
-+		queue_control = scd_q_msk;
- 
--	return iwl_dvm_send_cmd(priv, &cmd);
-+	IWL_DEBUG_INFO(priv, "queue control: 0x%x\n", queue_control);
-+	flush_cmd_v3.queue_control = cpu_to_le32(queue_control);
-+	flush_cmd_v2.queue_control = cpu_to_le16((u16)queue_control);
-+
-+	if (IWL_UCODE_API(priv->fw->ucode_ver) > 2)
-+		return iwl_dvm_send_cmd_pdu(priv, REPLY_TXFIFO_FLUSH, 0,
-+					    sizeof(flush_cmd_v3),
-+					    &flush_cmd_v3);
-+	return iwl_dvm_send_cmd_pdu(priv, REPLY_TXFIFO_FLUSH, 0,
-+				    sizeof(flush_cmd_v2), &flush_cmd_v2);
- }
- 
- void iwlagn_dev_txfifo_flush(struct iwl_priv *priv)
+ /* smart FIFO default values */
+-#define SF_W_MARK_SISO 4096
++#define SF_W_MARK_SISO 6144
+ #define SF_W_MARK_MIMO2 8192
+ #define SF_W_MARK_MIMO3 6144
+ #define SF_W_MARK_LEGACY 4096
 
 
