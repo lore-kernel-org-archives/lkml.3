@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932624AbbANHed (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:34:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58516 "EHLO
+	id S1755182AbbANHej (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:34:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58528 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932566AbbANHe1 (ORCPT
+	with ESMTP id S932567AbbANHe2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:34:27 -0500
+	Wed, 14 Jan 2015 02:34:28 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ian Abbott <abbotti@mev.co.uk>
-Subject: [PATCH 3.14 37/77] misc: genwqe: check for error from get_user_pages_fast()
-Date: Tue, 13 Jan 2015 23:23:17 -0800
-Message-Id: <20150114072226.264475958@linuxfoundation.org>
+        Jiri Jaburek <jjaburek@redhat.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.14 38/77] ALSA: usb-audio: extend KEF X300A FU 10 tweak to Arcam rPAC
+Date: Tue, 13 Jan 2015 23:23:18 -0800
+Message-Id: <20150114072226.396218207@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
 References: <20150114072224.182299947@linuxfoundation.org>
@@ -28,36 +28,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Jiri Jaburek <jjaburek@redhat.com>
 
-commit cf35d6e0475982667b0d2d318fb27be4b8849827 upstream.
+commit d70a1b9893f820fdbcdffac408c909c50f2e6b43 upstream.
 
-`genwqe_user_vmap()` calls `get_user_pages_fast()` and if the return
-value is less than the number of pages requested, it frees the pages and
-returns an error (`-EFAULT`).  However, it fails to consider a negative
-error return value from `get_user_pages_fast()`.  In that case, the test
-`if (rc < m->nr_pages)` will be false (due to promotion of `rc` to a
-large `unsigned int`) and the code will continue on to call
-`genwqe_map_pages()` with an invalid list of page pointers.  Fix it by
-bailing out if `get_user_pages_fast()` returns a negative error value.
+The Arcam rPAC seems to have the same problem - whenever anything
+(alsamixer, udevd, 3.9+ kernel from 60af3d037eb8c, ..) attempts to
+access mixer / control interface of the card, the firmware "locks up"
+the entire device, resulting in
+  SNDRV_PCM_IOCTL_HW_PARAMS failed (-5): Input/output error
+from alsa-lib.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Other operating systems can somehow read the mixer (there seems to be
+playback volume/mute), but any manipulation is ignored by the device
+(which has hardware volume controls).
+
+Signed-off-by: Jiri Jaburek <jjaburek@redhat.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/misc/genwqe/card_utils.c |    2 ++
- 1 file changed, 2 insertions(+)
+ sound/usb/mixer_maps.c |   15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
 
---- a/drivers/misc/genwqe/card_utils.c
-+++ b/drivers/misc/genwqe/card_utils.c
-@@ -490,6 +490,8 @@ int genwqe_user_vmap(struct genwqe_dev *
- 				 m->nr_pages,
- 				 1,		/* write by caller */
- 				 m->page_list);	/* ptrs to pages */
-+	if (rc < 0)
-+		goto fail_get_user_pages;
+--- a/sound/usb/mixer_maps.c
++++ b/sound/usb/mixer_maps.c
+@@ -328,8 +328,11 @@ static struct usbmix_name_map gamecom780
+ 	{}
+ };
  
- 	/* assumption: get_user_pages can be killed by signals. */
- 	if (rc < m->nr_pages) {
+-static const struct usbmix_name_map kef_x300a_map[] = {
+-	{ 10, NULL }, /* firmware locks up (?) when we try to access this FU */
++/* some (all?) SCMS USB3318 devices are affected by a firmware lock up
++ * when anything attempts to access FU 10 (control)
++ */
++static const struct usbmix_name_map scms_usb3318_map[] = {
++	{ 10, NULL },
+ 	{ 0 }
+ };
+ 
+@@ -425,8 +428,14 @@ static struct usbmix_ctl_map usbmix_ctl_
+ 		.map = ebox44_map,
+ 	},
+ 	{
++		/* KEF X300A */
+ 		.id = USB_ID(0x27ac, 0x1000),
+-		.map = kef_x300a_map,
++		.map = scms_usb3318_map,
++	},
++	{
++		/* Arcam rPAC */
++		.id = USB_ID(0x25c4, 0x0003),
++		.map = scms_usb3318_map,
+ 	},
+ 	{ 0 } /* terminator */
+ };
 
 
