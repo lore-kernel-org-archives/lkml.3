@@ -1,30 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932869AbbANINH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:13:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58291 "EHLO
+	id S932355AbbANHb5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:31:57 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58298 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754864AbbANHbr (ORCPT
+	with ESMTP id S932325AbbANHbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:31:47 -0500
+	Wed, 14 Jan 2015 02:31:52 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Olsa <jolsa@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Andi Kleen <ak@linux.intel.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Matt Fleming <matt.fleming@intel.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Zhiqiang Zhang <zhangzhiqiang.zhang@huawei.com>
-Subject: [PATCH 3.18 140/150] perf session: Do not fail on processing out of order event
-Date: Tue, 13 Jan 2015 23:23:31 -0800
-Message-Id: <20150114072102.189503210@linuxfoundation.org>
+        Hisashi Nakamura <hisashi.nakamura.ak@renesas.com>,
+        Yoshihiro Kaneko <ykaneko0929@gmail.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.18 141/150] spi: sh-msiof: Add runtime PM lock in initializing
+Date: Tue, 13 Jan 2015 23:23:32 -0800
+Message-Id: <20150114072102.238263958@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -39,88 +30,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jiri Olsa <jolsa@kernel.org>
+From: Hisashi Nakamura <hisashi.nakamura.ak@renesas.com>
 
-commit f61ff6c06dc8f32c7036013ad802c899ec590607 upstream.
+commit 015760563ec77bf17cec712fa94afdf53b285287 upstream.
 
-Linus reported perf report command being interrupted due to processing
-of 'out of order' event, with following error:
+SH-MSIOF driver is enabled autosuspend API of spi framework.
+But autosuspend framework doesn't work during initializing.
+So runtime PM lock is added in SH-MSIOF driver initializing.
 
-  Timestamp below last timeslice flush
-  0x5733a8 [0x28]: failed to process type: 3
-
-I could reproduce the issue and in my case it was caused by one CPU
-(mmap) being behind during record and userspace mmap reader seeing the
-data after other CPUs data were already stored.
-
-This is expected under some circumstances because we need to limit the
-number of events that we queue for reordering when we receive a
-PERF_RECORD_FINISHED_ROUND or when we force flush due to memory
-pressure.
-
-Reported-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-Acked-by: Ingo Molnar <mingo@kernel.org>
-Cc: Andi Kleen <ak@linux.intel.com>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Matt Fleming <matt.fleming@intel.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Link: http://lkml.kernel.org/r/1417016371-30249-1-git-send-email-jolsa@kernel.org
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Signed-off-by: Zhiqiang Zhang <zhangzhiqiang.zhang@huawei.com>
+Fixes: e2a0ba547ba31c (spi: sh-msiof: Convert to spi core auto_runtime_pm framework)
+Signed-off-by: Hisashi Nakamura <hisashi.nakamura.ak@renesas.com>
+Signed-off-by: Yoshihiro Kaneko <ykaneko0929@gmail.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- tools/perf/util/event.h   |    1 +
- tools/perf/util/session.c |   11 +++++------
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/spi/spi-sh-msiof.c |    5 +++++
+ 1 file changed, 5 insertions(+)
 
---- a/tools/perf/util/event.h
-+++ b/tools/perf/util/event.h
-@@ -214,6 +214,7 @@ struct events_stats {
- 	u32 nr_invalid_chains;
- 	u32 nr_unknown_id;
- 	u32 nr_unprocessable_samples;
-+	u32 nr_unordered_events;
- };
+--- a/drivers/spi/spi-sh-msiof.c
++++ b/drivers/spi/spi-sh-msiof.c
+@@ -480,6 +480,8 @@ static int sh_msiof_spi_setup(struct spi
+ 	struct device_node	*np = spi->master->dev.of_node;
+ 	struct sh_msiof_spi_priv *p = spi_master_get_devdata(spi->master);
  
- struct attr_event {
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -521,15 +521,11 @@ int perf_session_queue_event(struct perf
- 		return -ETIME;
- 
- 	if (timestamp < oe->last_flush) {
--		WARN_ONCE(1, "Timestamp below last timeslice flush\n");
--
--		pr_oe_time(timestamp,      "out of order event");
-+		pr_oe_time(timestamp,      "out of order event\n");
- 		pr_oe_time(oe->last_flush, "last flush, last_flush_type %d\n",
- 			   oe->last_flush_type);
- 
--		/* We could get out of order messages after forced flush. */
--		if (oe->last_flush_type != OE_FLUSH__HALF)
--			return -EINVAL;
-+		s->stats.nr_unordered_events++;
- 	}
- 
- 	new = ordered_events__new(oe, timestamp, event);
-@@ -1057,6 +1053,9 @@ static void perf_session__warn_about_err
- 			    "Do you have a KVM guest running and not using 'perf kvm'?\n",
- 			    session->stats.nr_unprocessable_samples);
- 	}
++	pm_runtime_get_sync(&p->pdev->dev);
 +
-+	if (session->stats.nr_unordered_events != 0)
-+		ui__warning("%u out of order events recorded.\n", session->stats.nr_unordered_events);
+ 	if (!np) {
+ 		/*
+ 		 * Use spi->controller_data for CS (same strategy as spi_gpio),
+@@ -498,6 +500,9 @@ static int sh_msiof_spi_setup(struct spi
+ 	if (spi->cs_gpio >= 0)
+ 		gpio_set_value(spi->cs_gpio, !(spi->mode & SPI_CS_HIGH));
+ 
++
++	pm_runtime_put_sync(&p->pdev->dev);
++
+ 	return 0;
  }
  
- volatile int session_done;
 
 
