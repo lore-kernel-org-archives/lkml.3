@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932428AbbANHdo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:33:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58432 "EHLO
+	id S932999AbbANIQN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:16:13 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58213 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932146AbbANHdm (ORCPT
+	with ESMTP id S1754827AbbANHbA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:33:42 -0500
+	Wed, 14 Jan 2015 02:31:00 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "joyce.xue" <xuejiufei@huawei.com>, Szabo Aron - UBIT <aron@ubit.hu>,
-        Mark Fasheh <mfasheh@suse.com>, Joel Becker <jlbec@evilplan.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 04/77] ocfs2: fix the wrong directory passed to ocfs2_lookup_ino_from_name() when link file
+        Tejun Heo <tj@kernel.org>, Jan Kara <jack@suse.cz>,
+        Mikulas Patocka <mpatocka@redhat.com>, Jens Axboe <axboe@kernel.dk>,
+        Al Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@fb.com>
+Subject: [PATCH 3.18 093/150] writeback: fix a subtle race condition in I_DIRTY clearing
 Date: Tue, 13 Jan 2015 23:22:44 -0800
-Message-Id: <20150114072224.416589354@linuxfoundation.org>
+Message-Id: <20150114072100.090095417@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-References: <20150114072224.182299947@linuxfoundation.org>
+In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
+References: <20150114072055.842408181@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -27,168 +26,130 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Xue jiufei <xuejiufei@huawei.com>
+From: Tejun Heo <tj@kernel.org>
 
-commit 53dc20b9a3d928b0744dad5aee65b610de1cc85d upstream.
+commit 9c6ac78eb3521c5937b2dd8a7d1b300f41092f45 upstream.
 
-In ocfs2_link(), the parent directory inode passed to function
-ocfs2_lookup_ino_from_name() is wrong.  Parameter dir is the parent of
-new_dentry not old_dentry.  We should get old_dir from old_dentry and
-lookup old_dentry in old_dir in case another node remove the old dentry.
+After invoking ->dirty_inode(), __mark_inode_dirty() does smp_mb() and
+tests inode->i_state locklessly to see whether it already has all the
+necessary I_DIRTY bits set.  The comment above the barrier doesn't
+contain any useful information - memory barriers can't ensure "changes
+are seen by all cpus" by itself.
 
-With this change, hard linking works again, when paths are relative with
-at least one subdirectory.  This is how the problem was reproducable:
+And it sure enough was broken.  Please consider the following
+scenario.
 
-  # mkdir a
-  # mkdir b
-  # touch a/test
-  # ln a/test b/test
-  ln: failed to create hard link `b/test' => `a/test': No such file or  directory
+ CPU 0					CPU 1
+ -------------------------------------------------------------------------------
 
-However when creating links in the same dir, it worked well.
+					enters __writeback_single_inode()
+					grabs inode->i_lock
+					tests PAGECACHE_TAG_DIRTY which is clear
+ enters __set_page_dirty()
+ grabs mapping->tree_lock
+ sets PAGECACHE_TAG_DIRTY
+ releases mapping->tree_lock
+ leaves __set_page_dirty()
 
-Now the link gets created.
+ enters __mark_inode_dirty()
+ smp_mb()
+ sees I_DIRTY_PAGES set
+ leaves __mark_inode_dirty()
+					clears I_DIRTY_PAGES
+					releases inode->i_lock
 
-Fixes: 0e048316ff57 ("ocfs2: check existence of old dentry in ocfs2_link()")
-Signed-off-by: joyce.xue <xuejiufei@huawei.com>
-Reported-by: Szabo Aron - UBIT <aron@ubit.hu>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Cc: Joel Becker <jlbec@evilplan.org>
-Tested-by: Aron Szabo <aron@ubit.hu>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Now @inode has dirty pages w/ I_DIRTY_PAGES clear.  This doesn't seem
+to lead to an immediately critical problem because requeue_inode()
+later checks PAGECACHE_TAG_DIRTY instead of I_DIRTY_PAGES when
+deciding whether the inode needs to be requeued for IO and there are
+enough unintentional memory barriers inbetween, so while the inode
+ends up with inconsistent I_DIRTY_PAGES flag, it doesn't fall off the
+IO list.
+
+The lack of explicit barrier may also theoretically affect the other
+I_DIRTY bits which deal with metadata dirtiness.  There is no
+guarantee that a strong enough barrier exists between
+I_DIRTY_[DATA]SYNC clearing and write_inode() writing out the dirtied
+inode.  Filesystem inode writeout path likely has enough stuff which
+can behave as full barrier but it's theoretically possible that the
+writeout may not see all the updates from ->dirty_inode().
+
+Fix it by adding an explicit smp_mb() after I_DIRTY clearing.  Note
+that I_DIRTY_PAGES needs a special treatment as it always needs to be
+cleared to be interlocked with the lockless test on
+__mark_inode_dirty() side.  It's cleared unconditionally and
+reinstated after smp_mb() if the mapping still has dirty pages.
+
+Also add comments explaining how and why the barriers are paired.
+
+Lightly tested.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Jan Kara <jack@suse.cz>
+Cc: Mikulas Patocka <mpatocka@redhat.com>
+Cc: Jens Axboe <axboe@kernel.dk>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Reviewed-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/ocfs2/namei.c |   43 +++++++++++++++++++++++++++++++++++--------
- 1 file changed, 35 insertions(+), 8 deletions(-)
+ fs/fs-writeback.c |   29 ++++++++++++++++++++++-------
+ 1 file changed, 22 insertions(+), 7 deletions(-)
 
---- a/fs/ocfs2/namei.c
-+++ b/fs/ocfs2/namei.c
-@@ -94,6 +94,14 @@ static int ocfs2_create_symlink_data(str
- 				     struct inode *inode,
- 				     const char *symname);
- 
-+static int ocfs2_double_lock(struct ocfs2_super *osb,
-+			     struct buffer_head **bh1,
-+			     struct inode *inode1,
-+			     struct buffer_head **bh2,
-+			     struct inode *inode2,
-+			     int rename);
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -479,12 +479,28 @@ __writeback_single_inode(struct inode *i
+ 	 * write_inode()
+ 	 */
+ 	spin_lock(&inode->i_lock);
+-	/* Clear I_DIRTY_PAGES if we've written out all dirty pages */
+-	if (!mapping_tagged(mapping, PAGECACHE_TAG_DIRTY))
+-		inode->i_state &= ~I_DIRTY_PAGES;
 +
-+static void ocfs2_double_unlock(struct inode *inode1, struct inode *inode2);
- /* An orphan dir name is an 8 byte value, printed as a hex string */
- #define OCFS2_ORPHAN_NAMELEN ((int)(2 * sizeof(u64)))
- 
-@@ -656,8 +664,10 @@ static int ocfs2_link(struct dentry *old
- {
- 	handle_t *handle;
- 	struct inode *inode = old_dentry->d_inode;
-+	struct inode *old_dir = old_dentry->d_parent->d_inode;
- 	int err;
- 	struct buffer_head *fe_bh = NULL;
-+	struct buffer_head *old_dir_bh = NULL;
- 	struct buffer_head *parent_fe_bh = NULL;
- 	struct ocfs2_dinode *fe = NULL;
- 	struct ocfs2_super *osb = OCFS2_SB(dir->i_sb);
-@@ -674,19 +684,33 @@ static int ocfs2_link(struct dentry *old
- 
- 	dquot_initialize(dir);
- 
--	err = ocfs2_inode_lock_nested(dir, &parent_fe_bh, 1, OI_LS_PARENT);
-+	err = ocfs2_double_lock(osb, &old_dir_bh, old_dir,
-+			&parent_fe_bh, dir, 0);
- 	if (err < 0) {
- 		if (err != -ENOENT)
- 			mlog_errno(err);
- 		return err;
- 	}
- 
-+	/* make sure both dirs have bhs
-+	 * get an extra ref on old_dir_bh if old==new */
-+	if (!parent_fe_bh) {
-+		if (old_dir_bh) {
-+			parent_fe_bh = old_dir_bh;
-+			get_bh(parent_fe_bh);
-+		} else {
-+			mlog(ML_ERROR, "%s: no old_dir_bh!\n", osb->uuid_str);
-+			err = -EIO;
-+			goto out;
-+		}
-+	}
+ 	dirty = inode->i_state & I_DIRTY;
+-	inode->i_state &= ~(I_DIRTY_SYNC | I_DIRTY_DATASYNC);
++	inode->i_state &= ~I_DIRTY;
 +
- 	if (!dir->i_nlink) {
- 		err = -ENOENT;
- 		goto out;
++	/*
++	 * Paired with smp_mb() in __mark_inode_dirty().  This allows
++	 * __mark_inode_dirty() to test i_state without grabbing i_lock -
++	 * either they see the I_DIRTY bits cleared or we see the dirtied
++	 * inode.
++	 *
++	 * I_DIRTY_PAGES is always cleared together above even if @mapping
++	 * still has dirty pages.  The flag is reinstated after smp_mb() if
++	 * necessary.  This guarantees that either __mark_inode_dirty()
++	 * sees clear I_DIRTY_PAGES or we see PAGECACHE_TAG_DIRTY.
++	 */
++	smp_mb();
++
++	if (mapping_tagged(mapping, PAGECACHE_TAG_DIRTY))
++		inode->i_state |= I_DIRTY_PAGES;
++
+ 	spin_unlock(&inode->i_lock);
++
+ 	/* Don't write the inode if only I_DIRTY_PAGES was set */
+ 	if (dirty & (I_DIRTY_SYNC | I_DIRTY_DATASYNC)) {
+ 		int err = write_inode(inode, wbc);
+@@ -1148,12 +1164,11 @@ void __mark_inode_dirty(struct inode *in
  	}
  
--	err = ocfs2_lookup_ino_from_name(dir, old_dentry->d_name.name,
-+	err = ocfs2_lookup_ino_from_name(old_dir, old_dentry->d_name.name,
- 			old_dentry->d_name.len, &old_de_ino);
- 	if (err) {
- 		err = -ENOENT;
-@@ -779,10 +803,11 @@ out_unlock_inode:
- 	ocfs2_inode_unlock(inode, 1);
+ 	/*
+-	 * make sure that changes are seen by all cpus before we test i_state
+-	 * -- mikulas
++	 * Paired with smp_mb() in __writeback_single_inode() for the
++	 * following lockless i_state test.  See there for details.
+ 	 */
+ 	smp_mb();
  
- out:
--	ocfs2_inode_unlock(dir, 1);
-+	ocfs2_double_unlock(old_dir, dir);
+-	/* avoid the locking if we can */
+ 	if ((inode->i_state & flags) == flags)
+ 		return;
  
- 	brelse(fe_bh);
- 	brelse(parent_fe_bh);
-+	brelse(old_dir_bh);
- 
- 	ocfs2_free_dir_lookup_result(&lookup);
- 
-@@ -991,14 +1016,15 @@ leave:
- }
- 
- /*
-- * The only place this should be used is rename!
-+ * The only place this should be used is rename and link!
-  * if they have the same id, then the 1st one is the only one locked.
-  */
- static int ocfs2_double_lock(struct ocfs2_super *osb,
- 			     struct buffer_head **bh1,
- 			     struct inode *inode1,
- 			     struct buffer_head **bh2,
--			     struct inode *inode2)
-+			     struct inode *inode2,
-+			     int rename)
- {
- 	int status;
- 	struct ocfs2_inode_info *oi1 = OCFS2_I(inode1);
-@@ -1028,7 +1054,7 @@ static int ocfs2_double_lock(struct ocfs
- 		}
- 		/* lock id2 */
- 		status = ocfs2_inode_lock_nested(inode2, bh2, 1,
--						 OI_LS_RENAME1);
-+				rename == 1 ? OI_LS_RENAME1 : OI_LS_PARENT);
- 		if (status < 0) {
- 			if (status != -ENOENT)
- 				mlog_errno(status);
-@@ -1037,7 +1063,8 @@ static int ocfs2_double_lock(struct ocfs
- 	}
- 
- 	/* lock id1 */
--	status = ocfs2_inode_lock_nested(inode1, bh1, 1, OI_LS_RENAME2);
-+	status = ocfs2_inode_lock_nested(inode1, bh1, 1,
-+			rename == 1 ?  OI_LS_RENAME2 : OI_LS_PARENT);
- 	if (status < 0) {
- 		/*
- 		 * An error return must mean that no cluster locks
-@@ -1137,7 +1164,7 @@ static int ocfs2_rename(struct inode *ol
- 
- 	/* if old and new are the same, this'll just do one lock. */
- 	status = ocfs2_double_lock(osb, &old_dir_bh, old_dir,
--				   &new_dir_bh, new_dir);
-+				   &new_dir_bh, new_dir, 1);
- 	if (status < 0) {
- 		mlog_errno(status);
- 		goto bail;
 
 
