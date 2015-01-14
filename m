@@ -1,240 +1,527 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753888AbbANQJu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 11:09:50 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:27881 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753742AbbANQJo (ORCPT
+	id S1753849AbbANQJt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 11:09:49 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:26943 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753747AbbANQJp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 11:09:44 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-0e-54b694c42bf0
+	Wed, 14 Jan 2015 11:09:45 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-10-54b694c581d2
 From: Karol Wrona <k.wrona@samsung.com>
 To: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
         Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
         Peter Meerwald <pmeerw@pmeerw.net>, linux-kernel@vger.kernel.org
 Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
-        Karol Wrona <wrona.vy@gmail.com>, Karol Wrona <k.wrona@samsung.com>
-Subject: [PATCH v4 5/5] iio: common: ssp_sensors: Add sensorhub gyroscope sensor
-Date: Wed, 14 Jan 2015 17:09:22 +0100
-Message-id: <1421251763-26513-5-git-send-email-k.wrona@samsung.com>
+        Karol Wrona <wrona.vy@gmail.com>
+Subject: iio: Move buffer registration to the core
+Date: Wed, 14 Jan 2015 17:09:23 +0100
+Message-id: <1421251763-26513-6-git-send-email-k.wrona@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1421251763-26513-1-git-send-email-k.wrona@samsung.com>
 References: <1421251763-26513-1-git-send-email-k.wrona@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplluLIzCtJLcpLzFFi42I5/e/4Fd0jU7aFGFx6pmyxccZ6VosHTauY
-	LE4t289ksev/G2aLs01v2C2WTJ7PajHvyDsWi8u75rBZ/N51jN1iz7otTA5cHjtn3WX3+PAx
-	zmPTqk42jyVvDrF6nG8+wujRt2UVo8fnTXIB7FFcNimpOZllqUX6dglcGVv6l7IXPNWreD93
-	AXsDY496FyMHh4SAicTXSyZdjJxAppjEhXvr2boYuTiEBJYyShxr2Ajl9DFJTO2eyQRSxSag
-	LtG8YzEzSEJE4AKjxPFDW1hAHGaBNYwSZ85OYAepEhYIkNixfBsziM0ioCqx6eMEMJtXwFmi
-	e+0pFojVChJzJtmAhDkFXCT2rloIFhYCKtl5THQCI+8CRoZVjKKppckFxUnpuUZ6xYm5xaV5
-	6XrJ+bmbGCFB+HUH49JjVocYBTgYlXh4HY5sDRFiTSwrrsw9xCjBwawkwvu0fFuIEG9KYmVV
-	alF+fFFpTmrxIUYmDk6pBsaqN8X6BZ+9azkWbEt7J60qd2J9xqWiwJzvN5VtWT/Vyeg9WTd1
-	0+6AwpscbnPOqixV5PwiEGfqd/92cWsa10G/t6d+pf/+IPlK7wZD28ZjWfaNUzaqqN/43e21
-	xXByWeZGXeapDexVP9o3Be36pyGnd9jhAe+sDF+2DvtEr8x1PTMfHAgyslZiKc5INNRiLipO
-	BADNabBzIAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupiluLIzCtJLcpLzFFi42I5/e/4Fd2jU7aFGJw4zmaxccZ6VosHTauY
+	LHb9f8NscbbpDbvFksnzWS3mHXnHYnF51xw2i9+7jrFb7Fm3hcmB02PnrLvsHh8+xnlsWtXJ
+	5rHkzSFWj/PNRxg9+rasYvT4vEkugD2KyyYlNSezLLVI3y6BK+PCoyMsBU1tjBUzp2xkbGCc
+	WNjFyMkhIWAicfD2U3YIW0ziwr31bF2MXBxCAksZJfb8mM8E4fQxSXx5dAesik1AXaJ5x2Jm
+	kISIwAVGieOHtrCAOMwC7YwS9zedB6sSFjCSOPFnOSOIzSKgKvHsxGQWEJtXwFli7uKvQDYH
+	0D4FiTmTbEDCnAIuEntXLQQLCwGV7DwmOoGRdwEjwypG0dTS5ILipPRcI73ixNzi0rx0veT8
+	3E2MkPD7uoNx6TGrQ4wCHIxKPLwOR7aGCLEmlhVX5h5ilOBgVhLhfVq+LUSINyWxsiq1KD++
+	qDQntfgQIxMHp1QDo7fC0c4j6wL77Yzir7dwmgr2r3c3O5u3fyuzSt2qpCcK5pN03BcuVNwS
+	Nye7Z+2KK7wC/5KdbG5umfb+17U7Hrb/i1ebqx3rsq/pS9nV9Ovk+VcMej9nfv4mv3SOE8dO
+	55fl4j5TZWO3V1k2ybZt7BWRuaji/ezehVMHmf2b/vvXntbTPT/noRJLcUaioRZzUXEiAPOT
+	TRAdAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds gyroscope iio driver which uses sensorhub as data
-provider.
+From: Lars-Peter Clausen <lars@metafoo.de>
 
-Signed-off-by: Karol Wrona <k.wrona@samsung.com>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/iio/gyro/Makefile          |    2 +
- drivers/iio/gyro/ssp_gyro_sensor.c |  169 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 171 insertions(+)
- create mode 100644 drivers/iio/gyro/ssp_gyro_sensor.c
+Originally device and buffer registration were kept as separate operations
+in IIO to allow to register two distinct sets of channels for buffered and
+non-buffered operations. This has since already been further restricted and
+the channel set registered for the buffer needs to be a subset of the
+channel set registered for the device. Additionally the possibility to not
+have a raw (or processed) attribute for a channel which was registered for
+the device was added a while ago. This means it is possible to not register
+any device level attributes for a channel even if it is registered for the
+device. Also if a channel's scan_index is set to -1 and the channel is
+registered for the buffer it is ignored.
 
-diff --git a/drivers/iio/gyro/Makefile b/drivers/iio/gyro/Makefile
-index 36a3877..f46341b 100644
---- a/drivers/iio/gyro/Makefile
-+++ b/drivers/iio/gyro/Makefile
-@@ -16,6 +16,8 @@ itg3200-y               := itg3200_core.o
- itg3200-$(CONFIG_IIO_BUFFER) += itg3200_buffer.o
- obj-$(CONFIG_ITG3200)   += itg3200.o
+So in summary it means it is possible to register the same channel array for
+both the device and the buffer yet still end up with distinctive sets of
+channels for both of them. This makes the argument for having to have to
+manually register the channels for both the device and the buffer invalid.
+Considering that the vast majority of all drivers want to register the same
+set of channels for both the buffer and the device it makes sense to move
+the buffer registration into the core to avoid some boiler-plate code in the
+device driver setup path.
+
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Signed-off-by: Jonathan Cameron <jic23@kernel.org>
+
+diff --git a/drivers/iio/adc/ti_am335x_adc.c b/drivers/iio/adc/ti_am335x_adc.c
+index b730864..d550ac7 100644
+--- a/drivers/iio/adc/ti_am335x_adc.c
++++ b/drivers/iio/adc/ti_am335x_adc.c
+@@ -264,16 +264,8 @@ static int tiadc_iio_buffered_hardware_setup(struct iio_dev *indio_dev,
+ 	indio_dev->setup_ops = setup_ops;
+ 	indio_dev->modes |= INDIO_BUFFER_HARDWARE;
  
-+obj-$(CONFIG_IIO_SSP_SENSORS_COMMONS) += ssp_gyro_sensor.o
-+
- obj-$(CONFIG_IIO_ST_GYRO_3AXIS) += st_gyro.o
- st_gyro-y := st_gyro_core.o
- st_gyro-$(CONFIG_IIO_BUFFER) += st_gyro_buffer.o
-diff --git a/drivers/iio/gyro/ssp_gyro_sensor.c b/drivers/iio/gyro/ssp_gyro_sensor.c
-new file mode 100644
-index 0000000..311d56f
---- /dev/null
-+++ b/drivers/iio/gyro/ssp_gyro_sensor.c
-@@ -0,0 +1,169 @@
-+/*
-+ *  Copyright (C) 2014, Samsung Electronics Co. Ltd. All Rights Reserved.
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License as published by
-+ *  the Free Software Foundation; either version 2 of the License, or
-+ *  (at your option) any later version.
-+ *
-+ *  This program is distributed in the hope that it will be useful,
-+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *  GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <linux/iio/common/ssp_sensors.h>
-+#include <linux/iio/iio.h>
-+#include <linux/iio/kfifo_buf.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include "../common/ssp_sensors/ssp_iio_sensor.h"
-+
-+#define SSP_CHANNEL_COUNT 3
-+
-+#define SSP_GYROSCOPE_NAME "ssp-gyroscope"
-+static const char ssp_gyro_name[] = SSP_GYROSCOPE_NAME;
-+
-+enum ssp_gyro_3d_channel {
-+	SSP_CHANNEL_SCAN_INDEX_X,
-+	SSP_CHANNEL_SCAN_INDEX_Y,
-+	SSP_CHANNEL_SCAN_INDEX_Z,
-+	SSP_CHANNEL_SCAN_INDEX_TIME,
-+};
-+
-+static int ssp_gyro_read_raw(struct iio_dev *indio_dev,
-+			     struct iio_chan_spec const *chan, int *val,
-+			     int *val2, long mask)
+-	ret = iio_buffer_register(indio_dev,
+-				  indio_dev->channels,
+-				  indio_dev->num_channels);
+-	if (ret)
+-		goto error_free_irq;
+-
+ 	return 0;
+ 
+-error_free_irq:
+-	free_irq(irq, indio_dev);
+ error_kfifo_free:
+ 	iio_kfifo_free(indio_dev->buffer);
+ 	return ret;
+@@ -285,7 +277,6 @@ static void tiadc_iio_buffered_hardware_remove(struct iio_dev *indio_dev)
+ 
+ 	free_irq(adc_dev->mfd_tscadc->irq, indio_dev);
+ 	iio_kfifo_free(indio_dev->buffer);
+-	iio_buffer_unregister(indio_dev);
+ }
+ 
+ 
+diff --git a/drivers/iio/iio_core.h b/drivers/iio/iio_core.h
+index 5f0ea77..3598835 100644
+--- a/drivers/iio/iio_core.h
++++ b/drivers/iio/iio_core.h
+@@ -48,6 +48,8 @@ unsigned int iio_buffer_poll(struct file *filp,
+ ssize_t iio_buffer_read_first_n_outer(struct file *filp, char __user *buf,
+ 				      size_t n, loff_t *f_ps);
+ 
++int iio_buffer_alloc_sysfs_and_mask(struct iio_dev *indio_dev);
++void iio_buffer_free_sysfs_and_mask(struct iio_dev *indio_dev);
+ 
+ #define iio_buffer_poll_addr (&iio_buffer_poll)
+ #define iio_buffer_read_first_n_outer_addr (&iio_buffer_read_first_n_outer)
+@@ -60,6 +62,13 @@ void iio_buffer_wakeup_poll(struct iio_dev *indio_dev);
+ #define iio_buffer_poll_addr NULL
+ #define iio_buffer_read_first_n_outer_addr NULL
+ 
++static inline int iio_buffer_alloc_sysfs_and_mask(struct iio_dev *indio_dev)
 +{
-+	u32 t;
-+	struct ssp_data *data = dev_get_drvdata(indio_dev->dev.parent->parent);
-+
-+	switch (mask) {
-+	case IIO_CHAN_INFO_SAMP_FREQ:
-+		t = ssp_get_sensor_delay(data, SSP_GYROSCOPE_SENSOR);
-+		ssp_convert_to_freq(t, val, val2);
-+		return IIO_VAL_INT_PLUS_MICRO;
-+	default:
-+		break;
-+	}
-+
-+	return -EINVAL;
++	return 0;
 +}
 +
-+static int ssp_gyro_write_raw(struct iio_dev *indio_dev,
-+			      struct iio_chan_spec const *chan, int val,
-+			      int val2, long mask)
-+{
-+	int ret;
-+	struct ssp_data *data = dev_get_drvdata(indio_dev->dev.parent->parent);
++static inline void iio_buffer_free_sysfs_and_mask(struct iio_dev *indio_dev) {}
 +
-+	switch (mask) {
-+	case IIO_CHAN_INFO_SAMP_FREQ:
-+		ret = ssp_convert_to_time(val, val2);
-+		ret = ssp_change_delay(data, SSP_GYROSCOPE_SENSOR, ret);
-+		if (ret < 0)
-+			dev_err(&indio_dev->dev, "gyro sensor enable fail\n");
+ static inline void iio_disable_all_buffers(struct iio_dev *indio_dev) {}
+ static inline void iio_buffer_wakeup_poll(struct iio_dev *indio_dev) {}
+ 
+diff --git a/drivers/iio/industrialio-buffer.c b/drivers/iio/industrialio-buffer.c
+index f667e4e..8bb3e64 100644
+--- a/drivers/iio/industrialio-buffer.c
++++ b/drivers/iio/industrialio-buffer.c
+@@ -385,14 +385,16 @@ static int iio_buffer_add_channel_sysfs(struct iio_dev *indio_dev,
+ 
+ static const char * const iio_scan_elements_group_name = "scan_elements";
+ 
+-int iio_buffer_register(struct iio_dev *indio_dev,
+-			const struct iio_chan_spec *channels,
+-			int num_channels)
++int iio_buffer_alloc_sysfs_and_mask(struct iio_dev *indio_dev)
+ {
+ 	struct iio_dev_attr *p;
+ 	struct attribute **attr;
+ 	struct iio_buffer *buffer = indio_dev->buffer;
+ 	int ret, i, attrn, attrcount, attrcount_orig = 0;
++	const struct iio_chan_spec *channels;
 +
-+		return ret;
-+	default:
-+		break;
-+	}
-+
-+	return -EINVAL;
-+}
-+
-+static struct iio_info ssp_gyro_iio_info = {
-+	.read_raw = &ssp_gyro_read_raw,
-+	.write_raw = &ssp_gyro_write_raw,
-+};
-+
-+static const unsigned long ssp_gyro_scan_mask[] = { 0x07, 0, };
-+
-+static const struct iio_chan_spec ssp_gyro_channels[] = {
-+	SSP_CHANNEL_AG(IIO_ANGL_VEL, IIO_MOD_X, SSP_CHANNEL_SCAN_INDEX_X),
-+	SSP_CHANNEL_AG(IIO_ANGL_VEL, IIO_MOD_Y, SSP_CHANNEL_SCAN_INDEX_Y),
-+	SSP_CHANNEL_AG(IIO_ANGL_VEL, IIO_MOD_Z, SSP_CHANNEL_SCAN_INDEX_Z),
-+	SSP_CHAN_TIMESTAMP(SSP_CHANNEL_SCAN_INDEX_TIME),
-+};
-+
-+static int ssp_process_gyro_data(struct iio_dev *indio_dev, void *buf,
-+				 int64_t timestamp)
-+{
-+	return ssp_common_process_data(indio_dev, buf, SSP_GYROSCOPE_SIZE,
-+				       timestamp);
-+}
-+
-+static const struct iio_buffer_setup_ops ssp_gyro_buffer_ops = {
-+	.postenable = &ssp_common_buffer_postenable,
-+	.postdisable = &ssp_common_buffer_postdisable,
-+};
-+
-+static int ssp_gyro_probe(struct platform_device *pdev)
-+{
-+	int ret;
-+	struct iio_dev *indio_dev;
-+	struct ssp_sensor_data *spd;
-+	struct iio_buffer *buffer;
-+
-+	indio_dev = devm_iio_device_alloc(&pdev->dev, sizeof(*spd));
-+	if (!indio_dev)
-+		return -ENOMEM;
-+
-+	spd = iio_priv(indio_dev);
-+
-+	spd->process_data = ssp_process_gyro_data;
-+	spd->type = SSP_GYROSCOPE_SENSOR;
-+
-+	indio_dev->name = ssp_gyro_name;
-+	indio_dev->dev.parent = &pdev->dev;
-+	indio_dev->info = &ssp_gyro_iio_info;
-+	indio_dev->modes = INDIO_BUFFER_SOFTWARE;
-+	indio_dev->channels = ssp_gyro_channels;
-+	indio_dev->num_channels = ARRAY_SIZE(ssp_gyro_channels);
-+	indio_dev->available_scan_masks = ssp_gyro_scan_mask;
-+
-+	buffer = devm_iio_kfifo_allocate(&pdev->dev);
 +	if (!buffer)
-+		return -ENOMEM;
++		return 0;
+ 
+ 	if (buffer->attrs)
+ 		indio_dev->groups[indio_dev->groupcounter++] = buffer->attrs;
+@@ -404,9 +406,10 @@ int iio_buffer_register(struct iio_dev *indio_dev,
+ 	}
+ 	attrcount = attrcount_orig;
+ 	INIT_LIST_HEAD(&buffer->scan_el_dev_attr_list);
++	channels = indio_dev->channels;
+ 	if (channels) {
+ 		/* new magic */
+-		for (i = 0; i < num_channels; i++) {
++		for (i = 0; i < indio_dev->num_channels; i++) {
+ 			if (channels[i].scan_index < 0)
+ 				continue;
+ 
+@@ -463,15 +466,16 @@ error_cleanup_dynamic:
+ 
+ 	return ret;
+ }
+-EXPORT_SYMBOL(iio_buffer_register);
+ 
+-void iio_buffer_unregister(struct iio_dev *indio_dev)
++void iio_buffer_free_sysfs_and_mask(struct iio_dev *indio_dev)
+ {
++	if (!indio_dev->buffer)
++		return;
 +
-+	iio_device_attach_buffer(indio_dev, buffer);
+ 	kfree(indio_dev->buffer->scan_mask);
+ 	kfree(indio_dev->buffer->scan_el_group.attrs);
+ 	iio_free_chan_devattr_list(&indio_dev->buffer->scan_el_dev_attr_list);
+ }
+-EXPORT_SYMBOL(iio_buffer_unregister);
+ 
+ ssize_t iio_buffer_read_length(struct device *dev,
+ 			       struct device_attribute *attr,
+diff --git a/drivers/iio/industrialio-core.c b/drivers/iio/industrialio-core.c
+index 45bb3a4..ee442ee 100644
+--- a/drivers/iio/industrialio-core.c
++++ b/drivers/iio/industrialio-core.c
+@@ -1158,11 +1158,19 @@ int iio_device_register(struct iio_dev *indio_dev)
+ 			"Failed to register debugfs interfaces\n");
+ 		return ret;
+ 	}
 +
-+	indio_dev->setup_ops = &ssp_gyro_buffer_ops;
++	ret = iio_buffer_alloc_sysfs_and_mask(indio_dev);
++	if (ret) {
++		dev_err(indio_dev->dev.parent,
++			"Failed to create buffer sysfs interfaces\n");
++		goto error_unreg_debugfs;
++	}
 +
-+	platform_set_drvdata(pdev, indio_dev);
+ 	ret = iio_device_register_sysfs(indio_dev);
+ 	if (ret) {
+ 		dev_err(indio_dev->dev.parent,
+ 			"Failed to register sysfs interfaces\n");
+-		goto error_unreg_debugfs;
++		goto error_buffer_free_sysfs;
+ 	}
+ 	ret = iio_device_register_eventset(indio_dev);
+ 	if (ret) {
+@@ -1195,6 +1203,8 @@ error_unreg_eventset:
+ 	iio_device_unregister_eventset(indio_dev);
+ error_free_sysfs:
+ 	iio_device_unregister_sysfs(indio_dev);
++error_buffer_free_sysfs:
++	iio_buffer_free_sysfs_and_mask(indio_dev);
+ error_unreg_debugfs:
+ 	iio_device_unregister_debugfs(indio_dev);
+ 	return ret;
+@@ -1223,6 +1233,8 @@ void iio_device_unregister(struct iio_dev *indio_dev)
+ 	iio_buffer_wakeup_poll(indio_dev);
+ 
+ 	mutex_unlock(&indio_dev->info_exist_lock);
 +
-+	ret = iio_device_register(indio_dev);
-+	if (ret < 0)
-+		return ret;
-+
-+	/* ssp registering should be done after all iio setup */
-+	ssp_register_consumer(indio_dev, SSP_GYROSCOPE_SENSOR);
-+
-+	return 0;
-+}
-+
-+static int ssp_gyro_remove(struct platform_device *pdev)
-+{
-+	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
-+
-+	iio_device_unregister(indio_dev);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver ssp_gyro_driver = {
-+	.driver = {
-+		.owner = THIS_MODULE,
-+		.name = SSP_GYROSCOPE_NAME,
-+	},
-+	.probe = ssp_gyro_probe,
-+	.remove = ssp_gyro_remove,
-+};
-+
-+module_platform_driver(ssp_gyro_driver);
-+
-+MODULE_AUTHOR("Karol Wrona <k.wrona@samsung.com>");
-+MODULE_DESCRIPTION("Samsung sensorhub gyroscopes driver");
-+MODULE_LICENSE("GPL");
++	iio_buffer_free_sysfs_and_mask(indio_dev);
+ }
+ EXPORT_SYMBOL(iio_device_unregister);
+ 
+diff --git a/drivers/iio/industrialio-triggered-buffer.c b/drivers/iio/industrialio-triggered-buffer.c
+index d6f54930..61a5d04 100644
+--- a/drivers/iio/industrialio-triggered-buffer.c
++++ b/drivers/iio/industrialio-triggered-buffer.c
+@@ -32,7 +32,7 @@ static const struct iio_buffer_setup_ops iio_triggered_buffer_setup_ops = {
+  *
+  * This function combines some common tasks which will normally be performed
+  * when setting up a triggered buffer. It will allocate the buffer and the
+- * pollfunc, as well as register the buffer with the IIO core.
++ * pollfunc.
+  *
+  * Before calling this function the indio_dev structure should already be
+  * completely initialized, but not yet registered. In practice this means that
+@@ -78,16 +78,8 @@ int iio_triggered_buffer_setup(struct iio_dev *indio_dev,
+ 	/* Flag that polled ring buffering is possible */
+ 	indio_dev->modes |= INDIO_BUFFER_TRIGGERED;
+ 
+-	ret = iio_buffer_register(indio_dev,
+-				  indio_dev->channels,
+-				  indio_dev->num_channels);
+-	if (ret)
+-		goto error_dealloc_pollfunc;
+-
+ 	return 0;
+ 
+-error_dealloc_pollfunc:
+-	iio_dealloc_pollfunc(indio_dev->pollfunc);
+ error_kfifo_free:
+ 	iio_kfifo_free(indio_dev->buffer);
+ error_ret:
+@@ -101,7 +93,6 @@ EXPORT_SYMBOL(iio_triggered_buffer_setup);
+  */
+ void iio_triggered_buffer_cleanup(struct iio_dev *indio_dev)
+ {
+-	iio_buffer_unregister(indio_dev);
+ 	iio_dealloc_pollfunc(indio_dev->pollfunc);
+ 	iio_kfifo_free(indio_dev->buffer);
+ }
+diff --git a/drivers/staging/iio/accel/lis3l02dq_core.c b/drivers/staging/iio/accel/lis3l02dq_core.c
+index f5e145c..b78c9c5 100644
+--- a/drivers/staging/iio/accel/lis3l02dq_core.c
++++ b/drivers/staging/iio/accel/lis3l02dq_core.c
+@@ -716,14 +716,6 @@ static int lis3l02dq_probe(struct spi_device *spi)
+ 	if (ret)
+ 		return ret;
+ 
+-	ret = iio_buffer_register(indio_dev,
+-				  lis3l02dq_channels,
+-				  ARRAY_SIZE(lis3l02dq_channels));
+-	if (ret) {
+-		dev_err(&spi->dev, "failed to initialize the buffer\n");
+-		goto error_unreg_buffer_funcs;
+-	}
+-
+ 	if (spi->irq) {
+ 		ret = request_threaded_irq(st->us->irq,
+ 					   &lis3l02dq_th,
+@@ -732,7 +724,7 @@ static int lis3l02dq_probe(struct spi_device *spi)
+ 					   "lis3l02dq",
+ 					   indio_dev);
+ 		if (ret)
+-			goto error_uninitialize_buffer;
++			goto error_unreg_buffer_funcs;
+ 
+ 		ret = lis3l02dq_probe_trigger(indio_dev);
+ 		if (ret)
+@@ -756,8 +748,6 @@ error_remove_trigger:
+ error_free_interrupt:
+ 	if (spi->irq)
+ 		free_irq(st->us->irq, indio_dev);
+-error_uninitialize_buffer:
+-	iio_buffer_unregister(indio_dev);
+ error_unreg_buffer_funcs:
+ 	lis3l02dq_unconfigure_buffer(indio_dev);
+ 	return ret;
+@@ -804,7 +794,6 @@ static int lis3l02dq_remove(struct spi_device *spi)
+ 		free_irq(st->us->irq, indio_dev);
+ 
+ 	lis3l02dq_remove_trigger(indio_dev);
+-	iio_buffer_unregister(indio_dev);
+ 	lis3l02dq_unconfigure_buffer(indio_dev);
+ 
+ 	return 0;
+diff --git a/drivers/staging/iio/accel/sca3000_core.c b/drivers/staging/iio/accel/sca3000_core.c
+index aef8c91..9cd04c7 100644
+--- a/drivers/staging/iio/accel/sca3000_core.c
++++ b/drivers/staging/iio/accel/sca3000_core.c
+@@ -1156,11 +1156,6 @@ static int sca3000_probe(struct spi_device *spi)
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	ret = iio_buffer_register(indio_dev, indio_dev->channels,
+-				  indio_dev->num_channels);
+-	if (ret < 0)
+-		goto error_unregister_dev;
+-
+ 	if (spi->irq) {
+ 		ret = request_threaded_irq(spi->irq,
+ 					   NULL,
+@@ -1169,7 +1164,7 @@ static int sca3000_probe(struct spi_device *spi)
+ 					   "sca3000",
+ 					   indio_dev);
+ 		if (ret)
+-			goto error_unregister_ring;
++			goto error_unregister_dev;
+ 	}
+ 	sca3000_register_ring_funcs(indio_dev);
+ 	ret = sca3000_clean_setup(st);
+@@ -1180,8 +1175,6 @@ static int sca3000_probe(struct spi_device *spi)
+ error_free_irq:
+ 	if (spi->irq)
+ 		free_irq(spi->irq, indio_dev);
+-error_unregister_ring:
+-	iio_buffer_unregister(indio_dev);
+ error_unregister_dev:
+ 	iio_device_unregister(indio_dev);
+ 	return ret;
+@@ -1215,7 +1208,6 @@ static int sca3000_remove(struct spi_device *spi)
+ 	if (spi->irq)
+ 		free_irq(spi->irq, indio_dev);
+ 	iio_device_unregister(indio_dev);
+-	iio_buffer_unregister(indio_dev);
+ 	sca3000_unconfigure_ring(indio_dev);
+ 
+ 	return 0;
+diff --git a/drivers/staging/iio/iio_simple_dummy_buffer.c b/drivers/staging/iio/iio_simple_dummy_buffer.c
+index 35d60d5..a2d72c1 100644
+--- a/drivers/staging/iio/iio_simple_dummy_buffer.c
++++ b/drivers/staging/iio/iio_simple_dummy_buffer.c
+@@ -172,15 +172,8 @@ int iio_simple_dummy_configure_buffer(struct iio_dev *indio_dev)
+ 	 */
+ 	indio_dev->modes |= INDIO_BUFFER_TRIGGERED;
+ 
+-	ret = iio_buffer_register(indio_dev, indio_dev->channels,
+-				  indio_dev->num_channels);
+-	if (ret)
+-		goto error_dealloc_pollfunc;
+-
+ 	return 0;
+ 
+-error_dealloc_pollfunc:
+-	iio_dealloc_pollfunc(indio_dev->pollfunc);
+ error_free_buffer:
+ 	iio_kfifo_free(indio_dev->buffer);
+ error_ret:
+@@ -194,7 +187,6 @@ error_ret:
+  */
+ void iio_simple_dummy_unconfigure_buffer(struct iio_dev *indio_dev)
+ {
+-	iio_buffer_unregister(indio_dev);
+ 	iio_dealloc_pollfunc(indio_dev->pollfunc);
+ 	iio_kfifo_free(indio_dev->buffer);
+ }
+diff --git a/drivers/staging/iio/impedance-analyzer/ad5933.c b/drivers/staging/iio/impedance-analyzer/ad5933.c
+index aa6a368..c50b138 100644
+--- a/drivers/staging/iio/impedance-analyzer/ad5933.c
++++ b/drivers/staging/iio/impedance-analyzer/ad5933.c
+@@ -752,23 +752,16 @@ static int ad5933_probe(struct i2c_client *client,
+ 	if (ret)
+ 		goto error_disable_reg;
+ 
+-	ret = iio_buffer_register(indio_dev, ad5933_channels,
+-		ARRAY_SIZE(ad5933_channels));
+-	if (ret)
+-		goto error_unreg_ring;
+-
+ 	ret = ad5933_setup(st);
+ 	if (ret)
+-		goto error_uninitialize_ring;
++		goto error_unreg_ring;
+ 
+ 	ret = iio_device_register(indio_dev);
+ 	if (ret)
+-		goto error_uninitialize_ring;
++		goto error_unreg_ring;
+ 
+ 	return 0;
+ 
+-error_uninitialize_ring:
+-	iio_buffer_unregister(indio_dev);
+ error_unreg_ring:
+ 	iio_kfifo_free(indio_dev->buffer);
+ error_disable_reg:
+@@ -784,7 +777,6 @@ static int ad5933_remove(struct i2c_client *client)
+ 	struct ad5933_state *st = iio_priv(indio_dev);
+ 
+ 	iio_device_unregister(indio_dev);
+-	iio_buffer_unregister(indio_dev);
+ 	iio_kfifo_free(indio_dev->buffer);
+ 	if (!IS_ERR(st->reg))
+ 		regulator_disable(st->reg);
+diff --git a/drivers/staging/iio/meter/ade7758.h b/drivers/staging/iio/meter/ade7758.h
+index 0731820..762d7dc 100644
+--- a/drivers/staging/iio/meter/ade7758.h
++++ b/drivers/staging/iio/meter/ade7758.h
+@@ -146,7 +146,6 @@ ssize_t ade7758_read_data_from_ring(struct device *dev,
+ int ade7758_configure_ring(struct iio_dev *indio_dev);
+ void ade7758_unconfigure_ring(struct iio_dev *indio_dev);
+ 
+-void ade7758_uninitialize_ring(struct iio_dev *indio_dev);
+ int ade7758_set_irq(struct device *dev, bool enable);
+ 
+ int ade7758_spi_write_reg_8(struct device *dev,
+diff --git a/drivers/staging/iio/meter/ade7758_core.c b/drivers/staging/iio/meter/ade7758_core.c
+index abc6006..6e8b011 100644
+--- a/drivers/staging/iio/meter/ade7758_core.c
++++ b/drivers/staging/iio/meter/ade7758_core.c
+@@ -885,23 +885,15 @@ static int ade7758_probe(struct spi_device *spi)
+ 	if (ret)
+ 		goto error_free_tx;
+ 
+-	ret = iio_buffer_register(indio_dev,
+-				  &ade7758_channels[0],
+-				  ARRAY_SIZE(ade7758_channels));
+-	if (ret) {
+-		dev_err(&spi->dev, "failed to initialize the ring\n");
+-		goto error_unreg_ring_funcs;
+-	}
+-
+ 	/* Get the device into a sane initial state */
+ 	ret = ade7758_initial_setup(indio_dev);
+ 	if (ret)
+-		goto error_uninitialize_ring;
++		goto error_unreg_ring_funcs;
+ 
+ 	if (spi->irq) {
+ 		ret = ade7758_probe_trigger(indio_dev);
+ 		if (ret)
+-			goto error_uninitialize_ring;
++			goto error_unreg_ring_funcs;
+ 	}
+ 
+ 	ret = iio_device_register(indio_dev);
+@@ -913,8 +905,6 @@ static int ade7758_probe(struct spi_device *spi)
+ error_remove_trigger:
+ 	if (spi->irq)
+ 		ade7758_remove_trigger(indio_dev);
+-error_uninitialize_ring:
+-	ade7758_uninitialize_ring(indio_dev);
+ error_unreg_ring_funcs:
+ 	ade7758_unconfigure_ring(indio_dev);
+ error_free_tx:
+@@ -932,7 +922,6 @@ static int ade7758_remove(struct spi_device *spi)
+ 	iio_device_unregister(indio_dev);
+ 	ade7758_stop_device(&indio_dev->dev);
+ 	ade7758_remove_trigger(indio_dev);
+-	ade7758_uninitialize_ring(indio_dev);
+ 	ade7758_unconfigure_ring(indio_dev);
+ 	kfree(st->tx);
+ 	kfree(st->rx);
+diff --git a/drivers/staging/iio/meter/ade7758_ring.c b/drivers/staging/iio/meter/ade7758_ring.c
+index c0accf8..27c3ed6 100644
+--- a/drivers/staging/iio/meter/ade7758_ring.c
++++ b/drivers/staging/iio/meter/ade7758_ring.c
+@@ -181,8 +181,3 @@ error_iio_kfifo_free:
+ 	iio_kfifo_free(indio_dev->buffer);
+ 	return ret;
+ }
+-
+-void ade7758_uninitialize_ring(struct iio_dev *indio_dev)
+-{
+-	iio_buffer_unregister(indio_dev);
+-}
+diff --git a/include/linux/iio/buffer.h b/include/linux/iio/buffer.h
+index 8c8ce61..b0e006c 100644
+--- a/include/linux/iio/buffer.h
++++ b/include/linux/iio/buffer.h
+@@ -151,22 +151,6 @@ static inline int iio_push_to_buffers_with_timestamp(struct iio_dev *indio_dev,
+ int iio_update_demux(struct iio_dev *indio_dev);
+ 
+ /**
+- * iio_buffer_register() - register the buffer with IIO core
+- * @indio_dev:		device with the buffer to be registered
+- * @channels:		the channel descriptions used to construct buffer
+- * @num_channels:	the number of channels
+- **/
+-int iio_buffer_register(struct iio_dev *indio_dev,
+-			const struct iio_chan_spec *channels,
+-			int num_channels);
+-
+-/**
+- * iio_buffer_unregister() - unregister the buffer from IIO core
+- * @indio_dev:		the device with the buffer to be unregistered
+- **/
+-void iio_buffer_unregister(struct iio_dev *indio_dev);
+-
+-/**
+  * iio_buffer_read_length() - attr func to get number of datums in the buffer
+  **/
+ ssize_t iio_buffer_read_length(struct device *dev,
+@@ -223,16 +207,6 @@ static inline void iio_device_attach_buffer(struct iio_dev *indio_dev,
+ 
+ #else /* CONFIG_IIO_BUFFER */
+ 
+-static inline int iio_buffer_register(struct iio_dev *indio_dev,
+-					   const struct iio_chan_spec *channels,
+-					   int num_channels)
+-{
+-	return 0;
+-}
+-
+-static inline void iio_buffer_unregister(struct iio_dev *indio_dev)
+-{}
+-
+ static inline void iio_buffer_get(struct iio_buffer *buffer) {}
+ static inline void iio_buffer_put(struct iio_buffer *buffer) {}
+ 
 -- 
-1.7.9.5
-
+cgit v0.10.2
