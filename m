@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754503AbbANH2H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:28:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57936 "EHLO
+	id S1754534AbbANH2T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:28:19 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57940 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754443AbbANH2F (ORCPT
+	with ESMTP id S1752515AbbANH2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:28:05 -0500
+	Wed, 14 Jan 2015 02:28:10 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.18 081/150] ALSA: hda - Fix wrong gpio_dir & gpio_mask hint setups for IDT/STAC codecs
-Date: Tue, 13 Jan 2015 23:22:32 -0800
-Message-Id: <20150114072059.513253378@linuxfoundation.org>
+        Aaron Plattner <aplattner@nvidia.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.18 082/150] ALSA: hda - Add new GPU codec ID 0x10de0072 to snd-hda
+Date: Tue, 13 Jan 2015 23:22:33 -0800
+Message-Id: <20150114072059.563259316@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -29,35 +28,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Takashi Iwai <tiwai@suse.de>
+From: Aaron Plattner <aplattner@nvidia.com>
 
-commit c507de88f6a336bd7296c9ec0073b2d4af8b4f5e upstream.
+commit 60834b73a9c2bbc2f514122ddc626f3350fb40cd upstream.
 
-stac_store_hints() does utterly wrong for masking the values for
-gpio_dir and gpio_data, likely due to copy&paste errors.  Fortunately,
-this feature is used very rarely, so the impact must be really small.
+Vendor ID 0x10de0072 is used by a yet-to-be-named GPU chip.
 
-Reported-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Signed-off-by: Aaron Plattner <aplattner@nvidia.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/pci/hda/patch_sigmatel.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ sound/pci/hda/patch_hdmi.c |    2 ++
+ 1 file changed, 2 insertions(+)
 
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -568,9 +568,9 @@ static void stac_store_hints(struct hda_
- 			spec->gpio_mask;
- 	}
- 	if (get_int_hint(codec, "gpio_dir", &spec->gpio_dir))
--		spec->gpio_mask &= spec->gpio_mask;
--	if (get_int_hint(codec, "gpio_data", &spec->gpio_data))
- 		spec->gpio_dir &= spec->gpio_mask;
-+	if (get_int_hint(codec, "gpio_data", &spec->gpio_data))
-+		spec->gpio_data &= spec->gpio_mask;
- 	if (get_int_hint(codec, "eapd_mask", &spec->eapd_mask))
- 		spec->eapd_mask &= spec->gpio_mask;
- 	if (get_int_hint(codec, "gpio_mute", &spec->gpio_mute))
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -3351,6 +3351,7 @@ static const struct hda_codec_preset snd
+ { .id = 0x10de0067, .name = "MCP67 HDMI",	.patch = patch_nvhdmi_2ch },
+ { .id = 0x10de0070, .name = "GPU 70 HDMI/DP",	.patch = patch_nvhdmi },
+ { .id = 0x10de0071, .name = "GPU 71 HDMI/DP",	.patch = patch_nvhdmi },
++{ .id = 0x10de0072, .name = "GPU 72 HDMI/DP",	.patch = patch_nvhdmi },
+ { .id = 0x10de8001, .name = "MCP73 HDMI",	.patch = patch_nvhdmi_2ch },
+ { .id = 0x11069f80, .name = "VX900 HDMI/DP",	.patch = patch_via_hdmi },
+ { .id = 0x11069f81, .name = "VX900 HDMI/DP",	.patch = patch_via_hdmi },
+@@ -3410,6 +3411,7 @@ MODULE_ALIAS("snd-hda-codec-id:10de0060"
+ MODULE_ALIAS("snd-hda-codec-id:10de0067");
+ MODULE_ALIAS("snd-hda-codec-id:10de0070");
+ MODULE_ALIAS("snd-hda-codec-id:10de0071");
++MODULE_ALIAS("snd-hda-codec-id:10de0072");
+ MODULE_ALIAS("snd-hda-codec-id:10de8001");
+ MODULE_ALIAS("snd-hda-codec-id:11069f80");
+ MODULE_ALIAS("snd-hda-codec-id:11069f81");
 
 
