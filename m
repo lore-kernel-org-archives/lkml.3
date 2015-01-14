@@ -1,95 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751600AbbANBi7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 20:38:59 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:43537 "EHLO
-	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751004AbbANBi6 (ORCPT
+	id S1752007AbbANBoR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 20:44:17 -0500
+Received: from mail-bn1bon0116.outbound.protection.outlook.com ([157.56.111.116]:33926
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751167AbbANBoP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 20:38:58 -0500
-X-Original-SENDERIP: 10.177.220.203
-X-Original-MAILFROM: namhyung@kernel.org
-Date: Wed, 14 Jan 2015 10:35:04 +0900
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>, Kan Liang <kan.liang@intel.com>,
-        Jiri Olsa <jolsa@kernel.org>
-Subject: Re: [PATCH 5/7] perf tools: Pass struct perf_hpp_fmt to its callbacks
-Message-ID: <20150114013504.GB800@sejong>
-References: <1420677949-6719-1-git-send-email-namhyung@kernel.org>
- <1420677949-6719-6-git-send-email-namhyung@kernel.org>
- <20150112162140.GK12406@kernel.org>
- <20150112162736.GL12406@kernel.org>
- <20150112164050.GB18267@krava.brq.redhat.com>
- <20150112164406.GC29743@kernel.org>
+	Tue, 13 Jan 2015 20:44:15 -0500
+From: Dexuan Cui <decui@microsoft.com>
+To: Vitaly Kuznetsov <vkuznets@redhat.com>, KY Srinivasan <kys@microsoft.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<driverdev-devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "jasowang@redhat.com" <jasowang@redhat.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>
+Subject: RE: [PATCH v3] hv: hv_fcopy: drop the obsolete message on transfer
+ failure
+Thread-Topic: [PATCH v3] hv: hv_fcopy: drop the obsolete message on transfer
+ failure
+Thread-Index: AQHQLzg4w1QfDLsS1EmuRLAXowpA7Zy+1h1g
+Date: Wed, 14 Jan 2015 01:43:45 +0000
+Message-ID: <F792CF86EFE20D4AB8064279AFBA51C61EA7CFF9@SIXPRD3002MB028.064d.mgd.msft.net>
+References: <1417093747-21073-1-git-send-email-decui@microsoft.com>
+ <8761caeqjp.fsf@vitty.brq.redhat.com>
+In-Reply-To: <8761caeqjp.fsf@vitty.brq.redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [141.251.55.68]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20150112164406.GC29743@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=fail (sender IP is 206.191.249.68)
+ smtp.mailfrom=decui@microsoft.com; 
+X-Forefront-Antispam-Report: CIP:206.191.249.68;CTRY:US;IPV:CAL;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(377454003)(199003)(13464003)(164054003)(51704005)(189002)(81156004)(106466001)(85426001)(106116001)(105606002)(97736003)(69596002)(6806004)(19580405001)(19580395003)(86612001)(551934003)(46102003)(86362001)(97756001)(2561002)(217423001)(16796002)(33656002)(87936001)(2656002)(50986999)(76176999)(54356999)(23726002)(86146001)(46406003)(55846006)(50466002)(64706001)(66066001)(47776003)(102836002)(26826002)(2421001)(1511001)(92566002)(62966003)(77156002)(68736005)(2900100001)(2920100001)(2950100001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0775;H:064-smtp-out.microsoft.com;FPR:;SPF:Fail;MLV:ovrnspm;PTR:ErrorRetry;A:1;MX:1;LANG:en;
+X-DmarcStatus-Test: Failed
+X-DmarcAction-Test: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3004003)(3005003);SRVR:BY2PR0301MB0775;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR0301MB0775;
+X-Forefront-PRVS: 04569283F9
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0775;
+X-OriginatorOrg: microsoft.onmicrosoft.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 14 Jan 2015 01:44:09.1379
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: 72f988bf-86f1-41af-91ab-2d7cd011db47
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=72f988bf-86f1-41af-91ab-2d7cd011db47;Ip=[206.191.249.68]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR0301MB0775
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnaldo and Jiri,
-
-On Mon, Jan 12, 2015 at 01:44:06PM -0300, Arnaldo Carvalho de Melo wrote:
-> Em Mon, Jan 12, 2015 at 05:40:50PM +0100, Jiri Olsa escreveu:
-> > On Mon, Jan 12, 2015 at 01:27:36PM -0300, Arnaldo Carvalho de Melo wrote:
-> > > Em Mon, Jan 12, 2015 at 01:21:40PM -0300, Arnaldo Carvalho de Melo escreveu:
-> > > > Em Thu, Jan 08, 2015 at 09:45:46AM +0900, Namhyung Kim escreveu:
-> > > > > Currently ->cmp, ->collapse and ->sort callbacks doesn't pass
-> > > > > corresponding fmt.  But it'll be needed by upcoming changes in
-> > > > > perf diff command.
-> > > > > 
-> > > > > Suggested-by: Jiri Olsa <jolsa@kernel.org>
-> > > > 
-> > > > 
-> > > >   CC       /tmp/build/perf/builtin-evlist.o
-> > > > builtin-diff.c: In function ‘data__hpp_register’:
-> > > > builtin-diff.c:1036:11: error: assignment from incompatible pointer type [-Werror]
-> > > >   fmt->cmp    = hist_entry__cmp_nop;
-> > > >            ^
-> > > > builtin-diff.c:1037:16: error: assignment from incompatible pointer type [-Werror]
-> > > >   fmt->collapse = hist_entry__cmp_nop;
-> > > >                 ^
-> > > > builtin-diff.c:1043:13: error: assignment from incompatible pointer type [-Werror]
-> > > >    fmt->sort  = hist_entry__cmp_baseline;
-> > > >              ^
-> > > > builtin-diff.c:1047:13: error: assignment from incompatible pointer type [-Werror]
-> > > >    fmt->sort  = hist_entry__cmp_delta;
-> > > >              ^
-> > > > builtin-diff.c:1051:13: error: assignment from incompatible pointer type [-Werror]
-> > > >    fmt->sort  = hist_entry__cmp_ratio;
-> > > >              ^
-> > > > builtin-diff.c:1055:13: error: assignment from incompatible pointer type [-Werror]
-> > > >    fmt->sort  = hist_entry__cmp_wdiff;
-> > > >              ^
-> > > > builtin-diff.c:1058:13: error: assignment from incompatible pointer type [-Werror]
-> > > >    fmt->sort  = hist_entry__cmp_nop;
-> > > >              ^
-> > > > cc1: all warnings being treated as errors
-> > > >   LINK     plugin_kvm.so
-> > > > make[1]: *** [/tmp/build/perf/builtin-diff.o] Error 1
-> > > > make[1]: *** Waiting for unfinished jobs....
-> > > >   LINK     plugin_mac80211.so
-> > > 
-> > > Am I missing something? Lemme continue trying applying the rest of the
-> > > kit...
-> > 
-> > hum,
-> > looks like those (= hist_entry__cmp_delta,.. functions) are fixed (=added fmt param)
-> > later in patch 6/7 of this series.. which is wrong, should be updated in this patch,
-> > as you did below
+> -----Original Message-----
+> From: Vitaly Kuznetsov [mailto:vkuznets@redhat.com]
+> Sent: Tuesday, January 13, 2015 21:52 PM
+> To: Dexuan Cui; KY Srinivasan
+> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org; driverdev-
+> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
+> jasowang@redhat.com; Haiyang Zhang
+> Subject: Re: [PATCH v3] hv: hv_fcopy: drop the obsolete message on transfer
+> failure
 > 
-> I have it all fixed up and pushed to my perf/core branch, thanks for
-> checking!
+> Dexuan Cui <decui@microsoft.com> writes:
+> 
+> > In the case the user-space daemon crashes, hangs or is killed, we
+> > need to down the semaphore, otherwise, after the daemon starts next
+> > time, the obsolete data in fcopy_transaction.message or
+> > fcopy_transaction.fcopy_msg will be used immediately.
+> 
+> It seems this patch got lost and I don't see it in recent 'resend'
+> series. K.Y., Dexuan, can you please take a look?
+Hi Vitaly, Jason,
+The patch can't fix all the corner cases (it would need non-trivial efforts for that)
+as we discussed, but I think it would be better for us to have it as it can indeed fix
+an obvious issue and doesn't introduce new issues.
 
-Oops, my bad.  It must came from the many of rebases during the
-development.  Sorry about that and really thank you to fix them up.
+I think I can document the known discussed corner cases in the patch as TODOs
+and resend the patch.
+
+Please let me know if you have different opinions. :-) 
 
 Thanks,
-Namhyung
+-- Dexuan
+
+> 
+> >
+> > Cc: Jason Wang <jasowang@redhat.com>
+> > Cc: Vitaly Kuznetsov <vkuznets@redhat.com>
+> > Cc: K. Y. Srinivasan <kys@microsoft.com>
+> > Signed-off-by: Dexuan Cui <decui@microsoft.com>
+> > ---
+> >
+> > v2: I removed the "FCP" prefix as Greg asked.
+> >
+> >     I also updated the output message a little:
+> >     "FCP: failed to acquire the semaphore" -->
+> >     "can not acquire the semaphore: it is benign"
+> >
+> > v3: I added the code in fcopy_release() as Jason Wang suggested.
+> >     I removed the pr_debug (it isn't so meaningful)and added a comment
+> instead.
+> >
+> >  drivers/hv/hv_fcopy.c | 19 +++++++++++++++++++
+> >  1 file changed, 19 insertions(+)
+> >
+> > diff --git a/drivers/hv/hv_fcopy.c b/drivers/hv/hv_fcopy.c
+> > index 23b2ce2..faa6ba6 100644
+> > --- a/drivers/hv/hv_fcopy.c
+> > +++ b/drivers/hv/hv_fcopy.c
+> > @@ -86,6 +86,18 @@ static void fcopy_work_func(struct work_struct
+> *dummy)
+> >  	 * process the pending transaction.
+> >  	 */
+> >  	fcopy_respond_to_host(HV_E_FAIL);
+> > +
+> > +	/* In the case the user-space daemon crashes, hangs or is killed, we
+> > +	 * need to down the semaphore, otherwise, after the daemon starts
+> next
+> > +	 * time, the obsolete data in fcopy_transaction.message or
+> > +	 * fcopy_transaction.fcopy_msg will be used immediately.
+> > +	 *
+> > +	 * NOTE: fcopy_read() happens to get the semaphore (very rare)? We're
+> > +	 * still OK, because we've reported the failure to the host.
+> > +	 */
+> > +	if (down_trylock(&fcopy_transaction.read_sema))
+> > +		;
+> > +
+> >  }
+> >
+> >  static int fcopy_handle_handshake(u32 version)
+> > @@ -351,6 +363,13 @@ static int fcopy_release(struct inode *inode, struct
+> file *f)
+> >  	 */
+> >  	in_hand_shake = true;
+> >  	opened = false;
+> > +
+> > +	if (cancel_delayed_work_sync(&fcopy_work)) {
+> > +		/* We haven't up()-ed the semaphore(very rare)? */
+> > +		if (down_trylock(&fcopy_transaction.read_sema))
+> > +			;
+> > +		fcopy_respond_to_host(HV_E_FAIL);
+> > +	}
+> >  	return 0;
+> >  }
+> 
+> --
+>   Vitaly
