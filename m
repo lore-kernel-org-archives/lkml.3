@@ -1,102 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751879AbbANDHP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 22:07:15 -0500
-Received: from mga03.intel.com ([134.134.136.65]:50996 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751086AbbANDHO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 22:07:14 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="440264737"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Sander Eikelenboom <linux@eikelenboom.it>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Yinghai Lu <yinghai@kernel.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+	id S1751387AbbANDSl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 22:18:41 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:36377 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751052AbbANDSj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 22:18:39 -0500
+Date: Tue, 13 Jan 2015 19:18:36 -0800
+From: Omar Sandoval <osandov@osandov.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-nfs@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v3] [Bugfix] x86/apic: Fix xen IRQ allocation failure caused by commit b81975eade8c
-Date: Wed, 14 Jan 2015 11:09:35 +0800
-Message-Id: <1421204979-30619-1-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <alpine.DEB.2.11.1501131000410.17382@nanos>
-References: <alpine.DEB.2.11.1501131000410.17382@nanos>
+Subject: Re: [PATCH v2 0/5] clean up and generalize swap-over-NFS
+Message-ID: <20150114031836.GA21198@mew>
+References: <cover.1419044605.git.osandov@osandov.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1419044605.git.osandov@osandov.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit b81975eade8c ("x86, irq: Clean up irqdomain transition code")
-breaks xen IRQ allocation because xen_smp_prepare_cpus() doesn't invoke
-setup_IO_APIC(), so no irqdomains created for IOAPICs and
-mp_map_pin_to_irq() fails at the very beginning.
+On Fri, Dec 19, 2014 at 07:18:24PM -0800, Omar Sandoval wrote:
+> Hi,
+> 
+> This patch series (based on ecb5ec0 in Linus' tree) contains all of the
+> non-BTRFS work that I've done to implement swapfiles on BTRFS. The BTRFS
+> portion is still undergoing development and is now outweighed by the
+> non-BTRFS changes, so I want to get these in separately.
+> 
+> Version 2 changes the generic swapfile interface to use ->read_iter and
+> ->write_iter instead of using ->direct_IO directly in response to
+> discussion on the previous submission. It also adds the iov_iter_is_bvec
+> helper to factor out some common checks.
+> 
+> Version 1 can be found here: https://lkml.org/lkml/2014/12/15/7
+> 
+> Omar Sandoval (5):
+>   iov_iter: add ITER_BVEC helpers
+>   direct-io: don't dirty ITER_BVEC pages on read
+>   nfs: don't dirty ITER_BVEC pages read through direct I/O
+>   swapfile: use ->read_iter and ->write_iter
+>   vfs: update swap_{,de}activate documentation
+> 
+>  Documentation/filesystems/Locking |  7 ++++---
+>  Documentation/filesystems/vfs.txt |  7 ++++---
+>  fs/direct-io.c                    |  8 ++++---
+>  fs/nfs/direct.c                   |  5 ++++-
+>  fs/splice.c                       |  7 ++-----
+>  include/linux/uio.h               |  7 +++++++
+>  mm/iov_iter.c                     | 12 +++++++++++
+>  mm/page_io.c                      | 44 +++++++++++++++++++++++++--------------
+>  mm/swapfile.c                     | 11 +++++++++-
+>  9 files changed, 76 insertions(+), 32 deletions(-)
+> 
+> -- 
+> 2.2.1
+> 
 
-So move creating of IOAPIC irqdomains from setup_IO_APIC() into
-arch_early_ioapic_init().
+Hi, everyone,
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Signed-off-by: David Vrabel <david.vrabel@citrix.com>
-Reported-and-tested-by: Sander Eikelenboom <linux@eikelenboom.it>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/kernel/apic/io_apic.c |   13 +++++++------
- 1 file changed, 7 insertions(+), 6 deletions(-)
+Thanks for all of the feedback on the last few iterations of this
+series. If it's alright, I'd like to revive the conversation around
+these patches.
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 3f5f60406ab1..1117c84cefe4 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -245,6 +245,8 @@ static void free_ioapic_saved_registers(int idx)
- 	ioapics[idx].saved_registers = NULL;
- }
- 
-+static int mp_irqdomain_create(int ioapic);
-+
- int __init arch_early_ioapic_init(void)
- {
- 	struct irq_cfg *cfg;
-@@ -253,8 +255,10 @@ int __init arch_early_ioapic_init(void)
- 	if (!nr_legacy_irqs())
- 		io_apic_irqs = ~0UL;
- 
--	for_each_ioapic(i)
-+	for_each_ioapic(i) {
-+		BUG_ON(mp_irqdomain_create(i));
- 		alloc_ioapic_saved_registers(i);
-+	}
- 
- 	/*
- 	 * For legacy IRQ's, start with assigning irq0 to irq15 to
-@@ -2371,16 +2375,12 @@ static void ioapic_destroy_irqdomain(int idx)
- 
- void __init setup_IO_APIC(void)
- {
--	int ioapic;
--
- 	/*
- 	 * calling enable_IO_APIC() is moved to setup_local_APIC for BP
- 	 */
- 	io_apic_irqs = nr_legacy_irqs() ? ~PIC_IRQS : ~0UL;
- 
- 	apic_printk(APIC_VERBOSE, "ENABLING IO-APIC IRQs\n");
--	for_each_ioapic(ioapic)
--		BUG_ON(mp_irqdomain_create(ioapic));
- 
- 	/*
-          * Set up IO-APIC IRQ routing.
-@@ -2929,7 +2929,8 @@ int mp_register_ioapic(int id, u32 address, u32 gsi_base,
- 	/*
- 	 * If mp_register_ioapic() is called during early boot stage when
- 	 * walking ACPI/SFI/DT tables, it's too early to create irqdomain,
--	 * we are still using bootmem allocator. So delay it to setup_IO_APIC().
-+	 * we are still using bootmem allocator.So delay it to
-+	 * arch_early_ioapic_init().
- 	 */
- 	if (hotplug) {
- 		if (mp_irqdomain_create(idx)) {
+There are a couple of issues which we were discussing before the
+holidays:
+
+One concern that Al mentioned was ->read_iter and ->write_iter falling
+back to the buffered I/O case. Like Christoph mentioned, this can be
+prevented by doing the proper checks on the filesystem side (usually
+just making sure that all blocks of a swapfile are allocated, but on
+BTRFS, for example, we also have to check for compressed extents).
+
+The other concern which Al brought up was that ->read_iter is passed a
+locked page in the iter_bvec and could end up trying to lock it. I'm not
+too sure under what conditions that would happen -- could someone give
+an example? My intuition is that there's no path which will lead us to
+deadlock on a page in the swapcache, but I don't have anything solid to
+back that up.
+
+Thanks!
 -- 
-1.7.10.4
-
+Omar
