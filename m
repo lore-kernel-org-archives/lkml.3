@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754227AbbANH05 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:26:57 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57824 "EHLO
+	id S1754264AbbANH1L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:27:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57833 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754208AbbANH0z (ORCPT
+	with ESMTP id S1752436AbbANH1H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:26:55 -0500
+	Wed, 14 Jan 2015 02:27:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Karl Relton <karllinuxtest.relton@ntlworld.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.18 058/150] HID: add battery quirk for USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ISO keyboard
-Date: Tue, 13 Jan 2015 23:22:09 -0800
-Message-Id: <20150114072058.493517899@linuxfoundation.org>
+        x86@kernel.org, "H. Peter Anvin" <hpa@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: [PATCH 3.18 060/150] x86: export get_xsave_addr
+Date: Tue, 13 Jan 2015 23:22:11 -0800
+Message-Id: <20150114072058.574241363@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -29,34 +30,29 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Karl Relton <karllinuxtest.relton@ntlworld.com>
+From: Paolo Bonzini <pbonzini@redhat.com>
 
-commit da940db41dcf8c04166f711646df2f35376010aa upstream.
+commit ba7b39203a3a18018173b87e73f27169bd8e5147 upstream.
 
-Apple bluetooth wireless keyboard (sold in UK) has always reported zero
-for battery strength no matter what condition the batteries are actually
-in. With this patch applied (applying same quirk as other Apple
-keyboards), the battery strength is now correctly reported.
+get_xsave_addr is the API to access XSAVE states, and KVM would
+like to use it.  Export it.
 
-Signed-off-by: Karl Relton <karllinuxtest.relton@ntlworld.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+Cc: x86@kernel.org
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/hid-input.c |    3 +++
- 1 file changed, 3 insertions(+)
+ arch/x86/kernel/xsave.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/hid/hid-input.c
-+++ b/drivers/hid/hid-input.c
-@@ -312,6 +312,9 @@ static const struct hid_device_id hid_ba
- 			       USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ANSI),
- 	  HID_BATTERY_QUIRK_PERCENT | HID_BATTERY_QUIRK_FEATURE },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE,
-+			       USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ISO),
-+	  HID_BATTERY_QUIRK_PERCENT | HID_BATTERY_QUIRK_FEATURE },
-+	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE,
- 		USB_DEVICE_ID_APPLE_ALU_WIRELESS_ANSI),
- 	  HID_BATTERY_QUIRK_PERCENT | HID_BATTERY_QUIRK_FEATURE },
- 	{}
+--- a/arch/x86/kernel/xsave.c
++++ b/arch/x86/kernel/xsave.c
+@@ -738,3 +738,4 @@ void *get_xsave_addr(struct xsave_struct
+ 
+ 	return (void *)xsave + xstate_comp_offsets[feature];
+ }
++EXPORT_SYMBOL_GPL(get_xsave_addr);
 
 
