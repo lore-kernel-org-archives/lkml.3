@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752998AbbANIW4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:22:56 -0500
-Received: from mx02.posteo.de ([89.146.194.165]:52057 "EHLO mx02.posteo.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752629AbbANIWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 03:22:25 -0500
-From: Patrick Boettcher <patrick.boettcher@posteo.de>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Patrick Boettcher <patrick.boettcher@posteo.de>,
-        Arnd Bergmann <arnd@arndb.de>, John Stultz <john.stultz@linaro.org>,
-        Peter Senna Tschudin <peter.senna@gmail.com>,
-        Daniel Vetter <daniel@ffwll.ch>,
-        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
-        Tapasweni Pathak <tapaswenipathak@gmail.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: android: fix coding style error
-Date: Wed, 14 Jan 2015 09:20:42 +0100
-Message-Id: <1421223642-4465-1-git-send-email-patrick.boettcher@posteo.de>
-X-Mailer: git-send-email 2.1.4
+	id S1752598AbbANIU7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:20:59 -0500
+Received: from mail-we0-f175.google.com ([74.125.82.175]:42442 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194AbbANIU5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 03:20:57 -0500
+MIME-Version: 1.0
+In-Reply-To: <20150108012616.GQ9759@ld-irv-0074>
+References: <1418873011-4974-1-git-send-email-zhang.chunyan@linaro.org>
+	<4170676.z5yoWA4Rtc@wuerfel>
+	<20150108012616.GQ9759@ld-irv-0074>
+Date: Wed, 14 Jan 2015 16:20:56 +0800
+Message-ID: <CAG2=9p-CJyFiid2=eA5cOi7zt9oSxScfsox5YVNngfN9nQz8-Q@mail.gmail.com>
+Subject: Re: [PATCH v3] mtd: test: Replace timeval with ktime_t in speedtest.c
+ and torturetest.c
+From: Chunyan Zhang <zhang.chunyan@linaro.org>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: Arnd Bergmann <arnd@linaro.org>, David Woodhouse <dwmw2@infradead.org>,
+        John Stultz <john.stultz@linaro.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        linux-kernel@vger.kernel.org, Lyra Zhang <zhang.lyra@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simple style fix - 80 char limit was exceeded.
+Hi, Brian
 
-Context: eudyptula challenge (http://eudyptula-challenge.org/)
+Thank you so much !
 
-Signed-off-by: Patrick Boettcher <patrick.boettcher@posteo.de>
+Best regards,
+Chunyan
 
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: John Stultz <john.stultz@linaro.org>
-Cc: Peter Senna Tschudin <peter.senna@gmail.com>
-Cc: Daniel Vetter <daniel@ffwll.ch>
-Cc: Maarten Lankhorst <maarten.lankhorst@canonical.com>
-Cc: Tapasweni Pathak <tapaswenipathak@gmail.com>
-Cc: devel@driverdev.osuosl.org
-Cc: linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
----
- drivers/staging/android/sync_debug.c | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/staging/android/sync_debug.c b/drivers/staging/android/sync_debug.c
-index 1532a86..9a2aaf8 100644
---- a/drivers/staging/android/sync_debug.c
-+++ b/drivers/staging/android/sync_debug.c
-@@ -96,7 +96,8 @@ static void sync_print_pt(struct seq_file *s, struct sync_pt *pt, bool fence)
- 		   sync_status_str(status));
- 
- 	if (status <= 0) {
--		struct timespec64 ts64 = ktime_to_timespec64(pt->base.timestamp);
-+		struct timespec64 ts64 =
-+		    ktime_to_timespec64(pt->base.timestamp);
- 
- 		seq_printf(s, "@%lld.%09ld", (s64)ts64.tv_sec, ts64.tv_nsec);
- 	}
--- 
-2.1.4
-
+On Thu, Jan 8, 2015 at 9:26 AM, Brian Norris
+<computersforpeace@gmail.com> wrote:
+> On Thu, Dec 18, 2014 at 08:53:10AM +0100, Arnd Bergmann wrote:
+>> On Thursday 18 December 2014 11:23:31 Chunyan Zhang wrote:
+>> > This patch changes the 32-bit time type (timeval) to the 64-bit one
+>> > (ktime_t), since 32-bit time types will break in the year 2038.
+>> >
+>> > I use ktime_t instead of timeval to define 'start' and 'finish'
+>> > which are used to get the time for tow points.
+>> >
+>> > This patch also changes do_gettimeofday() to ktime_get() accordingly,
+>> > since ktime_get returns a ktime_t, but do_gettimeofday returns a
+>> > struct timeval, and the other reason is that ktime_get() uses
+>> > the monotonic clock.
+>> >
+>> > This patch is based on another patch which privides a millisecond
+>> > time difference function 'ktime_ms_delta' in ktime.h
+>> >
+>> > http://lkml.iu.edu//hypermail/linux/kernel/1412.2/00625.html
+>> >
+>> > Signed-off-by: Chunyan Zhang <zhang.chunyan@linaro.org>
+>> > Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+>> >
+>>
+>> The new version still looks good to me, but as there is now a
+>> dependency on another patch, I'd suggest we queue this up in the
+>> y2038 branch together with the patch that introduces ktime_ms_delta.
+>>
+>> David or Brian, can you provide an Ack for this, or do you have
+>> any objections?
+>
+> I just tested v2, which doesn't have this dependency and has only a
+> trivial difference from v3. Seems to work OK. So:
+>
+> Tested-by: Brian Norris <computersforpeace@gmail.com>
+> Acked-by: Brian Norris <computersforpeace@gmail.com>
+>
+> Feel free to queue it in the dependent branch.
+>
+> Thanks,
+> Brian
