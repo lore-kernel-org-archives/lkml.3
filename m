@@ -1,90 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756059AbbANImr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:42:47 -0500
-Received: from mailapp01.imgtec.com ([195.59.15.196]:29158 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754679AbbANImo (ORCPT
+	id S1756042AbbANImf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:42:35 -0500
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:38043 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755160AbbANImd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 03:42:44 -0500
-From: Qais Yousef <qais.yousef@imgtec.com>
-To: <alsa-devel@alsa-project.org>
-CC: Qais Yousef <qais.yousef@imgtec.com>, Vinod Koul <vinod.koul@intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3] ALSA: ASoC: soc-compress.c: fix NULL dereference
-Date: Wed, 14 Jan 2015 08:42:22 +0000
-Message-ID: <1421224942-19083-1-git-send-email-qais.yousef@imgtec.com>
-X-Mailer: git-send-email 2.1.0
+	Wed, 14 Jan 2015 03:42:33 -0500
+Message-ID: <54B62BF2.5000208@hitachi.com>
+Date: Wed, 14 Jan 2015 17:42:26 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.168.154.94]
+To: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>
+Subject: Re: [PATCH 2/4] perf probe: Do not rely on map__load() filter to
+ find symbols
+References: <1420886028-15135-1-git-send-email-namhyung@kernel.org> <1420886028-15135-2-git-send-email-namhyung@kernel.org> <54B3BEA2.3020700@hitachi.com> <20150114014506.GC800@sejong>
+In-Reply-To: <20150114014506.GC800@sejong>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In soc_new_compress() when rtd->dai_link->daynamic is set, we create the pcm
-substreams with this call:
+(2015/01/14 10:45), Namhyung Kim wrote:
+> On Mon, Jan 12, 2015 at 09:31:30PM +0900, Masami Hiramatsu wrote:
+>> (2015/01/10 19:33), Namhyung Kim wrote:
+>>> The find_probe_trace_events_from_map() searches matching symbol from a
+>>> map (so from a backing dso).  For uprobes, it'll create a new map (and
+>>> dso) and loads it using a filter.  It's a little bit inefficient in that
+>>> it'll read out the symbol table everytime but works well anyway.
+>>>
+>>> For kprobes however, it'll reuse existing kernel map which might be
+>>> loaded before.  In this case map__load() just returns with no result.
+>>> It makes kprobes always failed to find symbol even if it exists in the
+>>> map (dso).
+>>>
+>>> To fix it, use map__find_symbol_by_name() instead.  It'll load a map
+>>> with full symbols and sorts them by name.  It needs to search sibing
+>>> nodes since there can be multiple (local) symbols with same name.  Now
+>>> resulting symbol references are saved in the funcs list.
+>>>
+>>> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>>> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+>>> ---
+>>>  tools/perf/util/probe-event.c | 101 ++++++++++++++++++++++++++++++++++++------
+>>>  1 file changed, 87 insertions(+), 14 deletions(-)
+>>>
+>>> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+>>> index 7f9b8632e433..e5af16988791 100644
+>>> --- a/tools/perf/util/probe-event.c
+>>> +++ b/tools/perf/util/probe-event.c
+>>> @@ -2191,20 +2191,86 @@ static int __add_probe_trace_events(struct perf_probe_event *pev,
+>>>  	return ret;
+>>>  }
+>>>  
+>>> -static char *looking_function_name;
+>>> -static int num_matched_functions;
+>>> +struct symbol_entry {
+>>> +	struct list_head node;
+>>> +	struct symbol *sym;
+>>> +};
+>>>  
+>>> -static int probe_function_filter(struct map *map __maybe_unused,
+>>> -				      struct symbol *sym)
+>>> +/* returns 1 if symbol was added, 0 if symbol was skipped, -1 if error */
+>>> +static int add_symbol_entry(struct symbol *sym, struct list_head *head)
+>>>  {
+>>> -	if ((sym->binding == STB_GLOBAL || sym->binding == STB_LOCAL) &&
+>>> -	    strcmp(looking_function_name, sym->name) == 0) {
+>>> -		num_matched_functions++;
+>>> +	struct symbol_entry *ent;
+>>> +
+>>> +	if (sym->binding != STB_GLOBAL && sym->binding != STB_LOCAL)
+>>>  		return 0;
+>>> -	}
+>>> +
+>>> +	ent = malloc(sizeof(*ent));
+>>> +	if (ent == NULL)
+>>> +		return -1;
+>>
+>> return -ENOMEM; ?
+> 
+> Okay, will change.
+> 
+> 
+>>
+>>> +
+>>> +	ent->sym = sym;
+>>> +	list_add(&ent->node, head);
+>>>  	return 1;
+>>>  }
+>>>  
+>>> +static int find_probe_functions(struct map *map, char *name, struct list_head *head)
+>>> +{
+>>> +	struct symbol *sym, *orig_sym;
+>>> +	struct symbol_entry *ent;
+>>> +	struct rb_node *node;
+>>> +	int found = 0;
+>>> +	int ret;
+>>> +
+>>> +	sym = map__find_symbol_by_name(map, name, NULL);
+>>> +	if (sym == NULL)
+>>> +		return 0;
+>>> +
+>>> +	ret = add_symbol_entry(sym, head);
+>>> +	if (ret < 0)
+>>> +		goto err;
+>>> +
+>>> +	found += ret;
+>>
+>> If ret always be 1 in successful case, we'd better do "found++" here.
+>> And it also means we can do it shorter as below.
+>>
+>> if (add_symbol_entry(sym, head) < 0)
+>> 	goto err;
+>> found++;
+> 
+> But it can return 0 in successful case like STB_WEAK..  I'm not sure
+> how we can handle the weak functions properly, but anyway the original
+> code already ignored the weak functions.
 
-   ret = snd_pcm_new_internal(rtd->card->snd_card, new_name, num,
-                                   1, 0, &be_pcm);
+Ah, I see... OK, it should not be changed.
 
-which passes 0 as capture_count leading to
+>>> +
+>>> +	/* search back and forth to find symbols that have same name */
+>>
+>> Hmm, I see. but this code looks no-good sign... Can we have any generic
+>> synonym handling routine?
+> 
+> Like what?  I guess we can change map__find_symbol_by_name() to return
+> a list of symbols or add a new function to do it.  Is it okay to you?
 
-   be_pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream
+Yeah, one possible solution is introducing map__find_all_symbols_by_name()
+for looking up all the symbols who have same name. Or, map__find_symbol_by_name()
+does forward search on rbtree to find the first symbol and returns it, so that
+caller just do backward search.
 
-being NULL, hence when trying to set rtd a few lines below we get an oops.
+Thank you,
 
-Fix by using rtd->dai_link->dpcm_playback and rtd->dai_link->dpcm_capture as
-playback_count and capture_count to snd_pcm_new_internal().
-
-Signed-off-by: Qais Yousef <qais.yousef@imgtec.com>
-Cc: Vinod Koul <vinod.koul@intel.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>
-Cc: Mark Brown <broonie@kernel.org>
-Cc: Jaroslav Kysela <perex@perex.cz>
-Cc: Takashi Iwai <tiwai@suse.de>
-Cc: linux-kernel@vger.kernel.org
----
-v3->v2:
-  - fix a typo s/dynmic/dynamic/ in commit message
-  - use if else if because either dpcm_playback or dpcm_capture should be on
-    for compressed devices
-
-v2->v1:
-   - use better way to fix it than just removing the line that caused the oops
-
- sound/soc/soc-compress.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
-
-diff --git a/sound/soc/soc-compress.c b/sound/soc/soc-compress.c
-index 590a82f01d0b..025c38fbe3c0 100644
---- a/sound/soc/soc-compress.c
-+++ b/sound/soc/soc-compress.c
-@@ -659,7 +659,8 @@ int soc_new_compress(struct snd_soc_pcm_runtime *rtd, int num)
- 			rtd->dai_link->stream_name);
- 
- 		ret = snd_pcm_new_internal(rtd->card->snd_card, new_name, num,
--				1, 0, &be_pcm);
-+				rtd->dai_link->dpcm_playback,
-+				rtd->dai_link->dpcm_capture, &be_pcm);
- 		if (ret < 0) {
- 			dev_err(rtd->card->dev, "ASoC: can't create compressed for %s\n",
- 				rtd->dai_link->name);
-@@ -668,8 +669,10 @@ int soc_new_compress(struct snd_soc_pcm_runtime *rtd, int num)
- 
- 		rtd->pcm = be_pcm;
- 		rtd->fe_compr = 1;
--		be_pcm->streams[SNDRV_PCM_STREAM_PLAYBACK].substream->private_data = rtd;
--		be_pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream->private_data = rtd;
-+		if (rtd->dai_link->dpcm_playback)
-+			be_pcm->streams[SNDRV_PCM_STREAM_PLAYBACK].substream->private_data = rtd;
-+		else if (rtd->dai_link->dpcm_capture)
-+			be_pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream->private_data = rtd;
- 		memcpy(compr->ops, &soc_compr_dyn_ops, sizeof(soc_compr_dyn_ops));
- 	} else
- 		memcpy(compr->ops, &soc_compr_ops, sizeof(soc_compr_ops));
 -- 
-2.1.0
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
 
