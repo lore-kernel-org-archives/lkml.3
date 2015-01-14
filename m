@@ -1,26 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616AbbANMg5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 07:36:57 -0500
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:59290 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752115AbbANMgy (ORCPT
+	id S1752754AbbANMiJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 07:38:09 -0500
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:36740 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752547AbbANMiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 07:36:54 -0500
+	Wed, 14 Jan 2015 07:38:07 -0500
 MIME-Version: 1.0
-In-Reply-To: <1420621722-7428-3-git-send-email-oliver+list@schinagl.nl>
+In-Reply-To: <1420621722-7428-4-git-send-email-oliver+list@schinagl.nl>
 References: <1420621722-7428-1-git-send-email-oliver+list@schinagl.nl>
-	<1420621722-7428-3-git-send-email-oliver+list@schinagl.nl>
-Date: Wed, 14 Jan 2015 13:36:53 +0100
-Message-ID: <CACRpkdY85oZT5mZNF6isVf9SGP8pCRnWQ5Db80_+isdACY1Yaw@mail.gmail.com>
-Subject: Re: [PATCH v1 2/4] gpio: add parameter to allow the use named gpios
+	<1420621722-7428-4-git-send-email-oliver+list@schinagl.nl>
+Date: Wed, 14 Jan 2015 13:38:05 +0100
+Message-ID: <CACRpkdY7Gqy=pTAQX1F7L-nE29QhGRaca-ALpLrRzKWy0uyOOA@mail.gmail.com>
+Subject: Re: [PATCH v1 3/4] leds: Let the binding document example for
+ leds-gpio follow the gpio bindings
 From: Linus Walleij <linus.walleij@linaro.org>
-To: Olliver Schinagl <oliver+list@schinagl.nl>,
-        Alexandre Courbot <gnurou@gmail.com>
+To: Olliver Schinagl <oliver+list@schinagl.nl>
 Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
         Mark Rutland <mark.rutland@arm.com>,
         Ian Campbell <ijc+devicetree@hellion.org.uk>,
         Kumar Gala <galak@codeaurora.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>,
         Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
         Olliver Schinagl <oliver@schinagl.nl>,
@@ -46,16 +47,15 @@ On Wed, Jan 7, 2015 at 10:08 AM, Olliver Schinagl
 
 > From: Olliver Schinagl <oliver@schinagl.nl>
 >
-> The gpio binding document says that new code should always use named
-> gpios. Patch 40b73183 added support to parse a list of gpios from child
-> nodes, but does not make it possible to use named gpios. This patch adds
-> the con_id property and implements it is done in gpiolib.c, where the
-> old-style of using unnamed gpios still works.
+> In the gpio bindings documents it is requested to use the marco's in
+> include/dt-bindings/gpio/gpio.h whenever possible. The gpios in the led
+> drivers don't seem to form an exception, so update the example in the
+> document bindings.
 >
 > Signed-off-by: Olliver Schinagl <oliver@schinagl.nl>
 
-Alexandre, can you please take a close look at this
-patch.
+With the spelling mistake fixed:
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
 Yours,
 Linus Walleij
