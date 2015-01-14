@@ -1,181 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754436AbbANVDc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 16:03:32 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60253 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754385AbbANVDa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 16:03:30 -0500
-Date: Wed, 14 Jan 2015 16:03:24 -0500
-From: Richard Guy Briggs <rgb@redhat.com>
-To: Paul Moore <pmoore@redhat.com>
-Cc: linux-audit@redhat.com, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 2/5] fs: create proper filename objects using
- getname_kernel()
-Message-ID: <20150114210324.GN29998@madcap2.tricolour.ca>
-References: <20150108164514.11316.85331.stgit@localhost>
- <20150108165036.11316.14958.stgit@localhost>
+	id S1754503AbbANVDs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 16:03:48 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:4220 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752008AbbANVDq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 16:03:46 -0500
+Date: Wed, 14 Jan 2015 13:03:26 -0800
+From: Calvin Owens <calvinowens@fb.com>
+To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+CC: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Peter Feiner <pfeiner@google.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        linux-kernel <linux-kernel@vger.kernel.org>, <kernel-team@fb.com>
+Subject: Re: [RFC][PATCH] procfs: Add /proc/<pid>/mapped_files
+Message-ID: <20150114210326.GA25159@mail.thefacebook.com>
+References: <1421194829-28696-1-git-send-email-calvinowens@fb.com>
+ <87oaq1v49z.fsf@rasmusvillemoes.dk>
+ <CAAHN_R0AhAc7zt3sfbKdXJEj3Ncd4Hao-1qr=X3mkSjB7F_fYg@mail.gmail.com>
+ <87fvbdv2g3.fsf@rasmusvillemoes.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <20150108165036.11316.14958.stgit@localhost>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <87fvbdv2g3.fsf@rasmusvillemoes.dk>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-14_05:2015-01-14,2015-01-14,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=0
+ compositescore=0.165369342820785 urlsuspect_oldscore=0.165369342820785
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=1996008
+ rbsscore=0.165369342820785 spamscore=0
+ recipient_to_sender_domain_totalscore=12 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1501140205
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/01/08, Paul Moore wrote:
-> There are several areas in the kernel that create temporary filename
-> objects using the following pattern:
+On Wednesday 01/14 at 15:53 +0100, Rasmus Villemoes wrote:
+> On Wed, Jan 14 2015, Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com> wrote:
 > 
-> 	int func(const char *name)
-> 	{
-> 		struct filename *file = { .name = name };
-> 		...
-> 		return 0;
-> 	}
+> > On 14 January 2015 at 19:43, Rasmus Villemoes <linux@rasmusvillemoes.dk> wrote:
+> >> Just thinking out loud: Could one simply mark a VMA as being used for
+> >> stack during the clone call (is there room in vm_flags, or does
+> >> VM_GROWSDOWN already tell the whole story?), and then write the TID into
+> >> a new field in the VMA - I think one could make a union with vm_pgoff so
+> >> as not to enlarge the structure.
+> >
+> > vm_flags does not have space IIRC (that was my first approach at
+> > implementing this) and VM_GROWSDOWN is not sufficient.
 > 
-> ... which for the most part works okay, but it causes havoc within the
-> audit subsystem as the filename object does not persist beyond the
-> lifetime of the function.  This patch converts all of these temporary
-> filename objects into proper filename objects using getname_kernel()
-> and putname() which ensure that the filename object persists until the
-> audit subsystem is finished with it.
+> Looking at include/linux/mm.h:
 > 
-> Signed-off-by: Paul Moore <pmoore@redhat.com>
+> #define VM_GROWSDOWN    0x00000100      /* general info on the segment */
+> #define VM_PFNMAP       0x00000400      /* Page-ranges managed without "struct page", just pure PFN */
+> #define VM_DENYWRITE    0x00000800      /* ETXTBSY on write attempts.. */
+> 
+> It would seem that 0x00000200 is available (unless defined and used
+> somewhere else).
+> 
+> > If we can make a union with vm_pgoff like you say, we probably don't
+> > need a flag value; a non-zero value could indicate that it is a thread
+> > stack.
+> 
+> Well, only when combined with checking vm_file for being NULL. One would
+> also need to ensure that vm_pgoff is 0 for any non-stack,
+> non-file-backed VMA. At which point it is somewhat ugly. 
+> 
+> > One problem with caching the value on clone like this though is that
+> > the stack could change due to a setcontext, but AFAICT we don't care
+> > about that for the process stack either.
+> 
+> If it is important, I guess one could update the info when a task calls
+> setcontext.
 
-Reviewed-by: Richard Guy Briggs <rgb@redhat.com>
+If I understand the current behavior, the "[stack]" marker will get put
+next to *any* mapping that encompasses the current value in the task's
+%sp, regardless of how the mapping was created or ucontext stuff. If
+you use flags on the VMA structs things could potentially be marked as
+stacks even though %sp points somewhere else.
 
-> ---
->  fs/exec.c  |   11 +++++++++--
->  fs/namei.c |   34 ++++++++++++++++++++++++++--------
->  fs/open.c  |   11 +++++++++--
->  3 files changed, 44 insertions(+), 12 deletions(-)
-> 
-> diff --git a/fs/exec.c b/fs/exec.c
-> index a3d33fe..d067771 100644
-> --- a/fs/exec.c
-> +++ b/fs/exec.c
-> @@ -789,8 +789,15 @@ exit:
->  
->  struct file *open_exec(const char *name)
->  {
-> -	struct filename tmp = { .name = name };
-> -	return do_open_exec(&tmp);
-> +	struct file *file;
-> +	struct filename *tmp;
-> +
-> +	tmp = getname_kernel(name);
-> +	if (unlikely(IS_ERR(tmp)))
-> +		return (void *)tmp;
-> +	file = do_open_exec(tmp);
-> +	putname(tmp);
-> +	return file;
->  }
->  EXPORT_SYMBOL(open_exec);
->  
-> diff --git a/fs/namei.c b/fs/namei.c
-> index eeb3b83..c3d21b7 100644
-> --- a/fs/namei.c
-> +++ b/fs/namei.c
-> @@ -2001,9 +2001,15 @@ static int filename_lookup(int dfd, struct filename *name,
->  static int do_path_lookup(int dfd, const char *name,
->  				unsigned int flags, struct nameidata *nd)
->  {
-> -	struct filename filename = { .name = name };
-> +	int retval;
-> +	struct filename *filename;
->  
-> -	return filename_lookup(dfd, &filename, flags, nd);
-> +	filename = getname_kernel(name);
-> +	if (unlikely(IS_ERR(filename)))
-> +		return PTR_ERR(filename);
-> +	retval = filename_lookup(dfd, filename, flags, nd);
-> +	putname(filename);
-> +	return retval;
->  }
->  
->  /* does lookup, returns the object with parent locked */
-> @@ -2368,8 +2374,15 @@ int
->  kern_path_mountpoint(int dfd, const char *name, struct path *path,
->  			unsigned int flags)
->  {
-> -	struct filename s = {.name = name};
-> -	return filename_mountpoint(dfd, &s, path, flags);
-> +	int retval;
-> +	struct filename *s;
-> +
-> +	s = getname_kernel(name);
-> +	if (unlikely(IS_ERR(s)))
-> +		return PTR_ERR(s);
-> +	retval = filename_mountpoint(dfd, s, path, flags);
-> +	putname(s);
-> +	return retval;
->  }
->  EXPORT_SYMBOL(kern_path_mountpoint);
->  
-> @@ -3259,7 +3272,7 @@ struct file *do_file_open_root(struct dentry *dentry, struct vfsmount *mnt,
->  {
->  	struct nameidata nd;
->  	struct file *file;
-> -	struct filename filename = { .name = name };
-> +	struct filename *filename;
->  	int flags = op->lookup_flags | LOOKUP_ROOT;
->  
->  	nd.root.mnt = mnt;
-> @@ -3268,11 +3281,16 @@ struct file *do_file_open_root(struct dentry *dentry, struct vfsmount *mnt,
->  	if (d_is_symlink(dentry) && op->intent & LOOKUP_OPEN)
->  		return ERR_PTR(-ELOOP);
->  
-> -	file = path_openat(-1, &filename, &nd, op, flags | LOOKUP_RCU);
-> +	filename = getname_kernel(name);
-> +	if (unlikely(IS_ERR(filename)))
-> +		return (void *)filename;
-> +
-> +	file = path_openat(-1, filename, &nd, op, flags | LOOKUP_RCU);
->  	if (unlikely(file == ERR_PTR(-ECHILD)))
-> -		file = path_openat(-1, &filename, &nd, op, flags);
-> +		file = path_openat(-1, filename, &nd, op, flags);
->  	if (unlikely(file == ERR_PTR(-ESTALE)))
-> -		file = path_openat(-1, &filename, &nd, op, flags | LOOKUP_REVAL);
-> +		file = path_openat(-1, filename, &nd, op, flags | LOOKUP_REVAL);
-> +	putname(filename);
->  	return file;
->  }
->  
-> diff --git a/fs/open.c b/fs/open.c
-> index d6fd3ac..666982b 100644
-> --- a/fs/open.c
-> +++ b/fs/open.c
-> @@ -940,8 +940,15 @@ struct file *file_open_name(struct filename *name, int flags, umode_t mode)
->   */
->  struct file *filp_open(const char *filename, int flags, umode_t mode)
->  {
-> -	struct filename name = {.name = filename};
-> -	return file_open_name(&name, flags, mode);
-> +	struct file *file;
-> +	struct filename *name;
-> +
-> +	name = getname_kernel(filename);
-> +	if (unlikely(IS_ERR(name)))
-> +		return (void *)name;
-> +	file = file_open_name(name, flags, mode);
-> +	putname(name);
-> +	return file;
->  }
->  EXPORT_SYMBOL(filp_open);
->  
-> 
-> --
-> Linux-audit mailing list
-> Linux-audit@redhat.com
-> https://www.redhat.com/mailman/listinfo/linux-audit
+It's probable that nobody cares (you'd obviously have to be doing crazy
+things to be pointing %sp at arbitrary places), but that's why I was
+hesitant to mess with it.
 
-- RGB
-
---
-Richard Guy Briggs <rbriggs@redhat.com>
-Senior Software Engineer, Kernel Security, AMER ENG Base Operating Systems, Red Hat
-Remote, Ottawa, Canada
-Voice: +1.647.777.2635, Internal: (81) 32635, Alt: +1.613.693.0684x3545
+Thanks,
+Calvin
+ 
+> Rasmus
