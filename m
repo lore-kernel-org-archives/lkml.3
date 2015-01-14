@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754081AbbANQLL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 11:11:11 -0500
+	id S1753935AbbANQJw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 11:09:52 -0500
 Received: from mailout3.w1.samsung.com ([210.118.77.13]:26943 "EHLO
 	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752497AbbANQJk (ORCPT
+	with ESMTP id S1753710AbbANQJm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 11:09:40 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-4d-54b694c10f4c
+	Wed, 14 Jan 2015 11:09:42 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-50-54b694c2348a
 From: Karol Wrona <k.wrona@samsung.com>
 To: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
         Hartmut Knaack <knaack.h@gmx.de>, Lars-Peter Clausen <lars@metafoo.de>,
@@ -15,44 +15,57 @@ To: Jonathan Cameron <jic23@kernel.org>, linux-iio@vger.kernel.org,
 Cc: Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Kyungmin Park <kyungmin.park@samsung.com>,
         Karol Wrona <wrona.vy@gmail.com>, Karol Wrona <k.wrona@samsung.com>
-Subject: [PATCH v4 3/5] iio: common: ssp_sensors: Add sensorhub iio commons
-Date: Wed, 14 Jan 2015 17:09:20 +0100
-Message-id: <1421251763-26513-3-git-send-email-k.wrona@samsung.com>
+Subject: [PATCH v4 4/5] iio: common: ssp_sensors: Add sensorhub accelerometer
+ sensor
+Date: Wed, 14 Jan 2015 17:09:21 +0100
+Message-id: <1421251763-26513-4-git-send-email-k.wrona@samsung.com>
 X-Mailer: git-send-email 1.7.9.5
 In-reply-to: <1421251763-26513-1-git-send-email-k.wrona@samsung.com>
 References: <1421251763-26513-1-git-send-email-k.wrona@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFuplluLIzCtJLcpLzFFi42I5/e/4Fd2DU7aFGFx9bG2xccZ6VosHTauY
-	LE4t289ksev/G2aLs01v2C2WTJ7PajHvyDsWi8u75rBZ/N51jN1iz7otTA5cHjtn3WX3+PAx
-	zmPTqk42jyVvDrF6nG8+wujRt2UVo8fnTXIB7FFcNimpOZllqUX6dglcGec6lzMVtOlXXF3Y
-	w9zAOE+ti5GTQ0LARGLN9a+sELaYxIV769m6GLk4hASWMkrc/X2QHSQhJNDHJLH0gjiIzSag
-	LtG8YzEzSJGIwAVGieOHtrCAOMwCaxglzpydANYhLOAt0XpqDpjNIqAqceTbezYQm1fAWaJj
-	5TGmLkYOoHUKEnMm2YCEOQVcJPauWsgCEhYCKtl5THQCI+8CRoZVjKKppckFxUnpuYZ6xYm5
-	xaV56XrJ+bmbGCFB+GUH4+JjVocYBTgYlXh4NSZsCxFiTSwrrsw9xCjBwawkwvu0HCjEm5JY
-	WZValB9fVJqTWnyIkYmDU6qBsXnu1xaPM3P2nd2t7Lqwv2RCiXvLDaPKmGyhKV7f93Zlf7mU
-	uvGjxzq/7wsVt0/59b5p/TNz1ugnLO1ry5deqw24+zBst84MtdZaO/eZFW5mrF7r+ILDpvFw
-	TPlvJ6x0hGXRajPH/Tv4CiZ33v3W921Fyp6tu2dP+do661NZyF32josK7xJ1CpVYijMSDbWY
-	i4oTASbXarIgAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjluLIzCtJLcpLzFFi42I5/e/4Fd1DU7aFGPSdULHYOGM9q8WDplVM
+	FqeW7Wey2PX/DbPF2aY37BZLJs9ntZh35B2LxeVdc9gsfu86xm6xZ90WJgcuj52z7rJ7fPgY
+	57FpVSebx5I3h1g9zjcfYfTo27KK0ePzJrkA9igum5TUnMyy1CJ9uwSujJ7b25gKTuhXTN24
+	n6mB8Yt6FyMnh4SAicS80ztYIWwxiQv31rN1MXJxCAksZZTYNKefGcLpY5KY2j2TCaSKTUBd
+	onnHYrCEiMAFRonjh7awgDjMAmsYJc6cncAOUiUsECbx6+9csA4WAVWJ1ql9jCA2r4CzRO/d
+	y0A7OID2KUjMmWQDEuYUcJHYu2ohC0hYCKhk5zHRCYy8CxgZVjGKppYmFxQnpeca6hUn5haX
+	5qXrJefnbmKEhOGXHYyLj1kdYhTgYFTi4dWYsC1EiDWxrLgy9xCjBAezkgjv03KgEG9KYmVV
+	alF+fFFpTmrxIUYmDk6pBkaj/wvZ9m3hjJAI+aE6p//1+sdTlU8fnLvcNoQ/+leOlKHLgcXT
+	5z7IPvBPRznBe13OKf/LX/rO2fuEm4qc3/h4esTnw9rvbm3Zcoyf7dSXj+2etY+bTx//Hy+5
+	/pBec8DGv0z+hybXKCXPk/qiVs4Rq+Py6IF2WeKbWQWJPd3zlmmeTC+3r3BQYinOSDTUYi4q
+	TgQAtOZYvCECAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds common library for sensorhub iio drivers.
+This patch adds accelerometer iio driver which uses sensorhub as data
+provider.
 
 Signed-off-by: Karol Wrona <k.wrona@samsung.com>
 Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/iio/common/ssp_sensors/ssp_iio.c        |  107 +++++++++++++++++++++++
- drivers/iio/common/ssp_sensors/ssp_iio_sensor.h |   70 +++++++++++++++
- 2 files changed, 177 insertions(+)
- create mode 100644 drivers/iio/common/ssp_sensors/ssp_iio.c
- create mode 100644 drivers/iio/common/ssp_sensors/ssp_iio_sensor.h
+ drivers/iio/accel/Makefile           |    1 +
+ drivers/iio/accel/ssp_accel_sensor.c |  170 ++++++++++++++++++++++++++++++++++
+ 2 files changed, 171 insertions(+)
+ create mode 100644 drivers/iio/accel/ssp_accel_sensor.c
 
-diff --git a/drivers/iio/common/ssp_sensors/ssp_iio.c b/drivers/iio/common/ssp_sensors/ssp_iio.c
+diff --git a/drivers/iio/accel/Makefile b/drivers/iio/accel/Makefile
+index a593996..487f520 100644
+--- a/drivers/iio/accel/Makefile
++++ b/drivers/iio/accel/Makefile
+@@ -9,6 +9,7 @@ obj-$(CONFIG_HID_SENSOR_ACCEL_3D) += hid-sensor-accel-3d.o
+ obj-$(CONFIG_KXCJK1013) += kxcjk-1013.o
+ obj-$(CONFIG_KXSD9)	+= kxsd9.o
+ obj-$(CONFIG_MMA8452)	+= mma8452.o
++obj-$(CONFIG_IIO_SSP_SENSORS_COMMONS) += ssp_accel_sensor.o
+ 
+ obj-$(CONFIG_IIO_ST_ACCEL_3AXIS) += st_accel.o
+ st_accel-y := st_accel_core.o
+diff --git a/drivers/iio/accel/ssp_accel_sensor.c b/drivers/iio/accel/ssp_accel_sensor.c
 new file mode 100644
-index 0000000..a3ae165
+index 0000000..f14125a
 --- /dev/null
-+++ b/drivers/iio/common/ssp_sensors/ssp_iio.c
-@@ -0,0 +1,107 @@
++++ b/drivers/iio/accel/ssp_accel_sensor.c
+@@ -0,0 +1,170 @@
 +/*
 + *  Copyright (C) 2014, Samsung Electronics Co. Ltd. All Rights Reserved.
 + *
@@ -69,173 +82,160 @@ index 0000000..a3ae165
 + */
 +
 +#include <linux/iio/common/ssp_sensors.h>
++#include <linux/iio/iio.h>
 +#include <linux/iio/kfifo_buf.h>
 +#include <linux/module.h>
++#include <linux/platform_device.h>
 +#include <linux/slab.h>
-+#include "ssp_iio_sensor.h"
++#include "../common/ssp_sensors/ssp_iio_sensor.h"
 +
-+/**
-+ * ssp_common_buffer_postenable() - generic postenable callback for ssp buffer
-+ *
-+ * @indio_dev:		iio device
-+ *
-+ * Returns 0 or negative value in case of error
-+ */
-+int ssp_common_buffer_postenable(struct iio_dev *indio_dev)
++#define SSP_CHANNEL_COUNT 3
++
++#define SSP_ACCEL_NAME "ssp-accelerometer"
++static const char ssp_accel_device_name[] = SSP_ACCEL_NAME;
++
++enum ssp_accel_3d_channel {
++	SSP_CHANNEL_SCAN_INDEX_X,
++	SSP_CHANNEL_SCAN_INDEX_Y,
++	SSP_CHANNEL_SCAN_INDEX_Z,
++	SSP_CHANNEL_SCAN_INDEX_TIME,
++};
++
++static int ssp_accel_read_raw(struct iio_dev *indio_dev,
++			      struct iio_chan_spec const *chan,  int *val,
++			      int *val2, long mask)
 +{
-+	struct ssp_sensor_data *spd = iio_priv(indio_dev);
++	u32 t;
 +	struct ssp_data *data = dev_get_drvdata(indio_dev->dev.parent->parent);
 +
-+	/* the allocation is made in post because scan size is known in this
-+	 * moment
-+	 * */
-+	spd->buffer = kmalloc(indio_dev->scan_bytes, GFP_KERNEL | GFP_DMA);
-+	if (!spd->buffer)
-+		return -ENOMEM;
++	switch (mask) {
++	case IIO_CHAN_INFO_SAMP_FREQ:
++		t = ssp_get_sensor_delay(data, SSP_ACCELEROMETER_SENSOR);
++		ssp_convert_to_freq(t, val, val2);
++		return IIO_VAL_INT_PLUS_MICRO;
++	default:
++		break;
++	}
 +
-+	return ssp_enable_sensor(data, spd->type,
-+				 ssp_get_sensor_delay(data, spd->type));
++	return -EINVAL;
 +}
-+EXPORT_SYMBOL(ssp_common_buffer_postenable);
 +
-+/**
-+ * ssp_common_buffer_postdisable() - generic postdisable callback for ssp buffer
-+ *
-+ * @indio_dev:		iio device
-+ *
-+ * Returns 0 or negative value in case of error
-+ */
-+int ssp_common_buffer_postdisable(struct iio_dev *indio_dev)
++static int ssp_accel_write_raw(struct iio_dev *indio_dev,
++			       struct iio_chan_spec const *chan, int val,
++			       int val2, long mask)
 +{
 +	int ret;
-+	struct ssp_sensor_data *spd = iio_priv(indio_dev);
 +	struct ssp_data *data = dev_get_drvdata(indio_dev->dev.parent->parent);
 +
-+	ret = ssp_disable_sensor(data, spd->type);
++	switch (mask) {
++	case IIO_CHAN_INFO_SAMP_FREQ:
++		ret = ssp_convert_to_time(val, val2);
++		ret = ssp_change_delay(data, SSP_ACCELEROMETER_SENSOR, ret);
++		if (ret < 0)
++			dev_err(&indio_dev->dev, "accel sensor enable fail\n");
++
++		return ret;
++	default:
++		break;
++	}
++
++	return -EINVAL;
++}
++
++static struct iio_info ssp_accel_iio_info = {
++	.read_raw = &ssp_accel_read_raw,
++	.write_raw = &ssp_accel_write_raw,
++};
++
++static const unsigned long ssp_accel_scan_mask[] = { 0x7, 0, };
++
++static const struct iio_chan_spec ssp_acc_channels[] = {
++	SSP_CHANNEL_AG(IIO_ACCEL, IIO_MOD_X, SSP_CHANNEL_SCAN_INDEX_X),
++	SSP_CHANNEL_AG(IIO_ACCEL, IIO_MOD_Y, SSP_CHANNEL_SCAN_INDEX_Y),
++	SSP_CHANNEL_AG(IIO_ACCEL, IIO_MOD_Z, SSP_CHANNEL_SCAN_INDEX_Z),
++	SSP_CHAN_TIMESTAMP(SSP_CHANNEL_SCAN_INDEX_TIME),
++};
++
++static int ssp_process_accel_data(struct iio_dev *indio_dev, void *buf,
++				  int64_t timestamp)
++{
++	return ssp_common_process_data(indio_dev, buf, SSP_ACCELEROMETER_SIZE,
++				       timestamp);
++}
++
++static const struct iio_buffer_setup_ops ssp_accel_buffer_ops = {
++	.postenable = &ssp_common_buffer_postenable,
++	.postdisable = &ssp_common_buffer_postdisable,
++};
++
++static int ssp_accel_probe(struct platform_device *pdev)
++{
++	int ret;
++	struct iio_dev *indio_dev;
++	struct ssp_sensor_data *spd;
++	struct iio_buffer *buffer;
++
++	indio_dev = devm_iio_device_alloc(&pdev->dev, sizeof(*spd));
++	if (!indio_dev)
++		return -ENOMEM;
++
++	spd = iio_priv(indio_dev);
++
++	spd->process_data = ssp_process_accel_data;
++	spd->type = SSP_ACCELEROMETER_SENSOR;
++
++	indio_dev->name = ssp_accel_device_name;
++	indio_dev->dev.parent = &pdev->dev;
++	indio_dev->dev.of_node = pdev->dev.of_node;
++	indio_dev->info = &ssp_accel_iio_info;
++	indio_dev->modes = INDIO_BUFFER_SOFTWARE;
++	indio_dev->channels = ssp_acc_channels;
++	indio_dev->num_channels = ARRAY_SIZE(ssp_acc_channels);
++	indio_dev->available_scan_masks = ssp_accel_scan_mask;
++
++	buffer = devm_iio_kfifo_allocate(&pdev->dev);
++	if (!buffer)
++		return -ENOMEM;
++
++	iio_device_attach_buffer(indio_dev, buffer);
++
++	indio_dev->setup_ops = &ssp_accel_buffer_ops;
++
++	platform_set_drvdata(pdev, indio_dev);
++
++	ret = iio_device_register(indio_dev);
 +	if (ret < 0)
 +		return ret;
 +
-+	kfree(spd->buffer);
++	/* ssp registering should be done after all iio setup */
++	ssp_register_consumer(indio_dev, SSP_ACCELEROMETER_SENSOR);
 +
-+	return ret;
++	return 0;
 +}
-+EXPORT_SYMBOL(ssp_common_buffer_postdisable);
 +
-+/**
-+ * ssp_common_process_data() - Common process data callback for ssp sensors
-+ *
-+ * @indio_dev:		iio device
-+ * @buf:		source buffer
-+ * @len:		sensor data length
-+ * @timestamp:		system timestamp
-+ *
-+ * Returns 0 or negative value in case of error
-+ */
-+int ssp_common_process_data(struct iio_dev *indio_dev, void *buf,
-+			    unsigned int len, int64_t timestamp)
++static int ssp_accel_remove(struct platform_device *pdev)
 +{
-+	__le32 time;
-+	int64_t calculated_time;
-+	struct ssp_sensor_data *spd = iio_priv(indio_dev);
++	struct iio_dev *indio_dev = platform_get_drvdata(pdev);
 +
-+	if (indio_dev->scan_bytes == 0)
-+		return 0;
++	iio_device_unregister(indio_dev);
 +
-+	/*
-+	 * it always sends full set of samples, remember about available masks
-+	 */
-+	memcpy(spd->buffer, buf, len);
-+
-+	if (indio_dev->scan_timestamp) {
-+		memcpy(&time, &((char *)buf)[len], SSP_TIME_SIZE);
-+		calculated_time =
-+			timestamp + (int64_t)le32_to_cpu(time) * 1000000;
-+	}
-+
-+	return iio_push_to_buffers_with_timestamp(indio_dev, spd->buffer,
-+						  calculated_time);
++	return 0;
 +}
-+EXPORT_SYMBOL(ssp_common_process_data);
++
++static struct platform_driver ssp_accel_driver = {
++	.driver = {
++		.owner = THIS_MODULE,
++		.name = SSP_ACCEL_NAME,
++	},
++	.probe = ssp_accel_probe,
++	.remove =  ssp_accel_remove,
++};
++
++module_platform_driver(ssp_accel_driver);
 +
 +MODULE_AUTHOR("Karol Wrona <k.wrona@samsung.com>");
-+MODULE_DESCRIPTION("Samsung sensorhub commons");
++MODULE_DESCRIPTION("Samsung sensorhub accelerometers driver");
 +MODULE_LICENSE("GPL");
-diff --git a/drivers/iio/common/ssp_sensors/ssp_iio_sensor.h b/drivers/iio/common/ssp_sensors/ssp_iio_sensor.h
-new file mode 100644
-index 0000000..dda267c
---- /dev/null
-+++ b/drivers/iio/common/ssp_sensors/ssp_iio_sensor.h
-@@ -0,0 +1,70 @@
-+#ifndef __SSP_IIO_SENSOR_H__
-+#define __SSP_IIO_SENSOR_H__
-+
-+#define SSP_CHANNEL_AG(_type, _mod, _index) \
-+{ \
-+		.type = _type,\
-+		.modified = 1,\
-+		.channel2 = _mod,\
-+		.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SAMP_FREQ),\
-+		.scan_index = _index,\
-+		.scan_type = {\
-+			.sign = 's',\
-+			.realbits = 16,\
-+			.storagebits = 16,\
-+			.shift = 0,\
-+			.endianness = IIO_LE,\
-+		},\
-+}
-+
-+/* It is defined here as it is a mixed timestamp */
-+#define SSP_CHAN_TIMESTAMP(_si) {					\
-+	.type = IIO_TIMESTAMP,						\
-+	.channel = -1,							\
-+	.scan_index = _si,						\
-+	.scan_type = {							\
-+		.sign = 's',						\
-+		.realbits = 64,						\
-+		.storagebits = 64,					\
-+		},							\
-+}
-+
-+#define SSP_MS_PER_S			1000
-+#define SSP_INVERTED_SCALING_FACTOR	1000000ULL
-+
-+#define SSP_FACTOR_WITH_MS \
-+	(SSP_INVERTED_SCALING_FACTOR * SSP_MS_PER_S)
-+
-+int ssp_common_buffer_postenable(struct iio_dev *indio_dev);
-+
-+int ssp_common_buffer_postdisable(struct iio_dev *indio_dev);
-+
-+int ssp_common_process_data(struct iio_dev *indio_dev, void *buf,
-+			    unsigned int len, int64_t timestamp);
-+
-+/* Converts time in ms to frequency */
-+static inline void ssp_convert_to_freq(u32 time, int *integer_part,
-+				       int *fractional)
-+{
-+	if (time == 0) {
-+		*fractional = 0;
-+		*integer_part = 0;
-+		return;
-+	}
-+
-+	*integer_part = SSP_FACTOR_WITH_MS / time;
-+	*fractional = do_div(*integer_part, SSP_INVERTED_SCALING_FACTOR);
-+}
-+
-+/* Converts frequency to time in ms */
-+static inline int ssp_convert_to_time(int integer_part, int fractional)
-+{
-+	u64 value;
-+
-+	value = integer_part * SSP_INVERTED_SCALING_FACTOR + fractional;
-+	if (value == 0)
-+		return 0;
-+
-+	return div_u64(SSP_FACTOR_WITH_MS, value);
-+}
-+#endif /* __SSP_IIO_SENSOR_H__ */
 -- 
 1.7.9.5
 
