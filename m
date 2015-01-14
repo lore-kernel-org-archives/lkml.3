@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753126AbbANN7Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 08:59:16 -0500
-Received: from hedwig.cmf.nrl.navy.mil ([134.207.12.162]:33634 "EHLO
-	hedwig.cmf.nrl.navy.mil" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752602AbbANN7O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 08:59:14 -0500
-Date: Wed, 14 Jan 2015 08:58:51 -0500
-From: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
-To: David Miller <davem@davemloft.net>
-Cc: lambert.quentin@gmail.com, linux-atm-general@lists.sourceforge.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/1] atm: remove deprecated use of pci api
-Message-ID: <20150114085851.234db50d@thirdoffive.cmf.nrl.navy.mil>
-In-Reply-To: <20150113.215944.1703977685948196746.davem@davemloft.net>
-References: <20150112161042.GA11374@sloth>
-	<20150113.215944.1703977685948196746.davem@davemloft.net>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
+	id S1753369AbbANN7i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 08:59:38 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50758 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753251AbbANN7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 08:59:35 -0500
+Date: Wed, 14 Jan 2015 11:59:30 -0200
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Vineet Gupta <Vineet.Gupta1@synopsys.com>, namhyung@kernel.org,
+        jolsa@kernel.org, peterz@infradead.org, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, linux-perf-users@vger.kernel.org,
+        linux-arch@vger.kernel.org, Alexey.Brodkin@synopsys.com
+Subject: Re: [PATCH v3 0/5] Perf tool fixes for ARC + uClibc
+Message-ID: <20150114135930.GA2463@redhat.com>
+References: <1421156604-30603-1-git-send-email-vgupta@synopsys.com>
+ <20150114120000.GB11443@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-NRLCMF-Spam-Score: () hits=0
-X-NRLCMF-Virus-Scanned: No virus found
-X-NRLCMF-Languages: en
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150114120000.GB11443@krava.brq.redhat.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Jan 2015 21:59:44 -0500 (EST)
-David Miller <davem@davemloft.net> wrote:
-
-> From: Quentin Lambert <lambert.quentin@gmail.com>
-> Date: Mon, 12 Jan 2015 17:10:42 +0100
+Em Wed, Jan 14, 2015 at 01:00:00PM +0100, Jiri Olsa escreveu:
+> On Tue, Jan 13, 2015 at 07:13:19PM +0530, Vineet Gupta wrote:
+> > Hi,
+> > 
+> > This series based off linux-next of 20150105 allows us to build/use perf
+> > for ARC with uClibc based userland.
+> > 
+> > v3: Changes since v2 [2]
+> > * 1/5	: Ack from Jiri
+> > * 2/5	: no changes
+> > * 3/5	: sys/syscall.h included	  [Jiri]
+> > * 4/5	: no changes
+> > * 5/5	: -lpthread added to link target  [Jiri]
+> > * {1,5} : Changelog updated so scissor lines don't start at column 1
 > 
-> > @@ -2246,7 +2246,8 @@ static int eni_init_one(struct pci_dev *pci_dev,
-> >  		goto err_disable;
-> >  
-> >  	zero = &eni_dev->zero;
-> > -	zero->addr = pci_alloc_consistent(pci_dev, ENI_ZEROES_SIZE, &zero->dma);
-> > +	zero->addr = dma_alloc_coherent(&pci_dev->dev, ENI_ZEROES_SIZE,
-> > +					&zero->dma, GFP_ATOMIC);
-> >  	if (!zero->addr)
-> >  		goto err_kfree;
-> >  
-> 
-> I really would like you to look at these locations and see if
-> GFP_KERNEL can be used instead of GFP_ATOMIC.  I bet that nearly
-> all of these can, and it is preferred.
-> 
-> Thanks.
+> Acked-by: Jiri Olsa <jolsa@kernel.org>
 
-I think I would like to go through and just fix all the usages of the
-older pci interface.  This patch isn't very complete due to its
-automated nature.
+Most are already in my perf/urgent branch.
 
-I will make some time this weekend.
+- Arnaldo
