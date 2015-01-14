@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754990AbbANHcV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:32:21 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58353 "EHLO
+	id S1755037AbbANHcZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:32:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58356 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754965AbbANHcS (ORCPT
+	with ESMTP id S1754967AbbANHcS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Jan 2015 02:32:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [PATCH 3.18 125/150] ACPI / PM: Fix PM initialization for devices that are not present
-Date: Tue, 13 Jan 2015 23:23:16 -0800
-Message-Id: <20150114072101.507199259@linuxfoundation.org>
+        Dirk Hohndel <dirk@hohndel.org>, Nick Dyer <nick.dyer@itdev.co.uk>,
+        Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.18 126/150] Revert "Input: atmel_mxt_ts - use deep sleep mode when stopped"
+Date: Tue, 13 Jan 2015 23:23:17 -0800
+Message-Id: <20150114072101.550487263@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -29,99 +31,187 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 1b1f3e1699a9886f1070f94171097ab4ccdbfc95 upstream.
+commit 7f4054836d811c650c51f9c93088f8ebd61b0020 upstream.
 
-If an ACPI device object whose _STA returns 0 (not present and not
-functional) has _PR0 or _PS0, its power_manageable flag will be set
-and acpi_bus_init_power() will return 0 for it.  Consequently, if
-such a device object is passed to the ACPI device PM functions, they
-will attempt to carry out the requested operation on the device,
-although they should not do that for devices that are not present.
+This reverts commit 9d469d033d135d80742a4e39e6bbb4519dd5eee1.
 
-To fix that problem make acpi_bus_init_power() return an error code
-for devices that are not present which will cause power_manageable to
-be cleared for them as appropriate in acpi_bus_get_power_flags().
-However, the lists of power resources should not be freed for the
-device in that case, so modify acpi_bus_get_power_flags() to keep
-those lists even if acpi_bus_init_power() returns an error.
-Accordingly, when deciding whether or not the lists of power
-resources need to be freed, acpi_free_power_resources_lists()
-should check the power.flags.power_resources flag instead of
-flags.power_manageable, so make that change too.
+It breaks the Chromebook Pixel touchpad (and touchscreen).
 
-Furthermore, if acpi_bus_attach() sees that flags.initialized is
-unset for the given device, it should reset the power management
-settings of the device and re-initialize them from scratch instead
-of relying on the previous settings (the device may have appeared
-after being not present previously, for example), so make it use
-the 'valid' flag of the D0 power state as the initial value of
-flags.power_manageable for it and call acpi_bus_init_power() to
-discover its current power state.
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Reported-by: Dirk Hohndel <dirk@hohndel.org>
+Bisected-by: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Nick Dyer <nick.dyer@itdev.co.uk>
+Cc: Benson Leung <bleung@chromium.org>
+Cc: Yufeng Shen <miletus@chromium.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/acpi/device_pm.c |    2 +-
- drivers/acpi/scan.c      |   13 ++++++++-----
- 2 files changed, 9 insertions(+), 6 deletions(-)
+ drivers/input/touchscreen/atmel_mxt_ts.c |   99 ++++++++-----------------------
+ 1 file changed, 26 insertions(+), 73 deletions(-)
 
---- a/drivers/acpi/device_pm.c
-+++ b/drivers/acpi/device_pm.c
-@@ -257,7 +257,7 @@ int acpi_bus_init_power(struct acpi_devi
+--- a/drivers/input/touchscreen/atmel_mxt_ts.c
++++ b/drivers/input/touchscreen/atmel_mxt_ts.c
+@@ -99,13 +99,9 @@
+ #define MXT_T6_STATUS_COMSERR	(1 << 2)
  
- 	device->power.state = ACPI_STATE_UNKNOWN;
- 	if (!acpi_device_is_present(device))
--		return 0;
-+		return -ENXIO;
+ /* MXT_GEN_POWER_T7 field */
+-struct t7_config {
+-	u8 idle;
+-	u8 active;
+-} __packed;
+-
+-#define MXT_POWER_CFG_RUN		0
+-#define MXT_POWER_CFG_DEEPSLEEP		1
++#define MXT_POWER_IDLEACQINT	0
++#define MXT_POWER_ACTVACQINT	1
++#define MXT_POWER_ACTV2IDLETO	2
  
- 	result = acpi_device_get_power(device, &state);
- 	if (result)
---- a/drivers/acpi/scan.c
-+++ b/drivers/acpi/scan.c
-@@ -909,7 +909,7 @@ static void acpi_free_power_resources_li
- 	if (device->wakeup.flags.valid)
- 		acpi_power_resources_list_free(&device->wakeup.resources);
+ /* MXT_GEN_ACQUIRE_T8 field */
+ #define MXT_ACQUIRE_CHRGTIME	0
+@@ -117,6 +113,7 @@ struct t7_config {
+ #define MXT_ACQUIRE_ATCHCALSTHR	7
  
--	if (!device->flags.power_manageable)
-+	if (!device->power.flags.power_resources)
- 		return;
+ /* MXT_TOUCH_MULTI_T9 field */
++#define MXT_TOUCH_CTRL		0
+ #define MXT_T9_ORIENT		9
+ #define MXT_T9_RANGE		18
  
- 	for (i = ACPI_STATE_D0; i <= ACPI_STATE_D3_HOT; i++) {
-@@ -1631,10 +1631,8 @@ static void acpi_bus_get_power_flags(str
- 			device->power.flags.power_resources)
- 		device->power.states[ACPI_STATE_D3_COLD].flags.os_accessible = 1;
+@@ -256,7 +253,6 @@ struct mxt_data {
+ 	bool update_input;
+ 	u8 last_message_count;
+ 	u8 num_touchids;
+-	struct t7_config t7_cfg;
  
--	if (acpi_bus_init_power(device)) {
--		acpi_free_power_resources_lists(device);
-+	if (acpi_bus_init_power(device))
- 		device->flags.power_manageable = 0;
--	}
+ 	/* Cached parameters from object table */
+ 	u16 T5_address;
+@@ -672,6 +668,20 @@ static void mxt_proc_t6_messages(struct
+ 	data->t6_status = status;
  }
  
- static void acpi_bus_get_flags(struct acpi_device *device)
-@@ -2202,13 +2200,18 @@ static void acpi_bus_attach(struct acpi_
- 	/* Skip devices that are not present. */
- 	if (!acpi_device_is_present(device)) {
- 		device->flags.visited = false;
-+		device->flags.power_manageable = 0;
- 		return;
- 	}
- 	if (device->handler)
- 		goto ok;
- 
- 	if (!device->flags.initialized) {
--		acpi_bus_update_power(device, NULL);
-+		device->flags.power_manageable =
-+			device->power.states[ACPI_STATE_D0].flags.valid;
-+		if (acpi_bus_init_power(device))
-+			device->flags.power_manageable = 0;
++static int mxt_write_object(struct mxt_data *data,
++				 u8 type, u8 offset, u8 val)
++{
++	struct mxt_object *object;
++	u16 reg;
 +
- 		device->flags.initialized = true;
++	object = mxt_get_object(data, type);
++	if (!object || offset >= mxt_obj_size(object))
++		return -EINVAL;
++
++	reg = object->start_address;
++	return mxt_write_reg(data->client, reg + offset, val);
++}
++
+ static void mxt_input_button(struct mxt_data *data, u8 *message)
+ {
+ 	struct input_dev *input = data->input_dev;
+@@ -1742,60 +1752,6 @@ err_free_object_table:
+ 	return error;
+ }
+ 
+-static int mxt_set_t7_power_cfg(struct mxt_data *data, u8 sleep)
+-{
+-	struct device *dev = &data->client->dev;
+-	int error;
+-	struct t7_config *new_config;
+-	struct t7_config deepsleep = { .active = 0, .idle = 0 };
+-
+-	if (sleep == MXT_POWER_CFG_DEEPSLEEP)
+-		new_config = &deepsleep;
+-	else
+-		new_config = &data->t7_cfg;
+-
+-	error = __mxt_write_reg(data->client, data->T7_address,
+-				sizeof(data->t7_cfg), new_config);
+-	if (error)
+-		return error;
+-
+-	dev_dbg(dev, "Set T7 ACTV:%d IDLE:%d\n",
+-		new_config->active, new_config->idle);
+-
+-	return 0;
+-}
+-
+-static int mxt_init_t7_power_cfg(struct mxt_data *data)
+-{
+-	struct device *dev = &data->client->dev;
+-	int error;
+-	bool retry = false;
+-
+-recheck:
+-	error = __mxt_read_reg(data->client, data->T7_address,
+-				sizeof(data->t7_cfg), &data->t7_cfg);
+-	if (error)
+-		return error;
+-
+-	if (data->t7_cfg.active == 0 || data->t7_cfg.idle == 0) {
+-		if (!retry) {
+-			dev_dbg(dev, "T7 cfg zero, resetting\n");
+-			mxt_soft_reset(data);
+-			retry = true;
+-			goto recheck;
+-		} else {
+-			dev_dbg(dev, "T7 cfg zero after reset, overriding\n");
+-			data->t7_cfg.active = 20;
+-			data->t7_cfg.idle = 100;
+-			return mxt_set_t7_power_cfg(data, MXT_POWER_CFG_RUN);
+-		}
+-	}
+-
+-	dev_dbg(dev, "Initialized power cfg: ACTV %d, IDLE %d\n",
+-		data->t7_cfg.active, data->t7_cfg.idle);
+-	return 0;
+-}
+-
+ static int mxt_configure_objects(struct mxt_data *data,
+ 				 const struct firmware *cfg)
+ {
+@@ -1809,12 +1765,6 @@ static int mxt_configure_objects(struct
+ 			dev_warn(dev, "Error %d updating config\n", error);
  	}
- 	device->flags.visited = false;
+ 
+-	error = mxt_init_t7_power_cfg(data);
+-	if (error) {
+-		dev_err(dev, "Failed to initialize power cfg\n");
+-		return error;
+-	}
+-
+ 	error = mxt_initialize_t9_input_device(data);
+ 	if (error)
+ 		return error;
+@@ -2093,15 +2043,16 @@ static const struct attribute_group mxt_
+ 
+ static void mxt_start(struct mxt_data *data)
+ {
+-	mxt_set_t7_power_cfg(data, MXT_POWER_CFG_RUN);
+-
+-	/* Recalibrate since chip has been in deep sleep */
+-	mxt_t6_command(data, MXT_COMMAND_CALIBRATE, 1, false);
++	/* Touch enable */
++	mxt_write_object(data,
++			MXT_TOUCH_MULTI_T9, MXT_TOUCH_CTRL, 0x83);
+ }
+ 
+ static void mxt_stop(struct mxt_data *data)
+ {
+-	mxt_set_t7_power_cfg(data, MXT_POWER_CFG_DEEPSLEEP);
++	/* Touch disable */
++	mxt_write_object(data,
++			MXT_TOUCH_MULTI_T9, MXT_TOUCH_CTRL, 0);
+ }
+ 
+ static int mxt_input_open(struct input_dev *dev)
+@@ -2267,6 +2218,8 @@ static int mxt_resume(struct device *dev
+ 	struct mxt_data *data = i2c_get_clientdata(client);
+ 	struct input_dev *input_dev = data->input_dev;
+ 
++	mxt_soft_reset(data);
++
+ 	mutex_lock(&input_dev->mutex);
+ 
+ 	if (input_dev->users)
 
 
