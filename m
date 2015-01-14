@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755883AbbANIiw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:38:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57806 "EHLO
+	id S1756242AbbANIvd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:51:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57624 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754153AbbANH0s (ORCPT
+	with ESMTP id S1752287AbbANHZR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:26:48 -0500
+	Wed, 14 Jan 2015 02:25:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Stephane Grosjean <s.grosjean@peak-system.com>,
-        Marc Kleine-Budde <mkl@pengutronix.de>
-Subject: [PATCH 3.18 010/150] can: peak_usb: fix memset() usage
-Date: Tue, 13 Jan 2015 23:21:21 -0800
-Message-Id: <20150114072056.318009351@linuxfoundation.org>
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 3.18 011/150] swiotlb-xen: pass dev_addr to xen_dma_unmap_page and xen_dma_sync_single_for_cpu
+Date: Tue, 13 Jan 2015 23:21:22 -0800
+Message-Id: <20150114072056.369020326@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -29,43 +30,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Stephane Grosjean <s.grosjean@peak-system.com>
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-commit dc50ddcd4c58a5a0226038307d6ef884bec9f8c2 upstream.
+commit d6883e6f32e07ef2cc974753ba00927de099e6d7 upstream.
 
-This patchs fixes a misplaced call to memset() that fills the request
-buffer with 0. The problem was with sending PCAN_USBPRO_REQ_FCT
-requests, the content set by the caller was thus lost.
+xen_dma_unmap_page and xen_dma_sync_single_for_cpu take a dma_addr_t
+handle as argument, not a physical address.
 
-With this patch, the memory area is zeroed only when requesting info
-from the device.
-
-Signed-off-by: Stephane Grosjean <s.grosjean@peak-system.com>
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/can/usb/peak_usb/pcan_usb_pro.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/xen/swiotlb-xen.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/net/can/usb/peak_usb/pcan_usb_pro.c
-+++ b/drivers/net/can/usb/peak_usb/pcan_usb_pro.c
-@@ -333,8 +333,6 @@ static int pcan_usb_pro_send_req(struct
- 	if (!(dev->state & PCAN_USB_STATE_CONNECTED))
- 		return 0;
+--- a/drivers/xen/swiotlb-xen.c
++++ b/drivers/xen/swiotlb-xen.c
+@@ -447,7 +447,7 @@ static void xen_unmap_single(struct devi
  
--	memset(req_addr, '\0', req_size);
--
- 	req_type = USB_TYPE_VENDOR | USB_RECIP_OTHER;
+ 	BUG_ON(dir == DMA_NONE);
  
- 	switch (req_id) {
-@@ -345,6 +343,7 @@ static int pcan_usb_pro_send_req(struct
- 	default:
- 		p = usb_rcvctrlpipe(dev->udev, 0);
- 		req_type |= USB_DIR_IN;
-+		memset(req_addr, '\0', req_size);
- 		break;
- 	}
+-	xen_dma_unmap_page(hwdev, paddr, size, dir, attrs);
++	xen_dma_unmap_page(hwdev, dev_addr, size, dir, attrs);
  
+ 	/* NOTE: We use dev_addr here, not paddr! */
+ 	if (is_xen_swiotlb_buffer(dev_addr)) {
+@@ -495,14 +495,14 @@ xen_swiotlb_sync_single(struct device *h
+ 	BUG_ON(dir == DMA_NONE);
+ 
+ 	if (target == SYNC_FOR_CPU)
+-		xen_dma_sync_single_for_cpu(hwdev, paddr, size, dir);
++		xen_dma_sync_single_for_cpu(hwdev, dev_addr, size, dir);
+ 
+ 	/* NOTE: We use dev_addr here, not paddr! */
+ 	if (is_xen_swiotlb_buffer(dev_addr))
+ 		swiotlb_tbl_sync_single(hwdev, paddr, size, dir, target);
+ 
+ 	if (target == SYNC_FOR_DEVICE)
+-		xen_dma_sync_single_for_cpu(hwdev, paddr, size, dir);
++		xen_dma_sync_single_for_cpu(hwdev, dev_addr, size, dir);
+ 
+ 	if (dir != DMA_FROM_DEVICE)
+ 		return;
 
 
