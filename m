@@ -1,22 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933377AbbANH7g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:59:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58574 "EHLO
+	id S932323AbbANHbs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:31:48 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58266 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932692AbbANHfP (ORCPT
+	with ESMTP id S1754290AbbANHbp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:35:15 -0500
+	Wed, 14 Jan 2015 02:31:45 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Christian Riesch <christian.riesch@omicron.at>
-Subject: [PATCH 3.14 48/77] n_tty: Fix read_buf race condition, increment read_head after pushing data
-Date: Tue, 13 Jan 2015 23:23:28 -0800
-Message-Id: <20150114072226.897876398@linuxfoundation.org>
+        Vince Weaver <vince@deater.net>, Jiri Olsa <jolsa@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        "Yan, Zheng" <zheng.z.yan@intel.com>, Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.18 138/150] perf: Fix events installation during moving group
+Date: Tue, 13 Jan 2015 23:23:29 -0800
+Message-Id: <20150114072102.094964675@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-References: <20150114072224.182299947@linuxfoundation.org>
+In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
+References: <20150114072055.842408181@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -24,46 +30,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Christian Riesch <christian.riesch@omicron.at>
+From: Jiri Olsa <jolsa@kernel.org>
 
-commit 8bfbe2de769afda051c56aba5450391670e769fc upstream.
+commit 9fc81d87420d0d3fd62d5e5529972c0ad9eab9cc upstream.
 
-Commit 19e2ad6a09f0c06dbca19c98e5f4584269d913dd ("n_tty: Remove overflow
-tests from receive_buf() path") moved the increment of read_head into
-the arguments list of read_buf_addr(). Function calls represent a
-sequence point in C. Therefore read_head is incremented before the
-character c is placed in the buffer. Since the circular read buffer is
-a lock-less design since commit 6d76bd2618535c581f1673047b8341fd291abc67
-("n_tty: Make N_TTY ldisc receive path lockless"), this creates a race
-condition that leads to communication errors.
+We allow PMU driver to change the cpu on which the event
+should be installed to. This happened in patch:
 
-This patch modifies the code to increment read_head _after_ the data
-is placed in the buffer and thus fixes the race for non-SMP machines.
-To fix the problem for SMP machines, memory barriers must be added in
-a separate patch.
+  e2d37cd213dc ("perf: Allow the PMU driver to choose the CPU on which to install events")
 
-Signed-off-by: Christian Riesch <christian.riesch@omicron.at>
+This patch also forces all the group members to follow
+the currently opened events cpu if the group happened
+to be moved.
+
+This and the change of event->cpu in perf_install_in_context()
+function introduced in:
+
+  0cda4c023132 ("perf: Introduce perf_pmu_migrate_context()")
+
+forces group members to change their event->cpu,
+if the currently-opened-event's PMU changed the cpu
+and there is a group move.
+
+Above behaviour causes problem for breakpoint events,
+which uses event->cpu to touch cpu specific data for
+breakpoints accounting. By changing event->cpu, some
+breakpoints slots were wrongly accounted for given
+cpu.
+
+Vinces's perf fuzzer hit this issue and caused following
+WARN on my setup:
+
+   WARNING: CPU: 0 PID: 20214 at arch/x86/kernel/hw_breakpoint.c:119 arch_install_hw_breakpoint+0x142/0x150()
+   Can't find any breakpoint slot
+   [...]
+
+This patch changes the group moving code to keep the event's
+original cpu.
+
+Reported-by: Vince Weaver <vince@deater.net>
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Vince Weaver <vince@deater.net>
+Cc: Yan, Zheng <zheng.z.yan@intel.com>
+Link: http://lkml.kernel.org/r/1418243031-20367-3-git-send-email-jolsa@kernel.org
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/tty/n_tty.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ kernel/events/core.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -321,7 +321,8 @@ static void n_tty_check_unthrottle(struc
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -7435,11 +7435,11 @@ SYSCALL_DEFINE5(perf_event_open,
  
- static inline void put_tty_queue(unsigned char c, struct n_tty_data *ldata)
- {
--	*read_buf_addr(ldata, ldata->read_head++) = c;
-+	*read_buf_addr(ldata, ldata->read_head) = c;
-+	ldata->read_head++;
- }
- 
- /**
+ 	if (move_group) {
+ 		synchronize_rcu();
+-		perf_install_in_context(ctx, group_leader, event->cpu);
++		perf_install_in_context(ctx, group_leader, group_leader->cpu);
+ 		get_ctx(ctx);
+ 		list_for_each_entry(sibling, &group_leader->sibling_list,
+ 				    group_entry) {
+-			perf_install_in_context(ctx, sibling, event->cpu);
++			perf_install_in_context(ctx, sibling, sibling->cpu);
+ 			get_ctx(ctx);
+ 		}
+ 	}
 
 
