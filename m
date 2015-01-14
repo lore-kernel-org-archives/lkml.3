@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932721AbbANHfS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:35:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58562 "EHLO
+	id S933169AbbANHsM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:48:12 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58842 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932667AbbANHfJ (ORCPT
+	with ESMTP id S933086AbbANHiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:35:09 -0500
+	Wed, 14 Jan 2015 02:38:07 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Jan Kara <jack@suse.cz>,
-        Mikulas Patocka <mpatocka@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Al Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.14 45/77] writeback: fix a subtle race condition in I_DIRTY clearing
+        Stephane Grosjean <s.grosjean@peak-system.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Subject: [PATCH 3.10 04/44] can: peak_usb: fix cleanup sequence order in case of error during init
 Date: Tue, 13 Jan 2015 23:23:25 -0800
-Message-Id: <20150114072226.742268938@linuxfoundation.org>
+Message-Id: <20150114072227.671728088@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-References: <20150114072224.182299947@linuxfoundation.org>
+In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
+References: <20150114072227.419663002@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,130 +25,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: Stephane Grosjean <s.grosjean@peak-system.com>
 
-commit 9c6ac78eb3521c5937b2dd8a7d1b300f41092f45 upstream.
+commit af35d0f1cce7a990286e2b94c260a2c2d2a0e4b0 upstream.
 
-After invoking ->dirty_inode(), __mark_inode_dirty() does smp_mb() and
-tests inode->i_state locklessly to see whether it already has all the
-necessary I_DIRTY bits set.  The comment above the barrier doesn't
-contain any useful information - memory barriers can't ensure "changes
-are seen by all cpus" by itself.
+This patch sets the correct reverse sequence order to the instructions
+set to run, when any failure occurs during the initialization steps.
+It also adds the missing unregistration call of the can device if the
+failure appears after having been registered.
 
-And it sure enough was broken.  Please consider the following
-scenario.
-
- CPU 0					CPU 1
- -------------------------------------------------------------------------------
-
-					enters __writeback_single_inode()
-					grabs inode->i_lock
-					tests PAGECACHE_TAG_DIRTY which is clear
- enters __set_page_dirty()
- grabs mapping->tree_lock
- sets PAGECACHE_TAG_DIRTY
- releases mapping->tree_lock
- leaves __set_page_dirty()
-
- enters __mark_inode_dirty()
- smp_mb()
- sees I_DIRTY_PAGES set
- leaves __mark_inode_dirty()
-					clears I_DIRTY_PAGES
-					releases inode->i_lock
-
-Now @inode has dirty pages w/ I_DIRTY_PAGES clear.  This doesn't seem
-to lead to an immediately critical problem because requeue_inode()
-later checks PAGECACHE_TAG_DIRTY instead of I_DIRTY_PAGES when
-deciding whether the inode needs to be requeued for IO and there are
-enough unintentional memory barriers inbetween, so while the inode
-ends up with inconsistent I_DIRTY_PAGES flag, it doesn't fall off the
-IO list.
-
-The lack of explicit barrier may also theoretically affect the other
-I_DIRTY bits which deal with metadata dirtiness.  There is no
-guarantee that a strong enough barrier exists between
-I_DIRTY_[DATA]SYNC clearing and write_inode() writing out the dirtied
-inode.  Filesystem inode writeout path likely has enough stuff which
-can behave as full barrier but it's theoretically possible that the
-writeout may not see all the updates from ->dirty_inode().
-
-Fix it by adding an explicit smp_mb() after I_DIRTY clearing.  Note
-that I_DIRTY_PAGES needs a special treatment as it always needs to be
-cleared to be interlocked with the lockless test on
-__mark_inode_dirty() side.  It's cleared unconditionally and
-reinstated after smp_mb() if the mapping still has dirty pages.
-
-Also add comments explaining how and why the barriers are paired.
-
-Lightly tested.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Reviewed-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+Signed-off-by: Stephane Grosjean <s.grosjean@peak-system.com>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/fs-writeback.c |   29 ++++++++++++++++++++++-------
- 1 file changed, 22 insertions(+), 7 deletions(-)
+ drivers/net/can/usb/peak_usb/pcan_usb_core.c |   17 ++++++++++-------
+ 1 file changed, 10 insertions(+), 7 deletions(-)
 
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -476,12 +476,28 @@ __writeback_single_inode(struct inode *i
- 	 * write_inode()
- 	 */
- 	spin_lock(&inode->i_lock);
--	/* Clear I_DIRTY_PAGES if we've written out all dirty pages */
--	if (!mapping_tagged(mapping, PAGECACHE_TAG_DIRTY))
--		inode->i_state &= ~I_DIRTY_PAGES;
-+
- 	dirty = inode->i_state & I_DIRTY;
--	inode->i_state &= ~(I_DIRTY_SYNC | I_DIRTY_DATASYNC);
-+	inode->i_state &= ~I_DIRTY;
-+
-+	/*
-+	 * Paired with smp_mb() in __mark_inode_dirty().  This allows
-+	 * __mark_inode_dirty() to test i_state without grabbing i_lock -
-+	 * either they see the I_DIRTY bits cleared or we see the dirtied
-+	 * inode.
-+	 *
-+	 * I_DIRTY_PAGES is always cleared together above even if @mapping
-+	 * still has dirty pages.  The flag is reinstated after smp_mb() if
-+	 * necessary.  This guarantees that either __mark_inode_dirty()
-+	 * sees clear I_DIRTY_PAGES or we see PAGECACHE_TAG_DIRTY.
-+	 */
-+	smp_mb();
-+
-+	if (mapping_tagged(mapping, PAGECACHE_TAG_DIRTY))
-+		inode->i_state |= I_DIRTY_PAGES;
-+
- 	spin_unlock(&inode->i_lock);
-+
- 	/* Don't write the inode if only I_DIRTY_PAGES was set */
- 	if (dirty & (I_DIRTY_SYNC | I_DIRTY_DATASYNC)) {
- 		int err = write_inode(inode, wbc);
-@@ -1145,12 +1161,11 @@ void __mark_inode_dirty(struct inode *in
+--- a/drivers/net/can/usb/peak_usb/pcan_usb_core.c
++++ b/drivers/net/can/usb/peak_usb/pcan_usb_core.c
+@@ -727,7 +727,7 @@ static int peak_usb_create_dev(struct pe
+ 	dev->cmd_buf = kmalloc(PCAN_USB_MAX_CMD_LEN, GFP_KERNEL);
+ 	if (!dev->cmd_buf) {
+ 		err = -ENOMEM;
+-		goto lbl_set_intf_data;
++		goto lbl_free_candev;
  	}
  
- 	/*
--	 * make sure that changes are seen by all cpus before we test i_state
--	 * -- mikulas
-+	 * Paired with smp_mb() in __writeback_single_inode() for the
-+	 * following lockless i_state test.  See there for details.
- 	 */
- 	smp_mb();
+ 	dev->udev = usb_dev;
+@@ -766,7 +766,7 @@ static int peak_usb_create_dev(struct pe
+ 	err = register_candev(netdev);
+ 	if (err) {
+ 		dev_err(&intf->dev, "couldn't register CAN device: %d\n", err);
+-		goto lbl_free_cmd_buf;
++		goto lbl_restore_intf_data;
+ 	}
  
--	/* avoid the locking if we can */
- 	if ((inode->i_state & flags) == flags)
- 		return;
+ 	if (dev->prev_siblings)
+@@ -779,14 +779,14 @@ static int peak_usb_create_dev(struct pe
+ 	if (dev->adapter->dev_init) {
+ 		err = dev->adapter->dev_init(dev);
+ 		if (err)
+-			goto lbl_free_cmd_buf;
++			goto lbl_unregister_candev;
+ 	}
  
+ 	/* set bus off */
+ 	if (dev->adapter->dev_set_bus) {
+ 		err = dev->adapter->dev_set_bus(dev, 0);
+ 		if (err)
+-			goto lbl_free_cmd_buf;
++			goto lbl_unregister_candev;
+ 	}
+ 
+ 	/* get device number early */
+@@ -798,11 +798,14 @@ static int peak_usb_create_dev(struct pe
+ 
+ 	return 0;
+ 
+-lbl_free_cmd_buf:
+-	kfree(dev->cmd_buf);
++lbl_unregister_candev:
++	unregister_candev(netdev);
+ 
+-lbl_set_intf_data:
++lbl_restore_intf_data:
+ 	usb_set_intfdata(intf, dev->prev_siblings);
++	kfree(dev->cmd_buf);
++
++lbl_free_candev:
+ 	free_candev(netdev);
+ 
+ 	return err;
 
 
