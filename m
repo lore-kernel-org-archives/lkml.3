@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766AbbANJcl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 04:32:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37772 "EHLO mx1.redhat.com"
+	id S1752828AbbANJcu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 04:32:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47317 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752501AbbANJci (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 04:32:38 -0500
-Subject: [RFC PATCH 0/5] Second attempt at contained helper execution
+	id S1752501AbbANJcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 04:32:45 -0500
+Subject: [RFC PATCH 1/5] nsproxy - refactor setns()
 From: Ian Kent <ikent@redhat.com>
 To: Kernel Mailing List <linux-kernel@vger.kernel.org>
 Cc: David Howells <dhowells@redhat.com>, Oleg Nesterov <onestero@redhat.com>,
@@ -16,8 +16,10 @@ Cc: David Howells <dhowells@redhat.com>, Oleg Nesterov <onestero@redhat.com>,
         Al Viro <viro@ZenIV.linux.org.uk>,
         Jeff Layton <jeff.layton@primarydata.com>,
         "Eric W. Biederman" <ebiederm@xmission.com>
-Date: Wed, 14 Jan 2015 17:32:22 +0800
-Message-ID: <20150114092704.30252.60446.stgit@pluto.fritz.box>
+Date: Wed, 14 Jan 2015 17:32:29 +0800
+Message-ID: <20150114093228.30252.30091.stgit@pluto.fritz.box>
+In-Reply-To: <20150114092704.30252.60446.stgit@pluto.fritz.box>
+References: <20150114092704.30252.60446.stgit@pluto.fritz.box>
 User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -26,57 +28,79 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series is a further attempt to find how (or even an acceptable
-way) to execute a usermode helper in a contained environment.
+For usermode helpers to execute within a namspace a slightly different
+entry point to setns() that takes a namspace inode is needed.
 
-Being an attempt to find how to do this no testing has been done and
-won't be until a suitable approach can be agreed on, if at all.
-
->From previous discussion seperation between the caller and the
-execution environment is required for security reasons.
-
-It was suggested that a thread be created for each mount and be used
-as the basis for the execution environment. There are a number of
-problems with this, not the least of which is scaling to a large
-numbers of mounts, and there may not be a mount corresponding the the
-needed callback which amounts to creating the process from the context
-of the caller which we don't want to do.
-
-But now, when a usermode helper is executed the root init namespace is
-used and has proven to be adequate. So perhaps it will also be adequate
-to use the same approach for contained execution by using the container
-init namespace as the basis for the execution.
-
-That's essentially all this series attempts to do.
-
-There are other difficulties to tackle as well, such as how to decide
-if contained helper execution is needed. For example, if a mount has
-been propagated to a container or bound into the container tree (such
-as with the --volume option of "docker run") the root init namespace
-may need to be used and not the container namespace.
-
-There's also the rather resource heavy method that is used here to
-enter the target namespace which probably needs work but is out of
-scope for this series if in fact this approach is even acceptable.
-
-Comments please?
-
+Signed-off-by: Ian Kent <ikent@redhat.com>
+Cc: Benjamin Coddington <bcodding@redhat.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: J. Bruce Fields <bfields@fieldses.org>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Trond Myklebust <trond.myklebust@primarydata.com>
+Cc: Oleg Nesterov <onestero@redhat.com>
+Cc: Eric W. Biederman <ebiederm@xmission.com>
+Cc: Jeff Layton <jeff.layton@primarydata.com>
 ---
+ include/linux/nsproxy.h |    1 +
+ kernel/nsproxy.c        |   21 ++++++++++++++-------
+ 2 files changed, 15 insertions(+), 7 deletions(-)
 
-Ian Kent (5):
-      nsproxy - refactor setns()
-      kmod - rename call_usermodehelper() flags parameter
-      kmod - teach call_usermodehelper() to use a namespace
-      KEYS - rename call_usermodehelper_keys() flags parameter
-      KEYS: exec request-key within the requesting task's init namespace
+diff --git a/include/linux/nsproxy.h b/include/linux/nsproxy.h
+index 35fa08f..c75bf12 100644
+--- a/include/linux/nsproxy.h
++++ b/include/linux/nsproxy.h
+@@ -62,6 +62,7 @@ extern struct nsproxy init_nsproxy;
+  *
+  */
+ 
++int setns_inode(struct inode *inode, int nstype);
+ int copy_namespaces(unsigned long flags, struct task_struct *tsk);
+ void exit_task_namespaces(struct task_struct *tsk);
+ void switch_task_namespaces(struct task_struct *tsk, struct nsproxy *new);
+diff --git a/kernel/nsproxy.c b/kernel/nsproxy.c
+index 49746c8..27cc544 100644
+--- a/kernel/nsproxy.c
++++ b/kernel/nsproxy.c
+@@ -218,20 +218,15 @@ void exit_task_namespaces(struct task_struct *p)
+ 	switch_task_namespaces(p, NULL);
+ }
+ 
+-SYSCALL_DEFINE2(setns, int, fd, int, nstype)
++int setns_inode(struct inode *inode, int nstype)
+ {
+ 	struct task_struct *tsk = current;
+ 	struct nsproxy *new_nsproxy;
+-	struct file *file;
+ 	struct ns_common *ns;
+ 	int err;
+ 
+-	file = proc_ns_fget(fd);
+-	if (IS_ERR(file))
+-		return PTR_ERR(file);
+-
+ 	err = -EINVAL;
+-	ns = get_proc_ns(file_inode(file));
++	ns = get_proc_ns(inode);
+ 	if (nstype && (ns->ops->type != nstype))
+ 		goto out;
+ 
+@@ -248,6 +243,18 @@ SYSCALL_DEFINE2(setns, int, fd, int, nstype)
+ 	}
+ 	switch_task_namespaces(tsk, new_nsproxy);
+ out:
++	return err;
++}
++
++SYSCALL_DEFINE2(setns, int, fd, int, nstype)
++{
++	struct file *file;
++	int err;
++
++	file = proc_ns_fget(fd);
++	if (IS_ERR(file))
++		return PTR_ERR(file);
++	err = setns_inode(file_inode(file), nstype);
+ 	fput(file);
+ 	return err;
+ }
 
-
- include/linux/kmod.h        |   21 ++++++-
- include/linux/nsproxy.h     |    1 
- kernel/kmod.c               |  135 +++++++++++++++++++++++++++++++++++++++----
- kernel/nsproxy.c            |   21 ++++---
- security/keys/request_key.c |   51 ++++++++++++++--
- 5 files changed, 201 insertions(+), 28 deletions(-)
-
---
-Ian
