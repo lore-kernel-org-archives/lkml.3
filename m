@@ -1,145 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753032AbbANNsc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 08:48:32 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:31277 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751598AbbANNsa (ORCPT
+	id S1752992AbbANNtg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 08:49:36 -0500
+Received: from smtprelay0200.hostedemail.com ([216.40.44.200]:34134 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751187AbbANNtf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 08:48:30 -0500
-Message-ID: <54B673AB.6040404@atmel.com>
-Date: Wed, 14 Jan 2015 14:48:27 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Wed, 14 Jan 2015 08:49:35 -0500
+X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2553:2559:2562:2693:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3874:4470:5007:6261:7875:7903:8531:9040:10004:10400:10848:10967:11232:11658:11914:12043:12050:12294:12517:12519:12740:13069:13149:13161:13229:13230:13311:13357:13618:14096:14097:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: silk35_3622f889afc08
+X-Filterd-Recvd-Size: 2097
+Date: Wed, 14 Jan 2015 08:49:30 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, vvs@sw.ru
+Subject: Re: Bug with jprobes and function graph tracer
+Message-ID: <20150114084930.06e9daf1@gandalf.local.home>
+In-Reply-To: <54B513A9.8070004@hitachi.com>
+References: <20150108122016.0241f713@gandalf.local.home>
+	<54B503F5.4020509@hitachi.com>
+	<20150113072232.451c599b@gandalf.local.home>
+	<54B513A9.8070004@hitachi.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        "Jean-Christophe Plagniol-Villard" <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        "Rob Herring" <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "Kumar Gala" <galak@codeaurora.org>, <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2 5/5] ARM: at91/dt: define a dumb irq demultiplexer
- chip connected on irq1
-References: <1421174781-4340-1-git-send-email-boris.brezillon@free-electrons.com> <1421174781-4340-6-git-send-email-boris.brezillon@free-electrons.com>
-In-Reply-To: <1421174781-4340-6-git-send-email-boris.brezillon@free-electrons.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 13/01/2015 19:46, Boris Brezillon a écrit :
-> IRQ is multiplexing several peripheral IRQs, but there's no way to
-> properly demultiplex those IRQs.
-> Use a dumb irq demux chip to achieve this demultiplexing operation.
+On Tue, 13 Jan 2015 21:46:33 +0900
+Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
+
+
+> > 
+> > I worked on this for the last few days and have a patch that fixes the
+> > problem. I'll be posting it later today. It also uncovered another
+> > unrelated bug that I worked on yesterday, otherwise I would have posted
+> > these fixes already.
 > 
-> Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-> ---
->  arch/arm/boot/dts/at91sam9260.dtsi | 26 ++++++++++++++++++++------
->  1 file changed, 20 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/arm/boot/dts/at91sam9260.dtsi b/arch/arm/boot/dts/at91sam9260.dtsi
-> index dd1313c..debe8d2 100644
-> --- a/arch/arm/boot/dts/at91sam9260.dtsi
-> +++ b/arch/arm/boot/dts/at91sam9260.dtsi
-> @@ -10,7 +10,7 @@
->  
->  #include "skeleton.dtsi"
->  #include <dt-bindings/pinctrl/at91.h>
-> -#include <dt-bindings/interrupt-controller/irq.h>
-> +#include <dt-bindings/interrupt-controller/atmel-aic.h>
->  #include <dt-bindings/gpio/gpio.h>
->  #include <dt-bindings/clock/at91.h>
->  
-> @@ -89,6 +89,7 @@
->  				atmel,external-irqs = <29 30 31>;
->  			};
->  
-> +
->  			ramc0: ramc@ffffea00 {
->  				compatible = "atmel,at91sam9260-sdramc";
->  				reg = <0xffffea00 0x200>;
-> @@ -97,7 +98,7 @@
->  			pmc: pmc@fffffc00 {
->  				compatible = "atmel,at91sam9260-pmc";
->  				reg = <0xfffffc00 0x100>;
-> -				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-> +				interrupts-extended = <&dumb_irq1_demux AIC_IRQ1_PMC>;
->  				interrupt-controller;
->  				#address-cells = <1>;
->  				#size-cells = <0>;
-> @@ -364,7 +365,7 @@
->  			pit: timer@fffffd30 {
->  				compatible = "atmel,at91sam9260-pit";
->  				reg = <0xfffffd30 0xf>;
-> -				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-> +				interrupts-extended = <&dumb_irq1_demux AIC_IRQ1_PIT>;
->  				clocks = <&mck>;
->  			};
->  
-> @@ -750,7 +751,7 @@
->  			dbgu: serial@fffff200 {
->  				compatible = "atmel,at91sam9260-usart";
->  				reg = <0xfffff200 0x200>;
-> -				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-> +				interrupts-extended = <&dumb_irq1_demux AIC_IRQ1_DBGU>;
->  				pinctrl-names = "default";
->  				pinctrl-0 = <&pinctrl_dbgu>;
->  				clocks = <&mck>;
-> @@ -959,7 +960,7 @@
->  			rtc@fffffd20 {
->  				compatible = "atmel,at91sam9260-rtt";
->  				reg = <0xfffffd20 0x10>;
-> -				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-> +				interrupts-extended = <&dumb_irq1_demux AIC_IRQ1_RTT>;
->  				clocks = <&clk32k>;
->  				status = "disabled";
->  			};
-> @@ -967,7 +968,7 @@
->  			watchdog@fffffd40 {
->  				compatible = "atmel,at91sam9260-wdt";
->  				reg = <0xfffffd40 0x10>;
-> -				interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-> +				interrupts-extended = <&dumb_irq1_demux AIC_IRQ1_WATCHDOG>;
->  				atmel,watchdog-type = "hardware";
->  				atmel,reset-type = "all";
->  				atmel,dbg-halt;
-> @@ -1010,6 +1011,19 @@
->  		};
->  	};
->  
-> +	dumb_irq1_demux: dumb-irq-demux@1 {
-> +		compatible = "irqchip-dumb-demux";
-> +		interrupt-controller;
-> +		#interrupt-cells = <1>;
-> +		interrupts = <1 IRQ_TYPE_LEVEL_HIGH 7>;
-> +		irqs = <(AIC_IRQ_MASK(AIC_IRQ1_PMC) |
-> +			 AIC_IRQ_MASK(AIC_IRQ1_PIT) |
-> +			 AIC_IRQ_MASK(AIC_IRQ1_DBGU) |
-> +			 AIC_IRQ_MASK(AIC_IRQ1_RTT) |
-> +			 AIC_IRQ_MASK(AIC_IRQ1_WATCHDOG) |
-> +			 AIC_IRQ_MASK(AIC_IRQ1_RSTC))>;
-> +	};
-> +
+> Great! I look forward that! :)
 
-Yep, with the modification that you suggested in "Re: [PATCH v2 4/5]
-ARM: at91/dt: add AIC irq1 muxed peripheral id definitions" it would be
-even simpler.
+I was all set to send the patches but during testing found that this
+isn't just affected by the fentry code, but also happens when jprobes
+and kprobes uses the breakpoint method (old mcount and i386).
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+I guess this has always been broken from when jprobes and function
+graph tracing were together.
 
->  	i2c@0 {
->  		compatible = "i2c-gpio";
->  		gpios = <&pioA 23 GPIO_ACTIVE_HIGH /* sda */
-> 
+Anyway, I think I have a simpler solution which simulates making the
+jprobes "notrace". At least this solution will allow us to have jprobe
+callbacks traced in the future. But for now, instead of crashing, we'll
+just disable function graph tracing while its in a jprobe.
 
+I'll see if I can get that patch working today (I should stop saying
+that).
 
--- 
-Nicolas Ferre
+But all is not lost. I found two bugs in the current implementation of
+the function graph tracer because of this :-)
+
+-- Steve
