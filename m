@@ -1,38 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753873AbbANUG5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 15:06:57 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:44859 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753555AbbANUGz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 15:06:55 -0500
-Date: Wed, 14 Jan 2015 15:06:49 -0500 (EST)
-Message-Id: <20150114.150649.475667638817956451.davem@davemloft.net>
-To: hayeswang@realtek.com
-Cc: netdev@vger.kernel.org, nic_swsd@realtek.com, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH net-next] r8152: replace tasklet with NAPI
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1394712342-15778-117-Taiwan-albertk@realtek.com>
-References: <1394712342-15778-117-Taiwan-albertk@realtek.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 14 Jan 2015 12:06:54 -0800 (PST)
+	id S1752152AbbANUQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 15:16:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35867 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751387AbbANUQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 15:16:27 -0500
+Date: Wed, 14 Jan 2015 15:16:10 -0500
+From: Brian Foster <bfoster@redhat.com>
+To: Namjae Jeon <linkinjeon@gmail.com>
+Cc: david@fromorbit.com, tytso@mit.edu, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        xfs@oss.sgi.com, a.sangwan@samsung.com,
+        Namjae Jeon <namjae.jeon@samsung.com>
+Subject: Re: [PATCH v8 11/11] xfstests: fsx: Add fallocate insert range
+ operation
+Message-ID: <20150114201610.GA49511@bfoster.bfoster>
+References: <1421165126-3585-1-git-send-email-linkinjeon@gmail.com>
+ <1421165126-3585-12-git-send-email-linkinjeon@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421165126-3585-12-git-send-email-linkinjeon@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hayes Wang <hayeswang@realtek.com>
-Date: Mon, 12 Jan 2015 12:06:23 +0800
-
-> Replace tasklet with NAPI.
+On Wed, Jan 14, 2015 at 01:05:26AM +0900, Namjae Jeon wrote:
+> From: Namjae Jeon <namjae.jeon@samsung.com>
 > 
-> Add rx_queue to queue the remaining rx packets if the number of the
-> rx packets is more than the request from poll().
+> This commit adds fallocate FALLOC_FL_INSERT_RANGE support for fsx.
 > 
-> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+> Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
+> Cc: Brian Foster<bfoster@redhat.com>
+> ---
+> Changelog
+> v8:
+>  - create TRIM_OFF() and TRIM_LEN() and redeine redefine TRIM_OFF_LEN().
+> 
+>  ltp/fsx.c |  122 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++-----
+>  1 file changed, 113 insertions(+), 9 deletions(-)
+> 
+> diff --git a/ltp/fsx.c b/ltp/fsx.c
+> index 3709419..741af34 100644
+> --- a/ltp/fsx.c
+> +++ b/ltp/fsx.c
+> @@ -95,7 +95,8 @@ int			logcount = 0;	/* total ops */
+>  #define OP_PUNCH_HOLE		6
+>  #define OP_ZERO_RANGE		7
+>  #define OP_COLLAPSE_RANGE	8
+> -#define OP_MAX_FULL		9
+> +#define OP_INSERT_RANGE	9
+> +#define OP_MAX_FULL		10
+>  
+>  /* operation modifiers */
+>  #define OP_CLOSEOPEN	100
+> @@ -145,6 +146,7 @@ int     fallocate_calls = 1;            /* -F flag disables */
+>  int     punch_hole_calls = 1;           /* -H flag disables */
+>  int     zero_range_calls = 1;           /* -z flag disables */
+>  int	collapse_range_calls = 1;	/* -C flag disables */
+> +int	insert_range_calls = 1;		/* -i flag disables */
+>  int 	mapped_reads = 1;		/* -R flag disables it */
+>  int	fsxgoodfd = 0;
+>  int	o_direct;			/* -Z */
+> @@ -339,6 +341,14 @@ logdump(void)
+>  						     lp->args[0] + lp->args[1])
+>  				prt("\t******CCCC");
+>  			break;
+> +		case OP_INSERT_RANGE:
+> +			prt("INSERT 0x%x thru 0x%x\t(0x%x bytes)",
+> +			    lp->args[0], lp->args[0] + lp->args[1] - 1,
+> +			    lp->args[1]);
+> +			if (badoff >= lp->args[0] && badoff <
+> +						     lp->args[0] + lp->args[1])
+> +				prt("\t******CCCC");
+> +			break;
+>  		case OP_SKIPPED:
+>  			prt("SKIPPED (no operation)");
+>  			break;
+> @@ -1012,6 +1022,59 @@ do_collapse_range(unsigned offset, unsigned length)
+>  }
+>  #endif
+>  
+> +#ifdef FALLOC_FL_INSERT_RANGE
+> +void
+> +do_insert_range(unsigned offset, unsigned length)
+> +{
+> +	unsigned end_offset;
+> +	int mode = FALLOC_FL_INSERT_RANGE;
+> +
+> +	if (length == 0) {
+> +		if (!quiet && testcalls > simulatedopcount)
+> +			prt("skipping zero length insert range\n");
+> +		log4(OP_SKIPPED, OP_INSERT_RANGE, offset, length);
+> +		return;
+> +	}
+> +
+> +	if ((loff_t)offset >= file_size) {
+> +		if (!quiet && testcalls > simulatedopcount)
+> +			prt("skipping insert range behind EOF\n");
+> +		log4(OP_SKIPPED, OP_INSERT_RANGE, offset, length);
+> +		return;
+> +	}
+> +
+> +	log4(OP_INSERT_RANGE, offset, length, 0);
+> +
+> +	if (testcalls <= simulatedopcount)
+> +		return;
+> +
+> +	end_offset = offset + length;
+> +	if ((progressinterval && testcalls % progressinterval == 0) ||
+> +	    (debug && (monitorstart == -1 || monitorend == -1 ||
+> +		      end_offset <= monitorend))) {
+> +		prt("%lu insert\tfrom 0x%x to 0x%x, (0x%x bytes)\n", testcalls,
+> +			offset, offset+length, length);
+> +	}
+> +	if (fallocate(fd, mode, (loff_t)offset, (loff_t)length) == -1) {
+> +		prt("insert range: %x to %x\n", offset, length);
+> +		prterr("do_insert_range: fallocate");
+> +		report_failure(161);
+> +	}
+> +
+> +	memmove(good_buf + end_offset, good_buf + offset,
+> +		file_size - offset);
+> +	memset(good_buf + offset, '\0', length);
+> +	file_size += length;
+> +}
+> +
+> +#else
+> +void
+> +do_insert_range(unsigned offset, unsigned length)
+> +{
+> +	return;
+> +}
+> +#endif
+> +
+>  #ifdef HAVE_LINUX_FALLOC_H
+>  /* fallocate is basically a no-op unless extending, then a lot like a truncate */
+>  void
+> @@ -1117,14 +1180,25 @@ docloseopen(void)
+>  	}
+>  }
+>  
+> -#define TRIM_OFF_LEN(off, len, size)	\
+> -do {					\
+> -	if (size)			\
+> +
+> +#define TRIM_OFF(off, size)	\
+> +do {						\
+> +	if (size)				\
+>  		(off) %= (size);	\
+> -	else				\
+> -		(off) = 0;		\
+> -	if ((off) + (len) > (size))	\
+> -		(len) = (size) - (off);	\
+> +	else					\
+> +		(off) = 0;			\
+> +} while (0)
+> +
+> +#define TRIM_LEN(off, len, size)	\
+> +do {								\
+> +	if ((off) + (len) > (size))		\
+> +		(len) = (size) - (off);		\
+> +} while (0)
+> +
+> +#define TRIM_OFF_LEN(off, len, size)	\
+> +do {									\
+> +	TRIM_OFF(off, size);				\
+> +	TRIM_LEN(off, len, size);			\
+>  } while (0)
+>  
+>  void
+> @@ -1192,6 +1266,12 @@ test(void)
+>  			goto out;
+>  		}
+>  		break;
+> +	case OP_INSERT_RANGE:
+> +		if (!insert_range_calls) {
+> +			log4(OP_SKIPPED, OP_INSERT_RANGE, offset, size);
+> +			goto out;
+> +		}
+> +		break;
+>  	}
+>  
+>  	switch (op) {
+> @@ -1244,6 +1324,22 @@ test(void)
+>  		}
+>  		do_collapse_range(offset, size);
+>  		break;
+> +	case OP_INSERT_RANGE:
+> +		TRIM_OFF(offset, file_size);
+> +		TRIM_LEN(offset, size, maxfilelen - file_size);
 
-Applied, thanks.
+Ugh, I hit a crash down in do_insert_range() due to the memset() on
+good_buf going off the end of the buffer. It looks like the TRIM_LEN()
+here is not correct and can result in a really large length value.
+
+Perhaps something like TRIM_LEN(file_size, length, maxfilelen) is what
+we want for insert range ops?
+
+Brian
+
+> +		offset = offset & ~(block_size - 1);
+> +		size = size & ~(block_size - 1);
+> +		if (size == 0) {
+> +			log4(OP_SKIPPED, OP_INSERT_RANGE, offset, size);
+> +			goto out;
+> +		}
+> +		if (file_size + size > maxfilelen) {
+> +			log4(OP_SKIPPED, OP_INSERT_RANGE, offset, size);
+> +			goto out;
+> +		}
+> +
+> +		do_insert_range(offset, size);
+> +		break;
+>  	default:
+>  		prterr("test: unknown operation");
+>  		report_failure(42);
+> @@ -1307,6 +1403,9 @@ usage(void)
+>  #ifdef FALLOC_FL_COLLAPSE_RANGE
+>  "	-C: Do not use collapse range calls\n"
+>  #endif
+> +#ifdef FALLOC_FL_INSERT_RANGE
+> +"	-i: Do not use insert range calls\n"
+> +#endif
+>  "	-L: fsxLite - no file creations & no file size changes\n\
+>  	-N numops: total # operations to do (default infinity)\n\
+>  	-O: use oplen (see -o flag) for every op (default random)\n\
+> @@ -1493,7 +1592,7 @@ main(int argc, char **argv)
+>  
+>  	setvbuf(stdout, (char *)0, _IOLBF, 0); /* line buffered stdout */
+>  
+> -	while ((ch = getopt(argc, argv, "b:c:dfl:m:no:p:qr:s:t:w:xyAD:FHzCLN:OP:RS:WZ"))
+> +	while ((ch = getopt(argc, argv, "b:c:dfl:m:no:p:qr:s:t:w:xyAD:FHzCiLN:OP:RS:WZ"))
+>  	       != EOF)
+>  		switch (ch) {
+>  		case 'b':
+> @@ -1599,6 +1698,9 @@ main(int argc, char **argv)
+>  		case 'C':
+>  			collapse_range_calls = 0;
+>  			break;
+> +		case 'i':
+> +			insert_range_calls = 0;
+> +			break;
+>  		case 'L':
+>  		        lite = 1;
+>  			break;
+> @@ -1758,6 +1860,8 @@ main(int argc, char **argv)
+>  		zero_range_calls = test_fallocate(FALLOC_FL_ZERO_RANGE);
+>  	if (collapse_range_calls)
+>  		collapse_range_calls = test_fallocate(FALLOC_FL_COLLAPSE_RANGE);
+> +	if (insert_range_calls)
+> +		insert_range_calls = test_fallocate(FALLOC_FL_INSERT_RANGE);
+>  
+>  	while (numops == -1 || numops--)
+>  		test();
+> -- 
+> 1.7.9.5
+> 
