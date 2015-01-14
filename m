@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753943AbbANJwH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 04:52:07 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:36395 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753870AbbANJwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 04:52:04 -0500
-Message-ID: <54B63C07.9010301@ti.com>
-Date: Wed, 14 Jan 2015 15:21:03 +0530
+	id S1753603AbbANJzs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 04:55:48 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:48347 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751633AbbANJzq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 04:55:46 -0500
+Message-ID: <54B63CED.1020603@ti.com>
+Date: Wed, 14 Jan 2015 15:24:53 +0530
 From: Sekhar Nori <nsekhar@ti.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>, Mark Brown <broonie@kernel.org>,
-        <linux@arm.linux.org.uk>, <arnd@arndb.de>, <vinod.koul@intel.com>,
-        <khilman@deeprootsystems.com>
-CC: Liam Girdwood <lgirdwood@gmail.com>, <alsa-devel@alsa-project.org>,
-        <linux-kernel@vger.kernel.org>, <ulf.hansson@linaro.org>,
-        <chris@printf.net>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-mmc@vger.kernel.org>, <linux-spi@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, Tony Lindgren <tony@atomide.com>,
-        <dmaengine@vger.kernel.org>
-Subject: Re: [PATCH 0/3] ARM: edma: Correct header file usage
-References: <1417084891-17990-1-git-send-email-peter.ujfalusi@ti.com>
-In-Reply-To: <1417084891-17990-1-git-send-email-peter.ujfalusi@ti.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>,
+        Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>
+CC: Rob Herring <robh+dt@kernel.org>, Vinod Koul <vinod.koul@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <devicetree@vger.kernel.org>
+Subject: Re: [PATCH] arch: arm: common: edma.c:  Remove some unused functions
+References: <1417906406-5527-1-git-send-email-rickard_strandqvist@spectrumdigital.se> <54A10868.70001@ti.com>
+In-Reply-To: <54A10868.70001@ti.com>
 Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 27 November 2014 04:11 PM, Peter Ujfalusi wrote:
-> Hi,
+On Monday 29 December 2014 01:23 PM, Peter Ujfalusi wrote:
+> On 12/07/2014 12:53 AM, Rickard Strandqvist wrote:
+>> Removes some functions that are not used anywhere:
+>> edma_shadow0_read() edma_or_array()
+>>
+>> This was partially found by using a static code analysis program called cppcheck.
 > 
-> The linux/platform_data/edma.h file was used for API definition as well, which
-> is not correct since the header should only contain platform data related
-> structures, defines, etc.
+> Acked-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 
-I would like to queue this series through ARM-SoC for v3.20 with Mark's
-and Ulf's acks added. I know its not the complete clean-up everyone
-wanted to see but I also know Peter working on doing the complete
-clean-up as well. So we are firmly on the path to removing
-arch/arm/common/edma.c.
+Queuing for v3.20 through ARM-SoC.
+
+The correct prefix for ARM patches is "ARM: ". I will fix while
+applying. Please take care next time on.
 
 Thanks,
 Sekhar
-
