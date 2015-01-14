@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574AbbANOpy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 09:45:54 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:33918 "EHLO
+	id S1753240AbbANOpe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 09:45:34 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:33915 "EHLO
 	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752876AbbANOpg (ORCPT
+	with ESMTP id S1752748AbbANOpc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 09:45:36 -0500
+	Wed, 14 Jan 2015 09:45:32 -0500
 From: Marc Zyngier <marc.zyngier@arm.com>
 To: Thomas Gleixner <tglx@linutronix.de>,
         Jiang Liu <jiang.liu@linux.intel.com>
 Cc: <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 1/2] genirq: Abstract access to irq_chip flags
-Date: Wed, 14 Jan 2015 14:45:16 +0000
-Message-Id: <1421246717-11640-2-git-send-email-marc.zyngier@arm.com>
+Subject: [PATCH v2 2/2] genirq: Allow irq_desc to carry the union of stacked irq_chip flags
+Date: Wed, 14 Jan 2015 14:45:17 +0000
+Message-Id: <1421246717-11640-3-git-send-email-marc.zyngier@arm.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421246717-11640-1-git-send-email-marc.zyngier@arm.com>
 References: <1421246717-11640-1-git-send-email-marc.zyngier@arm.com>
@@ -21,136 +21,122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to safely migrate to a cumulative set of flags, start by
-abstracting the way we look at these flags. There is otherwise no
-change in semantics here.
+The current infrastructure for stacked domains doesn't propagate
+irq_chip flags, and as we only look at the top-level irq_chip,
+we may miss a number of critical flags.
+
+This patch accumulates the flags into a new set, stored at the
+irq_desc level, with an additional flag to indicate that this is
+a stack of irqchip. The accessor is updated to return the right one.
 
 Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
 ---
- include/linux/irqdesc.h |  5 +++++
- kernel/irq/chip.c       | 10 +++++-----
- kernel/irq/manage.c     |  8 ++++----
- kernel/irq/pm.c         |  2 +-
- 4 files changed, 15 insertions(+), 10 deletions(-)
+ include/linux/irq.h     |  4 ++++
+ include/linux/irqdesc.h |  7 +++++++
+ kernel/irq/irqdesc.c    |  3 +++
+ kernel/irq/irqdomain.c  | 20 +++++++++++++++++++-
+ 4 files changed, 33 insertions(+), 1 deletion(-)
 
+diff --git a/include/linux/irq.h b/include/linux/irq.h
+index d09ec7a..cb956f6 100644
+--- a/include/linux/irq.h
++++ b/include/linux/irq.h
+@@ -377,6 +377,7 @@ struct irq_chip {
+  * IRQCHIP_SKIP_SET_WAKE:	Skip chip.irq_set_wake(), for this irq chip
+  * IRQCHIP_ONESHOT_SAFE:	One shot does not require mask/unmask
+  * IRQCHIP_EOI_THREADED:	Chip requires eoi() on unmask in threaded mode
++ * IRQCHIP_STACKED_CHIPS:	Pseudo flag for stacked irq chips
+  */
+ enum {
+ 	IRQCHIP_SET_TYPE_MASKED		= (1 <<  0),
+@@ -386,6 +387,9 @@ enum {
+ 	IRQCHIP_SKIP_SET_WAKE		= (1 <<  4),
+ 	IRQCHIP_ONESHOT_SAFE		= (1 <<  5),
+ 	IRQCHIP_EOI_THREADED		= (1 <<  6),
++
++	/* The following is only valid as part of irq_desc.chip_flags */
++	IRQCHIP_STACKED_CHIPS		= (1 << 31),
+ };
+ 
+ /* This include will go away once we isolated irq_desc usage to core code */
 diff --git a/include/linux/irqdesc.h b/include/linux/irqdesc.h
-index faf433a..32d9fff 100644
+index 32d9fff..f35f192 100644
 --- a/include/linux/irqdesc.h
 +++ b/include/linux/irqdesc.h
-@@ -107,6 +107,11 @@ static inline void *irq_desc_get_chip_data(struct irq_desc *desc)
- 	return desc->irq_data.chip_data;
+@@ -50,6 +50,9 @@ struct irq_desc {
+ 	struct irq_data		irq_data;
+ 	unsigned int __percpu	*kstat_irqs;
+ 	irq_flow_handler_t	handle_irq;
++#ifdef CONFIG_IRQ_DOMAIN_HIERARCHY
++	unsigned long		chip_flags;	/* Union of all the irqchips */
++#endif
+ #ifdef CONFIG_IRQ_PREFLOW_FASTEOI
+ 	irq_preflow_handler_t	preflow_handler;
+ #endif
+@@ -109,6 +112,10 @@ static inline void *irq_desc_get_chip_data(struct irq_desc *desc)
+ 
+ static inline unsigned long irq_desc_get_chip_flags(struct irq_desc *desc)
+ {
++#ifdef CONFIG_IRQ_DOMAIN_HIERARCHY
++	if (desc->chip_flags & IRQCHIP_STACKED_CHIPS)
++		return desc->chip_flags;
++#endif
+ 	return desc->irq_data.chip->flags;
  }
  
-+static inline unsigned long irq_desc_get_chip_flags(struct irq_desc *desc)
-+{
-+	return desc->irq_data.chip->flags;
-+}
-+
- static inline void *irq_desc_get_handler_data(struct irq_desc *desc)
- {
- 	return desc->irq_data.handler_data;
-diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-index 6f1c7a5..d8ffb36 100644
---- a/kernel/irq/chip.c
-+++ b/kernel/irq/chip.c
-@@ -287,7 +287,7 @@ void unmask_threaded_irq(struct irq_desc *desc)
- {
- 	struct irq_chip *chip = desc->irq_data.chip;
- 
--	if (chip->flags & IRQCHIP_EOI_THREADED)
-+	if (irq_desc_get_chip_flags(desc) & IRQCHIP_EOI_THREADED)
- 		chip->irq_eoi(&desc->irq_data);
- 
- 	if (chip->irq_unmask) {
-@@ -489,7 +489,7 @@ static void cond_unmask_eoi_irq(struct irq_desc *desc, struct irq_chip *chip)
- 	    irqd_irq_masked(&desc->irq_data) && !desc->threads_oneshot) {
- 		chip->irq_eoi(&desc->irq_data);
- 		unmask_irq(desc);
--	} else if (!(chip->flags & IRQCHIP_EOI_THREADED)) {
-+	} else if (!(irq_desc_get_chip_flags(desc) & IRQCHIP_EOI_THREADED)) {
- 		chip->irq_eoi(&desc->irq_data);
+diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
+index 99793b9..b916ea4 100644
+--- a/kernel/irq/irqdesc.c
++++ b/kernel/irq/irqdesc.c
+@@ -84,6 +84,9 @@ static void desc_set_defaults(unsigned int irq, struct irq_desc *desc, int node,
+ 	irq_settings_clr_and_set(desc, ~0, _IRQ_DEFAULT_INIT_FLAGS);
+ 	irqd_set(&desc->irq_data, IRQD_IRQ_DISABLED);
+ 	desc->handle_irq = handle_bad_irq;
++#ifdef CONFIG_IRQ_DOMAIN_HIERARCHY
++	desc->chip_flags = 0;
++#endif
+ 	desc->depth = 1;
+ 	desc->irq_count = 0;
+ 	desc->irqs_unhandled = 0;
+diff --git a/kernel/irq/irqdomain.c b/kernel/irq/irqdomain.c
+index 7fac311..3d0e366 100644
+--- a/kernel/irq/irqdomain.c
++++ b/kernel/irq/irqdomain.c
+@@ -1013,6 +1013,17 @@ static void irq_domain_free_irqs_recursive(struct irq_domain *domain,
  	}
  }
-@@ -538,7 +538,7 @@ handle_fasteoi_irq(unsigned int irq, struct irq_desc *desc)
- 	raw_spin_unlock(&desc->lock);
- 	return;
- out:
--	if (!(chip->flags & IRQCHIP_EOI_IF_HANDLED))
-+	if (!(irq_desc_get_chip_flags(desc) & IRQCHIP_EOI_IF_HANDLED))
- 		chip->irq_eoi(&desc->irq_data);
- 	raw_spin_unlock(&desc->lock);
- }
-@@ -836,7 +836,7 @@ void irq_cpu_online(void)
  
- 		chip = irq_data_get_irq_chip(&desc->irq_data);
- 		if (chip && chip->irq_cpu_online &&
--		    (!(chip->flags & IRQCHIP_ONOFFLINE_ENABLED) ||
-+		    (!(irq_desc_get_chip_flags(desc) & IRQCHIP_ONOFFLINE_ENABLED) ||
- 		     !irqd_irq_disabled(&desc->irq_data)))
- 			chip->irq_cpu_online(&desc->irq_data);
++static void irq_desc_update_chip_flags(struct irq_domain *domain,
++				       unsigned int virq)
++{
++#ifdef CONFIG_IRQ_DOMAIN_HIERARCHY
++	struct irq_desc *desc = irq_to_desc(virq);
++	struct irq_data *data = irq_domain_get_irq_data(domain, virq);
++
++	desc->chip_flags |= data->chip->flags | IRQCHIP_STACKED_CHIPS;
++#endif
++}
++
+ static int irq_domain_alloc_irqs_recursive(struct irq_domain *domain,
+ 					   unsigned int irq_base,
+ 					   unsigned int nr_irqs, void *arg)
+@@ -1025,8 +1036,15 @@ static int irq_domain_alloc_irqs_recursive(struct irq_domain *domain,
+ 	if (recursive)
+ 		ret = irq_domain_alloc_irqs_recursive(parent, irq_base,
+ 						      nr_irqs, arg);
+-	if (ret >= 0)
++	if (ret >= 0) {
+ 		ret = domain->ops->alloc(domain, irq_base, nr_irqs, arg);
++		if (ret >= 0) {
++			int i;
++
++			for (i = 0; i < nr_irqs; i++)
++				irq_desc_update_chip_flags(domain, irq_base + i);
++		}
++	}
+ 	if (ret < 0 && recursive)
+ 		irq_domain_free_irqs_recursive(parent, irq_base, nr_irqs);
  
-@@ -866,7 +866,7 @@ void irq_cpu_offline(void)
- 
- 		chip = irq_data_get_irq_chip(&desc->irq_data);
- 		if (chip && chip->irq_cpu_offline &&
--		    (!(chip->flags & IRQCHIP_ONOFFLINE_ENABLED) ||
-+		    (!(irq_desc_get_chip_flags(desc) & IRQCHIP_ONOFFLINE_ENABLED) ||
- 		     !irqd_irq_disabled(&desc->irq_data)))
- 			chip->irq_cpu_offline(&desc->irq_data);
- 
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index 8069237..be7ce78 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -491,7 +491,7 @@ static int set_irq_wake_real(unsigned int irq, unsigned int on)
- 	struct irq_desc *desc = irq_to_desc(irq);
- 	int ret = -ENXIO;
- 
--	if (irq_desc_get_chip(desc)->flags &  IRQCHIP_SKIP_SET_WAKE)
-+	if (irq_desc_get_chip_flags(desc) &  IRQCHIP_SKIP_SET_WAKE)
- 		return 0;
- 
- 	if (desc->irq_data.chip->irq_set_wake)
-@@ -589,7 +589,7 @@ int __irq_set_trigger(struct irq_desc *desc, unsigned int irq,
- 
- 	flags &= IRQ_TYPE_SENSE_MASK;
- 
--	if (chip->flags & IRQCHIP_SET_TYPE_MASKED) {
-+	if (irq_desc_get_chip_flags(desc) & IRQCHIP_SET_TYPE_MASKED) {
- 		if (!irqd_irq_masked(&desc->irq_data))
- 			mask_irq(desc);
- 		if (!irqd_irq_disabled(&desc->irq_data))
-@@ -1043,7 +1043,7 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 	 * chip flags, so we can avoid the unmask dance at the end of
- 	 * the threaded handler for those.
- 	 */
--	if (desc->irq_data.chip->flags & IRQCHIP_ONESHOT_SAFE)
-+	if (irq_desc_get_chip_flags(desc) & IRQCHIP_ONESHOT_SAFE)
- 		new->flags &= ~IRQF_ONESHOT;
- 
- 	/*
-@@ -1121,7 +1121,7 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 		new->thread_mask = 1 << ffz(thread_mask);
- 
- 	} else if (new->handler == irq_default_primary_handler &&
--		   !(desc->irq_data.chip->flags & IRQCHIP_ONESHOT_SAFE)) {
-+		   !(irq_desc_get_chip_flags(desc) & IRQCHIP_ONESHOT_SAFE)) {
- 		/*
- 		 * The interrupt was requested with handler = NULL, so
- 		 * we use the default primary handler for it. But it
-diff --git a/kernel/irq/pm.c b/kernel/irq/pm.c
-index 3ca5325..8ed029d 100644
---- a/kernel/irq/pm.c
-+++ b/kernel/irq/pm.c
-@@ -88,7 +88,7 @@ static bool suspend_device_irq(struct irq_desc *desc, int irq)
- 	 * chip level. The chip implementation indicates that with
- 	 * IRQCHIP_MASK_ON_SUSPEND.
- 	 */
--	if (irq_desc_get_chip(desc)->flags & IRQCHIP_MASK_ON_SUSPEND)
-+	if (irq_desc_get_chip_flags(desc) & IRQCHIP_MASK_ON_SUSPEND)
- 		mask_irq(desc);
- 	return true;
- }
 -- 
 2.1.4
 
