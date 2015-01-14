@@ -1,54 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932108AbbANSjn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 13:39:43 -0500
-Received: from mail-vc0-f174.google.com ([209.85.220.174]:33337 "EHLO
-	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754430AbbANSjm (ORCPT
+	id S1753806AbbANSlD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 13:41:03 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:40876 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751343AbbANSlA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 13:39:42 -0500
+	Wed, 14 Jan 2015 13:41:00 -0500
+Date: Wed, 14 Jan 2015 12:39:43 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: Felipe Balbi <balbi@ti.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Subject: Re: [PATCH 08/12] usb: gadget: at91_udc: Remove non-DT handling code
+Message-ID: <20150114183943.GO16533@saruman>
+Reply-To: <balbi@ti.com>
+References: <1421252524-24452-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <1421252524-24452-9-git-send-email-alexandre.belloni@free-electrons.com>
+ <20150114173812.GI16533@saruman>
+ <20150114183516.GN3843@piout.net>
 MIME-Version: 1.0
-In-Reply-To: <1421203412-5159-1-git-send-email-zyw@rock-chips.com>
-References: <1421203412-5159-1-git-send-email-zyw@rock-chips.com>
-Date: Wed, 14 Jan 2015 10:39:41 -0800
-X-Google-Sender-Auth: b6vsuhembe9kwRpe68u0yYoDeGQ
-Message-ID: <CAD=FV=UBSBmCo3GpKN0pkdmkbT27hPp4akPoZG0hSGdpEwa_jg@mail.gmail.com>
-Subject: Re: [PATCH] RTC: RK808: fix the rtc time reading issue
-From: Doug Anderson <dianders@chromium.org>
-To: Chris Zhong <zyw@rock-chips.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="OxpYUbrsx40GOZXC"
+Content-Disposition: inline
+In-Reply-To: <20150114183516.GN3843@piout.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chris,
+--OxpYUbrsx40GOZXC
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, Jan 13, 2015 at 6:43 PM, Chris Zhong <zyw@rock-chips.com> wrote:
-> +       /* After we set the GET_TIME bit, the rtc time couldn't be read
-> +        * immediately, we should wait up to 31.25 us, about one cycle of
-> +        * 32khz. If we clear the GET_TIME bit here, the time of i2c transfer
-> +        * certainly more than 31.25us.
-> +        */
+On Wed, Jan 14, 2015 at 07:35:16PM +0100, Alexandre Belloni wrote:
+> On 14/01/2015 at 11:38:12 -0600, Felipe Balbi wrote :
+> > On Wed, Jan 14, 2015 at 05:22:00PM +0100, Alexandre Belloni wrote:
+> > > From: Boris Brezillon <boris.brezillon@free-electrons.com>
+> > >=20
+> > > Since non-DT board support has been removed from the at91 architectur=
+e we
+> > > can safely remove non-DT handling code.
+> > >=20
+> > > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> > > ---
+> > >  drivers/usb/gadget/udc/Kconfig    |  1 +
+> > >  drivers/usb/gadget/udc/at91_udc.c | 16 ++--------------
+> > >  2 files changed, 3 insertions(+), 14 deletions(-)
+> > >=20
+> > > diff --git a/drivers/usb/gadget/udc/Kconfig b/drivers/usb/gadget/udc/=
+Kconfig
+> > > index b8e213eb36cc..366e551aeff0 100644
+> > > --- a/drivers/usb/gadget/udc/Kconfig
+> > > +++ b/drivers/usb/gadget/udc/Kconfig
+> > > @@ -32,6 +32,7 @@ menu "USB Peripheral Controller"
+> > >  config USB_AT91
+> > >  	tristate "Atmel AT91 USB Device Port"
+> > >  	depends on ARCH_AT91
+> > > +	depends on OF || COMPILE_TEST
+> >=20
+> > will this build with !OF builds ?
+> >=20
+>=20
+> It should, I'll check but it doesn't matter because it depends on
+> ARCH_AT91 which selects OF.
 
-No idea what Andrew thinks of this, but other multiline comments in
-this file look slightly different (there's a line containing just /*).
+Missed that line :-)
 
+Acked-by: Felipe Balbi <balbi@ti.com>
 
->         ret = regmap_update_bits(rk808->regmap, RK808_RTC_CTRL_REG,
->                                  BIT_RTC_CTRL_REG_RTC_GET_TIME,
-> -                                BIT_RTC_CTRL_REG_RTC_GET_TIME);
-> +                                0);
->         if (ret) {
->                 dev_err(dev, "Failed to update bits rtc_ctrl: %d\n", ret);
->                 return ret;
+--=20
+balbi
 
-Above is just a nit.  I'll leave it up to Andrew to say whether he
-wants you to spin, or he'll fix it up, or he doesn't care and he'll
-land it as-is.
+--OxpYUbrsx40GOZXC
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Reviewed-by: Doug Anderson <dianders@chromium.org>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUtrfvAAoJEIaOsuA1yqREQJ0QAJKdH8Ww4uqdjDbn8kqS6Kyf
+Vl2cH4pZRU1KQmxxG8n66+YBprqLB/b89QQXOTBde17H/S8xXagfxe7sBLOn8k2p
+nEgf+bl0BJRwQu8LsZyWY9NJpfbht22RH0hU+KvlTp5gHAD38DcqdvbazqhXp6OK
+k9G/zcK8JanwAKZewCiM6LHfpvcDJ0xMzTKjmezSMQNe4n7R9a9ejJm5/e7sJpAO
+mdbGEg0tX5xe39QrMpndmBD9HaadqLNW4W4DA21gRoAKSk3DM7/ynJZK8t4Zx8A9
+7cOY0RQ5YEkX5uvUmlWo7scEuVWfF1fqvJ7KMoigVL86Y335iOu+qAyC5qjjxiO0
+p/himGKHge/zBm4NmDcG3ujiWv0KZJSudzPqdEYiH98jmCJN4g9d4e+GV/pSdW/U
+gWj/UuF7KxJC+YzI6uQlhnFkPa4SzHX4nte6NdhET0nfnjGX64w9CLZwQzpZ+qMG
+QW+qvDX8iOX2Yi7Qx3UTuIjqUQ1Yp5AQxFbzgT/6q8PLNJZx9ZZ83LgyoItKnJc5
+C8RC9Vx5K55T+A75PXGs/CW+bD9ZX5SWaMoErFBBtBWrjwY/E9Rp6z9GKVebXtIx
+VvHqk/l0bBgTFyol2hJxdF1+5soalkmCqwh1gFNkGO/rJzrUFH5XYoA64tQrLv4r
+UGmK7tUXYdpmJAa3M8Tf
+=Ng/J
+-----END PGP SIGNATURE-----
+
+--OxpYUbrsx40GOZXC--
