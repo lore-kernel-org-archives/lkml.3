@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932475AbbANHeJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:34:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58470 "EHLO
+	id S1754753AbbANH3g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:29:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58075 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932457AbbANHeF (ORCPT
+	with ESMTP id S1754730AbbANH3d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:34:05 -0500
+	Wed, 14 Jan 2015 02:29:33 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [PATCH 3.14 24/77] UBI: Fix invalid vfree()
+        Luca Abeni <luca.abeni@unitn.it>,
+        "Peter Zijlstra (Intel)" <peterz@infradead.org>,
+        Juri Lelli <juri.lelli@gmail.com>, Dario Faggioli <raistlin@linux.it>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.18 113/150] sched/deadline: Fix migration of SCHED_DEADLINE tasks
 Date: Tue, 13 Jan 2015 23:23:04 -0800
-Message-Id: <20150114072225.522021333@linuxfoundation.org>
+Message-Id: <20150114072100.978110411@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-References: <20150114072224.182299947@linuxfoundation.org>
+In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
+References: <20150114072055.842408181@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,76 +28,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Richard Weinberger <richard@nod.at>
+From: Luca Abeni <luca.abeni@unitn.it>
 
-commit f38aed975c0c3645bbdfc5ebe35726e64caaf588 upstream.
+commit 6a503c3be937d275113b702e0421e5b0720abe8a upstream.
 
-The logic of vfree()'ing vol->upd_buf is tied to vol->updating.
-In ubi_start_update() vol->updating is set long before vmalloc()'ing
-vol->upd_buf. If we encounter a write failure in ubi_start_update()
-before vmalloc() the UBI device release function will try to vfree()
-vol->upd_buf because vol->updating is set.
-Fix this by allocating vol->upd_buf directly after setting vol->updating.
+According to global EDF, tasks should be migrated between runqueues
+without checking if their scheduling deadlines and runtimes are valid.
+However, SCHED_DEADLINE currently performs such a check:
+a migration happens doing:
 
-Fixes:
-[   31.559338] UBI warning: vol_cdev_release: update of volume 2 not finished, volume is damaged
-[   31.559340] ------------[ cut here ]------------
-[   31.559343] WARNING: CPU: 1 PID: 2747 at mm/vmalloc.c:1446 __vunmap+0xe3/0x110()
-[   31.559344] Trying to vfree() nonexistent vm area (ffffc90001f2b000)
-[   31.559345] Modules linked in:
-[   31.565620]  0000000000000bba ffff88002a0cbdb0 ffffffff818f0497 ffff88003b9ba148
-[   31.566347]  ffff88002a0cbde0 ffffffff8156f515 ffff88003b9ba148 0000000000000bba
-[   31.567073]  0000000000000000 0000000000000000 ffff88002a0cbe88 ffffffff8156c10a
-[   31.567793] Call Trace:
-[   31.568034]  [<ffffffff818f0497>] dump_stack+0x4e/0x7a
-[   31.568510]  [<ffffffff8156f515>] ubi_io_write_vid_hdr+0x155/0x160
-[   31.569084]  [<ffffffff8156c10a>] ubi_eba_write_leb+0x23a/0x870
-[   31.569628]  [<ffffffff81569b36>] vol_cdev_write+0x226/0x380
-[   31.570155]  [<ffffffff81179265>] vfs_write+0xb5/0x1f0
-[   31.570627]  [<ffffffff81179f8a>] SyS_pwrite64+0x6a/0xa0
-[   31.571123]  [<ffffffff818fde12>] system_call_fastpath+0x16/0x1b
+	deactivate_task(rq, next_task, 0);
+	set_task_cpu(next_task, later_rq->cpu);
+	activate_task(later_rq, next_task, 0);
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+which ends up calling dequeue_task_dl(), setting the new CPU, and then
+calling enqueue_task_dl().
+
+enqueue_task_dl() then calls enqueue_dl_entity(), which calls
+update_dl_entity(), which can modify scheduling deadline and runtime,
+breaking global EDF scheduling.
+
+As a result, some of the properties of global EDF are not respected:
+for example, a taskset {(30, 80), (40, 80), (120, 170)} scheduled on
+two cores can have unbounded response times for the third task even
+if 30/80+40/80+120/170 = 1.5809 < 2
+
+This can be fixed by invoking update_dl_entity() only in case of
+wakeup, or if this is a new SCHED_DEADLINE task.
+
+Signed-off-by: Luca Abeni <luca.abeni@unitn.it>
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Acked-by: Juri Lelli <juri.lelli@gmail.com>
+Cc: Dario Faggioli <raistlin@linux.it>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1418813432-20797-2-git-send-email-luca.abeni@unitn.it
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/ubi/upd.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ kernel/sched/deadline.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/drivers/mtd/ubi/upd.c
-+++ b/drivers/mtd/ubi/upd.c
-@@ -133,6 +133,10 @@ int ubi_start_update(struct ubi_device *
- 	ubi_assert(!vol->updating && !vol->changing_leb);
- 	vol->updating = 1;
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -831,10 +831,10 @@ enqueue_dl_entity(struct sched_dl_entity
+ 	 * parameters of the task might need updating. Otherwise,
+ 	 * we want a replenishment of its runtime.
+ 	 */
+-	if (!dl_se->dl_new && flags & ENQUEUE_REPLENISH)
+-		replenish_dl_entity(dl_se, pi_se);
+-	else
++	if (dl_se->dl_new || flags & ENQUEUE_WAKEUP)
+ 		update_dl_entity(dl_se, pi_se);
++	else if (flags & ENQUEUE_REPLENISH)
++		replenish_dl_entity(dl_se, pi_se);
  
-+	vol->upd_buf = vmalloc(ubi->leb_size);
-+	if (!vol->upd_buf)
-+		return -ENOMEM;
-+
- 	err = set_update_marker(ubi, vol);
- 	if (err)
- 		return err;
-@@ -152,14 +156,12 @@ int ubi_start_update(struct ubi_device *
- 		err = clear_update_marker(ubi, vol, 0);
- 		if (err)
- 			return err;
-+
-+		vfree(vol->upd_buf);
- 		vol->updating = 0;
- 		return 0;
- 	}
- 
--	vol->upd_buf = vmalloc(ubi->leb_size);
--	if (!vol->upd_buf)
--		return -ENOMEM;
--
- 	vol->upd_ebs = div_u64(bytes + vol->usable_leb_size - 1,
- 			       vol->usable_leb_size);
- 	vol->upd_bytes = bytes;
+ 	__enqueue_dl_entity(dl_se);
+ }
 
 
