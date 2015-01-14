@@ -1,73 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754173AbbANPNG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 10:13:06 -0500
-Received: from mail.kernel.org ([198.145.29.136]:44528 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754001AbbANPNA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 10:13:00 -0500
-Message-ID: <54B68773.10805@kernel.org>
-Date: Thu, 15 Jan 2015 00:12:51 +0900
-From: Kukjin Kim <kgene@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
+	id S932097AbbANPNS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 10:13:18 -0500
+Received: from mail-ig0-f179.google.com ([209.85.213.179]:34567 "EHLO
+	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753098AbbANPNF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 10:13:05 -0500
 MIME-Version: 1.0
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-CC: Kukjin Kim <kgene.kim@samsung.com>, Doug Anderson <dianders@chromium.org>,
-        Kevin Hilman <khilman@linaro.org>, Olof Johansson <olof@lixom.net>,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND 0/4] Small updates to Snow and Peach Pit/Pi DTS
-References: <1420212257-22443-1-git-send-email-javier.martinez@collabora.co.uk> <54B3A4C2.8070304@collabora.co.uk>
-In-Reply-To: <54B3A4C2.8070304@collabora.co.uk>
-X-Enigmail-Version: 1.1.1
+In-Reply-To: <1421163897-8020-7-git-send-email-xlpang@126.com>
+References: <1421163897-8020-1-git-send-email-xlpang@126.com>
+	<1421163897-8020-7-git-send-email-xlpang@126.com>
+Date: Wed, 14 Jan 2015 23:13:04 +0800
+Message-ID: <CADcy93W3OcAN4UWLNFmf2dWehk2=90CagWtrumvqZBu4GYEN+A@mail.gmail.com>
+Subject: Re: [RFC PATCH v2 6/9] rtc/mxc: Modify rtc_update_alarm() not to
+ touch the alarm time
+From: Xunlei Pang <pang.xunlei@linaro.org>
+To: Xunlei Pang <xlpang@126.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, John Stultz <john.stultz@linaro.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Fabio Estevam <fabio.estevam@freescale.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12/15 19:41, Javier Martinez Canillas wrote:
-> Hello Kukjin,
-> 
-Hi,
+Cc Fabio Estevam <fabio.estevam@freescale.com>
 
-> On 01/02/2015 04:24 PM, Javier Martinez Canillas wrote:
->>
->> This series adds some DTS snippets that were missing in the mainline
->> Snow and Peach Pit/Pi Device Trees but are present in the downstream
->> ChromeOS kernel.
->>
->> The series is composed of the following patches:
->>
->> Javier Martinez Canillas (4):
->>   ARM: dts: Add power and lid GPIO keys pinctrl for exynos5250-snow
->>   ARM: dts: Add lid GPIO key device node for Peach boards
->>   ARM: dts: Set Peach boards USB WebCam regulators to always on
->>   ARM: dts: Configure regulators for suspend on exynos Peach boards
->>
->>  arch/arm/boot/dts/exynos5250-snow.dts      |  16 +++++
->>  arch/arm/boot/dts/exynos5420-peach-pit.dts | 100 +++++++++++++++++++++++++++-
->>  arch/arm/boot/dts/exynos5800-peach-pi.dts  | 101 ++++++++++++++++++++++++++++-
->>  3 files changed, 215 insertions(+), 2 deletions(-)
->>
->> Patch #1 adds some pinctrl lines for the GPIO keys in the Snow DTS.
->>
->> Patch #2 adds a device node and pinctrl lines for the lid GPIO in
->> the Peach boards DTS.
->>
->> Patch #3 sets the regulators that supply voltage to the USB WebCam
->> in Peach boards as always on.
->>
->> Patch #4 configures the max77802 regulators on the Peach Pit and Pi
->> boards to be enabled or disabled during system suspend.
->>
-> 
-> I saw that you collected some DTS patches for 3.20 but these are not
-> included. Any comments about this series?
-> 
-Yeah, but I don't think I checked all of submitted patches including
-this at that time and I'll have a look at this series soon.
-
-Thanks for your gentle reminder.
-
-- Kukjin
+On 13 January 2015 at 23:44, Xunlei Pang <xlpang@126.com> wrote:
+> From: Xunlei Pang <pang.xunlei@linaro.org>
+>
+> rtc_class_ops's set_alarm() shouldn't deal with the alarm date,
+> as this is handled in the rtc core.
+>
+> See rtc_dev_ioctl()'s RTC_ALM_SET and RTC_WKALM_SET cases.
+>
+> Signed-off-by: Xunlei Pang <pang.xunlei@linaro.org>
+> ---
+>  drivers/rtc/rtc-mxc.c | 22 ++++------------------
+>  1 file changed, 4 insertions(+), 18 deletions(-)
+>
+> diff --git a/drivers/rtc/rtc-mxc.c b/drivers/rtc/rtc-mxc.c
+> index 3c3f8d1..a7b218f 100644
+> --- a/drivers/rtc/rtc-mxc.c
+> +++ b/drivers/rtc/rtc-mxc.c
+> @@ -173,29 +173,18 @@ static void set_alarm_or_time(struct device *dev, int time_alarm, u32 time)
+>   * This function updates the RTC alarm registers and then clears all the
+>   * interrupt status bits.
+>   */
+> -static int rtc_update_alarm(struct device *dev, struct rtc_time *alrm)
+> +static void rtc_update_alarm(struct device *dev, struct rtc_time *alrm)
+>  {
+> -       struct rtc_time alarm_tm, now_tm;
+> -       unsigned long now, time;
+> +       unsigned long time;
+>         struct platform_device *pdev = to_platform_device(dev);
+>         struct rtc_plat_data *pdata = platform_get_drvdata(pdev);
+>         void __iomem *ioaddr = pdata->ioaddr;
+>
+> -       now = get_alarm_or_time(dev, MXC_RTC_TIME);
+> -       rtc_time_to_tm(now, &now_tm);
+> -       alarm_tm.tm_year = now_tm.tm_year;
+> -       alarm_tm.tm_mon = now_tm.tm_mon;
+> -       alarm_tm.tm_mday = now_tm.tm_mday;
+> -       alarm_tm.tm_hour = alrm->tm_hour;
+> -       alarm_tm.tm_min = alrm->tm_min;
+> -       alarm_tm.tm_sec = alrm->tm_sec;
+> -       rtc_tm_to_time(&alarm_tm, &time);
+> +       rtc_tm_to_time(alrm, &time);
+>
+>         /* clear all the interrupt status bits */
+>         writew(readw(ioaddr + RTC_RTCISR), ioaddr + RTC_RTCISR);
+>         set_alarm_or_time(dev, MXC_RTC_ALARM, time);
+> -
+> -       return 0;
+>  }
+>
+>  static void mxc_rtc_irq_enable(struct device *dev, unsigned int bit,
+> @@ -346,11 +335,8 @@ static int mxc_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
+>  {
+>         struct platform_device *pdev = to_platform_device(dev);
+>         struct rtc_plat_data *pdata = platform_get_drvdata(pdev);
+> -       int ret;
+>
+> -       ret = rtc_update_alarm(dev, &alrm->time);
+> -       if (ret)
+> -               return ret;
+> +       rtc_update_alarm(dev, &alrm->time);
+>
+>         memcpy(&pdata->g_rtc_alarm, &alrm->time, sizeof(struct rtc_time));
+>         mxc_rtc_irq_enable(dev, RTC_ALM_BIT, alrm->enabled);
+> --
+> 1.9.1
+>
+>
