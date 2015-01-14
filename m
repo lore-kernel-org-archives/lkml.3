@@ -1,116 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631AbbANWuy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 17:50:54 -0500
-Received: from mail-bl2on0131.outbound.protection.outlook.com ([65.55.169.131]:57056
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754575AbbANWuv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 17:50:51 -0500
-X-WSS-ID: 0NI6VGL-07-E4Q-02
-X-M-MSG: 
-Message-ID: <54B6F2C4.20701@amd.com>
-Date: Wed, 14 Jan 2015 16:50:44 -0600
-From: Aravind Gopalakrishnan <aravind.gopalakrishnan@amd.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
-MIME-Version: 1.0
-To: <a.p.zijlstra@chello.nl>, <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>, <acme@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: question regarding -D flag in perf stat
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+	id S1753905AbbANWxL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 17:53:11 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43203 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751016AbbANWxJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 17:53:09 -0500
+Date: Wed, 14 Jan 2015 14:53:07 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Sonny Rao <sonnyrao@chromium.org>
+Cc: Doug Anderson <dianders@chromium.org>, Chris Zhong <zyw@rock-chips.com>,
+        Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] RTC: RK808: fix the rtc time reading issue
+Message-Id: <20150114145307.380c86a83c65760a046382e4@linux-foundation.org>
+In-Reply-To: <CAPz6YkWe9tkn7BehGOurbq6omvTpYi170G0z6T+OijngOADRQQ@mail.gmail.com>
+References: <1421203412-5159-1-git-send-email-zyw@rock-chips.com>
+	<CAPz6YkW4icehT6P9EicP1Eww_Ny0hNaeS53WXaFei+HrYbPQ3A@mail.gmail.com>
+	<CAD=FV=UDj08jkOCDVJ1Q+EanrBHwP_-88XMXojPjY8iB3i-AQA@mail.gmail.com>
+	<CAPz6YkWe9tkn7BehGOurbq6omvTpYi170G0z6T+OijngOADRQQ@mail.gmail.com>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.180.168.240]
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=none (sender IP is 165.204.84.221)
- smtp.mailfrom=Aravind.Gopalakrishnan@amd.com; 
-X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(53754006)(199003)(51914003)(189002)(92566002)(86362001)(77096005)(97736003)(36756003)(77156002)(47776003)(65806001)(62966003)(64706001)(33656002)(105586002)(106466001)(120886001)(23756003)(64126003)(68736005)(50466002)(87936001)(83506001)(46102003)(101416001)(50986999)(229853001)(54356999)(65816999)(107886001);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR02MB194;H:atltwp01.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;A:3;MX:1;LANG:en;
-X-DmarcAction-Test: None
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:BLUPR02MB194;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BLUPR02MB194;
-X-Forefront-PRVS: 04569283F9
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR02MB194;
-X-OriginatorOrg: amd4.onmicrosoft.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 14 Jan 2015 22:50:45.8043
- (UTC)
-X-MS-Exchange-CrossTenant-Id: fde4dada-be84-483f-92cc-e026cbee8e96
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=fde4dada-be84-483f-92cc-e026cbee8e96;Ip=[165.204.84.221]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BLUPR02MB194
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Wed, 14 Jan 2015 11:44:02 -0800 Sonny Rao <sonnyrao@chromium.org> wrote:
 
-I had a question regarding the intention of the -D flag after looking at 
-perf stat numbers of the following workload:
+> On Wed, Jan 14, 2015 at 10:36 AM, Doug Anderson <dianders@chromium.org> wrote:
+> > Sonny,
+> >
+> >> Chris, it looks like you swapped the set and the clear of this bit,
+> >> and you're relying on the fact that the i2c transaction takes a
+> >> certain amount of time after the RTC_GET_TIME BIT is set.   I'm not
+> >> sure how long it actually takes, but why not just put in a usleep()
+> >> for the minimum wait time?
+> >
+> > I think we are safe.
+> >
+> > At 400kHz (the max speed of this part) each bit can be transferred no
+> > faster than 2.5us.  In order to do a valid i2c transaction we need to
+> > _at least_ write the address of the device and the data onto the bus,
+> > which is 16 bits.  16 * 2.5us = 40us.  That's above the 31.25us
+> >
+> > Personally I think what Chris has is fine, with the comment.
+> 
+> Ok, I'm fine with that if we're sure it's slow enough.  Comment
+> explaining would certainly help.
 
-main(){
+Thanks, all.  I did this:
 
-int a=5, b=6;
+--- a/drivers/rtc/rtc-rk808.c~rtc-rk808-fix-the-rtc-time-reading-issue-fix
++++ a/drivers/rtc/rtc-rk808.c
+@@ -73,10 +73,11 @@ static int rk808_rtc_readtime(struct dev
+ 		return ret;
+ 	}
+ 
+-	/* After we set the GET_TIME bit, the rtc time couldn't be read
+-	 * immediately, we should wait up to 31.25 us, about one cycle of
++	/*
++	 * After we set the GET_TIME bit, the rtc time can't be read
++	 * immediately. So we should wait up to 31.25 us, about one cycle of
+ 	 * 32khz. If we clear the GET_TIME bit here, the time of i2c transfer
+-	 * certainly more than 31.25us.
++	 * certainly more than 31.25us: 16 * 2.5us at 400kHz bus frequency.
+ 	 */
+ 	ret = regmap_update_bits(rk808->regmap, RK808_RTC_CTRL_REG,
+ 				 BIT_RTC_CTRL_REG_RTC_GET_TIME,
+_
 
-int i;
-
-#pragma omp for schedule(dynamic)
-
-for (i=0; i<10000000; i++){
-
-b=b+a;
-
-}
-
-return 0;
-
-}
-
-_Stats without delay:_
-
-# perf stat -e cycles,instructions,cpu-clock,task-clock ../../test/a.out
-
-Performance counter stats for '../../test/a.out':
-
-    203,581,363,567 cycles #    1.500 GHz
-
-      7,563,983,198 instructions #    0.04  insns per cycle
-
-      135721.617844 cpu-clock (msec)
-
-      135721.600586 task-clock (msec) # *5.985 CPUs utilized*
-
-       22.678577620 seconds time elapsed (run time)
-
-_Stats with delay of 10 seconds:_
-
-# perf stat -D 10000 -e cycles,instructions,cpu-clock,task-clock 
-../../test/a.out
-
-b=363264281
-
-Performance counter stats for '../../test/a.out':
-
-    112,134,813,161 cycles #    1.500 GHz
-
-      4,461,136,761 instructions #    0.04  insns per cycle
-
-       74757.386789 cpu-clock (msec)
-
-       74757.317781 task-clock (msec) # *3.324 CPUs utilized*
-
-22.490237094 seconds time elapsed**(run time)*(delay time is not 
-excluded here)*
-
-The issue is that CPU utilization is calculated as 
-task-clock/total-runtime which in the case of no delay is fine.
-But for the delay case, the total run time should exclude the delay 
-time. Right?
-(and as a consequence, utilization would be calculated exclusive of the 
-delay time which would give us CPU utilization only for the period 
-during which perf actually collects info)
-
-Or is this the way -D flag is intended to work?
-
-Thanks for the clarifications,
--Aravind.
