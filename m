@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754468AbbANH17 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:27:59 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57910 "EHLO
+	id S1754486AbbANH2A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:28:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57914 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754442AbbANH14 (ORCPT
+	with ESMTP id S1754443AbbANH14 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Jan 2015 02:27:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Kailang Yang <kailang@realtek.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.18 075/150] ALSA: hda/realtek - New codec support for ALC298
-Date: Tue, 13 Jan 2015 23:22:26 -0800
-Message-Id: <20150114072059.236414445@linuxfoundation.org>
+Subject: [PATCH 3.18 076/150] ALSA: hda/realtek - New codec support for ALC256
+Date: Tue, 13 Jan 2015 23:22:27 -0800
+Message-Id: <20150114072059.287500569@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -30,9 +30,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Kailang Yang <kailang@realtek.com>
 
-commit 506b62c33a7444b91a93bf2da772f4c7e6656410 upstream.
+commit 4344aec84bd84b58a01347f0db7693f73fb6473d upstream.
 
-Add new support for ALC298 codec.
+Add new support for ALC256 codec.
 
 Signed-off-by: Kailang Yang <kailang@realtek.com>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
@@ -44,47 +44,47 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 --- a/sound/pci/hda/patch_realtek.c
 +++ b/sound/pci/hda/patch_realtek.c
-@@ -323,6 +323,7 @@ static void alc_fill_eapd_coef(struct hd
+@@ -319,6 +319,7 @@ static void alc_fill_eapd_coef(struct hd
+ 		break;
+ 	case 0x10ec0233:
+ 	case 0x10ec0255:
++	case 0x10ec0256:
+ 	case 0x10ec0282:
  	case 0x10ec0283:
  	case 0x10ec0286:
- 	case 0x10ec0288:
-+	case 0x10ec0298:
- 		alc_update_coef_idx(codec, 0x10, 1<<9, 0);
- 		break;
- 	case 0x10ec0285:
-@@ -2657,6 +2658,7 @@ enum {
- 	ALC269_TYPE_ALC284,
- 	ALC269_TYPE_ALC285,
+@@ -2660,6 +2661,7 @@ enum {
  	ALC269_TYPE_ALC286,
-+	ALC269_TYPE_ALC298,
+ 	ALC269_TYPE_ALC298,
  	ALC269_TYPE_ALC255,
++	ALC269_TYPE_ALC256,
  };
  
-@@ -2684,6 +2686,7 @@ static int alc269_parse_auto_config(stru
- 	case ALC269_TYPE_ALC282:
- 	case ALC269_TYPE_ALC283:
+ /*
+@@ -2688,6 +2690,7 @@ static int alc269_parse_auto_config(stru
  	case ALC269_TYPE_ALC286:
-+	case ALC269_TYPE_ALC298:
+ 	case ALC269_TYPE_ALC298:
  	case ALC269_TYPE_ALC255:
++	case ALC269_TYPE_ALC256:
  		ssids = alc269_ssids;
  		break;
-@@ -5377,6 +5380,9 @@ static int patch_alc269(struct hda_codec
- 		spec->codec_variant = ALC269_TYPE_ALC286;
- 		spec->shutup = alc286_shutup;
- 		break;
-+	case 0x10ec0298:
-+		spec->codec_variant = ALC269_TYPE_ALC298;
-+		break;
+ 	default:
+@@ -5386,6 +5389,9 @@ static int patch_alc269(struct hda_codec
  	case 0x10ec0255:
  		spec->codec_variant = ALC269_TYPE_ALC255;
  		break;
-@@ -6334,6 +6340,7 @@ static const struct hda_codec_preset snd
- 	{ .id = 0x10ec0290, .name = "ALC290", .patch = patch_alc269 },
- 	{ .id = 0x10ec0292, .name = "ALC292", .patch = patch_alc269 },
- 	{ .id = 0x10ec0293, .name = "ALC293", .patch = patch_alc269 },
-+	{ .id = 0x10ec0298, .name = "ALC298", .patch = patch_alc269 },
- 	{ .id = 0x10ec0861, .rev = 0x100340, .name = "ALC660",
- 	  .patch = patch_alc861 },
- 	{ .id = 0x10ec0660, .name = "ALC660-VD", .patch = patch_alc861vd },
++	case 0x10ec0256:
++		spec->codec_variant = ALC269_TYPE_ALC256;
++		break;
+ 	}
+ 
+ 	if (snd_hda_codec_read(codec, 0x51, 0, AC_VERB_PARAMETERS, 0) == 0x10ec5505) {
+@@ -6321,6 +6327,7 @@ static const struct hda_codec_preset snd
+ 	{ .id = 0x10ec0233, .name = "ALC233", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0235, .name = "ALC233", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0255, .name = "ALC255", .patch = patch_alc269 },
++	{ .id = 0x10ec0256, .name = "ALC256", .patch = patch_alc269 },
+ 	{ .id = 0x10ec0260, .name = "ALC260", .patch = patch_alc260 },
+ 	{ .id = 0x10ec0262, .name = "ALC262", .patch = patch_alc262 },
+ 	{ .id = 0x10ec0267, .name = "ALC267", .patch = patch_alc268 },
 
 
