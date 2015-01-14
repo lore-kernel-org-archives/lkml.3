@@ -1,344 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752275AbbANBdx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 20:33:53 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:54965 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751946AbbANBdw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 20:33:52 -0500
-Date: Tue, 13 Jan 2015 17:33:50 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: "Felipe F. Tonello" <eu@felipetonello.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH] char: Added support for u-blox 6 i2c gps driver
-Message-ID: <20150114013350.GA11620@kroah.com>
-References: <1421198202-4042-1-git-send-email-eu@felipetonello.com>
+	id S1752645AbbANBej (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 20:34:39 -0500
+Received: from mail-bl2on0105.outbound.protection.outlook.com ([65.55.169.105]:37638
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751631AbbANBei (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 20:34:38 -0500
+From: Dudley Du <dudl@cypress.com>
+To: Jeremiah Mahler <jmmahler@gmail.com>
+CC: "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "rydberg@euromail.se" <rydberg@euromail.se>,
+        "bleung@google.com" <bleung@google.com>, David Solda <dso@cypress.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH v17 00/12] input: cyapa: instruction of cyapa patches
+Thread-Topic: [PATCH v17 00/12] input: cyapa: instruction of cyapa patches
+Thread-Index: AQHQJJeXOvuLh01Zx0CtOZ9FR0tCH5yp36QAgAbp+uCADiEHAA==
+Date: Wed, 14 Jan 2015 01:34:34 +0000
+Message-ID: <BN1PR06MB07031D61722C01D4E608BE2D1410@BN1PR06MB070.namprd06.prod.outlook.com>
+References: <1419988621-2919-1-git-send-email-dudl@cypress.com>
+ <20141231161120.GA1385@newt.localdomain> 
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [140.207.206.26]
+authentication-results: spf=none (sender IP is )
+ smtp.mailfrom=dudl@cypress.com; 
+x-dmarcaction-test: None
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:DM2PR0601MB1088;UriScan:;
+x-exchange-antispam-report-test: UriScan:;
+x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0601MB1088;
+x-forefront-prvs: 04569283F9
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(199003)(13464003)(51704005)(189002)(164054003)(77156002)(62966003)(86362001)(87936001)(54606007)(2656002)(76576001)(110136001)(99286002)(106116001)(105586002)(106356001)(54206007)(19580405001)(2900100001)(92566002)(19580395003)(76176999)(40100003)(46102003)(50986999)(33656002)(74316001)(54356999)(122556002)(66066001)(64706001)(102836002)(1411001)(101416001);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0601MB1088;H:BN1PR06MB070.namprd06.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421198202-4042-1-git-send-email-eu@felipetonello.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+X-MS-Exchange-CrossTenant-originalarrivaltime: 14 Jan 2015 01:34:34.2120
+ (UTC)
+X-MS-Exchange-CrossTenant-fromentityheader: Hosted
+X-MS-Exchange-CrossTenant-id: 011addfc-2c09-450d-8938-e0bbc2dd2376
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: DM2PR0601MB1088
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0601MB1168;
+X-OriginatorOrg: cypress.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0E1YkHu000872
 
-On Tue, Jan 13, 2015 at 05:16:42PM -0800, Felipe F. Tonello wrote:
-> This driver will basically translate serial communication to i2c communication
-> between the user-space and the GPS module.
-> 
-> It creates a /dev/ttyS device node.
-> 
-> There are specific tty termios flags in order to the tty line discipliner not
-> to change the date it is pushed to user space.
+Hi Dmitry, Jeremiah,
 
-I don't understand this sentance, what date?  What is pushed where?
-What termios files?  What is a "discipliner"?
+Besides the the compile error, do you have any other comments on input cyapa v17 pathces?
 
-> That is necessary so the NMEA
-> data is not corrupted.
-> * iflags: added IGNCR: Ignore carriage return on input.
-> * oflags: removed ONLCR: (XSI) Map NL to CR-NL on output.
-> 
-> Signed-off-by: Felipe F. Tonello <eu@felipetonello.com>
-> ---
->  drivers/tty/serial/Kconfig          |   9 ++
->  drivers/tty/serial/Makefile         |   1 +
->  drivers/tty/serial/ublox6-gps-i2c.c | 245 ++++++++++++++++++++++++++++++++++++
->  3 files changed, 255 insertions(+)
->  create mode 100644 drivers/tty/serial/ublox6-gps-i2c.c
-> 
-> diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
-> index 26cec64..49913eb 100644
-> --- a/drivers/tty/serial/Kconfig
-> +++ b/drivers/tty/serial/Kconfig
-> @@ -1552,6 +1552,15 @@ config SERIAL_MEN_Z135
->  	  This driver can also be build as a module. If so, the module will be called
->  	  men_z135_uart.ko
->  
-> +config SERIAL_UBLOX_GPS
-> +	tristate "u-blox 6 I2C GPS support"
-> +	depends on I2C
-> +	default n
-> +	help
-> +	  This driver uses i2c to communicate with the u-blox 6 GPS module
-> +	  and has a serial tty device interface to the user-space, making
-> +	  it easy to read/write data from/to the GPS.
-> +
->  endmenu
->  
->  config SERIAL_MCTRL_GPIO
-> diff --git a/drivers/tty/serial/Makefile b/drivers/tty/serial/Makefile
-> index 0080cc3..cba2b5c 100644
-> --- a/drivers/tty/serial/Makefile
-> +++ b/drivers/tty/serial/Makefile
-> @@ -92,6 +92,7 @@ obj-$(CONFIG_SERIAL_ARC)	+= arc_uart.o
->  obj-$(CONFIG_SERIAL_RP2)	+= rp2.o
->  obj-$(CONFIG_SERIAL_FSL_LPUART)	+= fsl_lpuart.o
->  obj-$(CONFIG_SERIAL_MEN_Z135)	+= men_z135_uart.o
-> +obj-$(CONFIG_SERIAL_UBLOX_GPS) += ublox6-gps-i2c.o
->  
->  # GPIOLIB helpers for modem control lines
->  obj-$(CONFIG_SERIAL_MCTRL_GPIO)	+= serial_mctrl_gpio.o
-> diff --git a/drivers/tty/serial/ublox6-gps-i2c.c b/drivers/tty/serial/ublox6-gps-i2c.c
-> new file mode 100644
-> index 0000000..16dd1cf
-> --- /dev/null
-> +++ b/drivers/tty/serial/ublox6-gps-i2c.c
-> @@ -0,0 +1,245 @@
-> +/* u-blox 6 I2C GPS driver
-> + *
-> + * Copyright (C) 2015 Felipe F. Tonello <eu@felipetonello.com>
-> + *
-> + * Driver that translates a serial tty GPS device to a i2c GPS device
+Thanks,
+Dudley
 
-I don't think there is a "serial tty GPS device" here, right?
+> -----Original Message-----
+> From: Dudley Du
+> Sent: 2015å¹´1æœˆ5æ—¥ 9:57
+> To: 'Jeremiah Mahler'
+> Cc: dmitry.torokhov@gmail.com; rydberg@euromail.se; bleung@google.com;
+> David Solda; linux-input@vger.kernel.org; linux-kernel@vger.kernel.org
+> Subject: RE: [PATCH v17 00/12] input: cyapa: instruction of cyapa patches
+>
+> Thanks, Jeremiah.
+>
+> It seems the power manage code has been updated in kernel-next,
+> the same code didn't genereate any error before.
+> I updated with latest kernel-next, the compiling error also happened.
+> To fix this code, need to add stubs for cyapa_runtime_suspend() and
+> cyapa_runtime_resume() when CONFIG_PM_RUNTIME is not defined.
+>
+>  #ifdef CONFIG_PM_RUNTIME
+>  static int cyapa_runtime_suspend(struct device *dev)
+>  {
+>  struct cyapa *cyapa = dev_get_drvdata(dev);
+>  int error;
+>
+>  error = cyapa->ops->set_power_mode(cyapa,
+>  cyapa->runtime_suspend_power_mode,
+>  cyapa->runtime_suspend_sleep_time);
+>  if (error)
+>  dev_warn(dev, "runtime suspend failed: %d\n", error);
+>
+>  return 0;
+>  }
+>
+>  static int cyapa_runtime_resume(struct device *dev)
+>  {
+>  struct cyapa *cyapa = dev_get_drvdata(dev);
+>  int error;
+>
+>  error = cyapa->ops->set_power_mode(cyapa, PWR_MODE_FULL_ACTIVE, 0);
+>  if (error)
+>  dev_warn(dev, "runtime resume failed: %d\n", error);
+>
+>  return 0;
+>  }
+> +#else
+> +static inline int cyapa_runtime_suspend(struct device *dev) { return 0; }
+> +static inline int cyapa_runtime_resume(struct device *dev) { return 0; }
+>  #endif /* CONFIG_PM_RUNTIME */
+>
+>  static const struct dev_pm_ops cyapa_pm_ops = {
+>  SET_SYSTEM_SLEEP_PM_OPS(cyapa_suspend, cyapa_resume)
+>  SET_RUNTIME_PM_OPS(cyapa_runtime_suspend, cyapa_runtime_resume,
+> NULL)
+>  };
+>
+> Thanks,
+> dudley
+>
+> > -----Original Message-----
+> > From: Jeremiah Mahler [mailto:jmmahler@gmail.com]
+> > Sent: 2015å¹´1æœˆ1æ—¥ 0:11
+> > To: Dudley Du
+> > Cc: dmitry.torokhov@gmail.com; rydberg@euromail.se; bleung@google.com;
+> > David Solda; linux-input@vger.kernel.org; linux-kernel@vger.kernel.org
+> > Subject: Re: [PATCH v17 00/12] input: cyapa: instruction of cyapa patches
+> >
+> > Dudley,
+> >
+> > On Wed, Dec 31, 2014 at 09:16:49AM +0800, Dudley Du wrote:
+> > > V17 patches have below updates, details of other updates see history list:
+> > > 1) Fix kernel oops when system booting up with finger on TP.
+> > > 2) Remove unnecessary error log that may to system.
+> > > 3) Slipt out pm sleep code into cyapa_prepare_wakeup_controls(),
+> > >    remove #indefs in function body of CONFIG_PM_SLEEP and
+> > CONFIG_PM_RUNTIME.
+> > > 4) Supply stubs to cyapa_gen3_ops and cyapa_gen5_ops data structure to avoid
+> > >    checking for presence of various methods in ops.
+> > > 6) Fix the meanings of some comments and return error code not clear issue.
+> > [...]
+> >
+> > It has build errors :(
+> >
+> >   CHK     include/config/kernel.release
+> >   CHK     include/generated/uapi/linux/version.h
+> >   CHK     include/generated/utsrelease.h
+> >   CALL    scripts/checksyscalls.sh
+> >   CHK     include/generated/compile.h
+> >   CHK     kernel/config_data.h
+> >   CC [M]  drivers/input/mouse/cyapa.o
+> > In file included from include/linux/device.h:25:0,
+> >                  from include/linux/i2c.h:30,
+> >                  from drivers/input/mouse/cyapa.c:18:
+> > drivers/input/mouse/cyapa.c:1339:21: error: â€˜cyapa_runtime_suspendâ€™
+> > undeclared here (not in a function)
+> >   SET_RUNTIME_PM_OPS(cyapa_runtime_suspend, cyapa_runtime_resume,
+> > NULL)
+> >                      ^
+> > include/linux/pm.h:347:21: note: in definition of macro
+> â€˜SET_RUNTIME_PM_OPSâ€™
+> >   .runtime_suspend = suspend_fn, \
+> >                      ^
+> > drivers/input/mouse/cyapa.c:1339:44: error: â€˜cyapa_runtime_resumeâ€™
+> > undeclared here (not in a function)
+> >   SET_RUNTIME_PM_OPS(cyapa_runtime_suspend, cyapa_runtime_resume,
+> > NULL)
+> >                                             ^
+> > include/linux/pm.h:348:20: note: in definition of macro
+> â€˜SET_RUNTIME_PM_OPSâ€™
+> >   .runtime_resume = resume_fn, \
+> >                     ^
+> > scripts/Makefile.build:257: recipe for target 'drivers/input/mouse/cyapa.o' failed
+> > make[3]: *** [drivers/input/mouse/cyapa.o] Error 1
+> > scripts/Makefile.build:402: recipe for target 'drivers/input/mouse' failed
+> > make[2]: *** [drivers/input/mouse] Error 2
+> > scripts/Makefile.build:402: recipe for target 'drivers/input' failed
+> > make[1]: *** [drivers/input] Error 2
+> > make[1]: *** Waiting for unfinished jobs....
+> > Makefile:955: recipe for target 'drivers' failed
+> > make: *** [drivers] Error 2
+> > make: *** Waiting for unfinished jobs....
+> >
+> > --
+> > - Jeremiah Mahler
 
-
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/slab.h>
-> +#include <linux/tty.h>
-> +#include <linux/tty_flip.h>
-> +#include <linux/i2c.h>
-> +#include <linux/workqueue.h>
-> +
-> +/*
-> + * Version Information
-> + */
-> +#define DRIVER_VERSION "v0.1"
-> +#define DRIVER_DESC "u-blox 6 I2C GPS driver"
-> +
-> +#define UBLOX_GPS_MAJOR 0
-> +#define UBLOX_GPS_NUM 1 /* Only support 1 GPS at a time */
-> +
-> +/* By default u-blox GPS fill its buffer every 1 second (1000 msecs) */
-> +#define READ_TIME 1000
-> +
-> +static struct tty_port *ublox_gps_tty_port;
-> +static struct i2c_client *ublox_gps_i2c_client;
-
-Why only one device/client?  Why can't you have more than one in the
-system?  Please don't make this work for only one device, these can all
-be device-private.
-
-> +static int ublox_gps_is_open;
-
-Why do you need this?  And again, don't make it global for the whole
-driver, but unique per-device
-
-> +static struct file *ublox_gps_filp;
-
-I don't understand why you even need this, what problem is this solving?
-
-> +static void ublox_gps_read_worker(struct work_struct *private);
-> +
-> +static DECLARE_DELAYED_WORK(ublox_gps_wq, ublox_gps_read_worker);
-
-Again, make device-specific.
-
-> +static void ublox_gps_read_worker(struct work_struct *private)
-> +{
-> +	s32 gps_buf_size, buf_size = 0;
-> +	u8 *buf;
-> +
-> +	if (!ublox_gps_is_open)
-> +		return;
-
-How can this happen?
-
-> +
-> +	/* check if driver was removed */
-> +	if (!ublox_gps_i2c_client)
-> +		return;
-
-How can this happen?
-
-> +
-> +	gps_buf_size = i2c_smbus_read_word_data(ublox_gps_i2c_client, 0xfd);
-> +	if (gps_buf_size < 0) {
-> +		dev_warn(&ublox_gps_i2c_client->dev, KBUILD_MODNAME ": couldn't read register(0xfd) from GPS.\n");
-
-Something to be fixed for all of your dev_*() calls, don't put
-KBUILD_MODNAME, it's not needed as dev_* handles everything properly to
-point to the specific driver and device that created the message.
-
-
-> +		/* try one more time */
-> +		goto end;
-> +	}
-> +
-> +	/* 0xfd is the MSB and 0xfe is the LSB */
-> +	gps_buf_size = ((gps_buf_size & 0xf) << 8) | ((gps_buf_size & 0xf0) >> 8);
-
-I don't understand the comment here.
-
-> +
-> +	if (gps_buf_size > 0) {
-> +
-> +		buf = kcalloc(gps_buf_size, sizeof(*buf), GFP_KERNEL);
-> +		if (!buf) {
-> +			dev_warn(&ublox_gps_i2c_client->dev, KBUILD_MODNAME ": couldn't allocate memory.\n");
-
-No need to send any error if memory is gone, that already happened in
-the syslog.
-
-> +			/* try one more time */
-> +			goto end;
-> +		}
-> +
-> +		do {
-> +			buf_size = i2c_master_recv(ublox_gps_i2c_client, (char *)buf, gps_buf_size);
-> +			if (buf_size < 0) {
-> +				dev_warn(&ublox_gps_i2c_client->dev, KBUILD_MODNAME ": couldn't read data from GPS.\n");
-> +				kfree(buf);
-> +				/* try one more time */
-> +				goto end;
-> +			}
-> +
-> +			tty_insert_flip_string(ublox_gps_tty_port, buf, buf_size);
-> +
-> +			gps_buf_size -= buf_size;
-> +
-> +			/* There is a small chance that we need to split the data over
-> +			   several buffers. If this is the case we must loop */
-> +		} while (unlikely(gps_buf_size > 0));
-> +
-> +		tty_flip_buffer_push(ublox_gps_tty_port);
-> +
-> +		kfree(buf);
-> +	}
-> +
-> +end:
-> +	/* resubmit the workqueue again */
-> +	schedule_delayed_work(&ublox_gps_wq, msecs_to_jiffies(READ_TIME)); /* 1 sec delay */
-> +}
-> +
-> +static int ublox_gps_serial_open(struct tty_struct *tty, struct file *filp)
-> +{
-> +	if (ublox_gps_is_open)
-> +		return -EBUSY;
-> +
-> +	ublox_gps_filp = filp;
-> +	ublox_gps_tty_port = tty->port;
-> +	ublox_gps_tty_port->low_latency = true; /* make sure we push data immediately */
-> +	ublox_gps_is_open = true;
-> +
-> +	schedule_delayed_work(&ublox_gps_wq, 0);
-> +
-> +	return 0;
-> +}
-> +
-> +static void ublox_gps_serial_close(struct tty_struct *tty, struct file *filp)
-> +{
-> +	if (!ublox_gps_is_open)
-
-How can this happen?
-
-> +		return;
-> +
-> +	/* avoid stop when the denied (in open) file structure closes itself */
-> +	if (ublox_gps_filp != filp)
-> +		return;
-
-I don't understand, how can something "close itself"?
-
-> +
-> +	ublox_gps_is_open = false;
-> +	ublox_gps_filp = NULL;
-> +	ublox_gps_tty_port = NULL;
-> +}
-> +
-> +static int ublox_gps_serial_write(struct tty_struct *tty, const unsigned char *buf,
-> +	int count)
-> +{
-> +	if (!ublox_gps_is_open)
-> +		return 0;
-> +
-> +	/* check if driver was removed */
-> +	if (!ublox_gps_i2c_client)
-> +		return 0;
-> +
-> +	/* we don't write back to the GPS so just return same value here */
-> +	return count;
-> +}
-
-So write does nothing, why even have it at all?
-
-> +static int ublox_gps_write_room(struct tty_struct *tty)
-> +{
-> +	if (!ublox_gps_is_open)
-> +		return 0;
-> +
-> +	/* check if driver was removed */
-> +	if (!ublox_gps_i2c_client)
-> +		return 0;
-> +
-> +	/* we don't write back to the GPS so just return some value here */
-> +	return 1024;
-
-Why have this function at all if it does nothing?
-
-
-> +}
-> +
-> +static const struct tty_operations ublox_gps_serial_ops = {
-> +	.open = ublox_gps_serial_open,
-> +	.close = ublox_gps_serial_close,
-> +	.write = ublox_gps_serial_write,
-> +	.write_room = ublox_gps_write_room,
-> +};
-> +
-> +static struct tty_driver *ublox_gps_tty_driver;
-> +
-> +static int ublox_gps_probe(struct i2c_client *client,
-> +	const struct i2c_device_id *id)
-> +{
-> +	int result = 0;
-> +
-> +	ublox_gps_tty_driver = alloc_tty_driver(UBLOX_GPS_NUM);
-> +	if (!ublox_gps_tty_driver)
-> +		return -ENOMEM;
-> +
-> +	ublox_gps_tty_driver->owner = THIS_MODULE;
-> +	ublox_gps_tty_driver->driver_name = "ublox_gps";
-> +	ublox_gps_tty_driver->name = "ttyS";
-> +	ublox_gps_tty_driver->major = UBLOX_GPS_MAJOR;
-> +	ublox_gps_tty_driver->minor_start = 0;
-> +	ublox_gps_tty_driver->type = TTY_DRIVER_TYPE_SERIAL;
-> +	ublox_gps_tty_driver->subtype = SERIAL_TYPE_NORMAL;
-> +	ublox_gps_tty_driver->flags = TTY_DRIVER_REAL_RAW;
-> +	ublox_gps_tty_driver->init_termios = tty_std_termios;
-> +	ublox_gps_tty_driver->init_termios.c_iflag = IGNCR | IXON;
-> +	ublox_gps_tty_driver->init_termios.c_oflag = OPOST;
-> +	ublox_gps_tty_driver->init_termios.c_cflag = B9600 | CS8 | CREAD |
-> +		HUPCL | CLOCAL;
-> +	ublox_gps_tty_driver->init_termios.c_ispeed = 9600;
-> +	ublox_gps_tty_driver->init_termios.c_ospeed = 9600;
-> +	tty_set_operations(ublox_gps_tty_driver, &ublox_gps_serial_ops);
-> +	result = tty_register_driver(ublox_gps_tty_driver);
-> +	if (result) {
-> +		dev_err(&ublox_gps_i2c_client->dev, KBUILD_MODNAME ": %s - tty_register_driver failed\n",
-> +			__func__);
-> +		goto err;
-> +	}
-> +
-> +	ublox_gps_i2c_client = client;
-> +	ublox_gps_filp = NULL;
-> +	ublox_gps_tty_port = NULL;
-> +	ublox_gps_is_open = false;
-> +
-> +	/* i2c_set_clientdata(client, NULL); */
-> +
-> +	dev_info(&ublox_gps_i2c_client->dev, KBUILD_MODNAME ": " DRIVER_VERSION ": "
-> +		DRIVER_DESC "\n");
-
-Be quiet for "normal" operations please, your driver should never send
-anything to the kernel log unless some error happens.
-
-thanks,
-
-greg k-h
+This message and any attachments may contain Cypress (or its subsidiaries) confidential information. If it has been received in error, please advise the sender and immediately delete this message.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
