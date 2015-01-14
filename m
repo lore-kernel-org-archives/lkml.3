@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836AbbANVIL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 16:08:11 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:40841 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752249AbbANVII (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 16:08:08 -0500
-Date: Thu, 15 Jan 2015 00:08:40 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Johannes Thumshirn <johannes.thumshirn@men.de>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>
-Subject: [patch] mcb: request_mem_region() returns NULL on error
-Message-ID: <20150114210840.GG23203@mwanda>
+	id S1753150AbbANVI6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 16:08:58 -0500
+Received: from mail.kernel.org ([198.145.29.136]:37303 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751630AbbANVI5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 16:08:57 -0500
+Date: Wed, 14 Jan 2015 18:08:52 -0300
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: Re: [PATCH v2 1/4] perf tools: Fix segfault for symbol annotation on
+ TUI
+Message-ID: <20150114210852.GD3691@kernel.org>
+References: <1421234288-22758-1-git-send-email-namhyung@kernel.org>
+ <54B683ED.2060105@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+In-Reply-To: <54B683ED.2060105@gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code here is checking for IS_ERR() when request_mem_region() only
-returns NULL on error and never an ERR_PTR.
+Em Wed, Jan 14, 2015 at 07:57:49AM -0700, David Ahern escreveu:
+> On 1/14/15 4:18 AM, Namhyung Kim wrote:
+> 
+> >@@ -129,8 +124,7 @@ static inline struct sym_hist *annotation__histogram(struct annotation *notes, i
+> >
+> >  static inline struct annotation *symbol__annotation(struct symbol *sym)
+> >  {
+> >-	struct sannotation *a = container_of(sym, struct sannotation, symbol);
+> >-	return &a->annotation;
+> >+	return (void *)sym - symbol_conf.priv_size;
+> 
+> symbol__priv(sym);
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Amended, thanks.
 
-diff --git a/drivers/mcb/mcb-pci.c b/drivers/mcb/mcb-pci.c
-index 5e1bd5d..2d6524a 100644
---- a/drivers/mcb/mcb-pci.c
-+++ b/drivers/mcb/mcb-pci.c
-@@ -56,9 +56,9 @@ static int mcb_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 
- 	res = request_mem_region(priv->mapbase, CHAM_HEADER_SIZE,
- 				 KBUILD_MODNAME);
--	if (IS_ERR(res)) {
-+	if (!res) {
- 		dev_err(&pdev->dev, "Failed to request PCI memory\n");
--		ret = PTR_ERR(res);
-+		ret = -EBUSY;
- 		goto err_start;
- 	}
- 
+- Arnaldo
