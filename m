@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932821AbbANHfy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:35:54 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58610 "EHLO
+	id S932177AbbANH3m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:29:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58063 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932742AbbANHfo (ORCPT
+	with ESMTP id S1752031AbbANH3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:35:44 -0500
+	Wed, 14 Jan 2015 02:29:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        William Unruh <unruh@physics.ubc.ca>,
-        Martin Lucina <martin@lucina.net>,
-        Myron Stowe <myron.stowe@redhat.com>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Matthew Wilcox <willy@linux.intel.com>
-Subject: [PATCH 3.14 21/77] PCI: Restore detection of read-only BARs
-Date: Tue, 13 Jan 2015 23:23:01 -0800
-Message-Id: <20150114072225.343548697@linuxfoundation.org>
+        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.18 111/150] nilfs2: fix the nilfs_iget() vs. nilfs_new_inode() races
+Date: Tue, 13 Jan 2015 23:23:02 -0800
+Message-Id: <20150114072100.889874175@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-References: <20150114072224.182299947@linuxfoundation.org>
+In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
+References: <20150114072055.842408181@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -28,68 +27,180 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Myron Stowe <myron.stowe@redhat.com>
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
 
-commit 36e8164882ca6d3c41cb91e6f09a3ed236841f80 upstream.
+commit 705304a863cc41585508c0f476f6d3ec28cf7e00 upstream.
 
-Commit 6ac665c63dca ("PCI: rewrite PCI BAR reading code") masked off
-low-order bits from 'l', but not from 'sz'.  Both are passed to pci_size(),
-which compares 'base == maxbase' to check for read-only BARs.  The masking
-of 'l' means that comparison will never be 'true', so the check for
-read-only BARs no longer works.
+Same story as in commit 41080b5a2401 ("nfsd race fixes: ext2") (similar
+ext2 fix) except that nilfs2 needs to use insert_inode_locked4() instead
+of insert_inode_locked() and a bug of a check for dead inodes needs to
+be fixed.
 
-Resolve this by also masking off the low-order bits of 'sz' before passing
-it into pci_size() as 'maxbase'.  With this change, pci_size() will once
-again catch the problems that have been encountered to date:
+If nilfs_iget() is called from nfsd after nilfs_new_inode() calls
+insert_inode_locked4(), nilfs_iget() will wait for unlock_new_inode() at
+the end of nilfs_mkdir()/nilfs_create()/etc to unlock the inode.
 
-  - AGP aperture BAR of AMD-7xx host bridges: if the AGP window is
-    disabled, this BAR is read-only and read as 0x00000008 [1]
+If nilfs_iget() is called before nilfs_new_inode() calls
+insert_inode_locked4(), it will create an in-core inode and read its
+data from the on-disk inode.  But, nilfs_iget() will find i_nlink equals
+zero and fail at nilfs_read_inode_common(), which will lead it to call
+iget_failed() and cleanly fail.
 
-  - BARs 0-4 of ALi IDE controllers can be non-zero and read-only [1]
+However, this sanity check doesn't work as expected for reused on-disk
+inodes because they leave a non-zero value in i_mode field and it
+hinders the test of i_nlink.  This patch also fixes the issue by
+removing the test on i_mode that nilfs2 doesn't need.
 
-  - Intel Sandy Bridge - Thermal Management Controller [8086:0103];
-    BAR 0 returning 0xfed98004 [2]
-
-  - Intel Xeon E5 v3/Core i7 Power Control Unit [8086:2fc0];
-    Bar 0 returning 0x00001a [3]
-
-Link: [1] https://git.kernel.org/cgit/linux/kernel/git/tglx/history.git/commit/drivers/pci/probe.c?id=1307ef6621991f1c4bc3cec1b5a4ebd6fd3d66b9 ("PCI: probing read-only BARs" (pre-git))
-Link: [2] https://bugzilla.kernel.org/show_bug.cgi?id=43331
-Link: [3] https://bugzilla.kernel.org/show_bug.cgi?id=85991
-Reported-by: William Unruh <unruh@physics.ubc.ca>
-Reported-by: Martin Lucina <martin@lucina.net>
-Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
-Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
-CC: Matthew Wilcox <willy@linux.intel.com>
+Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/pci/probe.c |    3 +++
- 1 file changed, 3 insertions(+)
+ fs/nilfs2/inode.c |   32 ++++++++++++++++++++++++--------
+ fs/nilfs2/namei.c |   15 ++++++++++++---
+ 2 files changed, 36 insertions(+), 11 deletions(-)
 
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -214,14 +214,17 @@ int __pci_read_base(struct pci_dev *dev,
- 		res->flags |= IORESOURCE_SIZEALIGN;
- 		if (res->flags & IORESOURCE_IO) {
- 			l &= PCI_BASE_ADDRESS_IO_MASK;
-+			sz &= PCI_BASE_ADDRESS_IO_MASK;
- 			mask = PCI_BASE_ADDRESS_IO_MASK & (u32) IO_SPACE_LIMIT;
- 		} else {
- 			l &= PCI_BASE_ADDRESS_MEM_MASK;
-+			sz &= PCI_BASE_ADDRESS_MEM_MASK;
- 			mask = (u32)PCI_BASE_ADDRESS_MEM_MASK;
- 		}
- 	} else {
- 		res->flags |= (l & IORESOURCE_ROM_ENABLE);
- 		l &= PCI_ROM_ADDRESS_MASK;
-+		sz &= PCI_ROM_ADDRESS_MASK;
- 		mask = (u32)PCI_ROM_ADDRESS_MASK;
- 	}
+--- a/fs/nilfs2/inode.c
++++ b/fs/nilfs2/inode.c
+@@ -49,6 +49,8 @@ struct nilfs_iget_args {
+ 	int for_gc;
+ };
  
++static int nilfs_iget_test(struct inode *inode, void *opaque);
++
+ void nilfs_inode_add_blocks(struct inode *inode, int n)
+ {
+ 	struct nilfs_root *root = NILFS_I(inode)->i_root;
+@@ -348,6 +350,17 @@ const struct address_space_operations ni
+ 	.is_partially_uptodate  = block_is_partially_uptodate,
+ };
+ 
++static int nilfs_insert_inode_locked(struct inode *inode,
++				     struct nilfs_root *root,
++				     unsigned long ino)
++{
++	struct nilfs_iget_args args = {
++		.ino = ino, .root = root, .cno = 0, .for_gc = 0
++	};
++
++	return insert_inode_locked4(inode, ino, nilfs_iget_test, &args);
++}
++
+ struct inode *nilfs_new_inode(struct inode *dir, umode_t mode)
+ {
+ 	struct super_block *sb = dir->i_sb;
+@@ -383,7 +396,7 @@ struct inode *nilfs_new_inode(struct ino
+ 	if (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode)) {
+ 		err = nilfs_bmap_read(ii->i_bmap, NULL);
+ 		if (err < 0)
+-			goto failed_bmap;
++			goto failed_after_creation;
+ 
+ 		set_bit(NILFS_I_BMAP, &ii->i_state);
+ 		/* No lock is needed; iget() ensures it. */
+@@ -399,21 +412,24 @@ struct inode *nilfs_new_inode(struct ino
+ 	spin_lock(&nilfs->ns_next_gen_lock);
+ 	inode->i_generation = nilfs->ns_next_generation++;
+ 	spin_unlock(&nilfs->ns_next_gen_lock);
+-	insert_inode_hash(inode);
++	if (nilfs_insert_inode_locked(inode, root, ino) < 0) {
++		err = -EIO;
++		goto failed_after_creation;
++	}
+ 
+ 	err = nilfs_init_acl(inode, dir);
+ 	if (unlikely(err))
+-		goto failed_acl; /* never occur. When supporting
++		goto failed_after_creation; /* never occur. When supporting
+ 				    nilfs_init_acl(), proper cancellation of
+ 				    above jobs should be considered */
+ 
+ 	return inode;
+ 
+- failed_acl:
+- failed_bmap:
++ failed_after_creation:
+ 	clear_nlink(inode);
++	unlock_new_inode(inode);
+ 	iput(inode);  /* raw_inode will be deleted through
+-			 generic_delete_inode() */
++			 nilfs_evict_inode() */
+ 	goto failed;
+ 
+  failed_ifile_create_inode:
+@@ -461,8 +477,8 @@ int nilfs_read_inode_common(struct inode
+ 	inode->i_atime.tv_nsec = le32_to_cpu(raw_inode->i_mtime_nsec);
+ 	inode->i_ctime.tv_nsec = le32_to_cpu(raw_inode->i_ctime_nsec);
+ 	inode->i_mtime.tv_nsec = le32_to_cpu(raw_inode->i_mtime_nsec);
+-	if (inode->i_nlink == 0 && inode->i_mode == 0)
+-		return -EINVAL; /* this inode is deleted */
++	if (inode->i_nlink == 0)
++		return -ESTALE; /* this inode is deleted */
+ 
+ 	inode->i_blocks = le64_to_cpu(raw_inode->i_blocks);
+ 	ii->i_flags = le32_to_cpu(raw_inode->i_flags);
+--- a/fs/nilfs2/namei.c
++++ b/fs/nilfs2/namei.c
+@@ -51,9 +51,11 @@ static inline int nilfs_add_nondir(struc
+ 	int err = nilfs_add_link(dentry, inode);
+ 	if (!err) {
+ 		d_instantiate(dentry, inode);
++		unlock_new_inode(inode);
+ 		return 0;
+ 	}
+ 	inode_dec_link_count(inode);
++	unlock_new_inode(inode);
+ 	iput(inode);
+ 	return err;
+ }
+@@ -182,6 +184,7 @@ out:
+ out_fail:
+ 	drop_nlink(inode);
+ 	nilfs_mark_inode_dirty(inode);
++	unlock_new_inode(inode);
+ 	iput(inode);
+ 	goto out;
+ }
+@@ -201,11 +204,15 @@ static int nilfs_link(struct dentry *old
+ 	inode_inc_link_count(inode);
+ 	ihold(inode);
+ 
+-	err = nilfs_add_nondir(dentry, inode);
+-	if (!err)
++	err = nilfs_add_link(dentry, inode);
++	if (!err) {
++		d_instantiate(dentry, inode);
+ 		err = nilfs_transaction_commit(dir->i_sb);
+-	else
++	} else {
++		inode_dec_link_count(inode);
++		iput(inode);
+ 		nilfs_transaction_abort(dir->i_sb);
++	}
+ 
+ 	return err;
+ }
+@@ -243,6 +250,7 @@ static int nilfs_mkdir(struct inode *dir
+ 
+ 	nilfs_mark_inode_dirty(inode);
+ 	d_instantiate(dentry, inode);
++	unlock_new_inode(inode);
+ out:
+ 	if (!err)
+ 		err = nilfs_transaction_commit(dir->i_sb);
+@@ -255,6 +263,7 @@ out_fail:
+ 	drop_nlink(inode);
+ 	drop_nlink(inode);
+ 	nilfs_mark_inode_dirty(inode);
++	unlock_new_inode(inode);
+ 	iput(inode);
+ out_dir:
+ 	drop_nlink(dir);
 
 
