@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933051AbbANHhq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:37:46 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58809 "EHLO
+	id S1755650AbbANIMU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:12:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58314 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933036AbbANHhj (ORCPT
+	with ESMTP id S1754441AbbANHb7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:37:39 -0500
+	Wed, 14 Jan 2015 02:31:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [PATCH 3.10 14/44] UBI: Fix invalid vfree()
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.18 144/150] regulator: s2mps11: Fix dw_mmc failure on Gear 2
 Date: Tue, 13 Jan 2015 23:23:35 -0800
-Message-Id: <20150114072228.306754465@linuxfoundation.org>
+Message-Id: <20150114072102.369913101@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
-References: <20150114072227.419663002@linuxfoundation.org>
+In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
+References: <20150114072055.842408181@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,76 +25,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Richard Weinberger <richard@nod.at>
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-commit f38aed975c0c3645bbdfc5ebe35726e64caaf588 upstream.
+commit 1222d8fe578cd28a6c7f5e4e6c6b664c56abfdc0 upstream.
 
-The logic of vfree()'ing vol->upd_buf is tied to vol->updating.
-In ubi_start_update() vol->updating is set long before vmalloc()'ing
-vol->upd_buf. If we encounter a write failure in ubi_start_update()
-before vmalloc() the UBI device release function will try to vfree()
-vol->upd_buf because vol->updating is set.
-Fix this by allocating vol->upd_buf directly after setting vol->updating.
+Invalid buck4 configuration for linear mapping of voltage in S2MPS14
+regulators caused boot failure on Gear 2 (dw_mmc-exynos):
 
-Fixes:
-[   31.559338] UBI warning: vol_cdev_release: update of volume 2 not finished, volume is damaged
-[   31.559340] ------------[ cut here ]------------
-[   31.559343] WARNING: CPU: 1 PID: 2747 at mm/vmalloc.c:1446 __vunmap+0xe3/0x110()
-[   31.559344] Trying to vfree() nonexistent vm area (ffffc90001f2b000)
-[   31.559345] Modules linked in:
-[   31.565620]  0000000000000bba ffff88002a0cbdb0 ffffffff818f0497 ffff88003b9ba148
-[   31.566347]  ffff88002a0cbde0 ffffffff8156f515 ffff88003b9ba148 0000000000000bba
-[   31.567073]  0000000000000000 0000000000000000 ffff88002a0cbe88 ffffffff8156c10a
-[   31.567793] Call Trace:
-[   31.568034]  [<ffffffff818f0497>] dump_stack+0x4e/0x7a
-[   31.568510]  [<ffffffff8156f515>] ubi_io_write_vid_hdr+0x155/0x160
-[   31.569084]  [<ffffffff8156c10a>] ubi_eba_write_leb+0x23a/0x870
-[   31.569628]  [<ffffffff81569b36>] vol_cdev_write+0x226/0x380
-[   31.570155]  [<ffffffff81179265>] vfs_write+0xb5/0x1f0
-[   31.570627]  [<ffffffff81179f8a>] SyS_pwrite64+0x6a/0xa0
-[   31.571123]  [<ffffffff818fde12>] system_call_fastpath+0x16/0x1b
+[    3.569137] EXT4-fs (mmcblk0p15): mounted filesystem with ordered data mode. Opts: (null)
+[    3.571716] VFS: Mounted root (ext4 filesystem) readonly on device 179:15.
+[    3.629842] mmcblk0: error -110 sending status command, retrying
+[    3.630244] mmcblk0: error -110 sending status command, retrying
+[    3.636292] mmcblk0: error -110 sending status command, aborting
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Buck4 voltage regulator has different minimal voltage value than other
+bucks. Commit merging multiple regulator description macros caused to
+use linear_min_sel from buck[1235] regulators as value for buck4. This
+lead to lower voltage of buck4 than required.
+
+Output of the buck4 is used internally as power source for
+LDO{3,4,7,11,19,20,21,23}. On Gear 2 board LDO11 is used as MMC
+regulator (V_EMMC_1.8V).
+
+Fixes: 5a867cf28893 ("regulator: s2mps11: Optimize the regulator description macro")
+Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/ubi/upd.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
+ drivers/regulator/s2mps11.c |   19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
 
---- a/drivers/mtd/ubi/upd.c
-+++ b/drivers/mtd/ubi/upd.c
-@@ -133,6 +133,10 @@ int ubi_start_update(struct ubi_device *
- 	ubi_assert(!vol->updating && !vol->changing_leb);
- 	vol->updating = 1;
+--- a/drivers/regulator/s2mps11.c
++++ b/drivers/regulator/s2mps11.c
+@@ -479,7 +479,7 @@ static struct regulator_ops s2mps14_reg_
+ 	.enable_mask	= S2MPS14_ENABLE_MASK		\
+ }
  
-+	vol->upd_buf = vmalloc(ubi->leb_size);
-+	if (!vol->upd_buf)
-+		return -ENOMEM;
-+
- 	err = set_update_marker(ubi, vol);
- 	if (err)
- 		return err;
-@@ -152,14 +156,12 @@ int ubi_start_update(struct ubi_device *
- 		err = clear_update_marker(ubi, vol, 0);
- 		if (err)
- 			return err;
-+
-+		vfree(vol->upd_buf);
- 		vol->updating = 0;
- 		return 0;
- 	}
+-#define regulator_desc_s2mps14_buck(num, min, step) {		\
++#define regulator_desc_s2mps14_buck(num, min, step, min_sel) {	\
+ 	.name		= "BUCK"#num,				\
+ 	.id		= S2MPS14_BUCK##num,			\
+ 	.ops		= &s2mps14_reg_ops,			\
+@@ -488,7 +488,7 @@ static struct regulator_ops s2mps14_reg_
+ 	.min_uV		= min,					\
+ 	.uV_step	= step,					\
+ 	.n_voltages	= S2MPS14_BUCK_N_VOLTAGES,		\
+-	.linear_min_sel = S2MPS14_BUCK1235_START_SEL,		\
++	.linear_min_sel = min_sel,				\
+ 	.ramp_delay	= S2MPS14_BUCK_RAMP_DELAY,		\
+ 	.vsel_reg	= S2MPS14_REG_B1CTRL2 + (num - 1) * 2,	\
+ 	.vsel_mask	= S2MPS14_BUCK_VSEL_MASK,		\
+@@ -522,11 +522,16 @@ static const struct regulator_desc s2mps
+ 	regulator_desc_s2mps14_ldo(23, MIN_800_MV, STEP_25_MV),
+ 	regulator_desc_s2mps14_ldo(24, MIN_1800_MV, STEP_25_MV),
+ 	regulator_desc_s2mps14_ldo(25, MIN_1800_MV, STEP_25_MV),
+-	regulator_desc_s2mps14_buck(1, MIN_600_MV, STEP_6_25_MV),
+-	regulator_desc_s2mps14_buck(2, MIN_600_MV, STEP_6_25_MV),
+-	regulator_desc_s2mps14_buck(3, MIN_600_MV, STEP_6_25_MV),
+-	regulator_desc_s2mps14_buck(4, MIN_1400_MV, STEP_12_5_MV),
+-	regulator_desc_s2mps14_buck(5, MIN_600_MV, STEP_6_25_MV),
++	regulator_desc_s2mps14_buck(1, MIN_600_MV, STEP_6_25_MV,
++				    S2MPS14_BUCK1235_START_SEL),
++	regulator_desc_s2mps14_buck(2, MIN_600_MV, STEP_6_25_MV,
++				    S2MPS14_BUCK1235_START_SEL),
++	regulator_desc_s2mps14_buck(3, MIN_600_MV, STEP_6_25_MV,
++				    S2MPS14_BUCK1235_START_SEL),
++	regulator_desc_s2mps14_buck(4, MIN_1400_MV, STEP_12_5_MV,
++				    S2MPS14_BUCK4_START_SEL),
++	regulator_desc_s2mps14_buck(5, MIN_600_MV, STEP_6_25_MV,
++				    S2MPS14_BUCK1235_START_SEL),
+ };
  
--	vol->upd_buf = vmalloc(ubi->leb_size);
--	if (!vol->upd_buf)
--		return -ENOMEM;
--
- 	vol->upd_ebs = div_u64(bytes + vol->usable_leb_size - 1,
- 			       vol->usable_leb_size);
- 	vol->upd_bytes = bytes;
+ static int s2mps14_pmic_enable_ext_control(struct s2mps11_info *s2mps11,
 
 
