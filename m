@@ -1,23 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933344AbbANIF2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:05:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58473 "EHLO
+	id S933174AbbANISm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:18:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58083 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932477AbbANHeL (ORCPT
+	with ESMTP id S932145AbbANH3i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:34:11 -0500
+	Wed, 14 Jan 2015 02:29:38 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [PATCH 3.14 25/77] UBI: Fix double free after do_sync_erase()
+        Luca Abeni <luca.abeni@unitn.it>,
+        "Peter Zijlstra (Intel)" <peterz@infradead.org>,
+        Juri Lelli <juri.lelli@gmail.com>, Dario Faggioli <raistlin@linux.it>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>
+Subject: [PATCH 3.18 114/150] sched/deadline: Avoid double-accounting in case of missed deadlines
 Date: Tue, 13 Jan 2015 23:23:05 -0800
-Message-Id: <20150114072225.575454941@linuxfoundation.org>
+Message-Id: <20150114072101.025465378@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-References: <20150114072224.182299947@linuxfoundation.org>
+In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
+References: <20150114072055.842408181@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,61 +28,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Richard Weinberger <richard@nod.at>
+From: Luca Abeni <luca.abeni@unitn.it>
 
-commit aa5ad3b6eb8feb2399a5d26c8fb0060561bb9534 upstream.
+commit 269ad8015a6b2bb1cf9e684da4921eb6fa0a0c88 upstream.
 
-If the erase worker is unable to erase a PEB it will
-free the ubi_wl_entry itself.
-The failing ubi_wl_entry must not free()'d again after
-do_sync_erase() returns.
+The dl_runtime_exceeded() function is supposed to ckeck if
+a SCHED_DEADLINE task must be throttled, by checking if its
+current runtime is <= 0. However, it also checks if the
+scheduling deadline has been missed (the current time is
+larger than the current scheduling deadline), further
+decreasing the runtime if this happens.
+This "double accounting" is wrong:
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+- In case of partitioned scheduling (or single CPU), this
+  happens if task_tick_dl() has been called later than expected
+  (due to small HZ values). In this case, the current runtime is
+  also negative, and replenish_dl_entity() can take care of the
+  deadline miss by recharging the current runtime to a value smaller
+  than dl_runtime
+
+- In case of global scheduling on multiple CPUs, scheduling
+  deadlines can be missed even if the task did not consume more
+  runtime than expected, hence penalizing the task is wrong
+
+This patch fix this problem by throttling a SCHED_DEADLINE task
+only when its runtime becomes negative, and not modifying the runtime
+
+Signed-off-by: Luca Abeni <luca.abeni@unitn.it>
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Acked-by: Juri Lelli <juri.lelli@gmail.com>
+Cc: Dario Faggioli <raistlin@linux.it>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1418813432-20797-3-git-send-email-luca.abeni@unitn.it
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/ubi/wl.c |   10 +++-------
- 1 file changed, 3 insertions(+), 7 deletions(-)
+ kernel/sched/deadline.c |   19 +------------------
+ 1 file changed, 1 insertion(+), 18 deletions(-)
 
---- a/drivers/mtd/ubi/wl.c
-+++ b/drivers/mtd/ubi/wl.c
-@@ -1205,7 +1205,6 @@ static int wear_leveling_worker(struct u
- 
- 	err = do_sync_erase(ubi, e1, vol_id, lnum, 0);
- 	if (err) {
--		kmem_cache_free(ubi_wl_entry_slab, e1);
- 		if (e2)
- 			kmem_cache_free(ubi_wl_entry_slab, e2);
- 		goto out_ro;
-@@ -1219,10 +1218,8 @@ static int wear_leveling_worker(struct u
- 		dbg_wl("PEB %d (LEB %d:%d) was put meanwhile, erase",
- 		       e2->pnum, vol_id, lnum);
- 		err = do_sync_erase(ubi, e2, vol_id, lnum, 0);
--		if (err) {
--			kmem_cache_free(ubi_wl_entry_slab, e2);
-+		if (err)
- 			goto out_ro;
--		}
- 	}
- 
- 	dbg_wl("done");
-@@ -1258,10 +1255,9 @@ out_not_moved:
- 
- 	ubi_free_vid_hdr(ubi, vid_hdr);
- 	err = do_sync_erase(ubi, e2, vol_id, lnum, torture);
--	if (err) {
--		kmem_cache_free(ubi_wl_entry_slab, e2);
-+	if (err)
- 		goto out_ro;
+--- a/kernel/sched/deadline.c
++++ b/kernel/sched/deadline.c
+@@ -575,24 +575,7 @@ void init_dl_task_timer(struct sched_dl_
+ static
+ int dl_runtime_exceeded(struct rq *rq, struct sched_dl_entity *dl_se)
+ {
+-	int dmiss = dl_time_before(dl_se->deadline, rq_clock(rq));
+-	int rorun = dl_se->runtime <= 0;
+-
+-	if (!rorun && !dmiss)
+-		return 0;
+-
+-	/*
+-	 * If we are beyond our current deadline and we are still
+-	 * executing, then we have already used some of the runtime of
+-	 * the next instance. Thus, if we do not account that, we are
+-	 * stealing bandwidth from the system at each deadline miss!
+-	 */
+-	if (dmiss) {
+-		dl_se->runtime = rorun ? dl_se->runtime : 0;
+-		dl_se->runtime -= rq_clock(rq) - dl_se->deadline;
 -	}
-+
- 	mutex_unlock(&ubi->move_mutex);
- 	return 0;
+-
+-	return 1;
++	return (dl_se->runtime <= 0);
+ }
  
+ extern bool sched_rt_bandwidth_account(struct rt_rq *rt_rq);
 
 
