@@ -1,33 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754049AbbANVqT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 16:46:19 -0500
-Received: from lb2-smtp-cloud2.xs4all.net ([194.109.24.25]:42141 "EHLO
-	lb2-smtp-cloud2.xs4all.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751540AbbANVqS (ORCPT
+	id S1754521AbbANVnF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 16:43:05 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:46605 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754486AbbANVnD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 16:46:18 -0500
-Message-ID: <54B6E3A6.6000605@xs4all.net>
-Date: Wed, 14 Jan 2015 22:46:14 +0100
-From: Miquel van Smoorenburg <mikevs@xs4all.net>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Wed, 14 Jan 2015 16:43:03 -0500
+Date: Wed, 14 Jan 2015 23:46:49 +0200
+From: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
+To: devel@driverdev.osuosl.org
+Cc: mchehab@osg.samsung.com, gregkh@linuxfoundation.org,
+        hans.verkuil@cisco.com, prabhakar.csengg@gmail.com,
+        boris.brezillon@free-electrons.com, sakari.ailus@linux.intel.com,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: davinci_vpfe: fix space prohibited before semicolon
+ warning
+Message-ID: <20150114214649.GA20302@localhost.localdomain>
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: net: prevent of emerging cross-namespace symlinks patches for
- 3.14
-References: <54B6D241.6070700@xs4all.net> <20150114210746.GC32102@kroah.com>
-In-Reply-To: <20150114210746.GC32102@kroah.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/01/15 22:07, Greg KH wrote:
-> For networking patches, can you cc: netdev and get an ack from the
-> networking maintainer for me to be able to apply them?
+This patch fixes the following checkpatch.pl warning:
 
-Done, and sorry for the stable@kernel.org bounce.
+space prohibited before semicolon
 
-Mike.
+Signed-off-by: Aya Mahfouz <mahfouz.saif.elyazal@gmail.com>
+---
+v1: This patch applies to Greg's tree.
+
+ drivers/staging/media/davinci_vpfe/dm365_ipipe.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/media/davinci_vpfe/dm365_ipipe.c b/drivers/staging/media/davinci_vpfe/dm365_ipipe.c
+index 704fa20..a425f71 100644
+--- a/drivers/staging/media/davinci_vpfe/dm365_ipipe.c
++++ b/drivers/staging/media/davinci_vpfe/dm365_ipipe.c
+@@ -901,7 +901,7 @@ static int ipipe_set_gbce_params(struct vpfe_ipipe_device *ipipe, void *param)
+ 	struct device *dev = ipipe->subdev.v4l2_dev->dev;
+ 
+ 	if (!gbce_param) {
+-		memset(gbce, 0 , sizeof(struct vpfe_ipipe_gbce));
++		memset(gbce, 0, sizeof(struct vpfe_ipipe_gbce));
+ 	} else {
+ 		memcpy(gbce, gbce_param, sizeof(struct vpfe_ipipe_gbce));
+ 		if (ipipe_validate_gbce_params(gbce) < 0) {
+@@ -1086,7 +1086,7 @@ static int ipipe_set_car_params(struct vpfe_ipipe_device *ipipe, void *param)
+ 	struct vpfe_ipipe_car *car = &ipipe->config.car;
+ 
+ 	if (!car_param) {
+-		memset(car , 0, sizeof(struct vpfe_ipipe_car));
++		memset(car, 0, sizeof(struct vpfe_ipipe_car));
+ 	} else {
+ 		memcpy(car, car_param, sizeof(struct vpfe_ipipe_car));
+ 		if (ipipe_validate_car_params(car) < 0) {
+-- 
+1.9.3
+
