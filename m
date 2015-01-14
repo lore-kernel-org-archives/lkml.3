@@ -1,110 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754013AbbANQcq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 11:32:46 -0500
-Received: from mga01.intel.com ([192.55.52.88]:25315 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753553AbbANQck (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 11:32:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,756,1413270000"; 
-   d="scan'208";a="651073738"
-Message-ID: <54B69A29.6060201@linux.intel.com>
-Date: Wed, 14 Jan 2015 08:32:41 -0800
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1754052AbbANQd2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 11:33:28 -0500
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:44907 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752140AbbANQd0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 11:33:26 -0500
+Date: Wed, 14 Jan 2015 16:33:17 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Siddhartha De <siddhartha.de87@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Question about kernel interfaces
+Message-ID: <20150114163317.46a1ecec@lxorguk.ukuu.org.uk>
+In-Reply-To: <CADxyqME4=vnZh4J8BDw63r6L=hA8OpO4GJWxuuOgwuFwHb+8Lg@mail.gmail.com>
+References: <CADxyqMFnDnFNvTL7Yuzd-1WP9RRddFYAd7UVXmLT2SOMRmOx9g@mail.gmail.com>
+	<CADxyqMHXMjXPVnGSpQSS=_FUpH=Hz-=P1FbcFfJ8Omp3k74dGA@mail.gmail.com>
+	<20150108134849.671ee761@lxorguk.ukuu.org.uk>
+	<CADxyqME4=vnZh4J8BDw63r6L=hA8OpO4GJWxuuOgwuFwHb+8Lg@mail.gmail.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>,
-        Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Arnd Bergmann <arnd@arndb.de>
-CC: Alexandre Courbot <gnurou@gmail.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Ortiz, Samuel" <samuel.ortiz@intel.com>
-Subject: Re: [RFC PATCH] gpio: support for GPIO forwarding
-References: <1418890998-23811-1-git-send-email-heikki.krogerus@linux.intel.com> <CACRpkdY-yFKsYbCrMpnViMFoQEugyGQivaV0M+GDzLrbDO7i6Q@mail.gmail.com>
-In-Reply-To: <CACRpkdY-yFKsYbCrMpnViMFoQEugyGQivaV0M+GDzLrbDO7i6Q@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ugh, Samuel actually Cc'd this time...
+> Just wanted to point out something  :-
+> 
+> Quoting from makelinux website :-
+> http://www.makelinux.net/books/lkd2/ch17lev1sec8
+> 
+> "The sysfs filesystem is currently the place for implementing
+> functionality previously reserved for ioctl() calls on device nodes or
+> the procfs filesystem. These days, the chic thing to do is implement
+> such functionality as sysfs attributes in the appropriate directory.
+> For example, instead of a new ioctl() on a device node, add a sysfs
+> attribute in the driver's sysfs directory. Such an approach avoids the
+> type-unsafe use of obscure ioctl() arguments and the haphazard mess of
+> /proc. "
 
-On 1/14/15 4:58 AM, Linus Walleij wrote:
-> On Thu, Dec 18, 2014 at 9:23 AM, Heikki Krogerus
-> <heikki.krogerus@linux.intel.com> wrote:
-> 
->> This makes it possible to assign GPIOs at runtime. The
->> motivation for it is because of need to forward GPIOs from
->> one device to an other. That feature may be useful for
->> example with some mfd devices, but initially it is needed
->> because on some Intel Braswell based ACPI platforms the GPIO
->> resources controlling signals of the USB PHY are given to
->> the controller device object for whatever reason, so the
->> driver of that controller needs be able to pass them to the
->> PHY device somehow.
->>
->> So basically this is meant to allow patching of bad (bad
->> from Linux kernels point of view) hardware descriptions
->> provided by system fw in the drivers.
->>
->> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
->> ---
->>
->> Hi,
->>
->> I'm sending this first as a RFC in case you guys have some better
->> idea how to solve our problem. I actually already have couple
->> platforms where the GPIO resources are given to the "wrong" device
->> objects now.
->>
->> Originally we were thinking about simply handling our problem with
->> hacks to the PHY drivers, basically also checking if the parent has
->> GPIOs. That would only work if the controller is always the parent,
->> which it's not, but even if it was, it would be too risky. The PHY
->> drivers don't know which controller they are attached to, so what is
->> to say that the GPIOs aren't really attached to the controller.
->>
->> So the safest way to handle our problem is to deal with it in quirks
->> in the controller drivers. Solving it by bouncing the GPIOs did not
->> feel ideal there doesn't seem to be any other way. The API is copied
->> from clkdev (clk_register_clkdev). In the end it's really only one
->> function for adding the lookups and one for removing them.
->>
->> The way it's implemented is by modifying the current style of handling
->> the lookups a little bit. The per device lookup table is basically
->> reverted back to the single linked-list format since it seems that
->> these lookups may have to be assigned from several sources.
-> 
-> Oh ain't that great.
-> 
-> So now we start patching around the kernel because the ACPI
-> tables are erroneous for GPIOs. I'd like some feedback from
-> Rafael &| Darren on this patch, i.e. if you two think this is a good
-> way of accounting for bad GPIO descriptions in ACPI tables then
-> ACK this patch.
-> 
-> I guess the other option would be to fix up the ACPI DSDT
-> itself to put resources right, correct? Is this not possible?
-> 
-> Alexandre also need to ACK it before I dare do anything with
-> it.
-> 
-> Do we want to use the same mechanism for augmenting
-> bad device trees too?
-> 
-> What I like about it so far is the create/remove symmetry
-> though.
-> 
-> Yours,
-> Linus Walleij
-> 
+And is wrong. Certainly rather clueless people had the idea they could
+make ioctl go away using sysfs, and then everyone wrote about it. Anyone
+who actually thought about the problem realised immediately they are not
+semantically equivalent.
 
--- 
-Darren Hart
-Intel Open Source Technology Center
+> sysfs is the new ioctl
+
+And as was pointed out even then they are not semantically equivalent so
+everyone who was talking about "sysfs being the new ioctl" was basically
+talking out the wrong end.
+
+What was done was to stop filling drivers with ioctls for pieces of
+general information which didn't have a context attached to it or
+sequence. Things like power state, what type it is, what bus it is on
+etc. That avoided having zillions of ioctls but at the cost of memory.
+
+> Taking this idea further , could we also expose driver IOCTL's over
+> the network ?
+> 
+> For eg to open the cd rom drive we would be calling the following url :-
+
+You could but why would you make the network visible. If you look at real
+clustered systems they all hide the network. You don't care where it is,
+often you don't even care where the drive is.
+
+eject /dev/cdrom
+
+on such a system lets the kernel figure out who to ask to eject it.
+
+The job of an OS is to abstract details like that. In a clustered OS I
+want to be able to type
+
+	mount mydisk
+
+and I don't care who, where or how it gets mounted so long as it appears.
+
+Alan
