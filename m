@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754890AbbANHcC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:32:02 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58309 "EHLO
+	id S932897AbbANHgp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:36:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58698 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754106AbbANHb7 (ORCPT
+	with ESMTP id S932179AbbANHgn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:31:59 -0500
+	Wed, 14 Jan 2015 02:36:43 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Dave Airlie <airlied@redhat.com>
-Subject: [PATCH 3.18 143/150] nouveau: bring back legacy mmap handler
+        Brian Norris <computersforpeace@gmail.com>,
+        Akinobu Mita <akinobu.mita@gmail.com>
+Subject: [PATCH 3.14 54/77] mtd: tests: abort torturetest on erase errors
 Date: Tue, 13 Jan 2015 23:23:34 -0800
-Message-Id: <20150114072102.321620758@linuxfoundation.org>
+Message-Id: <20150114072227.230278504@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
-References: <20150114072055.842408181@linuxfoundation.org>
+In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
+References: <20150114072224.182299947@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,49 +25,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Dave Airlie <airlied@redhat.com>
+From: Brian Norris <computersforpeace@gmail.com>
 
-commit 2036eaa74031b11028ee8fc1f44f128fdc871dda upstream.
+commit 68f29815034e9dc9ed53cad85946c32b07adc8cc upstream.
 
-nouveau userspace back at 1.0.1 used to call the X server
-DRIOpenDRMMaster interface even for DRI2 (doh!), this attempts
-to map the sarea and fails if it can't.
+The torture test should quit once it actually induces an error in the
+flash. This step was accidentally removed during refactoring.
 
-Since 884c6dabb0eafe7227f099c9e78e514191efaf13 from Daniel,
-this fails, but only ancient drivers would see it.
+Without this fix, the torturetest just continues infinitely, or until
+the maximum cycle count is reached. e.g.:
 
-Revert the nouveau bits of that fix.
+   ...
+   [ 7619.218171] mtd_test: error -5 while erasing EB 100
+   [ 7619.297981] mtd_test: error -5 while erasing EB 100
+   [ 7619.377953] mtd_test: error -5 while erasing EB 100
+   [ 7619.457998] mtd_test: error -5 while erasing EB 100
+   [ 7619.537990] mtd_test: error -5 while erasing EB 100
+   ...
 
-Acked-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
+Fixes: 6cf78358c94f ("mtd: mtd_torturetest: use mtd_test helpers")
+Signed-off-by: Brian Norris <computersforpeace@gmail.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/gpu/drm/nouveau/nouveau_ttm.c |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ drivers/mtd/tests/torturetest.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/gpu/drm/nouveau/nouveau_ttm.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_ttm.c
-@@ -28,6 +28,7 @@
- #include "nouveau_ttm.h"
- #include "nouveau_gem.h"
+--- a/drivers/mtd/tests/torturetest.c
++++ b/drivers/mtd/tests/torturetest.c
+@@ -264,7 +264,9 @@ static int __init tort_init(void)
+ 		int i;
+ 		void *patt;
  
-+#include "drm_legacy.h"
- static int
- nouveau_vram_manager_init(struct ttm_mem_type_manager *man, unsigned long psize)
- {
-@@ -281,7 +282,7 @@ nouveau_ttm_mmap(struct file *filp, stru
- 	struct nouveau_drm *drm = nouveau_drm(file_priv->minor->dev);
+-		mtdtest_erase_good_eraseblocks(mtd, bad_ebs, eb, ebcnt);
++		err = mtdtest_erase_good_eraseblocks(mtd, bad_ebs, eb, ebcnt);
++		if (err)
++			goto out;
  
- 	if (unlikely(vma->vm_pgoff < DRM_FILE_PAGE_OFFSET))
--		return -EINVAL;
-+		return drm_legacy_mmap(filp, vma);
- 
- 	return ttm_bo_mmap(filp, vma, &drm->ttm.bdev);
- }
+ 		/* Check if the eraseblocks contain only 0xFF bytes */
+ 		if (check) {
 
 
