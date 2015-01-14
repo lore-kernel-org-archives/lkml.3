@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755261AbbANHhJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:37:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58743 "EHLO
+	id S933051AbbANHhq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:37:46 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58809 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754235AbbANHhC (ORCPT
+	with ESMTP id S933036AbbANHhj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:37:02 -0500
+	Wed, 14 Jan 2015 02:37:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 55/77] nilfs2: fix the nilfs_iget() vs. nilfs_new_inode() races
+        Richard Weinberger <richard@nod.at>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [PATCH 3.10 14/44] UBI: Fix invalid vfree()
 Date: Tue, 13 Jan 2015 23:23:35 -0800
-Message-Id: <20150114072227.283460822@linuxfoundation.org>
+Message-Id: <20150114072228.306754465@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-References: <20150114072224.182299947@linuxfoundation.org>
+In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
+References: <20150114072227.419663002@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -27,180 +25,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+From: Richard Weinberger <richard@nod.at>
 
-commit 705304a863cc41585508c0f476f6d3ec28cf7e00 upstream.
+commit f38aed975c0c3645bbdfc5ebe35726e64caaf588 upstream.
 
-Same story as in commit 41080b5a2401 ("nfsd race fixes: ext2") (similar
-ext2 fix) except that nilfs2 needs to use insert_inode_locked4() instead
-of insert_inode_locked() and a bug of a check for dead inodes needs to
-be fixed.
+The logic of vfree()'ing vol->upd_buf is tied to vol->updating.
+In ubi_start_update() vol->updating is set long before vmalloc()'ing
+vol->upd_buf. If we encounter a write failure in ubi_start_update()
+before vmalloc() the UBI device release function will try to vfree()
+vol->upd_buf because vol->updating is set.
+Fix this by allocating vol->upd_buf directly after setting vol->updating.
 
-If nilfs_iget() is called from nfsd after nilfs_new_inode() calls
-insert_inode_locked4(), nilfs_iget() will wait for unlock_new_inode() at
-the end of nilfs_mkdir()/nilfs_create()/etc to unlock the inode.
+Fixes:
+[   31.559338] UBI warning: vol_cdev_release: update of volume 2 not finished, volume is damaged
+[   31.559340] ------------[ cut here ]------------
+[   31.559343] WARNING: CPU: 1 PID: 2747 at mm/vmalloc.c:1446 __vunmap+0xe3/0x110()
+[   31.559344] Trying to vfree() nonexistent vm area (ffffc90001f2b000)
+[   31.559345] Modules linked in:
+[   31.565620]  0000000000000bba ffff88002a0cbdb0 ffffffff818f0497 ffff88003b9ba148
+[   31.566347]  ffff88002a0cbde0 ffffffff8156f515 ffff88003b9ba148 0000000000000bba
+[   31.567073]  0000000000000000 0000000000000000 ffff88002a0cbe88 ffffffff8156c10a
+[   31.567793] Call Trace:
+[   31.568034]  [<ffffffff818f0497>] dump_stack+0x4e/0x7a
+[   31.568510]  [<ffffffff8156f515>] ubi_io_write_vid_hdr+0x155/0x160
+[   31.569084]  [<ffffffff8156c10a>] ubi_eba_write_leb+0x23a/0x870
+[   31.569628]  [<ffffffff81569b36>] vol_cdev_write+0x226/0x380
+[   31.570155]  [<ffffffff81179265>] vfs_write+0xb5/0x1f0
+[   31.570627]  [<ffffffff81179f8a>] SyS_pwrite64+0x6a/0xa0
+[   31.571123]  [<ffffffff818fde12>] system_call_fastpath+0x16/0x1b
 
-If nilfs_iget() is called before nilfs_new_inode() calls
-insert_inode_locked4(), it will create an in-core inode and read its
-data from the on-disk inode.  But, nilfs_iget() will find i_nlink equals
-zero and fail at nilfs_read_inode_common(), which will lead it to call
-iget_failed() and cleanly fail.
-
-However, this sanity check doesn't work as expected for reused on-disk
-inodes because they leave a non-zero value in i_mode field and it
-hinders the test of i_nlink.  This patch also fixes the issue by
-removing the test on i_mode that nilfs2 doesn't need.
-
-Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Richard Weinberger <richard@nod.at>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/nilfs2/inode.c |   32 ++++++++++++++++++++++++--------
- fs/nilfs2/namei.c |   15 ++++++++++++---
- 2 files changed, 36 insertions(+), 11 deletions(-)
+ drivers/mtd/ubi/upd.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/fs/nilfs2/inode.c
-+++ b/fs/nilfs2/inode.c
-@@ -49,6 +49,8 @@ struct nilfs_iget_args {
- 	int for_gc;
- };
+--- a/drivers/mtd/ubi/upd.c
++++ b/drivers/mtd/ubi/upd.c
+@@ -133,6 +133,10 @@ int ubi_start_update(struct ubi_device *
+ 	ubi_assert(!vol->updating && !vol->changing_leb);
+ 	vol->updating = 1;
  
-+static int nilfs_iget_test(struct inode *inode, void *opaque);
++	vol->upd_buf = vmalloc(ubi->leb_size);
++	if (!vol->upd_buf)
++		return -ENOMEM;
 +
- void nilfs_inode_add_blocks(struct inode *inode, int n)
- {
- 	struct nilfs_root *root = NILFS_I(inode)->i_root;
-@@ -347,6 +349,17 @@ const struct address_space_operations ni
- 	.is_partially_uptodate  = block_is_partially_uptodate,
- };
- 
-+static int nilfs_insert_inode_locked(struct inode *inode,
-+				     struct nilfs_root *root,
-+				     unsigned long ino)
-+{
-+	struct nilfs_iget_args args = {
-+		.ino = ino, .root = root, .cno = 0, .for_gc = 0
-+	};
+ 	err = set_update_marker(ubi, vol);
+ 	if (err)
+ 		return err;
+@@ -152,14 +156,12 @@ int ubi_start_update(struct ubi_device *
+ 		err = clear_update_marker(ubi, vol, 0);
+ 		if (err)
+ 			return err;
 +
-+	return insert_inode_locked4(inode, ino, nilfs_iget_test, &args);
-+}
-+
- struct inode *nilfs_new_inode(struct inode *dir, umode_t mode)
- {
- 	struct super_block *sb = dir->i_sb;
-@@ -382,7 +395,7 @@ struct inode *nilfs_new_inode(struct ino
- 	if (S_ISREG(mode) || S_ISDIR(mode) || S_ISLNK(mode)) {
- 		err = nilfs_bmap_read(ii->i_bmap, NULL);
- 		if (err < 0)
--			goto failed_bmap;
-+			goto failed_after_creation;
- 
- 		set_bit(NILFS_I_BMAP, &ii->i_state);
- 		/* No lock is needed; iget() ensures it. */
-@@ -398,21 +411,24 @@ struct inode *nilfs_new_inode(struct ino
- 	spin_lock(&nilfs->ns_next_gen_lock);
- 	inode->i_generation = nilfs->ns_next_generation++;
- 	spin_unlock(&nilfs->ns_next_gen_lock);
--	insert_inode_hash(inode);
-+	if (nilfs_insert_inode_locked(inode, root, ino) < 0) {
-+		err = -EIO;
-+		goto failed_after_creation;
-+	}
- 
- 	err = nilfs_init_acl(inode, dir);
- 	if (unlikely(err))
--		goto failed_acl; /* never occur. When supporting
-+		goto failed_after_creation; /* never occur. When supporting
- 				    nilfs_init_acl(), proper cancellation of
- 				    above jobs should be considered */
- 
- 	return inode;
- 
-- failed_acl:
-- failed_bmap:
-+ failed_after_creation:
- 	clear_nlink(inode);
-+	unlock_new_inode(inode);
- 	iput(inode);  /* raw_inode will be deleted through
--			 generic_delete_inode() */
-+			 nilfs_evict_inode() */
- 	goto failed;
- 
-  failed_ifile_create_inode:
-@@ -460,8 +476,8 @@ int nilfs_read_inode_common(struct inode
- 	inode->i_atime.tv_nsec = le32_to_cpu(raw_inode->i_mtime_nsec);
- 	inode->i_ctime.tv_nsec = le32_to_cpu(raw_inode->i_ctime_nsec);
- 	inode->i_mtime.tv_nsec = le32_to_cpu(raw_inode->i_mtime_nsec);
--	if (inode->i_nlink == 0 && inode->i_mode == 0)
--		return -EINVAL; /* this inode is deleted */
-+	if (inode->i_nlink == 0)
-+		return -ESTALE; /* this inode is deleted */
- 
- 	inode->i_blocks = le64_to_cpu(raw_inode->i_blocks);
- 	ii->i_flags = le32_to_cpu(raw_inode->i_flags);
---- a/fs/nilfs2/namei.c
-+++ b/fs/nilfs2/namei.c
-@@ -51,9 +51,11 @@ static inline int nilfs_add_nondir(struc
- 	int err = nilfs_add_link(dentry, inode);
- 	if (!err) {
- 		d_instantiate(dentry, inode);
-+		unlock_new_inode(inode);
++		vfree(vol->upd_buf);
+ 		vol->updating = 0;
  		return 0;
  	}
- 	inode_dec_link_count(inode);
-+	unlock_new_inode(inode);
- 	iput(inode);
- 	return err;
- }
-@@ -182,6 +184,7 @@ out:
- out_fail:
- 	drop_nlink(inode);
- 	nilfs_mark_inode_dirty(inode);
-+	unlock_new_inode(inode);
- 	iput(inode);
- 	goto out;
- }
-@@ -201,11 +204,15 @@ static int nilfs_link(struct dentry *old
- 	inode_inc_link_count(inode);
- 	ihold(inode);
  
--	err = nilfs_add_nondir(dentry, inode);
--	if (!err)
-+	err = nilfs_add_link(dentry, inode);
-+	if (!err) {
-+		d_instantiate(dentry, inode);
- 		err = nilfs_transaction_commit(dir->i_sb);
--	else
-+	} else {
-+		inode_dec_link_count(inode);
-+		iput(inode);
- 		nilfs_transaction_abort(dir->i_sb);
-+	}
- 
- 	return err;
- }
-@@ -243,6 +250,7 @@ static int nilfs_mkdir(struct inode *dir
- 
- 	nilfs_mark_inode_dirty(inode);
- 	d_instantiate(dentry, inode);
-+	unlock_new_inode(inode);
- out:
- 	if (!err)
- 		err = nilfs_transaction_commit(dir->i_sb);
-@@ -255,6 +263,7 @@ out_fail:
- 	drop_nlink(inode);
- 	drop_nlink(inode);
- 	nilfs_mark_inode_dirty(inode);
-+	unlock_new_inode(inode);
- 	iput(inode);
- out_dir:
- 	drop_nlink(dir);
+-	vol->upd_buf = vmalloc(ubi->leb_size);
+-	if (!vol->upd_buf)
+-		return -ENOMEM;
+-
+ 	vol->upd_ebs = div_u64(bytes + vol->usable_leb_size - 1,
+ 			       vol->usable_leb_size);
+ 	vol->upd_bytes = bytes;
 
 
