@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755284AbbANHio (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:38:44 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58872 "EHLO
+	id S1754945AbbANHcO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:32:14 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58333 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754531AbbANHim (ORCPT
+	with ESMTP id S1754106AbbANHcL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:38:42 -0500
+	Wed, 14 Jan 2015 02:32:11 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>,
-        Antonio Borneo <borneo.antonio@gmail.com>,
-        Benjamin Tissoires <benjamin.tissoires@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [PATCH 3.10 17/44] HID: i2c-hid: fix race condition reading reports
+        Tejun Heo <tj@kernel.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.18 147/150] mm: protect set_page_dirty() from ongoing truncation
 Date: Tue, 13 Jan 2015 23:23:38 -0800
-Message-Id: <20150114072228.481827679@linuxfoundation.org>
+Message-Id: <20150114072102.500026135@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
-References: <20150114072227.419663002@linuxfoundation.org>
+In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
+References: <20150114072055.842408181@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -27,93 +27,179 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
+From: Johannes Weiner <hannes@cmpxchg.org>
 
-commit 6296f4a8eb86f9abcc370fb7a1a116b8441c17fd upstream.
+commit 2d6d7f98284648c5ed113fe22a132148950b140f upstream.
 
-Current driver uses a common buffer for reading reports either
-synchronously in i2c_hid_get_raw_report() and asynchronously in
-the interrupt handler.
-There is race condition if an interrupt arrives immediately after
-the report is received in i2c_hid_get_raw_report(); the common
-buffer is modified by the interrupt handler with the new report
-and then i2c_hid_get_raw_report() proceed using wrong data.
+Tejun, while reviewing the code, spotted the following race condition
+between the dirtying and truncation of a page:
 
-Fix it by using a separate buffers for synchronous reports.
+__set_page_dirty_nobuffers()       __delete_from_page_cache()
+  if (TestSetPageDirty(page))
+                                     page->mapping = NULL
+				     if (PageDirty())
+				       dec_zone_page_state(page, NR_FILE_DIRTY);
+				       dec_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
+    if (page->mapping)
+      account_page_dirtied(page)
+        __inc_zone_page_state(page, NR_FILE_DIRTY);
+	__inc_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
 
-Signed-off-by: Jean-Baptiste Maneyrol <jmaneyrol@invensense.com>
-[Antonio Borneo: cleanup, rebase to v3.17, submit mainline]
-Signed-off-by: Antonio Borneo <borneo.antonio@gmail.com>
-Reviewed-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
-Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+which results in an imbalance of NR_FILE_DIRTY and BDI_RECLAIMABLE.
+
+Dirtiers usually lock out truncation, either by holding the page lock
+directly, or in case of zap_pte_range(), by pinning the mapcount with
+the page table lock held.  The notable exception to this rule, though,
+is do_wp_page(), for which this race exists.  However, do_wp_page()
+already waits for a locked page to unlock before setting the dirty bit,
+in order to prevent a race where clear_page_dirty() misses the page bit
+in the presence of dirty ptes.  Upgrade that wait to a fully locked
+set_page_dirty() to also cover the situation explained above.
+
+Afterwards, the code in set_page_dirty() dealing with a truncation race
+is no longer needed.  Remove it.
+
+Reported-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+Acked-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+Reviewed-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/hid/i2c-hid/i2c-hid.c |   12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+ include/linux/writeback.h |    1 -
+ mm/memory.c               |   27 +++++++++++++++++----------
+ mm/page-writeback.c       |   43 ++++++++++++-------------------------------
+ 3 files changed, 29 insertions(+), 42 deletions(-)
 
---- a/drivers/hid/i2c-hid/i2c-hid.c
-+++ b/drivers/hid/i2c-hid/i2c-hid.c
-@@ -134,6 +134,7 @@ struct i2c_hid {
- 						   * descriptor. */
- 	unsigned int		bufsize;	/* i2c buffer size */
- 	char			*inbuf;		/* Input buffer */
-+	char			*rawbuf;	/* Raw Input buffer */
- 	char			*cmdbuf;	/* Command buffer */
- 	char			*argsbuf;	/* Command arguments buffer */
+--- a/include/linux/writeback.h
++++ b/include/linux/writeback.h
+@@ -177,7 +177,6 @@ int write_cache_pages(struct address_spa
+ 		      struct writeback_control *wbc, writepage_t writepage,
+ 		      void *data);
+ int do_writepages(struct address_space *mapping, struct writeback_control *wbc);
+-void set_page_dirty_balance(struct page *page);
+ void writeback_set_ratelimit(void);
+ void tag_pages_for_writeback(struct address_space *mapping,
+ 			     pgoff_t start, pgoff_t end);
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2150,17 +2150,24 @@ reuse:
+ 		if (!dirty_page)
+ 			return ret;
  
-@@ -471,9 +472,11 @@ static void i2c_hid_find_max_report(stru
- static void i2c_hid_free_buffers(struct i2c_hid *ihid)
- {
- 	kfree(ihid->inbuf);
-+	kfree(ihid->rawbuf);
- 	kfree(ihid->argsbuf);
- 	kfree(ihid->cmdbuf);
- 	ihid->inbuf = NULL;
-+	ihid->rawbuf = NULL;
- 	ihid->cmdbuf = NULL;
- 	ihid->argsbuf = NULL;
- 	ihid->bufsize = 0;
-@@ -489,10 +492,11 @@ static int i2c_hid_alloc_buffers(struct
- 		       report_size; /* report */
- 
- 	ihid->inbuf = kzalloc(report_size, GFP_KERNEL);
-+	ihid->rawbuf = kzalloc(report_size, GFP_KERNEL);
- 	ihid->argsbuf = kzalloc(args_len, GFP_KERNEL);
- 	ihid->cmdbuf = kzalloc(sizeof(union command) + args_len, GFP_KERNEL);
- 
--	if (!ihid->inbuf || !ihid->argsbuf || !ihid->cmdbuf) {
-+	if (!ihid->inbuf || !ihid->rawbuf || !ihid->argsbuf || !ihid->cmdbuf) {
- 		i2c_hid_free_buffers(ihid);
- 		return -ENOMEM;
- 	}
-@@ -519,12 +523,12 @@ static int i2c_hid_get_raw_report(struct
- 
- 	ret = i2c_hid_get_report(client,
- 			report_type == HID_FEATURE_REPORT ? 0x03 : 0x01,
--			report_number, ihid->inbuf, ask_count);
-+			report_number, ihid->rawbuf, ask_count);
- 
- 	if (ret < 0)
- 		return ret;
- 
--	ret_count = ihid->inbuf[0] | (ihid->inbuf[1] << 8);
-+	ret_count = ihid->rawbuf[0] | (ihid->rawbuf[1] << 8);
- 
- 	if (ret_count <= 2)
- 		return 0;
-@@ -533,7 +537,7 @@ static int i2c_hid_get_raw_report(struct
- 
- 	/* The query buffer contains the size, dropping it in the reply */
- 	count = min(count, ret_count - 2);
--	memcpy(buf, ihid->inbuf + 2, count);
-+	memcpy(buf, ihid->rawbuf + 2, count);
- 
- 	return count;
+-		/*
+-		 * Yes, Virginia, this is actually required to prevent a race
+-		 * with clear_page_dirty_for_io() from clearing the page dirty
+-		 * bit after it clear all dirty ptes, but before a racing
+-		 * do_wp_page installs a dirty pte.
+-		 *
+-		 * do_shared_fault is protected similarly.
+-		 */
+ 		if (!page_mkwrite) {
+-			wait_on_page_locked(dirty_page);
+-			set_page_dirty_balance(dirty_page);
++			struct address_space *mapping;
++			int dirtied;
++
++			lock_page(dirty_page);
++			dirtied = set_page_dirty(dirty_page);
++			VM_BUG_ON_PAGE(PageAnon(dirty_page), dirty_page);
++			mapping = dirty_page->mapping;
++			unlock_page(dirty_page);
++
++			if (dirtied && mapping) {
++				/*
++				 * Some device drivers do not set page.mapping
++				 * but still dirty their pages
++				 */
++				balance_dirty_pages_ratelimited(mapping);
++			}
++
+ 			/* file_update_time outside page_lock */
+ 			if (vma->vm_file)
+ 				file_update_time(vma->vm_file);
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -1541,16 +1541,6 @@ pause:
+ 		bdi_start_background_writeback(bdi);
  }
+ 
+-void set_page_dirty_balance(struct page *page)
+-{
+-	if (set_page_dirty(page)) {
+-		struct address_space *mapping = page_mapping(page);
+-
+-		if (mapping)
+-			balance_dirty_pages_ratelimited(mapping);
+-	}
+-}
+-
+ static DEFINE_PER_CPU(int, bdp_ratelimits);
+ 
+ /*
+@@ -2123,32 +2113,25 @@ EXPORT_SYMBOL(account_page_dirtied);
+  * page dirty in that case, but not all the buffers.  This is a "bottom-up"
+  * dirtying, whereas __set_page_dirty_buffers() is a "top-down" dirtying.
+  *
+- * Most callers have locked the page, which pins the address_space in memory.
+- * But zap_pte_range() does not lock the page, however in that case the
+- * mapping is pinned by the vma's ->vm_file reference.
+- *
+- * We take care to handle the case where the page was truncated from the
+- * mapping by re-checking page_mapping() inside tree_lock.
++ * The caller must ensure this doesn't race with truncation.  Most will simply
++ * hold the page lock, but e.g. zap_pte_range() calls with the page mapped and
++ * the pte lock held, which also locks out truncation.
+  */
+ int __set_page_dirty_nobuffers(struct page *page)
+ {
+ 	if (!TestSetPageDirty(page)) {
+ 		struct address_space *mapping = page_mapping(page);
+-		struct address_space *mapping2;
+ 		unsigned long flags;
+ 
+ 		if (!mapping)
+ 			return 1;
+ 
+ 		spin_lock_irqsave(&mapping->tree_lock, flags);
+-		mapping2 = page_mapping(page);
+-		if (mapping2) { /* Race with truncate? */
+-			BUG_ON(mapping2 != mapping);
+-			WARN_ON_ONCE(!PagePrivate(page) && !PageUptodate(page));
+-			account_page_dirtied(page, mapping);
+-			radix_tree_tag_set(&mapping->page_tree,
+-				page_index(page), PAGECACHE_TAG_DIRTY);
+-		}
++		BUG_ON(page_mapping(page) != mapping);
++		WARN_ON_ONCE(!PagePrivate(page) && !PageUptodate(page));
++		account_page_dirtied(page, mapping);
++		radix_tree_tag_set(&mapping->page_tree, page_index(page),
++				   PAGECACHE_TAG_DIRTY);
+ 		spin_unlock_irqrestore(&mapping->tree_lock, flags);
+ 		if (mapping->host) {
+ 			/* !PageAnon && !swapper_space */
+@@ -2305,12 +2288,10 @@ int clear_page_dirty_for_io(struct page
+ 		/*
+ 		 * We carefully synchronise fault handlers against
+ 		 * installing a dirty pte and marking the page dirty
+-		 * at this point. We do this by having them hold the
+-		 * page lock at some point after installing their
+-		 * pte, but before marking the page dirty.
+-		 * Pages are always locked coming in here, so we get
+-		 * the desired exclusion. See mm/memory.c:do_wp_page()
+-		 * for more comments.
++		 * at this point.  We do this by having them hold the
++		 * page lock while dirtying the page, and pages are
++		 * always locked coming in here, so we get the desired
++		 * exclusion.
+ 		 */
+ 		if (TestClearPageDirty(page)) {
+ 			dec_zone_page_state(page, NR_FILE_DIRTY);
 
 
