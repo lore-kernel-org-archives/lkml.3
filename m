@@ -1,171 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752367AbbANDVW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 22:21:22 -0500
-Received: from mail-bl2on0117.outbound.protection.outlook.com ([65.55.169.117]:64875
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752142AbbANDVV convert rfc822-to-8bit (ORCPT
+	id S1752537AbbANDXk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 22:23:40 -0500
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:39489 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751388AbbANDXi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 22:21:21 -0500
-From: KY Srinivasan <kys@microsoft.com>
-To: Dexuan Cui <decui@microsoft.com>, Vitaly Kuznetsov <vkuznets@redhat.com>
-CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<driverdev-devel@linuxdriverproject.org>,
-        "olaf@aepfle.de" <olaf@aepfle.de>,
-        "apw@canonical.com" <apw@canonical.com>,
-        "jasowang@redhat.com" <jasowang@redhat.com>,
-        Haiyang Zhang <haiyangz@microsoft.com>
-Subject: RE: [PATCH v3] hv: hv_fcopy: drop the obsolete message on transfer
- failure
-Thread-Topic: [PATCH v3] hv: hv_fcopy: drop the obsolete message on transfer
- failure
-Thread-Index: AQHQCjmjSzw/zQ+dsEi8PDH7zIFezJy+W/YWgADGp4CAABsV4A==
-Date: Wed, 14 Jan 2015 03:21:18 +0000
-Message-ID: <BY2PR0301MB07117C3BF4EDBAA1306BC15CA0410@BY2PR0301MB0711.namprd03.prod.outlook.com>
-References: <1417093747-21073-1-git-send-email-decui@microsoft.com>
- <8761caeqjp.fsf@vitty.brq.redhat.com>
- <F792CF86EFE20D4AB8064279AFBA51C61EA7CFF9@SIXPRD3002MB028.064d.mgd.msft.net>
-In-Reply-To: <F792CF86EFE20D4AB8064279AFBA51C61EA7CFF9@SIXPRD3002MB028.064d.mgd.msft.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2601:8:9b00:fd:59dd:bd2e:e8d9:683a]
-authentication-results: spf=none (sender IP is )
- smtp.mailfrom=kys@microsoft.com; 
-x-dmarcaction-test: None
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BY2PR0301MB0775;
-x-exchange-antispam-report-test: UriScan:;
-x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0775;
-x-forefront-prvs: 04569283F9
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(377454003)(199003)(13464003)(164054003)(51704005)(189002)(106356001)(74316001)(99286002)(106116001)(105586002)(101416001)(19580405001)(19580395003)(86612001)(551934003)(46102003)(40100003)(2561002)(122556002)(217423001)(86362001)(33656002)(87936001)(2656002)(54606007)(50986999)(76176999)(54356999)(54206007)(64706001)(76576001)(102836002)(2421001)(1511001)(92566002)(62966003)(77156002)(2900100001)(2950100001)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0775;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: microsoft.onmicrosoft.com
-X-MS-Exchange-CrossTenant-originalarrivaltime: 14 Jan 2015 03:21:18.1112
- (UTC)
-X-MS-Exchange-CrossTenant-fromentityheader: Hosted
-X-MS-Exchange-CrossTenant-id: 72f988bf-86f1-41af-91ab-2d7cd011db47
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR0301MB0775
+	Tue, 13 Jan 2015 22:23:38 -0500
+Message-ID: <1421205803.2119.110.camel@dhcp-9-2-203-236.watson.ibm.com>
+Subject: Re: [RFC][PATCH 6/9] gen_initramfs_list.sh: include xattrs
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Rob Landley <rob@landley.net>
+Cc: Josh Boyer <jwboyer@fedoraproject.org>,
+        initramfs <initramfs@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        linux-ima-devel@lists.sourceforge.net,
+        linux-security-module <linux-security-module@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Fionnuala Gunter <fin@linux.vnet.ibm.com>,
+        "casey.schaufler" <casey.schaufler@intel.com>,
+        Paul Moore <pmoore@redhat.com>
+Date: Tue, 13 Jan 2015 22:23:23 -0500
+In-Reply-To: <54B5913C.5050109@landley.net>
+References: <1420663980-20842-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1420663980-20842-7-git-send-email-zohar@linux.vnet.ibm.com>
+	 <CA+5PVA77x2W9LyHMq1jSW3HKqNgFPz-gPVOH0QtEmmMBwzOx_Q@mail.gmail.com>
+	 <1420729994.6338.52.camel@dhcp-9-2-203-236.watson.ibm.com>
+	 <54AECA32.6000304@landley.net>
+	 <1420754931.6338.95.camel@dhcp-9-2-203-236.watson.ibm.com>
+	 <54B56881.30403@landley.net>
+	 <1421180416.2119.73.camel@dhcp-9-2-203-236.watson.ibm.com>
+	 <54B5913C.5050109@landley.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.6.4 (3.6.4-3.fc18) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15011403-0005-0000-0000-0000035FA6DD
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2015-01-13 at 15:42 -0600, Rob Landley wrote: 
+> 
+> On 01/13/2015 02:20 PM, Mimi Zohar wrote:
+> > On Tue, 2015-01-13 at 12:48 -0600, Rob Landley wrote: 
+> >> I note that there are two data formats of interest here:
+> >>
+> >> 1) the cpio file layout.
+> >>
+> >> 2) the list of files generated by gen_initramfs_list.sh and consumed by
+> >> gen_init_cpio.
+> >>
+> >> The fact you're modifying gen_initramfs_list.sh seems to imply that
+> >> you're changing the _second_ format as well as the first...? The second
+> >> was never actually specified, but it does get used a lot by various
+> >> build systems and breaking it would inconvenience people. (Plus I'd need
+> >> to update the documentation, but I need to do that anyway.)
+> > 
+> > Patch "[PATCH 6/9] gen_initramfs_list.sh: include xattrs" is a one line
+> > change that adds the "-x" option to include xattrs in the initramfs, if
+> > they exist.
+> 
+> Unconditionally. Even if we've configured xattr support out of our
+> kernel or tmpfs?
+> 
+> > This patch makes the new method (070703) the default format.
+> 
+> So nobody should ever try to build an embedded system (without xattrs)
+> from something like Red Hat Enterprise (where they just magically show up)?
 
+Good point.  I'll address this in the next post.
 
-> -----Original Message-----
-> From: Dexuan Cui
-> Sent: Tuesday, January 13, 2015 5:44 PM
-> To: Vitaly Kuznetsov; KY Srinivasan
-> Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org; driverdev-
-> devel@linuxdriverproject.org; olaf@aepfle.de; apw@canonical.com;
-> jasowang@redhat.com; Haiyang Zhang
-> Subject: RE: [PATCH v3] hv: hv_fcopy: drop the obsolete message on transfer
-> failure
-> 
-> > -----Original Message-----
-> > From: Vitaly Kuznetsov [mailto:vkuznets@redhat.com]
-> > Sent: Tuesday, January 13, 2015 21:52 PM
-> > To: Dexuan Cui; KY Srinivasan
-> > Cc: gregkh@linuxfoundation.org; linux-kernel@vger.kernel.org;
-> > driverdev- devel@linuxdriverproject.org; olaf@aepfle.de;
-> > apw@canonical.com; jasowang@redhat.com; Haiyang Zhang
-> > Subject: Re: [PATCH v3] hv: hv_fcopy: drop the obsolete message on
-> > transfer failure
-> >
-> > Dexuan Cui <decui@microsoft.com> writes:
-> >
-> > > In the case the user-space daemon crashes, hangs or is killed, we
-> > > need to down the semaphore, otherwise, after the daemon starts next
-> > > time, the obsolete data in fcopy_transaction.message or
-> > > fcopy_transaction.fcopy_msg will be used immediately.
-> >
-> > It seems this patch got lost and I don't see it in recent 'resend'
-> > series. K.Y., Dexuan, can you please take a look?
-> Hi Vitaly, Jason,
-> The patch can't fix all the corner cases (it would need non-trivial efforts for
-> that) as we discussed, but I think it would be better for us to have it as it can
-> indeed fix an obvious issue and doesn't introduce new issues.
-> 
-> I think I can document the known discussed corner cases in the patch as
-> TODOs and resend the patch.
-> 
-> Please let me know if you have different opinions. :-)
+> >> Ss long as you're extending the format could you add a second 32 bits of
+> >> time data that gets glued to the top half of a uint64_t, and then store
+> >> the actual time value in microseconds (so time*1000000)? (I'd say
+> >> "nanoseconds" but 63 bits of nanoseconds is 292 years, which is just
+> >> short enough I'm uncomfortable with it. I'm just optimistic enough to
+> >> think that might inconvenience somebody.)
+> >>
+> >> The other "huh" is the filesize, but 4 gigs per file seems unlikely to
+> >> be more than initramfs needs any time soon? (It's possible that RPM
+> >> might care in 15 years or so...)
+> > 
+> > 4 bytes enough?
 
-Resend the patch.
+> Eh, as long as we're breaking compatibility anyway, we might as well
+> extend the file size. It's gzipped so the extra run of consecutive
+> zeroes isn't really an issue, and if tmpfs is going to support 64 bit
+> file sizes the thing that's populating them should to just to match.
+> (You can already have memory bigger than 4g. Some crazy person is going
+> to put a squashfs in tmpfs and loopback mount it, or have a giant video
+> there, or... Bootloaders being able to cope with this is not my problem. :)
 
-K. Y
+> Probably having the new fields at the end (and gluing them to the
+> earlier ones) makes more sense than having variable sized fields? I
+> don't have a strong opinion either way.
+
+The current file data size header field is a 8 character hexidecimal
+string, which is long enough to store 4g (0xFFFFFFFF).
+
+> >> I have no idea what sys_setxattr() accepts, but
+> >> presumably there's a man page for the system call...
+> >>
+> >>   http://man7.org/linux/man-pages/man2/setxattr.2.html
+> >>
+> >> Ok, that's probably enough data to implement it. (Not sure why that man
+> >> page isn't in my ubuntu 14.04 install which has manpages-dev installed?
+> >>
+> >>   $ man setxattr
+> >>   No manual entry for setxattr
+> >>
+> >>> Note that gen_init_cpio does not include "security.evm" as it is file
+> >>> system dependent.
+> >>
+> >> I have no idea what that is. Should I not include it in the command line
+> >> cpio? (Or have a flag?)
+> > 
+> > Right, don't include "security.evm".  Both the HMAC and signature format
+> > include the inode number, which is filesystem specific.
 > 
-> Thanks,
-> -- Dexuan
+> So save extended attributes but filter out this one magic extended
+> attribute that we _shouldn't_ save because we know, a priori, that this
+> data is not portable.
 > 
-> >
-> > >
-> > > Cc: Jason Wang <jasowang@redhat.com>
-> > > Cc: Vitaly Kuznetsov <vkuznets@redhat.com>
-> > > Cc: K. Y. Srinivasan <kys@microsoft.com>
-> > > Signed-off-by: Dexuan Cui <decui@microsoft.com>
-> > > ---
-> > >
-> > > v2: I removed the "FCP" prefix as Greg asked.
-> > >
-> > >     I also updated the output message a little:
-> > >     "FCP: failed to acquire the semaphore" -->
-> > >     "can not acquire the semaphore: it is benign"
-> > >
-> > > v3: I added the code in fcopy_release() as Jason Wang suggested.
-> > >     I removed the pr_debug (it isn't so meaningful)and added a
-> > > comment
-> > instead.
-> > >
-> > >  drivers/hv/hv_fcopy.c | 19 +++++++++++++++++++
-> > >  1 file changed, 19 insertions(+)
-> > >
-> > > diff --git a/drivers/hv/hv_fcopy.c b/drivers/hv/hv_fcopy.c index
-> > > 23b2ce2..faa6ba6 100644
-> > > --- a/drivers/hv/hv_fcopy.c
-> > > +++ b/drivers/hv/hv_fcopy.c
-> > > @@ -86,6 +86,18 @@ static void fcopy_work_func(struct work_struct
-> > *dummy)
-> > >  	 * process the pending transaction.
-> > >  	 */
-> > >  	fcopy_respond_to_host(HV_E_FAIL);
-> > > +
-> > > +	/* In the case the user-space daemon crashes, hangs or is killed, we
-> > > +	 * need to down the semaphore, otherwise, after the daemon starts
-> > next
-> > > +	 * time, the obsolete data in fcopy_transaction.message or
-> > > +	 * fcopy_transaction.fcopy_msg will be used immediately.
-> > > +	 *
-> > > +	 * NOTE: fcopy_read() happens to get the semaphore (very rare)?
-> We're
-> > > +	 * still OK, because we've reported the failure to the host.
-> > > +	 */
-> > > +	if (down_trylock(&fcopy_transaction.read_sema))
-> > > +		;
-> > > +
-> > >  }
-> > >
-> > >  static int fcopy_handle_handshake(u32 version) @@ -351,6 +363,13 @@
-> > > static int fcopy_release(struct inode *inode, struct
-> > file *f)
-> > >  	 */
-> > >  	in_hand_shake = true;
-> > >  	opened = false;
-> > > +
-> > > +	if (cancel_delayed_work_sync(&fcopy_work)) {
-> > > +		/* We haven't up()-ed the semaphore(very rare)? */
-> > > +		if (down_trylock(&fcopy_transaction.read_sema))
-> > > +			;
-> > > +		fcopy_respond_to_host(HV_E_FAIL);
-> > > +	}
-> > >  	return 0;
-> > >  }
-> >
-> > --
-> >   Vitaly
+> I'm remembering why I didn't want to get this on me.
+> 
+> >> The last time I used extended attributes was on OS/2; my only
+> >> non-academic interaction with selinux has been looking up how to switch
+> >> it off.
+> >>
+> >> I still boggle that Fortune 500 bureaucracies include "must have a
+> >> security system designed by the NSA based on the idea of complicating
+> >> the system until there are no obvious holes, because after the Snowden
+> >> leaks that's clearly a good idea" as part of their certification
+> >> processes for reducing the risk of being unable to delegate blame.
+> > 
+> > I'm the linux-integrity subsystem maintainer, not an LSM maintainer (not
+> > that there is anything wrong in being an LSM maintainer).  So, I'm not
+> > quite sure why you keep saying things like this to me. BTW, there are
+> > a number of LSMs these days, not only SELinux.
+> 
+> Yes, and I can't keep 'em straight. The android guys are adding SELinux:
+> 
+> https://android.googlesource.com/platform/external/toybox/+/d5c66a9fd36777f80ba05301dcfa6789b103e486
+> 
+> The Tizen guys are adding something called "smack":
+> https://git.tizen.org/cgit/platform/upstream/toybox.git
+> 
+> Up until about 3 months ago I had successfully avoided all of this. Oh
+> well, always something new to learn...
+> 
+> Do each of them have their own rules about what extended attribute data
+> is not portable and should be filtered out? Or is this one magic entry
+> it? (I'd RTFM but http://man7.org/linux/man-pages/man5/attr.5.html does
+> not contain the string "evm".)
+> 
+> Rob
+
+I would assume only 'security.evm' is not portable as it attempts to
+tightly bind the file metadata to the file data.  Casey?  Paul?
+
+Mimi
 
