@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754338AbbANSiE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 13:38:04 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:20952 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753306AbbANSiA (ORCPT
+	id S932070AbbANSiu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 13:38:50 -0500
+Received: from mail-la0-f45.google.com ([209.85.215.45]:53386 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754395AbbANSir (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 13:38:00 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+jLawXw37h63JxNP3uEqX+/eaY4fgPuCY=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 68AF06463DD
-Date: Wed, 14 Jan 2015 13:37:56 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: shirish gajera <gajerashirish@gmail.com>
-Cc: gregkh@linuxfoundation.org, Eric Rost <eric.rost@mybabylon.net>,
-        jake@lwn.net, Anton Saraev <antonysaraev@gmail.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] staging: skein: Remove all do{} while (0) loop from
- single statement.
-Message-ID: <20150114183756.GA24989@titan.lakedaemon.net>
-References: <20150111234105.GA2744@shirish-ThinkPad-Edge-E430>
- <20150112141516.GX24989@titan.lakedaemon.net>
- <CAG77vrojhVij2154vDxCxE9vPDPfP2QuJaKFcAz4pErW_pLRVQ@mail.gmail.com>
+	Wed, 14 Jan 2015 13:38:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAG77vrojhVij2154vDxCxE9vPDPfP2QuJaKFcAz4pErW_pLRVQ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20150114183546.GC6902@pd.tnic>
+References: <5491B4A8.905@amacapital.net> <CALCETrUyw5_E+FN8o8ZsOxN5XG81-Q8MVzeUHPZ_XBM+ifi6_w@mail.gmail.com>
+ <20141231183739.GA28946@console-pimps.org> <20150114165151.GA3479@codeblueprint.co.uk>
+ <CALCETrWOxPwoL0zo0UZMk=05uAEqgY-Xovk1=JHwbVtinx3u3w@mail.gmail.com> <20150114183546.GC6902@pd.tnic>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Wed, 14 Jan 2015 10:38:25 -0800
+Message-ID: <CALCETrUEfQY-hnmNV9-PfDbEYLa7bVoRcsZc2X0V+mEAbfNH2g@mail.gmail.com>
+Subject: Re: EFI mixed mode + perf = rampant triple faults
+To: Borislav Petkov <bp@alien8.de>
+Cc: Matt Fleming <matt@console-pimps.org>, LKML <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Shirish,
+On Wed, Jan 14, 2015 at 10:35 AM, Borislav Petkov <bp@alien8.de> wrote:
+> On Wed, Jan 14, 2015 at 10:27:47AM -0800, Andy Lutomirski wrote:
+>> How are you manually triggering an MCE?  I've been playing with some
+>> MCE stuff recently, but the only reasonably reliable way I know of to
+>> trigger an MCE is using WHEA, and I don't have a box with WHEA, and I
+>> assume your ASUS T100 doesn't either.
+>
+> asm volatile("int $18");
 
-Please don't toppost, I've corrected it below.
+That's not a real MCE, though -- it happens synchronously instead of
+at MCE priority with all the associated messiness.  Or is the idea to
+just stick that in after switching to the 32-bit mode being tested?
 
-On Mon, Jan 12, 2015 at 11:14:57AM -0800, shirish gajera wrote:
-> On Mon, Jan 12, 2015 at 6:15 AM, Jason Cooper <jason@lakedaemon.net> wrote:
-> > On Sun, Jan 11, 2015 at 03:41:05PM -0800, Shirish Gajera wrote:
-> > > This patch fixes the checkpatch.pl warning:
-> > >
-> > > WARNING: Single statement macros should not use a do {} while (0) loop
-> > >
-> > > I remove do while from the single statement macro.
-> > >
-> > > Signed-off-by: Shirish Gajera <gajerashirish@gmail.com>
-> > > ---
-> > >  drivers/staging/skein/skein_block.c | 31 +++++++++----------------------
-> > >  1 file changed, 9 insertions(+), 22 deletions(-)
-> >
-> > Several people have submitted patches for this checkpatch warning.
-> > Please check the mailinglist archives and deconflict with the other
-> > submitters.
-> 
-> It did't see any other submitter in script.
-> 
-> Is there any other way to check ?
+--Andy
 
-The mailing list for the linux-staging tree is rather arcane to find,
-it's not linux-staging@...  Here's the link for joining:
+>
+>> Tianocore makes assumptions about the kernel's GDT layout?  Yuck.
+>
+> Yuck indeed.
+>
+> --
+> Regards/Gruss,
+>     Boris.
+>
+> Sent from a fat crate under my desk. Formatting is fine.
+> --
 
-  http://driverdev.linuxdriverproject.org/mailman/listinfo/driverdev-devel
 
-And here's the archives:
 
-  http://driverdev.linuxdriverproject.org/pipermail/driverdev-devel/
-
-hth,
-
-Jason.
+-- 
+Andy Lutomirski
+AMA Capital Management, LLC
