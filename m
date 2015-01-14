@@ -1,56 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753782AbbANXkB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 18:40:01 -0500
-Received: from mta-out1.inet.fi ([62.71.2.203]:32915 "EHLO jenni1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751257AbbANXkA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 18:40:00 -0500
-Date: Thu, 15 Jan 2015 01:39:54 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Petr Cermak <petrcermak@chromium.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Primiano Tucci <primiano@chromium.org>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH v2 2/2] task_mmu: Add user-space support for resetting
- mm->hiwater_rss (peak RSS)
-Message-ID: <20150114233954.GB14615@node.dhcp.inet.fi>
-References: <20150107172452.GA7922@node.dhcp.inet.fi>
- <20150114152225.GB31484@google.com>
+	id S1752460AbbANXos (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 18:44:48 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:48423 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217AbbANXor (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 18:44:47 -0500
+Message-ID: <54B6FF69.3080705@oracle.com>
+Date: Wed, 14 Jan 2015 18:44:41 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150114152225.GB31484@google.com>
-User-Agent: Mutt/1.5.23.1 (2014-03-12)
+To: Jeff Layton <jeff.layton@primarydata.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: fs: locks: WARNING: CPU: 16 PID: 4296 at fs/locks.c:236 locks_free_lock_context+0x10d/0x240()
+References: <54B4A909.9060206@oracle.com>	<20150113164441.5b210f48@tlielax.poochiereds.net>	<54B5A145.6060108@oracle.com> <20150114092705.39bd4881@tlielax.poochiereds.net>
+In-Reply-To: <20150114092705.39bd4881@tlielax.poochiereds.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 14, 2015 at 03:22:25PM +0000, Petr Cermak wrote:
-> On Wed, Jan 07, 2015 at 07:24:52PM +0200, Kirill A. Shutemov wrote:
-> > And how it's not an ABI break?
-> I don't think this is an ABI break because the current behaviour is not
-> changed unless you write "5" to /proc/pid/clear_refs. If you do, you are
-> explicitly requesting the new functionality.
+On 01/14/2015 09:27 AM, Jeff Layton wrote:
+> On Tue, 13 Jan 2015 17:50:45 -0500
+> Sasha Levin <sasha.levin@oracle.com> wrote:
 > 
-> > We have never-lowering VmHWM for 9+ years. How can you know that nobody
-> > expects this behaviour?
-> This is why we sent an RFC [1] several weeks ago. We expect this to be
-> used mainly by performance-related tools (e.g. profilers) and from the
-> comments in the code [2] VmHWM seems to be a best-effort counter. If this
-> is strictly a no-go, I can only think of the following two alternatives:
+>> On 01/13/2015 04:44 PM, Jeff Layton wrote:
+>>> On Tue, 13 Jan 2015 00:11:37 -0500
+>>> Sasha Levin <sasha.levin@oracle.com> wrote:
+>>>
+>>>> Hey Jeff,
+>>>>
+>>>> While fuzzing with trinity inside a KVM tools guest running the latest -next
+>>>> kernel, I've stumbled on the following spew:
+>>>>
+>>>> [  887.078606] WARNING: CPU: 16 PID: 4296 at fs/locks.c:236 locks_free_lock_context+0x10d/0x240()
+>>>> [  887.079703] Modules linked in:
+>>>> [  887.080288] CPU: 16 PID: 4296 Comm: trinity-c273 Not tainted 3.19.0-rc4-next-20150112-sasha-00053-g23c147e02e-dirty #1710
+>>>> [  887.082229]  0000000000000000 0000000000000000 0000000000000000 ffff8804c9f4f8e8
+>>>> [  887.083773]  ffffffff9154e0a6 0000000000000000 ffff8804cad98000 ffff8804c9f4f938
+>>>> [  887.085280]  ffffffff8140a4d0 0000000000000001 ffffffff81bf0d2d ffff8804c9f4f988
+>>>> [  887.086792] Call Trace:
+>>>> [  887.087320] dump_stack (lib/dump_stack.c:52)
+>>>> [  887.088247] warn_slowpath_common (kernel/panic.c:447)
+>>>> [  887.089342] ? locks_free_lock_context (fs/locks.c:236 (discriminator 3))
+>>>> [  887.090514] warn_slowpath_null (kernel/panic.c:481)
+>>>> [  887.091629] locks_free_lock_context (fs/locks.c:236 (discriminator 3))
+>>>> [  887.092782] __destroy_inode (fs/inode.c:243)
+>>>> [  887.093817] destroy_inode (fs/inode.c:268)
+>>>> [  887.094833] evict (fs/inode.c:574)
+>>>> [  887.095808] iput (fs/inode.c:1503)
+>>>> [  887.096687] __dentry_kill (fs/dcache.c:323 fs/dcache.c:508)
+>>>> [  887.097683] ? _raw_spin_trylock (kernel/locking/spinlock.c:136)
+>>>> [  887.098733] ? dput (fs/dcache.c:545 fs/dcache.c:648)
+>>>> [  887.099672] dput (fs/dcache.c:649)
+>>>> [  887.100552] __fput (fs/file_table.c:227)
+>>>
+>>> So, looking at this a bit more...
+>>>
+>>> It's clear that we're at the dput in __fput at this point. Much earlier
+>>> in __fput, we call locks_remove_file to remove all of the locks that
+>>> are associated with the file description.
+>>>
+>>> Evidently though, something didn't go right there. The two most likely
+>>> scenarios to my mind are:
+>>>
+>>> A) a lock raced onto the list somehow after that point. That seems
+>>> unlikely since presumably the fcheck should have failed at that point.
+>>>
+>>> ...or...
+>>>
+>>> B) the CPU that called locks_remove_file mistakenly thought that
+>>> inode->i_flctx was NULL when it really wasn't (stale cache, perhaps?).
+>>> That would make it skip trying to remove any flock locks.
+>>>
+>>> B seems more likely to me, and if it's the case then that would seem to
+>>> imply that we need some memory barriers (or maybe some ACCESS_ONCE
+>>> calls) in these codepaths. I'll have to sit down and work through it to
+>>> see what makes the most sense.
+>>>
+>>> If your debugging seems to jive with this, then one thing that might be
+>>> interesting would be to comment out these two lines in
+>>> locks_remove_flock:
+>>>
+>>>         if (!file_inode(filp)->i_flctx)
+>>>                 return;
+>>>
+>>> ...and see if it's still reproducible. That's obviously not a real fix
+>>> for this problem, but it might help prove whether the above suspicion
+>>> is correct.
+>>
+>> Removing those two lines makes the issue go away.
+>>
+>> I'm guessing that figuring out which filesystem we were abusing isn't
+>> interesting anymore...
+>>
 > 
->   1. Add an extra resettable field to /proc/pid/status (e.g.
->      resettable_hiwater_rss). While this doesn't violate the current
->      definition of VmHWM, it adds an extra line to /proc/pid/status,
->      which I think is a much bigger issue.
->   2. Introduce a new proc fs file to task_mmu (e.g.
->      /proc/pid/profiler_stats), but this feels like overengineering.
+> Sigh. I've been trying to reproduce this today. I've set up two
+> different KVM guests on two different hosts, and run trinity on both,
+> and I can't seem to get this warning to pop.
+> 
+> Could you share what trinity command-line options you're using? Any
+> other special setup I should be considering to reproduce it?
+> 
+> I was hoping to get it to reproduce so I could test out potential
+> memory barrier fixes...
 
-BTW, we have memory.max_usage_in_byte in memory cgroup. And it's resetable.
-Wouldn't it be enough for your profiling use-case?
+I don't think there's anything special about my setup here that can
+trigger that, specially if it's not dependant on a filesystem in use.
 
--- 
- Kirill A. Shutemov
+I'm running trinity with: ./trinity -xsched_setattr -xsetpriority
+-xunshare -xreboot -xshutdown -xnfsservctl -xclock_nanosleep -xuselib
+-xperf_event_open -m --quiet --dangerous -C 400 -l off
+
+If that doesn't end up helping, I'd be happy to test out fixes here,
+it usually reproduces quickly.
+
+
+Thanks,
+Sasha
