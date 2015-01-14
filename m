@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754629AbbANVtJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 16:49:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53540 "EHLO mx1.redhat.com"
+	id S1754677AbbANVtf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 16:49:35 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47458 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753691AbbANVtG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 16:49:06 -0500
+	id S1753691AbbANVt2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 16:49:28 -0500
 From: Denys Vlasenko <dvlasenk@redhat.com>
 To: Andy Lutomirski <luto@amacapital.net>
 Cc: Denys Vlasenko <dvlasenk@redhat.com>,
@@ -15,22 +15,24 @@ Cc: Denys Vlasenko <dvlasenk@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>, X86 ML <x86@kernel.org>,
         Alexei Starovoitov <ast@plumgrid.com>, Will Drewry <wad@chromium.org>,
         Kees Cook <keescook@chromium.org>, linux-kernel@vger.kernel.org
-Subject: [PATCH 04/11] x86: rename some macros and labels, no code changes
-Date: Wed, 14 Jan 2015 22:48:14 +0100
-Message-Id: <1421272101-16847-4-git-send-email-dvlasenk@redhat.com>
+Subject: [PATCH 05/11] x86: add comments about various syscall instructions, no code changes
+Date: Wed, 14 Jan 2015 22:48:15 +0100
+Message-Id: <1421272101-16847-5-git-send-email-dvlasenk@redhat.com>
 In-Reply-To: <1421272101-16847-1-git-send-email-dvlasenk@redhat.com>
 References: <1421272101-16847-1-git-send-email-dvlasenk@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rename LOAD_ARGS32 to RESTORE_REGS32 to match other RESTORE_* macros.
-The "ARGS" part was misleading anyway - we are restoring registers,
-not arguments.
+SYSCALL/SYSRET and SYSENTER/SYSEXIT have weird semantics.
+Moreover, they differ in 32- and 64-bit mode.
+What is saved? What is not? Is rsp set? Are interrupts disabled?
+People tend to not remember these details well enough.
 
-Similarly, rename [retint_]restore_args to [retint_]restore_c_regs:
-at these labels, we restore registers clobbered by C ABI;
-rename int_restore_rest to int_restore_extra_regs.
+This patch adds comments which explain in detail
+what registers are modified by each of these instructions.
+The comments are placed immediately before corresponding
+entry and exit points.
 
 Signed-off-by: Denys Vlasenko <dvlasenk@redhat.com>
 CC: Linus Torvalds <torvalds@linux-foundation.org>
@@ -45,121 +47,312 @@ CC: Will Drewry <wad@chromium.org>
 CC: Kees Cook <keescook@chromium.org>
 CC: linux-kernel@vger.kernel.org
 ---
- arch/x86/ia32/ia32entry.S  | 10 +++++-----
- arch/x86/kernel/entry_64.S | 16 ++++++++--------
- 2 files changed, 13 insertions(+), 13 deletions(-)
+ arch/x86/ia32/ia32entry.S  | 133 ++++++++++++++++++++++++++++-----------------
+ arch/x86/kernel/entry_64.S |  32 ++++++-----
+ 2 files changed, 102 insertions(+), 63 deletions(-)
 
 diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
-index e99f8a5..9f4c877 100644
+index 9f4c877..366f633 100644
 --- a/arch/x86/ia32/ia32entry.S
 +++ b/arch/x86/ia32/ia32entry.S
-@@ -51,7 +51,7 @@
- 	.endm
- 
- 	/*
--	 * Reload arg registers from stack in case ptrace changed them.
-+	 * Reload registers from stack in case ptrace changed them.
- 	 * We don't reload %eax because syscall_trace_enter() returned
- 	 * the %rax value we should see.  Instead, we just truncate that
- 	 * value to 32 bits again as we did on entry from user mode.
-@@ -60,7 +60,7 @@
- 	 * If it's -1 to make us punt the syscall, then (u32)-1 is still
- 	 * an appropriately invalid value.
+@@ -99,22 +99,25 @@ ENDPROC(native_irq_enable_sysexit)
+ /*
+  * 32bit SYSENTER instruction entry.
+  *
++ * SYSENTER loads ss, rsp, cs, and rip from previously programmed MSRs.
++ * IF and VM in rflags are cleared (IOW: interrupts are off).
++ * SYSENTER does not save anything on the stack,
++ * and does not save old rip (!!!) and rflags.
++ *
+  * Arguments:
+- * %eax	System call number.
+- * %ebx Arg1
+- * %ecx Arg2
+- * %edx Arg3
+- * %esi Arg4
+- * %edi Arg5
+- * %ebp user stack
+- * 0(%ebp) Arg6	
+- * 	
+- * Interrupts off.
+- *	
++ * eax  system call number
++ * ebx  arg1
++ * ecx  arg2
++ * edx  arg3
++ * esi  arg4
++ * edi  arg5
++ * ebp  user stack
++ * 0(%ebp) arg6
++ *
+  * This is purely a fast path. For anything complicated we use the int 0x80
+- * path below.	Set up a complete hardware stack frame to share code
++ * path below. We set up a complete hardware stack frame to share code
+  * with the int 0x80 path.
+- */ 	
++ */
+ ENTRY(ia32_sysenter_target)
+ 	CFI_STARTPROC32	simple
+ 	CFI_SIGNAL_FRAME
+@@ -128,6 +131,7 @@ ENTRY(ia32_sysenter_target)
+ 	 * disabled irqs, here we enable it straight after entry:
  	 */
--	.macro LOAD_ARGS32 _r9=0
-+	.macro RESTORE_REGS32 _r9=0
- 	.if \_r9
- 	movl R9(%rsp),%r9d
- 	.endif
-@@ -263,7 +263,7 @@ sysenter_tracesys:
- 	movq	$-ENOSYS,RAX(%rsp)/* ptrace can change this for a bad syscall */
- 	movq	%rsp,%rdi        /* &pt_regs -> arg1 */
- 	call	syscall_trace_enter
--	LOAD_ARGS32  /* reload args from stack in case ptrace changed it */
-+	RESTORE_REGS32  /* reload regs from stack in case ptrace changed it */
- 	RESTORE_EXTRA_REGS
- 	cmpq	$(IA32_NR_syscalls-1),%rax
- 	ja	int_ret_from_sys_call /* sysenter_tracesys has set RAX(%rsp) */
-@@ -380,7 +380,7 @@ cstar_tracesys:
- 	movq $-ENOSYS,RAX(%rsp)	/* ptrace can change this for a bad syscall */
- 	movq %rsp,%rdi        /* &pt_regs -> arg1 */
- 	call syscall_trace_enter
--	LOAD_ARGS32 1	/* reload args from stack in case ptrace changed it */
-+	RESTORE_REGS32 1	/* reload regs from stack in case ptrace changed it */
- 	RESTORE_EXTRA_REGS
- 	xchgl %ebp,%r9d
- 	cmpq $(IA32_NR_syscalls-1),%rax
-@@ -458,7 +458,7 @@ ia32_tracesys:
- 	movq $-ENOSYS,RAX(%rsp)	/* ptrace can change this for a bad syscall */
- 	movq %rsp,%rdi        /* &pt_regs -> arg1 */
- 	call syscall_trace_enter
--	LOAD_ARGS32	/* reload args from stack in case ptrace changed it */
-+	RESTORE_REGS32	/* reload args from stack in case ptrace changed it */
- 	RESTORE_EXTRA_REGS
- 	cmpq $(IA32_NR_syscalls-1),%rax
- 	ja  int_ret_from_sys_call	/* ia32_tracesys has set RAX(%rsp) */
+ 	ENABLE_INTERRUPTS(CLBR_NONE)
++	/* Construct iret frame (ss,rsp,rflags,cs,rip) */
+  	movl	%ebp,%ebp		/* zero extension */
+ 	pushq_cfi $__USER32_DS
+ 	/*CFI_REL_OFFSET ss,0*/
+@@ -140,14 +144,19 @@ ENTRY(ia32_sysenter_target)
+ 	pushq_cfi $__USER32_CS
+ 	/*CFI_REL_OFFSET cs,0*/
+ 	movl	%eax, %eax
++	/* Store thread_info->sysenter_return in rip stack slot */
+ 	pushq_cfi %r10
+ 	CFI_REL_OFFSET rip,0
++	/* Store orig_ax */
+ 	pushq_cfi %rax
++	/* Construct the rest of "struct pt_regs" */
+ 	cld
+ 	ALLOC_PT_GPREGS_ON_STACK
+ 	SAVE_C_REGS_EXCEPT_R891011
+- 	/* no need to do an access_ok check here because rbp has been
+- 	   32bit zero extended */ 
++	/*
++	 * no need to do an access_ok check here because rbp has been
++	 * 32bit zero extended
++	 */
+ 	ASM_STAC
+ 1:	movl	(%rbp),%ebp
+ 	_ASM_EXTABLE(1b,ia32_badarg)
+@@ -184,6 +193,7 @@ sysexit_from_sys_call:
+ 	movl	RIP(%rsp),%edx		/* User %eip */
+ 	CFI_REGISTER rip,rdx
+ 	RESTORE_RSI_RDI
++	/* pop everything except ss,rsp,rflags slots */
+ 	REMOVE_PT_GPREGS_FROM_STACK 3*8
+ 	xorq	%r8,%r8
+ 	xorq	%r9,%r9
+@@ -194,6 +204,10 @@ sysexit_from_sys_call:
+ 	popq_cfi %rcx				/* User %esp */
+ 	CFI_REGISTER rsp,rcx
+ 	TRACE_IRQS_ON
++	/*
++	 * 32bit SYSEXIT restores eip from edx, esp from ecx.
++	 * cs and ss are loaded from MSRs.
++	 */
+ 	ENABLE_INTERRUPTS_SYSEXIT32
+ 
+ 	CFI_RESTORE_STATE
+@@ -274,23 +288,33 @@ ENDPROC(ia32_sysenter_target)
+ /*
+  * 32bit SYSCALL instruction entry.
+  *
++ * 32bit SYSCALL saves rip to rcx, clears rflags.RF, then saves rflags to r11,
++ * then loads new ss, cs, and rip from previously programmed MSRs.
++ * rflags gets masked by a value from another MSR (so CLD and CLAC
++ * are not needed). SYSCALL does not save anything on the stack
++ * and does not change rsp.
++ *
++ * Note: rflags saving+masking-with-MSR happens only in Long mode
++ * (in legacy 32bit mode, IF, RF and VM bits are cleared and that's it).
++ * Don't get confused: rflags saving+masking depends on Long Mode Active bit
++ * (EFER.LMA=1), NOT on bitness of userspace where SYSCALL executes
++ * or target CS descriptor's L bit (SYSCALL does not read segment descriptors).
++ *
+  * Arguments:
+- * %eax	System call number.
+- * %ebx Arg1
+- * %ecx return EIP 
+- * %edx Arg3
+- * %esi Arg4
+- * %edi Arg5
+- * %ebp Arg2    [note: not saved in the stack frame, should not be touched]
+- * %esp user stack 
+- * 0(%esp) Arg6
+- * 	
+- * Interrupts off.
+- *	
++ * eax  system call number
++ * ecx  return address
++ * ebx  arg1
++ * ebp  arg2	(note: not saved in the stack frame, should not be touched)
++ * edx  arg3
++ * esi  arg4
++ * edi  arg5
++ * esp  user stack
++ * 0(%esp) arg6
++ *
+  * This is purely a fast path. For anything complicated we use the int 0x80
+- * path below.	Set up a complete hardware stack frame to share code
+- * with the int 0x80 path.	
+- */ 	
++ * path below. We set up a complete hardware stack frame to share code
++ * with the int 0x80 path.
++ */
+ ENTRY(ia32_cstar_target)
+ 	CFI_STARTPROC32	simple
+ 	CFI_SIGNAL_FRAME
+@@ -306,7 +330,7 @@ ENTRY(ia32_cstar_target)
+ 	 * disabled irqs and here we enable it straight after entry:
+ 	 */
+ 	ENABLE_INTERRUPTS(CLBR_NONE)
+-	ALLOC_PT_GPREGS_ON_STACK 8
++	ALLOC_PT_GPREGS_ON_STACK 8	/* +8: space for orig_ax */
+ 	SAVE_C_REGS_EXCEPT_RCX_R891011
+ 	movl 	%eax,%eax	/* zero extension */
+ 	movq	%rax,ORIG_RAX(%rsp)
+@@ -320,9 +344,11 @@ ENTRY(ia32_cstar_target)
+ 	/*CFI_REL_OFFSET rflags,EFLAGS*/
+ 	movq	%r8,RSP(%rsp)
+ 	CFI_REL_OFFSET rsp,RSP
+-	/* no need to do an access_ok check here because r8 has been
+-	   32bit zero extended */ 
+-	/* hardware stack frame is complete now */	
++	/* iret stack frame is complete now */
++	/*
++	 * no need to do an access_ok check here because r8 has been
++	 * 32bit zero extended
++	 */
+ 	ASM_STAC
+ 1:	movl	(%r8),%r9d
+ 	_ASM_EXTABLE(1b,ia32_badarg)
+@@ -355,8 +381,15 @@ sysretl_from_sys_call:
+ 	TRACE_IRQS_ON
+ 	movl RSP(%rsp),%esp
+ 	CFI_RESTORE rsp
++	/*
++	 * 64bit->32bit SYSRET restores eip from ecx,
++	 * eflags from r11 (but RF and VM bits are forced to 0),
++	 * cs and ss are loaded from MSRs.
++	 * (Note: 32bit->32bit SYSRET is different: since r11
++	 * does not exist, it merely sets eflags.IF=1).
++	 */
+ 	USERGS_SYSRET32
+-	
++
+ #ifdef CONFIG_AUDITSYSCALL
+ cstar_auditsys:
+ 	CFI_RESTORE_STATE
+@@ -394,26 +427,26 @@ ia32_badarg:
+ 	jmp ia32_sysret
+ 	CFI_ENDPROC
+ 
+-/* 
+- * Emulated IA32 system calls via int 0x80. 
++/*
++ * Emulated IA32 system calls via int 0x80.
+  *
+- * Arguments:	 
+- * %eax	System call number.
+- * %ebx Arg1
+- * %ecx Arg2
+- * %edx Arg3
+- * %esi Arg4
+- * %edi Arg5
+- * %ebp Arg6    [note: not saved in the stack frame, should not be touched]
++ * Arguments:
++ * eax  system call number
++ * ebx  arg1
++ * ecx  arg2
++ * edx  arg3
++ * esi  arg4
++ * edi  arg5
++ * ebp  arg6	(note: not saved in the stack frame, should not be touched)
+  *
+  * Notes:
+- * Uses the same stack frame as the x86-64 version.	
+- * All registers except %eax must be saved (but ptrace may violate that)
++ * Uses the same stack frame as the x86-64 version.
++ * All registers except eax must be saved (but ptrace may violate that).
+  * Arguments are zero extended. For system calls that want sign extension and
+  * take long arguments a wrapper is needed. Most calls can just be called
+  * directly.
+- * Assumes it is only called from user space and entered with interrupts off.	
+- */ 				
++ * Assumes it is only called from user space and entered with interrupts off.
++ */
+ 
+ ENTRY(ia32_syscall)
+ 	CFI_STARTPROC32	simple
+@@ -432,7 +465,7 @@ ENTRY(ia32_syscall)
+ 	 */
+ 	ENABLE_INTERRUPTS(CLBR_NONE)
+ 	movl %eax,%eax
+-	pushq_cfi %rax
++	pushq_cfi %rax		/* store orig_ax */
+ 	cld
+ 	/* note the registers are not zero extended to the sf.
+ 	   this could be a problem. */
 diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index a15bef6..c9259f4 100644
+index c9259f4..3498274 100644
 --- a/arch/x86/kernel/entry_64.S
 +++ b/arch/x86/kernel/entry_64.S
-@@ -62,7 +62,7 @@
+@@ -255,25 +255,25 @@ ENTRY(ret_from_fork)
+ END(ret_from_fork)
  
+ /*
+- * System call entry. Up to 6 arguments in registers are supported.
++ * 64bit SYSCALL instruction entry. Up to 6 arguments in registers.
+  *
+- * SYSCALL does not save anything on the stack and does not change the
+- * stack pointer.  However, it does mask the flags register for us, so
+- * CLD and CLAC are not needed.
+- */
+-
+-/*
+- * Register setup:
++ * 64bit SYSCALL saves rip to rcx, clears rflags.RF, then saves rflags to r11,
++ * then loads new ss, cs, and rip from previously programmed MSRs.
++ * rflags gets masked by a value from another MSR (so CLD and CLAC
++ * are not needed). SYSCALL does not save anything on the stack
++ * and does not change rsp.
++ *
++ * Registers on entry:
+  * rax  system call number
++ * rcx  return address
++ * r11  saved rflags (note: r11 is callee-clobbered register in C ABI)
+  * rdi  arg0
+- * rcx  return address for syscall/sysret, C arg3
+  * rsi  arg1
+  * rdx  arg2
+- * r10  arg3 	(--> moved to rcx for C)
++ * r10  arg3 (needs to be moved to rcx to conform to C ABI)
+  * r8   arg4
+  * r9   arg5
+- * r11  eflags for syscall/sysret, temporary for C
+- * r12-r15,rbp,rbx saved by C code, not touched.
++ * (note: r12-r15,rbp,rbx are callee-preserved in C ABI)
+  *
+  * Interrupts are off on entry.
+  * Only called from user space.
+@@ -301,13 +301,14 @@ ENTRY(system_call)
+ GLOBAL(system_call_after_swapgs)
  
- #ifndef CONFIG_PREEMPT
--#define retint_kernel retint_restore_args
-+#define retint_kernel retint_restore_c_regs
- #endif
- 
- #ifdef CONFIG_PARAVIRT
-@@ -481,7 +481,7 @@ int_check_syscall_exit_work:
- 	call syscall_trace_leave
- 	popq_cfi %rdi
- 	andl $~(_TIF_WORK_SYSCALL_EXIT|_TIF_SYSCALL_EMU),%edi
--	jmp int_restore_rest
-+	jmp int_restore_extra_regs
- 
- int_signal:
- 	testl $_TIF_DO_NOTIFY_MASK,%edx
-@@ -490,7 +490,7 @@ int_signal:
- 	xorl %esi,%esi		# oldset -> arg2
- 	call do_notify_resume
- 1:	movl $_TIF_WORK_MASK,%edi
--int_restore_rest:
-+int_restore_extra_regs:
- 	RESTORE_EXTRA_REGS
- 	DISABLE_INTERRUPTS(CLBR_NONE)
- 	TRACE_IRQS_OFF
-@@ -757,15 +757,15 @@ retint_swapgs:		/* return to user-space */
- 	DISABLE_INTERRUPTS(CLBR_ANY)
- 	TRACE_IRQS_IRETQ
- 	SWAPGS
--	jmp restore_args
-+	jmp restore_c_regs
- 
--retint_restore_args:	/* return to kernel space */
-+retint_restore_c_regs:	/* return to kernel space */
- 	DISABLE_INTERRUPTS(CLBR_ANY)
+ 	movq	%rsp,PER_CPU_VAR(old_rsp)
++	/* kernel_stack is set so that 5 slots (iret frame) are preallocated */
+ 	movq	PER_CPU_VAR(kernel_stack),%rsp
  	/*
- 	 * The iretq could re-enable interrupts:
+ 	 * No need to follow this irqs off/on section - it's straight
+ 	 * and short:
  	 */
- 	TRACE_IRQS_IRETQ
--restore_args:
-+restore_c_regs:
- 	RESTORE_C_REGS
- 	REMOVE_PT_GPREGS_FROM_STACK 8
+ 	ENABLE_INTERRUPTS(CLBR_NONE)
+-	ALLOC_PT_GPREGS_ON_STACK 8
++	ALLOC_PT_GPREGS_ON_STACK 8		/* +8: space for orig_ax */
+ 	SAVE_C_REGS_EXCEPT_RAX_RCX
+ 	movq	$-ENOSYS,RAX(%rsp)
+ 	movq_cfi rax,(ORIG_RAX)
+@@ -350,6 +351,11 @@ sysret_check:
+ 	CFI_REGISTER	rip,rcx
+ 	/*CFI_REGISTER	rflags,r11*/
+ 	movq	PER_CPU_VAR(old_rsp), %rsp
++	/*
++	 * 64bit SYSRET restores rip from rcx,
++	 * rflags from r11 (but RF and VM bits are forced to 0),
++	 * cs and ss are loaded from MSRs.
++	 */
+ 	USERGS_SYSRET64
  
-@@ -854,9 +854,9 @@ retint_signal:
- 	/* rcx:	 threadinfo. interrupts off. */
- ENTRY(retint_kernel)
- 	cmpl $0,PER_CPU_VAR(__preempt_count)
--	jnz  retint_restore_args
-+	jnz  retint_restore_c_regs
- 	bt   $9,EFLAGS(%rsp)	/* interrupts off? */
--	jnc  retint_restore_args
-+	jnc  retint_restore_c_regs
- 	call preempt_schedule_irq
- 	jmp exit_intr
- #endif
+ 	CFI_RESTORE_STATE
 -- 
 1.8.1.4
 
