@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752704AbbANR6m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 12:58:42 -0500
-Received: from mail-by2on0108.outbound.protection.outlook.com ([207.46.100.108]:56836
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750856AbbANR6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 12:58:40 -0500
-Message-ID: <1421258312.4961.133.camel@freescale.com>
-Subject: Re: [PATCH] powerpc/mpic: Add DT option to skip readback after EOI
-From: Scott Wood <scottwood@freescale.com>
-To: Bogdan Purcareata <bogdan.purcareata@freescale.com>
-CC: <benh@kernel.crashing.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>
-Date: Wed, 14 Jan 2015 11:58:32 -0600
-In-Reply-To: <1421236622-29366-1-git-send-email-bogdan.purcareata@freescale.com>
-References: <1421236622-29366-1-git-send-email-bogdan.purcareata@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
+	id S1752940AbbANSAb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 13:00:31 -0500
+Received: from mail-qc0-f173.google.com ([209.85.216.173]:52207 "EHLO
+	mail-qc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750965AbbANSA3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 13:00:29 -0500
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [2601:2:5800:3f7:12bf:48ff:fe84:c9a0]
-X-ClientProxiedBy: BL2PR05CA0036.namprd05.prod.outlook.com (10.255.226.36) To
- BY2PR0301MB0726.namprd03.prod.outlook.com (25.160.63.16)
-Authentication-Results: spf=none (sender IP is )
- smtp.mailfrom=scottwood@freescale.com; 
-X-DmarcAction-Test: None
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BY2PR0301MB0726;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR0301MB0726;
-X-Forefront-PRVS: 04569283F9
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(189002)(199003)(51704005)(24454002)(377424004)(76176999)(50986999)(64706001)(47776003)(106356001)(110136001)(101416001)(19580395003)(19580405001)(77156002)(62966003)(92566002)(87976001)(103116003)(68736005)(36756003)(2950100001)(46102003)(86362001)(105586002)(97736003)(50226001)(33646002)(50466002)(23676002)(42186005)(122386002)(40100003)(3826002);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0726;H:[IPv6:2601:2:5800:3f7:12bf:48ff:fe84:c9a0];FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0726;
-X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 14 Jan 2015 17:58:37.5580
- (UTC)
-X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR0301MB0726
+In-Reply-To: <1421203412-5159-1-git-send-email-zyw@rock-chips.com>
+References: <1421203412-5159-1-git-send-email-zyw@rock-chips.com>
+From: Sonny Rao <sonnyrao@chromium.org>
+Date: Wed, 14 Jan 2015 10:00:08 -0800
+X-Google-Sender-Auth: 8doBr_Cpa_bus8NrYHmaBH4J9tU
+Message-ID: <CAPz6YkW4icehT6P9EicP1Eww_Ny0hNaeS53WXaFei+HrYbPQ3A@mail.gmail.com>
+Subject: Re: [PATCH] RTC: RK808: fix the rtc time reading issue
+To: Chris Zhong <zyw@rock-chips.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Douglas Anderson <dianders@chromium.org>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        linux-rockchip@lists.infradead.org,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2015-01-14 at 11:57 +0000, Bogdan Purcareata wrote:
-> The readback is necessary in order to handle PCI posted
-> writes,
+On Tue, Jan 13, 2015 at 6:43 PM, Chris Zhong <zyw@rock-chips.com> wrote:
+> After we set the GET_TIME bit, the rtc time couldn't be read immediately,
+> we should wait up to 31.25 us, about one cycle of 32khz. Otherwise reading
+> RTC time will return a old time. If clear the GET_TIME bit after setting,
+> the time of i2c transfer certainly more than 31.25us.
+>
+> Signed-off-by: Chris Zhong <zyw@rock-chips.com>
+>
+> ---
+>
+>  drivers/rtc/rtc-rk808.c | 9 +++++++--
+>  1 file changed, 7 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/rtc/rtc-rk808.c b/drivers/rtc/rtc-rk808.c
+> index df42257..8dae322 100644
+> --- a/drivers/rtc/rtc-rk808.c
+> +++ b/drivers/rtc/rtc-rk808.c
+> @@ -67,15 +67,20 @@ static int rk808_rtc_readtime(struct device *dev, struct rtc_time *tm)
+>         /* Force an update of the shadowed registers right now */
+>         ret = regmap_update_bits(rk808->regmap, RK808_RTC_CTRL_REG,
+>                                  BIT_RTC_CTRL_REG_RTC_GET_TIME,
+> -                                0);
+> +                                BIT_RTC_CTRL_REG_RTC_GET_TIME);
+>         if (ret) {
+>                 dev_err(dev, "Failed to update bits rtc_ctrl: %d\n", ret);
+>                 return ret;
+>         }
+>
+> +       /* After we set the GET_TIME bit, the rtc time couldn't be read
+> +        * immediately, we should wait up to 31.25 us, about one cycle of
+> +        * 32khz. If we clear the GET_TIME bit here, the time of i2c transfer
+> +        * certainly more than 31.25us.
+> +        */
 
-That is unclear.
+Chris, it looks like you swapped the set and the clear of this bit,
+and you're relying on the fact that the i2c transaction takes a
+certain amount of time after the RTC_GET_TIME BIT is set.   I'm not
+sure how long it actually takes, but why not just put in a usleep()
+for the minimum wait time?
 
->  or when the MPIC is handling interrupts in a loop
-> (ppc_md.get_irq).
-
-I'm questioning this one as well -- if reading WHOAMI is sufficient to
-sync with the EOI, why wouldn't reading INTACK work as well?
-
->  Newer MPIC versions don't require this readback. Leave the option
-> configurable using a device tree entry.
-> 
-> This saves a MMIO trap per interrupt.
-> 
-> Signed-off-by: Scott Wood <scottwood@freescale.com>
-> Signed-off-by: Bogdan Purcareata <bogdan.purcareata@freescale.com>
-
-You should note changes (e.g. with a [] note between signoffs) if it
-differs from the original...
-
--Scott
-
-
+>         ret = regmap_update_bits(rk808->regmap, RK808_RTC_CTRL_REG,
+>                                  BIT_RTC_CTRL_REG_RTC_GET_TIME,
+> -                                BIT_RTC_CTRL_REG_RTC_GET_TIME);
+> +                                0);
+>         if (ret) {
+>                 dev_err(dev, "Failed to update bits rtc_ctrl: %d\n", ret);
+>                 return ret;
+> --
+> 1.9.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
