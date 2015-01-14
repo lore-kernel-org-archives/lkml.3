@@ -1,67 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753254AbbANN5i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 08:57:38 -0500
-Received: from mail-qg0-f44.google.com ([209.85.192.44]:62689 "EHLO
-	mail-qg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752611AbbANN5h (ORCPT
+	id S1753449AbbANOQr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 09:16:47 -0500
+Received: from mailscan33.extendcp.co.uk ([79.170.42.5]:47133 "EHLO
+	mailscan1.extendcp.co.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752406AbbANOQq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 08:57:37 -0500
-Date: Wed, 14 Jan 2015 08:57:33 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?utf-8?B?IklzaGltYXRzdSwgWWFzdWFraS/nn7Pmnb4g6Z2W56ugIg==?= 
-	<isimatu.yasuaki@jp.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        "guz.fnst@cn.fujitsu.com" <guz.fnst@cn.fujitsu.com>
-Subject: Re: [PATCH 1/2] workqueue: update numa affinity info at node hotplug
-Message-ID: <20150114135733.GB3565@htj.dyndns.org>
-References: <54905F87.2030302@jp.fujitsu.com>
- <549061BD.3040802@jp.fujitsu.com>
- <5490DE23.9000602@cn.fujitsu.com>
- <5490F70E.4010703@jp.fujitsu.com>
- <54910CFD.4070203@jp.fujitsu.com>
- <20141225201156.GA22951@htj.dyndns.org>
- <54B4C6ED.9060501@cn.fujitsu.com>
- <20150113152224.GA2976@htj.dyndns.org>
- <54B5D8B4.7010708@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54B5D8B4.7010708@cn.fujitsu.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 14 Jan 2015 09:16:46 -0500
+From: Mark Glover <mark@actisense.com>
+To: johan@kernel.org, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Mark Glover <mark@actisense.com>
+Subject: [PATCH] Added PIDs for Actisense USB Devices
+Date: Wed, 14 Jan 2015 13:58:40 +0000
+Message-Id: <1421243920-15048-1-git-send-email-mark@actisense.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Authenticated-As: mark.glover@actisense.com
+X-Extend-Src: mailout
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Lai.
+From: Mark Glover <mark@actisense.com>
 
-On Wed, Jan 14, 2015 at 10:47:16AM +0800, Lai Jiangshan wrote:
-> > Even if that involves slightly more code, that's the right thing to do at this point.
-> 
-> Right, but in currently, the workqueue will be the only user, and I don't known
-> asking who to do it, so I may keep it in the workqueue.c.
+ Signed-off-by: Mark Glover <mark@actisense.com>
 
-The problem is that working around this in workqueue effectively hides
-what needs to be actively looked upon and decided.  It curently isn't
-currently defined even when such mappings can change or for which
-cpus?  Are all offline cpus up for grabs or just !present ones?  These
-are questions which can only be answered / determined from NUMA side
-and the sooner we deal with this properly the better.
+---
+ drivers/usb/serial/ftdi_sio.c     |   17 +++++++++++++++++
+ drivers/usb/serial/ftdi_sio_ids.h |   21 +++++++++++++++++++++
+ 2 files changed, 38 insertions(+)
 
-> > It'd be
-> > awesome if somebody more familiar with the numa side can chime in and
-> > explain why this mapping change can't be avoided.
-> 
-> I'm also looking for someone answer it.
-
-Exactly, whoever is requiring NUMA node remapping should explain and
-justify that and how the model to handle it can only be determined
-from that.
-
-Thanks.
-
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index 1ebb351..a118e5b 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -978,6 +978,23 @@ static const struct usb_device_id id_table_combined[] = {
+ 	{ USB_DEVICE_INTERFACE_NUMBER(INFINEON_VID, INFINEON_TRIBOARD_PID, 1) },
+ 	/* GE Healthcare devices */
+ 	{ USB_DEVICE(GE_HEALTHCARE_VID, GE_HEALTHCARE_NEMO_TRACKER_PID) },
++	/* Active Research (Actisense) devices */
++	{ USB_DEVICE(FTDI_VID, ACTISENSE_NDC_PID) },
++	{ USB_DEVICE(FTDI_VID, ACTISENSE_USG_PID) },
++	{ USB_DEVICE(FTDI_VID, ACTISENSE_NGT_PID) },
++	{ USB_DEVICE(FTDI_VID, ACTISENSE_NGW_PID) },
++	{ USB_DEVICE(FTDI_VID, ACTISENSE_D9AC_PID) },
++	{ USB_DEVICE(FTDI_VID, ACTISENSE_D9AD_PID) },
++	{ USB_DEVICE(FTDI_VID, ACTISENSE_D9AE_PID) },
++	{ USB_DEVICE(FTDI_VID, ACTISENSE_D9AF_PID) },
++	{ USB_DEVICE(FTDI_VID, CHETCO_SEAGAUGE_PID) },
++	{ USB_DEVICE(FTDI_VID, CHETCO_SEASWITCH_PID) },
++	{ USB_DEVICE(FTDI_VID, CHETCO_SEASMART_NMEA2000_PID) },
++	{ USB_DEVICE(FTDI_VID, CHETCO_SEASMART_ETHERNET_PID) },
++	{ USB_DEVICE(FTDI_VID, CHETCO_SEASMART_WIFI_PID) },
++	{ USB_DEVICE(FTDI_VID, CHETCO_SEASMART_DISPLAY_PID) },
++	{ USB_DEVICE(FTDI_VID, CHETCO_SEASMART_LITE_PID) },
++	{ USB_DEVICE(FTDI_VID, CHETCO_SEASMART_ANALOG_PID) },
+ 	{ }					/* Terminating entry */
+ };
+ 
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serials/ftdi_sio_ids.h
+index e52409c..8ccd1b6 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -1438,3 +1438,24 @@
+  */
+ #define GE_HEALTHCARE_VID		0x1901
+ #define GE_HEALTHCARE_NEMO_TRACKER_PID	0x0015
++
++/*
++ * Active Research (Actisense) devices
++ */
++#define ACTISENSE_NDC_PID		0xD9A8 /* NDC USB Serial Adapter */
++#define ACTISENSE_USG_PID		0xD9A9 /* USG USB Serial Adapter */
++#define ACTISENSE_NGT_PID		0xD9AA /* NGT NMEA2000 Interface */
++#define ACTISENSE_NGW_PID		0xD9AB /* NGW NMEA2000 Gateway */
++#define ACTISENSE_D9AC_PID		0xD9AC /* Actisense Reserved */
++#define ACTISENSE_D9AD_PID		0xD9AD /* Actisense Reserved */
++#define ACTISENSE_D9AE_PID		0xD9AE /* Actisense Reserved */
++#define ACTISENSE_D9AF_PID		0xD9AF /* Actisense Reserved */
++#define CHETCO_SEAGAUGE_PID		0xA548 /* SeaGauge USB Adapter */
++#define CHETCO_SEASWITCH_PID		0xA549 /* SeaSwitch USB Apadter */
++#define CHETCO_SEASMART_NMEA2000_PID	0xA54A /* SeaSmart NMEA2000 Gateway */
++#define CHETCO_SEASMART_ETHERNET_PID	0xA54B /* SeaSmart Ethernet Gateway */
++#define CHETCO_SEASMART_WIFI_PID	0xA5AC /* SeaSmart Wifi Gateway */
++#define CHETCO_SEASMART_DISPLAY_PID	0xA5AD /* SeaSmart NMEA2000 Display */
++#define CHETCO_SEASMART_LITE_PID	0xA5AE /* SeaSmart Lite USB Adapter */
++#define CHETCO_SEASMART_ANALOG_PID	0xA5AF /* SeaSmart Analog Adapter */
++
 -- 
-tejun
+1.7.9.5
+
