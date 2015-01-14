@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754245AbbANRWc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 12:22:32 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:57175 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751109AbbANRWa (ORCPT
+	id S1753880AbbANRVs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 12:21:48 -0500
+Received: from devils.ext.ti.com ([198.47.26.153]:37788 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752402AbbANRVq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 12:22:30 -0500
-Date: Wed, 14 Jan 2015 17:22:06 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Ken Wilson <ken.wilson@opengear.com>
-Cc: thomas.petazzoni@free-electrons.com, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        ezequiel.garcia@free-electrons.com, gerg@uclinux.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-spi@vger.kernel.org
-Message-ID: <20150114172206.GA4160@sirena.org.uk>
-References: <1421032440-15335-1-git-send-email-ken.wilson@opengear.com>
- <1421032440-15335-2-git-send-email-ken.wilson@opengear.com>
+	Wed, 14 Jan 2015 12:21:46 -0500
+From: Vitaly Andrianov <vitalya@ti.com>
+To: <linux@arm.linux.org.uk>, <thomas.petazzoni@free-electrons.com>,
+        <catalin.marinas@arm.com>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>
+CC: Vitaly Andrianov <vitalya@ti.com>
+Subject: [PATCH] ARM: mm: use phys_addr_t in __arm_ioremap functions
+Date: Wed, 14 Jan 2015 12:22:34 -0500
+Message-ID: <1421256154-18514-1-git-send-email-vitalya@ti.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="8p/3hdGJBHAENZPK"
-Content-Disposition: inline
-In-Reply-To: <1421032440-15335-2-git-send-email-ken.wilson@opengear.com>
-X-Cookie: Keep out of reach of children.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCHv2 1/2] spi: orion: Change spi-orion to use transfer_one()
- semantics for SPI transfers
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On a 32 bit ARM architecture with LPAE extension physical addresses
+cannot fit into unsigned long variable.
 
---8p/3hdGJBHAENZPK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This patch fixes the ioremap_page, __map_ioremap_pfn_caller,
+__arm_ioremap and __arm_ioremap_exec functions.
 
-On Mon, Jan 12, 2015 at 01:13:59PM +1000, Ken Wilson wrote:
-> This commit changes spi-orion to provide setup, set_cs, and transfer_one
-> functions instead of transfer_one_message. This allows chip select support
-> for both native and GPIO chip selects to be added.
+Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
+Acked-by: Murali Karicheri <m-karicheri2@ti.com>
+---
+ arch/arm/include/asm/mach/map.h | 2 +-
+ arch/arm/mm/ioremap.c           | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-Applied, thanks.
+diff --git a/arch/arm/include/asm/mach/map.h b/arch/arm/include/asm/mach/map.h
+index 2fe141f..836f006 100644
+--- a/arch/arm/include/asm/mach/map.h
++++ b/arch/arm/include/asm/mach/map.h
+@@ -52,7 +52,7 @@ extern const struct mem_type *get_mem_type(unsigned int type);
+ /*
+  * external interface to remap single page with appropriate type
+  */
+-extern int ioremap_page(unsigned long virt, unsigned long phys,
++extern int ioremap_page(unsigned long virt, phys_addr_t phys,
+ 			const struct mem_type *mtype);
+ #else
+ #define iotable_init(map,num)	do { } while (0)
+diff --git a/arch/arm/mm/ioremap.c b/arch/arm/mm/ioremap.c
+index f123d6e..e0fe50f 100644
+--- a/arch/arm/mm/ioremap.c
++++ b/arch/arm/mm/ioremap.c
+@@ -103,7 +103,7 @@ void __init add_static_vm_early(struct static_vm *svm)
+ 	list_add_tail(&svm->list, &curr_svm->list);
+ }
+ 
+-int ioremap_page(unsigned long virt, unsigned long phys,
++int ioremap_page(unsigned long virt, phys_addr_t phys,
+ 		 const struct mem_type *mtype)
+ {
+ 	return ioremap_page_range(virt, virt + PAGE_SIZE, phys,
+-- 
+1.9.1
 
---8p/3hdGJBHAENZPK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBCAAGBQJUtqW+AAoJECTWi3JdVIfQyKcH/1rOfEb5pMLI95Y+6L6Tb+x/
-qneOjSR10GZMk9ScRs9TMrnCESTVqiv1SU5nTbQsB56zvvLBoZ5X2WnXx2kEMC4O
-hHdAjjz46e4WBrmRTgt52Zbn/sbucKDtLAbiY2FSkLFEIclkVhlkuQgAmBkPi9jZ
-xk699s91Qp0FwefqN9pSLNJMLIuILUMynzf9VC+5XKbXaGErFOhlgjiZ34YCD8Du
-CU9GOwf91TR6XuML4eNGs5QKdKFmmEyJ5l9PH9lk4Cbg026hMpkbp8KQVx2jakTR
-4U45Qd6n5oHqq3jT5znuXYklm8xLXBuJlctOZAWJUoKVEWw5HtxZB/kLQT7nj7w=
-=7J8p
------END PGP SIGNATURE-----
-
---8p/3hdGJBHAENZPK--
