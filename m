@@ -1,47 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753646AbbANStz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 13:49:55 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:37462 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751617AbbANSty (ORCPT
+	id S1753147AbbANS4j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 13:56:39 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:48097 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751004AbbANS4h convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 13:49:54 -0500
+	Wed, 14 Jan 2015 13:56:37 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 96.249.243.124
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/Ni3/upXI23Y57vDoYXXxIKAc44Jybe+E=
+X-DKIM: OpenDKIM Filter v2.0.1 titan 7F616646488
+Date: Wed, 14 Jan 2015 13:56:19 -0500
+From: Jason Cooper <jason@lakedaemon.net>
+To: Boris Brezillon <boris.brezillon@free-electrons.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 2/5] irqchip: Add DT binding doc for dumb demuxer
+ chips
+Message-ID: <20150114185619.GB24989@titan.lakedaemon.net>
+References: <1421174781-4340-1-git-send-email-boris.brezillon@free-electrons.com>
+ <1421174781-4340-3-git-send-email-boris.brezillon@free-electrons.com>
+ <20150113190050.GZ24989@titan.lakedaemon.net>
+ <20150113215207.185d92b4@bbrezillon>
 MIME-Version: 1.0
-In-Reply-To: <20150114184714.GD6902@pd.tnic>
-References: <5491B4A8.905@amacapital.net> <CALCETrUyw5_E+FN8o8ZsOxN5XG81-Q8MVzeUHPZ_XBM+ifi6_w@mail.gmail.com>
- <20141231183739.GA28946@console-pimps.org> <20150114165151.GA3479@codeblueprint.co.uk>
- <CALCETrWOxPwoL0zo0UZMk=05uAEqgY-Xovk1=JHwbVtinx3u3w@mail.gmail.com>
- <20150114183546.GC6902@pd.tnic> <CALCETrUEfQY-hnmNV9-PfDbEYLa7bVoRcsZc2X0V+mEAbfNH2g@mail.gmail.com>
- <20150114184714.GD6902@pd.tnic>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 14 Jan 2015 10:49:32 -0800
-Message-ID: <CALCETrVUw=Pg+UqQ-B23dd+o3_ROoziH84B-BdBRqDk5-J=amQ@mail.gmail.com>
-Subject: Re: EFI mixed mode + perf = rampant triple faults
-To: Borislav Petkov <bp@alien8.de>
-Cc: Matt Fleming <matt@console-pimps.org>, LKML <linux-kernel@vger.kernel.org>,
-        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20150113215207.185d92b4@bbrezillon>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 14, 2015 at 10:47 AM, Borislav Petkov <bp@alien8.de> wrote:
-> On Wed, Jan 14, 2015 at 10:38:25AM -0800, Andy Lutomirski wrote:
->> That's not a real MCE, though -- it happens synchronously instead of
->
-> MCE can be synchronous in a sense too, as a result of executing an insn,
-> for example, i.e., EIPV bit set.
->
->> at MCE priority with all the associated messiness.  Or is the idea to
->> just stick that in after switching to the 32-bit mode being tested?
->
-> Yes, the idea was to simply trigger a real exception after switching to
-> 32-bit while still with 64-bit IDT handlers.
->
+Hey Boris,
 
-Seems like a reasonable test to me.
+On Tue, Jan 13, 2015 at 09:52:07PM +0100, Boris Brezillon wrote:
+> On Tue, 13 Jan 2015 14:00:50 -0500 Jason Cooper <jason@lakedaemon.net> wrote:
+> > On Tue, Jan 13, 2015 at 07:46:18PM +0100, Boris Brezillon wrote:
+> > > Add documentation for the dumb demuxer.
+> > > 
+> > > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> > > ---
+> > >  .../bindings/interrupt-controller/dumb-demux.txt   | 34 ++++++++++++++++++++++
+> > >  1 file changed, 34 insertions(+)
+> > >  create mode 100644 Documentation/devicetree/bindings/interrupt-controller/dumb-demux.txt
+> > > 
+> > > diff --git a/Documentation/devicetree/bindings/interrupt-controller/dumb-demux.txt b/Documentation/devicetree/bindings/interrupt-controller/dumb-demux.txt
+> > > new file mode 100644
+> > > index 0000000..1c777ef
+> > > --- /dev/null
+> > > +++ b/Documentation/devicetree/bindings/interrupt-controller/dumb-demux.txt
+> > > @@ -0,0 +1,34 @@
+> > > +* Generic Dumb Interrupt Demultiplexer
+> > > +
+> > > +This Dumb demultiplixer simply forward all incoming interrupts to its
+> > > +enabled/unmasked children.
+> > 
+> > Please forgive the potentially naïve question, but what hardware is this
+> > describing?
+> 
+> That's not a real hardware per se, but on some hardware (like at91 SoCs)
+> some IRQ line are shared by several peripherals, and this dumb
+> demultiplex is here to represent such shared irq lines which cannot be
+> easily demultiplexed (because they do not provide a 'cause'
+> register).
+> 
+> You can see it as a virtual irqchip provided to address broken hardware
+> designs.
 
---Andy
+Hmm.  Well, given tglx's recent reply, I suppose I'll *not* go down the
+rabbit hole of "the DT is for describing hardware."  :-P
+
+However, it would probably be a lot more palatable to the DT maintainers
+if we at least change the compatible to prepend "linux,".  This way, if
+someone does come up with a better solution down the road, it will be
+much easier to deprecate the binding.
+
+I would also be amenable to "virt,", or "hack,", or even
+"work-around-piss-poor-hw,".  Basically, anything that would indicate to
+consumers of the DT that this is not a true reflection of the hardware,
+and that it may be superseded by a better solution later.
+
+It would also be helpful to explain the situation more fully in the
+binding document.
+
+thx,
+
+Jason.
