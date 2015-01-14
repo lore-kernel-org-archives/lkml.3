@@ -1,149 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753914AbbANAU3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 19:20:29 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:8671 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751845AbbANAU2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 19:20:28 -0500
-From: Calvin Owens <calvinowens@fb.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Peter Feiner <pfeiner@google.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-CC: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <kernel-team@fb.com>,
-        <calvinowens@fb.com>
-Subject: [RFC][PATCH] procfs: Add /proc/<pid>/mapped_files
-Date: Tue, 13 Jan 2015 16:20:29 -0800
-Message-ID: <1421194829-28696-1-git-send-email-calvinowens@fb.com>
-X-Mailer: git-send-email 2.1.4
+	id S1752646AbbANAWW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 19:22:22 -0500
+Received: from mail.kernel.org ([198.145.29.136]:54754 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750995AbbANAWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 19:22:21 -0500
+Date: Tue, 13 Jan 2015 16:22:15 -0800
+From: Jaegeuk Kim <jaegeuk@kernel.org>
+To: Chao Yu <chao2.yu@samsung.com>
+Cc: "'Changman Lee'" <cm224.lee@samsung.com>,
+        linux-f2fs-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [f2fs-dev][PATCH 2/2] f2fs: enable recover_xattr_data to avoid
+ cp when fsync after operating xattr
+Message-ID: <20150114002215.GA4930@jaegeuk-mac02.mot.com>
+References: <009401d0297a$41523580$c3f6a080$@samsung.com>
+ <20150106194419.GB54001@jaegeuk-mac02>
+ <000101d02cce$4bed1c60$e3c75520$@samsung.com>
+ <20150111053212.GB91790@jaegeuk-mac02.hsd1.ca.comcast.net>
+ <000301d02e4b$e768bbd0$b63a3370$@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2015-01-13_08:2015-01-13,2015-01-13,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
- kscore.compositescore=0 circleOfTrustscore=51.5900229690472
- compositescore=0.165369342820785 urlsuspect_oldscore=0.165369342820785
- suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
- bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=1996008
- rbsscore=0.165369342820785 spamscore=0
- recipient_to_sender_domain_totalscore=12 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1501140002
-X-FB-Internal: deliver
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <000301d02e4b$e768bbd0$b63a3370$@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit b76437579d1344b6 ("procfs: mark thread stack correctly in
-proc/<pid>/maps") introduced logic to mark thread stacks with the
-"[stack:%d]" marker in /proc/<pid>/maps.
+On Mon, Jan 12, 2015 at 05:40:28PM +0800, Chao Yu wrote:
+> Hi Jaegeuk,
+> 
+> > -----Original Message-----
+> > From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
+> > Sent: Sunday, January 11, 2015 1:32 PM
+> > To: Chao Yu
+> > Cc: 'Changman Lee'; linux-f2fs-devel@lists.sourceforge.net; linux-kernel@vger.kernel.org
+> > Subject: Re: [f2fs-dev][PATCH 2/2] f2fs: enable recover_xattr_data to avoid cp when fsync after
+> > operating xattr
+> > 
+> > On Sat, Jan 10, 2015 at 08:08:33PM +0800, Chao Yu wrote:
+> > > Hi Jaegeuk,
+> > >
+> > > > -----Original Message-----
+> > > > From: Jaegeuk Kim [mailto:jaegeuk@kernel.org]
+> > > > Sent: Wednesday, January 07, 2015 3:44 AM
+> > > > To: Chao Yu
+> > > > Cc: Changman Lee; linux-f2fs-devel@lists.sourceforge.net; linux-kernel@vger.kernel.org
+> > > > Subject: Re: [f2fs-dev][PATCH 2/2] f2fs: enable recover_xattr_data to avoid cp when fsync
+> > after
+> > > > operating xattr
+> > > >
+> > > > Hi Chao,
+> > > >
+> > > > On Tue, Jan 06, 2015 at 02:29:40PM +0800, Chao Yu wrote:
+> > > > > Now if we call fsync() after we update the xattr date belongs to the file, f2fs
+> > > > > will do checkpoint to keep data.
+> > > > > This can cause low performance because checkpoint block most operation and write
+> > > > > lots of blocks. So we'd better to avoid doing checkpoint by writing modified
+> > > > > xattr node page to warm node segment, and then it can be recovered when we mount
+> > > > > this device later on.
+> > > >
+> > > > You're trying to change the writing policy as xattr blocks are written into
+> > > > WARM_NODE area instead of COLD_NODE area.
+> > > > I don't think xattrs are frequently changed between each fsync calls.
+> > > >
+> > > > How do you think?
+> > >
+> > > I'm not sure whether there is a scenario that setxattr and fsync are invoked
+> > > alternately, but if there is, our performance will decrease obviously.
+> > >
+> > > If you don't want to change writing policy, how about writing xattr node with
+> > > fsync flag into cold node segment when fsync() is called, then try to recover
+> > > it from cold node chain when recovery after abnormally pow-cut, this way can
+> > > avoid cp frequently in above scenario.
+> > 
+> > Firt of all, I don't think this scenario is frequent enough that we have to
+> > break the exisiting writing and recovery procedures.
+> > Moreover, if xattr entries are covered by inline_xattr, it doesn't trigger
+> > checkpoint.
+> 
+> Agree, that's a good solution.
+> 
+> > 
+> > Let me know, if I'm missing something.
+> > 
+> > If you try to change the recovery procedure, it needs to think about the
+> > disk full condition. (i.e., space_for_roll_forward())
+> > And, I don't want to search cold node chain.
+> 
+> OK, if we keep writing policy and recovery procedure as it is, then, shouldn't our
+> recover_xattr_data be dropped because it will be not used from any call path?
+> How do you think of below patch?
 
-This causes reading /proc/<pid>/maps to take O(N^2) time, where N is
-the number of threads sharing an address space, since each line of
-output requires iterating over the VMA list looking for ranges that
-correspond to the stack pointer in any task's register set. When
-dealing with highly-threaded Java applications, reading this file can
-take hours and trigger softlockup dumps.
+Hi Chao,
 
-Eliminating the "[stack:%d]" marker is not a viable option since it's
-been there for some time, and I don't see a way to do the stack check
-more efficiently that wouldn't end up making the whole thing really
-ugly.
+Nice catch.
+But, IIRC, this code was remained for backward compatibility, since long time
+ago, xattr blocks were written into the warm node chain.
+So, I couldn't remove this.
 
-The use case I'm specifically concerned with is the lsof command, so
-this patch adds an additional file, "mapped_files", that simply
-iterates over the VMAs associated with the task and outputs a
-newline-delimited list of the pathnames of the files associated with
-the VMAs, if any.
+Thanks,
 
-This gives lsof and suchlike a way to determine the pathnames of files
-mapped into a process without incurring the O(N^2) behavior of the
-maps file.
-
-Signed-off-by: Calvin Owens <calvinowens@fb.com>
----
-I'm also sending a simple repro program as a reply to this E-Mail.
-
- fs/proc/base.c     |  1 +
- fs/proc/internal.h |  1 +
- fs/proc/task_mmu.c | 32 ++++++++++++++++++++++++++++++++
- 3 files changed, 34 insertions(+)
-
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index 3f3d7ae..15f8bd0 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -2564,6 +2564,7 @@ static const struct pid_entry tgid_base_stuff[] = {
- 	ONE("stat",       S_IRUGO, proc_tgid_stat),
- 	ONE("statm",      S_IRUGO, proc_pid_statm),
- 	REG("maps",       S_IRUGO, proc_pid_maps_operations),
-+	REG("mapped_files", S_IRUGO, proc_mapped_files_operations),
- #ifdef CONFIG_NUMA
- 	REG("numa_maps",  S_IRUGO, proc_pid_numa_maps_operations),
- #endif
-diff --git a/fs/proc/internal.h b/fs/proc/internal.h
-index 6fcdba5..a09bbdd 100644
---- a/fs/proc/internal.h
-+++ b/fs/proc/internal.h
-@@ -284,6 +284,7 @@ struct mm_struct *proc_mem_open(struct inode *inode, unsigned int mode);
- 
- extern const struct file_operations proc_pid_maps_operations;
- extern const struct file_operations proc_tid_maps_operations;
-+extern const struct file_operations proc_mapped_files_operations;
- extern const struct file_operations proc_pid_numa_maps_operations;
- extern const struct file_operations proc_tid_numa_maps_operations;
- extern const struct file_operations proc_pid_smaps_operations;
-diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
-index 246eae8..bc101e0 100644
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -412,6 +412,38 @@ const struct file_operations proc_tid_maps_operations = {
- 	.release	= proc_map_release,
- };
- 
-+static int show_next_mapped_file(struct seq_file *m, void *v)
-+{
-+	struct vm_area_struct *vma = v;
-+	struct file *file = vma->vm_file;
-+
-+	if (file) {
-+		seq_path(m, &file->f_path, "\n");
-+		seq_putc(m, '\n');
-+	}
-+
-+	return 0;
-+}
-+
-+static const struct seq_operations mapped_files_seq_op = {
-+	.start	= m_start,
-+	.next	= m_next,
-+	.stop	= m_stop,
-+	.show	= show_next_mapped_file,
-+};
-+
-+static int mapped_files_open(struct inode *inode, struct file *file)
-+{
-+	return do_maps_open(inode, file, &mapped_files_seq_op);
-+}
-+
-+const struct file_operations proc_mapped_files_operations = {
-+	.open		= mapped_files_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= seq_release_private,
-+};
-+
- /*
-  * Proportional Set Size(PSS): my share of RSS.
-  *
--- 
-2.1.4
-
+> 
+> >From 4fee238292aa0198a1530492afbd529e84e83141 Mon Sep 17 00:00:00 2001
+> From: Chao Yu <chao2.yu@samsung.com>
+> Date: Mon, 12 Jan 2015 17:25:44 +0800
+> Subject: [PATCH] f2fs: drop recover_xattr_data
+> 
+> Because xattr node will be written to cold node segment, so in current procedure
+> it's wrong that we try to find and recover it from warm node chain in
+> recover_xattr_data.
+> 
+> Let's drop this related function and invoking.
+> 
+> Signed-off-by: Chao Yu <chao2.yu@samsung.com>
+> ---
+>  fs/f2fs/f2fs.h     |  1 -
+>  fs/f2fs/node.c     | 36 ------------------------------------
+>  fs/f2fs/recovery.c |  8 ++------
+>  3 files changed, 2 insertions(+), 43 deletions(-)
+> 
+> diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+> index 209532c..3b18072 100644
+> --- a/fs/f2fs/f2fs.h
+> +++ b/fs/f2fs/f2fs.h
+> @@ -1392,7 +1392,6 @@ bool alloc_nid(struct f2fs_sb_info *, nid_t *);
+>  void alloc_nid_done(struct f2fs_sb_info *, nid_t);
+>  void alloc_nid_failed(struct f2fs_sb_info *, nid_t);
+>  void recover_inline_xattr(struct inode *, struct page *);
+> -void recover_xattr_data(struct inode *, struct page *, block_t);
+>  int recover_inode_page(struct f2fs_sb_info *, struct page *);
+>  int restore_node_summary(struct f2fs_sb_info *, unsigned int,
+>  				struct f2fs_summary_block *);
+> diff --git a/fs/f2fs/node.c b/fs/f2fs/node.c
+> index d7c1436..75aa233 100644
+> --- a/fs/f2fs/node.c
+> +++ b/fs/f2fs/node.c
+> @@ -1656,42 +1656,6 @@ update_inode:
+>  	f2fs_put_page(ipage, 1);
+>  }
+>  
+> -void recover_xattr_data(struct inode *inode, struct page *page, block_t blkaddr)
+> -{
+> -	struct f2fs_sb_info *sbi = F2FS_I_SB(inode);
+> -	nid_t prev_xnid = F2FS_I(inode)->i_xattr_nid;
+> -	nid_t new_xnid = nid_of_node(page);
+> -	struct node_info ni;
+> -
+> -	/* 1: invalidate the previous xattr nid */
+> -	if (!prev_xnid)
+> -		goto recover_xnid;
+> -
+> -	/* Deallocate node address */
+> -	get_node_info(sbi, prev_xnid, &ni);
+> -	f2fs_bug_on(sbi, ni.blk_addr == NULL_ADDR);
+> -	invalidate_blocks(sbi, ni.blk_addr);
+> -	dec_valid_node_count(sbi, inode);
+> -	set_node_addr(sbi, &ni, NULL_ADDR, false);
+> -
+> -recover_xnid:
+> -	/* 2: allocate new xattr nid */
+> -	if (unlikely(!inc_valid_node_count(sbi, inode)))
+> -		f2fs_bug_on(sbi, 1);
+> -
+> -	remove_free_nid(NM_I(sbi), new_xnid);
+> -	get_node_info(sbi, new_xnid, &ni);
+> -	ni.ino = inode->i_ino;
+> -	set_node_addr(sbi, &ni, NEW_ADDR, false);
+> -	F2FS_I(inode)->i_xattr_nid = new_xnid;
+> -
+> -	/* 3: update xattr blkaddr */
+> -	refresh_sit_entry(sbi, NEW_ADDR, blkaddr);
+> -	set_node_addr(sbi, &ni, blkaddr, false);
+> -
+> -	update_inode_page(inode);
+> -}
+> -
+>  int recover_inode_page(struct f2fs_sb_info *sbi, struct page *page)
+>  {
+>  	struct f2fs_inode *src, *dst;
+> diff --git a/fs/f2fs/recovery.c b/fs/f2fs/recovery.c
+> index c4211a5..f70c2e7 100644
+> --- a/fs/f2fs/recovery.c
+> +++ b/fs/f2fs/recovery.c
+> @@ -342,13 +342,9 @@ static int do_recover_data(struct f2fs_sb_info *sbi, struct inode *inode,
+>  	struct node_info ni;
+>  	int err = 0, recovered = 0;
+>  
+> -	/* step 1: recover xattr */
+> -	if (IS_INODE(page)) {
+> +	/* step 1: recover inline xattr */
+> +	if (IS_INODE(page))
+>  		recover_inline_xattr(inode, page);
+> -	} else if (f2fs_has_xattr_block(ofs_of_node(page))) {
+> -		recover_xattr_data(inode, page, blkaddr);
+> -		goto out;
+> -	}
+>  
+>  	/* step 2: recover inline data */
+>  	if (recover_inline_data(inode, page))
+> -- 
+> 2.2.1
+> 
+> 
+> > 
+> > Thanks,
+> > 
+> > >
+> > > Thanks,
+> > > Yu
