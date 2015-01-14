@@ -1,93 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756186AbbANIrj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:47:39 -0500
-Received: from mailapp01.imgtec.com ([195.59.15.196]:7439 "EHLO
-	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752753AbbANIrg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 03:47:36 -0500
-From: Qais Yousef <qais.yousef@imgtec.com>
-To: <alsa-devel@alsa-project.org>
-CC: Qais Yousef <qais.yousef@imgtec.com>, Vinod Koul <vinod.koul@intel.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH v4] ALSA: ASoC: soc-compress.c: fix NULL dereference
-Date: Wed, 14 Jan 2015 08:47:29 +0000
-Message-ID: <1421225249-19762-1-git-send-email-qais.yousef@imgtec.com>
-X-Mailer: git-send-email 2.1.0
+	id S1756204AbbANIrz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:47:55 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:52791 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756188AbbANIrw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 03:47:52 -0500
+Date: Wed, 14 Jan 2015 09:47:50 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Steven Rostedt <rostedt@goodmis.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Josh Poimboeuf <jpoimboe@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        live-patching@vger.kernel.org, linux-next@vger.kernel.org
+Subject: [PATCH 1/2 v2] ftrace: don't allow IPMODIFY without proper compiler
+ support
+In-Reply-To: <20150113211223.18908f21@grimm.local.home>
+Message-ID: <alpine.LNX.2.00.1501140945520.4162@pobox.suse.cz>
+References: <alpine.LNX.2.00.1412221412360.1680@pobox.suse.cz> <20141223094607.GA16445@infradead.org> <20141223151056.GA4789@treble.redhat.com> <20141226155613.36dd95b9@canb.auug.org.au> <20150107144317.61ab2080877a4d8227990551@linux-foundation.org>
+ <alpine.LNX.2.00.1501072346400.15299@pobox.suse.cz> <20150107153006.60ed354e3458f402e6819b9e@linux-foundation.org> <alpine.LNX.2.00.1501080037030.15299@pobox.suse.cz> <20150107155701.4839545f63701412003edd88@linux-foundation.org>
+ <alpine.LNX.2.00.1501080104190.15299@pobox.suse.cz> <54B3C1DD.6090400@hitachi.com> <alpine.LNX.2.00.1501132345080.4162@pobox.suse.cz> <20150113211223.18908f21@grimm.local.home>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [192.168.154.94]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In soc_new_compress() when rtd->dai_link->dynamic is set, we create the pcm
-substreams with this call:
+Using IPMODIFY needs to be allowed only with compilers which are 
+guaranteed to generate function prologues compatible with function 
+redirection through changing instruction pointer in saved regs.
 
-   ret = snd_pcm_new_internal(rtd->card->snd_card, new_name, num,
-                                   1, 0, &be_pcm);
+For example changing regs->ip on x86_64 in cases when gcc is using mcount 
+(and not fentry) is not allowed, because at the time mcount call is 
+issued, the original function's prologue has already been executed, which 
+leads to all kinds of inconsistent havoc.
 
-which passes 0 as capture_count leading to
+There is currently no way to express dependency on gcc features in 
+Kconfig, (CC_USING_FENTRY is defined only during build, so it's not 
+possible for Kconfig symbol to depend on it) so this needs to be checked 
+in runtime.
 
-   be_pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream
+Mark x86_64 with fentry supported for now. Other archs can be added
+gradually.
 
-being NULL, hence when trying to set rtd a few lines below we get an oops.
-
-Fix by using rtd->dai_link->dpcm_playback and rtd->dai_link->dpcm_capture as
-playback_count and capture_count to snd_pcm_new_internal().
-
-Signed-off-by: Qais Yousef <qais.yousef@imgtec.com>
-Cc: Vinod Koul <vinod.koul@intel.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>
-Cc: Mark Brown <broonie@kernel.org>
-Cc: Jaroslav Kysela <perex@perex.cz>
-Cc: Takashi Iwai <tiwai@suse.de>
-Cc: linux-kernel@vger.kernel.org
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 ---
-v4->v3:
-  - the typo fix went wrong, apologies for the noise
 
-v3->v2:
-  - fix a typo s/dynmic/dynamic/ in commit message
-  - use if else if because either dpcm_playback or dpcm_capture should be on
-    for compressed devices
+v1 -> v2: turn macro function into a plain macro
 
-v2->v1:
-   - use better way to fix it than just removing the line that caused the oops
+ arch/x86/include/asm/ftrace.h | 2 ++
+ include/linux/ftrace.h        | 5 +++++
+ kernel/trace/ftrace.c         | 5 +++++
+ 3 files changed, 12 insertions(+)
 
- sound/soc/soc-compress.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
-
-diff --git a/sound/soc/soc-compress.c b/sound/soc/soc-compress.c
-index 590a82f01d0b..025c38fbe3c0 100644
---- a/sound/soc/soc-compress.c
-+++ b/sound/soc/soc-compress.c
-@@ -659,7 +659,8 @@ int soc_new_compress(struct snd_soc_pcm_runtime *rtd, int num)
- 			rtd->dai_link->stream_name);
+diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
+index f45acad..f84eaaf 100644
+--- a/arch/x86/include/asm/ftrace.h
++++ b/arch/x86/include/asm/ftrace.h
+@@ -4,8 +4,10 @@
+ #ifdef CONFIG_FUNCTION_TRACER
+ #ifdef CC_USING_FENTRY
+ # define MCOUNT_ADDR		((long)(__fentry__))
++# define ftrace_ipmodify_supported 1
+ #else
+ # define MCOUNT_ADDR		((long)(mcount))
++# define ftrace_ipmodify_supported 0
+ #endif
+ #define MCOUNT_INSN_SIZE	5 /* sizeof mcount call */
  
- 		ret = snd_pcm_new_internal(rtd->card->snd_card, new_name, num,
--				1, 0, &be_pcm);
-+				rtd->dai_link->dpcm_playback,
-+				rtd->dai_link->dpcm_capture, &be_pcm);
- 		if (ret < 0) {
- 			dev_err(rtd->card->dev, "ASoC: can't create compressed for %s\n",
- 				rtd->dai_link->name);
-@@ -668,8 +669,10 @@ int soc_new_compress(struct snd_soc_pcm_runtime *rtd, int num)
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index 1da6029..837153a 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -244,6 +244,11 @@ static inline int ftrace_function_local_disabled(struct ftrace_ops *ops)
+ extern void ftrace_stub(unsigned long a0, unsigned long a1,
+ 			struct ftrace_ops *op, struct pt_regs *regs);
  
- 		rtd->pcm = be_pcm;
- 		rtd->fe_compr = 1;
--		be_pcm->streams[SNDRV_PCM_STREAM_PLAYBACK].substream->private_data = rtd;
--		be_pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream->private_data = rtd;
-+		if (rtd->dai_link->dpcm_playback)
-+			be_pcm->streams[SNDRV_PCM_STREAM_PLAYBACK].substream->private_data = rtd;
-+		else if (rtd->dai_link->dpcm_capture)
-+			be_pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream->private_data = rtd;
- 		memcpy(compr->ops, &soc_compr_dyn_ops, sizeof(soc_compr_dyn_ops));
- 	} else
- 		memcpy(compr->ops, &soc_compr_ops, sizeof(soc_compr_ops));
++#ifndef ftrace_ipmodify_supported
++/* let's not make any implicit assumptions about profiling call placement */
++# define ftrace_ipmodify_supported 0
++
++#endif
+ #else /* !CONFIG_FUNCTION_TRACER */
+ /*
+  * (un)register_ftrace_function must be a macro since the ops parameter
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 929a733..05af4cd 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -1809,6 +1809,11 @@ static int __ftrace_hash_update_ipmodify(struct ftrace_ops *ops,
+ 	if (!(ops->flags & FTRACE_OPS_FL_IPMODIFY))
+ 		return 0;
+ 
++	if (!ftrace_ipmodify_supported) {
++		WARN(1, "Your compiler doesn't support features necessary for IPMODIFY");
++		return 0;
++	}
++
+ 	/*
+ 	 * Since the IPMODIFY is a very address sensitive action, we do not
+ 	 * allow ftrace_ops to set all functions to new hash.
+
 -- 
-2.1.0
-
+Jiri Kosina
+SUSE Labs
