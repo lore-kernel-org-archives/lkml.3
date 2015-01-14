@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933017AbbANHhg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:37:36 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58779 "EHLO
+	id S1755003AbbANHcW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:32:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58348 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755263AbbANHha (ORCPT
+	with ESMTP id S1754964AbbANHcR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:37:30 -0500
+	Wed, 14 Jan 2015 02:32:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Nishanth Menon <nm@ti.com>, Tony Lindgren <tony@atomide.com>
-Subject: [PATCH 3.14 61/77] ARM: OMAP4: PM: Only do static dependency configuration in omap4_init_static_deps
+        Jay Foad <jay.foad@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.18 150/150] mm: Dont count the stack guard page towards RLIMIT_STACK
 Date: Tue, 13 Jan 2015 23:23:41 -0800
-Message-Id: <20150114072227.600395632@linuxfoundation.org>
+Message-Id: <20150114072102.622132230@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-References: <20150114072224.182299947@linuxfoundation.org>
+In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
+References: <20150114072055.842408181@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -24,81 +25,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Nishanth Menon <nm@ti.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 9008d83fe9dc2e0f19b8ba17a423b3759d8e0fd7 upstream.
+commit 690eac53daff34169a4d74fc7bfbd388c4896abb upstream.
 
-Commit 705814b5ea6f ("ARM: OMAP4+: PM: Consolidate OMAP4 PM code to
-re-use it for OMAP5")
+Commit fee7e49d4514 ("mm: propagate error from stack expansion even for
+guard page") made sure that we return the error properly for stack
+growth conditions.  It also theorized that counting the guard page
+towards the stack limit might break something, but also said "Let's see
+if anybody notices".
 
-Moved logic generic for OMAP5+ as part of the init routine by
-introducing omap4_pm_init. However, the patch left the powerdomain
-initial setup, an unused omap4430 es1.0 check and a spurious log
-"Power Management for TI OMAP4." in the original code.
+Somebody did notice.  Apparently android-x86 sets the stack limit very
+close to the limit indeed, and including the guard page in the rlimit
+check causes the android 'zygote' process problems.
 
-Remove the duplicate code which is already present in omap4_pm_init from
-omap4_init_static_deps.
+So this adds the (fairly trivial) code to make the stack rlimit check be
+against the actual real stack size, rather than the size of the vma that
+includes the guard page.
 
-As part of this change, also move the u-boot version print out of the
-static dependency function to the omap4_pm_init function.
-
-Fixes: 705814b5ea6f ("ARM: OMAP4+: PM: Consolidate OMAP4 PM code to re-use it for OMAP5")
-Signed-off-by: Nishanth Menon <nm@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Reported-and-tested-by: Chih-Wei Huang <cwhuang@android-x86.org>
+Cc: Jay Foad <jay.foad@gmail.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-omap2/pm44xx.c |   29 +++++++++--------------------
- 1 file changed, 9 insertions(+), 20 deletions(-)
+ mm/mmap.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/arch/arm/mach-omap2/pm44xx.c
-+++ b/arch/arm/mach-omap2/pm44xx.c
-@@ -148,26 +148,6 @@ static inline int omap4_init_static_deps
- 	struct clockdomain *ducati_clkdm, *l3_2_clkdm;
- 	int ret = 0;
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -2099,14 +2099,17 @@ static int acct_stack_growth(struct vm_a
+ {
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	struct rlimit *rlim = current->signal->rlim;
+-	unsigned long new_start;
++	unsigned long new_start, actual_size;
  
--	if (omap_rev() == OMAP4430_REV_ES1_0) {
--		WARN(1, "Power Management not supported on OMAP4430 ES1.0\n");
--		return -ENODEV;
--	}
--
--	pr_err("Power Management for TI OMAP4.\n");
--	/*
--	 * OMAP4 chip PM currently works only with certain (newer)
--	 * versions of bootloaders. This is due to missing code in the
--	 * kernel to properly reset and initialize some devices.
--	 * http://www.spinics.net/lists/arm-kernel/msg218641.html
--	 */
--	pr_warn("OMAP4 PM: u-boot >= v2012.07 is required for full PM support\n");
--
--	ret = pwrdm_for_each(pwrdms_setup, NULL);
--	if (ret) {
--		pr_err("Failed to setup powerdomains\n");
--		return ret;
--	}
--
- 	/*
- 	 * The dynamic dependency between MPUSS -> MEMIF and
- 	 * MPUSS -> L4_PER/L3_* and DUCATI -> L3_* doesn't work as
-@@ -231,6 +211,15 @@ int __init omap4_pm_init(void)
+ 	/* address space limit tests */
+ 	if (!may_expand_vm(mm, grow))
+ 		return -ENOMEM;
  
- 	pr_info("Power Management for TI OMAP4+ devices.\n");
+ 	/* Stack limit test */
+-	if (size > ACCESS_ONCE(rlim[RLIMIT_STACK].rlim_cur))
++	actual_size = size;
++	if (size && (vma->vm_flags & (VM_GROWSUP | VM_GROWSDOWN)))
++		actual_size -= PAGE_SIZE;
++	if (actual_size > ACCESS_ONCE(rlim[RLIMIT_STACK].rlim_cur))
+ 		return -ENOMEM;
  
-+	/*
-+	 * OMAP4 chip PM currently works only with certain (newer)
-+	 * versions of bootloaders. This is due to missing code in the
-+	 * kernel to properly reset and initialize some devices.
-+	 * http://www.spinics.net/lists/arm-kernel/msg218641.html
-+	 */
-+	if (cpu_is_omap44xx())
-+		pr_warn("OMAP4 PM: u-boot >= v2012.07 is required for full PM support\n");
-+
- 	ret = pwrdm_for_each(pwrdms_setup, NULL);
- 	if (ret) {
- 		pr_err("Failed to setup powerdomains.\n");
+ 	/* mlock limit tests */
 
 
