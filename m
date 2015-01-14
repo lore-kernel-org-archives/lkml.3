@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753832AbbANIa1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:30:27 -0500
-Received: from filter1.ibarracuda.nl ([83.247.7.10]:42754 "EHLO
+	id S1753910AbbANIay (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:30:54 -0500
+Received: from filter1.ibarracuda.nl ([83.247.7.10]:42993 "EHLO
 	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753702AbbANIaV (ORCPT
+	with ESMTP id S1753840AbbANIaw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 03:30:21 -0500
-X-ASG-Debug-ID: 1421223528-0759e7543ba83d40002-xx1T2L
+	Wed, 14 Jan 2015 03:30:52 -0500
+X-ASG-Debug-ID: 1421223534-0759e7543ba83dd0002-xx1T2L
 X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
 X-Barracuda-AUTH-User: xsenscom
 X-Barracuda-Apparent-Source-IP: 87.249.116.215
@@ -21,10 +21,10 @@ CC: Frans Klaver <frans.klaver@xsens.com>,
         =?UTF-8?q?Ren=C3=A9=20Moll?= <linux@r-moll.nl>,
         Guenter Roeck <linux@roeck-us.net>, <linux-kernel@vger.kernel.org>,
         <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>
-Subject: [PATCH RESEND 09/13] power: reset: ltc2952: fix C++ style function pointers
-Date: Wed, 14 Jan 2015 09:15:42 +0100
-X-ASG-Orig-Subj: [PATCH RESEND 09/13] power: reset: ltc2952: fix C++ style function pointers
-Message-ID: <1421223346-27410-10-git-send-email-frans.klaver@xsens.com>
+Subject: [PATCH RESEND 10/13] power: reset: ltc2952: disable timers in _remove
+Date: Wed, 14 Jan 2015 09:15:43 +0100
+X-ASG-Orig-Subj: [PATCH RESEND 10/13] power: reset: ltc2952: disable timers in _remove
+Message-ID: <1421223346-27410-11-git-send-email-frans.klaver@xsens.com>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <1421223346-27410-1-git-send-email-frans.klaver@xsens.com>
 References: <1421223346-27410-1-git-send-email-frans.klaver@xsens.com>
@@ -32,7 +32,7 @@ MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [172.16.11.149]
 X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
-X-Barracuda-Start-Time: 1421223528
+X-Barracuda-Start-Time: 1421223535
 X-Barracuda-Encrypted: AES128-SHA
 X-Barracuda-URL: https://filter1.ibarracuda.nl:443/cgi-mod/mark.cgi
 X-Barracuda-BRTS-Status: 1
@@ -47,44 +47,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The function pointers for the timers and pm_power_off are assigned with
-C++ style
-	foo = &func;
-
-Let's change it instead to the more C style
-	foo = func;
+Disable the timers when ltc2952_poweroff is removed. We don't want to
+risk calling functions on data that no longer exist.
 
 Signed-off-by: Frans Klaver <frans.klaver@xsens.com>
 ---
- drivers/power/reset/ltc2952-poweroff.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/power/reset/ltc2952-poweroff.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
 diff --git a/drivers/power/reset/ltc2952-poweroff.c b/drivers/power/reset/ltc2952-poweroff.c
-index 70d8e3a..8ab1da6 100644
+index 8ab1da6..2f3fd5b 100644
 --- a/drivers/power/reset/ltc2952-poweroff.c
 +++ b/drivers/power/reset/ltc2952-poweroff.c
-@@ -182,10 +182,10 @@ static void ltc2952_poweroff_default(struct ltc2952_poweroff *data)
- 	data->trigger_delay = ktime_set(2, 500L*1E6L);
+@@ -285,6 +285,8 @@ static int ltc2952_poweroff_remove(struct platform_device *pdev)
+ 	struct ltc2952_poweroff *data = platform_get_drvdata(pdev);
  
- 	hrtimer_init(&data->timer_trigger, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
--	data->timer_trigger.function = &ltc2952_poweroff_timer_trigger;
-+	data->timer_trigger.function = ltc2952_poweroff_timer_trigger;
- 
- 	hrtimer_init(&data->timer_wde, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
--	data->timer_wde.function = &ltc2952_poweroff_timer_wde;
-+	data->timer_wde.function = ltc2952_poweroff_timer_wde;
- }
- 
- static int ltc2952_poweroff_init(struct platform_device *pdev)
-@@ -270,7 +270,7 @@ static int ltc2952_poweroff_probe(struct platform_device *pdev)
- 
- 	/* TODO: remove ltc2952_data */
- 	ltc2952_data = data;
--	pm_power_off = &ltc2952_poweroff_kill;
-+	pm_power_off = ltc2952_poweroff_kill;
- 
- 	data->panic_notifier.notifier_call = ltc2952_poweroff_notify_panic;
- 	atomic_notifier_chain_register(&panic_notifier_list,
+ 	pm_power_off = NULL;
++	hrtimer_cancel(&data->timer_trigger);
++	hrtimer_cancel(&data->timer_wde);
+ 	atomic_notifier_chain_unregister(&panic_notifier_list,
+ 					 &data->panic_notifier);
+ 	return 0;
 -- 
 2.1.0
 
