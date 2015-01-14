@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932793AbbANHfu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:35:50 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58629 "EHLO
+	id S932144AbbANH3i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:29:38 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58069 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932744AbbANHfp (ORCPT
+	with ESMTP id S1754505AbbANH3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:35:45 -0500
+	Wed, 14 Jan 2015 02:29:32 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Rob Herring <robherring2@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Anton Vorontsov <anton@enomsg.org>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
-        Kees Cook <keescook@chromium.org>, Tony Lindgren <tony@atomide.com>,
-        Tony Luck <tony.luck@intel.com>
-Subject: [PATCH 3.14 23/77] pstore-ram: Allow optional mapping with pgprot_noncached
+        Johannes Berg <johannes.berg@intel.com>, Nishanth Menon <nm@ti.com>,
+        Randy Dunlap <rdunlap@infradead.org>, Michal Marek <mmarek@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 3.18 112/150] scripts/kernel-doc: dont eat struct members with __aligned
 Date: Tue, 13 Jan 2015 23:23:03 -0800
-Message-Id: <20150114072225.442771223@linuxfoundation.org>
+Message-Id: <20150114072100.935696112@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-References: <20150114072224.182299947@linuxfoundation.org>
+In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
+References: <20150114072055.842408181@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -29,237 +27,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tony Lindgren <tony@atomide.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-commit 027bc8b08242c59e19356b4b2c189f2d849ab660 upstream.
+commit 7b990789a4c3420fa57596b368733158e432d444 upstream.
 
-On some ARMs the memory can be mapped pgprot_noncached() and still
-be working for atomic operations. As pointed out by Colin Cross
-<ccross@android.com>, in some cases you do want to use
-pgprot_noncached() if the SoC supports it to see a debug printk
-just before a write hanging the system.
+The change from \d+ to .+ inside __aligned() means that the following
+structure:
 
-On ARMs, the atomic operations on strongly ordered memory are
-implementation defined. So let's provide an optional kernel parameter
-for configuring pgprot_noncached(), and use pgprot_writecombine() by
-default.
+  struct test {
+        u8 a __aligned(2);
+        u8 b __aligned(2);
+  };
 
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Rob Herring <robherring2@gmail.com>
+essentially gets modified to
+
+  struct test {
+        u8 a;
+  };
+
+for purposes of kernel-doc, thus dropping a struct member, which in
+turns causes warnings and invalid kernel-doc generation.
+
+Fix this by replacing the catch-all (".") with anything that's not a
+semicolon ("[^;]").
+
+Fixes: 9dc30918b23f ("scripts/kernel-doc: handle struct member __aligned without numbers")
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Cc: Nishanth Menon <nm@ti.com>
 Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Anton Vorontsov <anton@enomsg.org>
-Cc: Colin Cross <ccross@android.com>
-Cc: Olof Johansson <olof@lixom.net>
-Cc: Russell King <linux@arm.linux.org.uk>
-Acked-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
+Cc: Michal Marek <mmarek@suse.cz>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/ramoops.txt  |   13 +++++++++++--
- fs/pstore/ram.c            |   13 +++++++++++--
- fs/pstore/ram_core.c       |   31 ++++++++++++++++++++++---------
- include/linux/pstore_ram.h |    4 +++-
- 4 files changed, 47 insertions(+), 14 deletions(-)
+ scripts/kernel-doc |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/Documentation/ramoops.txt
-+++ b/Documentation/ramoops.txt
-@@ -14,11 +14,19 @@ survive after a restart.
+--- a/scripts/kernel-doc
++++ b/scripts/kernel-doc
+@@ -1753,7 +1753,7 @@ sub dump_struct($$) {
+ 	# strip kmemcheck_bitfield_{begin,end}.*;
+ 	$members =~ s/kmemcheck_bitfield_.*?;//gos;
+ 	# strip attributes
+-	$members =~ s/__aligned\s*\(.+\)//gos;
++	$members =~ s/__aligned\s*\([^;]*\)//gos;
  
- 1. Ramoops concepts
- 
--Ramoops uses a predefined memory area to store the dump. The start and size of
--the memory area are set using two variables:
-+Ramoops uses a predefined memory area to store the dump. The start and size
-+and type of the memory area are set using three variables:
-   * "mem_address" for the start
-   * "mem_size" for the size. The memory size will be rounded down to a
-   power of two.
-+  * "mem_type" to specifiy if the memory type (default is pgprot_writecombine).
-+
-+Typically the default value of mem_type=0 should be used as that sets the pstore
-+mapping to pgprot_writecombine. Setting mem_type=1 attempts to use
-+pgprot_noncached, which only works on some platforms. This is because pstore
-+depends on atomic operations. At least on ARM, pgprot_noncached causes the
-+memory to be mapped strongly ordered, and atomic operations on strongly ordered
-+memory are implementation defined, and won't work on many ARMs such as omaps.
- 
- The memory area is divided into "record_size" chunks (also rounded down to
- power of two) and each oops/panic writes a "record_size" chunk of
-@@ -55,6 +63,7 @@ Setting the ramoops parameters can be do
- static struct ramoops_platform_data ramoops_data = {
-         .mem_size               = <...>,
-         .mem_address            = <...>,
-+        .mem_type               = <...>,
-         .record_size            = <...>,
-         .dump_oops              = <...>,
-         .ecc                    = <...>,
---- a/fs/pstore/ram.c
-+++ b/fs/pstore/ram.c
-@@ -61,6 +61,11 @@ module_param(mem_size, ulong, 0400);
- MODULE_PARM_DESC(mem_size,
- 		"size of reserved RAM used to store oops/panic logs");
- 
-+static unsigned int mem_type;
-+module_param(mem_type, uint, 0600);
-+MODULE_PARM_DESC(mem_type,
-+		"set to 1 to try to use unbuffered memory (default 0)");
-+
- static int dump_oops = 1;
- module_param(dump_oops, int, 0600);
- MODULE_PARM_DESC(dump_oops,
-@@ -79,6 +84,7 @@ struct ramoops_context {
- 	struct persistent_ram_zone *fprz;
- 	phys_addr_t phys_addr;
- 	unsigned long size;
-+	unsigned int memtype;
- 	size_t record_size;
- 	size_t console_size;
- 	size_t ftrace_size;
-@@ -353,7 +359,8 @@ static int ramoops_init_przs(struct devi
- 		size_t sz = cxt->record_size;
- 
- 		cxt->przs[i] = persistent_ram_new(*paddr, sz, 0,
--						  &cxt->ecc_info);
-+						  &cxt->ecc_info,
-+						  cxt->memtype);
- 		if (IS_ERR(cxt->przs[i])) {
- 			err = PTR_ERR(cxt->przs[i]);
- 			dev_err(dev, "failed to request mem region (0x%zx@0x%llx): %d\n",
-@@ -383,7 +390,7 @@ static int ramoops_init_prz(struct devic
- 		return -ENOMEM;
- 	}
- 
--	*prz = persistent_ram_new(*paddr, sz, sig, &cxt->ecc_info);
-+	*prz = persistent_ram_new(*paddr, sz, sig, &cxt->ecc_info, cxt->memtype);
- 	if (IS_ERR(*prz)) {
- 		int err = PTR_ERR(*prz);
- 
-@@ -431,6 +438,7 @@ static int ramoops_probe(struct platform
- 	cxt->dump_read_cnt = 0;
- 	cxt->size = pdata->mem_size;
- 	cxt->phys_addr = pdata->mem_address;
-+	cxt->memtype = pdata->mem_type;
- 	cxt->record_size = pdata->record_size;
- 	cxt->console_size = pdata->console_size;
- 	cxt->ftrace_size = pdata->ftrace_size;
-@@ -561,6 +569,7 @@ static void ramoops_register_dummy(void)
- 
- 	dummy_data->mem_size = mem_size;
- 	dummy_data->mem_address = mem_address;
-+	dummy_data->mem_type = 0;
- 	dummy_data->record_size = record_size;
- 	dummy_data->console_size = ramoops_console_size;
- 	dummy_data->ftrace_size = ramoops_ftrace_size;
---- a/fs/pstore/ram_core.c
-+++ b/fs/pstore/ram_core.c
-@@ -380,7 +380,8 @@ void persistent_ram_zap(struct persisten
- 	persistent_ram_update_header_ecc(prz);
- }
- 
--static void *persistent_ram_vmap(phys_addr_t start, size_t size)
-+static void *persistent_ram_vmap(phys_addr_t start, size_t size,
-+		unsigned int memtype)
- {
- 	struct page **pages;
- 	phys_addr_t page_start;
-@@ -392,7 +393,10 @@ static void *persistent_ram_vmap(phys_ad
- 	page_start = start - offset_in_page(start);
- 	page_count = DIV_ROUND_UP(size + offset_in_page(start), PAGE_SIZE);
- 
--	prot = pgprot_writecombine(PAGE_KERNEL);
-+	if (memtype)
-+		prot = pgprot_noncached(PAGE_KERNEL);
-+	else
-+		prot = pgprot_writecombine(PAGE_KERNEL);
- 
- 	pages = kmalloc(sizeof(struct page *) * page_count, GFP_KERNEL);
- 	if (!pages) {
-@@ -411,8 +415,11 @@ static void *persistent_ram_vmap(phys_ad
- 	return vaddr;
- }
- 
--static void *persistent_ram_iomap(phys_addr_t start, size_t size)
-+static void *persistent_ram_iomap(phys_addr_t start, size_t size,
-+		unsigned int memtype)
- {
-+	void *va;
-+
- 	if (!request_mem_region(start, size, "persistent_ram")) {
- 		pr_err("request mem region (0x%llx@0x%llx) failed\n",
- 			(unsigned long long)size, (unsigned long long)start);
-@@ -422,19 +429,24 @@ static void *persistent_ram_iomap(phys_a
- 	buffer_start_add = buffer_start_add_locked;
- 	buffer_size_add = buffer_size_add_locked;
- 
--	return ioremap_wc(start, size);
-+	if (memtype)
-+		va = ioremap(start, size);
-+	else
-+		va = ioremap_wc(start, size);
-+
-+	return va;
- }
- 
- static int persistent_ram_buffer_map(phys_addr_t start, phys_addr_t size,
--		struct persistent_ram_zone *prz)
-+		struct persistent_ram_zone *prz, int memtype)
- {
- 	prz->paddr = start;
- 	prz->size = size;
- 
- 	if (pfn_valid(start >> PAGE_SHIFT))
--		prz->vaddr = persistent_ram_vmap(start, size);
-+		prz->vaddr = persistent_ram_vmap(start, size, memtype);
- 	else
--		prz->vaddr = persistent_ram_iomap(start, size);
-+		prz->vaddr = persistent_ram_iomap(start, size, memtype);
- 
- 	if (!prz->vaddr) {
- 		pr_err("%s: Failed to map 0x%llx pages at 0x%llx\n", __func__,
-@@ -502,7 +514,8 @@ void persistent_ram_free(struct persiste
- }
- 
- struct persistent_ram_zone *persistent_ram_new(phys_addr_t start, size_t size,
--			u32 sig, struct persistent_ram_ecc_info *ecc_info)
-+			u32 sig, struct persistent_ram_ecc_info *ecc_info,
-+			unsigned int memtype)
- {
- 	struct persistent_ram_zone *prz;
- 	int ret = -ENOMEM;
-@@ -513,7 +526,7 @@ struct persistent_ram_zone *persistent_r
- 		goto err;
- 	}
- 
--	ret = persistent_ram_buffer_map(start, size, prz);
-+	ret = persistent_ram_buffer_map(start, size, prz, memtype);
- 	if (ret)
- 		goto err;
- 
---- a/include/linux/pstore_ram.h
-+++ b/include/linux/pstore_ram.h
-@@ -53,7 +53,8 @@ struct persistent_ram_zone {
- };
- 
- struct persistent_ram_zone *persistent_ram_new(phys_addr_t start, size_t size,
--			u32 sig, struct persistent_ram_ecc_info *ecc_info);
-+			u32 sig, struct persistent_ram_ecc_info *ecc_info,
-+			unsigned int memtype);
- void persistent_ram_free(struct persistent_ram_zone *prz);
- void persistent_ram_zap(struct persistent_ram_zone *prz);
- 
-@@ -76,6 +77,7 @@ ssize_t persistent_ram_ecc_string(struct
- struct ramoops_platform_data {
- 	unsigned long	mem_size;
- 	unsigned long	mem_address;
-+	unsigned int	mem_type;
- 	unsigned long	record_size;
- 	unsigned long	console_size;
- 	unsigned long	ftrace_size;
+ 	create_parameterlist($members, ';', $file);
+ 	check_sections($file, $declaration_name, "struct", $sectcheck, $struct_actual, $nested);
 
 
