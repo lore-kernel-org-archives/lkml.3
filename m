@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753205AbbANI1j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:27:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57923 "EHLO
+	id S1754503AbbANH2H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:28:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57936 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754471AbbANH17 (ORCPT
+	with ESMTP id S1754443AbbANH2F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:27:59 -0500
+	Wed, 14 Jan 2015 02:28:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Daniel Mack <daniel@zonque.org>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH 3.18 080/150] ALSA: snd-usb-caiaq: fix stream count check
-Date: Tue, 13 Jan 2015 23:22:31 -0800
-Message-Id: <20150114072059.470093346@linuxfoundation.org>
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH 3.18 081/150] ALSA: hda - Fix wrong gpio_dir & gpio_mask hint setups for IDT/STAC codecs
+Date: Tue, 13 Jan 2015 23:22:32 -0800
+Message-Id: <20150114072059.513253378@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -28,35 +29,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Daniel Mack <daniel@zonque.org>
+From: Takashi Iwai <tiwai@suse.de>
 
-commit 49cdd5b641933fda6324fc901eaf856924ba6a27 upstream.
+commit c507de88f6a336bd7296c9ec0073b2d4af8b4f5e upstream.
 
-Commit 897c329bc ("ALSA: usb: caiaq: check for cdev->n_streams > 1")
-introduced a safety check to protect against bogus data provided by
-devices. However, the n_streams variable is already divided by
-CHANNELS_PER_STREAM, so the correct check is 'n_streams > 0'.
+stac_store_hints() does utterly wrong for masking the values for
+gpio_dir and gpio_data, likely due to copy&paste errors.  Fortunately,
+this feature is used very rarely, so the impact must be really small.
 
-Fix this to un-break support for stereo devices.
-
-Signed-off-by: Daniel Mack <daniel@zonque.org>
+Reported-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/usb/caiaq/audio.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ sound/pci/hda/patch_sigmatel.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/sound/usb/caiaq/audio.c
-+++ b/sound/usb/caiaq/audio.c
-@@ -816,7 +816,7 @@ int snd_usb_caiaq_audio_init(struct snd_
- 		return -EINVAL;
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -568,9 +568,9 @@ static void stac_store_hints(struct hda_
+ 			spec->gpio_mask;
  	}
- 
--	if (cdev->n_streams < 2) {
-+	if (cdev->n_streams < 1) {
- 		dev_err(dev, "bogus number of streams: %d\n", cdev->n_streams);
- 		return -EINVAL;
- 	}
+ 	if (get_int_hint(codec, "gpio_dir", &spec->gpio_dir))
+-		spec->gpio_mask &= spec->gpio_mask;
+-	if (get_int_hint(codec, "gpio_data", &spec->gpio_data))
+ 		spec->gpio_dir &= spec->gpio_mask;
++	if (get_int_hint(codec, "gpio_data", &spec->gpio_data))
++		spec->gpio_data &= spec->gpio_mask;
+ 	if (get_int_hint(codec, "eapd_mask", &spec->eapd_mask))
+ 		spec->eapd_mask &= spec->gpio_mask;
+ 	if (get_int_hint(codec, "gpio_mute", &spec->gpio_mute))
 
 
