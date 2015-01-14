@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933201AbbANHjS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:39:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58932 "EHLO
+	id S1755194AbbANHnm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:43:42 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58936 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755387AbbANHjO (ORCPT
+	with ESMTP id S933204AbbANHjU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:39:14 -0500
+	Wed, 14 Jan 2015 02:39:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>
-Subject: [PATCH 3.10 37/44] ARM: mvebu: disable I/O coherency on non-SMP situations on Armada 370/375/38x/XP
-Date: Tue, 13 Jan 2015 23:23:58 -0800
-Message-Id: <20150114072229.435286561@linuxfoundation.org>
+        Chris Mason <clm@fb.com>
+Subject: [PATCH 3.10 38/44] Btrfs: dont delay inode ref updates during log replay
+Date: Tue, 13 Jan 2015 23:23:59 -0800
+Message-Id: <20150114072229.483142327@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
 References: <20150114072227.419663002@linuxfoundation.org>
@@ -30,90 +28,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+From: Chris Mason <clm@fb.com>
 
-commit e55355453600a33bb5ca4f71f2d7214875f3b061 upstream.
+commit 6f8960541b1eb6054a642da48daae2320fddba93 upstream.
 
-Enabling the hardware I/O coherency on Armada 370, Armada 375, Armada
-38x and Armada XP requires a certain number of conditions:
+Commit 1d52c78afbb (Btrfs: try not to ENOSPC on log replay) added a
+check to skip delayed inode updates during log replay because it
+confuses the enospc code.  But the delayed processing will end up
+ignoring delayed refs from log replay because the inode itself wasn't
+put through the delayed code.
 
- - On Armada 370, the cache policy must be set to write-allocate.
+This can end up triggering a warning at commit time:
 
- - On Armada 375, 38x and XP, the cache policy must be set to
-   write-allocate, the pages must be mapped with the shareable
-   attribute, and the SMP bit must be set
+WARNING: CPU: 2 PID: 778 at fs/btrfs/delayed-inode.c:1410 btrfs_assert_delayed_root_empty+0x32/0x34()
 
-Currently, on Armada XP, when CONFIG_SMP is enabled, those conditions
-are met. However, when Armada XP is used in a !CONFIG_SMP kernel, none
-of these conditions are met. With Armada 370, the situation is worse:
-since the processor is single core, regardless of whether CONFIG_SMP
-or !CONFIG_SMP is used, the cache policy will be set to write-back by
-the kernel and not write-allocate.
+Which is repeated for each commit because we never process the delayed
+inode ref update.
 
-Since solving this problem turns out to be quite complicated, and we
-don't want to let users with a mainline kernel known to have
-infrequent but existing data corruptions, this commit proposes to
-simply disable hardware I/O coherency in situations where it is known
-not to work.
+The fix used here is to change btrfs_delayed_delete_inode_ref to return
+an error if we're currently in log replay.  The caller will do the ref
+deletion immediately and everything will work properly.
 
-And basically, the is_smp() function of the kernel tells us whether it
-is OK to enable hardware I/O coherency or not, so this commit slightly
-refactors the coherency_type() function to return
-COHERENCY_FABRIC_TYPE_NONE when is_smp() is false, or the appropriate
-type of the coherency fabric in the other case.
-
-Thanks to this, the I/O coherency fabric will no longer be used at all
-in !CONFIG_SMP configurations. It will continue to be used in
-CONFIG_SMP configurations on Armada XP, Armada 375 and Armada 38x
-(which are multiple cores processors), but will no longer be used on
-Armada 370 (which is a single core processor).
-
-In the process, it simplifies the implementation of the
-coherency_type() function, and adds a missing call to of_node_put().
-
-Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
-Fixes: e60304f8cb7bb545e79fe62d9b9762460c254ec2 ("arm: mvebu: Add hardware I/O Coherency support")
-Cc: <stable@vger.kernel.org> # v3.8+
-Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-Link: https://lkml.kernel.org/r/1415871540-20302-3-git-send-email-thomas.petazzoni@free-electrons.com
-Signed-off-by: Jason Cooper <jason@lakedaemon.net>
+Signed-off-by: Chris Mason <clm@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/mach-mvebu/coherency.c |   23 +++++++++++++++++++++++
- 1 file changed, 23 insertions(+)
+ fs/btrfs/delayed-inode.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
 
---- a/arch/arm/mach-mvebu/coherency.c
-+++ b/arch/arm/mach-mvebu/coherency.c
-@@ -141,6 +141,29 @@ int __init coherency_init(void)
- {
- 	struct device_node *np;
+--- a/fs/btrfs/delayed-inode.c
++++ b/fs/btrfs/delayed-inode.c
+@@ -1843,6 +1843,14 @@ int btrfs_delayed_update_inode(struct bt
+ 	struct btrfs_delayed_node *delayed_node;
+ 	int ret = 0;
  
 +	/*
-+	 * The coherency fabric is needed:
-+	 * - For coherency between processors on Armada XP, so only
-+	 *   when SMP is enabled.
-+	 * - For coherency between the processor and I/O devices, but
-+	 *   this coherency requires many pre-requisites (write
-+	 *   allocate cache policy, shareable pages, SMP bit set) that
-+	 *   are only meant in SMP situations.
-+	 *
-+	 * Note that this means that on Armada 370, there is currently
-+	 * no way to use hardware I/O coherency, because even when
-+	 * CONFIG_SMP is enabled, is_smp() returns false due to the
-+	 * Armada 370 being a single-core processor. To lift this
-+	 * limitation, we would have to find a way to make the cache
-+	 * policy set to write-allocate (on all Armada SoCs), and to
-+	 * set the shareable attribute in page tables (on all Armada
-+	 * SoCs except the Armada 370). Unfortunately, such decisions
-+	 * are taken very early in the kernel boot process, at a point
-+	 * where we don't know yet on which SoC we are running.
++	 * we don't do delayed inode updates during log recovery because it
++	 * leads to enospc problems.  This means we also can't do
++	 * delayed inode refs
 +	 */
-+	if (!is_smp())
-+		return 0;
++	if (BTRFS_I(inode)->root->fs_info->log_root_recovering)
++		return -EAGAIN;
 +
- 	np = of_find_matching_node(NULL, of_coherency_table);
- 	if (np) {
- 		pr_info("Initializing Coherency fabric\n");
+ 	delayed_node = btrfs_get_or_create_delayed_node(inode);
+ 	if (IS_ERR(delayed_node))
+ 		return PTR_ERR(delayed_node);
 
 
