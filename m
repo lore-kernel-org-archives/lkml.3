@@ -1,78 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753760AbbANQV5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 11:21:57 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:45251 "EHLO
+	id S1754067AbbANQWV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 11:22:21 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:45266 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751818AbbANQV4 (ORCPT
+	with ESMTP id S1751331AbbANQWQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 11:21:56 -0500
-Date: Wed, 14 Jan 2015 17:21:52 +0100
+	Wed, 14 Jan 2015 11:22:16 -0500
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Boris Brezillon <boris.brezillon@free-electrons.com>
-Cc: Lee Jones <lee.jones@linaro.org>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+To: Felipe Balbi <balbi@ti.com>
+Cc: Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
         Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Andrew Victor <linux@maxim.org.za>,
-        Samuel Ortiz <sameo@linux.intel.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
+        Arnd Bergmann <arnd@arndb.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Jean-Jacques Hiblot <jjhiblot@traphandler.com>
-Subject: Re: [PATCH v5 00/11] memory: add Atmel EBI (External Bus Interface)
- driver
-Message-ID: <20150114162152.GL3843@piout.net>
-References: <1417639455-17410-1-git-send-email-boris.brezillon@free-electrons.com>
- <20150111135615.3326d803@bbrezillon>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150111135615.3326d803@bbrezillon>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Subject: [PATCH 00/12] Atmel matrix, SMC and UDC rework
+Date: Wed, 14 Jan 2015 17:21:52 +0100
+Message-Id: <1421252524-24452-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Felipe,
 
-Hi,
+The following series replace the previous series sent by Boris named:
+ - [PATCH v5 00/11] memory: add Atmel EBI (External Bus Interface) driver
+ - [PATCH 00/11] usb: gadget: at91_udc: Rework for multi-platform support
 
-On 11/01/2015 at 13:56:15 +0100, Boris Brezillon wrote :
-> Hi Lee,
-> 
-> On Wed,  3 Dec 2014 21:44:04 +0100
-> Boris Brezillon <boris.brezillon@free-electrons.com> wrote:
-> 
-> > The EBI (External Bus Interface) is used to access external peripherals
-> > (NOR, SRAM, NAND, and other specific devices like ethernet controllers).
-> > Each device is assigned a CS line and an address range and can have its
-> > own configuration (timings, access mode, bus width, ...).
-> > This driver provides a generic DT binding to configure a device according
-> > to its requirements.
-> > For specific device controllers (like the NAND one) the SMC timings
-> > should be configured by the controller driver through the matrix and
-> > smc syscon regmaps.
-> > 
-> > The first 4 patches introduce 2 syscon devices needed to configure the
-> > EBI bus, patch 5 and 6 adds support for the EBI bus, and the remaining
-> > patches declares the EBI related nodes in sama5d3 dts[i] files.
-> 
-> Can you take the first 4 patches of this series (adding 2 syscon
-> devices and their associated bindings doc) for 3.20 ?
-> Alexandre has worked on multi platform support for Atmel SoCs and his
-> work depends on these two syscon devices.
-> 
-> Let me know if you want me to send to send a new series containing only
-> those 4 commits.
-> 
+The patches I left out are less urgent and will be resent later, probably for
+3.21.
 
-Actually, because of other series depending on it and because you
-already acked them, Nicolas wants to take those 4 patches through the
-AT91 tree, unless you have any reason to take them through your tree.
+Because of the dependancy between the syscon addition and the at91_udc series,
+this can go through the AT91 tree if you giv your ack on the udc patches.
 
-Sorry for the noise.
+The first 4 patches introduce 2 syscon devices needed to configure the
+matrix and SMC.
+The following patches rework the at91_udc driver to prepare at91 for
+multi-platform support.
+
+It also include several fixes:
+ - fix clock names to be consistent with other USB drivers
+ - document clocks and clock-names properties in atmel-usb DT bindings doc
+
+and some cleanup changes:
+ - remove useless usb_clk
+ - allocate at91_udc instance instead of using the statically defined one
+ - simplify the probe and remove functions by using devm_ helpers
+ - remove !DT specific code
+
+Changes from the previous series:
+ - rebased on 3.19-rc1
+
+Boris Brezillon (12):
+  mfd: syscon: Add atmel-matrix registers definition
+  mfd: syscon: Add Atmel Matrix bus DT binding documentation
+  mfd: syscon: Add atmel-smc registers definition
+  mfd: syscon: Add Atmel SMC binding doc
+  usb: gadget: at91_udc: Fix clock names
+  usb: gadget: at91_udc: Drop uclk clock
+  usb: gadget: at91_udc: Document DT clocks and clock-names property
+  usb: gadget: at91_udc: Remove non-DT handling code
+  usb: gadget: at91_udc: Simplify probe and remove functions
+  usb: gadget: at91_udc: Rework for multi-platform kernel support
+  usb: gadget: at91_udc: Update DT binding documentation
+  usb: gadget: at91_udc: Allocate udc instance
+
+ .../devicetree/bindings/mfd/atmel-matrix.txt       |  24 +
+ .../devicetree/bindings/mfd/atmel-smc.txt          |  19 +
+ .../devicetree/bindings/usb/atmel-usb.txt          |  10 +-
+ drivers/usb/gadget/udc/Kconfig                     |   1 +
+ drivers/usb/gadget/udc/at91_udc.c                  | 525 +++++++++++----------
+ drivers/usb/gadget/udc/at91_udc.h                  |   9 +-
+ include/linux/mfd/syscon/atmel-matrix.h            | 117 +++++
+ include/linux/mfd/syscon/atmel-smc.h               | 173 +++++++
+ 8 files changed, 623 insertions(+), 255 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/mfd/atmel-matrix.txt
+ create mode 100644 Documentation/devicetree/bindings/mfd/atmel-smc.txt
+ create mode 100644 include/linux/mfd/syscon/atmel-matrix.h
+ create mode 100644 include/linux/mfd/syscon/atmel-smc.h
 
 -- 
-Alexandre Belloni, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+2.1.0
+
