@@ -1,73 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752227AbbANDuU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 22:50:20 -0500
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:32816 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750856AbbANDuQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 22:50:16 -0500
-Message-ID: <54B5E76F.6050307@linux.vnet.ibm.com>
-Date: Wed, 14 Jan 2015 09:20:07 +0530
-From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752532AbbANDyY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 22:54:24 -0500
+Received: from mail.eperm.de ([89.247.134.16]:59493 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752089AbbANDyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 22:54:22 -0500
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: "'Herbert Xu'" <herbert@gondor.apana.org.au>
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
+        "'LKML'" <linux-kernel@vger.kernel.org>,
+        ABI/API <linux-api@vger.kernel.org>, linux-crypto@vger.kernel.org
+Subject: [PATCH v10 0/2] crypto: AF_ALG: add AEAD and RNG support
+Date: Wed, 14 Jan 2015 04:52:29 +0100
+Message-ID: <5489736.JvWhZNrmuD@tachyon.chronox.de>
+User-Agent: KMail/4.14.3 (Linux/3.17.8-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
 MIME-Version: 1.0
-To: Michael Ellerman <mpe@ellerman.id.au>,
-        Shuah Khan <shuahkh@osg.samsung.com>
-CC: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] selftests/powerpc: Add .gitignore for powerpc selftests
-References: <1421192997-17003-1-git-send-email-mpe@ellerman.id.au> <54B5B561.40406@osg.samsung.com> <1421201759.10748.8.camel@ellerman.id.au>
-In-Reply-To: <1421201759.10748.8.camel@ellerman.id.au>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15011403-0021-0000-0000-00000354288C
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2015 07:45 AM, Michael Ellerman wrote:
-> On Tue, 2015-01-13 at 17:16 -0700, Shuah Khan wrote:
->> Please add a commit log.
->  
-> What does it need to say?
-> 
->> On 01/13/2015 04:49 PM, Michael Ellerman wrote:
->>> Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
->>> ---
->>>  .../testing/selftests/powerpc/copyloops/.gitignore |  4 ++++
->>>  tools/testing/selftests/powerpc/mm/.gitignore      |  1 +
->>>  tools/testing/selftests/powerpc/pmu/.gitignore     |  3 +++
->>>  tools/testing/selftests/powerpc/pmu/ebb/.gitignore | 22 ++++++++++++++++++++++
->>>  .../selftests/powerpc/primitives/.gitignore        |  1 +
->>>  tools/testing/selftests/powerpc/tm/.gitignore      |  1 +
->>>  6 files changed, 32 insertions(+)
->>>  create mode 100644 tools/testing/selftests/powerpc/copyloops/.gitignore
->>>  create mode 100644 tools/testing/selftests/powerpc/mm/.gitignore
->>>  create mode 100644 tools/testing/selftests/powerpc/pmu/.gitignore
->>>  create mode 100644 tools/testing/selftests/powerpc/pmu/ebb/.gitignore
->>>  create mode 100644 tools/testing/selftests/powerpc/primitives/.gitignore
->>>  create mode 100644 tools/testing/selftests/powerpc/tm/.gitignore
->>
->> Please create a single .gitignore for all targets right under
->> tools/testing/selftests/powerpc instead of multiple .gitignore
->> files.
-> 
-> Why? Having separate files makes it less likely we'll get merge conflicts
-> between different test subdirectores, it also makes it more likely someone
-> adding a test will notice they need to update the .gitignore in the same
-> directory.
+Hi,
 
-Hey Michael,
+This patch set adds AEAD and RNG support to the AF_ALG interface
+exported by the kernel crypto API. By extending AF_ALG with AEAD and RNG
+support, all cipher types the kernel crypto API allows access to are
+now accessible from userspace.
 
-I had already posted a similar patch in this regard along with the ptrace
-patches last month. Thats why I mentioned in the cover letter that
-gitignore updates for all these tests will come from that patch series
-instead of from this one. 
+Both, AEAD and RNG implementations are stand-alone and do not depend
+other AF_ALG interfaces (like hash or skcipher).
 
-https://lkml.org/lkml/2014/12/2/80
+The AEAD implementation uses the same approach as provided with
+skcipher by offering the following interfaces:
 
-Regards
-Anshuman
+	* sendmsg and recvmsg interfaces allowing multiple
+	  invocations supporting a threaded user space. To support
+	  multi-threaded user space, kernel-side buffering
+	  is implemented similarly to skcipher.
+
+	* splice / vmsplice interfaces allowing a zero-copy
+	  invocation
+
+The RNG interface only implements the recvmsg interface as
+zero-copy is not applicable.
+
+The new AEAD and RNG interfaces are fully tested with the test application
+provided at [1]. That test application exercises all newly added user space
+interfaces. The testing covers:
+
+	* use of the sendmsg/recvmsg interface
+
+	* use of the splice / vmsplice interface
+
+	* invocation of all AF_ALG types (aead, rng, skcipher, hash)
+
+	* using all types of operation (encryption, decryption, keyed MD,
+	  MD, random numbers, AEAD decryption with positive and negative
+	  authentication verification)
+
+	* stress testing by running all tests for 30 minutes in an
+	  endless loop
+
+	* test execution on 64 bit and 32 bit
+
+[1] http://www.chronox.de/libkcapi.html
+
+Changes v2:
+* rebase to current cryptodev-2.6 tree
+* use memzero_explicit to zeroize AEAD associated data
+* use sizeof for determining length of AEAD associated data
+* update algif_rng.c covering all suggestions from Daniel Borkmann
+  <dborkman@redhat.com>
+* addition of patch 9: add digestsize interface for hashes
+* addition of patch to update documentation covering the userspace interface
+* change numbers of getsockopt options: separate them from sendmsg interface
+  definitions
+
+Changes v3:
+* remove getsockopt interface
+* AEAD: associated data is set prepended to the plain/ciphertext
+* AEAD: allowing arbitrary associated data lengths
+* remove setkey patch as protection was already in the existing code
+
+Changes v4:
+* stand-alone implementation of AEAD
+* testing of all interfaces offered by AEAD
+* stress testing of AEAD and RNG
+
+Changes v5:
+* AEAD: add outer while(size) loop in aead_sendmsg to ensure all data is
+  copied into the kernel (reporter Herbert Xu)
+* AEAD: aead_sendmsg bug fix: change size -= len; to size -= plen;
+* AF_ALG / AEAD: add aead_setauthsize and associated extension to
+  struct af_alg_type as well as alg_setsockopt (reporter Herbert Xu)
+* RNG: rng_recvmsg: use 128 byte stack variable for output of RNG instead
+  of ctx->result (reporter Herbert Xu)
+* RNG / AF_ALG: allow user space to seed RNG via setsockopt
+* RNG: rng_recvmsg bug fix: use genlen as result variable for
+  crypto_rng_get_bytes as previously no negative errors were obtained
+* AF_ALG: alg_setop: zeroize buffer before free
+
+Changes v6:
+* AEAD/RNG: port to 3.19-rc1 with the iov_iter handling
+* RNG: use the setkey interface to obtain the seed and drop the patch adding
+  a separate reseeding interface
+* extract the zeroization patch for alg_setkey into a stand-alone patch
+  submission
+* fix bug in aead_sufficient_data (reporter Herbert Xu)
+* testing of all interfaces with test application provided with libkcapi version
+  0.6.2
+
+Changes v7:
+* AEAD: aead_recvmsg: change error code from ENOMEM to EINVAL
+* AEAD: drop aead_readable/aead_sufficient_data and only use ctx->more to decide
+  whether the read side shall become active. This change requires that the
+  patch for crypto_aead_decrypt ensuring that the ciphertext contains the
+  authentication tag was added -- see https://lkml.org/lkml/2014/12/30/200.
+  Otherwise, user space can trigger a kernel crash.
+* RNG: patch dropped as it was applied
+* AEAD: port Kconfig/Makefile patch forward to current code base
+
+Changes v8:
+* Removed check for aead_assoclen in aead_sendmsg
+* Fix endless loop bug in aead_sendmsg (check for sgl->cur > ALG_MAX_PAGES in
+  while condition removed -- this condition is checked within the loop already)
+* Resurrect aead_sufficient_data and call it in aead_sendmsg, aead_sendpage to
+  notify caller about wrong invocation
+* Re-add aead_sufficient_data to aead_recvmsg to verify user input data before
+  using them to ensure the kernel protects against malicious parameters
+* Allow arbitrary size of AD (i.e. up to the maximum buffer size of
+  ALG_MAX_PAGES)
+* When aead_recvmsg receives an error from decryption, release all pages if the
+  error is EBADMSG -- this error implies that a proper decryption was performed
+  but the integrity of the message is lost. This error is considered to be a
+  valid decryption result.
+* Add test cases for sendmsg and splice interface to test large AD sizes (in
+  case of sendmsg, use 65504 bytes AD and 32 bytes plaintext; in case of splice
+  use 15 pages AD and 32 bytes in the 16th page for plaintext). See [1] for
+  updated test case.
+
+Changes v9:
+* if socket is not writable during sendmsg/sendpage due to insufficient memory
+  and a recvmsg operation is forced, inform userspace about truncated operation
+  via MSG_TRUNC
+* use -EMSGSIZE in case insufficient data was provided in sendmsg/sendpage
+* release all buffers in case insufficient data was provided in sendmsg/sendpage
+* bug fix in sendmsg: when a new page is allocated, reset sg->offset to 0 --
+  the error is visible with the new tests in [1] when using the -d flag
+  with the test application
+
+Changes v10:
+* initialize ctx->trunc in aead_accept_parent to zero
+* fix one line with code formatting problems
+
+Stephan Mueller (2):
+  crypto: AF_ALG: add AEAD support
+  crypto: AF_ALG: enable AEAD interface compilation
+
+ crypto/Kconfig      |   9 +
+ crypto/Makefile     |   1 +
+ crypto/algif_aead.c | 680 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 690 insertions(+)
+ create mode 100644 crypto/algif_aead.c
+
+-- 
+2.1.0
+
 
