@@ -1,20 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753568AbbANHZw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:25:52 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57716 "EHLO
+	id S1753941AbbANHZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:25:59 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57728 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753294AbbANHZr (ORCPT
+	with ESMTP id S1752468AbbANHZx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:25:47 -0500
+	Wed, 14 Jan 2015 02:25:53 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Johan Hedberg <johan.hedberg@intel.com>
-Subject: [PATCH 3.18 036/150] Bluetooth: Fix controller configuration with HCI_QUIRK_INVALID_BDADDR
-Date: Tue, 13 Jan 2015 23:21:47 -0800
-Message-Id: <20150114072057.500860034@linuxfoundation.org>
+        William Unruh <unruh@physics.ubc.ca>,
+        Martin Lucina <martin@lucina.net>,
+        Myron Stowe <myron.stowe@redhat.com>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Matthew Wilcox <willy@linux.intel.com>
+Subject: [PATCH 3.18 038/150] PCI: Restore detection of read-only BARs
+Date: Tue, 13 Jan 2015 23:21:49 -0800
+Message-Id: <20150114072057.582503575@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -29,68 +32,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Marcel Holtmann <marcel@holtmann.org>
+From: Myron Stowe <myron.stowe@redhat.com>
 
-commit 8bfe8442ff20fdc2d965c197103d935a99bd3296 upstream.
+commit 36e8164882ca6d3c41cb91e6f09a3ed236841f80 upstream.
 
-When controllers set the HCI_QUIRK_INVALID_BDADDR flag, it is required
-by userspace to program a valid public Bluetooth device address into
-the controller before it can be used.
+Commit 6ac665c63dca ("PCI: rewrite PCI BAR reading code") masked off
+low-order bits from 'l', but not from 'sz'.  Both are passed to pci_size(),
+which compares 'base == maxbase' to check for read-only BARs.  The masking
+of 'l' means that comparison will never be 'true', so the check for
+read-only BARs no longer works.
 
-After successful address configuration, the internal state changes and
-the controller runs the complete initialization procedure. However one
-small difference is that this is no longer the HCI_SETUP stage. The
-HCI_SETUP stage is only valid during initial controller setup. In this
-case the stack runs the initialization as part of the HCI_CONFIG stage.
+Resolve this by also masking off the low-order bits of 'sz' before passing
+it into pci_size() as 'maxbase'.  With this change, pci_size() will once
+again catch the problems that have been encountered to date:
 
-The controller version information, default name and supported commands
-are only stored during HCI_SETUP. While these information are static,
-they are not read initially when HCI_QUIRK_INVALID_BDADDR is set. So
-when running in HCI_CONFIG state, these information need to be updated
-as well.
+  - AGP aperture BAR of AMD-7xx host bridges: if the AGP window is
+    disabled, this BAR is read-only and read as 0x00000008 [1]
 
-This especially impacts Bluetooth 4.1 and later controllers using
-extended feature pages and second event mask page.
+  - BARs 0-4 of ALi IDE controllers can be non-zero and read-only [1]
 
-Signed-off-by: Marcel Holtmann <marcel@holtmann.org>
-Signed-off-by: Johan Hedberg <johan.hedberg@intel.com>
+  - Intel Sandy Bridge - Thermal Management Controller [8086:0103];
+    BAR 0 returning 0xfed98004 [2]
+
+  - Intel Xeon E5 v3/Core i7 Power Control Unit [8086:2fc0];
+    Bar 0 returning 0x00001a [3]
+
+Link: [1] https://git.kernel.org/cgit/linux/kernel/git/tglx/history.git/commit/drivers/pci/probe.c?id=1307ef6621991f1c4bc3cec1b5a4ebd6fd3d66b9 ("PCI: probing read-only BARs" (pre-git))
+Link: [2] https://bugzilla.kernel.org/show_bug.cgi?id=43331
+Link: [3] https://bugzilla.kernel.org/show_bug.cgi?id=85991
+Reported-by: William Unruh <unruh@physics.ubc.ca>
+Reported-by: Martin Lucina <martin@lucina.net>
+Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
+Signed-off-by: Bjorn Helgaas <bhelgaas@google.com>
+CC: Matthew Wilcox <willy@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- net/bluetooth/hci_event.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+ drivers/pci/probe.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/net/bluetooth/hci_event.c
-+++ b/net/bluetooth/hci_event.c
-@@ -239,7 +239,8 @@ static void hci_cc_read_local_name(struc
- 	if (rp->status)
- 		return;
- 
--	if (test_bit(HCI_SETUP, &hdev->dev_flags))
-+	if (test_bit(HCI_SETUP, &hdev->dev_flags) ||
-+	    test_bit(HCI_CONFIG, &hdev->dev_flags))
- 		memcpy(hdev->dev_name, rp->name, HCI_MAX_NAME_LENGTH);
- }
- 
-@@ -494,7 +495,8 @@ static void hci_cc_read_local_version(st
- 	if (rp->status)
- 		return;
- 
--	if (test_bit(HCI_SETUP, &hdev->dev_flags)) {
-+	if (test_bit(HCI_SETUP, &hdev->dev_flags) ||
-+	    test_bit(HCI_CONFIG, &hdev->dev_flags)) {
- 		hdev->hci_ver = rp->hci_ver;
- 		hdev->hci_rev = __le16_to_cpu(rp->hci_rev);
- 		hdev->lmp_ver = rp->lmp_ver;
-@@ -513,7 +515,8 @@ static void hci_cc_read_local_commands(s
- 	if (rp->status)
- 		return;
- 
--	if (test_bit(HCI_SETUP, &hdev->dev_flags))
-+	if (test_bit(HCI_SETUP, &hdev->dev_flags) ||
-+	    test_bit(HCI_CONFIG, &hdev->dev_flags))
- 		memcpy(hdev->commands, rp->commands, sizeof(hdev->commands));
- }
+--- a/drivers/pci/probe.c
++++ b/drivers/pci/probe.c
+@@ -216,14 +216,17 @@ int __pci_read_base(struct pci_dev *dev,
+ 		res->flags |= IORESOURCE_SIZEALIGN;
+ 		if (res->flags & IORESOURCE_IO) {
+ 			l &= PCI_BASE_ADDRESS_IO_MASK;
++			sz &= PCI_BASE_ADDRESS_IO_MASK;
+ 			mask = PCI_BASE_ADDRESS_IO_MASK & (u32) IO_SPACE_LIMIT;
+ 		} else {
+ 			l &= PCI_BASE_ADDRESS_MEM_MASK;
++			sz &= PCI_BASE_ADDRESS_MEM_MASK;
+ 			mask = (u32)PCI_BASE_ADDRESS_MEM_MASK;
+ 		}
+ 	} else {
+ 		res->flags |= (l & IORESOURCE_ROM_ENABLE);
+ 		l &= PCI_ROM_ADDRESS_MASK;
++		sz &= PCI_ROM_ADDRESS_MASK;
+ 		mask = (u32)PCI_ROM_ADDRESS_MASK;
+ 	}
  
 
 
