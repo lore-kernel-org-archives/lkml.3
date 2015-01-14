@@ -1,97 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752189AbbANUFZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 15:05:25 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:22859 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751225AbbANUFW (ORCPT
+	id S1753526AbbANUGw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 15:06:52 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:57522 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753245AbbANUGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 15:05:22 -0500
-X-IronPort-AV: E=Sophos;i="5.07,757,1413270000"; 
-   d="scan'208";a="54818385"
-Message-ID: <54B6CC00.3050609@broadcom.com>
-Date: Wed, 14 Jan 2015 12:05:20 -0800
-From: Ray Jui <rjui@broadcom.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Wed, 14 Jan 2015 15:06:50 -0500
+Date: Wed, 14 Jan 2015 20:06:26 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Ken Wilson <ken.wilson@opengear.com>
+Cc: thomas.petazzoni@free-electrons.com, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        ezequiel.garcia@free-electrons.com, gerg@uclinux.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-spi@vger.kernel.org
+Message-ID: <20150114200626.GN3043@sirena.org.uk>
+References: <1421032440-15335-1-git-send-email-ken.wilson@opengear.com>
+ <1421032440-15335-3-git-send-email-ken.wilson@opengear.com>
 MIME-Version: 1.0
-To: =?windows-1252?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: Wolfram Sang <wsa@the-dreams.de>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "Scott Branden" <sbranden@broadcom.com>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v3 2/3] i2c: iproc: Add Broadcom iProc I2C Driver
-References: <rjui@broadcom.com> <1418183832-24793-1-git-send-email-rjui@broadcom.com> <1418183832-24793-3-git-send-email-rjui@broadcom.com> <20150113225012.GK22880@pengutronix.de> <54B5D0F9.8030902@broadcom.com> <20150114075137.GL22880@pengutronix.de>
-In-Reply-To: <20150114075137.GL22880@pengutronix.de>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="SgT04PEqo/+yUDw3"
+Content-Disposition: inline
+In-Reply-To: <1421032440-15335-3-git-send-email-ken.wilson@opengear.com>
+X-Cookie: To program is to be.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCHv2 2/2] spi: orion: Add multiple chip select support to
+ spi-orion
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+--SgT04PEqo/+yUDw3
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-On 1/13/2015 11:51 PM, Uwe Kleine-König wrote:
-> Hello,
-> 
-> On Tue, Jan 13, 2015 at 06:14:17PM -0800, Ray Jui wrote:
->>>> +	irq = platform_get_irq(pdev, 0);
->>>> +	if (irq < 0) {
->>> irq == 0 should be handled as error, too.
->>>
->> Ah. I thought zero is a valid global interrupt number, and I see other
->> drivers checking against < 0 as well. Is my understanding incorrect?
-> These are wrong, too. 0 should never be a valid interrupt number. There
-> are some exceptions but mostly for historic reasons. The right handling
-> is used for example in drivers/i2c/busses/i2c-efm32.c.
-> 
-Okay. Will check against <= 0. Thanks.
+On Mon, Jan 12, 2015 at 01:14:00PM +1000, Ken Wilson wrote:
 
->>>> +		dev_err(dev->device, "no irq resource\n");
->>>> +		return irq;
->>>> +	}
->> [...]
->>>> +static int bcm_iproc_i2c_remove(struct platform_device *pdev)
->>>> +{
->>>> +	struct bcm_iproc_i2c_dev *dev = platform_get_drvdata(pdev);
->>>> +
->>>> +	i2c_del_adapter(&dev->adapter);
->>>> +	bcm_iproc_i2c_disable(dev);
->>> I think you have a problem here if bcm_iproc_i2c_remove is called while
->>> an irq is still being serviced. I'm not sure how to prevent this
->>> properly for a shared interrupt.
->>>
->> Can I grab i2c_lock_adapter to ensure the bus is locked (so there's no
->> outstanding transactions or IRQs by the time we remove the adapter)? But
->> I see no I2C bus driver does this in their remove function...
-> The problem I pointed out is the reason for some driver authors not to
-> use devm_request_irq. If you use plain request_irq and the matching
-> free_irq in the .remove callback you can be sure that the irq isn't
-> running any more as soon as free_irq returns.
-> 
-Okay. Will change to use request_irq and make sure that it's freed in
-the remove function. Also, the interrupt is dedicated to the I2C
-controller, so I'll remove the IRQF_SHARED flag.
+> +- num-cs     : The total number of chip selects used by this platform.
+> +		If unset, this defaults to 1.
 
-> BTW, if you use vim, you can add
-> 
-> 	set cinoptions=(,:
-> 	if has("autocmd")
-> 		filetype plugin indent on
-> 	endif
-> 
-> to your .vimrc. Then while typing vim does the indention right and
-> consistent, and with the = command you can reindent.
-> 
-Wow this is excellent! Just tried and it works perfectly. Thanks a lot!!!
+So, this is intended to be the number of hardware chip selects that can
+be configured but the first commit mentioned GPIOs as an option too so
+we should at least say that this is specifically the controller
+supported ones.  However...
 
-> Best regards
-> Uwe
-> 
+> +#define ORION_SPI_CS_MASK	0x1C
+> +#define ORION_SPI_CS_SHIFT	2
+> +#define ORION_SPI_CS(cs)	((cs << ORION_SPI_CS_SHIFT) & \
+> +					ORION_SPI_CS_MASK)
+
+...given that we have a fixed bitfield here which we know and doesn't
+appear to depend on configuration do we even need this to be
+configurable - given that we're going to need an explicit node for any
+slave can't we just accept any sane chip select for a slave without
+extending the binding?
+
+--SgT04PEqo/+yUDw3
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBCAAGBQJUtsxCAAoJECTWi3JdVIfQON0H/1W+W9OIt4nQmp4YmrbbORPs
+TyEnxWbjrhVVjaktUcm9ChTnVXpvtirsvTrjRCTHJKOT0hrLBbE7wcwvyICpggY4
+gAT5MlBrVavPL44zZB3f36FxrrN+86dKwfeQ+XrWJ8XM6QA3gV136zVQuGmJ6j50
+35JAYVSJY3v2zwmD99Qzl3hIzpST++xZkmw7jAgXT9g/V7fU707aJ8PJIl0LaSdU
+WC7CoA10rcCX9PMxtzfGvH1cN8svY7MiEmaZx2pb7YVndt9qMzTn/IrR7DqJKNJc
+mkSa0Mtm6Tds4wZedpc96/XLNlfdKBGZpceYcTo+mbBnSfv9fwTh/5lKE+fJWE8=
+=nyM7
+-----END PGP SIGNATURE-----
+
+--SgT04PEqo/+yUDw3--
