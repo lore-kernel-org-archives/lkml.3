@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753818AbbANHZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:25:56 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57735 "EHLO
+	id S1754133AbbANH0h (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:26:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57784 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753588AbbANHZy (ORCPT
+	with ESMTP id S1751388AbbANH0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:25:54 -0500
+	Wed, 14 Jan 2015 02:26:34 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 3.18 013/150] swiotlb-xen: call xen_dma_sync_single_for_device when appropriate
-Date: Tue, 13 Jan 2015 23:21:24 -0800
-Message-Id: <20150114072056.470607924@linuxfoundation.org>
+Subject: [PATCH 3.18 014/150] swiotlb-xen: pass dev_addr to swiotlb_tbl_unmap_single
+Date: Tue, 13 Jan 2015 23:21:25 -0800
+Message-Id: <20150114072056.513542219@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -31,10 +31,11 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-commit 9490c6c67e2f41760de8ece4e4f56f75f84ceb9e upstream.
+commit 2c3fc8d26dd09b9d7069687eead849ee81c78e46 upstream.
 
-In xen_swiotlb_sync_single we always call xen_dma_sync_single_for_cpu,
-even when we should call xen_dma_sync_single_for_device. Fix that.
+Need to pass the pointer within the swiotlb internal buffer to the
+swiotlb library, that in the case of xen_unmap_single is dev_addr, not
+paddr.
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
@@ -46,14 +47,14 @@ Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 --- a/drivers/xen/swiotlb-xen.c
 +++ b/drivers/xen/swiotlb-xen.c
-@@ -500,7 +500,7 @@ xen_swiotlb_sync_single(struct device *h
- 		swiotlb_tbl_sync_single(hwdev, paddr, size, dir, target);
+@@ -449,7 +449,7 @@ static void xen_unmap_single(struct devi
  
- 	if (target == SYNC_FOR_DEVICE)
--		xen_dma_sync_single_for_cpu(hwdev, dev_addr, size, dir);
-+		xen_dma_sync_single_for_device(hwdev, dev_addr, size, dir);
- 
- 	if (dir != DMA_FROM_DEVICE)
+ 	/* NOTE: We use dev_addr here, not paddr! */
+ 	if (is_xen_swiotlb_buffer(dev_addr)) {
+-		swiotlb_tbl_unmap_single(hwdev, paddr, size, dir);
++		swiotlb_tbl_unmap_single(hwdev, dev_addr, size, dir);
  		return;
+ 	}
+ 
 
 
