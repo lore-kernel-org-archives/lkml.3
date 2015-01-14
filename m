@@ -1,119 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752306AbbANCyk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 21:54:40 -0500
-Received: from 60-248-182-7.HINET-IP.hinet.net ([60.248.182.7]:38670 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751543AbbANCya (ORCPT
+	id S1752074AbbANClY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 21:41:24 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:42308 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751046AbbANClW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 21:54:30 -0500
-X-Greylist: delayed 801 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 Jan 2015 21:54:22 EST
-X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID t0E2eWRS024528, This message is accepted by code: ctloc85258
-From: <micky_ching@realsil.com.cn>
-To: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>
-CC: <sameo@linux.intel.com>, <maximlevitsky@gmail.com>,
-        <gregkh@linuxfoundation.org>, <oakad@yahoo.com>,
-        <rogerable@realtek.com>, <wei_wang@realsil.com.cn>,
-        Micky Ching <micky_ching@realsil.com.cn>
-Subject: [PATCH 3/3] memstick: rtsx: move suspend/resume to pm ops
-Date: Wed, 14 Jan 2015 10:40:17 +0800
-Message-ID: <50460f994b1fe34c329ab0d59bcdb81bbf6b941b.1421202479.git.micky_ching@realsil.com.cn>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <cover.1421202479.git.micky_ching@realsil.com.cn>
-References: <cover.1421202479.git.micky_ching@realsil.com.cn>
+	Tue, 13 Jan 2015 21:41:22 -0500
+Message-ID: <54B5D739.6040102@oracle.com>
+Date: Wed, 14 Jan 2015 10:40:57 +0800
+From: ethan zhao <ethan.zhao@oracle.com>
+Organization: Oracle Corporation
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.29.41.103]
+To: "Dev, Vasu" <vasu.dev@intel.com>
+CC: Ethan Zhao <ethan.kernel@gmail.com>,
+        "Ronciak, John" <john.ronciak@intel.com>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        "Allan, Bruce W" <bruce.w.allan@intel.com>,
+        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
+        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
+        "Rose, Gregory V" <gregory.v.rose@intel.com>,
+        "Vick, Matthew" <matthew.vick@intel.com>,
+        "Williams, Mitch A" <mitch.a.williams@intel.com>,
+        "Parikh, Neerav" <neerav.parikh@intel.com>,
+        Linux NICS <Linux-nics@isotope.jf.intel.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "brian.maly@oracle.com" <brian.maly@oracle.com>
+Subject: Re: [PATCH] i40e: don't enable and init FCOE by default when do PF
+ reset
+References: <1420821466-5747-1-git-send-email-ethan.zhao@oracle.com> <D38E8E86660E514AB505863C19C9287C741097AF@ORSMSX102.amr.corp.intel.com> <933BEC2E04D6A5458F4B0239FB547F9A34CC3608@fmsmsx118.amr.corp.intel.com> <CABawtvN_afL4B=fwtRJF_YJpe7tv6yf-OHJipWkGd-AiAjtckg@mail.gmail.com> <933BEC2E04D6A5458F4B0239FB547F9A34CC4055@fmsmsx118.amr.corp.intel.com>
+In-Reply-To: <933BEC2E04D6A5458F4B0239FB547F9A34CC4055@fmsmsx118.amr.corp.intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Micky Ching <micky_ching@realsil.com.cn>
+Vasu,
 
-Move suspend/resume function to pm ops, make it consistence
-with rtsx_usb_ms.c driver.
+On 2015/1/14 3:38, Dev, Vasu wrote:
+>> -----Original Message-----
+>>>>> diff --git a/drivers/net/ethernet/intel/i40e/i40e_main.c
+>>>>> b/drivers/net/ethernet/intel/i40e/i40e_main.c
+>>>>> index a5f2660..a2572cc 100644
+>>>>> --- a/drivers/net/ethernet/intel/i40e/i40e_main.c
+>>>>> +++ b/drivers/net/ethernet/intel/i40e/i40e_main.c
+>>>>> @@ -6180,9 +6180,12 @@ static void i40e_reset_and_rebuild(struct
+>>>>> i40e_pf *pf, bool reinit)
+>>>>>      }
+>>>>>   #endif /* CONFIG_I40E_DCB */
+>>>>>   #ifdef I40E_FCOE
+>>>>> -   ret = i40e_init_pf_fcoe(pf);
+>>>>> -   if (ret)
+>>>>> -           dev_info(&pf->pdev->dev, "init_pf_fcoe failed: %d\n", ret);
+>>>>> +   if (pf->flags & I40E_FLAG_FCOE_ENABLED) {
+>>>>> +           ret = i40e_init_pf_fcoe(pf);
+>>> Calling i40e_init_pf_fcoe() here conflicts with its
+>> I40E_FLAG_FCOE_ENABLED pre-condition since I40E_FLAG_FCOE_ENABLED is
+>> set by very same i40e_init_pf_fcoe(), in turn i40e_init_pf_fcoe() will never get
+>> called.
+>>
+>> I don't think so,  here ,i40e_reset_and_rebuild()  is not the only and the first
+>> place that  i40e_init_pf_fcoe() is called, see i40e_probe(), that is the first
+>> chance.
+>>
+>> i40e_probe()
+>> -->i40e_sw_init()
+>>       -->i40e_init_pf_fcoe()
+>>
+>> And the I40E_FLAG_FCOE_ENABLED is possible be set by
+>> i40e_fcoe_enable() or i40e_fcoe_disable() interface before the reset action is
+>> to be done.
+>>
+> It is set by i40e_init_pf_fcoe() and you are right that the modified call flow by your patch won't impact setting of I40E_FLAG_FCOE_ENABLED anyway which could have prevented calling i40e_init_pf_fcoe() as I described above, so this is not an issue with the patch.
+>
+>> BTW, the reason I post this patch is that we hit a bug, after setup vlan, the PF
+>> is enabled to FCOE.
+>>
+> Then that BUG would still remain un-fixed and calling i40e_init_pf_fcoe() under I40E_FLAG_FCOE_ENABLED  flag really won't affect call flow to fix anything. I mean I40E_FLAG_FCOE_ENABLED  condition will be true with "pf->hw.func_caps.fcoe == true" and otherwise calling i40e_init_pf_fcoe() simply returns back early on after checking "pf->hw.func_caps.fcoe == false", so how that bug is fixed here by added I40E_FLAG_FCOE_ENABLED  condition ? What is the bug ?
+  The func_caps.fcoe is assigned by following call path, under our test 
+environment,
 
-Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
----
- drivers/memstick/host/rtsx_pci_ms.c | 25 +++++++++++--------------
- 1 file changed, 11 insertions(+), 14 deletions(-)
+  i40e_probe()
+   ->i40e_get_capabilities()
+      ->i40e_aq_discover_capabilities()
+         ->i40e_parse_discover_capabilities()
 
-diff --git a/drivers/memstick/host/rtsx_pci_ms.c b/drivers/memstick/host/rtsx_pci_ms.c
-index c9981af..475afa8 100644
---- a/drivers/memstick/host/rtsx_pci_ms.c
-+++ b/drivers/memstick/host/rtsx_pci_ms.c
-@@ -22,6 +22,7 @@
- #include <linux/module.h>
- #include <linux/highmem.h>
- #include <linux/delay.h>
-+#include <linux/pm.h>
- #include <linux/platform_device.h>
- #include <linux/memstick.h>
- #include <linux/mfd/rtsx_pci.h>
-@@ -514,11 +515,11 @@ static int rtsx_pci_ms_set_param(struct memstick_host *msh,
- 	return 0;
- }
- 
--#ifdef CONFIG_PM
-+#ifdef CONFIG_PM_SLEEP
- 
--static int rtsx_pci_ms_suspend(struct platform_device *pdev, pm_message_t state)
-+static int rtsx_pci_ms_suspend(struct device *dev)
- {
--	struct realtek_pci_ms *host = platform_get_drvdata(pdev);
-+	struct realtek_pci_ms *host = dev_get_drvdata(dev);
- 	struct memstick_host *msh = host->msh;
- 
- 	dev_dbg(ms_dev(host), "--> %s\n", __func__);
-@@ -527,9 +528,9 @@ static int rtsx_pci_ms_suspend(struct platform_device *pdev, pm_message_t state)
- 	return 0;
- }
- 
--static int rtsx_pci_ms_resume(struct platform_device *pdev)
-+static int rtsx_pci_ms_resume(struct device *dev)
- {
--	struct realtek_pci_ms *host = platform_get_drvdata(pdev);
-+	struct realtek_pci_ms *host = dev_get_drvdata(dev);
- 	struct memstick_host *msh = host->msh;
- 
- 	dev_dbg(ms_dev(host), "--> %s\n", __func__);
-@@ -537,13 +538,7 @@ static int rtsx_pci_ms_resume(struct platform_device *pdev)
- 	memstick_resume_host(msh);
- 	return 0;
- }
--
--#else /* CONFIG_PM */
--
--#define rtsx_pci_ms_suspend NULL
--#define rtsx_pci_ms_resume NULL
--
--#endif /* CONFIG_PM */
-+#endif /* CONFIG_PM_SLEEP */
- 
- static void rtsx_pci_ms_card_event(struct platform_device *pdev)
- {
-@@ -641,6 +636,9 @@ static int rtsx_pci_ms_drv_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+static SIMPLE_DEV_PM_OPS(rtsx_pci_ms_pm_ops,
-+	rtsx_pci_ms_suspend, rtsx_pci_ms_resume);
-+
- static struct platform_device_id rtsx_pci_ms_ids[] = {
- 	{
- 		.name = DRV_NAME_RTSX_PCI_MS,
-@@ -654,10 +652,9 @@ static struct platform_driver rtsx_pci_ms_driver = {
- 	.probe		= rtsx_pci_ms_drv_probe,
- 	.remove		= rtsx_pci_ms_drv_remove,
- 	.id_table       = rtsx_pci_ms_ids,
--	.suspend	= rtsx_pci_ms_suspend,
--	.resume		= rtsx_pci_ms_resume,
- 	.driver		= {
- 		.name	= DRV_NAME_RTSX_PCI_MS,
-+		.pm	= &rtsx_pci_ms_pm_ops,
- 	},
- };
- module_platform_driver(rtsx_pci_ms_driver);
--- 
-1.9.1
+  Or
+
+  i40e_reset_and_rebuild()
+   ->i40e_get_capabilities()
+     ->i40e_aq_discover_capabilities()
+       ->i40e_parse_discover_capabilities()
+
+  Under our test environment, the "pf->hw.func_caps.fcoe" is true. so if 
+i40e_reset_and_rebuild() is called for VLAN setup, ethtool diagnostic test.
+  And then i40e_init_pf_fcoe() is to be called,
+
+  While if (!pf->hw.func_caps.fcoe) wouldn't return,
+
+  So  pf->flags is set to I40E_FLAG_FCOE_ENABLED.
+
+  With my patch,  i40e_init_pf_fcoe() is only called after 
+I40E_FLAG_FCOE_ENABLED is set before reset.
+
+Enable FCOE in i40e_probe() or not is another issue.
+
+
+Thanks,
+Ethan
+
+
+>
+>>> Jeff Kirsher should be getting out a patch queued by me which adds
+>> I40E_FCoE Kbuild option, in that FCoE is disabled by default and  user could
+>> enable FCoE only if needed, that patch would do same of skipping
+>> i40e_init_pf_fcoe() whether FCoE capability in device enabled or not in
+>> default config.
+>> The following patch will not fix the above issue -- configuration of PF will be
+>> changed via reset.
+>> How about the FCOE is configured and disabled by  i40e_fcoe_disable() ,
+>> then reset happens ?
+>>
+> May be but if the BUG is due to FCoE being enabled then having it disabled in config will avoid the bug for non FCoE config option and once bug is understood then that has to be fixed for FCoE enabled config also as I asked above.
+>
+> Thanks Ethan for detailed response.
+> Vasu
+>
+>>>  From patchwork Wed Oct  2 23:26:08 2013
+>>> Content-Type: text/plain; charset="utf-8"
+>>> MIME-Version: 1.0
+>>> Content-Transfer-Encoding: 7bit
+>>> Subject: [net] i40e: adds FCoE configure option
+>>> Date: Thu, 03 Oct 2013 07:26:08 -0000
+>>> From: Vasu Dev <vasu.dev@intel.com>
+>>> X-Patchwork-Id: 11797
+>>>
+>>> Adds FCoE config option I40E_FCOE, so that FCoE can be enabled as
+>>> needed but otherwise have it disabled by default.
+>>>
+>>> This also eliminate multiple FCoE config checks, instead now just one
+>>> config check for CONFIG_I40E_FCOE.
+>>>
+>>> The I40E FCoE was added with 3.17 kernel and therefore this patch
+>>> shall be applied to stable 3.17 kernel also.
+>>>
+>>> CC: <stable@vger.kernel.org>
+>>> Signed-off-by: Vasu Dev <vasu.dev@intel.com>
+>>> Tested-by: Jim Young <jamesx.m.young@intel.com>
+>>>
+>>> ---
+>>> drivers/net/ethernet/intel/Kconfig           |   11 +++++++++++
+>>>   drivers/net/ethernet/intel/i40e/Makefile     |    2 +-
+>>>   drivers/net/ethernet/intel/i40e/i40e_osdep.h |    4 ++--
+>>>   3 files changed, 14 insertions(+), 3 deletions(-)
+>>>
+>>> diff --git a/drivers/net/ethernet/intel/Kconfig
+>>> b/drivers/net/ethernet/intel/Kconfig
+>>> index 5b8300a..4d61ef5 100644
+>>> --- a/drivers/net/ethernet/intel/Kconfig
+>>> +++ b/drivers/net/ethernet/intel/Kconfig
+>>> @@ -281,6 +281,17 @@ config I40E_DCB
+>>>
+>>>            If unsure, say N.
+>>>
+>>> +config I40E_FCOE
+>>> +       bool "Fibre Channel over Ethernet (FCoE)"
+>>> +       default n
+>>> +       depends on I40E && DCB && FCOE
+>>> +       ---help---
+>>> +         Say Y here if you want to use Fibre Channel over Ethernet (FCoE)
+>>> +         in the driver. This will create new netdev for exclusive FCoE
+>>> +         use with XL710 FCoE offloads enabled.
+>>> +
+>>> +         If unsure, say N.
+>>> +
+>>>   config I40EVF
+>>>          tristate "Intel(R) XL710 X710 Virtual Function Ethernet support"
+>>>          depends on PCI_MSI
+>>> diff --git a/drivers/net/ethernet/intel/i40e/Makefile
+>>> b/drivers/net/ethernet/intel/i40e/Makefile
+>>> index 4b94ddb..c405819 100644
+>>> --- a/drivers/net/ethernet/intel/i40e/Makefile
+>>> +++ b/drivers/net/ethernet/intel/i40e/Makefile
+>>> @@ -44,4 +44,4 @@ i40e-objs := i40e_main.o \
+>>>          i40e_virtchnl_pf.o
+>>>
+>>>   i40e-$(CONFIG_I40E_DCB) += i40e_dcb.o i40e_dcb_nl.o
+>>> -i40e-$(CONFIG_FCOE:m=y) += i40e_fcoe.o
+>>> +i40e-$(CONFIG_I40E_FCOE) += i40e_fcoe.o
+>>> diff --git a/drivers/net/ethernet/intel/i40e/i40e_osdep.h
+>>> b/drivers/net/ethernet/intel/i40e/i40e_osdep.h
+>>> index 045b5c4..ad802dd 100644
+>>> --- a/drivers/net/ethernet/intel/i40e/i40e_osdep.h
+>>> +++ b/drivers/net/ethernet/intel/i40e/i40e_osdep.h
+>>> @@ -78,7 +78,7 @@ do {                                                            \
+>>>   } while (0)
+>>>
+>>>   typedef enum i40e_status_code i40e_status; -#if defined(CONFIG_FCOE)
+>>> || defined(CONFIG_FCOE_MODULE)
+>>> +#ifdef CONFIG_I40E_FCOE
+>>>   #define I40E_FCOE
+>>> -#endif /* CONFIG_FCOE or CONFIG_FCOE_MODULE */
+>>> +#endif
+>>>   #endif /* _I40E_OSDEP_H_ */
+>>>
+>>>>> +           if (ret)
+>>>>> +                   dev_info(&pf->pdev->dev,
+>>>>> +                            "init_pf_fcoe failed: %d\n", ret);
+>>>>> +   }
+>>>>>
+>>>>>   #endif
+>>>>>      /* do basic switch setup */
+>>>>> --
+>>>>> 1.8.3.1
+>> Thanks,
+>> Ethan
 
