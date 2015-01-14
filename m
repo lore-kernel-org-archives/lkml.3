@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752514AbbANUZQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 15:25:16 -0500
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:33612 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751241AbbANUZO (ORCPT
+	id S1752140AbbANVbs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 16:31:48 -0500
+Received: from st11p01mm-asmtpout002.mac.com ([17.172.204.237]:53169 "EHLO
+	st11p01mm-asmtp002.mac.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751494AbbANVbr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 15:25:14 -0500
-MIME-Version: 1.0
-In-Reply-To: <54B6C6D1.3010804@linux.intel.com>
-References: <cover.1421103159.git.luto@amacapital.net> <6cb492e6037780a61b973cc9e40050d43452ed63.1421103159.git.luto@amacapital.net>
- <54B45D04.2030309@linux.intel.com> <CALCETrVNnn3onV3N0b2UPxYL0kM_sY6NXE5O8RABkc+prnyRYg@mail.gmail.com>
- <54B6C6D1.3010804@linux.intel.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Wed, 14 Jan 2015 12:24:52 -0800
-Message-ID: <CALCETrXxtrvYegFDQ4-YeBrVkYYcsUKA5dG1hASoUM=Sc-aDvQ@mail.gmail.com>
-Subject: Re: [PATCH 3.19 v2 2/3] x86, mpx: Short-circuit the instruction
- decoder for unexpected opcodes
-To: Dave Hansen <dave.hansen@linux.intel.com>
-Cc: X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 14 Jan 2015 16:31:47 -0500
+X-Greylist: delayed 3610 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Jan 2015 16:31:46 EST
+From: Louis Langholtz <lou_langholtz@me.com>
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7bit
+Subject: [PATCH] kernel: avoid overflow in cmp_range
+Date: Wed, 14 Jan 2015 13:31:18 -0700
+Message-id: <3E2D3190-D01C-4BCE-8E6F-B2BB9BC29984@me.com>
+Cc: torvalds@linux-foundation.org
+To: linux-kernel@vger.kernel.org, yinghai@kernel.org, hpa@linux.intel.com
+MIME-version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
+X-Mailer: Apple Mail (2.1878.6)
+X-Proofpoint-Virus-Version: vendor=fsecure
+ engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-14_05:2015-01-14,2015-01-14,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0
+ suspectscore=0 phishscore=0 adultscore=0 bulkscore=0 classifier=spam adjust=0
+ reason=mlx scancount=1 engine=7.0.1-1412080000 definitions=main-1501140202
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 14, 2015 at 11:43 AM, Dave Hansen
-<dave.hansen@linux.intel.com> wrote:
-> On 01/12/2015 03:57 PM, Andy Lutomirski wrote:
->>>> >> -     /*
->>>> >> -      * We only _really_ need to decode bndcl/bndcn/bndcu
->>>> >> -      * Error out on anything else.
->>>> >> -      */
->>>> >> -     if (insn->opcode.bytes[0] != 0x0f)
->>>> >> -             goto bad_opcode;
->>>> >> -     if ((insn->opcode.bytes[1] != 0x1a) &&
->>>> >> -         (insn->opcode.bytes[1] != 0x1b))
->>>> >> -             goto bad_opcode;
->>> >
->>> > Otherwise, this looks OK to me.  Have you tested this at all?  I know
->>> > you don't have any MPX hardware, but you can still hack something in to
->>> > point the instruction decoder at an MPX binary.
->> I haven't tested this at all.  ISTM it's more likely that any test
->> hack I write for this will mask any problem than that it will be a
->> real test.
->
-> This is completely and totally broken when there is an instruction
-> prefix.  Instruction prefixes which occur before the opcodes in the
-> buffer, so buf[0] is not necessarily insn->opcode.bytes[0].
->
-> This was immediately obvious when I actually ran this code for the first
-> time, even on hardware without MPX.
+Avoid overflow possibility.
 
-My apologies -- I misunderstood what insn->opcode.bytes did, and I
-assumed that the original code intentionally did the same thing.
+Signed-off-by: Louis Langholtz <lou_langholtz@me.com>
+---
+diff --git a/kernel/range.c b/kernel/range.c
+index 322ea8e..06d9ee7 100644
+--- a/kernel/range.c
++++ b/kernel/range.c
+@@ -113,12 +113,16 @@ static int cmp_range(const void *x1, const void *x2)
+{
+      const struct range *r1 = x1;
+      const struct range *r2 = x2;
+-       s64 start1, start2;
++       u64 start1, start2;
 
-Please drop this patch.
+      start1 = r1->start;
+      start2 = r2->start;
 
---Andy
+-       return start1 - start2;
++       if (start1 < start2)
++               return -1;
++       if (start1 > start2)
++               return 1;
++       return 0;
+}
 
--- 
-Andy Lutomirski
-AMA Capital Management, LLC
+int clean_sort_range(struct range *range, int az)
