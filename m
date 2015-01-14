@@ -1,43 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752805AbbANMnc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 07:43:32 -0500
-Received: from mga11.intel.com ([192.55.52.93]:56411 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752706AbbANMna (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 07:43:30 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.07,755,1413270000"; 
-   d="scan'208";a="669722619"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com, adrian.hunter@intel.com,
-        markus.t.metzger@intel.com, mathieu.poirier@linaro.org,
-        Kaixu Xia <kaixu.xia@linaro.org>, acme@infradead.org
-Subject: Re: [PATCH v9 00/14] perf: Add infrastructure and support for Intel PT
-In-Reply-To: <1421237903-181015-1-git-send-email-alexander.shishkin@linux.intel.com>
-References: <1421237903-181015-1-git-send-email-alexander.shishkin@linux.intel.com>
-User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/24.4.1 (x86_64-pc-linux-gnu)
-Date: Wed, 14 Jan 2015 14:43:25 +0200
-Message-ID: <87h9vtmt1u.fsf@ashishki-desk.ger.corp.intel.com>
+	id S1752858AbbANMpV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 07:45:21 -0500
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:36296 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752706AbbANMpR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 07:45:17 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <20150108221249.GH23256@dtor-ws>
+References: <1420621722-7428-1-git-send-email-oliver+list@schinagl.nl>
+	<1420621722-7428-5-git-send-email-oliver+list@schinagl.nl>
+	<20150107235522.GA6670@dtor-ws>
+	<54AE43A9.3020309@schinagl.nl>
+	<CAL_JsqJE_PCXrejHO3vfdbbtC4FGyuPhJ8W-A=8nZMcu6aBxCw@mail.gmail.com>
+	<20150108221249.GH23256@dtor-ws>
+Date: Wed, 14 Jan 2015 13:45:16 +0100
+Message-ID: <CACRpkdZZxAPecNfADzYLSz8S6tNBi9Jr4st==zxnNp2r2gPC2g@mail.gmail.com>
+Subject: Re: [PATCH v1 4/4] leds: no longer use unnamed gpios
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Rob Herring <robherring2@gmail.com>, Olliver Schinagl <oliver@schinagl.nl>,
+        Olliver Schinagl <oliver+list@schinagl.nl>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Alexandre Courbot <gnurou@gmail.com>, Bryan Wu <cooloney@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>, Robin Gong <b38343@freescale.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Aaron Lu <aaron.lu@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>, Alexander Shiyan <shc_work@mail.ru>,
+        Jingoo Han <jg1.han@samsung.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexander Shishkin <alexander.shishkin@linux.intel.com> writes:
+On Thu, Jan 8, 2015 at 11:12 PM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> On Thu, Jan 08, 2015 at 08:40:20AM -0600, Rob Herring wrote:
+>> On Thu, Jan 8, 2015 at 2:45 AM, Olliver Schinagl <oliver@schinagl.nl> wrote:
 
->   * added a comment for the ITRACE_START record.
+>> >>> --- a/drivers/leds/leds-gpio.c
+>> >>> +++ b/drivers/leds/leds-gpio.c
+>> >>> @@ -184,7 +184,7 @@ static struct gpio_leds_priv *gpio_leds_create(struct
+>> >>> platform_device *pdev)
+>> >>>                 struct gpio_led led = {};
+>> >>>                 const char *state = NULL;
+>> >>>   -             led.gpiod = devm_get_gpiod_from_child(dev, NULL, child);
+>> >>> +               led.gpiod = devm_get_gpiod_from_child(dev, "led", child);
+>> >>
+>> >> Would not this break existing boards using old bindings? You need to
+>> >> handle both cases: if you can't located "led-gpios" then you will have to
+>> >> try just "gpios".
+>> >
+>> > Very true. I was rather even hoping we could update all bindings, I don't
+>> > mind going through the available dts files to fix them ... But need to know
+>> > that that's the proper way to go before doing the work ;)
+>>
+>> That will not work. You cannot make changes that require a new dtb
+>> with a new kernel. This would also break for the other way around
+>> (i.e. a new dtb and old kernel).
+>>
+>> You would have to search for both led-gpios and gpios. I'm not sure if
+>> we can do that generically for all GPIOs. If you had a node with both
+>> "blah-gpios" and "gpios", it would break. I would hope there are no
+>> such cases like that. We also now have to consider how ACPI identifies
+>> GPIOs and whether this makes sense.
+>
+> I think only the driver itself can know about such "legacy" mappings and
+> make a decision.
 
-...and I messed it up so the last change didn't make it,
-apologies. Should I resend the whole series as v10, for consistency?
+Yeah leds-gpio.c will need to be patched to check for "led-gpios" first
+and then fall back to "gpios" if not found.
 
-Regards,
---
-Alex
+Yours,
+Linus Walleij
