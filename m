@@ -1,51 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160AbbANPLz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 10:11:55 -0500
-Received: from skprod3.natinst.com ([130.164.80.24]:46802 "EHLO ni.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754130AbbANPLx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 10:11:53 -0500
-From: "Brad Mouring" <bmouring@ni.com>
-Date: Wed, 14 Jan 2015 09:11:49 -0600
-To: David Miller <davem@davemloft.net>
-Cc: xander.huff@ni.com, nicolas.ferre@atmel.com, jaeden.amero@ni.com,
-        rich.tollerton@ni.com, ben.shelton@ni.com, brad.mouring@ni.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] net/macb: Adding comments to various #defs to make
- interpretation easier
-Message-ID: <20150114151148.GA13853@linuxgetsreal>
-References: <1421187351-27279-1-git-send-email-xander.huff@ni.com>
- <20150114.002609.1903467089677912749.davem@davemloft.net>
+	id S1754173AbbANPNG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 10:13:06 -0500
+Received: from mail.kernel.org ([198.145.29.136]:44528 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754001AbbANPNA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 10:13:00 -0500
+Message-ID: <54B68773.10805@kernel.org>
+Date: Thu, 15 Jan 2015 00:12:51 +0900
+From: Kukjin Kim <kgene@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-In-Reply-To: <20150114.002609.1903467089677912749.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-MIMETrack: Itemize by SMTP Server on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP6|November
- 21, 2013) at 01/14/2015 09:11:50 AM,
-	Serialize by Router on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP6|November
- 21, 2013) at 01/14/2015 09:11:50 AM,
-	Serialize complete at 01/14/2015 09:11:50 AM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2015-01-14_05:2015-01-14,2015-01-14,1970-01-01 signatures=0
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+CC: Kukjin Kim <kgene.kim@samsung.com>, Doug Anderson <dianders@chromium.org>,
+        Kevin Hilman <khilman@linaro.org>, Olof Johansson <olof@lixom.net>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND 0/4] Small updates to Snow and Peach Pit/Pi DTS
+References: <1420212257-22443-1-git-send-email-javier.martinez@collabora.co.uk> <54B3A4C2.8070304@collabora.co.uk>
+In-Reply-To: <54B3A4C2.8070304@collabora.co.uk>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 14, 2015 at 12:26:09AM -0500, David Miller wrote:
-> From: Xander Huff <xander.huff@ni.com>
-> Date: Tue, 13 Jan 2015 16:15:50 -0600
+On 01/12/15 19:41, Javier Martinez Canillas wrote:
+> Hello Kukjin,
 > 
-> > This change is to help improve at-a-glace knowledge of the purpose of the
-> > various Cadence MACB/GEM registers. Comments are more helpful for human
-> > readability than short acronyms.
-> > 
-> > Describe various #define varibles Cadence MACB/GEM registers as documented
-> > in Xilinix's "Zynq-7000 All Programmable SoC TechnicalReference Manual, v1.9.1
-s/Xilinix/Xilinx/. Sorry for the previous html-spam. Didn't follow the rule to always get coffee in the system prior to responding.
-> > (UG-585)"
-> > 
-> > Signed-off-by: Xander Huff <xander.huff@ni.com>
+Hi,
+
+> On 01/02/2015 04:24 PM, Javier Martinez Canillas wrote:
+>>
+>> This series adds some DTS snippets that were missing in the mainline
+>> Snow and Peach Pit/Pi Device Trees but are present in the downstream
+>> ChromeOS kernel.
+>>
+>> The series is composed of the following patches:
+>>
+>> Javier Martinez Canillas (4):
+>>   ARM: dts: Add power and lid GPIO keys pinctrl for exynos5250-snow
+>>   ARM: dts: Add lid GPIO key device node for Peach boards
+>>   ARM: dts: Set Peach boards USB WebCam regulators to always on
+>>   ARM: dts: Configure regulators for suspend on exynos Peach boards
+>>
+>>  arch/arm/boot/dts/exynos5250-snow.dts      |  16 +++++
+>>  arch/arm/boot/dts/exynos5420-peach-pit.dts | 100 +++++++++++++++++++++++++++-
+>>  arch/arm/boot/dts/exynos5800-peach-pi.dts  | 101 ++++++++++++++++++++++++++++-
+>>  3 files changed, 215 insertions(+), 2 deletions(-)
+>>
+>> Patch #1 adds some pinctrl lines for the GPIO keys in the Snow DTS.
+>>
+>> Patch #2 adds a device node and pinctrl lines for the lid GPIO in
+>> the Peach boards DTS.
+>>
+>> Patch #3 sets the regulators that supply voltage to the USB WebCam
+>> in Peach boards as always on.
+>>
+>> Patch #4 configures the max77802 regulators on the Peach Pit and Pi
+>> boards to be enabled or disabled during system suspend.
+>>
 > 
-> Applied.
+> I saw that you collected some DTS patches for 3.20 but these are not
+> included. Any comments about this series?
+> 
+Yeah, but I don't think I checked all of submitted patches including
+this at that time and I'll have a look at this series soon.
+
+Thanks for your gentle reminder.
+
+- Kukjin
