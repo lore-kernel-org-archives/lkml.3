@@ -1,85 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834AbbANM5k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 07:57:40 -0500
-Received: from mail.kernel.org ([198.145.29.136]:34769 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751583AbbANM5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 07:57:39 -0500
-Date: Wed, 14 Jan 2015 09:57:36 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH v2 1/4] perf tools: Fix segfault for symbol annotation on
- TUI
-Message-ID: <20150114125736.GB3691@kernel.org>
-References: <1421234288-22758-1-git-send-email-namhyung@kernel.org>
+	id S1752699AbbANM6j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 07:58:39 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:62956 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751749AbbANM6h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 07:58:37 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421234288-22758-1-git-send-email-namhyung@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1418890998-23811-1-git-send-email-heikki.krogerus@linux.intel.com>
+References: <1418890998-23811-1-git-send-email-heikki.krogerus@linux.intel.com>
+Date: Wed, 14 Jan 2015 13:58:36 +0100
+Message-ID: <CACRpkdY-yFKsYbCrMpnViMFoQEugyGQivaV0M+GDzLrbDO7i6Q@mail.gmail.com>
+Subject: Re: [RFC PATCH] gpio: support for GPIO forwarding
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Darren Hart <dvhart@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>
+Cc: Alexandre Courbot <gnurou@gmail.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Jan 14, 2015 at 08:18:05PM +0900, Namhyung Kim escreveu:
-> Currently the symbol structure is allocated with symbol_conf.priv_size
-> to carry sideband information like annotation, map browser on TUI and
-> sort-by-name tree node.  So retrieving these information from symbol
-> needs to care about the details of such placement.
-> 
-> However the annotation code just assumes that the symbol is placed after
-> the struct annotation.  But actually there's other info between them.
-> So accessing those struct will lead to an undefined behavior (usually a
-> crash) after they write their info to the same location.
-> 
-> To reproduce the problem, please follow the steps below:
-> 
->   1. run perf report (TUI of course) with -v option
->   2. open map browser (by pressing right arrow key for any entry)
->   3. search any function (by pressing '/' key and input whatever..)
->   4. return to the hist browser (by pressing 'q' or left arrow key)
->   5. open annotation window for the same entry (by pressing 'a' key)
+On Thu, Dec 18, 2014 at 9:23 AM, Heikki Krogerus
+<heikki.krogerus@linux.intel.com> wrote:
 
-Thanks, nice fix, description and reproduction steps, applied to perf/urgent.
-
-- Arnaldo
- 
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+> This makes it possible to assign GPIOs at runtime. The
+> motivation for it is because of need to forward GPIOs from
+> one device to an other. That feature may be useful for
+> example with some mfd devices, but initially it is needed
+> because on some Intel Braswell based ACPI platforms the GPIO
+> resources controlling signals of the USB PHY are given to
+> the controller device object for whatever reason, so the
+> driver of that controller needs be able to pass them to the
+> PHY device somehow.
+>
+> So basically this is meant to allow patching of bad (bad
+> from Linux kernels point of view) hardware descriptions
+> provided by system fw in the drivers.
+>
+> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
 > ---
->  tools/perf/util/annotate.h | 8 +-------
->  1 file changed, 1 insertion(+), 7 deletions(-)
-> 
-> diff --git a/tools/perf/util/annotate.h b/tools/perf/util/annotate.h
-> index 0784a9420528..cadbdc90a5cb 100644
-> --- a/tools/perf/util/annotate.h
-> +++ b/tools/perf/util/annotate.h
-> @@ -116,11 +116,6 @@ struct annotation {
->  	struct annotated_source *src;
->  };
->  
-> -struct sannotation {
-> -	struct annotation annotation;
-> -	struct symbol	  symbol;
-> -};
-> -
->  static inline struct sym_hist *annotation__histogram(struct annotation *notes, int idx)
->  {
->  	return (((void *)&notes->src->histograms) +
-> @@ -129,8 +124,7 @@ static inline struct sym_hist *annotation__histogram(struct annotation *notes, i
->  
->  static inline struct annotation *symbol__annotation(struct symbol *sym)
->  {
-> -	struct sannotation *a = container_of(sym, struct sannotation, symbol);
-> -	return &a->annotation;
-> +	return (void *)sym - symbol_conf.priv_size;
->  }
->  
->  int addr_map_symbol__inc_samples(struct addr_map_symbol *ams, int evidx);
-> -- 
-> 2.2.1
+>
+> Hi,
+>
+> I'm sending this first as a RFC in case you guys have some better
+> idea how to solve our problem. I actually already have couple
+> platforms where the GPIO resources are given to the "wrong" device
+> objects now.
+>
+> Originally we were thinking about simply handling our problem with
+> hacks to the PHY drivers, basically also checking if the parent has
+> GPIOs. That would only work if the controller is always the parent,
+> which it's not, but even if it was, it would be too risky. The PHY
+> drivers don't know which controller they are attached to, so what is
+> to say that the GPIOs aren't really attached to the controller.
+>
+> So the safest way to handle our problem is to deal with it in quirks
+> in the controller drivers. Solving it by bouncing the GPIOs did not
+> feel ideal there doesn't seem to be any other way. The API is copied
+> from clkdev (clk_register_clkdev). In the end it's really only one
+> function for adding the lookups and one for removing them.
+>
+> The way it's implemented is by modifying the current style of handling
+> the lookups a little bit. The per device lookup table is basically
+> reverted back to the single linked-list format since it seems that
+> these lookups may have to be assigned from several sources.
+
+Oh ain't that great.
+
+So now we start patching around the kernel because the ACPI
+tables are erroneous for GPIOs. I'd like some feedback from
+Rafael &| Darren on this patch, i.e. if you two think this is a good
+way of accounting for bad GPIO descriptions in ACPI tables then
+ACK this patch.
+
+I guess the other option would be to fix up the ACPI DSDT
+itself to put resources right, correct? Is this not possible?
+
+Alexandre also need to ACK it before I dare do anything with
+it.
+
+Do we want to use the same mechanism for augmenting
+bad device trees too?
+
+What I like about it so far is the create/remove symmetry
+though.
+
+Yours,
+Linus Walleij
