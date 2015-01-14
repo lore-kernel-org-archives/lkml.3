@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754025AbbANTpB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 14:45:01 -0500
-Received: from mailout.micron.com ([137.201.242.129]:21712 "EHLO
-	mailout.micron.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751065AbbANTo7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 14:44:59 -0500
-Message-ID: <54B6C7E4.6010002@micron.com>
-Date: Wed, 14 Jan 2015 11:47:48 -0800
-From: Sam Bradshaw <sbradshaw@micron.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.23) Gecko/20110928 Red Hat/3.1.15-1.el6_1 Thunderbird/3.1.15
-MIME-Version: 1.0
-To: <martin.petersen@oracle.com>, <axboe@kernel.dk>,
+	id S1752994AbbANTsE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 14:48:04 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:60370 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751241AbbANTsC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 14:48:02 -0500
+From: Vitaly Andrianov <vitalya@ti.com>
+To: <linux@arm.linux.org.uk>, <thomas.petazzoni@free-electrons.com>,
+        <catalin.marinas@arm.com>, <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>
-Subject: [PATCH] block: pass correct prot_buf pointer to integrity metadata
- processing function
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-Product-Ver: SMEX-10.0.0.4152-7.000.1014-21250.001
-X-TM-AS-Result: No--2.044900-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
-X-MT-CheckInternalSenderRule: True
+CC: Vitaly Andrianov <vitalya@ti.com>
+Subject: [PATCH] arm: mm: remove unused ioremap_page()
+Date: Wed, 14 Jan 2015 14:48:56 -0500
+Message-ID: <1421264936-9495-1-git-send-email-vitalya@ti.com>
+X-Mailer: git-send-email 1.9.1
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The prot_buf pointer passed to the generate/verify functions is 
-incorrect for the second and subsequent range, making it impossible 
-to verify the guard tag.  The patch correctly increments the prot_buf 
-pointer by the tuple size for each pass.
+This patch removes unused ioremap_page().
 
-Signed-off-by: Sam Bradshaw <sbradshaw@micron.com>
+Signed-off-by: Vitaly Andrianov <vitalya@ti.com>
 ---
-diff --git a/block/bio-integrity.c b/block/bio-integrity.c
-index 5cbd5d9..c7cbf60 100644
---- a/block/bio-integrity.c
-+++ b/block/bio-integrity.c
-@@ -226,13 +226,13 @@ static int bio_integrity_process(struct bio *bio,
- 	iter.disk_name = bio->bi_bdev->bd_disk->disk_name;
- 	iter.interval = bi->interval;
- 	iter.seed = bip_get_seed(bip);
--	iter.prot_buf = prot_buf;
+ arch/arm/include/asm/mach/map.h | 5 -----
+ arch/arm/mm/ioremap.c           | 8 --------
+ 2 files changed, 13 deletions(-)
+
+diff --git a/arch/arm/include/asm/mach/map.h b/arch/arm/include/asm/mach/map.h
+index f98c7f3..be2b68e 100644
+--- a/arch/arm/include/asm/mach/map.h
++++ b/arch/arm/include/asm/mach/map.h
+@@ -52,11 +52,6 @@ static inline void debug_ll_io_init(void) {}
  
- 	bio_for_each_segment(bv, bio, bviter) {
- 		void *kaddr = kmap_atomic(bv.bv_page);
- 
- 		iter.data_buf = kaddr + bv.bv_offset;
- 		iter.data_size = bv.bv_len;
-+		iter.prot_buf = prot_buf;
- 
- 		ret = proc_fn(&iter);
- 		if (ret) {
-@@ -241,6 +241,7 @@ static int bio_integrity_process(struct bio *bio,
- 		}
- 
- 		kunmap_atomic(kaddr);
-+		prot_buf += bi->tuple_size;
- 	}
- 	return ret;
+ struct mem_type;
+ extern const struct mem_type *get_mem_type(unsigned int type);
+-/*
+- * external interface to remap single page with appropriate type
+- */
+-extern int ioremap_page(unsigned long virt, unsigned long phys,
+-			const struct mem_type *mtype);
+ #else
+ #define iotable_init(map,num)	do { } while (0)
+ #define vm_reserve_area_early(a,s,c)	do { } while (0)
+diff --git a/arch/arm/mm/ioremap.c b/arch/arm/mm/ioremap.c
+index d1e5ad7..c91633f 100644
+--- a/arch/arm/mm/ioremap.c
++++ b/arch/arm/mm/ioremap.c
+@@ -103,14 +103,6 @@ void __init add_static_vm_early(struct static_vm *svm)
+ 	list_add_tail(&svm->list, &curr_svm->list);
  }
+ 
+-int ioremap_page(unsigned long virt, unsigned long phys,
+-		 const struct mem_type *mtype)
+-{
+-	return ioremap_page_range(virt, virt + PAGE_SIZE, phys,
+-				  __pgprot(mtype->prot_pte));
+-}
+-EXPORT_SYMBOL(ioremap_page);
+-
+ void __check_vmalloc_seq(struct mm_struct *mm)
+ {
+ 	unsigned int seq;
+-- 
+1.9.1
+
