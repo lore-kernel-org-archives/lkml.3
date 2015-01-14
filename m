@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754763AbbANHaH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:30:07 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58136 "EHLO
+	id S932201AbbANHaa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:30:30 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58177 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752018AbbANHaF (ORCPT
+	with ESMTP id S1751414AbbANHa0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:30:05 -0500
+	Wed, 14 Jan 2015 02:30:26 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>, Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        Tony Lindgren <tony@atomide.com>
-Subject: [PATCH 3.18 117/150] ARM: dts: am437x-sk-evm.dts: fix LCD timings
-Date: Tue, 13 Jan 2015 23:23:08 -0800
-Message-Id: <20150114072101.153857088@linuxfoundation.org>
+        Nishanth Menon <nm@ti.com>, Viresh Kumar <viresh.kumar@linaro.org>,
+        Kevin Hilman <khilman@linaro.org>
+Subject: [PATCH 3.18 118/150] ARM: defconfigs: use CONFIG_CPUFREQ_DT
+Date: Tue, 13 Jan 2015 23:23:09 -0800
+Message-Id: <20150114072101.197237474@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -29,59 +29,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+From: Viresh Kumar <viresh.kumar@linaro.org>
 
-commit d73f825e6efa723e81d9ffcc4949fe9f03f1df29 upstream.
+commit 9d312cd12e89ce08add99fe66e8f6baeaca16d7d upstream.
 
-The lcd0 node for am437x-sk-evm.dts contains bad LCD timings, and while
-they seem to work with a quick test, doing for example blank/unblank
-will give you a black display.
+CONFIG_GENERIC_CPUFREQ_CPU0 disappeared with commit bbcf071969b20f
+("cpufreq: cpu0: rename driver and internals to 'cpufreq_dt'") and some
+defconfigs are still using it instead of the new one.
 
-This patch updates the timings to the 'typical' values from the LCD spec
-sheet.
+Use the renamed CONFIG_CPUFREQ_DT generic driver.
 
-Also, the compatible string is completely bogus, as
-"osddisplays,osd057T0559-34ts" is _not_ a 480x272 panel. The panel on
-the board is a newhaven one. Update the compatible string to reflect
-this. Note that this hasn't caused any issues, as the "panel-dpi"
-matches the driver.
-
-Tested-by: Felipe Balbi <balbi@ti.com>
-Signed-off-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+Reported-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@linaro.org>
+Signed-off-by: Kevin Hilman <khilman@linaro.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/am437x-sk-evm.dts |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ arch/arm/configs/multi_v7_defconfig |    2 +-
+ arch/arm/configs/shmobile_defconfig |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/arm/boot/dts/am437x-sk-evm.dts
-+++ b/arch/arm/boot/dts/am437x-sk-evm.dts
-@@ -100,7 +100,7 @@
- 	};
- 
- 	lcd0: display {
--		compatible = "osddisplays,osd057T0559-34ts", "panel-dpi";
-+		compatible = "newhaven,nhd-4.3-480272ef-atxl", "panel-dpi";
- 		label = "lcd";
- 
- 		pinctrl-names = "default";
-@@ -112,11 +112,11 @@
- 			clock-frequency = <9000000>;
- 			hactive = <480>;
- 			vactive = <272>;
--			hfront-porch = <8>;
--			hback-porch = <43>;
--			hsync-len = <4>;
--			vback-porch = <12>;
--			vfront-porch = <4>;
-+			hfront-porch = <2>;
-+			hback-porch = <2>;
-+			hsync-len = <41>;
-+			vfront-porch = <2>;
-+			vback-porch = <2>;
- 			vsync-len = <10>;
- 			hsync-active = <0>;
- 			vsync-active = <0>;
+--- a/arch/arm/configs/multi_v7_defconfig
++++ b/arch/arm/configs/multi_v7_defconfig
+@@ -446,4 +446,4 @@ CONFIG_DEBUG_FS=y
+ CONFIG_MAGIC_SYSRQ=y
+ CONFIG_LOCKUP_DETECTOR=y
+ CONFIG_CRYPTO_DEV_TEGRA_AES=y
+-CONFIG_GENERIC_CPUFREQ_CPU0=y
++CONFIG_CPUFREQ_DT=y
+--- a/arch/arm/configs/shmobile_defconfig
++++ b/arch/arm/configs/shmobile_defconfig
+@@ -176,5 +176,5 @@ CONFIG_CPU_FREQ_GOV_USERSPACE=y
+ CONFIG_CPU_FREQ_GOV_ONDEMAND=y
+ CONFIG_CPU_FREQ_GOV_CONSERVATIVE=y
+ CONFIG_CPU_THERMAL=y
+-CONFIG_GENERIC_CPUFREQ_CPU0=y
++CONFIG_CPUFREQ_DT=y
+ CONFIG_REGULATOR_DA9210=y
 
 
