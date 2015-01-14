@@ -1,177 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932087AbbANSjI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 13:39:08 -0500
-Received: from mail-we0-f176.google.com ([74.125.82.176]:50573 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752184AbbANSjF (ORCPT
+	id S932108AbbANSjn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 13:39:43 -0500
+Received: from mail-vc0-f174.google.com ([209.85.220.174]:33337 "EHLO
+	mail-vc0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754430AbbANSjm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 13:39:05 -0500
+	Wed, 14 Jan 2015 13:39:42 -0500
 MIME-Version: 1.0
-In-Reply-To: <20150114154816.58b0f9c7@lxorguk.ukuu.org.uk>
-References: <1421198202-4042-1-git-send-email-eu@felipetonello.com>
-	<20150114154816.58b0f9c7@lxorguk.ukuu.org.uk>
-Date: Wed, 14 Jan 2015 10:39:04 -0800
-Message-ID: <CAGrhNMysmq==Y0naNki0z5usmMwUErj-FOTy=8KH0V=R7=VFwA@mail.gmail.com>
-Subject: Re: [PATCH] char: Added support for u-blox 6 i2c gps driver
-From: Felipe Tonello <eu@felipetonello.com>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
+In-Reply-To: <1421203412-5159-1-git-send-email-zyw@rock-chips.com>
+References: <1421203412-5159-1-git-send-email-zyw@rock-chips.com>
+Date: Wed, 14 Jan 2015 10:39:41 -0800
+X-Google-Sender-Auth: b6vsuhembe9kwRpe68u0yYoDeGQ
+Message-ID: <CAD=FV=UBSBmCo3GpKN0pkdmkbT27hPp4akPoZG0hSGdpEwa_jg@mail.gmail.com>
+Subject: Re: [PATCH] RTC: RK808: fix the rtc time reading issue
+From: Doug Anderson <dianders@chromium.org>
+To: Chris Zhong <zyw@rock-chips.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+Chris,
 
-On Wed, Jan 14, 2015 at 7:48 AM, One Thousand Gnomes
-<gnomes@lxorguk.ukuu.org.uk> wrote:
-> On Tue, 13 Jan 2015 17:16:42 -0800
-> "Felipe F. Tonello" <eu@felipetonello.com> wrote:
->
->> This driver will basically translate serial communication to i2c communication
->> between the user-space and the GPS module.
->>
->> It creates a /dev/ttyS device node.
->
-> It shouldn't. It should use its own name. (ttyubl or something .. )
+On Tue, Jan 13, 2015 at 6:43 PM, Chris Zhong <zyw@rock-chips.com> wrote:
+> +       /* After we set the GET_TIME bit, the rtc time couldn't be read
+> +        * immediately, we should wait up to 31.25 us, about one cycle of
+> +        * 32khz. If we clear the GET_TIME bit here, the time of i2c transfer
+> +        * certainly more than 31.25us.
+> +        */
 
-Ok.
+No idea what Andrew thinks of this, but other multiline comments in
+this file look slightly different (there's a line containing just /*).
 
->
->
->> There are specific tty termios flags in order to the tty line discipliner not
->> to change the date it is pushed to user space. That is necessary so the NMEA
->> data is not corrupted.
->> * iflags: added IGNCR: Ignore carriage return on input.
->> * oflags: removed ONLCR: (XSI) Map NL to CR-NL on output.
->
-> The user space should probably set these but if its a single purpose
-> device then it's not unreasonable to just set defaults I guess.
 
-Yes, that was my idea.
+>         ret = regmap_update_bits(rk808->regmap, RK808_RTC_CTRL_REG,
+>                                  BIT_RTC_CTRL_REG_RTC_GET_TIME,
+> -                                BIT_RTC_CTRL_REG_RTC_GET_TIME);
+> +                                0);
+>         if (ret) {
+>                 dev_err(dev, "Failed to update bits rtc_ctrl: %d\n", ret);
+>                 return ret;
 
->
->> +static DECLARE_DELAYED_WORK(ublox_gps_wq, ublox_gps_read_worker);
->> +
->> +static void ublox_gps_read_worker(struct work_struct *private)
->> +{
->> +     s32 gps_buf_size, buf_size = 0;
->> +     u8 *buf;
->> +
->> +     if (!ublox_gps_is_open)
->> +             return;
->> +
->> +     /* check if driver was removed */
->> +     if (!ublox_gps_i2c_client)
->> +             return;
->
->
-> Greg has pointed out your locking is nonsensical - you want to be
-> refcounting. In the tty side case it's done for you for the most part,
-> but for the i2c side it's your problem and you need to ensure that you
-> hold suitable references between tty open and close, and on the close you
-> kill and wait for any work queues.
->
->
->> +static int ublox_gps_serial_open(struct tty_struct *tty, struct file *filp)
->> +{
->> +     if (ublox_gps_is_open)
->> +             return -EBUSY;
->> +
->> +     ublox_gps_filp = filp;
->> +     ublox_gps_tty_port = tty->port;
->> +     ublox_gps_tty_port->low_latency = true; /* make sure we push data immediately */
->> +     ublox_gps_is_open = true;
->
-> tty semantics for exclusive are standardised in POSIX and this is not the
-> expected behaviour. See the TIOCEXCL ioctl.
->
->> +static void ublox_gps_serial_close(struct tty_struct *tty, struct file *filp)
->> +{
->> +     if (!ublox_gps_is_open)
->> +             return;
->> +
->> +     /* avoid stop when the denied (in open) file structure closes itself */
->> +     if (ublox_gps_filp != filp)
->> +             return;
->
-> That should never be possible. If it can happen you've got a locking bug
-> that needs fixing instead
->
->> +static int ublox_gps_serial_write(struct tty_struct *tty, const unsigned char *buf,
->> +     int count)
->> +{
->> +     if (!ublox_gps_is_open)
->> +             return 0;
->> +
->> +     /* check if driver was removed */
->> +     if (!ublox_gps_i2c_client)
->> +             return 0;
->> +
->> +     /* we don't write back to the GPS so just return same value here */
->> +     return count;
->
-> Just omit the serial_write method, or return -EIO; don't pretend it
-> worked.
+Above is just a nit.  I'll leave it up to Andrew to say whether he
+wants you to spin, or he'll fix it up, or he doesn't care and he'll
+land it as-is.
 
-Ok. I had to write the write because the tty layer was calling
-write_room without testing if the pointer was NULL. That was causing a
-segmentation fault. And If you implement the write_room you have to
-implement the write too.
-
-Maybe more recent versions fixed this bug.
-
->
->> +     ublox_gps_tty_driver->driver_name = "ublox_gps";
->> +     ublox_gps_tty_driver->name = "ttyS";
->> +     ublox_gps_tty_driver->major = UBLOX_GPS_MAJOR;
->
-> Not ttyS and use dynamic numbering
->
->> +     ublox_gps_tty_driver->minor_start = 0;
->> +     ublox_gps_tty_driver->type = TTY_DRIVER_TYPE_SERIAL;
->> +     ublox_gps_tty_driver->subtype = SERIAL_TYPE_NORMAL;
->> +     ublox_gps_tty_driver->flags = TTY_DRIVER_REAL_RAW;
->> +     ublox_gps_tty_driver->init_termios = tty_std_termios;
->> +     ublox_gps_tty_driver->init_termios.c_iflag = IGNCR | IXON;
->> +     ublox_gps_tty_driver->init_termios.c_oflag = OPOST;
->> +     ublox_gps_tty_driver->init_termios.c_cflag = B9600 | CS8 | CREAD |
->> +             HUPCL | CLOCAL;
->> +     ublox_gps_tty_driver->init_termios.c_ispeed = 9600;
->> +     ublox_gps_tty_driver->init_termios.c_ospeed = 9600;
->> +     tty_set_operations(ublox_gps_tty_driver, &ublox_gps_serial_ops);
->> +     result = tty_register_driver(ublox_gps_tty_driver);
->> +     if (result) {
->> +             dev_err(&ublox_gps_i2c_client->dev, KBUILD_MODNAME ": %s - tty_register_driver failed\n",
->> +                     __func__);
->> +             goto err;
->> +     }
->> +
->> +     ublox_gps_i2c_client = client;
->> +     ublox_gps_filp = NULL;
->> +     ublox_gps_tty_port = NULL;
->> +     ublox_gps_is_open = false;
->
-> There are some other i2c based tty drivers in the kernel - notably those
-> in drivers/tty/serial that use the uart layer to deal with most of the
-> awkward locking cases.
->
-> You can do it by hand but it's fairly hairy (see
-> drivers/mmc/card/sdio_uart.c, so it might be simplest to tweak the driver
-> to use the uart layer. You don't really gain much from it for your driver
-> except easier locking - but the locking is rather handy.
->
-> Alan
-
-Ok.
-
-The thing is that: I wrote this driver to work with only one gps
-module, because that's my configuration here. I cannot really test
-multiple i2c gps at the same time. If you guys really want a driver
-that works for multiple gps drivers, I cannot test it.
-
-So my question is, can I leave the driver working for one gps only and
-then improve what needs to be improved?
+Reviewed-by: Doug Anderson <dianders@chromium.org>
