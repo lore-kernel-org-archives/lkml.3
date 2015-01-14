@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928AbbANQiQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 11:38:16 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:40003 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751331AbbANQiO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 11:38:14 -0500
-Date: Wed, 14 Jan 2015 16:38:00 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: "Wang, Yalin" <Yalin.Wang@sonymobile.com>
-Cc: "'Ard Biesheuvel'" <ard.biesheuvel@linaro.org>,
-        "'Will Deacon'" <will.deacon@arm.com>,
-        "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'akinobu.mita@gmail.com'" <akinobu.mita@gmail.com>,
-        "'linux-mm@kvack.org'" <linux-mm@kvack.org>,
-        "'Joe Perches'" <joe@perches.com>,
-        "'linux-arm-kernel@lists.infradead.org'" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [RFC V6 2/3] arm:add bitrev.h file to support rbit instruction
-Message-ID: <20150114163800.GZ12302@n2100.arm.linux.org.uk>
-References: <35FD53F367049845BC99AC72306C23D103E010D18273@CNBJMBX05.corpusers.net>
- <35FD53F367049845BC99AC72306C23D103E010D18275@CNBJMBX05.corpusers.net>
- <20141113235322.GC4042@n2100.arm.linux.org.uk>
- <35FD53F367049845BC99AC72306C23D103E010D1829B@CNBJMBX05.corpusers.net>
- <20141114095812.GG4042@n2100.arm.linux.org.uk>
- <35FD53F367049845BC99AC72306C23D103E688B313C6@CNBJMBX05.corpusers.net>
- <20150108184059.GZ12302@n2100.arm.linux.org.uk>
- <35FD53F367049845BC99AC72306C23D103EDAF89E195@CNBJMBX05.corpusers.net>
- <20150109111048.GE12302@n2100.arm.linux.org.uk>
- <35FD53F367049845BC99AC72306C23D103EDAF89E198@CNBJMBX05.corpusers.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <35FD53F367049845BC99AC72306C23D103EDAF89E198@CNBJMBX05.corpusers.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752941AbbANQjm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 11:39:42 -0500
+Received: from mga02.intel.com ([134.134.136.20]:31861 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751677AbbANQjg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 11:39:36 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.07,756,1413270000"; 
+   d="scan'208";a="651077351"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: x86@kernel.org, Aubrey Li <aubrey.li@linux.intel.com>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        "Kumar P, Mahesh" <mahesh.kumar.p@intel.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v5 0/5] x86: clean ups and feature enhancement in pmc_atom
+Date: Wed, 14 Jan 2015 18:39:30 +0200
+Message-Id: <1421253575-22509-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 2.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 09, 2015 at 08:40:56PM +0800, Wang, Yalin wrote:
-> Oh, I see,
-> How about change like this:
-> +	select HAVE_ARCH_BITREVERSE if ((CPU_V7M || CPU_V7) && !CPU_V6 && !CPU_V6K)
-> I am not sure if I also need add some older CPU types like !CPU_ARM9TDMI &&　!CPU_ARM940T ?
-> 
-> Another solution is:
-> +	select HAVE_ARCH_BITREVERSE if ((CPU_32V7M || CPU_32V7) && !CPU_32V6 && !CPU_32V5 && !CPU_32V4 && !CPU_32V4T && !CPU_32V3)
-> 
-> By the way, I am not clear about the difference between CPU_V6 and CPU_V6K, could you tell me? :)
+Couple of clean ups and one feature enhancement (expose PSS register in the
+debug fs).
 
-I think
+Changes since v4:
+- address one Thomas' comment (patch 1/5 was added)
+- rebased on recent linux-next
 
-	select HAVE_ARCH_BITREVERSE if (CPU_32v7M || CPU_32v7) && !CPU_32v6
+Changes since v3:
+- rebase on top of recent linux-next
+- resend to better place for review and push
 
-is sufficient - we don't support mixing pre-v6 and v6+ CPU architectures
-into a single kernel.
+Changes since v2:
+- rebase on top of recent linux-next
+- applied Acks
+- introduce patch 3/3
+
+Andy Shevchenko (5):
+  x86: pmc-atom: assign debugfs node as soon as possible
+  x86: pmc_atom: don't check for NULL twice
+  x86: pmc-atom: remove unused macro
+  x86: pmc_atom: clean up init function
+  x86: pmc_atom: expose contents of PSS
+
+ arch/x86/include/asm/pmc_atom.h | 22 +++++++++++
+ arch/x86/kernel/pmc_atom.c      | 81 ++++++++++++++++++++++++++++++++---------
+ 2 files changed, 86 insertions(+), 17 deletions(-)
 
 -- 
-FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
-according to speedtest.net.
+2.1.4
+
