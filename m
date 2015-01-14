@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933015AbbANIQh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:16:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58197 "EHLO
+	id S932222AbbANHbE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:31:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58202 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752517AbbANHay (ORCPT
+	with ESMTP id S1753903AbbANHa7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:30:54 -0500
+	Wed, 14 Jan 2015 02:30:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Ahmed Tamrawi <ahmedtamrawi@gmail.com>,
-        Oliver Neukum <oneukum@suse.de>
-Subject: [PATCH 3.18 090/150] cdc-acm: memory leak in error case
-Date: Tue, 13 Jan 2015 23:22:41 -0800
-Message-Id: <20150114072059.954375580@linuxfoundation.org>
+        Philipp Reisner <philipp.reisner@linbit.com>,
+        Lars Ellenberg <lars.ellenberg@linbit.com>, Jens Axboe <axboe@fb.com>
+Subject: [PATCH 3.18 091/150] drbd: merge_bvec_fn: properly remap bvm->bi_bdev
+Date: Tue, 13 Jan 2015 23:22:42 -0800
+Message-Id: <20150114072059.996883185@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -29,30 +29,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oliver Neukum <oneukum@suse.de>
+From: Lars Ellenberg <lars.ellenberg@linbit.com>
 
-commit d908f8478a8d18e66c80a12adb27764920c1f1ca upstream.
+commit 3b9d35d744bb5139f9fed57f38c019bb8c7d351c upstream.
 
-If probe() fails not only the attributes need to be removed
-but also the memory freed.
+This was not noticed for many years. Affects operation if
+md raid is used a backing device for DRBD.
 
-Reported-by: Ahmed Tamrawi <ahmedtamrawi@gmail.com>
-Signed-off-by: Oliver Neukum <oneukum@suse.de>
+Signed-off-by: Philipp Reisner <philipp.reisner@linbit.com>
+Signed-off-by: Lars Ellenberg <lars.ellenberg@linbit.com>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/class/cdc-acm.c |    1 +
+ drivers/block/drbd/drbd_req.c |    1 +
  1 file changed, 1 insertion(+)
 
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -1476,6 +1476,7 @@ alloc_fail8:
- 				&dev_attr_wCountryCodes);
- 		device_remove_file(&acm->control->dev,
- 				&dev_attr_iCountryCodeRelDate);
-+		kfree(acm->country_codes);
- 	}
- 	device_remove_file(&acm->control->dev, &dev_attr_bmCapabilities);
- alloc_fail7:
+--- a/drivers/block/drbd/drbd_req.c
++++ b/drivers/block/drbd/drbd_req.c
+@@ -1545,6 +1545,7 @@ int drbd_merge_bvec(struct request_queue
+ 		struct request_queue * const b =
+ 			device->ldev->backing_bdev->bd_disk->queue;
+ 		if (b->merge_bvec_fn) {
++			bvm->bi_bdev = device->ldev->backing_bdev;
+ 			backing_limit = b->merge_bvec_fn(b, bvm, bvec);
+ 			limit = min(limit, backing_limit);
+ 		}
 
 
