@@ -1,24 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754001AbbANH0I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:26:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57753 "EHLO
+	id S1756083AbbANInp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:43:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57765 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753942AbbANH0F (ORCPT
+	with ESMTP id S1753968AbbANH0G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:26:05 -0500
+	Wed, 14 Jan 2015 02:26:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Rob Herring <robherring2@gmail.com>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Anton Vorontsov <anton@enomsg.org>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
-        Kees Cook <keescook@chromium.org>, Tony Lindgren <tony@atomide.com>,
-        Tony Luck <tony.luck@intel.com>
-Subject: [PATCH 3.18 041/150] pstore-ram: Allow optional mapping with pgprot_noncached
-Date: Tue, 13 Jan 2015 23:21:52 -0800
-Message-Id: <20150114072057.723529817@linuxfoundation.org>
+        Richard Weinberger <richard@nod.at>,
+        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+Subject: [PATCH 3.18 042/150] UBI: Fix invalid vfree()
+Date: Tue, 13 Jan 2015 23:21:53 -0800
+Message-Id: <20150114072057.764979337@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -33,233 +29,72 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tony Lindgren <tony@atomide.com>
+From: Richard Weinberger <richard@nod.at>
 
-commit 027bc8b08242c59e19356b4b2c189f2d849ab660 upstream.
+commit f38aed975c0c3645bbdfc5ebe35726e64caaf588 upstream.
 
-On some ARMs the memory can be mapped pgprot_noncached() and still
-be working for atomic operations. As pointed out by Colin Cross
-<ccross@android.com>, in some cases you do want to use
-pgprot_noncached() if the SoC supports it to see a debug printk
-just before a write hanging the system.
+The logic of vfree()'ing vol->upd_buf is tied to vol->updating.
+In ubi_start_update() vol->updating is set long before vmalloc()'ing
+vol->upd_buf. If we encounter a write failure in ubi_start_update()
+before vmalloc() the UBI device release function will try to vfree()
+vol->upd_buf because vol->updating is set.
+Fix this by allocating vol->upd_buf directly after setting vol->updating.
 
-On ARMs, the atomic operations on strongly ordered memory are
-implementation defined. So let's provide an optional kernel parameter
-for configuring pgprot_noncached(), and use pgprot_writecombine() by
-default.
+Fixes:
+[   31.559338] UBI warning: vol_cdev_release: update of volume 2 not finished, volume is damaged
+[   31.559340] ------------[ cut here ]------------
+[   31.559343] WARNING: CPU: 1 PID: 2747 at mm/vmalloc.c:1446 __vunmap+0xe3/0x110()
+[   31.559344] Trying to vfree() nonexistent vm area (ffffc90001f2b000)
+[   31.559345] Modules linked in:
+[   31.565620]  0000000000000bba ffff88002a0cbdb0 ffffffff818f0497 ffff88003b9ba148
+[   31.566347]  ffff88002a0cbde0 ffffffff8156f515 ffff88003b9ba148 0000000000000bba
+[   31.567073]  0000000000000000 0000000000000000 ffff88002a0cbe88 ffffffff8156c10a
+[   31.567793] Call Trace:
+[   31.568034]  [<ffffffff818f0497>] dump_stack+0x4e/0x7a
+[   31.568510]  [<ffffffff8156f515>] ubi_io_write_vid_hdr+0x155/0x160
+[   31.569084]  [<ffffffff8156c10a>] ubi_eba_write_leb+0x23a/0x870
+[   31.569628]  [<ffffffff81569b36>] vol_cdev_write+0x226/0x380
+[   31.570155]  [<ffffffff81179265>] vfs_write+0xb5/0x1f0
+[   31.570627]  [<ffffffff81179f8a>] SyS_pwrite64+0x6a/0xa0
+[   31.571123]  [<ffffffff818fde12>] system_call_fastpath+0x16/0x1b
 
-Cc: Arnd Bergmann <arnd@arndb.de>
-Cc: Rob Herring <robherring2@gmail.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Anton Vorontsov <anton@enomsg.org>
-Cc: Colin Cross <ccross@android.com>
-Cc: Olof Johansson <olof@lixom.net>
-Cc: Russell King <linux@arm.linux.org.uk>
-Acked-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
-Signed-off-by: Tony Luck <tony.luck@intel.com>
+Signed-off-by: Richard Weinberger <richard@nod.at>
+Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- Documentation/ramoops.txt  |   13 +++++++++++--
- fs/pstore/ram.c            |   13 +++++++++++--
- fs/pstore/ram_core.c       |   31 ++++++++++++++++++++++---------
- include/linux/pstore_ram.h |    4 +++-
- 4 files changed, 47 insertions(+), 14 deletions(-)
+ drivers/mtd/ubi/upd.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
 
---- a/Documentation/ramoops.txt
-+++ b/Documentation/ramoops.txt
-@@ -14,11 +14,19 @@ survive after a restart.
+--- a/drivers/mtd/ubi/upd.c
++++ b/drivers/mtd/ubi/upd.c
+@@ -133,6 +133,10 @@ int ubi_start_update(struct ubi_device *
+ 	ubi_assert(!vol->updating && !vol->changing_leb);
+ 	vol->updating = 1;
  
- 1. Ramoops concepts
- 
--Ramoops uses a predefined memory area to store the dump. The start and size of
--the memory area are set using two variables:
-+Ramoops uses a predefined memory area to store the dump. The start and size
-+and type of the memory area are set using three variables:
-   * "mem_address" for the start
-   * "mem_size" for the size. The memory size will be rounded down to a
-   power of two.
-+  * "mem_type" to specifiy if the memory type (default is pgprot_writecombine).
++	vol->upd_buf = vmalloc(ubi->leb_size);
++	if (!vol->upd_buf)
++		return -ENOMEM;
 +
-+Typically the default value of mem_type=0 should be used as that sets the pstore
-+mapping to pgprot_writecombine. Setting mem_type=1 attempts to use
-+pgprot_noncached, which only works on some platforms. This is because pstore
-+depends on atomic operations. At least on ARM, pgprot_noncached causes the
-+memory to be mapped strongly ordered, and atomic operations on strongly ordered
-+memory are implementation defined, and won't work on many ARMs such as omaps.
- 
- The memory area is divided into "record_size" chunks (also rounded down to
- power of two) and each oops/panic writes a "record_size" chunk of
-@@ -55,6 +63,7 @@ Setting the ramoops parameters can be do
- static struct ramoops_platform_data ramoops_data = {
-         .mem_size               = <...>,
-         .mem_address            = <...>,
-+        .mem_type               = <...>,
-         .record_size            = <...>,
-         .dump_oops              = <...>,
-         .ecc                    = <...>,
---- a/fs/pstore/ram.c
-+++ b/fs/pstore/ram.c
-@@ -61,6 +61,11 @@ module_param(mem_size, ulong, 0400);
- MODULE_PARM_DESC(mem_size,
- 		"size of reserved RAM used to store oops/panic logs");
- 
-+static unsigned int mem_type;
-+module_param(mem_type, uint, 0600);
-+MODULE_PARM_DESC(mem_type,
-+		"set to 1 to try to use unbuffered memory (default 0)");
+ 	err = set_update_marker(ubi, vol);
+ 	if (err)
+ 		return err;
+@@ -152,14 +156,12 @@ int ubi_start_update(struct ubi_device *
+ 		err = clear_update_marker(ubi, vol, 0);
+ 		if (err)
+ 			return err;
 +
- static int dump_oops = 1;
- module_param(dump_oops, int, 0600);
- MODULE_PARM_DESC(dump_oops,
-@@ -79,6 +84,7 @@ struct ramoops_context {
- 	struct persistent_ram_zone *fprz;
- 	phys_addr_t phys_addr;
- 	unsigned long size;
-+	unsigned int memtype;
- 	size_t record_size;
- 	size_t console_size;
- 	size_t ftrace_size;
-@@ -358,7 +364,8 @@ static int ramoops_init_przs(struct devi
- 		size_t sz = cxt->record_size;
- 
- 		cxt->przs[i] = persistent_ram_new(*paddr, sz, 0,
--						  &cxt->ecc_info);
-+						  &cxt->ecc_info,
-+						  cxt->memtype);
- 		if (IS_ERR(cxt->przs[i])) {
- 			err = PTR_ERR(cxt->przs[i]);
- 			dev_err(dev, "failed to request mem region (0x%zx@0x%llx): %d\n",
-@@ -388,7 +395,7 @@ static int ramoops_init_prz(struct devic
- 		return -ENOMEM;
++		vfree(vol->upd_buf);
+ 		vol->updating = 0;
+ 		return 0;
  	}
  
--	*prz = persistent_ram_new(*paddr, sz, sig, &cxt->ecc_info);
-+	*prz = persistent_ram_new(*paddr, sz, sig, &cxt->ecc_info, cxt->memtype);
- 	if (IS_ERR(*prz)) {
- 		int err = PTR_ERR(*prz);
- 
-@@ -435,6 +442,7 @@ static int ramoops_probe(struct platform
- 
- 	cxt->size = pdata->mem_size;
- 	cxt->phys_addr = pdata->mem_address;
-+	cxt->memtype = pdata->mem_type;
- 	cxt->record_size = pdata->record_size;
- 	cxt->console_size = pdata->console_size;
- 	cxt->ftrace_size = pdata->ftrace_size;
-@@ -564,6 +572,7 @@ static void ramoops_register_dummy(void)
- 
- 	dummy_data->mem_size = mem_size;
- 	dummy_data->mem_address = mem_address;
-+	dummy_data->mem_type = 0;
- 	dummy_data->record_size = record_size;
- 	dummy_data->console_size = ramoops_console_size;
- 	dummy_data->ftrace_size = ramoops_ftrace_size;
---- a/fs/pstore/ram_core.c
-+++ b/fs/pstore/ram_core.c
-@@ -380,7 +380,8 @@ void persistent_ram_zap(struct persisten
- 	persistent_ram_update_header_ecc(prz);
- }
- 
--static void *persistent_ram_vmap(phys_addr_t start, size_t size)
-+static void *persistent_ram_vmap(phys_addr_t start, size_t size,
-+		unsigned int memtype)
- {
- 	struct page **pages;
- 	phys_addr_t page_start;
-@@ -392,7 +393,10 @@ static void *persistent_ram_vmap(phys_ad
- 	page_start = start - offset_in_page(start);
- 	page_count = DIV_ROUND_UP(size + offset_in_page(start), PAGE_SIZE);
- 
--	prot = pgprot_writecombine(PAGE_KERNEL);
-+	if (memtype)
-+		prot = pgprot_noncached(PAGE_KERNEL);
-+	else
-+		prot = pgprot_writecombine(PAGE_KERNEL);
- 
- 	pages = kmalloc_array(page_count, sizeof(struct page *), GFP_KERNEL);
- 	if (!pages) {
-@@ -411,8 +415,11 @@ static void *persistent_ram_vmap(phys_ad
- 	return vaddr;
- }
- 
--static void *persistent_ram_iomap(phys_addr_t start, size_t size)
-+static void *persistent_ram_iomap(phys_addr_t start, size_t size,
-+		unsigned int memtype)
- {
-+	void *va;
-+
- 	if (!request_mem_region(start, size, "persistent_ram")) {
- 		pr_err("request mem region (0x%llx@0x%llx) failed\n",
- 			(unsigned long long)size, (unsigned long long)start);
-@@ -422,19 +429,24 @@ static void *persistent_ram_iomap(phys_a
- 	buffer_start_add = buffer_start_add_locked;
- 	buffer_size_add = buffer_size_add_locked;
- 
--	return ioremap_wc(start, size);
-+	if (memtype)
-+		va = ioremap(start, size);
-+	else
-+		va = ioremap_wc(start, size);
-+
-+	return va;
- }
- 
- static int persistent_ram_buffer_map(phys_addr_t start, phys_addr_t size,
--		struct persistent_ram_zone *prz)
-+		struct persistent_ram_zone *prz, int memtype)
- {
- 	prz->paddr = start;
- 	prz->size = size;
- 
- 	if (pfn_valid(start >> PAGE_SHIFT))
--		prz->vaddr = persistent_ram_vmap(start, size);
-+		prz->vaddr = persistent_ram_vmap(start, size, memtype);
- 	else
--		prz->vaddr = persistent_ram_iomap(start, size);
-+		prz->vaddr = persistent_ram_iomap(start, size, memtype);
- 
- 	if (!prz->vaddr) {
- 		pr_err("%s: Failed to map 0x%llx pages at 0x%llx\n", __func__,
-@@ -500,7 +512,8 @@ void persistent_ram_free(struct persiste
- }
- 
- struct persistent_ram_zone *persistent_ram_new(phys_addr_t start, size_t size,
--			u32 sig, struct persistent_ram_ecc_info *ecc_info)
-+			u32 sig, struct persistent_ram_ecc_info *ecc_info,
-+			unsigned int memtype)
- {
- 	struct persistent_ram_zone *prz;
- 	int ret = -ENOMEM;
-@@ -511,7 +524,7 @@ struct persistent_ram_zone *persistent_r
- 		goto err;
- 	}
- 
--	ret = persistent_ram_buffer_map(start, size, prz);
-+	ret = persistent_ram_buffer_map(start, size, prz, memtype);
- 	if (ret)
- 		goto err;
- 
---- a/include/linux/pstore_ram.h
-+++ b/include/linux/pstore_ram.h
-@@ -53,7 +53,8 @@ struct persistent_ram_zone {
- };
- 
- struct persistent_ram_zone *persistent_ram_new(phys_addr_t start, size_t size,
--			u32 sig, struct persistent_ram_ecc_info *ecc_info);
-+			u32 sig, struct persistent_ram_ecc_info *ecc_info,
-+			unsigned int memtype);
- void persistent_ram_free(struct persistent_ram_zone *prz);
- void persistent_ram_zap(struct persistent_ram_zone *prz);
- 
-@@ -76,6 +77,7 @@ ssize_t persistent_ram_ecc_string(struct
- struct ramoops_platform_data {
- 	unsigned long	mem_size;
- 	unsigned long	mem_address;
-+	unsigned int	mem_type;
- 	unsigned long	record_size;
- 	unsigned long	console_size;
- 	unsigned long	ftrace_size;
+-	vol->upd_buf = vmalloc(ubi->leb_size);
+-	if (!vol->upd_buf)
+-		return -ENOMEM;
+-
+ 	vol->upd_ebs = div_u64(bytes + vol->usable_leb_size - 1,
+ 			       vol->usable_leb_size);
+ 	vol->upd_bytes = bytes;
 
 
