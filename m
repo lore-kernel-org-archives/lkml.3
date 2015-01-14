@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933185AbbANHjQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:39:16 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58929 "EHLO
+	id S1755489AbbANHwF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:52:05 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58735 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755386AbbANHjO (ORCPT
+	with ESMTP id S1755235AbbANHg4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:39:14 -0500
+	Wed, 14 Jan 2015 02:36:56 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>, Nishanth Menon <nm@ti.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Michal Marek <mmarek@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>,
+        Jay Foad <jay.foad@gmail.com>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.10 36/44] scripts/kernel-doc: dont eat struct members with __aligned
+Subject: [PATCH 3.14 77/77] mm: Dont count the stack guard page towards RLIMIT_STACK
 Date: Tue, 13 Jan 2015 23:23:57 -0800
-Message-Id: <20150114072229.386726507@linuxfoundation.org>
+Message-Id: <20150114072228.613515286@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
-References: <20150114072227.419663002@linuxfoundation.org>
+In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
+References: <20150114072224.182299947@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -27,57 +25,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Johannes Berg <johannes.berg@intel.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
 
-commit 7b990789a4c3420fa57596b368733158e432d444 upstream.
+commit 690eac53daff34169a4d74fc7bfbd388c4896abb upstream.
 
-The change from \d+ to .+ inside __aligned() means that the following
-structure:
+Commit fee7e49d4514 ("mm: propagate error from stack expansion even for
+guard page") made sure that we return the error properly for stack
+growth conditions.  It also theorized that counting the guard page
+towards the stack limit might break something, but also said "Let's see
+if anybody notices".
 
-  struct test {
-        u8 a __aligned(2);
-        u8 b __aligned(2);
-  };
+Somebody did notice.  Apparently android-x86 sets the stack limit very
+close to the limit indeed, and including the guard page in the rlimit
+check causes the android 'zygote' process problems.
 
-essentially gets modified to
+So this adds the (fairly trivial) code to make the stack rlimit check be
+against the actual real stack size, rather than the size of the vma that
+includes the guard page.
 
-  struct test {
-        u8 a;
-  };
-
-for purposes of kernel-doc, thus dropping a struct member, which in
-turns causes warnings and invalid kernel-doc generation.
-
-Fix this by replacing the catch-all (".") with anything that's not a
-semicolon ("[^;]").
-
-Fixes: 9dc30918b23f ("scripts/kernel-doc: handle struct member __aligned without numbers")
-Signed-off-by: Johannes Berg <johannes.berg@intel.com>
-Cc: Nishanth Menon <nm@ti.com>
-Cc: Randy Dunlap <rdunlap@infradead.org>
-Cc: Michal Marek <mmarek@suse.cz>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Reported-and-tested-by: Chih-Wei Huang <cwhuang@android-x86.org>
+Cc: Jay Foad <jay.foad@gmail.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- scripts/kernel-doc |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ mm/mmap.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
---- a/scripts/kernel-doc
-+++ b/scripts/kernel-doc
-@@ -1750,7 +1750,7 @@ sub dump_struct($$) {
- 	# strip kmemcheck_bitfield_{begin,end}.*;
- 	$members =~ s/kmemcheck_bitfield_.*?;//gos;
- 	# strip attributes
--	$members =~ s/__aligned\s*\(.+\)//gos;
-+	$members =~ s/__aligned\s*\([^;]*\)//gos;
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -2058,14 +2058,17 @@ static int acct_stack_growth(struct vm_a
+ {
+ 	struct mm_struct *mm = vma->vm_mm;
+ 	struct rlimit *rlim = current->signal->rlim;
+-	unsigned long new_start;
++	unsigned long new_start, actual_size;
  
- 	create_parameterlist($members, ';', $file);
- 	check_sections($file, $declaration_name, "struct", $sectcheck, $struct_actual, $nested);
+ 	/* address space limit tests */
+ 	if (!may_expand_vm(mm, grow))
+ 		return -ENOMEM;
+ 
+ 	/* Stack limit test */
+-	if (size > ACCESS_ONCE(rlim[RLIMIT_STACK].rlim_cur))
++	actual_size = size;
++	if (size && (vma->vm_flags & (VM_GROWSUP | VM_GROWSDOWN)))
++		actual_size -= PAGE_SIZE;
++	if (actual_size > ACCESS_ONCE(rlim[RLIMIT_STACK].rlim_cur))
+ 		return -ENOMEM;
+ 
+ 	/* mlock limit tests */
 
 
