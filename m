@@ -1,46 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753150AbbANVI6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 16:08:58 -0500
-Received: from mail.kernel.org ([198.145.29.136]:37303 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751630AbbANVI5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 16:08:57 -0500
-Date: Wed, 14 Jan 2015 18:08:52 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: David Ahern <dsahern@gmail.com>
-Cc: Namhyung Kim <namhyung@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: Re: [PATCH v2 1/4] perf tools: Fix segfault for symbol annotation on
- TUI
-Message-ID: <20150114210852.GD3691@kernel.org>
-References: <1421234288-22758-1-git-send-email-namhyung@kernel.org>
- <54B683ED.2060105@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54B683ED.2060105@gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753620AbbANVJj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 16:09:39 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:45379 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752016AbbANVJi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 16:09:38 -0500
+Date: Wed, 14 Jan 2015 16:09:29 -0500 (EST)
+Message-Id: <20150114.160929.619787519481343067.davem@davemloft.net>
+To: xander.huff@ni.com
+Cc: nicolas.ferre@atmel.com, netdev@vger.kernel.org, jaeden.amero@ni.com,
+        rich.tollerton@ni.com, ben.shelton@ni.com, brad.mouring@ni.com,
+        linux-kernel@vger.kernel.org, cyrille.pitchen@atmel.com
+Subject: Re: [PATCH 1/2] fixup! net/macb: Adding comments to various #defs
+ to make interpretation easier
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1421266881-17314-1-git-send-email-xander.huff@ni.com>
+References: <54B690F5.5080308@atmel.com>
+	<1421266881-17314-1-git-send-email-xander.huff@ni.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 14 Jan 2015 13:09:32 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Wed, Jan 14, 2015 at 07:57:49AM -0700, David Ahern escreveu:
-> On 1/14/15 4:18 AM, Namhyung Kim wrote:
-> 
-> >@@ -129,8 +124,7 @@ static inline struct sym_hist *annotation__histogram(struct annotation *notes, i
-> >
-> >  static inline struct annotation *symbol__annotation(struct symbol *sym)
-> >  {
-> >-	struct sannotation *a = container_of(sym, struct sannotation, symbol);
-> >-	return &a->annotation;
-> >+	return (void *)sym - symbol_conf.priv_size;
-> 
-> symbol__priv(sym);
 
-Amended, thanks.
+As I mentioned, this won't do.
 
-- Arnaldo
+I've already applied your original patches to net-next, therefore you will
+have to submit fixups relative to that.
