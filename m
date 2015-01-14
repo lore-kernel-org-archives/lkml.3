@@ -1,96 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751658AbbANArZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 19:47:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43640 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750921AbbANArY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 19:47:24 -0500
-Message-ID: <54B5BC84.8090603@redhat.com>
-Date: Tue, 13 Jan 2015 19:47:00 -0500
-From: Jon Masters <jcm@redhat.com>
-Organization: Red Hat, Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: sysfs topology for arm64 cluster_id
-Content-Type: text/plain; charset=utf-8
+	id S1752137AbbANArd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 19:47:33 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:54378 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751064AbbANAr2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 19:47:28 -0500
+Date: Tue, 13 Jan 2015 16:47:26 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Maximilian Attems <max@stro.at>, Geoff Levand <geoff@infradead.org>,
+        Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-api@vger.kernel.org, linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] headers_check: don't warn about kexec.h
+Message-Id: <20150113164726.72ab8dec58aabf332fd4e1a0@linux-foundation.org>
+In-Reply-To: <1421183111.15397.34.camel@x220>
+References: <12825174.7oxZXDxNhV@wuerfel>
+	<1421169212.15397.22.camel@x220>
+	<2363197.VbAKlSiQLX@wuerfel>
+	<1421183111.15397.34.camel@x220>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Folks,
+On Tue, 13 Jan 2015 22:05:11 +0100 Paul Bolle <pebolle@tiscali.nl> wrote:
 
-TLDR: I would like to consider the value of adding something like
-"cluster_siblings" or similar in sysfs to describe ARM topology.
+> [Dragging Andrew, Linus, and Maximilian into this thread.]
+> 
+> On Tue, 2015-01-13 at 21:27 +0100, Arnd Bergmann wrote:
+> > On Tuesday 13 January 2015 18:13:32 Paul Bolle wrote:
+> > > The last time that Geoff has been trying to get that patch applied
+> > > should be
+> > > http://lkml.kernel.org/r/b0702fc4186db21820d686e89afd6480560823db.1415837218.git.geoff@infradead.org> 
+> > > I'd rather see that go in.
+> > 
+> > Fine with me as well. As long as we can find someone to take one of 
+> > the patches, I'm happy.
+> 
+> Since Geoff's patch (and my preceding, identical patch) basically is a
+> partial revert of commit 29a5c67e7a78 ("kexec: export kexec.h to user
+> space") that should probably be done by either Andrew or Linus. 
+> 
+> (This short thread starts at
+> http://lkml.kernel.org/r/12825174.7oxZXDxNhV@wuerfel .)
 
-A quick question on intended data representation in /sysfs topology
-before I ask the team on this end to go down the (wrong?) path. On ARM
-systems today, we have a hierarchical CPU topology:
+hm, sorry, I can't imagine why I didn't process Geoff's patch series
+back in November.  They all look good - I grabbed them.
 
-                 Socket ---- Coherent Interonnect ---- Socket
-                   |                                    |
-         Cluster0 ... ClusterN                Cluster0 ... ClusterN
-            |             |                      |             |
-      Core0...CoreN  Core0...CoreN        Core0...CoreN  Core0...CoreN
-        |       |      |        |           |       |      |       |
-     T0..TN  T0..Tn  T0..TN  T0..TN       T0..TN T0..TN  T0..TN  T0..TN
 
-Where we might (or might not) have threads in individual cores (a la SMT
-- it's allowed in the architecture at any rate) and we group cores
-together into units of clusters usually 2-4 cores in size (though this
-varies between implementations, some of which have different but similar
-concepts, such as AppliedMicro Potenza PMDs CPU complexes of dual
-cores). There are multiple clusters per "socket", and there might be an
-arbitrary number of sockets. We'll start to enable NUMA soon.
-
-The existing ARM architectural code understands expressing topology in
-terms of the above, but it doesn't quite map these concepts directly in
-sysfs (does not expose cluster_ids as an example). Currently, a cpu-map
-in DeviceTree can expose hierarchies (included nested clusters) and this
-is parsed at boot time to populate scheduler information, as well as the
-topology files in sysfs (if that is provided - none of the reference
-devicetrees upstream do this today, but some exist). But the cluster
-information itself isn't quite exposed (whereas other whacky
-architectural concepts such as s390 books are exposed already today).
-
-Anyway. We have a small problem with tools such as those in util-linux
-(lscpu) getting confused as a result of translating x86-isms to ARM. For
-example, the lscpu utility calculates the number of sockets using the
-following computation:
-
-nsockets = desc->ncpus / nthreads / ncores
-
-(number of sockets = total number of online processing elements /
-threads within a single core / cores within a single socket)
-
-If you're not careful, you can end up with something like:
-
-# lscpu
-Architecture:          aarch64
-Byte Order:            Little Endian
-CPU(s):                8
-On-line CPU(s) list:   0-7
-Thread(s) per core:    1
-Core(s) per socket:    2
-Socket(s):             4
-
-Now we can argue that the system in question needs an updated cpu-map
-(it'll actually be something ACPI but I'm keeping this discussion to DT
-to avoid that piece further in discussion, and you can assume I'm
-booting any test boxes in further work on this using DeviceTree prior to
-switching the result over to ACPI) but either way, util-linux is
-thinking in an x86-centric sense of what these files mean. And I think
-the existing topology/cpu-map stuff in arm64 is doing the same.
-
-Is it not a good idea to expose the cluster details directly in sysfs
-and have these utilities understand the possible extra level in the
-calculation? Or do we want to just fudge the numbers (as seems to be the
-case in some systems I am seeing) to make the x86 model add up?
-
-Let me know the preferred course...
-
-Jon.
