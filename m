@@ -1,72 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753074AbbANRBH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 12:01:07 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:34055 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751404AbbANRBG (ORCPT
+	id S1753506AbbANRCp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 12:02:45 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:56911 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751868AbbANRCo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 12:01:06 -0500
-Date: Wed, 14 Jan 2015 17:00:45 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: "jcm@redhat.com" <jcm@redhat.com>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: sysfs topology for arm64 cluster_id
-Message-ID: <20150114170045.GC21115@leverpostej>
-References: <54B5BC84.8090603@redhat.com>
+	Wed, 14 Jan 2015 12:02:44 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54B5BC84.8090603@redhat.com>
-Thread-Topic: sysfs topology for arm64 cluster_id
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20150114164458.GA2152@fool>
+References: <CAECXXi7Ax3t2b7x=KqUF1udNKWgQnGebVtkyLHnjhxEZ2o=M5g@mail.gmail.com>
+	<CANZNk812oKH3k+bW8Jb2fQHxOS+pF=ghHpekB4X8QtQm67X-hQ@mail.gmail.com>
+	<CAECXXi4mEV2=-w95LJCDA=zf6f8_SCRBHYkp2tTwUuAJiOjaQQ@mail.gmail.com>
+	<20150114164458.GA2152@fool>
+Date: Wed, 14 Jan 2015 19:02:43 +0200
+Message-ID: <CANZNk826hadyqf=C7MsNdp9=kXTdqZGvoGbH4S16RHop=UVC6A@mail.gmail.com>
+Subject: Re: NBD Maintainer
+From: Andrey Utkin <andrey.krieger.utkin@gmail.com>
+To: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
+Cc: Paul Clements <paul.clements@us.sios.com>,
+        kernel list <linux-kernel@vger.kernel.org>,
+        "nbd-general@lists.sourceforge.net" 
+	<nbd-general@lists.sourceforge.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 14, 2015 at 12:47:00AM +0000, Jon Masters wrote:
-> Hi Folks,
-> 
-> TLDR: I would like to consider the value of adding something like
-> "cluster_siblings" or similar in sysfs to describe ARM topology.
-> 
-> A quick question on intended data representation in /sysfs topology
-> before I ask the team on this end to go down the (wrong?) path. On ARM
-> systems today, we have a hierarchical CPU topology:
-> 
->                  Socket ---- Coherent Interonnect ---- Socket
->                    |                                    |
->          Cluster0 ... ClusterN                Cluster0 ... ClusterN
->             |             |                      |             |
->       Core0...CoreN  Core0...CoreN        Core0...CoreN  Core0...CoreN
->         |       |      |        |           |       |      |       |
->      T0..TN  T0..Tn  T0..TN  T0..TN       T0..TN T0..TN  T0..TN  T0..TN
-> 
-> Where we might (or might not) have threads in individual cores (a la SMT
-> - it's allowed in the architecture at any rate) and we group cores
-> together into units of clusters usually 2-4 cores in size (though this
-> varies between implementations, some of which have different but similar
-> concepts, such as AppliedMicro Potenza PMDs CPU complexes of dual
-> cores). There are multiple clusters per "socket", and there might be an
-> arbitrary number of sockets. We'll start to enable NUMA soon.
+2015-01-14 18:44 GMT+02:00 Sudip Mukherjee <sudipm.mukherjee@gmail.com>:
+> studied the driver code. looks like the driver is simple and the main work is being done by the nbd-client and nbd-server.
+> i was thinking of putting in my name for consideration, but being a newbie in lkml (have worked with drivers and server-client codes in my dayjob)
+> and seeing the vast user base i am not sure anymore. But will like to try if you are there for guidance.
+>
+> sudip
 
-I have a slight disagreement with the diagram above.
+Nearly the same for me, however, I have even less commits accepted
+upstream than Sudip.
+Willing to help despite being very limited in free time.
 
-The MPIDR_EL1.Aff* fields and the cpu-map bindings currently only
-describe the hierarchy, without any information on the relative
-weighting between levels, and without any mapping to HW concepts such as
-sockets. What these happen to map to is specific to a particular system,
-and the hierarchy may be carved up in a number of possible ways
-(including "virtual" clusters). There are also 24 RES0 bits that could
-potentially become additional Aff fields we may need to describe in
-future.
-
-"socket", "package", etc are meaningless unless the system provides a
-mapping of Aff levels to these. We can't guess how the HW is actually
-organised.
-
-Mark.
+-- 
+Andrey Utkin
