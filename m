@@ -1,91 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752231AbbANAde (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 19:33:34 -0500
-Received: from mail.kernel.org ([198.145.29.136]:55499 "EHLO mail.kernel.org"
+	id S1751658AbbANArZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 19:47:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43640 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751064AbbANAdb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 19:33:31 -0500
-From: Jaegeuk Kim <jaegeuk@kernel.org>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-f2fs-devel@lists.sourceforge.net
-Cc: Jaegeuk Kim <jaegeuk@kernel.org>
-Subject: [PATCH 2/2] f2fs: update memory footprint information
-Date: Tue, 13 Jan 2015 16:33:24 -0800
-Message-Id: <1421195604-5256-2-git-send-email-jaegeuk@kernel.org>
-X-Mailer: git-send-email 2.1.1
-In-Reply-To: <1421195604-5256-1-git-send-email-jaegeuk@kernel.org>
-References: <1421195604-5256-1-git-send-email-jaegeuk@kernel.org>
+	id S1750921AbbANArY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 19:47:24 -0500
+Message-ID: <54B5BC84.8090603@redhat.com>
+Date: Tue, 13 Jan 2015 19:47:00 -0500
+From: Jon Masters <jcm@redhat.com>
+Organization: Red Hat, Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: sysfs topology for arm64 cluster_id
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds missing memory usages, and splits them in detail.
+Hi Folks,
 
-Signed-off-by: Jaegeuk Kim <jaegeuk@kernel.org>
----
- fs/f2fs/debug.c | 24 +++++++++++++++++-------
- fs/f2fs/f2fs.h  |  2 +-
- 2 files changed, 18 insertions(+), 8 deletions(-)
+TLDR: I would like to consider the value of adding something like
+"cluster_siblings" or similar in sysfs to describe ARM topology.
 
-diff --git a/fs/f2fs/debug.c b/fs/f2fs/debug.c
-index b45daab..0f721f6 100644
---- a/fs/f2fs/debug.c
-+++ b/fs/f2fs/debug.c
-@@ -177,13 +177,18 @@ get_cache:
- 	/* free nids */
- 	si->cache_mem += NM_I(sbi)->fcnt * sizeof(struct free_nid);
- 	si->cache_mem += NM_I(sbi)->nat_cnt * sizeof(struct nat_entry);
--	npages = NODE_MAPPING(sbi)->nrpages;
--	si->cache_mem += npages << PAGE_CACHE_SHIFT;
--	npages = META_MAPPING(sbi)->nrpages;
--	si->cache_mem += npages << PAGE_CACHE_SHIFT;
-+	si->cache_mem += NM_I(sbi)->dirty_nat_cnt *
-+					sizeof(struct nat_entry_set);
-+	si->cache_mem += si->inmem_pages * sizeof(struct inmem_pages);
- 	si->cache_mem += sbi->n_dirty_dirs * sizeof(struct inode_entry);
- 	for (i = 0; i <= UPDATE_INO; i++)
- 		si->cache_mem += sbi->im[i].ino_num * sizeof(struct ino_entry);
-+
-+	si->page_mem = 0;
-+	npages = NODE_MAPPING(sbi)->nrpages;
-+	si->page_mem += npages << PAGE_CACHE_SHIFT;
-+	npages = META_MAPPING(sbi)->nrpages;
-+	si->page_mem += npages << PAGE_CACHE_SHIFT;
- }
- 
- static int stat_show(struct seq_file *s, void *v)
-@@ -301,9 +306,14 @@ static int stat_show(struct seq_file *s, void *v)
- 
- 		/* memory footprint */
- 		update_mem_info(si->sbi);
--		seq_printf(s, "\nMemory: %u KB = static: %u + cached: %u\n",
--				(si->base_mem + si->cache_mem) >> 10,
--				si->base_mem >> 10, si->cache_mem >> 10);
-+		seq_printf(s, "\nMemory: %u KB\n",
-+			(si->base_mem + si->cache_mem + si->page_mem) >> 10);
-+		seq_printf(s, "  - static: %u KB\n",
-+				si->base_mem >> 10);
-+		seq_printf(s, "  - cached: %u KB\n",
-+				si->cache_mem >> 10);
-+		seq_printf(s, "  - paged : %u KB\n",
-+				si->page_mem >> 10);
- 	}
- 	mutex_unlock(&f2fs_stat_mutex);
- 	return 0;
-diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
-index 209532c..c2cf040 100644
---- a/fs/f2fs/f2fs.h
-+++ b/fs/f2fs/f2fs.h
-@@ -1530,7 +1530,7 @@ struct f2fs_stat_info {
- 	unsigned int segment_count[2];
- 	unsigned int block_count[2];
- 	unsigned int inplace_count;
--	unsigned base_mem, cache_mem;
-+	unsigned base_mem, cache_mem, page_mem;
- };
- 
- static inline struct f2fs_stat_info *F2FS_STAT(struct f2fs_sb_info *sbi)
--- 
-2.1.1
+A quick question on intended data representation in /sysfs topology
+before I ask the team on this end to go down the (wrong?) path. On ARM
+systems today, we have a hierarchical CPU topology:
 
+                 Socket ---- Coherent Interonnect ---- Socket
+                   |                                    |
+         Cluster0 ... ClusterN                Cluster0 ... ClusterN
+            |             |                      |             |
+      Core0...CoreN  Core0...CoreN        Core0...CoreN  Core0...CoreN
+        |       |      |        |           |       |      |       |
+     T0..TN  T0..Tn  T0..TN  T0..TN       T0..TN T0..TN  T0..TN  T0..TN
+
+Where we might (or might not) have threads in individual cores (a la SMT
+- it's allowed in the architecture at any rate) and we group cores
+together into units of clusters usually 2-4 cores in size (though this
+varies between implementations, some of which have different but similar
+concepts, such as AppliedMicro Potenza PMDs CPU complexes of dual
+cores). There are multiple clusters per "socket", and there might be an
+arbitrary number of sockets. We'll start to enable NUMA soon.
+
+The existing ARM architectural code understands expressing topology in
+terms of the above, but it doesn't quite map these concepts directly in
+sysfs (does not expose cluster_ids as an example). Currently, a cpu-map
+in DeviceTree can expose hierarchies (included nested clusters) and this
+is parsed at boot time to populate scheduler information, as well as the
+topology files in sysfs (if that is provided - none of the reference
+devicetrees upstream do this today, but some exist). But the cluster
+information itself isn't quite exposed (whereas other whacky
+architectural concepts such as s390 books are exposed already today).
+
+Anyway. We have a small problem with tools such as those in util-linux
+(lscpu) getting confused as a result of translating x86-isms to ARM. For
+example, the lscpu utility calculates the number of sockets using the
+following computation:
+
+nsockets = desc->ncpus / nthreads / ncores
+
+(number of sockets = total number of online processing elements /
+threads within a single core / cores within a single socket)
+
+If you're not careful, you can end up with something like:
+
+# lscpu
+Architecture:          aarch64
+Byte Order:            Little Endian
+CPU(s):                8
+On-line CPU(s) list:   0-7
+Thread(s) per core:    1
+Core(s) per socket:    2
+Socket(s):             4
+
+Now we can argue that the system in question needs an updated cpu-map
+(it'll actually be something ACPI but I'm keeping this discussion to DT
+to avoid that piece further in discussion, and you can assume I'm
+booting any test boxes in further work on this using DeviceTree prior to
+switching the result over to ACPI) but either way, util-linux is
+thinking in an x86-centric sense of what these files mean. And I think
+the existing topology/cpu-map stuff in arm64 is doing the same.
+
+Is it not a good idea to expose the cluster details directly in sysfs
+and have these utilities understand the possible extra level in the
+calculation? Or do we want to just fudge the numbers (as seems to be the
+case in some systems I am seeing) to make the x86 model add up?
+
+Let me know the preferred course...
+
+Jon.
