@@ -1,195 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753705AbbANQwT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 11:52:19 -0500
-Received: from mail-ig0-f179.google.com ([209.85.213.179]:39076 "EHLO
-	mail-ig0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752018AbbANQwO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 11:52:14 -0500
-Date: Wed, 14 Jan 2015 09:52:04 -0700
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Subject: Re: [PATCH 02/10] PCI, x86: clip firmware assigned resource under
- parent bridge's
-Message-ID: <20150114165204.GA19925@google.com>
-References: <1421090600-9750-1-git-send-email-yinghai@kernel.org>
- <1421090600-9750-3-git-send-email-yinghai@kernel.org>
+	id S1752718AbbANQzn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 11:55:43 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:56117 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750719AbbANQzl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 11:55:41 -0500
+Date: Wed, 14 Jan 2015 17:55:37 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>, vvs@sw.ru,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        x86-ml <x86@kernel.org>, stable@vger.kernel.org
+Subject: Re: [PATCH 3/3] ftrace/jprobes/x86: Fix conflict between jprobes and
+ function graph tracing
+Message-ID: <20150114165537.GB6902@pd.tnic>
+References: <20150114153958.931152836@goodmis.org>
+ <20150114154329.552437962@goodmis.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1421090600-9750-3-git-send-email-yinghai@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20150114154329.552437962@goodmis.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 11:23:12AM -0800, Yinghai Lu wrote:
-> Some bios put range that is not fully coverred by root bus resources.
-> Try to clip them and update them in pci bridge bars.
+On Wed, Jan 14, 2015 at 10:40:01AM -0500, Steven Rostedt wrote:
+> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 > 
-> Link: https://bugzilla.kernel.org/show_bug.cgi?id=85491
-> Reported-by: Marek Kordik <kordikmarek@gmail.com>
-> Tested-by: Marek Kordik <kordikmarek@gmail.com>
-> Fixes: 5b28541552ef ("PCI: Restrict 64-bit prefetchable bridge windows to 64-bit resources")
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: Ingo Molnar <mingo@redhat.com>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: x86@kernel.org
-> ---
->  arch/x86/pci/i386.c | 74 +++++++++++++++++++++++++++++++++++++----------------
->  1 file changed, 52 insertions(+), 22 deletions(-)
+> If the function graph tracer traces a jprobe callback, the system will
+> crash. This can easily be demonstrated by compiling the jprobe
+> sample module that is in the kernel tree, loading it and running the
+> function graph tracer.
 > 
-> diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
-> index 9b18ef3..d43e1af 100644
-> --- a/arch/x86/pci/i386.c
-> +++ b/arch/x86/pci/i386.c
-> @@ -205,10 +205,11 @@ EXPORT_SYMBOL(pcibios_align_resource);
->   *	    as well.
->   */
->  
-> -static void pcibios_allocate_bridge_resources(struct pci_dev *dev)
-> +static bool pcibios_allocate_bridge_resources(struct pci_dev *dev)
->  {
->  	int idx;
->  	struct resource *r;
-> +	bool changed = false;
->  
->  	for (idx = PCI_BRIDGE_RESOURCES; idx < PCI_NUM_RESOURCES; idx++) {
->  		r = &dev->resource[idx];
-> @@ -216,17 +217,33 @@ static void pcibios_allocate_bridge_resources(struct pci_dev *dev)
->  			continue;
->  		if (r->parent)	/* Already allocated */
->  			continue;
-> -		if (!r->start || pci_claim_resource(dev, idx) < 0) {
-> -			/*
-> -			 * Something is wrong with the region.
-> -			 * Invalidate the resource to prevent
-> -			 * child resource allocations in this
-> -			 * range.
-> -			 */
-> -			r->start = r->end = 0;
-> -			r->flags = 0;
-> +
-> +		if (!r->start)
-> +			goto clear;
-> +
-> +		if (pci_claim_resource(dev, idx) >= 0)
-> +			continue;
-> +
-> +		/* try again after clip for pci bridge*/
-> +		if ((dev->class >> 8) == PCI_CLASS_BRIDGE_PCI &&
-> +		    pci_bus_clip_resource(dev, r)) {
-> +			changed = true;
-> +			if (pci_claim_resource(dev, idx) >= 0)
-> +				continue;
->  		}
-> +
-> +clear:
-> +		/*
-> +		 * Something is wrong with the region.
-> +		 * Invalidate the resource to prevent
-> +		 * child resource allocations in this
-> +		 * range.
-> +		 */
-> +		r->start = r->end = 0;
-> +		r->flags = 0;
->  	}
-> +
-> +	return changed;
-
-There's a lot of duplicated code in these patches.  Is it possible to
-factor this out a bit, e.g., something like this?
-
-  int pci_claim_bridge_resource(struct pci_dev *dev, int i)
-  {
-    if ((dev->class >> 8) != PCI_CLASS_BRIDGE_PCI)
-      return 0;
-
-    if (pci_claim_resource(dev, i) == 0)
-      return 0;		/* claimed the window */
-
-    if (!pci_bus_clip_resource(dev, i))
-      return -EINVAL;	/* clipping didn't change anything */
-
-    if (dev->subordinate)
-      pci_setup_bridge(dev->subordinate);
-    if (pci_claim_resource(dev, i) == 0)
-      return 0;		/* claimed a smaller window */
-
-    return -EINVAL;
-  }
-
->  }
->  
->  static void pcibios_allocate_bus_resources(struct pci_bus *bus)
-> @@ -234,8 +251,12 @@ static void pcibios_allocate_bus_resources(struct pci_bus *bus)
->  	struct pci_bus *child;
->  
->  	/* Depth-First Search on bus tree */
-> -	if (bus->self)
-> -		pcibios_allocate_bridge_resources(bus->self);
-> +	if (bus->self) {
-> +		bool changed = pcibios_allocate_bridge_resources(bus->self);
-> +
-> +		if (changed)
-> +			pci_setup_bridge(bus);
-> +	}
->  	list_for_each_entry(child, &bus->children, node)
->  		pcibios_allocate_bus_resources(child);
->  }
-> @@ -274,18 +295,27 @@ static void pcibios_allocate_dev_resources(struct pci_dev *dev, int pass)
->  				dev_dbg(&dev->dev,
->  					"BAR %d: reserving %pr (d=%d, p=%d)\n",
->  					idx, r, disabled, pass);
-> -				if (pci_claim_resource(dev, idx) < 0) {
-> -					if (r->flags & IORESOURCE_PCI_FIXED) {
-> -						dev_info(&dev->dev, "BAR %d %pR is immovable\n",
-> +
-> +				if (pci_claim_resource(dev, idx) >= 0)
-> +					continue;
-> +
-> +				if (r->flags & IORESOURCE_PCI_FIXED) {
-> +					dev_info(&dev->dev, "BAR %d %pR is immovable\n",
->  							 idx, r);
-> -					} else {
-> -						/* We'll assign a new address later */
-> -						pcibios_save_fw_addr(dev,
-> -								idx, r->start);
-> -						r->end -= r->start;
-> -						r->start = 0;
-> -					}
-> +					continue;
-> +				}
-> +
-> +				/* try again with clip */
-> +				if (pci_bus_clip_resource(dev, r)) {
-> +					pci_update_resource(dev, idx);
-> +					if (pci_claim_resource(dev, idx) >= 0)
-> +						continue;
-
-This hunk doesn't make sense to me.  This only deals with standard BARs and
-IOV BARS.  It doesn't deal with bridge windows at all.  The sizes of these
-BARs and IOV BARs are fixed and there's no point in trying to clip them
-because we can't tell the hardware that the BAR is now smaller.
-
-It's different for bridge windows because we can adjust their size.
-
-Bjorn
-
->  				}
-> +
-> +				/* We'll assign a new address later */
-> +				pcibios_save_fw_addr(dev, idx, r->start);
-> +				r->end -= r->start;
-> +				r->start = 0;
->  			}
->  		}
->  	if (!pass) {
-> -- 
-> 1.8.4.5
+>  # modprobe jprobe_example.ko
+>  # echo function_graph > /sys/kernel/debug/tracing/current_tracer
+>  # ls
 > 
+> The first two commands end up in a nice crash after the first fork.
+> (do_fork has a jprobe attached to it, so "ls" just triggers that fork)
+> 
+> The problem is caused by the jprobe_return() that all jprobe callbacks
+> must end with. The way jprobes works is that the function a jprobe
+> is attached to has a breakpoint placed at the start of it (or it uses
+> ftrace if fentry is supported). The breakpoint handler (or ftrace callback)
+> will copy the stack frame and change the ip address to return to the
+> jprobe handler instead of the function. The jprobe handler must end
+> with jprobe_return() which swaps the stack and does an int3 (breakpoint).
+> This breakpoint handler will then put back the saved stack frame,
+> simulate the instruction at the beginning of the function it added
+> a breakpoint to, and then continue on.
+> 
+> For function tracing to work, it hijakes the return address from the
+> stack frame, and replaces it with a hook function that will trace
+> the end of the call. This hook function will restore the return
+> address of the function call.
+> 
+> If the function tracer traces the jprobe handler, the hook function
+> for that handler will not be called, and its saved return address
+> will be used for the next function. This will result in a kernel crash.
+> 
+> To solve this, pause function tracing before the jprobe handler is called
+> and unpause it before it returns back to the function it probed.
+
+Err, stupid question: marking the jprobe handler "notrace" doesn't help?
+
+-- 
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
