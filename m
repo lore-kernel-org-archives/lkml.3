@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752133AbbANHJY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:09:24 -0500
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:47502 "EHLO
+	id S1752237AbbANHJZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:09:25 -0500
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:47499 "EHLO
 	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752063AbbANHJW (ORCPT
+	with ESMTP id S1752055AbbANHJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:09:22 -0500
+	Wed, 14 Jan 2015 02:09:21 -0500
 From: Anshuman Khandual <khandual@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
 Cc: peterz@infradead.org, akpm@linux-foundation.org, tglx@linutronix.de,
@@ -16,47 +16,80 @@ Cc: peterz@infradead.org, akpm@linux-foundation.org, tglx@linutronix.de,
         benh@kernel.crashing.org, sukadev@linux.vnet.ibm.com,
         mpe@ellerman.id.au, sam.bobroff@au1.ibm.com, kirjanov@gmail.com,
         shuahkh@osg.samsung.com
-Subject: [PATCH V7 1/8] elf: Add new powerpc specifc core note sections
-Date: Wed, 14 Jan 2015 12:38:43 +0530
-Message-Id: <1421219330-19984-2-git-send-email-khandual@linux.vnet.ibm.com>
+Subject: [PATCH V7 2/8] powerpc, process: Add the function flush_tmregs_to_thread
+Date: Wed, 14 Jan 2015 12:38:44 +0530
+Message-Id: <1421219330-19984-3-git-send-email-khandual@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1421219330-19984-1-git-send-email-khandual@linux.vnet.ibm.com>
 References: <1421219330-19984-1-git-send-email-khandual@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15011407-1618-0000-0000-0000017348AE
+x-cbid: 15011407-1618-0000-0000-0000017348AA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds four new ELF core note sections for powerpc
-transactional memory and one new ELF core note section for
-powerpc general miscellaneous debug registers. These addition
-of new ELF core note sections extends the existing ELF ABI
-without affecting it in any manner.
+This patch creates a function flush_tmregs_to_thread which
+will then be used by subsequent patches in this series. The
+function checks for self tracing ptrace interface attempts
+while in the TM context and logs appropriate warning message.
 
-Acked-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Anshuman Khandual <khandual@linux.vnet.ibm.com>
 ---
- include/uapi/linux/elf.h | 5 +++++
- 1 file changed, 5 insertions(+)
+ arch/powerpc/include/asm/switch_to.h |  8 ++++++++
+ arch/powerpc/kernel/process.c        | 20 ++++++++++++++++++++
+ 2 files changed, 28 insertions(+)
 
-diff --git a/include/uapi/linux/elf.h b/include/uapi/linux/elf.h
-index 71e1d0e..0fd9983 100644
---- a/include/uapi/linux/elf.h
-+++ b/include/uapi/linux/elf.h
-@@ -379,6 +379,11 @@ typedef struct elf64_shdr {
- #define NT_PPC_VMX	0x100		/* PowerPC Altivec/VMX registers */
- #define NT_PPC_SPE	0x101		/* PowerPC SPE/EVR registers */
- #define NT_PPC_VSX	0x102		/* PowerPC VSX registers */
-+#define NT_PPC_TM_SPR	0x103		/* PowerPC TM special registers */
-+#define NT_PPC_TM_CGPR	0x104		/* PowerpC TM checkpointed GPR */
-+#define NT_PPC_TM_CFPR	0x105		/* PowerPC TM checkpointed FPR */
-+#define NT_PPC_TM_CVMX	0x106		/* PowerPC TM checkpointed VMX */
-+#define NT_PPC_MISC	0x107		/* PowerPC miscellaneous registers */
- #define NT_386_TLS	0x200		/* i386 TLS slots (struct user_desc) */
- #define NT_386_IOPERM	0x201		/* x86 io permission bitmap (1=deny) */
- #define NT_X86_XSTATE	0x202		/* x86 extended state using xsave */
+diff --git a/arch/powerpc/include/asm/switch_to.h b/arch/powerpc/include/asm/switch_to.h
+index 58abeda..23752a9 100644
+--- a/arch/powerpc/include/asm/switch_to.h
++++ b/arch/powerpc/include/asm/switch_to.h
+@@ -82,6 +82,14 @@ static inline void flush_spe_to_thread(struct task_struct *t)
+ }
+ #endif
+ 
++#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
++extern void flush_tmregs_to_thread(struct task_struct *);
++#else
++static inline void flush_tmregs_to_thread(struct task_struct *t)
++{
++}
++#endif
++
+ static inline void clear_task_ebb(struct task_struct *t)
+ {
+ #ifdef CONFIG_PPC_BOOK3S_64
+diff --git a/arch/powerpc/kernel/process.c b/arch/powerpc/kernel/process.c
+index b4cc7be..a6f7ca5 100644
+--- a/arch/powerpc/kernel/process.c
++++ b/arch/powerpc/kernel/process.c
+@@ -745,6 +745,26 @@ void restore_tm_state(struct pt_regs *regs)
+ #define __switch_to_tm(prev)
+ #endif /* CONFIG_PPC_TRANSACTIONAL_MEM */
+ 
++#ifdef CONFIG_PPC_TRANSACTIONAL_MEM
++void flush_tmregs_to_thread(struct task_struct *tsk)
++{
++	/*
++	 * Process self tracing is not yet supported through
++	 * ptrace interface. Ptrace generic code should have
++	 * prevented this from happening in the first place.
++	 * Warn once here with the message, if some how it
++	 * is attempted.
++	 */
++	WARN_ONCE(tsk == current,
++		"Not expecting ptrace on self: TM regs may be incorrect\n");
++
++	/*
++	 * If task is not current, it should have been flushed
++	 * already to it's thread_struct during __switch_to().
++	 */
++}
++#endif
++
+ struct task_struct *__switch_to(struct task_struct *prev,
+ 	struct task_struct *new)
+ {
 -- 
 1.9.3
 
