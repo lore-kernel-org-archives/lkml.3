@@ -1,86 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754136AbbANRTJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 12:19:09 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:54886 "EHLO mx1.redhat.com"
+	id S1753896AbbANRT4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 12:19:56 -0500
+Received: from gum.cmpxchg.org ([85.214.110.215]:57437 "EHLO gum.cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754024AbbANRTH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 12:19:07 -0500
-Message-ID: <54B6A4EF.7020501@redhat.com>
-Date: Wed, 14 Jan 2015 12:18:39 -0500
-From: Jon Masters <jcm@redhat.com>
-Organization: Red Hat, Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1751187AbbANRTy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 12:19:54 -0500
+Date: Wed, 14 Jan 2015 12:19:44 -0500
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Greg Thelen <gthelen@google.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/2] mm: memcontrol: default hierarchy interface for
+ memory
+Message-ID: <20150114171944.GB32040@phnom.home.cmpxchg.org>
+References: <1420776904-8559-1-git-send-email-hannes@cmpxchg.org>
+ <1420776904-8559-2-git-send-email-hannes@cmpxchg.org>
+ <20150114153425.GF4706@dhcp22.suse.cz>
 MIME-Version: 1.0
-To: Mark Rutland <mark.rutland@arm.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Don Dutile <ddutile@redhat.com>
-Subject: Re: sysfs topology for arm64 cluster_id
-References: <54B5BC84.8090603@redhat.com> <20150114170045.GC21115@leverpostej>
-In-Reply-To: <20150114170045.GC21115@leverpostej>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150114153425.GF4706@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2015 12:00 PM, Mark Rutland wrote:
-> On Wed, Jan 14, 2015 at 12:47:00AM +0000, Jon Masters wrote:
->> Hi Folks,
->>
->> TLDR: I would like to consider the value of adding something like
->> "cluster_siblings" or similar in sysfs to describe ARM topology.
->>
->> A quick question on intended data representation in /sysfs topology
->> before I ask the team on this end to go down the (wrong?) path. On ARM
->> systems today, we have a hierarchical CPU topology:
->>
->>                  Socket ---- Coherent Interonnect ---- Socket
->>                    |                                    |
->>          Cluster0 ... ClusterN                Cluster0 ... ClusterN
->>             |             |                      |             |
->>       Core0...CoreN  Core0...CoreN        Core0...CoreN  Core0...CoreN
->>         |       |      |        |           |       |      |       |
->>      T0..TN  T0..Tn  T0..TN  T0..TN       T0..TN T0..TN  T0..TN  T0..TN
->>
->> Where we might (or might not) have threads in individual cores (a la SMT
->> - it's allowed in the architecture at any rate) and we group cores
->> together into units of clusters usually 2-4 cores in size (though this
->> varies between implementations, some of which have different but similar
->> concepts, such as AppliedMicro Potenza PMDs CPU complexes of dual
->> cores). There are multiple clusters per "socket", and there might be an
->> arbitrary number of sockets. We'll start to enable NUMA soon.
+On Wed, Jan 14, 2015 at 04:34:25PM +0100, Michal Hocko wrote:
+> On Thu 08-01-15 23:15:04, Johannes Weiner wrote:
+> [...]
+> > @@ -2353,6 +2353,22 @@ done_restock:
+> >  	css_get_many(&memcg->css, batch);
+> >  	if (batch > nr_pages)
+> >  		refill_stock(memcg, batch - nr_pages);
+> > +	/*
+> > +	 * If the hierarchy is above the normal consumption range,
+> > +	 * make the charging task trim the excess.
+> > +	 */
+> > +	do {
+> > +		unsigned long nr_pages = page_counter_read(&memcg->memory);
+> > +		unsigned long high = ACCESS_ONCE(memcg->high);
+> > +
+> > +		if (nr_pages > high) {
+> > +			mem_cgroup_events(memcg, MEMCG_HIGH, 1);
+> > +
+> > +			try_to_free_mem_cgroup_pages(memcg, nr_pages - high,
+> > +						     gfp_mask, true);
+> > +		}
 > 
-> I have a slight disagreement with the diagram above.
+> As I've said before I am not happy about this. Heavy parallel load
+> hitting on the limit can generate really high reclaim targets causing
+> over reclaim and long stalls. Moreover portions of the excess would be
+> reclaimed multiple times which is not necessary.
+>
+> I am not entirely happy about reclaiming nr_pages for THP_PAGES already
+> and this might be much worse, more probable and less predictable.
+> 
+> I believe the target should be capped somehow. nr_pages sounds like a
+> compromise. It would still throttle the charger and scale much better.
 
-Thanks for the clarification - note that I was *explicitly not* saying
-that the MPIDR Affinity bits sufficiently described the system :) Nor do
-I think cpu-map does cover everything we want today.
+That's fair enough, I'll experiment with this.
 
-> The MPIDR_EL1.Aff* fields and the cpu-map bindings currently only
-> describe the hierarchy, without any information on the relative
-> weighting between levels, and without any mapping to HW concepts such as
-> sockets. What these happen to map to is specific to a particular system,
-> and the hierarchy may be carved up in a number of possible ways
-> (including "virtual" clusters). There are also 24 RES0 bits that could
-> potentially become additional Aff fields we may need to describe in
-> future.
+> > +static int memory_events_show(struct seq_file *m, void *v)
+> > +{
+> > +	struct mem_cgroup *memcg = mem_cgroup_from_css(seq_css(m));
+> > +
+> > +	seq_printf(m, "low %lu\n", mem_cgroup_read_events(memcg, MEMCG_LOW));
+> > +	seq_printf(m, "high %lu\n", mem_cgroup_read_events(memcg, MEMCG_HIGH));
+> > +	seq_printf(m, "max %lu\n", mem_cgroup_read_events(memcg, MEMCG_MAX));
+> > +	seq_printf(m, "oom %lu\n", mem_cgroup_read_events(memcg, MEMCG_OOM));
+> > +
+> > +	return 0;
+> > +}
+> 
+> OK, but I really think we need a way of OOM notification for user space
+> OOM handling as well - including blocking the OOM killer as we have
+> now.  This is not directly related to this patch so it doesn't have to
+> happen right now, we should just think about the proper interface if
+> oom_control is consider not suitable.
 
-> "socket", "package", etc are meaningless unless the system provides a
-> mapping of Aff levels to these. We can't guess how the HW is actually
-> organised.
+Yes, I think OOM control should be a separate discussion.
 
-The replies I got from you and Arnd gel with my thinking that we want
-something generic enough in Linux to handle this in a non-architectural
-way (real topology, not just hierarchies). That should also cover the
-kind of cluster-like stuff e.g. AMD with NUMA on HT on a single socket
-and other stuff. So...it sounds like we need "something" to add to our
-understanding of hierarchy, and that "something" is in sysfs. A proposal
-needs to be derived (I think Don will followup since he is keen to poke
-at this). We'll go back to the ACPI ASWG folks to add whatever is
-missing to future ACPI bindings after that discussion.
+> > @@ -2322,6 +2325,12 @@ static bool shrink_zone(struct zone *zone, struct scan_control *sc,
+> >  			struct lruvec *lruvec;
+> >  			int swappiness;
+> >  
+> > +			if (mem_cgroup_low(root, memcg)) {
+> > +				if (!sc->may_thrash)
+> > +					continue;
+> > +				mem_cgroup_events(memcg, MEMCG_LOW, 1);
+> > +			}
+> > +
+> >  			lruvec = mem_cgroup_zone_lruvec(zone, memcg);
+> >  			swappiness = mem_cgroup_swappiness(memcg);
+> >  
+> > @@ -2343,8 +2352,7 @@ static bool shrink_zone(struct zone *zone, struct scan_control *sc,
+> >  				mem_cgroup_iter_break(root, memcg);
+> >  				break;
+> >  			}
+> > -			memcg = mem_cgroup_iter(root, memcg, &reclaim);
+> > -		} while (memcg);
+> > +		} while ((memcg = mem_cgroup_iter(root, memcg, &reclaim)));
+> 
+> I had a similar code but then I could trigger quick priority drop downs
+> during parallel reclaim with multiple low limited groups. I've tried to
+> address that by retrying shrink_zone if it hasn't called shrink_lruvec
+> at all. Still not ideal because it can livelock theoretically, but I
+> haven't seen that in my testing.
 
-Jon.
+Do you remember the circumstances and the exact configuration?
 
+I tested this with around 30 containerized kernel build jobs whose low
+boundaries pretty much added up to the available physical memory and
+never observed this.  That being said, thrashing is an emergency path
+and users should really watch the memory.events low counter.  After
+all, if global reclaim frequently has to ignore the reserve settings,
+what's the point of having them in the first place?
+
+So while I see that this might burn some cpu cycles when the system is
+misconfigured, and that we could definitely be smarter about this, I'm
+not convinced we have to rush a workaround before moving ahead with
+this patch, especially not one that is prone to livelock the system.
+
+> Other than that the patch looks OK and I am happy this has moved
+> forward finally.
+
+Thanks! I'm glad we're getting somewhere as well.
