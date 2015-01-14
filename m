@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754438AbbANR2b (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 12:28:31 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49871 "EHLO mx1.redhat.com"
+	id S1754528AbbANR3c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 12:29:32 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44496 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754395AbbANR2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 12:28:25 -0500
-Date: Wed, 14 Jan 2015 19:28:15 +0200
+	id S1754413AbbANR22 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 12:28:28 -0500
+Date: Wed, 14 Jan 2015 19:28:18 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org
 Cc: Rusty Russell <rusty@rustcorp.com.au>, cornelia.huck@de.ibm.com,
-        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
-Subject: [PATCH v3 14/16] virtio_pci: macros for PCI layout offsets
-Message-ID: <1421256142-11512-15-git-send-email-mst@redhat.com>
+        virtualization@lists.linux-foundation.org
+Subject: [PATCH v3 15/16] virtio_pci_modern: reduce number of mappings
+Message-ID: <1421256142-11512-16-git-send-email-mst@redhat.com>
 References: <1421256142-11512-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -23,129 +23,149 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rusty Russell <rusty@rustcorp.com.au>
+We don't know the # of VQs that drivers are going to use so it's hard to
+predict how much memory we'll need to map. However, the relevant
+capability does give us an upper limit.
+If that's below a page, we can reduce the number of required
+mappings by mapping it all once ahead of the time.
 
-QEMU wants it, so why not?  Trust, but verify.
-
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- include/uapi/linux/virtio_pci.h    | 30 ++++++++++++++++++++
- drivers/virtio/virtio_pci_modern.c | 58 +++++++++++++++++++++++++++++++++++++-
- 2 files changed, 87 insertions(+), 1 deletion(-)
+ drivers/virtio/virtio_pci_common.h |  3 ++
+ drivers/virtio/virtio_pci_modern.c | 57 ++++++++++++++++++++++++++++++++------
+ 2 files changed, 52 insertions(+), 8 deletions(-)
 
-diff --git a/include/uapi/linux/virtio_pci.h b/include/uapi/linux/virtio_pci.h
-index 4e05423..e841edd 100644
---- a/include/uapi/linux/virtio_pci.h
-+++ b/include/uapi/linux/virtio_pci.h
-@@ -159,6 +159,36 @@ struct virtio_pci_common_cfg {
- 	__le32 queue_used_hi;		/* read-write */
- };
+diff --git a/drivers/virtio/virtio_pci_common.h b/drivers/virtio/virtio_pci_common.h
+index 610c43f..d391805 100644
+--- a/drivers/virtio/virtio_pci_common.h
++++ b/drivers/virtio/virtio_pci_common.h
+@@ -62,8 +62,11 @@ struct virtio_pci_device {
+ 	struct virtio_pci_common_cfg __iomem *common;
+ 	/* Device-specific data (non-legacy mode)  */
+ 	void __iomem *device;
++	/* Base of vq notifications (non-legacy mode). */
++	void __iomem *notify_base;
  
-+/* Macro versions of offsets for the Old Timers! */
-+#define VIRTIO_PCI_CAP_VNDR		0
-+#define VIRTIO_PCI_CAP_NEXT		1
-+#define VIRTIO_PCI_CAP_LEN		2
-+#define VIRTIO_PCI_CAP_TYPE_AND_BAR	3
-+#define VIRTIO_PCI_CAP_OFFSET		4
-+#define VIRTIO_PCI_CAP_LENGTH		8
-+
-+#define VIRTIO_PCI_NOTIFY_CAP_MULT	12
-+
-+#define VIRTIO_PCI_COMMON_DFSELECT	0
-+#define VIRTIO_PCI_COMMON_DF		4
-+#define VIRTIO_PCI_COMMON_GFSELECT	8
-+#define VIRTIO_PCI_COMMON_GF		12
-+#define VIRTIO_PCI_COMMON_MSIX		16
-+#define VIRTIO_PCI_COMMON_NUMQ		18
-+#define VIRTIO_PCI_COMMON_STATUS	20
-+#define VIRTIO_PCI_COMMON_CFGGENERATION	21
-+#define VIRTIO_PCI_COMMON_Q_SELECT	22
-+#define VIRTIO_PCI_COMMON_Q_SIZE	24
-+#define VIRTIO_PCI_COMMON_Q_MSIX	26
-+#define VIRTIO_PCI_COMMON_Q_ENABLE	28
-+#define VIRTIO_PCI_COMMON_Q_NOFF	30
-+#define VIRTIO_PCI_COMMON_Q_DESCLO	32
-+#define VIRTIO_PCI_COMMON_Q_DESCHI	36
-+#define VIRTIO_PCI_COMMON_Q_AVAILLO	40
-+#define VIRTIO_PCI_COMMON_Q_AVAILHI	44
-+#define VIRTIO_PCI_COMMON_Q_USEDLO	48
-+#define VIRTIO_PCI_COMMON_Q_USEDHI	52
-+
- #endif /* VIRTIO_PCI_NO_MODERN */
+ 	/* So we can sanity-check accesses. */
++	size_t notify_len;
+ 	size_t device_len;
  
- #endif
+ 	/* Capability for when we need to map notifications per-vq. */
 diff --git a/drivers/virtio/virtio_pci_modern.c b/drivers/virtio/virtio_pci_modern.c
-index 38c0a11..5e0d309 100644
+index 5e0d309..9c000e9a 100644
 --- a/drivers/virtio/virtio_pci_modern.c
 +++ b/drivers/virtio/virtio_pci_modern.c
-@@ -469,9 +469,65 @@ static void virtio_pci_release_dev(struct device *_d)
- 	kfree(vp_dev);
- }
+@@ -333,10 +333,26 @@ static struct virtqueue *setup_vq(struct virtio_pci_device *vp_dev,
+ 	iowrite64_twopart(virt_to_phys(virtqueue_get_used(vq)),
+ 			  &cfg->queue_used_lo, &cfg->queue_used_hi);
  
--/* TODO: validate the ABI statically. */
-+/* This is part of the ABI.  Don't screw with it. */
- static inline void check_offsets(void)
- {
-+	/* Note: disk space was harmed in compilation of this function. */
-+	BUILD_BUG_ON(VIRTIO_PCI_CAP_VNDR !=
-+		     offsetof(struct virtio_pci_cap, cap_vndr));
-+	BUILD_BUG_ON(VIRTIO_PCI_CAP_NEXT !=
-+		     offsetof(struct virtio_pci_cap, cap_next));
-+	BUILD_BUG_ON(VIRTIO_PCI_CAP_LEN !=
-+		     offsetof(struct virtio_pci_cap, cap_len));
-+	BUILD_BUG_ON(VIRTIO_PCI_CAP_TYPE_AND_BAR !=
-+		     offsetof(struct virtio_pci_cap, type_and_bar));
-+	BUILD_BUG_ON(VIRTIO_PCI_CAP_OFFSET !=
-+		     offsetof(struct virtio_pci_cap, offset));
-+	BUILD_BUG_ON(VIRTIO_PCI_CAP_LENGTH !=
-+		     offsetof(struct virtio_pci_cap, length));
-+	BUILD_BUG_ON(VIRTIO_PCI_NOTIFY_CAP_MULT !=
-+		     offsetof(struct virtio_pci_notify_cap,
-+			      notify_off_multiplier));
-+	BUILD_BUG_ON(VIRTIO_PCI_COMMON_DFSELECT !=
-+		     offsetof(struct virtio_pci_common_cfg,
-+			      device_feature_select));
-+	BUILD_BUG_ON(VIRTIO_PCI_COMMON_DF !=
-+		     offsetof(struct virtio_pci_common_cfg, device_feature));
-+	BUILD_BUG_ON(VIRTIO_PCI_COMMON_GFSELECT !=
-+		     offsetof(struct virtio_pci_common_cfg,
-+			      guest_feature_select));
-+	BUILD_BUG_ON(VIRTIO_PCI_COMMON_GF !=
-+		     offsetof(struct virtio_pci_common_cfg, guest_feature));
-+	BUILD_BUG_ON(VIRTIO_PCI_COMMON_MSIX !=
-+		     offsetof(struct virtio_pci_common_cfg, msix_config));
-+	BUILD_BUG_ON(VIRTIO_PCI_COMMON_NUMQ !=
-+		     offsetof(struct virtio_pci_common_cfg, num_queues));
-+	BUILD_BUG_ON(VIRTIO_PCI_COMMON_STATUS !=
-+		     offsetof(struct virtio_pci_common_cfg, device_status));
-+	BUILD_BUG_ON(VIRTIO_PCI_COMMON_CFGGENERATION !=
-+		     offsetof(struct virtio_pci_common_cfg, config_generation));
-+	BUILD_BUG_ON(VIRTIO_PCI_COMMON_Q_SELECT !=
-+		     offsetof(struct virtio_pci_common_cfg, queue_select));
-+	BUILD_BUG_ON(VIRTIO_PCI_COMMON_Q_SIZE !=
-+		     offsetof(struct virtio_pci_common_cfg, queue_size));
-+	BUILD_BUG_ON(VIRTIO_PCI_COMMON_Q_MSIX !=
-+		     offsetof(struct virtio_pci_common_cfg, queue_msix_vector));
-+	BUILD_BUG_ON(VIRTIO_PCI_COMMON_Q_ENABLE !=
-+		     offsetof(struct virtio_pci_common_cfg, queue_enable));
-+	BUILD_BUG_ON(VIRTIO_PCI_COMMON_Q_NOFF !=
-+		     offsetof(struct virtio_pci_common_cfg, queue_notify_off));
-+	BUILD_BUG_ON(VIRTIO_PCI_COMMON_Q_DESCLO !=
-+		     offsetof(struct virtio_pci_common_cfg, queue_desc_lo));
-+	BUILD_BUG_ON(VIRTIO_PCI_COMMON_Q_DESCHI !=
-+		     offsetof(struct virtio_pci_common_cfg, queue_desc_hi));
-+	BUILD_BUG_ON(VIRTIO_PCI_COMMON_Q_AVAILLO !=
-+		     offsetof(struct virtio_pci_common_cfg, queue_avail_lo));
-+	BUILD_BUG_ON(VIRTIO_PCI_COMMON_Q_AVAILHI !=
-+		     offsetof(struct virtio_pci_common_cfg, queue_avail_hi));
-+	BUILD_BUG_ON(VIRTIO_PCI_COMMON_Q_USEDLO !=
-+		     offsetof(struct virtio_pci_common_cfg, queue_used_lo));
-+	BUILD_BUG_ON(VIRTIO_PCI_COMMON_Q_USEDHI !=
-+		     offsetof(struct virtio_pci_common_cfg, queue_used_hi));
- }
+-	vq->priv = (void __force *)map_capability(vp_dev->pci_dev,
+-				  vp_dev->notify_map_cap, 2, 2,
+-				  off * vp_dev->notify_offset_multiplier, 2,
+-				  NULL);
++	if (vp_dev->notify_base) {
++		/* offset should not wrap */
++		if ((u64)off * vp_dev->notify_offset_multiplier + 2
++		    > vp_dev->notify_len) {
++			dev_warn(&vp_dev->pci_dev->dev,
++				 "bad notification offset %u (x %u) "
++				 "for queue %u > %zd",
++				 off, vp_dev->notify_offset_multiplier,
++				 index, vp_dev->notify_len);
++			err = -EINVAL;
++			goto err_map_notify;
++		}
++		vq->priv = (void __force *)vp_dev->notify_base +
++			off * vp_dev->notify_offset_multiplier;
++	} else {
++		vq->priv = (void __force *)map_capability(vp_dev->pci_dev,
++					  vp_dev->notify_map_cap, 2, 2,
++					  off * vp_dev->notify_offset_multiplier, 2,
++					  NULL);
++	}
  
- /* the PCI probing function */
+ 	if (!vq->priv) {
+ 		err = -ENOMEM;
+@@ -355,7 +371,8 @@ static struct virtqueue *setup_vq(struct virtio_pci_device *vp_dev,
+ 	return vq;
+ 
+ err_assign_vector:
+-	pci_iounmap(vp_dev->pci_dev, (void __iomem __force *)vq->priv);
++	if (!vp_dev->notify_base)
++		pci_iounmap(vp_dev->pci_dev, (void __iomem __force *)vq->priv);
+ err_map_notify:
+ 	vring_del_virtqueue(vq);
+ err_new_queue:
+@@ -400,7 +417,8 @@ static void del_vq(struct virtio_pci_vq_info *info)
+ 		ioread16(&vp_dev->common->queue_msix_vector);
+ 	}
+ 
+-	pci_iounmap(vp_dev->pci_dev, (void __force __iomem *)vq->priv);
++	if (!vp_dev->notify_base)
++		pci_iounmap(vp_dev->pci_dev, (void __force __iomem *)vq->priv);
+ 
+ 	vring_del_virtqueue(vq);
+ 
+@@ -536,6 +554,7 @@ int virtio_pci_modern_probe(struct virtio_pci_device *vp_dev)
+ 	struct pci_dev *pci_dev = vp_dev->pci_dev;
+ 	int err, common, isr, notify, device;
+ 	u32 notify_length;
++	u32 notify_offset;
+ 
+ 	check_offsets();
+ 
+@@ -602,13 +621,30 @@ int virtio_pci_modern_probe(struct virtio_pci_device *vp_dev)
+ 			      notify + offsetof(struct virtio_pci_notify_cap,
+ 						notify_off_multiplier),
+ 			      &vp_dev->notify_offset_multiplier);
+-	/* Read notify length from config space. */
++	/* Read notify length and offset from config space. */
+ 	pci_read_config_dword(pci_dev,
+ 			      notify + offsetof(struct virtio_pci_notify_cap,
+ 						cap.length),
+ 			      &notify_length);
+ 
+-	vp_dev->notify_map_cap = notify;
++	pci_read_config_dword(pci_dev,
++			      notify + offsetof(struct virtio_pci_notify_cap,
++						cap.length),
++			      &notify_offset);
++
++	/* We don't know how many VQs we'll map, ahead of the time.
++	 * If notify length is small, map it all now.
++	 * Otherwise, map each VQ individually later.
++	 */
++	if ((u64)notify_length + (notify_offset % PAGE_SIZE) <= PAGE_SIZE) {
++		vp_dev->notify_base = map_capability(pci_dev, notify, 2, 2,
++						     0, notify_length,
++						     &vp_dev->notify_len);
++		if (!vp_dev->notify_base)
++			goto err_map_notify;
++	} else {
++		vp_dev->notify_map_cap = notify;
++	}
+ 
+ 	/* Again, we don't know how much we should map, but PAGE_SIZE
+ 	 * is more than enough for all existing devices.
+@@ -630,6 +666,9 @@ int virtio_pci_modern_probe(struct virtio_pci_device *vp_dev)
+ 	return 0;
+ 
+ err_map_device:
++	if (vp_dev->notify_base)
++		pci_iounmap(pci_dev, vp_dev->notify_base);
++err_map_notify:
+ 	pci_iounmap(pci_dev, vp_dev->isr);
+ err_map_isr:
+ 	pci_iounmap(pci_dev, vp_dev->common);
+@@ -643,6 +682,8 @@ void virtio_pci_modern_remove(struct virtio_pci_device *vp_dev)
+ 
+ 	if (vp_dev->device)
+ 		pci_iounmap(pci_dev, vp_dev->device);
++	if (vp_dev->notify_base)
++		pci_iounmap(pci_dev, vp_dev->notify_base);
+ 	pci_iounmap(pci_dev, vp_dev->isr);
+ 	pci_iounmap(pci_dev, vp_dev->common);
+ }
 -- 
 MST
 
