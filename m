@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933084AbbANHiF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:38:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58834 "EHLO
+	id S932262AbbANHbV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:31:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58237 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932319AbbANHiA (ORCPT
+	with ESMTP id S1751191AbbANHbS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:38:00 -0500
+	Wed, 14 Jan 2015 02:31:18 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Hubert Feurstein <h.feurstein@gmail.com>,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 02/44] ath9k_hw: fix hardware queue allocation
-Date: Tue, 13 Jan 2015 23:23:23 -0800
-Message-Id: <20150114072227.543497201@linuxfoundation.org>
+        Vinson Lee <vlee@twitter.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>
+Subject: [PATCH 3.18 133/150] crypto: sha-mb - Add avx2_supported check.
+Date: Tue, 13 Jan 2015 23:23:24 -0800
+Message-Id: <20150114072101.877410538@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
-References: <20150114072227.419663002@linuxfoundation.org>
+In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
+References: <20150114072055.842408181@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,44 +25,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Vinson Lee <vlee@twitter.com>
 
-commit ad8fdccf9c197a89e2d2fa78c453283dcc2c343f upstream.
+commit 0b8c960cf6defc56b3aa1a71b5af95872b6dff2b upstream.
 
-The driver passes the desired hardware queue index for a WMM data queue
-in qinfo->tqi_subtype. This was ignored in ath9k_hw_setuptxqueue, which
-instead relied on the order in which the function is called.
+This patch fixes this allyesconfig target build error with older
+binutils.
 
-Reported-by: Hubert Feurstein <h.feurstein@gmail.com>
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+  LD      arch/x86/crypto/built-in.o
+ld: arch/x86/crypto/sha-mb/built-in.o: No such file: No such file or directory
+
+Signed-off-by: Vinson Lee <vlee@twitter.com>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/mac.c |    9 +--------
- 1 file changed, 1 insertion(+), 8 deletions(-)
+ arch/x86/crypto/Makefile |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/net/wireless/ath/ath9k/mac.c
-+++ b/drivers/net/wireless/ath/ath9k/mac.c
-@@ -311,14 +311,7 @@ int ath9k_hw_setuptxqueue(struct ath_hw
- 		q = ATH9K_NUM_TX_QUEUES - 3;
- 		break;
- 	case ATH9K_TX_QUEUE_DATA:
--		for (q = 0; q < ATH9K_NUM_TX_QUEUES; q++)
--			if (ah->txq[q].tqi_type ==
--			    ATH9K_TX_QUEUE_INACTIVE)
--				break;
--		if (q == ATH9K_NUM_TX_QUEUES) {
--			ath_err(common, "No available TX queue\n");
--			return -1;
--		}
-+		q = qinfo->tqi_subtype;
- 		break;
- 	default:
- 		ath_err(common, "Invalid TX queue type: %u\n", type);
+--- a/arch/x86/crypto/Makefile
++++ b/arch/x86/crypto/Makefile
+@@ -26,7 +26,6 @@ obj-$(CONFIG_CRYPTO_GHASH_CLMUL_NI_INTEL
+ 
+ obj-$(CONFIG_CRYPTO_CRC32C_INTEL) += crc32c-intel.o
+ obj-$(CONFIG_CRYPTO_SHA1_SSSE3) += sha1-ssse3.o
+-obj-$(CONFIG_CRYPTO_SHA1_MB) += sha-mb/
+ obj-$(CONFIG_CRYPTO_CRC32_PCLMUL) += crc32-pclmul.o
+ obj-$(CONFIG_CRYPTO_SHA256_SSSE3) += sha256-ssse3.o
+ obj-$(CONFIG_CRYPTO_SHA512_SSSE3) += sha512-ssse3.o
+@@ -46,6 +45,7 @@ endif
+ ifeq ($(avx2_supported),yes)
+ 	obj-$(CONFIG_CRYPTO_CAMELLIA_AESNI_AVX2_X86_64) += camellia-aesni-avx2.o
+ 	obj-$(CONFIG_CRYPTO_SERPENT_AVX2_X86_64) += serpent-avx2.o
++	obj-$(CONFIG_CRYPTO_SHA1_MB) += sha-mb/
+ endif
+ 
+ aes-i586-y := aes-i586-asm_32.o aes_glue.o
 
 
