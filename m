@@ -1,51 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752987AbbANOhJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 09:37:09 -0500
-Received: from mail-we0-f179.google.com ([74.125.82.179]:60240 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752110AbbANOhH (ORCPT
+	id S1753212AbbANOhf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 09:37:35 -0500
+Received: from mail-qc0-f182.google.com ([209.85.216.182]:52381 "EHLO
+	mail-qc0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753115AbbANOhe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 09:37:07 -0500
+	Wed, 14 Jan 2015 09:37:34 -0500
+Date: Wed, 14 Jan 2015 09:37:30 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Andrzej Hajda <a.hajda@samsung.com>
+Cc: linux-mm@kvack.org, Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org, andi@firstfloor.org, andi@lisas.de,
+        Mike Turquette <mturquette@linaro.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH 2.5/5] kernfs: remove KERNFS_STATIC_NAME
+Message-ID: <20150114143730.GE3565@htj.dyndns.org>
+References: <1421054323-14430-1-git-send-email-a.hajda@samsung.com>
+ <1421054323-14430-3-git-send-email-a.hajda@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <87oaq1v49z.fsf@rasmusvillemoes.dk>
-References: <1421194829-28696-1-git-send-email-calvinowens@fb.com>
-	<87oaq1v49z.fsf@rasmusvillemoes.dk>
-Date: Wed, 14 Jan 2015 20:07:06 +0530
-Message-ID: <CAAHN_R0AhAc7zt3sfbKdXJEj3Ncd4Hao-1qr=X3mkSjB7F_fYg@mail.gmail.com>
-Subject: Re: [RFC][PATCH] procfs: Add /proc/<pid>/mapped_files
-From: Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>
-To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Cc: Calvin Owens <calvinowens@fb.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        Peter Feiner <pfeiner@google.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        linux-kernel <linux-kernel@vger.kernel.org>, kernel-team@fb.com
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421054323-14430-3-git-send-email-a.hajda@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 January 2015 at 19:43, Rasmus Villemoes <linux@rasmusvillemoes.dk> wrote:
-> Just thinking out loud: Could one simply mark a VMA as being used for
-> stack during the clone call (is there room in vm_flags, or does
-> VM_GROWSDOWN already tell the whole story?), and then write the TID into
-> a new field in the VMA - I think one could make a union with vm_pgoff so
-> as not to enlarge the structure.
+When a new kernfs node is created, KERNFS_STATIC_NAME is used to avoid
+making a separate copy of its name.  It's currently only used for
+sysfs attributes whose filenames are required to stay accessible and
+unchanged.  There are rare exceptions where these names are allocated
+and formatted dynamically but for the vast majority of cases they're
+consts in the rodata section.
 
-vm_flags does not have space IIRC (that was my first approach at
-implementing this) and VM_GROWSDOWN is not sufficient.  If we can make
-a union with vm_pgoff like you say, we probably don't need a flag
-value; a non-zero value could indicate that it is a thread stack.
+Now that kernfs is converted to use kstrdup_const() and kfree_const(),
+there's little point in keeping KERNFS_STATIC_NAME around.  Remove it.
 
-One problem with caching the value on clone like this though is that
-the stack could change due to a setcontext, but AFAICT we don't care
-about that for the process stack either.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Andrzej Hajda <a.hajda@samsung.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
+Lightly tested.  Seems to work fine.  Please feel free to route with
+the rest of the series.
 
-Siddhesh
--- 
-http://siddhesh.in
+Thanks.
+
+ fs/kernfs/dir.c        |   20 ++++++++------------
+ fs/kernfs/file.c       |    4 ----
+ fs/sysfs/file.c        |    2 +-
+ include/linux/kernfs.h |    7 ++-----
+ kernel/cgroup.c        |    2 +-
+ 5 files changed, 12 insertions(+), 23 deletions(-)
+
+--- a/fs/kernfs/dir.c
++++ b/fs/kernfs/dir.c
+@@ -407,8 +407,9 @@ void kernfs_put(struct kernfs_node *kn)
+ 
+ 	if (kernfs_type(kn) == KERNFS_LINK)
+ 		kernfs_put(kn->symlink.target_kn);
+-	if (!(kn->flags & KERNFS_STATIC_NAME))
+-		kfree_const(kn->name);
++
++	kfree_const(kn->name);
++
+ 	if (kn->iattr) {
+ 		if (kn->iattr->ia_secdata)
+ 			security_release_secctx(kn->iattr->ia_secdata,
+@@ -502,15 +503,12 @@ static struct kernfs_node *__kernfs_new_
+ 					     const char *name, umode_t mode,
+ 					     unsigned flags)
+ {
+-	const char *dup_name = NULL;
+ 	struct kernfs_node *kn;
+ 	int ret;
+ 
+-	if (!(flags & KERNFS_STATIC_NAME)) {
+-		name = dup_name = kstrdup_const(name, GFP_KERNEL);
+-		if (!name)
+-			return NULL;
+-	}
++	name = kstrdup_const(name, GFP_KERNEL);
++	if (!name)
++		return NULL;
+ 
+ 	kn = kmem_cache_zalloc(kernfs_node_cache, GFP_KERNEL);
+ 	if (!kn)
+@@ -534,7 +532,7 @@ static struct kernfs_node *__kernfs_new_
+  err_out2:
+ 	kmem_cache_free(kernfs_node_cache, kn);
+  err_out1:
+-	kfree_const(dup_name);
++	kfree_const(name);
+ 	return NULL;
+ }
+ 
+@@ -1281,9 +1279,7 @@ int kernfs_rename_ns(struct kernfs_node
+ 
+ 	kn->ns = new_ns;
+ 	if (new_name) {
+-		if (!(kn->flags & KERNFS_STATIC_NAME))
+-			old_name = kn->name;
+-		kn->flags &= ~KERNFS_STATIC_NAME;
++		old_name = kn->name;
+ 		kn->name = new_name;
+ 	}
+ 
+--- a/fs/kernfs/file.c
++++ b/fs/kernfs/file.c
+@@ -901,7 +901,6 @@ const struct file_operations kernfs_file
+  * @ops: kernfs operations for the file
+  * @priv: private data for the file
+  * @ns: optional namespace tag of the file
+- * @name_is_static: don't copy file name
+  * @key: lockdep key for the file's active_ref, %NULL to disable lockdep
+  *
+  * Returns the created node on success, ERR_PTR() value on error.
+@@ -911,7 +910,6 @@ struct kernfs_node *__kernfs_create_file
+ 					 umode_t mode, loff_t size,
+ 					 const struct kernfs_ops *ops,
+ 					 void *priv, const void *ns,
+-					 bool name_is_static,
+ 					 struct lock_class_key *key)
+ {
+ 	struct kernfs_node *kn;
+@@ -919,8 +917,6 @@ struct kernfs_node *__kernfs_create_file
+ 	int rc;
+ 
+ 	flags = KERNFS_FILE;
+-	if (name_is_static)
+-		flags |= KERNFS_STATIC_NAME;
+ 
+ 	kn = kernfs_new_node(parent, name, (mode & S_IALLUGO) | S_IFREG, flags);
+ 	if (!kn)
+--- a/fs/sysfs/file.c
++++ b/fs/sysfs/file.c
+@@ -295,7 +295,7 @@ int sysfs_add_file_mode_ns(struct kernfs
+ 		key = attr->key ?: (struct lock_class_key *)&attr->skey;
+ #endif
+ 	kn = __kernfs_create_file(parent, attr->name, mode & 0777, size, ops,
+-				  (void *)attr, ns, true, key);
++				  (void *)attr, ns, key);
+ 	if (IS_ERR(kn)) {
+ 		if (PTR_ERR(kn) == -EEXIST)
+ 			sysfs_warn_dup(parent, attr->name);
+--- a/include/linux/kernfs.h
++++ b/include/linux/kernfs.h
+@@ -43,7 +43,6 @@ enum kernfs_node_flag {
+ 	KERNFS_HAS_SEQ_SHOW	= 0x0040,
+ 	KERNFS_HAS_MMAP		= 0x0080,
+ 	KERNFS_LOCKDEP		= 0x0100,
+-	KERNFS_STATIC_NAME	= 0x0200,
+ 	KERNFS_SUICIDAL		= 0x0400,
+ 	KERNFS_SUICIDED		= 0x0800,
+ };
+@@ -291,7 +290,6 @@ struct kernfs_node *__kernfs_create_file
+ 					 umode_t mode, loff_t size,
+ 					 const struct kernfs_ops *ops,
+ 					 void *priv, const void *ns,
+-					 bool name_is_static,
+ 					 struct lock_class_key *key);
+ struct kernfs_node *kernfs_create_link(struct kernfs_node *parent,
+ 				       const char *name,
+@@ -369,8 +367,7 @@ kernfs_create_dir_ns(struct kernfs_node
+ static inline struct kernfs_node *
+ __kernfs_create_file(struct kernfs_node *parent, const char *name,
+ 		     umode_t mode, loff_t size, const struct kernfs_ops *ops,
+-		     void *priv, const void *ns, bool name_is_static,
+-		     struct lock_class_key *key)
++		     void *priv, const void *ns, struct lock_class_key *key)
+ { return ERR_PTR(-ENOSYS); }
+ 
+ static inline struct kernfs_node *
+@@ -439,7 +436,7 @@ kernfs_create_file_ns(struct kernfs_node
+ 	key = (struct lock_class_key *)&ops->lockdep_key;
+ #endif
+ 	return __kernfs_create_file(parent, name, mode, size, ops, priv, ns,
+-				    false, key);
++				    key);
+ }
+ 
+ static inline struct kernfs_node *
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -3077,7 +3077,7 @@ static int cgroup_add_file(struct cgroup
+ #endif
+ 	kn = __kernfs_create_file(cgrp->kn, cgroup_file_name(cgrp, cft, name),
+ 				  cgroup_file_mode(cft), 0, cft->kf_ops, cft,
+-				  NULL, false, key);
++				  NULL, key);
+ 	if (IS_ERR(kn))
+ 		return PTR_ERR(kn);
+ 
