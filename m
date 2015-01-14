@@ -1,151 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752748AbbANUvR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 15:51:17 -0500
-Received: from mail-oi0-f41.google.com ([209.85.218.41]:65393 "EHLO
-	mail-oi0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751280AbbANUvP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 15:51:15 -0500
+	id S1753232AbbANU7A (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 15:59:00 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45613 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752099AbbANU6z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 15:58:55 -0500
+From: Suman Anna <s-anna@ti.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>, Mark Rutland <mark.rutland@arm.com>,
+        Kumar Gala <galak@codeaurora.org>
+CC: Bjorn Andersson <bjorn@kryo.se>, Josh Cartwright <joshc@codeaurora.org>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Suman Anna <s-anna@ti.com>
+Subject: [PATCH v7 0/4] hwspinlock core & omap dt support
+Date: Wed, 14 Jan 2015 14:58:17 -0600
+Message-ID: <1421269101-51105-1-git-send-email-s-anna@ti.com>
+X-Mailer: git-send-email 2.2.1
 MIME-Version: 1.0
-In-Reply-To: <CACZ9PQXW9G4Vw-dcPwkdVE=uoYmDYEQnJWDnnpup1LxC3s5QPg@mail.gmail.com>
-References: <1420986751-30364-1-git-send-email-r.peniaev@gmail.com>
-	<1420986751-30364-2-git-send-email-r.peniaev@gmail.com>
-	<20150112183955.GO13360@arm.com>
-	<CACZ9PQXW9G4Vw-dcPwkdVE=uoYmDYEQnJWDnnpup1LxC3s5QPg@mail.gmail.com>
-Date: Wed, 14 Jan 2015 12:51:14 -0800
-X-Google-Sender-Auth: HviUo-RNFvEwNuP4-ulAFT4ByoU
-Message-ID: <CAGXu5jLO-YSaF8P9o3jcXP4VZCPYVshz73krnchYuv9pPGY6Sw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] ARM: entry-common: fix forgotten set of thread_info->syscall
-From: Kees Cook <keescook@chromium.org>
-To: Roman Peniaev <r.peniaev@gmail.com>
-Cc: Will Deacon <will.deacon@arm.com>, Russell King <linux@arm.linux.org.uk>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Sekhar Nori <nsekhar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 12:35 AM, Roman Peniaev <r.peniaev@gmail.com> wrote:
-> On Tue, Jan 13, 2015 at 3:39 AM, Will Deacon <will.deacon@arm.com> wrote:
->> On Sun, Jan 11, 2015 at 02:32:30PM +0000, Roman Pen wrote:
->>> thread_info->syscall is used only for ptrace, but syscall number
->>> is also used by syscall_get_nr and returned to userspace by the
->>> following proc file access:
->>>
->>>  $ cat /proc/self/syscall
->>>  0 0x3 0xbe928bd8 0x1000 0x0 0xac9e0 0x3 0xbe928bb4 0xb6f5dfbc
->>>  ^
->>> The first number is the syscall number, currently it is zero.
->>> Patch fixes this:
->>>
->>>  $ cat /proc/self/syscall
->>>  3 0x3 0xbefc7bd8 0x1000 0x0 0xac9e0 0x3 0xbefc7bb4 0xb6e82fbc
->>>  ^
->>> Right, read syscall
->>
->> Yes, it seems that despite requiring CONFIG_HAVE_ARCH_TRACEHOOK,
->> the /proc code requires syscall_get_nr to work regardless of
->> TIF_SYSCALL_TRACE.
->>
->>> Signed-off-by: Roman Pen <r.peniaev@gmail.com>
->>> Cc: Russell King <linux@arm.linux.org.uk>
->>> Cc: Marc Zyngier <marc.zyngier@arm.com>
->>> Cc: Catalin Marinas <catalin.marinas@arm.com>
->>> Cc: Christoffer Dall <christoffer.dall@linaro.org>
->>> Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
->>> Cc: Sekhar Nori <nsekhar@ti.com>
->>> Cc: linux-arm-kernel@lists.infradead.org
->>> Cc: linux-kernel@vger.kernel.org
->>> Cc: stable@vger.kernel.org
->>> ---
->>>  arch/arm/kernel/asm-offsets.c  | 1 +
->>>  arch/arm/kernel/entry-common.S | 1 +
->>>  2 files changed, 2 insertions(+)
->>>
->>> diff --git a/arch/arm/kernel/asm-offsets.c b/arch/arm/kernel/asm-offsets.c
->>> index 2d2d608..6911bad 100644
->>> --- a/arch/arm/kernel/asm-offsets.c
->>> +++ b/arch/arm/kernel/asm-offsets.c
->>> @@ -70,6 +70,7 @@ int main(void)
->>>    DEFINE(TI_CPU,             offsetof(struct thread_info, cpu));
->>>    DEFINE(TI_CPU_DOMAIN,              offsetof(struct thread_info, cpu_domain));
->>>    DEFINE(TI_CPU_SAVE,                offsetof(struct thread_info, cpu_context));
->>> +  DEFINE(TI_SYSCALL,         offsetof(struct thread_info, syscall));
->>>    DEFINE(TI_USED_CP,         offsetof(struct thread_info, used_cp));
->>>    DEFINE(TI_TP_VALUE,                offsetof(struct thread_info, tp_value));
->>>    DEFINE(TI_FPSTATE,         offsetof(struct thread_info, fpstate));
->>> diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.S
->>> index f8ccc21..89452ff 100644
->>> --- a/arch/arm/kernel/entry-common.S
->>> +++ b/arch/arm/kernel/entry-common.S
->>> @@ -189,6 +189,7 @@ ENTRY(vector_swi)
->>>  #endif
->>>
->>>  local_restart:
->>> +     str scno, [tsk, #TI_SYSCALL]            @ set syscall number
->>>       ldr     r10, [tsk, #TI_FLAGS]           @ check for syscall tracing
->>>       stmdb   sp!, {r4, r5}                   @ push fifth and sixth args
->>
->> Do we definitely want to update scno on syscall restarting?
->
->
-> Good question.
->
-> First thing to mention is __sys_trace will trace 'restart_syscall',
-> not the real syscall we are going to restart.
->
-> E.g. in test application we do infinite poll and then send STOP and
-> CONT to this app:
->
->     test-243   [002] ...1  1792.067726: sys_enter: NR 168 (0, 0,
-> ffffffff, 0, 0, 0)
->     test-243   [002] ...1  1802.299073: sys_exit: NR 168 = -516
->     test-243   [004] ...1  1814.716264: sys_enter: NR 0 (0, 0,
-> ffffffff, 0, 0, 0)
->     test-243   [004] ...1  2183.687225: sys_exit: NR 0 = -516
->
-> the poll was restarted and trace shows that we are in restart_syscall.
->
-> Is that expected?
->
-> And the second thing is that my next patch did some tweaks in
-> 'syscall_trace_enter', where we take scno not from param we passed,
-> but from thread_info->syscall we previously set.
->
-> So, regarding your question, if I set scno only once - I will break
-> previous behavior, and __sys_trace will trace the syscall we restarted.
->
-> And I think this is what we need, because according to the
-> 'syscall_trace_enter' code we do 'secure_computing' and
-> 'audit_syscall_entry', which definitely expect original syscall, not
-> the 'restart_syscall'.
+Hi Ohad,
 
-Seccomp expects to see the __NR_restart_syscall syscall, since it
-interposes the syscall entry points.
+This is an updated version of the hwspinlock dt support series,
+rebased onto v3.19-rc3 and mainly addresses the continued discussion
+on the need to maintain a list of registered spinlock banks [1].
+I have removed this patch as per your wish, and as a result the
+burden of the spinlock validation and deferred probing is pushed
+onto the hwspinlock clients. Sorry for the delay in refreshing this
+series, hopefully this can be the last revision.
 
--Kees
+Following are the main changes in v7 w.r.t v6:
+- Dropped the patch "hwspinlock/core: maintain a list of registered
+  hwspinlock banks"
+- Updated generic hwspinlock bindings to make hwlock-base-id property
+  mandatory.
+- Updated the OMAP hwspinlock binding and DT support patches to correct
+  for the mandatory hwlock-base-id property.
+- Updated the common OF helpers patch to move the of_hwspin_lock_get_base_id()
+  and of_hwspin_lock_get_num_locks() functions into the internal header,
+  these are no longer exported, but available for platform implementations.
+  of_hwspin_lock_get_id() is also simplified now.
 
->
->
-> --
-> Roman
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+The validation logs on all the applicable OMAP SoCs are at:
+  OMAP4  - http://slexy.org/view/s21Mh1SqP8
+  OMAP5  - http://slexy.org/view/s21TYWxoKu
+  DRA74x - http://slexy.org/view/s2dQdghLPr
+  DRA72x - http://slexy.org/view/s2QajhhWYu
+  AM33xx - http://slexy.org/view/s21DvKQOpa
+  AM43xx - http://slexy.org/view/s21L3YB95Q
 
+The above logs are generated with some additional test patches staged
+here for reference,
+https://github.com/sumananna/omap-kernel/commits/hwspinlock/test/3.19-rc3-dt-v7
 
+The test branch also includes a required patch that adds the hwlock-base-id
+to all the OMAP hwspinlock DT nodes (will submit that patch separately for
+Tony to pick it up).
+
+Bjorn,
+I didn't add your Tested-by: or Reviewed-by as I have modified the
+series a bit. Care to give those once again, thanks.
+
+regards
+Suman
+
+[1] https://patchwork.kernel.org/patch/4898041/
+
+---
+v6:
+http://marc.info/?l=linux-omap&m=141055365213895&w=2
+- of_hwspin_lock_request_specific() is replaced
+  with of_hwspin_lock_get_id(). of_hwspin_lock_simple_xlate() is
+  made internal, and of_hwspin_lock_get_base_id() is added.
+- Updated the OMAP hwspinlock DT support patch to assign base-id
+  from DT if present
+- RFC patches adding the concept of reserved locks and return code
+  change convention dropped.
+
+v5:
+http://marc.info/?l=linux-omap&m=139890478402807&w=2
+- Rebased v4 patches plus additional RFC patches.
+- Added back the patch to support DT-based hwlock-base-id property,
+  for registration purposes.
+- RFC patches introducing the concept of reserved locks.
+- Staged patches for converting return convention to better support
+  deferred probing of client drivers.
+
+v4:
+- The DT bindings are split into separate patches, and updated to
+  add comments about #hwlock-cells
+- Fixed a registration issue with repeated module installation and
+  removal.
+- Added a new OF helper to support #hwlock-cells in addition to the
+  previous OF functions. The OMAP adaptation patch is updated to use
+  the default translate function
+- Updated hwspinlock documentation to adjust for the structure
+  changes and the new api additions.
+- Added build support for AM335x, AM43xx and DRA7xx
+http://marc.info/?l=linux-omap&m=138965904015225&w=2
+
+v3:
+- Removed the DT property hwlock-base-id and associated OF helper
+- Added changes in core to support requesting a specific hwlock using
+  phandle + args approach
+- Revised both the common and OMAP DT bindings document
+http://marc.info/?l=linux-omap&m=138143992932197&w=2
+
+v2:
+- Added a new common DT binding documentation and OF helpers.
+- Revised OMAP DT parse support to use the new OF helper (Patch2)
+- OMAP5 hwspinlock support including the hwmod entry and DT node
+- Add AM335x support to OMAP hwspinlock driver, including a fix
+  needed in driver given that AM335 spinlock module requires s/w wakeup
+- AM335 DT node for spinlock, and a hwmod change to enable smart-idle
+  for AM335.
+- OMAP4 DT node patch is unchanged
+http://marc.info/?l=linux-omap&m=137944644112727&w=2
+
+v1:
+- Add DT parse support to OMAP hwspinlock driver
+- Add OMAP4 DT node and bindings information
+http://marc.info/?l=linux-omap&m=137823082308009&w=2
+
+---
+
+Suman Anna (4):
+  Documentation: dt: add common bindings for hwspinlock
+  Documentation: dt: add the omap hwspinlock bindings document
+  hwspinlock/core: add common OF helpers
+  hwspinlock/omap: add support for dt nodes
+
+ .../devicetree/bindings/hwlock/hwlock.txt          | 55 ++++++++++++++++++
+ .../devicetree/bindings/hwlock/omap-hwspinlock.txt | 28 ++++++++++
+ Documentation/hwspinlock.txt                       | 25 +++++++++
+ MAINTAINERS                                        |  1 -
+ arch/arm/mach-omap2/Makefile                       |  3 -
+ arch/arm/mach-omap2/hwspinlock.c                   | 60 --------------------
+ drivers/hwspinlock/hwspinlock_core.c               | 65 ++++++++++++++++++++++
+ drivers/hwspinlock/hwspinlock_internal.h           | 47 ++++++++++++++++
+ drivers/hwspinlock/omap_hwspinlock.c               | 22 ++++++--
+ include/linux/hwspinlock.h                         |  7 +++
+ 10 files changed, 244 insertions(+), 69 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/hwlock/hwlock.txt
+ create mode 100644 Documentation/devicetree/bindings/hwlock/omap-hwspinlock.txt
+ delete mode 100644 arch/arm/mach-omap2/hwspinlock.c
 
 -- 
-Kees Cook
-Chrome OS Security
+2.2.1
+
