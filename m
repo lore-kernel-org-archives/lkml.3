@@ -1,27 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474AbbANODx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 09:03:53 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36904 "EHLO
+	id S1753340AbbANODe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 09:03:34 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:36893 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752546AbbANODv (ORCPT
+	with ESMTP id S1752477AbbANODc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 09:03:51 -0500
-Date: Wed, 14 Jan 2015 06:02:29 -0800
-From: tip-bot for Kirill Tkhai <tipbot@zytor.com>
-Message-ID: <tip-bb04159df99fa353d0fb524574aca03ce2c6515b@git.kernel.org>
-Cc: torvalds@linux-foundation.org, hpa@zytor.com, tglx@linutronix.de,
-        ktkhai@parallels.com, peterz@infradead.org,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, bsegall@google.com
-Reply-To: bsegall@google.com, mingo@kernel.org, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, ktkhai@parallels.com, hpa@zytor.com,
-        tglx@linutronix.de, torvalds@linux-foundation.org
-In-Reply-To: <1418644618.6074.13.camel@tkhai>
-References: <1418644618.6074.13.camel@tkhai>
+	Wed, 14 Jan 2015 09:03:32 -0500
+Date: Wed, 14 Jan 2015 06:02:49 -0800
+From: tip-bot for Yao Dongdong <tipbot@zytor.com>
+Message-ID: <tip-1b537c7d1e58c761212a193085f9049b58f672e6@git.kernel.org>
+Cc: tglx@linutronix.de, yaodongdong@huawei.com, torvalds@linux-foundation.org,
+        mingo@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        peterz@infradead.org
+Reply-To: tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, hpa@zytor.com, torvalds@linux-foundation.org,
+        mingo@kernel.org, yaodongdong@huawei.com
+In-Reply-To: <1419835303-28958-1-git-send-email-yaodongdong@huawei.com>
+References: <1419835303-28958-1-git-send-email-yaodongdong@huawei.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/fair: Fix sched_entity::avg::
- decay_count initialization
-Git-Commit-ID: bb04159df99fa353d0fb524574aca03ce2c6515b
+Subject: [tip:sched/core] sched/core: Remove check of p->sched_class
+Git-Commit-ID: 1b537c7d1e58c761212a193085f9049b58f672e6
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -34,62 +33,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bb04159df99fa353d0fb524574aca03ce2c6515b
-Gitweb:     http://git.kernel.org/tip/bb04159df99fa353d0fb524574aca03ce2c6515b
-Author:     Kirill Tkhai <ktkhai@parallels.com>
-AuthorDate: Mon, 15 Dec 2014 14:56:58 +0300
+Commit-ID:  1b537c7d1e58c761212a193085f9049b58f672e6
+Gitweb:     http://git.kernel.org/tip/1b537c7d1e58c761212a193085f9049b58f672e6
+Author:     Yao Dongdong <yaodongdong@huawei.com>
+AuthorDate: Mon, 29 Dec 2014 14:41:43 +0800
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 14 Jan 2015 13:34:16 +0100
+CommitDate: Wed, 14 Jan 2015 13:34:17 +0100
 
-sched/fair: Fix sched_entity::avg::decay_count initialization
+sched/core: Remove check of p->sched_class
 
-Child has the same decay_count as parent. If it's not zero,
-we add it to parent's cfs_rq->removed_load:
+Search all usage of p->sched_class in sched/core.c, no one check it
+before use, so it seems that every task must belong to one sched_class.
 
-wake_up_new_task()->set_task_cpu()->migrate_task_rq_fair().
-
-Child's load is a just garbade after copying of parent,
-it hasn't been on cfs_rq yet, and it must not be added to
-cfs_rq::removed_load in migrate_task_rq_fair().
-
-The patch moves sched_entity::avg::decay_count intialization
-in sched_fork(). So, migrate_task_rq_fair() does not change
-removed_load.
-
-Signed-off-by: Kirill Tkhai <ktkhai@parallels.com>
+Signed-off-by: Yao Dongdong <yaodongdong@huawei.com>
+[ Moved the early class assignment to make it boot. ]
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Reviewed-by: Ben Segall <bsegall@google.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1418644618.6074.13.camel@tkhai
+Link: http://lkml.kernel.org/r/1419835303-28958-1-git-send-email-yaodongdong@huawei.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/core.c | 3 +++
- kernel/sched/fair.c | 1 -
- 2 files changed, 3 insertions(+), 1 deletion(-)
+ kernel/sched/core.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
 diff --git a/kernel/sched/core.c b/kernel/sched/core.c
-index 816c172..95ac795 100644
+index 95ac795..46a2345 100644
 --- a/kernel/sched/core.c
 +++ b/kernel/sched/core.c
-@@ -1832,6 +1832,9 @@ static void __sched_fork(unsigned long clone_flags, struct task_struct *p)
- 	p->se.prev_sum_exec_runtime	= 0;
- 	p->se.nr_migrations		= 0;
- 	p->se.vruntime			= 0;
-+#ifdef CONFIG_SMP
-+	p->se.avg.decay_count		= 0;
-+#endif
- 	INIT_LIST_HEAD(&p->se.group_node);
+@@ -4744,7 +4744,7 @@ static struct rq *move_queued_task(struct task_struct *p, int new_cpu)
  
- #ifdef CONFIG_SCHEDSTATS
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 97000a9..2a0b302 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -676,7 +676,6 @@ void init_task_runnable_average(struct task_struct *p)
+ void do_set_cpus_allowed(struct task_struct *p, const struct cpumask *new_mask)
  {
- 	u32 slice;
+-	if (p->sched_class && p->sched_class->set_cpus_allowed)
++	if (p->sched_class->set_cpus_allowed)
+ 		p->sched_class->set_cpus_allowed(p, new_mask);
  
--	p->se.avg.decay_count = 0;
- 	slice = sched_slice(task_cfs_rq(p), &p->se) >> 10;
- 	p->se.avg.runnable_avg_sum = slice;
- 	p->se.avg.runnable_avg_period = slice;
+ 	cpumask_copy(&p->cpus_allowed, new_mask);
+@@ -7254,6 +7254,11 @@ void __init sched_init(void)
+ 	enter_lazy_tlb(&init_mm, current);
+ 
+ 	/*
++	 * During early bootup we pretend to be a normal task:
++	 */
++	current->sched_class = &fair_sched_class;
++
++	/*
+ 	 * Make us the idle thread. Technically, schedule() should not be
+ 	 * called from this thread, however somewhere below it might be,
+ 	 * but because we are the idle thread, we just pick up running again
+@@ -7263,11 +7268,6 @@ void __init sched_init(void)
+ 
+ 	calc_load_update = jiffies + LOAD_FREQ;
+ 
+-	/*
+-	 * During early bootup we pretend to be a normal task:
+-	 */
+-	current->sched_class = &fair_sched_class;
+-
+ #ifdef CONFIG_SMP
+ 	zalloc_cpumask_var(&sched_domains_tmpmask, GFP_NOWAIT);
+ 	/* May be allocated at isolcpus cmdline parse time */
