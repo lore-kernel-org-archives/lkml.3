@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752735AbbANIVd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:21:33 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58031 "EHLO
+	id S933124AbbANIS1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:18:27 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58090 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754688AbbANH3D (ORCPT
+	with ESMTP id S932147AbbANH3j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:29:03 -0500
+	Wed, 14 Jan 2015 02:29:39 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Martin Hauke <mardnh@gmx.de>, Johan Hovold <johan@kernel.org>
-Subject: [PATCH 3.18 087/150] USB: qcserial: Add support for HP lt4112 LTE/HSPA+ Gobi 4G Modem
-Date: Tue, 13 Jan 2015 23:22:38 -0800
-Message-Id: <20150114072059.810226330@linuxfoundation.org>
+        Steev Klimaszewski <steev@gentoo.org>, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 3.18 088/150] Add USB_EHCI_EXYNOS to multi_v7_defconfig
+Date: Tue, 13 Jan 2015 23:22:39 -0800
+Message-Id: <20150114072059.853268115@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -28,82 +28,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Martin Hauke <mardnh@gmx.de>
+From: Steev Klimaszewski <threeway@gmail.com>
 
-commit e7181d005e84b15fe3121a8d22840adc3395d496 upstream.
+commit 007487f1fd43d84f26cda926081ca219a24ecbc4 upstream.
 
-Added new device layout "DEVICE_HWI" and also added the USB VID/PID for the
-HP lt4112 LTE/HSPA+ Gobi 4G Modem (Huawei me906e)
+Currently we enable Exynos devices in the multi v7 defconfig, however, when
+testing on my ODROID-U3, I noticed that USB was not working.  Enabling this
+option causes USB to work, which enables networking support as well since the
+ODROID-U3 has networking on the USB bus.
 
-Signed-off-by: Martin Hauke <mardnh@gmx.de>
-Signed-off-by: Johan Hovold <johan@kernel.org>
+[arnd] Support for odroid-u3 was added in 3.10, so it would be nice to
+backport this fix at least that far.
+
+Signed-off-by: Steev Klimaszewski <steev@gentoo.org>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/usb/serial/qcserial.c |   33 +++++++++++++++++++++++++++++++++
- 1 file changed, 33 insertions(+)
+ arch/arm/configs/multi_v7_defconfig |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/usb/serial/qcserial.c
-+++ b/drivers/usb/serial/qcserial.c
-@@ -27,12 +27,15 @@ enum qcserial_layouts {
- 	QCSERIAL_G2K = 0,	/* Gobi 2000 */
- 	QCSERIAL_G1K = 1,	/* Gobi 1000 */
- 	QCSERIAL_SWI = 2,	/* Sierra Wireless */
-+	QCSERIAL_HWI = 3,	/* Huawei */
- };
- 
- #define DEVICE_G1K(v, p) \
- 	USB_DEVICE(v, p), .driver_info = QCSERIAL_G1K
- #define DEVICE_SWI(v, p) \
- 	USB_DEVICE(v, p), .driver_info = QCSERIAL_SWI
-+#define DEVICE_HWI(v, p) \
-+	USB_DEVICE(v, p), .driver_info = QCSERIAL_HWI
- 
- static const struct usb_device_id id_table[] = {
- 	/* Gobi 1000 devices */
-@@ -157,6 +160,9 @@ static const struct usb_device_id id_tab
- 	{DEVICE_SWI(0x413c, 0x81a8)},	/* Dell Wireless 5808 Gobi(TM) 4G LTE Mobile Broadband Card */
- 	{DEVICE_SWI(0x413c, 0x81a9)},	/* Dell Wireless 5808e Gobi(TM) 4G LTE Mobile Broadband Card */
- 
-+	/* Huawei devices */
-+	{DEVICE_HWI(0x03f0, 0x581d)},	/* HP lt4112 LTE/HSPA+ Gobi 4G Modem (Huawei me906e) */
-+
- 	{ }				/* Terminating entry */
- };
- MODULE_DEVICE_TABLE(usb, id_table);
-@@ -283,6 +289,33 @@ static int qcprobe(struct usb_serial *se
- 			break;
- 		default:
- 			/* don't claim any unsupported interface */
-+			altsetting = -1;
-+			break;
-+		}
-+		break;
-+	case QCSERIAL_HWI:
-+		/*
-+		 * Huawei layout:
-+		 * 0: AT-capable modem port
-+		 * 1: DM/DIAG
-+		 * 2: AT-capable modem port
-+		 * 3: CCID-compatible PCSC interface
-+		 * 4: QMI/net
-+		 * 5: NMEA
-+		 */
-+		switch (ifnum) {
-+		case 0:
-+		case 2:
-+			dev_dbg(dev, "Modem port found\n");
-+			break;
-+		case 1:
-+			dev_dbg(dev, "DM/DIAG interface found\n");
-+			break;
-+		case 5:
-+			dev_dbg(dev, "NMEA GPS interface found\n");
-+			break;
-+		default:
-+			/* don't claim any unsupported interface */
- 			altsetting = -1;
- 			break;
- 		}
+--- a/arch/arm/configs/multi_v7_defconfig
++++ b/arch/arm/configs/multi_v7_defconfig
+@@ -320,6 +320,7 @@ CONFIG_USB=y
+ CONFIG_USB_XHCI_HCD=y
+ CONFIG_USB_XHCI_MVEBU=y
+ CONFIG_USB_EHCI_HCD=y
++CONFIG_USB_EHCI_EXYNOS=y
+ CONFIG_USB_EHCI_TEGRA=y
+ CONFIG_USB_EHCI_HCD_PLATFORM=y
+ CONFIG_USB_ISP1760_HCD=y
 
 
