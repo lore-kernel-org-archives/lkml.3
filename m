@@ -1,69 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753359AbbANOOD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 09:14:03 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:38540 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752345AbbANOOB (ORCPT
+	id S1753374AbbANOP0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 09:15:26 -0500
+Received: from vserver.eikelenboom.it ([84.200.39.61]:53740 "EHLO
+	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752819AbbANOPZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 09:14:01 -0500
-Date: Wed, 14 Jan 2015 15:13:56 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Davidlohr Bueso <dave@stgolabs.net>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, Davidlohr Bueso <dbueso@suse.de>
-Subject: Re: [PATCH 6/8] locking/mcs: Better differentiate between mcs
- variants
-Message-ID: <20150114141356.GA12084@gmail.com>
-References: <1419757883-4423-1-git-send-email-dave@stgolabs.net>
- <1419757883-4423-7-git-send-email-dave@stgolabs.net>
+	Wed, 14 Jan 2015 09:15:25 -0500
+Date: Wed, 14 Jan 2015 15:15:21 +0100
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <74756708.20150114151521@eikelenboom.it>
+To: David Vrabel <david.vrabel@citrix.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: xen-devel@lists.xenproject.org, linux-kernel@vger.kernel.org
+Subject: 3.19-rc4: Xen pci-passthrough regression, bisected to commit cffe0a2b5a34c95a4dadc9ec7132690a5b0f6687 "x86, irq: Keep balance of IOAPIC pin reference count"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1419757883-4423-7-git-send-email-dave@stgolabs.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Gerry / David / Konrad,
 
-* Davidlohr Bueso <dave@stgolabs.net> wrote:
+Some more testing uncovered another issue under Xen, this time with PCI-passthrough.
 
-> We have two flavors of the MCS spinlock: standard and cancelable (osq).
-> While each one is independent of the other, we currently mix and match
-> them. This patch:
-> 
-> o Moves osq code out of mcs_spinlock.h (which only deals with the traditional
-> version) into include/linux/osq_lock.h. No unnecessary code is added to the
-> more global header file, anything locks that make use of osq must include
-> it anyway.
-> 
-> o Renames mcs_spinlock.c to osq_lock.c. This file only contains osq code.
-> 
-> o Introduces a CONFIG_LOCK_SPIN_ON_OWNER in order to only build osq_lock
-> if there is support for it.
-> 
-> Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
-> ---
->  include/linux/osq_lock.h      |  12 ++-
->  kernel/Kconfig.locks          |   4 +
->  kernel/locking/Makefile       |   3 +-
->  kernel/locking/mcs_spinlock.c | 208 ------------------------------------------
->  kernel/locking/mcs_spinlock.h |  16 ----
->  kernel/locking/osq_lock.c     | 203 +++++++++++++++++++++++++++++++++++++++++
->  6 files changed, 219 insertions(+), 227 deletions(-)
->  delete mode 100644 kernel/locking/mcs_spinlock.c
->  create mode 100644 kernel/locking/osq_lock.c
+I have bisected it to the following commit: 
+cffe0a2b5a34c95a4dadc9ec7132690a5b0f6687 "x86, irq: Keep balance of IOAPIC pin reference count"
 
-x86 defconfig produces:
+It causes these symptoms:
 
-  kernel/locking/mcs_spinlock.h:81:2: error: implicit declaration of function ‘ASSIGN_ONCE’ [-Werror=implicit-function-declaration]
+- On Intel
+  - Running on Xen with pci devices seized on host boot with xen-pciback.hide= parameter
+  - Running a HVM guest with PCI passthrough of two devices (NIC + wireless NIC)
+  - While the driver loads fine, the device isn't working properly, looking in /proc/interrupts in the guest
+    shows that it doesn't receive any interrupts.
+  - Reverting this particular commit (in the dom0 kernel only) makes the device receive interrupts and work properly again.
 
-Also, this patch should really be split into three separate (and 
-tested) patches.
+- On AMD (more subtle symptom) 
+  - Running on Xen with pci devices seized on host boot with xen-pciback.hide= parameter
+  - Running a HVM guest with PCI passthrough of one devices (videograbber)
+  - While the driver loads fine and the device looks like it's working, the videostream isn't stable and it skips or repeats frames.
+  - Reverting this particular commit (in the dom0 kernel only) makes the device work properly again with a stable videostream.
 
-Thanks,
+--
+Sander
 
-	Ingo
