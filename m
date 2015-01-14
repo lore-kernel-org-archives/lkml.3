@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932866AbbANHgW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:36:22 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58674 "EHLO
+	id S932927AbbANHqg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:46:36 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58888 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754692AbbANHgU (ORCPT
+	with ESMTP id S1755068AbbANHit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:36:20 -0500
+	Wed, 14 Jan 2015 02:38:49 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Chris Mason <clm@fb.com>
-Subject: [PATCH 3.14 69/77] Btrfs: dont delay inode ref updates during log replay
-Date: Tue, 13 Jan 2015 23:23:49 -0800
-Message-Id: <20150114072228.126781053@linuxfoundation.org>
+        David Ramos <daramos@stanford.edu>, Jens Axboe <axboe@fb.com>
+Subject: [PATCH 3.10 29/44] genhd: check for int overflow in disk_expand_part_tbl()
+Date: Tue, 13 Jan 2015 23:23:50 -0800
+Message-Id: <20150114072229.091840891@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-References: <20150114072224.182299947@linuxfoundation.org>
+In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
+References: <20150114072227.419663002@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -24,54 +24,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Chris Mason <clm@fb.com>
+From: Jens Axboe <axboe@fb.com>
 
-commit 6f8960541b1eb6054a642da48daae2320fddba93 upstream.
+commit 5fabcb4c33fe11c7e3afdf805fde26c1a54d0953 upstream.
 
-Commit 1d52c78afbb (Btrfs: try not to ENOSPC on log replay) added a
-check to skip delayed inode updates during log replay because it
-confuses the enospc code.  But the delayed processing will end up
-ignoring delayed refs from log replay because the inode itself wasn't
-put through the delayed code.
+We can get here from blkdev_ioctl() -> blkpg_ioctl() -> add_partition()
+with a user passed in partno value. If we pass in 0x7fffffff, the
+new target in disk_expand_part_tbl() overflows the 'int' and we
+access beyond the end of ptbl->part[] and even write to it when we
+do the rcu_assign_pointer() to assign the new partition.
 
-This can end up triggering a warning at commit time:
-
-WARNING: CPU: 2 PID: 778 at fs/btrfs/delayed-inode.c:1410 btrfs_assert_delayed_root_empty+0x32/0x34()
-
-Which is repeated for each commit because we never process the delayed
-inode ref update.
-
-The fix used here is to change btrfs_delayed_delete_inode_ref to return
-an error if we're currently in log replay.  The caller will do the ref
-deletion immediately and everything will work properly.
-
-Signed-off-by: Chris Mason <clm@fb.com>
+Reported-by: David Ramos <daramos@stanford.edu>
+Signed-off-by: Jens Axboe <axboe@fb.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/btrfs/delayed-inode.c |    8 ++++++++
- 1 file changed, 8 insertions(+)
+ block/genhd.c |   11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
 
---- a/fs/btrfs/delayed-inode.c
-+++ b/fs/btrfs/delayed-inode.c
-@@ -1854,6 +1854,14 @@ int btrfs_delayed_delete_inode_ref(struc
- {
- 	struct btrfs_delayed_node *delayed_node;
- 
-+	/*
-+	 * we don't do delayed inode updates during log recovery because it
-+	 * leads to enospc problems.  This means we also can't do
-+	 * delayed inode refs
-+	 */
-+	if (BTRFS_I(inode)->root->fs_info->log_root_recovering)
-+		return -EAGAIN;
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -1070,9 +1070,16 @@ int disk_expand_part_tbl(struct gendisk
+ 	struct disk_part_tbl *old_ptbl = disk->part_tbl;
+ 	struct disk_part_tbl *new_ptbl;
+ 	int len = old_ptbl ? old_ptbl->len : 0;
+-	int target = partno + 1;
++	int i, target;
+ 	size_t size;
+-	int i;
 +
- 	delayed_node = btrfs_get_or_create_delayed_node(inode);
- 	if (IS_ERR(delayed_node))
- 		return PTR_ERR(delayed_node);
++	/*
++	 * check for int overflow, since we can get here from blkpg_ioctl()
++	 * with a user passed 'partno'.
++	 */
++	target = partno + 1;
++	if (target < 0)
++		return -EINVAL;
+ 
+ 	/* disk_max_parts() is zero during initialization, ignore if so */
+ 	if (disk_max_parts(disk) && target > disk_max_parts(disk))
 
 
