@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754410AbbANWEI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 17:04:08 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:35399 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752492AbbANWEG (ORCPT
+	id S1754546AbbANWEl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 17:04:41 -0500
+Received: from mail-qg0-f52.google.com ([209.85.192.52]:57825 "EHLO
+	mail-qg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754497AbbANWEj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 17:04:06 -0500
-Date: Wed, 14 Jan 2015 16:04:03 -0600
-From: Andy Gross <agross@codeaurora.org>
-To: Kumar Gala <galak@codeaurora.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, arm@kernel.org,
-        Kevin Hilman <khilman@linaro.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
-        linux-arm-kernel@lists.infradead.org, Lina Iyer <lina.iyer@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Olav Haugan <ohaugan@codeaurora.org>, markivx@codeaurora.org
-Subject: Re: [GIT PULL] qcom SoC changes for v3.18
-Message-ID: <20150114220403.GA32295@qualcomm.com>
-References: <A246CCDC-948C-429E-9FC5-934D317EB9D4@codeaurora.org>
- <201410011641.44037.arnd@arndb.de>
- <4AF7ABD3-EC90-47B8-96F3-B0AC396C52CC@codeaurora.org>
+	Wed, 14 Jan 2015 17:04:39 -0500
+Date: Wed, 14 Jan 2015 17:04:34 -0500
+From: Jeff Layton <jlayton@poochiereds.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linda Walsh <suse@tlinx.org>, NeilBrown <neilb@suse.de>
+Subject: Re: [GIT PULL] please pull file-locking related bugfix for v3.19
+ (and v3.18 stable)
+Message-ID: <20150114170434.17a9e599@tlielax.poochiereds.net>
+In-Reply-To: <CA+55aFwwn_X-snqCk_dy_67g=Neo_fR4fmy=_hSp3izbDTxKRA@mail.gmail.com>
+References: <20150114074620.0f80880b@tlielax.poochiereds.net>
+	<CA+55aFwwn_X-snqCk_dy_67g=Neo_fR4fmy=_hSp3izbDTxKRA@mail.gmail.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4AF7ABD3-EC90-47B8-96F3-B0AC396C52CC@codeaurora.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 15, 2014 at 10:18:30AM +0200, Kumar Gala wrote:
-> 
-> On Oct 1, 2014, at 4:41 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> 
-> > On Monday 22 September 2014, Kumar Gala wrote:
-> >> The following changes since commit 7d1311b93e58ed55f3a31cc8f94c4b8fe988a2b9:
-> >> 
-> >>  Linux 3.17-rc1 (2014-08-16 10:40:26 -0600)
-> >> 
-> >> are available in the git repository at:
-> >> 
-> >>  git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-soc-for-3.18
-> >> 
-> >> for you to fetch changes up to 525fbb55947177cdae507b0d292f43c2c9a75a47:
-> >> 
-> >>  ARM: qcom: Move scm-boot files to drivers/soc and include/soc (2014-09-18 18:14:01 -0500)
-> >> 
-> >> ----------------------------------------------------------------
-> >> Qualcomm ARM Based SoC Updates for v3.18
-> >> 
-> >> * Moved scm support into drivers/soc/qcom (allows for use by drivers)
-> >> * Various bug fixes and minor feature additions to scm code
-> >> * Added big-endian support to debug MSM uart
-> > 
-> > Pulled it into next/late now. This means we're not sending it together with the
-> > other pull requests to Linus. We'll see how things go during the first week
-> > and may or may not send it in the second week of the merge window depending
-> > on that.
-> > 
-> > 	Arnd
-> 
-> Any update if you guys will end up sending this to linus for 3.18 or not?
+On Thu, 15 Jan 2015 10:40:25 +1300
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Where are we on this set of changes?  Have they been queued up again?
+> On Thu, Jan 15, 2015 at 1:46 AM, Jeff Layton <jlayton@poochiereds.net> wrote:
+> >
+> >   git://git.samba.org/jlayton/linux.git 52d304eb4eaced9ad04b64ba7cd6ceb5153bbf18
+> 
+> Ugh. What are you doing?
+> 
+> Don't send me raw hex numbers of the commit. There's a tag there, and
+> it has the name tags/locks-3.19-1, and has your signature on it and
+> everything. Sending me the raw hex of the commit object misses that,
+> and looks horrible too.
+> 
+> What kind of odd/broken script do you use?
+> 
+>            Linus
+
+Ugh, sorry about that. I'm not sure what happened. For some reason
+git-request-pull didn't seem to notice the tag. Once I added it as the
+"end" arg on the command line, it picked it up. I don't recall ever
+having to do that before.
+
+In any case, let's try that again...
+
+----------------------------------------------------------------
+
+The following changes since commit 971780b701946be0d6e34b4abf6eec1ab05ec0c8:
+
+  Merge tag 'gpio-v3.19-3' of git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio (2015-01-13 15:29:42 +1300)
+
+are available in the git repository at:
+
+  git://git.samba.org/jlayton/linux.git tags/locks-v3.19-1
+
+for you to fetch changes up to 52d304eb4eaced9ad04b64ba7cd6ceb5153bbf18:
+
+  locks: fix NULL-deref in generic_delete_lease (2015-01-13 07:00:55 -0500)
+
+----------------------------------------------------------------
+File-locking related bugfix for v3.19 (and v3.18-stable)
+
+Just a simple bugfix for a regression that I introduced into v3.18 with
+the internal lease API overhaul -- mea culpa. Kudos to Linda and Neil
+for tracking this down and fixing it.
+----------------------------------------------------------------
+NeilBrown (1):
+      locks: fix NULL-deref in generic_delete_lease
+
+ fs/locks.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
 -- 
-Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-a Linux Foundation Collaborative Project
-
+Jeff Layton <jlayton@poochiereds.net>
