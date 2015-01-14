@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752416AbbANHZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:25:58 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57732 "EHLO
+	id S1753966AbbANH0E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:26:04 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57740 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753294AbbANHZx (ORCPT
+	with ESMTP id S1753942AbbANHZ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:25:53 -0500
+	Wed, 14 Jan 2015 02:25:59 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Arend Van Spriel <arend@broadcom.com>,
-        Pieter-Paul Giesberts <pieterpg@broadcom.com>,
-        Hante Meuleman <meuleman@broadcom.com>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.18 039/150] brcmfmac: Fix ifidx for rx data by msgbuf.
-Date: Tue, 13 Jan 2015 23:21:50 -0800
-Message-Id: <20150114072057.631272654@linuxfoundation.org>
+        Arnd Bergmann <arnd@arndb.de>,
+        Anton Vorontsov <cbouatmailru@gmail.com>,
+        Colin Cross <ccross@android.com>, Olof Johansson <olof@lixom.net>,
+        Kees Cook <keescook@chromium.org>,
+        Rob Herring <rob.herring@calxeda.com>,
+        Tony Lindgren <tony@atomide.com>, Tony Luck <tony.luck@intel.com>
+Subject: [PATCH 3.18 040/150] pstore-ram: Fix hangs by using write-combine mappings
+Date: Tue, 13 Jan 2015 23:21:51 -0800
+Message-Id: <20150114072057.681084740@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -31,43 +33,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Hante Meuleman <meuleman@broadcom.com>
+From: Rob Herring <robherring2@gmail.com>
 
-commit 94a612086f5e78272e831c04b673778f8546ea73 upstream.
+commit 7ae9cb81933515dc7db1aa3c47ef7653717e3090 upstream.
 
-The ifidx provided by FW needs to be offsetted when receiving data
-packets.
+Currently trying to use pstore on at least ARMs can hang as we're
+mapping the peristent RAM with pgprot_noncached().
 
-Reviewed-by: Arend Van Spriel <arend@broadcom.com>
-Reviewed-by: Pieter-Paul Giesberts <pieterpg@broadcom.com>
-Signed-off-by: Hante Meuleman <meuleman@broadcom.com>
-Signed-off-by: Arend van Spriel <arend@broadcom.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+On ARMs, pgprot_noncached() will actually make the memory strongly
+ordered, and as the atomic operations pstore uses are implementation
+defined for strongly ordered memory, they may not work. So basically
+atomic operations have undefined behavior on ARM for device or strongly
+ordered memory types.
+
+Let's fix the issue by using write-combine variants for mappings. This
+corresponds to normal, non-cacheable memory on ARM. For many other
+architectures, this change does not change the mapping type as by
+default we have:
+
+#define pgprot_writecombine pgprot_noncached
+
+The reason why pgprot_noncached() was originaly used for pstore
+is because Colin Cross <ccross@android.com> had observed lost
+debug prints right before a device hanging write operation on some
+systems. For the platforms supporting pgprot_noncached(), we can
+add a an optional configuration option to support that. But let's
+get pstore working first before adding new features.
+
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: Colin Cross <ccross@android.com>
+Cc: Olof Johansson <olof@lixom.net>
+Cc: linux-kernel@vger.kernel.org
+Acked-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Rob Herring <rob.herring@calxeda.com>
+[tony@atomide.com: updated description]
+Signed-off-by: Tony Lindgren <tony@atomide.com>
+Signed-off-by: Tony Luck <tony.luck@intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/brcm80211/brcmfmac/msgbuf.c |    9 +++++++++
- 1 file changed, 9 insertions(+)
+ fs/pstore/ram_core.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/drivers/net/wireless/brcm80211/brcmfmac/msgbuf.c
-+++ b/drivers/net/wireless/brcm80211/brcmfmac/msgbuf.c
-@@ -1081,8 +1081,17 @@ brcmf_msgbuf_rx_skb(struct brcmf_msgbuf
- {
- 	struct brcmf_if *ifp;
+--- a/fs/pstore/ram_core.c
++++ b/fs/pstore/ram_core.c
+@@ -392,7 +392,7 @@ static void *persistent_ram_vmap(phys_ad
+ 	page_start = start - offset_in_page(start);
+ 	page_count = DIV_ROUND_UP(size + offset_in_page(start), PAGE_SIZE);
  
-+	/* The ifidx is the idx to map to matching netdev/ifp. When receiving
-+	 * events this is easy because it contains the bssidx which maps
-+	 * 1-on-1 to the netdev/ifp. But for data frames the ifidx is rcvd.
-+	 * bssidx 1 is used for p2p0 and no data can be received or
-+	 * transmitted on it. Therefor bssidx is ifidx + 1 if ifidx > 0
-+	 */
-+	if (ifidx)
-+		(ifidx)++;
- 	ifp = msgbuf->drvr->iflist[ifidx];
- 	if (!ifp || !ifp->ndev) {
-+		brcmf_err("Received pkt for invalid ifidx %d\n", ifidx);
- 		brcmu_pkt_buf_free_skb(skb);
- 		return;
- 	}
+-	prot = pgprot_noncached(PAGE_KERNEL);
++	prot = pgprot_writecombine(PAGE_KERNEL);
+ 
+ 	pages = kmalloc_array(page_count, sizeof(struct page *), GFP_KERNEL);
+ 	if (!pages) {
+@@ -422,7 +422,7 @@ static void *persistent_ram_iomap(phys_a
+ 	buffer_start_add = buffer_start_add_locked;
+ 	buffer_size_add = buffer_size_add_locked;
+ 
+-	return ioremap(start, size);
++	return ioremap_wc(start, size);
+ }
+ 
+ static int persistent_ram_buffer_map(phys_addr_t start, phys_addr_t size,
 
 
