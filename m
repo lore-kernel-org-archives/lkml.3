@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756168AbbANIuI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:50:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57655 "EHLO
+	id S1755154AbbANItp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:49:45 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57659 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752401AbbANHZT (ORCPT
+	with ESMTP id S1752430AbbANHZU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:25:19 -0500
+	Wed, 14 Jan 2015 02:25:20 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Peter Rosin <peda@axentia.se>, Mark Brown <broonie@kernel.org>
-Subject: [PATCH 3.18 023/150] ASoC: pcm512x: Trigger auto-increment of register addresses on i2c
-Date: Tue, 13 Jan 2015 23:21:34 -0800
-Message-Id: <20150114072056.918341238@linuxfoundation.org>
+        Andrew Jackson <Andrew.Jackson@arm.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: [PATCH 3.18 024/150] ASoC: dwc: Ensure FIFOs are flushed to prevent channel swap
+Date: Tue, 13 Jan 2015 23:21:35 -0800
+Message-Id: <20150114072056.967027886@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -28,39 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Peter Rosin <peda@axentia.se>
+From: Andrew Jackson <Andrew.Jackson@arm.com>
 
-commit 681a19560378213a193c424881b2180a783b81ae upstream.
+commit 3475c3d034d7f276a474c8bd53f44b48c8bf669d upstream.
 
-When the codec is connected using i2c, it will only auto-increment
-register addresses if msb (0x80) of the register address byte is set.
+Flush the FIFOs when the stream is prepared for use.  This avoids
+an inadvertent swapping of the left/right channels if the FIFOs are
+not empty at startup.
 
-[Fixes cache sync if multiple adjacent registers are updated -- broonie]
-
-Signed-off-by: Peter Rosin <peda@axentia.se>
+Signed-off-by: Andrew Jackson <Andrew.Jackson@arm.com>
 Signed-off-by: Mark Brown <broonie@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- sound/soc/codecs/pcm512x-i2c.c |    7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ sound/soc/dwc/designware_i2s.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
 
---- a/sound/soc/codecs/pcm512x-i2c.c
-+++ b/sound/soc/codecs/pcm512x-i2c.c
-@@ -24,8 +24,13 @@ static int pcm512x_i2c_probe(struct i2c_
- 			     const struct i2c_device_id *id)
- {
- 	struct regmap *regmap;
-+	struct regmap_config config = pcm512x_regmap;
+--- a/sound/soc/dwc/designware_i2s.c
++++ b/sound/soc/dwc/designware_i2s.c
+@@ -263,6 +263,19 @@ static void dw_i2s_shutdown(struct snd_p
+ 	snd_soc_dai_set_dma_data(dai, substream, NULL);
+ }
  
--	regmap = devm_regmap_init_i2c(i2c, &pcm512x_regmap);
-+	/* msb needs to be set to enable auto-increment of addresses */
-+	config.read_flag_mask = 0x80;
-+	config.write_flag_mask = 0x80;
++static int dw_i2s_prepare(struct snd_pcm_substream *substream,
++			  struct snd_soc_dai *dai)
++{
++	struct dw_i2s_dev *dev = snd_soc_dai_get_drvdata(dai);
 +
-+	regmap = devm_regmap_init_i2c(i2c, &config);
- 	if (IS_ERR(regmap))
- 		return PTR_ERR(regmap);
++	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
++		i2s_write_reg(dev->i2s_base, TXFFR, 1);
++	else
++		i2s_write_reg(dev->i2s_base, RXFFR, 1);
++
++	return 0;
++}
++
+ static int dw_i2s_trigger(struct snd_pcm_substream *substream,
+ 		int cmd, struct snd_soc_dai *dai)
+ {
+@@ -294,6 +307,7 @@ static struct snd_soc_dai_ops dw_i2s_dai
+ 	.startup	= dw_i2s_startup,
+ 	.shutdown	= dw_i2s_shutdown,
+ 	.hw_params	= dw_i2s_hw_params,
++	.prepare	= dw_i2s_prepare,
+ 	.trigger	= dw_i2s_trigger,
+ };
  
 
 
