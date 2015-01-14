@@ -1,92 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751695AbbANBLk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 20:11:40 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:56007 "EHLO
-	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751469AbbANBLi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 20:11:38 -0500
-X-Original-SENDERIP: 10.177.220.203
-X-Original-MAILFROM: namhyung@kernel.org
-Date: Wed, 14 Jan 2015 10:09:05 +0900
-From: Namhyung Kim <namhyung@kernel.org>
-To: Wang Nan <wangnan0@huawei.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        mingo@kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, paulmck@linux.vnet.ibm.com,
-        mathieu.desnoyers@efficios.com,
-        xiakaixu 00238161 <xiakaixu@huawei.com>
-Subject: Re: [PATCH 1/2] tracing: Move enabling tracepoints to just after
- rcu_init()
-Message-ID: <20150114010905.GA800@sejong>
-References: <E1Y9QLr-0000h7-Qw@feisty.vs19.net>
- <54AF53BD.5070303@huawei.com>
- <54B5B478.1020401@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <54B5B478.1020401@huawei.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751936AbbANBWk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 20:22:40 -0500
+Received: from m12-18.163.com ([220.181.12.18]:47231 "EHLO m12-18.163.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751122AbbANBWj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jan 2015 20:22:39 -0500
+X-Coremail-DSSMTP: 117.88.247.19
+From: weiyj_lk@163.com
+To: Kishon Vijay Abraham I <kishon@ti.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>
+Cc: Wei Yongjun <yongjun_wei@trendmicro.com.cn>, linux-kernel@vger.kernel.org
+Subject: [PATCH] phy: fix return value check in armada375_usb_phy_probe()
+Date: Wed, 14 Jan 2015 09:10:00 +0800
+Message-Id: <1421197800-14935-1-git-send-email-weiyj_lk@163.com>
+X-Mailer: git-send-email 1.9.3
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-CM-TRANSID: EsCowEC5_kNWxLVU7DGOAA--.767S2
+X-Coremail-Antispam: 1Uf129KBjvdXoW7Wr4kAFWDXryfuF1furWfZrb_yoWDCFb_W3
+	ykur93Xr4qya1IgrWUA3y5A3ySvF1kGa4DWr4Yq3yavryYgr1akr98X3s7Xrsagw4rGr9r
+	K3W5Zr4Svr1xJjkaLaAFLSUrUUUUUb8apTn2vfkv8UJUUUU8Yxn0WfASr-VFAUDa7-sFnT
+	9fnUUvcSsGvfC2KfnxnUUI43ZEXa7IUnP8n5UUUUU==
+X-Originating-IP: [117.88.247.19]
+X-CM-SenderInfo: pzhl5yxbonqiywtou0bp/1tbiGQuB1lEAQr7-OgAAst
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 14, 2015 at 08:12:40AM +0800, Wang Nan wrote:
-> Ping...
-> 
-> On 2015/1/9 12:06, Wang Nan wrote:
-> > Hi Steven Rostedt,
-> > 
-> > During studying your code we find a problem, please see below.
-> > 
-> >>
-> >> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> >>
-> >> Enabling tracepoints at boot up can be very useful. The tracepoint
-> >> can be initialized right after RCU has been. There's no need to
-> >> wait for the early_initcall() to be called. That's too late for some
-> >> things that can use tracepoints for debugging. Move the logic to
-> >> enable tracepoints out of the initcalls and into init/main.c to
-> >> right after rcu_init().
-> >>
-> >> This also allows trace_printk() to be used early too.
-> >>
-> >> Link: http://lkml.kernel.org/r/alpine.DEB.2.11.1412121539300.16494@nanos
-> >> Link: http://lkml.kernel.org/r/20141214164104.307127356@goodmis.org
-> >>
-> >> Reviewed-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> >> Suggested-by: Thomas Gleixner <tglx@linutronix.de>
-> >> Tested-by: Thomas Gleixner <tglx@linutronix.de>
-> >> Acked-by: Thomas Gleixner <tglx@linutronix.de>
-> >> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> > 
-> > [...]
-> > 
-> >> +void __init trace_init(void)
-> >> +{
-> >> +	tracer_alloc_buffers();
-> >> +	init_ftrace_syscalls();
-> >> +	trace_event_init();	
-> >> +}
-> >> +
-> > 
-> > [...]
-> > 
-> >> +
-> >> +void __init trace_event_init(void)
-> >> +{
-> >> +	event_trace_memsetup();
-> >> +	init_ftrace_syscalls();
-> >> +	event_trace_enable();
-> >> +}
-> >> +
-> > 
-> > init_ftrace_syscalls() get called twice by trace_init() and trace_event_init(), some resources are wasted.
-> > At lease one of them can be removed.
+From: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
 
-I think it's more natural to keep it in the trace_event_init().
+In case of error, the function devm_ioremap_resource() returns
+ERR_PTR() and never returns NULL. The NULL test in the return
+value check should be replaced with IS_ERR().
 
-Thanks,
-Namhyung
+Signed-off-by: Wei Yongjun <yongjun_wei@trendmicro.com.cn>
+---
+ drivers/phy/phy-armada375-usb2.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/phy/phy-armada375-usb2.c b/drivers/phy/phy-armada375-usb2.c
+index ac7d99d..7c99ca2 100644
+--- a/drivers/phy/phy-armada375-usb2.c
++++ b/drivers/phy/phy-armada375-usb2.c
+@@ -118,8 +118,8 @@ static int armada375_usb_phy_probe(struct platform_device *pdev)
+ 
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	usb_cluster_base = devm_ioremap_resource(&pdev->dev, res);
+-	if (!usb_cluster_base)
+-		return -ENOMEM;
++	if (IS_ERR(usb_cluster_base))
++		return PTR_ERR(usb_cluster_base);
+ 
+ 	phy = devm_phy_create(dev, NULL, &armada375_usb_phy_ops);
+ 	if (IS_ERR(phy)) {
+
