@@ -1,62 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995AbbANRSy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 12:18:54 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:57156 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752137AbbANRSx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 12:18:53 -0500
-Date: Wed, 14 Jan 2015 17:18:38 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Geert Uytterhoeven <geert+renesas@glider.be>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Jean-Francois Moine <moinejf@free.fr>,
-        alsa-devel@alsa-project.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <20150114171838.GY4160@sirena.org.uk>
-References: <1421179417-23698-1-git-send-email-geert+renesas@glider.be>
+	id S1754136AbbANRTJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 12:19:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54886 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754024AbbANRTH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 12:19:07 -0500
+Message-ID: <54B6A4EF.7020501@redhat.com>
+Date: Wed, 14 Jan 2015 12:18:39 -0500
+From: Jon Masters <jcm@redhat.com>
+Organization: Red Hat, Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="2+IDmuKgu0wSQZlt"
-Content-Disposition: inline
-In-Reply-To: <1421179417-23698-1-git-send-email-geert+renesas@glider.be>
-X-Cookie: Keep out of reach of children.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] ASoC: simple-card: Fix crash in asoc_simple_card_unref()
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Mark Rutland <mark.rutland@arm.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Don Dutile <ddutile@redhat.com>
+Subject: Re: sysfs topology for arm64 cluster_id
+References: <54B5BC84.8090603@redhat.com> <20150114170045.GC21115@leverpostej>
+In-Reply-To: <20150114170045.GC21115@leverpostej>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/14/2015 12:00 PM, Mark Rutland wrote:
+> On Wed, Jan 14, 2015 at 12:47:00AM +0000, Jon Masters wrote:
+>> Hi Folks,
+>>
+>> TLDR: I would like to consider the value of adding something like
+>> "cluster_siblings" or similar in sysfs to describe ARM topology.
+>>
+>> A quick question on intended data representation in /sysfs topology
+>> before I ask the team on this end to go down the (wrong?) path. On ARM
+>> systems today, we have a hierarchical CPU topology:
+>>
+>>                  Socket ---- Coherent Interonnect ---- Socket
+>>                    |                                    |
+>>          Cluster0 ... ClusterN                Cluster0 ... ClusterN
+>>             |             |                      |             |
+>>       Core0...CoreN  Core0...CoreN        Core0...CoreN  Core0...CoreN
+>>         |       |      |        |           |       |      |       |
+>>      T0..TN  T0..Tn  T0..TN  T0..TN       T0..TN T0..TN  T0..TN  T0..TN
+>>
+>> Where we might (or might not) have threads in individual cores (a la SMT
+>> - it's allowed in the architecture at any rate) and we group cores
+>> together into units of clusters usually 2-4 cores in size (though this
+>> varies between implementations, some of which have different but similar
+>> concepts, such as AppliedMicro Potenza PMDs CPU complexes of dual
+>> cores). There are multiple clusters per "socket", and there might be an
+>> arbitrary number of sockets. We'll start to enable NUMA soon.
+> 
+> I have a slight disagreement with the diagram above.
 
---2+IDmuKgu0wSQZlt
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Thanks for the clarification - note that I was *explicitly not* saying
+that the MPIDR Affinity bits sufficiently described the system :) Nor do
+I think cpu-map does cover everything we want today.
 
-On Tue, Jan 13, 2015 at 09:03:37PM +0100, Geert Uytterhoeven wrote:
-> If asoc_simple_card_probe() fails, asoc_simple_card_unref() may be
-> called before dev_set_drvdata(), causing a NULL pointer dereference in
-> asoc_simple_card_unref():
+> The MPIDR_EL1.Aff* fields and the cpu-map bindings currently only
+> describe the hierarchy, without any information on the relative
+> weighting between levels, and without any mapping to HW concepts such as
+> sockets. What these happen to map to is specific to a particular system,
+> and the hierarchy may be carved up in a number of possible ways
+> (including "virtual" clusters). There are also 24 RES0 bits that could
+> potentially become additional Aff fields we may need to describe in
+> future.
 
-Applied, thanks.
+> "socket", "package", etc are meaningless unless the system provides a
+> mapping of Aff levels to these. We can't guess how the HW is actually
+> organised.
 
---2+IDmuKgu0wSQZlt
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+The replies I got from you and Arnd gel with my thinking that we want
+something generic enough in Linux to handle this in a non-architectural
+way (real topology, not just hierarchies). That should also cover the
+kind of cluster-like stuff e.g. AMD with NUMA on HT on a single socket
+and other stuff. So...it sounds like we need "something" to add to our
+understanding of hierarchy, and that "something" is in sysfs. A proposal
+needs to be derived (I think Don will followup since he is keen to poke
+at this). We'll go back to the ACPI ASWG folks to add whatever is
+missing to future ACPI bindings after that discussion.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Jon.
 
-iQEcBAEBCAAGBQJUtqTuAAoJECTWi3JdVIfQSpEH/1dq2UiGyLtXhJQMMso1FSBf
-SnjsqSpspcbV7bjMPJJWI/f92411NgMYKxcix0W9dTlma9qYYfqdNgaBIPYyq+T9
-YHAqOCyLm44qJlnucGF+LCqPbrxUFo81y1LZjGGQDEHgSajqmmvA0CkxVzHEzCqH
-QAbeAQkpDDShpbeDNlecZSx0YF4I1/hdnHGvthXNKIenT2NL+Zk9SOkSsFf0m2LP
-s+PF8DbhyRbSR7o3I2IHIh7gWE+D/WhjqfrhQ9uSHY2T72PJOR6P1d+2SUER9wru
-mANqDmJXZsk93Jm7b2wiHHyWiyKNxDQHNoVT4K+w1Nvo+0pRUsjFAyEpW8VFpms=
-=gqwy
------END PGP SIGNATURE-----
-
---2+IDmuKgu0wSQZlt--
