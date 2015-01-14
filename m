@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932999AbbANIQN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:16:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58213 "EHLO
+	id S1754848AbbANHbI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:31:08 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58219 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754827AbbANHbA (ORCPT
+	with ESMTP id S932224AbbANHbG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:31:00 -0500
+	Wed, 14 Jan 2015 02:31:06 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Jan Kara <jack@suse.cz>,
-        Mikulas Patocka <mpatocka@redhat.com>, Jens Axboe <axboe@kernel.dk>,
-        Al Viro <viro@zeniv.linux.org.uk>, Jens Axboe <axboe@fb.com>
-Subject: [PATCH 3.18 093/150] writeback: fix a subtle race condition in I_DIRTY clearing
-Date: Tue, 13 Jan 2015 23:22:44 -0800
-Message-Id: <20150114072100.090095417@linuxfoundation.org>
+        Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 3.18 094/150] tracing/sched: Check preempt_count() for current when reading task->state
+Date: Tue, 13 Jan 2015 23:22:45 -0800
+Message-Id: <20150114072100.134852125@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -30,126 +29,65 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tejun Heo <tj@kernel.org>
+From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-commit 9c6ac78eb3521c5937b2dd8a7d1b300f41092f45 upstream.
+commit aee4e5f3d3abb7a2239dd02f6d8fb173413fd02f upstream.
 
-After invoking ->dirty_inode(), __mark_inode_dirty() does smp_mb() and
-tests inode->i_state locklessly to see whether it already has all the
-necessary I_DIRTY bits set.  The comment above the barrier doesn't
-contain any useful information - memory barriers can't ensure "changes
-are seen by all cpus" by itself.
+When recording the state of a task for the sched_switch tracepoint a check of
+task_preempt_count() is performed to see if PREEMPT_ACTIVE is set. This is
+because, technically, a task being preempted is really in the TASK_RUNNING
+state, and that is what should be recorded when tracing a sched_switch,
+even if the task put itself into another state (it hasn't scheduled out
+in that state yet).
 
-And it sure enough was broken.  Please consider the following
-scenario.
+But with the change to use per_cpu preempt counts, the
+task_thread_info(p)->preempt_count is no longer used, and instead
+task_preempt_count(p) is used.
 
- CPU 0					CPU 1
- -------------------------------------------------------------------------------
+The problem is that this does not use the current preempt count but a stale
+one from a previous sched_switch. The task_preempt_count(p) uses
+saved_preempt_count and not preempt_count(). But for tracing sched_switch,
+if p is current, we really want preempt_count().
 
-					enters __writeback_single_inode()
-					grabs inode->i_lock
-					tests PAGECACHE_TAG_DIRTY which is clear
- enters __set_page_dirty()
- grabs mapping->tree_lock
- sets PAGECACHE_TAG_DIRTY
- releases mapping->tree_lock
- leaves __set_page_dirty()
+I hit this bug when I was tracing sleep and the call from do_nanosleep()
+scheduled out in the "RUNNING" state.
 
- enters __mark_inode_dirty()
- smp_mb()
- sees I_DIRTY_PAGES set
- leaves __mark_inode_dirty()
-					clears I_DIRTY_PAGES
-					releases inode->i_lock
+           sleep-4290  [000] 537272.259992: sched_switch:         sleep:4290 [120] R ==> swapper/0:0 [120]
+           sleep-4290  [000] 537272.260015: kernel_stack:         <stack trace>
+=> __schedule (ffffffff8150864a)
+=> schedule (ffffffff815089f8)
+=> do_nanosleep (ffffffff8150b76c)
+=> hrtimer_nanosleep (ffffffff8108d66b)
+=> SyS_nanosleep (ffffffff8108d750)
+=> return_to_handler (ffffffff8150e8e5)
+=> tracesys_phase2 (ffffffff8150c844)
 
-Now @inode has dirty pages w/ I_DIRTY_PAGES clear.  This doesn't seem
-to lead to an immediately critical problem because requeue_inode()
-later checks PAGECACHE_TAG_DIRTY instead of I_DIRTY_PAGES when
-deciding whether the inode needs to be requeued for IO and there are
-enough unintentional memory barriers inbetween, so while the inode
-ends up with inconsistent I_DIRTY_PAGES flag, it doesn't fall off the
-IO list.
+After a bit of hair pulling, I found that the state was really
+TASK_INTERRUPTIBLE, but the saved_preempt_count had an old PREEMPT_ACTIVE
+set and caused the sched_switch tracepoint to show it as RUNNING.
 
-The lack of explicit barrier may also theoretically affect the other
-I_DIRTY bits which deal with metadata dirtiness.  There is no
-guarantee that a strong enough barrier exists between
-I_DIRTY_[DATA]SYNC clearing and write_inode() writing out the dirtied
-inode.  Filesystem inode writeout path likely has enough stuff which
-can behave as full barrier but it's theoretically possible that the
-writeout may not see all the updates from ->dirty_inode().
+Link: http://lkml.kernel.org/r/20141210174428.3cb7542a@gandalf.local.home
 
-Fix it by adding an explicit smp_mb() after I_DIRTY clearing.  Note
-that I_DIRTY_PAGES needs a special treatment as it always needs to be
-cleared to be interlocked with the lockless test on
-__mark_inode_dirty() side.  It's cleared unconditionally and
-reinstated after smp_mb() if the mapping still has dirty pages.
-
-Also add comments explaining how and why the barriers are paired.
-
-Lightly tested.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Jan Kara <jack@suse.cz>
-Cc: Mikulas Patocka <mpatocka@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Reviewed-by: Jan Kara <jack@suse.cz>
-Signed-off-by: Jens Axboe <axboe@fb.com>
+Acked-by: Ingo Molnar <mingo@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Fixes: 01028747559a "sched: Create more preempt_count accessors"
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- fs/fs-writeback.c |   29 ++++++++++++++++++++++-------
- 1 file changed, 22 insertions(+), 7 deletions(-)
+ include/trace/events/sched.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -479,12 +479,28 @@ __writeback_single_inode(struct inode *i
- 	 * write_inode()
- 	 */
- 	spin_lock(&inode->i_lock);
--	/* Clear I_DIRTY_PAGES if we've written out all dirty pages */
--	if (!mapping_tagged(mapping, PAGECACHE_TAG_DIRTY))
--		inode->i_state &= ~I_DIRTY_PAGES;
-+
- 	dirty = inode->i_state & I_DIRTY;
--	inode->i_state &= ~(I_DIRTY_SYNC | I_DIRTY_DATASYNC);
-+	inode->i_state &= ~I_DIRTY;
-+
-+	/*
-+	 * Paired with smp_mb() in __mark_inode_dirty().  This allows
-+	 * __mark_inode_dirty() to test i_state without grabbing i_lock -
-+	 * either they see the I_DIRTY bits cleared or we see the dirtied
-+	 * inode.
-+	 *
-+	 * I_DIRTY_PAGES is always cleared together above even if @mapping
-+	 * still has dirty pages.  The flag is reinstated after smp_mb() if
-+	 * necessary.  This guarantees that either __mark_inode_dirty()
-+	 * sees clear I_DIRTY_PAGES or we see PAGECACHE_TAG_DIRTY.
-+	 */
-+	smp_mb();
-+
-+	if (mapping_tagged(mapping, PAGECACHE_TAG_DIRTY))
-+		inode->i_state |= I_DIRTY_PAGES;
-+
- 	spin_unlock(&inode->i_lock);
-+
- 	/* Don't write the inode if only I_DIRTY_PAGES was set */
- 	if (dirty & (I_DIRTY_SYNC | I_DIRTY_DATASYNC)) {
- 		int err = write_inode(inode, wbc);
-@@ -1148,12 +1164,11 @@ void __mark_inode_dirty(struct inode *in
- 	}
- 
+--- a/include/trace/events/sched.h
++++ b/include/trace/events/sched.h
+@@ -100,7 +100,7 @@ static inline long __trace_sched_switch_
  	/*
--	 * make sure that changes are seen by all cpus before we test i_state
--	 * -- mikulas
-+	 * Paired with smp_mb() in __writeback_single_inode() for the
-+	 * following lockless i_state test.  See there for details.
+ 	 * For all intents and purposes a preempted task is a running task.
  	 */
- 	smp_mb();
- 
--	/* avoid the locking if we can */
- 	if ((inode->i_state & flags) == flags)
- 		return;
+-	if (task_preempt_count(p) & PREEMPT_ACTIVE)
++	if (preempt_count() & PREEMPT_ACTIVE)
+ 		state = TASK_RUNNING | TASK_STATE_MAX;
+ #endif
  
 
 
