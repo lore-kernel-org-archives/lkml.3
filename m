@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753121AbbANOCS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 09:02:18 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:36852 "EHLO
+	id S1753286AbbANOCa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 09:02:30 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:36859 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752293AbbANOCR (ORCPT
+	with ESMTP id S1753172AbbANOC2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 09:02:17 -0500
-Date: Wed, 14 Jan 2015 06:01:30 -0800
-From: tip-bot for Xunlei Pang <tipbot@zytor.com>
-Message-ID: <tip-638476007d13534b2ed4134bf0279ef44071140b@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, bsegall@google.com,
-        pang.xunlei@linaro.org, peterz@infradead.org,
-        torvalds@linux-foundation.org, mingo@kernel.org, hpa@zytor.com
-Reply-To: tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, peterz@infradead.org,
-        bsegall@google.com, pang.xunlei@linaro.org, hpa@zytor.com,
-        mingo@kernel.org
-In-Reply-To: <1418745509-2609-1-git-send-email-pang.xunlei@linaro.org>
-References: <1418745509-2609-1-git-send-email-pang.xunlei@linaro.org>
+	Wed, 14 Jan 2015 09:02:28 -0500
+Date: Wed, 14 Jan 2015 06:01:50 -0800
+From: tip-bot for Eric Sandeen <tipbot@zytor.com>
+Message-ID: <tip-a8b686b3af4419f92e0ea5be1c76fb68363df8e6@git.kernel.org>
+Cc: mingo@kernel.org, linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        torvalds@linux-foundation.org, peterz@infradead.org, hpa@zytor.com,
+        sandeen@redhat.com
+Reply-To: sandeen@redhat.com, tglx@linutronix.de, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, hpa@zytor.com,
+        torvalds@linux-foundation.org, peterz@infradead.org
+In-Reply-To: <5490B158.4060005@redhat.com>
+References: <5490B158.4060005@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched/fair:
-  Fix the dealing with decay_count in __synchronize_entity_decay()
-Git-Commit-ID: 638476007d13534b2ed4134bf0279ef44071140b
+Subject: [tip:sched/core] sched/debug:
+  Check for stack overflow in ___might_sleep()
+Git-Commit-ID: a8b686b3af4419f92e0ea5be1c76fb68363df8e6
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -35,51 +34,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  638476007d13534b2ed4134bf0279ef44071140b
-Gitweb:     http://git.kernel.org/tip/638476007d13534b2ed4134bf0279ef44071140b
-Author:     Xunlei Pang <pang.xunlei@linaro.org>
-AuthorDate: Tue, 16 Dec 2014 23:58:29 +0800
+Commit-ID:  a8b686b3af4419f92e0ea5be1c76fb68363df8e6
+Gitweb:     http://git.kernel.org/tip/a8b686b3af4419f92e0ea5be1c76fb68363df8e6
+Author:     Eric Sandeen <sandeen@redhat.com>
+AuthorDate: Tue, 16 Dec 2014 16:25:28 -0600
 Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Wed, 14 Jan 2015 13:34:13 +0100
+CommitDate: Wed, 14 Jan 2015 13:34:14 +0100
 
-sched/fair: Fix the dealing with decay_count in __synchronize_entity_decay()
+sched/debug: Check for stack overflow in ___might_sleep()
 
-In __synchronize_entity_decay(), if "decays" happens to be zero,
-se->avg.decay_count will not be zeroed, holding the positive value
-assigned when dequeued last time.
+Sometimes a "BUG: sleeping function called from invalid context"
+message is not indicative of locking problems, but is the result
+of a stack overflow corrupting the thread info.
 
-This is problematic in the following case:
-If this runnable task is CFS-balanced to other CPUs soon afterwards,
-migrate_task_rq_fair() will treat it as a blocked task due to its
-non-zero decay_count, thereby adding its load to cfs_rq->removed_load
-wrongly.
+Witness http://oss.sgi.com/archives/xfs/2014-02/msg00325.html
+for example, which took a few go-rounds to sort out.
 
-Thus, we must zero se->avg.decay_count in this case as well.
+If we're printing the warning, things are wonky already, and
+it'd be informative to check for the stack end corruption at this
+point, too.
 
-Signed-off-by: Xunlei Pang <pang.xunlei@linaro.org>
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
 Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Reviewed-by: Ben Segall <bsegall@google.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1418745509-2609-1-git-send-email-pang.xunlei@linaro.org
+Link: http://lkml.kernel.org/r/5490B158.4060005@redhat.com
 Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- kernel/sched/fair.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ kernel/sched/core.c | 3 +++
+ 1 file changed, 3 insertions(+)
 
-diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
-index 40667cb..97000a9 100644
---- a/kernel/sched/fair.c
-+++ b/kernel/sched/fair.c
-@@ -2574,11 +2574,11 @@ static inline u64 __synchronize_entity_decay(struct sched_entity *se)
- 	u64 decays = atomic64_read(&cfs_rq->decay_counter);
+diff --git a/kernel/sched/core.c b/kernel/sched/core.c
+index c0accc0..56c9b79 100644
+--- a/kernel/sched/core.c
++++ b/kernel/sched/core.c
+@@ -7325,6 +7325,9 @@ void ___might_sleep(const char *file, int line, int preempt_offset)
+ 			in_atomic(), irqs_disabled(),
+ 			current->pid, current->comm);
  
- 	decays -= se->avg.decay_count;
-+	se->avg.decay_count = 0;
- 	if (!decays)
- 		return 0;
- 
- 	se->avg.load_avg_contrib = decay_load(se->avg.load_avg_contrib, decays);
--	se->avg.decay_count = 0;
- 
- 	return decays;
- }
++	if (task_stack_end_corrupted(current))
++		printk(KERN_EMERG "Thread overran stack, or stack corrupted\n");
++
+ 	debug_show_held_locks(current);
+ 	if (irqs_disabled())
+ 		print_irqtrace_events(current);
