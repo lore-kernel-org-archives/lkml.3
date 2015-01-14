@@ -1,108 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146AbbANWpa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 17:45:30 -0500
-Received: from smtprelay4.synopsys.com ([198.182.47.9]:34622 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751649AbbANWp2 convert rfc822-to-8bit (ORCPT
+	id S1754255AbbANWpf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 17:45:35 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43173 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751688AbbANWpd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 17:45:28 -0500
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: "balbi@ti.com" <balbi@ti.com>
-CC: Alan Stern <stern@rowland.harvard.edu>,
-        Robert Baldyga <r.baldyga@samsung.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dinguyen@opensource.altera.com" <dinguyen@opensource.altera.com>,
-        "yousaf.kaukab@intel.com" <yousaf.kaukab@intel.com>,
-        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>
-Subject: RE: [PATCH v2] usb: dwc2: call dwc2_is_controller_alive() under
- spinlock
-Thread-Topic: [PATCH v2] usb: dwc2: call dwc2_is_controller_alive() under
- spinlock
-Thread-Index: AQHQL8W5lMCdaYrjlUuC2oTfEkhvI5zAib4AgAAICYCAABL6AIAAB36AgAABTYD//4F/UIAAjX6A//96v7A=
-Date: Wed, 14 Jan 2015 22:45:26 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E03048450774D@US01WEMBX2.internal.synopsys.com>
-References: <20150114211434.GT16533@saruman>
- <Pine.LNX.4.44L0.1501141636590.1464-100000@iolanthe.rowland.org>
- <20150114214603.GU16533@saruman>
- <A2CA0424C0A6F04399FB9E1CD98E03048450771B@US01WEMBX2.internal.synopsys.com>
- <20150114223941.GV16533@saruman>
-In-Reply-To: <20150114223941.GV16533@saruman>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.13.184.19]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 14 Jan 2015 17:45:33 -0500
+Date: Wed, 14 Jan 2015 14:45:31 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Calvin Owens <calvinowens@fb.com>
+Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Peter Feiner <pfeiner@google.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        linux-kernel <linux-kernel@vger.kernel.org>, <kernel-team@fb.com>
+Subject: Re: [RFC][PATCH] procfs: Add /proc/<pid>/mapped_files
+Message-Id: <20150114144531.2564398d03c19fd48e4749d9@linux-foundation.org>
+In-Reply-To: <20150114210326.GA25159@mail.thefacebook.com>
+References: <1421194829-28696-1-git-send-email-calvinowens@fb.com>
+	<87oaq1v49z.fsf@rasmusvillemoes.dk>
+	<CAAHN_R0AhAc7zt3sfbKdXJEj3Ncd4Hao-1qr=X3mkSjB7F_fYg@mail.gmail.com>
+	<87fvbdv2g3.fsf@rasmusvillemoes.dk>
+	<20150114210326.GA25159@mail.thefacebook.com>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Felipe Balbi [mailto:balbi@ti.com]
-> Sent: Wednesday, January 14, 2015 2:40 PM
-> 
-> On Wed, Jan 14, 2015 at 10:28:54PM +0000, Paul Zimmerman wrote:
-> > > From: Felipe Balbi [mailto:balbi@ti.com]
-> > > Sent: Wednesday, January 14, 2015 1:46 PM
-> > >
-> > > On Wed, Jan 14, 2015 at 04:41:23PM -0500, Alan Stern wrote:
-> > > > > > > This is really, really odd. Register accesses are atomic, so the lock
-> > > > > > > isn't really doing anything. Besides, you're calling
-> > > > > > > dwc2_is_controller_alive() from within the IRQ handler, so IRQs are
-> > > > > > > already disabled.
-> > > > > >
-> > > > > > Spinlocks sometimes do more than you think.  For instance, here the
-> > > > > > lock prevents the register access from happening while some other CPU
-> > > > > > is holding the lock.  If a silicon quirk causes the register access to
-> > > > > > interfere with other activities, this could be important.
-> > > > >
-> > > > > readl() (which is used by dwc2_is_controller_alive()) adds a memory
-> > > > > barrier to the register accesses, that should force all register
-> > > > > accesses the be correctly ordered.
-> > > >
-> > > > Memory barriers will order accesses that are all made on the same CPU
-> > > > with respect to each other.  They do not order these accesses against
-> > > > accesses made from another CPU -- that's why we have spinlocks.  :-)
-> > >
-> > > a fair point :-) The register is still read-only, so that shouldn't
-> > > matter either :-)
-> > >
-> > > > >  I fail to see how a silicon quirk
-> > > > > could cause this and if, indeed, it does, I'd be more comfortable with a
-> > > > > proper STARS tickect number from synopsys :-s
-> > > >
-> > > > Maybe accessing this register somehow resets something else.  I don't
-> > > > know.  It seems unlikely, but at least it explains how adding a
-> > > > spinlock could fix the problem.
-> > >
-> > > I would really need Paul (or someone at Synopsys) to confirm this
-> > > somehow. Maybe it has something to do with how the register is
-> > > implemented, dunno.
-> > >
-> > > Paul, do you have any idea what could cause this ? Could the HW into
-> > > some weird state if we read GSNPSID at random locations or when data is
-> > > being transferred, or anything like that ?
-> >
-> > Only thing I can think of is that there is some silicon bug in Robert's
-> > platform. But I am not aware of any STARs that mention accesses to the
-> > GSNPSID register as being problematic.
-> >
-> > Funny thing is, this code has been basically the same since at least
-> > November 2013. So I think some other recent change must have modified
-> > the timing of the register accesses, or something like that. But that's
-> > just handwaving, really.
-> 
-> Alright, I'll apply this patch but for 3.20 with a stable tag as I have
-> already sent my last pull request to Greg. Unless someone has a really
-> big complaint about doing things as such.
+On Wed, 14 Jan 2015 13:03:26 -0800 Calvin Owens <calvinowens@fb.com> wrote:
 
-It should go to 3.19-rc shouldn't it? It's a fix, and Robert's platform
-is broken without it, IIUC.
+> > Well, only when combined with checking vm_file for being NULL. One would
+> > also need to ensure that vm_pgoff is 0 for any non-stack,
+> > non-file-backed VMA. At which point it is somewhat ugly. 
+> > 
+> > > One problem with caching the value on clone like this though is that
+> > > the stack could change due to a setcontext, but AFAICT we don't care
+> > > about that for the process stack either.
+> > 
+> > If it is important, I guess one could update the info when a task calls
+> > setcontext.
+> 
+> If I understand the current behavior, the "[stack]" marker will get put
+> next to *any* mapping that encompasses the current value in the task's
+> %sp, regardless of how the mapping was created or ucontext stuff. If
+> you use flags on the VMA structs things could potentially be marked as
+> stacks even though %sp points somewhere else.
+> 
+> It's probable that nobody cares (you'd obviously have to be doing crazy
+> things to be pointing %sp at arbitrary places), but that's why I was
+> hesitant to mess with it.
 
--- 
-Paul
+Fixing the N^2 search would of course be much better than adding a new
+proc file to sidestep it.
+
+Could we do something like refreshing the new vma.vm_flags:VM_IS_STACK
+on each thread at the time when /proc/PID/maps is opened?  So do a walk
+of the threads, use each thread's sp to hunt down the thread's stack's
+vma, then set VM_IS_STACK and fill in the new vma.stack_tid field?
+
+There are still several flags unused in vma.vm_flags btw.
+
+I'm not sure that we can repurpose vm_pgoff (or vm_private_data) for
+this: a badly behaved thread could make its sp point at a random vma
+then trick the kernel into scribbling on that vma's vm_proff?  Adding a
+new field to the vma wouldn't kill us, I guess.  That would remove the
+need for a VM_IS_STACK.
+
 
