@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755489AbbANHwF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:52:05 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58735 "EHLO
+	id S933201AbbANHjS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:39:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58932 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755235AbbANHg4 (ORCPT
+	with ESMTP id S1755387AbbANHjO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:36:56 -0500
+	Wed, 14 Jan 2015 02:39:14 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jay Foad <jay.foad@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 3.14 77/77] mm: Dont count the stack guard page towards RLIMIT_STACK
-Date: Tue, 13 Jan 2015 23:23:57 -0800
-Message-Id: <20150114072228.613515286@linuxfoundation.org>
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>
+Subject: [PATCH 3.10 37/44] ARM: mvebu: disable I/O coherency on non-SMP situations on Armada 370/375/38x/XP
+Date: Tue, 13 Jan 2015 23:23:58 -0800
+Message-Id: <20150114072229.435286561@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-References: <20150114072224.182299947@linuxfoundation.org>
+In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
+References: <20150114072227.419663002@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,58 +26,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
+From: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
 
-commit 690eac53daff34169a4d74fc7bfbd388c4896abb upstream.
+commit e55355453600a33bb5ca4f71f2d7214875f3b061 upstream.
 
-Commit fee7e49d4514 ("mm: propagate error from stack expansion even for
-guard page") made sure that we return the error properly for stack
-growth conditions.  It also theorized that counting the guard page
-towards the stack limit might break something, but also said "Let's see
-if anybody notices".
+Enabling the hardware I/O coherency on Armada 370, Armada 375, Armada
+38x and Armada XP requires a certain number of conditions:
 
-Somebody did notice.  Apparently android-x86 sets the stack limit very
-close to the limit indeed, and including the guard page in the rlimit
-check causes the android 'zygote' process problems.
+ - On Armada 370, the cache policy must be set to write-allocate.
 
-So this adds the (fairly trivial) code to make the stack rlimit check be
-against the actual real stack size, rather than the size of the vma that
-includes the guard page.
+ - On Armada 375, 38x and XP, the cache policy must be set to
+   write-allocate, the pages must be mapped with the shareable
+   attribute, and the SMP bit must be set
 
-Reported-and-tested-by: Chih-Wei Huang <cwhuang@android-x86.org>
-Cc: Jay Foad <jay.foad@gmail.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Currently, on Armada XP, when CONFIG_SMP is enabled, those conditions
+are met. However, when Armada XP is used in a !CONFIG_SMP kernel, none
+of these conditions are met. With Armada 370, the situation is worse:
+since the processor is single core, regardless of whether CONFIG_SMP
+or !CONFIG_SMP is used, the cache policy will be set to write-back by
+the kernel and not write-allocate.
+
+Since solving this problem turns out to be quite complicated, and we
+don't want to let users with a mainline kernel known to have
+infrequent but existing data corruptions, this commit proposes to
+simply disable hardware I/O coherency in situations where it is known
+not to work.
+
+And basically, the is_smp() function of the kernel tells us whether it
+is OK to enable hardware I/O coherency or not, so this commit slightly
+refactors the coherency_type() function to return
+COHERENCY_FABRIC_TYPE_NONE when is_smp() is false, or the appropriate
+type of the coherency fabric in the other case.
+
+Thanks to this, the I/O coherency fabric will no longer be used at all
+in !CONFIG_SMP configurations. It will continue to be used in
+CONFIG_SMP configurations on Armada XP, Armada 375 and Armada 38x
+(which are multiple cores processors), but will no longer be used on
+Armada 370 (which is a single core processor).
+
+In the process, it simplifies the implementation of the
+coherency_type() function, and adds a missing call to of_node_put().
+
+Signed-off-by: Thomas Petazzoni <thomas.petazzoni@free-electrons.com>
+Fixes: e60304f8cb7bb545e79fe62d9b9762460c254ec2 ("arm: mvebu: Add hardware I/O Coherency support")
+Cc: <stable@vger.kernel.org> # v3.8+
+Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
+Link: https://lkml.kernel.org/r/1415871540-20302-3-git-send-email-thomas.petazzoni@free-electrons.com
+Signed-off-by: Jason Cooper <jason@lakedaemon.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- mm/mmap.c |    7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ arch/arm/mach-mvebu/coherency.c |   23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
 
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -2058,14 +2058,17 @@ static int acct_stack_growth(struct vm_a
+--- a/arch/arm/mach-mvebu/coherency.c
++++ b/arch/arm/mach-mvebu/coherency.c
+@@ -141,6 +141,29 @@ int __init coherency_init(void)
  {
- 	struct mm_struct *mm = vma->vm_mm;
- 	struct rlimit *rlim = current->signal->rlim;
--	unsigned long new_start;
-+	unsigned long new_start, actual_size;
+ 	struct device_node *np;
  
- 	/* address space limit tests */
- 	if (!may_expand_vm(mm, grow))
- 		return -ENOMEM;
- 
- 	/* Stack limit test */
--	if (size > ACCESS_ONCE(rlim[RLIMIT_STACK].rlim_cur))
-+	actual_size = size;
-+	if (size && (vma->vm_flags & (VM_GROWSUP | VM_GROWSDOWN)))
-+		actual_size -= PAGE_SIZE;
-+	if (actual_size > ACCESS_ONCE(rlim[RLIMIT_STACK].rlim_cur))
- 		return -ENOMEM;
- 
- 	/* mlock limit tests */
++	/*
++	 * The coherency fabric is needed:
++	 * - For coherency between processors on Armada XP, so only
++	 *   when SMP is enabled.
++	 * - For coherency between the processor and I/O devices, but
++	 *   this coherency requires many pre-requisites (write
++	 *   allocate cache policy, shareable pages, SMP bit set) that
++	 *   are only meant in SMP situations.
++	 *
++	 * Note that this means that on Armada 370, there is currently
++	 * no way to use hardware I/O coherency, because even when
++	 * CONFIG_SMP is enabled, is_smp() returns false due to the
++	 * Armada 370 being a single-core processor. To lift this
++	 * limitation, we would have to find a way to make the cache
++	 * policy set to write-allocate (on all Armada SoCs), and to
++	 * set the shareable attribute in page tables (on all Armada
++	 * SoCs except the Armada 370). Unfortunately, such decisions
++	 * are taken very early in the kernel boot process, at a point
++	 * where we don't know yet on which SoC we are running.
++	 */
++	if (!is_smp())
++		return 0;
++
+ 	np = of_find_matching_node(NULL, of_coherency_table);
+ 	if (np) {
+ 		pr_info("Initializing Coherency fabric\n");
 
 
