@@ -1,112 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754398AbbANWNH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 17:13:07 -0500
-Received: from mout.kundenserver.de ([212.227.17.24]:51080 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754302AbbANWND convert rfc822-to-8bit (ORCPT
+	id S1754264AbbANWM7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 17:12:59 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:45847 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753883AbbANWM5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 17:13:03 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Nicolas FERRE <nicolas.ferre@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] ARM: at91: pm: rework cpu detection
-Date: Wed, 14 Jan 2015 23:12:48 +0100
-Message-ID: <3173260.kaXht7OIt1@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20150114210734.GO3843@piout.net>
-References: <1421097825-396-1-git-send-email-alexandre.belloni@free-electrons.com> <217DB987-13E3-4D5D-A9BE-D17662A19E26@jcrosoft.com> <20150114210734.GO3843@piout.net>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
-X-Provags-ID: V03:K0:JbhkZaqb9jWnDspBtlyxc0vzRBxzplpeJTJ19XVd66ZyQyZbnZh
- 9VB/Br35st0Dk0EUH/jqUamjU58Jg6hz3gOq4XXgSFWd+RMH6Bgr0lduVL53RMpEXPeuuBl
- Yd39vvPshCwGRWcCRbF0/daJ+DKIh6ytxfqKCTWT21JnIHc5QXl11k+Q9GbuYpU/qxn3fbV
- 0PK6lpHy46PfAi6tPt5aA==
-X-UI-Out-Filterresults: notjunk:1;
+	Wed, 14 Jan 2015 17:12:57 -0500
+Date: Wed, 14 Jan 2015 17:12:54 -0500 (EST)
+Message-Id: <20150114.171254.46734872853630430.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 14 Jan 2015 14:12:57 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 14 January 2015 22:07:34 Alexandre Belloni wrote:
-> Hi,
-> 
-> (Adding Arnd in Cc)
-> 
-> On 15/01/2015 at 04:37:14 +0800, Jean-Christophe PLAGNIOL-VILLARD wrote :
-> > >>> -	/* AT91RM9200 SDRAM low-power mode cannot be used with self-refresh. */
-> > >>> -	if (cpu_is_at91rm9200())
-> > >>> +	at91_pm_data.memctrl = AT91_MEMCTRL_SDRAMC;
-> > >>> +
-> > >>> +	if (of_machine_is_compatible("atmel,at91rm9200")) {
-> > >>> +		/*
-> > >>> +		 * AT91RM9200 SDRAM low-power mode cannot be used with
-> > >>> +		 * self-refresh.
-> > >>> +		 */
-> > >>> 		at91_ramc_write(0, AT91RM9200_SDRAMC_LPR, 0);
-> > >>> -	
-> > >>> +
-> > >>> +		at91_pm_data.uhp_udp_mask = AT91RM9200_PMC_UHP |
-> > >>> +					    AT91RM9200_PMC_UDP;
-> > >>> +		at91_pm_data.memctrl = AT91_MEMCTRL_MC;
-> > >>> +	} else if (of_machine_is_compatible("atmel,at91sam9260") ||
-> > >>> +		   of_machine_is_compatible("atmel,at91sam9g20") ||
-> > >>> +		   of_machine_is_compatible("atmel,at91sam9261") ||
-> > >>> +		   of_machine_is_compatible("atmel,at91sam9g10") ||
-> > >>> +		   of_machine_is_compatible("atmel,at91sam9263")) {
-> > >> nack here
-> > >> 
-> > >> you switch for runtime information from the SOC register store in ram to DT
-> > >> 
-> > >> DT is great but I do prefer to rely on the SoC register here as the whole was
-> > >> also to check that the is correct
-> > > 
-> > > Well, cpu_is_xxx macros are defined in a mach specific header, and we're
-> > > currently trying to enable multi platform support. 
-> > 
-> > Yes does not mean we can not move this, use the REAL hardware detected cpu is better
-> > as you can check that the DT is valid for this SoC and also have fixup for a specific
-> > SoC version without having to have x DT per SoC
 
-We should definitely be able to confine the SoC detection to at91sam9 though,
-because in the three other cases (rm9200, sama5d3, sama5d4), we already have
-separate machine descriptors and don't need to do any detection.
+1) Don't use uninitialized data in IPVS, from Dan Carpenter.
 
-> > >> wihich is way slower
-> > > 
-> > > Hmm, this SoC detection has been move from the suspend path (where, as
-> > > you stated, speed is a real concern) to the pm init function (which is
-> > > only called once at startup), and I doubt the boot time penalty will
-> > > even be noticeable…
-> > 
-> > except if your table is boot as quick as possible avoid useless string compare is always a good choice
-> > 
-> > IIRC we had in the past RFC to have the drivers compatible compare switch to HASH
-> > for this purpose too
-> > 
-> 
-> Following a discussion with Arnd, the whole SoC detection will be remove
-> which will be completely faster than mapping the dbgu registers.
-> 
-> Also, the of_machine_is_compatible are supposed to be removed soon,
-> waiting for the pm code to be reworked. What is done here is to allow us
-> to go forward with switching to multiplatform and cleaning up the
-> mach-at91 directory.
-> 
-> I have follow up patches coming up and they already remove some of the
-> of_machine_is_compatible.
+2) conntrack race fixes from Pablo Neira Ayuso.
 
-As you have already confined the of_machine_is_compatible() checks
-to one top-level function, and we have found that this function
-should not be an unconditional arch_initcall, I think the easiest
-way forward is to split at91_pm_init into multiple functions,
-one per case you need to handle, and then use a machine_descriptor
-with a list of compatible strings to match it.
+3) Fix TX hangs with i40e, from Jesse Brandeburg.
 
-I think that just means we need an extra machine descriptor to
-handle the at91sam9g45, but that will get folded again over time.
+4) Fix budget return from poll calls in dnet and alx, from Eric Dumazet.
 
-	Arnd
+5) Fix bugus "if (unlikely(x) < 0)" test in AF_PACKET, from Christoph	
+   Jaeger.
+
+6) Fix bug introduced by conversion to list_head in TIPC retransmit
+   code, from Jon Paul Maloy.
+
+7) Don't use GFP_NOIO under spinlock in USB kaweth driver, from Alexey
+   Khoroshilov.
+
+8) Fix bridge build with INET disabled, from Arnd Bergmann.
+
+9) Fix netlink array overrun for PROBE attributes in openvswitch,
+   from Thomas Graf.
+
+10) Don't hold spinlock across synchronize_irq() in tg3 driver, from
+    Prashant Sreedharan.
+
+Please pull, thanks a lot.
+
+The following changes since commit bdec41963890f8ed9ad89f8b418959ab3cdc2aa3:
+
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net (2015-01-06 17:48:14 -0800)
+
+are available in the git repository at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/davem/net.git master
+
+for you to fetch changes up to c637dbcedf31ce1dd813a461de406f45aa7a3d38:
+
+  Merge branch 'tg3-net' (2015-01-14 17:05:55 -0500)
+
+----------------------------------------------------------------
+
+Alexandre Belloni (1):
+      net/at91_ether: prepare and unprepare clock
+
+Alexey Khoroshilov (1):
+      usb/kaweth: use GFP_ATOMIC under spin_lock in usb_start_wait_urb()
+
+Ani Sinha (1):
+      update ip-sysctl.txt documentation (v2)
+
+Anjali Singhai (2):
+      i40e: Fix Rx checksum error counter
+      i40e: Fix bug with TCP over IPv6 over VXLAN
+
+Arik Nemtsov (1):
+      iwlwifi: pcie: correctly define 7265-D cfg
+
+Arnd Bergmann (1):
+      bridge: only provide proxy ARP when CONFIG_INET is enabled
+
+B Viswanath (1):
+      net: Corrected the comment describing the ndo operations to reflect the actual prototype for couple of operations
+
+Benjamin Poirier (1):
+      netdevice: Add missing parentheses in macro
+
+Christoph Jaeger (1):
+      packet: bail out of packet_snd() if L2 header creation fails
+
+Dan Carpenter (1):
+      ipvs: uninitialized data with IP_VS_IPV6
+
+David S. Miller (4):
+      Merge branch 'master' of git://git.kernel.org/.../jkirsher/net
+      Merge git://git.kernel.org/.../pablo/nf
+      Merge tag 'wireless-drivers-for-davem-2015-01-09' of git://git.kernel.org/.../kvalo/wireless-drivers
+      Merge branch 'tg3-net'
+
+David Spinadel (2):
+      iwlwifi: mvm: add a flag to enable match found notification
+      iwlwifi: mvm: scan dwell time corrections
+
+David Vrabel (1):
+      xen-netfront: use different locks for Rx and Tx stats
+
+Emmanuel Grumbach (2):
+      iwlwifi: 7000: fix reported firmware name for 7265D
+      iwlwifi: bump firmware API for mvm devices to 12
+
+Eric Dumazet (2):
+      net: dnet: fix dnet_poll()
+      alx: fix alx_poll()
+
+Eyal Shapira (2):
+      iwlwifi: mvm: fix Rx with both chains
+      iwlwifi: mvm: fix out of bounds access to tid_to_mac80211_ac
+
+Giel van Schijndel (1):
+      isdn: fix NUL (\0 or \x00) specification in string
+
+Hariprasad Shenai (2):
+      cxgb4vf: Initialize mdio_addr before using it
+      cxgb4vf: Fix queue allocation for 40G adapter
+
+Hubert Feurstein (1):
+      net: fec: fix NULL pointer dereference in fec_enet_timeout_work
+
+Jean-Francois Remy (1):
+      neighbour: fix base_reachable_time(_ms) not effective immediatly when changed
+
+Jesse Brandeburg (1):
+      i40e: fix un-necessary Tx hangs
+
+Jiri Pirko (1):
+      team: avoid possible underflow of count_pending value for notify_peers and mcast_rejoin
+
+Jon Paul Maloy (1):
+      tipc: fix bug in broadcast retransmit code
+
+Kalle Valo (1):
+      Merge tag 'iwlwifi-for-kalle-2015-01-05' of https://git.kernel.org/.../iwlwifi/iwlwifi-fixes
+
+Larry Finger (1):
+      rtlwifi: Fix error when accessing unmapped memory in skb
+
+Mugunthan V N (1):
+      drivers: net: cpsw: fix multicast flush in dual emac mode
+
+Nobuhiro Iwamatsu (2):
+      sh-eth: Set fdr_value of R-Car SoCs
+      sh_eth: Fix access to TRSCER register
+
+Pablo Neira Ayuso (5):
+      Merge tag 'ipvs2-for-v3.19' of https://git.kernel.org/.../horms/ipvs-next into ipvs-next
+      netfilter: conntrack: fix race between confirmation and flush
+      netfilter: nfnetlink: validate nfnetlink header from batch
+      netfilter: nfnetlink: relax strict multicast group check from netlink_bind
+      netfilter: nf_tables: fix flush ruleset chain dependencies
+
+Prashant Sreedharan (3):
+      tg3: tg3_timer() should grab tp->lock before checking for tp->irq_sync
+      tg3: tg3_reset_task() needs to use rtnl_lock to synchronize
+      tg3: Release tp->lock before invoking synchronize_irq()
+
+Stefan Agner (1):
+      net: fec: fix MDIO bus assignement for dual fec SoC's
+
+Thomas Falcon (1):
+      MAINTAINERS: add me as ibmveth maintainer
+
+Thomas Graf (1):
+      openvswitch: packet messages need their own probe attribtue
+
+Vasu Dev (1):
+      i40e: adds FCoE configure option
+
+leroy christophe (1):
+      netfilter: nf_tables: fix port natting in little endian archs
+
+ Documentation/networking/ip-sysctl.txt              |   2 ++
+ MAINTAINERS                                         |   2 +-
+ arch/arm/boot/dts/imx6sx-sdb.dts                    |  15 ++++++++++
+ arch/arm/boot/dts/vf610-twr.dts                     |  15 ++++++++++
+ drivers/isdn/hardware/eicon/message.c               |   2 +-
+ drivers/net/ethernet/atheros/alx/main.c             |  24 ++++++++--------
+ drivers/net/ethernet/broadcom/tg3.c                 |  23 +++++++++++++--
+ drivers/net/ethernet/cadence/at91_ether.c           |  10 +++----
+ drivers/net/ethernet/chelsio/cxgb4vf/cxgb4vf_main.c |   2 +-
+ drivers/net/ethernet/chelsio/cxgb4vf/t4vf_hw.c      |   2 ++
+ drivers/net/ethernet/dnet.c                         |  18 ++++--------
+ drivers/net/ethernet/freescale/fec.h                |   2 ++
+ drivers/net/ethernet/freescale/fec_main.c           |  10 ++++---
+ drivers/net/ethernet/intel/Kconfig                  |  11 ++++++++
+ drivers/net/ethernet/intel/i40e/Makefile            |   2 +-
+ drivers/net/ethernet/intel/i40e/i40e_osdep.h        |   4 +--
+ drivers/net/ethernet/intel/i40e/i40e_txrx.c         | 104 +++++++++++++++++++++++++++++++++++++++++++++++---------------------
+ drivers/net/ethernet/intel/i40e/i40e_txrx.h         |   1 +
+ drivers/net/ethernet/renesas/sh_eth.c               |   9 +++++-
+ drivers/net/ethernet/renesas/sh_eth.h               |   5 ++++
+ drivers/net/ethernet/ti/cpsw.c                      |  11 ++++++--
+ drivers/net/ethernet/ti/cpsw_ale.c                  |  10 ++++++-
+ drivers/net/ethernet/ti/cpsw_ale.h                  |   2 +-
+ drivers/net/team/team.c                             |  16 +++++++++--
+ drivers/net/usb/kaweth.c                            |   2 +-
+ drivers/net/wireless/iwlwifi/iwl-7000.c             |   6 ++--
+ drivers/net/wireless/iwlwifi/iwl-8000.c             |   2 +-
+ drivers/net/wireless/iwlwifi/iwl-fw-file.h          |   4 +++
+ drivers/net/wireless/iwlwifi/mvm/fw-api-scan.h      |   2 ++
+ drivers/net/wireless/iwlwifi/mvm/scan.c             |  19 +++++++++----
+ drivers/net/wireless/iwlwifi/mvm/tx.c               |   8 ++++--
+ drivers/net/wireless/iwlwifi/mvm/utils.c            |   2 +-
+ drivers/net/wireless/iwlwifi/pcie/drv.c             |   4 ++-
+ drivers/net/wireless/rtlwifi/pci.c                  |  32 +++++++++++++++------
+ drivers/net/xen-netfront.c                          |  71 +++++++++++++++++++++++++++-------------------
+ include/linux/netdevice.h                           |   6 ++--
+ include/uapi/linux/openvswitch.h                    |   4 +++
+ net/bridge/br_input.c                               |   3 +-
+ net/core/neighbour.c                                |  44 +++++++++++++++++++++++++++++
+ net/ipv4/netfilter/nft_redir_ipv4.c                 |   8 +++---
+ net/ipv6/netfilter/nft_redir_ipv6.c                 |   8 +++---
+ net/netfilter/ipvs/ip_vs_ftp.c                      |  10 +++----
+ net/netfilter/nf_conntrack_core.c                   |  20 ++++++-------
+ net/netfilter/nf_tables_api.c                       |  14 ++++++----
+ net/netfilter/nfnetlink.c                           |   5 ++--
+ net/netfilter/nft_nat.c                             |   8 +++---
+ net/openvswitch/datapath.c                          |   3 +-
+ net/packet/af_packet.c                              |   2 +-
+ net/tipc/bcast.c                                    |   5 ++--
+ 49 files changed, 419 insertions(+), 175 deletions(-)
