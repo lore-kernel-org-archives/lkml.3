@@ -1,114 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882AbbANIbh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:31:37 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:41233 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754357AbbANIbe (ORCPT
+	id S1754991AbbANIc3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:32:29 -0500
+Received: from mout.kundenserver.de ([212.227.126.130]:51035 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753752AbbANIc1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 03:31:34 -0500
-Date: Wed, 14 Jan 2015 09:31:30 +0100
-From: Boris Brezillon <boris.brezillon@free-electrons.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Jason Cooper <jason@lakedaemon.net>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, devicetree@vger.kernel.org
-Subject: Re: [PATCH v2 1/5] irqchip: add dumb demultiplexer implementation
-Message-ID: <20150114093130.3923a89a@bbrezillon>
-In-Reply-To: <alpine.DEB.2.11.1501132153210.5526@nanos>
-References: <1421174781-4340-1-git-send-email-boris.brezillon@free-electrons.com>
-	<1421174781-4340-2-git-send-email-boris.brezillon@free-electrons.com>
-	<alpine.DEB.2.11.1501132153210.5526@nanos>
-X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+	Wed, 14 Jan 2015 03:32:27 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Patrick Boettcher <patrick.boettcher@posteo.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Peter Senna Tschudin <peter.senna@gmail.com>,
+        Daniel Vetter <daniel@ffwll.ch>,
+        Maarten Lankhorst <maarten.lankhorst@canonical.com>,
+        Tapasweni Pathak <tapaswenipathak@gmail.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: android: fix coding style error
+Date: Wed, 14 Jan 2015 09:32:20 +0100
+Message-ID: <1839300.4mCDOMkO8E@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1421223642-4465-1-git-send-email-patrick.boettcher@posteo.de>
+References: <1421223642-4465-1-git-send-email-patrick.boettcher@posteo.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:VgdxvDvpV1DfJBxXrMJ3XSji8gcTzwqPeosNgmq4rCwITNa3zpc
+ wyu/04xDJpY13SeFXyQeRh34qDbn7kC0/G8CmsiTe4AXTJYIGIH6Ay4oWPi8EYHetxomDgy
+ Iy3E2OQZVdg10LYm3aHHLV6FGkvh5PJxC9nPOsQe0YYhzI/gXMnbec31dmIHbDbleQe1jXG
+ NHRTNU7QB65tojK7jE/sg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
-
-On Tue, 13 Jan 2015 22:00:55 +0100 (CET)
-Thomas Gleixner <tglx@linutronix.de> wrote:
-
-> On Tue, 13 Jan 2015, Boris Brezillon wrote:
-> > +	ret = irq_set_handler_data(irq, demux);
-> > +	if (ret) {
-> > +		pr_err("Failed to assign handler data\n");
-> > +		goto err_free_domain;
-> > +	}
-> > +
-> > +	irq_set_chained_handler(irq, irq_dumb_demux_handler);
-> > +
-> > +	/*
-> > +	 * Disable the src irq (automatically enabled by
-> > +	 * irq_set_chained_handler) to prevent irqs from happening while
-> > +	 * nobody requested any of the demuxed irqs.
-> > +	 */
-> > +	disable_irq(irq);
+On Wednesday 14 January 2015 09:20:42 Patrick Boettcher wrote:
+> diff --git a/drivers/staging/android/sync_debug.c b/drivers/staging/android/sync_debug.c
+> index 1532a86..9a2aaf8 100644
+> --- a/drivers/staging/android/sync_debug.c
+> +++ b/drivers/staging/android/sync_debug.c
+> @@ -96,7 +96,8 @@ static void sync_print_pt(struct seq_file *s, struct sync_pt *pt, bool fence)
+>                    sync_status_str(status));
+>  
+>         if (status <= 0) {
+> -               struct timespec64 ts64 = ktime_to_timespec64(pt->base.timestamp);
+> +               struct timespec64 ts64 =
+> +                   ktime_to_timespec64(pt->base.timestamp);
+>  
+>                 seq_printf(s, "@%lld.%09ld", (s64)ts64.tv_sec, ts64.tv_nsec);
+>         }
 > 
-> We rather prevent the startup of the irq line right away.
 
-Yep, the comment was here to draw the attention, since I wasn't sure
-modifying core code was the best solution.
-Anyway I agree that keeping the src_irq disabled when registering the
-chained handler is better than doing it afterwards.
+You are not really improving readability by just wrapping the line
+arbitrarily though.
 
-> 
-> enum {
->      IRQ_CHAINED_NONE,
->      IRQ_CHAINED_STARTUP,
->      IRQ_CHAINED_NOSTARTUP,
-> };
-> 
-> -__irq_set_handler(unsigned int irq, irq_flow_handler_t handle, int is_chained,
-> -                  const char *name);
-> +__irq_set_handler(unsigned int irq, irq_flow_handler_t handle, int chained_mode,
-> +                  const char *name);
-> 
-> {
-> ....
->         if (handle != handle_bad_irq && chained_mode) {
->                 irq_settings_set_noprobe(desc);
->                 irq_settings_set_norequest(desc);
->                 irq_settings_set_nothread(desc);
-> -               irq_startup(desc, true);
-> +               if (chained_mode == IRQ_CHAINED_STARTUP)
-> +                       irq_startup(desc, true);
-> 	}
-> ....
-> }
-> 
-> Hmm?
+If you're offended by the long line, better rework the code so the long
+line is not needed.
 
-I'm fine with this approach, with a static inline helper:
-
-static inline void
-irq_set_chained_handler_nostartup(unsigned int irq,
-				  irq_flow_handler_t handle)
-{
-	__irq_set_handler(irq, handle, IRQ_CHAINED_NOSTARTUP, NULL);
-}
-
-Anyway, I'll wait a clear decision regarding which approach should be
-taken (see my answer to Rob) before sending a new version.
-
-Thanks for your reviews.
-
-Best Regards,
-
-Boris
-
-
--- 
-Boris Brezillon, Free Electrons
-Embedded Linux and Kernel engineering
-http://free-electrons.com
+	Arnd
