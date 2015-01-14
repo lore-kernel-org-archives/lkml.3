@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754801AbbANHaj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:30:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58185 "EHLO
+	id S932548AbbANHeV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:34:21 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58492 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751414AbbANHah (ORCPT
+	with ESMTP id S932486AbbANHeT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:30:37 -0500
+	Wed, 14 Jan 2015 02:34:19 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH 3.18 120/150] ARM: dts: Enable PWM node by default for s3c64xx
+        Karl Relton <karllinuxtest.relton@ntlworld.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.14 31/77] HID: add battery quirk for USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ISO keyboard
 Date: Tue, 13 Jan 2015 23:23:11 -0800
-Message-Id: <20150114072101.287372415@linuxfoundation.org>
+Message-Id: <20150114072225.926878836@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
-References: <20150114072055.842408181@linuxfoundation.org>
+In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
+References: <20150114072224.182299947@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,51 +25,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.18-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tomasz Figa <tomasz.figa@gmail.com>
+From: Karl Relton <karllinuxtest.relton@ntlworld.com>
 
-commit 5e794de514f56de1e78e979ca09c56a91aa2e9f1 upstream.
+commit da940db41dcf8c04166f711646df2f35376010aa upstream.
 
-The PWM block is required for system clock source so it must be always
-enabled. This patch fixes boot issues on SMDK6410 which did not have
-the node enabled explicitly for other purposes.
+Apple bluetooth wireless keyboard (sold in UK) has always reported zero
+for battery strength no matter what condition the batteries are actually
+in. With this patch applied (applying same quirk as other Apple
+keyboards), the battery strength is now correctly reported.
 
-Fixes: eeb93d02 ("clocksource: of: Respect device tree node status")
-
-Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
-Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
+Signed-off-by: Karl Relton <karllinuxtest.relton@ntlworld.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/s3c6410-mini6410.dts |    4 ----
- arch/arm/boot/dts/s3c64xx.dtsi         |    1 -
- 2 files changed, 5 deletions(-)
+ drivers/hid/hid-input.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/arch/arm/boot/dts/s3c6410-mini6410.dts
-+++ b/arch/arm/boot/dts/s3c6410-mini6410.dts
-@@ -198,10 +198,6 @@
- 	status = "okay";
- };
- 
--&pwm {
--	status = "okay";
--};
--
- &pinctrl0 {
- 	gpio_leds: gpio-leds {
- 		samsung,pins = "gpk-4", "gpk-5", "gpk-6", "gpk-7";
---- a/arch/arm/boot/dts/s3c64xx.dtsi
-+++ b/arch/arm/boot/dts/s3c64xx.dtsi
-@@ -172,7 +172,6 @@
- 			clocks = <&clocks PCLK_PWM>;
- 			samsung,pwm-outputs = <0>, <1>;
- 			#pwm-cells = <3>;
--			status = "disabled";
- 		};
- 
- 		pinctrl0: pinctrl@7f008000 {
+--- a/drivers/hid/hid-input.c
++++ b/drivers/hid/hid-input.c
+@@ -312,6 +312,9 @@ static const struct hid_device_id hid_ba
+ 			       USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ANSI),
+ 	  HID_BATTERY_QUIRK_PERCENT | HID_BATTERY_QUIRK_FEATURE },
+ 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE,
++			       USB_DEVICE_ID_APPLE_ALU_WIRELESS_2011_ISO),
++	  HID_BATTERY_QUIRK_PERCENT | HID_BATTERY_QUIRK_FEATURE },
++	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_APPLE,
+ 		USB_DEVICE_ID_APPLE_ALU_WIRELESS_ANSI),
+ 	  HID_BATTERY_QUIRK_PERCENT | HID_BATTERY_QUIRK_FEATURE },
+ 	{}
 
 
