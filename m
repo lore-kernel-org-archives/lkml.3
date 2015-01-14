@@ -1,60 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753817AbbANTDE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 14:03:04 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:57395 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753387AbbANTDC (ORCPT
+	id S1754024AbbANTDl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 14:03:41 -0500
+Received: from smtprelay4.synopsys.com ([198.182.47.9]:59872 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751004AbbANTDj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 14:03:02 -0500
-Date: Wed, 14 Jan 2015 19:02:51 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Bo Shen <voice.shen@atmel.com>
-Cc: ckeepax@opensource.wolfsonmicro.com, lars@metafoo.de,
-        alsa-devel@alsa-project.org, linux-sound@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Message-ID: <20150114190251.GC3043@sirena.org.uk>
-References: <1421143531-6662-1-git-send-email-voice.shen@atmel.com>
+	Wed, 14 Jan 2015 14:03:39 -0500
+From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+To: Robert Baldyga <r.baldyga@samsung.com>, "balbi@ti.com" <balbi@ti.com>
+CC: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "dinguyen@opensource.altera.com" <dinguyen@opensource.altera.com>,
+        "yousaf.kaukab@intel.com" <yousaf.kaukab@intel.com>,
+        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>
+Subject: RE: [PATCH v2] usb: dwc2: call dwc2_is_controller_alive() under
+ spinlock
+Thread-Topic: [PATCH v2] usb: dwc2: call dwc2_is_controller_alive() under
+ spinlock
+Thread-Index: AQHQL8W5lMCdaYrjlUuC2oTfEkhvI5y/95kg
+Date: Wed, 14 Jan 2015 19:03:37 +0000
+Message-ID: <A2CA0424C0A6F04399FB9E1CD98E030484507633@US01WEMBX2.internal.synopsys.com>
+References: <1421217931-23722-1-git-send-email-r.baldyga@samsung.com>
+In-Reply-To: <1421217931-23722-1-git-send-email-r.baldyga@samsung.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.13.184.19]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="WfZ7S8PLGjBY9Voh"
-Content-Disposition: inline
-In-Reply-To: <1421143531-6662-1-git-send-email-voice.shen@atmel.com>
-X-Cookie: To program is to be.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v3] ASoC: wm8904: fix runtime warning
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> From: Robert Baldyga [mailto:r.baldyga@samsung.com]
+> Sent: Tuesday, January 13, 2015 10:46 PM
+> 
+> This patch fixes bug described here:
+> https://lkml.org/lkml/2014/12/22/185
+> 
+> Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
 
---WfZ7S8PLGjBY9Voh
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Although I don't understand *why* this fixes Robert's issue, it's
+certainly a harmless patch, so
 
-On Tue, Jan 13, 2015 at 06:05:31PM +0800, Bo Shen wrote:
-> Correct the path name for mux to get rid of the following warning:
+Acked-by: Paul Zimmerman <paulz@synopsys.com>
 
-Applied, thanks.
+But I suspect Felipe will want a better changelog, I don't think just
+a URL is good enough.
 
---WfZ7S8PLGjBY9Voh
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+-- 
+Paul
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+> ---
+> 
+> Changelog:
+> 
+> v2:
+> - fixed comment from Paul Zimmerman
+> 
+> v1: https://lkml.org/lkml/2015/1/13/186
+> 
+>  drivers/usb/dwc2/core_intr.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/usb/dwc2/core_intr.c b/drivers/usb/dwc2/core_intr.c
+> index ad43c5b..02e3e2d 100644
+> --- a/drivers/usb/dwc2/core_intr.c
+> +++ b/drivers/usb/dwc2/core_intr.c
+> @@ -476,13 +476,13 @@ irqreturn_t dwc2_handle_common_intr(int irq, void *dev)
+>  	u32 gintsts;
+>  	irqreturn_t retval = IRQ_NONE;
+> 
+> +	spin_lock(&hsotg->lock);
+> +
+>  	if (!dwc2_is_controller_alive(hsotg)) {
+>  		dev_warn(hsotg->dev, "Controller is dead\n");
+>  		goto out;
+>  	}
+> 
+> -	spin_lock(&hsotg->lock);
+> -
+>  	gintsts = dwc2_read_common_intr(hsotg);
+>  	if (gintsts & ~GINTSTS_PRTINT)
+>  		retval = IRQ_HANDLED;
+> @@ -515,8 +515,8 @@ irqreturn_t dwc2_handle_common_intr(int irq, void *dev)
+>  		}
+>  	}
+> 
+> -	spin_unlock(&hsotg->lock);
+>  out:
+> +	spin_unlock(&hsotg->lock);
+>  	return retval;
+>  }
+>  EXPORT_SYMBOL_GPL(dwc2_handle_common_intr);
+> --
+> 1.9.1
 
-iQEcBAEBCAAGBQJUtr1aAAoJECTWi3JdVIfQJx0H/AtAsVpVtA3+q98tTlX0DWsj
-H/BeQ+0wzox/m66YL2JA5zg55SprZv1Ca8pdFyu6ZDt+jZ9vDtU4VoXpuExULy7T
-yWNBI4XG9z2h/j/XfjW98EOkS06F36JPNxWoFhExuXROvPu03/+T2hWujKhnAquO
-VritK+YgopvpG2uhjazAhoGj2+NK4BEWD9rqqCIwTdbB3481KMa+ftoNvQEWmP+E
-FFKQHrCLUXD4FjVheapX+0GqjhQQcoZnQDRvBQ22QdByNjqX78K5CuIZtDurn3ty
-CN6spTkOujJu6oTRfCGhpfgKYXfqO0FpmSS46sTkk5yLFWePv+uv4PmLVifCVLE=
-=UM3h
------END PGP SIGNATURE-----
-
---WfZ7S8PLGjBY9Voh--
