@@ -1,57 +1,298 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751973AbbANJ3E (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 04:29:04 -0500
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:60727 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751004AbbANJ3A (ORCPT
+	id S1752274AbbANJaw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 04:30:52 -0500
+Received: from mail-qa0-f54.google.com ([209.85.216.54]:58020 "EHLO
+	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751991AbbANJas (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 04:29:00 -0500
-Message-ID: <1421227738.15397.46.camel@x220>
-Subject: Re: clocksource: marco: CONFIG_ARCH_ATLAS7?
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Barry Song <Barry.Song@csr.com>
-Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 14 Jan 2015 10:28:58 +0100
-In-Reply-To: <5EB3BFCD089AD643B9BB63439F5FD5E90177A62F01@SHAASIEXM01.ASIA.ROOT.PRI>
-References: <1421225516.15397.41.camel@x220>
-	 <5EB3BFCD089AD643B9BB63439F5FD5E90177A62F01@SHAASIEXM01.ASIA.ROOT.PRI>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 14 Jan 2015 09:28:58.0801 (UTC) FILETIME=[8667E210:01D02FDC]
-X-RcptDomain: vger.kernel.org
+	Wed, 14 Jan 2015 04:30:48 -0500
+MIME-Version: 1.0
+In-Reply-To: <1420949002-3726-4-git-send-email-dave.long@linaro.org>
+References: <1420949002-3726-1-git-send-email-dave.long@linaro.org>
+	<1420949002-3726-4-git-send-email-dave.long@linaro.org>
+Date: Wed, 14 Jan 2015 15:00:47 +0530
+Message-ID: <CAHM4w1no=A1kTxN26znXD42USzO+ByHWHy76F2UMnmXhPKH0kQ@mail.gmail.com>
+Subject: Re: [PATCH v4 3/6] arm64: Kprobes with single stepping support
+From: Pratyush Anand <pratyush.anand@gmail.com>
+To: David Long <dave.long@linaro.org>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        William Cohen <wcohen@redhat.com>,
+        Steve Capper <steve.capper@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        davem@davemloft.net, linux-kernel@vger.kernel.org,
+        Pratyush Anand <panand@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2015-01-14 at 09:21 +0000, Barry Song wrote:
-> > -----Original Message----- 
-> > Your commit 81428bbe1d8a ("clocksource: marco: Rename marco to
-> > atlas7") is included in today's linux-next (ie, next-20150114). I
-> > noticed because a script I use to check linux-next spotted a
-> > problem.
-> > 
-> > See, your commit renames one reference to CONFIG_ARCH_MARCO to
-> > CONFIG_ARCH_ATLAS7. But there's no Kconfig symbol ARCH_ATLAS7 in
-> > linux-next yet. I assume that one or more patches to add ARCH_ATLAS7
-> > (or to rename ARCH_MARCO to ARCH_ATLAS7) are queued somewhere. Is
-> > that correct?
-> > 
-> Yes, paul.
-> It is queuing in arm-soc for refining my pull-request. Related patches
-> have been acked by Arnd.
+Hi Dave,
 
-Unless the related patches take a long time to land (say, until after
-v3.20-rc1) I won't bother you again about this.
+On Sun, Jan 11, 2015 at 9:33 AM, David Long <dave.long@linaro.org> wrote:
+> From: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
+>
+> Add support for basic kernel probes(kprobes) and jump probes
+> (jprobes) for ARM64.
+>
+> Kprobes will utilize software breakpoint and single step debug
+> exceptions supported on ARM v8.
+>
+> Software breakpoint is placed at the probe address to trap the
+> kernel execution into kprobe handler.
+>
+> ARM v8 supports single stepping to be enabled while exception return
+> (ERET) with next PC in exception return address (ELR_EL1). The
+> kprobe handler prepares an executable memory slot for out-of-line
+> execution with a copy of the original instruction being probed, and
+> enables single stepping from the instruction slot. With this scheme,
+> the instruction is executed with the exact same register context
+> 'except PC' that points to instruction slot.
+>
+> Debug mask(PSTATE.D) is enabled only when single stepping a recursive
+> kprobe, e.g.: during kprobes reenter so that probed instruction can be
+> single stepped within the kprobe handler -exception- context.
+> The recursion depth of kprobe is always 2, i.e. upon probe re-entry,
+> any further re-entry is prevented by not calling handlers and the case
+> counted as a missed kprobe).
+>
+> Single stepping from slot has a drawback on PC-relative accesses
+> like branching and symbolic literals access as offset from new PC
+> (slot address) may not be ensured to fit in immediate value of
+> opcode. Such instructions needs simulation, so reject
+> probing such instructions.
+>
+> Instructions generating exceptions or cpu mode change are rejected,
+> and not allowed to insert probe for these instructions.
+>
+> Instructions using Exclusive Monitor are rejected too.
+>
+> System instructions are mostly enabled for stepping, except MSR
+> immediate that updates "daif" flags in PSTATE, which are not safe
+> for probing.
+>
+> Changes since v3:
+> from David Long:
+> 1) Removed unnecessary addtion of NOP after out-of-line instruction.
+> 2) Replaced table-driven instruction parsing with calls to external
+>    test functions.
+> from Steve Capper:
+> 3) Disable local irq while executing out of line instruction.
+>
+> Signed-off-by: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
+> Signed-off-by: Steve Capper <steve.capper@linaro.org>
+> Signed-off-by: David A. Long <dave.long@linaro.org>
+> ---
+>  arch/arm64/Kconfig                |   1 +
+>  arch/arm64/include/asm/kprobes.h  |  60 +++++
+>  arch/arm64/include/asm/probes.h   |  50 ++++
+>  arch/arm64/include/asm/ptrace.h   |   3 +-
+>  arch/arm64/kernel/Makefile        |   1 +
+>  arch/arm64/kernel/kprobes-arm64.c |  65 +++++
+>  arch/arm64/kernel/kprobes-arm64.h |  28 ++
+>  arch/arm64/kernel/kprobes.c       | 551 ++++++++++++++++++++++++++++++++++++++
+>  arch/arm64/kernel/kprobes.h       |  30 +++
+>  arch/arm64/kernel/vmlinux.lds.S   |   1 +
+>  10 files changed, 789 insertions(+), 1 deletion(-)
+>  create mode 100644 arch/arm64/include/asm/kprobes.h
+>  create mode 100644 arch/arm64/include/asm/probes.h
+>  create mode 100644 arch/arm64/kernel/kprobes-arm64.c
+>  create mode 100644 arch/arm64/kernel/kprobes-arm64.h
+>  create mode 100644 arch/arm64/kernel/kprobes.c
+>  create mode 100644 arch/arm64/kernel/kprobes.h
+>
+> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
+> index 12b3fd6..b3f61ba 100644
+> --- a/arch/arm64/Kconfig
+> +++ b/arch/arm64/Kconfig
+> @@ -67,6 +67,7 @@ config ARM64
+>         select HAVE_REGS_AND_STACK_ACCESS_API
+>         select HAVE_RCU_TABLE_FREE
+>         select HAVE_SYSCALL_TRACEPOINTS
+> +       select HAVE_KPROBES if !XIP_KERNEL
+>         select IRQ_DOMAIN
+>         select MODULES_USE_ELF_RELA
+>         select NO_BOOTMEM
+> diff --git a/arch/arm64/include/asm/kprobes.h b/arch/arm64/include/asm/kprobes.h
+> new file mode 100644
+> index 0000000..b35d3b9
+> --- /dev/null
+> +++ b/arch/arm64/include/asm/kprobes.h
+> @@ -0,0 +1,60 @@
+> +/*
+> + * arch/arm64/include/asm/kprobes.h
+> + *
+> + * Copyright (C) 2013 Linaro Limited
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+> + * General Public License for more details.
+> + */
+> +
+> +#ifndef _ARM_KPROBES_H
+> +#define _ARM_KPROBES_H
+> +
+> +#include <linux/types.h>
+> +#include <linux/ptrace.h>
+> +#include <linux/percpu.h>
+> +
+> +#define __ARCH_WANT_KPROBES_INSN_SLOT
+> +#define MAX_INSN_SIZE                  1
+> +#define MAX_STACK_SIZE                 128
+> +
+> +#define flush_insn_slot(p)             do { } while (0)
+> +#define kretprobe_blacklist_size       0
+> +
+> +#include <asm/probes.h>
+> +
+> +struct prev_kprobe {
+> +       struct kprobe *kp;
+> +       unsigned int status;
+> +};
+> +
+> +/* Single step context for kprobe */
+> +struct kprobe_step_ctx {
+> +#define KPROBES_STEP_NONE      0x0
+> +#define KPROBES_STEP_PENDING   0x1
+> +       unsigned long ss_status;
+> +       unsigned long match_addr;
+> +};
+> +
+> +/* per-cpu kprobe control block */
+> +struct kprobe_ctlblk {
+> +       unsigned int kprobe_status;
+> +       unsigned long saved_irqflag;
+> +       struct prev_kprobe prev_kprobe;
+> +       struct kprobe_step_ctx ss_ctx;
+> +       struct pt_regs jprobe_saved_regs;
+> +       char jprobes_stack[MAX_STACK_SIZE];
+> +};
+> +
+> +void arch_remove_kprobe(struct kprobe *);
+> +int kprobe_fault_handler(struct pt_regs *regs, unsigned int fsr);
+> +int kprobe_exceptions_notify(struct notifier_block *self,
+> +                            unsigned long val, void *data);
+> +
+> +#endif /* _ARM_KPROBES_H */
+> diff --git a/arch/arm64/include/asm/probes.h b/arch/arm64/include/asm/probes.h
+> new file mode 100644
+> index 0000000..9dba74d
+> --- /dev/null
+> +++ b/arch/arm64/include/asm/probes.h
+> @@ -0,0 +1,50 @@
+> +/*
+> + * arch/arm64/include/asm/probes.h
+> + *
+> + * Copyright (C) 2013 Linaro Limited
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+> + * General Public License for more details.
+> + */
+> +#ifndef _ARM_PROBES_H
+> +#define _ARM_PROBES_H
+> +
+> +struct kprobe;
+> +struct arch_specific_insn;
+> +
+> +typedef u32 kprobe_opcode_t;
+> +typedef unsigned long (kprobes_pstate_check_t)(unsigned long);
+> +typedef unsigned long
+> +(kprobes_condition_check_t)(struct kprobe *p, struct pt_regs *);
 
-Thanks!
+Can we make kprobes_condition_check_t as struct kprobe indepedent, so
+that it is usable by uprobe as
+well..
+
+ typedef unsigned long
+(kprobes_condition_check_t)(u32 opcode, struct arch_specific_insn *asi,
+               struct pt_regs *);
 
 
-Paul Bolle
+> +typedef void
+> +(kprobes_prepare_t)(struct kprobe *, struct arch_specific_insn *);
 
+Similarly,
+
+ typedef void
+(kprobes_prepare_t)(u32 insn, struct arch_specific_insn *);
+
+> +typedef void (kprobes_handler_t) (u32 opcode, long addr, struct pt_regs *);
+> +
+> +enum pc_restore_type {
+> +       NO_RESTORE,
+> +       RESTORE_PC,
+> +};
+> +
+
+[...]
+
+> +static bool aarch64_insn_is_steppable(u32 insn)
+> +{
+> +       if (aarch64_get_insn_class(insn) == AARCH64_INSN_CLS_BR_SYS) {
+> +               if (aarch64_insn_is_branch(insn))
+> +                       return false;
+> +
+> +               /* modification of daif creates issues */
+> +               if (aarch64_insn_is_msr_daif(insn))
+> +                       return false;
+> +
+> +               if (aarch64_insn_is_hint(insn))
+> +                       return aarch64_insn_is_nop(insn);
+> +
+> +               return true;
+> +       }
+> +
+> +       if (aarch64_insn_uses_literal(insn))
+> +               return false;
+> +
+> +       if (aarch64_insn_is_exclusive(insn))
+> +               return false;
+> +
+> +       return true;
+
+Default true return may not be a good idea until we are sure that we
+are returning false for all possible
+simulation and rejection cases. In my opinion, its better to return
+true only for steppable and false for
+all remaining.
+
+> +}
+
+[...]
+
+> +#ifndef _ARM_KERNEL_KPROBES_H
+> +#define _ARM_KERNEL_KPROBES_H
+> +
+> +/* BRK opcodes with ESR encoding  */
+> +#define BRK64_ESR_MASK         0xFFFF
+> +#define BRK64_ESR_KPROBES      0x0004
+> +#define BRK64_OPCODE_KPROBES   0xD4200080      /* "brk 0x4" */
+
+As will deacon suggested, these can be moved to debug-monitor.h and
+then uprobe can also add
+its defines there only.
+
+> +#define ARCH64_NOP_OPCODE      0xD503201F
+
+It is not being used, so can be removed.
+
+~Pratyush
