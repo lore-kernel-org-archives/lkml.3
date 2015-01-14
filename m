@@ -1,336 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753387AbbANUVm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 15:21:42 -0500
-Received: from skprod3.natinst.com ([130.164.80.24]:35599 "EHLO ni.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751850AbbANUVj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 15:21:39 -0500
-From: Xander Huff <xander.huff@ni.com>
-To: nicolas.ferre@atmel.com, netdev@vger.kernel.org, davem@davemloft.net
-Cc: jaeden.amero@ni.com, rich.tollerton@ni.com, ben.shelton@ni.com,
-        brad.mouring@ni.com, linux-kernel@vger.kernel.org,
-        cyrille.pitchen@atmel.com, Xander Huff <xander.huff@ni.com>
-Subject: [PATCH 2/2] fixup! net/macb: improved ethtool statistics support
-Date: Wed, 14 Jan 2015 14:21:21 -0600
-Message-Id: <1421266881-17314-2-git-send-email-xander.huff@ni.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1421266881-17314-1-git-send-email-xander.huff@ni.com>
-References: <54B690F5.5080308@atmel.com>
- <1421266881-17314-1-git-send-email-xander.huff@ni.com>
-X-MIMETrack: Itemize by SMTP Server on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP6|November
- 21, 2013) at 01/14/2015 02:21:35 PM,
-	Serialize by Router on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP6|November
- 21, 2013) at 01/14/2015 02:21:35 PM,
-	Serialize complete at 01/14/2015 02:21:35 PM
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2015-01-14_05:2015-01-14,2015-01-14,1970-01-01 signatures=0
+	id S1753578AbbANUVo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 15:21:44 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:47714 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751850AbbANUVn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 15:21:43 -0500
+Date: Wed, 14 Jan 2015 21:21:39 +0100
+From: Boris Brezillon <boris.brezillon@free-electrons.com>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6] ARM: at91: pm: rework cpu detection
+Message-ID: <20150114212139.0ad297eb@bbrezillon>
+In-Reply-To: <20150114191412.GA14457@ns203013.ovh.net>
+References: <1421097825-396-1-git-send-email-alexandre.belloni@free-electrons.com>
+	<1421097825-396-2-git-send-email-alexandre.belloni@free-electrons.com>
+	<20150114191412.GA14457@ns203013.ovh.net>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Xander Huff <xander.huff@ni.com>
----
- drivers/net/ethernet/cadence/macb.c |  25 +++--
- drivers/net/ethernet/cadence/macb.h | 203 +++++++++---------------------------
- 2 files changed, 68 insertions(+), 160 deletions(-)
+Hi Jean-Christophe,
 
-diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-index dd8c202..f60f8f8 100644
---- a/drivers/net/ethernet/cadence/macb.c
-+++ b/drivers/net/ethernet/cadence/macb.c
-@@ -1832,15 +1832,15 @@ static void gem_update_stats(struct macb *bp)
- 
- 	for (i = 0; i < GEM_STATS_LEN; ++i, ++p) {
- 		u32 offset = gem_statistics[i].offset;
--		u64 val = __raw_readl(bp->regs+offset);
-+		u64 val = __raw_readl(bp->regs + offset);
- 
- 		bp->ethtool_stats[i] += val;
- 		*p += val;
- 
- 		if (offset == GEM_OCTTXL || offset == GEM_OCTRXL) {
- 			/* Add GEM_OCTTXH, GEM_OCTRXH */
--			val = __raw_readl(bp->regs+offset+4);
--			bp->ethtool_stats[i] += ((u64)val)<<32;
-+			val = __raw_readl(bp->regs+offset + 4);
-+			bp->ethtool_stats[i] += ((u64)val) << 32;
- 			*(++p) += val;
- 		}
- 	}
-@@ -1891,7 +1891,7 @@ static void gem_get_ethtool_stats(struct net_device *dev,
- 
- 	bp = netdev_priv(dev);
- 	gem_update_stats(bp);
--	memcpy(data, &bp->ethtool_stats, sizeof(u64)*GEM_STATS_LEN);
-+	memcpy(data, &bp->ethtool_stats, sizeof(u64) * GEM_STATS_LEN);
- }
- 
- static int gem_get_sset_count(struct net_device *dev, int sset)
-@@ -2032,11 +2032,21 @@ const struct ethtool_ops macb_ethtool_ops = {
- 	.get_regs		= macb_get_regs,
- 	.get_link		= ethtool_op_get_link,
- 	.get_ts_info		= ethtool_op_get_ts_info,
-+};
-+EXPORT_SYMBOL_GPL(macb_ethtool_ops);
-+
-+const struct ethtool_ops gem_ethtool_ops = {
-+	.get_settings		= macb_get_settings,
-+	.set_settings		= macb_set_settings,
-+	.get_regs_len		= macb_get_regs_len,
-+	.get_regs		= macb_get_regs,
-+	.get_link		= ethtool_op_get_link,
-+	.get_ts_info		= ethtool_op_get_ts_info,
- 	.get_ethtool_stats	= gem_get_ethtool_stats,
- 	.get_strings		= gem_get_ethtool_strings,
- 	.get_sset_count		= gem_get_sset_count,
- };
--EXPORT_SYMBOL_GPL(macb_ethtool_ops);
-+EXPORT_SYMBOL_GPL(gem_ethtool_ops);
- 
- int macb_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
- {
-@@ -2325,7 +2335,10 @@ static int __init macb_probe(struct platform_device *pdev)
- 
- 	dev->netdev_ops = &macb_netdev_ops;
- 	netif_napi_add(dev, &bp->napi, macb_poll, 64);
--	dev->ethtool_ops = &macb_ethtool_ops;
-+	if (macb_is_gem(bp))
-+		dev->ethtool_ops = &gem_ethtool_ops;
-+	else
-+		dev->ethtool_ops = &macb_ethtool_ops;
- 
- 	dev->base_addr = regs->start;
- 
-diff --git a/drivers/net/ethernet/cadence/macb.h b/drivers/net/ethernet/cadence/macb.h
-index d7b93d0..2ea5355 100644
---- a/drivers/net/ethernet/cadence/macb.h
-+++ b/drivers/net/ethernet/cadence/macb.h
-@@ -82,159 +82,52 @@
- #define GEM_SA4B				0x00A0 /* Specific4 Bottom */
- #define GEM_SA4T				0x00A4 /* Specific4 Top */
- #define GEM_OTX					0x0100 /* Octets transmitted */
--#define GEM_OCTTXL				0x0100 /* Octets transmitted
--							* [31:0]
--							*/
--#define GEM_OCTTXH				0x0104 /* Octets transmitted
--							* [47:32]
--							*/
--#define GEM_TXCNT				0x0108 /* Error-free Frames
--							* Transmitted counter
--							*/
--#define GEM_TXBCCNT				0x010c /* Error-free Broadcast
--							* Frames counter
--							*/
--#define GEM_TXMCCNT				0x0110 /* Error-free Multicast
--							* Frames counter
--							*/
--#define GEM_TXPAUSECNT				0x0114 /* Pause Frames
--							* Transmitted Counter
--							*/
--#define GEM_TX64CNT				0x0118 /* Error-free 64 byte
--							* Frames Transmitted
--							* counter
--							*/
--#define GEM_TX65CNT				0x011c /* Error-free 65-127 byte
--							* Frames Transmitted
--							* counter
--							*/
--#define GEM_TX128CNT				0x0120 /* Error-free 128-255
--							* byte Frames
--							* Transmitted counter
--							*/
--#define GEM_TX256CNT				0x0124 /* Error-free 256-511
--							* byte Frames
--							* transmitted counter
--							*/
--#define GEM_TX512CNT				0x0128 /* Error-free 512-1023
--							* byte Frames
--							* transmitted counter
--							*/
--#define GEM_TX1024CNT				0x012c /* Error-free 1024-1518
--							* byte Frames
--							* transmitted counter
--							*/
--#define GEM_TX1519CNT				0x0130 /* Error-free larger than
--							* 1519 byte Frames
--							* tranmitted counter
--							*/
--#define GEM_TXURUNCNT				0x0134 /* TX under run error
--							* counter
--							*/
--#define GEM_SNGLCOLLCNT				0x0138 /* Single Collision Frame
--							* Counter
--							*/
--#define GEM_MULTICOLLCNT			0x013c /* Multiple Collision
--							* Frame Counter
--							*/
--#define GEM_EXCESSCOLLCNT			0x0140 /* Excessive Collision
--							* Frame Counter
--							*/
--#define GEM_LATECOLLCNT				0x0144 /* Late Collision Frame
--							* Counter
--							*/
--#define GEM_TXDEFERCNT				0x0148 /* Deferred Transmission
--							* Frame Counter
--							*/
--#define GEM_TXCSENSECNT				0x014c /* Carrier Sense Error
--							* Counter
--							*/
-+#define GEM_OCTTXL				0x0100 /* Octets transmitted [31:0] */
-+#define GEM_OCTTXH				0x0104 /* Octets transmitted [47:32] */
-+#define GEM_TXCNT				0x0108 /* Error-free Frames Transmitted counter */
-+#define GEM_TXBCCNT				0x010c /* Error-free Broadcast Frames counter */
-+#define GEM_TXMCCNT				0x0110 /* Error-free Multicast Frames counter */
-+#define GEM_TXPAUSECNT				0x0114 /* Pause Frames Transmitted Counter */
-+#define GEM_TX64CNT				0x0118 /* Error-free 64 byte Frames Transmitted counter */
-+#define GEM_TX65CNT				0x011c /* Error-free 65-127 byte Frames Transmitted counter */
-+#define GEM_TX128CNT				0x0120 /* Error-free 128-255 byte Frames Transmitted counter */
-+#define GEM_TX256CNT				0x0124 /* Error-free 256-511 byte Frames transmitted counter */
-+#define GEM_TX512CNT				0x0128 /* Error-free 512-1023 byte Frames transmitted counter */
-+#define GEM_TX1024CNT				0x012c /* Error-free 1024-1518 byte Frames transmitted counter */
-+#define GEM_TX1519CNT				0x0130 /* Error-free larger than 1519 byte Frames tranmitted counter */
-+#define GEM_TXURUNCNT				0x0134 /* TX under run error counter */
-+#define GEM_SNGLCOLLCNT				0x0138 /* Single Collision Frame Counter */
-+#define GEM_MULTICOLLCNT			0x013c /* Multiple Collision Frame Counter */
-+#define GEM_EXCESSCOLLCNT			0x0140 /* Excessive Collision Frame Counter */
-+#define GEM_LATECOLLCNT				0x0144 /* Late Collision Frame Counter */
-+#define GEM_TXDEFERCNT				0x0148 /* Deferred Transmission Frame Counter */
-+#define GEM_TXCSENSECNT				0x014c /* Carrier Sense Error Counter */
- #define GEM_ORX					0x0150 /* Octets received */
--#define GEM_OCTRXL				0x0150 /* Octets received
--							* [31:0]
--							*/
--#define GEM_OCTRXH				0x0154 /* Octets received
--							* [47:32]
--							*/
--#define GEM_RXCNT				0x0158 /* Error-free Frames
--							* Received Counter
--							*/
--#define GEM_RXBROADCNT				0x015c /* Error-free Broadcast
--							* Frames Received
--							* Counter
--							*/
--#define GEM_RXMULTICNT				0x0160 /* Error-free Multicast
--							* Frames Received
--							* Counter
--							*/
--#define GEM_RXPAUSECNT				0x0164 /* Error-free Pause
--							* Frames Received
--							* Counter
--							*/
--#define GEM_RX64CNT				0x0168 /* Error-free 64 byte
--							* Frames Received
--							* Counter
--							*/
--#define GEM_RX65CNT				0x016c /* Error-free 65-127 byte
--							* Frames Received
--							* Counter
--							*/
--#define GEM_RX128CNT				0x0170 /* Error-free 128-255
--							* byte Frames Received
--							* Counter
--							*/
--#define GEM_RX256CNT				0x0174 /* Error-free 256-511
--							* byte Frames Received
--							* Counter
--							*/
--#define GEM_RX512CNT				0x0178 /* Error-free 512-1023
--							* byte Frames Received
--							* Counter
--							*/
--#define GEM_RX1024CNT				0x017c /* Error-free 1024-1518
--							* byte Frames Received
--							* Counter
--							*/
--#define GEM_RX1519CNT				0x0180 /* Error-free larger than
--							* 1519 Frames Received
--							* Counter
--							*/
--#define GEM_RXUNDRCNT				0x0184 /* Undersize Frames
--							* Received Counter
--							*/
--#define GEM_RXOVRCNT				0x0188 /* Oversize Frames
--							* Received Counter
--							*/
--#define GEM_RXJABCNT				0x018c /* Jabbers Received
--							* Counter
--							*/
--#define GEM_RXFCSCNT				0x0190 /* Frame Check Sequence
--							* Error Counter
--							*/
--#define GEM_RXLENGTHCNT				0x0194 /* Length Field Error
--							* Counter
--							*/
--#define GEM_RXSYMBCNT				0x0198 /* Symbol Error
--							* Counter
--							*/
--#define GEM_RXALIGNCNT				0x019c /* Alignment Error
--							* Counter
--							*/
--#define GEM_RXRESERRCNT				0x01a0 /* Receive Resource Error
--							* Counter
--							*/
--#define GEM_RXORCNT				0x01a4 /* Receive Overrun
--							* Counter
--							*/
--#define GEM_RXIPCCNT				0x01a8 /* IP header Checksum
--							* Error Counter
--							*/
--#define GEM_RXTCPCCNT				0x01ac /* TCP Checksum Error
--							* Counter
--							*/
--#define GEM_RXUDPCCNT				0x01b0 /* UDP Checksum Error
--							* Counter
--							*/
-+#define GEM_OCTRXL				0x0150 /* Octets received [31:0] */
-+#define GEM_OCTRXH				0x0154 /* Octets received [47:32] */
-+#define GEM_RXCNT				0x0158 /* Error-free Frames Received Counter */
-+#define GEM_RXBROADCNT				0x015c /* Error-free Broadcast Frames Received Counter */
-+#define GEM_RXMULTICNT				0x0160 /* Error-free Multicast Frames Received Counter */
-+#define GEM_RXPAUSECNT				0x0164 /* Error-free Pause Frames Received Counter */
-+#define GEM_RX64CNT				0x0168 /* Error-free 64 byte Frames Received Counter */
-+#define GEM_RX65CNT				0x016c /* Error-free 65-127 byte Frames Received Counter */
-+#define GEM_RX128CNT				0x0170 /* Error-free 128-255 byte Frames Received Counter */
-+#define GEM_RX256CNT				0x0174 /* Error-free 256-511 byte Frames Received Counter */
-+#define GEM_RX512CNT				0x0178 /* Error-free 512-1023 byte Frames Received Counter */
-+#define GEM_RX1024CNT				0x017c /* Error-free 1024-1518 byte Frames Received Counter */
-+#define GEM_RX1519CNT				0x0180 /* Error-free larger than 1519 Frames Received Counter */
-+#define GEM_RXUNDRCNT				0x0184 /* Undersize Frames Received Counter */
-+#define GEM_RXOVRCNT				0x0188 /* Oversize Frames Received Counter */
-+#define GEM_RXJABCNT				0x018c /* Jabbers Received Counter */
-+#define GEM_RXFCSCNT				0x0190 /* Frame Check Sequence Error Counter */
-+#define GEM_RXLENGTHCNT				0x0194 /* Length Field Error Counter */
-+#define GEM_RXSYMBCNT				0x0198 /* Symbol Error Counter */
-+#define GEM_RXALIGNCNT				0x019c /* Alignment Error Counter */
-+#define GEM_RXRESERRCNT				0x01a0 /* Receive Resource Error Counter */
-+#define GEM_RXORCNT				0x01a4 /* Receive Overrun Counter */
-+#define GEM_RXIPCCNT				0x01a8 /* IP header Checksum Error Counter */
-+#define GEM_RXTCPCCNT				0x01ac /* TCP Checksum Error Counter */
-+#define GEM_RXUDPCCNT				0x01b0 /* UDP Checksum Error Counter */
- #define GEM_DCFG1				0x0280 /* Design Config 1 */
- #define GEM_DCFG2				0x0284 /* Design Config 2 */
- #define GEM_DCFG3				0x0288 /* Design Config 3 */
-@@ -748,7 +641,8 @@ struct gem_stats {
- 	u32	rx_udp_checksum_errors;
- };
- 
--/* Describes the name and offset of an individual statistic register, as
-+/*
-+ * Describes the name and offset of an individual statistic register, as
-  * returned by `ethtool -S`. Also describes which net_device_stats statistics
-  * this register should contribute to.
-  */
-@@ -778,7 +672,8 @@ struct gem_statistic {
- 	.stat_bits = bits				\
- }
- 
--/* list of gem statistic registers. The names MUST match the
-+/*
-+ * list of gem statistic registers. The names MUST match the
-  * corresponding GEM_* definitions.
-  */
- static const struct gem_statistic gem_statistics[] = {
+On Wed, 14 Jan 2015 20:14:12 +0100
+Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com> wrote:
+
+> On 22:23 Mon 12 Jan     , Alexandre Belloni wrote:
+> > Store SoC differences in a struct to remove cpu_is_* usage.
+> > 
+> > Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> > ---
+> >  arch/arm/mach-at91/pm.c | 54 ++++++++++++++++++++++++++++++-------------------
+> >  1 file changed, 33 insertions(+), 21 deletions(-)
+> > 
+> > diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
+> > index 9b15169a1c62..79aa793d1f00 100644
+> > --- a/arch/arm/mach-at91/pm.c
+> > +++ b/arch/arm/mach-at91/pm.c
+> > @@ -17,6 +17,7 @@
+> >  #include <linux/interrupt.h>
+> >  #include <linux/sysfs.h>
+> >  #include <linux/module.h>
+> > +#include <linux/of.h>
+> >  #include <linux/platform_device.h>
+> >  #include <linux/io.h>
+> >  #include <linux/clk/at91_pmc.h>
+> > @@ -32,6 +33,11 @@
+> >  #include "generic.h"
+> >  #include "pm.h"
+> >  
+> > +static struct {
+> > +	unsigned long uhp_udp_mask;
+> > +	int memctrl;
+> > +} at91_pm_data;
+> > +
+> >  static void (*at91_pm_standby)(void);
+> >  
+> >  static int at91_pm_valid_state(suspend_state_t state)
+> > @@ -71,17 +77,9 @@ static int at91_pm_verify_clocks(void)
+> >  	scsr = at91_pmc_read(AT91_PMC_SCSR);
+> >  
+> >  	/* USB must not be using PLLB */
+> > -	if (cpu_is_at91rm9200()) {
+> > -		if ((scsr & (AT91RM9200_PMC_UHP | AT91RM9200_PMC_UDP)) != 0) {
+> > -			pr_err("AT91: PM - Suspend-to-RAM with USB still active\n");
+> > -			return 0;
+> > -		}
+> > -	} else if (cpu_is_at91sam9260() || cpu_is_at91sam9261() || cpu_is_at91sam9263()
+> > -			|| cpu_is_at91sam9g20() || cpu_is_at91sam9g10()) {
+> > -		if ((scsr & (AT91SAM926x_PMC_UHP | AT91SAM926x_PMC_UDP)) != 0) {
+> > -			pr_err("AT91: PM - Suspend-to-RAM with USB still active\n");
+> > -			return 0;
+> > -		}
+> > +	if ((scsr & at91_pm_data.uhp_udp_mask) != 0) {
+> > +		pr_err("AT91: PM - Suspend-to-RAM with USB still active\n");
+> > +		return 0;
+> >  	}
+> >  
+> >  	/* PCK0..PCK3 must be disabled, or configured to use clk32k */
+> > @@ -149,18 +147,13 @@ static int at91_pm_enter(suspend_state_t state)
+> >  			 * turning off the main oscillator; reverse on wakeup.
+> >  			 */
+> >  			if (slow_clock) {
+> > -				int memctrl = AT91_MEMCTRL_SDRAMC;
+> > -
+> > -				if (cpu_is_at91rm9200())
+> > -					memctrl = AT91_MEMCTRL_MC;
+> > -				else if (cpu_is_at91sam9g45())
+> > -					memctrl = AT91_MEMCTRL_DDRSDR;
+> >  #ifdef CONFIG_AT91_SLOW_CLOCK
+> >  				/* copy slow_clock handler to SRAM, and call it */
+> >  				memcpy(slow_clock, at91_slow_clock, at91_slow_clock_sz);
+> >  #endif
+> >  				slow_clock(at91_pmc_base, at91_ramc_base[0],
+> > -					   at91_ramc_base[1], memctrl);
+> > +					   at91_ramc_base[1],
+> > +					   at91_pm_data.memctrl);
+> >  				break;
+> >  			} else {
+> >  				pr_info("AT91: PM - no slow clock mode enabled ...\n");
+> > @@ -237,10 +230,29 @@ static int __init at91_pm_init(void)
+> >  
+> >  	pr_info("AT91: Power Management%s\n", (slow_clock ? " (with slow clock mode)" : ""));
+> >  
+> > -	/* AT91RM9200 SDRAM low-power mode cannot be used with self-refresh. */
+> > -	if (cpu_is_at91rm9200())
+> > +	at91_pm_data.memctrl = AT91_MEMCTRL_SDRAMC;
+> > +
+> > +	if (of_machine_is_compatible("atmel,at91rm9200")) {
+> > +		/*
+> > +		 * AT91RM9200 SDRAM low-power mode cannot be used with
+> > +		 * self-refresh.
+> > +		 */
+> >  		at91_ramc_write(0, AT91RM9200_SDRAMC_LPR, 0);
+> > -	
+> > +
+> > +		at91_pm_data.uhp_udp_mask = AT91RM9200_PMC_UHP |
+> > +					    AT91RM9200_PMC_UDP;
+> > +		at91_pm_data.memctrl = AT91_MEMCTRL_MC;
+> > +	} else if (of_machine_is_compatible("atmel,at91sam9260") ||
+> > +		   of_machine_is_compatible("atmel,at91sam9g20") ||
+> > +		   of_machine_is_compatible("atmel,at91sam9261") ||
+> > +		   of_machine_is_compatible("atmel,at91sam9g10") ||
+> > +		   of_machine_is_compatible("atmel,at91sam9263")) {
+> nack here
+> 
+> you switch for runtime information from the SOC register store in ram to DT
+> 
+> DT is great but I do prefer to rely on the SoC register here as the whole was
+> also to check that the is correct
+
+Well, cpu_is_xxx macros are defined in a mach specific header, and we're
+currently trying to enable multi platform support. 
+
+> 
+> wihich is way slower
+
+Hmm, this SoC detection has been move from the suspend path (where, as
+you stated, speed is a real concern) to the pm init function (which is
+only called once at startup), and I doubt the boot time penalty will
+even be noticeable...
+
+Best Regards,
+
+Boris
+
+
 -- 
-1.9.1
-
+Boris Brezillon, Free Electrons
+Embedded Linux and Kernel engineering
+http://free-electrons.com
