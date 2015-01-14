@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472AbbANJg6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 04:36:58 -0500
-Received: from mail-bn1on0116.outbound.protection.outlook.com ([157.56.110.116]:32864
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753215AbbANJgz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 04:36:55 -0500
-From: Jingchang Lu <jingchang.lu@freescale.com>
-To: Jingchang Lu <jingchang.lu@freescale.com>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>
-CC: "dan.j.williams@intel.com" <dan.j.williams@intel.com>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH 1/2] dmaengine: fsl-edma: add dma memcpy support
-Thread-Topic: [PATCH 1/2] dmaengine: fsl-edma: add dma memcpy support
-Thread-Index: AQHQJBRBvR5ApUwEo0OF2Mc0BMepuJy/cf2w
-Date: Wed, 14 Jan 2015 09:36:52 +0000
-Message-ID: <BN3PR0301MB12364CA46991F6616348AD9087410@BN3PR0301MB1236.namprd03.prod.outlook.com>
-References: <1419928907-18053-1-git-send-email-jingchang.lu@freescale.com>
- <1419928907-18053-2-git-send-email-jingchang.lu@freescale.com>
-In-Reply-To: <1419928907-18053-2-git-send-email-jingchang.lu@freescale.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [123.151.195.51]
-authentication-results: spf=none (sender IP is )
- smtp.mailfrom=jingchang.lu@freescale.com; 
-x-dmarcaction-test: None
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:(3005003);SRVR:BN3PR0301MB1235;
-x-exchange-antispam-report-test: UriScan:;
-x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1235;
-x-forefront-prvs: 04569283F9
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(377454003)(199003)(13464003)(41574002)(51704005)(189002)(77156002)(62966003)(86362001)(76576001)(87936001)(54606007)(2656002)(106116001)(105586002)(106356001)(54206007)(19580405001)(2900100001)(2950100001)(19580395003)(92566002)(66066001)(54356999)(97736003)(46102003)(122556002)(64706001)(33656002)(2501002)(99286002)(74316001)(40100003)(76176999)(50986999)(68736005)(101416001)(102836002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN3PR0301MB1235;H:BN3PR0301MB1236.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
+	id S1753584AbbANJpp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 04:45:45 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:50165 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753073AbbANJpl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 04:45:41 -0500
+Date: Wed, 14 Jan 2015 12:45:38 +0300
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Dave Hansen <dave.hansen@linux.intel.com>
+Cc: "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, linux-mm@kvack.org,
+        Pavel Emelyanov <xemul@openvz.org>, linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 1/2] mm: rename mm->nr_ptes to mm->nr_pgtables
+Message-ID: <20150114094538.GD2253@moon>
+References: <1421176456-21796-1-git-send-email-kirill.shutemov@linux.intel.com>
+ <1421176456-21796-2-git-send-email-kirill.shutemov@linux.intel.com>
+ <20150113214355.GC2253@moon>
+ <54B592D6.4090406@linux.intel.com>
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-originalarrivaltime: 14 Jan 2015 09:36:52.4636
- (UTC)
-X-MS-Exchange-CrossTenant-fromentityheader: Hosted
-X-MS-Exchange-CrossTenant-id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN3PR0301MB1235
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54B592D6.4090406@linux.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0E9b48s005293
 
-Hi, Vinod,
+On Tue, Jan 13, 2015 at 01:49:10PM -0800, Dave Hansen wrote:
+> On 01/13/2015 01:43 PM, Cyrill Gorcunov wrote:
+> > On Tue, Jan 13, 2015 at 09:14:15PM +0200, Kirill A. Shutemov wrote:
+> >> We're going to account pmd page tables too. Let's rename mm->nr_pgtables
+> >> to something more generic.
+> >>
+> >> Signed-off-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+> >> --- a/fs/proc/task_mmu.c
+> >> +++ b/fs/proc/task_mmu.c
+> >> @@ -64,7 +64,7 @@ void task_mem(struct seq_file *m, struct mm_struct *mm)
+> >>  		data << (PAGE_SHIFT-10),
+> >>  		mm->stack_vm << (PAGE_SHIFT-10), text, lib,
+> >>  		(PTRS_PER_PTE * sizeof(pte_t) *
+> >> -		 atomic_long_read(&mm->nr_ptes)) >> 10,
+> >> +		 atomic_long_read(&mm->nr_pgtables)) >> 10,
+> > 
+> > This implies that (PTRS_PER_PTE * sizeof(pte_t)) = (PTRS_PER_PMD * sizeof(pmd_t))
+> > which might be true for all archs, right?
+> 
+> I wonder if powerpc is OK on this front today.  This diagram:
+> 
+> 	http://linux-mm.org/PageTableStructure
+> 
+> says that they use a 128-byte "pte" table when mapping 16M pages.  I
+> wonder if they bump mm->nr_ptes for these.
 
-   Could you please help review the two patches, and merge them if possible? Thanks!
-
-
-Best Regards,
-Jingchang
-
->-----Original Message-----
->From: Jingchang Lu [mailto:jingchang.lu@freescale.com]
->Sent: Tuesday, December 30, 2014 4:42 PM
->To: vinod.koul@intel.com
->Cc: dan.j.williams@intel.com; dmaengine@vger.kernel.org; linux-
->kernel@vger.kernel.org; linux-arm-kernel@lists.infradead.org; Lu
->Jingchang-B35083
->Subject: [PATCH 1/2] dmaengine: fsl-edma: add dma memcpy support
->
->This adds the memory copy capability support, the memcpy functionality
->needs to configure the DMAMUX of the channel with the always on slave id.
->
->Signed-off-by: Jingchang Lu <jingchang.lu@freescale.com>
->---
-> drivers/dma/fsl-edma.c | 63
->++++++++++++++++++++++++++++++++++++++++++++++++--
-> 1 file changed, 61 insertions(+), 2 deletions(-)
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+It looks like this doesn't matter. The statistics here prints the size
+of summary memory occupied for pte_t entries, here PTRS_PER_PTE * sizeof(pte_t)
+is only valid for, once we start accounting pmd into same counter it implies
+that PTRS_PER_PTE == PTRS_PER_PMD, which is not true for all archs
+(if I understand the idea of accounting here right).
