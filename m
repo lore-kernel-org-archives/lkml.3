@@ -1,164 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752456AbbANMMw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 07:12:52 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:39478 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752181AbbANMMu (ORCPT
+	id S1752571AbbANMO1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 07:14:27 -0500
+Received: from vserver.eikelenboom.it ([84.200.39.61]:52925 "EHLO
+	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752053AbbANMOZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 07:12:50 -0500
-Date: Wed, 14 Jan 2015 12:12:34 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: Jyri Sarha <jsarha@ti.com>, Philipp Zabel <p.zabel@pengutronix.de>,
-        Andrew Jackson <Andrew.Jackson@arm.com>,
-        Mark Brown <broonie@kernel.org>, Dave Airlie <airlied@gmail.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v9 1/4] drm/i2c: tda998x: Add DT support for audio
-Message-ID: <20150114121233.GW12302@n2100.arm.linux.org.uk>
-References: <20150112175705.GN12302@n2100.arm.linux.org.uk>
- <1421151718.4519.24.camel@pengutronix.de>
- <20150113122715.GP12302@n2100.arm.linux.org.uk>
- <20150113165411.5469930d@armhf>
- <20150113160313.GR12302@n2100.arm.linux.org.uk>
- <20150113200252.3dbfab14@armhf>
- <20150113192648.GU12302@n2100.arm.linux.org.uk>
- <54B574CD.9020905@ti.com>
- <20150113195415.GV12302@n2100.arm.linux.org.uk>
- <20150114085501.677dc4d2@armhf>
+	Wed, 14 Jan 2015 07:14:25 -0500
+Date: Wed, 14 Jan 2015 13:14:20 +0100
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <1645184106.20150114131420@eikelenboom.it>
+To: Pravin B Shelar <pshelar@nicira.com>
+CC: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        <linux-kernel@vger.kernel.org>
+Subject: 3.19-rc4:  BUG: unable to handle kernel paging request at ffff880055f15000 ovs_packet_cmd_execute+0x1f/0x229
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20150114085501.677dc4d2@armhf>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 14, 2015 at 08:55:01AM +0100, Jean-Francois Moine wrote:
-> On Tue, 13 Jan 2015 19:54:15 +0000
-> Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-> 
-> > On Tue, Jan 13, 2015 at 09:41:01PM +0200, Jyri Sarha wrote:
-> > > On 01/13/2015 09:26 PM, Russell King - ARM Linux wrote:
-> > > >SCLK: _~_~_~_~_~_~_~_~_~_~_~_~_~_~_~_~_~_~_~_~_~_~_~_~_~_~_~_~_~_~_~_~_~_
-> > > >   WS: __~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~________________________________~
-> > > >I2S1: llmm............................llmm............................llm
-> > > >I2S2: llmm............................llmm............................llm
-> > > >I2S3: llmm............................llmm............................llm
-> > > >I2S4: llmm............................llmm............................llm
-> > > >
-> > > >So, what I'm saying is that it is_impossible_  to drive the TDA998x using
-> > > >multiple I2S streams which are not produced by the same I2S block.
-> > > 
-> > > This is besides the point, but it is possible that one of the multiple I2S
-> > > blocks is the bit-clock and frame-clock master to the i2s bus and the others
-> > > are slaves to it (banging their bits according to SCLK and WS of the I2S
-> > > master). However, in this situation there really is only one i2s bus with
-> > > multiple data pins.
-> > > 
-> > > Just my 0.02€ to this discussion.
-> > 
-> > Right, that's about the only way it could work.
-> > 
-> > To represent that in DT, I would imagine we'd need something like this:
-> > 
-> > 	#address-cells = <1>;
-> > 	#size-cells = <0>;
-> > 	...
-> >         port@1 {                        /* AP1,2 = I2S */
-> > 		#address-cells = <1>;
-> > 		#size-cells = <0>;
-> >                 port-type = "i2s";
-> >                 reg = <0x01>;		/* WS */
-> >                 tda998x_i2s1: endpoint@2 {
-> > 			reg = <0x02>;	/* AP1 */
-> >                         remote-endpoint = <&audio1_i2s>;
-> >                 };
-> >                 tda998x_i2s2: endpoint@4 {
-> > 			reg = <0x04>;	/* AP2 */
-> >                         remote-endpoint = <&audio2_i2s>;
-> >                 };
-> >         };
-> > 
-> > where audio1_i2s is operating in master mode, and audio2_i2s is
-> > operating in slave mode for both WS and SCLK.
-> > 
-> > If we can agree on that, then I'm happy with the proposed binding.
-> > (Remember that #address-cells and #size-cells are required in the
-> > parent where we have reg= in the child.)
-> 
-> #address-cells and #size-cells may be defined in any of the upper
-> parent, so, as it is defined in the device, it is not needed in the
-> port (see of_n_addr_cells in drivers/of/base.c).
+Hi,
 
-That may be, but the documentation specifies that it should be given.
-See Documentation/devicetree/bindings/graph.txt - maybe the docs need
-fixing?
+I was testing 3.19-rc4 with openvswitch and encountered the splat below.
 
-> Well, I am a bit lost between (only one source / many channels - I2S
-> busses) and (many sources / one I2s bus!).
+#addr2line -e /boot/vmlinux-3.19.0-rc4-creanuc-20150114-doflr-apicpatchv3-apicrevert+ ffffffff818a1690
+/mnt/kernelbuild/linux-tip/net/openvswitch/datapath.c:527
+--
+Sander
 
-I think that's a matter of how the problem is viewed. :)
+[  463.033308] BUG: unable to handle kernel paging request at ffff880055f15000
+[  463.072154] IP: [<ffffffff818a1690>] ovs_packet_cmd_execute+0x1f/0x229
+[  463.106202] PGD 1e10067 PUD 2097067 PMD 5ff54067 PTE 0
+[  463.126940] Oops: 0000 [#1] SMP
+[  463.147505] Modules linked in:
+[  463.166938] CPU: 2 PID: 3049 Comm: ovs-vswitchd Not tainted 3.19.0-rc4-creanuc-20150114-doflr-apicpatchv3-apicrevert+ #1
+[  463.187507] Hardware name:                  /D53427RKE, BIOS RKPPT10H.86A.0017.2013.0425.1251 04/25/2013
+[  463.208553] task: ffff880058d30000 ti: ffff880055c38000 task.ti: ffff880055c38000
+[  463.229734] RIP: e030:[<ffffffff818a1690>]  [<ffffffff818a1690>] ovs_packet_cmd_execute+0x1f/0x229
+[  463.251082] RSP: e02b:ffff880055c3ba48  EFLAGS: 00010296
+[  463.271786] RAX: ffff88004fe38818 RBX: ffffffff81ed4cc0 RCX: 0000000000000000
+[  463.293072] RDX: ffff880055c3bb00 RSI: ffff880055c3bad0 RDI: ffff8800559dc700
+[  463.314521] RBP: ffff8800559dc700 R08: ffffffff81b08d00 R09: 000000007ffff000
+[  463.336189] R10: ffff88004fe38814 R11: ffffffff81ed4cc0 R12: ffff880055f14fc0
+[  463.356906] R13: ffff88004fe38800 R14: ffff880055f14fc0 R15: ffffffff81b08c60
+[  463.377482] FS:  00007f196321c700(0000) GS:ffff88005f700000(0000) knlGS:ffff88005f680000
+[  463.398646] CS:  e033 DS: 0000 ES: 0000 CR0: 0000000080050033
+[  463.419995] CR2: ffff880055f15000 CR3: 000000005622e000 CR4: 0000000000042660
+[  463.441577] Stack:
+[  463.462975]  000000000000000c ffff88004fe38814 0000000000000005 ffffffff8130b116
+[  463.485114]  ffffffff81ed4cc0 ffffffff81ed4cc0 ffff8800559dc700 ffff880055f14fc0
+[  463.507367]  ffff88004fe38800 0000000000000008 ffffffff81b08c60 ffffffff81794364
+[  463.530186] Call Trace:
+[  463.552330]  [<ffffffff8130b116>] ? nla_parse+0x57/0xe7
+[  463.574869]  [<ffffffff81794364>] ? genl_family_rcv_msg+0x243/0x2a9
+[  463.597276]  [<ffffffff818ad9a2>] ? __slab_alloc.constprop.63+0x2bb/0x2e5
+[  463.619394]  [<ffffffff81794402>] ? genl_rcv_msg+0x38/0x5b
+[  463.641361]  [<ffffffff817911a6>] ? __netlink_lookup+0x3a/0x40
+[  463.663192]  [<ffffffff817943ca>] ? genl_family_rcv_msg+0x2a9/0x2a9
+[  463.685141]  [<ffffffff81793686>] ? netlink_rcv_skb+0x36/0x7c
+[  463.706874]  [<ffffffff81793987>] ? genl_rcv+0x1f/0x2c
+[  463.729152]  [<ffffffff817930ea>] ? netlink_unicast+0x100/0x19c
+[  463.751315]  [<ffffffff8179350d>] ? netlink_sendmsg+0x311/0x36b
+[  463.772483]  [<ffffffff8173d574>] ? do_sock_sendmsg+0x62/0x7b
+[  463.793309]  [<ffffffff8173e6ce>] ? copy_msghdr_from_user+0x158/0x17c
+[  463.814032]  [<ffffffff8173e94c>] ? ___sys_sendmsg+0x11f/0x197
+[  463.834595]  [<ffffffff8173ddfd>] ? sock_poll+0xf2/0xfd
+[  463.854970]  [<ffffffff81136d27>] ? ep_send_events_proc+0x91/0x153
+[  463.875603]  [<ffffffff81136c96>] ? ep_read_events_proc+0x92/0x92
+[  463.896168]  [<ffffffff818b6929>] ? _raw_spin_unlock_irqrestore+0x42/0x5b
+[  463.917050]  [<ffffffff8113759c>] ? ep_scan_ready_list.isra.14+0x163/0x182
+[  463.938458]  [<ffffffff81137820>] ? ep_poll+0x250/0x2c4
+[  463.958214]  [<ffffffff8173f410>] ? __sys_sendmsg+0x3b/0x5d
+[  463.977581]  [<ffffffff818b6da9>] ? system_call_fastpath+0x12/0x17
+[  463.996860] Code: ff 89 d8 5b 5d 41 5c 41 5d 41 5e c3 41 57 41 56 41 55 41 54 55 53 48 83 ec 28 48 8b 46 18 4c 8b 76 20 48 89 44 24 08 49 8b 46 08 <49> 8b 6e 40 48 85 c0 0f 84 e0 01 00 00 49 83 7e 10 00 0f 84 d5
+[  464.037236] RIP  [<ffffffff818a1690>] ovs_packet_cmd_execute+0x1f/0x229
+[  464.056926]  RSP <ffff880055c3ba48>
+[  464.076182] CR2: ffff880055f15000
+[  464.095097] ---[ end trace 8bcb28ced5309e55 ]---
 
-> Anyway, I don't understand your example.
-> I'd expect that a port would be a DAI.
-
-I view a DAI as a Linux abstraction, which doesn't really have any place
-in DT.  I'm looking at this problem from the electronics point of view.
-
-> If yes, when playing is active, both endpoints receive an audio stream
-> from the remote audio devices, and the AP register is always set to
-> 0x07 (= 0x01 | 0x02 | 0x04).
-> Then, it would have been simpler to have:
-> 
->  	#address-cells = <1>;
->  	#size-cells = <0>;
->  	...
->          port@7 {                        /* AP1,2 = I2S */
->                  port-type = "i2s";
->                  reg = <0x07>;		/* WS + AP1 + AP2 */
->                  tda998x_i2s1: endpoint@1 {
->                          remote-endpoint = <&audio1_i2s>;
->                  };
->                  tda998x_i2s2: endpoint@2 {
->                          remote-endpoint = <&audio2_i2s>;
->                  };
->          };
-> 
-> If no, the two DAIs must be created from the endpoints, permitting
-> streaming on i2s1 alone, i2s2 alone or both i2s1+i2s2 at the same time.
-
-How does that work - I mean, if we have i2s1 as the SCLK and WS master,
-how can i2s2 run without i2s1?
-
-I suppose I2S2 could be reprogrammed to be the master for both signals,
-provided that I2S1 is programmed to be a slave before hand, but that
-seems to be making things excessively complex (we'd need some way for
-I2S1 and I2S2 to comunicate that state between themselves and negotiate
-which to be the master.)
-
-However, I'd suggest that if audio1_i2s always maps to HDMI front
-left/right, audio1_i2s must always be enabled when audio playback is
-required; there is no CA bit combination provided in HDMI where the
-front L/R channels are optional.  Hence, I'd suggest that audio1_i2s
-must always be the master.
-
-As we don't know, I'd suggest that we permit flexibility here.  We
-can use the reg property as you have below, and we just bitwise-or
-the of_endpoint port/id together, along with that result from other
-active audio endpoints.  The advantage of that is we can use any of
-these representations, and it should result in a working setup - and
-when we do have the necessary information to make a properly informed
-decision, we can update the DT and binding doc accordingly and we
-won't have to update the driver (nor will we break backwards compat.)
-
-Sound sane?
-
--- 
-FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
-according to speedtest.net.
