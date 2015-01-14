@@ -1,145 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752530AbbANCen (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jan 2015 21:34:43 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:45066 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751086AbbANCel (ORCPT
+	id S1752315AbbANCms (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jan 2015 21:42:48 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:56568 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751086AbbANCmr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jan 2015 21:34:41 -0500
-Message-ID: <54B5D5B9.4060409@hitachi.com>
-Date: Wed, 14 Jan 2015 11:34:33 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 13 Jan 2015 21:42:47 -0500
+From: Wang Nan <wangnan0@huawei.com>
+To: <jolsa@kernel.org>
+CC: <linux-kernel@vger.kernel.org>, <lizefan@huawei.com>,
+        <namhyung@kernel.org>, <a.p.zijlstra@chello.nl>, <paulus@samba.org>,
+        <mingo@redhat.com>, <acme@kernel.org>,
+        <masami.hiramatsu.pt@hitachi.com>
+Subject: [PATCH v2] perf: fix dwarf unwind using libunwind.
+Date: Wed, 14 Jan 2015 10:36:47 +0800
+Message-ID: <1421203007-75799-1-git-send-email-wangnan0@huawei.com>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <20150113091928.GA2160@krava.brq.redhat.com>
+References: <20150113091928.GA2160@krava.brq.redhat.com>
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Josh Poimboeuf <jpoimboe@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        live-patching@vger.kernel.org, linux-next@vger.kernel.org,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] ftrace: don't allow IPMODIFY without proper compiler
- support (was Re: Re: livepatching tree for linux-next)
-References: <alpine.LNX.2.00.1412221412360.1680@pobox.suse.cz> <20141223094607.GA16445@infradead.org> <20141223151056.GA4789@treble.redhat.com> <20141226155613.36dd95b9@canb.auug.org.au> <20150107144317.61ab2080877a4d8227990551@linux-foundation.org> <alpine.LNX.2.00.1501072346400.15299@pobox.suse.cz> <20150107153006.60ed354e3458f402e6819b9e@linux-foundation.org> <alpine.LNX.2.00.1501080037030.15299@pobox.suse.cz> <20150107155701.4839545f63701412003edd88@linux-foundation.org> <alpine.LNX.2.00.1501080104190.15299@pobox.suse.cz> <54B3C1DD.6090400@hitachi.com> <alpine.LNX.2.00.1501132345080.4162@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1501132345080.4162@pobox.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020205.54B5D78D.011E,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 8ed13e013ec1f8f4ec7757f07f549ad4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2015/01/14 7:47), Jiri Kosina wrote:
-> On Mon, 12 Jan 2015, Masami Hiramatsu wrote:
-> 
->>> In any case, Masami, I really think you would like to do something 
->>> like that for IPMODIFY as well ... or are you deliberately defering 
->>> the responsibility to handle the possible mcount fallout to the 
->>> ftrace_ops owner?
->>
->> Ah, good point. I just tried to use ftrace and WARN if not possible
->> to use it. I'll see it tomorrow. Anyway, I'd prefer to have this
->> kind of checking functionality in ftrace.
-> 
-> Okay, so how about something like this, for example ... ?
+Perf tool fails to unwind user stack if the event raises in a shared
+object. This patch improves tests/dwarf-unwind.c to demonstrate the
+problem by utilizing commonly used glibc function "bsearch". If perf
+is not statically linked, the testcase will try to unwind a mixed call
+trace.
 
-Thanks! Could you read my comments?
+By debugging libunwind I found that there is a bug in unwind-libunwind:
+it always passes 0 as segbase to libunwind, cause libunwind unable to
+locate debug_frame entry fir first level ip address (I add some more
+debugging output into libunwind to make things clear):
 
-> From: Jiri Kosina <jkosina@suse.cz>
-> Subject: [PATCH] ftrace: don't allow IPMODIFY without proper compiler support
-> 
-> Using IPMODIFY needs to be allowed only with compilers which are 
-> guaranteed to generate function prologues compatible with function 
-> redirection through changing instruction pointer in saved regs.
-> 
-> For example changing regs->ip on x86_64 in cases when gcc is using mcount 
-> (and not fentry) is not allowed, because at the time mcount call is 
-> issued, the original function's prologue has already been executed, which 
-> leads to all kinds of inconsistent havoc.
-> 
-> There is currently no way to express dependency on gcc features in 
-> Kconfig, (CC_USING_FENTRY is defined only during build, so it's not 
-> possible for Kconfig symbol to depend on it) so this needs to be checked 
-> in runtime.
-> 
-> Mark x86_64 with fentry supported for now. Other archs can be added 
-> gradually.
-> 
-> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
-> ---
->  arch/x86/include/asm/ftrace.h | 2 ++
->  include/linux/ftrace.h        | 4 ++++
->  kernel/trace/ftrace.c         | 5 +++++
->  3 files changed, 11 insertions(+)
-> 
-> diff --git a/arch/x86/include/asm/ftrace.h b/arch/x86/include/asm/ftrace.h
-> index f45acad..29fa417 100644
-> --- a/arch/x86/include/asm/ftrace.h
-> +++ b/arch/x86/include/asm/ftrace.h
-> @@ -4,8 +4,10 @@
->  #ifdef CONFIG_FUNCTION_TRACER
->  #ifdef CC_USING_FENTRY
->  # define MCOUNT_ADDR		((long)(__fentry__))
-> +# define arch_ftrace_ipmodify_compiler_support(void) ({ 1; })
->  #else
->  # define MCOUNT_ADDR		((long)(mcount))
-> +#define arch_ftrace_ipmodify_compiler_support(void) ({ 0; })
+               >_Uarm_dwarf_find_debug_frame: start_ip = 10be98, end_ip = 10c2a4
+               >_Uarm_dwarf_find_debug_frame: found debug_frame table `/lib/libc-2.18.so': segbase=0x0, len=7, gp=0x0, table_data=0x449388
+               >_Uarm_dwarf_search_unwind_table: call lookup:ip = b6cd3bcc, segbase = 0, rel_ip = b6cd3bcc
+               >lookup: e->start_ip_offset = bcf18 (rel_ip = b6cd3bcc)
+               >lookup: e->start_ip_offset = 6d314 (rel_ip = b6cd3bcc)
+               >lookup: e->start_ip_offset = 33d0c (rel_ip = b6cd3bcc)
+                ...
+               >lookup: e->start_ip_offset = 15d0c (rel_ip = b6cd3bcc)
+               >lookup: e->start_ip_offset = 15c40 (rel_ip = b6cd3bcc)
+ >_Uarm_dwarf_search_unwind_table: IP b6cd3bcc inside range b6c12000-b6d4c000, but no explicit unwind info found
+                >put_rs_cache: unmasking signals/interrupts and releasing lock
+               >_Uarm_dwarf_step: returning -10
+ >_Uarm_step: dwarf_step()=-10
 
-Hmm, can we just define ARCH_FTRACE_SUPPORT_IPMODIFY here?
+This patch passes map->start as segbase to dwarf_find_debug_frame(), so
+di will be initialized correctly.
 
->  #endif
->  #define MCOUNT_INSN_SIZE	5 /* sizeof mcount call */
->  
-> diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-> index 1da6029..655ba99 100644
-> --- a/include/linux/ftrace.h
-> +++ b/include/linux/ftrace.h
-> @@ -244,6 +244,10 @@ static inline int ftrace_function_local_disabled(struct ftrace_ops *ops)
->  extern void ftrace_stub(unsigned long a0, unsigned long a1,
->  			struct ftrace_ops *op, struct pt_regs *regs);
->  
-> +#ifndef arch_ftrace_ipmodify_compiler_support
-> +/* let's not make any implicit assumptions about profiling call placement */
-> +# define arch_ftrace_ipmodify_compiler_support() { 0; }
-> +#endif
->  #else /* !CONFIG_FUNCTION_TRACER */
->  /*
->   * (un)register_ftrace_function must be a macro since the ops parameter
-> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-> index 929a733..11370fd 100644
-> --- a/kernel/trace/ftrace.c
-> +++ b/kernel/trace/ftrace.c
-> @@ -1809,6 +1809,11 @@ static int __ftrace_hash_update_ipmodify(struct ftrace_ops *ops,
->  	if (!(ops->flags & FTRACE_OPS_FL_IPMODIFY))
->  		return 0;
->  
-> +	if (!arch_ftrace_ipmodify_compiler_support()) {
-> +		WARN(1, "Your compiler doesn't support features necessary for IPMODIFY");
-> +		return 0;
-> +	}
+In addition, dso and executable are different when setting segbase. This
+patch first check whether the elf is executable, and pass segbase only
+for shared object.
 
-Actually, if ftrace doesn't support IPMODIFY, I would like to just drop
-the entire code for CONFIG_KPROBES_ON_FTRACE(this is a hidden config),
-instead of checking at runtime.
+Signed-off-by: Wang Nan <wangnan0@huawei.com>
+---
+ tools/perf/tests/dwarf-unwind.c    | 36 ++++++++++++++++++++++++++++++++++--
+ tools/perf/util/unwind-libunwind.c | 28 +++++++++++++++++++++++++++-
+ 2 files changed, 61 insertions(+), 3 deletions(-)
 
-So, there are 2 ifdefs of code in kernel/kprobes.c for
-CONFIG_KPROBES_ON_FTRACE, those should also check
-ARCH_FTRACE_SUPPORT_IPMODIFY too.
-
-Thank you,
-
-> +
->  	/*
->  	 * Since the IPMODIFY is a very address sensitive action, we do not
->  	 * allow ftrace_ops to set all functions to new hash.
-> 
-
-
+diff --git a/tools/perf/tests/dwarf-unwind.c b/tools/perf/tests/dwarf-unwind.c
+index ab28cca..0bf06be 100644
+--- a/tools/perf/tests/dwarf-unwind.c
++++ b/tools/perf/tests/dwarf-unwind.c
+@@ -11,6 +11,9 @@
+ #include "thread.h"
+ #include "callchain.h"
+ 
++/* For bsearch. We try to unwind functions in shared object. */
++#include <stdlib.h>
++
+ static int mmap_handler(struct perf_tool *tool __maybe_unused,
+ 			union perf_event *event,
+ 			struct perf_sample *sample __maybe_unused,
+@@ -28,7 +31,7 @@ static int init_live_machine(struct machine *machine)
+ 						  mmap_handler, machine, true);
+ }
+ 
+-#define MAX_STACK 6
++#define MAX_STACK 8
+ 
+ static int unwind_entry(struct unwind_entry *entry, void *arg)
+ {
+@@ -37,6 +40,8 @@ static int unwind_entry(struct unwind_entry *entry, void *arg)
+ 	static const char *funcs[MAX_STACK] = {
+ 		"test__arch_unwind_sample",
+ 		"unwind_thread",
++		"compare",
++		"bsearch",
+ 		"krava_3",
+ 		"krava_2",
+ 		"krava_1",
+@@ -88,10 +93,37 @@ static int unwind_thread(struct thread *thread)
+ 	return err;
+ }
+ 
++static int global_unwind_retval = -INT_MAX;
++
++__attribute__ ((noinline))
++static int compare(void *p1, void *p2)
++{
++	/* Any possible value should be 'thread' */
++	struct thread *thread = *(struct thread **)p1;
++
++	if (global_unwind_retval == -INT_MAX)
++		global_unwind_retval = unwind_thread(thread);
++
++	return p1 - p2;
++}
++
+ __attribute__ ((noinline))
+ static int krava_3(struct thread *thread)
+ {
+-	return unwind_thread(thread);
++	struct thread *array[2] = {thread, thread};
++	void *fp = &bsearch;
++	/*
++	 * make _bsearch a volatile function pointer to
++	 * prevent potential optimization, which may expand
++	 * bsearch and call compare directly from this function,
++	 * instead of libc shared object.
++	 */
++	void *(*volatile _bsearch)(void *, void *, size_t,
++			size_t, int (*)(void *, void *));
++
++	_bsearch = fp;
++	_bsearch(array, &thread, 2, sizeof(struct thread **), compare);
++	return global_unwind_retval;
+ }
+ 
+ __attribute__ ((noinline))
+diff --git a/tools/perf/util/unwind-libunwind.c b/tools/perf/util/unwind-libunwind.c
+index 371219a..6edf535 100644
+--- a/tools/perf/util/unwind-libunwind.c
++++ b/tools/perf/util/unwind-libunwind.c
+@@ -185,6 +185,28 @@ static u64 elf_section_offset(int fd, const char *name)
+ 	return offset;
+ }
+ 
++#ifndef NO_LIBUNWIND_DEBUG_FRAME
++static int elf_is_exec(int fd, const char *name)
++{
++	Elf *elf;
++	GElf_Ehdr ehdr;
++	int retval = 0;
++
++	elf = elf_begin(fd, PERF_ELF_C_READ_MMAP, NULL);
++	if (elf == NULL)
++		return 0;
++	if (gelf_getehdr(elf, &ehdr) == NULL)
++		goto out;
++
++	retval = (ehdr.e_type == ET_EXEC);
++
++out:
++	elf_end(elf);
++	pr_debug("unwind: elf_is_exec(%s): %d\n", name, retval);
++	return retval;
++}
++#endif
++
+ struct table_entry {
+ 	u32 start_ip_offset;
+ 	u32 fde_offset;
+@@ -322,8 +344,12 @@ find_proc_info(unw_addr_space_t as, unw_word_t ip, unw_proc_info_t *pi,
+ #ifndef NO_LIBUNWIND_DEBUG_FRAME
+ 	/* Check the .debug_frame section for unwinding info */
+ 	if (!read_unwind_spec_debug_frame(map->dso, ui->machine, &segbase)) {
++		int fd = dso__data_fd(map->dso, ui->machine);
++		int is_exec = elf_is_exec(fd, map->dso->name);
++		unw_word_t base = is_exec ? 0 : map->start;
++
+ 		memset(&di, 0, sizeof(di));
+-		if (dwarf_find_debug_frame(0, &di, ip, 0, map->dso->name,
++		if (dwarf_find_debug_frame(0, &di, ip, base, map->dso->name,
+ 					   map->start, map->end))
+ 			return dwarf_search_unwind_table(as, ip, &di, pi,
+ 							 need_unwind_info, arg);
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+1.8.4
 
