@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754043AbbANH0N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:26:13 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:57769 "EHLO
+	id S1754113AbbANH0Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:26:25 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:57774 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754004AbbANH0L (ORCPT
+	with ESMTP id S1754004AbbANH0R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:26:11 -0500
+	Wed, 14 Jan 2015 02:26:17 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Richard Weinberger <richard@nod.at>,
-        Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
-Subject: [PATCH 3.18 043/150] UBI: Fix double free after do_sync_erase()
-Date: Tue, 13 Jan 2015 23:21:54 -0800
-Message-Id: <20150114072057.822105580@linuxfoundation.org>
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        David Woodhouse <David.Woodhouse@intel.com>,
+        Joerg Roedel <jroedel@suse.de>
+Subject: [PATCH 3.18 044/150] iommu/vt-d: Fix an off-by-one bug in __domain_mapping()
+Date: Tue, 13 Jan 2015 23:21:55 -0800
+Message-Id: <20150114072057.865798612@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
 References: <20150114072055.842408181@linuxfoundation.org>
@@ -29,57 +30,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Richard Weinberger <richard@nod.at>
+From: Jiang Liu <jiang.liu@linux.intel.com>
 
-commit aa5ad3b6eb8feb2399a5d26c8fb0060561bb9534 upstream.
+commit cc4f14aa170d895c9a43bdb56f62070c8a6da908 upstream.
 
-If the erase worker is unable to erase a PEB it will
-free the ubi_wl_entry itself.
-The failing ubi_wl_entry must not free()'d again after
-do_sync_erase() returns.
+There's an off-by-one bug in function __domain_mapping(), which may
+trigger the BUG_ON(nr_pages < lvl_pages) when
+	(nr_pages + 1) & superpage_mask == 0
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
-Signed-off-by: Artem Bityutskiy <artem.bityutskiy@linux.intel.com>
+The issue was introduced by commit 9051aa0268dc "intel-iommu: Combine
+domain_pfn_mapping() and domain_sg_mapping()", which sets sg_res to
+"nr_pages + 1" to avoid some of the 'sg_res==0' code paths.
+
+It's safe to remove extra "+1" because sg_res is only used to calculate
+page size now.
+
+Reported-And-Tested-by: Sudeep Dutt <sudeep.dutt@intel.com>
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Acked-By: David Woodhouse <David.Woodhouse@intel.com>
+Signed-off-by: Joerg Roedel <jroedel@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/mtd/ubi/wl.c |   10 +++-------
- 1 file changed, 3 insertions(+), 7 deletions(-)
+ drivers/iommu/intel-iommu.c |    8 +++-----
+ 1 file changed, 3 insertions(+), 5 deletions(-)
 
---- a/drivers/mtd/ubi/wl.c
-+++ b/drivers/mtd/ubi/wl.c
-@@ -1212,7 +1212,6 @@ static int wear_leveling_worker(struct u
+--- a/drivers/iommu/intel-iommu.c
++++ b/drivers/iommu/intel-iommu.c
+@@ -1983,7 +1983,7 @@ static int __domain_mapping(struct dmar_
+ {
+ 	struct dma_pte *first_pte = NULL, *pte = NULL;
+ 	phys_addr_t uninitialized_var(pteval);
+-	unsigned long sg_res;
++	unsigned long sg_res = 0;
+ 	unsigned int largepage_lvl = 0;
+ 	unsigned long lvl_pages = 0;
  
- 	err = do_sync_erase(ubi, e1, vol_id, lnum, 0);
- 	if (err) {
--		kmem_cache_free(ubi_wl_entry_slab, e1);
- 		if (e2)
- 			kmem_cache_free(ubi_wl_entry_slab, e2);
- 		goto out_ro;
-@@ -1226,10 +1225,8 @@ static int wear_leveling_worker(struct u
- 		dbg_wl("PEB %d (LEB %d:%d) was put meanwhile, erase",
- 		       e2->pnum, vol_id, lnum);
- 		err = do_sync_erase(ubi, e2, vol_id, lnum, 0);
--		if (err) {
--			kmem_cache_free(ubi_wl_entry_slab, e2);
-+		if (err)
- 			goto out_ro;
--		}
+@@ -1994,10 +1994,8 @@ static int __domain_mapping(struct dmar_
+ 
+ 	prot &= DMA_PTE_READ | DMA_PTE_WRITE | DMA_PTE_SNP;
+ 
+-	if (sg)
+-		sg_res = 0;
+-	else {
+-		sg_res = nr_pages + 1;
++	if (!sg) {
++		sg_res = nr_pages;
+ 		pteval = ((phys_addr_t)phys_pfn << VTD_PAGE_SHIFT) | prot;
  	}
- 
- 	dbg_wl("done");
-@@ -1265,10 +1262,9 @@ out_not_moved:
- 
- 	ubi_free_vid_hdr(ubi, vid_hdr);
- 	err = do_sync_erase(ubi, e2, vol_id, lnum, torture);
--	if (err) {
--		kmem_cache_free(ubi_wl_entry_slab, e2);
-+	if (err)
- 		goto out_ro;
--	}
-+
- 	mutex_unlock(&ubi->move_mutex);
- 	return 0;
  
 
 
