@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932529AbbANHeS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:34:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58478 "EHLO
+	id S932186AbbANHaJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:30:09 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58131 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932486AbbANHeM (ORCPT
+	with ESMTP id S1751414AbbANHaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:34:12 -0500
+	Wed, 14 Jan 2015 02:30:05 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        Joerg Roedel <jroedel@suse.de>
-Subject: [PATCH 3.14 26/77] iommu/vt-d: Fix an off-by-one bug in __domain_mapping()
-Date: Tue, 13 Jan 2015 23:23:06 -0800
-Message-Id: <20150114072225.624111446@linuxfoundation.org>
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, Felipe Balbi <balbi@ti.com>,
+        Tony Lindgren <tony@atomide.com>
+Subject: [PATCH 3.18 116/150] ARM: dts: am437x-sk: fix lcd enable pin mux data
+Date: Tue, 13 Jan 2015 23:23:07 -0800
+Message-Id: <20150114072101.109927124@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-References: <20150114072224.182299947@linuxfoundation.org>
+In-Reply-To: <20150114072055.842408181@linuxfoundation.org>
+References: <20150114072055.842408181@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -26,58 +25,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.18-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Jiang Liu <jiang.liu@linux.intel.com>
+From: Felipe Balbi <balbi@ti.com>
 
-commit cc4f14aa170d895c9a43bdb56f62070c8a6da908 upstream.
+commit 58230c2c443bc9801293f6535144d04ceaf731e0 upstream.
 
-There's an off-by-one bug in function __domain_mapping(), which may
-trigger the BUG_ON(nr_pages < lvl_pages) when
-	(nr_pages + 1) & superpage_mask == 0
+Caused by a copy & paste error. Note that even with
+this bug AM437x SK display still works because GPIO
+mux mode is always enabled. It's still wrong to mux
+somebody else's pin.
 
-The issue was introduced by commit 9051aa0268dc "intel-iommu: Combine
-domain_pfn_mapping() and domain_sg_mapping()", which sets sg_res to
-"nr_pages + 1" to avoid some of the 'sg_res==0' code paths.
+Luckily ball D25 (offset 0x238 - gpio5_8) on AM437x
+isn't used for anything.
 
-It's safe to remove extra "+1" because sg_res is only used to calculate
-page size now.
+While at that, also replace a pullup with a pulldown
+as that gpio should be normally low, not high.
 
-Reported-And-Tested-by: Sudeep Dutt <sudeep.dutt@intel.com>
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Acked-By: David Woodhouse <David.Woodhouse@intel.com>
-Signed-off-by: Joerg Roedel <jroedel@suse.de>
+Acked-by: Tomi Valkeinen <tomi.valkeinen@ti.com>
+Signed-off-by: Felipe Balbi <balbi@ti.com>
+Signed-off-by: Tony Lindgren <tony@atomide.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/iommu/intel-iommu.c |    8 +++-----
- 1 file changed, 3 insertions(+), 5 deletions(-)
+ arch/arm/boot/dts/am437x-sk-evm.dts |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
---- a/drivers/iommu/intel-iommu.c
-+++ b/drivers/iommu/intel-iommu.c
-@@ -1768,7 +1768,7 @@ static int __domain_mapping(struct dmar_
- 	struct dma_pte *first_pte = NULL, *pte = NULL;
- 	phys_addr_t uninitialized_var(pteval);
- 	int addr_width = agaw_to_width(domain->agaw) - VTD_PAGE_SHIFT;
--	unsigned long sg_res;
-+	unsigned long sg_res = 0;
- 	unsigned int largepage_lvl = 0;
- 	unsigned long lvl_pages = 0;
+--- a/arch/arm/boot/dts/am437x-sk-evm.dts
++++ b/arch/arm/boot/dts/am437x-sk-evm.dts
+@@ -320,8 +320,7 @@
  
-@@ -1779,10 +1779,8 @@ static int __domain_mapping(struct dmar_
- 
- 	prot &= DMA_PTE_READ | DMA_PTE_WRITE | DMA_PTE_SNP;
- 
--	if (sg)
--		sg_res = 0;
--	else {
--		sg_res = nr_pages + 1;
-+	if (!sg) {
-+		sg_res = nr_pages;
- 		pteval = ((phys_addr_t)phys_pfn << VTD_PAGE_SHIFT) | prot;
- 	}
- 
+ 	lcd_pins: lcd_pins {
+ 		pinctrl-single,pins = <
+-			/* GPIO 5_8 to select LCD / HDMI */
+-			0x238 (PIN_OUTPUT_PULLUP | MUX_MODE7)
++			0x1c (PIN_OUTPUT_PULLDOWN | MUX_MODE7) /* gpcm_ad7.gpio1_7 */
+ 		>;
+ 	};
+ };
 
 
