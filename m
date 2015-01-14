@@ -1,174 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510AbbANPBU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 10:01:20 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:54951 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752957AbbANPBQ convert rfc822-to-8bit (ORCPT
+	id S1753334AbbANPDM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 10:03:12 -0500
+Received: from zabrina.hetzner-de.towertech.it ([178.63.16.19]:37458 "EHLO
+	zabrina.hetzner-de.towertech.it" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751008AbbANPDL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 10:01:16 -0500
-X-AuditID: cbfee61b-f79d76d0000024d6-cf-54b684b9a763
-Date: Wed, 14 Jan 2015 16:01:06 +0100
-From: Lukasz Majewski <l.majewski@samsung.com>
-To: Eduardo Valentin <edubezval@gmail.com>
-Cc: Kamil Debski <k.debski@samsung.com>, Jean Delvare <jdelvare@suse.de>,
-        Guenter Roeck <linux@roeck-us.net>, lm-sensors@lm-sensors.org,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        devicetree@vger.kernel.org, Lukasz Majewski <l.majewski@majess.pl>,
-        Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
-        Abhilash Kesavan <a.kesavan@samsung.com>
-Subject: Re: [PATCH v2 1/8] thermal: Provide stub for
- thermal_of_cooling_device_register() function
-Message-id: <20150114160106.20aa160b@amdc2363>
-In-reply-to: <20150102190339.GA22356@developer>
-References: <1418897591-18332-1-git-send-email-l.majewski@samsung.com>
- <1419265668-32283-1-git-send-email-l.majewski@samsung.com>
- <1419265668-32283-2-git-send-email-l.majewski@samsung.com>
- <20150102185426.GC12485@developer> <20150102190339.GA22356@developer>
-Organization: SPRC Poland
-X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 8BIT
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprIIsWRmVeSWpSXmKPExsVy+t9jAd2dLdtCDK7MsLF4vGYxk8X8I+dY
-	LeZfucZqsfTuJzaLH68vsFms+atk0bvgKpvFm0fcFpd3zWGz+Nx7hNFixvl9TBZPFp5hsrgz
-	bS+bxeE37awOfB47Z91l93gwcTebx7ppb5k9dn5vYPfo27KK0WPz6WqPz5vkAtijuGxSUnMy
-	y1KL9O0SuDKWtq1mL5ikWPG99QNTA+M3qS5GTg4JAROJAw9eMEHYYhIX7q1nA7GFBBYxSny8
-	5Q9h/2KUePeiEsRmEVCVuL9+K1gNm4CexOe7T8F6RQS0JE5c2g5kc3EwC0xjkVh9vZcdJCEs
-	kCpx+e5msAZeoIbVk1tZuxg5ODgF9CXWfpcHqRcS6GCSmDqlA2wQv4CkRPu/H8wQB9lJnPu0
-	gR2iV1Dix+R7LCA2s4C6xKR5i5ghbG2JJ+8usE5gFJyFpGwWkrJZSMoWMDKvYhRNLUguKE5K
-	zzXSK07MLS7NS9dLzs/dxAiOqGfSOxhXNVgcYhTgYFTi4XU4sjVEiDWxrLgy9xCjBAezkgjv
-	0/JtIUK8KYmVValF+fFFpTmpxYcYpTlYlMR5lezbQoQE0hNLUrNTUwtSi2CyTBycUg2MTPtE
-	7/7pnT2xqdvR8lzkYvNb19/ZpxZ/71adPXXH2nVcNzel6fqkZ1uInOt4+jRx6pSL/+9+Yt5g
-	zHL0t4HgxA1t4d8XOk9NWJ6iofz+oMeyfReeV+kb+q7v5f/+ZXPI/osfDQOtIm25vU4k/bje
-	weq8/4pumz6n2NYvopfcXq5ccfNGIHPudCWW4oxEQy3mouJEALyxwCakAgAA
+	Wed, 14 Jan 2015 10:03:11 -0500
+Date: Wed, 14 Jan 2015 16:03:08 +0100
+From: Alessandro Zummo <a.zummo@towertech.it>
+To: Xunlei Pang <pang.xunlei@linaro.org>
+Cc: Xunlei Pang <xlpang@126.com>, lkml <linux-kernel@vger.kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC PATCH v2 3/9] rtc/test: Update driver to address
+ y2038/y2106 issues
+Message-ID: <20150114160308.08a7f45b@linux.lan.towertech.it>
+In-Reply-To: <CADcy93WPZCmPLUsa9kmz6GtD7E3+8td1PJteJxnZi0R2mLAYKw@mail.gmail.com>
+References: <1421163897-8020-1-git-send-email-xlpang@126.com>
+	<1421163897-8020-4-git-send-email-xlpang@126.com>
+	<20150113171904.6b2327d5@linux.lan.towertech.it>
+	<CADcy93WPZCmPLUsa9kmz6GtD7E3+8td1PJteJxnZi0R2mLAYKw@mail.gmail.com>
+Organization: Tower Technologies
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eduardo,
+On Wed, 14 Jan 2015 22:56:15 +0800
+Xunlei Pang <pang.xunlei@linaro.org> wrote:
 
-> On Fri, Jan 02, 2015 at 02:54:28PM -0400, Eduardo Valentin wrote:
-> > On Mon, Dec 22, 2014 at 05:27:41PM +0100, Lukasz Majewski wrote:
-> > > Odroid U3 fan can work without being registered as OF cooling
-> > > device (with CONFIG_THERMAL_OF disabled).
-> > > In this situation it can be controlled via PWM entry at
-> > > /sys/class/hwmon/hwmon0/pwm1.
-> > > 
-> > > Therefore, the thermal_of_cooling_device_register() function
-> > > needs a stub to allow clean compilation.
-> > > 
-> > > Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
-> > 
-> > Acked-by: Eduardo Valentin <edubezval@gmail.com>
-> 
-> Sorry, too fast,
-> 
-> This is actually
-> Nacked-by: Eduardo Valentin <edubezval@gmail.com>
-> 
-> :-)
-> 
-> I get this error:
-> drivers/thermal/thermal_core.c:1210:1: error: redefinition of
-> ‘thermal_of_cooling_device_register’
->  thermal_of_cooling_device_register(struct device_node *np,
->   ^
->   In file included from drivers/thermal/thermal_core.c:34:0:
->   include/linux/thermal.h:321:1: note: previous definition of
->   ‘thermal_of_cooling_device_register’ was here
->    thermal_of_cooling_device_register(struct device_node *np,
->     ^
-> 
-> 
-> We provide the function in thermal core even if CONFIG_THERMAL_OF is
-> not set.
+> We want to do away with set_mmss() eventually, time64 is the final version,
+> so I think this would be ok.
 
-Unfortunately the PWM fan subsystem can work perfectly fine without
-CONFIG_THERMAL.
-
-I think that it would be enough to make something like this in
-the ./include/linux/thermal.h:
-
-#ifdef CONFIG_THERMAL
-	static inline struct thermal_cooling_device *
-		thermal_of_cooling_device_register(struct device_node
-		*np, char *type, void *devdata,
-				   const struct
-		thermal_cooling_device_ops *ops) {
-		return NULL;
-	}
-#else
-	[ already present declaration of
-	thermal_of_cooling_device_register() ]
-#endif /* CONFIG_THERMAL */
-
-
-
-> > 
-> > > ---
-> > > Changes for v2:
-> > > - None
-> > > ---
-> > >  include/linux/thermal.h | 14 +++++++++++---
-> > >  1 file changed, 11 insertions(+), 3 deletions(-)
-> > > 
-> > > diff --git a/include/linux/thermal.h b/include/linux/thermal.h
-> > > index 2de3d9e..871123c 100644
-> > > --- a/include/linux/thermal.h
-> > > +++ b/include/linux/thermal.h
-> > > @@ -328,6 +328,10 @@ thermal_zone_of_sensor_register(struct
-> > > device *dev, int id, void *data, const struct
-> > > thermal_zone_of_device_ops *ops); void
-> > > thermal_zone_of_sensor_unregister(struct device *dev, struct
-> > > thermal_zone_device *tz); +struct thermal_cooling_device *
-> > > +thermal_of_cooling_device_register(struct device_node *np,
-> > > +				   char *type, void *devdata,
-> > > +				   const struct
-> > > thermal_cooling_device_ops *); #else
-> > >  static inline struct thermal_zone_device *
-> > >  thermal_zone_of_sensor_register(struct device *dev, int id, void
-> > > *data, @@ -342,6 +346,13 @@ void
-> > > thermal_zone_of_sensor_unregister(struct device *dev, {
-> > >  }
-> > >  
-> > > +static inline struct thermal_cooling_device *
-> > > +thermal_of_cooling_device_register(struct device_node *np,
-> > > +				   char *type, void *devdata,
-> > > +				   const struct
-> > > thermal_cooling_device_ops *ops) +{
-> > > +	return NULL;
-> > > +}
-> > >  #endif
-> > >  struct thermal_zone_device *thermal_zone_device_register(const
-> > > char *, int, int, void *, struct thermal_zone_device_ops *,
-> > > @@ -357,9 +368,6 @@ void thermal_zone_device_update(struct
-> > > thermal_zone_device *); 
-> > >  struct thermal_cooling_device
-> > > *thermal_cooling_device_register(char *, void *, const struct
-> > > thermal_cooling_device_ops *); -struct thermal_cooling_device *
-> > > -thermal_of_cooling_device_register(struct device_node *np, char
-> > > *, void *,
-> > > -				   const struct
-> > > thermal_cooling_device_ops *); void
-> > > thermal_cooling_device_unregister(struct thermal_cooling_device
-> > > *); struct thermal_zone_device
-> > > *thermal_zone_get_zone_by_name(const char *name); int
-> > > thermal_zone_get_temp(struct thermal_zone_device *tz, unsigned
-> > > long *temp); -- 2.0.0.rc2
-> > > 
-> 
-> 
-
-
+ We'll get rid of set_mmss() from the test driver later on,
+ after everything else has been converted :)
 
 -- 
-Best regards,
 
-Lukasz Majewski
+ Best regards,
 
-Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
+ Alessandro Zummo,
+  Tower Technologies - Torino, Italy
+
+  http://www.towertech.it
+
