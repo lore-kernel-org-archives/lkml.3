@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933038AbbANHhj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:37:39 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58774 "EHLO
+	id S933307AbbANHln (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 02:41:43 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58989 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755077AbbANHha (ORCPT
+	with ESMTP id S933223AbbANHj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:37:30 -0500
+	Wed, 14 Jan 2015 02:39:29 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH 3.14 60/77] ARM: dts: Enable PWM node by default for s3c64xx
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        Jiri Kosina <jkosina@suse.cz>
+Subject: [PATCH 3.10 19/44] HID: roccat: potential out of bounds in pyra_sysfs_write_settings()
 Date: Tue, 13 Jan 2015 23:23:40 -0800
-Message-Id: <20150114072227.544083842@linuxfoundation.org>
+Message-Id: <20150114072228.597383674@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-References: <20150114072224.182299947@linuxfoundation.org>
+In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
+References: <20150114072227.419663002@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,51 +25,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.14-stable review patch.  If anyone has any objections, please let me know.
+3.10-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Tomasz Figa <tomasz.figa@gmail.com>
+From: Dan Carpenter <dan.carpenter@oracle.com>
 
-commit 5e794de514f56de1e78e979ca09c56a91aa2e9f1 upstream.
+commit 606185b20caf4c57d7e41e5a5ea4aff460aef2ab upstream.
 
-The PWM block is required for system clock source so it must be always
-enabled. This patch fixes boot issues on SMDK6410 which did not have
-the node enabled explicitly for other purposes.
+This is a static checker fix.  We write some binary settings to the
+sysfs file.  One of the settings is the "->startup_profile".  There
+isn't any checking to make sure it fits into the
+pyra->profile_settings[] array in the profile_activated() function.
 
-Fixes: eeb93d02 ("clocksource: of: Respect device tree node status")
+I added a check to pyra_sysfs_write_settings() in both places because
+I wasn't positive that the other callers were correct.
 
-Signed-off-by: Tomasz Figa <tomasz.figa@gmail.com>
-Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- arch/arm/boot/dts/s3c6410-mini6410.dts |    4 ----
- arch/arm/boot/dts/s3c64xx.dtsi         |    1 -
- 2 files changed, 5 deletions(-)
+ drivers/hid/hid-roccat-pyra.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
---- a/arch/arm/boot/dts/s3c6410-mini6410.dts
-+++ b/arch/arm/boot/dts/s3c6410-mini6410.dts
-@@ -198,10 +198,6 @@
- 	status = "okay";
- };
+--- a/drivers/hid/hid-roccat-pyra.c
++++ b/drivers/hid/hid-roccat-pyra.c
+@@ -35,6 +35,8 @@ static struct class *pyra_class;
+ static void profile_activated(struct pyra_device *pyra,
+ 		unsigned int new_profile)
+ {
++	if (new_profile >= ARRAY_SIZE(pyra->profile_settings))
++		return;
+ 	pyra->actual_profile = new_profile;
+ 	pyra->actual_cpi = pyra->profile_settings[pyra->actual_profile].y_cpi;
+ }
+@@ -236,9 +238,11 @@ static ssize_t pyra_sysfs_write_settings
+ 	if (off != 0 || count != PYRA_SIZE_SETTINGS)
+ 		return -EINVAL;
  
--&pwm {
--	status = "okay";
--};
+-	mutex_lock(&pyra->pyra_lock);
 -
- &pinctrl0 {
- 	gpio_leds: gpio-leds {
- 		samsung,pins = "gpk-4", "gpk-5", "gpk-6", "gpk-7";
---- a/arch/arm/boot/dts/s3c64xx.dtsi
-+++ b/arch/arm/boot/dts/s3c64xx.dtsi
-@@ -168,7 +168,6 @@
- 			clocks = <&clocks PCLK_PWM>;
- 			samsung,pwm-outputs = <0>, <1>;
- 			#pwm-cells = <3>;
--			status = "disabled";
- 		};
+ 	settings = (struct pyra_settings const *)buf;
++	if (settings->startup_profile >= ARRAY_SIZE(pyra->profile_settings))
++		return -EINVAL;
++
++	mutex_lock(&pyra->pyra_lock);
  
- 		pinctrl0: pinctrl@7f008000 {
+ 	retval = pyra_set_settings(usb_dev, settings);
+ 	if (retval) {
 
 
