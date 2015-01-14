@@ -1,43 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755940AbbANIkF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 03:40:05 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:48319 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755922AbbANIkA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 03:40:00 -0500
-Date: Wed, 14 Jan 2015 00:39:51 -0800
-From: Christoph Hellwig <hch@infradead.org>
-To: Richard Weinberger <richard@nod.at>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        user-mode-linux-devel@lists.sourceforge.net, dxld@darkboxed.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] hostfs: Use noop_fsync for directories
-Message-ID: <20150114083951.GA29714@infradead.org>
-References: <1421187358-32600-1-git-send-email-richard@nod.at>
- <20150113221958.GA27739@infradead.org>
- <54B59B9E.4000806@nod.at>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54B59B9E.4000806@nod.at>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1755994AbbANIl2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:41:28 -0500
+Received: from guitar.tcltek.co.il ([192.115.133.116]:42903 "EHLO
+	mx.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754188AbbANIlX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 03:41:23 -0500
+From: Baruch Siach <baruch@tkos.co.il>
+To: arm@kernel.org
+Cc: Mark Rutland <mark.rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Baruch Siach <baruch@tkos.co.il>
+Subject: [PATCH v3 0/4] ARM: Conexant Digicolor CX92755 SoC support
+Date: Wed, 14 Jan 2015 10:40:29 +0200
+Message-Id: <cover.1421219953.git.baruch@tkos.co.il>
+X-Mailer: git-send-email 2.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 11:26:38PM +0100, Richard Weinberger wrote:
-> hostfs tries do reduce the amount of syscall between guest and host as much
-> as possible. For file operations it passes everything down to the host but
-> for directory operations only ->iterate() does.
-> 
-> It is already horrible slow, if we add an ->open() for directory too it would
-> get even more slower. :-(
+This series adds initial support for the Conexant CX92755 SoC. The CX92755 is
+one of the Digicolor series of SoCs, all sharing many of the same peripherals.
+The code was tested on the CX92755 evaluation kit, AKA Equinox.
 
-This sounds fairlt dangerous.  At least add some good documentation
-explaining these semantics.
+Uses attempting to try this code will most likely also want the UART/console
+driver available from https://patchwork.kernel.org/patch/5515861/.
+
+v3:
+   * Remove earlyprintk from dts bootargs (Arnd Bergmann)
+
+   * Move aliases from chip .dtsi to board .dts (Arnd Bergmann)
+
+   * Add 'cpus' node (Mark Rutland)
+
+   * Add commit log messages to all patches (Arnd Bergmann)
+
+   * Add Arnd's ack
+
+   * Split arch/arm stuff from the irq and timer drivers
+
+v2:
+   http://marc.info/?t=142074613900007&r=1&w=2
+
+   * Remove .map_io assignment, debug_ll is enabled by default (Arnd Bergmann)
+
+   * Migrate the irq driver to generic irq chip, simplifying the code somewhat
+     (Arnd Bergmann)
+
+   * Change the timer dt binding, so that the 'reg' property points to the
+     first "Agent Communication" register. This should improve the chance of
+     reusing this binding for other SoCs in this series.
+
+   * Add the CONTROL() and COUNT() macros to the timer driver to make the code
+     clearer.
+
+   * Move arch/arm Kconfig changes from the clocksource driver patch to the
+     base arch support patch to reduce dependency between them
+
+v1:
+   http://thread.gmane.org/gmane.linux.kernel/1855027
+
+Baruch Siach (4):
+  ARM: initial support for Conexant Digicolor CX92755 SoC
+  ARM: digicolor: add low level debug support
+  ARM: digicolor: add minimal device tree description
+  ARM: devicetree: document supported Conexant Digicolor SoC
+
+ .../devicetree/bindings/arm/digicolor.txt          |   6 ++
+ arch/arm/Kconfig                                   |   2 +
+ arch/arm/Kconfig.debug                             |  12 ++-
+ arch/arm/boot/dts/Makefile                         |   1 +
+ arch/arm/boot/dts/conexant_equinox.dts             |  74 ++++++++++++++
+ arch/arm/boot/dts/cx92755.dtsi                     | 107 +++++++++++++++++++++
+ arch/arm/include/debug/digicolor.S                 |  35 +++++++
+ arch/arm/mach-digicolor/Kconfig                    |   5 +
+ arch/arm/mach-digicolor/Makefile                   |   1 +
+ arch/arm/mach-digicolor/digicolor.c                |  18 ++++
+ 10 files changed, 259 insertions(+), 2 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/arm/digicolor.txt
+ create mode 100644 arch/arm/boot/dts/conexant_equinox.dts
+ create mode 100644 arch/arm/boot/dts/cx92755.dtsi
+ create mode 100644 arch/arm/include/debug/digicolor.S
+ create mode 100644 arch/arm/mach-digicolor/Kconfig
+ create mode 100644 arch/arm/mach-digicolor/Makefile
+ create mode 100644 arch/arm/mach-digicolor/digicolor.c
+
+-- 
+2.1.4
 
