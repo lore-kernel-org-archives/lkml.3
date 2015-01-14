@@ -1,58 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753571AbbANP0j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 10:26:39 -0500
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:47489 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751631AbbANP0i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 10:26:38 -0500
+	id S1753764AbbANP1q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 10:27:46 -0500
+Received: from mail.kernel.org ([198.145.29.136]:45666 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751936AbbANP1p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 10:27:45 -0500
+Message-ID: <54B68AEA.7090406@kernel.org>
+Date: Thu, 15 Jan 2015 00:27:38 +0900
+From: Kukjin Kim <kgene@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.24) Gecko/20111108 Fedora/3.1.16-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.16
 MIME-Version: 1.0
-In-Reply-To: <20150114160308.08a7f45b@linux.lan.towertech.it>
-References: <1421163897-8020-1-git-send-email-xlpang@126.com>
-	<1421163897-8020-4-git-send-email-xlpang@126.com>
-	<20150113171904.6b2327d5@linux.lan.towertech.it>
-	<CADcy93WPZCmPLUsa9kmz6GtD7E3+8td1PJteJxnZi0R2mLAYKw@mail.gmail.com>
-	<20150114160308.08a7f45b@linux.lan.towertech.it>
-Date: Wed, 14 Jan 2015 23:26:37 +0800
-Message-ID: <CADcy93Vo6BoU6noPHXRCy7nYtW3q9DUZFXO4v9LE+iMn=Kk4cw@mail.gmail.com>
-Subject: Re: [RFC PATCH v2 3/9] rtc/test: Update driver to address y2038/y2106 issues
-From: Xunlei Pang <pang.xunlei@linaro.org>
-To: Alessandro Zummo <a.zummo@towertech.it>
-Cc: Xunlei Pang <xlpang@126.com>, lkml <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+To: Chanwoo Choi <cw00.choi@samsung.com>
+CC: Kukjin Kim <kgene@kernel.org>, ben-linux@fluff.org,
+        kyungmin.park@samsung.com, inki.dae@samsung.com,
+        k.kozlowski@samsung.com, b.zolnierkie@samsung.com,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RESEND PATCH] ARM: EXYNOS: Add exynos3250 suspend-to-ram support
+References: <1420681838-4292-1-git-send-email-cw00.choi@samsung.com> <54B38989.4030700@kernel.org> <54B38B24.20804@samsung.com> <54B393B9.6060806@kernel.org> <54B3A477.8080705@samsung.com>
+In-Reply-To: <54B3A477.8080705@samsung.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 January 2015 at 23:03, Alessandro Zummo <a.zummo@towertech.it> wrote:
-> On Wed, 14 Jan 2015 22:56:15 +0800
-> Xunlei Pang <pang.xunlei@linaro.org> wrote:
->
->> We want to do away with set_mmss() eventually, time64 is the final version,
->> so I think this would be ok.
->
->  We'll get rid of set_mmss() from the test driver later on,
->  after everything else has been converted :)
+On 01/12/15 19:39, Chanwoo Choi wrote:
+> Dear Kukjin,
+> 
+> On 01/12/2015 06:28 PM, Kukjin Kim wrote:
+>> On 01/12/15 17:51, Chanwoo Choi wrote:
+>>> Dear Kukjin,
+>>>
+>>> On 01/12/2015 05:44 PM, Kukjin Kim wrote:
+>>>> On 01/08/15 10:50, Chanwoo Choi wrote:
+>>>>> This patch adds the support for suspend-to-ram feature of Exynos3250 SoC.
+>>>>> Exynos3250 don't contain the L2 cache.
+>>>>>
+>>>>> Cc: Kukjin Kim <kgene@kernel.org>
+>>>>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>>>>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+>>>>> ---
+>>>>> Depend on:
+>>>>> - v3.19-rc3
+>>>>>
+>>>> Chanwoo,
+>>>>
+>>>> Can you please let me know why this is depending on v3.19-rc3?
+>>>> If I apply this on top of my tree not including some stuff between
+>>>> v3.19-rc1 and v3.19-rc3, is there a problem?
+>>>
+>>> No problem.
+>>> I'm sorry. It is my mistake about using meaning of dependency.
+>>> This patch can be applied on v3.19-rc1. I just tested it on v3.19-rc3.
+>>>
+>> OK, applied.
+> 
+> Thanks for your apply.
+> 
+> I check this patch on your git repository on following:
+> https://git.kernel.org/cgit/linux/kernel/git/kgene/linux-samsung.git/commit/?h=v3.20-next/update-samsung&id=e2fb3668567d0b70563cca0d1e350afd5053e4a3
+> 
+> Although this patch contains a little decription of patch,
+> applied patch don't include any description of patch.
+> 
+> If you possible, please add the description of patch.
+> 
+You're right. Maybe I've missed the contents when I applied.
 
-Ok.
-
-But on the other hand, we will have no test for  set_mmss64(),
-because adding the set_mmss64() will make set_mmss() dysfunctional.
+I've just restored your git log with small modification.
 
 Thanks,
-Xunlei
->
-> --
->
->  Best regards,
->
->  Alessandro Zummo,
->   Tower Technologies - Torino, Italy
->
->   http://www.towertech.it
->
+Kukjin
