@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754543AbbANVvE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 16:51:04 -0500
-Received: from fieldses.org ([174.143.236.118]:38490 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752501AbbANVu7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 16:50:59 -0500
-Date: Wed, 14 Jan 2015 16:50:57 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] nfsd: nfs4state: Remove unused function
-Message-ID: <20150114215057.GA7071@fieldses.org>
-References: <1421182644-8258-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421182644-8258-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S932074AbbANVw1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 16:52:27 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:45704 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754123AbbANVwY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 16:52:24 -0500
+Date: Wed, 14 Jan 2015 16:52:20 -0500 (EST)
+Message-Id: <20150114.165220.2282566005036464131.davem@davemloft.net>
+To: xander.huff@ni.com
+Cc: nicolas.ferre@atmel.com, netdev@vger.kernel.org, jaeden.amero@ni.com,
+        rich.tollerton@ni.com, ben.shelton@ni.com, brad.mouring@ni.com,
+        linux-kernel@vger.kernel.org, cyrille.pitchen@atmel.com
+Subject: Re: [PATCH 1/2] fixup! net/macb: Adding comments to various #defs
+ to make interpretation easier
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <54B6DD2A.1050502@ni.com>
+References: <1421266881-17314-1-git-send-email-xander.huff@ni.com>
+	<20150114.160929.619787519481343067.davem@davemloft.net>
+	<54B6DD2A.1050502@ni.com>
+X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Wed, 14 Jan 2015 13:52:23 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 09:57:24PM +0100, Rickard Strandqvist wrote:
-> Remove the function renew_client() that is not used anywhere.
-> 
-> This was partially found by using a static code analysis program called cppcheck.
+From: Xander Huff <xander.huff@ni.com>
+Date: Wed, 14 Jan 2015 15:18:34 -0600
 
-Huh.  OK, queueing up for 3.20.--b.
+> On 1/14/2015 3:09 PM, David Miller wrote:
+>>
+>> As I mentioned, this won't do.
+>>
+>> I've already applied your original patches to net-next, therefore you
+>> will
+>> have to submit fixups relative to that.
+>>
+> These fixup commits are relative to an updated net-next, specifically
+> "237de6e Merge branch 'hip04'".
+> 
+> Do you need them relative to (what I'm seeing is the latest) "2733135
+> Merge branch 'vxlan_rco'"?
 
-> 
-> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> ---
->  fs/nfsd/nfs4state.c |   10 ----------
->  1 file changed, 10 deletions(-)
-> 
-> diff --git a/fs/nfsd/nfs4state.c b/fs/nfsd/nfs4state.c
-> index e9c3afe..5d63c5c 100644
-> --- a/fs/nfsd/nfs4state.c
-> +++ b/fs/nfsd/nfs4state.c
-> @@ -150,16 +150,6 @@ renew_client_locked(struct nfs4_client *clp)
->  	clp->cl_time = get_seconds();
->  }
->  
-> -static inline void
-> -renew_client(struct nfs4_client *clp)
-> -{
-> -	struct nfsd_net *nn = net_generic(clp->net, nfsd_net_id);
-> -
-> -	spin_lock(&nn->client_lock);
-> -	renew_client_locked(clp);
-> -	spin_unlock(&nn->client_lock);
-> -}
-> -
->  static void put_client_renew_locked(struct nfs4_client *clp)
->  {
->  	struct nfsd_net *nn = net_generic(clp->net, nfsd_net_id);
-> -- 
-> 1.7.10.4
-> 
+Why don't you make your subject lines and commit messages just say what
+they are doing, rather than just saying "fix this other change"?
