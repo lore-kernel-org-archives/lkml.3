@@ -1,90 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752589AbbANMmp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 07:42:45 -0500
-Received: from mailscan33.extendcp.co.uk ([79.170.42.5]:52721 "EHLO
-	mailscan1.extendcp.co.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752361AbbANMmo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 07:42:44 -0500
-X-Greylist: delayed 927 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Jan 2015 07:42:43 EST
-From: Mark Glover <mark@actisense.com>
-To: johan@kernel.org, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Mark Glover <mark@actisense.com>
-Subject: [PATCH] Added PIDs for Actisense USB Devices Signed-off-by: Mark Glover <mark@actisense.com>
-Date: Wed, 14 Jan 2015 12:25:14 +0000
-Message-Id: <1421238314-2974-1-git-send-email-mark@actisense.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Authenticated-As: mark.glover@actisense.com
-X-Extend-Src: mailout
+	id S1753108AbbANM1M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 07:27:12 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:55022 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751872AbbANM1K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 07:27:10 -0500
+Message-ID: <54B6607D.5040107@ti.com>
+Date: Wed, 14 Jan 2015 14:26:37 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Paul Walmsley <paul@pwsan.com>
+CC: Lokesh Vutla <lokeshvutla@ti.com>, <tony@atomide.com>,
+        <santosh.shilimkar@oracle.com>, <t-kristo@ti.com>, <nm@ti.com>,
+        <nsekhar@ti.com>, <bcousson@baylibre.com>,
+        <linux-omap@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <s-anna@ti.com>
+Subject: Re: [PATCH] ARM: OMAP2+: hwmod: Fix _wait_target_ready() for hwmods
+ without sysc
+References: <1418917790-1791-1-git-send-email-rogerq@ti.com> <5492F84E.7020706@ti.com> <alpine.DEB.2.02.1501020654050.27058@utopia.booyaka.com> <54AA4CD4.40105@ti.com> <alpine.DEB.2.02.1501060202540.28771@utopia.booyaka.com> <54AD166C.9060507@ti.com> <alpine.DEB.2.02.1501132345220.28034@utopia.booyaka.com>
+In-Reply-To: <alpine.DEB.2.02.1501132345220.28034@utopia.booyaka.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Glover <mark@actisense.com>
+On 14/01/15 01:46, Paul Walmsley wrote:
+> On Wed, 7 Jan 2015, Roger Quadros wrote:
+> 
+>>> From: Paul Walmsley <paul@pwsan.com>
+>>> Date: Mon, 5 Jan 2015 15:49:57 -0700
+>>> Subject: [PATCH] Only skip ioremap() if IP block does not have OCP header
+>>>  registers. Experimental.
+>>>
+>>> ---
+>>>  arch/arm/mach-omap2/omap_hwmod.c | 33 +++++++++++++++++++++------------
+>>>  1 file changed, 21 insertions(+), 12 deletions(-)
+>>>
+>>> diff --git a/arch/arm/mach-omap2/omap_hwmod.c b/arch/arm/mach-omap2/omap_hwmod.c
+>>> index cbb908dc5cf0..03df8833d399 100644
+>>> --- a/arch/arm/mach-omap2/omap_hwmod.c
+>>> +++ b/arch/arm/mach-omap2/omap_hwmod.c
+>>> @@ -1938,6 +1938,8 @@ static int _reset(struct omap_hwmod *oh)
+>>>  	pr_debug("omap_hwmod: %s: resetting\n", oh->name);
+>>>  
+>>>  	if (oh->class->reset) {
+>>> +		WARN(!oh->_mpu_rt_va, "Attempt to call custom reset with no MPU register target ioremapped: %s",
+>>> +		     oh->name);
+>>
+>> Not part of $subject.
+> 
+> Hmm, how do you mean?  If we skip the ioremap(), wouldn't you like to know 
+> before some custom reset code gets called that pretty much always depends 
+> on the ioremap() succeeding? :-)
 
----
- drivers/usb/serial/ftdi_sio.c     |   17 +++++++++++++++++
- drivers/usb/serial/ftdi_sio_ids.h |   21 +++++++++++++++++++++
- 2 files changed, 38 insertions(+)
+Ah yes. you are right.
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index 1ebb351..a118e5b 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -978,6 +978,23 @@ static const struct usb_device_id id_table_combined[] = {
- 	{ USB_DEVICE_INTERFACE_NUMBER(INFINEON_VID, INFINEON_TRIBOARD_PID, 1) },
- 	/* GE Healthcare devices */
- 	{ USB_DEVICE(GE_HEALTHCARE_VID, GE_HEALTHCARE_NEMO_TRACKER_PID) },
-+	/* Active Research (Actisense) devices */
-+	{ USB_DEVICE(FTDI_VID, ACTISENSE_NDC_PID) },
-+	{ USB_DEVICE(FTDI_VID, ACTISENSE_USG_PID) },
-+	{ USB_DEVICE(FTDI_VID, ACTISENSE_NGT_PID) },
-+	{ USB_DEVICE(FTDI_VID, ACTISENSE_NGW_PID) },
-+	{ USB_DEVICE(FTDI_VID, ACTISENSE_D9AC_PID) },
-+	{ USB_DEVICE(FTDI_VID, ACTISENSE_D9AD_PID) },
-+	{ USB_DEVICE(FTDI_VID, ACTISENSE_D9AE_PID) },
-+	{ USB_DEVICE(FTDI_VID, ACTISENSE_D9AF_PID) },
-+	{ USB_DEVICE(FTDI_VID, CHETCO_SEAGAUGE_PID) },
-+	{ USB_DEVICE(FTDI_VID, CHETCO_SEAGAUGE__PID) },
-+	{ USB_DEVICE(FTDI_VID, CHETCO_SEASMART_NMEA2000_PID) },
-+	{ USB_DEVICE(FTDI_VID, CHETCO_SEASMART_ETHERNET_PID) },
-+	{ USB_DEVICE(FTDI_VID, CHETCO_SEASMART_WIFI_PID) },
-+	{ USB_DEVICE(FTDI_VID, CHETCO_SEASMART_DISPLAY_PID) },
-+	{ USB_DEVICE(FTDI_VID, CHETCO_SEASMART_LITE_PID) },
-+	{ USB_DEVICE(FTDI_VID, CHETCO_SEASMART_ANALOG_PID) },
- 	{ }					/* Terminating entry */
- };
- 
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index e52409c..8ccd1b6 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -1438,3 +1438,24 @@
-  */
- #define GE_HEALTHCARE_VID		0x1901
- #define GE_HEALTHCARE_NEMO_TRACKER_PID	0x0015
-+
-+/*
-+ * Active Research (Actisense) devices
-+ */
-+#define ACTISENSE_NDC_PID		0xD9A8 /* NDC USB Serial Adapter */
-+#define ACTISENSE_USG_PID		0xD9A9 /* USG USB Serial Adapter */
-+#define ACTISENSE_NGT_PID		0xD9AA /* NGT NMEA2000 Interface */
-+#define ACTISENSE_NGW_PID		0xD9AB /* NGW NMEA2000 Gateway */
-+#define ACTISENSE_D9AC_PID		0xD9AC /* Actisense Reserved */
-+#define ACTISENSE_D9AD_PID		0xD9AD /* Actisense Reserved */
-+#define ACTISENSE_D9AE_PID		0xD9AE /* Actisense Reserved */
-+#define ACTISENSE_D9AF_PID		0xD9AF /* Actisense Reserved */
-+#define CHETCO_SEAGAUGE_PID		0xA548 /* SeaGauge USB Adapter */
-+#define CHETCO_SEAGAUGE__PID		0xA549 /* SeaSwitch USG Apadter */
-+#define CHETCO_SEASMART_NMEA2000_PID	0xA54A /* SeaSmart NMEA2000 Gateway */
-+#define CHETCO_SEASMART_ETHERNET_PID	0xA54B /* SeaSmart Ethernet Gateway */
-+#define CHETCO_SEASMART_WIFI_PID	0xA5AC /* SeaSmart Wifi Gateway */
-+#define CHETCO_SEASMART_DISPLAY_PID	0xA5AD /* SeaSmart NMEA2000 Display */
-+#define CHETCO_SEASMART_LITE_PID	0xA5AE /* SeaSmart Lite USB Adapter */
-+#define CHETCO_SEASMART_ANALOG_PID	0xA5AF /* SeaSmart Analog Adapter */
-+
--- 
-1.7.9.5
+> 
+>>>  		r = oh->class->reset(oh);
+>>>  	} else {
+>>>  		if (oh->rst_lines_cnt > 0) {
+>>> @@ -2358,15 +2360,19 @@ static int of_dev_hwmod_lookup(struct device_node *np,
+>>>  }
+>>>  
+>>>  /**
+>>> - * _init_mpu_rt_base - populate the virtual address for a hwmod
+>>> + * _init_mpu_rt_base - populate the MPU port and virtual address
+>>>   * @oh: struct omap_hwmod * to locate the virtual address
+>>>   * @data: (unused, caller should pass NULL)
+>>>   * @index: index of the reg entry iospace in device tree
+>>>   * @np: struct device_node * of the IP block's device node in the DT data
+>>>   *
+>>> - * Cache the virtual address used by the MPU to access this IP block's
+>>> - * registers.  This address is needed early so the OCP registers that
+>>> - * are part of the device's address space can be ioremapped properly.
+>>> + * Cache the interconnect target port and the virtual address used by
+>>> + * the MPU to access this IP block's registers.  The address is needed
+>>> + * early so the OCP registers that are part of the device's address
+>>> + * space can be ioremapped properly.  The presence or absence of the
+>>> + * interconnect target port also indicates whether the hwmod code
+>>> + * should wait for the IP block to indicate readiness after it is
+>>> + * enabled.
+>>>   *
+>>>   * Returns 0 on success, -EINVAL if an invalid hwmod is passed, and
+>>>   * -ENXIO on absent or invalid register target address space.
+>>> @@ -2385,6 +2391,13 @@ static int __init _init_mpu_rt_base(struct omap_hwmod *oh, void *data,
+>>>  	if (oh->_int_flags & _HWMOD_NO_MPU_PORT)
+>>>  		return -ENXIO;
+>>>  
+>>> +	/*
+>>> +	 * If there's no need for the hwmod code to read or write to
+>>> +	 * the IP block registers, bail out early before the ioremap()
+>>> +	 */
+>>> +	if (!oh->class->sysc)
+>>> +		return 0;
+>>> +
+>>>  	mem = _find_mpu_rt_addr_space(oh);
+>>>  	if (!mem) {
+>>>  		pr_debug("omap_hwmod: %s: no MPU register target found\n",
+>>> @@ -2451,14 +2464,10 @@ static int __init _init(struct omap_hwmod *oh, void *data)
+>>>  				oh->name, np->name);
+>>>  	}
+>>>  
+>>> -	if (oh->class->sysc) {
+>>> -		r = _init_mpu_rt_base(oh, NULL, index, np);
+>>> -		if (r < 0) {
+>>> -			WARN(1, "omap_hwmod: %s: doesn't have mpu register target base\n",
+>>> -			     oh->name);
+>>> -			return 0;
+>>> -		}
+>>> -	}
+>>> +	r = _init_mpu_rt_base(oh, NULL, index, np);
+>>> +	if (r < 0)
+>>> +		pr_debug("omap_hwmod: %s: doesn't have mpu register target base\n",
+>>> +			 oh->name);
+>>
+>> This is the real piece that fixes the issue.
+>>
+>>>  
+>>>  	r = _init_clocks(oh, NULL);
+>>>  	if (r < 0) {
+>>>
+>>
+>> I've tested this patch on am43x-gp-evm, and it seems to fix the issue 
+>> although with some unpleasant warning messages.
+> 
+> Could you paste those in?
+> 
+I can't reproduce what I saw earlier. Sorry for the noise.
+
+cheers,
+-roger
 
