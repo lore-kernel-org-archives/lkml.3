@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933104AbbANHiI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 02:38:08 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:58838 "EHLO
+	id S1755225AbbANIAc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 03:00:32 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58554 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932319AbbANHiG (ORCPT
+	with ESMTP id S1754676AbbANHfE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 02:38:06 -0500
+	Wed, 14 Jan 2015 02:35:04 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: linux-kernel@vger.kernel.org
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, stable@vger.kernel.org,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH 3.10 03/44] ath9k: fix BE/BK queue order
+        Ahmed Tamrawi <ahmedtamrawi@gmail.com>,
+        Oliver Neukum <oneukum@suse.de>
+Subject: [PATCH 3.14 44/77] cdc-acm: memory leak in error case
 Date: Tue, 13 Jan 2015 23:23:24 -0800
-Message-Id: <20150114072227.606417250@linuxfoundation.org>
+Message-Id: <20150114072226.697435481@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.2
-In-Reply-To: <20150114072227.419663002@linuxfoundation.org>
-References: <20150114072227.419663002@linuxfoundation.org>
+In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
+References: <20150114072224.182299947@linuxfoundation.org>
 User-Agent: quilt/0.63-1
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
@@ -25,37 +25,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.10-stable review patch.  If anyone has any objections, please let me know.
+3.14-stable review patch.  If anyone has any objections, please let me know.
 
 ------------------
 
-From: Felix Fietkau <nbd@openwrt.org>
+From: Oliver Neukum <oneukum@suse.de>
 
-commit 78063d81d353e10cbdd279c490593113b8fdae1c upstream.
+commit d908f8478a8d18e66c80a12adb27764920c1f1ca upstream.
 
-Hardware queues are ordered by priority. Use queue index 0 for BK, which
-has lower priority than BE.
+If probe() fails not only the attributes need to be removed
+but also the memory freed.
 
-Signed-off-by: Felix Fietkau <nbd@openwrt.org>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Reported-by: Ahmed Tamrawi <ahmedtamrawi@gmail.com>
+Signed-off-by: Oliver Neukum <oneukum@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ---
- drivers/net/wireless/ath/ath9k/hw.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/class/cdc-acm.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/net/wireless/ath/ath9k/hw.h
-+++ b/drivers/net/wireless/ath/ath9k/hw.h
-@@ -215,8 +215,8 @@
- #define AH_WOW_BEACON_MISS		BIT(3)
- 
- enum ath_hw_txq_subtype {
--	ATH_TXQ_AC_BE = 0,
--	ATH_TXQ_AC_BK = 1,
-+	ATH_TXQ_AC_BK = 0,
-+	ATH_TXQ_AC_BE = 1,
- 	ATH_TXQ_AC_VI = 2,
- 	ATH_TXQ_AC_VO = 3,
- };
+--- a/drivers/usb/class/cdc-acm.c
++++ b/drivers/usb/class/cdc-acm.c
+@@ -1449,6 +1449,7 @@ alloc_fail8:
+ 				&dev_attr_wCountryCodes);
+ 		device_remove_file(&acm->control->dev,
+ 				&dev_attr_iCountryCodeRelDate);
++		kfree(acm->country_codes);
+ 	}
+ 	device_remove_file(&acm->control->dev, &dev_attr_bmCapabilities);
+ alloc_fail7:
 
 
