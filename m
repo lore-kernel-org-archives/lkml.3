@@ -1,76 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752007AbbANUqh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 15:46:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:42003 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750719AbbANUqg (ORCPT
+	id S1752325AbbANUrP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 15:47:15 -0500
+Received: from mx0a-00082601.pphosted.com ([67.231.145.42]:40805 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752035AbbANUrO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 15:46:36 -0500
-Date: Wed, 14 Jan 2015 12:46:35 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: ashishsangwan2@gmail.com
-Cc: linux-kernel@vger.kernel.org, Ashish Sangwan <a.sangwan@samsung.com>,
-        Namjae Jeon <namjae.jeon@samsung.com>
-Subject: Re: [PATCH] driver core: access dev->driver under dev->mutex in
- dev_uevent
-Message-ID: <20150114204635.GD31119@kroah.com>
-References: <1421259054-2574-1-git-send-email-a.sangwan@samsung.com>
+	Wed, 14 Jan 2015 15:47:14 -0500
+Date: Wed, 14 Jan 2015 12:46:53 -0800
+From: Calvin Owens <calvinowens@fb.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+CC: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        Peter Feiner <pfeiner@google.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Siddhesh Poyarekar <siddhesh.poyarekar@gmail.com>,
+        <linux-kernel@vger.kernel.org>, <kernel-team@fb.com>,
+        Pavel Emelyanov <xemul@openvz.org>
+Subject: Re: [RFC][PATCH] procfs: Add /proc/<pid>/mapped_files
+Message-ID: <20150114204653.GA26698@mail.thefacebook.com>
+References: <1421194829-28696-1-git-send-email-calvinowens@fb.com>
+ <20150114152501.GB9820@node.dhcp.inet.fi>
+ <20150114153323.GF2253@moon>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <1421259054-2574-1-git-send-email-a.sangwan@samsung.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20150114153323.GF2253@moon>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Originating-IP: [192.168.16.4]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-14_05:2015-01-14,2015-01-14,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0 kscore.is_bulkscore=0
+ kscore.compositescore=0 circleOfTrustscore=0
+ compositescore=0.128698695412054 urlsuspect_oldscore=0.128698695412054
+ suspectscore=0 recipient_domain_to_sender_totalscore=0 phishscore=0
+ bulkscore=0 kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=2524143
+ rbsscore=0.128698695412054 spamscore=0
+ recipient_to_sender_domain_totalscore=12 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1501140204
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 14, 2015 at 11:40:54PM +0530, ashishsangwan2@gmail.com wrote:
-> From: Ashish Sangwan <a.sangwan@samsung.com>
+On Wednesday 01/14 at 18:33 +0300, Cyrill Gorcunov wrote:
+> On Wed, Jan 14, 2015 at 05:25:01PM +0200, Kirill A. Shutemov wrote:
+> ...
+> > > 
+> > > This gives lsof and suchlike a way to determine the pathnames of files
+> > > mapped into a process without incurring the O(N^2) behavior of the
+> > > maps file.
+> > 
+> > We already have /proc/PID/map_files/ directory which lists all mapped
+> > files. Should we consider relaxing permission checking there and move it
+> > outside CONFIG_CHECKPOINT_RESTORE instead?
+> > 
+> > Restriction to CAP_SYSADMIN for follow_link is undertansble, but why do we
+> > restrict readdir and readlink?
 > 
-> We have hit a race condition while parallely accessing device's uevent
-> and rmmoding device's driver.
+> We didn't think this functionality might be needed someone but us (criu camp),
+> so that the rule of thumb was CONFIG_CHECKPOINT_RESTORE + CAP_SYSADMIN, until
+> otherwise strictly needed. So I think now we can relax security rules a bit
+> and allow to readdir and such for owners.
 
-How are you doing that?  By reading the uevent file and removing the
-device?
+Ah, I feel silly for missing that. I'll send a patch to move map_files
+out from behind CONFIG_CHECKPOINT_RESTORE and change the permissions.
 
-Removing a kernel module is not a "normal" thing at all, so this type of
-"error" is very low on anyone's list.
-
-> In dev_uevent() first dev->driver is checked if
-> present which becomes true but before calling add_uevent_var 
-> dev->driver is set to NULL and driver is freed in __device_release_driver().
-> This results in either NULL pointer derefrence or invalid virtual address
-> access. Fix this race by accessing dev->driver under dev->mutex.
-> 
-> Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
-> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-> ---
->  drivers/base/core.c | 7 +++++++
->  1 file changed, 7 insertions(+)
-> 
-> diff --git a/drivers/base/core.c b/drivers/base/core.c
-> index 97e2baf..f8e854a 100644
-> --- a/drivers/base/core.c
-> +++ b/drivers/base/core.c
-> @@ -326,8 +326,15 @@ static int dev_uevent(struct kset *kset, struct kobject *kobj,
->  	if (dev->type && dev->type->name)
->  		add_uevent_var(env, "DEVTYPE=%s", dev->type->name);
->  
-> +	/*
-> +	 * dev->driver is set NULL under dev->mutex so it should be checked
-> +	 * after acquiring dev->mutex. This prevents a race between 
-> +	 * __device_release_driver and dev_uevent.
-> +	 */
-> +	device_lock(dev);
->  	if (dev->driver)
->  		add_uevent_var(env, "DRIVER=%s", dev->driver->name);
-> +	device_unlock(dev);
-
-Always run your patches through checkpatch before sending them out so
-you don't get grumpy email responses about how you need to run patches
-through checkpatch before sending them out...
-
-thanks,
-
-greg k-h
+Thanks,
+Calvin
