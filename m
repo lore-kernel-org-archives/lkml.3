@@ -1,73 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753587AbbAORHh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 12:07:37 -0500
-Received: from mx2.parallels.com ([199.115.105.18]:57994 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751219AbbAORHg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 12:07:36 -0500
-Date: Thu, 15 Jan 2015 20:07:26 +0300
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Michal Hocko <mhocko@suse.cz>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -mm v2] vmscan: move reclaim_state handling to shrink_slab
-Message-ID: <20150115170726.GH11264@esperanza>
-References: <1421311073-28130-1-git-send-email-vdavydov@parallels.com>
- <20150115125820.GE7000@dhcp22.suse.cz>
- <20150115132516.GG11264@esperanza>
- <20150115144838.GI7000@dhcp22.suse.cz>
+	id S1754678AbbAORIG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 12:08:06 -0500
+Received: from mta-out1.inet.fi ([62.71.2.203]:34909 "EHLO jenni2.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754396AbbAORIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 12:08:04 -0500
+Date: Thu, 15 Jan 2015 19:07:31 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Darren Hart <dvhart@infradead.org>
+Subject: Re: [GIT PULL] platform-drivers-x86 for 3.19
+Message-ID: <20150115170731.GB21675@node.dhcp.inet.fi>
+References: <20150112183831.GA99900@vmdeb7>
+ <CAObL_7FCiZJuTQNUfqjoxaRscB+_2fvwpnXDt3d8E+0dFm=i6A@mail.gmail.com>
+ <20150112200331.GA23277@node.dhcp.inet.fi>
+ <CAObL_7FwxW=oq9L+POVx_4S9HSZW2QM3bnTNW37rDsUA=-U3FA@mail.gmail.com>
+ <20150112203003.GB23277@node.dhcp.inet.fi>
+ <CAObL_7HNXAxnoNx-K=yJ1C9kkffc9Rf=EmVGJ+=K+5S40m7jSQ@mail.gmail.com>
+ <20150113175609.GB130525@vmdeb7>
+ <CAObL_7HDckMzgbbaKEH=iYwRdn24ANy5U8EMp=A3ODhWMt_2bw@mail.gmail.com>
+ <20150115164054.GA21675@node.dhcp.inet.fi>
+ <CAObL_7GvVtiBye4s7=EoV_wuBzGMBZLFnqYwNG5gkKW4SjneVQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150115144838.GI7000@dhcp22.suse.cz>
+In-Reply-To: <CAObL_7GvVtiBye4s7=EoV_wuBzGMBZLFnqYwNG5gkKW4SjneVQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 15, 2015 at 03:48:38PM +0100, Michal Hocko wrote:
-> On Thu 15-01-15 16:25:16, Vladimir Davydov wrote:
-> > 		memcg = mem_cgroup_iter(root, NULL, &reclaim);
-> > 		do {
-> > 			[...]
-> > 			if (memcg && is_classzone)
-> > 				shrink_slab(sc->gfp_mask, zone_to_nid(zone),
-> > 					    memcg, sc->nr_scanned - scanned,
-> > 					    lru_pages);
-> > 
-> > 			/*
-> > 			 * Direct reclaim and kswapd have to scan all memory
-> > 			 * cgroups to fulfill the overall scan target for the
-> > 			 * zone.
-> > 			 *
-> > 			 * Limit reclaim, on the other hand, only cares about
-> > 			 * nr_to_reclaim pages to be reclaimed and it will
-> > 			 * retry with decreasing priority if one round over the
-> > 			 * whole hierarchy is not sufficient.
-> > 			 */
-> > 			if (!global_reclaim(sc) &&
-> > 					sc->nr_reclaimed >= sc->nr_to_reclaim) {
-> > 				mem_cgroup_iter_break(root, memcg);
-> > 				break;
-> > 			}
-> > 			memcg = mem_cgroup_iter(root, memcg, &reclaim);
-> > 		} while (memcg);
-> > 
-> > 
-> > If we can ignore reclaimed slab pages here (?), let's drop this patch.
+On Thu, Jan 15, 2015 at 09:00:44AM -0800, Andrew Lutomirski wrote:
+> On Jan 15, 2015 8:43 AM, "Kirill A. Shutemov" <kirill@shutemov.name> wrote:
+> >
+> > On Tue, Jan 13, 2015 at 10:04:55AM -0800, Andrew Lutomirski wrote:
+> > > On Tue, Jan 13, 2015 at 9:56 AM, Darren Hart <dvhart@infradead.org> wrote:
+> > > > On Mon, Jan 12, 2015 at 02:12:44PM -0800, Andrew Lutomirski wrote:
+> > > >> On Mon, Jan 12, 2015 at 12:30 PM, Kirill A. Shutemov
+> > > >> <kirill@shutemov.name> wrote:
+> > > >> > On Mon, Jan 12, 2015 at 12:05:45PM -0800, Andrew Lutomirski wrote:
+> > > >> >> On Mon, Jan 12, 2015 at 12:03 PM, Kirill A. Shutemov
+> > > >> >> <kirill@shutemov.name> wrote:
+> > > >> >> > On Mon, Jan 12, 2015 at 10:42:11AM -0800, Andrew Lutomirski wrote:
+> > > >> >> >> On Mon, Jan 12, 2015 at 10:38 AM, Darren Hart <dvhart@infradead.org> wrote:
+> > > >> >> >> > On Mon, Jan 12, 2015 at 12:58:02AM +0200, Kirill A. Shutemov wrote:
+> > > >> >> >> >> On Thu, Dec 18, 2014 at 09:51:27AM -0800, Darren Hart wrote:
+> > > >> >> >> >> > thinkpad-acpi using software mute simplifies the driver and the user experience
+> > > >> >> >> >> > significantly.
+> > > >> >> >> >>
+> > > >> >> >> >> Except when it doesn't.
+> > > >> >> >> >>
+> > > >> >> >> >> I'm probably in minority, but I don't use fancy userspace to mess with my
+> > > >> >> >> >> mixer and the mute button worked just fine for me before the change.
+> > > >> >> >> >> Wasted half an hour to find out what happened is not a pure win from user
+> > > >> >> >> >> experience point of view.
+> > > >> >> >> >>
+> > > >> >> >> >> Is it really necessary to have software_mute_requested == true by default?
+> > > >> >> >> >> Can fancy userspace ask for desired behaviour instead and change kernel to
+> > > >> >> >> >> not send hotkeys change notification until software_mute is enabled?
+> > > >> >> >> >>
+> > > >> >> >> >> --
+> > > >> >> >> >>  Kirill A. Shutemov
+> > > >> >> >> >>
+> > > >> >> >> >
+> > > >> >> >> > Thanks for the report Kirill,
+> > > >> >> >> >
+> > > >> >> >> > Andy, we're at RC4, so if we need to fix (or revert) this fix, we only have a
+> > > >> >> >> > couple weeks to do so.
+> > > >> >> >> >
+> > > >> >> >> > Kirill, to define the scope of the problem, if you specify
+> > > >> >> >> > software_mute_requested as false on the kernel command line, does your system
+> > > >> >> >> > function as expected?
+> > > >> >> >>
+> > > >> >> >> If I understood Kirill's email correctly, the only issue is that he
+> > > >> >> >> liked the old behavior.  Kirill, is that correct?
+> > > >> >> >
+> > > >> >> > Yes. For now I use thinkpad_acpi.software_mute=0 to get old behaviour.
+> > > >> >> >
+> > > >> >>
+> > > >> >> What aspect of the old behavior is better than the new default behavior?
+> > > >> >
+> > > >> > It's not necessary better. The new behavior just broke my use-case.
+> > > >> >
+> > > >> > I don't have anything in my system what would react on KEY_MUTE and I used
+> > > >> > the functionality platform provides until it suddenly stopped working.
+> > > >> >
+> > > >> > I personally can live with new thinkpad_acpi. I'll probably update my
+> > > >> > configuration to react on the software button.
+> > > >> >
+> > > >> > But who else will get frustrated after update to v3.19?
+> > > >>
+> > > >> Can you try the equivalent of:
+> > > >>
+> > > >> bindsym XF86AudioMute exec amixer -q set Master toggle
+> > > >>
+> > > >> for your desktop environment?  Note that this is exactly what you'd do
+> > > >> if you were using any laptop that wasn't a thinkpad.
+> > > >
+> > > > Unless we hear back from Kirill on why this isn't workable, I'm inclined to
+> > > > leave this as is. Between the kernel module option and this keybinding,
+> > > > equivalent behavior can be easily achieved, and the general use case is
+> > > > significantly improved.
+> > > >
+> > > > The current gap appears to be the mute LED in the button itself, which can be
+> > > > addressed moving forward.
+> > >
+> > > I should have clarified this better.  The command:
+> > >
+> > > amixer -q set Master toggle
+> > >
+> > > should toggle the mute LED in sync with the master mixer on all
+> > > ThinkPad models with a mute LED.  This works on my X220, and Borislav
+> > > confirmed off-list that it works on his X230.  If there's a ThinkPad
+> > > with a mute LED on which this doesn't work, then IMO it's a bug and
+> > > should be fixed.
+> >
+> > Okay. Mute and mute led works. Any idea how to get mic mute led work?
+> > What happend to your patch on the topic?
+> >
+> > http://permalink.gmane.org/gmane.linux.drivers.platform.x86.devel/1962
 > 
-> I see what you are trying to achieve but can this lead to a serious
-> over-reclaim?
+> It was addressed differently -- the mic mute works like the mute
+> button as a result of:
+> 
+> b317b032d2dc ALSA: hda - Split Thinkpad ACPI-related code
+> b67ae3f1c97e ALSA: hda - Enable Thinkpad mute/micmute LEDs for Realtek
+> 08cf680ccafd ALSA: hda - add connection to thinkpad_acpi to control
+> mute/micmute LEDs
+> 
+> On my X220, "amixer set Capture toggle" toggles the mute LED.
 
-I think it can, but only if we shrink an inode with lots of pages
-attached to its address space (they also count to reclaim_state). In
-this case, we overreclaim anyway though.
+Oh. Thanks. I've tried with "Mic", not "Capture".
 
-I agree that this is a high risk for a vague benefit. Let's drop it
-until we see this problem in real life.
-
-Thanks,
-Vladimir
+-- 
+ Kirill A. Shutemov
