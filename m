@@ -1,96 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754503AbbAOOJ4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 09:09:56 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:39326 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754431AbbAOOJy (ORCPT
+	id S1754817AbbAOOKr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 09:10:47 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:52169 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754125AbbAOOKn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 09:09:54 -0500
-Message-ID: <54B7CA30.1010806@atmel.com>
-Date: Thu, 15 Jan 2015 15:09:52 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Thu, 15 Jan 2015 09:10:43 -0500
 MIME-Version: 1.0
-To: Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/7] AT91 cleanup for 3.20 #1
-References: <1421088136-10172-1-git-send-email-alexandre.belloni@free-electrons.com> <20150112202603.6a7b691d@bbrezillon>
-In-Reply-To: <20150112202603.6a7b691d@bbrezillon>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.161.30.18]
+In-Reply-To: <3538097.dWBy3R9lty@wuerfel>
+References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org>
+ <1797489.PjmKzBFdQA@wuerfel> <20150106112000.GA8829@e104818-lin.cambridge.arm.com>
+ <3538097.dWBy3R9lty@wuerfel>
+From: Grant Likely <grant.likely@linaro.org>
+Date: Thu, 15 Jan 2015 14:10:22 +0000
+X-Google-Sender-Auth: GHKEaulzfYfUAdeG8IuOWnPw0Go
+Message-ID: <CACxGe6tjiE6u8i-1PHYzX2cOhxJkYN3cV9mqhCHRSMRdOQRfzg@mail.gmail.com>
+Subject: Re: [Linaro-acpi] [PATCH v5 18/18] Documentation: ACPI for ARM64
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linaro-acpi <linaro-acpi@lists.linaro.org>, Rob Herring <robh@kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>, Robert Richter <rric@kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Robert Moore <robert.moore@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        "jcm@redhat.com" <jcm@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Olof Johansson <olof@lixom.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 12/01/2015 20:26, Boris Brezillon a écrit :
-> Hi Alexandre,
-> 
-> On Mon, 12 Jan 2015 19:42:09 +0100
-> Alexandre Belloni <alexandre.belloni@free-electrons.com> wrote:
-> 
->> Hi,
+On Tue, Jan 6, 2015 at 1:59 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Tuesday 06 January 2015 11:20:01 Catalin Marinas wrote:
+>> On Mon, Jan 05, 2015 at 08:16:30PM +0000, Arnd Bergmann wrote:
+>> > On Monday 05 January 2015 13:13:02 Catalin Marinas wrote:
+>> > > > since passing no DT tables to OS but
+>> > > > acpi=force is missing is a corner case, we can do a follow up patch to
+>> > > > fix that, does it make sense?
+>> > >
+>> > > Not entirely. Why would no dtb and no acpi=force be a corner case? I
+>> > > thought this should be the default when only ACPI tables are passed, no
+>> > > need for an additional acpi=force argument.
+>> >
+>> > We don't really support the case of only ACPI tables for now. The expectation
+>> > is that you always have working DT support, at least for the next few years
+>> > as ACPI features are ramping up, and without acpi=force it should not try
+>> > to use ACPI at all.
 >>
->> This patch set cleans a lot of remaining header, config options and functions
->> that are not used anymore since the switch to DT only.
+>> So if both DT and ACPI are present, just use DT unless acpi=force is
+>> passed. So far I think we agree but what I want to avoid is always
+>> mandating acpi=force even when the DT tables are missing (in the long
+>> run).
 >>
->> Patch 5 is moving mach/debug-macro.S to include/debug/at91.S to prepare the
->> upcoming switch to multiplatform.
->>
-> 
-> Thanks for those cleanup changes.
-> 
-> To the whole series:
-> 
-> Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+>> Now, what's preventing a vendor firmware from providing only ACPI
+>> tables? Do we enforce it in some way (arm-acpi.txt, kernel warning etc.)
+>> that both DT and ACPI are supported, or at least that dts files are
+>> merged in the kernel first?
+>
+> We have no way of enforcing what a board vendor ships, so if they want
+> to have ACPI-only machines for MS Windows, they just won't work by
+> default on Linux. Once ACPI support is mature enough, we can also
+> have a whitelist or a different default for using it automatically
+> when no DT is present.
+>
+> For drivers merged upstream, I would insist that every driver merged
+> for an ARM64 platform has a documented DT binding that is used in the
+> driver.
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+That's a dumb rule. It will result in untested DT code paths being
+thrown into drivers just too meet the rules rather than on whether or
+not they will actually be used. It's fine to allow driver authors to
+only implement the ACPI code path if that is what they are working
+with. We can *always* add a DT path to the driver when it is needed.
 
-With the change noted in patch 6/7, all queued on at91-3.20-at91. Thanks.
+As you say, wecannot insist that vendors implement DT as well as ACPI.
+The most we can do is offer the recommendation that DT works now, but
+ACPI is immature for ARM. If they choose to do ACPI only, that is
+absolutely fine and they do so with the understanding that it will
+take time to stabilize to the point that we're comfortable
+guaranteeing support in mainline. However, that doesn't even remotely
+block getting each of their drivers merged as they become ready.
 
-
->> Alexandre Belloni (7):
->>   ARM: at91: remove unused mach/memory.h
->>   ARM: at91: remove useless config MACH_AT91RM9200_DT
->>   ARM: at91: remove useless config MACH_AT91SAM9_DT
->>   ARM: at91: remove useless at91_sysirq_mask_rtx
->>   ARM: at91: move debug-macro.S into the common space
->>   ARM: at91: remove useless at91rm9200_dt_initialize()
->>   ARM: at91: remove useless at91rm9200_set_type()
->>
->>  MAINTAINERS                                        |  1 +
->>  arch/arm/Kconfig.debug                             |  9 ++-
->>  .../mach/debug-macro.S => include/debug/at91.S}    | 19 +++---
->>  arch/arm/mach-at91/Kconfig                         |  8 ---
->>  arch/arm/mach-at91/Makefile                        |  6 +-
->>  arch/arm/mach-at91/at91sam9260.c                   |  2 -
->>  arch/arm/mach-at91/at91sam9261.c                   |  2 -
->>  arch/arm/mach-at91/at91sam9263.c                   |  3 -
->>  arch/arm/mach-at91/at91sam9g45.c                   |  3 -
->>  arch/arm/mach-at91/at91sam9n12.c                   |  6 --
->>  arch/arm/mach-at91/at91sam9rl.c                    |  3 -
->>  arch/arm/mach-at91/at91sam9x5.c                    | 10 ---
->>  arch/arm/mach-at91/board-dt-rm9200.c               |  2 +-
->>  arch/arm/mach-at91/generic.h                       |  6 --
->>  arch/arm/mach-at91/include/mach/at91_rtt.h         | 35 ----------
->>  arch/arm/mach-at91/include/mach/memory.h           | 26 --------
->>  arch/arm/mach-at91/sama5d3.c                       |  6 --
->>  arch/arm/mach-at91/setup.c                         | 18 ------
->>  arch/arm/mach-at91/sysirq_mask.c                   | 75 ----------------------
->>  19 files changed, 23 insertions(+), 217 deletions(-)
->>  rename arch/arm/{mach-at91/include/mach/debug-macro.S => include/debug/at91.S} (68%)
->>  delete mode 100644 arch/arm/mach-at91/include/mach/at91_rtt.h
->>  delete mode 100644 arch/arm/mach-at91/include/mach/memory.h
->>  delete mode 100644 arch/arm/mach-at91/sysirq_mask.c
->>
-> 
-> 
-> 
-
-
--- 
-Nicolas Ferre
+g.
