@@ -1,314 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755808AbbAOS4g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 13:56:36 -0500
-Received: from forward-corp1m.cmail.yandex.net ([5.255.216.100]:60180 "EHLO
-	forward-corp1m.cmail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752989AbbAOS4a (ORCPT
+	id S1755684AbbAOSt5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 13:49:57 -0500
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:56283 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755637AbbAOStz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 13:56:30 -0500
-Authentication-Results: smtpcorp1m.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-Subject: [PATCH 6/6] memcg: filesystem bandwidth controller
-From: Konstantin Khebnikov <khlebnikov@yandex-team.ru>
-To: linux-mm@kvack.org, cgroups@vger.kernel.org
-Cc: Roman Gushchin <klamm@yandex-team.ru>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, linux-fsdevel@vger.kernel.org,
-        koct9i@gmail.com
-Date: Thu, 15 Jan 2015 21:49:18 +0300
-Message-ID: <20150115184918.10450.86621.stgit@buzz>
-In-Reply-To: <20150115180242.10450.92.stgit@buzz>
-References: <20150115180242.10450.92.stgit@buzz>
-User-Agent: StGit/0.17.1-dirty
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Thu, 15 Jan 2015 13:49:55 -0500
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: Ralf Baechle <ralf@linux-mips.org>, David Daney <david.daney@cavium.com>,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
+Cc: Hemmo Nieminen <hemmo.nieminen@iki.fi>, stable@vger.kernel.org,
+        Aaro Koskinen <aaro.koskinen@iki.fi>
+Subject: [PATCH 1/2] MIPS: OCTEON: fix kernel crash when offlining a CPU
+Date: Thu, 15 Jan 2015 20:49:26 +0200
+Message-Id: <1421347767-21740-1-git-send-email-aaro.koskinen@iki.fi>
+X-Mailer: git-send-email 2.2.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Konstantin Khlebnikov <khlebnikov@yandex-team.ru>
+octeon_cpu_disable() will unconditionally enable interrupts when called
+with interrupts disabled. Fix that.
 
-This is example of filesystem bandwidth controller build on the top of
-dirty memory accounting, percpu_ratelimit and delay-injection.
+The patch fixes the following crash when offlining a CPU:
 
-Cgroup charges read/write requests into rate-limiters and injects delays
-which controls overall speed.
+[   93.818785] ------------[ cut here ]------------
+[   93.823421] WARNING: CPU: 1 PID: 10 at kernel/smp.c:231 flush_smp_call_function_queue+0x1c4/0x1d0()
+[   93.836215] Modules linked in:
+[   93.839287] CPU: 1 PID: 10 Comm: migration/1 Not tainted 3.19.0-rc4-octeon-los_b5f0 #1
+[   93.847212] Stack : 0000000000000001 ffffffff81b2cf90 0000000000000004 ffffffff81630000
+	  0000000000000000 0000000000000000 0000000000000000 000000000000004a
+	  0000000000000006 ffffffff8117e550 0000000000000000 0000000000000000
+	  ffffffff81b30000 ffffffff81b26808 8000000032c77748 ffffffff81627e07
+	  ffffffff81595ec8 ffffffff81b26808 000000000000000a 0000000000000001
+	  0000000000000001 0000000000000003 0000000010008ce1 ffffffff815030c8
+	  8000000032cbbb38 ffffffff8113d42c 0000000010008ce1 ffffffff8117f36c
+	  8000000032c77300 8000000032cbba50 0000000000000001 ffffffff81503984
+	  0000000000000000 0000000000000000 0000000000000000 0000000000000000
+	  0000000000000000 ffffffff81121668 0000000000000000 0000000000000000
+	  ...
+[   93.912819] Call Trace:
+[   93.915273] [<ffffffff81121668>] show_stack+0x68/0x80
+[   93.920335] [<ffffffff81503984>] dump_stack+0x6c/0x90
+[   93.925395] [<ffffffff8113d58c>] warn_slowpath_common+0x94/0xd8
+[   93.931324] [<ffffffff811a402c>] flush_smp_call_function_queue+0x1c4/0x1d0
+[   93.938208] [<ffffffff811a4128>] hotplug_cfd+0xf0/0x108
+[   93.943444] [<ffffffff8115bacc>] notifier_call_chain+0x5c/0xb8
+[   93.949286] [<ffffffff8113d704>] cpu_notify+0x24/0x60
+[   93.954348] [<ffffffff81501738>] take_cpu_down+0x38/0x58
+[   93.959670] [<ffffffff811b343c>] multi_cpu_stop+0x154/0x180
+[   93.965250] [<ffffffff811b3768>] cpu_stopper_thread+0xd8/0x160
+[   93.971093] [<ffffffff8115ea4c>] smpboot_thread_fn+0x1ec/0x1f8
+[   93.976936] [<ffffffff8115ab04>] kthread+0xd4/0xf0
+[   93.981735] [<ffffffff8111c4f0>] ret_from_kernel_thread+0x14/0x1c
+[   93.987835]
+[   93.989326] ---[ end trace c9e3815ee655bda9 ]---
+[   93.993951] Kernel bug detected[#1]:
+[   93.997533] CPU: 1 PID: 10 Comm: migration/1 Tainted: G        W      3.19.0-rc4-octeon-los_b5f0 #1
+[   94.006591] task: 8000000032c77300 ti: 8000000032cb8000 task.ti: 8000000032cb8000
+[   94.014081] $ 0   : 0000000000000000 0000000010000ce1 0000000000000001 ffffffff81620000
+[   94.022146] $ 4   : 8000000002c72ac0 0000000000000000 00000000000001a7 ffffffff813b06f0
+[   94.030210] $ 8   : ffffffff813b20d8 0000000000000000 0000000000000000 ffffffff81630000
+[   94.038275] $12   : 0000000000000087 0000000000000000 0000000000000086 0000000000000000
+[   94.046339] $16   : ffffffff81623168 0000000000000001 0000000000000000 0000000000000008
+[   94.054405] $20   : 0000000000000001 0000000000000001 0000000000000001 0000000000000003
+[   94.062470] $24   : 0000000000000038 ffffffff813b7f10
+[   94.070536] $28   : 8000000032cb8000 8000000032cbbc20 0000000010008ce1 ffffffff811bcaf4
+[   94.078601] Hi    : 0000000000f188e8
+[   94.082179] Lo    : d4fdf3b646c09d55
+[   94.085760] epc   : ffffffff811bc9d0 irq_work_run_list+0x8/0xf8
+[   94.091686]     Tainted: G        W
+[   94.095613] ra    : ffffffff811bcaf4 irq_work_run+0x34/0x60
+[   94.101192] Status: 10000ce3	KX SX UX KERNEL EXL IE
+[   94.106235] Cause : 40808034
+[   94.109119] PrId  : 000d9301 (Cavium Octeon II)
+[   94.113653] Modules linked in:
+[   94.116721] Process migration/1 (pid: 10, threadinfo=8000000032cb8000, task=8000000032c77300, tls=0000000000000000)
+[   94.127168] Stack : 8000000002c74c80 ffffffff811a4128 0000000000000001 ffffffff81635720
+	  fffffffffffffff2 ffffffff8115bacc 80000000320fbce0 80000000320fbca4
+	  80000000320fbc80 0000000000000002 0000000000000004 ffffffff8113d704
+	  80000000320fbce0 ffffffff81501738 0000000000000003 ffffffff811b343c
+	  8000000002c72aa0 8000000002c72aa8 ffffffff8159cae8 ffffffff8159caa0
+	  ffffffff81650000 80000000320fbbf0 80000000320fbc80 ffffffff811b32e8
+	  0000000000000000 ffffffff811b3768 ffffffff81622b80 ffffffff815148a8
+	  8000000032c77300 8000000002c73e80 ffffffff815148a8 8000000032c77300
+	  ffffffff81622b80 ffffffff815148a8 8000000032c77300 ffffffff81503f48
+	  ffffffff8115ea0c ffffffff81620000 0000000000000000 ffffffff81174d64
+	  ...
+[   94.192771] Call Trace:
+[   94.195222] [<ffffffff811bc9d0>] irq_work_run_list+0x8/0xf8
+[   94.200802] [<ffffffff811bcaf4>] irq_work_run+0x34/0x60
+[   94.206036] [<ffffffff811a4128>] hotplug_cfd+0xf0/0x108
+[   94.211269] [<ffffffff8115bacc>] notifier_call_chain+0x5c/0xb8
+[   94.217111] [<ffffffff8113d704>] cpu_notify+0x24/0x60
+[   94.222171] [<ffffffff81501738>] take_cpu_down+0x38/0x58
+[   94.227491] [<ffffffff811b343c>] multi_cpu_stop+0x154/0x180
+[   94.233072] [<ffffffff811b3768>] cpu_stopper_thread+0xd8/0x160
+[   94.238914] [<ffffffff8115ea4c>] smpboot_thread_fn+0x1ec/0x1f8
+[   94.244757] [<ffffffff8115ab04>] kthread+0xd4/0xf0
+[   94.249555] [<ffffffff8111c4f0>] ret_from_kernel_thread+0x14/0x1c
+[   94.255654]
+[   94.257146]
+Code: a2423c40  40026000  30420001 <00020336> dc820000  10400037  00000000  0000010f  0000010f
+[   94.267183] ---[ end trace c9e3815ee655bdaa ]---
+[   94.271804] Fatal exception: panic in 5 seconds
 
-Interface:
-memory.fs_bps_limit     bytes per second, 0 == unlimited
-memory.fs_iops_limit    iops limit, 0 == unlimited
-Statistics: fs_io_bytes and fs_io_operations in memory.stat
-
-For small bandwidth limits memory limit also must be set into corresponded
-value otherwise injected delay after writing dirty-set might be enormous.
-
-Signed-off-by: Konstantin Khlebnikov <khlebnikov@yandex-team.ru>
+Reported-by: Hemmo Nieminen <hemmo.nieminen@iki.fi>
+Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+Cc: stable@vger.kernel.org
 ---
- block/blk-core.c           |    2 +
- fs/direct-io.c             |    2 +
- include/linux/memcontrol.h |    4 ++
- mm/memcontrol.c            |  102 +++++++++++++++++++++++++++++++++++++++++++-
- mm/readahead.c             |    2 +
- 5 files changed, 110 insertions(+), 2 deletions(-)
+ arch/mips/cavium-octeon/smp.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index 3ad4055..799f5f5 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -1966,6 +1966,7 @@ void submit_bio(int rw, struct bio *bio)
- 			count_vm_events(PGPGOUT, count);
- 		} else {
- 			task_io_account_read(bio->bi_iter.bi_size);
-+			mem_cgroup_account_bandwidth(bio->bi_iter.bi_size);
- 			count_vm_events(PGPGIN, count);
- 		}
- 
-@@ -2208,6 +2209,7 @@ void blk_account_io_start(struct request *rq, bool new_io)
- 		}
- 		part_round_stats(cpu, part);
- 		part_inc_in_flight(part, rw);
-+		mem_cgroup_account_ioop();
- 		rq->part = part;
- 	}
- 
-diff --git a/fs/direct-io.c b/fs/direct-io.c
-index e181b6b..9c60a82 100644
---- a/fs/direct-io.c
-+++ b/fs/direct-io.c
-@@ -24,6 +24,7 @@
- #include <linux/types.h>
- #include <linux/fs.h>
- #include <linux/mm.h>
-+#include <linux/memcontrol.h>
- #include <linux/slab.h>
- #include <linux/highmem.h>
- #include <linux/pagemap.h>
-@@ -775,6 +776,7 @@ submit_page_section(struct dio *dio, struct dio_submit *sdio, struct page *page,
- 		 * Read accounting is performed in submit_bio()
- 		 */
- 		task_io_account_write(len);
-+		mem_cgroup_account_bandwidth(len);
- 	}
- 
- 	/*
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 3f89e9b..633310e 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -183,6 +183,8 @@ bool mem_cgroup_dirty_limits(struct address_space *mapping, unsigned long *dirty
- bool mem_cgroup_dirty_exceeded(struct inode *inode);
- void mem_cgroup_poke_writeback(struct address_space *mapping,
- 			       struct mem_cgroup *memcg);
-+void mem_cgroup_account_bandwidth(unsigned long bytes);
-+void mem_cgroup_account_ioop(void);
- 
- #else /* CONFIG_MEMCG */
- struct mem_cgroup;
-@@ -362,6 +364,8 @@ static inline bool mem_cgroup_dirty_limits(struct address_space *mapping, unsign
- static inline bool mem_cgroup_dirty_exceeded(struct inode *inode) { return false; }
- static inline void mem_cgroup_poke_writeback(struct address_space *mapping,
- 					     struct mem_cgroup *memcg) { }
-+static inline void mem_cgroup_account_bandwidth(unsigned long bytes) {}
-+static inline void mem_cgroup_account_ioop(void) {}
- 
- #endif /* CONFIG_MEMCG */
- 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index d9d345c..f49fbbf 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -27,6 +27,7 @@
- 
- #include <linux/page_counter.h>
- #include <linux/memcontrol.h>
-+#include <linux/percpu_ratelimit.h>
- #include <linux/cgroup.h>
- #include <linux/mm.h>
- #include <linux/hugetlb.h>
-@@ -368,6 +369,9 @@ struct mem_cgroup {
- 	unsigned int dirty_exceeded;
- 	unsigned int dirty_ratio;
- 
-+	struct percpu_ratelimit iobw;
-+	struct percpu_ratelimit ioop;
-+
- 	struct mem_cgroup_per_node *nodeinfo[0];
- 	/* WARNING: nodeinfo must be the last member here */
- };
-@@ -3762,6 +3766,12 @@ static int memcg_stat_show(struct seq_file *m, void *v)
- 	seq_printf(m, "fs_dirty_threshold %llu\n", (u64)PAGE_SIZE *
- 			memcg->dirty_threshold);
- 
-+	seq_printf(m, "fs_io_bytes %llu\n",
-+			percpu_ratelimit_sum(&memcg->iobw));
-+	seq_printf(m, "fs_io_operations %llu\n",
-+			percpu_ratelimit_sum(&memcg->ioop));
-+
-+
- #ifdef CONFIG_DEBUG_VM
- 	{
- 		int nid, zid;
-@@ -3833,6 +3843,40 @@ static int mem_cgroup_dirty_ratio_write(struct cgroup_subsys_state *css,
- 	return 0;
- }
- 
-+static u64 mem_cgroup_get_bps_limit(
-+		struct cgroup_subsys_state *css, struct cftype *cft)
-+{
-+	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
-+
-+	return percpu_ratelimit_quota(&memcg->iobw, NSEC_PER_SEC);
-+}
-+
-+static int mem_cgroup_set_bps_limit(
-+		struct cgroup_subsys_state *css, struct cftype *cft, u64 val)
-+{
-+	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
-+
-+	percpu_ratelimit_setup(&memcg->iobw, val, NSEC_PER_SEC);
-+	return 0;
-+}
-+
-+static u64 mem_cgroup_get_iops_limit(
-+		struct cgroup_subsys_state *css, struct cftype *cft)
-+{
-+	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
-+
-+	return percpu_ratelimit_quota(&memcg->ioop, NSEC_PER_SEC);
-+}
-+
-+static int mem_cgroup_set_iops_limit(
-+		struct cgroup_subsys_state *css, struct cftype *cft, u64 val)
-+{
-+	struct mem_cgroup *memcg = mem_cgroup_from_css(css);
-+
-+	percpu_ratelimit_setup(&memcg->ioop, val, NSEC_PER_SEC);
-+	return 0;
-+}
-+
- static void __mem_cgroup_threshold(struct mem_cgroup *memcg, bool swap)
+diff --git a/arch/mips/cavium-octeon/smp.c b/arch/mips/cavium-octeon/smp.c
+index ecd903d..9673c5b 100644
+--- a/arch/mips/cavium-octeon/smp.c
++++ b/arch/mips/cavium-octeon/smp.c
+@@ -231,6 +231,7 @@ DEFINE_PER_CPU(int, cpu_state);
+ static int octeon_cpu_disable(void)
  {
- 	struct mem_cgroup_threshold_ary *t;
-@@ -4489,6 +4533,16 @@ static struct cftype mem_cgroup_files[] = {
- 		.write_u64 = mem_cgroup_dirty_ratio_write,
- 	},
- 	{
-+		.name = "fs_bps_limit",
-+		.read_u64 = mem_cgroup_get_bps_limit,
-+		.write_u64 = mem_cgroup_set_bps_limit,
-+	},
-+	{
-+		.name = "fs_iops_limit",
-+		.read_u64 = mem_cgroup_get_iops_limit,
-+		.write_u64 = mem_cgroup_set_iops_limit,
-+	},
-+	{
- 		.name = "move_charge_at_immigrate",
- 		.read_u64 = mem_cgroup_move_charge_read,
- 		.write_u64 = mem_cgroup_move_charge_write,
-@@ -4621,7 +4675,9 @@ static struct mem_cgroup *mem_cgroup_alloc(void)
- 		return NULL;
+ 	unsigned int cpu = smp_processor_id();
++	unsigned long flags;
  
- 	if (percpu_counter_init(&memcg->nr_dirty, 0, GFP_KERNEL) ||
--	    percpu_counter_init(&memcg->nr_writeback, 0, GFP_KERNEL))
-+	    percpu_counter_init(&memcg->nr_writeback, 0, GFP_KERNEL) ||
-+	    percpu_ratelimit_init(&memcg->iobw, GFP_KERNEL) ||
-+	    percpu_ratelimit_init(&memcg->ioop, GFP_KERNEL))
- 		goto out_free;
+ 	if (cpu == 0)
+ 		return -EBUSY;
+@@ -240,9 +241,9 @@ static int octeon_cpu_disable(void)
  
- 	memcg->stat = alloc_percpu(struct mem_cgroup_stat_cpu);
-@@ -4633,6 +4689,8 @@ static struct mem_cgroup *mem_cgroup_alloc(void)
- out_free:
- 	percpu_counter_destroy(&memcg->nr_dirty);
- 	percpu_counter_destroy(&memcg->nr_writeback);
-+	percpu_ratelimit_destroy(&memcg->iobw);
-+	percpu_ratelimit_destroy(&memcg->ioop);
- 	kfree(memcg);
- 	return NULL;
- }
-@@ -4659,6 +4717,8 @@ static void __mem_cgroup_free(struct mem_cgroup *memcg)
+ 	set_cpu_online(cpu, false);
+ 	cpu_clear(cpu, cpu_callin_map);
+-	local_irq_disable();
++	local_irq_save(flags);
+ 	octeon_fixup_irqs();
+-	local_irq_enable();
++	local_irq_restore(flags);
  
- 	percpu_counter_destroy(&memcg->nr_dirty);
- 	percpu_counter_destroy(&memcg->nr_writeback);
-+	percpu_ratelimit_destroy(&memcg->iobw);
-+	percpu_ratelimit_destroy(&memcg->ioop);
- 	free_percpu(memcg->stat);
- 
- 	disarm_static_keys(memcg);
-@@ -5956,8 +6016,44 @@ void mem_cgroup_inc_page_writeback(struct address_space *mapping)
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_mapping(mapping);
- 
--	for (; memcg; memcg = parent_mem_cgroup(memcg))
-+	for (; memcg; memcg = parent_mem_cgroup(memcg)) {
- 		percpu_counter_inc(&memcg->nr_writeback);
-+		percpu_ratelimit_charge(&memcg->iobw, PAGE_CACHE_SIZE);
-+	}
-+
-+	rcu_read_lock();
-+	memcg = mem_cgroup_from_task(current);
-+	for (; memcg; memcg = parent_mem_cgroup(memcg)) {
-+		if (percpu_ratelimit_blocked(&memcg->iobw))
-+			inject_delay(percpu_ratelimit_target(&memcg->iobw));
-+	}
-+	rcu_read_unlock();
-+}
-+
-+void mem_cgroup_account_bandwidth(unsigned long bytes)
-+{
-+	struct mem_cgroup *memcg;
-+
-+	rcu_read_lock();
-+	memcg = mem_cgroup_from_task(current);
-+	for (; memcg; memcg = parent_mem_cgroup(memcg)) {
-+		if (percpu_ratelimit_charge(&memcg->iobw, bytes))
-+			inject_delay(percpu_ratelimit_target(&memcg->iobw));
-+	}
-+	rcu_read_unlock();
-+}
-+
-+void mem_cgroup_account_ioop(void)
-+{
-+	struct mem_cgroup *memcg;
-+
-+	rcu_read_lock();
-+	memcg = mem_cgroup_from_task(current);
-+	for (; memcg; memcg = parent_mem_cgroup(memcg)) {
-+		if (percpu_ratelimit_charge(&memcg->ioop, 1))
-+			inject_delay(percpu_ratelimit_target(&memcg->ioop));
-+	}
-+	rcu_read_unlock();
- }
- 
- void mem_cgroup_dec_page_writeback(struct address_space *mapping)
-@@ -6038,6 +6134,8 @@ bool mem_cgroup_dirty_limits(struct address_space *mapping,
- 		if (dirty > background) {
- 			if (!memcg->dirty_exceeded)
- 				memcg->dirty_exceeded = 1;
-+			if (percpu_ratelimit_blocked(&memcg->iobw))
-+				inject_delay(percpu_ratelimit_target(&memcg->iobw));
- 			rcu_read_unlock();
- 			if (dirty > (background + threshold) / 2 &&
- 			    !test_and_set_bit(BDI_memcg_writeback_running,
-diff --git a/mm/readahead.c b/mm/readahead.c
-index 17b9172..7c7ec23 100644
---- a/mm/readahead.c
-+++ b/mm/readahead.c
-@@ -16,6 +16,7 @@
- #include <linux/pagevec.h>
- #include <linux/pagemap.h>
- #include <linux/syscalls.h>
-+#include <linux/memcontrol.h>
- #include <linux/file.h>
- 
- #include "internal.h"
-@@ -102,6 +103,7 @@ int read_cache_pages(struct address_space *mapping, struct list_head *pages,
- 			break;
- 		}
- 		task_io_account_read(PAGE_CACHE_SIZE);
-+		mem_cgroup_account_bandwidth(PAGE_CACHE_SIZE);
- 	}
- 	return ret;
- }
+ 	flush_cache_all();
+ 	local_flush_tlb_all();
+-- 
+2.2.0
 
