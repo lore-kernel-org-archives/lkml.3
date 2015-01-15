@@ -1,271 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755634AbbAOXpH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 18:45:07 -0500
-Received: from mga01.intel.com ([192.55.52.88]:51720 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752164AbbAOXpE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 18:45:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,406,1418112000"; 
-   d="scan'208";a="651848865"
-From: "Dev, Vasu" <vasu.dev@intel.com>
-To: ethan zhao <ethan.zhao@oracle.com>
-CC: Ethan Zhao <ethan.kernel@gmail.com>,
-        "Ronciak, John" <john.ronciak@intel.com>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
-        "Allan, Bruce W" <bruce.w.allan@intel.com>,
-        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
-        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
-        "Rose, Gregory V" <gregory.v.rose@intel.com>,
-        "Vick, Matthew" <matthew.vick@intel.com>,
-        "Williams, Mitch A" <mitch.a.williams@intel.com>,
-        "Parikh, Neerav" <neerav.parikh@intel.com>,
-        Linux NICS <Linux-nics@isotope.jf.intel.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "brian.maly@oracle.com" <brian.maly@oracle.com>
-Subject: RE: [PATCH] i40e: don't enable and init FCOE by default when do PF
- reset
-Thread-Topic: [PATCH] i40e: don't enable and init FCOE by default when do PF
- reset
-Thread-Index: AdAxHUZgZG20AojpQdSGM7ysgg48Fg==
-Date: Thu, 15 Jan 2015 23:45:01 +0000
-Message-ID: <933BEC2E04D6A5458F4B0239FB547F9A34CCCD35@fmsmsx118.amr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.1.200.108]
-Content-Type: text/plain; charset="utf-8"
+	id S1755758AbbAOXrJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 18:47:09 -0500
+Received: from mail-qc0-f172.google.com ([209.85.216.172]:36777 "EHLO
+	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752743AbbAOXrI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 18:47:08 -0500
 MIME-Version: 1.0
+In-Reply-To: <CAEUsAPZime72Cu8prsVx8tabcj_KLoJG9V2j3S41S=z2w=acAQ@mail.gmail.com>
+References: <1421293948-10901-1-git-send-email-chris@rorvick.com>
+	<1421319786.27673.12.camel@linux-0dmf.site>
+	<CAEUsAPZime72Cu8prsVx8tabcj_KLoJG9V2j3S41S=z2w=acAQ@mail.gmail.com>
+Date: Thu, 15 Jan 2015 17:47:07 -0600
+X-Google-Sender-Auth: _3X06tRs4QThRBThlV0XYbzfmsA
+Message-ID: <CAEUsAPZeK18xBKawK5GVmhxrOwi3ZNOP-x9fUrkdEgWj10tUbw@mail.gmail.com>
+Subject: Re: [PATCH] usb: Fix typo in `struct usb_host_interface' comment
+From: Chris Rorvick <chris@rorvick.com>
+To: Oliver Neukum <oneukum@suse.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0FNjFv2018782
 
-> -----Original Message-----
-> From: ethan zhao [mailto:ethan.zhao@oracle.com]
-> Sent: Tuesday, January 13, 2015 6:41 PM
-> To: Dev, Vasu
-> Cc: Ethan Zhao; Ronciak, John; Kirsher, Jeffrey T; Brandeburg, Jesse; Allan,
-> Bruce W; Wyborny, Carolyn; Skidmore, Donald C; Rose, Gregory V; Vick,
-> Matthew; Williams, Mitch A; Parikh, Neerav; Linux NICS; e1000-
-> devel@lists.sourceforge.net; netdev@vger.kernel.org; linux-
-> kernel@vger.kernel.org; brian.maly@oracle.com
-> Subject: Re: [PATCH] i40e: don't enable and init FCOE by default when do PF
-> reset
-> 
-> Vasu,
-> 
-> On 2015/1/14 3:38, Dev, Vasu wrote:
-> >> -----Original Message-----
-> >>>>> diff --git a/drivers/net/ethernet/intel/i40e/i40e_main.c
-> >>>>> b/drivers/net/ethernet/intel/i40e/i40e_main.c
-> >>>>> index a5f2660..a2572cc 100644
-> >>>>> --- a/drivers/net/ethernet/intel/i40e/i40e_main.c
-> >>>>> +++ b/drivers/net/ethernet/intel/i40e/i40e_main.c
-> >>>>> @@ -6180,9 +6180,12 @@ static void i40e_reset_and_rebuild(struct
-> >>>>> i40e_pf *pf, bool reinit)
-> >>>>>      }
-> >>>>>   #endif /* CONFIG_I40E_DCB */
-> >>>>>   #ifdef I40E_FCOE
-> >>>>> -   ret = i40e_init_pf_fcoe(pf);
-> >>>>> -   if (ret)
-> >>>>> -           dev_info(&pf->pdev->dev, "init_pf_fcoe failed: %d\n", ret);
-> >>>>> +   if (pf->flags & I40E_FLAG_FCOE_ENABLED) {
-> >>>>> +           ret = i40e_init_pf_fcoe(pf);
-> >>> Calling i40e_init_pf_fcoe() here conflicts with its
-> >> I40E_FLAG_FCOE_ENABLED pre-condition since
-> I40E_FLAG_FCOE_ENABLED is
-> >> set by very same i40e_init_pf_fcoe(), in turn i40e_init_pf_fcoe()
-> >> will never get called.
-> >>
-> >> I don't think so,  here ,i40e_reset_and_rebuild()  is not the only
-> >> and the first place that  i40e_init_pf_fcoe() is called, see
-> >> i40e_probe(), that is the first chance.
-> >>
-> >> i40e_probe()
-> >> -->i40e_sw_init()
-> >>       -->i40e_init_pf_fcoe()
-> >>
-> >> And the I40E_FLAG_FCOE_ENABLED is possible be set by
-> >> i40e_fcoe_enable() or i40e_fcoe_disable() interface before the reset
-> >> action is to be done.
-> >>
-> > It is set by i40e_init_pf_fcoe() and you are right that the modified call flow
-> by your patch won't impact setting of I40E_FLAG_FCOE_ENABLED anyway
-> which could have prevented calling i40e_init_pf_fcoe() as I described above,
-> so this is not an issue with the patch.
-> >
-> >> BTW, the reason I post this patch is that we hit a bug, after setup
-> >> vlan, the PF is enabled to FCOE.
-> >>
-> > Then that BUG would still remain un-fixed and calling i40e_init_pf_fcoe()
-> under I40E_FLAG_FCOE_ENABLED  flag really won't affect call flow to fix
-> anything. I mean I40E_FLAG_FCOE_ENABLED  condition will be true with "pf-
-> >hw.func_caps.fcoe == true" and otherwise calling i40e_init_pf_fcoe() simply
-> returns back early on after checking "pf->hw.func_caps.fcoe == false", so
-> how that bug is fixed here by added I40E_FLAG_FCOE_ENABLED  condition ?
-> What is the bug ?
->   The func_caps.fcoe is assigned by following call path, under our test
-> environment,
-> 
->   i40e_probe()
->    ->i40e_get_capabilities()
->       ->i40e_aq_discover_capabilities()
->          ->i40e_parse_discover_capabilities()
-> 
->   Or
-> 
->   i40e_reset_and_rebuild()
->    ->i40e_get_capabilities()
->      ->i40e_aq_discover_capabilities()
->        ->i40e_parse_discover_capabilities()
-> 
->   Under our test environment, the "pf->hw.func_caps.fcoe" is true. so if
-> i40e_reset_and_rebuild() is called for VLAN setup, ethtool diagnostic test.
->   And then i40e_init_pf_fcoe() is to be called,
-> 
->   While if (!pf->hw.func_caps.fcoe) wouldn't return,
-> 
+On Thu, Jan 15, 2015 at 6:54 AM, Chris Rorvick <chris@rorvick.com> wrote:
+> On Thu, Jan 15, 2015 at 5:03 AM, Oliver Neukum <oneukum@suse.de> wrote:
+>> On Wed, 2015-01-14 at 21:52 -0600, Chris Rorvick wrote:
+>>> The descriptor member `bNumEndpoints' is plural.
+>>
+>> I am afraid that is not a good idea. The name of a
+>> member of a structure mentioned in the specification should
+>> appear as it is used in the specification.
+>
+> Where is it not plural in the specification?
 
-I said it would return with "pf->hw.func_caps.fcoe == false" in my last response, more details below.
+I think understand your comment now so I will respond more specifically:
+This is a typo precisely because `bNumEndpoint' is not consistent with
+the specification, nor is it consistent with the definition of `struct
+usb_interface_descriptor'.  The specification and the structure both use
+`bNumEndpoints'.
 
->   So  pf->flags is set to I40E_FLAG_FCOE_ENABLED.
-> 
->   With my patch,  i40e_init_pf_fcoe() is only called after
-> I40E_FLAG_FCOE_ENABLED is set before reset.
-> 
-> Enable FCOE in i40e_probe() or not is another issue.
-> 
+Fixing this has utility because `struct usb_interface_descriptor' is not
+defined in <linux/usb.h>.  So, if corrected, the code for determining
+the number of endpoints is readily available to anyone looking at
+`struct usb_host_interface' without tracking down the uapi header.
 
-Nope since both cases we should do i40e_init_pf_fcoe() or don't based on fcoe cap true or false. 
+Mentioning that the descriptor member/field is plural was just an
+attempt to make it easy to see what changed.
 
-I don't have much to add as I described before with the your patch that "calling i40e_init_pf_fcoe() under I40E_FLAG_FCOE_ENABLED  flag really won't affect call flow to fix anything. I mean I40E_FLAG_FCOE_ENABLED  condition will be true with "pf->hw.func_caps.fcoe == true" and otherwise calling i40e_init_pf_fcoe() simply returns back early on after checking "pf->hw.func_caps.fcoe == false". 
+Regards,
 
-May be I'm missing something, I guess next either go with CONFIG_I40E_FCOE disable as I suggested before and now it in upstream kernel or we can have further off list discussion to fix the issue you are trying to fix with the patch.
-
-Thanks,
-Vasu
-
-> Thanks,
-> Ethan
-> 
-> 
-> >
-> >>> Jeff Kirsher should be getting out a patch queued by me which adds
-> >> I40E_FCoE Kbuild option, in that FCoE is disabled by default and
-> >> user could enable FCoE only if needed, that patch would do same of
-> >> skipping
-> >> i40e_init_pf_fcoe() whether FCoE capability in device enabled or not
-> >> in default config.
-> >> The following patch will not fix the above issue -- configuration of
-> >> PF will be changed via reset.
-> >> How about the FCOE is configured and disabled by  i40e_fcoe_disable()
-> >> , then reset happens ?
-> >>
-> > May be but if the BUG is due to FCoE being enabled then having it disabled
-> in config will avoid the bug for non FCoE config option and once bug is
-> understood then that has to be fixed for FCoE enabled config also as I asked
-> above.
-> >
-> > Thanks Ethan for detailed response.
-> > Vasu
-> >
-> >>>  From patchwork Wed Oct  2 23:26:08 2013
-> >>> Content-Type: text/plain; charset="utf-8"
-> >>> MIME-Version: 1.0
-> >>> Content-Transfer-Encoding: 7bit
-> >>> Subject: [net] i40e: adds FCoE configure option
-> >>> Date: Thu, 03 Oct 2013 07:26:08 -0000
-> >>> From: Vasu Dev <vasu.dev@intel.com>
-> >>> X-Patchwork-Id: 11797
-> >>>
-> >>> Adds FCoE config option I40E_FCOE, so that FCoE can be enabled as
-> >>> needed but otherwise have it disabled by default.
-> >>>
-> >>> This also eliminate multiple FCoE config checks, instead now just
-> >>> one config check for CONFIG_I40E_FCOE.
-> >>>
-> >>> The I40E FCoE was added with 3.17 kernel and therefore this patch
-> >>> shall be applied to stable 3.17 kernel also.
-> >>>
-> >>> CC: <stable@vger.kernel.org>
-> >>> Signed-off-by: Vasu Dev <vasu.dev@intel.com>
-> >>> Tested-by: Jim Young <jamesx.m.young@intel.com>
-> >>>
-> >>> ---
-> >>> drivers/net/ethernet/intel/Kconfig           |   11 +++++++++++
-> >>>   drivers/net/ethernet/intel/i40e/Makefile     |    2 +-
-> >>>   drivers/net/ethernet/intel/i40e/i40e_osdep.h |    4 ++--
-> >>>   3 files changed, 14 insertions(+), 3 deletions(-)
-> >>>
-> >>> diff --git a/drivers/net/ethernet/intel/Kconfig
-> >>> b/drivers/net/ethernet/intel/Kconfig
-> >>> index 5b8300a..4d61ef5 100644
-> >>> --- a/drivers/net/ethernet/intel/Kconfig
-> >>> +++ b/drivers/net/ethernet/intel/Kconfig
-> >>> @@ -281,6 +281,17 @@ config I40E_DCB
-> >>>
-> >>>            If unsure, say N.
-> >>>
-> >>> +config I40E_FCOE
-> >>> +       bool "Fibre Channel over Ethernet (FCoE)"
-> >>> +       default n
-> >>> +       depends on I40E && DCB && FCOE
-> >>> +       ---help---
-> >>> +         Say Y here if you want to use Fibre Channel over Ethernet (FCoE)
-> >>> +         in the driver. This will create new netdev for exclusive FCoE
-> >>> +         use with XL710 FCoE offloads enabled.
-> >>> +
-> >>> +         If unsure, say N.
-> >>> +
-> >>>   config I40EVF
-> >>>          tristate "Intel(R) XL710 X710 Virtual Function Ethernet support"
-> >>>          depends on PCI_MSI
-> >>> diff --git a/drivers/net/ethernet/intel/i40e/Makefile
-> >>> b/drivers/net/ethernet/intel/i40e/Makefile
-> >>> index 4b94ddb..c405819 100644
-> >>> --- a/drivers/net/ethernet/intel/i40e/Makefile
-> >>> +++ b/drivers/net/ethernet/intel/i40e/Makefile
-> >>> @@ -44,4 +44,4 @@ i40e-objs := i40e_main.o \
-> >>>          i40e_virtchnl_pf.o
-> >>>
-> >>>   i40e-$(CONFIG_I40E_DCB) += i40e_dcb.o i40e_dcb_nl.o
-> >>> -i40e-$(CONFIG_FCOE:m=y) += i40e_fcoe.o
-> >>> +i40e-$(CONFIG_I40E_FCOE) += i40e_fcoe.o
-> >>> diff --git a/drivers/net/ethernet/intel/i40e/i40e_osdep.h
-> >>> b/drivers/net/ethernet/intel/i40e/i40e_osdep.h
-> >>> index 045b5c4..ad802dd 100644
-> >>> --- a/drivers/net/ethernet/intel/i40e/i40e_osdep.h
-> >>> +++ b/drivers/net/ethernet/intel/i40e/i40e_osdep.h
-> >>> @@ -78,7 +78,7 @@ do {                                                            \
-> >>>   } while (0)
-> >>>
-> >>>   typedef enum i40e_status_code i40e_status; -#if
-> >>> defined(CONFIG_FCOE)
-> >>> || defined(CONFIG_FCOE_MODULE)
-> >>> +#ifdef CONFIG_I40E_FCOE
-> >>>   #define I40E_FCOE
-> >>> -#endif /* CONFIG_FCOE or CONFIG_FCOE_MODULE */
-> >>> +#endif
-> >>>   #endif /* _I40E_OSDEP_H_ */
-> >>>
-> >>>>> +           if (ret)
-> >>>>> +                   dev_info(&pf->pdev->dev,
-> >>>>> +                            "init_pf_fcoe failed: %d\n", ret);
-> >>>>> +   }
-> >>>>>
-> >>>>>   #endif
-> >>>>>      /* do basic switch setup */
-> >>>>> --
-> >>>>> 1.8.3.1
-> >> Thanks,
-> >> Ethan
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Chris
