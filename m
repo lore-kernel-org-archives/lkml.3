@@ -1,130 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751717AbbAOJUg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 04:20:36 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:50065 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045AbbAOJUb (ORCPT
+	id S1752787AbbAOI7B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 03:59:01 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:59005 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751717AbbAOI67 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 04:20:31 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-8e-54b7865deec1
-Message-id: <1421313626.19448.8.camel@AMDC1943>
-Subject: Re: [RFC 0/3] mmc: Add dynamic frequency scaling
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Chris Ball <chris@printf.net>, Jaehoon Chung <jh80.chung@samsung.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>, Kukjin Kim <kgene@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Date: Thu, 15 Jan 2015 10:20:26 +0100
-In-reply-to: <CAPDyKFpGiaDJ3zjCSSbcia6iLS2+FLBRjGAheQAzvFsAkJax+A@mail.gmail.com>
-References: <1421054585-9032-1-git-send-email-k.kozlowski@samsung.com>
- <CAPDyKFpGiaDJ3zjCSSbcia6iLS2+FLBRjGAheQAzvFsAkJax+A@mail.gmail.com>
-Content-type: text/plain; charset=UTF-8
-X-Mailer: Evolution 3.10.4-0ubuntu2
-MIME-version: 1.0
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrBLMWRmVeSWpSXmKPExsVy+t/xy7qxbdtDDBbfELHYOGM9q8WEy9sZ
-	LeYfOcdqceNXG6tF/+PXzBZnm96wW2x6fI3V4vKuOWwWR/73M1rMOL+PyWLtkbvsFk8nXGSz
-	+HGmm8Xi+NpwBz6Py329TB6bVnWyedy5tofNY/OSeo8brxYyefRtWcXo8XmTXAB7FJdNSmpO
-	Zllqkb5dAlfGp2VyBbfFKiafW8PUwPhfoIuRk0NCwERi1t/vjBC2mMSFe+vZuhi5OIQEljJK
-	vDh3H8r5zCjRtPMcO0gVr4C+xJxzW1lAbGEBS4kVq3pYQWw2AWOJzcuXsIHYIgIaEnsenmcF
-	aWYW+MMisfb4XCaQBIuAqsT99SfBBnEKBEvc37oBbLWQQC+jxKPFuSA2s4C6xKR5i5i7GDmA
-	TlKWaOx3g9grKPFj8j0WiBJ5ic1r3jJPYBSYhaRjFpKyWUjKFjAyr2IUTS1NLihOSs810itO
-	zC0uzUvXS87P3cQIiZ2vOxiXHrM6xCjAwajEw8vgtz1EiDWxrLgy9xCjBAezkghvZw5QiDcl
-	sbIqtSg/vqg0J7X4ECMTB6dUAyPT2taJn/i6dnaKNyUtOdqzNl/F4dOWN5LOT4r6jBcsV7s5
-	67jonr7Z/8I5ilkUvpytKG89kmrmIt5n/U+VO3OH5NaHsb/2VexQtYrW5WOPdRDjCyrVL9jl
-	pbaAo31xcU7u61NzSqdv7PQ/6NFe82B+dgXDBZOMEhXdGQk9+5y4ri/dLCjSp8RSnJFoqMVc
-	VJwIAHH5GRt7AgAA
+	Thu, 15 Jan 2015 03:58:59 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] gpio: support for GPIO forwarding
+Date: Thu, 15 Jan 2015 10:21:24 +0100
+Message-ID: <1445095.bPkYZhscYx@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20150108082510.GA19346@kuha.fi.intel.com>
+References: <1418890998-23811-1-git-send-email-heikki.krogerus@linux.intel.com> <20150108082510.GA19346@kuha.fi.intel.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On czw, 2015-01-15 at 09:20 +0100, Ulf Hansson wrote:
-> + Mike, Stephen (Clock maintainers)
-> 
-> On 12 January 2015 at 10:23, Krzysztof Kozlowski
-> <k.kozlowski@samsung.com> wrote:
+On Thursday, January 08, 2015 10:25:10 AM Heikki Krogerus wrote:
+> On Thu, Dec 18, 2014 at 10:23:18AM +0200, Heikki Krogerus wrote:
+> > This makes it possible to assign GPIOs at runtime. The
+> > motivation for it is because of need to forward GPIOs from
+> > one device to an other. That feature may be useful for
+> > example with some mfd devices, but initially it is needed
+> > because on some Intel Braswell based ACPI platforms the GPIO
+> > resources controlling signals of the USB PHY are given to
+> > the controller device object for whatever reason, so the
+> > driver of that controller needs be able to pass them to the
+> > PHY device somehow.
+> > 
+> > So basically this is meant to allow patching of bad (bad
+> > from Linux kernels point of view) hardware descriptions
+> > provided by system fw in the drivers.
+> > 
+> > Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> > ---
+> > 
 > > Hi,
-> >
-> >
-> > I would like to hear some comments about idea of scaling MMC clock
-> > frequency. The basic idea is to lower the clock when device is
-> > completely idle or not busy enough.
+> > 
+> > I'm sending this first as a RFC in case you guys have some better
+> > idea how to solve our problem. I actually already have couple
+> > platforms where the GPIO resources are given to the "wrong" device
+> > objects now.
+> > 
+> > Originally we were thinking about simply handling our problem with
+> > hacks to the PHY drivers, basically also checking if the parent has
+> > GPIOs. That would only work if the controller is always the parent,
+> > which it's not, but even if it was, it would be too risky. The PHY
+> > drivers don't know which controller they are attached to, so what is
+> > to say that the GPIOs aren't really attached to the controller.
+> > 
+> > So the safest way to handle our problem is to deal with it in quirks
+> > in the controller drivers. Solving it by bouncing the GPIOs did not
+> > feel ideal there doesn't seem to be any other way. The API is copied
+> > from clkdev (clk_register_clkdev). In the end it's really only one
+> > function for adding the lookups and one for removing them.
+> > 
+> > The way it's implemented is by modifying the current style of handling
+> > the lookups a little bit. The per device lookup table is basically
+> > reverted back to the single linked-list format since it seems that
+> > these lookups may have to be assigned from several sources.
+> > 
+> > Thanks,
 > 
-> We already have host drivers that implements runtime PM support.
-> Typically that would mean the clock will be gated once the device
-> becomes runtime PM suspended.
-> 
-> Why should we decrease the frequency of an already gated clock?
+> Gentle ping on this.
 
-In case of idle state you're right that clkgate would be better. But
-what about finding a compromise between high performance (high
-frequency) and energy saving for different loads on MMC?
+Please CC patches involving ACPI in *any* *way* way to linux-acpi@vger.kernel.org.
 
-The frequency scaling could help in that case. Anyway I should prepare
-some more benchmarks for such conditions.
+Thanks!
 
-Best regards,
-Krzysztof
-
-> I think this boils done to how DVFS transitions can be triggered from
-> the clock drivers, right?
-> 
-> Currently the clock framework supports this through clock rate change
-> notifiers. Should we have clock notifiers for clk_prepare|unprepare()
-> as well? I do remember that someone posted patches for that a while
-> ago, but those were rejected.
-> 
-> Mike, Stephen - comments?
-> 
-> Kind regards
-> Uffe
-> 
-> >
-> > The patchset adds MMC card as a devfreq device and uses simple_ondemand
-> > as governor. In idle this gave benefits (less energy consumed during
-> > idle):
-> > 1. Trats2 (Exynos4412): 2.6%
-> > 2. Rinato (Exynos3250): 1%
-> >
-> > but (especially on Rinato) it had impact on performance (probably
-> > because ondemand triggering a little to late). What is interesting
-> > manually changing the clock (without this patchset) gave slightly
-> > bigger benefits. Maybe the devfreq introduces noticeable overhead?
-> >
-> >
-> > Comments are welcomed. Maybe on other platforms this has bigger impact?
-> >
-> > Best regards,
-> > Krzysztof
-> >
-> >
-> > Krzysztof Kozlowski (3):
-> >   mmc: Add dynamic frequency scaling
-> >   ARM: dts: Specify MSHC realistic clocks and use frequency scaling
-> >   ARM: dts: Use frequency scaling for MSHC
-> >
-> >  Documentation/devicetree/bindings/mmc/mmc.txt |   2 +
-> >  arch/arm/boot/dts/exynos3250-rinato.dts       |   1 +
-> >  arch/arm/boot/dts/exynos4412-trats2.dts       |   4 +-
-> >  drivers/mmc/card/block.c                      | 247 ++++++++++++++++++++++++++
-> >  drivers/mmc/core/Kconfig                      |  16 ++
-> >  drivers/mmc/core/core.h                       |   1 -
-> >  drivers/mmc/core/host.c                       |   2 +
-> >  include/linux/mmc/card.h                      |   8 +
-> >  include/linux/mmc/host.h                      |   3 +
-> >  9 files changed, 282 insertions(+), 2 deletions(-)
-> >
-> > --
-> > 1.9.1
-> >
-
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
