@@ -1,96 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754215AbbAOOH4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 09:07:56 -0500
-Received: from mail-by2on0118.outbound.protection.outlook.com ([207.46.100.118]:64832
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753950AbbAOOHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 09:07:55 -0500
-X-Greylist: delayed 1136 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Jan 2015 09:07:55 EST
-Date: Thu, 15 Jan 2015 21:34:40 +0800
-From: Zidan Wang <b50113@freescale.com>
-To: Mark Brown <broonie@kernel.org>
-CC: Zidan Wang <zidan.wang@freescale.com>, <lgirdwood@gmail.com>,
-        <perex@perex.cz>, <tiwai@suse.de>, <lars@metafoo.de>,
-        <ckeepax@opensource.wolfsonmicro.com>,
-        <patches@opensource.wolfsonmicro.com>, <alsa-devel@alsa-project.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [alsa-devel][PATCH v2 2/2] ASoC: wm8960: Let wm8960 driver
- configure its bit clock and frame clock
-Message-ID: <20150115133439.GA29323@b50113>
-References: <1420615905-4078-1-git-send-email-zidan.wang@freescale.com>
- <1420615905-4078-2-git-send-email-zidan.wang@freescale.com>
- <20150114192703.GH3043@sirena.org.uk>
+	id S1754672AbbAONfw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 08:35:52 -0500
+Received: from mail3.unitn.it ([193.205.206.24]:64189 "EHLO mail3.unitn.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752709AbbAONfv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 08:35:51 -0500
+Message-ID: <54B7C232.8060806@unitn.it>
+Date: Thu, 15 Jan 2015 14:35:46 +0100
+From: Luca Abeni <luca.abeni@unitn.it>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20150114192703.GH3043@sirena.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=B50113@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(51704005)(189002)(199003)(24454002)(76176999)(46406003)(23726002)(54356999)(50986999)(46102003)(33716001)(77096005)(83506001)(62966003)(77156002)(68736005)(69596002)(64706001)(47776003)(6806004)(104016003)(86362001)(97736003)(97756001)(105606002)(106466001)(81156004)(33656002)(85426001)(87936001)(92566002)(110136001)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR0301MB1264;H:az84smr01.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-DmarcAction-Test: None
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:DM2PR0301MB1264;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:DM2PR0301MB1264;
-X-Forefront-PRVS: 0457F11EAF
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR0301MB1264;
-X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 15 Jan 2015 13:33:40.2725
- (UTC)
-X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.158.2]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: DM2PR0301MB1264
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Kirill Tkhai <tkhai@yandex.ru>, Juri Lelli <juri.lelli@arm.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "juri.lelli@gmail.com" <juri.lelli@gmail.com>
+Subject: Re: Another SCHED_DEADLINE bug (with bisection and possible fix)
+References: <2629881420411885@web9m.yandex.ru> <54AAABFB.3060109@unitn.it> <1420499241.3361.14.camel@yandex.ru> <20150107080155.1d42d123@luca-1225C> <1420633741.12772.10.camel@yandex.ru> <54B4D2DF.9010308@arm.com> <4500351421141200@web2m.yandex.ru> <20150113140436.GI25256@twins.programming.kicks-ass.net> <4632021421239387@web25g.yandex.ru> <54B7A33F.20904@unitn.it> <20150115122323.GU23965@worktop.programming.kicks-ass.net>
+In-Reply-To: <20150115122323.GU23965@worktop.programming.kicks-ass.net>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 14, 2015 at 07:27:03PM +0000, Mark Brown wrote:
-> On Wed, Jan 07, 2015 at 03:31:45PM +0800, Zidan Wang wrote:
-> 
-> > +	for (i = 0; i < ARRAY_SIZE(dac_divs); ++i) {
-> > +		if (wm8960->sysclk == lrclk * dac_divs[i]) {
-> > +			for (j = 0; j < ARRAY_SIZE(bclk_divs); ++j) {
-> > +				if (wm8960->sysclk ==  wm8960->bclk *
-> > +						bclk_divs[j] / 10) {
-> > +					goto config_clock;
-> > +				}
-> > +			}
-> > +		}
-> > +	}
-> > +
-> > +	dev_err(codec->dev, "Unsupported sysclk %d\n", wm8960->sysclk);
-> > +	return;
-> 
-> It's a bit awkward using the goto like this.  A more common way of
-> writing this is to change the above block to be
-> 
-> 	if (i == ARRAY_SIZE(dac_divs))
-> 		/* return error */
-> 
-> rather than skipping over the error.  Otherwise this looks good.
+Hi Peter,
 
-Hi Mark,
+On 01/15/2015 01:23 PM, Peter Zijlstra wrote:
+> On Thu, Jan 15, 2015 at 12:23:43PM +0100, Luca Abeni wrote:
+>> There are some parts of the patch that I do not understand (for example:
+>> if I understand well, if the task is not throttled you set dl_new to 1...
+>> And if it is throttled you change its current runtime and scheduling deadline...
+>> Why?)
+>> Anyway, I tested the patch and I confirm that it fixes the hang I originally
+>> reported.
+>
+> I'll go look at the patch in a wee bit. But Juri, Luca, could you
+> describe the correct behaviour?
+>
+>>From what I understand we should either modify the tasks run/sleep stats
+> when we change its parameters or we should schedule a delayed release of
+> the bandwidth delta (when it reaches its 0-lag point, if thats in the
+> future).
+I suspect the correct behaviour can be difficult to implement:
+- When a SCHED_DEADLINE task ends (or changes its scheduling policy to
+   something different), its bandwidth cannot be released immediately,
+   but should be released at the "0-lag time" (which reminds me about the
+   GRUB patches... I had to implement a similar behaviour in those patches :)
+- The same applies when the task changes its scheduling parameters decreasing
+   its bandwidth. In this case, we also need to update the current runtime (if
+   it is larger than the new runtime, set it to the new maximum value - I think
+   this is the safest thing to do)
+- When a task changes its parameters to increase its bandwidth, be do not
+   have such problems.
 
-I found it can't generate bclk for S20_3LE data format.
+As far as I can see, if we apply the runtime / deadline changes starting from
+the next reservation period we are safe (because the "0-lag time" is always
+smaller than the current scheduling deadline).
+This might cause some transient overloads (because if I change the parameters
+of a task at time t, the update takes action a little bit later - at the next
+scheduling deadline), but guarantees that a task never consumes more than
+expected (for example: if a task continuously changes its bandwidth between
+0.4 and 0.3, it will never consume more than 0.4. I suspect that if we
+immediately update dl_se->deadline and dl_se->runtime a task can arrive to
+consume much more CPU time).
 
-For 2 channel S20_3LE data format:
 
-bclk = fs * 20 * 2
-Sysclk = BCLKDIV * bclk = BCLKDIV * fs * 40
-Sysclk = DACDIV * fs * 256
+				Luca
 
-BCLKDIV/DACDIV = 256/40 = 32/5
+>
+> Doing neither will allow one to game the reservation system afaict.
+>
 
-But BCLKDIV/DACDIV can't be 32/5. So I want to support tdm slot.
-
-bclk = fs * slot_width * slots * channal.
-
-Do you think it make sense, or any other ideas?
-
-Best Regards,
-Zidan
