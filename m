@@ -1,40 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754076AbbAOTIl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 14:08:41 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:54233 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752763AbbAOTIj (ORCPT
+	id S1755209AbbAOTIt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 14:08:49 -0500
+Received: from mail-qc0-f176.google.com ([209.85.216.176]:38460 "EHLO
+	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754725AbbAOTIp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 14:08:39 -0500
-Date: Thu, 15 Jan 2015 14:08:36 -0500 (EST)
-Message-Id: <20150115.140836.1633263812782739886.davem@davemloft.net>
-To: Zubair.Kakakhel@imgtec.com
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, s.hauer@pengutronix.de,
-        sergei.shtylyov@cogentembedded.com
-Subject: Re: [PATCH_V5] dm9000: Add regulator and reset support to dm9000
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1421316746-38128-1-git-send-email-Zubair.Kakakhel@imgtec.com>
-References: <1421316746-38128-1-git-send-email-Zubair.Kakakhel@imgtec.com>
-X-Mailer: Mew version 6.6 on Emacs 24.4 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Thu, 15 Jan 2015 11:08:38 -0800 (PST)
+	Thu, 15 Jan 2015 14:08:45 -0500
+Date: Thu, 15 Jan 2015 14:08:40 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Konstantin Khlebnikov <koct9i@gmail.com>
+Cc: Konstantin Khebnikov <khlebnikov@yandex-team.ru>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>, cgroups@vger.kernel.org,
+        Roman Gushchin <klamm@yandex-team.ru>, Jan Kara <jack@suse.cz>,
+        Dave Chinner <david@fromorbit.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Subject: Re: [PATCH 3/6] memcg: track shared inodes with dirty pages
+Message-ID: <20150115190840.GD28195@htj.dyndns.org>
+References: <20150115180242.10450.92.stgit@buzz>
+ <20150115184914.10450.51964.stgit@buzz>
+ <20150115185543.GA28195@htj.dyndns.org>
+ <CALYGNiPY2K6F+OFoCV5XShrXaQOiyGXreR=4TC=Mp7axTiF0YQ@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALYGNiPY2K6F+OFoCV5XShrXaQOiyGXreR=4TC=Mp7axTiF0YQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
-Date: Thu, 15 Jan 2015 10:12:26 +0000
+Hello,
 
-> In boards, the dm9000 chip's power and reset can be controlled by gpio.
-> 
-> It makes sense to add them to the dm9000 driver and let dt be used to
-> enable power and reset the phy.
-> 
-> Signed-off-by: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
-> Signed-off-by: Paul Burton <paul.burton@imgtec.com>
+On Thu, Jan 15, 2015 at 11:04:49PM +0400, Konstantin Khlebnikov wrote:
+> I know. Absolutely accurate per-page solution looks too complicated for me.
+> Is there any real demand for accurate handling dirty set in shared inodes?
+> Doing whole accounting in per-inode basis makes life so much easier.
 
-Applied to net-next, thanks.
+Ah, yeah, patch #3 arrived in isolation, so I thought it was part of
+something completely different.  I definitely thought about doing it
+per-inode too (and also requiring memcg to attribute pages according
+to its inode rather than individual pages).  I'll look into the
+patchset and try to identify the pros and cons of our approaches.
+
+Thanks.
+
+-- 
+tejun
