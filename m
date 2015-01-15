@@ -1,57 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752954AbbAOKiB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 05:38:01 -0500
-Received: from mail-we0-f169.google.com ([74.125.82.169]:43904 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751403AbbAOKh7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 05:37:59 -0500
-Date: Thu, 15 Jan 2015 11:37:54 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Andy Lutomirski <luto@amacapital.net>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Denys Vlasenko <dvlasenk@redhat.com>, Borislav Petkov <bp@alien8.de>,
-        Tony Luck <tony.luck@intel.com>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [GIT PULL] x86/entry changes for 3.20, round 1
-Message-ID: <20150115103754.GC1698@gmail.com>
-References: <CALCETrVCmoEP-Ha937VurRVxYYmSG==QL=twMBUWgzOAxc4uRA@mail.gmail.com>
- <20150115092740.GY9719@linux.vnet.ibm.com>
+	id S1752595AbbAOKkN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 05:40:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:54032 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751502AbbAOKkL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 05:40:11 -0500
+Message-ID: <54B79900.50705@redhat.com>
+Date: Thu, 15 Jan 2015 11:40:00 +0100
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150115092740.GY9719@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Luis Henriques <luis.henriques@canonical.com>,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+CC: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [3/5, media] pwc-if: fix build warning when !CONFIG_USB_PWC_INPUT_EVDEV
+References: <20141001231000.GA25634@hercules>
+In-Reply-To: <20141001231000.GA25634@hercules>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+On 02-10-14 01:10, Luis Henriques wrote:
+> Label err_video_unreg in function usb_pwc_probe() is only used when
+> CONFIG_USB_PWC_INPUT_EVDEV is defined.
+>
+> drivers/media/usb/pwc/pwc-if.c:1104:1: warning: label 'err_video_unreg' defined but not used [-Wunused-label]
+>
+> Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
 
-> On Wed, Jan 14, 2015 at 05:59:26PM -0800, Andy Lutomirski wrote:
-> > Hi Ingo and Thomas,
-> > 
-> > At Linus' suggestion, I'm trying out some maintainerish stuff for x86
-> > entry code.  Please consider pulling to an appropriate branch *after
-> > Paul sends his RCU pull request*, only if 734d16801349 is included in
-> > that pull request.  If this goes well, maybe I'll submit a MAINTAINERS
-> > patch, too.
-> > 
-> > IMPORTANT: This is based on an RCU change that you don't have yet.  I
-> > think that Paul is planning on sending a pull request with that change
-> > fairly soon.  The code in here would compile without that fix, but it
-> > would introduce a nasty regression, so, to avoid breaking bisection, I
-> > based this off of the relevant change in Paul's tree.  (It's the very
-> > first change for 3.20 in his current queue.)
-> 
-> Yep, should happen by early next week, if it survives this weekend's
-> testing.  ;-)
+Sorry for the slow reaction, I somehow missed this patch and just found it in my
+patchwork TODO.
 
-Ok, I'll first wait for that pull request to arrive then.
+I understand what you're trying to achieve here, but NAK to the implementation,
+this is breaking the code flow wrt error handling, making it much harder
+to double check that everything is being cleaned up properly.
 
-Thanks,
+Regards,
 
-	Ingo
+Hans
+
+
+>
+> ---
+> drivers/media/usb/pwc/pwc-if.c | 8 ++++----
+>   1 file changed, 4 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/media/usb/pwc/pwc-if.c b/drivers/media/usb/pwc/pwc-if.c
+> index 15b754da4a2c..e6b7e63b0b8e 100644
+> --- a/drivers/media/usb/pwc/pwc-if.c
+> +++ b/drivers/media/usb/pwc/pwc-if.c
+> @@ -1078,7 +1078,8 @@ static int usb_pwc_probe(struct usb_interface *intf, const struct usb_device_id
+>   	pdev->button_dev = input_allocate_device();
+>   	if (!pdev->button_dev) {
+>   		rc = -ENOMEM;
+> -		goto err_video_unreg;
+> +		video_unregister_device(&pdev->vdev);
+> +		goto err_unregister_v4l2_dev;
+>   	}
+>
+>   	usb_make_path(udev, pdev->button_phys, sizeof(pdev->button_phys));
+> @@ -1095,14 +1096,13 @@ static int usb_pwc_probe(struct usb_interface *intf, const struct usb_device_id
+>   	if (rc) {
+>   		input_free_device(pdev->button_dev);
+>   		pdev->button_dev = NULL;
+> -		goto err_video_unreg;
+> +		video_unregister_device(&pdev->vdev);
+> +		goto err_unregister_v4l2_dev;
+>   	}
+>   #endif
+>
+>   	return 0;
+>
+> -err_video_unreg:
+> -	video_unregister_device(&pdev->vdev);
+>   err_unregister_v4l2_dev:
+>   	v4l2_device_unregister(&pdev->v4l2_dev);
+>   err_free_controls:
+>
