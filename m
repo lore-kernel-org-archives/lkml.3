@@ -1,43 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754939AbbAOTju (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 14:39:50 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46890 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751900AbbAOTjs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 14:39:48 -0500
-Date: Thu, 15 Jan 2015 20:38:39 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Christian Borntraeger <borntraeger@de.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, x86@kernel.org,
-        xen-devel@lists.xenproject.org, linux-mm@kvack.org
-Subject: Re: [PATCH 4/8] x86/spinlock: Leftover conversion
-	ACCESS_ONCE->READ_ONCE
-Message-ID: <20150115193839.GA28727@redhat.com>
-References: <1421312314-72330-1-git-send-email-borntraeger@de.ibm.com> <1421312314-72330-5-git-send-email-borntraeger@de.ibm.com>
+	id S1755333AbbAOTkg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 14:40:36 -0500
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:58692 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751423AbbAOTkf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 14:40:35 -0500
+Date: Thu, 15 Jan 2015 14:40:31 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Bart Van Assche <bvanassche@acm.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        Hannes Reinecke <hare@suse.de>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: sysfs methods can race with ->remove
+Message-ID: <20150115194031.GE28195@htj.dyndns.org>
+References: <20150115160612.GA31446@infradead.org>
+ <Pine.LNX.4.44L0.1501151255060.1064-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1421312314-72330-5-git-send-email-borntraeger@de.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <Pine.LNX.4.44L0.1501151255060.1064-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/15, Christian Borntraeger wrote:
->
-> --- a/arch/x86/include/asm/spinlock.h
-> +++ b/arch/x86/include/asm/spinlock.h
-> @@ -186,7 +186,7 @@ static inline void arch_spin_unlock_wait(arch_spinlock_t *lock)
->  	__ticket_t head = ACCESS_ONCE(lock->tickets.head);
->  
->  	for (;;) {
-> -		struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
-> +		struct __raw_tickets tmp = READ_ONCE(lock->tickets);
+Hello, Alan.
 
-Agreed, but what about another ACCESS_ONCE() above?
+On Thu, Jan 15, 2015 at 01:22:03PM -0500, Alan Stern wrote:
+> > It has a reference to keep it from beeing freed, but so far I can't find
+> > anything that prevents ->remove from beeing called while we are in or
+> > just before a method call.
+> 
+> There are two types of methods to think about: Those registered by the 
+> subsystem and those registered by the driver.
+> 
+> If a method is registered by the driver, then the driver will
+> unregister it when the ->remove routine runs.  I don't know for
+> certain, but I would expect that the sysfs/kernfs core will make sure
+> that any existing method calls complete before unregister returns.  
+> This would prevent races.
 
-Oleg.
+Yes, attribute deletions are blocked till the on-going sysfs
+read/write operations are finished and further rw accesses are failed.
 
+> If a method is registered by the subsystem, and if the method runs 
+> entirely within the subsystem's code, then ->remove doesn't matter.  
+> The driver could be unbound while the method is running and it would be 
+> okay.
+> 
+> The only time we have a problem is when the method is registered by the 
+> subsystem and the method calls into the driver.  (Note that this is 
+> exactly what happens with scsi_rescan_device.)
+> 
+> > > > But this seems like a more generic problem, and at least a quick glance at
+> > > > the pci_driver methods seems like others don't have a good
+> > > > synchroniation of ->remove against random driver methods.
+> > > 
+> > > Can you give one or two examples?
+> > 
+> > I look at the sriov_configure PCI method, or the various sub-methods
+> > under pci_driver.err_handler.
+> 
+> The sriov_numvfs_store method does have the same problem, and so does 
+> the reset_store method (by way of pci_reset_function -> 
+> pci_dev_save_and_disable -> pci_reset_notify).
+> 
+> Tejun, is my analysis correct?  How should we fix these races?
+
+I'm not really following what the actual problem case is, so SCSI
+subsystem store methods are derefing dev->driver without synchronizing
+against detach events?  If that's the case, the solution would be
+synchronizing against attach/detach events?  Sorry if I'm being
+totally idiotic.  I'm having a bit of hard time jumping right in.  :)
+
+Thanks.
+
+-- 
+tejun
