@@ -1,176 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112AbbAOLEe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 06:04:34 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:47251 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751920AbbAOLEd (ORCPT
+	id S1753237AbbAOLE4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 06:04:56 -0500
+Received: from mail-la0-f47.google.com ([209.85.215.47]:43790 "EHLO
+	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752604AbbAOLEx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 06:04:33 -0500
-Date: Thu, 15 Jan 2015 11:04:53 +0000
-From: Luis Henriques <luis.henriques@canonical.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: stable@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>, xen-devel@lists.xensource.com,
-        catalin.marinas@arm.com, Ian Campbell <ian.campbell@citrix.com>
-Subject: Re: backport a4dba130891271084344c12537731542ec77cb85 to 3.16+
-Message-ID: <20150115110453.GB5176@charon>
-References: <alpine.DEB.2.02.1501121704380.3058@kaball.uk.xensource.com>
+	Thu, 15 Jan 2015 06:04:53 -0500
+Date: Thu, 15 Jan 2015 12:04:54 +0100
+From: Christoffer Dall <christoffer.dall@linaro.org>
+To: Eric Auger <eric.auger@linaro.org>
+Cc: eric.auger@st.com, marc.zyngier@arm.com, andre.przywara@arm.com,
+        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
+        kvm@vger.kernel.org, alex.williamson@redhat.com, agraf@suse.de,
+        joel.schopp@amd.com, kim.phillips@freescale.com, paulus@samba.org,
+        gleb@kernel.org, pbonzini@redhat.com, borntraeger@de.ibm.com,
+        cornelia.huck@de.ibm.com, linux-kernel@vger.kernel.org,
+        patches@linaro.org, will.deacon@arm.com,
+        a.motakis@virtualopensystems.com, a.rigo@virtualopensystems.com,
+        john.liuli@huawei.com, ming.lei@canonical.com, feng.wu@intel.com,
+        b.reynal@virtualopensystems.com
+Subject: Re: [PATCH v6 2/4] KVM: introduce kvm_arch_intc_initialized
+Message-ID: <20150115110454.GP26222@cbox>
+References: <1421170420-30617-1-git-send-email-eric.auger@linaro.org>
+ <1421170420-30617-3-git-send-email-eric.auger@linaro.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.DEB.2.02.1501121704380.3058@kaball.uk.xensource.com>
+In-Reply-To: <1421170420-30617-3-git-send-email-eric.auger@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 06:09:33PM +0000, Stefano Stabellini wrote:
-> Hi all,
-> I would like to request a backport of the following commit:
+On Tue, Jan 13, 2015 at 06:33:38PM +0100, Eric Auger wrote:
+> Introduce __KVM_HAVE_ARCH_INTC_INITIALIZED define and
+> associated kvm_arch_intc_initialized function. This latter
+> allows to test whether the virtual interrupt controller is initialized
+> and ready to accept virtual IRQ injection. On some architectures,
+> the virtual interrupt controller is dynamically instantiated, justifying
+> that kind of check.
 > 
+> Signed-off-by: Eric Auger <eric.auger@linaro.org>
 > 
-> commit a4dba130891271084344c12537731542ec77cb85
-> Author: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> Date:   Fri Nov 21 11:07:39 2014 +0000
-> 
->     xen/arm/arm64: introduce xen_arch_need_swiotlb
-> 
-> 
-> to stable trees from 3.16 onward (3.16 included).
-> 
-> 
-> The commit needs to be slightly modified because is_device_dma_coherent
-> is not available on kernels < 3.19, so I just removed the call,
-> thus assuming that the device is not coherent on arm (slower but safe):
-> 
->  diff --git a/arch/arm/xen/mm.c b/arch/arm/xen/mm.c
-> -index ab700e1..28ebf3e 100644
-> +index b0e77de..f8a576b 100644
->  --- a/arch/arm/xen/mm.c
->  +++ b/arch/arm/xen/mm.c
-> -@@ -100,6 +100,13 @@ void __xen_dma_sync_single_for_device(struct device *hwdev,
-> - 	__xen_dma_page_cpu_to_dev(hwdev, handle, size, dir);
-> - }
-> +@@ -16,6 +16,13 @@
-> + #include <asm/xen/hypercall.h>
-> + #include <asm/xen/interface.h>
->   
->  +bool xen_arch_need_swiotlb(struct device *dev,
->  +			   unsigned long pfn,
->  +			   unsigned long mfn)
->  +{
-> -+	return ((pfn != mfn) && !is_device_dma_coherent(dev));
-> ++	return (pfn != mfn);
->  +}
->  +
->   int xen_create_contiguous_region(phys_addr_t pstart, unsigned int order,
-> 
-> 
-> The modified patch follows.
-> 
->
-
-Thank you Stefano, I will queue this for the next 3.16 kernel.
-
-Cheers,
---
-Luís
-
-> ---
-> 
-> xen/arm/arm64: introduce xen_arch_need_swiotlb
-> 
-> From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> 
-> Introduce an arch specific function to find out whether a particular dma
-> mapping operation needs to bounce on the swiotlb buffer.
-> 
-> On ARM and ARM64, if the page involved is a foreign page and the device
-> is not coherent, we need to bounce because at unmap time we cannot
-> execute any required cache maintenance operations (we don't know how to
-> find the pfn from the mfn).
-> 
-> No change of behaviour for x86.
-> 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> Reviewed-by: David Vrabel <david.vrabel@citrix.com>
-> Reviewed-by: Catalin Marinas <catalin.marinas@arm.com>
-> Acked-by: Ian Campbell <ian.campbell@citrix.com>
-> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> 
-> diff --git a/arch/arm/include/asm/xen/page.h b/arch/arm/include/asm/xen/page.h
-> index 135c24a..68c739b 100644
-> --- a/arch/arm/include/asm/xen/page.h
-> +++ b/arch/arm/include/asm/xen/page.h
-> @@ -107,4 +107,8 @@ static inline bool set_phys_to_machine(unsigned long pfn, unsigned long mfn)
->  #define xen_remap(cookie, size) ioremap_cache((cookie), (size))
->  #define xen_unmap(cookie) iounmap((cookie))
->  
-> +bool xen_arch_need_swiotlb(struct device *dev,
-> +			   unsigned long pfn,
-> +			   unsigned long mfn);
-> +
->  #endif /* _ASM_ARM_XEN_PAGE_H */
-> diff --git a/arch/arm/xen/mm.c b/arch/arm/xen/mm.c
-> index b0e77de..f8a576b 100644
-> --- a/arch/arm/xen/mm.c
-> +++ b/arch/arm/xen/mm.c
-> @@ -16,6 +16,13 @@
->  #include <asm/xen/hypercall.h>
->  #include <asm/xen/interface.h>
->  
-> +bool xen_arch_need_swiotlb(struct device *dev,
-> +			   unsigned long pfn,
-> +			   unsigned long mfn)
-> +{
-> +	return (pfn != mfn);
-> +}
-> +
->  int xen_create_contiguous_region(phys_addr_t pstart, unsigned int order,
->  				 unsigned int address_bits,
->  				 dma_addr_t *dma_handle)
-> diff --git a/arch/x86/include/asm/xen/page.h b/arch/x86/include/asm/xen/page.h
-> index c949923..f58ef6c 100644
-> --- a/arch/x86/include/asm/xen/page.h
-> +++ b/arch/x86/include/asm/xen/page.h
-> @@ -236,4 +236,11 @@ void make_lowmem_page_readwrite(void *vaddr);
->  #define xen_remap(cookie, size) ioremap((cookie), (size));
->  #define xen_unmap(cookie) iounmap((cookie))
->  
-> +static inline bool xen_arch_need_swiotlb(struct device *dev,
-> +					 unsigned long pfn,
-> +					 unsigned long mfn)
-> +{
-> +	return false;
-> +}
-> +
->  #endif /* _ASM_X86_XEN_PAGE_H */
-> diff --git a/drivers/xen/swiotlb-xen.c b/drivers/xen/swiotlb-xen.c
-> index ebd8f21..ac5d41b 100644
-> --- a/drivers/xen/swiotlb-xen.c
-> +++ b/drivers/xen/swiotlb-xen.c
-> @@ -399,7 +399,9 @@ dma_addr_t xen_swiotlb_map_page(struct device *dev, struct page *page,
->  	 * buffering it.
->  	 */
->  	if (dma_capable(dev, dev_addr, size) &&
-> -	    !range_straddles_page_boundary(phys, size) && !swiotlb_force) {
-> +	    !range_straddles_page_boundary(phys, size) &&
-> +		!xen_arch_need_swiotlb(dev, PFN_DOWN(phys), PFN_DOWN(dev_addr)) &&
-> +		!swiotlb_force) {
->  		/* we are not interested in the dma_addr returned by
->  		 * xen_dma_map_page, only in the potential cache flushes executed
->  		 * by the function. */
-> @@ -557,6 +559,7 @@ xen_swiotlb_map_sg_attrs(struct device *hwdev, struct scatterlist *sgl,
->  		dma_addr_t dev_addr = xen_phys_to_bus(paddr);
->  
->  		if (swiotlb_force ||
-> +		    xen_arch_need_swiotlb(hwdev, PFN_DOWN(paddr), PFN_DOWN(dev_addr)) ||
->  		    !dma_capable(hwdev, dev_addr, sg->length) ||
->  		    range_straddles_page_boundary(paddr, sg->length)) {
->  			phys_addr_t map = swiotlb_tbl_map_single(hwdev,
-> --
-> To unsubscribe from this list: send the line "unsubscribe stable" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Acked-by: Christoffer Dall <christoffer.dall@linaro.org>
