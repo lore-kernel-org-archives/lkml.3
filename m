@@ -1,128 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932450AbbAOWPw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 17:15:52 -0500
-Received: from mail-oi0-f44.google.com ([209.85.218.44]:55209 "EHLO
-	mail-oi0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932189AbbAOWPt (ORCPT
+	id S932461AbbAOWQx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 17:16:53 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:57828 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753511AbbAOWQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 17:15:49 -0500
-Date: Thu, 15 Jan 2015 16:15:45 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Kjetil Oftedal <oftedal@gmail.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Yijing Wang <wangyijing@huawei.com>, Sam Ravnborg <sam@ravnborg.org>,
-        sparclinux@vger.kernel.org
-Subject: Re: [PATCH 10/10] PCI, sparc: clip firmware assigned resource under
- parent bridge's
-Message-ID: <20150115221545.GA29776@google.com>
-References: <1421090600-9750-1-git-send-email-yinghai@kernel.org>
- <1421090600-9750-11-git-send-email-yinghai@kernel.org>
- <CALMQjD91+0o=DjQDV3ydkakrG6X=3RkHoCf-T5=wLbC01WkdEA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALMQjD91+0o=DjQDV3ydkakrG6X=3RkHoCf-T5=wLbC01WkdEA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 15 Jan 2015 17:16:52 -0500
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Bo Shen <voice.shen@atmel.com>, Wenyou Yang <Wenyou.Yang@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH 0/5] AT91: switch to multiplatform
+Date: Thu, 15 Jan 2015 23:16:44 +0100
+Message-Id: <1421360209-15852-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 11:31:09PM +0100, Kjetil Oftedal wrote:
-> Hi,
-> 
-> Am I missing something or is this just code to get the the resource
-> subsystem to accept the bus resources, not caring if the resources are
-> actually usable? PCI BARs usually have a given size for a reason?
+This patch set switches all AT91 SoCs to multiplatform then proceed to further
+cleanup.
 
-Hi Kjetil,
+Alexandre Belloni (5):
+  ARM: at91: switch to multiplatform
+  ARM: at91: switch at91_dt_defconfig to multiplatform
+  ARM: at91: remove unused uncompress.h
+  ARM: at91: sama5d4: copy defines to SoC file
+  ARM: at91: remove useless SoC includes
 
-This isn't for regular PCI BARs (Yinghai did apply it to some regular BARs
-in the v1 patches, but I think that was a mistake).  This is for scenarios
-like this:
+ arch/arm/Kconfig                              |  13 --
+ arch/arm/configs/at91_dt_defconfig            |   5 +-
+ arch/arm/mach-at91/Kconfig                    | 114 +++++++-------
+ arch/arm/mach-at91/Makefile                   |   2 +
+ arch/arm/mach-at91/include/mach/at91rm9200.h  | 103 ------------
+ arch/arm/mach-at91/include/mach/at91sam9260.h | 129 ---------------
+ arch/arm/mach-at91/include/mach/at91sam9261.h |  99 ------------
+ arch/arm/mach-at91/include/mach/at91sam9263.h | 117 --------------
+ arch/arm/mach-at91/include/mach/at91sam9g45.h | 143 -----------------
+ arch/arm/mach-at91/include/mach/at91sam9n12.h |  65 --------
+ arch/arm/mach-at91/include/mach/at91sam9rl.h  | 105 -------------
+ arch/arm/mach-at91/include/mach/at91sam9x5.h  |  71 ---------
+ arch/arm/mach-at91/include/mach/hardware.h    |  11 --
+ arch/arm/mach-at91/include/mach/sama5d3.h     |  86 ----------
+ arch/arm/mach-at91/include/mach/sama5d4.h     |  33 ----
+ arch/arm/mach-at91/include/mach/uncompress.h  | 218 --------------------------
+ arch/arm/mach-at91/sama5d4.c                  |  12 +-
+ 17 files changed, 77 insertions(+), 1249 deletions(-)
+ delete mode 100644 arch/arm/mach-at91/include/mach/at91rm9200.h
+ delete mode 100644 arch/arm/mach-at91/include/mach/at91sam9260.h
+ delete mode 100644 arch/arm/mach-at91/include/mach/at91sam9261.h
+ delete mode 100644 arch/arm/mach-at91/include/mach/at91sam9263.h
+ delete mode 100644 arch/arm/mach-at91/include/mach/at91sam9g45.h
+ delete mode 100644 arch/arm/mach-at91/include/mach/at91sam9n12.h
+ delete mode 100644 arch/arm/mach-at91/include/mach/at91sam9rl.h
+ delete mode 100644 arch/arm/mach-at91/include/mach/at91sam9x5.h
+ delete mode 100644 arch/arm/mach-at91/include/mach/sama5d3.h
+ delete mode 100644 arch/arm/mach-at91/include/mach/sama5d4.h
+ delete mode 100644 arch/arm/mach-at91/include/mach/uncompress.h
 
-  pci_bus 0000:00: root bus resource [mem 0xc0000000-0xffffffff]
-  pci 0000:00:01.0:   bridge window [mem 0xbdf00000-0xddefffff 64bit pref]
-  pci 0000:01:00.0: reg 0x10: [mem 0xc0000000-0xcfffffff pref]
+-- 
+2.1.0
 
-The 00:01.0 window is illegal: it starts before the host bridge window, so
-we have to assume the [0xbdf00000-0xbfffffff] region is inaccessible.  We
-can make it legal by clipping it to [mem 0xc0000000-0xddefffff 64bit pref].
-
-Linux should never assign an illegal bridge window like this, but some
-firmware does, and the idea is to make a minimal change (clip the window)
-before resorting to the big hammer of reassigning resources from scratch.
-
-Bjorn
-
-> On 12/01/2015, Yinghai Lu <yinghai@kernel.org> wrote:
-> > Some bios put range that is not fully coverred by root bus resources.
-> > Try to clip them and update them in pci bridge bars.
-> >
-> > We'd like to fix other arches instead of just x86.
-> >
-> > Link: https://bugzilla.kernel.org/show_bug.cgi?id=85491
-> > Reported-by: Marek Kordik <kordikmarek@gmail.com>
-> > Fixes: 5b28541552ef ("PCI: Restrict 64-bit prefetchable bridge windows to
-> > 64-bit resources")
-> > Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> > Cc: "David S. Miller" <davem@davemloft.net>
-> > Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
-> > Cc: Yijing Wang <wangyijing@huawei.com>
-> > Cc: Sam Ravnborg <sam@ravnborg.org>
-> > Cc: sparclinux@vger.kernel.org
-> > ---
-> >  arch/sparc/kernel/pci.c | 20 +++++++++++++++++++-
-> >  1 file changed, 19 insertions(+), 1 deletion(-)
-> >
-> > diff --git a/arch/sparc/kernel/pci.c b/arch/sparc/kernel/pci.c
-> > index b36365f..0e391e5 100644
-> > --- a/arch/sparc/kernel/pci.c
-> > +++ b/arch/sparc/kernel/pci.c
-> > @@ -623,6 +623,7 @@ static void pci_claim_bus_resources(struct pci_bus
-> > *bus)
-> >  	struct pci_dev *dev;
-> >
-> >  	list_for_each_entry(dev, &bus->devices, bus_list) {
-> > +		bool changed = false;
-> >  		int i;
-> >
-> >  		for (i = 0; i < PCI_NUM_RESOURCES; i++) {
-> > @@ -639,8 +640,25 @@ static void pci_claim_bus_resources(struct pci_bus
-> > *bus)
-> >  				       (unsigned long long)r->end,
-> >  				       (unsigned int)r->flags);
-> >
-> > -			pci_claim_resource(dev, i);
-> > +			if (pci_claim_resource(dev, i) >= 0)
-> > +				continue;
-> > +
-> > +			if (dev->subordinate &&
-> > +			    i >= PCI_BRIDGE_RESOURCES &&
-> > +			    i < PCI_NUM_RESOURCES &&
-> > +			    (dev->class >> 8) == PCI_CLASS_BRIDGE_PCI &&
-> > +			    pci_bus_clip_resource(dev, r)) {
-> > +				changed = true;
-> > +				pci_claim_resource(dev, i);
-> > +			} else if (i < PCI_BRIDGE_RESOURCES &&
-> > +				   i != PCI_ROM_RESOURCE &&
-> > +				   pci_bus_clip_resource(dev, r)) {
-> > +					pci_update_resource(dev, i);
-> > +					pci_claim_resource(dev, i);
-> > +			}
-> >  		}
-> > +		if (changed)
-> > +			pci_setup_bridge(dev->subordinate);
-> >  	}
-> >
-> >  	list_for_each_entry(child_bus, &bus->children, node)
-> > --
-> > 1.8.4.5
-> >
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe sparclinux" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >
