@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932482AbbAOWRw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 17:17:52 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:57841 "EHLO
+	id S1755983AbbAOWQ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 17:16:56 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:57847 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755861AbbAOWQx (ORCPT
+	with ESMTP id S932452AbbAOWQy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 17:16:53 -0500
+	Thu, 15 Jan 2015 17:16:54 -0500
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>
 Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -15,9 +15,9 @@ Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Bo Shen <voice.shen@atmel.com>, Wenyou Yang <Wenyou.Yang@atmel.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH 2/5] ARM: at91: switch at91_dt_defconfig to multiplatform
-Date: Thu, 15 Jan 2015 23:16:46 +0100
-Message-Id: <1421360209-15852-3-git-send-email-alexandre.belloni@free-electrons.com>
+Subject: [PATCH 3/5] ARM: at91: remove unused uncompress.h
+Date: Thu, 15 Jan 2015 23:16:47 +0100
+Message-Id: <1421360209-15852-4-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1421360209-15852-1-git-send-email-alexandre.belloni@free-electrons.com>
 References: <1421360209-15852-1-git-send-email-alexandre.belloni@free-electrons.com>
@@ -25,27 +25,239 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Following the switch to multiplatform, uncompress.h is not used anymore. Remove
+it.
+
 Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
- arch/arm/configs/at91_dt_defconfig | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ arch/arm/mach-at91/include/mach/uncompress.h | 218 ---------------------------
+ 1 file changed, 218 deletions(-)
+ delete mode 100644 arch/arm/mach-at91/include/mach/uncompress.h
 
-diff --git a/arch/arm/configs/at91_dt_defconfig b/arch/arm/configs/at91_dt_defconfig
-index 811e72bbe642..2f82bc5bacec 100644
---- a/arch/arm/configs/at91_dt_defconfig
-+++ b/arch/arm/configs/at91_dt_defconfig
-@@ -13,7 +13,10 @@ CONFIG_MODULE_UNLOAD=y
- # CONFIG_BLK_DEV_BSG is not set
- # CONFIG_IOSCHED_DEADLINE is not set
- # CONFIG_IOSCHED_CFQ is not set
--CONFIG_ARCH_AT91=y
-+CONFIG_ARCH_MULTI_V4T=y
-+CONFIG_ARCH_MULTI_V5=y
-+# CONFIG_ARCH_MULTI_V7 is not set
-+CONFIG_SOC_SAM_V4_V5=y
- CONFIG_SOC_AT91RM9200=y
- CONFIG_SOC_AT91SAM9=y
- CONFIG_AT91_TIMER_HZ=128
+diff --git a/arch/arm/mach-at91/include/mach/uncompress.h b/arch/arm/mach-at91/include/mach/uncompress.h
+deleted file mode 100644
+index 4ebb609369e3..000000000000
+--- a/arch/arm/mach-at91/include/mach/uncompress.h
++++ /dev/null
+@@ -1,218 +0,0 @@
+-/*
+- * arch/arm/mach-at91/include/mach/uncompress.h
+- *
+- * Copyright (C) 2003 SAN People
+- * Copyright (C) 2012 Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+- */
+-
+-#ifndef __ASM_ARCH_UNCOMPRESS_H
+-#define __ASM_ARCH_UNCOMPRESS_H
+-
+-#include <linux/io.h>
+-#include <linux/atmel_serial.h>
+-#include <mach/hardware.h>
+-
+-#include <mach/at91_dbgu.h>
+-#include <mach/cpu.h>
+-
+-void __iomem *at91_uart;
+-
+-static const u32 uarts_rm9200[] = {
+-	AT91_BASE_DBGU0,
+-	AT91RM9200_BASE_US0,
+-	AT91RM9200_BASE_US1,
+-	AT91RM9200_BASE_US2,
+-	AT91RM9200_BASE_US3,
+-	0,
+-};
+-
+-static const u32 uarts_sam9260[] = {
+-	AT91_BASE_DBGU0,
+-	AT91SAM9260_BASE_US0,
+-	AT91SAM9260_BASE_US1,
+-	AT91SAM9260_BASE_US2,
+-	AT91SAM9260_BASE_US3,
+-	AT91SAM9260_BASE_US4,
+-	AT91SAM9260_BASE_US5,
+-	0,
+-};
+-
+-static const u32 uarts_sam9261[] = {
+-	AT91_BASE_DBGU0,
+-	AT91SAM9261_BASE_US0,
+-	AT91SAM9261_BASE_US1,
+-	AT91SAM9261_BASE_US2,
+-	0,
+-};
+-
+-static const u32 uarts_sam9263[] = {
+-	AT91_BASE_DBGU1,
+-	AT91SAM9263_BASE_US0,
+-	AT91SAM9263_BASE_US1,
+-	AT91SAM9263_BASE_US2,
+-	0,
+-};
+-
+-static const u32 uarts_sam9g45[] = {
+-	AT91_BASE_DBGU1,
+-	AT91SAM9G45_BASE_US0,
+-	AT91SAM9G45_BASE_US1,
+-	AT91SAM9G45_BASE_US2,
+-	AT91SAM9G45_BASE_US3,
+-	0,
+-};
+-
+-static const u32 uarts_sam9rl[] = {
+-	AT91_BASE_DBGU0,
+-	AT91SAM9RL_BASE_US0,
+-	AT91SAM9RL_BASE_US1,
+-	AT91SAM9RL_BASE_US2,
+-	AT91SAM9RL_BASE_US3,
+-	0,
+-};
+-
+-static const u32 uarts_sam9x5[] = {
+-	AT91_BASE_DBGU0,
+-	AT91SAM9X5_BASE_USART0,
+-	AT91SAM9X5_BASE_USART1,
+-	AT91SAM9X5_BASE_USART2,
+-	0,
+-};
+-
+-static const u32 uarts_sama5d3[] = {
+-	AT91_BASE_DBGU1,
+-	SAMA5D3_BASE_USART0,
+-	SAMA5D3_BASE_USART1,
+-	SAMA5D3_BASE_USART2,
+-	SAMA5D3_BASE_USART3,
+-	0,
+-};
+-
+-static const u32 uarts_sama5d4[] = {
+-	AT91_BASE_DBGU2,
+-	SAMA5D4_BASE_USART3,
+-	0,
+-};
+-
+-static inline const u32* decomp_soc_detect(void __iomem *dbgu_base)
+-{
+-	u32 cidr, socid;
+-
+-	cidr = __raw_readl(dbgu_base + AT91_DBGU_CIDR);
+-	socid = cidr & ~AT91_CIDR_VERSION;
+-
+-	switch (socid) {
+-	case ARCH_ID_AT91RM9200:
+-		return uarts_rm9200;
+-
+-	case ARCH_ID_AT91SAM9G20:
+-	case ARCH_ID_AT91SAM9260:
+-		return uarts_sam9260;
+-
+-	case ARCH_ID_AT91SAM9261:
+-		return uarts_sam9261;
+-
+-	case ARCH_ID_AT91SAM9263:
+-		return uarts_sam9263;
+-
+-	case ARCH_ID_AT91SAM9G45:
+-		return uarts_sam9g45;
+-
+-	case ARCH_ID_AT91SAM9RL64:
+-		return uarts_sam9rl;
+-
+-	case ARCH_ID_AT91SAM9N12:
+-	case ARCH_ID_AT91SAM9X5:
+-		return uarts_sam9x5;
+-
+-	case ARCH_ID_SAMA5:
+-		cidr = __raw_readl(dbgu_base + AT91_DBGU_EXID);
+-		if (cidr & ARCH_EXID_SAMA5D3)
+-			return uarts_sama5d3;
+-		else if (cidr & ARCH_EXID_SAMA5D4)
+-			return uarts_sama5d4;
+-
+-		break;
+-	}
+-
+-	/* at91sam9g10 */
+-	if ((cidr & ~AT91_CIDR_EXT) == ARCH_ID_AT91SAM9G10) {
+-		return uarts_sam9261;
+-	}
+-	/* at91sam9xe */
+-	else if ((cidr & AT91_CIDR_ARCH) == ARCH_FAMILY_AT91SAM9XE) {
+-		return uarts_sam9260;
+-	}
+-
+-	return NULL;
+-}
+-
+-static inline void arch_decomp_setup(void)
+-{
+-	int i = 0;
+-	const u32* usarts;
+-
+-	usarts = decomp_soc_detect((void __iomem *)AT91_BASE_DBGU0);
+-	if (!usarts)
+-		usarts = decomp_soc_detect((void __iomem *)AT91_BASE_DBGU1);
+-	if (!usarts)
+-		usarts = decomp_soc_detect((void __iomem *)AT91_BASE_DBGU2);
+-	if (!usarts) {
+-		at91_uart = NULL;
+-		return;
+-	}
+-
+-	do {
+-		/* physical address */
+-		at91_uart = (void __iomem *)usarts[i];
+-
+-		if (__raw_readl(at91_uart + ATMEL_US_BRGR))
+-			return;
+-		i++;
+-	} while (usarts[i]);
+-
+-	at91_uart = NULL;
+-}
+-
+-/*
+- * The following code assumes the serial port has already been
+- * initialized by the bootloader.  If you didn't setup a port in
+- * your bootloader then nothing will appear (which might be desired).
+- *
+- * This does not append a newline
+- */
+-static void putc(int c)
+-{
+-	if (!at91_uart)
+-		return;
+-
+-	while (!(__raw_readl(at91_uart + ATMEL_US_CSR) & ATMEL_US_TXRDY))
+-		barrier();
+-	__raw_writel(c, at91_uart + ATMEL_US_THR);
+-}
+-
+-static inline void flush(void)
+-{
+-	if (!at91_uart)
+-		return;
+-
+-	/* wait for transmission to complete */
+-	while (!(__raw_readl(at91_uart + ATMEL_US_CSR) & ATMEL_US_TXEMPTY))
+-		barrier();
+-}
+-
+-#endif
 -- 
 2.1.0
 
