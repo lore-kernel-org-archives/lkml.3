@@ -1,157 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752740AbbAOKrM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 05:47:12 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:60952 "EHLO SMTP.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751683AbbAOKrK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 05:47:10 -0500
-X-IronPort-AV: E=Sophos;i="5.09,402,1418083200"; 
-   d="scan'208";a="216448437"
-Date: Thu, 15 Jan 2015 10:47:01 +0000
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball.uk.xensource.com
-To: "Luis R. Rodriguez" <mcgrof@do-not-panic.com>
-CC: <hpa@zytor.com>, <josh@joshtriplett.org>, <sam@ravnborg.org>,
-        <stefano.stabellini@eu.citrix.com>, <bpoirier@suse.de>,
-        <x86@kernel.org>, <kvm@vger.kernel.org>,
-        <xen-devel@lists.xenproject.org>, <linux-kernel@vger.kernel.org>,
-        <julien.grall@linaro.org>, <rientjes@google.com>, <mcgrof@suse.com>,
-        Borislav Petkov <bp@suse.de>, Pekka Enberg <penberg@kernel.org>,
-        Michal Marek <mmarek@suse.cz>, Randy Dunlap <rdunlap@infradead.org>,
-        <levinsasha928@gmail.com>, <mtosatti@redhat.com>,
-        <fengguang.wu@intel.com>, David Vrabel <david.vrabel@citrix.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH v3 2/2] x86, arm, platform, xen, kconfig: add xen defconfig
- helper
-In-Reply-To: <1421264027-10706-3-git-send-email-mcgrof@do-not-panic.com>
-Message-ID: <alpine.DEB.2.02.1501151046370.28492@kaball.uk.xensource.com>
-References: <1421264027-10706-1-git-send-email-mcgrof@do-not-panic.com> <1421264027-10706-3-git-send-email-mcgrof@do-not-panic.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752805AbbAOKsj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 05:48:39 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:47180 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751427AbbAOKsh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 05:48:37 -0500
+Date: Thu, 15 Jan 2015 10:48:56 +0000
+From: Luis Henriques <luis.henriques@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Daniel Vetter <daniel.vetter@intel.com>, Thomas Voegtle <tv@lio96.de>,
+        Chris Wilson <chris@chris-wilson.co.uk>
+Subject: Re: [PATCH 3.16.y-ckt 075/216] drm/i915: Disallow pin ioctl
+ completely for kms drivers
+Message-ID: <20150115104856.GA5176@charon>
+References: <1421085933-32536-1-git-send-email-luis.henriques@canonical.com>
+ <1421085933-32536-76-git-send-email-luis.henriques@canonical.com>
+ <20150113193357.GB24809@charon>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-X-DLP: MIA1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20150113193357.GB24809@charon>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Jan 2015, Luis R. Rodriguez wrote:
-> From: "Luis R. Rodriguez" <mcgrof@suse.com>
+On Tue, Jan 13, 2015 at 07:33:57PM +0000, Luis Henriques wrote:
+> On Mon, Jan 12, 2015 at 06:03:12PM +0000, Luis Henriques wrote:
+> > 3.16.7-ckt4 -stable review patch.  If anyone has any objections, please let me know.
+> >
 > 
-> This lets you build a kernel which can support xen dom0
-> or xen guests by just using:
+> Hi Daniel and Chris,
 > 
->    make xenconfig
+> Thomas Voegtle (on Cc:) reported a regression in 3.16.7-ckt4, and he
+> traced the issue to this commit.  You can see the whole thread in the
+> 3.16.7-ckt4 stable review email, or here:
 > 
-> on both x86 and arm64 kernels. This also splits out the
-> options which are available currently to be built with x86
-> and 'make ARCH=arm64' under a shared config.
+>  http://thread.gmane.org/gmane.linux.kernel.stable/119818/focus=120043
 > 
-> Technically xen supports a dom0 kernel and also a guest
-> kernel configuration but upon review with the xen team
-> since we don't have many dom0 options its best to just
-> combine these two into one.
-> 
-> Cc: Josh Triplett <josh@joshtriplett.org>
-> Cc: Borislav Petkov <bp@suse.de>
-> Cc: Pekka Enberg <penberg@kernel.org>
-> Cc: David Rientjes <rientjes@google.com>
-> Cc: Michal Marek <mmarek@suse.cz>
-> Cc: Randy Dunlap <rdunlap@infradead.org>
-> Cc: penberg@kernel.org
-> Cc: levinsasha928@gmail.com
-> Cc: mtosatti@redhat.com
-> Cc: fengguang.wu@intel.com
-> Cc: David Vrabel <david.vrabel@citrix.com>
-> Cc: Ian Campbell <Ian.Campbell@citrix.com>
-> Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> Cc: xen-devel@lists.xenproject.org
-> Acked-by: Julien Grall <julien.grall@linaro.org>
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
-> Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+> Any suggestions/ideas before I drop this patch?  It seems odd to me
+> that this patch causes a memory leak, but I don't really know the
+> code.
+>
 
-Acked-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+This patch has been dropped from 3.16.7-ckt4.
 
+Cheers,
+--
+Luís
 
->  arch/x86/configs/xen.config | 10 ++++++++++
->  kernel/configs/xen.config   | 26 ++++++++++++++++++++++++++
->  scripts/kconfig/Makefile    |  5 +++++
->  3 files changed, 41 insertions(+)
->  create mode 100644 arch/x86/configs/xen.config
->  create mode 100644 kernel/configs/xen.config
+> Cheers,
+> --
+> Luís
 > 
-> diff --git a/arch/x86/configs/xen.config b/arch/x86/configs/xen.config
-> new file mode 100644
-> index 0000000..fa7d214
-> --- /dev/null
-> +++ b/arch/x86/configs/xen.config
-> @@ -0,0 +1,10 @@
-> +# x86 xen specific config options
-> +CONFIG_XEN_PVHVM=y
-> +CONFIG_XEN_MAX_DOMAIN_MEMORY=500
-> +CONFIG_XEN_SAVE_RESTORE=y
-> +# CONFIG_XEN_DEBUG_FS is not set
-> +CONFIG_XEN_PVH=y
-> +CONFIG_XEN_MCE_LOG=y
-> +CONFIG_PCI_XEN=y
-> +CONFIG_XEN_PCIDEV_FRONTEND=m
-> +CONFIG_XEN_ACPI_PROCESSOR=m
-> diff --git a/kernel/configs/xen.config b/kernel/configs/xen.config
-> new file mode 100644
-> index 0000000..476fcf0
-> --- /dev/null
-> +++ b/kernel/configs/xen.config
-> @@ -0,0 +1,26 @@
-> +# generic config
-> +CONFIG_XEN=y
-> +CONFIG_XEN_DOM0=y
-> +CONFIG_XEN_BLKDEV_FRONTEND=m
-> +CONFIG_XEN_BLKDEV_BACKEND=m
-> +CONFIG_XEN_NETDEV_FRONTEND=m
-> +CONFIG_XEN_NETDEV_BACKEND=m
-> +CONFIG_INPUT_XEN_KBDDEV_FRONTEND=y
-> +CONFIG_HVC_XEN=y
-> +CONFIG_HVC_XEN_FRONTEND=y
-> +CONFIG_XEN_WDT=m
-> +CONFIG_XEN_FBDEV_FRONTEND=y
-> +CONFIG_XEN_BALLOON=y
-> +CONFIG_XEN_BALLOON_MEMORY_HOTPLUG=y
-> +CONFIG_XEN_SCRUB_PAGES=y
-> +CONFIG_XEN_DEV_EVTCHN=m
-> +CONFIG_XEN_BACKEND=y
-> +CONFIG_XENFS=m
-> +CONFIG_XEN_COMPAT_XENFS=y
-> +CONFIG_XEN_SYS_HYPERVISOR=y
-> +CONFIG_XEN_XENBUS_FRONTEND=y
-> +CONFIG_XEN_GNTDEV=m
-> +CONFIG_XEN_GRANT_DEV_ALLOC=m
-> +CONFIG_SWIOTLB_XEN=y
-> +CONFIG_XEN_PCIDEV_BACKEND=m
-> +CONFIG_XEN_PRIVCMD=m
-> diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-> index ff612b0..f4a8f89 100644
-> --- a/scripts/kconfig/Makefile
-> +++ b/scripts/kconfig/Makefile
-> @@ -117,6 +117,10 @@ PHONY += kvmconfig
->  kvmconfig:
->  	$(call mergeconfig,kvm_guest)
->  
-> +PHONY += xenconfig
-> +xenconfig:
-> +	$(call mergeconfig,xen)
-> +
->  PHONY += tinyconfig
->  tinyconfig: allnoconfig
->  	$(call mergeconfig,tiny)
-> @@ -142,6 +146,7 @@ help:
->  	@echo  '  listnewconfig   - List new options'
->  	@echo  '  olddefconfig	  - Same as silentoldconfig but sets new symbols to their default value'
->  	@echo  '  kvmconfig	  - Enable additional options for kvm guest kernel support'
-> +	@echo  '  xenconfig       - Enable additional options for xen dom0 and guest kernel support'
->  	@echo  '  tinyconfig	  - Configure the tiniest possible kernel'
->  
->  # lxdialog stuff
+> > ------------------
+> > 
+> > From: Daniel Vetter <daniel.vetter@ffwll.ch>
+> > 
+> > commit d472fcc8379c062bd56a3876fc6ef22258f14a91 upstream.
+> > 
+> > The problem here is that SNA pins batchbuffers to etch out a bit more
+> > performance. Iirc it started out as a w/a for i830M (which we've
+> > implemented in the kernel since a long time already). The problem is
+> > that the pin ioctl wasn't added in
+> > 
+> > commit d23db88c3ab233daed18709e3a24d6c95344117f
+> > Author: Chris Wilson <chris@chris-wilson.co.uk>
+> > Date:   Fri May 23 08:48:08 2014 +0200
+> > 
+> >     drm/i915: Prevent negative relocation deltas from wrapping
+> > 
+> > Fix this by simply disallowing pinning from userspace so that the
+> > kernel is in full control of batch placement again. Especially since
+> > distros are moving towards running X as non-root, so most users won't
+> > even be able to see any benefits.
+> > 
+> > UMS support is dead now, but we need this minimal patch for
+> > backporting. Follow-up patch will remove the pin ioctl code
+> > completely.
+> > 
+> > Note to backporters: You must have both
+> > 
+> > commit b45305fce5bb1abec263fcff9d81ebecd6306ede
+> > Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+> > Date:   Mon Dec 17 16:21:27 2012 +0100
+> > 
+> >     drm/i915: Implement workaround for broken CS tlb on i830/845
+> > 
+> > which laned in 3.8 and
+> > 
+> > commit c4d69da167fa967749aeb70bc0e94a457e5d00c1
+> > Author: Chris Wilson <chris@chris-wilson.co.uk>
+> > Date:   Mon Sep 8 14:25:41 2014 +0100
+> > 
+> >     drm/i915: Evict CS TLBs between batches
+> > 
+> > which is also marked cc: stable. Otherwise this could introduce a
+> > regression by disabling the userspace w/a without the kernel w/a being
+> > fully functional on i830/45.
+> > 
+> > References: https://bugs.freedesktop.org/show_bug.cgi?id=76554#c116
+> > Cc: Chris Wilson <chris@chris-wilson.co.uk>
+> > Signed-off-by: Daniel Vetter <daniel.vetter@intel.com>
+> > Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+> > ---
+> >  drivers/gpu/drm/i915/i915_gem.c | 5 ++++-
+> >  1 file changed, 4 insertions(+), 1 deletion(-)
+> > 
+> > diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+> > index ef3b4798da02..05cf35a972e5 100644
+> > --- a/drivers/gpu/drm/i915/i915_gem.c
+> > +++ b/drivers/gpu/drm/i915/i915_gem.c
+> > @@ -4129,7 +4129,7 @@ i915_gem_pin_ioctl(struct drm_device *dev, void *data,
+> >  	struct drm_i915_gem_object *obj;
+> >  	int ret;
+> >  
+> > -	if (INTEL_INFO(dev)->gen >= 6)
+> > +	if (drm_core_check_feature(dev, DRIVER_MODESET))
+> >  		return -ENODEV;
+> >  
+> >  	ret = i915_mutex_lock_interruptible(dev);
+> > @@ -4222,6 +4222,9 @@ i915_gem_busy_ioctl(struct drm_device *dev, void *data,
+> >  	struct drm_i915_gem_object *obj;
+> >  	int ret;
+> >  
+> > +	if (drm_core_check_feature(dev, DRIVER_MODESET))
+> > +		return -ENODEV;
+> > +
+> >  	ret = i915_mutex_lock_interruptible(dev);
+> >  	if (ret)
+> >  		return ret;
+> > -- 
+> > 2.1.4
+> > 
+> 
 > -- 
-> 2.1.1
-> 
+> kernel-team mailing list
+> kernel-team@lists.ubuntu.com
+> https://lists.ubuntu.com/mailman/listinfo/kernel-team
