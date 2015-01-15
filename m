@@ -1,103 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932071AbbAOOxt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 09:53:49 -0500
-Received: from mga09.intel.com ([134.134.136.24]:51662 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751377AbbAOOxr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 09:53:47 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="asc'?scan'208";a="440948309"
-Message-ID: <1421333621.2632.19.camel@jtkirshe-mobl>
-Subject: Re: [PATCH] e100: Don't enable WoL by default on Toshiba devices
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: Ondrej Zary <linux@rainbow-software.org>
-Cc: David Miller <davem@davemloft.net>, e1000-devel@lists.sourceforge.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Thu, 15 Jan 2015 06:53:41 -0800
-In-Reply-To: <201501151440.32159.linux@rainbow-software.org>
-References: <1415832445-9524-1-git-send-email-linux@rainbow-software.org>
-	 <20141112.181813.1072534293888457853.davem@davemloft.net>
-	 <1415849927.2454.14.camel@jtkirshe-mobl>
-	 <201501151440.32159.linux@rainbow-software.org>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-AdWP2HVJX4glXsf1aK1d"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
+	id S1754473AbbAOOzW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 09:55:22 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:54474 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751423AbbAOOzS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 09:55:18 -0500
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org, monstr@monstr.eu
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Alan Cox <alan@linux.intel.com>, Tony Lindgren <tony@atomide.com>,
+        Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH 1/2] tty: serial: 8250_core: Remove trailing whitespaces
+Date: Thu, 15 Jan 2015 15:55:07 +0100
+Message-Id: <3293c93689f5d8c684133a9d9952411a201609dc.1421333585.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-24537-1421333708-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
---=-AdWP2HVJX4glXsf1aK1d
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+--=_mimegpg-monstr-desktop-24537-1421333708-0001
 
-On Thu, 2015-01-15 at 14:40 +0100, Ondrej Zary wrote:
-> On Thursday 13 November 2014, Jeff Kirsher wrote:
-> > On Wed, 2014-11-12 at 18:18 -0500, David Miller wrote:
-> > > From: Ondrej Zary <linux@rainbow-software.org>
-> > > Date: Wed, 12 Nov 2014 23:47:25 +0100
-> > >
-> > > > Enabling WoL on some Toshiba laptops (such as Portege R100)
-> causes
-> > > > battery drain after shutdown (WoL is active even on battery).
-> These
-> > > > laptops have the WoL bit set in EEPROM ID, causing e100 driver
-> to
-> > > > enable WoL by default.
-> > > >
-> > > > Check subsystem vendor ID and if it's Toshiba, don't enable WoL
-> by
-> > > > default from EEPROM settings.
-> > > >
-> > > > Fixes
-> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/110784
-> > > >
-> > > > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-> > >
-> > > Jeff, are you gonna pick this up?
-> >
-> > Yes, sorry I did not catch it earlier.
->=20
-> What happened to this patch? I don't see it in net.git or
-> net-next.git=20
-> (checked both davem's and jkirsher's)
+No functional changes.
 
-Sorry, I thought I had replied with a NAK on this patch after further
-review of the changes.
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+---
 
-We don't fix BIOS issues in the driver especially regarding feature
-enablement like WoL.  We would end up with dozens of these kinds of fixes
-if we to allow this.
+ drivers/tty/serial/8250/8250_core.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-You should go back to the OEM and ask for a BIOS update to resolve this or
-configure udev so that ethtool disables WoL. =20
+diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
+index 11c66856ba2f..65e52c9109e2 100644
+--- a/drivers/tty/serial/8250/8250_core.c
++++ b/drivers/tty/serial/8250/8250_core.c
+@@ -884,7 +884,7 @@ static int broken_efr(struct uart_8250_port *up)
+ 	/*
+ 	 * Exar ST16C2550 "A2" devices incorrectly detect as
+ 	 * having an EFR, and report an ID of 0x0201.  See
+-	 * http://linux.derkeiler.com/Mailing-Lists/Kernel/2004-11/4812.html
++	 * http://linux.derkeiler.com/Mailing-Lists/Kernel/2004-11/4812.html
+ 	 */
+ 	if (autoconfig_read_divisor_id(up) == 0x0201 && size_fifo(up) == 16)
+ 		return 1;
+@@ -1239,7 +1239,7 @@ static void autoconfig(struct uart_8250_port *up, unsigned int probeflags)
+ 	serial_out(up, UART_LCR, save_lcr);
+
+ 	port->fifosize = uart_config[up->port.type].fifo_size;
+-	old_capabilities = up->capabilities;
++	old_capabilities = up->capabilities;
+ 	up->capabilities = uart_config[port->type].flags;
+ 	up->tx_loadsz = uart_config[port->type].tx_loadsz;
+
+--
+1.8.2.3
 
 
---=-AdWP2HVJX4glXsf1aK1d
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+--=_mimegpg-monstr-desktop-24537-1421333708-0001
+Content-Type: application/pgp-signature
 Content-Transfer-Encoding: 7bit
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-iQIcBAABCgAGBQJUt9R1AAoJEOVv75VaS+3OBbgP/RIs7gMxLItovRW/9TeMjfpw
-tGTYTm43QaEKdorRktnF1CVbhmMog9wm0CTu8SDU1zmMF2wMw04ycZv6y4Hc4L3+
-i+NuX88mtemEnASK1hyvSk/zF+ciHOLta84gRFFJnq0kdkWGB8QI60NYNyC8hPoa
-8HFteSNb4Hubt0GOJBGmmllEQdVRQ/uYNjZ0wq4AEcRo/wljb7h81fA4R4mC13kV
-9wjjIuIkQrtgY4HxwsoMkd/VgAAcM7CF8I5lh48AdTO7xz7IXhKmPwhMSLspBHG1
-iY6ZahW1HTafo2/LZSmPVl/MV6ClCdZ4qvhl15PspYTzfRbpm0JIGdp8gId3si+Q
-8TXlyGbsUnSPFZYzehQrxUBv21oELRqIYHzJQg3Sx4JrQ7ome5vcnfnrIxv9YYmI
-g4GUJcapRlnCp1oUAJGgw/Kok0GXGSMcSO+9lfM6KI0GRhSEAyE5mnaDPHw/NGQ8
-GiWnXgz9V8tOKW8dR3v+iPVcl1wOjbhl8buzwqrrmeL6tVdi41TywH5Xv9ze1Mxc
-a5jWXS63/m7ayjdPhxkGXFLgmvsg8GqJHtt77wkzWVaCUjxGPRtoUkKxYP0DSiw3
-RDk9FlEE3oiVgb9ogeNieA+FlMiNVcCTKujYp50H7bOCnn8wb2dNVisACFSVgfsw
-o/z7oZiHf3AkDD7kHYKC
-=y5Z8
+iEYEABECAAYFAlS31MwACgkQykllyylKDCEloACeIYkq59Mpy9UYhPvwNau3T4z7
+EjYAnjp47cBfQPrZP9AxwJGqWynWH8Ib
+=RK+E
 -----END PGP SIGNATURE-----
 
---=-AdWP2HVJX4glXsf1aK1d--
-
+--=_mimegpg-monstr-desktop-24537-1421333708-0001--
