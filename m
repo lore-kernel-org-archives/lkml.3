@@ -1,70 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751974AbbAOHuv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 02:50:51 -0500
-Received: from mx1.epson.co.jp ([203.179.21.130]:60704 "EHLO mx1.epson.co.jp"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751271AbbAOHuu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 02:50:50 -0500
-From: Nakashima Akihiro <Nakashima.Akihiro@exc.epson.co.jp>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: "davem@davemloft.net" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        Ueda Motoki <Ueda.Motoki@exc.epson.co.jp>,
-        "Otsu Takahiro" <Otsu.Takahiro@exc.epson.co.jp>,
-        Tomono Mitsunori <Tomono.Mitsunori@exc.epson.co.jp>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: PROBLEM: [3.4] neigh_destroy() crashes on unplug netdev.
-Thread-Topic: PROBLEM: [3.4] neigh_destroy() crashes on unplug netdev.
-Thread-Index: AdAwht3nzPqnF/rnSHqgeN93j8w5nv//fhOA//9f8qA=
-Date: Thu, 15 Jan 2015 07:50:41 +0000
-Message-ID: <E694983F62A0954788A62E997021A9C3109443@JPEX011.apo.epson.net>
-References: <E694983F62A0954788A62E997021A9C31093E1@JPEX011.apo.epson.net>
- <1421305399.11734.40.camel@edumazet-glaptop2.roam.corp.google.com>
-In-Reply-To: <1421305399.11734.40.camel@edumazet-glaptop2.roam.corp.google.com>
-Accept-Language: ja-JP, en-US
-Content-Language: ja-JP
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.10.190.203]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-TM-AS-Product-Ver: IMSS-7.0.0.8250-6.8.0.1017-21252.003
-X-TM-AS-User-Approved-Sender: Yes
+	id S1752008AbbAOHv4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 02:51:56 -0500
+Received: from smtp2.provo.novell.com ([137.65.250.81]:40959 "EHLO
+	smtp2.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751262AbbAOHvz (ORCPT
+	<rfc822;groupwise-linux-kernel@vger.kernel.org:0:0>);
+	Thu, 15 Jan 2015 02:51:55 -0500
+Message-ID: <1421308290.17403.4.camel@stgolabs.net>
+Subject: Re: [PATCH] sound/oss: use current->state helpers
+From: Davidlohr Bueso <dave@stgolabs.net>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Andrew Veliath <andrewtv@usa.net>, Jaroslav Kysela <perex@perex.cz>,
+        linux-kernel@vger.kernel.org
+Date: Wed, 14 Jan 2015 23:51:30 -0800
+In-Reply-To: <s5hzj9kzeex.wl-tiwai@suse.de>
+References: <1421305903.17403.0.camel@stgolabs.net>
+	 <s5hzj9kzeex.wl-tiwai@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0F7ow79012285
 
-Dear Eric:
-
-3.6 or later kernels (including recent mainline) do not have this problem.
-3.4.105 is based on an old kernel, but it is a latest kernel of 3.4 LTS branch.
-I think it is better to backport 20 patches to LTS branch.
-But if you do not have such support policy, I will apply these patches to my 3.4 kernel only.
-
-Thanks
-
------Original Message-----
-From: Eric Dumazet [mailto:eric.dumazet@gmail.com] 
-Sent: Thursday, January 15, 2015 4:03 PM
-To: Nakashima Akihiro
-Cc: davem@davemloft.net; netdev@vger.kernel.org; Ueda Motoki; Otsu Takahiro; Tomono Mitsunori; linux-kernel@vger.kernel.org
-Subject: Re: PROBLEM: [3.4] neigh_destroy() crashes on unplug netdev.
-
-On Thu, 2015-01-15 at 05:57 +0000, Nakashima Akihiro wrote:
-> Dear David and networking developers:
+On Thu, 2015-01-15 at 08:33 +0100, Takashi Iwai wrote:
+> At Wed, 14 Jan 2015 23:11:43 -0800,
+> Davidlohr Bueso wrote:
+> > 
+> > From: Davidlohr Bueso <dave@stgolabs.net>
+> > 
+> > Call __set_current_state() instead of assigning the new state directly.
+> > These interfaces also aid CONFIG_DEBUG_ATOMIC_SLEEP environments, keeping
+> > track of who changed the state.
+> > 
+> > Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
 > 
-> I got kernel panic on 3.4.105 kernel.
-> Please see a report below.
+> The author and sign-off have different addresses.  Could you align?
 
-Please try a recent kernel.
+I don't see a problem with that. All my patches are the same.
 
-We are not going to debug such an old one, given there are chances we already fixed the problem ages ago.
+Thanks,
+Davidlohr
 
-Thanks
-
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
