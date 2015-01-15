@@ -1,94 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199AbbAOBfF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 20:35:05 -0500
-Received: from mail.kernel.org ([198.145.29.136]:47691 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751145AbbAOBfB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 20:35:01 -0500
-From: Kevin Hilman <khilman@kernel.org>
-To: Guenter Roeck <linux@roeck-us.net>, lm-sensors@lm-sensors.org
-Cc: linux-samsung-soc@vger.kernel.org, linaro-kernel@lists.linaro.org,
-        Jean Delvare <jdelvare@suse.de>, Jonathan Corbet <corbet@lwn.net>,
-        linux-doc@vger.kernel.org (open list:DOCUMENTATION),
-        linux-kernel@vger.kernel.org (open list)
-Subject: [PATCH v2] hwmon: (ina2xx) Add ina231 compatible string
-Date: Wed, 14 Jan 2015 17:34:58 -0800
-Message-Id: <1421285699-8469-1-git-send-email-khilman@kernel.org>
-X-Mailer: git-send-email 2.1.3
+	id S1752338AbbAOBvK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 20:51:10 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:29070 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751169AbbAOBvH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 20:51:07 -0500
+X-AuditID: cbfee68e-f79b46d000002b74-eb-54b71d0884e3
+From: Chanwoo Choi <cw00.choi@samsung.com>
+To: myungjoo.ham@samsung.com, kgene@kernel.org
+Cc: kyungmin.park@samsung.com, rafael.j.wysocki@intel.com,
+        mark.rutland@arm.com, a.kesavan@samsung.com, tomasz.figa@gmail.com,
+        k.kozlowski@samsung.com, b.zolnierkie@samsung.com, robh+dt@kernel.org,
+        cw00.choi@samsung.com, inki.dae@samsung.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org
+Subject: [PATCH v4 0/9] devfreq: Add generic exynos memory-bus frequency driver
+Date: Thu, 15 Jan 2015 10:50:48 +0900
+Message-id: <1421286657-4720-1-git-send-email-cw00.choi@samsung.com>
+X-Mailer: git-send-email 1.8.5.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrBLMWRmVeSWpSXmKPExsWyRsSkWJdDdnuIwaEL4haP1yxmstg4Yz2r
+	xfUvz1ktJt2fwGLx+oWhRf/j18wWZ5vesFtsenyN1eLyrjlsFp97jzBazDi/j8li6fWLTBa3
+	G1ewWTxe8ZbdonXvEXaLVbv+MDoIeKyZt4bRY+esu+wei/e8ZPLYtKqTzWPzknqPvi2rGD0+
+	b5ILYI/isklJzcksSy3St0vgypjwOK3gpWLF09fvWRoYj0h1MXJySAiYSLxZ9oEFwhaTuHBv
+	PVsXIxeHkMBSRol/786ywRTtPdXFDpGYzijReO4bVFUTk0T73QZWkCo2AS2J/S9ugHWICOhJ
+	dB7bww5iMwv8YZJo2gS2QljAX+Lp1p2MIDaLgKrE558zmEFsXgEXidtve5kgtilILFs+kxVk
+	gYTAOXaJ9YunsEE0CEh8m3wIaBAHUEJWYtMBZoh6SYmDK26wTGAUXMDIsIpRNLUguaA4Kb3I
+	SK84Mbe4NC9dLzk/dxMjMEJO/3vWt4Px5gHrQ4wCHIxKPLwOR7aGCLEmlhVX5h5iNAXaMJFZ
+	SjQ5HxiHeSXxhsZmRhamJqbGRuaWZkrivAlSP4OFBNITS1KzU1MLUovii0pzUosPMTJxcEo1
+	MHr+SDohXO+wg/ldWFaZwlr3ibn9HprNDtW+sj9XOVX8Ob5TR8f0rHz5nH8nEjzOX9Tw+jf1
+	zX5bhwTfjwuu2+Y6i+yQ2XBgK6dKQuJP09SqmXPfSUwp8XzPsl1j5vWQdF2m2CgNZuF3HCvO
+	/+641pH09sbbYuZHYXu70nZnNny7E2yuIrv7hhJLcUaioRZzUXEiAJoJAqqLAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrEIsWRmVeSWpSXmKPExsVy+t9jQV0O2e0hBi+e8Fo8XrOYyWLjjPWs
+	Fte/PGe1mHR/AovF6xeGFv2PXzNbnG16w26x6fE1VovLu+awWXzuPcJoMeP8PiaLpdcvMlnc
+	blzBZvF4xVt2i9a9R9gtVu36w+gg4LFm3hpGj52z7rJ7LN7zkslj06pONo/NS+o9+rasYvT4
+	vEkugD2qgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX0NLCXEkhLzE31VbJxSdA1y0z
+	B+h4JYWyxJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+IUFwPUYGaCBhDWPGhMdpBS8VK56+fs/S
+	wHhEqouRk0NCwERi76kudghbTOLCvfVsXYxcHEIC0xklGs99g3KamCTa7zawglSxCWhJ7H9x
+	gw3EFhHQk+g8tgesm1ngD5NE0yYWEFtYwF/i6dadjCA2i4CqxOefM5hBbF4BF4nbb3uZILYp
+	SCxbPpN1AiP3AkaGVYyiqQXJBcVJ6bmGesWJucWleel6yfm5mxjB8fdMagfjygaLQ4wCHIxK
+	PLwOR7aGCLEmlhVX5h5ilOBgVhLhfftpW4gQb0piZVVqUX58UWlOavEhRlOg7ROZpUST84Gp
+	Ia8k3tDYxMzI0sjc0MLI2FxJnFfJvi1ESCA9sSQ1OzW1ILUIpo+Jg1OqgTFQWfD5K9+fexuD
+	FjI/25Ih/Cjj8K6txfu6DyZKK4vG52b3Zm9ilHukJfZxz6uF3/+J9f26Z8BRmHDla4p4vzDf
+	g3277Sd/YJAMW3zsyOmcl6u0FFTvSx5l/RPAe+rbr4/LWUxmG3wq0vtUu1Nlt5O315ul4gt9
+	ru1dHl3HItkkfFg4/tiFKE8lluKMREMt5qLiRADndXJT1QIAAA==
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kevin Hilman <khilman@linaro.org>
+This patch-set adds the generic exynos bus frequency driver for memory bus
+with DEVFREQ framework. The Samsung Exynos SoCs have the common architecture
+for memory bus between DRAM memory and MMC/sub IP in SoC. This driver can
+support the memory bus frequency driver for Exynos SoCs.
 
-Add support for "ina231" as compatible string, and update
-Documentation and Kconfig accordingly.
+Each memory bus block has a clock for memory bus speed and frequency
+table which is changed according to the utilization of memory bus on runtime.
+And then each memory bus group has the one more memory bus blocks and
+OPP table (including frequency and voltage), regulator, devfreq-event
+devices.
 
-Tested with the Exynos5422-based odroid-xu3 board which has on-board
-INA231 sensors.
+There are a little difference about the number of memory bus because each Exynos
+SoC have the different sub-IP and different memory bus speed. In spite of this
+difference among Exynos SoCs, we can support almost Exynos SoC by adding
+unique data of memory bus to devicetree file.
 
-Signed-off-by: Kevin Hilman <khilman@linaro.org>
----
- Documentation/hwmon/ina2xx | 9 +++++++++
- drivers/hwmon/Kconfig      | 4 ++--
- drivers/hwmon/ina2xx.c     | 1 +
- 3 files changed, 12 insertions(+), 2 deletions(-)
+Depend on:
+- [PATCHv8 0/9] devfreq: Add devfreq-event class to provide raw data for devfreq device
+  : https://lkml.org/lkml/2015/1/7/795
 
-diff --git a/Documentation/hwmon/ina2xx b/Documentation/hwmon/ina2xx
-index 4223c2d3b508..c2f838f65ee4 100644
---- a/Documentation/hwmon/ina2xx
-+++ b/Documentation/hwmon/ina2xx
-@@ -26,6 +26,12 @@ Supported chips:
-     Datasheet: Publicly available at the Texas Instruments website
-                http://www.ti.com/
- 
-+  * Texas Instruments INA231
-+    Prefix: 'ina231'
-+    Addresses: I2C 0x40 - 0x4f
-+    Datasheet: Publicly available at the Texas Instruments website
-+               http://www.ti.com/
-+
- Author: Lothar Felten <l-felten@ti.com>
- 
- Description
-@@ -44,6 +50,9 @@ The INA226 monitors both a shunt voltage drop and bus supply voltage.
- The INA230 is a high or low side current shunt and power monitor with an I2C
- interface. The INA230 monitors both a shunt voltage drop and bus supply voltage.
- 
-+The INA231 is a high or low side current shunt and power monitor with an I2C
-+interface. The INA230 monitors both a shunt voltage drop and bus supply voltage.
-+
- The shunt value in micro-ohms can be set via platform data or device tree.
- Please refer to the Documentation/devicetree/bindings/i2c/ina2xx.txt for bindings
- if the device tree is used.
-diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index 6529c09c46f0..408fb6f5f055 100644
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -1420,8 +1420,8 @@ config SENSORS_INA2XX
- 	tristate "Texas Instruments INA219 and compatibles"
- 	depends on I2C
- 	help
--	  If you say yes here you get support for INA219, INA220, INA226, and
--	  INA230 power monitor chips.
-+	  If you say yes here you get support for INA219, INA220, INA226,
-+	  INA230, and INA231 power monitor chips.
- 
- 	  The INA2xx driver is configured for the default configuration of
- 	  the part as described in the datasheet.
-diff --git a/drivers/hwmon/ina2xx.c b/drivers/hwmon/ina2xx.c
-index e01feba909c3..8c4a29bd2eaf 100644
---- a/drivers/hwmon/ina2xx.c
-+++ b/drivers/hwmon/ina2xx.c
-@@ -287,6 +287,7 @@ static const struct i2c_device_id ina2xx_id[] = {
- 	{ "ina220", ina219 },
- 	{ "ina226", ina226 },
- 	{ "ina230", ina226 },
-+	{ "ina231", ina226 },
- 	{ }
- };
- MODULE_DEVICE_TABLE(i2c, ina2xx_id);
+Changelog:
+
+Changes from v3:
+(https://lkml.org/lkml/2015/1/7/872)
+- Change the driver name and path by comment
+  : drivers/devfreq/exynos-busfreq.c -> drivers/devfreq/exynos/exynos-bus.c
+- Disable regulator when entering suspend state in exynos-bus.c
+  and enable it after wake-up from suspend state.
+- Add 'exynos,saturation-ratio' property to calibrate the performance count
+  against cycle count.
+- Add new patch to remove unused old driver
+  : drivers/devfreq/exynos/exynos4_bus.{c|h}
+- Clean-up code for minor issue
+- Add acked tag by Myungjoo Ham (DEVFREQ maintainer)
+
+Changes from v2:
+(https://lkml.org/lkml/2014/12/31/2)
+- Support the memory bus frequency feature for Exynos3250-based Monk board
+- Fix build warning about variable uninitialized
+
+Changes from v1:
+(https://lkml.org/lkml/2014/12/23/178)
+- This patchset is rebased on v3.19-rc2.
+- Fix bug after wake-up from suspend state. If devfreq device fail to get event,
+  exynos-busfreq retry to set the event for starting.
+- Add memory bus group of Exynos4x12/Exynos4210
+- Add divider clock id for Exynos4 memory bus frequency
+- Support memory bus frequency driver on Exynos4412-based TRATS2 board
+- This patch-set has the dependency on following patch-set[1]:
+  [1] [PATCHv6 0/9] devfreq: Add devfreq-event class to provide raw data for devfreq device
+  : https://lkml.org/lkml/2014/12/28/139
+
+Chanwoo Choi (9):
+  devfreq: exynos: Add generic exynos memory bus frequency driver
+  devfreq: exynos: Add documentation for generic exynos memory bus frequency driver
+  ARM: dts: Add memory bus node for Exynos3250
+  clk: samsung: exynos4: Add divider clock id for memory bus frequency
+  ARM: dts: Add memory bus node for Exynos4x12
+  ARM: dts: Add memory bus node for Exynos4210
+  ARM: dts: Add the support for exynos busfreq on Exynos3250-based Rinato/Monk board
+  ARM: dts: Add the support for exynos busfreq on Exynos4412-based TRATS2 board
+  devfreq: exynos: Remove unused exynos4 memory busfreq driver
+
+ .../devicetree/bindings/devfreq/exynos-bus.txt     |  188 ++++
+ arch/arm/boot/dts/exynos3250-monk.dts              |   12 +
+ arch/arm/boot/dts/exynos3250-rinato.dts            |   12 +
+ arch/arm/boot/dts/exynos3250.dtsi                  |  125 +++
+ arch/arm/boot/dts/exynos4210.dtsi                  |   93 ++
+ arch/arm/boot/dts/exynos4412-trats2.dts            |   12 +
+ arch/arm/boot/dts/exynos4x12.dtsi                  |  121 +++
+ drivers/clk/samsung/clk-exynos4.c                  |   10 +-
+ drivers/devfreq/Kconfig                            |   17 +-
+ drivers/devfreq/Makefile                           |    1 +
+ drivers/devfreq/exynos/Makefile                    |    2 +-
+ drivers/devfreq/exynos/exynos-bus.c                |  598 +++++++++++
+ drivers/devfreq/exynos/exynos4_bus.c               | 1055 --------------------
+ drivers/devfreq/exynos/exynos4_bus.h               |  110 --
+ include/dt-bindings/clock/exynos4.h                |    7 +-
+ 15 files changed, 1184 insertions(+), 1179 deletions(-)
+ create mode 100644 Documentation/devicetree/bindings/devfreq/exynos-bus.txt
+ create mode 100644 drivers/devfreq/exynos/exynos-bus.c
+ delete mode 100644 drivers/devfreq/exynos/exynos4_bus.c
+ delete mode 100644 drivers/devfreq/exynos/exynos4_bus.h
+
 -- 
-2.1.3
+1.8.5.5
 
