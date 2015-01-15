@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755183AbbAORbR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 12:31:17 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:55406 "EHLO
+	id S1752893AbbAORcr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 12:32:47 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:53030 "EHLO
 	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751437AbbAORbP (ORCPT
+	with ESMTP id S1752107AbbAORcp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 12:31:15 -0500
-Message-ID: <54B7F9A1.9020004@wwwdotorg.org>
-Date: Thu, 15 Jan 2015 10:32:17 -0700
+	Thu, 15 Jan 2015 12:32:45 -0500
+Message-ID: <54B7F9FB.7030100@wwwdotorg.org>
+Date: Thu, 15 Jan 2015 10:33:47 -0700
 From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
@@ -33,4 +33,12 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On 01/15/2015 09:12 AM, Tomeu Vizoso wrote:
 > Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 
-Some explanation of why such a delay might be useful would be ... useful!
+Ah, having read the explanation in the next patch, I think ...
+
+> diff --git a/Documentation/devicetree/bindings/mmc/mmc,pwrseq-simple.txt b/Documentation/devicetree/bindings/mmc/mmc,pwrseq-simple.txt
+
+> +- delay : delay to wait after driving the reset gpio active [ms].
+
+... delay is the wrong name. reset-pulse-width or reset-pulse-length 
+would be better. delay sounds like a delay after resetting the device 
+before it can be accessed.
