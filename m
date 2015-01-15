@@ -1,66 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755530AbbAOVWb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 16:22:31 -0500
-Received: from www.linutronix.de ([62.245.132.108]:58246 "EHLO
+	id S1754184AbbAOVW2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 16:22:28 -0500
+Received: from www.linutronix.de ([62.245.132.108]:58248 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753383AbbAOVW1 (ORCPT
+	with ESMTP id S1752109AbbAOVW1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 15 Jan 2015 16:22:27 -0500
-Message-Id: <20150115210458.625399149@linutronix.de>
+Message-Id: <20150115211702.285038186@linutronix.de>
 User-Agent: quilt/0.63-1
-Date: Thu, 15 Jan 2015 21:22:07 -0000
+Date: Thu, 15 Jan 2015 21:22:09 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Jiang Liu <jiang.liu@linux.intel.com>, Joerg Roedel <joro@8bytes.org>,
         x86@kernel.org, Tony Luck <tony.luck@intel.com>,
         Borislav Petkov <bp@alien8.de>
-Subject: [patch 00/23] x86: Cleanup apic/ioapic/x2apic setup code
+Subject: [patch 01/23] x86/apic: Avoid open coded x2apic detection
+References: <20150115210458.625399149@linutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Disposition: inline;
+ filename=x86-avoid-open-coded-x2apic-detection.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While reviewing Jiangs interrupt remapping patch set, I had several
-serious WTF moments when trying to understand what that code is doing.
+enable_IR_x2apic() grew a open coded x2apic detection. Implement a
+proper helper function which shares the code with the already existing
+x2apic_enabled().
 
-The main issues I've seen are:
-
-    - Blindly copy and pasted code
-
-    - Random places which initialize bits and pieces
-
-    - Code which got mindlessly expanded with duct tape and glue
-      without considering readability and maintainability.
-
-    - Missing inline stubs which result in a ifdef nightmare
-
-    - Superflous inline stubs to artificially avoid sensible ifdefs
-
-The deeper I looked the more I started to get grumpy about that maze
-and finally sat down and cleaned it up seriously. One bug I fixed on
-the way (surprise, surprise) got folded into Jiangs series which is
-now in tip/x86/apic. The other one is not that crucial and cant be
-fixed in the previous code without adding more mess.
-
-The following patch series applies on top of tip/x86/apic. It cleans
-up and consolidates the apic/ioapic/x2apic setup functions.
-
-Please give it a proper review and testing.
-
-Thanks,
-
-	tglx
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/include/asm/smpboot_hooks.h |   68 ------
- tip/arch/x86/include/asm/apic.h      |   57 +----
- tip/arch/x86/include/asm/io_apic.h   |    5 
- tip/arch/x86/kernel/apic/apic.c      |  395 ++++++++++++++++++-----------------
- tip/arch/x86/kernel/apic/io_apic.c   |   13 -
- tip/arch/x86/kernel/cpu/common.c     |    2 
- tip/arch/x86/kernel/smpboot.c        |  113 +++++-----
- tip/init/main.c                      |   14 -
- 8 files changed, 308 insertions(+), 359 deletions(-)
+ arch/x86/include/asm/apic.h |   18 +++++++++---------
+ arch/x86/kernel/apic/apic.c |    5 +----
+ 2 files changed, 10 insertions(+), 13 deletions(-)
+
+Index: tip/arch/x86/include/asm/apic.h
+===================================================================
+--- tip.orig/arch/x86/include/asm/apic.h
++++ tip/arch/x86/include/asm/apic.h
+@@ -108,6 +108,14 @@ extern u64 native_apic_icr_read(void);
+ 
+ extern int x2apic_mode;
+ 
++static inline bool apic_is_x2apic_enabled(void)
++{
++	u64 msr;
++
++	rdmsrl(MSR_IA32_APICBASE, msr);
++	return msr & X2APIC_ENABLE;
++}
++
+ #ifdef CONFIG_X86_X2APIC
+ /*
+  * Make previous memory operations globally visible before
+@@ -175,15 +183,7 @@ extern void check_x2apic(void);
+ extern void enable_x2apic(void);
+ static inline int x2apic_enabled(void)
+ {
+-	u64 msr;
+-
+-	if (!cpu_has_x2apic)
+-		return 0;
+-
+-	rdmsrl(MSR_IA32_APICBASE, msr);
+-	if (msr & X2APIC_ENABLE)
+-		return 1;
+-	return 0;
++	return cpu_has_x2apic && apic_is_x2apic_enabled();
+ }
+ 
+ #define x2apic_supported()	(cpu_has_x2apic)
+Index: tip/arch/x86/kernel/apic/apic.c
+===================================================================
+--- tip.orig/arch/x86/kernel/apic/apic.c
++++ tip/arch/x86/kernel/apic/apic.c
+@@ -1625,10 +1625,7 @@ void __init enable_IR_x2apic(void)
+ 	int ret, ir_stat;
+ 
+ 	if (!IS_ENABLED(CONFIG_X86_X2APIC)) {
+-		u64 msr;
+-
+-		rdmsrl(MSR_IA32_APICBASE, msr);
+-		if (msr & X2APIC_ENABLE)
++		if (apic_is_x2apic_enabled())
+ 			panic("BIOS has enabled x2apic but kernel doesn't support x2apic, please disable x2apic in BIOS.\n");
+ 	}
+ 
+
 
