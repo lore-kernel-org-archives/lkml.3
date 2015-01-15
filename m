@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752903AbbAOEcY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 23:32:24 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:21525 "EHLO
+	id S1754531AbbAOEeK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 23:34:10 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:21528 "EHLO
 	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752431AbbAOEcS (ORCPT
+	with ESMTP id S1752517AbbAOEcV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 23:32:18 -0500
+	Wed, 14 Jan 2015 23:32:21 -0500
 From: Yinghai Lu <yinghai@kernel.org>
 To: Bjorn Helgaas <bhelgaas@google.com>
 Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, David Howells <dhowells@redhat.com>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH v2 04/10] PCI, frv: clip firmware assigned resource under parent bridge's
-Date: Wed, 14 Jan 2015 20:31:31 -0800
-Message-Id: <1421296297-6371-5-git-send-email-yinghai@kernel.org>
+        Yinghai Lu <yinghai@kernel.org>, Tony Luck <tony.luck@intel.com>,
+        Fenghua Yu <fenghua.yu@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        linux-ia64@vger.kernel.org
+Subject: [PATCH v2 05/10] PCI, ia64: clip firmware assigned resource under parent bridge's
+Date: Wed, 14 Jan 2015 20:31:32 -0800
+Message-Id: <1421296297-6371-6-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.8.4.5
 In-Reply-To: <1421296297-6371-1-git-send-email-yinghai@kernel.org>
 References: <1421296297-6371-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -32,25 +34,85 @@ Link: https://bugzilla.kernel.org/show_bug.cgi?id=85491
 Reported-by: Marek Kordik <kordikmarek@gmail.com>
 Fixes: 5b28541552ef ("PCI: Restrict 64-bit prefetchable bridge windows to 64-bit resources")
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: David Howells <dhowells@redhat.com>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>
+Cc: linux-ia64@vger.kernel.org
 ---
- arch/frv/mb93090-mb00/pci-frv.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/ia64/pci/pci.c | 48 +++++++++++++++++++++---------------------------
+ 1 file changed, 21 insertions(+), 27 deletions(-)
 
-diff --git a/arch/frv/mb93090-mb00/pci-frv.c b/arch/frv/mb93090-mb00/pci-frv.c
-index 67b1d16..9e49c3e 100644
---- a/arch/frv/mb93090-mb00/pci-frv.c
-+++ b/arch/frv/mb93090-mb00/pci-frv.c
-@@ -94,7 +94,7 @@ static void __init pcibios_allocate_bus_resources(struct list_head *bus_list)
- 				r = &dev->resource[idx];
- 				if (!r->start)
- 					continue;
--				pci_claim_resource(dev, idx);
-+				pci_claim_bridge_resource(dev, idx)
- 			}
- 		}
- 		pcibios_allocate_bus_resources(&bus->children);
+diff --git a/arch/ia64/pci/pci.c b/arch/ia64/pci/pci.c
+index 291a582..900cc93 100644
+--- a/arch/ia64/pci/pci.c
++++ b/arch/ia64/pci/pci.c
+@@ -487,45 +487,39 @@ int pcibios_root_bridge_prepare(struct pci_host_bridge *bridge)
+ 	return 0;
+ }
+ 
+-static int is_valid_resource(struct pci_dev *dev, int idx)
++void pcibios_fixup_device_resources(struct pci_dev *dev)
+ {
+-	unsigned int i, type_mask = IORESOURCE_IO | IORESOURCE_MEM;
+-	struct resource *devr = &dev->resource[idx], *busr;
++	int idx;
+ 
+ 	if (!dev->bus)
+-		return 0;
+-
+-	pci_bus_for_each_resource(dev->bus, busr, i) {
+-		if (!busr || ((busr->flags ^ devr->flags) & type_mask))
+-			continue;
+-		if ((devr->start) && (devr->start >= busr->start) &&
+-				(devr->end <= busr->end))
+-			return 1;
+-	}
+-	return 0;
+-}
++		return;
+ 
+-static void pcibios_fixup_resources(struct pci_dev *dev, int start, int limit)
+-{
+-	int i;
++	for (idx = 0; idx < PCI_BRIDGE_RESOURCES; idx++) {
++		struct resource *r = &dev->resource[idx];
+ 
+-	for (i = start; i < limit; i++) {
+-		if (!dev->resource[i].flags)
++		if (!r->flags || r->parent || !r->start)
+ 			continue;
+-		if ((is_valid_resource(dev, i)))
+-			pci_claim_resource(dev, i);
+-	}
+-}
+ 
+-void pcibios_fixup_device_resources(struct pci_dev *dev)
+-{
+-	pcibios_fixup_resources(dev, 0, PCI_BRIDGE_RESOURCES);
++		pci_claim_resource(dev, idx);
++	}
+ }
+ EXPORT_SYMBOL_GPL(pcibios_fixup_device_resources);
+ 
+ static void pcibios_fixup_bridge_resources(struct pci_dev *dev)
+ {
+-	pcibios_fixup_resources(dev, PCI_BRIDGE_RESOURCES, PCI_NUM_RESOURCES);
++	int idx;
++
++	if (!dev->bus)
++		return;
++
++	for (idx = PCI_BRIDGE_RESOURCES; idx < PCI_NUM_RESOURCES; idx++) {
++		struct resource *r = &dev->resource[idx];
++
++		if (!r->flags || r->parent || !r->start)
++			continue;
++
++		pci_claim_bridge_resource(dev, idx);
++	}
+ }
+ 
+ /*
 -- 
 1.8.4.5
 
