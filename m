@@ -1,67 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752694AbbAOJHN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 04:07:13 -0500
-Received: from casper.infradead.org ([85.118.1.10]:37075 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752459AbbAOJHF (ORCPT
+	id S1751797AbbAOJMb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 04:12:31 -0500
+Received: from www.linutronix.de ([62.245.132.108]:54786 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750997AbbAOJM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 04:07:05 -0500
-Date: Thu, 15 Jan 2015 10:06:59 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com, adrian.hunter@intel.com,
-        markus.t.metzger@intel.com, mathieu.poirier@linaro.org,
-        Kaixu Xia <kaixu.xia@linaro.org>, acme@infradead.org
-Subject: Re: [PATCH v9 12/14] x86: perf: intel_pt: Intel PT PMU driver
-Message-ID: <20150115090659.GQ23965@worktop.programming.kicks-ass.net>
-References: <1421237903-181015-1-git-send-email-alexander.shishkin@linux.intel.com>
- <1421237903-181015-13-git-send-email-alexander.shishkin@linux.intel.com>
+	Thu, 15 Jan 2015 04:12:26 -0500
+Date: Thu, 15 Jan 2015 10:11:52 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Rob Herring <robherring2@gmail.com>
+cc: Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v2 1/5] irqchip: add dumb demultiplexer implementation
+In-Reply-To: <CAL_JsqLwBvV5s531_YsA=sCE4_LG=eXTua8mh069ufRjSNFhng@mail.gmail.com>
+Message-ID: <alpine.DEB.2.11.1501151003430.5526@nanos>
+References: <1421174781-4340-1-git-send-email-boris.brezillon@free-electrons.com> <1421174781-4340-2-git-send-email-boris.brezillon@free-electrons.com> <CAL_JsqJ5DSo6jmAuHPDdV6pMca8BVbg5V-GZ5=2qu96_QYXMtQ@mail.gmail.com> <alpine.DEB.2.11.1501141110190.5526@nanos>
+ <CAL_JsqLwBvV5s531_YsA=sCE4_LG=eXTua8mh069ufRjSNFhng@mail.gmail.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421237903-181015-13-git-send-email-alexander.shishkin@linux.intel.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 14, 2015 at 02:18:21PM +0200, Alexander Shishkin wrote:
-> +static __init int pt_init(void)
-> +{
+On Wed, 14 Jan 2015, Rob Herring wrote:
+> On Wed, Jan 14, 2015 at 4:36 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > All attempts to work around that have resulted in horrible bandaids so
+> > far. That's why I guided Boris to implement this dummy demultiplexing
+> > mechanism. It solves the problem at hand nicely without adding nasty
+> > hackarounds into the suspend/resume code and inflicting platform
+> > knowledge on multi-platform device drivers.
+> 
+> This change will break on old kernels with a new dtb. Would you be
+> happy if a BIOS update required a new kernel? Fixing this for any
+> platform requires a dtb update which may not be possible on some
+> platforms. I don't have a problem with this breakage for 1 platform
+> and the at91 guys may not care, but we'd ultimately be changing how
+> all shared irqs are specified for all DT. Maybe we decide that this is
+> how we want to describe things, but that needs much wider discussion
+> and agreement.
 
-> +	pt_pmu.pmu.attr_groups	= pt_attr_groups;
-> +	pt_pmu.pmu.task_ctx_nr	= perf_hw_context;
+We do not change shared interrupts in any way. We provide an
+alternative mechanism for braindead hardware. And if the at91 folks
+are fine with the DT change, then it's their decision. Nothing forces
+this on everyone.
+ 
+> > If you have a proper solution for the problem at hand which
+> >
+> >    - avoids the demux dummy
+> >
+> >    - works straight forward with suspend/resume/wakeup
+> >
+> >    - does not add horrible new APIs
+> >
+> >    - does not add conditionals to the interrupt hotpath
+> >
+> >    - does not inflict platform knowledge about interrupt chip details
+> >      on drivers
+> >
+> > then I'm happy to take it.
+> >
+> > But as long as you can't come up with anything sane, the demux dummy
+> > is the best solution for this problem we've seen so far.
+> 
+> What if during suspend you move all actions w/o IRQF_NO_SUSPEND to a
+> suspended action list? This would leave only the actions with
+> IRQF_NO_SUSPEND set in the active action list. The cost would be a
+> pointer in irq_desc and moving the actions during suspend and resume.
 
-I just noticed this one, how can this ever work? We want the PT thing to
-always get programmed, right? -- because we disallow creating more than
-1?
+That's exactly what we want NOT. Because it prevents us to do proper
+sanity checks for IRQF_NO_SUSPEND. We've been there and I rejected it
+for that very reason.
+ 
+> There are probably ways to do this demux irqchip without a DT change.
 
-Which reminds me; does that exclusive thing you did not allow you to
-create one cpu wide and one per task (they're separate contexts) events?
-At which point we're not schedulable at all.
+What's the problem with a DT change for a single platform, if the
+maintainers are willing to take it and deal with the fallout?
 
-By sticking it on the HW context list it can end up not being programed
-because its stuck after a bunch of hardware events that don't all fit on
-the PMU.
+And in case of AT91 the new kernel will simply work with the old DT
+and just emit the same warning vs. the IRQF_NO_SUSPEND mismatch. Older
+kernels won't work with a new DT, but that's about it.
 
-Would not the SW list be more appropriate; the SW list is a list of
-events that's guaranteed to be schedulable.
+Aside of that, I'm quite amused about your DT update worries. DTs
+break with every kernel version on very popular platforms in very
+weird and subtle ways.
 
-> +	pt_pmu.pmu.event_init	= pt_event_init;
-> +	pt_pmu.pmu.add		= pt_event_add;
-> +	pt_pmu.pmu.del		= pt_event_del;
-> +	pt_pmu.pmu.start	= pt_event_start;
-> +	pt_pmu.pmu.stop		= pt_event_stop;
-> +	pt_pmu.pmu.read		= pt_event_read;
-> +	pt_pmu.pmu.setup_aux	= pt_buffer_setup_aux;
-> +	pt_pmu.pmu.free_aux	= pt_buffer_free_aux;
-> +	ret = perf_pmu_register(&pt_pmu.pmu, "intel_pt", -1);
-> +
-> +	return ret;
-> +}
+Thanks,
+
+	tglx
+
