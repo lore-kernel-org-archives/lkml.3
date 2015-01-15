@@ -1,150 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753414AbbAOMcF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 07:32:05 -0500
-Received: from mga11.intel.com ([192.55.52.93]:13702 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751959AbbAOMcD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 07:32:03 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,403,1418112000"; 
-   d="scan'208";a="651540208"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com, adrian.hunter@intel.com,
-        markus.t.metzger@intel.com, mathieu.poirier@linaro.org,
-        Kaixu Xia <kaixu.xia@linaro.org>, acme@infradead.org
-Subject: Re: [PATCH v9 12/14] x86: perf: intel_pt: Intel PT PMU driver
-In-Reply-To: <20150115090659.GQ23965@worktop.programming.kicks-ass.net>
-References: <1421237903-181015-1-git-send-email-alexander.shishkin@linux.intel.com> <1421237903-181015-13-git-send-email-alexander.shishkin@linux.intel.com> <20150115090659.GQ23965@worktop.programming.kicks-ass.net>
-User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/24.4.1 (x86_64-pc-linux-gnu)
-Date: Thu, 15 Jan 2015 14:31:57 +0200
-Message-ID: <87egqwmdhe.fsf@ashishki-desk.ger.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1753917AbbAOMcy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 07:32:54 -0500
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:50236 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753544AbbAOMcw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 07:32:52 -0500
+From: Simone Weiss <simone.weiss@fau.de>
+To: simone.weiss@fau.de
+Cc: helene.gsaenger@studium.fau.de, linux-kernel@i4.cs.fau.de,
+        lidza.louina@gmail.com, markh@compro.net, gregkh@linuxfoundation.org,
+        driverdev-devel@linuxdriverproject.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v4 4/6] dgnc: checkpatch: macros in enclosed parantheses
+Date: Thu, 15 Jan 2015 13:32:39 +0100
+Message-Id: <1421325159-970-1-git-send-email-simone.weiss@fau.de>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <20150114131815.GG5571@mwanda>
+References: <20150114131815.GG5571@mwanda>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra <peterz@infradead.org> writes:
+dpacompat.h and digi.h partly define the same macros, so it is necessary to
+change them both. I also removed some defines as they were unnecessary, 
+because they were already defined, or because they were never used.
 
-> On Wed, Jan 14, 2015 at 02:18:21PM +0200, Alexander Shishkin wrote:
->> +static __init int pt_init(void)
->> +{
->
->> +	pt_pmu.pmu.attr_groups	= pt_attr_groups;
->> +	pt_pmu.pmu.task_ctx_nr	= perf_hw_context;
->
-> I just noticed this one, how can this ever work? We want the PT thing to
-> always get programmed, right? -- because we disallow creating more than
-> 1?
->
-> Which reminds me; does that exclusive thing you did not allow you to
-> create one cpu wide and one per task (they're separate contexts) events?
-> At which point we're not schedulable at all.
->
-> By sticking it on the HW context list it can end up not being programed
-> because its stuck after a bunch of hardware events that don't all fit on
-> the PMU.
->
-> Would not the SW list be more appropriate; the SW list is a list of
-> events that's guaranteed to be schedulable.
-
-You're right, of course.
-
-As for the exclusive events, how about something like the code below (on
-top of the previous exclusive event patch)? The only remaining issue
-that I see is creating cpu-wide events in the presence of per-thread
-(event->cpu==-1) events. Both would still work, but only one of them
-will actually get scheduled at a time. I'm thinking about adding a
-counter for per-thread events to struct pmu for this purpose, so that if
-any are present, we can disallow creating cpu-wide events. Or, we can
-leave it as it is.
-
-What do you think?
-
+Signed-off-by: Simone Weiss <simone.weiss@fau.de>
+Signed-off-by: Helene Gsaenger <helene.gsaenger@studium.fau.de>
 ---
- kernel/events/core.c | 52 +++++++++++++++++++++++++++++++++++++++++++++++-----
- 1 file changed, 47 insertions(+), 5 deletions(-)
+ drivers/staging/dgnc/digi.h      | 59 +++++++++++++++++++---------------------
+ drivers/staging/dgnc/dpacompat.h |  8 ++----
+ 2 files changed, 30 insertions(+), 37 deletions(-)
 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index cf0bf99f53..e8c86530e2 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -7688,14 +7688,11 @@ static bool exclusive_event_match(struct perf_event *e1, struct perf_event *e2)
- 	return false;
- }
+diff --git a/drivers/staging/dgnc/digi.h b/drivers/staging/dgnc/digi.h
+index 3181a35..56466a7 100644
+--- a/drivers/staging/dgnc/digi.h
++++ b/drivers/staging/dgnc/digi.h
+@@ -38,8 +38,8 @@
  
--static bool exclusive_event_ok(struct perf_event *event,
--			      struct perf_event_context *ctx)
-+static bool __exclusive_event_ok(struct perf_event *event,
-+				 struct perf_event_context *ctx)
- {
- 	struct perf_event *iter_event;
+ #if !defined(TIOCMODG)
  
--	if (!(event->pmu->capabilities & PERF_PMU_CAP_EXCLUSIVE))
--		return true;
+-#define	TIOCMODG	('d'<<8) | 250		/* get modem ctrl state	*/
+-#define	TIOCMODS	('d'<<8) | 251		/* set modem ctrl state	*/
++#define	TIOCMODG	(('d'<<8) | 250)	/* get modem ctrl state	*/
++#define	TIOCMODS	(('d'<<8) | 251)	/* set modem ctrl state	*/
+ 
+ #ifndef TIOCM_LE
+ #define		TIOCM_LE	0x01		/* line enable		*/
+@@ -58,44 +58,41 @@
+ #endif
+ 
+ #if !defined(TIOCMSET)
+-#define	TIOCMSET	('d'<<8) | 252		/* set modem ctrl state	*/
+-#define	TIOCMGET	('d'<<8) | 253		/* set modem ctrl state	*/
++#define	TIOCMSET	(('d'<<8) | 252)	/* set modem ctrl state	*/
++#define	TIOCMGET	(('d'<<8) | 253)	/* set modem ctrl state	*/
+ #endif
+ 
+ #if !defined(TIOCMBIC)
+-#define	TIOCMBIC	('d'<<8) | 254		/* set modem ctrl state */
+-#define	TIOCMBIS	('d'<<8) | 255		/* set modem ctrl state */
++#define	TIOCMBIC	(('d'<<8) | 254)	/* set modem ctrl state */
++#define	TIOCMBIS	(('d'<<8) | 255)	/* set modem ctrl state */
+ #endif
+ 
+ 
+ #if !defined(TIOCSDTR)
+-#define	TIOCSDTR	('e'<<8) | 0		/* set DTR		*/
+-#define	TIOCCDTR	('e'<<8) | 1		/* clear DTR		*/
++#define	TIOCSDTR	(('e'<<8) | 0)		/* set DTR		*/
++#define	TIOCCDTR	(('e'<<8) | 1)		/* clear DTR		*/
+ #endif
+ 
+ /************************************************************************
+  * Ioctl command arguments for DIGI parameters.
+  ************************************************************************/
+-#define DIGI_GETA	('e'<<8) | 94		/* Read params		*/
++#define DIGI_GETA	(('e'<<8) | 94)		/* Read params		*/
+ 
+-#define DIGI_SETA	('e'<<8) | 95		/* Set params		*/
+-#define DIGI_SETAW	('e'<<8) | 96		/* Drain & set params	*/
+-#define DIGI_SETAF	('e'<<8) | 97		/* Drain, flush & set params */
++#define DIGI_SETA	(('e'<<8) | 95)		/* Set params		*/
++#define DIGI_SETAW	(('e'<<8) | 96)		/* Drain & set params	*/
++#define DIGI_SETAF	(('e'<<8) | 97)		/* Drain, flush & set params */
+ 
+-#define DIGI_KME	('e'<<8) | 98		/* Read/Write Host	*/
+-						/* Adapter Memory	*/
 -
- 	list_for_each_entry(iter_event, &ctx->event_list, event_entry) {
- 		if (exclusive_event_match(iter_event, event))
- 			return false;
-@@ -7704,6 +7701,51 @@ static bool exclusive_event_ok(struct perf_event *event,
- 	return true;
- }
+-#define	DIGI_GETFLOW	('e'<<8) | 99		/* Get startc/stopc flow */
++#define	DIGI_GETFLOW	(('e'<<8) | 99)		/* Get startc/stopc flow */
+ 						/* control characters	 */
+-#define	DIGI_SETFLOW	('e'<<8) | 100		/* Set startc/stopc flow */
++#define	DIGI_SETFLOW	(('e'<<8) | 100)	/* Set startc/stopc flow */
+ 						/* control characters	 */
+-#define	DIGI_GETAFLOW	('e'<<8) | 101		/* Get Aux. startc/stopc */
++#define	DIGI_GETAFLOW	(('e'<<8) | 101)	/* Get Aux. startc/stopc */
+ 						/* flow control chars	 */
+-#define	DIGI_SETAFLOW	('e'<<8) | 102		/* Set Aux. startc/stopc */
++#define	DIGI_SETAFLOW	(('e'<<8) | 102)	/* Set Aux. startc/stopc */
+ 						/* flow control chars	 */
  
-+static bool __exclusive_event_ok_on_cpu(struct perf_event *event, int cpu)
-+{
-+	struct perf_event_context *cpuctx;
-+	bool ret;
-+
-+	cpuctx = find_get_context(event->pmu, NULL, cpu);
-+	mutex_lock(&cpuctx->mutex);
-+	ret = __exclusive_event_ok(event, cpuctx);
-+	perf_unpin_context(cpuctx);
-+	put_ctx(cpuctx);
-+	mutex_unlock(&cpuctx->mutex);
-+
-+	return ret;
-+}
-+
-+static bool exclusive_event_ok(struct perf_event *event,
-+			       struct perf_event_context *ctx)
-+{
-+	bool ret = true;
-+
-+	if (!(event->pmu->capabilities & PERF_PMU_CAP_EXCLUSIVE))
-+		return true;
-+
-+	if (!__exclusive_event_ok(event, ctx))
-+		return false;
-+
-+	if (ctx->task) {
-+		int cpu;
-+
-+		if (event->cpu == -1) {
-+			get_online_cpus();
-+			for_each_online_cpu(cpu) {
-+				ret = __exclusive_event_ok_on_cpu(event, cpu);
-+				if (ret)
-+					break;
-+			}
-+			put_online_cpus();
-+		} else {
-+			ret = __exclusive_event_ok_on_cpu(event, event->cpu);
-+		}
-+	}
-+
-+	return ret;
-+}
-+
- /**
-  * sys_perf_event_open - open a performance event, associate it to a task/cpu
+-#define DIGI_GEDELAY	('d'<<8) | 246		/* Get edelay */
+-#define DIGI_SEDELAY	('d'<<8) | 247		/* Set edelay */
++#define DIGI_GEDELAY	(('d'<<8) | 246)	/* Get edelay */
++#define DIGI_SEDELAY	(('d'<<8) | 247)	/* Set edelay */
+ 
+ struct	digiflow_t {
+ 	unsigned char	startc;				/* flow cntl start char	*/
+@@ -104,8 +101,8 @@ struct	digiflow_t {
+ 
+ 
+ #ifdef	FLOW_2200
+-#define	F2200_GETA	('e'<<8) | 104		/* Get 2x36 flow cntl flags */
+-#define	F2200_SETAW	('e'<<8) | 105		/* Set 2x36 flow cntl flags */
++#define	F2200_GETA	(('e'<<8) | 104)	/* Get 2x36 flow cntl flags */
++#define	F2200_SETAW	(('e'<<8) | 105)	/* Set 2x36 flow cntl flags */
+ #define		F2200_MASK	0x03		/* 2200 flow cntl bit mask  */
+ #define		FCNTL_2200	0x01		/* 2x36 terminal flow cntl  */
+ #define		PCNTL_2200	0x02		/* 2x36 printer flow cntl   */
+@@ -241,7 +238,7 @@ struct digi_dinfo {
+ 	char		dinfo_version[16];	/* driver version       */
+ };
+ 
+-#define	DIGI_GETDD	('d'<<8) | 248		/* get driver info      */
++#define	DIGI_GETDD	(('d'<<8) | 248)	/* get driver info      */
+ 
+ /************************************************************************
+  * Structure used with ioctl commands for per-board information
+@@ -261,7 +258,7 @@ struct digi_info {
+ 	char		info_reserved[7];	/* for future expansion    */
+ };
+ 
+-#define	DIGI_GETBD	('d'<<8) | 249		/* get board info          */
++#define	DIGI_GETBD	(('d'<<8) | 249)	/* get board info          */
+ 
+ struct digi_stat {
+ 	unsigned int	info_chan;		/* Channel number (0 based)  */
+@@ -276,7 +273,7 @@ struct digi_stat {
+ 	unsigned int	info_reserved[8];	/* for future expansion    */
+ };
+ 
+-#define	DIGI_GETSTAT	('d'<<8) | 244		/* get board info          */
++#define	DIGI_GETSTAT	(('d'<<8) | 244)	/* get board info          */
+ /************************************************************************
   *
+  * Structure used with ioctl commands for per-channel information
+@@ -339,7 +336,7 @@ struct digi_getcounter {
+ #define INFO_CH_WLOW	0x0020
+ #define INFO_XXBUF_BUSY 0x0040
+ 
+-#define	DIGI_GETCH	('d'<<8) | 245		/* get board info          */
++#define	DIGI_GETCH	(('d'<<8) | 245)	/* get board info          */
+ 
+ /* Board type definitions */
+ 
+@@ -389,10 +386,10 @@ struct digi_getcounter {
+ #define DIGI_SETCUSTOMBAUD	_IOW('e', 106, int)	/* Set integer baud rate */
+ #define DIGI_GETCUSTOMBAUD	_IOR('e', 107, int)	/* Get integer baud rate */
+ 
+-#define DIGI_REALPORT_GETBUFFERS ('e'<<8) | 108
+-#define DIGI_REALPORT_SENDIMMEDIATE ('e'<<8) | 109
+-#define DIGI_REALPORT_GETCOUNTERS ('e'<<8) | 110
+-#define DIGI_REALPORT_GETEVENTS ('e'<<8) | 111
++#define DIGI_REALPORT_GETBUFFERS (('e'<<8) | 108)
++#define DIGI_REALPORT_SENDIMMEDIATE (('e'<<8) | 109)
++#define DIGI_REALPORT_GETCOUNTERS (('e'<<8) | 110)
++#define DIGI_REALPORT_GETEVENTS (('e'<<8) | 111)
+ 
+ #define EV_OPU		0x0001		/* !<Output paused by client */
+ #define EV_OPS		0x0002		/* !<Output paused by reqular sw flowctrl */
+diff --git a/drivers/staging/dgnc/dpacompat.h b/drivers/staging/dgnc/dpacompat.h
+index b2d2dc0..7a25105 100644
+--- a/drivers/staging/dgnc/dpacompat.h
++++ b/drivers/staging/dgnc/dpacompat.h
+@@ -51,7 +51,6 @@ struct ni_info {
+ 
+ #define RW_READ		1
+ #define RW_WRITE        2
+-#define DIGI_KME        ('e'<<8) | 98           /* Read/Write Host */
+ 
+ #define SUBTYPE         0007
+ #define T_PCXI          0000
+@@ -106,10 +105,7 @@ struct ni_info {
+ 
+ /* Ioctls needed for dpa operation */
+ 
+-#define DIGI_GETDD      ('d'<<8) | 248          /* get driver info      */
+-#define DIGI_GETBD      ('d'<<8) | 249          /* get board info       */
+-#define DIGI_GET_NI_INFO ('d'<<8) | 250		/* nonintelligent state snfo */
++#define DIGI_GET_NI_INFO (('d'<<8) | 250)	/* nonintelligent state snfo */
+ 
+ /* Other special ioctls */
+-#define DIGI_TIMERIRQ ('d'<<8) | 251		/* Enable/disable RS_TIMER use */
+-#define DIGI_LOOPBACK ('d'<<8) | 252		/* Enable/disable UART internal loopback */
++#define DIGI_LOOPBACK (('d'<<8) | 252)		/* Enable/disable UART internal loopback */
 -- 
-2.1.4
+1.9.1
 
