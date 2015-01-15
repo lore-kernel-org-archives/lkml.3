@@ -1,102 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751893AbbAOIUJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 03:20:09 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:34592 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751352AbbAOIUG (ORCPT
+	id S1751871AbbAOIdi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 03:33:38 -0500
+Received: from mail-we0-f181.google.com ([74.125.82.181]:55125 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751175AbbAOIdg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 03:20:06 -0500
+	Thu, 15 Jan 2015 03:33:36 -0500
+Message-ID: <54B77B58.1000206@monstr.eu>
+Date: Thu, 15 Jan 2015 09:33:28 +0100
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <1421054585-9032-1-git-send-email-k.kozlowski@samsung.com>
-References: <1421054585-9032-1-git-send-email-k.kozlowski@samsung.com>
-Date: Thu, 15 Jan 2015 09:20:05 +0100
-Message-ID: <CAPDyKFpGiaDJ3zjCSSbcia6iLS2+FLBRjGAheQAzvFsAkJax+A@mail.gmail.com>
-Subject: Re: [RFC 0/3] mmc: Add dynamic frequency scaling
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Chris Ball <chris@printf.net>, Jaehoon Chung <jh80.chung@samsung.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>, Kukjin Kim <kgene@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
+To: nick <xerofoify@gmail.com>, michal.simek@xilinx.com
+CC: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        robh+dt@kernel.org, soren.brinkmann@xilinx.com,
+        grant.likely@linaro.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: Reminder about patch sent for the file,xsysace.c
+References: <54B03E0F.1000401@gmail.com>
+In-Reply-To: <54B03E0F.1000401@gmail.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="aWeiFAIjoDNd6KXVVAJ4WK4VsfOrxnBsF"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-+ Mike, Stephen (Clock maintainers)
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--aWeiFAIjoDNd6KXVVAJ4WK4VsfOrxnBsF
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: quoted-printable
 
-On 12 January 2015 at 10:23, Krzysztof Kozlowski
-<k.kozlowski@samsung.com> wrote:
-> Hi,
->
->
-> I would like to hear some comments about idea of scaling MMC clock
-> frequency. The basic idea is to lower the clock when device is
-> completely idle or not busy enough.
+Hi,
 
-We already have host drivers that implements runtime PM support.
-Typically that would mean the clock will be gated once the device
-becomes runtime PM suspended.
+please send the patch for removing that FIXME.
 
-Why should we decrease the frequency of an already gated clock?
+Thanks,
+Michal
 
-I think this boils done to how DVFS transitions can be triggered from
-the clock drivers, right?
+On 01/09/2015 09:46 PM, nick wrote:
+> Greetings Michal and others,
+> I am wondering about the patch I sent at the beginning of last month fo=
+r removing the=20
+> comment from the function,ace_probe for hard coding the bus width. In a=
+ddition I am=20
+> wondering whether I should resend this patch or is it in the queue for =
+the upcoming
+> rc releases or the 3.20 release.
+> Thanks,
+> Nick
+>=20
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>=20
 
-Currently the clock framework supports this through clock rate change
-notifiers. Should we have clock notifiers for clk_prepare|unprepare()
-as well? I do remember that someone posted patches for that a while
-ago, but those were rejected.
 
-Mike, Stephen - comments?
+--=20
+Michal Simek, Ing. (M.Eng), OpenPGP -> KeyID: FE3D1F91
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel - Microblaze cpu - http://www.monstr.eu/fdt/
+Maintainer of Linux kernel - Xilinx Zynq ARM architecture
+Microblaze U-BOOT custodian and responsible for u-boot arm zynq platform
 
-Kind regards
-Uffe
 
->
-> The patchset adds MMC card as a devfreq device and uses simple_ondemand
-> as governor. In idle this gave benefits (less energy consumed during
-> idle):
-> 1. Trats2 (Exynos4412): 2.6%
-> 2. Rinato (Exynos3250): 1%
->
-> but (especially on Rinato) it had impact on performance (probably
-> because ondemand triggering a little to late). What is interesting
-> manually changing the clock (without this patchset) gave slightly
-> bigger benefits. Maybe the devfreq introduces noticeable overhead?
->
->
-> Comments are welcomed. Maybe on other platforms this has bigger impact?
->
-> Best regards,
-> Krzysztof
->
->
-> Krzysztof Kozlowski (3):
->   mmc: Add dynamic frequency scaling
->   ARM: dts: Specify MSHC realistic clocks and use frequency scaling
->   ARM: dts: Use frequency scaling for MSHC
->
->  Documentation/devicetree/bindings/mmc/mmc.txt |   2 +
->  arch/arm/boot/dts/exynos3250-rinato.dts       |   1 +
->  arch/arm/boot/dts/exynos4412-trats2.dts       |   4 +-
->  drivers/mmc/card/block.c                      | 247 ++++++++++++++++++++++++++
->  drivers/mmc/core/Kconfig                      |  16 ++
->  drivers/mmc/core/core.h                       |   1 -
->  drivers/mmc/core/host.c                       |   2 +
->  include/linux/mmc/card.h                      |   8 +
->  include/linux/mmc/host.h                      |   3 +
->  9 files changed, 282 insertions(+), 2 deletions(-)
->
-> --
-> 1.9.1
->
+
+--aWeiFAIjoDNd6KXVVAJ4WK4VsfOrxnBsF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAlS3e1wACgkQykllyylKDCEAfACcC5NqHfmWFRnKovYw02lkEkSO
+IUsAnjNBg5OT4nq7sCTPgVMEDwfaqBAH
+=mDA7
+-----END PGP SIGNATURE-----
+
+--aWeiFAIjoDNd6KXVVAJ4WK4VsfOrxnBsF--
