@@ -1,194 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753170AbbAOR4Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 12:56:16 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:47450 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751147AbbAOR4O (ORCPT
+	id S1753773AbbAOSBU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 13:01:20 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:34600 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752135AbbAOSBS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 12:56:14 -0500
-Date: Thu, 15 Jan 2015 18:56:09 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Tejun Heo <tj@kernel.org>, Vladimir Davydov <vdavydov@parallels.com>,
-        "Suzuki K. Poulose" <Suzuki.Poulose@arm.com>, linux-mm@kvack.org,
+	Thu, 15 Jan 2015 13:01:18 -0500
+Date: Thu, 15 Jan 2015 18:00:33 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linaro-acpi@lists.linaro.org, Jon Masters <jcm@redhat.com>,
+        Grant Likely <grant.likely@linaro.org>, Rob Herring <robh@kernel.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Robert Moore <robert.moore@intel.com>,
+        Will Deacon <Will.Deacon@arm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Will Deacon <Will.Deacon@arm.com>
-Subject: Re: [PATCH cgroup/for-3.19-fixes] cgroup: implement
- cgroup_subsys->unbind() callback
-Message-ID: <20150115175609.GG7008@dhcp22.suse.cz>
-References: <54B01335.4060901@arm.com>
- <20150110085525.GD2110@esperanza>
- <20150110214316.GF25319@htj.dyndns.org>
- <20150111205543.GA5480@phnom.home.cmpxchg.org>
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Lv Zheng <lv.zheng@intel.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Olof Johansson <olof@lixom.net>
+Message-ID: <20150115180033.GE3043@sirena.org.uk>
+References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org>
+ <CACxGe6tjiE6u8i-1PHYzX2cOhxJkYN3cV9mqhCHRSMRdOQRfzg@mail.gmail.com>
+ <54B7E21E.2000901@redhat.com>
+ <2277974.2klgILPa2Q@wuerfel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="2+IiqX0tbFQDLF7Q"
 Content-Disposition: inline
-In-Reply-To: <20150111205543.GA5480@phnom.home.cmpxchg.org>
+In-Reply-To: <2277974.2klgILPa2Q@wuerfel>
+X-Cookie: To program is to be.
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [Linaro-acpi] [PATCH v5 18/18] Documentation: ACPI for ARM64
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun 11-01-15 15:55:43, Johannes Weiner wrote:
-> From d527ba1dbfdb58e1f7c7c4ee12b32ef2e5461990 Mon Sep 17 00:00:00 2001
-> From: Johannes Weiner <hannes@cmpxchg.org>
-> Date: Sun, 11 Jan 2015 10:29:05 -0500
-> Subject: [patch] mm: memcontrol: zap outstanding cache/swap references during
->  unbind
-> 
-> Cgroup core assumes that any outstanding css references after
-> offlining are temporary in nature, and e.g. mount waits for them to
-> disappear and release the root cgroup.  But leftover page cache and
-> swapout records in an offlined memcg are only dropped when the pages
-> get reclaimed under pressure or the swapped out pages get faulted in
-> from other cgroups, and so those cgroup operations can hang forever.
-> 
-> Implement the ->unbind() callback to actively get rid of outstanding
-> references when cgroup core wants them gone.  Swap out records are
-> deleted, such that the swap-in path will charge those pages to the
-> faulting task. 
 
-OK, that makes sense to me.
+--2+IiqX0tbFQDLF7Q
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> Page cache pages are moved to the root memory cgroup.
+On Thu, Jan 15, 2015 at 05:52:31PM +0100, Arnd Bergmann wrote:
+> On Thursday 15 January 2015 10:51:58 Jon Masters wrote:
 
-OK, this is better than reclaiming them.
+> > It gets worse. There *will* be large numbers of ACPI only ARM servers
+> > landing over the coming year. Not only would DT code be untested, but
+> > insisting on keeping e.g. a DSDT and DT in sync is never going to work
+> > anyway. Already we have early stage servers that contain a DT used for
+> > bringup that is subsequently not being updated as often as the ACPI
+> > tables (those systems are now booting exclusively in labs with ACPI).
+> > Eventually, I am going to push for the DT data to be removed from these
+> > systems rather than have out of date unmaintained DT data in firmware.
 
-[...]
-> +static void unbind_lru_list(struct mem_cgroup *memcg,
-> +			    struct zone *zone, enum lru_list lru)
-> +{
-> +	struct lruvec *lruvec = mem_cgroup_zone_lruvec(zone, memcg);
-> +	struct list_head *list = &lruvec->lists[lru];
-> +
-> +	while (!list_empty(list)) {
-> +		unsigned int nr_pages;
-> +		unsigned long flags;
-> +		struct page *page;
-> +
-> +		spin_lock_irqsave(&zone->lru_lock, flags);
-> +		if (list_empty(list)) {
-> +			spin_unlock_irqrestore(&zone->lru_lock, flags);
-> +			break;
-> +		}
-> +		page = list_last_entry(list, struct page, lru);
+> We will of course be able to relax the rule once ACPI has stabilized on
+> ARM64. At the moment, we haven't even agreed on how to represent basic
+> devices, so things are in flux and there is no way for a BIOS writer
+> to ship an image that we will guarantee to support in the long run.
 
-taking lru_lock for each page calls for troubles. The lock would bounce
-like crazy. It shouldn't be a big problem to list_move to a local list
-and then work on that one without the lock. Those pages wouldn't be
-visible for the reclaim but that would be only temporary. Or if that is
-not acceptable then just batch at least some number of pages (popular
-SWAP_CLUSTER_MAX).
+> At some point after we are reasonably sure we are able to keep supporting
+> all existing systems that are working with that kernel, we can take
+> support for new systems without having DT by default, and also support
+> booting those without acpi=force, which is related to this question.
 
-> +		if (!get_page_unless_zero(page)) {
-> +			list_move(&page->lru, list);
-> +			spin_unlock_irqrestore(&zone->lru_lock, flags);
-> +			continue;
-> +		}
-> +		BUG_ON(!PageLRU(page));
-> +		ClearPageLRU(page);
-> +		del_page_from_lru_list(page, lruvec, lru);
-> +		spin_unlock_irqrestore(&zone->lru_lock, flags);
-> +
-> +		compound_lock(page);
-> +		nr_pages = hpage_nr_pages(page);
-> +
-> +		if (!mem_cgroup_move_account(page, nr_pages,
-> +					     memcg, root_mem_cgroup)) {
-> +			/*
-> +			 * root_mem_cgroup page counters are not used,
-> +			 * otherwise we'd have to charge them here.
-> +			 */
-> +			page_counter_uncharge(&memcg->memory, nr_pages);
-> +			if (do_swap_account)
-> +				page_counter_uncharge(&memcg->memsw, nr_pages);
-> +			css_put_many(&memcg->css, nr_pages);
-> +		}
-> +
-> +		compound_unlock(page);
-> +
-> +		putback_lru_page(page);
-> +	}
-> +}
-> +
-> +static void unbind_work_fn(struct work_struct *work)
-> +{
-> +	struct cgroup_subsys_state *css;
-> +retry:
-> +	drain_all_stock(root_mem_cgroup);
-> +
-> +	rcu_read_lock();
-> +	css_for_each_child(css, &root_mem_cgroup->css) {
-> +		struct mem_cgroup *memcg = mem_cgroup_from_css(css);
-> +
-> +		/* Drop references from swap-out records */
-> +		if (do_swap_account) {
-> +			long zapped;
-> +
-> +			zapped = swap_cgroup_zap_records(memcg->css.id);
-> +			page_counter_uncharge(&memcg->memsw, zapped);
-> +			css_put_many(&memcg->css, zapped);
-> +		}
-> +
-> +		/* Drop references from leftover LRU pages */
-> +		css_get(css);
-> +		rcu_read_unlock();
-> +		atomic_inc(&memcg->moving_account);
-> +		synchronize_rcu();
+Speaking with my subsystem maintainer hat on (admittedly not subsystems
+affected too much by ARM servers so take this with a pinch of salt) this
+just sounds like it's making more work for me - it means having to force
+people to write DT code and bindings which I'm then going to have to
+review and none of us really care about.  Realistically I'm just going
+to take the code if a lack of a DT binding is the only option, I suspect
+others will be similar.
 
-Why do we need this? Who can migrate to/from offline memcgs? 
+--2+IiqX0tbFQDLF7Q
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> +		while (page_counter_read(&memcg->memory) -
-> +		       page_counter_read(&memcg->kmem) > 0) {
-> +			struct zone *zone;
-> +			enum lru_list lru;
-> +
-> +			lru_add_drain_all();
-> +
-> +			for_each_zone(zone)
-> +				for_each_lru(lru)
-> +					unbind_lru_list(memcg, zone, lru);
-> +
-> +			cond_resched();
-> +		}
-> +		atomic_dec(&memcg->moving_account);
-> +		rcu_read_lock();
-> +		css_put(css);
-> +	}
-> +	rcu_read_unlock();
-> +	/*
-> +	 * Swap-in is racy:
-> +	 *
-> +	 * #0                        #1
-> +	 *                           lookup_swap_cgroup_id()
-> +	 *                           rcu_read_lock()
-> +	 *                           mem_cgroup_lookup()
-> +	 *                           css_tryget_online()
-> +	 *                           rcu_read_unlock()
-> +	 * cgroup_kill_sb()
-> +	 *   !css_has_online_children()
-> +	 *     ->unbind()
-> +	 *                           page_counter_try_charge()
-> +	 *                           css_put()
-> +	 *                             css_free()
-> +	 *                           pc->mem_cgroup = dead memcg
-> +	 *                           add page to lru
-> +	 *
-> +	 * Loop until until all references established from previously
-> +	 * existing swap-out records have been transferred to pages on
-> +	 * the LRU and then uncharged from there.
-> +	 */
-> +	if (!list_empty(&root_mem_cgroup->css.children)) {
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-But what if kmem pages pin the memcg? We would loop for ever. Or am I
-missing something?
+iQEcBAEBCAAGBQJUuABAAAoJECTWi3JdVIfQPWQH/020gT9BIRjV1N4Ux3qm3DCT
+bJrBVHhVXf+nDskwUVdJGphppqydB3OWEdyi0dwUCHfbqn8YfFkqHoPUuYunOGXA
+L93tN0CXbZdih+/ArF8eWjfnZNhtQpPVQD1YjLEwQ4Aif4xVVizZxGx+hwQx8t2K
+zRXzttg7Ri8tCfRF0fm3lqoQx3LsYXgov456/9nD6tpWbzmHUMScp1zXq1nBn3QK
+FGxEeNTS3NviXYdDyq0ug3FqUKyLtooLVyGBgx2mWbHJEeEtlS6WO0hK85G2fZEz
+3vNZdb6MfjrqJ2XM8arbjjoBgrALjlsBpKJ2M1LM0O+w+AXBqzP0lXVf7WJYGwU=
+=MBIX
+-----END PGP SIGNATURE-----
 
-> +		msleep(10);
-> +		goto retry;
-> +	}
-> +}
-[...]
--- 
-Michal Hocko
-SUSE Labs
+--2+IiqX0tbFQDLF7Q--
