@@ -1,103 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753399AbbAOLlf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 06:41:35 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:48770 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752601AbbAOLle (ORCPT
+	id S1753445AbbAOLmC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 06:42:02 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:45602 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752598AbbAOLmA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 06:41:34 -0500
-Message-ID: <54B7A767.9000205@linaro.org>
-Date: Thu, 15 Jan 2015 12:41:27 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Thu, 15 Jan 2015 06:42:00 -0500
+Date: Thu, 15 Jan 2015 14:42:27 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Gigi Joseph <gigi.joseph@gmail.com>
+Cc: Lee Jones <lee.jones@linaro.org>, bvijay <bvijay@ti.com>,
+        Eyal Reizer <eyalr@ti.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch] ti-st: clean up data types (fix harmless memory corruption)
+Message-ID: <20150115114227.GB17976@mwanda>
 MIME-Version: 1.0
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        sylvain.rochet@finsecur.com
-Subject: Re: [PATCH] clocksource: timer-atmel-pit: don't suspend/resume if
- unused
-References: <1418911523-28492-1-git-send-email-nicolas.ferre@atmel.com> <54B3D450.7050405@atmel.com> <54B3D88C.80702@linaro.org> <alpine.DEB.2.11.1501131143250.17382@nanos>
-In-Reply-To: <alpine.DEB.2.11.1501131143250.17382@nanos>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2015 11:47 AM, Thomas Gleixner wrote:
-> On Mon, 12 Jan 2015, Daniel Lezcano wrote:
->
->> On 01/12/2015 03:04 PM, Nicolas Ferre wrote:
->>> Le 18/12/2014 15:05, Nicolas Ferre a écrit :
->>>> From: Sylvain Rochet <sylvain.rochet@finsecur.com>
->>>>
->>>> Waiting for PIT to stop counting takes a long time:
->>>>     1/(Master clock/prescaler/PIVR)
->>>> = 1/(133 MHz     /16       /2^20)
->>>> = 126 ms
->>>>
->>>> Up to 126 ms if master clock is set to 133 MHz, skipping suspend/resume
->>>> of the unused PIT device reduce (suspend time + resume time) from ~140 ms
->>>> to ~17 ms.
->>>>
->>>> Signed-off-by: Sylvain Rochet <sylvain.rochet@finsecur.com>
->>>> [nicolas.ferre@atmel.com: move to newer clocksource driver]
->>>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->>>> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
->>>> ---
->>>> Hi Sylvain,
->>>>
->>>> I re-worked (and "Acked") your patch so it can be applied on the newer
->>>> Mainline
->>>> kernels. Beware, I changed the "subject line" as well. The PIT driver
->>>> moved
->>>> recently (3.18).
->>>>
->>>> Daniel,
->>>> Can you take this patch in your tree?
->>>
->>> Hi Daniel,
->>>
->>> Anything prevents this patch from being merged (aka ping ;-))?
->>
->> [Cc'ed tglx].
->>
->> Hi Nico,
->>
->> thanks for the head up.
->>
->> Nothing prevents it but I am wondering if this change shouldn't be in the
->> generic framework (kernel/time/clocksource.c and kernel/time/clockevents.c),
->> so all drivers will benefit this change ?
->
-> Indeed. There is no point in calling suspend/resume for unused
-> clockevents. They should be stopped and disabled already.
+The big issue here is:
 
-Hi Nico,
+	of_property_read_u32(np, "flow_cntrl", (u32 *)&dt_pdata->flow_cntrl);
 
-are you planning to do the change in the generic framework ?
+"->flow_cntrl" is a char so when we write a 32 bit number to it then it
+corrupts past the end of the char.  It's probably hard to notice because
+the struct has padding so the code works on little endian systems. But
+on a big endian system the code would fail and on a 64 bit, big endian
+systems then "nshutdown_gpio" and "baud_rate" would be buggy as well.
 
-Thanks
-   -- Daniel
+Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
 
-> Now with clocksources this might be different. We have no explicit
-> state for this, but its trivial to add one at least for those
-> clocksources which have enable/disable callbacks. For the other ones
-> not so much.
-
-
-
-
-
--- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+diff --git a/include/linux/ti_wilink_st.h b/include/linux/ti_wilink_st.h
+index 9072d9f..c78dcfe 100644
+--- a/include/linux/ti_wilink_st.h
++++ b/include/linux/ti_wilink_st.h
+@@ -262,7 +262,7 @@ struct kim_data_s {
+ 	struct completion kim_rcvd, ldisc_installed;
+ 	char resp_buffer[30];
+ 	const struct firmware *fw_entry;
+-	long nshutdown;
++	unsigned nshutdown;
+ 	unsigned long rx_state;
+ 	unsigned long rx_count;
+ 	struct sk_buff *rx_skb;
+@@ -270,8 +270,8 @@ struct kim_data_s {
+ 	struct chip_version version;
+ 	unsigned char ldisc_install;
+ 	unsigned char dev_name[UART_DEV_NAME_LEN + 1];
+-	unsigned char flow_cntrl;
+-	unsigned long baud_rate;
++	unsigned flow_cntrl;
++	unsigned baud_rate;
+ };
+ 
+ /**
+@@ -437,10 +437,10 @@ struct gps_event_hdr {
+  *
+  */
+ struct ti_st_plat_data {
+-	long nshutdown_gpio;
++	u32 nshutdown_gpio;
+ 	unsigned char dev_name[UART_DEV_NAME_LEN]; /* uart name */
+-	unsigned char flow_cntrl; /* flow control flag */
+-	unsigned long baud_rate;
++	u32 flow_cntrl; /* flow control flag */
++	u32 baud_rate;
+ 	int (*suspend)(struct platform_device *, pm_message_t);
+ 	int (*resume)(struct platform_device *);
+ 	int (*chip_enable) (struct kim_data_s *);
+diff --git a/drivers/misc/ti-st/st_kim.c b/drivers/misc/ti-st/st_kim.c
+index 7109d28..104f271 100644
+--- a/drivers/misc/ti-st/st_kim.c
++++ b/drivers/misc/ti-st/st_kim.c
+@@ -635,7 +635,7 @@ static ssize_t show_baud_rate(struct device *dev,
+ 		struct device_attribute *attr, char *buf)
+ {
+ 	struct kim_data_s *kim_data = dev_get_drvdata(dev);
+-	return sprintf(buf, "%ld\n", kim_data->baud_rate);
++	return sprintf(buf, "%d\n", kim_data->baud_rate);
+ }
+ 
+ static ssize_t show_flow_cntrl(struct device *dev,
+@@ -757,9 +757,9 @@ static struct ti_st_plat_data *get_platform_data(struct device *dev)
+ 	if (dt_property)
+ 		memcpy(&dt_pdata->dev_name, dt_property, len);
+ 	of_property_read_u32(np, "nshutdown_gpio",
+-			     (u32 *)&dt_pdata->nshutdown_gpio);
+-	of_property_read_u32(np, "flow_cntrl", (u32 *)&dt_pdata->flow_cntrl);
+-	of_property_read_u32(np, "baud_rate", (u32 *)&dt_pdata->baud_rate);
++			     &dt_pdata->nshutdown_gpio);
++	of_property_read_u32(np, "flow_cntrl", &dt_pdata->flow_cntrl);
++	of_property_read_u32(np, "baud_rate", &dt_pdata->baud_rate);
+ 
+ 	return dt_pdata;
+ }
+@@ -809,14 +809,14 @@ static int kim_probe(struct platform_device *pdev)
+ 	kim_gdata->nshutdown = pdata->nshutdown_gpio;
+ 	err = gpio_request(kim_gdata->nshutdown, "kim");
+ 	if (unlikely(err)) {
+-		pr_err(" gpio %ld request failed ", kim_gdata->nshutdown);
++		pr_err(" gpio %d request failed ", kim_gdata->nshutdown);
+ 		return err;
+ 	}
+ 
+ 	/* Configure nShutdown GPIO as output=0 */
+ 	err = gpio_direction_output(kim_gdata->nshutdown, 0);
+ 	if (unlikely(err)) {
+-		pr_err(" unable to configure gpio %ld", kim_gdata->nshutdown);
++		pr_err(" unable to configure gpio %d", kim_gdata->nshutdown);
+ 		return err;
+ 	}
+ 	/* get reference of pdev for request_firmware
