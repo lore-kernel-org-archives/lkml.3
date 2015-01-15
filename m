@@ -1,94 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752424AbbAOLM2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 06:12:28 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:30320 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751427AbbAOLM0 (ORCPT
+	id S1752409AbbAOLTk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 06:19:40 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:50053 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751700AbbAOLTj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 06:12:26 -0500
-X-AuditID: cbfee61b-f79d76d0000024d6-4d-54b7a0980fe3
-From: Robert Baldyga <r.baldyga@samsung.com>
-To: paulz@synopsys.com
-Cc: balbi@ti.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dinguyen@opensource.altera.com,
-        yousaf.kaukab@intel.com, m.szyprowski@samsung.com,
-        stern@rowland.harvard.edu, Robert Baldyga <r.baldyga@samsung.com>
-Subject: [PATCH v3] usb: dwc2: call dwc2_is_controller_alive() under spinlock
-Date: Thu, 15 Jan 2015 12:11:36 +0100
-Message-id: <1421320296-11525-1-git-send-email-r.baldyga@samsung.com>
+	Thu, 15 Jan 2015 06:19:39 -0500
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID t0FBJ8IR002279, This message is accepted by code: ctloc85258
+From: <micky_ching@realsil.com.cn>
+To: <sameo@linux.intel.com>, <lee.jones@linaro.org>
+CC: <devel@linuxdriverproject.org>, <linux-kernel@vger.kernel.org>,
+        <gregkh@linuxfoundation.org>, <rogerable@realtek.com>,
+        <wei_wang@realsil.com.cn>, Micky Ching <micky_ching@realsil.com.cn>
+Subject: [PATCH 00/10] mfd: rtsx: add support for new rts524A and rts525A
+Date: Thu, 15 Jan 2015 19:18:57 +0800
+Message-ID: <cover.1421320541.git.micky_ching@realsil.com.cn>
 X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBLMWRmVeSWpSXmKPExsVy+t9jQd2ZC7aHGPy/yW5x8H69xapPa5gt
-	mhevZ7O4vGsOm8WiZa3MFmuP3GW32D5lOpPFg8M72S0m/L7AZrFp009mBy6PxXteMnnsn7uG
-	3aP/2iR2j9l3fzB69G1ZxeixZf9nRo/jN7YzeXzeJBfAEcVlk5Kak1mWWqRvl8CV8WP9WpaC
-	Pp6KyRvvMzUwtnB1MXJySAiYSLw4Mp8dwhaTuHBvPVsXIxeHkMB0RokD096xQzjtTBLTnn5n
-	AaliE9CR2PJ9AmMXIweHCFDH9w+cIDXMAo1MEnfbf7GB1AgL+Er8fr+MEcRmEVCVaN0FsoGD
-	g1fAVWLiBWWIZXISJ49NZp3AyL2AkWEVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnB4PZPe
-	wbiqweIQowAHoxIPL4Pf9hAh1sSy4srcQ4wSHMxKIrydOUAh3pTEyqrUovz4otKc1OJDjNIc
-	LErivEr2bSFCAumJJanZqakFqUUwWSYOTqkGxtK5DOyS7itdD3e13vQRagsP6vc6tvRN+Z1D
-	8hrv1r5Nyug5H3PpkcgzrereFc3v7m1TOu7tdPr8bnaZa+qWD76tm2dRrGNe+Uz3/pJEB3aO
-	Iou0dZeFYyew7kxfOXmjmmdd2fL1jz4uPcQ8aY6iRjXDbM7by+Y22Hxy88hbumpbd9mtwquz
-	PimxFGckGmoxFxUnAgCCy1cHKwIAAA==
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [172.29.41.103]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the following problem: data transmission in direction
-IN break unless the GSNPSID register access is done with spinlock held.
-This issue occurs at least in Exynos4412 SoC, probably in many SoC's
-from Exynos familly.
+From: Micky Ching <micky_ching@realsil.com.cn>
 
-The problem is described here:
-https://lkml.org/lkml/2014/12/22/185
-And there is linux mailing list discussion:
-https://lkml.org/lkml/2015/1/14/17
+This patchset including re-format some coding-style and add two new chip
+rts524A and rts525A.
 
-Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
----
+Micky Ching (10):
+  mfd: rtsx: replace TAB by SPC after #define
+  mfd: rtsx: place register address and values togather
+  mfd: rtsx: add debug info when access register failed
+  mfd: rtsx: update PETXCFG address
+  mfd: rtsx: update driving settings
+  mfd: rtsx: update phy register
+  mfd: rtsx: remove LCTLR defination
+  mfd: rtsx: add support for rts524A
+  mfd: rtsx: add support for rts525A
+  mfd: rtsx: using pcr_dbg replace dev_dbg
 
-Changelog:
+ drivers/mfd/Makefile         |   2 +-
+ drivers/mfd/rtl8411.c        |  11 +-
+ drivers/mfd/rts5209.c        |   4 +-
+ drivers/mfd/rts5227.c        |  12 +-
+ drivers/mfd/rts5229.c        |   4 +-
+ drivers/mfd/rts5249.c        | 274 ++++++++++---
+ drivers/mfd/rtsx_gops.c      |  37 --
+ drivers/mfd/rtsx_pcr.c       | 114 ++++--
+ drivers/mfd/rtsx_pcr.h       |   5 +
+ include/linux/mfd/rtsx_pci.h | 950 +++++++++++++++++++++----------------------
+ 10 files changed, 778 insertions(+), 635 deletions(-)
+ delete mode 100644 drivers/mfd/rtsx_gops.c
 
-v3:
-- updated the commit message
-
-v2: https://lkml.org/lkml/2015/1/14/17
-- fixed comment from Paul Zimmerman
-
-v1: https://lkml.org/lkml/2015/1/13/186
-
- drivers/usb/dwc2/core_intr.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/usb/dwc2/core_intr.c b/drivers/usb/dwc2/core_intr.c
-index ad43c5b..02e3e2d 100644
---- a/drivers/usb/dwc2/core_intr.c
-+++ b/drivers/usb/dwc2/core_intr.c
-@@ -476,13 +476,13 @@ irqreturn_t dwc2_handle_common_intr(int irq, void *dev)
- 	u32 gintsts;
- 	irqreturn_t retval = IRQ_NONE;
- 
-+	spin_lock(&hsotg->lock);
-+
- 	if (!dwc2_is_controller_alive(hsotg)) {
- 		dev_warn(hsotg->dev, "Controller is dead\n");
- 		goto out;
- 	}
- 
--	spin_lock(&hsotg->lock);
--
- 	gintsts = dwc2_read_common_intr(hsotg);
- 	if (gintsts & ~GINTSTS_PRTINT)
- 		retval = IRQ_HANDLED;
-@@ -515,8 +515,8 @@ irqreturn_t dwc2_handle_common_intr(int irq, void *dev)
- 		}
- 	}
- 
--	spin_unlock(&hsotg->lock);
- out:
-+	spin_unlock(&hsotg->lock);
- 	return retval;
- }
- EXPORT_SYMBOL_GPL(dwc2_handle_common_intr);
 -- 
 1.9.1
 
