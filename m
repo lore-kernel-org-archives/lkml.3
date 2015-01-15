@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751353AbbAOFmX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 00:42:23 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:13100 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750703AbbAOFmW (ORCPT
+	id S1751427AbbAOFnE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 00:43:04 -0500
+Received: from mail-pa0-f51.google.com ([209.85.220.51]:39581 "EHLO
+	mail-pa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750896AbbAOFnD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 00:42:22 -0500
-Message-ID: <54B7532E.7010000@huawei.com>
-Date: Thu, 15 Jan 2015 13:42:06 +0800
-From: hujianyang <hujianyang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
+	Thu, 15 Jan 2015 00:43:03 -0500
+Date: Thu, 15 Jan 2015 11:12:58 +0530
+From: Balavasu <kp.balavasu@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: andreas.dilger@intel.com, oleg.drokin@intel.com, greg@kroah.com
+Subject: [PATCH 2/2] staging: lustre: lnet: lnet: trailing statements should
+ be on next line
+Message-ID: <20150115054257.GA2901@vasu-Inspiron-3542>
 MIME-Version: 1.0
-To: Jens Axboe <axboe@fb.com>
-CC: <hch@infradead.org>, open list <linux-kernel@vger.kernel.org>
-Subject: [PATCH] blk-mq: cleanup additional nr_hw_queues check
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.68.144]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020202.54B7533C.0020,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 4dd040a605dcd6cf2087fd3742474a37
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No need to check set->nr_hw_queues twice in blk_mq_alloc_tag_set(),
-remove the latter one.
+This patch fixes the checkpatch.pl issue
+Error: trailing statements should be on next line
 
-Signed-off-by: hujianyang <hujianyang@huawei.com>
+Signed-off-by: Balavasu <kp.balavasu@gmail.com>
 ---
- block/blk-mq.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/staging/lustre/lnet/lnet/router.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/block/blk-mq.c b/block/blk-mq.c
-index a7d4a98..eddeccc 100644
---- a/block/blk-mq.c
-+++ b/block/blk-mq.c
-@@ -2097,7 +2097,7 @@ int blk_mq_alloc_tag_set(struct blk_mq_tag_set *set)
- 	if (set->queue_depth < set->reserved_tags + BLK_MQ_TAG_MIN)
- 		return -EINVAL;
-
--	if (!set->nr_hw_queues || !set->ops->queue_rq || !set->ops->map_queue)
-+	if (!set->ops->queue_rq || !set->ops->map_queue)
- 		return -EINVAL;
-
- 	if (set->queue_depth > BLK_MQ_MAX_DEPTH) {
+diff --git a/drivers/staging/lustre/lnet/lnet/router.c b/drivers/staging/lustre/lnet/lnet/router.c
+index cdeb246..0f569a0 100644
+--- a/drivers/staging/lustre/lnet/lnet/router.c
++++ b/drivers/staging/lustre/lnet/lnet/router.c
+@@ -1670,13 +1670,16 @@ lnet_get_tunables (void)
+ 	char *s;
+ 
+ 	s = getenv("LNET_ROUTER_PING_TIMEOUT");
+-	if (s != NULL) router_ping_timeout = atoi(s);
++	if (s != NULL)
++		router_ping_timeout = atoi(s);
+ 
+ 	s = getenv("LNET_LIVE_ROUTER_CHECK_INTERVAL");
+-	if (s != NULL) live_router_check_interval = atoi(s);
++	if (s != NULL)
++		live_router_check_interval = atoi(s);
+ 
+ 	s = getenv("LNET_DEAD_ROUTER_CHECK_INTERVAL");
+-	if (s != NULL) dead_router_check_interval = atoi(s);
++	if (s != NULL)
++		dead_router_check_interval = atoi(s);
+ 
+ 	/* This replaces old lnd_notify mechanism */
+ 	check_routers_before_use = 1;
 -- 
-1.6.0.2
+1.9.1
 
