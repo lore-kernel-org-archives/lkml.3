@@ -1,53 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381AbbAOLwN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 06:52:13 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:33242 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751559AbbAOLwL (ORCPT
+	id S1753493AbbAOLwO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 06:52:14 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:52704 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752184AbbAOLwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 06:52:11 -0500
-From: Masanari Iida <standby24x7@gmail.com>
-To: linux-kernel@vger.kernel.org, starvik@axis.com, jesper.nilsson@axis.com,
-        linux-cris-kernel@axis.com
-Cc: Masanari Iida <standby24x7@gmail.com>
-Subject: [PATCH] cris: Remove unnecessary KERN_INFO from sync_serial.c
-Date: Thu, 15 Jan 2015 20:52:08 +0900
-Message-Id: <1421322728-18968-1-git-send-email-standby24x7@gmail.com>
-X-Mailer: git-send-email 2.3.0.rc0
+	Thu, 15 Jan 2015 06:52:12 -0500
+Date: Thu, 15 Jan 2015 12:52:09 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        sylvain.rochet@finsecur.com
+Subject: Re: [PATCH] clocksource: timer-atmel-pit: don't suspend/resume if
+ unused
+Message-ID: <20150115115209.GS3843@piout.net>
+References: <1418911523-28492-1-git-send-email-nicolas.ferre@atmel.com>
+ <54B3D450.7050405@atmel.com>
+ <54B3D88C.80702@linaro.org>
+ <alpine.DEB.2.11.1501131143250.17382@nanos>
+ <54B7A767.9000205@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <54B7A767.9000205@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch remove unnecessary KERN_INFO in sync_serial.c
+Hi,
 
-Signed-off-by: Masanari Iida <standby24x7@gmail.com>
----
- arch/cris/arch-v32/drivers/sync_serial.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+I'll do it but only if you review my other series :)
 
-diff --git a/arch/cris/arch-v32/drivers/sync_serial.c b/arch/cris/arch-v32/drivers/sync_serial.c
-index 08a313f..91e8773 100644
---- a/arch/cris/arch-v32/drivers/sync_serial.c
-+++ b/arch/cris/arch-v32/drivers/sync_serial.c
-@@ -1286,7 +1286,7 @@ static void start_dma_out(struct sync_port *port, const char *data, int count)
- 
- 		tr_cfg.tr_en = regk_sser_yes;
- 		REG_WR(sser, port->regi_sser, rw_tr_cfg, tr_cfg);
--		DEBUGTRDMA(pr_info(KERN_INFO "dma s\n"););
-+		DEBUGTRDMA(pr_info("dma s\n"););
- 	} else {
- 		DMA_CONTINUE_DATA(port->regi_dmaout);
- 		DEBUGTRDMA(pr_info("dma c\n"););
-@@ -1443,7 +1443,7 @@ static inline void handle_rx_packet(struct sync_port *port)
- 	reg_dma_rw_ack_intr ack_intr = { .data = regk_dma_yes };
- 	unsigned long flags;
- 
--	DEBUGRXINT(pr_info(KERN_INFO "!"));
-+	DEBUGRXINT(pr_info("!"));
- 	spin_lock_irqsave(&port->lock, flags);
- 
- 	/* If we overrun the user experience is crap regardless if we
+On 15/01/2015 at 12:41:27 +0100, Daniel Lezcano wrote :
+> On 01/13/2015 11:47 AM, Thomas Gleixner wrote:
+> >On Mon, 12 Jan 2015, Daniel Lezcano wrote:
+> >
+> >>On 01/12/2015 03:04 PM, Nicolas Ferre wrote:
+> >>>Le 18/12/2014 15:05, Nicolas Ferre a écrit :
+> >>>>From: Sylvain Rochet <sylvain.rochet@finsecur.com>
+> >>>>
+> >>>>Waiting for PIT to stop counting takes a long time:
+> >>>>    1/(Master clock/prescaler/PIVR)
+> >>>>= 1/(133 MHz     /16       /2^20)
+> >>>>= 126 ms
+> >>>>
+> >>>>Up to 126 ms if master clock is set to 133 MHz, skipping suspend/resume
+> >>>>of the unused PIT device reduce (suspend time + resume time) from ~140 ms
+> >>>>to ~17 ms.
+> >>>>
+> >>>>Signed-off-by: Sylvain Rochet <sylvain.rochet@finsecur.com>
+> >>>>[nicolas.ferre@atmel.com: move to newer clocksource driver]
+> >>>>Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> >>>>Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+> >>>>---
+> >>>>Hi Sylvain,
+> >>>>
+> >>>>I re-worked (and "Acked") your patch so it can be applied on the newer
+> >>>>Mainline
+> >>>>kernels. Beware, I changed the "subject line" as well. The PIT driver
+> >>>>moved
+> >>>>recently (3.18).
+> >>>>
+> >>>>Daniel,
+> >>>>Can you take this patch in your tree?
+> >>>
+> >>>Hi Daniel,
+> >>>
+> >>>Anything prevents this patch from being merged (aka ping ;-))?
+> >>
+> >>[Cc'ed tglx].
+> >>
+> >>Hi Nico,
+> >>
+> >>thanks for the head up.
+> >>
+> >>Nothing prevents it but I am wondering if this change shouldn't be in the
+> >>generic framework (kernel/time/clocksource.c and kernel/time/clockevents.c),
+> >>so all drivers will benefit this change ?
+> >
+> >Indeed. There is no point in calling suspend/resume for unused
+> >clockevents. They should be stopped and disabled already.
+> 
+> Hi Nico,
+> 
+> are you planning to do the change in the generic framework ?
+> 
+> Thanks
+>   -- Daniel
+> 
+> >Now with clocksources this might be different. We have no explicit
+> >state for this, but its trivial to add one at least for those
+> >clocksources which have enable/disable callbacks. For the other ones
+> >not so much.
+> 
+> 
+> 
+> 
+> 
+> -- 
+>  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+> 
+> Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+> <http://twitter.com/#!/linaroorg> Twitter |
+> <http://www.linaro.org/linaro-blog/> Blog
+> 
+
 -- 
-2.3.0.rc0
-
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
