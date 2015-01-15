@@ -1,69 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754832AbbAONoW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 08:44:22 -0500
-Received: from mail.kernel.org ([198.145.29.136]:49664 "EHLO mail.kernel.org"
+	id S1754887AbbAONo3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 08:44:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47735 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754803AbbAONoT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 08:44:19 -0500
-Date: Thu, 15 Jan 2015 14:44:01 +0100
-From: Sebastian Reichel <sre@kernel.org>
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, stable@vger.kernel.org
-Subject: Re: [PATCH RESEND V2 1/2] power: gpio-charger: balance
- enable/disable_irq_wake calls
-Message-ID: <20150115134401.GA512@earth.universe>
-References: <1421287238-23522-1-git-send-email-dbaryshkov@gmail.com>
+	id S1754836AbbAONoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 08:44:25 -0500
+Date: Thu, 15 Jan 2015 15:44:12 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
+Subject: Re: [PATCH] virtio_balloon: coding style fixes
+Message-ID: <20150115134412.GA23874@redhat.com>
+References: <1421321941-21111-1-git-send-email-mst@redhat.com>
+ <20150115130642.GC7008@dhcp22.suse.cz>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="rwEMma7ioTxnRzrJ"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1421287238-23522-1-git-send-email-dbaryshkov@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20150115130642.GC7008@dhcp22.suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 15, 2015 at 02:06:42PM +0100, Michal Hocko wrote:
+> On Thu 15-01-15 13:39:06, Michael S. Tsirkin wrote:
+> > Most of our code has
+> > struct foo {
+> > }
+> > 
+> > Fix two instances where balloon is inconsistent.
+> 
+> I hate to complain but is it really necessary to post such patches to
+> linux-api?
 
---rwEMma7ioTxnRzrJ
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Well it's human to err, so it seems wise to copy parties
+interested in the ABI/API whenever we are changing files under include/uapi.
+Whitespace changes should mostly be safe, but it's not unknown
+e.g. to include unrelated changes in the same commit by mistake.
 
-Hi,
+> I thought the list was primarily for API related discussions.
 
-On Thu, Jan 15, 2015 at 05:00:37AM +0300, Dmitry Eremin-Solenikov wrote:
-> enable_irq_wakeup returns 0 in case it correctly enabled the IRQ to
-> generate the wakeup event (and thus resume should call disable_irq_wake).
-> Currently gpio-charger driver has this logic inverted. Correct that thus
-> correcting enable/disable_irq_wake() calls balance.
+Basically this line in MAINTAINERS
 
-Thanks, applied:
+ABI/API
+L:      linux-api@vger.kernel.org
+F:      Documentation/ABI/
+F:      include/linux/syscalls.h
+F:      include/uapi/
+F:      kernel/sys_ni.c
 
-http://git.infradead.org/battery-2.6.git/commit/9a2fb8ac9677ab9cf17ab336e06b59d93a57f4a4
+normally means "send all patches affecting files under include/uapi/ to
+this list", does it not?
 
--- Sebastian
+Wasn't this the intent?
 
---rwEMma7ioTxnRzrJ
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> This is not the only mail sent here which doesn't fall into that
+> category IMO. It is far from low volume list for quite some time.
+> 
+> Please let's get back low volume and API only discussion!
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Maybe send patch dropping include/uapi/ from there,
+should help drive the volumes down?
 
-iQIcBAEBCgAGBQJUt8QeAAoJENju1/PIO/qaigcP/398h9E7Sxd7qF2uSnK/896o
-Zgf/Chpp3xskn7VgpkEdv1v+NRP6PTWMf3n4xQnCaURO4QZ1wM53LlgXjvvEkXU1
-6zjdTsjt6NOTvHzygSmuVnG9nMttXpSllUKZdnlMwqXMCvcRNFc3mQAlgvCeutM4
-lmp/i8vDtDPcG9yLa1RzfLylEQufxIuESAFyzYxRK6CfKB7nCrVW1UTi46jfhDYy
-EGj3ub0Hw4VcIGsuK35Ux3wGzZo+5K4bviX915QsBBshTddKYniWYc8ZzlKfQMgZ
-2zw3gc8jAVWpcFTpW7Kzyoeo1pipKO+TyxIUdVC7QHzdHpy3EUuqBstl8d2rSeUm
-3Nvezru4H1Ikss4ekud3hLNBh8rBRJdLkX9ti7S4oO91QMpj2lNTw6k/9sS2Jf7p
-PfkK6AJvUrrK0oR2e9Uv39Hijw6oklF2QdDTvz7bDLqIdeX72aOdO0WOeHMY+V9z
-/E4Z5tljxCWjKTDnqn3gd9jXJbYa82iu0UJsKvm09GAMs6Bi40xvvN3W71H+tHJ4
-PMJ9NC7myo+lF+Ok4jIIw6lSb+Cqv60pc38zGacgKgZtcgvY62T05digf8Nra/BP
-Yo8ZlOl5ye8nogudnZcTHQxZYv5Iy46hIy+f42rD4EsQ/bYwfjxUnbIdOIY3jL2y
-sIjNb6L8hGpQacpIZydB
-=3B6e
------END PGP SIGNATURE-----
-
---rwEMma7ioTxnRzrJ--
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > ---
+> >  include/uapi/linux/virtio_balloon.h | 3 +--
+> >  drivers/virtio/virtio_balloon.c     | 3 +--
+> >  2 files changed, 2 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/include/uapi/linux/virtio_balloon.h b/include/uapi/linux/virtio_balloon.h
+> > index be40f70..4b0488f 100644
+> > --- a/include/uapi/linux/virtio_balloon.h
+> > +++ b/include/uapi/linux/virtio_balloon.h
+> > @@ -36,8 +36,7 @@
+> >  /* Size of a PFN in the balloon interface. */
+> >  #define VIRTIO_BALLOON_PFN_SHIFT 12
+> >  
+> > -struct virtio_balloon_config
+> > -{
+> > +struct virtio_balloon_config {
+> >  	/* Number of pages host wants Guest to give up. */
+> >  	__le32 num_pages;
+> >  	/* Number of pages we've actually got in balloon. */
+> > diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
+> > index 3176ea4..0413157 100644
+> > --- a/drivers/virtio/virtio_balloon.c
+> > +++ b/drivers/virtio/virtio_balloon.c
+> > @@ -44,8 +44,7 @@ static int oom_pages = OOM_VBALLOON_DEFAULT_PAGES;
+> >  module_param(oom_pages, int, S_IRUSR | S_IWUSR);
+> >  MODULE_PARM_DESC(oom_pages, "pages to free on OOM");
+> >  
+> > -struct virtio_balloon
+> > -{
+> > +struct virtio_balloon {
+> >  	struct virtio_device *vdev;
+> >  	struct virtqueue *inflate_vq, *deflate_vq, *stats_vq;
+> >  
+> > -- 
+> > MST
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> -- 
+> Michal Hocko
+> SUSE Labs
