@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755085AbbAOQXS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 11:23:18 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34111 "EHLO mx1.redhat.com"
+	id S1755420AbbAOQRA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 11:17:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:51251 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752104AbbAOQXR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 11:23:17 -0500
+	id S1752164AbbAOQQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 11:16:57 -0500
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -16,23 +16,18 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 7/8] perf data: Enable stream flush within processing
-Date: Thu, 15 Jan 2015 17:15:55 +0100
-Message-Id: <1421338556-20498-8-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 8/8] perf data: Add support for setting ordered_events queue size
+Date: Thu, 15 Jan 2015 17:15:56 +0100
+Message-Id: <1421338556-20498-9-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1421338556-20498-1-git-send-email-jolsa@kernel.org>
 References: <1421338556-20498-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For big data files the size of data allocated for stream
-instance could get really high. It's needed to flush the
-data out of the stream once in a while.
-
-Unfortunately there's no size indication in the stream
-object, so we govern the flush based on the number of
-stored events. Current flush limit is set ot 100000
-events.
+Adding support to limit the size of ordered_events queue,
+so we could control allocation size of perf data files
+without proper finished round events.
 
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -46,68 +41,63 @@ Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Cc: Tom Zanussi <tzanussi@gmail.com>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/util/data-convert-bt.c | 26 ++++++++++++++++++++++++--
- 1 file changed, 24 insertions(+), 2 deletions(-)
+ tools/perf/util/data-convert-bt.c | 22 ++++++++++++++++++++++
+ 1 file changed, 22 insertions(+)
 
 diff --git a/tools/perf/util/data-convert-bt.c b/tools/perf/util/data-convert-bt.c
-index 4bb769e081a8..3d73e51ee10d 100644
+index 3d73e51ee10d..ddecce88bf6d 100644
 --- a/tools/perf/util/data-convert-bt.c
 +++ b/tools/perf/util/data-convert-bt.c
-@@ -43,6 +43,7 @@ struct evsel_priv {
- struct ctf_stream {
- 	struct bt_ctf_stream *stream;
- 	int cpu;
-+	u32 count;
+@@ -74,6 +74,9 @@ struct convert {
+ 
+ 	u64			events_size;
+ 	u64			events_count;
++
++	/* Ordered events configured queue size. */
++	u64			queue_size;
  };
  
- struct ctf_writer {
-@@ -392,7 +393,10 @@ static int ctf_stream__flush(struct ctf_stream *cs)
- 		if (err)
- 			pr_err("CTF stream %d flush failed\n", cs->cpu);
- 
--		pr("Flush stream for cpu %d\n", cs->cpu);
-+		pr("Flush stream for cpu %d (%u samples)\n",
-+		   cs->cpu, cs->count);
-+
-+		cs->count = 0;
- 	}
- 
- 	return err;
-@@ -490,6 +494,19 @@ static int get_sample_cpu(struct ctf_writer *cw, struct perf_sample *sample,
- 	return cpu;
+ static int value_set(struct bt_ctf_field_type *type,
+@@ -966,6 +969,18 @@ static void ctf_writer__flush_streams(struct ctf_writer *cw)
+ 		ctf_stream__flush(cw->stream[cpu]);
  }
  
-+#define STREAM_FLUSH_COUNT 100000
-+
-+/*
-+ * Currently we have no other way to determine the
-+ * time for the stream flush other than keep track
-+ * of the number of events and check it against
-+ * threshold.
-+ */
-+static bool is_flush_needed(struct ctf_stream *cs)
++static int convert__config(const char *var, const char *value, void *cb)
 +{
-+	return cs->count >= STREAM_FLUSH_COUNT;
++	struct convert *c = cb;
++
++	if (!strcmp(var, "convert.queue-size")) {
++		c->queue_size = perf_config_u64(var, value);
++		return 0;
++	}
++
++	return perf_default_config(var, value, cb);
 +}
 +
- static int process_sample_event(struct perf_tool *tool,
- 				union perf_event *_event __maybe_unused,
- 				struct perf_sample *sample,
-@@ -535,8 +552,13 @@ static int process_sample_event(struct perf_tool *tool,
- 	}
+ int bt_convert__perf2ctf(const char *input, const char *path)
+ {
+ 	struct perf_session *session;
+@@ -991,6 +1006,8 @@ int bt_convert__perf2ctf(const char *input, const char *path)
+ 	struct ctf_writer *cw = &c.writer;
+ 	int err = -1;
  
- 	cs = ctf_stream(cw, get_sample_cpu(cw, sample, evsel));
--	if (cs)
-+	if (cs) {
-+		if (is_flush_needed(cs))
-+			ctf_stream__flush(cs);
++	perf_config(convert__config, &c);
 +
-+		cs->count++;
- 		bt_ctf_stream_append_event(cs->stream, event);
-+	}
+ 	/* CTF writer */
+ 	if (ctf_writer__init(cw, path))
+ 		return -1;
+@@ -1000,6 +1017,11 @@ int bt_convert__perf2ctf(const char *input, const char *path)
+ 	if (!session)
+ 		goto free_writer;
  
- 	bt_ctf_event_put(event);
- 	return cs ? 0 : -1;
++	if (c.queue_size) {
++		ordered_events__set_alloc_size(&session->ordered_events,
++					       c.queue_size);
++	}
++
+ 	/* CTF writer env/clock setup  */
+ 	if (ctf_writer__setup_env(cw, session))
+ 		goto free_session;
 -- 
 1.9.3
 
