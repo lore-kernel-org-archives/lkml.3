@@ -1,90 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209AbbAOJe0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 04:34:26 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46242 "EHLO mx2.suse.de"
+	id S1752517AbbAOJey (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 04:34:54 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46248 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751155AbbAOJeY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 04:34:24 -0500
-Date: Thu, 15 Jan 2015 10:34:18 +0100
-From: Jan Kara <jack@suse.cz>
-To: Davidlohr Bueso <dave@stgolabs.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Jan Kara <jack@suse.cz>, Davidlohr Bueso <dbueso@suse.de>
-Subject: Re: [PATCH 2/3] jbd: drop jbd_ENOSYS debug
-Message-ID: <20150115093418.GA12739@quack.suse.cz>
-References: <1421305154-14788-1-git-send-email-dave@stgolabs.net>
- <1421305154-14788-2-git-send-email-dave@stgolabs.net>
+	id S1752281AbbAOJew (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 04:34:52 -0500
+Date: Thu, 15 Jan 2015 10:34:48 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+cc: Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Josh Poimboeuf <jpoimboe@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        live-patching@vger.kernel.org, linux-next@vger.kernel.org
+Subject: Re: [PATCH 1/2 v2] ftrace: don't allow IPMODIFY without proper
+ compiler support
+In-Reply-To: <54B73549.3090405@hitachi.com>
+Message-ID: <alpine.LNX.2.00.1501151032280.4162@pobox.suse.cz>
+References: <alpine.LNX.2.00.1412221412360.1680@pobox.suse.cz> <20141223094607.GA16445@infradead.org> <20141223151056.GA4789@treble.redhat.com> <20141226155613.36dd95b9@canb.auug.org.au> <20150107144317.61ab2080877a4d8227990551@linux-foundation.org>
+ <alpine.LNX.2.00.1501072346400.15299@pobox.suse.cz> <20150107153006.60ed354e3458f402e6819b9e@linux-foundation.org> <alpine.LNX.2.00.1501080037030.15299@pobox.suse.cz> <20150107155701.4839545f63701412003edd88@linux-foundation.org>
+ <alpine.LNX.2.00.1501080104190.15299@pobox.suse.cz> <54B3C1DD.6090400@hitachi.com> <alpine.LNX.2.00.1501132345080.4162@pobox.suse.cz> <20150113211223.18908f21@grimm.local.home> <alpine.LNX.2.00.1501140945520.4162@pobox.suse.cz>
+ <54B73549.3090405@hitachi.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421305154-14788-2-git-send-email-dave@stgolabs.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 14-01-15 22:59:13, Davidlohr Bueso wrote:
-> A quick search shows that there are no users, drop the
-> macro for both jbd and jbd2.
-> 
-> Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
-> Cc: Jan Kara <jack@suse.cz>
-  Thanks. I've added the patch to my tree.
+On Thu, 15 Jan 2015, Masami Hiramatsu wrote:
 
-								Honza
+> Hmm, if this binary doesn't support IPMODIFY, it should return -ENOTSUPP.
 
-> ---
-> My goal here was to just change how we set current state, however
-> I realized that the function is not used.
-> 
->  include/linux/jbd.h  | 9 ---------
->  include/linux/jbd2.h | 9 ---------
->  2 files changed, 18 deletions(-)
-> 
-> diff --git a/include/linux/jbd.h b/include/linux/jbd.h
-> index 31229e0..d326152 100644
-> --- a/include/linux/jbd.h
-> +++ b/include/linux/jbd.h
-> @@ -956,15 +956,6 @@ void __log_wait_for_space(journal_t *journal);
->  extern void	__journal_drop_transaction(journal_t *, transaction_t *);
->  extern int	cleanup_journal_tail(journal_t *);
->  
-> -/* Debugging code only: */
-> -
-> -#define jbd_ENOSYS() \
-> -do {								           \
-> -	printk (KERN_ERR "JBD unimplemented function %s\n", __func__); \
-> -	current->state = TASK_UNINTERRUPTIBLE;			           \
-> -	schedule();						           \
-> -} while (1)
-> -
->  /*
->   * is_journal_abort
->   *
-> diff --git a/include/linux/jbd2.h b/include/linux/jbd2.h
-> index 704b9a5..20e7f78 100644
-> --- a/include/linux/jbd2.h
-> +++ b/include/linux/jbd2.h
-> @@ -1251,15 +1251,6 @@ void __jbd2_log_wait_for_space(journal_t *journal);
->  extern void __jbd2_journal_drop_transaction(journal_t *, transaction_t *);
->  extern int jbd2_cleanup_journal_tail(journal_t *);
->  
-> -/* Debugging code only: */
-> -
-> -#define jbd_ENOSYS() \
-> -do {								           \
-> -	printk (KERN_ERR "JBD unimplemented function %s\n", __func__); \
-> -	current->state = TASK_UNINTERRUPTIBLE;			           \
-> -	schedule();						           \
-> -} while (1)
-> -
->  /*
->   * is_journal_abort
->   *
-> -- 
-> 2.1.2
-> 
+Good poing, will send v3.
+
+> And also, IMHO, we'd better reject registering ftrace_ops with IPMODIFY 
+> in this situation before updating hash table.
+
+That would happen automatically if we return -ENOTSUPP, right? Because the 
+check in ftrace_hash_move() would cause freeing of the new_hash and the 
+error value would get propagated out to ftrace_hash_move() callers.
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Jiri Kosina
+SUSE Labs
