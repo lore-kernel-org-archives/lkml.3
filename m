@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751426AbbAOIDQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 03:03:16 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:58107 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045AbbAOIDP (ORCPT
+	id S1751614AbbAOIJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 03:09:56 -0500
+Received: from filter1.ibarracuda.nl ([83.247.7.10]:41348 "EHLO
+	filter1.ibarracuda.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751366AbbAOIJx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 03:03:15 -0500
-From: Kaixu Xia <xiakaixu@huawei.com>
-To: <mathieu.poirier@linaro.org>
-CC: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <xiakaixu@huawei.com>, <kaixu.xia@linaro.org>
-Subject: [PATCH] coresight: remove the extra spaces
-Date: Thu, 15 Jan 2015 15:54:19 +0800
-Message-ID: <1421308459-71865-1-git-send-email-xiakaixu@huawei.com>
-X-Mailer: git-send-email 1.8.5.5
+	Thu, 15 Jan 2015 03:09:53 -0500
+X-ASG-Debug-ID: 1421308472-0759e72fdb22b870002-xx1T2L
+X-Barracuda-Envelope-From: Frans.Klaver@xsens.com
+X-Barracuda-AUTH-User: xsenscom
+X-Barracuda-Apparent-Source-IP: 87.249.116.215
+Date: Thu, 15 Jan 2015 08:54:29 +0100
+From: Frans Klaver <frans.klaver@xsens.com>
+To: Sebastian Reichel <sre@kernel.org>
+CC: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Mark Rutland <mark.rutland@arm.com>,
+        =?utf-8?B?UmVuw6k=?= Moll <linux@r-moll.nl>,
+        Guenter Roeck <linux@roeck-us.net>, <linux-kernel@vger.kernel.org>,
+        <linux-pm@vger.kernel.org>, <devicetree@vger.kernel.org>
+Subject: Re: [PATCH RESEND 00/13] ltc2952 modernization and new functionality
+Message-ID: <20150115075428.GA22572@ci00147.xsens-tech.local>
+X-ASG-Orig-Subj: Re: [PATCH RESEND 00/13] ltc2952 modernization and new functionality
+References: <1421223346-27410-1-git-send-email-frans.klaver@xsens.com>
+ <20150115005249.GA20141@earth.universe>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020201.54B77376.00A0,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 4cc43ea8860581ae0ad29446f0523032
+Content-Type: text/plain; charset="utf-8"
+Content-Disposition: inline
+In-Reply-To: <20150115005249.GA20141@earth.universe>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [172.16.11.149]
+X-Barracuda-Connect: rev-215.116.249.87.virtu.nl[87.249.116.215]
+X-Barracuda-Start-Time: 1421308472
+X-Barracuda-Encrypted: AES128-SHA
+X-Barracuda-URL: https://filter1.ibarracuda.nl:443/cgi-mod/mark.cgi
+X-Barracuda-BRTS-Status: 1
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=5.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.3.14303
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are some extra spaces, so just remove them from these lines.
+On Thu, Jan 15, 2015 at 01:52:49AM +0100, Sebastian Reichel wrote:
+> Thanks for the cleanup, applied:
+> 
+> http://git.infradead.org/battery-2.6.git/commit/d84ba07c27fafca3cc77b25a1e204383a4b5af91
 
-Signed-off-by: Kaixu Xia <xiakaixu@huawei.com>
----
- drivers/coresight/coresight-etb10.c | 2 +-
- drivers/coresight/coresight.c       | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+Thanks for the heads up.
 
-diff --git a/drivers/coresight/coresight-etb10.c b/drivers/coresight/coresight-etb10.c
-index c922d4a..d0529b5 100644
---- a/drivers/coresight/coresight-etb10.c
-+++ b/drivers/coresight/coresight-etb10.c
-@@ -454,7 +454,7 @@ static int etb_probe(struct amba_device *adev, const struct amba_id *id)
- 	if (ret)
- 		return ret;
- 
--	drvdata->buffer_depth =  etb_get_buffer_depth(drvdata);
-+	drvdata->buffer_depth = etb_get_buffer_depth(drvdata);
- 	clk_disable_unprepare(drvdata->clk);
- 
- 	if (drvdata->buffer_depth < 0)
-diff --git a/drivers/coresight/coresight.c b/drivers/coresight/coresight.c
-index 11968b7..0de0c39 100644
---- a/drivers/coresight/coresight.c
-+++ b/drivers/coresight/coresight.c
-@@ -498,7 +498,7 @@ static int coresight_orphan_match(struct device *dev, void *data)
- 	 * Circle throuch all the connection of that component.  If we find
- 	 * an orphan connection whose name matches @csdev, link it.
- 	 */
--	for (i = 0; i < i_csdev->nr_outport; i++)	{
-+	for (i = 0; i < i_csdev->nr_outport; i++) {
- 		conn = &i_csdev->conns[i];
- 
- 		/* We have found at least one orphan connection */
--- 
-1.8.5.5
-
+Cheers,
+Frans
