@@ -1,50 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754914AbbAOORW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 09:17:22 -0500
-Received: from m12-11.163.com ([220.181.12.11]:41730 "EHLO m12-11.163.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752920AbbAOORT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 09:17:19 -0500
-X-Greylist: delayed 932 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Jan 2015 09:17:18 EST
-From: Yaowei Bai <bywxiaobai@163.com>
-To: rjw@rjwysocki.net, lenb@kernel.org, corbet@lwn.net
-Cc: linux-acpi@vger.kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Documentation/acpi: add the missing '='
-Date: Thu, 15 Jan 2015 21:59:16 +0800
-Message-Id: <1421330356-4051-1-git-send-email-bywxiaobai@163.com>
-X-Mailer: git-send-email 1.9.1
-X-CM-TRANSID: C8CowEBZmVoryLdUEnmuAA--.5S3
-X-Coremail-Antispam: 1Uf129KBjvdXoW7Wr4Uur13Wr13AF4UCrW3KFg_yoWxCrX_u3
-	WDXFsYqay7t3W8Xw1xX3s8AF17Gr4xKF1rC3WxCr4DC3W8ArWDZF90vryqv3y5Wr4xury5
-	WFn5CrWUJry2vjkaLaAFLSUrUUUUbb8apTn2vfkv8UJUUUU8Yxn0WfASr-VFAUDa7-sFnT
-	9fnUUvcSsGvfC2KfnxnUUI43ZEXa7IU0nF4tUUUUU==
-X-Originating-IP: [58.209.167.106]
-X-CM-SenderInfo: xe1z5x5dretxi6rwjhhfrp/xtbBFBuCT1D+VsyO0QAAsp
+	id S1754013AbbAOOAH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 09:00:07 -0500
+Received: from galahad.ideasonboard.com ([185.26.127.97]:51440 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751613AbbAOOAF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 09:00:05 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Masahiro Yamada <yamada.m@jp.panasonic.com>
+Cc: devicetree@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, Alexandre Courbot <acourbot@nvidia.com>,
+        Stephen Warren <swarren@nvidia.com>, linux-gpio@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Documentation: gpio: fix bindings document
+Date: Thu, 15 Jan 2015 16:00:31 +0200
+Message-ID: <6060230.fRgRe49Afg@avalon>
+User-Agent: KMail/4.14.3 (Linux/3.17.7-gentoo; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <1421311960-4120-1-git-send-email-yamada.m@jp.panasonic.com>
+References: <1421311960-4120-1-git-send-email-yamada.m@jp.panasonic.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Yaowei Bai <bywxiaobai@163.com>
----
- Documentation/acpi/enumeration.txt | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Hi Yamada-san,
 
-diff --git a/Documentation/acpi/enumeration.txt b/Documentation/acpi/enumeration.txt
-index b60d2ab..9b121a5 100644
---- a/Documentation/acpi/enumeration.txt
-+++ b/Documentation/acpi/enumeration.txt
-@@ -243,7 +243,7 @@ input driver:
- 			.owner	= THIS_MODULE,
- 			.pm	= &mpu3050_pm,
- 			.of_match_table = mpu3050_of_match,
--			.acpi_match_table  ACPI_PTR(mpu3050_acpi_match),
-+			.acpi_match_table = ACPI_PTR(mpu3050_acpi_match),
- 		},
- 		.probe		= mpu3050_probe,
- 		.remove		= mpu3050_remove,
+Thank you for the patch.
+
+On Thursday 15 January 2015 17:52:40 Masahiro Yamada wrote:
+> Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
+
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+
+> ---
+> 
+>  Documentation/devicetree/bindings/gpio/gpio.txt | 5 +++--
+>  1 file changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/Documentation/devicetree/bindings/gpio/gpio.txt
+> b/Documentation/devicetree/bindings/gpio/gpio.txt index b9bd1d6..f7a158d
+> 100644
+> --- a/Documentation/devicetree/bindings/gpio/gpio.txt
+> +++ b/Documentation/devicetree/bindings/gpio/gpio.txt
+> @@ -69,7 +69,8 @@ GPIO pin number, and GPIO flags as accepted by the
+> "qe_pio_e" gpio-controller. ----------------------------------
+> 
+>  A gpio-specifier should contain a flag indicating the GPIO polarity;
+> active- -high or active-low. If it does, the follow best practices should
+> be followed: +high or active-low. If it does, the following best practices
+> should be +followed:
+> 
+>  The gpio-specifier's polarity flag should represent the physical level at
+> the GPIO controller that achieves (or represents, for inputs) a logically
+> asserted @@ -147,7 +148,7 @@ contains information structures as follows:
+>  	numeric-gpio-range ::=
+>  			<pinctrl-phandle> <gpio-base> <pinctrl-base> <count>
+>  	named-gpio-range ::= <pinctrl-phandle> <gpio-base> '<0 0>'
+> -	gpio-phandle : phandle to pin controller node.
+> +	pinctrl-phandle : phandle to pin controller node
+>  	gpio-base : Base GPIO ID in the GPIO controller
+>  	pinctrl-base : Base pinctrl pin ID in the pin controller
+>  	count : The number of GPIOs/pins in this range
+
 -- 
-1.9.1
+Regards,
 
+Laurent Pinchart
 
