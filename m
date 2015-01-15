@@ -1,105 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209AbbAOMxS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 07:53:18 -0500
-Received: from mx5.zte.com.cn ([63.217.80.70]:44716 "EHLO mx5.zte.com.cn"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753489AbbAOMxQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 07:53:16 -0500
-X-Greylist: delayed 999 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Jan 2015 07:53:15 EST
-Subject: [PATCH 1/1] arch/x86/kvm/vmx.c: Fix external interrupts inject directly bug
- with guestos RFLAGS.IF=0
-X-KeepSent: 9FB4191F:311C876C-48257DCE:003C223F;
- type=4; name=$KeepSent
-To: gleb@kernel.org, pbonzini@redhat.com
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-X-Mailer: Lotus Notes Release 8.5.3 September 15, 2011
-Message-ID: <OF9FB4191F.311C876C-ON48257DCE.003C223F-48257DCE.0044DE9C@zte.com.cn>
-From: "Li Kaihang" <li.kaihang@zte.com.cn>
-Date: Thu, 15 Jan 2015 20:36:12 +0800
-X-MIMETrack: Serialize by Router on notes_smtp/zte_ltd(Release 8.5.3FP6|November 21, 2013) at
- 2015-01-15 20:36:21
+	id S1753947AbbAOMh4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 07:37:56 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:42194 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753219AbbAOMhy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 07:37:54 -0500
+Message-ID: <54B7B49C.90003@hitachi.com>
+Date: Thu, 15 Jan 2015 21:37:48 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-type: text/plain; charset=US-ASCII
-X-MAIL: mse01.zte.com.cn t0FCaLaI073928
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Dave Hansen <dave.hansen@linux.intel.com>
+Subject: Re: [PATCH 3.19 v4 2/2] x86: Enforce maximum instruction size
+ in the instruction decoder
+References: <cover.1421183147.git.luto@amacapital.net> <6ceb805aba0291431f19f72d7f2e765f3a0a9fcf.1421183147.git.luto@amacapital.net>
+In-Reply-To: <6ceb805aba0291431f19f72d7f2e765f3a0a9fcf.1421183147.git.luto@amacapital.net>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2015/01/14 6:49), Andy Lutomirski wrote:
+> x86 instructions cannot exceed 15 bytes, and the instruction decoder
+> should enforce that.  Prior to 6ba48ff46f76, the instruction length
+> limit was implicitly set to 16, which was an approximation of 15,
+> but there is currently no limit at all.
+> 
+> Fix the decoder to reject instructions that exceed 15 bytes.
+> A subsequent patch (targetted for 3.20) will fix MAX_INSN_SIZE.
 
-This patch fix a external interrupt injecting bug in linux 3.19-rc4.
+Hmm, is there any problem to just change MAX_INSN_SIZE to 15?
 
-GuestOS is running and handling some interrupt with RFLAGS.IF = 0 while a external interrupt coming,
-then can lead to a vm exit,in this case,we must avoid inject this external interrupt or it will generate
-a processor hardware exception causing virtual machine crash.
+> Other than potentially confusing some of the decoder sanity checks,
+> I'm not aware of any actual problems that omitting this check would
+> cause.
+> 
+> Fixes: 6ba48ff46f76 x86: Remove arbitrary instruction size limit in instruction decoder
+> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> ---
+>  arch/x86/lib/insn.c | 7 +++++++
+>  1 file changed, 7 insertions(+)
+> 
+> diff --git a/arch/x86/lib/insn.c b/arch/x86/lib/insn.c
+> index 2480978b31cc..7b80745d2c5a 100644
+> --- a/arch/x86/lib/insn.c
+> +++ b/arch/x86/lib/insn.c
+> @@ -52,6 +52,13 @@
+>   */
+>  void insn_init(struct insn *insn, const void *kaddr, int buf_len, int x86_64)
+>  {
+> +	/*
+> +	 * Instructions longer than 15 bytes are invalid even if the
+> +	 * input buffer is long enough to hold them.
+> +	 */
+> +	if (buf_len > 15)
+> +		buf_len = 15;
+> +
 
-Now, I show more details about this problem:
+Without changing the MAX_INSN_SIZE, this looks very odd, since all other
+code suppose that the max length of an instruction is 16 (MAX_INSN_SIZE)
+except here.
 
-A general external interrupt processing for a running virtual machine is shown in the following:
+Thank you,
 
-Step 1:
-     a ext intr gen a vm_exit --> vmx_complete_interrupts --> __vmx_complete_interrupts --> case INTR_TYPE_EXT_INR: kvm_queue_interrupt(vcpu, vector, type == INTR_TYPE_SOFT_INTR);
-
-Step 2:
-     kvm_x86_ops->handle_external_intr(vcpu);
-
-Step 3:
-     get back to vcpu_enter_guest after a while cycle,then run inject_pending_event
-
-Step 4:
-     if (vcpu->arch.interrupt.pending) {
-		kvm_x86_ops->set_irq(vcpu);
-		return 0;
-	}
-
-Step 5:
-     kvm_x86_ops->run(vcpu) --> vm_entry inject vector to guestos IDT
-
-for the above steps, step 4 and 5 will be a processor hardware exception if step1 happen while guestos RFLAGS.IF = 0, that is to say, guestos interrupt is disabled.
-So we should add a logic to judge in step 1 whether a external interrupt need to be pended then inject directly, in the process, we don't need to worry about
-this external interrupt lost because the next Step 2 will handle and choose a best chance to inject it by virtual interrupt controller.
+>  	memset(insn, 0, sizeof(*insn));
+>  	insn->kaddr = kaddr;
+>  	insn->end_kaddr = kaddr + buf_len;
+> 
 
 
-Signed-off-by: Li kaihang <li.kaihang@zte.com.cn>
----
- arch/x86/kvm/vmx.c |   20 ++++++++++++++++++--
- 1 files changed, 18 insertions(+), 2 deletions(-)
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index d4c58d8..e8311ee 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -7711,10 +7711,26 @@ static void __vmx_complete_interrupts(struct kvm_vcpu *vcpu,
-                break;
-        case INTR_TYPE_SOFT_INTR:
-                vcpu->arch.event_exit_inst_len = vmcs_read32(instr_len_field);
--               /* fall through */
--       case INTR_TYPE_EXT_INTR:
-+               /*
-+               * As software and external interrupts may all get here,
-+               * we should separate soft intr from ext intr code,and this
-+               * will ensure that software interrupts handling process is not
-+               * affected by solving external interrupt invalid injecting.
-+               */
-                kvm_queue_interrupt(vcpu, vector, type == INTR_TYPE_SOFT_INTR);
-                break;
-+       case INTR_TYPE_EXT_INTR:
-+               /*
-+               * GuestOS is running and handling some interrupt with
-+               * RFLAGS.IF = 0 while a external interrupt coming,
-+               * then can lead a vm exit getting here,in this case,
-+               * we must avoid inject this external interrupt or it will
-+               * generate a processor hardware exception causing vm crash.
-+               */
-+               if (kvm_x86_ops->interrupt_allowed(vcpu))
-+                       kvm_queue_interrupt(vcpu, vector,
-+                                       type == INTR_TYPE_SOFT_INTR);
-+               break;
-        default:
-                break;
-        }
---
 
---------------------------------------------------------
-ZTE Information Security Notice: The information contained in this mail (and any attachment transmitted herewith) is privileged and confidential and is intended for the exclusive use of the addressee(s).  If you are not an intended recipient, any disclosure, reproduction, distribution or other dissemination or use of the information contained is strictly prohibited.  If you have received this mail in error, please delete it and notify us immediately.
