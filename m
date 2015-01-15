@@ -1,80 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754967AbbAOOeP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 09:34:15 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:1339 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753858AbbAOOeN (ORCPT
+	id S1754711AbbAOPAJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 10:00:09 -0500
+Received: from frv189.fwdcdn.com ([212.42.77.189]:32270 "EHLO
+	frv189.fwdcdn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754638AbbAOPAF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 09:34:13 -0500
-Message-ID: <54B7CFE4.3060603@atmel.com>
-Date: Thu, 15 Jan 2015 15:34:12 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Thu, 15 Jan 2015 10:00:05 -0500
+Date: Thu, 15 Jan 2015 16:34:38 +0200
+From: Sergey Popov <popov_sergey@ukr.net>
+Subject: [patch 1/1] init/main.c: prevent increase of console_loglevel by
+ 'quiet' kernel parameter
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+X-Mailer: mail.ukr.net 5.0
+Message-Id: <1421328867.519739764.uwqo04hs@frv35.fwdcdn.com>
 MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Bo Shen <voice.shen@atmel.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3 0/6] AT91 DT for 3.20 #1
-References: <1421172746-18727-1-git-send-email-alexandre.belloni@free-electrons.com>
-In-Reply-To: <1421172746-18727-1-git-send-email-alexandre.belloni@free-electrons.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.161.30.18]
+Content-Type: multipart/mixed; boundary="=-3Ufh09jy+LlY6yOzgYwH"
+Content-Transfer-Encoding: binary
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 13/01/2015 19:12, Alexandre Belloni a écrit :
-> This series enables RTC on the at91sam9n12 and at91rm9200.
-> It also adds nodes for the SRAM availabe on at91 SoCs.
-> 
-> Finally it adds a dtsi for the at91sam9xe and uses it for the ethernut5 dts.
-> 
-> Changes in v3:
->  - corrected the 9260 and 9g20 reg properties of the SRAM node
-> 
-> Changes in v2:
->  - remove the 9x5 errata for the n12 rtc
-> 
-> Alexandre Belloni (6):
->   ARM: at91/dt: at91sam9n12: Add RTC node
->   ARM: at91/dt: rm9200: add RTC node
->   ARM: at91/dt: at91rm9200ek: enable RTC
->   ARM: at91/dt: add SRAM nodes
->   ARM: at91/dt: Add a dtsi for at91sam9xe
->   ARM: at91/dt: ethernut5: use at91sam9xe.dtsi
+--=-3Ufh09jy+LlY6yOzgYwH
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: binary
+Content-Disposition: inline
+Content-Length: 1228
 
-Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+From: Sergey Popov <popov_sergey@ukr.net>
 
-With the corrected at91sam9rl sram size (0x10000), whole series stacked
-on top of at91-3.20-dt.
+Prevent increase of console_loglevel by 'quiet'
 
-Thanks.
+'quiet' kernel option that follows the 'loglevel=N' should
+not blindly overwrite console_loglevel, instead it should
+respect and keep lower 'loglevel'.
 
+Signed-off-by: Sergey Popov <popov_sergey@ukr.net>
+---
+ init/main.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
 
->  .../devicetree/bindings/arm/atmel-at91.txt         |  1 +
->  arch/arm/boot/dts/at91rm9200.dtsi                  | 12 +++++
->  arch/arm/boot/dts/at91rm9200ek.dts                 |  4 ++
->  arch/arm/boot/dts/at91sam9260.dtsi                 |  5 ++
->  arch/arm/boot/dts/at91sam9261.dtsi                 |  5 ++
->  arch/arm/boot/dts/at91sam9263.dtsi                 | 10 ++++
->  arch/arm/boot/dts/at91sam9g20.dtsi                 |  9 ++++
->  arch/arm/boot/dts/at91sam9g45.dtsi                 |  7 ++-
->  arch/arm/boot/dts/at91sam9n12.dtsi                 | 12 +++++
->  arch/arm/boot/dts/at91sam9rl.dtsi                  |  5 ++
->  arch/arm/boot/dts/at91sam9x5.dtsi                  |  5 ++
->  arch/arm/boot/dts/at91sam9xe.dtsi                  | 60 ++++++++++++++++++++++
->  arch/arm/boot/dts/ethernut5.dts                    |  2 +-
->  arch/arm/boot/dts/sama5d3.dtsi                     |  5 ++
->  arch/arm/boot/dts/sama5d4.dtsi                     |  5 ++
->  15 files changed, 144 insertions(+), 3 deletions(-)
->  create mode 100644 arch/arm/boot/dts/at91sam9xe.dtsi
-> 
+Some drivers tend to print error messages (ex: 'drm/i810 does not support SMP') to the console 
+that we at our company don't want to show to people. We use 'quiet' kernel option to hide kernel decompressing progress and other messages not related to printk. But to hide error messages from drivers we use 'loglevel=3' parameter as well. But when it's _before_ the quiet, then quiet overrides loglevel=3 and set it to be 4.
+I think that's a bug, and here's simple solution for it. The only way to live without this patch is to pass 'loglevel=3' after the 'quiet'. This issue is known to the community, but everyone is using workaround (ex: https://wiki.archlinux.org/index.php/Silent_boot).
+I had enough inspiration to dive into the linux code and fix it.
 
+--
+with best regards,
+Sergey Popov
 
--- 
-Nicolas Ferre
+phone: +380687507707
+skype: uazure
+vk.com/uazure
+fb.com/uazure
+--=-3Ufh09jy+LlY6yOzgYwH
+Content-Type: application/x-patch; name="sergey-popov-quiet-respects-loglevel.patch"
+Content-Transfer-Encoding: base64
+Content-Id: <6kjjmvu3eybly7kthmbn>
+Content-Disposition: attachment
+
+ZGlmZiAtLWdpdCBhL2luaXQvbWFpbi5jIGIvaW5pdC9tYWluLmMKaW5kZXggNjFiOTkzNzYuLjkx
+ZmM3OGIgMTAwNjQ0Ci0tLSBhL2luaXQvbWFpbi5jCisrKyBiL2luaXQvbWFpbi5jCkBAIC0yMTEs
+NyArMjExLDEyIEBAIHN0YXRpYyBpbnQgX19pbml0IGRlYnVnX2tlcm5lbChjaGFyICpzdHIpCiAK
+IHN0YXRpYyBpbnQgX19pbml0IHF1aWV0X2tlcm5lbChjaGFyICpzdHIpCiB7Ci0JY29uc29sZV9s
+b2dsZXZlbCA9IENPTlNPTEVfTE9HTEVWRUxfUVVJRVQ7CisJLyoKKwkgKiAncXVpZXQnIG9wdGlv
+biBzaG91bGQgbm90IHJhaXNlIGNvbnNvbGVfbG9nbGV2ZWwsIGl0J3Mgb25seQorCSAqIGFsbG93
+ZWQgdG8gbG93ZXIgaXQKKwkgKi8KKwlpZiAoY29uc29sZV9sb2dsZXZlbCA+IENPTlNPTEVfTE9H
+TEVWRUxfUVVJRVQpCisJCWNvbnNvbGVfbG9nbGV2ZWwgPSBDT05TT0xFX0xPR0xFVkVMX1FVSUVU
+OwogCXJldHVybiAwOwogfQogCg==
+
+--=-3Ufh09jy+LlY6yOzgYwH--
