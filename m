@@ -1,84 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754060AbbAOVkF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 16:40:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36809 "EHLO mx1.redhat.com"
+	id S1754164AbbAOVn2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 16:43:28 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:58125 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751510AbbAOVkC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 16:40:02 -0500
-Message-ID: <54B8335D.304@redhat.com>
-Date: Thu, 15 Jan 2015 16:38:37 -0500
-From: Jon Masters <jcm@redhat.com>
-Organization: Red Hat, Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752531AbbAOVn0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 16:43:26 -0500
+Date: Thu, 15 Jan 2015 14:42:30 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: atull <atull@opensource.altera.com>, gregkh@linuxfoundation.org,
+        Pavel Machek <pavel@denx.de>, hpa@zytor.com, monstr@monstr.eu,
+        michal.simek@xilinx.com, rdunlap@infradead.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        pantelis.antoniou@konsulko.com, robh+dt@kernel.org,
+        grant.likely@linaro.org, iws@ovro.caltech.edu,
+        linux-doc@vger.kernel.org, broonie@kernel.org, philip@balister.org,
+        rubini@gnudd.com, s.trumtrar@pengutronix.de, jason@lakedaemon.net,
+        kyle.teske@ni.com, nico@linaro.org, balbi@ti.com, m.chehab@samsung.com,
+        davidb@codeaurora.org, rob@landley.net, davem@davemloft.net,
+        cesarb@cesarb.net, sameo@linux.intel.com, akpm@linux-foundation.org,
+        linus.walleij@linaro.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        devel@driverdev.osuosl.org, delicious.quinoa@gmail.com,
+        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
+Subject: Re: [PATCH v8 2/4] fpga manager: add sysfs interface document
+Message-ID: <20150115214230.GD23247@obsidianresearch.com>
+References: <20150109205643.GA5761@amd>
+ <20150112210134.687176ed@lxorguk.ukuu.org.uk>
+ <20150112214314.GA18610@obsidianresearch.com>
+ <20150113162847.2778b5a5@lxorguk.ukuu.org.uk>
+ <20150113200032.GA16205@obsidianresearch.com>
+ <alpine.DEB.2.02.1501131455130.30192@linuxheads99>
+ <20150113222450.GA17475@obsidianresearch.com>
+ <alpine.DEB.2.02.1501150936390.16760@linuxheads99>
+ <20150115184726.GA23247@obsidianresearch.com>
+ <20150115204502.591bca1d@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-To: Al Stone <ahs3@redhat.com>, Catalin Marinas <catalin.marinas@arm.com>,
-        Grant Likely <grant.likely@linaro.org>
-CC: Will Deacon <Will.Deacon@arm.com>,
-        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Mark Brown <broonie@kernel.org>,
-        Rob Herring <robh@kernel.org>, Robert Richter <rric@kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
-        Timur Tabi <timur@codeaurora.org>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linaro-acpi <linaro-acpi@lists.linaro.org>
-Subject: Re: [PATCH v7 00/17] Introduce ACPI for ARM64 based on ACPI 5.1
-References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org> <CACxGe6v_BvCQqp8d=LaQ8HeaOU1Zh_HPpwFTdwOjHUbqXsnQ8g@mail.gmail.com> <20150115182346.GE2329@e104818-lin.cambridge.arm.com> <54B831C9.3060700@redhat.com>
-In-Reply-To: <54B831C9.3060700@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150115204502.591bca1d@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.183
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/15/2015 04:31 PM, Al Stone wrote:
-> On 01/15/2015 11:23 AM, Catalin Marinas wrote:
->> On Thu, Jan 15, 2015 at 04:26:20PM +0000, Grant Likely wrote:
->>> On Wed, Jan 14, 2015 at 3:04 PM, Hanjun Guo <hanjun.guo@linaro.org> wrote:
->>>> This is the v7 of ACPI core patches for ARM64 based on ACPI 5.1
->>>
->>> I'll get right to the point: Can we please have this series queued up
->>> for v3.20?
->> [snip ... ]
+On Thu, Jan 15, 2015 at 08:45:02PM +0000, One Thousand Gnomes wrote:
+
+> > - Hand over to a DT overlay (how does this work?) Lock transfers
+> >   from FD to kernel
 > 
->>> 5. Platform support patches need verification and review
->>>    * ACPI core works on at least the Foundation model, Juno, APM
->>> Mustang, and AMD Seattle
->>>    * There still are driver patches being discussed. See Al's summary
->>> for details
->>>    * As I argued above, the state of driver patches isn't going to be
->>
->> We are still lacking here. To quote Al, "First version for AMD Seattle
->> has been posted to the public linaro-acpi mailing list for initial
->> review". Sorry but I don't follow linaro-acpi list. I don't know what's
->> in those patches and I can't tell which subsystems they touch, whether
->> maintainers agree with them. So in conclusion, I'm not confident the
->> arm64 hardware ACPI story looks that great yet.
->>  
+> That bit isn't stateful so I would actually have expected something in
+> the kernel ABI along the lines of 
 > 
-> This is solely my fault -- too much time on processes, email, and
-> documentation, not enough time on the Seattle patches.  And not
-> enough Seattles to go around for someone else to pick up the slack.
+>            request_fpga(blah)
+> 
+> which does
+> 
+>              if in use by user
+>                     EBUSY
+>              lock it (all user opens will fail)
+> 
+> and
+> 
+>             release_fpga(blah)
 
-As an aside: a few of us have discretely assisted in ensuring that the
-right folks have access to hardware platforms over the past few months.
-If one of the upstream maintainers does not have v8 hardware and doing
-so will unblock progress please get in touch off list.
+I am imagining two ways to start a kernel FPGA, the in-kernel method
+triggered by a DT node:
 
-Jon.
+  fpga = request_and_lock_fpga(of_get_fpga_controller(dev->of_node))
+  fw = request_firmat(of_get_fpga_firmware(dev->of_node));
+  fpga_program_fw(fpga, fw);
 
+  for_each_child_of_node(dev->of_node, child)
+    .. of_platform_bus_probe(child ... ) ..
+
+  .. somehow fpga and its lock transfer to dev->of_node ..
+
+The problem with this is it assumes the FPGA is ready to go
+immediately after fpga_program_fw. There are a few platforms that can
+manage this, but many others require at least some kind of startup
+sequence - eg wait for clocking PLLs to lock, do low level setup, etc.
+
+For very common cases (like Zynq can have a pretty common setup scheme
+for the PL side) the DT binding can guide the kernel to run the right
+code, and the code can live in the kernel because it is simple and
+broadly useful.
+
+For wild cases I'd like to just punt the setup code to user space. It
+is safer and simpler to run that complexity in a user process than in
+the kernel.
+
+Maybe there is a better way to handle this, but I have been under the
+impression that these days it is frowned on for the kernel to wait for
+userspace?
+
+So my idea is to use the user space method to also load a 'kernel'
+fpga, the process follows the kernel flow:
+
+   fd = open("/dev/fpga0"); // request_and_lock_fpga
+
+   ioctl(fd,START_PROGRAMMING); // fpga_program_fw
+   write(fd,fw,fw_size);
+   
+   // Arbitary complexity here
+   userspace_setup_fpga();
+
+   icotl(fd,BIND_DT_OVERLAY, .. ?? ..) // for_each_child_of_node
+
+This is what the state is about, if the setup fails I expect the
+kernel to go and unlock and deprogram the FPGA if fd is closed. Only a
+success on BIND_DT_OVERLAY will make the FPGA permanent beyond closing
+fd.
+
+Pantelis: I think this explains why a fd and ioctls. configfs, sysfs,
+etc lack the FD context to do the cleanup. 
+
+Essentially, I think a running FPGA should always be attached to some
+context that is the user - either the user is in-kernel (a DT of_node)
+or the user is in userspace (the fd).
+
+The invarient is - if there is no user then the kernel automatically
+makes the FPGA deprogrammed.
+
+Having a device that is potentially attached to the CPU bus running
+'rouge' is dangerous. We can't realistically deprogram it safely if we
+don't know what it is doing. Eg deprogramming in the middle of a DMA
+operation between the CPU and FPGA will often crash the entire system.
+
+The only way to provide reasonable safe guards is to have a clear
+chain of ownership. When the kernel takes ownership of the FPGA it
+also takes ownership of any cleanup required prior to deprogram.
+
+Jason
