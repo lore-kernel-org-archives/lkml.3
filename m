@@ -1,110 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887AbbAONo3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 08:44:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47735 "EHLO mx1.redhat.com"
+	id S1754931AbbAONou (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 08:44:50 -0500
+Received: from mail.kernel.org ([198.145.29.136]:49738 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754836AbbAONoZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 08:44:25 -0500
-Date: Thu, 15 Jan 2015 15:44:12 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, linux-api@vger.kernel.org
-Subject: Re: [PATCH] virtio_balloon: coding style fixes
-Message-ID: <20150115134412.GA23874@redhat.com>
-References: <1421321941-21111-1-git-send-email-mst@redhat.com>
- <20150115130642.GC7008@dhcp22.suse.cz>
+	id S1754892AbbAONor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 08:44:47 -0500
+Date: Thu, 15 Jan 2015 14:44:33 +0100
+From: Sebastian Reichel <sre@kernel.org>
+To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH RESEND V2 2/2] power: collie_battery: support generating
+ wakeup event
+Message-ID: <20150115134432.GB512@earth.universe>
+References: <1421287238-23522-1-git-send-email-dbaryshkov@gmail.com>
+ <1421287238-23522-2-git-send-email-dbaryshkov@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="hQiwHBbRI9kgIhsi"
 Content-Disposition: inline
-In-Reply-To: <20150115130642.GC7008@dhcp22.suse.cz>
+In-Reply-To: <1421287238-23522-2-git-send-email-dbaryshkov@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 15, 2015 at 02:06:42PM +0100, Michal Hocko wrote:
-> On Thu 15-01-15 13:39:06, Michael S. Tsirkin wrote:
-> > Most of our code has
-> > struct foo {
-> > }
-> > 
-> > Fix two instances where balloon is inconsistent.
-> 
-> I hate to complain but is it really necessary to post such patches to
-> linux-api?
 
-Well it's human to err, so it seems wise to copy parties
-interested in the ABI/API whenever we are changing files under include/uapi.
-Whitespace changes should mostly be safe, but it's not unknown
-e.g. to include unrelated changes in the same commit by mistake.
+--hQiwHBbRI9kgIhsi
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> I thought the list was primarily for API related discussions.
+Hi,
 
-Basically this line in MAINTAINERS
+On Thu, Jan 15, 2015 at 05:00:38AM +0300, Dmitry Eremin-Solenikov wrote:
+> Teach collie_battery driver to communicate to the kernel that it can
+> generate wakeup events. Handle enabling/disabling wakeup on battery full
+> event in suspend/resume callbacks.
 
-ABI/API
-L:      linux-api@vger.kernel.org
-F:      Documentation/ABI/
-F:      include/linux/syscalls.h
-F:      include/uapi/
-F:      kernel/sys_ni.c
+Thanks, applied:
 
-normally means "send all patches affecting files under include/uapi/ to
-this list", does it not?
+http://git.infradead.org/battery-2.6.git/commit/a465005643a4c1e02681b02075082fc6c7fa076a
 
-Wasn't this the intent?
+-- Sebastian
 
-> This is not the only mail sent here which doesn't fall into that
-> category IMO. It is far from low volume list for quite some time.
-> 
-> Please let's get back low volume and API only discussion!
+--hQiwHBbRI9kgIhsi
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Maybe send patch dropping include/uapi/ from there,
-should help drive the volumes down?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > ---
-> >  include/uapi/linux/virtio_balloon.h | 3 +--
-> >  drivers/virtio/virtio_balloon.c     | 3 +--
-> >  2 files changed, 2 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/include/uapi/linux/virtio_balloon.h b/include/uapi/linux/virtio_balloon.h
-> > index be40f70..4b0488f 100644
-> > --- a/include/uapi/linux/virtio_balloon.h
-> > +++ b/include/uapi/linux/virtio_balloon.h
-> > @@ -36,8 +36,7 @@
-> >  /* Size of a PFN in the balloon interface. */
-> >  #define VIRTIO_BALLOON_PFN_SHIFT 12
-> >  
-> > -struct virtio_balloon_config
-> > -{
-> > +struct virtio_balloon_config {
-> >  	/* Number of pages host wants Guest to give up. */
-> >  	__le32 num_pages;
-> >  	/* Number of pages we've actually got in balloon. */
-> > diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
-> > index 3176ea4..0413157 100644
-> > --- a/drivers/virtio/virtio_balloon.c
-> > +++ b/drivers/virtio/virtio_balloon.c
-> > @@ -44,8 +44,7 @@ static int oom_pages = OOM_VBALLOON_DEFAULT_PAGES;
-> >  module_param(oom_pages, int, S_IRUSR | S_IWUSR);
-> >  MODULE_PARM_DESC(oom_pages, "pages to free on OOM");
-> >  
-> > -struct virtio_balloon
-> > -{
-> > +struct virtio_balloon {
-> >  	struct virtio_device *vdev;
-> >  	struct virtqueue *inflate_vq, *deflate_vq, *stats_vq;
-> >  
-> > -- 
-> > MST
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> -- 
-> Michal Hocko
-> SUSE Labs
+iQIcBAEBCgAGBQJUt8RAAAoJENju1/PIO/qaFyoQAILosLE0+WzG2mjx3bGHFB8I
+cJeAeijse4T7zQdoonKZyZVYj96gp0HW155aVERjVbjVjeFwwnwmcOTML2fI2W3O
+EUvFE3k8TapPxrgl/0oCkmpz30RbNpSRk/THQN48u8KmFoL1BFiP1VWU1AeFdeVa
+QRMkLc88eCI2bPEqwdjr4kfPcWfXEbQLWriXSgugEecyNZsMi2pqL3xvzTov266z
+NBpLRCMjvv9K7CrRUdO+hHZZmyI7dMls9lTUGBRIKWgQtlUGk8nCyEOa5X0BlOTQ
+PiMhjOgGid1HAsbYRGLH/niX4O9ZF8JGX4cFzCtujr1bWdz/abprGB1cHuvCWM91
+xPFWK1errV9ihj78OD8zyLHgnKRZkt0iM3TbULphdH6iTAsWnhr6HXmI03crinab
+IqS1eRTgjhay+dUrbrPorbJuh2AZMh1bek516L8zIa/S4hWxchr4dG6hosQ7To4M
+BdBeQpeuXu2640EZtXYMWwCD8izeorvXJz8UQ8y/nsecvuzCW+z8k0aNQtE4d9xR
+10Un9q57TWpkQxuiRe90uVBnAulb1NPy78n1r2lvoeBF/0T4Lqvr24vMikfGw/Mt
+viEf0I/GKEtpI4GG1ngQpa/r0iT+tIMTnkS1BLSmiFHJqwThIFZaybtHqFpeTCfe
+qvI74D92H040S+PZzmOA
+=Jbte
+-----END PGP SIGNATURE-----
+
+--hQiwHBbRI9kgIhsi--
