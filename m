@@ -1,288 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932398AbbAOWA1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 17:00:27 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:57640 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932383AbbAOWAX (ORCPT
+	id S1753856AbbAOWKF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 17:10:05 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:50405 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753035AbbAOWKD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 17:00:23 -0500
-From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Bo Shen <voice.shen@atmel.com>, Wenyou Yang <Wenyou.Yang@atmel.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH 17/17] ARM: at91: remove at91_dt_initialize
-Date: Thu, 15 Jan 2015 22:58:20 +0100
-Message-Id: <1421359100-8930-18-git-send-email-alexandre.belloni@free-electrons.com>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1421359100-8930-1-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1421359100-8930-1-git-send-email-alexandre.belloni@free-electrons.com>
+	Thu, 15 Jan 2015 17:10:03 -0500
+From: Kamal Mostafa <kamal@canonical.com>
+To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        kernel-team@lists.ubuntu.com
+Cc: Kamal Mostafa <kamal@canonical.com>
+Subject: [3.13.y-ckt stable] Linux 3.13.11-ckt14 stable review
+Date: Thu, 15 Jan 2015 14:09:36 -0800
+Message-Id: <1421359795-11155-1-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the ramc initialization to pm.c as it is the only user left. This allows to
-get rid of at91_dt_initialize() and setup.c
+This is the start of the review cycle for the Linux 3.13.11-ckt14 stable kernel.
 
-Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
----
- arch/arm/mach-at91/Makefile     |  2 --
- arch/arm/mach-at91/at91rm9200.c |  1 -
- arch/arm/mach-at91/at91sam9.c   |  2 --
- arch/arm/mach-at91/generic.h    |  3 --
- arch/arm/mach-at91/pm.c         | 43 ++++++++++++++++++++++++++-
- arch/arm/mach-at91/sama5d3.c    |  1 -
- arch/arm/mach-at91/sama5d4.c    |  1 -
- arch/arm/mach-at91/setup.c      | 64 -----------------------------------------
- 8 files changed, 42 insertions(+), 75 deletions(-)
- delete mode 100644 arch/arm/mach-at91/setup.c
+This version contains 19 new patches, summarized below.  The new patches are
+posted as replies to this message and also available in this git branch:
 
-diff --git a/arch/arm/mach-at91/Makefile b/arch/arm/mach-at91/Makefile
-index 27b503defe80..be26bb8c9a9a 100644
---- a/arch/arm/mach-at91/Makefile
-+++ b/arch/arm/mach-at91/Makefile
-@@ -2,8 +2,6 @@
- # Makefile for the linux kernel.
- #
- 
--obj-y		:= setup.o
--
- obj-$(CONFIG_SOC_AT91SAM9)	+= sam9_smc.o
- 
- # CPU-specific support
-diff --git a/arch/arm/mach-at91/at91rm9200.c b/arch/arm/mach-at91/at91rm9200.c
-index a1d1e63fb405..4ab2e2bbdee2 100644
---- a/arch/arm/mach-at91/at91rm9200.c
-+++ b/arch/arm/mach-at91/at91rm9200.c
-@@ -41,7 +41,6 @@ static void __init rm9200_dt_device_init(void)
- 	arm_pm_idle = at91rm9200_idle;
- 	arm_pm_restart = at91rm9200_restart;
- 	at91_rm9200_pm_init();
--	at91_dt_initialize();
- 
- 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
- }
-diff --git a/arch/arm/mach-at91/at91sam9.c b/arch/arm/mach-at91/at91sam9.c
-index 0aeabcf4ddb8..8223b1298510 100644
---- a/arch/arm/mach-at91/at91sam9.c
-+++ b/arch/arm/mach-at91/at91sam9.c
-@@ -19,7 +19,6 @@ static void __init sam9_dt_device_init(void)
- {
- 	arm_pm_idle = at91sam9_idle;
- 	at91_sam9260_pm_init();
--	at91_dt_initialize();
- 
- 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
- }
-@@ -39,7 +38,6 @@ static void __init sam9g45_dt_device_init(void)
- {
- 	arm_pm_idle = at91sam9_idle;
- 	at91_sam9g45_pm_init();
--	at91_dt_initialize();
- 
- 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
- }
-diff --git a/arch/arm/mach-at91/generic.h b/arch/arm/mach-at91/generic.h
-index 881e73a27fab..1384354e93dc 100644
---- a/arch/arm/mach-at91/generic.h
-+++ b/arch/arm/mach-at91/generic.h
-@@ -14,9 +14,6 @@
- #include <linux/of.h>
- #include <linux/reboot.h>
- 
-- /* Processors */
--extern void __init at91_dt_initialize(void);
--
-  /* Timer */
- extern void at91rm9200_timer_init(void);
- 
-diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
-index 11bf992838af..4aebd7ba7640 100644
---- a/arch/arm/mach-at91/pm.c
-+++ b/arch/arm/mach-at91/pm.c
-@@ -44,6 +44,7 @@ static struct {
- } at91_pm_data;
- 
- static void (*at91_pm_standby)(void);
-+static void __iomem *at91_ramc_base[2];
- 
- static int at91_pm_valid_state(suspend_state_t state)
- {
-@@ -227,6 +228,44 @@ void at91_pm_set_standby(void (*at91_standby)(void))
- 	}
- }
- 
-+
-+static struct of_device_id ramc_ids[] = {
-+	{ .compatible = "atmel,at91rm9200-sdramc", .data = at91rm9200_standby },
-+	{ .compatible = "atmel,at91sam9260-sdramc", .data = at91sam9_sdram_standby },
-+	{ .compatible = "atmel,at91sam9g45-ddramc", .data = at91_ddr_standby },
-+	{ .compatible = "atmel,sama5d3-ddramc", .data = at91_ddr_standby },
-+	{ /*sentinel*/ }
-+};
-+
-+static void at91_dt_ramc(void)
-+{
-+	struct device_node *np;
-+	const struct of_device_id *of_id;
-+	int idx = 0;
-+	const void *standby = NULL;
-+
-+	for_each_matching_node_and_match(np, ramc_ids, &of_id) {
-+		at91_ramc_base[idx] = of_iomap(np, 0);
-+		if (!at91_ramc_base[idx])
-+			panic(pr_fmt("unable to map ramc[%d] cpu registers\n"), idx);
-+
-+		if (!standby)
-+			standby = of_id->data;
-+
-+		idx++;
-+	}
-+
-+	if (!idx)
-+		panic(pr_fmt("unable to find compatible ram controller node in dtb\n"));
-+
-+	if (!standby) {
-+		pr_warn("ramc no standby function available\n");
-+		return;
-+	}
-+
-+	at91_pm_set_standby(standby);
-+}
-+
- #ifdef CONFIG_AT91_SLOW_CLOCK
- static void __init at91_pm_sram_init(void)
- {
-@@ -268,7 +307,6 @@ put_node:
- }
- #endif
- 
--
- static void __init at91_pm_init(void)
- {
- #ifdef CONFIG_AT91_SLOW_CLOCK
-@@ -288,6 +326,7 @@ void __init at91_rm9200_pm_init(void)
- 	/*
- 	 * AT91RM9200 SDRAM low-power mode cannot be used with self-refresh.
- 	 */
-+	at91_dt_ramc();
- 	at91_ramc_write(0, AT91RM9200_SDRAMC_LPR, 0);
- 
- 	at91_pm_data.uhp_udp_mask = AT91RM9200_PMC_UHP | AT91RM9200_PMC_UDP;
-@@ -298,6 +337,7 @@ void __init at91_rm9200_pm_init(void)
- 
- void __init at91_sam9260_pm_init(void)
- {
-+	at91_dt_ramc();
- 	at91_pm_data.memctrl = AT91_MEMCTRL_SDRAMC;
- 	at91_pm_data.uhp_udp_mask = AT91SAM926x_PMC_UHP | AT91SAM926x_PMC_UDP;
- 	return at91_pm_init();
-@@ -305,6 +345,7 @@ void __init at91_sam9260_pm_init(void)
- 
- void __init at91_sam9g45_pm_init(void)
- {
-+	at91_dt_ramc();
- 	at91_pm_data.uhp_udp_mask = AT91SAM926x_PMC_UHP;
- 	at91_pm_data.memctrl = AT91_MEMCTRL_DDRSDR;
- 	return at91_pm_init();
-diff --git a/arch/arm/mach-at91/sama5d3.c b/arch/arm/mach-at91/sama5d3.c
-index 752d1612ff1f..3af2b4bcc205 100644
---- a/arch/arm/mach-at91/sama5d3.c
-+++ b/arch/arm/mach-at91/sama5d3.c
-@@ -16,7 +16,6 @@
- static void __init sama5_dt_device_init(void)
- {
- 	at91_sam9260_pm_init();
--	at91_dt_initialize();
- 
- 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
- }
-diff --git a/arch/arm/mach-at91/sama5d4.c b/arch/arm/mach-at91/sama5d4.c
-index 2f1ee08dc49f..2ec43ee3f440 100644
---- a/arch/arm/mach-at91/sama5d4.c
-+++ b/arch/arm/mach-at91/sama5d4.c
-@@ -52,7 +52,6 @@ static void __init sama5d4_map_io(void)
- static void __init sama5d4_dt_device_init(void)
- {
- 	at91_sam9260_pm_init();
--	at91_dt_initialize();
- 
- 	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
- }
-diff --git a/arch/arm/mach-at91/setup.c b/arch/arm/mach-at91/setup.c
-deleted file mode 100644
-index 4036e3e0ff96..000000000000
---- a/arch/arm/mach-at91/setup.c
-+++ /dev/null
-@@ -1,64 +0,0 @@
--/*
-- * Copyright (C) 2007 Atmel Corporation.
-- * Copyright (C) 2011 Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-- *
-- * Under GPLv2
-- */
--
--#define pr_fmt(fmt)	"AT91: " fmt
--
--#include <linux/io.h>
--#include <linux/pm.h>
--#include <linux/of_address.h>
--
--#include <asm/system_misc.h>
--
--#include <mach/hardware.h>
--
--#include "generic.h"
--#include "pm.h"
--
--void __iomem *at91_ramc_base[2];
--EXPORT_SYMBOL_GPL(at91_ramc_base);
--
--static struct of_device_id ramc_ids[] = {
--	{ .compatible = "atmel,at91rm9200-sdramc", .data = at91rm9200_standby },
--	{ .compatible = "atmel,at91sam9260-sdramc", .data = at91sam9_sdram_standby },
--	{ .compatible = "atmel,at91sam9g45-ddramc", .data = at91_ddr_standby },
--	{ .compatible = "atmel,sama5d3-ddramc", .data = at91_ddr_standby },
--	{ /*sentinel*/ }
--};
--
--static void at91_dt_ramc(void)
--{
--	struct device_node *np;
--	const struct of_device_id *of_id;
--	int idx = 0;
--	const void *standby = NULL;
--
--	for_each_matching_node_and_match(np, ramc_ids, &of_id) {
--		at91_ramc_base[idx] = of_iomap(np, 0);
--		if (!at91_ramc_base[idx])
--			panic(pr_fmt("unable to map ramc[%d] cpu registers\n"), idx);
--
--		if (!standby)
--			standby = of_id->data;
--
--		idx++;
--	}
--
--	if (!idx)
--		panic(pr_fmt("unable to find compatible ram controller node in dtb\n"));
--
--	if (!standby) {
--		pr_warn("ramc no standby function available\n");
--		return;
--	}
--
--	at91_pm_set_standby(standby);
--}
--
--void __init at91_dt_initialize(void)
--{
--	at91_dt_ramc();
--}
--- 
-2.1.0
+http://kernel.ubuntu.com/git?p=ubuntu/linux.git;h=linux-3.13.y-review;a=shortlog
 
+git://kernel.ubuntu.com/ubuntu/linux.git  linux-3.13.y-review
+
+The review period for version 3.13.11-ckt14 will be open for the next three days.
+To report a problem, please reply to the relevant follow-up patch message.
+
+For more information about the Linux 3.13.y-ckt extended stable kernel version,
+see https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable .
+
+ -Kamal
+
+--
+ arch/powerpc/platforms/cell/spufs/inode.c       |   2 +-
+ arch/s390/kernel/compat_linux.c                 |   2 +-
+ arch/x86/kernel/process_64.c                    | 101 +++++++++++++++++-------
+ arch/x86/kernel/tls.c                           |  23 ++++++
+ arch/x86/kvm/emulate.c                          |   4 +-
+ arch/x86/vdso/vma.c                             |  43 ++++++----
+ drivers/net/ethernet/intel/e1000e/netdev.c      |  20 +++--
+ drivers/staging/lustre/lustre/llite/dcache.c    |   2 +-
+ drivers/staging/lustre/lustre/llite/llite_lib.c |   2 +-
+ drivers/staging/lustre/lustre/llite/namei.c     |   8 +-
+ drivers/usb/gadget/at91_udc.c                   |  44 ++++++++---
+ fs/affs/amigaffs.c                              |   2 +-
+ fs/autofs4/expire.c                             |  12 +--
+ fs/autofs4/root.c                               |   2 +-
+ fs/ceph/dir.c                                   |   8 +-
+ fs/ceph/inode.c                                 |   6 +-
+ fs/cifs/inode.c                                 |   2 +-
+ fs/coda/cache.c                                 |   2 +-
+ fs/dcache.c                                     |  86 ++++++++++----------
+ fs/debugfs/inode.c                              |   2 +-
+ fs/exportfs/expfs.c                             |   2 +-
+ fs/isofs/rock.c                                 |   9 +++
+ fs/libfs.c                                      |  12 +--
+ fs/ncpfs/dir.c                                  |   2 +-
+ fs/ncpfs/ncplib_kernel.h                        |   4 +-
+ fs/nfs/getroot.c                                |   2 +-
+ fs/notify/fsnotify.c                            |   4 +-
+ fs/ocfs2/dcache.c                               |   2 +-
+ include/linux/cred.h                            |   1 +
+ include/linux/dcache.h                          |   8 +-
+ include/linux/user_namespace.h                  |   5 ++
+ kernel/cgroup.c                                 |   2 +-
+ kernel/groups.c                                 |  11 ++-
+ kernel/trace/trace.c                            |   4 +-
+ kernel/trace/trace_events.c                     |   2 +-
+ kernel/uid16.c                                  |   2 +-
+ kernel/user_namespace.c                         |  29 +++++--
+ net/batman-adv/fragmentation.c                  |   2 +-
+ net/ipv6/tcp_ipv6.c                             |   4 +-
+ security/keys/gc.c                              |   4 +-
+ security/selinux/selinuxfs.c                    |   6 +-
+ 41 files changed, 321 insertions(+), 169 deletions(-)
+
+Al Viro (2):
+      move d_rcu from overlapping d_child to overlapping d_alias
+      deal with deadlock in d_walk()
+
+Andy Lutomirski (3):
+      x86/tls: Validate TLS entries to protect espfix
+      x86_64, switch_to(): Load TLS descriptors before switching DS and ES
+      x86_64, vdso: Fix the vdso address randomization algorithm
+
+Andy Whitcroft (1):
+      [3.13-stable only] ipv6: fix swapped ipv4/ipv6 mtu_reduced callbacks
+
+David Ertman (1):
+      e1000e: Fix no connectivity when driver loaded with cable out
+
+Eric W. Biederman (6):
+      userns: Check euid no fsuid when establishing an unprivileged uid mapping
+      userns: Document what the invariant required for safe unprivileged mappings.
+      userns: Only allow the creator of the userns unprivileged mappings
+      groups: Consolidate the setgroups permission checks
+      userns: Don't allow setgroups until a gid mapping has been setablished
+      userns: Don't allow unprivileged creation of gid mappings
+
+Jan Kara (2):
+      isofs: Fix infinite looping over CE entries
+      isofs: Fix unchecked printing of ER records
+
+Nadav Amit (1):
+      [3.13-stable only] KVM: x86: Fix far-jump to non-canonical check
+
+Ronald Wahl (1):
+      usb: gadget: at91_udc: move prepare clk into process context
+
+Sasha Levin (1):
+      KEYS: close race between key lookup and freeing
+
+Sven Eckelmann (1):
+      batman-adv: Calculate extra tail size based on queued fragments
