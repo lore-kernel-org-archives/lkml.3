@@ -1,109 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753085AbbAOOso (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 09:48:44 -0500
-Received: from mail-we0-f170.google.com ([74.125.82.170]:52863 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751219AbbAOOsm (ORCPT
+	id S1754309AbbAOOw5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 09:52:57 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:43514 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752278AbbAOOwz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 09:48:42 -0500
-Date: Thu, 15 Jan 2015 15:48:38 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm v2] vmscan: move reclaim_state handling to shrink_slab
-Message-ID: <20150115144838.GI7000@dhcp22.suse.cz>
-References: <1421311073-28130-1-git-send-email-vdavydov@parallels.com>
- <20150115125820.GE7000@dhcp22.suse.cz>
- <20150115132516.GG11264@esperanza>
+	Thu, 15 Jan 2015 09:52:55 -0500
+Message-ID: <54B7D442.4060103@roeck-us.net>
+Date: Thu, 15 Jan 2015 06:52:50 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150115132516.GG11264@esperanza>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        monstr@monstr.eu
+CC: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH] watchdog: Remove .owner field from cadence driver
+References: <204239650e5bf19ea11cb4b9f41937552324e931.1421325759.git.michal.simek@xilinx.com>
+In-Reply-To: <204239650e5bf19ea11cb4b9f41937552324e931.1421325759.git.michal.simek@xilinx.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020205.54B7D447.0230,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 13
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 15-01-15 16:25:16, Vladimir Davydov wrote:
-> On Thu, Jan 15, 2015 at 01:58:20PM +0100, Michal Hocko wrote:
-> > On Thu 15-01-15 11:37:53, Vladimir Davydov wrote:
-> > > current->reclaim_state is only used to count the number of slab pages
-> > > reclaimed by shrink_slab(). So instead of initializing it before we are
-> > > 
-> > > Note that after this patch try_to_free_mem_cgroup_pages() will count not
-> > > only reclaimed user pages, but also slab pages, which is expected,
-> > > because it can reclaim kmem from kmem-active sub cgroups.
-> > 
-> > Except that reclaim_state counts all freed slab objects that have
-> > current->reclaim_state != NULL AFAIR. This includes also kfreed pages
-> > from interrupt context and who knows what else and those pages might be
-> > from a different memcgs, no?
-> 
-> Hmm, true, good point. Can an interrupt handler free a lot of memory
-> though?
+On 01/15/2015 04:42 AM, Michal Simek wrote:
+> .owner files is filled by module_platform_driver().
+>
+> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+> ---
+>
+> Big cleanup was done and this new driver was missed.
 
-it is drivers so who knows...
+Actually, it was included in 'watchdog: drop owner assignment from platform_drivers'
+by Wolfram Sang. It just hasn't been applied yet.
 
-> Does RCU free objects from irq or soft irq context?
+Guenter
 
-and this is another part which I didn't consider at all. RCU callbacks
-are normally processed from kthread context but rcu_init also does
-open_softirq(RCU_SOFTIRQ, rcu_process_callbacks)
-so something is clearly processed from softirq as well. I am not
-familiar with RCU details enough to tell how many callbacks are
-processed this way. Tiny RCU, on the other hand, seem to be processing
-all callbacks via __rcu_process_callbacks and that seems to be processed
-from softirq only.
-
-> > Besides that I am not sure this makes any difference in the end. No
-> > try_to_free_mem_cgroup_pages caller really cares about the exact
-> > number of reclaimed pages. We care only about whether there was any
-> > progress done - and even that not exactly (e.g. try_charge checks
-> > mem_cgroup_margin before retry/oom so if sufficient kmem pages were
-> > uncharged then we will notice that).
-> 
-> Frankly, I thought exactly the same initially, that's why I dropped
-> reclaim_state handling from the initial memcg shrinkers patch set.
-> However, then Hillf noticed that nr_reclaimed is checked right after
-> calling shrink_slab() in the memcg iteration loop in shrink_zone():
-> 
-> 
-> 		memcg = mem_cgroup_iter(root, NULL, &reclaim);
-> 		do {
-> 			[...]
-> 			if (memcg && is_classzone)
-> 				shrink_slab(sc->gfp_mask, zone_to_nid(zone),
-> 					    memcg, sc->nr_scanned - scanned,
-> 					    lru_pages);
-> 
-> 			/*
-> 			 * Direct reclaim and kswapd have to scan all memory
-> 			 * cgroups to fulfill the overall scan target for the
-> 			 * zone.
-> 			 *
-> 			 * Limit reclaim, on the other hand, only cares about
-> 			 * nr_to_reclaim pages to be reclaimed and it will
-> 			 * retry with decreasing priority if one round over the
-> 			 * whole hierarchy is not sufficient.
-> 			 */
-> 			if (!global_reclaim(sc) &&
-> 					sc->nr_reclaimed >= sc->nr_to_reclaim) {
-> 				mem_cgroup_iter_break(root, memcg);
-> 				break;
-> 			}
-> 			memcg = mem_cgroup_iter(root, memcg, &reclaim);
-> 		} while (memcg);
-> 
-> 
-> If we can ignore reclaimed slab pages here (?), let's drop this patch.
-
-I see what you are trying to achieve but can this lead to a serious
-over-reclaim? We should be reclaiming mostly user pages and kmem should
-be only a small portion I would expect.
--- 
-Michal Hocko
-SUSE Labs
