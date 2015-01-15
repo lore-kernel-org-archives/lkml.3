@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932329AbbAOV7y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 16:59:54 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:57588 "EHLO
+	id S932442AbbAOWCK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 17:02:10 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:57600 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755930AbbAOV7w (ORCPT
+	with ESMTP id S1755937AbbAOV7w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 15 Jan 2015 16:59:52 -0500
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
@@ -15,9 +15,9 @@ Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Bo Shen <voice.shen@atmel.com>, Wenyou Yang <Wenyou.Yang@atmel.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH 09/17] ARM: at91: pm: remove warning to remove SOC_AT91SAM9263 usage
-Date: Thu, 15 Jan 2015 22:58:12 +0100
-Message-Id: <1421359100-8930-10-git-send-email-alexandre.belloni@free-electrons.com>
+Subject: [PATCH 10/17] ARM: at91: merge SOC_AT91SAM9xxx
+Date: Thu, 15 Jan 2015 22:58:13 +0100
+Message-Id: <1421359100-8930-11-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1421359100-8930-1-git-send-email-alexandre.belloni@free-electrons.com>
 References: <1421359100-8930-1-git-send-email-alexandre.belloni@free-electrons.com>
@@ -25,33 +25,152 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The SOC_AT91SAM9263 is being removed, stop using it.
+Only use SOC_AT91SAM9 for all the at91sam9 SoCs.
+
+It enables HAVE_AT91_SMD and HAVE_AT91_UTMI for all the sam9 SoCs but this only
+represents 96 bytes of uncompressed kernel code.
 
 Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
- arch/arm/mach-at91/pm_slowclock.S | 9 ---------
- 1 file changed, 9 deletions(-)
+ arch/arm/configs/at91_dt_defconfig | 10 +----
+ arch/arm/mach-at91/Kconfig         | 92 +++++++++++---------------------------
+ 2 files changed, 27 insertions(+), 75 deletions(-)
 
-diff --git a/arch/arm/mach-at91/pm_slowclock.S b/arch/arm/mach-at91/pm_slowclock.S
-index 20018779bae7..556151e85ec4 100644
---- a/arch/arm/mach-at91/pm_slowclock.S
-+++ b/arch/arm/mach-at91/pm_slowclock.S
-@@ -17,15 +17,6 @@
- #include <mach/hardware.h>
- #include <mach/at91_ramc.h>
+diff --git a/arch/arm/configs/at91_dt_defconfig b/arch/arm/configs/at91_dt_defconfig
+index 8116d122e098..811e72bbe642 100644
+--- a/arch/arm/configs/at91_dt_defconfig
++++ b/arch/arm/configs/at91_dt_defconfig
+@@ -15,15 +15,7 @@ CONFIG_MODULE_UNLOAD=y
+ # CONFIG_IOSCHED_CFQ is not set
+ CONFIG_ARCH_AT91=y
+ CONFIG_SOC_AT91RM9200=y
+-CONFIG_SOC_AT91SAM9260=y
+-CONFIG_SOC_AT91SAM9261=y
+-CONFIG_SOC_AT91SAM9263=y
+-CONFIG_SOC_AT91SAM9RL=y
+-CONFIG_SOC_AT91SAM9G45=y
+-CONFIG_SOC_AT91SAM9X5=y
+-CONFIG_SOC_AT91SAM9N12=y
+-CONFIG_MACH_AT91RM9200_DT=y
+-CONFIG_MACH_AT91SAM9_DT=y
++CONFIG_SOC_AT91SAM9=y
+ CONFIG_AT91_TIMER_HZ=128
+ CONFIG_AEABI=y
+ CONFIG_UACCESS_WITH_MEMCPY=y
+diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
+index c6956b863b9d..c6740e359a44 100644
+--- a/arch/arm/mach-at91/Kconfig
++++ b/arch/arm/mach-at91/Kconfig
+@@ -16,15 +16,6 @@ config HAVE_AT91_SMD
+ config HAVE_AT91_H32MX
+ 	bool
  
+-config SOC_AT91SAM9
+-	bool
+-	select ATMEL_AIC_IRQ
+-	select COMMON_CLK_AT91
+-	select CPU_ARM926T
+-	select GENERIC_CLOCKEVENTS
+-	select MEMORY
+-	select ATMEL_SDRAMC
 -
--#ifdef CONFIG_SOC_AT91SAM9263
--/*
-- * FIXME either or both the SDRAM controllers (EB0, EB1) might be in use;
-- * handle those cases both here and in the Suspend-To-RAM support.
-- */
--#warning Assuming EB1 SDRAM controller is *NOT* used
--#endif
+ config SOC_SAMA5
+ 	bool
+ 	select ATMEL_AIC5_IRQ
+@@ -92,67 +83,36 @@ config SOC_AT91RM9200
+ 	select GENERIC_CLOCKEVENTS
+ 	select HAVE_AT91_USB_CLK
+ 
+-config SOC_AT91SAM9260
+-	bool "AT91SAM9260, AT91SAM9XE or AT91SAM9G20"
+-	select SOC_AT91SAM9
+-	select HAVE_AT91_USB_CLK
+-	help
+-	  Select this if you are using one of Atmel's AT91SAM9260, AT91SAM9XE
+-	  or AT91SAM9G20 SoC.
 -
- /*
-  * When SLOWDOWN_MASTER_CLOCK is defined we will also slow down the Master
-  * clock during suspend by adjusting its prescalar and divisor.
+-config SOC_AT91SAM9261
+-	bool "AT91SAM9261 or AT91SAM9G10"
+-	select HAVE_FB_ATMEL
+-	select SOC_AT91SAM9
+-	select HAVE_AT91_USB_CLK
+-	help
+-	  Select this if you are using one of Atmel's AT91SAM9261 or AT91SAM9G10 SoC.
+-
+-config SOC_AT91SAM9263
+-	bool "AT91SAM9263"
+-	select HAVE_FB_ATMEL
+-	select SOC_AT91SAM9
+-	select HAVE_AT91_USB_CLK
+-
+-config SOC_AT91SAM9RL
+-	bool "AT91SAM9RL"
+-	select HAVE_FB_ATMEL
+-	select SOC_AT91SAM9
+-	select HAVE_AT91_UTMI
+-
+-config SOC_AT91SAM9G45
+-	bool "AT91SAM9G45 or AT91SAM9M10 families"
+-	select HAVE_FB_ATMEL
+-	select SOC_AT91SAM9
+-	select HAVE_AT91_UTMI
+-	select HAVE_AT91_USB_CLK
+-	help
+-	  Select this if you are using one of Atmel's AT91SAM9G45 family SoC.
+-	  This support covers AT91SAM9G45, AT91SAM9G46, AT91SAM9M10 and AT91SAM9M11.
+-
+-config SOC_AT91SAM9X5
+-	bool "AT91SAM9x5 family"
+-	select HAVE_FB_ATMEL
+-	select SOC_AT91SAM9
+-	select HAVE_AT91_UTMI
++config SOC_AT91SAM9
++	bool "AT91SAM9"
++	select ATMEL_AIC_IRQ
++	select ATMEL_SDRAMC
++	select COMMON_CLK_AT91
++	select CPU_ARM926T
++	select GENERIC_CLOCKEVENTS
+ 	select HAVE_AT91_SMD
+ 	select HAVE_AT91_USB_CLK
+-	help
+-	  Select this if you are using one of Atmel's AT91SAM9x5 family SoC.
+-	  This means that your SAM9 name finishes with a '5' (except if it is
+-	  AT91SAM9G45!).
+-	  This support covers AT91SAM9G15, AT91SAM9G25, AT91SAM9X25, AT91SAM9G35
+-	  and AT91SAM9X35.
+-
+-config SOC_AT91SAM9N12
+-	bool "AT91SAM9N12 family"
++	select HAVE_AT91_UTMI
+ 	select HAVE_FB_ATMEL
+-	select SOC_AT91SAM9
+-	select HAVE_AT91_USB_CLK
++	select MEMORY
+ 	help
+-	  Select this if you are using Atmel's AT91SAM9N12 SoC.
+-
+-# ----------------------------------------------------------
++	  Select this if you are using one of those Atmel SoC:
++	    AT91SAM9260
++	    AT91SAM9261
++	    AT91SAM9263
++	    AT91SAM9G15
++	    AT91SAM9G20
++	    AT91SAM9G25
++	    AT91SAM9G35
++	    AT91SAM9G45
++	    AT91SAM9G46
++	    AT91SAM9M10
++	    AT91SAM9M11
++	    AT91SAM9N12
++	    AT91SAM9RL
++	    AT91SAM9X25
++	    AT91SAM9X35
++	    AT91SAM9XE
+ endif # SOC_SAM_V4_V5
+ 
+ comment "AT91 Feature Selections"
 -- 
 2.1.0
 
