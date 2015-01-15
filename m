@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751690AbbAOHMe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 02:12:34 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:49428 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751377AbbAOHMb (ORCPT
+	id S1751441AbbAOHSO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 02:18:14 -0500
+Received: from mail1.bemta5.messagelabs.com ([195.245.231.142]:30627 "EHLO
+	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751094AbbAOHSN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 02:12:31 -0500
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID t0F7Bpf1016253, This message is accepted by code: ctloc85258
-From: Roger Tseng <rogerable@realtek.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>,
-        <driverdev-devel@linuxdriverproject.org>, <wei_wang@realsil.com.cn>,
-        <micky_ching@realsil.com.cn>, Roger Tseng <rogerable@realtek.com>
-Subject: [PATCH 2/2] mfd: rtsx_usb: Defer autosuspend while card exists
-Date: Thu, 15 Jan 2015 15:14:45 +0800
-Message-ID: <1421306085-32254-3-git-send-email-rogerable@realtek.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1421306085-32254-1-git-send-email-rogerable@realtek.com>
-References: <1421306085-32254-1-git-send-email-rogerable@realtek.com>
+	Thu, 15 Jan 2015 02:18:13 -0500
+X-Env-Sender: Johannes.Thumshirn@men.de
+X-Msg-Ref: server-16.tower-180.messagelabs.com!1421306290!34747343!1
+X-Originating-IP: [80.255.6.145]
+X-StarScan-Received: 
+X-StarScan-Version: 6.12.5; banners=-,-,-
+X-VirusChecked: Checked
+X-PGP-Universal: processed;
+	by keys.men.de on Thu, 15 Jan 2015 08:18:10 +0100
+Date: Thu, 15 Jan 2015 08:18:01 +0100
+From: Johannes Thumshirn <johannes.thumshirn@men.de>
+To: Dan Carpenter <dan.carpenter@oracle.com>
+CC: Johannes Thumshirn <johannes.thumshirn@men.de>,
+        <linux-kernel@vger.kernel.org>, <kernel-janitors@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>
+Subject: Re: [patch] mcb: request_mem_region() returns NULL on error
+Message-ID: <20150115071800.GA26024@jtlinux>
+References: <20150114210840.GG23203@mwanda>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.81.121]
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20150114210840.GG23203@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Originating-IP: [192.1.1.31]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A card insertion happens after the lastest polling before reader is
-suspended may never have a chance to be detected. Under current 1-HZ
-polling interval setting in mmc_core, the worst case of such
-undetectablility is about 1 second.
+On Thu, Jan 15, 2015 at 12:08:40AM +0300, Dan Carpenter wrote:
+> The code here is checking for IS_ERR() when request_mem_region() only
+> returns NULL on error and never an ERR_PTR.
+> 
+> Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
+> 
+> diff --git a/drivers/mcb/mcb-pci.c b/drivers/mcb/mcb-pci.c
+> index 5e1bd5d..2d6524a 100644
+> --- a/drivers/mcb/mcb-pci.c
+> +++ b/drivers/mcb/mcb-pci.c
+> @@ -56,9 +56,9 @@ static int mcb_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+>  
+>  	res = request_mem_region(priv->mapbase, CHAM_HEADER_SIZE,
+>  				 KBUILD_MODNAME);
+> -	if (IS_ERR(res)) {
+> +	if (!res) {
+>  		dev_err(&pdev->dev, "Failed to request PCI memory\n");
+> -		ret = PTR_ERR(res);
+> +		ret = -EBUSY;
+>  		goto err_start;
+>  	}
+>  
 
-To further reduce the undetectability, detect card slot again in suspend
-method and defer the autosuspend if the slot is loaded. The default 2
-second autosuspend delay of USB subsystem should let the next polling
-detects the card.
-
-Signed-off-by: Roger Tseng <rogerable@realtek.com>
----
- drivers/mfd/rtsx_usb.c | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
-
-diff --git a/drivers/mfd/rtsx_usb.c b/drivers/mfd/rtsx_usb.c
-index 076694126e5d..63883fd025c0 100644
---- a/drivers/mfd/rtsx_usb.c
-+++ b/drivers/mfd/rtsx_usb.c
-@@ -687,6 +687,20 @@ static int rtsx_usb_suspend(struct usb_interface *intf, pm_message_t message)
- 	dev_dbg(&intf->dev, "%s called with pm message 0x%04x\n",
- 			__func__, message.event);
- 
-+	if (PMSG_IS_AUTO(message)) {
-+		if (mutex_trylock(&ucr->dev_mutex)) {
-+			rtsx_usb_get_card_status(ucr, &val);
-+			mutex_unlock(&ucr->dev_mutex);
-+
-+			/* Defer the autosuspend if card exists */
-+			if (val & (SD_CD | MS_CD))
-+				return -EAGAIN;
-+		} else {
-+			/* There is an ongoing operation*/
-+			return -EAGAIN;
-+		}
-+	}
-+
- 	return 0;
- }
- 
--- 
-2.1.3
-
+Applied to mcb-next, thanks.
