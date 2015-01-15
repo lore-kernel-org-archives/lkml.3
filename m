@@ -1,72 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753214AbbAOTgN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 14:36:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45628 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752135AbbAOTgL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 14:36:11 -0500
-Date: Thu, 15 Jan 2015 20:34:55 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        matt.fleming@intel.com, bp@suse.de, pbonzini@redhat.com,
-        tglx@linutronix.de, luto@amacapital.net
-Subject: Re: [RFC PATCH 06/11] x86,fpu: lazily skip fpu restore with eager
-	fpu mode, too
-Message-ID: <20150115193455.GE27332@redhat.com>
-References: <1421012793-30106-1-git-send-email-riel@redhat.com> <1421012793-30106-7-git-send-email-riel@redhat.com> <20150114183606.GA16024@redhat.com> <54B72AA0.5020500@redhat.com>
+	id S1753520AbbAOTgT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 14:36:19 -0500
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:58323 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753252AbbAOTgP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 14:36:15 -0500
+Message-ID: <54B816AC.7070902@gmail.com>
+Date: Thu, 15 Jan 2015 11:36:12 -0800
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54B72AA0.5020500@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+CC: Ralf Baechle <ralf@linux-mips.org>, David Daney <david.daney@cavium.com>,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        Hemmo Nieminen <hemmo.nieminen@iki.fi>, stable@vger.kernel.org
+Subject: Re: [PATCH 1/2] MIPS: OCTEON: fix kernel crash when offlining a CPU
+References: <1421347767-21740-1-git-send-email-aaro.koskinen@iki.fi>
+In-Reply-To: <1421347767-21740-1-git-send-email-aaro.koskinen@iki.fi>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14, Rik van Riel wrote:
+On 01/15/2015 10:49 AM, Aaro Koskinen wrote:
+> octeon_cpu_disable() will unconditionally enable interrupts when called
+> with interrupts disabled. Fix that.
+
+interrupts are always disabled here, so...
+
+[...]
 >
-> On 01/14/2015 01:36 PM, Oleg Nesterov wrote:
+> Reported-by: Hemmo Nieminen <hemmo.nieminen@iki.fi>
+> Signed-off-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+> Cc: stable@vger.kernel.org
+
+NACK!
+
+> ---
+>   arch/mips/cavium-octeon/smp.c | 5 +++--
+>   1 file changed, 3 insertions(+), 2 deletions(-)
 >
-> >> @@ -466,6 +462,10 @@ static inline void switch_fpu_finish(void)
-> >>
-> >> __thread_fpu_begin(tsk);
-> >>
-> >> +	/* The FPU registers already have this task's FPU state. */ +
-> >> if (fpu_lazy_restore(tsk, raw_smp_processor_id())) +		return; +
-> >
-> > Now that this is called before return to user-mode, I am not sure
-> > this is correct. Note that __kernel_fpu_begin() doesn't clear
-> > fpu_owner_task if use_eager_fpu().
+> diff --git a/arch/mips/cavium-octeon/smp.c b/arch/mips/cavium-octeon/smp.c
+> index ecd903d..9673c5b 100644
+> --- a/arch/mips/cavium-octeon/smp.c
+> +++ b/arch/mips/cavium-octeon/smp.c
+> @@ -231,6 +231,7 @@ DEFINE_PER_CPU(int, cpu_state);
+>   static int octeon_cpu_disable(void)
+>   {
+>   	unsigned int cpu = smp_processor_id();
+> +	unsigned long flags;
 >
-> However, __kernel_fpu_begin() does call __thread_clear_has_fpu(),
-> which clears the per-cpu fpu_owner variable, which is also
-> evaluated by fpu_lazy_restore(), so I think this is actually
-> correct.
+>   	if (cpu == 0)
+>   		return -EBUSY;
+> @@ -240,9 +241,9 @@ static int octeon_cpu_disable(void)
+>
+>   	set_cpu_online(cpu, false);
+>   	cpu_clear(cpu, cpu_callin_map);
+> -	local_irq_disable();
+> +	local_irq_save(flags);
 
-Sure, but only if __thread_has_fpu().
+Just remove this...
 
-But please ignore. My comment was confusing, sorry. What I actually
-tried to say is that this patch is another reason why (I think) we
-should start with kernel_fpu_begin/end.
+>   	octeon_fixup_irqs();
+> -	local_irq_enable();
+> +	local_irq_restore(flags);
 
-If nothing else:
+... and this.
 
-	1. interrupted_kernel_fpu_idle() should not fail if
-	   use_eager_fpu() && !__thread_has_fpu(), otherwise your
-	   changes will introduce the performance regression.
+>
+>   	flush_cache_all();
+>   	local_flush_tlb_all();
+>
 
-	   And in fact I think that it should only fail if
-	   kernel_fpu_begin() is already in progress.
+You can add an Acked-by me if you do that.
 
-	2. And in this case this_cpu_write(fpu_owner_task, NULL)
-	   can't depend on use_eager_fpu().
-
-	   And in fact I think it should not depend in any case,
-	   this only adds more confusion.
-
-Please look at the initial cleanups I sent.
-
-Oleg.
-
+David Daney.
