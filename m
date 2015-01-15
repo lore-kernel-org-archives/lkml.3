@@ -1,105 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928AbbAOMVt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 07:21:49 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:54272 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752184AbbAOMVs (ORCPT
+	id S1753960AbbAOMX2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 07:23:28 -0500
+Received: from casper.infradead.org ([85.118.1.10]:38226 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753343AbbAOMX0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 07:21:48 -0500
-Message-ID: <54B7B0D5.6080408@hitachi.com>
-Date: Thu, 15 Jan 2015 21:21:41 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Thu, 15 Jan 2015 07:23:26 -0500
+Date: Thu, 15 Jan 2015 13:23:23 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Luca Abeni <luca.abeni@unitn.it>
+Cc: Kirill Tkhai <tkhai@yandex.ru>, Juri Lelli <juri.lelli@arm.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "juri.lelli@gmail.com" <juri.lelli@gmail.com>
+Subject: Re: Another SCHED_DEADLINE bug (with bisection and possible fix)
+Message-ID: <20150115122323.GU23965@worktop.programming.kicks-ass.net>
+References: <2629881420411885@web9m.yandex.ru>
+ <54AAABFB.3060109@unitn.it>
+ <1420499241.3361.14.camel@yandex.ru>
+ <20150107080155.1d42d123@luca-1225C>
+ <1420633741.12772.10.camel@yandex.ru>
+ <54B4D2DF.9010308@arm.com>
+ <4500351421141200@web2m.yandex.ru>
+ <20150113140436.GI25256@twins.programming.kicks-ass.net>
+ <4632021421239387@web25g.yandex.ru>
+ <54B7A33F.20904@unitn.it>
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, David Ahern <dsahern@gmail.com>
-Subject: Re: [PATCH v3 3/3] perf probe: Fix probing kretprobes
-References: <1421279302-7105-1-git-send-email-namhyung@kernel.org> <1421279302-7105-3-git-send-email-namhyung@kernel.org>
-In-Reply-To: <1421279302-7105-3-git-send-email-namhyung@kernel.org>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54B7A33F.20904@unitn.it>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2015/01/15 8:48), Namhyung Kim wrote:
-> The commit dfef99cd0b2c ("perf probe: Use ref_reloc_sym based address
-> instead of the symbol name") converts kprobes to use ref_reloc_sym
-> (i.e. _stext) and offset instead of using symbol's name directly.  So
-> on my system, adding do_fork ends up with like below:
-> 
->   $ sudo perf probe -v --add do_fork%return
->   probe-definition(0): do_fork%return
->   symbol:do_fork file:(null) line:0 offset:0 return:1 lazy:(null)
->   0 arguments
->   Looking at the vmlinux_path (7 entries long)
->   Using /lib/modules/3.17.6-1-ARCH/build/vmlinux for symbols
->   Could not open debuginfo. Try to use symbols.
->   Opening /sys/kernel/debug/tracing/kprobe_events write=1
->   Added new event:
->   Writing event: r:probe/do_fork _stext+456136
->   Failed to write event: Invalid argument
->   Error: Failed to add events. Reason: Operation not permitted (Code: -1)
-> 
-> As you can see, the do_fork was translated to _stext+456136.  This was
-> because to support (local) symbols that have same name.  But the
-> problem is that kretprobe requires to be inserted at function start
-> point so it simply checks whether it's called with offset 0.  And if
-> not, it'll return with -EINVAL.  You can see it with dmesg.
-> 
->   $ dmesg | tail -1
->     [125621.764103] Return probe must be used without offset.
-> 
-> So we need to use the symbol name instead of ref_reloc_sym in case of
-> return probes.
+On Thu, Jan 15, 2015 at 12:23:43PM +0100, Luca Abeni wrote:
+> There are some parts of the patch that I do not understand (for example:
+> if I understand well, if the task is not throttled you set dl_new to 1...
+> And if it is throttled you change its current runtime and scheduling deadline...
+> Why?)
+> Anyway, I tested the patch and I confirm that it fixes the hang I originally
+> reported.
 
-Oops, I missed the 3rd version... Of course,
+I'll go look at the patch in a wee bit. But Juri, Luca, could you
+describe the correct behaviour?
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>From what I understand we should either modify the tasks run/sleep stats
+when we change its parameters or we should schedule a delayed release of
+the bandwidth delta (when it reaches its 0-lag point, if thats in the
+future).
 
-Thank you!
-
-> Reported-by: Jiri Olsa <jolsa@redhat.com>
-> Tested-by: Jiri Olsa <jolsa@redhat.com>
-> Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/util/probe-event.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-> index 3cfad9c74faf..8fcb19b0e74f 100644
-> --- a/tools/perf/util/probe-event.c
-> +++ b/tools/perf/util/probe-event.c
-> @@ -446,7 +446,7 @@ static int post_process_probe_trace_events(struct probe_trace_event *tevs,
->  	}
->  
->  	for (i = 0; i < ntevs; i++) {
-> -		if (tevs[i].point.address) {
-> +		if (tevs[i].point.address && !tevs[i].point.retprobe) {
->  			tmp = strdup(reloc_sym->name);
->  			if (!tmp)
->  				return -ENOMEM;
-> @@ -2254,7 +2254,7 @@ static int find_probe_trace_events_from_map(struct perf_probe_event *pev,
->  		goto out;
->  	}
->  
-> -	if (!pev->uprobes) {
-> +	if (!pev->uprobes && !pp->retprobe) {
->  		kmap = map__kmap(map);
->  		reloc_sym = kmap->ref_reloc_sym;
->  		if (!reloc_sym) {
-> 
-
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Doing neither will allow one to game the reservation system afaict.
