@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755517AbbAONNF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 08:13:05 -0500
-Received: from nivc-ms1.auriga.com ([80.240.102.146]:17930 "EHLO
+	id S1755533AbbAONNT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 08:13:19 -0500
+Received: from nivc-ms1.auriga.com ([80.240.102.146]:17939 "EHLO
 	nivc-ms1.auriga.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754118AbbAONNB (ORCPT
+	with ESMTP id S1752683AbbAONNR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 08:13:01 -0500
+	Thu, 15 Jan 2015 08:13:17 -0500
 From: Aleksey Makarov <aleksey.makarov@auriga.com>
 To: <linux-mips@linux-mips.org>
 CC: <linux-kernel@vger.kernel.org>, David Daney <david.daney@cavium.com>,
         Aleksey Makarov <aleksey.makarov@auriga.com>,
         Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH v3 08/15] MIPS: OCTEON: Add little-endian support to asm/octeon/octeon.h
-Date: Thu, 15 Jan 2015 16:11:12 +0300
-Message-ID: <1421327487-28679-9-git-send-email-aleksey.makarov@auriga.com>
+Subject: [PATCH v3 10/15] MIPS: OCTEON: Update octeon-model.h code for new SoCs.
+Date: Thu, 15 Jan 2015 16:11:14 +0300
+Message-ID: <1421327487-28679-11-git-send-email-aleksey.makarov@auriga.com>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <1421327487-28679-1-git-send-email-aleksey.makarov@auriga.com>
 References: <1421327487-28679-1-git-send-email-aleksey.makarov@auriga.com>
@@ -27,242 +27,291 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Daney <david.daney@cavium.com>
 
-Also update union octeon_cvmemctl with new OCTEON II fields.
+Add coverage for OCTEON III models.
 
 Signed-off-by: David Daney <david.daney@cavium.com>
-[aleksey.makarov@auriga.com: use __BITFIELD_FIELD]
 Signed-off-by: Aleksey Makarov <aleksey.makarov@auriga.com>
 ---
- arch/mips/include/asm/octeon/octeon.h | 135 ++++++++++++++++++++++++++--------
- 1 file changed, 105 insertions(+), 30 deletions(-)
+ arch/mips/cavium-octeon/dma-octeon.c               |   4 +-
+ .../cavium-octeon/executive/cvmx-helper-board.c    |   2 +-
+ arch/mips/cavium-octeon/octeon-irq.c               |   2 +-
+ arch/mips/cavium-octeon/setup.c                    |   2 +-
+ arch/mips/include/asm/octeon/octeon-model.h        | 107 ++++++++++++++++-----
+ 5 files changed, 90 insertions(+), 27 deletions(-)
 
-diff --git a/arch/mips/include/asm/octeon/octeon.h b/arch/mips/include/asm/octeon/octeon.h
-index 3e505a2..ba5df50 100644
---- a/arch/mips/include/asm/octeon/octeon.h
-+++ b/arch/mips/include/asm/octeon/octeon.h
-@@ -9,6 +9,7 @@
- #define __ASM_OCTEON_OCTEON_H
+diff --git a/arch/mips/cavium-octeon/dma-octeon.c b/arch/mips/cavium-octeon/dma-octeon.c
+index 3778655..7d89878 100644
+--- a/arch/mips/cavium-octeon/dma-octeon.c
++++ b/arch/mips/cavium-octeon/dma-octeon.c
+@@ -276,7 +276,7 @@ void __init plat_swiotlb_setup(void)
+ 			continue;
  
- #include <asm/octeon/cvmx.h>
-+#include <asm/bitfield.h>
+ 		/* These addresses map low for PCI. */
+-		if (e->addr > 0x410000000ull && !OCTEON_IS_MODEL(OCTEON_CN6XXX))
++		if (e->addr > 0x410000000ull && !OCTEON_IS_OCTEON2())
+ 			continue;
  
- extern uint64_t octeon_bootmem_alloc_range_phys(uint64_t size,
- 						uint64_t alignment,
-@@ -58,6 +59,7 @@ extern void octeon_io_clk_delay(unsigned long);
- #define OCTOEN_SERIAL_LEN	20
+ 		addr_size += e->size;
+@@ -308,7 +308,7 @@ void __init plat_swiotlb_setup(void)
+ #endif
+ #ifdef CONFIG_USB_OCTEON_OHCI
+ 	/* OCTEON II ohci is only 32-bit. */
+-	if (OCTEON_IS_MODEL(OCTEON_CN6XXX) && max_addr >= 0x100000000ul)
++	if (OCTEON_IS_OCTEON2() && max_addr >= 0x100000000ul)
+ 		swiotlbsize = 64 * (1<<20);
+ #endif
+ 	swiotlb_nslabs = swiotlbsize >> IO_TLB_SHIFT;
+diff --git a/arch/mips/cavium-octeon/executive/cvmx-helper-board.c b/arch/mips/cavium-octeon/executive/cvmx-helper-board.c
+index 5dfef84..9eb0fee 100644
+--- a/arch/mips/cavium-octeon/executive/cvmx-helper-board.c
++++ b/arch/mips/cavium-octeon/executive/cvmx-helper-board.c
+@@ -767,7 +767,7 @@ enum cvmx_helper_board_usb_clock_types __cvmx_helper_board_usb_get_clock_type(vo
+ 		break;
+ 	}
+ 	/* Most boards except NIC10e use a 12MHz crystal */
+-	if (OCTEON_IS_MODEL(OCTEON_FAM_2))
++	if (OCTEON_IS_OCTEON2())
+ 		return USB_CLOCK_TYPE_CRYSTAL_12;
+ 	return USB_CLOCK_TYPE_REF_48;
+ }
+diff --git a/arch/mips/cavium-octeon/octeon-irq.c b/arch/mips/cavium-octeon/octeon-irq.c
+index 2bc4aa9..01bb01c 100644
+--- a/arch/mips/cavium-octeon/octeon-irq.c
++++ b/arch/mips/cavium-octeon/octeon-irq.c
+@@ -1210,7 +1210,7 @@ static void __init octeon_irq_init_ciu(void)
+ 	if (OCTEON_IS_MODEL(OCTEON_CN58XX_PASS2_X) ||
+ 	    OCTEON_IS_MODEL(OCTEON_CN56XX_PASS2_X) ||
+ 	    OCTEON_IS_MODEL(OCTEON_CN52XX_PASS2_X) ||
+-	    OCTEON_IS_MODEL(OCTEON_CN6XXX)) {
++	    OCTEON_IS_OCTEON2() || OCTEON_IS_OCTEON3()) {
+ 		chip = &octeon_irq_chip_ciu_v2;
+ 		chip_mbox = &octeon_irq_chip_ciu_mbox_v2;
+ 		chip_wd = &octeon_irq_chip_ciu_wd_v2;
+diff --git a/arch/mips/cavium-octeon/setup.c b/arch/mips/cavium-octeon/setup.c
+index 7ff3def..45e17a1 100644
+--- a/arch/mips/cavium-octeon/setup.c
++++ b/arch/mips/cavium-octeon/setup.c
+@@ -659,7 +659,7 @@ void __init prom_init(void)
+ 	sysinfo->dfa_ref_clock_hz = octeon_bootinfo->dfa_ref_clock_hz;
+ 	sysinfo->bootloader_config_flags = octeon_bootinfo->config_flags;
  
- struct octeon_boot_descriptor {
-+#ifdef __BIG_ENDIAN_BITFIELD
- 	/* Start of block referenced by assembly code - do not change! */
- 	uint32_t desc_version;
- 	uint32_t desc_size;
-@@ -109,77 +111,149 @@ struct octeon_boot_descriptor {
- 	uint8_t mac_addr_base[6];
- 	uint8_t mac_addr_count;
- 	uint64_t cvmx_desc_vaddr;
-+#else
-+	uint32_t desc_size;
-+	uint32_t desc_version;
-+	uint64_t stack_top;
-+	uint64_t heap_base;
-+	uint64_t heap_end;
-+	/* Only used by bootloader */
-+	uint64_t entry_point;
-+	uint64_t desc_vaddr;
-+	/* End of This block referenced by assembly code - do not change! */
-+	uint32_t stack_size;
-+	uint32_t exception_base_addr;
-+	uint32_t argc;
-+	uint32_t heap_size;
-+	/*
-+	 * Argc count for application.
-+	 * Warning low bit scrambled in little-endian.
-+	 */
-+	uint32_t argv[OCTEON_ARGV_MAX_ARGS];
+-	if (OCTEON_IS_MODEL(OCTEON_CN6XXX)) {
++	if (OCTEON_IS_OCTEON2() || OCTEON_IS_OCTEON3()) {
+ 		/* I/O clock runs at a different rate than the CPU. */
+ 		union cvmx_mio_rst_boot rst_boot;
+ 		rst_boot.u64 = cvmx_read_csr(CVMX_MIO_RST_BOOT);
+diff --git a/arch/mips/include/asm/octeon/octeon-model.h b/arch/mips/include/asm/octeon/octeon-model.h
+index e8a1c2f..92b377e 100644
+--- a/arch/mips/include/asm/octeon/octeon-model.h
++++ b/arch/mips/include/asm/octeon/octeon-model.h
+@@ -45,6 +45,7 @@
+  */
+ 
+ #define OCTEON_FAMILY_MASK	0x00ffff00
++#define OCTEON_PRID_MASK	0x00ffffff
+ 
+ /* Flag bits in top byte */
+ /* Ignores revision in model checks */
+@@ -63,11 +64,52 @@
+ #define OM_MATCH_6XXX_FAMILY_MODELS	0x40000000
+ /* Match all cnf7XXX Octeon models. */
+ #define OM_MATCH_F7XXX_FAMILY_MODELS	0x80000000
++/* Match all cn7XXX Octeon models. */
++#define OM_MATCH_7XXX_FAMILY_MODELS     0x10000000
++#define OM_MATCH_FAMILY_MODELS		(OM_MATCH_5XXX_FAMILY_MODELS |	\
++					 OM_MATCH_6XXX_FAMILY_MODELS |	\
++					 OM_MATCH_F7XXX_FAMILY_MODELS | \
++					 OM_MATCH_7XXX_FAMILY_MODELS)
++/*
++ * CN7XXX models with new revision encoding
++ */
 +
-+#define  BOOT_FLAG_INIT_CORE		(1 << 0)
-+#define  OCTEON_BL_FLAG_DEBUG		(1 << 1)
-+#define  OCTEON_BL_FLAG_NO_MAGIC	(1 << 2)
-+	/* If set, use uart1 for console */
-+#define  OCTEON_BL_FLAG_CONSOLE_UART1	(1 << 3)
-+	/* If set, use PCI console */
-+#define  OCTEON_BL_FLAG_CONSOLE_PCI	(1 << 4)
-+	/* Call exit on break on serial port */
-+#define  OCTEON_BL_FLAG_BREAK		(1 << 5)
++#define OCTEON_CN73XX_PASS1_0	0x000d9700
++#define OCTEON_CN73XX		(OCTEON_CN73XX_PASS1_0 | OM_IGNORE_REVISION)
++#define OCTEON_CN73XX_PASS1_X	(OCTEON_CN73XX_PASS1_0 | \
++				 OM_IGNORE_MINOR_REVISION)
 +
-+	uint32_t core_mask;
-+	uint32_t flags;
-+	/* physical address of free memory descriptor block. */
-+	uint32_t phy_mem_desc_addr;
-+	/* DRAM size in megabyes. */
-+	uint32_t dram_size;
-+	/* CPU clock speed, in hz. */
-+	uint32_t eclock_hz;
-+	/* used to pass flags from app to debugger. */
-+	uint32_t debugger_flags_base_addr;
-+	/* SPI4 clock in hz. */
-+	uint32_t spi_clock_hz;
-+	/* DRAM clock speed, in hz. */
-+	uint32_t dclock_hz;
-+	uint8_t chip_rev_minor;
-+	uint8_t chip_rev_major;
-+	uint16_t chip_type;
-+	uint8_t board_rev_minor;
-+	uint8_t board_rev_major;
-+	uint16_t board_type;
++#define OCTEON_CN70XX_PASS1_0	0x000d9600
++#define OCTEON_CN70XX_PASS1_1	0x000d9601
++#define OCTEON_CN70XX_PASS1_2	0x000d9602
 +
-+	uint64_t unused1[4]; /* Not even filled in by bootloader. */
++#define OCTEON_CN70XX_PASS2_0	0x000d9608
 +
-+	uint64_t cvmx_desc_vaddr;
-+#endif
- };
++#define OCTEON_CN70XX		(OCTEON_CN70XX_PASS1_0 | OM_IGNORE_REVISION)
++#define OCTEON_CN70XX_PASS1_X	(OCTEON_CN70XX_PASS1_0 | \
++				 OM_IGNORE_MINOR_REVISION)
++#define OCTEON_CN70XX_PASS2_X	(OCTEON_CN70XX_PASS2_0 | \
++				 OM_IGNORE_MINOR_REVISION)
++
++#define OCTEON_CN71XX		OCTEON_CN70XX
++
++#define OCTEON_CN78XX_PASS1_0	0x000d9500
++#define OCTEON_CN78XX_PASS1_1	0x000d9501
++#define OCTEON_CN78XX_PASS2_0	0x000d9508
++
++#define OCTEON_CN78XX		(OCTEON_CN78XX_PASS1_0 | OM_IGNORE_REVISION)
++#define OCTEON_CN78XX_PASS1_X	(OCTEON_CN78XX_PASS1_0 | \
++				 OM_IGNORE_MINOR_REVISION)
++#define OCTEON_CN78XX_PASS2_X	(OCTEON_CN78XX_PASS2_0 | \
++				 OM_IGNORE_MINOR_REVISION)
++
++#define OCTEON_CN76XX		(0x000d9540 | OM_CHECK_SUBMODEL)
  
- union octeon_cvmemctl {
- 	uint64_t u64;
- 	struct {
- 		/* RO 1 = BIST fail, 0 = BIST pass */
--		uint64_t tlbbist:1;
-+		__BITFIELD_FIELD(uint64_t tlbbist:1,
- 		/* RO 1 = BIST fail, 0 = BIST pass */
--		uint64_t l1cbist:1;
-+		__BITFIELD_FIELD(uint64_t l1cbist:1,
- 		/* RO 1 = BIST fail, 0 = BIST pass */
--		uint64_t l1dbist:1;
-+		__BITFIELD_FIELD(uint64_t l1dbist:1,
- 		/* RO 1 = BIST fail, 0 = BIST pass */
--		uint64_t dcmbist:1;
-+		__BITFIELD_FIELD(uint64_t dcmbist:1,
- 		/* RO 1 = BIST fail, 0 = BIST pass */
--		uint64_t ptgbist:1;
-+		__BITFIELD_FIELD(uint64_t ptgbist:1,
- 		/* RO 1 = BIST fail, 0 = BIST pass */
--		uint64_t wbfbist:1;
-+		__BITFIELD_FIELD(uint64_t wbfbist:1,
- 		/* Reserved */
--		uint64_t reserved:22;
-+		__BITFIELD_FIELD(uint64_t reserved:17,
-+		/* OCTEON II - TLB replacement policy: 0 = bitmask LRU; 1 = NLU.
-+		 * This field selects between the TLB replacement policies:
-+		 * bitmask LRU or NLU. Bitmask LRU maintains a mask of
-+		 * recently used TLB entries and avoids them as new entries
-+		 * are allocated. NLU simply guarantees that the next
-+		 * allocation is not the last used TLB entry. */
-+		__BITFIELD_FIELD(uint64_t tlbnlu:1,
-+		/* OCTEON II - Selects the bit in the counter used for
-+		 * releasing a PAUSE. This counter trips every 2(8+PAUSETIME)
-+		 * cycles. If not already released, the cnMIPS II core will
-+		 * always release a given PAUSE instruction within
-+		 * 2(8+PAUSETIME). If the counter trip happens to line up,
-+		 * the cnMIPS II core may release the PAUSE instantly. */
-+		__BITFIELD_FIELD(uint64_t pausetime:3,
-+		/* OCTEON II - This field is an extension of
-+		 * CvmMemCtl[DIDTTO] */
-+		__BITFIELD_FIELD(uint64_t didtto2:1,
- 		/* R/W If set, marked write-buffer entries time out
- 		 * the same as as other entries; if clear, marked
- 		 * write-buffer entries use the maximum timeout. */
--		uint64_t dismarkwblongto:1;
-+		__BITFIELD_FIELD(uint64_t dismarkwblongto:1,
- 		/* R/W If set, a merged store does not clear the
- 		 * write-buffer entry timeout state. */
--		uint64_t dismrgclrwbto:1;
-+		__BITFIELD_FIELD(uint64_t dismrgclrwbto:1,
- 		/* R/W Two bits that are the MSBs of the resultant
- 		 * CVMSEG LM word location for an IOBDMA. The other 8
- 		 * bits come from the SCRADDR field of the IOBDMA. */
--		uint64_t iobdmascrmsb:2;
-+		__BITFIELD_FIELD(uint64_t iobdmascrmsb:2,
- 		/* R/W If set, SYNCWS and SYNCS only order marked
- 		 * stores; if clear, SYNCWS and SYNCS only order
- 		 * unmarked stores. SYNCWSMARKED has no effect when
- 		 * DISSYNCWS is set. */
--		uint64_t syncwsmarked:1;
-+		__BITFIELD_FIELD(uint64_t syncwsmarked:1,
- 		/* R/W If set, SYNCWS acts as SYNCW and SYNCS acts as
- 		 * SYNC. */
--		uint64_t dissyncws:1;
-+		__BITFIELD_FIELD(uint64_t dissyncws:1,
- 		/* R/W If set, no stall happens on write buffer
- 		 * full. */
--		uint64_t diswbfst:1;
-+		__BITFIELD_FIELD(uint64_t diswbfst:1,
- 		/* R/W If set (and SX set), supervisor-level
- 		 * loads/stores can use XKPHYS addresses with
- 		 * VA<48>==0 */
--		uint64_t xkmemenas:1;
-+		__BITFIELD_FIELD(uint64_t xkmemenas:1,
- 		/* R/W If set (and UX set), user-level loads/stores
- 		 * can use XKPHYS addresses with VA<48>==0 */
--		uint64_t xkmemenau:1;
-+		__BITFIELD_FIELD(uint64_t xkmemenau:1,
- 		/* R/W If set (and SX set), supervisor-level
- 		 * loads/stores can use XKPHYS addresses with
- 		 * VA<48>==1 */
--		uint64_t xkioenas:1;
-+		__BITFIELD_FIELD(uint64_t xkioenas:1,
- 		/* R/W If set (and UX set), user-level loads/stores
- 		 * can use XKPHYS addresses with VA<48>==1 */
--		uint64_t xkioenau:1;
-+		__BITFIELD_FIELD(uint64_t xkioenau:1,
- 		/* R/W If set, all stores act as SYNCW (NOMERGE must
- 		 * be set when this is set) RW, reset to 0. */
--		uint64_t allsyncw:1;
-+		__BITFIELD_FIELD(uint64_t allsyncw:1,
- 		/* R/W If set, no stores merge, and all stores reach
- 		 * the coherent bus in order. */
--		uint64_t nomerge:1;
-+		__BITFIELD_FIELD(uint64_t nomerge:1,
- 		/* R/W Selects the bit in the counter used for DID
- 		 * time-outs 0 = 231, 1 = 230, 2 = 229, 3 =
- 		 * 214. Actual time-out is between 1x and 2x this
- 		 * interval. For example, with DIDTTO=3, expiration
- 		 * interval is between 16K and 32K. */
--		uint64_t didtto:2;
-+		__BITFIELD_FIELD(uint64_t didtto:2,
- 		/* R/W If set, the (mem) CSR clock never turns off. */
--		uint64_t csrckalwys:1;
-+		__BITFIELD_FIELD(uint64_t csrckalwys:1,
- 		/* R/W If set, mclk never turns off. */
--		uint64_t mclkalwys:1;
-+		__BITFIELD_FIELD(uint64_t mclkalwys:1,
- 		/* R/W Selects the bit in the counter used for write
- 		 * buffer flush time-outs (WBFLT+11) is the bit
- 		 * position in an internal counter used to determine
-@@ -187,25 +261,26 @@ union octeon_cvmemctl {
- 		 * 2x this interval. For example, with WBFLT = 0, a
- 		 * write buffer expires between 2K and 4K cycles after
- 		 * the write buffer entry is allocated. */
--		uint64_t wbfltime:3;
-+		__BITFIELD_FIELD(uint64_t wbfltime:3,
- 		/* R/W If set, do not put Istream in the L2 cache. */
--		uint64_t istrnol2:1;
-+		__BITFIELD_FIELD(uint64_t istrnol2:1,
- 		/* R/W The write buffer threshold. */
--		uint64_t wbthresh:4;
-+		__BITFIELD_FIELD(uint64_t wbthresh:4,
- 		/* Reserved */
--		uint64_t reserved2:2;
-+		__BITFIELD_FIELD(uint64_t reserved2:2,
- 		/* R/W If set, CVMSEG is available for loads/stores in
- 		 * kernel/debug mode. */
--		uint64_t cvmsegenak:1;
-+		__BITFIELD_FIELD(uint64_t cvmsegenak:1,
- 		/* R/W If set, CVMSEG is available for loads/stores in
- 		 * supervisor mode. */
--		uint64_t cvmsegenas:1;
-+		__BITFIELD_FIELD(uint64_t cvmsegenas:1,
- 		/* R/W If set, CVMSEG is available for loads/stores in
- 		 * user mode. */
--		uint64_t cvmsegenau:1;
-+		__BITFIELD_FIELD(uint64_t cvmsegenau:1,
- 		/* R/W Size of local memory in cache blocks, 54 (6912
- 		 * bytes) is max legal value. */
--		uint64_t lmemsz:6;
-+		__BITFIELD_FIELD(uint64_t lmemsz:6,
-+		;)))))))))))))))))))))))))))))))))
- 	} s;
- };
+ /*
+  * CNF7XXX models with new revision encoding
+  */
+ #define OCTEON_CNF71XX_PASS1_0	0x000d9400
++#define OCTEON_CNF71XX_PASS1_1  0x000d9401
  
+ #define OCTEON_CNF71XX		(OCTEON_CNF71XX_PASS1_0 | OM_IGNORE_REVISION)
+ #define OCTEON_CNF71XX_PASS1_X	(OCTEON_CNF71XX_PASS1_0 | OM_IGNORE_MINOR_REVISION)
+@@ -79,6 +121,8 @@
+ #define OCTEON_CN68XX_PASS1_1	0x000d9101
+ #define OCTEON_CN68XX_PASS1_2	0x000d9102
+ #define OCTEON_CN68XX_PASS2_0	0x000d9108
++#define OCTEON_CN68XX_PASS2_1   0x000d9109
++#define OCTEON_CN68XX_PASS2_2   0x000d910a
+ 
+ #define OCTEON_CN68XX		(OCTEON_CN68XX_PASS2_0 | OM_IGNORE_REVISION)
+ #define OCTEON_CN68XX_PASS1_X	(OCTEON_CN68XX_PASS1_0 | OM_IGNORE_MINOR_REVISION)
+@@ -104,11 +148,18 @@
+ #define OCTEON_CN63XX_PASS1_X	(OCTEON_CN63XX_PASS1_0 | OM_IGNORE_MINOR_REVISION)
+ #define OCTEON_CN63XX_PASS2_X	(OCTEON_CN63XX_PASS2_0 | OM_IGNORE_MINOR_REVISION)
+ 
++/* CN62XX is same as CN63XX with 1 MB cache */
++#define OCTEON_CN62XX           OCTEON_CN63XX
++
+ #define OCTEON_CN61XX_PASS1_0	0x000d9300
++#define OCTEON_CN61XX_PASS1_1   0x000d9301
+ 
+ #define OCTEON_CN61XX		(OCTEON_CN61XX_PASS1_0 | OM_IGNORE_REVISION)
+ #define OCTEON_CN61XX_PASS1_X	(OCTEON_CN61XX_PASS1_0 | OM_IGNORE_MINOR_REVISION)
+ 
++/* CN60XX is same as CN61XX with 512 KB cache */
++#define OCTEON_CN60XX           OCTEON_CN61XX
++
+ /*
+  * CN5XXX models with new revision encoding
+  */
+@@ -120,7 +171,7 @@
+ #define OCTEON_CN58XX_PASS2_2	0x000d030a
+ #define OCTEON_CN58XX_PASS2_3	0x000d030b
+ 
+-#define OCTEON_CN58XX		(OCTEON_CN58XX_PASS1_0 | OM_IGNORE_REVISION)
++#define OCTEON_CN58XX		(OCTEON_CN58XX_PASS2_0 | OM_IGNORE_REVISION)
+ #define OCTEON_CN58XX_PASS1_X	(OCTEON_CN58XX_PASS1_0 | OM_IGNORE_MINOR_REVISION)
+ #define OCTEON_CN58XX_PASS2_X	(OCTEON_CN58XX_PASS2_0 | OM_IGNORE_MINOR_REVISION)
+ #define OCTEON_CN58XX_PASS1	OCTEON_CN58XX_PASS1_X
+@@ -217,12 +268,10 @@
+ #define OCTEON_CN3XXX		(OCTEON_CN58XX_PASS1_0 | OM_MATCH_PREVIOUS_MODELS | OM_IGNORE_REVISION)
+ #define OCTEON_CN5XXX		(OCTEON_CN58XX_PASS1_0 | OM_MATCH_5XXX_FAMILY_MODELS)
+ #define OCTEON_CN6XXX		(OCTEON_CN63XX_PASS1_0 | OM_MATCH_6XXX_FAMILY_MODELS)
+-
+-/* These are used to cover entire families of OCTEON processors */
+-#define OCTEON_FAM_1		(OCTEON_CN3XXX)
+-#define OCTEON_FAM_PLUS		(OCTEON_CN5XXX)
+-#define OCTEON_FAM_1_PLUS	(OCTEON_FAM_PLUS | OM_MATCH_PREVIOUS_MODELS)
+-#define OCTEON_FAM_2		(OCTEON_CN6XXX)
++#define OCTEON_CNF7XXX		(OCTEON_CNF71XX_PASS1_0 | \
++				 OM_MATCH_F7XXX_FAMILY_MODELS)
++#define OCTEON_CN7XXX		(OCTEON_CN78XX_PASS1_0 | \
++				 OM_MATCH_7XXX_FAMILY_MODELS)
+ 
+ /* The revision byte (low byte) has two different encodings.
+  * CN3XXX:
+@@ -232,7 +281,7 @@
+  *     <4>:   alternate package
+  *     <3:0>: revision
+  *
+- * CN5XXX:
++ * CN5XXX and older models:
+  *
+  *     bits
+  *     <7>:   reserved (0)
+@@ -251,17 +300,21 @@
+ /* CN5XXX and later use different layout of bits in the revision ID field */
+ #define OCTEON_58XX_FAMILY_MASK	     OCTEON_38XX_FAMILY_MASK
+ #define OCTEON_58XX_FAMILY_REV_MASK  0x00ffff3f
+-#define OCTEON_58XX_MODEL_MASK	     0x00ffffc0
++#define OCTEON_58XX_MODEL_MASK	     0x00ffff40
+ #define OCTEON_58XX_MODEL_REV_MASK   (OCTEON_58XX_FAMILY_REV_MASK | OCTEON_58XX_MODEL_MASK)
+-#define OCTEON_58XX_MODEL_MINOR_REV_MASK (OCTEON_58XX_MODEL_REV_MASK & 0x00fffff8)
++#define OCTEON_58XX_MODEL_MINOR_REV_MASK (OCTEON_58XX_MODEL_REV_MASK & 0x00ffff38)
+ #define OCTEON_5XXX_MODEL_MASK	     0x00ff0fc0
+ 
+-/* forward declarations */
+ static inline uint32_t cvmx_get_proc_id(void) __attribute__ ((pure));
+ static inline uint64_t cvmx_read_csr(uint64_t csr_addr);
+ 
+ #define __OCTEON_MATCH_MASK__(x, y, z) (((x) & (z)) == ((y) & (z)))
+ 
++/*
++ * __OCTEON_IS_MODEL_COMPILE__(arg_model, chip_model)
++ * returns true if chip_model is identical or belong to the OCTEON
++ * model group specified in arg_model.
++ */
+ /* NOTE: This for internal use only! */
+ #define __OCTEON_IS_MODEL_COMPILE__(arg_model, chip_model)		\
+ ((((arg_model & OCTEON_38XX_FAMILY_MASK) < OCTEON_CN58XX_PASS1_0)  && ( \
+@@ -286,11 +339,18 @@ static inline uint64_t cvmx_read_csr(uint64_t csr_addr);
+ 		((((arg_model) & (OM_FLAG_MASK)) == OM_IGNORE_REVISION) \
+ 			&& __OCTEON_MATCH_MASK__((chip_model), (arg_model), OCTEON_58XX_FAMILY_MASK)) || \
+ 		((((arg_model) & (OM_FLAG_MASK)) == OM_CHECK_SUBMODEL)	\
+-			&& __OCTEON_MATCH_MASK__((chip_model), (arg_model), OCTEON_58XX_MODEL_REV_MASK)) || \
++			&& __OCTEON_MATCH_MASK__((chip_model), (arg_model), OCTEON_58XX_MODEL_MASK)) || \
+ 		((((arg_model) & (OM_MATCH_5XXX_FAMILY_MODELS)) == OM_MATCH_5XXX_FAMILY_MODELS) \
+-			&& ((chip_model) >= OCTEON_CN58XX_PASS1_0) && ((chip_model) < OCTEON_CN63XX_PASS1_0)) || \
++			&& ((chip_model & OCTEON_PRID_MASK) >= OCTEON_CN58XX_PASS1_0) \
++			&& ((chip_model & OCTEON_PRID_MASK) < OCTEON_CN63XX_PASS1_0)) || \
+ 		((((arg_model) & (OM_MATCH_6XXX_FAMILY_MODELS)) == OM_MATCH_6XXX_FAMILY_MODELS) \
+-			&& ((chip_model) >= OCTEON_CN63XX_PASS1_0)) ||	\
++			&& ((chip_model & OCTEON_PRID_MASK) >= OCTEON_CN63XX_PASS1_0) \
++			&& ((chip_model & OCTEON_PRID_MASK) < OCTEON_CNF71XX_PASS1_0)) || \
++		((((arg_model) & (OM_MATCH_F7XXX_FAMILY_MODELS)) == OM_MATCH_F7XXX_FAMILY_MODELS) \
++			&& ((chip_model & OCTEON_PRID_MASK) >= OCTEON_CNF71XX_PASS1_0) \
++			&& ((chip_model & OCTEON_PRID_MASK) < OCTEON_CN78XX_PASS1_0)) || \
++		((((arg_model) & (OM_MATCH_7XXX_FAMILY_MODELS)) == OM_MATCH_7XXX_FAMILY_MODELS) \
++			&& ((chip_model & OCTEON_PRID_MASK) >= OCTEON_CN78XX_PASS1_0)) || \
+ 		((((arg_model) & (OM_MATCH_PREVIOUS_MODELS)) == OM_MATCH_PREVIOUS_MODELS) \
+ 			&& (((chip_model) & OCTEON_58XX_MODEL_MASK) < ((arg_model) & OCTEON_58XX_MODEL_MASK))) \
+ 		)))
+@@ -300,14 +360,6 @@ static inline int __octeon_is_model_runtime__(uint32_t model)
+ {
+ 	uint32_t cpuid = cvmx_get_proc_id();
+ 
+-	/*
+-	 * Check for special case of mismarked 3005 samples. We only
+-	 * need to check if the sub model isn't being ignored
+-	 */
+-	if ((model & OM_CHECK_SUBMODEL) == OM_CHECK_SUBMODEL) {
+-		if (cpuid == OCTEON_CN3010_PASS1 && (cvmx_read_csr(0x80011800800007B8ull) & (1ull << 34)))
+-			cpuid |= 0x10;
+-	}
+ 	return __OCTEON_IS_MODEL_COMPILE__(model, cpuid);
+ }
+ 
+@@ -326,10 +378,21 @@ static inline int __octeon_is_model_runtime__(uint32_t model)
+ #define OCTEON_IS_COMMON_BINARY() 1
+ #undef OCTEON_MODEL
+ 
++#define OCTEON_IS_OCTEON1()	OCTEON_IS_MODEL(OCTEON_CN3XXX)
++#define OCTEON_IS_OCTEONPLUS()	OCTEON_IS_MODEL(OCTEON_CN5XXX)
++#define OCTEON_IS_OCTEON2()						\
++	(OCTEON_IS_MODEL(OCTEON_CN6XXX) || OCTEON_IS_MODEL(OCTEON_CNF71XX))
++
++#define OCTEON_IS_OCTEON3()	OCTEON_IS_MODEL(OCTEON_CN7XXX)
++
++#define OCTEON_IS_OCTEON1PLUS()	(OCTEON_IS_OCTEON1() || OCTEON_IS_OCTEONPLUS())
++
+ const char *__init octeon_model_get_string(uint32_t chip_id);
+ 
+ /*
+  * Return the octeon family, i.e., ProcessorID of the PrID register.
++ *
++ * @return the octeon family on success, ((unint32_t)-1) on error.
+  */
+ static inline uint32_t cvmx_get_octeon_family(void)
+ {
 -- 
 2.2.2
 
