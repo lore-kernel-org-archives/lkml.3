@@ -1,83 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753229AbbAOLa2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 06:30:28 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:34576 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751385AbbAOLaG (ORCPT
+	id S1752823AbbAOLaH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 06:30:07 -0500
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:45954 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751433AbbAOLaF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 06:30:06 -0500
-Date: Thu, 15 Jan 2015 11:29:38 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Doug Anderson <dianders@chromium.org>, Kukjin Kim <kgene@kernel.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "inki.dae@samsung.com" <inki.dae@samsung.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "'Olof Johansson'" <olof@lixom.net>
-Subject: Re: [RESEND PATCH v3] clocksource: exynos_mct: Add the support for
- Exynos 64bit SoC
-Message-ID: <20150115112938.GB16217@leverpostej>
-References: <1421213603-5020-1-git-send-email-cw00.choi@samsung.com>
- <54B69072.4080607@kernel.org>
- <54B692FB.7030703@linaro.org>
- <54B7024C.4020407@samsung.com>
+	Thu, 15 Jan 2015 06:30:05 -0500
+Date: Thu, 15 Jan 2015 11:29:53 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Felipe Tonello <eu@felipetonello.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: Re: [PATCH] char: Added support for u-blox 6 i2c gps driver
+Message-ID: <20150115112953.27cc5934@lxorguk.ukuu.org.uk>
+In-Reply-To: <CAGrhNMysmq==Y0naNki0z5usmMwUErj-FOTy=8KH0V=R7=VFwA@mail.gmail.com>
+References: <1421198202-4042-1-git-send-email-eu@felipetonello.com>
+	<20150114154816.58b0f9c7@lxorguk.ukuu.org.uk>
+	<CAGrhNMysmq==Y0naNki0z5usmMwUErj-FOTy=8KH0V=R7=VFwA@mail.gmail.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54B7024C.4020407@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 14, 2015 at 11:57:00PM +0000, Chanwoo Choi wrote:
-> Hi Kukjin,
-> 
-> On 01/15/2015 01:02 AM, Daniel Lezcano wrote:
-> > On 01/14/2015 04:51 PM, Kukjin Kim wrote:
-> >> On 01/14/15 14:33, Chanwoo Choi wrote:
-> >>
-> >> Hi,
-> >>
-> >> + Doug, Olof
-> >>
-> >>> This patch adds the support for Exynos 64bit SoC. The delay_timer is only used
-> >>> for Exynos 32bit SoC.
-> >>>
-> >> Yes, the Exynos MCT(Multi-Core Timer) is 64bit timer and it is available
-> >> on 64bit exynos SoC such as exynos7. But basically ARMv8 architecture is
-> >> including ARM ARCH timer (ARM Generic Timer) and exynos7 also has
-> >> implemented it and additionally its access is faster than using memory
-> >> mapped register called SFR for MCT...so Doug submitted patch to use MCT
-> >> on 32bit exynos SoCs before.
-> 
-> I know arch_timer. As you comment, ARCH timer would be used for system timer for ARMv8.
-> But, Exynos5433/Exynos7 (ARMv8) include MCT (Multi-Core Timer) IP. I checked it on
-> Exynos5433/EXynos7 User-manaual and tested it.
-> 
-> I think that exynos_mct.c should support the Exynos 64-bit SoC
-> because Exynos5433/Exynos7 include already MCT (Multi-Core Timer) IP.
-> 
-> Also, I have a problem to verify ARCH timer on Exynos SoC. Exynos User-manual never includes
-> the detailed information about for ARCH timer(e.g, clock for ARCH timer). I knew that
-> I can get the document of ARCH timer for ARM official site but I think it is insufficient
-> to implement ARCH timer on Exynos SoC. 
+Which kernel did you see the write_room oops ? and I'll double check its
+all fixed.
 
-What do you mean by "insufficient to implement ARCH timer"?
+> >> +     ublox_gps_i2c_client = client;
+> >> +     ublox_gps_filp = NULL;
+> >> +     ublox_gps_tty_port = NULL;
+> >> +     ublox_gps_is_open = false;
+> >
+> > There are some other i2c based tty drivers in the kernel - notably those
+> > in drivers/tty/serial that use the uart layer to deal with most of the
+> > awkward locking cases.
+> >
+> > You can do it by hand but it's fairly hairy (see
+> > drivers/mmc/card/sdio_uart.c, so it might be simplest to tweak the driver
+> > to use the uart layer. You don't really gain much from it for your driver
+> > except easier locking - but the locking is rather handy.
+> >
+> > Alan
+> 
+> Ok.
+> 
+> The thing is that: I wrote this driver to work with only one gps
+> module, because that's my configuration here. I cannot really test
+> multiple i2c gps at the same time. If you guys really want a driver
+> that works for multiple gps drivers, I cannot test it.
 
-The architected timer is mandatory in ARMv8, and required by the arm64
-kernel.
+It isn't just about multiple GPS devices, it's about locking. What stops
+things being unloaded or reloaded and freeing memory you are still using.
+Things happen in parallel. If you have an i2c hot unplug happen as
+you are running your worker thread for example this would occur
 
-Additional timers may be requried if you want to put all CPUs into low
-power states where the timer logic may be disabled and/or lose state,
-but regardless the architected timers are necessary.
+	Device still plugged in
+               if (!ublox_gps_i2c_client)
+	       {False so we continue}
+	Device unplugged
+               Use ublock_gps_i2c_client
+               *Kaboom*
 
-Thanks,
-Mark.
+There are two ways to deal with that
+
+1. Don't free the resources until the device is not being used (so while
+the hardware may have walked the memory and pointers are still valid)
+
+2. take a lock before checking, drop it after you finish using the
+object. Take the same lock when destroying it.
+
+The kernel mostly does #1, in part because the second case tends to be
+hard to get right and avoid deadlocks.
+
+I'm much less worried about the single device parts of it. The static
+values you have are fairly easy to deal with I think
+
+ublox_gps_filp isn't needed (its only used for bogus tests)
+ublox_gps_is_open isn't needed (it's only used for the open test)
+
+ublox_gps_i2c_client belongs as a pointer in your tty_data
+ublox_gps_tty_port belongs as the client pointer in your i2c
+
