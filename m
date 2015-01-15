@@ -1,30 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755715AbbAOW6k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 17:58:40 -0500
-Received: from ozlabs.org ([103.22.144.67]:55961 "EHLO ozlabs.org"
+	id S1755175AbbAOXJf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 18:09:35 -0500
+Received: from ozlabs.org ([103.22.144.67]:49678 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753586AbbAOW6i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 17:58:38 -0500
-Message-ID: <1421362698.23332.6.camel@ellerman.id.au>
-Subject: Re: [PATCH v4 20/20] kbuild: add a new kselftest_install make
- target to install selftests
+	id S1753899AbbAOXJd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 18:09:33 -0500
+Message-ID: <1421363369.23332.8.camel@ellerman.id.au>
+Subject: Re: [PATCH 1/8] ppc/kvm: Replace ACCESS_ONCE with READ_ONCE
 From: Michael Ellerman <mpe@ellerman.id.au>
-To: Shuah Khan <shuahkh@osg.samsung.com>
-Cc: mmarek@suse.cz, masami.hiramatsu.pt@hitachi.com,
-        gregkh@linuxfoundation.org, akpm@linux-foundation.org,
-        rostedt@goodmis.org, mingo@redhat.com, davem@davemloft.net,
-        keescook@chromium.org, tranmanphong@gmail.com, cov@codeaurora.org,
-        dh.herrmann@gmail.com, hughd@google.com, bobby.prani@gmail.com,
-        serge.hallyn@ubuntu.com, ebiederm@xmission.com,
-        tim.bird@sonymobile.com, josh@joshtriplett.org, koct9i@gmail.com,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, netdev@vger.kernel.org
-Date: Fri, 16 Jan 2015 09:58:18 +1100
-In-Reply-To: <54B69A1B.80006@osg.samsung.com>
-References: <cover.1420571615.git.shuahkh@osg.samsung.com>
-	 <2c5a28faaa79d9c2415854a08817ada509fcb943.1420571615.git.shuahkh@osg.samsung.com>
-	 <54B69A1B.80006@osg.samsung.com>
+To: Christian Borntraeger <borntraeger@de.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, x86@kernel.org,
+        xen-devel@lists.xenproject.org, linux-mm@kvack.org
+Date: Fri, 16 Jan 2015 10:09:29 +1100
+In-Reply-To: <1421312314-72330-2-git-send-email-borntraeger@de.ibm.com>
+References: <1421312314-72330-1-git-send-email-borntraeger@de.ibm.com>
+	 <1421312314-72330-2-git-send-email-borntraeger@de.ibm.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.12.7-0ubuntu1 
 Mime-Version: 1.0
@@ -33,36 +26,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2015-01-14 at 09:32 -0700, Shuah Khan wrote:
-> On 01/06/2015 12:43 PM, Shuah Khan wrote:
-> > Add a new make target to install to install kernel selftests.
-> > This new target will build and install selftests. kselftest
-> > target now depends on kselftest_install and runs the generated
-> > kselftest script to reduce duplicate work and for common look
-> > and feel when running tests.
-> > 
-> > make kselftest_target:
-> > -- exports kselftest INSTALL_KSFT_PATH
-> >    default $(INSTALL_MOD_PATH)/lib/kselftest/$(KERNELRELEASE)
-> > -- exports INSTALL_KSFT_PATH
-> > -- runs selftests make install target
-> > 
-> > Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
+On Thu, 2015-01-15 at 09:58 +0100, Christian Borntraeger wrote:
+> ACCESS_ONCE does not work reliably on non-scalar types. For
+> example gcc 4.6 and 4.7 might remove the volatile tag for such
+> accesses during the SRA (scalar replacement of aggregates) step
+> (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58145)
 > 
-> Hi Marek,
+> Change the ppc/kvm code to replace ACCESS_ONCE with READ_ONCE.
 > 
-> Could you please Ack this patch, if this version looks good,
-> so I can take this through ksefltest tree.
+> Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
+> ---
+>  arch/powerpc/kvm/book3s_hv_rm_xics.c |  8 ++++----
+>  arch/powerpc/kvm/book3s_xics.c       | 16 ++++++++--------
+>  2 files changed, 12 insertions(+), 12 deletions(-)
+> 
+> diff --git a/arch/powerpc/kvm/book3s_hv_rm_xics.c b/arch/powerpc/kvm/book3s_hv_rm_xics.c
+> index 7b066f6..7c22997 100644
+> --- a/arch/powerpc/kvm/book3s_hv_rm_xics.c
+> +++ b/arch/powerpc/kvm/book3s_hv_rm_xics.c
+> @@ -152,7 +152,7 @@ static void icp_rm_down_cppr(struct kvmppc_xics *xics, struct kvmppc_icp *icp,
+>  	 * in virtual mode.
+>  	 */
+>  	do {
+> -		old_state = new_state = ACCESS_ONCE(icp->state);
+> +		old_state = new_state = READ_ONCE(icp->state);
 
-Hi Shuah,
+These are all icp->state.
 
-I posted what I think is a better approach last week. It's less code and less
-repetition, and installs the majority of tests this series missed - ie. the
-powerpc ones.
-
-Please at least respond to it before you put this series into next.
-
-https://lkml.org/lkml/2015/1/9/45
+Which is a union, but it's only the size of unsigned long. So in practice there
+shouldn't be a bug here right?
 
 cheers
 
