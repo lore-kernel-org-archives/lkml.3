@@ -1,107 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751797AbbAOJMb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 04:12:31 -0500
-Received: from www.linutronix.de ([62.245.132.108]:54786 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750997AbbAOJM0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 04:12:26 -0500
-Date: Thu, 15 Jan 2015 10:11:52 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Rob Herring <robherring2@gmail.com>
-cc: Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2 1/5] irqchip: add dumb demultiplexer implementation
-In-Reply-To: <CAL_JsqLwBvV5s531_YsA=sCE4_LG=eXTua8mh069ufRjSNFhng@mail.gmail.com>
-Message-ID: <alpine.DEB.2.11.1501151003430.5526@nanos>
-References: <1421174781-4340-1-git-send-email-boris.brezillon@free-electrons.com> <1421174781-4340-2-git-send-email-boris.brezillon@free-electrons.com> <CAL_JsqJ5DSo6jmAuHPDdV6pMca8BVbg5V-GZ5=2qu96_QYXMtQ@mail.gmail.com> <alpine.DEB.2.11.1501141110190.5526@nanos>
- <CAL_JsqLwBvV5s531_YsA=sCE4_LG=eXTua8mh069ufRjSNFhng@mail.gmail.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	id S1752342AbbAOJQL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 04:16:11 -0500
+Received: from mga09.intel.com ([134.134.136.24]:21784 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751482AbbAOJQG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 04:16:06 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,402,1418112000"; 
+   d="scan'208";a="670290666"
+From: "David E. Box" <david.e.box@linux.intel.com>
+To: wsa@the-dreams.de
+Cc: jdelvare@suse.de, arnd@arndb.de, maxime.ripard@free-electrons.com,
+        dianders@chromium.org, david.e.box@linux.intel.com,
+        u.kleine-koenig@pengutronix.de,
+        laurent.pinchart+renesas@ideasonboard.com,
+        boris.brezillon@free-electrons.com, maxime.coquelin@st.com,
+        andrew@lunn.ch, sjg@chromium.org, markus.mayer@linaro.org,
+        ch.naveen@samsung.com, jacob.jun.pan@linux.intel.com,
+        max.schwarz@online.de, mika.westerberg@linux.intel.com,
+        skuribay@pobox.com, Romain.Baeriswyl@abilis.com, wenkai.du@intel.com,
+        christian.ruppert@abilis.com, alan@linux.intel.com,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
+Subject: [PATCH V4 0/2] i2c-designware: Add Intel Baytrail pmic i2c bus support
+Date: Thu, 15 Jan 2015 01:12:15 -0800
+Message-Id: <1421313137-1613-1-git-send-email-david.e.box@linux.intel.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1417478973-25522-1-git-send-email-david.e.box@linux.intel.com>
+References: <1417478973-25522-1-git-send-email-david.e.box@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Jan 2015, Rob Herring wrote:
-> On Wed, Jan 14, 2015 at 4:36 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > All attempts to work around that have resulted in horrible bandaids so
-> > far. That's why I guided Boris to implement this dummy demultiplexing
-> > mechanism. It solves the problem at hand nicely without adding nasty
-> > hackarounds into the suspend/resume code and inflicting platform
-> > knowledge on multi-platform device drivers.
-> 
-> This change will break on old kernels with a new dtb. Would you be
-> happy if a BIOS update required a new kernel? Fixing this for any
-> platform requires a dtb update which may not be possible on some
-> platforms. I don't have a problem with this breakage for 1 platform
-> and the at91 guys may not care, but we'd ultimately be changing how
-> all shared irqs are specified for all DT. Maybe we decide that this is
-> how we want to describe things, but that needs much wider discussion
-> and agreement.
+V4:	- Added bus lock to i2c_dw_init() as suggested by Jarrko Nikula
+	  <jarkko.nikula@linux.intel.com>. Addresses infrequent hang that was
+	  seen occuring during probe.
+	- Added label in i2c_dw_xfer() to bypass unnecessary lock release when
+	  acquire fails. Suggested by Mika.
+	- Changed make to build driver as composite addition to
+	  i2c-designware-platform. Driver can be module or built-in following
+	  the platform driver selection. Tested as both.
+	- Added EPROBE_DEFER return to baytrail definition of i2c_dw_eval_lock()
+	  to defer probe if iosf_mbi driver (required for acquring bus lock) is
+	  not available.
 
-We do not change shared interrupts in any way. We provide an
-alternative mechanism for braindead hardware. And if the at91 folks
-are fine with the DT change, then it's their decision. Nothing forces
-this on everyone.
- 
-> > If you have a proper solution for the problem at hand which
-> >
-> >    - avoids the demux dummy
-> >
-> >    - works straight forward with suspend/resume/wakeup
-> >
-> >    - does not add horrible new APIs
-> >
-> >    - does not add conditionals to the interrupt hotpath
-> >
-> >    - does not inflict platform knowledge about interrupt chip details
-> >      on drivers
-> >
-> > then I'm happy to take it.
-> >
-> > But as long as you can't come up with anything sane, the demux dummy
-> > is the best solution for this problem we've seen so far.
-> 
-> What if during suspend you move all actions w/o IRQF_NO_SUSPEND to a
-> suspended action list? This would leave only the actions with
-> IRQF_NO_SUSPEND set in the active action list. The cost would be a
-> pointer in irq_desc and moving the actions during suspend and resume.
+V3:	- Split lock support and driver into separate patches
+	- Change module build to bool. Platforms running without this driver
+	  cannot perform critical functions such as charging. Furthermore attempts
+	  by other drivers to access the i2c bus without a lock will hang the
+	  platform.
+	- Replaced has_hw_lock flag with acquire/release function pointers.
+	- Replaced acquire/release ifdef code with single
+	  i2c_dw_eval_lock_support() test for cleaner (if still undesirable)
+	  compile time scalability. Future Intel platforms will however continue
+	  to use the Baytrail driver.
 
-That's exactly what we want NOT. Because it prevents us to do proper
-sanity checks for IRQF_NO_SUSPEND. We've been there and I rejected it
-for that very reason.
- 
-> There are probably ways to do this demux irqchip without a DT change.
+V2:	- Moved semaphore detection out of dw platform driver
+	- Replaced function pointers with defined acquire/release functions in
+	  dw core. This helps eliminate the ifdefery in the dw platform driver.
+	- Use new has_hw_lock flag to check if the lock exists on a given bus.
+	- Use new pm_runtime_disabled flag to conditionally turnoff runtime pm
+	  in the dw platform driver.
 
-What's the problem with a DT change for a single platform, if the
-maintainers are willing to take it and deal with the fallout?
+David E. Box (2):
+  i2c-designware: Add i2c bus locking support
+  i2c-designware: Add Intel Baytrail PMIC I2C bus support
 
-And in case of AT91 the new kernel will simply work with the old DT
-and just emit the same warning vs. the IRQF_NO_SUSPEND mismatch. Older
-kernels won't work with a new DT, but that's about it.
+ drivers/i2c/busses/Kconfig                   |  11 ++
+ drivers/i2c/busses/Makefile                  |   1 +
+ drivers/i2c/busses/i2c-designware-baytrail.c | 160 +++++++++++++++++++++++++++
+ drivers/i2c/busses/i2c-designware-core.c     |  26 +++++
+ drivers/i2c/busses/i2c-designware-core.h     |  12 ++
+ drivers/i2c/busses/i2c-designware-platdrv.c  |  20 +++-
+ 6 files changed, 225 insertions(+), 5 deletions(-)
+ create mode 100644 drivers/i2c/busses/i2c-designware-baytrail.c
 
-Aside of that, I'm quite amused about your DT update worries. DTs
-break with every kernel version on very popular platforms in very
-weird and subtle ways.
-
-Thanks,
-
-	tglx
+-- 
+1.9.1
 
