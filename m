@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753056AbbAOP3K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 10:29:10 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.232]:36123 "EHLO
+	id S1754803AbbAOP3X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 10:29:23 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:2511 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751437AbbAOP3I (ORCPT
+	by vger.kernel.org with ESMTP id S1754064AbbAOP3V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 10:29:08 -0500
-Message-Id: <20150115152906.615332601@goodmis.org>
+	Thu, 15 Jan 2015 10:29:21 -0500
+Message-Id: <20150115152906.767167659@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Thu, 15 Jan 2015 10:28:03 -0500
+Date: Thu, 15 Jan 2015 10:28:04 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
@@ -17,12 +17,13 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         <stable@vger.kernel.org>
-Subject: [PATCH 2/5] ftrace: Check both notrace and filter for old hash
+Subject: [PATCH 3/5] ftrace/jprobes/x86: Fix conflict between jprobes and function graph
+ tracing
 References: <20150115152801.855110791@goodmis.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=0002-ftrace-Check-both-notrace-and-filter-for-old-hash.patch
-X-RR-Connecting-IP: 107.14.168.142:25
+Content-Disposition: inline; filename=0003-ftrace-jprobes-x86-Fix-conflict-between-jprobes-and-.patch
+X-RR-Connecting-IP: 107.14.168.118:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,140 +31,111 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
 
-Using just the filter for checking for trampolines or regs is not enough
-when updating the code against the records that represent all functions.
-Both the filter hash and the notrace hash need to be checked.
+If the function graph tracer traces a jprobe callback, the system will
+crash. This can easily be demonstrated by compiling the jprobe
+sample module that is in the kernel tree, loading it and running the
+function graph tracer.
 
-To trigger this bug (using trace-cmd and perf):
+ # modprobe jprobe_example.ko
+ # echo function_graph > /sys/kernel/debug/tracing/current_tracer
+ # ls
 
- # perf probe -a do_fork
- # trace-cmd start -B foo -e probe
- # trace-cmd record -p function_graph -n do_fork sleep 1
+The first two commands end up in a nice crash after the first fork.
+(do_fork has a jprobe attached to it, so "ls" just triggers that fork)
 
-The trace-cmd record at the end clears the filter before it disables
-function_graph tracing and then that causes the accounting of the
-ftrace function records to become incorrect and causes ftrace to bug.
+The problem is caused by the jprobe_return() that all jprobe callbacks
+must end with. The way jprobes works is that the function a jprobe
+is attached to has a breakpoint placed at the start of it (or it uses
+ftrace if fentry is supported). The breakpoint handler (or ftrace callback)
+will copy the stack frame and change the ip address to return to the
+jprobe handler instead of the function. The jprobe handler must end
+with jprobe_return() which swaps the stack and does an int3 (breakpoint).
+This breakpoint handler will then put back the saved stack frame,
+simulate the instruction at the beginning of the function it added
+a breakpoint to, and then continue on.
 
-Link: http://lkml.kernel.org/r/20150114154329.358378039@goodmis.org
+For function tracing to work, it hijakes the return address from the
+stack frame, and replaces it with a hook function that will trace
+the end of the call. This hook function will restore the return
+address of the function call.
 
-Cc: stable@vger.kernel.org
-[ still need to switch old_hash_ops to old_ops_hash ]
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+If the function tracer traces the jprobe handler, the hook function
+for that handler will not be called, and its saved return address
+will be used for the next function. This will result in a kernel crash.
+
+To solve this, pause function tracing before the jprobe handler is called
+and unpause it before it returns back to the function it probed.
+
+Some other updates:
+
+Used a variable "saved_sp" to hold kcb->jprobe_saved_sp. This makes the
+code look a bit cleaner and easier to understand (various tries to fix
+this bug required this change).
+
+Note, if fentry is being used, jprobes will change the ip address before
+the function graph tracer runs and it will not be able to trace the
+function that the jprobe is probing.
+
+Link: http://lkml.kernel.org/r/20150114154329.552437962@goodmis.org
+
+Cc: stable@vger.kernel.org # 2.6.30+
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/ftrace.c | 27 ++++++++++++++++++++-------
- 1 file changed, 20 insertions(+), 7 deletions(-)
+ arch/x86/kernel/kprobes/core.c | 20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 2b35d0ba578d..224e768bdc73 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2497,12 +2497,14 @@ static void ftrace_run_update_code(int command)
- }
- 
- static void ftrace_run_modify_code(struct ftrace_ops *ops, int command,
--				   struct ftrace_hash *old_hash)
-+				   struct ftrace_ops_hash *old_hash)
- {
- 	ops->flags |= FTRACE_OPS_FL_MODIFYING;
--	ops->old_hash.filter_hash = old_hash;
-+	ops->old_hash.filter_hash = old_hash->filter_hash;
-+	ops->old_hash.notrace_hash = old_hash->notrace_hash;
- 	ftrace_run_update_code(command);
- 	ops->old_hash.filter_hash = NULL;
-+	ops->old_hash.notrace_hash = NULL;
- 	ops->flags &= ~FTRACE_OPS_FL_MODIFYING;
- }
- 
-@@ -3579,7 +3581,7 @@ static struct ftrace_ops trace_probe_ops __read_mostly =
- 
- static int ftrace_probe_registered;
- 
--static void __enable_ftrace_function_probe(struct ftrace_hash *old_hash)
-+static void __enable_ftrace_function_probe(struct ftrace_ops_hash *old_hash)
- {
- 	int ret;
- 	int i;
-@@ -3637,6 +3639,7 @@ int
- register_ftrace_function_probe(char *glob, struct ftrace_probe_ops *ops,
- 			      void *data)
- {
-+	struct ftrace_ops_hash old_hash_ops;
- 	struct ftrace_func_probe *entry;
- 	struct ftrace_hash **orig_hash = &trace_probe_ops.func_hash->filter_hash;
- 	struct ftrace_hash *old_hash = *orig_hash;
-@@ -3658,6 +3661,10 @@ register_ftrace_function_probe(char *glob, struct ftrace_probe_ops *ops,
- 
- 	mutex_lock(&trace_probe_ops.func_hash->regex_lock);
- 
-+	old_hash_ops.filter_hash = old_hash;
-+	/* Probes only have filters */
-+	old_hash_ops.notrace_hash = NULL;
+diff --git a/arch/x86/kernel/kprobes/core.c b/arch/x86/kernel/kprobes/core.c
+index f7e3cd50ece0..98f654d466e5 100644
+--- a/arch/x86/kernel/kprobes/core.c
++++ b/arch/x86/kernel/kprobes/core.c
+@@ -1020,6 +1020,15 @@ int setjmp_pre_handler(struct kprobe *p, struct pt_regs *regs)
+ 	regs->flags &= ~X86_EFLAGS_IF;
+ 	trace_hardirqs_off();
+ 	regs->ip = (unsigned long)(jp->entry);
 +
- 	hash = alloc_and_copy_ftrace_hash(FTRACE_HASH_DEFAULT_BITS, old_hash);
- 	if (!hash) {
- 		count = -ENOMEM;
-@@ -3718,7 +3725,7 @@ register_ftrace_function_probe(char *glob, struct ftrace_probe_ops *ops,
- 
- 	ret = ftrace_hash_move(&trace_probe_ops, 1, orig_hash, hash);
- 
--	__enable_ftrace_function_probe(old_hash);
-+	__enable_ftrace_function_probe(&old_hash_ops);
- 
- 	if (!ret)
- 		free_ftrace_hash_rcu(old_hash);
-@@ -4006,7 +4013,7 @@ ftrace_match_addr(struct ftrace_hash *hash, unsigned long ip, int remove)
++	/*
++	 * jprobes use jprobe_return() which skips the normal return
++	 * path of the function, and this messes up the accounting of the
++	 * function graph tracer to get messed up.
++	 *
++	 * Pause function graph tracing while performing the jprobe function.
++	 */
++	pause_graph_tracing();
+ 	return 1;
  }
+ NOKPROBE_SYMBOL(setjmp_pre_handler);
+@@ -1048,24 +1057,25 @@ int longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
+ 	struct kprobe_ctlblk *kcb = get_kprobe_ctlblk();
+ 	u8 *addr = (u8 *) (regs->ip - 1);
+ 	struct jprobe *jp = container_of(p, struct jprobe, kp);
++	void *saved_sp = kcb->jprobe_saved_sp;
  
- static void ftrace_ops_update_code(struct ftrace_ops *ops,
--				   struct ftrace_hash *old_hash)
-+				   struct ftrace_ops_hash *old_hash)
- {
- 	struct ftrace_ops *op;
- 
-@@ -4041,6 +4048,7 @@ ftrace_set_hash(struct ftrace_ops *ops, unsigned char *buf, int len,
- 		unsigned long ip, int remove, int reset, int enable)
- {
- 	struct ftrace_hash **orig_hash;
-+	struct ftrace_ops_hash old_hash_ops;
- 	struct ftrace_hash *old_hash;
- 	struct ftrace_hash *hash;
- 	int ret;
-@@ -4077,9 +4085,11 @@ ftrace_set_hash(struct ftrace_ops *ops, unsigned char *buf, int len,
- 
- 	mutex_lock(&ftrace_lock);
- 	old_hash = *orig_hash;
-+	old_hash_ops.filter_hash = ops->func_hash->filter_hash;
-+	old_hash_ops.notrace_hash = ops->func_hash->notrace_hash;
- 	ret = ftrace_hash_move(ops, enable, orig_hash, hash);
- 	if (!ret) {
--		ftrace_ops_update_code(ops, old_hash);
-+		ftrace_ops_update_code(ops, &old_hash_ops);
- 		free_ftrace_hash_rcu(old_hash);
- 	}
- 	mutex_unlock(&ftrace_lock);
-@@ -4291,6 +4301,7 @@ static void __init set_ftrace_early_filters(void)
- int ftrace_regex_release(struct inode *inode, struct file *file)
- {
- 	struct seq_file *m = (struct seq_file *)file->private_data;
-+	struct ftrace_ops_hash old_hash_ops;
- 	struct ftrace_iterator *iter;
- 	struct ftrace_hash **orig_hash;
- 	struct ftrace_hash *old_hash;
-@@ -4324,10 +4335,12 @@ int ftrace_regex_release(struct inode *inode, struct file *file)
- 
- 		mutex_lock(&ftrace_lock);
- 		old_hash = *orig_hash;
-+		old_hash_ops.filter_hash = iter->ops->func_hash->filter_hash;
-+		old_hash_ops.notrace_hash = iter->ops->func_hash->notrace_hash;
- 		ret = ftrace_hash_move(iter->ops, filter_hash,
- 				       orig_hash, iter->hash);
- 		if (!ret) {
--			ftrace_ops_update_code(iter->ops, old_hash);
-+			ftrace_ops_update_code(iter->ops, &old_hash_ops);
- 			free_ftrace_hash_rcu(old_hash);
+ 	if ((addr > (u8 *) jprobe_return) &&
+ 	    (addr < (u8 *) jprobe_return_end)) {
+-		if (stack_addr(regs) != kcb->jprobe_saved_sp) {
++		if (stack_addr(regs) != saved_sp) {
+ 			struct pt_regs *saved_regs = &kcb->jprobe_saved_regs;
+ 			printk(KERN_ERR
+ 			       "current sp %p does not match saved sp %p\n",
+-			       stack_addr(regs), kcb->jprobe_saved_sp);
++			       stack_addr(regs), saved_sp);
+ 			printk(KERN_ERR "Saved registers for jprobe %p\n", jp);
+ 			show_regs(saved_regs);
+ 			printk(KERN_ERR "Current registers\n");
+ 			show_regs(regs);
+ 			BUG();
  		}
- 		mutex_unlock(&ftrace_lock);
++		/* It's OK to start function graph tracing again */
++		unpause_graph_tracing();
+ 		*regs = kcb->jprobe_saved_regs;
+-		memcpy((kprobe_opcode_t *)(kcb->jprobe_saved_sp),
+-		       kcb->jprobes_stack,
+-		       MIN_STACK_SIZE(kcb->jprobe_saved_sp));
++		memcpy(saved_sp, kcb->jprobes_stack, MIN_STACK_SIZE(saved_sp));
+ 		preempt_enable_no_resched();
+ 		return 1;
+ 	}
 -- 
 2.1.4
 
