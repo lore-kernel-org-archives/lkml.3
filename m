@@ -1,98 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755040AbbAORaP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 12:30:15 -0500
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:48032 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751403AbbAORaM (ORCPT
+	id S1754732AbbAORhu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 12:37:50 -0500
+Received: from smtpout.karoo.kcom.com ([212.50.160.34]:19956 "EHLO
+	smtpout.karoo.kcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751437AbbAORht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 12:30:12 -0500
+	Thu, 15 Jan 2015 12:37:49 -0500
+X-Greylist: delayed 375 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Jan 2015 12:37:49 EST
+X-IronPort-AV: E=Sophos;i="5.09,404,1418083200"; 
+   d="scan'208";a="33680406"
+Date: Thu, 15 Jan 2015 17:31:32 +0000
+From: Mike Crowe <mac@mcrowe.com>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Cc: Arnd Bergmann <arnd@arndb.de>, Kay Sievers <kay@vrfy.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: kmsg: lseek errors confuse glibc's dprintf
+Message-ID: <20150115173132.GA7486@mcrowe.com>
 MIME-Version: 1.0
-In-Reply-To: <1421202745.27675.148.camel@mtksdaap41>
-References: <1418772873-19747-1-git-send-email-hongzhou.yang@mediatek.com>
-	<1418772873-19747-5-git-send-email-hongzhou.yang@mediatek.com>
-	<1418807365.6443.17.camel@mtksdaap41>
-	<1420535817.17567.10.camel@mtksdaap41>
-	<CACRpkdb2KJbjzFgTmDvHSw7jNAExxVtU3y4_fgyn6J8hcW5OrQ@mail.gmail.com>
-	<1421202745.27675.148.camel@mtksdaap41>
-Date: Thu, 15 Jan 2015 18:30:12 +0100
-Message-ID: <CACRpkdY7_A_rORDvDrGtV0aa6mJGj=Sr-k=KVGu_=0et-gNpiQ@mail.gmail.com>
-Subject: Re: [PATCH v4 4/5] ARM: mediatek: Add EINT support to MTK pinctrl driver.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: Mark Rutland <mark.rutland@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Vladimir Murzin <vladimir.murzin@arm.com>, maoguang.meng@mediatek.com,
-        Russell King <linux@arm.linux.org.uk>, srv_heupstream@mediatek.com,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Hongzhou Yang <hongzhou.yang@mediatek.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>, alan.cheng@mediatek.com,
-        toby.liu@mediatek.com, Sascha Hauer <kernel@pengutronix.de>,
-        Kumar Gala <galak@codeaurora.org>, dandan.he@mediatek.com,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 14, 2015 at 3:32 AM, Yingjoe Chen <yingjoe.chen@mediatek.com> wrote:
+glibc's dprintf implementation does not work correctly with /dev/kmsg file
+descriptors because glibc treats receiving EBADF and EINVAL from lseek when
+trying to determine the current file position as errors. See
+https://sourceware.org/bugzilla/show_bug.cgi?id=17830
 
-> Let's me describe my problem more clearly. On our SoC, if a pin support
-> interrupt it will have 2 different numbers for it. For examples, here's
-> a partial list for the gpio and EINT number mappings on mt8135:
->
->    gpio  EINT
->      0     49
->      1     48
->     ...........
->     36     97
->     37     19
->     ...........
->
-> To control interrupt related function, we'll need EINT number to locate
-> corresponding register bits. When interrupt occurs, the interrupt
-> handler will know which EINT interrupt occurs. In irq_chip functions,
-> only .irq_request_resources and .irq_release_resources use gpio number
-> to set pinmux to EINT mode and all the others need EINT number.
->
-> Because EINT number is used more frequently in interrupt related
-> functions, it make sense to use EINT number as hwirq instead of gpio
-> number. That means irq_domain will translate EINT number to virq.
-> So what mtk_gpio_to_irq actually do is translate gpio number to EINT
-> number and use irq domain to translate it to virq.
+>From what I can tell prior to Kay Sievers printk record commit
+e11fea92e13fb91c50bacca799a6131c81929986, calling lseek(fd, 0, SEEK_CUR)
+with such a file descriptor would not return an error.
 
-But the EINT is not a hardware number is it?
+Prior to Kay's change, Arnd Bergmann's commit
+6038f373a3dc1f1c26496e60b6c40b164716f07e seemed to go to some lengths to
+preserve the successful return code rather than returning (the perhaps more
+logical) -ESPIPE.
 
-That sounds like an abuse of the irqdomain framework.
+glibc is happy with either a successful return or -ESPIPE.
 
-The purpose of that code is to map hardware IRQs to Linux
-IRQs nothing else.
+For maximum compatibility it seems that success should be returned but
+given Kay's new seek interface perhaps this isn't helpful.
 
-This sounds more like mapping a Linux IRQ (the EINT) to
-another Linux IRQ (whatever the irqdomain allocates for
-you).
+This patch ensures that such a seek succeeds:
 
-Since the EINTs are already Linux IRQs, these should be used
-directly.
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index 02d6b6d..b3ff6f0 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -693,7 +693,7 @@ static loff_t devkmsg_llseek(struct file *file, loff_t offset, int whence)
+ 	loff_t ret = 0;
+ 
+ 	if (!user)
+-		return -EBADF;
++		return (whence == SEEK_CUR) ? 0 : -EBADF;
+ 	if (offset)
+ 		return -ESPIPE;
+ 
+@@ -718,6 +718,11 @@ static loff_t devkmsg_llseek(struct file *file, loff_t offset, int whence)
+ 		user->idx = log_next_idx;
+ 		user->seq = log_next_seq;
+ 		break;
++	case SEEK_CUR:
++		/* For compatibility with userspace requesting the
++		 * current file position. */
++		ret = 0;
++		break;
+ 	default:
+ 		ret = -EINVAL;
+ 	}
 
-I would solve this by just having some cross-reference table
-for mapping GPIOs to EINTs without involving the irqdomain
-at all.
+(although it could be argued that the !user case should return -ESPIPE
+rather than EBADF since the file descriptor _is_ valid.)
 
-struct eint_map {
-    int gpio_offset;
-    int eint;
-};
+and this patch causes a failure that glibc is prepared to accept:
 
-But also check with the irqdomain people.
+diff --git a/kernel/printk/printk.c b/kernel/printk/printk.c
+index 02d6b6d..f6b0c93 100644
+--- a/kernel/printk/printk.c
++++ b/kernel/printk/printk.c
+@@ -693,7 +693,7 @@ static loff_t devkmsg_llseek(struct file *file, loff_t offset, int whence)
+ 	loff_t ret = 0;
+ 
+ 	if (!user)
+-		return -EBADF;
++		return -ESPIPE;
+ 	if (offset)
+ 		return -ESPIPE;
+ 
+@@ -718,6 +718,11 @@ static loff_t devkmsg_llseek(struct file *file, loff_t offset, int whence)
+ 		user->idx = log_next_idx;
+ 		user->seq = log_next_seq;
+ 		break;
++	case SEEK_CUR:
++		/* For compatibility with userspace expecting SEEK_CUR
++		 * to not yield EINVAL. */
++		ret = -ESPIPE;
++		break;
+ 	default:
+ 		ret = -EINVAL;
+ 	}
 
-Yours,
-Linus Walleij
+Either makes dprintf work, but is either the right solution?
+
+Thanks.
+
+Mike.
