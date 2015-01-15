@@ -1,91 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754508AbbAOBJI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 20:09:08 -0500
-Received: from mail-pa0-f41.google.com ([209.85.220.41]:59735 "EHLO
-	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752045AbbAOBJH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 20:09:07 -0500
-Message-ID: <54B7132A.6030803@gmail.com>
-Date: Wed, 14 Jan 2015 17:08:58 -0800
-From: Florian Fainelli <f.fainelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Jonathan Richardson <jonathar@broadcom.com>, Joe Perches <joe@perches.com>
-CC: devicetree@vger.kernel.org, Ray Jui <rjui@broadcom.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-kernel@vger.kernel.org, Rob Herring <robh+dt@kernel.org>,
-        bcm-kernel-feedback-list@broadcom.com, linux-input@vger.kernel.org,
-        Grant Likely <grant.likely@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v2 1/2] Input: touchscreen-iproc: Add Broadcom iProc touchscreen
- driver
-References: <Jonathan Richardson <jonathar@broadcom.com> <1419027470-7969-1-git-send-email-jonathar@broadcom.com> <1419027470-7969-2-git-send-email-jonathar@broadcom.com> <1419028015.25129.14.camel@perches.com> <5494AEB8.8060606@broadcom.com>
-In-Reply-To: <5494AEB8.8060606@broadcom.com>
-Content-Type: text/plain; charset=utf-8
+	id S1751516AbbAOBOc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 20:14:32 -0500
+Received: from ozlabs.org ([103.22.144.67]:48208 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750841AbbAOBOb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 20:14:31 -0500
+Message-ID: <1421284467.11409.2.camel@ellerman.id.au>
+Subject: Re: [PATCH] powerpc: powernv: winkle: Restore LPCR with LPCR_PECE1
+ cleared
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org
+Date: Thu, 15 Jan 2015 12:14:27 +1100
+In-Reply-To: <1421234001-24886-1-git-send-email-shreyas@linux.vnet.ibm.com>
+References: <1421234001-24886-1-git-send-email-shreyas@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/12/14 15:03, Jonathan Richardson wrote:
-> On 14-12-19 02:26 PM, Joe Perches wrote:
->> On Fri, 2014-12-19 at 14:17 -0800, Jonathan Richardson wrote:
->>> Add initial version of the Broadcom touchscreen driver.
->>
->> more trivia:
->>
->>> diff --git a/drivers/input/touchscreen/bcm_iproc_tsc.c b/drivers/input/touchscreen/bcm_iproc_tsc.c
->> []
->>> +static int get_tsc_config(struct device_node *np, struct iproc_ts_priv *priv)
->>> +{
->>> +	u32 val;
->> []
->>> +	if (of_property_read_u32(np, "debounce_timeout", &val) >= 0) {
->>> +		if (val < 0 || val > 255) {
->>> +			dev_err(dev, "debounce_timeout must be [0-255]\n");
->>> +			return -EINVAL;
->>> +		}
->>> +		priv->cfg_params.debounce_timeout = val;
+On Wed, 2015-01-14 at 16:43 +0530, Shreyas B. Prabhu wrote:
+> LPCR_PECE1 bit controls whether decrementer interrupts are allowed to
+> cause exit from power-saving mode. While waking up from winkle, restoring
+> LPCR with LPCR_PECE1 set (i.e Decrementer interrupts allowed) can cause
+> issue in the following scenario:
+> 
+> - All the threads in a core are offlined. The core enters deep winkle.
+> - Spurious interrupt wakes up a thread in the core. Here LPCR is restored
+>   with LPCR_PECE1 bit set.
+> - Since it was a spurious interrupt on a offline thread, the thread clears
+>   the interrupt and goes back to winkle.
+> - Here before the thread executes winkle and puts the core into deep winkle,
+>   if a decrementer interrupt occurs on any of the sibling threads in the core
+>   that thread wakes up. 
+> - Since in offline loop we are flushing interrupt only in case of external
+>   interrupt, the decrementer interrupt does not get flushed. So at this stage
+>   the thread is stuck in this is loop of waking up at 0x100 due to decrementer
+>   interrupt, not flushing the interrupt as only external interrupts get flushed,
+>   entering winkle, waking up at 0x100 again.
+> 
+> Fix this by programming PORE to restore LPCR with LPCR_PECE1 bit 
+> cleared when waking up from winkle.
 
-BTW, common practice for DT properties is to use a dash instead of an
-underscore for multi-worded properties.
+That sounds good.
 
->>
->> Doesn't the compiler generate a warning message
->> about an impossible "unsigned < 0" test for all
->> of these "val < 0" uses?
->>
-> 
-> Actually no it doesn't. The gcc output shows that neither -Wtype-limits
-> nor -Wextra are used to compile that file. I assume this is because
-> there would be just too many warnings.
-> 
-> 
->>> +	}
->>> +
->>> +	if (of_property_read_u32(np, "settling_timeout", &val) >= 0) {
->>> +		if (val < 0 || val > 11) {
->> []
->>> +	if (of_property_read_u32(np, "touch_timeout", &val) >= 0) {
->>> +		if (val < 0 || val > 255) {
->> []
->>> +	if (of_property_read_u32(np, "average_data", &val) >= 0) {
->>> +		if (val < 0 || val > 8) {
->> []
->>> +	if (of_property_read_u32(np, "fifo_threshold", &val) >= 0) {
->>> +		if (val < 0 || val > 31) {
->>
->>
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
+But this makes the third place where we clear LPCR_PECE1, in addition to:
+
+    static int fastsleep_loop(struct cpuidle_device *dev,
+    				struct cpuidle_driver *drv,
+    				int index)
+    {
+    	...
+    
+    	new_lpcr = old_lpcr;
+    	/* Do not exit powersave upon decrementer as we've setup the timer
+    	 * offload.
+    	 */
+    	new_lpcr &= ~LPCR_PECE1;
+    
+    	mtspr(SPRN_LPCR, new_lpcr);
+
+And:
+
+    static void pnv_smp_cpu_kill_self(void)
+    {
+    	...
+    
+    	/* We don't want to take decrementer interrupts while we are offline,
+    	 * so clear LPCR:PECE1. We keep PECE2 enabled.
+    	 */
+    	mtspr(SPRN_LPCR, mfspr(SPRN_LPCR) & ~(u64)LPCR_PECE1);
 
 
--- 
-Florian
+So perhaps we can capture that logic in one place somehow?
+
+cheers
+
+
