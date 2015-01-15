@@ -1,92 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753496AbbAOUwJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 15:52:09 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:26344 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752164AbbAOUwH (ORCPT
+	id S1753608AbbAOUy5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 15:54:57 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:42615 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751879AbbAOUyy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 15:52:07 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 96.249.243.124
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+xgJqslCdhwphtGwPkhnmnOUDnIm+/R20=
-X-DKIM: OpenDKIM Filter v2.0.1 titan 26CD864759F
-Date: Thu, 15 Jan 2015 15:51:39 -0500
-From: Jason Cooper <jason@lakedaemon.net>
-To: Mark Brown <broonie@kernel.org>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, "jcm@redhat.com" <jcm@redhat.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
-        Timur Tabi <timur@codeaurora.org>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
+	Thu, 15 Jan 2015 15:54:54 -0500
+Subject: Re: [PATCH v8 2/4] fpga manager: add sysfs interface document
+Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
+Content-Type: text/plain; charset=utf-8
+From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+In-Reply-To: <20150115204502.591bca1d@lxorguk.ukuu.org.uk>
+Date: Thu, 15 Jan 2015 22:54:46 +0200
+Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        atull <atull@opensource.altera.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Pavel Machek <pavel@denx.de>, hpa@zytor.com,
+        Michal Simek <monstr@monstr.eu>,
+        Michal Simek <michal.simek@xilinx.com>, rdunlap@infradead.org,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linaro-acpi <linaro-acpi@lists.linaro.org>
-Subject: Re: [PATCH v7 00/17] Introduce ACPI for ARM64 based on ACPI 5.1
-Message-ID: <20150115205139.GG24989@titan.lakedaemon.net>
-References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org>
- <CACxGe6v_BvCQqp8d=LaQ8HeaOU1Zh_HPpwFTdwOjHUbqXsnQ8g@mail.gmail.com>
- <20150115182346.GE2329@e104818-lin.cambridge.arm.com>
- <20150115190220.GF3043@sirena.org.uk>
- <20150115200437.GF24989@titan.lakedaemon.net>
- <20150115203159.GG3043@sirena.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150115203159.GG3043@sirena.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        devicetree@vger.kernel.org, robh+dt@kernel.org,
+        Grant Likely <grant.likely@linaro.org>, iws@ovro.caltech.edu,
+        linux-doc@vger.kernel.org, Mark Brown <broonie@kernel.org>,
+        philip@balister.org, rubini@gnudd.com,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>, jason@lakedaemon.net,
+        kyle.teske@ni.com, nico@linaro.org, Felipe Balbi <balbi@ti.com>,
+        m.chehab@samsung.com, davidb@codeaurora.org,
+        Rob Landley <rob@landley.net>, davem@davemloft.net, cesarb@cesarb.net,
+        sameo@linux.intel.com, akpm@linux-foundation.org,
+        Linus Walleij <linus.walleij@linaro.org>, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, devel@driverdev.osuosl.org,
+        Alan Tull <delicious.quinoa@gmail.com>, dinguyen@opensource.altera.com,
+        yvanderv@opensource.altera.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <A3B5BC9B-EB88-4C0E-B235-E9C86D23DC34@konsulko.com>
+References: <20150107084819.GA1887@amd> <alpine.DEB.2.02.1501091302370.30067@linuxheads99> <20150109205643.GA5761@amd> <20150112210134.687176ed@lxorguk.ukuu.org.uk> <20150112214314.GA18610@obsidianresearch.com> <20150113162847.2778b5a5@lxorguk.ukuu.org.uk> <20150113200032.GA16205@obsidianresearch.com> <alpine.DEB.2.02.1501131455130.30192@linuxheads99> <20150113222450.GA17475@obsidianresearch.com> <alpine.DEB.2.02.1501150936390.16760@linuxheads99> <20150115184726.GA23247@obsidianresearch.com> <20150115204502.591bca1d@lxorguk.ukuu.org.uk>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+X-Mailer: Apple Mail (2.1993)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 15, 2015 at 08:31:59PM +0000, Mark Brown wrote:
-> On Thu, Jan 15, 2015 at 03:04:37PM -0500, Jason Cooper wrote:
-> > On Thu, Jan 15, 2015 at 07:02:20PM +0000, Mark Brown wrote:
+Hi Alan,
+
+> On Jan 15, 2015, at 22:45 , One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk> wrote:
 > 
-> > > There's probably a bit of a process problem here - these patches are all
-> > > being posted as part of big and apparently controversial threads with
-> > > subject lines in the form "ARM / ACPI:" so people could be forgiven for
-> > > just not even reading the e-mails enough to notice changes to their
-> > > subsystems.  Is it worth posting those patches separately more directly
-> > > to the relevant maintainers?
+> On Thu, 15 Jan 2015 11:47:26 -0700
+> Jason Gunthorpe <jgunthorpe@obsidianresearch.com> wrote:
+>> It is a novel idea, my concern would be that embedding the FPGA in the
+>> DT makes it permanent unswappable kernel memory.
+>> Not having the kernel hold the FPGA is best for many uses.
 > 
-> > I think it's beneficial to post the entire series as one thread, but to
-> > change the subject line of each patch to adequately reflect the affected
-> > subsystem.
+> If you have a filesysytem before the FPGA is set up then it belongs in
+> the file system. As you presumably loaded the kernel from somewhere there
+> ought to be a file system (even an initrd).
 > 
-> Just changing the subject lines to be more suitable would help, but
-> given the painful thread it's probably worth going the extra step if
-> the lack of these reviews is a causing problems - I know that even with
-> a suitable subject line if I'm busy then I'm fairly likely to zone out
-> something in the middle a big series that doesn't seem to be going
-> anywhere.
 
-True, I was merely expressing a preference.  A lot of series containing
-irqchip changes tend to have build dependencies outside of
-drivers/irqchip. So I like to see the whole picture to decide how best
-to handle the patches.
+Request firmware does not imply keeping it around. You can always re-request
+when reloading (although there’s a nasty big of caching that needs to be
+resolved with the firmware loader).
 
-I suppose the ideal solution would be to have a "mute sub-thread" option
-in the MUA.  But that doesn't help us today.  :)
+>> Having the kernel hold the FPGA as a swppable file handle/mmap of some
+>> sort is next best (obviously the fs must be operating during resume)
+> 
+> For a lot of hardware that gets somewhat hairy because you don't know
+> what the dependancies between devices are on the resume but yes.
+> 
+>> Unswappable kernel memory is the worst choice
+> 
+> There is another case here - which is where the firmware is somewhere
+> else physically. For example in PCI ROM space, or flash, but designed to
+> be loaded by the OS.
+> 
+> 
 
-Whichever way they do it is fine by me.
+One of the ideas rolling about is to put the device tree overlay blob in
+an EEPROM and then load it from there (not from the filesystem).
 
-thx,
+>> I think to justify the ioctls you need a reason to have the context
+>> of a FD. sysfs is stateless, so if my process dies the kernel doesn't
+>> know.
+> 
+> That isn't to say the stateless information doesn't belong in sysfs. Eg
+> you don't neccessarily want to open the device node and go through ioctls
+> just for bits of information that are interesting to reporting tools.
+> 
+> (Imagine an 'lsfpga' tool for the kind of things you'd leave in sysfs)
+> 
+>> Identifying the ioctls needed would probably clarify things. My
+>> rough start would be 
+>> 
+>> - Get status: programed, not programmed, error?
+>>  Bitfile type? (eg Xilinx has nearly every permutation of bit/byte
+>>  ordering)
+> 
+> That's probably some kind of "what are you" ioctl that returns the
+> vendor/type information.
+> 
 
-Jason.
+Can we please not use ioctls if possible. Configfs seems to work just fine
+for configuration and for any other higher speed API we should use read/write/mmap.
+
+Ioctls are a pain for scripting and interpreted languages usually.
+
+>> - Hand over to a DT overlay (how does this work?) Lock transfers
+>>  from FD to kernel
+> 
+> That bit isn't stateful so I would actually have expected something in
+> the kernel ABI along the lines of 
+> 
+>           request_fpga(blah)
+> 
+> which does
+> 
+>             if in use by user
+>                    EBUSY
+>             lock it (all user opens will fail)
+> 
+> and
+> 
+>            release_fpga(blah)
+> 
+> and a sysfs node indicating its busy (and perhaps also what for if the
+> request_fpga passes a textual name)
+> 
+>> Not sure about partial reconfiguration - clearly the kernel needs to
+>> know and check that the bitfiles are of the correct family, I wonder
+>> if the approach should be to program a basis on the FPGA which then
+>> creates a new FPGA device in the system that can accept the partial
+>> reconfiguration - this way the locking makes sense, the basis is
+>> locked by the kernel and devices and the overlay remains
+>> lockable/swappable/whatever by a dedicated /dev/ node ??
+> 
+> I think so.
+> 
+> If you closed the device you have no idea what happened between the close
+> and a re-open, therefore you have no idea what the FPGA state is.
+> 
+>> Just thinking aloud, I've never had a use case for partial
+>> reconfiguration.
+> 
+> The API handles it but whether it needs to be there from day one I don't
+> know.
+> 
+
+Making the API handle partial reconfiguration from day one might be pushing tricky.
+I don’t remember any case where I came across a need for it.
+
+We could do with a virtual FPGA topology; have a root FPGA that’s keeping the
+common unchanged bits and another that’s keeping the bits that do change.
+
+Dunno how nice it would be in practice though.
+
+> Alan
+> 
+
+Regards
+
+— Pantelis
+
