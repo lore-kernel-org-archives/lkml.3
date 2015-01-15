@@ -1,30 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755239AbbAOQPI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 11:15:08 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:45039 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752425AbbAOQPE (ORCPT
+	id S932129AbbAOQPT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 11:15:19 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:42348 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755218AbbAOQPH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 11:15:04 -0500
+	Thu, 15 Jan 2015 11:15:07 -0500
 From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 To: linux-tegra@vger.kernel.org
 Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
         Dylan Reid <dgreid@chromium.org>, Simon Glass <sjg@chromium.org>,
         Ulf Hansson <ulf.hansson@linaro.org>,
         Tomeu Vizoso <tomeu.vizoso@collabora.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
         Stephen Warren <swarren@wwwdotorg.org>,
         Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v2 09/11] ARM: tegra: Use pwrseq-simple for the wifi in Nyan
-Date: Thu, 15 Jan 2015 17:12:21 +0100
-Message-Id: <1421338359-27467-10-git-send-email-tomeu.vizoso@collabora.com>
+        Alexandre Courbot <gnurou@gmail.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, Wolfram Sang <wsa@the-dreams.de>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+Subject: [PATCH v2 10/11] ASoC: tegra: Add a control for the headphone switch
+Date: Thu, 15 Jan 2015 17:12:22 +0100
+Message-Id: <1421338359-27467-11-git-send-email-tomeu.vizoso@collabora.com>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1421338359-27467-1-git-send-email-tomeu.vizoso@collabora.com>
 References: <1421338359-27467-1-git-send-email-tomeu.vizoso@collabora.com>
@@ -32,38 +30,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Nyan boards have a Marvell 88w8897 wifi card connected through SDIO
-that need the reset line to be hold active for several milliseconds.
+To be used by userspace when the headphones jack is plugged in.
 
 Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 ---
- arch/arm/boot/dts/tegra124-nyan.dtsi | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ sound/soc/tegra/tegra_max98090.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-diff --git a/arch/arm/boot/dts/tegra124-nyan.dtsi b/arch/arm/boot/dts/tegra124-nyan.dtsi
-index 25bbcbe..dbaf261f 100644
---- a/arch/arm/boot/dts/tegra124-nyan.dtsi
-+++ b/arch/arm/boot/dts/tegra124-nyan.dtsi
-@@ -365,11 +365,19 @@
- 		status = "okay";
- 	};
+diff --git a/sound/soc/tegra/tegra_max98090.c b/sound/soc/tegra/tegra_max98090.c
+index af3fb99..8df71a4 100644
+--- a/sound/soc/tegra/tegra_max98090.c
++++ b/sound/soc/tegra/tegra_max98090.c
+@@ -136,6 +136,7 @@ static const struct snd_soc_dapm_widget tegra_max98090_dapm_widgets[] = {
+ };
  
-+	sdhci0_pwrseq: sdhci0_pwrseq {
-+		compatible = "mmc,pwrseq-simple";
-+
-+                reset-gpios = <&gpio TEGRA_GPIO(X, 7) GPIO_ACTIVE_LOW>;
-+                delay = <20>; /* ms */
-+	};
-+
- 	sdhci@0,700b0000 { /* WiFi/BT on this bus */
- 		status = "okay";
- 		bus-width = <4>;
- 		no-1-8-v;
- 		non-removable;
-+		mmc-pwrseq = <&sdhci0_pwrseq>;
- 	};
+ static const struct snd_kcontrol_new tegra_max98090_controls[] = {
++	SOC_DAPM_PIN_SWITCH("Headphones"),
+ 	SOC_DAPM_PIN_SWITCH("Speakers"),
+ };
  
- 	sdhci@0,700b0400 { /* SD Card on this bus */
 -- 
 1.9.3
 
