@@ -1,147 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755289AbbAORiF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 12:38:05 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:15860 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752743AbbAORiB (ORCPT
+	id S1752910AbbAORuM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 12:50:12 -0500
+Received: from mail-wg0-f49.google.com ([74.125.82.49]:34159 "EHLO
+	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751385AbbAORuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 12:38:01 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-7c-54b7faf6f529
-Message-id: <54B7FAF2.8080207@samsung.com>
-Date: Thu, 15 Jan 2015 18:37:54 +0100
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.1.2
-MIME-version: 1.0
-To: "Baluta, Teodora" <teodora.baluta@intel.com>,
-        Jonathan Cameron <jic23@kernel.org>
-Cc: Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-iio <linux-iio@vger.kernel.org>,
-        LMML <linux-media@vger.kernel.org>, Hans Verkuil <hverkuil@xs4all.nl>
-Subject: Re: [RFC PATCH 0/3] Introduce IIO interface for fingerprint sensors
-References: <1417698017-13835-1-git-send-email-teodora.baluta@intel.com>
- <5481153B.4070609@kernel.org> <1418047828.18463.10.camel@bebop>
- <54930604.1020607@metafoo.de> <549D42BD.1050901@kernel.org>
- <1421255642.31900.4.camel@bebop>
-In-reply-to: <1421255642.31900.4.camel@bebop>
-Content-type: text/plain; charset=utf-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKLMWRmVeSWpSXmKPExsVy+t/xK7rffm0PMZiwQdHi1ORnTBYPmlYx
-	WSyZPJ/VYt6RdywWl3fNYbPo2bCV1eLiOnmLs2duMDlweCze85LJY9OqTjaPJW8OsXr0bVnF
-	6PF5k5zHqa+f2QPYorhsUlJzMstSi/TtErgyJj58x1jwSbPizsryBsbZSl2MHBwSAiYSb+bX
-	dzFyApliEhfurWfrYuTiEBJYyijxuPsIE4TziVFiz/RjzCBVvAJaEssbzzOC2CwCqhIdr6+z
-	g9hsAoYSvUf7wOKiAhESJ+/uYYeoF5T4MfkeC4gtIhAusWfTQ7ANzAJtTBIX9pwCKxIW8JHY
-	f+k1C8S214wS7a3NYJM4BXQlru9fww5yKrOAusSUKbkgYWYBeYnNa94yT2AUmIVkxyyEqllI
-	qhYwMq9iFE0tTS4oTkrPNdQrTswtLs1L10vOz93ECAn6LzsYFx+zOsQowMGoxMPL4Lc9RIg1
-	say4MvcQowQHs5IIb9QjoBBvSmJlVWpRfnxRaU5q8SFGJg5OqQbG6ROvld30d5GQL8htDb33
-	ZN1FZY7VaocXVe/aWxXc11bSI9h/se/2VqH2R6k7eL26OjTnZ3IfjSo6bHpZLOXBqTPbOm/e
-	fuBwbKlf1nat10c2Z26ZKB0gtKWjKGzZas08gwm7Ls9wO3a7ZP06GZ/Wp1U5sV/vtpv2JwoU
-	XTd8b31zY579on8zlFiKMxINtZiLihMBa/W7llgCAAA=
+	Thu, 15 Jan 2015 12:50:10 -0500
+From: =?UTF-8?q?Rafa=C5=82=20Krypa?= <rafal@krypa.net>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: James Morris <james.l.morris@oracle.com>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rafal Krypa <r.krypa@samsung.com>
+Subject: [PATCH] Smack: Don't build IPv6 stuff when CONFIG_IPV6=n
+Date: Thu, 15 Jan 2015 18:49:57 +0100
+Message-Id: <1421344197-25256-1-git-send-email-rafal@krypa.net>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/01/15 18:14, Baluta, Teodora wrote:
-> On Vi, 2014-12-26 at 11:13 +0000, Jonathan Cameron wrote:
->> On 18/12/14 16:51, Lars-Peter Clausen wrote:
->>> Adding V4L folks to Cc for more input.
->>
->> Thanks Lars - we definitely would need the v4l guys to agree to a driver like
->> this going in IIO. (not that I'm convinced it should!)
->>
->>> On 12/08/2014 03:10 PM, Baluta, Teodora wrote:
->>>> Hello,
->>>>
->>>> On Vi, 2014-12-05 at 02:15 +0000, Jonathan Cameron wrote:
->>>>> On 04/12/14 13:00, Teodora Baluta wrote:
->>>>>> This patchset adds support for fingerprint sensors through the IIO interface.
->>>>>> This way userspace applications collect information in a uniform way. All
->>>>>> processing would be done in the upper layers as suggested in [0].
->>>>>>
->>>>>> In order to test out this proposal, a minimal implementation for UPEK's
->>>>>> TouchChip Fingerprint Sensor via USB is also available. Although there is an
->>>>>> existing implementation in userspace for USB fingerprint devices, including this
->>>>>> particular device, the driver represents a proof of concept of how fingerprint
->>>>>> sensors could be integrated in the IIO framework regardless of the used bus. For
->>>>>> lower power requirements, the SPI bus is preferred and a kernel driver
->>>>>> implementation makes more sense.
->>>>>
->>>>> So why not v4l?  These are effectively image sensors..
->>>>
->>>> Well, here's why I don't think v4l would be the best option:
->>>>
->>>> - an image scanner could be implemented in the v4l subsystem, but it
->>>> seems far more complicated for a simple fingerprint scanner - it usually
->>>> has drivers for webcams, TVs or video streaming devices. The v4l
->>>> subsystem (with all its support for colorspace, decoders, image
->>>> compression, frame control) seems a bit of an overkill for a very
->>>> straightforward fingerprint imaging sensor.
->
->> Whilst those are there, I would doubt the irrelevant bits would put much
->> burden on a fingerprint scanning driver.  Been a while since I did
->> anything in that area though so I could be wrong!
+From: Rafal Krypa <r.krypa@samsung.com>
 
-IMO V4L is much better fit for this kind of devices than IIO. You can use
-just a subset of the API, it shouldn't take much effort to write a simple
-v4l2 capture driver, supporting fixed (probably vendor/chip specific) image
-format.  I'm not sure if it's better to use the v4l2 controls [1], define
-a new v4l2 controls class for the fingerprint scanner processing features,
-rather than trying to pass raw data to user space and interpret it then
-in some library.  I know there has been resistance to allowing passing
-unknown binary blobs to user space, due to possible abuses.
+For case when IPv6 is disabled, this fixes build break in one place and removes
+unused code in several other places.
 
-[1] Documentation/video4linux/v4l2-controls.txt
+Signed-off-by: Rafal Krypa <r.krypa@samsung.com>
+---
+ security/smack/smack_lsm.c | 46 ++++++++++++++++++++++++++++++----------------
+ 1 file changed, 30 insertions(+), 16 deletions(-)
 
->>>> - a fingerprint device could also send out a processed information, not
->>>> just the image of a fingerprint. This means that the processing is done
->>>> in hardware - the UPEK TouchStrip chipset in libfprint has this behavior
->>>> (see [0]). So, the IIO framework would support a uniform way of handling
->>>> fingerprint devices that either do processing in software or in
->>>> hardware.
-
-You can use the v4l2 controls API for that, which also supports events.
-The controls could be made read only.
-It would be interesting to list what kind of features these could be.
-
->> This is more interesting, but does that map well to IIO style
->> channels anyway?  If not we are going to end up with a whole new
->> interface which ever subsystem is used for the image side of things.
->>>>
->>>> The way I see it now, for processed fingerprint information, an IIO
->>>> device could have an IIO_FINGERPRINT channel with a modifier and only
->>>> the sensitivity threshold attribute set. We would also need two
->>>> triggers: one for enrollment and one for the verification mode to
->>>> control the device from a userspace application.
-
-This could be all well handled with the v4l2 controls, for instance see
-what features are available in the Camera Flash controls subset
-
-http://linuxtv.org/downloads/v4l-dvb-apis/extended-controls.html#flash-controls
-
->> Sure - what you proposed would work.  The question is whether it is
->> the best way to do it.
-> 
-> Any thoughts on this from the v4l community?
-
-I would try it with V4L2, it seems to me most suitable subsystem for such
-devices to me.  The question is what ends up in the kernel and what in user
-space.  Anyway IMO V4L2 API is quite flexible with regards to that, due to
-wide range of devices it needs to cover.
-
->>>> [0] http://www.freedesktop.org/wiki/Software/fprint/libfprint/upekts/
->>>>
->>>>>> A sysfs trigger is enabled and the device starts scanning. As soon as an image
->>>>>> is available it is written in the character device /dev/iio:deviceX.
->>>>>>
->>>>>> Userspace applications will be able to calculate the expected image size using
->>>>>> the fingerprint attributes height, width and bit depth. Other attributes
->>>>>> introduced for the fingerprint channel in IIO represent information that aids in
->>>>>> the fingerprint image processing. Besides these, the proposed interface offers
->>>>>> userspace a way to read a feedback after a scan (like the swipe was too slow or
->>>>>> too fast) through a modified fingerprint_status channel.
->>>>>>
->>>>>> [0] http://www.spinics.net/lists/linux-iio/msg11463.html
+diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+index a688f7b..6fe7c6e 100644
+--- a/security/smack/smack_lsm.c
++++ b/security/smack/smack_lsm.c
+@@ -52,9 +52,9 @@
+ #define SMK_RECEIVING	1
+ #define SMK_SENDING	2
+ 
+-#ifndef CONFIG_SECURITY_SMACK_NETFILTER
++#if IS_ENABLED(CONFIG_IPV6) && !defined(CONFIG_SECURITY_SMACK_NETFILTER)
+ LIST_HEAD(smk_ipv6_port_list);
+-#endif
++#endif /* CONFIG_IPV6 && !CONFIG_SECURITY_SMACK_NETFILTER */
+ static struct kmem_cache *smack_inode_cache;
+ int smack_enabled;
+ 
+@@ -2218,7 +2218,7 @@ static int smack_netlabel_send(struct sock *sk, struct sockaddr_in *sap)
+ 	return smack_netlabel(sk, sk_lbl);
+ }
+ 
+-#ifndef CONFIG_SECURITY_SMACK_NETFILTER
++#if IS_ENABLED(CONFIG_IPV6) && !defined(CONFIG_SECURITY_SMACK_NETFILTER)
+ /**
+  * smk_ipv6_port_label - Smack port access table management
+  * @sock: socket
+@@ -2368,7 +2368,7 @@ auditout:
+ 	rc = smk_bu_note("IPv6 port check", skp, object, MAY_WRITE, rc);
+ 	return rc;
+ }
+-#endif /* !CONFIG_SECURITY_SMACK_NETFILTER */
++#endif /* CONFIG_IPV6 && !CONFIG_SECURITY_SMACK_NETFILTER */
+ 
+ /**
+  * smack_inode_setsecurity - set smack xattrs
+@@ -2429,10 +2429,10 @@ static int smack_inode_setsecurity(struct inode *inode, const char *name,
+ 	} else
+ 		return -EOPNOTSUPP;
+ 
+-#ifndef CONFIG_SECURITY_SMACK_NETFILTER
++#if IS_ENABLED(CONFIG_IPV6) && !defined(CONFIG_SECURITY_SMACK_NETFILTER)
+ 	if (sock->sk->sk_family == PF_INET6)
+ 		smk_ipv6_port_label(sock, NULL);
+-#endif
++#endif /* CONFIG_IPV6 && !CONFIG_SECURITY_SMACK_NETFILTER */
+ 
+ 	return 0;
+ }
+@@ -2474,12 +2474,14 @@ static int smack_socket_post_create(struct socket *sock, int family,
+ static int smack_socket_bind(struct socket *sock, struct sockaddr *address,
+ 				int addrlen)
+ {
++#if IS_ENABLED(CONFIG_IPV6)
+ 	if (sock->sk != NULL && sock->sk->sk_family == PF_INET6)
+ 		smk_ipv6_port_label(sock, address);
++#endif
+ 
+ 	return 0;
+ }
+-#endif
++#endif /* !CONFIG_SECURITY_SMACK_NETFILTER */
+ 
+ /**
+  * smack_socket_connect - connect access check
+@@ -2508,10 +2510,10 @@ static int smack_socket_connect(struct socket *sock, struct sockaddr *sap,
+ 	case PF_INET6:
+ 		if (addrlen < sizeof(struct sockaddr_in6))
+ 			return -EINVAL;
+-#ifndef CONFIG_SECURITY_SMACK_NETFILTER
++#if IS_ENABLED(CONFIG_IPV6) && !defined(CONFIG_SECURITY_SMACK_NETFILTER)
+ 		rc = smk_ipv6_port_check(sock->sk, (struct sockaddr_in6 *)sap,
+ 						SMK_CONNECTING);
+-#endif
++#endif /* CONFIG_IPV6 && !CONFIG_SECURITY_SMACK_NETFILTER */
+ 		break;
+ 	}
+ 	return rc;
+@@ -3394,9 +3396,9 @@ static int smack_socket_sendmsg(struct socket *sock, struct msghdr *msg,
+ 				int size)
+ {
+ 	struct sockaddr_in *sip = (struct sockaddr_in *) msg->msg_name;
+-#ifndef CONFIG_SECURITY_SMACK_NETFILTER
++#if IS_ENABLED(CONFIG_IPV6) && !defined(CONFIG_SECURITY_SMACK_NETFILTER)
+ 	struct sockaddr_in6 *sap = (struct sockaddr_in6 *) msg->msg_name;
+-#endif
++#endif /* CONFIG_IPV6 && !CONFIG_SECURITY_SMACK_NETFILTER */
+ 	int rc = 0;
+ 
+ 	/*
+@@ -3410,9 +3412,9 @@ static int smack_socket_sendmsg(struct socket *sock, struct msghdr *msg,
+ 		rc = smack_netlabel_send(sock->sk, sip);
+ 		break;
+ 	case AF_INET6:
+-#ifndef CONFIG_SECURITY_SMACK_NETFILTER
++#if IS_ENABLED(CONFIG_IPV6) && !defined(CONFIG_SECURITY_SMACK_NETFILTER)
+ 		rc = smk_ipv6_port_check(sock->sk, sap, SMK_SENDING);
+-#endif
++#endif /* CONFIG_IPV6 && !CONFIG_SECURITY_SMACK_NETFILTER */
+ 		break;
+ 	}
+ 	return rc;
+@@ -3503,6 +3505,7 @@ static struct smack_known *smack_from_secattr(struct netlbl_lsm_secattr *sap,
+ 	return smack_net_ambient;
+ }
+ 
++#if IS_ENABLED(CONFIG_IPV6)
+ static int smk_skb_to_addr_ipv6(struct sk_buff *skb, struct sockaddr_in6 *sip)
+ {
+ 	u8 nexthdr;
+@@ -3549,6 +3552,7 @@ static int smk_skb_to_addr_ipv6(struct sk_buff *skb, struct sockaddr_in6 *sip)
+ 	}
+ 	return proto;
+ }
++#endif /* CONFIG_IPV6 */
+ 
+ /**
+  * smack_socket_sock_rcv_skb - Smack packet delivery access check
+@@ -3562,13 +3566,15 @@ static int smack_socket_sock_rcv_skb(struct sock *sk, struct sk_buff *skb)
+ 	struct netlbl_lsm_secattr secattr;
+ 	struct socket_smack *ssp = sk->sk_security;
+ 	struct smack_known *skp = NULL;
+-	struct sockaddr_in6 sadd;
+ 	int rc = 0;
+-	int proto;
+ 	struct smk_audit_info ad;
+ #ifdef CONFIG_AUDIT
+ 	struct lsm_network_audit net;
+ #endif
++#if IS_ENABLED(CONFIG_IPV6)
++	struct sockaddr_in6 sadd;
++	int proto;
++#endif /* CONFIG_IPV6 */
+ 
+ 	switch (sk->sk_family) {
+ 	case PF_INET:
+@@ -3617,6 +3623,7 @@ access_check:
+ 		if (rc != 0)
+ 			netlbl_skbuff_err(skb, rc, 0);
+ 		break;
++#if IS_ENABLED(CONFIG_IPV6)
+ 	case PF_INET6:
+ 		proto = smk_skb_to_addr_ipv6(skb, &sadd);
+ 		if (proto != IPPROTO_UDP && proto != IPPROTO_TCP)
+@@ -3639,6 +3646,7 @@ access_check:
+ 		rc = smk_ipv6_port_check(sk, &sadd, SMK_RECEIVING);
+ #endif /* CONFIG_SECURITY_SMACK_NETFILTER */
+ 		break;
++#endif /* CONFIG_IPV6 */
+ 	}
+ 
+ 	return rc;
+@@ -3702,8 +3710,10 @@ static int smack_socket_getpeersec_dgram(struct socket *sock,
+ 	if (skb != NULL) {
+ 		if (skb->protocol == htons(ETH_P_IP))
+ 			family = PF_INET;
++#if IS_ENABLED(CONFIG_IPV6)
+ 		else if (skb->protocol == htons(ETH_P_IPV6))
+ 			family = PF_INET6;
++#endif /* CONFIG_IPV6 */
+ 	}
+ 	if (family == PF_UNSPEC && sock != NULL)
+ 		family = sock->sk->sk_family;
+@@ -3732,11 +3742,13 @@ static int smack_socket_getpeersec_dgram(struct socket *sock,
+ 		}
+ 		netlbl_secattr_destroy(&secattr);
+ 		break;
++#if IS_ENABLED(CONFIG_IPV6)
+ 	case PF_INET6:
+ #ifdef CONFIG_SECURITY_SMACK_NETFILTER
+ 		s = skb->secmark;
+-#endif
++#endif /* CONFIG_SECURITY_SMACK_NETFILTER */
+ 		break;
++#endif /* CONFIG_IPV6 */
+ 	}
+ 	*secid = s;
+ 	if (s == 0)
+@@ -3792,6 +3804,7 @@ static int smack_inet_conn_request(struct sock *sk, struct sk_buff *skb,
+ 	struct lsm_network_audit net;
+ #endif
+ 
++#if IS_ENABLED(CONFIG_IPV6)
+ 	if (family == PF_INET6) {
+ 		/*
+ 		 * Handle mapped IPv4 packets arriving
+@@ -3803,6 +3816,7 @@ static int smack_inet_conn_request(struct sock *sk, struct sk_buff *skb,
+ 		else
+ 			return 0;
+ 	}
++#endif /* CONFIG_IPV6 */
+ 
+ 	netlbl_secattr_init(&secattr);
+ 	rc = netlbl_skbuff_getattr(skb, family, &secattr);
+-- 
+1.9.1
 
