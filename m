@@ -1,135 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751741AbbAOIlu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 03:41:50 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:45598 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045AbbAOIls (ORCPT
+	id S1752571AbbAOInO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 03:43:14 -0500
+Received: from mailout3.samsung.com ([203.254.224.33]:34305 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752514AbbAOInL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 03:41:48 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-a5-54b77d492dfb
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Kukjin Kim <kgene@kernel.org>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH 3/3] ARM: dts: exynos4412-trats2: Switch max77686 regulators to
- GPIO control
-Date: Thu, 15 Jan 2015 09:41:35 +0100
-Message-id: <1421311295-18960-4-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1421311295-18960-1-git-send-email-k.kozlowski@samsung.com>
-References: <1421311295-18960-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJJMWRmVeSWpSXmKPExsVy+t/xq7qetdtDDG5OlbGYf+Qcq8XrF4YW
-	/Y9fM1tsenyN1eLyrjlsFjPO72NyYPPYtKqTzWPzknqPvi2rGD0+b5ILYInisklJzcksSy3S
-	t0vgyujZfYGt4IlERd/ySewNjEeEuxg5OSQETCRut71nhbDFJC7cW8/WxcjFISSwlFHi4tYd
-	7BBOH5PEpZvv2ECq2ASMJTYvXwJmiwisAKpqsgSxmQUMJX6++8MOYgsLxEmcPX2fBcRmEVCV
-	WN3YCFTPwcEr4C7R114CsUxO4uSxyWCLOQU8JPpOTgdrFQIq6Vkyg30CI+8CRoZVjKKppckF
-	xUnpuYZ6xYm5xaV56XrJ+bmbGCHB82UH4+JjVocYBTgYlXh4Gfy2hwixJpYVV+YeYpTgYFYS
-	4e3MAQrxpiRWVqUW5ccXleakFh9iZOLglGpgFLNzzPHrMz0e+r14ivDMX17fS+52/PiqMcXg
-	StWtqGT9PfW89qkX86tmzH8z48kHiQgupq+r+KJlVn881GX0kjnhcFVfAlO/jJLoHMXZf+0c
-	tjO98i/7W5Dww6fnSnz4grQ7c+acLtxrwmsca3f7XMC1ZDev/j3rbx687fHOgrvLzW3u51tJ
-	SizFGYmGWsxFxYkAfvvdVfwBAAA=
+	Thu, 15 Jan 2015 03:43:11 -0500
+X-AuditID: cbfee61a-f79c06d000004e71-3f-54b77d9c8455
+Date: Thu, 15 Jan 2015 09:43:00 +0100
+From: Lukasz Majewski <l.majewski@samsung.com>
+To: Eduardo Valentin <edubezval@gmail.com>
+Cc: Kamil Debski <k.debski@samsung.com>, Jean Delvare <jdelvare@suse.de>,
+        Guenter Roeck <linux@roeck-us.net>, lm-sensors@lm-sensors.org,
+        Linux PM list <linux-pm@vger.kernel.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>,
+        devicetree@vger.kernel.org, Lukasz Majewski <l.majewski@majess.pl>,
+        Kukjin Kim <kgene.kim@samsung.com>, linux-kernel@vger.kernel.org,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Abhilash Kesavan <kesavan.abhilash@gmail.com>,
+        Abhilash Kesavan <a.kesavan@samsung.com>
+Subject: Re: [PATCH v2 1/8] thermal: Provide stub for
+ thermal_of_cooling_device_register() function
+Message-id: <20150115094300.7019081d@amdc2363>
+In-reply-to: <20150114183211.GB3672@developer>
+References: <1418897591-18332-1-git-send-email-l.majewski@samsung.com>
+ <1419265668-32283-1-git-send-email-l.majewski@samsung.com>
+ <1419265668-32283-2-git-send-email-l.majewski@samsung.com>
+ <20150102185426.GC12485@developer> <20150102190339.GA22356@developer>
+ <20150114160106.20aa160b@amdc2363> <20150114183211.GB3672@developer>
+Organization: SPRC Poland
+X-Mailer: Claws Mail 3.8.1 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 8BIT
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCIsWRmVeSWpSXmKPExsVy+t9jAd05tdtDDNqbtSwer1nMZDH/yDlW
+	i/lXrrFaLL37ic3ix+sLbBZr/ipZ9C64ymbx5hG3xeVdc9gsPvceYbSYcX4fk8WThWeYLO5M
+	28tmcfhNO6sDn8fOWXfZPR5M3M3msW7aW2aPnd8b2D36tqxi9Nh8utrj8ya5APYoLpuU1JzM
+	stQifbsEroxvd+4xF7RqVjxp2cnUwNip0MXIySEhYCJxYeExZghbTOLCvfVsXYxcHEICixgl
+	jrfeZIFwfjFKfLuyiA2kikVAVWLygllgHWwCehKf7z5lArFFBLQkTlzazgTSwCwwjUVi9fVe
+	dpCEsECqxOW7m8GaeYEa5v6aBBbnBLKvLJvACrHhPJPEojfXwYr4BSQl2v/9gLrJTuLcpw3s
+	EM2CEj8m32MBsZkF1CUmzVvEDGFrSzx5d4F1AqPgLCRls5CUzUJStoCReRWjaGpBckFxUnqu
+	oV5xYm5xaV66XnJ+7iZGcFw9k9rBuLLB4hCjAAejEg8vg9/2ECHWxLLiytxDjBIczEoivJ05
+	QCHelMTKqtSi/Pii0pzU4kOM0hwsSuK8SvZtIUIC6YklqdmpqQWpRTBZJg5OqQbGie3ejKvu
+	6szoi7m+8mxz5ZXWaW4CU4KqNv8vvvlmbdDOMDO+hiKH7Uv8vyQENOhGJWSz6tgazpiytD87
+	gd1dou6+T9nhFC4Jxctt7q8/XzR4eSj3THaq7uP5wTOdolOMN0XuWjKDfbrlJuecqxct7/LG
+	Trc1ErlafYQtWer06bStHn/06mcqsRRnJBpqMRcVJwIAghuv96cCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove fixed regulators (duplicating what max77686 provides) and
-add GPIO enable control to max77686 regulators.
+Hi Eduardo,
 
-This gives the system full control over those regulators. Previously
-the state of such regulators was a mixture of what max77686 driver set
-over I2C and what regulator-fixed set through GPIO.
+> On Wed, Jan 14, 2015 at 04:01:06PM +0100, Lukasz Majewski wrote:
+> > Hi Eduardo,
+> > 
+> > > On Fri, Jan 02, 2015 at 02:54:28PM -0400, Eduardo Valentin wrote:
+> > > > On Mon, Dec 22, 2014 at 05:27:41PM +0100, Lukasz Majewski wrote:
+> > > > > Odroid U3 fan can work without being registered as OF cooling
+> > > > > device (with CONFIG_THERMAL_OF disabled).
+> > > > > In this situation it can be controlled via PWM entry at
+> > > > > /sys/class/hwmon/hwmon0/pwm1.
+> > > > > 
+> > > > > Therefore, the thermal_of_cooling_device_register() function
+> > > > > needs a stub to allow clean compilation.
+> > > > > 
+> > > > > Signed-off-by: Lukasz Majewski <l.majewski@samsung.com>
+> > > > 
+> > > > Acked-by: Eduardo Valentin <edubezval@gmail.com>
+> > > 
+> > > Sorry, too fast,
+> > > 
+> > > This is actually
+> > > Nacked-by: Eduardo Valentin <edubezval@gmail.com>
+> > > 
+> > > :-)
+> > > 
+> > > I get this error:
+> > > drivers/thermal/thermal_core.c:1210:1: error: redefinition of
+> > > ‘thermal_of_cooling_device_register’
+> > >  thermal_of_cooling_device_register(struct device_node *np,
+> > >   ^
+> > >   In file included from drivers/thermal/thermal_core.c:34:0:
+> > >   include/linux/thermal.h:321:1: note: previous definition of
+> > >   ‘thermal_of_cooling_device_register’ was here
+> > >    thermal_of_cooling_device_register(struct device_node *np,
+> > >     ^
+> > > 
+> > > 
+> > > We provide the function in thermal core even if CONFIG_THERMAL_OF
+> > > is not set.
+> > 
+> > Unfortunately the PWM fan subsystem can work perfectly fine without
+> > CONFIG_THERMAL.
+> > 
+> 
+> Now I understand what you are trying to do.
+> 
+> > I think that it would be enough to make something like this in
+> > the ./include/linux/thermal.h:
+> > 
+> > #ifdef CONFIG_THERMAL
+> Well, I think it should be the opposite here:
+> 
+> #ifndef CONFIG_THERMAL
+> 
+> that is, if no config thermal, then you provide the stub not the other
+> way around.
 
-Removal of 'regulator-always-on' from CAM_ISP_CORE_1.2V (buck9) allows
-disabling it when it is not used. Previously this regulator was always
-enabled because its enable state is a OR of:
- - ENB9 GPIO (turned always on by regulator-fixed),
- - BUCK9EN field in BUCK9CTRL register (off by max77686 through I2C).
+This seems like a better solution :-).
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
----
- arch/arm/boot/dts/exynos4412-trats2.dts | 25 +++++--------------------
- 1 file changed, 5 insertions(+), 20 deletions(-)
+Thanks.
 
-diff --git a/arch/arm/boot/dts/exynos4412-trats2.dts b/arch/arm/boot/dts/exynos4412-trats2.dts
-index ef05139506e6..8611c07c2e41 100644
---- a/arch/arm/boot/dts/exynos4412-trats2.dts
-+++ b/arch/arm/boot/dts/exynos4412-trats2.dts
-@@ -58,15 +58,6 @@
- 		#address-cells = <1>;
- 		#size-cells = <0>;
- 
--		vemmc_reg: regulator-0 {
--			compatible = "regulator-fixed";
--			regulator-name = "VMEM_VDD_2.8V";
--			regulator-min-microvolt = <2800000>;
--			regulator-max-microvolt = <2800000>;
--			gpio = <&gpk0 2 0>;
--			enable-active-high;
--		};
--
- 		cam_io_reg: voltage-regulator-1 {
- 			compatible = "regulator-fixed";
- 			regulator-name = "CAM_SENSOR_A";
-@@ -94,16 +85,6 @@
- 			enable-active-high;
- 		};
- 
--		cam_isp_core_reg: voltage-regulator-4 {
--			compatible = "regulator-fixed";
--			regulator-name = "CAM_ISP_CORE_1.2V_EN";
--			regulator-min-microvolt = <1200000>;
--			regulator-max-microvolt = <1200000>;
--			gpio = <&gpm0 3 0>;
--			enable-active-high;
--			regulator-always-on;
--		};
--
- 		ps_als_reg: voltage-regulator-5 {
- 			compatible = "regulator-fixed";
- 			regulator-name = "LED_A_3.0V";
-@@ -405,6 +386,7 @@
- 					regulator-name = "VTF_2.8V";
- 					regulator-min-microvolt = <2800000>;
- 					regulator-max-microvolt = <2800000>;
-+					maxim,ena-gpios = <&gpy2 0 GPIO_ACTIVE_HIGH>;
- 				};
- 
- 				ldo22_reg: ldo22 {
-@@ -412,6 +394,7 @@
- 					regulator-name = "VMEM_VDD_2.8V";
- 					regulator-min-microvolt = <2800000>;
- 					regulator-max-microvolt = <2800000>;
-+					maxim,ena-gpios = <&gpk0 2 GPIO_ACTIVE_HIGH>;
- 				};
- 
- 				ldo23_reg: ldo23 {
-@@ -518,6 +501,7 @@
- 					regulator-name = "VMEM_VDDF_3.0V";
- 					regulator-min-microvolt = <2850000>;
- 					regulator-max-microvolt = <2850000>;
-+					maxim,ena-gpios = <&gpk0 2 GPIO_ACTIVE_HIGH>;
- 				};
- 
- 				buck9_reg: buck9 {
-@@ -525,6 +509,7 @@
- 					regulator-name = "CAM_ISP_CORE_1.2V";
- 					regulator-min-microvolt = <1000000>;
- 					regulator-max-microvolt = <1200000>;
-+					maxim,ena-gpios = <&gpm0 3 GPIO_ACTIVE_HIGH>;
- 				};
- 			};
- 		};
-@@ -587,7 +572,7 @@
- 		broken-cd;
- 		non-removable;
- 		card-detect-delay = <200>;
--		vmmc-supply = <&vemmc_reg>;
-+		vmmc-supply = <&ldo22_reg>;
- 		clock-frequency = <400000000>;
- 		samsung,dw-mshc-ciu-div = <0>;
- 		samsung,dw-mshc-sdr-timing = <2 3>;
+> 
+> > 	static inline struct thermal_cooling_device *
+> > 		thermal_of_cooling_device_register(struct
+> > device_node *np, char *type, void *devdata,
+> > 				   const struct
+> > 		thermal_cooling_device_ops *ops) {
+> > 		return NULL;
+> > 	}
+> > #else
+> > 	[ already present declaration of
+> > 	thermal_of_cooling_device_register() ]
+> > #endif /* CONFIG_THERMAL */
+> 
+> 
+> > 
+> > 
+> > 
+> > > > 
+> > > > > ---
+> > > > > Changes for v2:
+> > > > > - None
+> > > > > ---
+> > > > >  include/linux/thermal.h | 14 +++++++++++---
+> > > > >  1 file changed, 11 insertions(+), 3 deletions(-)
+> > > > > 
+> > > > > diff --git a/include/linux/thermal.h b/include/linux/thermal.h
+> > > > > index 2de3d9e..871123c 100644
+> > > > > --- a/include/linux/thermal.h
+> > > > > +++ b/include/linux/thermal.h
+> > > > > @@ -328,6 +328,10 @@ thermal_zone_of_sensor_register(struct
+> > > > > device *dev, int id, void *data, const struct
+> > > > > thermal_zone_of_device_ops *ops); void
+> > > > > thermal_zone_of_sensor_unregister(struct device *dev, struct
+> > > > > thermal_zone_device *tz); +struct thermal_cooling_device *
+> > > > > +thermal_of_cooling_device_register(struct device_node *np,
+> > > > > +				   char *type, void *devdata,
+> > > > > +				   const struct
+> > > > > thermal_cooling_device_ops *); #else
+> > > > >  static inline struct thermal_zone_device *
+> > > > >  thermal_zone_of_sensor_register(struct device *dev, int id,
+> > > > > void *data, @@ -342,6 +346,13 @@ void
+> > > > > thermal_zone_of_sensor_unregister(struct device *dev, {
+> > > > >  }
+> > > > >  
+> > > > > +static inline struct thermal_cooling_device *
+> > > > > +thermal_of_cooling_device_register(struct device_node *np,
+> > > > > +				   char *type, void *devdata,
+> > > > > +				   const struct
+> > > > > thermal_cooling_device_ops *ops) +{
+> > > > > +	return NULL;
+> > > > > +}
+> > > > >  #endif
+> > > > >  struct thermal_zone_device
+> > > > > *thermal_zone_device_register(const char *, int, int, void *,
+> > > > > struct thermal_zone_device_ops *, @@ -357,9 +368,6 @@ void
+> > > > > thermal_zone_device_update(struct thermal_zone_device *); 
+> > > > >  struct thermal_cooling_device
+> > > > > *thermal_cooling_device_register(char *, void *, const struct
+> > > > > thermal_cooling_device_ops *); -struct thermal_cooling_device
+> > > > > * -thermal_of_cooling_device_register(struct device_node *np,
+> > > > > char *, void *,
+> > > > > -				   const struct
+> > > > > thermal_cooling_device_ops *); void
+> > > > > thermal_cooling_device_unregister(struct
+> > > > > thermal_cooling_device *); struct thermal_zone_device
+> > > > > *thermal_zone_get_zone_by_name(const char *name); int
+> > > > > thermal_zone_get_temp(struct thermal_zone_device *tz, unsigned
+> > > > > long *temp); -- 2.0.0.rc2
+> > > > > 
+> > > 
+> > > 
+> > 
+> > 
+> > 
+> > -- 
+> > Best regards,
+> > 
+> > Lukasz Majewski
+> > 
+> > Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
+
+
+
 -- 
-1.9.1
+Best regards,
 
+Lukasz Majewski
+
+Samsung R&D Institute Poland (SRPOL) | Linux Platform Group
