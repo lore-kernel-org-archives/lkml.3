@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751976AbbAOEv4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 23:51:56 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:45026 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751216AbbAOEvy (ORCPT
+	id S1751216AbbAOFF4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 00:05:56 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45373 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750699AbbAOFFy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 23:51:54 -0500
-Message-ID: <54B74761.8080103@roeck-us.net>
-Date: Wed, 14 Jan 2015 20:51:45 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Thu, 15 Jan 2015 00:05:54 -0500
+Date: Wed, 14 Jan 2015 21:05:52 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
+Cc: robh@kernel.org, Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH v5] ARC: Dynamically determine BASE_BAUD from DeviceTree
+Message-ID: <20150115050552.GA24813@kroah.com>
+References: <CAL_JsqLzzLajoQAT3nYd5zi4=+zchXfVVPnYNriAZZi4tpa6yA@mail.gmail.com>
+ <1420889152-29361-1-git-send-email-vgupta@synopsys.com>
+ <54B73FC0.4060506@synopsys.com>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org
-Subject: Re: [PATCH 3.14 00/77] 3.14.29-stable review
-References: <20150114072224.182299947@linuxfoundation.org>
-In-Reply-To: <20150114072224.182299947@linuxfoundation.org>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020204.54B7476A.0128,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 13
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54B73FC0.4060506@synopsys.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/13/2015 11:22 PM, Greg Kroah-Hartman wrote:
-> This is the start of the stable review cycle for the 3.14.29 release.
-> There are 77 patches in this series, all will be posted as a response
-> to this one.  If anyone has any issues with these being applied, please
-> let me know.
->
-> Responses should be made by Fri Jan 16 07:22:07 UTC 2015.
-> Anything received after that time might be too late.
->
+On Thu, Jan 15, 2015 at 09:49:12AM +0530, Vineet Gupta wrote:
+> Hi Greg,
+> 
+> On Saturday 10 January 2015 04:56 PM, Vineet Gupta wrote:
+> > 8250 earlycon is broken on multi-platform ARC because the UART clk
+> > value (BASE_BAUD) is fixed at build time.
+> > 
+> > Instead, determine the appropriate UART clk at runtime; parse the
+> > devicetree early for platforms requiring alternate UART clk values
+> > (currently only the TB10X platform).
+> > 
+> > Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> > Cc: Jiri Slaby <jslaby@suse.cz>
+> > Cc: linux-serial@vger.kernel.org
+> > Cc: linux-kernel@vger.kernel.org
+> > Cc: Rob Herring <robh@kernel.org>
+> > Cc: Arnd Bergmann <arnd@arndb.de>
+> > Reviewed-by: Peter Hurley <peter@hurleysoftware.com>
+> > Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+> > ---
+> >  arch/arc/include/asm/serial.h | 23 +++++------------------
+> >  arch/arc/kernel/devtree.c     | 24 ++++++++++++++++++++++++
+> 
+> This being all in arch code, do you want me to take this in via ARC tree ?
 
-Build results:
-	total: 137 pass: 137 fail: 0
-Qemu tests:
-	total: 30 pass: 30 fail: 0
+Sure, that's fine with me:
 
-This is with the latest version, after dropping the patch causing
-the powerpc build and qemu failures.
-
-Guenter
-
+Acked-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
