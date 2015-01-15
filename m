@@ -1,228 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752910AbbAORuM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 12:50:12 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:34159 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751385AbbAORuK (ORCPT
+	id S1753170AbbAOR4Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 12:56:16 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:47450 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751147AbbAOR4O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 12:50:10 -0500
-From: =?UTF-8?q?Rafa=C5=82=20Krypa?= <rafal@krypa.net>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: James Morris <james.l.morris@oracle.com>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rafal Krypa <r.krypa@samsung.com>
-Subject: [PATCH] Smack: Don't build IPv6 stuff when CONFIG_IPV6=n
-Date: Thu, 15 Jan 2015 18:49:57 +0100
-Message-Id: <1421344197-25256-1-git-send-email-rafal@krypa.net>
-X-Mailer: git-send-email 1.9.1
+	Thu, 15 Jan 2015 12:56:14 -0500
+Date: Thu, 15 Jan 2015 18:56:09 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Tejun Heo <tj@kernel.org>, Vladimir Davydov <vdavydov@parallels.com>,
+        "Suzuki K. Poulose" <Suzuki.Poulose@arm.com>, linux-mm@kvack.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>
+Subject: Re: [PATCH cgroup/for-3.19-fixes] cgroup: implement
+ cgroup_subsys->unbind() callback
+Message-ID: <20150115175609.GG7008@dhcp22.suse.cz>
+References: <54B01335.4060901@arm.com>
+ <20150110085525.GD2110@esperanza>
+ <20150110214316.GF25319@htj.dyndns.org>
+ <20150111205543.GA5480@phnom.home.cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150111205543.GA5480@phnom.home.cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafal Krypa <r.krypa@samsung.com>
+On Sun 11-01-15 15:55:43, Johannes Weiner wrote:
+> From d527ba1dbfdb58e1f7c7c4ee12b32ef2e5461990 Mon Sep 17 00:00:00 2001
+> From: Johannes Weiner <hannes@cmpxchg.org>
+> Date: Sun, 11 Jan 2015 10:29:05 -0500
+> Subject: [patch] mm: memcontrol: zap outstanding cache/swap references during
+>  unbind
+> 
+> Cgroup core assumes that any outstanding css references after
+> offlining are temporary in nature, and e.g. mount waits for them to
+> disappear and release the root cgroup.  But leftover page cache and
+> swapout records in an offlined memcg are only dropped when the pages
+> get reclaimed under pressure or the swapped out pages get faulted in
+> from other cgroups, and so those cgroup operations can hang forever.
+> 
+> Implement the ->unbind() callback to actively get rid of outstanding
+> references when cgroup core wants them gone.  Swap out records are
+> deleted, such that the swap-in path will charge those pages to the
+> faulting task. 
 
-For case when IPv6 is disabled, this fixes build break in one place and removes
-unused code in several other places.
+OK, that makes sense to me.
 
-Signed-off-by: Rafal Krypa <r.krypa@samsung.com>
----
- security/smack/smack_lsm.c | 46 ++++++++++++++++++++++++++++++----------------
- 1 file changed, 30 insertions(+), 16 deletions(-)
+> Page cache pages are moved to the root memory cgroup.
 
-diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-index a688f7b..6fe7c6e 100644
---- a/security/smack/smack_lsm.c
-+++ b/security/smack/smack_lsm.c
-@@ -52,9 +52,9 @@
- #define SMK_RECEIVING	1
- #define SMK_SENDING	2
- 
--#ifndef CONFIG_SECURITY_SMACK_NETFILTER
-+#if IS_ENABLED(CONFIG_IPV6) && !defined(CONFIG_SECURITY_SMACK_NETFILTER)
- LIST_HEAD(smk_ipv6_port_list);
--#endif
-+#endif /* CONFIG_IPV6 && !CONFIG_SECURITY_SMACK_NETFILTER */
- static struct kmem_cache *smack_inode_cache;
- int smack_enabled;
- 
-@@ -2218,7 +2218,7 @@ static int smack_netlabel_send(struct sock *sk, struct sockaddr_in *sap)
- 	return smack_netlabel(sk, sk_lbl);
- }
- 
--#ifndef CONFIG_SECURITY_SMACK_NETFILTER
-+#if IS_ENABLED(CONFIG_IPV6) && !defined(CONFIG_SECURITY_SMACK_NETFILTER)
- /**
-  * smk_ipv6_port_label - Smack port access table management
-  * @sock: socket
-@@ -2368,7 +2368,7 @@ auditout:
- 	rc = smk_bu_note("IPv6 port check", skp, object, MAY_WRITE, rc);
- 	return rc;
- }
--#endif /* !CONFIG_SECURITY_SMACK_NETFILTER */
-+#endif /* CONFIG_IPV6 && !CONFIG_SECURITY_SMACK_NETFILTER */
- 
- /**
-  * smack_inode_setsecurity - set smack xattrs
-@@ -2429,10 +2429,10 @@ static int smack_inode_setsecurity(struct inode *inode, const char *name,
- 	} else
- 		return -EOPNOTSUPP;
- 
--#ifndef CONFIG_SECURITY_SMACK_NETFILTER
-+#if IS_ENABLED(CONFIG_IPV6) && !defined(CONFIG_SECURITY_SMACK_NETFILTER)
- 	if (sock->sk->sk_family == PF_INET6)
- 		smk_ipv6_port_label(sock, NULL);
--#endif
-+#endif /* CONFIG_IPV6 && !CONFIG_SECURITY_SMACK_NETFILTER */
- 
- 	return 0;
- }
-@@ -2474,12 +2474,14 @@ static int smack_socket_post_create(struct socket *sock, int family,
- static int smack_socket_bind(struct socket *sock, struct sockaddr *address,
- 				int addrlen)
- {
-+#if IS_ENABLED(CONFIG_IPV6)
- 	if (sock->sk != NULL && sock->sk->sk_family == PF_INET6)
- 		smk_ipv6_port_label(sock, address);
-+#endif
- 
- 	return 0;
- }
--#endif
-+#endif /* !CONFIG_SECURITY_SMACK_NETFILTER */
- 
- /**
-  * smack_socket_connect - connect access check
-@@ -2508,10 +2510,10 @@ static int smack_socket_connect(struct socket *sock, struct sockaddr *sap,
- 	case PF_INET6:
- 		if (addrlen < sizeof(struct sockaddr_in6))
- 			return -EINVAL;
--#ifndef CONFIG_SECURITY_SMACK_NETFILTER
-+#if IS_ENABLED(CONFIG_IPV6) && !defined(CONFIG_SECURITY_SMACK_NETFILTER)
- 		rc = smk_ipv6_port_check(sock->sk, (struct sockaddr_in6 *)sap,
- 						SMK_CONNECTING);
--#endif
-+#endif /* CONFIG_IPV6 && !CONFIG_SECURITY_SMACK_NETFILTER */
- 		break;
- 	}
- 	return rc;
-@@ -3394,9 +3396,9 @@ static int smack_socket_sendmsg(struct socket *sock, struct msghdr *msg,
- 				int size)
- {
- 	struct sockaddr_in *sip = (struct sockaddr_in *) msg->msg_name;
--#ifndef CONFIG_SECURITY_SMACK_NETFILTER
-+#if IS_ENABLED(CONFIG_IPV6) && !defined(CONFIG_SECURITY_SMACK_NETFILTER)
- 	struct sockaddr_in6 *sap = (struct sockaddr_in6 *) msg->msg_name;
--#endif
-+#endif /* CONFIG_IPV6 && !CONFIG_SECURITY_SMACK_NETFILTER */
- 	int rc = 0;
- 
- 	/*
-@@ -3410,9 +3412,9 @@ static int smack_socket_sendmsg(struct socket *sock, struct msghdr *msg,
- 		rc = smack_netlabel_send(sock->sk, sip);
- 		break;
- 	case AF_INET6:
--#ifndef CONFIG_SECURITY_SMACK_NETFILTER
-+#if IS_ENABLED(CONFIG_IPV6) && !defined(CONFIG_SECURITY_SMACK_NETFILTER)
- 		rc = smk_ipv6_port_check(sock->sk, sap, SMK_SENDING);
--#endif
-+#endif /* CONFIG_IPV6 && !CONFIG_SECURITY_SMACK_NETFILTER */
- 		break;
- 	}
- 	return rc;
-@@ -3503,6 +3505,7 @@ static struct smack_known *smack_from_secattr(struct netlbl_lsm_secattr *sap,
- 	return smack_net_ambient;
- }
- 
-+#if IS_ENABLED(CONFIG_IPV6)
- static int smk_skb_to_addr_ipv6(struct sk_buff *skb, struct sockaddr_in6 *sip)
- {
- 	u8 nexthdr;
-@@ -3549,6 +3552,7 @@ static int smk_skb_to_addr_ipv6(struct sk_buff *skb, struct sockaddr_in6 *sip)
- 	}
- 	return proto;
- }
-+#endif /* CONFIG_IPV6 */
- 
- /**
-  * smack_socket_sock_rcv_skb - Smack packet delivery access check
-@@ -3562,13 +3566,15 @@ static int smack_socket_sock_rcv_skb(struct sock *sk, struct sk_buff *skb)
- 	struct netlbl_lsm_secattr secattr;
- 	struct socket_smack *ssp = sk->sk_security;
- 	struct smack_known *skp = NULL;
--	struct sockaddr_in6 sadd;
- 	int rc = 0;
--	int proto;
- 	struct smk_audit_info ad;
- #ifdef CONFIG_AUDIT
- 	struct lsm_network_audit net;
- #endif
-+#if IS_ENABLED(CONFIG_IPV6)
-+	struct sockaddr_in6 sadd;
-+	int proto;
-+#endif /* CONFIG_IPV6 */
- 
- 	switch (sk->sk_family) {
- 	case PF_INET:
-@@ -3617,6 +3623,7 @@ access_check:
- 		if (rc != 0)
- 			netlbl_skbuff_err(skb, rc, 0);
- 		break;
-+#if IS_ENABLED(CONFIG_IPV6)
- 	case PF_INET6:
- 		proto = smk_skb_to_addr_ipv6(skb, &sadd);
- 		if (proto != IPPROTO_UDP && proto != IPPROTO_TCP)
-@@ -3639,6 +3646,7 @@ access_check:
- 		rc = smk_ipv6_port_check(sk, &sadd, SMK_RECEIVING);
- #endif /* CONFIG_SECURITY_SMACK_NETFILTER */
- 		break;
-+#endif /* CONFIG_IPV6 */
- 	}
- 
- 	return rc;
-@@ -3702,8 +3710,10 @@ static int smack_socket_getpeersec_dgram(struct socket *sock,
- 	if (skb != NULL) {
- 		if (skb->protocol == htons(ETH_P_IP))
- 			family = PF_INET;
-+#if IS_ENABLED(CONFIG_IPV6)
- 		else if (skb->protocol == htons(ETH_P_IPV6))
- 			family = PF_INET6;
-+#endif /* CONFIG_IPV6 */
- 	}
- 	if (family == PF_UNSPEC && sock != NULL)
- 		family = sock->sk->sk_family;
-@@ -3732,11 +3742,13 @@ static int smack_socket_getpeersec_dgram(struct socket *sock,
- 		}
- 		netlbl_secattr_destroy(&secattr);
- 		break;
-+#if IS_ENABLED(CONFIG_IPV6)
- 	case PF_INET6:
- #ifdef CONFIG_SECURITY_SMACK_NETFILTER
- 		s = skb->secmark;
--#endif
-+#endif /* CONFIG_SECURITY_SMACK_NETFILTER */
- 		break;
-+#endif /* CONFIG_IPV6 */
- 	}
- 	*secid = s;
- 	if (s == 0)
-@@ -3792,6 +3804,7 @@ static int smack_inet_conn_request(struct sock *sk, struct sk_buff *skb,
- 	struct lsm_network_audit net;
- #endif
- 
-+#if IS_ENABLED(CONFIG_IPV6)
- 	if (family == PF_INET6) {
- 		/*
- 		 * Handle mapped IPv4 packets arriving
-@@ -3803,6 +3816,7 @@ static int smack_inet_conn_request(struct sock *sk, struct sk_buff *skb,
- 		else
- 			return 0;
- 	}
-+#endif /* CONFIG_IPV6 */
- 
- 	netlbl_secattr_init(&secattr);
- 	rc = netlbl_skbuff_getattr(skb, family, &secattr);
+OK, this is better than reclaiming them.
+
+[...]
+> +static void unbind_lru_list(struct mem_cgroup *memcg,
+> +			    struct zone *zone, enum lru_list lru)
+> +{
+> +	struct lruvec *lruvec = mem_cgroup_zone_lruvec(zone, memcg);
+> +	struct list_head *list = &lruvec->lists[lru];
+> +
+> +	while (!list_empty(list)) {
+> +		unsigned int nr_pages;
+> +		unsigned long flags;
+> +		struct page *page;
+> +
+> +		spin_lock_irqsave(&zone->lru_lock, flags);
+> +		if (list_empty(list)) {
+> +			spin_unlock_irqrestore(&zone->lru_lock, flags);
+> +			break;
+> +		}
+> +		page = list_last_entry(list, struct page, lru);
+
+taking lru_lock for each page calls for troubles. The lock would bounce
+like crazy. It shouldn't be a big problem to list_move to a local list
+and then work on that one without the lock. Those pages wouldn't be
+visible for the reclaim but that would be only temporary. Or if that is
+not acceptable then just batch at least some number of pages (popular
+SWAP_CLUSTER_MAX).
+
+> +		if (!get_page_unless_zero(page)) {
+> +			list_move(&page->lru, list);
+> +			spin_unlock_irqrestore(&zone->lru_lock, flags);
+> +			continue;
+> +		}
+> +		BUG_ON(!PageLRU(page));
+> +		ClearPageLRU(page);
+> +		del_page_from_lru_list(page, lruvec, lru);
+> +		spin_unlock_irqrestore(&zone->lru_lock, flags);
+> +
+> +		compound_lock(page);
+> +		nr_pages = hpage_nr_pages(page);
+> +
+> +		if (!mem_cgroup_move_account(page, nr_pages,
+> +					     memcg, root_mem_cgroup)) {
+> +			/*
+> +			 * root_mem_cgroup page counters are not used,
+> +			 * otherwise we'd have to charge them here.
+> +			 */
+> +			page_counter_uncharge(&memcg->memory, nr_pages);
+> +			if (do_swap_account)
+> +				page_counter_uncharge(&memcg->memsw, nr_pages);
+> +			css_put_many(&memcg->css, nr_pages);
+> +		}
+> +
+> +		compound_unlock(page);
+> +
+> +		putback_lru_page(page);
+> +	}
+> +}
+> +
+> +static void unbind_work_fn(struct work_struct *work)
+> +{
+> +	struct cgroup_subsys_state *css;
+> +retry:
+> +	drain_all_stock(root_mem_cgroup);
+> +
+> +	rcu_read_lock();
+> +	css_for_each_child(css, &root_mem_cgroup->css) {
+> +		struct mem_cgroup *memcg = mem_cgroup_from_css(css);
+> +
+> +		/* Drop references from swap-out records */
+> +		if (do_swap_account) {
+> +			long zapped;
+> +
+> +			zapped = swap_cgroup_zap_records(memcg->css.id);
+> +			page_counter_uncharge(&memcg->memsw, zapped);
+> +			css_put_many(&memcg->css, zapped);
+> +		}
+> +
+> +		/* Drop references from leftover LRU pages */
+> +		css_get(css);
+> +		rcu_read_unlock();
+> +		atomic_inc(&memcg->moving_account);
+> +		synchronize_rcu();
+
+Why do we need this? Who can migrate to/from offline memcgs? 
+
+> +		while (page_counter_read(&memcg->memory) -
+> +		       page_counter_read(&memcg->kmem) > 0) {
+> +			struct zone *zone;
+> +			enum lru_list lru;
+> +
+> +			lru_add_drain_all();
+> +
+> +			for_each_zone(zone)
+> +				for_each_lru(lru)
+> +					unbind_lru_list(memcg, zone, lru);
+> +
+> +			cond_resched();
+> +		}
+> +		atomic_dec(&memcg->moving_account);
+> +		rcu_read_lock();
+> +		css_put(css);
+> +	}
+> +	rcu_read_unlock();
+> +	/*
+> +	 * Swap-in is racy:
+> +	 *
+> +	 * #0                        #1
+> +	 *                           lookup_swap_cgroup_id()
+> +	 *                           rcu_read_lock()
+> +	 *                           mem_cgroup_lookup()
+> +	 *                           css_tryget_online()
+> +	 *                           rcu_read_unlock()
+> +	 * cgroup_kill_sb()
+> +	 *   !css_has_online_children()
+> +	 *     ->unbind()
+> +	 *                           page_counter_try_charge()
+> +	 *                           css_put()
+> +	 *                             css_free()
+> +	 *                           pc->mem_cgroup = dead memcg
+> +	 *                           add page to lru
+> +	 *
+> +	 * Loop until until all references established from previously
+> +	 * existing swap-out records have been transferred to pages on
+> +	 * the LRU and then uncharged from there.
+> +	 */
+> +	if (!list_empty(&root_mem_cgroup->css.children)) {
+
+But what if kmem pages pin the memcg? We would loop for ever. Or am I
+missing something?
+
+> +		msleep(10);
+> +		goto retry;
+> +	}
+> +}
+[...]
 -- 
-1.9.1
-
+Michal Hocko
+SUSE Labs
