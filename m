@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307AbbAOLGn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 06:06:43 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60925 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752995AbbAOLGm (ORCPT
+	id S1753373AbbAOLHY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 06:07:24 -0500
+Received: from e06smtp15.uk.ibm.com ([195.75.94.111]:43580 "EHLO
+	e06smtp15.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753323AbbAOLHW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 06:06:42 -0500
-Date: Thu, 15 Jan 2015 11:06:34 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Masanari Iida <standby24x7@gmail.com>
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org, lgirdwood@gmail.com,
-        tiwai@suse.de
-Message-ID: <20150115110634.GQ3043@sirena.org.uk>
-References: <1421317768-17707-1-git-send-email-standby24x7@gmail.com>
+	Thu, 15 Jan 2015 06:07:22 -0500
+Message-ID: <54B79F5F.1040806@de.ibm.com>
+Date: Thu, 15 Jan 2015 12:07:11 +0100
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="0pkK7MCEo5hACTvx"
-Content-Disposition: inline
-In-Reply-To: <1421317768-17707-1-git-send-email-standby24x7@gmail.com>
-X-Cookie: To program is to be.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH] [trivial] ASoC: Fix typo in bt-sco.c
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: David Vrabel <david.vrabel@citrix.com>, linux-kernel@vger.kernel.org
+CC: linux-arch@vger.kernel.org, kvm@vger.kernel.org, x86@kernel.org,
+        kvm-ppc@vger.kernel.org, linux-mm@kvack.org,
+        xen-devel@lists.xenproject.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [Xen-devel] [PATCH 3/8] x86/xen/p2m: Replace ACCESS_ONCE with
+ READ_ONCE
+References: <1421312314-72330-1-git-send-email-borntraeger@de.ibm.com> <1421312314-72330-4-git-send-email-borntraeger@de.ibm.com> <54B799DC.1050008@citrix.com>
+In-Reply-To: <54B799DC.1050008@citrix.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15011511-0021-0000-0000-0000028DF1C4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Am 15.01.2015 um 11:43 schrieb David Vrabel:
+> On 15/01/15 08:58, Christian Borntraeger wrote:
+>> ACCESS_ONCE does not work reliably on non-scalar types. For
+>> example gcc 4.6 and 4.7 might remove the volatile tag for such
+>> accesses during the SRA (scalar replacement of aggregates) step
+>> (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58145)
+>>
+>> Change the p2m code to replace ACCESS_ONCE with READ_ONCE.
+> 
+> Acked-by: David Vrabel <david.vrabel@citrix.com>
 
---0pkK7MCEo5hACTvx
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Thanks
 
-On Thu, Jan 15, 2015 at 07:29:28PM +0900, Masanari Iida wrote:
-> This patch fix spelling typo in bt-sco.c
+> Let me know if you want me to merge this via the Xen tree.
 
-Applied, thanks.
 
---0pkK7MCEo5hACTvx
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+With your Acked-by, I can easily carry this in my tree. We can 
+then ensure that this patch is merged before the ACCESS_ONCE is
+made stricter - making bisecting easier.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Christian
 
-iQEcBAEBCAAGBQJUt586AAoJECTWi3JdVIfQ23AH/RJO97j7RO/nBxkjSynLk1KG
-5fonX28rjaKHkEFflxfctfhawpSf2vsovsvl4Y61P/aNGvD80JEi6NHpLULwUUCn
-4xabIFGGJVrBGBereQJEljT0f05JxxXqHn6ctIksJ76CYXV1Hhuyvcu7vGgspHjx
-sN10s+ZkDCMbXspKoQXKeoHx+3cKo9gFuE0bfp9SFH9QSFpS5TOW3btCi8qWpYTV
-ZTvBJi3tPAoQLeMzLNnxQLIXVIlIdp3pa9NbmGtIPfgJU26ng9U6umW4JAVqna8l
-ltsKFiZConXChjEofXqi7+1z+khmk96dxFUgQAv+au4HyIHIBNyPt2gUEOD3YuA=
-=DNCI
------END PGP SIGNATURE-----
-
---0pkK7MCEo5hACTvx--
