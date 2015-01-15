@@ -1,64 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753314AbbAOADb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 19:03:31 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:40791 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751796AbbAOADa (ORCPT
+	id S1752729AbbAOANm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 19:13:42 -0500
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:43521 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751008AbbAOANl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 19:03:30 -0500
-Date: Thu, 15 Jan 2015 00:03:06 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Victor Kamensky <victor.kamensky@linaro.org>
-Cc: Will Deacon <will.deacon@arm.com>, Avi Kivity <avi@cloudius-systems.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Anton Blanchard <anton@samba.org>, David Ahern <dsahern@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/2] perf symbols: Ignore mapping symbols on aarch64
-Message-ID: <20150115000305.GC12302@n2100.arm.linux.org.uk>
-References: <1421168344-5363-1-git-send-email-victor.kamensky@linaro.org>
- <20150114112210.GF4050@arm.com>
- <CAA3XUr2KUyafcnUggN7=xGNGSeRkkRtYtxZmwm4UC8sRCGup3g@mail.gmail.com>
+	Wed, 14 Jan 2015 19:13:41 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAA3XUr2KUyafcnUggN7=xGNGSeRkkRtYtxZmwm4UC8sRCGup3g@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <54595FED.6000409@gmail.com>
+References: <1414521895-12667-1-git-send-email-f.fainelli@gmail.com>
+	<1414521895-12667-2-git-send-email-f.fainelli@gmail.com>
+	<20141104204514.GA5908@quad.lixom.net>
+	<545957A5.6010802@gmail.com>
+	<CACxGe6s5rCUM_QQ-Da-AOKBbb4tUEJ_rcKU9frdEDDprYND3Tw@mail.gmail.com>
+	<54595FED.6000409@gmail.com>
+Date: Wed, 14 Jan 2015 16:13:40 -0800
+Message-ID: <CAN8TOE_uHUFuyofTYFzWioB7TkCqx2sLYk2bbrV06EKOMvzYRg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] MAINTAINERS: update brcmstb entries
+From: Brian Norris <computersforpeace@gmail.com>
+To: Florian Fainelli <f.fainelli@gmail.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>, Olof Johansson <olof@lixom.net>,
+        "arm@kernel.org" <arm@kernel.org>,
+        Gregory Fong <gregory.0xf0@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Marc Carino <marc.ceeeee@gmail.com>,
+        Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 14, 2015 at 10:38:38AM -0800, Victor Kamensky wrote:
-> >From fed6caab410ddcaf487ff23a3908eca129e50b89 Mon Sep 17 00:00:00 2001
-> From: Victor Kamensky <victor.kamensky@linaro.org>
-> Date: Wed, 14 Jan 2015 07:42:41 -0800
-> Subject: [PATCH 3/3] perf symbols: improve abi compliance in arm mapping
->  symbols handling
-> 
-> Both Arm and Aarch64 ELF ABI allow mapping symbols be in from
-> either "$d" or "$d.<any>". But current code that handles mapping
-> symbols only deals with the first, dollar character and a single
-> letter, case.
-> 
-> The patch adds handling of the second case with period
-> followed by any characters.
-> 
-> Suggested-by: Will Deacon <will.deacon@arm.com>
-> Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
+Since I found this in my inbox during garbage collection...
 
-I wonder if it would make more sense to re-use the "is_arm_mapping_symbol"
-thing which we have in kernel/module.c and scripts/kallsyms.c - it
-seems silly to re-invent code which we already have to detect these
-symbols.
+On Tue, Nov 4, 2014 at 3:23 PM, Florian Fainelli <f.fainelli@gmail.com> wrote:
+> On 11/04/2014 02:56 PM, Grant Likely wrote:
+>> On Tue, Nov 4, 2014 at 10:48 PM, Florian Fainelli <f.fainelli@gmail.com> wrote:
+>>> On 11/04/2014 12:45 PM, Olof Johansson wrote:
+>>>> On Tue, Oct 28, 2014 at 11:44:54AM -0700, Florian Fainelli wrote:
+>>>>> Remove Marc Carino from the brcmstb maintainers list and add Gregory
+>>>>> Fong and myself as new maintainers for the brcmstb platform.
+>>>>>
+>>>>> Signed-off-by: Florian Fainelli <f.fainelli@gmail.com>
+>>>>> ---
+>>>>>  MAINTAINERS | 3 ++-
+>>>>>  1 file changed, 2 insertions(+), 1 deletion(-)
+>>>>>
+>>>>> diff --git a/MAINTAINERS b/MAINTAINERS
+>>>>> index dab92a78d1d5..33a8b31e03f0 100644
+>>>>> --- a/MAINTAINERS
+>>>>> +++ b/MAINTAINERS
+>>>>> @@ -2093,8 +2093,9 @@ F:     arch/arm/mach-bcm/bcm63xx.c
+>>>>>  F:  arch/arm/include/debug/bcm63xx.S
+>>>>>
+>>>>>  BROADCOM BCM7XXX ARM ARCHITECTURE
+>>>>> -M:  Marc Carino <marc.ceeeee@gmail.com>
+>>>>>  M:  Brian Norris <computersforpeace@gmail.com>
+>>>>> +M:  Gregory Fong <gregory.0xf0@gmail.com>
+>>>>> +M:  Florian Fainelli <f.fainelli@gmail.com>
+>>>>
+>>>> You're removing Marc here, but I don't see an ack from him, nor has
+>>>> he been cc:d on the patch. It's common practice for people to agree to
+>>>> being removed. Can you please make sure we get an ack from him on this,
+>>>> maybe by reposting and cc:ing him?
+>>>
+>>> Marc is no longer with Broadcom, do you still want him to ack this?
+>>
+>> Yes, absolutely. Maintainership is entrusted to an individual, not
+>> their employer. We've had many situations where someone has continued
+>> to maintain a platform even after changing employment. So, yes, there
+>> needs to be an ack from Marc.
+>
+> He is CC'd, now. Marc, please Ack this if you are okay with the change.
 
--- 
-FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
-according to speedtest.net.
+Can we add a "Not-nacked-by" tag and proceed? Marc is obviously not
+involved here any more. I figure removing expired maintainers should
+be a little easier than removing SCOTUS judges.
+
+Brian
