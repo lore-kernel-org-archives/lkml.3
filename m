@@ -1,188 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878AbbAOM6w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 07:58:52 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48898 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754847AbbAOM6s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 07:58:48 -0500
-From: Jiri Olsa <jolsa@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@kernel.org>,
-        Alexis Berlemont <alexis.berlemont@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 36/36] perf build: Display make commands on V=1
-Date: Thu, 15 Jan 2015 13:55:32 +0100
-Message-Id: <1421326532-25660-37-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1421326532-25660-1-git-send-email-jolsa@kernel.org>
-References: <1421326532-25660-1-git-send-email-jolsa@kernel.org>
+	id S1755178AbbAONCx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 08:02:53 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:41017 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753644AbbAOM6Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 07:58:24 -0500
+Date: Thu, 15 Jan 2015 13:58:20 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -mm v2] vmscan: move reclaim_state handling to shrink_slab
+Message-ID: <20150115125820.GE7000@dhcp22.suse.cz>
+References: <1421311073-28130-1-git-send-email-vdavydov@parallels.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421311073-28130-1-git-send-email-vdavydov@parallels.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get more verbose output wrt displaying executed commands
-from make.
+On Thu 15-01-15 11:37:53, Vladimir Davydov wrote:
+> current->reclaim_state is only used to count the number of slab pages
+> reclaimed by shrink_slab(). So instead of initializing it before we are
+> 
+> Note that after this patch try_to_free_mem_cgroup_pages() will count not
+> only reclaimed user pages, but also slab pages, which is expected,
+> because it can reclaim kmem from kmem-active sub cgroups.
 
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-Cc: Alexis Berlemont <alexis.berlemont@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
----
- tools/perf/Makefile.perf | 48 +++++++++++++++++++++++++++---------------------
- 1 file changed, 27 insertions(+), 21 deletions(-)
+Except that reclaim_state counts all freed slab objects that have
+current->reclaim_state != NULL AFAIR. This includes also kfreed pages
+from interrupt context and who knows what else and those pages might be
+from a different memcgs, no?
 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 6b6bef8a515a..d5f1d3feea17 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -89,13 +89,19 @@ VPATH += $(OUTPUT)
- export VPATH
- endif
- 
-+ifeq ($(V),1)
-+  Q =
-+else
-+  Q = @
-+endif
-+
- # Do not use make's built-in rules and variables
- # (this increases performance and avoids hard-to-debug behaviour);
- MAKEFLAGS += -rR
- 
- $(OUTPUT)PERF-VERSION-FILE: ../../.git/HEAD
--	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
--	@touch $(OUTPUT)PERF-VERSION-FILE
-+	$(Q)$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
-+	$(Q)touch $(OUTPUT)PERF-VERSION-FILE
- 
- CC = $(CROSS_COMPILE)gcc
- LD = $(CROSS_COMPILE)ld
-@@ -251,7 +257,7 @@ SHELL = $(SHELL_PATH)
- all: shell_compatibility_test $(ALL_PROGRAMS) $(LANG_BINDINGS) $(OTHER_PROGRAMS)
- 
- please_set_SHELL_PATH_to_a_more_modern_shell:
--	@$$(:)
-+	$(Q)$$(:)
- 
- shell_compatibility_test: please_set_SHELL_PATH_to_a_more_modern_shell
- 
-@@ -264,13 +270,13 @@ export srctree OUTPUT RM CC LD CFLAGS V BISON FLEX
- build := -f $(srctree)/tools/build/Makefile.build dir=. obj
- 
- $(PERF_IN): $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)common-cmds.h FORCE
--	@$(MAKE) $(build)=perf
-+	$(Q)$(MAKE) $(build)=perf
- 
- $(OUTPUT)perf: $(PERFLIBS) $(PERF_IN)
- 	$(QUIET_LINK)$(CC) $(CFLAGS) $(LDFLAGS) $(PERF_IN) $(LIBS) -o $@
- 
- $(GTK_IN): FORCE
--	@$(MAKE) $(build)=gtk
-+	$(Q)$(MAKE) $(build)=gtk
- 
- $(OUTPUT)libperf-gtk.so: $(GTK_IN) $(PERFLIBS)
- 	$(QUIET_LINK)$(CC) -o $@ -shared $(LDFLAGS) $(filter %.o,$^) $(GTK_LIBS)
-@@ -315,25 +321,25 @@ build-dir   = $(if $(__build-dir),$(__build-dir),.)
- single_dep: $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)common-cmds.h
- 
- $(OUTPUT)%.o: %.c single_dep FORCE
--	@$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
-+	$(Q)$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
- 
- $(OUTPUT)%.i: %.c single_dep FORCE
--	@$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
-+	$(Q)$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
- 
- $(OUTPUT)%.s: %.c single_dep FORCE
--	@$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
-+	$(Q)$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
- 
- $(OUTPUT)%-bison.o: %.c single_dep FORCE
--	@$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
-+	$(Q)$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
- 
- $(OUTPUT)%-flex.o: %.c single_dep FORCE
--	@$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
-+	$(Q)$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
- 
- $(OUTPUT)%.o: %.S single_dep FORCE
--	@$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
-+	$(Q)$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
- 
- $(OUTPUT)%.i: %.S single_dep FORCE
--	@$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
-+	$(Q)$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
- 
- $(OUTPUT)perf-%: %.o $(PERFLIBS)
- 	$(QUIET_LINK)$(CC) $(CFLAGS) -o $@ $(LDFLAGS) $(filter %.o,$^) $(LIBS)
-@@ -353,7 +359,7 @@ $(patsubst perf-%,%.o,$(PROGRAMS)): $(wildcard */*.h)
- LIBPERF_IN := $(OUTPUT)libperf-in.o
- 
- $(LIBPERF_IN): FORCE
--	@$(MAKE) $(build)=libperf
-+	$(Q)$(MAKE) $(build)=libperf
- 
- $(LIB_FILE): $(LIBPERF_IN)
- 	$(QUIET_AR)$(RM) $@ && $(AR) rcs $@ $(LIBPERF_IN) $(LIB_OBJS)
-@@ -362,21 +368,21 @@ LIBTRACEEVENT_FLAGS += CFLAGS="-g -Wall $(EXTRA_CFLAGS)"
- LIBTRACEEVENT_FLAGS += plugin_dir=$(plugindir_SQ)
- 
- $(LIBTRACEEVENT): FORCE
--	@$(MAKE) -C $(TRACE_EVENT_DIR) $(LIBTRACEEVENT_FLAGS) O=$(OUTPUT) $(OUTPUT)libtraceevent.a plugins
-+	$(Q)$(MAKE) -C $(TRACE_EVENT_DIR) $(LIBTRACEEVENT_FLAGS) O=$(OUTPUT) $(OUTPUT)libtraceevent.a plugins
- 
- $(LIBTRACEEVENT)-clean:
- 	$(call QUIET_CLEAN, libtraceevent)
--	@$(MAKE) -C $(TRACE_EVENT_DIR) O=$(OUTPUT) clean >/dev/null
-+	$(Q)$(MAKE) -C $(TRACE_EVENT_DIR) O=$(OUTPUT) clean >/dev/null
- 
- install-traceevent-plugins: $(LIBTRACEEVENT)
--	@$(MAKE) -C $(TRACE_EVENT_DIR) $(LIBTRACEEVENT_FLAGS) O=$(OUTPUT) install_plugins
-+	$(Q)$(MAKE) -C $(TRACE_EVENT_DIR) $(LIBTRACEEVENT_FLAGS) O=$(OUTPUT) install_plugins
- 
- $(LIBAPIKFS): FORCE
--	@$(MAKE) -C $(LIB_DIR) O=$(OUTPUT) $(OUTPUT)libapi.a
-+	$(Q)$(MAKE) -C $(LIB_DIR) O=$(OUTPUT) $(OUTPUT)libapi.a
- 
- $(LIBAPIKFS)-clean:
- 	$(call QUIET_CLEAN, libapi)
--	@$(MAKE) -C $(LIB_DIR) O=$(OUTPUT) clean >/dev/null
-+	$(Q)$(MAKE) -C $(LIB_DIR) O=$(OUTPUT) clean >/dev/null
- 
- help:
- 	@echo 'Perf make targets:'
-@@ -514,12 +520,12 @@ $(INSTALL_DOC_TARGETS):
- #
- config-clean:
- 	$(call QUIET_CLEAN, config)
--	@$(MAKE) -C config/feature-checks clean >/dev/null
-+	$(Q)$(MAKE) -C config/feature-checks clean >/dev/null
- 
- clean: $(LIBTRACEEVENT)-clean $(LIBAPIKFS)-clean config-clean
- 	$(call QUIET_CLEAN, core-objs)  $(RM) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)perf-with-kcore $(LANG_BINDINGS)
--	@find $(if $(OUTPUT),$(OUTPUT),.) -name \*.o | xargs $(RM)
--	@$(RM) .config-detected
-+	$(Q)find $(if $(OUTPUT),$(OUTPUT),.) -name \*.o | xargs $(RM)
-+	$(Q)$(RM) .config-detected
- 	$(call QUIET_CLEAN, core-progs) $(RM) $(ALL_PROGRAMS) perf perf-read-vdso32 perf-read-vdsox32
- 	$(call QUIET_CLEAN, core-gen)   $(RM)  *.spec *.pyc *.pyo */*.pyc */*.pyo $(OUTPUT)common-cmds.h TAGS tags cscope* $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)PERF-FEATURES $(OUTPUT)util/*-bison* $(OUTPUT)util/*-flex*
- 	$(QUIET_SUBDIR0)Documentation $(QUIET_SUBDIR1) clean
+Besides that I am not sure this makes any difference in the end. No
+try_to_free_mem_cgroup_pages caller really cares about the exact
+number of reclaimed pages. We care only about whether there was any
+progress done - and even that not exactly (e.g. try_charge checks
+mem_cgroup_margin before retry/oom so if sufficient kmem pages were
+uncharged then we will notice that).
+
+That being said, I haven't read the patch yet, but the above assumption
+doesn't sound correct to me. reclaim_state is nasty and relying on it for
+something that is targeted might lead to unexpected results.
+
+> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+> ---
+> Changes in v2:
+>  - do not change shrink_slab() return value to the number of reclaimed
+>    slab pages, because it can make drop_slab() abort beforehand (Andrew)
+> 
+>  mm/page_alloc.c |    4 ----
+>  mm/vmscan.c     |   43 +++++++++++++++++--------------------------
+>  2 files changed, 17 insertions(+), 30 deletions(-)
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index e1963ea0684a..f528e4ba91b5 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -2448,7 +2448,6 @@ static int
+>  __perform_reclaim(gfp_t gfp_mask, unsigned int order, struct zonelist *zonelist,
+>  		  nodemask_t *nodemask)
+>  {
+> -	struct reclaim_state reclaim_state;
+>  	int progress;
+>  
+>  	cond_resched();
+> @@ -2457,12 +2456,9 @@ __perform_reclaim(gfp_t gfp_mask, unsigned int order, struct zonelist *zonelist,
+>  	cpuset_memory_pressure_bump();
+>  	current->flags |= PF_MEMALLOC;
+>  	lockdep_set_current_reclaim_state(gfp_mask);
+> -	reclaim_state.reclaimed_slab = 0;
+> -	current->reclaim_state = &reclaim_state;
+>  
+>  	progress = try_to_free_pages(zonelist, order, gfp_mask, nodemask);
+>  
+> -	current->reclaim_state = NULL;
+>  	lockdep_clear_current_reclaim_state();
+>  	current->flags &= ~PF_MEMALLOC;
+>  
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index 16f3e45742d6..26fdcc6c747d 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -367,13 +367,18 @@ static unsigned long do_shrink_slab(struct shrink_control *shrinkctl,
+>   * the ->seeks setting of the shrink function, which indicates the
+>   * cost to recreate an object relative to that of an LRU page.
+>   *
+> - * Returns the number of reclaimed slab objects.
+> + * Returns the number of reclaimed slab objects. The number of reclaimed slab
+> + * pages is added to *@ret_nr_reclaimed.
+>   */
+>  static unsigned long shrink_slab(gfp_t gfp_mask, int nid,
+>  				 struct mem_cgroup *memcg,
+>  				 unsigned long nr_scanned,
+> -				 unsigned long nr_eligible)
+> +				 unsigned long nr_eligible,
+> +				 unsigned long *ret_nr_reclaimed)
+>  {
+> +	struct reclaim_state reclaim_state = {
+> +		.reclaimed_slab = 0,
+> +	};
+>  	struct shrinker *shrinker;
+>  	unsigned long freed = 0;
+>  
+> @@ -394,6 +399,8 @@ static unsigned long shrink_slab(gfp_t gfp_mask, int nid,
+>  		goto out;
+>  	}
+>  
+> +	current->reclaim_state = &reclaim_state;
+> +
+>  	list_for_each_entry(shrinker, &shrinker_list, list) {
+>  		struct shrink_control sc = {
+>  			.gfp_mask = gfp_mask,
+> @@ -410,6 +417,9 @@ static unsigned long shrink_slab(gfp_t gfp_mask, int nid,
+>  		freed += do_shrink_slab(&sc, shrinker, nr_scanned, nr_eligible);
+>  	}
+>  
+> +	current->reclaim_state = NULL;
+> +	*ret_nr_reclaimed += reclaim_state.reclaimed_slab;
+> +
+>  	up_read(&shrinker_rwsem);
+>  out:
+>  	cond_resched();
+> @@ -419,6 +429,7 @@ out:
+>  void drop_slab_node(int nid)
+>  {
+>  	unsigned long freed;
+> +	unsigned long nr_reclaimed = 0;
+>  
+>  	do {
+>  		struct mem_cgroup *memcg = NULL;
+> @@ -426,9 +437,9 @@ void drop_slab_node(int nid)
+>  		freed = 0;
+>  		do {
+>  			freed += shrink_slab(GFP_KERNEL, nid, memcg,
+> -					     1000, 1000);
+> +					     1000, 1000, &nr_reclaimed);
+>  		} while ((memcg = mem_cgroup_iter(NULL, memcg, NULL)) != NULL);
+> -	} while (freed > 10);
+> +	} while (freed);
+>  }
+>  
+>  void drop_slab(void)
+> @@ -2339,7 +2350,6 @@ static inline bool should_continue_reclaim(struct zone *zone,
+>  static bool shrink_zone(struct zone *zone, struct scan_control *sc,
+>  			bool is_classzone)
+>  {
+> -	struct reclaim_state *reclaim_state = current->reclaim_state;
+>  	unsigned long nr_reclaimed, nr_scanned;
+>  	bool reclaimable = false;
+>  
+> @@ -2371,7 +2381,7 @@ static bool shrink_zone(struct zone *zone, struct scan_control *sc,
+>  			if (memcg && is_classzone)
+>  				shrink_slab(sc->gfp_mask, zone_to_nid(zone),
+>  					    memcg, sc->nr_scanned - scanned,
+> -					    lru_pages);
+> +					    lru_pages, &sc->nr_reclaimed);
+>  
+>  			/*
+>  			 * Direct reclaim and kswapd have to scan all memory
+> @@ -2398,12 +2408,7 @@ static bool shrink_zone(struct zone *zone, struct scan_control *sc,
+>  		if (global_reclaim(sc) && is_classzone)
+>  			shrink_slab(sc->gfp_mask, zone_to_nid(zone), NULL,
+>  				    sc->nr_scanned - nr_scanned,
+> -				    zone_lru_pages);
+> -
+> -		if (reclaim_state) {
+> -			sc->nr_reclaimed += reclaim_state->reclaimed_slab;
+> -			reclaim_state->reclaimed_slab = 0;
+> -		}
+> +				    zone_lru_pages, &sc->nr_reclaimed);
+>  
+>  		vmpressure(sc->gfp_mask, sc->target_mem_cgroup,
+>  			   sc->nr_scanned - nr_scanned,
+> @@ -3367,17 +3372,12 @@ static int kswapd(void *p)
+>  	int balanced_classzone_idx;
+>  	pg_data_t *pgdat = (pg_data_t*)p;
+>  	struct task_struct *tsk = current;
+> -
+> -	struct reclaim_state reclaim_state = {
+> -		.reclaimed_slab = 0,
+> -	};
+>  	const struct cpumask *cpumask = cpumask_of_node(pgdat->node_id);
+>  
+>  	lockdep_set_current_reclaim_state(GFP_KERNEL);
+>  
+>  	if (!cpumask_empty(cpumask))
+>  		set_cpus_allowed_ptr(tsk, cpumask);
+> -	current->reclaim_state = &reclaim_state;
+>  
+>  	/*
+>  	 * Tell the memory management that we're a "memory allocator",
+> @@ -3449,7 +3449,6 @@ static int kswapd(void *p)
+>  	}
+>  
+>  	tsk->flags &= ~(PF_MEMALLOC | PF_SWAPWRITE | PF_KSWAPD);
+> -	current->reclaim_state = NULL;
+>  	lockdep_clear_current_reclaim_state();
+>  
+>  	return 0;
+> @@ -3492,7 +3491,6 @@ void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx)
+>   */
+>  unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
+>  {
+> -	struct reclaim_state reclaim_state;
+>  	struct scan_control sc = {
+>  		.nr_to_reclaim = nr_to_reclaim,
+>  		.gfp_mask = GFP_HIGHUSER_MOVABLE,
+> @@ -3508,12 +3506,9 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
+>  
+>  	p->flags |= PF_MEMALLOC;
+>  	lockdep_set_current_reclaim_state(sc.gfp_mask);
+> -	reclaim_state.reclaimed_slab = 0;
+> -	p->reclaim_state = &reclaim_state;
+>  
+>  	nr_reclaimed = do_try_to_free_pages(zonelist, &sc);
+>  
+> -	p->reclaim_state = NULL;
+>  	lockdep_clear_current_reclaim_state();
+>  	p->flags &= ~PF_MEMALLOC;
+>  
+> @@ -3678,7 +3673,6 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+>  	/* Minimum pages needed in order to stay on node */
+>  	const unsigned long nr_pages = 1 << order;
+>  	struct task_struct *p = current;
+> -	struct reclaim_state reclaim_state;
+>  	struct scan_control sc = {
+>  		.nr_to_reclaim = max(nr_pages, SWAP_CLUSTER_MAX),
+>  		.gfp_mask = (gfp_mask = memalloc_noio_flags(gfp_mask)),
+> @@ -3697,8 +3691,6 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+>  	 */
+>  	p->flags |= PF_MEMALLOC | PF_SWAPWRITE;
+>  	lockdep_set_current_reclaim_state(gfp_mask);
+> -	reclaim_state.reclaimed_slab = 0;
+> -	p->reclaim_state = &reclaim_state;
+>  
+>  	if (zone_pagecache_reclaimable(zone) > zone->min_unmapped_pages) {
+>  		/*
+> @@ -3710,7 +3702,6 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+>  		} while (sc.nr_reclaimed < nr_pages && --sc.priority >= 0);
+>  	}
+>  
+> -	p->reclaim_state = NULL;
+>  	current->flags &= ~(PF_MEMALLOC | PF_SWAPWRITE);
+>  	lockdep_clear_current_reclaim_state();
+>  	return sc.nr_reclaimed >= nr_pages;
+> -- 
+> 1.7.10.4
+> 
+
 -- 
-1.9.3
-
+Michal Hocko
+SUSE Labs
