@@ -1,112 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245AbbAOABb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 19:01:31 -0500
-Received: from mga14.intel.com ([192.55.52.115]:64041 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751410AbbAOAB2 convert rfc822-to-8bit (ORCPT
+	id S1753314AbbAOADb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 19:03:31 -0500
+Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:40791 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751796AbbAOADa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 19:01:28 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,400,1418112000"; 
-   d="scan'208";a="662015406"
-From: "Tantilov, Emil S" <emil.s.tantilov@intel.com>
-To: Sowmini Varadhan <sowmini.varadhan@oracle.com>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
-        "Allan, Bruce W" <bruce.w.allan@intel.com>,
-        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
-        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
-        "Rose, Gregory V" <gregory.v.rose@intel.com>,
-        "Vick, Matthew" <matthew.vick@intel.com>,
-        "Ronciak, John" <john.ronciak@intel.com>,
-        "Williams, Mitch A" <mitch.a.williams@intel.com>
-CC: Linux NICS <Linux-nics@isotope.jf.intel.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+	Wed, 14 Jan 2015 19:03:30 -0500
+Date: Thu, 15 Jan 2015 00:03:06 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Victor Kamensky <victor.kamensky@linaro.org>
+Cc: Will Deacon <will.deacon@arm.com>, Avi Kivity <avi@cloudius-systems.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "sparclinux@vger.kernel.org" <sparclinux@vger.kernel.org>
-Subject: RE: [PATCH] ixgbe: Re-enable relaxed ordering as part of
- init/restart sequence for non-DCA config
-Thread-Topic: [PATCH] ixgbe: Re-enable relaxed ordering as part of
- init/restart sequence for non-DCA config
-Thread-Index: AQHQMAgLteN7B1M16U2+bo7OUfzseZzAN8Rg
-Date: Thu, 15 Jan 2015 00:01:24 +0000
-Message-ID: <87618083B2453E4A8714035B62D67992501E1DD6@FMSMSX105.amr.corp.intel.com>
-References: <20150114144009.GG19534@oracle.com>
-In-Reply-To: <20150114144009.GG19534@oracle.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.1.200.108]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        Anton Blanchard <anton@samba.org>, David Ahern <dsahern@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
+        Dave P Martin <Dave.Martin@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 1/2] perf symbols: Ignore mapping symbols on aarch64
+Message-ID: <20150115000305.GC12302@n2100.arm.linux.org.uk>
+References: <1421168344-5363-1-git-send-email-victor.kamensky@linaro.org>
+ <20150114112210.GF4050@arm.com>
+ <CAA3XUr2KUyafcnUggN7=xGNGSeRkkRtYtxZmwm4UC8sRCGup3g@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAA3XUr2KUyafcnUggN7=xGNGSeRkkRtYtxZmwm4UC8sRCGup3g@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->-----Original Message-----
->From: Sowmini Varadhan [mailto:sowmini.varadhan@oracle.com] 
->Relaxed ordering is disabled by default at driver initialization
->and re-enabled when DCA is used. The reason it is disabled  was
->due to an issue on some chipsets (see comments in ixgbe_update_tx_dca()).
->But when DCA is not used, RO needs to be re-enabled, else we have
->a serialization bottleneck on platforms like SPARC.
->
->This patch eliminates the bottleneck for ixgbe when DCA is not configured.
->
->Signed-off-by: Sowmini Varadhan <sowmini.varadhan@oracle.com>
->Cc: Emil Tantilov <emil.s.tantilov@intel.com>
->---
-> drivers/net/ethernet/intel/ixgbe/ixgbe_82598.c  |    1 +
-> drivers/net/ethernet/intel/ixgbe/ixgbe_common.c |   20 ++++++++++++++++++++
-> drivers/net/ethernet/intel/ixgbe/ixgbe_common.h |    1 +
-> drivers/net/ethernet/intel/ixgbe/ixgbe_main.c   |   11 +++++++++++
-> drivers/net/ethernet/intel/ixgbe/ixgbe_type.h   |    1 +
-> drivers/net/ethernet/intel/ixgbe/ixgbe_x540.c   |    1 +
-> 6 files changed, 35 insertions(+), 0 deletions(-)
->
->diff --git a/drivers/net/ethernet/intel/ixgbe/ixgbe_82598.c b/drivers/net/ethernet/intel/ixgbe/ixgbe_82598.c
->index c5c97b4..85c7a28 100644
->--- a/drivers/net/ethernet/intel/ixgbe/ixgbe_82598.c
->+++ b/drivers/net/ethernet/intel/ixgbe/ixgbe_82598.c
->@@ -1161,6 +1161,7 @@ static struct ixgbe_mac_operations mac_ops_82598 = {
-> 	.clear_hw_cntrs		= &ixgbe_clear_hw_cntrs_generic,
-> 	.get_media_type		= &ixgbe_get_media_type_82598,
-> 	.enable_rx_dma          = &ixgbe_enable_rx_dma_generic,
->+	.enable_relaxed_ordering = &ixgbe_enable_relaxed_ordering,
+On Wed, Jan 14, 2015 at 10:38:38AM -0800, Victor Kamensky wrote:
+> >From fed6caab410ddcaf487ff23a3908eca129e50b89 Mon Sep 17 00:00:00 2001
+> From: Victor Kamensky <victor.kamensky@linaro.org>
+> Date: Wed, 14 Jan 2015 07:42:41 -0800
+> Subject: [PATCH 3/3] perf symbols: improve abi compliance in arm mapping
+>  symbols handling
+> 
+> Both Arm and Aarch64 ELF ABI allow mapping symbols be in from
+> either "$d" or "$d.<any>". But current code that handles mapping
+> symbols only deals with the first, dollar character and a single
+> letter, case.
+> 
+> The patch adds handling of the second case with period
+> followed by any characters.
+> 
+> Suggested-by: Will Deacon <will.deacon@arm.com>
+> Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
 
-The IXGBE_DCA_TXCTRL register for 82598 is at a different offset. Also there is a limit of 16 registers. The function we have in our code for 82598 is as follows:
+I wonder if it would make more sense to re-use the "is_arm_mapping_symbol"
+thing which we have in kernel/module.c and scripts/kallsyms.c - it
+seems silly to re-invent code which we already have to detect these
+symbols.
 
-/**
- *  ixgbe_enable_relaxed_ordering_82598 - enable relaxed ordering
- *  @hw: pointer to hardware structure
- *
- **/
-void ixgbe_enable_relaxed_ordering_82598(struct ixgbe_hw *hw)
-{
-	u32 regval;
-	u32 i;
-
-	/* Enable relaxed ordering */
-	for (i = 0; ((i < hw->mac.max_tx_queues) &&
-	     (i < IXGBE_DCA_MAX_QUEUES_82598)); i++) {
-		regval = IXGBE_READ_REG(hw, IXGBE_DCA_TXCTRL(i));
-		regval |= IXGBE_DCA_TXCTRL_DESC_WRO_EN;
-		IXGBE_WRITE_REG(hw, IXGBE_DCA_TXCTRL(i), regval);
-	}
-
-	for (i = 0; ((i < hw->mac.max_rx_queues) &&
-	     (i < IXGBE_DCA_MAX_QUEUES_82598)); i++) {
-		regval = IXGBE_READ_REG(hw, IXGBE_DCA_RXCTRL(i));
-		regval |= IXGBE_DCA_RXCTRL_DATA_WRO_EN |
-			  IXGBE_DCA_RXCTRL_HEAD_WRO_EN;
-		IXGBE_WRITE_REG(hw, IXGBE_DCA_RXCTRL(i), regval);
-	}
-}
-
-Thanks,
-Emil
+-- 
+FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
+according to speedtest.net.
