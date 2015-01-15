@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755817AbbAOVWv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 16:22:51 -0500
-Received: from www.linutronix.de ([62.245.132.108]:58365 "EHLO
+	id S1755916AbbAOVZi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 16:25:38 -0500
+Received: from www.linutronix.de ([62.245.132.108]:58377 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751566AbbAOVWr (ORCPT
+	with ESMTP id S1755764AbbAOVWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 16:22:47 -0500
-Message-Id: <20150115211703.397170414@linutronix.de>
+	Thu, 15 Jan 2015 16:22:48 -0500
+Message-Id: <20150115211703.490719938@linutronix.de>
 User-Agent: quilt/0.63-1
-Date: Thu, 15 Jan 2015 21:22:30 -0000
+Date: Thu, 15 Jan 2015 21:22:32 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Jiang Liu <jiang.liu@linux.intel.com>, Joerg Roedel <joro@8bytes.org>,
         x86@kernel.org, Tony Luck <tony.luck@intel.com>,
         Borislav Petkov <bp@alien8.de>
-Subject: [patch 14/23] x86/ioapic: Provide stub functions for IOAPIC=n
+Subject: [patch 15/23] x86/ioapic: Add proper checks to setp/enable_IO_APIC()
 References: <20150115210458.625399149@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline;
- filename=x86-ioapic-add-proper-checks-provide-stubs.patch
+Content-Disposition: inline; filename=x86-ioapic-add-proper-checks.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
@@ -28,29 +27,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To avoid lots of ifdeffery provide proper stubs for setup_IO_APIC(),
-enable_IO_APIC() and setup_ioapic_dest().
+No point to have the same checks at every call site. Add them to the
+functions, so they can be called unconditionally.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/include/asm/io_apic.h |    5 +++++
- 1 file changed, 5 insertions(+)
+ arch/x86/kernel/apic/io_apic.c |   11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
 
-Index: tip/arch/x86/include/asm/io_apic.h
+Index: tip/arch/x86/kernel/apic/io_apic.c
 ===================================================================
---- tip.orig/arch/x86/include/asm/io_apic.h
-+++ tip/arch/x86/include/asm/io_apic.h
-@@ -279,6 +279,11 @@ static inline void disable_ioapic_suppor
- #define native_ioapic_set_affinity	NULL
- #define native_setup_ioapic_entry	NULL
- #define native_eoi_ioapic_pin		NULL
-+
-+static inline void setup_IO_APIC(void) { }
-+static inline void enable_IO_APIC(void) { }
-+static inline void setup_ioapic_dest(void) { }
-+
- #endif
+--- tip.orig/arch/x86/kernel/apic/io_apic.c
++++ tip/arch/x86/kernel/apic/io_apic.c
+@@ -1507,7 +1507,10 @@ void __init enable_IO_APIC(void)
+ 	int i8259_apic, i8259_pin;
+ 	int apic, pin;
  
- #endif /* _ASM_X86_IO_APIC_H */
+-	if (!nr_legacy_irqs())
++	if (skip_ioapic_setup)
++		nr_ioapics = 0;
++
++	if (!nr_legacy_irqs() || !nr_ioapics)
+ 		return;
+ 
+ 	for_each_ioapic_pin(apic, pin) {
+@@ -2373,9 +2376,9 @@ void __init setup_IO_APIC(void)
+ {
+ 	int ioapic;
+ 
+-	/*
+-	 * calling enable_IO_APIC() is moved to setup_local_APIC for BP
+-	 */
++	if (skip_ioapic_setup || !nr_ioapics)
++		return;
++
+ 	io_apic_irqs = nr_legacy_irqs() ? ~PIC_IRQS : ~0UL;
+ 
+ 	apic_printk(APIC_VERBOSE, "ENABLING IO-APIC IRQs\n");
 
 
