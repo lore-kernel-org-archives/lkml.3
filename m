@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755701AbbAOQdK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 11:33:10 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37792 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755606AbbAOQdG (ORCPT
+	id S1755732AbbAOQdg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 11:33:36 -0500
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:48483 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753359AbbAOQde convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 11:33:06 -0500
-Date: Thu, 15 Jan 2015 17:32:35 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: Ray Jui <rjui@broadcom.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Scott Branden <sbranden@broadcom.com>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        bcm-kernel-feedback-list@broadcom.com, devicetree@vger.kernel.org
-Subject: Re: [PATCH v4 2/3] i2c: iproc: Add Broadcom iProc I2C Driver
-Message-ID: <20150115163235.GQ22880@pengutronix.de>
-References: <rjui@broadcom.com>
- <1421274213-3544-1-git-send-email-rjui@broadcom.com>
- <1421274213-3544-3-git-send-email-rjui@broadcom.com>
- <20150115084119.GN22880@pengutronix.de>
- <20150115120704.GB2549@katana>
+	Thu, 15 Jan 2015 11:33:34 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20150115120704.GB2549@katana>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <1421150406-20255-1-git-send-email-johan@kernel.org>
+References: <1421150406-20255-1-git-send-email-johan@kernel.org>
+Date: Thu, 15 Jan 2015 17:33:33 +0100
+Message-ID: <CACRpkdYuC7P0Mhv8dqkhMnem8atH7nu98TjqaiGjPRE6HT52gg@mail.gmail.com>
+Subject: Re: [PATCH 0/3] gpio: sysfs: fix attribute leaks and races
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Johan Hovold <johan@kernel.org>
+Cc: Alexandre Courbot <gnurou@gmail.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, Jan 13, 2015 at 1:00 PM, Johan Hovold <johan@kernel.org> wrote:
 
-On Thu, Jan 15, 2015 at 01:07:05PM +0100, Wolfram Sang wrote:
-> > > +	iproc_i2c->msg = msg;
-> > Can it happen that iproc_i2c->msg still holds an uncompleted message
-> > here or is this serialized by the core? Wolfram? Either here something
-> 
-> We have per-adapter locks serializing transfers, if you mean that?
-ok, so in the efm32 driver the if (ddata->msgs) condition in
-efm32_i2c_master_xfer can never be true, right?
+> Here are three more patches for 3.19 fixing some long-standing memory
+> leaks and races (with userspace) in the gpio sysfs-interface
+> implementation.
 
-> > > +static int bcm_iproc_i2c_remove(struct platform_device *pdev)
-> > > +{
-> > > +	struct bcm_iproc_i2c_dev *iproc_i2c = platform_get_drvdata(pdev);
-> > > +
-> > > +	i2c_del_adapter(&iproc_i2c->adapter);
-> > You need to free the irq before i2c_del_adapter.
-> 
-> One could also keep using devm_request_irq and disable all interrupts
-> sources here?
-calling devm_free_irq would work or writel(0, iproc_i2c->base +
-IE_OFFSET) + synchronize_irq().
+All three patches applied for fixes.
 
-Best regards
-Uwe
+Thank you for daring to go into the sysfs mess, noone dares to go
+there but for you. This interface was merged when the GPIO subsystem
+was unmaintained IIRC and has serious design and code issues.
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> The memory leaks are marked for stable, but I'll need to backport them
+> to pre-3.18 kernels once they are upstream due to commit 0eb4c6c2671c
+> ("gpio: move sysfs support to its own file").
+
+OK we'll run into it. Just send them to Greg once this is upstream.
+
+> Please note that these patches will cause a conflict with 3511ee7b3312
+> ("gpio: lib-sysfs: Add 'wakeup' attribute") in gpio/devel, which adds
+> yet another device attribute without ever removing it. Unless the commit
+> in question can be reverted, that leak could be fixed as part of the
+> merge resolution, I guess.
+
+I took the patch out of my tree.
+
+SÃ¶ren: can you rebase the patch on top of my "fixes" branch or
+the next linux-next and I'll apply it once I can merge the next -rc
+into my devel branch.
+Include Johan on CC and check the leak fixes in this patch series
+to make sure we don't add more of them.
+
+Yours,
+Linus Walleij
