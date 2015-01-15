@@ -1,68 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755462AbbAORJg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 12:09:36 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:24315 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755295AbbAORJe (ORCPT
+	id S1755412AbbAORKi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 12:10:38 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:34420 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753539AbbAORKg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 12:09:34 -0500
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
-        <arm@kernel.org>
-CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Josh Wu <josh.wu@atmel.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Ludovic Desroches <ludovic.desroches@atmel.com>
-Subject: [GIT PULL] at91: defconfig for 3.20 #1
-Date: Thu, 15 Jan 2015 18:09:42 +0100
-Message-ID: <1421341782-14355-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 2.1.3
-Organization: atmel
+	Thu, 15 Jan 2015 12:10:36 -0500
+Date: Thu, 15 Jan 2015 17:09:57 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Cc: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Dylan Reid <dgreid@chromium.org>, Simon Glass <sjg@chromium.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Stephen Warren <swarren@wwwdotorg.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Lars-Peter Clausen <lars@metafoo.de>, Wolfram Sang <wsa@the-dreams.de>,
+        alsa-devel@alsa-project.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Message-ID: <20150115170957.GD3043@sirena.org.uk>
+References: <1421338359-27467-1-git-send-email-tomeu.vizoso@collabora.com>
+ <1421338359-27467-11-git-send-email-tomeu.vizoso@collabora.com>
+ <20150115162057.GC3043@sirena.org.uk>
+ <CAAObsKBKZsvLo9OjzcHiPEPq1iUeog0Bm-jzvxLrkt2X=N5djw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="+Xnt6BZa+I2KmHWw"
+Content-Disposition: inline
+In-Reply-To: <CAAObsKBKZsvLo9OjzcHiPEPq1iUeog0Bm-jzvxLrkt2X=N5djw@mail.gmail.com>
+X-Cookie: To program is to be.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v2 10/11] ASoC: tegra: Add a control for the headphone
+ switch
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd, Olof, Kevin,
 
-A little defconfig update. If you want me to collect more patches before
-sending you a more substantial one, let me know.
+--+Xnt6BZa+I2KmHWw
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thanks, bye,
+On Thu, Jan 15, 2015 at 06:02:51PM +0100, Tomeu Vizoso wrote:
+> On 15 January 2015 at 17:20, Mark Brown <broonie@kernel.org> wrote:
+> > On Thu, Jan 15, 2015 at 05:12:22PM +0100, Tomeu Vizoso wrote:
+> >> To be used by userspace when the headphones jack is plugged in.
 
-The following changes since commit eaa27f34e91a14cdceed26ed6c6793ec1d186115:
+> > I'm missing patches 1-9 of this series, what's going on there?
 
-  linux 3.19-rc4 (2015-01-11 12:44:53 -0800)
+> Sorry, no idea. They have reached lkml though:
 
-are available in the git repository at:
+> https://lkml.org/lkml/2015/1/15/473
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git tags/at91-defconfig
+What's going wrong there is that you didn't CC me on either them or the
+cover letter - you should always make sure that everyone is at least
+getting the cover letter so they know what's going on.  Never assume
+anyone is going to see anything on the list.
 
-for you to fetch changes up to a1b282911b47a522f150eb715fb037628c5173fe:
+--+Xnt6BZa+I2KmHWw
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-  ARM: at91: sama5: enable atmel-isi and ov2640 in defconfig (2015-01-15 16:28:23 +0100)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-----------------------------------------------------------------
-First batch of defconfig update for 3.20:
-- we remove DEBUG_LL from sama5 defconfig as all SoC are not compatible
-- enable ISI and selected sensors
+iQEcBAEBCAAGBQJUt/RkAAoJECTWi3JdVIfQA+gH/1KOociYTanGd0y/0grS2qKZ
+tROqSwXDCqvvENcy0pL+/XTGGucMNr0KRE3KHHtY5yXsouUq54heZsnM/moaiDf/
+fJVuleDfo6xWqTuzQj3ScwQF9aNr1FkN/V/Osqc4vTzi83BLOXCr031SUou0tW01
+EGI0691qY+AtOW7o9NVZqd/OLGbQHuQ0dqIFeXhjzYymd+aWUv33sf7Z97BR/GJX
+SFEfSa7FaS3eEsgxgsbFroV3nbXrk6rhE07PiYdGvu23VwsvqIPZ1s1wz1IjEhdP
+g7JyIzIqfdjDAnC0NMr3Y3xtzbs5Qv2Xe1euDrglbe4ovrOPpA663GGxClCnwKQ=
+=f8dJ
+-----END PGP SIGNATURE-----
 
-----------------------------------------------------------------
-Josh Wu (1):
-      ARM: at91: sama5: enable atmel-isi and ov2640 in defconfig
-
-Maxime Ripard (1):
-      ARM: at91/config: sama5: Remove DEBUG_LL
-
- arch/arm/configs/sama5_defconfig | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
-
--- 
-Nicolas Ferre
+--+Xnt6BZa+I2KmHWw--
