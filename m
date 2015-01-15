@@ -1,56 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932160AbbAORZe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 12:25:34 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:46839 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753346AbbAORZd (ORCPT
+	id S1754790AbbAOR05 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 12:26:57 -0500
+Received: from mail-we0-f176.google.com ([74.125.82.176]:35674 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752254AbbAOR04 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 12:25:33 -0500
-Message-ID: <54B7F84A.6020906@wwwdotorg.org>
-Date: Thu, 15 Jan 2015 10:26:34 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Thu, 15 Jan 2015 12:26:56 -0500
+Date: Thu, 15 Jan 2015 18:26:52 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: Vladimir Davydov <vdavydov@parallels.com>,
+        "Suzuki K. Poulose" <Suzuki.Poulose@arm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm@kvack.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <Will.Deacon@arm.com>
+Subject: Re: [PATCH cgroup/for-3.19-fixes] cgroup: implement
+ cgroup_subsys->unbind() callback
+Message-ID: <20150115172652.GF7008@dhcp22.suse.cz>
+References: <54B01335.4060901@arm.com>
+ <20150110085525.GD2110@esperanza>
+ <20150110214316.GF25319@htj.dyndns.org>
 MIME-Version: 1.0
-To: Tomeu Vizoso <tomeu.vizoso@collabora.com>, linux-tegra@vger.kernel.org
-CC: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Dylan Reid <dgreid@chromium.org>, Simon Glass <sjg@chromium.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 04/11] ARM: tegra: Set spi-max-frequency property to
- flash node
-References: <1421338359-27467-1-git-send-email-tomeu.vizoso@collabora.com> <1421338359-27467-5-git-send-email-tomeu.vizoso@collabora.com>
-In-Reply-To: <1421338359-27467-5-git-send-email-tomeu.vizoso@collabora.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150110214316.GF25319@htj.dyndns.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/15/2015 09:12 AM, Tomeu Vizoso wrote:
-> To silence a warning on Nyan boards.
->
-> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-> ---
->   arch/arm/boot/dts/tegra124-nyan-big.dts | 1 +
->   1 file changed, 1 insertion(+)
->
-> diff --git a/arch/arm/boot/dts/tegra124-nyan-big.dts b/arch/arm/boot/dts/tegra124-nyan-big.dts
-> index 9a9cffe..94c7ba9 100644
-> --- a/arch/arm/boot/dts/tegra124-nyan-big.dts
-> +++ b/arch/arm/boot/dts/tegra124-nyan-big.dts
-> @@ -1660,6 +1660,7 @@
->
->   		flash@0 {
->   			compatible = "winbond,w25q32dw";
-> +			spi-max-frequency = <25000000>;
+On Sat 10-01-15 16:43:16, Tejun Heo wrote:
+> Currently, if a hierarchy doesn't have any live children when it's
+> unmounted, the hierarchy starts dying by killing its refcnt.  The
+> expectation is that even if there are lingering dead children which
+> are lingering due to remaining references, they'll be put in a finite
+> amount of time.  When the children are finally released, the hierarchy
+> is destroyed and all controllers bound to it also are released.
+> 
+> However, for memcg, the premise that the lingering refs will be put in
+> a finite amount time is not true.  In the absense of memory pressure,
+> dead memcg's may hang around indefinitely pinned by its pages.  This
+> unfortunately may lead to indefinite hang on the next mount attempt
+> involving memcg as the mount logic waits for it to get released.
+> 
+> While we can change hierarchy destruction logic such that a hierarchy
+> is only destroyed when it's not mounted anywhere and all its children,
+> live or dead, are gone, this makes whether the hierarchy gets
+> destroyed or not to be determined by factors opaque to userland.
+> Userland may or may not get a new hierarchy on the next mount attempt.
+> Worse, if it explicitly wants to create a new hierarchy with different
+> options or controller compositions involving memcg, it will fail in an
+> essentially arbitrary manner.
+> 
+> We want to guarantee that a hierarchy is destroyed once the
+> conditions, unmounted and no visible children, are met.  To aid it,
+> this patch introduces a new callback cgroup_subsys->unbind() which is
+> invoked right before the hierarchy a subsystem is bound to starts
+> dying.  memcg can implement this callback and initiate draining of
+> remaining refs so that the hierarchy can eventually be released in a
+> finite amount of time.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Li Zefan <lizefan@huawei.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: Vladimir Davydov <vdavydov@parallels.com>
 
-This property already exists in the SPI controller. Isn't the max 
-frequency supposed to inherit from there? If so, shouldn't the code not 
-warn when such inheritance happens, i.e. it'd be better to fix the code?
+Ohh, I have missed this one as I wasn't on the CC list.
+
+FWIW this approach makes sense to me. I just think that we should have a
+way to fail. E.g. kmem pages are impossible to reclaim because there
+might be some objects lingering somewhere not bound to a task context
+and reparenting is hard as Vladimir has pointed out several times
+already.
+Normal LRU pages should be reclaimable or reparented to the root easily.
+
+I cannot judge the implementation but I agree with the fact that memcg
+controller should be the one to take an action.
+-- 
+Michal Hocko
+SUSE Labs
