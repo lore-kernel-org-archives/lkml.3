@@ -1,56 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755669AbbAOSt4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 13:49:56 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:38650 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755639AbbAOSty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 13:49:54 -0500
-Message-ID: <54B80B89.5010807@redhat.com>
-Date: Thu, 15 Jan 2015 12:48:41 -0600
-From: Mark Langsdorf <mlangsdo@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1755753AbbAOS4f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 13:56:35 -0500
+Received: from forward-corp1m.cmail.yandex.net ([5.255.216.100]:60182 "EHLO
+	forward-corp1m.cmail.yandex.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752885AbbAOS4a (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 13:56:30 -0500
+X-Greylist: delayed 432 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Jan 2015 13:56:28 EST
+Authentication-Results: smtpcorp1m.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
+Subject: [PATCHSET RFC 0/6] memcg: inode-based dirty-set controller
+From: Konstantin Khebnikov <khlebnikov@yandex-team.ru>
+To: linux-mm@kvack.org, cgroups@vger.kernel.org
+Cc: Roman Gushchin <klamm@yandex-team.ru>, Jan Kara <jack@suse.cz>,
+        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+        Tejun Heo <tj@kernel.org>, linux-fsdevel@vger.kernel.org,
+        koct9i@gmail.com
+Date: Thu, 15 Jan 2015 21:49:10 +0300
+Message-ID: <20150115180242.10450.92.stgit@buzz>
+User-Agent: StGit/0.17.1-dirty
 MIME-Version: 1.0
-To: Hanjun Guo <hanjun.guo@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Will Deacon <will.deacon@arm.com>
-CC: Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Jon Masters <jcm@redhat.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Mark Brown <broonie@kernel.org>,
-        Rob Herring <robh@kernel.org>, Robert Richter <rric@kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
-        phoenix.liyi@huawei.com, Timur Tabi <timur@codeaurora.org>,
-        suravee.suthikulpanit@amd.com, wangyijing@huawei.com,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org
-Subject: Re: [PATCH v7 12/17] ARM64 / ACPI: Introduce ACPI_IRQ_MODEL_GIC and
- register device's gsi
-References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org> <1421247905-3749-13-git-send-email-hanjun.guo@linaro.org>
-In-Reply-To: <1421247905-3749-13-git-send-email-hanjun.guo@linaro.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2015 09:05 AM, Hanjun Guo wrote:
-> Introduce ACPI_IRQ_MODEL_GIC which is needed for ARM64 as GIC is
-> used, and then register device's gsi with the core IRQ subsystem.
->
-> acpi_register_gsi() is similar to DT based irq_of_parse_and_map(),
-> since gsi is unique in the system, so use hwirq number directly
-> for the mapping.
->
-> Originally-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
-> Tested-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-> Tested-by: Yijing Wang <wangyijing@huawei.com>
-> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> ---
-Tested-by: Mark Langsdorf <mlangsdo@redhat.com>
+This is ressurection of my old RFC patch for dirty-set accounting cgroup [1]
+Now it's merged into memory cgroup and got bandwidth controller as a bonus.
+
+That shows alternative solution: less accurate but much less monstrous than
+accurate page-based dirty-set controller from Tejun Heo.
+
+Memory overhead: +1 pointer into struct address_space.
+Perfomance overhead is almost zero, no new locks added.
+
+Idea is stright forward: link each inode to some cgroup when first dirty
+page appers and account all dirty pages to it. Writeback is implemented
+as single per-bdi writeback work which writes only inodes which belong
+to memory cgroups where amount of dirty memory is beyond thresholds.
+
+Third patch adds trick for handling shared inodes which have dirty pages
+from several cgroups: it marks whole inode as shared and alters writeback
+filter for it.
+
+The rest is an example of bandwith and iops controller build on top of that.
+Design is completely original, I bet nobody ever used task-works for that =)
+
+[1] [PATCH RFC] fsio: filesystem io accounting cgroup
+http://marc.info/?l=linux-kernel&m=137331569501655&w=2
+
+Patches also available here:
+https://github.com/koct9i/linux.git branch memcg_dirty_control
+
+---
+
+Konstantin Khebnikov (6):
+      memcg: inode-based dirty and writeback pages accounting
+      memcg: dirty-set limiting and filtered writeback
+      memcg: track shared inodes with dirty pages
+      percpu_ratelimit: high-performance ratelimiting counter
+      delay-injection: resource management via procrastination
+      memcg: filesystem bandwidth controller
+
+
+ block/blk-core.c                 |    2 
+ fs/direct-io.c                   |    2 
+ fs/fs-writeback.c                |   22 ++
+ fs/inode.c                       |    1 
+ include/linux/backing-dev.h      |    1 
+ include/linux/fs.h               |   14 +
+ include/linux/memcontrol.h       |   27 +++
+ include/linux/percpu_ratelimit.h |   45 ++++
+ include/linux/sched.h            |    7 +
+ include/linux/writeback.h        |    1 
+ include/trace/events/sched.h     |    7 +
+ include/trace/events/writeback.h |    1 
+ kernel/sched/core.c              |   66 +++++++
+ kernel/sched/fair.c              |   12 +
+ lib/Makefile                     |    1 
+ lib/percpu_ratelimit.c           |  168 +++++++++++++++++
+ mm/memcontrol.c                  |  381 ++++++++++++++++++++++++++++++++++++++
+ mm/page-writeback.c              |   32 +++
+ mm/readahead.c                   |    2 
+ mm/truncate.c                    |    1 
+ mm/vmscan.c                      |    4 
+ 21 files changed, 787 insertions(+), 10 deletions(-)
+ create mode 100644 include/linux/percpu_ratelimit.h
+ create mode 100644 lib/percpu_ratelimit.c
+
+--
+Signature
