@@ -1,160 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755630AbbAOVgb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 16:36:31 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:50370 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751879AbbAOVga (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 16:36:30 -0500
-Message-ID: <54B832DA.9060900@gmail.com>
-Date: Thu, 15 Jan 2015 14:36:26 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S1754060AbbAOVkF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 16:40:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36809 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751510AbbAOVkC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 16:40:02 -0500
+Message-ID: <54B8335D.304@redhat.com>
+Date: Thu, 15 Jan 2015 16:38:37 -0500
+From: Jon Masters <jcm@redhat.com>
+Organization: Red Hat, Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-CC: Dominique Toupin <dominique.toupin@ericsson.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jeremie Galarneau <jgalar@efficios.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: [PATCHv3 0/8] perf tools: Add perf data CTF conversion
-References: <1421338556-20498-1-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1421338556-20498-1-git-send-email-jolsa@kernel.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Al Stone <ahs3@redhat.com>, Catalin Marinas <catalin.marinas@arm.com>,
+        Grant Likely <grant.likely@linaro.org>
+CC: Will Deacon <Will.Deacon@arm.com>,
+        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Mark Brown <broonie@kernel.org>,
+        Rob Herring <robh@kernel.org>, Robert Richter <rric@kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
+        Timur Tabi <timur@codeaurora.org>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linaro-acpi <linaro-acpi@lists.linaro.org>
+Subject: Re: [PATCH v7 00/17] Introduce ACPI for ARM64 based on ACPI 5.1
+References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org> <CACxGe6v_BvCQqp8d=LaQ8HeaOU1Zh_HPpwFTdwOjHUbqXsnQ8g@mail.gmail.com> <20150115182346.GE2329@e104818-lin.cambridge.arm.com> <54B831C9.3060700@redhat.com>
+In-Reply-To: <54B831C9.3060700@redhat.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/15/15 9:15 AM, Jiri Olsa wrote:
-> hi,
-> this is follow up on original RFC patchset:
->    http://marc.info/?t=140732735600004&r=1&w=2
->
-> Basically we are adding 'perf data convert' command to
-> allow conversion of perf data file into CTF [1] data.
->
-> v3 changes:
->    - rebased to latest acme's perf/core
->
-> v2 changes:
->    - addressed comments from Namhyung
->    - rebased to latest acme's perf/core
->
-> Changes from RFC:
->    - able to generate CTF data, that are possible to be displayed under
->      tracecompas GUI [3], please check several screenshots in here [4]
->    - storing CTF data streams per cpu
->    - several cleanups
->
-> Examples:
-> - Catch default perf data (cycles event):
->    $ perf record ls
->    [ perf record: Woken up 1 times to write data ]
->    [ perf record: Captured and wrote 0.012 MB perf.data (~546 samples) ]
->
-> - To display converted CTF data run [2]:
->    $ babeltrace ./ctf-data/
->    [03:19:13.962125533] (+?.?????????) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 1 }
->    [03:19:13.962130001] (+0.000004468) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 1 }
->    [03:19:13.962131936] (+0.000001935) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 8 }
->    [03:19:13.962133732] (+0.000001796) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 114 }
->    [03:19:13.962135557] (+0.000001825) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 2087 }
->    [03:19:13.962137627] (+0.000002070) cycles: { }, { ip = 0xFFFFFFFF81361938, tid = 20714, pid = 20714, period = 37582 }
->    [03:19:13.962161091] (+0.000023464) cycles: { }, { ip = 0xFFFFFFFF8124218F, tid = 20714, pid = 20714, period = 600246 }
->    [03:19:13.962517569] (+0.000356478) cycles: { }, { ip = 0xFFFFFFFF811A75DB, tid = 20714, pid = 20714, period = 1325731 }
->    [03:19:13.969518008] (+0.007000439) cycles: { }, { ip = 0x34080917B2, tid = 20714, pid = 20714, period = 1144298 }
->
-> - To get some nice output in tracecompas GUI [3], please capture sched:*
->    and syscall tracepoints like:
->    # perf record -e 'sched:*,raw_syscalls:*' -a
->    ^C[ perf record: Woken up 0 times to write data ]
->    [ perf record: Captured and wrote 412.347 MB perf.data (~18015721 samples) ]
->
-> - To convert perf data file run:
->    # perf data convert --to-ctf=./ctf
->    [ perf data convert: Converted 'perf.data' into CTF data './ctf' ]
->    [ perf data convert: Converted and wrote 408.421 MB (3964792 samples) ]
->
-> - To display converted CTF data run [2]:
->    # babeltrace ./ctf-data/
->    [23:32:20.165354855] (+0.000000507) sched:sched_wakeup: { cpu_id = 0 }, { perf_ip = 0xFFFFFFFF810BCA72, perf_tid = 0, perf_pid = 0, perf_id = 462554, perf_period = 1, common_type = 265, ...
->    [23:32:20.165359078] (+0.000001181) sched:sched_switch: { cpu_id = 0 }, { perf_ip = 0xFFFFFFFF8172A110, perf_tid = 0, perf_pid = 0, perf_id = 462562, perf_period = 1, common_type = 263, ...
->    [23:32:20.165364686] (+0.000000328) sched:sched_stat_runtime: { cpu_id = 0 }, { perf_ip = 0xFFFFFFFF810C8AE5, perf_tid = 5326, perf_pid = 5326, perf_id = 462610, perf_period = 11380, ...
->    [23:32:20.165366067] (+0.000001205) sched:sched_switch: { cpu_id = 0 }, { perf_ip = 0xFFFFFFFF8172A110, perf_tid = 5326, perf_pid = 5326, perf_id = 462562, perf_period = 1, common_type  ...
->    [23:32:20.165723312] (+0.000001479) sched:sched_stat_runtime: { cpu_id = 2 }, { perf_ip = 0xFFFFFFFF810C8AE5, perf_tid = 11821, perf_pid = 11821, perf_id = 462612, perf_period = 1000265, ...
->    [23:32:20.065282391] (+?.?????????) raw_syscalls:sys_enter: { cpu_id = 1 }, { perf_ip = 0xFFFFFFFF810230AF, perf_tid = 26155, perf_pid = 26155, perf_id = 462635, perf_period = 1, ...
->    [23:32:20.065286422] (+0.000004031) raw_syscalls:sys_exit: { cpu_id = 1 }, { perf_ip = 0xFFFFFFFF810231D8, perf_tid = 26155, perf_pid = 26155, perf_id = 462639, perf_period = 1, ...
->
-> - Or run tracecompass and open the CTF data ;-)
->
-> Changes are also reachable in here:
->    git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
->    perf/core_ctf_convert
->
-> thanks,
-> jirka
->
-> [1] Common Trace Format - http://www.efficios.com/ctf
-> [2] babeltrace - http://www.efficios.com/babeltrace
-> [3] Trace compass - http://projects.eclipse.org/projects/tools.tracecompass
-> [4] screenshots - http://people.redhat.com/~jolsa/tracecompass-perf/
->
->
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Dominique Toupin <dominique.toupin@ericsson.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Jeremie Galarneau <jgalar@efficios.com>
-> Cc: Jiri Olsa <jolsa@kernel.org>
-> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> Cc: Namhyung Kim <namhyung@gmail.com>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> Cc: Tom Zanussi <tzanussi@gmail.com>
-> ---
-> Jiri Olsa (5):
->        perf tools: Add feature check for libbabeltrace
->        perf tools: Add new perf data command
->        perf data: Add perf data to CTF conversion support
->        perf data: Enable stream flush within processing
->        perf data: Add support for setting ordered_events queue size
->
-> Sebastian Andrzej Siewior (3):
->        perf data: Add a 'perf' prefix to the generic fields
->        perf data: Add tracepoint events fields CTF conversion support
->        perf data: Switch to multiple cpu stream files
->
->   tools/perf/Documentation/perf-data.txt                |   40 ++
->   tools/perf/Documentation/perf.txt                     |    7 +-
->   tools/perf/Makefile.perf                              |    9 +-
->   tools/perf/builtin-data.c                             |  119 ++++++
->   tools/perf/builtin.h                                  |    1 +
->   tools/perf/command-list.txt                           |    1 +
->   tools/perf/config/Makefile                            |   24 ++
->   tools/perf/config/feature-checks/Makefile             |    8 +-
->   tools/perf/config/feature-checks/test-all.c           |    5 +
->   tools/perf/config/feature-checks/test-libbabeltrace.c |    8 +
->   tools/perf/perf.c                                     |    1 +
->   tools/perf/util/data-convert-bt.c                     | 1057 +++++++++++++++++++++++++++++++++++++++++++++++++
->   tools/perf/util/data-convert-bt.h                     |    8 +
->   tools/perf/util/debug.c                               |    2 +
->   tools/perf/util/debug.h                               |    1 +
->   15 files changed, 1287 insertions(+), 4 deletions(-)
->   create mode 100644 tools/perf/Documentation/perf-data.txt
->   create mode 100644 tools/perf/builtin-data.c
->   create mode 100644 tools/perf/config/feature-checks/test-libbabeltrace.c
->   create mode 100644 tools/perf/util/data-convert-bt.c
->   create mode 100644 tools/perf/util/data-convert-bt.h
->
+On 01/15/2015 04:31 PM, Al Stone wrote:
+> On 01/15/2015 11:23 AM, Catalin Marinas wrote:
+>> On Thu, Jan 15, 2015 at 04:26:20PM +0000, Grant Likely wrote:
+>>> On Wed, Jan 14, 2015 at 3:04 PM, Hanjun Guo <hanjun.guo@linaro.org> wrote:
+>>>> This is the v7 of ACPI core patches for ARM64 based on ACPI 5.1
+>>>
+>>> I'll get right to the point: Can we please have this series queued up
+>>> for v3.20?
+>> [snip ... ]
+> 
+>>> 5. Platform support patches need verification and review
+>>>    * ACPI core works on at least the Foundation model, Juno, APM
+>>> Mustang, and AMD Seattle
+>>>    * There still are driver patches being discussed. See Al's summary
+>>> for details
+>>>    * As I argued above, the state of driver patches isn't going to be
+>>
+>> We are still lacking here. To quote Al, "First version for AMD Seattle
+>> has been posted to the public linaro-acpi mailing list for initial
+>> review". Sorry but I don't follow linaro-acpi list. I don't know what's
+>> in those patches and I can't tell which subsystems they touch, whether
+>> maintainers agree with them. So in conclusion, I'm not confident the
+>> arm64 hardware ACPI story looks that great yet.
+>>  
+> 
+> This is solely my fault -- too much time on processes, email, and
+> documentation, not enough time on the Seattle patches.  And not
+> enough Seattles to go around for someone else to pick up the slack.
 
-All of the patches look good to me:
-   Reviewed-by: David Ahern <dsahern@gmail.com>
+As an aside: a few of us have discretely assisted in ensuring that the
+right folks have access to hardware platforms over the past few months.
+If one of the upstream maintainers does not have v8 hardware and doing
+so will unblock progress please get in touch off list.
 
-Seems like a great start point to a cool feature.
+Jon.
+
