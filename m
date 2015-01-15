@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755788AbbAOWKU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 17:10:20 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:50447 "EHLO
+	id S1756019AbbAOWNt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 17:13:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:50457 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753506AbbAOWKL (ORCPT
+	with ESMTP id S1754257AbbAOWKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 15 Jan 2015 17:10:11 -0500
 From: Kamal Mostafa <kamal@canonical.com>
@@ -12,9 +12,9 @@ To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
 Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
         Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 07/19] userns: Document what the invariant required for safe unprivileged mappings.
-Date: Thu, 15 Jan 2015 14:09:43 -0800
-Message-Id: <1421359795-11155-8-git-send-email-kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 08/19] userns: Only allow the creator of the userns unprivileged mappings
+Date: Thu, 15 Jan 2015 14:09:44 -0800
+Message-Id: <1421359795-11155-9-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1421359795-11155-1-git-send-email-kamal@canonical.com>
 References: <1421359795-11155-1-git-send-email-kamal@canonical.com>
@@ -29,48 +29,54 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit 0542f17bf2c1f2430d368f44c8fcf2f82ec9e53e upstream.
+commit f95d7918bd1e724675de4940039f2865e5eec5fe upstream.
 
-The rule is simple.  Don't allow anything that wouldn't be allowed
-without unprivileged mappings.
+If you did not create the user namespace and are allowed
+to write to uid_map or gid_map you should already have the necessary
+privilege in the parent user namespace to establish any mapping
+you want so this will not affect userspace in practice.
 
-It was previously overlooked that establishing gid mappings would
-allow dropping groups and potentially gaining permission to files and
-directories that had lesser permissions for a specific group than for
-all other users.
+Limiting unprivileged uid mapping establishment to the creator of the
+user namespace makes it easier to verify all credentials obtained with
+the uid mapping can be obtained without the uid mapping without
+privilege.
 
-This is the rule needed to fix CVE-2014-8989 and prevent any other
-security issues with new_idmap_permitted.
+Limiting unprivileged gid mapping establishment (which is temporarily
+absent) to the creator of the user namespace also ensures that the
+combination of uid and gid can already be obtained without privilege.
 
-The reason for this rule is that the unix permission model is old and
-there are programs out there somewhere that take advantage of every
-little corner of it.  So allowing a uid or gid mapping to be
-established without privielge that would allow anything that would not
-be allowed without that mapping will result in expectations from some
-code somewhere being violated.  Violated expectations about the
-behavior of the OS is a long way to say a security issue.
+This is part of the fix for CVE-2014-8989.
 
+Reviewed-by: Andy Lutomirski <luto@amacapital.net>
 Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- kernel/user_namespace.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ kernel/user_namespace.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
-index 8bdb421..1ae8d2c 100644
+index 1ae8d2c..30a5362 100644
 --- a/kernel/user_namespace.c
 +++ b/kernel/user_namespace.c
-@@ -804,7 +804,9 @@ static bool new_idmap_permitted(const struct file *file,
+@@ -804,14 +804,16 @@ static bool new_idmap_permitted(const struct file *file,
  				struct user_namespace *ns, int cap_setid,
  				struct uid_gid_map *new_map)
  {
--	/* Allow mapping to your own filesystem ids */
-+	/* Don't allow mappings that would allow anything that wouldn't
-+	 * be allowed without the establishment of unprivileged mappings.
-+	 */
- 	if ((new_map->nr_extents == 1) && (new_map->extent[0].count == 1)) {
++	const struct cred *cred = file->f_cred;
+ 	/* Don't allow mappings that would allow anything that wouldn't
+ 	 * be allowed without the establishment of unprivileged mappings.
+ 	 */
+-	if ((new_map->nr_extents == 1) && (new_map->extent[0].count == 1)) {
++	if ((new_map->nr_extents == 1) && (new_map->extent[0].count == 1) &&
++	    uid_eq(ns->owner, cred->euid)) {
  		u32 id = new_map->extent[0].lower_first;
  		if (cap_setid == CAP_SETUID) {
+ 			kuid_t uid = make_kuid(ns->parent, id);
+-			if (uid_eq(uid, file->f_cred->euid))
++			if (uid_eq(uid, cred->euid))
+ 				return true;
+ 		}
+ 		else if (cap_setid == CAP_SETGID) {
 -- 
 1.9.1
 
