@@ -1,177 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753967AbbAOM3j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 07:29:39 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:56881 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753782AbbAOM3f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 07:29:35 -0500
-From: Imre Palik <imrep.amz@gmail.com>
-To: linux-audit@redhat.com, Paul Moore <paul@paul-moore.com>
-Cc: Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
-        "Palik, Imre" <imrep@amazon.de>, Matt Wilson <msw@amazon.com>
-Subject: [RFC PATCH v3] audit: move the tree pruning to a dedicated thread
-Date: Thu, 15 Jan 2015 13:27:50 +0100
-Message-Id: <1421324870-15070-1-git-send-email-imrep.amz@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1753156AbbAOM2x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 07:28:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60753 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751470AbbAOM2v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 07:28:51 -0500
+Date: Thu, 15 Jan 2015 07:28:32 -0500
+From: Brian Foster <bfoster@redhat.com>
+To: Namjae Jeon <namjae.jeon@samsung.com>
+Cc: "'Namjae Jeon'" <linkinjeon@gmail.com>, david@fromorbit.com, tytso@mit.edu,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, xfs@oss.sgi.com, a.sangwan@samsung.com
+Subject: Re: [PATCH v8 9/11] xfstests: generic/043: Test multiple fallocate
+ insert/collapse range calls
+Message-ID: <20150115122831.GA18876@bfoster.bfoster>
+References: <1421165126-3585-1-git-send-email-linkinjeon@gmail.com>
+ <1421165126-3585-10-git-send-email-linkinjeon@gmail.com>
+ <20150114201710.GB49511@bfoster.bfoster>
+ <004301d030ac$0ad62960$20827c20$@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <004301d030ac$0ad62960$20827c20$@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Palik, Imre" <imrep@amazon.de>
+On Thu, Jan 15, 2015 at 07:14:26PM +0900, Namjae Jeon wrote:
+> 
+> > > +_require_scratch
+> > > +_require_xfs_io_command "fiemap"
+> > > +_require_xfs_io_command "finsert"
+> > > +_require_xfs_io_command "fcollapse"
+> > > +_do_die_on_error=y
+> > 
+> > What is _do_die_on_error for? Seems like that's only relevant for using
+> > _do()?
+> > 
+> > > +src=$SCRATCH_MNT/testfile
+> > > +dest=$SCRATCH_MNT/testfile.dest
+> > > +BLOCKS=100
+> > > +BSIZE=`get_block_size $SCRATCH_MNT`
+> > > +
+> > 
+> > rm -f $seqres.full
+> > 
+> > ... to clear out the old .full file.
+> > 
+> > > +_scratch_mkfs MKFS_OPTIONS >> $seqres.full 2>&1
+> > 
+> > You don't need MKFS_OPTIONS here. In fact, this currently causes a mkfs
+> > failure (missing $) that we don't detect because we aren't checking that
+> > the mkfs actually succeeds. All we need to do here is:
+> > 
+> > _scratch_mkfs >> $seqres.full 2>&1 || _fail "mkfs failed"
+> > 
+> > If you dig down into _scratch_mkfs(), you'll see that it already
+> > includes $MKFS_OPTIONS and thus formats the fs as specified by the test
+> > config.
+> > 
+> > It might also be a good idea to check that the _scratch_mount below
+> > succeeds as well...
+> > 
+> > > +_scratch_mount >> $seqres.full 2>&1
+> > > +length=$(($BLOCKS * $BSIZE))
+> > > +
+> > > +# Write file
+> > > +$XFS_IO_PROG -f -c "pwrite 0 $length" -c fsync $src > /dev/null
+> > > +cp $src $dest
+> > > +
+> > 
+> > It seems quite unlikely for this to not create a single extent given the
+> > smallish file size and freshly created fs, but who knows with various fs
+> > types, test configurations, test device sizes, etc. Another option could
+> > be to check the starting extent count and verify the ending extent count
+> > matches, rather than assume hardcoded values of 1.
+> > 
+> > To be honest, even just including the starting extent count in the
+> > golden output (e.g., add an fiemap command here as well) might be good
+> > enough to distinguish that failure path from something going wrong in
+> > the collapse path, should it ever occur.
+> > 
+> > > +# Insert alternate blocks
+> > > +for (( j=0; j < $(($BLOCKS/2)); j++ )); do
+> > > +	offset=$((($j*$BSIZE)*2))
+> > > +	$XFS_IO_PROG -c "finsert $offset $BSIZE" $dest > /dev/null
+> > > +done
+> > > +
+> > > +# Check if 100 extents are present
+> > > +$XFS_IO_PROG -c "fiemap -v" $dest | grep "^ *[0-9]*:" |wc -l
+> > > +
+> > > +_check_scratch_fs
+> > > +if [ $? -ne 0 ]; then
+> > > +	status=1
+> > > +	exit
+> > > +fi
+> > > +
+> > > +# Collapse alternate blocks
+> > > +for (( j=0; j < $(($BLOCKS/2)); j++ )); do
+> > > +	offset=$((($j*$BSIZE)))
+> > > +	$XFS_IO_PROG -c "fcollapse $offset $BSIZE" $dest > /dev/null
+> > > +done
+> > > +
+> > > +# Check if 1 extents are present
+> > > +$XFS_IO_PROG -c "fiemap -v" $dest | grep "^ *[0-9]*:" |wc -l
+> > > +
+> > > +# compare original file and test file.
+> > > +cmp $src $dest || _fail "file bytes check failed"
+> > > +
+> > > +_check_scratch_fs
+> > > +if [ $? -ne 0 ]; then
+> > > +	status=1
+> > > +	exit
+> > > +fi
+> > > +
+> > > +umount $SCRATCH_MNT
+> > > +
+> > 
+> > The scratch device is unmounted and checked after each test that uses it
+> > so the above is unnecessary.
+> I checked your each review points. and updated patch.
+> 
+> Could you please review below patch ?
+> Thanks a lot!
+> 
+> ------------------------------------------------------------------------------
+> Subject: [PATCH v9 9/11] xfstests: generic/043: Test multiple fallocate 
+>  insert/collapse range calls
+> 
+> This testcase(043) tries to test finsert range a single alternate block
+> mulitiple times and test merge code of collase range.
+> 
+> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+> Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
+> ---
+>  tests/generic/043     |   96 +++++++++++++++++++++++++++++++++++++++++++++++++
+>  tests/generic/043.out |    2 +
+>  tests/generic/group   |    1 +
+>  3 files changed, 99 insertions(+), 0 deletions(-)
+>  create mode 100644 tests/generic/043
+>  create mode 100644 tests/generic/043.out
+> 
+> diff --git a/tests/generic/043 b/tests/generic/043
+> new file mode 100644
+> index 0000000..a6f91ce
+> --- /dev/null
+> +++ b/tests/generic/043
+> @@ -0,0 +1,96 @@
+> +#! /bin/bash
+> +# FS QA Test No. generic/043
+> +#
+> +# Test multiple fallocate insert/collapse range calls on same file.
+> +# Call insert range a single alternate block multiple times until the file
+> +# is left with 100 extents and as much number of extents. And Call collapse
+> +# range about the previously inserted ranges to test merge code of collapse
+> +# range. Also check for data integrity and file system consistency.
+> +#-----------------------------------------------------------------------
+> +# Copyright (c) 2014 Samsung Electronics.  All Rights Reserved.
+> +#
+> +# This program is free software; you can redistribute it and/or
+> +# modify it under the terms of the GNU General Public License as
+> +# published by the Free Software Foundation.
+> +#
+> +# This program is distributed in the hope that it would be useful,
+> +# but WITHOUT ANY WARRANTY; without even the implied warranty of
+> +# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> +# GNU General Public License for more details.
+> +#
+> +# You should have received a copy of the GNU General Public License
+> +# along with this program; if not, write the Free Software Foundation,
+> +# Inc.,  51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+> +#
+> +#-----------------------------------------------------------------------
+> +#
+> +
+> +seq=`basename $0`
+> +seqres=$RESULT_DIR/$seq
+> +echo "QA output created by $seq"
+> +
+> +here=`pwd`
+> +tmp=/tmp/$$
+> +status=1	# failure is the default!
+> +trap "rm -f $tmp.*; exit \$status" 0 1 2 3 15
+> +
+> +# get standard environment, filters and checks
+> +. ./common/rc
+> +. ./common/filter
+> +
+> +# real QA test starts here
+> +_supported_fs generic
+> +_supported_os Linux
+> +
+> +_require_scratch
+> +_require_xfs_io_command "fiemap"
+> +_require_xfs_io_command "finsert"
+> +_require_xfs_io_command "fcollapse"
+> +_do_die_on_error=always
 
-When file auditing is enabled, during a low memory situation, a memory
-allocation with __GFP_FS can lead to pruning the inode cache.  Which can,
-in turn lead to audit_tree_freeing_mark() being called.  This can call
-audit_schedule_prune(), that tries to fork a pruning thread, and
-waits until the thread is created.  But forking needs memory, and the
-memory allocations there are done with __GFP_FS.
+Still not sure what the above is for, but otherwise this one looks fine
+to me:
 
-So we are waiting merrily for some __GFP_FS memory allocations to complete,
-while holding some filesystem locks.  This can take a while ...
+Reviewed-by: Brian Foster <bfoster@redhat.com>
 
-This patch creates a single thread for pruning the tree from
-audit_add_tree_rule(), and thus avoids the deadlock that the on-demand
-thread creation can cause.
-
-Reported-by: Matt Wilson <msw@amazon.com>
-Cc: Matt Wilson <msw@amazon.com>
-Signed-off-by: Imre Palik <imrep@amazon.de>
----
- kernel/audit_tree.c |   86 ++++++++++++++++++++++++++++++++++-----------------
- 1 file changed, 58 insertions(+), 28 deletions(-)
-
-diff --git a/kernel/audit_tree.c b/kernel/audit_tree.c
-index 2e0c974..4883b6e 100644
---- a/kernel/audit_tree.c
-+++ b/kernel/audit_tree.c
-@@ -37,6 +37,7 @@ struct audit_chunk {
- 
- static LIST_HEAD(tree_list);
- static LIST_HEAD(prune_list);
-+static struct task_struct *prune_thread;
- 
- /*
-  * One struct chunk is attached to each inode of interest.
-@@ -651,6 +652,55 @@ static int tag_mount(struct vfsmount *mnt, void *arg)
- 	return tag_chunk(mnt->mnt_root->d_inode, arg);
- }
- 
-+/*
-+ * That gets run when evict_chunk() ends up needing to kill audit_tree.
-+ * Runs from a separate thread.
-+ */
-+static int prune_tree_thread(void *unused)
-+{
-+	for (;;) {
-+		set_current_state(TASK_INTERRUPTIBLE);
-+		if (list_empty(&prune_list))
-+			schedule();
-+		__set_current_state(TASK_RUNNING);
-+
-+		mutex_lock(&audit_cmd_mutex);
-+		mutex_lock(&audit_filter_mutex);
-+
-+		while (!list_empty(&prune_list)) {
-+			struct audit_tree *victim;
-+
-+			victim = list_entry(prune_list.next,
-+					struct audit_tree, list);
-+			list_del_init(&victim->list);
-+
-+			mutex_unlock(&audit_filter_mutex);
-+
-+			prune_one(victim);
-+
-+			mutex_lock(&audit_filter_mutex);
-+		}
-+
-+		mutex_unlock(&audit_filter_mutex);
-+		mutex_unlock(&audit_cmd_mutex);
-+	}
-+	return 0;
-+}
-+
-+static int launch_prune_thread(void)
-+{
-+	prune_thread = kthread_create(prune_tree_thread, NULL,
-+				"audit_prune_tree");
-+	if (IS_ERR(prune_thread)) {
-+		pr_err("cannot start thread audit_prune_tree");
-+		prune_thread = NULL;
-+		return -ENOMEM;
-+	} else {
-+		wake_up_process(prune_thread);
-+		return 0;
-+	}
-+}
-+
- /* called with audit_filter_mutex */
- int audit_add_tree_rule(struct audit_krule *rule)
- {
-@@ -674,6 +724,12 @@ int audit_add_tree_rule(struct audit_krule *rule)
- 	/* do not set rule->tree yet */
- 	mutex_unlock(&audit_filter_mutex);
- 
-+	if (unlikely(!prune_thread)) {
-+		err = launch_prune_thread();
-+		if (err)
-+			goto Err;
-+	}
-+
- 	err = kern_path(tree->pathname, 0, &path);
- 	if (err)
- 		goto Err;
-@@ -811,36 +867,10 @@ int audit_tag_tree(char *old, char *new)
- 	return failed;
- }
- 
--/*
-- * That gets run when evict_chunk() ends up needing to kill audit_tree.
-- * Runs from a separate thread.
-- */
--static int prune_tree_thread(void *unused)
--{
--	mutex_lock(&audit_cmd_mutex);
--	mutex_lock(&audit_filter_mutex);
--
--	while (!list_empty(&prune_list)) {
--		struct audit_tree *victim;
--
--		victim = list_entry(prune_list.next, struct audit_tree, list);
--		list_del_init(&victim->list);
--
--		mutex_unlock(&audit_filter_mutex);
--
--		prune_one(victim);
--
--		mutex_lock(&audit_filter_mutex);
--	}
--
--	mutex_unlock(&audit_filter_mutex);
--	mutex_unlock(&audit_cmd_mutex);
--	return 0;
--}
- 
- static void audit_schedule_prune(void)
- {
--	kthread_run(prune_tree_thread, NULL, "audit_prune_tree");
-+	wake_up_process(prune_thread);
- }
- 
- /*
-@@ -907,9 +937,9 @@ static void evict_chunk(struct audit_chunk *chunk)
- 	for (n = 0; n < chunk->count; n++)
- 		list_del_init(&chunk->owners[n].list);
- 	spin_unlock(&hash_lock);
-+	mutex_unlock(&audit_filter_mutex);
- 	if (need_prune)
- 		audit_schedule_prune();
--	mutex_unlock(&audit_filter_mutex);
- }
- 
- static int audit_tree_handle_event(struct fsnotify_group *group,
--- 
-1.7.9.5
-
+> +src=$SCRATCH_MNT/testfile
+> +dest=$SCRATCH_MNT/testfile.dest
+> +BLOCKS=100
+> +BSIZE=`get_block_size $SCRATCH_MNT`
+> +rm -f $seqres.full
+> +
+> +_scratch_mkfs >> $seqres.full 2>&1 || _fail "mkfs failed"
+> +_scratch_mount || _fail "mount failed"
+> +length=$(($BLOCKS * $BSIZE))
+> +
+> +# Write file
+> +_do "$XFS_IO_PROG -f -c \"pwrite 0 $length\" -c fsync $src"
+> +cp $src $dest
+> +extent_before=`$XFS_IO_PROG -c "fiemap -v" $dest | grep "^ *[0-9]*:" |wc -l`
+> +
+> +# Insert alternate blocks
+> +for (( j=0; j < $(($BLOCKS/2)); j++ )); do
+> +	offset=$((($j*$BSIZE)*2))
+> +	_do "$XFS_IO_PROG -c \"finsert $offset $BSIZE\" $dest"
+> +done
+> +
+> +# Check if 100 extents are present
+> +$XFS_IO_PROG -c "fiemap -v" $dest | grep "^ *[0-9]*:" |wc -l
+> +
+> +_check_scratch_fs
+> +if [ $? -ne 0 ]; then
+> +	status=1
+> +	exit
+> +fi
+> +
+> +# Collapse alternate blocks
+> +for (( j=0; j < $(($BLOCKS/2)); j++ )); do
+> +	offset=$((($j*$BSIZE)))
+> +	_do "$XFS_IO_PROG -c \"fcollapse $offset $BSIZE\" $dest"
+> +done
+> +
+> +extent_after=`$XFS_IO_PROG -c "fiemap -v" $dest | grep "^ *[0-9]*:" |wc -l`
+> +if [ $extent_before -ne $extent_after ]; then
+> +	echo "extents mismatched before = $extent_before after = $extent_after"
+> +fi
+> +
+> +# compare original file and test file.
+> +cmp $src $dest || _fail "file bytes check failed"
+> +
+> +# success, all done
+> +status=0
+> +exit
+> diff --git a/tests/generic/043.out b/tests/generic/043.out
+> new file mode 100644
+> index 0000000..28427c5
+> --- /dev/null
+> +++ b/tests/generic/043.out
+> @@ -0,0 +1,2 @@
+> +QA output created by 043
+> +100
+> diff --git a/tests/generic/group b/tests/generic/group
+> index c0944b3..0a10bdd 100644
+> --- a/tests/generic/group
+> +++ b/tests/generic/group
+> @@ -45,6 +45,7 @@
+>  040 auto quick prealloc
+>  041 auto quick prealloc
+>  042 auto quick prealloc
+> +043 auto quick prealloc
+>  053 acl repair auto quick
+>  062 attr udf auto quick
+>  068 other auto freeze dangerous stress
+> -- 
+> 1.7.7
+> 
+> 
