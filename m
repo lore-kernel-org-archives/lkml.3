@@ -1,482 +1,446 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754714AbbAOPSj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 10:18:39 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:41253 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754631AbbAOPSf (ORCPT
+	id S1753549AbbAOPUm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 10:20:42 -0500
+Received: from mail-qa0-f49.google.com ([209.85.216.49]:60653 "EHLO
+	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751691AbbAOPUj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 10:18:35 -0500
-Message-ID: <98e6a7a4b00a1055334ffc9c9c4af091.squirrel@www.codeaurora.org>
-In-Reply-To: <1421332359-31785-5-git-send-email-ygardi@codeaurora.org>
-References: <1421332359-31785-1-git-send-email-ygardi@codeaurora.org>
-    <1421332359-31785-5-git-send-email-ygardi@codeaurora.org>
-Date: Thu, 15 Jan 2015 15:18:33 -0000
-Subject: Re: [PATCH v7 4/5] phy: qcom-ufs: add support for 14nm phy
-From: dovl@codeaurora.org
-To: "Yaniv Gardi" <ygardi@codeaurora.org>
-Cc: james.bottomley@hansenpartnership.com, hch@infradead.org,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, santoshsy@gmail.com,
-        linux-scsi-owner@vger.kernel.org, subhashj@codeaurora.org,
-        ygardi@codeaurora.org, noag@codeaurora.org, draviv@codeaurora.org,
-        "Kishon Vijay Abraham I" <kishon@ti.com>,
-        "Grant Likely" <grant.likely@linaro.org>,
-        "Rob Herring" <robh+dt@kernel.org>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>
-User-Agent: SquirrelMail/1.4.22-4.el6
+	Thu, 15 Jan 2015 10:20:39 -0500
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+To: Namjae Jeon <namjae.jeon@samsung.com>, Dave Chinner <david@fromorbit.com>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        "'Alexander Viro'" <viro@zeniv.linux.org.uk>
+Cc: Brian Foster <bfoster@redhat.com>,
+        =?utf-8?B?THVrw6HFoQ==?= Czerner <lczerner@redhat.com>,
+        linux-fsdevel@vger.kernel.org, Ashish Sangwan <a.sangwan@samsung.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] fs: file freeze support
+In-Reply-To: <005c01d030b7$90ab2cb0$b2018610$@samsung.com>
+References: <005c01d030b7$90ab2cb0$b2018610$@samsung.com>
+User-Agent: Notmuch/0.18.1 (http://notmuchmail.org) Emacs/24.4.1 (x86_64-pc-linux-gnu)
+Date: Thu, 15 Jan 2015 18:19:36 +0300
+Message-ID: <87sifc137b.fsf@openvz.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha512; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reviewed-by: Dov Levenglick <dovl@codeaurora.org>
+--=-=-=
+Content-Type: text/plain
+Content-Transfer-Encoding: quoted-printable
 
-> This change adds a support for a 14nm qcom-ufs phy that is
-> required in platforms that use ufs-qcom controller.
+Namjae Jeon <namjae.jeon@samsung.com> writes:
+
+> We introduce per-file freeze feature for unifying defrag ext4 and xfs
+> as first ingredient. We get the idea courtesy of Dave Chinner
+> (https://lkml.org/lkml/2014/7/14/759)
+> per-file freeze will be used to avoid that file is not modified while
+> userspace is doing the defrag.
 >
-> Signed-off-by: Yaniv Gardi <ygardi@codeaurora.org>
+> This patch tries to implement file write freeze functionality.
+> Introduce new inode state, I_WRITE_FREEZED.
+> When this state is set, any process which tries to modify the file's addr=
+ess
+> space, either by pagefault mmap writes or using write(2), will block until
+> the this state is cleared. I_WRITE_FREEZED is set by calling FS_IOC_FWFRE=
+EZE
+> ioctl and clear by FS_IOC_FWTHAW ioctl.
 >
+> File write freeze functionality, when used in conjunction with
+> inode's immutable flag can be used for creating truly stable file snapsho=
+ts
+> wherein write freeze will prevent any modification to the file from alrea=
+dy
+> open file descriptors and immutable flag will prevent any new modification
+> to the file. One of the intended uses for stable file snapshots would be =
+in
+> the defragmentation applications which defrags single file.
+>
+> For implementation purpose, initially we tried to keep percpu usage count=
+ers
+> inside struct inode just like there is struct sb_writers in super_block.
+> But considering that it will significantly bloat up struct inode when act=
+ually
+> the usage of file write freeze will be infrequent, we dropped this idea.
+> Instead we have tried to use already present filesystem freezing infrastr=
+ucture.
+> Current approach makes it possible for implementing file write freeze wit=
+hout
+> bloating any of struct super_block/inode.
+> In FS_IOC_FWFREEZE, we wait for complete fs to be frozen, set I_WRITE_FRE=
+EZED to
+> inode's state and unfreeze the fs.=20
+Looks interesting. I have added some comments below.
+>
+> TODO : prevent inode eviction when I_WRITE_FREEZED state is set.
+> TODO : xfstests testcase for file freeze.
+>
+> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+> Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
 > ---
->  drivers/phy/Makefile                |   1 +
->  drivers/phy/phy-qcom-ufs-qmp-14nm.c | 201
-> ++++++++++++++++++++++++++++++++++++
->  drivers/phy/phy-qcom-ufs-qmp-14nm.h | 177 +++++++++++++++++++++++++++++++
->  3 files changed, 379 insertions(+)
->  create mode 100644 drivers/phy/phy-qcom-ufs-qmp-14nm.c
->  create mode 100644 drivers/phy/phy-qcom-ufs-qmp-14nm.h
+>  fs/btrfs/inode.c        |  1 +
+>  fs/buffer.c             |  1 +
+>  fs/ext4/inode.c         |  1 +
+>  fs/f2fs/file.c          |  1 +
+>  fs/gfs2/file.c          |  1 +
+>  fs/inode.c              | 19 ++++++++++++++++++
+>  fs/ioctl.c              | 30 +++++++++++++++++++++++++++++
+>  fs/nilfs2/file.c        |  1 +
+>  fs/ocfs2/mmap.c         |  1 +
+>  fs/super.c              | 51 +++++++++++++++++++++++++++++++++++++++++++=
+++++++
+>  include/linux/fs.h      | 13 +++++++++++++
+>  include/uapi/linux/fs.h |  2 ++
+>  mm/filemap.c            |  1 +
+>  13 files changed, 123 insertions(+)
 >
-> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
-> index 781b2fa..cfbb720 100644
-> --- a/drivers/phy/Makefile
-> +++ b/drivers/phy/Makefile
-> @@ -36,3 +36,4 @@ obj-$(CONFIG_PHY_STIH407_USB)		+=
-> phy-stih407-usb.o
->  obj-$(CONFIG_PHY_STIH41X_USB)		+= phy-stih41x-usb.o
->  obj-$(CONFIG_PHY_QCOM_UFS) 	+= phy-qcom-ufs.o
->  obj-$(CONFIG_PHY_QCOM_UFS) 	+= phy-qcom-ufs-qmp-20nm.o
-> +obj-$(CONFIG_PHY_QCOM_UFS) 	+= phy-qcom-ufs-qmp-14nm.o
-> diff --git a/drivers/phy/phy-qcom-ufs-qmp-14nm.c
-> b/drivers/phy/phy-qcom-ufs-qmp-14nm.c
-> new file mode 100644
-> index 0000000..f5fc50a
-> --- /dev/null
-> +++ b/drivers/phy/phy-qcom-ufs-qmp-14nm.c
-> @@ -0,0 +1,201 @@
-> +/*
-> + * Copyright (c) 2013-2015, Linux Foundation. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 and
-> + * only version 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + */
-> +
-> +#include "phy-qcom-ufs-qmp-14nm.h"
-> +
-> +#define UFS_PHY_NAME "ufs_phy_qmp_14nm"
-> +#define UFS_PHY_VDDA_PHY_UV	(925000)
-> +
-> +static
-> +int ufs_qcom_phy_qmp_14nm_phy_calibrate(struct ufs_qcom_phy
-> *ufs_qcom_phy,
-> +					bool is_rate_B)
-> +{
-> +	int tbl_size_A = ARRAY_SIZE(phy_cal_table_rate_A);
-> +	int tbl_size_B = ARRAY_SIZE(phy_cal_table_rate_B);
-> +	int err;
-> +
-> +	err = ufs_qcom_phy_calibrate(ufs_qcom_phy, phy_cal_table_rate_A,
-> +		tbl_size_A, phy_cal_table_rate_B, tbl_size_B, is_rate_B);
-> +
-> +	if (err)
-> +		dev_err(ufs_qcom_phy->dev,
-> +			"%s: ufs_qcom_phy_calibrate() failed %d\n",
-> +			__func__, err);
-> +	return err;
-> +}
-> +
-> +static
-> +void ufs_qcom_phy_qmp_14nm_advertise_quirks(struct ufs_qcom_phy
-> *phy_common)
-> +{
-> +	phy_common->quirks =
-> +		UFS_QCOM_PHY_QUIRK_HIBERN8_EXIT_AFTER_PHY_PWR_COLLAPSE;
-> +}
-> +
-> +static int ufs_qcom_phy_qmp_14nm_init(struct phy *generic_phy)
-> +{
-> +	struct ufs_qcom_phy_qmp_14nm *phy = phy_get_drvdata(generic_phy);
-> +	struct ufs_qcom_phy *phy_common = &phy->common_cfg;
-> +	int err;
-> +
-> +	err = ufs_qcom_phy_init_clks(generic_phy, phy_common);
-> +	if (err) {
-> +		dev_err(phy_common->dev, "%s: ufs_qcom_phy_init_clks()
-> failed %d\n",
-> +			__func__, err);
-> +		goto out;
-> +	}
-> +
-> +	err = ufs_qcom_phy_init_vregulators(generic_phy, phy_common);
-> +	if (err) {
-> +		dev_err(phy_common->dev, "%s:
-> ufs_qcom_phy_init_vregulators() failed %d\n",
-> +			__func__, err);
-> +		goto out;
-> +	}
-> +	phy_common->vdda_phy.max_uV = UFS_PHY_VDDA_PHY_UV;
-> +	phy_common->vdda_phy.min_uV = UFS_PHY_VDDA_PHY_UV;
-> +
-> +	ufs_qcom_phy_qmp_14nm_advertise_quirks(phy_common);
-> +
-> +out:
-> +	return err;
-> +}
-> +
-> +static
-> +void ufs_qcom_phy_qmp_14nm_power_control(struct ufs_qcom_phy *phy, bool
-> val)
-> +{
-> +	writel_relaxed(val ? 0x1 : 0x0, phy->mmio +
-> UFS_PHY_POWER_DOWN_CONTROL);
-> +	/*
-> +	 * Before any transactions involving PHY, ensure PHY knows
-> +	 * that it's analog rail is powered ON (or OFF).
-> +	 */
-> +	mb();
-> +}
-> +
-> +static inline
-> +void ufs_qcom_phy_qmp_14nm_set_tx_lane_enable(struct ufs_qcom_phy *phy,
-> u32 val)
-> +{
-> +	/*
-> +	 * 14nm PHY does not have TX_LANE_ENABLE register.
-> +	 * Implement this function so as not to propagate error to caller.
-> +	 */
-> +}
-> +
-> +static inline void ufs_qcom_phy_qmp_14nm_start_serdes(struct ufs_qcom_phy
-> *phy)
-> +{
-> +	u32 tmp;
-> +
-> +	tmp = readl_relaxed(phy->mmio + UFS_PHY_PHY_START);
-> +	tmp &= ~MASK_SERDES_START;
-> +	tmp |= (1 << OFFSET_SERDES_START);
-> +	writel_relaxed(tmp, phy->mmio + UFS_PHY_PHY_START);
-> +	/* Ensure register value is committed */
-> +	mb();
-> +}
-> +
-> +static int ufs_qcom_phy_qmp_14nm_is_pcs_ready(struct ufs_qcom_phy
-> *phy_common)
-> +{
-> +	int err = 0;
-> +	u32 val;
-> +
-> +	err = readl_poll_timeout(phy_common->mmio +
-> UFS_PHY_PCS_READY_STATUS,
-> +		val, (val & MASK_PCS_READY), 10, 1000000);
-> +	if (err)
-> +		dev_err(phy_common->dev, "%s: poll for pcs failed err =
-> %d\n",
-> +			__func__, err);
-> +	return err;
-> +}
-> +
-> +static struct phy_ops ufs_qcom_phy_qmp_14nm_phy_ops = {
-> +	.init		= ufs_qcom_phy_qmp_14nm_init,
-> +	.exit		= ufs_qcom_phy_exit,
-> +	.power_on	= ufs_qcom_phy_power_on,
-> +	.power_off	= ufs_qcom_phy_power_off,
-> +	.owner		= THIS_MODULE,
-> +};
-> +
-> +static struct ufs_qcom_phy_specific_ops phy_14nm_ops = {
-> +	.calibrate_phy		= ufs_qcom_phy_qmp_14nm_phy_calibrate,
-> +	.start_serdes		= ufs_qcom_phy_qmp_14nm_start_serdes,
-> +	.is_physical_coding_sublayer_ready =
-> ufs_qcom_phy_qmp_14nm_is_pcs_ready,
-> +	.set_tx_lane_enable	=
-> ufs_qcom_phy_qmp_14nm_set_tx_lane_enable,
-> +	.power_control		= ufs_qcom_phy_qmp_14nm_power_control,
-> +};
-> +
-> +static int ufs_qcom_phy_qmp_14nm_probe(struct platform_device *pdev)
-> +{
-> +	struct device *dev = &pdev->dev;
-> +	struct phy *generic_phy;
-> +	struct ufs_qcom_phy_qmp_14nm *phy;
-> +	int err = 0;
-> +
-> +	phy = devm_kzalloc(dev, sizeof(*phy), GFP_KERNEL);
-> +	if (!phy) {
-> +		dev_err(dev, "%s: failed to allocate phy\n", __func__);
-> +		err = -ENOMEM;
-> +		goto out;
-> +	}
-> +
-> +	generic_phy = ufs_qcom_phy_generic_probe(pdev, &phy->common_cfg,
-> +				&ufs_qcom_phy_qmp_14nm_phy_ops,
-> &phy_14nm_ops);
-> +
-> +	if (!generic_phy) {
-> +		dev_err(dev, "%s: ufs_qcom_phy_generic_probe() failed\n",
-> +			__func__);
-> +		err = -EIO;
-> +		goto out;
-> +	}
-> +
-> +	phy_set_drvdata(generic_phy, phy);
-> +
-> +	strlcpy(phy->common_cfg.name, UFS_PHY_NAME,
-> +		sizeof(phy->common_cfg.name));
-> +
-> +out:
-> +	return err;
-> +}
-> +
-> +static int ufs_qcom_phy_qmp_14nm_remove(struct platform_device *pdev)
-> +{
-> +	struct device *dev = &pdev->dev;
-> +	struct phy *generic_phy = to_phy(dev);
-> +	struct ufs_qcom_phy *ufs_qcom_phy = get_ufs_qcom_phy(generic_phy);
-> +	int err = 0;
-> +
-> +	err = ufs_qcom_phy_remove(generic_phy, ufs_qcom_phy);
-> +	if (err)
-> +		dev_err(dev, "%s: ufs_qcom_phy_remove failed = %d\n",
-> +			__func__, err);
-> +
-> +	return err;
-> +}
-> +
-> +static const struct of_device_id ufs_qcom_phy_qmp_14nm_of_match[] = {
-> +	{.compatible = "qcom,ufs-phy-qmp-14nm"},
-> +	{},
-> +};
-> +MODULE_DEVICE_TABLE(of, ufs_qcom_phy_qmp_14nm_of_match);
-> +
-> +static struct platform_driver ufs_qcom_phy_qmp_14nm_driver = {
-> +	.probe = ufs_qcom_phy_qmp_14nm_probe,
-> +	.remove = ufs_qcom_phy_qmp_14nm_remove,
-> +	.driver = {
-> +		.of_match_table = ufs_qcom_phy_qmp_14nm_of_match,
-> +		.name = "ufs_qcom_phy_qmp_14nm",
-> +		.owner = THIS_MODULE,
-> +	},
-> +};
-> +
-> +module_platform_driver(ufs_qcom_phy_qmp_14nm_driver);
-> +
-> +MODULE_DESCRIPTION("Universal Flash Storage (UFS) QCOM PHY QMP 14nm");
-> +MODULE_LICENSE("GPL v2");
-> diff --git a/drivers/phy/phy-qcom-ufs-qmp-14nm.h
-> b/drivers/phy/phy-qcom-ufs-qmp-14nm.h
-> new file mode 100644
-> index 0000000..3aefdba
-> --- /dev/null
-> +++ b/drivers/phy/phy-qcom-ufs-qmp-14nm.h
-> @@ -0,0 +1,177 @@
-> +/*
-> + * Copyright (c) 2013-2015, Linux Foundation. All rights reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 and
-> + * only version 2 as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + */
-> +
-> +#ifndef UFS_QCOM_PHY_QMP_14NM_H_
-> +#define UFS_QCOM_PHY_QMP_14NM_H_
-> +
-> +#include "phy-qcom-ufs-i.h"
-> +
-> +/* QCOM UFS PHY control registers */
-> +#define COM_OFF(x)	(0x000 + x)
-> +#define PHY_OFF(x)	(0xC00 + x)
-> +#define TX_OFF(n, x)	(0x400 + (0x400 * n) + x)
-> +#define RX_OFF(n, x)	(0x600 + (0x400 * n) + x)
-> +
-> +/* UFS PHY QSERDES COM registers */
-> +#define QSERDES_COM_BG_TIMER			COM_OFF(0x0C)
-> +#define QSERDES_COM_BIAS_EN_CLKBUFLR_EN		COM_OFF(0x34)
-> +#define QSERDES_COM_SYS_CLK_CTRL		COM_OFF(0x3C)
-> +#define QSERDES_COM_LOCK_CMP1_MODE0		COM_OFF(0x4C)
-> +#define QSERDES_COM_LOCK_CMP2_MODE0		COM_OFF(0x50)
-> +#define QSERDES_COM_LOCK_CMP3_MODE0		COM_OFF(0x54)
-> +#define QSERDES_COM_LOCK_CMP1_MODE1		COM_OFF(0x58)
-> +#define QSERDES_COM_LOCK_CMP2_MODE1		COM_OFF(0x5C)
-> +#define QSERDES_COM_LOCK_CMP3_MODE1		COM_OFF(0x60)
-> +#define QSERDES_COM_CP_CTRL_MODE0		COM_OFF(0x78)
-> +#define QSERDES_COM_CP_CTRL_MODE1		COM_OFF(0x7C)
-> +#define QSERDES_COM_PLL_RCTRL_MODE0		COM_OFF(0x84)
-> +#define QSERDES_COM_PLL_RCTRL_MODE1		COM_OFF(0x88)
-> +#define QSERDES_COM_PLL_CCTRL_MODE0		COM_OFF(0x90)
-> +#define QSERDES_COM_PLL_CCTRL_MODE1		COM_OFF(0x94)
-> +#define QSERDES_COM_SYSCLK_EN_SEL		COM_OFF(0xAC)
-> +#define QSERDES_COM_RESETSM_CNTRL		COM_OFF(0xB4)
-> +#define QSERDES_COM_LOCK_CMP_EN			COM_OFF(0xC8)
-> +#define QSERDES_COM_LOCK_CMP_CFG		COM_OFF(0xCC)
-> +#define QSERDES_COM_DEC_START_MODE0		COM_OFF(0xD0)
-> +#define QSERDES_COM_DEC_START_MODE1		COM_OFF(0xD4)
-> +#define QSERDES_COM_DIV_FRAC_START1_MODE0	COM_OFF(0xDC)
-> +#define QSERDES_COM_DIV_FRAC_START2_MODE0	COM_OFF(0xE0)
-> +#define QSERDES_COM_DIV_FRAC_START3_MODE0	COM_OFF(0xE4)
-> +#define QSERDES_COM_DIV_FRAC_START1_MODE1	COM_OFF(0xE8)
-> +#define QSERDES_COM_DIV_FRAC_START2_MODE1	COM_OFF(0xEC)
-> +#define QSERDES_COM_DIV_FRAC_START3_MODE1	COM_OFF(0xF0)
-> +#define QSERDES_COM_INTEGLOOP_GAIN0_MODE0	COM_OFF(0x108)
-> +#define QSERDES_COM_INTEGLOOP_GAIN1_MODE0	COM_OFF(0x10C)
-> +#define QSERDES_COM_INTEGLOOP_GAIN0_MODE1	COM_OFF(0x110)
-> +#define QSERDES_COM_INTEGLOOP_GAIN1_MODE1	COM_OFF(0x114)
-> +#define QSERDES_COM_VCO_TUNE_CTRL		COM_OFF(0x124)
-> +#define QSERDES_COM_VCO_TUNE_MAP		COM_OFF(0x128)
-> +#define QSERDES_COM_VCO_TUNE1_MODE0		COM_OFF(0x12C)
-> +#define QSERDES_COM_VCO_TUNE2_MODE0		COM_OFF(0x130)
-> +#define QSERDES_COM_VCO_TUNE1_MODE1		COM_OFF(0x134)
-> +#define QSERDES_COM_VCO_TUNE2_MODE1		COM_OFF(0x138)
-> +#define QSERDES_COM_VCO_TUNE_TIMER1		COM_OFF(0x144)
-> +#define QSERDES_COM_VCO_TUNE_TIMER2		COM_OFF(0x148)
-> +#define QSERDES_COM_CLK_SELECT			COM_OFF(0x174)
-> +#define QSERDES_COM_HSCLK_SEL			COM_OFF(0x178)
-> +#define QSERDES_COM_CORECLK_DIV			COM_OFF(0x184)
-> +#define QSERDES_COM_CORE_CLK_EN			COM_OFF(0x18C)
-> +#define QSERDES_COM_CMN_CONFIG			COM_OFF(0x194)
-> +#define QSERDES_COM_SVS_MODE_CLK_SEL		COM_OFF(0x19C)
-> +#define QSERDES_COM_CORECLK_DIV_MODE1		COM_OFF(0x1BC)
-> +
-> +/* UFS PHY registers */
-> +#define UFS_PHY_PHY_START			PHY_OFF(0x00)
-> +#define UFS_PHY_POWER_DOWN_CONTROL		PHY_OFF(0x04)
-> +#define UFS_PHY_PCS_READY_STATUS		PHY_OFF(0x168)
-> +
-> +/* UFS PHY TX registers */
-> +#define QSERDES_TX_HIGHZ_TRANSCEIVER_BIAS_DRVR_EN	TX_OFF(0, 0x68)
-> +#define QSERDES_TX_LANE_MODE				TX_OFF(0, 0x94)
-> +
-> +/* UFS PHY RX registers */
-> +#define QSERDES_RX_UCDR_FASTLOCK_FO_GAIN	RX_OFF(0, 0x40)
-> +#define QSERDES_RX_RX_TERM_BW			RX_OFF(0, 0x90)
-> +#define QSERDES_RX_RX_EQ_GAIN1_LSB		RX_OFF(0, 0xC4)
-> +#define QSERDES_RX_RX_EQ_GAIN1_MSB		RX_OFF(0, 0xC8)
-> +#define QSERDES_RX_RX_EQ_GAIN2_LSB		RX_OFF(0, 0xCC)
-> +#define QSERDES_RX_RX_EQ_GAIN2_MSB		RX_OFF(0, 0xD0)
-> +#define QSERDES_RX_RX_EQU_ADAPTOR_CNTRL2	RX_OFF(0, 0xD8)
-> +#define QSERDES_RX_SIGDET_CNTRL			RX_OFF(0, 0x114)
-> +#define QSERDES_RX_SIGDET_LVL			RX_OFF(0, 0x118)
-> +#define QSERDES_RX_SIGDET_DEGLITCH_CNTRL	RX_OFF(0, 0x11C)
-> +#define QSERDES_RX_RX_INTERFACE_MODE		RX_OFF(0, 0x12C)
-> +
-> +/*
-> + * This structure represents the 14nm specific phy.
-> + * common_cfg MUST remain the first field in this structure
-> + * in case extra fields are added. This way, when calling
-> + * get_ufs_qcom_phy() of generic phy, we can extract the
-> + * common phy structure (struct ufs_qcom_phy) out of it
-> + * regardless of the relevant specific phy.
-> + */
-> +struct ufs_qcom_phy_qmp_14nm {
-> +	struct ufs_qcom_phy common_cfg;
-> +};
-> +
-> +static struct ufs_qcom_phy_calibration phy_cal_table_rate_A[] = {
-> +	UFS_QCOM_PHY_CAL_ENTRY(UFS_PHY_POWER_DOWN_CONTROL, 0x01),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_CMN_CONFIG, 0x0e),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_SYSCLK_EN_SEL, 0xd7),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_CLK_SELECT, 0x30),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_SYS_CLK_CTRL, 0x06),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_BIAS_EN_CLKBUFLR_EN, 0x08),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_BG_TIMER, 0x0a),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_HSCLK_SEL, 0x05),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_CORECLK_DIV, 0x0a),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_CORECLK_DIV_MODE1, 0x0a),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_LOCK_CMP_EN, 0x01),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_VCO_TUNE_CTRL, 0x10),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_RESETSM_CNTRL, 0x20),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_CORE_CLK_EN, 0x00),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_LOCK_CMP_CFG, 0x00),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_VCO_TUNE_TIMER1, 0xff),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_VCO_TUNE_TIMER2, 0x3f),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_VCO_TUNE_MAP, 0x14),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_SVS_MODE_CLK_SEL, 0x05),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_DEC_START_MODE0, 0x82),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_DIV_FRAC_START1_MODE0, 0x00),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_DIV_FRAC_START2_MODE0, 0x00),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_DIV_FRAC_START3_MODE0, 0x00),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_CP_CTRL_MODE0, 0x0b),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_PLL_RCTRL_MODE0, 0x16),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_PLL_CCTRL_MODE0, 0x28),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_INTEGLOOP_GAIN0_MODE0, 0x80),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_INTEGLOOP_GAIN1_MODE0, 0x00),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_VCO_TUNE1_MODE0, 0x28),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_VCO_TUNE2_MODE0, 0x02),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_LOCK_CMP1_MODE0, 0xff),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_LOCK_CMP2_MODE0, 0x0c),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_LOCK_CMP3_MODE0, 0x00),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_DEC_START_MODE1, 0x98),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_DIV_FRAC_START1_MODE1, 0x00),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_DIV_FRAC_START2_MODE1, 0x00),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_DIV_FRAC_START3_MODE1, 0x00),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_CP_CTRL_MODE1, 0x0b),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_PLL_RCTRL_MODE1, 0x16),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_PLL_CCTRL_MODE1, 0x28),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_INTEGLOOP_GAIN0_MODE1, 0x80),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_INTEGLOOP_GAIN1_MODE1, 0x00),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_VCO_TUNE1_MODE1, 0xd6),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_VCO_TUNE2_MODE1, 0x00),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_LOCK_CMP1_MODE1, 0x32),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_LOCK_CMP2_MODE1, 0x0f),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_LOCK_CMP3_MODE1, 0x00),
-> +
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_TX_HIGHZ_TRANSCEIVER_BIAS_DRVR_EN,
-> 0x45),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_TX_LANE_MODE, 0x02),
-> +
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_RX_SIGDET_LVL, 0x24),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_RX_SIGDET_CNTRL, 0x02),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_RX_RX_INTERFACE_MODE, 0x00),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_RX_SIGDET_DEGLITCH_CNTRL, 0x18),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_RX_UCDR_FASTLOCK_FO_GAIN, 0x0B),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_RX_RX_TERM_BW, 0x5B),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_RX_RX_EQ_GAIN1_LSB, 0xFF),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_RX_RX_EQ_GAIN1_MSB, 0x3F),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_RX_RX_EQ_GAIN2_LSB, 0xFF),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_RX_RX_EQ_GAIN2_MSB, 0x0F),
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_RX_RX_EQU_ADAPTOR_CNTRL2, 0x0E),
-> +};
-> +
-> +static struct ufs_qcom_phy_calibration phy_cal_table_rate_B[] = {
-> +	UFS_QCOM_PHY_CAL_ENTRY(QSERDES_COM_VCO_TUNE_MAP, 0x54),
-> +};
-> +
-> +#endif
-> --
-> 1.8.5.2
+> diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+> index e687bb0..357c749 100644
+> --- a/fs/btrfs/inode.c
+> +++ b/fs/btrfs/inode.c
+> @@ -8262,6 +8262,7 @@ int btrfs_page_mkwrite(struct vm_area_struct *vma, =
+struct vm_fault *vmf)
+>  	u64 page_start;
+>  	u64 page_end;
+>=20=20
+> +	inode_start_write(inode);
+>  	sb_start_pagefault(inode->i_sb);
+>  	ret  =3D btrfs_delalloc_reserve_space(inode, PAGE_CACHE_SIZE);
+>  	if (!ret) {
+> diff --git a/fs/buffer.c b/fs/buffer.c
+> index 20805db..966d50b 100644
+> --- a/fs/buffer.c
+> +++ b/fs/buffer.c
+> @@ -2444,6 +2444,7 @@ int block_page_mkwrite(struct vm_area_struct *vma, =
+struct vm_fault *vmf,
+>  	int ret;
+>  	struct super_block *sb =3D file_inode(vma->vm_file)->i_sb;
+>=20=20
+> +	inode_start_write(file_inode(vma->vm_file));
+>  	sb_start_pagefault(sb);
+>=20=20
+>  	/*
+> diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
+> index 5653fa4..7e1e41e 100644
+> --- a/fs/ext4/inode.c
+> +++ b/fs/ext4/inode.c
+> @@ -4981,6 +4981,7 @@ int ext4_page_mkwrite(struct vm_area_struct *vma, s=
+truct vm_fault *vmf)
+>  	get_block_t *get_block;
+>  	int retries =3D 0;
+>=20=20
+> +	inode_start_write(inode);
+>  	sb_start_pagefault(inode->i_sb);
+>  	file_update_time(vma->vm_file);
+>  	/* Delalloc case is easy... */
+> diff --git a/fs/f2fs/file.c b/fs/f2fs/file.c
+> index f172ddc4..9e23f8d 100644
+> --- a/fs/f2fs/file.c
+> +++ b/fs/f2fs/file.c
+> @@ -40,6 +40,7 @@ static int f2fs_vm_page_mkwrite(struct vm_area_struct *=
+vma,
+>=20=20
+>  	f2fs_balance_fs(sbi);
 >
-> --
-> QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
-> of Code Aurora Forum, hosted by The Linux Foundation
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+> +	inode_start_write(inode);
+>  	sb_start_pagefault(inode->i_sb);
+IMHO it is reasonable to fold sb_start_{write,pagefault}, to inode_start_{w=
+rite,pagefault}
+>=20=20
+>  	f2fs_bug_on(sbi, f2fs_has_inline_data(inode));
+> diff --git a/fs/gfs2/file.c b/fs/gfs2/file.c
+> index 6e600ab..bddf66b 100644
+> --- a/fs/gfs2/file.c
+> +++ b/fs/gfs2/file.c
+> @@ -393,6 +393,7 @@ static int gfs2_page_mkwrite(struct vm_area_struct *v=
+ma, struct vm_fault *vmf)
+>  	loff_t size;
+>  	int ret;
+>=20=20
+> +	inode_start_write(inode);
+>  	sb_start_pagefault(inode->i_sb);
+>=20=20
+>  	/* Update file times before taking page lock */
+> diff --git a/fs/inode.c b/fs/inode.c
+> index aa149e7..82a96d0 100644
+> --- a/fs/inode.c
+> +++ b/fs/inode.c
+> @@ -1929,3 +1929,22 @@ void inode_set_flags(struct inode *inode, unsigned=
+ int flags,
+>  				  new_flags) !=3D old_flags));
+>  }
+>  EXPORT_SYMBOL(inode_set_flags);
+> +
+> +void inode_start_write(struct inode *inode)
+> +{
+> +	struct super_block *sb =3D inode->i_sb;
+> +
+> +retry:
+> +	spin_lock(&inode->i_lock);
+This means that i_lock will be acquired on each mkpage_write for all
+users who do not care about fsfreeze which result smp performance drawback
+It is reasonable to add lockless test first because flag is set while
+whole fs is frozen so we can not enter this routine.
 
+> +	if (inode->i_state & I_WRITE_FREEZED) {
+> +		DEFINE_WAIT(wait);
+> +
+> +		prepare_to_wait(&sb->s_writers.wait_unfrozen, &wait,
+> +				TASK_UNINTERRUPTIBLE);
+> +		spin_unlock(&inode->i_lock);
+> +		schedule();
+> +		finish_wait(&sb->s_writers.wait_unfrozen, &wait);
+> +		goto retry;
+> +	}
+> +	spin_unlock(&inode->i_lock);
+> +}
+> diff --git a/fs/ioctl.c b/fs/ioctl.c
+> index 214c3c1..c8e9ae3 100644
+> --- a/fs/ioctl.c
+> +++ b/fs/ioctl.c
+> @@ -540,6 +540,28 @@ static int ioctl_fsthaw(struct file *filp)
+>  	return thaw_super(sb);
+>  }
+>=20=20
+> +static int ioctl_filefreeze(struct file *filp)
+> +{
+> +	struct inode *inode =3D file_inode(filp);
+> +
+> +	if (!inode_owner_or_capable(inode))
+> +		return -EPERM;
+> +
+> +	/* Freeze */
+> +	return file_write_freeze(inode);
+> +}
 
+> +
+> +static int ioctl_filethaw(struct file *filp)
+> +{
+> +	struct inode *inode =3D file_inode(filp);
+> +
+> +	if (!inode_owner_or_capable(inode))
+> +		return -EPERM;
+> +
+> +	/* Thaw */
+> +	return file_write_unfreeze(inode);
+> +}
+> +
+>  /*
+>   * When you add any new common ioctls to the switches above and below
+>   * please update compat_sys_ioctl() too.
+> @@ -589,6 +611,14 @@ int do_vfs_ioctl(struct file *filp, unsigned int fd,=
+ unsigned int cmd,
+>  		error =3D ioctl_fsthaw(filp);
+>  		break;
+>=20=20
+> +	case FS_IOC_FWFREEZE:
+> +		error =3D ioctl_filefreeze(filp);
+> +		break;
+> +
+> +	case FS_IOC_FWTHAW:
+> +		error =3D ioctl_filethaw(filp);
+> +		break;
+> +
+>  	case FS_IOC_FIEMAP:
+>  		return ioctl_fiemap(filp, arg);
+>=20=20
+> diff --git a/fs/nilfs2/file.c b/fs/nilfs2/file.c
+> index 3a03e0a..5110d9d 100644
+> --- a/fs/nilfs2/file.c
+> +++ b/fs/nilfs2/file.c
+> @@ -66,6 +66,7 @@ static int nilfs_page_mkwrite(struct vm_area_struct *vm=
+a, struct vm_fault *vmf)
+>  	if (unlikely(nilfs_near_disk_full(inode->i_sb->s_fs_info)))
+>  		return VM_FAULT_SIGBUS; /* -ENOSPC */
+>=20=20
+> +	inode_start_write(file_inode(vma->vm_file));
+>  	sb_start_pagefault(inode->i_sb);
+>  	lock_page(page);
+>  	if (page->mapping !=3D inode->i_mapping ||
+> diff --git a/fs/ocfs2/mmap.c b/fs/ocfs2/mmap.c
+> index 10d66c7..d073fc2 100644
+> --- a/fs/ocfs2/mmap.c
+> +++ b/fs/ocfs2/mmap.c
+> @@ -136,6 +136,7 @@ static int ocfs2_page_mkwrite(struct vm_area_struct *=
+vma, struct vm_fault *vmf)
+>  	sigset_t oldset;
+>  	int ret;
+>=20=20
+> +	inode_start_write(inode);
+>  	sb_start_pagefault(inode->i_sb);
+>  	ocfs2_block_signals(&oldset);
+>=20=20
+> diff --git a/fs/super.c b/fs/super.c
+> index eae088f..5e44e42 100644
+> --- a/fs/super.c
+> +++ b/fs/super.c
+> @@ -1393,3 +1393,54 @@ out:
+>  	return 0;
+>  }
+>  EXPORT_SYMBOL(thaw_super);
+> +
+IMHO it is reasonable to open code this procedure so user is responsible
+for calling  freeze_super(), thaw_super() . This allow to call for
+several inodes in a row like follows:
+
+ioctl(sb,FIFREEZE)
+while (f =3D pop(files_list))
+  ioctl(f,FS_IOC_FWFREEZE)
+ioctl(sb,FITHAW)
+
+This required for directory defragmentation(small files compacting)
+
+> +int file_write_freeze(struct inode *inode)
+> +{
+> +	struct super_block *sb =3D inode->i_sb;
+> +	int ret =3D 0;
+> +
+> +	if (!S_ISREG(inode->i_mode))
+> +		return -EINVAL;
+> +
+> +	spin_lock(&inode->i_lock);
+> +
+> +	if (inode->i_state & I_WRITE_FREEZED)
+> +		ret =3D -EBUSY;
+> +	spin_unlock(&inode->i_lock);
+> +	if (ret)
+> +		return ret;
+> +
+> +	ret =3D freeze_super(sb);
+> +	if (ret)
+> +		return ret;
+> +
+> +	spin_lock(&inode->i_lock);
+> +	inode->i_state |=3D I_WRITE_FREEZED;
+> +	smp_wmb();
+> +	spin_unlock(&inode->i_lock);
+> +
+> +	return thaw_super(sb);
+> +}
+> +EXPORT_SYMBOL(file_write_freeze);
+> +
+> +int file_write_unfreeze(struct inode *inode)
+> +{
+> +	struct super_block *sb =3D inode->i_sb;
+> +
+> +	if (!S_ISREG(inode->i_mode))
+> +		return -EINVAL;
+> +
+> +	spin_lock(&inode->i_lock);
+> +
+> +	if (!(inode->i_state & I_WRITE_FREEZED)) {
+> +		spin_unlock(&inode->i_lock);
+> +		return -EINVAL;
+> +	}
+> +
+> +	inode->i_state &=3D ~I_WRITE_FREEZED;
+> +	smp_wmb();
+> +	wake_up(&sb->s_writers.wait_unfrozen);
+> +	spin_unlock(&inode->i_lock);
+> +	return 0;
+> +}
+> +EXPORT_SYMBOL(file_write_unfreeze);
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index 8639770..13eba85 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -1313,8 +1313,12 @@ extern struct timespec current_fs_time(struct supe=
+r_block *sb);
+>   * Snapshotting support.
+>   */
+>=20=20
+> +int file_write_freeze(struct inode *inode);
+> +int file_write_unfreeze(struct inode *inode);
+> +
+>  void __sb_end_write(struct super_block *sb, int level);
+>  int __sb_start_write(struct super_block *sb, int level, bool wait);
+> +void inode_start_write(struct inode *inode);
+>=20=20
+>  /**
+>   * sb_end_write - drop write access to a superblock
+> @@ -1730,6 +1734,12 @@ struct super_operations {
+>   *
+>   * I_DIO_WAKEUP		Never set.  Only used as a key for wait_on_bit().
+>   *
+> + * I_WRITE_FREEZED	This bit is set by calling file_write_freeze ioctl and
+> + *			unset by file_write_thaw ioctl. If this is set, the
+> + *			processes which have already open the file and try to
+> + *			modify the file address space will block until the bit
+> + *			is cleared.
+> + *
+>   * Q: What is the difference between I_WILL_FREE and I_FREEING?
+>   */
+>  #define I_DIRTY_SYNC		(1 << 0)
+> @@ -1746,6 +1756,7 @@ struct super_operations {
+>  #define __I_DIO_WAKEUP		9
+>  #define I_DIO_WAKEUP		(1 << I_DIO_WAKEUP)
+>  #define I_LINKABLE		(1 << 10)
+> +#define I_WRITE_FREEZED	(1 << 11)
+>=20=20
+>  #define I_DIRTY (I_DIRTY_SYNC | I_DIRTY_DATASYNC | I_DIRTY_PAGES)
+>=20=20
+> @@ -2321,6 +2332,7 @@ static inline void file_start_write(struct file *fi=
+le)
+>  {
+>  	if (!S_ISREG(file_inode(file)->i_mode))
+>  		return;
+> +	inode_start_write(file_inode(file));
+>  	__sb_start_write(file_inode(file)->i_sb, SB_FREEZE_WRITE, true);
+>  }
+>=20=20
+> @@ -2328,6 +2340,7 @@ static inline bool file_start_write_trylock(struct =
+file *file)
+>  {
+>  	if (!S_ISREG(file_inode(file)->i_mode))
+>  		return true;
+> +	inode_start_write(file_inode(file));
+>  	return __sb_start_write(file_inode(file)->i_sb, SB_FREEZE_WRITE, false);
+>  }
+>=20=20
+> diff --git a/include/uapi/linux/fs.h b/include/uapi/linux/fs.h
+> index 3735fa0..3f529a7 100644
+> --- a/include/uapi/linux/fs.h
+> +++ b/include/uapi/linux/fs.h
+> @@ -167,6 +167,8 @@ struct inodes_stat_t {
+>  #define FS_IOC32_SETFLAGS		_IOW('f', 2, int)
+>  #define FS_IOC32_GETVERSION		_IOR('v', 1, int)
+>  #define FS_IOC32_SETVERSION		_IOW('v', 2, int)
+> +#define FS_IOC_FWFREEZE		_IOWR('X', 122, int) /* File Freeze */
+> +#define FS_IOC_FWTHAW			_IOWR('X', 123, int) /* File Thaw */
+>=20=20
+>  /*
+>   * Inode flags (FS_IOC_GETFLAGS / FS_IOC_SETFLAGS)
+> diff --git a/mm/filemap.c b/mm/filemap.c
+> index bd8543c..b07a873 100644
+> --- a/mm/filemap.c
+> +++ b/mm/filemap.c
+> @@ -2066,6 +2066,7 @@ int filemap_page_mkwrite(struct vm_area_struct *vma=
+, struct vm_fault *vmf)
+>  	struct inode *inode =3D file_inode(vma->vm_file);
+>  	int ret =3D VM_FAULT_LOCKED;
+>=20=20
+> +	inode_start_write(inode);
+>  	sb_start_pagefault(inode->i_sb);
+>  	file_update_time(vma->vm_file);
+>  	lock_page(page);
+> --=20
+> 1.8.5.5
+
+--=-=-=
+Content-Type: application/pgp-signature; name="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQEcBAEBCgAGBQJUt9qIAAoJELhyPTmIL6kB6m0IAMBBHqfMIlJNmMW/2nUdwdyD
+APAw1uhWllPGqhi/uckTMHEMGG1UUJMib6OQkImme1FkL8T8VkB4fzpn2DHaWqim
+4DpIk5UXBXDqQ4VNYVFEMDpouW0R2GOMgacjc1JO57yfQg/lqt5ES1eaG/onCcJH
+FmCvR2t2cJN3BPpH/BY48Q52ND0VVsIWxXyJicCXIhDCKpZh7PzRAW91Q5t6Xihu
+4poWZ2z+FZ3ZmHavOp26jUebfLVVgUvYpcQXxSmt75LXSdGW70kyWSNfYCgJdiSX
+li9p3bwy1nOboUWwzzIXE9VECHHyYm49ymLjKvT9AbjJW2c0Ni46i6HORCbj1wA=
+=Pkg8
+-----END PGP SIGNATURE-----
+--=-=-=--
