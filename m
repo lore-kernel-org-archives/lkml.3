@@ -1,89 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753521AbbAOLpq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 06:45:46 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:32891 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751939AbbAOLpn (ORCPT
+	id S1753393AbbAOLrn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 06:47:43 -0500
+Received: from smtp-out4.electric.net ([192.162.216.185]:59945 "EHLO
+	smtp-out4.electric.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751939AbbAOLrl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 06:45:43 -0500
-Date: Thu, 15 Jan 2015 11:44:37 +0000
-From: Mark Brown <broonie@kernel.org>
-To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        atull <atull@opensource.altera.com>, Pavel Machek <pavel@denx.de>,
-        gregkh@linuxfoundation.org, hpa@zytor.com, monstr@monstr.eu,
-        michal.simek@xilinx.com, rdunlap@infradead.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        pantelis.antoniou@konsulko.com, robh+dt@kernel.org,
-        grant.likely@linaro.org, iws@ovro.caltech.edu,
-        linux-doc@vger.kernel.org, philip@balister.org, rubini@gnudd.com,
-        s.trumtrar@pengutronix.de, jason@lakedaemon.net, kyle.teske@ni.com,
-        nico@linaro.org, balbi@ti.com, m.chehab@samsung.com,
-        davidb@codeaurora.org, rob@landley.net, davem@davemloft.net,
-        cesarb@cesarb.net, sameo@linux.intel.com, akpm@linux-foundation.org,
-        linus.walleij@linaro.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        devel@driverdev.osuosl.org, delicious.quinoa@gmail.com,
-        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
-Message-ID: <20150115114437.GV3043@sirena.org.uk>
-References: <20150109205643.GA5761@amd>
- <20150112210134.687176ed@lxorguk.ukuu.org.uk>
- <20150112214314.GA18610@obsidianresearch.com>
- <20150113162847.2778b5a5@lxorguk.ukuu.org.uk>
- <20150113200032.GA16205@obsidianresearch.com>
- <alpine.DEB.2.02.1501131455130.30192@linuxheads99>
- <20150113222450.GA17475@obsidianresearch.com>
- <20150114160617.02fb9135@lxorguk.ukuu.org.uk>
- <20150114181258.GB16392@obsidianresearch.com>
- <20150115113617.537965b3@lxorguk.ukuu.org.uk>
+	Thu, 15 Jan 2015 06:47:41 -0500
+From: David Laight <David.Laight@ACULAB.COM>
+To: "'Xander Huff'" <xander.huff@ni.com>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "nicolas.ferre@atmel.com" <nicolas.ferre@atmel.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "jaeden.amero@ni.com" <jaeden.amero@ni.com>,
+        "rich.tollerton@ni.com" <rich.tollerton@ni.com>,
+        "ben.shelton@ni.com" <ben.shelton@ni.com>,
+        "brad.mouring@ni.com" <brad.mouring@ni.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "cyrille.pitchen@atmel.com" <cyrille.pitchen@atmel.com>
+Subject: RE: [PATCH v2 1/2] fixup! net/macb: Adding comments to various
+ #defs to make interpretation easier
+Thread-Topic: [PATCH v2 1/2] fixup! net/macb: Adding comments to various
+ #defs to make interpretation easier
+Thread-Index: AQHQMEg8WuR9pg8wHkmscGeTWaWfCJzBEJhg
+Date: Thu, 15 Jan 2015 11:46:04 +0000
+Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1CAC999F@AcuExch.aculab.com>
+References: <20150114.165220.2282566005036464131.davem@davemloft.net>
+ <1421274051-21588-1-git-send-email-xander.huff@ni.com>
+In-Reply-To: <1421274051-21588-1-git-send-email-xander.huff@ni.com>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.202.99.200]
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="v7CWsE/Dy737oYst"
-Content-Disposition: inline
-In-Reply-To: <20150115113617.537965b3@lxorguk.ukuu.org.uk>
-X-Cookie: To program is to be.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v8 2/4] fpga manager: add sysfs interface document
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+X-Outbound-IP: 213.249.233.130
+X-Env-From: David.Laight@ACULAB.COM
+X-PolicySMART: 3396946, 3397078
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Xander Huff
+> Put #define comments into a single line.
 
---v7CWsE/Dy737oYst
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Breaks the 80 char limit.
+I suspect the definitions could be made to fit by judicial editing.
+But that probably requires knowing exactly what the comments mean.
 
-On Thu, Jan 15, 2015 at 11:36:17AM +0000, One Thousand Gnomes wrote:
+	David
 
-> yes - there is a model for this in Linux already. Some of the audio
-> subsystems have "firmware" files distributed which are actually a
-> structured file that userspace parses to get a real set of firmware for
-> the controller and a set of descriptions for things like mixer controls.
-
-We didn't actually merge that yet (but we do want to).  It's likely that
-the parsing of the files will end up in the kernel rather than userspace,
-or that anything userspace is doing is mostly about translating vendor
-formats into a standard Linux one anyway.
-
---v7CWsE/Dy737oYst
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBCAAGBQJUt6gkAAoJECTWi3JdVIfQ4yEH/AmhkGaqplZacrO2SqUdLw9v
-Tgg940NRMGB3vZLtdA9kCGJ8xSuoO299yukTDb9Jrg3IkNSxbOISiooh31pkzqS0
-we7p09DC3gKPiV2EvG4gFqz+Qbiy+S19Q6bnO2V2DTuviJvMNeCcW/GqNxGCt5Cs
-py0NM0YEFUvfXnlgpK93/HL368a0cGey4/pfHUKRF++DcioPlKCCDTBxk1mDBzXX
-EcTqCrYphmYfi9RkDeAkorvZFuMIoz5XHfLCiQ/DH4X3S7i1W326La0jMoP5LU8s
-JvizzG9DtFawLqnRDiWbiAJUBF6Rz72J9ggep/SBvFSZexw/9T99SfyhHhrW0BE=
-=rb+2
------END PGP SIGNATURE-----
-
---v7CWsE/Dy737oYst--
+> Signed-off-by: Xander Huff <xander.huff@ni.com>
+> ---
+>  drivers/net/ethernet/cadence/macb.h | 107 +++++++++---------------------------
+>  1 file changed, 26 insertions(+), 81 deletions(-)
+> 
+> diff --git a/drivers/net/ethernet/cadence/macb.h b/drivers/net/ethernet/cadence/macb.h
+> index 378b218..d7b93d0 100644
+> --- a/drivers/net/ethernet/cadence/macb.h
+> +++ b/drivers/net/ethernet/cadence/macb.h
+> @@ -275,9 +275,7 @@
+>  #define MACB_THALT_SIZE				1
+>  #define MACB_NCR_TPF_OFFSET			11 /* Transmit pause frame */
+>  #define MACB_NCR_TPF_SIZE			1
+> -#define MACB_TZQ_OFFSET				12 /* Transmit zero quantum
+> -						    * pause frame
+> -						    */
+> +#define MACB_TZQ_OFFSET				12 /* Transmit zero quantum pause frame */
+>  #define MACB_TZQ_SIZE				1
+> 
+>  /* Bitfields in NCFGR */
+> @@ -299,9 +297,7 @@
+>  #define MACB_UNI_SIZE				1
+>  #define MACB_BIG_OFFSET				8 /* Receive 1536 byte frames */
+>  #define MACB_BIG_SIZE				1
+> -#define MACB_EAE_OFFSET				9 /* External address match
+> -						   * enable
+> -						   */
+> +#define MACB_EAE_OFFSET				9 /* External address match enable */
+>  #define MACB_EAE_SIZE				1
+>  #define MACB_CLK_OFFSET				10
+>  #define MACB_CLK_SIZE				2
+> @@ -313,9 +309,7 @@
+>  #define MACB_RM9200_RMII_SIZE			1  /* AT91RM9200 only */
+>  #define MACB_RBOF_OFFSET			14 /* Receive buffer offset */
+>  #define MACB_RBOF_SIZE				2
+> -#define MACB_RLCE_OFFSET			16 /* Length field error frame
+> -						    * discard
+> -						    */
+> +#define MACB_RLCE_OFFSET			16 /* Length field error frame discard */
+>  #define MACB_RLCE_SIZE				1
+>  #define MACB_DRFCS_OFFSET			17 /* FCS remove */
+>  #define MACB_DRFCS_SIZE				1
+> @@ -335,41 +329,22 @@
+>  #define GEM_RXCOEN_SIZE				1
+> 
+>  /* Constants for data bus width. */
+> -#define GEM_DBW32				0 /* 32 bit AMBA AHB data bus
+> -						   * width
+> -						   */
+> -#define GEM_DBW64				1 /* 64 bit AMBA AHB data bus
+> -						   * width
+> -						   */
+> -#define GEM_DBW128				2 /* 128 bit AMBA AHB data bus
+> -						   * width
+> -						   */
+> +#define GEM_DBW32				0 /* 32 bit AMBA AHB data bus width */
+> +#define GEM_DBW64				1 /* 64 bit AMBA AHB data bus width */
+> +#define GEM_DBW128				2 /* 128 bit AMBA AHB data bus width */
+> 
+>  /* Bitfields in DMACFG. */
+> -#define GEM_FBLDO_OFFSET			0 /* AHB fixed burst length for
+> -						   * DMA data operations
+> -						   */
+> +#define GEM_FBLDO_OFFSET			0 /* AHB fixed burst length for DMA data operations */
+>  #define GEM_FBLDO_SIZE				5
+> -#define GEM_ENDIA_OFFSET			7 /* AHB endian swap mode enable
+> -						   * for packet data accesses
+> -						   */
+> +#define GEM_ENDIA_OFFSET			7 /* AHB endian swap mode enable for packet data accesses */
+>  #define GEM_ENDIA_SIZE				1
+> -#define GEM_RXBMS_OFFSET			8 /* Receiver packet buffer
+> -						   * memory size select
+> -						   */
+> +#define GEM_RXBMS_OFFSET			8 /* Receiver packet buffer memory size select */
+>  #define GEM_RXBMS_SIZE				2
+> -#define GEM_TXPBMS_OFFSET			10 /* Transmitter packet buffer
+> -						    * memory size select
+> -						    */
+> +#define GEM_TXPBMS_OFFSET			10 /* Transmitter packet buffer memory size select */
+>  #define GEM_TXPBMS_SIZE				1
+> -#define GEM_TXCOEN_OFFSET			11 /* Transmitter IP, TCP and
+> -						    * UDP checksum generation
+> -						    * offload enable
+> -						    */
+> +#define GEM_TXCOEN_OFFSET			11 /* Transmitter IP, TCP and UDP checksum generation
+> offload enable */
+>  #define GEM_TXCOEN_SIZE				1
+> -#define GEM_RXBS_OFFSET				16 /* DMA receive buffer size in
+> -						    * AHB system memory
+> -						    */
+> +#define GEM_RXBS_OFFSET				16 /* DMA receive buffer size in AHB system memory */
+>  #define GEM_RXBS_SIZE				8
+>  #define GEM_DDRP_OFFSET				24 /* disc_when_no_ahb */
+>  #define GEM_DDRP_SIZE				1
+> @@ -378,13 +353,9 @@
+>  /* Bitfields in NSR */
+>  #define MACB_NSR_LINK_OFFSET			0 /* pcs_link_state */
+>  #define MACB_NSR_LINK_SIZE			1
+> -#define MACB_MDIO_OFFSET			1 /* status of the mdio_in
+> -						   * pin
+> -						   */
+> +#define MACB_MDIO_OFFSET			1 /* status of the mdio_in pin */
+>  #define MACB_MDIO_SIZE				1
+> -#define MACB_IDLE_OFFSET			2 /* The PHY management logic is
+> -						   * idle (i.e. has completed)
+> -						   */
+> +#define MACB_IDLE_OFFSET			2 /* The PHY management logic is idle (i.e. has completed)
+> */
+>  #define MACB_IDLE_SIZE				1
+> 
+>  /* Bitfields in TSR */
+> @@ -396,9 +367,7 @@
+>  #define MACB_TSR_RLE_SIZE			1
+>  #define MACB_TGO_OFFSET				3 /* Transmit go */
+>  #define MACB_TGO_SIZE				1
+> -#define MACB_BEX_OFFSET				4 /* Transmit frame corruption
+> -						   * due to AHB error
+> -						   */
+> +#define MACB_BEX_OFFSET				4 /* Transmit frame corruption due to AHB error */
+>  #define MACB_BEX_SIZE				1
+>  #define MACB_RM9200_BNQ_OFFSET			4 /* AT91RM9200 only */
+>  #define MACB_RM9200_BNQ_SIZE			1 /* AT91RM9200 only */
+> @@ -424,43 +393,23 @@
+>  #define MACB_RXUBR_SIZE				1
+>  #define MACB_TXUBR_OFFSET			3 /* TX used bit read */
+>  #define MACB_TXUBR_SIZE				1
+> -#define MACB_ISR_TUND_OFFSET			4 /* Enable trnasmit buffer
+> -						   * under run interrupt
+> -						   */
+> +#define MACB_ISR_TUND_OFFSET			4 /* Enable trnasmit buffer under run interrupt */
+>  #define MACB_ISR_TUND_SIZE			1
+> -#define MACB_ISR_RLE_OFFSET			5 /* Enable retry limit exceeded
+> -						   * or late collision interrupt
+> -						   */
+> +#define MACB_ISR_RLE_OFFSET			5 /* Enable retry limit exceeded or late collision interrupt
+> */
+>  #define MACB_ISR_RLE_SIZE			1
+> -#define MACB_TXERR_OFFSET			6 /* Enable transmit frame
+> -						   * corruption due to AHB error
+> -						   * interrupt
+> -						   */
+> +#define MACB_TXERR_OFFSET			6 /* Enable transmit frame corruption due to AHB error
+> interrupt */
+>  #define MACB_TXERR_SIZE				1
+> -#define MACB_TCOMP_OFFSET			7 /* Enable transmit complete
+> -						   * interrupt
+> -						   */
+> +#define MACB_TCOMP_OFFSET			7 /* Enable transmit complete interrupt */
+>  #define MACB_TCOMP_SIZE				1
+> -#define MACB_ISR_LINK_OFFSET			9 /* Enable link change
+> -						   * interrupt
+> -						   */
+> +#define MACB_ISR_LINK_OFFSET			9 /* Enable link change interrupt */
+>  #define MACB_ISR_LINK_SIZE			1
+> -#define MACB_ISR_ROVR_OFFSET			10 /* Enable receive overrun
+> -						    * interrupt
+> -						    */
+> +#define MACB_ISR_ROVR_OFFSET			10 /* Enable receive overrun interrupt */
+>  #define MACB_ISR_ROVR_SIZE			1
+> -#define MACB_HRESP_OFFSET			11 /* Enable hrsep not OK
+> -						    * interrupt
+> -						    */
+> +#define MACB_HRESP_OFFSET			11 /* Enable hrsep not OK interrupt */
+>  #define MACB_HRESP_SIZE				1
+> -#define MACB_PFR_OFFSET				12 /* Enable pause frame with
+> -						    * non-zero pause quantum
+> -						    * interrupt
+> -						    */
+> +#define MACB_PFR_OFFSET				12 /* Enable pause frame with non-zero pause quantum
+> interrupt */
+>  #define MACB_PFR_SIZE				1
+> -#define MACB_PTZ_OFFSET				13 /* Enable pause time zero
+> -						    * interrupt
+> -						    */
+> +#define MACB_PTZ_OFFSET				13 /* Enable pause time zero interrupt */
+>  #define MACB_PTZ_SIZE				1
+> 
+>  /* Bitfields in MAN */
+> @@ -472,13 +421,9 @@
+>  #define MACB_REGA_SIZE				5
+>  #define MACB_PHYA_OFFSET			23 /* PHY address */
+>  #define MACB_PHYA_SIZE				5
+> -#define MACB_RW_OFFSET				28 /* Operation. 10 is read. 01
+> -						    * is write.
+> -						    */
+> +#define MACB_RW_OFFSET				28 /* Operation. 10 is read. 01 is write. */
+>  #define MACB_RW_SIZE				2
+> -#define MACB_SOF_OFFSET				30 /* Must be written to 1 for
+> -						    * Clause 22 operation
+> -						    */
+> +#define MACB_SOF_OFFSET				30 /* Must be written to 1 for Clause 22 operation */
+>  #define MACB_SOF_SIZE				2
+> 
+>  /* Bitfields in USRIO (AVR32) */
+> --
+> 1.9.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
