@@ -1,83 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932226AbbAOXln (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 18:41:43 -0500
-Received: from lists.s-osg.org ([54.187.51.154]:39619 "EHLO lists.s-osg.org"
+	id S1755634AbbAOXpH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 18:45:07 -0500
+Received: from mga01.intel.com ([192.55.52.88]:51720 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932072AbbAOXll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 18:41:41 -0500
-Message-ID: <54B8502C.2040708@osg.samsung.com>
-Date: Thu, 15 Jan 2015 16:41:32 -0700
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1752164AbbAOXpE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 18:45:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,406,1418112000"; 
+   d="scan'208";a="651848865"
+From: "Dev, Vasu" <vasu.dev@intel.com>
+To: ethan zhao <ethan.zhao@oracle.com>
+CC: Ethan Zhao <ethan.kernel@gmail.com>,
+        "Ronciak, John" <john.ronciak@intel.com>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        "Allan, Bruce W" <bruce.w.allan@intel.com>,
+        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
+        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
+        "Rose, Gregory V" <gregory.v.rose@intel.com>,
+        "Vick, Matthew" <matthew.vick@intel.com>,
+        "Williams, Mitch A" <mitch.a.williams@intel.com>,
+        "Parikh, Neerav" <neerav.parikh@intel.com>,
+        Linux NICS <Linux-nics@isotope.jf.intel.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "brian.maly@oracle.com" <brian.maly@oracle.com>
+Subject: RE: [PATCH] i40e: don't enable and init FCOE by default when do PF
+ reset
+Thread-Topic: [PATCH] i40e: don't enable and init FCOE by default when do PF
+ reset
+Thread-Index: AdAxHUZgZG20AojpQdSGM7ysgg48Fg==
+Date: Thu, 15 Jan 2015 23:45:01 +0000
+Message-ID: <933BEC2E04D6A5458F4B0239FB547F9A34CCCD35@fmsmsx118.amr.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.1.200.108]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Michael Ellerman <mpe@ellerman.id.au>
-CC: mmarek@suse.cz, masami.hiramatsu.pt@hitachi.com,
-        gregkh@linuxfoundation.org, akpm@linux-foundation.org,
-        rostedt@goodmis.org, mingo@redhat.com, davem@davemloft.net,
-        keescook@chromium.org, tranmanphong@gmail.com, cov@codeaurora.org,
-        dh.herrmann@gmail.com, hughd@google.com, bobby.prani@gmail.com,
-        serge.hallyn@ubuntu.com, ebiederm@xmission.com,
-        tim.bird@sonymobile.com, josh@joshtriplett.org, koct9i@gmail.com,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH v4 20/20] kbuild: add a new kselftest_install make target
- to install selftests
-References: <cover.1420571615.git.shuahkh@osg.samsung.com> <2c5a28faaa79d9c2415854a08817ada509fcb943.1420571615.git.shuahkh@osg.samsung.com> <54B69A1B.80006@osg.samsung.com> <1421362698.23332.6.camel@ellerman.id.au>
-In-Reply-To: <1421362698.23332.6.camel@ellerman.id.au>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0FNjFv2018782
 
-On 01/15/2015 03:58 PM, Michael Ellerman wrote:
-> On Wed, 2015-01-14 at 09:32 -0700, Shuah Khan wrote:
->> On 01/06/2015 12:43 PM, Shuah Khan wrote:
->>> Add a new make target to install to install kernel selftests.
->>> This new target will build and install selftests. kselftest
->>> target now depends on kselftest_install and runs the generated
->>> kselftest script to reduce duplicate work and for common look
->>> and feel when running tests.
->>>
->>> make kselftest_target:
->>> -- exports kselftest INSTALL_KSFT_PATH
->>>    default $(INSTALL_MOD_PATH)/lib/kselftest/$(KERNELRELEASE)
->>> -- exports INSTALL_KSFT_PATH
->>> -- runs selftests make install target
->>>
->>> Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
->>
->> Hi Marek,
->>
->> Could you please Ack this patch, if this version looks good,
->> so I can take this through ksefltest tree.
+> -----Original Message-----
+> From: ethan zhao [mailto:ethan.zhao@oracle.com]
+> Sent: Tuesday, January 13, 2015 6:41 PM
+> To: Dev, Vasu
+> Cc: Ethan Zhao; Ronciak, John; Kirsher, Jeffrey T; Brandeburg, Jesse; Allan,
+> Bruce W; Wyborny, Carolyn; Skidmore, Donald C; Rose, Gregory V; Vick,
+> Matthew; Williams, Mitch A; Parikh, Neerav; Linux NICS; e1000-
+> devel@lists.sourceforge.net; netdev@vger.kernel.org; linux-
+> kernel@vger.kernel.org; brian.maly@oracle.com
+> Subject: Re: [PATCH] i40e: don't enable and init FCOE by default when do PF
+> reset
 > 
-> Hi Shuah,
+> Vasu,
 > 
-> I posted what I think is a better approach last week. It's less code and less
-> repetition, and installs the majority of tests this series missed - ie. the
-> powerpc ones.
+> On 2015/1/14 3:38, Dev, Vasu wrote:
+> >> -----Original Message-----
+> >>>>> diff --git a/drivers/net/ethernet/intel/i40e/i40e_main.c
+> >>>>> b/drivers/net/ethernet/intel/i40e/i40e_main.c
+> >>>>> index a5f2660..a2572cc 100644
+> >>>>> --- a/drivers/net/ethernet/intel/i40e/i40e_main.c
+> >>>>> +++ b/drivers/net/ethernet/intel/i40e/i40e_main.c
+> >>>>> @@ -6180,9 +6180,12 @@ static void i40e_reset_and_rebuild(struct
+> >>>>> i40e_pf *pf, bool reinit)
+> >>>>>      }
+> >>>>>   #endif /* CONFIG_I40E_DCB */
+> >>>>>   #ifdef I40E_FCOE
+> >>>>> -   ret = i40e_init_pf_fcoe(pf);
+> >>>>> -   if (ret)
+> >>>>> -           dev_info(&pf->pdev->dev, "init_pf_fcoe failed: %d\n", ret);
+> >>>>> +   if (pf->flags & I40E_FLAG_FCOE_ENABLED) {
+> >>>>> +           ret = i40e_init_pf_fcoe(pf);
+> >>> Calling i40e_init_pf_fcoe() here conflicts with its
+> >> I40E_FLAG_FCOE_ENABLED pre-condition since
+> I40E_FLAG_FCOE_ENABLED is
+> >> set by very same i40e_init_pf_fcoe(), in turn i40e_init_pf_fcoe()
+> >> will never get called.
+> >>
+> >> I don't think so,  here ,i40e_reset_and_rebuild()  is not the only
+> >> and the first place that  i40e_init_pf_fcoe() is called, see
+> >> i40e_probe(), that is the first chance.
+> >>
+> >> i40e_probe()
+> >> -->i40e_sw_init()
+> >>       -->i40e_init_pf_fcoe()
+> >>
+> >> And the I40E_FLAG_FCOE_ENABLED is possible be set by
+> >> i40e_fcoe_enable() or i40e_fcoe_disable() interface before the reset
+> >> action is to be done.
+> >>
+> > It is set by i40e_init_pf_fcoe() and you are right that the modified call flow
+> by your patch won't impact setting of I40E_FLAG_FCOE_ENABLED anyway
+> which could have prevented calling i40e_init_pf_fcoe() as I described above,
+> so this is not an issue with the patch.
+> >
+> >> BTW, the reason I post this patch is that we hit a bug, after setup
+> >> vlan, the PF is enabled to FCOE.
+> >>
+> > Then that BUG would still remain un-fixed and calling i40e_init_pf_fcoe()
+> under I40E_FLAG_FCOE_ENABLED  flag really won't affect call flow to fix
+> anything. I mean I40E_FLAG_FCOE_ENABLED  condition will be true with "pf-
+> >hw.func_caps.fcoe == true" and otherwise calling i40e_init_pf_fcoe() simply
+> returns back early on after checking "pf->hw.func_caps.fcoe == false", so
+> how that bug is fixed here by added I40E_FLAG_FCOE_ENABLED  condition ?
+> What is the bug ?
+>   The func_caps.fcoe is assigned by following call path, under our test
+> environment,
 > 
-> Please at least respond to it before you put this series into next.
+>   i40e_probe()
+>    ->i40e_get_capabilities()
+>       ->i40e_aq_discover_capabilities()
+>          ->i40e_parse_discover_capabilities()
 > 
-> https://lkml.org/lkml/2015/1/9/45
+>   Or
+> 
+>   i40e_reset_and_rebuild()
+>    ->i40e_get_capabilities()
+>      ->i40e_aq_discover_capabilities()
+>        ->i40e_parse_discover_capabilities()
+> 
+>   Under our test environment, the "pf->hw.func_caps.fcoe" is true. so if
+> i40e_reset_and_rebuild() is called for VLAN setup, ethtool diagnostic test.
+>   And then i40e_init_pf_fcoe() is to be called,
+> 
+>   While if (!pf->hw.func_caps.fcoe) wouldn't return,
 > 
 
-Michael,
+I said it would return with "pf->hw.func_caps.fcoe == false" in my last response, more details below.
 
-I didn't get a chance to review your patches yet. I plan to
-review and give you feedback by end of this week. This patch
-is needed in any case for either approach.
+>   So  pf->flags is set to I40E_FLAG_FCOE_ENABLED.
+> 
+>   With my patch,  i40e_init_pf_fcoe() is only called after
+> I40E_FLAG_FCOE_ENABLED is set before reset.
+> 
+> Enable FCOE in i40e_probe() or not is another issue.
+> 
 
-thanks,
--- Shuah
+Nope since both cases we should do i40e_init_pf_fcoe() or don't based on fcoe cap true or false. 
 
+I don't have much to add as I described before with the your patch that "calling i40e_init_pf_fcoe() under I40E_FLAG_FCOE_ENABLED  flag really won't affect call flow to fix anything. I mean I40E_FLAG_FCOE_ENABLED  condition will be true with "pf->hw.func_caps.fcoe == true" and otherwise calling i40e_init_pf_fcoe() simply returns back early on after checking "pf->hw.func_caps.fcoe == false". 
 
--- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Open Source Innovation Group
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+May be I'm missing something, I guess next either go with CONFIG_I40E_FCOE disable as I suggested before and now it in upstream kernel or we can have further off list discussion to fix the issue you are trying to fix with the patch.
+
+Thanks,
+Vasu
+
+> Thanks,
+> Ethan
+> 
+> 
+> >
+> >>> Jeff Kirsher should be getting out a patch queued by me which adds
+> >> I40E_FCoE Kbuild option, in that FCoE is disabled by default and
+> >> user could enable FCoE only if needed, that patch would do same of
+> >> skipping
+> >> i40e_init_pf_fcoe() whether FCoE capability in device enabled or not
+> >> in default config.
+> >> The following patch will not fix the above issue -- configuration of
+> >> PF will be changed via reset.
+> >> How about the FCOE is configured and disabled by  i40e_fcoe_disable()
+> >> , then reset happens ?
+> >>
+> > May be but if the BUG is due to FCoE being enabled then having it disabled
+> in config will avoid the bug for non FCoE config option and once bug is
+> understood then that has to be fixed for FCoE enabled config also as I asked
+> above.
+> >
+> > Thanks Ethan for detailed response.
+> > Vasu
+> >
+> >>>  From patchwork Wed Oct  2 23:26:08 2013
+> >>> Content-Type: text/plain; charset="utf-8"
+> >>> MIME-Version: 1.0
+> >>> Content-Transfer-Encoding: 7bit
+> >>> Subject: [net] i40e: adds FCoE configure option
+> >>> Date: Thu, 03 Oct 2013 07:26:08 -0000
+> >>> From: Vasu Dev <vasu.dev@intel.com>
+> >>> X-Patchwork-Id: 11797
+> >>>
+> >>> Adds FCoE config option I40E_FCOE, so that FCoE can be enabled as
+> >>> needed but otherwise have it disabled by default.
+> >>>
+> >>> This also eliminate multiple FCoE config checks, instead now just
+> >>> one config check for CONFIG_I40E_FCOE.
+> >>>
+> >>> The I40E FCoE was added with 3.17 kernel and therefore this patch
+> >>> shall be applied to stable 3.17 kernel also.
+> >>>
+> >>> CC: <stable@vger.kernel.org>
+> >>> Signed-off-by: Vasu Dev <vasu.dev@intel.com>
+> >>> Tested-by: Jim Young <jamesx.m.young@intel.com>
+> >>>
+> >>> ---
+> >>> drivers/net/ethernet/intel/Kconfig           |   11 +++++++++++
+> >>>   drivers/net/ethernet/intel/i40e/Makefile     |    2 +-
+> >>>   drivers/net/ethernet/intel/i40e/i40e_osdep.h |    4 ++--
+> >>>   3 files changed, 14 insertions(+), 3 deletions(-)
+> >>>
+> >>> diff --git a/drivers/net/ethernet/intel/Kconfig
+> >>> b/drivers/net/ethernet/intel/Kconfig
+> >>> index 5b8300a..4d61ef5 100644
+> >>> --- a/drivers/net/ethernet/intel/Kconfig
+> >>> +++ b/drivers/net/ethernet/intel/Kconfig
+> >>> @@ -281,6 +281,17 @@ config I40E_DCB
+> >>>
+> >>>            If unsure, say N.
+> >>>
+> >>> +config I40E_FCOE
+> >>> +       bool "Fibre Channel over Ethernet (FCoE)"
+> >>> +       default n
+> >>> +       depends on I40E && DCB && FCOE
+> >>> +       ---help---
+> >>> +         Say Y here if you want to use Fibre Channel over Ethernet (FCoE)
+> >>> +         in the driver. This will create new netdev for exclusive FCoE
+> >>> +         use with XL710 FCoE offloads enabled.
+> >>> +
+> >>> +         If unsure, say N.
+> >>> +
+> >>>   config I40EVF
+> >>>          tristate "Intel(R) XL710 X710 Virtual Function Ethernet support"
+> >>>          depends on PCI_MSI
+> >>> diff --git a/drivers/net/ethernet/intel/i40e/Makefile
+> >>> b/drivers/net/ethernet/intel/i40e/Makefile
+> >>> index 4b94ddb..c405819 100644
+> >>> --- a/drivers/net/ethernet/intel/i40e/Makefile
+> >>> +++ b/drivers/net/ethernet/intel/i40e/Makefile
+> >>> @@ -44,4 +44,4 @@ i40e-objs := i40e_main.o \
+> >>>          i40e_virtchnl_pf.o
+> >>>
+> >>>   i40e-$(CONFIG_I40E_DCB) += i40e_dcb.o i40e_dcb_nl.o
+> >>> -i40e-$(CONFIG_FCOE:m=y) += i40e_fcoe.o
+> >>> +i40e-$(CONFIG_I40E_FCOE) += i40e_fcoe.o
+> >>> diff --git a/drivers/net/ethernet/intel/i40e/i40e_osdep.h
+> >>> b/drivers/net/ethernet/intel/i40e/i40e_osdep.h
+> >>> index 045b5c4..ad802dd 100644
+> >>> --- a/drivers/net/ethernet/intel/i40e/i40e_osdep.h
+> >>> +++ b/drivers/net/ethernet/intel/i40e/i40e_osdep.h
+> >>> @@ -78,7 +78,7 @@ do {                                                            \
+> >>>   } while (0)
+> >>>
+> >>>   typedef enum i40e_status_code i40e_status; -#if
+> >>> defined(CONFIG_FCOE)
+> >>> || defined(CONFIG_FCOE_MODULE)
+> >>> +#ifdef CONFIG_I40E_FCOE
+> >>>   #define I40E_FCOE
+> >>> -#endif /* CONFIG_FCOE or CONFIG_FCOE_MODULE */
+> >>> +#endif
+> >>>   #endif /* _I40E_OSDEP_H_ */
+> >>>
+> >>>>> +           if (ret)
+> >>>>> +                   dev_info(&pf->pdev->dev,
+> >>>>> +                            "init_pf_fcoe failed: %d\n", ret);
+> >>>>> +   }
+> >>>>>
+> >>>>>   #endif
+> >>>>>      /* do basic switch setup */
+> >>>>> --
+> >>>>> 1.8.3.1
+> >> Thanks,
+> >> Ethan
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
