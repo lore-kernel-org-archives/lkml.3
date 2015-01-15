@@ -1,94 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817AbbAOOKr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 09:10:47 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:52169 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754125AbbAOOKn (ORCPT
+	id S1754753AbbAOOKc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 09:10:32 -0500
+Received: from galahad.ideasonboard.com ([185.26.127.97]:51460 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754690AbbAOOK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 09:10:43 -0500
+	Thu, 15 Jan 2015 09:10:28 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Masahiro Yamada <yamada.m@jp.panasonic.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, Alexandre Courbot <acourbot@nvidia.com>,
+        Stephen Warren <swarren@nvidia.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Documentation: gpio: fix bindings document
+Date: Thu, 15 Jan 2015 16:10:54 +0200
+Message-ID: <2479604.mfbgZIQjOA@avalon>
+User-Agent: KMail/4.14.3 (Linux/3.17.7-gentoo; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <CAL_JsqL+0C_wQ26=bdwYGLj0X=vzmn8khFfo_Ryet5O=k-XFzw@mail.gmail.com>
+References: <1421311960-4120-1-git-send-email-yamada.m@jp.panasonic.com> <CAL_JsqL+0C_wQ26=bdwYGLj0X=vzmn8khFfo_Ryet5O=k-XFzw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <3538097.dWBy3R9lty@wuerfel>
-References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org>
- <1797489.PjmKzBFdQA@wuerfel> <20150106112000.GA8829@e104818-lin.cambridge.arm.com>
- <3538097.dWBy3R9lty@wuerfel>
-From: Grant Likely <grant.likely@linaro.org>
-Date: Thu, 15 Jan 2015 14:10:22 +0000
-X-Google-Sender-Auth: GHKEaulzfYfUAdeG8IuOWnPw0Go
-Message-ID: <CACxGe6tjiE6u8i-1PHYzX2cOhxJkYN3cV9mqhCHRSMRdOQRfzg@mail.gmail.com>
-Subject: Re: [Linaro-acpi] [PATCH v5 18/18] Documentation: ACPI for ARM64
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linaro-acpi <linaro-acpi@lists.linaro.org>, Rob Herring <robh@kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>, Robert Richter <rric@kernel.org>,
-        Jason Cooper <jason@lakedaemon.net>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Robert Moore <robert.moore@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Mark Brown <broonie@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
-        "jcm@redhat.com" <jcm@redhat.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Olof Johansson <olof@lixom.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 6, 2015 at 1:59 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Tuesday 06 January 2015 11:20:01 Catalin Marinas wrote:
->> On Mon, Jan 05, 2015 at 08:16:30PM +0000, Arnd Bergmann wrote:
->> > On Monday 05 January 2015 13:13:02 Catalin Marinas wrote:
->> > > > since passing no DT tables to OS but
->> > > > acpi=force is missing is a corner case, we can do a follow up patch to
->> > > > fix that, does it make sense?
->> > >
->> > > Not entirely. Why would no dtb and no acpi=force be a corner case? I
->> > > thought this should be the default when only ACPI tables are passed, no
->> > > need for an additional acpi=force argument.
->> >
->> > We don't really support the case of only ACPI tables for now. The expectation
->> > is that you always have working DT support, at least for the next few years
->> > as ACPI features are ramping up, and without acpi=force it should not try
->> > to use ACPI at all.
->>
->> So if both DT and ACPI are present, just use DT unless acpi=force is
->> passed. So far I think we agree but what I want to avoid is always
->> mandating acpi=force even when the DT tables are missing (in the long
->> run).
->>
->> Now, what's preventing a vendor firmware from providing only ACPI
->> tables? Do we enforce it in some way (arm-acpi.txt, kernel warning etc.)
->> that both DT and ACPI are supported, or at least that dts files are
->> merged in the kernel first?
->
-> We have no way of enforcing what a board vendor ships, so if they want
-> to have ACPI-only machines for MS Windows, they just won't work by
-> default on Linux. Once ACPI support is mature enough, we can also
-> have a whitelist or a different default for using it automatically
-> when no DT is present.
->
-> For drivers merged upstream, I would insist that every driver merged
-> for an ARM64 platform has a documented DT binding that is used in the
-> driver.
+Hi Rob,
 
-That's a dumb rule. It will result in untested DT code paths being
-thrown into drivers just too meet the rules rather than on whether or
-not they will actually be used. It's fine to allow driver authors to
-only implement the ACPI code path if that is what they are working
-with. We can *always* add a DT path to the driver when it is needed.
+On Thursday 15 January 2015 08:07:18 Rob Herring wrote:
+> On Thu, Jan 15, 2015 at 2:52 AM, Masahiro Yamada
+> 
+> <yamada.m@jp.panasonic.com> wrote:
+> > Signed-off-by: Masahiro Yamada <yamada.m@jp.panasonic.com>
+> 
+> Perhaps some explanation. You can't just remove properties. Please
+> explain to what extent the old/wrong name is used. This patch is only
+> okay if there are no users of gpio-phandle.
 
-As you say, wecannot insist that vendors implement DT as well as ACPI.
-The most we can do is offer the recommendation that DT works now, but
-ACPI is immature for ARM. If they choose to do ACPI only, that is
-absolutely fine and they do so with the understanding that it will
-take time to stabilize to the point that we're comfortable
-guaranteeing support in mainline. However, that doesn't even remotely
-block getting each of their drivers merged as they become ready.
+As far as I understand the patch just fixes a typo. There has never been a 
+gpio-phandle for GPIO controllers, only for GPIO consumers.
 
-g.
+> > ---
+> > 
+> >  Documentation/devicetree/bindings/gpio/gpio.txt | 5 +++--
+> >  1 file changed, 3 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/Documentation/devicetree/bindings/gpio/gpio.txt
+> > b/Documentation/devicetree/bindings/gpio/gpio.txt index b9bd1d6..f7a158d
+> > 100644
+> > --- a/Documentation/devicetree/bindings/gpio/gpio.txt
+> > +++ b/Documentation/devicetree/bindings/gpio/gpio.txt
+> > @@ -69,7 +69,8 @@ GPIO pin number, and GPIO flags as accepted by the
+> > "qe_pio_e" gpio-controller.> 
+> >  ----------------------------------
+> >  
+> >  A gpio-specifier should contain a flag indicating the GPIO polarity;
+> >  active-> 
+> > -high or active-low. If it does, the follow best practices should be
+> > followed: +high or active-low. If it does, the following best practices
+> > should be> 
+> > +followed:
+> >  The gpio-specifier's polarity flag should represent the physical level at
+> >  the GPIO controller that achieves (or represents, for inputs) a
+> >  logically asserted> 
+> > @@ -147,7 +148,7 @@ contains information structures as follows:
+> >         numeric-gpio-range ::=
+> >         
+> >                         <pinctrl-phandle> <gpio-base> <pinctrl-base>
+> >                         <count>
+> >         
+> >         named-gpio-range ::= <pinctrl-phandle> <gpio-base> '<0 0>'
+> > 
+> > -       gpio-phandle : phandle to pin controller node.
+> > +       pinctrl-phandle : phandle to pin controller node
+> > 
+> >         gpio-base : Base GPIO ID in the GPIO controller
+> >         pinctrl-base : Base pinctrl pin ID in the pin controller
+> >         count : The number of GPIOs/pins in this range
+
+-- 
+Regards,
+
+Laurent Pinchart
+
