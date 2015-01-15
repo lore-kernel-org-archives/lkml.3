@@ -1,115 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752501AbbAOJ0v (ORCPT <rfc822;w@1wt.eu>);
+	id S1752616AbbAOJ0z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 04:26:55 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46085 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751992AbbAOJ0v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 15 Jan 2015 04:26:51 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.243]:5536 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751433AbbAOJ0r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 04:26:47 -0500
-Message-ID: <54B787D5.9070408@atmel.com>
-Date: Thu, 15 Jan 2015 10:26:45 +0100
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
+Message-ID: <54B787D7.7040202@suse.com>
+Date: Thu, 15 Jan 2015 10:26:47 +0100
+From: =?windows-1252?Q?J=FCrgen_Gro=DF?= <jgross@suse.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>, Rob Herring <robherring2@gmail.com>
-CC: Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v2 1/5] irqchip: add dumb demultiplexer implementation
-References: <1421174781-4340-1-git-send-email-boris.brezillon@free-electrons.com> <1421174781-4340-2-git-send-email-boris.brezillon@free-electrons.com> <CAL_JsqJ5DSo6jmAuHPDdV6pMca8BVbg5V-GZ5=2qu96_QYXMtQ@mail.gmail.com> <alpine.DEB.2.11.1501141110190.5526@nanos> <CAL_JsqLwBvV5s531_YsA=sCE4_LG=eXTua8mh069ufRjSNFhng@mail.gmail.com> <alpine.DEB.2.11.1501151003430.5526@nanos>
-In-Reply-To: <alpine.DEB.2.11.1501151003430.5526@nanos>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [10.161.30.18]
+To: Christian Borntraeger <borntraeger@de.ibm.com>,
+        linux-kernel@vger.kernel.org
+CC: linux-arch@vger.kernel.org, kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
+        linuxppc-dev@lists.ozlabs.org, x86@kernel.org,
+        xen-devel@lists.xenproject.org, linux-mm@kvack.org
+Subject: Re: [PATCH 3/8] x86/xen/p2m: Replace ACCESS_ONCE with READ_ONCE
+References: <1421312314-72330-1-git-send-email-borntraeger@de.ibm.com> <1421312314-72330-4-git-send-email-borntraeger@de.ibm.com>
+In-Reply-To: <1421312314-72330-4-git-send-email-borntraeger@de.ibm.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 15/01/2015 10:11, Thomas Gleixner a écrit :
-> On Wed, 14 Jan 2015, Rob Herring wrote:
->> On Wed, Jan 14, 2015 at 4:36 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
->>> All attempts to work around that have resulted in horrible bandaids so
->>> far. That's why I guided Boris to implement this dummy demultiplexing
->>> mechanism. It solves the problem at hand nicely without adding nasty
->>> hackarounds into the suspend/resume code and inflicting platform
->>> knowledge on multi-platform device drivers.
->>
->> This change will break on old kernels with a new dtb. Would you be
->> happy if a BIOS update required a new kernel? Fixing this for any
->> platform requires a dtb update which may not be possible on some
->> platforms. I don't have a problem with this breakage for 1 platform
->> and the at91 guys may not care, but we'd ultimately be changing how
->> all shared irqs are specified for all DT. Maybe we decide that this is
->> how we want to describe things, but that needs much wider discussion
->> and agreement.
-> 
-> We do not change shared interrupts in any way. We provide an
-> alternative mechanism for braindead hardware. And if the at91 folks
+On 01/15/2015 09:58 AM, Christian Borntraeger wrote:
+> ACCESS_ONCE does not work reliably on non-scalar types. For
+> example gcc 4.6 and 4.7 might remove the volatile tag for such
+> accesses during the SRA (scalar replacement of aggregates) step
+> (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58145)
+>
+> Change the p2m code to replace ACCESS_ONCE with READ_ONCE.
+>
+> Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
 
-Let me add subtle details: "Old braindead hardware, with possibility to
-use alternative set of timers which doesn't have shared interrupt lines" ;-)
+Reviewed-by: Juergen Gross <jgross@suse.com>
 
-> are fine with the DT change, then it's their decision. Nothing forces
-> this on everyone.
+> ---
+>   arch/x86/xen/p2m.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/arch/x86/xen/p2m.c b/arch/x86/xen/p2m.c
+> index edbc7a6..cb71016 100644
+> --- a/arch/x86/xen/p2m.c
+> +++ b/arch/x86/xen/p2m.c
+> @@ -554,7 +554,7 @@ static bool alloc_p2m(unsigned long pfn)
+>   		mid_mfn = NULL;
+>   	}
+>
+> -	p2m_pfn = pte_pfn(ACCESS_ONCE(*ptep));
+> +	p2m_pfn = pte_pfn(READ_ONCE(*ptep));
+>   	if (p2m_pfn == PFN_DOWN(__pa(p2m_identity)) ||
+>   	    p2m_pfn == PFN_DOWN(__pa(p2m_missing))) {
+>   		/* p2m leaf page is missing */
+>
 
-Yes I do agree to change DT.
-
->>> If you have a proper solution for the problem at hand which
->>>
->>>    - avoids the demux dummy
->>>
->>>    - works straight forward with suspend/resume/wakeup
->>>
->>>    - does not add horrible new APIs
->>>
->>>    - does not add conditionals to the interrupt hotpath
->>>
->>>    - does not inflict platform knowledge about interrupt chip details
->>>      on drivers
->>>
->>> then I'm happy to take it.
->>>
->>> But as long as you can't come up with anything sane, the demux dummy
->>> is the best solution for this problem we've seen so far.
->>
->> What if during suspend you move all actions w/o IRQF_NO_SUSPEND to a
->> suspended action list? This would leave only the actions with
->> IRQF_NO_SUSPEND set in the active action list. The cost would be a
->> pointer in irq_desc and moving the actions during suspend and resume.
-> 
-> That's exactly what we want NOT. Because it prevents us to do proper
-> sanity checks for IRQF_NO_SUSPEND. We've been there and I rejected it
-> for that very reason.
->  
->> There are probably ways to do this demux irqchip without a DT change.
-> 
-> What's the problem with a DT change for a single platform, if the
-> maintainers are willing to take it and deal with the fallout?
-> 
-> And in case of AT91 the new kernel will simply work with the old DT
-> and just emit the same warning vs. the IRQF_NO_SUSPEND mismatch. Older
-> kernels won't work with a new DT, but that's about it.
-> 
-> Aside of that, I'm quite amused about your DT update worries. DTs
-> break with every kernel version on very popular platforms in very
-> weird and subtle ways.
-
-DT on AT91 is a Work In Progress (for 3.5 years) and the facts have told
-us that DT updates were absolutely necessary. So, for now, I agree to
-change DT as far as AT91 is concerned.
-
-Bye,
--- 
-Nicolas Ferre
