@@ -1,82 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817AbbAOKMU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 05:12:20 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:35611 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752762AbbAOKMO (ORCPT
+	id S1753240AbbAOKNh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 05:13:37 -0500
+Received: from mailapp01.imgtec.com ([195.59.15.196]:10546 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752823AbbAOKNd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 05:12:14 -0500
+	Thu, 15 Jan 2015 05:13:33 -0500
+From: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
+To: <davem@davemloft.net>
+CC: <Zubair.Kakakhel@imgtec.com>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <s.hauer@pengutronix.de>, <sergei.shtylyov@cogentembedded.com>
+Subject: [PATCH_V5] dm9000: Add regulator and reset support to dm9000
+Date: Thu, 15 Jan 2015 10:12:26 +0000
+Message-ID: <1421316746-38128-1-git-send-email-Zubair.Kakakhel@imgtec.com>
+X-Mailer: git-send-email 1.9.1
 MIME-Version: 1.0
-In-Reply-To: <20150112175920.GC19868@roeck-us.net>
-References: <20150112180322.003b44f2@canb.auug.org.au>
-	<20150112162438.GA18723@roeck-us.net>
-	<CAMuHMdUYEe=L=H75AOYVjinRSW=okRJNrNJVy-bY1gshdVrO7Q@mail.gmail.com>
-	<20150112175920.GC19868@roeck-us.net>
-Date: Thu, 15 Jan 2015 11:12:13 +0100
-X-Google-Sender-Auth: nPzEcsN2aMjilFNGPMYxi7dszuk
-Message-ID: <CAMuHMdV1k4viMKmi_8vM52iz+ry50k=Ard1ADkEGzia+yJ5e3Q@mail.gmail.com>
-Subject: Re: linux-next: Tree for Jan 12 (build failures: m68k, ppc)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Linux-Next <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Clark <robdclark@gmail.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        linux-m68k <linux-m68k@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
+X-Originating-IP: [192.168.154.89]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 12, 2015 at 6:59 PM, Guenter Roeck <linux@roeck-us.net> wrote:
->> > Build failures, seen since next-20150109:
->> >         m68k:allmodconfig
->> >         powerpc:ppc6xx_defconfig
+In boards, the dm9000 chip's power and reset can be controlled by gpio.
 
-It looks like parisc is also suffering:
-http://kisskb.ellerman.id.au/kisskb/buildresult/12343847/
+It makes sense to add them to the dm9000 driver and let dt be used to
+enable power and reset the phy.
 
->> > Due to:
->> >         ERROR: "__get_user_bad" [drivers/gpu/drm/drm.ko] undefined!
->> >         make[1]: *** [__modpost] Error 1
->> >
->> > Caused by commit d34f20d6e2f (drm: Atomic modeset ioctl).
->>
->> Yeah, it needs a get_user() that supports 64-bit data.
->>
-> Hi Geert,
->
-> I assume you mean m68k, where 64 bit support for get_user has been disabled.
->
-> The problem on powerpc is different though: __get_user_nocheck()
-> and __get_user_check() use
->         unsigned long __gu_val;
-> followed by
->         __get_user_size(__gu_val, __gu_addr, (size), __gu_err);
->
-> __get_user_size() fails in
->         if (size > sizeof(x))
->                  (x) = __get_user_bad();
->
-> Presumably "unsigned long" is 32 bit on 32 bit powerpc, not 64 bit.
->
-> Overall, the explicit 64-bit use of get_user() seems to be quite unusual.
+Signed-off-by: Zubair Lutfullah Kakakhel <Zubair.Kakakhel@imgtec.com>
+Signed-off-by: Paul Burton <paul.burton@imgtec.com>
 
-I noticed you've sent a fix for DRM.
+---
+V4 Reordered an error check. PTR_ERR inside IS_ERR.
 
-Doh, and I was just fixing m68k...
+V3 Fixed an indentation and removed a call to gpio_direction_output as
+devm_gpio_request_one can handle it.
 
-Gr{oetje,eeting}s,
+V2 A few fixes and more error checks. Nothing major
 
-                        Geert
+V1 Minor blooper
+---
+ .../devicetree/bindings/net/davicom-dm9000.txt     |  4 +++
+ drivers/net/ethernet/davicom/dm9000.c              | 40 ++++++++++++++++++++++
+ 2 files changed, 44 insertions(+)
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+diff --git a/Documentation/devicetree/bindings/net/davicom-dm9000.txt b/Documentation/devicetree/bindings/net/davicom-dm9000.txt
+index 28767ed..5224bf0 100644
+--- a/Documentation/devicetree/bindings/net/davicom-dm9000.txt
++++ b/Documentation/devicetree/bindings/net/davicom-dm9000.txt
+@@ -11,6 +11,8 @@ Required properties:
+ Optional properties:
+ - davicom,no-eeprom : Configuration EEPROM is not available
+ - davicom,ext-phy : Use external PHY
++- reset-gpios : phandle of gpio that will be used to reset chip during probe
++- vcc-supply : phandle of regulator that will be used to enable power to chip
+ 
+ Example:
+ 
+@@ -21,4 +23,6 @@ Example:
+ 		interrupts = <7 4>;
+ 		local-mac-address = [00 00 de ad be ef];
+ 		davicom,no-eeprom;
++		reset-gpios = <&gpf 12 GPIO_ACTIVE_LOW>;
++		vcc-supply = <&eth0_power>;
+ 	};
+diff --git a/drivers/net/ethernet/davicom/dm9000.c b/drivers/net/ethernet/davicom/dm9000.c
+index ef0bb58..c0a7813 100644
+--- a/drivers/net/ethernet/davicom/dm9000.c
++++ b/drivers/net/ethernet/davicom/dm9000.c
+@@ -36,6 +36,9 @@
+ #include <linux/platform_device.h>
+ #include <linux/irq.h>
+ #include <linux/slab.h>
++#include <linux/regulator/consumer.h>
++#include <linux/gpio.h>
++#include <linux/of_gpio.h>
+ 
+ #include <asm/delay.h>
+ #include <asm/irq.h>
+@@ -1426,11 +1429,48 @@ dm9000_probe(struct platform_device *pdev)
+ 	struct dm9000_plat_data *pdata = dev_get_platdata(&pdev->dev);
+ 	struct board_info *db;	/* Point a board information structure */
+ 	struct net_device *ndev;
++	struct device *dev = &pdev->dev;
+ 	const unsigned char *mac_src;
+ 	int ret = 0;
+ 	int iosize;
+ 	int i;
+ 	u32 id_val;
++	int reset_gpios;
++	enum of_gpio_flags flags;
++	struct regulator *power;
++
++	power = devm_regulator_get(dev, "vcc");
++	if (IS_ERR(power)) {
++		if (PTR_ERR(power) == -EPROBE_DEFER)
++			return -EPROBE_DEFER;
++		dev_dbg(dev, "no regulator provided\n");
++	} else {
++		ret = regulator_enable(power);
++		if (ret != 0) {
++			dev_err(dev,
++				"Failed to enable power regulator: %d\n", ret);
++			return ret;
++		}
++		dev_dbg(dev, "regulator enabled\n");
++	}
++
++	reset_gpios = of_get_named_gpio_flags(dev->of_node, "reset-gpios", 0,
++					      &flags);
++	if (gpio_is_valid(reset_gpios)) {
++		ret = devm_gpio_request_one(dev, reset_gpios, flags,
++					    "dm9000_reset");
++		if (ret) {
++			dev_err(dev, "failed to request reset gpio %d: %d\n",
++				reset_gpios, ret);
++			return -ENODEV;
++		}
++
++		/* According to manual PWRST# Low Period Min 1ms */
++		msleep(2);
++		gpio_set_value(reset_gpios, 1);
++		/* Needs 3ms to read eeprom when PWRST is deasserted */
++		msleep(4);
++	}
+ 
+ 	if (!pdata) {
+ 		pdata = dm9000_parse_dt(&pdev->dev);
+-- 
+1.9.1
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
