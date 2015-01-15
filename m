@@ -1,72 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752001AbbAOKEI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 05:04:08 -0500
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:44693 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750997AbbAOKEF (ORCPT
+	id S1752307AbbAOKFO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 05:05:14 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.242]:46855 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752079AbbAOKFL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 05:04:05 -0500
+	Thu, 15 Jan 2015 05:05:11 -0500
+Message-ID: <54B790D5.5040205@atmel.com>
+Date: Thu, 15 Jan 2015 11:05:09 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <1421313626.19448.8.camel@AMDC1943>
-References: <1421054585-9032-1-git-send-email-k.kozlowski@samsung.com>
-	<CAPDyKFpGiaDJ3zjCSSbcia6iLS2+FLBRjGAheQAzvFsAkJax+A@mail.gmail.com>
-	<1421313626.19448.8.camel@AMDC1943>
-Date: Thu, 15 Jan 2015 11:04:04 +0100
-Message-ID: <CAPDyKFqe7UxSrQxuvGw7UWFQhvX0NZ83rvLrAEMZFpA4n0GcNg@mail.gmail.com>
-Subject: Re: [RFC 0/3] mmc: Add dynamic frequency scaling
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Chris Ball <chris@printf.net>, Jaehoon Chung <jh80.chung@samsung.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>, Kukjin Kim <kgene@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Content-Type: text/plain; charset=UTF-8
+To: Xander Huff <xander.huff@ni.com>, <davem@davemloft.net>
+CC: <netdev@vger.kernel.org>, <jaeden.amero@ni.com>, <rich.tollerton@ni.com>,
+        <ben.shelton@ni.com>, <brad.mouring@ni.com>,
+        <linux-kernel@vger.kernel.org>, <cyrille.pitchen@atmel.com>
+Subject: Re: [PATCH v2 1/2] fixup! net/macb: Adding comments to various #defs
+ to make interpretation easier
+References: <20150114.165220.2282566005036464131.davem@davemloft.net> <1421274051-21588-1-git-send-email-xander.huff@ni.com>
+In-Reply-To: <1421274051-21588-1-git-send-email-xander.huff@ni.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 January 2015 at 10:20, Krzysztof Kozlowski
-<k.kozlowski@samsung.com> wrote:
-> On czw, 2015-01-15 at 09:20 +0100, Ulf Hansson wrote:
->> + Mike, Stephen (Clock maintainers)
->>
->> On 12 January 2015 at 10:23, Krzysztof Kozlowski
->> <k.kozlowski@samsung.com> wrote:
->> > Hi,
->> >
->> >
->> > I would like to hear some comments about idea of scaling MMC clock
->> > frequency. The basic idea is to lower the clock when device is
->> > completely idle or not busy enough.
->>
->> We already have host drivers that implements runtime PM support.
->> Typically that would mean the clock will be gated once the device
->> becomes runtime PM suspended.
->>
->> Why should we decrease the frequency of an already gated clock?
->
-> In case of idle state you're right that clkgate would be better. But
-> what about finding a compromise between high performance (high
-> frequency) and energy saving for different loads on MMC?
+Le 14/01/2015 23:20, Xander Huff a écrit :
+> Put #define comments into a single line.
 
-I guess a compromise could be beneficial for some SOC and use cases.
-At least I remember, ST-Ericsson's UX500 SOC had such an out of tree
-hack to track MMC load.
+It seems that correction is not done for all the entries modified:
+@ 0x0100 to 0x01b0
 
->
-> The frequency scaling could help in that case. Anyway I should prepare
-> some more benchmarks for such conditions.
+Can you please consider correcting this?
 
-Seems reasonable and please do!
+Thanks, bye.
 
-Kind regards
-Uffe
+> Signed-off-by: Xander Huff <xander.huff@ni.com>
+> ---
+>  drivers/net/ethernet/cadence/macb.h | 107 +++++++++---------------------------
+>  1 file changed, 26 insertions(+), 81 deletions(-)
+> 
+> diff --git a/drivers/net/ethernet/cadence/macb.h b/drivers/net/ethernet/cadence/macb.h
+> index 378b218..d7b93d0 100644
+> --- a/drivers/net/ethernet/cadence/macb.h
+> +++ b/drivers/net/ethernet/cadence/macb.h
+> @@ -275,9 +275,7 @@
+>  #define MACB_THALT_SIZE				1
+>  #define MACB_NCR_TPF_OFFSET			11 /* Transmit pause frame */
+>  #define MACB_NCR_TPF_SIZE			1
+> -#define MACB_TZQ_OFFSET				12 /* Transmit zero quantum
+> -						    * pause frame
+> -						    */
+> +#define MACB_TZQ_OFFSET				12 /* Transmit zero quantum pause frame */
+>  #define MACB_TZQ_SIZE				1
+>  
+>  /* Bitfields in NCFGR */
+> @@ -299,9 +297,7 @@
+>  #define MACB_UNI_SIZE				1
+>  #define MACB_BIG_OFFSET				8 /* Receive 1536 byte frames */
+>  #define MACB_BIG_SIZE				1
+> -#define MACB_EAE_OFFSET				9 /* External address match
+> -						   * enable
+> -						   */
+> +#define MACB_EAE_OFFSET				9 /* External address match enable */
+>  #define MACB_EAE_SIZE				1
+>  #define MACB_CLK_OFFSET				10
+>  #define MACB_CLK_SIZE				2
+> @@ -313,9 +309,7 @@
+>  #define MACB_RM9200_RMII_SIZE			1  /* AT91RM9200 only */
+>  #define MACB_RBOF_OFFSET			14 /* Receive buffer offset */
+>  #define MACB_RBOF_SIZE				2
+> -#define MACB_RLCE_OFFSET			16 /* Length field error frame
+> -						    * discard
+> -						    */
+> +#define MACB_RLCE_OFFSET			16 /* Length field error frame discard */
+>  #define MACB_RLCE_SIZE				1
+>  #define MACB_DRFCS_OFFSET			17 /* FCS remove */
+>  #define MACB_DRFCS_SIZE				1
+> @@ -335,41 +329,22 @@
+>  #define GEM_RXCOEN_SIZE				1
+>  
+>  /* Constants for data bus width. */
+> -#define GEM_DBW32				0 /* 32 bit AMBA AHB data bus
+> -						   * width
+> -						   */
+> -#define GEM_DBW64				1 /* 64 bit AMBA AHB data bus
+> -						   * width
+> -						   */
+> -#define GEM_DBW128				2 /* 128 bit AMBA AHB data bus
+> -						   * width
+> -						   */
+> +#define GEM_DBW32				0 /* 32 bit AMBA AHB data bus width */
+> +#define GEM_DBW64				1 /* 64 bit AMBA AHB data bus width */
+> +#define GEM_DBW128				2 /* 128 bit AMBA AHB data bus width */
+>  
+>  /* Bitfields in DMACFG. */
+> -#define GEM_FBLDO_OFFSET			0 /* AHB fixed burst length for
+> -						   * DMA data operations
+> -						   */
+> +#define GEM_FBLDO_OFFSET			0 /* AHB fixed burst length for DMA data operations */
+>  #define GEM_FBLDO_SIZE				5
+> -#define GEM_ENDIA_OFFSET			7 /* AHB endian swap mode enable
+> -						   * for packet data accesses
+> -						   */
+> +#define GEM_ENDIA_OFFSET			7 /* AHB endian swap mode enable for packet data accesses */
+>  #define GEM_ENDIA_SIZE				1
+> -#define GEM_RXBMS_OFFSET			8 /* Receiver packet buffer
+> -						   * memory size select
+> -						   */
+> +#define GEM_RXBMS_OFFSET			8 /* Receiver packet buffer memory size select */
+>  #define GEM_RXBMS_SIZE				2
+> -#define GEM_TXPBMS_OFFSET			10 /* Transmitter packet buffer
+> -						    * memory size select
+> -						    */
+> +#define GEM_TXPBMS_OFFSET			10 /* Transmitter packet buffer memory size select */
+>  #define GEM_TXPBMS_SIZE				1
+> -#define GEM_TXCOEN_OFFSET			11 /* Transmitter IP, TCP and
+> -						    * UDP checksum generation
+> -						    * offload enable
+> -						    */
+> +#define GEM_TXCOEN_OFFSET			11 /* Transmitter IP, TCP and UDP checksum generation offload enable */
+>  #define GEM_TXCOEN_SIZE				1
+> -#define GEM_RXBS_OFFSET				16 /* DMA receive buffer size in
+> -						    * AHB system memory
+> -						    */
+> +#define GEM_RXBS_OFFSET				16 /* DMA receive buffer size in AHB system memory */
+>  #define GEM_RXBS_SIZE				8
+>  #define GEM_DDRP_OFFSET				24 /* disc_when_no_ahb */
+>  #define GEM_DDRP_SIZE				1
+> @@ -378,13 +353,9 @@
+>  /* Bitfields in NSR */
+>  #define MACB_NSR_LINK_OFFSET			0 /* pcs_link_state */
+>  #define MACB_NSR_LINK_SIZE			1
+> -#define MACB_MDIO_OFFSET			1 /* status of the mdio_in
+> -						   * pin
+> -						   */
+> +#define MACB_MDIO_OFFSET			1 /* status of the mdio_in pin */
+>  #define MACB_MDIO_SIZE				1
+> -#define MACB_IDLE_OFFSET			2 /* The PHY management logic is
+> -						   * idle (i.e. has completed)
+> -						   */
+> +#define MACB_IDLE_OFFSET			2 /* The PHY management logic is idle (i.e. has completed) */
+>  #define MACB_IDLE_SIZE				1
+>  
+>  /* Bitfields in TSR */
+> @@ -396,9 +367,7 @@
+>  #define MACB_TSR_RLE_SIZE			1
+>  #define MACB_TGO_OFFSET				3 /* Transmit go */
+>  #define MACB_TGO_SIZE				1
+> -#define MACB_BEX_OFFSET				4 /* Transmit frame corruption
+> -						   * due to AHB error
+> -						   */
+> +#define MACB_BEX_OFFSET				4 /* Transmit frame corruption due to AHB error */
+>  #define MACB_BEX_SIZE				1
+>  #define MACB_RM9200_BNQ_OFFSET			4 /* AT91RM9200 only */
+>  #define MACB_RM9200_BNQ_SIZE			1 /* AT91RM9200 only */
+> @@ -424,43 +393,23 @@
+>  #define MACB_RXUBR_SIZE				1
+>  #define MACB_TXUBR_OFFSET			3 /* TX used bit read */
+>  #define MACB_TXUBR_SIZE				1
+> -#define MACB_ISR_TUND_OFFSET			4 /* Enable trnasmit buffer
+> -						   * under run interrupt
+> -						   */
+> +#define MACB_ISR_TUND_OFFSET			4 /* Enable trnasmit buffer under run interrupt */
+>  #define MACB_ISR_TUND_SIZE			1
+> -#define MACB_ISR_RLE_OFFSET			5 /* Enable retry limit exceeded
+> -						   * or late collision interrupt
+> -						   */
+> +#define MACB_ISR_RLE_OFFSET			5 /* Enable retry limit exceeded or late collision interrupt */
+>  #define MACB_ISR_RLE_SIZE			1
+> -#define MACB_TXERR_OFFSET			6 /* Enable transmit frame
+> -						   * corruption due to AHB error
+> -						   * interrupt
+> -						   */
+> +#define MACB_TXERR_OFFSET			6 /* Enable transmit frame corruption due to AHB error interrupt */
+>  #define MACB_TXERR_SIZE				1
+> -#define MACB_TCOMP_OFFSET			7 /* Enable transmit complete
+> -						   * interrupt
+> -						   */
+> +#define MACB_TCOMP_OFFSET			7 /* Enable transmit complete interrupt */
+>  #define MACB_TCOMP_SIZE				1
+> -#define MACB_ISR_LINK_OFFSET			9 /* Enable link change
+> -						   * interrupt
+> -						   */
+> +#define MACB_ISR_LINK_OFFSET			9 /* Enable link change interrupt */
+>  #define MACB_ISR_LINK_SIZE			1
+> -#define MACB_ISR_ROVR_OFFSET			10 /* Enable receive overrun
+> -						    * interrupt
+> -						    */
+> +#define MACB_ISR_ROVR_OFFSET			10 /* Enable receive overrun interrupt */
+>  #define MACB_ISR_ROVR_SIZE			1
+> -#define MACB_HRESP_OFFSET			11 /* Enable hrsep not OK
+> -						    * interrupt
+> -						    */
+> +#define MACB_HRESP_OFFSET			11 /* Enable hrsep not OK interrupt */
+>  #define MACB_HRESP_SIZE				1
+> -#define MACB_PFR_OFFSET				12 /* Enable pause frame with
+> -						    * non-zero pause quantum
+> -						    * interrupt
+> -						    */
+> +#define MACB_PFR_OFFSET				12 /* Enable pause frame with non-zero pause quantum interrupt */
+>  #define MACB_PFR_SIZE				1
+> -#define MACB_PTZ_OFFSET				13 /* Enable pause time zero
+> -						    * interrupt
+> -						    */
+> +#define MACB_PTZ_OFFSET				13 /* Enable pause time zero interrupt */
+>  #define MACB_PTZ_SIZE				1
+>  
+>  /* Bitfields in MAN */
+> @@ -472,13 +421,9 @@
+>  #define MACB_REGA_SIZE				5
+>  #define MACB_PHYA_OFFSET			23 /* PHY address */
+>  #define MACB_PHYA_SIZE				5
+> -#define MACB_RW_OFFSET				28 /* Operation. 10 is read. 01
+> -						    * is write.
+> -						    */
+> +#define MACB_RW_OFFSET				28 /* Operation. 10 is read. 01 is write. */
+>  #define MACB_RW_SIZE				2
+> -#define MACB_SOF_OFFSET				30 /* Must be written to 1 for
+> -						    * Clause 22 operation
+> -						    */
+> +#define MACB_SOF_OFFSET				30 /* Must be written to 1 for Clause 22 operation */
+>  #define MACB_SOF_SIZE				2
+>  
+>  /* Bitfields in USRIO (AVR32) */
+> 
+
+
+-- 
+Nicolas Ferre
