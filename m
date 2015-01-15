@@ -1,89 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754450AbbAONZ1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 08:25:27 -0500
-Received: from mx2.parallels.com ([199.115.105.18]:34595 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751570AbbAONZ0 (ORCPT
+	id S1753659AbbAONa5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 08:30:57 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:47963 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752484AbbAONaz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 08:25:26 -0500
-Date: Thu, 15 Jan 2015 16:25:16 +0300
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Michal Hocko <mhocko@suse.cz>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -mm v2] vmscan: move reclaim_state handling to shrink_slab
-Message-ID: <20150115132516.GG11264@esperanza>
-References: <1421311073-28130-1-git-send-email-vdavydov@parallels.com>
- <20150115125820.GE7000@dhcp22.suse.cz>
+	Thu, 15 Jan 2015 08:30:55 -0500
+Message-ID: <54B7C10D.1090008@atmel.com>
+Date: Thu, 15 Jan 2015 14:30:53 +0100
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20150115125820.GE7000@dhcp22.suse.cz>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>
+CC: Felipe Balbi <balbi@ti.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Arnd Bergmann <arnd@arndb.de>, <linux-usb@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>
+Subject: Re: [PATCH 00/12] Atmel matrix, SMC and UDC rework
+References: <1421252524-24452-1-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1421252524-24452-1-git-send-email-alexandre.belloni@free-electrons.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.161.30.18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 15, 2015 at 01:58:20PM +0100, Michal Hocko wrote:
-> On Thu 15-01-15 11:37:53, Vladimir Davydov wrote:
-> > current->reclaim_state is only used to count the number of slab pages
-> > reclaimed by shrink_slab(). So instead of initializing it before we are
-> > 
-> > Note that after this patch try_to_free_mem_cgroup_pages() will count not
-> > only reclaimed user pages, but also slab pages, which is expected,
-> > because it can reclaim kmem from kmem-active sub cgroups.
+Le 14/01/2015 17:21, Alexandre Belloni a écrit :
+> Hi Felipe,
 > 
-> Except that reclaim_state counts all freed slab objects that have
-> current->reclaim_state != NULL AFAIR. This includes also kfreed pages
-> from interrupt context and who knows what else and those pages might be
-> from a different memcgs, no?
+> The following series replace the previous series sent by Boris named:
+>  - [PATCH v5 00/11] memory: add Atmel EBI (External Bus Interface) driver
+>  - [PATCH 00/11] usb: gadget: at91_udc: Rework for multi-platform support
+> 
+> The patches I left out are less urgent and will be resent later, probably for
+> 3.21.
+> 
+> Because of the dependancy between the syscon addition and the at91_udc series,
+> this can go through the AT91 tree if you giv your ack on the udc patches.
+> 
+> The first 4 patches introduce 2 syscon devices needed to configure the
+> matrix and SMC.
+> The following patches rework the at91_udc driver to prepare at91 for
+> multi-platform support.
+> 
+> It also include several fixes:
+>  - fix clock names to be consistent with other USB drivers
+>  - document clocks and clock-names properties in atmel-usb DT bindings doc
+> 
+> and some cleanup changes:
+>  - remove useless usb_clk
+>  - allocate at91_udc instance instead of using the statically defined one
+>  - simplify the probe and remove functions by using devm_ helpers
+>  - remove !DT specific code
+> 
+> Changes from the previous series:
+>  - rebased on 3.19-rc1
+>
+> Boris Brezillon (12):
+>   mfd: syscon: Add atmel-matrix registers definition
+>   mfd: syscon: Add Atmel Matrix bus DT binding documentation
+>   mfd: syscon: Add atmel-smc registers definition
+>   mfd: syscon: Add Atmel SMC binding doc
 
-Hmm, true, good point. Can an interrupt handler free a lot of memory
-though? Does RCU free objects from irq or soft irq context?
+I already acknowledged these 4 patches as part of another series.
 
-> Besides that I am not sure this makes any difference in the end. No
-> try_to_free_mem_cgroup_pages caller really cares about the exact
-> number of reclaimed pages. We care only about whether there was any
-> progress done - and even that not exactly (e.g. try_charge checks
-> mem_cgroup_margin before retry/oom so if sufficient kmem pages were
-> uncharged then we will notice that).
+>   usb: gadget: at91_udc: Fix clock names
+>   usb: gadget: at91_udc: Drop uclk clock
+>   usb: gadget: at91_udc: Document DT clocks and clock-names property
+>   usb: gadget: at91_udc: Remove non-DT handling code
+>   usb: gadget: at91_udc: Simplify probe and remove functions
+>   usb: gadget: at91_udc: Rework for multi-platform kernel support
+>   usb: gadget: at91_udc: Update DT binding documentation
+>   usb: gadget: at91_udc: Allocate udc instance
 
-Frankly, I thought exactly the same initially, that's why I dropped
-reclaim_state handling from the initial memcg shrinkers patch set.
-However, then Hillf noticed that nr_reclaimed is checked right after
-calling shrink_slab() in the memcg iteration loop in shrink_zone():
+I'm fine with all this:
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
+Great, I plan to add them all to the at91-3.20-drivers branch now.
 
-		memcg = mem_cgroup_iter(root, NULL, &reclaim);
-		do {
-			[...]
-			if (memcg && is_classzone)
-				shrink_slab(sc->gfp_mask, zone_to_nid(zone),
-					    memcg, sc->nr_scanned - scanned,
-					    lru_pages);
-
-			/*
-			 * Direct reclaim and kswapd have to scan all memory
-			 * cgroups to fulfill the overall scan target for the
-			 * zone.
-			 *
-			 * Limit reclaim, on the other hand, only cares about
-			 * nr_to_reclaim pages to be reclaimed and it will
-			 * retry with decreasing priority if one round over the
-			 * whole hierarchy is not sufficient.
-			 */
-			if (!global_reclaim(sc) &&
-					sc->nr_reclaimed >= sc->nr_to_reclaim) {
-				mem_cgroup_iter_break(root, memcg);
-				break;
-			}
-			memcg = mem_cgroup_iter(root, memcg, &reclaim);
-		} while (memcg);
+Thanks, best regards.
 
 
-If we can ignore reclaimed slab pages here (?), let's drop this patch.
+>  .../devicetree/bindings/mfd/atmel-matrix.txt       |  24 +
+>  .../devicetree/bindings/mfd/atmel-smc.txt          |  19 +
+>  .../devicetree/bindings/usb/atmel-usb.txt          |  10 +-
+>  drivers/usb/gadget/udc/Kconfig                     |   1 +
+>  drivers/usb/gadget/udc/at91_udc.c                  | 525 +++++++++++----------
+>  drivers/usb/gadget/udc/at91_udc.h                  |   9 +-
+>  include/linux/mfd/syscon/atmel-matrix.h            | 117 +++++
+>  include/linux/mfd/syscon/atmel-smc.h               | 173 +++++++
+>  8 files changed, 623 insertions(+), 255 deletions(-)
+>  create mode 100644 Documentation/devicetree/bindings/mfd/atmel-matrix.txt
+>  create mode 100644 Documentation/devicetree/bindings/mfd/atmel-smc.txt
+>  create mode 100644 include/linux/mfd/syscon/atmel-matrix.h
+>  create mode 100644 include/linux/mfd/syscon/atmel-smc.h
+> 
 
-Thanks,
-Vladimir
+
+-- 
+Nicolas Ferre
