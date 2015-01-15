@@ -1,106 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752754AbbAOKMM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 05:12:12 -0500
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:47213 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752147AbbAOKMJ (ORCPT
+	id S1752817AbbAOKMU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 05:12:20 -0500
+Received: from mail-la0-f44.google.com ([209.85.215.44]:35611 "EHLO
+	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752762AbbAOKMO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 05:12:09 -0500
+	Thu, 15 Jan 2015 05:12:14 -0500
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdbOz0VAH1RzaXdDyfDxzTtAuBNA_yGQoS8G_y8JxCFJiw@mail.gmail.com>
-References: <1418031490-17716-1-git-send-email-rebecca.swee.fun.chang@intel.com>
- <1418031490-17716-2-git-send-email-rebecca.swee.fun.chang@intel.com> <CACRpkdbOz0VAH1RzaXdDyfDxzTtAuBNA_yGQoS8G_y8JxCFJiw@mail.gmail.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Thu, 15 Jan 2015 19:11:48 +0900
-Message-ID: <CAAVeFuJ+rus5+tjdYxUwGahNCSR1RnoFt=8XEHZ-jznvFj+L4g@mail.gmail.com>
-Subject: Re: [PATCHv5 1/2] gpio: sch: Consolidate similar algorithms
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>,
-        Mika Westerberg <mika.westerberg@intel.com>,
-        GPIO Subsystem Mailing List <linux-gpio@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Denis Turischev <denis.turischev@compulab.co.il>
+In-Reply-To: <20150112175920.GC19868@roeck-us.net>
+References: <20150112180322.003b44f2@canb.auug.org.au>
+	<20150112162438.GA18723@roeck-us.net>
+	<CAMuHMdUYEe=L=H75AOYVjinRSW=okRJNrNJVy-bY1gshdVrO7Q@mail.gmail.com>
+	<20150112175920.GC19868@roeck-us.net>
+Date: Thu, 15 Jan 2015 11:12:13 +0100
+X-Google-Sender-Auth: nPzEcsN2aMjilFNGPMYxi7dszuk
+Message-ID: <CAMuHMdV1k4viMKmi_8vM52iz+ry50k=Ard1ADkEGzia+yJ5e3Q@mail.gmail.com>
+Subject: Re: linux-next: Tree for Jan 12 (build failures: m68k, ppc)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linux-Next <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Clark <robdclark@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        linux-m68k <linux-m68k@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 15, 2015 at 6:49 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Mon, Dec 8, 2014 at 10:38 AM, Chang Rebecca Swee Fun
-> <rebecca.swee.fun.chang@intel.com> wrote:
->
->> Consolidating similar algorithms into common functions to make
->> GPIO SCH simpler and manageable.
->>
->> Signed-off-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
->> Reviewed-by: Mika Westerberg <mika.westerberg@linux.intel.com>
->> Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
->
-> I have removed this patch from the tree. It breaks completely
-> in build and looks strange:
->
->> +static void sch_gpio_reg_set(struct gpio_chip *gc, unsigned gpio, unsigned reg,
->> +                            int val)
->
-> Takes struct gpio_chip * as argument...
->
->> +static int sch_gpio_direction_in(struct gpio_chip *gc, unsigned gpio_num)
->> +{
->> +       struct sch_gpio *sch = to_sch_gpio(gc);
->>
->> +       spin_lock(&sch->lock);
->> +       sch_gpio_reg_set(sch, gpio_num, GIO, 1);
->
-> Passes something else as argument.
->
->>  static void sch_gpio_set(struct gpio_chip *gc, unsigned gpio_num, int val)
->>  {
->>         struct sch_gpio *sch = to_sch_gpio(gc);
->> -       u8 curr_vals;
->> -       unsigned short offset, bit;
->>
->>         spin_lock(&sch->lock);
->> -
->> -       offset = sch_gpio_offset(sch, gpio_num, GLV);
->> -       bit = sch_gpio_bit(sch, gpio_num);
->> -
->> -       curr_vals = inb(sch->iobase + offset);
->> -
->> -       if (val)
->> -               outb(curr_vals | (1 << bit), sch->iobase + offset);
->> -       else
->> -               outb((curr_vals & ~(1 << bit)), sch->iobase + offset);
->> -
->> +       sch_gpio_reg_set(gc, gpio_num, GLV, val);
->
-> Here it is correct.
->
->> @@ -139,18 +123,9 @@ static int sch_gpio_direction_out(struct gpio_chip *gc, unsigned gpio_num,
->>                                   int val)
->>  {
->>         struct sch_gpio *sch = to_sch_gpio(gc);
->> -       u8 curr_dirs;
->> -       unsigned short offset, bit;
->>
->>         spin_lock(&sch->lock);
->> -
->> -       offset = sch_gpio_offset(sch, gpio_num, GIO);
->> -       bit = sch_gpio_bit(sch, gpio_num);
->> -
->> -       curr_dirs = inb(sch->iobase + offset);
->> -       if (curr_dirs & (1 << bit))
->> -               outb(curr_dirs & ~(1 << bit), sch->iobase + offset);
->> -
->> +       sch_gpio_reg_set(sch, gpio_num, GIO, 0);
->
-> Wrong again. Etc.
->
-> Makes me suspect that this patch is not tested at all, so dropped.
+On Mon, Jan 12, 2015 at 6:59 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+>> > Build failures, seen since next-20150109:
+>> >         m68k:allmodconfig
+>> >         powerpc:ppc6xx_defconfig
 
-IIRC at least one of the previous versions had the same issue and at
-that time I already pointed out that *compiling and testing* patches
-before sending them in the wild is common sense.
+It looks like parisc is also suffering:
+http://kisskb.ellerman.id.au/kisskb/buildresult/12343847/
 
-Ironically the cover letter says "The patches has been verifed and
-tested working on Galileo Board". One may wonder...
+>> > Due to:
+>> >         ERROR: "__get_user_bad" [drivers/gpu/drm/drm.ko] undefined!
+>> >         make[1]: *** [__modpost] Error 1
+>> >
+>> > Caused by commit d34f20d6e2f (drm: Atomic modeset ioctl).
+>>
+>> Yeah, it needs a get_user() that supports 64-bit data.
+>>
+> Hi Geert,
+>
+> I assume you mean m68k, where 64 bit support for get_user has been disabled.
+>
+> The problem on powerpc is different though: __get_user_nocheck()
+> and __get_user_check() use
+>         unsigned long __gu_val;
+> followed by
+>         __get_user_size(__gu_val, __gu_addr, (size), __gu_err);
+>
+> __get_user_size() fails in
+>         if (size > sizeof(x))
+>                  (x) = __get_user_bad();
+>
+> Presumably "unsigned long" is 32 bit on 32 bit powerpc, not 64 bit.
+>
+> Overall, the explicit 64-bit use of get_user() seems to be quite unusual.
+
+I noticed you've sent a fix for DRM.
+
+Doh, and I was just fixing m68k...
+
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
