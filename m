@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755398AbbAONLi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 08:11:38 -0500
-Received: from nivc-ms1.auriga.com ([80.240.102.146]:17876 "EHLO
+	id S1755417AbbAONLt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 08:11:49 -0500
+Received: from nivc-ms1.auriga.com ([80.240.102.146]:17885 "EHLO
 	nivc-ms1.auriga.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755378AbbAONLe (ORCPT
+	with ESMTP id S1754044AbbAONLs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 08:11:34 -0500
+	Thu, 15 Jan 2015 08:11:48 -0500
 From: Aleksey Makarov <aleksey.makarov@auriga.com>
 To: <linux-mips@linux-mips.org>
 CC: <linux-kernel@vger.kernel.org>, David Daney <david.daney@cavium.com>,
-        Aleksey Makarov <aleksey.makarov@auriga.com>
-Subject: [PATCH v3 00/15] MIPS: OCTEON: Some partial support for Octeon III
-Date: Thu, 15 Jan 2015 16:11:04 +0300
-Message-ID: <1421327487-28679-1-git-send-email-aleksey.makarov@auriga.com>
+        Aleksey Makarov <aleksey.makarov@auriga.com>,
+        Leonid Rosenboim <lrosenboim@caviumnetworks.com>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: [PATCH v3 01/15] MIPS: OCTEON: Save/Restore wider multiply registers in OCTEON III CPUs
+Date: Thu, 15 Jan 2015 16:11:05 +0300
+Message-ID: <1421327487-28679-2-git-send-email-aleksey.makarov@auriga.com>
 X-Mailer: git-send-email 2.2.2
+In-Reply-To: <1421327487-28679-1-git-send-email-aleksey.makarov@auriga.com>
+References: <1421327487-28679-1-git-send-email-aleksey.makarov@auriga.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [80.240.102.213]
@@ -22,79 +26,285 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes in v3:
+From: David Daney <david.daney@cavium.com>
 
-- Reintroduce cvmx-rst-defs.h.  An union from it is used both in
-  csrc-octeon.c and setup.c
-- File octeon-models.h was updated.  Macro OCTEON_FAM_* were
-  removed.
-- Patches "Core-15169 Workaround and general CVMSEG cleanup"
-  and "Remove setting of processor specific CVMCTL icache bits"
-  were added.
-- CIB and SUM2 support was added to the irq code.  
-  The function of_irq_init() is used now to initialize interrupt
-  controllers
+The wide multiplier is twice as wide, so we need to save twice as much
+state.  Detect the multiplier type (CPU type) at start up and install
+model specific handlers.
 
-Changes in v2:
+Signed-off-by: David Daney <david.daney@cavium.com>
+Signed-off-by: Leonid Rosenboim <lrosenboim@caviumnetworks.com>
+[aleksey.makarov@auriga.com:
+	conflict resolution,
+	support for old compilers]
+Signed-off-by: Aleksey Makarov <aleksey.makarov@auriga.com>
+---
+ arch/mips/cavium-octeon/setup.c       |  37 ++++++++++
+ arch/mips/include/asm/octeon/octeon.h |  13 ++++
+ arch/mips/include/asm/ptrace.h        |   4 +-
+ arch/mips/kernel/octeon_switch.S      | 128 ++++++++++++++++++++++++++--------
+ 4 files changed, 150 insertions(+), 32 deletions(-)
 
-- Do not introduce cvmx-rst-defs.h. Define all the required
-  symbols in csrc-octeon.c
-- The patch "MIPS: Remove unneeded #ifdef __KERNEL__ from
-  asm/processor.h" will be sent separately as it is not
-  OCTEON specific
-
-Summary:
-
-These patches fix some issues in the Cavium Octeon code and
-introduce some partial support for Octeon III and little-endian.
-Also irq code was changed to support SATA and some other interrutps.
-
-Aleksey Makarov (1):
-  MIPS: OCTEON: Delete unused COP2 saving code
-
-Chad Reese (1):
-  MIPS: OCTEON: Remove setting of processor specific CVMCTL icache bits.
-
-Chandrakala Chavva (2):
-  MIPS: OCTEON: Use correct instruction to read 64-bit COP0 register
-  MIPS: OCTEON: More OCTEONIII support
-
-David Daney (11):
-  MIPS: OCTEON: Save/Restore wider multiply registers in OCTEON III CPUs
-  MIPS: OCTEON: Fix FP context save.
-  MIPS: OCTEON: Save and restore CP2 SHA3 state
-  MIPS: OCTEON: Implement the core-16057 workaround
-  MIPS: OCTEON: Add ability to used an initrd from a named memory block.
-  MIPS: OCTEON: Add little-endian support to asm/octeon/octeon.h
-  MIPS: OCTEON: Implement DCache errata workaround for all CN6XXX
-  MIPS: OCTEON: Update octeon-model.h code for new SoCs.
-  MIPS: OCTEON: Core-15169 Workaround and general CVMSEG cleanup.
-  MIPS: OCTEON: Don't do acknowledge operations for level triggered
-    irqs.
-  MIPS: OCTEON: irq: add CIB and other fixes
-
- .../devicetree/bindings/mips/cavium/cib.txt        |   43 +
- arch/mips/cavium-octeon/csrc-octeon.c              |   11 +-
- arch/mips/cavium-octeon/dma-octeon.c               |    4 +-
- .../cavium-octeon/executive/cvmx-helper-board.c    |    2 +-
- arch/mips/cavium-octeon/octeon-irq.c               | 1094 +++++++++++++++-----
- arch/mips/cavium-octeon/setup.c                    |   93 +-
- arch/mips/include/asm/bootinfo.h                   |    1 +
- .../asm/mach-cavium-octeon/kernel-entry-init.h     |   64 +-
- arch/mips/include/asm/mach-cavium-octeon/war.h     |    3 +
- arch/mips/include/asm/octeon/cvmx-rst-defs.h       |  306 ++++++
- arch/mips/include/asm/octeon/octeon-model.h        |  107 +-
- arch/mips/include/asm/octeon/octeon.h              |  148 ++-
- arch/mips/include/asm/processor.h                  |    2 +
- arch/mips/include/asm/ptrace.h                     |    4 +-
- arch/mips/kernel/asm-offsets.c                     |    1 +
- arch/mips/kernel/octeon_switch.S                   |  218 ++--
- arch/mips/kernel/setup.c                           |   19 +-
- arch/mips/mm/uasm.c                                |    2 +-
- 18 files changed, 1675 insertions(+), 447 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/mips/cavium/cib.txt
- create mode 100644 arch/mips/include/asm/octeon/cvmx-rst-defs.h
-
+diff --git a/arch/mips/cavium-octeon/setup.c b/arch/mips/cavium-octeon/setup.c
+index 94f888d..2d8a531 100644
+--- a/arch/mips/cavium-octeon/setup.c
++++ b/arch/mips/cavium-octeon/setup.c
+@@ -615,6 +615,7 @@ void __init prom_init(void)
+ 	const char *arg;
+ 	char *p;
+ 	int i;
++	u64 t;
+ 	int argc;
+ #ifdef CONFIG_CAVIUM_RESERVE32
+ 	int64_t addr = -1;
+@@ -663,6 +664,42 @@ void __init prom_init(void)
+ 		octeon_io_clock_rate = sysinfo->cpu_clock_hz;
+ 	}
+ 
++	t = read_c0_cvmctl();
++	if ((t & (1ull << 27)) == 0) {
++		/*
++		 * Setup the multiplier save/restore code if
++		 * CvmCtl[NOMUL] clear.
++		 */
++		void *save;
++		void *save_end;
++		void *restore;
++		void *restore_end;
++		int save_len;
++		int restore_len;
++		int save_max = (char *)octeon_mult_save_end -
++			(char *)octeon_mult_save;
++		int restore_max = (char *)octeon_mult_restore_end -
++			(char *)octeon_mult_restore;
++		if (current_cpu_data.cputype == CPU_CAVIUM_OCTEON3) {
++			save = octeon_mult_save3;
++			save_end = octeon_mult_save3_end;
++			restore = octeon_mult_restore3;
++			restore_end = octeon_mult_restore3_end;
++		} else {
++			save = octeon_mult_save2;
++			save_end = octeon_mult_save2_end;
++			restore = octeon_mult_restore2;
++			restore_end = octeon_mult_restore2_end;
++		}
++		save_len = (char *)save_end - (char *)save;
++		restore_len = (char *)restore_end - (char *)restore;
++		if (!WARN_ON(save_len > save_max ||
++				restore_len > restore_max)) {
++			memcpy(octeon_mult_save, save, save_len);
++			memcpy(octeon_mult_restore, restore, restore_len);
++		}
++	}
++
+ 	/*
+ 	 * Only enable the LED controller if we're running on a CN38XX, CN58XX,
+ 	 * or CN56XX. The CN30XX and CN31XX don't have an LED controller.
+diff --git a/arch/mips/include/asm/octeon/octeon.h b/arch/mips/include/asm/octeon/octeon.h
+index d781f9e..3e505a2 100644
+--- a/arch/mips/include/asm/octeon/octeon.h
++++ b/arch/mips/include/asm/octeon/octeon.h
+@@ -229,6 +229,19 @@ static inline void octeon_npi_write32(uint64_t address, uint32_t val)
+ 	cvmx_read64_uint32(address ^ 4);
+ }
+ 
++/* Octeon multiplier save/restore routines from octeon_switch.S */
++void octeon_mult_save(void);
++void octeon_mult_restore(void);
++void octeon_mult_save_end(void);
++void octeon_mult_restore_end(void);
++void octeon_mult_save3(void);
++void octeon_mult_save3_end(void);
++void octeon_mult_save2(void);
++void octeon_mult_save2_end(void);
++void octeon_mult_restore3(void);
++void octeon_mult_restore3_end(void);
++void octeon_mult_restore2(void);
++void octeon_mult_restore2_end(void);
+ 
+ /**
+  * Read a 32bit value from the Octeon NPI register space
+diff --git a/arch/mips/include/asm/ptrace.h b/arch/mips/include/asm/ptrace.h
+index fc783f8..ffc3203 100644
+--- a/arch/mips/include/asm/ptrace.h
++++ b/arch/mips/include/asm/ptrace.h
+@@ -40,8 +40,8 @@ struct pt_regs {
+ 	unsigned long cp0_cause;
+ 	unsigned long cp0_epc;
+ #ifdef CONFIG_CPU_CAVIUM_OCTEON
+-	unsigned long long mpl[3];	  /* MTM{0,1,2} */
+-	unsigned long long mtp[3];	  /* MTP{0,1,2} */
++	unsigned long long mpl[6];        /* MTM{0-5} */
++	unsigned long long mtp[6];        /* MTP{0-5} */
+ #endif
+ } __aligned(8);
+ 
+diff --git a/arch/mips/kernel/octeon_switch.S b/arch/mips/kernel/octeon_switch.S
+index f654768..3dec1e8 100644
+--- a/arch/mips/kernel/octeon_switch.S
++++ b/arch/mips/kernel/octeon_switch.S
+@@ -450,18 +450,23 @@ done_restore:
+  * void octeon_mult_save()
+  * sp is assumed to point to a struct pt_regs
+  *
+- * NOTE: This is called in SAVE_SOME in stackframe.h. It can only
+- *	 safely modify k0 and k1.
++ * NOTE: This is called in SAVE_TEMP in stackframe.h. It can
++ *       safely modify v1,k0, k1,$10-$15, and $24.  It will
++ *	 be overwritten with a processor specific version of the code.
+  */
+-	.align	7
++	.p2align 7
+ 	.set push
+ 	.set noreorder
+ 	LEAF(octeon_mult_save)
+-	dmfc0	k0, $9,7	/* CvmCtl register. */
+-	bbit1	k0, 27, 1f	/* Skip CvmCtl[NOMUL] */
++	jr	ra
+ 	 nop
++	.space 30 * 4, 0
++octeon_mult_save_end:
++	EXPORT(octeon_mult_save_end)
++	END(octeon_mult_save)
+ 
+-	/* Save the multiplier state */
++	LEAF(octeon_mult_save2)
++	/* Save the multiplier state OCTEON II and earlier*/
+ 	v3mulu	k0, $0, $0
+ 	v3mulu	k1, $0, $0
+ 	sd	k0, PT_MTP(sp)	      /* PT_MTP	   has P0 */
+@@ -476,44 +481,107 @@ done_restore:
+ 	sd	k0, PT_MPL+8(sp)      /* PT_MPL+8  has MPL1 */
+ 	jr	ra
+ 	 sd	k1, PT_MPL+16(sp)     /* PT_MPL+16 has MPL2 */
+-
+-1:	/* Resume here if CvmCtl[NOMUL] */
++octeon_mult_save2_end:
++	EXPORT(octeon_mult_save2_end)
++	END(octeon_mult_save2)
++
++	LEAF(octeon_mult_save3)
++	/* Save the multiplier state OCTEON III */
++	v3mulu	$10, $0, $0		/* read P0 */
++	v3mulu	$11, $0, $0		/* read P1 */
++	v3mulu	$12, $0, $0		/* read P2 */
++	sd	$10, PT_MTP+(0*8)(sp)	/* store P0 */
++	v3mulu	$10, $0, $0		/* read P3 */
++	sd	$11, PT_MTP+(1*8)(sp)	/*  store P1 */
++	v3mulu	$11, $0, $0		/* read P4 */
++	sd	$12, PT_MTP+(2*8)(sp)	/* store P2 */
++	ori	$13, $0, 1
++	v3mulu	$12, $0, $0		/* read P5 */
++	sd	$10, PT_MTP+(3*8)(sp)	/* store P3 */
++	v3mulu	$13, $13, $0		/* P4-P0 = MPL5-MPL1, $13 = MPL0 */
++	sd	$11, PT_MTP+(4*8)(sp)	/* store P4 */
++	v3mulu	$10, $0, $0		/* read MPL1 */
++	sd	$12, PT_MTP+(5*8)(sp)	/* store P5 */
++	v3mulu	$11, $0, $0		/* read MPL2 */
++	sd	$13, PT_MPL+(0*8)(sp)	/* store MPL0 */
++	v3mulu	$12, $0, $0		/* read MPL3 */
++	sd	$10, PT_MPL+(1*8)(sp)	/* store MPL1 */
++	v3mulu	$10, $0, $0		/* read MPL4 */
++	sd	$11, PT_MPL+(2*8)(sp)	/* store MPL2 */
++	v3mulu	$11, $0, $0		/* read MPL5 */
++	sd	$12, PT_MPL+(3*8)(sp)	/* store MPL3 */
++	sd	$10, PT_MPL+(4*8)(sp)	/* store MPL4 */
+ 	jr	ra
+-	END(octeon_mult_save)
++	 sd	$11, PT_MPL+(5*8)(sp)	/* store MPL5 */
++octeon_mult_save3_end:
++	EXPORT(octeon_mult_save3_end)
++	END(octeon_mult_save3)
+ 	.set pop
+ 
+ /*
+  * void octeon_mult_restore()
+  * sp is assumed to point to a struct pt_regs
+  *
+- * NOTE: This is called in RESTORE_SOME in stackframe.h.
++ * NOTE: This is called in RESTORE_TEMP in stackframe.h.
+  */
+-	.align	7
++	.p2align 7
+ 	.set push
+ 	.set noreorder
+ 	LEAF(octeon_mult_restore)
+-	dmfc0	k1, $9,7		/* CvmCtl register. */
+-	ld	v0, PT_MPL(sp)		/* MPL0 */
+-	ld	v1, PT_MPL+8(sp)	/* MPL1 */
+-	ld	k0, PT_MPL+16(sp)	/* MPL2 */
+-	bbit1	k1, 27, 1f		/* Skip CvmCtl[NOMUL] */
+-	/* Normally falls through, so no time wasted here */
+-	nop
++	jr	ra
++	 nop
++	.space 30 * 4, 0
++octeon_mult_restore_end:
++	EXPORT(octeon_mult_restore_end)
++	END(octeon_mult_restore)
+ 
++	LEAF(octeon_mult_restore2)
++	ld	v0, PT_MPL(sp)        	/* MPL0 */
++	ld	v1, PT_MPL+8(sp)      	/* MPL1 */
++	ld	k0, PT_MPL+16(sp)     	/* MPL2 */
+ 	/* Restore the multiplier state */
+-	ld	k1, PT_MTP+16(sp)	/* P2 */
+-	MTM0	v0			/* MPL0 */
++	ld	k1, PT_MTP+16(sp)     	/* P2 */
++	mtm0	v0			/* MPL0 */
+ 	ld	v0, PT_MTP+8(sp)	/* P1 */
+-	MTM1	v1			/* MPL1 */
+-	ld	v1, PT_MTP(sp)		/* P0 */
+-	MTM2	k0			/* MPL2 */
+-	MTP2	k1			/* P2 */
+-	MTP1	v0			/* P1 */
++	mtm1	v1			/* MPL1 */
++	ld	v1, PT_MTP(sp)   	/* P0 */
++	mtm2	k0			/* MPL2 */
++	mtp2	k1			/* P2 */
++	mtp1	v0			/* P1 */
+ 	jr	ra
+-	 MTP0	v1			/* P0 */
+-
+-1:	/* Resume here if CvmCtl[NOMUL] */
++	 mtp0	v1			/* P0 */
++octeon_mult_restore2_end:
++	EXPORT(octeon_mult_restore2_end)
++	END(octeon_mult_restore2)
++
++	LEAF(octeon_mult_restore3)
++	ld	$12, PT_MPL+(0*8)(sp)	/* read MPL0 */
++	ld	$13, PT_MPL+(3*8)(sp)	/* read MPL3 */
++	ld	$10, PT_MPL+(1*8)(sp)	/* read MPL1 */
++	ld	$11, PT_MPL+(4*8)(sp)	/* read MPL4 */
++	.word	0x718d0008
++	/* mtm0	$12, $13		   restore MPL0 and MPL3 */
++	ld	$12, PT_MPL+(2*8)(sp)	/* read MPL2 */
++	.word	0x714b000c
++	/* mtm1	$10, $11		   restore MPL1 and MPL4 */
++	ld	$13, PT_MPL+(5*8)(sp)	/* read MPL5 */
++	ld	$10, PT_MTP+(0*8)(sp)	/* read P0 */
++	ld	$11, PT_MTP+(3*8)(sp)	/* read P3 */
++	.word	0x718d000d
++	/* mtm2	$12, $13		   restore MPL2 and MPL5 */
++	ld	$12, PT_MTP+(1*8)(sp)	/* read P1 */
++	.word	0x714b0009
++	/* mtp0	$10, $11		   restore P0 and P3 */
++	ld	$13, PT_MTP+(4*8)(sp)	/* read P4 */
++	ld	$10, PT_MTP+(2*8)(sp)	/* read P2 */
++	ld	$11, PT_MTP+(5*8)(sp)	/* read P5 */
++	.word	0x718d000a
++	/* mtp1	$12, $13		   restore P1 and P4 */
+ 	jr	ra
+-	 nop
+-	END(octeon_mult_restore)
++	.word	0x714b000b
++	/* mtp2	$10, $11		   restore P2 and P5 */
++
++octeon_mult_restore3_end:
++	EXPORT(octeon_mult_restore3_end)
++	END(octeon_mult_restore3)
+ 	.set pop
 -- 
 2.2.2
 
