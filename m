@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754467AbbAOM5H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 07:57:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:34715 "EHLO mx1.redhat.com"
+	id S1755326AbbAONKD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 08:10:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33153 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753571AbbAOM5C (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 07:57:02 -0500
+	id S1754450AbbAOM5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 07:57:14 -0500
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>,
@@ -19,16 +19,16 @@ Cc: Jiri Olsa <jolsa@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 10/36] perf build: Add probe objects building
-Date: Thu, 15 Jan 2015 13:55:06 +0100
-Message-Id: <1421326532-25660-11-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 11/36] perf build: Add dwarf objects building
+Date: Thu, 15 Jan 2015 13:55:07 +0100
+Message-Id: <1421326532-25660-12-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1421326532-25660-1-git-send-email-jolsa@kernel.org>
 References: <1421326532-25660-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the probe objects building under build framework
+Move the dwarf objects building under build framework
 to be included in the libperf build object.
 
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
@@ -44,94 +44,51 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/Build           |  1 +
- tools/perf/Makefile.perf   | 19 +------------------
- tools/perf/config/Makefile |  1 +
- tools/perf/util/Build      |  7 +++++++
- 4 files changed, 10 insertions(+), 18 deletions(-)
+ tools/perf/Makefile.perf   | 7 -------
+ tools/perf/config/Makefile | 1 +
+ tools/perf/util/Build      | 3 +++
+ 3 files changed, 4 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/Build b/tools/perf/Build
-index 31c4c555cc81..170e4563bb24 100644
---- a/tools/perf/Build
-+++ b/tools/perf/Build
-@@ -20,6 +20,7 @@ perf-y += builtin-inject.o
- perf-y += builtin-mem.o
- 
- perf-$(CONFIG_AUDIT) += builtin-trace.o
-+perf-$(CONFIG_LIBELF) += builtin-probe.o
- 
- perf-y += bench/
- perf-y += tests/
 diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index fa8268ce4659..564d18806446 100644
+index 564d18806446..d0df16556fe4 100644
 --- a/tools/perf/Makefile.perf
 +++ b/tools/perf/Makefile.perf
-@@ -325,9 +325,6 @@ LIB_H += util/data.h
- LIB_H += util/kvm-stat.h
- LIB_H += util/thread-stack.h
- 
--LIB_OBJS += $(OUTPUT)util/symbol-elf.o
--LIB_OBJS += $(OUTPUT)util/probe-event.o
--
- LIB_OBJS += $(OUTPUT)ui/setup.o
- LIB_OBJS += $(OUTPUT)ui/helpline.o
- LIB_OBJS += $(OUTPUT)ui/progress.o
-@@ -335,8 +332,6 @@ LIB_OBJS += $(OUTPUT)ui/util.o
- LIB_OBJS += $(OUTPUT)ui/hist.o
- LIB_OBJS += $(OUTPUT)ui/stdio/hist.o
- 
--BUILTIN_OBJS += $(OUTPUT)builtin-probe.o
--
- PERFLIBS = $(LIB_FILE) $(LIBAPIKFS) $(LIBTRACEEVENT)
- 
- # We choose to avoid "if .. else if .. else .. endif endif"
-@@ -349,19 +344,7 @@ ifneq ($(OUTPUT),)
+@@ -344,13 +344,6 @@ ifneq ($(OUTPUT),)
    CFLAGS += -I$(OUTPUT)
  endif
  
--ifdef NO_LIBELF
--# Remove ELF/DWARF dependent codes
--LIB_OBJS := $(filter-out $(OUTPUT)util/symbol-elf.o,$(LIB_OBJS))
--LIB_OBJS := $(filter-out $(OUTPUT)util/dwarf-aux.o,$(LIB_OBJS))
--LIB_OBJS := $(filter-out $(OUTPUT)util/probe-event.o,$(LIB_OBJS))
--LIB_OBJS := $(filter-out $(OUTPUT)util/probe-finder.o,$(LIB_OBJS))
+-ifndef NO_LIBELF
+-ifndef NO_DWARF
+-  LIB_OBJS += $(OUTPUT)util/probe-finder.o
+-  LIB_OBJS += $(OUTPUT)util/dwarf-aux.o
+-endif # NO_DWARF
+-endif # NO_LIBELF
 -
--BUILTIN_OBJS := $(filter-out $(OUTPUT)builtin-probe.o,$(BUILTIN_OBJS))
--
--# Use minimal symbol handling
--LIB_OBJS += $(OUTPUT)util/symbol-minimal.o
--
--else # NO_LIBELF
-+ifndef NO_LIBELF
- ifndef NO_DWARF
-   LIB_OBJS += $(OUTPUT)util/probe-finder.o
-   LIB_OBJS += $(OUTPUT)util/dwarf-aux.o
+ ifndef NO_LIBDW_DWARF_UNWIND
+   LIB_OBJS += $(OUTPUT)util/unwind-libdw.o
+   LIB_H += util/unwind-libdw.h
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 0b61ec2c667d..1a3720f2cdbb 100644
+index 1a3720f2cdbb..20f00b2effb9 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -365,6 +365,7 @@ endif # NO_LIBELF
- ifndef NO_LIBELF
-   CFLAGS += -DHAVE_LIBELF_SUPPORT
-   EXTLIBS += -lelf
-+  $(call detected,CONFIG_LIBELF)
- 
-   ifeq ($(feature-libelf-mmap), 1)
-     CFLAGS += -DHAVE_LIBELF_MMAP_SUPPORT
+@@ -386,6 +386,7 @@ ifndef NO_LIBELF
+       CFLAGS += -DHAVE_DWARF_SUPPORT $(LIBDW_CFLAGS)
+       LDFLAGS += $(LIBDW_LDFLAGS)
+       EXTLIBS += -ldw
++      $(call detected,CONFIG_DWARF)
+     endif # PERF_HAVE_DWARF_REGS
+   endif # NO_DWARF
+ endif # NO_LIBELF
 diff --git a/tools/perf/util/Build b/tools/perf/util/Build
-index 2a50aabec8dc..65029041bc13 100644
+index 65029041bc13..b21f67172983 100644
 --- a/tools/perf/util/Build
 +++ b/tools/perf/util/Build
-@@ -75,6 +75,13 @@ libperf-y += tsc.o
- libperf-y += cloexec.o
- libperf-y += thread-stack.o
+@@ -82,6 +82,9 @@ ifndef CONFIG_LIBELF
+ libperf-y += symbol-minimal.o
+ endif
  
-+libperf-$(CONFIG_LIBELF) += symbol-elf.o
-+libperf-$(CONFIG_LIBELF) += probe-event.o
-+
-+ifndef CONFIG_LIBELF
-+libperf-y += symbol-minimal.o
-+endif
++libperf-$(CONFIG_DWARF) += probe-finder.o
++libperf-$(CONFIG_DWARF) += dwarf-aux.o
 +
  CFLAGS_config.o   += -DETC_PERFCONFIG="BUILD_STR($(ETC_PERFCONFIG_SQ))"
  CFLAGS_exec_cmd.o += -DPERF_EXEC_PATH="BUILD_STR($(perfexecdir_SQ))" -DPREFIX="BUILD_STR($(prefix_SQ))"
