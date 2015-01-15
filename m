@@ -1,156 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752055AbbAOEFM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 23:05:12 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.229]:43732 "EHLO
+	id S1752008AbbAOESW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 23:18:22 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:49836 "EHLO
 	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751072AbbAOEFI (ORCPT
+	by vger.kernel.org with ESMTP id S1751684AbbAOEST (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 23:05:08 -0500
-Message-Id: <20150115040506.216066449@goodmis.org>
+	Wed, 14 Jan 2015 23:18:19 -0500
+Message-Id: <20150115040923.755326391@goodmis.org>
 User-Agent: quilt/0.61-1
-Date: Wed, 14 Jan 2015 23:04:09 -0500
+Date: Wed, 14 Jan 2015 23:09:23 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Michael Ellerman <mpe@ellerman.id.au>
-Subject: [PATCH 2/2] tracing: Fix enabling of syscall events on the command line
-References: <20150115040407.859948617@goodmis.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline; filename=0002-tracing-Fix-enabling-of-syscall-events-on-the-comman.patch
-X-RR-Connecting-IP: 107.14.168.130:25
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        x86-ml <x86@kernel.org>
+Subject: [RFC][PATCH 0/2] ftrace/jprobes/x86: Graph trace jprobes if fentry is used
+X-RR-Connecting-IP: 107.14.168.142:25
 X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+This is built on top of the patches that disable function graph tracer
+for jprobes:
 
-Commit 5f893b2639b2 "tracing: Move enabling tracepoints to just after
-rcu_init()" broke the enabling of system call events from the command
-line. The reason was that the enabling of command line trace events
-was moved before PID 1 started, and the syscall tracepoints require
-that all tasks have the TIF_SYSCALL_TRACEPOINT flag set. But the
-swapper task (pid 0) is not part of that. Since the swapper task is the
-only task that is running at this early in boot, no task gets the
-flag set, and the tracepoint never gets reached.
+  https://lkml.org/lkml/2015/1/14/631
 
-Instead of setting the swapper task flag (there should be no reason to
-do that), re-enabled trace events again after the init thread (PID 1)
-has been started. It requires disabling all command line events and
-re-enabling them, as just enabling them again will not reset the logic
-to set the TIF_SYSCALL_TRACEPOINT flag, as the syscall tracepoint will
-be fooled into thinking that it was already set, and wont try setting
-it again. For this reason, we must first disable it and re-enable it.
+This is actually the first solution I had to deal with jprobes and
+function graph tracing, but as I thought the problem only happened
+when kprobes used the ftrace infrastructure (fentry), I had a bit
+more control of what was happening. But testing showed that the
+issue also happens when kprobes does not use fentry, but uses the
+breakpoint at the start of the function. Dealing with breakpoints
+and simulating commands the breakpoint is on and trying to get
+all that to work with function graph tracing was a bit too much,
+so I punted (sorry for the American Football reference). I just
+made a patch set that disabled function graph tracing on jprobes
+all together and I'm pushing that to mainline and stable.
 
-Link: http://lkml.kernel.org/r/1421188517-18312-1-git-send-email-mpe@ellerman.id.au
+That said, in most cases today, people use x86_64 over i386 and have
+newer gcc's that support fentry. That means for the majority of
+use cases jprobes can still be traced and we do not need to limit
+function graph tracing against them. I took my first solution
+and placed it on top of the final solution where if fentry is
+supported, we do not disable function graph tracing on jprobes
+but instead use the added trampoline tricks to cover it.
 
-Reported-by: Michael Ellerman <mpe@ellerman.id.au>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/trace_events.c | 69 ++++++++++++++++++++++++++++++++++++---------
- 1 file changed, 55 insertions(+), 14 deletions(-)
+The first patch allows for tracing of jprobes and the second patch
+lets function graph tracing still trace the function that is being
+probed.
 
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 366a78a3e61e..b03a0ea77b99 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -2429,12 +2429,39 @@ static __init int event_trace_memsetup(void)
- 	return 0;
- }
- 
-+static __init void
-+early_enable_events(struct trace_array *tr, bool disable_first)
-+{
-+	char *buf = bootup_event_buf;
-+	char *token;
-+	int ret;
-+
-+	while (true) {
-+		token = strsep(&buf, ",");
-+
-+		if (!token)
-+			break;
-+		if (!*token)
-+			continue;
-+
-+		/* Restarting syscalls requires that we stop them first */
-+		if (disable_first)
-+			ftrace_set_clr_event(tr, token, 0);
-+
-+		ret = ftrace_set_clr_event(tr, token, 1);
-+		if (ret)
-+			pr_warn("Failed to enable trace event: %s\n", token);
-+
-+		/* Put back the comma to allow this to be called again */
-+		if (buf)
-+			*(buf - 1) = ',';
-+	}
-+}
-+
- static __init int event_trace_enable(void)
- {
- 	struct trace_array *tr = top_trace_array();
- 	struct ftrace_event_call **iter, *call;
--	char *buf = bootup_event_buf;
--	char *token;
- 	int ret;
- 
- 	if (!tr)
-@@ -2456,18 +2483,7 @@ static __init int event_trace_enable(void)
- 	 */
- 	__trace_early_add_events(tr);
- 
--	while (true) {
--		token = strsep(&buf, ",");
--
--		if (!token)
--			break;
--		if (!*token)
--			continue;
--
--		ret = ftrace_set_clr_event(tr, token, 1);
--		if (ret)
--			pr_warn("Failed to enable trace event: %s\n", token);
--	}
-+	early_enable_events(tr, false);
- 
- 	trace_printk_start_comm();
- 
-@@ -2478,6 +2494,31 @@ static __init int event_trace_enable(void)
- 	return 0;
- }
- 
-+/*
-+ * event_trace_enable() is called from trace_event_init() first to
-+ * initialize events and perhaps start any events that are on the
-+ * command line. Unfortunately, there are some events that will not
-+ * start this early, like the system call tracepoints that need
-+ * to set the TIF_SYSCALL_TRACEPOINT flag of pid 1. But event_trace_enable()
-+ * is called before pid 1 starts, and this flag is never set, making
-+ * the syscall tracepoint never get reached, but the event is enabled
-+ * regardless (and not doing anything).
-+ */
-+static __init int event_trace_enable_again(void)
-+{
-+	struct trace_array *tr;
-+
-+	tr = top_trace_array();
-+	if (!tr)
-+		return -ENODEV;
-+
-+	early_enable_events(tr, true);
-+
-+	return 0;
-+}
-+
-+early_initcall(event_trace_enable_again);
-+
- static __init int event_trace_init(void)
- {
- 	struct trace_array *tr;
--- 
-2.1.4
+Steven Rostedt (Red Hat) (2):
+      ftrace/jprobes/x86: Allow jprobes to be graph traced if using fentry
+      ftrace/jprobes/x86: Have function being probed be graph traced
 
-
+----
+ arch/x86/include/asm/ftrace.h    |  4 +++
+ arch/x86/include/asm/kprobes.h   |  9 +++++
+ arch/x86/kernel/kprobes/core.c   | 72 +++++++++++++++++++++++++++++++++++++++-
+ arch/x86/kernel/kprobes/ftrace.c | 14 ++++++++
+ arch/x86/kernel/mcount_64.S      | 36 +++++++++++++++++++-
+ 5 files changed, 133 insertions(+), 2 deletions(-)
