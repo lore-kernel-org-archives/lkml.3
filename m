@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752729AbbAOKar (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 05:30:47 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:53912 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751525AbbAOKan (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 05:30:43 -0500
-Date: Thu, 15 Jan 2015 11:30:38 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Borislav Petkov <bp@suse.de>
-Cc: x86-ml <x86@kernel.org>, Tony Luck <tony.luck@intel.com>,
-        linux-edac <linux-edac@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] RAS update for 3.20
-Message-ID: <20150115103038.GA1698@gmail.com>
-References: <20150113120713.GA5784@pd.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150113120713.GA5784@pd.tnic>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752241AbbAOK23 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 05:28:29 -0500
+Received: from mga14.intel.com ([192.55.52.115]:26482 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751392AbbAOK21 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 05:28:27 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,402,1418112000"; 
+   d="scan'208";a="512633633"
+From: Anda-Maria Nicolae <anda-maria.nicolae@intel.com>
+To: lauro.venancio@openbossa.org, aloisio.almeida@openbossa.org,
+        sameo@linux.intel.com, christophe.ricard@gmail.com,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [RFC PATCH] NFC: st21nfcb: Avoid use of skb after free
+Date: Thu, 15 Jan 2015 12:30:57 +0200
+Message-Id: <1421317857-1713-1-git-send-email-anda-maria.nicolae@intel.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Do not insert in send queue the skb that contains unknown Packet Control Byte
 
-* Borislav Petkov <bp@suse.de> wrote:
+Signed-off-by: Anda-Maria Nicolae <anda-maria.nicolae@intel.com>
+---
+Only compile tested, please have a look
 
-> Hi guys,
-> 
-> please queue this for 3.20.
-> 
-> Thanks.
-> 
-> ---
-> The following changes since commit 97bf6af1f928216fd6c5a66e8a57bfa95a659672:
-> 
->   Linux 3.19-rc1 (2014-12-20 17:08:50 -0800)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/bp/bp.git tags/ras_for_3.20
-> 
-> for you to fetch changes up to 83737691e586cd2767fa4fc87cd41251d1a49e9e:
-> 
->   x86, mce: Fix sparse errors (2014-12-22 21:04:31 +0100)
-> 
-> ----------------------------------------------------------------
-> Nothing special this time, just an error messages improvement from Andy
-> and a cleanup from me.
-> 
-> ----------------------------------------------------------------
-> Andy Lutomirski (1):
->       x86, mce: Improve timeout error messages
-> 
-> Borislav Petkov (1):
->       x86, mce: Fix sparse errors
-> 
->  arch/x86/kernel/cpu/mcheck/mce.c | 25 ++++++++++++++-----------
->  1 file changed, 14 insertions(+), 11 deletions(-)
+ drivers/nfc/st21nfcb/ndlc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Pulled into tip:x86/ras, thanks Boris!
+diff --git a/drivers/nfc/st21nfcb/ndlc.c b/drivers/nfc/st21nfcb/ndlc.c
+index bac50e8..72659a3 100644
+--- a/drivers/nfc/st21nfcb/ndlc.c
++++ b/drivers/nfc/st21nfcb/ndlc.c
+@@ -138,7 +138,7 @@ static void llt_ndlc_requeue_data_pending(struct llt_ndlc *ndlc)
+ 		default:
+ 			pr_err("UNKNOWN Packet Control Byte=%d\n", pcb);
+ 			kfree_skb(skb);
+-			break;
++			continue;
+ 		}
+ 		skb_queue_head(&ndlc->send_q, skb);
+ 	}
+-- 
+1.7.9.5
 
-	Ingo
