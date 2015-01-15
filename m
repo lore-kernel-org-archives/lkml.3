@@ -1,155 +1,246 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754770AbbAOQvc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 11:51:32 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:34958 "EHLO
+	id S1755000AbbAOQvf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 11:51:35 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:34961 "EHLO
 	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754724AbbAOQva (ORCPT
+	with ESMTP id S1754724AbbAOQvd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 11:51:30 -0500
+	Thu, 15 Jan 2015 11:51:33 -0500
 From: Javi Merino <javi.merino@arm.com>
 To: linux-kernel@vger.kernel.org
-Cc: Dave Martin <Dave.Martin@arm.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@redhat.com>, Javi Merino <javi.merino@arm.com>
-Subject: [RESEND PATCH v2 1/2] tracing: Add array printing helpers
-Date: Thu, 15 Jan 2015 16:50:58 +0000
-Message-Id: <1421340659-18063-1-git-send-email-javi.merino@arm.com>
+Cc: Javi Merino <javi.merino@arm.com>, Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Steven Rostedt <srostedt@redhat.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: [RESEND PATCH v2 2/2] tools lib traceevent: Add support for __print_array()
+Date: Thu, 15 Jan 2015 16:50:59 +0000
+Message-Id: <1421340659-18063-2-git-send-email-javi.merino@arm.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1421340659-18063-1-git-send-email-javi.merino@arm.com>
+References: <1421340659-18063-1-git-send-email-javi.merino@arm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Martin <Dave.Martin@arm.com>
+Trace can now generate traces with variable element size arrays.  Add
+support to parse them.
 
-If a trace event contains an array, there is currently no standard
-way to format this for text output.  Drivers are currently hacking
-around this by a) local hacks that use the trace_seq functionailty
-directly, or b) just not printing that information.  For fixed size
-arrays, formatting of the elements can be open-coded, but this gets
-cumbersome for arrays of non-trivial size.
-
-These approaches result in non-standard content of the event format
-description delivered to userspace, so userland tools needs to be
-taught to understand and parse each array printing method
-individually.
-
-This patch implements common __print_<type>_array() helpers that
-tracepoint implementations can use instead of reinventing them.  A
-simple C-style syntax is used to delimit the array and its elements
-{like,this}.
-
-So that the helpers can be used with large static arrays as well as
-dynamic arrays, they take a pointer and element count: they can be
-used with __get_dynamic_array() for use with dynamic arrays.
-
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Signed-off-by: Dave Martin <Dave.Martin@arm.com>
+Cc: Namhyung Kim <namhyung@kernel.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Steven Rostedt <srostedt@redhat.com>
+Cc: Jiri Olsa <jolsa@redhat.com>
 Signed-off-by: Javi Merino <javi.merino@arm.com>
 ---
-Changes since v1[0]
+ tools/lib/traceevent/event-parse.c | 127 +++++++++++++++++++++++++++++++++++++
+ tools/lib/traceevent/event-parse.h |   8 +++
+ 2 files changed, 135 insertions(+)
 
-- Replaced the DEFINE_PRINT_ARRAY macros with a single
-  ftrace_print_array_seq() function.
-
-[0] http://thread.gmane.org/gmane.linux.kernel/1845418/focus=54110
-
- include/linux/ftrace_event.h |  4 ++++
- include/trace/ftrace.h       |  5 +++++
- kernel/trace/trace_output.c  | 42 ++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 51 insertions(+)
-
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 0bebb5c348b8..5aa4a9269547 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -44,6 +44,10 @@ const char *ftrace_print_bitmask_seq(struct trace_seq *p, void *bitmask_ptr,
- const char *ftrace_print_hex_seq(struct trace_seq *p,
- 				 const unsigned char *buf, int len);
- 
-+const char *ftrace_print_array_seq(struct trace_seq *p,
-+				   const void *buf, int buf_len,
-+				   size_t el_size);
-+
- struct trace_iterator;
- struct trace_event;
- 
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 139b5067345b..da911289a8dd 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -263,6 +263,10 @@
- #undef __print_hex
- #define __print_hex(buf, buf_len) ftrace_print_hex_seq(p, buf, buf_len)
- 
-+#undef __print_array
-+#define __print_array(array, count, el_size)			\
-+	ftrace_print_array_seq(p, array, count, el_size)
-+
- #undef DECLARE_EVENT_CLASS
- #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
- static notrace enum print_line_t					\
-@@ -674,6 +678,7 @@ static inline void ftrace_test_probe_##call(void)			\
- #undef __get_dynamic_array_len
- #undef __get_str
- #undef __get_bitmask
-+#undef __print_array
- 
- #undef TP_printk
- #define TP_printk(fmt, args...) "\"" fmt "\", "  __stringify(args)
-diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
-index b77b9a697619..6cee7c36a669 100644
---- a/kernel/trace/trace_output.c
-+++ b/kernel/trace/trace_output.c
-@@ -177,6 +177,48 @@ ftrace_print_hex_seq(struct trace_seq *p, const unsigned char *buf, int buf_len)
+diff --git a/tools/lib/traceevent/event-parse.c b/tools/lib/traceevent/event-parse.c
+index cf3a44bf1ec3..00dd6213449c 100644
+--- a/tools/lib/traceevent/event-parse.c
++++ b/tools/lib/traceevent/event-parse.c
+@@ -757,6 +757,11 @@ static void free_arg(struct print_arg *arg)
+ 		free_arg(arg->hex.field);
+ 		free_arg(arg->hex.size);
+ 		break;
++	case PRINT_INT_ARRAY:
++		free_arg(arg->int_array.field);
++		free_arg(arg->int_array.size);
++		free_arg(arg->int_array.el_size);
++		break;
+ 	case PRINT_TYPE:
+ 		free(arg->typecast.type);
+ 		free_arg(arg->typecast.item);
+@@ -2533,6 +2538,71 @@ process_hex(struct event_format *event, struct print_arg *arg, char **tok)
  }
- EXPORT_SYMBOL(ftrace_print_hex_seq);
  
-+const char *
-+ftrace_print_array_seq(struct trace_seq *p, const void *buf, int buf_len,
-+		       size_t el_size)
+ static enum event_type
++process_int_array(struct event_format *event, struct print_arg *arg, char **tok)
 +{
-+	const char *ret = trace_seq_buffer_ptr(p);
-+	const char *prefix = "";
-+	void *ptr = (void *)buf;
++	struct print_arg *field;
++	enum event_type type;
++	char *token;
 +
-+	trace_seq_putc(p, '{');
++	memset(arg, 0, sizeof(*arg));
++	arg->type = PRINT_INT_ARRAY;
 +
-+	while (ptr < buf + buf_len) {
-+		switch (el_size) {
-+		case 8:
-+			trace_seq_printf(p, "%s0x%x", prefix,
-+					 *(u8 *)ptr);
-+			break;
-+		case 16:
-+			trace_seq_printf(p, "%s0x%x", prefix,
-+					 *(u16 *)ptr);
-+			break;
-+		case 32:
-+			trace_seq_printf(p, "%s0x%x", prefix,
-+					 *(u32 *)ptr);
-+			break;
-+		case 64:
-+			trace_seq_printf(p, "%s0x%llx", prefix,
-+					 *(u64 *)ptr);
-+			break;
-+		default:
-+			BUG();
-+		}
-+		prefix = ",";
-+		ptr += el_size / 8;
++	field = alloc_arg();
++	if (!field) {
++		do_warning_event(event, "%s: not enough memory!", __func__);
++		goto out;
 +	}
 +
-+	trace_seq_putc(p, '}');
-+	trace_seq_putc(p, 0);
++	type = process_arg(event, field, &token);
 +
-+	return ret;
++	if (test_type_token(type, token, EVENT_DELIM, ","))
++		goto out_free;
++
++	arg->int_array.field = field;
++
++	free_token(token);
++
++	field = alloc_arg();
++	if (!field) {
++		do_warning_event(event, "%s: not enough memory!", __func__);
++		goto out;
++	}
++
++	type = process_arg(event, field, &token);
++
++	if (test_type_token(type, token, EVENT_DELIM, ","))
++		goto out_free;
++
++	arg->int_array.size = field;
++
++	free_token(token);
++
++	field = alloc_arg();
++	if (!field) {
++		do_warning_event(event, "%s: not enough memory!", __func__);
++		goto out;
++	}
++
++	type = process_arg(event, field, &token);
++
++	if (test_type_token(type, token, EVENT_DELIM, ")"))
++		goto out_free;
++
++	arg->int_array.el_size = field;
++
++	free_token(token);
++	type = read_token_item(tok);
++	return type;
++
++ out_free:
++	free_arg(field);
++	free_token(token);
++out:
++	*tok = NULL;
++	return EVENT_ERROR;
 +}
-+EXPORT_SYMBOL(ftrace_print_array_seq);
 +
- int ftrace_raw_output_prep(struct trace_iterator *iter,
- 			   struct trace_event *trace_event)
++static enum event_type
+ process_dynamic_array(struct event_format *event, struct print_arg *arg, char **tok)
  {
+ 	struct format_field *field;
+@@ -2827,6 +2897,10 @@ process_function(struct event_format *event, struct print_arg *arg,
+ 		free_token(token);
+ 		return process_hex(event, arg, tok);
+ 	}
++	if (strcmp(token, "__print_array") == 0) {
++		free_token(token);
++		return process_int_array(event, arg, tok);
++	}
+ 	if (strcmp(token, "__get_str") == 0) {
+ 		free_token(token);
+ 		return process_str(event, arg, tok);
+@@ -3355,6 +3429,7 @@ eval_num_arg(void *data, int size, struct event_format *event, struct print_arg
+ 		break;
+ 	case PRINT_FLAGS:
+ 	case PRINT_SYMBOL:
++	case PRINT_INT_ARRAY:
+ 	case PRINT_HEX:
+ 		break;
+ 	case PRINT_TYPE:
+@@ -3765,6 +3840,49 @@ static void print_str_arg(struct trace_seq *s, void *data, int size,
+ 		}
+ 		break;
+ 
++	case PRINT_INT_ARRAY: {
++		void *num;
++		int el_size;
++
++		if (arg->int_array.field->type == PRINT_DYNAMIC_ARRAY) {
++			unsigned long offset;
++
++			offset = pevent_read_number(pevent,
++				 data + arg->int_array.field->dynarray.field->offset,
++				arg->int_array.field->dynarray.field->size);
++			num = data + (offset & 0xffff);
++		} else {
++			field = arg->int_array.field->field.field;
++			if (!field) {
++				str = arg->int_array.field->field.name;
++				field = pevent_find_any_field(event, str);
++				if (!field)
++					goto out_warning_field;
++				arg->int_array.field->field.field = field;
++			}
++			num = data + field->offset;
++		}
++		len = eval_num_arg(data, size, event, arg->int_array.size);
++		el_size = eval_num_arg(data, size, event,
++				       arg->int_array.el_size);
++		el_size /= 8;
++		for (i = 0; i < len; i++) {
++			if (i)
++				trace_seq_putc(s, ' ');
++
++			if (el_size == 1)
++				trace_seq_printf(s, "%u", *(uint8_t *)num);
++			else if (el_size == 2)
++				trace_seq_printf(s, "%u", *(uint16_t *)num);
++			else if (el_size == 4)
++				trace_seq_printf(s, "%u", *(uint32_t *)num);
++			else if (el_size == 8)
++				trace_seq_printf(s, "%lu", *(uint64_t *)num);
++
++			num += el_size;
++		}
++		break;
++	}
+ 	case PRINT_TYPE:
+ 		break;
+ 	case PRINT_STRING: {
+@@ -4928,6 +5046,15 @@ static void print_args(struct print_arg *args)
+ 		print_args(args->hex.size);
+ 		printf(")");
+ 		break;
++	case PRINT_INT_ARRAY:
++		printf("__print_array(");
++		print_args(args->int_array.field);
++		printf(", ");
++		print_args(args->int_array.size);
++		printf(", ");
++		print_args(args->int_array.el_size);
++		printf(")");
++		break;
+ 	case PRINT_STRING:
+ 	case PRINT_BSTRING:
+ 		printf("__get_str(%s)", args->string.string);
+diff --git a/tools/lib/traceevent/event-parse.h b/tools/lib/traceevent/event-parse.h
+index 7a3873ff9a4f..5ac3e3c00389 100644
+--- a/tools/lib/traceevent/event-parse.h
++++ b/tools/lib/traceevent/event-parse.h
+@@ -245,6 +245,12 @@ struct print_arg_hex {
+ 	struct print_arg	*size;
+ };
+ 
++struct print_arg_int_array {
++	struct print_arg	*field;
++	struct print_arg	*size;
++	struct print_arg	*el_size;
++};
++
+ struct print_arg_dynarray {
+ 	struct format_field	*field;
+ 	struct print_arg	*index;
+@@ -273,6 +279,7 @@ enum print_arg_type {
+ 	PRINT_FLAGS,
+ 	PRINT_SYMBOL,
+ 	PRINT_HEX,
++	PRINT_INT_ARRAY,
+ 	PRINT_TYPE,
+ 	PRINT_STRING,
+ 	PRINT_BSTRING,
+@@ -292,6 +299,7 @@ struct print_arg {
+ 		struct print_arg_flags		flags;
+ 		struct print_arg_symbol		symbol;
+ 		struct print_arg_hex		hex;
++		struct print_arg_int_array	int_array;
+ 		struct print_arg_func		func;
+ 		struct print_arg_string		string;
+ 		struct print_arg_bitmask	bitmask;
 -- 
 1.9.1
 
