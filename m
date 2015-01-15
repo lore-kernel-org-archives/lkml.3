@@ -1,59 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932265AbbAOVdy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 16:33:54 -0500
-Received: from mail-we0-f176.google.com ([74.125.82.176]:63138 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932157AbbAOVdw (ORCPT
+	id S1755630AbbAOVgb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 16:36:31 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:50370 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751879AbbAOVga (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 16:33:52 -0500
-Message-ID: <54B8323D.6020304@gmail.com>
-Date: Thu, 15 Jan 2015 22:33:49 +0100
-From: "christophe.ricard" <christophe.ricard@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Thu, 15 Jan 2015 16:36:30 -0500
+Message-ID: <54B832DA.9060900@gmail.com>
+Date: Thu, 15 Jan 2015 14:36:26 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-To: Anda-Maria Nicolae <anda-maria.nicolae@intel.com>,
-        lauro.venancio@openbossa.org, aloisio.almeida@openbossa.org,
-        sameo@linux.intel.com, linux-wireless@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] NFC: st21nfcb: Avoid use of skb after free
-References: <1421317857-1713-1-git-send-email-anda-maria.nicolae@intel.com>
-In-Reply-To: <1421317857-1713-1-git-send-email-anda-maria.nicolae@intel.com>
+To: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: Dominique Toupin <dominique.toupin@ericsson.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jeremie Galarneau <jgalar@efficios.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Tom Zanussi <tzanussi@gmail.com>
+Subject: Re: [PATCHv3 0/8] perf tools: Add perf data CTF conversion
+References: <1421338556-20498-1-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1421338556-20498-1-git-send-email-jolsa@kernel.org>
 Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anda-Maria,
-
-I agree with your fix. I have built and tested it successfully.
-I will include it in a new patch series with a:
-Acked-by: Christophe Ricard <christophe-h.ricard@st.com>
-
-Thanks a lot.
-Christophe
-On 15/01/2015 11:30, Anda-Maria Nicolae wrote:
-> Do not insert in send queue the skb that contains unknown Packet Control Byte
+On 1/15/15 9:15 AM, Jiri Olsa wrote:
+> hi,
+> this is follow up on original RFC patchset:
+>    http://marc.info/?t=140732735600004&r=1&w=2
 >
-> Signed-off-by: Anda-Maria Nicolae <anda-maria.nicolae@intel.com>
+> Basically we are adding 'perf data convert' command to
+> allow conversion of perf data file into CTF [1] data.
+>
+> v3 changes:
+>    - rebased to latest acme's perf/core
+>
+> v2 changes:
+>    - addressed comments from Namhyung
+>    - rebased to latest acme's perf/core
+>
+> Changes from RFC:
+>    - able to generate CTF data, that are possible to be displayed under
+>      tracecompas GUI [3], please check several screenshots in here [4]
+>    - storing CTF data streams per cpu
+>    - several cleanups
+>
+> Examples:
+> - Catch default perf data (cycles event):
+>    $ perf record ls
+>    [ perf record: Woken up 1 times to write data ]
+>    [ perf record: Captured and wrote 0.012 MB perf.data (~546 samples) ]
+>
+> - To display converted CTF data run [2]:
+>    $ babeltrace ./ctf-data/
+>    [03:19:13.962125533] (+?.?????????) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 1 }
+>    [03:19:13.962130001] (+0.000004468) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 1 }
+>    [03:19:13.962131936] (+0.000001935) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 8 }
+>    [03:19:13.962133732] (+0.000001796) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 114 }
+>    [03:19:13.962135557] (+0.000001825) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 2087 }
+>    [03:19:13.962137627] (+0.000002070) cycles: { }, { ip = 0xFFFFFFFF81361938, tid = 20714, pid = 20714, period = 37582 }
+>    [03:19:13.962161091] (+0.000023464) cycles: { }, { ip = 0xFFFFFFFF8124218F, tid = 20714, pid = 20714, period = 600246 }
+>    [03:19:13.962517569] (+0.000356478) cycles: { }, { ip = 0xFFFFFFFF811A75DB, tid = 20714, pid = 20714, period = 1325731 }
+>    [03:19:13.969518008] (+0.007000439) cycles: { }, { ip = 0x34080917B2, tid = 20714, pid = 20714, period = 1144298 }
+>
+> - To get some nice output in tracecompas GUI [3], please capture sched:*
+>    and syscall tracepoints like:
+>    # perf record -e 'sched:*,raw_syscalls:*' -a
+>    ^C[ perf record: Woken up 0 times to write data ]
+>    [ perf record: Captured and wrote 412.347 MB perf.data (~18015721 samples) ]
+>
+> - To convert perf data file run:
+>    # perf data convert --to-ctf=./ctf
+>    [ perf data convert: Converted 'perf.data' into CTF data './ctf' ]
+>    [ perf data convert: Converted and wrote 408.421 MB (3964792 samples) ]
+>
+> - To display converted CTF data run [2]:
+>    # babeltrace ./ctf-data/
+>    [23:32:20.165354855] (+0.000000507) sched:sched_wakeup: { cpu_id = 0 }, { perf_ip = 0xFFFFFFFF810BCA72, perf_tid = 0, perf_pid = 0, perf_id = 462554, perf_period = 1, common_type = 265, ...
+>    [23:32:20.165359078] (+0.000001181) sched:sched_switch: { cpu_id = 0 }, { perf_ip = 0xFFFFFFFF8172A110, perf_tid = 0, perf_pid = 0, perf_id = 462562, perf_period = 1, common_type = 263, ...
+>    [23:32:20.165364686] (+0.000000328) sched:sched_stat_runtime: { cpu_id = 0 }, { perf_ip = 0xFFFFFFFF810C8AE5, perf_tid = 5326, perf_pid = 5326, perf_id = 462610, perf_period = 11380, ...
+>    [23:32:20.165366067] (+0.000001205) sched:sched_switch: { cpu_id = 0 }, { perf_ip = 0xFFFFFFFF8172A110, perf_tid = 5326, perf_pid = 5326, perf_id = 462562, perf_period = 1, common_type  ...
+>    [23:32:20.165723312] (+0.000001479) sched:sched_stat_runtime: { cpu_id = 2 }, { perf_ip = 0xFFFFFFFF810C8AE5, perf_tid = 11821, perf_pid = 11821, perf_id = 462612, perf_period = 1000265, ...
+>    [23:32:20.065282391] (+?.?????????) raw_syscalls:sys_enter: { cpu_id = 1 }, { perf_ip = 0xFFFFFFFF810230AF, perf_tid = 26155, perf_pid = 26155, perf_id = 462635, perf_period = 1, ...
+>    [23:32:20.065286422] (+0.000004031) raw_syscalls:sys_exit: { cpu_id = 1 }, { perf_ip = 0xFFFFFFFF810231D8, perf_tid = 26155, perf_pid = 26155, perf_id = 462639, perf_period = 1, ...
+>
+> - Or run tracecompass and open the CTF data ;-)
+>
+> Changes are also reachable in here:
+>    git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
+>    perf/core_ctf_convert
+>
+> thanks,
+> jirka
+>
+> [1] Common Trace Format - http://www.efficios.com/ctf
+> [2] babeltrace - http://www.efficios.com/babeltrace
+> [3] Trace compass - http://projects.eclipse.org/projects/tools.tracecompass
+> [4] screenshots - http://people.redhat.com/~jolsa/tracecompass-perf/
+>
+>
+> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Cc: David Ahern <dsahern@gmail.com>
+> Cc: Dominique Toupin <dominique.toupin@ericsson.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Jeremie Galarneau <jgalar@efficios.com>
+> Cc: Jiri Olsa <jolsa@kernel.org>
+> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> Cc: Namhyung Kim <namhyung@gmail.com>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+> Cc: Tom Zanussi <tzanussi@gmail.com>
 > ---
-> Only compile tested, please have a look
+> Jiri Olsa (5):
+>        perf tools: Add feature check for libbabeltrace
+>        perf tools: Add new perf data command
+>        perf data: Add perf data to CTF conversion support
+>        perf data: Enable stream flush within processing
+>        perf data: Add support for setting ordered_events queue size
 >
->   drivers/nfc/st21nfcb/ndlc.c |    2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
+> Sebastian Andrzej Siewior (3):
+>        perf data: Add a 'perf' prefix to the generic fields
+>        perf data: Add tracepoint events fields CTF conversion support
+>        perf data: Switch to multiple cpu stream files
 >
-> diff --git a/drivers/nfc/st21nfcb/ndlc.c b/drivers/nfc/st21nfcb/ndlc.c
-> index bac50e8..72659a3 100644
-> --- a/drivers/nfc/st21nfcb/ndlc.c
-> +++ b/drivers/nfc/st21nfcb/ndlc.c
-> @@ -138,7 +138,7 @@ static void llt_ndlc_requeue_data_pending(struct llt_ndlc *ndlc)
->   		default:
->   			pr_err("UNKNOWN Packet Control Byte=%d\n", pcb);
->   			kfree_skb(skb);
-> -			break;
-> +			continue;
->   		}
->   		skb_queue_head(&ndlc->send_q, skb);
->   	}
+>   tools/perf/Documentation/perf-data.txt                |   40 ++
+>   tools/perf/Documentation/perf.txt                     |    7 +-
+>   tools/perf/Makefile.perf                              |    9 +-
+>   tools/perf/builtin-data.c                             |  119 ++++++
+>   tools/perf/builtin.h                                  |    1 +
+>   tools/perf/command-list.txt                           |    1 +
+>   tools/perf/config/Makefile                            |   24 ++
+>   tools/perf/config/feature-checks/Makefile             |    8 +-
+>   tools/perf/config/feature-checks/test-all.c           |    5 +
+>   tools/perf/config/feature-checks/test-libbabeltrace.c |    8 +
+>   tools/perf/perf.c                                     |    1 +
+>   tools/perf/util/data-convert-bt.c                     | 1057 +++++++++++++++++++++++++++++++++++++++++++++++++
+>   tools/perf/util/data-convert-bt.h                     |    8 +
+>   tools/perf/util/debug.c                               |    2 +
+>   tools/perf/util/debug.h                               |    1 +
+>   15 files changed, 1287 insertions(+), 4 deletions(-)
+>   create mode 100644 tools/perf/Documentation/perf-data.txt
+>   create mode 100644 tools/perf/builtin-data.c
+>   create mode 100644 tools/perf/config/feature-checks/test-libbabeltrace.c
+>   create mode 100644 tools/perf/util/data-convert-bt.c
+>   create mode 100644 tools/perf/util/data-convert-bt.h
+>
 
+All of the patches look good to me:
+   Reviewed-by: David Ahern <dsahern@gmail.com>
+
+Seems like a great start point to a cool feature.
