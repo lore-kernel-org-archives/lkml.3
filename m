@@ -1,95 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751736AbbAOCrr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 21:47:47 -0500
-Received: from ozlabs.org ([103.22.144.67]:58912 "EHLO ozlabs.org"
+	id S1752180AbbAOCta (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 21:49:30 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60246 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751205AbbAOCrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 21:47:45 -0500
-Date: Thu, 15 Jan 2015 13:47:35 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Vrabel <david.vrabel@citrix.com>
-Subject: linux-next: manual merge of the net-next tree with the net tree
-Message-ID: <20150115134735.1e4612c6@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1751205AbbAOCt3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 21:49:29 -0500
+Message-ID: <54B72AA0.5020500@redhat.com>
+Date: Wed, 14 Jan 2015 21:49:04 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/oZs.80FKNEj1RzEYMAS6ixp"; protocol="application/pgp-signature"
+To: Oleg Nesterov <oleg@redhat.com>
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        matt.fleming@intel.com, bp@suse.de, pbonzini@redhat.com,
+        tglx@linutronix.de, luto@amacapital.net
+Subject: Re: [RFC PATCH 06/11] x86,fpu: lazily skip fpu restore with eager
+ fpu mode, too
+References: <1421012793-30106-1-git-send-email-riel@redhat.com> <1421012793-30106-7-git-send-email-riel@redhat.com> <20150114183606.GA16024@redhat.com>
+In-Reply-To: <20150114183606.GA16024@redhat.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/oZs.80FKNEj1RzEYMAS6ixp
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Hi all,
+On 01/14/2015 01:36 PM, Oleg Nesterov wrote:
+> On 01/11, riel@redhat.com wrote:
+>> 
+>> If the next task still has its FPU state present in the FPU
+>> registers, there is no need to restore it from memory.
+> 
+> Another patch I can't understand...
+> 
+>> --- a/arch/x86/include/asm/fpu-internal.h +++
+>> b/arch/x86/include/asm/fpu-internal.h @@ -435,13 +435,9 @@ static
+>> inline void switch_fpu_prepare(struct task_struct *old, struct
+>> task_struc old->thread.fpu.last_cpu = ~0; if (preload) { 
+>> new->thread.fpu_counter++; -			if (!use_eager_fpu() &&
+>> fpu_lazy_restore(new, cpu)) -				/* XXX: is this safe against
+>> ptrace??? */ -				__thread_fpu_begin(new); -			else { +
+>> set_thread_flag(TIF_LOAD_FPU); +			if (!fpu_lazy_restore(new,
+>> cpu)) prefetch(new->thread.fpu.state); -
+>> set_thread_flag(TIF_LOAD_FPU); -			}
+> 
+> It is not clear to me why do we set TIF_LOAD_FPU if
+> fpu_lazy_restore() succeeds. __thread_fpu_begin() is cheap.
+> 
+> At the same time, if switch_fpu_finish() does fpu_lazy_restore()
+> anyway, why this patch doesn't remove it from switch_fpu_prepare()
+> ?
 
-Today's linux-next merge of the net-next tree got a conflict in
-drivers/net/xen-netfront.c between commit 900e183301b5 ("xen-netfront:
-use different locks for Rx and Tx stats") from the net tree and commit
-a55e8bb8fb89 ("xen-netfront: refactor making Tx requests") from the
-net-next tree.
+I have it removed now, because the prefetch does not make
+much sense (as was pointed out by either you or Andy).
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+>> @@ -466,6 +462,10 @@ static inline void switch_fpu_finish(void)
+>> 
+>> __thread_fpu_begin(tsk);
+>> 
+>> +	/* The FPU registers already have this task's FPU state. */ +
+>> if (fpu_lazy_restore(tsk, raw_smp_processor_id())) +		return; +
+> 
+> Now that this is called before return to user-mode, I am not sure
+> this is correct. Note that __kernel_fpu_begin() doesn't clear
+> fpu_owner_task if use_eager_fpu().
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+However, __kernel_fpu_begin() does call __thread_clear_has_fpu(),
+which clears the per-cpu fpu_owner variable, which is also
+evaluated by fpu_lazy_restore(), so I think this is actually
+correct.
 
-diff --cc drivers/net/xen-netfront.c
-index d8c10764f130,01a4350eb313..000000000000
---- a/drivers/net/xen-netfront.c
-+++ b/drivers/net/xen-netfront.c
-@@@ -562,18 -518,15 +517,15 @@@ static u16 xennet_select_queue(struct n
- =20
-  static int xennet_start_xmit(struct sk_buff *skb, struct net_device *dev)
-  {
-- 	unsigned short id;
-  	struct netfront_info *np =3D netdev_priv(dev);
- -	struct netfront_stats *stats =3D this_cpu_ptr(np->stats);
- +	struct netfront_stats *tx_stats =3D this_cpu_ptr(np->tx_stats);
-- 	struct xen_netif_tx_request *tx;
-- 	char *data =3D skb->data;
-- 	RING_IDX i;
-- 	grant_ref_t ref;
-- 	unsigned long mfn;
-+ 	struct xen_netif_tx_request *tx, *first_tx;
-+ 	unsigned int i;
-  	int notify;
-  	int slots;
-- 	unsigned int offset =3D offset_in_page(data);
-- 	unsigned int len =3D skb_headlen(skb);
-+ 	struct page *page;
-+ 	unsigned int offset;
-+ 	unsigned int len;
-  	unsigned long flags;
-  	struct netfront_queue *queue =3D NULL;
-  	unsigned int num_queues =3D dev->real_num_tx_queues;
-
---Sig_/oZs.80FKNEj1RzEYMAS6ixp
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
+- -- 
+All rights reversed
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Version: GnuPG v1
 
-iQIcBAEBCAAGBQJUtypPAAoJEMDTa8Ir7ZwVkcYP/1vLa6WhxEaf0bx1uORWbj+X
-Ge2oxR79aYJs7fiD5Ps6Pe/SUUhB6rukBk9OQbidsc3Fk1A+TdmNOm8wI+vnoNmQ
-G/DV3wB3nbGJoOVBZR27I4BlLGJKlqv+gw2gPiRYfFAQz1VSiuyjwrVJlkfxmIxC
-QfkLaxHGV2Ccv0hsMLKougFuck0EsiYIYPpE6YMpX4qJAoNml/hCBGYFiEJOe6/h
-pfoSg2zjyiR7PVSlGe4IJ4WpXLIRAWuPiXK+3mWpCqo/hpB4Ke2P2m5UZoFmvUsa
-Ja24UfXQ8BZuNUU3ewqLoMCRX5uOn2KcEDfQdKnx6rju/4vYk0Kuka1TYn2onQZS
-dIQl3q6YWpngpwc/qJlYwV8oFUk/23PxL/zjHfaJanGELM1sUInfPGao0K9vG786
-ksMtXkxuJ7X5awj35d3+vWb5z9h1o5gyAib69ILW++iJfl5LfJtm+VUyW7w9DLOM
-uhvesTkZaQSfnqs/BUClyencELim6b8seugXX0lx/ThMguG2zHCMC3DecmrzrBCn
-ZsHs8xVC8eKu9Dr96HhTnlM02ATsGN7LQnxTt8YwvfqnvN1gF0jnm7LwMcDKKs9+
-lX8XHzbZtgXrWGxPS6MPrQDRdwdksLTjvSCvjpf1wMfjMcnlbKDdBh8Je4W4KFw/
-T3cDqIbQJ/Lh7r6mx6L5
-=E0ux
+iQEcBAEBAgAGBQJUtyqgAAoJEM553pKExN6DFG0H+wfeZaKByANgrgUBHMYjrkEW
+0C6f3lWaxyi8CPad7ghWN3GnSARpaA+OorukD3xwmubZjUc69vcNHMPW9A8hT95q
+FNpRQHW/ehx6esXme+Jc7r1FCYr5Jm9hvfQ4xPm6jQQDs/Sok4vjsPgOnaa0DeHa
+gqeE2cXt38kTtTgxsP7CKC/m3/B+KQ2c7ieB4XtXfWfwBNiFUiFgfRB22ip0hZCr
+7D2UuatSat+zyaH8G5bHPQciEzGWARYB/SrzhmoUXrX7fGdY7fMvKUDyLH+p2SK0
+0k3V4yBETi2GtMK2+z3KNlQ8TVp4/LvkpuCKbu54hHQh1sDYkDCXDpMfcwuJ4H4=
+=Hah8
 -----END PGP SIGNATURE-----
-
---Sig_/oZs.80FKNEj1RzEYMAS6ixp--
