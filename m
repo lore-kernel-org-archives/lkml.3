@@ -1,120 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753445AbbAOLmC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 06:42:02 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:45602 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752598AbbAOLmA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 06:42:00 -0500
-Date: Thu, 15 Jan 2015 14:42:27 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Gigi Joseph <gigi.joseph@gmail.com>
-Cc: Lee Jones <lee.jones@linaro.org>, bvijay <bvijay@ti.com>,
-        Eyal Reizer <eyalr@ti.com>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [patch] ti-st: clean up data types (fix harmless memory corruption)
-Message-ID: <20150115114227.GB17976@mwanda>
+	id S1753504AbbAOLnd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 06:43:33 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44291 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751385AbbAOLnc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 06:43:32 -0500
+Date: Thu, 15 Jan 2015 13:43:26 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org
+Subject: [PATCH] virtio_blk: coding style fixes
+Message-ID: <1421322201-21203-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The big issue here is:
+Most of our code has
+struct foo {
+}
 
-	of_property_read_u32(np, "flow_cntrl", (u32 *)&dt_pdata->flow_cntrl);
+Fix two instances where blk is inconsistent.
 
-"->flow_cntrl" is a char so when we write a 32 bit number to it then it
-corrupts past the end of the char.  It's probably hard to notice because
-the struct has padding so the code works on little endian systems. But
-on a big endian system the code would fail and on a 64 bit, big endian
-systems then "nshutdown_gpio" and "baud_rate" would be buggy as well.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ drivers/block/virtio_blk.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-Signed-off-by: Dan Carpenter <dan.carpenter@oracle.com>
-
-diff --git a/include/linux/ti_wilink_st.h b/include/linux/ti_wilink_st.h
-index 9072d9f..c78dcfe 100644
---- a/include/linux/ti_wilink_st.h
-+++ b/include/linux/ti_wilink_st.h
-@@ -262,7 +262,7 @@ struct kim_data_s {
- 	struct completion kim_rcvd, ldisc_installed;
- 	char resp_buffer[30];
- 	const struct firmware *fw_entry;
--	long nshutdown;
-+	unsigned nshutdown;
- 	unsigned long rx_state;
- 	unsigned long rx_count;
- 	struct sk_buff *rx_skb;
-@@ -270,8 +270,8 @@ struct kim_data_s {
- 	struct chip_version version;
- 	unsigned char ldisc_install;
- 	unsigned char dev_name[UART_DEV_NAME_LEN + 1];
--	unsigned char flow_cntrl;
--	unsigned long baud_rate;
-+	unsigned flow_cntrl;
-+	unsigned baud_rate;
+diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+index 7164da8..c5730d3 100644
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -28,8 +28,7 @@ struct virtio_blk_vq {
+ 	char name[VQ_NAME_LEN];
+ } ____cacheline_aligned_in_smp;
+ 
+-struct virtio_blk
+-{
++struct virtio_blk {
+ 	struct virtio_device *vdev;
+ 
+ 	/* The disk structure for the kernel. */
+@@ -52,8 +51,7 @@ struct virtio_blk
+ 	struct virtio_blk_vq *vqs;
  };
  
- /**
-@@ -437,10 +437,10 @@ struct gps_event_hdr {
-  *
-  */
- struct ti_st_plat_data {
--	long nshutdown_gpio;
-+	u32 nshutdown_gpio;
- 	unsigned char dev_name[UART_DEV_NAME_LEN]; /* uart name */
--	unsigned char flow_cntrl; /* flow control flag */
--	unsigned long baud_rate;
-+	u32 flow_cntrl; /* flow control flag */
-+	u32 baud_rate;
- 	int (*suspend)(struct platform_device *, pm_message_t);
- 	int (*resume)(struct platform_device *);
- 	int (*chip_enable) (struct kim_data_s *);
-diff --git a/drivers/misc/ti-st/st_kim.c b/drivers/misc/ti-st/st_kim.c
-index 7109d28..104f271 100644
---- a/drivers/misc/ti-st/st_kim.c
-+++ b/drivers/misc/ti-st/st_kim.c
-@@ -635,7 +635,7 @@ static ssize_t show_baud_rate(struct device *dev,
- 		struct device_attribute *attr, char *buf)
- {
- 	struct kim_data_s *kim_data = dev_get_drvdata(dev);
--	return sprintf(buf, "%ld\n", kim_data->baud_rate);
-+	return sprintf(buf, "%d\n", kim_data->baud_rate);
- }
- 
- static ssize_t show_flow_cntrl(struct device *dev,
-@@ -757,9 +757,9 @@ static struct ti_st_plat_data *get_platform_data(struct device *dev)
- 	if (dt_property)
- 		memcpy(&dt_pdata->dev_name, dt_property, len);
- 	of_property_read_u32(np, "nshutdown_gpio",
--			     (u32 *)&dt_pdata->nshutdown_gpio);
--	of_property_read_u32(np, "flow_cntrl", (u32 *)&dt_pdata->flow_cntrl);
--	of_property_read_u32(np, "baud_rate", (u32 *)&dt_pdata->baud_rate);
-+			     &dt_pdata->nshutdown_gpio);
-+	of_property_read_u32(np, "flow_cntrl", &dt_pdata->flow_cntrl);
-+	of_property_read_u32(np, "baud_rate", &dt_pdata->baud_rate);
- 
- 	return dt_pdata;
- }
-@@ -809,14 +809,14 @@ static int kim_probe(struct platform_device *pdev)
- 	kim_gdata->nshutdown = pdata->nshutdown_gpio;
- 	err = gpio_request(kim_gdata->nshutdown, "kim");
- 	if (unlikely(err)) {
--		pr_err(" gpio %ld request failed ", kim_gdata->nshutdown);
-+		pr_err(" gpio %d request failed ", kim_gdata->nshutdown);
- 		return err;
- 	}
- 
- 	/* Configure nShutdown GPIO as output=0 */
- 	err = gpio_direction_output(kim_gdata->nshutdown, 0);
- 	if (unlikely(err)) {
--		pr_err(" unable to configure gpio %ld", kim_gdata->nshutdown);
-+		pr_err(" unable to configure gpio %d", kim_gdata->nshutdown);
- 		return err;
- 	}
- 	/* get reference of pdev for request_firmware
+-struct virtblk_req
+-{
++struct virtblk_req {
+ 	struct request *req;
+ 	struct virtio_blk_outhdr out_hdr;
+ 	struct virtio_scsi_inhdr in_hdr;
+-- 
+MST
