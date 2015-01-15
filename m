@@ -1,44 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751262AbbAOF3A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 00:29:00 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45487 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750699AbbAOF27 (ORCPT
+	id S1751353AbbAOFmX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 00:42:23 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:13100 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750703AbbAOFmW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 00:28:59 -0500
-Date: Wed, 14 Jan 2015 21:28:57 -0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
-        shuah.kh@samsung.com, stable@vger.kernel.org
-Subject: Re: [PATCH 3.18 000/150] 3.18.3-stable review
-Message-ID: <20150115052857.GA27433@kroah.com>
-References: <20150114072055.842408181@linuxfoundation.org>
- <54B746AB.2050404@roeck-us.net>
+	Thu, 15 Jan 2015 00:42:22 -0500
+Message-ID: <54B7532E.7010000@huawei.com>
+Date: Thu, 15 Jan 2015 13:42:06 +0800
+From: hujianyang <hujianyang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:17.0) Gecko/20130801 Thunderbird/17.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54B746AB.2050404@roeck-us.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Jens Axboe <axboe@fb.com>
+CC: <hch@infradead.org>, open list <linux-kernel@vger.kernel.org>
+Subject: [PATCH] blk-mq: cleanup additional nr_hw_queues check
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.68.144]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020202.54B7533C.0020,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 4dd040a605dcd6cf2087fd3742474a37
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 14, 2015 at 08:48:43PM -0800, Guenter Roeck wrote:
-> On 01/13/2015 11:21 PM, Greg Kroah-Hartman wrote:
-> >This is the start of the stable review cycle for the 3.18.3 release.
-> >There are 150 patches in this series, all will be posted as a response
-> >to this one.  If anyone has any issues with these being applied, please
-> >let me know.
-> >
-> >Responses should be made by Fri Jan 16 07:20:24 UTC 2015.
-> >Anything received after that time might be too late.
-> >
-> 
-> Update: Tests still pass after you dropped a patch.
+No need to check set->nr_hw_queues twice in blk_mq_alloc_tag_set(),
+remove the latter one.
 
-Great, thanks for testing all of these and letting me know.
+Signed-off-by: hujianyang <hujianyang@huawei.com>
+---
+ block/blk-mq.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-greg k-h
+diff --git a/block/blk-mq.c b/block/blk-mq.c
+index a7d4a98..eddeccc 100644
+--- a/block/blk-mq.c
++++ b/block/blk-mq.c
+@@ -2097,7 +2097,7 @@ int blk_mq_alloc_tag_set(struct blk_mq_tag_set *set)
+ 	if (set->queue_depth < set->reserved_tags + BLK_MQ_TAG_MIN)
+ 		return -EINVAL;
+
+-	if (!set->nr_hw_queues || !set->ops->queue_rq || !set->ops->map_queue)
++	if (!set->ops->queue_rq || !set->ops->map_queue)
+ 		return -EINVAL;
+
+ 	if (set->queue_depth > BLK_MQ_MAX_DEPTH) {
+-- 
+1.6.0.2
+
