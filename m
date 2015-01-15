@@ -1,52 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016AbbAOIpB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 03:45:01 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:54568 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751175AbbAOIo7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 03:44:59 -0500
-From: Borislav Petkov <bp@alien8.de>
-To: KVM <kvm@vger.kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] kvm: Fix CR3_PCID_INVD type on 32-bit
+	id S1752660AbbAOIpV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 03:45:21 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42527 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752409AbbAOIpQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 03:45:16 -0500
 Date: Thu, 15 Jan 2015 09:44:56 +0100
-Message-Id: <1421311496-18028-1-git-send-email-bp@alien8.de>
-X-Mailer: git-send-email 2.2.0.33.gc18b867
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Ray Jui <rjui@broadcom.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Scott Branden <sbranden@broadcom.com>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        bcm-kernel-feedback-list@broadcom.com, devicetree@vger.kernel.org
+Subject: Re: [PATCH v4 3/3] ARM: dts: add I2C device nodes for Broadcom Cygnus
+Message-ID: <20150115084456.GO22880@pengutronix.de>
+References: <rjui@broadcom.com>
+ <1421274213-3544-1-git-send-email-rjui@broadcom.com>
+ <1421274213-3544-4-git-send-email-rjui@broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <1421274213-3544-4-git-send-email-rjui@broadcom.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Borislav Petkov <bp@suse.de>
+Hello,
 
-arch/x86/kvm/emulate.c: In function ‘check_cr_write’:
-arch/x86/kvm/emulate.c:3552:4: warning: left shift count >= width of type
-    rsvd = CR3_L_MODE_RESERVED_BITS & ~CR3_PCID_INVD;
+On Wed, Jan 14, 2015 at 02:23:33PM -0800, Ray Jui wrote:
+> Add I2C device nodes and its properties in bcm-cygnus.dtsi but keep
+> them disabled there. Individual I2C devices can be enabled in board
+> specific dts file when I2C slave devices are enabled in the future
+s/$/./
 
-happens because sizeof(UL) on 32-bit is 4 bytes but we shift it 63 bits
-to the left.
+> 
+> Signed-off-by: Ray Jui <rjui@broadcom.com>
+> Reviewed-by: Scott Branden <sbranden@broadcom.com>
+> ---
+>  arch/arm/boot/dts/bcm-cygnus.dtsi |   20 ++++++++++++++++++++
+>  1 file changed, 20 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/bcm-cygnus.dtsi b/arch/arm/boot/dts/bcm-cygnus.dtsi
+> index 5126f9e..f7d6c1d 100644
+> --- a/arch/arm/boot/dts/bcm-cygnus.dtsi
+> +++ b/arch/arm/boot/dts/bcm-cygnus.dtsi
+> @@ -70,6 +70,26 @@
+>  		};
+>  	};
+>  
+> +	i2c0: i2c@18008000 {
+> +		compatible = "brcm,iproc-i2c";
+in patch 2 you wrote the driver is for a family of SoCs, right? Then I'd
+make this:
 
-Signed-off-by: Borislav Petkov <bp@suse.de>
----
- arch/x86/include/asm/kvm_host.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+	compatible = "brcm,$mysoc-iproc-i2c", "brcm,iproc-i2c";
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index d89c6b828c96..a8d07a060136 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -51,7 +51,7 @@
- 			  | X86_CR0_NW | X86_CR0_CD | X86_CR0_PG))
- 
- #define CR3_L_MODE_RESERVED_BITS 0xFFFFFF0000000000ULL
--#define CR3_PCID_INVD		 (1UL << 63)
-+#define CR3_PCID_INVD		 BIT_64(63)
- #define CR4_RESERVED_BITS                                               \
- 	(~(unsigned long)(X86_CR4_VME | X86_CR4_PVI | X86_CR4_TSD | X86_CR4_DE\
- 			  | X86_CR4_PSE | X86_CR4_PAE | X86_CR4_MCE     \
+(or maybe s/$mysoc-iproc-i2c/$mysoc-i2c/).
+
+Best regards
+Uwe
+
 -- 
-2.2.0.33.gc18b867
-
+Pengutronix e.K.                           | Uwe Kleine-K�nig            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
