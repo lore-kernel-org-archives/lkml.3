@@ -1,66 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755320AbbAOQ1q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 11:27:46 -0500
-Received: from fieldses.org ([174.143.236.118]:57880 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752814AbbAOQ1o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 11:27:44 -0500
-Date: Thu, 15 Jan 2015 11:27:42 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Ian Kent <ikent@redhat.com>
-Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>,
-        Oleg Nesterov <onestero@redhat.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Benjamin Coddington <bcodding@redhat.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Jeff Layton <jeff.layton@primarydata.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [RFC PATCH 0/5] Second attempt at contained helper execution
-Message-ID: <20150115162741.GA14902@fieldses.org>
-References: <20150114092704.30252.60446.stgit@pluto.fritz.box>
- <20150114215525.GB7071@fieldses.org>
- <20150114221011.GC7071@fieldses.org>
- <1421281572.2688.4.camel@pluto.fritz.box>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421281572.2688.4.camel@pluto.fritz.box>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755167AbbAOQb6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 11:31:58 -0500
+Received: from mail14.tpgi.com.au ([203.12.160.182]:34983 "EHLO
+	mail14.tpgi.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752535AbbAOQb4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 11:31:56 -0500
+X-TPG-Antivirus: Passed
+X-TPG-Abuse: host=14-201-201-57.static.tpgi.com.au; ip=14.201.201.57; date=Fri, 16 Jan 2015 03:31:24 +1100; auth=qn3nQWOo9XiOgLX3+3LzYIb4Pj8GBfUecjOflfKdwAc=
+From: Emrys Bayliss <emrys@paradise.net.nz>
+To: forest@alittletooquiet.net, gregkh@linuxfoundation.org,
+        emrys@paradise.net.nz, tvboxspy@gmail.com, gclement@baobob.org,
+        guido@vanguardiasur.com.ar
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/7] Staging: vt6655: Fix style and checkpatch issues 
+Date: Fri, 16 Jan 2015 03:29:20 +1100
+Message-Id: <1421339367-23521-1-git-send-email-emrys@paradise.net.nz>
+X-Mailer: git-send-email 2.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 15, 2015 at 08:26:12AM +0800, Ian Kent wrote:
-> On Wed, 2015-01-14 at 17:10 -0500, J. Bruce Fields wrote:
-> > > On Wed, Jan 14, 2015 at 05:32:22PM +0800, Ian Kent wrote:
-> > > > There are other difficulties to tackle as well, such as how to decide
-> > > > if contained helper execution is needed. For example, if a mount has
-> > > > been propagated to a container or bound into the container tree (such
-> > > > as with the --volume option of "docker run") the root init namespace
-> > > > may need to be used and not the container namespace.
-> > 
-> > I think you have to go through each of the existing upcall examples and
-> > decide what's needed for each.
-> > 
-> > At least for the nfsv4 idmapper I would've thought the namespace the
-> > mount was done in would be the right choice, hence my previous question.
-> 
-> Probably but you don't necessarily know what namespace the mount was
-> done in. It may have been propagated from another namespace or (although
-> I don't think it works yet) bound from another container using the
-> volumes-from docker option.
+Fix checkpatch and formatting issues in drivers/staging/vt6655/mac.h
 
-Name-id mappings should be associated with the superblock, I guess--so
-don't you store a pointer to the right thing there?
+Emrys Bayliss (7):
+  Staging: vt6655: Checkpatch fix: unnecessary whitespace
+  Staging: vt6655: Checkpatch fix: empty c99 comments
+  Staging: vt6655: comment after statement formatting
+  Staging: vt6655: Checkpatch fix: c99 comments after statements
+  Staging: vt6655: Checkpatch fix: lines longer than 80 columns
+  Staging: vt6655: comment headings formatting
+  Staging: vt6655: Checkpatch fix: c99 comment headings
 
---b.
+ drivers/staging/vt6655/mac.h | 684 ++++++++++++++++++++-----------------------
+ 1 file changed, 317 insertions(+), 367 deletions(-)
 
-> 
-> At least I believe that's a problem and I agree that, once a suitable
-> method of running helpers is found each case will need to be looked at.
-> 
-> Ian
-> 
-> 
+-- 
+2.2.1
+
