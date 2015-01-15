@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753014AbbAOSlw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 13:41:52 -0500
-Received: from mail.kernel.org ([198.145.29.136]:40375 "EHLO mail.kernel.org"
+	id S1754116AbbAOSqG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 13:46:06 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37972 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751417AbbAOSlu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 13:41:50 -0500
+	id S1752425AbbAOSqD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 13:46:03 -0500
+Message-ID: <54B80A92.6050209@redhat.com>
+Date: Thu, 15 Jan 2015 12:44:34 -0600
+From: Mark Langsdorf <mlangsdo@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <1418162614-19182-1-git-send-email-khilman@kernel.org>
-References: <1418162614-19182-1-git-send-email-khilman@kernel.org>
-Date: Thu, 15 Jan 2015 10:41:46 -0800
-Message-ID: <CAMAWPa8WFgQw4ydGiNXCV1N60tNLL0odg5GrVVd0WahTvUCsgQ@mail.gmail.com>
-Subject: Re: [PATCH 0/2] clockevents: introduce ->set_dev_mode() and convert a
- few drivers
-From: Kevin Hilman <khilman@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Viresh Kumar <viresh.kumar@linaro.org>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Preeti U Murthy <preeti@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
+To: Hanjun Guo <hanjun.guo@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Will Deacon <will.deacon@arm.com>
+CC: Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Jon Masters <jcm@redhat.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Mark Brown <broonie@kernel.org>,
+        Rob Herring <robh@kernel.org>, Robert Richter <rric@kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
+        phoenix.liyi@huawei.com, Timur Tabi <timur@codeaurora.org>,
+        suravee.suthikulpanit@amd.com, wangyijing@huawei.com,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org,
+        Mark Salter <msalter@redhat.com>,
+        Leif Lindholm <leif.lindholm@linaro.org>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Subject: Re: [PATCH v7 01/17] arm64: allow late use of early_ioremap
+References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org> <1421247905-3749-2-git-send-email-hanjun.guo@linaro.org>
+In-Reply-To: <1421247905-3749-2-git-send-email-hanjun.guo@linaro.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas,
+On 01/14/2015 09:04 AM, Hanjun Guo wrote:
+> From: Mark Salter <msalter@redhat.com>
+>
+> Commit 0e63ea48b4d8 (arm64/efi: add missing call to early_ioremap_reset())
+> added a missing call to early_ioremap_reset(). This triggers a BUG if code
+> tries using early_ioremap() after the early_ioremap_reset(). This is a
+> problem for some ACPI code which needs short-lived temporary mappings
+> after paging_init() but before acpi_early_init() in start_kernel(). This
+> patch adds definitions for the __late_set_fixmap() and __late_clear_fixmap()
+> which avoids the BUG by allowing later use of early_ioremap().
+>
+> Signed-off-by: Mark Salter <msalter@redhat.com>
+> CC: Leif Lindholm <leif.lindholm@linaro.org>
+> CC: Ard Biesheuvel <ard.biesheuvel@linaro.org>
+> [hj: update the change log]
+> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+> ---
+Tested-by: Mark Langsdorf <mlangsdo@redhat.com>
 
-Gentle reminder ping...
-
-On Tue, Dec 9, 2014 at 2:03 PM, Kevin Hilman <khilman@kernel.org> wrote:
-> From: Kevin Hilman <khilman@linaro.org>
->
-> Currently, the ->set_mode() method of a clockevent device is not
-> allowed to fail, so it has no return value.  In order to add new
-> clockevent modes, and allow the setting of those modes to fail, we
-> need the clockevent core to be able to detect when setting a mode
-> fails.
->
-> Rather than changing the current ->set_mode() and requiring all
-> clockevent devices to change immedately, introduce a new mode setting
-> method ->set_dev_mode() which returns 'int'.
->
-> In addition, migrate a few drivers over to the new method to
-> demonstrate how the new method is to be used, and how to convert.
->
-> Proposal for new method originally suggested by Thomas Gleixner[1].
->
-> [1] https://lkml.org/lkml/2014/5/10/86
->
-> Viresh Kumar (2):
->   clockevents: introduce ->set_dev_mode() which can return error
->   clockevents: migrate some drivers to new ->set_dev_mode()
->
->  drivers/clocksource/arm_arch_timer.c     | 46 +++++++++++++++++---------------
->  drivers/clocksource/bcm2835_timer.c      | 10 +++----
->  drivers/clocksource/bcm_kona_timer.c     | 15 ++++++++---
->  drivers/clocksource/i8253.c              | 11 +++++---
->  drivers/clocksource/time-armada-370-xp.c | 21 +++++++++++----
->  include/linux/clockchips.h               |  5 +++-
->  kernel/time/clockevents.c                | 21 ++++++++++++---
->  kernel/time/timer_list.c                 |  5 +++-
->  8 files changed, 91 insertions(+), 43 deletions(-)
->
-> --
-> 2.1.3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
