@@ -1,66 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753016AbbAOBHT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 20:07:19 -0500
-Received: from smtp1s1.overthewire.com.au ([203.18.94.100]:55504 "EHLO
-	smtp1s1.overthewire.com.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751079AbbAOBHR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 20:07:17 -0500
-Message-ID: <54B712C0.5010808@opengear.com>
-Date: Thu, 15 Jan 2015 11:07:12 +1000
-From: Ken Wilson <ken.wilson@opengear.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
-MIME-Version: 1.0
-To: Mark Brown <broonie@kernel.org>
-CC: thomas.petazzoni@free-electrons.com, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        ezequiel.garcia@free-electrons.com, gerg@uclinux.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-spi@vger.kernel.org
-Subject: Re: [PATCHv2 2/2] spi: orion: Add multiple chip select support to
- spi-orion
-References: <1421032440-15335-1-git-send-email-ken.wilson@opengear.com> <1421032440-15335-3-git-send-email-ken.wilson@opengear.com> <20150114200626.GN3043@sirena.org.uk>
-In-Reply-To: <20150114200626.GN3043@sirena.org.uk>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754371AbbAOBIO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 20:08:14 -0500
+Received: from mail.kernel.org ([198.145.29.136]:46732 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751886AbbAOBIM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 20:08:12 -0500
+From: Kevin Hilman <khilman@kernel.org>
+To: Kukjin Kim <kgene.kim@samsung.com>, linux-samsung-soc@vger.kernel.org
+Cc: linaro-kernel@lists.linaro.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene@kernel.org>,
+        devicetree@vger.kernel.org (open list:OPEN FIRMWARE AND...),
+        linux-arm-kernel@lists.infradead.org (moderated list:ARM PORT),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH v2] ARM: dts: exynos5422-odroidxu3: add on-board INA231 sensors
+Date: Wed, 14 Jan 2015 17:08:09 -0800
+Message-Id: <1421284089-421-1-git-send-email-khilman@kernel.org>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Kevin Hilman <khilman@linaro.org>
 
-On 15/01/15 06:06, Mark Brown wrote:
-> On Mon, Jan 12, 2015 at 01:14:00PM +1000, Ken Wilson wrote:
->
->> +- num-cs     : The total number of chip selects used by this platform.
->> +		If unset, this defaults to 1.
-> So, this is intended to be the number of hardware chip selects that can
-> be configured but the first commit mentioned GPIOs as an option too so
-> we should at least say that this is specifically the controller
-> supported ones.  However...
->
->> +#define ORION_SPI_CS_MASK	0x1C
->> +#define ORION_SPI_CS_SHIFT	2
->> +#define ORION_SPI_CS(cs)	((cs << ORION_SPI_CS_SHIFT) & \
->> +					ORION_SPI_CS_MASK)
-> ...given that we have a fixed bitfield here which we know and doesn't
-> appear to depend on configuration do we even need this to be
-> configurable - given that we're going to need an explicit node for any
-> slave can't we just accept any sane chip select for a slave without
-> extending the binding?
-The different implementations that use this driver (Marvell Kirkwood, 
-Armada 370/375) all
-have a different number of supported chip selects, that fit into this 
-bit mask. There are also
-multiple SPI controllers on each SoC which support different numbers of 
-chip selects.
-For example, on the Armada 375, SPI0 supports 3 chip selects, while SPI1 
-only has 1.
+The odroid-xu3 has 4 INA231 current sensors on board which can be
+accessed from the Linux via the hwmon interface.
 
-I agree that we could support any sane chip select for a slave, since 
-the slave addresses do need
-to be explicitly defined. I'm happy with whatever your preference is.
+There is one sensor for each of these power rails:
 
-Thanks,
-Ken
+- A15 cluster: VDD_ARM
+- A7 cluster: VDD_KFC
+- GPU: VDD_G3D
+- memory: VDD_MEM
+
+In addition to adding the sensors, LDO26 from the PMIC needs to be
+enabled because it's powering these sensor.
+
+Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
+Signed-off-by: Kevin Hilman <khilman@linaro.org>
+---
+v2: use "ti,ina231" as compatible string.
+
+Applies on top of "ARM: dts: Add dts file for odroid XU3 board" from Sjoerd Simons.
+
+ arch/arm/boot/dts/exynos5422-odroidxu3.dts | 39 ++++++++++++++++++++++++++++++
+ 1 file changed, 39 insertions(+)
+
+diff --git a/arch/arm/boot/dts/exynos5422-odroidxu3.dts b/arch/arm/boot/dts/exynos5422-odroidxu3.dts
+index c29123c0734d..50353d023225 100644
+--- a/arch/arm/boot/dts/exynos5422-odroidxu3.dts
++++ b/arch/arm/boot/dts/exynos5422-odroidxu3.dts
+@@ -174,6 +174,13 @@
+ 					regulator-always-on;
+ 				};
+ 
++				ldo26_reg: LDO26 {
++					regulator-name = "vdd_ldo26";
++					regulator-min-microvolt = <3000000>;
++					regulator-max-microvolt = <3000000>;
++					regulator-always-on;
++				};
++
+ 				buck1_reg: BUCK1 {
+ 					regulator-name = "vdd_mif";
+ 					regulator-min-microvolt = <800000>;
+@@ -257,6 +264,38 @@
+ 		};
+ 	};
+ 
++	i2c_0: i2c@12C60000 {
++		status = "okay";
++
++		/* A15 cluster: VDD_ARM */
++		ina231@40 {
++			compatible = "ti,ina231";
++			reg = <0x40>;
++			shunt-resistor = <10000>;
++		};
++
++		/* memory: VDD_MEM */
++		ina231@41 {
++			compatible = "ti,ina231";
++			reg = <0x41>;
++			shunt-resistor = <10000>;
++		};
++
++		/* GPU: VDD_G3D */
++		ina231@44 {
++			compatible = "ti,ina231";
++			reg = <0x44>;
++			shunt-resistor = <10000>;
++		};
++
++		/* A7 cluster: VDD_KFC */
++		ina231@45 {
++			compatible = "ti,ina231";
++			reg = <0x45>;
++			shunt-resistor = <10000>;
++		};
++	};
++
+ 	i2c_2: i2c@12C80000 {
+ 		samsung,i2c-sda-delay = <100>;
+ 		samsung,i2c-max-bus-freq = <66000>;
+-- 
+2.1.3
+
