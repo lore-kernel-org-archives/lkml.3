@@ -1,100 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327AbbAOUcx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 15:32:53 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:35119 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752447AbbAOUcw (ORCPT
+	id S1753535AbbAOUfd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 15:35:33 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:41621 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752451AbbAOUfc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 15:32:52 -0500
-Date: Thu, 15 Jan 2015 20:31:59 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, "jcm@redhat.com" <jcm@redhat.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
-        Timur Tabi <timur@codeaurora.org>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+	Thu, 15 Jan 2015 15:35:32 -0500
+MIME-Version: 1.0
+In-Reply-To: <1420736772-11088-2-git-send-email-marc.zyngier@arm.com>
+References: <1420736772-11088-1-git-send-email-marc.zyngier@arm.com>
+	<1420736772-11088-2-git-send-email-marc.zyngier@arm.com>
+Date: Thu, 15 Jan 2015 14:35:31 -0600
+Message-ID: <CALRxmdDVUoYNg3QC0LdvKmCz9x4nzE9+TDiV9K9OH=Gxk-Cd9w@mail.gmail.com>
+Subject: Re: [PATCH v2 1/8] device core: Introduce per-device MSI domain pointer
+From: Stuart Yoder <b08248@gmail.com>
+To: Marc Zyngier <marc.zyngier@arm.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linaro-acpi <linaro-acpi@lists.linaro.org>
-Message-ID: <20150115203159.GG3043@sirena.org.uk>
-References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org>
- <CACxGe6v_BvCQqp8d=LaQ8HeaOU1Zh_HPpwFTdwOjHUbqXsnQ8g@mail.gmail.com>
- <20150115182346.GE2329@e104818-lin.cambridge.arm.com>
- <20150115190220.GF3043@sirena.org.uk>
- <20150115200437.GF24989@titan.lakedaemon.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="pVF9EYSGkiif4dMH"
-Content-Disposition: inline
-In-Reply-To: <20150115200437.GF24989@titan.lakedaemon.net>
-X-Cookie: To program is to be.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v7 00/17] Introduce ACPI for ARM64 based on ACPI 5.1
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yijing Wang <wangyijing@huawei.com>,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 8, 2015 at 11:06 AM, Marc Zyngier <marc.zyngier@arm.com> wrote:
+> As MSI-type features are creeping into non-PCI devices, it is
+> starting to make sense to give our struct device some form of
+> support for this, by allowing a pointer to an MSI irq domain to
+> be set/retrieved.
+>
+> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+> ---
+>  include/linux/device.h | 20 ++++++++++++++++++++
+>  1 file changed, 20 insertions(+)
+>
+> diff --git a/include/linux/device.h b/include/linux/device.h
+> index fb50673..ec4cee5 100644
+> --- a/include/linux/device.h
+> +++ b/include/linux/device.h
+> @@ -690,6 +690,7 @@ struct acpi_dev_node {
+>   *             along with subsystem-level and driver-level callbacks.
+>   * @pins:      For device pin management.
+>   *             See Documentation/pinctrl.txt for details.
+> + * @msi_domain: The generic MSI domain this device is using.
+>   * @numa_node: NUMA node this device is close to.
+>   * @dma_mask:  Dma mask (if dma'ble device).
+>   * @coherent_dma_mask: Like dma_mask, but for alloc_coherent mapping as not all
+> @@ -750,6 +751,9 @@ struct device {
+>         struct dev_pm_info      power;
+>         struct dev_pm_domain    *pm_domain;
+>
+> +#ifdef CONFIG_GENERIC_MSI_IRQ_DOMAIN
+> +       struct irq_domain       *msi_domain; /* MSI domain device uses */
+> +#endif
 
---pVF9EYSGkiif4dMH
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This is not a comment on this patch specifically, but a question about other
+MSI specific fields that might be needed in struct device.
 
-On Thu, Jan 15, 2015 at 03:04:37PM -0500, Jason Cooper wrote:
-> On Thu, Jan 15, 2015 at 07:02:20PM +0000, Mark Brown wrote:
+Currently the generic MSI domain handling has hardcoded assumptions
+that devices are PCI-- see the for_each_msi_entry() iterator in msi.h:
 
-> > There's probably a bit of a process problem here - these patches are all
-> > being posted as part of big and apparently controversial threads with
-> > subject lines in the form "ARM / ACPI:" so people could be forgiven for
-> > just not even reading the e-mails enough to notice changes to their
-> > subsystems.  Is it worth posting those patches separately more directly
-> > to the relevant maintainers?
+  #define dev_to_msi_list(dev)            (&to_pci_dev((dev))->msi_list)
 
-> I think it's beneficial to post the entire series as one thread, but to
-> change the subject line of each patch to adequately reflect the affected
-> subsystem.
+  #define for_each_msi_entry(desc, dev)   \
+        list_for_each_entry((desc), dev_to_msi_list((dev)), list)
 
-Just changing the subject lines to be more suitable would help, but
-given the painful thread it's probably worth going the extra step if
-the lack of these reviews is a causing problems - I know that even with
-a suitable subject line if I'm busy then I'm fairly likely to zone out
-something in the middle a big series that doesn't seem to be going
-anywhere.
+One approach would be to move the msi_list out of pci_dev and put
+it in struct device, so all devices can have an msi_list.
 
---pVF9EYSGkiif4dMH
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+The other approach would be to keep msi_list in a bus specific
+device struct, and then dev_to_msi_list() would need to be
+implemented as a bus specific callback of some kind.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+The above hardcoded PCI assumption isn't going to work.   Wanted to
+see if there is any advice in which direction to go.
 
-iQEcBAEBCAAGBQJUuCO/AAoJECTWi3JdVIfQgVUH/R+pj/lFK0/eUWUBKgec5yah
-mP4d5UlCk2r/ikA4vaq3B7pwADDjNq+6fegY8xyQw7PK3lrifqpEEO4PiPtHLQtF
-3DvrIXFZjZM0TNc3RlDQfZLDD9fFNQNG18h8+SV1d1r9zKvVaNA/EMGf20fVCFzs
-G9Q/KI7qtzHKQ6A67WTIphyeiIiyEcmox436ktNBJRtiYhnMomUIY+s7I0D5aJ3n
-ZFbdIPiAwn9db3GyRh3Mo9Kx0GOMoDXuFL408iwzc83bBOqrEiLdxdKvNBtnEDb5
-wwkPRmBxOLbfzjZHJQrpeYnttmFaigAOLhmXAOo/QvHAFbECuWGcHZ6QDO1PFOI=
-=xJ3q
------END PGP SIGNATURE-----
-
---pVF9EYSGkiif4dMH--
+Thanks,
+Stuart Yoder
