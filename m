@@ -1,104 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755150AbbAOOjM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 09:39:12 -0500
-Received: from mail.kernel.org ([198.145.29.136]:53280 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751631AbbAOOjJ convert rfc822-to-8bit (ORCPT
+	id S1754365AbbAOOmr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 09:42:47 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:63747 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752111AbbAOOmp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 09:39:09 -0500
-Date: Thu, 15 Jan 2015 15:38:55 +0100
-From: Sebastian Reichel <sre@kernel.org>
-To: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Belisko Marek <marek.belisko@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-input@vger.kernel.org, Marek Belisko <marek@goldelico.com>,
-        Jonathan Richardson <jonathar@broadcom.com>,
-        Scott Branden <sbranden@broadcom.com>,
-        Yoichi Yuasa <yuasa@linux-mips.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        List for communicating with real GTA04 owners 
-	<gta04-owner@goldelico.com>
-Subject: Re: [PATCH 1/3] input: tsc2007: Add pre-calibration, flipping and
- rotation
-Message-ID: <20150115143855.GD512@earth.universe>
-References: <1412108254-19234-1-git-send-email-marek@goldelico.com>
- <1412108254-19234-2-git-send-email-marek@goldelico.com>
- <CAAfyv36bD9ZratOzr7FkeQde8k-K9XjEjH9gkntm9qewD-cH9g@mail.gmail.com>
- <20150115005938.GB9134@dtor-ws>
- <0F9A17C1-9B01-4EE9-BE98-266B8FC02B84@goldelico.com>
+	Thu, 15 Jan 2015 09:42:45 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <0F9A17C1-9B01-4EE9-BE98-266B8FC02B84@goldelico.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20150115135556.GH16217@leverpostej>
+References: <1421269101-51105-1-git-send-email-s-anna@ti.com>
+ <1421269101-51105-2-git-send-email-s-anna@ti.com> <20150115135201.GG16217@leverpostej>
+ <20150115135556.GH16217@leverpostej>
+From: Rob Herring <robherring2@gmail.com>
+Date: Thu, 15 Jan 2015 08:42:23 -0600
+Message-ID: <CAL_JsqL2LZAooMk-V8+xeF2g6acZE21M+-OBRw8aEVa-5wVHuQ@mail.gmail.com>
+Subject: Re: [PATCH v7 1/4] Documentation: dt: add common bindings for hwspinlock
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Suman Anna <s-anna@ti.com>, Ohad Ben-Cohen <ohad@wizery.com>,
+        Kumar Gala <galak@codeaurora.org>, Bjorn Andersson <bjorn@kryo.se>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Rob Herring <robh+dt@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Thu, Jan 15, 2015 at 08:36:44AM +0100, Dr. H. Nikolaus Schaller wrote:
-> > 1. Perform conversion in input core rather than individual drivers. I
-> > think we should allocate a new bitmaps for some transformations and have
-> > the code do X/Y flip/clip of the coordinates.
-> 
-> Do you have a suggestion where this should be (I have no clue how
-> the input system works or is structured - we just know how to extend a
-> driver that uses it)?
-> 
-> > 2. Standardize on bindings. We already have of-touchscreen.c doing
-> > rudimentary parsing, we shoudl look into extending it rather than
-> > creating myriad of driver-specific bindings.
-> 
-> Ok, looks reasonable.
-
-Documentation is in 
-
-Documentation/devicetree/bindings/input/touchscreen/touchscreen.txt
-
-> > Also, do we need swap and flip or do we simply need rotation (like the
-> > proposed Broadcom iproc driver has)?
-> 
-> Well, since the DT should describe hardware, there are 3 sets of wires which
-> can have a cross-over: X+ and X-, Y+ and Y-, X and Y.
+On Thu, Jan 15, 2015 at 7:55 AM, Mark Rutland <mark.rutland@arm.com> wrote:
+> On Thu, Jan 15, 2015 at 01:52:01PM +0000, Mark Rutland wrote:
+>> On Wed, Jan 14, 2015 at 08:58:18PM +0000, Suman Anna wrote:
+>> > This patch adds the generic common bindings used to represent
+>> > a hwlock device and use/request locks in a device-tree build.
+>> >
+>> > All the platform-specific hwlock driver implementations need the
+>> > number of locks and associated base id for registering the locks
+>> > present within the device with the driver core. This base id
+>> > needs to be unique across multiple IP instances of a hwspinlock
+>> > device, so that each hwlock can be represented uniquely in a
+>> > system.
+>> >
+>> > The number of locks is represented by 'hwlock-num-locks' property,
+>> > and the base id is represented by the 'hwlock-base-id' property.
+>> > The args specifier length is dependent on each vendor-specific
+>> > implementation and is represented through the '#hwlock-cells'
+>> > property. Client users need to use the property 'hwlocks' for
+>> > requesting specific lock(s).
+>> >
+>> > Note that the document is named hwlock.txt deliberately to keep
+>> > it a bit more generic.
+>> >
+>> > Cc: Rob Herring <robh+dt@kernel.org>
+>> > Signed-off-by: Suman Anna <s-anna@ti.com>
+>> > ---
+>> > v7: Revised binding info for hwlock-base-id, it is mandatory now
+>> >
+>> >  .../devicetree/bindings/hwlock/hwlock.txt          | 55 ++++++++++++++++++++++
+>> >  1 file changed, 55 insertions(+)
+>> >  create mode 100644 Documentation/devicetree/bindings/hwlock/hwlock.txt
+>> >
+>> > diff --git a/Documentation/devicetree/bindings/hwlock/hwlock.txt b/Documentation/devicetree/bindings/hwlock/hwlock.txt
+>> > new file mode 100644
+>> > index 000000000000..8de7aaf878f9
+>> > --- /dev/null
+>> > +++ b/Documentation/devicetree/bindings/hwlock/hwlock.txt
+>> > @@ -0,0 +1,55 @@
+>> > +Generic hwlock bindings
+>> > +=======================
+>> > +
+>> > +Generic bindings that are common to all the hwlock platform specific driver
+>> > +implementations.
+>> > +
+>> > +The validity and need of these common properties may vary from one platform
+>> > +implementation to another. The platform specific bindings should explicitly
+>> > +state if an optional property is used. Please also look through the individual
+>> > +platform specific hwlock binding documentations for identifying the applicable
+>> > +properties.
+>> > +
+>> > +Common properties:
+>> > +- #hwlock-cells:   Specifies the number of cells needed to represent a
+>> > +                   specific lock. This property is mandatory for all
+>> > +                   platform implementations.
+>> > +- hwlock-num-locks:        Number of locks present in a hwlock device. This
+>> > +                   property is needed on hwlock devices, where the number
+>> > +                   of supported locks within a hwlock device cannot be
+>> > +                   read from a register.
+>> > +- hwlock-base-id:  An unique base Id for the locks for a particular hwlock
+>> > +                   device. This property is mandatory for all platform
+>> > +                   implementations.
+>>
+>> This property makes no sense. The ID encoded in the hwlock cells is
+>> relative to the instance (identified by phandle), not global. So the DT
+>> has no global ID space.
+>>
+>> Why do you think you need this?
 >
-> So IMHO hardware has no “rotation”, just crossover of wires. Rotation is an
-> interpretation of the result of these connections in combination with some
-> panel the touch is glued to and should therefore not be represented in the DT.
-> 
-> As a result we have proposed a scheme without explicit rotation. We specify what
-> coordinates X- and X+ should report at their ends (min, max) because the DT
-> programmer has to specify them anyways. Flipping is a result of defining these
-> coordinates in an ascending or descending way. Only swapping of the X and Y
-> wires can’t be implicitly defined so it has its own property. So the scheme we
-> have proposed tries to optimize the efforts needed to adapt new boards and write
-> DTs and focus the DT on hardware description.
-> 
-> As a bonus we also specify the min and max value to be reported for the touch
-> pressure (Z axis) using the same basic principle.
-> 
-> And it is a pure add-on on top of the existing driver so that it attempts not
-> to break existing device trees.
+> Having looked at the way this proeprty is used, NAK.
+>
+> If you need to carve up a Linux-internal ID space, do that dynamically.
+> There is no need for this property.
 
-from what I can see there are no in-tree-users using any of the
-new properties.
+Better yet, don't create a Linux ID space for this. Everywhere we have
+one, we want to get rid of it.
 
-> Maybe could you accept it as a first step for this specific driver (and let’s do
-> the big standardization work later on)?
-
-That does not work, since you create an ABI.
-
--- Sebastian
+Rob
