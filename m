@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932289AbbAOWMb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 17:12:31 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:50495 "EHLO
+	id S1755989AbbAOWK3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 17:10:29 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:50499 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755374AbbAOWKO (ORCPT
+	with ESMTP id S1755715AbbAOWKP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 17:10:14 -0500
+	Thu, 15 Jan 2015 17:10:15 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Nadav Amit <namit@cs.technion.ac.il>, Paolo Bonzini <pbonzini@redhat.com>,
-        Vinson Lee <vlee@twopensource.com>,
-        Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 04/19] [3.13-stable only] KVM: x86: Fix far-jump to non-canonical check
-Date: Thu, 15 Jan 2015 14:09:40 -0800
-Message-Id: <1421359795-11155-5-git-send-email-kamal@canonical.com>
+Cc: Andy Lutomirski <luto@amacapital.net>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "security@kernel.org" <security@kernel.org>, Willy Tarreau <w@1wt.eu>,
+        Ingo Molnar <mingo@kernel.org>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 05/19] x86/tls: Validate TLS entries to protect espfix
+Date: Thu, 15 Jan 2015 14:09:41 -0800
+Message-Id: <1421359795-11155-6-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1421359795-11155-1-git-send-email-kamal@canonical.com>
 References: <1421359795-11155-1-git-send-email-kamal@canonical.com>
@@ -28,54 +30,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Nadav Amit <namit@cs.technion.ac.il>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit 7e46dddd6f6cd5dbf3c7bd04a7e75d19475ac9f2 upstream.
+commit 41bdc78544b8a93a9c6814b8bbbfef966272abbe upstream.
 
-[3.13-stable's first backport (f9bffe0) of this commit accidentally omitted
-part of the upstream patch (the WARN_ON fixes), supplied here.]
+Installing a 16-bit RW data segment into the GDT defeats espfix.
+AFAICT this will not affect glibc, Wine, or dosemu at all.
 
-Commit d1442d85cc30 ("KVM: x86: Handle errors when RIP is set during far
-jumps") introduced a bug that caused the fix to be incomplete.  Due to
-incorrect evaluation, far jump to segment with L bit cleared (i.e., 32-bit
-segment) and RIP with any of the high bits set (i.e, RIP[63:32] != 0) set may
-not trigger #GP.  As we know, this imposes a security problem.
-
-In addition, the condition for two warnings was incorrect.
-
-Fixes: d1442d85cc30ea75f7d399474ca738e0bc96f715
-Reported-by: Dan Carpenter <dan.carpenter@oracle.com>
-Signed-off-by: Nadav Amit <namit@cs.technion.ac.il>
-[Add #ifdef CONFIG_X86_64 to avoid complaints of undefined behavior. - Paolo]
-Signed-off-by: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Vinson Lee <vlee@twopensource.com>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Acked-by: H. Peter Anvin <hpa@zytor.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: security@kernel.org <security@kernel.org>
+Cc: Willy Tarreau <w@1wt.eu>
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/kvm/emulate.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/kernel/tls.c | 23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
 
-diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index 97e766b..4919b95 100644
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -1994,7 +1994,7 @@ static int em_jmp_far(struct x86_emulate_ctxt *ctxt)
+diff --git a/arch/x86/kernel/tls.c b/arch/x86/kernel/tls.c
+index f7fec09..e7650bd 100644
+--- a/arch/x86/kernel/tls.c
++++ b/arch/x86/kernel/tls.c
+@@ -27,6 +27,21 @@ static int get_free_idx(void)
+ 	return -ESRCH;
+ }
  
- 	rc = assign_eip_far(ctxt, ctxt->src.val, new_desc.l);
- 	if (rc != X86EMUL_CONTINUE) {
--		WARN_ON(!ctxt->mode != X86EMUL_MODE_PROT64);
-+		WARN_ON(ctxt->mode != X86EMUL_MODE_PROT64);
- 		/* assigning eip failed; restore the old cs */
- 		ops->set_segment(ctxt, old_sel, &old_desc, 0, VCPU_SREG_CS);
- 		return rc;
-@@ -2088,7 +2088,7 @@ static int em_ret_far(struct x86_emulate_ctxt *ctxt)
- 		return rc;
- 	rc = assign_eip_far(ctxt, eip, new_desc.l);
- 	if (rc != X86EMUL_CONTINUE) {
--		WARN_ON(!ctxt->mode != X86EMUL_MODE_PROT64);
-+		WARN_ON(ctxt->mode != X86EMUL_MODE_PROT64);
- 		ops->set_segment(ctxt, old_cs, &old_desc, 0, VCPU_SREG_CS);
- 	}
- 	return rc;
++static bool tls_desc_okay(const struct user_desc *info)
++{
++	if (LDT_empty(info))
++		return true;
++
++	/*
++	 * espfix is required for 16-bit data segments, but espfix
++	 * only works for LDT segments.
++	 */
++	if (!info->seg_32bit)
++		return false;
++
++	return true;
++}
++
+ static void set_tls_desc(struct task_struct *p, int idx,
+ 			 const struct user_desc *info, int n)
+ {
+@@ -66,6 +81,9 @@ int do_set_thread_area(struct task_struct *p, int idx,
+ 	if (copy_from_user(&info, u_info, sizeof(info)))
+ 		return -EFAULT;
+ 
++	if (!tls_desc_okay(&info))
++		return -EINVAL;
++
+ 	if (idx == -1)
+ 		idx = info.entry_number;
+ 
+@@ -192,6 +210,7 @@ int regset_tls_set(struct task_struct *target, const struct user_regset *regset,
+ {
+ 	struct user_desc infobuf[GDT_ENTRY_TLS_ENTRIES];
+ 	const struct user_desc *info;
++	int i;
+ 
+ 	if (pos >= GDT_ENTRY_TLS_ENTRIES * sizeof(struct user_desc) ||
+ 	    (pos % sizeof(struct user_desc)) != 0 ||
+@@ -205,6 +224,10 @@ int regset_tls_set(struct task_struct *target, const struct user_regset *regset,
+ 	else
+ 		info = infobuf;
+ 
++	for (i = 0; i < count / sizeof(struct user_desc); i++)
++		if (!tls_desc_okay(info + i))
++			return -EINVAL;
++
+ 	set_tls_desc(target,
+ 		     GDT_ENTRY_TLS_MIN + (pos / sizeof(struct user_desc)),
+ 		     info, count / sizeof(struct user_desc));
 -- 
 1.9.1
 
