@@ -1,84 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753393AbbAOAXO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 19:23:14 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:44948 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752708AbbAOAXM (ORCPT
+	id S1753932AbbAOA0f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 19:26:35 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:56526 "EHLO
+	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751578AbbAOA0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 19:23:12 -0500
-Message-ID: <54B7086E.7060807@codeaurora.org>
-Date: Wed, 14 Jan 2015 16:23:10 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Wed, 14 Jan 2015 19:26:32 -0500
+X-Original-SENDERIP: 10.177.220.203
+X-Original-MAILFROM: namhyung@kernel.org
+Date: Thu, 15 Jan 2015 09:23:59 +0900
+From: Namhyung Kim <namhyung@kernel.org>
+To: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Jiri Olsa <jolsa@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: Re: [PATCH v2 2/4] perf tools: Add link argument to
+ dso__find_symbol_by_name()
+Message-ID: <20150115002359.GB2096@sejong>
+References: <1421234288-22758-1-git-send-email-namhyung@kernel.org>
+ <1421234288-22758-2-git-send-email-namhyung@kernel.org>
+ <54B69B12.50409@gmail.com>
 MIME-Version: 1.0
-To: Timur Tabi <timur@codeaurora.org>
-CC: Pramod Gurav <pramod.gurav@smartplayin.com>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        linux-arm-msm@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "Ivan T. Ivanov" <iivanov@mm-sol.com>,
-        Andy Gross <agross@codeaurora.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v3 4/4] pinctrl: qcom: Add support for reset for apq8064
-References: <1409322659-17693-1-git-send-email-pramod.gurav@smartplayin.com>	<1409322659-17693-5-git-send-email-pramod.gurav@smartplayin.com>	<CAOZdJXXRgrYUEcX4f5zRuKgX-Dtbpvf-SV4-8rjuohv3=0NJhQ@mail.gmail.com>	<54B6FF75.70500@codeaurora.org> <CAOZdJXXZ3RH1zOGcz1L58d9DV_LSZtUxYVKe6ssM71nyhnbMyg@mail.gmail.com>
-In-Reply-To: <CAOZdJXXZ3RH1zOGcz1L58d9DV_LSZtUxYVKe6ssM71nyhnbMyg@mail.gmail.com>
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <54B69B12.50409@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2015 03:54 PM, Timur Tabi wrote:
-> On Wed, Jan 14, 2015 at 5:44 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
->> I think so. Can you send a patch? Plus it would be nice to move i = 0 in
->> the for loop at the same time.
-> Sadly, Qualcomm policy makes that very cumbersome for me.  I won't be
-> able to send a patch any time soon.
->
+On Wed, Jan 14, 2015 at 09:36:34AM -0700, David Ahern wrote:
+> On 1/14/15 4:18 AM, Namhyung Kim wrote:
+> >@@ -414,10 +414,24 @@ static struct symbol *symbols__find_by_name(struct rb_root *symbols,
+> >  		else if (cmp > 0)
+> >  			n = n->rb_right;
+> >  		else
+> >-			return &s->sym;
+> >+			break;
+> >  	}
+> >
+> >-	return NULL;
+> >+	if (n == NULL)
+> >+		return NULL;
+> >+
+> >+	/* return first symbol that has same name (if any) */
+> >+	for (n = rb_prev(n); n; n = rb_prev(n)) {
+> >+		struct symbol_name_rb_node *tmp;
+> >+
+> >+		tmp = rb_entry(n, struct symbol_name_rb_node, rb_node);
+> >+		if (strcmp(tmp->sym.name, s->sym.name))
+> 
+> strcmp() == 0?
 
-Hm... we'll have to figure out that part. Anyway here's the patch.
+No, at this point the 's' points to the first symbol that has same
+name.  And if it finds another symbol (tmp) that has same name, it
+updates the s to point to the tmp and continues.  Otherwise it returns
+with the existing symbol (s).
 
----8<----
-From: Stephen Boyd <sboyd@codeaurora.org>
-Subject: [PATCH] pinctrl: qcom: Don't iterate past end of function array
+Thanks,
+Namhyung
 
-Timur reports that this code crashes if nfunctions is 0. Fix the
-loop iteration to only consider valid elements of the functions
-array.
 
-Reported-by: Timur Tabi <timur@codeaurora.org>
-Cc: Pramod Gurav <pramod.gurav@smartplayin.com>
-Cc: Bjorn Andersson <bjorn.andersson@sonymobile.com>
-Cc: Ivan T. Ivanov <iivanov@mm-sol.com>
-Cc: Andy Gross <agross@codeaurora.org>
-Fixes: 327455817a92 "pinctrl: qcom: Add support for reset for apq8064"
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
- drivers/pinctrl/qcom/pinctrl-msm.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/pinctrl/qcom/pinctrl-msm.c b/drivers/pinctrl/qcom/pinctrl-msm.c
-index e730935fa457..ed7017df065d 100644
---- a/drivers/pinctrl/qcom/pinctrl-msm.c
-+++ b/drivers/pinctrl/qcom/pinctrl-msm.c
-@@ -865,10 +865,10 @@ static int msm_ps_hold_restart(struct notifier_block *nb, unsigned long action,
- 
- static void msm_pinctrl_setup_pm_reset(struct msm_pinctrl *pctrl)
- {
--	int i = 0;
-+	int i;
- 	const struct msm_function *func = pctrl->soc->functions;
- 
--	for (; i <= pctrl->soc->nfunctions; i++)
-+	for (i = 0; i < pctrl->soc->nfunctions; i++)
- 		if (!strcmp(func[i].name, "ps_hold")) {
- 			pctrl->restart_nb.notifier_call = msm_ps_hold_restart;
- 			pctrl->restart_nb.priority = 128;
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-a Linux Foundation Collaborative Project
-
+> 
+> >+			break;
+> >+
+> >+		s = tmp;
+> >+	}
+> >+
+> >+	return &s->sym;
+> >  }
+> >
+> >  struct symbol *dso__find_symbol(struct dso *dso,
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
