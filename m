@@ -1,113 +1,745 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580AbbAOPFJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 10:05:09 -0500
-Received: from mo4-p00-ob.smtp.rzone.de ([81.169.146.220]:11473 "EHLO
-	mo4-p00-ob.smtp.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752104AbbAOPFG convert rfc822-to-8bit (ORCPT
+	id S1753190AbbAOPK7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 10:10:59 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:33764 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751423AbbAOPK4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 10:05:06 -0500
-X-RZG-AUTH: :JGIXVUS7cutRB/49FwqZ7WcKdUCnXG6JabOfSXKWrat/jdPryY0=
-X-RZG-CLASS-ID: mo00
+	Thu, 15 Jan 2015 10:10:56 -0500
+Message-ID: <54B7D87C.3090901@gmail.com>
+Date: Thu, 15 Jan 2015 16:10:52 +0100
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: mtk.manpages@gmail.com, "Carlos O'Donell" <carlos@redhat.com>,
+        Darren Hart <dvhart@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Jakub Jelinek <jakub@redhat.com>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Torvald Riegel <triegel@redhat.com>,
+        Roland McGrath <roland@redhat.com>, Darren Hart <dvhart@infradead.org>,
+        Anton Blanchard <anton@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>, Petr Baudis <pasky@suse.cz>,
+        Eric Dumazet <edumazet@google.com>,
+        bill o gallmeister <bgallmeister@gmail.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Daniel Wagner <wagi@monom.org>,
+        Rich Felker <dalias@libc.org>
+Subject: Re: futex(2) man page update help request
+References: <537346E5.4050407@gmail.com> <CF98E3EF.90564%dvhart@linux.intel.com> <CAKgNAkh+PWzT2SByaLk_OtiAXeZSkWoMgu+ivDOt1dTWVtaatQ@mail.gmail.com> <5373D0CA.2050204@redhat.com> <alpine.DEB.2.02.1405150121230.6261@ionos.tec.linutronix.de> <CAKgNAkjQ5Dd_U9OojXdgeforpRevvPHNFAw99kBFPCwHgf7Ggg@mail.gmail.com> <alpine.DEB.2.02.1405151144390.6261@ionos.tec.linutronix.de>
+In-Reply-To: <alpine.DEB.2.02.1405151144390.6261@ionos.tec.linutronix.de>
 Content-Type: text/plain; charset=windows-1252
-Mime-Version: 1.0 (Mac OS X Mail 7.3 \(1878.6\))
-Subject: Re: [PATCH 1/3] input: tsc2007: Add pre-calibration, flipping and rotation
-From: "Dr. H. Nikolaus Schaller" <hns@goldelico.com>
-In-Reply-To: <20150115143855.GD512@earth.universe>
-Date: Thu, 15 Jan 2015 16:04:14 +0100
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Belisko Marek <marek.belisko@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-input@vger.kernel.org, Marek Belisko <marek@goldelico.com>,
-        Jonathan Richardson <jonathar@broadcom.com>,
-        Scott Branden <sbranden@broadcom.com>,
-        Yoichi Yuasa <yuasa@linux-mips.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        List for communicating with real GTA04 owners 
-	<gta04-owner@goldelico.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <2C4E66DD-1764-4DCA-A58A-78A6986EF7F1@goldelico.com>
-References: <1412108254-19234-1-git-send-email-marek@goldelico.com> <1412108254-19234-2-git-send-email-marek@goldelico.com> <CAAfyv36bD9ZratOzr7FkeQde8k-K9XjEjH9gkntm9qewD-cH9g@mail.gmail.com> <20150115005938.GB9134@dtor-ws> <0F9A17C1-9B01-4EE9-BE98-266B8FC02B84@goldelico.com> <20150115143855.GD512@earth.universe>
-To: Sebastian Reichel <sre@kernel.org>
-X-Mailer: Apple Mail (2.1878.6)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+[Adding a few people to CC that have expressed interest in the 
+progress of the updates of this page, or who may be able to
+provide review feedback. Eventually, you'll all get CCed on
+the new draft of the page.]
 
-Am 15.01.2015 um 15:38 schrieb Sebastian Reichel <sre@kernel.org>:
+Hello Thomas,
 
-> Hi,
+On 05/15/2014 04:14 PM, Thomas Gleixner wrote:
+> On Thu, 15 May 2014, Michael Kerrisk (man-pages) wrote:
+>> And that universe would love to have your documentation of 
+>> FUTEX_WAKE_BITSET and FUTEX_WAIT_BITSET ;-),
 > 
-> On Thu, Jan 15, 2015 at 08:36:44AM +0100, Dr. H. Nikolaus Schaller wrote:
->>> 1. Perform conversion in input core rather than individual drivers. I
->>> think we should allocate a new bitmaps for some transformations and have
->>> the code do X/Y flip/clip of the coordinates.
->> 
->> Do you have a suggestion where this should be (I have no clue how
->> the input system works or is structured - we just know how to extend a
->> driver that uses it)?
->> 
->>> 2. Standardize on bindings. We already have of-touchscreen.c doing
->>> rudimentary parsing, we shoudl look into extending it rather than
->>> creating myriad of driver-specific bindings.
->> 
->> Ok, looks reasonable.
+> I give you almost the full treatment, but I leave REQUEUE_PI to
+> Darren and FUTEX_WAKE_OP to Jakub. :)
+
+Thank you for the great effort you put into compiling the
+text below, and apologies for my long delay in following up.
+
+I've integrated almost all of your suggestions into the 
+manual page. I will shortly send out a new draft of the
+page that contains various FIXMEs for points that remain 
+unclear.
+
+Most of the rest of this mail is just a checklist noting
+what I did with your comments. No response is needed 
+in most cases, but there are a very few open questions in 
+this mail that, to help you find them, I have marked with
+"???". If you (or someone else) could reply to those, I 
+would be grateful.
+
+In the next day or two, I hope to send out the new version
+of the futex(2) page for review. The new draft is a bit
+bigger (okay -- 4 x bigger) than the current page. And there 
+are a quite number of FIXMEs that I've placed in the page 
+for various points--some minor, but a few major--that need
+to be checked or fixed. Would you have some time to review
+that page? 
+
+For that matter, if anyone else would have time for
+reviewing the page, could they shout out now. It's perhaps
+unlikely, but I am worried about getting a thundering herd
+of comments, and bringing the page to the state where I have 
+it now has already been a fairly demanding task.
+
+==========
+
+> FUTEX_WAIT
 > 
-> Documentation is in 
+> < Existing blurb seems ok >
 > 
-> Documentation/devicetree/bindings/input/touchscreen/touchscreen.txt
+> Related return values
 > 
->>> Also, do we need swap and flip or do we simply need rotation (like the
->>> proposed Broadcom iproc driver has)?
->> 
->> Well, since the DT should describe hardware, there are 3 sets of wires which
->> can have a cross-over: X+ and X-, Y+ and Y-, X and Y.
->> 
->> So IMHO hardware has no “rotation”, just crossover of wires. Rotation is an
->> interpretation of the result of these connections in combination with some
->> panel the touch is glued to and should therefore not be represented in the DT.
->> 
->> As a result we have proposed a scheme without explicit rotation. We specify what
->> coordinates X- and X+ should report at their ends (min, max) because the DT
->> programmer has to specify them anyways. Flipping is a result of defining these
->> coordinates in an ascending or descending way. Only swapping of the X and Y
->> wires can’t be implicitly defined so it has its own property. So the scheme we
->> have proposed tries to optimize the efforts needed to adapt new boards and write
->> DTs and focus the DT on hardware description.
->> 
->> As a bonus we also specify the min and max value to be reported for the touch
->> pressure (Z axis) using the same basic principle.
->> 
->> And it is a pure add-on on top of the existing driver so that it attempts not
->> to break existing device trees.
+> [EFAULT] Kernel was unable to access the futex value at uaddr.
+
+Added/reworked.
+
+> [EINVAL] The supplied uaddr argument does not pouint to a valid 
+> object, i.e. pointer is not 4 byte aligned
+
+Added.
+
+> [EINVAL] The supplied timeout argument is not normalized.
+
+Added, but with more detail.
+
+> [EWOULDBLOCK] The atomic enqueueing failed. 
+
+Added.
+
+Note, however, that for consistency, I'll use EAGAIN throughout 
+the page.
+
+>  User space value at uaddr
+> is not equal val argument.
+
+Was already present.
+
+> [ETIMEDOUT] timeout expired
+
+Was present, but I have now added more detail.
+
+==========
+
+> FUTEX_WAKE
 > 
-> from what I can see there are no in-tree-users using any of the
-> new properties.
-
-Not yet. But our [patch 2/3] of this series defines the DT entry for the GTA04 devices:
-
-https://lkml.org/lkml/2014/9/30/663
-
+> < Existing blurb seems ok >
 > 
->> Maybe could you accept it as a first step for this specific driver (and let’s do
->> the big standardization work later on)?
+> Related return values
 > 
-> That does not work, since you create an ABI.
+> [EFAULT] Kernel was unable to access the futex value at uaddr.
 
-Hm. I don’t understand what you mean with creating an ABI?
+Added/reworked.
+
+> [EINVAL] The supplied uaddr argument does not point to a valid 
+> object, i.e. pointer is not 4 byte aligned
+
+Added.
+
+> [EINVAL] The kernel detected inconsistent state between the user
+> space state at uaddr and the kernel state, i.e. it detected a waiter
+> which waits in FUTEX_LOCK_PI
+
+Added.
+
+==========
+
+> FUTEX_REQUEUE
+> 
+> Existing blurb seems ok , except for this:
+> 
+> The argument val contains the number of waiters on uaddr which are
+> immediately woken up.
+> The timeout argument is abused to transport the number of waiters
+> which are requeued to the futex at uaddr2. The pointer is typecasted
+> to u32.
+
+What I've actually done with the main text for FUTEX_REQUEUE is defer 
+to the (now-expanded) discussion of FUTEX_CMP_REQUEUE. 
+
+> [EFAULT] Kernel was unable to access the futex value at uaddr or
+> uaddr2
+
+Added/reworked.
+
+> [EINVAL] The supplied uaddr/uaddr2 arguments do not point to a valid
+> object, i.e. pointer is not 4 byte aligned
+
+Added.
+
+> [EINVAL] The kernel detected inconsistent state between the user
+> space state at uaddr and the kernel state, i.e. it detected a waiter
+> which waits in FUTEX_LOCK_PI on uaddr
+
+Added.
+
+> [EINVAL] uaddr equal uaddr2. Requeue to same futex.
+
+??? I added this, but does this error not occur only for PI requeues?
+
+==========
+
+> FUTEX_REQUEUE_CMP
+> 
+> Existing blurb seems ok , except for this:
+
+[[
+> The argument val is contains the number of waiters on uaddr which are
+> immediately woken up.
+> 
+> The timeout argument is abused to transport the number of waiters
+> which are requeued to the futex at uaddr2. The pointer is typecasted
+> to u32.
+]]
+
+Covered now (in more detail).
+
+> Related return values
+> 
+> [EFAULT] Kernel was unable to access the futex value at uaddr or
+> uaddr2
+
+Added/reworked.
+
+> [EINVAL] The supplied uaddr/uaddr2 arguments do not point to a valid
+> object, i.e. pointer is not 4 byte aligned
+
+Added.
+
+> [EINVAL] uaddr equal uaddr2. Requeue to same futex.
+
+Added.
+
+> [EINVAL] The kernel detected inconsistent state between the user
+> space state at uaddr and the kernel state, i.e. it detected a waiter
+> which waits in FUTEX_LOCK_PI on uaddr
+
+Added
+
+> [EAGAIN] uaddr1 readout is not equal the compare value in argument
+> val3
+
+Was already present.
+
+==========
+
+> FUTEX_WAKE_OP
+> 
+> 
+> Jakub, can you please explain it? I'm lost :)
+
+I had a read of Ulrich Drepper's "Futexes are Tricky", and the source 
+code, and took a shot at it. I'd like to have someone check what 
+I wrote though. See the draft that I will soon send out.
+
+> The argument val contains the maximum number of waiters on uaddr
+> which are immediately woken up.
+
+Covered in my new text.
+
+> The timeout argument is abused to transport the maximum number of
+> waiters on uaddr2 which are woken up. The pointer is typecasted to
+> u32.
+
+Covered in my new text.
+
+> Related return values
+> 
+> [EFAULT] Kernel was unable to access the futex values at uaddr or
+> uaddr2
+
+This point was covered already in ERRORS.
+
+> [EINVAL] The supplied uaddr or uaddr2 argument does not point to a
+> valid object, i.e. pointer is not 4 byte aligned
+
+This point was covered already in ERRORS.
+
+> [EINVAL] The kernel detected inconsistent state between the user
+> space state at uaddr and the kernel state, i.e. it detected a waiter
+> which waits in FUTEX_LOCK_PI on uaddr
+
+I added this point.
+
+==========
+
+> FUTEX_WAIT_BITSET
+> 
+> The same as FUTEX_WAIT except that val3 is used to provide a 32bit
+> bitset to the kernel. This bitset is stored in the kernel internal
+> state of the waiter.
+
+Added.
+
+> This futex op also allows to have the option bit FUTEX_CLOCK_REALTIME
+> set.
+
+Added.
+
+> Related return values
+> 
+> [EFAULT] Kernel was unable to access the futex value at uaddr.
+
+Already covered.
+
+> [EINVAL] The supplied uaddr argument does not point to a valid 
+> object, i.e. pointer is not 4 byte aligned
+
+Already covered.
+
+> [EINVAL] The supplied bitset is zero.
+
+Added.
+
+> [EINVAL] The supplied timeout argument is not normalized.
+
+Already covered.
+
+> [ETIMEDOUT] timeout expired
+
+Already covered.
+
+==========
+
+> FUTEX_WAKE_BITSET
+> 
+> The same as FUTEX_WAKE except that val3 is used to provide a 32bit
+> bitset to the kernel. This bitset is used to select waiters on the
+> futex. The selection is done by a bitwise AND of the wake side
+> supplied bitset and the bitset which is stored in the kernel internal
+> state of the waiters. If the result is non zero, the waiter is woken,
+> otherwise left waiting.
+
+Added (along with quite a bit of other detail).
+
+> [EFAULT] Kernel was unable to access the futex value at uaddr.
+
+Covered already.
+
+> [EINVAL] The supplied uaddr argument does not point to a valid 
+> object, i.e. pointer is not 4 byte aligned
+
+Covered already.
+
+> [EINVAL] The supplied bitset is zero.
+
+Added.
+
+> [EINVAL] The kernel detected inconsistent state between the user
+> space state at uaddr and the kernel state, i.e. it detected a waiter
+> which waits in FUTEX_LOCK_PI
+
+Added.
+
+==========
+
+> FUTEX_LOCK_PI
+> 
+> This operation reads from the futex address provided by the uaddr
+> argument, which contains the namespace specific TID of the lock
+> owner. If the TID is 0, then the kernel tries to set the waiters TID
+> atomically. If the TID is nonzero or the take over fails the kernel
+> sets atomically the FUTEX_WAITERS bit which signals the owner, that
+> it cannot unlock the futex in user space atomically by transitioning
+> from TID to 0. After that the kernel tries to find the task which is
+> associated to the owner TID, creates or reuses kernel state on behalf
+> of the owner and attaches the waiter to it. The enqueing of the 
+> waiter is in descending priority order if more than one waiter 
+> exists. The owner inherits either the priority or the bandwidth of
+> the waiter. This inheritance follows the lock chain in the case of
+> nested locking and performs deadlock detection.
+
+Added.
+
+> The timeout argument is handled as described in FUTEX_WAIT. The
+> arguments uaddr2, val, and val3 are ignored.
+
+Added. Note, though, that some crufty code gives the impression
+that FUTEX_LOCK_PI uses 'val'. I'll send a patch separately.
+
+> Related return values
+> 
+> [EFAULT] Kernel was unable to access the futex value at uaddr.
+
+Already covered.
+
+> [ENOMEM] Kernel could not allocate state
+
+Added
+
+> [EINVAL] The supplied uaddr argument does not point to a valid 
+> object, i.e. pointer is not 4 byte aligned
+
+Already covered.
+
+> [EINVAL] The supplied timeout argument is not normalized.
+
+Already covered.
+
+> [EINVAL]
+> The kernel detected inconsistent state between the user space state
+> at uaddr and the kernel state. Thats either state corruption or it
+> found a waiter on uaddr which is waiting on FUTEX_WAIT[_BITSET]
+
+Added.
+
+> [EPERM]  Caller is not allowed to attach itself to the futex. Can be
+> a legitimate issue or a hint for state corruption in user space
+
+Added.
+
+> [ESRCH]	 The TID in the user space value does not exist
+
+Added.
+
+> [EAGAIN] The futex owner TID is about to exit, but has not yet 
+> handled the internal state cleanup. Try again.
+
+Added.
+
+> [ETIMEDOUT] timeout expired
+
+Already covered.
+
+> [EDEADLOCK] The futex is already locked by the caller or the kernel 
+> detected a deadlock scenario in a nested lock chain
+
+Added.
+
+> [EOWNERDIED] The owner of the futex died and the kernel made the 
+> caller the new owner. The kernel sets the FUTEX_OWNER_DIED bit in the
+> futex userspace value. Caller is responsible for cleanup
+
+There is no such thing as an EOWNERDIED error. I had a look
+through the kernel source for the FUTEX_OWNER_DIED cases and didn't 
+see an obvious error associated with them. Can you clarify? (I think 
+the point is that this condition, which is described in
+Documentation/robust-futexes.txt, is not an error as such. However, I'm
+not yet sure of how to describe it in the man page.)
+I will add this point as a FIXME in the new draft man page.
+
+> [ENOSYS] Not implemented on all architectures and not supported on
+> some CPU variants  (runtime detection)  
+
+Added.
+
+==========
+
+> FUTEX_TRYLOCK_PI
+> 
+> This operation tries to acquire the futex at uaddr. It deals with the
+> situation where the TID value at uaddr is 0, but the FUTEX_HAS_WAITER
+> bit is set. User space cannot handle this race free.
+
+Added.
+
+> The arguments uaddr2, val, timeout and val3 are ignored.
+
+??? But the code reads:
+
+        case FUTEX_TRYLOCK_PI:
+                return futex_lock_pi(uaddr, flags, 0, timeout, 1);
+ 
+which momentarily misleads one into thinking that 'timeout' is used.
+And: it's not quite ignored, since in futex_lock_pi() a non-NULL
+'timeout' is unconditionally dereferenced (meaning you could get
+an EFAULT error for a bad 'timeout' pointer).
+I'm confused....
+
+Maybe the above code should be
+
+        case FUTEX_TRYLOCK_PI:
+                return futex_lock_pi(uaddr, flags, 0, NULL, 1);
+?
+
+> Return values:
+> 
+> [EFAULT] Kernel was unable to access the futex value at uaddr.
+
+Already covered.
+
+> [ENOMEM] Kernel could not allocate state
+
+Added.
+
+> [EINVAL] The supplied uaddr argument does not point to a valid 
+> object, i.e. pointer is not 4 byte aligned
+
+Already covered.
+
+> [EINVAL] The kernel detected inconsistent state between the user 
+> space state at uaddr and the kernel state
+
+Added, but with the same text as for FUTEX_LOCK_PI above. I.e., the text
+"Thats either state corruption or it found a waiter on uaddr which is
+waiting on FUTEX_WAIT[_BITSET]" is also included.
+
+> [EPERM]  Caller is not allowed to attach itself to the futex. Can be
+> a legitimate issue or a hint for state corruption in user space
+
+Added.
+
+> [ESRCH]	 The TID in the user space value does not exist
+
+Added.
+
+> [EAGAIN] The futex owner TID is about to exit, but has not yet 
+> handled the internal state cleanup. Try again.
+
+Added.
+
+> [EDEADLOCK] The futex is already locked by the caller.
+
+Added.
+
+> [EOWNERDIED] The owner of the futex died and the kernel made the 
+> caller the new owner. The kernel sets the FUTEX_OWNER_DIED bit in the
+> futex userspace value. Caller is responsible for cleanup
+
+See comment above concerning EOWNERDIED for FUTEX_LOCK_PI
+
+> [ENOSYS] Not implemented on all architectures and not supported on
+> some CPU variants (runtime detection)
+
+Added.
+
+==========
+
+> FUTEX_UNLOCK_PI
+> 
+> This operation wakes the top priority waiter which is waiting in
+> FUTEX_LOCK_PI on the futex address provided by the uaddr argument.
+> 
+> This is called when the user space value at uaddr cannot be changed
+> atomically from TID (of the owner) to 0.
+> 
+> The arguments uaddr2, val, timeout and val3 are ignored.
+
+Added.
+
+> Related return values:  
+> [EINVAL] The kernel detected inconsistent
+> state between the user space state at uaddr and the kernel state, 
+> i.e. it detected a waiter which waits in FUTEX_WAIT[_BITSET].
+
+Added (but with a question in a FIXME).
+
+> [EPERM]  Caller does not own the futex.
+
+Added.
+
+> [ENOSYS] Not implemented on all architectures and not supported on
+> some CPU variants (runtime detection)
+
+Added.
+
+==========
+
+> FUTEX_WAIT_REQUEUE_PI
+> 
+> Wait operation to wait on a non pi futex at uaddr and potentially be
+> requeued on a pi futex at uaddr2. The wait operation on uaddr is the
+> same as FUTEX_WAIT. The waiter can be removed from the wait on uaddr
+> via FUTEX_WAKE without requeuing on uaddr2.
+
+Added.
+
+> The timeout argument is handled as described in FUTEX_WAIT.
+
+The above seems not to be correct. I've written the discussion of
+'timeout' up as I understand it, and added a FIXME to the draft page.
+
+> Darren, can you fill in the missing details?
+
+> Return values:
+> 
+> [EFAULT] Kernel was unable to access the futex value at uaddr or
+> uaddr2
+
+Already covered.
+
+> [EINVAL] The supplied uaddr or uaddr2 argument does not point to a
+> valid object, i.e. pointer is not 4 byte aligned
+
+Already covered.
+
+> [EINVAL] The supplied timeout argument is not normalized.
+
+Already covered.
+
+> [EINVAL] The supplied bitset is zero.
+
+??? I don't believe this can happen. 'val3' is internally set to
+FUTEX_BITSET_MATCH_ANY. Can you confirm?
+
+> [EWOULDBLOCK] The atomic enqueueing failed. User space value at uaddr
+> is not equal val argument.
+
+Added using the same text as FUTEX_WAIT:
+
+       EAGAIN (FUTEX_WAIT, FUTEX_WAIT_REQUEUE_PI) The value pointed to
+              by  uaddr was not equal to the expected value val at the
+              time of the call.
+
+> [ETIMEDOUT] timeout expired
+
+Already covered.
+
+> [EOWNERDIED] The owner of the PI futex at uaddr2 died and the kernel
+> made the caller the new owner. The kernel sets the FUTEX_OWNER_DIED
+> bit in the uaddr2 futex userspace value.  Caller is responsible for 
+> cleanup
+
+See comment above concerning EOWNERDIED for FUTEX_LOCK_PI
+
+> [ENOSYS] Not implemented on all architectures and not supported on
+> some CPU variants (runtime detection)
+
+Added.
+
+==========
+
+> FUTEX_CMP_REQUEUE_PI
+> 
+> PI aware variant of FUTEX_CMP_REQUEUE. Inner futex at uaddr is a non
+> PI futex. Outer futex to which is requeued is a PI futex at uaddr2.
+
+I instead used Darren's proposed text:
+ 
+# PI aware variant for FUTEX_CMP_REQUEUE. Requeue tasks blocked on uaddr via
+# FUTEX_WAIT_REQUEUE_PI from a non-PI source futex (uaddr) to a PI target
+# futex (uaddr2).
+
+> The waiters on uaddr must wait in FUTEX_WAIT_REQUEUE_PI.
+
+Covered above.
+
+> The argument val is contains the number of waiters on uaddr which are
+> immediately woken up. Must be 1 for this opcode.
+
+Added.
+
+> The timeout argument is abused to transport the number of waiters
+> which are requeued on to the futex at uaddr2. The pointer is
+> typecasted to u32.
+
+Added.
+
+> Darren, can you fill in the missing details?
+> 
+> [EFAULT] Kernel was unable to access the futex value at uaddr or
+> uaddr2
+
+Already covered.
+
+> [ENOMEM] Kernel could not allocate state
+
+Added.
+
+> [EINVAL] The supplied uaddr/uaddr2 arguments do not point to a valid
+> object, i.e. pointer is not 4 byte aligned
+
+Already covered.
+
+> [EINVAL] uaddr equal uaddr2. Requeue to same futex.
+
+Added.
+
+> [EINVAL] The kernel detected inconsistent state between the user
+> space state at uaddr and the kernel state, i.e. it detected a waiter
+> which waits in FUTEX_LOCK_PI on uaddr
+
+Added
+
+> [EINVAL] The kernel detected inconsistent state between the user
+> space state at uaddr and the kernel state, i.e. it detected a waiter
+> which waits in FUTEX_WAIT[_BITSET] on uaddr
+
+Added.
+
+> [EINVAL] The kernel detected inconsistent state between the user
+> space state at uaddr2 and the kernel state, i.e. it detected a waiter
+> which waits in FUTEX_WAIT on uaddr2.
+
+Added.
+
+> [EINVAL] The supplied bitset is zero.
+
+Darren Hart noted: Bitset doesn't apply to FUTEX_CMP_REQUEUE_PI.
+
+> [EAGAIN] uaddr1 readout is not equal the compare value in argument
+> val3
+
+Added.
+
+> [EAGAIN] The futex owner TID of uaddr2 is about to exit, but has not
+> yet handled the internal state cleanup. Try again.
+
+Added.
+
+> [EPERM]  Caller is not allowed to attach the waiter to the futex at
+> uaddr2 Can be a legitimate issue or a hint for state corruption in
+> user space
+
+Added.
+
+> [ESRCH]	 The TID in the user space value at uaddr2 does not exist
+
+Added.
+
+> [EDEADLOCK] The requeuing of a waiter to the kernel representation of
+> the PI futex at uaddr2 detected a deadlock scenario.
+
+Added.
+
+> [ENOSYS] Not implemented on all architectures and not supported on
+> some CPU variants (runtime detection)
+
+Added.
+
+==========
+
+> The various option bits seem to be undocumented as well
+
+Yes, thanks for that.
+
+> FUTEX_PRIVATE_FLAG
+
+I've added this one, along with the detail "(since Linux 2.6.22)"
+
+> This option bit can be ored on all futex ops.
+> 
+> It tells the kernel, that the futex is process private and not shared
+> with another process. That allows the kernel to chose the fast path
+> for validating the user space address and avoids expensive VMA
+> lookup, taking refcounts on file backing store etc.
+> 
+> FUTEX_CLOCK_REALTIME
+
+I've added this one, along with the detail "(since Linux 2.6.28)"
+
+> This option bit can be ored on the futex ops FUTEX_WAIT_BITSET and
+> FUTEX_WAIT_REQUEUE_PI
+> 
+> If set the kernel treats the user space supplied timeout as absolute
+> time based on CLOCK_REALTIME.
+> 
+> If not set the kernel treats the user space supplied timeout as
+> relative time.
+> 
+> If this is set on any other op than the supported ones, kernel 
+> returns ENOSYS!
+
+The details in the preceding 4 paragraphs have been integrated.
+
+Thanks,
+
+Michael
 
 
 
-
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
