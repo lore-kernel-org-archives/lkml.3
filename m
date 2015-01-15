@@ -1,69 +1,322 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754931AbbAONou (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 08:44:50 -0500
-Received: from mail.kernel.org ([198.145.29.136]:49738 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754892AbbAONor (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 08:44:47 -0500
-Date: Thu, 15 Jan 2015 14:44:33 +0100
-From: Sebastian Reichel <sre@kernel.org>
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH RESEND V2 2/2] power: collie_battery: support generating
- wakeup event
-Message-ID: <20150115134432.GB512@earth.universe>
-References: <1421287238-23522-1-git-send-email-dbaryshkov@gmail.com>
- <1421287238-23522-2-git-send-email-dbaryshkov@gmail.com>
+	id S932094AbbAONqu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 08:46:50 -0500
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:57184 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754224AbbAONqr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 08:46:47 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="hQiwHBbRI9kgIhsi"
-Content-Disposition: inline
-In-Reply-To: <1421287238-23522-2-git-send-email-dbaryshkov@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CAKMK7uH0GUjkksG5RJ03qtf=bqdPvAK1PpayQ6Wz9dq2KMe9Tw@mail.gmail.com>
+References: <1421187484-13875-1-git-send-email-sviau@codeaurora.org>
+	<1421187484-13875-3-git-send-email-sviau@codeaurora.org>
+	<CAKMK7uH0GUjkksG5RJ03qtf=bqdPvAK1PpayQ6Wz9dq2KMe9Tw@mail.gmail.com>
+Date: Thu, 15 Jan 2015 08:46:46 -0500
+Message-ID: <CAF6AEGvCf=7bQWJMxXgzn6DKWPR6TKXJ3+06aRrCg9nV62J7cA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] drm/msm/mdp5: Add hardware cursor support
+From: Rob Clark <robdclark@gmail.com>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Stephane Viau <sviau@codeaurora.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        Beeresh Gopal <gbeeresh@codeaurora.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jan 14, 2015 at 7:55 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
+> On Tue, Jan 13, 2015 at 05:18:04PM -0500, Stephane Viau wrote:
+>> From: Beeresh Gopal <gbeeresh@codeaurora.org>
+>>
+>> This patch implements the hardware accelarated cursor
+>> support for MDP5 platforms.
+>>
+>> Signed-off-by: Beeresh Gopal <gbeeresh@codeaurora.org>
+>> Signed-off-by: Wentao Xu <wentaox@codeaurora.org>
+>> Signed-off-by: Stephane Viau <sviau@codeaurora.org>
+>
+> Imo implementing legacy cursor support instead of with universal planes
+> makes no sense. Especially since msm is converted to atomic already, and
+> you can't move the cursor with atomic when it's legacy only. See the
+> cursor argument for the drm_crtc_init_with_planes function and how it's
+> used in e.g. i915.
+>
 
---hQiwHBbRI9kgIhsi
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+well, I'm still not 100% convinced about going through the whole
+atomic mechanism for cursors..  in particular stuff that tries to
+enable/disable the cursor at 1000fps, goes *really* badly when things
+start waiting for vsync.
 
-Hi,
+I'll probably try some experiments with it at some point, but at this
+point something that works with x11 is a lot more interesting for me
+(since every time I switch from mdp4 device to mdp5 device I forget to
+disable hw cursor the first time I start x)
 
-On Thu, Jan 15, 2015 at 05:00:38AM +0300, Dmitry Eremin-Solenikov wrote:
-> Teach collie_battery driver to communicate to the kernel that it can
-> generate wakeup events. Handle enabling/disabling wakeup on battery full
-> event in suspend/resume callbacks.
+BR,
+-R
 
-Thanks, applied:
-
-http://git.infradead.org/battery-2.6.git/commit/a465005643a4c1e02681b02075082fc6c7fa076a
-
--- Sebastian
-
---hQiwHBbRI9kgIhsi
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBCgAGBQJUt8RAAAoJENju1/PIO/qaFyoQAILosLE0+WzG2mjx3bGHFB8I
-cJeAeijse4T7zQdoonKZyZVYj96gp0HW155aVERjVbjVjeFwwnwmcOTML2fI2W3O
-EUvFE3k8TapPxrgl/0oCkmpz30RbNpSRk/THQN48u8KmFoL1BFiP1VWU1AeFdeVa
-QRMkLc88eCI2bPEqwdjr4kfPcWfXEbQLWriXSgugEecyNZsMi2pqL3xvzTov266z
-NBpLRCMjvv9K7CrRUdO+hHZZmyI7dMls9lTUGBRIKWgQtlUGk8nCyEOa5X0BlOTQ
-PiMhjOgGid1HAsbYRGLH/niX4O9ZF8JGX4cFzCtujr1bWdz/abprGB1cHuvCWM91
-xPFWK1errV9ihj78OD8zyLHgnKRZkt0iM3TbULphdH6iTAsWnhr6HXmI03crinab
-IqS1eRTgjhay+dUrbrPorbJuh2AZMh1bek516L8zIa/S4hWxchr4dG6hosQ7To4M
-BdBeQpeuXu2640EZtXYMWwCD8izeorvXJz8UQ8y/nsecvuzCW+z8k0aNQtE4d9xR
-10Un9q57TWpkQxuiRe90uVBnAulb1NPy78n1r2lvoeBF/0T4Lqvr24vMikfGw/Mt
-viEf0I/GKEtpI4GG1ngQpa/r0iT+tIMTnkS1BLSmiFHJqwThIFZaybtHqFpeTCfe
-qvI74D92H040S+PZzmOA
-=Jbte
------END PGP SIGNATURE-----
-
---hQiwHBbRI9kgIhsi--
+> Cheers, Daniel
+>
+>> ---
+>>  drivers/gpu/drm/msm/mdp/mdp5/mdp5_crtc.c | 164 +++++++++++++++++++++++++++++++
+>>  1 file changed, 164 insertions(+)
+>>
+>> diff --git a/drivers/gpu/drm/msm/mdp/mdp5/mdp5_crtc.c b/drivers/gpu/drm/msm/mdp/mdp5/mdp5_crtc.c
+>> index f021f96..2021f09 100644
+>> --- a/drivers/gpu/drm/msm/mdp/mdp5/mdp5_crtc.c
+>> +++ b/drivers/gpu/drm/msm/mdp/mdp5/mdp5_crtc.c
+>> @@ -24,6 +24,9 @@
+>>  #include "drm_crtc_helper.h"
+>>  #include "drm_flip_work.h"
+>>
+>> +#define CURSOR_WIDTH 64
+>> +#define CURSOR_HEIGHT 64
+>> +
+>>  #define SSPP_MAX (SSPP_RGB3 + 1) /* TODO: Add SSPP_MAX in mdp5.xml.h */
+>>
+>>  struct mdp5_crtc {
+>> @@ -47,8 +50,21 @@ struct mdp5_crtc {
+>>  #define PENDING_FLIP   0x2
+>>   atomic_t pending;
+>>
+>> + /* for unref'ing cursor bo's after scanout completes: */
+>> + struct drm_flip_work unref_cursor_work;
+>> +
+>>   struct mdp_irq vblank;
+>>   struct mdp_irq err;
+>> +
+>> + struct {
+>> + /* protect REG_MDP5_LM_CURSOR* registers and cursor scanout_bo*/
+>> + spinlock_t lock;
+>> +
+>> + /* current cursor being scanned out: */
+>> + struct drm_gem_object *scanout_bo;
+>> + uint32_t width;
+>> + uint32_t height;
+>> + } cursor;
+>>  };
+>>  #define to_mdp5_crtc(x) container_of(x, struct mdp5_crtc, base)
+>>
+>> @@ -129,11 +145,22 @@ static void complete_flip(struct drm_crtc *crtc, struct drm_file *file)
+>>   }
+>>  }
+>>
+>> +static void unref_cursor_worker(struct drm_flip_work *work, void *val)
+>> +{
+>> + struct mdp5_crtc *mdp5_crtc =
+>> + container_of(work, struct mdp5_crtc, unref_cursor_work);
+>> + struct mdp5_kms *mdp5_kms = get_kms(&mdp5_crtc->base);
+>> +
+>> + msm_gem_put_iova(val, mdp5_kms->id);
+>> + drm_gem_object_unreference_unlocked(val);
+>> +}
+>> +
+>>  static void mdp5_crtc_destroy(struct drm_crtc *crtc)
+>>  {
+>>   struct mdp5_crtc *mdp5_crtc = to_mdp5_crtc(crtc);
+>>
+>>   drm_crtc_cleanup(crtc);
+>> + drm_flip_work_cleanup(&mdp5_crtc->unref_cursor_work);
+>>
+>>   kfree(mdp5_crtc);
+>>  }
+>> @@ -384,6 +411,132 @@ static int mdp5_crtc_set_property(struct drm_crtc *crtc,
+>>   return -EINVAL;
+>>  }
+>>
+>> +static int mdp5_crtc_cursor_set(struct drm_crtc *crtc,
+>> + struct drm_file *file, uint32_t handle,
+>> + uint32_t width, uint32_t height)
+>> +{
+>> + struct mdp5_crtc *mdp5_crtc = to_mdp5_crtc(crtc);
+>> + struct drm_device *dev = crtc->dev;
+>> + struct mdp5_kms *mdp5_kms = get_kms(crtc);
+>> + struct drm_gem_object *cursor_bo, *old_bo;
+>> + uint32_t blendcfg, cursor_addr, stride;
+>> + int ret, bpp, lm;
+>> + unsigned int depth;
+>> + enum mdp5_cursor_alpha cur_alpha = CURSOR_ALPHA_PER_PIXEL;
+>> + uint32_t flush_mask = mdp_ctl_flush_mask_cursor(0);
+>> + unsigned long flags;
+>> +
+>> + if ((width > CURSOR_WIDTH) || (height > CURSOR_HEIGHT)) {
+>> + dev_err(dev->dev, "bad cursor size: %dx%d\n", width, height);
+>> + return -EINVAL;
+>> + }
+>> +
+>> + if (NULL == mdp5_crtc->ctl)
+>> + return -EINVAL;
+>> +
+>> + if (!handle) {
+>> + DBG("Cursor off");
+>> + return mdp5_ctl_set_cursor(mdp5_crtc->ctl, false);
+>> + }
+>> +
+>> + cursor_bo = drm_gem_object_lookup(dev, file, handle);
+>> + if (!cursor_bo)
+>> + return -ENOENT;
+>> +
+>> + ret = msm_gem_get_iova(cursor_bo, mdp5_kms->id, &cursor_addr);
+>> + if (ret)
+>> + return -EINVAL;
+>> +
+>> + lm = mdp5_crtc->lm;
+>> + drm_fb_get_bpp_depth(DRM_FORMAT_ARGB8888, &depth, &bpp);
+>> + stride = width * (bpp >> 3);
+>> +
+>> + spin_lock_irqsave(&mdp5_crtc->cursor.lock, flags);
+>> + old_bo = mdp5_crtc->cursor.scanout_bo;
+>> +
+>> + mdp5_write(mdp5_kms, REG_MDP5_LM_CURSOR_STRIDE(lm), stride);
+>> + mdp5_write(mdp5_kms, REG_MDP5_LM_CURSOR_FORMAT(lm),
+>> + MDP5_LM_CURSOR_FORMAT_FORMAT(CURSOR_FMT_ARGB8888));
+>> + mdp5_write(mdp5_kms, REG_MDP5_LM_CURSOR_IMG_SIZE(lm),
+>> + MDP5_LM_CURSOR_IMG_SIZE_SRC_H(height) |
+>> + MDP5_LM_CURSOR_IMG_SIZE_SRC_W(width));
+>> + mdp5_write(mdp5_kms, REG_MDP5_LM_CURSOR_SIZE(lm),
+>> + MDP5_LM_CURSOR_SIZE_ROI_H(height) |
+>> + MDP5_LM_CURSOR_SIZE_ROI_W(width));
+>> + mdp5_write(mdp5_kms, REG_MDP5_LM_CURSOR_BASE_ADDR(lm), cursor_addr);
+>> +
+>> +
+>> + blendcfg = MDP5_LM_CURSOR_BLEND_CONFIG_BLEND_EN;
+>> + blendcfg |= MDP5_LM_CURSOR_BLEND_CONFIG_BLEND_TRANSP_EN;
+>> + blendcfg |= MDP5_LM_CURSOR_BLEND_CONFIG_BLEND_ALPHA_SEL(cur_alpha);
+>> + mdp5_write(mdp5_kms, REG_MDP5_LM_CURSOR_BLEND_CONFIG(lm), blendcfg);
+>> +
+>> + mdp5_crtc->cursor.scanout_bo = cursor_bo;
+>> + mdp5_crtc->cursor.width = width;
+>> + mdp5_crtc->cursor.height = height;
+>> + spin_unlock_irqrestore(&mdp5_crtc->cursor.lock, flags);
+>> +
+>> + ret = mdp5_ctl_set_cursor(mdp5_crtc->ctl, true);
+>> + if (ret)
+>> + goto end;
+>> +
+>> + flush_mask |= mdp5_ctl_get_flush(mdp5_crtc->ctl);
+>> + crtc_flush(crtc, flush_mask);
+>> +
+>> +end:
+>> + if (old_bo) {
+>> + drm_flip_work_queue(&mdp5_crtc->unref_cursor_work, old_bo);
+>> + /* enable vblank to complete cursor work: */
+>> + request_pending(crtc, PENDING_CURSOR);
+>> + }
+>> + return ret;
+>> +}
+>> +
+>> +static int mdp5_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
+>> +{
+>> + struct mdp5_kms *mdp5_kms = get_kms(crtc);
+>> + struct mdp5_crtc *mdp5_crtc = to_mdp5_crtc(crtc);
+>> + uint32_t flush_mask = mdp_ctl_flush_mask_cursor(0);
+>> + uint32_t xres = crtc->mode.hdisplay;
+>> + uint32_t yres = crtc->mode.vdisplay;
+>> + uint32_t roi_w;
+>> + uint32_t roi_h;
+>> + unsigned long flags;
+>> +
+>> + x = (x > 0) ? x : 0;
+>> + y = (y > 0) ? y : 0;
+>> +
+>> + /*
+>> + * Cursor Region Of Interest (ROI) is a plane read from cursor
+>> + * buffer to render. The ROI region is determined by the visiblity of
+>> + * the cursor point. In the default Cursor image the cursor point will
+>> + * be at the top left of the cursor image, unless it is specified
+>> + * otherwise using hotspot feature.
+>> + *
+>> + * If the cursor point reaches the right (xres - x < cursor.width) or
+>> + * bottom (yres - y < cursor.height) boundary of the screen, then ROI
+>> + * width and ROI height need to be evaluated to crop the cursor image
+>> + * accordingly.
+>> + * (xres-x) will be new cursor width when x > (xres - cursor.width)
+>> + * (yres-y) will be new cursor height when y > (yres - cursor.height)
+>> + */
+>> + roi_w = min(mdp5_crtc->cursor.width, xres - x);
+>> + roi_h = min(mdp5_crtc->cursor.height, yres - y);
+>> +
+>> + spin_lock_irqsave(&mdp5_crtc->cursor.lock, flags);
+>> + mdp5_write(mdp5_kms, REG_MDP5_LM_CURSOR_SIZE(mdp5_crtc->lm),
+>> + MDP5_LM_CURSOR_SIZE_ROI_H(roi_h) |
+>> + MDP5_LM_CURSOR_SIZE_ROI_W(roi_w));
+>> + mdp5_write(mdp5_kms, REG_MDP5_LM_CURSOR_START_XY(mdp5_crtc->lm),
+>> + MDP5_LM_CURSOR_START_XY_Y_START(y) |
+>> + MDP5_LM_CURSOR_START_XY_X_START(x));
+>> + spin_unlock_irqrestore(&mdp5_crtc->cursor.lock, flags);
+>> +
+>> + crtc_flush(crtc, flush_mask);
+>> +
+>> + return 0;
+>> +}
+>> +
+>>  static const struct drm_crtc_funcs mdp5_crtc_funcs = {
+>>   .set_config = drm_atomic_helper_set_config,
+>>   .destroy = mdp5_crtc_destroy,
+>> @@ -392,6 +545,8 @@ static const struct drm_crtc_funcs mdp5_crtc_funcs = {
+>>   .reset = drm_atomic_helper_crtc_reset,
+>>   .atomic_duplicate_state = drm_atomic_helper_crtc_duplicate_state,
+>>   .atomic_destroy_state = drm_atomic_helper_crtc_destroy_state,
+>> + .cursor_set = mdp5_crtc_cursor_set,
+>> + .cursor_move = mdp5_crtc_cursor_move,
+>>  };
+>>
+>>  static const struct drm_crtc_helper_funcs mdp5_crtc_helper_funcs = {
+>> @@ -412,6 +567,7 @@ static void mdp5_crtc_vblank_irq(struct mdp_irq *irq, uint32_t irqstatus)
+>>  {
+>>   struct mdp5_crtc *mdp5_crtc = container_of(irq, struct mdp5_crtc, vblank);
+>>   struct drm_crtc *crtc = &mdp5_crtc->base;
+>> + struct msm_drm_private *priv = crtc->dev->dev_private;
+>>   unsigned pending;
+>>
+>>   mdp_irq_unregister(&get_kms(crtc)->base, &mdp5_crtc->vblank);
+>> @@ -421,6 +577,9 @@ static void mdp5_crtc_vblank_irq(struct mdp_irq *irq, uint32_t irqstatus)
+>>   if (pending & PENDING_FLIP) {
+>>   complete_flip(crtc, NULL);
+>>   }
+>> +
+>> + if (pending & PENDING_CURSOR)
+>> + drm_flip_work_commit(&mdp5_crtc->unref_cursor_work, priv->wq);
+>>  }
+>>
+>>  static void mdp5_crtc_err_irq(struct mdp_irq *irq, uint32_t irqstatus)
+>> @@ -520,6 +679,7 @@ struct drm_crtc *mdp5_crtc_init(struct drm_device *dev,
+>>   mdp5_crtc->lm = GET_LM_ID(id);
+>>
+>>   spin_lock_init(&mdp5_crtc->lm_lock);
+>> + spin_lock_init(&mdp5_crtc->cursor.lock);
+>>
+>>   mdp5_crtc->vblank.irq = mdp5_crtc_vblank_irq;
+>>   mdp5_crtc->err.irq = mdp5_crtc_err_irq;
+>> @@ -528,6 +688,10 @@ struct drm_crtc *mdp5_crtc_init(struct drm_device *dev,
+>>   pipe2name(mdp5_plane_pipe(plane)), id);
+>>
+>>   drm_crtc_init_with_planes(dev, crtc, plane, NULL, &mdp5_crtc_funcs);
+>> +
+>> + drm_flip_work_init(&mdp5_crtc->unref_cursor_work,
+>> + "unref cursor", unref_cursor_worker);
+>> +
+>>   drm_crtc_helper_add(crtc, &mdp5_crtc_helper_funcs);
+>>   plane->crtc = crtc;
+>>
+>> --
+>> Qualcomm Innovation Center, Inc.
+>>
+>> The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum, a Linux Foundation Collaborative Project
+>>
+>> _______________________________________________
+>> dri-devel mailing list
+>> dri-devel@lists.freedesktop.org
+>> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+>
+> --
+> Daniel Vetter
+> Software Engineer, Intel Corporation
+> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
