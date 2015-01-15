@@ -1,101 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754276AbbAOOJi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 09:09:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:16384 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752903AbbAOOJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 09:09:37 -0500
-Date: Thu, 15 Jan 2015 16:09:23 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org
-Subject: [PATCH] virtio_pci: add an option to disable legacy driver
-Message-ID: <1421330958-24192-1-git-send-email-mst@redhat.com>
+	id S1754419AbbAOOJw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 09:09:52 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:37079 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754341AbbAOOJu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 09:09:50 -0500
+Message-ID: <54B7CA15.7000200@roeck-us.net>
+Date: Thu, 15 Jan 2015 06:09:25 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Mutt-Fcc: =sent
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Linux-Next <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rob Clark <robdclark@gmail.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        linux-m68k <linux-m68k@vger.kernel.org>
+Subject: Re: linux-next: Tree for Jan 12 (build failures: m68k, ppc)
+References: <20150112180322.003b44f2@canb.auug.org.au>	<20150112162438.GA18723@roeck-us.net>	<CAMuHMdUYEe=L=H75AOYVjinRSW=okRJNrNJVy-bY1gshdVrO7Q@mail.gmail.com>	<20150112175920.GC19868@roeck-us.net> <CAMuHMdV1k4viMKmi_8vM52iz+ry50k=Ard1ADkEGzia+yJ5e3Q@mail.gmail.com>
+In-Reply-To: <CAMuHMdV1k4viMKmi_8vM52iz+ry50k=Ard1ADkEGzia+yJ5e3Q@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020202.54B7CA2E.015C,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 6
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Useful for testing device virtio 1 compatibility.
-Based on patch by Rusty - couldn't resist putting
-that flying car joke in there!
+On 01/15/2015 02:12 AM, Geert Uytterhoeven wrote:
+> On Mon, Jan 12, 2015 at 6:59 PM, Guenter Roeck <linux@roeck-us.net> wrote:
+>>>> Build failures, seen since next-20150109:
+>>>>          m68k:allmodconfig
+>>>>          powerpc:ppc6xx_defconfig
+>
+> It looks like parisc is also suffering:
+> http://kisskb.ellerman.id.au/kisskb/buildresult/12343847/
+>
+>>>> Due to:
+>>>>          ERROR: "__get_user_bad" [drivers/gpu/drm/drm.ko] undefined!
+>>>>          make[1]: *** [__modpost] Error 1
+>>>>
+>>>> Caused by commit d34f20d6e2f (drm: Atomic modeset ioctl).
+>>>
+>>> Yeah, it needs a get_user() that supports 64-bit data.
+>>>
+>> Hi Geert,
+>>
+>> I assume you mean m68k, where 64 bit support for get_user has been disabled.
+>>
+>> The problem on powerpc is different though: __get_user_nocheck()
+>> and __get_user_check() use
+>>          unsigned long __gu_val;
+>> followed by
+>>          __get_user_size(__gu_val, __gu_addr, (size), __gu_err);
+>>
+>> __get_user_size() fails in
+>>          if (size > sizeof(x))
+>>                   (x) = __get_user_bad();
+>>
+>> Presumably "unsigned long" is 32 bit on 32 bit powerpc, not 64 bit.
+>>
+>> Overall, the explicit 64-bit use of get_user() seems to be quite unusual.
+>
+> I noticed you've sent a fix for DRM.
+>
+> Doh, and I was just fixing m68k...
+>
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/virtio/virtio_pci_common.h | 10 ++++++++++
- drivers/virtio/Kconfig             | 19 +++++++++++++++++++
- drivers/virtio/Makefile            |  3 ++-
- 3 files changed, 31 insertions(+), 1 deletion(-)
+Sorry, should have Cc:'d you.
 
-diff --git a/drivers/virtio/virtio_pci_common.h b/drivers/virtio/virtio_pci_common.h
-index d391805..28ee4e5 100644
---- a/drivers/virtio/virtio_pci_common.h
-+++ b/drivers/virtio/virtio_pci_common.h
-@@ -147,8 +147,18 @@ const char *vp_bus_name(struct virtio_device *vdev);
-  */
- int vp_set_vq_affinity(struct virtqueue *vq, int cpu);
- 
-+#if IS_ENABLED(CONFIG_VIRTIO_PCI_LEGACY)
- int virtio_pci_legacy_probe(struct virtio_pci_device *);
- void virtio_pci_legacy_remove(struct virtio_pci_device *);
-+#else
-+static inline int virtio_pci_legacy_probe(struct virtio_pci_device *vp_dev)
-+{
-+	return -ENODEV;
-+}
-+static inline void virtio_pci_legacy_remove(struct virtio_pci_device *vp_dev)
-+{
-+}
-+#endif
- int virtio_pci_modern_probe(struct virtio_pci_device *);
- void virtio_pci_modern_remove(struct virtio_pci_device *);
- 
-diff --git a/drivers/virtio/Kconfig b/drivers/virtio/Kconfig
-index 083fb45..b546da5 100644
---- a/drivers/virtio/Kconfig
-+++ b/drivers/virtio/Kconfig
-@@ -19,6 +19,25 @@ config VIRTIO_PCI
- 
- 	  If unsure, say M.
- 
-+config VIRTIO_PCI_LEGACY
-+	bool "Support for legacy virtio draft 0.9.X and older devices"
-+	default y
-+	depends on VIRTIO_PCI
-+	---help---
-+          Virtio PCI Card 0.9.X Draft (circa 2014) and older device support.
-+
-+	  This option enables building a transitional driver, supporting
-+	  both devices conforming to Virtio 1 specification, and legacy devices.
-+	  If disabled, you get a slightly smaller, non-transitional driver,
-+	  with no legacy compatibility.
-+
-+          So look out into your driveway.  Do you have a flying car?  If
-+          so, you can happily disable this option and virtio will not
-+          break.  Otherwise, leave it set.  Unless you're testing what
-+          life will be like in The Future.
-+
-+	  If unsure, say Y.
-+
- config VIRTIO_BALLOON
- 	tristate "Virtio balloon driver"
- 	depends on VIRTIO
-diff --git a/drivers/virtio/Makefile b/drivers/virtio/Makefile
-index bd230d1..a7fa9a5 100644
---- a/drivers/virtio/Makefile
-+++ b/drivers/virtio/Makefile
-@@ -1,5 +1,6 @@
- obj-$(CONFIG_VIRTIO) += virtio.o virtio_ring.o
- obj-$(CONFIG_VIRTIO_MMIO) += virtio_mmio.o
- obj-$(CONFIG_VIRTIO_PCI) += virtio_pci.o
--virtio_pci-y := virtio_pci_modern.o virtio_pci_legacy.o virtio_pci_common.o
-+virtio_pci-y := virtio_pci_modern.o virtio_pci_common.o
-+virtio_pci-$(CONFIG_VIRTIO_PCI_LEGACY) := virtio_pci_legacy.o
- obj-$(CONFIG_VIRTIO_BALLOON) += virtio_balloon.o
--- 
-MST
+Guenter
+
