@@ -1,84 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755357AbbAOUIz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 15:08:55 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:31118 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752781AbbAOUIy (ORCPT
+	id S1755518AbbAOUKN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 15:10:13 -0500
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:33277 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753199AbbAOUKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 15:08:54 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-To: linux-kernel@vger.kernel.org
-Cc: ming.lei@canonical.com, Sasha Levin <sasha.levin@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH] blk-mq: free hctx only when the kobject is released
-Date: Thu, 15 Jan 2015 15:08:38 -0500
-Message-Id: <1421352518-27220-1-git-send-email-sasha.levin@oracle.com>
-X-Mailer: git-send-email 2.1.0
-X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
+	Thu, 15 Jan 2015 15:10:11 -0500
+Message-ID: <54B81EA0.8060409@gmail.com>
+Date: Thu, 15 Jan 2015 12:10:08 -0800
+From: David Daney <ddaney.cavm@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Aaro Koskinen <aaro.koskinen@iki.fi>
+CC: Ralf Baechle <ralf@linux-mips.org>, David Daney <david.daney@cavium.com>,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        Hemmo Nieminen <hemmo.nieminen@iki.fi>, stable@vger.kernel.org
+Subject: Re: [PATCH 1/2] MIPS: OCTEON: fix kernel crash when offlining a CPU
+References: <1421347767-21740-1-git-send-email-aaro.koskinen@iki.fi> <54B816AC.7070902@gmail.com> <20150115195345.GA8087@fuloong-minipc.musicnaut.iki.fi>
+In-Reply-To: <20150115195345.GA8087@fuloong-minipc.musicnaut.iki.fi>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When releasing hctx, we do not know that the embedded kobject has been
-released until it's ->release() callback has been called. It is unsafe
-to unconditionally free the underlying memory until the ->release()
-callback has been called since it may cause use-after-free bugs.
+On 01/15/2015 11:53 AM, Aaro Koskinen wrote:
+> Hi,
+>
+> On Thu, Jan 15, 2015 at 11:36:12AM -0800, David Daney wrote:
+>> On 01/15/2015 10:49 AM, Aaro Koskinen wrote:
+>>> octeon_cpu_disable() will unconditionally enable interrupts when called
+>>> with interrupts disabled. Fix that.
+>>
+>> interrupts are always disabled here, so...
+>
+> Is that also true for all the currently supported stable kernels...?
 
-In practice, this patch fixes a use-after-free when destroying devices
-(encountered with loop devices, in my case).
+I haven't done extensive research recently, but I have removed that pair 
+of local_irq_disable/local_irq_enable in our SDK kernel based on 3.10
 
-Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
----
- block/blk-mq-sysfs.c |   11 ++++++++++-
- block/blk-mq.c       |    4 +---
- 2 files changed, 11 insertions(+), 4 deletions(-)
 
-diff --git a/block/blk-mq-sysfs.c b/block/blk-mq-sysfs.c
-index 1630a20..83d4bd8 100644
---- a/block/blk-mq-sysfs.c
-+++ b/block/blk-mq-sysfs.c
-@@ -17,6 +17,15 @@ static void blk_mq_sysfs_release(struct kobject *kobj)
- {
- }
- 
-+static void blk_mq_hw_sysfs_release(struct kobject *kobj)
-+{
-+	struct blk_mq_hw_ctx *hctx;
-+
-+	hctx = container_of(kobj, struct blk_mq_hw_ctx, kobj);
-+
-+	kfree(hctx);
-+}
-+
- struct blk_mq_ctx_sysfs_entry {
- 	struct attribute attr;
- 	ssize_t (*show)(struct blk_mq_ctx *, char *);
-@@ -324,7 +333,7 @@ static struct kobj_type blk_mq_ctx_ktype = {
- static struct kobj_type blk_mq_hw_ktype = {
- 	.sysfs_ops	= &blk_mq_hw_sysfs_ops,
- 	.default_attrs	= default_hw_ctx_attrs,
--	.release	= blk_mq_sysfs_release,
-+	.release	= blk_mq_hw_sysfs_release,
- };
- 
- static void blk_mq_unregister_hctx(struct blk_mq_hw_ctx *hctx)
-diff --git a/block/blk-mq.c b/block/blk-mq.c
-index 04caf9f..7701eb2 100644
---- a/block/blk-mq.c
-+++ b/block/blk-mq.c
-@@ -1593,10 +1593,8 @@ static void blk_mq_free_hw_queues(struct request_queue *q,
- 	struct blk_mq_hw_ctx *hctx;
- 	unsigned int i;
- 
--	queue_for_each_hw_ctx(q, hctx, i) {
-+	queue_for_each_hw_ctx(q, hctx, i)
- 		free_cpumask_var(hctx->cpumask);
--		kfree(hctx);
--	}
- }
- 
- static int blk_mq_init_hctx(struct request_queue *q,
--- 
-1.7.10.4
+> Or should I just drop Cc: stable from this patch?
+>
+>> Just remove this...
+>>
+>>>   	octeon_fixup_irqs();
+>>> -	local_irq_enable();
+>>> +	local_irq_restore(flags);
+>>
+>> ... and this.
+>>
+>>>
+>>>   	flush_cache_all();
+>>>   	local_flush_tlb_all();
+>>>
+>>
+>> You can add an Acked-by me if you do that.
+>
+> Ok, I will do that.
+>
+> A.
+>
+>
 
