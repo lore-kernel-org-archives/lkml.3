@@ -1,65 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752197AbbAOBWh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 20:22:37 -0500
-Received: from cn.fujitsu.com ([59.151.112.132]:49073 "EHLO
-	heian.cn.fujitsu.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751145AbbAOBWg (ORCPT
+	id S1752370AbbAOBl6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 20:41:58 -0500
+Received: from mail1.bemta5.messagelabs.com ([195.245.231.152]:28037 "EHLO
+	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750826AbbAOBl5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 20:22:36 -0500
-X-IronPort-AV: E=Sophos;i="5.04,848,1406563200"; 
-   d="scan'208";a="56082811"
-Message-ID: <54B716A0.5020800@cn.fujitsu.com>
-Date: Thu, 15 Jan 2015 09:23:44 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Wed, 14 Jan 2015 20:41:57 -0500
+X-Greylist: delayed 397 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Jan 2015 20:41:56 EST
+X-Env-Sender: James.Ban.opensource@diasemi.com
+X-Msg-Ref: server-4.tower-180.messagelabs.com!1421285717!41073714!1
+X-Originating-IP: [82.210.246.133]
+X-StarScan-Received: 
+X-StarScan-Version: 6.12.5; banners=-,-,-
+X-VirusChecked: Checked
+Message-ID: <201501150135.t0F1Z6UD032294@krsrvapps-01.diasemi.com>
+From: James Ban <james.ban.opensource@diasemi.com>
+Date: Thu, 15 Jan 2015 10:29:08 +0900
+Subject: [PATCH V1] regulator: da9211: fix unmatched of_node and add gpio
+ control
+To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Support Opensource <support.opensource@diasemi.com>,
+        LKML <linux-kernel@vger.kernel.org>
+CC: David Dajun Chen <david.chen@diasemi.com>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Kamezawa Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?UTF-8?B?IklzaGltYXRzdSwgWWFzdWFraS/nn7Pmnb4g6Z2W56ugIg==?= 
-	<isimatu.yasuaki@jp.fujitsu.com>,
-        Tang Chen <tangchen@cn.fujitsu.com>,
-        "guz.fnst@cn.fujitsu.com" <guz.fnst@cn.fujitsu.com>
-Subject: Re: [PATCH 1/2] workqueue: update numa affinity info at node hotplug
-References: <54905F87.2030302@jp.fujitsu.com> <549061BD.3040802@jp.fujitsu.com> <5490DE23.9000602@cn.fujitsu.com> <5490F70E.4010703@jp.fujitsu.com> <54910CFD.4070203@jp.fujitsu.com> <20141225201156.GA22951@htj.dyndns.org> <54B4C6ED.9060501@cn.fujitsu.com> <20150113152224.GA2976@htj.dyndns.org> <54B5D8B4.7010708@cn.fujitsu.com> <20150114135733.GB3565@htj.dyndns.org>
-In-Reply-To: <20150114135733.GB3565@htj.dyndns.org>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.167.226.103]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2015 09:57 PM, Tejun Heo wrote:
-> Hello, Lai.
-> 
-> On Wed, Jan 14, 2015 at 10:47:16AM +0800, Lai Jiangshan wrote:
->>> Even if that involves slightly more code, that's the right thing to do at this point.
->>
->> Right, but in currently, the workqueue will be the only user, and I don't known
->> asking who to do it, so I may keep it in the workqueue.c.
-> 
-> The problem is that working around this in workqueue effectively hides
-> what needs to be actively looked upon and decided.  It curently isn't
-> currently defined even when such mappings can change or for which
-> cpus?  Are all offline cpus up for grabs or just !present ones?  These
-> are questions which can only be answered / determined from NUMA side
-> and the sooner we deal with this properly the better.
+This is a patch for fixing unmatched of_node and adding gpio control.
 
-So the solution_B totally keeps away from this spaghetti.
+Signed-off-by: James Ban <james.ban.opensource@diasemi.com>
+---
 
-> 
->>> It'd be
->>> awesome if somebody more familiar with the numa side can chime in and
->>> explain why this mapping change can't be avoided.
->>
->> I'm also looking for someone answer it.
-> 
-> Exactly, whoever is requiring NUMA node remapping should explain and
-> justify that and how the model to handle it can only be determined
-> from that.
-> 
-> Thanks.
-> 
+This patch is relative to linux-next repository tag next-20150113.
+
+Changes in V1:
+- fix unmatched of_node.
+- add gpio control for buck eanble/disable.
+
+ .../devicetree/bindings/regulator/da9211.txt       |   24 +++++++++-
+ drivers/regulator/da9211-regulator.c               |   49 ++++++++++++++++++--
+ drivers/regulator/da9211-regulator.h               |    1 +
+ include/linux/regulator/da9211.h                   |    9 ++++
+ 4 files changed, 79 insertions(+), 4 deletions(-)
+
+diff --git a/Documentation/devicetree/bindings/regulator/da9211.txt b/Documentation/devicetree/bindings/regulator/da9211.txt
+index 240019a..b53a246 100644
+--- a/Documentation/devicetree/bindings/regulator/da9211.txt
++++ b/Documentation/devicetree/bindings/regulator/da9211.txt
+@@ -11,6 +11,12 @@ Required properties:
+   BUCKA and BUCKB.
+ 
+ Optional properties:
++- bucka-uses-gpio: BUCKA can be controlled by gpio.
++- bucka-enable-platform-gpio: platform gpio for control of BUCKA.
++- bucka-enable-init-state: initial state of gpio for BUCKA
++- buckb-uses-gpio: BUCKB can be controlled by gpio.
++- buckb-enable-platform-gpio: platform gpio for control of BUCKB.
++- buckb-enable-init-state: initial state of gpio for BUCKB
+ - Any optional property defined in regulator.txt
+ 
+ Example 1) DA9211
+@@ -20,6 +26,14 @@ Example 1) DA9211
+ 		reg = <0x68>;
+ 		interrupts = <3 27>;
+ 
++		bucka-uses-gpio;
++		bucka-enable-platform-gpio = <&gpio 27 0>;
++		bucka-enable-init-state = <0>;
++
++		buckb-uses-gpio;
++		buckb-enable-platform-gpio = <&gpio 17 0>;
++		buckb-enable-init-state = <0>;
++
+ 		regulators {
+ 			BUCKA {
+ 				regulator-name = "VBUCKA";
+@@ -38,12 +52,20 @@ Example 1) DA9211
+ 		};
+ 	};
+ 
+-Example 2) DA92113
++Example 2) DA9213
+ 	pmic: da9213@68 {
+ 		compatible = "dlg,da9213";
+ 		reg = <0x68>;
+ 		interrupts = <3 27>;
+ 
++		bucka-uses-gpio;
++		bucka-enable-platform-gpio = <&gpio 27 0>;
++		bucka-enable-init-state = <0>;
++
++		buckb-uses-gpio;
++		buckb-enable-platform-gpio = <&gpio 17 0>;
++		buckb-enable-init-state = <0>;
++
+ 		regulators {
+ 			BUCKA {
+ 				regulator-name = "VBUCKA";
+diff --git a/drivers/regulator/da9211-regulator.c b/drivers/regulator/da9211-regulator.c
+index c78d210..2d9a38a 100644
+--- a/drivers/regulator/da9211-regulator.c
++++ b/drivers/regulator/da9211-regulator.c
+@@ -24,6 +24,7 @@
+ #include <linux/regmap.h>
+ #include <linux/irq.h>
+ #include <linux/interrupt.h>
++#include <linux/of_gpio.h>
+ #include <linux/regulator/of_regulator.h>
+ #include <linux/regulator/da9211.h>
+ #include "da9211-regulator.h"
+@@ -248,7 +249,7 @@ static struct da9211_pdata *da9211_parse_regulators_dt(
+ {
+ 	struct da9211_pdata *pdata;
+ 	struct device_node *node;
+-	int i, num, n;
++	int i, num, n, gpio;
+ 
+ 	node = of_get_child_by_name(dev->of_node, "regulators");
+ 	if (!node) {
+@@ -276,10 +277,42 @@ static struct da9211_pdata *da9211_parse_regulators_dt(
+ 			continue;
+ 
+ 		pdata->init_data[n] = da9211_matches[i].init_data;
+-
++		pdata->reg_node[n] = da9211_matches[i].of_node;
+ 		n++;
+ 	}
+ 
++	if (of_get_property(dev->of_node, "bucka-uses-gpio", NULL)) {
++		gpio = of_get_named_gpio(dev->of_node,
++					"bucka-enable-platform-gpio", 0);
++		if (!gpio_is_valid(gpio)) {
++			dev_err(dev, "invalid gpio: %d\n", gpio);
++			return ERR_PTR(-EINVAL);
++		}
++		pdata->buck_data[0].gpio_ren = gpio;
++
++		if (of_property_read_u32(dev->of_node,
++				"bucka-enable-init-state",
++				&pdata->buck_data[0].ena_init_state)) {
++			pdata->buck_data[0].ena_init_state = 0;
++		}
++	}
++
++	if (of_get_property(dev->of_node, "buckb-uses-gpio", NULL)) {
++		gpio = of_get_named_gpio(dev->of_node,
++					"buckb-enable-platform-gpio", 0);
++		if (!gpio_is_valid(gpio)) {
++			dev_err(dev, "invalid gpio: %d\n", gpio);
++			return ERR_PTR(-EINVAL);
++		}
++		pdata->buck_data[1].gpio_ren = gpio;
++
++		if (of_property_read_u32(dev->of_node,
++				"buckb-enable-init-state",
++				&pdata->buck_data[1].ena_init_state)) {
++			pdata->buck_data[1].ena_init_state = 0;
++		}
++	}
++
+ 	return pdata;
+ }
+ #else
+@@ -364,7 +397,17 @@ static int da9211_regulator_init(struct da9211 *chip)
+ 		config.dev = chip->dev;
+ 		config.driver_data = chip;
+ 		config.regmap = chip->regmap;
+-		config.of_node = chip->dev->of_node;
++		config.of_node = chip->pdata->reg_node[i];
++
++		if (chip->pdata->buck_data[i].gpio_ren) {
++			config.ena_gpio = chip->pdata->buck_data[i].gpio_ren;
++
++			if (chip->pdata->buck_data[i].ena_init_state == 0)
++				config.ena_gpio_flags = GPIOF_OUT_INIT_LOW;
++			else
++				config.ena_gpio_flags = GPIOF_OUT_INIT_HIGH;
++				config.ena_gpio_invert = 0;
++		}
+ 
+ 		chip->rdev[i] = devm_regulator_register(chip->dev,
+ 			&da9211_regulators[i], &config);
+diff --git a/drivers/regulator/da9211-regulator.h b/drivers/regulator/da9211-regulator.h
+index 93fa9df..2a88190 100644
+--- a/drivers/regulator/da9211-regulator.h
++++ b/drivers/regulator/da9211-regulator.h
+@@ -182,6 +182,7 @@
+ #define	DA9211_BUCKA_GPI_GPIO3		0x06
+ #define	DA9211_BUCKA_PD_DIS			0x08
+ #define	DA9211_VBUCKA_SEL			0x10
++#define	DA9211_VBUCKA_SEL_MASK		0x10
+ #define	DA9211_VBUCKA_SEL_A			0x00
+ #define	DA9211_VBUCKA_SEL_B			0x10
+ #define	DA9211_VBUCKA_GPI_SHIFT		5
+diff --git a/include/linux/regulator/da9211.h b/include/linux/regulator/da9211.h
+index 5479394..8748423 100644
+--- a/include/linux/regulator/da9211.h
++++ b/include/linux/regulator/da9211.h
+@@ -25,6 +25,13 @@ enum da9211_chip_id {
+ 	DA9213,
+ };
+ 
++struct da9211_buck_data {
++	/* gpio of platform for buck eanble/disable */
++	int gpio_ren;
++	/* init state of gpio_ren */
++	int ena_init_state;
++};
++
+ struct da9211_pdata {
+ 	/*
+ 	 * Number of buck
+@@ -32,6 +39,8 @@ struct da9211_pdata {
+ 	 * 2 : 2 phase 2 buck
+ 	 */
+ 	int num_buck;
++	struct da9211_buck_data buck_data[DA9211_MAX_REGULATORS];
++	struct device_node *reg_node[DA9211_MAX_REGULATORS];
+ 	struct regulator_init_data *init_data[DA9211_MAX_REGULATORS];
+ };
+ #endif
+-- 
+end-of-patch for regulator: da9211: fix unmatched of_node and add gpio control V1
 
