@@ -1,210 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260AbbAOCvJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 21:51:09 -0500
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:47113 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893AbbAOCvH (ORCPT
+	id S1751370AbbAODEW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 22:04:22 -0500
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:49580 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750779AbbAODEV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 21:51:07 -0500
+	Wed, 14 Jan 2015 22:04:21 -0500
+Message-ID: <54B72E2D.5000507@hitachi.com>
+Date: Thu, 15 Jan 2015 12:04:13 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-In-Reply-To: <20150115000305.GC12302@n2100.arm.linux.org.uk>
-References: <1421168344-5363-1-git-send-email-victor.kamensky@linaro.org>
-	<20150114112210.GF4050@arm.com>
-	<CAA3XUr2KUyafcnUggN7=xGNGSeRkkRtYtxZmwm4UC8sRCGup3g@mail.gmail.com>
-	<20150115000305.GC12302@n2100.arm.linux.org.uk>
-Date: Wed, 14 Jan 2015 18:51:06 -0800
-Message-ID: <CAA3XUr2ej57VxAF1D3tbhjcVFtgyvHWKQxMiTBJ9RcmYCUHekQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] perf symbols: Ignore mapping symbols on aarch64
-From: Victor Kamensky <victor.kamensky@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Will Deacon <will.deacon@arm.com>, Avi Kivity <avi@cloudius-systems.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        Anton Blanchard <anton@samba.org>, David Ahern <dsahern@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Namhyung Kim <namhyung@kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Dave P Martin <Dave.Martin@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Josh Poimboeuf <jpoimboe@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        live-patching@vger.kernel.org, linux-next@vger.kernel.org
+Subject: Re: [PATCH 2/2] kprobes: compile out IPMODIFY support if ftrace doesn't
+ support it
+References: <alpine.LNX.2.00.1412221412360.1680@pobox.suse.cz> <20141223094607.GA16445@infradead.org> <20141223151056.GA4789@treble.redhat.com> <20141226155613.36dd95b9@canb.auug.org.au> <20150107144317.61ab2080877a4d8227990551@linux-foundation.org> <alpine.LNX.2.00.1501072346400.15299@pobox.suse.cz> <20150107153006.60ed354e3458f402e6819b9e@linux-foundation.org> <alpine.LNX.2.00.1501080037030.15299@pobox.suse.cz> <20150107155701.4839545f63701412003edd88@linux-foundation.org> <alpine.LNX.2.00.1501080104190.15299@pobox.suse.cz> <54B3C1DD.6090400@hitachi.com> <alpine.LNX.2.00.1501132345080.4162@pobox.suse.cz> <20150113211223.18908f21@grimm.local.home> <alpine.LNX.2.00.1501140945520.4162@pobox.suse.cz> <alpine.LNX.2.00.1501140947540.4162@pobox.suse.cz>
+In-Reply-To: <alpine.LNX.2.00.1501140947540.4162@pobox.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 January 2015 at 16:03, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Wed, Jan 14, 2015 at 10:38:38AM -0800, Victor Kamensky wrote:
->> >From fed6caab410ddcaf487ff23a3908eca129e50b89 Mon Sep 17 00:00:00 2001
->> From: Victor Kamensky <victor.kamensky@linaro.org>
->> Date: Wed, 14 Jan 2015 07:42:41 -0800
->> Subject: [PATCH 3/3] perf symbols: improve abi compliance in arm mapping
->>  symbols handling
->>
->> Both Arm and Aarch64 ELF ABI allow mapping symbols be in from
->> either "$d" or "$d.<any>". But current code that handles mapping
->> symbols only deals with the first, dollar character and a single
->> letter, case.
->>
->> The patch adds handling of the second case with period
->> followed by any characters.
->>
->> Suggested-by: Will Deacon <will.deacon@arm.com>
->> Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
->
-> I wonder if it would make more sense to re-use the "is_arm_mapping_symbol"
-> thing which we have in kernel/module.c and scripts/kallsyms.c - it
-> seems silly to re-invent code which we already have to detect these
-> symbols.
+(2015/01/14 17:48), Jiri Kosina wrote:
+> If ftrace doesn't claim to support IPMODIFY support, there is no need to 
+> compile IPMODIFY support in kprobes either.
+> 
 
-Thanks for pointing this out. I did not know about
-"is_arm_mapping_symbol" function.
+This looks good to me :)
 
-Do you suggest we copy one of those functions into tools/perf?
-Since tools/perf is separate user-land utility I don't see easy way
-how can we reuse those directly.
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
-Also those functions check for mapping symbols
-seems to be more efficient that one I come with, for example
-one from scripts/kallsyms.c
+Thanks!
 
-static inline int is_arm_mapping_symbol(const char *str)
-{
-    return str[0] == '$' && strchr("axtd", str[1])
-           && (str[2] == '\0' || str[2] == '.');
-}
+> Signed-off-by: Jiri Kosina <jkosina@suse.cz>
+> ---
+>  kernel/kprobes.c | 8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+> index 06f5830..49a69d7 100644
+> --- a/kernel/kprobes.c
+> +++ b/kernel/kprobes.c
+> @@ -912,7 +912,7 @@ static struct kprobe *alloc_aggr_kprobe(struct kprobe *p)
+>  }
+>  #endif /* CONFIG_OPTPROBES */
+>  
+> -#ifdef CONFIG_KPROBES_ON_FTRACE
+> +#if defined(CONFIG_KPROBES_ON_FTRACE) && (ftrace_ipmodify_supported == 1)
+>  static struct ftrace_ops kprobe_ftrace_ops __read_mostly = {
+>  	.func = kprobe_ftrace_handler,
+>  	.flags = FTRACE_OPS_FL_SAVE_REGS | FTRACE_OPS_FL_IPMODIFY,
+> @@ -957,7 +957,7 @@ static void disarm_kprobe_ftrace(struct kprobe *p)
+>  			   (unsigned long)p->addr, 1, 0);
+>  	WARN(ret < 0, "Failed to disarm kprobe-ftrace at %p (%d)\n", p->addr, ret);
+>  }
+> -#else	/* !CONFIG_KPROBES_ON_FTRACE */
+> +#else	/* !CONFIG_KPROBES_ON_FTRACE || ftrace_ipmodify_supported == 0 */
+>  #define prepare_kprobe(p)	arch_prepare_kprobe(p)
+>  #define arm_kprobe_ftrace(p)	do {} while (0)
+>  #define disarm_kprobe_ftrace(p)	do {} while (0)
+> @@ -1416,12 +1416,12 @@ int __weak arch_check_ftrace_location(struct kprobe *p)
+>  
+>  	ftrace_addr = ftrace_location((unsigned long)p->addr);
+>  	if (ftrace_addr) {
+> -#ifdef CONFIG_KPROBES_ON_FTRACE
+> +#if defined(CONFIG_KPROBES_ON_FTRACE) && (ftrace_ipmodify_supported == 1)
+>  		/* Given address is not on the instruction boundary */
+>  		if ((unsigned long)p->addr != ftrace_addr)
+>  			return -EILSEQ;
+>  		p->flags |= KPROBE_FLAG_FTRACE;
+> -#else	/* !CONFIG_KPROBES_ON_FTRACE */
+> +#else	/* !CONFIG_KPROBES_ON_FTRACE || ftrace_ipmodify_supported == 0 */
+>  		return -EINVAL;
+>  #endif
+>  	}
+> 
 
-But it seems that they are somewhat accurate: because they bundle
-EM_ARM and EM_AARCH64 into one case. According to ABIs
-for EM_ARM we have $a, $t, $d, $a.<any>, $t.<any>, $d.<any>;
-and for EM_AARCH64 we have $x, $d, $x.<any>, $d.<any>.
-
-How about the following two variants of the patch. It follows the same
-mapping handling logic as in other 3 copies of is_arm_mapping_symbol
-function in kernel, but it still separate copy in tools/perf code. Personally I
-prefer variant 1, but I am fine with variant 2 too, because practically it
-will be OK.
-
-Variant 1 (as addition to this patch, as above):
-
->From e08d348bd72d406d8939993d266729d805577c4b Mon Sep 17 00:00:00 2001
-From: Victor Kamensky <victor.kamensky@linaro.org>
-Date: Wed, 14 Jan 2015 07:42:41 -0800
-Subject: [PATCH 3/3] perf symbols: improve abi compliance in arm mapping
- symbols handling
-
-Both Arm and Aarch64 ELF ABI allow mapping symbols be in from
-either "$d" or "$d.<any>". But current code that handles mapping
-symbols only deals with the first, dollar character and a single
-letter, case.
-
-The patch adds handling of the second case with period
-followed by any characters.
-
-Suggested-by: Russell King <linux@arm.linux.org.uk>
-Suggested-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
----
- tools/perf/util/symbol-elf.c | 9 ++++-----
- 1 file changed, 4 insertions(+), 5 deletions(-)
-
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index 1e188dd..a038c98 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -857,17 +857,16 @@ int dso__load_sym(struct dso *dso, struct map *map,
-          * don't identify functions, so will confuse the profile
-          * output: */
-         if (ehdr.e_machine == EM_ARM) {
--            if (!strcmp(elf_name, "$a") ||
--                !strcmp(elf_name, "$d") ||
--                !strcmp(elf_name, "$t"))
-+                        if (elf_name[0] == '$' && strchr("adt", elf_name[1])
-+                        && (elf_name[2] == '\0' || elf_name[2] == '.'))
-                 continue;
-         }
-         /* Reject Aarch64 ELF "mapping symbols": these aren't unique and
-          * don't identify functions, so will confuse the profile
-          * output: */
-         if (ehdr.e_machine == EM_AARCH64) {
--            if (!strcmp(elf_name, "$x") ||
--                !strcmp(elf_name, "$d"))
-+                        if (elf_name[0] == '$' && strchr("dx", elf_name[1])
-+                        && (elf_name[2] == '\0' || elf_name[2] == '.'))
-                 continue;
-         }
 
 -- 
-1.9.3
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-Variant 2 instead of patch posted with current subject:
 
- From c8d08ebddc61203daf21b17c891c26c1d08e14f1 Mon Sep 17 00:00:00 2001
-From: Victor Kamensky <victor.kamensky@linaro.org>
-Date: Mon, 12 Jan 2015 14:13:36 -0800
-Subject: [PATCH 1/2] perf symbols: Ignore mapping symbols on aarch64
-
-Aarch64 ELF files use mapping symbols with special names $x, $d
-to identify regions of Aarch64 code (see Aarch64 ELF ABI - "ARM
-IHI 0056B", section "4.5.4 Mapping symbols").
-
-The patch filters out these symbols at load time, similar to
-"696b97a perf symbols: Ignore mapping symbols on ARM" changes
-done for ARM before V8.
-
-Also added handling of mapping symbols that has format
-"$d.<any>" and similar for both cases.
-
-Note we are not making difference between EM_ARM and
-EM_AARCH64 mapping symbols instead code handles superset
-of both.
-
-Signed-off-by: Victor Kamensky <victor.kamensky@linaro.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Adrian Hunter <adrian.hunter@intel.com>
-Cc: Jiri Olsa <jolsa@redhat.com>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Avi Kivity <avi@cloudius-systems.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Anton Blanchard <anton@samba.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Dave Martin <Dave.Martin@arm.com>
----
- tools/perf/util/symbol-elf.c | 7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
-
-diff --git a/tools/perf/util/symbol-elf.c b/tools/perf/util/symbol-elf.c
-index 06fcd1b..b2eb0f9 100644
---- a/tools/perf/util/symbol-elf.c
-+++ b/tools/perf/util/symbol-elf.c
-@@ -856,10 +856,9 @@ int dso__load_sym(struct dso *dso, struct map *map,
-         /* Reject ARM ELF "mapping symbols": these aren't unique and
-          * don't identify functions, so will confuse the profile
-          * output: */
--        if (ehdr.e_machine == EM_ARM) {
--            if (!strcmp(elf_name, "$a") ||
--                !strcmp(elf_name, "$d") ||
--                !strcmp(elf_name, "$t"))
-+        if (ehdr.e_machine == EM_ARM || ehdr.e_machine == EM_AARCH64) {
-+                        if (elf_name[0] == '$' && strchr("adtx", elf_name[1])
-+                        && (elf_name[2] == '\0' || elf_name[2] == '.'))
-                 continue;
-         }
-
--- 
-1.9.3
-
-Thanks,
-Victor
-
-> --
-> FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
-> according to speedtest.net.
