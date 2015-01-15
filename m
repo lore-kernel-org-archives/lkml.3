@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753254AbbAOMv6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 07:51:58 -0500
-Received: from mail-lb0-f175.google.com ([209.85.217.175]:42047 "EHLO
-	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751470AbbAOMv5 (ORCPT
+	id S1753780AbbAOMwU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 07:52:20 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:59292 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753428AbbAOMwS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 07:51:57 -0500
-From: Dmitry Osipenko <digetx@gmail.com>
-To: digetx@gmail.com, Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>
-Cc: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ARM: tegra20: cpuidle: remove unnecessary "resettable" status clear
-Date: Thu, 15 Jan 2015 15:49:37 +0300
-Message-Id: <1421326202-29845-1-git-send-email-digetx@gmail.com>
-X-Mailer: git-send-email 2.2.1
+	Thu, 15 Jan 2015 07:52:18 -0500
+From: Kalle Valo <kvalo@codeaurora.org>
+To: Arend van Spriel <arend@broadcom.com>
+Cc: "Fu\, Zhonghui" <zhonghui.fu@linux.intel.com>, <brudley@broadcom.com>,
+        Franky Lin <frankyl@broadcom.com>, <meuleman@broadcom.com>,
+        <linville@tuxdriver.com>, <pieterpg@broadcom.com>,
+        <hdegoede@redhat.com>, <wens@csie.org>,
+        <linux-wireless@vger.kernel.org>, <brcm80211-dev-list@broadcom.com>,
+        <netdev@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] brcmfmac: avoid duplicated suspend/resume operation
+References: <54B36C88.3030609@linux.intel.com> <54B39B59.8000907@broadcom.com>
+Date: Thu, 15 Jan 2015 14:52:09 +0200
+In-Reply-To: <54B39B59.8000907@broadcom.com> (Arend van Spriel's message of
+	"Mon, 12 Jan 2015 11:00:57 +0100")
+Message-ID: <877fwotddy.fsf@kamboji.qca.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CPU1 "resettable" status is already cleared by final suspend function in case
-of suspend abortion and by reset handler in case of completed CPU powergate,
-no point to do it again.
+Arend van Spriel <arend@broadcom.com> writes:
 
-Signed-off-by: Dmitry Osipenko <digetx@gmail.com>
----
- arch/arm/mach-tegra/cpuidle-tegra20.c | 2 --
- 1 file changed, 2 deletions(-)
+> On 01/12/15 07:41, Fu, Zhonghui wrote:
+>>  From 8685c3c2746b4275fc808d9db23c364b2f54b52a Mon Sep 17 00:00:00 2001
+>> From: Zhonghui Fu<zhonghui.fu@linux.intel.com>
+>> Date: Mon, 12 Jan 2015 14:25:46 +0800
+>> Subject: [PATCH] brcmfmac: avoid duplicated suspend/resume operation
+>>
+>> WiFi chip has 2 SDIO functions, and PM core will trigger
+>> twice suspend/resume operations for one WiFi chip to do
+>> the same things. This patch avoid this case.
+>>
+>> Acked-by: Arend van Spriel<arend@broadcom.com>
+>> Acked-by: Sergei Shtylyov<sergei.shtylyov@cogentembedded.com>
+>> Signed-off-by: Zhonghui Fu<zhonghui.fu@linux.intel.com>
+>
+> This patch needs to be rebased.
+>
+> Kalle,
+>
+> Please drop this one.
 
-diff --git a/arch/arm/mach-tegra/cpuidle-tegra20.c b/arch/arm/mach-tegra/cpuidle-tegra20.c
-index b30bf5c..ad6158e 100644
---- a/arch/arm/mach-tegra/cpuidle-tegra20.c
-+++ b/arch/arm/mach-tegra/cpuidle-tegra20.c
-@@ -158,8 +158,6 @@ static bool tegra20_idle_enter_lp2_cpu_1(struct cpuidle_device *dev,
- 
- 	cpu_suspend(0, tegra20_sleep_cpu_secondary_finish);
- 
--	tegra20_cpu_clear_resettable();
--
- 	clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &dev->cpu);
- 
- 	return true;
+Ok, dropped. I'll wait for the rebase.
+
 -- 
-2.2.1
-
+Kalle Valo
