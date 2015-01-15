@@ -1,140 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754678AbbAORIG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 12:08:06 -0500
-Received: from mta-out1.inet.fi ([62.71.2.203]:34909 "EHLO jenni2.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754396AbbAORIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 12:08:04 -0500
-Date: Thu, 15 Jan 2015 19:07:31 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Andrew Lutomirski <luto@mit.edu>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Darren Hart <dvhart@infradead.org>
-Subject: Re: [GIT PULL] platform-drivers-x86 for 3.19
-Message-ID: <20150115170731.GB21675@node.dhcp.inet.fi>
-References: <20150112183831.GA99900@vmdeb7>
- <CAObL_7FCiZJuTQNUfqjoxaRscB+_2fvwpnXDt3d8E+0dFm=i6A@mail.gmail.com>
- <20150112200331.GA23277@node.dhcp.inet.fi>
- <CAObL_7FwxW=oq9L+POVx_4S9HSZW2QM3bnTNW37rDsUA=-U3FA@mail.gmail.com>
- <20150112203003.GB23277@node.dhcp.inet.fi>
- <CAObL_7HNXAxnoNx-K=yJ1C9kkffc9Rf=EmVGJ+=K+5S40m7jSQ@mail.gmail.com>
- <20150113175609.GB130525@vmdeb7>
- <CAObL_7HDckMzgbbaKEH=iYwRdn24ANy5U8EMp=A3ODhWMt_2bw@mail.gmail.com>
- <20150115164054.GA21675@node.dhcp.inet.fi>
- <CAObL_7GvVtiBye4s7=EoV_wuBzGMBZLFnqYwNG5gkKW4SjneVQ@mail.gmail.com>
+	id S1755058AbbAORIY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 12:08:24 -0500
+Received: from mail-we0-f176.google.com ([74.125.82.176]:35766 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754707AbbAORIV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 12:08:21 -0500
+Date: Thu, 15 Jan 2015 18:08:17 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Greg Thelen <gthelen@google.com>, linux-mm@kvack.org,
+        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch 2/2] mm: memcontrol: default hierarchy interface for
+ memory
+Message-ID: <20150115170817.GE7008@dhcp22.suse.cz>
+References: <1420776904-8559-1-git-send-email-hannes@cmpxchg.org>
+ <1420776904-8559-2-git-send-email-hannes@cmpxchg.org>
+ <20150114153425.GF4706@dhcp22.suse.cz>
+ <20150114171944.GB32040@phnom.home.cmpxchg.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAObL_7GvVtiBye4s7=EoV_wuBzGMBZLFnqYwNG5gkKW4SjneVQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23.1 (2014-03-12)
+In-Reply-To: <20150114171944.GB32040@phnom.home.cmpxchg.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 15, 2015 at 09:00:44AM -0800, Andrew Lutomirski wrote:
-> On Jan 15, 2015 8:43 AM, "Kirill A. Shutemov" <kirill@shutemov.name> wrote:
-> >
-> > On Tue, Jan 13, 2015 at 10:04:55AM -0800, Andrew Lutomirski wrote:
-> > > On Tue, Jan 13, 2015 at 9:56 AM, Darren Hart <dvhart@infradead.org> wrote:
-> > > > On Mon, Jan 12, 2015 at 02:12:44PM -0800, Andrew Lutomirski wrote:
-> > > >> On Mon, Jan 12, 2015 at 12:30 PM, Kirill A. Shutemov
-> > > >> <kirill@shutemov.name> wrote:
-> > > >> > On Mon, Jan 12, 2015 at 12:05:45PM -0800, Andrew Lutomirski wrote:
-> > > >> >> On Mon, Jan 12, 2015 at 12:03 PM, Kirill A. Shutemov
-> > > >> >> <kirill@shutemov.name> wrote:
-> > > >> >> > On Mon, Jan 12, 2015 at 10:42:11AM -0800, Andrew Lutomirski wrote:
-> > > >> >> >> On Mon, Jan 12, 2015 at 10:38 AM, Darren Hart <dvhart@infradead.org> wrote:
-> > > >> >> >> > On Mon, Jan 12, 2015 at 12:58:02AM +0200, Kirill A. Shutemov wrote:
-> > > >> >> >> >> On Thu, Dec 18, 2014 at 09:51:27AM -0800, Darren Hart wrote:
-> > > >> >> >> >> > thinkpad-acpi using software mute simplifies the driver and the user experience
-> > > >> >> >> >> > significantly.
-> > > >> >> >> >>
-> > > >> >> >> >> Except when it doesn't.
-> > > >> >> >> >>
-> > > >> >> >> >> I'm probably in minority, but I don't use fancy userspace to mess with my
-> > > >> >> >> >> mixer and the mute button worked just fine for me before the change.
-> > > >> >> >> >> Wasted half an hour to find out what happened is not a pure win from user
-> > > >> >> >> >> experience point of view.
-> > > >> >> >> >>
-> > > >> >> >> >> Is it really necessary to have software_mute_requested == true by default?
-> > > >> >> >> >> Can fancy userspace ask for desired behaviour instead and change kernel to
-> > > >> >> >> >> not send hotkeys change notification until software_mute is enabled?
-> > > >> >> >> >>
-> > > >> >> >> >> --
-> > > >> >> >> >>  Kirill A. Shutemov
-> > > >> >> >> >>
-> > > >> >> >> >
-> > > >> >> >> > Thanks for the report Kirill,
-> > > >> >> >> >
-> > > >> >> >> > Andy, we're at RC4, so if we need to fix (or revert) this fix, we only have a
-> > > >> >> >> > couple weeks to do so.
-> > > >> >> >> >
-> > > >> >> >> > Kirill, to define the scope of the problem, if you specify
-> > > >> >> >> > software_mute_requested as false on the kernel command line, does your system
-> > > >> >> >> > function as expected?
-> > > >> >> >>
-> > > >> >> >> If I understood Kirill's email correctly, the only issue is that he
-> > > >> >> >> liked the old behavior.  Kirill, is that correct?
-> > > >> >> >
-> > > >> >> > Yes. For now I use thinkpad_acpi.software_mute=0 to get old behaviour.
-> > > >> >> >
-> > > >> >>
-> > > >> >> What aspect of the old behavior is better than the new default behavior?
-> > > >> >
-> > > >> > It's not necessary better. The new behavior just broke my use-case.
-> > > >> >
-> > > >> > I don't have anything in my system what would react on KEY_MUTE and I used
-> > > >> > the functionality platform provides until it suddenly stopped working.
-> > > >> >
-> > > >> > I personally can live with new thinkpad_acpi. I'll probably update my
-> > > >> > configuration to react on the software button.
-> > > >> >
-> > > >> > But who else will get frustrated after update to v3.19?
-> > > >>
-> > > >> Can you try the equivalent of:
-> > > >>
-> > > >> bindsym XF86AudioMute exec amixer -q set Master toggle
-> > > >>
-> > > >> for your desktop environment?  Note that this is exactly what you'd do
-> > > >> if you were using any laptop that wasn't a thinkpad.
-> > > >
-> > > > Unless we hear back from Kirill on why this isn't workable, I'm inclined to
-> > > > leave this as is. Between the kernel module option and this keybinding,
-> > > > equivalent behavior can be easily achieved, and the general use case is
-> > > > significantly improved.
-> > > >
-> > > > The current gap appears to be the mute LED in the button itself, which can be
-> > > > addressed moving forward.
-> > >
-> > > I should have clarified this better.  The command:
-> > >
-> > > amixer -q set Master toggle
-> > >
-> > > should toggle the mute LED in sync with the master mixer on all
-> > > ThinkPad models with a mute LED.  This works on my X220, and Borislav
-> > > confirmed off-list that it works on his X230.  If there's a ThinkPad
-> > > with a mute LED on which this doesn't work, then IMO it's a bug and
-> > > should be fixed.
-> >
-> > Okay. Mute and mute led works. Any idea how to get mic mute led work?
-> > What happend to your patch on the topic?
-> >
-> > http://permalink.gmane.org/gmane.linux.drivers.platform.x86.devel/1962
+On Wed 14-01-15 12:19:44, Johannes Weiner wrote:
+> On Wed, Jan 14, 2015 at 04:34:25PM +0100, Michal Hocko wrote:
+> > On Thu 08-01-15 23:15:04, Johannes Weiner wrote:
+[...]
+> > > @@ -2322,6 +2325,12 @@ static bool shrink_zone(struct zone *zone, struct scan_control *sc,
+> > >  			struct lruvec *lruvec;
+> > >  			int swappiness;
+> > >  
+> > > +			if (mem_cgroup_low(root, memcg)) {
+> > > +				if (!sc->may_thrash)
+> > > +					continue;
+> > > +				mem_cgroup_events(memcg, MEMCG_LOW, 1);
+> > > +			}
+> > > +
+> > >  			lruvec = mem_cgroup_zone_lruvec(zone, memcg);
+> > >  			swappiness = mem_cgroup_swappiness(memcg);
+> > >  
+> > > @@ -2343,8 +2352,7 @@ static bool shrink_zone(struct zone *zone, struct scan_control *sc,
+> > >  				mem_cgroup_iter_break(root, memcg);
+> > >  				break;
+> > >  			}
+> > > -			memcg = mem_cgroup_iter(root, memcg, &reclaim);
+> > > -		} while (memcg);
+> > > +		} while ((memcg = mem_cgroup_iter(root, memcg, &reclaim)));
+> > 
+> > I had a similar code but then I could trigger quick priority drop downs
+> > during parallel reclaim with multiple low limited groups. I've tried to
+> > address that by retrying shrink_zone if it hasn't called shrink_lruvec
+> > at all. Still not ideal because it can livelock theoretically, but I
+> > haven't seen that in my testing.
 > 
-> It was addressed differently -- the mic mute works like the mute
-> button as a result of:
-> 
-> b317b032d2dc ALSA: hda - Split Thinkpad ACPI-related code
-> b67ae3f1c97e ALSA: hda - Enable Thinkpad mute/micmute LEDs for Realtek
-> 08cf680ccafd ALSA: hda - add connection to thinkpad_acpi to control
-> mute/micmute LEDs
-> 
-> On my X220, "amixer set Capture toggle" toggles the mute LED.
+> Do you remember the circumstances and the exact configuration?
 
-Oh. Thanks. I've tried with "Mic", not "Capture".
+Well, I was testing heavy parallel memory intensive load (combination of
+anon and file) in one memcg and many (hundreds of) idle memcgs to see
+how much overhead memcg traversing would cost us. And I misconfigured by
+setting idle memcgs low-limit to -1 instead of 0. There is nothing
+running in them.
+I've noticed that I can see more pages reclaimed than expected and also
+higher runtime which turned out to be related to longer stalls during
+reclaim rather than the cost of the memcg reclaim iterator.  Debugging
+has shown that many direct reclaimers were racing over low-limited
+groups and dropped to lower priorities. The race window was apparently
+much much smaller than a noop shrink_lruvec run.
+
+So in a sense this was a mis-configured system because I do not expect
+so many low limited groups in real life but there was still something
+reclaimable so the machine wasn't really over-committed. So this points
+to an issue which might happen, albeit in a smaller scale, if there are
+many groups, heavy reclaim and some reclaimers unlucky to race and see
+only low-limited groups.
+ 
+> I tested this with around 30 containerized kernel build jobs whose low
+> boundaries pretty much added up to the available physical memory and
+> never observed this.  That being said, thrashing is an emergency path
+> and users should really watch the memory.events low counter.  After
+> all, if global reclaim frequently has to ignore the reserve settings,
+> what's the point of having them in the first place?
+
+Sure, over-committed low limit is a misconfiguration. But this is not
+what happened in my testing.
+
+> So while I see that this might burn some cpu cycles when the system is
+> misconfigured, and that we could definitely be smarter about this, I'm
+> not convinced we have to rush a workaround before moving ahead with
+> this patch, especially not one that is prone to livelock the system.
+
+OK, then do not merge it to the original patch. If for nothing else then
+for bisectability. I will post a patch separately. I still think we
+should consider a way how to address it sooner or later because the
+result would be non trivial to debug.
 
 -- 
- Kirill A. Shutemov
+Michal Hocko
+SUSE Labs
