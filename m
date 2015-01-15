@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755510AbbAONMy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 08:12:54 -0500
-Received: from nivc-ms1.auriga.com ([80.240.102.146]:17926 "EHLO
+	id S1755517AbbAONNF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 08:13:05 -0500
+Received: from nivc-ms1.auriga.com ([80.240.102.146]:17930 "EHLO
 	nivc-ms1.auriga.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753999AbbAONMw (ORCPT
+	with ESMTP id S1754118AbbAONNB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 08:12:52 -0500
+	Thu, 15 Jan 2015 08:13:01 -0500
 From: Aleksey Makarov <aleksey.makarov@auriga.com>
 To: <linux-mips@linux-mips.org>
 CC: <linux-kernel@vger.kernel.org>, David Daney <david.daney@cavium.com>,
         Aleksey Makarov <aleksey.makarov@auriga.com>,
-        Leonid Rosenboim <lrosenboim@caviumnetworks.com>,
         Ralf Baechle <ralf@linux-mips.org>
-Subject: [PATCH v3 07/15] MIPS: OCTEON: Add ability to used an initrd from a named memory block.
-Date: Thu, 15 Jan 2015 16:11:11 +0300
-Message-ID: <1421327487-28679-8-git-send-email-aleksey.makarov@auriga.com>
+Subject: [PATCH v3 08/15] MIPS: OCTEON: Add little-endian support to asm/octeon/octeon.h
+Date: Thu, 15 Jan 2015 16:11:12 +0300
+Message-ID: <1421327487-28679-9-git-send-email-aleksey.makarov@auriga.com>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <1421327487-28679-1-git-send-email-aleksey.makarov@auriga.com>
 References: <1421327487-28679-1-git-send-email-aleksey.makarov@auriga.com>
@@ -28,153 +27,242 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: David Daney <david.daney@cavium.com>
 
-If 'rd_name=xxx' is passed to the kernel, the named block with name
-'xxx' is used for the initrd.
+Also update union octeon_cvmemctl with new OCTEON II fields.
 
 Signed-off-by: David Daney <david.daney@cavium.com>
-Signed-off-by: Leonid Rosenboim <lrosenboim@caviumnetworks.com>
-[aleksey.makarov@auriga.com: conflict resolution]
+[aleksey.makarov@auriga.com: use __BITFIELD_FIELD]
 Signed-off-by: Aleksey Makarov <aleksey.makarov@auriga.com>
 ---
- arch/mips/cavium-octeon/setup.c  | 37 +++++++++++++++++++++++++++++++++----
- arch/mips/include/asm/bootinfo.h |  1 +
- arch/mips/kernel/setup.c         | 19 ++++++++++++++++---
- 3 files changed, 50 insertions(+), 7 deletions(-)
+ arch/mips/include/asm/octeon/octeon.h | 135 ++++++++++++++++++++++++++--------
+ 1 file changed, 105 insertions(+), 30 deletions(-)
 
-diff --git a/arch/mips/cavium-octeon/setup.c b/arch/mips/cavium-octeon/setup.c
-index 2d8a531..5da0fcc 100644
---- a/arch/mips/cavium-octeon/setup.c
-+++ b/arch/mips/cavium-octeon/setup.c
-@@ -28,6 +28,7 @@
- #include <linux/of_fdt.h>
- #include <linux/libfdt.h>
- #include <linux/kexec.h>
-+#include <linux/initrd.h>
+diff --git a/arch/mips/include/asm/octeon/octeon.h b/arch/mips/include/asm/octeon/octeon.h
+index 3e505a2..ba5df50 100644
+--- a/arch/mips/include/asm/octeon/octeon.h
++++ b/arch/mips/include/asm/octeon/octeon.h
+@@ -9,6 +9,7 @@
+ #define __ASM_OCTEON_OCTEON_H
  
- #include <asm/processor.h>
- #include <asm/reboot.h>
-@@ -264,6 +265,9 @@ static int octeon_uart;
+ #include <asm/octeon/cvmx.h>
++#include <asm/bitfield.h>
  
- extern asmlinkage void handle_int(void);
+ extern uint64_t octeon_bootmem_alloc_range_phys(uint64_t size,
+ 						uint64_t alignment,
+@@ -58,6 +59,7 @@ extern void octeon_io_clk_delay(unsigned long);
+ #define OCTOEN_SERIAL_LEN	20
  
-+/* If an initrd named block is specified, its name goes here. */
-+static char rd_name[64] __initdata;
+ struct octeon_boot_descriptor {
++#ifdef __BIG_ENDIAN_BITFIELD
+ 	/* Start of block referenced by assembly code - do not change! */
+ 	uint32_t desc_version;
+ 	uint32_t desc_size;
+@@ -109,77 +111,149 @@ struct octeon_boot_descriptor {
+ 	uint8_t mac_addr_base[6];
+ 	uint8_t mac_addr_count;
+ 	uint64_t cvmx_desc_vaddr;
++#else
++	uint32_t desc_size;
++	uint32_t desc_version;
++	uint64_t stack_top;
++	uint64_t heap_base;
++	uint64_t heap_end;
++	/* Only used by bootloader */
++	uint64_t entry_point;
++	uint64_t desc_vaddr;
++	/* End of This block referenced by assembly code - do not change! */
++	uint32_t stack_size;
++	uint32_t exception_base_addr;
++	uint32_t argc;
++	uint32_t heap_size;
++	/*
++	 * Argc count for application.
++	 * Warning low bit scrambled in little-endian.
++	 */
++	uint32_t argv[OCTEON_ARGV_MAX_ARGS];
 +
- /**
-  * Return non zero if we are currently running in the Octeon simulator
-  *
-@@ -812,6 +816,10 @@ void __init prom_init(void)
- 				MAX_MEMORY = 32ull << 30;
- 			if (*p == '@')
- 				RESERVE_LOW_MEM = memparse(p + 1, &p);
-+		} else if (strncmp(arg, "rd_name=", 8) == 0) {
-+			strncpy(rd_name, arg + 8, sizeof(rd_name));
-+			rd_name[sizeof(rd_name) - 1] = 0;
-+			goto append_arg;
- #ifdef CONFIG_KEXEC
- 		} else if (strncmp(arg, "crashkernel=", 12) == 0) {
- 			crashk_size = memparse(arg+12, &p);
-@@ -824,11 +832,15 @@ void __init prom_init(void)
- 			 * parse_crashkernel(arg, sysinfo->system_dram_size,
- 			 *		  &crashk_size, &crashk_base);
- 			 */
-+			goto append_arg;
- #endif
--		} else if (strlen(arcs_cmdline) + strlen(arg) + 1 <
--			   sizeof(arcs_cmdline) - 1) {
--			strcat(arcs_cmdline, " ");
--			strcat(arcs_cmdline, arg);
-+		} else {
-+append_arg:
-+			if (strlen(arcs_cmdline) + strlen(arg) + 1
-+				< sizeof(arcs_cmdline) - 1) {
-+				strcat(arcs_cmdline, " ");
-+				strcat(arcs_cmdline, arg);
-+			}
- 		}
- 	}
- 
-@@ -892,6 +904,23 @@ void __init plat_mem_setup(void)
- 	total = 0;
- 	crashk_end = 0;
- 
-+#ifdef CONFIG_BLK_DEV_INITRD
++#define  BOOT_FLAG_INIT_CORE		(1 << 0)
++#define  OCTEON_BL_FLAG_DEBUG		(1 << 1)
++#define  OCTEON_BL_FLAG_NO_MAGIC	(1 << 2)
++	/* If set, use uart1 for console */
++#define  OCTEON_BL_FLAG_CONSOLE_UART1	(1 << 3)
++	/* If set, use PCI console */
++#define  OCTEON_BL_FLAG_CONSOLE_PCI	(1 << 4)
++	/* Call exit on break on serial port */
++#define  OCTEON_BL_FLAG_BREAK		(1 << 5)
 +
-+	if (rd_name[0]) {
-+		const struct cvmx_bootmem_named_block_desc *initrd_block;
++	uint32_t core_mask;
++	uint32_t flags;
++	/* physical address of free memory descriptor block. */
++	uint32_t phy_mem_desc_addr;
++	/* DRAM size in megabyes. */
++	uint32_t dram_size;
++	/* CPU clock speed, in hz. */
++	uint32_t eclock_hz;
++	/* used to pass flags from app to debugger. */
++	uint32_t debugger_flags_base_addr;
++	/* SPI4 clock in hz. */
++	uint32_t spi_clock_hz;
++	/* DRAM clock speed, in hz. */
++	uint32_t dclock_hz;
++	uint8_t chip_rev_minor;
++	uint8_t chip_rev_major;
++	uint16_t chip_type;
++	uint8_t board_rev_minor;
++	uint8_t board_rev_major;
++	uint16_t board_type;
 +
-+		initrd_block = cvmx_bootmem_find_named_block(rd_name);
-+		if (initrd_block != NULL) {
-+			initrd_start = initrd_block->base_addr + PAGE_OFFSET;
-+			initrd_end = initrd_start + initrd_block->size;
-+			add_memory_region(initrd_block->base_addr,
-+				initrd_block->size, BOOT_MEM_INIT_RAM);
-+			initrd_in_reserved = 1;
-+			total += initrd_block->size;
-+		}
-+	}
++	uint64_t unused1[4]; /* Not even filled in by bootloader. */
++
++	uint64_t cvmx_desc_vaddr;
 +#endif
-+
- 	/*
- 	 * The Mips memory init uses the first memory location for
- 	 * some memory vectors. When SPARSEMEM is in use, it doesn't
-diff --git a/arch/mips/include/asm/bootinfo.h b/arch/mips/include/asm/bootinfo.h
-index b603804..93b7c57 100644
---- a/arch/mips/include/asm/bootinfo.h
-+++ b/arch/mips/include/asm/bootinfo.h
-@@ -105,6 +105,7 @@ struct boot_mem_map {
  };
  
- extern struct boot_mem_map boot_mem_map;
-+extern bool initrd_in_reserved;
+ union octeon_cvmemctl {
+ 	uint64_t u64;
+ 	struct {
+ 		/* RO 1 = BIST fail, 0 = BIST pass */
+-		uint64_t tlbbist:1;
++		__BITFIELD_FIELD(uint64_t tlbbist:1,
+ 		/* RO 1 = BIST fail, 0 = BIST pass */
+-		uint64_t l1cbist:1;
++		__BITFIELD_FIELD(uint64_t l1cbist:1,
+ 		/* RO 1 = BIST fail, 0 = BIST pass */
+-		uint64_t l1dbist:1;
++		__BITFIELD_FIELD(uint64_t l1dbist:1,
+ 		/* RO 1 = BIST fail, 0 = BIST pass */
+-		uint64_t dcmbist:1;
++		__BITFIELD_FIELD(uint64_t dcmbist:1,
+ 		/* RO 1 = BIST fail, 0 = BIST pass */
+-		uint64_t ptgbist:1;
++		__BITFIELD_FIELD(uint64_t ptgbist:1,
+ 		/* RO 1 = BIST fail, 0 = BIST pass */
+-		uint64_t wbfbist:1;
++		__BITFIELD_FIELD(uint64_t wbfbist:1,
+ 		/* Reserved */
+-		uint64_t reserved:22;
++		__BITFIELD_FIELD(uint64_t reserved:17,
++		/* OCTEON II - TLB replacement policy: 0 = bitmask LRU; 1 = NLU.
++		 * This field selects between the TLB replacement policies:
++		 * bitmask LRU or NLU. Bitmask LRU maintains a mask of
++		 * recently used TLB entries and avoids them as new entries
++		 * are allocated. NLU simply guarantees that the next
++		 * allocation is not the last used TLB entry. */
++		__BITFIELD_FIELD(uint64_t tlbnlu:1,
++		/* OCTEON II - Selects the bit in the counter used for
++		 * releasing a PAUSE. This counter trips every 2(8+PAUSETIME)
++		 * cycles. If not already released, the cnMIPS II core will
++		 * always release a given PAUSE instruction within
++		 * 2(8+PAUSETIME). If the counter trip happens to line up,
++		 * the cnMIPS II core may release the PAUSE instantly. */
++		__BITFIELD_FIELD(uint64_t pausetime:3,
++		/* OCTEON II - This field is an extension of
++		 * CvmMemCtl[DIDTTO] */
++		__BITFIELD_FIELD(uint64_t didtto2:1,
+ 		/* R/W If set, marked write-buffer entries time out
+ 		 * the same as as other entries; if clear, marked
+ 		 * write-buffer entries use the maximum timeout. */
+-		uint64_t dismarkwblongto:1;
++		__BITFIELD_FIELD(uint64_t dismarkwblongto:1,
+ 		/* R/W If set, a merged store does not clear the
+ 		 * write-buffer entry timeout state. */
+-		uint64_t dismrgclrwbto:1;
++		__BITFIELD_FIELD(uint64_t dismrgclrwbto:1,
+ 		/* R/W Two bits that are the MSBs of the resultant
+ 		 * CVMSEG LM word location for an IOBDMA. The other 8
+ 		 * bits come from the SCRADDR field of the IOBDMA. */
+-		uint64_t iobdmascrmsb:2;
++		__BITFIELD_FIELD(uint64_t iobdmascrmsb:2,
+ 		/* R/W If set, SYNCWS and SYNCS only order marked
+ 		 * stores; if clear, SYNCWS and SYNCS only order
+ 		 * unmarked stores. SYNCWSMARKED has no effect when
+ 		 * DISSYNCWS is set. */
+-		uint64_t syncwsmarked:1;
++		__BITFIELD_FIELD(uint64_t syncwsmarked:1,
+ 		/* R/W If set, SYNCWS acts as SYNCW and SYNCS acts as
+ 		 * SYNC. */
+-		uint64_t dissyncws:1;
++		__BITFIELD_FIELD(uint64_t dissyncws:1,
+ 		/* R/W If set, no stall happens on write buffer
+ 		 * full. */
+-		uint64_t diswbfst:1;
++		__BITFIELD_FIELD(uint64_t diswbfst:1,
+ 		/* R/W If set (and SX set), supervisor-level
+ 		 * loads/stores can use XKPHYS addresses with
+ 		 * VA<48>==0 */
+-		uint64_t xkmemenas:1;
++		__BITFIELD_FIELD(uint64_t xkmemenas:1,
+ 		/* R/W If set (and UX set), user-level loads/stores
+ 		 * can use XKPHYS addresses with VA<48>==0 */
+-		uint64_t xkmemenau:1;
++		__BITFIELD_FIELD(uint64_t xkmemenau:1,
+ 		/* R/W If set (and SX set), supervisor-level
+ 		 * loads/stores can use XKPHYS addresses with
+ 		 * VA<48>==1 */
+-		uint64_t xkioenas:1;
++		__BITFIELD_FIELD(uint64_t xkioenas:1,
+ 		/* R/W If set (and UX set), user-level loads/stores
+ 		 * can use XKPHYS addresses with VA<48>==1 */
+-		uint64_t xkioenau:1;
++		__BITFIELD_FIELD(uint64_t xkioenau:1,
+ 		/* R/W If set, all stores act as SYNCW (NOMERGE must
+ 		 * be set when this is set) RW, reset to 0. */
+-		uint64_t allsyncw:1;
++		__BITFIELD_FIELD(uint64_t allsyncw:1,
+ 		/* R/W If set, no stores merge, and all stores reach
+ 		 * the coherent bus in order. */
+-		uint64_t nomerge:1;
++		__BITFIELD_FIELD(uint64_t nomerge:1,
+ 		/* R/W Selects the bit in the counter used for DID
+ 		 * time-outs 0 = 231, 1 = 230, 2 = 229, 3 =
+ 		 * 214. Actual time-out is between 1x and 2x this
+ 		 * interval. For example, with DIDTTO=3, expiration
+ 		 * interval is between 16K and 32K. */
+-		uint64_t didtto:2;
++		__BITFIELD_FIELD(uint64_t didtto:2,
+ 		/* R/W If set, the (mem) CSR clock never turns off. */
+-		uint64_t csrckalwys:1;
++		__BITFIELD_FIELD(uint64_t csrckalwys:1,
+ 		/* R/W If set, mclk never turns off. */
+-		uint64_t mclkalwys:1;
++		__BITFIELD_FIELD(uint64_t mclkalwys:1,
+ 		/* R/W Selects the bit in the counter used for write
+ 		 * buffer flush time-outs (WBFLT+11) is the bit
+ 		 * position in an internal counter used to determine
+@@ -187,25 +261,26 @@ union octeon_cvmemctl {
+ 		 * 2x this interval. For example, with WBFLT = 0, a
+ 		 * write buffer expires between 2K and 4K cycles after
+ 		 * the write buffer entry is allocated. */
+-		uint64_t wbfltime:3;
++		__BITFIELD_FIELD(uint64_t wbfltime:3,
+ 		/* R/W If set, do not put Istream in the L2 cache. */
+-		uint64_t istrnol2:1;
++		__BITFIELD_FIELD(uint64_t istrnol2:1,
+ 		/* R/W The write buffer threshold. */
+-		uint64_t wbthresh:4;
++		__BITFIELD_FIELD(uint64_t wbthresh:4,
+ 		/* Reserved */
+-		uint64_t reserved2:2;
++		__BITFIELD_FIELD(uint64_t reserved2:2,
+ 		/* R/W If set, CVMSEG is available for loads/stores in
+ 		 * kernel/debug mode. */
+-		uint64_t cvmsegenak:1;
++		__BITFIELD_FIELD(uint64_t cvmsegenak:1,
+ 		/* R/W If set, CVMSEG is available for loads/stores in
+ 		 * supervisor mode. */
+-		uint64_t cvmsegenas:1;
++		__BITFIELD_FIELD(uint64_t cvmsegenas:1,
+ 		/* R/W If set, CVMSEG is available for loads/stores in
+ 		 * user mode. */
+-		uint64_t cvmsegenau:1;
++		__BITFIELD_FIELD(uint64_t cvmsegenau:1,
+ 		/* R/W Size of local memory in cache blocks, 54 (6912
+ 		 * bytes) is max legal value. */
+-		uint64_t lmemsz:6;
++		__BITFIELD_FIELD(uint64_t lmemsz:6,
++		;)))))))))))))))))))))))))))))))))
+ 	} s;
+ };
  
- extern void add_memory_region(phys_addr_t start, phys_addr_t size, long type);
- extern void detect_memory_region(phys_addr_t start, phys_addr_t sz_min,  phys_addr_t sz_max);
-diff --git a/arch/mips/kernel/setup.c b/arch/mips/kernel/setup.c
-index 0589290..28f231a 100644
---- a/arch/mips/kernel/setup.c
-+++ b/arch/mips/kernel/setup.c
-@@ -62,6 +62,7 @@ unsigned long mips_machtype __read_mostly = MACH_UNKNOWN;
- EXPORT_SYMBOL(mips_machtype);
- 
- struct boot_mem_map boot_mem_map;
-+bool initrd_in_reserved;
- 
- static char __initdata command_line[COMMAND_LINE_SIZE];
- char __initdata arcs_cmdline[COMMAND_LINE_SIZE];
-@@ -307,8 +308,14 @@ static void __init bootmem_init(void)
- 	 * as our memory range starting point. Once bootmem is inited we
- 	 * will reserve the area used for the initrd.
- 	 */
--	init_initrd();
--	reserved_end = (unsigned long) PFN_UP(__pa_symbol(&_end));
-+
-+	if (initrd_in_reserved) {
-+		init_initrd();
-+		reserved_end = (unsigned long) PFN_UP(__pa_symbol(&_end));
-+	} else {
-+		reserved_end = max_t(unsigned long, init_initrd(),
-+				     PFN_UP(__pa_symbol(&_end)));
-+	}
- 
- 	/*
- 	 * max_low_pfn is not a number of pages. The number of pages
-@@ -323,8 +330,14 @@ static void __init bootmem_init(void)
- 	for (i = 0; i < boot_mem_map.nr_map; i++) {
- 		unsigned long start, end;
- 
--		if (boot_mem_map.map[i].type != BOOT_MEM_RAM)
-+		switch (boot_mem_map.map[i].type) {
-+		case BOOT_MEM_RAM:
-+		case BOOT_MEM_INIT_RAM:
-+			break;
-+		default:
-+			/* Not usable memory */
- 			continue;
-+		}
- 
- 		start = PFN_UP(boot_mem_map.map[i].addr);
- 		end = PFN_DOWN(boot_mem_map.map[i].addr
 -- 
 2.2.2
 
