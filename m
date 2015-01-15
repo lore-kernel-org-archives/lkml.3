@@ -1,232 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752289AbbAOIMz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 03:12:55 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:39368 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045AbbAOIMx (ORCPT
+	id S1752356AbbAOIO3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 03:14:29 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:43934 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751656AbbAOIO1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 03:12:53 -0500
-Message-ID: <bca0eaf2183036ff6a913daea6e09ad9.squirrel@www.codeaurora.org>
-In-Reply-To: <5550127.3sXOcCISZN@wuerfel>
-References: <1420754626-30121-1-git-send-email-wstephen@codeaurora.org>
-    <5550127.3sXOcCISZN@wuerfel>
-Date: Thu, 15 Jan 2015 08:12:51 -0000
-Subject: Re: [PATCH] ethernet: atheros: Add nss-gmac driver
-From: wstephen@codeaurora.org
-To: "Arnd Bergmann" <arnd@arndb.de>
-Cc: "Stephen Wang" <wstephen@codeaurora.org>, jcliburn@gmail.com,
-        grant.likely@linaro.org, robh+dt@kernel.org,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        devicetree@vger.kernel.org
-User-Agent: SquirrelMail/1.4.22-4.el6
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+	Thu, 15 Jan 2015 03:14:27 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f5-b7fc86d0000066b7-b0-54b776e2c262
+Content-transfer-encoding: 8BIT
+Message-id: <1421309663.12511.2.camel@AMDC1943>
+Subject: Re: [PATCH 2/2] clk: exynos-audss: Fix memory leak on driver unbind or
+ probe failure
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Mike Turquette <mturquette@linaro.org>
+Cc: Stephen Boyd <sboyd@codeaurora.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Tomasz Figa <tomasz.figa@gmail.com>, Kukjin Kim <kgene@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Date: Thu, 15 Jan 2015 09:14:23 +0100
+In-reply-to: <20150114222504.22722.49023@quantum>
+References: <1420451561-12360-1-git-send-email-k.kozlowski@samsung.com>
+ <1420451561-12360-2-git-send-email-k.kozlowski@samsung.com>
+ <54AEF541.1090700@codeaurora.org> <20150114222504.22722.49023@quantum>
+X-Mailer: Evolution 3.10.4-0ubuntu2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOLMWRmVeSWpSXmKPExsVy+t/xK7qPyraHGCy6xm7R//g1s8Wmx9dY
+	LS7vmsNmMeP8PiaLpxMuslkcftPOavHjTDeLxapdfxgdODwu9/UyeeycdZfdY9OqTjaPO9f2
+	sHlsXlLv0bdlFaPH501yAexRXDYpqTmZZalF+nYJXBkH7z1lK5jCUXGqK7CBcSdbFyMHh4SA
+	iUT/f54uRk4gU0ziwr31bCC2kMBSRokf+xVBbF4BQYkfk++xgJQzC8hLHLmUDRJmFlCXmDRv
+	EXMXIxdQ+WdGiR073jFB1OtLrLx8kx3EFhaIl7h5YRGYzSZgLLF5+RKw+SICWhLbDrSygTQz
+	C7QzSUw9/4UZJMEioCrxfOddVhCbU8BQou3PGmaIg84xSqw5kQpxs7JEY7/bBEaBWUjOm4Vw
+	3iwk5y1gZF7FKJpamlxQnJSea6RXnJhbXJqXrpecn7uJERL4X3cwLj1mdYhRgINRiYeXwW97
+	iBBrYllxZe4hRgkOZiUR3s4coBBvSmJlVWpRfnxRaU5q8SFGJg5OqQbGniNle6PZzAqyF8XW
+	3Qn682N379OcCzyM66O0on88UZmqM4FlhofiyZtpOkfM/C9+ETF71VN5kT9xjmr03RKvlvfa
+	8xze9Tqf+vMq5MJxPavNk3tSHyVNlVaecMj5+tdvvzq99krlliQe7zYssZrHtlixV+LR74CP
+	UVf+G18KOO4TbHNx0/wFSizFGYmGWsxFxYkAQeMtv1oCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd, Francois
+On śro, 2015-01-14 at 14:25 -0800, Mike Turquette wrote:
+> Quoting Stephen Boyd (2015-01-08 13:23:13)
+> > On 01/05/2015 01:52 AM, Krzysztof Kozlowski wrote:
+> > > The memory allocated by basic clock divider/gate/mux (struct clk_gate,
+> > > clk_divider and clk_mux) was leaking. During driver unbind or probe
+> > > failure the driver only unregistered the clocks.
+> > >
+> > > Use clk_unregister_{gate,divider,mux} to release all resources.
+> > >
+> > > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > >
+> > 
+> > Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+> 
+> I've applied both patches to clk-next. Krzysztof, let me know if you
+> would prefer to take the audss patch through the samsung clock branch
+> instead (to include it in a later pull request).
 
-The nss-gmac driver is for the internal GMAC IP in the Qualcomm IPQ806x
-SoC. There are 2 ARM cores and 2 NSS cores inside the IPQ806x SoC. The
-main purpose of these NSS cores is to offload the networking stack from
-the ARM cores to achieve high performance at routing/ipsec..etc without
-exhausting the ARM core CPU cycles. There is another nss-drv driver for
-the NSS cores.
-The nss-gmac driver is designed to work standalone or with the nss-drv
-driver so the switchable data plane overlay was implemented. When it
-worked standalone, the data plane is running on the ARM core as a standard
-networking driver. The nss-drv driver can take over the data plane and
-offload it to the NSS cores. The STMicro stmmac driver does not have this
-kind of overlay design so is not suitable for IPQ806x. This is why we
-don't based on the stmmac driver
+Thanks! I'm fine with applying them to clk-next.
 
-Thanks,
-Stephen
+Best regards,
+Krzysztof
 
->> diff --git a/drivers/net/ethernet/atheros/nss-gmac/LICENSE.txt
->> b/drivers/net/ethernet/atheros/nss-gmac/LICENSE.txt
->> new file mode 100644
->> index 0000000..806f2e6
->> --- /dev/null
->> +++ b/drivers/net/ethernet/atheros/nss-gmac/LICENSE.txt
->> @@ -0,0 +1,14 @@
->> +Linux Driver for 3504 DWC Ether MAC 10/100/1000 Universal
->> +Linux Driver for 3507 DWC Ether MAC 10/100 Universal
->> +
->> +IMPORTANT: Synopsys Ethernet MAC Linux Software Drivers and
->> documentation (hereinafter, "Software") are unsupported proprietary
->> works of Synopsys, Inc. unless otherwise expressly agreed to in writing
->> between Synopsys and you.
->> +
->> +The Software uses certain Linux kernel functionality and may therefore
->> be subject to the GNU Public License which is available at:
->> +http://www.gnu.org/licenses/gpl.html
->
-> It sounds like this one is related to the dwmac driver in
-> drivers/net/ethernet/stmicro/stmmac/. Please move the code into
-> the same directory and reuse as much as you can.
->
-> If this is a completely unrelated part, it should probably go
-> into drivers/net/ethernet/designware or drivers/net/ethernet/synopsys.
->
->> +#ifdef CONFIG_OF
->> +#include <msm_nss_gmac.h>
->> +#else
->> +#include <mach/msm_nss_gmac.h>
->> +#endif
->
-> Drop the non-CONFIG_OF part here and elsewhere, we don't support
-> separate platform directories any more, and mach-qcom is already
-> DT-only.
->
->> +/**********************************************************
->> + * GMAC registers Map
->> + * For Pci based system address is BARx + gmac_register_base
->> + * For any other system translation is done accordingly
->> + **********************************************************/
->> +enum gmac_registers {
->> +	gmac_config = 0x0000,		/* Mac config Register                */
->> +	gmac_frame_filter = 0x0004,	/* Mac frame filtering controls       */
->> +	gmac_hash_high = 0x0008,	/* Multi-cast hash table high         */
->> +	gmac_hash_low = 0x000c,		/* Multi-cast hash table low          */
->> +	gmac_gmii_addr = 0x0010,	/* GMII address Register(ext. Phy)    */
->> +	gmac_gmii_data = 0x0014,	/* GMII data Register(ext. Phy)       */
->> +	gmac_flow_control = 0x0018,	/* Flow control Register              */
->> +	gmac_vlan = 0x001c,		/* VLAN tag Register (IEEE 802.1Q)    */
->> +	gmac_version = 0x0020,		/* GMAC Core Version Register         */
->> +	gmac_wakeup_addr = 0x0028,	/* GMAC wake-up frame filter adrress
->> +					   reg				      */
->
-> This looks a lot like dwmac1000 as well.
->
->> +	if (of_property_read_u32(np, "qcom,id", &gmacdev->macid)
->> +		|| of_property_read_u32(np, "qcom,emulation", &gmaccfg->emulation)
->> +		|| of_property_read_u32(np, "qcom,phy_mii_type",
->> &gmaccfg->phy_mii_type)
->> +		|| of_property_read_u32(np, "qcom,phy_mdio_addr",
->> &gmaccfg->phy_mdio_addr)
->> +		|| of_property_read_u32(np, "qcom,rgmii_delay",
->> &gmaccfg->rgmii_delay)
->> +		|| of_property_read_u32(np, "qcom,poll_required",
->> &gmaccfg->poll_required)
->> +		|| of_property_read_u32(np, "qcom,forced_speed",
->> &gmaccfg->forced_speed)
->> +		|| of_property_read_u32(np, "qcom,forced_duplex",
->> &gmaccfg->forced_duplex)
->> +		|| of_property_read_u32(np, "qcom,irq", &netdev->irq)
->> +		|| of_property_read_u32(np, "qcom,socver", &gmaccfg->socver)) {
->
-> This is not an acceptable way to pass data from DT, please use the
-> standard properties.
->
->> +	if (test_bit(__NSS_GMAC_LINKPOLL, &gmacdev->flags)) {
->> +#if (LINUX_VERSION_CODE <= KERNEL_VERSION(3, 8, 0))
->> +		gmacdev->phydev = phy_connect(netdev, (const char *)phy_id,
->> +					      &nss_gmac_adjust_link, 0, phyif);
->> +#else
->> +		gmacdev->phydev = phy_connect(netdev, (const char *)phy_id,
->> +					      &nss_gmac_adjust_link, phyif);
->> +#endif
->
-> Drop all LINUX_VERSION_CODE checks
->
->> +		if (IS_ERR_OR_NULL(gmacdev->phydev)) {
->> +			netdev_dbg(netdev, "PHY %s attach FAIL", phy_id);
->> +			ret = -EIO;
->> +			goto nss_gmac_phy_attach_fail;
->> +		}
->
-> Also any IS_ERR_OR_NULL checks, you are using the API incorrectly.
->
->> +static struct of_device_id nss_gmac_dt_ids[] = {
->> +	{ .compatible =  "qcom,nss-gmac0" },
->> +	{ .compatible =  "qcom,nss-gmac1" },
->> +	{ .compatible =  "qcom,nss-gmac2" },
->> +	{ .compatible =  "qcom,nss-gmac3" },
->> +	{},
->> +};
->> +MODULE_DEVICE_TABLE(of, nss_gmac_dt_ids);
->
-> Are all four versions supported by this driver?
->
-> Each one of these needs its own devicetree binding that documents which
-> hardware it is for and what the supported DT properties are.
->
->> +static struct platform_driver nss_gmac_drv = {
->> +	.probe = nss_gmac_probe,
->> +	.remove = nss_gmac_remove,
->> +	.driver = {
->> +		   .name = "nss-gmac",
->> +		   .owner = THIS_MODULE,
->> +#ifdef CONFIG_OF
->> +		   .of_match_table = of_match_ptr(nss_gmac_dt_ids),
->> +#endif
->
-> The redundancy here is redundant and unnecessary.
->
->> +
->> +/**
->> + * @brief IOCTL interface.
->> + * This function is mainly for debugging purpose.
->> + * This provides hooks for Register read write, Retrieve descriptor
->> status
->> + * and Retreiving Device structure information.
->> + * @param[in] pointer to net_device structure.
->> + * @param[in] pointer to ifreq structure.
->> + * @param[in] ioctl command.
->> + * @return Returns 0 on success Error code on failure.
->> + */
->> +static int32_t nss_gmac_linux_do_ioctl(struct net_device *netdev,
->> +                                      struct ifreq *ifr, int32_t cmd)
->> +{
->
-> Remove the private ioctls.
->
->> +/**
->> + * @brief Stats Callback to receive statistics from NSS
->> + * @param[in] pointer to gmac context
->> + * @param[in] pointer to gmac statistics
->> + * @return Returns void.
->> + */
->> +static void nss_gmac_stats_receive(struct nss_gmac_dev *gmacdev,
->> +					struct nss_gmac_stats *gstat)
->> +{
-> ...
->> +}
->> +EXPORT_SYMBOL(nss_gmac_receive);
->
-> Why multiple modules instead of linking everything together?
->
->> +
->> +/**
->> + * NSS Driver interface APIs
->> + */
->
-> What is an NSS driver?
->
->> +/*
->> + * nss_gmac_open_work()
->> + *	Schedule delayed work to open the netdev again
->> + */
->> +void nss_gmac_open_work(struct work_struct *work)
->> +{
->> +	struct nss_gmac_dev *gmacdev = container_of(to_delayed_work(work),
->> +						struct nss_gmac_dev, gmacwork);
->> +
->> +	netdev_dbg(gmacdev->netdev, "Do the network up in delayed queue %s\n",
->> +							gmacdev->netdev->name);
->> +	nss_gmac_linux_open(gmacdev->netdev);
->> +}
->
-> You seem to have an operating system abstraction layer in here. We know
-> which OS we are running on, so please remove the abstraction.
->
-> 	Arnd
->
 
+> 
+> Regards,
+> Mike
+> 
+> > 
+> > -- 
+> > Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+> > a Linux Foundation Collaborative Project
+> > 
 
