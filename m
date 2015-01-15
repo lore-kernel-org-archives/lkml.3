@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755423AbbAOS4P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 13:56:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:33545 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752885AbbAOS4N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 13:56:13 -0500
-Message-ID: <54B80CFA.1010203@redhat.com>
-Date: Thu, 15 Jan 2015 12:54:50 -0600
-From: Mark Langsdorf <mlangsdo@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1755129AbbAOSzt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 13:55:49 -0500
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:50789 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751981AbbAOSzr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 13:55:47 -0500
+Date: Thu, 15 Jan 2015 13:55:43 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Konstantin Khebnikov <khlebnikov@yandex-team.ru>
+Cc: linux-mm@kvack.org, cgroups@vger.kernel.org,
+        Roman Gushchin <klamm@yandex-team.ru>, Jan Kara <jack@suse.cz>,
+        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, koct9i@gmail.com
+Subject: Re: [PATCH 3/6] memcg: track shared inodes with dirty pages
+Message-ID: <20150115185543.GA28195@htj.dyndns.org>
+References: <20150115180242.10450.92.stgit@buzz>
+ <20150115184914.10450.51964.stgit@buzz>
 MIME-Version: 1.0
-To: Hanjun Guo <hanjun.guo@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Will Deacon <will.deacon@arm.com>
-CC: Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Jon Masters <jcm@redhat.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Mark Brown <broonie@kernel.org>,
-        Rob Herring <robh@kernel.org>, Robert Richter <rric@kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
-        phoenix.liyi@huawei.com, Timur Tabi <timur@codeaurora.org>,
-        suravee.suthikulpanit@amd.com, wangyijing@huawei.com,
-        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org,
-        Al Stone <al.stone@linaro.org>
-Subject: Re: [PATCH v7 17/17] Documentation: ACPI for ARM64
-References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org> <1421247905-3749-18-git-send-email-hanjun.guo@linaro.org>
-In-Reply-To: <1421247905-3749-18-git-send-email-hanjun.guo@linaro.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150115184914.10450.51964.stgit@buzz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/2015 09:05 AM, Hanjun Guo wrote:
-> From: Graeme Gregory <graeme.gregory@linaro.org>
->
-> Add documentation for the guidelines of how to use ACPI
-> on ARM64.
->
-> Reviewed-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-> Reviewed-by: Yi Li <phoenix.liyi@huawei.com>
-> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
-> Signed-off-by: Al Stone <al.stone@linaro.org>
-> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> ---
-There's enough here to get people started. Additional
-information can be added in later patches as needed and
-as we get more experience with ACPI on ARM64.
+On Thu, Jan 15, 2015 at 09:49:14PM +0300, Konstantin Khebnikov wrote:
+> From: Konstantin Khlebnikov <khlebnikov@yandex-team.ru>
+> 
+> Inode is owned only by one memory cgroup, but if it's shared it might
+> contain pages from multiple cgroups. This patch detects this situation
+> in memory reclaiemer and marks dirty inode with flag I_DIRTY_SHARED
+> which is cleared only when data is completely written. Memcg writeback
+> always writes such inodes.
+> 
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@yandex-team.ru>
 
-Reviewed-by: Mark Langsdorf <mlangsdo@redhat.com>
+This conflicts with the writeback cgroup support patchset which will
+solve the writeback and memcg problem a lot more comprehensively.
 
+ http://lkml.kernel.org/g/1420579582-8516-1-git-send-email-tj@kernel.org
+
+Thanks.
+
+-- 
+tejun
