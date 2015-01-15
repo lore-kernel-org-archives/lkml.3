@@ -1,84 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787AbbAOI7B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 03:59:01 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:59005 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751717AbbAOI67 (ORCPT
+	id S1752467AbbAOJZU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 04:25:20 -0500
+Received: from www.linutronix.de ([62.245.132.108]:54869 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751738AbbAOJZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 03:58:59 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] gpio: support for GPIO forwarding
-Date: Thu, 15 Jan 2015 10:21:24 +0100
-Message-ID: <1445095.bPkYZhscYx@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <20150108082510.GA19346@kuha.fi.intel.com>
-References: <1418890998-23811-1-git-send-email-heikki.krogerus@linux.intel.com> <20150108082510.GA19346@kuha.fi.intel.com>
+	Thu, 15 Jan 2015 04:25:18 -0500
+Date: Thu, 15 Jan 2015 10:24:29 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+cc: Joerg Roedel <joro@8bytes.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Yinghai Lu <yinghai@kernel.org>, Borislav Petkov <bp@alien8.de>,
+        x86@kernel.org, David Rientjes <rientjes@google.com>,
+        HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>,
+        Jan Beulich <JBeulich@suse.com>, Richard Weinberger <richard@nod.at>,
+        Oren Twaig <oren@scalemp.com>, Tony Luck <tony.luck@intel.com>,
+        linux-kernel@vger.kernel.org, iommu@lists.linux-foundation.org,
+        "H. Peter Anvin" <hpa@linux.intel.com>, Ingo Molnar <mingo@kernel.org>
+Subject: Re: [Patch v2 07/16] x86/apic: Refine enable_IR_x2apic() and related
+ functions
+In-Reply-To: <1420615903-28253-8-git-send-email-jiang.liu@linux.intel.com>
+Message-ID: <alpine.DEB.2.11.1501151023140.5526@nanos>
+References: <1420615903-28253-1-git-send-email-jiang.liu@linux.intel.com> <1420615903-28253-8-git-send-email-jiang.liu@linux.intel.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, January 08, 2015 10:25:10 AM Heikki Krogerus wrote:
-> On Thu, Dec 18, 2014 at 10:23:18AM +0200, Heikki Krogerus wrote:
-> > This makes it possible to assign GPIOs at runtime. The
-> > motivation for it is because of need to forward GPIOs from
-> > one device to an other. That feature may be useful for
-> > example with some mfd devices, but initially it is needed
-> > because on some Intel Braswell based ACPI platforms the GPIO
-> > resources controlling signals of the USB PHY are given to
-> > the controller device object for whatever reason, so the
-> > driver of that controller needs be able to pass them to the
-> > PHY device somehow.
-> > 
-> > So basically this is meant to allow patching of bad (bad
-> > from Linux kernels point of view) hardware descriptions
-> > provided by system fw in the drivers.
-> > 
-> > Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-> > ---
-> > 
-> > Hi,
-> > 
-> > I'm sending this first as a RFC in case you guys have some better
-> > idea how to solve our problem. I actually already have couple
-> > platforms where the GPIO resources are given to the "wrong" device
-> > objects now.
-> > 
-> > Originally we were thinking about simply handling our problem with
-> > hacks to the PHY drivers, basically also checking if the parent has
-> > GPIOs. That would only work if the controller is always the parent,
-> > which it's not, but even if it was, it would be too risky. The PHY
-> > drivers don't know which controller they are attached to, so what is
-> > to say that the GPIOs aren't really attached to the controller.
-> > 
-> > So the safest way to handle our problem is to deal with it in quirks
-> > in the controller drivers. Solving it by bouncing the GPIOs did not
-> > feel ideal there doesn't seem to be any other way. The API is copied
-> > from clkdev (clk_register_clkdev). In the end it's really only one
-> > function for adding the lookups and one for removing them.
-> > 
-> > The way it's implemented is by modifying the current style of handling
-> > the lookups a little bit. The per device lookup table is basically
-> > reverted back to the single linked-list format since it seems that
-> > these lookups may have to be assigned from several sources.
-> > 
-> > Thanks,
+On Wed, 7 Jan 2015, Jiang Liu wrote:
+
+> Refine enable_IR_x2apic() and related functions for better readability.
 > 
-> Gentle ping on this.
+> It also changes the way to handle IR in XAPIC mode when enabling X2APIC.
+> Previously it just skips X2APIC initialization without checking max CPU
+> APIC ID in system, which may cause problem if system has CPU with APIC
+> ID bigger than 255. So treat IR in XAPIC mode as same as IR is disabled
+> when enabling CPU X2APIC.
 
-Please CC patches involving ACPI in *any* *way* way to linux-acpi@vger.kernel.org.
+Please don't do that. This wants to be two patches:
 
-Thanks!
+       1) reordering the code
 
--- 
-I speak only for myself.
-Rafael J. Wysocki, Intel Open Source Technology Center.
+       2) changing the operation
+
+I've split it already, so no need to resend.
+
+Thanks,
+
+	tglx
