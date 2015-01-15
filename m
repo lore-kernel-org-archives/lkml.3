@@ -1,85 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755333AbbAOTkg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 14:40:36 -0500
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:58692 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751423AbbAOTkf (ORCPT
+	id S1753285AbbAOTlc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 14:41:32 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:61382 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752254AbbAOTlb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 14:40:35 -0500
-Date: Thu, 15 Jan 2015 14:40:31 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Bart Van Assche <bvanassche@acm.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        Hannes Reinecke <hare@suse.de>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: sysfs methods can race with ->remove
-Message-ID: <20150115194031.GE28195@htj.dyndns.org>
-References: <20150115160612.GA31446@infradead.org>
- <Pine.LNX.4.44L0.1501151255060.1064-100000@iolanthe.rowland.org>
+	Thu, 15 Jan 2015 14:41:31 -0500
+Date: Thu, 15 Jan 2015 19:41:27 +0000
+From: Matt Fleming <matt@console-pimps.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "linux-efi@vger.kernel.org" <linux-efi@vger.kernel.org>,
+        Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: EFI mixed mode + perf = rampant triple faults
+Message-ID: <20150115194127.GB12079@codeblueprint.co.uk>
+References: <5491B4A8.905@amacapital.net>
+ <CALCETrUyw5_E+FN8o8ZsOxN5XG81-Q8MVzeUHPZ_XBM+ifi6_w@mail.gmail.com>
+ <20141231183739.GA28946@console-pimps.org>
+ <20150114165151.GA3479@codeblueprint.co.uk>
+ <CALCETrWOxPwoL0zo0UZMk=05uAEqgY-Xovk1=JHwbVtinx3u3w@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1501151255060.1064-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CALCETrWOxPwoL0zo0UZMk=05uAEqgY-Xovk1=JHwbVtinx3u3w@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Alan.
+On Wed, 14 Jan, at 10:27:47AM, Andy Lutomirski wrote:
+> 
+> How are you manually triggering an MCE?  I've been playing with some
+> MCE stuff recently, but the only reasonably reliable way I know of to
+> trigger an MCE is using WHEA, and I don't have a box with WHEA, and I
+> assume your ASUS T100 doesn't either.
+ 
+As Borislav mentions, I used 'int $18', solely to trigger the 64-bit
+exception handler code paths in the middle of the EFI mixed mode code.
 
-On Thu, Jan 15, 2015 at 01:22:03PM -0500, Alan Stern wrote:
-> > It has a reference to keep it from beeing freed, but so far I can't find
-> > anything that prevents ->remove from beeing called while we are in or
-> > just before a method call.
+> > Where this won't work so well is at boot time before we jump to the
+> > kernel proper. There, we still need to restore the firmware's GDT so
+> > that interrupts are serviced correctly before ExitBootServices() (in
+> > particular, ia32 Tianocore assumes __KERNEL_CS is a 32-bit CS).
 > 
-> There are two types of methods to think about: Those registered by the 
-> subsystem and those registered by the driver.
-> 
-> If a method is registered by the driver, then the driver will
-> unregister it when the ->remove routine runs.  I don't know for
-> certain, but I would expect that the sysfs/kernfs core will make sure
-> that any existing method calls complete before unregister returns.  
-> This would prevent races.
+> Tianocore makes assumptions about the kernel's GDT layout?  Yuck.
 
-Yes, attribute deletions are blocked till the on-going sysfs
-read/write operations are finished and further rw accesses are failed.
+No, but 32-bit Tianocore does rely on the second GDT entry being a
+32-bit CS.
 
-> If a method is registered by the subsystem, and if the method runs 
-> entirely within the subsystem's code, then ->remove doesn't matter.  
-> The driver could be unbound while the method is running and it would be 
-> okay.
-> 
-> The only time we have a problem is when the method is registered by the 
-> subsystem and the method calls into the driver.  (Note that this is 
-> exactly what happens with scsi_rescan_device.)
-> 
-> > > > But this seems like a more generic problem, and at least a quick glance at
-> > > > the pci_driver methods seems like others don't have a good
-> > > > synchroniation of ->remove against random driver methods.
-> > > 
-> > > Can you give one or two examples?
-> > 
-> > I look at the sriov_configure PCI method, or the various sub-methods
-> > under pci_driver.err_handler.
-> 
-> The sriov_numvfs_store method does have the same problem, and so does 
-> the reset_store method (by way of pci_reset_function -> 
-> pci_dev_save_and_disable -> pci_reset_notify).
-> 
-> Tejun, is my analysis correct?  How should we fix these races?
-
-I'm not really following what the actual problem case is, so SCSI
-subsystem store methods are derefing dev->driver without synchronizing
-against detach events?  If that's the case, the solution would be
-synchronizing against attach/detach events?  Sorry if I'm being
-totally idiotic.  I'm having a bit of hard time jumping right in.  :)
-
-Thanks.
+It has no knowledge of Linux's GDT layout.
 
 -- 
-tejun
+Matt Fleming, Intel Open Source Technology Center
