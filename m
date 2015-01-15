@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755962AbbAOV1Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 16:27:25 -0500
-Received: from www.linutronix.de ([62.245.132.108]:58317 "EHLO
+	id S932287AbbAOV0z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 16:26:55 -0500
+Received: from www.linutronix.de ([62.245.132.108]:58327 "EHLO
 	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752328AbbAOVWi (ORCPT
+	with ESMTP id S1755658AbbAOVWk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 16:22:38 -0500
-Message-Id: <20150115211702.955392443@linutronix.de>
+	Thu, 15 Jan 2015 16:22:40 -0500
+Message-Id: <20150115211703.051214090@linutronix.de>
 User-Agent: quilt/0.63-1
-Date: Thu, 15 Jan 2015 21:22:22 -0000
+Date: Thu, 15 Jan 2015 21:22:24 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: Jiang Liu <jiang.liu@linux.intel.com>, Joerg Roedel <joro@8bytes.org>,
         x86@kernel.org, Tony Luck <tony.luck@intel.com>,
         Borislav Petkov <bp@alien8.de>
-Subject: [patch 09/23] x86/x2apic: Add proper state tracking
+Subject: [patch 10/23] x86/x2apic: Disable x2apic from nox2apic setup
 References: <20150115210458.625399149@linutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
-Content-Disposition: inline; filename=x86-x2apic-add-state-tracking.patch
+Content-Disposition: inline;
+ filename=x86-x2apic-disable-x2apic-from-nox2apic-setup.patch
 X-Linutronix-Spam-Score: -1.0
 X-Linutronix-Spam-Level: -
 X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
@@ -27,72 +28,161 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Having 3 different variables to track the state is just silly and
-error prone. Add a proper state tracking variable which covers the
-three possible states: ON/OFF/DISABLED.
+There is no point in postponing the hardware disablement of x2apic. It
+can be disabled right away in the nox2apic setup function.
 
-We cannot use x2apic_mode for this as this would require to change all
-users of x2apic_mode with explicit comparisons for a state value
-instead of treating it as boolean.
+Disable it right away and set the state to DISABLED . This allows to
+remove all the nox2apic conditionals all over the place.
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/kernel/apic/apic.c |   15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
+ arch/x86/include/asm/apic.h |    1 
+ arch/x86/kernel/apic/apic.c |   59 +++++++++++++++++---------------------------
+ 2 files changed, 24 insertions(+), 36 deletions(-)
 
+Index: tip/arch/x86/include/asm/apic.h
+===================================================================
+--- tip.orig/arch/x86/include/asm/apic.h
++++ tip/arch/x86/include/asm/apic.h
+@@ -185,7 +185,6 @@ static inline int x2apic_enabled(void)
+ 
+ #define x2apic_supported()	(cpu_has_x2apic)
+ #else
+-static inline void disable_x2apic(void) { }
+ static inline void enable_x2apic(void) { }
+ static inline int x2apic_enabled(void) { return 0; }
+ 
 Index: tip/arch/x86/kernel/apic/apic.c
 ===================================================================
 --- tip.orig/arch/x86/kernel/apic/apic.c
 +++ tip/arch/x86/kernel/apic/apic.c
-@@ -1480,6 +1480,14 @@ static bool nox2apic __initdata;
+@@ -1474,12 +1474,8 @@ void __init bsp_end_local_APIC_setup(voi
+ 
+ }
+ 
+-/* Control whether x2APIC mode is enabled or not */
+-static bool nox2apic __initdata;
+-
  #ifdef CONFIG_X86_X2APIC
  int x2apic_mode;
- static int x2apic_disabled;
+-static int x2apic_disabled;
+ 
+ enum {
+ 	X2APIC_OFF,
+@@ -1488,6 +1484,19 @@ enum {
+ };
+ static int x2apic_state;
+ 
++static inline void disable_x2apic(void)
++{
++	u64 msr;
 +
-+enum {
-+	X2APIC_OFF,
-+	X2APIC_ON,
-+	X2APIC_DISABLED,
-+};
-+static int x2apic_state;
++	rdmsrl(MSR_IA32_APICBASE, msr);
++	if (!(msr & X2APIC_ENABLE))
++		return;
++	/* Disable xapic and x2apic first and then reenable xapic mode */
++	wrmsrl(MSR_IA32_APICBASE, msr & ~(X2APIC_ENABLE | XAPIC_ENABLE));
++	wrmsrl(MSR_IA32_APICBASE, msr & ~X2APIC_ENABLE);
++	printk_once(KERN_INFO "x2apic disabled\n");
++}
 +
  static int __init setup_nox2apic(char *str)
  {
  	if (x2apic_enabled()) {
-@@ -1496,7 +1504,7 @@ static int __init setup_nox2apic(char *s
- 		setup_clear_cpu_cap(X86_FEATURE_X2APIC);
- 
- 	nox2apic = true;
+@@ -1498,28 +1507,17 @@ static int __init setup_nox2apic(char *s
+ 				   apicid);
+ 			return 0;
+ 		}
 -
-+	x2apic_state = X2APIC_DISABLED;
+-		pr_warning("x2apic already enabled. will disable it\n");
+-	} else
+-		setup_clear_cpu_cap(X86_FEATURE_X2APIC);
+-
+-	nox2apic = true;
++		pr_warning("x2apic already enabled.\n");
++		disable_x2apic();
++	}
++	setup_clear_cpu_cap(X86_FEATURE_X2APIC);
+ 	x2apic_state = X2APIC_DISABLED;
++	x2apic_mode = 0;
  	return 0;
  }
  early_param("nox2apic", setup_nox2apic);
-@@ -1539,6 +1547,7 @@ static __init void disable_x2apic(void)
+ 
+-/*
+- * Need to disable xapic and x2apic at the same time and then enable xapic mode
+- */
+-static inline void __disable_x2apic(u64 msr)
+-{
+-	wrmsrl(MSR_IA32_APICBASE,
+-	       msr & ~(X2APIC_ENABLE | XAPIC_ENABLE));
+-	wrmsrl(MSR_IA32_APICBASE, msr & ~X2APIC_ENABLE);
+-}
+-
+-static __init void disable_x2apic(void)
++static __init void x2apic_disable(void)
+ {
+ 	u64 msr;
+ 
+@@ -1533,20 +1531,13 @@ static __init void disable_x2apic(void)
+ 		if (x2apic_id >= 255)
+ 			panic("Cannot disable x2apic, id: %08x\n", x2apic_id);
+ 
+-		pr_info("Disabling x2apic\n");
+-		__disable_x2apic(msr);
+-
+-		if (nox2apic) {
+-			clear_cpu_cap(&cpu_data(0), X86_FEATURE_X2APIC);
+-			setup_clear_cpu_cap(X86_FEATURE_X2APIC);
+-		}
++		disable_x2apic();
+ 
+ 		x2apic_mode = 0;
+ 
+ 		register_lapic_address(mp_lapic_addr);
  	}
  
- 	x2apic_disabled = 1;
-+	x2apic_state = X2APIC_DISABLED;
+-	x2apic_disabled = 1;
+ 	x2apic_state = X2APIC_DISABLED;
  }
  
- void enable_x2apic(void)
-@@ -1559,6 +1568,7 @@ void enable_x2apic(void)
+@@ -1554,9 +1545,8 @@ void enable_x2apic(void)
+ {
+ 	u64 msr;
+ 
+-	rdmsrl(MSR_IA32_APICBASE, msr);
+-	if (x2apic_disabled) {
+-		__disable_x2apic(msr);
++	if (x2apic_state == X2APIC_DISABLED) {
++		disable_x2apic();
+ 		x2apic_mode = 0;
+ 		return;
+ 	}
+@@ -1564,6 +1554,7 @@ void enable_x2apic(void)
+ 	if (!x2apic_mode)
+ 		return;
+ 
++	rdmsrl(MSR_IA32_APICBASE, msr);
+ 	if (!(msr & X2APIC_ENABLE)) {
  		printk_once(KERN_INFO "Enabling x2apic\n");
  		wrmsrl(MSR_IA32_APICBASE, msr | X2APIC_ENABLE);
- 	}
-+	x2apic_state = X2APIC_ON;
- }
+@@ -1584,7 +1575,7 @@ static __init void try_to_enable_x2apic(
+ 		    (IS_ENABLED(CONFIG_HYPERVISOR_GUEST) &&
+ 		     !hypervisor_x2apic_available())) {
+ 			pr_info("x2apic: IRQ remapping doesn't support X2APIC mode\n");
+-			disable_x2apic();
++			x2apic_disable();
+ 			return;
+ 		}
  
- static __init void try_to_enable_x2apic(int remap_mode)
-@@ -1597,6 +1607,9 @@ void __init check_x2apic(void)
- 	if (x2apic_enabled()) {
- 		pr_info("x2apic: enabled by BIOS, switching to x2apic ops\n");
- 		x2apic_mode = 1;
-+		x2apic_state = X2APIC_ON;
-+	} else if (!cpu_has_x2apic) {
-+		x2apic_state = X2APIC_DISABLED;
- 	}
- }
- #else /* CONFIG_X86_X2APIC */
+@@ -1656,8 +1647,6 @@ void __init enable_IR_x2apic(void)
+ 	legacy_pic->mask_all();
+ 	mask_ioapic_entries();
+ 
+-	if (nox2apic)
+-		disable_x2apic();
+ 	/* If irq_remapping_prepare() succeded, try to enable it */
+ 	if (ir_stat >= 0)
+ 		ir_stat = try_to_enable_IR();
 
 
