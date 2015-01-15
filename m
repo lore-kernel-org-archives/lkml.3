@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755974AbbAOWK1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 17:10:27 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:50450 "EHLO
+	id S932437AbbAOWPY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 17:15:24 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:50452 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753930AbbAOWKL (ORCPT
+	with ESMTP id S1754020AbbAOWKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 15 Jan 2015 17:10:11 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jan Kara <jack@suse.cz>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 13/19] isofs: Fix unchecked printing of ER records
-Date: Thu, 15 Jan 2015 14:09:49 -0800
-Message-Id: <1421359795-11155-14-git-send-email-kamal@canonical.com>
+Cc: Andy Lutomirski <luto@amacapital.net>, Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 14/19] x86_64, vdso: Fix the vdso address randomization algorithm
+Date: Thu, 15 Jan 2015 14:09:50 -0800
+Message-Id: <1421359795-11155-15-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1421359795-11155-1-git-send-email-kamal@canonical.com>
 References: <1421359795-11155-1-git-send-email-kamal@canonical.com>
@@ -26,35 +26,126 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Andy Lutomirski <luto@amacapital.net>
 
-commit 4e2024624e678f0ebb916e6192bd23c1f9fdf696 upstream.
+commit 394f56fe480140877304d342dec46d50dc823d46 upstream.
 
-We didn't check length of rock ridge ER records before printing them.
-Thus corrupted isofs image can cause us to access and print some memory
-behind the buffer with obvious consequences.
+The theory behind vdso randomization is that it's mapped at a random
+offset above the top of the stack.  To avoid wasting a page of
+memory for an extra page table, the vdso isn't supposed to extend
+past the lowest PMD into which it can fit.  Other than that, the
+address should be a uniformly distributed address that meets all of
+the alignment requirements.
 
-Reported-and-tested-by: Carl Henrik Lunde <chlunde@ping.uio.no>
-Signed-off-by: Jan Kara <jack@suse.cz>
+The current algorithm is buggy: the vdso has about a 50% probability
+of being at the very end of a PMD.  The current algorithm also has a
+decent chance of failing outright due to incorrect handling of the
+case where the top of the stack is near the top of its PMD.
+
+This fixes the implementation.  The paxtest estimate of vdso
+"randomisation" improves from 11 bits to 18 bits.  (Disclaimer: I
+don't know what the paxtest code is actually calculating.)
+
+It's worth noting that this algorithm is inherently biased: the vdso
+is more likely to end up near the end of its PMD than near the
+beginning.  Ideally we would either nix the PMD sharing requirement
+or jointly randomize the vdso and the stack to reduce the bias.
+
+In the mean time, this is a considerable improvement with basically
+no risk of compatibility issues, since the allowed outputs of the
+algorithm are unchanged.
+
+As an easy test, doing this:
+
+for i in `seq 10000`
+  do grep -P vdso /proc/self/maps |cut -d- -f1
+done |sort |uniq -d
+
+used to produce lots of output (1445 lines on my most recent run).
+A tiny subset looks like this:
+
+7fffdfffe000
+7fffe01fe000
+7fffe05fe000
+7fffe07fe000
+7fffe09fe000
+7fffe0bfe000
+7fffe0dfe000
+
+Note the suspicious fe000 endings.  With the fix, I get a much more
+palatable 76 repeated addresses.
+
+Reviewed-by: Kees Cook <keescook@chromium.org>
+Signed-off-by: Andy Lutomirski <luto@amacapital.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/isofs/rock.c | 3 +++
- 1 file changed, 3 insertions(+)
+ arch/x86/vdso/vma.c | 43 +++++++++++++++++++++++++++++--------------
+ 1 file changed, 29 insertions(+), 14 deletions(-)
 
-diff --git a/fs/isofs/rock.c b/fs/isofs/rock.c
-index bb63254..735d752 100644
---- a/fs/isofs/rock.c
-+++ b/fs/isofs/rock.c
-@@ -362,6 +362,9 @@ repeat:
- 			rs.cont_size = isonum_733(rr->u.CE.size);
- 			break;
- 		case SIG('E', 'R'):
-+			/* Invalid length of ER tag id? */
-+			if (rr->u.ER.len_id + offsetof(struct rock_ridge, u.ER.data) > rr->len)
-+				goto out;
- 			ISOFS_SB(inode->i_sb)->s_rock = 1;
- 			printk(KERN_DEBUG "ISO 9660 Extensions: ");
- 			{
+diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
+index 431e875..ab6ba35 100644
+--- a/arch/x86/vdso/vma.c
++++ b/arch/x86/vdso/vma.c
+@@ -117,30 +117,45 @@ subsys_initcall(init_vdso);
+ 
+ struct linux_binprm;
+ 
+-/* Put the vdso above the (randomized) stack with another randomized offset.
+-   This way there is no hole in the middle of address space.
+-   To save memory make sure it is still in the same PTE as the stack top.
+-   This doesn't give that many random bits */
++/*
++ * Put the vdso above the (randomized) stack with another randomized
++ * offset.  This way there is no hole in the middle of address space.
++ * To save memory make sure it is still in the same PTE as the stack
++ * top.  This doesn't give that many random bits.
++ *
++ * Note that this algorithm is imperfect: the distribution of the vdso
++ * start address within a PMD is biased toward the end.
++ *
++ * Only used for the 64-bit and x32 vdsos.
++ */
+ static unsigned long vdso_addr(unsigned long start, unsigned len)
+ {
+ 	unsigned long addr, end;
+ 	unsigned offset;
+-	end = (start + PMD_SIZE - 1) & PMD_MASK;
++
++	/*
++	 * Round up the start address.  It can start out unaligned as a result
++	 * of stack start randomization.
++	 */
++	start = PAGE_ALIGN(start);
++
++	/* Round the lowest possible end address up to a PMD boundary. */
++	end = (start + len + PMD_SIZE - 1) & PMD_MASK;
+ 	if (end >= TASK_SIZE_MAX)
+ 		end = TASK_SIZE_MAX;
+ 	end -= len;
+-	/* This loses some more bits than a modulo, but is cheaper */
+-	offset = get_random_int() & (PTRS_PER_PTE - 1);
+-	addr = start + (offset << PAGE_SHIFT);
+-	if (addr >= end)
+-		addr = end;
++
++	if (end > start) {
++		offset = get_random_int() % (((end - start) >> PAGE_SHIFT) + 1);
++		addr = start + (offset << PAGE_SHIFT);
++	} else {
++		addr = start;
++	}
+ 
+ 	/*
+-	 * page-align it here so that get_unmapped_area doesn't
+-	 * align it wrongfully again to the next page. addr can come in 4K
+-	 * unaligned here as a result of stack start randomization.
++	 * Forcibly align the final address in case we have a hardware
++	 * issue that requires alignment for performance reasons.
+ 	 */
+-	addr = PAGE_ALIGN(addr);
+ 	addr = align_vdso_addr(addr);
+ 
+ 	return addr;
 -- 
 1.9.1
 
