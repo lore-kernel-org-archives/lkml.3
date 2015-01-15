@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754492AbbAOM5L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 07:57:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40941 "EHLO mx1.redhat.com"
+	id S1754525AbbAOM5P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 07:57:15 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33147 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754450AbbAOM5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 07:57:08 -0500
+	id S1754503AbbAOM5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 07:57:14 -0500
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>,
@@ -19,16 +19,16 @@ Cc: Jiri Olsa <jolsa@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 21/36] perf build: Add arch arm objects building
-Date: Thu, 15 Jan 2015 13:55:17 +0100
-Message-Id: <1421326532-25660-22-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 22/36] perf build: Add arch arm64 objects building
+Date: Thu, 15 Jan 2015 13:55:18 +0100
+Message-Id: <1421326532-25660-23-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1421326532-25660-1-git-send-email-jolsa@kernel.org>
 References: <1421326532-25660-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the arm arch objects building under build framework
+Move the arm64 arch objects building under build framework
 to be included in the libperf build object.
 
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
@@ -44,58 +44,40 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/arch/arm/Build       |  2 ++
- tools/perf/arch/arm/Makefile    | 11 -----------
- tools/perf/arch/arm/tests/Build |  2 ++
- tools/perf/arch/arm/util/Build  |  4 ++++
- 4 files changed, 8 insertions(+), 11 deletions(-)
- create mode 100644 tools/perf/arch/arm/tests/Build
- create mode 100644 tools/perf/arch/arm/util/Build
+ tools/perf/arch/arm64/Build      | 3 +++
+ tools/perf/arch/arm64/Makefile   | 4 ----
+ tools/perf/arch/arm64/util/Build | 2 ++
+ 3 files changed, 5 insertions(+), 4 deletions(-)
+ create mode 100644 tools/perf/arch/arm64/util/Build
 
-diff --git a/tools/perf/arch/arm/Build b/tools/perf/arch/arm/Build
-index e69de29bb2d1..41bf61da476a 100644
---- a/tools/perf/arch/arm/Build
-+++ b/tools/perf/arch/arm/Build
-@@ -0,0 +1,2 @@
+diff --git a/tools/perf/arch/arm64/Build b/tools/perf/arch/arm64/Build
+index e69de29bb2d1..3bfe380bbf4e 100644
+--- a/tools/perf/arch/arm64/Build
++++ b/tools/perf/arch/arm64/Build
+@@ -0,0 +1,3 @@
++ifneq ($(CONFIG_DWARF)$(CONFIG_LIBUNWIND),)
 +libperf-y += util/
-+libperf-$(CONFIG_DWARF_UNWIND) += tests/
-diff --git a/tools/perf/arch/arm/Makefile b/tools/perf/arch/arm/Makefile
-index 09d62153d384..7fbca175099e 100644
---- a/tools/perf/arch/arm/Makefile
-+++ b/tools/perf/arch/arm/Makefile
-@@ -1,14 +1,3 @@
++endif
+diff --git a/tools/perf/arch/arm64/Makefile b/tools/perf/arch/arm64/Makefile
+index 67e9b3d38e89..7fbca175099e 100644
+--- a/tools/perf/arch/arm64/Makefile
++++ b/tools/perf/arch/arm64/Makefile
+@@ -1,7 +1,3 @@
  ifndef NO_DWARF
  PERF_HAVE_DWARF_REGS := 1
 -LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
 -endif
 -ifndef NO_LIBUNWIND
 -LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/unwind-libunwind.o
--endif
--ifndef NO_LIBDW_DWARF_UNWIND
--LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/unwind-libdw.o
--endif
--ifndef NO_DWARF_UNWIND
--LIB_OBJS += $(OUTPUT)arch/$(ARCH)/tests/regs_load.o
--LIB_OBJS += $(OUTPUT)arch/$(ARCH)/tests/dwarf-unwind.o
  endif
-diff --git a/tools/perf/arch/arm/tests/Build b/tools/perf/arch/arm/tests/Build
+diff --git a/tools/perf/arch/arm64/util/Build b/tools/perf/arch/arm64/util/Build
 new file mode 100644
-index 000000000000..b30eff9bcc83
+index 000000000000..e58123a8912b
 --- /dev/null
-+++ b/tools/perf/arch/arm/tests/Build
++++ b/tools/perf/arch/arm64/util/Build
 @@ -0,0 +1,2 @@
-+libperf-y += regs_load.o
-+libperf-y += dwarf-unwind.o
-diff --git a/tools/perf/arch/arm/util/Build b/tools/perf/arch/arm/util/Build
-new file mode 100644
-index 000000000000..d22e3d07de3d
---- /dev/null
-+++ b/tools/perf/arch/arm/util/Build
-@@ -0,0 +1,4 @@
-+libperf-$(CONFIG_DWARF) += dwarf-regs.o
-+
-+libperf-$(CONFIG_LIBUNWIND)          += unwind-libunwind.o
-+libperf-$(CONFIG_LIBDW_DWARF_UNWIND) += unwind-libdw.o
++libperf-$(CONFIG_DWARF)     += dwarf-regs.o
++libperf-$(CONFIG_LIBUNWIND) += unwind-libunwind.o
 -- 
 1.9.3
 
