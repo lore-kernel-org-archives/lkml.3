@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753719AbbAOO7i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 09:59:38 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:54343 "EHLO
+	id S932078AbbAOPCA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 10:02:00 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:54349 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752082AbbAOO7g (ORCPT
+	with ESMTP id S1752111AbbAOO7g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 15 Jan 2015 09:59:36 -0500
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
@@ -14,9 +14,9 @@ Cc: Boris Brezillon <boris.brezillon@free-electrons.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Arnd Bergmann <arnd@arndb.de>,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH v2 1/8] ARM: at91: pm: rework cpu detection
-Date: Thu, 15 Jan 2015 15:59:24 +0100
-Message-Id: <1421333971-7581-2-git-send-email-alexandre.belloni@free-electrons.com>
+Subject: [PATCH v2 2/8] ARM: at91: pm: use the mmio-sram pool to access SRAM
+Date: Thu, 15 Jan 2015 15:59:25 +0100
+Message-Id: <1421333971-7581-3-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1421333971-7581-1-git-send-email-alexandre.belloni@free-electrons.com>
 References: <1421333971-7581-1-git-send-email-alexandre.belloni@free-electrons.com>
@@ -24,112 +24,98 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Store SoC differences in a struct to remove cpu_is_* usage.
+Now that the SRAM is part of a genpool, use it to allocate memory to use for the
+slowclock implementation.
 
 Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
- arch/arm/mach-at91/pm.c | 54 ++++++++++++++++++++++++++++++-------------------
- 1 file changed, 33 insertions(+), 21 deletions(-)
+ arch/arm/mach-at91/Kconfig |  1 +
+ arch/arm/mach-at91/pm.c    | 46 +++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 46 insertions(+), 1 deletion(-)
 
+diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
+index cec0fb5d621a..b7dcef50db23 100644
+--- a/arch/arm/mach-at91/Kconfig
++++ b/arch/arm/mach-at91/Kconfig
+@@ -178,6 +178,7 @@ comment "AT91 Feature Selections"
+ 
+ config AT91_SLOW_CLOCK
+ 	bool "Suspend-to-RAM disables main oscillator"
++	select SRAM
+ 	depends on SUSPEND
+ 	help
+ 	  Select this if you want Suspend-to-RAM to save the most power
 diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
-index 9b15169a1c62..79aa793d1f00 100644
+index 79aa793d1f00..515791edcc60 100644
 --- a/arch/arm/mach-at91/pm.c
 +++ b/arch/arm/mach-at91/pm.c
-@@ -17,6 +17,7 @@
+@@ -14,10 +14,12 @@
+ #include <linux/suspend.h>
+ #include <linux/sched.h>
+ #include <linux/proc_fs.h>
++#include <linux/genalloc.h>
  #include <linux/interrupt.h>
  #include <linux/sysfs.h>
  #include <linux/module.h>
-+#include <linux/of.h>
+ #include <linux/of.h>
++#include <linux/of_platform.h>
  #include <linux/platform_device.h>
  #include <linux/io.h>
  #include <linux/clk/at91_pmc.h>
-@@ -32,6 +33,11 @@
- #include "generic.h"
- #include "pm.h"
- 
-+static struct {
-+	unsigned long uhp_udp_mask;
-+	int memctrl;
-+} at91_pm_data;
-+
- static void (*at91_pm_standby)(void);
- 
- static int at91_pm_valid_state(suspend_state_t state)
-@@ -71,17 +77,9 @@ static int at91_pm_verify_clocks(void)
- 	scsr = at91_pmc_read(AT91_PMC_SCSR);
- 
- 	/* USB must not be using PLLB */
--	if (cpu_is_at91rm9200()) {
--		if ((scsr & (AT91RM9200_PMC_UHP | AT91RM9200_PMC_UDP)) != 0) {
--			pr_err("AT91: PM - Suspend-to-RAM with USB still active\n");
--			return 0;
--		}
--	} else if (cpu_is_at91sam9260() || cpu_is_at91sam9261() || cpu_is_at91sam9263()
--			|| cpu_is_at91sam9g20() || cpu_is_at91sam9g10()) {
--		if ((scsr & (AT91SAM926x_PMC_UHP | AT91SAM926x_PMC_UDP)) != 0) {
--			pr_err("AT91: PM - Suspend-to-RAM with USB still active\n");
--			return 0;
--		}
-+	if ((scsr & at91_pm_data.uhp_udp_mask) != 0) {
-+		pr_err("AT91: PM - Suspend-to-RAM with USB still active\n");
-+		return 0;
+@@ -222,10 +224,52 @@ void at91_pm_set_standby(void (*at91_standby)(void))
  	}
+ }
  
- 	/* PCK0..PCK3 must be disabled, or configured to use clk32k */
-@@ -149,18 +147,13 @@ static int at91_pm_enter(suspend_state_t state)
- 			 * turning off the main oscillator; reverse on wakeup.
- 			 */
- 			if (slow_clock) {
--				int memctrl = AT91_MEMCTRL_SDRAMC;
--
--				if (cpu_is_at91rm9200())
--					memctrl = AT91_MEMCTRL_MC;
--				else if (cpu_is_at91sam9g45())
--					memctrl = AT91_MEMCTRL_DDRSDR;
- #ifdef CONFIG_AT91_SLOW_CLOCK
- 				/* copy slow_clock handler to SRAM, and call it */
- 				memcpy(slow_clock, at91_slow_clock, at91_slow_clock_sz);
- #endif
- 				slow_clock(at91_pmc_base, at91_ramc_base[0],
--					   at91_ramc_base[1], memctrl);
-+					   at91_ramc_base[1],
-+					   at91_pm_data.memctrl);
- 				break;
- 			} else {
- 				pr_info("AT91: PM - no slow clock mode enabled ...\n");
-@@ -237,10 +230,29 @@ static int __init at91_pm_init(void)
- 
- 	pr_info("AT91: Power Management%s\n", (slow_clock ? " (with slow clock mode)" : ""));
- 
--	/* AT91RM9200 SDRAM low-power mode cannot be used with self-refresh. */
--	if (cpu_is_at91rm9200())
-+	at91_pm_data.memctrl = AT91_MEMCTRL_SDRAMC;
++#ifdef CONFIG_AT91_SLOW_CLOCK
++static void __init at91_pm_sram_init(void)
++{
++	struct gen_pool *sram_pool;
++	phys_addr_t sram_pbase;
++	unsigned long sram_base;
++	struct device_node *node;
++	struct platform_device *pdev;
 +
-+	if (of_machine_is_compatible("atmel,at91rm9200")) {
-+		/*
-+		 * AT91RM9200 SDRAM low-power mode cannot be used with
-+		 * self-refresh.
-+		 */
- 		at91_ramc_write(0, AT91RM9200_SDRAMC_LPR, 0);
--	
-+
-+		at91_pm_data.uhp_udp_mask = AT91RM9200_PMC_UHP |
-+					    AT91RM9200_PMC_UDP;
-+		at91_pm_data.memctrl = AT91_MEMCTRL_MC;
-+	} else if (of_machine_is_compatible("atmel,at91sam9260") ||
-+		   of_machine_is_compatible("atmel,at91sam9g20") ||
-+		   of_machine_is_compatible("atmel,at91sam9261") ||
-+		   of_machine_is_compatible("atmel,at91sam9g10") ||
-+		   of_machine_is_compatible("atmel,at91sam9263")) {
-+		at91_pm_data.uhp_udp_mask = AT91SAM926x_PMC_UHP |
-+					    AT91SAM926x_PMC_UDP;
-+	} else if (of_machine_is_compatible("atmel,at91sam9g45")) {
-+		at91_pm_data.memctrl = AT91_MEMCTRL_DDRSDR;
++	node = of_find_compatible_node(NULL, NULL, "mmio-sram");
++	if (!node) {
++		pr_warn("%s: failed to find sram node!\n", __func__);
++		return;
 +	}
 +
- 	if (at91_cpuidle_device.dev.platform_data)
- 		platform_device_register(&at91_cpuidle_device);
++	pdev = of_find_device_by_node(node);
++	if (!pdev) {
++		pr_warn("%s: failed to find sram device!\n", __func__);
++		goto put_node;
++	}
++
++	sram_pool = dev_get_gen_pool(&pdev->dev);
++	if (!sram_pool) {
++		pr_warn("%s: sram pool unavailable!\n", __func__);
++		goto put_node;
++	}
++
++	sram_base = gen_pool_alloc(sram_pool, at91_slow_clock_sz);
++	if (!sram_base) {
++		pr_warn("%s: unable to alloc ocram!\n", __func__);
++		goto put_node;
++	}
++
++	sram_pbase = gen_pool_virt_to_phys(sram_pool, sram_base);
++	slow_clock = __arm_ioremap_exec(sram_pbase, at91_slow_clock_sz, false);
++
++put_node:
++	of_node_put(node);
++}
++#endif
++
++
+ static int __init at91_pm_init(void)
+ {
+ #ifdef CONFIG_AT91_SLOW_CLOCK
+-	slow_clock = (void *) (AT91_IO_VIRT_BASE - at91_slow_clock_sz);
++	at91_pm_sram_init();
+ #endif
  
+ 	pr_info("AT91: Power Management%s\n", (slow_clock ? " (with slow clock mode)" : ""));
 -- 
 2.1.0
 
