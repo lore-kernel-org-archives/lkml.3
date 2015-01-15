@@ -1,72 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932092AbbAOQBL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 11:01:11 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:46334 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753634AbbAOQBJ (ORCPT
+	id S1752304AbbAOQF7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 11:05:59 -0500
+Received: from mail-wg0-f43.google.com ([74.125.82.43]:42445 "EHLO
+	mail-wg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751525AbbAOQF6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 11:01:09 -0500
-Message-ID: <54B7E441.6040803@gmail.com>
-Date: Thu, 15 Jan 2015 09:01:05 -0700
-From: David Ahern <dsahern@gmail.com>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Thu, 15 Jan 2015 11:05:58 -0500
+Message-ID: <54B7E561.8090008@linaro.org>
+Date: Thu, 15 Jan 2015 17:05:53 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org
-CC: Alexis Berlemont <alexis.berlemont@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 05/36] perf build: Disable make's built-in rules and variables
-References: <1421326532-25660-1-git-send-email-jolsa@kernel.org> <1421326532-25660-6-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1421326532-25660-6-git-send-email-jolsa@kernel.org>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Wim Van Sebroeck <wim@iguana.be>, Guenter Roeck <linux@roeck-us.net>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH v3 6/8] clocksource: atmel-st: properly initialize driver
+References: <1421077023-30954-1-git-send-email-alexandre.belloni@free-electrons.com> <1421077023-30954-7-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1421077023-30954-7-git-send-email-alexandre.belloni@free-electrons.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/15/15 5:55 AM, Jiri Olsa wrote:
-
-> diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-> index 1f71a32aea78..dd49b40e203b 100644
-> --- a/tools/perf/Makefile.perf
-> +++ b/tools/perf/Makefile.perf
-> @@ -84,6 +84,10 @@ ifneq ($(OUTPUT),)
->   #$(info Determined 'OUTPUT' to be $(OUTPUT))
->   endif
+On 01/12/2015 04:37 PM, Alexandre Belloni wrote:
+> Use clocksource_of_init to initialize the system timer instead of relying on a
+> custom function.
 >
-> +# Do not use make's built-in rules and variables
-> +# (this increases performance and avoids hard-to-debug behaviour);
-> +MAKEFLAGS += -rR
-> +
->   $(OUTPUT)PERF-VERSION-FILE: ../../.git/HEAD
->   	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
->   	@touch $(OUTPUT)PERF-VERSION-FILE
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
 
-Does this depend on any prior patch? Was not obvious to me. Adding just 
-this patch to a fresh build and it blows up.
+Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 
-$ vi Makefile.perf
-- add line above
-$ mkdir /tmp/junk2
-$ make O=/tmp/junk2
-...
-  CC       /tmp/junk2/fs/debugfs.o
-   CC       /tmp/junk2/fs/fs.o
-   CC       /tmp/junk2/fd/array.o
-/bin/sh: .event-parse.d: command not found
-/bin/sh: .trace-seq.d: command not found
-/bin/sh: .event-plugin.d: command not found
-make[3]: *** [.event-parse.d] Error 127
-make[3]: *** Waiting for unfinished jobs....
-...
+> ---
+>   arch/arm/mach-at91/board-dt-rm9200.c | 7 -------
+>   arch/arm/mach-at91/generic.h         | 3 ---
+>   drivers/clocksource/timer-atmel-st.c | 4 +++-
+>   3 files changed, 3 insertions(+), 11 deletions(-)
+>
+> diff --git a/arch/arm/mach-at91/board-dt-rm9200.c b/arch/arm/mach-at91/board-dt-rm9200.c
+> index 76dfe8f9af50..d9a45f49c208 100644
+> --- a/arch/arm/mach-at91/board-dt-rm9200.c
+> +++ b/arch/arm/mach-at91/board-dt-rm9200.c
+> @@ -24,19 +24,12 @@
+>
+>   #include "generic.h"
+>
+> -static void __init at91rm9200_dt_timer_init(void)
+> -{
+> -	of_clk_init(NULL);
+> -	at91rm9200_timer_init();
+> -}
+> -
+>   static const char *at91rm9200_dt_board_compat[] __initdata = {
+>   	"atmel,at91rm9200",
+>   	NULL
+>   };
+>
+>   DT_MACHINE_START(at91rm9200_dt, "Atmel AT91RM9200 (Device Tree)")
+> -	.init_time      = at91rm9200_dt_timer_init,
+>   	.map_io		= at91_map_io,
+>   	.init_early	= at91rm9200_dt_initialize,
+>   	.dt_compat	= at91rm9200_dt_board_compat,
+> diff --git a/arch/arm/mach-at91/generic.h b/arch/arm/mach-at91/generic.h
+> index d53324210adf..fc12f3d4b93c 100644
+> --- a/arch/arm/mach-at91/generic.h
+> +++ b/arch/arm/mach-at91/generic.h
+> @@ -29,9 +29,6 @@ extern void __init at91_dt_initialize(void);
+>   extern void __init at91_sysirq_mask_rtc(u32 rtc_base);
+>   extern void __init at91_sysirq_mask_rtt(u32 rtt_base);
+>
+> - /* Timer */
+> -extern void at91rm9200_timer_init(void);
+> -
+>   /* idle */
+>   extern void at91sam9_idle(void);
+>
+> diff --git a/drivers/clocksource/timer-atmel-st.c b/drivers/clocksource/timer-atmel-st.c
+> index 522583d6cc78..ed0267f1c892 100644
+> --- a/drivers/clocksource/timer-atmel-st.c
+> +++ b/drivers/clocksource/timer-atmel-st.c
+> @@ -232,7 +232,7 @@ err:
+>   /*
+>    * ST (system timer) module supports both clockevents and clocksource.
+>    */
+> -void __init at91rm9200_timer_init(void)
+> +static void __init atmel_st_timer_init(struct device_node *node)
+>   {
+>   	/* For device tree enabled device: initialize here */
+>   	of_at91rm9200_st_init();
+> @@ -261,3 +261,5 @@ void __init at91rm9200_timer_init(void)
+>
+>   	arm_pm_restart = at91rm9200_restart;
+>   }
+> +CLOCKSOURCE_OF_DECLARE(atmel_st_timer, "atmel,at91rm9200-st",
+> +		       atmel_st_timer_init);
+>
 
-This is on a Fedora 16 host.
 
-David
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
