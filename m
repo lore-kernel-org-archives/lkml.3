@@ -1,132 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775AbbAORBI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 12:01:08 -0500
-Received: from mail-yh0-f45.google.com ([209.85.213.45]:45157 "EHLO
-	mail-yh0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752223AbbAORBG (ORCPT
+	id S1754838AbbAORBj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 12:01:39 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:55592 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752164AbbAORBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 12:01:06 -0500
+	Thu, 15 Jan 2015 12:01:37 -0500
+Date: Thu, 15 Jan 2015 18:01:34 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Wim Van Sebroeck <wim@iguana.be>, Guenter Roeck <linux@roeck-us.net>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH v3 5/8] ARM: at91: move the restart function to the
+ system timer driver
+Message-ID: <20150115170134.GU3843@piout.net>
+References: <1421077023-30954-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <1421077023-30954-6-git-send-email-alexandre.belloni@free-electrons.com>
+ <54B7ED29.9060700@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <20150115164054.GA21675@node.dhcp.inet.fi>
-References: <20141218175126.GA78864@vmdeb7> <20150111225802.GA12944@node.dhcp.inet.fi>
- <20150112183831.GA99900@vmdeb7> <CAObL_7FCiZJuTQNUfqjoxaRscB+_2fvwpnXDt3d8E+0dFm=i6A@mail.gmail.com>
- <20150112200331.GA23277@node.dhcp.inet.fi> <CAObL_7FwxW=oq9L+POVx_4S9HSZW2QM3bnTNW37rDsUA=-U3FA@mail.gmail.com>
- <20150112203003.GB23277@node.dhcp.inet.fi> <CAObL_7HNXAxnoNx-K=yJ1C9kkffc9Rf=EmVGJ+=K+5S40m7jSQ@mail.gmail.com>
- <20150113175609.GB130525@vmdeb7> <CAObL_7HDckMzgbbaKEH=iYwRdn24ANy5U8EMp=A3ODhWMt_2bw@mail.gmail.com>
- <20150115164054.GA21675@node.dhcp.inet.fi>
-From: Andrew Lutomirski <luto@mit.edu>
-Date: Thu, 15 Jan 2015 09:00:44 -0800
-X-Google-Sender-Auth: PZxTIoanfvEOg4O-EieGG3SPcFE
-Message-ID: <CAObL_7GvVtiBye4s7=EoV_wuBzGMBZLFnqYwNG5gkKW4SjneVQ@mail.gmail.com>
-Subject: Re: [GIT PULL] platform-drivers-x86 for 3.19
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        Darren Hart <dvhart@infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54B7ED29.9060700@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Jan 15, 2015 8:43 AM, "Kirill A. Shutemov" <kirill@shutemov.name> wrote:
->
-> On Tue, Jan 13, 2015 at 10:04:55AM -0800, Andrew Lutomirski wrote:
-> > On Tue, Jan 13, 2015 at 9:56 AM, Darren Hart <dvhart@infradead.org> wrote:
-> > > On Mon, Jan 12, 2015 at 02:12:44PM -0800, Andrew Lutomirski wrote:
-> > >> On Mon, Jan 12, 2015 at 12:30 PM, Kirill A. Shutemov
-> > >> <kirill@shutemov.name> wrote:
-> > >> > On Mon, Jan 12, 2015 at 12:05:45PM -0800, Andrew Lutomirski wrote:
-> > >> >> On Mon, Jan 12, 2015 at 12:03 PM, Kirill A. Shutemov
-> > >> >> <kirill@shutemov.name> wrote:
-> > >> >> > On Mon, Jan 12, 2015 at 10:42:11AM -0800, Andrew Lutomirski wrote:
-> > >> >> >> On Mon, Jan 12, 2015 at 10:38 AM, Darren Hart <dvhart@infradead.org> wrote:
-> > >> >> >> > On Mon, Jan 12, 2015 at 12:58:02AM +0200, Kirill A. Shutemov wrote:
-> > >> >> >> >> On Thu, Dec 18, 2014 at 09:51:27AM -0800, Darren Hart wrote:
-> > >> >> >> >> > thinkpad-acpi using software mute simplifies the driver and the user experience
-> > >> >> >> >> > significantly.
-> > >> >> >> >>
-> > >> >> >> >> Except when it doesn't.
-> > >> >> >> >>
-> > >> >> >> >> I'm probably in minority, but I don't use fancy userspace to mess with my
-> > >> >> >> >> mixer and the mute button worked just fine for me before the change.
-> > >> >> >> >> Wasted half an hour to find out what happened is not a pure win from user
-> > >> >> >> >> experience point of view.
-> > >> >> >> >>
-> > >> >> >> >> Is it really necessary to have software_mute_requested == true by default?
-> > >> >> >> >> Can fancy userspace ask for desired behaviour instead and change kernel to
-> > >> >> >> >> not send hotkeys change notification until software_mute is enabled?
-> > >> >> >> >>
-> > >> >> >> >> --
-> > >> >> >> >>  Kirill A. Shutemov
-> > >> >> >> >>
-> > >> >> >> >
-> > >> >> >> > Thanks for the report Kirill,
-> > >> >> >> >
-> > >> >> >> > Andy, we're at RC4, so if we need to fix (or revert) this fix, we only have a
-> > >> >> >> > couple weeks to do so.
-> > >> >> >> >
-> > >> >> >> > Kirill, to define the scope of the problem, if you specify
-> > >> >> >> > software_mute_requested as false on the kernel command line, does your system
-> > >> >> >> > function as expected?
-> > >> >> >>
-> > >> >> >> If I understood Kirill's email correctly, the only issue is that he
-> > >> >> >> liked the old behavior.  Kirill, is that correct?
-> > >> >> >
-> > >> >> > Yes. For now I use thinkpad_acpi.software_mute=0 to get old behaviour.
-> > >> >> >
-> > >> >>
-> > >> >> What aspect of the old behavior is better than the new default behavior?
-> > >> >
-> > >> > It's not necessary better. The new behavior just broke my use-case.
-> > >> >
-> > >> > I don't have anything in my system what would react on KEY_MUTE and I used
-> > >> > the functionality platform provides until it suddenly stopped working.
-> > >> >
-> > >> > I personally can live with new thinkpad_acpi. I'll probably update my
-> > >> > configuration to react on the software button.
-> > >> >
-> > >> > But who else will get frustrated after update to v3.19?
-> > >>
-> > >> Can you try the equivalent of:
-> > >>
-> > >> bindsym XF86AudioMute exec amixer -q set Master toggle
-> > >>
-> > >> for your desktop environment?  Note that this is exactly what you'd do
-> > >> if you were using any laptop that wasn't a thinkpad.
-> > >
-> > > Unless we hear back from Kirill on why this isn't workable, I'm inclined to
-> > > leave this as is. Between the kernel module option and this keybinding,
-> > > equivalent behavior can be easily achieved, and the general use case is
-> > > significantly improved.
-> > >
-> > > The current gap appears to be the mute LED in the button itself, which can be
-> > > addressed moving forward.
+Hi,
+
+On 15/01/2015 at 17:39:05 +0100, Daniel Lezcano wrote :
+> On 01/12/2015 04:37 PM, Alexandre Belloni wrote:
+> >Restarting on an at91rm9200 is handled by using the system timer. Move that
+> >function to the system timer driver.
 > >
-> > I should have clarified this better.  The command:
+> >Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> >Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> >---
+> >  arch/arm/mach-at91/at91rm9200.c      | 11 -----------
+> >  drivers/clocksource/timer-atmel-st.c | 12 ++++++++++++
+> >  2 files changed, 12 insertions(+), 11 deletions(-)
 > >
-> > amixer -q set Master toggle
+> >diff --git a/arch/arm/mach-at91/at91rm9200.c b/arch/arm/mach-at91/at91rm9200.c
+> >index b52916947535..4ea889cd6091 100644
+> >--- a/arch/arm/mach-at91/at91rm9200.c
+> >+++ b/arch/arm/mach-at91/at91rm9200.c
+> >@@ -15,7 +15,6 @@
 > >
-> > should toggle the mute LED in sync with the master mixer on all
-> > ThinkPad models with a mute LED.  This works on my X220, and Borislav
-> > confirmed off-list that it works on his X230.  If there's a ThinkPad
-> > with a mute LED on which this doesn't work, then IMO it's a bug and
-> > should be fixed.
->
-> Okay. Mute and mute led works. Any idea how to get mic mute led work?
-> What happend to your patch on the topic?
->
-> http://permalink.gmane.org/gmane.linux.drivers.platform.x86.devel/1962
+> >  #include <asm/mach/map.h>
+> >  #include <asm/system_misc.h>
+> >-#include <mach/at91_st.h>
+> >  #include <mach/hardware.h>
+> >
+> >  #include "soc.h"
+> >@@ -30,15 +29,6 @@ static void at91rm9200_idle(void)
+> >  	at91_pmc_write(AT91_PMC_SCDR, AT91_PMC_PCK);
+> >  }
+> >
+> >-static void at91rm9200_restart(enum reboot_mode reboot_mode, const char *cmd)
+> >-{
+> >-	/*
+> >-	 * Perform a hardware reset with the use of the Watchdog timer.
+> >-	 */
+> >-	at91_st_write(AT91_ST_WDMR, AT91_ST_RSTEN | AT91_ST_EXTEN | 1);
+> >-	at91_st_write(AT91_ST_CR, AT91_ST_WDRST);
+> >-}
+> >-
+> >  /* --------------------------------------------------------------------
+> >   *  AT91RM9200 processor initialization
+> >   * -------------------------------------------------------------------- */
+> >@@ -51,7 +41,6 @@ static void __init at91rm9200_map_io(void)
+> >  static void __init at91rm9200_initialize(void)
+> >  {
+> >  	arm_pm_idle = at91rm9200_idle;
+> >-	arm_pm_restart = at91rm9200_restart;
+> >  }
+> >
+> >
+> >diff --git a/drivers/clocksource/timer-atmel-st.c b/drivers/clocksource/timer-atmel-st.c
+> >index 51761f8927b7..522583d6cc78 100644
+> >--- a/drivers/clocksource/timer-atmel-st.c
+> >+++ b/drivers/clocksource/timer-atmel-st.c
+> >@@ -29,6 +29,7 @@
+> >  #include <linux/of_irq.h>
+> >
+> >  #include <asm/mach/time.h>
+> >+#include <asm/system_misc.h>
+> >
+> >  #include <mach/at91_st.h>
+> >  #include <mach/hardware.h>
+> >@@ -180,6 +181,15 @@ static struct clock_event_device clkevt = {
+> >  	.set_mode	= clkevt32k_mode,
+> >  };
+> >
+> >+static void at91rm9200_restart(enum reboot_mode reboot_mode, const char *cmd)
+> >+{
+> >+	/*
+> >+	 * Perform a hardware reset with the use of the Watchdog timer.
+> >+	 */
+> >+	at91_st_write(AT91_ST_WDMR, AT91_ST_RSTEN | AT91_ST_EXTEN | 1);
+> >+	at91_st_write(AT91_ST_CR, AT91_ST_WDRST);
+> >+}
+> >+
+> >  void __iomem *at91_st_base;
+> >  EXPORT_SYMBOL_GPL(at91_st_base);
+> >
+> >@@ -248,4 +258,6 @@ void __init at91rm9200_timer_init(void)
+> >
+> >  	/* register clocksource */
+> >  	clocksource_register_hz(&clk32k, AT91_SLOW_CLOCK);
+> >+
+> >+	arm_pm_restart = at91rm9200_restart;
+> >  }
+> 
+> Mmh, I can't clearly explain why but I have a problem with that.
+> 
+> Can you explain why restart code falls in the clockevents driver ?
+> 
+> 
 
-It was addressed differently -- the mic mute works like the mute
-button as a result of:
+That is a temporary location before getting rid of it by writing a
+proper reset driver that will use the same syscon.
 
-b317b032d2dc ALSA: hda - Split Thinkpad ACPI-related code
-b67ae3f1c97e ALSA: hda - Enable Thinkpad mute/micmute LEDs for Realtek
-08cf680ccafd ALSA: hda - add connection to thinkpad_acpi to control
-mute/micmute LEDs
+The main goal is to remove mach/at91_st.h and direct accesses to the
+system timer registers.
 
-On my X220, "amixer set Capture toggle" toggles the mute LED.
 
---Andy
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
