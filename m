@@ -1,110 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754365AbbAOOmr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 09:42:47 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:63747 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752111AbbAOOmp (ORCPT
+	id S1752027AbbAOOo2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 09:44:28 -0500
+Received: from frv199.fwdcdn.com ([212.42.77.199]:60661 "EHLO
+	frv199.fwdcdn.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751219AbbAOOo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 09:42:45 -0500
+	Thu, 15 Jan 2015 09:44:27 -0500
+X-Greylist: delayed 585 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Jan 2015 09:44:27 EST
+Date: Thu, 15 Jan 2015 16:44:24 +0200
+From: Sergey Popov <popov_sergey@ukr.net>
+Subject: [patch 1/1] init/main.c: prevent increase of console_loglevel by
+ 'quiet' kernel parameter (inline now, sorry for previous attachment)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+X-Mailer: mail.ukr.net 5.0
+Message-Id: <1421332804.230522034.oqmpkds7@frv35.fwdcdn.com>
+X-Reply-Action: template
 MIME-Version: 1.0
-In-Reply-To: <20150115135556.GH16217@leverpostej>
-References: <1421269101-51105-1-git-send-email-s-anna@ti.com>
- <1421269101-51105-2-git-send-email-s-anna@ti.com> <20150115135201.GG16217@leverpostej>
- <20150115135556.GH16217@leverpostej>
-From: Rob Herring <robherring2@gmail.com>
-Date: Thu, 15 Jan 2015 08:42:23 -0600
-Message-ID: <CAL_JsqL2LZAooMk-V8+xeF2g6acZE21M+-OBRw8aEVa-5wVHuQ@mail.gmail.com>
-Subject: Re: [PATCH v7 1/4] Documentation: dt: add common bindings for hwspinlock
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Suman Anna <s-anna@ti.com>, Ohad Ben-Cohen <ohad@wizery.com>,
-        Kumar Gala <galak@codeaurora.org>, Bjorn Andersson <bjorn@kryo.se>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rob Herring <robh+dt@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: binary
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 15, 2015 at 7:55 AM, Mark Rutland <mark.rutland@arm.com> wrote:
-> On Thu, Jan 15, 2015 at 01:52:01PM +0000, Mark Rutland wrote:
->> On Wed, Jan 14, 2015 at 08:58:18PM +0000, Suman Anna wrote:
->> > This patch adds the generic common bindings used to represent
->> > a hwlock device and use/request locks in a device-tree build.
->> >
->> > All the platform-specific hwlock driver implementations need the
->> > number of locks and associated base id for registering the locks
->> > present within the device with the driver core. This base id
->> > needs to be unique across multiple IP instances of a hwspinlock
->> > device, so that each hwlock can be represented uniquely in a
->> > system.
->> >
->> > The number of locks is represented by 'hwlock-num-locks' property,
->> > and the base id is represented by the 'hwlock-base-id' property.
->> > The args specifier length is dependent on each vendor-specific
->> > implementation and is represented through the '#hwlock-cells'
->> > property. Client users need to use the property 'hwlocks' for
->> > requesting specific lock(s).
->> >
->> > Note that the document is named hwlock.txt deliberately to keep
->> > it a bit more generic.
->> >
->> > Cc: Rob Herring <robh+dt@kernel.org>
->> > Signed-off-by: Suman Anna <s-anna@ti.com>
->> > ---
->> > v7: Revised binding info for hwlock-base-id, it is mandatory now
->> >
->> >  .../devicetree/bindings/hwlock/hwlock.txt          | 55 ++++++++++++++++++++++
->> >  1 file changed, 55 insertions(+)
->> >  create mode 100644 Documentation/devicetree/bindings/hwlock/hwlock.txt
->> >
->> > diff --git a/Documentation/devicetree/bindings/hwlock/hwlock.txt b/Documentation/devicetree/bindings/hwlock/hwlock.txt
->> > new file mode 100644
->> > index 000000000000..8de7aaf878f9
->> > --- /dev/null
->> > +++ b/Documentation/devicetree/bindings/hwlock/hwlock.txt
->> > @@ -0,0 +1,55 @@
->> > +Generic hwlock bindings
->> > +=======================
->> > +
->> > +Generic bindings that are common to all the hwlock platform specific driver
->> > +implementations.
->> > +
->> > +The validity and need of these common properties may vary from one platform
->> > +implementation to another. The platform specific bindings should explicitly
->> > +state if an optional property is used. Please also look through the individual
->> > +platform specific hwlock binding documentations for identifying the applicable
->> > +properties.
->> > +
->> > +Common properties:
->> > +- #hwlock-cells:   Specifies the number of cells needed to represent a
->> > +                   specific lock. This property is mandatory for all
->> > +                   platform implementations.
->> > +- hwlock-num-locks:        Number of locks present in a hwlock device. This
->> > +                   property is needed on hwlock devices, where the number
->> > +                   of supported locks within a hwlock device cannot be
->> > +                   read from a register.
->> > +- hwlock-base-id:  An unique base Id for the locks for a particular hwlock
->> > +                   device. This property is mandatory for all platform
->> > +                   implementations.
->>
->> This property makes no sense. The ID encoded in the hwlock cells is
->> relative to the instance (identified by phandle), not global. So the DT
->> has no global ID space.
->>
->> Why do you think you need this?
->
-> Having looked at the way this proeprty is used, NAK.
->
-> If you need to carve up a Linux-internal ID space, do that dynamically.
-> There is no need for this property.
+From: Sergey Popov < popov_sergey@ukr.net >
 
-Better yet, don't create a Linux ID space for this. Everywhere we have
-one, we want to get rid of it.
+Prevent increase of console_loglevel by 'quiet'
 
-Rob
+'quiet' kernel option that follows the 'loglevel=N' should
+not blindly overwrite console_loglevel, instead it should
+respect and keep lower 'loglevel'.
+
+Signed-off-by: Sergey Popov < popov_sergey@ukr.net >
+---
+ init/main.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+Some drivers tend to print error messages (ex: 'drm/i810 does not support SMP') to the console 
+that we at our company don't want to show to people. We use 'quiet' kernel option to hide kernel decompressing progress and other messages not related to printk. But to hide error messages from drivers we use 'loglevel=3' parameter as well. But when it's _before_ the quiet, then quiet overrides loglevel=3 and set it to be 4.
+I think that's a bug, and here's simple solution for it. The only way to live without this patch is to pass 'loglevel=3' after the 'quiet'. This issue is known to the community, but everyone is using workaround (ex: https://wiki.archlinux.org/index.php/Silent_boot ).
+
+
+diff --git a/init/main.c b/init/main.c
+index 61b99376..91fc78b 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -211,7 +211,12 @@ static int __init debug_kernel(char *str)
+ 
+ static int __init quiet_kernel(char *str)
+ {
+-	console_loglevel = CONSOLE_LOGLEVEL_QUIET;
++	/*
++	 * 'quiet' option should not raise console_loglevel, it's only
++	 * allowed to lower it
++	 */
++	if (console_loglevel > CONSOLE_LOGLEVEL_QUIET)
++		console_loglevel = CONSOLE_LOGLEVEL_QUIET;
+ 	return 0;
+ }
+ 
+ 
