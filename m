@@ -1,110 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754192AbbAOMwm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 07:52:42 -0500
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:55150 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753794AbbAOMwj (ORCPT
+	id S1754229AbbAOMyM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 07:54:12 -0500
+Received: from mail-oi0-f46.google.com ([209.85.218.46]:62333 "EHLO
+	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751947AbbAOMyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 07:52:39 -0500
+	Thu, 15 Jan 2015 07:54:10 -0500
 MIME-Version: 1.0
-Reply-To: cw00.choi@samsung.com
-In-Reply-To: <CAGTfZH0Ve+icxc6FpMJhfNMRMqQASrcUmnrZw-6sYQz8rabC_A@mail.gmail.com>
-References: <1421213603-5020-1-git-send-email-cw00.choi@samsung.com>
-	<54B69072.4080607@kernel.org>
-	<54B692FB.7030703@linaro.org>
-	<54B7024C.4020407@samsung.com>
-	<20150115112938.GB16217@leverpostej>
-	<CAGTfZH0Ve+icxc6FpMJhfNMRMqQASrcUmnrZw-6sYQz8rabC_A@mail.gmail.com>
-Date: Thu, 15 Jan 2015 21:52:38 +0900
-Message-ID: <CAGTfZH0SQRyTMTmge6x2fXFBdVwtgJ_wcxK36mFrf6ZNPBn85w@mail.gmail.com>
-Subject: Re: [RESEND PATCH v3] clocksource: exynos_mct: Add the support for
- Exynos 64bit SoC
-From: Chanwoo Choi <cwchoi00@gmail.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Doug Anderson <dianders@chromium.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "inki.dae@samsung.com" <inki.dae@samsung.com>,
-        Kukjin Kim <kgene@kernel.org>, Olof Johansson <olof@lixom.net>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+Date: Thu, 15 Jan 2015 12:54:09 +0000
+Message-ID: <CAGj5WxAsvr6s+0L0yNPMraRGr23yPeE3-suB6R+NmvKA3DYBjw@mail.gmail.com>
+Subject: Re: Questions about IOMMU & PCIe switch
+From: Luis Alves <ljalvs@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Manu Abraham <abraham.manu@gmail.com>, ray@apollo.lv, clemens@ladisch.de
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 15, 2015 at 9:46 PM, Chanwoo Choi <cwchoi00@gmail.com> wrote:
-> Hi Mark,
->
-> On Thu, Jan 15, 2015 at 8:29 PM, Mark Rutland <mark.rutland@arm.com> wrote:
->> On Wed, Jan 14, 2015 at 11:57:00PM +0000, Chanwoo Choi wrote:
->>> Hi Kukjin,
->>>
->>> On 01/15/2015 01:02 AM, Daniel Lezcano wrote:
->>> > On 01/14/2015 04:51 PM, Kukjin Kim wrote:
->>> >> On 01/14/15 14:33, Chanwoo Choi wrote:
->>> >>
->>> >> Hi,
->>> >>
->>> >> + Doug, Olof
->>> >>
->>> >>> This patch adds the support for Exynos 64bit SoC. The delay_timer is only used
->>> >>> for Exynos 32bit SoC.
->>> >>>
->>> >> Yes, the Exynos MCT(Multi-Core Timer) is 64bit timer and it is available
->>> >> on 64bit exynos SoC such as exynos7. But basically ARMv8 architecture is
->>> >> including ARM ARCH timer (ARM Generic Timer) and exynos7 also has
->>> >> implemented it and additionally its access is faster than using memory
->>> >> mapped register called SFR for MCT...so Doug submitted patch to use MCT
->>> >> on 32bit exynos SoCs before.
->>>
->>> I know arch_timer. As you comment, ARCH timer would be used for system timer for ARMv8.
->>> But, Exynos5433/Exynos7 (ARMv8) include MCT (Multi-Core Timer) IP. I checked it on
->>> Exynos5433/EXynos7 User-manaual and tested it.
->>>
->>> I think that exynos_mct.c should support the Exynos 64-bit SoC
->>> because Exynos5433/Exynos7 include already MCT (Multi-Core Timer) IP.
->>>
->>> Also, I have a problem to verify ARCH timer on Exynos SoC. Exynos User-manual never includes
->>> the detailed information about for ARCH timer(e.g, clock for ARCH timer). I knew that
->>> I can get the document of ARCH timer for ARM official site but I think it is insufficient
->>> to implement ARCH timer on Exynos SoC.
+Hi Manu,
+
+Do you know if your saa716x driver might have any issue in the dma code?
+The code doesn't seem to be using chained scatterlists so it should be
+ok with the "old" method of just increment the pointer instead of
+using sg_next.
+(It's still a little blurry to my this IOMMU+dma+scatterlist stuff)
+
+Anyway, I've converted it to use "sg_next" as asked Raimonds to test
+(but I think it shouldn't make any difference):
+https://github.com/ljalves/linux_media/commit/54362743588bc8271e7988dd2823f818c00bf43d
+
+I also know don't fully understand the whole driver but I say thank
+you for it! :)
+By the way, when can we get it upstream? If you need help with
+anything just mail me. We are waiting for that driver for so long!
+
+
+Regards,
+Luis
+
+
+On Thu, Jan 8, 2015 at 8:35 PM, Raimonds Cicans <ray@apollo.lv> wrote:
+> On 08.01.2015 10:34, Clemens Ladisch wrote:
 >>
->> What do you mean by "insufficient to implement ARCH timer"?
+>> Raimonds Cicans wrote:
+>>>
+>>> https://github.com/ljalves/linux_media/issues/66
+>>
+>> If the TBS driver works, why don't you use it?
 >
-> As I knew, timer must need the source clock. The clock for ARCH timer
-> has dependency on Exynos SoC, But I cannot find
+> 1) driver is not stable in 24x7 setups
+>
+> 2) driver use old DVBAPI. This cause problems with some
+>      user space programs.
 
-I'm so sorry about this mistake. I pressed the send button before
-completing reply.
-
-As I knew, timer must need the source clock. The clock for ARCH timer
-has dependency on Exynos SoC, But I cannot find the clock information
-for ARCH timer on Exynos SoC user-manual.
-
-When I tried to use ARCH timer on Exynos3250, It is not working. We
-can check this ARCH timer issue of Exynos3250
-on following patch[1]:
-[1] http://www.spinics.net/lists/arm-kernel/msg322943.html
+It shouldn't. It is backward compatible.
 
 >
->>
->> The architected timer is mandatory in ARMv8, and required by the arm64
->> kernel.
->>
->> Additional timers may be requried if you want to put all CPUs into low
->> power states where the timer logic may be disabled and/or lose state,
->> but regardless the architected timers are necessary.
+> 3) TBS recommends to use card in MSI interrupt mode
+>      but this mode on IOMMU systems do not work:
+>      card is able to find transponders and tune to it
+>      but can not receive any data
 
-I agree that ARCH timer is mandatory.
+TBS didn't even have the courtesy to say thanks, but still.
+They don't have any clue on the driver.
 
-I just think that existing exynos-mct.c driver should support the Exynos5/7 SoC
-because released Exynos5/7 SoC includes already MCT IP for system timer.
+You shouldn't use MSI mode on most systems unless you
+are sure that your machine works perfectly well with MSI
+mode.
 
-Best Regards,
-Chanwoo Choi
+You should simply use standard interrupt mode, if you are
+unsure.
+
+In any sense, that card looks a bit odd:
+
+1. It doesn't need a PCIe switch, nor that CPLD in there for
+the fact that it is using a SAA7160, rather than an E version,
+which thereby support 4 FGPI inputs (4 simultaneous TS's)
+(Redundant components)
+
+2. But in any sense, the PCIe switch is transparent, It doesn't
+need any programming. All what you can do with the PCIe
+switch is to reprogram the lines to it, nothing more. In any
+case, if your card is detected, there's no point in playing with
+the PCIe switch
+
+3. The TS failure in a while can most likely be attributed to
+bad CPLD programming. On the cards that I have worked
+with, they've worked pretty well.
+
+
+Regards,
+
+Manu
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
