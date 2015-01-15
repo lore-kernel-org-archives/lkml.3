@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754200AbbAOA2R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 19:28:17 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43770 "EHLO
+	id S1754260AbbAOA3G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 19:29:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43773 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751952AbbAOA2P (ORCPT
+	with ESMTP id S1753177AbbAOA3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 19:28:15 -0500
-Date: Wed, 14 Jan 2015 16:28:15 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Felipe Balbi <balbi@ti.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux USB Mailing List <linux-usb@vger.kernel.org>
-Subject: Re: [GIT PULL] USB patches
-Message-ID: <20150115002815.GA7942@kroah.com>
-References: <1421257719-13711-1-git-send-email-balbi@ti.com>
+	Wed, 14 Jan 2015 19:29:03 -0500
+Date: Wed, 14 Jan 2015 16:29:02 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Shuah Khan <shuahkh@osg.samsung.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, linux@roeck-us.net,
+        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
+        stable@vger.kernel.org
+Subject: Re: [PATCH 3.18 000/150] 3.18.3-stable review
+Message-ID: <20150115002902.GA14212@kroah.com>
+References: <20150114072055.842408181@linuxfoundation.org>
+ <54B6F238.9000609@osg.samsung.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1421257719-13711-1-git-send-email-balbi@ti.com>
+In-Reply-To: <54B6F238.9000609@osg.samsung.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 14, 2015 at 11:48:39AM -0600, Felipe Balbi wrote:
-> Hi Greg,
+On Wed, Jan 14, 2015 at 03:48:24PM -0700, Shuah Khan wrote:
+> On 01/14/2015 12:21 AM, Greg Kroah-Hartman wrote:
+> > This is the start of the stable review cycle for the 3.18.3 release.
+> > There are 150 patches in this series, all will be posted as a response
+> > to this one.  If anyone has any issues with these being applied, please
+> > let me know.
+> > 
+> > Responses should be made by Fri Jan 16 07:20:24 UTC 2015.
+> > Anything received after that time might be too late.
+> > 
+> > The whole patch series can be found in one patch at:
+> > 	kernel.org/pub/linux/kernel/v3.0/stable-review/patch-3.18.3-rc1.gz
+> > and the diffstat can be found below.
+> > 
+> > thanks,
+> > 
+> > greg k-h
+> > 
 > 
-> Alright, 3 more fixes for v3.19-rc and my queue is finally clean.
-> 
-> All three fixes are rather obvious, two of them just took longer
-> to sort out all the stable rules details and I ended up having
-> to fix all that, otherwise we would miss the time frame.
-> 
-> Please condiser merging to your greg/usb-linus branch.
-> 
-> cheers
-> 
-> The following changes since commit 5fb694f96e7c19e66b1c55124b98812e32e3efa5:
-> 
->   usb: gadget: udc: atmel: fix possible oops when unloading module (2015-01-09 18:15:11 -0600)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git tags/fixes-for-v3.19-rc6
+> Compiled and booted on my test system. No dmesg regressions.
 
-Pulled and pushed out, thanks.
+Thanks for testing all of these and letting me know.
 
 greg k-h
