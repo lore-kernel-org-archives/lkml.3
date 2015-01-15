@@ -1,74 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751405AbbAOCpU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 21:45:20 -0500
-Received: from smtprelay4.synopsys.com ([198.182.47.9]:37333 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893AbbAOCpS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 21:45:18 -0500
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: "balbi@ti.com" <balbi@ti.com>
-CC: "Dinh Nguyen (dinguyen@opensource.altera.com)" 
-	<dinguyen@opensource.altera.com>,
-        "lyz@rock-chips.com" <lyz@rock-chips.com>,
-        "robert.jarzmik@free.fr" <robert.jarzmik@free.fr>,
-        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] usb: phy: make GPIOs optional for the generic phy
-Thread-Topic: [PATCH] usb: phy: make GPIOs optional for the generic phy
-Thread-Index: AdAwbTXrO7DxzvJ4SC6YgyOS6Kjhkw==
-Date: Thu, 15 Jan 2015 02:45:12 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304845078CE@US01WEMBX2.internal.synopsys.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.13.184.19]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751736AbbAOCrr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 21:47:47 -0500
+Received: from ozlabs.org ([103.22.144.67]:58912 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751205AbbAOCrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 21:47:45 -0500
+Date: Thu, 15 Jan 2015 13:47:35 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Vrabel <david.vrabel@citrix.com>
+Subject: linux-next: manual merge of the net-next tree with the net tree
+Message-ID: <20150115134735.1e4612c6@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/oZs.80FKNEj1RzEYMAS6ixp"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 47bd18e210fecf701d493c27884e13c69bc449ea Mon Sep 17 00:00:00 2001
-From: Paul Zimmerman <paulz@synopsys.com>
-Date: Wed, 14 Jan 2015 18:15:58 -0800
-Subject: [PATCH] usb: phy: make GPIOs optional for the generic phy
+--Sig_/oZs.80FKNEj1RzEYMAS6ixp
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-The use of GPIOs should be optional for the generic phy, otherwise
-the Altera SOCFPGA platform at least is broken.
+Hi all,
 
-Fixes breakage caused by a combination of e9f2cefb0cd "usb: phy: 
-generic: migrate to gpio_desc" and 135b3c4304d "usb: dwc2: platform: 
-add generic PHY framework support".
+Today's linux-next merge of the net-next tree got a conflict in
+drivers/net/xen-netfront.c between commit 900e183301b5 ("xen-netfront:
+use different locks for Rx and Tx stats") from the net tree and commit
+a55e8bb8fb89 ("xen-netfront: refactor making Tx requests") from the
+net-next tree.
 
-Signed-off-by: Paul Zimmerman <paulz@synopsys.com>
----
-Based on top of testing/next.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
- drivers/usb/phy/phy-generic.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --git a/drivers/usb/phy/phy-generic.c b/drivers/usb/phy/phy-generic.c
-index dd05254..9a826ff 100644
---- a/drivers/usb/phy/phy-generic.c
-+++ b/drivers/usb/phy/phy-generic.c
-@@ -218,10 +218,10 @@ int usb_phy_gen_create_phy(struct device *dev, struct usb_phy_generic *nop,
- 			clk_rate = 0;
- 
- 		needs_vcc = of_property_read_bool(node, "vcc-supply");
--		nop->gpiod_reset = devm_gpiod_get(dev, "reset-gpios");
-+		nop->gpiod_reset = devm_gpiod_get_optional(dev, "reset-gpios");
- 		err = PTR_ERR(nop->gpiod_reset);
- 		if (!err) {
--			nop->gpiod_vbus = devm_gpiod_get(dev,
-+			nop->gpiod_vbus = devm_gpiod_get_optional(dev,
- 							 "vbus-detect-gpio");
- 			err = PTR_ERR(nop->gpiod_vbus);
- 		}
--- 
-1.7.6.5
+diff --cc drivers/net/xen-netfront.c
+index d8c10764f130,01a4350eb313..000000000000
+--- a/drivers/net/xen-netfront.c
++++ b/drivers/net/xen-netfront.c
+@@@ -562,18 -518,15 +517,15 @@@ static u16 xennet_select_queue(struct n
+ =20
+  static int xennet_start_xmit(struct sk_buff *skb, struct net_device *dev)
+  {
+- 	unsigned short id;
+  	struct netfront_info *np =3D netdev_priv(dev);
+ -	struct netfront_stats *stats =3D this_cpu_ptr(np->stats);
+ +	struct netfront_stats *tx_stats =3D this_cpu_ptr(np->tx_stats);
+- 	struct xen_netif_tx_request *tx;
+- 	char *data =3D skb->data;
+- 	RING_IDX i;
+- 	grant_ref_t ref;
+- 	unsigned long mfn;
++ 	struct xen_netif_tx_request *tx, *first_tx;
++ 	unsigned int i;
+  	int notify;
+  	int slots;
+- 	unsigned int offset =3D offset_in_page(data);
+- 	unsigned int len =3D skb_headlen(skb);
++ 	struct page *page;
++ 	unsigned int offset;
++ 	unsigned int len;
+  	unsigned long flags;
+  	struct netfront_queue *queue =3D NULL;
+  	unsigned int num_queues =3D dev->real_num_tx_queues;
 
+--Sig_/oZs.80FKNEj1RzEYMAS6ixp
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUtypPAAoJEMDTa8Ir7ZwVkcYP/1vLa6WhxEaf0bx1uORWbj+X
+Ge2oxR79aYJs7fiD5Ps6Pe/SUUhB6rukBk9OQbidsc3Fk1A+TdmNOm8wI+vnoNmQ
+G/DV3wB3nbGJoOVBZR27I4BlLGJKlqv+gw2gPiRYfFAQz1VSiuyjwrVJlkfxmIxC
+QfkLaxHGV2Ccv0hsMLKougFuck0EsiYIYPpE6YMpX4qJAoNml/hCBGYFiEJOe6/h
+pfoSg2zjyiR7PVSlGe4IJ4WpXLIRAWuPiXK+3mWpCqo/hpB4Ke2P2m5UZoFmvUsa
+Ja24UfXQ8BZuNUU3ewqLoMCRX5uOn2KcEDfQdKnx6rju/4vYk0Kuka1TYn2onQZS
+dIQl3q6YWpngpwc/qJlYwV8oFUk/23PxL/zjHfaJanGELM1sUInfPGao0K9vG786
+ksMtXkxuJ7X5awj35d3+vWb5z9h1o5gyAib69ILW++iJfl5LfJtm+VUyW7w9DLOM
+uhvesTkZaQSfnqs/BUClyencELim6b8seugXX0lx/ThMguG2zHCMC3DecmrzrBCn
+ZsHs8xVC8eKu9Dr96HhTnlM02ATsGN7LQnxTt8YwvfqnvN1gF0jnm7LwMcDKKs9+
+lX8XHzbZtgXrWGxPS6MPrQDRdwdksLTjvSCvjpf1wMfjMcnlbKDdBh8Je4W4KFw/
+T3cDqIbQJ/Lh7r6mx6L5
+=E0ux
+-----END PGP SIGNATURE-----
+
+--Sig_/oZs.80FKNEj1RzEYMAS6ixp--
