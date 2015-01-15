@@ -1,49 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755129AbbAOSzt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 13:55:49 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:50789 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751981AbbAOSzr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 13:55:47 -0500
-Date: Thu, 15 Jan 2015 13:55:43 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Konstantin Khebnikov <khlebnikov@yandex-team.ru>
-Cc: linux-mm@kvack.org, cgroups@vger.kernel.org,
-        Roman Gushchin <klamm@yandex-team.ru>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, koct9i@gmail.com
-Subject: Re: [PATCH 3/6] memcg: track shared inodes with dirty pages
-Message-ID: <20150115185543.GA28195@htj.dyndns.org>
-References: <20150115180242.10450.92.stgit@buzz>
- <20150115184914.10450.51964.stgit@buzz>
+	id S1753332AbbAOTAX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 14:00:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35056 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752164AbbAOTAV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 14:00:21 -0500
+Message-ID: <54B80DE4.5060902@redhat.com>
+Date: Thu, 15 Jan 2015 13:58:44 -0500
+From: Jon Masters <jcm@redhat.com>
+Organization: Red Hat, Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150115184914.10450.51964.stgit@buzz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Hanjun Guo <hanjun.guo@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Will Deacon <will.deacon@arm.com>
+CC: Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Mark Brown <broonie@kernel.org>,
+        Rob Herring <robh@kernel.org>, Robert Richter <rric@kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>, Charles.Garcia-Tobin@arm.com,
+        phoenix.liyi@huawei.com, Timur Tabi <timur@codeaurora.org>,
+        suravee.suthikulpanit@amd.com, wangyijing@huawei.com,
+        linux-acpi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linaro-acpi@lists.linaro.org
+Subject: Re: [PATCH v7 00/17] Introduce ACPI for ARM64 based on ACPI 5.1
+References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org>
+In-Reply-To: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 15, 2015 at 09:49:14PM +0300, Konstantin Khebnikov wrote:
-> From: Konstantin Khlebnikov <khlebnikov@yandex-team.ru>
+On 01/14/2015 10:04 AM, Hanjun Guo wrote:
+> Hi,
 > 
-> Inode is owned only by one memory cgroup, but if it's shared it might
-> contain pages from multiple cgroups. This patch detects this situation
-> in memory reclaiemer and marks dirty inode with flag I_DIRTY_SHARED
-> which is cleared only when data is completely written. Memcg writeback
-> always writes such inodes.
+> This is the v7 of ACPI core patches for ARM64 based on ACPI 5.1
 > 
-> Signed-off-by: Konstantin Khlebnikov <khlebnikov@yandex-team.ru>
+> updates from v6:
+>   - Rebased on top of 3.19-rc4, add Mack Salter's patch to use
+>     the early_ioremap after paging_init() for ACPI table mappings;
+> 
+>   - Two patches about converting apic_id to phys_id to make it arch
+>     agnostic were already merged into RC4 by Rafael.
+> 
+>   - Split patch "Parse FADT table to get PSCI flags for PSCI init"
+>     into two as Lorenzo's suggestion, also fix typo and lack of __init
+>     for psci_0_2_set_functions() which is spotted by Lorenzo.
+> 
+>   - Add Tested-by from Yijing Wang.
+> 
+> previous version is here:
+> v6: https://lkml.org/lkml/2015/1/4/40
+> 
+> 1. Why we need ACPI on ARM64?
+> 
+>   - Grant already posted a blog about this, and stated clearly
+>     why we need ACPI on ARM64:
+> 
+>     http://www.secretlab.ca/archives/151
+> 
+> 
+> 2. What we need to do before the arm64 ACPI core patches
+>    could be merged into the kernel?
+> 
+>   - Al Stone posted a TODO list and updates v2 for the
+>     progress we made:
+>     http://www.spinics.net/lists/arm-kernel/msg390069.html
+> 
+>   - so from the progress we can see that we already finished
+>     most of the items, and _OSI we got a plan to fix it, RFC
+>     patch is on the way.
+> 
+> 
+> This patch set was tested on FVP by Fuwei, and booted ok as expected.
+> (No functional change since last version)
 
-This conflicts with the writeback cgroup support patchset which will
-solve the writeback and memcg problem a lot more comprehensively.
+For the entire series:
 
- http://lkml.kernel.org/g/1420579582-8516-1-git-send-email-tj@kernel.org
+Tested-by: Jon Masters <jcm@redhat.com>
 
-Thanks.
 
--- 
-tejun
