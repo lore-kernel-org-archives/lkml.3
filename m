@@ -1,173 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754397AbbAOXbl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 18:31:41 -0500
-Received: from lgeamrelo04.lge.com ([156.147.1.127]:54742 "EHLO
-	lgeamrelo04.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752290AbbAOXbk (ORCPT
+	id S1754151AbbAOX34 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 18:29:56 -0500
+Received: from galahad.ideasonboard.com ([185.26.127.97]:52231 "EHLO
+	galahad.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752054AbbAOX3y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 18:31:40 -0500
-X-Original-SENDERIP: 10.177.220.203
-X-Original-MAILFROM: namhyung@kernel.org
-Date: Fri, 16 Jan 2015 08:28:56 +0900
-From: Namhyung Kim <namhyung@kernel.org>
-To: Jiri Olsa <jolsa@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Dominique Toupin <dominique.toupin@ericsson.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jeremie Galarneau <jgalar@efficios.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: [PATCHv3 0/8] perf tools: Add perf data CTF conversion
-Message-ID: <20150115232856.GA821@sejong>
-References: <1421338556-20498-1-git-send-email-jolsa@kernel.org>
+	Thu, 15 Jan 2015 18:29:54 -0500
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: dmaengine@vger.kernel.org, linux-sh@vger.kernel.org,
+        Magnus Damm <magnus.damm@gmail.com>, Simon Horman <horms@verge.net.au>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Vinod Koul <vinod.koul@intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dmaengine: of: bail out early if "dmas" property is not present
+Date: Fri, 16 Jan 2015 01:30:21 +0200
+Message-ID: <2985582.KWahZ5isJS@avalon>
+User-Agent: KMail/4.14.3 (Linux/3.17.7-gentoo; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <1421244988-11794-1-git-send-email-wsa@the-dreams.de>
+References: <1421244988-11794-1-git-send-email-wsa@the-dreams.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1421338556-20498-1-git-send-email-jolsa@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jiri,
+Hi Wolfram,
 
-On Thu, Jan 15, 2015 at 05:15:48PM +0100, Jiri Olsa wrote:
-> hi,
-> this is follow up on original RFC patchset:
->   http://marc.info/?t=140732735600004&r=1&w=2
-> 
-> Basically we are adding 'perf data convert' command to
-> allow conversion of perf data file into CTF [1] data.
+Thank you for the patch.
 
-I think I already gave my ACKs to this series, but let me repeat it.
+On Wednesday 14 January 2015 15:16:28 Wolfram Sang wrote:
+> From: Wolfram Sang <wsa+renesas@sang-engineering.com>
+> 
+> And don't print an error: not configured is not an error.
+> 
+> Reported-by: Philipp Zabel <p.zabel@pengutronix.de>
+> Signed-off-by: Wolfram Sang <wsa+renesas@sang-engineering.com>
 
-Acked-by: Namhyung Kim <namhyung@kernel.org>
+This looks good to me.
 
-Thanks,
-Namhyung
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-
-> 
-> v3 changes:
->   - rebased to latest acme's perf/core
-> 
-> v2 changes:
->   - addressed comments from Namhyung
->   - rebased to latest acme's perf/core
-> 
-> Changes from RFC:
->   - able to generate CTF data, that are possible to be displayed under
->     tracecompas GUI [3], please check several screenshots in here [4]
->   - storing CTF data streams per cpu
->   - several cleanups
-> 
-> Examples:
-> - Catch default perf data (cycles event):
->   $ perf record ls
->   [ perf record: Woken up 1 times to write data ]
->   [ perf record: Captured and wrote 0.012 MB perf.data (~546 samples) ]
-> 
-> - To display converted CTF data run [2]:
->   $ babeltrace ./ctf-data/
->   [03:19:13.962125533] (+?.?????????) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 1 }
->   [03:19:13.962130001] (+0.000004468) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 1 }
->   [03:19:13.962131936] (+0.000001935) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 8 }
->   [03:19:13.962133732] (+0.000001796) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 114 }
->   [03:19:13.962135557] (+0.000001825) cycles: { }, { ip = 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 2087 }
->   [03:19:13.962137627] (+0.000002070) cycles: { }, { ip = 0xFFFFFFFF81361938, tid = 20714, pid = 20714, period = 37582 }
->   [03:19:13.962161091] (+0.000023464) cycles: { }, { ip = 0xFFFFFFFF8124218F, tid = 20714, pid = 20714, period = 600246 }
->   [03:19:13.962517569] (+0.000356478) cycles: { }, { ip = 0xFFFFFFFF811A75DB, tid = 20714, pid = 20714, period = 1325731 }
->   [03:19:13.969518008] (+0.007000439) cycles: { }, { ip = 0x34080917B2, tid = 20714, pid = 20714, period = 1144298 }
-> 
-> - To get some nice output in tracecompas GUI [3], please capture sched:*
->   and syscall tracepoints like:
->   # perf record -e 'sched:*,raw_syscalls:*' -a
->   ^C[ perf record: Woken up 0 times to write data ]
->   [ perf record: Captured and wrote 412.347 MB perf.data (~18015721 samples) ]
-> 
-> - To convert perf data file run:
->   # perf data convert --to-ctf=./ctf 
->   [ perf data convert: Converted 'perf.data' into CTF data './ctf' ]
->   [ perf data convert: Converted and wrote 408.421 MB (3964792 samples) ]
-> 
-> - To display converted CTF data run [2]:
->   # babeltrace ./ctf-data/
->   [23:32:20.165354855] (+0.000000507) sched:sched_wakeup: { cpu_id = 0 }, { perf_ip = 0xFFFFFFFF810BCA72, perf_tid = 0, perf_pid = 0, perf_id = 462554, perf_period = 1, common_type = 265, ...
->   [23:32:20.165359078] (+0.000001181) sched:sched_switch: { cpu_id = 0 }, { perf_ip = 0xFFFFFFFF8172A110, perf_tid = 0, perf_pid = 0, perf_id = 462562, perf_period = 1, common_type = 263, ...
->   [23:32:20.165364686] (+0.000000328) sched:sched_stat_runtime: { cpu_id = 0 }, { perf_ip = 0xFFFFFFFF810C8AE5, perf_tid = 5326, perf_pid = 5326, perf_id = 462610, perf_period = 11380, ...
->   [23:32:20.165366067] (+0.000001205) sched:sched_switch: { cpu_id = 0 }, { perf_ip = 0xFFFFFFFF8172A110, perf_tid = 5326, perf_pid = 5326, perf_id = 462562, perf_period = 1, common_type  ...
->   [23:32:20.165723312] (+0.000001479) sched:sched_stat_runtime: { cpu_id = 2 }, { perf_ip = 0xFFFFFFFF810C8AE5, perf_tid = 11821, perf_pid = 11821, perf_id = 462612, perf_period = 1000265, ...
->   [23:32:20.065282391] (+?.?????????) raw_syscalls:sys_enter: { cpu_id = 1 }, { perf_ip = 0xFFFFFFFF810230AF, perf_tid = 26155, perf_pid = 26155, perf_id = 462635, perf_period = 1, ...
->   [23:32:20.065286422] (+0.000004031) raw_syscalls:sys_exit: { cpu_id = 1 }, { perf_ip = 0xFFFFFFFF810231D8, perf_tid = 26155, perf_pid = 26155, perf_id = 462639, perf_period = 1, ...
-> 
-> - Or run tracecompass and open the CTF data ;-)
-> 
-> Changes are also reachable in here:
->   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
->   perf/core_ctf_convert
-> 
-> thanks,
-> jirka
-> 
-> [1] Common Trace Format - http://www.efficios.com/ctf
-> [2] babeltrace - http://www.efficios.com/babeltrace
-> [3] Trace compass - http://projects.eclipse.org/projects/tools.tracecompass
-> [4] screenshots - http://people.redhat.com/~jolsa/tracecompass-perf/
-> 
-> 
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: David Ahern <dsahern@gmail.com>
-> Cc: Dominique Toupin <dominique.toupin@ericsson.com>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Jeremie Galarneau <jgalar@efficios.com>
-> Cc: Jiri Olsa <jolsa@kernel.org>
-> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> Cc: Namhyung Kim <namhyung@gmail.com>
-> Cc: Paul Mackerras <paulus@samba.org>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> Cc: Tom Zanussi <tzanussi@gmail.com>
 > ---
-> Jiri Olsa (5):
->       perf tools: Add feature check for libbabeltrace
->       perf tools: Add new perf data command
->       perf data: Add perf data to CTF conversion support
->       perf data: Enable stream flush within processing
->       perf data: Add support for setting ordered_events queue size
 > 
-> Sebastian Andrzej Siewior (3):
->       perf data: Add a 'perf' prefix to the generic fields
->       perf data: Add tracepoint events fields CTF conversion support
->       perf data: Switch to multiple cpu stream files
+> In response to Philipp's patch silencing the warning in the driver:
+> http://patchwork.ozlabs.org/patch/425696/
 > 
->  tools/perf/Documentation/perf-data.txt                |   40 ++
->  tools/perf/Documentation/perf.txt                     |    7 +-
->  tools/perf/Makefile.perf                              |    9 +-
->  tools/perf/builtin-data.c                             |  119 ++++++
->  tools/perf/builtin.h                                  |    1 +
->  tools/perf/command-list.txt                           |    1 +
->  tools/perf/config/Makefile                            |   24 ++
->  tools/perf/config/feature-checks/Makefile             |    8 +-
->  tools/perf/config/feature-checks/test-all.c           |    5 +
->  tools/perf/config/feature-checks/test-libbabeltrace.c |    8 +
->  tools/perf/perf.c                                     |    1 +
->  tools/perf/util/data-convert-bt.c                     | 1057 +++++++++++++++++++++++++++++++++++++++++++++++++
->  tools/perf/util/data-convert-bt.h                     |    8 +
->  tools/perf/util/debug.c                               |    2 +
->  tools/perf/util/debug.h                               |    1 +
->  15 files changed, 1287 insertions(+), 4 deletions(-)
->  create mode 100644 tools/perf/Documentation/perf-data.txt
->  create mode 100644 tools/perf/builtin-data.c
->  create mode 100644 tools/perf/config/feature-checks/test-libbabeltrace.c
->  create mode 100644 tools/perf/util/data-convert-bt.c
->  create mode 100644 tools/perf/util/data-convert-bt.h
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> I think this should be handled in the core.
+> 
+>  drivers/dma/of-dma.c | 4 ++++
+>  1 file changed, 4 insertions(+)
+> 
+> diff --git a/drivers/dma/of-dma.c b/drivers/dma/of-dma.c
+> index d5fbeaa1e7ba..ca31f1b45366 100644
+> --- a/drivers/dma/of-dma.c
+> +++ b/drivers/dma/of-dma.c
+> @@ -159,6 +159,10 @@ struct dma_chan *of_dma_request_slave_channel(struct
+> device_node *np, return ERR_PTR(-ENODEV);
+>  	}
+> 
+> +	/* Silently fail if there is not even the "dmas" property */
+> +	if (!of_find_property(np, "dmas", NULL))
+> +		return ERR_PTR(-ENODEV);
+> +
+>  	count = of_property_count_strings(np, "dma-names");
+>  	if (count < 0) {
+>  		pr_err("%s: dma-names property of node '%s' missing or empty\n",
+
+-- 
+Regards,
+
+Laurent Pinchart
+
