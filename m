@@ -1,71 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753606AbbAOLWj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 06:22:39 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:32783 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751834AbbAOLWg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 06:22:36 -0500
-Date: Thu, 15 Jan 2015 11:22:13 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Ken Wilson <ken.wilson@opengear.com>
-Cc: thomas.petazzoni@free-electrons.com, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        ezequiel.garcia@free-electrons.com, gerg@uclinux.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-spi@vger.kernel.org
-Message-ID: <20150115112213.GT3043@sirena.org.uk>
-References: <1421032440-15335-1-git-send-email-ken.wilson@opengear.com>
- <1421032440-15335-3-git-send-email-ken.wilson@opengear.com>
- <20150114200626.GN3043@sirena.org.uk>
- <54B712C0.5010808@opengear.com>
+	id S1753679AbbAOLXI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 06:23:08 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:48733 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753212AbbAOLXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 06:23:05 -0500
+Message-ID: <54B7A315.4030104@ti.com>
+Date: Thu, 15 Jan 2015 13:23:01 +0200
+From: Tomi Valkeinen <tomi.valkeinen@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="TJ9V72hR/LoebVea"
-Content-Disposition: inline
-In-Reply-To: <54B712C0.5010808@opengear.com>
-X-Cookie: To program is to be.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCHv2 2/2] spi: orion: Add multiple chip select support to
- spi-orion
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Fbdev development list <linux-fbdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] fbdev fixes for 3.19
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature";
+	boundary="3LFwKP5277brCdPLa0X1LBC1DMaILVvmX"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--3LFwKP5277brCdPLa0X1LBC1DMaILVvmX
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
 
---TJ9V72hR/LoebVea
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Hi Linus,
 
-On Thu, Jan 15, 2015 at 11:07:12AM +1000, Ken Wilson wrote:
+Please pull fbdev fixes for 3.19:
 
-> I agree that we could support any sane chip select for a slave, since the
-> slave addresses do need
-> to be explicitly defined. I'm happy with whatever your preference is.
+The following changes since commit eaa27f34e91a14cdceed26ed6c6793ec1d1861=
+15:
 
-Just accepting anything seems easier both for users and in
-implementation.
+  linux 3.19-rc4 (2015-01-11 12:44:53 -0800)
 
---TJ9V72hR/LoebVea
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tomba/linux.git tags/fbde=
+v-fixes-3.19
+
+for you to fetch changes up to ef6899cdc8608e2f018e590683f04bb04a069704:
+
+  fbdev/broadsheetfb: fix memory leak (2015-01-13 15:13:45 +0200)
+
+----------------------------------------------------------------
+fbdev fixes for 3.19
+
+* broadsheetfb: fix memory leak
+* simplefb: fix build failure on sparc
+
+----------------------------------------------------------------
+Colin Ian King (1):
+      fbdev/broadsheetfb: fix memory leak
+
+Hans de Goede (1):
+      simplefb: Fix build failure on Sparc
+
+ drivers/video/fbdev/broadsheetfb.c | 8 +++++---
+ drivers/video/fbdev/simplefb.c     | 2 +-
+ 2 files changed, 6 insertions(+), 4 deletions(-)
+
+
+
+--3LFwKP5277brCdPLa0X1LBC1DMaILVvmX
 Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Version: GnuPG v1
 
-iQEcBAEBCAAGBQJUt6LkAAoJECTWi3JdVIfQboMH/2FrwA8VEDSQZzlbas58eEws
-vD1EgggndHLeSSniFHUblzCjn6CGldTpIHlFi7OUrsoaHkASWhEtDyCfrTG+AUec
-zVIA1rHqYSOXZXFIZynP9QM7a6P43Fh/WaVN0YkUb0rSnxC4CsJx4KxILgiVdaSm
-bY6rh1oc/tQU/FghZvJiTIHGbhviuNLcjvrvUvydLVZDX5xQkb0QerumMFD8MVcu
-6Mnpd1wNfcz7YIcL7LoDxJ4KTp6Op1g9sQVcqHJSpSFfQ99rRCEycytOWDbulL9j
-LPpgFY3RecxnOQGdWW4BxvZbCds4GV3aHPE8IjAr4l5+Xiez2gbUg6pj4Ar0n2I=
-=pf3A
+iQIcBAEBAgAGBQJUt6MVAAoJEPo9qoy8lh71XXUP/ijC5Jq4X4t4boEBi79AFqgL
+5aVQYpvDqVWdoUqwOV17Ui2JHdZtU69Y5zVWg3NUCMcTZ3hD13coDWczf6MbB69O
+ku4wSFKbLM3ovUxPnVRKVThV89Cmk9lCxVP9Bbw1lObKPBlCPT+hKH56RvV8xKBU
+oR3z8HOvOV3Tc2bVgZp3K/Ob7ztmHtFsLVtACEy2aSC+5MiYHlWtEbuEmQBpfWl6
+ilpAZ7sQpw9lh4A0UV1MUzOYMtgbem3z5i82ahMQHxox+gdnZERyL/DAxUarylGj
+/saOtZJh+bF+VVRw+c08rfqabHIT6qc9xF+ZVCdRBLTxI/ckCoaBEKQ6bu/JtNIV
+UkGtFUUkKOsFv/6ZlZimtormA8x3YApIgaDWf6ETY2XYvS5e7n+XNUui9NivcT8v
+zOPyPCAeJB/rUC3a9QUw04NtnHW6YAZXrE/QBNksdWRWNDSr/ddwayUe1xzyyQIK
+jpmwp2YzbfmKqVvh0hzoa0L5O3kxWvzIaKbs0cammtlnZu5hCdt/zhT6Sd0eK1A3
+RtpZtRQBodb7a77m/tM1Bhh4s3PrGKTSChj2p2uk4OzwFlkyFM915ry6nmf9POBj
+OXxqBFmsmAxsRzjQ3e7494dnnXiPE5niBGl91AbPF4GVTL/3mVm4vEk9PvXWnbQA
+jDyhwYHiaeCw+Az5KEWL
+=uZSB
 -----END PGP SIGNATURE-----
 
---TJ9V72hR/LoebVea--
+--3LFwKP5277brCdPLa0X1LBC1DMaILVvmX--
