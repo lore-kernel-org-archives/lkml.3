@@ -1,103 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755420AbbAOQRA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 11:17:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51251 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752164AbbAOQQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 11:16:57 -0500
-From: Jiri Olsa <jolsa@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jeremie Galarneau <jgalar@efficios.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 8/8] perf data: Add support for setting ordered_events queue size
-Date: Thu, 15 Jan 2015 17:15:56 +0100
-Message-Id: <1421338556-20498-9-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1421338556-20498-1-git-send-email-jolsa@kernel.org>
-References: <1421338556-20498-1-git-send-email-jolsa@kernel.org>
+	id S1755436AbbAOQRS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 11:17:18 -0500
+Received: from mail-we0-f172.google.com ([74.125.82.172]:49232 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752551AbbAOQRP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 11:17:15 -0500
+Message-ID: <54B7E807.4050301@linaro.org>
+Date: Thu, 15 Jan 2015 17:17:11 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Wim Van Sebroeck <wim@iguana.be>, Guenter Roeck <linux@roeck-us.net>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH v3 4/8] ARM: at91: time: move the system timer driver
+ to drivers/clocksource
+References: <1421077023-30954-1-git-send-email-alexandre.belloni@free-electrons.com> <1421077023-30954-5-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1421077023-30954-5-git-send-email-alexandre.belloni@free-electrons.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding support to limit the size of ordered_events queue,
-so we could control allocation size of perf data files
-without proper finished round events.
+On 01/12/2015 04:36 PM, Alexandre Belloni wrote:
+> Import at91rm9200_time.c from mach-at91 as timer-atmel-st.c. Further cleanup is
+> required to get rid of the mach-at91 headers.
+>
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
 
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jeremie Galarneau <jgalar@efficios.com>
-Cc: Jiri Olsa <jolsa@kernel.org>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
----
- tools/perf/util/data-convert-bt.c | 22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 
-diff --git a/tools/perf/util/data-convert-bt.c b/tools/perf/util/data-convert-bt.c
-index 3d73e51ee10d..ddecce88bf6d 100644
---- a/tools/perf/util/data-convert-bt.c
-+++ b/tools/perf/util/data-convert-bt.c
-@@ -74,6 +74,9 @@ struct convert {
- 
- 	u64			events_size;
- 	u64			events_count;
-+
-+	/* Ordered events configured queue size. */
-+	u64			queue_size;
- };
- 
- static int value_set(struct bt_ctf_field_type *type,
-@@ -966,6 +969,18 @@ static void ctf_writer__flush_streams(struct ctf_writer *cw)
- 		ctf_stream__flush(cw->stream[cpu]);
- }
- 
-+static int convert__config(const char *var, const char *value, void *cb)
-+{
-+	struct convert *c = cb;
-+
-+	if (!strcmp(var, "convert.queue-size")) {
-+		c->queue_size = perf_config_u64(var, value);
-+		return 0;
-+	}
-+
-+	return perf_default_config(var, value, cb);
-+}
-+
- int bt_convert__perf2ctf(const char *input, const char *path)
- {
- 	struct perf_session *session;
-@@ -991,6 +1006,8 @@ int bt_convert__perf2ctf(const char *input, const char *path)
- 	struct ctf_writer *cw = &c.writer;
- 	int err = -1;
- 
-+	perf_config(convert__config, &c);
-+
- 	/* CTF writer */
- 	if (ctf_writer__init(cw, path))
- 		return -1;
-@@ -1000,6 +1017,11 @@ int bt_convert__perf2ctf(const char *input, const char *path)
- 	if (!session)
- 		goto free_writer;
- 
-+	if (c.queue_size) {
-+		ordered_events__set_alloc_size(&session->ordered_events,
-+					       c.queue_size);
-+	}
-+
- 	/* CTF writer env/clock setup  */
- 	if (ctf_writer__setup_env(cw, session))
- 		goto free_session;
+> ---
+>   arch/arm/mach-at91/Makefile                                           | 2 +-
+>   drivers/clocksource/Kconfig                                           | 4 ++++
+>   drivers/clocksource/Makefile                                          | 1 +
+>   .../at91rm9200_time.c => drivers/clocksource/timer-atmel-st.c         | 0
+>   4 files changed, 6 insertions(+), 1 deletion(-)
+>   rename arch/arm/mach-at91/at91rm9200_time.c => drivers/clocksource/timer-atmel-st.c (100%)
+>
+> diff --git a/arch/arm/mach-at91/Makefile b/arch/arm/mach-at91/Makefile
+> index 7b6424d40764..5d1ee3a6f115 100644
+> --- a/arch/arm/mach-at91/Makefile
+> +++ b/arch/arm/mach-at91/Makefile
+> @@ -7,7 +7,7 @@ obj-y		:= setup.o sysirq_mask.o
+>   obj-$(CONFIG_SOC_AT91SAM9)	+= sam9_smc.o
+>
+>   # CPU-specific support
+> -obj-$(CONFIG_SOC_AT91RM9200)	+= at91rm9200.o at91rm9200_time.o
+> +obj-$(CONFIG_SOC_AT91RM9200)	+= at91rm9200.o
+>   obj-$(CONFIG_SOC_AT91SAM9260)	+= at91sam9260.o
+>   obj-$(CONFIG_SOC_AT91SAM9261)	+= at91sam9261.o
+>   obj-$(CONFIG_SOC_AT91SAM9263)	+= at91sam9263.o
+> diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
+> index fc01ec27d3c8..ebc6dd77136e 100644
+> --- a/drivers/clocksource/Kconfig
+> +++ b/drivers/clocksource/Kconfig
+> @@ -128,6 +128,10 @@ config ATMEL_PIT
+>   	select CLKSRC_OF if OF
+>   	def_bool SOC_AT91SAM9 || SOC_SAMA5
+>
+> +config ATMEL_ST
+> +	select CLKSRC_OF if OF
+> +	def_bool SOC_AT91RM9200
+> +
+>   config CLKSRC_METAG_GENERIC
+>   	def_bool y if METAG
+>   	help
+> diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
+> index 94d90b24b56b..b7380ded4e4c 100644
+> --- a/drivers/clocksource/Makefile
+> +++ b/drivers/clocksource/Makefile
+> @@ -1,5 +1,6 @@
+>   obj-$(CONFIG_CLKSRC_OF)	+= clksrc-of.o
+>   obj-$(CONFIG_ATMEL_PIT)		+= timer-atmel-pit.o
+> +obj-$(CONFIG_ATMEL_ST)		+= timer-atmel-st.o
+>   obj-$(CONFIG_ATMEL_TCB_CLKSRC)	+= tcb_clksrc.o
+>   obj-$(CONFIG_X86_PM_TIMER)	+= acpi_pm.o
+>   obj-$(CONFIG_SCx200HR_TIMER)	+= scx200_hrt.o
+> diff --git a/arch/arm/mach-at91/at91rm9200_time.c b/drivers/clocksource/timer-atmel-st.c
+> similarity index 100%
+> rename from arch/arm/mach-at91/at91rm9200_time.c
+> rename to drivers/clocksource/timer-atmel-st.c
+>
+
+
 -- 
-1.9.3
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
