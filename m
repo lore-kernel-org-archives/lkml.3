@@ -1,73 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751293AbbAOFUj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 00:20:39 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:40663 "EHLO
-	mx0b-00082601.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750896AbbAOFUh (ORCPT
+	id S1751262AbbAOF3A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 00:29:00 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45487 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750699AbbAOF27 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 00:20:37 -0500
-Date: Wed, 14 Jan 2015 21:20:28 -0800
-From: Calvin Owens <calvinowens@fb.com>
-To: Paul Moore <paul@paul-moore.com>, <rgb@redhat.com>
-CC: Eric Paris <eparis@redhat.com>, <ebiederm@xmission.com>,
-        <linux-kernel@vger.kernel.org>, <kernel-team@fb.com>,
-        <stable@vger.kernel.org>, <linux-audit@redhat.com>
-Subject: Re: [PATCH][RESEND 2] Revert "AUDIT: Allow login in non-init
- namespaces"
-Message-ID: <20150115052028.GA15348@mail.thefacebook.com>
-References: <1415148371-11742-1-git-send-email-calvinowens@fb.com>
- <1569326.X07DWxmoQX@sifl>
- <20150109212451.GG27996@mail.thefacebook.com>
- <4124626.alCBS2pqnO@sifl>
+	Thu, 15 Jan 2015 00:28:59 -0500
+Date: Wed, 14 Jan 2015 21:28:57 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, satoru.takeuchi@gmail.com,
+        shuah.kh@samsung.com, stable@vger.kernel.org
+Subject: Re: [PATCH 3.18 000/150] 3.18.3-stable review
+Message-ID: <20150115052857.GA27433@kroah.com>
+References: <20150114072055.842408181@linuxfoundation.org>
+ <54B746AB.2050404@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4124626.alCBS2pqnO@sifl>
-User-Agent: Mutt/1.5.20 (2009-12-10)
-X-Originating-IP: [192.168.16.4]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2015-01-15_02:2015-01-14,2015-01-15,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=5.57331958361829e-14 kscore.compositescore=0
- circleOfTrustscore=0 compositescore=0.925924926977281
- urlsuspect_oldscore=0.925924926977281 suspectscore=0
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=64355
- rbsscore=0.925924926977281 spamscore=0
- recipient_to_sender_domain_totalscore=2 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1501150054
-X-FB-Internal: deliver
+In-Reply-To: <54B746AB.2050404@roeck-us.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 01/09 at 16:36 -0500, Paul Moore wrote:
-> On Friday, January 09, 2015 01:24:51 PM Calvin Owens wrote:
-> > On Friday 01/09 at 15:33 -0500, Paul Moore wrote:
-> > > While I haven't had reason to test this code lately, last I knew it was
-> > > working, what problems are you seeing Calvin?  Also, with what
-> > > distribution?
+On Wed, Jan 14, 2015 at 08:48:43PM -0800, Guenter Roeck wrote:
+> On 01/13/2015 11:21 PM, Greg Kroah-Hartman wrote:
+> >This is the start of the stable review cycle for the 3.18.3 release.
+> >There are 150 patches in this series, all will be posted as a response
+> >to this one.  If anyone has any issues with these being applied, please
+> >let me know.
 > >
-> > An SSH authentication setup in LXC containers on CentOS broke with the
-> > original patch. My revert made it work again. I can dig up more detail
-> > about the specific setup if you're interested.
+> >Responses should be made by Fri Jan 16 07:20:24 UTC 2015.
+> >Anything received after that time might be too late.
+> >
 > 
-> Yes, please.  I believe it is the little details that are important for this 
-> issue.
+> Update: Tests still pass after you dropped a patch.
 
-Just drop this patch, I goofed up. Sorry for the noise.
+Great, thanks for testing all of these and letting me know.
 
-(543bc6a1a987 was mistakingly applied to a kernel build without the
-supporting patches mentioned in the commit message. It was stupid of me
-not to check for that before bothering you...)
-
-Thanks very much,
-Calvin
- 
-> -- 
-> paul moore
-> www.paul-moore.com
-> 
+greg k-h
