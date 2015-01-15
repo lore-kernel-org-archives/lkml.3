@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932501AbbAOWSt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 17:18:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42021 "EHLO mx1.redhat.com"
+	id S932503AbbAOWTo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 17:19:44 -0500
+Received: from ozlabs.org ([103.22.144.67]:39049 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755742AbbAOWSs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 17:18:48 -0500
-Date: Fri, 16 Jan 2015 00:18:12 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Rik van Riel <riel@redhat.com>, Michal Hocko <mhocko@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, Vlastimil Babka <vbabka@suse.cz>,
-        Suleiman Souhlal <suleiman@google.com>, linux-mm@kvack.org
-Subject: [PATCH] mm/vmscan: fix highidx argument type
-Message-ID: <1421360175-18899-1-git-send-email-mst@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Mutt-Fcc: =sent
+	id S1755723AbbAOWTn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 17:19:43 -0500
+Message-ID: <1421360377.23332.1.camel@ellerman.id.au>
+Subject: Re: [PATCH] pseries/le: Fix another endiannes issue in RTAS call
+ from xmon
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+Cc: Laurent Dufour <ldufour@linux.vnet.ibm.com>, paulus@samba.org,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Date: Fri, 16 Jan 2015 09:19:37 +1100
+In-Reply-To: <54B8188D.1060907@linux.vnet.ibm.com>
+References: <1421295950.11409.3.camel@ellerman.id.au>
+	 <1421342627-7214-1-git-send-email-ldufour@linux.vnet.ibm.com>
+	 <54B8188D.1060907@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-for_each_zone_zonelist_nodemask wants an enum zone_type
-argument, but is passed gfp_t:
+On Thu, 2015-01-15 at 11:44 -0800, Tyrel Datwyler wrote:
+> On 01/15/2015 09:23 AM, Laurent Dufour wrote:
+> > The commit 3b8a3c010969 ("powerpc/pseries: Fix endiannes issue in RTAS
+> > call from xmon") was fixing an endianness issue in the call made from
+> > xmon to RTAS.
+> > 
+> > However, as Michael Ellerman noticed, this fix was not complete, the
+> > token value was not byte swapped. This lead to call an unexpected and
+> > most of the time unexisting RTAS function, which is silently ignored
+> > by RTAS.
+> 
+> Nit. Not so much that is silently ignored by RTAS as much as
+> disable_surveillance silently doesn't check the return status of the
+> RTAS call. Maybe a check is warranted and reporting of non-success.
 
-mm/vmscan.c:2658:9:    expected int enum zone_type [signed] highest_zoneidx
-mm/vmscan.c:2658:9:    got restricted gfp_t [usertype] gfp_mask
-mm/vmscan.c:2658:9: warning: incorrect type in argument 2 (different base types)
-mm/vmscan.c:2658:9:    expected int enum zone_type [signed] highest_zoneidx
-mm/vmscan.c:2658:9:    got restricted gfp_t [usertype] gfp_mask
+Yeah you're right, I added a printf of the result and got -3, which is also
+wrong as far as I can tell, but I didn't have the energy to chase it any
+further.
 
-convert argument to the correct type.
+Because this is in xmon we want to be extra careful about what we do, but an
+xmon_printf() should be safe. I'll do that as a cleanup after this.
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
+cheers
 
-In case this was already fixed, pls ignore - seems to still be
-there in latest master.
 
- mm/vmscan.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index ab2505c..dcd90c8 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2656,7 +2656,7 @@ static bool throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
- 	 * should make reasonable progress.
- 	 */
- 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
--					gfp_mask, nodemask) {
-+					gfp_zone(gfp_mask), nodemask) {
- 		if (zone_idx(zone) > ZONE_NORMAL)
- 			continue;
- 
--- 
-MST
