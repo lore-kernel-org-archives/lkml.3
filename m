@@ -1,116 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932396AbbAOWNq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 17:13:46 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:50463 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754669AbbAOWKL (ORCPT
+	id S932450AbbAOWPw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 17:15:52 -0500
+Received: from mail-oi0-f44.google.com ([209.85.218.44]:55209 "EHLO
+	mail-oi0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932189AbbAOWPt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 17:10:11 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
-        kernel-team@lists.ubuntu.com
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 19/19] deal with deadlock in d_walk()
-Date: Thu, 15 Jan 2015 14:09:55 -0800
-Message-Id: <1421359795-11155-20-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1421359795-11155-1-git-send-email-kamal@canonical.com>
-References: <1421359795-11155-1-git-send-email-kamal@canonical.com>
-X-Extended-Stable: 3.13
+	Thu, 15 Jan 2015 17:15:49 -0500
+Date: Thu, 15 Jan 2015 16:15:45 -0600
+From: Bjorn Helgaas <bhelgaas@google.com>
+To: Kjetil Oftedal <oftedal@gmail.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Yijing Wang <wangyijing@huawei.com>, Sam Ravnborg <sam@ravnborg.org>,
+        sparclinux@vger.kernel.org
+Subject: Re: [PATCH 10/10] PCI, sparc: clip firmware assigned resource under
+ parent bridge's
+Message-ID: <20150115221545.GA29776@google.com>
+References: <1421090600-9750-1-git-send-email-yinghai@kernel.org>
+ <1421090600-9750-11-git-send-email-yinghai@kernel.org>
+ <CALMQjD91+0o=DjQDV3ydkakrG6X=3RkHoCf-T5=wLbC01WkdEA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALMQjD91+0o=DjQDV3ydkakrG6X=3RkHoCf-T5=wLbC01WkdEA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-3.13.11-ckt14 -stable review patch.  If anyone has any objections, please let me know.
+On Mon, Jan 12, 2015 at 11:31:09PM +0100, Kjetil Oftedal wrote:
+> Hi,
+> 
+> Am I missing something or is this just code to get the the resource
+> subsystem to accept the bus resources, not caring if the resources are
+> actually usable? PCI BARs usually have a given size for a reason?
 
-------------------
+Hi Kjetil,
 
-From: Al Viro <viro@zeniv.linux.org.uk>
+This isn't for regular PCI BARs (Yinghai did apply it to some regular BARs
+in the v1 patches, but I think that was a mistake).  This is for scenarios
+like this:
 
-commit ca5358ef75fc69fee5322a38a340f5739d997c10 upstream.
+  pci_bus 0000:00: root bus resource [mem 0xc0000000-0xffffffff]
+  pci 0000:00:01.0:   bridge window [mem 0xbdf00000-0xddefffff 64bit pref]
+  pci 0000:01:00.0: reg 0x10: [mem 0xc0000000-0xcfffffff pref]
 
-... by not hitting rename_retry for reasons other than rename having
-happened.  In other words, do _not_ restart when finding that
-between unlocking the child and locking the parent the former got
-into __dentry_kill().  Skip the killed siblings instead...
+The 00:01.0 window is illegal: it starts before the host bridge window, so
+we have to assume the [0xbdf00000-0xbfffffff] region is inaccessible.  We
+can make it legal by clipping it to [mem 0xc0000000-0xddefffff 64bit pref].
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-[ kamal: backport to 3.13-stable: __dentry_kill() change applied to d_kill() ]
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- fs/dcache.c | 31 ++++++++++++++++---------------
- 1 file changed, 16 insertions(+), 15 deletions(-)
+Linux should never assign an illegal bridge window like this, but some
+firmware does, and the idea is to make a minimal change (clip the window)
+before resorting to the big hammer of reassigning resources from scratch.
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index a2ca842..6ef3f68 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -437,7 +437,7 @@ static struct dentry *d_kill(struct dentry *dentry, struct dentry *parent)
- 	__releases(parent->d_lock)
- 	__releases(dentry->d_inode->i_lock)
- {
--	list_del(&dentry->d_child);
-+	__list_del_entry(&dentry->d_child);
- 	/*
- 	 * Inform d_walk() that we are no longer attached to the
- 	 * dentry tree
-@@ -1125,33 +1125,31 @@ resume:
- 	/*
- 	 * All done at this level ... ascend and resume the search.
- 	 */
-+	rcu_read_lock();
-+ascend:
- 	if (this_parent != parent) {
- 		struct dentry *child = this_parent;
- 		this_parent = child->d_parent;
- 
--		rcu_read_lock();
- 		spin_unlock(&child->d_lock);
- 		spin_lock(&this_parent->d_lock);
- 
--		/*
--		 * might go back up the wrong parent if we have had a rename
--		 * or deletion
--		 */
--		if (this_parent != child->d_parent ||
--			 (child->d_flags & DCACHE_DENTRY_KILLED) ||
--			 need_seqretry(&rename_lock, seq)) {
--			spin_unlock(&this_parent->d_lock);
--			rcu_read_unlock();
-+		/* might go back up the wrong parent if we have had a rename. */
-+		if (need_seqretry(&rename_lock, seq))
- 			goto rename_retry;
-+		next = child->d_child.next;
-+		while (unlikely(child->d_flags & DCACHE_DENTRY_KILLED)) {
-+			if (next == &this_parent->d_subdirs)
-+				goto ascend;
-+			child = list_entry(next, struct dentry, d_child);
-+			next = next->next;
- 		}
- 		rcu_read_unlock();
--		next = child->d_child.next;
- 		goto resume;
- 	}
--	if (need_seqretry(&rename_lock, seq)) {
--		spin_unlock(&this_parent->d_lock);
-+	if (need_seqretry(&rename_lock, seq))
- 		goto rename_retry;
--	}
-+	rcu_read_unlock();
- 	if (finish)
- 		finish(data);
- 
-@@ -1161,6 +1159,9 @@ out_unlock:
- 	return;
- 
- rename_retry:
-+	spin_unlock(&this_parent->d_lock);
-+	rcu_read_unlock();
-+	BUG_ON(seq & 1);
- 	if (!retry)
- 		return;
- 	seq = 1;
--- 
-1.9.1
+Bjorn
 
+> On 12/01/2015, Yinghai Lu <yinghai@kernel.org> wrote:
+> > Some bios put range that is not fully coverred by root bus resources.
+> > Try to clip them and update them in pci bridge bars.
+> >
+> > We'd like to fix other arches instead of just x86.
+> >
+> > Link: https://bugzilla.kernel.org/show_bug.cgi?id=85491
+> > Reported-by: Marek Kordik <kordikmarek@gmail.com>
+> > Fixes: 5b28541552ef ("PCI: Restrict 64-bit prefetchable bridge windows to
+> > 64-bit resources")
+> > Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> > Cc: "David S. Miller" <davem@davemloft.net>
+> > Cc: Paul Gortmaker <paul.gortmaker@windriver.com>
+> > Cc: Yijing Wang <wangyijing@huawei.com>
+> > Cc: Sam Ravnborg <sam@ravnborg.org>
+> > Cc: sparclinux@vger.kernel.org
+> > ---
+> >  arch/sparc/kernel/pci.c | 20 +++++++++++++++++++-
+> >  1 file changed, 19 insertions(+), 1 deletion(-)
+> >
+> > diff --git a/arch/sparc/kernel/pci.c b/arch/sparc/kernel/pci.c
+> > index b36365f..0e391e5 100644
+> > --- a/arch/sparc/kernel/pci.c
+> > +++ b/arch/sparc/kernel/pci.c
+> > @@ -623,6 +623,7 @@ static void pci_claim_bus_resources(struct pci_bus
+> > *bus)
+> >  	struct pci_dev *dev;
+> >
+> >  	list_for_each_entry(dev, &bus->devices, bus_list) {
+> > +		bool changed = false;
+> >  		int i;
+> >
+> >  		for (i = 0; i < PCI_NUM_RESOURCES; i++) {
+> > @@ -639,8 +640,25 @@ static void pci_claim_bus_resources(struct pci_bus
+> > *bus)
+> >  				       (unsigned long long)r->end,
+> >  				       (unsigned int)r->flags);
+> >
+> > -			pci_claim_resource(dev, i);
+> > +			if (pci_claim_resource(dev, i) >= 0)
+> > +				continue;
+> > +
+> > +			if (dev->subordinate &&
+> > +			    i >= PCI_BRIDGE_RESOURCES &&
+> > +			    i < PCI_NUM_RESOURCES &&
+> > +			    (dev->class >> 8) == PCI_CLASS_BRIDGE_PCI &&
+> > +			    pci_bus_clip_resource(dev, r)) {
+> > +				changed = true;
+> > +				pci_claim_resource(dev, i);
+> > +			} else if (i < PCI_BRIDGE_RESOURCES &&
+> > +				   i != PCI_ROM_RESOURCE &&
+> > +				   pci_bus_clip_resource(dev, r)) {
+> > +					pci_update_resource(dev, i);
+> > +					pci_claim_resource(dev, i);
+> > +			}
+> >  		}
+> > +		if (changed)
+> > +			pci_setup_bridge(dev->subordinate);
+> >  	}
+> >
+> >  	list_for_each_entry(child_bus, &bus->children, node)
+> > --
+> > 1.8.4.5
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe sparclinux" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >
