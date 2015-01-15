@@ -1,107 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755058AbbAORIY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 12:08:24 -0500
-Received: from mail-we0-f176.google.com ([74.125.82.176]:35766 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754707AbbAORIV (ORCPT
+	id S1755462AbbAORJg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 12:09:36 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:24315 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755295AbbAORJe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 12:08:21 -0500
-Date: Thu, 15 Jan 2015 18:08:17 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Greg Thelen <gthelen@google.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 2/2] mm: memcontrol: default hierarchy interface for
- memory
-Message-ID: <20150115170817.GE7008@dhcp22.suse.cz>
-References: <1420776904-8559-1-git-send-email-hannes@cmpxchg.org>
- <1420776904-8559-2-git-send-email-hannes@cmpxchg.org>
- <20150114153425.GF4706@dhcp22.suse.cz>
- <20150114171944.GB32040@phnom.home.cmpxchg.org>
+	Thu, 15 Jan 2015 12:09:34 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: Arnd Bergmann <arnd@arndb.de>, Olof Johansson <olof@lixom.net>,
+        <arm@kernel.org>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Josh Wu <josh.wu@atmel.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: [GIT PULL] at91: defconfig for 3.20 #1
+Date: Thu, 15 Jan 2015 18:09:42 +0100
+Message-ID: <1421341782-14355-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 2.1.3
+Organization: atmel
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150114171944.GB32040@phnom.home.cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 14-01-15 12:19:44, Johannes Weiner wrote:
-> On Wed, Jan 14, 2015 at 04:34:25PM +0100, Michal Hocko wrote:
-> > On Thu 08-01-15 23:15:04, Johannes Weiner wrote:
-[...]
-> > > @@ -2322,6 +2325,12 @@ static bool shrink_zone(struct zone *zone, struct scan_control *sc,
-> > >  			struct lruvec *lruvec;
-> > >  			int swappiness;
-> > >  
-> > > +			if (mem_cgroup_low(root, memcg)) {
-> > > +				if (!sc->may_thrash)
-> > > +					continue;
-> > > +				mem_cgroup_events(memcg, MEMCG_LOW, 1);
-> > > +			}
-> > > +
-> > >  			lruvec = mem_cgroup_zone_lruvec(zone, memcg);
-> > >  			swappiness = mem_cgroup_swappiness(memcg);
-> > >  
-> > > @@ -2343,8 +2352,7 @@ static bool shrink_zone(struct zone *zone, struct scan_control *sc,
-> > >  				mem_cgroup_iter_break(root, memcg);
-> > >  				break;
-> > >  			}
-> > > -			memcg = mem_cgroup_iter(root, memcg, &reclaim);
-> > > -		} while (memcg);
-> > > +		} while ((memcg = mem_cgroup_iter(root, memcg, &reclaim)));
-> > 
-> > I had a similar code but then I could trigger quick priority drop downs
-> > during parallel reclaim with multiple low limited groups. I've tried to
-> > address that by retrying shrink_zone if it hasn't called shrink_lruvec
-> > at all. Still not ideal because it can livelock theoretically, but I
-> > haven't seen that in my testing.
-> 
-> Do you remember the circumstances and the exact configuration?
+Arnd, Olof, Kevin,
 
-Well, I was testing heavy parallel memory intensive load (combination of
-anon and file) in one memcg and many (hundreds of) idle memcgs to see
-how much overhead memcg traversing would cost us. And I misconfigured by
-setting idle memcgs low-limit to -1 instead of 0. There is nothing
-running in them.
-I've noticed that I can see more pages reclaimed than expected and also
-higher runtime which turned out to be related to longer stalls during
-reclaim rather than the cost of the memcg reclaim iterator.  Debugging
-has shown that many direct reclaimers were racing over low-limited
-groups and dropped to lower priorities. The race window was apparently
-much much smaller than a noop shrink_lruvec run.
+A little defconfig update. If you want me to collect more patches before
+sending you a more substantial one, let me know.
 
-So in a sense this was a mis-configured system because I do not expect
-so many low limited groups in real life but there was still something
-reclaimable so the machine wasn't really over-committed. So this points
-to an issue which might happen, albeit in a smaller scale, if there are
-many groups, heavy reclaim and some reclaimers unlucky to race and see
-only low-limited groups.
- 
-> I tested this with around 30 containerized kernel build jobs whose low
-> boundaries pretty much added up to the available physical memory and
-> never observed this.  That being said, thrashing is an emergency path
-> and users should really watch the memory.events low counter.  After
-> all, if global reclaim frequently has to ignore the reserve settings,
-> what's the point of having them in the first place?
+Thanks, bye,
 
-Sure, over-committed low limit is a misconfiguration. But this is not
-what happened in my testing.
+The following changes since commit eaa27f34e91a14cdceed26ed6c6793ec1d186115:
 
-> So while I see that this might burn some cpu cycles when the system is
-> misconfigured, and that we could definitely be smarter about this, I'm
-> not convinced we have to rush a workaround before moving ahead with
-> this patch, especially not one that is prone to livelock the system.
+  linux 3.19-rc4 (2015-01-11 12:44:53 -0800)
 
-OK, then do not merge it to the original patch. If for nothing else then
-for bisectability. I will post a patch separately. I still think we
-should consider a way how to address it sooner or later because the
-result would be non trivial to debug.
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git tags/at91-defconfig
+
+for you to fetch changes up to a1b282911b47a522f150eb715fb037628c5173fe:
+
+  ARM: at91: sama5: enable atmel-isi and ov2640 in defconfig (2015-01-15 16:28:23 +0100)
+
+----------------------------------------------------------------
+First batch of defconfig update for 3.20:
+- we remove DEBUG_LL from sama5 defconfig as all SoC are not compatible
+- enable ISI and selected sensors
+
+----------------------------------------------------------------
+Josh Wu (1):
+      ARM: at91: sama5: enable atmel-isi and ov2640 in defconfig
+
+Maxime Ripard (1):
+      ARM: at91/config: sama5: Remove DEBUG_LL
+
+ arch/arm/configs/sama5_defconfig | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
 
 -- 
-Michal Hocko
-SUSE Labs
+Nicolas Ferre
