@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342AbbAOV7N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 16:59:13 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:57535 "EHLO
+	id S1755846AbbAOV7Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 16:59:24 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:57546 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751272AbbAOV7M (ORCPT
+	with ESMTP id S1753427AbbAOV7W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 16:59:12 -0500
+	Thu, 15 Jan 2015 16:59:22 -0500
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>
 Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -15,107 +15,175 @@ Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Bo Shen <voice.shen@atmel.com>, Wenyou Yang <Wenyou.Yang@atmel.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH 00/17] AT91 cleanup for 3.20 #3
-Date: Thu, 15 Jan 2015 22:58:03 +0100
-Message-Id: <1421359100-8930-1-git-send-email-alexandre.belloni@free-electrons.com>
+Subject: [PATCH 01/17] ARM: at91: merge at91rm9200 files
+Date: Thu, 15 Jan 2015 22:58:04 +0100
+Message-Id: <1421359100-8930-2-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 2.1.0
+In-Reply-To: <1421359100-8930-1-git-send-email-alexandre.belloni@free-electrons.com>
+References: <1421359100-8930-1-git-send-email-alexandre.belloni@free-electrons.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch sets is based on AT91 cleanup for 3.20 #2. it goes further in the
-cleanup.
+From: Arnd Bergmann <arnd@arndb.de>
 
-It merges board-dt ans soc files, ending up with only at91rm9200.c, at91sam9.c,
-sama5d3.c and sama5d4.c.
+There is only one board file for the rm9200 soc file left, so
+it makes sense to merge the two files into one, which allows
+us further cleanup.
 
-It merges all the SOC_AT91SAM9xxx config option under SOC_AT91SAM9.
-
-It also removes unused headers.
-
-There is also one fix regarding arm_pm_idle for sam9n12 and sam9g45.
-
-Alexandre Belloni (15):
-  ARM: at91:remove unused mach/system_rev.h
-  ARM: at91: fix sam9n12 and sam9x5 arm_pm_idle
-  ARM: at91: sam9: set arm_pm_idle from sam9_dt_device_init
-  ARM: at91: remove unused at91_ioremap_matrix and header
-  ARM: at91: remove unused _matrix.h headers
-  ARM: at91: stop using HAVE_AT91_DBGUx
-  ARM: at91: pm: remove warning to remove SOC_AT91SAM9263 usage
-  ARM: at91: merge SOC_AT91SAM9xxx
-  ARM: at91: remove at91_boot_soc
-  ARM: at91: rework initialization for rm9200 based boards
-  ARM: at91: rework initialization for sam9 based boards
-  ARM: at91: rework initialization for sama5 based boards
-  ARM: at91: remove old setup
-  ARM: at91: mark const init data with __initconst instead of __initdata
-  ARM: at91: remove at91_dt_initialize
-
-Arnd Bergmann (2):
-  ARM: at91: merge at91rm9200 files
-  ARM: at91: move sama5 specific code into per-soc files
-
- arch/arm/Kconfig.debug                             |   6 +-
- arch/arm/configs/at91_dt_defconfig                 |  10 +-
- arch/arm/mach-at91/Kconfig                         | 111 ++----
- arch/arm/mach-at91/Makefile                        |  17 +-
- arch/arm/mach-at91/at91rm9200.c                    |  49 ++-
- arch/arm/mach-at91/{board-dt-sam9.c => at91sam9.c} |  21 +-
- arch/arm/mach-at91/at91sam9260.c                   |  32 --
- arch/arm/mach-at91/at91sam9261.c                   |  31 --
- arch/arm/mach-at91/at91sam9263.c                   |  30 --
- arch/arm/mach-at91/at91sam9g45.c                   |  30 --
- arch/arm/mach-at91/at91sam9n12.c                   |  20 -
- arch/arm/mach-at91/at91sam9rl.c                    |  32 --
- arch/arm/mach-at91/at91sam9x5.c                    |  20 -
- arch/arm/mach-at91/board-dt-rm9200.c               |  54 ---
- arch/arm/mach-at91/board-dt-sama5.c                |  60 ---
- arch/arm/mach-at91/generic.h                       |  11 -
- arch/arm/mach-at91/include/mach/at91_dbgu.h        |  63 ----
- arch/arm/mach-at91/include/mach/at91_matrix.h      |  23 --
- arch/arm/mach-at91/include/mach/at91_ramc.h        |   6 -
- .../mach-at91/include/mach/at91sam9260_matrix.h    |  80 ----
- .../mach-at91/include/mach/at91sam9261_matrix.h    |  64 ----
- .../mach-at91/include/mach/at91sam9263_matrix.h    | 129 -------
- arch/arm/mach-at91/include/mach/at91sam9_smc.h     |   2 -
- .../mach-at91/include/mach/at91sam9g45_matrix.h    | 153 --------
- .../mach-at91/include/mach/at91sam9n12_matrix.h    |  53 ---
- .../arm/mach-at91/include/mach/at91sam9rl_matrix.h |  96 -----
- .../arm/mach-at91/include/mach/at91sam9x5_matrix.h |  53 ---
- arch/arm/mach-at91/include/mach/cpu.h              | 240 ------------
- arch/arm/mach-at91/include/mach/system_rev.h       |  27 --
- arch/arm/mach-at91/pm.c                            |  48 ++-
- arch/arm/mach-at91/pm_slowclock.S                  |   9 -
- arch/arm/mach-at91/sama5d3.c                       |  31 +-
- arch/arm/mach-at91/sama5d4.c                       |  35 +-
- arch/arm/mach-at91/setup.c                         | 407 ---------------------
- arch/arm/mach-at91/soc.h                           |  77 ----
- 35 files changed, 151 insertions(+), 1979 deletions(-)
- rename arch/arm/mach-at91/{board-dt-sam9.c => at91sam9.c} (71%)
- delete mode 100644 arch/arm/mach-at91/at91sam9260.c
- delete mode 100644 arch/arm/mach-at91/at91sam9261.c
- delete mode 100644 arch/arm/mach-at91/at91sam9263.c
- delete mode 100644 arch/arm/mach-at91/at91sam9g45.c
- delete mode 100644 arch/arm/mach-at91/at91sam9n12.c
- delete mode 100644 arch/arm/mach-at91/at91sam9rl.c
- delete mode 100644 arch/arm/mach-at91/at91sam9x5.c
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+---
+ arch/arm/mach-at91/Makefile          |  1 -
+ arch/arm/mach-at91/at91rm9200.c      | 50 ++++++++++++++++++++++++++++-----
+ arch/arm/mach-at91/board-dt-rm9200.c | 54 ------------------------------------
+ 3 files changed, 43 insertions(+), 62 deletions(-)
  delete mode 100644 arch/arm/mach-at91/board-dt-rm9200.c
- delete mode 100644 arch/arm/mach-at91/board-dt-sama5.c
- delete mode 100644 arch/arm/mach-at91/include/mach/at91_dbgu.h
- delete mode 100644 arch/arm/mach-at91/include/mach/at91_matrix.h
- delete mode 100644 arch/arm/mach-at91/include/mach/at91sam9260_matrix.h
- delete mode 100644 arch/arm/mach-at91/include/mach/at91sam9261_matrix.h
- delete mode 100644 arch/arm/mach-at91/include/mach/at91sam9263_matrix.h
- delete mode 100644 arch/arm/mach-at91/include/mach/at91sam9g45_matrix.h
- delete mode 100644 arch/arm/mach-at91/include/mach/at91sam9n12_matrix.h
- delete mode 100644 arch/arm/mach-at91/include/mach/at91sam9rl_matrix.h
- delete mode 100644 arch/arm/mach-at91/include/mach/at91sam9x5_matrix.h
- delete mode 100644 arch/arm/mach-at91/include/mach/cpu.h
- delete mode 100644 arch/arm/mach-at91/include/mach/system_rev.h
- delete mode 100644 arch/arm/mach-at91/setup.c
- delete mode 100644 arch/arm/mach-at91/soc.h
 
+diff --git a/arch/arm/mach-at91/Makefile b/arch/arm/mach-at91/Makefile
+index 8ef7d9a2e855..d89c2437ef10 100644
+--- a/arch/arm/mach-at91/Makefile
++++ b/arch/arm/mach-at91/Makefile
+@@ -19,7 +19,6 @@ obj-$(CONFIG_SOC_SAMA5D3)	+= sama5d3.o
+ obj-$(CONFIG_SOC_SAMA5D4)	+= sama5d4.o
+ 
+ # AT91SAM board with device-tree
+-obj-$(CONFIG_SOC_AT91RM9200) += board-dt-rm9200.o
+ obj-$(CONFIG_SOC_AT91SAM9) += board-dt-sam9.o
+ 
+ # SAMA5 board with device-tree
+diff --git a/arch/arm/mach-at91/at91rm9200.c b/arch/arm/mach-at91/at91rm9200.c
+index 3be1963f5c56..eaa30b1fea01 100644
+--- a/arch/arm/mach-at91/at91rm9200.c
++++ b/arch/arm/mach-at91/at91rm9200.c
+@@ -1,20 +1,30 @@
+ /*
+- * arch/arm/mach-at91/at91rm9200.c
++ *  Setup code for AT91RM9200
+  *
+  *  Copyright (C) 2005 SAN People
++ *  Copyright (C) 2011 Atmel,
++ *                2011 Nicolas Ferre <nicolas.ferre@atmel.com>
++ *                2012 Joachim Eastwood <manabian@gmail.com>
+  *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License as published by
+- * the Free Software Foundation; either version 2 of the License, or
+- * (at your option) any later version.
+- *
++ * Licensed under GPLv2 or later.
+  */
+-
++#include <linux/types.h>
++#include <linux/init.h>
+ #include <linux/module.h>
++#include <linux/gpio.h>
++#include <linux/of.h>
++#include <linux/of_irq.h>
++#include <linux/of_platform.h>
++#include <linux/clk-provider.h>
+ #include <linux/clk/at91_pmc.h>
+ 
++#include <asm/setup.h>
++#include <asm/irq.h>
++#include <asm/mach/arch.h>
++#include <asm/mach/irq.h>
+ #include <asm/mach/map.h>
+ #include <asm/system_misc.h>
++
+ #include <mach/at91_st.h>
+ #include <mach/hardware.h>
+ 
+@@ -44,3 +54,29 @@ static void __init at91rm9200_initialize(void)
+ AT91_SOC_START(at91rm9200)
+ 	.init = at91rm9200_initialize,
+ AT91_SOC_END
++
++static void __init at91rm9200_dt_timer_init(void)
++{
++	of_clk_init(NULL);
++	at91rm9200_timer_init();
++}
++
++static void __init rm9200_dt_device_init(void)
++{
++	at91_rm9200_pm_init();
++
++	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
++}
++
++static const char *at91rm9200_dt_board_compat[] __initdata = {
++	"atmel,at91rm9200",
++	NULL
++};
++
++DT_MACHINE_START(at91rm9200_dt, "Atmel AT91RM9200 (Device Tree)")
++	.init_time      = at91rm9200_dt_timer_init,
++	.map_io		= at91_map_io,
++	.init_early	= at91_dt_initialize,
++	.init_machine	= rm9200_dt_device_init,
++	.dt_compat	= at91rm9200_dt_board_compat,
++MACHINE_END
+diff --git a/arch/arm/mach-at91/board-dt-rm9200.c b/arch/arm/mach-at91/board-dt-rm9200.c
+deleted file mode 100644
+index 5f82a65153e1..000000000000
+--- a/arch/arm/mach-at91/board-dt-rm9200.c
++++ /dev/null
+@@ -1,54 +0,0 @@
+-/*
+- *  Setup code for AT91RM9200 Evaluation Kits with Device Tree support
+- *
+- *  Copyright (C) 2011 Atmel,
+- *                2011 Nicolas Ferre <nicolas.ferre@atmel.com>
+- *                2012 Joachim Eastwood <manabian@gmail.com>
+- *
+- * Licensed under GPLv2 or later.
+- */
+-
+-#include <linux/types.h>
+-#include <linux/init.h>
+-#include <linux/module.h>
+-#include <linux/gpio.h>
+-#include <linux/of.h>
+-#include <linux/of_irq.h>
+-#include <linux/of_platform.h>
+-#include <linux/clk-provider.h>
+-
+-#include <asm/setup.h>
+-#include <asm/irq.h>
+-#include <asm/mach/arch.h>
+-#include <asm/mach/map.h>
+-#include <asm/mach/irq.h>
+-
+-#include "generic.h"
+-
+-static void __init at91rm9200_dt_timer_init(void)
+-{
+-	of_clk_init(NULL);
+-	at91rm9200_timer_init();
+-}
+-
+-static void __init rm9200_dt_device_init(void)
+-{
+-	at91_rm9200_pm_init();
+-
+-	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
+-}
+-
+-
+-
+-static const char *at91rm9200_dt_board_compat[] __initdata = {
+-	"atmel,at91rm9200",
+-	NULL
+-};
+-
+-DT_MACHINE_START(at91rm9200_dt, "Atmel AT91RM9200 (Device Tree)")
+-	.init_time      = at91rm9200_dt_timer_init,
+-	.map_io		= at91_map_io,
+-	.init_early	= at91_dt_initialize,
+-	.init_machine	= rm9200_dt_device_init,
+-	.dt_compat	= at91rm9200_dt_board_compat,
+-MACHINE_END
 -- 
 2.1.0
 
