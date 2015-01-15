@@ -1,93 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755475AbbAOVp6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 16:45:58 -0500
-Received: from skprod3.natinst.com ([130.164.80.24]:42055 "EHLO ni.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752959AbbAOVpy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 16:45:54 -0500
-From: Xander Huff <xander.huff@ni.com>
-To: davem@davemloft.net, nicolas.ferre@atmel.com, david.light@aculab.com
-Cc: netdev@vger.kernel.org, jaeden.amero@ni.com, rich.tollerton@ni.com,
-        brad.mouring@ni.com, linux-kernel@vger.kernel.org,
-        cyrille.pitchen@atmel.com, Xander Huff <xander.huff@ni.com>
-Subject: [PATCH v3 3/3] net/macb: Create gem_ethtool_ops for new statistics functions
-Date: Thu, 15 Jan 2015 15:45:16 -0600
-Message-Id: <1421358316-23660-3-git-send-email-xander.huff@ni.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1421358316-23660-1-git-send-email-xander.huff@ni.com>
-References: <063D6719AE5E284EB5DD2968C1650D6D1CAC999F@AcuExch.aculab.com>
- <1421358316-23660-1-git-send-email-xander.huff@ni.com>
-X-MIMETrack: Itemize by SMTP Server on US-AUS-MGWOut1/AUS/H/NIC(Release 8.5.3FP6|November
- 21, 2013) at 01/15/2015 03:45:24 PM,
-	Serialize by Router on US-AUS-MGWOut1/AUS/H/NIC(Release 8.5.3FP6|November
- 21, 2013) at 01/15/2015 03:45:25 PM,
-	Serialize complete at 01/15/2015 03:45:25 PM
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2015-01-15_07:2015-01-15,2015-01-15,1970-01-01 signatures=0
+	id S932215AbbAOV5G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 16:57:06 -0500
+Received: from na3sys009aog122.obsmtp.com ([74.125.149.147]:50632 "HELO
+	na3sys009aog122.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753921AbbAOV5D (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 16:57:03 -0500
+From: Joe Stringer <joestringer@nicira.com>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, dev@openvswitch.org, pshelar@nicira.com
+Subject: [PATCH net-next v12 0/5] openvswitch: Introduce 128-bit unique flow identifiers.
+Date: Thu, 15 Jan 2015 13:48:22 -0800
+Message-Id: <1421358507-5992-1-git-send-email-joestringer@nicira.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-10/100 MACB does not have the same statistics possibilities as GEM. Separate
-macb_ethtool_ops to make a new GEM-specific struct with the new statistics
-functions included.
+This series extends the openvswitch datapath interface for flow commands to use
+128-bit unique identifiers as an alternative to the netlink-formatted flow key.
+This significantly reduces the cost of assembling messages between the kernel
+and userspace, in particular improving Open vSwitch revalidation performance by
+40% or more.
 
-Signed-off-by: Xander Huff <xander.huff@ni.com>
----
- drivers/net/ethernet/cadence/macb.c | 15 +++++++++++++--
- 1 file changed, 13 insertions(+), 2 deletions(-)
+v12:
+- Userspace patches fully merged into Open vSwitch master
+- New minor refactor patches (2,3,4)
+- Merge unmasked_key, ufid representation of flow identifier in sw_flow
+- Improve memory allocation sizes when serializing ufid
+- Handle corner case where a flow_new is requested with a flow that has an
+  identical ufid as an existing flow, but a different flow key
+- Limit UFID to between 1-16 octets inclusive.
+- Add various helper functions to improve readibility
 
-diff --git a/drivers/net/ethernet/cadence/macb.c b/drivers/net/ethernet/cadence/macb.c
-index 9edd787..f2f9ca0 100644
---- a/drivers/net/ethernet/cadence/macb.c
-+++ b/drivers/net/ethernet/cadence/macb.c
-@@ -2032,11 +2032,21 @@ const struct ethtool_ops macb_ethtool_ops = {
- 	.get_regs		= macb_get_regs,
- 	.get_link		= ethtool_op_get_link,
- 	.get_ts_info		= ethtool_op_get_ts_info,
-+};
-+EXPORT_SYMBOL_GPL(macb_ethtool_ops);
-+
-+const struct ethtool_ops gem_ethtool_ops = {
-+	.get_settings		= macb_get_settings,
-+	.set_settings		= macb_set_settings,
-+	.get_regs_len		= macb_get_regs_len,
-+	.get_regs		= macb_get_regs,
-+	.get_link		= ethtool_op_get_link,
-+	.get_ts_info		= ethtool_op_get_ts_info,
- 	.get_ethtool_stats	= gem_get_ethtool_stats,
- 	.get_strings		= gem_get_ethtool_strings,
- 	.get_sset_count		= gem_get_sset_count,
- };
--EXPORT_SYMBOL_GPL(macb_ethtool_ops);
-+EXPORT_SYMBOL_GPL(gem_ethtool_ops);
- 
- int macb_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
- {
-@@ -2325,7 +2335,6 @@ static int __init macb_probe(struct platform_device *pdev)
- 
- 	dev->netdev_ops = &macb_netdev_ops;
- 	netif_napi_add(dev, &bp->napi, macb_poll, 64);
--	dev->ethtool_ops = &macb_ethtool_ops;
- 
- 	dev->base_addr = regs->start;
- 
-@@ -2339,12 +2348,14 @@ static int __init macb_probe(struct platform_device *pdev)
- 		bp->macbgem_ops.mog_free_rx_buffers = gem_free_rx_buffers;
- 		bp->macbgem_ops.mog_init_rings = gem_init_rings;
- 		bp->macbgem_ops.mog_rx = gem_rx;
-+		dev->ethtool_ops = &gem_ethtool_ops;
- 	} else {
- 		bp->max_tx_length = MACB_MAX_TX_LEN;
- 		bp->macbgem_ops.mog_alloc_rx_buffers = macb_alloc_rx_buffers;
- 		bp->macbgem_ops.mog_free_rx_buffers = macb_free_rx_buffers;
- 		bp->macbgem_ops.mog_init_rings = macb_init_rings;
- 		bp->macbgem_ops.mog_rx = macb_rx;
-+		dev->ethtool_ops = &macb_ethtool_ops;
- 	}
- 
- 	/* Set features */
+v11:
+- Pushed most of the prerequisite patches for this series to OVS master.
+- Split out openvswitch.h interface changes from datapath implementation
+- Datapath implementation to be reviewed on net-next, separately
+
+v10:
+- New patch allowing datapath to serialize masked keys
+- Simplify datapath interface by accepting UFID or flow_key, but not both
+- Flows set up with UFID must be queried/deleted using UFID
+- Reduce sw_flow memory usage for UFID
+- Don't periodically rehash UFID table in linux datapath
+- Remove kernel_only UFID in linux datapath
+
+v9:
+- No kernel changes
+
+v8:
+- Rename UID -> UFID
+- Fix null dereference in datapath when paired with older userspace
+- All patches are reviewed/acked except datapath changes.
+
+v7:
+- Remove OVS_DP_F_INDEX_BY_UID
+- Rework datapath UID serialization for variable length UIDs
+
+v6:
+- Reduce netlink conversions for all datapaths
+- Various bugfixes
+
+v5:
+- Various bugfixes
+- Improve logging
+
+v4:
+- Datapath memory leak fixes
+- Enable UID-based terse dumping and deleting by default
+- Various fixes
+
+RFCv3:
+- Add datapath implementation
+
+Joe Stringer (5):
+  openvswitch: Refactor ovs_nla_fill_match().
+  openvswitch: Refactor ovs_flow_tbl_insert().
+  openvswitch: Use sw_flow_key_range for key ranges.
+  genetlink: Add genlmsg_parse() helper function.
+  openvswitch: Add support for unique flow IDs.
+
+ Documentation/networking/openvswitch.txt |   13 ++
+ include/net/genetlink.h                  |   17 +++
+ include/uapi/linux/openvswitch.h         |   20 +++
+ net/openvswitch/datapath.c               |  240 ++++++++++++++++++++----------
+ net/openvswitch/flow.h                   |   28 +++-
+ net/openvswitch/flow_netlink.c           |  101 ++++++++++++-
+ net/openvswitch/flow_netlink.h           |   14 +-
+ net/openvswitch/flow_table.c             |  226 +++++++++++++++++++++-------
+ net/openvswitch/flow_table.h             |    8 +-
+ 9 files changed, 532 insertions(+), 135 deletions(-)
+
 -- 
-1.9.1
+1.7.10.4
 
