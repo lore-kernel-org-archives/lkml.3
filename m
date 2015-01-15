@@ -1,141 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752704AbbAOJ1v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 04:27:51 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:60264 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752065AbbAOJ1s (ORCPT
+	id S1752629AbbAOJFn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 04:05:43 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:50357 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751256AbbAOJFi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 04:27:48 -0500
-Date: Thu, 15 Jan 2015 01:27:40 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        X86 ML <x86@kernel.org>,
+	Thu, 15 Jan 2015 04:05:38 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Darren Hart <dvhart@linux.intel.com>,
+        Heikki Krogerus <heikki.krogerus@linux.intel.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Arnd Bergmann <arnd@arndb.de>, Alexandre Courbot <gnurou@gmail.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Denys Vlasenko <dvlasenk@redhat.com>, Borislav Petkov <bp@alien8.de>,
-        Tony Luck <tony.luck@intel.com>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [GIT PULL] x86/entry changes for 3.20, round 1
-Message-ID: <20150115092740.GY9719@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <CALCETrVCmoEP-Ha937VurRVxYYmSG==QL=twMBUWgzOAxc4uRA@mail.gmail.com>
+        "Ortiz, Samuel" <samuel.ortiz@intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
+Subject: Re: [RFC PATCH] gpio: support for GPIO forwarding
+Date: Thu, 15 Jan 2015 10:28:03 +0100
+Message-ID: <2901311.HTghqkaiPd@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <54B69A0C.7040505@linux.intel.com>
+References: <1418890998-23811-1-git-send-email-heikki.krogerus@linux.intel.com> <CACRpkdY-yFKsYbCrMpnViMFoQEugyGQivaV0M+GDzLrbDO7i6Q@mail.gmail.com> <54B69A0C.7040505@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrVCmoEP-Ha937VurRVxYYmSG==QL=twMBUWgzOAxc4uRA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15011509-0021-0000-0000-000007CCC054
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 14, 2015 at 05:59:26PM -0800, Andy Lutomirski wrote:
-> Hi Ingo and Thomas,
+On Wednesday, January 14, 2015 08:32:12 AM Darren Hart wrote:
 > 
-> At Linus' suggestion, I'm trying out some maintainerish stuff for x86
-> entry code.  Please consider pulling to an appropriate branch *after
-> Paul sends his RCU pull request*, only if 734d16801349 is included in
-> that pull request.  If this goes well, maybe I'll submit a MAINTAINERS
-> patch, too.
+> On 1/14/15 4:58 AM, Linus Walleij wrote:
+> > On Thu, Dec 18, 2014 at 9:23 AM, Heikki Krogerus
+> > <heikki.krogerus@linux.intel.com> wrote:
+> > 
+> >> This makes it possible to assign GPIOs at runtime. The
+> >> motivation for it is because of need to forward GPIOs from
+> >> one device to an other. That feature may be useful for
+> >> example with some mfd devices, but initially it is needed
 > 
-> IMPORTANT: This is based on an RCU change that you don't have yet.  I
-> think that Paul is planning on sending a pull request with that change
-> fairly soon.  The code in here would compile without that fix, but it
-> would introduce a nasty regression, so, to avoid breaking bisection, I
-> based this off of the relevant change in Paul's tree.  (It's the very
-> first change for 3.20 in his current queue.)
+> +Samuel Ortiz for his thoughts on applicability to MFD.
+> 
+> >> because on some Intel Braswell based ACPI platforms the GPIO
+> >> resources controlling signals of the USB PHY are given to
+> >> the controller device object for whatever reason, so the
+> >> driver of that controller needs be able to pass them to the
+> >> PHY device somehow.
+> >>
+> >> So basically this is meant to allow patching of bad (bad
+> >> from Linux kernels point of view) hardware descriptions
+> >> provided by system fw in the drivers.
+> >>
+> >> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> >> ---
+> >>
+> >> Hi,
+> >>
+> >> I'm sending this first as a RFC in case you guys have some better
+> >> idea how to solve our problem. I actually already have couple
+> >> platforms where the GPIO resources are given to the "wrong" device
+> >> objects now.
+> >>
+> >> Originally we were thinking about simply handling our problem with
+> >> hacks to the PHY drivers, basically also checking if the parent has
+> >> GPIOs. That would only work if the controller is always the parent,
+> >> which it's not, but even if it was, it would be too risky. The PHY
+> >> drivers don't know which controller they are attached to, so what is
+> >> to say that the GPIOs aren't really attached to the controller.
+> >>
+> >> So the safest way to handle our problem is to deal with it in quirks
+> >> in the controller drivers. Solving it by bouncing the GPIOs did not
+> >> feel ideal there doesn't seem to be any other way. The API is copied
+> >> from clkdev (clk_register_clkdev). In the end it's really only one
+> >> function for adding the lookups and one for removing them.
+> >>
+> >> The way it's implemented is by modifying the current style of handling
+> >> the lookups a little bit. The per device lookup table is basically
+> >> reverted back to the single linked-list format since it seems that
+> >> these lookups may have to be assigned from several sources.
+> > 
+> > Oh ain't that great.
+> > 
+> > So now we start patching around the kernel because the ACPI
+> > tables are erroneous for GPIOs. I'd like some feedback from
+> > Rafael &| Darren on this patch, i.e. if you two think this is a good
+> > way of accounting for bad GPIO descriptions in ACPI tables then
+> > ACK this patch.
+> > 
+> > I guess the other option would be to fix up the ACPI DSDT
+> > itself to put resources right, correct? Is this not possible?
+> 
+> This is my gut reaction as well.
 
-Yep, should happen by early next week, if it survives this weekend's
-testing.  ;-)
+Pretty much agreed.
 
-							Thanx, Paul
+> Heikki, why can't we correct the firmware tables? That needs to be made clear
+> before we start adding hacks to the kernel.
 
-> If you want me to structure this differently, let me know.
-> 
-> I may have one more entry pull request before the merge window if I
-> can get my sysret stuff reviewed in time.  Not sure yet.  I may also
-> be comfortable with some more of Denys' cleanups in time.
-> 
-> The following changes since commit 734d16801349fbe951d2f780191d32c5b8a892d1:
-> 
->   rcu: Make rcu_nmi_enter() handle nesting (2014-12-30 17:40:16 -0800)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/luto/linux.git
-> tags/pr-20150114-x86-entry
-> 
-> for you to fetch changes up to f6f64681d9d87ded48a90b644b2991c6ee05da2d:
-> 
->   x86: entry_64.S: fold SAVE_ARGS_IRQ macro into its sole user
-> (2015-01-13 14:18:08 -0800)
-> 
-> ----------------------------------------------------------------
-> This is my accumulated x86 entry work, part 1, for 3.20.  The meat
-> of this is an IST rework.  When an IST exception interrupts user
-> space, we will handle it on the per-thread kernel stack instead of
-> on the IST stack.  This sounds messy, but it actually simplifies the
-> IST entry/exit code, because it eliminates some ugly games we used
-> to play in order to handle rescheduling, signal delivery, etc on the
-> way out of an IST exception.
-> 
-> The IST rework introduces proper context tracking to IST exception
-> handlers.  I haven't seen any bug reports, but the old code could
-> have incorrectly treated an IST exception handler as an RCU extended
-> quiescent state.
-> 
-> The memory failure change (included in this pull request with
-> Borislav and Tony's permission) eliminates a bunch of code that
-> is no longer needed now that user memory failure handlers are
-> called in process context.
-> 
-> Finally, this includes a few on Denys' uncontroversial and Obviously
-> Correct (tm) cleanups.
-> 
-> The IST and memory failure changes have been in -next for a while.
-> 
-> LKML references:
-> 
-> IST rework:
-> http://lkml.kernel.org/r/cover.1416604491.git.luto@amacapital.net
-> 
-> Memory failure change:
-> http://lkml.kernel.org/r/54ab2ffa301102cd6e@agluck-desk.sc.intel.com
-> 
-> Denys' cleanups:
-> http://lkml.kernel.org/r/1420927210-19738-1-git-send-email-dvlasenk@redhat.com
-> 
-> ----------------------------------------------------------------
-> Andy Lutomirski (4):
->       x86, entry: Switch stacks on a paranoid entry from userspace
->       x86, traps: Track entry into and exit from IST context
->       x86: Clean up current_stack_pointer
->       x86, traps: Add ist_begin_non_atomic and ist_end_non_atomic
-> 
-> Denys Vlasenko (3):
->       x86: entry_64.S: delete unused code
->       x86: ia32entry.S: fix wrong symbolic constant usage: R11->ARGOFFSET
->       x86: entry_64.S: fold SAVE_ARGS_IRQ macro into its sole user
-> 
-> Tony Luck (1):
->       x86, mce: Get rid of TIF_MCE_NOTIFY and associated mce tricks
-> 
->  Documentation/x86/entry_64.txt         |  18 ++-
->  Documentation/x86/x86_64/kernel-stacks |   8 +-
->  arch/x86/ia32/ia32entry.S              |   4 +-
->  arch/x86/include/asm/calling.h         |   1 -
->  arch/x86/include/asm/mce.h             |   1 -
->  arch/x86/include/asm/thread_info.h     |  15 ++-
->  arch/x86/include/asm/traps.h           |   6 +
->  arch/x86/kernel/cpu/mcheck/mce.c       | 114 +++++-------------
->  arch/x86/kernel/cpu/mcheck/p5.c        |   6 +
->  arch/x86/kernel/cpu/mcheck/winchip.c   |   5 +
->  arch/x86/kernel/entry_64.S             | 208 ++++++++++++++-------------------
->  arch/x86/kernel/irq_32.c               |  13 +--
->  arch/x86/kernel/signal.c               |   6 -
->  arch/x86/kernel/traps.c                | 108 +++++++++++++----
->  14 files changed, 252 insertions(+), 261 deletions(-)
-> 
+We need to start working in that direction really.  Fixing problems in ACPI
+tables via kernel code is not going to scale sufficiently IMO.
 
+> You said, "Bad for Linux", why is this not a problem for other operating
+> systems?
+
+Good question. :-)
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
