@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902AbbAOLAn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 06:00:43 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:50229 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752134AbbAOLAl (ORCPT
+	id S1753008AbbAOLBD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 06:01:03 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:38585 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752858AbbAOLBA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 06:00:41 -0500
+	Thu, 15 Jan 2015 06:01:00 -0500
 From: Dmitry Osipenko <digetx@gmail.com>
 To: digetx@gmail.com, Stephen Warren <swarren@wwwdotorg.org>,
         Thierry Reding <thierry.reding@gmail.com>,
@@ -14,9 +14,9 @@ To: digetx@gmail.com, Stephen Warren <swarren@wwwdotorg.org>,
         Peter De Schrijver <pdeschrijver@nvidia.com>
 Cc: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
         stable@vger.kernel.org
-Subject: [PATCH] ARM: tegra20: Store CPU "resettable" status in IRAM
-Date: Thu, 15 Jan 2015 13:58:57 +0300
-Message-Id: <1421319545-23920-2-git-send-email-digetx@gmail.com>
+Subject: [PATCH] ARM: tegra: Store tegra_resume() address in IRAM
+Date: Thu, 15 Jan 2015 13:58:58 +0300
+Message-Id: <1421319545-23920-3-git-send-email-digetx@gmail.com>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <1421319545-23920-1-git-send-email-digetx@gmail.com>
 References: <1421319545-23920-1-git-send-email-digetx@gmail.com>
@@ -31,217 +31,159 @@ physical memory address of common resume function and in the same time used by
 tegra20_cpu_shutdown() (shared by Tegra20 cpuidle driver and platform SMP code),
 which is storing CPU1 "resettable" status. It implies strict order of scratch
 register usage, otherwise resume function address is lost on Tegra20 after
-disabling non-boot CPU's on suspend. Fix it by storing "resettable" status in
-IRAM instead of PMC scratch register.
+disabling non-boot CPU's on suspend. Fix it by storing tegra_resume() physical
+address in IRAM instead of PMC scratch register.
 
 Signed-off-by: Dmitry Osipenko <digetx@gmail.com>
 Fixes: 7232398abc6a (ARM: tegra: Convert PMC to a driver)
 Cc: <stable@vger.kernel.org> # v3.17+
 ---
- arch/arm/mach-tegra/cpuidle-tegra20.c |  5 ++---
- arch/arm/mach-tegra/reset-handler.S   | 10 +++++++---
- arch/arm/mach-tegra/reset.h           |  4 ++++
- arch/arm/mach-tegra/sleep-tegra20.S   | 37 ++++++++++++++++++++---------------
- arch/arm/mach-tegra/sleep.h           |  4 ++++
- 5 files changed, 38 insertions(+), 22 deletions(-)
+ arch/arm/mach-tegra/pm.c            |  3 +++
+ arch/arm/mach-tegra/reset-handler.S |  4 ++++
+ arch/arm/mach-tegra/reset.h         |  4 ++++
+ arch/arm/mach-tegra/sleep-tegra20.S |  7 ++++---
+ arch/arm/mach-tegra/sleep-tegra30.S |  7 ++++---
+ drivers/soc/tegra/pmc.c             | 19 -------------------
+ 6 files changed, 19 insertions(+), 25 deletions(-)
 
-diff --git a/arch/arm/mach-tegra/cpuidle-tegra20.c b/arch/arm/mach-tegra/cpuidle-tegra20.c
-index b30bf5c..f209e9c 100644
---- a/arch/arm/mach-tegra/cpuidle-tegra20.c
-+++ b/arch/arm/mach-tegra/cpuidle-tegra20.c
-@@ -35,6 +35,7 @@
- #include "iomap.h"
- #include "irq.h"
- #include "pm.h"
-+#include "reset.h"
- #include "sleep.h"
+diff --git a/arch/arm/mach-tegra/pm.c b/arch/arm/mach-tegra/pm.c
+index b0f48a3..f11e129 100644
+--- a/arch/arm/mach-tegra/pm.c
++++ b/arch/arm/mach-tegra/pm.c
+@@ -395,6 +395,9 @@ void __init tegra_init_suspend(void)
+ 		break;
+ 	}
  
- #ifdef CONFIG_PM_SLEEP
-@@ -72,15 +73,13 @@ static struct cpuidle_driver tegra_idle_driver = {
- 
- #ifdef CONFIG_PM_SLEEP
- #ifdef CONFIG_SMP
--static void __iomem *pmc = IO_ADDRESS(TEGRA_PMC_BASE);
--
- static int tegra20_reset_sleeping_cpu_1(void)
- {
- 	int ret = 0;
- 
- 	tegra_pen_lock();
- 
--	if (readl(pmc + PMC_SCRATCH41) == CPU_RESETTABLE)
-+	if (readb(tegra20_cpu1_resettable_status) == CPU_RESETTABLE)
- 		tegra20_cpu_shutdown(1);
- 	else
- 		ret = -EINVAL;
++	/* Store common resume function physical address in IRAM */
++	writel_relaxed(virt_to_phys(tegra_resume), tegra_resume_func_phys_addr);
++
+ 	suspend_set_ops(&tegra_suspend_ops);
+ }
+ #endif
 diff --git a/arch/arm/mach-tegra/reset-handler.S b/arch/arm/mach-tegra/reset-handler.S
-index 7b2baab..60e9add 100644
+index 7b2baab..659557b 100644
 --- a/arch/arm/mach-tegra/reset-handler.S
 +++ b/arch/arm/mach-tegra/reset-handler.S
-@@ -168,10 +168,10 @@ after_errata:
- 	cmp	r6, #TEGRA20
- 	bne	1f
- 	/* If not CPU0, don't let CPU0 reset CPU1 now that CPU1 is coming up. */
--	mov32	r5, TEGRA_PMC_BASE
--	mov	r0, #0
-+	mov32	r5, TEGRA_IRAM_BASE + TEGRA_IRAM_RESET_HANDLER_OFFSET
-+	mov	r0, #CPU_NOT_RESETTABLE
- 	cmp	r10, #0
--	strne	r0, [r5, #PMC_SCRATCH41]
-+	strneb	r0, [r5, #__tegra20_cpu1_resettable_status_offset]
- 1:
- #endif
- 
 @@ -280,6 +280,10 @@ __tegra_cpu_reset_handler_data:
  	.rept	TEGRA_RESET_DATA_SIZE
  	.long	0
  	.endr
-+	.globl	__tegra20_cpu1_resettable_status_offset
-+	.equ	__tegra20_cpu1_resettable_status_offset, \
++	.globl	__tegra_resume_func_addr_offset
++	.equ	__tegra_resume_func_addr_offset, \
 +					. - __tegra_cpu_reset_handler_start
-+	.byte	0
++	.long	0
  	.align L1_CACHE_SHIFT
  
  ENTRY(__tegra_cpu_reset_handler_end)
 diff --git a/arch/arm/mach-tegra/reset.h b/arch/arm/mach-tegra/reset.h
-index 76a9343..29c3dec 100644
+index 76a9343..1b43f19 100644
 --- a/arch/arm/mach-tegra/reset.h
 +++ b/arch/arm/mach-tegra/reset.h
-@@ -35,6 +35,7 @@ extern unsigned long __tegra_cpu_reset_handler_data[TEGRA_RESET_DATA_SIZE];
- 
+@@ -36,6 +36,7 @@ extern unsigned long __tegra_cpu_reset_handler_data[TEGRA_RESET_DATA_SIZE];
  void __tegra_cpu_reset_handler_start(void);
  void __tegra_cpu_reset_handler(void);
-+void __tegra20_cpu1_resettable_status_offset(void);
  void __tegra_cpu_reset_handler_end(void);
++void __tegra_resume_func_addr_offset(void);
  void tegra_secondary_startup(void);
  
+ #ifdef CONFIG_PM_SLEEP
 @@ -47,6 +48,9 @@ void tegra_secondary_startup(void);
  	(IO_ADDRESS(TEGRA_IRAM_BASE + TEGRA_IRAM_RESET_HANDLER_OFFSET + \
  	((u32)&__tegra_cpu_reset_handler_data[TEGRA_RESET_MASK_LP2] - \
  	 (u32)__tegra_cpu_reset_handler_start)))
-+#define tegra20_cpu1_resettable_status \
++#define tegra_resume_func_phys_addr \
 +	(IO_ADDRESS(TEGRA_IRAM_BASE + TEGRA_IRAM_RESET_HANDLER_OFFSET + \
-+	 (u32)__tegra20_cpu1_resettable_status_offset))
++	 (u32)__tegra_resume_func_addr_offset))
  #endif
  
  #define tegra_cpu_reset_handler_offset \
 diff --git a/arch/arm/mach-tegra/sleep-tegra20.S b/arch/arm/mach-tegra/sleep-tegra20.S
-index be4bc5f..e6b684e 100644
+index be4bc5f..bea484f8 100644
 --- a/arch/arm/mach-tegra/sleep-tegra20.S
 +++ b/arch/arm/mach-tegra/sleep-tegra20.S
-@@ -97,9 +97,10 @@ ENDPROC(tegra20_hotplug_shutdown)
- ENTRY(tegra20_cpu_shutdown)
- 	cmp	r0, #0
- 	reteq	lr			@ must not be called for CPU 0
--	mov32	r1, TEGRA_PMC_VIRT + PMC_SCRATCH41
-+	mov32	r1, TEGRA_IRAM_RESET_BASE_VIRT
-+	ldr	r2, =__tegra20_cpu1_resettable_status_offset
- 	mov	r12, #CPU_RESETTABLE
--	str	r12, [r1]
-+	strb	r12, [r1, r2]
- 
- 	cpu_to_halt_reg r1, r0
- 	ldr	r3, =TEGRA_FLOW_CTRL_VIRT
-@@ -182,38 +183,41 @@ ENDPROC(tegra_pen_unlock)
- /*
-  * tegra20_cpu_clear_resettable(void)
+@@ -327,7 +327,7 @@ tegra20_iram_start:
+  * system clock running on the same PLL that it suspended at), and
+  * jumps to tegra_resume to restore virtual addressing and PLLX.
+  * The physical address of tegra_resume expected to be stored in
+- * PMC_SCRATCH41.
++ * IRAM reset handler area.
   *
-- * Called to clear the "resettable soon" flag in PMC_SCRATCH41 when
-+ * Called to clear the "resettable soon" flag in IRAM variable when
-  * it is expected that the secondary CPU will be idle soon.
+  * NOTE: THIS *MUST* BE RELOCATED TO TEGRA_IRAM_LPx_RESUME_AREA.
   */
- ENTRY(tegra20_cpu_clear_resettable)
--	mov32	r1, TEGRA_PMC_VIRT + PMC_SCRATCH41
-+	mov32	r1, TEGRA_IRAM_RESET_BASE_VIRT
-+	ldr	r2, =__tegra20_cpu1_resettable_status_offset
- 	mov	r12, #CPU_NOT_RESETTABLE
--	str	r12, [r1]
-+	strb	r12, [r1, r2]
- 	ret	lr
- ENDPROC(tegra20_cpu_clear_resettable)
+@@ -400,8 +400,9 @@ exit_selfrefresh_loop:
+ 	mov	r1, #0			@ unstall all transactions
+ 	str	r1, [r0, #EMC_REQ_CTRL]
  
- /*
-  * tegra20_cpu_set_resettable_soon(void)
+-	mov32	r0, TEGRA_PMC_BASE
+-	ldr	r0, [r0, #PMC_SCRATCH41]
++	mov32	r0, TEGRA_IRAM_BASE + TEGRA_IRAM_RESET_HANDLER_OFFSET
++	ldr 	r1, =__tegra_resume_func_addr_offset
++	ldr	r0, [r0, r1]
+ 	ret	r0			@ jump to tegra_resume
+ ENDPROC(tegra20_lp1_reset)
+ 
+diff --git a/arch/arm/mach-tegra/sleep-tegra30.S b/arch/arm/mach-tegra/sleep-tegra30.S
+index 5d8d13a..b05f22c 100644
+--- a/arch/arm/mach-tegra/sleep-tegra30.S
++++ b/arch/arm/mach-tegra/sleep-tegra30.S
+@@ -314,7 +314,7 @@ tegra30_iram_start:
+  * system clock running on the same PLL that it suspended at), and
+  * jumps to tegra_resume to restore virtual addressing.
+  * The physical address of tegra_resume expected to be stored in
+- * PMC_SCRATCH41.
++ * IRAM reset handler area.
   *
-- * Called to set the "resettable soon" flag in PMC_SCRATCH41 when
-+ * Called to set the "resettable soon" flag in IRAM variable when
-  * it is expected that the secondary CPU will be idle soon.
+  * NOTE: THIS *MUST* BE RELOCATED TO TEGRA_IRAM_LPx_RESUME_AREA.
   */
- ENTRY(tegra20_cpu_set_resettable_soon)
--	mov32	r1, TEGRA_PMC_VIRT + PMC_SCRATCH41
-+	mov32	r1, TEGRA_IRAM_RESET_BASE_VIRT
-+	ldr	r2, =__tegra20_cpu1_resettable_status_offset
- 	mov	r12, #CPU_RESETTABLE_SOON
--	str	r12, [r1]
-+	strb	r12, [r1, r2]
- 	ret	lr
- ENDPROC(tegra20_cpu_set_resettable_soon)
+@@ -528,8 +528,9 @@ zcal_done:
+ 	bne	exit_self_refresh
+ __no_dual_emc_chanl:
  
- /*
-  * tegra20_cpu_is_resettable_soon(void)
-  *
-- * Returns true if the "resettable soon" flag in PMC_SCRATCH41 has been
-+ * Returns true if the "resettable soon" flag in IRAM variable has been
-  * set because it is expected that the secondary CPU will be idle soon.
-  */
- ENTRY(tegra20_cpu_is_resettable_soon)
--	mov32	r1, TEGRA_PMC_VIRT + PMC_SCRATCH41
--	ldr	r12, [r1]
-+	mov32	r1, TEGRA_IRAM_RESET_BASE_VIRT
-+	ldr	r2, =__tegra20_cpu1_resettable_status_offset
-+	ldrb	r12, [r1, r2]
- 	cmp	r12, #CPU_RESETTABLE_SOON
- 	moveq	r0, #1
- 	movne	r0, #0
-@@ -256,9 +260,10 @@ ENTRY(tegra20_sleep_cpu_secondary_finish)
- 	mov	r0, #TEGRA_FLUSH_CACHE_LOUIS
- 	bl	tegra_disable_clean_inv_dcache
+-	mov32	r0, TEGRA_PMC_BASE
+-	ldr	r0, [r0, #PMC_SCRATCH41]
++	mov32	r0, TEGRA_IRAM_BASE + TEGRA_IRAM_RESET_HANDLER_OFFSET
++	ldr 	r1, =__tegra_resume_func_addr_offset
++	ldr	r0, [r0, r1]
+ 	ret	r0			@ jump to tegra_resume
+ ENDPROC(tegra30_lp1_reset)
  
--	mov32	r0, TEGRA_PMC_VIRT + PMC_SCRATCH41
-+	mov32	r0, TEGRA_IRAM_RESET_BASE_VIRT
-+	ldr	r4, =__tegra20_cpu1_resettable_status_offset
- 	mov	r3, #CPU_RESETTABLE
--	str	r3, [r0]
-+	strb	r3, [r0, r4]
+diff --git a/drivers/soc/tegra/pmc.c b/drivers/soc/tegra/pmc.c
+index a2c0ceb..b87ead2 100644
+--- a/drivers/soc/tegra/pmc.c
++++ b/drivers/soc/tegra/pmc.c
+@@ -739,24 +739,6 @@ static int tegra_pmc_probe(struct platform_device *pdev)
+ 	return 0;
+ }
  
- 	bl	tegra_cpu_do_idle
- 
-@@ -274,10 +279,10 @@ ENTRY(tegra20_sleep_cpu_secondary_finish)
- 
- 	bl	tegra_pen_lock
- 
--	mov32	r3, TEGRA_PMC_VIRT
--	add	r0, r3, #PMC_SCRATCH41
-+	mov32	r0, TEGRA_IRAM_RESET_BASE_VIRT
-+	ldr	r4, =__tegra20_cpu1_resettable_status_offset
- 	mov	r3, #CPU_NOT_RESETTABLE
--	str	r3, [r0]
-+	strb	r3, [r0, r4]
- 
- 	bl	tegra_pen_unlock
- 
-diff --git a/arch/arm/mach-tegra/sleep.h b/arch/arm/mach-tegra/sleep.h
-index 92d46ec..0d59360 100644
---- a/arch/arm/mach-tegra/sleep.h
-+++ b/arch/arm/mach-tegra/sleep.h
-@@ -18,6 +18,7 @@
- #define __MACH_TEGRA_SLEEP_H
- 
- #include "iomap.h"
-+#include "irammap.h"
- 
- #define TEGRA_ARM_PERIF_VIRT (TEGRA_ARM_PERIF_BASE - IO_CPU_PHYS \
- 					+ IO_CPU_VIRT)
-@@ -29,6 +30,9 @@
- 					+ IO_APB_VIRT)
- #define TEGRA_PMC_VIRT	(TEGRA_PMC_BASE - IO_APB_PHYS + IO_APB_VIRT)
- 
-+#define TEGRA_IRAM_RESET_BASE_VIRT (IO_IRAM_VIRT + \
-+				TEGRA_IRAM_RESET_HANDLER_OFFSET)
-+
- /* PMC_SCRATCH37-39 and 41 are used for tegra_pen_lock and idle */
- #define PMC_SCRATCH37	0x130
- #define PMC_SCRATCH38	0x134
+-#ifdef CONFIG_PM_SLEEP
+-static int tegra_pmc_suspend(struct device *dev)
+-{
+-	tegra_pmc_writel(virt_to_phys(tegra_resume), PMC_SCRATCH41);
+-
+-	return 0;
+-}
+-
+-static int tegra_pmc_resume(struct device *dev)
+-{
+-	tegra_pmc_writel(0x0, PMC_SCRATCH41);
+-
+-	return 0;
+-}
+-#endif
+-
+-static SIMPLE_DEV_PM_OPS(tegra_pmc_pm_ops, tegra_pmc_suspend, tegra_pmc_resume);
+-
+ static const char * const tegra20_powergates[] = {
+ 	[TEGRA_POWERGATE_CPU] = "cpu",
+ 	[TEGRA_POWERGATE_3D] = "3d",
+@@ -894,7 +876,6 @@ static struct platform_driver tegra_pmc_driver = {
+ 		.name = "tegra-pmc",
+ 		.suppress_bind_attrs = true,
+ 		.of_match_table = tegra_pmc_match,
+-		.pm = &tegra_pmc_pm_ops,
+ 	},
+ 	.probe = tegra_pmc_probe,
+ };
 -- 
 2.2.1
 
