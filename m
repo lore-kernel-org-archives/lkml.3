@@ -1,103 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755405AbbAOQcK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 11:32:10 -0500
-Received: from mail14.tpgi.com.au ([203.12.160.182]:35170 "EHLO
-	mail14.tpgi.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755350AbbAOQcH (ORCPT
+	id S1755191AbbAOQ3b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 11:29:31 -0500
+Received: from mail-we0-f180.google.com ([74.125.82.180]:61430 "EHLO
+	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753357AbbAOQ3a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 11:32:07 -0500
-X-TPG-Antivirus: Passed
-X-TPG-Abuse: host=14-201-201-57.static.tpgi.com.au; ip=14.201.201.57; date=Fri, 16 Jan 2015 03:31:33 +1100; auth=qn3nQWOo9XiOgLX3+3LzYIb4Pj8GBfUecjOflfKdwAc=
-From: Emrys Bayliss <emrys@paradise.net.nz>
-To: forest@alittletooquiet.net, gregkh@linuxfoundation.org,
-        emrys@paradise.net.nz, tvboxspy@gmail.com, gclement@baobob.org,
-        guido@vanguardiasur.com.ar
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/7] Staging: vt6655: comment after statement formatting
-Date: Fri, 16 Jan 2015 03:29:23 +1100
-Message-Id: <1421339367-23521-4-git-send-email-emrys@paradise.net.nz>
-X-Mailer: git-send-email 2.2.1
-In-Reply-To: <1421339367-23521-1-git-send-email-emrys@paradise.net.nz>
-References: <1421339367-23521-1-git-send-email-emrys@paradise.net.nz>
+	Thu, 15 Jan 2015 11:29:30 -0500
+Message-ID: <54B7EAE4.3020107@linaro.org>
+Date: Thu, 15 Jan 2015 17:29:24 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+CC: Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Wim Van Sebroeck <wim@iguana.be>, Guenter Roeck <linux@roeck-us.net>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH v3 8/8] ARM: at91: remove useless include
+References: <1421077023-30954-1-git-send-email-alexandre.belloni@free-electrons.com> <1421077023-30954-9-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1421077023-30954-9-git-send-email-alexandre.belloni@free-electrons.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch makes the formatting of the comments in mac.h more
-consistent.
+On 01/12/2015 04:37 PM, Alexandre Belloni wrote:
+> Both drivers using the system timer are now converted to an MFD. mach/at91_st.h
+> is now useless.
+>
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
 
-* Where a comment follows a statement, it is separated by a single
-  space.
+Acked-by: Daniel Lezcano <daniel.lezcano@linaro.org>
 
-Signed-off-by: Emrys Bayliss <emrys@paradise.net.nz>
----
- drivers/staging/vt6655/mac.h | 24 ++++++++++++------------
- 1 file changed, 12 insertions(+), 12 deletions(-)
+> ---
+>   arch/arm/mach-at91/include/mach/at91_st.h | 61 -------------------------------
+>   1 file changed, 61 deletions(-)
+>   delete mode 100644 arch/arm/mach-at91/include/mach/at91_st.h
+>
+> diff --git a/arch/arm/mach-at91/include/mach/at91_st.h b/arch/arm/mach-at91/include/mach/at91_st.h
+> deleted file mode 100644
+> index 67fdbd13c3ed..000000000000
+> --- a/arch/arm/mach-at91/include/mach/at91_st.h
+> +++ /dev/null
+> @@ -1,61 +0,0 @@
+> -/*
+> - * arch/arm/mach-at91/include/mach/at91_st.h
+> - *
+> - * Copyright (C) 2005 Ivan Kokshaysky
+> - * Copyright (C) SAN People
+> - *
+> - * System Timer (ST) - System peripherals registers.
+> - * Based on AT91RM9200 datasheet revision E.
+> - *
+> - * This program is free software; you can redistribute it and/or modify
+> - * it under the terms of the GNU General Public License as published by
+> - * the Free Software Foundation; either version 2 of the License, or
+> - * (at your option) any later version.
+> - */
+> -
+> -#ifndef AT91_ST_H
+> -#define AT91_ST_H
+> -
+> -#ifndef __ASSEMBLY__
+> -extern void __iomem *at91_st_base;
+> -
+> -#define at91_st_read(field) \
+> -	__raw_readl(at91_st_base + field)
+> -
+> -#define at91_st_write(field, value) \
+> -	__raw_writel(value, at91_st_base + field)
+> -#else
+> -.extern at91_st_base
+> -#endif
+> -
+> -#define	AT91_ST_CR		0x00			/* Control Register */
+> -#define 	AT91_ST_WDRST		(1 << 0)		/* Watchdog Timer Restart */
+> -
+> -#define	AT91_ST_PIMR		0x04			/* Period Interval Mode Register */
+> -#define		AT91_ST_PIV		(0xffff <<  0)		/* Period Interval Value */
+> -
+> -#define	AT91_ST_WDMR		0x08			/* Watchdog Mode Register */
+> -#define		AT91_ST_WDV		(0xffff <<  0)		/* Watchdog Counter Value */
+> -#define		AT91_ST_RSTEN		(1	<< 16)		/* Reset Enable */
+> -#define		AT91_ST_EXTEN		(1	<< 17)		/* External Signal Assertion Enable */
+> -
+> -#define	AT91_ST_RTMR		0x0c			/* Real-time Mode Register */
+> -#define		AT91_ST_RTPRES		(0xffff <<  0)		/* Real-time Prescalar Value */
+> -
+> -#define	AT91_ST_SR		0x10			/* Status Register */
+> -#define		AT91_ST_PITS		(1 << 0)		/* Period Interval Timer Status */
+> -#define		AT91_ST_WDOVF		(1 << 1) 		/* Watchdog Overflow */
+> -#define		AT91_ST_RTTINC		(1 << 2) 		/* Real-time Timer Increment */
+> -#define		AT91_ST_ALMS		(1 << 3) 		/* Alarm Status */
+> -
+> -#define	AT91_ST_IER		0x14			/* Interrupt Enable Register */
+> -#define	AT91_ST_IDR		0x18			/* Interrupt Disable Register */
+> -#define	AT91_ST_IMR		0x1c			/* Interrupt Mask Register */
+> -
+> -#define	AT91_ST_RTAR		0x20			/* Real-time Alarm Register */
+> -#define		AT91_ST_ALMV		(0xfffff << 0)		/* Alarm Value */
+> -
+> -#define	AT91_ST_CRTR		0x24			/* Current Real-time Register */
+> -#define		AT91_ST_CRTV		(0xfffff << 0)		/* Current Real-Time Value */
+> -
+> -#endif
+>
 
-diff --git a/drivers/staging/vt6655/mac.h b/drivers/staging/vt6655/mac.h
-index 359e3f2..f29fe30 100644
---- a/drivers/staging/vt6655/mac.h
-+++ b/drivers/staging/vt6655/mac.h
-@@ -336,12 +336,12 @@
- //
- #define HOSTCR_TXONST       0x80
- #define HOSTCR_RXONST       0x40
--#define HOSTCR_ADHOC        0x20        // Network Type 1 = Ad-hoc
--#define HOSTCR_AP           0x10        // Port Type 1 = AP
--#define HOSTCR_TXON         0x08        //0000 1000
--#define HOSTCR_RXON         0x04        //0000 0100
--#define HOSTCR_MACEN        0x02        //0000 0010
--#define HOSTCR_SOFTRST      0x01        //0000 0001
-+#define HOSTCR_ADHOC        0x20 // Network Type 1 = Ad-hoc
-+#define HOSTCR_AP           0x10 // Port Type 1 = AP
-+#define HOSTCR_TXON         0x08 //0000 1000
-+#define HOSTCR_RXON         0x04 //0000 0100
-+#define HOSTCR_MACEN        0x02 //0000 0010
-+#define HOSTCR_SOFTRST      0x01 //0000 0001
- 
- //
- // Bits in the MACCR register
-@@ -371,7 +371,7 @@
- // Bits in the TCR register
- //
- #define TCR_SYNCDCFOPT      0x02
--#define TCR_AUTOBCNTX       0x01        // Beacon automatically transmit enable
-+#define TCR_AUTOBCNTX       0x01 // Beacon automatically transmit enable
- 
- //
- // Bits in the IMR register
-@@ -381,7 +381,7 @@
- #define IMR_RADARDETECT     0x10000000
- #define IMR_MEASUREEND      0x08000000
- #define IMR_SOFTTIMER1      0x00200000
--#define IMR_RXDMA1          0x00001000      //0000 0000 0001 0000 0000 0000
-+#define IMR_RXDMA1          0x00001000 //0000 0000 0001 0000 0000 0000
- #define IMR_RXNOBUF         0x00000800
- #define IMR_MIBNEARFULL     0x00000400
- #define IMR_SOFTINT         0x00000200
-@@ -404,9 +404,9 @@
- #define ISR_RADARDETECT     0x10000000
- #define ISR_MEASUREEND      0x08000000
- #define ISR_SOFTTIMER1      0x00200000
--#define ISR_RXDMA1          0x00001000      //0000 0000 0001 0000 0000 0000
--#define ISR_RXNOBUF         0x00000800      //0000 0000 0000 1000 0000 0000
--#define ISR_MIBNEARFULL     0x00000400      //0000 0000 0000 0100 0000 0000
-+#define ISR_RXDMA1          0x00001000 //0000 0000 0001 0000 0000 0000
-+#define ISR_RXNOBUF         0x00000800 //0000 0000 0000 1000 0000 0000
-+#define ISR_MIBNEARFULL     0x00000400 //0000 0000 0000 0100 0000 0000
- #define ISR_SOFTINT         0x00000200
- #define ISR_FETALERR        0x00000100
- #define ISR_WATCHDOG        0x00000080
-@@ -603,7 +603,7 @@
- #define W_MAX_TIMEOUT       0xFFF0U
- 
- // wait time within loop
--#define CB_DELAY_LOOP_WAIT  10          // 10ms
-+#define CB_DELAY_LOOP_WAIT  10 // 10ms
- 
- //
- // revision id
+
 -- 
-2.2.1
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
