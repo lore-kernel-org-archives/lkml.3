@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755021AbbAOOM2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 09:12:28 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:53768 "EHLO
+	id S1754885AbbAOOLm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 09:11:42 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:53779 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754522AbbAOOKP (ORCPT
+	with ESMTP id S1754531AbbAOOKQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 09:10:15 -0500
+	Thu, 15 Jan 2015 09:10:16 -0500
 From: Gregory CLEMENT <gregory.clement@free-electrons.com>
 To: Tejun Heo <tj@kernel.org>, Hans de Goede <hdegoede@redhat.com>,
         linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
@@ -23,9 +23,9 @@ Cc: =?UTF-8?q?Antoine=20T=C3=A9nart?=
         linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
         Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
         Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org
-Subject: [PATCH v4 3/4] ata: libahci: Allow using multiple regulators
-Date: Thu, 15 Jan 2015 15:09:37 +0100
-Message-Id: <1421330978-9694-4-git-send-email-gregory.clement@free-electrons.com>
+Subject: [PATCH v4 4/4] ARM: mvebu: Armada 385 GP: Add regulators to the SATA port
+Date: Thu, 15 Jan 2015 15:09:38 +0100
+Message-Id: <1421330978-9694-5-git-send-email-gregory.clement@free-electrons.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1421330978-9694-1-git-send-email-gregory.clement@free-electrons.com>
 References: <1421330978-9694-1-git-send-email-gregory.clement@free-electrons.com>
@@ -33,412 +33,164 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current implementation of the libahci allows using multiple PHYs
-but not multiple regulators. This patch adds the support of multiple
-regulators. Until now it was mandatory to have a PHY under a subnode,
-now a port subnode can contain either a regulator or a PHY (or both).
-
-In order to be able to asociate a port with a regulator the port are
-now a platform device in the device tree case.
-
-There was only one driver which used directly the regulator field of
-the ahci_host_priv structure. To preserve the bisectability the change
-in the ahci_imx driver was done in the same patch.
+Add the regulators to each SATA port.
 
 Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
 ---
- drivers/ata/ahci.h             |   2 +-
- drivers/ata/ahci_imx.c         |  14 +--
- drivers/ata/libahci_platform.c | 230 +++++++++++++++++++++++++++++------------
- include/linux/ahci_platform.h  |   2 +
- 4 files changed, 173 insertions(+), 75 deletions(-)
+ arch/arm/boot/dts/armada-388-gp.dts | 126 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 126 insertions(+)
 
-diff --git a/drivers/ata/ahci.h b/drivers/ata/ahci.h
-index 40f0e34f17af..275358ae0b3f 100644
---- a/drivers/ata/ahci.h
-+++ b/drivers/ata/ahci.h
-@@ -333,7 +333,7 @@ struct ahci_host_priv {
- 	u32			em_msg_type;	/* EM message type */
- 	bool			got_runtime_pm; /* Did we do pm_runtime_get? */
- 	struct clk		*clks[AHCI_MAX_CLKS]; /* Optional */
--	struct regulator	*target_pwr;	/* Optional */
-+	struct regulator	**target_pwrs;	/* Optional */
- 	/*
- 	 * If platform uses PHYs. There is a 1:1 relation between the port number and
- 	 * the PHY position in this array.
-diff --git a/drivers/ata/ahci_imx.c b/drivers/ata/ahci_imx.c
-index 35d51c59a370..41632e57d46f 100644
---- a/drivers/ata/ahci_imx.c
-+++ b/drivers/ata/ahci_imx.c
-@@ -221,11 +221,9 @@ static int imx_sata_enable(struct ahci_host_priv *hpriv)
- 	if (imxpriv->no_device)
- 		return 0;
- 
--	if (hpriv->target_pwr) {
--		ret = regulator_enable(hpriv->target_pwr);
--		if (ret)
--			return ret;
--	}
-+	ret = ahci_platform_enable_regulators(hpriv);
-+	if (ret)
-+		return ret;
- 
- 	ret = clk_prepare_enable(imxpriv->sata_ref_clk);
- 	if (ret < 0)
-@@ -270,8 +268,7 @@ static int imx_sata_enable(struct ahci_host_priv *hpriv)
- disable_clk:
- 	clk_disable_unprepare(imxpriv->sata_ref_clk);
- disable_regulator:
--	if (hpriv->target_pwr)
--		regulator_disable(hpriv->target_pwr);
-+	ahci_platform_disable_regulators(hpriv);
- 
- 	return ret;
- }
-@@ -291,8 +288,7 @@ static void imx_sata_disable(struct ahci_host_priv *hpriv)
- 
- 	clk_disable_unprepare(imxpriv->sata_ref_clk);
- 
--	if (hpriv->target_pwr)
--		regulator_disable(hpriv->target_pwr);
-+	ahci_platform_disable_regulators(hpriv);
- }
- 
- static void ahci_imx_error_handler(struct ata_port *ap)
-diff --git a/drivers/ata/libahci_platform.c b/drivers/ata/libahci_platform.c
-index a147aaadca85..73a086664ee7 100644
---- a/drivers/ata/libahci_platform.c
-+++ b/drivers/ata/libahci_platform.c
-@@ -24,6 +24,7 @@
- #include <linux/ahci_platform.h>
- #include <linux/phy/phy.h>
- #include <linux/pm_runtime.h>
-+#include <linux/of_platform.h>
- #include "ahci.h"
- 
- static void ahci_host_stop(struct ata_host *host);
-@@ -138,6 +139,59 @@ void ahci_platform_disable_clks(struct ahci_host_priv *hpriv)
- EXPORT_SYMBOL_GPL(ahci_platform_disable_clks);
- 
- /**
-+ * ahci_platform_enable_regulators - Enable regulators
-+ * @hpriv: host private area to store config values
-+ *
-+ * This function enables all the regulators found in
-+ * hpriv->target_pwrs, if any.  If a regulator fails to be enabled, it
-+ * disables all the regulators already enabled in reverse order and
-+ * returns an error.
-+ *
-+ * RETURNS:
-+ * 0 on success otherwise a negative error code
-+ */
-+int ahci_platform_enable_regulators(struct ahci_host_priv *hpriv)
-+{
-+	int rc, i;
+diff --git a/arch/arm/boot/dts/armada-388-gp.dts b/arch/arm/boot/dts/armada-388-gp.dts
+index 4df22bf91683..590b383db323 100644
+--- a/arch/arm/boot/dts/armada-388-gp.dts
++++ b/arch/arm/boot/dts/armada-388-gp.dts
+@@ -173,6 +173,16 @@
+ 				status = "okay";
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
 +
-+	for (i = 0; i < hpriv->nports; i++) {
-+		if (!hpriv->target_pwrs[i])
-+			continue;
++				sata0: sata-port@0 {
++					reg = <0>;
++					target-supply = <&reg_5v_sata0>;
++				};
 +
-+		rc = regulator_enable(hpriv->target_pwrs[i]);
-+		if (rc)
-+			goto disable_target_pwrs;
-+	}
-+
-+	return 0;
-+
-+disable_target_pwrs:
-+	while (--i >= 0)
-+		if (hpriv->target_pwrs[i])
-+			regulator_disable(hpriv->target_pwrs[i]);
-+
-+	return rc;
-+}
-+EXPORT_SYMBOL_GPL(ahci_platform_enable_regulators);
-+
-+/**
-+ * ahci_platform_disable_regulators - Disable regulators
-+ * @hpriv: host private area to store config values
-+ *
-+ * This function disables all regulators found in hpriv->target_pwrs.
-+ */
-+void ahci_platform_disable_regulators(struct ahci_host_priv *hpriv)
-+{
-+	int i;
-+
-+	for (i = 0; i < hpriv->nports; i++) {
-+		if (!hpriv->target_pwrs[i])
-+			continue;
-+		regulator_disable(hpriv->target_pwrs[i]);
-+	}
-+}
-+EXPORT_SYMBOL_GPL(ahci_platform_disable_regulators);
-+/**
-  * ahci_platform_enable_resources - Enable platform resources
-  * @hpriv: host private area to store config values
-  *
-@@ -157,11 +211,9 @@ int ahci_platform_enable_resources(struct ahci_host_priv *hpriv)
- {
- 	int rc;
++				sata1: sata-port@1 {
++					reg = <1>;
++					target-supply = <&reg_5v_sata1>;
++				};
+ 			};
  
--	if (hpriv->target_pwr) {
--		rc = regulator_enable(hpriv->target_pwr);
--		if (rc)
--			return rc;
--	}
-+	rc = ahci_platform_enable_regulators(hpriv);
-+	if (rc)
-+		return rc;
- 
- 	rc = ahci_platform_enable_clks(hpriv);
- 	if (rc)
-@@ -177,8 +229,8 @@ disable_clks:
- 	ahci_platform_disable_clks(hpriv);
- 
- disable_regulator:
--	if (hpriv->target_pwr)
--		regulator_disable(hpriv->target_pwr);
-+	ahci_platform_disable_regulators(hpriv);
+ 			sata@e0000 {
+@@ -181,6 +191,16 @@
+ 				status = "okay";
+ 				#address-cells = <1>;
+ 				#size-cells = <0>;
 +
- 	return rc;
- }
- EXPORT_SYMBOL_GPL(ahci_platform_enable_resources);
-@@ -199,8 +251,7 @@ void ahci_platform_disable_resources(struct ahci_host_priv *hpriv)
++				sata2: sata-port@0 {
++					reg = <0>;
++					target-supply = <&reg_5v_sata2>;
++				};
++
++				sata3: sata-port@1 {
++					reg = <1>;
++					target-supply = <&reg_5v_sata3>;
++				};
+ 			};
  
- 	ahci_platform_disable_clks(hpriv);
+ 			sdhci@d8000 {
+@@ -278,6 +298,112 @@
+ 		regulator-always-on;
+ 		gpio = <&expander0 4 GPIO_ACTIVE_HIGH>;
+ 	};
++
++	reg_sata0: pwr-sata0 {
++		compatible = "regulator-fixed";
++		regulator-name = "pwr_en_sata0";
++		enable-active-high;
++		regulator-always-on;
++
++	};
++
++	reg_5v_sata0: v5-sata0 {
++		compatible = "regulator-fixed";
++		regulator-name = "v5.0-sata0";
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++		regulator-always-on;
++		vin-supply = <&reg_sata0>;
++	};
++
++	reg_12v_sata0: v12-sata0 {
++		compatible = "regulator-fixed";
++		regulator-name = "v12.0-sata0";
++		regulator-min-microvolt = <12000000>;
++		regulator-max-microvolt = <12000000>;
++		regulator-always-on;
++		vin-supply = <&reg_sata0>;
++	};
++
++	reg_sata1: pwr-sata1 {
++		regulator-name = "pwr_en_sata1";
++		compatible = "regulator-fixed";
++		regulator-min-microvolt = <12000000>;
++		regulator-max-microvolt = <12000000>;
++		enable-active-high;
++		regulator-always-on;
++		gpio = <&expander0 3 GPIO_ACTIVE_HIGH>;
++	};
++
++	reg_5v_sata1: v5-sata1 {
++		compatible = "regulator-fixed";
++		regulator-name = "v5.0-sata1";
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++		regulator-always-on;
++		vin-supply = <&reg_sata1>;
++	};
++
++	reg_12v_sata1: v12-sata1 {
++		compatible = "regulator-fixed";
++		regulator-name = "v12.0-sata1";
++		regulator-min-microvolt = <12000000>;
++		regulator-max-microvolt = <12000000>;
++		regulator-always-on;
++		vin-supply = <&reg_sata1>;
++	};
++
++	reg_sata2: pwr-sata2 {
++		compatible = "regulator-fixed";
++		regulator-name = "pwr_en_sata2";
++		enable-active-high;
++		regulator-always-on;
++		gpio = <&expander0 11 GPIO_ACTIVE_HIGH>;
++	};
++
++	reg_5v_sata2: v5-sata2 {
++		compatible = "regulator-fixed";
++		regulator-name = "v5.0-sata2";
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++		regulator-always-on;
++		vin-supply = <&reg_sata2>;
++	};
++
++	reg_12v_sata2: v12-sata2 {
++		compatible = "regulator-fixed";
++		regulator-name = "v12.0-sata2";
++		regulator-min-microvolt = <12000000>;
++		regulator-max-microvolt = <12000000>;
++		regulator-always-on;
++		vin-supply = <&reg_sata2>;
++	};
++
++	reg_sata3: pwr-sata3 {
++		compatible = "regulator-fixed";
++		regulator-name = "pwr_en_sata3";
++		enable-active-high;
++		regulator-always-on;
++		gpio = <&expander0 12 GPIO_ACTIVE_HIGH>;
++	};
++
++	reg_5v_sata3: v5-sata3 {
++		compatible = "regulator-fixed";
++		regulator-name = "v5.0-sata3";
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++		regulator-always-on;
++		vin-supply = <&reg_sata3>;
++	};
++
++	reg_12v_sata3: v12-sata3 {
++		compatible = "regulator-fixed";
++		regulator-name = "v12.0-sata3";
++		regulator-min-microvolt = <12000000>;
++		regulator-max-microvolt = <12000000>;
++		regulator-always-on;
++		vin-supply = <&reg_sata3>;
++	};
+ };
  
--	if (hpriv->target_pwr)
--		regulator_disable(hpriv->target_pwr);
-+	ahci_platform_disable_regulators(hpriv);
- }
- EXPORT_SYMBOL_GPL(ahci_platform_disable_resources);
- 
-@@ -216,6 +267,68 @@ static void ahci_platform_put_resources(struct device *dev, void *res)
- 
- 	for (c = 0; c < AHCI_MAX_CLKS && hpriv->clks[c]; c++)
- 		clk_put(hpriv->clks[c]);
-+	/*
-+	 * The regulators are tied to child node device and not to the
-+	 * SATA device itself. So we can't use devm for automatically
-+	 * releasing them. We have to do it manually here.
-+	 */
-+	for (c = 0; c < hpriv->nports; c++)
-+		if (hpriv->target_pwrs && hpriv->target_pwrs[c])
-+			regulator_put(hpriv->target_pwrs[c]);
-+
-+}
-+
-+static int ahci_platform_get_phy(struct ahci_host_priv *hpriv, u32 port,
-+				struct device *dev, struct device_node *node)
-+{
-+	int rc;
-+
-+	hpriv->phys[port] = devm_of_phy_get(dev, node, NULL);
-+
-+	if (!IS_ERR(hpriv->phys[port]))
-+		return 0;
-+
-+	rc = PTR_ERR(hpriv->phys[port]);
-+	switch (rc) {
-+	case -ENOSYS:
-+		/* No PHY support. Check if PHY is required. */
-+		if (of_find_property(node, "phys", NULL)) {
-+			dev_err(dev,
-+				"couldn't get PHY in node %s: ENOSYS\n",
-+				node->name);
-+			break;
-+		}
-+	case -ENODEV:
-+		/* continue normally */
-+		hpriv->phys[port] = NULL;
-+		rc = 0;
-+		break;
-+
-+	default:
-+		dev_err(dev,
-+			"couldn't get PHY in node %s: %d\n",
-+			node->name, rc);
-+
-+		break;
-+	}
-+
-+	return rc;
-+}
-+
-+static int ahci_platform_get_regulator(struct ahci_host_priv *hpriv, u32 port,
-+				struct device *dev)
-+{
-+	struct regulator *target_pwr;
-+	int rc = 0;
-+
-+	target_pwr = regulator_get_optional(dev, "target");
-+
-+	if (!IS_ERR(target_pwr))
-+		hpriv->target_pwrs[port] = target_pwr;
-+	else
-+		rc = PTR_ERR(target_pwr);
-+
-+	return rc;
- }
- 
- /**
-@@ -240,7 +353,7 @@ struct ahci_host_priv *ahci_platform_get_resources(struct platform_device *pdev)
- 	struct ahci_host_priv *hpriv;
- 	struct clk *clk;
- 	struct device_node *child;
--	int i, enabled_ports = 0, rc = -ENOMEM;
-+	int i, sz, enabled_ports = 0, rc = -ENOMEM, child_nodes;
- 	u32 mask_port_map = 0;
- 
- 	if (!devres_open_group(dev, NULL, GFP_KERNEL))
-@@ -261,14 +374,6 @@ struct ahci_host_priv *ahci_platform_get_resources(struct platform_device *pdev)
- 		goto err_out;
- 	}
- 
--	hpriv->target_pwr = devm_regulator_get_optional(dev, "target");
--	if (IS_ERR(hpriv->target_pwr)) {
--		rc = PTR_ERR(hpriv->target_pwr);
--		if (rc == -EPROBE_DEFER)
--			goto err_out;
--		hpriv->target_pwr = NULL;
--	}
--
- 	for (i = 0; i < AHCI_MAX_CLKS; i++) {
- 		/*
- 		 * For now we must use clk_get(dev, NULL) for the first clock,
-@@ -290,19 +395,33 @@ struct ahci_host_priv *ahci_platform_get_resources(struct platform_device *pdev)
- 		hpriv->clks[i] = clk;
- 	}
- 
--	hpriv->nports = of_get_child_count(dev->of_node);
-+	hpriv->nports = child_nodes = of_get_child_count(dev->of_node);
- 
--	if (hpriv->nports) {
--		hpriv->phys = devm_kzalloc(dev,
--					   hpriv->nports * sizeof(*hpriv->phys),
--					   GFP_KERNEL);
--		if (!hpriv->phys) {
--			rc = -ENOMEM;
--			goto err_out;
--		}
-+	/*
-+	 * If no sub-node was found, we still need to set nports to
-+	 * one in order to be able to use the
-+	 * ahci_platform_[en|dis]able_[phys|regulators] functions.
-+	 */
-+	if (!child_nodes)
-+		hpriv->nports = 1;
- 
-+	sz = hpriv->nports * sizeof(*hpriv->phys);
-+	hpriv->phys = devm_kzalloc(dev, sz, GFP_KERNEL);
-+	if (!hpriv->phys) {
-+		rc = -ENOMEM;
-+		goto err_out;
-+	}
-+	sz = hpriv->nports * sizeof(*hpriv->target_pwrs);
-+	hpriv->target_pwrs = devm_kzalloc(dev, sz, GFP_KERNEL);
-+	if (!hpriv->target_pwrs) {
-+		rc = -ENOMEM;
-+		goto err_out;
-+	}
-+
-+	if (child_nodes) {
- 		for_each_child_of_node(dev->of_node, child) {
- 			u32 port;
-+			struct platform_device *port_dev;
- 
- 			if (!of_device_is_available(child))
- 				continue;
-@@ -316,18 +435,23 @@ struct ahci_host_priv *ahci_platform_get_resources(struct platform_device *pdev)
- 				dev_warn(dev, "invalid port number %d\n", port);
- 				continue;
- 			}
--
- 			mask_port_map |= BIT(port);
- 
--			hpriv->phys[port] = devm_of_phy_get(dev, child, NULL);
--			if (IS_ERR(hpriv->phys[port])) {
--				rc = PTR_ERR(hpriv->phys[port]);
--				dev_err(dev,
--					"couldn't get PHY in node %s: %d\n",
--					child->name, rc);
--				goto err_out;
-+			of_platform_device_create(child, NULL, NULL);
-+
-+			port_dev = of_find_device_by_node(child);
-+
-+			if (port_dev) {
-+				rc = ahci_platform_get_regulator(hpriv, port,
-+								&port_dev->dev);
-+				if (rc == -EPROBE_DEFER)
-+					goto err_out;
- 			}
- 
-+			rc = ahci_platform_get_phy(hpriv, port, dev, child);
-+			if (rc)
-+				goto err_out;
-+
- 			enabled_ports++;
- 		}
- 		if (!enabled_ports) {
-@@ -343,38 +467,14 @@ struct ahci_host_priv *ahci_platform_get_resources(struct platform_device *pdev)
- 		 * If no sub-node was found, keep this for device tree
- 		 * compatibility
- 		 */
--		struct phy *phy = devm_phy_get(dev, "sata-phy");
--		if (!IS_ERR(phy)) {
--			hpriv->phys = devm_kzalloc(dev, sizeof(*hpriv->phys),
--						   GFP_KERNEL);
--			if (!hpriv->phys) {
--				rc = -ENOMEM;
--				goto err_out;
--			}
--
--			hpriv->phys[0] = phy;
--			hpriv->nports = 1;
--		} else {
--			rc = PTR_ERR(phy);
--			switch (rc) {
--				case -ENOSYS:
--					/* No PHY support. Check if PHY is required. */
--					if (of_find_property(dev->of_node, "phys", NULL)) {
--						dev_err(dev, "couldn't get sata-phy: ENOSYS\n");
--						goto err_out;
--					}
--				case -ENODEV:
--					/* continue normally */
--					hpriv->phys = NULL;
--					break;
--
--				default:
--					goto err_out;
-+		rc = ahci_platform_get_phy(hpriv, 0, dev, dev->of_node);
-+		if (rc)
-+			goto err_out;
- 
--			}
--		}
-+		rc = ahci_platform_get_regulator(hpriv, 0, dev);
-+		if (rc == -EPROBE_DEFER)
-+			goto err_out;
- 	}
--
- 	pm_runtime_enable(dev);
- 	pm_runtime_get_sync(dev);
- 	hpriv->got_runtime_pm = true;
-diff --git a/include/linux/ahci_platform.h b/include/linux/ahci_platform.h
-index 642d6ae4030c..f65b33809170 100644
---- a/include/linux/ahci_platform.h
-+++ b/include/linux/ahci_platform.h
-@@ -24,6 +24,8 @@ struct platform_device;
- 
- int ahci_platform_enable_clks(struct ahci_host_priv *hpriv);
- void ahci_platform_disable_clks(struct ahci_host_priv *hpriv);
-+int ahci_platform_enable_regulators(struct ahci_host_priv *hpriv);
-+void ahci_platform_disable_regulators(struct ahci_host_priv *hpriv);
- int ahci_platform_enable_resources(struct ahci_host_priv *hpriv);
- void ahci_platform_disable_resources(struct ahci_host_priv *hpriv);
- struct ahci_host_priv *ahci_platform_get_resources(
+ &pinctrl {
 -- 
 1.9.1
 
