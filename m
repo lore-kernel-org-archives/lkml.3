@@ -1,54 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753960AbbAOMX2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 07:23:28 -0500
-Received: from casper.infradead.org ([85.118.1.10]:38226 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753343AbbAOMX0 (ORCPT
+	id S1753942AbbAOMX1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 07:23:27 -0500
+Received: from mail-we0-f179.google.com ([74.125.82.179]:60363 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752134AbbAOMX0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 15 Jan 2015 07:23:26 -0500
-Date: Thu, 15 Jan 2015 13:23:23 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Luca Abeni <luca.abeni@unitn.it>
-Cc: Kirill Tkhai <tkhai@yandex.ru>, Juri Lelli <juri.lelli@arm.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "juri.lelli@gmail.com" <juri.lelli@gmail.com>
-Subject: Re: Another SCHED_DEADLINE bug (with bisection and possible fix)
-Message-ID: <20150115122323.GU23965@worktop.programming.kicks-ass.net>
-References: <2629881420411885@web9m.yandex.ru>
- <54AAABFB.3060109@unitn.it>
- <1420499241.3361.14.camel@yandex.ru>
- <20150107080155.1d42d123@luca-1225C>
- <1420633741.12772.10.camel@yandex.ru>
- <54B4D2DF.9010308@arm.com>
- <4500351421141200@web2m.yandex.ru>
- <20150113140436.GI25256@twins.programming.kicks-ass.net>
- <4632021421239387@web25g.yandex.ru>
- <54B7A33F.20904@unitn.it>
+Message-ID: <54B7B13C.3090803@linaro.org>
+Date: Thu, 15 Jan 2015 13:23:24 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54B7A33F.20904@unitn.it>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+CC: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        sylvain.rochet@finsecur.com
+Subject: Re: [PATCH] clocksource: timer-atmel-pit: don't suspend/resume if
+ unused
+References: <1418911523-28492-1-git-send-email-nicolas.ferre@atmel.com> <54B3D450.7050405@atmel.com> <54B3D88C.80702@linaro.org> <alpine.DEB.2.11.1501131143250.17382@nanos> <54B7A767.9000205@linaro.org> <20150115115209.GS3843@piout.net>
+In-Reply-To: <20150115115209.GS3843@piout.net>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 15, 2015 at 12:23:43PM +0100, Luca Abeni wrote:
-> There are some parts of the patch that I do not understand (for example:
-> if I understand well, if the task is not throttled you set dl_new to 1...
-> And if it is throttled you change its current runtime and scheduling deadline...
-> Why?)
-> Anyway, I tested the patch and I confirm that it fixes the hang I originally
-> reported.
+On 01/15/2015 12:52 PM, Alexandre Belloni wrote:
+> Hi,
+>
+> I'll do it but only if you review my other series :)
 
-I'll go look at the patch in a wee bit. But Juri, Luca, could you
-describe the correct behaviour?
+deal ! ;)
 
->From what I understand we should either modify the tasks run/sleep stats
-when we change its parameters or we should schedule a delayed release of
-the bandwidth delta (when it reaches its 0-lag point, if thats in the
-future).
+   -- Daniel
 
-Doing neither will allow one to game the reservation system afaict.
+
+>
+> On 15/01/2015 at 12:41:27 +0100, Daniel Lezcano wrote :
+>> On 01/13/2015 11:47 AM, Thomas Gleixner wrote:
+>>> On Mon, 12 Jan 2015, Daniel Lezcano wrote:
+>>>
+>>>> On 01/12/2015 03:04 PM, Nicolas Ferre wrote:
+>>>>> Le 18/12/2014 15:05, Nicolas Ferre a écrit :
+>>>>>> From: Sylvain Rochet <sylvain.rochet@finsecur.com>
+>>>>>>
+>>>>>> Waiting for PIT to stop counting takes a long time:
+>>>>>>     1/(Master clock/prescaler/PIVR)
+>>>>>> = 1/(133 MHz     /16       /2^20)
+>>>>>> = 126 ms
+>>>>>>
+>>>>>> Up to 126 ms if master clock is set to 133 MHz, skipping suspend/resume
+>>>>>> of the unused PIT device reduce (suspend time + resume time) from ~140 ms
+>>>>>> to ~17 ms.
+>>>>>>
+>>>>>> Signed-off-by: Sylvain Rochet <sylvain.rochet@finsecur.com>
+>>>>>> [nicolas.ferre@atmel.com: move to newer clocksource driver]
+>>>>>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>>>>>> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+>>>>>> ---
+>>>>>> Hi Sylvain,
+>>>>>>
+>>>>>> I re-worked (and "Acked") your patch so it can be applied on the newer
+>>>>>> Mainline
+>>>>>> kernels. Beware, I changed the "subject line" as well. The PIT driver
+>>>>>> moved
+>>>>>> recently (3.18).
+>>>>>>
+>>>>>> Daniel,
+>>>>>> Can you take this patch in your tree?
+>>>>>
+>>>>> Hi Daniel,
+>>>>>
+>>>>> Anything prevents this patch from being merged (aka ping ;-))?
+>>>>
+>>>> [Cc'ed tglx].
+>>>>
+>>>> Hi Nico,
+>>>>
+>>>> thanks for the head up.
+>>>>
+>>>> Nothing prevents it but I am wondering if this change shouldn't be in the
+>>>> generic framework (kernel/time/clocksource.c and kernel/time/clockevents.c),
+>>>> so all drivers will benefit this change ?
+>>>
+>>> Indeed. There is no point in calling suspend/resume for unused
+>>> clockevents. They should be stopped and disabled already.
+>>
+>> Hi Nico,
+>>
+>> are you planning to do the change in the generic framework ?
+>>
+>> Thanks
+>>    -- Daniel
+>>
+>>> Now with clocksources this might be different. We have no explicit
+>>> state for this, but its trivial to add one at least for those
+>>> clocksources which have enable/disable callbacks. For the other ones
+>>> not so much.
+>>
+>>
+>>
+>>
+>>
+>> --
+>>   <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+>>
+>> Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+>> <http://twitter.com/#!/linaroorg> Twitter |
+>> <http://www.linaro.org/linaro-blog/> Blog
+>>
+>
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
