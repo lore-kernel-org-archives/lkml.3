@@ -1,64 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932323AbbAOWtY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 17:49:24 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:59774 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932258AbbAOWtW (ORCPT
+	id S1755460AbbAOWy6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 17:54:58 -0500
+Received: from mail-oi0-f46.google.com ([209.85.218.46]:63233 "EHLO
+	mail-oi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753207AbbAOWyz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 17:49:22 -0500
-Date: Thu, 15 Jan 2015 14:49:20 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Rik van Riel <riel@redhat.com>, Michal Hocko <mhocko@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, Vlastimil Babka <vbabka@suse.cz>,
-        Suleiman Souhlal <suleiman@google.com>, linux-mm@kvack.org
-Subject: Re: [PATCH] mm/vmscan: fix highidx argument type
-Message-Id: <20150115144920.33c446af388ed74c11dc573e@linux-foundation.org>
-In-Reply-To: <1421360175-18899-1-git-send-email-mst@redhat.com>
-References: <1421360175-18899-1-git-send-email-mst@redhat.com>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 15 Jan 2015 17:54:55 -0500
+MIME-Version: 1.0
+In-Reply-To: <CACZ9PQVo0SF4Z-rdNk4e=yY17Xt9n5hAqm4ZRNLEw3jGYYcvtA@mail.gmail.com>
+References: <1420986751-30364-1-git-send-email-r.peniaev@gmail.com>
+	<1420986751-30364-2-git-send-email-r.peniaev@gmail.com>
+	<20150112183955.GO13360@arm.com>
+	<CACZ9PQXW9G4Vw-dcPwkdVE=uoYmDYEQnJWDnnpup1LxC3s5QPg@mail.gmail.com>
+	<CAGXu5jLO-YSaF8P9o3jcXP4VZCPYVshz73krnchYuv9pPGY6Sw@mail.gmail.com>
+	<CACZ9PQVo0SF4Z-rdNk4e=yY17Xt9n5hAqm4ZRNLEw3jGYYcvtA@mail.gmail.com>
+Date: Thu, 15 Jan 2015 14:54:54 -0800
+X-Google-Sender-Auth: yJnD9CxtCA0jSVYhOJHW6VF2qm8
+Message-ID: <CAGXu5j+O6znN=7-gc3PqwqFA5MFRPLGBUzabOmQjWn_9WTjvpg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] ARM: entry-common: fix forgotten set of thread_info->syscall
+From: Kees Cook <keescook@chromium.org>
+To: Roman Peniaev <r.peniaev@gmail.com>
+Cc: Will Deacon <will.deacon@arm.com>, Russell King <linux@arm.linux.org.uk>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Sekhar Nori <nsekhar@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Jan 2015 00:18:12 +0200 "Michael S. Tsirkin" <mst@redhat.com> wrote:
-
-> for_each_zone_zonelist_nodemask wants an enum zone_type
-> argument, but is passed gfp_t:
-> 
-> mm/vmscan.c:2658:9:    expected int enum zone_type [signed] highest_zoneidx
-> mm/vmscan.c:2658:9:    got restricted gfp_t [usertype] gfp_mask
-> mm/vmscan.c:2658:9: warning: incorrect type in argument 2 (different base types)
-> mm/vmscan.c:2658:9:    expected int enum zone_type [signed] highest_zoneidx
-> mm/vmscan.c:2658:9:    got restricted gfp_t [usertype] gfp_mask
-
-Which tool emitted these warnings?
-
-> convert argument to the correct type.
-> 
-> ...
+On Wed, Jan 14, 2015 at 5:54 PM, Roman Peniaev <r.peniaev@gmail.com> wrote:
+> On Thu, Jan 15, 2015 at 5:51 AM, Kees Cook <keescook@chromium.org> wrote:
+>> On Tue, Jan 13, 2015 at 12:35 AM, Roman Peniaev <r.peniaev@gmail.com> wrote:
+>>> On Tue, Jan 13, 2015 at 3:39 AM, Will Deacon <will.deacon@arm.com> wrote:
+>>>> On Sun, Jan 11, 2015 at 02:32:30PM +0000, Roman Pen wrote:
+>>>>> thread_info->syscall is used only for ptrace, but syscall number
+>>>>> is also used by syscall_get_nr and returned to userspace by the
+>>>>> following proc file access:
+>>>>>
+>>>>>  $ cat /proc/self/syscall
+>>>>>  0 0x3 0xbe928bd8 0x1000 0x0 0xac9e0 0x3 0xbe928bb4 0xb6f5dfbc
+>>>>>  ^
+>>>>> The first number is the syscall number, currently it is zero.
+>>>>> Patch fixes this:
+>>>>>
+>>>>>  $ cat /proc/self/syscall
+>>>>>  3 0x3 0xbefc7bd8 0x1000 0x0 0xac9e0 0x3 0xbefc7bb4 0xb6e82fbc
+>>>>>  ^
+>>>>> Right, read syscall
+>>>>
+>>>> Yes, it seems that despite requiring CONFIG_HAVE_ARCH_TRACEHOOK,
+>>>> the /proc code requires syscall_get_nr to work regardless of
+>>>> TIF_SYSCALL_TRACE.
+>>>>
+>>>>> Signed-off-by: Roman Pen <r.peniaev@gmail.com>
+>>>>> Cc: Russell King <linux@arm.linux.org.uk>
+>>>>> Cc: Marc Zyngier <marc.zyngier@arm.com>
+>>>>> Cc: Catalin Marinas <catalin.marinas@arm.com>
+>>>>> Cc: Christoffer Dall <christoffer.dall@linaro.org>
+>>>>> Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+>>>>> Cc: Sekhar Nori <nsekhar@ti.com>
+>>>>> Cc: linux-arm-kernel@lists.infradead.org
+>>>>> Cc: linux-kernel@vger.kernel.org
+>>>>> Cc: stable@vger.kernel.org
+>>>>> ---
+>>>>>  arch/arm/kernel/asm-offsets.c  | 1 +
+>>>>>  arch/arm/kernel/entry-common.S | 1 +
+>>>>>  2 files changed, 2 insertions(+)
+>>>>>
+>>>>> diff --git a/arch/arm/kernel/asm-offsets.c b/arch/arm/kernel/asm-offsets.c
+>>>>> index 2d2d608..6911bad 100644
+>>>>> --- a/arch/arm/kernel/asm-offsets.c
+>>>>> +++ b/arch/arm/kernel/asm-offsets.c
+>>>>> @@ -70,6 +70,7 @@ int main(void)
+>>>>>    DEFINE(TI_CPU,             offsetof(struct thread_info, cpu));
+>>>>>    DEFINE(TI_CPU_DOMAIN,              offsetof(struct thread_info, cpu_domain));
+>>>>>    DEFINE(TI_CPU_SAVE,                offsetof(struct thread_info, cpu_context));
+>>>>> +  DEFINE(TI_SYSCALL,         offsetof(struct thread_info, syscall));
+>>>>>    DEFINE(TI_USED_CP,         offsetof(struct thread_info, used_cp));
+>>>>>    DEFINE(TI_TP_VALUE,                offsetof(struct thread_info, tp_value));
+>>>>>    DEFINE(TI_FPSTATE,         offsetof(struct thread_info, fpstate));
+>>>>> diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.S
+>>>>> index f8ccc21..89452ff 100644
+>>>>> --- a/arch/arm/kernel/entry-common.S
+>>>>> +++ b/arch/arm/kernel/entry-common.S
+>>>>> @@ -189,6 +189,7 @@ ENTRY(vector_swi)
+>>>>>  #endif
+>>>>>
+>>>>>  local_restart:
+>>>>> +     str scno, [tsk, #TI_SYSCALL]            @ set syscall number
+>>>>>       ldr     r10, [tsk, #TI_FLAGS]           @ check for syscall tracing
+>>>>>       stmdb   sp!, {r4, r5}                   @ push fifth and sixth args
+>>>>
+>>>> Do we definitely want to update scno on syscall restarting?
+>>>
+>>>
+>>> Good question.
+>>>
+>>> First thing to mention is __sys_trace will trace 'restart_syscall',
+>>> not the real syscall we are going to restart.
+>>>
+>>> E.g. in test application we do infinite poll and then send STOP and
+>>> CONT to this app:
+>>>
+>>>     test-243   [002] ...1  1792.067726: sys_enter: NR 168 (0, 0,
+>>> ffffffff, 0, 0, 0)
+>>>     test-243   [002] ...1  1802.299073: sys_exit: NR 168 = -516
+>>>     test-243   [004] ...1  1814.716264: sys_enter: NR 0 (0, 0,
+>>> ffffffff, 0, 0, 0)
+>>>     test-243   [004] ...1  2183.687225: sys_exit: NR 0 = -516
+>>>
+>>> the poll was restarted and trace shows that we are in restart_syscall.
+>>>
+>>> Is that expected?
+>>>
+>>> And the second thing is that my next patch did some tweaks in
+>>> 'syscall_trace_enter', where we take scno not from param we passed,
+>>> but from thread_info->syscall we previously set.
+>>>
+>>> So, regarding your question, if I set scno only once - I will break
+>>> previous behavior, and __sys_trace will trace the syscall we restarted.
+>>>
+>>> And I think this is what we need, because according to the
+>>> 'syscall_trace_enter' code we do 'secure_computing' and
+>>> 'audit_syscall_entry', which definitely expect original syscall, not
+>>> the 'restart_syscall'.
+>>
+>> Seccomp expects to see the __NR_restart_syscall syscall, since it
+>> interposes the syscall entry points.
 >
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2656,7 +2656,7 @@ static bool throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
->  	 * should make reasonable progress.
->  	 */
->  	for_each_zone_zonelist_nodemask(zone, z, zonelist,
-> -					gfp_mask, nodemask) {
-> +					gfp_zone(gfp_mask), nodemask) {
->  		if (zone_idx(zone) > ZONE_NORMAL)
->  			continue;
+>
+> Aha, thanks. So I should not break anything.
 
-hm, I wonder what the runtime effects are.
+I've tested on ARM now, seccomp doesn't see any change in behavior.
+Please consider both patches:
 
-The throttle_direct_reclaim() comment isn't really accurate, is it? 
-"Throttle direct reclaimers if backing storage is backed by the
-network".  The code is applicable to all types of backing, but was
-added to address problems which are mainly observed with network
-backing?
+Tested-by: Kees Cook <keescook@chromium.org>
+
+One interesting thing I noticed (which is unchanged by this series),
+but pulling ARM_r7 during the seccomp ptrace event shows __NR_poll,
+not __NR_restart_syscall, even though it was a __NR_restart_syscall
+trap from seccomp. Is there a better place to see the actual syscall?
+
+-Kees
+
+>
+> --
+> Roman
+>
+>
+>>
+>> -Kees
+>>
+>>>
+>>>
+>>> --
+>>> Roman
+>>>
+>>> _______________________________________________
+>>> linux-arm-kernel mailing list
+>>> linux-arm-kernel@lists.infradead.org
+>>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+>>
+>>
+>>
+>> --
+>> Kees Cook
+>> Chrome OS Security
+
+
+
+-- 
+Kees Cook
+Chrome OS Security
