@@ -1,239 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752214AbbAOIiI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 03:38:08 -0500
-Received: from mx2.parallels.com ([199.115.105.18]:45381 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751433AbbAOIiG (ORCPT
+	id S1752414AbbAOImN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 03:42:13 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:59067 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752352AbbAOImJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 03:38:06 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Vlastimil Babka <vbabka@suse.cz>, Mel Gorman <mgorman@suse.de>,
-        Rik van Riel <riel@redhat.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH -mm v2] vmscan: move reclaim_state handling to shrink_slab
-Date: Thu, 15 Jan 2015 11:37:53 +0300
-Message-ID: <1421311073-28130-1-git-send-email-vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
+	Thu, 15 Jan 2015 03:42:09 -0500
+Date: Thu, 15 Jan 2015 09:41:19 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Ray Jui <rjui@broadcom.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Scott Branden <sbranden@broadcom.com>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        bcm-kernel-feedback-list@broadcom.com, devicetree@vger.kernel.org
+Subject: Re: [PATCH v4 2/3] i2c: iproc: Add Broadcom iProc I2C Driver
+Message-ID: <20150115084119.GN22880@pengutronix.de>
+References: <rjui@broadcom.com>
+ <1421274213-3544-1-git-send-email-rjui@broadcom.com>
+ <1421274213-3544-3-git-send-email-rjui@broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1421274213-3544-3-git-send-email-rjui@broadcom.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-current->reclaim_state is only used to count the number of slab pages
-reclaimed by shrink_slab(). So instead of initializing it before we are
-going to call try_to_free_pages() or shrink_zone(), let's set in
-directly in shrink_slab().
+Hello,
 
-Note that after this patch try_to_free_mem_cgroup_pages() will count not
-only reclaimed user pages, but also slab pages, which is expected,
-because it can reclaim kmem from kmem-active sub cgroups.
+On Wed, Jan 14, 2015 at 02:23:32PM -0800, Ray Jui wrote:
+> +#include <linux/device.h>
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/sched.h>
+> +#include <linux/i2c.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/clk.h>
+> +#include <linux/io.h>
+> +#include <linux/slab.h>
+> +#include <linux/delay.h>
+some of them are not needed. I tested on amd64 and efm32 and could drop
+linux/device.h, linux/sched.h, linux/clk.h. (BTW, I wonder that you
+don't need clk handling.)
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
----
-Changes in v2:
- - do not change shrink_slab() return value to the number of reclaimed
-   slab pages, because it can make drop_slab() abort beforehand (Andrew)
+> +#define TIM_CFG_OFFSET               0x04
+> +#define TIME_CFG_MODE_400_SHIFT      31
+Is the register name and the bit name prefix really different or is this
+a typo?
 
- mm/page_alloc.c |    4 ----
- mm/vmscan.c     |   43 +++++++++++++++++--------------------------
- 2 files changed, 17 insertions(+), 30 deletions(-)
+> +static int __wait_for_bus_idle(struct bcm_iproc_i2c_dev *iproc_i2c)
+A bcm_iproc_i2c prefix would be nice here.
 
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index e1963ea0684a..f528e4ba91b5 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -2448,7 +2448,6 @@ static int
- __perform_reclaim(gfp_t gfp_mask, unsigned int order, struct zonelist *zonelist,
- 		  nodemask_t *nodemask)
- {
--	struct reclaim_state reclaim_state;
- 	int progress;
- 
- 	cond_resched();
-@@ -2457,12 +2456,9 @@ __perform_reclaim(gfp_t gfp_mask, unsigned int order, struct zonelist *zonelist,
- 	cpuset_memory_pressure_bump();
- 	current->flags |= PF_MEMALLOC;
- 	lockdep_set_current_reclaim_state(gfp_mask);
--	reclaim_state.reclaimed_slab = 0;
--	current->reclaim_state = &reclaim_state;
- 
- 	progress = try_to_free_pages(zonelist, order, gfp_mask, nodemask);
- 
--	current->reclaim_state = NULL;
- 	lockdep_clear_current_reclaim_state();
- 	current->flags &= ~PF_MEMALLOC;
- 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 16f3e45742d6..26fdcc6c747d 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -367,13 +367,18 @@ static unsigned long do_shrink_slab(struct shrink_control *shrinkctl,
-  * the ->seeks setting of the shrink function, which indicates the
-  * cost to recreate an object relative to that of an LRU page.
-  *
-- * Returns the number of reclaimed slab objects.
-+ * Returns the number of reclaimed slab objects. The number of reclaimed slab
-+ * pages is added to *@ret_nr_reclaimed.
-  */
- static unsigned long shrink_slab(gfp_t gfp_mask, int nid,
- 				 struct mem_cgroup *memcg,
- 				 unsigned long nr_scanned,
--				 unsigned long nr_eligible)
-+				 unsigned long nr_eligible,
-+				 unsigned long *ret_nr_reclaimed)
- {
-+	struct reclaim_state reclaim_state = {
-+		.reclaimed_slab = 0,
-+	};
- 	struct shrinker *shrinker;
- 	unsigned long freed = 0;
- 
-@@ -394,6 +399,8 @@ static unsigned long shrink_slab(gfp_t gfp_mask, int nid,
- 		goto out;
- 	}
- 
-+	current->reclaim_state = &reclaim_state;
-+
- 	list_for_each_entry(shrinker, &shrinker_list, list) {
- 		struct shrink_control sc = {
- 			.gfp_mask = gfp_mask,
-@@ -410,6 +417,9 @@ static unsigned long shrink_slab(gfp_t gfp_mask, int nid,
- 		freed += do_shrink_slab(&sc, shrinker, nr_scanned, nr_eligible);
- 	}
- 
-+	current->reclaim_state = NULL;
-+	*ret_nr_reclaimed += reclaim_state.reclaimed_slab;
-+
- 	up_read(&shrinker_rwsem);
- out:
- 	cond_resched();
-@@ -419,6 +429,7 @@ out:
- void drop_slab_node(int nid)
- {
- 	unsigned long freed;
-+	unsigned long nr_reclaimed = 0;
- 
- 	do {
- 		struct mem_cgroup *memcg = NULL;
-@@ -426,9 +437,9 @@ void drop_slab_node(int nid)
- 		freed = 0;
- 		do {
- 			freed += shrink_slab(GFP_KERNEL, nid, memcg,
--					     1000, 1000);
-+					     1000, 1000, &nr_reclaimed);
- 		} while ((memcg = mem_cgroup_iter(NULL, memcg, NULL)) != NULL);
--	} while (freed > 10);
-+	} while (freed);
- }
- 
- void drop_slab(void)
-@@ -2339,7 +2350,6 @@ static inline bool should_continue_reclaim(struct zone *zone,
- static bool shrink_zone(struct zone *zone, struct scan_control *sc,
- 			bool is_classzone)
- {
--	struct reclaim_state *reclaim_state = current->reclaim_state;
- 	unsigned long nr_reclaimed, nr_scanned;
- 	bool reclaimable = false;
- 
-@@ -2371,7 +2381,7 @@ static bool shrink_zone(struct zone *zone, struct scan_control *sc,
- 			if (memcg && is_classzone)
- 				shrink_slab(sc->gfp_mask, zone_to_nid(zone),
- 					    memcg, sc->nr_scanned - scanned,
--					    lru_pages);
-+					    lru_pages, &sc->nr_reclaimed);
- 
- 			/*
- 			 * Direct reclaim and kswapd have to scan all memory
-@@ -2398,12 +2408,7 @@ static bool shrink_zone(struct zone *zone, struct scan_control *sc,
- 		if (global_reclaim(sc) && is_classzone)
- 			shrink_slab(sc->gfp_mask, zone_to_nid(zone), NULL,
- 				    sc->nr_scanned - nr_scanned,
--				    zone_lru_pages);
--
--		if (reclaim_state) {
--			sc->nr_reclaimed += reclaim_state->reclaimed_slab;
--			reclaim_state->reclaimed_slab = 0;
--		}
-+				    zone_lru_pages, &sc->nr_reclaimed);
- 
- 		vmpressure(sc->gfp_mask, sc->target_mem_cgroup,
- 			   sc->nr_scanned - nr_scanned,
-@@ -3367,17 +3372,12 @@ static int kswapd(void *p)
- 	int balanced_classzone_idx;
- 	pg_data_t *pgdat = (pg_data_t*)p;
- 	struct task_struct *tsk = current;
--
--	struct reclaim_state reclaim_state = {
--		.reclaimed_slab = 0,
--	};
- 	const struct cpumask *cpumask = cpumask_of_node(pgdat->node_id);
- 
- 	lockdep_set_current_reclaim_state(GFP_KERNEL);
- 
- 	if (!cpumask_empty(cpumask))
- 		set_cpus_allowed_ptr(tsk, cpumask);
--	current->reclaim_state = &reclaim_state;
- 
- 	/*
- 	 * Tell the memory management that we're a "memory allocator",
-@@ -3449,7 +3449,6 @@ static int kswapd(void *p)
- 	}
- 
- 	tsk->flags &= ~(PF_MEMALLOC | PF_SWAPWRITE | PF_KSWAPD);
--	current->reclaim_state = NULL;
- 	lockdep_clear_current_reclaim_state();
- 
- 	return 0;
-@@ -3492,7 +3491,6 @@ void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx)
-  */
- unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
- {
--	struct reclaim_state reclaim_state;
- 	struct scan_control sc = {
- 		.nr_to_reclaim = nr_to_reclaim,
- 		.gfp_mask = GFP_HIGHUSER_MOVABLE,
-@@ -3508,12 +3506,9 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
- 
- 	p->flags |= PF_MEMALLOC;
- 	lockdep_set_current_reclaim_state(sc.gfp_mask);
--	reclaim_state.reclaimed_slab = 0;
--	p->reclaim_state = &reclaim_state;
- 
- 	nr_reclaimed = do_try_to_free_pages(zonelist, &sc);
- 
--	p->reclaim_state = NULL;
- 	lockdep_clear_current_reclaim_state();
- 	p->flags &= ~PF_MEMALLOC;
- 
-@@ -3678,7 +3673,6 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
- 	/* Minimum pages needed in order to stay on node */
- 	const unsigned long nr_pages = 1 << order;
- 	struct task_struct *p = current;
--	struct reclaim_state reclaim_state;
- 	struct scan_control sc = {
- 		.nr_to_reclaim = max(nr_pages, SWAP_CLUSTER_MAX),
- 		.gfp_mask = (gfp_mask = memalloc_noio_flags(gfp_mask)),
-@@ -3697,8 +3691,6 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
- 	 */
- 	p->flags |= PF_MEMALLOC | PF_SWAPWRITE;
- 	lockdep_set_current_reclaim_state(gfp_mask);
--	reclaim_state.reclaimed_slab = 0;
--	p->reclaim_state = &reclaim_state;
- 
- 	if (zone_pagecache_reclaimable(zone) > zone->min_unmapped_pages) {
- 		/*
-@@ -3710,7 +3702,6 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
- 		} while (sc.nr_reclaimed < nr_pages && --sc.priority >= 0);
- 	}
- 
--	p->reclaim_state = NULL;
- 	current->flags &= ~(PF_MEMALLOC | PF_SWAPWRITE);
- 	lockdep_clear_current_reclaim_state();
- 	return sc.nr_reclaimed >= nr_pages;
+> +static int bcm_iproc_i2c_format_addr(struct bcm_iproc_i2c_dev *iproc_i2c,
+> +				     struct i2c_msg *msg, u8 *addr)
+> +{
+> +
+> +	if (msg->flags & I2C_M_TEN) {
+> +		dev_err(iproc_i2c->device, "no support for 10-bit address\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	*addr = (msg->addr << 1);
+You can also drop the parentheses.
+
+> +	switch (val) {
+> +	case M_CMD_STATUS_SUCCESS:
+> +		return 0;
+> +
+> +	case M_CMD_STATUS_LOST_ARB:
+> +		dev_err(iproc_i2c->device, "lost bus arbitration\n");
+> +		return -EREMOTEIO;
+> +
+> +	case M_CMD_STATUS_NACK_ADDR:
+> +		dev_err(iproc_i2c->device, "NAK addr:0x%02x\n",
+> +			iproc_i2c->msg->addr);
+> +		return -EREMOTEIO;
+> +
+> +	case M_CMD_STATUS_NACK_DATA:
+> +		dev_err(iproc_i2c->device, "NAK data\n");
+> +		return -EREMOTEIO;
+> +
+> +	case M_CMD_STATUS_TIMEOUT:
+> +		dev_err(iproc_i2c->device, "bus timeout\n");
+> +		return -ETIMEDOUT;
+> +
+> +	default:
+> +		dev_err(iproc_i2c->device, "unknown error code=%d\n", val);
+> +		return -EREMOTEIO;
+> +	}
+> +
+> +	return -EREMOTEIO;
+This is not reached.
+
+> +}
+> +
+> +static int bcm_iproc_i2c_xfer_single_msg(struct bcm_iproc_i2c_dev *iproc_i2c,
+> +					 struct i2c_msg *msg)
+> +{
+> +	int ret, i;
+> +	u8 addr;
+> +	u32 val;
+> +	unsigned long time_left = msecs_to_jiffies(I2C_TIMEOUT_MESC);
+> +
+> +	if (msg->len < 1 || msg->len > M_TX_RX_FIFO_SIZE - 1) {
+Is the < 1 a hardware or a software limitation? That means your driver
+doesn't support I2C_SMBUS_QUICK which is used for example by i2cdetect.
+
+> +		dev_err(iproc_i2c->device,
+> +			"supported data length is 1 - %u bytes\n",
+> +			M_TX_RX_FIFO_SIZE - 1);
+> +		return -EINVAL;
+> +	}
+> +
+> +	iproc_i2c->msg = msg;
+Can it happen that iproc_i2c->msg still holds an uncompleted message
+here or is this serialized by the core? Wolfram? Either here something
+like:
+
+	if (iproc_i2c->msg)
+		return -EBUSY;
+
+and
+
+	iproc_i2c->msg = NULL;
+
+when a transfer is completed is needed, or the respective code can be
+dropped from other drivers (e.g. i2c-efm32).
+On the other hand .msg is only used in bcm_iproc_i2c_check_status() to
+give a diagnostic message. Maybe you can drop .msg and instead give it
+as an additional parameter to bcm_iproc_i2c_check_status().
+
+> +	ret = __wait_for_bus_idle(iproc_i2c);
+> +	if (ret)
+> +		return ret;
+I would still prefer to have something like:
+
+	if (bcm_iproc_i2c_bus_busy())
+		return -EBUSY;
+
+instead of a tight loop here.
+
+> +	ret = bcm_iproc_i2c_format_addr(iproc_i2c, msg, &addr);
+> +	if (ret)
+> +		return ret;
+> +
+> +	/* load slave address into the TX FIFO */
+> +	writel(addr, iproc_i2c->base + M_TX_OFFSET);
+> +
+> +	/* for a write transaction, load data into the TX FIFO */
+> +	if (!(msg->flags & I2C_M_RD)) {
+> +		for (i = 0; i < msg->len; i++) {
+> +			val = msg->buf[i];
+> +
+> +			/* mark the last byte */
+> +			if (i == msg->len - 1)
+> +				val |= 1 << M_TX_WR_STATUS_SHIFT;
+What happens if you don't mark this last byte? Could this be used to
+support transfers bigger than the fifo size?
+
+> +	/*
+> +	 * Enable the "start busy" interrupt, which will be triggered after
+> +	 * the transaction is done, i.e., the internal start_busy bit
+s/\.,/./ I think
+
+> +	 * transitions from 1 to 0
+s/$/./
+> +	 */
+> +	writel(1 << IE_M_START_BUSY_SHIFT, iproc_i2c->base + IE_OFFSET);
+> +
+> +	/*
+> +	 * Now we can activate the transfer. For a read operation, specify the
+> +	 * number of bytes to read
+s/$/./
+
+> +	 */
+> +	val = 1 << M_CMD_START_BUSY_SHIFT;
+> +	if (msg->flags & I2C_M_RD) {
+> +		val |= (M_CMD_PROTOCOL_BLK_RD << M_CMD_PROTOCOL_SHIFT) |
+> +		       (msg->len << M_CMD_RD_CNT_SHIFT);
+> +	} else {
+> +		val |= (M_CMD_PROTOCOL_BLK_WR << M_CMD_PROTOCOL_SHIFT);
+> +	}
+> +	writel(val, iproc_i2c->base + M_CMD_OFFSET);
+> +
+> +	time_left = wait_for_completion_timeout(&iproc_i2c->done, time_left);
+
+When the interrupt fires here after the complete timed out and before
+you disable the irq you still throw the result away.
+> +
+> +	/* disable all interrupts */
+> +	writel(0, iproc_i2c->base + IE_OFFSET);
+> +
+> +	if (!time_left) {
+> +		dev_err(iproc_i2c->device, "transaction times out\n");
+s/times/timed/
+
+> +static uint32_t bcm_iproc_i2c_functionality(struct i2c_adapter *adap)
+> +{
+> +	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
+Note that I2C_FUNC_SMBUS_EMUL includes I2C_FUNC_SMBUS_QUICK, so your
+driver claims to support transfers of length 0.
+
+> +static int bcm_iproc_i2c_cfg_speed(struct bcm_iproc_i2c_dev *iproc_i2c)
+> +{
+> +	unsigned int bus_speed, speed_bit;
+> +	u32 val;
+> +	int ret = of_property_read_u32(iproc_i2c->device->of_node,
+> +				       "clock-frequency", &bus_speed);
+> +	if (ret < 0) {
+> +		dev_err(iproc_i2c->device,
+> +			"missing clock-frequency property\n");
+> +		return -ENODEV;
+Is a missing property the only situation where of_property_read_u32
+returns an error? Would it be sane to default to 100 kHz?
+
+> +static int bcm_iproc_i2c_remove(struct platform_device *pdev)
+> +{
+> +	struct bcm_iproc_i2c_dev *iproc_i2c = platform_get_drvdata(pdev);
+> +
+> +	i2c_del_adapter(&iproc_i2c->adapter);
+You need to free the irq before i2c_del_adapter.
+
+> +	free_irq(iproc_i2c->irq, iproc_i2c);
+> +	bcm_iproc_i2c_disable(iproc_i2c);
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct of_device_id bcm_iproc_i2c_of_match[] = {
+> +	{.compatible = "brcm,iproc-i2c",},
+Not sure this is specified to be a must, but I'd add spaces after { and
+before }.
+
+> +	{},
+It's a good habit to write this as
+
+	{ /* sentinel */ }
+
+without trailing comma.
+
+Best regards
+Uwe
+
 -- 
-1.7.10.4
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
