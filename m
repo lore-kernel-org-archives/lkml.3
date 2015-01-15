@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755137AbbAOQTZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 11:19:25 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37994 "EHLO mx1.redhat.com"
+	id S1755378AbbAOQQv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 11:16:51 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36104 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755168AbbAOQQr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 11:16:47 -0500
+	id S1752164AbbAOQQp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 11:16:45 -0500
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -16,44 +16,22 @@ Cc: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
         Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 1/8] perf tools: Add feature check for libbabeltrace
-Date: Thu, 15 Jan 2015 17:15:49 +0100
-Message-Id: <1421338556-20498-2-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 2/8] perf tools: Add new perf data command
+Date: Thu, 15 Jan 2015 17:15:50 +0100
+Message-Id: <1421338556-20498-3-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1421338556-20498-1-git-send-email-jolsa@kernel.org>
 References: <1421338556-20498-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding feature check for babeltrace library [1], which will be
-used for perf data file CTF [2] conversion in following patches.
+Adding new 'perf data' command to provide operations over
+data files.
 
-The babeltrace library is now automatically detected as standard
-feature. It's possible to specify LIBBABELTRACE_DIR make variable
-to specify location of installed libbabeltrace, like:
-
-  $ make LIBBABELTRACE_DIR=/opt/libbabeltrace/
-    BUILD:   Doing 'make -j4' parallel build
-
-  Auto-detecting system features:
-  ...                         dwarf: [ on  ]
-  ...                         glibc: [ on  ]
-  ...                          gtk2: [ on  ]
-  ...                      libaudit: [ on  ]
-  ...                        libbfd: [ on  ]
-  ...                        libelf: [ on  ]
-  ...                       libnuma: [ on  ]
-  ...                       libperl: [ on  ]
-  ...                     libpython: [ on  ]
-  ...                      libslang: [ on  ]
-  ...                     libunwind: [ on  ]
-  ...                 libbabeltrace: [ on  ]
-  ...            libdw-dwarf-unwind: [ on  ]
-  ...                          zlib: [ on  ]
-  ...     DWARF post unwind library: libunwind
-
-[1] babeltrace - http://www.efficios.com/babeltrace
-[2] Common Trace Format - http://www.efficios.com/ctf
+The 'perf data convert' sub command is coming in following
+patch, but there's possibility for other useful commands
+like 'perf data ls' (to display perf data file in directory
+in ls style).
 
 Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
 Cc: David Ahern <dsahern@gmail.com>
@@ -68,155 +46,166 @@ Cc: Tom Zanussi <tzanussi@gmail.com>
 Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 ---
- tools/perf/Makefile.perf                           |  4 +++-
- tools/perf/config/Makefile                         | 24 ++++++++++++++++++++++
- tools/perf/config/feature-checks/Makefile          |  8 ++++++--
- tools/perf/config/feature-checks/test-all.c        |  5 +++++
- .../config/feature-checks/test-libbabeltrace.c     |  8 ++++++++
- 5 files changed, 46 insertions(+), 3 deletions(-)
- create mode 100644 tools/perf/config/feature-checks/test-libbabeltrace.c
+ tools/perf/Documentation/perf-data.txt | 15 +++++++
+ tools/perf/Makefile.perf               |  1 +
+ tools/perf/builtin-data.c              | 75 ++++++++++++++++++++++++++++++++++
+ tools/perf/builtin.h                   |  1 +
+ tools/perf/command-list.txt            |  1 +
+ tools/perf/perf.c                      |  1 +
+ 6 files changed, 94 insertions(+)
+ create mode 100644 tools/perf/Documentation/perf-data.txt
+ create mode 100644 tools/perf/builtin-data.c
 
+diff --git a/tools/perf/Documentation/perf-data.txt b/tools/perf/Documentation/perf-data.txt
+new file mode 100644
+index 000000000000..b8c83947715c
+--- /dev/null
++++ b/tools/perf/Documentation/perf-data.txt
+@@ -0,0 +1,15 @@
++perf-data(1)
++==============
++
++NAME
++----
++perf-data - Data file related processing
++
++SYNOPSIS
++--------
++[verse]
++'perf data' [<common options>] <command> [<options>]",
++
++DESCRIPTION
++-----------
++Data file related processing.
 diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 1f71a32aea78..77c19e16c950 100644
+index 77c19e16c950..4e0c3077bba2 100644
 --- a/tools/perf/Makefile.perf
 +++ b/tools/perf/Makefile.perf
-@@ -68,7 +68,9 @@ include config/utilities.mak
- # for reading the x32 mode 32-bit compatibility VDSO in 64-bit mode
- #
- # Define NO_ZLIB if you do not want to support compressed kernel modules
--
-+#
-+# Define NO_LIBBABELTRACE if you do not want libbabeltrace support
-+# for CTF data format.
+@@ -495,6 +495,7 @@ BUILTIN_OBJS += $(OUTPUT)builtin-kvm.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-inject.o
+ BUILTIN_OBJS += $(OUTPUT)tests/builtin-test.o
+ BUILTIN_OBJS += $(OUTPUT)builtin-mem.o
++BUILTIN_OBJS += $(OUTPUT)builtin-data.o
  
- ifeq ($(srctree),)
- srctree := $(patsubst %/,%,$(dir $(shell pwd)))
-diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 648e31ff4021..83b7792156dd 100644
---- a/tools/perf/config/Makefile
-+++ b/tools/perf/config/Makefile
-@@ -84,6 +84,17 @@ ifndef NO_LIBELF
-   FEATURE_CHECK_LDFLAGS-libdw-dwarf-unwind := $(LIBDW_LDFLAGS) -ldw
- endif
+ PERFLIBS = $(LIB_FILE) $(LIBAPIKFS) $(LIBTRACEEVENT)
  
-+ifndef NO_LIBBABELTRACE
-+  # for linking with debug library, run like:
-+  # make DEBUG=1 LIBBABELTRACE_DIR=/opt/libbabeltrace/
-+  ifdef LIBBABELTRACE_DIR
-+    LIBBABELTRACE_CFLAGS  := -I$(LIBBABELTRACE_DIR)/include
-+    LIBBABELTRACE_LDFLAGS := -L$(LIBBABELTRACE_DIR)/lib
-+  endif
-+  FEATURE_CHECK_CFLAGS-libbabeltrace := $(LIBBABELTRACE_CFLAGS)
-+  FEATURE_CHECK_LDFLAGS-libbabeltrace := $(LIBBABELTRACE_LDFLAGS) -lbabeltrace-ctf
-+endif
-+
- # include ARCH specific config
- -include $(src-perf)/arch/$(ARCH)/Makefile
- 
-@@ -201,6 +212,7 @@ CORE_FEATURE_TESTS =			\
- 	stackprotector-all		\
- 	timerfd				\
- 	libdw-dwarf-unwind		\
-+	libbabeltrace			\
- 	zlib
- 
- LIB_FEATURE_TESTS =			\
-@@ -216,6 +228,7 @@ LIB_FEATURE_TESTS =			\
- 	libslang			\
- 	libunwind			\
- 	libdw-dwarf-unwind		\
-+	libbabeltrace			\
- 	zlib
- 
- VF_FEATURE_TESTS =			\
-@@ -661,6 +674,17 @@ else
-   NO_PERF_READ_VDSOX32 := 1
- endif
- 
-+ifndef NO_LIBBABELTRACE
-+  ifeq ($(feature-libbabeltrace), 0)
-+    msg := $(warning No libbabeltrace found, disables 'perf data' CTF format support, please install libbabeltrace-devel/libbabeltrace-ctf-dev);
-+    NO_LIBBABELTRACE := 1
-+  else
-+    CFLAGS += -DHAVE_LIBBABELTRACE_SUPPORT $(LIBBABELTRACE_CFLAGS)
-+    LDFLAGS += $(LIBBABELTRACE_LDFLAGS)
-+    EXTLIBS += -lbabeltrace-ctf
-+  endif
-+endif
-+
- # Among the variables below, these:
- #   perfexecdir
- #   template_dir
-diff --git a/tools/perf/config/feature-checks/Makefile b/tools/perf/config/feature-checks/Makefile
-index 53f19b5dbc37..9d7536e39efd 100644
---- a/tools/perf/config/feature-checks/Makefile
-+++ b/tools/perf/config/feature-checks/Makefile
-@@ -28,6 +28,7 @@ FILES=					\
- 	test-stackprotector-all.bin	\
- 	test-timerfd.bin		\
- 	test-libdw-dwarf-unwind.bin	\
-+	test-libbabeltrace.bin		\
- 	test-compile-32.bin		\
- 	test-compile-x32.bin		\
- 	test-zlib.bin
-@@ -42,7 +43,7 @@ BUILD = $(CC) $(CFLAGS) -o $(OUTPUT)$@ $(patsubst %.bin,%.c,$@) $(LDFLAGS)
- ###############################
- 
- test-all.bin:
--	$(BUILD) -Werror -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lelf -laudit -I/usr/include/slang -lslang $(shell $(PKG_CONFIG) --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl -lz
-+	$(BUILD) -Werror -fstack-protector-all -O2 -Werror -D_FORTIFY_SOURCE=2 -ldw -lelf -lnuma -lelf -laudit -I/usr/include/slang -lslang $(shell $(PKG_CONFIG) --libs --cflags gtk+-2.0 2>/dev/null) $(FLAGS_PERL_EMBED) $(FLAGS_PYTHON_EMBED) -DPACKAGE='"perf"' -lbfd -ldl -lz -lbabeltrace
- 
- test-hello.bin:
- 	$(BUILD)
-@@ -129,7 +130,10 @@ test-timerfd.bin:
- 	$(BUILD)
- 
- test-libdw-dwarf-unwind.bin:
--	$(BUILD)
-+	$(BUILD) # -ldw provided by $(FEATURE_CHECK_LDFLAGS-libdw-dwarf-unwind)
-+
-+test-libbabeltrace.bin:
-+	$(BUILD) # -lbabeltrace provided by $(FEATURE_CHECK_LDFLAGS-libbabeltrace)
- 
- test-sync-compare-and-swap.bin:
- 	$(BUILD) -Werror
-diff --git a/tools/perf/config/feature-checks/test-all.c b/tools/perf/config/feature-checks/test-all.c
-index 652e0098eba6..d63f5f2be9e3 100644
---- a/tools/perf/config/feature-checks/test-all.c
-+++ b/tools/perf/config/feature-checks/test-all.c
-@@ -97,6 +97,10 @@
- # include "test-zlib.c"
- #undef main
- 
-+#define main main_test_libbabeltrace
-+# include "test-libbabeltrace.c"
-+#undef main
-+
- int main(int argc, char *argv[])
- {
- 	main_test_libpython();
-@@ -121,6 +125,7 @@ int main(int argc, char *argv[])
- 	main_test_libdw_dwarf_unwind();
- 	main_test_sync_compare_and_swap(argc, argv);
- 	main_test_zlib();
-+	main_test_libbabeltrace();
- 
- 	return 0;
- }
-diff --git a/tools/perf/config/feature-checks/test-libbabeltrace.c b/tools/perf/config/feature-checks/test-libbabeltrace.c
+diff --git a/tools/perf/builtin-data.c b/tools/perf/builtin-data.c
 new file mode 100644
-index 000000000000..3b7dd68a4d52
+index 000000000000..1eee97d020fa
 --- /dev/null
-+++ b/tools/perf/config/feature-checks/test-libbabeltrace.c
-@@ -0,0 +1,8 @@
++++ b/tools/perf/builtin-data.c
+@@ -0,0 +1,75 @@
++#include <linux/compiler.h>
++#include "builtin.h"
++#include "perf.h"
++#include "debug.h"
++#include "parse-options.h"
 +
-+#include <babeltrace/ctf-writer/writer.h>
++typedef int (*data_cmd_fn_t)(int argc, const char **argv, const char *prefix);
 +
-+int main(void)
++struct data_cmd {
++	const char	*name;
++	const char	*summary;
++	data_cmd_fn_t	fn;
++};
++
++static struct data_cmd data_cmds[];
++
++#define for_each_cmd(cmd) \
++	for (cmd = data_cmds; cmd && cmd->name; cmd++)
++
++static const struct option data_options[] = {
++	OPT_END()
++};
++
++static const char * const data_usage[] = {
++	"perf data [<common options>] <command> [<options>]",
++	NULL
++};
++
++static void print_usage(void)
 +{
-+	bt_ctf_stream_class_get_packet_context_type((void *) 0);
-+	return 0;
++	struct data_cmd *cmd;
++
++	printf("Usage:\n");
++	printf("\t%s\n\n", data_usage[0]);
++	printf("\tAvailable commands:\n");
++
++	for_each_cmd(cmd) {
++		printf("\t %s\t- %s\n", cmd->name, cmd->summary);
++	}
++
++	printf("\n");
 +}
++
++static struct data_cmd data_cmds[] = {
++	{ NULL },
++};
++
++int cmd_data(int argc, const char **argv, const char *prefix)
++{
++	struct data_cmd *cmd;
++	const char *cmdstr;
++
++	/* No command specified. */
++	if (argc < 2)
++		goto usage;
++
++	argc = parse_options(argc, argv, data_options, data_usage,
++			     PARSE_OPT_STOP_AT_NON_OPTION);
++	if (argc < 1)
++		goto usage;
++
++	cmdstr = argv[0];
++
++	for_each_cmd(cmd) {
++		if (strcmp(cmd->name, cmdstr))
++			continue;
++
++		return cmd->fn(argc, argv, prefix);
++	}
++
++	pr_err("Unknown command: %s\n", cmdstr);
++usage:
++	print_usage();
++	return -1;
++}
+diff --git a/tools/perf/builtin.h b/tools/perf/builtin.h
+index b210d62907e4..3688ad29085f 100644
+--- a/tools/perf/builtin.h
++++ b/tools/perf/builtin.h
+@@ -37,6 +37,7 @@ extern int cmd_test(int argc, const char **argv, const char *prefix);
+ extern int cmd_trace(int argc, const char **argv, const char *prefix);
+ extern int cmd_inject(int argc, const char **argv, const char *prefix);
+ extern int cmd_mem(int argc, const char **argv, const char *prefix);
++extern int cmd_data(int argc, const char **argv, const char *prefix);
+ 
+ extern int find_scripts(char **scripts_array, char **scripts_path_array);
+ #endif
+diff --git a/tools/perf/command-list.txt b/tools/perf/command-list.txt
+index 0906fc401c52..00fcaf8a5b8d 100644
+--- a/tools/perf/command-list.txt
++++ b/tools/perf/command-list.txt
+@@ -7,6 +7,7 @@ perf-archive			mainporcelain common
+ perf-bench			mainporcelain common
+ perf-buildid-cache		mainporcelain common
+ perf-buildid-list		mainporcelain common
++perf-data			mainporcelain common
+ perf-diff			mainporcelain common
+ perf-evlist			mainporcelain common
+ perf-inject			mainporcelain common
+diff --git a/tools/perf/perf.c b/tools/perf/perf.c
+index 3700a7faca6c..f3c66b81c6be 100644
+--- a/tools/perf/perf.c
++++ b/tools/perf/perf.c
+@@ -62,6 +62,7 @@ static struct cmd_struct commands[] = {
+ #endif
+ 	{ "inject",	cmd_inject,	0 },
+ 	{ "mem",	cmd_mem,	0 },
++	{ "data",	cmd_data,	0 },
+ };
+ 
+ struct pager_config {
 -- 
 1.9.3
 
