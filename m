@@ -1,32 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753440AbbAOLVq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 06:21:46 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60997 "EHLO
+	id S1753606AbbAOLWj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 06:22:39 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:32783 "EHLO
 	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752604AbbAOLVo (ORCPT
+	with ESMTP id S1751834AbbAOLWg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 06:21:44 -0500
-Date: Thu, 15 Jan 2015 11:21:39 +0000
+	Thu, 15 Jan 2015 06:22:36 -0500
+Date: Thu, 15 Jan 2015 11:22:13 +0000
 From: Mark Brown <broonie@kernel.org>
-To: James Ban <james.ban.opensource@diasemi.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>,
-        Support Opensource <support.opensource@diasemi.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Dajun Chen <david.chen@diasemi.com>
-Message-ID: <20150115112139.GS3043@sirena.org.uk>
-References: <201501150135.t0F1Z6UD032294@krsrvapps-01.diasemi.com>
+To: Ken Wilson <ken.wilson@opengear.com>
+Cc: thomas.petazzoni@free-electrons.com, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        ezequiel.garcia@free-electrons.com, gerg@uclinux.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-spi@vger.kernel.org
+Message-ID: <20150115112213.GT3043@sirena.org.uk>
+References: <1421032440-15335-1-git-send-email-ken.wilson@opengear.com>
+ <1421032440-15335-3-git-send-email-ken.wilson@opengear.com>
+ <20150114200626.GN3043@sirena.org.uk>
+ <54B712C0.5010808@opengear.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="6pbY/KU4ayLo+qis"
+	protocol="application/pgp-signature"; boundary="TJ9V72hR/LoebVea"
 Content-Disposition: inline
-In-Reply-To: <201501150135.t0F1Z6UD032294@krsrvapps-01.diasemi.com>
+In-Reply-To: <54B712C0.5010808@opengear.com>
 X-Cookie: To program is to be.
 User-Agent: Mutt/1.5.23 (2014-03-12)
 X-SA-Exim-Connect-IP: 94.175.94.161
 X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH V1] regulator: da9211: fix unmatched of_node and add gpio
- control
+Subject: Re: [PATCHv2 2/2] spi: orion: Add multiple chip select support to
+ spi-orion
 X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
 X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -34,65 +39,33 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---6pbY/KU4ayLo+qis
+--TJ9V72hR/LoebVea
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
-On Thu, Jan 15, 2015 at 10:29:08AM +0900, James Ban wrote:
-> This is a patch for fixing unmatched of_node and adding gpio control.
+On Thu, Jan 15, 2015 at 11:07:12AM +1000, Ken Wilson wrote:
 
-That sounds like two separate changes to me...
+> I agree that we could support any sane chip select for a slave, since the
+> slave addresses do need
+> to be explicitly defined. I'm happy with whatever your preference is.
 
->  Optional properties:
-> +- bucka-uses-gpio: BUCKA can be controlled by gpio.
-> +- bucka-enable-platform-gpio: platform gpio for control of BUCKA.
-> +- bucka-enable-init-state: initial state of gpio for BUCKA
+Just accepting anything seems easier both for users and in
+implementation.
 
-Even for a single GPIO specifiers are usually called -gpios.  It also
-seems redundant to have the -uses property, if there is a GPIO specifier
-for the enable then we can just assume it's supposed to be used without
-the extra property.
-
-> +		bucka-uses-gpio;
-> +		bucka-enable-platform-gpio = <&gpio 27 0>;
-> +		bucka-enable-init-state = <0>;
-> +
-> +		buckb-uses-gpio;
-> +		buckb-enable-platform-gpio = <&gpio 17 0>;
-> +		buckb-enable-init-state = <0>;
-> +
->  		regulators {
->  			BUCKA {
->  				regulator-name = "VBUCKA";
-
-Would it not be more natural to have the properties in the node for the
-regulator (the recently added of_parse_cb will help with that)?
-
-> +	if (of_get_property(dev->of_node, "bucka-uses-gpio", NULL)) {
-> +		gpio = of_get_named_gpio(dev->of_node,
-> +					"bucka-enable-platform-gpio", 0);
-> +		if (!gpio_is_valid(gpio)) {
-> +			dev_err(dev, "invalid gpio: %d\n", gpio);
-> +			return ERR_PTR(-EINVAL);
-> +		}
-
-This will be broken for deferred probe, it's better to pass through any
-errors.
-
---6pbY/KU4ayLo+qis
+--TJ9V72hR/LoebVea
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v2
 
-iQEcBAEBCAAGBQJUt6LCAAoJECTWi3JdVIfQ8qEH/iZnLi+rmB5Jy0I9DCpHp/cO
-BCwnqeYYt3Ro/XkA+muT70pQiz9v1iPJPMm71JDR7ysUDl5uESkRu78DObk7Spyi
-SN7QfIf2vy4mgoP6EjxN8dpP6IVzgD4M6CMIkqm5L4Ntkgq/P83QlQQ21KLa/nfN
-YmZRm5J7N0e2+UoVkhU7lJBD+EqrEewnxdNPpwF9qgGSpME8ahdHpShyQ0O5RdSu
-CJZNRBbs9i6AHBEGBkPF/lALSro2RM5/cIoOCGCbl+yLZ2OVtNFVUlNP4DehBWh0
-keB60EJJBCEaHn+GliSY9Cr74f0xHDlOqmWfByzER59pSO/ruSgek3YKUb9+Rq0=
-=yUUK
+iQEcBAEBCAAGBQJUt6LkAAoJECTWi3JdVIfQboMH/2FrwA8VEDSQZzlbas58eEws
+vD1EgggndHLeSSniFHUblzCjn6CGldTpIHlFi7OUrsoaHkASWhEtDyCfrTG+AUec
+zVIA1rHqYSOXZXFIZynP9QM7a6P43Fh/WaVN0YkUb0rSnxC4CsJx4KxILgiVdaSm
+bY6rh1oc/tQU/FghZvJiTIHGbhviuNLcjvrvUvydLVZDX5xQkb0QerumMFD8MVcu
+6Mnpd1wNfcz7YIcL7LoDxJ4KTp6Op1g9sQVcqHJSpSFfQ99rRCEycytOWDbulL9j
+LPpgFY3RecxnOQGdWW4BxvZbCds4GV3aHPE8IjAr4l5+Xiez2gbUg6pj4Ar0n2I=
+=pf3A
 -----END PGP SIGNATURE-----
 
---6pbY/KU4ayLo+qis--
+--TJ9V72hR/LoebVea--
