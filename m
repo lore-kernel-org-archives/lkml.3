@@ -1,170 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853AbbAOLKb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 06:10:31 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47947 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751834AbbAOLK3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 06:10:29 -0500
-Message-ID: <54B7A021.90101@suse.de>
-Date: Thu, 15 Jan 2015 12:10:25 +0100
-From: Alexander Graf <agraf@suse.de>
-User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.10; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Ming Lei <ming.lei@canonical.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org
-CC: Rob Herring <robh+dt@kernel.org>,
-        alvise rigo <a.rigo@virtualopensystems.com>
-Subject: Re: [PATCH] pci: generic host: make it more generic
-References: <1415702040-2790-1-git-send-email-ming.lei@canonical.com>
-In-Reply-To: <1415702040-2790-1-git-send-email-ming.lei@canonical.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+	id S1752424AbbAOLM2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 06:12:28 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:30320 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751427AbbAOLM0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 06:12:26 -0500
+X-AuditID: cbfee61b-f79d76d0000024d6-4d-54b7a0980fe3
+From: Robert Baldyga <r.baldyga@samsung.com>
+To: paulz@synopsys.com
+Cc: balbi@ti.com, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dinguyen@opensource.altera.com,
+        yousaf.kaukab@intel.com, m.szyprowski@samsung.com,
+        stern@rowland.harvard.edu, Robert Baldyga <r.baldyga@samsung.com>
+Subject: [PATCH v3] usb: dwc2: call dwc2_is_controller_alive() under spinlock
+Date: Thu, 15 Jan 2015 12:11:36 +0100
+Message-id: <1421320296-11525-1-git-send-email-r.baldyga@samsung.com>
+X-Mailer: git-send-email 1.9.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprBLMWRmVeSWpSXmKPExsVy+t9jQd2ZC7aHGPy/yW5x8H69xapPa5gt
+	mhevZ7O4vGsOm8WiZa3MFmuP3GW32D5lOpPFg8M72S0m/L7AZrFp009mBy6PxXteMnnsn7uG
+	3aP/2iR2j9l3fzB69G1ZxeixZf9nRo/jN7YzeXzeJBfAEcVlk5Kak1mWWqRvl8CV8WP9WpaC
+	Pp6KyRvvMzUwtnB1MXJySAiYSLw4Mp8dwhaTuHBvPVsXIxeHkMB0RokD096xQzjtTBLTnn5n
+	AaliE9CR2PJ9AmMXIweHCFDH9w+cIDXMAo1MEnfbf7GB1AgL+Er8fr+MEcRmEVCVaN0FsoGD
+	g1fAVWLiBWWIZXISJ49NZp3AyL2AkWEVo2hqQXJBcVJ6rpFecWJucWleul5yfu4mRnB4PZPe
+	wbiqweIQowAHoxIPL4Pf9hAh1sSy4srcQ4wSHMxKIrydOUAh3pTEyqrUovz4otKc1OJDjNIc
+	LErivEr2bSFCAumJJanZqakFqUUwWSYOTqkGxtK5DOyS7itdD3e13vQRagsP6vc6tvRN+Z1D
+	8hrv1r5Nyug5H3PpkcgzrereFc3v7m1TOu7tdPr8bnaZa+qWD76tm2dRrGNe+Uz3/pJEB3aO
+	Iou0dZeFYyew7kxfOXmjmmdd2fL1jz4uPcQ8aY6iRjXDbM7by+Y22Hxy88hbumpbd9mtwquz
+	PimxFGckGmoxFxUnAgCCy1cHKwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11.11.14 11:33, Ming Lei wrote:
-> This patch converts the generic host controller driver
-> into a more generic one, and basically don't need
-> platform's pcibios support, and use DT based generic
-> APIs to parse resource and remap IO port.
-> 
-> This patch has been tested on both ARMv7 and ARMv8
-> VM, and in theroy it should support other ARCHs too.
-> 
-> With this patch, virtio PCI block, network and scsi devices
-> can work well on ARMv7 and ARMv8 VM.
-> 
-> QEMU needs below patches for runing the test:
-> 
-> - Rob Herring's "Add generic PCI host device" patches
-> 	http://lists.gnu.org/archive/html/qemu-devel/2014-06/msg03482.html
-> 	http://lists.gnu.org/archive/html/qemu-devel/2014-06/msg03483.html
-> - Alvise Rigo's "Add Generic PCI host device update"
-> 	http://marc.info/?l=qemu-devel&m=140506329920172&w=2
-> 
-> For ARMv8, cpu model of "host" and "cortex-a57" is missed
-> in Alvise Rigo's patchset, otherwise ARM64 VM can't boot.
-> 
-> All these QEMU patches can be found in below tree:
-> 
-> 	http://kernel.ubuntu.com/git?p=ming/qemu.git;a=shortlog;h=refs/heads/arm64-pci-test
-> 
-> Signed-off-by: Ming Lei <ming.lei@canonical.com>
-> ---
->  drivers/pci/host/Kconfig            |    2 +-
->  drivers/pci/host/pci-host-generic.c |  196 +++++++++++------------------------
->  2 files changed, 63 insertions(+), 135 deletions(-)
-> 
-> diff --git a/drivers/pci/host/Kconfig b/drivers/pci/host/Kconfig
-> index 3dc25fa..885034d 100644
-> --- a/drivers/pci/host/Kconfig
-> +++ b/drivers/pci/host/Kconfig
-> @@ -50,7 +50,7 @@ config PCI_RCAR_GEN2_PCIE
->  
->  config PCI_HOST_GENERIC
->  	bool "Generic PCI host controller"
-> -	depends on ARM && OF
-> +	depends on OF
->  	help
->  	  Say Y here if you want to support a simple generic PCI host
->  	  controller, such as the one emulated by kvmtool.
-> diff --git a/drivers/pci/host/pci-host-generic.c b/drivers/pci/host/pci-host-generic.c
-> index 3d2076f..00d0ca3 100644
-> --- a/drivers/pci/host/pci-host-generic.c
-> +++ b/drivers/pci/host/pci-host-generic.c
-> @@ -44,12 +44,14 @@ struct gen_pci {
->  	struct list_head			resources;
->  };
->  
-> +/* fake sysdata for cheating ARCH's pcibios code */
-> +static char	gen_sysdata[256];
-> +
->  static void __iomem *gen_pci_map_cfg_bus_cam(struct pci_bus *bus,
->  					     unsigned int devfn,
->  					     int where)
->  {
-> -	struct pci_sys_data *sys = bus->sysdata;
-> -	struct gen_pci *pci = sys->private_data;
-> +	struct gen_pci *pci = dev_get_drvdata(bus->dev.parent->parent);
+This patch fixes the following problem: data transmission in direction
+IN break unless the GSNPSID register access is done with spinlock held.
+This issue occurs at least in Exynos4412 SoC, probably in many SoC's
+from Exynos familly.
 
-Just as a heads up, this breaks when you have PCI bridges in between. In
-that case you need something like the ugly patch below on top.
+The problem is described here:
+https://lkml.org/lkml/2014/12/22/185
+And there is linux mailing list discussion:
+https://lkml.org/lkml/2015/1/14/17
 
+Signed-off-by: Robert Baldyga <r.baldyga@samsung.com>
+---
 
-Alex
+Changelog:
 
+v3:
+- updated the commit message
 
-diff --git a/drivers/pci/host/pci-host-generic.c
-b/drivers/pci/host/pci-host-generic.c
-index e580296..730a07b 100644
---- a/drivers/pci/host/pci-host-generic.c
-+++ b/drivers/pci/host/pci-host-generic.c
-@@ -47,11 +47,26 @@ struct gen_pci {
- /* fake sysdata for cheating ARCH's pcibios code */
- static char	gen_sysdata[256];
+v2: https://lkml.org/lkml/2015/1/14/17
+- fixed comment from Paul Zimmerman
 
-+static struct gen_pci *gen_pci_get_drvdata(struct pci_bus *bus)
-+{
-+	struct device *dev = bus->dev.parent->parent;
-+	struct gen_pci *pci;
+v1: https://lkml.org/lkml/2015/1/13/186
+
+ drivers/usb/dwc2/core_intr.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/usb/dwc2/core_intr.c b/drivers/usb/dwc2/core_intr.c
+index ad43c5b..02e3e2d 100644
+--- a/drivers/usb/dwc2/core_intr.c
++++ b/drivers/usb/dwc2/core_intr.c
+@@ -476,13 +476,13 @@ irqreturn_t dwc2_handle_common_intr(int irq, void *dev)
+ 	u32 gintsts;
+ 	irqreturn_t retval = IRQ_NONE;
+ 
++	spin_lock(&hsotg->lock);
 +
-+	while (dev) {
-+		pci = dev_get_drvdata(dev);
-+		if (pci)
-+			return pci;
-+		dev = dev->parent;
-+	}
-+
-+	return NULL;
-+}
-+
- static void __iomem *gen_pci_map_cfg_bus_cam(struct pci_bus *bus,
- 					     unsigned int devfn,
- 					     int where)
- {
--	struct gen_pci *pci = dev_get_drvdata(bus->dev.parent->parent);
-+	struct gen_pci *pci = gen_pci_get_drvdata(bus);
- 	resource_size_t idx = bus->number - pci->cfg.bus_range.start;
-
- 	return pci->cfg.win[idx] + ((devfn << 8) | where);
-@@ -66,7 +81,7 @@ static void __iomem *gen_pci_map_cfg_bus_ecam(struct
-pci_bus *bus,
- 					      unsigned int devfn,
- 					      int where)
- {
--	struct gen_pci *pci = dev_get_drvdata(bus->dev.parent->parent);
-+	struct gen_pci *pci = gen_pci_get_drvdata(bus);
- 	resource_size_t idx = bus->number - pci->cfg.bus_range.start;
-
- 	return pci->cfg.win[idx] + ((devfn << 12) | where);
-@@ -81,7 +96,11 @@ static int gen_pci_config_read(struct pci_bus *bus,
-unsigned int devfn,
- 				int where, int size, u32 *val)
- {
- 	void __iomem *addr;
--	struct gen_pci *pci = dev_get_drvdata(bus->dev.parent->parent);
-+	struct gen_pci *pci = gen_pci_get_drvdata(bus);
-+
-+	WARN_ON(!pci);
-+	if (!pci)
-+		return PCIBIOS_DEVICE_NOT_FOUND;
-
- 	addr = pci->cfg.ops->map_bus(bus, devfn, where);
-
-@@ -103,7 +122,11 @@ static int gen_pci_config_write(struct pci_bus
-*bus, unsigned int devfn,
- 				 int where, int size, u32 val)
- {
- 	void __iomem *addr;
--	struct gen_pci *pci = dev_get_drvdata(bus->dev.parent->parent);
-+	struct gen_pci *pci = gen_pci_get_drvdata(bus);
-+
-+	WARN_ON(!pci);
-+	if (!pci)
-+		return PCIBIOS_DEVICE_NOT_FOUND;
-
- 	addr = pci->cfg.ops->map_bus(bus, devfn, where);
+ 	if (!dwc2_is_controller_alive(hsotg)) {
+ 		dev_warn(hsotg->dev, "Controller is dead\n");
+ 		goto out;
+ 	}
+ 
+-	spin_lock(&hsotg->lock);
+-
+ 	gintsts = dwc2_read_common_intr(hsotg);
+ 	if (gintsts & ~GINTSTS_PRTINT)
+ 		retval = IRQ_HANDLED;
+@@ -515,8 +515,8 @@ irqreturn_t dwc2_handle_common_intr(int irq, void *dev)
+ 		}
+ 	}
+ 
+-	spin_unlock(&hsotg->lock);
+ out:
++	spin_unlock(&hsotg->lock);
+ 	return retval;
+ }
+ EXPORT_SYMBOL_GPL(dwc2_handle_common_intr);
+-- 
+1.9.1
 
