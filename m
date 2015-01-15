@@ -1,131 +1,376 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852AbbAOKM0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 05:12:26 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:35585 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752766AbbAOKMU (ORCPT
+	id S1752762AbbAOKSU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 05:18:20 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:56714 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752132AbbAOKMY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 05:12:20 -0500
+	Thu, 15 Jan 2015 05:12:24 -0500
 From: Vincent Guittot <vincent.guittot@linaro.org>
 To: peterz@infradead.org, mingo@kernel.org, linux-kernel@vger.kernel.org,
         preeti@linux.vnet.ibm.com, Morten.Rasmussen@arm.com,
         kamalesh@linux.vnet.ibm.com
 Cc: riel@redhat.com, efault@gmx.de, nicolas.pitre@linaro.org,
         dietmar.eggemann@arm.com, linaro-kernel@lists.linaro.org,
-        Vincent Guittot <vincent.guittot@linaro.org>
-Subject: [PATCH RESEND v9 00/10] sched: consolidation of CPU capacity and usage
-Date: Thu, 15 Jan 2015 11:09:20 +0100
-Message-Id: <1421316570-23097-1-git-send-email-vincent.guittot@linaro.org>
+        Vincent Guittot <vincent.guittot@linaro.org>,
+        Paul Turner <pjt@google.com>, Ben Segall <bsegall@google.com>
+Subject: [PATCH RESEND v9 01/10] sched: add utilization_avg_contrib
+Date: Thu, 15 Jan 2015 11:09:21 +0100
+Message-Id: <1421316570-23097-2-git-send-email-vincent.guittot@linaro.org>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1421316570-23097-1-git-send-email-vincent.guittot@linaro.org>
+References: <1421316570-23097-1-git-send-email-vincent.guittot@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset consolidates several changes in the capacity and the usage
-tracking of the CPU. It provides a frequency invariant metric of the usage of
-CPUs and generally improves the accuracy of load/usage tracking in the
-scheduler. The frequency invariant metric is the foundation required for the
-consolidation of cpufreq and implementation of a fully invariant load tracking.
-These are currently WIP and require several changes to the load balancer
-(including how it will use and interprets load and capacity metrics) and
-extensive validation. The frequency invariance is done with
-arch_scale_freq_capacity and this patchset doesn't provide the backends of
-the function which are architecture dependent.
+Add new statistics which reflect the average time a task is running on the CPU
+and the sum of these running time of the tasks on a runqueue. The latter is
+named utilization_load_avg.
 
-As discussed at LPC14, Morten and I have consolidated our changes into a single
-patchset to make it easier to review and merge.
+This patch is based on the usage metric that was proposed in the 1st
+versions of the per-entity load tracking patchset by Paul Turner
+<pjt@google.com> but that has be removed afterwards. This version differs from
+the original one in the sense that it's not linked to task_group.
 
-During load balance, the scheduler evaluates the number of tasks that a group
-of CPUs can handle. The current method assumes that tasks have a fix load of
-SCHED_LOAD_SCALE and CPUs have a default capacity of SCHED_CAPACITY_SCALE.
-This assumption generates wrong decision by creating ghost cores or by
-removing real ones when the original capacity of CPUs is different from the
-default SCHED_CAPACITY_SCALE. With this patch set, we don't try anymore to
-evaluate the number of available cores based on the group_capacity but instead
-we evaluate the usage of a group and compare it with its capacity.
+The rq's utilization_load_avg will be used to check if a rq is overloaded or
+not instead of trying to compute how many tasks a group of CPUs can handle.
 
-This patchset mainly replaces the old capacity_factor method by a new one and
-keeps the general policy almost unchanged. These new metrics will be also used
-in later patches.
+Rename runnable_avg_period into avg_period as it is now used with both
+runnable_avg_sum and running_avg_sum
 
-The CPU usage is based on a running time tracking version of the current
-implementation of the load average tracking. I also have a version that is
-based on the new implementation proposal [1] but I haven't provide the patches
-and results as [1] is still under review. I can provide change above [1] to
-change how CPU usage is computed and to adapt to new mecanism.
+Add some descriptions of the variables to explain their differences
 
-Change since V8
- - reorder patches
+cc: Paul Turner <pjt@google.com>
+cc: Ben Segall <bsegall@google.com>
 
-Change since V7
- - add freq invariance for usage tracking
- - add freq invariance for scale_rt
- - update comments and commits' message
- - fix init of utilization_avg_contrib
- - fix prefer_sibling
+Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+---
+ include/linux/sched.h | 21 ++++++++++++---
+ kernel/sched/debug.c  | 10 ++++---
+ kernel/sched/fair.c   | 74 ++++++++++++++++++++++++++++++++++++++++-----------
+ kernel/sched/sched.h  |  8 +++++-
+ 4 files changed, 89 insertions(+), 24 deletions(-)
 
-Change since V6
- - add group usage tracking
- - fix some commits' messages
- - minor fix like comments and argument order
-
-Change since V5
- - remove patches that have been merged since v5 : patches 01, 02, 03, 04, 05, 07
- - update commit log and add more details on the purpose of the patches
- - fix/remove useless code with the rebase on patchset [2]
- - remove capacity_orig in sched_group_capacity as it is not used
- - move code in the right patch
- - add some helper function to factorize code
-
-Change since V4
- - rebase to manage conflicts with changes in selection of busiest group
-
-Change since V3:
- - add usage_avg_contrib statistic which sums the running time of tasks on a rq
- - use usage_avg_contrib instead of runnable_avg_sum for cpu_utilization
- - fix replacement power by capacity
- - update some comments
-
-Change since V2:
- - rebase on top of capacity renaming
- - fix wake_affine statistic update
- - rework nohz_kick_needed
- - optimize the active migration of a task from CPU with reduced capacity
- - rename group_activity by group_utilization and remove unused total_utilization
- - repair SD_PREFER_SIBLING and use it for SMT level
- - reorder patchset to gather patches with same topics
-
-Change since V1:
- - add 3 fixes
- - correct some commit messages
- - replace capacity computation by activity
- - take into account current cpu capacity
-
-[1] https://lkml.org/lkml/2014/10/10/131
-[2] https://lkml.org/lkml/2014/7/25/589
-
-Morten Rasmussen (2):
-  sched: Track group sched_entity usage contributions
-  sched: Make sched entity usage tracking scale-invariant
-
-Vincent Guittot (8):
-  sched: add utilization_avg_contrib
-  sched: remove frequency scaling from cpu_capacity
-  sched: make scale_rt invariant with frequency
-  sched: add per rq cpu_capacity_orig
-  sched: get CPU's usage statistic
-  sched: replace capacity_factor by usage
-  sched: add SD_PREFER_SIBLING for SMT level
-  sched: move cfs task on a CPU with higher capacity
-
- include/linux/sched.h |  21 ++-
- kernel/sched/core.c   |  15 +-
- kernel/sched/debug.c  |  12 +-
- kernel/sched/fair.c   | 369 ++++++++++++++++++++++++++++++++------------------
- kernel/sched/sched.h  |  15 +-
- 5 files changed, 276 insertions(+), 156 deletions(-)
-
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 18f5262..b576b29 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1071,15 +1071,28 @@ struct load_weight {
+ };
+ 
+ struct sched_avg {
++	u64 last_runnable_update;
++	s64 decay_count;
++	/*
++	 * utilization_avg_contrib describes the amount of time that a
++	 * sched_entity is running on a CPU. It is based on running_avg_sum
++	 * and is scaled in the range [0..SCHED_LOAD_SCALE].
++	 * load_avg_contrib described the amount of time that a sched_entity
++	 * is runnable on a rq. It is based on both runnable_avg_sum and the
++	 * weight of the task.
++	 */
++	unsigned long load_avg_contrib, utilization_avg_contrib;
+ 	/*
+ 	 * These sums represent an infinite geometric series and so are bound
+ 	 * above by 1024/(1-y).  Thus we only need a u32 to store them for all
+ 	 * choices of y < 1-2^(-32)*1024.
++	 * running_avg_sum reflects the time that the sched_entity is
++	 * effectively running on the CPU.
++	 * runnable_avg_sum represents the amount of time a sched_entity is on
++	 * a runqueue which includes the running time that is monitored by
++	 * running_avg_sum.
+ 	 */
+-	u32 runnable_avg_sum, runnable_avg_period;
+-	u64 last_runnable_update;
+-	s64 decay_count;
+-	unsigned long load_avg_contrib;
++	u32 runnable_avg_sum, avg_period, running_avg_sum;
+ };
+ 
+ #ifdef CONFIG_SCHEDSTATS
+diff --git a/kernel/sched/debug.c b/kernel/sched/debug.c
+index ce33780..f384452 100644
+--- a/kernel/sched/debug.c
++++ b/kernel/sched/debug.c
+@@ -71,7 +71,7 @@ static void print_cfs_group_stats(struct seq_file *m, int cpu, struct task_group
+ 	if (!se) {
+ 		struct sched_avg *avg = &cpu_rq(cpu)->avg;
+ 		P(avg->runnable_avg_sum);
+-		P(avg->runnable_avg_period);
++		P(avg->avg_period);
+ 		return;
+ 	}
+ 
+@@ -94,7 +94,7 @@ static void print_cfs_group_stats(struct seq_file *m, int cpu, struct task_group
+ 	P(se->load.weight);
+ #ifdef CONFIG_SMP
+ 	P(se->avg.runnable_avg_sum);
+-	P(se->avg.runnable_avg_period);
++	P(se->avg.avg_period);
+ 	P(se->avg.load_avg_contrib);
+ 	P(se->avg.decay_count);
+ #endif
+@@ -214,6 +214,8 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
+ 			cfs_rq->runnable_load_avg);
+ 	SEQ_printf(m, "  .%-30s: %ld\n", "blocked_load_avg",
+ 			cfs_rq->blocked_load_avg);
++	SEQ_printf(m, "  .%-30s: %ld\n", "utilization_load_avg",
++			cfs_rq->utilization_load_avg);
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 	SEQ_printf(m, "  .%-30s: %ld\n", "tg_load_contrib",
+ 			cfs_rq->tg_load_contrib);
+@@ -628,8 +630,10 @@ void proc_sched_show_task(struct task_struct *p, struct seq_file *m)
+ 	P(se.load.weight);
+ #ifdef CONFIG_SMP
+ 	P(se.avg.runnable_avg_sum);
+-	P(se.avg.runnable_avg_period);
++	P(se.avg.running_avg_sum);
++	P(se.avg.avg_period);
+ 	P(se.avg.load_avg_contrib);
++	P(se.avg.utilization_avg_contrib);
+ 	P(se.avg.decay_count);
+ #endif
+ 	P(policy);
+diff --git a/kernel/sched/fair.c b/kernel/sched/fair.c
+index bd61cff..3a91ae6 100644
+--- a/kernel/sched/fair.c
++++ b/kernel/sched/fair.c
+@@ -670,6 +670,7 @@ static int select_idle_sibling(struct task_struct *p, int cpu);
+ static unsigned long task_h_load(struct task_struct *p);
+ 
+ static inline void __update_task_entity_contrib(struct sched_entity *se);
++static inline void __update_task_entity_utilization(struct sched_entity *se);
+ 
+ /* Give new task start runnable values to heavy its load in infant time */
+ void init_task_runnable_average(struct task_struct *p)
+@@ -678,9 +679,10 @@ void init_task_runnable_average(struct task_struct *p)
+ 
+ 	p->se.avg.decay_count = 0;
+ 	slice = sched_slice(task_cfs_rq(p), &p->se) >> 10;
+-	p->se.avg.runnable_avg_sum = slice;
+-	p->se.avg.runnable_avg_period = slice;
++	p->se.avg.runnable_avg_sum = p->se.avg.running_avg_sum = slice;
++	p->se.avg.avg_period = slice;
+ 	__update_task_entity_contrib(&p->se);
++	__update_task_entity_utilization(&p->se);
+ }
+ #else
+ void init_task_runnable_average(struct task_struct *p)
+@@ -1548,7 +1550,7 @@ static u64 numa_get_avg_runtime(struct task_struct *p, u64 *period)
+ 		*period = now - p->last_task_numa_placement;
+ 	} else {
+ 		delta = p->se.avg.runnable_avg_sum;
+-		*period = p->se.avg.runnable_avg_period;
++		*period = p->se.avg.avg_period;
+ 	}
+ 
+ 	p->last_sum_exec_runtime = runtime;
+@@ -2294,7 +2296,8 @@ static u32 __compute_runnable_contrib(u64 n)
+  */
+ static __always_inline int __update_entity_runnable_avg(u64 now,
+ 							struct sched_avg *sa,
+-							int runnable)
++							int runnable,
++							int running)
+ {
+ 	u64 delta, periods;
+ 	u32 runnable_contrib;
+@@ -2320,7 +2323,7 @@ static __always_inline int __update_entity_runnable_avg(u64 now,
+ 	sa->last_runnable_update = now;
+ 
+ 	/* delta_w is the amount already accumulated against our next period */
+-	delta_w = sa->runnable_avg_period % 1024;
++	delta_w = sa->avg_period % 1024;
+ 	if (delta + delta_w >= 1024) {
+ 		/* period roll-over */
+ 		decayed = 1;
+@@ -2333,7 +2336,9 @@ static __always_inline int __update_entity_runnable_avg(u64 now,
+ 		delta_w = 1024 - delta_w;
+ 		if (runnable)
+ 			sa->runnable_avg_sum += delta_w;
+-		sa->runnable_avg_period += delta_w;
++		if (running)
++			sa->running_avg_sum += delta_w;
++		sa->avg_period += delta_w;
+ 
+ 		delta -= delta_w;
+ 
+@@ -2343,20 +2348,26 @@ static __always_inline int __update_entity_runnable_avg(u64 now,
+ 
+ 		sa->runnable_avg_sum = decay_load(sa->runnable_avg_sum,
+ 						  periods + 1);
+-		sa->runnable_avg_period = decay_load(sa->runnable_avg_period,
++		sa->running_avg_sum = decay_load(sa->running_avg_sum,
++						  periods + 1);
++		sa->avg_period = decay_load(sa->avg_period,
+ 						     periods + 1);
+ 
+ 		/* Efficiently calculate \sum (1..n_period) 1024*y^i */
+ 		runnable_contrib = __compute_runnable_contrib(periods);
+ 		if (runnable)
+ 			sa->runnable_avg_sum += runnable_contrib;
+-		sa->runnable_avg_period += runnable_contrib;
++		if (running)
++			sa->running_avg_sum += runnable_contrib;
++		sa->avg_period += runnable_contrib;
+ 	}
+ 
+ 	/* Remainder of delta accrued against u_0` */
+ 	if (runnable)
+ 		sa->runnable_avg_sum += delta;
+-	sa->runnable_avg_period += delta;
++	if (running)
++		sa->running_avg_sum += delta;
++	sa->avg_period += delta;
+ 
+ 	return decayed;
+ }
+@@ -2372,6 +2383,8 @@ static inline u64 __synchronize_entity_decay(struct sched_entity *se)
+ 		return 0;
+ 
+ 	se->avg.load_avg_contrib = decay_load(se->avg.load_avg_contrib, decays);
++	se->avg.utilization_avg_contrib =
++		decay_load(se->avg.utilization_avg_contrib, decays);
+ 	se->avg.decay_count = 0;
+ 
+ 	return decays;
+@@ -2408,7 +2421,7 @@ static inline void __update_tg_runnable_avg(struct sched_avg *sa,
+ 
+ 	/* The fraction of a cpu used by this cfs_rq */
+ 	contrib = div_u64((u64)sa->runnable_avg_sum << NICE_0_SHIFT,
+-			  sa->runnable_avg_period + 1);
++			  sa->avg_period + 1);
+ 	contrib -= cfs_rq->tg_runnable_contrib;
+ 
+ 	if (abs(contrib) > cfs_rq->tg_runnable_contrib / 64) {
+@@ -2461,7 +2474,8 @@ static inline void __update_group_entity_contrib(struct sched_entity *se)
+ 
+ static inline void update_rq_runnable_avg(struct rq *rq, int runnable)
+ {
+-	__update_entity_runnable_avg(rq_clock_task(rq), &rq->avg, runnable);
++	__update_entity_runnable_avg(rq_clock_task(rq), &rq->avg, runnable,
++			runnable);
+ 	__update_tg_runnable_avg(&rq->avg, &rq->cfs);
+ }
+ #else /* CONFIG_FAIR_GROUP_SCHED */
+@@ -2479,7 +2493,7 @@ static inline void __update_task_entity_contrib(struct sched_entity *se)
+ 
+ 	/* avoid overflowing a 32-bit type w/ SCHED_LOAD_SCALE */
+ 	contrib = se->avg.runnable_avg_sum * scale_load_down(se->load.weight);
+-	contrib /= (se->avg.runnable_avg_period + 1);
++	contrib /= (se->avg.avg_period + 1);
+ 	se->avg.load_avg_contrib = scale_load(contrib);
+ }
+ 
+@@ -2498,6 +2512,27 @@ static long __update_entity_load_avg_contrib(struct sched_entity *se)
+ 	return se->avg.load_avg_contrib - old_contrib;
+ }
+ 
++
++static inline void __update_task_entity_utilization(struct sched_entity *se)
++{
++	u32 contrib;
++
++	/* avoid overflowing a 32-bit type w/ SCHED_LOAD_SCALE */
++	contrib = se->avg.running_avg_sum * scale_load_down(SCHED_LOAD_SCALE);
++	contrib /= (se->avg.avg_period + 1);
++	se->avg.utilization_avg_contrib = scale_load(contrib);
++}
++
++static long __update_entity_utilization_avg_contrib(struct sched_entity *se)
++{
++	long old_contrib = se->avg.utilization_avg_contrib;
++
++	if (entity_is_task(se))
++		__update_task_entity_utilization(se);
++
++	return se->avg.utilization_avg_contrib - old_contrib;
++}
++
+ static inline void subtract_blocked_load_contrib(struct cfs_rq *cfs_rq,
+ 						 long load_contrib)
+ {
+@@ -2514,7 +2549,7 @@ static inline void update_entity_load_avg(struct sched_entity *se,
+ 					  int update_cfs_rq)
+ {
+ 	struct cfs_rq *cfs_rq = cfs_rq_of(se);
+-	long contrib_delta;
++	long contrib_delta, utilization_delta;
+ 	u64 now;
+ 
+ 	/*
+@@ -2526,18 +2561,22 @@ static inline void update_entity_load_avg(struct sched_entity *se,
+ 	else
+ 		now = cfs_rq_clock_task(group_cfs_rq(se));
+ 
+-	if (!__update_entity_runnable_avg(now, &se->avg, se->on_rq))
++	if (!__update_entity_runnable_avg(now, &se->avg, se->on_rq,
++					cfs_rq->curr == se))
+ 		return;
+ 
+ 	contrib_delta = __update_entity_load_avg_contrib(se);
++	utilization_delta = __update_entity_utilization_avg_contrib(se);
+ 
+ 	if (!update_cfs_rq)
+ 		return;
+ 
+-	if (se->on_rq)
++	if (se->on_rq) {
+ 		cfs_rq->runnable_load_avg += contrib_delta;
+-	else
++		cfs_rq->utilization_load_avg += utilization_delta;
++	} else {
+ 		subtract_blocked_load_contrib(cfs_rq, -contrib_delta);
++	}
+ }
+ 
+ /*
+@@ -2612,6 +2651,7 @@ static inline void enqueue_entity_load_avg(struct cfs_rq *cfs_rq,
+ 	}
+ 
+ 	cfs_rq->runnable_load_avg += se->avg.load_avg_contrib;
++	cfs_rq->utilization_load_avg += se->avg.utilization_avg_contrib;
+ 	/* we force update consideration on load-balancer moves */
+ 	update_cfs_rq_blocked_load(cfs_rq, !wakeup);
+ }
+@@ -2630,6 +2670,7 @@ static inline void dequeue_entity_load_avg(struct cfs_rq *cfs_rq,
+ 	update_cfs_rq_blocked_load(cfs_rq, !sleep);
+ 
+ 	cfs_rq->runnable_load_avg -= se->avg.load_avg_contrib;
++	cfs_rq->utilization_load_avg -= se->avg.utilization_avg_contrib;
+ 	if (sleep) {
+ 		cfs_rq->blocked_load_avg += se->avg.load_avg_contrib;
+ 		se->avg.decay_count = atomic64_read(&cfs_rq->decay_counter);
+@@ -2967,6 +3008,7 @@ set_next_entity(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ 		 */
+ 		update_stats_wait_end(cfs_rq, se);
+ 		__dequeue_entity(cfs_rq, se);
++		update_entity_load_avg(se, 1);
+ 	}
+ 
+ 	update_stats_curr_start(cfs_rq, se);
+diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
+index 6130251..c34bd11 100644
+--- a/kernel/sched/sched.h
++++ b/kernel/sched/sched.h
+@@ -343,8 +343,14 @@ struct cfs_rq {
+ 	 * Under CFS, load is tracked on a per-entity basis and aggregated up.
+ 	 * This allows for the description of both thread and group usage (in
+ 	 * the FAIR_GROUP_SCHED case).
++	 * runnable_load_avg is the sum of the load_avg_contrib of the
++	 * sched_entities on the rq.
++	 * blocked_load_avg is similar to runnable_load_avg except that its
++	 * the blocked sched_entities on the rq.
++	 * utilization_load_avg is the sum of the average running time of the
++	 * sched_entities on the rq.
+ 	 */
+-	unsigned long runnable_load_avg, blocked_load_avg;
++	unsigned long runnable_load_avg, blocked_load_avg, utilization_load_avg;
+ 	atomic64_t decay_counter;
+ 	u64 last_decay;
+ 	atomic_long_t removed_load;
 -- 
 1.9.1
 
