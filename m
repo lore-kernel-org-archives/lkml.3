@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752301AbbAOB3j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 20:29:39 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:36235 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751385AbbAOB3h (ORCPT
+	id S1752414AbbAOBaU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 20:30:20 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:46522 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751031AbbAOBaS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 20:29:37 -0500
-Date: Wed, 14 Jan 2015 17:29:49 -0800
-From: Olof Johansson <olof@lixom.net>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        "arm@kernel.org" <arm@kernel.org>, Bryan Wu <cooloney@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] arm: mach-versatile: core: Remove unused function
-Message-ID: <20150115012949.GF32756@quad.lixom.net>
-References: <1420303959-12898-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
- <CACRpkdan1BZQnYgTdF9ctbLOPNoDwDX3Epy8Xfttd2v4-G-4Lw@mail.gmail.com>
+	Wed, 14 Jan 2015 20:30:18 -0500
+From: Kevin Hilman <khilman@kernel.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: lm-sensors@lm-sensors.org, linux-samsung-soc@vger.kernel.org,
+        Jean Delvare <jdelvare@suse.de>,
+        open list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] hwmon: (ina2xx) Add ina231 compatible string
+References: <1421279852-27965-1-git-send-email-khilman@kernel.org>
+	<20150115005642.GA31033@roeck-us.net>
+Date: Wed, 14 Jan 2015 17:30:15 -0800
+In-Reply-To: <20150115005642.GA31033@roeck-us.net> (Guenter Roeck's message of
+	"Wed, 14 Jan 2015 16:56:42 -0800")
+Message-ID: <7hppagq194.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACRpkdan1BZQnYgTdF9ctbLOPNoDwDX3Epy8Xfttd2v4-G-4Lw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 14, 2015 at 12:53:07PM +0100, Linus Walleij wrote:
-> On Sat, Jan 3, 2015 at 5:52 PM, Rickard Strandqvist
-> <rickard_strandqvist@spectrumdigital.se> wrote:
-> 
-> > Remove the function versatile_leds_event() that is not used anywhere.
-> >
-> > This was partially found by using a static code analysis program called cppcheck.
-> >
-> > Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-> 
-> Reviewed-by: Linus Walleij <linus.walleij@linaro.org>
-> 
-> That's right, the code was made redundant in
-> commit e031cd513ec2ff661465dc1198220075719e72d1
-> "ARM: mach-realview and mach-versatile: retire custom LED code"
-> 
-> ARM SoC folks: I suggest you apply this patch directly to your cleanup
-> branch.
+Guenter Roeck <linux@roeck-us.net> writes:
 
-Thanks, applied with a minor tweak to the patch subject.
+> On Wed, Jan 14, 2015 at 03:57:32PM -0800, Kevin Hilman wrote:
+>> From: Kevin Hilman <khilman@linaro.org>
+>> 
+>> Add support for "ina231" as compatible string.
+>> 
+>> Tested with the Exynos5422-based odroid-xu3 board which has on-board
+>> INA231 sensors.
+>> 
+>> Signed-off-by: Kevin Hilman <khilman@linaro.org>
+>
+> Hi Kevin,
+>
+> can you also update Documentation/hwmon/ina2xx and Documentation/hwmon/Kconfig ?
+>
 
+Sure... coming right up.
 
--Olof
+Kevin
+
