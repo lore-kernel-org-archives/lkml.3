@@ -1,95 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549AbbAOA7q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 19:59:46 -0500
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:44053 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750782AbbAOA7o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 19:59:44 -0500
-Date: Wed, 14 Jan 2015 16:59:38 -0800
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Belisko Marek <marek.belisko@gmail.com>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Benoit Cousson <bcousson@baylibre.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "Dr. H. Nikolaus Schaller" <hns@goldelico.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-input@vger.kernel.org, Marek Belisko <marek@goldelico.com>,
-        Jonathan Richardson <jonathar@broadcom.com>,
-        Scott Branden <sbranden@broadcom.com>,
-        Yoichi Yuasa <yuasa@linux-mips.org>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>
-Subject: Re: [PATCH 1/3] input: tsc2007: Add pre-calibration, flipping and
- rotation
-Message-ID: <20150115005938.GB9134@dtor-ws>
-References: <1412108254-19234-1-git-send-email-marek@goldelico.com>
- <1412108254-19234-2-git-send-email-marek@goldelico.com>
- <CAAfyv36bD9ZratOzr7FkeQde8k-K9XjEjH9gkntm9qewD-cH9g@mail.gmail.com>
+	id S1754302AbbAOBBv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 20:01:51 -0500
+Received: from mail.kernel.org ([198.145.29.136]:46377 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753960AbbAOBBr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 20:01:47 -0500
+Date: Thu, 15 Jan 2015 02:01:34 +0100
+From: Sebastian Reichel <sre@kernel.org>
+To: Beomho Seo <beomho.seo@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org, lee.jone@linaro.org, broonie@kernel.org,
+        dbaryshkov@gmail.com, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, cw00.choi@samsung.com, inki.dae@samsung.com,
+        sw0312.kim@samsung.com, David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH v2 1/3] power: rt5033_battery: Add RT5033 Fuel gauge
+ device driver
+Message-ID: <20150115010134.GB20141@earth.universe>
+References: <1420793114-20586-1-git-send-email-beomho.seo@samsung.com>
+ <1420793114-20586-2-git-send-email-beomho.seo@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="/NkBOFFp2J2Af1nK"
 Content-Disposition: inline
-In-Reply-To: <CAAfyv36bD9ZratOzr7FkeQde8k-K9XjEjH9gkntm9qewD-cH9g@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1420793114-20586-2-git-send-email-beomho.seo@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 10, 2015 at 03:15:39PM +0100, Belisko Marek wrote:
-> Ping for input maintainer. DT changes was acked. Thanks.
-> 
-> On Tue, Sep 30, 2014 at 10:17 PM, Marek Belisko <marek@goldelico.com> wrote:
-> > This patch adds new parameters that allow to address typical hardware
-> > design differences: touch screens may be wired or oriented differently
-> > (portrait or landscape). And usually the active area of the touch is a
-> > little larger than the active area of the LCD. This results in the touch
-> > coordinates that have some significant deviation from LCD coordinates.
-> > Usually this is addressed in user space by a calibration tool (e.g. tslib
-> > or xinput-calibrator) but some systems don't have these tools or require
-> > that the screen is already roughly calibrated (e.g. Replicant) to operate
-> > the device until a better calibration can be done. And, some systems
-> > react very strangely if the touch event stream reports coordinates
-> > outside of the active area.
-> >
-> > This makes it necessry to be able to configure:
-> > 1. swapping x and y wires (coordinate values)
-> > 2. flipping of x (left - right) or y (top - bottom) or even both
-> > 3. define an active area so that an uncalibrated screen already
-> > roughly matches the LCD to be useful.
-> > 4. clip reported coordinates to the active area.
-> >
-> > If none of the new parameters is defined (in DT) or set in a board file,
-> > the driver behaves the same as without this patch.
-> >
-> > Author (1&2): H. Nikolaus Schaller <hns@goldelico.com>
-> > Author (3&4): Paul Kocialkowski <contact@paulk.fr>
-> >
-> > Signed-off-by: H. Nikolaus Schaller <hns@goldelico.com>
 
-OK, I was hesitant of adding these as normally we have tslib to perform
-the conversion, but maybe it is time to allow it in the kernel and
-standardize users. However, this seems like a general issue and we
-should:
+--/NkBOFFp2J2Af1nK
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-1. Perform conversion in input core rather than individual drivers. I
-think we should allocate a new bitmaps for some transformations and have
-the code do X/Y flip/clip of the coordinates.
+Hi,
 
-2. Standardize on bindings. We already have of-touchscreen.c doing
-rudimentary parsing, we shoudl look into extending it rather than
-creating myriad of driver-specific bindings.
+On Fri, Jan 09, 2015 at 05:45:11PM +0900, Beomho Seo wrote:
+> This patch adds device driver of Richtek PMIC.
+> The driver support battery fuel gange. Fuel gauge calculates and determines the
+> battery state of charge(SOC) according to battery open circuit voltage(OCV).
+> Also, this driver provides battery average voltage, voltage and bettery present
+> property.
 
-Also, do we need swap and flip or do we simply need rotation (like the
-proposed Broadcom iproc driver has)?
+Thanks, applied:
 
-Thanks.
+http://git.infradead.org/battery-2.6.git/commit/3cfb56d7ff013762a17b6a1b78bb3b0e4a6a6588
 
--- 
-Dmitry
+-- Sebastian
+
+--/NkBOFFp2J2Af1nK
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJUtxFuAAoJENju1/PIO/qaRsYP/0aeGZE1rBRba2Bknvr8zYLJ
+aThRVS21wC+yYdjEAU1gTMvGG+iKjM4hZvVRrWbADXSTrXQkgdxTvcHReLkjoTL4
+nsvCZ+5As4NkUVSx2MbeqCvFiW3YXCZBX6Uup8rtMnt5tIhkb434Fu/xKzvj2pUS
+b9qbraDGaYd0vNHiH7L2XX2zf5rBT3vwWITwgxsyCJoPkwBVAPFugTJ8aYwTc4ji
+xmTN3Gj9MtLacj8TjEhYiSYIs5u917ghdTQjyxVt7cNktvn3TrH/pA9RVOzNsuw+
+HHD9S7TZ+s+0FrPoEton1LGYb52UZ1HdSEgBsdaVEkEJ69fDnL4qBX2Duxg22SB0
+HCGSKJvFp6zUsNs5BhAm5jQboErJzSB3D8T5IAgaq2qXXbi9AQTeI7B8o7FzovtR
+exisPArq9bLjfzptqLU5ZMsuDLy4CCgvILS2N64dpqROYUTtmrIwFmJAqsBMRrjT
+H/f2FUc/wz+R9OsiQB/XVjYlsNUt4vahPjO8gVSa0IaBq3ixSK3EKi+rmwy8t9JZ
+9alDfcQEhcbcqtD6b6NPwmCpQO1bpY1q/xSJ7god3KUJcI6r7tXcTnE8SLyl53HK
+N702P5Gf599AKSxG2AEkkGlkHWGYGnfBkQvRmE7qmQV0npIVdty6lTklnmsZeebE
+DjQnmWVh/XVCIAJJr+DJ
+=K3c+
+-----END PGP SIGNATURE-----
+
+--/NkBOFFp2J2Af1nK--
