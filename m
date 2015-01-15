@@ -1,56 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511AbbAOI60 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 03:58:26 -0500
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:48113 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752418AbbAOI6T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 03:58:19 -0500
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-arch@vger.kernel.org, kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, x86@kernel.org,
-        xen-devel@lists.xenproject.org, linux-mm@kvack.org,
-        Christian Borntraeger <borntraeger@de.ibm.com>
-Subject: [PATCH 8/8] kernel: Fix sparse warning for ACCESS_ONCE
-Date: Thu, 15 Jan 2015 09:58:34 +0100
-Message-Id: <1421312314-72330-9-git-send-email-borntraeger@de.ibm.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1421312314-72330-1-git-send-email-borntraeger@de.ibm.com>
-References: <1421312314-72330-1-git-send-email-borntraeger@de.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15011508-0029-0000-0000-000002D00B26
+	id S1753017AbbAOJCQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 04:02:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56872 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751385AbbAOJCM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 04:02:12 -0500
+Date: Thu, 15 Jan 2015 09:59:06 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Michael Ellerman <mpe@ellerman.id.au>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Use dwfl_report_elf() instead of offline
+Message-ID: <20150115085906.GA23695@krava.brq.redhat.com>
+References: <20150114221045.GA17703@us.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150114221045.GA17703@us.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit a91ed664749c ("kernel: tighten rules for ACCESS ONCE") results in
-sparse warnings like "Using plain integer as NULL pointer" - Let's add a
-type cast to the dummy assignment.
-To avoid warnings lik "sparse: warning: cast to restricted __hc32" we also
-use __force on that cast.
+On Wed, Jan 14, 2015 at 02:10:45PM -0800, Sukadev Bhattiprolu wrote:
+> 
+> From 8e6fb4c58d0d9f4798c191d840e32084b1217cc3 Mon Sep 17 00:00:00 2001
+> From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+> Date: Fri, 21 Nov 2014 20:33:53 -0500
+> Subject: [PATCH 1/1] Use dwfl_report_elf() instead of offline.
+> 
+> dwfl_report_offline() works only when libraries are prelinked.
+> 
+> Replace dwfl_report_offline() with dwfl_report_elf() so we correctly
+> extract debug info even from libraries that are not prelinked.
+> 
+> Reported-by: Jiri Olsa <jolsa@redhat.com>
 
-Fixes: a91ed664749c ("kernel: tighten rules for ACCESS ONCE")
-Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
----
- include/linux/compiler.h | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+hi,
+this is related to the powerpc issue I was just testing right?
+looks like this patch is different from what I was testing..
 
-diff --git a/include/linux/compiler.h b/include/linux/compiler.h
-index 5e186bf..7bebf05 100644
---- a/include/linux/compiler.h
-+++ b/include/linux/compiler.h
-@@ -461,7 +461,7 @@ static __always_inline void __assign_once_size(volatile void *p, void *res, int
-  * If possible use READ_ONCE/ASSIGN_ONCE instead.
-  */
- #define __ACCESS_ONCE(x) ({ \
--	 __maybe_unused typeof(x) __var = 0; \
-+	 __maybe_unused typeof(x) __var = (__force typeof(x)) 0; \
- 	(volatile typeof(x) *)&(x); })
- #define ACCESS_ONCE(x) (*__ACCESS_ONCE(x))
- 
--- 
-1.9.3
-
+thanks,
+jirka
