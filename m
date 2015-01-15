@@ -1,92 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752089AbbAOIg0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 03:36:26 -0500
-Received: from mailscan11.extendcp.co.uk ([79.170.45.20]:60302 "EHLO
-	mailscan1.extendcp.co.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751525AbbAOIgZ (ORCPT
+	id S1752214AbbAOIiI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 03:38:08 -0500
+Received: from mx2.parallels.com ([199.115.105.18]:45381 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751433AbbAOIiG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 03:36:25 -0500
-X-Greylist: delayed 66961 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Jan 2015 03:36:25 EST
-From: Mark Glover <mark@actisense.com>
-To: johan@kernel.org, gregkh@linuxfoundation.org, linux-usb@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Mark Glover <mark@actisense.com>
-Subject: [PATCH] Added PIDs for Actisense USB Devices
-Date: Thu, 15 Jan 2015 08:34:34 +0000
-Message-Id: <1421310874-6754-1-git-send-email-mark@actisense.com>
-X-Mailer: git-send-email 1.7.9.5
-X-Authenticated-As: mark.glover@actisense.com
-X-Extend-Src: mailout
+	Thu, 15 Jan 2015 03:38:06 -0500
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Vlastimil Babka <vbabka@suse.cz>, Mel Gorman <mgorman@suse.de>,
+        Rik van Riel <riel@redhat.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH -mm v2] vmscan: move reclaim_state handling to shrink_slab
+Date: Thu, 15 Jan 2015 11:37:53 +0300
+Message-ID: <1421311073-28130-1-git-send-email-vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Glover <mark@actisense.com>
+current->reclaim_state is only used to count the number of slab pages
+reclaimed by shrink_slab(). So instead of initializing it before we are
+going to call try_to_free_pages() or shrink_zone(), let's set in
+directly in shrink_slab().
 
-Signed-off-by: Mark Glover <mark@actisense.com>
+Note that after this patch try_to_free_mem_cgroup_pages() will count not
+only reclaimed user pages, but also slab pages, which is expected,
+because it can reclaim kmem from kmem-active sub cgroups.
 
+Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
 ---
- drivers/usb/serial/ftdi_sio.c     |   17 +++++++++++++++++
- drivers/usb/serial/ftdi_sio_ids.h |   21 +++++++++++++++++++++
- 2 files changed, 38 insertions(+)
+Changes in v2:
+ - do not change shrink_slab() return value to the number of reclaimed
+   slab pages, because it can make drop_slab() abort beforehand (Andrew)
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index 1ebb351..a118e5b 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -978,6 +978,23 @@ static const struct usb_device_id id_table_combined[] = {
- 	{ USB_DEVICE_INTERFACE_NUMBER(INFINEON_VID, INFINEON_TRIBOARD_PID, 1) },
- 	/* GE Healthcare devices */
- 	{ USB_DEVICE(GE_HEALTHCARE_VID, GE_HEALTHCARE_NEMO_TRACKER_PID) },
-+	/* Active Research (Actisense) devices */
-+	{ USB_DEVICE(FTDI_VID, ACTISENSE_NDC_PID) },
-+	{ USB_DEVICE(FTDI_VID, ACTISENSE_USG_PID) },
-+	{ USB_DEVICE(FTDI_VID, ACTISENSE_NGT_PID) },
-+	{ USB_DEVICE(FTDI_VID, ACTISENSE_NGW_PID) },
-+	{ USB_DEVICE(FTDI_VID, ACTISENSE_D9AC_PID) },
-+	{ USB_DEVICE(FTDI_VID, ACTISENSE_D9AD_PID) },
-+	{ USB_DEVICE(FTDI_VID, ACTISENSE_D9AE_PID) },
-+	{ USB_DEVICE(FTDI_VID, ACTISENSE_D9AF_PID) },
-+	{ USB_DEVICE(FTDI_VID, CHETCO_SEAGAUGE_PID) },
-+	{ USB_DEVICE(FTDI_VID, CHETCO_SEASWITCH_PID) },
-+	{ USB_DEVICE(FTDI_VID, CHETCO_SEASMART_NMEA2000_PID) },
-+	{ USB_DEVICE(FTDI_VID, CHETCO_SEASMART_ETHERNET_PID) },
-+	{ USB_DEVICE(FTDI_VID, CHETCO_SEASMART_WIFI_PID) },
-+	{ USB_DEVICE(FTDI_VID, CHETCO_SEASMART_DISPLAY_PID) },
-+	{ USB_DEVICE(FTDI_VID, CHETCO_SEASMART_LITE_PID) },
-+	{ USB_DEVICE(FTDI_VID, CHETCO_SEASMART_ANALOG_PID) },
- 	{ }					/* Terminating entry */
- };
+ mm/page_alloc.c |    4 ----
+ mm/vmscan.c     |   43 +++++++++++++++++--------------------------
+ 2 files changed, 17 insertions(+), 30 deletions(-)
+
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index e1963ea0684a..f528e4ba91b5 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2448,7 +2448,6 @@ static int
+ __perform_reclaim(gfp_t gfp_mask, unsigned int order, struct zonelist *zonelist,
+ 		  nodemask_t *nodemask)
+ {
+-	struct reclaim_state reclaim_state;
+ 	int progress;
  
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serials/ftdi_sio_ids.h
-index e52409c..8ccd1b6 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -1438,3 +1438,24 @@
+ 	cond_resched();
+@@ -2457,12 +2456,9 @@ __perform_reclaim(gfp_t gfp_mask, unsigned int order, struct zonelist *zonelist,
+ 	cpuset_memory_pressure_bump();
+ 	current->flags |= PF_MEMALLOC;
+ 	lockdep_set_current_reclaim_state(gfp_mask);
+-	reclaim_state.reclaimed_slab = 0;
+-	current->reclaim_state = &reclaim_state;
+ 
+ 	progress = try_to_free_pages(zonelist, order, gfp_mask, nodemask);
+ 
+-	current->reclaim_state = NULL;
+ 	lockdep_clear_current_reclaim_state();
+ 	current->flags &= ~PF_MEMALLOC;
+ 
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 16f3e45742d6..26fdcc6c747d 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -367,13 +367,18 @@ static unsigned long do_shrink_slab(struct shrink_control *shrinkctl,
+  * the ->seeks setting of the shrink function, which indicates the
+  * cost to recreate an object relative to that of an LRU page.
+  *
+- * Returns the number of reclaimed slab objects.
++ * Returns the number of reclaimed slab objects. The number of reclaimed slab
++ * pages is added to *@ret_nr_reclaimed.
   */
- #define GE_HEALTHCARE_VID		0x1901
- #define GE_HEALTHCARE_NEMO_TRACKER_PID	0x0015
+ static unsigned long shrink_slab(gfp_t gfp_mask, int nid,
+ 				 struct mem_cgroup *memcg,
+ 				 unsigned long nr_scanned,
+-				 unsigned long nr_eligible)
++				 unsigned long nr_eligible,
++				 unsigned long *ret_nr_reclaimed)
+ {
++	struct reclaim_state reclaim_state = {
++		.reclaimed_slab = 0,
++	};
+ 	struct shrinker *shrinker;
+ 	unsigned long freed = 0;
+ 
+@@ -394,6 +399,8 @@ static unsigned long shrink_slab(gfp_t gfp_mask, int nid,
+ 		goto out;
+ 	}
+ 
++	current->reclaim_state = &reclaim_state;
 +
-+/*
-+ * Active Research (Actisense) devices
-+ */
-+#define ACTISENSE_NDC_PID		0xD9A8 /* NDC USB Serial Adapter */
-+#define ACTISENSE_USG_PID		0xD9A9 /* USG USB Serial Adapter */
-+#define ACTISENSE_NGT_PID		0xD9AA /* NGT NMEA2000 Interface */
-+#define ACTISENSE_NGW_PID		0xD9AB /* NGW NMEA2000 Gateway */
-+#define ACTISENSE_D9AC_PID		0xD9AC /* Actisense Reserved */
-+#define ACTISENSE_D9AD_PID		0xD9AD /* Actisense Reserved */
-+#define ACTISENSE_D9AE_PID		0xD9AE /* Actisense Reserved */
-+#define ACTISENSE_D9AF_PID		0xD9AF /* Actisense Reserved */
-+#define CHETCO_SEAGAUGE_PID		0xA548 /* SeaGauge USB Adapter */
-+#define CHETCO_SEASWITCH_PID		0xA549 /* SeaSwitch USB Adapter */
-+#define CHETCO_SEASMART_NMEA2000_PID	0xA54A /* SeaSmart NMEA2000 Gateway */
-+#define CHETCO_SEASMART_ETHERNET_PID	0xA54B /* SeaSmart Ethernet Gateway */
-+#define CHETCO_SEASMART_WIFI_PID	0xA5AC /* SeaSmart Wifi Gateway */
-+#define CHETCO_SEASMART_DISPLAY_PID	0xA5AD /* SeaSmart NMEA2000 Display */
-+#define CHETCO_SEASMART_LITE_PID	0xA5AE /* SeaSmart Lite USB Adapter */
-+#define CHETCO_SEASMART_ANALOG_PID	0xA5AF /* SeaSmart Analog Adapter */
+ 	list_for_each_entry(shrinker, &shrinker_list, list) {
+ 		struct shrink_control sc = {
+ 			.gfp_mask = gfp_mask,
+@@ -410,6 +417,9 @@ static unsigned long shrink_slab(gfp_t gfp_mask, int nid,
+ 		freed += do_shrink_slab(&sc, shrinker, nr_scanned, nr_eligible);
+ 	}
+ 
++	current->reclaim_state = NULL;
++	*ret_nr_reclaimed += reclaim_state.reclaimed_slab;
 +
+ 	up_read(&shrinker_rwsem);
+ out:
+ 	cond_resched();
+@@ -419,6 +429,7 @@ out:
+ void drop_slab_node(int nid)
+ {
+ 	unsigned long freed;
++	unsigned long nr_reclaimed = 0;
+ 
+ 	do {
+ 		struct mem_cgroup *memcg = NULL;
+@@ -426,9 +437,9 @@ void drop_slab_node(int nid)
+ 		freed = 0;
+ 		do {
+ 			freed += shrink_slab(GFP_KERNEL, nid, memcg,
+-					     1000, 1000);
++					     1000, 1000, &nr_reclaimed);
+ 		} while ((memcg = mem_cgroup_iter(NULL, memcg, NULL)) != NULL);
+-	} while (freed > 10);
++	} while (freed);
+ }
+ 
+ void drop_slab(void)
+@@ -2339,7 +2350,6 @@ static inline bool should_continue_reclaim(struct zone *zone,
+ static bool shrink_zone(struct zone *zone, struct scan_control *sc,
+ 			bool is_classzone)
+ {
+-	struct reclaim_state *reclaim_state = current->reclaim_state;
+ 	unsigned long nr_reclaimed, nr_scanned;
+ 	bool reclaimable = false;
+ 
+@@ -2371,7 +2381,7 @@ static bool shrink_zone(struct zone *zone, struct scan_control *sc,
+ 			if (memcg && is_classzone)
+ 				shrink_slab(sc->gfp_mask, zone_to_nid(zone),
+ 					    memcg, sc->nr_scanned - scanned,
+-					    lru_pages);
++					    lru_pages, &sc->nr_reclaimed);
+ 
+ 			/*
+ 			 * Direct reclaim and kswapd have to scan all memory
+@@ -2398,12 +2408,7 @@ static bool shrink_zone(struct zone *zone, struct scan_control *sc,
+ 		if (global_reclaim(sc) && is_classzone)
+ 			shrink_slab(sc->gfp_mask, zone_to_nid(zone), NULL,
+ 				    sc->nr_scanned - nr_scanned,
+-				    zone_lru_pages);
+-
+-		if (reclaim_state) {
+-			sc->nr_reclaimed += reclaim_state->reclaimed_slab;
+-			reclaim_state->reclaimed_slab = 0;
+-		}
++				    zone_lru_pages, &sc->nr_reclaimed);
+ 
+ 		vmpressure(sc->gfp_mask, sc->target_mem_cgroup,
+ 			   sc->nr_scanned - nr_scanned,
+@@ -3367,17 +3372,12 @@ static int kswapd(void *p)
+ 	int balanced_classzone_idx;
+ 	pg_data_t *pgdat = (pg_data_t*)p;
+ 	struct task_struct *tsk = current;
+-
+-	struct reclaim_state reclaim_state = {
+-		.reclaimed_slab = 0,
+-	};
+ 	const struct cpumask *cpumask = cpumask_of_node(pgdat->node_id);
+ 
+ 	lockdep_set_current_reclaim_state(GFP_KERNEL);
+ 
+ 	if (!cpumask_empty(cpumask))
+ 		set_cpus_allowed_ptr(tsk, cpumask);
+-	current->reclaim_state = &reclaim_state;
+ 
+ 	/*
+ 	 * Tell the memory management that we're a "memory allocator",
+@@ -3449,7 +3449,6 @@ static int kswapd(void *p)
+ 	}
+ 
+ 	tsk->flags &= ~(PF_MEMALLOC | PF_SWAPWRITE | PF_KSWAPD);
+-	current->reclaim_state = NULL;
+ 	lockdep_clear_current_reclaim_state();
+ 
+ 	return 0;
+@@ -3492,7 +3491,6 @@ void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx)
+  */
+ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
+ {
+-	struct reclaim_state reclaim_state;
+ 	struct scan_control sc = {
+ 		.nr_to_reclaim = nr_to_reclaim,
+ 		.gfp_mask = GFP_HIGHUSER_MOVABLE,
+@@ -3508,12 +3506,9 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
+ 
+ 	p->flags |= PF_MEMALLOC;
+ 	lockdep_set_current_reclaim_state(sc.gfp_mask);
+-	reclaim_state.reclaimed_slab = 0;
+-	p->reclaim_state = &reclaim_state;
+ 
+ 	nr_reclaimed = do_try_to_free_pages(zonelist, &sc);
+ 
+-	p->reclaim_state = NULL;
+ 	lockdep_clear_current_reclaim_state();
+ 	p->flags &= ~PF_MEMALLOC;
+ 
+@@ -3678,7 +3673,6 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+ 	/* Minimum pages needed in order to stay on node */
+ 	const unsigned long nr_pages = 1 << order;
+ 	struct task_struct *p = current;
+-	struct reclaim_state reclaim_state;
+ 	struct scan_control sc = {
+ 		.nr_to_reclaim = max(nr_pages, SWAP_CLUSTER_MAX),
+ 		.gfp_mask = (gfp_mask = memalloc_noio_flags(gfp_mask)),
+@@ -3697,8 +3691,6 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+ 	 */
+ 	p->flags |= PF_MEMALLOC | PF_SWAPWRITE;
+ 	lockdep_set_current_reclaim_state(gfp_mask);
+-	reclaim_state.reclaimed_slab = 0;
+-	p->reclaim_state = &reclaim_state;
+ 
+ 	if (zone_pagecache_reclaimable(zone) > zone->min_unmapped_pages) {
+ 		/*
+@@ -3710,7 +3702,6 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+ 		} while (sc.nr_reclaimed < nr_pages && --sc.priority >= 0);
+ 	}
+ 
+-	p->reclaim_state = NULL;
+ 	current->flags &= ~(PF_MEMALLOC | PF_SWAPWRITE);
+ 	lockdep_clear_current_reclaim_state();
+ 	return sc.nr_reclaimed >= nr_pages;
 -- 
-1.7.9.5
+1.7.10.4
 
