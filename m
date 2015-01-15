@@ -1,145 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752394AbbAOC0G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 21:26:06 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:41889 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751335AbbAOC0E (ORCPT
+	id S1751405AbbAOCpU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 21:45:20 -0500
+Received: from smtprelay4.synopsys.com ([198.182.47.9]:37333 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750893AbbAOCpS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 21:26:04 -0500
-From: Jeff Layton <jeff.layton@primarydata.com>
-X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
-Date: Wed, 14 Jan 2015 21:26:00 -0500
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Jeff Layton <jeff.layton@primarydata.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: fs: locks: WARNING: CPU: 16 PID: 4296 at fs/locks.c:236
- locks_free_lock_context+0x10d/0x240()
-Message-ID: <20150114212600.664785f5@synchrony.poochiereds.net>
-In-Reply-To: <54B6FF69.3080705@oracle.com>
-References: <54B4A909.9060206@oracle.com>
-	<20150113164441.5b210f48@tlielax.poochiereds.net>
-	<54B5A145.6060108@oracle.com>
-	<20150114092705.39bd4881@tlielax.poochiereds.net>
-	<54B6FF69.3080705@oracle.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
+	Wed, 14 Jan 2015 21:45:18 -0500
+From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+To: "balbi@ti.com" <balbi@ti.com>
+CC: "Dinh Nguyen (dinguyen@opensource.altera.com)" 
+	<dinguyen@opensource.altera.com>,
+        "lyz@rock-chips.com" <lyz@rock-chips.com>,
+        "robert.jarzmik@free.fr" <robert.jarzmik@free.fr>,
+        "linus.walleij@linaro.org" <linus.walleij@linaro.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] usb: phy: make GPIOs optional for the generic phy
+Thread-Topic: [PATCH] usb: phy: make GPIOs optional for the generic phy
+Thread-Index: AdAwbTXrO7DxzvJ4SC6YgyOS6Kjhkw==
+Date: Thu, 15 Jan 2015 02:45:12 +0000
+Message-ID: <A2CA0424C0A6F04399FB9E1CD98E0304845078CE@US01WEMBX2.internal.synopsys.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.13.184.19]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Jan 2015 18:44:41 -0500
-Sasha Levin <sasha.levin@oracle.com> wrote:
+>From 47bd18e210fecf701d493c27884e13c69bc449ea Mon Sep 17 00:00:00 2001
+From: Paul Zimmerman <paulz@synopsys.com>
+Date: Wed, 14 Jan 2015 18:15:58 -0800
+Subject: [PATCH] usb: phy: make GPIOs optional for the generic phy
 
-> On 01/14/2015 09:27 AM, Jeff Layton wrote:
-> > On Tue, 13 Jan 2015 17:50:45 -0500
-> > Sasha Levin <sasha.levin@oracle.com> wrote:
-> > 
-> >> On 01/13/2015 04:44 PM, Jeff Layton wrote:
-> >>> On Tue, 13 Jan 2015 00:11:37 -0500
-> >>> Sasha Levin <sasha.levin@oracle.com> wrote:
-> >>>
-> >>>> Hey Jeff,
-> >>>>
-> >>>> While fuzzing with trinity inside a KVM tools guest running the latest -next
-> >>>> kernel, I've stumbled on the following spew:
-> >>>>
-> >>>> [  887.078606] WARNING: CPU: 16 PID: 4296 at fs/locks.c:236 locks_free_lock_context+0x10d/0x240()
-> >>>> [  887.079703] Modules linked in:
-> >>>> [  887.080288] CPU: 16 PID: 4296 Comm: trinity-c273 Not tainted 3.19.0-rc4-next-20150112-sasha-00053-g23c147e02e-dirty #1710
-> >>>> [  887.082229]  0000000000000000 0000000000000000 0000000000000000 ffff8804c9f4f8e8
-> >>>> [  887.083773]  ffffffff9154e0a6 0000000000000000 ffff8804cad98000 ffff8804c9f4f938
-> >>>> [  887.085280]  ffffffff8140a4d0 0000000000000001 ffffffff81bf0d2d ffff8804c9f4f988
-> >>>> [  887.086792] Call Trace:
-> >>>> [  887.087320] dump_stack (lib/dump_stack.c:52)
-> >>>> [  887.088247] warn_slowpath_common (kernel/panic.c:447)
-> >>>> [  887.089342] ? locks_free_lock_context (fs/locks.c:236 (discriminator 3))
-> >>>> [  887.090514] warn_slowpath_null (kernel/panic.c:481)
-> >>>> [  887.091629] locks_free_lock_context (fs/locks.c:236 (discriminator 3))
-> >>>> [  887.092782] __destroy_inode (fs/inode.c:243)
-> >>>> [  887.093817] destroy_inode (fs/inode.c:268)
-> >>>> [  887.094833] evict (fs/inode.c:574)
-> >>>> [  887.095808] iput (fs/inode.c:1503)
-> >>>> [  887.096687] __dentry_kill (fs/dcache.c:323 fs/dcache.c:508)
-> >>>> [  887.097683] ? _raw_spin_trylock (kernel/locking/spinlock.c:136)
-> >>>> [  887.098733] ? dput (fs/dcache.c:545 fs/dcache.c:648)
-> >>>> [  887.099672] dput (fs/dcache.c:649)
-> >>>> [  887.100552] __fput (fs/file_table.c:227)
-> >>>
-> >>> So, looking at this a bit more...
-> >>>
-> >>> It's clear that we're at the dput in __fput at this point. Much earlier
-> >>> in __fput, we call locks_remove_file to remove all of the locks that
-> >>> are associated with the file description.
-> >>>
-> >>> Evidently though, something didn't go right there. The two most likely
-> >>> scenarios to my mind are:
-> >>>
-> >>> A) a lock raced onto the list somehow after that point. That seems
-> >>> unlikely since presumably the fcheck should have failed at that point.
-> >>>
-> >>> ...or...
-> >>>
-> >>> B) the CPU that called locks_remove_file mistakenly thought that
-> >>> inode->i_flctx was NULL when it really wasn't (stale cache, perhaps?).
-> >>> That would make it skip trying to remove any flock locks.
-> >>>
-> >>> B seems more likely to me, and if it's the case then that would seem to
-> >>> imply that we need some memory barriers (or maybe some ACCESS_ONCE
-> >>> calls) in these codepaths. I'll have to sit down and work through it to
-> >>> see what makes the most sense.
-> >>>
-> >>> If your debugging seems to jive with this, then one thing that might be
-> >>> interesting would be to comment out these two lines in
-> >>> locks_remove_flock:
-> >>>
-> >>>         if (!file_inode(filp)->i_flctx)
-> >>>                 return;
-> >>>
-> >>> ...and see if it's still reproducible. That's obviously not a real fix
-> >>> for this problem, but it might help prove whether the above suspicion
-> >>> is correct.
-> >>
-> >> Removing those two lines makes the issue go away.
-> >>
-> >> I'm guessing that figuring out which filesystem we were abusing isn't
-> >> interesting anymore...
-> >>
-> > 
-> > Sigh. I've been trying to reproduce this today. I've set up two
-> > different KVM guests on two different hosts, and run trinity on both,
-> > and I can't seem to get this warning to pop.
-> > 
-> > Could you share what trinity command-line options you're using? Any
-> > other special setup I should be considering to reproduce it?
-> > 
-> > I was hoping to get it to reproduce so I could test out potential
-> > memory barrier fixes...
-> 
-> I don't think there's anything special about my setup here that can
-> trigger that, specially if it's not dependant on a filesystem in use.
-> 
-> I'm running trinity with: ./trinity -xsched_setattr -xsetpriority
-> -xunshare -xreboot -xshutdown -xnfsservctl -xclock_nanosleep -xuselib
-> -xperf_event_open -m --quiet --dangerous -C 400 -l off
-> 
-> If that doesn't end up helping, I'd be happy to test out fixes here,
-> it usually reproduces quickly.
-> 
-> 
+The use of GPIOs should be optional for the generic phy, otherwise
+the Altera SOCFPGA platform at least is broken.
 
-Great, I'll try those options tomorrow.
+Fixes breakage caused by a combination of e9f2cefb0cd "usb: phy: 
+generic: migrate to gpio_desc" and 135b3c4304d "usb: dwc2: platform: 
+add generic PHY framework support".
 
-I did push out a newer version of the series to linux-next, which does
-a smp_rmb at the beginning of locks_remove_file. I'm not sure if that's
-sufficient to fix this, but it's probably a reasonable start.
+Signed-off-by: Paul Zimmerman <paulz@synopsys.com>
+---
+Based on top of testing/next.
 
-If you update the kernel you're testing to the next linux-next tree,
-then it'd be interesting to know if it's still reproducible.
+ drivers/usb/phy/phy-generic.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Thanks again!
+diff --git a/drivers/usb/phy/phy-generic.c b/drivers/usb/phy/phy-generic.c
+index dd05254..9a826ff 100644
+--- a/drivers/usb/phy/phy-generic.c
++++ b/drivers/usb/phy/phy-generic.c
+@@ -218,10 +218,10 @@ int usb_phy_gen_create_phy(struct device *dev, struct usb_phy_generic *nop,
+ 			clk_rate = 0;
+ 
+ 		needs_vcc = of_property_read_bool(node, "vcc-supply");
+-		nop->gpiod_reset = devm_gpiod_get(dev, "reset-gpios");
++		nop->gpiod_reset = devm_gpiod_get_optional(dev, "reset-gpios");
+ 		err = PTR_ERR(nop->gpiod_reset);
+ 		if (!err) {
+-			nop->gpiod_vbus = devm_gpiod_get(dev,
++			nop->gpiod_vbus = devm_gpiod_get_optional(dev,
+ 							 "vbus-detect-gpio");
+ 			err = PTR_ERR(nop->gpiod_vbus);
+ 		}
 -- 
-Jeff Layton <jlayton@primarydata.com>
+1.7.6.5
+
