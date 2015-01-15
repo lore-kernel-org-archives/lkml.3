@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755846AbbAOV7Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 16:59:24 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:57546 "EHLO
+	id S1755892AbbAOV7f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 16:59:35 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:57553 "EHLO
 	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753427AbbAOV7W (ORCPT
+	with ESMTP id S1755848AbbAOV7c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 16:59:22 -0500
+	Thu, 15 Jan 2015 16:59:32 -0500
 From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 To: Nicolas Ferre <nicolas.ferre@atmel.com>
 Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
@@ -15,9 +15,9 @@ Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
         Bo Shen <voice.shen@atmel.com>, Wenyou Yang <Wenyou.Yang@atmel.com>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Subject: [PATCH 01/17] ARM: at91: merge at91rm9200 files
-Date: Thu, 15 Jan 2015 22:58:04 +0100
-Message-Id: <1421359100-8930-2-git-send-email-alexandre.belloni@free-electrons.com>
+Subject: [PATCH 02/17] ARM: at91: move sama5 specific code into per-soc files
+Date: Thu, 15 Jan 2015 22:58:05 +0100
+Message-Id: <1421359100-8930-3-git-send-email-alexandre.belloni@free-electrons.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1421359100-8930-1-git-send-email-alexandre.belloni@free-electrons.com>
 References: <1421359100-8930-1-git-send-email-alexandre.belloni@free-electrons.com>
@@ -27,115 +27,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnd Bergmann <arnd@arndb.de>
 
-There is only one board file for the rm9200 soc file left, so
-it makes sense to merge the two files into one, which allows
-us further cleanup.
+The common board-dt-sama5 file no longer contains any shared
+code, so we can just move the machine descriptors into the
+per-soc files for further cleanup.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
- arch/arm/mach-at91/Makefile          |  1 -
- arch/arm/mach-at91/at91rm9200.c      | 50 ++++++++++++++++++++++++++++-----
- arch/arm/mach-at91/board-dt-rm9200.c | 54 ------------------------------------
- 3 files changed, 43 insertions(+), 62 deletions(-)
- delete mode 100644 arch/arm/mach-at91/board-dt-rm9200.c
+ arch/arm/mach-at91/Makefile         |  3 --
+ arch/arm/mach-at91/board-dt-sama5.c | 60 -------------------------------------
+ arch/arm/mach-at91/sama5d3.c        | 28 +++++++++++++----
+ arch/arm/mach-at91/sama5d4.c        | 33 ++++++++++++++++++--
+ 4 files changed, 54 insertions(+), 70 deletions(-)
+ delete mode 100644 arch/arm/mach-at91/board-dt-sama5.c
 
 diff --git a/arch/arm/mach-at91/Makefile b/arch/arm/mach-at91/Makefile
-index 8ef7d9a2e855..d89c2437ef10 100644
+index d89c2437ef10..4bce1fac680e 100644
 --- a/arch/arm/mach-at91/Makefile
 +++ b/arch/arm/mach-at91/Makefile
-@@ -19,7 +19,6 @@ obj-$(CONFIG_SOC_SAMA5D3)	+= sama5d3.o
- obj-$(CONFIG_SOC_SAMA5D4)	+= sama5d4.o
- 
+@@ -21,9 +21,6 @@ obj-$(CONFIG_SOC_SAMA5D4)	+= sama5d4.o
  # AT91SAM board with device-tree
--obj-$(CONFIG_SOC_AT91RM9200) += board-dt-rm9200.o
  obj-$(CONFIG_SOC_AT91SAM9) += board-dt-sam9.o
  
- # SAMA5 board with device-tree
-diff --git a/arch/arm/mach-at91/at91rm9200.c b/arch/arm/mach-at91/at91rm9200.c
-index 3be1963f5c56..eaa30b1fea01 100644
---- a/arch/arm/mach-at91/at91rm9200.c
-+++ b/arch/arm/mach-at91/at91rm9200.c
-@@ -1,20 +1,30 @@
- /*
-- * arch/arm/mach-at91/at91rm9200.c
-+ *  Setup code for AT91RM9200
-  *
-  *  Copyright (C) 2005 SAN People
-+ *  Copyright (C) 2011 Atmel,
-+ *                2011 Nicolas Ferre <nicolas.ferre@atmel.com>
-+ *                2012 Joachim Eastwood <manabian@gmail.com>
-  *
-- * This program is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License as published by
-- * the Free Software Foundation; either version 2 of the License, or
-- * (at your option) any later version.
-- *
-+ * Licensed under GPLv2 or later.
-  */
+-# SAMA5 board with device-tree
+-obj-$(CONFIG_SOC_SAMA5)		+= board-dt-sama5.o
 -
-+#include <linux/types.h>
-+#include <linux/init.h>
- #include <linux/module.h>
-+#include <linux/gpio.h>
-+#include <linux/of.h>
-+#include <linux/of_irq.h>
-+#include <linux/of_platform.h>
-+#include <linux/clk-provider.h>
- #include <linux/clk/at91_pmc.h>
- 
-+#include <asm/setup.h>
-+#include <asm/irq.h>
-+#include <asm/mach/arch.h>
-+#include <asm/mach/irq.h>
- #include <asm/mach/map.h>
- #include <asm/system_misc.h>
-+
- #include <mach/at91_st.h>
- #include <mach/hardware.h>
- 
-@@ -44,3 +54,29 @@ static void __init at91rm9200_initialize(void)
- AT91_SOC_START(at91rm9200)
- 	.init = at91rm9200_initialize,
- AT91_SOC_END
-+
-+static void __init at91rm9200_dt_timer_init(void)
-+{
-+	of_clk_init(NULL);
-+	at91rm9200_timer_init();
-+}
-+
-+static void __init rm9200_dt_device_init(void)
-+{
-+	at91_rm9200_pm_init();
-+
-+	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
-+}
-+
-+static const char *at91rm9200_dt_board_compat[] __initdata = {
-+	"atmel,at91rm9200",
-+	NULL
-+};
-+
-+DT_MACHINE_START(at91rm9200_dt, "Atmel AT91RM9200 (Device Tree)")
-+	.init_time      = at91rm9200_dt_timer_init,
-+	.map_io		= at91_map_io,
-+	.init_early	= at91_dt_initialize,
-+	.init_machine	= rm9200_dt_device_init,
-+	.dt_compat	= at91rm9200_dt_board_compat,
-+MACHINE_END
-diff --git a/arch/arm/mach-at91/board-dt-rm9200.c b/arch/arm/mach-at91/board-dt-rm9200.c
+ # Power Management
+ obj-$(CONFIG_PM)		+= pm.o
+ obj-$(CONFIG_AT91_SLOW_CLOCK)	+= pm_slowclock.o
+diff --git a/arch/arm/mach-at91/board-dt-sama5.c b/arch/arm/mach-at91/board-dt-sama5.c
 deleted file mode 100644
-index 5f82a65153e1..000000000000
---- a/arch/arm/mach-at91/board-dt-rm9200.c
+index 44d372a22a29..000000000000
+--- a/arch/arm/mach-at91/board-dt-sama5.c
 +++ /dev/null
-@@ -1,54 +0,0 @@
+@@ -1,60 +0,0 @@
 -/*
-- *  Setup code for AT91RM9200 Evaluation Kits with Device Tree support
+- *  Setup code for SAMA5 Evaluation Kits with Device Tree support
 - *
-- *  Copyright (C) 2011 Atmel,
-- *                2011 Nicolas Ferre <nicolas.ferre@atmel.com>
-- *                2012 Joachim Eastwood <manabian@gmail.com>
+- *  Copyright (C) 2013 Atmel,
+- *                2013 Ludovic Desroches <ludovic.desroches@atmel.com>
 - *
 - * Licensed under GPLv2 or later.
 - */
@@ -144,9 +74,11 @@ index 5f82a65153e1..000000000000
 -#include <linux/init.h>
 -#include <linux/module.h>
 -#include <linux/gpio.h>
+-#include <linux/micrel_phy.h>
 -#include <linux/of.h>
 -#include <linux/of_irq.h>
 -#include <linux/of_platform.h>
+-#include <linux/phy.h>
 -#include <linux/clk-provider.h>
 -
 -#include <asm/setup.h>
@@ -157,33 +89,154 @@ index 5f82a65153e1..000000000000
 -
 -#include "generic.h"
 -
--static void __init at91rm9200_dt_timer_init(void)
+-static void __init sama5_dt_device_init(void)
 -{
--	of_clk_init(NULL);
--	at91rm9200_timer_init();
--}
--
--static void __init rm9200_dt_device_init(void)
--{
--	at91_rm9200_pm_init();
--
+-	at91_sam9260_pm_init();
 -	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
 -}
 -
--
--
--static const char *at91rm9200_dt_board_compat[] __initdata = {
--	"atmel,at91rm9200",
+-static const char *sama5_dt_board_compat[] __initconst = {
+-	"atmel,sama5",
 -	NULL
 -};
 -
--DT_MACHINE_START(at91rm9200_dt, "Atmel AT91RM9200 (Device Tree)")
--	.init_time      = at91rm9200_dt_timer_init,
+-DT_MACHINE_START(sama5_dt, "Atmel SAMA5 (Device Tree)")
+-	/* Maintainer: Atmel */
 -	.map_io		= at91_map_io,
 -	.init_early	= at91_dt_initialize,
--	.init_machine	= rm9200_dt_device_init,
--	.dt_compat	= at91rm9200_dt_board_compat,
+-	.init_machine	= sama5_dt_device_init,
+-	.dt_compat	= sama5_dt_board_compat,
 -MACHINE_END
+-
+-static const char *sama5_alt_dt_board_compat[] __initconst = {
+-	"atmel,sama5d4",
+-	NULL
+-};
+-
+-DT_MACHINE_START(sama5_alt_dt, "Atmel SAMA5 (Device Tree)")
+-	/* Maintainer: Atmel */
+-	.map_io		= at91_alt_map_io,
+-	.init_early	= at91_dt_initialize,
+-	.init_machine	= sama5_dt_device_init,
+-	.dt_compat	= sama5_alt_dt_board_compat,
+-	.l2c_aux_mask	= ~0UL,
+-MACHINE_END
+diff --git a/arch/arm/mach-at91/sama5d3.c b/arch/arm/mach-at91/sama5d3.c
+index b7c64ca7107f..ecd35f135a9f 100644
+--- a/arch/arm/mach-at91/sama5d3.c
++++ b/arch/arm/mach-at91/sama5d3.c
+@@ -7,19 +7,18 @@
+  * Licensed under GPLv2 or later.
+  */
+ 
+-#include <linux/module.h>
+-#include <linux/dma-mapping.h>
+-#include <linux/clk/at91_pmc.h>
++#include <linux/init.h>
++#include <linux/of_platform.h>
+ 
+-#include <asm/irq.h>
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
++#include <asm/mach/irq.h>
++
+ #include <mach/sama5d3.h>
+ #include <mach/cpu.h>
+ 
+ #include "soc.h"
+ #include "generic.h"
+-#include "sam9_smc.h"
+ 
+ /* --------------------------------------------------------------------
+  *  AT91SAM9x5 processor initialization
+@@ -27,3 +26,22 @@
+ 
+ AT91_SOC_START(sama5d3)
+ AT91_SOC_END
++
++static void __init sama5_dt_device_init(void)
++{
++	at91_sam9260_pm_init();
++	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
++}
++
++static const char *sama5_dt_board_compat[] __initconst = {
++	"atmel,sama5",
++	NULL
++};
++
++DT_MACHINE_START(sama5_dt, "Atmel SAMA5 (Device Tree)")
++	/* Maintainer: Atmel */
++	.map_io		= at91_map_io,
++	.init_early	= at91_dt_initialize,
++	.init_machine	= sama5_dt_device_init,
++	.dt_compat	= sama5_dt_board_compat,
++MACHINE_END
+diff --git a/arch/arm/mach-at91/sama5d4.c b/arch/arm/mach-at91/sama5d4.c
+index fa127fb79221..68573cd9d8f9 100644
+--- a/arch/arm/mach-at91/sama5d4.c
++++ b/arch/arm/mach-at91/sama5d4.c
+@@ -10,17 +10,27 @@
+ #include <linux/module.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/clk/at91_pmc.h>
++#include <linux/types.h>
++#include <linux/init.h>
++#include <linux/gpio.h>
++#include <linux/micrel_phy.h>
++#include <linux/of.h>
++#include <linux/of_irq.h>
++#include <linux/of_platform.h>
++#include <linux/phy.h>
++#include <linux/clk-provider.h>
+ 
+ #include <asm/irq.h>
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
++#include <asm/mach/irq.h>
++
+ #include <mach/sama5d4.h>
+ #include <mach/cpu.h>
+ #include <mach/hardware.h>
+ 
+ #include "soc.h"
+ #include "generic.h"
+-#include "sam9_smc.h"
+ 
+ /* --------------------------------------------------------------------
+  *  Processor initialization
+@@ -52,7 +62,6 @@ static struct map_desc at91_io_desc[] __initdata = {
+ 	},
+ };
+ 
+-
+ static void __init sama5d4_map_io(void)
+ {
+ 	iotable_init(at91_io_desc, ARRAY_SIZE(at91_io_desc));
+@@ -61,3 +70,23 @@ static void __init sama5d4_map_io(void)
+ AT91_SOC_START(sama5d4)
+ 	.map_io = sama5d4_map_io,
+ AT91_SOC_END
++
++static void __init sama5d4_dt_device_init(void)
++{
++	at91_sam9260_pm_init();
++	of_platform_populate(NULL, of_default_bus_match_table, NULL, NULL);
++}
++
++static const char *sama5_alt_dt_board_compat[] __initconst = {
++	"atmel,sama5d4",
++	NULL
++};
++
++DT_MACHINE_START(sama5_alt_dt, "Atmel SAMA5 (Device Tree)")
++	/* Maintainer: Atmel */
++	.map_io		= at91_alt_map_io,
++	.init_early	= at91_dt_initialize,
++	.init_machine	= sama5d4_dt_device_init,
++	.dt_compat	= sama5_alt_dt_board_compat,
++	.l2c_aux_mask	= ~0UL,
++MACHINE_END
 -- 
 2.1.0
 
