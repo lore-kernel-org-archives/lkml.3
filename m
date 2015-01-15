@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417AbbAOVSY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 16:18:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59133 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751510AbbAOVSX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 16:18:23 -0500
-Message-ID: <1421356698.3933.18.camel@nilsson.home.kraxel.org>
-Subject: Re: [PATCH v3 00/16] virtio-pci: towards virtio 1.0 guest support
-From: Gerd Hoffmann <kraxel@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org
-Date: Thu, 15 Jan 2015 22:18:18 +0100
-In-Reply-To: <1421256142-11512-1-git-send-email-mst@redhat.com>
-References: <1421256142-11512-1-git-send-email-mst@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755530AbbAOVWb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 16:22:31 -0500
+Received: from www.linutronix.de ([62.245.132.108]:58246 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753383AbbAOVW1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 16:22:27 -0500
+Message-Id: <20150115210458.625399149@linutronix.de>
+User-Agent: quilt/0.63-1
+Date: Thu, 15 Jan 2015 21:22:07 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>, Joerg Roedel <joro@8bytes.org>,
+        x86@kernel.org, Tony Luck <tony.luck@intel.com>,
+        Borislav Petkov <bp@alien8.de>
+Subject: [patch 00/23] x86: Cleanup apic/ioapic/x2apic setup code
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hi,
+While reviewing Jiangs interrupt remapping patch set, I had several
+serious WTF moments when trying to understand what that code is doing.
 
-> QEMU side is still undergoing polishing, but is already testable.
+The main issues I've seen are:
 
-Looked art the qemu side for now, commenting here due to qemu patches
-not being posted to the list yet (guess that is at least partly already
-on your todo list):
+    - Blindly copy and pasted code
 
- * Both legacy and modern should be switchable.  Modern needs to be
-   switchable _anyway_ for backward compatibility with old qemu
-   versions.  But legacy should be too, for testing purposes and for
-   new device types which don't need legacy in the first place.
+    - Random places which initialize bits and pieces
 
- * I'd like to see some more flexibility in the pci bar layout.  Stuff
-   I have in mind:
-    - New devices which don't need a legacy bar can use bar 0 for
-      modern.
-    - One MMIO bar is enough, we can place both virtio regions and
-      msi-x regions there.  I'd suggest to add msi-x sub-regions to
-      the modern bar.
+    - Code which got mindlessly expanded with duct tape and glue
+      without considering readability and maintainability.
 
- * What is the reason for making the modern bar 8M in size?  Looks a bit
-   excessive, given that only 64k or so of that are actually used ...
+    - Missing inline stubs which result in a ifdef nightmare
 
-virtio-scsi seems to be broken, at least my usual fedora guest didn't
-boot up from virtio-scsi disk when using a guest kernel with this patch
-series applied.
+    - Superflous inline stubs to artificially avoid sensible ifdefs
 
-cheers,
-  Gerd
+The deeper I looked the more I started to get grumpy about that maze
+and finally sat down and cleaned it up seriously. One bug I fixed on
+the way (surprise, surprise) got folded into Jiangs series which is
+now in tip/x86/apic. The other one is not that crucial and cant be
+fixed in the previous code without adding more mess.
 
+The following patch series applies on top of tip/x86/apic. It cleans
+up and consolidates the apic/ioapic/x2apic setup functions.
+
+Please give it a proper review and testing.
+
+Thanks,
+
+	tglx
+---
+ arch/x86/include/asm/smpboot_hooks.h |   68 ------
+ tip/arch/x86/include/asm/apic.h      |   57 +----
+ tip/arch/x86/include/asm/io_apic.h   |    5 
+ tip/arch/x86/kernel/apic/apic.c      |  395 ++++++++++++++++++-----------------
+ tip/arch/x86/kernel/apic/io_apic.c   |   13 -
+ tip/arch/x86/kernel/cpu/common.c     |    2 
+ tip/arch/x86/kernel/smpboot.c        |  113 +++++-----
+ tip/init/main.c                      |   14 -
+ 8 files changed, 308 insertions(+), 359 deletions(-)
 
