@@ -1,258 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753264AbbAOLpI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 06:45:08 -0500
-Received: from out114-135.biz.mail.alibaba.com ([205.204.114.135]:41114 "EHLO
-	out11.biz.mail.alibaba.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752921AbbAOLpF (ORCPT
+	id S1753521AbbAOLpq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 06:45:46 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:32891 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751939AbbAOLpn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 06:45:05 -0500
-X-Greylist: delayed 85118 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Jan 2015 06:45:04 EST
-X-Alimail-AntiSpam: AC=PASS;BC=-1|-1;BR=01201311R191e4;FP=0|-1|-1|-1|0|-1|-1|-1;HT=r46d02012;MF=hillf.zj@alibaba-inc.com;PH=DS;RN=9;RT=9;SR=0;
-Reply-To: "Hillf Danton" <hillf.zj@alibaba-inc.com>
-From: "Hillf Danton" <hillf.zj@alibaba-inc.com>
-To: "'Vladimir Davydov'" <vdavydov@parallels.com>
-Cc: "Andrew Morton" <akpm@linux-foundation.org>,
-        "Johannes Weiner" <hannes@cmpxchg.org>,
-        "Michal Hocko" <mhocko@suse.cz>, "Vlastimil Babka" <vbabka@suse.cz>,
-        "Mel Gorman" <mgorman@suse.de>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>, <linux-mm@kvack.org>,
-        "'Rik van Riel'" <riel@redhat.com>
-Subject: Re: [PATCH -mm v2] vmscan: move reclaim_state handling to shrink_slab
-Date: Thu, 15 Jan 2015 19:43:56 +0800
-Message-ID: <0c2201d030b8$8c2e3aa0$a48aafe0$@alibaba-inc.com>
+	Thu, 15 Jan 2015 06:45:43 -0500
+Date: Thu, 15 Jan 2015 11:44:37 +0000
+From: Mark Brown <broonie@kernel.org>
+To: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        atull <atull@opensource.altera.com>, Pavel Machek <pavel@denx.de>,
+        gregkh@linuxfoundation.org, hpa@zytor.com, monstr@monstr.eu,
+        michal.simek@xilinx.com, rdunlap@infradead.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        pantelis.antoniou@konsulko.com, robh+dt@kernel.org,
+        grant.likely@linaro.org, iws@ovro.caltech.edu,
+        linux-doc@vger.kernel.org, philip@balister.org, rubini@gnudd.com,
+        s.trumtrar@pengutronix.de, jason@lakedaemon.net, kyle.teske@ni.com,
+        nico@linaro.org, balbi@ti.com, m.chehab@samsung.com,
+        davidb@codeaurora.org, rob@landley.net, davem@davemloft.net,
+        cesarb@cesarb.net, sameo@linux.intel.com, akpm@linux-foundation.org,
+        linus.walleij@linaro.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        devel@driverdev.osuosl.org, delicious.quinoa@gmail.com,
+        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
+Message-ID: <20150115114437.GV3043@sirena.org.uk>
+References: <20150109205643.GA5761@amd>
+ <20150112210134.687176ed@lxorguk.ukuu.org.uk>
+ <20150112214314.GA18610@obsidianresearch.com>
+ <20150113162847.2778b5a5@lxorguk.ukuu.org.uk>
+ <20150113200032.GA16205@obsidianresearch.com>
+ <alpine.DEB.2.02.1501131455130.30192@linuxheads99>
+ <20150113222450.GA17475@obsidianresearch.com>
+ <20150114160617.02fb9135@lxorguk.ukuu.org.uk>
+ <20150114181258.GB16392@obsidianresearch.com>
+ <20150115113617.537965b3@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Outlook 14.0
-Thread-Index: AdAwuFXKRKlVIaGvSkWSAa+2iKyzKQ==
-Content-Language: zh-cn
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="v7CWsE/Dy737oYst"
+Content-Disposition: inline
+In-Reply-To: <20150115113617.537965b3@lxorguk.ukuu.org.uk>
+X-Cookie: To program is to be.
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v8 2/4] fpga manager: add sysfs interface document
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> current->reclaim_state is only used to count the number of slab pages
-> reclaimed by shrink_slab(). So instead of initializing it before we are
-> going to call try_to_free_pages() or shrink_zone(), let's set in
-> directly in shrink_slab().
-> 
-> Note that after this patch try_to_free_mem_cgroup_pages() will count not
-> only reclaimed user pages, but also slab pages, which is expected,
-> because it can reclaim kmem from kmem-active sub cgroups.
-> 
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> ---
 
-Acked-by: Hillf Danton <hillf.zj@alibaba-inc.com>
+--v7CWsE/Dy737oYst
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-> Changes in v2:
->  - do not change shrink_slab() return value to the number of reclaimed
->    slab pages, because it can make drop_slab() abort beforehand (Andrew)
-> 
->  mm/page_alloc.c |    4 ----
->  mm/vmscan.c     |   43 +++++++++++++++++--------------------------
->  2 files changed, 17 insertions(+), 30 deletions(-)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index e1963ea0684a..f528e4ba91b5 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -2448,7 +2448,6 @@ static int
->  __perform_reclaim(gfp_t gfp_mask, unsigned int order, struct zonelist *zonelist,
->  		  nodemask_t *nodemask)
->  {
-> -	struct reclaim_state reclaim_state;
->  	int progress;
-> 
->  	cond_resched();
-> @@ -2457,12 +2456,9 @@ __perform_reclaim(gfp_t gfp_mask, unsigned int order, struct zonelist *zonelist,
->  	cpuset_memory_pressure_bump();
->  	current->flags |= PF_MEMALLOC;
->  	lockdep_set_current_reclaim_state(gfp_mask);
-> -	reclaim_state.reclaimed_slab = 0;
-> -	current->reclaim_state = &reclaim_state;
-> 
->  	progress = try_to_free_pages(zonelist, order, gfp_mask, nodemask);
-> 
-> -	current->reclaim_state = NULL;
->  	lockdep_clear_current_reclaim_state();
->  	current->flags &= ~PF_MEMALLOC;
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 16f3e45742d6..26fdcc6c747d 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -367,13 +367,18 @@ static unsigned long do_shrink_slab(struct shrink_control *shrinkctl,
->   * the ->seeks setting of the shrink function, which indicates the
->   * cost to recreate an object relative to that of an LRU page.
->   *
-> - * Returns the number of reclaimed slab objects.
-> + * Returns the number of reclaimed slab objects. The number of reclaimed slab
-> + * pages is added to *@ret_nr_reclaimed.
->   */
->  static unsigned long shrink_slab(gfp_t gfp_mask, int nid,
->  				 struct mem_cgroup *memcg,
->  				 unsigned long nr_scanned,
-> -				 unsigned long nr_eligible)
-> +				 unsigned long nr_eligible,
-> +				 unsigned long *ret_nr_reclaimed)
->  {
-> +	struct reclaim_state reclaim_state = {
-> +		.reclaimed_slab = 0,
-> +	};
->  	struct shrinker *shrinker;
->  	unsigned long freed = 0;
-> 
-> @@ -394,6 +399,8 @@ static unsigned long shrink_slab(gfp_t gfp_mask, int nid,
->  		goto out;
->  	}
-> 
-> +	current->reclaim_state = &reclaim_state;
-> +
->  	list_for_each_entry(shrinker, &shrinker_list, list) {
->  		struct shrink_control sc = {
->  			.gfp_mask = gfp_mask,
-> @@ -410,6 +417,9 @@ static unsigned long shrink_slab(gfp_t gfp_mask, int nid,
->  		freed += do_shrink_slab(&sc, shrinker, nr_scanned, nr_eligible);
->  	}
-> 
-> +	current->reclaim_state = NULL;
-> +	*ret_nr_reclaimed += reclaim_state.reclaimed_slab;
-> +
->  	up_read(&shrinker_rwsem);
->  out:
->  	cond_resched();
-> @@ -419,6 +429,7 @@ out:
->  void drop_slab_node(int nid)
->  {
->  	unsigned long freed;
-> +	unsigned long nr_reclaimed = 0;
-> 
->  	do {
->  		struct mem_cgroup *memcg = NULL;
-> @@ -426,9 +437,9 @@ void drop_slab_node(int nid)
->  		freed = 0;
->  		do {
->  			freed += shrink_slab(GFP_KERNEL, nid, memcg,
-> -					     1000, 1000);
-> +					     1000, 1000, &nr_reclaimed);
->  		} while ((memcg = mem_cgroup_iter(NULL, memcg, NULL)) != NULL);
-> -	} while (freed > 10);
-> +	} while (freed);
->  }
-> 
->  void drop_slab(void)
-> @@ -2339,7 +2350,6 @@ static inline bool should_continue_reclaim(struct zone *zone,
->  static bool shrink_zone(struct zone *zone, struct scan_control *sc,
->  			bool is_classzone)
->  {
-> -	struct reclaim_state *reclaim_state = current->reclaim_state;
->  	unsigned long nr_reclaimed, nr_scanned;
->  	bool reclaimable = false;
-> 
-> @@ -2371,7 +2381,7 @@ static bool shrink_zone(struct zone *zone, struct scan_control *sc,
->  			if (memcg && is_classzone)
->  				shrink_slab(sc->gfp_mask, zone_to_nid(zone),
->  					    memcg, sc->nr_scanned - scanned,
-> -					    lru_pages);
-> +					    lru_pages, &sc->nr_reclaimed);
-> 
->  			/*
->  			 * Direct reclaim and kswapd have to scan all memory
-> @@ -2398,12 +2408,7 @@ static bool shrink_zone(struct zone *zone, struct scan_control *sc,
->  		if (global_reclaim(sc) && is_classzone)
->  			shrink_slab(sc->gfp_mask, zone_to_nid(zone), NULL,
->  				    sc->nr_scanned - nr_scanned,
-> -				    zone_lru_pages);
-> -
-> -		if (reclaim_state) {
-> -			sc->nr_reclaimed += reclaim_state->reclaimed_slab;
-> -			reclaim_state->reclaimed_slab = 0;
-> -		}
-> +				    zone_lru_pages, &sc->nr_reclaimed);
-> 
->  		vmpressure(sc->gfp_mask, sc->target_mem_cgroup,
->  			   sc->nr_scanned - nr_scanned,
-> @@ -3367,17 +3372,12 @@ static int kswapd(void *p)
->  	int balanced_classzone_idx;
->  	pg_data_t *pgdat = (pg_data_t*)p;
->  	struct task_struct *tsk = current;
-> -
-> -	struct reclaim_state reclaim_state = {
-> -		.reclaimed_slab = 0,
-> -	};
->  	const struct cpumask *cpumask = cpumask_of_node(pgdat->node_id);
-> 
->  	lockdep_set_current_reclaim_state(GFP_KERNEL);
-> 
->  	if (!cpumask_empty(cpumask))
->  		set_cpus_allowed_ptr(tsk, cpumask);
-> -	current->reclaim_state = &reclaim_state;
-> 
->  	/*
->  	 * Tell the memory management that we're a "memory allocator",
-> @@ -3449,7 +3449,6 @@ static int kswapd(void *p)
->  	}
-> 
->  	tsk->flags &= ~(PF_MEMALLOC | PF_SWAPWRITE | PF_KSWAPD);
-> -	current->reclaim_state = NULL;
->  	lockdep_clear_current_reclaim_state();
-> 
->  	return 0;
-> @@ -3492,7 +3491,6 @@ void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx)
->   */
->  unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
->  {
-> -	struct reclaim_state reclaim_state;
->  	struct scan_control sc = {
->  		.nr_to_reclaim = nr_to_reclaim,
->  		.gfp_mask = GFP_HIGHUSER_MOVABLE,
-> @@ -3508,12 +3506,9 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
-> 
->  	p->flags |= PF_MEMALLOC;
->  	lockdep_set_current_reclaim_state(sc.gfp_mask);
-> -	reclaim_state.reclaimed_slab = 0;
-> -	p->reclaim_state = &reclaim_state;
-> 
->  	nr_reclaimed = do_try_to_free_pages(zonelist, &sc);
-> 
-> -	p->reclaim_state = NULL;
->  	lockdep_clear_current_reclaim_state();
->  	p->flags &= ~PF_MEMALLOC;
-> 
-> @@ -3678,7 +3673,6 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
->  	/* Minimum pages needed in order to stay on node */
->  	const unsigned long nr_pages = 1 << order;
->  	struct task_struct *p = current;
-> -	struct reclaim_state reclaim_state;
->  	struct scan_control sc = {
->  		.nr_to_reclaim = max(nr_pages, SWAP_CLUSTER_MAX),
->  		.gfp_mask = (gfp_mask = memalloc_noio_flags(gfp_mask)),
-> @@ -3697,8 +3691,6 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
->  	 */
->  	p->flags |= PF_MEMALLOC | PF_SWAPWRITE;
->  	lockdep_set_current_reclaim_state(gfp_mask);
-> -	reclaim_state.reclaimed_slab = 0;
-> -	p->reclaim_state = &reclaim_state;
-> 
->  	if (zone_pagecache_reclaimable(zone) > zone->min_unmapped_pages) {
->  		/*
-> @@ -3710,7 +3702,6 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
->  		} while (sc.nr_reclaimed < nr_pages && --sc.priority >= 0);
->  	}
-> 
-> -	p->reclaim_state = NULL;
->  	current->flags &= ~(PF_MEMALLOC | PF_SWAPWRITE);
->  	lockdep_clear_current_reclaim_state();
->  	return sc.nr_reclaimed >= nr_pages;
-> --
-> 1.7.10.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+On Thu, Jan 15, 2015 at 11:36:17AM +0000, One Thousand Gnomes wrote:
 
+> yes - there is a model for this in Linux already. Some of the audio
+> subsystems have "firmware" files distributed which are actually a
+> structured file that userspace parses to get a real set of firmware for
+> the controller and a set of descriptions for things like mixer controls.
 
+We didn't actually merge that yet (but we do want to).  It's likely that
+the parsing of the files will end up in the kernel rather than userspace,
+or that anything userspace is doing is mostly about translating vendor
+formats into a standard Linux one anyway.
+
+--v7CWsE/Dy737oYst
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBCAAGBQJUt6gkAAoJECTWi3JdVIfQ4yEH/AmhkGaqplZacrO2SqUdLw9v
+Tgg940NRMGB3vZLtdA9kCGJ8xSuoO299yukTDb9Jrg3IkNSxbOISiooh31pkzqS0
+we7p09DC3gKPiV2EvG4gFqz+Qbiy+S19Q6bnO2V2DTuviJvMNeCcW/GqNxGCt5Cs
+py0NM0YEFUvfXnlgpK93/HL368a0cGey4/pfHUKRF++DcioPlKCCDTBxk1mDBzXX
+EcTqCrYphmYfi9RkDeAkorvZFuMIoz5XHfLCiQ/DH4X3S7i1W326La0jMoP5LU8s
+JvizzG9DtFawLqnRDiWbiAJUBF6Rz72J9ggep/SBvFSZexw/9T99SfyhHhrW0BE=
+=rb+2
+-----END PGP SIGNATURE-----
+
+--v7CWsE/Dy737oYst--
