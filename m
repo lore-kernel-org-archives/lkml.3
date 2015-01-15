@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752462AbbAOET3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 23:19:29 -0500
-Received: from us01smtprelay-2.synopsys.com ([198.182.47.9]:38134 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751293AbbAOET1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 23:19:27 -0500
-Message-ID: <54B73FC0.4060506@synopsys.com>
-Date: Thu, 15 Jan 2015 09:49:12 +0530
-From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: <gregkh@linuxfoundation.org>, <robh@kernel.org>
-CC: Jiri Slaby <jslaby@suse.cz>, <linux-serial@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH v5] ARC: Dynamically determine BASE_BAUD from DeviceTree
-References: <CAL_JsqLzzLajoQAT3nYd5zi4=+zchXfVVPnYNriAZZi4tpa6yA@mail.gmail.com> <1420889152-29361-1-git-send-email-vgupta@synopsys.com>
-In-Reply-To: <1420889152-29361-1-git-send-email-vgupta@synopsys.com>
-Content-Type: text/plain; charset="windows-1252"
+	id S1751678AbbAOEZy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 23:25:54 -0500
+Received: from ozlabs.org ([103.22.144.67]:41308 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751159AbbAOEZx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 23:25:53 -0500
+Message-ID: <1421295950.11409.3.camel@ellerman.id.au>
+Subject: Re: [PATCH] pseries/le: Fix endiannes issue in RTAS call from xmon
+From: Michael Ellerman <mpe@ellerman.id.au>
+To: Laurent Dufour <ldufour@linux.vnet.ibm.com>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        benh@kernel.crashing.org, paulus@samba.org
+Date: Thu, 15 Jan 2015 15:25:50 +1100
+In-Reply-To: <1416838073-16642-1-git-send-email-ldufour@linux.vnet.ibm.com>
+References: <1416838073-16642-1-git-send-email-ldufour@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.12.196.223]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-
-On Saturday 10 January 2015 04:56 PM, Vineet Gupta wrote:
-> 8250 earlycon is broken on multi-platform ARC because the UART clk
-> value (BASE_BAUD) is fixed at build time.
+On Mon, 2014-11-24 at 15:07 +0100, Laurent Dufour wrote:
+> On pseries system (LPAR) xmon failed to enter when running in LE mode, system
+> is hunging. Inititating xmon will lead to such an output on the console:
 > 
-> Instead, determine the appropriate UART clk at runtime; parse the
-> devicetree early for platforms requiring alternate UART clk values
-> (currently only the TB10X platform).
+> SysRq : Entering xmon
+> cpu 0x15: Vector: 0  at [c0000003f39ffb10]
+>     pc: c00000000007ed7c: sysrq_handle_xmon+0x5c/0x70
+>     lr: c00000000007ed7c: sysrq_handle_xmon+0x5c/0x70
+>     sp: c0000003f39ffc70
+>    msr: 8000000000009033
+>   current = 0xc0000003fafa7180
+>   paca    = 0xc000000007d75e80	 softe: 0	 irq_happened: 0x01
+>     pid   = 14617, comm = bash
+> Bad kernel stack pointer fafb4b0 at eca7cc4
+> cpu 0x15: Vector: 300 (Data Access) at [c000000007f07d40]
+>     pc: 000000000eca7cc4
+>     lr: 000000000eca7c44
+>     sp: fafb4b0
+>    msr: 8000000000001000
+>    dar: 10000000
+>  dsisr: 42000000
+>   current = 0xc0000003fafa7180
+>   paca    = 0xc000000007d75e80	 softe: 0	 irq_happened: 0x01
+>     pid   = 14617, comm = bash
+> cpu 0x15: Exception 300 (Data Access) in xmon, returning to main loop
+> xmon: WARNING: bad recursive fault on cpu 0x15
 > 
-> Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-> Cc: Jiri Slaby <jslaby@suse.cz>
-> Cc: linux-serial@vger.kernel.org
-> Cc: linux-kernel@vger.kernel.org
-> Cc: Rob Herring <robh@kernel.org>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Reviewed-by: Peter Hurley <peter@hurleysoftware.com>
-> Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+> The root cause is that xmon is calling RTAS to turn off the surveillance
+> when entering xmon, and RTAS is requiring big endian parameters.
+> 
+> This patch is byte swapping the RTAS arguments when running in LE mode.
+> 
+> Signed-off-by: Laurent Dufour <ldufour@linux.vnet.ibm.com>
 > ---
->  arch/arc/include/asm/serial.h | 23 +++++------------------
->  arch/arc/kernel/devtree.c     | 24 ++++++++++++++++++++++++
+>  arch/powerpc/xmon/xmon.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/powerpc/xmon/xmon.c b/arch/powerpc/xmon/xmon.c
+> index b988b5addf86..c8efbb37d6e0 100644
+> --- a/arch/powerpc/xmon/xmon.c
+> +++ b/arch/powerpc/xmon/xmon.c
+> @@ -293,10 +293,10 @@ static inline void disable_surveillance(void)
+>  	args.token = rtas_token("set-indicator");
+>  	if (args.token == RTAS_UNKNOWN_SERVICE)
+>  		return;
 
-This being all in arch code, do you want me to take this in via ARC tree ?
+I just noticed we're not handling the token correctly here. It is be32 also.
 
-Thx,
--Vineet
+cheers
+
 
