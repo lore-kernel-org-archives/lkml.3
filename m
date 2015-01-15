@@ -1,271 +1,1019 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753750AbbAOPMh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 10:12:37 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:55409 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752699AbbAOPMf (ORCPT
+	id S1753980AbbAOPRy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 10:17:54 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:41151 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752254AbbAOPRw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 10:12:35 -0500
-Message-ID: <54B7D8D4.2070203@gmail.com>
-Date: Thu, 15 Jan 2015 16:12:20 +0100
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Thu, 15 Jan 2015 10:17:52 -0500
+Message-ID: <1e1cf511337a39155ad16534f2a4c802.squirrel@www.codeaurora.org>
+In-Reply-To: <1421332359-31785-2-git-send-email-ygardi@codeaurora.org>
+References: <1421332359-31785-1-git-send-email-ygardi@codeaurora.org>
+    <1421332359-31785-2-git-send-email-ygardi@codeaurora.org>
+Date: Thu, 15 Jan 2015 15:17:49 -0000
+Subject: Re: [PATCH v7 1/5] phy: qcom-ufs: add support for QUALCOMM
+ Technologies UFS PHY drivers
+From: dovl@codeaurora.org
+To: "Yaniv Gardi" <ygardi@codeaurora.org>
+Cc: james.bottomley@hansenpartnership.com, hch@infradead.org,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, santoshsy@gmail.com,
+        linux-scsi-owner@vger.kernel.org, subhashj@codeaurora.org,
+        ygardi@codeaurora.org, noag@codeaurora.org, draviv@codeaurora.org,
+        "Kishon Vijay Abraham I" <kishon@ti.com>,
+        "Grant Likely" <grant.likely@linaro.org>,
+        "Rob Herring" <robh+dt@kernel.org>,
+        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>
+User-Agent: SquirrelMail/1.4.22-4.el6
 MIME-Version: 1.0
-To: Darren Hart <dvhart@linux.intel.com>, Thomas Gleixner <tglx@linutronix.de>
-CC: mtk.manpages@gmail.com, "Carlos O'Donell" <carlos@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Jakub Jelinek <jakub@redhat.com>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux API <linux-api@vger.kernel.org>
-Subject: Re: futex(2) man page update help request
-References: <537346E5.4050407@gmail.com> <CF98E3EF.90564%dvhart@linux.intel.com> <CAKgNAkh+PWzT2SByaLk_OtiAXeZSkWoMgu+ivDOt1dTWVtaatQ@mail.gmail.com> <5373D0CA.2050204@redhat.com> <alpine.DEB.2.02.1405150121230.6261@ionos.tec.linutronix.de> <CAKgNAkjQ5Dd_U9OojXdgeforpRevvPHNFAw99kBFPCwHgf7Ggg@mail.gmail.com> <alpine.DEB.2.02.1405151144390.6261@ionos.tec.linutronix.de> <CF9A731D.913E6%dvhart@linux.intel.com>
-In-Reply-To: <CF9A731D.913E6%dvhart@linux.intel.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Darren,
+Reviewed-by: Dov Levenglick <dovl@codeaurora.org>
 
-I give you the same apology as to Thomas for the 
-long-delayed response to your mail.
-
-And I repeat my note to Thomas:
-In the next day or two, I hope to send out the new version
-of the futex(2) page for review. The new draft is a bit
-bigger (okay -- 4 x bigger) than the current page. And there 
-are a quite number of FIXMEs that I've placed in the page 
-for various points--some minor, but a few major--that need
-to be checked or fixed. Would you have some time to review
-that page? 
-
-In the meantime, I have a couple of questions, which, if 
-you could answer them, I would work some changes into the 
-page before sending.
-
-1. In various places, distinction is made between non-PI 
-   futexs and PI futexes. But what determines that distinction?
-   From the kernel's perspective, hat make a futex one type
-   or another? I presume it is to do with the types of blocking
-   waiters on the futex, but it would be good to have a formal
-   definition.
-
-2. Can you say something about the pairing requirements of
-   FUTEX_WAIT_REQUEUE_PI and FUTEX_CMP_REQUEUE_PI. 
-   What is the requirement and why do we need it?
-
-Most of the rest of this mail is just a checklist noting
-what I did with your comments. No response is needed 
-in most cases, but there is one that I have marked with
-"???". If you could reply to that. I'd be grateful.
-
-On 05/15/2014 10:35 PM, Darren Hart wrote:
-> On 5/15/14, 7:14, "Thomas Gleixner" <tglx@linutronix.de> wrote:
-> 
-> Wow Thomas, I planned to do exactly this and you beat me to it. Again.
-> Thanks for getting this started.
-> 
-> Michael, I imagine you want something more condensed, and I'll add to what
-> tglx posted (inline below) to try and get you that, but if you have
-> questions and need to fill in the gap, the paper I presented at RTLWS11 in
-> '09 covers this particularly nasty OPCODE in detail:
-> 
-> http://lwn.net/images/conf/rtlws11/papers/proc/p10.pdf
-> 
-> I believe Michael is looking for some higher level documentation, like how
-> to use these and what they are intended for. 
-
-Yes, that would be good.
-
-> Probably something more like
-> Ulrich's Futexes are Tricky paper - but let's start with getting the op
-> codes, arguments, and return codes fleshed out.
-
-Okay.
-
-> For all the PI opcodes, we should probably mention something about the
-> futex value scheme (TID), whereas the other opcodes do not require any
-> specific value scheme.
-> 
-> No Owner:	0
-> Owner:		TID
-> Waiters:	TID | FUTEX_WAITERS
-> 
-> This is the relevant section from the referenced paper:
-> 				
-> The PI futex operations diverge from the oth-
-> ers in that they impose a policy describing how
-> the futex value is to be used. If the lock is un-
-> owned, the futex value shall be 0. If owned, it
-> shall be the thread id (tid) of the owning thread.
-> If there are threads contending for the lock, then
-> the FUTEX_WAITERS flag is set. With this policy in
-> place, userspace can atomically acquire an unowned
-> lock or release an uncontended lock using an atomic
-> instruction and their own tid. A non-zero futex
-> value will force waiters into the kernel to lock. The
-> FUTEX_WAITERS flag forces the owner into the kernel
-> to unlock. If the callers are forced into the kernel,
-> they then deal directly with an underlying rt_mutex
-> which implements the priority inheritance semantics.
-> After the rt_mutex is acquired, the futex value is up-
-> dated accordingly, before the calling thread returns
-> to userspace.
+> This change adds a generic and common API support for ufs phy QUALCOMM
+> Technologies. This support provides common code and also points
+> to specific phy callbacks to differentiate between different behaviors
+> of frequent use-cases (like power on, power off, phy calibration etc).
 >
-> It is important to note that the kernel will update the futex value prior
-> to returning to userspace. Unlike other futex op codes,
-> FUTEX_CMP_REUQUE_PI (and FUTEX_WAIT_REQUEUE_PI, FUTEX_LOCK_PI are designed
-> for the implementation of very specific IPC mechanisms).
+> Signed-off-by: Yaniv Gardi <ygardi@codeaurora.org>
+>
+> ---
+>  drivers/phy/Kconfig          |   7 +
+>  drivers/phy/Makefile         |   1 +
+>  drivers/phy/phy-qcom-ufs-i.h | 118 +++++++
+>  drivers/phy/phy-qcom-ufs.c   | 745
+> +++++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 871 insertions(+)
+>  create mode 100644 drivers/phy/phy-qcom-ufs-i.h
+>  create mode 100644 drivers/phy/phy-qcom-ufs.c
+>
+> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+> index ccad880..26a7623 100644
+> --- a/drivers/phy/Kconfig
+> +++ b/drivers/phy/Kconfig
+> @@ -277,4 +277,11 @@ config PHY_STIH41X_USB
+>  	  Enable this to support the USB transceiver that is part of
+>  	  STMicroelectronics STiH41x SoC series.
+>
+> +config PHY_QCOM_UFS
+> +	tristate "Qualcomm UFS PHY driver"
+> +	depends on OF && ARCH_MSM
+> +	select GENERIC_PHY
+> +	help
+> +	  Support for UFS PHY on QCOM chipsets.
+> +
+>  endmenu
+> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
+> index aa74f96..335965d 100644
+> --- a/drivers/phy/Makefile
+> +++ b/drivers/phy/Makefile
+> @@ -34,3 +34,4 @@ obj-$(CONFIG_PHY_ST_SPEAR1340_MIPHY)	+=
+> phy-spear1340-miphy.o
+>  obj-$(CONFIG_PHY_XGENE)			+= phy-xgene.o
+>  obj-$(CONFIG_PHY_STIH407_USB)		+= phy-stih407-usb.o
+>  obj-$(CONFIG_PHY_STIH41X_USB)		+= phy-stih41x-usb.o
+> +obj-$(CONFIG_PHY_QCOM_UFS) 	+= phy-qcom-ufs.o
+> diff --git a/drivers/phy/phy-qcom-ufs-i.h b/drivers/phy/phy-qcom-ufs-i.h
+> new file mode 100644
+> index 0000000..dac200f
+> --- /dev/null
+> +++ b/drivers/phy/phy-qcom-ufs-i.h
+> @@ -0,0 +1,118 @@
+> +/*
+> + * Copyright (c) 2013-2015, Linux Foundation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 and
+> + * only version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + */
+> +
+> +#ifndef UFS_QCOM_PHY_I_H_
+> +#define UFS_QCOM_PHY_I_H_
+> +
+> +#include <linux/clk.h>
+> +#include <linux/slab.h>
+> +#include <linux/phy/phy.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/io.h>
+> +#include <linux/delay.h>
+> +
+> +#define UFS_QCOM_PHY_NAME_LEN	30
+> +
+> +struct ufs_qcom_phy_calibration {
+> +	u32 reg_offset;
+> +	u32 cfg_value;
+> +};
+> +
+> +struct ufs_qcom_phy_vreg {
+> +	const char *name;
+> +	struct regulator *reg;
+> +	int max_uA;
+> +	int min_uV;
+> +	int max_uV;
+> +	bool enabled;
+> +	bool is_always_on;
+> +};
+> +
+> +struct ufs_qcom_phy {
+> +	struct list_head list;
+> +	struct device *dev;
+> +	void __iomem *mmio;
+> +	void __iomem *dev_ref_clk_ctrl_mmio;
+> +	struct clk *tx_iface_clk;
+> +	struct clk *rx_iface_clk;
+> +	bool is_iface_clk_enabled;
+> +	struct clk *ref_clk_src;
+> +	struct clk *ref_clk_parent;
+> +	struct clk *ref_clk;
+> +	bool is_ref_clk_enabled;
+> +	bool is_dev_ref_clk_enabled;
+> +	struct ufs_qcom_phy_vreg vdda_pll;
+> +	struct ufs_qcom_phy_vreg vdda_phy;
+> +	struct ufs_qcom_phy_vreg vddp_ref_clk;
+> +	unsigned int quirks;
+> +
+> +	/*
+> +	* If UFS link is put into Hibern8 and if UFS PHY analog hardware
+> is
+> +	* power collapsed (by clearing UFS_PHY_POWER_DOWN_CONTROL),
+> Hibern8
+> +	* exit might fail even after powering on UFS PHY analog hardware.
+> +	* Enabling this quirk will help to solve above issue by doing
+> +	* custom PHY settings just before PHY analog power collapse.
+> +	*/
+> +	#define UFS_QCOM_PHY_QUIRK_HIBERN8_EXIT_AFTER_PHY_PWR_COLLAPSE
+> BIT(0)
+> +
+> +	u8 host_ctrl_rev_major;
+> +	u16 host_ctrl_rev_minor;
+> +	u16 host_ctrl_rev_step;
+> +
+> +	char name[UFS_QCOM_PHY_NAME_LEN];
+> +	struct ufs_qcom_phy_calibration *cached_regs;
+> +	int cached_regs_table_size;
+> +	bool is_powered_on;
+> +	struct ufs_qcom_phy_specific_ops *phy_spec_ops;
+> +};
+> +
+> +/**
+> + * struct ufs_qcom_phy_specific_ops - set of pointers to functions which
+> have a
+> + * specific implementation per phy. Each UFS phy, should implement
+> + * those functions according to its spec and requirements
+> + * @calibrate_phy: pointer to a function that calibrate the phy
+> + * @start_serdes: pointer to a function that starts the serdes
+> + * @is_physical_coding_sublayer_ready: pointer to a function that
+> + * checks pcs readiness. returns 0 for success and non-zero for error.
+> + * @set_tx_lane_enable: pointer to a function that enable tx lanes
+> + * @power_control: pointer to a function that controls analog rail of phy
+> + * and writes to QSERDES_RX_SIGDET_CNTRL attribute
+> + */
+> +struct ufs_qcom_phy_specific_ops {
+> +	int (*calibrate_phy)(struct ufs_qcom_phy *phy, bool is_rate_B);
+> +	void (*start_serdes)(struct ufs_qcom_phy *phy);
+> +	int (*is_physical_coding_sublayer_ready)(struct ufs_qcom_phy
+> *phy);
+> +	void (*set_tx_lane_enable)(struct ufs_qcom_phy *phy, u32 val);
+> +	void (*power_control)(struct ufs_qcom_phy *phy, bool val);
+> +};
+> +
+> +struct ufs_qcom_phy *get_ufs_qcom_phy(struct phy *generic_phy);
+> +int ufs_qcom_phy_power_on(struct phy *generic_phy);
+> +int ufs_qcom_phy_power_off(struct phy *generic_phy);
+> +int ufs_qcom_phy_exit(struct phy *generic_phy);
+> +int ufs_qcom_phy_init_clks(struct phy *generic_phy,
+> +			struct ufs_qcom_phy *phy_common);
+> +int ufs_qcom_phy_init_vregulators(struct phy *generic_phy,
+> +			struct ufs_qcom_phy *phy_common);
+> +int ufs_qcom_phy_remove(struct phy *generic_phy,
+> +		       struct ufs_qcom_phy *ufs_qcom_phy);
+> +struct phy *ufs_qcom_phy_generic_probe(struct platform_device *pdev,
+> +			struct ufs_qcom_phy *common_cfg,
+> +			struct phy_ops *ufs_qcom_phy_gen_ops,
+> +			struct ufs_qcom_phy_specific_ops *phy_spec_ops);
+> +int ufs_qcom_phy_calibrate(struct ufs_qcom_phy *ufs_qcom_phy,
+> +			struct ufs_qcom_phy_calibration *tbl_A, int
+> tbl_size_A,
+> +			struct ufs_qcom_phy_calibration *tbl_B, int
+> tbl_size_B,
+> +			bool is_rate_B);
+> +#endif
+> diff --git a/drivers/phy/phy-qcom-ufs.c b/drivers/phy/phy-qcom-ufs.c
+> new file mode 100644
+> index 0000000..44ee983
+> --- /dev/null
+> +++ b/drivers/phy/phy-qcom-ufs.c
+> @@ -0,0 +1,745 @@
+> +/*
+> + * Copyright (c) 2013-2015, Linux Foundation. All rights reserved.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 and
+> + * only version 2 as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + */
+> +
+> +#include "phy-qcom-ufs-i.h"
+> +
+> +#define MAX_PROP_NAME              32
+> +#define VDDA_PHY_MIN_UV            1000000
+> +#define VDDA_PHY_MAX_UV            1000000
+> +#define VDDA_PLL_MIN_UV            1800000
+> +#define VDDA_PLL_MAX_UV            1800000
+> +#define VDDP_REF_CLK_MIN_UV        1200000
+> +#define VDDP_REF_CLK_MAX_UV        1200000
+> +
+> +static int __ufs_qcom_phy_init_vreg(struct phy *, struct
+> ufs_qcom_phy_vreg *,
+> +				    const char *, bool);
+> +static int ufs_qcom_phy_init_vreg(struct phy *, struct ufs_qcom_phy_vreg
+> *,
+> +				  const char *);
+> +static int ufs_qcom_phy_base_init(struct platform_device *pdev,
+> +				  struct ufs_qcom_phy *phy_common);
+> +
+> +int ufs_qcom_phy_calibrate(struct ufs_qcom_phy *ufs_qcom_phy,
+> +			   struct ufs_qcom_phy_calibration *tbl_A,
+> +			   int tbl_size_A,
+> +			   struct ufs_qcom_phy_calibration *tbl_B,
+> +			   int tbl_size_B, bool is_rate_B)
+> +{
+> +	int i;
+> +	int ret = 0;
+> +
+> +	if (!tbl_A) {
+> +		dev_err(ufs_qcom_phy->dev, "%s: tbl_A is NULL", __func__);
+> +		ret = EINVAL;
+> +		goto out;
+> +	}
+> +
+> +	for (i = 0; i < tbl_size_A; i++)
+> +		writel_relaxed(tbl_A[i].cfg_value,
+> +			       ufs_qcom_phy->mmio + tbl_A[i].reg_offset);
+> +
+> +	/*
+> +	 * In case we would like to work in rate B, we need
+> +	 * to override a registers that were configured in rate A table
+> +	 * with registers of rate B table.
+> +	 * table.
+> +	 */
+> +	if (is_rate_B) {
+> +		if (!tbl_B) {
+> +			dev_err(ufs_qcom_phy->dev, "%s: tbl_B is NULL",
+> +				__func__);
+> +			ret = EINVAL;
+> +			goto out;
+> +		}
+> +
+> +		for (i = 0; i < tbl_size_B; i++)
+> +			writel_relaxed(tbl_B[i].cfg_value,
+> +				ufs_qcom_phy->mmio + tbl_B[i].reg_offset);
+> +	}
+> +
+> +	/* flush buffered writes */
+> +	mb();
+> +
+> +out:
+> +	return ret;
+> +}
+> +
+> +struct phy *ufs_qcom_phy_generic_probe(struct platform_device *pdev,
+> +				struct ufs_qcom_phy *common_cfg,
+> +				struct phy_ops *ufs_qcom_phy_gen_ops,
+> +				struct ufs_qcom_phy_specific_ops
+> *phy_spec_ops)
+> +{
+> +	int err;
+> +	struct device *dev = &pdev->dev;
+> +	struct phy *generic_phy = NULL;
+> +	struct phy_provider *phy_provider;
+> +
+> +	err = ufs_qcom_phy_base_init(pdev, common_cfg);
+> +	if (err) {
+> +		dev_err(dev, "%s: phy base init failed %d\n", __func__,
+> err);
+> +		goto out;
+> +	}
+> +
+> +	phy_provider = devm_of_phy_provider_register(dev,
+> of_phy_simple_xlate);
+> +	if (IS_ERR(phy_provider)) {
+> +		err = PTR_ERR(phy_provider);
+> +		dev_err(dev, "%s: failed to register phy %d\n", __func__,
+> err);
+> +		goto out;
+> +	}
+> +
+> +	generic_phy = devm_phy_create(dev, NULL, ufs_qcom_phy_gen_ops);
+> +	if (IS_ERR(generic_phy)) {
+> +		err =  PTR_ERR(generic_phy);
+> +		dev_err(dev, "%s: failed to create phy %d\n", __func__,
+> err);
+> +		goto out;
+> +	}
+> +
+> +	common_cfg->phy_spec_ops = phy_spec_ops;
+> +	common_cfg->dev = dev;
+> +
+> +out:
+> +	return generic_phy;
+> +}
+> +
+> +/*
+> + * This assumes the embedded phy structure inside generic_phy is of type
+> + * struct ufs_qcom_phy. In order to function properly it's crucial
+> + * to keep the embedded struct "struct ufs_qcom_phy common_cfg"
+> + * as the first inside generic_phy.
+> + */
+> +struct ufs_qcom_phy *get_ufs_qcom_phy(struct phy *generic_phy)
+> +{
+> +	return (struct ufs_qcom_phy *)phy_get_drvdata(generic_phy);
+> +}
+> +
+> +static
+> +int ufs_qcom_phy_base_init(struct platform_device *pdev,
+> +			   struct ufs_qcom_phy *phy_common)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	struct resource *res;
+> +	int err = 0;
+> +
+> +	res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
+> "phy_mem");
+> +	if (!res) {
+> +		dev_err(dev, "%s: phy_mem resource not found\n",
+> __func__);
+> +		err = -ENOMEM;
+> +		goto out;
+> +	}
+> +
+> +	phy_common->mmio = devm_ioremap_resource(dev, res);
+> +	if (IS_ERR((void const *)phy_common->mmio)) {
+> +		err = PTR_ERR((void const *)phy_common->mmio);
+> +		phy_common->mmio = NULL;
+> +		dev_err(dev, "%s: ioremap for phy_mem resource failed
+> %d\n",
+> +			__func__, err);
+> +		goto out;
+> +	}
+> +
+> +	/* "dev_ref_clk_ctrl_mem" is optional resource */
+> +	res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
+> +					   "dev_ref_clk_ctrl_mem");
+> +	if (!res) {
+> +		dev_dbg(dev, "%s: dev_ref_clk_ctrl_mem resource not
+> found\n",
+> +			__func__);
+> +		goto out;
+> +	}
+> +
+> +	phy_common->dev_ref_clk_ctrl_mmio = devm_ioremap_resource(dev,
+> res);
+> +	if (IS_ERR((void const *)phy_common->dev_ref_clk_ctrl_mmio)) {
+> +		err = PTR_ERR((void const
+> *)phy_common->dev_ref_clk_ctrl_mmio);
+> +		phy_common->dev_ref_clk_ctrl_mmio = NULL;
+> +		dev_err(dev, "%s: ioremap for dev_ref_clk_ctrl_mem
+> resource failed %d\n",
+> +			__func__, err);
+> +	}
+> +
+> +out:
+> +	return err;
+> +}
+> +
+> +static int __ufs_qcom_phy_clk_get(struct phy *phy,
+> +			 const char *name, struct clk **clk_out, bool
+> err_print)
+> +{
+> +	struct clk *clk;
+> +	int err = 0;
+> +	struct ufs_qcom_phy *ufs_qcom_phy = get_ufs_qcom_phy(phy);
+> +	struct device *dev = ufs_qcom_phy->dev;
+> +
+> +	clk = devm_clk_get(dev, name);
+> +	if (IS_ERR(clk)) {
+> +		err = PTR_ERR(clk);
+> +		if (err_print)
+> +			dev_err(dev, "failed to get %s err %d", name,
+> err);
+> +	} else {
+> +		*clk_out = clk;
+> +	}
+> +
+> +	return err;
+> +}
+> +
+> +static
+> +int ufs_qcom_phy_clk_get(struct phy *phy,
+> +			 const char *name, struct clk **clk_out)
+> +{
+> +	return __ufs_qcom_phy_clk_get(phy, name, clk_out, true);
+> +}
+> +
+> +int
+> +ufs_qcom_phy_init_clks(struct phy *generic_phy,
+> +		       struct ufs_qcom_phy *phy_common)
+> +{
+> +	int err;
+> +
+> +	err = ufs_qcom_phy_clk_get(generic_phy, "tx_iface_clk",
+> +				   &phy_common->tx_iface_clk);
+> +	if (err)
+> +		goto out;
+> +
+> +	err = ufs_qcom_phy_clk_get(generic_phy, "rx_iface_clk",
+> +				   &phy_common->rx_iface_clk);
+> +	if (err)
+> +		goto out;
+> +
+> +	err = ufs_qcom_phy_clk_get(generic_phy, "ref_clk_src",
+> +				   &phy_common->ref_clk_src);
+> +	if (err)
+> +		goto out;
+> +
+> +	/*
+> +	 * "ref_clk_parent" is optional hence don't abort init if it's not
+> +	 * found.
+> +	 */
+> +	__ufs_qcom_phy_clk_get(generic_phy, "ref_clk_parent",
+> +				   &phy_common->ref_clk_parent, false);
+> +
+> +	err = ufs_qcom_phy_clk_get(generic_phy, "ref_clk",
+> +				   &phy_common->ref_clk);
+> +
+> +out:
+> +	return err;
+> +}
+> +
+> +int
+> +ufs_qcom_phy_init_vregulators(struct phy *generic_phy,
+> +			      struct ufs_qcom_phy *phy_common)
+> +{
+> +	int err;
+> +
+> +	err = ufs_qcom_phy_init_vreg(generic_phy, &phy_common->vdda_pll,
+> +		"vdda-pll");
+> +	if (err)
+> +		goto out;
+> +
+> +	err = ufs_qcom_phy_init_vreg(generic_phy, &phy_common->vdda_phy,
+> +		"vdda-phy");
+> +
+> +	if (err)
+> +		goto out;
+> +
+> +	/* vddp-ref-clk-* properties are optional */
+> +	__ufs_qcom_phy_init_vreg(generic_phy, &phy_common->vddp_ref_clk,
+> +				 "vddp-ref-clk", true);
+> +out:
+> +	return err;
+> +}
+> +
+> +static int __ufs_qcom_phy_init_vreg(struct phy *phy,
+> +		struct ufs_qcom_phy_vreg *vreg, const char *name, bool
+> optional)
+> +{
+> +	int err = 0;
+> +	struct ufs_qcom_phy *ufs_qcom_phy = get_ufs_qcom_phy(phy);
+> +	struct device *dev = ufs_qcom_phy->dev;
+> +
+> +	char prop_name[MAX_PROP_NAME];
+> +
+> +	vreg->name = kstrdup(name, GFP_KERNEL);
+> +	if (!vreg->name) {
+> +		err = -ENOMEM;
+> +		goto out;
+> +	}
+> +
+> +	vreg->reg = devm_regulator_get(dev, name);
+> +	if (IS_ERR(vreg->reg)) {
+> +		err = PTR_ERR(vreg->reg);
+> +		vreg->reg = NULL;
+> +		if (!optional)
+> +			dev_err(dev, "failed to get %s, %d\n", name, err);
+> +		goto out;
+> +	}
+> +
+> +	if (dev->of_node) {
+> +		snprintf(prop_name, MAX_PROP_NAME, "%s-max-microamp",
+> name);
+> +		err = of_property_read_u32(dev->of_node,
+> +					prop_name, &vreg->max_uA);
+> +		if (err && err != -EINVAL) {
+> +			dev_err(dev, "%s: failed to read %s\n",
+> +					__func__, prop_name);
+> +			goto out;
+> +		} else if (err == -EINVAL || !vreg->max_uA) {
+> +			if (regulator_count_voltages(vreg->reg) > 0) {
+> +				dev_err(dev, "%s: %s is mandatory\n",
+> +						__func__, prop_name);
+> +				goto out;
+> +			}
+> +			err = 0;
+> +		}
+> +		snprintf(prop_name, MAX_PROP_NAME, "%s-always-on", name);
+> +		if (of_get_property(dev->of_node, prop_name, NULL))
+> +			vreg->is_always_on = true;
+> +		else
+> +			vreg->is_always_on = false;
+> +	}
+> +
+> +	if (!strcmp(name, "vdda-pll")) {
+> +		vreg->max_uV = VDDA_PLL_MAX_UV;
+> +		vreg->min_uV = VDDA_PLL_MIN_UV;
+> +	} else if (!strcmp(name, "vdda-phy")) {
+> +		vreg->max_uV = VDDA_PHY_MAX_UV;
+> +		vreg->min_uV = VDDA_PHY_MIN_UV;
+> +	} else if (!strcmp(name, "vddp-ref-clk")) {
+> +		vreg->max_uV = VDDP_REF_CLK_MAX_UV;
+> +		vreg->min_uV = VDDP_REF_CLK_MIN_UV;
+> +	}
+> +
+> +out:
+> +	if (err)
+> +		kfree(vreg->name);
+> +	return err;
+> +}
+> +
+> +static int ufs_qcom_phy_init_vreg(struct phy *phy,
+> +			struct ufs_qcom_phy_vreg *vreg, const char *name)
+> +{
+> +	return __ufs_qcom_phy_init_vreg(phy, vreg, name, false);
+> +}
+> +
+> +static
+> +int ufs_qcom_phy_cfg_vreg(struct phy *phy,
+> +			  struct ufs_qcom_phy_vreg *vreg, bool on)
+> +{
+> +	int ret = 0;
+> +	struct regulator *reg = vreg->reg;
+> +	const char *name = vreg->name;
+> +	int min_uV;
+> +	int uA_load;
+> +	struct ufs_qcom_phy *ufs_qcom_phy = get_ufs_qcom_phy(phy);
+> +	struct device *dev = ufs_qcom_phy->dev;
+> +
+> +	BUG_ON(!vreg);
+> +
+> +	if (regulator_count_voltages(reg) > 0) {
+> +		min_uV = on ? vreg->min_uV : 0;
+> +		ret = regulator_set_voltage(reg, min_uV, vreg->max_uV);
+> +		if (ret) {
+> +			dev_err(dev, "%s: %s set voltage failed,
+> err=%d\n",
+> +					__func__, name, ret);
+> +			goto out;
+> +		}
+> +		uA_load = on ? vreg->max_uA : 0;
+> +		ret = regulator_set_optimum_mode(reg, uA_load);
+> +		if (ret >= 0) {
+> +			/*
+> +			 * regulator_set_optimum_mode() returns new
+> regulator
+> +			 * mode upon success.
+> +			 */
+> +			ret = 0;
+> +		} else {
+> +			dev_err(dev, "%s: %s set optimum mode(uA_load=%d)
+> failed, err=%d\n",
+> +					__func__, name, uA_load, ret);
+> +			goto out;
+> +		}
+> +	}
+> +out:
+> +	return ret;
+> +}
+> +
+> +static
+> +int ufs_qcom_phy_enable_vreg(struct phy *phy,
+> +			     struct ufs_qcom_phy_vreg *vreg)
+> +{
+> +	struct ufs_qcom_phy *ufs_qcom_phy = get_ufs_qcom_phy(phy);
+> +	struct device *dev = ufs_qcom_phy->dev;
+> +	int ret = 0;
+> +
+> +	if (!vreg || vreg->enabled)
+> +		goto out;
+> +
+> +	ret = ufs_qcom_phy_cfg_vreg(phy, vreg, true);
+> +	if (ret) {
+> +		dev_err(dev, "%s: ufs_qcom_phy_cfg_vreg() failed,
+> err=%d\n",
+> +			__func__, ret);
+> +		goto out;
+> +	}
+> +
+> +	ret = regulator_enable(vreg->reg);
+> +	if (ret) {
+> +		dev_err(dev, "%s: enable failed, err=%d\n",
+> +				__func__, ret);
+> +		goto out;
+> +	}
+> +
+> +	vreg->enabled = true;
+> +out:
+> +	return ret;
+> +}
+> +
+> +int ufs_qcom_phy_enable_ref_clk(struct phy *generic_phy)
+> +{
+> +	int ret = 0;
+> +	struct ufs_qcom_phy *phy = get_ufs_qcom_phy(generic_phy);
+> +
+> +	if (phy->is_ref_clk_enabled)
+> +		goto out;
+> +
+> +	/*
+> +	 * reference clock is propagated in a daisy-chained manner from
+> +	 * source to phy, so ungate them at each stage.
+> +	 */
+> +	ret = clk_prepare_enable(phy->ref_clk_src);
+> +	if (ret) {
+> +		dev_err(phy->dev, "%s: ref_clk_src enable failed %d\n",
+> +				__func__, ret);
+> +		goto out;
+> +	}
+> +
+> +	/*
+> +	 * "ref_clk_parent" is optional clock hence make sure that clk
+> reference
+> +	 * is available before trying to enable the clock.
+> +	 */
+> +	if (phy->ref_clk_parent) {
+> +		ret = clk_prepare_enable(phy->ref_clk_parent);
+> +		if (ret) {
+> +			dev_err(phy->dev, "%s: ref_clk_parent enable
+> failed %d\n",
+> +					__func__, ret);
+> +			goto out_disable_src;
+> +		}
+> +	}
+> +
+> +	ret = clk_prepare_enable(phy->ref_clk);
+> +	if (ret) {
+> +		dev_err(phy->dev, "%s: ref_clk enable failed %d\n",
+> +				__func__, ret);
+> +		goto out_disable_parent;
+> +	}
+> +
+> +	phy->is_ref_clk_enabled = true;
+> +	goto out;
+> +
+> +out_disable_parent:
+> +	if (phy->ref_clk_parent)
+> +		clk_disable_unprepare(phy->ref_clk_parent);
+> +out_disable_src:
+> +	clk_disable_unprepare(phy->ref_clk_src);
+> +out:
+> +	return ret;
+> +}
+> +
+> +static
+> +int ufs_qcom_phy_disable_vreg(struct phy *phy,
+> +			      struct ufs_qcom_phy_vreg *vreg)
+> +{
+> +	struct ufs_qcom_phy *ufs_qcom_phy = get_ufs_qcom_phy(phy);
+> +	struct device *dev = ufs_qcom_phy->dev;
+> +	int ret = 0;
+> +
+> +	if (!vreg || !vreg->enabled || vreg->is_always_on)
+> +		goto out;
+> +
+> +	ret = regulator_disable(vreg->reg);
+> +
+> +	if (!ret) {
+> +		/* ignore errors on applying disable config */
+> +		ufs_qcom_phy_cfg_vreg(phy, vreg, false);
+> +		vreg->enabled = false;
+> +	} else {
+> +		dev_err(dev, "%s: %s disable failed, err=%d\n",
+> +				__func__, vreg->name, ret);
+> +	}
+> +out:
+> +	return ret;
+> +}
+> +
+> +void ufs_qcom_phy_disable_ref_clk(struct phy *generic_phy)
+> +{
+> +	struct ufs_qcom_phy *phy = get_ufs_qcom_phy(generic_phy);
+> +
+> +	if (phy->is_ref_clk_enabled) {
+> +		clk_disable_unprepare(phy->ref_clk);
+> +		/*
+> +		 * "ref_clk_parent" is optional clock hence make sure that
+> clk
+> +		 * reference is available before trying to disable the
+> clock.
+> +		 */
+> +		if (phy->ref_clk_parent)
+> +			clk_disable_unprepare(phy->ref_clk_parent);
+> +		clk_disable_unprepare(phy->ref_clk_src);
+> +		phy->is_ref_clk_enabled = false;
+> +	}
+> +}
+> +
+> +#define UFS_REF_CLK_EN	(1 << 5)
+> +
+> +static void ufs_qcom_phy_dev_ref_clk_ctrl(struct phy *generic_phy, bool
+> enable)
+> +{
+> +	struct ufs_qcom_phy *phy = get_ufs_qcom_phy(generic_phy);
+> +
+> +	if (phy->dev_ref_clk_ctrl_mmio &&
+> +	    (enable ^ phy->is_dev_ref_clk_enabled)) {
+> +		u32 temp = readl_relaxed(phy->dev_ref_clk_ctrl_mmio);
+> +
+> +		if (enable)
+> +			temp |= UFS_REF_CLK_EN;
+> +		else
+> +			temp &= ~UFS_REF_CLK_EN;
+> +
+> +		/*
+> +		 * If we are here to disable this clock immediately after
+> +		 * entering into hibern8, we need to make sure that device
+> +		 * ref_clk is active atleast 1us after the hibern8 enter.
+> +		 */
+> +		if (!enable)
+> +			udelay(1);
+> +
+> +		writel_relaxed(temp, phy->dev_ref_clk_ctrl_mmio);
+> +		/* ensure that ref_clk is enabled/disabled before we
+> return */
+> +		wmb();
+> +		/*
+> +		 * If we call hibern8 exit after this, we need to make
+> sure that
+> +		 * device ref_clk is stable for atleast 1us before the
+> hibern8
+> +		 * exit command.
+> +		 */
+> +		if (enable)
+> +			udelay(1);
+> +
+> +		phy->is_dev_ref_clk_enabled = enable;
+> +	}
+> +}
+> +
+> +void ufs_qcom_phy_enable_dev_ref_clk(struct phy *generic_phy)
+> +{
+> +	ufs_qcom_phy_dev_ref_clk_ctrl(generic_phy, true);
+> +}
+> +
+> +void ufs_qcom_phy_disable_dev_ref_clk(struct phy *generic_phy)
+> +{
+> +	ufs_qcom_phy_dev_ref_clk_ctrl(generic_phy, false);
+> +}
+> +
+> +/* Turn ON M-PHY RMMI interface clocks */
+> +int ufs_qcom_phy_enable_iface_clk(struct phy *generic_phy)
+> +{
+> +	struct ufs_qcom_phy *phy = get_ufs_qcom_phy(generic_phy);
+> +	int ret = 0;
+> +
+> +	if (phy->is_iface_clk_enabled)
+> +		goto out;
+> +
+> +	ret = clk_prepare_enable(phy->tx_iface_clk);
+> +	if (ret) {
+> +		dev_err(phy->dev, "%s: tx_iface_clk enable failed %d\n",
+> +				__func__, ret);
+> +		goto out;
+> +	}
+> +	ret = clk_prepare_enable(phy->rx_iface_clk);
+> +	if (ret) {
+> +		clk_disable_unprepare(phy->tx_iface_clk);
+> +		dev_err(phy->dev, "%s: rx_iface_clk enable failed %d.
+> disabling also tx_iface_clk\n",
+> +				__func__, ret);
+> +		goto out;
+> +	}
+> +	phy->is_iface_clk_enabled = true;
+> +
+> +out:
+> +	return ret;
+> +}
+> +
+> +/* Turn OFF M-PHY RMMI interface clocks */
+> +void ufs_qcom_phy_disable_iface_clk(struct phy *generic_phy)
+> +{
+> +	struct ufs_qcom_phy *phy = get_ufs_qcom_phy(generic_phy);
+> +
+> +	if (phy->is_iface_clk_enabled) {
+> +		clk_disable_unprepare(phy->tx_iface_clk);
+> +		clk_disable_unprepare(phy->rx_iface_clk);
+> +		phy->is_iface_clk_enabled = false;
+> +	}
+> +}
+> +
+> +int ufs_qcom_phy_start_serdes(struct phy *generic_phy)
+> +{
+> +	struct ufs_qcom_phy *ufs_qcom_phy = get_ufs_qcom_phy(generic_phy);
+> +	int ret = 0;
+> +
+> +	if (!ufs_qcom_phy->phy_spec_ops->start_serdes) {
+> +		dev_err(ufs_qcom_phy->dev, "%s: start_serdes() callback is
+> not supported\n",
+> +			__func__);
+> +		ret = -ENOTSUPP;
+> +	} else {
+> +		ufs_qcom_phy->phy_spec_ops->start_serdes(ufs_qcom_phy);
+> +	}
+> +
+> +	return ret;
+> +}
+> +
+> +int ufs_qcom_phy_set_tx_lane_enable(struct phy *generic_phy, u32
+> tx_lanes)
+> +{
+> +	struct ufs_qcom_phy *ufs_qcom_phy = get_ufs_qcom_phy(generic_phy);
+> +	int ret = 0;
+> +
+> +	if (!ufs_qcom_phy->phy_spec_ops->set_tx_lane_enable) {
+> +		dev_err(ufs_qcom_phy->dev, "%s: set_tx_lane_enable()
+> callback is not supported\n",
+> +			__func__);
+> +		ret = -ENOTSUPP;
+> +	} else {
+> +
+> ufs_qcom_phy->phy_spec_ops->set_tx_lane_enable(ufs_qcom_phy,
+> +							       tx_lanes);
+> +	}
+> +
+> +	return ret;
+> +}
+> +
+> +void ufs_qcom_phy_save_controller_version(struct phy *generic_phy,
+> +					  u8 major, u16 minor, u16 step)
+> +{
+> +	struct ufs_qcom_phy *ufs_qcom_phy = get_ufs_qcom_phy(generic_phy);
+> +
+> +	ufs_qcom_phy->host_ctrl_rev_major = major;
+> +	ufs_qcom_phy->host_ctrl_rev_minor = minor;
+> +	ufs_qcom_phy->host_ctrl_rev_step = step;
+> +}
+> +
+> +int ufs_qcom_phy_calibrate_phy(struct phy *generic_phy, bool is_rate_B)
+> +{
+> +	struct ufs_qcom_phy *ufs_qcom_phy = get_ufs_qcom_phy(generic_phy);
+> +	int ret = 0;
+> +
+> +	if (!ufs_qcom_phy->phy_spec_ops->calibrate_phy) {
+> +		dev_err(ufs_qcom_phy->dev, "%s: calibrate_phy() callback
+> is not supported\n",
+> +			__func__);
+> +		ret = -ENOTSUPP;
+> +	} else {
+> +		ret = ufs_qcom_phy->phy_spec_ops->
+> +				calibrate_phy(ufs_qcom_phy, is_rate_B);
+> +		if (ret)
+> +			dev_err(ufs_qcom_phy->dev, "%s: calibrate_phy()
+> failed %d\n",
+> +				__func__, ret);
+> +	}
+> +
+> +	return ret;
+> +}
+> +
+> +int ufs_qcom_phy_remove(struct phy *generic_phy,
+> +			struct ufs_qcom_phy *ufs_qcom_phy)
+> +{
+> +	phy_power_off(generic_phy);
+> +
+> +	kfree(ufs_qcom_phy->vdda_pll.name);
+> +	kfree(ufs_qcom_phy->vdda_phy.name);
+> +
+> +	return 0;
+> +}
+> +
+> +int ufs_qcom_phy_exit(struct phy *generic_phy)
+> +{
+> +	struct ufs_qcom_phy *ufs_qcom_phy = get_ufs_qcom_phy(generic_phy);
+> +
+> +	if (ufs_qcom_phy->is_powered_on)
+> +		phy_power_off(generic_phy);
+> +
+> +	return 0;
+> +}
+> +
+> +int ufs_qcom_phy_is_pcs_ready(struct phy *generic_phy)
+> +{
+> +	struct ufs_qcom_phy *ufs_qcom_phy = get_ufs_qcom_phy(generic_phy);
+> +
+> +	if
+> (!ufs_qcom_phy->phy_spec_ops->is_physical_coding_sublayer_ready) {
+> +		dev_err(ufs_qcom_phy->dev, "%s:
+> is_physical_coding_sublayer_ready() callback is not supported\n",
+> +			__func__);
+> +		return -ENOTSUPP;
+> +	}
+> +
+> +	return ufs_qcom_phy->phy_spec_ops->
+> +			is_physical_coding_sublayer_ready(ufs_qcom_phy);
+> +}
+> +
+> +int ufs_qcom_phy_power_on(struct phy *generic_phy)
+> +{
+> +	struct ufs_qcom_phy *phy_common = get_ufs_qcom_phy(generic_phy);
+> +	struct device *dev = phy_common->dev;
+> +	int err;
+> +
+> +	err = ufs_qcom_phy_enable_vreg(generic_phy,
+> &phy_common->vdda_phy);
+> +	if (err) {
+> +		dev_err(dev, "%s enable vdda_phy failed, err=%d\n",
+> +			__func__, err);
+> +		goto out;
+> +	}
+> +
+> +	phy_common->phy_spec_ops->power_control(phy_common, true);
+> +
+> +	/* vdda_pll also enables ref clock LDOs so enable it first */
+> +	err = ufs_qcom_phy_enable_vreg(generic_phy,
+> &phy_common->vdda_pll);
+> +	if (err) {
+> +		dev_err(dev, "%s enable vdda_pll failed, err=%d\n",
+> +			__func__, err);
+> +		goto out_disable_phy;
+> +	}
+> +
+> +	err = ufs_qcom_phy_enable_ref_clk(generic_phy);
+> +	if (err) {
+> +		dev_err(dev, "%s enable phy ref clock failed, err=%d\n",
+> +			__func__, err);
+> +		goto out_disable_pll;
+> +	}
+> +
+> +	/* enable device PHY ref_clk pad rail */
+> +	if (phy_common->vddp_ref_clk.reg) {
+> +		err = ufs_qcom_phy_enable_vreg(generic_phy,
+> +					       &phy_common->vddp_ref_clk);
+> +		if (err) {
+> +			dev_err(dev, "%s enable vddp_ref_clk failed,
+> err=%d\n",
+> +				__func__, err);
+> +			goto out_disable_ref_clk;
+> +		}
+> +	}
+> +
+> +	phy_common->is_powered_on = true;
+> +	goto out;
+> +
+> +out_disable_ref_clk:
+> +	ufs_qcom_phy_disable_ref_clk(generic_phy);
+> +out_disable_pll:
+> +	ufs_qcom_phy_disable_vreg(generic_phy, &phy_common->vdda_pll);
+> +out_disable_phy:
+> +	ufs_qcom_phy_disable_vreg(generic_phy, &phy_common->vdda_phy);
+> +out:
+> +	return err;
+> +}
+> +
+> +int ufs_qcom_phy_power_off(struct phy *generic_phy)
+> +{
+> +	struct ufs_qcom_phy *phy_common = get_ufs_qcom_phy(generic_phy);
+> +
+> +	phy_common->phy_spec_ops->power_control(phy_common, false);
+> +
+> +	if (phy_common->vddp_ref_clk.reg)
+> +		ufs_qcom_phy_disable_vreg(generic_phy,
+> +					  &phy_common->vddp_ref_clk);
+> +	ufs_qcom_phy_disable_ref_clk(generic_phy);
+> +
+> +	ufs_qcom_phy_disable_vreg(generic_phy, &phy_common->vdda_pll);
+> +	ufs_qcom_phy_disable_vreg(generic_phy, &phy_common->vdda_phy);
+> +	phy_common->is_powered_on = false;
+> +
+> +	return 0;
+> +}
+> --
+> 1.8.5.2
+>
+> --
+> QUALCOMM ISRAEL, on behalf of Qualcomm Innovation Center, Inc. is a member
+> of Code Aurora Forum, hosted by The Linux Foundation
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-??? Great text. May I presume that I can take this text 
-and freely adapt it for the man page? (Actually, this is a 
-request for forgiveness, rather than permission :-).)
 
->> FUTEX_CMP_REQUEUE_PI
->>
->> 	PI aware variant of FUTEX_CMP_REQUEUE. Inner futex at uaddr is
->> 	a non PI futex. Outer futex to which is requeued is a PI futex
->> 	at uaddr2.
-> 
-> Inner/outer terminology applies specifically to the glibc pthread
-> condition variable and mutex use case, but is overly specific for the man
-> page. Consider:
-> 
-> PI aware variant for FUTEX_CMP_REQUEUE. Requeue tasks blocked on uaddr via
-> FUTEX_WAIT_REQUEUE_PI from a non-PI source futex (uaddr) to a PI target
-> futex (uaddr2).
-
-Thanks for that text. It is easier to grasp.
-
->>
->> 	The waiters on uaddr must wait in FUTEX_WAIT_REQUEUE_PI.
->>
->> 	The argument val is contains the number of waiters on uaddr
->> 	which are immediately woken up. Must be 1 for this opcode.
-> 
-> Because the point is to avoid the thundering herd in the first place, and
-> other nasty little races and faulting corner cases...
-
-I added the piece about "thundering herd".
-
->> 	The timeout argument is abused to transport the number of
->> 	waiters which are requeued on to the futex at uaddr2. The
->> 	pointer is typecasted to u32.
-> 
-> 
->           val3 contains the expected value of uaddr (same as
-> FUTEX_CMP_REQUEUE)
-
-Yes. (The text now says that 'val3' has the same purpose as 
-for FUTEX_CMP_REQUEUE.)
-
->> Darren, can you fill in the missing details?
-> 
-> Yup...
-> 
->>
->> 	[EFAULT] Kernel was unable to access the futex value at uaddr
->> 		 or uaddr2
->>
->> 	[ENOMEM] Kernel could not allocate state
->>
->> 	[EINVAL] The supplied uaddr/uaddr2 arguments do not point to a
->> 		 valid object, i.e. pointer is not 4 byte aligned
->>
->> 	[EINVAL] uaddr equal uaddr2. Requeue to same futex.
->>
->> 	[EINVAL] The kernel detected inconsistent state between the
->> 		 user space state at uaddr and the kernel state,
->> 		 i.e. it detected a waiter which waits in
->> 		 FUTEX_LOCK_PI on uaddr
-> 
->                    instead of FUTEX_WAIT_REQUEUE_PI.
-
-Thanks. I added that detail.
-
->> 	[EINVAL] The kernel detected inconsistent state between the
->> 		 user space state at uaddr and the kernel state,
->> 		 i.e. it detected a waiter which waits in
->> 		 FUTEX_WAIT[_BITSET] on uaddr
->>
->> 	[EINVAL] The kernel detected inconsistent state between the
->> 		 user space state at uaddr2 and the kernel state,
->> 		 i.e. it detected a waiter which waits in
->> 		 FUTEX_WAIT on uaddr2.
-> 
->           [EINVAL] The kernel detected the FUTEX_CMP_REQUEUE_PI call is
->                    attempting to requeue a task to a futex other than that
->                    specified by the matching FUTEX_WAIT_REQUEUE_PI call for
->                    that task.
-
-Thanks. Added.
-
-> A number of these EINVALs can probably be combined into "Kernel detected
-> bad state" as far as the C library is concerned, but we can consolidate
-> later. But basically, EINVAL is returned if the non-pi to pi or op pairing
-> semantics are violated.
-
-I think the page probably needs some text to cover that point. I'll add
-a FIXME for review.
-
->>  	[EINVAL] The supplied bitset is zero.
-> 
-> Bitset doesn't apply to FUTEX_CMP_REQUEUE_PI.
-
-Thanks.
-
->           [EINVAL] nr_wake != 1
-
-Thanks, I'd already spotted this, but it's good to have confirmation.
-
-> EAGAIN == EWOULDBLOCK. We use each in the kernel, but will just refer to
-> them here as EAGAIN.
-
-Yes. And I've followed that convention now in the man page.
-
->> 	[EAGAIN] uaddr1 readout is not equal the compare value in
->> 		 argument val3
->>
->> 	[EAGAIN] The futex owner TID of uaddr2 is about to exit, but
->> 		 has not yet handled the internal state cleanup. Try
->> 		 again.
->>
->> 	[EPERM]  Caller is not allowed to attach the waiter to the
->> 		 futex at uaddr2 Can be a legitimate issue or a hint
->> 		 for state corruption in user space
->>
->> 	[ESRCH]	 The TID in the user space value at uaddr2 does not exist
-> 
-> Hrm, I'm missing ESRCH and EPERM in my state diagrams.... put yes, we can
-> get ESRCH when looking up PI state, and we can return that from
-> futex_requeue.... That needs some time to review...
-> 
-> I'm not seeing the EPERM path, where is that coming from?
-
-Any further insight on the above?
-
->> 	[EDEADLOCK] The requeuing of a waiter to the kernel representation
->> 		    of the PI futex at uaddr2 detected a deadlock scenario.
->>
->>        [ENOSYS] Not implemented on all architectures and not supported
->> 		 on some CPU variants (runtime detection)
-> 
-> Return value >= 0 is successful, indicating the number of of tasks
-> requeued or woken (3 requeued and 1 woken would return 4).
-
-Yes. Already noted.
-
-Cheers,
-
-Michael
-
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
