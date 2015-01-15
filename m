@@ -1,75 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752652AbbAOKwv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 05:52:51 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:60855 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751433AbbAOKwu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 05:52:50 -0500
-Date: Thu, 15 Jan 2015 10:52:36 +0000
-From: Mark Brown <broonie@kernel.org>
-To: jiwang <jiada_wang@mentor.com>
-Cc: Fabio Estevam <festevam@gmail.com>, Lars-Peter Clausen <lars@metafoo.de>,
-        Takashi Iwai <tiwai@suse.de>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "Frkuska, Joshua" <Joshua_Frkuska@mentor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lgirdwood@gmail.com" <lgirdwood@gmail.com>
-Message-ID: <20150115105236.GP3043@sirena.org.uk>
-References: <20150113215412.GS4160@sirena.org.uk>
- <s5hr3ux24em.wl-tiwai@suse.de>
- <54B625A8.8090406@metafoo.de>
- <s5hoaq121gh.wl-tiwai@suse.de>
- <54B63E4F.2010506@metafoo.de>
- <s5hwq4phbzr.wl-tiwai@suse.de>
- <20150114120228.GT4160@sirena.org.uk>
- <54B6679F.1030706@metafoo.de>
- <CAOMZO5AQEyb9in0hRn+7zcpE5r8zwVUFjCqAqNOmLMCGYka3Pg@mail.gmail.com>
- <54B744D1.3040809@mentor.com>
+	id S1752874AbbAOKxj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 05:53:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41766 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751901AbbAOKxh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 05:53:37 -0500
+Message-ID: <54B79C0E.4080903@redhat.com>
+Date: Thu, 15 Jan 2015 11:53:02 +0100
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="Zfao1/4IORAeFOVj"
-Content-Disposition: inline
-In-Reply-To: <54B744D1.3040809@mentor.com>
-X-Cookie: To program is to be.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [alsa-devel] unload Audio drivers while playback stream is
- active case kernel crash
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Antonio Ospite <ao2@ao2.it>, Joe Howse <josephhowse@nummist.com>
+CC: Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] gspca: Add high-speed modes for PS3 Eye camera
+References: <1419865203-3967-1-git-send-email-josephhowse@nummist.com> <20150104162909.f29952436894222f8074862f@ao2.it>
+In-Reply-To: <20150104162909.f29952436894222f8074862f@ao2.it>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---Zfao1/4IORAeFOVj
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+On 04-01-15 16:29, Antonio Ospite wrote:
+> On Mon, 29 Dec 2014 11:00:03 -0400
+> Joe Howse <josephhowse@nummist.com> wrote:
+>
+>> Add support in the PS3 Eye driver for QVGA capture at higher
+>> frame rates: 187, 150, and 137 FPS. This functionality is valuable
+>> because the PS3 Eye is popular for computer vision projects and no
+>> other camera in its price range supports such high frame rates.
+>>
+>> Correct a QVGA mode that was listed as 40 FPS. It is really 37 FPS
+>> (half of 75 FPS).
+>>
+>> Tests confirm that the nominal frame rates are achieved.
+>>
+>> Signed-off-by: Joe Howse <josephhowse@nummist.com>
+>
+> Tested-by: Antonio Ospite <ao2@ao2.it>
 
-On Thu, Jan 15, 2015 at 01:40:49PM +0900, jiwang wrote:
+Joe, thanks for the patch, Antonio, thanks for testing, I've queued
+this up in my gspca tree for merging into the 3.20 kernel
 
-> Can we have a more generic fix to this issue?
-> Or shall we set owner field for all machine drivers?
+Regards,
 
-Ideally we should do both.
+Hans
 
---Zfao1/4IORAeFOVj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBCAAGBQJUt5v0AAoJECTWi3JdVIfQpMkH/jTi8BFqSKGZcylvRb19hQnz
-pEUPAQkbNQPL7EeJ9JE9KaZ1ffDzWf31Cbbr6A8F/HfhFcQxh0N74z2PIM0V9qlQ
-yAyAgRrpe8uS3GjgjOqQs9qbzhxm+FnxVJofaBuky/dyY6CSLfjGgT7WZhamIg6O
-Yw73UP22TrpnGG5h/JPRFZu6vXsZX4gWJzQrD3f/lW3+sW9dxQqQtzA0PL0y3ghx
-ZT3/69RRsM1FLmY/AfHHXfwrK8NzYeeJNDOiiO/1eVx5Tyw9EZvQOfAf5iRSJVyr
-SFVqDFZqxhKz4mn2WUqCcsj/6gr6IPoL+2zZDQjSO0jNWrbdQIA81odvwTZCkZk=
-=bWFR
------END PGP SIGNATURE-----
-
---Zfao1/4IORAeFOVj--
+>
+> Thanks Joe.
+>
+> I noticed that qv4l2 displays max 60fps even though from the video I can
+> perceive the higher framerate, and same happens in guvcview.
+>
+> gst-inspect-1.0 won't even let me set framerates higher than 75 so
+> I didn't test with GStreamer.
+>
+> I know that the camera is also able to stream raw Bayer data which
+> requires less bandwidth than the default YUYV, although the driver does
+> not currently expose that; maybe some higher framerates can be achieved
+> also at VGA with Bayer output.
+>
+> In case you wanted to explore that remember to set supported framerates
+> appropriately in ov772x_framerates for the 4 combinations of formats and
+> resolutions (i.e. Bayer outputs will support more framerates).
+>
+> Ciao,
+>     Antonio
+>
+>> ---
+>>   drivers/media/usb/gspca/ov534.c | 10 ++++++++--
+>>   1 file changed, 8 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/drivers/media/usb/gspca/ov534.c b/drivers/media/usb/gspca/ov534.c
+>> index 90f0d63..a9c866d 100644
+>> --- a/drivers/media/usb/gspca/ov534.c
+>> +++ b/drivers/media/usb/gspca/ov534.c
+>> @@ -12,6 +12,8 @@
+>>    * PS3 Eye camera enhanced by Richard Kaswy http://kaswy.free.fr
+>>    * PS3 Eye camera - brightness, contrast, awb, agc, aec controls
+>>    *                  added by Max Thrun <bear24rw@gmail.com>
+>> + * PS3 Eye camera - FPS range extended by Joseph Howse
+>> + *                  <josephhowse@nummist.com> http://nummist.com
+>>    *
+>>    * This program is free software; you can redistribute it and/or modify
+>>    * it under the terms of the GNU General Public License as published by
+>> @@ -116,7 +118,7 @@ static const struct v4l2_pix_format ov767x_mode[] = {
+>>   		.colorspace = V4L2_COLORSPACE_JPEG},
+>>   };
+>>
+>> -static const u8 qvga_rates[] = {125, 100, 75, 60, 50, 40, 30};
+>> +static const u8 qvga_rates[] = {187, 150, 137, 125, 100, 75, 60, 50, 37, 30};
+>>   static const u8 vga_rates[] = {60, 50, 40, 30, 15};
+>>
+>>   static const struct framerates ov772x_framerates[] = {
+>> @@ -769,12 +771,16 @@ static void set_frame_rate(struct gspca_dev *gspca_dev)
+>>   		{15, 0x03, 0x41, 0x04},
+>>   	};
+>>   	static const struct rate_s rate_1[] = {	/* 320x240 */
+>> +/*		{205, 0x01, 0xc1, 0x02},  * 205 FPS: video is partly corrupt */
+>> +		{187, 0x01, 0x81, 0x02}, /* 187 FPS or below: video is valid */
+>> +		{150, 0x01, 0xc1, 0x04},
+>> +		{137, 0x02, 0xc1, 0x02},
+>>   		{125, 0x02, 0x81, 0x02},
+>>   		{100, 0x02, 0xc1, 0x04},
+>>   		{75, 0x03, 0xc1, 0x04},
+>>   		{60, 0x04, 0xc1, 0x04},
+>>   		{50, 0x02, 0x41, 0x04},
+>> -		{40, 0x03, 0x41, 0x04},
+>> +		{37, 0x03, 0x41, 0x04},
+>>   		{30, 0x04, 0x41, 0x04},
+>>   	};
+>>
+>> --
+>> 1.9.1
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
