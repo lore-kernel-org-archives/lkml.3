@@ -1,164 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754935AbbAOVCf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 16:02:35 -0500
-Received: from prod-mail-xrelay02.akamai.com ([72.246.2.14]:35290 "EHLO
+	id S932219AbbAOVEY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 16:04:24 -0500
+Received: from prod-mail-xrelay02.akamai.com ([72.246.2.14]:35331 "EHLO
 	prod-mail-xrelay02.akamai.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754094AbbAOVCb (ORCPT
+	by vger.kernel.org with ESMTP id S1754225AbbAOVCe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 16:02:31 -0500
+	Thu, 15 Jan 2015 16:02:34 -0500
 To: akpm@linux-foundation.org, famz@redhat.com
 Cc: normalperson@yhbt.net, nzimmer@sgi.com, viro@zeniv.linux.org.uk,
         davidel@xmailserver.org, rostedt@goodmis.org,
         linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Message-Id: <ccd8cbe1cf046c2036c100781a9122e3153577c4.1421337657.git.jbaron@akamai.com>
+Message-Id: <8f58ff508718ee67f75aadd67dda70d9feaa82ca.1421337657.git.jbaron@akamai.com>
 In-Reply-To: <cover.1421337657.git.jbaron@akamai.com>
 References: <cover.1421337657.git.jbaron@akamai.com>
 From: Jason Baron <jbaron@akamai.com>
-Subject: [RFC PATCH 1/5] epoll: remove ep_call_nested() from ep_eventpoll_poll()
-Date: Thu, 15 Jan 2015 21:02:30 +0000 (GMT)
+Subject: [RFC PATCH 2/5] epoll: remove ep_call_nested() from ep_poll_safewake()
+Date: Thu, 15 Jan 2015 21:02:33 +0000 (GMT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The use of ep_call_nested() in ep_eventpoll_poll(), which is the .poll
-routine for an epoll fd, is used to prevent excessively deep epoll
-nesting, and to prevent circular paths. However, we are already preventing
-circular paths during EPOLL_CTL_ADD. In terms of too deep epoll chains,
-we do in fact allow deep nesting of the epoll fds themselves (deeper
-than EP_MAX_NESTS), however we don't allow more than EP_MAX_NESTS when
-an epoll file descriptor is actually connected to a wakeup source. Thus,
-any deeper nesting than EP_MAX_NESTS must terminate after only 1 level
-nesting during poll(), since the poll() is called through ep_scan_ready_list(),
-which only calls deeper nests, if there are events available. In the
-case of no wakeup sources this is then not possible.
+The ep_poll_safewake() function is used to wakeup potentially nested epoll
+file descriptors. The function uses ep_call_nested() to prevent entering
+the same wake up queue more than once, and to prevent excessively deep wakeup
+paths (deeper than EP_MAX_NESTS). However, this is not necessary since we already
+preventing these conditions during EPOLL_CTL_ADD. This saves extra function
+calls, and avoids taking a global lock during the ep_call_nested() calls.
 
-Removing ep_call_nested(), reduces the function call stack for deep epoll
-chains, and in addition prevents the acquisition of a global spin_lock()
-that was in use in ep_call_nested().
+I have, however, left ep_call_nested() for the CONFIG_DEBUG_LOCK_ALLOC case,
+since ep_call_nested() keeps track of the nesting level, and this is required
+by the call to spin_lock_irqsave_nested(). It would be nice to remove the
+ep_call_nested() calls for the CONFIG_DEBUG_LOCK_ALLOC case as well, however
+its not clear how to simply pass the nesting level through multiple wake_up()
+levels. In any case, I don't think CONFIG_DEBUG_LOCK_ALLOC is generally used
+for production, so this should provide a decent speedup for the cases that
+we care about.
 
 Signed-off-by: Jason Baron <jbaron@akamai.com>
 ---
- fs/eventpoll.c | 59 +++++++++++++++++++++++-----------------------------------
- 1 file changed, 23 insertions(+), 36 deletions(-)
+ fs/eventpoll.c | 47 ++++++++++++++++++-----------------------------
+ 1 file changed, 18 insertions(+), 29 deletions(-)
 
 diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index d77f944..e7b0c9e 100644
+index e7b0c9e..2864d67 100644
 --- a/fs/eventpoll.c
 +++ b/fs/eventpoll.c
-@@ -268,9 +268,6 @@ static struct nested_calls poll_loop_ncalls;
- /* Used for safe wake up implementation */
- static struct nested_calls poll_safewake_ncalls;
+@@ -265,9 +265,6 @@ static DEFINE_MUTEX(epmutex);
+ /* Used to check for epoll file descriptor inclusion loops */
+ static struct nested_calls poll_loop_ncalls;
  
--/* Used to call file's f_op->poll() under the nested calls boundaries */
--static struct nested_calls poll_readywalk_ncalls;
+-/* Used for safe wake up implementation */
+-static struct nested_calls poll_safewake_ncalls;
 -
  /* Slab cache used to allocate "struct epitem" */
  static struct kmem_cache *epi_cache __read_mostly;
  
-@@ -793,6 +790,9 @@ static int ep_eventpoll_release(struct inode *inode, struct file *file)
+@@ -466,40 +463,21 @@ out_unlock:
+  * this special case of epoll.
+  */
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+-static inline void ep_wake_up_nested(wait_queue_head_t *wqueue,
+-				     unsigned long events, int subclass)
++
++static struct nested_calls poll_safewake_ncalls;
++
++static int ep_poll_wakeup_proc(void *priv, void *cookie, int call_nests)
+ {
+ 	unsigned long flags;
++	wait_queue_head_t *wqueue = (wait_queue_head_t *)cookie;
+ 
+-	spin_lock_irqsave_nested(&wqueue->lock, flags, subclass);
+-	wake_up_locked_poll(wqueue, events);
++	spin_lock_irqsave_nested(&wqueue->lock, flags, call_nests + 1);
++	wake_up_locked_poll(wqueue, POLLIN);
+ 	spin_unlock_irqrestore(&wqueue->lock, flags);
+-}
+-#else
+-static inline void ep_wake_up_nested(wait_queue_head_t *wqueue,
+-				     unsigned long events, int subclass)
+-{
+-	wake_up_poll(wqueue, events);
+-}
+-#endif
+ 
+-static int ep_poll_wakeup_proc(void *priv, void *cookie, int call_nests)
+-{
+-	ep_wake_up_nested((wait_queue_head_t *) cookie, POLLIN,
+-			  1 + call_nests);
  	return 0;
  }
  
-+static int ep_read_events_proc(struct eventpoll *ep, struct list_head *head,
-+			       void *priv);
-+
- static inline unsigned int ep_item_poll(struct epitem *epi, poll_table *pt)
+-/*
+- * Perform a safe wake up of the poll wait list. The problem is that
+- * with the new callback'd wake up system, it is possible that the
+- * poll callback is reentered from inside the call to wake_up() done
+- * on the poll wait queue head. The rule is that we cannot reenter the
+- * wake up code from the same task more than EP_MAX_NESTS times,
+- * and we cannot reenter the same wait queue head at all. This will
+- * enable to have a hierarchy of epoll file descriptor of no more than
+- * EP_MAX_NESTS deep.
+- */
+ static void ep_poll_safewake(wait_queue_head_t *wq)
  {
- 	pt->_key = epi->event.events;
-@@ -800,16 +800,31 @@ static inline unsigned int ep_item_poll(struct epitem *epi, poll_table *pt)
- 	return epi->ffd.file->f_op->poll(epi->ffd.file, pt) & epi->event.events;
+ 	int this_cpu = get_cpu();
+@@ -510,6 +488,15 @@ static void ep_poll_safewake(wait_queue_head_t *wq)
+ 	put_cpu();
  }
  
-+static inline unsigned int ep_item_poll_recurse(struct epitem *epi,
-+						poll_table *pt, int depth)
-+{
-+	pt->_key = epi->event.events;
++#else
 +
-+	if (is_file_epoll(epi->ffd.file)) {
-+		depth++;
-+		return ep_scan_ready_list(epi->ffd.file->private_data,
-+					  ep_read_events_proc, &depth, depth,
-+					  false) & epi->event.events;
-+	}
-+	return epi->ffd.file->f_op->poll(epi->ffd.file, pt) & epi->event.events;
++static void ep_poll_safewake(wait_queue_head_t *wq)
++{
++	wake_up_poll(wq, POLLIN);
 +}
 +
- static int ep_read_events_proc(struct eventpoll *ep, struct list_head *head,
- 			       void *priv)
++#endif
++
+ static void ep_remove_wait_queue(struct eppoll_entry *pwq)
  {
- 	struct epitem *epi, *tmp;
- 	poll_table pt;
-+	int depth = *(int *)priv;
- 
- 	init_poll_funcptr(&pt, NULL);
- 
- 	list_for_each_entry_safe(epi, tmp, head, rdllink) {
--		if (ep_item_poll(epi, &pt))
-+		if (ep_item_poll_recurse(epi, &pt, depth))
- 			return POLLIN | POLLRDNORM;
- 		else {
- 			/*
-@@ -828,45 +843,20 @@ static int ep_read_events_proc(struct eventpoll *ep, struct list_head *head,
- static void ep_ptable_queue_proc(struct file *file, wait_queue_head_t *whead,
- 				 poll_table *pt);
- 
--struct readyevents_arg {
--	struct eventpoll *ep;
--	bool locked;
--};
--
--static int ep_poll_readyevents_proc(void *priv, void *cookie, int call_nests)
--{
--	struct readyevents_arg *arg = priv;
--
--	return ep_scan_ready_list(arg->ep, ep_read_events_proc, NULL,
--				  call_nests + 1, arg->locked);
--}
--
- static unsigned int ep_eventpoll_poll(struct file *file, poll_table *wait)
- {
--	int pollflags;
- 	struct eventpoll *ep = file->private_data;
--	struct readyevents_arg arg;
--
--	/*
--	 * During ep_insert() we already hold the ep->mtx for the tfile.
--	 * Prevent re-aquisition.
--	 */
--	arg.locked = wait && (wait->_qproc == ep_ptable_queue_proc);
--	arg.ep = ep;
-+	int depth = 0;
- 
- 	/* Insert inside our poll wait queue */
- 	poll_wait(file, &ep->poll_wait, wait);
- 
- 	/*
- 	 * Proceed to find out if wanted events are really available inside
--	 * the ready list. This need to be done under ep_call_nested()
--	 * supervision, since the call to f_op->poll() done on listed files
--	 * could re-enter here.
-+	 * the ready list.
+ 	wait_queue_head_t *whead;
+@@ -2098,8 +2085,10 @@ static int __init eventpoll_init(void)
  	 */
--	pollflags = ep_call_nested(&poll_readywalk_ncalls, EP_MAX_NESTS,
--				   ep_poll_readyevents_proc, &arg, ep, current);
--
--	return pollflags != -1 ? pollflags : 0;
-+	return ep_scan_ready_list(ep, ep_read_events_proc, &depth, depth,
-+				wait && (wait->_qproc == ep_ptable_queue_proc));
- }
+ 	ep_nested_calls_init(&poll_loop_ncalls);
  
- #ifdef CONFIG_PROC_FS
-@@ -2111,9 +2101,6 @@ static int __init eventpoll_init(void)
++#ifdef CONFIG_DEBUG_LOCK_ALLOC
  	/* Initialize the structure used to perform safe poll wait head wake ups */
  	ep_nested_calls_init(&poll_safewake_ncalls);
++#endif
  
--	/* Initialize the structure used to perform file's f_op->poll() calls */
--	ep_nested_calls_init(&poll_readywalk_ncalls);
--
  	/*
  	 * We can have many thousands of epitems, so prevent this from
- 	 * using an extra cache line on 64-bit (and smaller) CPUs
 -- 
 1.8.2.rc2
 
