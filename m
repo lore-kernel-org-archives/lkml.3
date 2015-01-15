@@ -1,22 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756030AbbAOWOs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 17:14:48 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:50455 "EHLO
+	id S1755999AbbAOWNF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 17:13:05 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:50488 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754078AbbAOWKL (ORCPT
+	with ESMTP id S1755175AbbAOWKN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 17:10:11 -0500
+	Thu, 15 Jan 2015 17:10:13 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Jan Kara <jack@suse.cz>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 10/19] isofs: Fix infinite looping over CE entries
-Date: Thu, 15 Jan 2015 14:09:46 -0800
-Message-Id: <1421359795-11155-11-git-send-email-kamal@canonical.com>
+Cc: Sven Eckelmann <sven@narfation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 11/19] batman-adv: Calculate extra tail size based on queued fragments
+Date: Thu, 15 Jan 2015 14:09:47 -0800
+Message-Id: <1421359795-11155-12-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1421359795-11155-1-git-send-email-kamal@canonical.com>
 References: <1421359795-11155-1-git-send-email-kamal@canonical.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,57 +31,61 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jan Kara <jack@suse.cz>
+From: Sven Eckelmann <sven@narfation.org>
 
-commit f54e18f1b831c92f6512d2eedb224cd63d607d3d upstream.
+commit 5b6698b0e4a37053de35cc24ee695b98a7eb712b upstream.
 
-Rock Ridge extensions define so called Continuation Entries (CE) which
-define where is further space with Rock Ridge data. Corrupted isofs
-image can contain arbitrarily long chain of these, including a one
-containing loop and thus causing kernel to end in an infinite loop when
-traversing these entries.
+The fragmentation code was replaced in 610bfc6bc99bc83680d190ebc69359a05fc7f605
+("batman-adv: Receive fragmented packets and merge"). The new code provided a
+mostly unused parameter skb for the merging function. It is used inside the
+function to calculate the additionally needed skb tailroom. But instead of
+increasing its own tailroom, it is only increasing the tailroom of the first
+queued skb. This is not correct in some situations because the first queued
+entry can be a different one than the parameter.
 
-Limit the traversal to 32 entries which should be more than enough space
-to store all the Rock Ridge data.
+An observed problem was:
 
-Reported-by: P J P <ppandit@redhat.com>
-Signed-off-by: Jan Kara <jack@suse.cz>
+1. packet with size 104, total_size 1464, fragno 1 was received
+   - packet is queued
+2. packet with size 1400, total_size 1464, fragno 0 was received
+   - packet is queued at the end of the list
+3. enough data was received and can be given to the merge function
+   (1464 == (1400 - 20) + (104 - 20))
+   - merge functions gets 1400 byte large packet as skb argument
+4. merge function gets first entry in queue (104 byte)
+   - stored as skb_out
+5. merge function calculates the required extra tail as total_size - skb->len
+   - pskb_expand_head tail of skb_out with 64 bytes
+6. merge function tries to squeeze the extra 1380 bytes from the second queued
+   skb (1400 byte aka skb parameter) in the 64 extra tail bytes of skb_out
+
+Instead calculate the extra required tail bytes for skb_out also using skb_out
+instead of using the parameter skb. The skb parameter is only used to get the
+total_size from the last received packet. This is also the total_size used to
+decide that all fragments were received.
+
+Reported-by: Philipp Psurek <philipp.psurek@gmail.com>
+Signed-off-by: Sven Eckelmann <sven@narfation.org>
+Acked-by: Martin Hundebøll <martin@hundeboll.net>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- fs/isofs/rock.c | 6 ++++++
- 1 file changed, 6 insertions(+)
+ net/batman-adv/fragmentation.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/isofs/rock.c b/fs/isofs/rock.c
-index f488bba..bb63254 100644
---- a/fs/isofs/rock.c
-+++ b/fs/isofs/rock.c
-@@ -30,6 +30,7 @@ struct rock_state {
- 	int cont_size;
- 	int cont_extent;
- 	int cont_offset;
-+	int cont_loops;
- 	struct inode *inode;
- };
+diff --git a/net/batman-adv/fragmentation.c b/net/batman-adv/fragmentation.c
+index 8a1d4b54..b3c4223 100644
+--- a/net/batman-adv/fragmentation.c
++++ b/net/batman-adv/fragmentation.c
+@@ -253,7 +253,7 @@ batadv_frag_merge_packets(struct hlist_head *chain, struct sk_buff *skb)
+ 	kfree(entry);
  
-@@ -73,6 +74,9 @@ static void init_rock_state(struct rock_state *rs, struct inode *inode)
- 	rs->inode = inode;
- }
- 
-+/* Maximum number of Rock Ridge continuation entries */
-+#define RR_MAX_CE_ENTRIES 32
-+
- /*
-  * Returns 0 if the caller should continue scanning, 1 if the scan must end
-  * and -ve on error.
-@@ -105,6 +109,8 @@ static int rock_continue(struct rock_state *rs)
- 			goto out;
- 		}
- 		ret = -EIO;
-+		if (++rs->cont_loops >= RR_MAX_CE_ENTRIES)
-+			goto out;
- 		bh = sb_bread(rs->inode->i_sb, rs->cont_extent);
- 		if (bh) {
- 			memcpy(rs->buffer, bh->b_data + rs->cont_offset,
+ 	/* Make room for the rest of the fragments. */
+-	if (pskb_expand_head(skb_out, 0, size - skb->len, GFP_ATOMIC) < 0) {
++	if (pskb_expand_head(skb_out, 0, size - skb_out->len, GFP_ATOMIC) < 0) {
+ 		kfree_skb(skb_out);
+ 		skb_out = NULL;
+ 		goto free;
 -- 
 1.9.1
 
