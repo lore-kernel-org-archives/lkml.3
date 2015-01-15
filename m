@@ -1,36 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754968AbbAORUr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 12:20:47 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:63045 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753395AbbAORUo (ORCPT
+	id S1755250AbbAORVd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 12:21:33 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:53224 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752935AbbAORVa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 12:20:44 -0500
+	Thu, 15 Jan 2015 12:21:30 -0500
+Message-ID: <54B7F757.5060002@wwwdotorg.org>
+Date: Thu, 15 Jan 2015 10:22:31 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <1421161778-5671-1-git-send-email-md.jamalmohiuddin@gmail.com>
-References: <1421161778-5671-1-git-send-email-md.jamalmohiuddin@gmail.com>
-Date: Thu, 15 Jan 2015 18:20:43 +0100
-Message-ID: <CACRpkdb2=YyVtFFMqMQrWCVFhtnBOdmw57W0tktYn1c2fS8uQw@mail.gmail.com>
-Subject: Re: [PATCH] gpio: gpio-dln2: Added a Blank line after declaration
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mohammad Jamal <md.jamalmohiuddin@gmail.com>
-Cc: Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+CC: linux-tegra@vger.kernel.org,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Dylan Reid <dgreid@chromium.org>, Simon Glass <sjg@chromium.org>,
+        Ulf Hansson <ulf.hansson@linaro.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        Alexandre Courbot <gnurou@gmail.com>, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 03/11] ARM: tegra: Set the sound card model that alsaucm
+ expects
+References: <1421338359-27467-1-git-send-email-tomeu.vizoso@collabora.com> <1421338359-27467-4-git-send-email-tomeu.vizoso@collabora.com>
+In-Reply-To: <1421338359-27467-4-git-send-email-tomeu.vizoso@collabora.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 4:09 PM, Mohammad Jamal
-<md.jamalmohiuddin@gmail.com> wrote:
-
-> Fix the coding style issue by adding a blank line after declaration
+On 01/15/2015 09:12 AM, Tomeu Vizoso wrote:
+> Patches are on its way to add a config file to alsaucm for the Nyan
+> boards. Use the same card ID that alsaucm will expect.
 >
-> Signed-off-by: Mohammad Jamal <md.jamalmohiuddin@gmail.com>
+> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+> ---
+>   arch/arm/boot/dts/tegra124-nyan-big.dts | 4 ++--
+>   1 file changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/arm/boot/dts/tegra124-nyan-big.dts b/arch/arm/boot/dts/tegra124-nyan-big.dts
+> index 43e58a4..9a9cffe 100644
+> --- a/arch/arm/boot/dts/tegra124-nyan-big.dts
+> +++ b/arch/arm/boot/dts/tegra124-nyan-big.dts
+> @@ -1976,9 +1976,9 @@
+>   	};
+>
+>   	sound {
+> -		compatible = "nvidia,tegra-audio-max98090-nyan-big",
+> +		compatible = "nvidia,tegra-audio-max98090-nyan",
+>   			     "nvidia,tegra-audio-max98090";
 
-Patch applied.
+If all the boards that are derived from Nyan truly have identical audio 
+HW (or at least any differences can be described by this binding), then 
+it seems fine to add "nvidia,tegra-audio-max98090-nyan" to the 
+compatible value.
 
-Yours,
-Linus Walleij
+However, I don't see a reason to remove the board-specific compatible 
+value "nvidia,tegra-audio-max98090-nyan-big"; we should always include 
+all the values that are relevant.
+
+> -		nvidia,model = "Acer Chromebook 13";
+> +		nvidia,model = "GoogleNyan";
+
+Why not just name the UCM config file after the ASoC card name that's 
+already in use? Perhaps it's not likely to be unique enough though:-(
