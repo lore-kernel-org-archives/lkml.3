@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753315AbbAOKOU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 05:14:20 -0500
-Received: from mailout3.samsung.com ([203.254.224.33]:52899 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752171AbbAOKOO (ORCPT
+	id S1753370AbbAOKOe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 05:14:34 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:19303 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752143AbbAOKO3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 05:14:14 -0500
-X-AuditID: cbfee690-f79ab6d0000046f7-66-54b792f3f881
+	Thu, 15 Jan 2015 05:14:29 -0500
+X-AuditID: cbfee68d-f79296d000004278-58-54b793036e6b
 From: Namjae Jeon <namjae.jeon@samsung.com>
 To: "'Brian Foster'" <bfoster@redhat.com>,
         "'Namjae Jeon'" <linkinjeon@gmail.com>
@@ -15,46 +15,46 @@ Cc: david@fromorbit.com, tytso@mit.edu, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
         xfs@oss.sgi.com, a.sangwan@samsung.com
 References: <1421165126-3585-1-git-send-email-linkinjeon@gmail.com>
- <1421165126-3585-12-git-send-email-linkinjeon@gmail.com>
- <20150114201610.GA49511@bfoster.bfoster>
-In-reply-to: <20150114201610.GA49511@bfoster.bfoster>
-Subject: RE: [PATCH v8 11/11] xfstests: fsx: Add fallocate insert range
- operation
-Date: Thu, 15 Jan 2015 19:14:11 +0900
-Message-id: <004201d030ac$01d949f0$058bddd0$@samsung.com>
+ <1421165126-3585-10-git-send-email-linkinjeon@gmail.com>
+ <20150114201710.GB49511@bfoster.bfoster>
+In-reply-to: <20150114201710.GB49511@bfoster.bfoster>
+Subject: RE: [PATCH v8 9/11] xfstests: generic/043: Test multiple fallocate
+ insert/collapse range calls
+Date: Thu, 15 Jan 2015 19:14:26 +0900
+Message-id: <004301d030ac$0ad62960$20827c20$@samsung.com>
 MIME-version: 1.0
 Content-type: text/plain; charset=us-ascii
 Content-transfer-encoding: 7bit
 X-Mailer: Microsoft Outlook 14.0
-Thread-index: AQI8HFfblg/gPWIGszLKUjAczsKp1gHWc7HLAgNEqqubyk0nkA==
+Thread-index: AQI8HFfblg/gPWIGszLKUjAczsKp1gJE7vJ0AfQXG+Obx1UzIA==
 Content-language: ko
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFIsWRmVeSWpSXmKPExsWyRsSkRPfLpO0hBvvus1gsnXiJ2eLd5yqL
-	LcfuMVpcv3uL2WLmvDtsFnv2nmSxuLxrDptFa89PdotFfbcYHTg9Ti2S8Ng56y67R9OZo8we
-	qy9sZfR4v+8qm0ffllWMHp83yQWwR3HZpKTmZJalFunbJXBlXOpOKlhtWrGycy5TA2O/Zhcj
-	J4eEgInE4mcXWSBsMYkL99azdTFycQgJLGWUOHJ6BSNM0bLHjawQiUWMEvu+LWaEcP4ySvx/
-	sgwow8HBJqAt8WeLKEiDiICvxP3lH8EamAVWM0qcn9IN1b2SUeLjvG4mkCpOAVOJi3NbWEFs
-	YYFgiSO/74GtYxFQlfh/4yZYDa+ApcS3adfZIGxBiR+T74HdyiygJbF+53EmCFteYvOat8wQ
-	pypI7Dj7mhHiCieJli6IXmYBEYl9L96BXS0h0Mohca3lBxPEMgGJb5MPsYB8ICEgK7HpANQc
-	SYmDK26wTGCUmIVk9Swkq2chWT0LyYoFjCyrGEVTC5ILipPSi0z0ihNzi0vz0vWS83M3MQKj
-	/PS/ZxN2MN47YH2IUYCDUYmHl8Fve4gQa2JZcWXuIUZToIsmMkuJJucDU0leSbyhsZmRhamJ
-	qbGRuaWZkjjva6mfwUIC6YklqdmpqQWpRfFFpTmpxYcYmTg4pRoYaybY3Tf31b7df/VkzPEI
-	95p78v+ObzE/Uato/rJog11iac3rda8aLXMly2afUKngmGV04aPR6TX/TY7UdBWLtPqLV7G7
-	s3KUSvdynRR+9+W5W+HjFTsa3jnu+Vj7SotT+z3jyhWa0ldUKzfeLzLx+FNsZ8DpdCBwSv8/
-	83kP372L1mVYoSigxFKckWioxVxUnAgAXaKXn+0CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrCKsWRmVeSWpSXmKPExsVy+t9jAd3Pk7aHGOy+amGxdOIlZot3n6ss
-	thy7x2hx/e4tZouZ8+6wWezZe5LF4vKuOWwWrT0/2S0W9d1idOD0OLVIwmPnrLvsHk1njjJ7
-	rL6wldHj/b6rbB59W1YxenzeJBfAHtXAaJORmpiSWqSQmpecn5KZl26r5B0c7xxvamZgqGto
-	aWGupJCXmJtqq+TiE6DrlpkDdJmSQlliTilQKCCxuFhJ3w7ThNAQN10LmMYIXd+QILgeIwM0
-	kLCGMeNSd1LBatOKlZ1zmRoY+zW7GDk5JARMJJY9bmSFsMUkLtxbz9bFyMUhJLCIUWLft8WM
-	EM5fRon/T5YBVXFwsAloS/zZIgrSICLgK3F/+UdWkBpmgdWMEuendLNCNKxklPg4r5sJpIpT
-	wFTi4twWsBXCAsESR37fYwSxWQRUJf7fuAlWwytgKfFt2nU2CFtQ4sfkeywgNrOAlsT6nceZ
-	IGx5ic1r3jJDnKogsePsa0aIK5wkWrogepkFRCT2vXjHOIFRaBaSUbOQjJqFZNQsJC0LGFlW
-	MYqmFiQXFCel5xrqFSfmFpfmpesl5+duYgSnkGdSOxhXNlgcYhTgYFTi4WXw2x4ixJpYVlyZ
-	e4hRgoNZSYS3MwcoxJuSWFmVWpQfX1Sak1p8iNEU6NOJzFKiyfnA9JZXEm9obGJmZGlkbmhh
-	ZGyuJM6rZN8WIiSQnliSmp2aWpBaBNPHxMEp1cA4USO5W2HmJKamffIfPp1WCH6kweKcUhwq
-	8veXqnruGjnT9ZKiUQZ5V2/ceitctPCH2wtz97AUHpGHNxgvze+a9XjJ2//sG3TuV/iK2Mp8
-	ynO/c1wuMT56f/J09X9N9yZdlbGbt8tV+Ei/fn3qhI5LR3Y3MK+L/Dpj++kwn9TU3197jIVX
-	F8xXYinOSDTUYi4qTgQAMnck+jcDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrFIsWRmVeSWpSXmKPExsWyRsSkWJd58vYQgw87+CyWTrzEbPHuc5XF
+	lmP3GC2u373FbDFz3h02iz17T7JYXN41h82itecnu8WivluMDpwepxZJeOycdZfdo+nMUWaP
+	1Re2Mnq833eVzaNvyypGj8+b5ALYo7hsUlJzMstSi/TtErgyHrx4zljw3Lri8IKzbA2Mywy6
+	GDk5JARMJL7fWssOYYtJXLi3ng3EFhJYyigxc5EmTE1r9yKgGi6g+HRGiZ9r5rFCOH8ZJZYc
+	awPKcHCwCWhL/NkiCtIgIuArcX/5R7AaZoHVjBLnp3RDNaxklHh18iorSBWngKnE61N7mEFs
+	YYFMic8XboHZLAKqEmeO/QI7g1fAUqKnZyGULSjxY/I9FhCbWUBLYv3O40wQtrzE5jVvmSFO
+	VZDYcfY1I8QVThJfr+6FqhGR2PfiHSPIERICjRwSc/bsY4JYJiDxbfIhFpAPJARkJTYdgJoj
+	KXFwxQ2WCYwSs5CsnoVk9Swkq2chWbGAkWUVo2hqQXJBcVJ6kaFecWJucWleul5yfu4mRmCU
+	n/73rHcH4+0D1ocYBTgYlXh4Gfy2hwixJpYVV+YeYjQFumgis5Rocj4wleSVxBsamxlZmJqY
+	GhuZW5opifMqSv0MFhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cDolnBhV1XLajXGiwzR95v2
+	/N90/Mc75/V3p/zds/5C95dJBvYzpB52as2SXmvrmHL0zWpTtQ/OLzi0Lh+Vikmt62b5Lhm+
+	7+tv1i/pUYdUuN+7qjtwGjS47zykeeiI/oFtzu9knPc9DvK4c3z/otLkk3e90znlXZP97q+c
+	s4j1kbTi6cLn6753K7EUZyQaajEXFScCANNNN8ztAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrKKsWRmVeSWpSXmKPExsVy+t9jQV3mydtDDGYfZLFYOvESs8W7z1UW
+	W47dY7S4fvcWs8XMeXfYLPbsPclicXnXHDaL1p6f7BaL+m4xOnB6nFok4bFz1l12j6YzR5k9
+	Vl/Yyujxft9VNo++LasYPT5vkgtgj2pgtMlITUxJLVJIzUvOT8nMS7dV8g6Od443NTMw1DW0
+	tDBXUshLzE21VXLxCdB1y8wBukxJoSwxpxQoFJBYXKykb4dpQmiIm64FTGOErm9IEFyPkQEa
+	SFjDmPHgxXPGgufWFYcXnGVrYFxm0MXIySEhYCLR2r2IHcIWk7hwbz1bFyMXh5DAdEaJn2vm
+	sUI4fxkllhxrA6ri4GAT0Jb4s0UUpEFEwFfi/vKPYDXMAqsZJc5P6YZqWMko8erkVVaQKk4B
+	U4nXp/Ywg9jCApkSny/cArNZBFQlzhz7xQZi8wpYSvT0LISyBSV+TL7HAmIzC2hJrN95nAnC
+	lpfYvOYtM8SpChI7zr5mhLjCSeLr1b1QNSIS+168Y5zAKDQLyahZSEbNQjJqFpKWBYwsqxhF
+	UwuSC4qT0nMN9YoTc4tL89L1kvNzNzGCk8gzqR2MKxssDjEKcDAq8fAy+G0PEWJNLCuuzD3E
+	KMHBrCTC25kDFOJNSaysSi3Kjy8qzUktPsRoCvTpRGYp0eR8YILLK4k3NDYxM7I0Mje0MDI2
+	VxLnVbJvCxESSE8sSc1OTS1ILYLpY+LglGpg7K6arCow/byWV5bRnCt79c7f5G2eOIWdd9k5
+	m+yoJT6/NwqE7LkUaBc5ocO37kPjC/EHxXFSniossde6Kh3uMxY31GRd+jB3VYz/totrst5k
+	Miv9u3X0jHFGjNfCWGajW/V15eof5h/yXNW0fR9TvndAVcYih8Wb58jNNxKo2J2cfXptdEWq
+	EktxRqKhFnNRcSIAVhnlWzgDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -63,245 +63,242 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-> >  		}
-> >  		do_collapse_range(offset, size);
-> >  		break;
-> > +	case OP_INSERT_RANGE:
-> > +		TRIM_OFF(offset, file_size);
-> > +		TRIM_LEN(offset, size, maxfilelen - file_size);
+> > +_require_scratch
+> > +_require_xfs_io_command "fiemap"
+> > +_require_xfs_io_command "finsert"
+> > +_require_xfs_io_command "fcollapse"
+> > +_do_die_on_error=y
 > 
-> Ugh, I hit a crash down in do_insert_range() due to the memset() on
-> good_buf going off the end of the buffer. It looks like the TRIM_LEN()
-> here is not correct and can result in a really large length value.
+> What is _do_die_on_error for? Seems like that's only relevant for using
+> _do()?
 > 
-> Perhaps something like TRIM_LEN(file_size, length, maxfilelen) is what
-> we want for insert range ops?
-Hi Brian,
-Oops, Sorry about that.
-And your change is correct.
+> > +src=$SCRATCH_MNT/testfile
+> > +dest=$SCRATCH_MNT/testfile.dest
+> > +BLOCKS=100
+> > +BSIZE=`get_block_size $SCRATCH_MNT`
+> > +
+> 
+> rm -f $seqres.full
+> 
+> ... to clear out the old .full file.
+> 
+> > +_scratch_mkfs MKFS_OPTIONS >> $seqres.full 2>&1
+> 
+> You don't need MKFS_OPTIONS here. In fact, this currently causes a mkfs
+> failure (missing $) that we don't detect because we aren't checking that
+> the mkfs actually succeeds. All we need to do here is:
+> 
+> _scratch_mkfs >> $seqres.full 2>&1 || _fail "mkfs failed"
+> 
+> If you dig down into _scratch_mkfs(), you'll see that it already
+> includes $MKFS_OPTIONS and thus formats the fs as specified by the test
+> config.
+> 
+> It might also be a good idea to check that the _scratch_mount below
+> succeeds as well...
+> 
+> > +_scratch_mount >> $seqres.full 2>&1
+> > +length=$(($BLOCKS * $BSIZE))
+> > +
+> > +# Write file
+> > +$XFS_IO_PROG -f -c "pwrite 0 $length" -c fsync $src > /dev/null
+> > +cp $src $dest
+> > +
+> 
+> It seems quite unlikely for this to not create a single extent given the
+> smallish file size and freshly created fs, but who knows with various fs
+> types, test configurations, test device sizes, etc. Another option could
+> be to check the starting extent count and verify the ending extent count
+> matches, rather than assume hardcoded values of 1.
+> 
+> To be honest, even just including the starting extent count in the
+> golden output (e.g., add an fiemap command here as well) might be good
+> enough to distinguish that failure path from something going wrong in
+> the collapse path, should it ever occur.
+> 
+> > +# Insert alternate blocks
+> > +for (( j=0; j < $(($BLOCKS/2)); j++ )); do
+> > +	offset=$((($j*$BSIZE)*2))
+> > +	$XFS_IO_PROG -c "finsert $offset $BSIZE" $dest > /dev/null
+> > +done
+> > +
+> > +# Check if 100 extents are present
+> > +$XFS_IO_PROG -c "fiemap -v" $dest | grep "^ *[0-9]*:" |wc -l
+> > +
+> > +_check_scratch_fs
+> > +if [ $? -ne 0 ]; then
+> > +	status=1
+> > +	exit
+> > +fi
+> > +
+> > +# Collapse alternate blocks
+> > +for (( j=0; j < $(($BLOCKS/2)); j++ )); do
+> > +	offset=$((($j*$BSIZE)))
+> > +	$XFS_IO_PROG -c "fcollapse $offset $BSIZE" $dest > /dev/null
+> > +done
+> > +
+> > +# Check if 1 extents are present
+> > +$XFS_IO_PROG -c "fiemap -v" $dest | grep "^ *[0-9]*:" |wc -l
+> > +
+> > +# compare original file and test file.
+> > +cmp $src $dest || _fail "file bytes check failed"
+> > +
+> > +_check_scratch_fs
+> > +if [ $? -ne 0 ]; then
+> > +	status=1
+> > +	exit
+> > +fi
+> > +
+> > +umount $SCRATCH_MNT
+> > +
+> 
+> The scratch device is unmounted and checked after each test that uses it
+> so the above is unnecessary.
+I checked your each review points. and updated patch.
 
-Could you review the below updated patch ?
-
-Thanks!
+Could you please review below patch ?
+Thanks a lot!
 
 ------------------------------------------------------------------------------
-Subject: [PATCH v9 11/11] xfstests: fsx: Add fallocate insert range operation
+Subject: [PATCH v9 9/11] xfstests: generic/043: Test multiple fallocate 
+ insert/collapse range calls
 
-This commit adds fallocate FALLOC_FL_INSERT_RANGE support for fsx.
+This testcase(043) tries to test finsert range a single alternate block
+mulitiple times and test merge code of collase range.
 
 Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
 Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
 ---
- ltp/fsx.c |  124 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++-----
- 1 files changed, 114 insertions(+), 10 deletions(-)
+ tests/generic/043     |   96 +++++++++++++++++++++++++++++++++++++++++++++++++
+ tests/generic/043.out |    2 +
+ tests/generic/group   |    1 +
+ 3 files changed, 99 insertions(+), 0 deletions(-)
+ create mode 100644 tests/generic/043
+ create mode 100644 tests/generic/043.out
 
-diff --git a/ltp/fsx.c b/ltp/fsx.c
-index 3709419..9fed5b2 100644
---- a/ltp/fsx.c
-+++ b/ltp/fsx.c
-@@ -95,7 +95,8 @@ int			logcount = 0;	/* total ops */
- #define OP_PUNCH_HOLE		6
- #define OP_ZERO_RANGE		7
- #define OP_COLLAPSE_RANGE	8
--#define OP_MAX_FULL		9
-+#define OP_INSERT_RANGE	9
-+#define OP_MAX_FULL		10
- 
- /* operation modifiers */
- #define OP_CLOSEOPEN	100
-@@ -145,6 +146,7 @@ int     fallocate_calls = 1;            /* -F flag disables */
- int     punch_hole_calls = 1;           /* -H flag disables */
- int     zero_range_calls = 1;           /* -z flag disables */
- int	collapse_range_calls = 1;	/* -C flag disables */
-+int	insert_range_calls = 1;		/* -i flag disables */
- int 	mapped_reads = 1;		/* -R flag disables it */
- int	fsxgoodfd = 0;
- int	o_direct;			/* -Z */
-@@ -339,6 +341,14 @@ logdump(void)
- 						     lp->args[0] + lp->args[1])
- 				prt("\t******CCCC");
- 			break;
-+		case OP_INSERT_RANGE:
-+			prt("INSERT 0x%x thru 0x%x\t(0x%x bytes)",
-+			    lp->args[0], lp->args[0] + lp->args[1] - 1,
-+			    lp->args[1]);
-+			if (badoff >= lp->args[0] && badoff <
-+						     lp->args[0] + lp->args[1])
-+				prt("\t******CCCC");
-+			break;
- 		case OP_SKIPPED:
- 			prt("SKIPPED (no operation)");
- 			break;
-@@ -1012,6 +1022,59 @@ do_collapse_range(unsigned offset, unsigned length)
- }
- #endif
- 
-+#ifdef FALLOC_FL_INSERT_RANGE
-+void
-+do_insert_range(unsigned offset, unsigned length)
-+{
-+	unsigned end_offset;
-+	int mode = FALLOC_FL_INSERT_RANGE;
+diff --git a/tests/generic/043 b/tests/generic/043
+new file mode 100644
+index 0000000..a6f91ce
+--- /dev/null
++++ b/tests/generic/043
+@@ -0,0 +1,96 @@
++#! /bin/bash
++# FS QA Test No. generic/043
++#
++# Test multiple fallocate insert/collapse range calls on same file.
++# Call insert range a single alternate block multiple times until the file
++# is left with 100 extents and as much number of extents. And Call collapse
++# range about the previously inserted ranges to test merge code of collapse
++# range. Also check for data integrity and file system consistency.
++#-----------------------------------------------------------------------
++# Copyright (c) 2014 Samsung Electronics.  All Rights Reserved.
++#
++# This program is free software; you can redistribute it and/or
++# modify it under the terms of the GNU General Public License as
++# published by the Free Software Foundation.
++#
++# This program is distributed in the hope that it would be useful,
++# but WITHOUT ANY WARRANTY; without even the implied warranty of
++# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++# GNU General Public License for more details.
++#
++# You should have received a copy of the GNU General Public License
++# along with this program; if not, write the Free Software Foundation,
++# Inc.,  51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
++#
++#-----------------------------------------------------------------------
++#
 +
-+	if (length == 0) {
-+		if (!quiet && testcalls > simulatedopcount)
-+			prt("skipping zero length insert range\n");
-+		log4(OP_SKIPPED, OP_INSERT_RANGE, offset, length);
-+		return;
-+	}
++seq=`basename $0`
++seqres=$RESULT_DIR/$seq
++echo "QA output created by $seq"
 +
-+	if ((loff_t)offset >= file_size) {
-+		if (!quiet && testcalls > simulatedopcount)
-+			prt("skipping insert range behind EOF\n");
-+		log4(OP_SKIPPED, OP_INSERT_RANGE, offset, length);
-+		return;
-+	}
++here=`pwd`
++tmp=/tmp/$$
++status=1	# failure is the default!
++trap "rm -f $tmp.*; exit \$status" 0 1 2 3 15
 +
-+	log4(OP_INSERT_RANGE, offset, length, 0);
++# get standard environment, filters and checks
++. ./common/rc
++. ./common/filter
 +
-+	if (testcalls <= simulatedopcount)
-+		return;
++# real QA test starts here
++_supported_fs generic
++_supported_os Linux
 +
-+	end_offset = offset + length;
-+	if ((progressinterval && testcalls % progressinterval == 0) ||
-+	    (debug && (monitorstart == -1 || monitorend == -1 ||
-+		      end_offset <= monitorend))) {
-+		prt("%lu insert\tfrom 0x%x to 0x%x, (0x%x bytes)\n", testcalls,
-+			offset, offset+length, length);
-+	}
-+	if (fallocate(fd, mode, (loff_t)offset, (loff_t)length) == -1) {
-+		prt("insert range: %x to %x\n", offset, length);
-+		prterr("do_insert_range: fallocate");
-+		report_failure(161);
-+	}
++_require_scratch
++_require_xfs_io_command "fiemap"
++_require_xfs_io_command "finsert"
++_require_xfs_io_command "fcollapse"
++_do_die_on_error=always
++src=$SCRATCH_MNT/testfile
++dest=$SCRATCH_MNT/testfile.dest
++BLOCKS=100
++BSIZE=`get_block_size $SCRATCH_MNT`
++rm -f $seqres.full
 +
-+	memmove(good_buf + end_offset, good_buf + offset,
-+		file_size - offset);
-+	memset(good_buf + offset, '\0', length);
-+	file_size += length;
-+}
++_scratch_mkfs >> $seqres.full 2>&1 || _fail "mkfs failed"
++_scratch_mount || _fail "mount failed"
++length=$(($BLOCKS * $BSIZE))
 +
-+#else
-+void
-+do_insert_range(unsigned offset, unsigned length)
-+{
-+	return;
-+}
-+#endif
++# Write file
++_do "$XFS_IO_PROG -f -c \"pwrite 0 $length\" -c fsync $src"
++cp $src $dest
++extent_before=`$XFS_IO_PROG -c "fiemap -v" $dest | grep "^ *[0-9]*:" |wc -l`
 +
- #ifdef HAVE_LINUX_FALLOC_H
- /* fallocate is basically a no-op unless extending, then a lot like a truncate */
- void
-@@ -1117,14 +1180,25 @@ docloseopen(void)
- 	}
- }
- 
--#define TRIM_OFF_LEN(off, len, size)	\
--do {					\
--	if (size)			\
--		(off) %= (size);	\
--	else				\
--		(off) = 0;		\
--	if ((off) + (len) > (size))	\
--		(len) = (size) - (off);	\
++# Insert alternate blocks
++for (( j=0; j < $(($BLOCKS/2)); j++ )); do
++	offset=$((($j*$BSIZE)*2))
++	_do "$XFS_IO_PROG -c \"finsert $offset $BSIZE\" $dest"
++done
 +
-+#define TRIM_OFF(off, size)			\
-+do {						\
-+	if (size)				\
-+		(off) %= (size);		\
-+	else					\
-+		(off) = 0;			\
-+} while (0)
++# Check if 100 extents are present
++$XFS_IO_PROG -c "fiemap -v" $dest | grep "^ *[0-9]*:" |wc -l
 +
-+#define TRIM_LEN(off, len, size)		\
-+do {						\
-+	if ((off) + (len) > (size))		\
-+		(len) = (size) - (off);		\
-+} while (0)
++_check_scratch_fs
++if [ $? -ne 0 ]; then
++	status=1
++	exit
++fi
 +
-+#define TRIM_OFF_LEN(off, len, size)		\
-+do {						\
-+	TRIM_OFF(off, size);			\
-+	TRIM_LEN(off, len, size);		\
- } while (0)
- 
- void
-@@ -1192,6 +1266,12 @@ test(void)
- 			goto out;
- 		}
- 		break;
-+	case OP_INSERT_RANGE:
-+		if (!insert_range_calls) {
-+			log4(OP_SKIPPED, OP_INSERT_RANGE, offset, size);
-+			goto out;
-+		}
-+		break;
- 	}
- 
- 	switch (op) {
-@@ -1244,6 +1324,22 @@ test(void)
- 		}
- 		do_collapse_range(offset, size);
- 		break;
-+	case OP_INSERT_RANGE:
-+		TRIM_OFF(offset, file_size);
-+		TRIM_LEN(file_size, size, maxfilelen);
-+		offset = offset & ~(block_size - 1);
-+		size = size & ~(block_size - 1);
-+		if (size == 0) {
-+			log4(OP_SKIPPED, OP_INSERT_RANGE, offset, size);
-+			goto out;
-+		}
-+		if (file_size + size > maxfilelen) {
-+			log4(OP_SKIPPED, OP_INSERT_RANGE, offset, size);
-+			goto out;
-+		}
++# Collapse alternate blocks
++for (( j=0; j < $(($BLOCKS/2)); j++ )); do
++	offset=$((($j*$BSIZE)))
++	_do "$XFS_IO_PROG -c \"fcollapse $offset $BSIZE\" $dest"
++done
 +
-+		do_insert_range(offset, size);
-+		break;
- 	default:
- 		prterr("test: unknown operation");
- 		report_failure(42);
-@@ -1307,6 +1403,9 @@ usage(void)
- #ifdef FALLOC_FL_COLLAPSE_RANGE
- "	-C: Do not use collapse range calls\n"
- #endif
-+#ifdef FALLOC_FL_INSERT_RANGE
-+"	-i: Do not use insert range calls\n"
-+#endif
- "	-L: fsxLite - no file creations & no file size changes\n\
- 	-N numops: total # operations to do (default infinity)\n\
- 	-O: use oplen (see -o flag) for every op (default random)\n\
-@@ -1493,7 +1592,7 @@ main(int argc, char **argv)
- 
- 	setvbuf(stdout, (char *)0, _IOLBF, 0); /* line buffered stdout */
- 
--	while ((ch = getopt(argc, argv, "b:c:dfl:m:no:p:qr:s:t:w:xyAD:FHzCLN:OP:RS:WZ"))
-+	while ((ch = getopt(argc, argv, "b:c:dfl:m:no:p:qr:s:t:w:xyAD:FHzCiLN:OP:RS:WZ"))
- 	       != EOF)
- 		switch (ch) {
- 		case 'b':
-@@ -1599,6 +1698,9 @@ main(int argc, char **argv)
- 		case 'C':
- 			collapse_range_calls = 0;
- 			break;
-+		case 'i':
-+			insert_range_calls = 0;
-+			break;
- 		case 'L':
- 		        lite = 1;
- 			break;
-@@ -1758,6 +1860,8 @@ main(int argc, char **argv)
- 		zero_range_calls = test_fallocate(FALLOC_FL_ZERO_RANGE);
- 	if (collapse_range_calls)
- 		collapse_range_calls = test_fallocate(FALLOC_FL_COLLAPSE_RANGE);
-+	if (insert_range_calls)
-+		insert_range_calls = test_fallocate(FALLOC_FL_INSERT_RANGE);
- 
- 	while (numops == -1 || numops--)
- 		test();
++extent_after=`$XFS_IO_PROG -c "fiemap -v" $dest | grep "^ *[0-9]*:" |wc -l`
++if [ $extent_before -ne $extent_after ]; then
++	echo "extents mismatched before = $extent_before after = $extent_after"
++fi
++
++# compare original file and test file.
++cmp $src $dest || _fail "file bytes check failed"
++
++# success, all done
++status=0
++exit
+diff --git a/tests/generic/043.out b/tests/generic/043.out
+new file mode 100644
+index 0000000..28427c5
+--- /dev/null
++++ b/tests/generic/043.out
+@@ -0,0 +1,2 @@
++QA output created by 043
++100
+diff --git a/tests/generic/group b/tests/generic/group
+index c0944b3..0a10bdd 100644
+--- a/tests/generic/group
++++ b/tests/generic/group
+@@ -45,6 +45,7 @@
+ 040 auto quick prealloc
+ 041 auto quick prealloc
+ 042 auto quick prealloc
++043 auto quick prealloc
+ 053 acl repair auto quick
+ 062 attr udf auto quick
+ 068 other auto freeze dangerous stress
 -- 
 1.7.7
-
 
 
