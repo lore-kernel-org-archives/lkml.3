@@ -1,111 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755600AbbAOUQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 15:16:27 -0500
-Received: from mail-1.atlantis.sk ([80.94.52.57]:58836 "EHLO
-	mail-1.atlantis.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755369AbbAOUQZ (ORCPT
+	id S1755274AbbAOUQL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 15:16:11 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:58654 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752940AbbAOUQI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 15:16:25 -0500
-From: Ondrej Zary <linux@rainbow-software.org>
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: Re: [PATCH] e100: Don't enable WoL by default on Toshiba devices
-Date: Thu, 15 Jan 2015 21:15:43 +0100
-User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
-Cc: David Miller <davem@davemloft.net>, e1000-devel@lists.sourceforge.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1415832445-9524-1-git-send-email-linux@rainbow-software.org> <201501151618.07434.linux@rainbow-software.org> <1421335864.2632.29.camel@jtkirshe-mobl>
-In-Reply-To: <1421335864.2632.29.camel@jtkirshe-mobl>
-X-KMail-QuotePrefix: > 
+	Thu, 15 Jan 2015 15:16:08 -0500
+Date: Thu, 15 Jan 2015 21:16:05 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH] virtio_balloon: coding style fixes
+Message-ID: <20150115201605.GA24130@dhcp22.suse.cz>
+References: <1421321941-21111-1-git-send-email-mst@redhat.com>
+ <20150115130642.GC7008@dhcp22.suse.cz>
+ <20150115134412.GA23874@redhat.com>
+ <20150115141308.GH7000@dhcp22.suse.cz>
+ <20150115185018.GA31068@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201501152115.43721.linux@rainbow-software.org>
+In-Reply-To: <20150115185018.GA31068@redhat.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu 15-01-15 20:50:18, Michael S. Tsirkin wrote:
+> On Thu, Jan 15, 2015 at 03:13:08PM +0100, Michal Hocko wrote:
+> > On Thu 15-01-15 15:44:12, Michael S. Tsirkin wrote:
+[...]
+> > > Maybe send patch dropping include/uapi/ from there,
+> > > should help drive the volumes down?
+> > 
+> > This would be an overkill IMO. It would be much more preferable if
+> > people actually think about who from the suggested list (either from
+> > MAINTAINERS or ./scripts/get_maintainer.pl) should be really added.
+> > 
+> > [...]
+> 
+> Yea, think about it, then what?  I've no idea what is linux-abi for, and
+> what people subscribed there are interested in. How should I?
 
+https://www.kernel.org/doc/man-pages/linux-api-ml.html
 
-On Thursday 15 January 2015 16:31:04 Jeff Kirsher wrote:
-> On Thu, 2015-01-15 at 16:18 +0100, Ondrej Zary wrote:
-> > On Thursday 15 January 2015, Jeff Kirsher wrote:
-> > > On Thu, 2015-01-15 at 14:40 +0100, Ondrej Zary wrote:
-> > > > On Thursday 13 November 2014, Jeff Kirsher wrote:
-> > > > > On Wed, 2014-11-12 at 18:18 -0500, David Miller wrote:
-> > > > > > From: Ondrej Zary <linux@rainbow-software.org>
-> > > > > > Date: Wed, 12 Nov 2014 23:47:25 +0100
-> > > > > >
-> > > > > > > Enabling WoL on some Toshiba laptops (such as Portege R100)
-> > > >
-> > > > causes
-> > > >
-> > > > > > > battery drain after shutdown (WoL is active even on battery).
-> > > >
-> > > > These
-> > > >
-> > > > > > > laptops have the WoL bit set in EEPROM ID, causing e100 driver
-> > > >
-> > > > to
-> > > >
-> > > > > > > enable WoL by default.
-> > > > > > >
-> > > > > > > Check subsystem vendor ID and if it's Toshiba, don't enable WoL
-> > > >
-> > > > by
-> > > >
-> > > > > > > default from EEPROM settings.
-> > > > > > >
-> > > > > > > Fixes
-> > > >
-> > > > https://bugs.launchpad.net/ubuntu/+source/linux/+bug/110784
-> > > >
-> > > > > > > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
-> > > > > >
-> > > > > > Jeff, are you gonna pick this up?
-> > > > >
-> > > > > Yes, sorry I did not catch it earlier.
-> > > >
-> > > > What happened to this patch? I don't see it in net.git or
-> > > > net-next.git
-> > > > (checked both davem's and jkirsher's)
-> > >
-> > > Sorry, I thought I had replied with a NAK on this patch after further
-> > > review of the changes.
-> > >
-> > > We don't fix BIOS issues in the driver especially regarding feature
-> > > enablement like WoL.  We would end up with dozens of these kinds of
-> > > fixes if we to allow this.
-> > >
-> > > You should go back to the OEM and ask for a BIOS update to resolve this
-> > > or configure udev so that ethtool disables WoL.
-> >
-> > This is not a BIOS bug. When the machine is powered off in BIOS (or
-> > GRUB), everything is OK.
-> >
-> > The bug is that e100 driver enables WoL based on some bit in EEPROM that
-> > happens to be set on at least some Toshiba laptops and user has no way to
-> > change it.
->
-> Yes, the EEPROM can be modified/updated through the BIOS update I
-> suggested earlier.  So again, a BIOS issue.
+And by no means, I didn't intend to put critique just to you or only
+this particular patch. I just grown frustrated because there are so many
+patches which are no longer API/ABI related flying here. This was just
+an example.
 
-The machine has already the latest BIOS and it's unlikely that Toshiba will 
-release a new version for old laptops.
-
-> OR you can configure udev so that ethtool disables WoL if you do not
-> want to pursue a EEPROM update through a BIOS update.
-
-I can configure udev but what about other people that install Linux and expect 
-it to work (not drain battery after shutdown)? Without needing to know what 
-udev, ethtool or WoL is.
-
-> >  Windows driver does not do this. Other Linux ethernet drivers
-> > don't do this. When user wants WoL, (s)he enables it in BIOS and OS.
-> > Maybe this (mis)feature should be removed from the driver.
-
-
+Hi volume of unrelated emails will turn this into another lkml, I am
+afraid.
 -- 
-Ondrej Zary
+Michal Hocko
+SUSE Labs
