@@ -1,271 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485AbbAOQsa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 11:48:30 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:55636 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752259AbbAOQs3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 11:48:29 -0500
-Message-ID: <54B7ED85.2090700@linaro.org>
-Date: Thu, 15 Jan 2015 17:40:37 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1753235AbbAOQnk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 11:43:40 -0500
+Received: from mta-out1.inet.fi ([62.71.2.195]:40136 "EHLO jenni2.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752425AbbAOQni (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 11:43:38 -0500
+Date: Thu, 15 Jan 2015 18:40:54 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Andrew Lutomirski <luto@mit.edu>
+Cc: Darren Hart <dvhart@infradead.org>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] platform-drivers-x86 for 3.19
+Message-ID: <20150115164054.GA21675@node.dhcp.inet.fi>
+References: <20141218175126.GA78864@vmdeb7>
+ <20150111225802.GA12944@node.dhcp.inet.fi>
+ <20150112183831.GA99900@vmdeb7>
+ <CAObL_7FCiZJuTQNUfqjoxaRscB+_2fvwpnXDt3d8E+0dFm=i6A@mail.gmail.com>
+ <20150112200331.GA23277@node.dhcp.inet.fi>
+ <CAObL_7FwxW=oq9L+POVx_4S9HSZW2QM3bnTNW37rDsUA=-U3FA@mail.gmail.com>
+ <20150112203003.GB23277@node.dhcp.inet.fi>
+ <CAObL_7HNXAxnoNx-K=yJ1C9kkffc9Rf=EmVGJ+=K+5S40m7jSQ@mail.gmail.com>
+ <20150113175609.GB130525@vmdeb7>
+ <CAObL_7HDckMzgbbaKEH=iYwRdn24ANy5U8EMp=A3ODhWMt_2bw@mail.gmail.com>
 MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-CC: Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Wim Van Sebroeck <wim@iguana.be>, Guenter Roeck <linux@roeck-us.net>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH v3 7/8] clocksource: atmel-st: use syscon/regmap
-References: <1421077023-30954-1-git-send-email-alexandre.belloni@free-electrons.com> <1421077023-30954-8-git-send-email-alexandre.belloni@free-electrons.com>
-In-Reply-To: <1421077023-30954-8-git-send-email-alexandre.belloni@free-electrons.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAObL_7HDckMzgbbaKEH=iYwRdn24ANy5U8EMp=A3ODhWMt_2bw@mail.gmail.com>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/12/2015 04:37 PM, Alexandre Belloni wrote:
-> The register range from the system timer is also used by the watchdog driver.
-> Use a regmap to handle concurrent accesses.
->
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
-> ---
->   drivers/clocksource/timer-atmel-st.c | 103 +++++++++++++----------------------
->   1 file changed, 39 insertions(+), 64 deletions(-)
->
-> diff --git a/drivers/clocksource/timer-atmel-st.c b/drivers/clocksource/timer-atmel-st.c
-> index ed0267f1c892..557389306be5 100644
-> --- a/drivers/clocksource/timer-atmel-st.c
-> +++ b/drivers/clocksource/timer-atmel-st.c
-> @@ -24,20 +24,20 @@
->   #include <linux/irq.h>
->   #include <linux/clockchips.h>
->   #include <linux/export.h>
-> -#include <linux/of.h>
-> -#include <linux/of_address.h>
-> +#include <linux/mfd/atmel-st.h>
-> +#include <linux/mfd/syscon.h>
->   #include <linux/of_irq.h>
-> +#include <linux/regmap.h>
->
->   #include <asm/mach/time.h>
->   #include <asm/system_misc.h>
->
-> -#include <mach/at91_st.h>
-> -#include <mach/hardware.h>
-> -
->   static unsigned long last_crtr;
->   static u32 irqmask;
->   static struct clock_event_device clkevt;
-> +static struct regmap *regmap_st;
->
-> +#define AT91_SLOW_CLOCK		32768 /* DT compatibility */
->   #define RM9200_TIMER_LATCH	((AT91_SLOW_CLOCK + HZ/2) / HZ)
->
->   /*
-> @@ -47,11 +47,11 @@ static struct clock_event_device clkevt;
->    */
->   static inline unsigned long read_CRTR(void)
->   {
-> -	unsigned long x1, x2;
-> +	unsigned int x1, x2;
->
-> -	x1 = at91_st_read(AT91_ST_CRTR);
-> +	regmap_read(regmap_st, AT91_ST_CRTR, &x1);
->   	do {
-> -		x2 = at91_st_read(AT91_ST_CRTR);
-> +		regmap_read(regmap_st, AT91_ST_CRTR, &x2);
->   		if (x1 == x2)
->   			break;
->   		x1 = x2;
-> @@ -64,7 +64,10 @@ static inline unsigned long read_CRTR(void)
->    */
->   static irqreturn_t at91rm9200_timer_interrupt(int irq, void *dev_id)
->   {
-> -	u32	sr = at91_st_read(AT91_ST_SR) & irqmask;
-> +	u32 sr;
-> +
-> +	regmap_read(regmap_st, AT91_ST_SR, &sr);
-> +	sr &= irqmask;
->
->   	/*
->   	 * irqs should be disabled here, but as the irq is shared they are only
-> @@ -97,7 +100,7 @@ static struct irqaction at91rm9200_timer_irq = {
->   	.name		= "at91_tick",
->   	.flags		= IRQF_SHARED | IRQF_TIMER | IRQF_IRQPOLL,
->   	.handler	= at91rm9200_timer_interrupt,
-> -	.irq		= NR_IRQS_LEGACY + AT91_ID_SYS,
-> +	.irq		= 0,
->   };
->
->   static cycle_t read_clk32k(struct clocksource *cs)
-> @@ -116,23 +119,25 @@ static struct clocksource clk32k = {
->   static void
->   clkevt32k_mode(enum clock_event_mode mode, struct clock_event_device *dev)
->   {
-> +	unsigned int val;
-> +
->   	/* Disable and flush pending timer interrupts */
-> -	at91_st_write(AT91_ST_IDR, AT91_ST_PITS | AT91_ST_ALMS);
-> -	at91_st_read(AT91_ST_SR);
-> +	regmap_write(regmap_st, AT91_ST_IDR, AT91_ST_PITS | AT91_ST_ALMS);
-> +	regmap_read(regmap_st, AT91_ST_SR, &val);
->
->   	last_crtr = read_CRTR();
->   	switch (mode) {
->   	case CLOCK_EVT_MODE_PERIODIC:
->   		/* PIT for periodic irqs; fixed rate of 1/HZ */
->   		irqmask = AT91_ST_PITS;
-> -		at91_st_write(AT91_ST_PIMR, RM9200_TIMER_LATCH);
-> +		regmap_write(regmap_st, AT91_ST_PIMR, RM9200_TIMER_LATCH);
->   		break;
->   	case CLOCK_EVT_MODE_ONESHOT:
->   		/* ALM for oneshot irqs, set by next_event()
->   		 * before 32 seconds have passed
->   		 */
->   		irqmask = AT91_ST_ALMS;
-> -		at91_st_write(AT91_ST_RTAR, last_crtr);
-> +		regmap_write(regmap_st, AT91_ST_RTAR, last_crtr);
->   		break;
->   	case CLOCK_EVT_MODE_SHUTDOWN:
->   	case CLOCK_EVT_MODE_UNUSED:
-> @@ -140,7 +145,7 @@ clkevt32k_mode(enum clock_event_mode mode, struct clock_event_device *dev)
->   		irqmask = 0;
->   		break;
->   	}
-> -	at91_st_write(AT91_ST_IER, irqmask);
-> +	regmap_write(regmap_st, AT91_ST_IER, irqmask);
->   }
->
->   static int
-> @@ -148,6 +153,7 @@ clkevt32k_next_event(unsigned long delta, struct clock_event_device *dev)
->   {
->   	u32		alm;
->   	int		status = 0;
-> +	unsigned int	val;
->
->   	BUG_ON(delta < 2);
->
-> @@ -163,12 +169,12 @@ clkevt32k_next_event(unsigned long delta, struct clock_event_device *dev)
->   	alm = read_CRTR();
->
->   	/* Cancel any pending alarm; flush any pending IRQ */
-> -	at91_st_write(AT91_ST_RTAR, alm);
-> -	at91_st_read(AT91_ST_SR);
-> +	regmap_write(regmap_st, AT91_ST_RTAR, alm);
-> +	regmap_read(regmap_st, AT91_ST_SR, &val);
->
->   	/* Schedule alarm by writing RTAR. */
->   	alm += delta;
-> -	at91_st_write(AT91_ST_RTAR, alm);
-> +	regmap_write(regmap_st, AT91_ST_RTAR, alm);
->
->   	return status;
->   }
-> @@ -186,47 +192,8 @@ static void at91rm9200_restart(enum reboot_mode reboot_mode, const char *cmd)
->   	/*
->   	 * Perform a hardware reset with the use of the Watchdog timer.
->   	 */
-> -	at91_st_write(AT91_ST_WDMR, AT91_ST_RSTEN | AT91_ST_EXTEN | 1);
-> -	at91_st_write(AT91_ST_CR, AT91_ST_WDRST);
-> -}
-> -
-> -void __iomem *at91_st_base;
-> -EXPORT_SYMBOL_GPL(at91_st_base);
-> -
-> -static struct of_device_id at91rm9200_st_timer_ids[] = {
-> -	{ .compatible = "atmel,at91rm9200-st" },
-> -	{ /* sentinel */ }
-> -};
-> -
-> -static int __init of_at91rm9200_st_init(void)
-> -{
-> -	struct device_node *np;
-> -	int ret;
-> -
-> -	np = of_find_matching_node(NULL, at91rm9200_st_timer_ids);
-> -	if (!np)
-> -		goto err;
-> -
-> -	at91_st_base = of_iomap(np, 0);
-> -	if (!at91_st_base)
-> -		goto node_err;
-> -
-> -	/* Get the interrupts property */
-> -	ret = irq_of_parse_and_map(np, 0);
-> -	if (!ret)
-> -		goto ioremap_err;
-> -	at91rm9200_timer_irq.irq = ret;
-> -
-> -	of_node_put(np);
-> -
-> -	return 0;
-> -
-> -ioremap_err:
-> -	iounmap(at91_st_base);
-> -node_err:
-> -	of_node_put(np);
-> -err:
-> -	return -EINVAL;
-> +	regmap_write(regmap_st, AT91_ST_WDMR, AT91_ST_RSTEN | AT91_ST_EXTEN | 1);
-> +	regmap_write(regmap_st, AT91_ST_CR, AT91_ST_WDRST);
->   }
->
->   /*
-> @@ -234,13 +201,21 @@ err:
->    */
->   static void __init atmel_st_timer_init(struct device_node *node)
->   {
-> -	/* For device tree enabled device: initialize here */
-> -	of_at91rm9200_st_init();
-> +	unsigned int val;
-> +
-> +	regmap_st = syscon_node_to_regmap(node);
-> +	if (IS_ERR(regmap_st))
-> +		panic(pr_fmt("Unable to get regmap\n"));
+On Tue, Jan 13, 2015 at 10:04:55AM -0800, Andrew Lutomirski wrote:
+> On Tue, Jan 13, 2015 at 9:56 AM, Darren Hart <dvhart@infradead.org> wrote:
+> > On Mon, Jan 12, 2015 at 02:12:44PM -0800, Andrew Lutomirski wrote:
+> >> On Mon, Jan 12, 2015 at 12:30 PM, Kirill A. Shutemov
+> >> <kirill@shutemov.name> wrote:
+> >> > On Mon, Jan 12, 2015 at 12:05:45PM -0800, Andrew Lutomirski wrote:
+> >> >> On Mon, Jan 12, 2015 at 12:03 PM, Kirill A. Shutemov
+> >> >> <kirill@shutemov.name> wrote:
+> >> >> > On Mon, Jan 12, 2015 at 10:42:11AM -0800, Andrew Lutomirski wrote:
+> >> >> >> On Mon, Jan 12, 2015 at 10:38 AM, Darren Hart <dvhart@infradead.org> wrote:
+> >> >> >> > On Mon, Jan 12, 2015 at 12:58:02AM +0200, Kirill A. Shutemov wrote:
+> >> >> >> >> On Thu, Dec 18, 2014 at 09:51:27AM -0800, Darren Hart wrote:
+> >> >> >> >> > thinkpad-acpi using software mute simplifies the driver and the user experience
+> >> >> >> >> > significantly.
+> >> >> >> >>
+> >> >> >> >> Except when it doesn't.
+> >> >> >> >>
+> >> >> >> >> I'm probably in minority, but I don't use fancy userspace to mess with my
+> >> >> >> >> mixer and the mute button worked just fine for me before the change.
+> >> >> >> >> Wasted half an hour to find out what happened is not a pure win from user
+> >> >> >> >> experience point of view.
+> >> >> >> >>
+> >> >> >> >> Is it really necessary to have software_mute_requested == true by default?
+> >> >> >> >> Can fancy userspace ask for desired behaviour instead and change kernel to
+> >> >> >> >> not send hotkeys change notification until software_mute is enabled?
+> >> >> >> >>
+> >> >> >> >> --
+> >> >> >> >>  Kirill A. Shutemov
+> >> >> >> >>
+> >> >> >> >
+> >> >> >> > Thanks for the report Kirill,
+> >> >> >> >
+> >> >> >> > Andy, we're at RC4, so if we need to fix (or revert) this fix, we only have a
+> >> >> >> > couple weeks to do so.
+> >> >> >> >
+> >> >> >> > Kirill, to define the scope of the problem, if you specify
+> >> >> >> > software_mute_requested as false on the kernel command line, does your system
+> >> >> >> > function as expected?
+> >> >> >>
+> >> >> >> If I understood Kirill's email correctly, the only issue is that he
+> >> >> >> liked the old behavior.  Kirill, is that correct?
+> >> >> >
+> >> >> > Yes. For now I use thinkpad_acpi.software_mute=0 to get old behaviour.
+> >> >> >
+> >> >>
+> >> >> What aspect of the old behavior is better than the new default behavior?
+> >> >
+> >> > It's not necessary better. The new behavior just broke my use-case.
+> >> >
+> >> > I don't have anything in my system what would react on KEY_MUTE and I used
+> >> > the functionality platform provides until it suddenly stopped working.
+> >> >
+> >> > I personally can live with new thinkpad_acpi. I'll probably update my
+> >> > configuration to react on the software button.
+> >> >
+> >> > But who else will get frustrated after update to v3.19?
+> >>
+> >> Can you try the equivalent of:
+> >>
+> >> bindsym XF86AudioMute exec amixer -q set Master toggle
+> >>
+> >> for your desktop environment?  Note that this is exactly what you'd do
+> >> if you were using any laptop that wasn't a thinkpad.
+> >
+> > Unless we hear back from Kirill on why this isn't workable, I'm inclined to
+> > leave this as is. Between the kernel module option and this keybinding,
+> > equivalent behavior can be easily achieved, and the general use case is
+> > significantly improved.
+> >
+> > The current gap appears to be the mute LED in the button itself, which can be
+> > addressed moving forward.
+> 
+> I should have clarified this better.  The command:
+> 
+> amixer -q set Master toggle
+> 
+> should toggle the mute LED in sync with the master mixer on all
+> ThinkPad models with a mute LED.  This works on my X220, and Borislav
+> confirmed off-list that it works on his X230.  If there's a ThinkPad
+> with a mute LED on which this doesn't work, then IMO it's a bug and
+> should be fixed.
 
-Is it possible to get ride of those panics ? IIRC, we discussed to not 
-panic when a timer was not initialized in case there is a definition for 
-another one.
+Okay. Mute and mute led works. Any idea how to get mic mute led work?
+What happend to your patch on the topic?
 
->
->   	/* Disable all timer interrupts, and clear any pending ones */
-> -	at91_st_write(AT91_ST_IDR,
-> +	regmap_write(regmap_st, AT91_ST_IDR,
->   		AT91_ST_PITS | AT91_ST_WDOVF | AT91_ST_RTTINC | AT91_ST_ALMS);
-> -	at91_st_read(AT91_ST_SR);
-> +	regmap_read(regmap_st, AT91_ST_SR, &val);
-> +
-> +	/* Get the interrupts property */
-> +	at91rm9200_timer_irq.irq  = irq_of_parse_and_map(node, 0);
-> +	if (!at91rm9200_timer_irq.irq)
-> +		panic(pr_fmt("Unable to get IRQ from DT\n"));
->
->   	/* Make IRQs happen for the system timer */
->   	setup_irq(at91rm9200_timer_irq.irq, &at91rm9200_timer_irq);
-> @@ -249,7 +224,7 @@ static void __init atmel_st_timer_init(struct device_node *node)
->   	 * directly for the clocksource and all clockevents, after adjusting
->   	 * its prescaler from the 1 Hz default.
->   	 */
-> -	at91_st_write(AT91_ST_RTMR, 1);
-> +	regmap_write(regmap_st, AT91_ST_RTMR, 1);
->
->   	/* Setup timer clockevent, with minimum of two ticks (important!!) */
->   	clkevt.cpumask = cpumask_of(0);
->
-
+http://permalink.gmane.org/gmane.linux.drivers.platform.x86.devel/1962
 
 -- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
-
+ Kirill A. Shutemov
