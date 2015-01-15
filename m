@@ -1,65 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753420AbbAOToP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 14:44:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49997 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751959AbbAOToN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 14:44:13 -0500
-Date: Thu, 15 Jan 2015 20:43:17 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Davidlohr Bueso <dave@stgolabs.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Davidlohr Bueso <dbueso@suse.de>
-Subject: Re: [PATCH 3/3] signal: use current->state helpers
-Message-ID: <20150115194316.GB28727@redhat.com>
-References: <1421305154-14788-1-git-send-email-dave@stgolabs.net> <1421305154-14788-3-git-send-email-dave@stgolabs.net>
+	id S1754125AbbAOToX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 14:44:23 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:47519 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753458AbbAOToU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 14:44:20 -0500
+Message-ID: <54B8188D.1060907@linux.vnet.ibm.com>
+Date: Thu, 15 Jan 2015 11:44:13 -0800
+From: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421305154-14788-3-git-send-email-dave@stgolabs.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Laurent Dufour <ldufour@linux.vnet.ibm.com>, mpe@ellerman.id.au
+CC: paulus@samba.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, stable@vger.kernel.org
+Subject: Re: [PATCH] pseries/le: Fix another endiannes issue in RTAS call
+ from xmon
+References: <1421295950.11409.3.camel@ellerman.id.au> <1421342627-7214-1-git-send-email-ldufour@linux.vnet.ibm.com>
+In-Reply-To: <1421342627-7214-1-git-send-email-ldufour@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15011519-0033-0000-0000-00000358455B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14, Davidlohr Bueso wrote:
->
-> Call __set_current_state() instead of assigning the new state directly.
-> These interfaces also aid CONFIG_DEBUG_ATOMIC_SLEEP environments, keeping
-> track of who changed the state.
-
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-
-> Signed-off-by: Davidlohr Bueso <dbueso@suse.de>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> ---
->  kernel/signal.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
+On 01/15/2015 09:23 AM, Laurent Dufour wrote:
+> The commit 3b8a3c010969 ("powerpc/pseries: Fix endiannes issue in RTAS
+> call from xmon") was fixing an endianness issue in the call made from
+> xmon to RTAS.
 > 
-> diff --git a/kernel/signal.c b/kernel/signal.c
-> index 33a5275..a390499 100644
-> --- a/kernel/signal.c
-> +++ b/kernel/signal.c
-> @@ -3550,7 +3550,7 @@ SYSCALL_DEFINE2(signal, int, sig, __sighandler_t, handler)
->  SYSCALL_DEFINE0(pause)
->  {
->  	while (!signal_pending(current)) {
-> -		current->state = TASK_INTERRUPTIBLE;
-> +		__set_current_state(TASK_INTERRUPTIBLE);
->  		schedule();
->  	}
->  	return -ERESTARTNOHAND;
-> @@ -3563,7 +3563,7 @@ int sigsuspend(sigset_t *set)
->  	current->saved_sigmask = current->blocked;
->  	set_current_blocked(set);
->  
-> -	current->state = TASK_INTERRUPTIBLE;
-> +	__set_current_state(TASK_INTERRUPTIBLE);
->  	schedule();
->  	set_restore_sigmask();
->  	return -ERESTARTNOHAND;
-> -- 
-> 2.1.2
+> However, as Michael Ellerman noticed, this fix was not complete, the
+> token value was not byte swapped. This lead to call an unexpected and
+> most of the time unexisting RTAS function, which is silently ignored
+> by RTAS.
+
+Nit. Not so much that is silently ignored by RTAS as much as
+disable_surveillance silently doesn't check the return status of the
+RTAS call. Maybe a check is warranted and reporting of non-success.
+
+-Tyrel
+
+> 
+> This fix addresses this hole.
+> 
+> Reported-by: Michael Ellerman <mpe@ellerman.id.au>
+> Cc: stable@vger.kernel.org
+> Signed-off-by: Laurent Dufour <ldufour@linux.vnet.ibm.com>
+> ---
+>  arch/powerpc/xmon/xmon.c | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/arch/powerpc/xmon/xmon.c b/arch/powerpc/xmon/xmon.c
+> index 5b150f0c5df9..13c6e200b24e 100644
+> --- a/arch/powerpc/xmon/xmon.c
+> +++ b/arch/powerpc/xmon/xmon.c
+> @@ -337,6 +337,7 @@ static inline void disable_surveillance(void)
+>  	args.token = rtas_token("set-indicator");
+>  	if (args.token == RTAS_UNKNOWN_SERVICE)
+>  		return;
+> +	args.token = cpu_to_be32(args.token);
+>  	args.nargs = cpu_to_be32(3);
+>  	args.nret = cpu_to_be32(1);
+>  	args.rets = &args.args[3];
 > 
 
