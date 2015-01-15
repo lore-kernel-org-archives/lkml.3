@@ -1,67 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754309AbbAOOw5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 09:52:57 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:43514 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752278AbbAOOwz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 09:52:55 -0500
-Message-ID: <54B7D442.4060103@roeck-us.net>
-Date: Thu, 15 Jan 2015 06:52:50 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        monstr@monstr.eu
-CC: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH] watchdog: Remove .owner field from cadence driver
-References: <204239650e5bf19ea11cb4b9f41937552324e931.1421325759.git.michal.simek@xilinx.com>
-In-Reply-To: <204239650e5bf19ea11cb4b9f41937552324e931.1421325759.git.michal.simek@xilinx.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020205.54B7D447.0230,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 13
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S932071AbbAOOxt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 09:53:49 -0500
+Received: from mga09.intel.com ([134.134.136.24]:51662 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751377AbbAOOxr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 09:53:47 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="asc'?scan'208";a="440948309"
+Message-ID: <1421333621.2632.19.camel@jtkirshe-mobl>
+Subject: Re: [PATCH] e100: Don't enable WoL by default on Toshiba devices
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: Ondrej Zary <linux@rainbow-software.org>
+Cc: David Miller <davem@davemloft.net>, e1000-devel@lists.sourceforge.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 15 Jan 2015 06:53:41 -0800
+In-Reply-To: <201501151440.32159.linux@rainbow-software.org>
+References: <1415832445-9524-1-git-send-email-linux@rainbow-software.org>
+	 <20141112.181813.1072534293888457853.davem@davemloft.net>
+	 <1415849927.2454.14.camel@jtkirshe-mobl>
+	 <201501151440.32159.linux@rainbow-software.org>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-AdWP2HVJX4glXsf1aK1d"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/15/2015 04:42 AM, Michal Simek wrote:
-> .owner files is filled by module_platform_driver().
->
-> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
-> ---
->
-> Big cleanup was done and this new driver was missed.
 
-Actually, it was included in 'watchdog: drop owner assignment from platform_drivers'
-by Wolfram Sang. It just hasn't been applied yet.
+--=-AdWP2HVJX4glXsf1aK1d
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Guenter
+On Thu, 2015-01-15 at 14:40 +0100, Ondrej Zary wrote:
+> On Thursday 13 November 2014, Jeff Kirsher wrote:
+> > On Wed, 2014-11-12 at 18:18 -0500, David Miller wrote:
+> > > From: Ondrej Zary <linux@rainbow-software.org>
+> > > Date: Wed, 12 Nov 2014 23:47:25 +0100
+> > >
+> > > > Enabling WoL on some Toshiba laptops (such as Portege R100)
+> causes
+> > > > battery drain after shutdown (WoL is active even on battery).
+> These
+> > > > laptops have the WoL bit set in EEPROM ID, causing e100 driver
+> to
+> > > > enable WoL by default.
+> > > >
+> > > > Check subsystem vendor ID and if it's Toshiba, don't enable WoL
+> by
+> > > > default from EEPROM settings.
+> > > >
+> > > > Fixes
+> https://bugs.launchpad.net/ubuntu/+source/linux/+bug/110784
+> > > >
+> > > > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> > >
+> > > Jeff, are you gonna pick this up?
+> >
+> > Yes, sorry I did not catch it earlier.
+>=20
+> What happened to this patch? I don't see it in net.git or
+> net-next.git=20
+> (checked both davem's and jkirsher's)
+
+Sorry, I thought I had replied with a NAK on this patch after further
+review of the changes.
+
+We don't fix BIOS issues in the driver especially regarding feature
+enablement like WoL.  We would end up with dozens of these kinds of fixes
+if we to allow this.
+
+You should go back to the OEM and ask for a BIOS update to resolve this or
+configure udev so that ethtool disables WoL. =20
+
+
+--=-AdWP2HVJX4glXsf1aK1d
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAABCgAGBQJUt9R1AAoJEOVv75VaS+3OBbgP/RIs7gMxLItovRW/9TeMjfpw
+tGTYTm43QaEKdorRktnF1CVbhmMog9wm0CTu8SDU1zmMF2wMw04ycZv6y4Hc4L3+
+i+NuX88mtemEnASK1hyvSk/zF+ciHOLta84gRFFJnq0kdkWGB8QI60NYNyC8hPoa
+8HFteSNb4Hubt0GOJBGmmllEQdVRQ/uYNjZ0wq4AEcRo/wljb7h81fA4R4mC13kV
+9wjjIuIkQrtgY4HxwsoMkd/VgAAcM7CF8I5lh48AdTO7xz7IXhKmPwhMSLspBHG1
+iY6ZahW1HTafo2/LZSmPVl/MV6ClCdZ4qvhl15PspYTzfRbpm0JIGdp8gId3si+Q
+8TXlyGbsUnSPFZYzehQrxUBv21oELRqIYHzJQg3Sx4JrQ7ome5vcnfnrIxv9YYmI
+g4GUJcapRlnCp1oUAJGgw/Kok0GXGSMcSO+9lfM6KI0GRhSEAyE5mnaDPHw/NGQ8
+GiWnXgz9V8tOKW8dR3v+iPVcl1wOjbhl8buzwqrrmeL6tVdi41TywH5Xv9ze1Mxc
+a5jWXS63/m7ayjdPhxkGXFLgmvsg8GqJHtt77wkzWVaCUjxGPRtoUkKxYP0DSiw3
+RDk9FlEE3oiVgb9ogeNieA+FlMiNVcCTKujYp50H7bOCnn8wb2dNVisACFSVgfsw
+o/z7oZiHf3AkDD7kHYKC
+=y5Z8
+-----END PGP SIGNATURE-----
+
+--=-AdWP2HVJX4glXsf1aK1d--
 
