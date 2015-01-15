@@ -1,39 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752708AbbAOIpq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 03:45:46 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:38024 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751795AbbAOIo7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752016AbbAOIpB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 03:45:01 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:54568 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751175AbbAOIo7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 15 Jan 2015 03:44:59 -0500
-Date: Thu, 15 Jan 2015 09:44:49 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Bruce Merry <bmerry@ska.ac.za>
-Cc: linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>
-Subject: Re: [PATCH] perf bench: fix order of arguments to memcpy_alloc_mem
-Message-ID: <20150115084449.GP23965@worktop.programming.kicks-ass.net>
-References: <CAOm-9aqxsiC15Q+VGTB9k37-+VcSTaSZZL3xov7zexf4Pqr8NQ@mail.gmail.com>
+From: Borislav Petkov <bp@alien8.de>
+To: KVM <kvm@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] kvm: Fix CR3_PCID_INVD type on 32-bit
+Date: Thu, 15 Jan 2015 09:44:56 +0100
+Message-Id: <1421311496-18028-1-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 2.2.0.33.gc18b867
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOm-9aqxsiC15Q+VGTB9k37-+VcSTaSZZL3xov7zexf4Pqr8NQ@mail.gmail.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 15, 2015 at 10:15:34AM +0200, Bruce Merry wrote:
-> This was causing the destination instead of the source to be filled.
-> As a result, the source was typically all mapped to one zero page,
-> and hence very cacheable
+From: Borislav Petkov <bp@suse.de>
 
-Almost right ;-)
+arch/x86/kvm/emulate.c: In function ‘check_cr_write’:
+arch/x86/kvm/emulate.c:3552:4: warning: left shift count >= width of type
+    rsvd = CR3_L_MODE_RESERVED_BITS & ~CR3_PCID_INVD;
 
-Please have a look at Documentation/SubmittingPatches
+happens because sizeof(UL) on 32-bit is 4 bytes but we shift it 63 bits
+to the left.
 
-We require at least a Signed-off-by: tag in order to process patches.
+Signed-off-by: Borislav Petkov <bp@suse.de>
+---
+ arch/x86/include/asm/kvm_host.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Thanks!
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index d89c6b828c96..a8d07a060136 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -51,7 +51,7 @@
+ 			  | X86_CR0_NW | X86_CR0_CD | X86_CR0_PG))
+ 
+ #define CR3_L_MODE_RESERVED_BITS 0xFFFFFF0000000000ULL
+-#define CR3_PCID_INVD		 (1UL << 63)
++#define CR3_PCID_INVD		 BIT_64(63)
+ #define CR4_RESERVED_BITS                                               \
+ 	(~(unsigned long)(X86_CR4_VME | X86_CR4_PVI | X86_CR4_TSD | X86_CR4_DE\
+ 			  | X86_CR4_PSE | X86_CR4_PAE | X86_CR4_MCE     \
+-- 
+2.2.0.33.gc18b867
+
