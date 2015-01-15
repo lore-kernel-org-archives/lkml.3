@@ -1,140 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755217AbbAOUWw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 15:22:52 -0500
-Received: from mail-qa0-f49.google.com ([209.85.216.49]:48758 "EHLO
-	mail-qa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753033AbbAOUWu (ORCPT
+	id S1755403AbbAOUYj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 15:24:39 -0500
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:53623 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752940AbbAOUYh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 15:22:50 -0500
-From: Jeff Layton <jeff.layton@primarydata.com>
-X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
-Date: Thu, 15 Jan 2015 15:22:47 -0500
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Jeff Layton <jeff.layton@primarydata.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Subject: Re: fs: locks: WARNING: CPU: 16 PID: 4296 at fs/locks.c:236
- locks_free_lock_context+0x10d/0x240()
-Message-ID: <20150115152247.5e660000@tlielax.poochiereds.net>
-In-Reply-To: <54B6FF69.3080705@oracle.com>
-References: <54B4A909.9060206@oracle.com>
-	<20150113164441.5b210f48@tlielax.poochiereds.net>
-	<54B5A145.6060108@oracle.com>
-	<20150114092705.39bd4881@tlielax.poochiereds.net>
-	<54B6FF69.3080705@oracle.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
+	Thu, 15 Jan 2015 15:24:37 -0500
+Date: Thu, 15 Jan 2015 22:24:30 +0200
+From: Aaro Koskinen <aaro.koskinen@iki.fi>
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>, David Daney <david.daney@cavium.com>,
+        linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
+        Hemmo Nieminen <hemmo.nieminen@iki.fi>, stable@vger.kernel.org
+Subject: Re: [PATCH 1/2] MIPS: OCTEON: fix kernel crash when offlining a CPU
+Message-ID: <20150115202430.GB8087@fuloong-minipc.musicnaut.iki.fi>
+References: <1421347767-21740-1-git-send-email-aaro.koskinen@iki.fi>
+ <54B816AC.7070902@gmail.com>
+ <20150115195345.GA8087@fuloong-minipc.musicnaut.iki.fi>
+ <54B81EA0.8060409@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54B81EA0.8060409@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Jan 2015 18:44:41 -0500
-Sasha Levin <sasha.levin@oracle.com> wrote:
+Hi,
 
-> On 01/14/2015 09:27 AM, Jeff Layton wrote:
-> > On Tue, 13 Jan 2015 17:50:45 -0500
-> > Sasha Levin <sasha.levin@oracle.com> wrote:
-> > 
-> >> On 01/13/2015 04:44 PM, Jeff Layton wrote:
-> >>> On Tue, 13 Jan 2015 00:11:37 -0500
-> >>> Sasha Levin <sasha.levin@oracle.com> wrote:
-> >>>
-> >>>> Hey Jeff,
-> >>>>
-> >>>> While fuzzing with trinity inside a KVM tools guest running the latest -next
-> >>>> kernel, I've stumbled on the following spew:
-> >>>>
-> >>>> [  887.078606] WARNING: CPU: 16 PID: 4296 at fs/locks.c:236 locks_free_lock_context+0x10d/0x240()
-> >>>> [  887.079703] Modules linked in:
-> >>>> [  887.080288] CPU: 16 PID: 4296 Comm: trinity-c273 Not tainted 3.19.0-rc4-next-20150112-sasha-00053-g23c147e02e-dirty #1710
-> >>>> [  887.082229]  0000000000000000 0000000000000000 0000000000000000 ffff8804c9f4f8e8
-> >>>> [  887.083773]  ffffffff9154e0a6 0000000000000000 ffff8804cad98000 ffff8804c9f4f938
-> >>>> [  887.085280]  ffffffff8140a4d0 0000000000000001 ffffffff81bf0d2d ffff8804c9f4f988
-> >>>> [  887.086792] Call Trace:
-> >>>> [  887.087320] dump_stack (lib/dump_stack.c:52)
-> >>>> [  887.088247] warn_slowpath_common (kernel/panic.c:447)
-> >>>> [  887.089342] ? locks_free_lock_context (fs/locks.c:236 (discriminator 3))
-> >>>> [  887.090514] warn_slowpath_null (kernel/panic.c:481)
-> >>>> [  887.091629] locks_free_lock_context (fs/locks.c:236 (discriminator 3))
-> >>>> [  887.092782] __destroy_inode (fs/inode.c:243)
-> >>>> [  887.093817] destroy_inode (fs/inode.c:268)
-> >>>> [  887.094833] evict (fs/inode.c:574)
-> >>>> [  887.095808] iput (fs/inode.c:1503)
-> >>>> [  887.096687] __dentry_kill (fs/dcache.c:323 fs/dcache.c:508)
-> >>>> [  887.097683] ? _raw_spin_trylock (kernel/locking/spinlock.c:136)
-> >>>> [  887.098733] ? dput (fs/dcache.c:545 fs/dcache.c:648)
-> >>>> [  887.099672] dput (fs/dcache.c:649)
-> >>>> [  887.100552] __fput (fs/file_table.c:227)
-> >>>
-> >>> So, looking at this a bit more...
-> >>>
-> >>> It's clear that we're at the dput in __fput at this point. Much earlier
-> >>> in __fput, we call locks_remove_file to remove all of the locks that
-> >>> are associated with the file description.
-> >>>
-> >>> Evidently though, something didn't go right there. The two most likely
-> >>> scenarios to my mind are:
-> >>>
-> >>> A) a lock raced onto the list somehow after that point. That seems
-> >>> unlikely since presumably the fcheck should have failed at that point.
-> >>>
-> >>> ...or...
-> >>>
-> >>> B) the CPU that called locks_remove_file mistakenly thought that
-> >>> inode->i_flctx was NULL when it really wasn't (stale cache, perhaps?).
-> >>> That would make it skip trying to remove any flock locks.
-> >>>
-> >>> B seems more likely to me, and if it's the case then that would seem to
-> >>> imply that we need some memory barriers (or maybe some ACCESS_ONCE
-> >>> calls) in these codepaths. I'll have to sit down and work through it to
-> >>> see what makes the most sense.
-> >>>
-> >>> If your debugging seems to jive with this, then one thing that might be
-> >>> interesting would be to comment out these two lines in
-> >>> locks_remove_flock:
-> >>>
-> >>>         if (!file_inode(filp)->i_flctx)
-> >>>                 return;
-> >>>
-> >>> ...and see if it's still reproducible. That's obviously not a real fix
-> >>> for this problem, but it might help prove whether the above suspicion
-> >>> is correct.
+On Thu, Jan 15, 2015 at 12:10:08PM -0800, David Daney wrote:
+> On 01/15/2015 11:53 AM, Aaro Koskinen wrote:
+> >Hi,
+> >
+> >On Thu, Jan 15, 2015 at 11:36:12AM -0800, David Daney wrote:
+> >>On 01/15/2015 10:49 AM, Aaro Koskinen wrote:
+> >>>octeon_cpu_disable() will unconditionally enable interrupts when called
+> >>>with interrupts disabled. Fix that.
 > >>
-> >> Removing those two lines makes the issue go away.
-> >>
-> >> I'm guessing that figuring out which filesystem we were abusing isn't
-> >> interesting anymore...
-> >>
-> > 
-> > Sigh. I've been trying to reproduce this today. I've set up two
-> > different KVM guests on two different hosts, and run trinity on both,
-> > and I can't seem to get this warning to pop.
-> > 
-> > Could you share what trinity command-line options you're using? Any
-> > other special setup I should be considering to reproduce it?
-> > 
-> > I was hoping to get it to reproduce so I could test out potential
-> > memory barrier fixes...
+> >>interrupts are always disabled here, so...
+> >
+> >Is that also true for all the currently supported stable kernels...?
 > 
-> I don't think there's anything special about my setup here that can
-> trigger that, specially if it's not dependant on a filesystem in use.
-> 
-> I'm running trinity with: ./trinity -xsched_setattr -xsetpriority
-> -xunshare -xreboot -xshutdown -xnfsservctl -xclock_nanosleep -xuselib
-> -xperf_event_open -m --quiet --dangerous -C 400 -l off
-> 
-> If that doesn't end up helping, I'd be happy to test out fixes here,
-> it usually reproduces quickly.
-> 
-> 
+> I haven't done extensive research recently, but I have removed that pair of
+> local_irq_disable/local_irq_enable in our SDK kernel based on 3.10
 
-Ok, I tried to reproduce it with that and several variations but it
-still doesn't seem to do it for me. Can you try the latest linux-next
-tree and see if it's still reproducible there?
+Ok, I'll add stable tag only for 3.18 as that is the oldest I can test
+with at the moment.
 
-Thanks,
--- 
-Jeff Layton <jlayton@primarydata.com>
+A.
