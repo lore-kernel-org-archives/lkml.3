@@ -1,56 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754027AbbAOTEx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 14:04:53 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:45373 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752885AbbAOTEv (ORCPT
+	id S1754850AbbAOTFp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 14:05:45 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:37667 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751489AbbAOTFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 14:04:51 -0500
-MIME-Version: 1.0
-In-Reply-To: <20150115185543.GA28195@htj.dyndns.org>
-References: <20150115180242.10450.92.stgit@buzz>
-	<20150115184914.10450.51964.stgit@buzz>
-	<20150115185543.GA28195@htj.dyndns.org>
-Date: Thu, 15 Jan 2015 23:04:49 +0400
-Message-ID: <CALYGNiPY2K6F+OFoCV5XShrXaQOiyGXreR=4TC=Mp7axTiF0YQ@mail.gmail.com>
-Subject: Re: [PATCH 3/6] memcg: track shared inodes with dirty pages
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Konstantin Khebnikov <khlebnikov@yandex-team.ru>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>, cgroups@vger.kernel.org,
-        Roman Gushchin <klamm@yandex-team.ru>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 15 Jan 2015 14:05:42 -0500
+From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+To: LFBDEV <linux-fbdev@vger.kernel.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Prabhakar Lad <prabhakar.csengg@gmail.com>
+Subject: [PATCH v2] fbdev: ssd1307fb: return proper error code if write command fails
+Date: Thu, 15 Jan 2015 19:05:37 +0000
+Message-Id: <1421348737-4606-1-git-send-email-prabhakar.csengg@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 15, 2015 at 9:55 PM, Tejun Heo <tj@kernel.org> wrote:
-> On Thu, Jan 15, 2015 at 09:49:14PM +0300, Konstantin Khebnikov wrote:
->> From: Konstantin Khlebnikov <khlebnikov@yandex-team.ru>
->>
->> Inode is owned only by one memory cgroup, but if it's shared it might
->> contain pages from multiple cgroups. This patch detects this situation
->> in memory reclaiemer and marks dirty inode with flag I_DIRTY_SHARED
->> which is cleared only when data is completely written. Memcg writeback
->> always writes such inodes.
->>
->> Signed-off-by: Konstantin Khlebnikov <khlebnikov@yandex-team.ru>
->
-> This conflicts with the writeback cgroup support patchset which will
-> solve the writeback and memcg problem a lot more comprehensively.
->
->  http://lkml.kernel.org/g/1420579582-8516-1-git-send-email-tj@kernel.org
->
-> Thanks.
+From: Prabhakar Lad <prabhakar.csengg@gmail.com>
 
-I know. Absolutely accurate per-page solution looks too complicated for me.
-Is there any real demand for accurate handling dirty set in shared inodes?
-Doing whole accounting in per-inode basis makes life so much easier.
+this patch fixes ssd1307fb_ssd1306_init() function to return
+proper error codes in case of failures.
 
->
-> --
-> tejun
+Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+---
+ Changes for v2:
+ a: Added new line as per Maxime's suggestion.
+
+ drivers/video/fbdev/ssd1307fb.c | 67 ++++++++++++++++++++++++++++++++---------
+ 1 file changed, 53 insertions(+), 14 deletions(-)
+
+diff --git a/drivers/video/fbdev/ssd1307fb.c b/drivers/video/fbdev/ssd1307fb.c
+index f4daa59..0ea6345 100644
+--- a/drivers/video/fbdev/ssd1307fb.c
++++ b/drivers/video/fbdev/ssd1307fb.c
+@@ -320,7 +320,10 @@ static int ssd1307fb_ssd1306_init(struct ssd1307fb_par *par)
+ 
+ 	/* Set initial contrast */
+ 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_CONTRAST);
+-	ret = ret & ssd1307fb_write_cmd(par->client, 0x7f);
++	if (ret < 0)
++		return ret;
++
++	ret = ssd1307fb_write_cmd(par->client, 0x7f);
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -336,63 +339,99 @@ static int ssd1307fb_ssd1306_init(struct ssd1307fb_par *par)
+ 
+ 	/* Set multiplex ratio value */
+ 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_MULTIPLEX_RATIO);
+-	ret = ret & ssd1307fb_write_cmd(par->client, par->height - 1);
++	if (ret < 0)
++		return ret;
++
++	ret = ssd1307fb_write_cmd(par->client, par->height - 1);
+ 	if (ret < 0)
+ 		return ret;
+ 
+ 	/* set display offset value */
+ 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_DISPLAY_OFFSET);
++	if (ret < 0)
++		return ret;
++
+ 	ret = ssd1307fb_write_cmd(par->client, 0x20);
+ 	if (ret < 0)
+ 		return ret;
+ 
+ 	/* Set clock frequency */
+ 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_CLOCK_FREQ);
+-	ret = ret & ssd1307fb_write_cmd(par->client, 0xf0);
++	if (ret < 0)
++		return ret;
++
++	ret = ssd1307fb_write_cmd(par->client, 0xf0);
+ 	if (ret < 0)
+ 		return ret;
+ 
+ 	/* Set precharge period in number of ticks from the internal clock */
+ 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_PRECHARGE_PERIOD);
+-	ret = ret & ssd1307fb_write_cmd(par->client, 0x22);
++	if (ret < 0)
++		return ret;
++
++	ret = ssd1307fb_write_cmd(par->client, 0x22);
+ 	if (ret < 0)
+ 		return ret;
+ 
+ 	/* Set COM pins configuration */
+ 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_COM_PINS_CONFIG);
+-	ret = ret & ssd1307fb_write_cmd(par->client, 0x22);
++	if (ret < 0)
++		return ret;
++
++	ret = ssd1307fb_write_cmd(par->client, 0x22);
+ 	if (ret < 0)
+ 		return ret;
+ 
+ 	/* Set VCOMH */
+ 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_VCOMH);
+-	ret = ret & ssd1307fb_write_cmd(par->client, 0x49);
++	if (ret < 0)
++		return ret;
++
++	ret = ssd1307fb_write_cmd(par->client, 0x49);
+ 	if (ret < 0)
+ 		return ret;
+ 
+ 	/* Turn on the DC-DC Charge Pump */
+ 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_CHARGE_PUMP);
+-	ret = ret & ssd1307fb_write_cmd(par->client, 0x14);
++	if (ret < 0)
++		return ret;
++
++	ret = ssd1307fb_write_cmd(par->client, 0x14);
+ 	if (ret < 0)
+ 		return ret;
+ 
+ 	/* Switch to horizontal addressing mode */
+ 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_ADDRESS_MODE);
+-	ret = ret & ssd1307fb_write_cmd(par->client,
+-					SSD1307FB_SET_ADDRESS_MODE_HORIZONTAL);
++	if (ret < 0)
++		return ret;
++
++	ret = ssd1307fb_write_cmd(par->client,
++				  SSD1307FB_SET_ADDRESS_MODE_HORIZONTAL);
+ 	if (ret < 0)
+ 		return ret;
+ 
+ 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_COL_RANGE);
+-	ret = ret & ssd1307fb_write_cmd(par->client, 0x0);
+-	ret = ret & ssd1307fb_write_cmd(par->client, par->width - 1);
++	if (ret < 0)
++		return ret;
++
++	ret = ssd1307fb_write_cmd(par->client, 0x0);
++	if (ret < 0)
++		return ret;
++
++	ret = ssd1307fb_write_cmd(par->client, par->width - 1);
+ 	if (ret < 0)
+ 		return ret;
+ 
+ 	ret = ssd1307fb_write_cmd(par->client, SSD1307FB_SET_PAGE_RANGE);
+-	ret = ret & ssd1307fb_write_cmd(par->client, 0x0);
+-	ret = ret & ssd1307fb_write_cmd(par->client,
+-					par->page_offset + (par->height / 8) - 1);
++	if (ret < 0)
++		return ret;
++
++	ret = ssd1307fb_write_cmd(par->client, 0x0);
++	if (ret < 0)
++		return ret;
++
++	ret = ssd1307fb_write_cmd(par->client,
++				  par->page_offset + (par->height / 8) - 1);
+ 	if (ret < 0)
+ 		return ret;
+ 
+-- 
+1.9.1
+
