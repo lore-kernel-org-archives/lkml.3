@@ -1,258 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754587AbbAOQpT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 11:45:19 -0500
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:48793 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751219AbbAOQpR (ORCPT
+	id S1754516AbbAORM0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 12:12:26 -0500
+Received: from mail-wg0-f47.google.com ([74.125.82.47]:62133 "EHLO
+	mail-wg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751219AbbAORMZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 11:45:17 -0500
-From: Jeff Layton <jeff.layton@primarydata.com>
-X-Google-Original-From: Jeff Layton <jlayton@primarydata.com>
-Date: Thu, 15 Jan 2015 11:45:13 -0500
-To: Ian Kent <ikent@redhat.com>
-Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>,
-        Oleg Nesterov <onestero@redhat.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>,
-        Benjamin Coddington <bcodding@redhat.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Jeff Layton <jeff.layton@primarydata.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [RFC PATCH 3/5] kmod - teach call_usermodehelper() to use a
- namespace
-Message-ID: <20150115114513.046e9a8b@tlielax.poochiereds.net>
-In-Reply-To: <20150114093242.30252.46536.stgit@pluto.fritz.box>
-References: <20150114092704.30252.60446.stgit@pluto.fritz.box>
-	<20150114093242.30252.46536.stgit@pluto.fritz.box>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
+	Thu, 15 Jan 2015 12:12:25 -0500
+Date: Thu, 15 Jan 2015 16:46:25 +0000
+From: Petr Cermak <petrcermak@chromium.org>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Primiano Tucci <primiano@chromium.org>,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH v2 2/2] task_mmu: Add user-space support for resetting
+ mm->hiwater_rss (peak RSS)
+Message-ID: <20150115164625.GA11015@google.com>
+References: <20150107172452.GA7922@node.dhcp.inet.fi>
+ <20150114152225.GB31484@google.com>
+ <20150114233954.GB14615@node.dhcp.inet.fi>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150114233954.GB14615@node.dhcp.inet.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Jan 2015 17:32:43 +0800
-Ian Kent <ikent@redhat.com> wrote:
-
-> The call_usermodehelper() function executes all binaries in the
-> global "init" root context. This doesn't allow a binary to be run
-> within a namespace (eg. the namespace of a container).
+On Thu, Jan 15, 2015 at 01:36:30AM +0200, Kirill A. Shutemov wrote:
+> On Wed, Jan 14, 2015 at 03:22:25PM +0000, Petr Cermak wrote:
+> > On Wed, Jan 07, 2015 at 07:24:52PM +0200, Kirill A. Shutemov wrote:
+> > > And how it's not an ABI break?
+> > I don't think this is an ABI break because the current behaviour is not
+> > changed unless you write "5" to /proc/pid/clear_refs. If you do, you are
+> > explicitly requesting the new functionality.
 > 
-> Both containerized NFS client and NFS server need the ability to
-> execute a binary in a container's context. To do this use the init
-> process of the callers environment is used to setup the namespaces
-> in the same way the root init process is used otherwise.
+> I'm not sure if it should be considered ABI break or not. Just asking.
 > 
-> Signed-off-by: Ian Kent <ikent@redhat.com>
-> Cc: Benjamin Coddington <bcodding@redhat.com>
-> Cc: Al Viro <viro@ZenIV.linux.org.uk>
-> Cc: J. Bruce Fields <bfields@fieldses.org>
-> Cc: David Howells <dhowells@redhat.com>
-> Cc: Trond Myklebust <trond.myklebust@primarydata.com>
-> Cc: Oleg Nesterov <onestero@redhat.com>
-> Cc: Eric W. Biederman <ebiederm@xmission.com>
-> Cc: Jeff Layton <jeff.layton@primarydata.com>
-> ---
->  include/linux/kmod.h |   17 +++++++
->  kernel/kmod.c        |  119 +++++++++++++++++++++++++++++++++++++++++++++++++-
->  2 files changed, 133 insertions(+), 3 deletions(-)
+> I would like to hear opinion from other people.
+
+We would like to get more feedback as well.
+
+> > > We have never-lowering VmHWM for 9+ years. How can you know that nobody
+> > > expects this behaviour?
+> > This is why we sent an RFC [1] several weeks ago. We expect this to be
+> > used mainly by performance-related tools (e.g. profilers) and from the
+> > comments in the code [2] VmHWM seems to be a best-effort counter. If this
+> > is strictly a no-go, I can only think of the following two alternatives:
+> > 
+> >   1. Add an extra resettable field to /proc/pid/status (e.g.
+> >      resettable_hiwater_rss). While this doesn't violate the current
+> >      definition of VmHWM, it adds an extra line to /proc/pid/status,
+> >      which I think is a much bigger issue.
 > 
-> diff --git a/include/linux/kmod.h b/include/linux/kmod.h
-> index 15bdeed..487e68e 100644
-> --- a/include/linux/kmod.h
-> +++ b/include/linux/kmod.h
-> @@ -52,6 +52,7 @@ struct file;
->  #define UMH_WAIT_EXEC	1	/* wait for the exec, but not the process */
->  #define UMH_WAIT_PROC	2	/* wait for the process to complete */
->  #define UMH_KILLABLE	4	/* wait for EXEC/PROC killable */
-> +#define UMH_USE_NS	8	/* exec using caller's init namespace */
->  
->  struct subprocess_info {
->  	struct work_struct work;
-> @@ -69,6 +70,22 @@ struct subprocess_info {
->  extern int
->  call_usermodehelper(char *path, char **argv, char **envp, int flags);
->  
-> +#if !defined(CONFIG_PROC_FS) || !defined(CONFIG_NAMESPACES)
-> +inline int umh_get_init_pid(pid_t *pid)
-> +{
-> +	*pid = 0;
-> +	return 0;
-> +}
-> +
-> +inline int umh_enter_ns(pid_t pid, struct cred *new)
-> +{
-> +	return -ENOTSUP;
-> +}
-> +#else
-> +int umh_get_init_pid(pid_t *pid);
-> +int umh_enter_ns(pid_t pid, struct cred *new);
-> +#endif
-> +
->  extern struct subprocess_info *
->  call_usermodehelper_setup(char *path, char **argv, char **envp, gfp_t gfp_mask,
->  			  int (*init)(struct subprocess_info *info, struct cred *new),
-> diff --git a/kernel/kmod.c b/kernel/kmod.c
-> index 14c0188..2179e58 100644
-> --- a/kernel/kmod.c
-> +++ b/kernel/kmod.c
-> @@ -582,6 +582,97 @@ unlock:
->  }
->  EXPORT_SYMBOL(call_usermodehelper_exec);
->  
-> +#if defined(CONFIG_PROC_FS) && defined(CONFIG_NAMESPACES)
-> +#define NS_PATH_MAX	35
-> +#define NS_PATH_FMT	"%lu/ns/%s"
-> +
-> +/* Note namespace name order is significant */
-> +static const char *ns_names[] = { "user", "ipc", "uts", "net", "pid", "mnt", NULL };
-> +
-> +int umh_get_init_pid(pid_t *pid)
-> +{
-> +	struct task_struct *tsk;
-> +	pid_t init_pid;
-> +
-> +	rcu_read_lock();
-> +	tsk = find_task_by_vpid(1);
-> +	if (tsk)
-> +		get_task_struct(tsk);
-> +	rcu_read_unlock();
-> +	if (!tsk)
-> +		return -ESRCH;
-> +	init_pid = task_pid_nr(tsk);
-> +	put_task_struct(tsk);
-> +
-> +	*pid = init_pid;
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(umh_get_init_pid);
-> +
+> I don't think extra line is bigger issue. Sane applications would look for
+> a key, not line number. We do add lines there. I've posted patch which
+> adds one more just today ;)
 
-nit: pid_t == int, so you could just make this function return the
-pid or a negative error code instead of dealing with a return argument.
+In that case, should we add an extra field to /proc/pid/status?
 
-> +int umh_enter_ns(pid_t pid, struct cred *new)
-> +{
-> +	char path[NS_PATH_MAX];
-> +	struct vfsmount *mnt;
-> +	const char *name;
-> +	int err = 0;
-> +
-> +	/*
-> +	 * The user mode thread runner runs in the root init namespace
-> +	 * so it will see all system pids.
-> +	 */
-> +	mnt = task_active_pid_ns(current)->proc_mnt;
-> +
-> +	for (name = ns_names[0]; *name; name++) {
-> +		struct file *this;
-> +		int len;
-> +
-> +		len = snprintf(path,
-> +			       NS_PATH_MAX, NS_PATH_FMT,
-> +			       (unsigned long) pid, name);
-> +		if (len >= NS_PATH_MAX) {
-> +			err = -ENAMETOOLONG;
-> +			break;
-> +		}
-> +
-> +		this = file_open_root(mnt->mnt_root, mnt, path, O_RDONLY);
-> +		if (unlikely(IS_ERR(this))) {
-> +			err = PTR_ERR(this);
-> +			break;
-> +		}
-> +
-> +		err = setns_inode(file_inode(this), 0);
-> +		fput(this);
-> +		if (err)
-> +			break;
-> +	}
-> +
-> +	return err;
-> +}
-> +EXPORT_SYMBOL(umh_enter_ns);
-> +
-> +static int umh_set_ns(struct subprocess_info *info, struct cred *new)
-> +{
-> +	pid_t *init_pid = (pid_t *) info->data;
-> +
-> +	return umh_enter_ns(*init_pid, new);
-> +}
-> +
-> +static void umh_free_ns(struct subprocess_info *info)
-> +{
-> +	kfree(info->data);
-> +}
-> +#else
-> +static int umh_set_ns(struct subprocess_info *info, struct cred *new)
-> +{
-> +	return 0;
-> +}
-> +
-> +static void umh_free_ns(struct subprocess_info *info)
-> +{
-> +}
-> +#endif
-> +
->  /**
->   * call_usermodehelper() - prepare and start a usermode application
->   * @path: path to usermode executable
-> @@ -599,11 +690,33 @@ int call_usermodehelper(char *path, char **argv, char **envp, int flags)
->  {
->  	struct subprocess_info *info;
->  	gfp_t gfp_mask = (flags == UMH_NO_WAIT) ? GFP_ATOMIC : GFP_KERNEL;
-> +	unsigned int use_ns = flags & UMH_USE_NS;
-> +	pid_t init_pid = 0;
-> +	pid_t *pid = NULL;
->  
-> -	info = call_usermodehelper_setup(path, argv, envp, gfp_mask,
-> -					 NULL, NULL, NULL);
-> -	if (info == NULL)
-> +	if (use_ns) {
-> +		int ret = umh_get_init_pid(&init_pid);
-> +		if (ret)
-> +			return ret;
-> +	}
-> +
-> +	if (!init_pid)
-> +		info = call_usermodehelper_setup(path, argv, envp,
-> +						 gfp_mask, NULL, NULL, NULL);
-> +	else {
-> +		pid = kmalloc(sizeof(pid_t), gfp_mask);
-> +		if (!pid)
-> +			return -ENOMEM;
-> +		*pid = init_pid;
-> +		info = call_usermodehelper_setup(path, argv, envp, gfp_mask,
-> +						 umh_set_ns, umh_free_ns,
-> +						 pid);
-> +	}
-
-Is this racy?
-
-What guarantees that that pid will still be there (and in its correct
-incarnation) once you get around to spawning the helper? After all,
-this is just done via workqueues. Between the time that the work is
-scheduled and picked up by the workqueue the whole namespace could
-be torn down and a new process could grab that pid.
-
-Maybe it would be better instead to deal with task_structs directly,
-and ensure that the correct init process task_struct is pinned until
-the new process is spawned? (or maybe even until it exits?)
-
-> +	if (info == NULL) {
-> +		if (pid)
-> +			kfree(pid);
->  		return -ENOMEM;
-> +	}
->  
->  	return call_usermodehelper_exec(info, flags);
->  }
+> >   2. Introduce a new proc fs file to task_mmu (e.g.
+> >      /proc/pid/profiler_stats), but this feels like overengineering.
 > 
+> BTW, we have memory.max_usage_in_byte in memory cgroup. And it's resetable.
+> Wouldn't it be enough for your profiling use-case?
 
+This is a very interesting point, but it doesn't cover all use cases.
+Our specific use case is memory profiling of the Chromium browser, but I
+think that the same considerations below apply to any other use case
+which involves child sub-processes:
 
--- 
-Jeff Layton <jlayton@primarydata.com>
+  1. The process must be added to the control group explicitly by root.
+     Hence, the Chromium process cannot do this itself.
+  2. All forked children are implicitly grouped in the same control
+     group. This is a problem because we want to be able to measure
+     memory usage of the child processes separately.
+
+The advantage of using clear_refs instead is that Chomium would be able
+to profile its memory usage without any external intervention (as it's
+already the case with performance profiling).
+
+> > > And why do you reset hiwater_rss, but not hiwater_vm?
+> > This is a good point. Should we reset both using the same flag, or
+> > introduce a new one ("6")?
+> > 
+> > [1] lkml.iu.edu/hypermail/linux/kernel/1412.1/01877.html
+> > [2] task_mmu.c:32: "... such snapshots can always be inconsistent."
+
+Petr
