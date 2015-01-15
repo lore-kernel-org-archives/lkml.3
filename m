@@ -1,101 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755293AbbAOSWR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 13:22:17 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49524 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752812AbbAOSWP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 13:22:15 -0500
-Message-ID: <54B80539.7070703@redhat.com>
-Date: Thu, 15 Jan 2015 13:21:45 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1755223AbbAOSWH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 13:22:07 -0500
+Received: from iolanthe.rowland.org ([192.131.102.54]:59357 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752269AbbAOSWF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 13:22:05 -0500
+Date: Thu, 15 Jan 2015 13:22:03 -0500 (EST)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Christoph Hellwig <hch@infradead.org>, Tejun Heo <tj@kernel.org>
+cc: Bart Van Assche <bvanassche@acm.org>,
+        James Bottomley <jbottomley@parallels.com>,
+        Hannes Reinecke <hare@suse.de>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: sysfs methods can race with ->remove
+In-Reply-To: <20150115160612.GA31446@infradead.org>
+Message-ID: <Pine.LNX.4.44L0.1501151255060.1064-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: linux-kernel@vger.kernel.org, mgorman@suse.de, mingo@redhat.com
-Subject: Re: [PATCH] sched,numa: do not move past the balance point if unbalanced
-References: <20150112163039.7eb9a9e0@annuminas.surriel.com> <20150115104517.GR23965@worktop.programming.kicks-ass.net>
-In-Reply-To: <20150115104517.GR23965@worktop.programming.kicks-ass.net>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/15/2015 05:45 AM, Peter Zijlstra wrote:
-> On Mon, Jan 12, 2015 at 04:30:39PM -0500, Rik van Riel wrote:
->> There is a subtle interaction between the logic introduced in commit
->> e63da03639cc9e6e83b62e7ef8ffdbb92421416a, the way the load balancer
->
->    e63da03639cc ("sched/numa: Allow task switch if load imbalance improves")
+Tejun:
 
-Will do. Thanks for the git config :)
+The context is that we have been talking about
+drivers/scsi/scsi_scan.c:scsi_rescan_device(), which is called by the
+store_rescan_field() sysfs method in scsi_sysfs.c.  The problem is
+this: What happens in scsi_rescan_device if the device is unbound from
+its driver before the module_put call?  The dev->driver->owner
+calculation would dereference a NULL pointer.
 
->> The fix is to check the direction of the net moving of load, and to
->> refuse a NUMA move if it would cause the system to move past the point
->> of balance.  In an unbalanced state, only moves that bring us closer
->> to the balance point are allowed.
->
-> Did you also test with whatever load needed the previous thing? Its far
-> too easy to fix one and break the other in my experience ;-)
+On Thu, 15 Jan 2015, Christoph Hellwig wrote:
 
-The load that caused the need for the previous fix
-was one where all CPUs were overloaded, and one
-process did not have its threads converged on one
-node yet.
+> On Wed, Jan 14, 2015 at 10:07:00AM -0500, Alan Stern wrote:
+> > and the kernfs core insures that the underlying device won't be 
+> > deallocated while a sysfs method runs.
+> 
+> It has a reference to keep it from beeing freed, but so far I can't find
+> anything that prevents ->remove from beeing called while we are in or
+> just before a method call.
 
-In that case, the load from moving one task is a
-small fraction of the total load, and we are unable
-to move through the balance point to the other side.
+There are two types of methods to think about: Those registered by the 
+subsystem and those registered by the driver.
 
->>   	orig_src_load = env->src_stats.load;
->> -	orig_dst_load = env->dst_stats.load;
->>
->> -	if (orig_dst_load < orig_src_load)
->> -		swap(orig_dst_load, orig_src_load);
->> -
->> -	old_imb = orig_dst_load * src_capacity * 100 -
->> -		  orig_src_load * dst_capacity * env->imbalance_pct;
->> +	/*
->> +	 * In a task swap, there will be one load moving from src to dst,
->> +	 * and another moving back. This is the net sum of both moves.
->> +	 * Allow the move if it brings the system closer to a balanced
->> +	 * situation, without crossing over the balance point.
->> +	 */
->
-> This comment seems to 'forget' about the !swap moves?
+If a method is registered by the driver, then the driver will
+unregister it when the ->remove routine runs.  I don't know for
+certain, but I would expect that the sysfs/kernfs core will make sure
+that any existing method calls complete before unregister returns.  
+This would prevent races.
 
-Not sure how to describe that, except by pointing out
-that a task move is always from src to dst :)
+If a method is registered by the subsystem, and if the method runs 
+entirely within the subsystem's code, then ->remove doesn't matter.  
+The driver could be unbound while the method is running and it would be 
+okay.
 
->> +	moved_load = orig_src_load - src_load;
->>
->> -	/* Would this change make things worse? */
->> -	return (imb > old_imb);
->> +	if (moved_load > 0)
->> +		/* Moving src -> dst. Did we overshoot balance? */
->> +		return src_load < dst_load;
->
-> So here we inhibit movement when the src cpu gained (moved_load > 0) and
-> src was smaller than dst.
+The only time we have a problem is when the method is registered by the 
+subsystem and the method calls into the driver.  (Note that this is 
+exactly what happens with scsi_rescan_device.)
 
-moved_load > 0 means that the src cpu loses load
+> > > But this seems like a more generic problem, and at least a quick glance at
+> > > the pci_driver methods seems like others don't have a good
+> > > synchroniation of ->remove against random driver methods.
+> > 
+> > Can you give one or two examples?
+> 
+> I look at the sriov_configure PCI method, or the various sub-methods
+> under pci_driver.err_handler.
 
-> However there is no check the new src value is in fact bigger than dst;
-> src could have gained and still be smaller. And afaict that's a valid
-> move, even under the proposed semantics, right?
+The sriov_numvfs_store method does have the same problem, and so does 
+the reset_store method (by way of pci_reset_function -> 
+pci_dev_save_and_disable -> pci_reset_notify).
 
-If src gains load, moved_load will be negative
+Tejun, is my analysis correct?  How should we fix these races?
 
->> +	else
->> +		/* Moving dst -> src. Did we overshoot balance? */
->> +		return dst_load < src_load;
->
-> And vs.
->
->>   }
->
-> One should use capacity muck when comparing load between CPUs.
-
-You are right, I should use the capacities here.
+Alan Stern
 
