@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753177AbbAOAeB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 19:34:01 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:43797 "EHLO
+	id S1753597AbbAOAfQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 19:35:16 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43804 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751598AbbAOAeA (ORCPT
+	with ESMTP id S1752169AbbAOAfO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 19:34:00 -0500
-Date: Wed, 14 Jan 2015 16:33:59 -0800
+	Wed, 14 Jan 2015 19:35:14 -0500
+Date: Wed, 14 Jan 2015 16:35:13 -0800
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        satoru.takeuchi@gmail.com, shuah.kh@samsung.com,
-        stable@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
-        "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>,
-        Michael Ellerman <mpe@ellerman.id.au>
-Subject: Re: [PATCH 3.14 00/77] 3.14.29-stable review
-Message-ID: <20150115003359.GB14212@kroah.com>
-References: <20150114072224.182299947@linuxfoundation.org>
- <20150114163721.GA32246@roeck-us.net>
- <54B69DF6.7070306@suse.cz>
- <20150114180550.GA13907@roeck-us.net>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
+        Dirk Hohndel <dirk@hohndel.org>, Nick Dyer <nick.dyer@itdev.co.uk>,
+        Benson Leung <bleung@chromium.org>, Yufeng Shen <miletus@chromium.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 3.18 126/150] Revert "Input: atmel_mxt_ts - use deep
+ sleep mode when stopped"
+Message-ID: <20150115003513.GC14212@kroah.com>
+References: <20150114072055.842408181@linuxfoundation.org>
+ <20150114072101.550487263@linuxfoundation.org>
+ <20150114230002.GA9134@dtor-ws>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150114180550.GA13907@roeck-us.net>
+In-Reply-To: <20150114230002.GA9134@dtor-ws>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 14, 2015 at 10:05:50AM -0800, Guenter Roeck wrote:
-> On Wed, Jan 14, 2015 at 05:48:54PM +0100, Jiri Slaby wrote:
-> > On 01/14/2015, 05:37 PM, Guenter Roeck wrote:
-> > > On Tue, Jan 13, 2015 at 11:22:40PM -0800, Greg Kroah-Hartman wrote:
-> > >> This is the start of the stable review cycle for the 3.14.29 release.
-> > >> There are 77 patches in this series, all will be posted as a response
-> > >> to this one.  If anyone has any issues with these being applied, please
-> > >> let me know.
-> > >>
-> > >> Responses should be made by Fri Jan 16 07:22:07 UTC 2015.
-> > >> Anything received after that time might be too late.
-> > >>
-> > > There are several powerpc build failures.
-> > > 
-> > > Building powerpc:defconfig ... failed
-> > > Building powerpc:allmodconfig ... failed
-> > > Building powerpc:cell_defconfig ... failed
-> > > Building powerpc:maple_defconfig ... failed
-> > > 
-> > > arch/powerpc/kernel/head_64.o: In function `machine_check_handle_early':
-> > > (.text+0x918c): undefined reference to `.power7_enter_nap_mode'
+On Wed, Jan 14, 2015 at 03:00:02PM -0800, Dmitry Torokhov wrote:
+> Hi Greg,
+> 
+> On Tue, Jan 13, 2015 at 11:23:17PM -0800, Greg Kroah-Hartman wrote:
+> > 3.18-stable review patch.  If anyone has any objections, please let me know.
 > > 
-> > Dots from functions were removed only in commit b1576fec7f4 (powerpc: No
-> > need to use dot symbols when branching to a function).
+> > ------------------
 > > 
-> > The backport of commit 8117ac6a6c2 (powerpc/powernv: Switch off MMU
-> > before entering nap/sleep/rvwinkle mode) should redefine
-> > power7_enter_nap_mode with dots IMO.
+> > From: Linus Torvalds <torvalds@linux-foundation.org>
 > > 
-> Yes, something like that, or drop that commit for the time being.
-> Reverting it fixes the problem.
+> > commit 7f4054836d811c650c51f9c93088f8ebd61b0020 upstream.
+> > 
+> > This reverts commit 9d469d033d135d80742a4e39e6bbb4519dd5eee1.
+> > 
+> > It breaks the Chromebook Pixel touchpad (and touchscreen).
+> > 
+> > Reported-by: Dirk Hohndel <dirk@hohndel.org>
+> > Bisected-by: Linus Torvalds <torvalds@linux-foundation.org>
+> > Cc: Nick Dyer <nick.dyer@itdev.co.uk>
+> > Cc: Benson Leung <bleung@chromium.org>
+> > Cc: Yufeng Shen <miletus@chromium.org>
+> > Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> > Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> > Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+> 
+> I'd rather we did not apply this to stable just yet - the patch does not
+> fix Dirk's Pixel and Linus's still flaky and I have another patch I'm
+> waiting on them to try out.
 
-Thanks, I've dropped this patch for now because of this.
+Thanks for letting me know, it's now dropped.
 
 greg k-h
