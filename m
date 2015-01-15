@@ -1,66 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754104AbbAOUOO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 15:14:14 -0500
-Received: from smtprelay2.synopsys.com ([198.182.60.111]:34585 "EHLO
-	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752969AbbAOUOM convert rfc822-to-8bit (ORCPT
+	id S1755600AbbAOUQ1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 15:16:27 -0500
+Received: from mail-1.atlantis.sk ([80.94.52.57]:58836 "EHLO
+	mail-1.atlantis.sk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755369AbbAOUQZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 15:14:12 -0500
-From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
-To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "balbi@ti.com" <balbi@ti.com>, John Youn <John.Youn@synopsys.com>
-CC: "r.baldyga@samsung.com" <r.baldyga@samsung.com>,
-        "dinguyen@opensource.altera.com" <dinguyen@opensource.altera.com>,
-        Kever Yang <kever.yang@rock-chips.com>,
-        Mian Yousaf Kaukab <yousaf.kaukab@intel.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Yunzhi Li <lyz@rock-chips.com>, Jingoo Han <jg1.han@samsung.com>,
-        Nick Hudson <skrll@netbsd.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH RESEND] MAINTAINERS: update maintainer entry for dwc2 driver
-Thread-Topic: [PATCH RESEND] MAINTAINERS: update maintainer entry for dwc2
- driver
-Thread-Index: AdAw/8k6LrrozbwYRPqodVjE5jFc5A==
-Date: Thu, 15 Jan 2015 20:14:10 +0000
-Message-ID: <A2CA0424C0A6F04399FB9E1CD98E030484507C36@US01WEMBX2.internal.synopsys.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.13.184.19]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 15 Jan 2015 15:16:25 -0500
+From: Ondrej Zary <linux@rainbow-software.org>
+To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: Re: [PATCH] e100: Don't enable WoL by default on Toshiba devices
+Date: Thu, 15 Jan 2015 21:15:43 +0100
+User-Agent: KMail/1.9.10 (enterprise35 0.20100827.1168748)
+Cc: David Miller <davem@davemloft.net>, e1000-devel@lists.sourceforge.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1415832445-9524-1-git-send-email-linux@rainbow-software.org> <201501151618.07434.linux@rainbow-software.org> <1421335864.2632.29.camel@jtkirshe-mobl>
+In-Reply-To: <1421335864.2632.29.camel@jtkirshe-mobl>
+X-KMail-QuotePrefix: > 
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201501152115.43721.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the MAINTAINERS entry for the dwc2 driver to show John Youn
-as the new maintainer
 
-Signed-off-by: Paul Zimmerman <paulz@synopsys.com>
----
 
-Resending with linux-usb and linux-kernel in CC
+On Thursday 15 January 2015 16:31:04 Jeff Kirsher wrote:
+> On Thu, 2015-01-15 at 16:18 +0100, Ondrej Zary wrote:
+> > On Thursday 15 January 2015, Jeff Kirsher wrote:
+> > > On Thu, 2015-01-15 at 14:40 +0100, Ondrej Zary wrote:
+> > > > On Thursday 13 November 2014, Jeff Kirsher wrote:
+> > > > > On Wed, 2014-11-12 at 18:18 -0500, David Miller wrote:
+> > > > > > From: Ondrej Zary <linux@rainbow-software.org>
+> > > > > > Date: Wed, 12 Nov 2014 23:47:25 +0100
+> > > > > >
+> > > > > > > Enabling WoL on some Toshiba laptops (such as Portege R100)
+> > > >
+> > > > causes
+> > > >
+> > > > > > > battery drain after shutdown (WoL is active even on battery).
+> > > >
+> > > > These
+> > > >
+> > > > > > > laptops have the WoL bit set in EEPROM ID, causing e100 driver
+> > > >
+> > > > to
+> > > >
+> > > > > > > enable WoL by default.
+> > > > > > >
+> > > > > > > Check subsystem vendor ID and if it's Toshiba, don't enable WoL
+> > > >
+> > > > by
+> > > >
+> > > > > > > default from EEPROM settings.
+> > > > > > >
+> > > > > > > Fixes
+> > > >
+> > > > https://bugs.launchpad.net/ubuntu/+source/linux/+bug/110784
+> > > >
+> > > > > > > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> > > > > >
+> > > > > > Jeff, are you gonna pick this up?
+> > > > >
+> > > > > Yes, sorry I did not catch it earlier.
+> > > >
+> > > > What happened to this patch? I don't see it in net.git or
+> > > > net-next.git
+> > > > (checked both davem's and jkirsher's)
+> > >
+> > > Sorry, I thought I had replied with a NAK on this patch after further
+> > > review of the changes.
+> > >
+> > > We don't fix BIOS issues in the driver especially regarding feature
+> > > enablement like WoL.  We would end up with dozens of these kinds of
+> > > fixes if we to allow this.
+> > >
+> > > You should go back to the OEM and ask for a BIOS update to resolve this
+> > > or configure udev so that ethtool disables WoL.
+> >
+> > This is not a BIOS bug. When the machine is powered off in BIOS (or
+> > GRUB), everything is OK.
+> >
+> > The bug is that e100 driver enables WoL based on some bit in EEPROM that
+> > happens to be set on at least some Toshiba laptops and user has no way to
+> > change it.
+>
+> Yes, the EEPROM can be modified/updated through the BIOS update I
+> suggested earlier.  So again, a BIOS issue.
 
- MAINTAINERS |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+The machine has already the latest BIOS and it's unlikely that Toshiba will 
+release a new version for old laptops.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 3589d67..8096bea 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -3028,7 +3028,7 @@ S:	Maintained
- F:	drivers/platform/x86/dell-wmi.c
- 
- DESIGNWARE USB2 DRD IP DRIVER
--M:	Paul Zimmerman <paulz@synopsys.com>
-+M:	John Youn <johnyoun@synopsys.com>
- L:	linux-usb@vger.kernel.org
- T:	git git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git
- S:	Maintained
+> OR you can configure udev so that ethtool disables WoL if you do not
+> want to pursue a EEPROM update through a BIOS update.
+
+I can configure udev but what about other people that install Linux and expect 
+it to work (not drain battery after shutdown)? Without needing to know what 
+udev, ethtool or WoL is.
+
+> >  Windows driver does not do this. Other Linux ethernet drivers
+> > don't do this. When user wants WoL, (s)he enables it in BIOS and OS.
+> > Maybe this (mis)feature should be removed from the driver.
+
+
 -- 
-1.7.6.5
-
+Ondrej Zary
