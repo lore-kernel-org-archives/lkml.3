@@ -1,45 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753017AbbAOJCQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 04:02:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56872 "EHLO mx1.redhat.com"
+	id S1752499AbbAOJQ0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 04:16:26 -0500
+Received: from relay.swsoft.eu ([109.70.220.8]:48114 "EHLO relay.swsoft.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751385AbbAOJCM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 04:02:12 -0500
-Date: Thu, 15 Jan 2015 09:59:06 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Cc: Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Michael Ellerman <mpe@ellerman.id.au>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Use dwfl_report_elf() instead of offline
-Message-ID: <20150115085906.GA23695@krava.brq.redhat.com>
-References: <20150114221045.GA17703@us.ibm.com>
+	id S1752397AbbAOJQV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 04:16:21 -0500
+X-Greylist: delayed 857 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Jan 2015 04:16:20 EST
+Message-ID: <54B781F9.8050703@parallels.com>
+Date: Thu, 15 Jan 2015 12:01:45 +0300
+From: Pavel Emelyanov <xemul@parallels.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.5.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150114221045.GA17703@us.ibm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Andrea Arcangeli <aarcange@redhat.com>,
+        <lsf-pc@lists.linux-foundation.org>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <linux-api@vger.kernel.org>
+Subject: Re: [LSF/MM TOPIC] userfaultfd
+References: <20150114230130.GR6103@redhat.com>
+In-Reply-To: <20150114230130.GR6103@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [89.169.95.100]
+X-ClientProxiedBy: US-EXCH2.sw.swsoft.com (10.255.249.46) To
+ MSK-EXCH1.sw.swsoft.com (10.67.48.55)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 14, 2015 at 02:10:45PM -0800, Sukadev Bhattiprolu wrote:
+On 01/15/2015 02:01 AM, Andrea Arcangeli wrote:
+> Hello,
 > 
-> From 8e6fb4c58d0d9f4798c191d840e32084b1217cc3 Mon Sep 17 00:00:00 2001
-> From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-> Date: Fri, 21 Nov 2014 20:33:53 -0500
-> Subject: [PATCH 1/1] Use dwfl_report_elf() instead of offline.
-> 
-> dwfl_report_offline() works only when libraries are prelinked.
-> 
-> Replace dwfl_report_offline() with dwfl_report_elf() so we correctly
-> extract debug info even from libraries that are not prelinked.
-> 
-> Reported-by: Jiri Olsa <jolsa@redhat.com>
+> I would like to attend this year (2015) LSF/MM summit. I'm
+> particularly interested about the MM track, in order to get help in
+> finalizing the userfaultfd feature I've been working on lately.
 
-hi,
-this is related to the powerpc issue I was just testing right?
-looks like this patch is different from what I was testing..
+I'd like the +1 this. I'm also interested in this topic, especially
+in the item 5 below.
 
-thanks,
-jirka
+> 5) postcopy live migration of binaries inside linux containers
+>    (provided there is a userfaultfd command [not an external syscall
+>    like the original implementation] that allows to copy memory
+>    atomically in the userfaultfd "mm" and not in the manager "mm",
+>    hence the main reason the external syscalls are going away, and in
+>    turn MADV_USERFAULT fd-less is going away as well).
+
+We've started to play with the userfaultfd in the CRIU project [1] to 
+do the post-copy live migration of whole containers (and their parts).
+
+One more use case I've seen on CRIU mailing list is the restore of
+container from on-disk images w/o getting the whole memory in at the
+restore time. The memory is to be put into tasks' address space in
+n-demand manner later. It's claimed that such restore decreases the 
+restore time significantly.
+
+
+One more thing that userfaultfd can help with is restoring COW areas.
+Right now, if we have two tasks, that share a phys page, but have one
+RO mapped to do the COW later we do complex tricks with restoring the
+page in common ancestor, then inheriting one on fork()-s and mremap-ing
+it. Probably it's an API misuse, but it seems to be much simpler if
+the page could be just "sent" to the remote mm via userfaultfd.
+
+[1] http://criu.org/Main_Page
+
+Thanks,
+Pavel
+
