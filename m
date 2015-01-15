@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754698AbbAOM55 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 07:57:57 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48629 "EHLO mx1.redhat.com"
+	id S1754445AbbAOM5A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 07:57:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34681 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754683AbbAOM5z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 07:57:55 -0500
+	id S1754407AbbAOM46 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 07:56:58 -0500
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>,
@@ -19,16 +19,16 @@ Cc: Jiri Olsa <jolsa@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 17/36] perf build: Add perf regs objects building
-Date: Thu, 15 Jan 2015 13:55:13 +0100
-Message-Id: <1421326532-25660-18-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 18/36] perf build: Add zlib objects building
+Date: Thu, 15 Jan 2015 13:55:14 +0100
+Message-Id: <1421326532-25660-19-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1421326532-25660-1-git-send-email-jolsa@kernel.org>
 References: <1421326532-25660-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the regs objects building under build framework
+Move the zlib objects building under build framework
 to be included in the libperf build object.
 
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
@@ -44,57 +44,50 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/Makefile.perf   | 7 -------
- tools/perf/config/Makefile | 4 ++++
- tools/perf/util/Build      | 2 ++
- 3 files changed, 6 insertions(+), 7 deletions(-)
+ tools/perf/Makefile.perf   | 4 ----
+ tools/perf/config/Makefile | 1 +
+ tools/perf/util/Build      | 1 +
+ 3 files changed, 2 insertions(+), 4 deletions(-)
 
 diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 766334c35d54..da57ee1d0518 100644
+index da57ee1d0518..6154384eb2ee 100644
 --- a/tools/perf/Makefile.perf
 +++ b/tools/perf/Makefile.perf
-@@ -347,13 +347,6 @@ install-gtk: $(OUTPUT)libperf-gtk.so
+@@ -347,10 +347,6 @@ install-gtk: $(OUTPUT)libperf-gtk.so
  		$(INSTALL) $(OUTPUT)libperf-gtk.so '$(DESTDIR_SQ)$(libdir_SQ)'
  endif
  
--ifeq ($(NO_PERF_REGS),0)
--  ifeq ($(ARCH),x86)
--    LIB_H += arch/x86/include/perf_regs.h
--  endif
--  LIB_OBJS += $(OUTPUT)util/perf_regs.o
+-ifndef NO_ZLIB
+-  LIB_OBJS += $(OUTPUT)util/zlib.o
 -endif
 -
- ifndef NO_ZLIB
-   LIB_OBJS += $(OUTPUT)util/zlib.o
+ ifdef ASCIIDOC8
+   export ASCIIDOC8
  endif
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index fabc0cc874c2..ab265dfdfa8b 100644
+index ab265dfdfa8b..1f8851a7453b 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -48,6 +48,10 @@ ifeq ($(ARCH),arm64)
-   LIBUNWIND_LIBS = -lunwind -lunwind-aarch64
- endif
- 
-+ifeq ($(NO_PERF_REGS),0)
-+  $(call detected,CONFIG_PERF_REGS)
-+endif
-+
- # So far there's only x86 and arm libdw unwind support merged in perf.
- # Disable it on all other architectures in case libdw unwind
- # support is detected in system. Add supported architectures
+@@ -636,6 +636,7 @@ ifndef NO_ZLIB
+   ifeq ($(feature-zlib), 1)
+     CFLAGS += -DHAVE_ZLIB_SUPPORT
+     EXTLIBS += -lz
++    $(call detected,CONFIG_ZLIB)
+   else
+     NO_ZLIB := 1
+   endif
 diff --git a/tools/perf/util/Build b/tools/perf/util/Build
-index f11463be4506..65ff4de61483 100644
+index 65ff4de61483..1f6e88684e31 100644
 --- a/tools/perf/util/Build
 +++ b/tools/perf/util/Build
-@@ -90,6 +90,8 @@ libperf-$(CONFIG_LIBUNWIND)          += unwind-libunwind.o
- 
+@@ -91,6 +91,7 @@ libperf-$(CONFIG_LIBUNWIND)          += unwind-libunwind.o
  libperf-$(CONFIG_SCRIPT) += scripting-engines/
  
-+libperf-$(CONFIG_PERF_REGS) += perf_regs.o
-+
+ libperf-$(CONFIG_PERF_REGS) += perf_regs.o
++libperf-$(CONFIG_ZLIB) += zlib.o
+ 
  CFLAGS_config.o   += -DETC_PERFCONFIG="BUILD_STR($(ETC_PERFCONFIG_SQ))"
  CFLAGS_exec_cmd.o += -DPERF_EXEC_PATH="BUILD_STR($(perfexecdir_SQ))" -DPREFIX="BUILD_STR($(prefix_SQ))"
- 
 -- 
 1.9.3
 
