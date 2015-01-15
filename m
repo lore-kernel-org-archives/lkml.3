@@ -1,102 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755655AbbAOQcj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 11:32:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37440 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755605AbbAOQcf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 11:32:35 -0500
-Date: Thu, 15 Jan 2015 17:31:10 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: David Ahern <dsahern@gmail.com>
-Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Alexis Berlemont <alexis.berlemont@gmail.com>,
-        Andi Kleen <ak@linux.intel.com>, Anton Blanchard <anton@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Borislav Petkov <bp@alien8.de>, Borislav Petkov <bp@suse.de>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Florian Fainelli <florian@openwrt.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        Mark Salter <msalter@redhat.com>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "S. Lockwood-Childs" <sjl@vctlabs.com>,
-        Sam Ravnborg <sam@ravnborg.org>, Sasha Levin <sasha.levin@oracle.com>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCHv2 00/36] perf tools: New build framework
-Message-ID: <20150115163110.GE17228@krava.brq.redhat.com>
-References: <1421326532-25660-1-git-send-email-jolsa@kernel.org>
- <54B7E5E0.50702@gmail.com>
+	id S1755701AbbAOQdK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 11:33:10 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37792 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755606AbbAOQdG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 11:33:06 -0500
+Date: Thu, 15 Jan 2015 17:32:35 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: Ray Jui <rjui@broadcom.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Scott Branden <sbranden@broadcom.com>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        bcm-kernel-feedback-list@broadcom.com, devicetree@vger.kernel.org
+Subject: Re: [PATCH v4 2/3] i2c: iproc: Add Broadcom iProc I2C Driver
+Message-ID: <20150115163235.GQ22880@pengutronix.de>
+References: <rjui@broadcom.com>
+ <1421274213-3544-1-git-send-email-rjui@broadcom.com>
+ <1421274213-3544-3-git-send-email-rjui@broadcom.com>
+ <20150115084119.GN22880@pengutronix.de>
+ <20150115120704.GB2549@katana>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <54B7E5E0.50702@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20150115120704.GB2549@katana>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 15, 2015 at 09:08:00AM -0700, David Ahern wrote:
-> On 1/15/15 5:54 AM, Jiri Olsa wrote:
-> >Since it's actually small portion of kbuild that perf needs,
-> >I realized it's actually better to steal it than 'reconfigure'
-> >kbuild to be usable for perf.
-> >
-> >Also this patchset is kind of incremental version of the latest:
-> >   perf tools: Add kbuild support into Makefile.kbuild
-> >so it should be easier to review.
-> >
-> >NOTE I couldn't find any copyright/credit messages in the kbuild
-> >system, but would be happy to include it if someone suggests one.
-> >
-> >The stolen parts are in files:
-> >   Makefile.kbuild
-> >   Build.include
-> >
-> >The idea and more details are explained in the 'Documentation/Build'
-> >file. The basic idea is the same as in kbuild system, with some minor
-> >changes to allow for multiple binaries build definitions.
-> >
-> >User provides 'Build' files with objects definitions like:
-> >   perf-y += perf.o
-> >   perf-y += builtin-bench.o
-> >   ...
-> >
-> >   libperf-y += util/
-> >   ...
-> >
+Hello,
+
+On Thu, Jan 15, 2015 at 01:07:05PM +0100, Wolfram Sang wrote:
+> > > +	iproc_i2c->msg = msg;
+> > Can it happen that iproc_i2c->msg still holds an uncompleted message
+> > here or is this serialized by the core? Wolfram? Either here something
 > 
-> It is not obvious to me how this works. Users provide a .config file for
-> building perf? Or do users provide Build files like you state above? If it
-> is a .config file then what if a .config file is not present is it auto
-> generated using the current autoprobing?
+> We have per-adapter locks serializing transfers, if you mean that?
+ok, so in the efm32 driver the if (ddata->msgs) condition in
+efm32_i2c_master_xfer can never be true, right?
 
-so far users provide 'Build' files, which defines list of objects
-to be built for specific outputs, like following Build file:
+> > > +static int bcm_iproc_i2c_remove(struct platform_device *pdev)
+> > > +{
+> > > +	struct bcm_iproc_i2c_dev *iproc_i2c = platform_get_drvdata(pdev);
+> > > +
+> > > +	i2c_del_adapter(&iproc_i2c->adapter);
+> > You need to free the irq before i2c_del_adapter.
+> 
+> One could also keep using devm_request_irq and disable all interrupts
+> sources here?
+calling devm_free_irq would work or writel(0, iproc_i2c->base +
+IE_OFFSET) + synchronize_irq().
 
----
-perf-y += perf.o
-perf-y += builtin-bench.o
+Best regards
+Uwe
 
-libperf-y += util/
----
-
-means that build framework's output will be 2 files:
-
-  - 'perf-in.o'    that contains (links) perf.o and builtin-bench.o objects
-  - 'libperf-in.o' that contains (links) whatever is defined under 'util/'
-
-
-also user can provide '.config-detected' file that will get included
-into the Makefile.build to get the environment changed and refer to it
-in the 'Build' files
-
-I'll update docs with more details..
-
-jirka
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
