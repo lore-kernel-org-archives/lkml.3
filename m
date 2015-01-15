@@ -1,119 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755389AbbAOTVi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 14:21:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44737 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755306AbbAOTVg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 14:21:36 -0500
-Date: Thu, 15 Jan 2015 20:20:28 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Suresh Siddha <sbsiddha@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        matt.fleming@intel.com, bp@suse.de, pbonzini@redhat.com,
-        tglx@linutronix.de, luto@amacapital.net
-Subject: [PATCH 3/3] x86, fpu: fix math_state_restore() race with
-	kernel_fpu_begin()
-Message-ID: <20150115192028.GD27332@redhat.com>
-References: <1421012793-30106-1-git-send-email-riel@redhat.com> <20150115191918.GA27332@redhat.com>
+	id S1755470AbbAOTVv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 14:21:51 -0500
+Received: from smtprelay.synopsys.com ([198.182.47.9]:47762 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752672AbbAOTVt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 14:21:49 -0500
+From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+To: Felipe Balbi <balbi@ti.com>, Kever Yang <kever.yang@rock-chips.com>
+CC: "Dinh Nguyen (dinguyen@opensource.altera.com)" 
+	<dinguyen@opensource.altera.com>,
+        Doug Anderson <dianders@chromium.org>,
+        "linux-rockchip@lists.infradead.org" 
+	<linux-rockchip@lists.infradead.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] Revert "usb: dwc2: add bus suspend/resume for dwc2"
+Thread-Topic: [PATCH] Revert "usb: dwc2: add bus suspend/resume for dwc2"
+Thread-Index: AdAw+H1ni/7Lz4jATrSNTqNBjHd7JQ==
+Date: Thu, 15 Jan 2015 19:21:46 +0000
+Message-ID: <A2CA0424C0A6F04399FB9E1CD98E030484507BC5@US01WEMBX2.internal.synopsys.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.13.184.19]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150115191918.GA27332@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-math_state_restore() can race with kernel_fpu_begin() if irq comes
-right after __thread_fpu_begin(), __save_init_fpu() will overwrite
-fpu->state we are going to restore.
+This reverts commit 0cf884e819e05437287a668b9bfcc198bab6329c.
+Even after applying the follow-on patch at
+https://patchwork.kernel.org/patch/5325111
+there are still problems with device connect on the Altera SOCFPGA
+platform at least. One possible fix would be to add a whitelist
+to enable suspend/resume on platforms where it does work correctly.
 
-Add 2 simple helpers, kernel_fpu_disable() and kernel_fpu_enable()
-which simply set/clear in_kernel_fpu, and change math_state_restore()
-to exclude kernel_fpu_begin() in between.
-
-Alternatively we could use local_irq_save/restore, but probably these
-new helpers can have more users.
-
-Perhaps they should disable/enable preemption themselves, in this case
-we can remove preempt_disable() in __restore_xstate_sig().
-
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Paul Zimmerman <paulz@synopsys.com>
 ---
- arch/x86/include/asm/i387.h |    4 ++++
- arch/x86/kernel/i387.c      |   11 +++++++++++
- arch/x86/kernel/traps.c     |   12 +++++-------
- 3 files changed, 20 insertions(+), 7 deletions(-)
+Based on Felipe's testing/next branch.
 
-diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
-index 5e275d3..6eb6fcb 100644
---- a/arch/x86/include/asm/i387.h
-+++ b/arch/x86/include/asm/i387.h
-@@ -51,6 +51,10 @@ static inline void kernel_fpu_end(void)
- 	preempt_enable();
+ drivers/usb/dwc2/hcd.c |   88 ++++++------------------------------------------
+ 1 files changed, 11 insertions(+), 77 deletions(-)
+
+diff --git a/drivers/usb/dwc2/hcd.c b/drivers/usb/dwc2/hcd.c
+index a0cd9db..755e16b 100644
+--- a/drivers/usb/dwc2/hcd.c
++++ b/drivers/usb/dwc2/hcd.c
+@@ -1473,30 +1473,6 @@ static void dwc2_port_suspend(struct dwc2_hsotg *hsotg, u16 windex)
+ 	}
  }
  
-+/* Must be called with preempt disabled */
-+extern void kernel_fpu_disable(void);
-+extern void kernel_fpu_enable(void);
-+
- /*
-  * Some instructions like VIA's padlock instructions generate a spurious
-  * DNA fault but don't modify SSE registers. And these instructions
-diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-index 12088a3..81049ff 100644
---- a/arch/x86/kernel/i387.c
-+++ b/arch/x86/kernel/i387.c
-@@ -21,6 +21,17 @@
- 
- static DEFINE_PER_CPU(bool, in_kernel_fpu);
- 
-+void kernel_fpu_disable(void)
-+{
-+	WARN_ON(this_cpu_read(in_kernel_fpu));
-+	this_cpu_write(in_kernel_fpu, true);
-+}
-+
-+void kernel_fpu_enable(void)
-+{
-+	this_cpu_write(in_kernel_fpu, false);
-+}
-+
- /*
-  * Were we in an interrupt that interrupted kernel mode?
-  *
-diff --git a/arch/x86/kernel/traps.c b/arch/x86/kernel/traps.c
-index 88900e2..fb4cb6a 100644
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -788,18 +788,16 @@ void math_state_restore(void)
- 		local_irq_disable();
- 	}
- 
-+	/* Avoid __kernel_fpu_begin() right after __thread_fpu_begin() */
-+	kernel_fpu_disable();
- 	__thread_fpu_begin(tsk);
+-static void dwc2_port_resume(struct dwc2_hsotg *hsotg)
+-{
+-	u32 hprt0;
 -
--	/*
--	 * Paranoid restore. send a SIGSEGV if we fail to restore the state.
+-	/* After clear the Stop PHY clock bit, we should wait for a moment
+-	 * for PLL work stable with clock output.
 -	 */
- 	if (unlikely(restore_fpu_checking(tsk))) {
- 		drop_init_fpu(tsk);
- 		force_sig_info(SIGSEGV, SEND_SIG_PRIV, tsk);
--		return;
-+	} else {
-+		tsk->thread.fpu_counter++;
- 	}
+-	writel(0, hsotg->regs + PCGCTL);
+-	usleep_range(2000, 4000);
 -
--	tsk->thread.fpu_counter++;
-+	kernel_fpu_enable();
- }
- EXPORT_SYMBOL_GPL(math_state_restore);
+-	hprt0 = dwc2_read_hprt0(hsotg);
+-	hprt0 |= HPRT0_RES;
+-	writel(hprt0, hsotg->regs + HPRT0);
+-	hprt0 &= ~HPRT0_SUSP;
+-	/* according to USB2.0 Spec 7.1.7.7, the host must send the resume
+-	 * signal for at least 20ms
+-	 */
+-	usleep_range(20000, 25000);
+-
+-	hprt0 &= ~HPRT0_RES;
+-	writel(hprt0, hsotg->regs + HPRT0);
+-	hsotg->lx_state = DWC2_L0;
+-}
+-
+ /* Handles hub class-specific requests */
+ static int dwc2_hcd_hub_control(struct dwc2_hsotg *hsotg, u16 typereq,
+ 				u16 wvalue, u16 windex, char *buf, u16 wlength)
+@@ -1542,7 +1518,17 @@ static int dwc2_hcd_hub_control(struct dwc2_hsotg *hsotg, u16 typereq,
+ 		case USB_PORT_FEAT_SUSPEND:
+ 			dev_dbg(hsotg->dev,
+ 				"ClearPortFeature USB_PORT_FEAT_SUSPEND\n");
+-			dwc2_port_resume(hsotg);
++			writel(0, hsotg->regs + PCGCTL);
++			usleep_range(20000, 40000);
++
++			hprt0 = dwc2_read_hprt0(hsotg);
++			hprt0 |= HPRT0_RES;
++			writel(hprt0, hsotg->regs + HPRT0);
++			hprt0 &= ~HPRT0_SUSP;
++			usleep_range(100000, 150000);
++
++			hprt0 &= ~HPRT0_RES;
++			writel(hprt0, hsotg->regs + HPRT0);
+ 			break;
  
+ 		case USB_PORT_FEAT_POWER:
+@@ -2315,55 +2301,6 @@ static void _dwc2_hcd_stop(struct usb_hcd *hcd)
+ 	usleep_range(1000, 3000);
+ }
+ 
+-static int _dwc2_hcd_suspend(struct usb_hcd *hcd)
+-{
+-	struct dwc2_hsotg *hsotg = dwc2_hcd_to_hsotg(hcd);
+-	u32 hprt0;
+-
+-	if (!((hsotg->op_state == OTG_STATE_B_HOST) ||
+-		(hsotg->op_state == OTG_STATE_A_HOST)))
+-		return 0;
+-
+-	/* TODO: We get into suspend from 'on' state, maybe we need to do
+-	 * something if we get here from DWC2_L1(LPM sleep) state one day.
+-	 */
+-	if (hsotg->lx_state != DWC2_L0)
+-		return 0;
+-
+-	hprt0 = dwc2_read_hprt0(hsotg);
+-	if (hprt0 & HPRT0_CONNSTS) {
+-		dwc2_port_suspend(hsotg, 1);
+-	} else {
+-		u32 pcgctl = readl(hsotg->regs + PCGCTL);
+-
+-		pcgctl |= PCGCTL_STOPPCLK;
+-		writel(pcgctl, hsotg->regs + PCGCTL);
+-	}
+-
+-	return 0;
+-}
+-
+-static int _dwc2_hcd_resume(struct usb_hcd *hcd)
+-{
+-	struct dwc2_hsotg *hsotg = dwc2_hcd_to_hsotg(hcd);
+-	u32 hprt0;
+-
+-	if (!((hsotg->op_state == OTG_STATE_B_HOST) ||
+-		(hsotg->op_state == OTG_STATE_A_HOST)))
+-		return 0;
+-
+-	if (hsotg->lx_state != DWC2_L2)
+-		return 0;
+-
+-	hprt0 = dwc2_read_hprt0(hsotg);
+-	if ((hprt0 & HPRT0_CONNSTS) && (hprt0 & HPRT0_SUSP))
+-		dwc2_port_resume(hsotg);
+-	else
+-		writel(0, hsotg->regs + PCGCTL);
+-
+-	return 0;
+-}
+-
+ /* Returns the current frame number */
+ static int _dwc2_hcd_get_frame_number(struct usb_hcd *hcd)
+ {
+@@ -2734,9 +2671,6 @@ static struct hc_driver dwc2_hc_driver = {
+ 	.hub_status_data = _dwc2_hcd_hub_status_data,
+ 	.hub_control = _dwc2_hcd_hub_control,
+ 	.clear_tt_buffer_complete = _dwc2_hcd_clear_tt_buffer_complete,
+-
+-	.bus_suspend = _dwc2_hcd_suspend,
+-	.bus_resume = _dwc2_hcd_resume,
+ };
+ 
+ /*
 -- 
-1.5.5.1
-
+1.7.6.5
 
