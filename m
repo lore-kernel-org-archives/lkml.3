@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753457AbbAOA0a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jan 2015 19:26:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59027 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751578AbbAOA03 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jan 2015 19:26:29 -0500
-Message-ID: <1421281572.2688.4.camel@pluto.fritz.box>
-Subject: Re: [RFC PATCH 0/5] Second attempt at contained helper execution
-From: Ian Kent <ikent@redhat.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>,
-        Oleg Nesterov <onestero@redhat.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Benjamin Coddington <bcodding@redhat.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Jeff Layton <jeff.layton@primarydata.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Date: Thu, 15 Jan 2015 08:26:12 +0800
-In-Reply-To: <20150114221011.GC7071@fieldses.org>
-References: <20150114092704.30252.60446.stgit@pluto.fritz.box>
-	 <20150114215525.GB7071@fieldses.org> <20150114221011.GC7071@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754200AbbAOA2R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jan 2015 19:28:17 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:43770 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751952AbbAOA2P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jan 2015 19:28:15 -0500
+Date: Wed, 14 Jan 2015 16:28:15 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux USB Mailing List <linux-usb@vger.kernel.org>
+Subject: Re: [GIT PULL] USB patches
+Message-ID: <20150115002815.GA7942@kroah.com>
+References: <1421257719-13711-1-git-send-email-balbi@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421257719-13711-1-git-send-email-balbi@ti.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2015-01-14 at 17:10 -0500, J. Bruce Fields wrote:
-> > On Wed, Jan 14, 2015 at 05:32:22PM +0800, Ian Kent wrote:
-> > > There are other difficulties to tackle as well, such as how to decide
-> > > if contained helper execution is needed. For example, if a mount has
-> > > been propagated to a container or bound into the container tree (such
-> > > as with the --volume option of "docker run") the root init namespace
-> > > may need to be used and not the container namespace.
+On Wed, Jan 14, 2015 at 11:48:39AM -0600, Felipe Balbi wrote:
+> Hi Greg,
 > 
-> I think you have to go through each of the existing upcall examples and
-> decide what's needed for each.
+> Alright, 3 more fixes for v3.19-rc and my queue is finally clean.
 > 
-> At least for the nfsv4 idmapper I would've thought the namespace the
-> mount was done in would be the right choice, hence my previous question.
+> All three fixes are rather obvious, two of them just took longer
+> to sort out all the stable rules details and I ended up having
+> to fix all that, otherwise we would miss the time frame.
+> 
+> Please condiser merging to your greg/usb-linus branch.
+> 
+> cheers
+> 
+> The following changes since commit 5fb694f96e7c19e66b1c55124b98812e32e3efa5:
+> 
+>   usb: gadget: udc: atmel: fix possible oops when unloading module (2015-01-09 18:15:11 -0600)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git tags/fixes-for-v3.19-rc6
 
-Probably but you don't necessarily know what namespace the mount was
-done in. It may have been propagated from another namespace or (although
-I don't think it works yet) bound from another container using the
-volumes-from docker option.
+Pulled and pushed out, thanks.
 
-At least I believe that's a problem and I agree that, once a suitable
-method of running helpers is found each case will need to be looked at.
-
-Ian
-
-
+greg k-h
