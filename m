@@ -1,261 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755178AbbAONCx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 08:02:53 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:41017 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753644AbbAOM6Y (ORCPT
+	id S1754997AbbAOM7z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 07:59:55 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:49945 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754980AbbAOM7x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 07:58:24 -0500
-Date: Thu, 15 Jan 2015 13:58:20 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Vladimir Davydov <vdavydov@parallels.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm v2] vmscan: move reclaim_state handling to shrink_slab
-Message-ID: <20150115125820.GE7000@dhcp22.suse.cz>
-References: <1421311073-28130-1-git-send-email-vdavydov@parallels.com>
+	Thu, 15 Jan 2015 07:59:53 -0500
+Date: Thu, 15 Jan 2015 04:58:23 -0800
+From: tip-bot for Thomas Gleixner <tipbot@zytor.com>
+Message-ID: <tip-a1dafe857db56c35878c71560089a4694ac841fd@git.kernel.org>
+Cc: JBeulich@suse.com, tony.luck@intel.com, jroedel@suse.de,
+        jiang.liu@linux.intel.com, linux-kernel@vger.kernel.org,
+        rientjes@google.com, yinghai@kernel.org, hpa@zytor.com,
+        benh@kernel.crashing.org, d.hatayama@jp.fujitsu.com, bp@alien8.de,
+        hpa@linux.intel.com, richard@nod.at, tglx@linutronix.de,
+        joro@8bytes.org, mingo@kernel.org, oren@scalemp.com
+Reply-To: JBeulich@suse.com, jroedel@suse.de, tony.luck@intel.com,
+        jiang.liu@linux.intel.com, rientjes@google.com,
+        linux-kernel@vger.kernel.org, yinghai@kernel.org,
+        benh@kernel.crashing.org, hpa@zytor.com, oren@scalemp.com,
+        mingo@kernel.org, tglx@linutronix.de, joro@8bytes.org,
+        hpa@linux.intel.com, richard@nod.at, bp@alien8.de,
+        d.hatayama@jp.fujitsu.com
+In-Reply-To: <1420615903-28253-2-git-send-email-jiang.liu@linux.intel.com>
+References: <20141205084147.232633738@linutronix.de>
+	<1420615903-28253-2-git-send-email-jiang.liu@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/apic] iommu, x86:
+  Restructure setup of the irq remapping feature
+Git-Commit-ID: a1dafe857db56c35878c71560089a4694ac841fd
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1421311073-28130-1-git-send-email-vdavydov@parallels.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 15-01-15 11:37:53, Vladimir Davydov wrote:
-> current->reclaim_state is only used to count the number of slab pages
-> reclaimed by shrink_slab(). So instead of initializing it before we are
-> 
-> Note that after this patch try_to_free_mem_cgroup_pages() will count not
-> only reclaimed user pages, but also slab pages, which is expected,
-> because it can reclaim kmem from kmem-active sub cgroups.
+Commit-ID:  a1dafe857db56c35878c71560089a4694ac841fd
+Gitweb:     http://git.kernel.org/tip/a1dafe857db56c35878c71560089a4694ac841fd
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Wed, 7 Jan 2015 15:31:28 +0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Thu, 15 Jan 2015 11:24:22 +0100
 
-Except that reclaim_state counts all freed slab objects that have
-current->reclaim_state != NULL AFAIR. This includes also kfreed pages
-from interrupt context and who knows what else and those pages might be
-from a different memcgs, no?
+iommu, x86: Restructure setup of the irq remapping feature
 
-Besides that I am not sure this makes any difference in the end. No
-try_to_free_mem_cgroup_pages caller really cares about the exact
-number of reclaimed pages. We care only about whether there was any
-progress done - and even that not exactly (e.g. try_charge checks
-mem_cgroup_margin before retry/oom so if sufficient kmem pages were
-uncharged then we will notice that).
+enable_IR_x2apic() calls setup_irq_remapping_ops() which by default
+installs the intel dmar remapping ops and then calls the amd iommu irq
+remapping prepare callback to figure out whether we are running on an
+AMD machine with irq remapping hardware.
 
-That being said, I haven't read the patch yet, but the above assumption
-doesn't sound correct to me. reclaim_state is nasty and relying on it for
-something that is targeted might lead to unexpected results.
+Right after that it calls irq_remapping_prepare() which pointlessly
+checks:
+	if (!remap_ops || !remap_ops->prepare)
+               return -ENODEV;
+and then calls
 
-> Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
-> ---
-> Changes in v2:
->  - do not change shrink_slab() return value to the number of reclaimed
->    slab pages, because it can make drop_slab() abort beforehand (Andrew)
-> 
->  mm/page_alloc.c |    4 ----
->  mm/vmscan.c     |   43 +++++++++++++++++--------------------------
->  2 files changed, 17 insertions(+), 30 deletions(-)
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index e1963ea0684a..f528e4ba91b5 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -2448,7 +2448,6 @@ static int
->  __perform_reclaim(gfp_t gfp_mask, unsigned int order, struct zonelist *zonelist,
->  		  nodemask_t *nodemask)
->  {
-> -	struct reclaim_state reclaim_state;
->  	int progress;
->  
->  	cond_resched();
-> @@ -2457,12 +2456,9 @@ __perform_reclaim(gfp_t gfp_mask, unsigned int order, struct zonelist *zonelist,
->  	cpuset_memory_pressure_bump();
->  	current->flags |= PF_MEMALLOC;
->  	lockdep_set_current_reclaim_state(gfp_mask);
-> -	reclaim_state.reclaimed_slab = 0;
-> -	current->reclaim_state = &reclaim_state;
->  
->  	progress = try_to_free_pages(zonelist, order, gfp_mask, nodemask);
->  
-> -	current->reclaim_state = NULL;
->  	lockdep_clear_current_reclaim_state();
->  	current->flags &= ~PF_MEMALLOC;
->  
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 16f3e45742d6..26fdcc6c747d 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -367,13 +367,18 @@ static unsigned long do_shrink_slab(struct shrink_control *shrinkctl,
->   * the ->seeks setting of the shrink function, which indicates the
->   * cost to recreate an object relative to that of an LRU page.
->   *
-> - * Returns the number of reclaimed slab objects.
-> + * Returns the number of reclaimed slab objects. The number of reclaimed slab
-> + * pages is added to *@ret_nr_reclaimed.
->   */
->  static unsigned long shrink_slab(gfp_t gfp_mask, int nid,
->  				 struct mem_cgroup *memcg,
->  				 unsigned long nr_scanned,
-> -				 unsigned long nr_eligible)
-> +				 unsigned long nr_eligible,
-> +				 unsigned long *ret_nr_reclaimed)
->  {
-> +	struct reclaim_state reclaim_state = {
-> +		.reclaimed_slab = 0,
-> +	};
->  	struct shrinker *shrinker;
->  	unsigned long freed = 0;
->  
-> @@ -394,6 +399,8 @@ static unsigned long shrink_slab(gfp_t gfp_mask, int nid,
->  		goto out;
->  	}
->  
-> +	current->reclaim_state = &reclaim_state;
-> +
->  	list_for_each_entry(shrinker, &shrinker_list, list) {
->  		struct shrink_control sc = {
->  			.gfp_mask = gfp_mask,
-> @@ -410,6 +417,9 @@ static unsigned long shrink_slab(gfp_t gfp_mask, int nid,
->  		freed += do_shrink_slab(&sc, shrinker, nr_scanned, nr_eligible);
->  	}
->  
-> +	current->reclaim_state = NULL;
-> +	*ret_nr_reclaimed += reclaim_state.reclaimed_slab;
-> +
->  	up_read(&shrinker_rwsem);
->  out:
->  	cond_resched();
-> @@ -419,6 +429,7 @@ out:
->  void drop_slab_node(int nid)
->  {
->  	unsigned long freed;
-> +	unsigned long nr_reclaimed = 0;
->  
->  	do {
->  		struct mem_cgroup *memcg = NULL;
-> @@ -426,9 +437,9 @@ void drop_slab_node(int nid)
->  		freed = 0;
->  		do {
->  			freed += shrink_slab(GFP_KERNEL, nid, memcg,
-> -					     1000, 1000);
-> +					     1000, 1000, &nr_reclaimed);
->  		} while ((memcg = mem_cgroup_iter(NULL, memcg, NULL)) != NULL);
-> -	} while (freed > 10);
-> +	} while (freed);
->  }
->  
->  void drop_slab(void)
-> @@ -2339,7 +2350,6 @@ static inline bool should_continue_reclaim(struct zone *zone,
->  static bool shrink_zone(struct zone *zone, struct scan_control *sc,
->  			bool is_classzone)
->  {
-> -	struct reclaim_state *reclaim_state = current->reclaim_state;
->  	unsigned long nr_reclaimed, nr_scanned;
->  	bool reclaimable = false;
->  
-> @@ -2371,7 +2381,7 @@ static bool shrink_zone(struct zone *zone, struct scan_control *sc,
->  			if (memcg && is_classzone)
->  				shrink_slab(sc->gfp_mask, zone_to_nid(zone),
->  					    memcg, sc->nr_scanned - scanned,
-> -					    lru_pages);
-> +					    lru_pages, &sc->nr_reclaimed);
->  
->  			/*
->  			 * Direct reclaim and kswapd have to scan all memory
-> @@ -2398,12 +2408,7 @@ static bool shrink_zone(struct zone *zone, struct scan_control *sc,
->  		if (global_reclaim(sc) && is_classzone)
->  			shrink_slab(sc->gfp_mask, zone_to_nid(zone), NULL,
->  				    sc->nr_scanned - nr_scanned,
-> -				    zone_lru_pages);
-> -
-> -		if (reclaim_state) {
-> -			sc->nr_reclaimed += reclaim_state->reclaimed_slab;
-> -			reclaim_state->reclaimed_slab = 0;
-> -		}
-> +				    zone_lru_pages, &sc->nr_reclaimed);
->  
->  		vmpressure(sc->gfp_mask, sc->target_mem_cgroup,
->  			   sc->nr_scanned - nr_scanned,
-> @@ -3367,17 +3372,12 @@ static int kswapd(void *p)
->  	int balanced_classzone_idx;
->  	pg_data_t *pgdat = (pg_data_t*)p;
->  	struct task_struct *tsk = current;
-> -
-> -	struct reclaim_state reclaim_state = {
-> -		.reclaimed_slab = 0,
-> -	};
->  	const struct cpumask *cpumask = cpumask_of_node(pgdat->node_id);
->  
->  	lockdep_set_current_reclaim_state(GFP_KERNEL);
->  
->  	if (!cpumask_empty(cpumask))
->  		set_cpus_allowed_ptr(tsk, cpumask);
-> -	current->reclaim_state = &reclaim_state;
->  
->  	/*
->  	 * Tell the memory management that we're a "memory allocator",
-> @@ -3449,7 +3449,6 @@ static int kswapd(void *p)
->  	}
->  
->  	tsk->flags &= ~(PF_MEMALLOC | PF_SWAPWRITE | PF_KSWAPD);
-> -	current->reclaim_state = NULL;
->  	lockdep_clear_current_reclaim_state();
->  
->  	return 0;
-> @@ -3492,7 +3491,6 @@ void wakeup_kswapd(struct zone *zone, int order, enum zone_type classzone_idx)
->   */
->  unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
->  {
-> -	struct reclaim_state reclaim_state;
->  	struct scan_control sc = {
->  		.nr_to_reclaim = nr_to_reclaim,
->  		.gfp_mask = GFP_HIGHUSER_MOVABLE,
-> @@ -3508,12 +3506,9 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
->  
->  	p->flags |= PF_MEMALLOC;
->  	lockdep_set_current_reclaim_state(sc.gfp_mask);
-> -	reclaim_state.reclaimed_slab = 0;
-> -	p->reclaim_state = &reclaim_state;
->  
->  	nr_reclaimed = do_try_to_free_pages(zonelist, &sc);
->  
-> -	p->reclaim_state = NULL;
->  	lockdep_clear_current_reclaim_state();
->  	p->flags &= ~PF_MEMALLOC;
->  
-> @@ -3678,7 +3673,6 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
->  	/* Minimum pages needed in order to stay on node */
->  	const unsigned long nr_pages = 1 << order;
->  	struct task_struct *p = current;
-> -	struct reclaim_state reclaim_state;
->  	struct scan_control sc = {
->  		.nr_to_reclaim = max(nr_pages, SWAP_CLUSTER_MAX),
->  		.gfp_mask = (gfp_mask = memalloc_noio_flags(gfp_mask)),
-> @@ -3697,8 +3691,6 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
->  	 */
->  	p->flags |= PF_MEMALLOC | PF_SWAPWRITE;
->  	lockdep_set_current_reclaim_state(gfp_mask);
-> -	reclaim_state.reclaimed_slab = 0;
-> -	p->reclaim_state = &reclaim_state;
->  
->  	if (zone_pagecache_reclaimable(zone) > zone->min_unmapped_pages) {
->  		/*
-> @@ -3710,7 +3702,6 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
->  		} while (sc.nr_reclaimed < nr_pages && --sc.priority >= 0);
->  	}
->  
-> -	p->reclaim_state = NULL;
->  	current->flags &= ~(PF_MEMALLOC | PF_SWAPWRITE);
->  	lockdep_clear_current_reclaim_state();
->  	return sc.nr_reclaimed >= nr_pages;
-> -- 
-> 1.7.10.4
-> 
+    remap_ops->prepare()
 
--- 
-Michal Hocko
-SUSE Labs
+which is silly in the AMD case as it got called from
+setup_irq_remapping_ops() already a few microseconds ago.
+
+Simplify this and just collapse everything into
+irq_remapping_prepare().
+
+The irq_remapping_prepare() remains still silly as it assigns blindly
+the intel ops, but that's not scope of this patch.
+
+The scope here is to move the preperatory work, i.e. memory
+allocations out of the atomic section which is required to enable irq
+remapping.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Tested-by: Borislav Petkov <bp@alien8.de>
+Acked-and-tested-by: Joerg Roedel <joro@8bytes.org>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: iommu@lists.linux-foundation.org
+Cc: Joerg Roedel <jroedel@suse.de>
+Cc: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: David Rientjes <rientjes@google.com>
+Cc: HATAYAMA Daisuke <d.hatayama@jp.fujitsu.com>
+Cc: Jan Beulich <JBeulich@suse.com>
+Cc: Richard Weinberger <richard@nod.at>
+Cc: Oren Twaig <oren@scalemp.com>
+Cc: x86@kernel.org
+Link: http://lkml.kernel.org/r/20141205084147.232633738@linutronix.de
+Link: http://lkml.kernel.org/r/1420615903-28253-2-git-send-email-jiang.liu@linux.intel.com
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/include/asm/irq_remapping.h |  2 --
+ arch/x86/kernel/apic/apic.c          |  3 ---
+ drivers/iommu/irq_remapping.c        | 19 +++++++------------
+ 3 files changed, 7 insertions(+), 17 deletions(-)
+
+diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
+index b7747c4..f1b619e 100644
+--- a/arch/x86/include/asm/irq_remapping.h
++++ b/arch/x86/include/asm/irq_remapping.h
+@@ -33,7 +33,6 @@ struct irq_cfg;
+ 
+ #ifdef CONFIG_IRQ_REMAP
+ 
+-extern void setup_irq_remapping_ops(void);
+ extern int irq_remapping_supported(void);
+ extern void set_irq_remapping_broken(void);
+ extern int irq_remapping_prepare(void);
+@@ -60,7 +59,6 @@ void irq_remap_modify_chip_defaults(struct irq_chip *chip);
+ 
+ #else  /* CONFIG_IRQ_REMAP */
+ 
+-static inline void setup_irq_remapping_ops(void) { }
+ static inline int irq_remapping_supported(void) { return 0; }
+ static inline void set_irq_remapping_broken(void) { }
+ static inline int irq_remapping_prepare(void) { return -ENODEV; }
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index 29b5b18..141f103 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -1597,9 +1597,6 @@ void __init enable_IR_x2apic(void)
+ 	int ret, x2apic_enabled = 0;
+ 	int hardware_init_ret;
+ 
+-	/* Make sure irq_remap_ops are initialized */
+-	setup_irq_remapping_ops();
+-
+ 	hardware_init_ret = irq_remapping_prepare();
+ 	if (hardware_init_ret && !x2apic_supported())
+ 		return;
+diff --git a/drivers/iommu/irq_remapping.c b/drivers/iommu/irq_remapping.c
+index 89c4846..91d5884d 100644
+--- a/drivers/iommu/irq_remapping.c
++++ b/drivers/iommu/irq_remapping.c
+@@ -194,16 +194,6 @@ static __init int setup_irqremap(char *str)
+ }
+ early_param("intremap", setup_irqremap);
+ 
+-void __init setup_irq_remapping_ops(void)
+-{
+-	remap_ops = &intel_irq_remap_ops;
+-
+-#ifdef CONFIG_AMD_IOMMU
+-	if (amd_iommu_irq_ops.prepare() == 0)
+-		remap_ops = &amd_iommu_irq_ops;
+-#endif
+-}
+-
+ void set_irq_remapping_broken(void)
+ {
+ 	irq_remap_broken = 1;
+@@ -222,9 +212,14 @@ int irq_remapping_supported(void)
+ 
+ int __init irq_remapping_prepare(void)
+ {
+-	if (!remap_ops || !remap_ops->prepare)
+-		return -ENODEV;
++	remap_ops = &intel_irq_remap_ops;
+ 
++#ifdef CONFIG_AMD_IOMMU
++	if (amd_iommu_irq_ops.prepare() == 0) {
++		remap_ops = &amd_iommu_irq_ops;
++		return 0;
++	}
++#endif
+ 	return remap_ops->prepare();
+ }
+ 
