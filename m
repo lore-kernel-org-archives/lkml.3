@@ -1,69 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752736AbbAOKbw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 05:31:52 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:51271 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751525AbbAOKbu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 05:31:50 -0500
-Date: Thu, 15 Jan 2015 11:31:46 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: x86-ml <x86@kernel.org>, linux-edac <linux-edac@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Tomasz Nowicki <tomasz.nowicki@linaro.org>,
-        Borislav Petkov <bp@suse.de>
-Subject: Re: [GIT PULL] RAS update for 3.20
-Message-ID: <20150115103146.GB1698@gmail.com>
-References: <20150113120713.GA5784@pd.tnic>
- <3908561D78D1C84285E8C5FCA982C28F3299AD99@ORSMSX114.amr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <3908561D78D1C84285E8C5FCA982C28F3299AD99@ORSMSX114.amr.corp.intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752780AbbAOKex (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 05:34:53 -0500
+Received: from guitar.tcltek.co.il ([192.115.133.116]:42981 "EHLO
+	mx.tkos.co.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751994AbbAOKej (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 05:34:39 -0500
+From: Baruch Siach <baruch@tkos.co.il>
+To: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        devicetree@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Mark Rutland <mark.rutland@arm.com>, Baruch Siach <baruch@tkos.co.il>
+Subject: [PATCH v3 0/2] irqchip: Conexant CX92755 interrupts controller support
+Date: Thu, 15 Jan 2015 12:33:58 +0200
+Message-Id: <cover.1421317616.git.baruch@tkos.co.il>
+X-Mailer: git-send-email 2.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This short series adds support for the Conexant CX92755 SoC interrupts 
+controller. This SoC is part of the Conexant Digicolor series of SoCs.
 
-* Luck, Tony <tony.luck@intel.com> wrote:
+v3:
+   * Split from the "ARM: Conexant Digicolor CX92755 SoC support" series, as 
+     these patches should go via the irqchip maintainers
 
-> > Nothing special this time, just an error messages improvement from Andy
-> > and a cleanup from me.
-> 
-> Also this APEI change that hasn't seen much commentary since Tomas Nowicki pointed
-> out that v1 had cluttered up the APEI code with some x86-ism after he'd spent time
-> cleaning it up - so v2 addressed that by moving the x86 code out into arch/x86.
-> 
-> -Tony
-> 
-> The following changes since commit b2776bf7149bddd1f4161f14f79520f17fc1d71d:
-> 
->   Linux 3.18 (2014-12-07 14:21:05 -0800)
-> 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/ras/ras.git tags/please-pull-einj-mmcfg
-> 
-> for you to fetch changes up to d91525eb8ee6a622ce476955fe1a2530ade87c83:
-> 
->   ACPI, EINJ: Enhance error injection tolerance level (2014-12-15 11:36:37 -0800)
-> 
-> ----------------------------------------------------------------
-> When checking addresses in APEI action entries for validity, allow
-> access the mmcfg space - some error injection functions need to do
-> this.
-> 
-> ----------------------------------------------------------------
-> Chen, Gong (1):
->       ACPI, EINJ: Enhance error injection tolerance level
-> 
->  arch/x86/pci/mmconfig-shared.c | 28 ++++++++++++++++++++++++++++
->  drivers/acpi/apei/apei-base.c  | 32 ++++++++++++++++++++++++++------
->  2 files changed, 54 insertions(+), 6 deletions(-)
+   * Use syscon to access the system global UC_IRQ_CONTROL register
 
-Pulled into tip:x86/ras, thanks Tony!
+   * Add description of the "syscon" property to the device tree binding 
+     documentation
 
-	Ingo
+   * Rename the interrupt controller node name to "interrupt-controller" 
+     (Sergei Shtylyov)
+
+v2:
+   http://marc.info/?t=142074613900007&r=1&w=2
+
+   * Migrate the irq driver to generic irq chip, simplifying the code somewhat
+     (Arnd Bergmann)                                                          
+
+v1:
+   http://thread.gmane.org/gmane.linux.kernel/1855027
+
+Baruch Siach (2):
+  irqchip: devicetree: document Conexant Digicolor irq binding
+  irqchip: Conexant CX92755 interrupts controller driver
+
+ .../bindings/interrupt-controller/digicolor-ic.txt |  22 ++++
+ drivers/irqchip/Makefile                           |   1 +
+ drivers/irqchip/irq-digicolor.c                    | 120 +++++++++++++++++++++
+ 3 files changed, 143 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/interrupt-controller/digicolor-ic.txt
+ create mode 100644 drivers/irqchip/irq-digicolor.c
+
+-- 
+2.1.4
+
