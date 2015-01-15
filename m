@@ -1,100 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754490AbbAOPZm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 10:25:42 -0500
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:60597 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753515AbbAOPZk (ORCPT
+	id S1754908AbbAOP30 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 10:29:26 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.228]:2511 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754064AbbAOP3X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 10:25:40 -0500
-MIME-Version: 1.0
-In-Reply-To: <1421054585-9032-1-git-send-email-k.kozlowski@samsung.com>
-References: <1421054585-9032-1-git-send-email-k.kozlowski@samsung.com>
-From: Tomeu Vizoso <tomeu@tomeuvizoso.net>
-Date: Thu, 15 Jan 2015 16:25:19 +0100
-X-Google-Sender-Auth: kNSnUSkCl0OdkUjj1qEYbSdGJCA
-Message-ID: <CAAObsKCUed_-XndZC_-mn_MWt5f2h0OUff_FHC30W4+2VQxsQg@mail.gmail.com>
-Subject: Re: [RFC 0/3] mmc: Add dynamic frequency scaling
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc@vger.kernel.org, Kukjin Kim <kgene@kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 15 Jan 2015 10:29:23 -0500
+Message-Id: <20150115152801.855110791@goodmis.org>
+User-Agent: quilt/0.61-1
+Date: Thu, 15 Jan 2015 10:28:01 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Subject: [PATCH 0/5] [GIT PULL] ftrace: jprobe, syscall and other fixes
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 12 January 2015 at 10:23, Krzysztof Kozlowski
-<k.kozlowski@samsung.com> wrote:
-> Hi,
->
->
-> I would like to hear some comments about idea of scaling MMC clock
-> frequency. The basic idea is to lower the clock when device is
-> completely idle or not busy enough.
->
-> The patchset adds MMC card as a devfreq device and uses simple_ondemand
-> as governor. In idle this gave benefits (less energy consumed during
-> idle):
-> 1. Trats2 (Exynos4412): 2.6%
-> 2. Rinato (Exynos3250): 1%
->
-> but (especially on Rinato) it had impact on performance (probably
-> because ondemand triggering a little to late). What is interesting
-> manually changing the clock (without this patchset) gave slightly
-> bigger benefits. Maybe the devfreq introduces noticeable overhead?
 
-Could it be because of the polling interval being too long thus it
-being too slow to ramp up?
+Linus,
 
-That's a problem with all polling devfreq drivers, it has been
-proposed before using pm_qos to to reduce the polling interval when
-some event indicates that the utilization may grow abruptly in the
-near future.
+This holds a few fixes to the ftrace infrastructure as well as
+the mixture of function graph tracing and kprobes.
 
-I don't think pm_qos is the best mechanism for that, maybe something
-new needs to be devised.
+When jprobes and function graph tracing is enabled at the same time
+it will crash the system.
 
-Regards,
+  # modprobe jprobe_example
+  # echo function_graph > /sys/kernel/debug/tracing/current_tracer
 
-Tomeu
+After the first fork (jprobe_example probes it), the system will crash.
+This is due to the way jprobes copies the stack frame and does not
+do a normal function return. This messes up with the function graph
+tracing accounting which hijacks the return address from the stack
+and replaces it with a hook function. It saves the return addresses in
+a separate stack to put back the correct return address when done.
+But because the jprobe functions do not do a normal return, their
+stack addresses are not put back until the function they probe is called,
+which means that the probed function will get the return address of
+the jprobe handler instead of its own.
 
->
-> Comments are welcomed. Maybe on other platforms this has bigger impact?
->
-> Best regards,
-> Krzysztof
->
->
-> Krzysztof Kozlowski (3):
->   mmc: Add dynamic frequency scaling
->   ARM: dts: Specify MSHC realistic clocks and use frequency scaling
->   ARM: dts: Use frequency scaling for MSHC
->
->  Documentation/devicetree/bindings/mmc/mmc.txt |   2 +
->  arch/arm/boot/dts/exynos3250-rinato.dts       |   1 +
->  arch/arm/boot/dts/exynos4412-trats2.dts       |   4 +-
->  drivers/mmc/card/block.c                      | 247 ++++++++++++++++++++++++++
->  drivers/mmc/core/Kconfig                      |  16 ++
->  drivers/mmc/core/core.h                       |   1 -
->  drivers/mmc/core/host.c                       |   2 +
->  include/linux/mmc/card.h                      |   8 +
->  include/linux/mmc/host.h                      |   3 +
->  9 files changed, 282 insertions(+), 2 deletions(-)
->
-> --
-> 1.9.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+The simple fix here was to disable function graph tracing while the
+jprobe handler is being called.
+
+While debugging this I found two minor bugs with the function graph
+tracing.
+
+The first was about the function graph tracer sharing its function hash
+with the function tracer (they both get filtered by the same input).
+The changing of the set_ftrace_filter would not sync the function recording
+records after a change if the function tracer was disabled but the
+function graph tracer was enabled. This was due to the update only checking
+one of the ops instead of the shared ops to see if they were enabled and
+should perform the sync. This caused the ftrace accounting to break and
+a ftrace_bug() would be triggered, disabling ftrace until a reboot.
+
+The second was that the check to update records only checked one of the
+filter hashes. It needs to test both the "filter" and "notrace" hashes.
+The "filter" hash determines what functions to trace where as the "notrace"
+hash determines what functions not to trace (trace all but these).
+Both hashes need to be passed to the update code to find out what change
+is being done during the update. This also broke the ftrace record
+accounting and triggered a ftrace_bug().
+
+This patch set also include two more fixes that were reported separately
+from the kprobe issue.
+
+One was that init_ftrace_syscalls() was called twice at boot up.
+This is not a major bug, but that call performed a rather large kmalloc
+(NR_syscalls * sizeof(*syscalls_metadata)). The second call made the first
+one a memory leak, and wastes memory.
+
+The other fix is a regression caused by an update in the v3.19 merge window.
+The moving to enable events early, moved the enabling before PID 1 was
+created. The syscall events require setting the TIF_SYSCALL_TRACEPOINT
+for all tasks. But for_each_process_thread() does not include the swapper
+task (PID 0), and ended up being a nop. A suggested fix was to add
+the init_task() to have its flag set, but I didn't really want to mess
+with PID 0 for this minor bug. Instead I disable and re-enable events again
+at early_initcall() where it use to be enabled. This also handles any other
+event that might have its own reg function that could break at early
+boot up.
+
+Please pull the latest trace-fixes-v3.19-rc3 tree, which can be found at:
+
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-trace.git
+trace-fixes-v3.19-rc3
+
+Tag SHA1: 73a577e76939fb74bc8de1e2a816b3d8a0fe850d
+Head SHA1: ce1039bd3a89e99e4f624e75fb1777fc92d76eb3
+
+
+Steven Rostedt (Red Hat) (5):
+      ftrace: Fix updating of filters for shared global_ops filters
+      ftrace: Check both notrace and filter for old hash
+      ftrace/jprobes/x86: Fix conflict between jprobes and function graph tracing
+      tracing: Remove extra call to init_ftrace_syscalls()
+      tracing: Fix enabling of syscall events on the command line
+
+----
+ arch/x86/kernel/kprobes/core.c | 20 +++++++++---
+ kernel/trace/ftrace.c          | 53 +++++++++++++++++++++++++++-----
+ kernel/trace/trace.c           |  1 -
+ kernel/trace/trace_events.c    | 69 +++++++++++++++++++++++++++++++++---------
+ 4 files changed, 115 insertions(+), 28 deletions(-)
