@@ -1,88 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751791AbbAOGKo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 01:10:44 -0500
-Received: from ozlabs.org ([103.22.144.67]:51999 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751241AbbAOGKm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 01:10:42 -0500
-Message-ID: <1421302240.11409.6.camel@ellerman.id.au>
-Subject: Re: [PATCH] tracing: Allow raw_syscall tracepoints to work from boot
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, paulmck@linux.vnet.ibm.com,
-        Andrew Morton <akpm@osdl.org>, tglx@linutronix.de,
-        mathieu.desnoyers@efficios.com, xiakaixu@huawei.com
-Date: Thu, 15 Jan 2015 17:10:40 +1100
-In-Reply-To: <20150114130300.75c5d2ce@gandalf.local.home>
-References: <1421188517-18312-1-git-send-email-mpe@ellerman.id.au>
-	 <20150114130300.75c5d2ce@gandalf.local.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751616AbbAOGOF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 01:14:05 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:25079 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751045AbbAOGOC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 01:14:02 -0500
+X-AuditID: cbfee6a2-f79656d00000586c-c6-54b75aa69e07
+Message-id: <F7.3E.22636.6AA57B45@epcpsbgx2.samsung.com>
+Date: Thu, 15 Jan 2015 06:13:58 +0000 (GMT)
+From: Byeong-ki Shin <bk0121.shin@samsung.com>
+Subject: [PATCH] [media] dvb-core: Fix frontend thread serialization
+To: m.chehab@samsung.com, shuah.kh@samsung.com, olebowle@gmx.com,
+        tskd08@gmail.com
+Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Reply-to: bk0121.shin@samsung.com
+MIME-version: 1.0
+X-MTR: 20150115060853400@bk0121.shin
+Msgkey: 20150115060853400@bk0121.shin
+X-EPLocale: ko_KR.utf-8
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-MLAttribute: 
+X-RootMTR: 20150115060853400@bk0121.shin
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+X-ConfirmMail: N,general
+Content-type: multipart/mixed;
+ boundary="----=SAMSUNG_mySingle_MIME_MULTIPART_BOUNDARY"
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrNIsWRmVeSWpSXmKPExsVy+t/tft1lUdtDDHp6JSwu75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAldGb/819oLdVhVb3zcxNzBetuhi5OQQElCTeL3mAUsXIweHhICJ
+	xJ8ZgiBhCQExiQv31rN1MXIBlcxhlLg+q4ENJMErYCExuX0BK0g9i4CqxMztRiBhNgF9iYdt
+	d1hBbGEBF4nLbTNYQGwRgRyJ6QufgMWZBTwlrk9YyAjSKiSgKLFoUgjEREGJkzOfsECsVZFo
+	nNzNCBFXlXj06SAzRFxc4sLcS+wQNq/EjPanUPVyEtO+roGqkZY4P2sDI8z5i78/horzSxy7
+	vYMJwhaQmHrmICPEt5oS51ZDlfBJrFn4lgWmfNep5cwwq+5vmQvVKiGxtQXmk0iJOyuesU9g
+	lJ6F5INZSFIQtqLElO6HQDYHkK0psX6XPqpyDiDbU6LtAw9EdY7E40WdLKg6QexMiZ3da5kX
+	MHKuYhRNLUguKE5KrzDSK07MLS7NS9dLzs/dxAhOBs8W7WD8d976EKMAB6MSDy+D3/YQIdbE
+	suLK3EOMKkBzHm1YfYFRiiUvPy9VSYT37adtIUK8KYmVValF+fFFpTmpxYcYpTlYlMR5/5/L
+	DRESSE8sSc1OTS1ILYLJMnFwSjUwRkSzFe+9uNqSJ/5tfFOInNHlx7EOh1d/3z1d7cPSHqW/
+	bY+cXKPCX77kOM77ockn5KlSYrKF8YWY9P3u+c/dL5b9P3xcYhmLaeTGT7N4xdkOZ0zaud7H
+	6od59DWVms8cvuIZSkmK0251f7z76G/3vL+X+FZ2HPkz61D6cjF1n+m2K58EbVRYqMRSnJFo
+	qMVcVJwIAFtwykoOAwAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2015-01-14 at 13:03 -0500, Steven Rostedt wrote:
-> On Wed, 14 Jan 2015 09:35:17 +1100
-> Michael Ellerman <mpe@ellerman.id.au> wrote:
-> 
-> > In commit 5f893b2639b2 "tracing: Move enabling tracepoints to just after
-> > rcu_init()", tracing was enabled earlier in boot.
-> > 
-> > This broke tracing of the raw_syscall tracepoints from boot using the
-> > trace_event kernel parameter.
-> > 
-> > We can fix it by explicitly setting TIF_SYSCALL_TRACEPOINT for the
-> > init_task. That way when pid 1 is cloned from init_task it will inherit
-> > TIF_SYSCALL_TRACEPOINT.
-> 
-> I don't like setting the swap task flag for syscall tracing, as nothing
-> will unset it.
 
-We could unset it in the unregfunc(), I did that in my original patch but took
-it out because I wasn't sure it was necessary.
+------=SAMSUNG_mySingle_MIME_MULTIPART_BOUNDARY
+Content-Transfer-Encoding: base64
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+Message-ID: <1185548648.1075721421302436751.JavaMail.weblogic@epmlwas08d>
 
-> > It feels a bit naughty to be whacking init_task like this, but it also
-> > seems like the right fix?
-> 
-> No, I tried the following instead.
-> 
-> > Should we also clear it in the unregfunc? I can't see how that would
-> > ever be needed in practice?
-> 
-> It just seems hacky to set swapper in the first place.
-
-Actually I thought it was neat, basically everything else comes from init_task
-via copy_process().
- 
-> Try my patch and let me know if it works for you?
-
-Sure. It works.
-
-I can still see the first syscalls in the trace:
-
-    # entries-in-buffer/entries-written: 1021354/1021354   #P:8
-    #
-    #                              _-----=> irqs-off
-    #                             / _----=> need-resched
-    #                            | / _---=> hardirq/softirq
-    #                            || / _--=> preempt-depth
-    #                            ||| /     delay
-    #           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
-    #              | |       |   ||||       |         |
-                init-1     [000] ....     3.706370: sys_exit: NR -1 = 0
-                init-1     [000] ....     3.706394: sys_enter: NR 45 (0, 0, 3fffa2e20000, 3fffcfd4eac2, 80, 3fffa2e61820)
-                init-1     [000] ....     3.706395: sys_exit: NR 45 = 70367490932736
-                init-1     [000] ....     3.706409: sys_enter: NR 33 (3fffa2e694d0, 0, 3fffa2e7be20, 0, 1, ffffffffe0000000)
-                init-1     [000] ....     3.713325: sys_exit: NR 33 = -2
-    
-
-I like my version better, but your call.
-
-cheers
+RnJvbSAyMzg0YzExOWQwNGI1NGU2ZTZjMjgyYTg2OTMyNDZjNGU3ZDEzNDdlIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQ0KRnJvbTogImJrMDEyMS5zaGluIiA8YmswMTIxLnNoaW5Ac2Ftc3VuZy5j
+b20+DQpEYXRlOiBXZWQsIDE0IEphbiAyMDE1IDIwOjM1OjU3ICswOTAwDQpTdWJqZWN0OiBbUEFU
+Q0hdIFttZWRpYV0gZHZiLWNvcmU6IEZpeCBmcm9udGVuZCB0aHJlYWQgc2VyaWFsaXphdGlvbg0K
+DQpkdmJfZnJvbnRlbmRfdGhyZWFkJ3MgbGlmZSBjeWNsZSBpcyBjb250cm9sbGVkIGJ5IGR2Yl9m
+cm9udGVuZF9zdGFydA0KYW5kIGR2Yl9mcm9udGVuZF9yZWxlYXNlLg0KQnV0LCBpZiB1c2VyIG9w
+ZW5zIGZyb250ZW5kIGRldmljZSBiZWZvcmUgdGhlIHRocmVhZCBleGl0cyBjb21wbGV0ZWx5LA0K
+ZHZiX2Zyb250ZW5kX3N0YXJ0IGRvZXNuJ3QgY3JlYXRlIGEgbmV3IHRocmVhZC4NCg0KV2hlbiBl
+eGl0IGNvbmRpdGlvbiBvZiB0aHJlYWQgdGhhdCBpcyBqaWZmaWVzIGlzIHRyaWdnZXJlZA0KYnkg
+ZHZiX2Zyb250ZW5kX3JlbGVhc2UsIGR2Yl9mcm9udGVuZF90aHJlYWQgd2FrZXMgdXAgYW5kIGNo
+ZWNrcw0KZXhpdCBjb25kaXRpb24gd2l0aG91dCBzZW1hcGhvcmUgYWNxdWlyaW5nLg0KSW4gdGhp
+cyBjYXNlLCBpZiB1c2VyIGNvbnRleHQgY2hlY2tzIGV4aXN0ZW5jZSBvZiB0aHJlYWQoZmVwcml2
+LT50aHJlYWQpLA0KaXQgaXMgdHJ1ZSwgYW5kIGV4aXQgZmxhZ2UgaGFzIERWQl9GRV9OT19FWElU
+Lg0KVGhlcmVmb3JlLCBkdmJfZnJvbnRlbmRfc3RhcnQgZG9lc24ndCBtYWtlIGEgbmV3IHRocmVh
+ZCwNCnByZXZpb3VzIG9sZCB0aHJlYWQgaXMgZ29pbmcgdG8gdGVybWluYXRlLg0KDQpUbyBmaXgg
+dGhpcyBwcm9ibGVtLCBzZW1hcGhvcmUgc2hvdWxkIHByZXNlcnZlIHRocmVhZCBleGl0IGNvbmRp
+dGlvbiBhbmQNCmNoZWNraW5nIGl0LCB3aGljaCBhcmUgZHZiX2Zyb250ZW5kX2lzX2V4aXRpbmcg
+YW5kIGZlLT5leGl0Lg0KDQpTaWduZWQtb2ZmLWJ5OiBiazAxMjEuc2hpbiA8YmswMTIxLnNoaW5A
+c2Ftc3VuZy5jb20+DQotLS0NCiBkcml2ZXJzL21lZGlhL2R2Yi1jb3JlL2R2Yl9mcm9udGVuZC5j
+IHwgMjIgKysrKysrKysrKysrKysrLS0tLS0tLQ0KIDEgZmlsZSBjaGFuZ2VkLCAxNSBpbnNlcnRp
+b25zKCspLCA3IGRlbGV0aW9ucygtKQ0KDQpkaWZmIC0tZ2l0IGEvZHJpdmVycy9tZWRpYS9kdmIt
+Y29yZS9kdmJfZnJvbnRlbmQuYyBiL2RyaXZlcnMvbWVkaWEvZHZiLWNvcmUvZHZiX2Zyb250ZW5k
+LmMNCmluZGV4IDJjZjMwNTcuLmE4ZThkNDQgMTAwNjQ0DQotLS0gYS9kcml2ZXJzL21lZGlhL2R2
+Yi1jb3JlL2R2Yl9mcm9udGVuZC5jDQorKysgYi9kcml2ZXJzL21lZGlhL2R2Yi1jb3JlL2R2Yl9m
+cm9udGVuZC5jDQpAQCAtNjIwLDE0ICs2MjAsMTcgQEAgcmVzdGFydDoNCiAJCQkJfHwgZnJlZXpp
+bmcoY3VycmVudCksDQogCQkJZmVwcml2LT5kZWxheSk7DQogDQorCQlpZiAoZG93bl9pbnRlcnJ1
+cHRpYmxlKCZmZXByaXYtPnNlbSkpDQorCQkJYnJlYWs7DQorDQogCQlpZiAoa3RocmVhZF9zaG91
+bGRfc3RvcCgpIHx8IGR2Yl9mcm9udGVuZF9pc19leGl0aW5nKGZlKSkgew0KIAkJCS8qIGdvdCBz
+aWduYWwgb3IgcXVpdHRpbmcgKi8NCi0JCQlpZiAoIWRvd25faW50ZXJydXB0aWJsZSgmZmVwcml2
+LT5zZW0pKQ0KLQkJCQlzZW1oZWxkID0gdHJ1ZTsNCisJCQlzZW1oZWxkID0gdHJ1ZTsNCiAJCQlm
+ZS0+ZXhpdCA9IERWQl9GRV9OT1JNQUxfRVhJVDsNCiAJCQlicmVhazsNCiAJCX0NCiANCisJCXVw
+KCZmZXByaXYtPnNlbSk7DQogCQlpZiAodHJ5X3RvX2ZyZWV6ZSgpKQ0KIAkJCWdvdG8gcmVzdGFy
+dDsNCiANCkBAIC04MjEsMTcgKzgyNCwyMiBAQCBzdGF0aWMgaW50IGR2Yl9mcm9udGVuZF9zdGFy
+dChzdHJ1Y3QgZHZiX2Zyb250ZW5kICpmZSkNCiANCiAJZGV2X2RiZyhmZS0+ZHZiLT5kZXZpY2Us
+ICIlczpcbiIsIF9fZnVuY19fKTsNCiANCisJaWYgKGRvd25faW50ZXJydXB0aWJsZSgmZmVwcml2
+LT5zZW0pKQ0KKwkJcmV0dXJuIC1FSU5UUjsNCisNCiAJaWYgKGZlcHJpdi0+dGhyZWFkKSB7DQot
+CQlpZiAoZmUtPmV4aXQgPT0gRFZCX0ZFX05PX0VYSVQpDQorCQlpZiAoZmUtPmV4aXQgPT0gRFZC
+X0ZFX05PX0VYSVQpIHsNCisJCQl1cCgmZmVwcml2LT5zZW0pOw0KIAkJCXJldHVybiAwOw0KLQkJ
+ZWxzZQ0KKwkJfSBlbHNlIHsNCiAJCQlkdmJfZnJvbnRlbmRfc3RvcCAoZmUpOw0KKwkJfQ0KIAl9
+DQogDQotCWlmIChzaWduYWxfcGVuZGluZyhjdXJyZW50KSkNCi0JCXJldHVybiAtRUlOVFI7DQot
+CWlmIChkb3duX2ludGVycnVwdGlibGUgKCZmZXByaXYtPnNlbSkpDQorCWlmIChzaWduYWxfcGVu
+ZGluZyhjdXJyZW50KSkgew0KKwkJdXAoJmZlcHJpdi0+c2VtKTsNCiAJCXJldHVybiAtRUlOVFI7
+DQorCX0NCiANCiAJZmVwcml2LT5zdGF0ZSA9IEZFU1RBVEVfSURMRTsNCiAJZmUtPmV4aXQgPSBE
+VkJfRkVfTk9fRVhJVDsNCi0tIA0KMS45LjENCg0KDQoNCg0KDQotLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tLS0NCkJ5ZW9uZ2tpIFNoaW4gDQpTZW5pb3IgRW5naW5lZXIgDQoN
+Ck9mZmljZToNCk1vYmlsZTogKzgyLTEwLTMyNjgtODIwMQ0KRS1NYWlsOiBiazAxMjEuc2hpbkBz
+YW1zdW5nLmNvbQ==
 
 
+------=SAMSUNG_mySingle_MIME_MULTIPART_BOUNDARY
+Content-Type: application/octet-stream;
+ name="0001-media-dvb-core-Fix-frontend-thread-serialization.patch"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="0001-media-dvb-core-Fix-frontend-thread-serialization.patch"
 
+
+RnJvbSAyMzg0YzExOWQwNGI1NGU2ZTZjMjgyYTg2OTMyNDZjNGU3ZDEzNDdlIE1vbiBTZXAg
+MTcgMDA6MDA6MDAgMjAwMQpGcm9tOiAiYmswMTIxLnNoaW4iIDxiazAxMjEuc2hpbkBzYW1z
+dW5nLmNvbT4KRGF0ZTogV2VkLCAxNCBKYW4gMjAxNSAyMDozNTo1NyArMDkwMApTdWJqZWN0
+OiBbUEFUQ0hdIFttZWRpYV0gZHZiLWNvcmU6IEZpeCBmcm9udGVuZCB0aHJlYWQgc2VyaWFs
+aXphdGlvbgoKZHZiX2Zyb250ZW5kX3RocmVhZCdzIGxpZmUgY3ljbGUgaXMgY29udHJvbGxl
+ZCBieSBkdmJfZnJvbnRlbmRfc3RhcnQKYW5kIGR2Yl9mcm9udGVuZF9yZWxlYXNlLgpCdXQs
+IGlmIHVzZXIgb3BlbnMgZnJvbnRlbmQgZGV2aWNlIGJlZm9yZSB0aGUgdGhyZWFkIGV4aXRz
+IGNvbXBsZXRlbHksCmR2Yl9mcm9udGVuZF9zdGFydCBkb2Vzbid0IGNyZWF0ZSBhIG5ldyB0
+aHJlYWQuCgpXaGVuIGV4aXQgY29uZGl0aW9uIG9mIHRocmVhZCB0aGF0IGlzIGppZmZpZXMg
+aXMgdHJpZ2dlcmVkCmJ5IGR2Yl9mcm9udGVuZF9yZWxlYXNlLCBkdmJfZnJvbnRlbmRfdGhy
+ZWFkIHdha2VzIHVwIGFuZCBjaGVja3MKZXhpdCBjb25kaXRpb24gd2l0aG91dCBzZW1hcGhv
+cmUgYWNxdWlyaW5nLgpJbiB0aGlzIGNhc2UsIGlmIHVzZXIgY29udGV4dCBjaGVja3MgZXhp
+c3RlbmNlIG9mIHRocmVhZChmZXByaXYtPnRocmVhZCksCml0IGlzIHRydWUsIGFuZCBleGl0
+IGZsYWdlIGhhcyBEVkJfRkVfTk9fRVhJVC4KVGhlcmVmb3JlLCBkdmJfZnJvbnRlbmRfc3Rh
+cnQgZG9lc24ndCBtYWtlIGEgbmV3IHRocmVhZCwKcHJldmlvdXMgb2xkIHRocmVhZCBpcyBn
+b2luZyB0byB0ZXJtaW5hdGUuCgpUbyBmaXggdGhpcyBwcm9ibGVtLCBzZW1hcGhvcmUgc2hv
+dWxkIHByZXNlcnZlIHRocmVhZCBleGl0IGNvbmRpdGlvbiBhbmQKY2hlY2tpbmcgaXQsIHdo
+aWNoIGFyZSBkdmJfZnJvbnRlbmRfaXNfZXhpdGluZyBhbmQgZmUtPmV4aXQuCgpTaWduZWQt
+b2ZmLWJ5OiBiazAxMjEuc2hpbiA8YmswMTIxLnNoaW5Ac2Ftc3VuZy5jb20+Ci0tLQogZHJp
+dmVycy9tZWRpYS9kdmItY29yZS9kdmJfZnJvbnRlbmQuYyB8IDIyICsrKysrKysrKysrKysr
+Ky0tLS0tLS0KIDEgZmlsZSBjaGFuZ2VkLCAxNSBpbnNlcnRpb25zKCspLCA3IGRlbGV0aW9u
+cygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMvbWVkaWEvZHZiLWNvcmUvZHZiX2Zyb250ZW5k
+LmMgYi9kcml2ZXJzL21lZGlhL2R2Yi1jb3JlL2R2Yl9mcm9udGVuZC5jCmluZGV4IDJjZjMw
+NTcuLmE4ZThkNDQgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvbWVkaWEvZHZiLWNvcmUvZHZiX2Zy
+b250ZW5kLmMKKysrIGIvZHJpdmVycy9tZWRpYS9kdmItY29yZS9kdmJfZnJvbnRlbmQuYwpA
+QCAtNjIwLDE0ICs2MjAsMTcgQEAgcmVzdGFydDoKIAkJCQl8fCBmcmVlemluZyhjdXJyZW50
+KSwKIAkJCWZlcHJpdi0+ZGVsYXkpOwogCisJCWlmIChkb3duX2ludGVycnVwdGlibGUoJmZl
+cHJpdi0+c2VtKSkKKwkJCWJyZWFrOworCiAJCWlmIChrdGhyZWFkX3Nob3VsZF9zdG9wKCkg
+fHwgZHZiX2Zyb250ZW5kX2lzX2V4aXRpbmcoZmUpKSB7CiAJCQkvKiBnb3Qgc2lnbmFsIG9y
+IHF1aXR0aW5nICovCi0JCQlpZiAoIWRvd25faW50ZXJydXB0aWJsZSgmZmVwcml2LT5zZW0p
+KQotCQkJCXNlbWhlbGQgPSB0cnVlOworCQkJc2VtaGVsZCA9IHRydWU7CiAJCQlmZS0+ZXhp
+dCA9IERWQl9GRV9OT1JNQUxfRVhJVDsKIAkJCWJyZWFrOwogCQl9CiAKKwkJdXAoJmZlcHJp
+di0+c2VtKTsKIAkJaWYgKHRyeV90b19mcmVlemUoKSkKIAkJCWdvdG8gcmVzdGFydDsKIApA
+QCAtODIxLDE3ICs4MjQsMjIgQEAgc3RhdGljIGludCBkdmJfZnJvbnRlbmRfc3RhcnQoc3Ry
+dWN0IGR2Yl9mcm9udGVuZCAqZmUpCiAKIAlkZXZfZGJnKGZlLT5kdmItPmRldmljZSwgIiVz
+OlxuIiwgX19mdW5jX18pOwogCisJaWYgKGRvd25faW50ZXJydXB0aWJsZSgmZmVwcml2LT5z
+ZW0pKQorCQlyZXR1cm4gLUVJTlRSOworCiAJaWYgKGZlcHJpdi0+dGhyZWFkKSB7Ci0JCWlm
+IChmZS0+ZXhpdCA9PSBEVkJfRkVfTk9fRVhJVCkKKwkJaWYgKGZlLT5leGl0ID09IERWQl9G
+RV9OT19FWElUKSB7CisJCQl1cCgmZmVwcml2LT5zZW0pOwogCQkJcmV0dXJuIDA7Ci0JCWVs
+c2UKKwkJfSBlbHNlIHsKIAkJCWR2Yl9mcm9udGVuZF9zdG9wIChmZSk7CisJCX0KIAl9CiAK
+LQlpZiAoc2lnbmFsX3BlbmRpbmcoY3VycmVudCkpCi0JCXJldHVybiAtRUlOVFI7Ci0JaWYg
+KGRvd25faW50ZXJydXB0aWJsZSAoJmZlcHJpdi0+c2VtKSkKKwlpZiAoc2lnbmFsX3BlbmRp
+bmcoY3VycmVudCkpIHsKKwkJdXAoJmZlcHJpdi0+c2VtKTsKIAkJcmV0dXJuIC1FSU5UUjsK
+Kwl9CiAKIAlmZXByaXYtPnN0YXRlID0gRkVTVEFURV9JRExFOwogCWZlLT5leGl0ID0gRFZC
+X0ZFX05PX0VYSVQ7Ci0tIAoxLjkuMQoK
+
+
+------=SAMSUNG_mySingle_MIME_MULTIPART_BOUNDARY--
