@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932437AbbAOWPY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 17:15:24 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:50452 "EHLO
+	id S932424AbbAOWOr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 17:14:47 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:50458 "EHLO
 	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754020AbbAOWKL (ORCPT
+	with ESMTP id S1754089AbbAOWKL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 15 Jan 2015 17:10:11 -0500
 From: Kamal Mostafa <kamal@canonical.com>
 To: linux-kernel@vger.kernel.org, stable@vger.kernel.org,
         kernel-team@lists.ubuntu.com
-Cc: Andy Lutomirski <luto@amacapital.net>, Kamal Mostafa <kamal@canonical.com>
-Subject: [PATCH 3.13.y-ckt 14/19] x86_64, vdso: Fix the vdso address randomization algorithm
-Date: Thu, 15 Jan 2015 14:09:50 -0800
-Message-Id: <1421359795-11155-15-git-send-email-kamal@canonical.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kamal Mostafa <kamal@canonical.com>
+Subject: [PATCH 3.13.y-ckt 15/19] groups: Consolidate the setgroups permission checks
+Date: Thu, 15 Jan 2015 14:09:51 -0800
+Message-Id: <1421359795-11155-16-git-send-email-kamal@canonical.com>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1421359795-11155-1-git-send-email-kamal@canonical.com>
 References: <1421359795-11155-1-git-send-email-kamal@canonical.com>
@@ -26,126 +27,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Andy Lutomirski <luto@amacapital.net>
+From: "Eric W. Biederman" <ebiederm@xmission.com>
 
-commit 394f56fe480140877304d342dec46d50dc823d46 upstream.
+commit 7ff4d90b4c24a03666f296c3d4878cd39001e81e upstream.
 
-The theory behind vdso randomization is that it's mapped at a random
-offset above the top of the stack.  To avoid wasting a page of
-memory for an extra page table, the vdso isn't supposed to extend
-past the lowest PMD into which it can fit.  Other than that, the
-address should be a uniformly distributed address that meets all of
-the alignment requirements.
+Today there are 3 instances of setgroups and due to an oversight their
+permission checking has diverged.  Add a common function so that
+they may all share the same permission checking code.
 
-The current algorithm is buggy: the vdso has about a 50% probability
-of being at the very end of a PMD.  The current algorithm also has a
-decent chance of failing outright due to incorrect handling of the
-case where the top of the stack is near the top of its PMD.
+This corrects the current oversight in the current permission checks
+and adds a helper to avoid this in the future.
 
-This fixes the implementation.  The paxtest estimate of vdso
-"randomisation" improves from 11 bits to 18 bits.  (Disclaimer: I
-don't know what the paxtest code is actually calculating.)
+A user namespace security fix will update this new helper, shortly.
 
-It's worth noting that this algorithm is inherently biased: the vdso
-is more likely to end up near the end of its PMD than near the
-beginning.  Ideally we would either nix the PMD sharing requirement
-or jointly randomize the vdso and the stack to reduce the bias.
-
-In the mean time, this is a considerable improvement with basically
-no risk of compatibility issues, since the allowed outputs of the
-algorithm are unchanged.
-
-As an easy test, doing this:
-
-for i in `seq 10000`
-  do grep -P vdso /proc/self/maps |cut -d- -f1
-done |sort |uniq -d
-
-used to produce lots of output (1445 lines on my most recent run).
-A tiny subset looks like this:
-
-7fffdfffe000
-7fffe01fe000
-7fffe05fe000
-7fffe07fe000
-7fffe09fe000
-7fffe0bfe000
-7fffe0dfe000
-
-Note the suspicious fe000 endings.  With the fix, I get a much more
-palatable 76 repeated addresses.
-
-Reviewed-by: Kees Cook <keescook@chromium.org>
-Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+Signed-off-by: "Eric W. Biederman" <ebiederm@xmission.com>
 Signed-off-by: Kamal Mostafa <kamal@canonical.com>
 ---
- arch/x86/vdso/vma.c | 43 +++++++++++++++++++++++++++++--------------
- 1 file changed, 29 insertions(+), 14 deletions(-)
+ arch/s390/kernel/compat_linux.c | 2 +-
+ include/linux/cred.h            | 1 +
+ kernel/groups.c                 | 9 ++++++++-
+ kernel/uid16.c                  | 2 +-
+ 4 files changed, 11 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
-index 431e875..ab6ba35 100644
---- a/arch/x86/vdso/vma.c
-+++ b/arch/x86/vdso/vma.c
-@@ -117,30 +117,45 @@ subsys_initcall(init_vdso);
+diff --git a/arch/s390/kernel/compat_linux.c b/arch/s390/kernel/compat_linux.c
+index e030d2b..b67da3b 100644
+--- a/arch/s390/kernel/compat_linux.c
++++ b/arch/s390/kernel/compat_linux.c
+@@ -245,7 +245,7 @@ asmlinkage long sys32_setgroups16(int gidsetsize, u16 __user *grouplist)
+ 	struct group_info *group_info;
+ 	int retval;
  
- struct linux_binprm;
+-	if (!capable(CAP_SETGID))
++	if (!may_setgroups())
+ 		return -EPERM;
+ 	if ((unsigned)gidsetsize > NGROUPS_MAX)
+ 		return -EINVAL;
+diff --git a/include/linux/cred.h b/include/linux/cred.h
+index 04421e8..6c58dd7 100644
+--- a/include/linux/cred.h
++++ b/include/linux/cred.h
+@@ -68,6 +68,7 @@ extern void groups_free(struct group_info *);
+ extern int set_current_groups(struct group_info *);
+ extern int set_groups(struct cred *, struct group_info *);
+ extern int groups_search(const struct group_info *, kgid_t);
++extern bool may_setgroups(void);
  
--/* Put the vdso above the (randomized) stack with another randomized offset.
--   This way there is no hole in the middle of address space.
--   To save memory make sure it is still in the same PTE as the stack top.
--   This doesn't give that many random bits */
-+/*
-+ * Put the vdso above the (randomized) stack with another randomized
-+ * offset.  This way there is no hole in the middle of address space.
-+ * To save memory make sure it is still in the same PTE as the stack
-+ * top.  This doesn't give that many random bits.
-+ *
-+ * Note that this algorithm is imperfect: the distribution of the vdso
-+ * start address within a PMD is biased toward the end.
-+ *
-+ * Only used for the 64-bit and x32 vdsos.
-+ */
- static unsigned long vdso_addr(unsigned long start, unsigned len)
- {
- 	unsigned long addr, end;
- 	unsigned offset;
--	end = (start + PMD_SIZE - 1) & PMD_MASK;
+ /* access the groups "array" with this macro */
+ #define GROUP_AT(gi, i) \
+diff --git a/kernel/groups.c b/kernel/groups.c
+index 90cf1c3..984bb62 100644
+--- a/kernel/groups.c
++++ b/kernel/groups.c
+@@ -223,6 +223,13 @@ out:
+ 	return i;
+ }
+ 
++bool may_setgroups(void)
++{
++	struct user_namespace *user_ns = current_user_ns();
 +
-+	/*
-+	 * Round up the start address.  It can start out unaligned as a result
-+	 * of stack start randomization.
-+	 */
-+	start = PAGE_ALIGN(start);
++	return ns_capable(user_ns, CAP_SETGID);
++}
 +
-+	/* Round the lowest possible end address up to a PMD boundary. */
-+	end = (start + len + PMD_SIZE - 1) & PMD_MASK;
- 	if (end >= TASK_SIZE_MAX)
- 		end = TASK_SIZE_MAX;
- 	end -= len;
--	/* This loses some more bits than a modulo, but is cheaper */
--	offset = get_random_int() & (PTRS_PER_PTE - 1);
--	addr = start + (offset << PAGE_SHIFT);
--	if (addr >= end)
--		addr = end;
-+
-+	if (end > start) {
-+		offset = get_random_int() % (((end - start) >> PAGE_SHIFT) + 1);
-+		addr = start + (offset << PAGE_SHIFT);
-+	} else {
-+		addr = start;
-+	}
+ /*
+  *	SMP: Our groups are copy-on-write. We can set them safely
+  *	without another task interfering.
+@@ -233,7 +240,7 @@ SYSCALL_DEFINE2(setgroups, int, gidsetsize, gid_t __user *, grouplist)
+ 	struct group_info *group_info;
+ 	int retval;
  
- 	/*
--	 * page-align it here so that get_unmapped_area doesn't
--	 * align it wrongfully again to the next page. addr can come in 4K
--	 * unaligned here as a result of stack start randomization.
-+	 * Forcibly align the final address in case we have a hardware
-+	 * issue that requires alignment for performance reasons.
- 	 */
--	addr = PAGE_ALIGN(addr);
- 	addr = align_vdso_addr(addr);
+-	if (!ns_capable(current_user_ns(), CAP_SETGID))
++	if (!may_setgroups())
+ 		return -EPERM;
+ 	if ((unsigned)gidsetsize > NGROUPS_MAX)
+ 		return -EINVAL;
+diff --git a/kernel/uid16.c b/kernel/uid16.c
+index 602e5bb..d58cc4d 100644
+--- a/kernel/uid16.c
++++ b/kernel/uid16.c
+@@ -176,7 +176,7 @@ SYSCALL_DEFINE2(setgroups16, int, gidsetsize, old_gid_t __user *, grouplist)
+ 	struct group_info *group_info;
+ 	int retval;
  
- 	return addr;
+-	if (!ns_capable(current_user_ns(), CAP_SETGID))
++	if (!may_setgroups())
+ 		return -EPERM;
+ 	if ((unsigned)gidsetsize > NGROUPS_MAX)
+ 		return -EINVAL;
 -- 
 1.9.1
 
