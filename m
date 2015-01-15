@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754125AbbAOToX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 14:44:23 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:47519 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753458AbbAOToU (ORCPT
+	id S1754880AbbAOTrE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 14:47:04 -0500
+Received: from smtprelay.synopsys.com ([198.182.60.111]:34223 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752935AbbAOTrC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 14:44:20 -0500
-Message-ID: <54B8188D.1060907@linux.vnet.ibm.com>
-Date: Thu, 15 Jan 2015 11:44:13 -0800
-From: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Thu, 15 Jan 2015 14:47:02 -0500
+From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+To: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "balbi@ti.com" <balbi@ti.com>, John Youn <John.Youn@synopsys.com>
+CC: "r.baldyga@samsung.com" <r.baldyga@samsung.com>,
+        "dinguyen@opensource.altera.com" <dinguyen@opensource.altera.com>,
+        Kever Yang <kever.yang@rock-chips.com>,
+        Mian Yousaf Kaukab <yousaf.kaukab@intel.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Yunzhi Li <lyz@rock-chips.com>, Jingoo Han <jg1.han@samsung.com>,
+        Nick Hudson <skrll@netbsd.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] MAINTAINERS: update maintainer entry for dwc2 driver
+Thread-Topic: [PATCH] MAINTAINERS: update maintainer entry for dwc2 driver
+Thread-Index: AdAw+6OnaBlb9pj/Suy1qN4UDmXfpQAADSxA
+Date: Thu, 15 Jan 2015 19:47:00 +0000
+Message-ID: <A2CA0424C0A6F04399FB9E1CD98E030484507C05@US01WEMBX2.internal.synopsys.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.13.184.19]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Laurent Dufour <ldufour@linux.vnet.ibm.com>, mpe@ellerman.id.au
-CC: paulus@samba.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, stable@vger.kernel.org
-Subject: Re: [PATCH] pseries/le: Fix another endiannes issue in RTAS call
- from xmon
-References: <1421295950.11409.3.camel@ellerman.id.au> <1421342627-7214-1-git-send-email-ldufour@linux.vnet.ibm.com>
-In-Reply-To: <1421342627-7214-1-git-send-email-ldufour@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15011519-0033-0000-0000-00000358455B
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/15/2015 09:23 AM, Laurent Dufour wrote:
-> The commit 3b8a3c010969 ("powerpc/pseries: Fix endiannes issue in RTAS
-> call from xmon") was fixing an endianness issue in the call made from
-> xmon to RTAS.
-> 
-> However, as Michael Ellerman noticed, this fix was not complete, the
-> token value was not byte swapped. This lead to call an unexpected and
-> most of the time unexisting RTAS function, which is silently ignored
-> by RTAS.
+Adding linux-usb and linux-kernel to CC.
 
-Nit. Not so much that is silently ignored by RTAS as much as
-disable_surveillance silently doesn't check the return status of the
-RTAS call. Maybe a check is warranted and reporting of non-success.
+-- 
+Paul
 
--Tyrel
-
+> -----Original Message-----
+> From: Paul Zimmerman
+> Sent: Thursday, January 15, 2015 11:44 AM
+> To: gregkh@linuxfoundation.org; balbi@ti.com; John Youn (johnyoun@synopsys.com)
+> Cc: 'r.baldyga@samsung.com'; 'dinguyen@opensource.altera.com'; 'Kever Yang'; 'Mian Yousaf Kaukab';
+> 'Marek Szyprowski'; 'Yunzhi Li'; 'Jingoo Han'; 'Nick Hudson'
+> Subject: [PATCH] MAINTAINERS: update maintainer entry for dwc2 driver
 > 
-> This fix addresses this hole.
+> Update the MAINTAINERS entry for the dwc2 driver to show John Youn
+> as the new maintainer
 > 
-> Reported-by: Michael Ellerman <mpe@ellerman.id.au>
-> Cc: stable@vger.kernel.org
-> Signed-off-by: Laurent Dufour <ldufour@linux.vnet.ibm.com>
+> Signed-off-by: Paul Zimmerman <paulz@synopsys.com>
 > ---
->  arch/powerpc/xmon/xmon.c | 1 +
->  1 file changed, 1 insertion(+)
+>  MAINTAINERS |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> diff --git a/arch/powerpc/xmon/xmon.c b/arch/powerpc/xmon/xmon.c
-> index 5b150f0c5df9..13c6e200b24e 100644
-> --- a/arch/powerpc/xmon/xmon.c
-> +++ b/arch/powerpc/xmon/xmon.c
-> @@ -337,6 +337,7 @@ static inline void disable_surveillance(void)
->  	args.token = rtas_token("set-indicator");
->  	if (args.token == RTAS_UNKNOWN_SERVICE)
->  		return;
-> +	args.token = cpu_to_be32(args.token);
->  	args.nargs = cpu_to_be32(3);
->  	args.nret = cpu_to_be32(1);
->  	args.rets = &args.args[3];
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 3589d67..8096bea 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -3028,7 +3028,7 @@ S:	Maintained
+>  F:	drivers/platform/x86/dell-wmi.c
 > 
+>  DESIGNWARE USB2 DRD IP DRIVER
+> -M:	Paul Zimmerman <paulz@synopsys.com>
+> +M:	John Youn <johnyoun@synopsys.com>
+>  L:	linux-usb@vger.kernel.org
+>  T:	git git://git.kernel.org/pub/scm/linux/kernel/git/balbi/usb.git
+>  S:	Maintained
+> --
+> 1.7.6.5
 
