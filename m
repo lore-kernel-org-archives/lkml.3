@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756534AbbAPOs7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 09:48:59 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:49697 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752007AbbAPOsx (ORCPT
+	id S1754902AbbAPOwP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 09:52:15 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:36031 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751795AbbAPOwO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 09:48:53 -0500
-From: Archit Taneja <architt@codeaurora.org>
-To: linux-mtd@lists.infradead.org, linux-arm-msm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, agross@codeaurora.org, galak@codeaurora.org,
-        Archit Taneja <architt@codeaurora.org>, devicetree@vger.kernel.org
-Subject: [PATCH 5/5] arm: qcom: dts: Enale NAND node on IPQ8064 AP148 pplatform
-Date: Fri, 16 Jan 2015 20:18:22 +0530
-Message-Id: <1421419702-17812-6-git-send-email-architt@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1421419702-17812-1-git-send-email-architt@codeaurora.org>
-References: <1421419702-17812-1-git-send-email-architt@codeaurora.org>
+	Fri, 16 Jan 2015 09:52:14 -0500
+Message-ID: <54B92596.2040206@roeck-us.net>
+Date: Fri, 16 Jan 2015 06:52:06 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Robert Rosengren <robert.rosengren@axis.com>,
+        Jean Delvare <jdelvare@suse.de>, lm-sensors@lm-sensors.org
+CC: linux-kernel@vger.kernel.org, Robert Rosengren <robertr@axis.com>,
+        Johan Adolfsson <johana@axis.com>
+Subject: Re: [PATCH] hwmon: (ads7828) Make sample interval configurable
+References: <1421409922-28299-1-git-send-email-robert.rosengren@axis.com>
+In-Reply-To: <1421409922-28299-1-git-send-email-robert.rosengren@axis.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020204.54B9259D.0305,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 3
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable the NAND controller node on the AP148 platform. Provide pinmux
-information.
+On 01/16/2015 04:05 AM, Robert Rosengren wrote:
+> The default sample interval may be too slow for certain clients. This
+> patch makes it configurable via the platform_data.
+>
+> Signed-off-by: Robert Rosengren <robert.rosengren@axis.com>
+> Signed-off-by: Johan Adolfsson <johan.adolfsson@axis.com>
 
-Cc: devicetree@vger.kernel.org
-Signed-off-by: Archit Taneja <architt@codeaurora.org>
----
- arch/arm/boot/dts/qcom-ipq8064-ap148.dts | 32 ++++++++++++++++++++++++++++++++
- 1 file changed, 32 insertions(+)
+I am basically fine with the patch, though I would prefer replacing
+the entire update handling and chip access with regmap. Would you be
+interested in doing that ?
 
-diff --git a/arch/arm/boot/dts/qcom-ipq8064-ap148.dts b/arch/arm/boot/dts/qcom-ipq8064-ap148.dts
-index 1e1d0d8..82878bb 100644
---- a/arch/arm/boot/dts/qcom-ipq8064-ap148.dts
-+++ b/arch/arm/boot/dts/qcom-ipq8064-ap148.dts
-@@ -30,6 +30,28 @@
- 					bias-none;
- 				};
- 			};
-+			nand_pins: nand_pins {
-+				mux {
-+					pins = "gpio34", "gpio35", "gpio36",
-+					       "gpio37", "gpio38", "gpio39",
-+					       "gpio40", "gpio41", "gpio42",
-+					       "gpio43", "gpio44", "gpio45",
-+					       "gpio46", "gpio47";
-+					function = "nand";
-+					drive-strength = <10>;
-+					bias-disable;
-+				};
-+				pullups {
-+					pins = "gpio39";
-+					bias-pull-up;
-+				};
-+				hold {
-+					pins = "gpio40", "gpio41", "gpio42",
-+					       "gpio43", "gpio44", "gpio45",
-+					       "gpio46", "gpio47";
-+					bias-bus-hold;
-+				};
-+			};
- 		};
- 
- 		gsbi@16300000 {
-@@ -93,5 +115,15 @@
- 		dma@18300000 {
- 			status = "ok";
- 		};
-+
-+		nand@0x1ac00000 {
-+			status = "ok";
-+
-+			pinctrl-0 = <&nand_pins>;
-+			pinctrl-names = "default";
-+
-+			nand-ecc-strength = <4>;
-+			nand-bus-width = <8>;
-+		};
- 	};
- };
--- 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
-hosted by The Linux Foundation
+Thanks,
+Guenter
 
