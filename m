@@ -1,96 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756094AbbAPPFy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 10:05:54 -0500
-Received: from mx08-00178001.pphosted.com ([91.207.212.93]:45753 "EHLO
-	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751925AbbAPPFw (ORCPT
+	id S1752336AbbAPPI7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 10:08:59 -0500
+Received: from lb2-smtp-cloud3.xs4all.net ([194.109.24.26]:37669 "EHLO
+	lb2-smtp-cloud3.xs4all.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751441AbbAPPI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 10:05:52 -0500
-Message-ID: <54B92896.5020607@st.com>
-Date: Fri, 16 Jan 2015 16:04:54 +0100
-From: Maxime Coquelin <maxime.coquelin@st.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Fri, 16 Jan 2015 10:08:58 -0500
+Message-ID: <54B92976.1060501@xs4all.nl>
+Date: Fri, 16 Jan 2015 16:08:38 +0100
+From: Hans Verkuil <hverkuil@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
 MIME-Version: 1.0
-To: Kishon Vijay Abraham I <kishon@ti.com>,
-        Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>
-Cc: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <kernel@stlinux.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Subject: Re: [PATCH 0/3] Enable myphy28lp support
-References: <1421229299-8206-1-git-send-email-gabriel.fernandez@linaro.org> <54B8FC56.8080400@st.com> <54B904C3.1080002@st.com> <54B90FC4.2020604@ti.com>
-In-Reply-To: <54B90FC4.2020604@ti.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
+To: Scott Jiang <scott.jiang.linux@gmail.com>,
+        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+CC: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        adi-buildroot-devel@lists.sourceforge.net,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Subject: Re: [PATCH 00/15] media: blackfin: bfin_capture enhancements
+References: <1419072462-3168-1-git-send-email-prabhakar.csengg@gmail.com> <CAHG8p1DxTmd6QDpmjHSG0+40GaeGV0ox0aZpX_VVxTJUnxhB1A@mail.gmail.com>
+In-Reply-To: <CAHG8p1DxTmd6QDpmjHSG0+40GaeGV0ox0aZpX_VVxTJUnxhB1A@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.201.23.80]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2015-01-16_06:2015-01-16,2015-01-16,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Scott,
 
-On 01/16/2015 02:19 PM, Kishon Vijay Abraham I wrote:
-> Hi,
->
-> On Friday 16 January 2015 06:02 PM, Maxime Coquelin wrote:
->> On 01/16/2015 12:56 PM, Maxime Coquelin wrote:
->>> Hi Gabriel,
->>>
->>>      For the series:
->>> Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
->>>
->>>      Kishon, could you take care of adding PHY driver patch for v3.20?
->> Hi Kishon,
->>
->>      Don't apply the patch, since we have 2 other PHY driver patches, I will
->> send you a pull request.
-> Send me as patches if that is okay.
-Ok. Just sent the patches.
+Any idea when you will have time to test this?
 
-Thanks,
-Maxime
->
-> Thanks
-> Kishon
->
->> Best regards,
->> Maxime
+Regards,
+
+	Hans
+
+On 12/26/2014 08:13 AM, Scott Jiang wrote:
+> Hi Lad,
+> 
+> I'm on holiday these days. I will test these patches later.
+> 
+> Thanks,
+> Scott
+> 
+> 2014-12-20 18:47 GMT+08:00 Lad, Prabhakar <prabhakar.csengg@gmail.com>:
+>> Hi Scott,
 >>
+>> Although I was on holiday but couldn't resist myself from working,
+>> since I was away from my hardware I had to choose a different one,
+>> blackfin driver was lucky one. Since I don't have the blackfin
+>> board I haven't tested them on the actual board, but just compile
+>> tested, Can you please test it & ACK.
 >>
->>> Thanks,
->>> Maxime
->>> On 01/14/2015 10:54 AM, Gabriel FERNANDEZ wrote:
->>>> The goal of this series is to enable the support of MiPHY28lp Generic PHY.
->>>>
->>>> The first patch is to update miphy28lp phy driver to access sysconfig register
->>>> offsets via syscfg dt property. It's based on Arnds review comments here
->>>> https://lkml.org/lkml/2014/11/13/161
->>>> I have updated the miphy28lp phy driver same way as Peter's implementation.
->>>>
->>>> Gabriel Fernandez (3):
->>>>     phy: miphy28lp: Pass sysconfig register offsets via syscfg dt
->>>>       property.
->>>>     ARM: DT: STi: STiH407: Add DT node for MiPHY28lp
->>>>     ARM: multi_v7_defconfig: Enable MiPHY28lp - ST's Generic (SATA, PCIe &
->>>>       USB3) PHY
->>>>
->>>>    .../devicetree/bindings/phy/phy-miphy28lp.txt      | 43 ++++++---------
->>>>    arch/arm/boot/dts/stih407-family.dtsi              | 53 +++++++++++++++++++
->>>>    arch/arm/boot/dts/stihxxx-b2120.dtsi               | 11 ++++
->>>>    arch/arm/configs/multi_v7_defconfig                |  1 +
->>>>    drivers/phy/phy-miphy28lp.c                        | 61
->>>> ++++++++++++----------
->>>>    5 files changed, 113 insertions(+), 56 deletions(-)
->>>>
+>> Lad, Prabhakar (15):
+>>   media: blackfin: bfin_capture: drop buf_init() callback
+>>   media: blackfin: bfin_capture: release buffers in case
+>>     start_streaming() call back fails
+>>   media: blackfin: bfin_capture: set min_buffers_needed
+>>   media: blackfin: bfin_capture: improve buf_prepare() callback
+>>   media: blackfin: bfin_capture: improve queue_setup() callback
+>>   media: blackfin: bfin_capture: use vb2_fop_mmap/poll
+>>   media: blackfin: bfin_capture: use v4l2_fh_open and vb2_fop_release
+>>   media: blackfin: bfin_capture: use vb2_ioctl_* helpers
+>>   media: blackfin: bfin_capture: make sure all buffers are returned on
+>>     stop_streaming() callback
+>>   media: blackfin: bfin_capture: return -ENODATA for *std calls
+>>   media: blackfin: bfin_capture: return -ENODATA for *dv_timings calls
+>>   media: blackfin: bfin_capture: add support for vidioc_create_bufs
+>>   media: blackfin: bfin_capture: add support for VB2_DMABUF
+>>   media: blackfin: bfin_capture: add support for VIDIOC_EXPBUF
+>>   media: blackfin: bfin_capture: set v4l2 buffer sequence
+>>
+>>  drivers/media/platform/blackfin/bfin_capture.c | 310 ++++++++-----------------
+>>  1 file changed, 98 insertions(+), 212 deletions(-)
+>>
+>> --
+>> 1.9.1
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-media" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
