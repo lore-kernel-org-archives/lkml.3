@@ -1,125 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756758AbbAPQt0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 11:49:26 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:36361 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756616AbbAPQtV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 11:49:21 -0500
-Date: Fri, 16 Jan 2015 16:48:59 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Will Deacon <Will.Deacon@arm.com>
-Cc: Suzuki Poulose <Suzuki.Poulose@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "leo.yan@linaro.org" <leo.yan@linaro.org>,
-        "yexl@marvell.com" <yexl@marvell.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] arm64: Consolidate hotplug notifier for instruction
- emulation
-Message-ID: <20150116164859.GE32155@leverpostej>
-References: <1421325366-13263-1-git-send-email-suzuki.poulose@arm.com>
- <1421325366-13263-3-git-send-email-suzuki.poulose@arm.com>
- <20150116160730.GY7091@arm.com>
- <20150116163254.GC32155@leverpostej>
- <20150116164433.GB7091@arm.com>
+	id S1756581AbbAPRFG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 12:05:06 -0500
+Received: from mail-bn1on0060.outbound.protection.outlook.com ([157.56.110.60]:52576
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752154AbbAPRFC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 12:05:02 -0500
+X-Greylist: delayed 88041 seconds by postgrey-1.27 at vger.kernel.org; Fri, 16 Jan 2015 12:05:02 EST
+Date: Fri, 16 Jan 2015 08:49:17 -0800
+From: =?utf-8?B?U8O2cmVu?= Brinkmann <soren.brinkmann@xilinx.com>
+To: Johan Hovold <johan@kernel.org>
+CC: Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>, <linux-api@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-gpio@vger.kernel.org>,
+        <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH v4] gpio: lib-sysfs: Add 'wakeup' attribute
+References: <1421351389-11660-1-git-send-email-soren.brinkmann@xilinx.com>
+ <20150116111108.GG30960@localhost>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
 Content-Disposition: inline
-In-Reply-To: <20150116164433.GB7091@arm.com>
-Thread-Topic: [PATCH 2/3] arm64: Consolidate hotplug notifier for instruction
- emulation
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-acceptlanguage: en-GB, en-US
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20150116111108.GG30960@localhost>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21258.001
+X-TM-AS-User-Approved-Sender: Yes;Yes
+Message-ID: <a4610e13d0094d40b7e0574992509ec6@BN1AFFO11FD044.protection.gbl>
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=pass (sender IP is 149.199.60.83)
+ smtp.mailfrom=soren.brinkmann@xilinx.com; 
+X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(189002)(377424004)(51704005)(24454002)(199003)(19580405001)(85182001)(87936001)(83506001)(77156002)(19580395003)(6806004)(2950100001)(53416004)(92726002)(46102003)(110136001)(76176999)(50986999)(54356999)(106466001)(85202003)(104016003)(108616004)(92566002)(33646002)(86362001)(62966003)(47776003)(23676002)(74316001)(50466002)(64706001)(107986001)(24736002)(23106004);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1AFFO11HUB028;H:xsj-pvapsmtpgw01;FPR:;SPF:Pass;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB028;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BN1AFFO11HUB028;
+X-Forefront-PRVS: 04583CED1A
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB028;
+X-OriginatorOrg: xilinx.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 16 Jan 2015 16:49:19.8335
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: 657af505-d5df-48d0-8300-c31994686c5c
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=657af505-d5df-48d0-8300-c31994686c5c;Ip=[149.199.60.83]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN1AFFO11HUB028
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 16, 2015 at 04:44:34PM +0000, Will Deacon wrote:
-> On Fri, Jan 16, 2015 at 04:32:54PM +0000, Mark Rutland wrote:
-> > On Fri, Jan 16, 2015 at 04:07:30PM +0000, Will Deacon wrote:
-> > > On Thu, Jan 15, 2015 at 12:36:05PM +0000, Suzuki K. Poulose wrote:
-> > > > From: "Suzuki K. Poulose" <suzuki.poulose@arm.com>
-> > > > 
-> > > > As of now each insn_emulation has a cpu hotplug notifier that
-> > > > enables/disables the CPU feature bit for the functionality. This
-> > > > patch re-arranges the code, such that there is only one notifier
-> > > > that runs through the list of registered emulation hooks and runs
-> > > > their corresponding set_hw_mode.
-> > > > 
-> > > > We do nothing when a CPU is dying as we will set the appropriate bits
-> > > > as it comes back online based on the state of the hooks.
-> > > > 
-> > > > Signed-off-by: Suzuki K. Poulose <suzuki.poulose@arm.com>
-> > > > Signed-off-by: Mark Rutland <mark.rutland@arm.com>
-> > > > ---
-> > > >  Documentation/arm64/legacy_instructions.txt |    4 +
-> > > >  arch/arm64/include/asm/cpufeature.h         |    2 +
-> > > >  arch/arm64/kernel/armv8_deprecated.c        |  113 +++++++++++++++------------
-> > > >  3 files changed, 69 insertions(+), 50 deletions(-)
-> > > > 
-> > > > diff --git a/Documentation/arm64/legacy_instructions.txt b/Documentation/arm64/legacy_instructions.txt
-> > > > index a3b3da2..0a4dc26 100644
-> > > > --- a/Documentation/arm64/legacy_instructions.txt
-> > > > +++ b/Documentation/arm64/legacy_instructions.txt
-> > > > @@ -27,6 +27,10 @@ behaviours and the corresponding values of the sysctl nodes -
-> > > >    instructions. Using hardware execution generally provides better
-> > > >    performance, but at the loss of ability to gather runtime statistics
-> > > >    about the use of the deprecated instructions.
-> > > > +  Note: Emulation of a deprecated instruction depends on the availability
-> > > > +  of the feature on all the active CPUs. In case of CPU hotplug, if a new
-> > > > +  CPU doesn't support a feature, it could result in the abortion of the
-> > > > +  hotplug operation.
-> > > 
-> > > Is this true? We should be able to *emulate* the instruction anywhere,
-> > > it's the "hardware execution" setting that needs CPU support.
+On Fri, 2015-01-16 at 12:11PM +0100, Johan Hovold wrote:
+> On Thu, Jan 15, 2015 at 11:49:49AM -0800, Soren Brinkmann wrote:
+> > Add an attribute 'wakeup' to the GPIO sysfs interface which allows
+> > marking/unmarking a GPIO as wake IRQ.
+> > The file 'wakeup' is created in each exported GPIOs directory, if an IRQ
+> > is associated with that GPIO and the irqchip implements set_wake().
+> > Writing 'enabled' to that file will enable wake for that GPIO, while
+> > writing 'disabled' will disable wake.
+> > Reading that file will return either 'disabled' or 'enabled' depening on
+> > the currently set flag for the GPIO's IRQ.
 > > 
-> > Not quite. In ARMv8 there are three possible cases for endianness
-> > support:
+> > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
+> > Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
+> > ---
+> > Hi Linus, Johan,
 > > 
-> > (a) Mixed endian support at all levels
-> >     ID_AA64MMFR0_EL1.BigEnd == 0b0001
-> >     ID_AA64MMFR0_EL1.BigEnd0 == 0b0000 (RES0, invalid)
-> > 
-> > (b) Mixed endian support at EL0 only
-> >     ID_AA64MMFR0_EL1.BigEnd == 0b0000
-> >     ID_AA64MMFR0_EL1.BigEnd0 == 0b0001
-> >     SCTLR_EL1.EE has a fixed value
-> > 
-> > (c) No mixed endian support at all
-> >     ID_AA64MMFR0_EL1.BigEnd == 0b0000
-> >     ID_AA64MMFR0_EL1.BigEnd0 == 0b0000
-> >     SCTLR_EL1.{EE,E0E} have fixed values
-> > 
-> > We can emulate setend in cases (a) and (b), but not (c) unless we
-> > trapped every single instruction that could access memory. I don't think
-> > that's feasible.
-> > 
-> > Also fun in case (c) is that the kernel may not be able to run on all
-> > CPUs (consider a BE kernel where some CPUs are fixed to LE at EL1).
-> > 
-> > I hope no-one builds a system where CPUs are mismatched w.r.t.
-> > endianness support.
+> > I rebased my patch. And things look good.
 > 
-> Agreed, the problem here is all down to the wording.
-> Documentation/arm64/legacy_instructions.txt isn't specific to SETEND
-> emulation and saying "Emulation of a deprecated instruction depends on the
-> availability of the feature on all the active CPUs." as a blanket statement
-> doesn't make a lot of sense in isolation. It's certainly not the case for
-> SWP and CP15 barriers, for example.
+> I took at closer look at this patch now and I really don't think it
+> should be merged at all.
 > 
-> With SETEND, we have requirements on mixed-endian support for the emulation.
-> Fine, but let's not muddy the waters around the general CPU requirements
-> for deprecated instruction emulation.
+> We have a mechanism for handling wake-up sources (documented in
+> Documentation/power/devices.txt) as well as an ABI to enable/disable
+> them using the power/wakeup device attribute from userspace.
 
-Sure. I was only contending the "We should be able to *emulate* the
-instruction anywhere" part of your statement.
+Doesn't work for GPIOs AFAIK.
 
-We should probably add _a_ note as part of the patch introducing SETEND
-emulation, but not the one above, and we can drop it from this patch.
+> 
+> Implementing proper wakeup support for unclaimed GPIOs would take some
+> work (if at all desired), but that is not a reason to be adding custom
+> implementations that violates the kernel's power policies and new ABIs
+> that would need to be maintained forever.
 
-Mark.
+These are claimed, by the sysfs interface.
+
+> 
+> [ And we really shouldn't be adding anything to the broken gpio sysfs
+> interface until it's been redesigned. ]
+> 
+> Meanwhile you can (should) use gpio-keys if you need to wake your system
+> on gpio events.
+
+We had that discussion and I don't think GPIO keys is the right solution
+for every use-case.
+
+> 
+> > But the 'is_visible' things does not behave the way I expected it to.
+> > It seems to be only triggered on an export but not when attributes
+> > change. Hence, in my case, everything was visiible since the inital
+> > state matches that, but even when changing the direction or things
+> > like that, attributes don't disappear. Is that something still worked
+> > on? Expected
+> 
+> That's expected. We generally don't want attributes to appear or
+> disappear after the device has been registered (although there is a
+> mechanism for cases were it makes sense). This is no different from
+> how your v3 patch worked either.
+
+Sure, but the is_visible thing is effectively broken for GPIO. I think a
+GPIO is in a defined state when exported and the checks all work on that
+state during export. But then this state can be changed through the
+sysfs interface. So, if the initial state hides something it becomes
+unavailable for all times and, vice versa, if the initial state makes
+something visible, it will stay even when it is no longer a valid
+property to change.
+
+	Sören
