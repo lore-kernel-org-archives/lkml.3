@@ -1,215 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756476AbbAPP0o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 10:26:44 -0500
-Received: from ironport2-out.teksavvy.com ([206.248.154.181]:52163 "EHLO
-	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754220AbbAPP0m (ORCPT
+	id S1756508AbbAPP0z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 10:26:55 -0500
+Received: from casper.infradead.org ([85.118.1.10]:45076 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754253AbbAPP0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 10:26:42 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ArkGAOwQflRFpamy/2dsb2JhbABbFoJOI1JZgwWwVAEBAQEBAQaTBx0Mhh0CgSQXAQEBAQEBfIQCAQEBAQIBAQIgFR4iARALGAICBRYLAgIJAwIBAgEPBxEeEwEFAgEBiCcDCQkBDL95kEsNhXsBAQEBAQEBAwEBAQEBAQEbgSuFCIgFHIE5EQFQB4J1gVMFiwGKHoN5b4MrOoJ+gxmGXwOESoF4hBlRAYEMgToBAQE
-X-IPAS-Result: ArkGAOwQflRFpamy/2dsb2JhbABbFoJOI1JZgwWwVAEBAQEBAQaTBx0Mhh0CgSQXAQEBAQEBfIQCAQEBAQIBAQIgFR4iARALGAICBRYLAgIJAwIBAgEPBxEeEwEFAgEBiCcDCQkBDL95kEsNhXsBAQEBAQEBAwEBAQEBAQEbgSuFCIgFHIE5EQFQB4J1gVMFiwGKHoN5b4MrOoJ+gxmGXwOESoF4hBlRAYEMgToBAQE
-X-IronPort-AV: E=Sophos;i="5.07,502,1413259200"; 
-   d="scan'208";a="107984791"
-Message-ID: <54B92DAB.2020909@voxpopuli.im>
-Date: Fri, 16 Jan 2015 10:26:35 -0500
-From: Alexandre Montplaisir <alexmonthy@voxpopuli.im>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Fri, 16 Jan 2015 10:26:43 -0500
+Date: Fri, 16 Jan 2015 16:26:40 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: linux-kernel@vger.kernel.org, Will Deacon <will.deacon@arm.com>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@redhat.com>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>
+Subject: Re: [PATCH] perf: decouple unthrottling and rotating
+Message-ID: <20150116152640.GI22386@worktop.programming.kicks-ass.net>
+References: <1420642914-22760-1-git-send-email-mark.rutland@arm.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        David Ahern <dsahern@gmail.com>,
-        Dominique Toupin <dominique.toupin@ericsson.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jeremie Galarneau <jgalar@efficios.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
-        Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: [PATCHv3 0/8] perf tools: Add perf data CTF conversion
-References: <1421338556-20498-1-git-send-email-jolsa@kernel.org> <54B829D6.10003@voxpopuli.im>
-In-Reply-To: <54B829D6.10003@voxpopuli.im>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420642914-22760-1-git-send-email-mark.rutland@arm.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2015-01-15 03:57 PM, Alexandre Montplaisir wrote:
-> Hi,
->
-> I'm a developer for the Trace Compass tool (see links [3], [4] in 
-> Jiri's email). I can confirm that the generated CTF can be read 
-> correctly by our tool, which enables many views and analyses (Control 
-> Flow, CPU usage view, etc.) that were previously only available for 
-> LTTng traces.
->
-> Some of our users also use perf extensively, and are looking forward 
-> to this feature! Is there any ETA as to when this will be merged 
-> upstream?
->
-> Thanks,
-> Alexandre
+On Wed, Jan 07, 2015 at 03:01:54PM +0000, Mark Rutland wrote:
+> Currently the adjusments made as part of perf_event_task_tick use the
+> percpu rotation lists to iterate over any active PMU contexts, but these
+> are not used by the context rotation code, having been replaced by
+> separate (per-context) hrtimer callbacks. However, some manipulation of
+> the rotation lists (i.e. removal of contexts) has remained in
+> perf_rotate_context. This leads to the following issues:
+> 
+> * Contexts are not always removed from the rotation lists. Removal of
+>   PMUs which have been placed in rotation lists, but have not been
+>   removed by a hrtimer callback can result in corruption of the rotation
+>   lists (when memory backing the context is freed).
+> 
+>   This has been observed to result in hangs when PMU drivers built as
+>   modules are inserted and removed around the creation of events for
+>   said PMUs.
+> 
+> * Contexts which do not require rotation may be removed from the
+>   rotation lists as a result of a hrtimer, and will not be considered by
+>   the unthrottling code in perf_event_task_tick.
+> 
+> This patch solves these issues by moving any and all removal of contexts
+> from rotation lists to only occur when the final event is removed from a
+> context, mirroring the addition which only occurs when the first event
+> is added to a context. The vestigal manipulation of the rotation lists
+> is removed from perf_event_rotate_context.
+> 
+> As the rotation_list variables are not used for rotation, these are
+> renamed to active_ctx_list, which better matches their current function.
+> perf_pmu_rotate_{start,stop} are renamed to
+> perf_pmu_ctx_{activate,deactivate}.
+> 
+> Signed-off-by: Mark Rutland <mark.rutland@arm.com>
+> Reported-by: Johannes Jensen <johannes.jensen@arm.com>
+> Cc: Will Deacon <will.deacon@arm.com>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Arnaldo Carvalho de Melo <acme@kernel.org>
 
-That was a bit too fast, it seems there are issues with very recent 
-versions of Babeltrace. You can follow the discussion at
-http://lists.linuxfoundation.org/pipermail/diamon-discuss/2015-January/000007.html
-
-Cheers,
-Alex
-
->
->
-> On 01/15/2015 11:15 AM, Jiri Olsa wrote:
->> hi,
->> this is follow up on original RFC patchset:
->>    http://marc.info/?t=140732735600004&r=1&w=2
->>
->> Basically we are adding 'perf data convert' command to
->> allow conversion of perf data file into CTF [1] data.
->>
->> v3 changes:
->>    - rebased to latest acme's perf/core
->>
->> v2 changes:
->>    - addressed comments from Namhyung
->>    - rebased to latest acme's perf/core
->>
->> Changes from RFC:
->>    - able to generate CTF data, that are possible to be displayed under
->>      tracecompas GUI [3], please check several screenshots in here [4]
->>    - storing CTF data streams per cpu
->>    - several cleanups
->>
->> Examples:
->> - Catch default perf data (cycles event):
->>    $ perf record ls
->>    [ perf record: Woken up 1 times to write data ]
->>    [ perf record: Captured and wrote 0.012 MB perf.data (~546 samples) ]
->>
->> - To display converted CTF data run [2]:
->>    $ babeltrace ./ctf-data/
->>    [03:19:13.962125533] (+?.?????????) cycles: { }, { ip = 
->> 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 1 }
->>    [03:19:13.962130001] (+0.000004468) cycles: { }, { ip = 
->> 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 1 }
->>    [03:19:13.962131936] (+0.000001935) cycles: { }, { ip = 
->> 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 8 }
->>    [03:19:13.962133732] (+0.000001796) cycles: { }, { ip = 
->> 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 114 }
->>    [03:19:13.962135557] (+0.000001825) cycles: { }, { ip = 
->> 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 2087 }
->>    [03:19:13.962137627] (+0.000002070) cycles: { }, { ip = 
->> 0xFFFFFFFF81361938, tid = 20714, pid = 20714, period = 37582 }
->>    [03:19:13.962161091] (+0.000023464) cycles: { }, { ip = 
->> 0xFFFFFFFF8124218F, tid = 20714, pid = 20714, period = 600246 }
->>    [03:19:13.962517569] (+0.000356478) cycles: { }, { ip = 
->> 0xFFFFFFFF811A75DB, tid = 20714, pid = 20714, period = 1325731 }
->>    [03:19:13.969518008] (+0.007000439) cycles: { }, { ip = 
->> 0x34080917B2, tid = 20714, pid = 20714, period = 1144298 }
->>
->> - To get some nice output in tracecompas GUI [3], please capture sched:*
->>    and syscall tracepoints like:
->>    # perf record -e 'sched:*,raw_syscalls:*' -a
->>    ^C[ perf record: Woken up 0 times to write data ]
->>    [ perf record: Captured and wrote 412.347 MB perf.data (~18015721 
->> samples) ]
->>
->> - To convert perf data file run:
->>    # perf data convert --to-ctf=./ctf
->>    [ perf data convert: Converted 'perf.data' into CTF data './ctf' ]
->>    [ perf data convert: Converted and wrote 408.421 MB (3964792 
->> samples) ]
->>
->> - To display converted CTF data run [2]:
->>    # babeltrace ./ctf-data/
->>    [23:32:20.165354855] (+0.000000507) sched:sched_wakeup: { cpu_id = 
->> 0 }, { perf_ip = 0xFFFFFFFF810BCA72, perf_tid = 0, perf_pid = 0, 
->> perf_id = 462554, perf_period = 1, common_type = 265, ...
->>    [23:32:20.165359078] (+0.000001181) sched:sched_switch: { cpu_id = 
->> 0 }, { perf_ip = 0xFFFFFFFF8172A110, perf_tid = 0, perf_pid = 0, 
->> perf_id = 462562, perf_period = 1, common_type = 263, ...
->>    [23:32:20.165364686] (+0.000000328) sched:sched_stat_runtime: { 
->> cpu_id = 0 }, { perf_ip = 0xFFFFFFFF810C8AE5, perf_tid = 5326, 
->> perf_pid = 5326, perf_id = 462610, perf_period = 11380, ...
->>    [23:32:20.165366067] (+0.000001205) sched:sched_switch: { cpu_id = 
->> 0 }, { perf_ip = 0xFFFFFFFF8172A110, perf_tid = 5326, perf_pid = 
->> 5326, perf_id = 462562, perf_period = 1, common_type ...
->>    [23:32:20.165723312] (+0.000001479) sched:sched_stat_runtime: { 
->> cpu_id = 2 }, { perf_ip = 0xFFFFFFFF810C8AE5, perf_tid = 11821, 
->> perf_pid = 11821, perf_id = 462612, perf_period = 1000265, ...
->>    [23:32:20.065282391] (+?.?????????) raw_syscalls:sys_enter: { 
->> cpu_id = 1 }, { perf_ip = 0xFFFFFFFF810230AF, perf_tid = 26155, 
->> perf_pid = 26155, perf_id = 462635, perf_period = 1, ...
->>    [23:32:20.065286422] (+0.000004031) raw_syscalls:sys_exit: { 
->> cpu_id = 1 }, { perf_ip = 0xFFFFFFFF810231D8, perf_tid = 26155, 
->> perf_pid = 26155, perf_id = 462639, perf_period = 1, ...
->>
->> - Or run tracecompass and open the CTF data ;-)
->>
->> Changes are also reachable in here:
->>    git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
->>    perf/core_ctf_convert
->>
->> thanks,
->> jirka
->>
->> [1] Common Trace Format - http://www.efficios.com/ctf
->> [2] babeltrace - http://www.efficios.com/babeltrace
->> [3] Trace compass - 
->> http://projects.eclipse.org/projects/tools.tracecompass
->> [4] screenshots - http://people.redhat.com/~jolsa/tracecompass-perf/
->>
->>
->> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
->> Cc: David Ahern <dsahern@gmail.com>
->> Cc: Dominique Toupin <dominique.toupin@ericsson.com>
->> Cc: Frederic Weisbecker <fweisbec@gmail.com>
->> Cc: Jeremie Galarneau <jgalar@efficios.com>
->> Cc: Jiri Olsa <jolsa@kernel.org>
->> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
->> Cc: Namhyung Kim <namhyung@gmail.com>
->> Cc: Paul Mackerras <paulus@samba.org>
->> Cc: Peter Zijlstra <peterz@infradead.org>
->> Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
->> Cc: Tom Zanussi <tzanussi@gmail.com>
->> ---
->> Jiri Olsa (5):
->>        perf tools: Add feature check for libbabeltrace
->>        perf tools: Add new perf data command
->>        perf data: Add perf data to CTF conversion support
->>        perf data: Enable stream flush within processing
->>        perf data: Add support for setting ordered_events queue size
->>
->> Sebastian Andrzej Siewior (3):
->>        perf data: Add a 'perf' prefix to the generic fields
->>        perf data: Add tracepoint events fields CTF conversion support
->>        perf data: Switch to multiple cpu stream files
->>
->>   tools/perf/Documentation/perf-data.txt                |   40 ++
->>   tools/perf/Documentation/perf.txt                     |    7 +-
->>   tools/perf/Makefile.perf                              |    9 +-
->>   tools/perf/builtin-data.c                             |  119 ++++++
->>   tools/perf/builtin.h                                  |    1 +
->>   tools/perf/command-list.txt                           |    1 +
->>   tools/perf/config/Makefile                            |   24 ++
->>   tools/perf/config/feature-checks/Makefile             |    8 +-
->>   tools/perf/config/feature-checks/test-all.c           |    5 +
->>   tools/perf/config/feature-checks/test-libbabeltrace.c |    8 +
->>   tools/perf/perf.c                                     |    1 +
->>   tools/perf/util/data-convert-bt.c                     | 1057 
->> +++++++++++++++++++++++++++++++++++++++++++++++++
->>   tools/perf/util/data-convert-bt.h                     |    8 +
->>   tools/perf/util/debug.c                               |    2 +
->>   tools/perf/util/debug.h                               |    1 +
->>   15 files changed, 1287 insertions(+), 4 deletions(-)
->>   create mode 100644 tools/perf/Documentation/perf-data.txt
->>   create mode 100644 tools/perf/builtin-data.c
->>   create mode 100644 
->> tools/perf/config/feature-checks/test-libbabeltrace.c
->>   create mode 100644 tools/perf/util/data-convert-bt.c
->>   create mode 100644 tools/perf/util/data-convert-bt.h
->
-
+Thanks!
