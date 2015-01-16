@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756911AbbAPUF6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 15:05:58 -0500
-Received: from mail-qc0-f171.google.com ([209.85.216.171]:46959 "EHLO
-	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756311AbbAPUF4 (ORCPT
+	id S1756935AbbAPUGP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 15:06:15 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:62654 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756776AbbAPUF5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 15:05:56 -0500
+	Fri, 16 Jan 2015 15:05:57 -0500
 From: Peter Hurley <peter@hurleysoftware.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: Jiri Slaby <jslaby@suse.cz>,
@@ -15,9 +15,9 @@ Cc: Jiri Slaby <jslaby@suse.cz>,
         Denis Du <dudenis2000@yahoo.ca>,
         =?UTF-8?q?M=C3=A5ns=20Rullg=C3=A5rd?= <mans@mansr.com>,
         Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH v3 5/6] n_tty: Fix PARMRK over-throttling
-Date: Fri, 16 Jan 2015 15:05:38 -0500
-Message-Id: <1421438739-29672-6-git-send-email-peter@hurleysoftware.com>
+Subject: [PATCH v3 6/6] n_tty: Fix read buffer overwrite when no newline
+Date: Fri, 16 Jan 2015 15:05:39 -0500
+Message-Id: <1421438739-29672-7-git-send-email-peter@hurleysoftware.com>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <1421438739-29672-1-git-send-email-peter@hurleysoftware.com>
 References: <1421113668-20468-1-git-send-email-peter@hurleysoftware.com>
@@ -26,57 +26,208 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If PARMRK is enabled, the available read buffer space computation is
-overly-pessimistic, which results in severely throttled i/o, even
-in the absence of parity errors. For example, if the 4k read buffer
-contains 1k processed data, the input worker will compute available
-space of 333 bytes, despite 3k being available. At 1365 chars of
-processed data, 0 space available is computed.
+In canon mode, the read buffer head will advance over the buffer tail
+if the input > 4095 bytes without receiving a line termination char.
 
-*Divide remaining space* by 3, truncating down (if left == 2, left = 0).
+Discard additional input until a line termination is received.
+Before evaluating for overflow, the 'room' value is normalized for
+I_PARMRK and 1 byte is reserved for line termination (even in !icanon
+mode, in case the mode is switched). The following table shows the
+transform:
 
-Reported-by: Christian Riesch <christian.riesch@omicron.at>
+ actual buffer |  'room' value before overflow calc
+  space avail  |    !I_PARMRK    |    I_PARMRK
+ --------------------------------------------------
+      0        |       -1        |       -1
+      1        |        0        |        0
+      2        |        1        |        0
+      3        |        2        |        0
+      4+       |        3        |        1
 
-Conflicts:
-	drivers/tty/n_tty.c
+When !icanon or when icanon and the read buffer contains newlines,
+normalized 'room' values of -1 and 0 are clamped to 0, and
+'overflow' is 0, so read_head is not adjusted and the input i/o loop
+exits (setting no_room if called from flush_to_ldisc()). No input
+is discarded since the reader does have input available to read
+which ensures forward progress.
+
+When icanon and the read buffer does not contain newlines and the
+normalized 'room' value is 0, then overflow and room are reset to 1,
+so that the i/o loop will process the next input char normally
+(except for parity errors which are ignored). Thus, erasures, signalling
+chars, 7-bit mode, etc. will continue to be handled properly.
+
+If the input char processed was not a line termination char, then
+the canon_head index will not have advanced, so the normalized 'room'
+value will now be -1 and 'overflow' will be set, which indicates the
+read_head can safely be reset, effectively erasing the last char
+processed.
+
+If the input char processed was a line termination, then the
+canon_head index will have advanced, so 'overflow' is cleared to 0,
+the read_head is not reset, and 'room' is cleared to 0, which exits
+the i/o loop (because the reader now have input available to read
+which ensures forward progress).
+
+Note that it is possible for a line termination to be received, and
+for the reader to copy the line to the user buffer before the
+input i/o loop is ready to process the next input char. This is
+why the i/o loop recomputes the room/overflow state with every
+input char while handling overflow.
+
+Finally, if the input data was processed without receiving
+a line termination (so that overflow is still set), the pty
+driver must receive a write wakeup. A pty writer may be waiting
+to write more data in n_tty_write() but without unthrottling
+here that wakeup will not arrive, and forward progress will halt.
+(Normally, the pty writer is woken when the reader reads data out
+of the buffer and more space become available).
 
 Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
 ---
- drivers/tty/n_tty.c | 12 ++++--------
- 1 file changed, 4 insertions(+), 8 deletions(-)
+ drivers/tty/n_tty.c | 92 ++++++++++++++++++++++++++++++++++++-----------------
+ 1 file changed, 62 insertions(+), 30 deletions(-)
 
 diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index f63b25b..7aeabb7 100644
+index 7aeabb7..5793aa0 100644
 --- a/drivers/tty/n_tty.c
 +++ b/drivers/tty/n_tty.c
-@@ -1669,9 +1669,8 @@ n_tty_receive_buf_common(struct tty_struct *tty, const unsigned char *cp,
+@@ -225,8 +225,6 @@ static void n_tty_check_throttle(struct tty_struct *tty)
+ {
+ 	struct n_tty_data *ldata = tty->disc_data;
  
- 	while (1) {
- 		/*
--		 * When PARMRK is set, multiply read_cnt by 3, since each byte
--		 * might take up to three times as many spaces (depending on
--		 * its flags, e.g. parity error). [This calculation is wrong.]
-+		 * When PARMRK is set, each input char may take up to 3 chars
-+		 * in the read buf; reduce the buffer space avail by 3x
- 		 *
- 		 * If we are doing input canonicalization, and there are no
- 		 * pending newlines, let characters through without limit, so
-@@ -1683,13 +1682,10 @@ n_tty_receive_buf_common(struct tty_struct *tty, const unsigned char *cp,
- 		 * read_tail (so this producer will not overwrite unread data)
+-	if (tty->driver->type == TTY_DRIVER_TYPE_PTY)
+-		return;
+ 	/*
+ 	 * Check the remaining room for the input canonicalization
+ 	 * mode.  We don't want to throttle the driver if we're in
+@@ -1483,23 +1481,6 @@ n_tty_receive_char_lnext(struct tty_struct *tty, unsigned char c, char flag)
+ 		n_tty_receive_char_flagged(tty, c, flag);
+ }
+ 
+-/**
+- *	n_tty_receive_buf	-	data receive
+- *	@tty: terminal device
+- *	@cp: buffer
+- *	@fp: flag buffer
+- *	@count: characters
+- *
+- *	Called by the terminal driver when a block of characters has
+- *	been received. This function must be called from soft contexts
+- *	not from interrupt context. The driver is responsible for making
+- *	calls one at a time and in order (or using flush_to_ldisc)
+- *
+- *	n_tty_receive_buf()/producer path:
+- *		claims non-exclusive termios_rwsem
+- *		publishes commit_head or canon_head
+- */
+-
+ static void
+ n_tty_receive_buf_real_raw(struct tty_struct *tty, const unsigned char *cp,
+ 			   char *fp, int count)
+@@ -1658,12 +1639,45 @@ static void __receive_buf(struct tty_struct *tty, const unsigned char *cp,
+ 	}
+ }
+ 
++/**
++ *	n_tty_receive_buf_common	-	process input
++ *	@tty: device to receive input
++ *	@cp: input chars
++ *	@fp: flags for each char (if NULL, all chars are TTY_NORMAL)
++ *	@count: number of input chars in @cp
++ *
++ *	Called by the terminal driver when a block of characters has
++ *	been received. This function must be called from soft contexts
++ *	not from interrupt context. The driver is responsible for making
++ *	calls one at a time and in order (or using flush_to_ldisc)
++ *
++ *	Returns the # of input chars from @cp which were processed.
++ *
++ *	In canonical mode, the maximum line length is 4096 chars (including
++ *	the line termination char); lines longer than 4096 chars are
++ *	truncated. After 4095 chars, input data is still processed but
++ *	not stored. Overflow processing ensures the tty can always
++ *	receive more input until at least one line can be read.
++ *
++ *	In non-canonical mode, the read buffer will only accept 4095 chars;
++ *	this provides the necessary space for a newline char if the input
++ *	mode is switched to canonical.
++ *
++ *	Note it is possible for the read buffer to _contain_ 4096 chars
++ *	in non-canonical mode: the read buffer could already contain the
++ *	maximum canon line of 4096 chars when the mode is switched to
++ *	non-canonical.
++ *
++ *	n_tty_receive_buf()/producer path:
++ *		claims non-exclusive termios_rwsem
++ *		publishes commit_head or canon_head
++ */
+ static int
+ n_tty_receive_buf_common(struct tty_struct *tty, const unsigned char *cp,
+ 			 char *fp, int count, int flow)
+ {
+ 	struct n_tty_data *ldata = tty->disc_data;
+-	int room, n, rcvd = 0;
++	int room, n, rcvd = 0, overflow;
+ 
+ 	down_read(&tty->termios_rwsem);
+ 
+@@ -1683,19 +1697,27 @@ n_tty_receive_buf_common(struct tty_struct *tty, const unsigned char *cp,
  		 */
  		size_t tail = smp_load_acquire(&ldata->read_tail);
--		size_t head = ldata->read_head;
  
-+		room = N_TTY_BUF_SIZE - (ldata->read_head - tail) - 1;
+-		room = N_TTY_BUF_SIZE - (ldata->read_head - tail) - 1;
++		room = N_TTY_BUF_SIZE - (ldata->read_head - tail);
  		if (I_PARMRK(tty))
--			room = N_TTY_BUF_SIZE - (head - tail) * 3 - 1;
--		else
--			room = N_TTY_BUF_SIZE - (head - tail) - 1;
--
-+			room /= 3;
- 		if (room <= 0)
- 			room = ldata->icanon && ldata->canon_head == tail;
+-			room /= 3;
+-		if (room <= 0)
+-			room = ldata->icanon && ldata->canon_head == tail;
++			room = (room + 2) / 3;
++		room--;
++		if (room <= 0) {
++			overflow = ldata->icanon && ldata->canon_head == tail;
++			if (overflow && room < 0)
++				ldata->read_head--;
++			room = overflow;
++			ldata->no_room = flow && !room;
++		} else
++			overflow = 0;
  
+ 		n = min(count, room);
+-		if (!n) {
+-			if (flow && !room)
+-				ldata->no_room = 1;
++		if (!n)
+ 			break;
+-		}
+-		__receive_buf(tty, cp, fp, n);
++
++		/* ignore parity errors if handling overflow */
++		if (!overflow || !fp || *fp != TTY_PARITY)
++			__receive_buf(tty, cp, fp, n);
++
+ 		cp += n;
+ 		if (fp)
+ 			fp += n;
+@@ -1704,7 +1726,17 @@ n_tty_receive_buf_common(struct tty_struct *tty, const unsigned char *cp,
+ 	}
+ 
+ 	tty->receive_room = room;
+-	n_tty_check_throttle(tty);
++
++	/* Unthrottle if handling overflow on pty */
++	if (tty->driver->type == TTY_DRIVER_TYPE_PTY) {
++		if (overflow) {
++			tty_set_flow_change(tty, TTY_UNTHROTTLE_SAFE);
++			tty_unthrottle_safe(tty);
++			__tty_set_flow_change(tty, 0);
++		}
++	} else
++		n_tty_check_throttle(tty);
++
+ 	up_read(&tty->termios_rwsem);
+ 
+ 	return rcvd;
 -- 
 2.2.2
 
