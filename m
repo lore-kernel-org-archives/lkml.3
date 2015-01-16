@@ -1,46 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756883AbbAPS6Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 13:58:16 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:32910 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756866AbbAPS6N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 13:58:13 -0500
-Date: Fri, 16 Jan 2015 19:58:10 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>,
-        Joerg Roedel <joro@8bytes.org>, x86@kernel.org,
-        Tony Luck <tony.luck@intel.com>
-Subject: Re: [patch 09/23] x86/x2apic: Add proper state tracking
-Message-ID: <20150116185810.GJ18880@pd.tnic>
-References: <20150115210458.625399149@linutronix.de>
- <20150115211702.955392443@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20150115211702.955392443@linutronix.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1756704AbbAPTBQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 14:01:16 -0500
+Received: from skprod3.natinst.com ([130.164.80.24]:55266 "EHLO ni.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752601AbbAPTBP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 14:01:15 -0500
+From: Xander Huff <xander.huff@ni.com>
+To: jeffrey.t.kirsher@intel.com, jesse.brandeburg@intel.com,
+        bruce.w.allan@intel.com, carolyn.wyborny@intel.com,
+        donald.c.skidmore@intel.com, gregory.v.rose@intel.com,
+        matthew.vick@intel.com, john.ronciak@intel.com,
+        mitch.a.williams@intel.com
+Cc: linux.nics@intel.com, e1000-devel@lists.sourceforge.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        jeff.westfahl@ni.com, Xander Huff <xander.huff@ni.com>
+Subject: [PATCH RESEND] igb: Reset TXPBSIZE to default value
+Date: Fri, 16 Jan 2015 12:59:39 -0600
+Message-Id: <1421434779-20586-1-git-send-email-xander.huff@ni.com>
+X-Mailer: git-send-email 1.9.1
+X-MIMETrack: Itemize by SMTP Server on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP6|November
+ 21, 2013) at 01/16/2015 01:01:07 PM,
+	Serialize by Router on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP6|November
+ 21, 2013) at 01/16/2015 01:01:07 PM,
+	Serialize complete at 01/16/2015 01:01:07 PM
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-16_07:2015-01-16,2015-01-16,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 15, 2015 at 09:22:22PM -0000, Thomas Gleixner wrote:
-> Having 3 different variables to track the state is just silly and
-> error prone. Add a proper state tracking variable which covers the
-> three possible states: ON/OFF/DISABLED.
-> 
-> We cannot use x2apic_mode for this as this would require to change all
-> users of x2apic_mode with explicit comparisons for a state value
-> instead of treating it as boolean.
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+From: Jeff Westfahl <jeff.westfahl@ni.com>
 
-Acked-by: Borislav Petkov <bp@suse.de>
+The TXPBSIZE register of the i210 resets to its default value only
+at power-on. It doesn't reset if you reboot the system, only if you
+pull power. If something (another driver, another OS, etc.) modifies
+this register from its default value, the igb driver doesn't function
+correctly. It detects a hang of the transmitter and continuously resets
+the adapter. Here we set this value to its default when resetting the
+i210 to resolve this issue.
 
+Signed-off-by: Jeff Westfahl <jeff.westfahl@ni.com>
+Signed-off-by: Xander Huff <xander.huff@ni.com>
+---
+ drivers/net/ethernet/intel/igb/e1000_82575.c   | 4 ++++
+ drivers/net/ethernet/intel/igb/e1000_defines.h | 3 +++
+ drivers/net/ethernet/intel/igb/e1000_regs.h    | 1 +
+ 3 files changed, 8 insertions(+)
+
+diff --git a/drivers/net/ethernet/intel/igb/e1000_82575.c b/drivers/net/ethernet/intel/igb/e1000_82575.c
+index 0f69ef8..855a39e 100644
+--- a/drivers/net/ethernet/intel/igb/e1000_82575.c
++++ b/drivers/net/ethernet/intel/igb/e1000_82575.c
+@@ -2238,6 +2238,10 @@ static s32 igb_reset_hw_82580(struct e1000_hw *hw)
+ 	wr32(E1000_TCTL, E1000_TCTL_PSP);
+ 	wrfl();
+ 
++	if (hw->mac.type == e1000_i210)
++		/* TXPBSIZE resets only on power-up. */
++		wr32(E1000_TXPBSIZE, E1000_TXPBSIZE_RESET);
++
+ 	usleep_range(10000, 11000);
+ 
+ 	/* Determine whether or not a global dev reset is requested */
+diff --git a/drivers/net/ethernet/intel/igb/e1000_defines.h b/drivers/net/ethernet/intel/igb/e1000_defines.h
+index 217f813..d8e3c59 100644
+--- a/drivers/net/ethernet/intel/igb/e1000_defines.h
++++ b/drivers/net/ethernet/intel/igb/e1000_defines.h
+@@ -305,6 +305,9 @@
+ #define E1000_TCTL_COLD   0x003ff000    /* collision distance */
+ #define E1000_TCTL_RTLC   0x01000000    /* Re-transmit on late collision */
+ 
++/* Transmit Packet Buffer Size */
++#define E1000_TXPBSIZE_RESET 0x04000014
++
+ /* DMA Coalescing register fields */
+ #define E1000_DMACR_DMACWT_MASK         0x00003FFF /* DMA Coal Watchdog Timer */
+ #define E1000_DMACR_DMACTHR_MASK        0x00FF0000 /* DMA Coal Rx Threshold */
+diff --git a/drivers/net/ethernet/intel/igb/e1000_regs.h b/drivers/net/ethernet/intel/igb/e1000_regs.h
+index 6f0490d..7e2325b 100644
+--- a/drivers/net/ethernet/intel/igb/e1000_regs.h
++++ b/drivers/net/ethernet/intel/igb/e1000_regs.h
+@@ -60,6 +60,7 @@
+ #define E1000_TCTL     0x00400  /* TX Control - RW */
+ #define E1000_TCTL_EXT 0x00404  /* Extended TX Control - RW */
+ #define E1000_TIPG     0x00410  /* TX Inter-packet gap -RW */
++#define E1000_TXPBSIZE 0x03404  /* Transmit Packet Buffer Size - RW */
+ #define E1000_AIT      0x00458  /* Adaptive Interframe Spacing Throttle - RW */
+ #define E1000_LEDCTL   0x00E00  /* LED Control - RW */
+ #define E1000_LEDMUX   0x08130  /* LED MUX Control */
 -- 
-Regards/Gruss,
-    Boris.
+1.9.1
 
-ECO tip #101: Trim your mails when you reply.
---
