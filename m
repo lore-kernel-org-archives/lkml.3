@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754309AbbAPLIp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 06:08:45 -0500
-Received: from sci-ig2.spreadtrum.com ([222.66.158.135]:50885 "EHLO
+	id S1753636AbbAPKMp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 05:12:45 -0500
+Received: from sci-ig2.spreadtrum.com ([222.66.158.135]:62797 "EHLO
 	SHSQR01.spreadtrum.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751477AbbAPLIn (ORCPT
+	with ESMTP id S1753522AbbAPKMn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 06:08:43 -0500
+	Fri, 16 Jan 2015 05:12:43 -0500
 From: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
 To: <gregkh@linuxfoundation.org>, <mark.rutland@arm.com>, <arnd@arndb.de>,
         <gnomes@lxorguk.ukuu.org.uk>, <broonie@kernel.org>,
@@ -25,125 +25,39 @@ To: <gregkh@linuxfoundation.org>, <mark.rutland@arm.com>, <arnd@arndb.de>,
 CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
         <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>,
         <linux-api@vger.kernel.org>
-Subject: [PATCH v5 0/5] Add Spreadtrum Sharkl64 Platform support
-Date: Fri, 16 Jan 2015 18:00:06 +0800
-Message-ID: <1421402411-3479-1-git-send-email-chunyan.zhang@spreadtrum.com>
+Subject: [PATCH v5 1/5] Documentation: DT: Renamed of-serial.txt to 8250.txt
+Date: Fri, 16 Jan 2015 18:00:07 +0800
+Message-ID: <1421402411-3479-2-git-send-email-chunyan.zhang@spreadtrum.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <sc9836-v5>
+In-Reply-To: <1421402411-3479-1-git-send-email-chunyan.zhang@spreadtrum.com>
 References: <sc9836-v5>
+ <1421402411-3479-1-git-send-email-chunyan.zhang@spreadtrum.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.0.67.142]
 X-ClientProxiedBy: SHCAS01.spreadtrum.com (10.0.1.201) To
  SHMBX01.spreadtrum.com (10.0.1.203)
-X-MAIL: SHSQR01.spreadtrum.com t0GA1fUP040662
+X-MAIL: SHSQR01.spreadtrum.com t0GA1kB3040686
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Spreadtrum is a rapid growing chip vendor providing smart phone total solutions.
+The file of-serial.txt was only for 8250 compatible UART implementations,
+so renamed it to 8250.txt to avoid confusing other persons.
+This is suggested by Arnd, see:
+http://lists.infradead.org/pipermail/linux-arm-kernel/2014-September/291455.html
 
-Sharkl64 Platform is nominated as a SoC infrastructure that supports 4G/3G/2G
-standards based on ARMv8 multiple core architecture. Now we have only one
-SoC(SC9836) based on this Platform in developing.
-
-This patchset adds Sharkl64 support in arm64 device tree and adds the serial
-driver of SC9836-UART.
-
-This patchset also has patches which address "sprd" prefix and DT compatible
-strings for nodes which appear un-documented.
-
-This version code was tesed on SC9836 mobile phone.
-
-Changes from v4:
-* Addressed review comments from last version:
-	- Remove compitible string "arm,psci-0.2"
-	- Add the properties of psci v0.1
-	- Remove the "clocks" container node
-* Addressed review comments from Shawn Guo, Lea Yan, Jorge Ramirez-Ortiz:
-	- Turn the 'clocks' property of uart into a required property
-	- Use GIC macro instead of the value
-	- Update the CPU mask to match the number of described CPUs
-	- Use the more explicit compatible string "arm,gic-400" for GIC
-	- sprd_serial.c: Add a cpu_relax() in the busy loop of sprd_putc
-	- sprd_serial.c: Add calling uart_suspend_port and uart_resume_port in
-	  the function sprd_suspend and sprd_resume respectively
-	- sprd_serial.c: Use SIMPLE_DEV_PM_OPS to register sprd_suspend and
-	  sprd_resume
-
-Changes from v3:
-* Addressed review comments:
-	- Added the description of clock property for sc9836-uart
-	- Revised the size of GICC to be 8KiB
-	- Added another compatible string for psci-0.1
-	- Removed the clock-frequency property of timer in DT
-	- Removed ARCH_SHARKL64, just left ARCH_SPRD only
-	- sprd_serial.c: Removed .owner of platform_driver.driver
-	- sprd_serial.c: Removed all usages of unlikely
-	- sprd_serial.c: Used the .port member of sprd_port instead of the cast
-	- sprd_serial.c: sed dynamic allocation for major/minor device id
-	- sprd_serial.c: Added a timeout and a cpu_relax for clearing rx/tx fifo
-	- sprd_serial.c: clear CMSPAR in termios->c_cflag
-	- sprd_serial.c: Set the resulting baud back into the termios
-	- sprd_serial.c: Implemented a shared interrupt handler
-
-Changes from v2:
-* Addressed review comments:
-	- Added a specific compitible string 'sc9836-uart' for the serial
-	- Added a full serial driver
-	- Added the property 'clock-frequency' for timer node in dtsi.
-	- Replaceed the old macro prefix 'UART_' with 'SPRD_' in the 
-	  Spreadtrum serial driver code.
-* Revised the name of SoC and board from 'sharkl3' to 'sc9836'
-* Used dual-license for DTS files
-* Added a menuconfig 'ARCH_SPRD' in arch/arm64/Kconfig
-
-Changes from v1:
-* Addressed review comments:
-        - Added "sprd" prefix to vendor-prefixes.txt
-        - Created serial/sprd-serial.txt and remove the properties for serial-sprd
-          from of-serial.txt to it.
-        - Renamed of-serial.txt to 8250.txt according to Arnd's review comments
-        - Splited and revised .dts for Sharkl64 Platform
-        - Changed to PSCI method for cpu power management
-        - Revised Kconfig Makefile to match the alphabetical ordering
-        - Renamed serial-sprd-earlycon.c to serial-sprd.c
-
-Chunyan Zhang (3):
-  Documentation: DT: Renamed of-serial.txt to 8250.txt
-  Documentation: DT: Add bindings for Spreadtrum SoC Platform
-  tty/serial: Add Spreadtrum sc9836-uart driver support
-
-Zhizhou Zhang (2):
-  arm64: dts: Add support for Spreadtrum SC9836 SoC in dts and Makefile
-  arm64: Add support for Spreadtrum's Sharkl64 Platform in Kconfig and
-    defconfig
-
- Documentation/devicetree/bindings/arm/sprd.txt     |   11 +
+Signed-off-by: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
+Acked-by: Mark Rutland <mark.rutland@arm.com>
+---
  .../bindings/serial/{of-serial.txt => 8250.txt}    |    0
- .../devicetree/bindings/serial/sprd-uart.txt       |    7 +
- .../devicetree/bindings/vendor-prefixes.txt        |    1 +
- arch/arm64/Kconfig                                 |    5 +
- arch/arm64/boot/dts/Makefile                       |    1 +
- arch/arm64/boot/dts/sprd/Makefile                  |    5 +
- arch/arm64/boot/dts/sprd/sc9836-openphone.dts      |   49 ++
- arch/arm64/boot/dts/sprd/sc9836.dtsi               |   73 ++
- arch/arm64/boot/dts/sprd/sharkl64.dtsi             |   67 ++
- arch/arm64/configs/defconfig                       |    1 +
- drivers/tty/serial/Kconfig                         |   18 +
- drivers/tty/serial/Makefile                        |    1 +
- drivers/tty/serial/sprd_serial.c                   |  772 ++++++++++++++++++++
- include/uapi/linux/serial_core.h                   |    3 +
- 15 files changed, 1014 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/arm/sprd.txt
+ 1 file changed, 0 insertions(+), 0 deletions(-)
  rename Documentation/devicetree/bindings/serial/{of-serial.txt => 8250.txt} (100%)
- create mode 100644 Documentation/devicetree/bindings/serial/sprd-uart.txt
- create mode 100644 arch/arm64/boot/dts/sprd/Makefile
- create mode 100644 arch/arm64/boot/dts/sprd/sc9836-openphone.dts
- create mode 100644 arch/arm64/boot/dts/sprd/sc9836.dtsi
- create mode 100644 arch/arm64/boot/dts/sprd/sharkl64.dtsi
- create mode 100644 drivers/tty/serial/sprd_serial.c
 
+diff --git a/Documentation/devicetree/bindings/serial/of-serial.txt b/Documentation/devicetree/bindings/serial/8250.txt
+similarity index 100%
+rename from Documentation/devicetree/bindings/serial/of-serial.txt
+rename to Documentation/devicetree/bindings/serial/8250.txt
 -- 
 1.7.9.5
 
