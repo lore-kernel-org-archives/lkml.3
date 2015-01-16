@@ -1,258 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752054AbbAPJ2D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 04:28:03 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:60588 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751183AbbAPJ15 (ORCPT
+	id S1752266AbbAPJao (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 04:30:44 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:32766 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751051AbbAPJam (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 04:27:57 -0500
-Message-ID: <54B8D97B.3090908@free-electrons.com>
-Date: Fri, 16 Jan 2015 10:27:23 +0100
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Hans de Goede <hdegoede@redhat.com>, Tejun Heo <tj@kernel.org>,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-CC: =?windows-1252?Q?Antoine_T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org
-Subject: Re: [PATCH v4 4/4] ARM: mvebu: Armada 385 GP: Add regulators to the
- SATA port
-References: <1421330978-9694-1-git-send-email-gregory.clement@free-electrons.com> <1421330978-9694-5-git-send-email-gregory.clement@free-electrons.com> <54B8C933.7020502@redhat.com>
-In-Reply-To: <54B8C933.7020502@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+	Fri, 16 Jan 2015 04:30:42 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f5-b7fc86d0000066b7-33-54b8da3aadbc
+Content-transfer-encoding: 8BIT
+Message-id: <1421400684.11224.14.camel@AMDC1943>
+Subject: Re: [PATCH V1] regulator: da9211: Add gpio control for enable/disable
+ of buck
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: James Ban <james.ban.opensource@diasemi.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Support Opensource <support.opensource@diasemi.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>
+Date: Fri, 16 Jan 2015 10:31:24 +0100
+In-reply-to: <201501160901.t0G91F19021262@krsrvapps-01.diasemi.com>
+References: <201501160901.t0G91F19021262@krsrvapps-01.diasemi.com>
+X-Mailer: Evolution 3.10.4-0ubuntu2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrPLMWRmVeSWpSXmKPExsVy+t/xa7pWt3aEGBzu1rCY+vAJm8XtH6dZ
+	LT6tcrX4dqWDyeLyrjlsFntbLzI7sHms+KTvsXPWXXaPTas62Tw+b5ILYInisklJzcksSy3S
+	t0vgynjcsoSxoFmx4tuWqWwNjFOluhg5OSQETCSu7FzIBGGLSVy4t56ti5GLQ0hgKaPEjK5r
+	LCAJXgFBiR+T7wHZHBzMAvISRy5lg4SZBdQlJs1bxAxR/5lR4vH5XlaIegOJ18/esIHYwgIR
+	Epd72sDmsAkYS2xevgQsLgJUs/z6RkaIQRcZJea2+YDYLAKqEj97Z4IdxCngLHHh63GwXiEB
+	J4mHT94zgdwgIaAs0djvNoFRYBaS62YhXDcLyXULGJlXMYqmliYXFCel5xrpFSfmFpfmpesl
+	5+duYoQE8tcdjEuPWR1iFOBgVOLhddi0I0SINbGsuDL3EKMEB7OSCO/GbUAh3pTEyqrUovz4
+	otKc1OJDjEwcnFINjHKx8Q1dfl8V07kmTDit+3qjgxL3ajbWubkhB9ubQ04//B3cEOgj/vDJ
+	/tWap5RUTE5f/7VX60/iTB8BrkW82dUvclJt5zxc97BI6fl34c7dd/ffdz/44eKJDzdX1ipZ
+	VYtNbap4tnHFvQnLPwVYdX/ZqRURFat+uudozXGezMfyNy+JeN24baHEUpyRaKjFXFScCACR
+	YdDrQgIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Hans,
-
-On 16/01/2015 09:17, Hans de Goede wrote:
-> Hi,
+On pią, 2015-01-16 at 17:59 +0900, James Ban wrote:
+> This is a patch for adding gpio control about enable/disable of buck.
 > 
-> On 15-01-15 15:09, Gregory CLEMENT wrote:
->> Add the regulators to each SATA port.
->>
->> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
->> ---
->>   arch/arm/boot/dts/armada-388-gp.dts | 126 ++++++++++++++++++++++++++++++++++++
->>   1 file changed, 126 insertions(+)
->>
->> diff --git a/arch/arm/boot/dts/armada-388-gp.dts b/arch/arm/boot/dts/armada-388-gp.dts
->> index 4df22bf91683..590b383db323 100644
->> --- a/arch/arm/boot/dts/armada-388-gp.dts
->> +++ b/arch/arm/boot/dts/armada-388-gp.dts
->> @@ -173,6 +173,16 @@
->>   				status = "okay";
->>   				#address-cells = <1>;
->>   				#size-cells = <0>;
->> +
->> +				sata0: sata-port@0 {
->> +					reg = <0>;
->> +					target-supply = <&reg_5v_sata0>;
->> +				};
->> +
->> +				sata1: sata-port@1 {
->> +					reg = <1>;
->> +					target-supply = <&reg_5v_sata1>;
->> +				};
->>   			};
->>
->>   			sata@e0000 {
->> @@ -181,6 +191,16 @@
->>   				status = "okay";
->>   				#address-cells = <1>;
->>   				#size-cells = <0>;
->> +
->> +				sata2: sata-port@0 {
->> +					reg = <0>;
->> +					target-supply = <&reg_5v_sata2>;
->> +				};
->> +
->> +				sata3: sata-port@1 {
->> +					reg = <1>;
->> +					target-supply = <&reg_5v_sata3>;
->> +				};
->>   			};
->>
->>   			sdhci@d8000 {
->> @@ -278,6 +298,112 @@
->>   		regulator-always-on;
->>   		gpio = <&expander0 4 GPIO_ACTIVE_HIGH>;
->>   	};
->> +
->> +	reg_sata0: pwr-sata0 {
->> +		compatible = "regulator-fixed";
->> +		regulator-name = "pwr_en_sata0";
->> +		enable-active-high;
->> +		regulator-always-on;
->> +
->> +	};
->> +
->> +	reg_5v_sata0: v5-sata0 {
->> +		compatible = "regulator-fixed";
->> +		regulator-name = "v5.0-sata0";
->> +		regulator-min-microvolt = <5000000>;
->> +		regulator-max-microvolt = <5000000>;
->> +		regulator-always-on;
->> +		vin-supply = <&reg_sata0>;
->> +	};
->> +
->> +	reg_12v_sata0: v12-sata0 {
->> +		compatible = "regulator-fixed";
->> +		regulator-name = "v12.0-sata0";
->> +		regulator-min-microvolt = <12000000>;
->> +		regulator-max-microvolt = <12000000>;
->> +		regulator-always-on;
->> +		vin-supply = <&reg_sata0>;
->> +	};
+> Signed-off-by: James Ban <james.ban.opensource@diasemi.com>
+> ---
 > 
-> AFAIK the separate v5 / 12v regulators you're creating here
-> are not used anywhere. So I guess there just here to
-> accurately / completely describe the power topology ?
-
-Yes it was the point.
-
-> 
->> +
->> +	reg_sata1: pwr-sata1 {
->> +		regulator-name = "pwr_en_sata1";
->> +		compatible = "regulator-fixed";
->> +		regulator-min-microvolt = <12000000>;
->> +		regulator-max-microvolt = <12000000>;
->> +		enable-active-high;
->> +		regulator-always-on;
+> This patch is relative to linux-next repository tag next-20150115.
 > 
 > 
-> The always on here seems to a bit weird, wasn't the
-> whole purpose of this patch set to teach ahci_platform
-> to turn it on as needed ?
-
-Maybe I misunderstood the regulator binding, but I thought
-that (once the suspend will be available on this platform) I
-could use:
-
-regulator-state-mem {
-			regulator-off-in-suspend;
-		};
-
+>  .../devicetree/bindings/regulator/da9211.txt       |    7 ++++++-
+>  drivers/regulator/da9211-regulator.c               |    6 ++++++
+>  include/linux/regulator/da9211.h                   |    1 +
+>  3 files changed, 13 insertions(+), 1 deletion(-)
 > 
-> You do probably want to put a regulator-boot-on here so
-> that disks do not get an unwanted powercycle (bad for
-> their lifetime) when the firmware has already turned on
-> the disk. Downside of using regulator-boot-on is that if
-> the power is not actually turned on no power-on-delay is
+> diff --git a/Documentation/devicetree/bindings/regulator/da9211.txt b/Documentation/devicetree/bindings/regulator/da9211.txt
+> index 240019a..ad777ac 100644
+> --- a/Documentation/devicetree/bindings/regulator/da9211.txt
+> +++ b/Documentation/devicetree/bindings/regulator/da9211.txt
+> @@ -11,6 +11,7 @@ Required properties:
+>    BUCKA and BUCKB.
+>  
+>  Optional properties:
+> +- buck-enable-platform-gpio: platform gpio for control of BUCKA/BUCKB.
+>  - Any optional property defined in regulator.txt
+>  
+>  Example 1) DA9211
+> @@ -27,6 +28,7 @@ Example 1) DA9211
+>  				regulator-max-microvolt = <1570000>;
+>  				regulator-min-microamp 	= <2000000>;
+>  				regulator-max-microamp 	= <5000000>;
+> +				buck-enable-platform-gpio = <&gpio 27 0>;
+>  			};
+>  			BUCKB {
+>  				regulator-name = "VBUCKB";
+> @@ -34,11 +36,12 @@ Example 1) DA9211
+>  				regulator-max-microvolt = <1570000>;
+>  				regulator-min-microamp 	= <2000000>;
+>  				regulator-max-microamp 	= <5000000>;
+> +				buck-enable-platform-gpio = <&gpio 17 0>;
 
-That's why I didn't use it
+The suffix was changed to "-gpios".
+(Documentation/devicetree/bindings/gpio/gpio.txt)
 
-> done, but we're not using a power on delay anyways.
+>  			};
+>  		};
+>  	};
+>  
+> -Example 2) DA92113
+> +Example 2) DA9213
+>  	pmic: da9213@68 {
+>  		compatible = "dlg,da9213";
+>  		reg = <0x68>;
+> @@ -51,6 +54,7 @@ Example 2) DA92113
+>  				regulator-max-microvolt = <1570000>;
+>  				regulator-min-microamp 	= <3000000>;
+>  				regulator-max-microamp 	= <6000000>;
+> +				buck-enable-platform-gpio = <&gpio 27 0>;
+>  			};
+>  			BUCKB {
+>  				regulator-name = "VBUCKB";
+> @@ -58,6 +62,7 @@ Example 2) DA92113
+>  				regulator-max-microvolt = <1570000>;
+>  				regulator-min-microamp 	= <3000000>;
+>  				regulator-max-microamp 	= <6000000>;
+> +				buck-enable-platform-gpio = <&gpio 17 0>;
+>  			};
+>  		};
+>  	};
+> diff --git a/drivers/regulator/da9211-regulator.c b/drivers/regulator/da9211-regulator.c
+> index c78d210..d299b0f 100644
+> --- a/drivers/regulator/da9211-regulator.c
+> +++ b/drivers/regulator/da9211-regulator.c
+> @@ -24,6 +24,7 @@
+>  #include <linux/regmap.h>
+>  #include <linux/irq.h>
+>  #include <linux/interrupt.h>
+> +#include <linux/of_gpio.h>
+>  #include <linux/regulator/of_regulator.h>
+>  #include <linux/regulator/da9211.h>
+>  #include "da9211-regulator.h"
+> @@ -277,6 +278,10 @@ static struct da9211_pdata *da9211_parse_regulators_dt(
+>  
+>  		pdata->init_data[n] = da9211_matches[i].init_data;
+>  
+> +		pdata->gpio_ren[n] =
+> +			of_get_named_gpio(da9211_matches[i].of_node,
+> +				"buck-enable-platform-gpio", 0);
+> +
+>  		n++;
+>  	}
+>  
+> @@ -365,6 +370,7 @@ static int da9211_regulator_init(struct da9211 *chip)
+>  		config.driver_data = chip;
+>  		config.regmap = chip->regmap;
+>  		config.of_node = chip->dev->of_node;
+> +		config.ena_gpio = chip->pdata->gpio_ren[i];
 
-But if regulator-always-on prevent to switch it off in
-suspend then yes using regulator-boot-on is better.
+Probably you want to set also config.ena_gpio_initialized because '0'
+could be a valid GPIO. However that could be inconsistent with
+platform_data for your driver so it's up to you.
 
-Thanks,
+Don't you have to enable the GPIO usage in the device (switch from I2C
+control to GPIO)?
 
-Gregory
+Best regards,
+Krzysztof
 
-> 
-> The same goes for reg_sata2 & reg_sata3.
-> 
->> +		gpio = <&expander0 3 GPIO_ACTIVE_HIGH>;
->> +	};
->> +
->> +	reg_5v_sata1: v5-sata1 {
->> +		compatible = "regulator-fixed";
->> +		regulator-name = "v5.0-sata1";
->> +		regulator-min-microvolt = <5000000>;
->> +		regulator-max-microvolt = <5000000>;
->> +		regulator-always-on;
->> +		vin-supply = <&reg_sata1>;
->> +	};
->> +
->> +	reg_12v_sata1: v12-sata1 {
->> +		compatible = "regulator-fixed";
->> +		regulator-name = "v12.0-sata1";
->> +		regulator-min-microvolt = <12000000>;
->> +		regulator-max-microvolt = <12000000>;
->> +		regulator-always-on;
->> +		vin-supply = <&reg_sata1>;
->> +	};
->> +
->> +	reg_sata2: pwr-sata2 {
->> +		compatible = "regulator-fixed";
->> +		regulator-name = "pwr_en_sata2";
->> +		enable-active-high;
->> +		regulator-always-on;
->> +		gpio = <&expander0 11 GPIO_ACTIVE_HIGH>;
->> +	};
->> +
->> +	reg_5v_sata2: v5-sata2 {
->> +		compatible = "regulator-fixed";
->> +		regulator-name = "v5.0-sata2";
->> +		regulator-min-microvolt = <5000000>;
->> +		regulator-max-microvolt = <5000000>;
->> +		regulator-always-on;
->> +		vin-supply = <&reg_sata2>;
->> +	};
->> +
->> +	reg_12v_sata2: v12-sata2 {
->> +		compatible = "regulator-fixed";
->> +		regulator-name = "v12.0-sata2";
->> +		regulator-min-microvolt = <12000000>;
->> +		regulator-max-microvolt = <12000000>;
->> +		regulator-always-on;
->> +		vin-supply = <&reg_sata2>;
->> +	};
->> +
->> +	reg_sata3: pwr-sata3 {
->> +		compatible = "regulator-fixed";
->> +		regulator-name = "pwr_en_sata3";
->> +		enable-active-high;
->> +		regulator-always-on;
->> +		gpio = <&expander0 12 GPIO_ACTIVE_HIGH>;
->> +	};
->> +
->> +	reg_5v_sata3: v5-sata3 {
->> +		compatible = "regulator-fixed";
->> +		regulator-name = "v5.0-sata3";
->> +		regulator-min-microvolt = <5000000>;
->> +		regulator-max-microvolt = <5000000>;
->> +		regulator-always-on;
->> +		vin-supply = <&reg_sata3>;
->> +	};
->> +
->> +	reg_12v_sata3: v12-sata3 {
->> +		compatible = "regulator-fixed";
->> +		regulator-name = "v12.0-sata3";
->> +		regulator-min-microvolt = <12000000>;
->> +		regulator-max-microvolt = <12000000>;
->> +		regulator-always-on;
->> +		vin-supply = <&reg_sata3>;
->> +	};
->>   };
->>
->>   &pinctrl {
->>
-> 
-> Regards,
-> 
-> Hans
-> 
+>  
+>  		chip->rdev[i] = devm_regulator_register(chip->dev,
+>  			&da9211_regulators[i], &config);
+> diff --git a/include/linux/regulator/da9211.h b/include/linux/regulator/da9211.h
+> index 5479394..530b5ea 100644
+> --- a/include/linux/regulator/da9211.h
+> +++ b/include/linux/regulator/da9211.h
+> @@ -32,6 +32,7 @@ struct da9211_pdata {
+>  	 * 2 : 2 phase 2 buck
+>  	 */
+>  	int num_buck;
+> +	int gpio_ren[DA9211_MAX_REGULATORS];
+>  	struct regulator_init_data *init_data[DA9211_MAX_REGULATORS];
+>  };
+>  #endif
 
-
--- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
