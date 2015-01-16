@@ -1,52 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754737AbbAPSW0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 13:22:26 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:41622 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492AbbAPSWY (ORCPT
+	id S1753150AbbAPS0E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 13:26:04 -0500
+Received: from mail-we0-f173.google.com ([74.125.82.173]:63451 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751502AbbAPS0C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 13:22:24 -0500
-From: Stephane Viau <sviau@codeaurora.org>
-To: dri-devel@lists.freedesktop.org
-Cc: linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        robdclark@gmail.com, Stephane Viau <sviau@codeaurora.org>
-Subject: [PATCH] drm/msm/mdp5: Fix negative SMP block allocation
-Date: Fri, 16 Jan 2015 13:22:14 -0500
-Message-Id: <1421432534-27808-1-git-send-email-sviau@codeaurora.org>
-X-Mailer: git-send-email 1.8.2.1
+	Fri, 16 Jan 2015 13:26:02 -0500
+Message-ID: <54B957B5.8000202@gmail.com>
+Date: Fri, 16 Jan 2015 19:25:57 +0100
+From: Piotr Karbowski <piotr.karbowski@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [BUG] rename() from outside of the target dir breaks /proc exe
+ symlink.
+References: <549EEEEA.1050306@gmail.com> <20141227181412.GG22149@ZenIV.linux.org.uk> <54A329C1.9030704@gmail.com>
+In-Reply-To: <54A329C1.9030704@gmail.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In case we request a number of SMP blocks which is lower than
-the already reserved blocks, we should not try to allocate a
-negative number, but 0 blocks instead.
+On 12/30/2014 11:40 PM, Piotr Karbowski wrote:
+> Hi Al,
+>
+> On 12/27/2014 07:14 PM, Al Viro wrote:
+>> That's because it never _had_ worked.  Note that opening the damn thing
+>> will give the right file - it does not work by traversing the result of
+>> readlink(2).  readlink(2) output on those is not promised to be useful
+>> in all cases; often enough it is, but it won't work on cross-directory
+>> renames, it can't be used to tell a filename that really ends with "
+>> (deleted)"
+>> from a removed file, etc.  Moreover, it only very recently became
+>> usable for
+>> victim names with the last component longer than 40 characters if you
+>> did an
+>> overwriting rename.
+>>
+>> What are you trying to use it for?
+>
+> I am using it to track the origin of running processes. I am working
+> with continuous integration of a Linux embedded software. The tests goes
+> in Linux containers, multiple instances of binary with the same name in
+> a single container/namespace, all with cwd symlink pointing to / which
+> looks from outside virtually the same, the binaries are modified at
+> runtime by coping, modifing and replacing for another execution of the
+> same binary (using patchelf to add additional NEEDED to header or change
+> rpath or dynamic loader and such).
+>
+> In my very usecase, the exe symlink is essential.
 
-Signed-off-by: Stephane Viau <sviau@codeaurora.org>
----
- drivers/gpu/drm/msm/mdp/mdp5/mdp5_smp.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+*Friendly bump*
 
-diff --git a/drivers/gpu/drm/msm/mdp/mdp5/mdp5_smp.c b/drivers/gpu/drm/msm/mdp/mdp5/mdp5_smp.c
-index bf55188..1f795af89 100644
---- a/drivers/gpu/drm/msm/mdp/mdp5/mdp5_smp.c
-+++ b/drivers/gpu/drm/msm/mdp/mdp5/mdp5_smp.c
-@@ -119,9 +119,10 @@ static int smp_request_block(struct mdp5_smp *smp,
- 
- 	spin_lock_irqsave(&smp->state_lock, flags);
- 
--	nblks -= reserved;
--	if (reserved)
-+	if (reserved) {
-+		nblks = max(0, nblks - reserved);
- 		DBG("%d MMBs allocated (%d reserved)", nblks, reserved);
-+	}
- 
- 	avail = cnt - bitmap_weight(smp->state, cnt);
- 	if (nblks > avail) {
--- 
-Qualcomm Innovation Center, Inc.
+Can anything be done about it or is there any other mechanism that I 
+could use to get origin of the running binary?
 
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum, a Linux Foundation Collaborative Project
+-- Piotr.
 
