@@ -1,64 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752836AbbAPJf4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 04:35:56 -0500
-Received: from mout.kundenserver.de ([212.227.17.24]:62211 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752424AbbAPJfv (ORCPT
+	id S1751839AbbAPJet (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 04:34:49 -0500
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59947 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751041AbbAPJer (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 04:35:51 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Yijing Wang <wangyijing@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
-        Liviu Dudau <liviu@dudau.co.uk>, Tony Luck <tony.luck@intel.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Marc Zyngier <marc.zyngier@arm.com>, linux-pci@vger.kernel.org,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>, linux-m68k@vger.kernel.org,
-        Geert Uytterhoeven <geert@linux-m68k.org>, linux-alpha@vger.kernel.org,
-        linux-ia64@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, Yinghai Lu <yinghai@kernel.org>,
-        Jiang Liu <jiang.liu@linux.intel.com>
-Subject: Re: [PATCH 09/28] PCI: Separate pci_host_bridge creation out of pci_create_root_bus()
-Date: Fri, 16 Jan 2015 10:34:34 +0100
-Message-ID: <11966423.5s0rO0b8cE@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1421372666-12288-10-git-send-email-wangyijing@huawei.com>
-References: <1421372666-12288-1-git-send-email-wangyijing@huawei.com> <1421372666-12288-10-git-send-email-wangyijing@huawei.com>
+	Fri, 16 Jan 2015 04:34:47 -0500
+Message-ID: <54B8DB30.2070206@arm.com>
+Date: Fri, 16 Jan 2015 09:34:40 +0000
+From: =?windows-1252?Q?Andr=E9_Przywara?= <andre.przywara@arm.com>
+Organization: ARM Ltd.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:V4OsQW4fvRS1DXpV6Camn07cj1qXBzyHnT9RRoMZy1X+AXV3H5R
- eVR+tWwr8fRXOmoWS+WgoNSCoHkwxsSHhOZ3yW5exI9IlVzSiNcETnzGsnXOP077fNDJ8Um
- 1t7gtCklvc8NtCU/8YNxlTwB/tHo730EclPgo0mkohrY9ba6cq+Uu7J5S4Y6V/KvhEB+uBP
- rZK48B4yC8fKtzb2HqgCQ==
-X-UI-Out-Filterresults: notjunk:1;
+To: Eric Auger <eric.auger@linaro.org>, eric.auger@st.com,
+        christoffer.dall@linaro.org, marc.zyngier@arm.com,
+        andre.przywara@arm.com, linux-arm-kernel@lists.infradead.org,
+        kvmarm@lists.cs.columbia.edu, kvm@vger.kernel.org,
+        alex.williamson@redhat.com, agraf@suse.de, gleb@kernel.org,
+        pbonzini@redhat.com, borntraeger@de.ibm.com, cornelia.huck@de.ibm.com
+CC: will.deacon@arm.com, linux-kernel@vger.kernel.org, patches@linaro.org
+Subject: Re: [PATCH v7 1/4] KVM: arm/arm64: unset CONFIG_HAVE_KVM_IRQCHIP
+References: <1421333267-15287-1-git-send-email-eric.auger@linaro.org> <1421333267-15287-2-git-send-email-eric.auger@linaro.org>
+In-Reply-To: <1421333267-15287-2-git-send-email-eric.auger@linaro.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 16 January 2015 09:44:07 Yijing Wang wrote:
-> We want to make a generic pci_host_bridge, then we could
-> place common PCI infos like domain number in it. Ripping
-> out pci_host_bridge creation from pci_create_root_bus()
-> make code more better readability. Further more, we could
-> use the generic pci_host_bridge to hold host bridge specific
-> operations like pcibios_root_bridge_prepare().
+On 01/15/2015 02:47 PM, Eric Auger wrote:
+> CONFIG_HAVE_KVM_IRQCHIP is needed to support IRQ routing (along
+> with irq_comm.c and irqchip.c usage). This is not the case for
+> arm/arm64 currently.
 > 
-> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> This patch unsets the flag for both arm and arm64.
+> 
+> Signed-off-by: Eric Auger <eric.auger@linaro.org>
+> Acked-by: Christoffer Dall <christoffer.dall@linaro.org>
+> Acked-by: Will Deacon <will.deacon@arm.com>
+
+Given it's current usage in the kernel HAVE_KVM_IRQCHIP seems to be
+grossly misnamed these days, but that's certainly not the duty of this
+patch to solve. So:
+
+Reviewed-by: Andre Przywara <andre.przywara@arm.com>
+
+Cheers,
+Andre.
+
+> ---
+>  arch/arm/kvm/Kconfig   | 2 --
+>  arch/arm64/kvm/Kconfig | 1 -
+>  2 files changed, 3 deletions(-)
+> 
+> diff --git a/arch/arm/kvm/Kconfig b/arch/arm/kvm/Kconfig
+> index 466bd29..9f581b1 100644
+> --- a/arch/arm/kvm/Kconfig
+> +++ b/arch/arm/kvm/Kconfig
+> @@ -55,7 +55,6 @@ config KVM_ARM_MAX_VCPUS
+>  config KVM_ARM_VGIC
+>  	bool "KVM support for Virtual GIC"
+>  	depends on KVM_ARM_HOST && OF
+> -	select HAVE_KVM_IRQCHIP
+>  	default y
+>  	---help---
+>  	  Adds support for a hardware assisted, in-kernel GIC emulation.
+> @@ -63,7 +62,6 @@ config KVM_ARM_VGIC
+>  config KVM_ARM_TIMER
+>  	bool "KVM support for Architected Timers"
+>  	depends on KVM_ARM_VGIC && ARM_ARCH_TIMER
+> -	select HAVE_KVM_IRQCHIP
+>  	default y
+>  	---help---
+>  	  Adds support for the Architected Timers in virtual machines
+> diff --git a/arch/arm64/kvm/Kconfig b/arch/arm64/kvm/Kconfig
+> index 8ba85e9..279e1a0 100644
+> --- a/arch/arm64/kvm/Kconfig
+> +++ b/arch/arm64/kvm/Kconfig
+> @@ -50,7 +50,6 @@ config KVM_ARM_MAX_VCPUS
+>  config KVM_ARM_VGIC
+>  	bool
+>  	depends on KVM_ARM_HOST && OF
+> -	select HAVE_KVM_IRQCHIP
+>  	---help---
+>  	  Adds support for a hardware assisted, in-kernel GIC emulation.
+>  
 > 
 
-I assume this patch is doing the right thing, but the description
-above doesn't really tell me enough to be sure.
-
-This is supposed to be transparent to the callers, right? If
-so, please mention it explicitly in the text.
-
-Also you don't explain what the list of host bridges is
-used for. Maybe you can split this out into a separate patch
-so you have one patch that just moves code from one file
-to the other but no functional changes, and a second patch
-that exports pci_create_host_bridge and introduces the list,
-with an explanation of what it is used for.
-
-	Arnd
