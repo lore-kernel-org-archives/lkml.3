@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932791AbbAPDyd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 22:54:33 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:41174 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754189AbbAPDre (ORCPT
+	id S1756172AbbAPDsS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 22:48:18 -0500
+Received: from [119.145.14.66] ([119.145.14.66]:23231 "EHLO
+	szxga03-in.huawei.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S932612AbbAPDsI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 22:47:34 -0500
+	Thu, 15 Jan 2015 22:48:08 -0500
 From: Yijing Wang <wangyijing@huawei.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
 CC: Jiang Liu <jiang.liu@linux.intel.com>, <linux-pci@vger.kernel.org>,
@@ -20,10 +20,11 @@ CC: Jiang Liu <jiang.liu@linux.intel.com>, <linux-pci@vger.kernel.org>,
         <linux-m68k@vger.kernel.org>, Liviu Dudau <liviu@dudau.co.uk>,
         "Arnd Bergmann" <arnd@arndb.de>,
         Geert Uytterhoeven <geert@linux-m68k.org>,
-        "Yijing Wang" <wangyijing@huawei.com>
-Subject: [PATCH 19/28] PCI: Introduce pci_bus_child_max_busnr()
-Date: Fri, 16 Jan 2015 09:44:17 +0800
-Message-ID: <1421372666-12288-20-git-send-email-wangyijing@huawei.com>
+        "Yijing Wang" <wangyijing@huawei.com>,
+        Yijing Wang <wangyijing0307@gmail.com>
+Subject: [PATCH 20/28] PCI/Parisc: Use pci_scan_root_bus() for simplicity
+Date: Fri, 16 Jan 2015 09:44:18 +0800
+Message-ID: <1421372666-12288-21-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1421372666-12288-1-git-send-email-wangyijing@huawei.com>
 References: <1421372666-12288-1-git-send-email-wangyijing@huawei.com>
@@ -31,119 +32,95 @@ MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.175.100.166]
 X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020203.54B889D2.0010,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 66d4ad5119b43c78fade524658957320
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sometimes, we need to know the highest reserved
-busnr for children bus. Because parent's
-bus->busn_res could have padding in it.
-This function return the max child busnr as
-pci_scan_child_bus().
+From: Yijing Wang <wangyijing0307@gmail.com>
+
+Now pci_bus_add_devices() has been ripped out
+from pci_scan_root_bus(), we could use pci_scan_root_bus()
+instead of pci_create_root_bus() + pci_scan_child_bus()
+for simplicity.
 
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 ---
- drivers/pci/hotplug/acpiphp_glue.c |   29 +----------------------------
- drivers/pci/pci.c                  |   25 ++++++++++++++++++++++++-
- include/linux/pci.h                |    2 +-
- 3 files changed, 26 insertions(+), 30 deletions(-)
+ drivers/parisc/dino.c    |   11 ++---------
+ drivers/parisc/lba_pci.c |    6 ++----
+ 2 files changed, 4 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/pci/hotplug/acpiphp_glue.c b/drivers/pci/hotplug/acpiphp_glue.c
-index bcb90e4..84f2584 100644
---- a/drivers/pci/hotplug/acpiphp_glue.c
-+++ b/drivers/pci/hotplug/acpiphp_glue.c
-@@ -397,33 +397,6 @@ static void cleanup_bridge(struct acpiphp_bridge *bridge)
- 	acpi_unlock_hp_context();
- }
+diff --git a/drivers/parisc/dino.c b/drivers/parisc/dino.c
+index a0580af..e5ee339 100644
+--- a/drivers/parisc/dino.c
++++ b/drivers/parisc/dino.c
+@@ -977,15 +977,11 @@ static int __init dino_probe(struct parisc_device *dev)
+ 	if (dino_dev->hba.gmmio_space.flags)
+ 		pci_add_resource(&resources, &dino_dev->hba.gmmio_space);
  
--/**
-- * acpiphp_max_busnr - return the highest reserved bus number under the given bus.
-- * @bus: bus to start search with
-- */
--static unsigned char acpiphp_max_busnr(struct pci_bus *bus)
--{
--	struct pci_bus *tmp;
--	unsigned char max, n;
--
--	/*
--	 * pci_bus_max_busnr will return the highest
--	 * reserved busnr for all these children.
--	 * that is equivalent to the bus->subordinate
--	 * value.  We don't want to use the parent's
--	 * bus->subordinate value because it could have
--	 * padding in it.
--	 */
--	max = bus->busn_res.start;
--
--	list_for_each_entry(tmp, &bus->children, node) {
--		n = pci_bus_max_busnr(tmp);
--		if (n > max)
--			max = n;
--	}
--	return max;
--}
--
- static void acpiphp_set_acpi_region(struct acpiphp_slot *slot)
- {
- 	struct acpiphp_func *func;
-@@ -489,7 +462,7 @@ static void enable_slot(struct acpiphp_slot *slot)
- 	LIST_HEAD(add_list);
- 
- 	acpiphp_rescan_slot(slot);
--	max = acpiphp_max_busnr(bus);
-+	max = pci_bus_child_max_busnr(bus);
- 	for (pass = 0; pass < 2; pass++) {
- 		list_for_each_entry(dev, &bus->devices, bus_list) {
- 			if (PCI_SLOT(dev->devfn) != slot->device)
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 8b35e8e..a05f406 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -121,7 +121,30 @@ unsigned char pci_bus_max_busnr(struct pci_bus *bus)
+-	dino_dev->hba.bus_num.start = dino_current_bus;
+-	dino_dev->hba.bus_num.end = 255;
+-	dino_dev->hba.bus_num.flags = IORESOURCE_BUS;
+-	pci_add_resource(&resources, &dino_dev->hba.bus_num);
+ 	/*
+ 	** It's not used to avoid chicken/egg problems
+ 	** with configuration accessor functions.
+ 	*/
+-	dino_dev->hba.hba_bus = bus = pci_create_root_bus(&dev->dev,
++	dino_dev->hba.hba_bus = bus = pci_scan_root_bus(&dev->dev,
+ 			 dino_current_bus, &dino_cfg_ops, NULL, &resources);
+ 	if (!bus) {
+ 		printk(KERN_ERR "ERROR: failed to scan PCI bus on %s (duplicate bus number %d?)\n",
+@@ -996,13 +992,10 @@ static int __init dino_probe(struct parisc_device *dev)
+ 		return 0;
  	}
- 	return max;
- }
--EXPORT_SYMBOL_GPL(pci_bus_max_busnr);
-+
-+unsigned char pci_bus_child_max_busnr(struct pci_bus *bus)
-+{
-+	struct pci_bus *tmp;
-+	unsigned char max, n;
-+
-+	/*
-+	 * pci_bus_max_busnr will return the highest
-+	 * reserved busnr for all these children.
-+	 * that is equivalent to the bus->subordinate
-+	 * value.  We don't want to use the parent's
-+	 * bus->subordinate value because it could have
-+	 * padding in it.
-+	 */
-+	max = bus->busn_res.start;
-+
-+	list_for_each_entry(tmp, &bus->children, node) {
-+		n = pci_bus_max_busnr(tmp);
-+		if (n > max)
-+			max = n;
-+	}
-+	return max;
-+}
-+EXPORT_SYMBOL_GPL(pci_bus_child_max_busnr);
  
- #ifdef CONFIG_HAS_IOMEM
- void __iomem *pci_ioremap_bar(struct pci_dev *pdev, int bar)
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index da3a071..2970a84 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -1176,7 +1176,7 @@ int pci_scan_bridge(struct pci_bus *bus, struct pci_dev *dev, int max,
- void pci_walk_bus(struct pci_bus *top, int (*cb)(struct pci_dev *, void *),
- 		  void *userdata);
- int pci_cfg_space_size(struct pci_dev *dev);
--unsigned char pci_bus_max_busnr(struct pci_bus *bus);
-+unsigned char pci_bus_child_max_busnr(struct pci_bus *bus);
- void pci_setup_bridge(struct pci_bus *bus);
- resource_size_t pcibios_window_alignment(struct pci_bus *bus,
- 					 unsigned long type);
+-	max = pci_scan_child_bus(bus);
+-	pci_bus_update_busn_res_end(bus, max);
+-
+ 	/* This code *depends* on scanning being single threaded
+ 	 * if it isn't, this global bus number count will fail
+ 	 */
+-	dino_current_bus = max + 1;
++	dino_current_bus = bus->busn_res.end + 1;
+ 	pci_bus_assign_resources(bus);
+ 	pci_bus_add_devices(bus);
+ 	return 0;
+diff --git a/drivers/parisc/lba_pci.c b/drivers/parisc/lba_pci.c
+index 37e71ff..9e3a016 100644
+--- a/drivers/parisc/lba_pci.c
++++ b/drivers/parisc/lba_pci.c
+@@ -1564,15 +1564,13 @@ lba_driver_probe(struct parisc_device *dev)
+ 
+ 	dev->dev.platform_data = lba_dev;
+ 	lba_bus = lba_dev->hba.hba_bus =
+-		pci_create_root_bus(&dev->dev, lba_dev->hba.bus_num.start,
++		pci_scan_root_bus(&dev->dev, lba_dev->hba.bus_num.start,
+ 				    cfg_ops, NULL, &resources);
+ 	if (!lba_bus) {
+ 		pci_free_resource_list(&resources);
+ 		return 0;
+ 	}
+ 
+-	max = pci_scan_child_bus(lba_bus);
+-
+ 	/* This is in lieu of calling pci_assign_unassigned_resources() */
+ 	if (is_pdc_pat()) {
+ 		/* assign resources to un-initialized devices */
+@@ -1600,7 +1598,7 @@ lba_driver_probe(struct parisc_device *dev)
+ 		lba_dev->flags |= LBA_FLAG_SKIP_PROBE;
+ 	}
+ 
+-	lba_next_bus = max + 1;
++	lba_next_bus = pci_bus_child_max_busnr(lba_bus) + 1;
+ 	pci_bus_add_devices(lba_bus);
+ 
+ 	/* Whew! Finally done! Tell services we got this one covered. */
 -- 
 1.7.1
 
