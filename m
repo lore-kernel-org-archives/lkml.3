@@ -1,72 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753513AbbAPKqt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 05:46:49 -0500
-Received: from casper.infradead.org ([85.118.1.10]:43863 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751041AbbAPKqr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 05:46:47 -0500
-Date: Fri, 16 Jan 2015 11:46:44 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jiri Olsa <jolsa@redhat.com>
-Cc: Vince Weaver <vince@deater.net>, Ingo Molnar <mingo@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: perf fuzzer crash [PATCH] perf: Get group events reference
- before moving the group
-Message-ID: <20150116104644.GW23965@worktop.programming.kicks-ass.net>
-References: <20150116075746.GB2658@krava.brq.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150116075746.GB2658@krava.brq.redhat.com>
-User-Agent: Mutt/1.5.22.1 (2013-10-16)
+	id S1754415AbbAPK4U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 05:56:20 -0500
+Received: from www.osadl.org ([62.245.132.105]:48656 "EHLO www.osadl.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753844AbbAPK4T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 05:56:19 -0500
+From: Nicholas Mc Guire <der.herr@hofr.at>
+To: Philipp Zabel <p.zabel@pengutronix.de>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Lucas Stach <l.stach@pengutronix.de>,
+        Emil Renner Berthing <kernel@esmil.dk>,
+        Antoine Schweitzer-Chaput <antoine@schweitzer-chaput.fr>,
+        linux-kernel@vger.kernel.org, Nicholas Mc Guire <der.herr@hofr.at>
+Subject: [PATCH] gpu: ipu-v3: wait_for_completion_timeout does not return negativ status
+Date: Fri, 16 Jan 2015 11:48:02 +0100
+Message-Id: <1421405282-8951-1-git-send-email-der.herr@hofr.at>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 16, 2015 at 08:57:46AM +0100, Jiri Olsa wrote:
-> We need to make sure, that no event in the group lost
-> the last reference and gets removed from the context
-> during the group move in perf syscall.
-> 
-> This could happen if the child exits and calls put_event
-> on the parent event which got already closed, like in
-> following scenario:
-> 
->   - T1 creates software event E1
->   - T1 creates other software events as group with E1 as group leader
->   - T1 forks T2
->   - T2 has cloned E1 event that holds reference on E1
->   - T1 closes event within E1 group (say E3), the event stays alive
->     due to the T2 reference
->   - following happens concurently:
->     A) T1 creates hardware event E2 with groupleader E1
->     B) T2 exits
-> 
-> ad A) T1 triggers the E1 group move into hardware context:
->         mutex_lock(E1->ctx)
->           - remove E1 group only from the E1->ctx context, leaving
->             the goup links untouched
->         mutex_unlock(E1->ctx)
->         mutex_lock(E2->ctx)
->           - install E1 group into E2->ctx using the E1 group links
->         mutex_unlock(E2->ctx)
-> 
-> ad B) put_event(E3) is called and E3 is removed from E1->ctx
->       completely, including group links
-> 
-> If 'A' and 'B' races, we will get unbalanced refcounts,
-> because of removed group links.
-> 
-> Adding get_group/put_group functions to handle the event
-> ref's increase/decrease for the whole group.
+Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+---
 
-Its a bandaid at best :/ The problem is (again) that we changes
-event->ctx without any kind of serialization.
+Patch is against 3.19.0-rc3 -next-20150109
 
-The issue came up before:
+This patch was compiletested with imx_v6_v7_defconfig + 
+CONFIG_RESET_CONTROLLER=y, CONFIG_IMX_IPUV3_CORE=m
 
-  https://lkml.org/lkml/2014/9/5/397
+ drivers/gpu/ipu-v3/ipu-dc.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-and I've not been able to come up with anything much saner.
+diff --git a/drivers/gpu/ipu-v3/ipu-dc.c b/drivers/gpu/ipu-v3/ipu-dc.c
+index 2326c75..0ffa659 100644
+--- a/drivers/gpu/ipu-v3/ipu-dc.c
++++ b/drivers/gpu/ipu-v3/ipu-dc.c
+@@ -282,7 +282,7 @@ void ipu_dc_disable_channel(struct ipu_dc *dc)
+ 	enable_irq(irq);
+ 	ret = wait_for_completion_timeout(&priv->comp, msecs_to_jiffies(50));
+ 	disable_irq(irq);
+-	if (ret <= 0) {
++	if (ret == 0) {
+ 		dev_warn(priv->dev, "DC stop timeout after 50 ms\n");
+ 
+ 		val = readl(dc->base + DC_WR_CH_CONF);
+-- 
+1.7.10.4
+
