@@ -1,79 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887AbbAPLdU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 06:33:20 -0500
-Received: from www.linutronix.de ([62.245.132.108]:33419 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751637AbbAPLdS (ORCPT
+	id S1754830AbbAPLfF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 06:35:05 -0500
+Received: from lb1-smtp-cloud2.xs4all.net ([194.109.24.21]:47130 "EHLO
+	lb1-smtp-cloud2.xs4all.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752597AbbAPLfD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 06:33:18 -0500
-Message-ID: <54B8F6F5.1030204@linutronix.de>
-Date: Fri, 16 Jan 2015 12:33:09 +0100
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+	Fri, 16 Jan 2015 06:35:03 -0500
+Message-ID: <54B8F752.3050600@xs4all.nl>
+Date: Fri, 16 Jan 2015 12:34:42 +0100
+From: Hans Verkuil <hverkuil@xs4all.nl>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
 MIME-Version: 1.0
-To: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
-        monstr@monstr.eu, Olof Johansson <olof@lixom.net>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-serial@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
-        Peter Hurley <peter@hurleysoftware.com>,
-        Alan Cox <alan@linux.intel.com>, Tony Lindgren <tony@atomide.com>,
-        Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 2/2] tty: serial: 8250_core: Check that port->line is
- >=0
-References: <3293c93689f5d8c684133a9d9952411a201609dc.1421333585.git.michal.simek@xilinx.com> <d3a26f5ecd44e1415f213e6ee7f33005c1b23f4a.1421333585.git.michal.simek@xilinx.com> <54B8D32E.5000805@linutronix.de> <df5d7450de9f4382b1cb43791f69e25c@BL2FFO11FD013.protection.gbl> <54B8ED20.60308@linutronix.de> <3ecb2012312c4af5bbd395391aa82921@BY2FFO11FD005.protection.gbl>
-In-Reply-To: <3ecb2012312c4af5bbd395391aa82921@BY2FFO11FD005.protection.gbl>
+To: Hao Liang <hliang1025@gmail.com>, scott.jiang.linux@gmail.com,
+        mchehab@osg.samsung.com
+CC: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hao.Liang@analog.com, adi-buildroot-devel@lists.sourceforge.net
+Subject: Re: [PATCH] BLACKFIN MEDIA DRIVER: rewrite the blackfin style of
+ read/write into common style
+References: <1421218653-16165-1-git-send-email-hliang1025@gmail.com>
+In-Reply-To: <1421218653-16165-1-git-send-email-hliang1025@gmail.com>
 Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2015 12:02 PM, Michal Simek wrote:
->>> Origin patch looks good to me but this checking will be good to add.
->>> Are you using of_serial.c because I didn't find any of_alias_get_id call
->>> for 8250?
->>
->> I'm using of_alias_get_id() in 8250_omap.c which made it into
->> v3.19-rc1. I think the change you mention made it one release earlier.
+Hi Hao,
+
+Why would you do this? read/writew() is AFAICT not the same as bfin_read/write16
+(defined in arch/blackfin/include/asm/def_LPBlackfin.h). And all other blackfin
+sources I've seen all use bfin_read/write.
+
+So unless there is a good reason for this change I am not going to accept this.
+
+Regards,
+
+	Hans
+
+On 01/14/2015 07:57 AM, Hao Liang wrote:
+> Signed-off-by: Hao Liang <hliang1025@gmail.com>
+> ---
+>  drivers/media/platform/blackfin/ppi.c |   72 ++++++++++++++++-----------------
+>  1 file changed, 35 insertions(+), 37 deletions(-)
 > 
-> I see
-> serial: of-serial: fetch line number from DT
-> commit 1bd8324535ec1ff44aef55c0e40b9e7d56b310fb
+> diff --git a/drivers/media/platform/blackfin/ppi.c b/drivers/media/platform/blackfin/ppi.c
+> index cff63e5..de4b5c7 100644
+> --- a/drivers/media/platform/blackfin/ppi.c
+> +++ b/drivers/media/platform/blackfin/ppi.c
+> @@ -20,6 +20,7 @@
+>  #include <linux/module.h>
+>  #include <linux/slab.h>
+>  #include <linux/platform_device.h>
+> +#include <linux/io.h>
+>  
+>  #include <asm/bfin_ppi.h>
+>  #include <asm/blackfin.h>
+> @@ -59,10 +60,10 @@ static irqreturn_t ppi_irq_err(int irq, void *dev_id)
+>  		/* register on bf561 is cleared when read 
+>  		 * others are W1C
+>  		 */
+> -		status = bfin_read16(&reg->status);
+> +		status = readw(&reg->status);
+>  		if (status & 0x3000)
+>  			ppi->err = true;
+> -		bfin_write16(&reg->status, 0xff00);
+> +		writew(0xff00, &reg->status);
+>  		break;
+>  	}
+>  	case PPI_TYPE_EPPI:
+> @@ -70,10 +71,10 @@ static irqreturn_t ppi_irq_err(int irq, void *dev_id)
+>  		struct bfin_eppi_regs *reg = info->base;
+>  		unsigned short status;
+>  
+> -		status = bfin_read16(&reg->status);
+> +		status = readw(&reg->status);
+>  		if (status & 0x2)
+>  			ppi->err = true;
+> -		bfin_write16(&reg->status, 0xffff);
+> +		writew(0xffff, &reg->status);
+>  		break;
+>  	}
+>  	case PPI_TYPE_EPPI3:
+> @@ -81,10 +82,10 @@ static irqreturn_t ppi_irq_err(int irq, void *dev_id)
+>  		struct bfin_eppi3_regs *reg = info->base;
+>  		unsigned long stat;
+>  
+> -		stat = bfin_read32(&reg->stat);
+> +		stat = readl(&reg->stat);
+>  		if (stat & 0x2)
+>  			ppi->err = true;
+> -		bfin_write32(&reg->stat, 0xc0ff);
+> +		writel(0xc0ff, &reg->stat);
+>  		break;
+>  	}
+>  	default:
+> @@ -139,26 +140,25 @@ static int ppi_start(struct ppi_if *ppi)
+>  	case PPI_TYPE_PPI:
+>  	{
+>  		struct bfin_ppi_regs *reg = info->base;
+> -		bfin_write16(&reg->control, ppi->ppi_control);
+> +		writew(ppi->ppi_control, &reg->control);
+>  		break;
+>  	}
+>  	case PPI_TYPE_EPPI:
+>  	{
+>  		struct bfin_eppi_regs *reg = info->base;
+> -		bfin_write32(&reg->control, ppi->ppi_control);
+> +		writel(ppi->ppi_control, &reg->control);
+>  		break;
+>  	}
+>  	case PPI_TYPE_EPPI3:
+>  	{
+>  		struct bfin_eppi3_regs *reg = info->base;
+> -		bfin_write32(&reg->ctl, ppi->ppi_control);
+> +		writel(ppi->ppi_control, &reg->ctl);
+>  		break;
+>  	}
+>  	default:
+>  		return -EINVAL;
+>  	}
+>  
+> -	SSYNC();
+>  	return 0;
+>  }
+>  
+> @@ -172,19 +172,19 @@ static int ppi_stop(struct ppi_if *ppi)
+>  	case PPI_TYPE_PPI:
+>  	{
+>  		struct bfin_ppi_regs *reg = info->base;
+> -		bfin_write16(&reg->control, ppi->ppi_control);
+> +		writew(ppi->ppi_control, &reg->control);
+>  		break;
+>  	}
+>  	case PPI_TYPE_EPPI:
+>  	{
+>  		struct bfin_eppi_regs *reg = info->base;
+> -		bfin_write32(&reg->control, ppi->ppi_control);
+> +		writel(ppi->ppi_control, &reg->control);
+>  		break;
+>  	}
+>  	case PPI_TYPE_EPPI3:
+>  	{
+>  		struct bfin_eppi3_regs *reg = info->base;
+> -		bfin_write32(&reg->ctl, ppi->ppi_control);
+> +		writel(ppi->ppi_control, &reg->ctl);
+>  		break;
+>  	}
+>  	default:
+> @@ -195,7 +195,6 @@ static int ppi_stop(struct ppi_if *ppi)
+>  	clear_dma_irqstat(info->dma_ch);
+>  	disable_dma(info->dma_ch);
+>  
+> -	SSYNC();
+>  	return 0;
+>  }
+>  
+> @@ -242,9 +241,9 @@ static int ppi_set_params(struct ppi_if *ppi, struct ppi_params *params)
+>  		if (params->ppi_control & DMA32)
+>  			dma32 = 1;
+>  
+> -		bfin_write16(&reg->control, ppi->ppi_control);
+> -		bfin_write16(&reg->count, samples_per_line - 1);
+> -		bfin_write16(&reg->frame, params->frame);
+> +		writew(ppi->ppi_control, &reg->control);
+> +		writew(samples_per_line - 1, &reg->count);
+> +		writew(params->frame, &reg->frame);
+>  		break;
+>  	}
+>  	case PPI_TYPE_EPPI:
+> @@ -255,13 +254,13 @@ static int ppi_set_params(struct ppi_if *ppi, struct ppi_params *params)
+>  			|| (params->ppi_control & 0x38000) > DLEN_16)
+>  			dma32 = 1;
+>  
+> -		bfin_write32(&reg->control, ppi->ppi_control);
+> -		bfin_write16(&reg->line, samples_per_line);
+> -		bfin_write16(&reg->frame, params->frame);
+> -		bfin_write16(&reg->hdelay, hdelay);
+> -		bfin_write16(&reg->vdelay, params->vdelay);
+> -		bfin_write16(&reg->hcount, hcount);
+> -		bfin_write16(&reg->vcount, params->height);
+> +		writel(ppi->ppi_control, &reg->control);
+> +		writew(samples_per_line, &reg->line);
+> +		writew(params->frame, &reg->frame);
+> +		writew(hdelay, &reg->hdelay);
+> +		writew(params->vdelay, &reg->vdelay);
+> +		writew(hcount, &reg->hcount);
+> +		writew(params->height, &reg->vcount);
+>  		break;
+>  	}
+>  	case PPI_TYPE_EPPI3:
+> @@ -272,15 +271,15 @@ static int ppi_set_params(struct ppi_if *ppi, struct ppi_params *params)
+>  			|| (params->ppi_control & 0x70000) > DLEN_16)
+>  			dma32 = 1;
+>  
+> -		bfin_write32(&reg->ctl, ppi->ppi_control);
+> -		bfin_write32(&reg->line, samples_per_line);
+> -		bfin_write32(&reg->frame, params->frame);
+> -		bfin_write32(&reg->hdly, hdelay);
+> -		bfin_write32(&reg->vdly, params->vdelay);
+> -		bfin_write32(&reg->hcnt, hcount);
+> -		bfin_write32(&reg->vcnt, params->height);
+> +		writel(ppi->ppi_control, &reg->ctl);
+> +		writel(samples_per_line, &reg->line);
+> +		writel(params->frame, &reg->frame);
+> +		writel(hdelay, &reg->hdly);
+> +		writel(params->vdelay, &reg->vdly);
+> +		writel(hcount, &reg->hcnt);
+> +		writel(params->height, &reg->vcnt);
+>  		if (params->int_mask)
+> -			bfin_write32(&reg->imsk, params->int_mask & 0xFF);
+> +			writel(params->int_mask & 0xFF, &reg->imsk);
+>  		if (ppi->ppi_control & PORT_DIR) {
+>  			u32 hsync_width, vsync_width, vsync_period;
+>  
+> @@ -288,10 +287,10 @@ static int ppi_set_params(struct ppi_if *ppi, struct ppi_params *params)
+>  					* params->bpp / params->dlen;
+>  			vsync_width = params->vsync * samples_per_line;
+>  			vsync_period = samples_per_line * params->frame;
+> -			bfin_write32(&reg->fs1_wlhb, hsync_width);
+> -			bfin_write32(&reg->fs1_paspl, samples_per_line);
+> -			bfin_write32(&reg->fs2_wlvb, vsync_width);
+> -			bfin_write32(&reg->fs2_palpf, vsync_period);
+> +			writel(hsync_width, &reg->fs1_wlhb);
+> +			writel(samples_per_line, &reg->fs1_paspl);
+> +			writel(vsync_width, &reg->fs2_wlvb);
+> +			writel(vsync_period, &reg->fs2_palpf);
+>  		}
+>  		break;
+>  	}
+> @@ -313,7 +312,6 @@ static int ppi_set_params(struct ppi_if *ppi, struct ppi_params *params)
+>  	set_dma_y_count(info->dma_ch, params->height);
+>  	set_dma_config(info->dma_ch, dma_config);
+>  
+> -	SSYNC();
+>  	return 0;
+>  }
+>  
 > 
-> but it was reverted
-> 
-> Revert "serial: of-serial: fetch line number from DT"
-> commit e4c787dac21e50ac9ef53fac91b9182d4fede465
-> 
-> Olof: what was the reason for that breakage?
-> Is it missing alias list on Tegra?
-> which caused that port->line number is bogus.
 
-I doubt it, because a missing alias would return -1 and would not be
-considered for port->line.
-
-I think it is more what happens if you use the second UART and the
-primary is unused (as in not probed). With this change the console will
-be on ttyS1 - without it it remains on ttyS0. The former is what we
-wanted.
-
-And it seems they use for "nvidia,tegra[23]0-hsuart" the serial-tegra.c
-driver which makes use of of_alias_get_id() but the of_serial() one
-which is used by nvidia,tegra20-uart() does not. And since this change
-does not notify anyone during upgrade but removes the console everyone
-gets a little grumpy*.
-
-* and I've been looking for a smooth solution for the ttyOx -> ttySx
-  change in OMAP just to avoid people complaining and risking a revert
-  :)
-
-> Thanks,
-> Michal
-
-Sebastian
