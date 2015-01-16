@@ -1,102 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754153AbbAPNrt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 08:47:49 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:54491 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751314AbbAPNrs (ORCPT
+	id S1756113AbbAPNtD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 08:49:03 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:40181 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754653AbbAPNtA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 08:47:48 -0500
+	Fri, 16 Jan 2015 08:49:00 -0500
 MIME-Version: 1.0
-In-Reply-To: <1421352518-27220-1-git-send-email-sasha.levin@oracle.com>
-References: <1421352518-27220-1-git-send-email-sasha.levin@oracle.com>
-Date: Fri, 16 Jan 2015 21:47:45 +0800
-Message-ID: <CACVXFVPNo1j2SjzvCyUtuoebSHY-be=kN8P_OC8CzTNbeLKPjg@mail.gmail.com>
-Subject: Re: [PATCH] blk-mq: free hctx only when the kobject is released
-From: Ming Lei <ming.lei@canonical.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
+In-Reply-To: <54B8D4D0.3000904@samsung.com>
+References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
+ <1420816989-1808-4-git-send-email-j.anaszewski@samsung.com>
+ <CAL_JsqJKEp6TWaRhJimg3AWBh+MCCr2Bk9+1o7orLLdp5E+n-g@mail.gmail.com>
+ <54B38682.5080605@samsung.com> <CAL_Jsq+UaA41DvawdOMmOib=Fi0hC-nBdKV-+P4DFo+MoOy-bQ@mail.gmail.com>
+ <54B3F1EF.4060506@samsung.com> <CAL_JsqKpJtUG0G6g1GOuSVpc31oe-dp3qdrKJUE0upG-xRDFhA@mail.gmail.com>
+ <54B4DA81.7060900@samsung.com> <CAL_JsqLYxB5hzLAWXpU=uncM5DEMZU78mP673H9oSSNB-cgcYQ@mail.gmail.com>
+ <54B8D4D0.3000904@samsung.com>
+From: Rob Herring <robherring2@gmail.com>
+Date: Fri, 16 Jan 2015 07:48:38 -0600
+Message-ID: <CAL_Jsq+EFWzs1HP1tVt6P=p=HZn2AtSPjp55YrmMQi_mE+kNfQ@mail.gmail.com>
+Subject: Re: [PATCH/RFC v10 03/19] DT: leds: Add led-sources property
+To: Jacek Anaszewski <j.anaszewski@samsung.com>
+Cc: linux-leds@vger.kernel.org,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Pavel Machek <pavel@ucw.cz>, Bryan Wu <cooloney@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>, sakari.ailus@iki.fi,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 16, 2015 at 4:08 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
-> When releasing hctx, we do not know that the embedded kobject has been
-> released until it's ->release() callback has been called. It is unsafe
-> to unconditionally free the underlying memory until the ->release()
-> callback has been called since it may cause use-after-free bugs.
+On Fri, Jan 16, 2015 at 3:07 AM, Jacek Anaszewski
+<j.anaszewski@samsung.com> wrote:
+> On 01/15/2015 03:24 PM, Rob Herring wrote:
+>>
+>> On Tue, Jan 13, 2015 at 2:42 AM, Jacek Anaszewski
+>> <j.anaszewski@samsung.com> wrote:
+>>>
+>>> On 01/12/2015 05:55 PM, Rob Herring wrote:
+>>>>
+>>>>
+>>>> Adding Mark B and Liam...
+>>>>
+>>>> On Mon, Jan 12, 2015 at 10:10 AM, Jacek Anaszewski
+>>>> <j.anaszewski@samsung.com> wrote:
+>>>>>
+>>>>>
+>>>>> On 01/12/2015 02:52 PM, Rob Herring wrote:
+>>>>>>
+>>>>>>
+>>>>>>
+>>>>>> On Mon, Jan 12, 2015 at 2:32 AM, Jacek Anaszewski
+>>>>>> <j.anaszewski@samsung.com> wrote:
+>>>>>>>
+>>>>>>>
+>>>>>>> On 01/09/2015 07:33 PM, Rob Herring wrote:
+>>>>>>>>
+>>>>>>>>
+>>>>>>>> On Fri, Jan 9, 2015 at 9:22 AM, Jacek Anaszewski
+>>>>>>>> <j.anaszewski@samsung.com> wrote:
+>>>>>>>>>
+>>>>>>>>>
+>>>>>>>>> Add a property for defining the device outputs the LED
+>>>>>>>>> represented by the DT child node is connected to.
+>>>>
+>>>>
+>>>>
+>>>> [...]
+>>>>
+>>>>>>>>> b/Documentation/devicetree/bindings/leds/common.txt
+>>>>>>>>> index a2c3f7a..29295bf 100644
+>>>>>>>>> --- a/Documentation/devicetree/bindings/leds/common.txt
+>>>>>>>>> +++ b/Documentation/devicetree/bindings/leds/common.txt
+>>>>>>>>> @@ -1,6 +1,10 @@
+>>>>>>>>>      Common leds properties.
+>>>>>>>>>
+>>>>>>>>>      Optional properties for child nodes:
+>>>>>>>>> +- led-sources : Array of bits signifying the LED current regulator
+>>>>>>>>> outputs the
+>>>>>>>>> +               LED represented by the child node is connected to
+>>>>>>>>> (1
+>>>>>>>>> -
+>>>>>>>>> the LED
+>>>>>>>>> +               is connected to the output, 0 - the LED isn't
+>>>>>>>>> connected
+>>>>>>>>> to the
+>>>>>>>>> +               output).
+>>>>>>>>
+>>>>>>>>
+>>>>>>>>
+>>>>>>>>
+>>>>>>>>
+>>>>>>>> Sorry, I just don't understand this.
+>>>>>>>
+>>>>>>>
+>>>>>>>
+>>>>>>>
+>>>>>>>
+>>>>>>> In some Flash LED devices one LED can be connected to one or more
+>>>>>>> electric current outputs, which allows for multiplying the maximum
+>>>>>>> current allowed for the LED. Each sub-LED is represented by a child
+>>>>>>> node in the DT binding of the Flash LED device and it needs to
+>>>>>>> declare
+>>>>>>> which outputs it is connected to. In the example below the
+>>>>>>> led-sources
+>>>>>>> property is a two element array, which means that the flash LED
+>>>>>>> device
+>>>>>>> has two current outputs, and the bits signify if the LED is connected
+>>>>>>> to the output.
+>>>>>>
+>>>>>>
+>>>>>>
+>>>>>>
+>>>>>> Sounds like a regulator for which we already have bindings for and we
+>>>>>> have a driver for regulator based LEDs (but no binding for it).
+>>>>>
+>>>>>
+>>>>>
+>>>>>
+>>>>> Do you think of drivers/leds/leds-regulator.c driver? This driver just
+>>>>> allows for registering an arbitrary regulator device as a LED subsystem
+>>>>> device.
+>>>>>
+>>>>> There are however devices that don't fall into this category, i.e. they
+>>>>> have many outputs, that can be connected to a single LED or to many
+>>>>> LEDs
+>>>>> and the driver has to know what is the actual arrangement.
+>>>>
+>>>>
+>>>>
+>>>> We may need to extend the regulator binding slightly and allow for
+>>>> multiple phandles on a supply property, but wouldn't something like
+>>>> this work:
+>>>>
+>>>> led-supply = <&led-reg0>, <&led-reg1>, <&led-reg2>, <&led-reg3>;
+>>>>
+>>>> The shared source is already supported by the regulator binding.
+>>>
+>>>
+>>>
+>>> I think that we shouldn't split the LED devices into power supply
+>>> providers and consumers as in case of generic regulators. From this
+>>> point of view a LED device current output is a provider and a discrete
+>>> LED element is a consumer. In this approach each discrete LED element
+>>> should have a related driver which is not how LED devices are being
+>>> handled in the LED subsystem, where there is a single binding for a LED
+>>> device and there is a single driver for it which creates separate LED
+>>> class devices for each LED connected to the LED device output. Each
+>>> discrete LED is represented by a child node in the LED device binding.
+>>>
+>>> I am aware that it may be tempting to treat LED devices as common
+>>> regulators, but they have their specific features which gave a
+>>> reason for introducing LED class for them. Besides, there is already
+>>> drivers/leds/leds-regulator.c driver for LED devices which support only
+>>> turning on/off and setting brightness level.
+>>>
+>>> In your proposition a separate regulator provider binding would have
+>>> to be created for each current output and a separate binding for
+>>> each discrete LED connected to the LED device. It would create
+>>> unnecessary noise in a dts file.
+>>>
+>>> Moreover, using regulator binding implies that we want to treat it
+>>> as a sheer power supply for our device (which would be a discrete LED
+>>> element in this case), whereas LED devices provide more features like
+>>> blinking pattern and for flash LED devices - flash timeout, external
+>>> strobe and flash faults.
+>>
+>>
+>> Okay, fair enough. Please include some of this explanation in the
+>> binding description.
+>>
+>> I do still have some concerns about led-sources and whether it can
+>> support other scenarios. It is very much tied to the parent node. Are
+>> there any cases where we don't want the LEDs to be sub nodes? Perhaps
+>> the LEDs are on a separate daughterboard from the driver/supply and we
+>> can have different drivers. It's a stretch maybe.
 >
-> In practice, this patch fixes a use-after-free when destroying devices
-> (encountered with loop devices, in my case).
-
-Indeed, it is one bug since driver core can access kobject any time
-before it is released.
-
-ctx kobjects has the same problem, and that is a bit tricky
-because all ctx share one single per-cpu variable which is associated
-with request_queue, one idea is to free q->queue_ctx in release
-handler of q->mq_kobj, and let ctx kobject hold ref counter of
-q->mq_kobj. Could you fix ctx kobject lifetime in this patch too?
-
 >
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> ---
->  block/blk-mq-sysfs.c |   11 ++++++++++-
->  block/blk-mq.c       |    4 +---
->  2 files changed, 11 insertions(+), 4 deletions(-)
+> I think it is. Such arrangements would introduce problems also to the
+> other existing bindings. Probably not only LED subsystem related ones.
 >
-> diff --git a/block/blk-mq-sysfs.c b/block/blk-mq-sysfs.c
-> index 1630a20..83d4bd8 100644
-> --- a/block/blk-mq-sysfs.c
-> +++ b/block/blk-mq-sysfs.c
-> @@ -17,6 +17,15 @@ static void blk_mq_sysfs_release(struct kobject *kobj)
->  {
->  }
+>> Or are there cases
+>> where you need more information than just the connection?
 >
-> +static void blk_mq_hw_sysfs_release(struct kobject *kobj)
-> +{
-> +       struct blk_mq_hw_ctx *hctx;
+>
+> Currently I can't think of any.
+>
+> Modified rough proposal of the description:
+>
+>
+> -Optional properties for child nodes:
+> +LED and flash LED devices provide the same basic functionality as
+> +current regulators, but extended with LED and flash LED specific +features
+> like blinking patterns, flash timeout, flash faults and
+> +external flash strobe mode.
 > +
-> +       hctx = container_of(kobj, struct blk_mq_hw_ctx, kobj);
+> +Many LED devices expose more than one current output that can be
+> +connected to one or more discrete LED component. Since the arrangement
+> +of connections can influence the way of the LED device initialization,
+> +the LED components have to be tightly coupled with the LED device
+> +binding. They are represented in the form of its child nodes.
 > +
-> +       kfree(hctx);
-> +}
-> +
->  struct blk_mq_ctx_sysfs_entry {
->         struct attribute attr;
->         ssize_t (*show)(struct blk_mq_ctx *, char *);
-> @@ -324,7 +333,7 @@ static struct kobj_type blk_mq_ctx_ktype = {
->  static struct kobj_type blk_mq_hw_ktype = {
->         .sysfs_ops      = &blk_mq_hw_sysfs_ops,
->         .default_attrs  = default_hw_ctx_attrs,
-> -       .release        = blk_mq_sysfs_release,
-> +       .release        = blk_mq_hw_sysfs_release,
->  };
->
->  static void blk_mq_unregister_hctx(struct blk_mq_hw_ctx *hctx)
-> diff --git a/block/blk-mq.c b/block/blk-mq.c
-> index 04caf9f..7701eb2 100644
-> --- a/block/blk-mq.c
-> +++ b/block/blk-mq.c
-> @@ -1593,10 +1593,8 @@ static void blk_mq_free_hw_queues(struct request_queue *q,
->         struct blk_mq_hw_ctx *hctx;
->         unsigned int i;
->
-> -       queue_for_each_hw_ctx(q, hctx, i) {
-> +       queue_for_each_hw_ctx(q, hctx, i)
->                 free_cpumask_var(hctx->cpumask);
-> -               kfree(hctx);
-> -       }
->  }
->
->  static int blk_mq_init_hctx(struct request_queue *q,
-> --
-> 1.7.10.4
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> +Optional properties for child nodes (if a LED device exposes only one
+> +current output the properties can be placed directly in the LED device
+> +node):
+
+Why special case 1 output case? Just always require a child node.
+
+> +- led-sources : Array of connection states between all LED current
+> +               sources exposed by the device and this LED (1 - this LED
+> +               is connected to the current output with index N, 0 -
+> +               this LED isn't connected to the current output with
+> +               index N); the mapping of N-th element of the array to
+> +               the physical device output should be defined in the LED
+> +               driver binding.
+
+I think this should be a list of connected output numbers rather than
+effectively a bitmask.
+
+You may want to add something like led-output-cnt or led-driver-cnt in
+the parent so you know the max list size.
+
+Rob
