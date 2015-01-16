@@ -1,83 +1,215 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756429AbbAPPZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 10:25:56 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:36197 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753408AbbAPPZz (ORCPT
+	id S1756476AbbAPP0o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 10:26:44 -0500
+Received: from ironport2-out.teksavvy.com ([206.248.154.181]:52163 "EHLO
+	ironport2-out.teksavvy.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754220AbbAPP0m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 10:25:55 -0500
-Date: Fri, 16 Jan 2015 15:25:41 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Tom Lendacky <thomas.lendacky@amd.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        linaro-acpi <linaro-acpi@lists.linaro.org>,
-        Yijing Wang <wangyijing@huawei.com>, Rob Herring <robh@kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Timur Tabi <timur@codeaurora.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, "jcm@redhat.com" <jcm@redhat.com>,
-        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v7 00/17] Introduce ACPI for ARM64 based on ACPI 5.1
-Message-ID: <20150116152541.GG13634@e104818-lin.cambridge.arm.com>
-References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org>
- <54B9240A.7060003@amd.com>
- <20150116145545.GR7091@arm.com>
- <2198633.UpIyI82Yon@wuerfel>
+	Fri, 16 Jan 2015 10:26:42 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArkGAOwQflRFpamy/2dsb2JhbABbFoJOI1JZgwWwVAEBAQEBAQaTBx0Mhh0CgSQXAQEBAQEBfIQCAQEBAQIBAQIgFR4iARALGAICBRYLAgIJAwIBAgEPBxEeEwEFAgEBiCcDCQkBDL95kEsNhXsBAQEBAQEBAwEBAQEBAQEbgSuFCIgFHIE5EQFQB4J1gVMFiwGKHoN5b4MrOoJ+gxmGXwOESoF4hBlRAYEMgToBAQE
+X-IPAS-Result: ArkGAOwQflRFpamy/2dsb2JhbABbFoJOI1JZgwWwVAEBAQEBAQaTBx0Mhh0CgSQXAQEBAQEBfIQCAQEBAQIBAQIgFR4iARALGAICBRYLAgIJAwIBAgEPBxEeEwEFAgEBiCcDCQkBDL95kEsNhXsBAQEBAQEBAwEBAQEBAQEbgSuFCIgFHIE5EQFQB4J1gVMFiwGKHoN5b4MrOoJ+gxmGXwOESoF4hBlRAYEMgToBAQE
+X-IronPort-AV: E=Sophos;i="5.07,502,1413259200"; 
+   d="scan'208";a="107984791"
+Message-ID: <54B92DAB.2020909@voxpopuli.im>
+Date: Fri, 16 Jan 2015 10:26:35 -0500
+From: Alexandre Montplaisir <alexmonthy@voxpopuli.im>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <2198633.UpIyI82Yon@wuerfel>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: linux-kernel@vger.kernel.org
+CC: Jiri Olsa <jolsa@kernel.org>, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        David Ahern <dsahern@gmail.com>,
+        Dominique Toupin <dominique.toupin@ericsson.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jeremie Galarneau <jgalar@efficios.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Namhyung Kim <namhyung@gmail.com>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Tom Zanussi <tzanussi@gmail.com>
+Subject: Re: [PATCHv3 0/8] perf tools: Add perf data CTF conversion
+References: <1421338556-20498-1-git-send-email-jolsa@kernel.org> <54B829D6.10003@voxpopuli.im>
+In-Reply-To: <54B829D6.10003@voxpopuli.im>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 16, 2015 at 03:14:13PM +0000, Arnd Bergmann wrote:
-> On Friday 16 January 2015 14:55:45 Will Deacon wrote:
-> > On Fri, Jan 16, 2015 at 02:45:30PM +0000, Tom Lendacky wrote:
-> > > I have tested ACPI-enablement patches for the amd-xgbe/amd-xgbe-phy
-> > > drivers that I'm about to submit upstream with the V7 patch series
-> > > on the AMD Seattle server platform. There does not appear to be support
-> > > for the _CCA attribute in this patch series. The amd-xgbe driver will
-> > > setup the device domain and cache attributes based on the presence of
-> > > this attribute, but it requires the arch support to assign the proper
-> > > DMA operations in order for it to all work correctly.
-> > > 
-> > > Overriding the _CCA attribute in the driver, I was able to successfully
-> > > test the driver and this patch series.
-> > 
-> > Hopefully this will all be addressed when the IORT parts of ACPI have
-> > settled down (the current proposal allows for these attributes to be
-> > described as well as their interaction with things like IOMMUs).
-> > 
-> > In the meantime, are you falling back to non-coherent DMA? If so, what
-> > attributes have you settled on? We need to be really careful not to
-> > corrupt data during cache invalidatation when mapping a non-coherent
-> > buffer for the CPU.
-> 
-> I think in case of ACPI we should use cache-coherent as the default,
-> as this is what all servers will use for DMA masters.
+On 2015-01-15 03:57 PM, Alexandre Montplaisir wrote:
+> Hi,
+>
+> I'm a developer for the Trace Compass tool (see links [3], [4] in 
+> Jiri's email). I can confirm that the generated CTF can be read 
+> correctly by our tool, which enables many views and analyses (Control 
+> Flow, CPU usage view, etc.) that were previously only available for 
+> LTTng traces.
+>
+> Some of our users also use perf extensively, and are looking forward 
+> to this feature! Is there any ETA as to when this will be merged 
+> upstream?
+>
+> Thanks,
+> Alexandre
 
-Last time I heard in some call, it was agreed that _CCA properties
-should always be present and Linux should not make any assumption (there
-is no safe assumption here). While better options may appear in ACPI,
-_CCA is what we currently have.
+That was a bit too fast, it seems there are issues with very recent 
+versions of Babeltrace. You can follow the discussion at
+http://lists.linuxfoundation.org/pipermail/diamon-discuss/2015-January/000007.html
 
--- 
-Catalin
+Cheers,
+Alex
+
+>
+>
+> On 01/15/2015 11:15 AM, Jiri Olsa wrote:
+>> hi,
+>> this is follow up on original RFC patchset:
+>>    http://marc.info/?t=140732735600004&r=1&w=2
+>>
+>> Basically we are adding 'perf data convert' command to
+>> allow conversion of perf data file into CTF [1] data.
+>>
+>> v3 changes:
+>>    - rebased to latest acme's perf/core
+>>
+>> v2 changes:
+>>    - addressed comments from Namhyung
+>>    - rebased to latest acme's perf/core
+>>
+>> Changes from RFC:
+>>    - able to generate CTF data, that are possible to be displayed under
+>>      tracecompas GUI [3], please check several screenshots in here [4]
+>>    - storing CTF data streams per cpu
+>>    - several cleanups
+>>
+>> Examples:
+>> - Catch default perf data (cycles event):
+>>    $ perf record ls
+>>    [ perf record: Woken up 1 times to write data ]
+>>    [ perf record: Captured and wrote 0.012 MB perf.data (~546 samples) ]
+>>
+>> - To display converted CTF data run [2]:
+>>    $ babeltrace ./ctf-data/
+>>    [03:19:13.962125533] (+?.?????????) cycles: { }, { ip = 
+>> 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 1 }
+>>    [03:19:13.962130001] (+0.000004468) cycles: { }, { ip = 
+>> 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 1 }
+>>    [03:19:13.962131936] (+0.000001935) cycles: { }, { ip = 
+>> 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 8 }
+>>    [03:19:13.962133732] (+0.000001796) cycles: { }, { ip = 
+>> 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 114 }
+>>    [03:19:13.962135557] (+0.000001825) cycles: { }, { ip = 
+>> 0xFFFFFFFF8105443A, tid = 20714, pid = 20714, period = 2087 }
+>>    [03:19:13.962137627] (+0.000002070) cycles: { }, { ip = 
+>> 0xFFFFFFFF81361938, tid = 20714, pid = 20714, period = 37582 }
+>>    [03:19:13.962161091] (+0.000023464) cycles: { }, { ip = 
+>> 0xFFFFFFFF8124218F, tid = 20714, pid = 20714, period = 600246 }
+>>    [03:19:13.962517569] (+0.000356478) cycles: { }, { ip = 
+>> 0xFFFFFFFF811A75DB, tid = 20714, pid = 20714, period = 1325731 }
+>>    [03:19:13.969518008] (+0.007000439) cycles: { }, { ip = 
+>> 0x34080917B2, tid = 20714, pid = 20714, period = 1144298 }
+>>
+>> - To get some nice output in tracecompas GUI [3], please capture sched:*
+>>    and syscall tracepoints like:
+>>    # perf record -e 'sched:*,raw_syscalls:*' -a
+>>    ^C[ perf record: Woken up 0 times to write data ]
+>>    [ perf record: Captured and wrote 412.347 MB perf.data (~18015721 
+>> samples) ]
+>>
+>> - To convert perf data file run:
+>>    # perf data convert --to-ctf=./ctf
+>>    [ perf data convert: Converted 'perf.data' into CTF data './ctf' ]
+>>    [ perf data convert: Converted and wrote 408.421 MB (3964792 
+>> samples) ]
+>>
+>> - To display converted CTF data run [2]:
+>>    # babeltrace ./ctf-data/
+>>    [23:32:20.165354855] (+0.000000507) sched:sched_wakeup: { cpu_id = 
+>> 0 }, { perf_ip = 0xFFFFFFFF810BCA72, perf_tid = 0, perf_pid = 0, 
+>> perf_id = 462554, perf_period = 1, common_type = 265, ...
+>>    [23:32:20.165359078] (+0.000001181) sched:sched_switch: { cpu_id = 
+>> 0 }, { perf_ip = 0xFFFFFFFF8172A110, perf_tid = 0, perf_pid = 0, 
+>> perf_id = 462562, perf_period = 1, common_type = 263, ...
+>>    [23:32:20.165364686] (+0.000000328) sched:sched_stat_runtime: { 
+>> cpu_id = 0 }, { perf_ip = 0xFFFFFFFF810C8AE5, perf_tid = 5326, 
+>> perf_pid = 5326, perf_id = 462610, perf_period = 11380, ...
+>>    [23:32:20.165366067] (+0.000001205) sched:sched_switch: { cpu_id = 
+>> 0 }, { perf_ip = 0xFFFFFFFF8172A110, perf_tid = 5326, perf_pid = 
+>> 5326, perf_id = 462562, perf_period = 1, common_type ...
+>>    [23:32:20.165723312] (+0.000001479) sched:sched_stat_runtime: { 
+>> cpu_id = 2 }, { perf_ip = 0xFFFFFFFF810C8AE5, perf_tid = 11821, 
+>> perf_pid = 11821, perf_id = 462612, perf_period = 1000265, ...
+>>    [23:32:20.065282391] (+?.?????????) raw_syscalls:sys_enter: { 
+>> cpu_id = 1 }, { perf_ip = 0xFFFFFFFF810230AF, perf_tid = 26155, 
+>> perf_pid = 26155, perf_id = 462635, perf_period = 1, ...
+>>    [23:32:20.065286422] (+0.000004031) raw_syscalls:sys_exit: { 
+>> cpu_id = 1 }, { perf_ip = 0xFFFFFFFF810231D8, perf_tid = 26155, 
+>> perf_pid = 26155, perf_id = 462639, perf_period = 1, ...
+>>
+>> - Or run tracecompass and open the CTF data ;-)
+>>
+>> Changes are also reachable in here:
+>>    git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
+>>    perf/core_ctf_convert
+>>
+>> thanks,
+>> jirka
+>>
+>> [1] Common Trace Format - http://www.efficios.com/ctf
+>> [2] babeltrace - http://www.efficios.com/babeltrace
+>> [3] Trace compass - 
+>> http://projects.eclipse.org/projects/tools.tracecompass
+>> [4] screenshots - http://people.redhat.com/~jolsa/tracecompass-perf/
+>>
+>>
+>> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+>> Cc: David Ahern <dsahern@gmail.com>
+>> Cc: Dominique Toupin <dominique.toupin@ericsson.com>
+>> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+>> Cc: Jeremie Galarneau <jgalar@efficios.com>
+>> Cc: Jiri Olsa <jolsa@kernel.org>
+>> Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+>> Cc: Namhyung Kim <namhyung@gmail.com>
+>> Cc: Paul Mackerras <paulus@samba.org>
+>> Cc: Peter Zijlstra <peterz@infradead.org>
+>> Cc: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+>> Cc: Tom Zanussi <tzanussi@gmail.com>
+>> ---
+>> Jiri Olsa (5):
+>>        perf tools: Add feature check for libbabeltrace
+>>        perf tools: Add new perf data command
+>>        perf data: Add perf data to CTF conversion support
+>>        perf data: Enable stream flush within processing
+>>        perf data: Add support for setting ordered_events queue size
+>>
+>> Sebastian Andrzej Siewior (3):
+>>        perf data: Add a 'perf' prefix to the generic fields
+>>        perf data: Add tracepoint events fields CTF conversion support
+>>        perf data: Switch to multiple cpu stream files
+>>
+>>   tools/perf/Documentation/perf-data.txt                |   40 ++
+>>   tools/perf/Documentation/perf.txt                     |    7 +-
+>>   tools/perf/Makefile.perf                              |    9 +-
+>>   tools/perf/builtin-data.c                             |  119 ++++++
+>>   tools/perf/builtin.h                                  |    1 +
+>>   tools/perf/command-list.txt                           |    1 +
+>>   tools/perf/config/Makefile                            |   24 ++
+>>   tools/perf/config/feature-checks/Makefile             |    8 +-
+>>   tools/perf/config/feature-checks/test-all.c           |    5 +
+>>   tools/perf/config/feature-checks/test-libbabeltrace.c |    8 +
+>>   tools/perf/perf.c                                     |    1 +
+>>   tools/perf/util/data-convert-bt.c                     | 1057 
+>> +++++++++++++++++++++++++++++++++++++++++++++++++
+>>   tools/perf/util/data-convert-bt.h                     |    8 +
+>>   tools/perf/util/debug.c                               |    2 +
+>>   tools/perf/util/debug.h                               |    1 +
+>>   15 files changed, 1287 insertions(+), 4 deletions(-)
+>>   create mode 100644 tools/perf/Documentation/perf-data.txt
+>>   create mode 100644 tools/perf/builtin-data.c
+>>   create mode 100644 
+>> tools/perf/config/feature-checks/test-libbabeltrace.c
+>>   create mode 100644 tools/perf/util/data-convert-bt.c
+>>   create mode 100644 tools/perf/util/data-convert-bt.h
+>
+
