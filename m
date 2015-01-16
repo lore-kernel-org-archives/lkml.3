@@ -1,89 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754327AbbAPKWM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 05:22:12 -0500
-Received: from www.linutronix.de ([62.245.132.108]:33010 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754291AbbAPKWJ (ORCPT
+	id S1753776AbbAPKXd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 05:23:33 -0500
+Received: from mailgw01.mediatek.com ([210.61.82.183]:49762 "EHLO
+	mailgw01.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751513AbbAPKXa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 05:22:09 -0500
-Date: Fri, 16 Jan 2015 11:21:49 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Joerg Roedel <joro@8bytes.org>,
-        x86@kernel.org, Tony Luck <tony.luck@intel.com>,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [patch 00/23] x86: Cleanup apic/ioapic/x2apic setup code
-In-Reply-To: <54B8DBC1.6080205@linux.intel.com>
-Message-ID: <alpine.DEB.2.11.1501161120560.5526@nanos>
-References: <20150115210458.625399149@linutronix.de> <54B8DBC1.6080205@linux.intel.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Fri, 16 Jan 2015 05:23:30 -0500
+X-Listener-Flag: 11101
+Subject: Re: [PATCH v3 2/3] dt-bindings: Add pinctrl bindings for
+ mt65xx/mt81xx.
+From: Yingjoe Chen <yingjoe.chen@mediatek.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Sascha Hauer <s.hauer@pengutronix.de>, Rob Herring <robh+dt@kernel.org>,
+        Hongzhou Yang <hongzhou.yang@mediatek.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Sascha Hauer <kernel@pengutronix.de>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Vladimir Murzin <vladimir.murzin@arm.com>,
+        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        huang eddie <eddie.huang@mediatek.com>, <dandan.he@mediatek.com>,
+        <alan.cheng@mediatek.com>, <toby.liu@mediatek.com>
+In-Reply-To: <CACRpkdYRrs2=gNM1XGSh1cSo5Pvx6iNLt4HjL6gdTqGPWYSRDw@mail.gmail.com>
+References: <1415709535-31515-1-git-send-email-hongzhou.yang@mediatek.com>
+	 <1415709535-31515-3-git-send-email-hongzhou.yang@mediatek.com>
+	 <CACRpkdYSe_BH_qiHma2BA+c2otEi3wd0TBXy83t8vwrNL+3U2g@mail.gmail.com>
+	 <20141127101830.GP30369@pengutronix.de>
+	 <CACRpkdbMdJT6y-NL36RgQe0-CAFAVGqKiwY9+yFcwA7JDLmA+Q@mail.gmail.com>
+	 <20141202135527.GM30369@pengutronix.de>
+	 <CACRpkdZeRd+j7d_iRphruHRg8p3XjqWK8_HQzLH2PTZ_pqOrYA@mail.gmail.com>
+	 <20150112122200.GC18908@pengutronix.de>
+	 <CACRpkdYXrdiRWMV8YpxrSLe2rLEV-ZnX7=36w21zGquh==6WgA@mail.gmail.com>
+	 <20150113161614.GF23940@pengutronix.de>
+	 <CACRpkdYRrs2=gNM1XGSh1cSo5Pvx6iNLt4HjL6gdTqGPWYSRDw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 16 Jan 2015 18:23:25 +0800
+Message-ID: <1421403805.11671.58.camel@mtksdaap41>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-MTK: N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Jan 2015, Jiang Liu wrote:
-> On 2015/1/16 5:22, Thomas Gleixner wrote:
-> > While reviewing Jiangs interrupt remapping patch set, I had several
-> > serious WTF moments when trying to understand what that code is doing.
-> > 
-> > The main issues I've seen are:
-> > 
-> >     - Blindly copy and pasted code
-> > 
-> >     - Random places which initialize bits and pieces
-> > 
-> >     - Code which got mindlessly expanded with duct tape and glue
-> >       without considering readability and maintainability.
-> > 
-> >     - Missing inline stubs which result in a ifdef nightmare
-> > 
-> >     - Superflous inline stubs to artificially avoid sensible ifdefs
-> > 
-> > The deeper I looked the more I started to get grumpy about that maze
-> > and finally sat down and cleaned it up seriously. One bug I fixed on
-> > the way (surprise, surprise) got folded into Jiangs series which is
-> > now in tip/x86/apic. The other one is not that crucial and cant be
-> > fixed in the previous code without adding more mess.
-> > 
-> > The following patch series applies on top of tip/x86/apic. It cleans
-> > up and consolidates the apic/ioapic/x2apic setup functions.
-> > 
-> > Please give it a proper review and testing.
-> Hi Thomas,
+On Fri, 2015-01-16 at 10:53 +0100, Linus Walleij wrote:
+> On Tue, Jan 13, 2015 at 5:16 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> > On Tue, Jan 13, 2015 at 11:05:22AM +0100, Linus Walleij wrote:
 > 
-> Have done following test matrix:
-> 1) Hardware X2apic capable: yes, preenabled by BIOS: no,
->    Kernel: x2apic capable smp
-> 1.1) boot: ok
-> 1.2) boot with "nox2apic": ok
-> 1.3) boot with "nointremap": ok with CPU in physical flat mode
+> >> > You often talk about ambiguities. Could you give an example what
+> >> > ambiguities you mean?
+> >>
+> >> What happened was this pins = ; arguments were sometimes
+> >> strings and sometimes integers, that becomes strange to handle
+> >> in code, ambiguous.
+> >
+> > I see. I like naming it 'pinmux' because that's what it is: pins and
+> > mux settings. A plain 'pinno' suggests that it contains only pin mubers,
+> > without mux setting. How about 'pin-no-mux'? We also could add an
+> > explicit "pins-are-numbered" property instead of distinguishing this
+> > by property names.
 > 
-> 2) Hardware X2apic capable: yes, preenabled by BIOS: no,
->    Kernel: x2apic incapable smp
-> 2.1) boot: ok
+> I kind of like this "pins-are-numbered" thing.
 > 
-> 3) Hardware X2apic capable: yes, preenabled by BIOS: yes
-> 3.1) x2apic capable kernel: ok
-> 3.2) x2apic incapable kernel: hang with a blank screen(panic)
->    Kernel: x2apic capable smp
-> 
-> 4) Hardware X2apic capable: no
-> 4.1) boot x2apic capable smp kernel: ok
-> 4.2) boot x2apic incapable up kernel: ok
-> 4.3) boot xen domain0 with x2apic capable smp kernel: ok
-> 
-> 5) x86_32, UP, IO_APIC disabled
-> 5.1) boot: panic with following call stack:
-> do_ono_initcall()->APIC_init_uniprocessor()->setup_local_APIC().
-> I can't capture the full log message due to lack of serial console.
-> It seems we have trouble with:
-> early_initcall(APIC_init_uniprocessor);
+> The other property for the pin, whether pinmux or pin-no-mux or
+> pin-num-and-mux etc is no such big deal, as long as it's
+> consistent and documented with the generic bindings.
 
-Hmm, worked here. Lemme find some other machine.
+Hi Linus,
+
+To make sure I understand it correct, you think something like this is
+OK?
+
+	pinctrl@01c20800 {
+		compatible = "mediatek,mt8135-pinctrl";
+[...]
+		pins-are-numbered;
+
+		i2c0_pins_a: i2c0@0 {
+			pins1 {
+				pins = <MT8135_PIN_100_SDA0__FUNC_SDA0>,
+					<MT8135_PIN_101_SCL0__FUNC_SCL0>;
+				bias-disable;
+			};
+		};
+[....]
+	}
+
+Joe.C
+
 
