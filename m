@@ -1,90 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751839AbbAPJet (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 04:34:49 -0500
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59947 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751041AbbAPJer (ORCPT
+	id S1752580AbbAPJfQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 04:35:16 -0500
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:56071 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750965AbbAPJfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 04:34:47 -0500
-Message-ID: <54B8DB30.2070206@arm.com>
-Date: Fri, 16 Jan 2015 09:34:40 +0000
-From: =?windows-1252?Q?Andr=E9_Przywara?= <andre.przywara@arm.com>
-Organization: ARM Ltd.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Eric Auger <eric.auger@linaro.org>, eric.auger@st.com,
-        christoffer.dall@linaro.org, marc.zyngier@arm.com,
-        andre.przywara@arm.com, linux-arm-kernel@lists.infradead.org,
-        kvmarm@lists.cs.columbia.edu, kvm@vger.kernel.org,
-        alex.williamson@redhat.com, agraf@suse.de, gleb@kernel.org,
-        pbonzini@redhat.com, borntraeger@de.ibm.com, cornelia.huck@de.ibm.com
-CC: will.deacon@arm.com, linux-kernel@vger.kernel.org, patches@linaro.org
-Subject: Re: [PATCH v7 1/4] KVM: arm/arm64: unset CONFIG_HAVE_KVM_IRQCHIP
-References: <1421333267-15287-1-git-send-email-eric.auger@linaro.org> <1421333267-15287-2-git-send-email-eric.auger@linaro.org>
-In-Reply-To: <1421333267-15287-2-git-send-email-eric.auger@linaro.org>
-Content-Type: text/plain; charset=windows-1252
+	Fri, 16 Jan 2015 04:35:08 -0500
+Message-ID: <1421400905.15194.15.camel@x220>
+Subject: [PATCH] [linux-next] s390: Dump check for CONFIG_ZFCPDUMP
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Valentin Rothberg <valentinrothberg@gmail.com>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Fri, 16 Jan 2015 10:35:05 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 16 Jan 2015 09:35:06.0184 (UTC) FILETIME=[B6359480:01D0316F]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/15/2015 02:47 PM, Eric Auger wrote:
-> CONFIG_HAVE_KVM_IRQCHIP is needed to support IRQ routing (along
-> with irq_comm.c and irqchip.c usage). This is not the case for
-> arm/arm64 currently.
-> 
-> This patch unsets the flag for both arm and arm64.
-> 
-> Signed-off-by: Eric Auger <eric.auger@linaro.org>
-> Acked-by: Christoffer Dall <christoffer.dall@linaro.org>
-> Acked-by: Will Deacon <will.deacon@arm.com>
+Commit 725908110a1f ("s390: add SMT support") added a check for
+CONFIG_ZFCPDUMP. But the Kconfig symbol ZFCPDUMP was removed in v3.16
+through commit bf28a5970de3 ("s390/dump: Remove CONFIG_ZFCPDUMP"). So
+this check will always evaluate to false. No one noticed probably
+because the code also checks for CONFIG_CRASH_DUMP which "also enables
+s390 zfcpdump".
 
-Given it's current usage in the kernel HAVE_KVM_IRQCHIP seems to be
-grossly misnamed these days, but that's certainly not the duty of this
-patch to solve. So:
+Dump the unneeded check.
 
-Reviewed-by: Andre Przywara <andre.przywara@arm.com>
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+This trivial issue popped up in next-20150116. If s390 commits can still
+be altered after they've hit linux-next this might just as well be
+folded into commit 725908110a1f ("s390: add SMT support").
 
-Cheers,
-Andre.
+Entirely untested!
 
-> ---
->  arch/arm/kvm/Kconfig   | 2 --
->  arch/arm64/kvm/Kconfig | 1 -
->  2 files changed, 3 deletions(-)
-> 
-> diff --git a/arch/arm/kvm/Kconfig b/arch/arm/kvm/Kconfig
-> index 466bd29..9f581b1 100644
-> --- a/arch/arm/kvm/Kconfig
-> +++ b/arch/arm/kvm/Kconfig
-> @@ -55,7 +55,6 @@ config KVM_ARM_MAX_VCPUS
->  config KVM_ARM_VGIC
->  	bool "KVM support for Virtual GIC"
->  	depends on KVM_ARM_HOST && OF
-> -	select HAVE_KVM_IRQCHIP
->  	default y
->  	---help---
->  	  Adds support for a hardware assisted, in-kernel GIC emulation.
-> @@ -63,7 +62,6 @@ config KVM_ARM_VGIC
->  config KVM_ARM_TIMER
->  	bool "KVM support for Architected Timers"
->  	depends on KVM_ARM_VGIC && ARM_ARCH_TIMER
-> -	select HAVE_KVM_IRQCHIP
->  	default y
->  	---help---
->  	  Adds support for the Architected Timers in virtual machines
-> diff --git a/arch/arm64/kvm/Kconfig b/arch/arm64/kvm/Kconfig
-> index 8ba85e9..279e1a0 100644
-> --- a/arch/arm64/kvm/Kconfig
-> +++ b/arch/arm64/kvm/Kconfig
-> @@ -50,7 +50,6 @@ config KVM_ARM_MAX_VCPUS
->  config KVM_ARM_VGIC
->  	bool
->  	depends on KVM_ARM_HOST && OF
-> -	select HAVE_KVM_IRQCHIP
->  	---help---
->  	  Adds support for a hardware assisted, in-kernel GIC emulation.
->  
-> 
+ arch/s390/kernel/smp.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/s390/kernel/smp.c b/arch/s390/kernel/smp.c
+index 370ff3a092a3..fd4a9308f95f 100644
+--- a/arch/s390/kernel/smp.c
++++ b/arch/s390/kernel/smp.c
+@@ -762,7 +762,7 @@ static void __init smp_detect_cpus(void)
+ 			panic("Could not find boot CPU type");
+ 	}
+ 
+-#if defined(CONFIG_ZFCPDUMP) || defined(CONFIG_CRASH_DUMP)
++#if defined(CONFIG_CRASH_DUMP)
+ 	/* Collect CPU state of previous system */
+ 	smp_store_cpu_states(info);
+ #endif
+-- 
+1.9.3
 
