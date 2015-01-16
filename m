@@ -1,514 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756714AbbAPQsy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 11:48:54 -0500
-Received: from smtprelay0223.hostedemail.com ([216.40.44.223]:48820 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756616AbbAPQsv (ORCPT
+	id S1756758AbbAPQt0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 11:49:26 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:36361 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756616AbbAPQtV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 11:48:51 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::::::::::,RULES_HIT:4:41:69:355:379:541:599:800:960:968:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1593:1594:1605:1730:1747:1777:1792:2198:2199:2393:2553:2559:2562:2898:2904:3138:3139:3140:3141:3142:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4250:4321:4470:4605:5007:6117:6119:6261:7875:7903:7974:8531:8660:9010:10004:10848:10967:11026:11232:11473:11658:11914:12043:12291:12294:12295:12296:12438:12517:12519:12555:12683:12740:13148:13161:13229:13230:14096:14097:21067:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: boy90_86ed1fa5cb136
-X-Filterd-Recvd-Size: 17706
-Date: Fri, 16 Jan 2015 11:48:46 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Steven Rostedt <srostedt@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, kvm@vger.kernel.org,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [patch -rt 1/2] KVM: use simple waitqueue for vcpu->wq
-Message-ID: <20150116114846.4e7b718d@gandalf.local.home>
-In-Reply-To: <20150114171459.593877145@redhat.com>
-References: <20150114171251.882318257@redhat.com>
-	<20150114171459.593877145@redhat.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Fri, 16 Jan 2015 11:49:21 -0500
+Date: Fri, 16 Jan 2015 16:48:59 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Will Deacon <Will.Deacon@arm.com>
+Cc: Suzuki Poulose <Suzuki.Poulose@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "leo.yan@linaro.org" <leo.yan@linaro.org>,
+        "yexl@marvell.com" <yexl@marvell.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/3] arm64: Consolidate hotplug notifier for instruction
+ emulation
+Message-ID: <20150116164859.GE32155@leverpostej>
+References: <1421325366-13263-1-git-send-email-suzuki.poulose@arm.com>
+ <1421325366-13263-3-git-send-email-suzuki.poulose@arm.com>
+ <20150116160730.GY7091@arm.com>
+ <20150116163254.GC32155@leverpostej>
+ <20150116164433.GB7091@arm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150116164433.GB7091@arm.com>
+Thread-Topic: [PATCH 2/3] arm64: Consolidate hotplug notifier for instruction
+ emulation
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+acceptlanguage: en-GB, en-US
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Jan 2015 11:40:45 -0500
-Marcelo Tosatti <mtosatti@redhat.com> wrote:
-
-> The problem:
+On Fri, Jan 16, 2015 at 04:44:34PM +0000, Will Deacon wrote:
+> On Fri, Jan 16, 2015 at 04:32:54PM +0000, Mark Rutland wrote:
+> > On Fri, Jan 16, 2015 at 04:07:30PM +0000, Will Deacon wrote:
+> > > On Thu, Jan 15, 2015 at 12:36:05PM +0000, Suzuki K. Poulose wrote:
+> > > > From: "Suzuki K. Poulose" <suzuki.poulose@arm.com>
+> > > > 
+> > > > As of now each insn_emulation has a cpu hotplug notifier that
+> > > > enables/disables the CPU feature bit for the functionality. This
+> > > > patch re-arranges the code, such that there is only one notifier
+> > > > that runs through the list of registered emulation hooks and runs
+> > > > their corresponding set_hw_mode.
+> > > > 
+> > > > We do nothing when a CPU is dying as we will set the appropriate bits
+> > > > as it comes back online based on the state of the hooks.
+> > > > 
+> > > > Signed-off-by: Suzuki K. Poulose <suzuki.poulose@arm.com>
+> > > > Signed-off-by: Mark Rutland <mark.rutland@arm.com>
+> > > > ---
+> > > >  Documentation/arm64/legacy_instructions.txt |    4 +
+> > > >  arch/arm64/include/asm/cpufeature.h         |    2 +
+> > > >  arch/arm64/kernel/armv8_deprecated.c        |  113 +++++++++++++++------------
+> > > >  3 files changed, 69 insertions(+), 50 deletions(-)
+> > > > 
+> > > > diff --git a/Documentation/arm64/legacy_instructions.txt b/Documentation/arm64/legacy_instructions.txt
+> > > > index a3b3da2..0a4dc26 100644
+> > > > --- a/Documentation/arm64/legacy_instructions.txt
+> > > > +++ b/Documentation/arm64/legacy_instructions.txt
+> > > > @@ -27,6 +27,10 @@ behaviours and the corresponding values of the sysctl nodes -
+> > > >    instructions. Using hardware execution generally provides better
+> > > >    performance, but at the loss of ability to gather runtime statistics
+> > > >    about the use of the deprecated instructions.
+> > > > +  Note: Emulation of a deprecated instruction depends on the availability
+> > > > +  of the feature on all the active CPUs. In case of CPU hotplug, if a new
+> > > > +  CPU doesn't support a feature, it could result in the abortion of the
+> > > > +  hotplug operation.
+> > > 
+> > > Is this true? We should be able to *emulate* the instruction anywhere,
+> > > it's the "hardware execution" setting that needs CPU support.
+> > 
+> > Not quite. In ARMv8 there are three possible cases for endianness
+> > support:
+> > 
+> > (a) Mixed endian support at all levels
+> >     ID_AA64MMFR0_EL1.BigEnd == 0b0001
+> >     ID_AA64MMFR0_EL1.BigEnd0 == 0b0000 (RES0, invalid)
+> > 
+> > (b) Mixed endian support at EL0 only
+> >     ID_AA64MMFR0_EL1.BigEnd == 0b0000
+> >     ID_AA64MMFR0_EL1.BigEnd0 == 0b0001
+> >     SCTLR_EL1.EE has a fixed value
+> > 
+> > (c) No mixed endian support at all
+> >     ID_AA64MMFR0_EL1.BigEnd == 0b0000
+> >     ID_AA64MMFR0_EL1.BigEnd0 == 0b0000
+> >     SCTLR_EL1.{EE,E0E} have fixed values
+> > 
+> > We can emulate setend in cases (a) and (b), but not (c) unless we
+> > trapped every single instruction that could access memory. I don't think
+> > that's feasible.
+> > 
+> > Also fun in case (c) is that the kernel may not be able to run on all
+> > CPUs (consider a BE kernel where some CPUs are fixed to LE at EL1).
+> > 
+> > I hope no-one builds a system where CPUs are mismatched w.r.t.
+> > endianness support.
 > 
-> On -RT, an emulated LAPIC timer instances has the following path:
+> Agreed, the problem here is all down to the wording.
+> Documentation/arm64/legacy_instructions.txt isn't specific to SETEND
+> emulation and saying "Emulation of a deprecated instruction depends on the
+> availability of the feature on all the active CPUs." as a blanket statement
+> doesn't make a lot of sense in isolation. It's certainly not the case for
+> SWP and CP15 barriers, for example.
 > 
-> 1) hard interrupt
-> 2) ksoftirqd is scheduled
-> 3) ksoftirqd wakes up vcpu thread
-> 4) vcpu thread is scheduled
-> 
-> This extra context switch introduces unnecessary latency in the 
-> LAPIC path for a KVM guest.
-> 
-> The solution:
-> 
-> Allow waking up vcpu thread from hardirq context,
-> thus avoiding the need for ksoftirqd to be scheduled.
-> 
-> Normal waitqueues make use of spinlocks, which on -RT 
-> are sleepable locks. Therefore, waking up a waitqueue 
-> waiter involves locking a sleeping lock, which 
-> is not allowed from hard interrupt context.
-> 
+> With SETEND, we have requirements on mixed-endian support for the emulation.
+> Fine, but let's not muddy the waters around the general CPU requirements
+> for deprecated instruction emulation.
 
-I have no issue in pulling this into stable-rt, but read below.
+Sure. I was only contending the "We should be able to *emulate* the
+instruction anywhere" part of your statement.
 
-> cyclictest command line:
-> # cyclictest -m -n -q -p99 -l 1000000 -h60  -D 1m
-> 
-> This patch reduces the average latency in my tests from 14us to 11us.
-> 
-> Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
-> 
-> ---
->  arch/arm/kvm/arm.c                  |    4 ++--
->  arch/arm/kvm/psci.c                 |    4 ++--
->  arch/mips/kvm/kvm_mips.c            |    8 ++++----
->  arch/powerpc/include/asm/kvm_host.h |    4 ++--
->  arch/powerpc/kvm/book3s_hv.c        |   20 ++++++++++----------
->  arch/s390/include/asm/kvm_host.h    |    2 +-
->  arch/s390/kvm/interrupt.c           |   22 ++++++++++------------
->  arch/s390/kvm/sigp.c                |   16 ++++++++--------
->  arch/x86/kvm/lapic.c                |    6 +++---
->  include/linux/kvm_host.h            |    4 ++--
->  virt/kvm/async_pf.c                 |    4 ++--
->  virt/kvm/kvm_main.c                 |   16 ++++++++--------
->  12 files changed, 54 insertions(+), 56 deletions(-)
-> 
-> Index: linux-stable-rt/arch/arm/kvm/arm.c
-> ===================================================================
-> --- linux-stable-rt.orig/arch/arm/kvm/arm.c	2014-11-25 14:13:39.188899952 -0200
-> +++ linux-stable-rt/arch/arm/kvm/arm.c	2014-11-25 14:14:38.620810092 -0200
-> @@ -495,9 +495,9 @@
->  
->  static void vcpu_pause(struct kvm_vcpu *vcpu)
->  {
-> -	wait_queue_head_t *wq = kvm_arch_vcpu_wq(vcpu);
-> +	struct swait_head *wq = kvm_arch_vcpu_wq(vcpu);
->  
-> -	wait_event_interruptible(*wq, !vcpu->arch.pause);
-> +	swait_event_interruptible(*wq, !vcpu->arch.pause);
->  }
->  
->  static int kvm_vcpu_initialized(struct kvm_vcpu *vcpu)
-> Index: linux-stable-rt/arch/arm/kvm/psci.c
-> ===================================================================
-> --- linux-stable-rt.orig/arch/arm/kvm/psci.c	2014-11-25 14:13:39.189899951 -0200
-> +++ linux-stable-rt/arch/arm/kvm/psci.c	2014-11-25 14:14:38.620810092 -0200
-> @@ -36,7 +36,7 @@
->  {
->  	struct kvm *kvm = source_vcpu->kvm;
->  	struct kvm_vcpu *vcpu = NULL, *tmp;
-> -	wait_queue_head_t *wq;
-> +	struct swait_head *wq;
->  	unsigned long cpu_id;
->  	unsigned long mpidr;
->  	phys_addr_t target_pc;
-> @@ -80,7 +80,7 @@
->  	smp_mb();		/* Make sure the above is visible */
->  
->  	wq = kvm_arch_vcpu_wq(vcpu);
-> -	wake_up_interruptible(wq);
-> +	swait_wake_interruptible(wq);
->  
->  	return KVM_PSCI_RET_SUCCESS;
->  }
-> Index: linux-stable-rt/arch/mips/kvm/kvm_mips.c
-> ===================================================================
-> --- linux-stable-rt.orig/arch/mips/kvm/kvm_mips.c	2014-11-25 14:13:39.191899948 -0200
-> +++ linux-stable-rt/arch/mips/kvm/kvm_mips.c	2014-11-25 14:14:38.621810091 -0200
-> @@ -464,8 +464,8 @@
->  
->  	dvcpu->arch.wait = 0;
->  
-> -	if (waitqueue_active(&dvcpu->wq)) {
-> -		wake_up_interruptible(&dvcpu->wq);
-> +	if (swaitqueue_active(&dvcpu->wq)) {
-> +		swait_wake_interruptible(&dvcpu->wq);
->  	}
->  
->  	return 0;
-> @@ -971,8 +971,8 @@
->  	kvm_mips_callbacks->queue_timer_int(vcpu);
->  
->  	vcpu->arch.wait = 0;
-> -	if (waitqueue_active(&vcpu->wq)) {
-> -		wake_up_interruptible(&vcpu->wq);
-> +	if (swaitqueue_active(&vcpu->wq)) {
-> +		swait_wake_nterruptible(&vcpu->wq);
+We should probably add _a_ note as part of the patch introducing SETEND
+emulation, but not the one above, and we can drop it from this patch.
 
-Sure you compiled this patch?
-
->  	}
->  }
->  
-> Index: linux-stable-rt/arch/powerpc/include/asm/kvm_host.h
-> ===================================================================
-> --- linux-stable-rt.orig/arch/powerpc/include/asm/kvm_host.h	2014-11-25 14:13:39.193899944 -0200
-> +++ linux-stable-rt/arch/powerpc/include/asm/kvm_host.h	2014-11-25 14:14:38.621810091 -0200
-> @@ -295,7 +295,7 @@
->  	u8 in_guest;
->  	struct list_head runnable_threads;
->  	spinlock_t lock;
-> -	wait_queue_head_t wq;
-> +	struct swait_head wq;
->  	u64 stolen_tb;
->  	u64 preempt_tb;
->  	struct kvm_vcpu *runner;
-> @@ -612,7 +612,7 @@
->  	u8 prodded;
->  	u32 last_inst;
->  
-> -	wait_queue_head_t *wqp;
-> +	struct swait_head *wqp;
->  	struct kvmppc_vcore *vcore;
->  	int ret;
->  	int trap;
-> Index: linux-stable-rt/arch/powerpc/kvm/book3s_hv.c
-> ===================================================================
-> --- linux-stable-rt.orig/arch/powerpc/kvm/book3s_hv.c	2014-11-25 14:13:39.195899942 -0200
-> +++ linux-stable-rt/arch/powerpc/kvm/book3s_hv.c	2014-11-25 14:14:38.625810085 -0200
-> @@ -74,11 +74,11 @@
->  {
->  	int me;
->  	int cpu = vcpu->cpu;
-> -	wait_queue_head_t *wqp;
-> +	struct swait_head *wqp;
->  
->  	wqp = kvm_arch_vcpu_wq(vcpu);
-> -	if (waitqueue_active(wqp)) {
-> -		wake_up_interruptible(wqp);
-> +	if (swaitqueue_active(wqp)) {
-> +		swait_wake_interruptible(wqp);
->  		++vcpu->stat.halt_wakeup;
->  	}
->  
-> @@ -583,8 +583,8 @@
->  		tvcpu->arch.prodded = 1;
->  		smp_mb();
->  		if (vcpu->arch.ceded) {
-> -			if (waitqueue_active(&vcpu->wq)) {
-> -				wake_up_interruptible(&vcpu->wq);
-> +			if (swaitqueue_active(&vcpu->wq)) {
-> +				swait_wake_interruptible(&vcpu->wq);
->  				vcpu->stat.halt_wakeup++;
->  			}
->  		}
-> @@ -1199,7 +1199,7 @@
->  		if (vcore) {
->  			INIT_LIST_HEAD(&vcore->runnable_threads);
->  			spin_lock_init(&vcore->lock);
-> -			init_waitqueue_head(&vcore->wq);
-> +			init_swait_head(&vcore->wq);
->  			vcore->preempt_tb = TB_NIL;
->  			vcore->lpcr = kvm->arch.lpcr;
->  			vcore->first_vcpuid = core * threads_per_core;
-> @@ -1566,13 +1566,13 @@
->   */
->  static void kvmppc_vcore_blocked(struct kvmppc_vcore *vc)
->  {
-> -	DEFINE_WAIT(wait);
-> +	DEFINE_SWAITER(wait);
->  
-> -	prepare_to_wait(&vc->wq, &wait, TASK_INTERRUPTIBLE);
-> +	swait_prepare(&vc->wq, &wait, TASK_INTERRUPTIBLE);
->  	vc->vcore_state = VCORE_SLEEPING;
->  	spin_unlock(&vc->lock);
->  	schedule();
-> -	finish_wait(&vc->wq, &wait);
-> +	swait_finish(&vc->wq, &wait);
->  	spin_lock(&vc->lock);
->  	vc->vcore_state = VCORE_INACTIVE;
->  }
-> @@ -1613,7 +1613,7 @@
->  			kvmppc_create_dtl_entry(vcpu, vc);
->  			kvmppc_start_thread(vcpu);
->  		} else if (vc->vcore_state == VCORE_SLEEPING) {
-> -			wake_up(&vc->wq);
-> +			swait_wake(&vc->wq);
-
-I notice everywhere you have a swait_wake_interruptible() but here. Is
-there a reason why?
-
-IIRC, Peter wants to make swait wakeup usage homogenous. That is, you
-either sleep in an interruptible state, or you don't. You can't mix and
-match it.
-
-Peter is that what you plan?
-
--- Steve
-
-
->  		}
->  
->  	}
-> Index: linux-stable-rt/arch/s390/include/asm/kvm_host.h
-> ===================================================================
-> --- linux-stable-rt.orig/arch/s390/include/asm/kvm_host.h	2014-11-25 14:13:39.196899940 -0200
-> +++ linux-stable-rt/arch/s390/include/asm/kvm_host.h	2014-11-25 14:14:38.627810082 -0200
-> @@ -233,7 +233,7 @@
->  	atomic_t active;
->  	struct kvm_s390_float_interrupt *float_int;
->  	int timer_due; /* event indicator for waitqueue below */
-> -	wait_queue_head_t *wq;
-> +	struct swait_head *wq;
->  	atomic_t *cpuflags;
->  	unsigned int action_bits;
->  };
-> Index: linux-stable-rt/arch/s390/kvm/interrupt.c
-> ===================================================================
-> --- linux-stable-rt.orig/arch/s390/kvm/interrupt.c	2014-11-25 14:13:39.197899939 -0200
-> +++ linux-stable-rt/arch/s390/kvm/interrupt.c	2014-11-25 14:14:38.630810077 -0200
-> @@ -403,7 +403,7 @@
->  int kvm_s390_handle_wait(struct kvm_vcpu *vcpu)
->  {
->  	u64 now, sltime;
-> -	DECLARE_WAITQUEUE(wait, current);
-> +	DECLARE_SWAITER(wait);
->  
->  	vcpu->stat.exit_wait_state++;
->  	if (kvm_cpu_has_interrupt(vcpu))
-> @@ -440,12 +440,11 @@
->  	srcu_read_unlock(&vcpu->kvm->srcu, vcpu->srcu_idx);
->  	spin_lock(&vcpu->arch.local_int.float_int->lock);
->  	spin_lock_bh(&vcpu->arch.local_int.lock);
-> -	add_wait_queue(&vcpu->wq, &wait);
-> +	swait_prepare(&vcpu->wq, &wait, TASK_INTERRUPTIBLE);
->  	while (list_empty(&vcpu->arch.local_int.list) &&
->  		list_empty(&vcpu->arch.local_int.float_int->list) &&
->  		(!vcpu->arch.local_int.timer_due) &&
->  		!signal_pending(current)) {
-> -		set_current_state(TASK_INTERRUPTIBLE);
->  		spin_unlock_bh(&vcpu->arch.local_int.lock);
->  		spin_unlock(&vcpu->arch.local_int.float_int->lock);
->  		schedule();
-> @@ -453,8 +452,7 @@
->  		spin_lock_bh(&vcpu->arch.local_int.lock);
->  	}
->  	__unset_cpu_idle(vcpu);
-> -	__set_current_state(TASK_RUNNING);
-> -	remove_wait_queue(&vcpu->wq, &wait);
-> +	swait_finish(&vcpu->wq, &wait);
->  	spin_unlock_bh(&vcpu->arch.local_int.lock);
->  	spin_unlock(&vcpu->arch.local_int.float_int->lock);
->  	vcpu->srcu_idx = srcu_read_lock(&vcpu->kvm->srcu);
-> @@ -469,8 +467,8 @@
->  
->  	spin_lock(&vcpu->arch.local_int.lock);
->  	vcpu->arch.local_int.timer_due = 1;
-> -	if (waitqueue_active(&vcpu->wq))
-> -		wake_up_interruptible(&vcpu->wq);
-> +	if (swaitqueue_active(&vcpu->wq))
-> +		swait_wake_interruptible(&vcpu->wq);
->  	spin_unlock(&vcpu->arch.local_int.lock);
->  }
->  
-> @@ -617,7 +615,7 @@
->  	spin_lock_bh(&li->lock);
->  	list_add(&inti->list, &li->list);
->  	atomic_set(&li->active, 1);
-> -	BUG_ON(waitqueue_active(li->wq));
-> +	BUG_ON(swaitqueue_active(li->wq));
->  	spin_unlock_bh(&li->lock);
->  	return 0;
->  }
-> @@ -750,8 +748,8 @@
->  	li = fi->local_int[sigcpu];
->  	spin_lock_bh(&li->lock);
->  	atomic_set_mask(CPUSTAT_EXT_INT, li->cpuflags);
-> -	if (waitqueue_active(li->wq))
-> -		wake_up_interruptible(li->wq);
-> +	if (swaitqueue_active(li->wq))
-> +		swait_wake_interruptible(li->wq);
->  	spin_unlock_bh(&li->lock);
->  	spin_unlock(&fi->lock);
->  	mutex_unlock(&kvm->lock);
-> @@ -836,8 +834,8 @@
->  	if (inti->type == KVM_S390_SIGP_STOP)
->  		li->action_bits |= ACTION_STOP_ON_STOP;
->  	atomic_set_mask(CPUSTAT_EXT_INT, li->cpuflags);
-> -	if (waitqueue_active(&vcpu->wq))
-> -		wake_up_interruptible(&vcpu->wq);
-> +	if (swaitqueue_active(&vcpu->wq))
-> +		swait_wake_interruptible(&vcpu->wq);
->  	spin_unlock_bh(&li->lock);
->  	mutex_unlock(&vcpu->kvm->lock);
->  	return 0;
-> Index: linux-stable-rt/arch/s390/kvm/sigp.c
-> ===================================================================
-> --- linux-stable-rt.orig/arch/s390/kvm/sigp.c	2014-11-25 14:13:39.198899937 -0200
-> +++ linux-stable-rt/arch/s390/kvm/sigp.c	2014-11-25 14:14:38.633810073 -0200
-> @@ -79,8 +79,8 @@
->  	list_add_tail(&inti->list, &li->list);
->  	atomic_set(&li->active, 1);
->  	atomic_set_mask(CPUSTAT_EXT_INT, li->cpuflags);
-> -	if (waitqueue_active(li->wq))
-> -		wake_up_interruptible(li->wq);
-> +	if (swaitqueue_active(li->wq))
-> +		swait_wake_interruptible(li->wq);
->  	spin_unlock_bh(&li->lock);
->  	rc = SIGP_CC_ORDER_CODE_ACCEPTED;
->  	VCPU_EVENT(vcpu, 4, "sent sigp emerg to cpu %x", cpu_addr);
-> @@ -148,8 +148,8 @@
->  	list_add_tail(&inti->list, &li->list);
->  	atomic_set(&li->active, 1);
->  	atomic_set_mask(CPUSTAT_EXT_INT, li->cpuflags);
-> -	if (waitqueue_active(li->wq))
-> -		wake_up_interruptible(li->wq);
-> +	if (swaitqueue_active(li->wq))
-> +		swait_wake_interruptible(li->wq);
->  	spin_unlock_bh(&li->lock);
->  	rc = SIGP_CC_ORDER_CODE_ACCEPTED;
->  	VCPU_EVENT(vcpu, 4, "sent sigp ext call to cpu %x", cpu_addr);
-> @@ -179,8 +179,8 @@
->  	atomic_set(&li->active, 1);
->  	atomic_set_mask(CPUSTAT_STOP_INT, li->cpuflags);
->  	li->action_bits |= action;
-> -	if (waitqueue_active(li->wq))
-> -		wake_up_interruptible(li->wq);
-> +	if (swaitqueue_active(li->wq))
-> +		swait_wake_interruptible(li->wq);
->  out:
->  	spin_unlock_bh(&li->lock);
->  
-> @@ -288,8 +288,8 @@
->  
->  	list_add_tail(&inti->list, &li->list);
->  	atomic_set(&li->active, 1);
-> -	if (waitqueue_active(li->wq))
-> -		wake_up_interruptible(li->wq);
-> +	if (swaitqueue_active(li->wq))
-> +		swait_wake_interruptible(li->wq);
->  	rc = SIGP_CC_ORDER_CODE_ACCEPTED;
->  
->  	VCPU_EVENT(vcpu, 4, "set prefix of cpu %02x to %x", cpu_addr, address);
-> Index: linux-stable-rt/arch/x86/kvm/lapic.c
-> ===================================================================
-> --- linux-stable-rt.orig/arch/x86/kvm/lapic.c	2014-11-25 14:13:39.199899935 -0200
-> +++ linux-stable-rt/arch/x86/kvm/lapic.c	2015-01-14 15:02:41.135771065 -0200
-> @@ -1533,7 +1533,7 @@
->  	struct kvm_timer *ktimer = container_of(data, struct kvm_timer, timer);
->  	struct kvm_lapic *apic = container_of(ktimer, struct kvm_lapic, lapic_timer);
->  	struct kvm_vcpu *vcpu = apic->vcpu;
-> -	wait_queue_head_t *q = &vcpu->wq;
-> +	struct swait_head *q = &vcpu->wq;
->  
->  	/*
->  	 * There is a race window between reading and incrementing, but we do
-> @@ -1547,8 +1547,8 @@
->  		kvm_make_request(KVM_REQ_PENDING_TIMER, vcpu);
->  	}
->  
-> -	if (waitqueue_active(q))
-> -		wake_up_interruptible(q);
-> +	if (swaitqueue_active(q))
-> +		swait_wake_interruptible(q);
->  
->  	if (lapic_is_periodic(apic)) {
->  		hrtimer_add_expires_ns(&ktimer->timer, ktimer->period);
-> Index: linux-stable-rt/include/linux/kvm_host.h
-> ===================================================================
-> --- linux-stable-rt.orig/include/linux/kvm_host.h	2014-11-25 14:13:39.201899932 -0200
-> +++ linux-stable-rt/include/linux/kvm_host.h	2014-11-25 14:14:38.638810065 -0200
-> @@ -231,7 +231,7 @@
->  
->  	int fpu_active;
->  	int guest_fpu_loaded, guest_xcr0_loaded;
-> -	wait_queue_head_t wq;
-> +	struct swait_head wq;
->  	struct pid *pid;
->  	int sigset_active;
->  	sigset_t sigset;
-> @@ -677,7 +677,7 @@
->  }
->  #endif
->  
-> -static inline wait_queue_head_t *kvm_arch_vcpu_wq(struct kvm_vcpu *vcpu)
-> +static inline struct swait_head *kvm_arch_vcpu_wq(struct kvm_vcpu *vcpu)
->  {
->  #ifdef __KVM_HAVE_ARCH_WQP
->  	return vcpu->arch.wqp;
-> Index: linux-stable-rt/virt/kvm/async_pf.c
-> ===================================================================
-> --- linux-stable-rt.orig/virt/kvm/async_pf.c	2014-11-25 14:13:39.202899931 -0200
-> +++ linux-stable-rt/virt/kvm/async_pf.c	2014-11-25 14:14:38.639810063 -0200
-> @@ -82,8 +82,8 @@
->  
->  	trace_kvm_async_pf_completed(addr, gva);
->  
-> -	if (waitqueue_active(&vcpu->wq))
-> -		wake_up_interruptible(&vcpu->wq);
-> +	if (swaitqueue_active(&vcpu->wq))
-> +		swait_wake_interruptible(&vcpu->wq);
->  
->  	mmput(mm);
->  	kvm_put_kvm(vcpu->kvm);
-> Index: linux-stable-rt/virt/kvm/kvm_main.c
-> ===================================================================
-> --- linux-stable-rt.orig/virt/kvm/kvm_main.c	2014-11-25 14:13:39.204899928 -0200
-> +++ linux-stable-rt/virt/kvm/kvm_main.c	2014-11-25 14:14:38.641810060 -0200
-> @@ -219,7 +219,7 @@
->  	vcpu->kvm = kvm;
->  	vcpu->vcpu_id = id;
->  	vcpu->pid = NULL;
-> -	init_waitqueue_head(&vcpu->wq);
-> +	init_swait_head(&vcpu->wq);
->  	kvm_async_pf_vcpu_init(vcpu);
->  
->  	page = alloc_page(GFP_KERNEL | __GFP_ZERO);
-> @@ -1675,10 +1675,10 @@
->   */
->  void kvm_vcpu_block(struct kvm_vcpu *vcpu)
->  {
-> -	DEFINE_WAIT(wait);
-> +	DEFINE_SWAITER(wait);
->  
->  	for (;;) {
-> -		prepare_to_wait(&vcpu->wq, &wait, TASK_INTERRUPTIBLE);
-> +		swait_prepare(&vcpu->wq, &wait, TASK_INTERRUPTIBLE);
->  
->  		if (kvm_arch_vcpu_runnable(vcpu)) {
->  			kvm_make_request(KVM_REQ_UNHALT, vcpu);
-> @@ -1692,7 +1692,7 @@
->  		schedule();
->  	}
->  
-> -	finish_wait(&vcpu->wq, &wait);
-> +	swait_finish(&vcpu->wq, &wait);
->  }
->  EXPORT_SYMBOL_GPL(kvm_vcpu_block);
->  
-> @@ -1704,11 +1704,11 @@
->  {
->  	int me;
->  	int cpu = vcpu->cpu;
-> -	wait_queue_head_t *wqp;
-> +	struct swait_head *wqp;
->  
->  	wqp = kvm_arch_vcpu_wq(vcpu);
-> -	if (waitqueue_active(wqp)) {
-> -		wake_up_interruptible(wqp);
-> +	if (swaitqueue_active(wqp)) {
-> +		swait_wake_interruptible(wqp);
->  		++vcpu->stat.halt_wakeup;
->  	}
->  
-> @@ -1814,7 +1814,7 @@
->  				continue;
->  			if (vcpu == me)
->  				continue;
-> -			if (waitqueue_active(&vcpu->wq))
-> +			if (swaitqueue_active(&vcpu->wq))
->  				continue;
->  			if (!kvm_vcpu_eligible_for_directed_yield(vcpu))
->  				continue;
-> 
-
+Mark.
