@@ -1,76 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753877AbbAPLLB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 06:11:01 -0500
-Received: from mail-lb0-f172.google.com ([209.85.217.172]:37190 "EHLO
-	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751414AbbAPLK6 (ORCPT
+	id S1753344AbbAPLOR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 06:14:17 -0500
+Received: from smtp05.smtpout.orange.fr ([80.12.242.127]:19995 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751621AbbAPLOP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 06:10:58 -0500
-Date: Fri, 16 Jan 2015 12:11:08 +0100
-From: Johan Hovold <johan@kernel.org>
-To: Soren Brinkmann <soren.brinkmann@xilinx.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>, Johan Hovold <johan@kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-gpio@vger.kernel.org,
-        linux-doc@vger.kernel.org
-Subject: Re: [PATCH v4] gpio: lib-sysfs: Add 'wakeup' attribute
-Message-ID: <20150116111108.GG30960@localhost>
-References: <1421351389-11660-1-git-send-email-soren.brinkmann@xilinx.com>
+	Fri, 16 Jan 2015 06:14:15 -0500
+X-ME-Helo: beldin
+X-ME-Date: Fri, 16 Jan 2015 12:14:14 +0100
+X-ME-IP: 109.214.23.205
+From: Robert Jarzmik <robert.jarzmik@free.fr>
+To: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
+Cc: "balbi\@ti.com" <balbi@ti.com>,
+        "Dinh Nguyen \(dinguyen\@opensource.altera.com\)" 
+	<dinguyen@opensource.altera.com>,
+        "lyz\@rock-chips.com" <lyz@rock-chips.com>,
+        "linus.walleij\@linaro.org" <linus.walleij@linaro.org>,
+        "linux-usb\@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usb: phy: make GPIOs optional for the generic phy
+References: <A2CA0424C0A6F04399FB9E1CD98E0304845078CE@US01WEMBX2.internal.synopsys.com>
+X-URL: http://belgarath.falguerolles.org/
+Date: Fri, 16 Jan 2015 12:14:07 +0100
+In-Reply-To: <A2CA0424C0A6F04399FB9E1CD98E0304845078CE@US01WEMBX2.internal.synopsys.com>
+	(Paul Zimmerman's message of "Thu, 15 Jan 2015 02:45:12 +0000")
+Message-ID: <878uh3x9j4.fsf@free.fr>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.92 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421351389-11660-1-git-send-email-soren.brinkmann@xilinx.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 15, 2015 at 11:49:49AM -0800, Soren Brinkmann wrote:
-> Add an attribute 'wakeup' to the GPIO sysfs interface which allows
-> marking/unmarking a GPIO as wake IRQ.
-> The file 'wakeup' is created in each exported GPIOs directory, if an IRQ
-> is associated with that GPIO and the irqchip implements set_wake().
-> Writing 'enabled' to that file will enable wake for that GPIO, while
-> writing 'disabled' will disable wake.
-> Reading that file will return either 'disabled' or 'enabled' depening on
-> the currently set flag for the GPIO's IRQ.
-> 
-> Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
-> Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
-> ---
-> Hi Linus, Johan,
-> 
-> I rebased my patch. And things look good.
+Paul Zimmerman <Paul.Zimmerman@synopsys.com> writes:
 
-I took at closer look at this patch now and I really don't think it
-should be merged at all.
+> From 47bd18e210fecf701d493c27884e13c69bc449ea Mon Sep 17 00:00:00 2001
+> From: Paul Zimmerman <paulz@synopsys.com>
+> Date: Wed, 14 Jan 2015 18:15:58 -0800
+> Subject: [PATCH] usb: phy: make GPIOs optional for the generic phy
+>
+> The use of GPIOs should be optional for the generic phy, otherwise
+> the Altera SOCFPGA platform at least is broken.
+>
+> Fixes breakage caused by a combination of e9f2cefb0cd "usb: phy: 
+> generic: migrate to gpio_desc" and 135b3c4304d "usb: dwc2: platform: 
+> add generic PHY framework support".
+>
+> Signed-off-by: Paul Zimmerman <paulz@synopsys.com>
+Reviewed-by: Robert Jarzmik <robert.jarzmik@free.fr>
 
-We have a mechanism for handling wake-up sources (documented in
-Documentation/power/devices.txt) as well as an ABI to enable/disable
-them using the power/wakeup device attribute from userspace.
+Cheers.
 
-Implementing proper wakeup support for unclaimed GPIOs would take some
-work (if at all desired), but that is not a reason to be adding custom
-implementations that violates the kernel's power policies and new ABIs
-that would need to be maintained forever.
-
-[ And we really shouldn't be adding anything to the broken gpio sysfs
-interface until it's been redesigned. ]
-
-Meanwhile you can (should) use gpio-keys if you need to wake your system
-on gpio events.
-
-> But the 'is_visible' things does not behave the way I expected it to.
-> It seems to be only triggered on an export but not when attributes
-> change. Hence, in my case, everything was visiible since the inital
-> state matches that, but even when changing the direction or things
-> like that, attributes don't disappear. Is that something still worked
-> on? Expected
-
-That's expected. We generally don't want attributes to appear or
-disappear after the device has been registered (although there is a
-mechanism for cases were it makes sense). This is no different from
-how your v3 patch worked either.
-
-Johan
+--
+Robert
