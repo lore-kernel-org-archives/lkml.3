@@ -1,79 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756010AbbAPDWa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 22:22:30 -0500
-Received: from mail1.bemta14.messagelabs.com ([193.109.254.110]:13352 "EHLO
-	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753118AbbAPDW3 (ORCPT
+	id S1755987AbbAPDO7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 22:14:59 -0500
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:65407 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752940AbbAPDO6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 22:22:29 -0500
-X-Greylist: delayed 391 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Jan 2015 22:22:29 EST
-X-Env-Sender: James.Ban.opensource@diasemi.com
-X-Msg-Ref: server-13.tower-194.messagelabs.com!1421378155!27647506!1
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.12.5; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <201501160315.t0G3Fix5023568@krsrvapps-01.diasemi.com>
-From: James Ban <james.ban.opensource@diasemi.com>
-Date: Fri, 16 Jan 2015 12:13:27 +0900
-Subject: [PATCH V1] regulator: da9211: fix unmatched of_node
-To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Support Opensource <support.opensource@diasemi.com>,
-        LKML <linux-kernel@vger.kernel.org>
-CC: David Dajun Chen <david.chen@diasemi.com>
+	Thu, 15 Jan 2015 22:14:58 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1421375817-21793-1-git-send-email-hl@rock-chips.com>
+References: <1421375817-21793-1-git-send-email-hl@rock-chips.com>
+From: Daniel Kurtz <djkurtz@chromium.org>
+Date: Fri, 16 Jan 2015 11:14:37 +0800
+X-Google-Sender-Auth: 4K2wUECk8_mGMyADiHFjjrQc1-w
+Message-ID: <CAGS+omAvxNFaVkKJs2e4fWF-xeuMHrYSHFFeJZtdPETx+o4LFw@mail.gmail.com>
+Subject: Re: [PATCH v3] drm/panel: Add support for AUO b101ean01 panel
+To: huang lin <hl@rock-chips.com>
+Cc: Douglas Anderson <dianders@chromium.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Thierry Reding <thierry.reding@gmail.com>,
+        David Airlie <airlied@linux.ie>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch for fixing unmatched of_node.
+On Fri, Jan 16, 2015 at 10:36 AM, huang lin <hl@rock-chips.com> wrote:
+> The AUO b101ean01 panel is a 10.1" 1280x800 panel,
+> which can be supported by the simple panel driver.
+>
+> Signed-off-by: huang lin <hl@rock-chips.com>
 
-Signed-off-by: James Ban <james.ban.opensource@diasemi.com>
----
+Reviewed-by: Daniel Kurtz <djkurtz@chromium.org>
 
-This patch is relative to linux-next repository tag next-20150115.
-
-
- drivers/regulator/da9211-regulator.c |    4 ++--
- include/linux/regulator/da9211.h     |    1 +
- 2 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/regulator/da9211-regulator.c b/drivers/regulator/da9211-regulator.c
-index c78d210..8e6957c 100644
---- a/drivers/regulator/da9211-regulator.c
-+++ b/drivers/regulator/da9211-regulator.c
-@@ -276,7 +276,7 @@ static struct da9211_pdata *da9211_parse_regulators_dt(
- 			continue;
- 
- 		pdata->init_data[n] = da9211_matches[i].init_data;
--
-+		pdata->reg_node[n] = da9211_matches[i].of_node;
- 		n++;
- 	}
- 
-@@ -364,7 +364,7 @@ static int da9211_regulator_init(struct da9211 *chip)
- 		config.dev = chip->dev;
- 		config.driver_data = chip;
- 		config.regmap = chip->regmap;
--		config.of_node = chip->dev->of_node;
-+		config.of_node = chip->pdata->reg_node[i];
- 
- 		chip->rdev[i] = devm_regulator_register(chip->dev,
- 			&da9211_regulators[i], &config);
-diff --git a/include/linux/regulator/da9211.h b/include/linux/regulator/da9211.h
-index 5479394..d1d9d38 100644
---- a/include/linux/regulator/da9211.h
-+++ b/include/linux/regulator/da9211.h
-@@ -32,6 +32,7 @@ struct da9211_pdata {
- 	 * 2 : 2 phase 2 buck
- 	 */
- 	int num_buck;
-+	struct device_node *reg_node[DA9211_MAX_REGULATORS];
- 	struct regulator_init_data *init_data[DA9211_MAX_REGULATORS];
- };
- #endif
--- 
-end-of-patch for regulator: da9211: fix unmatched of_node V1
-
+>
+> ---
+>
+> Changes in v3:
+> - changed moving auo_b101ean01 definitions under auo_b101aw03
+>
+>  drivers/gpu/drm/panel/panel-simple.c | 26 ++++++++++++++++++++++++++
+>  1 file changed, 26 insertions(+)
+>
+> diff --git a/drivers/gpu/drm/panel/panel-simple.c b/drivers/gpu/drm/panel/panel-simple.c
+> index e95385b..24828e0 100644
+> --- a/drivers/gpu/drm/panel/panel-simple.c
+> +++ b/drivers/gpu/drm/panel/panel-simple.c
+> @@ -345,6 +345,29 @@ static const struct panel_desc auo_b101aw03 = {
+>         },
+>  };
+>
+> +static const struct drm_display_mode auo_b101ean01_mode = {
+> +       .clock = 72500,
+> +       .hdisplay = 1280,
+> +       .hsync_start = 1280 + 147,
+> +       .hsync_end = 1280 + 147 + 32,
+> +       .htotal = 1280 + 147 + 32 + 21,
+> +       .vdisplay = 800,
+> +       .vsync_start = 800 + 4,
+> +       .vsync_end = 800 + 4 + 4,
+> +       .vtotal = 800 + 4 + 4 + 8,
+> +       .vrefresh = 60,
+> +};
+> +
+> +static const struct panel_desc auo_b101ean01 = {
+> +       .modes = &auo_b101ean01_mode,
+> +       .num_modes = 1,
+> +       .bpc = 6,
+> +       .size = {
+> +               .width = 217,
+> +               .height = 136,
+> +       },
+> +};
+> +
+>  static const struct drm_display_mode auo_b101xtn01_mode = {
+>         .clock = 72000,
+>         .hdisplay = 1366,
+> @@ -727,6 +750,9 @@ static const struct of_device_id platform_of_match[] = {
+>                 .compatible = "auo,b101aw03",
+>                 .data = &auo_b101aw03,
+>         }, {
+> +               .compatible = "auo,b101ean01",
+> +               .data = &auo_b101ean01,
+> +       }, {
+>                 .compatible = "auo,b101xtn01",
+>                 .data = &auo_b101xtn01,
+>         }, {
+> --
+> 1.9.1
+>
+>
