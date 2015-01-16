@@ -1,46 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083AbbAPEw7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 23:52:59 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:51828 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754355AbbAPEw6 (ORCPT
+	id S1751255AbbAPFBv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 00:01:51 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:33970 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750741AbbAPFBu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 23:52:58 -0500
+	Fri, 16 Jan 2015 00:01:50 -0500
+Message-ID: <54B89B35.2010209@roeck-us.net>
+Date: Thu, 15 Jan 2015 21:01:41 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <20150115181032.GD30960@localhost>
-References: <1421161778-5671-1-git-send-email-md.jamalmohiuddin@gmail.com>
-	<CACRpkdb2=YyVtFFMqMQrWCVFhtnBOdmw57W0tktYn1c2fS8uQw@mail.gmail.com>
-	<20150115181032.GD30960@localhost>
-Date: Fri, 16 Jan 2015 10:22:56 +0530
-Message-ID: <CAP8vtK+vHR_7h_SYWfBNDZkAqUbtEdSDqw+AteZWGqoY37tYTQ@mail.gmail.com>
-Subject: Re: [PATCH] gpio: gpio-dln2: Added a Blank line after declaration
-From: Jamal Mohammad <md.jamalmohiuddin@gmail.com>
-To: Johan Hovold <johan@kernel.org>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Mike Looijmans <mike.looijmans@topic.nl>
+CC: wim@iguana.be, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] gpio_wdt: Add "always_running" feature to GPIO watchdog
+References: <20150113215212.GA12804@roeck-us.net> <1421216909-3109-1-git-send-email-mike.looijmans@topic.nl>
+In-Reply-To: <1421216909-3109-1-git-send-email-mike.looijmans@topic.nl>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020206.54B89B3D.0158,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 1
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think you are write ... checkpatch.pl was giving the error at the
-line so i added a blank line... i will send an updated patch..
+On 01/13/2015 10:28 PM, Mike Looijmans wrote:
+> On some chips, like the TPS386000, the trigger cannot be disabled
+> and the CPU must keep toggling the line at all times. Add a switch
+> "always_running" to keep toggling the GPIO line regardless of the
+> state of the soft part of the watchdog. The "armed" member keeps
+> track of whether a timeout must also cause a reset.
+>
+> Signed-off-by: Mike Looijmans <mike.looijmans@topic.nl>
 
-On Thu, Jan 15, 2015 at 11:40 PM, Johan Hovold <johan@kernel.org> wrote:
-> On Thu, Jan 15, 2015 at 06:20:43PM +0100, Linus Walleij wrote:
->> On Tue, Jan 13, 2015 at 4:09 PM, Mohammad Jamal
->> <md.jamalmohiuddin@gmail.com> wrote:
->>
->> > Fix the coding style issue by adding a blank line after declaration
->> >
->> > Signed-off-by: Mohammad Jamal <md.jamalmohiuddin@gmail.com>
->>
->> Patch applied.
->
-> This one looks bogus; it's adding a random newline within the
-> declarations not after.
->
-> Johan
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+
