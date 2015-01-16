@@ -1,73 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756655AbbAPRxP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 12:53:15 -0500
-Received: from lists.s-osg.org ([54.187.51.154]:44958 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753220AbbAPRxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 12:53:13 -0500
-Message-ID: <54B95006.3080502@osg.samsung.com>
-Date: Fri, 16 Jan 2015 10:53:10 -0700
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1755795AbbAPR5v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 12:57:51 -0500
+Received: from mail-we0-f171.google.com ([74.125.82.171]:39241 "EHLO
+	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751730AbbAPR5u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 12:57:50 -0500
+Date: Fri, 16 Jan 2015 18:57:45 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Vinayak Menon <vinmenon@codeaurora.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, hannes@cmpxchg.org, vdavydov@parallels.com,
+        mgorman@suse.de, minchan@kernel.org, Christoph Lameter <cl@gentwo.org>
+Subject: Re: [PATCH v2] mm: vmscan: fix the page state calculation in
+ too_many_isolated
+Message-ID: <20150116175745.GA22136@dhcp22.suse.cz>
+References: <1421235419-30736-1-git-send-email-vinmenon@codeaurora.org>
+ <20150114165036.GI4706@dhcp22.suse.cz>
+ <54B7F7C4.2070105@codeaurora.org>
+ <20150116154922.GB4650@dhcp22.suse.cz>
 MIME-Version: 1.0
-To: Michael Ellerman <mpe@ellerman.id.au>, linux-kernel@vger.kernel.org
-CC: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
-        rostedt@goodmis.org, mingo@redhat.com, davem@davemloft.net,
-        keescook@chromium.org, tranmanphong@gmail.com, cov@codeaurora.org,
-        dh.herrmann@gmail.com, hughd@google.com, bobby.prani@gmail.com,
-        serge.hallyn@ubuntu.com, ebiederm@xmission.com,
-        tim.bird@sonymobile.com, josh@joshtriplett.org, koct9i@gmail.com,
-        linux-kbuild@vger.kernel.org, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 1/6] selftests: Introduce minimal shared logic for running
- tests
-References: <1420794375-31881-1-git-send-email-mpe@ellerman.id.au>
-In-Reply-To: <1420794375-31881-1-git-send-email-mpe@ellerman.id.au>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150116154922.GB4650@dhcp22.suse.cz>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09/2015 02:06 AM, Michael Ellerman wrote:
-> This adds a Make include file which most selftests can then include to
-> get the run_tests logic.
-> 
-> On its own this has the advantage of some reduction in repetition, and
-> also means the pass/fail message is defined in fewer places.
-> 
-> However the key advantage is it will allow us to implement install very
-> simply in a subsequent patch.
-> 
-> The default implementation just executes each program in $(TEST_PROGS).
-> 
-> We use a variable to hold the default implementation of $(RUN_TESTS)
-> because that gives us a clean way to override it if necessary, ie. using
-> override. The mount, memory-hotplug and mqueue tests use that to provide
-> a different implementation.
-> 
-> Tests are not run via /bin/bash, so if they are scripts they must be
-> executable, we add u+x to several.
-> 
-> Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
+On Fri 16-01-15 16:49:22, Michal Hocko wrote:
+[...]
+> Why cannot we simply update the global counters from vmstat_shepherd
+> directly?
 
-I like the shared logic approach in general provided it leaves the
-flexibility to not use the shared logic if a test have the need to
-do so. This series requires some patch planning. shared logic patch
-followed by individual test patches as opposed a single patch.
-
-I would like to see the shared logic work done on top of my patch v4
-series.
-
-thanks,
--- Shuah
-
-
+OK, I should have checked the updating paths... This would be racy, so
+update from remote is not an option without additional trickery (like
+retries etc.) :/
 -- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Open Source Innovation Group
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+Michal Hocko
+SUSE Labs
