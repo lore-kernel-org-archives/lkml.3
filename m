@@ -1,107 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756427AbbAPP5H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 10:57:07 -0500
-Received: from mail-we0-f179.google.com ([74.125.82.179]:42516 "EHLO
-	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752953AbbAPP5F (ORCPT
+	id S1756131AbbAPPwz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 10:52:55 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:49234 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752910AbbAPPww (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 10:57:05 -0500
-Message-ID: <54B93346.4090307@linaro.org>
-Date: Fri, 16 Jan 2015 15:50:30 +0000
-From: Zoltan Kiss <zoltan.kiss@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: William Cohen <wcohen@redhat.com>, oprofile-list@lists.sf.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: Thread scheduler misbehaviour OR Oprofile bug?
-References: <54B919B5.4020300@linaro.org> <54B9305F.5020800@redhat.com>
-In-Reply-To: <54B9305F.5020800@redhat.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+	Fri, 16 Jan 2015 10:52:52 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-fc-54b933d14c61
+Message-id: <54B933D0.1090004@samsung.com>
+Date: Fri, 16 Jan 2015 16:52:48 +0100
+From: Jacek Anaszewski <j.anaszewski@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
+ Thunderbird/17.0.8
+MIME-version: 1.0
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-leds@vger.kernel.org,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Pavel Machek <pavel@ucw.cz>, Bryan Wu <cooloney@gmail.com>,
+        Richard Purdie <rpurdie@rpsys.net>, sakari.ailus@iki.fi,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Liam Girdwood <lgirdwood@gmail.com>,
+        Mark Brown <broonie@kernel.org>
+Subject: Re: [PATCH/RFC v10 03/19] DT: leds: Add led-sources property
+References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
+ <1420816989-1808-4-git-send-email-j.anaszewski@samsung.com>
+ <CAL_JsqJKEp6TWaRhJimg3AWBh+MCCr2Bk9+1o7orLLdp5E+n-g@mail.gmail.com>
+ <54B38682.5080605@samsung.com>
+ <CAL_Jsq+UaA41DvawdOMmOib=Fi0hC-nBdKV-+P4DFo+MoOy-bQ@mail.gmail.com>
+ <54B3F1EF.4060506@samsung.com>
+ <CAL_JsqKpJtUG0G6g1GOuSVpc31oe-dp3qdrKJUE0upG-xRDFhA@mail.gmail.com>
+ <54B4DA81.7060900@samsung.com>
+ <CAL_JsqLYxB5hzLAWXpU=uncM5DEMZU78mP673H9oSSNB-cgcYQ@mail.gmail.com>
+ <54B8D4D0.3000904@samsung.com>
+ <CAL_Jsq+EFWzs1HP1tVt6P=p=HZn2AtSPjp55YrmMQi_mE+kNfQ@mail.gmail.com>
+In-reply-to: <CAL_Jsq+EFWzs1HP1tVt6P=p=HZn2AtSPjp55YrmMQi_mE+kNfQ@mail.gmail.com>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprCIsWRmVeSWpSXmKPExsVy+t/xa7oXjXeGGOyfbGaxccZ6VoupD5+w
+	WRzdOZHJYv6Rc6wW/W8Wslqce7WS0eJs0xt2i29XOpgsLu+aw2ax9c06RoueDVtZLZZev8hk
+	cffUUTaLCdPXsli07j3CbvH92zc2i927nrJaHH7TzmpxZv9KNgdhjzXz1jB6XO7rZfLYOesu
+	u8fK5V/YPA5/XcjisWlVJ5vHnvk/WD36tqxi9Fix+ju7x+dNcgFcUVw2Kak5mWWpRfp2CVwZ
+	8/5fZixYbluxd+YHlgbG7wZdjJwcEgImEuev3GWDsMUkLtxbD2RzcQgJLGWU+LJqIyuE85FR
+	Ys2naSwgVbwCWhK3rjQA2RwcLAKqEtcnVIOE2QQMJX6+eM0EYosKREj8Ob2PFaJcUOLH5Htg
+	rSIC6hLflh8HW8As8J5VYvLSpWCbhQVcJWa3L2aGWPaGReLF0QNg3ZwCwRI3mx6BTWUWMJN4
+	1LKOGcKWl9i85i3zBEaBWUiWzEJSNgtJ2QJG5lWMoqmlyQXFSem5hnrFibnFpXnpesn5uZsY
+	ITH5ZQfj4mNWhxgFOBiVeHhnbNkRIsSaWFZcmXuIUYKDWUmEN0NgZ4gQb0piZVVqUX58UWlO
+	avEhRiYOTqkGxvBY3jvSxrZr3qhN5XggO6/NJqI/x6H2Su1aj6i+7d6//036PnWuT1l736f8
+	e9fTXrEeDLlX7NmX6+1sLnhLXjXnm5ecQqLbjSOWJ5rfTf7tyMFd5dng+ryh4Gzhm5RZtRP1
+	I1w+d7gqPTBbrW19O97m6NyQWTfO77heE6O02v7fSm8HiV/JSizFGYmGWsxFxYkARcQXrKcC	AAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 16/01/15 15:38, William Cohen wrote:
-> On 01/16/2015 09:01 AM, Zoltan Kiss wrote:
->> Hi,
+On 01/16/2015 02:48 PM, Rob Herring wrote:
+> On Fri, Jan 16, 2015 at 3:07 AM, Jacek Anaszewski
+> <j.anaszewski@samsung.com> wrote:
+>> On 01/15/2015 03:24 PM, Rob Herring wrote:
+>>>
+>>> On Tue, Jan 13, 2015 at 2:42 AM, Jacek Anaszewski
+>>> <j.anaszewski@samsung.com> wrote:
+>>>>
+>>>> On 01/12/2015 05:55 PM, Rob Herring wrote:
+>>>>>
+>>>>>
+>>>>> Adding Mark B and Liam...
+>>>>>
+>>>>> On Mon, Jan 12, 2015 at 10:10 AM, Jacek Anaszewski
+>>>>> <j.anaszewski@samsung.com> wrote:
+>>>>>>
+>>>>>>
+>>>>>> On 01/12/2015 02:52 PM, Rob Herring wrote:
+>>>>>>>
+>>>>>>>
+>>>>>>>
+>>>>>>> On Mon, Jan 12, 2015 at 2:32 AM, Jacek Anaszewski
+>>>>>>> <j.anaszewski@samsung.com> wrote:
+>>>>>>>>
+>>>>>>>>
+>>>>>>>> On 01/09/2015 07:33 PM, Rob Herring wrote:
+>>>>>>>>>
+>>>>>>>>>
+>>>>>>>>> On Fri, Jan 9, 2015 at 9:22 AM, Jacek Anaszewski
+>>>>>>>>> <j.anaszewski@samsung.com> wrote:
+>>>>>>>>>>
+>>>>>>>>>>
+>>>>>>>>>> Add a property for defining the device outputs the LED
+>>>>>>>>>> represented by the DT child node is connected to.
+>>>>>
+>>>>>
+>>>>>
+>>>>> [...]
+>>>>>
+>>>>>>>>>> b/Documentation/devicetree/bindings/leds/common.txt
+>>>>>>>>>> index a2c3f7a..29295bf 100644
+>>>>>>>>>> --- a/Documentation/devicetree/bindings/leds/common.txt
+>>>>>>>>>> +++ b/Documentation/devicetree/bindings/leds/common.txt
+>>>>>>>>>> @@ -1,6 +1,10 @@
+>>>>>>>>>>       Common leds properties.
+>>>>>>>>>>
+>>>>>>>>>>       Optional properties for child nodes:
+>>>>>>>>>> +- led-sources : Array of bits signifying the LED current regulator
+>>>>>>>>>> outputs the
+>>>>>>>>>> +               LED represented by the child node is connected to
+>>>>>>>>>> (1
+>>>>>>>>>> -
+>>>>>>>>>> the LED
+>>>>>>>>>> +               is connected to the output, 0 - the LED isn't
+>>>>>>>>>> connected
+>>>>>>>>>> to the
+>>>>>>>>>> +               output).
+>>>>>>>>>
+>>>>>>>>>
+>>>>>>>>>
+>>>>>>>>>
+>>>>>>>>>
+>>>>>>>>> Sorry, I just don't understand this.
+>>>>>>>>
+>>>>>>>>
+>>>>>>>>
+>>>>>>>>
+>>>>>>>>
+>>>>>>>> In some Flash LED devices one LED can be connected to one or more
+>>>>>>>> electric current outputs, which allows for multiplying the maximum
+>>>>>>>> current allowed for the LED. Each sub-LED is represented by a child
+>>>>>>>> node in the DT binding of the Flash LED device and it needs to
+>>>>>>>> declare
+>>>>>>>> which outputs it is connected to. In the example below the
+>>>>>>>> led-sources
+>>>>>>>> property is a two element array, which means that the flash LED
+>>>>>>>> device
+>>>>>>>> has two current outputs, and the bits signify if the LED is connected
+>>>>>>>> to the output.
+>>>>>>>
+>>>>>>>
+>>>>>>>
+>>>>>>>
+>>>>>>> Sounds like a regulator for which we already have bindings for and we
+>>>>>>> have a driver for regulator based LEDs (but no binding for it).
+>>>>>>
+>>>>>>
+>>>>>>
+>>>>>>
+>>>>>> Do you think of drivers/leds/leds-regulator.c driver? This driver just
+>>>>>> allows for registering an arbitrary regulator device as a LED subsystem
+>>>>>> device.
+>>>>>>
+>>>>>> There are however devices that don't fall into this category, i.e. they
+>>>>>> have many outputs, that can be connected to a single LED or to many
+>>>>>> LEDs
+>>>>>> and the driver has to know what is the actual arrangement.
+>>>>>
+>>>>>
+>>>>>
+>>>>> We may need to extend the regulator binding slightly and allow for
+>>>>> multiple phandles on a supply property, but wouldn't something like
+>>>>> this work:
+>>>>>
+>>>>> led-supply = <&led-reg0>, <&led-reg1>, <&led-reg2>, <&led-reg3>;
+>>>>>
+>>>>> The shared source is already supported by the regulator binding.
+>>>>
+>>>>
+>>>>
+>>>> I think that we shouldn't split the LED devices into power supply
+>>>> providers and consumers as in case of generic regulators. From this
+>>>> point of view a LED device current output is a provider and a discrete
+>>>> LED element is a consumer. In this approach each discrete LED element
+>>>> should have a related driver which is not how LED devices are being
+>>>> handled in the LED subsystem, where there is a single binding for a LED
+>>>> device and there is a single driver for it which creates separate LED
+>>>> class devices for each LED connected to the LED device output. Each
+>>>> discrete LED is represented by a child node in the LED device binding.
+>>>>
+>>>> I am aware that it may be tempting to treat LED devices as common
+>>>> regulators, but they have their specific features which gave a
+>>>> reason for introducing LED class for them. Besides, there is already
+>>>> drivers/leds/leds-regulator.c driver for LED devices which support only
+>>>> turning on/off and setting brightness level.
+>>>>
+>>>> In your proposition a separate regulator provider binding would have
+>>>> to be created for each current output and a separate binding for
+>>>> each discrete LED connected to the LED device. It would create
+>>>> unnecessary noise in a dts file.
+>>>>
+>>>> Moreover, using regulator binding implies that we want to treat it
+>>>> as a sheer power supply for our device (which would be a discrete LED
+>>>> element in this case), whereas LED devices provide more features like
+>>>> blinking pattern and for flash LED devices - flash timeout, external
+>>>> strobe and flash faults.
+>>>
+>>>
+>>> Okay, fair enough. Please include some of this explanation in the
+>>> binding description.
+>>>
+>>> I do still have some concerns about led-sources and whether it can
+>>> support other scenarios. It is very much tied to the parent node. Are
+>>> there any cases where we don't want the LEDs to be sub nodes? Perhaps
+>>> the LEDs are on a separate daughterboard from the driver/supply and we
+>>> can have different drivers. It's a stretch maybe.
 >>
->> I'm using OProfile to check some suspicious behaviour of dpdk-pktgen,
->> and I can see something which troubles me. Either the scheduler lies
->> about core affinity or Oprofile accounts some samples wrongly.
->> This userspace app runs in threads, which are assigned explicitly to one
->> single core with pthread_setaffinity_np (I've added some debug lines
->> which checks the affinity with pthread_getaffinity_np to make sure that
->> the affinity was correctly set indeed)
->> These threads run infinite loops, calling different functions. In my
->> example one of these functions (pktgen_main_rxtx_loop) should only be
->> called by the thread on core #1, but in the oprofile results I can see
->> samples from all other cores as well. I've added a sched_getcpu() call
->> to every iteration of that infinite loop to check if it runs anywhere
->> else than core #1, but it seems to be fine.
->> So my conclusion is that either the scheduler doesn't care about thread
->> affinity and even sched_getcpu() can't see that, OR, Oprofile falsely
->> accounts samples to the wrong CPU. Or to the wrong symbol, although I've
->> added "__attribute__ ((noinline))" to every called function to make sure
->> that inlineing doesn't screw up anything.
->> I'm running my tests on Ubuntu Servers with 14.04 with 3.13.0-32 kernel,
->> the CPU is a desktop kind, i5-4570 @ 3.20GHz (no-HT!) with oprofile 0.9.9.
->> Anyone have a suggestion about what happens?
 >>
->> Regards,
+>> I think it is. Such arrangements would introduce problems also to the
+>> other existing bindings. Probably not only LED subsystem related ones.
 >>
->> Zoltan
+>>> Or are there cases
+>>> where you need more information than just the connection?
+>>
+>>
+>> Currently I can't think of any.
+>>
+>> Modified rough proposal of the description:
+>>
+>>
+>> -Optional properties for child nodes:
+>> +LED and flash LED devices provide the same basic functionality as
+>> +current regulators, but extended with LED and flash LED specific +features
+>> like blinking patterns, flash timeout, flash faults and
+>> +external flash strobe mode.
+>> +
+>> +Many LED devices expose more than one current output that can be
+>> +connected to one or more discrete LED component. Since the arrangement
+>> +of connections can influence the way of the LED device initialization,
+>> +the LED components have to be tightly coupled with the LED device
+>> +binding. They are represented in the form of its child nodes.
+>> +
+>> +Optional properties for child nodes (if a LED device exposes only one
+>> +current output the properties can be placed directly in the LED device
+>> +node):
 >
-> Hi Zoltan,
->
-> Are you using operf or opcontrol to set up the data measurements?  It would be good to provide the command lines that you are using to do the data collection with oprofile.
+> Why special case 1 output case? Just always require a child node.
 
-Thanks for your reply! I'm using operf, here are the command sequence 
-I'm using:
+OK.
 
-rm -rf oprofile_data
-operf -scl --event CPU_CLK_UNHALTED:100000:0:1:1 --vmlinux 
-/usr/lib/debug/boot/vmlinux-`uname -r` &
-sleep 20
-killall -s SIGINT operf
-sleep 1
-opreport --image-path /local/pktgen-dpdk/app/build/ --symbols|less
+>> +- led-sources : Array of connection states between all LED current
+>> +               sources exposed by the device and this LED (1 - this LED
+>> +               is connected to the current output with index N, 0 -
+>> +               this LED isn't connected to the current output with
+>> +               index N); the mapping of N-th element of the array to
+>> +               the physical device output should be defined in the LED
+>> +               driver binding.
+>
+> I think this should be a list of connected output numbers rather than
+> effectively a bitmask.
+>
+> You may want to add something like led-output-cnt or led-driver-cnt in
+> the parent so you know the max list size.
 
-I'll check the rest of your suggestions later on.
+Why should we need this? The number of current outputs exposed by the
+device is fixed and can be specified in a LED device bindings
+documentation.
 
-Zoltan
-
->
-> "perf stat <command>" or "perf stat -p <list_of_pids>" can show task migration.  Look for the non-zero "cpu-migrations" in the output like in the output below.
->
-> $ perf stat -p 29600
-> ^C
->   Performance counter stats for process id '29600':
->
->         4303.761019      task-clock (msec)         #    0.305 CPUs utilized           [100.00%]
->              17,980      context-switches          #    0.004 M/sec                   [100.00%]
->                 595      cpu-migrations            #    0.138 K/sec                   [100.00%]
->              44,212      page-faults               #    0.010 M/sec
->      10,585,868,260      cycles                    #    2.460 GHz                     [100.00%]
->       6,463,554,435      stalled-cycles-frontend   #   61.06% frontend cycles idle    [100.00%]
->     <not supported>      stalled-cycles-backend
->      10,400,529,789      instructions              #    0.98  insns per cycle
->                                                    #    0.62  stalled cycles per insn [100.00%]
->       2,049,813,299      branches                  #  476.284 M/sec                   [100.00%]
->          48,441,881      branch-misses             #    2.36% of all branches
->
->        14.112614437 seconds time elapsed
->
->
->
-> As a check you might try using "perf record <command>" or "perf record -p <list_of_pids>".  Once data collection is done use "perf report --sort=cpu" to see whether samples were recorded on other processors.  That would determine how much the monitored process is beoing scheduled on other cpus.
->
-> There is also a systemtap (https://sourceware.org/systemtap/) script cycle_thief (https://sourceware.org/systemtap/examples/#process/cycle_thief.stp) that shows how often tasks are migrated and what other tasks are competing with the pid for time.
->
-> These suggestions should help determine whether oprofile is getting the attribution of samples wrong or the scheduler is migrating the tasks.
->
-> -Will
->
+-- 
+Best Regards,
+Jacek Anaszewski
