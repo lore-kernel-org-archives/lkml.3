@@ -1,79 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751597AbbAPFte (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 00:49:34 -0500
-Received: from mail-la0-f48.google.com ([209.85.215.48]:57813 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750968AbbAPFtc (ORCPT
+	id S1751923AbbAPFuT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 00:50:19 -0500
+Received: from mailgw02.mediatek.com ([210.61.82.184]:55139 "EHLO
+	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751609AbbAPFuR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 00:49:32 -0500
+	Fri, 16 Jan 2015 00:50:17 -0500
+X-Listener-Flag: 11101
+Subject: Re: [RFC 01/11] i2c: add quirk structure to describe adapter flaws
+From: Eddie Huang <eddie.huang@mediatek.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: <linux-i2c@vger.kernel.org>, <linux-mips@linux-mips.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        <linux-kernel@vger.kernel.org>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>,
+        Yingjoe Chen <yingjoe.chen@mediatek.com>,
+        <linuxppc-dev@lists.ozlabs.org>,
+        <linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <1420824103-24169-2-git-send-email-wsa@the-dreams.de>
+References: <1420824103-24169-1-git-send-email-wsa@the-dreams.de>
+	 <1420824103-24169-2-git-send-email-wsa@the-dreams.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 16 Jan 2015 13:50:08 +0800
+Message-ID: <1421387408.9323.10.camel@mtksdaap41>
 MIME-Version: 1.0
-From: Wincy Van <fanwenyi0529@gmail.com>
-Date: Fri, 16 Jan 2015 13:49:10 +0800
-Message-ID: <CACzj_yVRifkBrMt2q6Vjvr+anXr0n+9J_iERR+UnZVwz95jN5A@mail.gmail.com>
-Subject: [PATCH 0/5] KVM: nVMX: Enable nested apicv support.
-To: Paolo Bonzini <pbonzini@redhat.com>, gleb@kernel.org,
-        yang.z.zhang@intel.com
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Jan Kiszka <jan.kiszka@web.de>,
-        =?UTF-8?B?6IyD5paH5LiA?= <fanwenyi0529@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-MTK: N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In nested vmx, the efficiency of interrupt virtualization is
-very important, especially in high throughput scenes.
+Hi Wolfram,
 
-This patch set enables nested apicv support, which makes a
-huge improvement in nested interrupt virtualization.
+On Fri, 2015-01-09 at 18:21 +0100, Wolfram Sang wrote:
+>  
+> + */
+> +struct i2c_adapter_quirks {
+> +	u64 flags;
+> +	int max_num_msgs;
+> +	u16 max_write_len;
+> +	u16 max_read_len;
+> +	u16 max_comb_write_len;
+> +	u16 max_comb_read_len;
+> +};
+> +
+> +#define I2C_ADAPTER_QUIRK_COMB_WRITE_FIRST	BIT(0)
+> +#define I2C_ADAPTER_QUIRK_COMB_READ_SECOND	BIT(1)
+> +#define I2C_ADAPTER_QUIRK_COMB_WRITE_THEN_READ	(I2C_ADAPTER_QUIRK_COMB_WRITE_FIRST | \
+> +						I2C_ADAPTER_QUIRK_COMB_READ_SECOND)
+> +
+>  /*
+>   * i2c_adapter is the structure used to identify a physical i2c bus along
+>   * with the access algorithms necessary to access it.
+> @@ -472,6 +506,7 @@ struct i2c_adapter {
+>  	struct list_head userspace_clients;
+>  
+>  	struct i2c_bus_recovery_info *bus_recovery_info;
+> +	struct i2c_adapter_quirks *quirks;
+>  };
+>  #define to_i2c_adapter(d) container_of(d, struct i2c_adapter, dev)
+>  
 
-I also have done some simple tests:
-L0: Intel Xeon E5-2630 v2
-L1: CentOS 6.5 with 3.10.64-1.el6.elrepo.x86_64 kernel
-    16 vcpus, 32GB memory.
+I suggest to add const.
+	const struct i2c_adapter_quirks *quirks;
 
-L2: Windows Server 2008 R2 Datacenter
-    8 vcpus, 16GB memory.
+also, in i2c-core.c, should modify:
+	const struct i2c_adapter_quirks *q = adap->quirks;
 
- 1. Run wprime 32M, 8 threads.
 
-         original                nested apicv
 
-          7.782s                   7.172s
-
-    Improvement: 7.8%
-
- 2. Run iperf -s -w 64k in L1,
-    iperf -c 10.1.0.2 -p 5001 -i 1 -t 30 -P 8 -w 64k in L2
-
-         original                nested apicv
-
-        2.12 Gbits/s             3.50 Gbits/s
-
-    Improvement: 65.0%
-
-_________________________________________________________
-
-L2: CentOS 6.5 with 2.6.32-431 kernel
-    8 vcpus, 16GB memory.
-
- 1. Run iperf -s -w 64k in L1,
-    iperf -c 10.1.0.2 -p 5001 -i 1 -t 30 -P 8 -w 64k in L2
-
-         original                nested apicv
-
-        6.58 Gbits/s             14.2 Gbits/s
-
-    Improvement: 115.8%
-
-Wincy Van (5):
-  KVM: nVMX: Make nested control MSRs per-cpu.
-  KVM: nVMX: Enable nested virtualize x2apic mode.
-  KVM: nVMX: Enable nested apic register virtualization.
-  KVM: nVMX: Enable nested virtual interrupt delivery.
-  KVM: nVMX: Enable nested posted interrupt processing.
-
- arch/x86/kvm/vmx.c |  444 +++++++++++++++++++++++++++++++++++++++++-----------
- 1 files changed, 355 insertions(+), 89 deletions(-)
