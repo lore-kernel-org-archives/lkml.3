@@ -1,97 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756274AbbAPOqB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 09:46:01 -0500
-Received: from mga14.intel.com ([192.55.52.115]:33644 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754838AbbAPOp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 09:45:59 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,411,1418112000"; 
-   d="asc'?scan'208";a="513300989"
-Message-ID: <1421419558.2632.111.camel@jtkirshe-mobl>
-Subject: Re: [PATCHv2] ixgbe: Re-enable relaxed ordering as part of
- init/restart sequence for non-DCA config
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: Sowmini Varadhan <sowmini.varadhan@oracle.com>
-Cc: jesse.brandeburg@intel.com, bruce.w.allan@intel.com,
-        carolyn.wyborny@intel.com, donald.c.skidmore@intel.com,
-        gregory.v.rose@intel.com, matthew.vick@intel.com,
-        john.ronciak@intel.com, mitch.a.williams@intel.com,
-        linux.nics@intel.com, e1000-devel@lists.sourceforge.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sparclinux@vger.kernel.org, emil.s.tantilov@intel.com
-Date: Fri, 16 Jan 2015 06:45:58 -0800
-In-Reply-To: <20150115010352.GK24238@oracle.com>
-References: <20150115010352.GK24238@oracle.com>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-3MiGRmuaAV6qzmqb4nyP"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
+	id S1756375AbbAPOqk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 09:46:40 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40266 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751416AbbAPOqj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 09:46:39 -0500
+Date: Fri, 16 Jan 2015 14:46:35 +0000
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: Nikesh Oswal <nikesh@opensource.wolfsonmicro.com>
+Cc: broonie@kernel.org, lgirdwood@gmail.com, tiwai@suse.de,
+        alsa-devel@alsa-project.org, patches@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org, perex@perex.cz
+Subject: Re: [PATCH v8] ASoC: dapm: add code to configure dai link
+	parameters
+Message-ID: <20150116144635.GX14516@opensource.wolfsonmicro.com>
+References: <1421330832-15449-1-git-send-email-nikesh@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421330832-15449-1-git-send-email-nikesh@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---=-3MiGRmuaAV6qzmqb4nyP
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
-
-On Wed, 2015-01-14 at 20:03 -0500, Sowmini Varadhan wrote:
-> Relaxed ordering is disabled by default at driver initialization
-> and re-enabled when DCA is used. The reason it is disabled  was
-> due to an issue on some chipsets (see comments in
-> ixgbe_update_tx_dca()).
-> But when DCA is not used, RO needs to be re-enabled, else we have
-> a serialization bottleneck on platforms like SPARC.
->=20
-> This patch eliminates the bottleneck for ixgbe when DCA is not
-> configured.
->=20
-> Signed-off-by: Sowmini Varadhan <sowmini.varadhan@oracle.com>
-> Cc: Emil Tantilov <emil.s.tantilov@intel.com>
->=20
+On Thu, Jan 15, 2015 at 02:07:11PM +0000, Nikesh Oswal wrote:
+> dai-link params for codec-codec links were fixed. The fixed
+> link between codec and another chip which may be another codec,
+> baseband, bluetooth codec etc may require run time configuaration
+> changes. This change provides an optional alsa control to select
+> one of the params from a list of params.
+> 
+> Signed-off-by: Nikesh Oswal <nikesh@opensource.wolfsonmicro.com>
 > ---
-> v2: incoroporate comments from Emil Tantilov
->=20
->  drivers/net/ethernet/intel/ixgbe/ixgbe_82598.c  |   23
-> +++++++++++++++++++++++
->  drivers/net/ethernet/intel/ixgbe/ixgbe_common.c |   20
-> ++++++++++++++++++++
->  drivers/net/ethernet/intel/ixgbe/ixgbe_common.h |    1 +
->  drivers/net/ethernet/intel/ixgbe/ixgbe_main.c   |   11 +++++++++++
->  drivers/net/ethernet/intel/ixgbe/ixgbe_type.h   |    1 +
->  drivers/net/ethernet/intel/ixgbe/ixgbe_x540.c   |    1 +
->  6 files changed, 57 insertions(+), 0 deletions(-)
+>  include/sound/soc-dapm.h |    3 +
+>  include/sound/soc.h      |    1 +
+>  sound/soc/soc-core.c     |    6 +-
+>  sound/soc/soc-dapm.c     |  155 ++++++++++++++++++++++++++++++++++++++++++++--
+>  4 files changed, 157 insertions(+), 8 deletions(-)
+> 
+> diff --git a/include/sound/soc-dapm.h b/include/sound/soc-dapm.h
+> index 5c0a798..a2098e4 100644
+> @@ -3299,14 +3363,52 @@ int snd_soc_dapm_new_pcm(struct snd_soc_card *card,
+>  	struct snd_soc_dapm_widget *w;
+>  	size_t len;
+>  	char *link_name;
+> -	int ret;
+> +	int ret, count;
+> +	unsigned long private_value;
+> +	const char **w_param_text;
+> +	struct soc_enum w_param_enum[] = {
+> +		SOC_ENUM_SINGLE(0, 0, 0, NULL),
+> +	};
+> +	struct snd_kcontrol_new kcontrol_dai_link[] = {
+> +		SOC_ENUM_EXT(NULL, w_param_enum[0],
+> +			     snd_soc_dapm_dai_link_get,
+> +			     snd_soc_dapm_dai_link_put),
+> +	};
+> +	const struct snd_soc_pcm_stream *config = params;
+> +
+> +	w_param_text = devm_kcalloc(card->dev, num_params,
+> +					sizeof(char *), GFP_KERNEL);
+> +	if (!w_param_text)
+> +		return -ENOMEM;
+>  
+>  	len = strlen(source->name) + strlen(sink->name) + 2;
+>  	link_name = devm_kzalloc(card->dev, len, GFP_KERNEL);
+> -	if (!link_name)
+> -		return -ENOMEM;
+> +	if (!link_name) {
+> +		ret = -ENOMEM;
+> +		goto outfree_w_param;
+> +	}
+>  	snprintf(link_name, len, "%s-%s", source->name, sink->name);
+>  
+> +	for (count = 0 ; count < num_params; count++) {
+> +		if (!config->stream_name) {
+> +			dev_warn(card->dapm.dev,
+> +				"ASoC: anonymous config %d for dai link %s\n",
+> +				count, link_name);
 
-Thanks Sowmini, I have added your patch to my queue.
+The ALSA core doesn't like one of the string in the enum text
+links being a NULL pointer so you will want to add some sort of
+default text or something in this case.
 
-I know that Emil and others are looking into whether we can do this for
-all ixgbe silicon, so we may have a follow-on patch to the work you have
-done already to enable this for all devices.
+> +		} else {
+> +			w_param_text[count] = devm_kmemdup(card->dev,
+> +						config->stream_name,
+> +						strlen(config->stream_name) + 1,
+> +						GFP_KERNEL);
+> +			if (!w_param_text[count]) {
+> +				ret = -ENOMEM;
+> +				goto outfree_link_name;
+> +			}
+> +		}
+> +		config++;
+> +	}
+> +	w_param_enum[0].items = num_params;
+> +	w_param_enum[0].texts = w_param_text;
+> +
+>  	memset(&template, 0, sizeof(template));
+>  	template.reg = SND_SOC_NOPM;
+>  	template.id = snd_soc_dapm_dai_link;
 
---=-3MiGRmuaAV6qzmqb4nyP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-Content-Transfer-Encoding: 7bit
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAABCgAGBQJUuSQmAAoJEOVv75VaS+3OhYMP/1suBFxAMFKUxRMOkNAciBTn
-hiPFFmyrsvJUnG4FEaNBNcjdZr41RKFMKEjasEyVyzcihEamxTZzK7YDRx5Z2qrc
-eezMzXP/73Oi4R7NiCU4ESmfX8pO8BAGg/r2SaCnLKuETcHzHFa5hPDK5mqphMAE
-rI0fPCIWGkVUaoFc3r6Gb7F/EW0rRlxwCP7Yj0u7gG8nNvl9RmuHDDQR+G+WK4Je
-iB4jriDmtNv4jQ2cOdBFyBWA9L8yVrNnBgKemtH8tOWcOXw5ZmxXFP5p8EaMm9yc
-v5/dGGx3mdwZwfHG8FqvDwCKZqtMknozNBe0GQqUF4TIQmhuHCPf0pefh9dyhiQH
-v/BLfRriik2bNO+L+gdLj8W7qRf/pX3+tDe3S44ohAonQTX1psmbK/UgczPLA5Dl
-yJgLTXrLlxv26ZBhuG6iHP+za6w77lwU1UHk+NfW12Lmbc+iVaQ/RSfLXrquKbTj
-i/i4o5EmPeENXG3cCGry6kLNRkuWRVslPGvi8Y9liZ4M0BKy3vsGl9l3cBpkgwJj
-EGbD9uB0v57Fp5PpbyavBikT9XypzZjThH+bJJmxDeL1cm3zO9jbbJ7Bd0Lz04Kj
-vCZgJl/DsS7+FwXjwFAz96u0/yB0X0xrvvgCOgssSq5KxyujzzVLVEbYteJwlyr/
-QNeqnXEmvRazVDaKtUn3
-=kP7P
------END PGP SIGNATURE-----
-
---=-3MiGRmuaAV6qzmqb4nyP--
-
+Thanks,
+Charles
