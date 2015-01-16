@@ -1,66 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753928AbbAPI52 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 03:57:28 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:45553 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752615AbbAPI5W (ORCPT
+	id S1754016AbbAPJBY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 04:01:24 -0500
+Received: from mail1.bemta14.messagelabs.com ([193.109.254.113]:8098 "EHLO
+	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753156AbbAPJBW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 03:57:22 -0500
-From: Jia He <hejianet@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Jia He <hejianet@gmail.com>, Jeremiah Mahler <jmmahler@gmail.com>,
-        Oleg Drokin <oleg.drokin@intel.com>,
-        Andreas Dilger <andreas.dilger@intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH] staging: lustre: libcfs: fix sparse warnings about static  declaration
-Date: Fri, 16 Jan 2015 16:58:12 +0800
-Message-Id: <1421398692-21827-1-git-send-email-hejianet@gmail.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <20150114063518.GA18644@hudson.localdomain>
-References: <20150114063518.GA18644@hudson.localdomain>
+	Fri, 16 Jan 2015 04:01:22 -0500
+X-Env-Sender: James.Ban.opensource@diasemi.com
+X-Msg-Ref: server-12.tower-194.messagelabs.com!1421398880!28099696!1
+X-Originating-IP: [82.210.246.133]
+X-StarScan-Received: 
+X-StarScan-Version: 6.12.5; banners=-,-,-
+X-VirusChecked: Checked
+Message-ID: <201501160901.t0G91F19021262@krsrvapps-01.diasemi.com>
+From: James Ban <james.ban.opensource@diasemi.com>
+Date: Fri, 16 Jan 2015 17:59:38 +0900
+Subject: [PATCH V1] regulator: da9211: Add gpio control for enable/disable of
+ buck
+To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Support Opensource <support.opensource@diasemi.com>,
+        LKML <linux-kernel@vger.kernel.org>
+CC: David Dajun Chen <david.chen@diasemi.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  These functions kportal_memhog_{alloc,free} aren't used outside of 
-this file, so making them static to suppress the sparse warnings about 
-static declaration.
-  Besides, this also fixes the space warning checked by checkpatch.pl
+This is a patch for adding gpio control about enable/disable of buck.
 
-Signed-off-by: Jia He <hejianet@gmail.com>
-Cc: Jeremiah Mahler <jmmahler@gmail.com>
-Cc: Oleg Drokin <oleg.drokin@intel.com>
-Cc: Andreas Dilger <andreas.dilger@intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Signed-off-by: James Ban <james.ban.opensource@diasemi.com>
 ---
- drivers/staging/lustre/lustre/libcfs/module.c | 6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/lustre/lustre/libcfs/module.c b/drivers/staging/lustre/lustre/libcfs/module.c
-index 2c4fc74..1af6a37 100644
---- a/drivers/staging/lustre/lustre/libcfs/module.c
-+++ b/drivers/staging/lustre/lustre/libcfs/module.c
-@@ -42,8 +42,7 @@
- #include "../../include/linux/lnet/lnet.h"
- #include "tracefile.h"
+This patch is relative to linux-next repository tag next-20150115.
+
+
+ .../devicetree/bindings/regulator/da9211.txt       |    7 ++++++-
+ drivers/regulator/da9211-regulator.c               |    6 ++++++
+ include/linux/regulator/da9211.h                   |    1 +
+ 3 files changed, 13 insertions(+), 1 deletion(-)
+
+diff --git a/Documentation/devicetree/bindings/regulator/da9211.txt b/Documentation/devicetree/bindings/regulator/da9211.txt
+index 240019a..ad777ac 100644
+--- a/Documentation/devicetree/bindings/regulator/da9211.txt
++++ b/Documentation/devicetree/bindings/regulator/da9211.txt
+@@ -11,6 +11,7 @@ Required properties:
+   BUCKA and BUCKB.
  
--void
--kportal_memhog_free (struct libcfs_device_userstate *ldu)
-+static void kportal_memhog_free(struct libcfs_device_userstate *ldu)
- {
- 	struct page **level0p = &ldu->ldu_memhog_root_page;
- 	struct page **level1p;
-@@ -86,8 +85,7 @@ kportal_memhog_free (struct libcfs_device_userstate *ldu)
- 	LASSERT (ldu->ldu_memhog_pages == 0);
- }
+ Optional properties:
++- buck-enable-platform-gpio: platform gpio for control of BUCKA/BUCKB.
+ - Any optional property defined in regulator.txt
  
--int
--kportal_memhog_alloc(struct libcfs_device_userstate *ldu, int npages,
-+static int kportal_memhog_alloc(struct libcfs_device_userstate *ldu, int npages,
- 		     gfp_t flags)
- {
- 	struct page **level0p;
+ Example 1) DA9211
+@@ -27,6 +28,7 @@ Example 1) DA9211
+ 				regulator-max-microvolt = <1570000>;
+ 				regulator-min-microamp 	= <2000000>;
+ 				regulator-max-microamp 	= <5000000>;
++				buck-enable-platform-gpio = <&gpio 27 0>;
+ 			};
+ 			BUCKB {
+ 				regulator-name = "VBUCKB";
+@@ -34,11 +36,12 @@ Example 1) DA9211
+ 				regulator-max-microvolt = <1570000>;
+ 				regulator-min-microamp 	= <2000000>;
+ 				regulator-max-microamp 	= <5000000>;
++				buck-enable-platform-gpio = <&gpio 17 0>;
+ 			};
+ 		};
+ 	};
+ 
+-Example 2) DA92113
++Example 2) DA9213
+ 	pmic: da9213@68 {
+ 		compatible = "dlg,da9213";
+ 		reg = <0x68>;
+@@ -51,6 +54,7 @@ Example 2) DA92113
+ 				regulator-max-microvolt = <1570000>;
+ 				regulator-min-microamp 	= <3000000>;
+ 				regulator-max-microamp 	= <6000000>;
++				buck-enable-platform-gpio = <&gpio 27 0>;
+ 			};
+ 			BUCKB {
+ 				regulator-name = "VBUCKB";
+@@ -58,6 +62,7 @@ Example 2) DA92113
+ 				regulator-max-microvolt = <1570000>;
+ 				regulator-min-microamp 	= <3000000>;
+ 				regulator-max-microamp 	= <6000000>;
++				buck-enable-platform-gpio = <&gpio 17 0>;
+ 			};
+ 		};
+ 	};
+diff --git a/drivers/regulator/da9211-regulator.c b/drivers/regulator/da9211-regulator.c
+index c78d210..d299b0f 100644
+--- a/drivers/regulator/da9211-regulator.c
++++ b/drivers/regulator/da9211-regulator.c
+@@ -24,6 +24,7 @@
+ #include <linux/regmap.h>
+ #include <linux/irq.h>
+ #include <linux/interrupt.h>
++#include <linux/of_gpio.h>
+ #include <linux/regulator/of_regulator.h>
+ #include <linux/regulator/da9211.h>
+ #include "da9211-regulator.h"
+@@ -277,6 +278,10 @@ static struct da9211_pdata *da9211_parse_regulators_dt(
+ 
+ 		pdata->init_data[n] = da9211_matches[i].init_data;
+ 
++		pdata->gpio_ren[n] =
++			of_get_named_gpio(da9211_matches[i].of_node,
++				"buck-enable-platform-gpio", 0);
++
+ 		n++;
+ 	}
+ 
+@@ -365,6 +370,7 @@ static int da9211_regulator_init(struct da9211 *chip)
+ 		config.driver_data = chip;
+ 		config.regmap = chip->regmap;
+ 		config.of_node = chip->dev->of_node;
++		config.ena_gpio = chip->pdata->gpio_ren[i];
+ 
+ 		chip->rdev[i] = devm_regulator_register(chip->dev,
+ 			&da9211_regulators[i], &config);
+diff --git a/include/linux/regulator/da9211.h b/include/linux/regulator/da9211.h
+index 5479394..530b5ea 100644
+--- a/include/linux/regulator/da9211.h
++++ b/include/linux/regulator/da9211.h
+@@ -32,6 +32,7 @@ struct da9211_pdata {
+ 	 * 2 : 2 phase 2 buck
+ 	 */
+ 	int num_buck;
++	int gpio_ren[DA9211_MAX_REGULATORS];
+ 	struct regulator_init_data *init_data[DA9211_MAX_REGULATORS];
+ };
+ #endif
 -- 
-1.9.1
+end-of-patch for regulator: da9211: Add gpio control for enable/disable of buck V1
 
