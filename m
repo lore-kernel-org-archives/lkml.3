@@ -1,98 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753523AbbAPCVj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 21:21:39 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.230]:20115 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751261AbbAPCVi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 21:21:38 -0500
-Date: Thu, 15 Jan 2015 21:22:02 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Javi Merino <javi.merino@arm.com>
-Cc: linux-kernel@vger.kernel.org, Dave Martin <Dave.Martin@arm.com>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [RESEND PATCH v2 1/2] tracing: Add array printing helpers
-Message-ID: <20150115212202.7939072a@grimm.local.home>
-In-Reply-To: <1421340659-18063-1-git-send-email-javi.merino@arm.com>
-References: <1421340659-18063-1-git-send-email-javi.merino@arm.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	id S1754762AbbAPCW3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 21:22:29 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:44418 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753948AbbAPCW2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 21:22:28 -0500
+Message-ID: <54B875D3.30204@redhat.com>
+Date: Thu, 15 Jan 2015 21:22:11 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+To: Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Suresh Siddha <sbsiddha@gmail.com>
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        matt.fleming@intel.com, bp@suse.de, pbonzini@redhat.com,
+        tglx@linutronix.de, luto@amacapital.net
+Subject: Re: [PATCH 1/3] x86, fpu: introduce per-cpu "bool in_kernel_fpu"
+References: <1421012793-30106-1-git-send-email-riel@redhat.com> <20150115191918.GA27332@redhat.com> <20150115191943.GB27332@redhat.com>
+In-Reply-To: <20150115191943.GB27332@redhat.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-RR-Connecting-IP: 107.14.168.142:25
-X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Jan 2015 16:50:58 +0000
-Javi Merino <javi.merino@arm.com> wrote:
- 
-> +const char *
-> +ftrace_print_array_seq(struct trace_seq *p, const void *buf, int
-> buf_len,
-> +		       size_t el_size)
-> +{
-> +	const char *ret = trace_seq_buffer_ptr(p);
-> +	const char *prefix = "";
-> +	void *ptr = (void *)buf;
-> +
-> +	trace_seq_putc(p, '{');
-> +
-> +	while (ptr < buf + buf_len) {
-> +		switch (el_size) {
-> +		case 8:
-> +			trace_seq_printf(p, "%s0x%x", prefix,
-> +					 *(u8 *)ptr);
-> +			break;
-> +		case 16:
-> +			trace_seq_printf(p, "%s0x%x", prefix,
-> +					 *(u16 *)ptr);
-> +			break;
-> +		case 32:
-> +			trace_seq_printf(p, "%s0x%x", prefix,
-> +					 *(u32 *)ptr);
-> +			break;
-> +		case 64:
-> +			trace_seq_printf(p, "%s0x%llx", prefix,
-> +					 *(u64 *)ptr);
-> +			break;
-> +		default:
-> +			BUG();
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-BUG() is a bit extreme don't you think? I'm not sure it even deserves a
-WARN_ON().
+On 01/15/2015 02:19 PM, Oleg Nesterov wrote:
+> interrupted_kernel_fpu_idle() tries to detect if
+> kernel_fpu_begin() is safe or not. In particular it should
+> obviously deny the nested kernel_fpu_begin() and this logic looks
+> very confusing.
+> 
+> If use_eager_fpu() == T we rely on a) __thread_has_fpu() check in 
+> interrupted_kernel_fpu_idle(), and b) on the fact that _begin()
+> does __thread_clear_has_fpu().
+> 
+> Otherwise we demand that the interrupted task has no FPU if it is
+> in kernel mode, this works because __kernel_fpu_begin() does clts()
+> and interrupted_kernel_fpu_idle() checks X86_CR0_TS.
+> 
+> Add the per-cpu "bool in_kernel_fpu" variable, and change this
+> code to check/set/clear it. This allows to do more cleanups and
+> fixes, see the next changes.
+> 
+> The patch also moves WARN_ON_ONCE() under preempt_disable() just
+> to make this_cpu_read() look better, this is not really needed. And
+> in fact I think we should move it into __kernel_fpu_begin().
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-I would suggest doing:
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-			trace_seq_printf(p, "BAD SIZE:%d 0x%x", el_size,
-					*(u8 *)ptr);
-			el_size = 8;
 
-No need to go crashing the kernel or even messing with dmesg over
-somebody's tracepoint mistake.
+- -- 
+All rights reversed
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-The rest looks fine.
-
-> +		}
-> +		prefix = ",";
-> +		ptr += el_size / 8;
-> +	}
-> +
-> +	trace_seq_putc(p, '}');
-> +	trace_seq_putc(p, 0);
-
-I need to add a trace_seq_terminate() for this.
-
--- Steve
-
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL(ftrace_print_array_seq);
-> +
->  int ftrace_raw_output_prep(struct trace_iterator *iter,
->  			   struct trace_event *trace_event)
->  {
-
+iQEcBAEBAgAGBQJUuHXTAAoJEM553pKExN6Di2kIAL4HZ8qbOhHOaNKBvAA7uvdj
+3uFZcDdgoviKKT5yi4Q/49+AvXulKVxLuwpZoZXy74wID2J2AQ1bEiVkUKXhhbrl
+4FKW412VAD61fsAXvGp4n3l++ITTfjX4rL0hk6ntJlegqnI3l2sEYIWGa+Hnlh7e
+nTabtEOl3Ib1rkIKlR+6wVgogTzzLxLboGKY0aHHqYZmhlbGzWvnJ04PkgWPGFND
+9rQWz/+ZhbBgpeQRQSW8syluswcs/gQah3BygIRnPFW500zDQzihxjssDSd7/X2Z
+3lYq+TCWab8EGSpc4kOqgq+LU8nXxggP9nIA7LplqgpnIdAyg4YrxLvyWL5Y2Ys=
+=t5LD
+-----END PGP SIGNATURE-----
