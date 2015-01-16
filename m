@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757096AbbAPTSh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 14:18:37 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:45402 "EHLO
+	id S1757038AbbAPTSG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 14:18:06 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:45412 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756864AbbAPTQn (ORCPT
+	with ESMTP id S1756874AbbAPTQo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 14:16:43 -0500
+	Fri, 16 Jan 2015 14:16:44 -0500
 From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 To: arnd@arndb.de, ebiederm@xmission.com, gnomes@lxorguk.ukuu.org.uk,
         teg@jklm.no, jkosina@suse.cz, luto@amacapital.net,
@@ -14,9 +14,9 @@ To: arnd@arndb.de, ebiederm@xmission.com, gnomes@lxorguk.ukuu.org.uk,
 Cc: daniel@zonque.or, dh.herrmann@gmail.com, tixxdz@opendz.org,
         Daniel Mack <daniel@zonque.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: [PATCH 06/13] kdbus: add node and filesystem implementation
-Date: Fri, 16 Jan 2015 11:16:10 -0800
-Message-Id: <1421435777-25306-7-git-send-email-gregkh@linuxfoundation.org>
+Subject: [PATCH 07/13] kdbus: add code to gather metadata
+Date: Fri, 16 Jan 2015 11:16:11 -0800
+Message-Id: <1421435777-25306-8-git-send-email-gregkh@linuxfoundation.org>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>
 References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>
@@ -26,60 +26,41 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Daniel Mack <daniel@zonque.org>
 
-kdbusfs is a filesystem that will expose a fresh kdbus domain context
-each time it is mounted. Per mount point, there will be a 'control'
-node, which can be used to create buses. fs.c contains the
-implementation of that pseudo-fs. Exported inodes of 'file' type have
-their i_fop set to either kdbus_handle_control_ops or
-kdbus_handle_ep_ops, depending on their type. The actual dispatching
-of file operations is done from handle.c
+A connection chooses which metadata it wants to have attached to each
+message it receives with kdbus_cmd_hello.attach_flags. The metadata
+will be attached as items to the messages. All metadata refers to
+information about the sending task at sending time, unless otherwise
+stated. Also, the metadata is copied, not referenced, so even if the
+sending task doesn't exist anymore at the time the message is received,
+the information is still preserved.
 
-node.c is an implementation of a kdbus object that has an id and
-children, organized in an R/B tree. The tree is used by the filesystem
-code for lookup and iterator functions, and to deactivate children
-once the parent is deactivated. Every inode exported by kdbusfs is
-backed by a kdbus_node, hence it is embedded in struct kdbus_ep,
-struct kdbus_bus and struct kdbus_domain.
+See kdbus.txt for more details on which metadata can currently be
+attached to messages.
 
 Signed-off-by: Daniel Mack <daniel@zonque.org>
 Signed-off-by: David Herrmann <dh.herrmann@gmail.com>
 Signed-off-by: Djalal Harouni <tixxdz@opendz.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- include/uapi/linux/magic.h |   2 +
- ipc/kdbus/fs.c             | 519 ++++++++++++++++++++++++++
- ipc/kdbus/fs.h             |  25 ++
- ipc/kdbus/node.c           | 910 +++++++++++++++++++++++++++++++++++++++++++++
- ipc/kdbus/node.h           |  87 +++++
- 5 files changed, 1543 insertions(+)
- create mode 100644 ipc/kdbus/fs.c
- create mode 100644 ipc/kdbus/fs.h
- create mode 100644 ipc/kdbus/node.c
- create mode 100644 ipc/kdbus/node.h
+ ipc/kdbus/metadata.c | 1066 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ ipc/kdbus/metadata.h |   52 +++
+ 2 files changed, 1118 insertions(+)
+ create mode 100644 ipc/kdbus/metadata.c
+ create mode 100644 ipc/kdbus/metadata.h
 
-diff --git a/include/uapi/linux/magic.h b/include/uapi/linux/magic.h
-index 7d664ea85ebd..1cf05c066158 100644
---- a/include/uapi/linux/magic.h
-+++ b/include/uapi/linux/magic.h
-@@ -74,4 +74,6 @@
- #define BTRFS_TEST_MAGIC	0x73727279
- #define NSFS_MAGIC		0x6e736673
- 
-+#define KDBUS_SUPER_MAGIC	0x44427573
-+
- #endif /* __LINUX_MAGIC_H__ */
-diff --git a/ipc/kdbus/fs.c b/ipc/kdbus/fs.c
+diff --git a/ipc/kdbus/metadata.c b/ipc/kdbus/metadata.c
 new file mode 100644
-index 000000000000..f48b9bd533b5
+index 000000000000..101561dfe5ac
 --- /dev/null
-+++ b/ipc/kdbus/fs.c
-@@ -0,0 +1,519 @@
++++ b/ipc/kdbus/metadata.c
+@@ -0,0 +1,1066 @@
 +/*
 + * Copyright (C) 2013-2014 Kay Sievers
 + * Copyright (C) 2013-2014 Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 + * Copyright (C) 2013-2014 Daniel Mack <daniel@zonque.org>
 + * Copyright (C) 2013-2014 David Herrmann <dh.herrmann@gmail.com>
 + * Copyright (C) 2013-2014 Linux Foundation
++ * Copyright (C) 2014 Djalal Harouni <tixxdz@opendz.org>
 + *
 + * kdbus is free software; you can redistribute it and/or modify it under
 + * the terms of the GNU Lesser General Public License as published by the
@@ -87,1471 +68,1071 @@ index 000000000000..f48b9bd533b5
 + * your option) any later version.
 + */
 +
-+#include <linux/backing-dev.h>
-+#include <linux/dcache.h>
-+#include <linux/fs.h>
-+#include <linux/fsnotify.h>
++#include <linux/audit.h>
++#include <linux/capability.h>
++#include <linux/cgroup.h>
++#include <linux/cred.h>
++#include <linux/file.h>
++#include <linux/fs_struct.h>
 +#include <linux/init.h>
-+#include <linux/ipc_namespace.h>
-+#include <linux/magic.h>
-+#include <linux/module.h>
-+#include <linux/mount.h>
++#include <linux/kref.h>
 +#include <linux/mutex.h>
-+#include <linux/namei.h>
-+#include <linux/pagemap.h>
 +#include <linux/sched.h>
++#include <linux/security.h>
++#include <linux/sizes.h>
 +#include <linux/slab.h>
++#include <linux/uaccess.h>
++#include <linux/user_namespace.h>
++#include <linux/version.h>
 +
 +#include "bus.h"
-+#include "domain.h"
-+#include "endpoint.h"
-+#include "fs.h"
-+#include "handle.h"
-+#include "node.h"
++#include "connection.h"
++#include "item.h"
++#include "message.h"
++#include "metadata.h"
++#include "names.h"
 +
-+#define kdbus_node_from_dentry(_dentry) \
-+	((struct kdbus_node *)(_dentry)->d_fsdata)
-+#define kdbus_node_from_inode(_inode) \
-+	((struct kdbus_node *)(_inode)->i_private)
-+
-+static struct inode *fs_inode_get(struct super_block *sb,
-+				  struct kdbus_node *node);
-+
-+/*
-+ * Directory Management
++/**
++ * struct kdbus_meta_proc - Process metadata
++ * @kref:		Reference counting
++ * @lock:		Object lock
++ * @collected:		Bitmask of collected items
++ * @valid:		Bitmask of collected and valid items
++ * @uid:		UID of process
++ * @euid:		EUID of process
++ * @suid:		SUID of process
++ * @fsuid:		FSUID of process
++ * @gid:		GID of process
++ * @egid:		EGID of process
++ * @sgid:		SGID of process
++ * @fsgid:		FSGID of process
++ * @pid:		PID of process
++ * @tgid:		TGID of process
++ * @ppid:		PPID of process
++ * @auxgrps:		Auxiliary groups
++ * @n_auxgrps:		Number of items in @auxgrps
++ * @tid_comm:		TID comm line
++ * @pid_comm:		PID comm line
++ * @exe_path:		Executable path
++ * @root_path:		Root-FS path
++ * @cmdline:		Command-line
++ * @cgroup:		Full cgroup path
++ * @caps:		Capabilities
++ * @caps_namespace:	User-namespace of @caps
++ * @seclabel:		Seclabel
++ * @audit_loginuid:	Audit login-UID
++ * @audit_sessionid:	Audit session-ID
 + */
++struct kdbus_meta_proc {
++	struct kref kref;
++	struct mutex lock;
++	u64 collected;
++	u64 valid;
 +
-+static inline unsigned char kdbus_dt_type(struct kdbus_node *node)
-+{
-+	switch (node->type) {
-+	case KDBUS_NODE_DOMAIN:
-+	case KDBUS_NODE_BUS:
-+		return DT_DIR;
-+	case KDBUS_NODE_CONTROL:
-+	case KDBUS_NODE_ENDPOINT:
-+		return DT_REG;
-+	}
++	/* KDBUS_ITEM_CREDS */
++	kuid_t uid, euid, suid, fsuid;
++	kgid_t gid, egid, sgid, fsgid;
 +
-+	return DT_UNKNOWN;
-+}
++	/* KDBUS_ITEM_PIDS */
++	struct pid *pid;
++	struct pid *tgid;
++	struct pid *ppid;
 +
-+static int fs_dir_fop_iterate(struct file *file, struct dir_context *ctx)
-+{
-+	struct dentry *dentry = file->f_path.dentry;
-+	struct kdbus_node *parent = kdbus_node_from_dentry(dentry);
-+	struct kdbus_node *old, *next = file->private_data;
++	/* KDBUS_ITEM_AUXGROUPS */
++	kgid_t *auxgrps;
++	size_t n_auxgrps;
 +
-+	/*
-+	 * kdbusfs directory iterator (modelled after sysfs/kernfs)
-+	 * When iterating kdbusfs directories, we iterate all children of the
-+	 * parent kdbus_node object. We use ctx->pos to store the hash of the
-+	 * child and file->private_data to store a reference to the next node
-+	 * object. If ctx->pos is not modified via llseek while you iterate a
-+	 * directory, then we use the file->private_data node pointer to
-+	 * directly access the next node in the tree.
-+	 * However, if you directly seek on the directory, we have to find the
-+	 * closest node to that position and cannot use our node pointer. This
-+	 * means iterating the rb-tree to find the closest match and start over
-+	 * from there.
-+	 * Note that hash values are not neccessarily unique. Therefore, llseek
-+	 * is not guaranteed to seek to the same node that you got when you
-+	 * retrieved the position. Seeking to 0, 1, 2 and >=INT_MAX is safe,
-+	 * though. We could use the inode-number as position, but this would
-+	 * require another rb-tree for fast access. Kernfs and others already
-+	 * ignore those conflicts, so we should be fine, too.
-+	 */
++	/* KDBUS_ITEM_TID_COMM */
++	char tid_comm[TASK_COMM_LEN];
++	/* KDBUS_ITEM_PID_COMM */
++	char pid_comm[TASK_COMM_LEN];
 +
-+	if (!dir_emit_dots(file, ctx))
-+		return 0;
++	/* KDBUS_ITEM_EXE */
++	struct path exe_path;
++	struct path root_path;
 +
-+	/* acquire @next; if deactivated, or seek detected, find next node */
-+	old = next;
-+	if (next && ctx->pos == next->hash) {
-+		if (kdbus_node_acquire(next))
-+			kdbus_node_ref(next);
-+		else
-+			next = kdbus_node_next_child(parent, next);
-+	} else {
-+		next = kdbus_node_find_closest(parent, ctx->pos);
-+	}
-+	kdbus_node_unref(old);
++	/* KDBUS_ITEM_CMDLINE */
++	char *cmdline;
 +
-+	while (next) {
-+		/* emit @next */
-+		file->private_data = next;
-+		ctx->pos = next->hash;
++	/* KDBUS_ITEM_CGROUP */
++	char *cgroup;
 +
-+		kdbus_node_release(next);
++	/* KDBUS_ITEM_CAPS */
++	struct caps {
++		/* binary compatible to kdbus_caps */
++		u32 last_cap;
++		struct {
++			u32 caps[_KERNEL_CAPABILITY_U32S];
++		} set[4];
++	} caps;
++	struct user_namespace *caps_namespace;
 +
-+		if (!dir_emit(ctx, next->name, strlen(next->name), next->id,
-+			      kdbus_dt_type(next)))
-+			return 0;
++	/* KDBUS_ITEM_SECLABEL */
++	char *seclabel;
 +
-+		/* find next node after @next */
-+		old = next;
-+		next = kdbus_node_next_child(parent, next);
-+		kdbus_node_unref(old);
-+	}
-+
-+	file->private_data = NULL;
-+	ctx->pos = INT_MAX;
-+
-+	return 0;
-+}
-+
-+static loff_t fs_dir_fop_llseek(struct file *file, loff_t offset, int whence)
-+{
-+	struct inode *inode = file_inode(file);
-+	loff_t ret;
-+
-+	/* protect f_off against fop_iterate */
-+	mutex_lock(&inode->i_mutex);
-+	ret = generic_file_llseek(file, offset, whence);
-+	mutex_unlock(&inode->i_mutex);
-+
-+	return ret;
-+}
-+
-+static int fs_dir_fop_release(struct inode *inode, struct file *file)
-+{
-+	kdbus_node_unref(file->private_data);
-+	return 0;
-+}
-+
-+static const struct file_operations fs_dir_fops = {
-+	.read		= generic_read_dir,
-+	.iterate	= fs_dir_fop_iterate,
-+	.llseek		= fs_dir_fop_llseek,
-+	.release	= fs_dir_fop_release,
++	/* KDBUS_ITEM_AUDIT */
++	kuid_t audit_loginuid;
++	unsigned int audit_sessionid;
 +};
 +
-+static struct dentry *fs_dir_iop_lookup(struct inode *dir,
-+					struct dentry *dentry,
-+					unsigned int flags)
-+{
-+	struct dentry *dnew = NULL;
-+	struct kdbus_node *parent;
-+	struct kdbus_node *node;
-+	struct inode *inode;
-+
-+	parent = kdbus_node_from_dentry(dentry->d_parent);
-+	if (!kdbus_node_acquire(parent))
-+		return NULL;
-+
-+	/* returns reference to _acquired_ child node */
-+	node = kdbus_node_find_child(parent, dentry->d_name.name);
-+	if (node) {
-+		dentry->d_fsdata = node;
-+		inode = fs_inode_get(dir->i_sb, node);
-+		if (IS_ERR(inode))
-+			dnew = ERR_CAST(inode);
-+		else
-+			dnew = d_splice_alias(inode, dentry);
-+
-+		kdbus_node_release(node);
-+	}
-+
-+	kdbus_node_release(parent);
-+	return dnew;
-+}
-+
-+static const struct inode_operations fs_dir_iops = {
-+	.permission	= generic_permission,
-+	.lookup		= fs_dir_iop_lookup,
-+};
-+
-+/*
-+ * Inode Management
++/**
++ * struct kdbus_meta_conn
++ * @kref:		Reference counting
++ * @lock:		Object lock
++ * @collected:		Bitmask of collected items
++ * @valid:		Bitmask of collected and valid items
++ * @ts:			Timestamp values
++ * @owned_names_items:	Serialized items for owned names
++ * @owned_names_size:	Size of @owned_names_items
++ * @conn_description:	Connection description
 + */
++struct kdbus_meta_conn {
++	struct kref kref;
++	struct mutex lock;
++	u64 collected;
++	u64 valid;
 +
-+static const struct inode_operations fs_inode_iops = {
-+	.permission	= generic_permission,
++	/* KDBUS_ITEM_TIMESTAMP */
++	struct kdbus_timestamp ts;
++
++	/* KDBUS_ITEM_OWNED_NAME */
++	struct kdbus_item *owned_names_items;
++	size_t owned_names_size;
++
++	/* KDBUS_ITEM_CONN_DESCRIPTION */
++	char *conn_description;
 +};
 +
-+static struct inode *fs_inode_get(struct super_block *sb,
-+				  struct kdbus_node *node)
++/**
++ * kdbus_meta_proc_new() - Create process metadata object
++ *
++ * Return: Pointer to new object on success, ERR_PTR on failure.
++ */
++struct kdbus_meta_proc *kdbus_meta_proc_new(void)
 +{
-+	struct inode *inode;
++	struct kdbus_meta_proc *mp;
 +
-+	inode = iget_locked(sb, node->id);
-+	if (!inode)
++	mp = kzalloc(sizeof(*mp), GFP_KERNEL);
++	if (!mp)
 +		return ERR_PTR(-ENOMEM);
-+	if (!(inode->i_state & I_NEW))
-+		return inode;
 +
-+	inode->i_private = kdbus_node_ref(node);
-+	inode->i_mapping->a_ops = &empty_aops;
-+	inode->i_mapping->backing_dev_info = &noop_backing_dev_info;
-+	inode->i_mode = node->mode & S_IALLUGO;
-+	inode->i_atime = inode->i_ctime = inode->i_mtime = CURRENT_TIME;
-+	inode->i_uid = node->uid;
-+	inode->i_gid = node->gid;
++	kref_init(&mp->kref);
++	mutex_init(&mp->lock);
 +
-+	switch (node->type) {
-+	case KDBUS_NODE_DOMAIN:
-+	case KDBUS_NODE_BUS:
-+		inode->i_mode |= S_IFDIR;
-+		inode->i_op = &fs_dir_iops;
-+		inode->i_fop = &fs_dir_fops;
-+		set_nlink(inode, 2);
-+		break;
-+	case KDBUS_NODE_CONTROL:
-+		inode->i_mode |= S_IFREG;
-+		inode->i_op = &fs_inode_iops;
-+		inode->i_fop = &kdbus_handle_control_ops;
-+		break;
-+	case KDBUS_NODE_ENDPOINT:
-+		inode->i_mode |= S_IFREG;
-+		inode->i_op = &fs_inode_iops;
-+		inode->i_fop = &kdbus_handle_ep_ops;
-+		break;
-+	}
-+
-+	unlock_new_inode(inode);
-+
-+	return inode;
++	return mp;
 +}
 +
-+/*
-+ * Superblock Management
-+ */
-+
-+static int fs_super_dop_revalidate(struct dentry *dentry, unsigned int flags)
++static void kdbus_meta_proc_free(struct kref *kref)
 +{
-+	struct kdbus_node *node;
++	struct kdbus_meta_proc *mp = container_of(kref, struct kdbus_meta_proc,
++						  kref);
 +
-+	/* Force lookup on negatives */
-+	if (!dentry->d_inode)
-+		return 0;
++	path_put(&mp->exe_path);
++	path_put(&mp->root_path);
++	put_user_ns(mp->caps_namespace);
++	put_pid(mp->ppid);
++	put_pid(mp->tgid);
++	put_pid(mp->pid);
 +
-+	node = kdbus_node_from_dentry(dentry);
-+
-+	/* see whether the node has been removed */
-+	if (!kdbus_node_is_active(node))
-+		return 0;
-+
-+	return 1;
-+}
-+
-+static void fs_super_dop_release(struct dentry *dentry)
-+{
-+	kdbus_node_unref(dentry->d_fsdata);
-+}
-+
-+static const struct dentry_operations fs_super_dops = {
-+	.d_revalidate	= fs_super_dop_revalidate,
-+	.d_release	= fs_super_dop_release,
-+};
-+
-+static void fs_super_sop_evict_inode(struct inode *inode)
-+{
-+	struct kdbus_node *node = kdbus_node_from_inode(inode);
-+
-+	truncate_inode_pages_final(&inode->i_data);
-+	clear_inode(inode);
-+	kdbus_node_unref(node);
-+}
-+
-+static const struct super_operations fs_super_sops = {
-+	.statfs		= simple_statfs,
-+	.drop_inode	= generic_delete_inode,
-+	.evict_inode	= fs_super_sop_evict_inode,
-+};
-+
-+static int fs_super_fill(struct super_block *sb)
-+{
-+	struct kdbus_domain *domain = sb->s_fs_info;
-+	struct inode *inode;
-+	int ret;
-+
-+	sb->s_blocksize = PAGE_CACHE_SIZE;
-+	sb->s_blocksize_bits = PAGE_CACHE_SHIFT;
-+	sb->s_magic = KDBUS_SUPER_MAGIC;
-+	sb->s_maxbytes = MAX_LFS_FILESIZE;
-+	sb->s_op = &fs_super_sops;
-+	sb->s_time_gran = 1;
-+
-+	inode = fs_inode_get(sb, &domain->node);
-+	if (IS_ERR(inode))
-+		return PTR_ERR(inode);
-+
-+	sb->s_root = d_make_root(inode);
-+	if (!sb->s_root) {
-+		/* d_make_root iput()s the inode on failure */
-+		return -ENOMEM;
-+	}
-+
-+	/* sb holds domain reference */
-+	sb->s_root->d_fsdata = &domain->node;
-+	sb->s_d_op = &fs_super_dops;
-+
-+	/* sb holds root reference */
-+	domain->dentry = sb->s_root;
-+
-+	ret = kdbus_domain_activate(domain);
-+	if (ret < 0)
-+		return ret;
-+
-+	sb->s_flags |= MS_ACTIVE;
-+	return 0;
-+}
-+
-+static void fs_super_kill(struct super_block *sb)
-+{
-+	struct kdbus_domain *domain = sb->s_fs_info;
-+
-+	if (domain) {
-+		kdbus_domain_deactivate(domain);
-+		domain->dentry = NULL;
-+	}
-+
-+	kill_anon_super(sb);
-+
-+	if (domain)
-+		kdbus_domain_unref(domain);
-+}
-+
-+static int fs_super_set(struct super_block *sb, void *data)
-+{
-+	int ret;
-+
-+	ret = set_anon_super(sb, data);
-+	if (!ret)
-+		sb->s_fs_info = data;
-+
-+	return ret;
-+}
-+
-+static struct dentry *fs_super_mount(struct file_system_type *fs_type,
-+				     int flags, const char *dev_name,
-+				     void *data)
-+{
-+	struct kdbus_domain *domain;
-+	struct super_block *sb;
-+	int ret;
-+
-+	domain = kdbus_domain_new(KDBUS_MAKE_ACCESS_WORLD);
-+	if (IS_ERR(domain))
-+		return ERR_CAST(domain);
-+
-+	sb = sget(fs_type, NULL, fs_super_set, flags, domain);
-+	if (IS_ERR(sb)) {
-+		ret = PTR_ERR(sb);
-+		goto exit_domain;
-+	}
-+
-+	WARN_ON(sb->s_fs_info != domain);
-+	WARN_ON(sb->s_root);
-+
-+	ret = fs_super_fill(sb);
-+	if (ret < 0) {
-+		/* calls into ->kill_sb() when done */
-+		deactivate_locked_super(sb);
-+		return ERR_PTR(ret);
-+	}
-+
-+	return dget(sb->s_root);
-+
-+exit_domain:
-+	kdbus_domain_deactivate(domain);
-+	kdbus_domain_unref(domain);
-+	return ERR_PTR(ret);
-+}
-+
-+static struct file_system_type fs_type = {
-+	.name		= KBUILD_MODNAME "fs",
-+	.owner		= THIS_MODULE,
-+	.mount		= fs_super_mount,
-+	.kill_sb	= fs_super_kill,
-+	.fs_flags	= FS_USERNS_MOUNT,
-+};
-+
-+/**
-+ * kdbus_fs_init() - register kdbus filesystem
-+ *
-+ * This registers a filesystem with the VFS layer. The filesystem is called
-+ * `KBUILD_MODNAME "fs"', which usually resolves to `kdbusfs'. The nameing
-+ * scheme allows to set KBUILD_MODNAME to "kdbus2" and you will get an
-+ * independent filesystem for developers.
-+ *
-+ * Each mount of the kdbusfs filesystem has an kdbus_domain attached.
-+ * Operations on this mount will only affect the attached domain. On each mount
-+ * a new domain is automatically created and used for this mount exclusively.
-+ * If you want to share a domain across multiple mounts, you need to bind-mount
-+ * it.
-+ *
-+ * Mounts of kdbusfs (with a different domain each) are unrelated to each other
-+ * and will never have any effect on any domain but their own.
-+ *
-+ * Return: 0 on success, negative error otherwise.
-+ */
-+int kdbus_fs_init(void)
-+{
-+	return register_filesystem(&fs_type);
++	kfree(mp->seclabel);
++	kfree(mp->auxgrps);
++	kfree(mp->cmdline);
++	kfree(mp->cgroup);
++	kfree(mp);
 +}
 +
 +/**
-+ * kdbus_fs_exit() - unregister kdbus filesystem
++ * kdbus_meta_proc_ref() - Gain reference
++ * @mp:		Process metadata object
 + *
-+ * This does the reverse to kdbus_fs_init(). It unregisters the kdbusfs
-+ * filesystem from VFS and cleans up any allocated resources.
++ * Return: @mp is returned
 + */
-+void kdbus_fs_exit(void)
++struct kdbus_meta_proc *kdbus_meta_proc_ref(struct kdbus_meta_proc *mp)
 +{
-+	unregister_filesystem(&fs_type);
-+}
-+
-+/* acquire domain of @node, making sure all ancestors are active */
-+static struct kdbus_domain *fs_acquire_domain(struct kdbus_node *node)
-+{
-+	struct kdbus_domain *domain;
-+	struct kdbus_node *iter;
-+
-+	/* caller must guarantee that @node is linked */
-+	for (iter = node; iter->parent; iter = iter->parent)
-+		if (!kdbus_node_is_active(iter->parent))
-+			return NULL;
-+
-+	/* root nodes are always domains */
-+	if (WARN_ON(iter->type != KDBUS_NODE_DOMAIN))
-+		return NULL;
-+
-+	domain = kdbus_domain_from_node(iter);
-+	if (!kdbus_node_acquire(&domain->node))
-+		return NULL;
-+
-+	return domain;
++	if (mp)
++		kref_get(&mp->kref);
++	return mp;
 +}
 +
 +/**
-+ * kdbus_fs_flush() - flush dcache entries of a node
-+ * @node:		Node to flush entries of
++ * kdbus_meta_proc_unref() - Drop reference
++ * @mp:		Process metadata object
 + *
-+ * This flushes all VFS filesystem cache entries for a node and all its
-+ * children. This should be called whenever a node is destroyed during
-+ * runtime. It will flush the cache entries so the linked objects can be
-+ * deallocated.
-+ *
-+ * This is a no-op if you call it on active nodes (they really should stay in
-+ * cache) or on nodes with deactivated parents (flushing the parent is enough).
-+ * Furthermore, there is no need to call it on nodes whose lifetime is bound to
-+ * their parents'. In those cases, the parent-flush will always also flush the
-+ * children.
++ * Return: NULL
 + */
-+void kdbus_fs_flush(struct kdbus_node *node)
++struct kdbus_meta_proc *kdbus_meta_proc_unref(struct kdbus_meta_proc *mp)
 +{
-+	struct dentry *dentry, *parent_dentry = NULL;
-+	struct kdbus_domain *domain;
-+	struct qstr name;
-+
-+	/* active nodes should remain in cache */
-+	if (!kdbus_node_is_deactivated(node))
-+		return;
-+
-+	/* nodes that were never linked were never instantiated */
-+	if (!node->parent)
-+		return;
-+
-+	/* acquire domain and verify all ancestors are active */
-+	domain = fs_acquire_domain(node);
-+	if (!domain)
-+		return;
-+
-+	switch (node->type) {
-+	case KDBUS_NODE_ENDPOINT:
-+		if (WARN_ON(!node->parent || !node->parent->name))
-+			goto exit;
-+
-+		name.name = node->parent->name;
-+		name.len = strlen(node->parent->name);
-+		parent_dentry = d_hash_and_lookup(domain->dentry, &name);
-+		if (IS_ERR_OR_NULL(parent_dentry))
-+			goto exit;
-+
-+		/* fallthrough */
-+	case KDBUS_NODE_BUS:
-+		if (WARN_ON(!node->name))
-+			goto exit;
-+
-+		name.name = node->name;
-+		name.len = strlen(node->name);
-+		dentry = d_hash_and_lookup(parent_dentry ? : domain->dentry,
-+					   &name);
-+		if (!IS_ERR_OR_NULL(dentry)) {
-+			d_invalidate(dentry);
-+			dput(dentry);
-+		}
-+
-+		dput(parent_dentry);
-+		break;
-+
-+	default:
-+		/* all other types are bound to their parent lifetime */
-+		break;
-+	}
-+
-+exit:
-+	kdbus_node_release(&domain->node);
-+}
-diff --git a/ipc/kdbus/fs.h b/ipc/kdbus/fs.h
-new file mode 100644
-index 000000000000..5c38a5774392
---- /dev/null
-+++ b/ipc/kdbus/fs.h
-@@ -0,0 +1,25 @@
-+/*
-+ * Copyright (C) 2013-2014 Kay Sievers
-+ * Copyright (C) 2013-2014 Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-+ * Copyright (C) 2013-2014 Daniel Mack <daniel@zonque.org>
-+ * Copyright (C) 2013-2014 David Herrmann <dh.herrmann@gmail.com>
-+ * Copyright (C) 2013-2014 Linux Foundation
-+ *
-+ * kdbus is free software; you can redistribute it and/or modify it under
-+ * the terms of the GNU Lesser General Public License as published by the
-+ * Free Software Foundation; either version 2.1 of the License, or (at
-+ * your option) any later version.
-+ */
-+
-+#ifndef __KDBUSFS_H
-+#define __KDBUSFS_H
-+
-+#include <linux/kernel.h>
-+
-+struct kdbus_node;
-+
-+int kdbus_fs_init(void);
-+void kdbus_fs_exit(void);
-+void kdbus_fs_flush(struct kdbus_node *node);
-+
-+#endif
-diff --git a/ipc/kdbus/node.c b/ipc/kdbus/node.c
-new file mode 100644
-index 000000000000..2fd9cd09f3fe
---- /dev/null
-+++ b/ipc/kdbus/node.c
-@@ -0,0 +1,910 @@
-+/*
-+ * Copyright (C) 2013-2014 Kay Sievers
-+ * Copyright (C) 2013-2014 Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-+ * Copyright (C) 2013-2014 Daniel Mack <daniel@zonque.org>
-+ * Copyright (C) 2013-2014 David Herrmann <dh.herrmann@gmail.com>
-+ * Copyright (C) 2013-2014 Linux Foundation
-+ *
-+ * kdbus is free software; you can redistribute it and/or modify it under
-+ * the terms of the GNU Lesser General Public License as published by the
-+ * Free Software Foundation; either version 2.1 of the License, or (at
-+ * your option) any later version.
-+ */
-+
-+#include <linux/atomic.h>
-+#include <linux/fs.h>
-+#include <linux/idr.h>
-+#include <linux/kdev_t.h>
-+#include <linux/rbtree.h>
-+#include <linux/rwsem.h>
-+#include <linux/sched.h>
-+#include <linux/slab.h>
-+#include <linux/wait.h>
-+
-+#include "bus.h"
-+#include "domain.h"
-+#include "endpoint.h"
-+#include "fs.h"
-+#include "handle.h"
-+#include "node.h"
-+#include "util.h"
-+
-+/**
-+ * DOC: kdbus nodes
-+ *
-+ * Nodes unify lifetime management across exposed kdbus objects and provide a
-+ * hierarchy. Each kdbus object, that might be exposed to user-space, has a
-+ * kdbus_node object embedded and is linked into the hierarchy. Each node can
-+ * have any number (0-n) of child nodes linked. Each child retains a reference
-+ * to its parent node. For root-nodes, the parent is NULL.
-+ *
-+ * Each node object goes through a bunch of states during it's lifetime:
-+ *     * NEW
-+ *       * LINKED    (can be skipped by NEW->FREED transition)
-+ *         * ACTIVE  (can be skipped by LINKED->INACTIVE transition)
-+ *       * INACTIVE
-+ *       * DRAINED
-+ *     * FREED
-+ *
-+ * Each node is allocated by the caller and initialized via kdbus_node_init().
-+ * This never fails and sets the object into state NEW. From now on, ref-counts
-+ * on the node manage its lifetime. During init, the ref-count is set to 1. Once
-+ * it drops to 0, the node goes to state FREED and the node->free_cb() callback
-+ * is called to deallocate any memory.
-+ *
-+ * After initializing a node, you usually link it into the hierarchy. You need
-+ * to provide a parent node and a name. The node will be linked as child to the
-+ * parent and a globally unique ID is assigned to the child. The name of the
-+ * child must be unique for all children of this parent. Otherwise, linking the
-+ * child will fail with -EEXIST.
-+ * Note that the child is not marked active, yet. Admittedly, it prevents any
-+ * other node from being linked with the same name (thus, it reserves that
-+ * name), but any child-lookup (via name or unique ID) will never return this
-+ * child unless it has been marked active.
-+ *
-+ * Once successfully linked, you can use kdbus_node_activate() to activate a
-+ * child. This will mark the child active. This state can be skipped by directly
-+ * deactivating the child via kdbus_node_deactivate() (see below).
-+ * By activating a child, you enable any lookups on this child to succeed from
-+ * now on. Furthermore, any code that got its hands on a reference to the node,
-+ * can from now on "acquire" the node.
-+ *
-+ *     Active References (or: 'acquiring' and 'releasing' a node)
-+ *     Additionally to normal object references, nodes support something we call
-+ *     "active references". An active reference can be acquired via
-+ *     kdbus_node_acquire() and released via kdbus_node_release(). A caller
-+ *     _must_ own a normal object reference whenever calling those functions.
-+ *     Unlike object references, acquiring an active reference can fail (by
-+ *     returning 'false' from kdbus_node_acquire()). An active reference can
-+ *     only be acquired if the node is marked active. If it is not marked
-+ *     active, yet, or if it was already deactivated, no more active references
-+ *     can be acquired, ever!
-+ *     Active references are used to track tasks working on a node. Whenever a
-+ *     task enters kernel-space to perform an action on a node, it acquires an
-+ *     active reference, performs the action and releases the reference again.
-+ *     While holding an active reference, the node is guaranteed to stay active.
-+ *     If the node is deactivated in parallel, the node is marked as
-+ *     deactivated, then we wait for all active references to be dropped, before
-+ *     we finally proceed with any cleanups. That is, if you hold an active
-+ *     reference to a node, any resources that are bound to the "active" state
-+ *     are guaranteed to stay accessible until you release your reference.
-+ *
-+ *     Active-references are very similar to rw-locks, where acquiring a node is
-+ *     equal to try-read-lock and releasing to read-unlock. Deactivating a node
-+ *     means write-lock and never releasing it again.
-+ *     Unlike rw-locks, the 'active reference' concept is more versatile and
-+ *     avoids unusual rw-lock usage (never releasing a write-lock..).
-+ *
-+ *     It is safe to acquire multiple active-references recursively. But you
-+ *     need to check the return value of kdbus_node_acquire() on _each_ call. It
-+ *     may stop granting references at _any_ time.
-+ *
-+ *     You're free to perform any operations you want while holding an active
-+ *     reference, except sleeping for an indefinite period. Sleeping for a fixed
-+ *     amount of time is fine, but you usually should not wait on wait-queues
-+ *     without a timeout.
-+ *     For example, if you wait for I/O to happen, you should gather all data
-+ *     and schedule the I/O operation, then release your active reference and
-+ *     wait for it to complete. Then try to acquire a new reference. If it
-+ *     fails, perform any cleanup (the node is now dead). Otherwise, you can
-+ *     finish your operation.
-+ *
-+ * All nodes can be deactivated via kdbus_node_deactivate() at any time. You can
-+ * call this multiple times, even in parallel or on nodes that were never
-+ * linked, and it will just work. The only restriction is, you must not hold an
-+ * active reference when calling kdbus_node_deactivate().
-+ * By deactivating a node, it is immediately marked inactive. Then, we wait for
-+ * all active references to be released (called 'draining' the node). This
-+ * shouldn't take very long as we don't perform long-lasting operations while
-+ * holding an active reference. Note that once the node is marked inactive, no
-+ * new active references can be acquired.
-+ * Once all active references are dropped, the node is considered 'drained'. Now
-+ * kdbus_node_deactivate() is called on each child of the node before we
-+ * continue deactvating our node. That is, once all children are entirely
-+ * deactivated, we call ->release_cb() of our node. ->release_cb() can release
-+ * any resources on that node which are bound to the "active" state of a node.
-+ * When done, we unlink the node from its parent rb-tree, mark it as
-+ * 'released' and return.
-+ * If kdbus_node_deactivate() is called multiple times (even in parallel), all
-+ * but one caller will just wait until the node is fully deactivated. That is,
-+ * one random caller of kdbus_node_deactivate() is selected to call
-+ * ->release_cb() and cleanup the node. Only once all this is done, all other
-+ * callers will return from kdbus_node_deactivate(). That is, it doesn't matter
-+ * whether you're the selected caller or not, it will only return after
-+ * everything is fully done.
-+ *
-+ * When a node is activated, we acquire a normal object reference to the node.
-+ * This reference is dropped after deactivation is fully done (and only iff the
-+ * node really was activated). This allows callers to link+activate a child node
-+ * and then drop all refs. The node will be deactivated together with the
-+ * parent, and then be freed when this reference is dropped.
-+ *
-+ * Currently, nodes provide a bunch of resources that external code can use
-+ * directly. This includes:
-+ *
-+ *     * node->waitq: Each node has its own wait-queue that is used to manage
-+ *                    the 'active' state. When a node is deactivated, we wait on
-+ *                    this queue until all active refs are dropped. Analogously,
-+ *                    when you release an active reference on a deactivated
-+ *                    node, and the active ref-count drops to 0, we wake up a
-+ *                    single thread on this queue. Furthermore, once the
-+ *                    ->release_cb() callback finished, we wake up all waiters.
-+ *                    The node-owner is free to re-use this wait-queue for other
-+ *                    purposes. As node-management uses this queue only during
-+ *                    deactivation, it is usually totally fine to re-use the
-+ *                    queue for other, preferably low-overhead, use-cases.
-+ *
-+ *     * node->type: This field defines the type of the owner of this node. It
-+ *                   must be set during node initialization and must remain
-+ *                   constant. The node management never looks at this value,
-+ *                   but external users might use to gain access to the owner
-+ *                   object of a node.
-+ *                   It is totally up to the owner of the node to define what
-+ *                   their type means. Usually it means you can access the
-+ *                   parent structure via container_of(), as long as you hold an
-+ *                   active reference to the node.
-+ *
-+ *     * node->free_cb:    callback after all references are dropped
-+ *       node->release_cb: callback during node deactivation
-+ *                         These fields must be set by the node owner during
-+ *                         node initialization. They must remain constant. If
-+ *                         NULL, they're skipped.
-+ *
-+ *     * node->mode: filesystem access modes
-+ *       node->uid:  filesystem owner uid
-+ *       node->gid:  filesystem owner gid
-+ *                   These fields must be set by the node owner during node
-+ *                   initialization. They must remain constant and may be
-+ *                   accessed by other callers to properly initialize
-+ *                   filesystem nodes.
-+ *
-+ *     * node->id: This is an unsigned 32bit integer allocated by an IDR. It is
-+ *                 always kept as small as possible during allocation and is
-+ *                 globally unique across all nodes allocated by this module. 0
-+ *                 is reserved as "not assigned" and is the default.
-+ *                 The ID is assigned during kdbus_node_link() and is kept until
-+ *                 the object is freed. Thus, the ID surpasses the active
-+ *                 lifetime of a node. As long as you hold an object reference
-+ *                 to a node (and the node was linked once), the ID is valid and
-+ *                 unique.
-+ *
-+ *     * node->name: name of this node
-+ *       node->hash: 31bit hash-value of @name (range [2..INT_MAX-1])
-+ *                   These values follow the same lifetime rules as node->id.
-+ *                   They're initialized when the node is linked and then remain
-+ *                   constant until the last object reference is dropped.
-+ *                   Unlike the id, the name is only unique across all siblings
-+ *                   and only until the node is deactivated. Currently, the name
-+ *                   is even unique if linked but not activated, yet. This might
-+ *                   change in the future, though. Code should not rely on this.
-+ *
-+ *     * node->lock:     lock to protect node->children, node->rb, node->parent
-+ *     * node->parent: Reference to parent node. This is set during LINK time
-+ *                     and is dropped during destruction. You must not access
-+ *                     it unless you hold an active reference to the node or if
-+ *                     you know the node is dead.
-+ *     * node->children: rb-tree of all linked children of this node. You must
-+ *                       not access this directly, but use one of the iterator
-+ *                       or lookup helpers.
-+ */
-+
-+/*
-+ * Bias values track states of "active references". They're all negative. If a
-+ * node is active, its active-ref-counter is >=0 and tracks all active
-+ * references. Once a node is deactivaed, we subtract NODE_BIAS. This means, the
-+ * counter is now negative but still counts the active references. Once it drops
-+ * to exactly NODE_BIAS, we know all active references were dropped. Exactly one
-+ * thread will change it to NODE_RELEASE now, perform cleanup and then put it
-+ * into NODE_DRAINED. Once drained, all other threads that tried deactivating
-+ * the node will now be woken up (thus, they wait until the node is fully done).
-+ * The initial state during node-setup is NODE_NEW. If a node is directly
-+ * deactivated without having ever been active, it is put into
-+ * NODE_RELEASE_DIRECT instead of NODE_BIAS. This tracks this one-bit state
-+ * across node-deactivation. The task putting it into NODE_RELEASE now knows
-+ * whether the node was active before or not.
-+ *
-+ * Some archs implement atomic_sub(v) with atomic_add(-v), so reserve INT_MIN
-+ * to avoid overflows if multiplied by -1.
-+ */
-+#define KDBUS_NODE_BIAS			(INT_MIN + 5)
-+#define KDBUS_NODE_RELEASE_DIRECT	(KDBUS_NODE_BIAS - 1)
-+#define KDBUS_NODE_RELEASE		(KDBUS_NODE_BIAS - 2)
-+#define KDBUS_NODE_DRAINED		(KDBUS_NODE_BIAS - 3)
-+#define KDBUS_NODE_NEW			(KDBUS_NODE_BIAS - 4)
-+
-+/* global unique ID mapping for kdbus nodes */
-+static DEFINE_IDR(kdbus_node_idr);
-+static DECLARE_RWSEM(kdbus_node_idr_lock);
-+
-+/**
-+ * kdbus_node_name_hash() - hash a name
-+ * @name:	The string to hash
-+ *
-+ * This computes the hash of @name. It is guaranteed to be in the range
-+ * [2..INT_MAX-1]. The values 1, 2 and INT_MAX are unused as they are reserved
-+ * for the filesystem code.
-+ *
-+ * Return: hash value of the passed string
-+ */
-+static unsigned int kdbus_node_name_hash(const char *name)
-+{
-+	unsigned int hash;
-+
-+	/* reserve hash numbers 0, 1 and >=INT_MAX for magic directories */
-+	hash = kdbus_strhash(name) & INT_MAX;
-+	if (hash < 2)
-+		hash += 2;
-+	if (hash >= INT_MAX)
-+		hash = INT_MAX - 1;
-+
-+	return hash;
-+}
-+
-+/**
-+ * kdbus_node_name_compare() - compare a name with a node's name
-+ * @hash:	hash of the string to compare the node with
-+ * @name:	name to compare the node with
-+ * @node:	node to compare the name with
-+ *
-+ * Return: 0 if @name and @hash exactly match the information in @node, or
-+ * an integer less than or greater than zero if @name is found, respectively,
-+ * to be less than or be greater than the string stored in @node.
-+ */
-+static int kdbus_node_name_compare(unsigned int hash, const char *name,
-+				   const struct kdbus_node *node)
-+{
-+	if (hash != node->hash)
-+		return hash - node->hash;
-+
-+	return strcmp(name, node->name);
-+}
-+
-+/**
-+ * kdbus_node_init() - initialize a kdbus_node
-+ * @node:	Pointer to the node to initialize
-+ * @type:	The type the node will have (KDBUS_NODE_*)
-+ *
-+ * The caller is responsible of allocating @node and initializating it to zero.
-+ * Once this call returns, you must use the node_ref() and node_unref()
-+ * functions to manage this node.
-+ */
-+void kdbus_node_init(struct kdbus_node *node, unsigned int type)
-+{
-+	atomic_set(&node->refcnt, 1);
-+	mutex_init(&node->lock);
-+	node->id = 0;
-+	node->type = type;
-+	RB_CLEAR_NODE(&node->rb);
-+	node->children = RB_ROOT;
-+	init_waitqueue_head(&node->waitq);
-+	atomic_set(&node->active, KDBUS_NODE_NEW);
-+}
-+
-+/**
-+ * kdbus_node_link() - link a node into the nodes system
-+ * @node:	Pointer to the node to initialize
-+ * @parent:	Pointer to a parent node, may be %NULL
-+ * @name:	The name of the node (or NULL if root node)
-+ *
-+ * This links a node into the hierarchy. This must not be called multiple times.
-+ * If @parent is NULL, the node becomes a new root node.
-+ *
-+ * This call will fail if @name is not unique across all its siblings or if no
-+ * ID could be allocated. You must not activate a node if linking failed! It is
-+ * safe to deactivate it, though.
-+ *
-+ * Once you linked a node, you must call kdbus_node_deactivate() before you drop
-+ * the last reference (even if you never activate the node).
-+ *
-+ * Return: 0 on success. negative error otherwise.
-+ */
-+int kdbus_node_link(struct kdbus_node *node, struct kdbus_node *parent,
-+		    const char *name)
-+{
-+	int ret;
-+
-+	if (WARN_ON(node->type != KDBUS_NODE_DOMAIN && !parent))
-+		return -EINVAL;
-+
-+	if (WARN_ON(parent && !name))
-+		return -EINVAL;
-+
-+	if (name) {
-+		node->name = kstrdup(name, GFP_KERNEL);
-+		if (!node->name)
-+			return -ENOMEM;
-+
-+		node->hash = kdbus_node_name_hash(name);
-+	}
-+
-+	down_write(&kdbus_node_idr_lock);
-+	ret = idr_alloc(&kdbus_node_idr, node, 1, 0, GFP_KERNEL);
-+	if (ret >= 0)
-+		node->id = ret;
-+	up_write(&kdbus_node_idr_lock);
-+
-+	if (ret < 0)
-+		return ret;
-+
-+	ret = 0;
-+
-+	if (parent) {
-+		struct rb_node **n, *prev;
-+
-+		if (!kdbus_node_acquire(parent))
-+			return -ESHUTDOWN;
-+
-+		mutex_lock(&parent->lock);
-+
-+		n = &parent->children.rb_node;
-+		prev = NULL;
-+
-+		while (*n) {
-+			struct kdbus_node *pos;
-+			int result;
-+
-+			pos = kdbus_node_from_rb(*n);
-+			prev = *n;
-+			result = kdbus_node_name_compare(node->hash,
-+							 node->name,
-+							 pos);
-+			if (result == 0) {
-+				ret = -EEXIST;
-+				goto exit_unlock;
-+			}
-+
-+			if (result < 0)
-+				n = &pos->rb.rb_left;
-+			else
-+				n = &pos->rb.rb_right;
-+		}
-+
-+		/* add new node and rebalance the tree */
-+		rb_link_node(&node->rb, prev, n);
-+		rb_insert_color(&node->rb, &parent->children);
-+		node->parent = kdbus_node_ref(parent);
-+
-+exit_unlock:
-+		mutex_unlock(&parent->lock);
-+		kdbus_node_release(parent);
-+	}
-+
-+	return ret;
-+}
-+
-+/**
-+ * kdbus_node_ref() - Acquire object reference
-+ * @node:	node to acquire reference to (or NULL)
-+ *
-+ * This acquires a new reference to @node. You must already own a reference when
-+ * calling this!
-+ * If @node is NULL, this is a no-op.
-+ *
-+ * Return: @node is returned
-+ */
-+struct kdbus_node *kdbus_node_ref(struct kdbus_node *node)
-+{
-+	if (node)
-+		atomic_inc(&node->refcnt);
-+	return node;
-+}
-+
-+/**
-+ * kdbus_node_unref() - Drop object reference
-+ * @node:	node to drop reference to (or NULL)
-+ *
-+ * This drops an object reference to @node. You must not access the node if you
-+ * no longer own a reference.
-+ * If the ref-count drops to 0, the object will be destroyed (->free_cb will be
-+ * called).
-+ *
-+ * If you linked or activated the node, you must deactivate the node before you
-+ * drop your last reference! If you didn't link or activate the node, you can
-+ * drop any reference you want.
-+ *
-+ * Note that this calls into ->free_cb() and thus _might_ sleep. The ->free_cb()
-+ * callbacks must not acquire any outer locks, though. So you can safely drop
-+ * references while holding locks.
-+ *
-+ * If @node is NULL, this is a no-op.
-+ *
-+ * Return: This always returns NULL
-+ */
-+struct kdbus_node *kdbus_node_unref(struct kdbus_node *node)
-+{
-+	if (node && atomic_dec_and_test(&node->refcnt)) {
-+		struct kdbus_node safe = *node;
-+
-+		WARN_ON(atomic_read(&node->active) != KDBUS_NODE_DRAINED);
-+		WARN_ON(!RB_EMPTY_NODE(&node->rb));
-+
-+		if (node->free_cb)
-+			node->free_cb(node);
-+
-+		down_write(&kdbus_node_idr_lock);
-+		if (safe.id > 0)
-+			idr_remove(&kdbus_node_idr, safe.id);
-+		/* drop caches after last node to not leak memory on unload */
-+		if (idr_is_empty(&kdbus_node_idr)) {
-+			idr_destroy(&kdbus_node_idr);
-+			idr_init(&kdbus_node_idr);
-+		}
-+		up_write(&kdbus_node_idr_lock);
-+
-+		kfree(safe.name);
-+
-+		/*
-+		 * kdbusfs relies on the parent to be available even after the
-+		 * node was deactivated and unlinked. Therefore, we pin it
-+		 * until a node is destroyed.
-+		 */
-+		kdbus_node_unref(safe.parent);
-+	}
-+
++	if (mp)
++		kref_put(&mp->kref, kdbus_meta_proc_free);
 +	return NULL;
 +}
 +
-+/**
-+ * kdbus_node_is_active() - test whether a node is active
-+ * @node:	node to test
-+ *
-+ * This checks whether @node is active. That means, @node was linked and
-+ * activated by the node owner and hasn't been deactivated, yet. If, and only
-+ * if, a node is active, kdbus_node_acquire() will be able to acquire active
-+ * references.
-+ *
-+ * Note that this function does not give any lifetime guarantees. After this
-+ * call returns, the node might be deactivated immediately. Normally, what you
-+ * want is to acquire a real active reference via kdbus_node_acquire().
-+ *
-+ * Return: true if @node is active, false otherwise
-+ */
-+bool kdbus_node_is_active(struct kdbus_node *node)
++static void kdbus_meta_proc_collect_creds(struct kdbus_meta_proc *mp)
 +{
-+	return atomic_read(&node->active) >= 0;
++	mp->uid		= current_uid();
++	mp->euid	= current_euid();
++	mp->suid	= current_suid();
++	mp->fsuid	= current_fsuid();
++
++	mp->gid		= current_gid();
++	mp->egid	= current_egid();
++	mp->sgid	= current_sgid();
++	mp->fsgid	= current_fsgid();
++
++	mp->valid |= KDBUS_ATTACH_CREDS;
 +}
 +
-+/**
-+ * kdbus_node_is_deactivated() - test whether a node was already deactivated
-+ * @node:	node to test
-+ *
-+ * This checks whether kdbus_node_deactivate() was called on @node. Note that
-+ * this might be true even if you never deactivated the node directly, but only
-+ * one of its ancestors.
-+ *
-+ * Note that even if this returns 'false', the node might get deactivated
-+ * immediately after the call returns.
-+ *
-+ * Return: true if @node was already deactivated, false if not
-+ */
-+bool kdbus_node_is_deactivated(struct kdbus_node *node)
++static void kdbus_meta_proc_collect_pids(struct kdbus_meta_proc *mp)
 +{
-+	int v;
++	struct task_struct *parent;
 +
-+	v = atomic_read(&node->active);
-+	return v != KDBUS_NODE_NEW && v < 0;
++	mp->pid = get_pid(task_pid(current));
++	mp->tgid = get_pid(task_tgid(current));
++
++	rcu_read_lock();
++	parent = rcu_dereference(current->real_parent);
++	mp->ppid = get_pid(task_tgid(parent));
++	rcu_read_unlock();
++
++	mp->valid |= KDBUS_ATTACH_PIDS;
 +}
 +
-+/**
-+ * kdbus_node_activate() - activate a node
-+ * @node:	node to activate
-+ *
-+ * This marks @node as active if, and only if, the node wasn't activated nor
-+ * deactivated, yet, and the parent is still active. Any but the first call to
-+ * kdbus_node_activate() is a no-op.
-+ * If you called kdbus_node_deactivate() before, then even the first call to
-+ * kdbus_node_activate() will be a no-op.
-+ *
-+ * This call doesn't give any lifetime guarantees. The node might get
-+ * deactivated immediately after this call returns. Or the parent might already
-+ * be deactivated, which will make this call a no-op.
-+ *
-+ * If this call successfully activated a node, it will take an object reference
-+ * to it. This reference is dropped after the node is deactivated. Therefore,
-+ * the object owner can safely drop their reference to @node iff they know that
-+ * its parent node will get deactivated at some point. Once the parent node is
-+ * deactivated, it will deactivate all its child and thus drop this reference
-+ * again.
-+ *
-+ * Return: True if this call successfully activated the node, otherwise false.
-+ *         Note that this might return false, even if the node is still active
-+ *         (eg., if you called this a second time).
-+ */
-+bool kdbus_node_activate(struct kdbus_node *node)
++static int kdbus_meta_proc_collect_auxgroups(struct kdbus_meta_proc *mp)
 +{
-+	bool res = false;
++	struct group_info *info;
++	size_t i;
 +
-+	mutex_lock(&node->lock);
-+	if (atomic_read(&node->active) == KDBUS_NODE_NEW) {
-+		atomic_sub(KDBUS_NODE_NEW, &node->active);
-+		/* activated nodes have ref +1 */
-+		kdbus_node_ref(node);
-+		res = true;
-+	}
-+	mutex_unlock(&node->lock);
++	info = get_current_groups();
 +
-+	return res;
-+}
-+
-+/**
-+ * kdbus_node_deactivate() - deactivate a node
-+ * @node:	The node to deactivate.
-+ *
-+ * This function recursively deactivates this node and all its children. It
-+ * returns only once all children and the node itself were recursively disabled
-+ * (even if you call this function multiple times in parallel).
-+ *
-+ * It is safe to call this function on _any_ node that was initialized _any_
-+ * number of times.
-+ *
-+ * This call may sleep, as it waits for all active references to be dropped.
-+ */
-+void kdbus_node_deactivate(struct kdbus_node *node)
-+{
-+	struct kdbus_node *pos, *child;
-+	struct rb_node *rb;
-+	int v_pre, v_post;
-+
-+	pos = node;
-+
-+	/*
-+	 * To avoid recursion, we perform back-tracking while deactivating
-+	 * nodes. For each node we enter, we first mark the active-counter as
-+	 * deactivated by adding BIAS. If the node as children, we set the first
-+	 * child as current position and start over. If the node has no
-+	 * children, we drain the node by waiting for all active refs to be
-+	 * dropped and then releasing the node.
-+	 *
-+	 * After the node is released, we set its parent as current position
-+	 * and start over. If the current position was the initial node, we're
-+	 * done.
-+	 *
-+	 * Note that this function can be called in parallel by multiple
-+	 * callers. We make sure that each node is only released once, and any
-+	 * racing caller will wait until the other thread fully released that
-+	 * node.
-+	 */
-+
-+	for (;;) {
-+		/*
-+		 * Add BIAS to node->active to mark it as inactive. If it was
-+		 * never active before, immediately mark it as RELEASE_INACTIVE
-+		 * so we remember this state.
-+		 * We cannot remember v_pre as we might iterate into the
-+		 * children, overwriting v_pre, before we can release our node.
-+		 */
-+		mutex_lock(&pos->lock);
-+		v_pre = atomic_read(&pos->active);
-+		if (v_pre >= 0)
-+			atomic_add_return(KDBUS_NODE_BIAS, &pos->active);
-+		else if (v_pre == KDBUS_NODE_NEW)
-+			atomic_set(&pos->active, KDBUS_NODE_RELEASE_DIRECT);
-+		mutex_unlock(&pos->lock);
-+
-+		/* wait until all active references were dropped */
-+		wait_event(pos->waitq,
-+			   atomic_read(&pos->active) <= KDBUS_NODE_BIAS);
-+
-+		mutex_lock(&pos->lock);
-+		/* recurse into first child if any */
-+		rb = rb_first(&pos->children);
-+		if (rb) {
-+			child = kdbus_node_ref(kdbus_node_from_rb(rb));
-+			mutex_unlock(&pos->lock);
-+			pos = child;
-+			continue;
++	if (info->ngroups > 0) {
++		mp->auxgrps = kmalloc_array(info->ngroups, sizeof(kgid_t),
++					    GFP_KERNEL);
++		if (!mp->auxgrps) {
++			put_group_info(info);
++			return -ENOMEM;
 +		}
 +
-+		/* mark object as RELEASE */
-+		v_post = atomic_read(&pos->active);
-+		if (v_post == KDBUS_NODE_BIAS ||
-+		    v_post == KDBUS_NODE_RELEASE_DIRECT)
-+			atomic_set(&pos->active, KDBUS_NODE_RELEASE);
-+		mutex_unlock(&pos->lock);
-+
-+		/*
-+		 * If this is the thread that marked the object as RELEASE, we
-+		 * perform the actual release. Otherwise, we wait until the
-+		 * release is done and the node is marked as DRAINED.
-+		 */
-+		if (v_post == KDBUS_NODE_BIAS ||
-+		    v_post == KDBUS_NODE_RELEASE_DIRECT) {
-+			if (pos->release_cb)
-+				pos->release_cb(pos, v_post == KDBUS_NODE_BIAS);
-+
-+			if (pos->parent) {
-+				mutex_lock(&pos->parent->lock);
-+				if (!RB_EMPTY_NODE(&pos->rb)) {
-+					rb_erase(&pos->rb,
-+						 &pos->parent->children);
-+					RB_CLEAR_NODE(&pos->rb);
-+				}
-+				mutex_unlock(&pos->parent->lock);
-+			}
-+
-+			/* mark as DRAINED */
-+			atomic_set(&pos->active, KDBUS_NODE_DRAINED);
-+			wake_up_all(&pos->waitq);
-+
-+			/* drop VFS cache */
-+			kdbus_fs_flush(pos);
-+
-+			/*
-+			 * If the node was activated and somone subtracted BIAS
-+			 * from it to deactivate it, we, and only us, are
-+			 * responsible to release the extra ref-count that was
-+			 * taken once in kdbus_node_activate().
-+			 * If the node was never activated, no-one ever
-+			 * subtracted BIAS, but instead skipped that state and
-+			 * immediately went to NODE_RELEASE_DIRECT. In that case
-+			 * we must not drop the reference.
-+			 */
-+			if (v_post == KDBUS_NODE_BIAS)
-+				kdbus_node_unref(pos);
-+		} else {
-+			/* wait until object is DRAINED */
-+			wait_event(pos->waitq,
-+			    atomic_read(&pos->active) == KDBUS_NODE_DRAINED);
-+		}
-+
-+		/*
-+		 * We're done with the current node. Continue on its parent
-+		 * again, which will try deactivating its next child, or itself
-+		 * if no child is left.
-+		 * If we've reached our initial node again, we are done and
-+		 * can safely return.
-+		 */
-+		if (pos == node)
-+			break;
-+
-+		child = pos;
-+		pos = pos->parent;
-+		kdbus_node_unref(child);
++		for (i = 0; i < info->ngroups; i++)
++			mp->auxgrps[i] = GROUP_AT(info, i);
 +	}
++
++	mp->n_auxgrps = info->ngroups;
++	put_group_info(info);
++	mp->valid |= KDBUS_ATTACH_AUXGROUPS;
++
++	return 0;
 +}
 +
-+/**
-+ * kdbus_node_acquire() - Acquire an active ref on a node
-+ * @node:	The node
-+ *
-+ * This acquires an active-reference to @node. This will only succeed if the
-+ * node is active. You must release this active reference via
-+ * kdbus_node_release() again.
-+ *
-+ * See the introduction to "active references" for more details.
-+ *
-+ * Return: %true if @node was non-NULL and active
-+ */
-+bool kdbus_node_acquire(struct kdbus_node *node)
++static void kdbus_meta_proc_collect_tid_comm(struct kdbus_meta_proc *mp)
 +{
-+	return node && atomic_inc_unless_negative(&node->active);
++	get_task_comm(mp->tid_comm, current);
++	mp->valid |= KDBUS_ATTACH_TID_COMM;
 +}
 +
-+/**
-+ * kdbus_node_release() - Release an active ref on a node
-+ * @node:	The node
-+ *
-+ * This releases an active reference that was previously acquired via
-+ * kdbus_node_acquire(). See kdbus_node_acquire() for details.
-+ */
-+void kdbus_node_release(struct kdbus_node *node)
++static void kdbus_meta_proc_collect_pid_comm(struct kdbus_meta_proc *mp)
 +{
-+	if (node && atomic_dec_return(&node->active) == KDBUS_NODE_BIAS)
-+		wake_up(&node->waitq);
++	get_task_comm(mp->pid_comm, current->group_leader);
++	mp->valid |= KDBUS_ATTACH_PID_COMM;
 +}
 +
-+/**
-+ * kdbus_node_find_child() - Find child by name
-+ * @node:	parent node to search through
-+ * @name:	name of child node
-+ *
-+ * This searches through all children of @node for a child-node with name @name.
-+ * If not found, or if the child is deactivated, NULL is returned. Otherwise,
-+ * the child is acquired and a new reference is returned.
-+ *
-+ * If you're done with the child, you need to release it and drop your
-+ * reference.
-+ *
-+ * This function does not acquire the parent node. However, if the parent was
-+ * already deactivated, then kdbus_node_deactivate() will, at some point, also
-+ * deactivate the child. Therefore, we can rely on the explicit ordering during
-+ * deactivation.
-+ *
-+ * Return: Reference to acquired child node, or NULL if not found / not active.
-+ */
-+struct kdbus_node *kdbus_node_find_child(struct kdbus_node *node,
-+					 const char *name)
++static void kdbus_meta_proc_collect_exe(struct kdbus_meta_proc *mp)
 +{
-+	struct kdbus_node *child;
-+	struct rb_node *rb;
-+	unsigned int hash;
++	struct mm_struct *mm;
++
++	mm = get_task_mm(current);
++	if (!mm)
++		return;
++
++	down_read(&mm->mmap_sem);
++	if (mm->exe_file) {
++		mp->exe_path = mm->exe_file->f_path;
++		path_get(&mp->exe_path);
++		get_fs_root(current->fs, &mp->root_path);
++		mp->valid |= KDBUS_ATTACH_EXE;
++	}
++	up_read(&mm->mmap_sem);
++
++	mmput(mm);
++}
++
++static int kdbus_meta_proc_collect_cmdline(struct kdbus_meta_proc *mp)
++{
++	struct mm_struct *mm;
++	char *cmdline;
++
++	mm = get_task_mm(current);
++	if (!mm)
++		return 0;
++
++	if (!mm->arg_end) {
++		mmput(mm);
++		return 0;
++	}
++
++	cmdline = strndup_user((const char __user *)mm->arg_start,
++			       mm->arg_end - mm->arg_start);
++	mmput(mm);
++
++	if (IS_ERR(cmdline))
++		return PTR_ERR(cmdline);
++
++	mp->cmdline = cmdline;
++	mp->valid |= KDBUS_ATTACH_CMDLINE;
++
++	return 0;
++}
++
++static int kdbus_meta_proc_collect_cgroup(struct kdbus_meta_proc *mp)
++{
++#ifdef CONFIG_CGROUPS
++	void *page;
++	char *s;
++
++	page = (void *)__get_free_page(GFP_TEMPORARY);
++	if (!page)
++		return -ENOMEM;
++
++	s = task_cgroup_path(current, page, PAGE_SIZE);
++	if (s) {
++		mp->cgroup = kstrdup(s, GFP_KERNEL);
++		if (!mp->cgroup) {
++			free_page((unsigned long)page);
++			return -ENOMEM;
++		}
++	}
++
++	free_page((unsigned long)page);
++	mp->valid |= KDBUS_ATTACH_CGROUP;
++#endif
++
++	return 0;
++}
++
++static void kdbus_meta_proc_collect_caps(struct kdbus_meta_proc *mp)
++{
++	const struct cred *c = current_cred();
++	int i;
++
++	/* ABI: "last_cap" equals /proc/sys/kernel/cap_last_cap */
++	mp->caps.last_cap = CAP_LAST_CAP;
++	mp->caps_namespace = get_user_ns(current_user_ns());
++
++	CAP_FOR_EACH_U32(i) {
++		mp->caps.set[0].caps[i] = c->cap_inheritable.cap[i];
++		mp->caps.set[1].caps[i] = c->cap_permitted.cap[i];
++		mp->caps.set[2].caps[i] = c->cap_effective.cap[i];
++		mp->caps.set[3].caps[i] = c->cap_bset.cap[i];
++	}
++
++	/* clear unused bits */
++	for (i = 0; i < 4; i++)
++		mp->caps.set[i].caps[CAP_TO_INDEX(CAP_LAST_CAP)] &=
++						CAP_LAST_U32_VALID_MASK;
++
++	mp->valid |= KDBUS_ATTACH_CAPS;
++}
++
++static int kdbus_meta_proc_collect_seclabel(struct kdbus_meta_proc *mp)
++{
++#ifdef CONFIG_SECURITY
++	char *ctx = NULL;
++	u32 sid, len;
 +	int ret;
 +
-+	hash = kdbus_node_name_hash(name);
-+
-+	mutex_lock(&node->lock);
-+	rb = node->children.rb_node;
-+	while (rb) {
-+		child = kdbus_node_from_rb(rb);
-+		ret = kdbus_node_name_compare(hash, name, child);
-+		if (ret < 0)
-+			rb = rb->rb_left;
-+		else if (ret > 0)
-+			rb = rb->rb_right;
-+		else
-+			break;
++	security_task_getsecid(current, &sid);
++	ret = security_secid_to_secctx(sid, &ctx, &len);
++	if (ret < 0) {
++		/*
++		 * EOPNOTSUPP means no security module is active,
++		 * lets skip adding the seclabel then. This effectively
++		 * drops the SECLABEL item.
++		 */
++		return (ret == -EOPNOTSUPP) ? 0 : ret;
 +	}
-+	if (rb && kdbus_node_acquire(child))
-+		kdbus_node_ref(child);
-+	else
-+		child = NULL;
-+	mutex_unlock(&node->lock);
 +
-+	return child;
++	mp->seclabel = kstrdup(ctx, GFP_KERNEL);
++	security_release_secctx(ctx, len);
++	if (!mp->seclabel)
++		return -ENOMEM;
++
++	mp->valid |= KDBUS_ATTACH_SECLABEL;
++#endif
++
++	return 0;
 +}
 +
-+static struct kdbus_node *node_find_closest_unlocked(struct kdbus_node *node,
-+						     unsigned int hash,
-+						     const char *name)
++static void kdbus_meta_proc_collect_audit(struct kdbus_meta_proc *mp)
 +{
-+	struct kdbus_node *n, *pos = NULL;
-+	struct rb_node *rb;
-+	int res;
++#ifdef CONFIG_AUDITSYSCALL
++	mp->audit_loginuid = audit_get_loginuid(current);
++	mp->audit_sessionid = audit_get_sessionid(current);
++	mp->valid |= KDBUS_ATTACH_AUDIT;
++#endif
++}
++
++/**
++ * kdbus_meta_proc_collect() - Collect process metadata
++ * @mp:		Process metadata object
++ * @what:	Attach flags to collect
++ *
++ * This collects process metadata from current and saves it in @mp.
++ *
++ * Return: 0 on success, negative error code on failure.
++ */
++int kdbus_meta_proc_collect(struct kdbus_meta_proc *mp, u64 what)
++{
++	int ret;
++
++	if (!mp)
++		return 0;
++
++	mutex_lock(&mp->lock);
++
++	if ((what & KDBUS_ATTACH_CREDS) &&
++	    !(mp->collected & KDBUS_ATTACH_CREDS)) {
++		kdbus_meta_proc_collect_creds(mp);
++		mp->collected |= KDBUS_ATTACH_CREDS;
++	}
++
++	if ((what & KDBUS_ATTACH_PIDS) &&
++	    !(mp->collected & KDBUS_ATTACH_PIDS)) {
++		kdbus_meta_proc_collect_pids(mp);
++		mp->collected |= KDBUS_ATTACH_PIDS;
++	}
++
++	if ((what & KDBUS_ATTACH_AUXGROUPS) &&
++	    !(mp->collected & KDBUS_ATTACH_AUXGROUPS)) {
++		ret = kdbus_meta_proc_collect_auxgroups(mp);
++		if (ret < 0)
++			goto exit_unlock;
++		mp->collected |= KDBUS_ATTACH_AUXGROUPS;
++	}
++
++	if ((what & KDBUS_ATTACH_TID_COMM) &&
++	    !(mp->collected & KDBUS_ATTACH_TID_COMM)) {
++		kdbus_meta_proc_collect_tid_comm(mp);
++		mp->collected |= KDBUS_ATTACH_TID_COMM;
++	}
++
++	if ((what & KDBUS_ATTACH_PID_COMM) &&
++	    !(mp->collected & KDBUS_ATTACH_PID_COMM)) {
++		kdbus_meta_proc_collect_pid_comm(mp);
++		mp->collected |= KDBUS_ATTACH_PID_COMM;
++	}
++
++	if ((what & KDBUS_ATTACH_EXE) &&
++	    !(mp->collected & KDBUS_ATTACH_EXE)) {
++		kdbus_meta_proc_collect_exe(mp);
++		mp->collected |= KDBUS_ATTACH_EXE;
++	}
++
++	if ((what & KDBUS_ATTACH_CMDLINE) &&
++	    !(mp->collected & KDBUS_ATTACH_CMDLINE)) {
++		ret = kdbus_meta_proc_collect_cmdline(mp);
++		if (ret < 0)
++			goto exit_unlock;
++		mp->collected |= KDBUS_ATTACH_CMDLINE;
++	}
++
++	if ((what & KDBUS_ATTACH_CGROUP) &&
++	    !(mp->collected & KDBUS_ATTACH_CGROUP)) {
++		ret = kdbus_meta_proc_collect_cgroup(mp);
++		if (ret < 0)
++			goto exit_unlock;
++		mp->collected |= KDBUS_ATTACH_CGROUP;
++	}
++
++	if ((what & KDBUS_ATTACH_CAPS) &&
++	    !(mp->collected & KDBUS_ATTACH_CAPS)) {
++		kdbus_meta_proc_collect_caps(mp);
++		mp->collected |= KDBUS_ATTACH_CAPS;
++	}
++
++	if ((what & KDBUS_ATTACH_SECLABEL) &&
++	    !(mp->collected & KDBUS_ATTACH_SECLABEL)) {
++		ret = kdbus_meta_proc_collect_seclabel(mp);
++		if (ret < 0)
++			goto exit_unlock;
++		mp->collected |= KDBUS_ATTACH_SECLABEL;
++	}
++
++	if ((what & KDBUS_ATTACH_AUDIT) &&
++	    !(mp->collected & KDBUS_ATTACH_AUDIT)) {
++		kdbus_meta_proc_collect_audit(mp);
++		mp->collected |= KDBUS_ATTACH_AUDIT;
++	}
++
++	ret = 0;
++
++exit_unlock:
++	mutex_unlock(&mp->lock);
++	return ret;
++}
++
++/**
++ * kdbus_meta_proc_fake() - Fill process metadata from faked credentials
++ * @mp:		Metadata
++ * @creds:	Creds to set, may be %NULL
++ * @pids:	PIDs to set, may be %NULL
++ * @seclabel:	Seclabel to set, may be %NULL
++ *
++ * This function takes information stored in @creds, @pids and @seclabel and
++ * resolves them to kernel-representations, if possible. A call to this function
++ * is considered an alternative to calling kdbus_meta_add_current(), which
++ * derives the same information from the 'current' task.
++ *
++ * This call uses the current task's namespaces to resolve the given
++ * information.
++ *
++ * Return: 0 on success, negative error number otherwise.
++ */
++int kdbus_meta_proc_fake(struct kdbus_meta_proc *mp,
++			 const struct kdbus_creds *creds,
++			 const struct kdbus_pids *pids,
++			 const char *seclabel)
++{
++	int ret;
++
++	if (!mp)
++		return 0;
++
++	mutex_lock(&mp->lock);
++
++	if (creds && !(mp->collected & KDBUS_ATTACH_CREDS)) {
++		struct user_namespace *ns = current_user_ns();
++
++		mp->uid		= make_kuid(ns, creds->uid);
++		mp->euid	= make_kuid(ns, creds->euid);
++		mp->suid	= make_kuid(ns, creds->suid);
++		mp->fsuid	= make_kuid(ns, creds->fsuid);
++
++		mp->gid		= make_kgid(ns, creds->gid);
++		mp->egid	= make_kgid(ns, creds->egid);
++		mp->sgid	= make_kgid(ns, creds->sgid);
++		mp->fsgid	= make_kgid(ns, creds->fsgid);
++
++		if ((creds->uid   != (uid_t)-1 && !uid_valid(mp->uid))   ||
++		    (creds->euid  != (uid_t)-1 && !uid_valid(mp->euid))  ||
++		    (creds->suid  != (uid_t)-1 && !uid_valid(mp->suid))  ||
++		    (creds->fsuid != (uid_t)-1 && !uid_valid(mp->fsuid)) ||
++		    (creds->gid   != (gid_t)-1 && !gid_valid(mp->gid))   ||
++		    (creds->egid  != (gid_t)-1 && !gid_valid(mp->egid))  ||
++		    (creds->sgid  != (gid_t)-1 && !gid_valid(mp->sgid))  ||
++		    (creds->fsgid != (gid_t)-1 && !gid_valid(mp->fsgid))) {
++			ret = -EINVAL;
++			goto exit_unlock;
++		}
++
++		mp->valid |= KDBUS_ATTACH_CREDS;
++		mp->collected |= KDBUS_ATTACH_CREDS;
++	}
++
++	if (pids && !(mp->collected & KDBUS_ATTACH_PIDS)) {
++		mp->pid = get_pid(find_vpid(pids->tid));
++		mp->tgid = get_pid(find_vpid(pids->pid));
++		mp->ppid = get_pid(find_vpid(pids->ppid));
++
++		if ((pids->tid != 0 && !mp->pid) ||
++		    (pids->pid != 0 && !mp->tgid) ||
++		    (pids->ppid != 0 && !mp->ppid)) {
++			put_pid(mp->pid);
++			put_pid(mp->tgid);
++			put_pid(mp->ppid);
++			mp->pid = NULL;
++			mp->tgid = NULL;
++			mp->ppid = NULL;
++			ret = -EINVAL;
++			goto exit_unlock;
++		}
++
++		mp->valid |= KDBUS_ATTACH_PIDS;
++		mp->collected |= KDBUS_ATTACH_PIDS;
++	}
++
++	if (seclabel && !(mp->collected & KDBUS_ATTACH_SECLABEL)) {
++		mp->seclabel = kstrdup(seclabel, GFP_KERNEL);
++		if (!mp->seclabel) {
++			ret = -ENOMEM;
++			goto exit_unlock;
++		}
++
++		mp->valid |= KDBUS_ATTACH_SECLABEL;
++		mp->collected |= KDBUS_ATTACH_SECLABEL;
++	}
++
++	ret = 0;
++
++exit_unlock:
++	mutex_unlock(&mp->lock);
++	return ret;
++}
++
++/**
++ * kdbus_meta_conn_new() - Create connection metadata object
++ *
++ * Return: Pointer to new object on success, ERR_PTR on failure.
++ */
++struct kdbus_meta_conn *kdbus_meta_conn_new(void)
++{
++	struct kdbus_meta_conn *mc;
++
++	mc = kzalloc(sizeof(*mc), GFP_KERNEL);
++	if (!mc)
++		return ERR_PTR(-ENOMEM);
++
++	kref_init(&mc->kref);
++	mutex_init(&mc->lock);
++
++	return mc;
++}
++
++static void kdbus_meta_conn_free(struct kref *kref)
++{
++	struct kdbus_meta_conn *mc = container_of(kref, struct kdbus_meta_conn,
++						  kref);
++
++	kfree(mc->conn_description);
++	kfree(mc->owned_names_items);
++	kfree(mc);
++}
++
++/**
++ * kdbus_meta_conn_ref() - Gain reference
++ * @mc:		Connection metadata object
++ */
++struct kdbus_meta_conn *kdbus_meta_conn_ref(struct kdbus_meta_conn *mc)
++{
++	if (mc)
++		kref_get(&mc->kref);
++	return mc;
++}
++
++/**
++ * kdbus_meta_conn_unref() - Drop reference
++ * @mc:		Connection metadata object
++ */
++struct kdbus_meta_conn *kdbus_meta_conn_unref(struct kdbus_meta_conn *mc)
++{
++	if (mc)
++		kref_put(&mc->kref, kdbus_meta_conn_free);
++	return NULL;
++}
++
++static void kdbus_meta_conn_collect_timestamp(struct kdbus_meta_conn *mc,
++					      struct kdbus_kmsg *kmsg)
++{
++	struct timespec ts;
++
++	ktime_get_ts(&ts);
++	mc->ts.monotonic_ns = timespec_to_ns(&ts);
++
++	ktime_get_real_ts(&ts);
++	mc->ts.realtime_ns = timespec_to_ns(&ts);
++
++	if (kmsg)
++		mc->ts.seqnum = kmsg->seq;
++
++	mc->valid |= KDBUS_ATTACH_TIMESTAMP;
++}
++
++static int kdbus_meta_conn_collect_names(struct kdbus_meta_conn *mc,
++					 struct kdbus_conn *conn)
++{
++	const struct kdbus_name_entry *e;
++	struct kdbus_item *item;
++	size_t slen, size;
++
++	size = 0;
++	list_for_each_entry(e, &conn->names_list, conn_entry)
++		size += KDBUS_ITEM_SIZE(sizeof(struct kdbus_name) +
++					strlen(e->name) + 1);
++
++	if (!size)
++		return 0;
++
++	item = kmalloc(size, GFP_KERNEL);
++	if (!item)
++		return -ENOMEM;
++
++	mc->owned_names_items = item;
++	mc->owned_names_size = size;
++
++	list_for_each_entry(e, &conn->names_list, conn_entry) {
++		slen = strlen(e->name) + 1;
++		kdbus_item_set(item, KDBUS_ITEM_OWNED_NAME, NULL,
++			       sizeof(struct kdbus_name) + slen);
++		item->name.flags = e->flags;
++		memcpy(item->name.name, e->name, slen);
++		item = KDBUS_ITEM_NEXT(item);
++	}
++
++	/* sanity check: the buffer should be completely written now */
++	WARN_ON((u8 *)item != (u8 *)mc->owned_names_items + size);
++
++	mc->valid |= KDBUS_ATTACH_NAMES;
++	return 0;
++}
++
++static int kdbus_meta_conn_collect_description(struct kdbus_meta_conn *mc,
++					       struct kdbus_conn *conn)
++{
++	if (!conn->description)
++		return 0;
++
++	mc->conn_description = kstrdup(conn->description, GFP_KERNEL);
++	if (!mc->conn_description)
++		return -ENOMEM;
++
++	mc->valid |= KDBUS_ATTACH_CONN_DESCRIPTION;
++	return 0;
++}
++
++/**
++ * kdbus_meta_conn_collect() - Collect connection metadata
++ * @mc:		Message metadata object
++ * @kmsg:	Kmsg to collect data from
++ * @conn:	Connection to collect data from
++ * @what:	Attach flags to collect
++ *
++ * This collects connection metadata from @kmsg and @conn and saves it in @mc.
++ *
++ * Return: 0 on success, negative error code on failure.
++ */
++int kdbus_meta_conn_collect(struct kdbus_meta_conn *mc,
++			    struct kdbus_kmsg *kmsg,
++			    struct kdbus_conn *conn,
++			    u64 what)
++{
++	int ret;
++
++	if (!mc)
++		return 0;
++
++	if (conn)
++		mutex_lock(&conn->lock);
++	mutex_lock(&mc->lock);
++
++	if (kmsg && (what & KDBUS_ATTACH_TIMESTAMP) &&
++	    !(mc->collected & KDBUS_ATTACH_TIMESTAMP)) {
++		kdbus_meta_conn_collect_timestamp(mc, kmsg);
++		mc->collected |= KDBUS_ATTACH_TIMESTAMP;
++	}
++
++
++	if (conn && (what & KDBUS_ATTACH_NAMES) &&
++	    !(mc->collected & KDBUS_ATTACH_NAMES)) {
++		ret = kdbus_meta_conn_collect_names(mc, conn);
++		if (ret < 0)
++			goto exit_unlock;
++		mc->collected |= KDBUS_ATTACH_NAMES;
++	}
++
++	if (conn && (what & KDBUS_ATTACH_CONN_DESCRIPTION) &&
++	    !(mc->collected & KDBUS_ATTACH_CONN_DESCRIPTION)) {
++		ret = kdbus_meta_conn_collect_description(mc, conn);
++		if (ret < 0)
++			goto exit_unlock;
++		mc->collected |= KDBUS_ATTACH_CONN_DESCRIPTION;
++	}
++
++	ret = 0;
++
++exit_unlock:
++	mutex_unlock(&mc->lock);
++	if (conn)
++		mutex_unlock(&conn->lock);
++	return ret;
++}
++
++/**
++ * kdbus_meta_export() - export information from metadata into buffer
++ * @mp:		Process metadata, or NULL
++ * @mc:		Connection metadata, or NULL
++ * @mask:	Mask of KDBUS_ATTACH_* flags to export
++ * @sz:		Pointer to return the buffer size
++ *
++ * This function exports information from metadata to allocated buffer.
++ * Only information that is requested in @mask and that has been collected
++ * before is exported.
++ *
++ * All information will be translated using the current namespaces.
++ *
++ * Return: An array of items on success, ERR_PTR value on errors. On success,
++ * @sz is also set to the number of bytes returned in the items array. The
++ * caller must release the buffer via kfree().
++ */
++struct kdbus_item *kdbus_meta_export(struct kdbus_meta_proc *mp,
++				     struct kdbus_meta_conn *mc,
++				     u64 mask,
++				     size_t *sz)
++{
++	struct user_namespace *user_ns = current_user_ns();
++	struct kdbus_item *item, *items = NULL;
++	char *exe_pathname = NULL;
++	void *exe_page = NULL;
++	size_t size = 0;
++	u64 valid = 0;
++	int ret;
++
++	if (WARN_ON(!sz))
++		return ERR_PTR(-EINVAL);
++
++	if (mp) {
++		mutex_lock(&mp->lock);
++		valid |= mp ? mp->valid : 0;
++		mutex_unlock(&mp->lock);
++	}
++
++	if (mc) {
++		mutex_lock(&mc->lock);
++		valid |= mc ? mc->valid : 0;
++		mutex_unlock(&mc->lock);
++	}
++
++	mask &= valid;
++	mask &= kdbus_meta_attach_mask;
 +
 +	/*
-+	 * Find the closest child with ``node->hash >= hash'', or, if @name is
-+	 * valid, ``node->name >= name'' (where '>=' is the lex. order).
++	 * TODO: We currently have no sane way of translating a set of caps
++	 * between different user namespaces. Until that changes, we have
++	 * to drop such items.
 +	 */
++	if (mp && mp->caps_namespace != user_ns)
++		mask &= ~KDBUS_ATTACH_CAPS;
 +
-+	rb = node->children.rb_node;
-+	while (rb) {
-+		n = kdbus_node_from_rb(rb);
++	if (!mask) {
++		*sz = 0;
++		return NULL;
++	}
 +
-+		if (name)
-+			res = kdbus_node_name_compare(hash, name, n);
-+		else
-+			res = hash - n->hash;
++	/* process metadata */
 +
-+		if (res <= 0) {
-+			rb = rb->rb_left;
-+			pos = n;
-+		} else { /* ``hash > n->hash'', ``name > n->name'' */
-+			rb = rb->rb_right;
++	if (mp && (mask & KDBUS_ATTACH_CREDS))
++		size += KDBUS_ITEM_SIZE(sizeof(struct kdbus_creds));
++
++	if (mp && (mask & KDBUS_ATTACH_PIDS))
++		size += KDBUS_ITEM_SIZE(sizeof(struct kdbus_pids));
++
++	if (mp && (mask & KDBUS_ATTACH_AUXGROUPS))
++		size += KDBUS_ITEM_SIZE(mp->n_auxgrps * sizeof(u32));
++
++	if (mp && (mask & KDBUS_ATTACH_TID_COMM))
++		size += KDBUS_ITEM_SIZE(strlen(mp->tid_comm) + 1);
++
++	if (mp && (mask & KDBUS_ATTACH_PID_COMM))
++		size += KDBUS_ITEM_SIZE(strlen(mp->pid_comm) + 1);
++
++	if (mp && (mask & KDBUS_ATTACH_EXE)) {
++		struct path p;
++
++		/*
++		 * TODO: We need access to __d_path() so we can write the path
++		 * relative to conn->root_path. Once upstream, we need
++		 * EXPORT_SYMBOL(__d_path) or an equivalent of d_path() that
++		 * takes the root path directly. Until then, we drop this item
++		 * if the root-paths differ.
++		 */
++
++		get_fs_root(current->fs, &p);
++		if (path_equal(&p, &mp->root_path)) {
++			exe_page = (void *)__get_free_page(GFP_TEMPORARY);
++			if (!exe_page) {
++				path_put(&p);
++				ret = -ENOMEM;
++				goto exit;
++			}
++
++			exe_pathname = d_path(&mp->exe_path, exe_page,
++					      PAGE_SIZE);
++			if (IS_ERR(exe_pathname)) {
++				path_put(&p);
++				ret = PTR_ERR(exe_pathname);
++				goto exit;
++			}
++
++			size += KDBUS_ITEM_SIZE(strlen(exe_pathname) + 1);
++		} else {
++			mask &= ~KDBUS_ATTACH_EXE;
 +		}
++		path_put(&p);
 +	}
 +
-+	return pos;
-+}
++	if (mp && (mask & KDBUS_ATTACH_CMDLINE))
++		size += KDBUS_ITEM_SIZE(strlen(mp->cmdline) + 1);
 +
-+/**
-+ * kdbus_node_find_closest() - Find closest child-match
-+ * @node:	parent node to search through
-+ * @hash:	hash value to find closest match for
-+ *
-+ * Find the closest child of @node with a hash greater than or equal to @hash.
-+ * The closest match is the left-most child of @node with this property. Which
-+ * means, it is the first child with that hash returned by
-+ * kdbus_node_next_child(), if you'd iterate the whole parent node.
-+ *
-+ * Return: Reference to acquired child, or NULL if none found.
-+ */
-+struct kdbus_node *kdbus_node_find_closest(struct kdbus_node *node,
-+					   unsigned int hash)
-+{
-+	struct kdbus_node *child;
-+	struct rb_node *rb;
++	if (mp && (mask & KDBUS_ATTACH_CGROUP))
++		size += KDBUS_ITEM_SIZE(strlen(mp->cgroup) + 1);
 +
-+	mutex_lock(&node->lock);
++	if (mp && (mask & KDBUS_ATTACH_CAPS))
++		size += KDBUS_ITEM_SIZE(sizeof(mp->caps));
 +
-+	child = node_find_closest_unlocked(node, hash, NULL);
-+	while (child && !kdbus_node_acquire(child)) {
-+		rb = rb_next(&child->rb);
-+		if (rb)
-+			child = kdbus_node_from_rb(rb);
-+		else
-+			child = NULL;
-+	}
-+	kdbus_node_ref(child);
++	if (mp && (mask & KDBUS_ATTACH_SECLABEL))
++		size += KDBUS_ITEM_SIZE(strlen(mp->seclabel) + 1);
 +
-+	mutex_unlock(&node->lock);
++	if (mp && (mask & KDBUS_ATTACH_AUDIT))
++		size += KDBUS_ITEM_SIZE(sizeof(struct kdbus_audit));
 +
-+	return child;
-+}
++	/* connection metadata */
 +
-+/**
-+ * kdbus_node_next_child() - Acquire next child
-+ * @node:	parent node
-+ * @prev:	previous child-node position or NULL
-+ *
-+ * This function returns a reference to the next active child of @node, after
-+ * the passed position @prev. If @prev is NULL, a reference to the first active
-+ * child is returned. If no more active children are found, NULL is returned.
-+ *
-+ * This function acquires the next child it returns. If you're done with the
-+ * returned pointer, you need to release _and_ unref it.
-+ *
-+ * The passed in pointer @prev is not modified by this function, and it does
-+ * *not* have to be active. If @prev was acquired via different means, or if it
-+ * was unlinked from its parent before you pass it in, then this iterator will
-+ * still return the next active child (it will have to search through the
-+ * rb-tree based on the node-name, though).
-+ * However, @prev must not be linked to a different parent than @node!
-+ *
-+ * Return: Reference to next acquired child, or NULL if at the end.
-+ */
-+struct kdbus_node *kdbus_node_next_child(struct kdbus_node *node,
-+					 struct kdbus_node *prev)
-+{
-+	struct kdbus_node *pos = NULL;
-+	struct rb_node *rb;
++	if (mc && (mask & KDBUS_ATTACH_NAMES))
++		size += mc->owned_names_size;
 +
-+	mutex_lock(&node->lock);
++	if (mc && (mask & KDBUS_ATTACH_CONN_DESCRIPTION))
++		size += KDBUS_ITEM_SIZE(strlen(mc->conn_description) + 1);
 +
-+	if (!prev) {
-+		/*
-+		 * New iteration; find first node in rb-tree and try to acquire
-+		 * it. If we got it, directly return it as first element.
-+		 * Otherwise, the loop below will find the next active node.
-+		 */
-+		rb = rb_first(&node->children);
-+		if (!rb)
-+			goto exit;
-+		pos = kdbus_node_from_rb(rb);
-+		if (kdbus_node_acquire(pos))
-+			goto exit;
-+	} else if (RB_EMPTY_NODE(&prev->rb)) {
-+		/*
-+		 * The current iterator is no longer linked to the rb-tree. Use
-+		 * its hash value and name to find the next _higher_ node and
-+		 * acquire it. If we got it, return it as next element.
-+		 * Otherwise, the loop below will find the next active node.
-+		 */
-+		pos = node_find_closest_unlocked(node, prev->hash, prev->name);
-+		if (!pos)
-+			goto exit;
-+		if (kdbus_node_acquire(pos))
-+			goto exit;
-+	} else {
-+		/*
-+		 * The current iterator is still linked to the parent. Set it
-+		 * as current position and use the loop below to find the next
-+		 * active element.
-+		 */
-+		pos = prev;
++	if (mc && (mask & KDBUS_ATTACH_TIMESTAMP))
++		size += KDBUS_ITEM_SIZE(sizeof(struct kdbus_timestamp));
++
++	if (!size) {
++		*sz = 0;
++		ret = 0;
++		goto exit;
 +	}
 +
-+	/* @pos was already returned or is inactive; find next active node */
-+	do {
-+		rb = rb_next(&pos->rb);
-+		if (rb)
-+			pos = kdbus_node_from_rb(rb);
-+		else
-+			pos = NULL;
-+	} while (pos && !kdbus_node_acquire(pos));
++	items = kzalloc(size, GFP_KERNEL);
++	if (!items) {
++		ret = -ENOMEM;
++		goto exit;
++	}
++
++	item = items;
++
++	/* process metadata */
++
++	if (mp && (mask & KDBUS_ATTACH_CREDS)) {
++		struct kdbus_creds creds = {
++			.uid	= kdbus_from_kuid_keep(mp->uid),
++			.euid	= kdbus_from_kuid_keep(mp->euid),
++			.suid	= kdbus_from_kuid_keep(mp->suid),
++			.fsuid	= kdbus_from_kuid_keep(mp->fsuid),
++			.gid	= kdbus_from_kgid_keep(mp->gid),
++			.egid	= kdbus_from_kgid_keep(mp->egid),
++			.sgid	= kdbus_from_kgid_keep(mp->sgid),
++			.fsgid	= kdbus_from_kgid_keep(mp->fsgid),
++		};
++
++		item = kdbus_item_set(item, KDBUS_ITEM_CREDS, &creds,
++				      sizeof(creds));
++	}
++
++	if (mp && (mask & KDBUS_ATTACH_PIDS)) {
++		struct kdbus_pids pids = {
++			.pid = pid_vnr(mp->tgid),
++			.tid = pid_vnr(mp->pid),
++			.ppid = pid_vnr(mp->ppid),
++		};
++
++		item = kdbus_item_set(item, KDBUS_ITEM_PIDS, &pids,
++				      sizeof(pids));
++	}
++
++	if (mp && (mask & KDBUS_ATTACH_AUXGROUPS)) {
++		int i;
++
++		kdbus_item_set(item, KDBUS_ITEM_AUXGROUPS, NULL,
++			       mp->n_auxgrps * sizeof(u32));
++
++		for (i = 0; i < mp->n_auxgrps; i++)
++			item->data32[i] = from_kgid_munged(user_ns,
++							   mp->auxgrps[i]);
++
++		item = KDBUS_ITEM_NEXT(item);
++	}
++
++	if (mp && (mask & KDBUS_ATTACH_TID_COMM))
++		item = kdbus_item_set(item, KDBUS_ITEM_TID_COMM, mp->tid_comm,
++				      strlen(mp->tid_comm) + 1);
++
++	if (mp && (mask & KDBUS_ATTACH_PID_COMM))
++		item = kdbus_item_set(item, KDBUS_ITEM_PID_COMM, mp->pid_comm,
++				      strlen(mp->pid_comm) + 1);
++
++	if (mp && (mask & KDBUS_ATTACH_EXE))
++		item = kdbus_item_set(item, KDBUS_ITEM_EXE, exe_pathname,
++				      strlen(exe_pathname) + 1);
++
++	if (mp && (mask & KDBUS_ATTACH_CMDLINE))
++		item = kdbus_item_set(item, KDBUS_ITEM_CMDLINE, mp->cmdline,
++				      strlen(mp->cmdline) + 1);
++
++	if (mp && (mask & KDBUS_ATTACH_CGROUP))
++		item = kdbus_item_set(item, KDBUS_ITEM_CGROUP, mp->cgroup,
++				      strlen(mp->cgroup) + 1);
++
++	if (mp && (mask & KDBUS_ATTACH_CAPS))
++		item = kdbus_item_set(item, KDBUS_ITEM_CAPS, &mp->caps,
++				      sizeof(mp->caps));
++
++	if (mp && (mask & KDBUS_ATTACH_SECLABEL))
++		item = kdbus_item_set(item, KDBUS_ITEM_SECLABEL, mp->seclabel,
++				      strlen(mp->seclabel) + 1);
++
++	if (mp && (mask & KDBUS_ATTACH_AUDIT)) {
++		struct kdbus_audit a = {
++			.loginuid = from_kuid(user_ns, mp->audit_loginuid),
++			.sessionid = mp->audit_sessionid,
++		};
++
++		item = kdbus_item_set(item, KDBUS_ITEM_AUDIT, &a, sizeof(a));
++	}
++
++	/* connection metadata */
++
++	if (mc && (mask & KDBUS_ATTACH_NAMES)) {
++		memcpy(item, mc->owned_names_items, mc->owned_names_size);
++		item = (struct kdbus_item *)
++				((u8 *)item + mc->owned_names_size);
++	}
++
++	if (mc && (mask & KDBUS_ATTACH_CONN_DESCRIPTION))
++		item = kdbus_item_set(item, KDBUS_ITEM_CONN_DESCRIPTION,
++				      mc->conn_description,
++				      strlen(mc->conn_description) + 1);
++
++	if (mc && (mask & KDBUS_ATTACH_TIMESTAMP))
++		item = kdbus_item_set(item, KDBUS_ITEM_TIMESTAMP, &mc->ts,
++				      sizeof(mc->ts));
++
++	/* sanity check: the buffer should be completely written now */
++	WARN_ON((u8 *)item != (u8 *)items + size);
++
++	*sz = size;
++	ret = 0;
 +
 +exit:
-+	/* @pos is NULL or acquired. Take ref if non-NULL and return it */
-+	kdbus_node_ref(pos);
-+	mutex_unlock(&node->lock);
-+	return pos;
++	if (exe_page)
++		free_page((unsigned long)exe_page);
++	return ret < 0 ? ERR_PTR(ret) : items;
 +}
-diff --git a/ipc/kdbus/node.h b/ipc/kdbus/node.h
++
++/**
++ * kdbus_meta_calc_attach_flags() - calculate attach flags for a sender
++ *				    and a receiver
++ * @sender:		Sending connection
++ * @receiver:		Receiving connection
++ *
++ * Return: the attach flags both the sender and the receiver have opted-in
++ * for.
++ */
++u64 kdbus_meta_calc_attach_flags(const struct kdbus_conn *sender,
++				 const struct kdbus_conn *receiver)
++{
++	return atomic64_read(&sender->attach_flags_send) &
++	       atomic64_read(&receiver->attach_flags_recv);
++}
+diff --git a/ipc/kdbus/metadata.h b/ipc/kdbus/metadata.h
 new file mode 100644
-index 000000000000..fa9339123b8f
+index 000000000000..4ddac7bf630d
 --- /dev/null
-+++ b/ipc/kdbus/node.h
-@@ -0,0 +1,87 @@
++++ b/ipc/kdbus/metadata.h
+@@ -0,0 +1,52 @@
 +/*
 + * Copyright (C) 2013-2014 Kay Sievers
 + * Copyright (C) 2013-2014 Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 + * Copyright (C) 2013-2014 Daniel Mack <daniel@zonque.org>
 + * Copyright (C) 2013-2014 David Herrmann <dh.herrmann@gmail.com>
 + * Copyright (C) 2013-2014 Linux Foundation
++ * Copyright (C) 2014 Djalal Harouni
 + *
 + * kdbus is free software; you can redistribute it and/or modify it under
 + * the terms of the GNU Lesser General Public License as published by the
@@ -1559,78 +1140,42 @@ index 000000000000..fa9339123b8f
 + * your option) any later version.
 + */
 +
-+#ifndef __KDBUS_NODE_H
-+#define __KDBUS_NODE_H
++#ifndef __KDBUS_METADATA_H
++#define __KDBUS_METADATA_H
 +
-+#include <linux/atomic.h>
-+#include <linux/kernel.h>
-+#include <linux/mutex.h>
-+#include <linux/wait.h>
-+
-+struct kdbus_bus;
++struct kdbus_conn;
 +struct kdbus_domain;
-+struct kdbus_ep;
-+struct kdbus_node;
++struct kdbus_kmsg;
++struct kdbus_pool_slice;
 +
-+enum kdbus_node_type {
-+	KDBUS_NODE_DOMAIN,
-+	KDBUS_NODE_CONTROL,
-+	KDBUS_NODE_BUS,
-+	KDBUS_NODE_ENDPOINT,
-+};
++struct kdbus_meta_proc;
++struct kdbus_meta_conn;
 +
-+typedef void (*kdbus_node_free_t) (struct kdbus_node *node);
-+typedef void (*kdbus_node_release_t) (struct kdbus_node *node, bool was_active);
++extern unsigned long long kdbus_meta_attach_mask;
 +
-+struct kdbus_node {
-+	atomic_t refcnt;
-+	atomic_t active;
-+	wait_queue_head_t waitq;
++struct kdbus_meta_proc *kdbus_meta_proc_new(void);
++struct kdbus_meta_proc *kdbus_meta_proc_ref(struct kdbus_meta_proc *mp);
++struct kdbus_meta_proc *kdbus_meta_proc_unref(struct kdbus_meta_proc *mp);
++int kdbus_meta_proc_collect(struct kdbus_meta_proc *mp, u64 what);
++int kdbus_meta_proc_fake(struct kdbus_meta_proc *mp,
++			 const struct kdbus_creds *creds,
++			 const struct kdbus_pids *pids,
++			 const char *seclabel);
 +
-+	/* static members */
-+	unsigned int type;
-+	kdbus_node_free_t free_cb;
-+	kdbus_node_release_t release_cb;
-+	umode_t mode;
-+	kuid_t uid;
-+	kgid_t gid;
++struct kdbus_meta_conn *kdbus_meta_conn_new(void);
++struct kdbus_meta_conn *kdbus_meta_conn_ref(struct kdbus_meta_conn *mc);
++struct kdbus_meta_conn *kdbus_meta_conn_unref(struct kdbus_meta_conn *mc);
++int kdbus_meta_conn_collect(struct kdbus_meta_conn *mc,
++			    struct kdbus_kmsg *kmsg,
++			    struct kdbus_conn *conn,
++			    u64 what);
 +
-+	/* valid once linked */
-+	char *name;
-+	unsigned int hash;
-+	unsigned int id;
-+	struct kdbus_node *parent; /* may be NULL */
-+
-+	/* valid iff active */
-+	struct mutex lock;
-+	struct rb_node rb;
-+	struct rb_root children;
-+};
-+
-+#define kdbus_node_from_rb(_node) rb_entry((_node), struct kdbus_node, rb)
-+
-+void kdbus_node_init(struct kdbus_node *node, unsigned int type);
-+
-+int kdbus_node_link(struct kdbus_node *node, struct kdbus_node *parent,
-+		    const char *name);
-+
-+struct kdbus_node *kdbus_node_ref(struct kdbus_node *node);
-+struct kdbus_node *kdbus_node_unref(struct kdbus_node *node);
-+
-+bool kdbus_node_is_active(struct kdbus_node *node);
-+bool kdbus_node_is_deactivated(struct kdbus_node *node);
-+bool kdbus_node_activate(struct kdbus_node *node);
-+void kdbus_node_deactivate(struct kdbus_node *node);
-+
-+bool kdbus_node_acquire(struct kdbus_node *node);
-+void kdbus_node_release(struct kdbus_node *node);
-+
-+struct kdbus_node *kdbus_node_find_child(struct kdbus_node *node,
-+					 const char *name);
-+struct kdbus_node *kdbus_node_find_closest(struct kdbus_node *node,
-+					   unsigned int hash);
-+struct kdbus_node *kdbus_node_next_child(struct kdbus_node *node,
-+					 struct kdbus_node *prev);
++struct kdbus_item *kdbus_meta_export(struct kdbus_meta_proc *mp,
++				     struct kdbus_meta_conn *mc,
++				     u64 mask,
++				     size_t *sz);
++u64 kdbus_meta_calc_attach_flags(const struct kdbus_conn *sender,
++				 const struct kdbus_conn *receiver);
 +
 +#endif
 -- 
