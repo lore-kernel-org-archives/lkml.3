@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754292AbbAPDr2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 22:47:28 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:40925 "EHLO
+	id S932814AbbAPD4Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 22:56:16 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:40926 "EHLO
 	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752510AbbAPDrY (ORCPT
+	with ESMTP id S1751930AbbAPDr0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 22:47:24 -0500
+	Thu, 15 Jan 2015 22:47:26 -0500
 From: Yijing Wang <wangyijing@huawei.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
 CC: Jiang Liu <jiang.liu@linux.intel.com>, <linux-pci@vger.kernel.org>,
@@ -21,9 +21,9 @@ CC: Jiang Liu <jiang.liu@linux.intel.com>, <linux-pci@vger.kernel.org>,
         "Arnd Bergmann" <arnd@arndb.de>,
         Geert Uytterhoeven <geert@linux-m68k.org>,
         "Yijing Wang" <wangyijing@huawei.com>
-Subject: [PATCH 10/28] PCI: Save sysdata in pci_host_bridge drvdata
-Date: Fri, 16 Jan 2015 09:44:08 +0800
-Message-ID: <1421372666-12288-11-git-send-email-wangyijing@huawei.com>
+Subject: [PATCH 11/28] PCI: Introduce pci_host_bridge_ops to setup host bridge
+Date: Fri, 16 Jan 2015 09:44:09 +0800
+Message-ID: <1421372666-12288-12-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1421372666-12288-1-git-send-email-wangyijing@huawei.com>
 References: <1421372666-12288-1-git-send-email-wangyijing@huawei.com>
@@ -35,120 +35,158 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Save platform specific sysdata in pci_host_bridge
-drvdata, host bridge specific operation need to
-access it before the pci bus creation.
+Now we have weak functions like pcibios_root_bridge_prepare()
+to setup pci host bridge, We could introduce pci_host_bridge_ops
+which contain host bridge specific ops to setup pci_host_bridge.
+Then host bridge driver could add pci_host_bridge_ops hooks
+intead of weak function to setup pci_host_bridge.
+This patch add following pci_host_bridge_ops hooks:
+
+pci_host_bridge_ops {
+	/* set root bus speed, some platform need this like powerpc */
+	void (*phb_set_root_bus_speed)(struct pci_host_bridge *host);
+	/* setup pci_host_bridge before pci_host_bridge be added to driver core */
+	int (*phb_prepare)(struct pci_host_bridge *host);
+	/* probe whether pci_host_bridge scan mode is of mode */
+	void (*phb_probe_mode)(struct pci_host_bridge *);
+	/* platform specific of scan hook to scan pci device */
+	void (*phb_of_scan_bus)(struct pci_host_bridge *);
+}
 
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 ---
- drivers/pci/host-bridge.c |    4 +++-
- drivers/pci/probe.c       |   18 ++++++++----------
- include/linux/pci.h       |    3 ++-
- 3 files changed, 13 insertions(+), 12 deletions(-)
+ drivers/pci/host-bridge.c |   12 ++++++++++--
+ drivers/pci/probe.c       |   19 ++++++++++++++-----
+ include/linux/pci.h       |   16 ++++++++++++++--
+ 3 files changed, 38 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
-index c9ee582..0b6ba5c 100644
+index 0b6ba5c..ccbf168 100644
 --- a/drivers/pci/host-bridge.c
 +++ b/drivers/pci/host-bridge.c
-@@ -23,7 +23,8 @@ static void pci_release_host_bridge_dev(struct device *dev)
+@@ -23,8 +23,8 @@ static void pci_release_host_bridge_dev(struct device *dev)
  }
  
  struct pci_host_bridge *pci_create_host_bridge(
--		struct device *parent, u32 db, struct list_head *resources)
-+		struct device *parent, u32 db,
-+		struct list_head *resources, void *sysdata)
+-		struct device *parent, u32 db, 
+-		struct list_head *resources, void *sysdata)
++		struct device *parent, u32 db, struct list_head *resources,
++		void *sysdata, struct pci_host_bridge_ops *ops)
  {
  	int error;
  	int bus = PCI_BUSNUM(db);
-@@ -58,6 +59,7 @@ struct pci_host_bridge *pci_create_host_bridge(
+@@ -56,6 +56,7 @@ struct pci_host_bridge *pci_create_host_bridge(
+ 		}
+ 	mutex_unlock(&phb_mutex);
+ 
++	host->ops = ops;
  	host->dev.parent = parent;
  	INIT_LIST_HEAD(&host->windows);
  	host->dev.release = pci_release_host_bridge_dev;
-+	dev_set_drvdata(&host->dev, sysdata);
+@@ -63,6 +64,13 @@ struct pci_host_bridge *pci_create_host_bridge(
  	dev_set_name(&host->dev, "pci%04x:%02x", host->domain, 
  			host->busnum);
  
++	if (host->ops && host->ops->phb_prepare) {
++		error = host->ops->phb_prepare(host);
++		if(error) {
++			kfree(host);
++			return NULL;
++		}
++	}
+ 	error = device_register(&host->dev);
+ 	if (error) {
+ 		put_device(&host->dev);
 diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 2e0b952..98a8d97 100644
+index 98a8d97..5f748ed 100644
 --- a/drivers/pci/probe.c
 +++ b/drivers/pci/probe.c
-@@ -1865,8 +1865,7 @@ void __weak pcibios_remove_bus(struct pci_bus *bus)
- }
+@@ -1888,6 +1888,8 @@ static struct pci_bus *__pci_create_root_bus(
  
- static struct pci_bus *__pci_create_root_bus(
--		struct pci_host_bridge *bridge, struct pci_ops *ops,
--		void *sysdata)
-+		struct pci_host_bridge *bridge, struct pci_ops *ops)
- {
- 	int error;
- 	struct pci_bus *b;
-@@ -1882,7 +1881,7 @@ static struct pci_bus *__pci_create_root_bus(
- 	if (!b)
- 		return NULL;
- 
--	b->sysdata = sysdata;
-+	b->sysdata = dev_get_drvdata(&bridge->dev);
- 	b->ops = ops;
- 	b->number = b->busn_res.start = bridge->busnum;
- 	pci_bus_assign_domain_nr(b, parent);
-@@ -1954,11 +1953,11 @@ struct pci_bus *pci_create_root_bus(struct device *parent, u32 db,
+ 	bridge->bus = b;
+ 	b->bridge = get_device(&bridge->dev);
++	if (bridge->ops && bridge->ops->phb_set_root_bus_speed)
++		bridge->ops->phb_set_root_bus_speed(bridge);
+ 	error = pcibios_root_bridge_prepare(bridge);
+ 	if (error)
+ 		goto err_out;
+@@ -1953,7 +1955,7 @@ struct pci_bus *pci_create_root_bus(struct device *parent, u32 db,
  {
  	struct pci_host_bridge *host;
  
--	host = pci_create_host_bridge(parent, db, resources);
-+	host = pci_create_host_bridge(parent, db, resources, sysdata);
+-	host = pci_create_host_bridge(parent, db, resources, sysdata);
++	host = pci_create_host_bridge(parent, db, resources, sysdata, NULL);
  	if (!host)
  		return NULL;
  	
--	return __pci_create_root_bus(host, ops, sysdata);
-+	return __pci_create_root_bus(host, ops);
+@@ -2051,10 +2053,17 @@ static struct pci_bus *__pci_scan_root_bus(
+ 		pci_bus_insert_busn_res(b, host->busnum, 255);
+ 	}
+ 
+-	max = pci_scan_child_bus(b);
++	if (host->ops && host->ops->phb_probe_mode)
++		host->ops->phb_probe_mode(host);
+ 
+-	if (!found)
+-		pci_bus_update_busn_res_end(b, max);
++	if (host->of_scan) {
++		if (host->ops &&host->ops->phb_of_scan_bus)
++			host->ops->phb_of_scan_bus(host);
++	} else {
++		max = pci_scan_child_bus(b);
++		if (!found)
++			pci_bus_update_busn_res_end(b, max);
++	}
+ 
+ 	return b;
  }
- 
- int pci_bus_insert_busn_res(struct pci_bus *b, int bus, int bus_max)
-@@ -2025,8 +2024,7 @@ void pci_bus_release_busn_res(struct pci_bus *b)
- }
- 
- static struct pci_bus *__pci_scan_root_bus(
--		struct pci_host_bridge *host, struct pci_ops *ops,
--		void *sysdata)
-+		struct pci_host_bridge *host, struct pci_ops *ops)
- {
- 
- 	struct pci_host_bridge_window *window;
-@@ -2040,7 +2038,7 @@ static struct pci_bus *__pci_scan_root_bus(
- 			break;
- 		}
- 
--	b = __pci_create_root_bus(host, ops, sysdata);
-+	b = __pci_create_root_bus(host, ops);
- 	if (!b) {
- 		pci_free_host_bridge(host);
- 		return NULL;
-@@ -2066,11 +2064,11 @@ struct pci_bus *pci_scan_root_bus(struct device *parent, u32 db,
+@@ -2064,7 +2073,7 @@ struct pci_bus *pci_scan_root_bus(struct device *parent, u32 db,
  {
  	struct pci_host_bridge *host;
  
--	host = pci_create_host_bridge(parent, db, resources);
-+	host = pci_create_host_bridge(parent, db, resources, sysdata);
+-	host = pci_create_host_bridge(parent, db, resources, sysdata);
++	host = pci_create_host_bridge(parent, db, resources, sysdata, NULL);
  	if (!host)
  		return NULL;
  
--	return __pci_scan_root_bus(host, ops, sysdata);
-+	return __pci_scan_root_bus(host, ops);
- }
- EXPORT_SYMBOL(pci_scan_root_bus);
- 
 diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 5ee0033..3ee8436 100644
+index 3ee8436..c06b95d 100644
 --- a/include/linux/pci.h
 +++ b/include/linux/pci.h
-@@ -419,7 +419,8 @@ void pci_set_host_bridge_release(struct pci_host_bridge *bridge,
+@@ -401,13 +401,25 @@ struct pci_host_bridge_window {
+ 	resource_size_t offset;		/* bus address + offset = CPU address */
+ };
+ 
++struct pci_host_bridge;
++struct pci_host_bridge_ops {
++	void (*phb_set_root_bus_speed)(struct pci_host_bridge *host);
++	int (*phb_prepare)(struct pci_host_bridge *host);
++	/* Override domain number by host specific .phv_assign_domain_nr()  */
++	void (*phb_assign_domain_nr)(struct pci_host_bridge *);
++	void (*phb_probe_mode)(struct pci_host_bridge *);
++	void (*phb_of_scan_bus)(struct pci_host_bridge *);
++};
++
+ struct pci_host_bridge {
+ 	u16	domain;
+ 	u16 busnum;
++	bool of_scan;
+ 	struct device dev;
+ 	struct pci_bus *bus;		/* root bus */
+ 	struct list_head list;
+ 	struct list_head windows;	/* pci_host_bridge_windows */
++	struct pci_host_bridge_ops *ops;
+ 	void (*release_fn)(struct pci_host_bridge *);
+ 	void *release_data;
+ };
+@@ -419,8 +431,8 @@ void pci_set_host_bridge_release(struct pci_host_bridge *bridge,
  
  int pcibios_root_bridge_prepare(struct pci_host_bridge *bridge);
  struct pci_host_bridge *pci_create_host_bridge(
--		struct device *parent, u32 dombus, struct list_head *resources);
-+		struct device *parent, u32 dombus,
-+		struct list_head *resources, void *sysdata);
+-		struct device *parent, u32 dombus, 
+-		struct list_head *resources, void *sysdata);
++		struct device *parent, u32 dombus, struct list_head *resources,
++		void *sysdata, struct pci_host_bridge_ops *ops);
  /*
   * The first PCI_BRIDGE_RESOURCE_NUM PCI bus resources (those that correspond
   * to P2P or CardBus bridge windows) go in a table.  Additional ones (for
