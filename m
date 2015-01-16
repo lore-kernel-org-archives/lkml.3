@@ -1,108 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756678AbbAPQzZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 11:55:25 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:39885 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753014AbbAPQzX (ORCPT
+	id S1756744AbbAPQ4Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 11:56:25 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:36372 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756687AbbAPQ4X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 11:55:23 -0500
-Date: Fri, 16 Jan 2015 16:54:22 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, "jcm@redhat.com" <jcm@redhat.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
-        Robert Richter <rric@kernel.org>, Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
-        Timur Tabi <timur@codeaurora.org>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
+	Fri, 16 Jan 2015 11:56:23 -0500
+Date: Fri, 16 Jan 2015 16:56:00 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: "Suzuki K. Poulose" <suzuki.poulose@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linaro-acpi <linaro-acpi@lists.linaro.org>
-Message-ID: <20150116165422.GE3856@sirena.org.uk>
-References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org>
- <CACxGe6v_BvCQqp8d=LaQ8HeaOU1Zh_HPpwFTdwOjHUbqXsnQ8g@mail.gmail.com>
- <20150115182346.GE2329@e104818-lin.cambridge.arm.com>
- <20150115190220.GF3043@sirena.org.uk>
- <20150115200437.GF24989@titan.lakedaemon.net>
- <20150116101034.GC13634@e104818-lin.cambridge.arm.com>
- <20150116120518.GK3043@sirena.org.uk>
- <20150116122922.GO7091@arm.com>
+        "leo.yan@linaro.org" <leo.yan@linaro.org>,
+        "yexl@marvell.com" <yexl@marvell.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/3] arm64:  Emulate SETEND for AArch32 tasks
+Message-ID: <20150116165600.GF32155@leverpostej>
+References: <1421325366-13263-1-git-send-email-suzuki.poulose@arm.com>
+ <1421325366-13263-4-git-send-email-suzuki.poulose@arm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="k3qmt+ucFURmlhDS"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150116122922.GO7091@arm.com>
-X-Cookie: I've Been Moved!
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v7 00/17] Introduce ACPI for ARM64 based on ACPI 5.1
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <1421325366-13263-4-git-send-email-suzuki.poulose@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 15, 2015 at 12:36:06PM +0000, Suzuki K. Poulose wrote:
+> From: "Suzuki K. Poulose" <suzuki.poulose@arm.com>
+> 
+> Emulate deprecated 'setend' instruction for AArch32 bit tasks.
+> 
+> 	setend [le/be] - Sets the endianness of EL0
+> 
+> On systems with CPUs which support mixed endian at EL0, the hardware
+> support for the instruction can be enabled by setting the SCTLR_EL1.SED
+> bit. Like the other emulated instructions it is controlled by an entry in
+> /proc/sys/abi/. For more information see :
+> 	Documentation/arm64/legacy_instructions.txt
+> 
+> The instruction is emulated by setting/clearing the SPSR_EL1.E bit, which
+> will be reflected in the PSTATE.E in AArch32 context.
+> 
+> This patch also restores the native endianness for the execution of signal
+> handlers, since the process could have changed the endianness.
+> 
+> Note: All CPUs on the system should support for mixed endian at EL0. Once the
+> handler is registered a CPU which doesn't support mixed endian, cannot be
+> hotplugged in.
+> 
+> Signed-off-by: Suzuki K. Poulose <suzuki.poulose@arm.com>
+> ---
+>  Documentation/arm64/legacy_instructions.txt |    9 +++
+>  arch/arm64/Kconfig                          |   10 ++++
+>  arch/arm64/include/asm/cpufeature.h         |    1 +
+>  arch/arm64/include/asm/ptrace.h             |    7 +++
+>  arch/arm64/kernel/armv8_deprecated.c        |   82 +++++++++++++++++++++++++++
+>  arch/arm64/kernel/signal32.c                |    5 +-
+>  6 files changed, 113 insertions(+), 1 deletion(-)
+> 
+> diff --git a/Documentation/arm64/legacy_instructions.txt b/Documentation/arm64/legacy_instructions.txt
+> index 0a4dc26..92b7945 100644
+> --- a/Documentation/arm64/legacy_instructions.txt
+> +++ b/Documentation/arm64/legacy_instructions.txt
+> @@ -47,3 +47,12 @@ Default: Undef (0)
+>  Node: /proc/sys/abi/cp15_barrier
+>  Status: Deprecated
+>  Default: Emulate (1)
+> +
+> +* SETEND
+> +Node: /proc/sys/abi/setend
+> +Status: Deprecated
+> +Default: Emulate (1)*
+> +Note: All the cpus on the system should support mixed endian at EL0
+> +(ID_AA64MMFR0_EL1:BigEnd or BigEndEL0), for this feature to be enabled.
 
---k3qmt+ucFURmlhDS
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+This might read a little better as:
 
-On Fri, Jan 16, 2015 at 12:29:22PM +0000, Will Deacon wrote:
-> On Fri, Jan 16, 2015 at 12:05:18PM +0000, Mark Brown wrote:
+  Note: all CPUs in the system must have mixed-endian support at EL0 for
+  this feature to be enabled.
 
-> > Actually, another thing that might help would be if you and/or Will were
-> > to prod the relevant people for review, letting them know that the
-> > controversy isn't likely to affect their bits.
+That matches the ARM ARM wording for ID_AA64MMFR0_EL1. We shouldn't need
+to mention the particular register fields here.
 
-> Hmm, we *could*, but having maintainers go round poking other people to
-> review patches feels like the wrong way round to me. The authors should
-> be taking ownership of this series and that's half of the problem we
-> had in previous versions.
+Also, we should probably add a note at the top like:
 
-> It needs to be clear that Hanjun/Al/Graeme are the ones running the show,
-> not just now, but (even more importantly) when people start building on
-> top of the base support. If Catalin and I have to go around asking for
-> review, it sets us off on the wrong foot imo.
+  Note: instruction emulation may not be possible in all cases. See
+  below for further information.
 
-That's true in general but equally right now it's also fairly clear that
-this isn't going anywhere immediately (and one might assume potentially
-may end up needing substantial rework) for arm64 related reasons which
-creates a bit of stop energy that's more easily unblocked by the arm64
-maintainers than others.  From that point of view I guess just giving
-the ACPI folks something to point at to indicate that the remaining
-issues on the architecture side aren't likely to affect the relevant
-code would probably help also.
-
---k3qmt+ucFURmlhDS
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBCAAGBQJUuUI+AAoJECTWi3JdVIfQbhoH/0fmqLEKaN55GiCchLinunXH
-3CowG6cR8Rvx1t1XGZVq5LciTV/BwZ2IFCWVlDUrtuUyeahXPOnyK4rJ1AVD5u21
-FKj4EyuFh8pF2FQTEztQ5ZKKt6zVVwvU21OVA/YryZl35g+Qp0JfUyyq5gziGVXh
-b7GOT1XagEdIGvfOyxekbFcjWkXUAmA3uz5wVgjg0DY3esQgpF51KbL3VrZFss5f
-8h7sKOHKsRGzIhLBBj1v2OUFm8LAYEMASkOm/7BJHsQOj7b19QINCELxoUoVSXj1
-vvC1VfSnHfy0ikdSxSFu0GfdcZQvadanddVoQsC4RnuI1EQ9FfjkL3+IMY4LmpA=
-=LtRT
------END PGP SIGNATURE-----
-
---k3qmt+ucFURmlhDS--
+Thanks,
+Mark.
