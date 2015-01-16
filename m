@@ -1,64 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756598AbbAPQIO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 11:08:14 -0500
-Received: from mail-wg0-f42.google.com ([74.125.82.42]:55451 "EHLO
-	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756540AbbAPQIN (ORCPT
+	id S1753390AbbAPQPt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 11:15:49 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:54573 "EHLO
+	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752735AbbAPQPs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 11:08:13 -0500
+	Fri, 16 Jan 2015 11:15:48 -0500
+Message-ID: <54B93930.1090409@arm.com>
+Date: Fri, 16 Jan 2015 16:15:44 +0000
+From: "Suzuki K. Poulose" <Suzuki.Poulose@arm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <20150116155923.GK12302@n2100.arm.linux.org.uk>
-References: <1420986751-30364-1-git-send-email-r.peniaev@gmail.com>
-	<1420986751-30364-2-git-send-email-r.peniaev@gmail.com>
-	<20150112183955.GO13360@arm.com>
-	<CACZ9PQXW9G4Vw-dcPwkdVE=uoYmDYEQnJWDnnpup1LxC3s5QPg@mail.gmail.com>
-	<CAGXu5jLO-YSaF8P9o3jcXP4VZCPYVshz73krnchYuv9pPGY6Sw@mail.gmail.com>
-	<CACZ9PQVo0SF4Z-rdNk4e=yY17Xt9n5hAqm4ZRNLEw3jGYYcvtA@mail.gmail.com>
-	<CAGXu5j+O6znN=7-gc3PqwqFA5MFRPLGBUzabOmQjWn_9WTjvpg@mail.gmail.com>
-	<CACZ9PQUEprgKrpHazDULA5mf-OaoX=MAjEeWdspZTXT_+iUKWw@mail.gmail.com>
-	<20150116155923.GK12302@n2100.arm.linux.org.uk>
-Date: Sat, 17 Jan 2015 01:08:11 +0900
-Message-ID: <CACZ9PQUVFtCQg6XjDbokEPy_R2fZcHiq6+EEUZnx4FVfpfZxJg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] ARM: entry-common: fix forgotten set of thread_info->syscall
-From: Roman Peniaev <r.peniaev@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Kees Cook <keescook@chromium.org>, Will Deacon <will.deacon@arm.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
+To: Will Deacon <will.deacon@arm.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "leo.yan@linaro.org" <leo.yan@linaro.org>,
+        "yexl@marvell.com" <yexl@marvell.com>,
         Catalin Marinas <Catalin.Marinas@arm.com>,
-        Sekhar Nori <nsekhar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] arm64: Track system support for mixed endian EL0
+References: <1421325366-13263-1-git-send-email-suzuki.poulose@arm.com> <1421325366-13263-2-git-send-email-suzuki.poulose@arm.com> <20150116155322.GX7091@arm.com>
+In-Reply-To: <20150116155322.GX7091@arm.com>
+X-OriginalArrivalTime: 16 Jan 2015 16:15:45.0193 (UTC) FILETIME=[AE934190:01D031A7]
+X-MC-Unique: 115011616154502301
+Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 17, 2015 at 12:59 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Sat, Jan 17, 2015 at 12:57:02AM +0900, Roman Peniaev wrote:
->> On Fri, Jan 16, 2015 at 7:54 AM, Kees Cook <keescook@chromium.org> wrote:
->> > One interesting thing I noticed (which is unchanged by this series),
->> > but pulling ARM_r7 during the seccomp ptrace event shows __NR_poll,
->> > not __NR_restart_syscall, even though it was a __NR_restart_syscall
->> > trap from seccomp. Is there a better place to see the actual syscall?
+On 16/01/15 15:53, Will Deacon wrote:
+> On Thu, Jan 15, 2015 at 12:36:04PM +0000, Suzuki K. Poulose wrote:
+>> From: "Suzuki K. Poulose" <suzuki.poulose@arm.com>
 >>
->> As I understand we do not push new r7 to the stack, and ptrace uses the
->> old value.
+>> This patch keeps track of the mixed endian EL0 support across
+>> the system and provides helper functions to export it. The status
+>> is a boolean indicating whether all the CPUs on the system supports
+>> mixed endian at EL0.
+>>
+>> Signed-off-by: Suzuki K. Poulose <suzuki.poulose@arm.com>
+>> ---
+>>   arch/arm64/include/asm/cpufeature.h |   10 ++++++++++
+>>   arch/arm64/kernel/cpuinfo.c         |   22 ++++++++++++++++++++++
+>>   2 files changed, 32 insertions(+)
+>>
+>> diff --git a/arch/arm64/include/asm/cpufeature.h b/arch/arm64/include/asm/cpufeature.h
+>> index 07547cc..c7f68d1 100644
+>> --- a/arch/arm64/include/asm/cpufeature.h
+>> +++ b/arch/arm64/include/asm/cpufeature.h
+>> @@ -26,6 +26,9 @@
+>>
+>>   #define ARM64_NCAPS				2
+>>
+>> +#define ID_AA64MMFR0_EL1_BigEndEL0	(0x1UL << 16)
+>> +#define ID_AA64MMFR0_EL1_BigEnd		(0x1UL << 8)
 >
-> And why should we push r7 to the stack?  ptrace should be using the
-> recorded system call number, rather than poking about on the stack
-> itself.
+> I don't like the CaMeLcAsE. Also, perhaps these definitions should be
+> somewhere like cputype.h?
+Yeah, I tried to keep it aligned withe ARMv8 architecture definition of 
+those bits. Will change it.
+Things are a bit messy w.r.t the definitions. We have cpu.h, 
+cpufeature.h and cputype.h. I could move it to cputype.h, where we 
+already have MIDR_ defintions.
 
-Probably we should not, but the behaviour comparing arm to x86 is different.
+>
+>> +
+>>   #ifndef __ASSEMBLY__
+>>
+>>   extern DECLARE_BITMAP(cpu_hwcaps, ARM64_NCAPS);
+>> @@ -51,7 +54,14 @@ static inline void cpus_set_cap(unsigned int num)
+>>   		__set_bit(num, cpu_hwcaps);
+>>   }
+>>
+>> +static inline bool id_aa64mmfr0_mixed_endian_el0(unsigned long mmfr0)
+>> +{
+>> +	return !!(mmfr0 & (ID_AA64MMFR0_EL1_BigEndEL0 | ID_AA64MMFR0_EL1_BigEnd));
+>> +}
+>
+> These are 4-bit fields and I think you think you should be treating them
+> as such.
+OK
 
-Also there is no any way from userspace to figure out what syscall was
-restarted,
-if you do not trace each syscall enter and exit from the very beginning.
+>
+>> +
+>>   void check_local_cpu_errata(void);
+>> +bool system_supports_mixed_endian_el0(void);
+>> +bool cpu_supports_mixed_endian_el0(void);
+>>
+>>   #endif /* __ASSEMBLY__ */
+>>
+>> diff --git a/arch/arm64/kernel/cpuinfo.c b/arch/arm64/kernel/cpuinfo.c
+>> index 07d435c..b6d1135 100644
+>> --- a/arch/arm64/kernel/cpuinfo.c
+>> +++ b/arch/arm64/kernel/cpuinfo.c
+>> @@ -35,6 +35,7 @@
+>>    */
+>>   DEFINE_PER_CPU(struct cpuinfo_arm64, cpu_data);
+>>   static struct cpuinfo_arm64 boot_cpu_data;
+>> +static bool mixed_endian_el0 = true;
+>>
+>>   static char *icache_policy_str[] = {
+>>   	[ICACHE_POLICY_RESERVED] = "RESERVED/UNKNOWN",
+>> @@ -68,6 +69,26 @@ static void cpuinfo_detect_icache_policy(struct cpuinfo_arm64 *info)
+>>   	pr_info("Detected %s I-cache on CPU%d\n", icache_policy_str[l1ip], cpu);
+>>   }
+>>
+>> +bool cpu_supports_mixed_endian_el0(void)
+>> +{
+>> +	return id_aa64mmfr0_mixed_endian_el0(read_cpuid(ID_AA64MMFR0_EL1));
+>> +}
+>
+> Can we not just define a mask/value pair and have code do the MMFR0 access
+> inline? It also feels a bit over-engineered like this.
+Sure, will change this.
 
---
-Roman
+Thanks
+Suzuki
+>
+> Will
+>
+
+
