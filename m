@@ -1,90 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755277AbbAPMxV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 07:53:21 -0500
-Received: from mail-wg0-f54.google.com ([74.125.82.54]:51271 "EHLO
-	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752224AbbAPMxS (ORCPT
+	id S1755418AbbAPMzU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 07:55:20 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:48927 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751859AbbAPMzS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 07:53:18 -0500
-MIME-Version: 1.0
-In-Reply-To: <20150116102135.GC21809@leverpostej>
-References: <1421402411-3479-1-git-send-email-chunyan.zhang@spreadtrum.com>
-	<1421402411-3479-3-git-send-email-chunyan.zhang@spreadtrum.com>
-	<20150116102135.GC21809@leverpostej>
-Date: Fri, 16 Jan 2015 20:53:16 +0800
-Message-ID: <CAAfSe-teDdPzRUnvzM+NErfZwmqM04yUMgic--hyZL8-Jjd8jw@mail.gmail.com>
-Subject: Re: [PATCH v5 2/5] Documentation: DT: Add bindings for Spreadtrum SoC Platform
-From: Lyra Zhang <zhang.lyra@gmail.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Chunyan Zhang <chunyan.zhang@spreadtrum.com>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "gnomes@lxorguk.ukuu.org.uk" <gnomes@lxorguk.ukuu.org.uk>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "jslaby@suse.cz" <jslaby@suse.cz>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "heiko@sntech.de" <heiko@sntech.de>,
-        "florian.vaussard@epfl.ch" <florian.vaussard@epfl.ch>,
-        "andrew@lunn.ch" <andrew@lunn.ch>,
-        "rrichter@cavium.com" <rrichter@cavium.com>,
-        "hytszk@gmail.com" <hytszk@gmail.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "antonynpavlov@gmail.com" <antonynpavlov@gmail.com>,
-        "Joel.Schopp@amd.com" <Joel.Schopp@amd.com>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "jorge.ramirez-ortiz@linaro.org" <jorge.ramirez-ortiz@linaro.org>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "orsonzhai@gmail.com" <orsonzhai@gmail.com>,
-        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
-        "zhizhou.zhang@spreadtrum.com" <zhizhou.zhang@spreadtrum.com>,
-        "lanqing.liu@spreadtrum.com" <lanqing.liu@spreadtrum.com>,
-        "wei.qiao@spreadtrum.com" <wei.qiao@spreadtrum.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        Leo Yan <leo.yan@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 16 Jan 2015 07:55:18 -0500
+From: Michal Simek <michal.simek@xilinx.com>
+To: linux-kernel@vger.kernel.org, monstr@monstr.eu
+Cc: Mark Brown <broonie@kernel.org>,
+        =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
+        linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: [PATCH] spi: xilinx: Use standard num-cs binding
+Date: Fri, 16 Jan 2015 13:55:14 +0100
+Message-Id: <67f3c196833c427a489ca2c530d08987a6b5ee2a.1421412912.git.michal.simek@xilinx.com>
+X-Mailer: git-send-email 1.8.2.3
+Content-Type: multipart/signed;
+    boundary="=_mimegpg-monstr-desktop-28521-1421412914-0001";
+    micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Mark
+This is a MIME GnuPG-signed message.  If you see this text, it means that
+your E-mail or Usenet software does not support MIME signed messages.
+The Internet standard for MIME PGP messages, RFC 2015, was published in 1996.
+To open this message correctly you will need to install E-mail or Usenet
+software that supports modern Internet standards.
 
->> +
->> +Required properties:
->> +- compatible: must be "sprd,sc9836-uart"
->> +- reg: offset and length of the register set for the device
->> +- interrupts: exactly one interrupt specifier
->> +- clocks: phandles to input clocks.
->
-> The order and relevance of each should be specified. If you have
-> multiple clocks I would strongly recommend you use clock-names to
-> distinguish them.
->
+--=_mimegpg-monstr-desktop-28521-1421412914-0001
 
-Thank you for the recommendation.
-but, since we haven't made the clock driver ready, for this initial
-commit, we just let 4 UARTs share a single fixed 26 MHz clock source.
-we'll do like you've recommended when we will submit the clock driver
-in the future.
+Use standard num-cs binding property and setup
+"xlnx,num-ss-bits" as deprecated.
 
-Best regards,
-Chunyan
+Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+---
+
+ drivers/spi/spi-xilinx.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/spi/spi-xilinx.c b/drivers/spi/spi-xilinx.c
+index 79bd84f43430..30e5180195bb 100644
+--- a/drivers/spi/spi-xilinx.c
++++ b/drivers/spi/spi-xilinx.c
+@@ -338,8 +338,15 @@ static int xilinx_spi_probe(struct platform_device *pdev)
+ 		num_cs = pdata->num_chipselect;
+ 		bits_per_word = pdata->bits_per_word;
+ 	} else {
+-		of_property_read_u32(pdev->dev.of_node, "xlnx,num-ss-bits",
+-					  &num_cs);
++		if (of_property_read_u32(pdev->dev.of_node, "num-cs",
++					 &num_cs)) {
++			if (!of_property_read_u32(pdev->dev.of_node,
++						  "xlnx,num-ss-bits",
++						  &num_cs)) {
++				dev_err(&pdev->dev,
++					"property name 'xlnx,num-ss-bits' is deprecated.\n");
++			}
++		}
+ 	}
+
+ 	if (!num_cs) {
+--
+1.8.2.3
 
 
+--=_mimegpg-monstr-desktop-28521-1421412914-0001
+Content-Type: application/pgp-signature
+Content-Transfer-Encoding: 7bit
 
-> Otherwise this looks fine.
->
-> Mark.
->
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAlS5CjIACgkQykllyylKDCHv/wCfadPigO5FEf+BRTEyCVCvcZx7
+9BYAnRlqeZk/yQcoF84u0e/a+yRo3QEe
+=UaPi
+-----END PGP SIGNATURE-----
+
+--=_mimegpg-monstr-desktop-28521-1421412914-0001--
