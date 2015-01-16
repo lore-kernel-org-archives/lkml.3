@@ -1,100 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932169AbbAPQdS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 11:33:18 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:36331 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752342AbbAPQdR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 11:33:17 -0500
-Date: Fri, 16 Jan 2015 16:32:54 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Suzuki Poulose <Suzuki.Poulose@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "leo.yan@linaro.org" <leo.yan@linaro.org>,
-        "yexl@marvell.com" <yexl@marvell.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] arm64: Consolidate hotplug notifier for instruction
- emulation
-Message-ID: <20150116163254.GC32155@leverpostej>
-References: <1421325366-13263-1-git-send-email-suzuki.poulose@arm.com>
- <1421325366-13263-3-git-send-email-suzuki.poulose@arm.com>
- <20150116160730.GY7091@arm.com>
+	id S932271AbbAPQfV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 11:35:21 -0500
+Received: from lists.s-osg.org ([54.187.51.154]:44592 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752166AbbAPQfT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 11:35:19 -0500
+Message-ID: <54B93DA1.2010601@osg.samsung.com>
+Date: Fri, 16 Jan 2015 09:34:41 -0700
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150116160730.GY7091@arm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Michael Ellerman <mpe@ellerman.id.au>, linux-kernel@vger.kernel.org
+CC: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
+        rostedt@goodmis.org, mingo@redhat.com, davem@davemloft.net,
+        keescook@chromium.org, tranmanphong@gmail.com, cov@codeaurora.org,
+        dh.herrmann@gmail.com, hughd@google.com, bobby.prani@gmail.com,
+        serge.hallyn@ubuntu.com, ebiederm@xmission.com,
+        tim.bird@sonymobile.com, josh@joshtriplett.org, koct9i@gmail.com,
+        linux-kbuild@vger.kernel.org, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 4/6] kbuild: add a new kselftest_install make target to
+ install selftests
+References: <1420794375-31881-1-git-send-email-mpe@ellerman.id.au> <1420794375-31881-4-git-send-email-mpe@ellerman.id.au>
+In-Reply-To: <1420794375-31881-4-git-send-email-mpe@ellerman.id.au>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 16, 2015 at 04:07:30PM +0000, Will Deacon wrote:
-> On Thu, Jan 15, 2015 at 12:36:05PM +0000, Suzuki K. Poulose wrote:
-> > From: "Suzuki K. Poulose" <suzuki.poulose@arm.com>
-> > 
-> > As of now each insn_emulation has a cpu hotplug notifier that
-> > enables/disables the CPU feature bit for the functionality. This
-> > patch re-arranges the code, such that there is only one notifier
-> > that runs through the list of registered emulation hooks and runs
-> > their corresponding set_hw_mode.
-> > 
-> > We do nothing when a CPU is dying as we will set the appropriate bits
-> > as it comes back online based on the state of the hooks.
-> > 
-> > Signed-off-by: Suzuki K. Poulose <suzuki.poulose@arm.com>
-> > Signed-off-by: Mark Rutland <mark.rutland@arm.com>
-> > ---
-> >  Documentation/arm64/legacy_instructions.txt |    4 +
-> >  arch/arm64/include/asm/cpufeature.h         |    2 +
-> >  arch/arm64/kernel/armv8_deprecated.c        |  113 +++++++++++++++------------
-> >  3 files changed, 69 insertions(+), 50 deletions(-)
-> > 
-> > diff --git a/Documentation/arm64/legacy_instructions.txt b/Documentation/arm64/legacy_instructions.txt
-> > index a3b3da2..0a4dc26 100644
-> > --- a/Documentation/arm64/legacy_instructions.txt
-> > +++ b/Documentation/arm64/legacy_instructions.txt
-> > @@ -27,6 +27,10 @@ behaviours and the corresponding values of the sysctl nodes -
-> >    instructions. Using hardware execution generally provides better
-> >    performance, but at the loss of ability to gather runtime statistics
-> >    about the use of the deprecated instructions.
-> > +  Note: Emulation of a deprecated instruction depends on the availability
-> > +  of the feature on all the active CPUs. In case of CPU hotplug, if a new
-> > +  CPU doesn't support a feature, it could result in the abortion of the
-> > +  hotplug operation.
+On 01/09/2015 02:06 AM, Michael Ellerman wrote:
+> Add a new make target to install kernel selftests. This new target will
+> build and install selftests.
 > 
-> Is this true? We should be able to *emulate* the instruction anywhere,
-> it's the "hardware execution" setting that needs CPU support.
+> The default is just $(objtree)/selftests. This is preferable to
+> something based on $(INSTALL_MOD_PATH) (which defaults to /), as it
+> allows a normal user to install the tests. This is similar to the
+> default behaviour of make headers_install.
 
-Not quite. In ARMv8 there are three possible cases for endianness
-support:
+A normal user can install tests at any location they choose by
+overriding the default path. For example:
 
-(a) Mixed endian support at all levels
-    ID_AA64MMFR0_EL1.BigEnd == 0b0001
-    ID_AA64MMFR0_EL1.BigEnd0 == 0b0000 (RES0, invalid)
+INSTALL_MOD_PATH=/tmp make kselftest_install
 
-(b) Mixed endian support at EL0 only
-    ID_AA64MMFR0_EL1.BigEnd == 0b0000
-    ID_AA64MMFR0_EL1.BigEnd0 == 0b0001
-    SCTLR_EL1.EE has a fixed value
+will install under tmp.
 
-(c) No mixed endian support at all
-    ID_AA64MMFR0_EL1.BigEnd == 0b0000
-    ID_AA64MMFR0_EL1.BigEnd0 == 0b0000
-    SCTLR_EL1.{EE,E0E} have fixed values
+The approach I used also ties test installs to kernel release.
+This addresses an important use-case for kernel developers
+that want to compare results from release to release.
 
-We can emulate setend in cases (a) and (b), but not (c) unless we
-trapped every single instruction that could access memory. I don't think
-that's feasible.
+The use-case for any user to be able to install tests at
+any location is addressed by the above example.
 
-Also fun in case (c) is that the kernel may not be able to run on all
-CPUs (consider a BE kernel where some CPUs are fixed to LE at EL1).
+I would like these two above use-cases continued to be supported,
+especially the one that tries the test installs to kernel release.
+Another goal is to keep changes to the main Makefile minimal and
+the rest of the install support belongs under selftests/Makefile
+and any other include file (like the one you proposed).
 
-I hope no-one builds a system where CPUs are mismatched w.r.t.
-endianness support.
+The patch I have in patch v4 addresses the use-cases mentioned above.
+I do like the lib.mk approach in general and I am going to review that
+patch and give you feedback.
 
-Thanks,
-Mark.
+thanks,
+-- Shuah
+
+-- 
+Shuah Khan
+Sr. Linux Kernel Developer
+Open Source Innovation Group
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
