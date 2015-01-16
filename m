@@ -1,108 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396AbbAPKqM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 05:46:12 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:35674 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753081AbbAPKqJ (ORCPT
+	id S1753513AbbAPKqt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 05:46:49 -0500
+Received: from casper.infradead.org ([85.118.1.10]:43863 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751041AbbAPKqr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 05:46:09 -0500
-Message-ID: <54B8EBE7.808@arm.com>
-Date: Fri, 16 Jan 2015 10:45:59 +0000
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
+	Fri, 16 Jan 2015 05:46:47 -0500
+Date: Fri, 16 Jan 2015 11:46:44 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Vince Weaver <vince@deater.net>, Ingo Molnar <mingo@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: perf fuzzer crash [PATCH] perf: Get group events reference
+ before moving the group
+Message-ID: <20150116104644.GW23965@worktop.programming.kicks-ass.net>
+References: <20150116075746.GB2658@krava.brq.redhat.com>
 MIME-Version: 1.0
-To: Hanjun Guo <hanjun.guo@linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>
-CC: Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, "jcm@redhat.com" <jcm@redhat.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Bjorn Helgaas <bhelgaas@google.com>, Mark Brown <broonie@kernel.org>,
-        Rob Herring <robh@kernel.org>, Robert Richter <rric@kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
-        Timur Tabi <timur@codeaurora.org>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        "wangyijing@huawei.com" <wangyijing@huawei.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
-Subject: Re: [PATCH v7 12/17] ARM64 / ACPI: Introduce ACPI_IRQ_MODEL_GIC and
- register device's gsi
-References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org> <1421247905-3749-13-git-send-email-hanjun.guo@linaro.org>
-In-Reply-To: <1421247905-3749-13-git-send-email-hanjun.guo@linaro.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150116075746.GB2658@krava.brq.redhat.com>
+User-Agent: Mutt/1.5.22.1 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/01/15 15:05, Hanjun Guo wrote:
-> Introduce ACPI_IRQ_MODEL_GIC which is needed for ARM64 as GIC is
-> used, and then register device's gsi with the core IRQ subsystem.
+On Fri, Jan 16, 2015 at 08:57:46AM +0100, Jiri Olsa wrote:
+> We need to make sure, that no event in the group lost
+> the last reference and gets removed from the context
+> during the group move in perf syscall.
 > 
-> acpi_register_gsi() is similar to DT based irq_of_parse_and_map(),
-> since gsi is unique in the system, so use hwirq number directly
-> for the mapping.
+> This could happen if the child exits and calls put_event
+> on the parent event which got already closed, like in
+> following scenario:
 > 
-> Originally-by: Amit Daniel Kachhap <amit.daniel@samsung.com>
-> Tested-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-> Tested-by: Yijing Wang <wangyijing@huawei.com>
-> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
-> ---
->  arch/arm64/kernel/acpi.c | 73 ++++++++++++++++++++++++++++++++++++++++++++++++
->  drivers/acpi/bus.c       |  3 ++
->  include/linux/acpi.h     |  1 +
->  3 files changed, 77 insertions(+)
+>   - T1 creates software event E1
+>   - T1 creates other software events as group with E1 as group leader
+>   - T1 forks T2
+>   - T2 has cloned E1 event that holds reference on E1
+>   - T1 closes event within E1 group (say E3), the event stays alive
+>     due to the T2 reference
+>   - following happens concurently:
+>     A) T1 creates hardware event E2 with groupleader E1
+>     B) T2 exits
 > 
-> diff --git a/arch/arm64/kernel/acpi.c b/arch/arm64/kernel/acpi.c
-> index 0b7c3a6..c3e24c4 100644
-> --- a/arch/arm64/kernel/acpi.c
-> +++ b/arch/arm64/kernel/acpi.c
-> @@ -37,6 +37,12 @@ EXPORT_SYMBOL(acpi_pci_disabled);
->  static int enabled_cpus;	/* Processors (GICC) with enabled flag in MADT */
->  
->  /*
-> + * Since we're on ARM, the default interrupt routing model
-> + * clearly has to be GIC.
-> + */
-> +enum acpi_irq_model_id acpi_irq_model = ACPI_IRQ_MODEL_GIC;
-> +
-> +/*
->   * __acpi_map_table() will be called before page_init(), so early_ioremap()
->   * or early_memremap() should be called here to for ACPI table mapping.
->   */
-> @@ -184,6 +190,73 @@ void __init acpi_smp_init_cpus(void)
->  	pr_info("%d CPUs enabled, %d CPUs total\n", enabled_cpus, total_cpus);
->  }
->  
-> +int acpi_gsi_to_irq(u32 gsi, unsigned int *irq)
-> +{
-> +	*irq = irq_find_mapping(NULL, gsi);
+> ad A) T1 triggers the E1 group move into hardware context:
+>         mutex_lock(E1->ctx)
+>           - remove E1 group only from the E1->ctx context, leaving
+>             the goup links untouched
+>         mutex_unlock(E1->ctx)
+>         mutex_lock(E2->ctx)
+>           - install E1 group into E2->ctx using the E1 group links
+>         mutex_unlock(E2->ctx)
+> 
+> ad B) put_event(E3) is called and E3 is removed from E1->ctx
+>       completely, including group links
+> 
+> If 'A' and 'B' races, we will get unbalanced refcounts,
+> because of removed group links.
+> 
+> Adding get_group/put_group functions to handle the event
+> ref's increase/decrease for the whole group.
 
-Is the ACPI implementation really expecting to only deal with a single
-domain for interrupts?
+Its a bandaid at best :/ The problem is (again) that we changes
+event->ctx without any kind of serialization.
 
-This is likely to lead to a number of issues as we're now implementing
-stacked domains (GICv2m, GICv3 ITS are already using that model, and
-"wire-to MSI translators" will certainly do the same).
+The issue came up before:
 
-This means that, despite having a single GIC described in ACPI, you may
-end-up with multiple domains. I expect you'll be safe with MSI (assuming
-you never describe them in ACPI), but any form of wire-to-MSI
-translation won't work at all.
+  https://lkml.org/lkml/2014/9/5/397
 
-Thanks,
-
-	M.
--- 
-Jazz is not dead. It just smells funny...
+and I've not been able to come up with anything much saner.
