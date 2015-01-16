@@ -1,306 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754331AbbAPGAA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 01:00:00 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:52800 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751852AbbAPF77 (ORCPT
+	id S1753026AbbAPGJY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 01:09:24 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:55768 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751315AbbAPGJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 00:59:59 -0500
+	Fri, 16 Jan 2015 01:09:21 -0500
 MIME-Version: 1.0
-From: Wincy Van <fanwenyi0529@gmail.com>
-Date: Fri, 16 Jan 2015 13:59:37 +0800
-Message-ID: <CACzj_yWjkW0azZGEVHKkQZJWRjNykxCfBRz=tEA=d624WGzccw@mail.gmail.com>
-Subject: [PATCH 5/5] KVM: nVMX: Enable nested posted interrupt processing.
-To: Paolo Bonzini <pbonzini@redhat.com>, gleb@kernel.org,
-        yang.z.zhang@intel.com
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Jan Kiszka <jan.kiszka@web.de>,
-        =?UTF-8?B?6IyD5paH5LiA?= <fanwenyi0529@gmail.com>
+X-Originating-IP: [93.172.140.40]
+In-Reply-To: <CAL_JsqL2LZAooMk-V8+xeF2g6acZE21M+-OBRw8aEVa-5wVHuQ@mail.gmail.com>
+References: <1421269101-51105-1-git-send-email-s-anna@ti.com>
+ <1421269101-51105-2-git-send-email-s-anna@ti.com> <20150115135201.GG16217@leverpostej>
+ <20150115135556.GH16217@leverpostej> <CAL_JsqL2LZAooMk-V8+xeF2g6acZE21M+-OBRw8aEVa-5wVHuQ@mail.gmail.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Fri, 16 Jan 2015 08:09:00 +0200
+Message-ID: <CAK=WgbYQ=BbinqJ5fsw2Y+FKdy=nasLsw9mX8pw6S_o3owy9-g@mail.gmail.com>
+Subject: Re: [PATCH v7 1/4] Documentation: dt: add common bindings for hwspinlock
+To: Rob Herring <robherring2@gmail.com>
+Cc: Mark Rutland <mark.rutland@arm.com>, Suman Anna <s-anna@ti.com>,
+        Kumar Gala <galak@codeaurora.org>, Bjorn Andersson <bjorn@kryo.se>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Rob Herring <robh+dt@kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If vcpu has a interrupt in vmx non-root mode, we will
-kick that vcpu to inject interrupt timely. With posted
-interrupt processing, the kick intr is not needed, and
-interrupts are fully taken care of by hardware.
+On Thu, Jan 15, 2015 at 4:42 PM, Rob Herring <robherring2@gmail.com> wrote:
+> On Thu, Jan 15, 2015 at 7:55 AM, Mark Rutland <mark.rutland@arm.com> wrote:
+>> On Thu, Jan 15, 2015 at 01:52:01PM +0000, Mark Rutland wrote:
+>>> On Wed, Jan 14, 2015 at 08:58:18PM +0000, Suman Anna wrote:
+>>> > +- hwlock-base-id:  An unique base Id for the locks for a particular hwlock
+>>> > +                   device. This property is mandatory for all platform
+>>> > +                   implementations.
+>>>
+>>> This property makes no sense. The ID encoded in the hwlock cells is
+>>> relative to the instance (identified by phandle), not global. So the DT
+>>> has no global ID space.
+>>>
+>>> Why do you think you need this?
+>>
+>> Having looked at the way this proeprty is used, NAK.
+>>
+>> If you need to carve up a Linux-internal ID space, do that dynamically.
+>> There is no need for this property.
+>
+> Better yet, don't create a Linux ID space for this. Everywhere we have
+> one, we want to get rid of it.
 
-In nested vmx, this feature avoids much more vmexits
-than non-nested vmx.
+Rob, Mark,
 
-This patch use L0's POSTED_INTR_NV to avoid unexpected
-interrupt if L1's vector is different with L0's. If vcpu
-is in hardware's non-root mode, we use a physical ipi to
-deliver posted interrupts, otherwise we will deliver that
-interrupt to L1 and kick that vcpu out of nested
-non-root mode.
+The hwlock is a basic hardware primitive that allow synchronization
+between different processors in the system, which may be running Linux
+as well as other operating systems, and may have no other means of
+communication.
 
-Signed-off-by: Wincy Van <fanwenyi0529@gmail.com>
----
- arch/x86/kvm/vmx.c |  131 ++++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 files changed, 127 insertions(+), 4 deletions(-)
+The hwlock id numbers are predefined, global and static across the
+entire system: Linux may boot well after other operating systems are
+already running and using these hwlocks to communicate, and therefore,
+in order to use these hardware devices, it must not enumerate them
+differently than the rest of the system.
 
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index ea56e9f..5aeef79 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -215,6 +215,7 @@ struct __packed vmcs12 {
-        u64 tsc_offset;
-        u64 virtual_apic_page_addr;
-        u64 apic_access_addr;
-+       u64 posted_intr_desc_addr;
-        u64 ept_pointer;
-        u64 eoi_exit_bitmap0;
-        u64 eoi_exit_bitmap1;
-@@ -334,6 +335,7 @@ struct __packed vmcs12 {
-        u32 vmx_preemption_timer_value;
-        u32 padding32[7]; /* room for future expansion */
-        u16 virtual_processor_id;
-+       u16 posted_intr_nv;
-        u16 guest_es_selector;
-        u16 guest_cs_selector;
-        u16 guest_ss_selector;
-@@ -406,6 +408,8 @@ struct nested_vmx {
-         */
-        struct page *apic_access_page;
-        struct page *virtual_apic_page;
-+       struct page *pi_desc_page;
-+       struct pi_desc *pi_desc;
-        u64 msr_ia32_feature_control;
+Given that these id numbers are global, system-wide, static and
+predefined, where Linux may just be one user of them, please
+reconsider the approach as implemented by Suman, or suggest an
+alternative one you may prefer.
 
-        struct hrtimer preemption_timer;
-@@ -621,6 +625,7 @@ static int max_shadow_read_write_fields =
-
- static const unsigned short vmcs_field_to_offset_table[] = {
-        FIELD(VIRTUAL_PROCESSOR_ID, virtual_processor_id),
-+       FIELD(POSTED_INTR_NV, posted_intr_nv),
-        FIELD(GUEST_ES_SELECTOR, guest_es_selector),
-        FIELD(GUEST_CS_SELECTOR, guest_cs_selector),
-        FIELD(GUEST_SS_SELECTOR, guest_ss_selector),
-@@ -646,6 +651,7 @@ static const unsigned short vmcs_field_to_offset_table[] = {
-        FIELD64(TSC_OFFSET, tsc_offset),
-        FIELD64(VIRTUAL_APIC_PAGE_ADDR, virtual_apic_page_addr),
-        FIELD64(APIC_ACCESS_ADDR, apic_access_addr),
-+       FIELD64(POSTED_INTR_DESC_ADDR, posted_intr_desc_addr),
-        FIELD64(EPT_POINTER, ept_pointer),
-        FIELD64(EOI_EXIT_BITMAP0, eoi_exit_bitmap0),
-        FIELD64(EOI_EXIT_BITMAP1, eoi_exit_bitmap1),
-@@ -798,6 +804,7 @@ static void kvm_cpu_vmxon(u64 addr);
- static void kvm_cpu_vmxoff(void);
- static bool vmx_mpx_supported(void);
- static bool vmx_xsaves_supported(void);
-+static int vmx_vm_has_apicv(struct kvm *kvm);
- static int vmx_set_tss_addr(struct kvm *kvm, unsigned int addr);
- static void vmx_set_segment(struct kvm_vcpu *vcpu,
-                            struct kvm_segment *var, int seg);
-@@ -1159,6 +1166,11 @@ static inline bool nested_cpu_has_vid(struct
-vmcs12 *vmcs12)
-        return nested_cpu_has2(vmcs12, SECONDARY_EXEC_VIRTUAL_INTR_DELIVERY);
- }
-
-+static inline bool nested_cpu_has_posted_intr(struct vmcs12 *vmcs12)
-+{
-+       return vmcs12->pin_based_vm_exec_control & PIN_BASED_POSTED_INTR;
-+}
-+
- static inline bool is_exception(u32 intr_info)
- {
-        return (intr_info & (INTR_INFO_INTR_TYPE_MASK | INTR_INFO_VALID_MASK))
-@@ -2362,6 +2374,9 @@ static void nested_vmx_setup_ctls_msrs(struct
-vcpu_vmx *vmx)
-        vmx->nested.nested_vmx_pinbased_ctls_high |=
-                PIN_BASED_ALWAYSON_WITHOUT_TRUE_MSR |
-                PIN_BASED_VMX_PREEMPTION_TIMER;
-+       if (vmx_vm_has_apicv(vmx->vcpu.kvm))
-+               vmx->nested.nested_vmx_pinbased_ctls_high |=
-+                       PIN_BASED_POSTED_INTR;
-
-        /* exit controls */
-        rdmsr(MSR_IA32_VMX_EXIT_CTLS,
-@@ -4267,6 +4282,46 @@ static int vmx_vm_has_apicv(struct kvm *kvm)
-        return enable_apicv && irqchip_in_kernel(kvm);
- }
-
-+static int vmx_deliver_nested_posted_interrupt(struct kvm_vcpu *vcpu,
-+                                               int vector)
-+{
-+       int r = 0;
-+       unsigned long flags;
-+       struct vmcs12 *vmcs12;
-+
-+       /*
-+        * if vcpu is in L2, we are fast enough to complete
-+        * before L1 changes/destroys vmcs12.
-+        */
-+       local_irq_save(flags);
-+       vmcs12 = get_vmcs12(vcpu);
-+       if (!is_guest_mode(vcpu) || !vmcs12) {
-+               r = -1;
-+               goto out;
-+       }
-+       if (vector == vmcs12->posted_intr_nv &&
-+           nested_cpu_has_posted_intr(vmcs12)) {
-+               if (vcpu->mode == IN_GUEST_MODE)
-+                       apic->send_IPI_mask(get_cpu_mask(vcpu->cpu),
-+                               POSTED_INTR_VECTOR);
-+               else {
-+                       r = -1;
-+                       goto out;
-+               }
-+
-+               /*
-+                * if posted intr is done by hardware, the
-+                * corresponding eoi was sent to L0. Thus
-+                * we should send eoi to L1 manually.
-+                */
-+               kvm_apic_set_eoi_accelerated(vcpu,
-+                       vmcs12->posted_intr_nv);
-+       } else
-+               r = -1;
-+out:
-+       local_irq_restore(flags);
-+       return r;
-+}
- /*
-  * Send interrupt to vcpu via posted interrupt way.
-  * 1. If target vcpu is running(non-root mode), send posted interrupt
-@@ -4279,6 +4334,10 @@ static void vmx_deliver_posted_interrupt(struct
-kvm_vcpu *vcpu, int vector)
-        struct vcpu_vmx *vmx = to_vmx(vcpu);
-        int r;
-
-+       r = vmx_deliver_nested_posted_interrupt(vcpu, vector);
-+       if (!r)
-+               return;
-+
-        if (pi_test_and_set_pir(vector, &vmx->pi_desc))
-                return;
-
-@@ -6537,6 +6596,12 @@ static void free_nested(struct vcpu_vmx *vmx)
-                nested_release_page(vmx->nested.virtual_apic_page);
-                vmx->nested.virtual_apic_page = NULL;
-        }
-+       if (vmx->nested.pi_desc_page) {
-+               kunmap(vmx->nested.pi_desc_page);
-+               nested_release_page(vmx->nested.pi_desc_page);
-+               vmx->nested.pi_desc = NULL;
-+               vmx->nested.pi_desc_page = NULL;
-+       }
-
-        nested_free_all_saved_vmcss(vmx);
- }
-@@ -8363,6 +8428,30 @@ static bool nested_get_vmcs12_pages(struct
-kvm_vcpu *vcpu,
-                        return false;
-        }
-
-+       if (nested_cpu_has_posted_intr(vmcs12)) {
-+               if (!IS_ALIGNED(vmcs12->posted_intr_desc_addr, 64))
-+                       return false;
-+
-+               if (vmx->nested.pi_desc_page) { /* shouldn't happen */
-+                       kunmap(vmx->nested.pi_desc_page);
-+                       nested_release_page(vmx->nested.pi_desc_page);
-+               }
-+               vmx->nested.pi_desc_page =
-+                       nested_get_page(vcpu, vmcs12->posted_intr_desc_addr);
-+               if (!vmx->nested.pi_desc_page)
-+                       return false;
-+
-+               vmx->nested.pi_desc = kmap(vmx->nested.pi_desc_page);
-+               if (!vmx->nested.pi_desc) {
-+                       nested_release_page(vmx->nested.pi_desc_page);
-+                       return false;
-+               }
-+               vmx->nested.pi_desc = (struct pi_desc *)
-+                       ((unsigned long)vmx->nested.pi_desc +
-+                       (unsigned long)(vmcs12->posted_intr_desc_addr &
-+                       (PAGE_SIZE - 1)));
-+       }
-+
-        return true;
- }
-
-@@ -8404,20 +8493,38 @@ static inline int nested_vmx_check_vid(struct
-kvm_vcpu *vcpu,
-        return 0;
- }
-
-+static inline int nested_vmx_check_posted_intr(struct kvm_vcpu *vcpu,
-+                                              struct vmcs12 *vmcs12)
-+{
-+       /*
-+        * bits 15:8 should be zero in posted_intr_nv,
-+        * the descriptor address has been already checked
-+        * in nested_get_vmcs12_pages.
-+        */
-+       if (!nested_cpu_has_vid(vmcs12) ||
-+           !nested_exit_intr_ack_set(vcpu) ||
-+           vmcs12->posted_intr_nv & 0xff00)
-+               return -EINVAL;
-+       return 0;
-+}
-+
- static int nested_vmx_check_apicv_controls(struct kvm_vcpu *vcpu,
-                                           struct vmcs12 *vmcs12)
- {
--       int r;
-+       int r = 0;
-
-        if (!nested_cpu_has_virt_x2apic_mode(vmcs12) &&
-            !nested_cpu_has_apic_reg_virt(vmcs12) &&
--           !nested_cpu_has_vid(vmcs12))
-+           !nested_cpu_has_vid(vmcs12) &&
-+           !nested_cpu_has_posted_intr(vmcs12))
-                return 0;
-
-        if (nested_cpu_has_virt_x2apic_mode(vmcs12))
-                r = nested_vmx_check_virt_x2apic(vcpu, vmcs12);
-        if (nested_cpu_has_vid(vmcs12))
-                r |= nested_vmx_check_vid(vcpu, vmcs12);
-+       if (nested_cpu_has_posted_intr(vmcs12))
-+               r |= nested_vmx_check_posted_intr(vcpu, vmcs12);
-
-        if (r)
-                goto fail;
-@@ -8669,8 +8776,18 @@ static void prepare_vmcs02(struct kvm_vcpu
-*vcpu, struct vmcs12 *vmcs12)
-
-        exec_control = vmcs12->pin_based_vm_exec_control;
-        exec_control |= vmcs_config.pin_based_exec_ctrl;
--       exec_control &= ~(PIN_BASED_VMX_PREEMPTION_TIMER |
--                          PIN_BASED_POSTED_INTR);
-+       exec_control &= ~PIN_BASED_VMX_PREEMPTION_TIMER;
-+
-+       if (nested_cpu_has_posted_intr(vmcs12)) {
-+               /* Note that we use L0's vector to avoid unexpected intr. */
-+               vmcs_write64(POSTED_INTR_NV, POSTED_INTR_VECTOR);
-+               vmcs_write64(POSTED_INTR_DESC_ADDR,
-+                       page_to_phys(vmx->nested.pi_desc_page) +
-+                       (unsigned long)(vmcs12->posted_intr_desc_addr &
-+                       (PAGE_SIZE - 1)));
-+       } else
-+               exec_control &= ~PIN_BASED_POSTED_INTR;
-+
-        vmcs_write32(PIN_BASED_VM_EXEC_CONTROL, exec_control);
-
-        vmx->nested.preemption_timer_expired = false;
-@@ -9579,6 +9696,12 @@ static void nested_vmx_vmexit(struct kvm_vcpu
-*vcpu, u32 exit_reason,
-                nested_release_page(vmx->nested.virtual_apic_page);
-                vmx->nested.virtual_apic_page = NULL;
-        }
-+       if (vmx->nested.pi_desc_page) {
-+               kunmap(vmx->nested.pi_desc_page);
-+               nested_release_page(vmx->nested.pi_desc_page);
-+               vmx->nested.pi_desc = NULL;
-+               vmx->nested.pi_desc_page = NULL;
-+       }
-
-        /*
-         * We are now running in L2, mmu_notifier will force to reload the
---
-1.7.1
+Thanks,
+Ohad.
