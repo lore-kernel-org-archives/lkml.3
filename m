@@ -1,130 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753948AbbAPKtL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 05:49:11 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:35702 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752097AbbAPKtI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 05:49:08 -0500
-Date: Fri, 16 Jan 2015 10:48:42 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
-Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "gnomes@lxorguk.ukuu.org.uk" <gnomes@lxorguk.ukuu.org.uk>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "jslaby@suse.cz" <jslaby@suse.cz>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "heiko@sntech.de" <heiko@sntech.de>,
-        "florian.vaussard@epfl.ch" <florian.vaussard@epfl.ch>,
-        "andrew@lunn.ch" <andrew@lunn.ch>,
-        "rrichter@cavium.com" <rrichter@cavium.com>,
-        "hytszk@gmail.com" <hytszk@gmail.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "antonynpavlov@gmail.com" <antonynpavlov@gmail.com>,
-        "Joel.Schopp@amd.com" <Joel.Schopp@amd.com>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "lea.yan@linaro.org" <lea.yan@linaro.org>,
-        "jorge.ramirez-ortiz@linaro.org" <jorge.ramirez-ortiz@linaro.org>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "orsonzhai@gmail.com" <orsonzhai@gmail.com>,
-        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
-        "zhizhou.zhang@spreadtrum.com" <zhizhou.zhang@spreadtrum.com>,
-        "lanqing.liu@spreadtrum.com" <lanqing.liu@spreadtrum.com>,
-        "zhang.lyra@gmail.com" <zhang.lyra@gmail.com>,
-        "wei.qiao@spreadtrum.com" <wei.qiao@spreadtrum.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
-Subject: Re: [PATCH v5 4/5] arm64: Add support for Spreadtrum's Sharkl64
- Platform in Kconfig and defconfig
-Message-ID: <20150116104842.GE21809@leverpostej>
-References: <sc9836-v5>
- <1421402411-3479-1-git-send-email-chunyan.zhang@spreadtrum.com>
- <1421402411-3479-5-git-send-email-chunyan.zhang@spreadtrum.com>
+	id S1754058AbbAPKuV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 05:50:21 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:49633 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751249AbbAPKuS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 05:50:18 -0500
+Date: Fri, 16 Jan 2015 11:50:15 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>,
+        Joerg Roedel <joro@8bytes.org>, x86@kernel.org,
+        Tony Luck <tony.luck@intel.com>
+Subject: Re: [patch 02/23] x86/apic: Make x2apic_mode depend on
+ CONFIG_X86_X2APIC
+Message-ID: <20150116105015.GB18880@pd.tnic>
+References: <20150115210458.625399149@linutronix.de>
+ <20150115211702.363274310@linutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1421402411-3479-5-git-send-email-chunyan.zhang@spreadtrum.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20150115211702.363274310@linutronix.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 16, 2015 at 10:00:10AM +0000, Chunyan Zhang wrote:
-> From: Zhizhou Zhang <zhizhou.zhang@spreadtrum.com>
+On Thu, Jan 15, 2015 at 09:22:11PM -0000, Thomas Gleixner wrote:
+> No point in having a static variable around which is always 0. Let the
+> compiler optimize code out if disabled.
 > 
-> Adds support for Spreadtrum's SoC Platform in the arm64 Kconfig and
-> defconfig files.
-> 
-> Signed-off-by: Zhizhou Zhang <zhizhou.zhang@spreadtrum.com>
-> Signed-off-by: Orson Zhai <orson.zhai@spreadtrum.com>
-> Signed-off-by: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+
+Acked-by: Borislav Petkov <bp@suse.de>
+
 > ---
->  arch/arm64/Kconfig           |    5 +++++
->  arch/arm64/configs/defconfig |    1 +
->  2 files changed, 6 insertions(+)
+>  arch/x86/include/asm/apic.h |    8 ++++----
+>  arch/x86/kernel/apic/apic.c |    2 +-
+>  2 files changed, 5 insertions(+), 5 deletions(-)
 > 
-> diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-> index b1f9a20..885c1f4 100644
-> --- a/arch/arm64/Kconfig
-> +++ b/arch/arm64/Kconfig
-> @@ -153,6 +153,11 @@ config ARCH_SEATTLE
->  	help
->  	  This enables support for AMD Seattle SOC Family
+> Index: tip/arch/x86/include/asm/apic.h
+> ===================================================================
+> --- tip.orig/arch/x86/include/asm/apic.h
+> +++ tip/arch/x86/include/asm/apic.h
+> @@ -106,8 +106,6 @@ extern u32 native_safe_apic_wait_icr_idl
+>  extern void native_apic_icr_write(u32 low, u32 id);
+>  extern u64 native_apic_icr_read(void);
 >  
-> +config ARCH_SPRD
+> -extern int x2apic_mode;
+> -
+>  static inline bool apic_is_x2apic_enabled(void)
+>  {
+>  	u64 msr;
+> @@ -177,6 +175,7 @@ static inline u64 native_x2apic_icr_read
+>  	return val;
+>  }
+>  
+> +extern int x2apic_mode;
+>  extern int x2apic_phys;
+>  extern int x2apic_preenabled;
+>  extern void check_x2apic(void);
+> @@ -209,8 +208,9 @@ static inline void x2apic_force_phys(voi
+>  {
+>  }
+>  
+> -#define	x2apic_preenabled 0
+> -#define	x2apic_supported()	0
+> +#define x2apic_mode		(0)
+> +#define	x2apic_preenabled	(0)
 
-This should presumably be ARCH_SHARKL64, so you can add other SoC
-families later. The other entries in here are already formatted that
-way.
+Btw, while you're at it, you can kill this yet another knob
+x2apic_preenabled and use check_x2apic() directly. There are just too
+many useless knobs in there.
 
-I wonder if we should have these of the form ARCH_${VENDOR}_${FAMILY}
-(e.g. ARCH_SPRD_SHARKL64) rather than just ARCH_${FAMILY} to save
-ourselves from name conflicts in future (and to make it easier to grep
-for a particular vendor's config options).
+-- 
+Regards/Gruss,
+    Boris.
 
-> +	bool "Spreadtrum SoC platform"
-
-bool "Spreadtrun Sharkl64 SoC Family"
-
-> +	help
-> +	  Support for Spreadtrum ARM based SoCs
-
-
-Support for the Spreadtrum Sharkl64 SoC family.
-
-Thanks,
-Mark.
-
-> +
->  config ARCH_THUNDER
->  	bool "Cavium Inc. Thunder SoC Family"
->  	help
-> diff --git a/arch/arm64/configs/defconfig b/arch/arm64/configs/defconfig
-> index dd301be..c1677ca 100644
-> --- a/arch/arm64/configs/defconfig
-> +++ b/arch/arm64/configs/defconfig
-> @@ -33,6 +33,7 @@ CONFIG_MODULE_UNLOAD=y
->  # CONFIG_BLK_DEV_BSG is not set
->  # CONFIG_IOSCHED_DEADLINE is not set
->  CONFIG_ARCH_THUNDER=y
-> +CONFIG_ARCH_SPRD=y
->  CONFIG_ARCH_VEXPRESS=y
->  CONFIG_ARCH_XGENE=y
->  CONFIG_PCI=y
-> -- 
-> 1.7.9.5
-> 
-> 
+Sent from a fat crate under my desk. Formatting is fine.
+--
