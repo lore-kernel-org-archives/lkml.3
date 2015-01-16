@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757089AbbAPVXS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 16:23:18 -0500
-Received: from mail.kernel.org ([198.145.29.136]:54214 "EHLO mail.kernel.org"
+	id S1757137AbbAPVXX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 16:23:23 -0500
+Received: from mail.kernel.org ([198.145.29.136]:54252 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756960AbbAPVXO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 16:23:14 -0500
+	id S1756960AbbAPVXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 16:23:19 -0500
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Vineet Gupta <Vineet.Gupta1@synopsys.com>,
@@ -14,9 +14,9 @@ Cc: linux-kernel@vger.kernel.org, Vineet Gupta <Vineet.Gupta1@synopsys.com>,
         Jiri Olsa <jolsa@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 06/10] perf tools: Elide strlcpy warning with uclibc
-Date: Fri, 16 Jan 2015 18:22:38 -0300
-Message-Id: <1421443362-10709-7-git-send-email-acme@kernel.org>
+Subject: [PATCH 07/10] perf tools: Avoid build splat for syscall numbers with uclibc
+Date: Fri, 16 Jan 2015 18:22:39 -0300
+Message-Id: <1421443362-10709-8-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1421443362-10709-1-git-send-email-acme@kernel.org>
 References: <1421443362-10709-1-git-send-email-acme@kernel.org>
@@ -26,20 +26,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 
-   ----------------->8------------------
-  CC       bench/sched-pipe.o
-In file included from builtin-annotate.c:13:0:
-util/cache.h:76:15: warning: redundant redeclaration of 'strlcpy'
-[-Wredundant-decls]
- extern size_t strlcpy(char *dest, const char *src, size_t size);
-               ^
-In file included from util/util.h:55:0,
-                 from builtin.h:4,
-                 from builtin-annotate.c:8:
-~/vineetg/arc/gnu/INSTALL_1412-arc-2014.12-rc1/arc-snps-linux-uclibc/sysroot/usr/include/string.h:396:15:
-note: previous declaration of 'strlcpy' was here
- extern size_t strlcpy(char *__restrict dst, const char *__restrict src,
-   ----------------->8------------------
+This is due to duplicated unistd inclusion (via uClibc headers + kernel headers)
+Also seen on ARM uClibc based tools
+
+   ------- ARC build ---------->8-------------
+
+  CC       util/evlist.o
+In file included from
+~/arc/k.org/arch/arc/include/uapi/asm/unistd.h:25:0,
+                 from util/../perf-sys.h:10,
+                 from util/../perf.h:15,
+                 from util/event.h:7,
+                 from util/event.c:3:
+~/arc/k.org/include/uapi/asm-generic/unistd.h:906:0:
+warning: "__NR_fcntl64" redefined [enabled by default]
+ #define __NR_fcntl64 __NR3264_fcntl
+ ^
+In file included from
+~/arc/gnu/INSTALL_1412-arc-2014.12-rc1/arc-snps-linux-uclibc/sysroot/usr/include/sys/syscall.h:24:0,
+                 from util/../perf-sys.h:6,
+   ----------------->8-------------------
+
+   ------- ARM build ---------->8-------------
+
+  CC FPIC  plugin_scsi.o
+In file included from util/../perf-sys.h:9:0,
+                 from util/../perf.h:15,
+                 from util/cache.h:7,
+                 from perf.c:12:
+~/arc/k.org/arch/arm/include/uapi/asm/unistd.h:28:0:
+warning: "__NR_restart_syscall" redefined [enabled by default]
+In file included from
+~/buildroot/host/usr/arm-buildroot-linux-uclibcgnueabi/sysroot/usr/include/sys/syscall.h:25:0,
+                 from util/../perf-sys.h:6,
+                 from util/../perf.h:15,
+                 from util/cache.h:7,
+                 from perf.c:12:
+~/buildroot/host/usr/arm-buildroot-linux-uclibcgnueabi/sysroot/usr/include/bits/sysnum.h:17:0:
+note: this is the location of the previous definition
+   ----------------->8-------------------
 
 Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
 Cc: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
@@ -47,26 +72,56 @@ Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@kernel.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Link: http://lkml.kernel.org/r/1421156604-30603-3-git-send-email-vgupta@synopsys.com
+Link: http://lkml.kernel.org/r/1421156604-30603-4-git-send-email-vgupta@synopsys.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/cache.h | 2 ++
- 1 file changed, 2 insertions(+)
+ tools/perf/bench/sched-pipe.c | 2 +-
+ tools/perf/builtin-top.c      | 1 -
+ tools/perf/perf-sys.h         | 1 -
+ 3 files changed, 1 insertion(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/cache.h b/tools/perf/util/cache.h
-index 5cf9e1b5989d..d04d770d90f6 100644
---- a/tools/perf/util/cache.h
-+++ b/tools/perf/util/cache.h
-@@ -71,7 +71,9 @@ extern char *perf_path(const char *fmt, ...) __attribute__((format (printf, 1, 2
- extern char *perf_pathdup(const char *fmt, ...)
- 	__attribute__((format (printf, 1, 2)));
+diff --git a/tools/perf/bench/sched-pipe.c b/tools/perf/bench/sched-pipe.c
+index 07a8d7646a15..005cc283790c 100644
+--- a/tools/perf/bench/sched-pipe.c
++++ b/tools/perf/bench/sched-pipe.c
+@@ -19,12 +19,12 @@
+ #include <stdlib.h>
+ #include <signal.h>
+ #include <sys/wait.h>
+-#include <linux/unistd.h>
+ #include <string.h>
+ #include <errno.h>
+ #include <assert.h>
+ #include <sys/time.h>
+ #include <sys/types.h>
++#include <sys/syscall.h>
  
-+#ifndef __UCLIBC__
- /* Matches the libc/libbsd function attribute so we declare this unconditionally: */
- extern size_t strlcpy(char *dest, const char *src, size_t size);
-+#endif
+ #include <pthread.h>
  
- #endif /* __PERF_CACHE_H */
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index 961cea183a83..616f0fcb4701 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -66,7 +66,6 @@
+ #include <sys/utsname.h>
+ #include <sys/mman.h>
+ 
+-#include <linux/unistd.h>
+ #include <linux/types.h>
+ 
+ static volatile int done;
+diff --git a/tools/perf/perf-sys.h b/tools/perf/perf-sys.h
+index a3b13d7dc1d4..6ef68165c9db 100644
+--- a/tools/perf/perf-sys.h
++++ b/tools/perf/perf-sys.h
+@@ -6,7 +6,6 @@
+ #include <sys/syscall.h>
+ #include <linux/types.h>
+ #include <linux/perf_event.h>
+-#include <asm/unistd.h>
+ 
+ #if defined(__i386__)
+ #define mb()		asm volatile("lock; addl $0,0(%%esp)" ::: "memory")
 -- 
 1.9.3
 
