@@ -1,129 +1,332 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753945AbbAPMVp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 07:21:45 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:41368 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751405AbbAPMVn (ORCPT
+	id S1754989AbbAPMWp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 07:22:45 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:35896 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751649AbbAPMWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 07:21:43 -0500
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-X-AuditID: cbfec7f4-b7f126d000001e9a-21-54b90250e5d7
-Content-transfer-encoding: 8BIT
-Message-id: <1421410894.8119.9.camel@AMDC1943>
-Subject: Re: [PATCH] MAINTAINERS: Add entry for Maxim PMIC-s on Samsung boards
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Chanwoo Choi <cw00.choi@samsung.com>
-Cc: rtc-linux@googlegroups.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Alessandro Zummo <a.zummo@towertech.it>
-Date: Fri, 16 Jan 2015 13:21:34 +0100
-In-reply-to: <54B8FB31.5090105@samsung.com>
-References: <1421407190-6771-1-git-send-email-k.kozlowski@samsung.com>
- <54B8FB31.5090105@samsung.com>
-X-Mailer: Evolution 3.10.4-0ubuntu2
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrJLMWRmVeSWpSXmKPExsVy+t/xq7oBTDtDDJ6cELJYcvEqu8XUh0/Y
-	LK5/ec5qMenJe2aLiSsnM1vc/3qU0eLblQ4mi8u75rBZfO49wmjxdMJFNovbjSvYLPZ3djBa
-	nO5mtfhxppvF4vTuEgd+j8t9vUweO2fdZffYM/Ekm8fmFVoem1Z1snncubaHzWPeyUCPvi2r
-	GD2mz/vJ5PF5k1wAVxSXTUpqTmZZapG+XQJXxp+mY6wF58Qq3m08xdLAuF6oi5GTQ0LARKLv
-	9WpGCFtM4sK99WxdjFwcQgJLGSXurtjPCpLgFRCU+DH5HksXIwcHs4C8xJFL2SBhZgF1iUnz
-	FjFD1H9mlNh3egZUvZ7ExW9/mEBsYQE/ibtzXrOB2GwCxhKbly8Bs0UENCRm/r3CCNLMLNDD
-	IrHgdQ8zSIJFQFVi64zZ7CA2p4C2xIV3v8AGCQmkS1z/1McEcoSEgLJEY7/bBEaBWUjOm4Vw
-	3iwk5y1gZF7FKJpamlxQnJSea6hXnJhbXJqXrpecn7uJERJdX3YwLj5mdYhRgINRiYd3xpYd
-	IUKsiWXFlbmHGCU4mJVEeO0/A4V4UxIrq1KL8uOLSnNSiw8xMnFwSjUwtgW+OLM/pfmgM5dR
-	jniIaIjX4k+MVSZatjWr7kfyz1u8j/v8kVmJl48HXmbbuTFC6G/hpfPmdb4auhJ/p3RU6wXZ
-	XJnjlb5VJ/WXgF9hxPXQiUHBTcdCX0zysbR9cuVqhFt756PJgn86nt/V95x/c028/DRdt40x
-	dxZYVStlZaXsdPjI2K6lxFKckWioxVxUnAgAUb0SSowCAAA=
+	Fri, 16 Jan 2015 07:22:44 -0500
+Date: Fri, 16 Jan 2015 12:22:21 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Jiri Olsa <jolsa@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Alexis Berlemont <alexis.berlemont@gmail.com>,
+        Andi Kleen <ak@linux.intel.com>, Anton Blanchard <anton@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Borislav Petkov <bp@alien8.de>, Borislav Petkov <bp@suse.de>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Florian Fainelli <florian@openwrt.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
+        "msalter@redhat.com" <msalter@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "S. Lockwood-Childs" <sjl@vctlabs.com>,
+        Sam Ravnborg <sam@ravnborg.org>, Sasha Levin <sasha.levin@oracle.com>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Subject: Re: [PATCHv2 00/36] perf tools: New build framework
+Message-ID: <20150116122221.GN7091@arm.com>
+References: <1421326532-25660-1-git-send-email-jolsa@kernel.org>
+ <20150116113921.GL7091@arm.com>
+ <20150116121214.GI21809@leverpostej>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150116121214.GI21809@leverpostej>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On pią, 2015-01-16 at 20:51 +0900, Chanwoo Choi wrote:
-> Hi Krzysztof,
-> 
-> On 01/16/2015 08:19 PM, Krzysztof Kozlowski wrote:
-> > Add myself as supporter for Maxim 77686 PMIC and Maxim 14577/77693 MUIC
-> > drivers:
-> >  - mfd (all of them),
-> >  - extcon (extcon-max14577, extcon-max77693)
-> >  - power (max14577_charger.c, 77693 on LKML [1]),
-> >  - regulator (all of them),
-> >  - clock (clk-max77686.c)
-> >  - RTC (rtc-max77686.c).
+On Fri, Jan 16, 2015 at 12:12:14PM +0000, Mark Rutland wrote:
+> On Fri, Jan 16, 2015 at 11:39:22AM +0000, Will Deacon wrote:
+> > On Thu, Jan 15, 2015 at 12:54:56PM +0000, Jiri Olsa wrote:
+> > > hi,
+> > > I'm following up on latest post from Alexis:
+> > >   http://marc.info/?l=linux-kernel&m=141427580405357&w=2
+> > > 
+> > > v2 changes:
+> > >   - build Makefiles librarized and moved to 'tools/build' [Ingo]
+> > >   - several minor fixies [Namhyung]
+> > >   - tested on other archs now - x86_64, i386, powerpc
+> > >   - moved tools/lib/* under new build framework to show
+> > >     that it's possible ;-)
+> > >     included traceevent/lockdep maintainers to get the feedback
+> > >   - omitted last 2 patches
+> > > 
+> > > The patchset is also available in:
+> > >   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
+> > >   perf/build
+> > > 
+> > > All tests/make tests passed.
+> > > 
+> > > Any feedback from ARM guys would be great ;-)
 > > 
-> > Lately I am the author of major contributors to them. These
-> > drivers are used on Exynos-based boards (Trats 2, Gear 1 and Gear 2).
-> > 
-> > [1] https://lkml.org/lkml/2015/1/5/139
-> > 
-> > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
-> > cc: Chanwoo Choi <cw00.choi@samsung.com>
-> > Cc: Samuel Ortiz <sameo@linux.intel.com>
-> > Cc: Lee Jones <lee.jones@linaro.org>
-> > Cc: Sebastian Reichel <sre@kernel.org>
-> > Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-> > Cc: David Woodhouse <dwmw2@infradead.org>
-> > Cc: Liam Girdwood <lgirdwood@gmail.com>
-> > Cc: Mark Brown <broonie@kernel.org>
-> > Cc: Mike Turquette <mturquette@linaro.org>
-> > Cc: Stephen Boyd <sboyd@codeaurora.org>
-> > Cc: Alessandro Zummo <a.zummo@towertech.it>
-> > ---
-> >  MAINTAINERS | 15 +++++++++++++++
-> >  1 file changed, 15 insertions(+)
-> > 
-> > diff --git a/MAINTAINERS b/MAINTAINERS
-> > index f017a30eb280..b033fb499186 100644
-> > --- a/MAINTAINERS
-> > +++ b/MAINTAINERS
-> > @@ -6143,6 +6143,21 @@ F:	Documentation/devicetree/bindings/i2c/max6697.txt
-> >  F:	drivers/hwmon/max6697.c
-> >  F:	include/linux/platform_data/max6697.h
-> >  
-> > +MAXIM PMIC AND MUIC DRIVERS FOR EXYNOS BASED BOARDS
-> > +M:	Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > +L:	linux-kernel@vger.kernel.org
-> > +S:	Supported
-> > +F:	drivers/*/*max14577*.c
-> > +F:	drivers/*/*max77686*.c
-> > +F:	drivers/*/*max77693*.c
+> > [adding Mark Rutland to Cc]
 > 
-> I knew that you did implement max14577 series because I did cowork to implement it with you.
+> Cheers.
 > 
-> But,
-> The drivers/extcon/extcon-max77693.c was implemented by me
-> and extcon-max14577.c was implemented by me and you.
-> 
-> The initial version of drivers/mfd/max77876.c, drivers/regulator/max77686.c
-> was implemented by Jonghwa Lee(jonghwa3.lee@samsung.com).
-> 
-> The initial version of drivers/mfd/max77693.c was implmented by me
-> and drivers/mfd/max77693.c by Jonghwa Lee.
-> 
+> I just tried a cross-build for arm, and that blew up when trying to do
+> something with arch/arm/util/libperf-in.o (log below). I bisected that
+> to f169fbc4c59dd9d4 "perf build: Add arch x86 objects building". I'm
+> looking into why now.
 
-Yes, your are right. However I do not change the ownership or authorship
-of these drivers here. You and the others will still be the authors.
-Being the initial author is somehow different then reviewing and
-developing the driver further.
+I get a similar failure doing a native arm64 build. I think the problem is
+because the arch/ files for arm and arm64 aren't always required (i.e. there
+are configurations where nothing is built under there) and, consequently,
+libperf-in.o isn't actually needed and we try to link against something that
+doesn't exist.
 
-Although you didn't say that explicitly here but if you think there
-should be an entry also for you than I would appreciate it fully.
+Will
 
-Best regards,
-Krzysztof
-
-> Best Regards,
-> Chanwoo Choi
+> Thanks,
+> Mark.
 > 
+> [mark@leverpostej:~/src/linux/tools/perf]% make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
+>   BUILD:   Doing 'make -j8' parallel build
+> config/Makefile:341: No libelf found, disables 'probe' tool, please install elfutils-libelf-devel/libelf-dev
+> config/Makefile:417: Disabling post unwind, no support found.
+> config/Makefile:458: No libaudit.h found, disables 'trace' tool, please install audit-libs-devel or libaudit-dev
+> config/Makefile:473: slang not found, disables TUI support. Please install slang-devel or libslang-dev
+> config/Makefile:487: GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev
+> config/Makefile:515: Missing perl devel files. Disabling perl scripting support, consider installing perl-ExtUtils-Embed
+> config/Makefile:560: No Python.h (for Python 2.x) was found
+> config/Makefile:560: Python support will not be built
+> config/Makefile:653: No numa.h found, disables 'perf bench numa mem' benchmark, please install numactl-devel/libnuma-devel/libnuma-dev
 > 
+> Auto-detecting system features:
+> ...                         dwarf: [ OFF ]
+> ...                         glibc: [ on  ]
+> ...                          gtk2: [ OFF ]
+> ...                      libaudit: [ OFF ]
+> ...                        libbfd: [ OFF ]
+> ...                        libelf: [ OFF ]
+> ...                       libnuma: [ OFF ]
+> ...                       libperl: [ OFF ]
+> ...                     libpython: [ OFF ]
+> ...                      libslang: [ OFF ]
+> ...                     libunwind: [ OFF ]
+> ...            libdw-dwarf-unwind: [ OFF ]
+> ...                          zlib: [ OFF ]
 > 
-
+>   CC       arch/common.o
+>   CC       util/alias.o
+>   CC       util/abspath.o
+>   CC       ui/setup.o
+>   CC       event-parse.o
+>   CC       fd/array.o
+>   LD       arch/arm/libperf-in.o
+> arm-linux-gnueabihf-ld: cannot find arch/arm/util/libperf-in.o: No such file or directory
+> make[4]: *** [arch/arm/libperf-in.o] Error 1
+> make[3]: *** [arm] Error 2
+> make[3]: *** Waiting for unfinished jobs....
+>   GEN      common-cmds.h
+>   LD       fd/libapi-in.o
+>   CC       fs/fs.o
+>   CC       fs/debugfs.o
+>   CC       util/annotate.o
+>   CC       ui/helpline.o
+>   CC       ui/progress.o
+>   CC       ui/util.o
+>   LD       fs/libapi-in.o
+>   LD       libapi-in.o
+>   AR       libapi.a
+>   CC       ui/hist.o
+> make[2]: *** [arch] Error 2
+> make[2]: *** Waiting for unfinished jobs....
+>   CC       ui/stdio/hist.o
+>   CC       plugin_jbd2.o
+>   PERF_VERSION = 3.19.rc2.gcdb397
+>   CC       plugin_hrtimer.o
+>   CC       plugin_kmem.o
+>   LD       plugin_jbd2-in.o
+>   CC       plugin_kvm.o
+>   LD       plugin_hrtimer-in.o
+>   CC       plugin_mac80211.o
+>   CC       event-plugin.o
+>   LD       plugin_kmem-in.o
+>   CC       trace-seq.o
+>   LD       plugin_mac80211-in.o
+>   LD       plugin_kvm-in.o
+>   CC       parse-filter.o
+>   CC       plugin_sched_switch.o
+>   CC       parse-utils.o
+>   CC       kbuffer-parse.o
+>   CC       plugin_function.o
+>   LD       plugin_sched_switch-in.o
+>   CC       plugin_xen.o
+>   CC       plugin_scsi.o
+>   LD       plugin_xen-in.o
+>   LD       plugin_function-in.o
+>   CC       plugin_cfg80211.o
+>   LINK     plugin_jbd2.so
+>   LINK     plugin_hrtimer.so
+>   LINK     plugin_kmem.so
+>   LINK     plugin_kvm.so
+>   LD       plugin_cfg80211-in.o
+>   CC       builtin-bench.o
+>   LD       plugin_scsi-in.o
+>   LINK     plugin_mac80211.so
+>   LINK     plugin_sched_switch.so
+>   CC       builtin-annotate.o
+>   LD       libtraceevent-in.o
+>   LINK     plugin_function.so
+>   LINK     plugin_xen.so
+>   LINK     plugin_scsi.so
+>   LINK     plugin_cfg80211.so
+>   CC       util/build-id.o
+>   CC       util/config.o
+>   LINK     libtraceevent.a
+>   GEN      perf-archive
+>   GEN      perf-with-kcore
+>   CC       util/ctype.o
+>   CC       builtin-diff.o
+>   CC       util/db-export.o
+>   CC       util/environment.o
+>   CC       builtin-evlist.o
+>   CC       util/event.o
+>   CC       util/evlist.o
+>   CC       util/evsel.o
+>   CC       util/exec_cmd.o
+>   CC       builtin-help.o
+>   CC       util/find_next_bit.o
+>   CC       builtin-sched.o
+>   CC       util/help.o
+>   CC       builtin-buildid-list.o
+>   CC       builtin-buildid-cache.o
+>   CC       util/kallsyms.o
+>   CC       builtin-list.o
+>   CC       util/levenshtein.o
+>   CC       util/parse-options.o
+>   LD       ui/libperf-in.o
+>   BISON    util/parse-events-bison.c
+>   CC       builtin-record.o
+>   CC       builtin-report.o
+>   CC       util/path.o
+>   CC       util/rbtree.o
+>   CC       util/bitmap.o
+>   CC       util/hweight.o
+>   CC       util/run-command.o
+>   CC       util/quote.o
+>   CC       builtin-stat.o
+>   CC       util/strbuf.o
+>   CC       builtin-timechart.o
+>   CC       builtin-top.o
+>   CC       util/string.o
+>   CC       util/strlist.o
+>   CC       builtin-script.o
+>   CC       builtin-kmem.o
+>   CC       util/strfilter.o
+>   CC       util/top.o
+>   CC       builtin-lock.o
+>   CC       util/usage.o
+>   CC       util/wrapper.o
+>   CC       util/sigchain.o
+>   CC       builtin-kvm.o
+>   CC       util/dso.o
+>   CC       util/symbol.o
+>   CC       util/color.o
+>   CC       builtin-inject.o
+>   CC       util/pager.o
+>   CC       util/header.o
+>   CC       builtin-mem.o
+>   CC       util/callchain.o
+>   CC       bench/sched-messaging.o
+>   CC       bench/sched-pipe.o
+>   CC       util/values.o
+>   CC       util/debug.o
+>   CC       util/machine.o
+>   CC       tests/builtin-test.o
+>   CC       bench/mem-memcpy.o
+>   CC       util/map.o
+>   CC       util/pstack.o
+>   CC       tests/parse-events.o
+>   CC       bench/futex-hash.o
+>   CC       perf.o
+>   CC       util/session.o
+>   CC       bench/futex-wake.o
+>   CC       util/ordered-events.o
+>   CC       bench/futex-requeue.o
+>   CC       tests/dso-data.o
+>   CC       tests/attr.o
+>   CC       util/comm.o
+>   CC       util/thread.o
+>   LD       bench/perf-in.o
+>   CC       util/thread_map.o
+>   CC       util/trace-event-parse.o
+>   CC       tests/vmlinux-kallsyms.o
+>   CC       tests/open-syscall.o
+>   CC       tests/open-syscall-all-cpus.o
+>   CC       util/parse-events-bison.o
+>   BISON    util/pmu-bison.c
+>   CC       util/trace-event-read.o
+>   CC       tests/open-syscall-tp-fields.o
+>   CC       util/trace-event-info.o
+>   CC       util/trace-event-scripting.o
+>   CC       util/trace-event.o
+>   CC       util/svghelper.o
+>   CC       tests/mmap-basic.o
+>   CC       util/sort.o
+>   CC       util/hist.o
+>   CC       util/util.o
+>   CC       util/xyarray.o
+>   CC       tests/perf-record.o
+>   CC       util/cpumap.o
+>   CC       tests/rdpmc.o
+>   CC       util/cgroup.o
+>   CC       util/target.o
+>   CC       tests/evsel-roundtrip-name.o
+>   CC       tests/evsel-tp-sched.o
+>   CC       util/rblist.o
+>   CC       util/intlist.o
+>   CC       util/vdso.o
+>   CC       tests/fdarray.o
+>   CC       util/stat.o
+>   CC       util/record.o
+>   CC       util/srcline.o
+>   CC       tests/pmu.o
+>   CC       util/data.o
+>   CC       util/tsc.o
+>   CC       util/cloexec.o
+>   CC       util/thread-stack.o
+>   CC       tests/hists_common.o
+>   CC       util/symbol-minimal.o
+>   CC       util/perf_regs.o
+>   FLEX     util/parse-events-flex.c
+>   CC       tests/hists_link.o
+>   FLEX     util/pmu-flex.c
+>   CC       util/pmu-bison.o
+>   CC       util/parse-events.o
+>   CC       util/parse-events-flex.o
+>   CC       util/pmu.o
+>   CC       tests/hists_filter.o
+>   CC       util/pmu-flex.o
+>   CC       tests/hists_output.o
+>   CC       tests/hists_cumulate.o
+>   CC       tests/python-use.o
+>   CC       tests/bp_signal.o
+>   CC       tests/bp_signal_overflow.o
+>   CC       tests/task-exit.o
+>   CC       tests/sw-clock.o
+>   CC       tests/mmap-thread-lookup.o
+>   CC       tests/thread-mg-share.o
+>   CC       tests/switch-tracking.o
+>   CC       tests/keep-tracking.o
+>   CC       tests/code-reading.o
+>   CC       tests/sample-parsing.o
+>   CC       tests/parse-no-sample-id-all.o
+>   LD       util/libperf-in.o
+> make[1]: *** [libperf-in.o] Error 2
+> make[1]: *** Waiting for unfinished jobs....
+>   LD       tests/perf-in.o
+>   LD       perf-in.o
+> make: *** [all] Error 2
+> [
+> 
