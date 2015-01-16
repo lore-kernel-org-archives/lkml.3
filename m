@@ -1,51 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752279AbbAPViX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 16:38:23 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:47407 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750703AbbAPViW (ORCPT
+	id S1752584AbbAPVpd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 16:45:33 -0500
+Received: from mail-la0-f42.google.com ([209.85.215.42]:52870 "EHLO
+	mail-la0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751535AbbAPVpc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 16:38:22 -0500
-Date: Fri, 16 Jan 2015 13:38:20 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Kirill A. Shutemov" <kirill@shutemov.name>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
-        Peter Feiner <pfeiner@google.com>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -mm v7 00/13] pagewalk: improve vma handling, apply to
- new users
-Message-Id: <20150116133820.ab5754f94201697fae3cefcc@linux-foundation.org>
-In-Reply-To: <20150116163217.GA509@node.dhcp.inet.fi>
-References: <1415343692-6314-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-	<20150116163217.GA509@node.dhcp.inet.fi>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 16 Jan 2015 16:45:32 -0500
+Message-ID: <54B98679.5060104@gmail.com>
+Date: Sat, 17 Jan 2015 00:45:29 +0300
+From: Dmitry Tunin <hanipouspilot@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: linux-bluetooth <linux-bluetooth@vger.kernel.org>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: [PATCH] ath3k: Add support of AR3012 bluetooth 13d3:3423 device
+Content-Type: text/plain; charset=utf-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Jan 2015 18:32:17 +0200 "Kirill A. Shutemov" <kirill@shutemov.name> wrote:
+Add support of 13d3:3423 device.
 
-> On Fri, Nov 07, 2014 at 07:01:51AM +0000, Naoya Horiguchi wrote:
-> > This series is ver.7 of page table walker patchset.
-> > 
-> > I apologize about my long delay since previous version (I have moved to
-> > Japan last month and no machine access for a while.)
-> > I just rebased this onto mmotm-2014-11-05-16-01. I had some conflicts but
-> > the resolution was not hard.
-> > Trinity showed no bug at least in my environment.
-> 
-> Andrew, any chance you'll find time for the patchset?
-> 
+BugLink: https://bugs.launchpad.net/bugs/1411193
 
-That was 2+ months ago - the patches have decayed somewhat.  I'm only
-seeing a few rejects so I'll have a play with them, see how it all
-looks.
+---
 
+T: Bus=01 Lev=02 Prnt=03 Port=00 Cnt=01 Dev#= 5 Spd=12 MxCh= 0
+D: Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs= 1
+P: Vendor=13d3 ProdID=3423 Rev= 0.01
+C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+A: FirstIf#= 0 IfCount= 2 Cls=e0(wlcon) Sub=01 Prot=01
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E: Ad=81(I) Atr=03(Int.) MxPS= 16 Ivl=1ms
+E: Ad=82(I) Atr=02(Bulk) MxPS= 64 Ivl=0ms
+E: Ad=02(O) Atr=02(Bulk) MxPS= 64 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E: Ad=83(I) Atr=01(Isoc) MxPS= 0 Ivl=1ms
+E: Ad=03(O) Atr=01(Isoc) MxPS= 0 Ivl=1ms
+I: If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E: Ad=83(I) Atr=01(Isoc) MxPS= 9 Ivl=1ms
+E: Ad=03(O) Atr=01(Isoc) MxPS= 9 Ivl=1ms
+I: If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E: Ad=83(I) Atr=01(Isoc) MxPS= 17 Ivl=1ms
+E: Ad=03(O) Atr=01(Isoc) MxPS= 17 Ivl=1ms
+I: If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E: Ad=83(I) Atr=01(Isoc) MxPS= 25 Ivl=1ms
+E: Ad=03(O) Atr=01(Isoc) MxPS= 25 Ivl=1ms
+I: If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E: Ad=83(I) Atr=01(Isoc) MxPS= 33 Ivl=1ms
+E: Ad=03(O) Atr=01(Isoc) MxPS= 33 Ivl=1ms
+I: If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E: Ad=83(I) Atr=01(Isoc) MxPS= 49 Ivl=1ms
+E: Ad=03(O) Atr=01(Isoc) MxPS= 49 Ivl=1ms
 
+Signed-off-by: Dmitry Tunin <hanipouspilot@gmail.com>
+Cc: stable@vger.kernel.org
+---
+  drivers/bluetooth/ath3k.c | 2 ++
+  drivers/bluetooth/btusb.c | 1 +
+  2 files changed, 3 insertions(+)
+
+diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
+index 1ee27ac..13a64d0 100644
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -108,6 +108,7 @@ static const struct usb_device_id ath3k_table[] = {
+  	{ USB_DEVICE(0x13d3, 0x3393) },
+  	{ USB_DEVICE(0x13d3, 0x3402) },
+  	{ USB_DEVICE(0x13d3, 0x3408) },
++	{ USB_DEVICE(0x13d3, 0x3423) },
+  	{ USB_DEVICE(0x13d3, 0x3432) },
+  
+  	/* Atheros AR5BBU12 with sflash firmware */
+@@ -162,6 +163,7 @@ static const struct usb_device_id ath3k_blist_tbl[] = {
+  	{ USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
+  	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
+  	{ USB_DEVICE(0x13d3, 0x3408), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x13d3, 0x3423), .driver_info = BTUSB_ATH3012 },
+  	{ USB_DEVICE(0x13d3, 0x3432), .driver_info = BTUSB_ATH3012 },
+  
+  	/* Atheros AR5BBU22 with sflash firmware */
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index 4a6495a..1211c74 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -189,6 +189,7 @@ static const struct usb_device_id blacklist_table[] = {
+  	{ USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
+  	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
+  	{ USB_DEVICE(0x13d3, 0x3408), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x13d3, 0x3423), .driver_info = BTUSB_ATH3012 },
+  	{ USB_DEVICE(0x13d3, 0x3432), .driver_info = BTUSB_ATH3012 },
+  
+  	/* Atheros AR5BBU12 with sflash firmware */
+-- 
+1.9.1
