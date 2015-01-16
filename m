@@ -1,83 +1,370 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751721AbbAPXdX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 18:33:23 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:48401 "EHLO
+	id S1752219AbbAPXdg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 18:33:36 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:48251 "EHLO
 	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122AbbAPXdW (ORCPT
+	with ESMTP id S1751122AbbAPXdY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 18:33:22 -0500
+	Fri, 16 Jan 2015 18:33:24 -0500
 From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         "Luis R . Rodriguez" <mcgrof@suse.com>, Tejun Heo <tj@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@linux.intel.com>,
         Rusty Russell <rusty@rustcorp.com.au>, Olof Johansson <olof@lixom.net>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Subject: [PATCH 0/8] Asynchronous device/driver probing support
-Date: Fri, 16 Jan 2015 15:33:09 -0800
-Message-Id: <1421451197-19723-1-git-send-email-dmitry.torokhov@gmail.com>
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        cocci@systeme.lip6.fr, Christoph Hellwig <hch@infradead.org>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Ewan Milne <emilne@redhat.com>, Jean Delvare <jdelvare@suse.de>,
+        Hannes Reinecke <hare@suse.de>, Jani Nikula <jani.nikula@intel.com>
+Subject: [PATCH 1/8] module: add extra argument for parse_params() callback
+Date: Fri, 16 Jan 2015 15:33:10 -0800
+Message-Id: <1421451197-19723-2-git-send-email-dmitry.torokhov@gmail.com>
 X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
+In-Reply-To: <1421451197-19723-1-git-send-email-dmitry.torokhov@gmail.com>
+References: <1421451197-19723-1-git-send-email-dmitry.torokhov@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series is a combination of changes proposed by Luis a couple months
-ago and implementation used by Chrome OS. The issue we are trying to solve
-here is "slow" devices and drivers spending "too much time" in their probe()
-methods and it affects:
+From: Luis R. Rodriguez <mcgrof@suse.com>
 
-- overall kernel boot process when drivers are compiled into the kernel
-  and slow devices stall entire boot progress;
-- systemd desire to time out module loading process.
+This adds an extra argument onto parse_params() to be used
+as a way to make the unused callback a bit more useful and
+generic by allowing the caller to pass on a data structure
+of its choice. An example use case is to allow us to easily
+make module parameters for every module which we will do
+next.
 
-Unlike Luis' proposal we do make use of asycn_schedule() infrastructure
-instead of using a dedicated workqueue, so all  existing synchronization
-points in kernel that wait for device registration still work the same.
-Also, the asynchronous probing is done not only during driver registration
-(i.e. when devices are probed asynchronously only if they are registered
-before the driver), but also during device registration and deferred probe
-handling. This way slow devices do not stall kernel boot even when drivers
-are compiled into the kernel.
+@ parse @
+identifier name, args, params, num, level_min, level_max;
+identifier unknown, param, val, doing;
+type s16;
+@@
+ extern char *parse_args(const char *name,
+ 			 char *args,
+ 			 const struct kernel_param *params,
+ 			 unsigned num,
+ 			 s16 level_min,
+ 			 s16 level_max,
++			 void *arg,
+ 			 int (*unknown)(char *param, char *val,
+					const char *doing
++					, void *arg
+					));
 
-The last patch is for adventurous people to try and force
-fully-asynchronous boot. It works for me with limited success - I can boot
-Rockhip-based box to userspace as long as I force serial to be sychronously
-probed and ignore the fact that most devices are using "dummy" regulators
-as regulator subsystem really expects regulators to be registered in
-orderly fashion on OF-based systems.
+@ parse_mod @
+identifier name, args, params, num, level_min, level_max;
+identifier unknown, param, val, doing;
+type s16;
+@@
+ char *parse_args(const char *name,
+ 			 char *args,
+ 			 const struct kernel_param *params,
+ 			 unsigned num,
+ 			 s16 level_min,
+ 			 s16 level_max,
++			 void *arg,
+ 			 int (*unknown)(char *param, char *val,
+					const char *doing
++					, void *arg
+					))
+{
+	...
+}
 
-Thanks,
-Dmitry
+@ parse_args_found @
+expression R, E1, E2, E3, E4, E5, E6;
+identifier func;
+@@
 
+(
+	R =
+	parse_args(E1, E2, E3, E4, E5, E6,
++		   NULL,
+		   func);
+|
+	R =
+	parse_args(E1, E2, E3, E4, E5, E6,
++		   NULL,
+		   &func);
+|
+	R =
+	parse_args(E1, E2, E3, E4, E5, E6,
++		   NULL,
+		   NULL);
+|
+	parse_args(E1, E2, E3, E4, E5, E6,
++		   NULL,
+		   func);
+|
+	parse_args(E1, E2, E3, E4, E5, E6,
++		   NULL,
+		   &func);
+|
+	parse_args(E1, E2, E3, E4, E5, E6,
++		   NULL,
+		   NULL);
+)
 
-Dmitry Torokhov (3):
-  driver-core: add asynchronous probing support for drivers
-  driver-core: platform_driver_probe() must probe synchronously
-  module: add core_param_unsafe
+@ parse_args_unused depends on parse_args_found @
+identifier parse_args_found.func;
+@@
 
-Luis R. Rodriguez (5):
-  module: add extra argument for parse_params() callback
-  driver-core: add driver module asynchronous probe support
-  driver-core: enable drivers to opt-out of async probe
-  amd64_edac: enforce synchronous probe
-  driver-core: allow forcing async probing for modules and builtins
+int func(char *param, char *val, const char *unused
++		 , void *arg
+		 )
+{
+	...
+}
 
- Documentation/kernel-parameters.txt |  13 +++
- arch/powerpc/mm/hugetlbpage.c       |   4 +-
- drivers/base/base.h                 |   1 +
- drivers/base/bus.c                  |  31 +++++--
- drivers/base/dd.c                   | 166 +++++++++++++++++++++++++++++++-----
- drivers/base/platform.c             |  13 +++
- drivers/edac/amd64_edac.c           |   1 +
- include/linux/device.h              |  26 ++++++
- include/linux/module.h              |   2 +
- include/linux/moduleparam.h         |  12 ++-
- init/main.c                         |  25 +++---
- kernel/module.c                     |  25 +++++-
- kernel/params.c                     |  11 ++-
- lib/dynamic_debug.c                 |   4 +-
- 14 files changed, 284 insertions(+), 50 deletions(-)
+@ mod_unused depends on parse_args_found @
+identifier parse_args_found.func;
+expression A1, A2, A3;
+@@
 
+-	func(A1, A2, A3);
++	func(A1, A2, A3, NULL);
+
+Generated-by: Coccinelle SmPL
+Cc: cocci@systeme.lip6.fr
+Cc: Tejun Heo <tj@kernel.org>
+Cc: Arjan van de Ven <arjan@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Christoph Hellwig <hch@infradead.org>
+Cc: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Ewan Milne <emilne@redhat.com>
+Cc: Jean Delvare <jdelvare@suse.de>
+Cc: Hannes Reinecke <hare@suse.de>
+Cc: Jani Nikula <jani.nikula@intel.com>
+Cc: linux-kernel@vger.kernel.org
+Reviewed-by: Tejun Heo <tj@kernel.org>
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+---
+ arch/powerpc/mm/hugetlbpage.c |  4 ++--
+ include/linux/moduleparam.h   |  3 ++-
+ init/main.c                   | 25 +++++++++++++++----------
+ kernel/module.c               |  6 ++++--
+ kernel/params.c               | 11 +++++++----
+ lib/dynamic_debug.c           |  4 ++--
+ 6 files changed, 32 insertions(+), 21 deletions(-)
+
+diff --git a/arch/powerpc/mm/hugetlbpage.c b/arch/powerpc/mm/hugetlbpage.c
+index 620d0ec..ae0c479 100644
+--- a/arch/powerpc/mm/hugetlbpage.c
++++ b/arch/powerpc/mm/hugetlbpage.c
+@@ -336,7 +336,7 @@ int alloc_bootmem_huge_page(struct hstate *hstate)
+ unsigned long gpage_npages[MMU_PAGE_COUNT];
+ 
+ static int __init do_gpage_early_setup(char *param, char *val,
+-				       const char *unused)
++				       const char *unused, void *arg)
+ {
+ 	static phys_addr_t size;
+ 	unsigned long npages;
+@@ -385,7 +385,7 @@ void __init reserve_hugetlb_gpages(void)
+ 
+ 	strlcpy(cmdline, boot_command_line, COMMAND_LINE_SIZE);
+ 	parse_args("hugetlb gpages", cmdline, NULL, 0, 0, 0,
+-			&do_gpage_early_setup);
++			NULL, &do_gpage_early_setup);
+ 
+ 	/*
+ 	 * Walk gpage list in reverse, allocating larger page sizes first.
+diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
+index 1c9effa..1392370 100644
+--- a/include/linux/moduleparam.h
++++ b/include/linux/moduleparam.h
+@@ -357,8 +357,9 @@ extern char *parse_args(const char *name,
+ 		      unsigned num,
+ 		      s16 level_min,
+ 		      s16 level_max,
++		      void *arg,
+ 		      int (*unknown)(char *param, char *val,
+-			      const char *doing));
++				     const char *doing, void *arg));
+ 
+ /* Called by module remove. */
+ #ifdef CONFIG_SYSFS
+diff --git a/init/main.c b/init/main.c
+index cf95428..9596c65 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -238,7 +238,8 @@ static int __init loglevel(char *str)
+ early_param("loglevel", loglevel);
+ 
+ /* Change NUL term back to "=", to make "param" the whole string. */
+-static int __init repair_env_string(char *param, char *val, const char *unused)
++static int __init repair_env_string(char *param, char *val,
++				    const char *unused, void *arg)
+ {
+ 	if (val) {
+ 		/* param=val or param="val"? */
+@@ -255,14 +256,15 @@ static int __init repair_env_string(char *param, char *val, const char *unused)
+ }
+ 
+ /* Anything after -- gets handed straight to init. */
+-static int __init set_init_arg(char *param, char *val, const char *unused)
++static int __init set_init_arg(char *param, char *val,
++			       const char *unused, void *arg)
+ {
+ 	unsigned int i;
+ 
+ 	if (panic_later)
+ 		return 0;
+ 
+-	repair_env_string(param, val, unused);
++	repair_env_string(param, val, unused, NULL);
+ 
+ 	for (i = 0; argv_init[i]; i++) {
+ 		if (i == MAX_INIT_ARGS) {
+@@ -279,9 +281,10 @@ static int __init set_init_arg(char *param, char *val, const char *unused)
+  * Unknown boot options get handed to init, unless they look like
+  * unused parameters (modprobe will find them in /proc/cmdline).
+  */
+-static int __init unknown_bootoption(char *param, char *val, const char *unused)
++static int __init unknown_bootoption(char *param, char *val,
++				     const char *unused, void *arg)
+ {
+-	repair_env_string(param, val, unused);
++	repair_env_string(param, val, unused, NULL);
+ 
+ 	/* Handle obsolete-style parameters */
+ 	if (obsolete_checksetup(param))
+@@ -421,7 +424,8 @@ static noinline void __init_refok rest_init(void)
+ }
+ 
+ /* Check for early params. */
+-static int __init do_early_param(char *param, char *val, const char *unused)
++static int __init do_early_param(char *param, char *val,
++				 const char *unused, void *arg)
+ {
+ 	const struct obs_kernel_param *p;
+ 
+@@ -440,7 +444,8 @@ static int __init do_early_param(char *param, char *val, const char *unused)
+ 
+ void __init parse_early_options(char *cmdline)
+ {
+-	parse_args("early options", cmdline, NULL, 0, 0, 0, do_early_param);
++	parse_args("early options", cmdline, NULL, 0, 0, 0, NULL,
++		   do_early_param);
+ }
+ 
+ /* Arch code calls this early on, or if not, just before other parsing. */
+@@ -545,10 +550,10 @@ asmlinkage __visible void __init start_kernel(void)
+ 	after_dashes = parse_args("Booting kernel",
+ 				  static_command_line, __start___param,
+ 				  __stop___param - __start___param,
+-				  -1, -1, &unknown_bootoption);
++				  -1, -1, NULL, &unknown_bootoption);
+ 	if (!IS_ERR_OR_NULL(after_dashes))
+ 		parse_args("Setting init args", after_dashes, NULL, 0, -1, -1,
+-			   set_init_arg);
++			   NULL, set_init_arg);
+ 
+ 	jump_label_init();
+ 
+@@ -857,7 +862,7 @@ static void __init do_initcall_level(int level)
+ 		   initcall_command_line, __start___param,
+ 		   __stop___param - __start___param,
+ 		   level, level,
+-		   &repair_env_string);
++		   NULL, &repair_env_string);
+ 
+ 	for (fn = initcall_levels[level]; fn < initcall_levels[level+1]; fn++)
+ 		do_one_initcall(*fn);
+diff --git a/kernel/module.c b/kernel/module.c
+index 3965511..f5b28b6 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -3178,7 +3178,8 @@ out:
+ 	return err;
+ }
+ 
+-static int unknown_module_param_cb(char *param, char *val, const char *modname)
++static int unknown_module_param_cb(char *param, char *val, const char *modname,
++				   void *arg)
+ {
+ 	/* Check for magic 'dyndbg' arg */
+ 	int ret = ddebug_dyndbg_module_param_cb(param, val, modname);
+@@ -3283,7 +3284,8 @@ static int load_module(struct load_info *info, const char __user *uargs,
+ 
+ 	/* Module is ready to execute: parsing args may do that. */
+ 	after_dashes = parse_args(mod->name, mod->args, mod->kp, mod->num_kp,
+-				  -32768, 32767, unknown_module_param_cb);
++				  -32768, 32767, NULL,
++				  unknown_module_param_cb);
+ 	if (IS_ERR(after_dashes)) {
+ 		err = PTR_ERR(after_dashes);
+ 		goto bug_cleanup;
+diff --git a/kernel/params.c b/kernel/params.c
+index bd65d136..8534681 100644
+--- a/kernel/params.c
++++ b/kernel/params.c
+@@ -100,8 +100,9 @@ static int parse_one(char *param,
+ 		     unsigned num_params,
+ 		     s16 min_level,
+ 		     s16 max_level,
++		     void *arg,
+ 		     int (*handle_unknown)(char *param, char *val,
+-				     const char *doing))
++				     const char *doing, void *arg))
+ {
+ 	unsigned int i;
+ 	int err;
+@@ -128,7 +129,7 @@ static int parse_one(char *param,
+ 
+ 	if (handle_unknown) {
+ 		pr_debug("doing %s: %s='%s'\n", doing, param, val);
+-		return handle_unknown(param, val, doing);
++		return handle_unknown(param, val, doing, arg);
+ 	}
+ 
+ 	pr_debug("Unknown argument '%s'\n", param);
+@@ -194,7 +195,9 @@ char *parse_args(const char *doing,
+ 		 unsigned num,
+ 		 s16 min_level,
+ 		 s16 max_level,
+-		 int (*unknown)(char *param, char *val, const char *doing))
++		 void *arg,
++		 int (*unknown)(char *param, char *val,
++				const char *doing, void *arg))
+ {
+ 	char *param, *val;
+ 
+@@ -214,7 +217,7 @@ char *parse_args(const char *doing,
+ 			return args;
+ 		irq_was_disabled = irqs_disabled();
+ 		ret = parse_one(param, val, doing, params, num,
+-				min_level, max_level, unknown);
++				min_level, max_level, arg, unknown);
+ 		if (irq_was_disabled && !irqs_disabled())
+ 			pr_warn("%s: option '%s' enabled irq's!\n",
+ 				doing, param);
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index d8f3d31..e491e02 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -887,7 +887,7 @@ static int ddebug_dyndbg_param_cb(char *param, char *val,
+ 
+ /* handle both dyndbg and $module.dyndbg params at boot */
+ static int ddebug_dyndbg_boot_param_cb(char *param, char *val,
+-				const char *unused)
++				const char *unused, void *arg)
+ {
+ 	vpr_info("%s=\"%s\"\n", param, val);
+ 	return ddebug_dyndbg_param_cb(param, val, NULL, 0);
+@@ -1028,7 +1028,7 @@ static int __init dynamic_debug_init(void)
+ 	 */
+ 	cmdline = kstrdup(saved_command_line, GFP_KERNEL);
+ 	parse_args("dyndbg params", cmdline, NULL,
+-		   0, 0, 0, &ddebug_dyndbg_boot_param_cb);
++		   0, 0, 0, NULL, &ddebug_dyndbg_boot_param_cb);
+ 	kfree(cmdline);
+ 	return 0;
+ 
 -- 
 2.2.0.rc0.207.ga3a616c
 
