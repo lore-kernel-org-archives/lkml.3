@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757122AbbAPUKL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 15:10:11 -0500
-Received: from skprod3.natinst.com ([130.164.80.24]:44178 "EHLO ni.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753094AbbAPUKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 15:10:09 -0500
-Message-ID: <54B97012.4050402@ni.com>
-Date: Fri, 16 Jan 2015 14:09:54 -0600
-From: Xander Huff <xander.huff@ni.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S1756311AbbAPUMi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 15:12:38 -0500
+Received: from mail-oi0-f47.google.com ([209.85.218.47]:42299 "EHLO
+	mail-oi0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751409AbbAPUMh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 15:12:37 -0500
 MIME-Version: 1.0
-To: "Vick, Matthew" <matthew.vick@intel.com>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
-        "Allan, Bruce W" <bruce.w.allan@intel.com>,
-        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
-        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
-        "Rose, Gregory V" <gregory.v.rose@intel.com>,
-        "Ronciak, John" <john.ronciak@intel.com>,
-        "Williams, Mitch A" <mitch.a.williams@intel.com>
-CC: Linux NICS <Linux-nics@isotope.jf.intel.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jeff.westfahl@ni.com" <jeff.westfahl@ni.com>,
-        "Fujinaka, Todd" <todd.fujinaka@intel.com>
-Subject: Re: [PATCH RESEND] igb: Reset TXPBSIZE to default value
-References: <1421434779-20586-1-git-send-email-xander.huff@ni.com> <D0DEA929.671EB%matthew.vick@intel.com>
-In-Reply-To: <D0DEA929.671EB%matthew.vick@intel.com>
-X-MIMETrack: Itemize by SMTP Server on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP6|November
- 21, 2013) at 01/16/2015 02:09:54 PM,
-	Serialize by Router on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP6|November
- 21, 2013) at 01/16/2015 02:09:55 PM,
-	Serialize complete at 01/16/2015 02:09:55 PM
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=windows-1252; format=flowed
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2015-01-16_07:2015-01-16,2015-01-16,1970-01-01 signatures=0
+In-Reply-To: <1421308459-71865-1-git-send-email-xiakaixu@huawei.com>
+References: <1421308459-71865-1-git-send-email-xiakaixu@huawei.com>
+Date: Fri, 16 Jan 2015 13:12:36 -0700
+Message-ID: <CANLsYky1RZN8-kX==G159DSbSan=ZUOevs5taKABSrHaiPjLxA@mail.gmail.com>
+Subject: Re: [PATCH] coresight: remove the extra spaces
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
+To: Kaixu Xia <xiakaixu@huawei.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Kaixu Xia <kaixu.xia@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/16/2015 1:41 PM, Vick, Matthew wrote:
-> On 1/16/15, 10:59 AM, "Xander Huff" <xander.huff@ni.com> wrote:
+On 15 January 2015 at 00:54, Kaixu Xia <xiakaixu@huawei.com> wrote:
+> There are some extra spaces, so just remove them from these lines.
 >
->> From: Jeff Westfahl <jeff.westfahl@ni.com>
->>
->> The TXPBSIZE register of the i210 resets to its default value only
->> at power-on. It doesn't reset if you reboot the system, only if you
->> pull power. If something (another driver, another OS, etc.) modifies
->> this register from its default value, the igb driver doesn't function
->> correctly. It detects a hang of the transmitter and continuously resets
->> the adapter. Here we set this value to its default when resetting the
->> i210 to resolve this issue.
+> Signed-off-by: Kaixu Xia <xiakaixu@huawei.com>
+> ---
+>  drivers/coresight/coresight-etb10.c | 2 +-
+>  drivers/coresight/coresight.c       | 2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
 >
-> This should have already been resolved last May in commit
-> 27dff8b2f680ce966b5d959be9d69dd0edd92e3b ("igb: add defaults for i210
-> TX/RX PBSIZE"). Are you running the latest upstream kernel?
+> diff --git a/drivers/coresight/coresight-etb10.c b/drivers/coresight/coresight-etb10.c
+> index c922d4a..d0529b5 100644
+> --- a/drivers/coresight/coresight-etb10.c
+> +++ b/drivers/coresight/coresight-etb10.c
+> @@ -454,7 +454,7 @@ static int etb_probe(struct amba_device *adev, const struct amba_id *id)
+>         if (ret)
+>                 return ret;
 >
-> Cheers,
-> Matthew
+> -       drvdata->buffer_depth =  etb_get_buffer_depth(drvdata);
+> +       drvdata->buffer_depth = etb_get_buffer_depth(drvdata);
+>         clk_disable_unprepare(drvdata->clk);
 >
-Looks like you're correct. Please disregard this patch.
+>         if (drvdata->buffer_depth < 0)
+> diff --git a/drivers/coresight/coresight.c b/drivers/coresight/coresight.c
+> index 11968b7..0de0c39 100644
+> --- a/drivers/coresight/coresight.c
+> +++ b/drivers/coresight/coresight.c
+> @@ -498,7 +498,7 @@ static int coresight_orphan_match(struct device *dev, void *data)
+>          * Circle throuch all the connection of that component.  If we find
+>          * an orphan connection whose name matches @csdev, link it.
+>          */
+> -       for (i = 0; i < i_csdev->nr_outport; i++)       {
+> +       for (i = 0; i < i_csdev->nr_outport; i++) {
+>                 conn = &i_csdev->conns[i];
+>
+>                 /* We have found at least one orphan connection */
+> --
+> 1.8.5.5
+>
 
--- 
-Xander Huff
-Staff Software Engineer
-National Instruments
+Applied - thanks.
