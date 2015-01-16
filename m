@@ -1,108 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754868AbbAPVUW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 16:20:22 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:39950 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751581AbbAPVUU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 16:20:20 -0500
-Message-ID: <54B9808C.7010207@oracle.com>
-Date: Fri, 16 Jan 2015 16:20:12 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Jeff Layton <jeff.layton@primarydata.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>, dhowells@redhat.com
-Subject: Re: fs: locks: WARNING: CPU: 16 PID: 4296 at fs/locks.c:236 locks_free_lock_context+0x10d/0x240()
-References: <54B4A909.9060206@oracle.com>	<20150113164441.5b210f48@tlielax.poochiereds.net>	<54B5A145.6060108@oracle.com>	<20150114092705.39bd4881@tlielax.poochiereds.net>	<54B6FF69.3080705@oracle.com>	<20150115152247.5e660000@tlielax.poochiereds.net>	<54B920BB.3010205@oracle.com>	<20150116094028.4ffd675f@tlielax.poochiereds.net>	<54B95426.5020509@oracle.com>	<20150116135304.0feeaf15@tlielax.poochiereds.net> <20150116161635.3678ad23@tlielax.poochiereds.net>
-In-Reply-To: <20150116161635.3678ad23@tlielax.poochiereds.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+	id S1755442AbbAPVWz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 16:22:55 -0500
+Received: from mail.kernel.org ([198.145.29.136]:54098 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752251AbbAPVWx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 16:22:53 -0500
+From: Arnaldo Carvalho de Melo <acme@kernel.org>
+To: Ingo Molnar <mingo@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Alexey Brodkin <abrodkin@synopsys.com>, Borislav Petkov <bp@suse.de>,
+        Cody P Schafer <dev@codyps.com>, David Ahern <dsahern@gmail.com>,
+        Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jan Beulich <JBeulich@suse.com>, Jiri Olsa <jolsa@redhat.com>,
+        Li Zefan <lizefan@huawei.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Michael Ellerman <mpe@ellerman.id.au>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Vineet Gupta <vgupta@synopsys.com>, Wang Nan <wangnan0@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [GIT PULL 00/10] perf/urgent fixes
+Date: Fri, 16 Jan 2015 18:22:32 -0300
+Message-Id: <1421443362-10709-1-git-send-email-acme@kernel.org>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2015 04:16 PM, Jeff Layton wrote:
-> On Fri, 16 Jan 2015 13:53:04 -0500
-> Jeff Layton <jlayton@primarydata.com> wrote:
-> 
->> On Fri, 16 Jan 2015 13:10:46 -0500
->> Sasha Levin <sasha.levin@oracle.com> wrote:
->>
->>> On 01/16/2015 09:40 AM, Jeff Layton wrote:
->>>> On Fri, 16 Jan 2015 09:31:23 -0500
->>>> Sasha Levin <sasha.levin@oracle.com> wrote:
->>>>
->>>>> On 01/15/2015 03:22 PM, Jeff Layton wrote:
->>>>>> Ok, I tried to reproduce it with that and several variations but it
->>>>>> still doesn't seem to do it for me. Can you try the latest linux-next
->>>>>> tree and see if it's still reproducible there?
->>>>>
->>>>> It's still not in in today's -next, could you send me a patch for testing
->>>>> instead?
->>>>>
->>>>
->>>> Seems to be there for me:
->>>>
->>>> ----------------------[snip]-----------------------
->>>> /*
->>>>  * This function is called on the last close of an open file.
->>>>  */
->>>> void locks_remove_file(struct file *filp)
->>>> {
->>>>         /* ensure that we see any assignment of i_flctx */
->>>>         smp_rmb();
->>>>
->>>>         /* remove any OFD locks */
->>>>         locks_remove_posix(filp, filp);
->>>> ----------------------[snip]-----------------------
->>>>
->>>> That's actually the right place to put the barrier, I think. We just
->>>> need to ensure that this function sees any assignment to i_flctx that
->>>> occurred before this point. By the time we're here, we shouldn't be
->>>> getting any new locks that matter to this close since the fcheck call
->>>> should fail on any new requests.
->>>>
->>>> If that works, then I'll probably make some other changes to the set
->>>> and re-post it next week.
->>>>
->>>> Many thanks for helping me test this!
->>>
->>> You're right, I somehow missed that.
->>>
->>> But it doesn't fix the issue, I still see it happening, but it seems
->>> to be less frequent(?).
->>>
->>
->> Ok, that was my worry (and one of the reasons I really would like to
->> find some way to reproduce this on my own). I think what I'll do at
->> this point is pull the patchset from linux-next until I can consult
->> with someone who understands this sort of cache-coherency problem
->> better than I do.
->>
->> Once I get it resolved, I'll push it back to my linux-next branch and
->> let you know and we can give it another go.
->>
->> Thanks for the testing so far!
-> 
-> Actually, I take it back. One more try...
-> 
-> I dragooned David Howells into helping me look at this and he talked me
-> into just going back to using the i_lock to protect the i_flctx
-> assignment.
-> 
-> My hope is that will work around whatever strange effect is causing
-> this. Can you test tomorrow's -next tree (once it's been merged) and see
-> whether this is still reproducible?
+Hi Ingo,
 
-Sure. You can also feel free to send patches my way to test/debug, it's
-pretty easy to throw them into my test setup.
+	Please consider pulling,
 
+- Arnaldo
 
-Thanks,
-Sasha
+The following changes since commit 33636732dcd7cc738a5913bb730d663c6b03c8fb:
 
+  perf/x86/intel: Fix bug for "cycles:p" and "cycles:pp" on SLM (2015-01-16 09:06:59 +0100)
 
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-urgent-for-mingo
+
+for you to fetch changes up to 6bcf9c1ff3ec22fd81eba336737d9865476509b1:
+
+  perf tools powerpc: Use dwfl_report_elf() instead of offline. (2015-01-16 17:49:30 -0300)
+
+----------------------------------------------------------------
+perf/urgent fixes:
+
+User visible:
+
+- Fix segfault when using both the map symtab viewer and annotation
+  in the TUI (Namhyung Kim).
+
+Developer stuff:
+
+- uClibc build fixes (Alexey Brodkin, Vineet Gupta).
+
+- bitops/hweight were moved from tools/perf/ too tools/include, move
+  some leftovers (Arnaldo Carvalho de Melo)
+
+- Fix dwarf unwind x86_64 build error (Namhyung Kim)
+
+- Fix __machine__findnew_thread() error path (Namhyung Kim)
+
+- Propagate error code when write(2) failed in 'perf probe' (Namhyung Kim)
+
+- Use dwfl_report_elf() instead of offline in powerpc bits to
+  properly handle non prelinked DSOs (Sukadev Bhattiprolu).
+
+- Fix dwarf unwind using libunwind in 'perf test' (Wang Nan)
+
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+
+----------------------------------------------------------------
+Alexey Brodkin (1):
+      perf tools: Fix statfs.f_type data type mismatch build error with uclibc
+
+Arnaldo Carvalho de Melo (1):
+      tools: Remove bitops/hweight usage of bits in tools/perf
+
+Namhyung Kim (4):
+      perf probe: Propagate error code when write(2) failed
+      perf tools: Fix building error in x86_64 when dwarf unwind is on
+      perf machine: Fix __machine__findnew_thread() error path
+      perf tools: Fix segfault for symbol annotation on TUI
+
+Sukadev Bhattiprolu (1):
+      perf tools powerpc: Use dwfl_report_elf() instead of offline.
+
+Vineet Gupta (2):
+      perf tools: Elide strlcpy warning with uclibc
+      perf tools: Avoid build splat for syscall numbers with uclibc
+
+Wang Nan (1):
+      perf test: Fix dwarf unwind using libunwind.
+
+ tools/include/asm-generic/bitops.h                |  2 ++
+ tools/include/asm-generic/bitops/arch_hweight.h   |  1 +
+ tools/include/asm-generic/bitops/const_hweight.h  |  1 +
+ tools/include/asm-generic/bitops/hweight.h        |  7 +++++
+ tools/include/linux/bitops.h                      |  7 ++++-
+ tools/lib/api/fs/debugfs.c                        |  2 +-
+ tools/lib/api/fs/fs.c                             |  2 +-
+ tools/perf/MANIFEST                               |  6 ++++
+ tools/perf/Makefile.perf                          | 11 +++++--
+ tools/perf/arch/powerpc/util/skip-callchain-idx.c | 19 +++++++-----
+ tools/perf/bench/sched-pipe.c                     |  2 +-
+ tools/perf/builtin-top.c                          |  1 -
+ tools/perf/config/Makefile                        |  2 +-
+ tools/perf/config/Makefile.arch                   | 26 ++++++++--------
+ tools/perf/perf-sys.h                             |  1 -
+ tools/perf/tests/dwarf-unwind.c                   | 36 +++++++++++++++++++++--
+ tools/perf/util/annotate.h                        |  8 +----
+ tools/perf/util/cache.h                           |  2 ++
+ tools/perf/util/hweight.c                         | 31 -------------------
+ tools/perf/util/include/asm/hweight.h             |  8 -----
+ tools/perf/util/machine.c                         |  4 ++-
+ tools/perf/util/probe-event.c                     |  4 ++-
+ tools/perf/util/python-ext-sources                |  2 +-
+ tools/perf/util/unwind-libunwind.c                | 28 +++++++++++++++++-
+ 24 files changed, 131 insertions(+), 82 deletions(-)
+ create mode 100644 tools/include/asm-generic/bitops/arch_hweight.h
+ create mode 100644 tools/include/asm-generic/bitops/const_hweight.h
+ create mode 100644 tools/include/asm-generic/bitops/hweight.h
+ delete mode 100644 tools/perf/util/hweight.c
+ delete mode 100644 tools/perf/util/include/asm/hweight.h
