@@ -1,91 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436AbbAPNUX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 08:20:23 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:59923 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751740AbbAPNUW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 08:20:22 -0500
-Message-ID: <54B90FC4.2020604@ti.com>
-Date: Fri, 16 Jan 2015 18:49:00 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
-MIME-Version: 1.0
-To: Maxime Coquelin <maxime.coquelin@st.com>,
-        Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>
-CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <kernel@stlinux.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        Gabriel Fernandez <gabriel.fernandez@linaro.org>
-Subject: Re: [PATCH 0/3] Enable myphy28lp support
-References: <1421229299-8206-1-git-send-email-gabriel.fernandez@linaro.org> <54B8FC56.8080400@st.com> <54B904C3.1080002@st.com>
-In-Reply-To: <54B904C3.1080002@st.com>
-Content-Type: text/plain; charset="windows-1252"
+	id S1752272AbbAPN1T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 08:27:19 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:59574 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751416AbbAPN1S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 08:27:18 -0500
+Message-ID: <1421414833.21318.67.camel@nilsson.home.kraxel.org>
+Subject: Re: [PATCH v3 00/16] virtio-pci: towards virtio 1.0 guest support
+From: Gerd Hoffmann <kraxel@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org
+Date: Fri, 16 Jan 2015 14:27:13 +0100
+In-Reply-To: <20150116084541.GA29204@redhat.com>
+References: <1421256142-11512-1-git-send-email-mst@redhat.com>
+	 <1421356698.3933.18.camel@nilsson.home.kraxel.org>
+	 <20150115213256.GA4813@redhat.com>
+	 <1421397146.21318.16.camel@nilsson.home.kraxel.org>
+	 <20150116084541.GA29204@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+  Hi,
 
-On Friday 16 January 2015 06:02 PM, Maxime Coquelin wrote:
+> > > > virtio-scsi seems to be broken, at least my usual fedora guest didn't
+> > > > boot up from virtio-scsi disk when using a guest kernel with this patch
+> > > > series applied.
+> > > 
+> > > I'll re-test. Do other devices work for you? Thanks!
+> > 
+> > Didn't came very far yet in my testing due to the guest not booting.
 > 
-> On 01/16/2015 12:56 PM, Maxime Coquelin wrote:
->> Hi Gabriel,
->>
->>     For the series:
->> Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
->>
->>     Kishon, could you take care of adding PHY driver patch for v3.20?
-> Hi Kishon,
-> 
->     Don't apply the patch, since we have 2 other PHY driver patches, I will
-> send you a pull request.
+> Try virtio-blk - that worked for me.
 
-Send me as patches if that is okay.
+Nope.  Booted from ide now, looked in /sys/bus/virtio/devices:
 
-Thanks
-Kishon
+lrwxrwxrwx. 1 root root 0 Jan 16 14:15 virtio0
+-> ../../../devices/pci0000:00/0000:00:0b.0/virtio0
 
-> 
-> Best regards,
-> Maxime
-> 
-> 
->>
->> Thanks,
->> Maxime
->> On 01/14/2015 10:54 AM, Gabriel FERNANDEZ wrote:
->>> The goal of this series is to enable the support of MiPHY28lp Generic PHY.
->>>
->>> The first patch is to update miphy28lp phy driver to access sysconfig register
->>> offsets via syscfg dt property. It's based on Arnds review comments here
->>> https://lkml.org/lkml/2014/11/13/161
->>> I have updated the miphy28lp phy driver same way as Peter's implementation.
->>>
->>> Gabriel Fernandez (3):
->>>    phy: miphy28lp: Pass sysconfig register offsets via syscfg dt
->>>      property.
->>>    ARM: DT: STi: STiH407: Add DT node for MiPHY28lp
->>>    ARM: multi_v7_defconfig: Enable MiPHY28lp - ST's Generic (SATA, PCIe &
->>>      USB3) PHY
->>>
->>>   .../devicetree/bindings/phy/phy-miphy28lp.txt      | 43 ++++++---------
->>>   arch/arm/boot/dts/stih407-family.dtsi              | 53 +++++++++++++++++++
->>>   arch/arm/boot/dts/stihxxx-b2120.dtsi               | 11 ++++
->>>   arch/arm/configs/multi_v7_defconfig                |  1 +
->>>   drivers/phy/phy-miphy28lp.c                        | 61
->>> ++++++++++++----------
->>>   5 files changed, 113 insertions(+), 56 deletions(-)
->>>
->>
-> 
+lspci:
+
+00:09.0 Ethernet controller: Red Hat, Inc Virtio network device
+00:0a.0 Communication controller: Red Hat, Inc Virtio console
+00:0b.0 Unclassified device [00ff]: Red Hat, Inc Virtio memory balloon
+
+net + serial are missing ...
+
+I'm running 3.19-rc4 with this series applied in the guest, maybe I need
+more?
+
+On the qemu side it is your virtio-1.0 branch from yesterday, rebased to
+master.
+
+cheers,
+  Gerd
+
+
