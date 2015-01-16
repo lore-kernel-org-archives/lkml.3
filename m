@@ -1,131 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752796AbbAPXee (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 18:34:34 -0500
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:33677 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751873AbbAPXdi (ORCPT
+	id S1752442AbbAPXlh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 18:41:37 -0500
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:49482 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751216AbbAPXla (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 18:33:38 -0500
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        "Luis R . Rodriguez" <mcgrof@suse.com>, Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@linux.intel.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, Olof Johansson <olof@lixom.net>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Subject: [PATCH 8/8] driver-core: allow forcing async probing for modules and builtins
-Date: Fri, 16 Jan 2015 15:33:17 -0800
-Message-Id: <1421451197-19723-9-git-send-email-dmitry.torokhov@gmail.com>
-X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
-In-Reply-To: <1421451197-19723-1-git-send-email-dmitry.torokhov@gmail.com>
-References: <1421451197-19723-1-git-send-email-dmitry.torokhov@gmail.com>
+	Fri, 16 Jan 2015 18:41:30 -0500
+X-IronPort-AV: E=Sophos;i="5.09,413,1418112000"; 
+   d="scan'208";a="55002149"
+From: Ray Jui <rjui@broadcom.com>
+To: Wolfram Sang <wsa@the-dreams.de>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Rob Herring <robh+dt@kernel.org>, "Pawel Moll" <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "Grant Likely" <grant.likely@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>
+CC: Scott Branden <sbranden@broadcom.com>, <linux-i2c@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>,
+        "Ray Jui" <rjui@broadcom.com>
+Subject: [PATCH v5 0/3] Add I2C support to Broadcom iProc
+Date: Fri, 16 Jan 2015 15:42:14 -0800
+Message-ID: <1421451737-7107-1-git-send-email-rjui@broadcom.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <Ray Jui <rjui@broadcom.com>
+References: <Ray Jui <rjui@broadcom.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Luis R. Rodriguez <mcgrof@suse.com>
+This patchset contains the initial I2C support for Broadcom iProc family of
+SoCs.
 
-Folks wishing to test enabling async probe for all built-in drivers
-and/or for all modules can enable
-__DEBUG__kernel_force_builtin_async_probe or
-__DEBUG__kernel_force_modules_async_probe kernel parameters.
+The iProc I2C controller has separate internal TX and RX FIFOs, each has a
+size of 64 bytes. The iProc I2C controller supports two bus speeds including
+standard mode (100 kHz) and fast mode (400 kHz)
 
-Using either one will taint your kernel.
+Changes from v4:
+ - Remove redundant header file includes
+ - Change the logic that waits for the host controller to be idle to
+   simply return -EBUSY
+ - Use proper print level and error codes in the driver
+ - Allow zero length message in the driver to support I2C_SMBUS_QUICK
+ - Change back to use devm_request_irq. Disable interrupt in the remove
+   function so there's no outstanding I2C interrupt when the driver is
+   being removed from the framework
+ - Other minor miscellaneous improvements and fixes
 
-Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
-[Dmitry: split off from another patch, split into 2 parameters, moved
-over to core_param_unsafe()]
-Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
----
- Documentation/kernel-parameters.txt | 10 ++++++++++
- drivers/base/dd.c                   | 13 +++++++++----
- kernel/module.c                     |  7 +++++++
- 3 files changed, 26 insertions(+), 4 deletions(-)
+Changes from v3:
+ - Add config dependency to COMPILE_TEST to allow the driver to be build tested
+   by other platforms
+ - Improve CPU utilization efficiency in the loop of waiting for bus to idle
+ - Add more comment in the driver to clarify the way how the "start busy"
+   interrupt is triggered from the I2C controller
+ - Fix inconsistent coding style and format
+ - Improve the bus speed validation logic in the driver
+ - Add code to free the interrupt line in driver's remove function. Also
+   change to use non-devm API to request the interrupt line
+ - Other miscellaneous improvements and fixes
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index af034a2..b09c4ac 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -931,6 +931,16 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 	module.async_probe [KNL]
- 			Enable asynchronous probe on this module.
- 
-+	__DEBUG__kernel_force_builtin_async_probe [KNL]
-+			Enable asynchronous probe on all built-in drivers.
-+			This is is testing parameter and using it will taint
-+			your kernel.
-+
-+	__DEBUG__kernel_force_modules_async_probe [KNL]
-+			Enable asynchronous probe on all modules. This is
-+			is testing parameter and using it will taint your
-+			kernel.
-+
- 	early_ioremap_debug [KNL]
- 			Enable debug messages in early_ioremap support. This
- 			is useful for tracking down temporary early mappings
-diff --git a/drivers/base/dd.c b/drivers/base/dd.c
-index 1308e08..4d00734 100644
---- a/drivers/base/dd.c
-+++ b/drivers/base/dd.c
-@@ -20,6 +20,7 @@
- #include <linux/device.h>
- #include <linux/delay.h>
- #include <linux/module.h>
-+#include <linux/moduleparam.h>
- #include <linux/kthread.h>
- #include <linux/wait.h>
- #include <linux/async.h>
-@@ -402,6 +403,10 @@ int driver_probe_device(struct device_driver *drv, struct device *dev)
- 	return ret;
- }
- 
-+static bool force_builtin_async_probe;
-+core_param_unsafe(__DEBUG__kernel_force_builtin_async_probe,
-+		  force_builtin_async_probe, bool, 0644);
-+
- bool driver_allows_async_probing(struct device_driver *drv)
- {
- 	switch (drv->probe_type) {
-@@ -412,10 +417,10 @@ bool driver_allows_async_probing(struct device_driver *drv)
- 		return false;
- 
- 	default:
--		if (drv->owner && drv->owner->async_probe_requested)
--			return true;
--
--		return false;
-+		if (drv->owner)
-+			return drv->owner->async_probe_requested;
-+		else
-+			return force_builtin_async_probe;
- 	}
- }
- 
-diff --git a/kernel/module.c b/kernel/module.c
-index 80639fa..8d667ef 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -3196,6 +3196,10 @@ static int unknown_module_param_cb(char *param, char *val, const char *modname,
- 	return 0;
- }
- 
-+static bool force_modules_async_probe;
-+core_param_unsafe(__DEBUG__kernel_force_modules_async_probe,
-+		  force_modules_async_probe, bool, 0644);
-+
- /* Allocate and load the module: note that size of section 0 is always
-    zero, and we rely on this for optional sections. */
- static int load_module(struct load_info *info, const char __user *uargs,
-@@ -3290,6 +3294,9 @@ static int load_module(struct load_info *info, const char __user *uargs,
- 	if (err)
- 		goto ddebug_cleanup;
- 
-+	if (force_modules_async_probe)
-+		mod->async_probe_requested = true;
-+
- 	/* Module is ready to execute: parsing args may do that. */
- 	after_dashes = parse_args(mod->name, mod->args, mod->kp, mod->num_kp,
- 				  -32768, 32767, NULL,
+Changes from v2:
+ - Have the I2C driver default to y so it does not need to be selected from
+   ARCH_BCM_IPROC. This also helps to get rid of one patch. The driver still
+   depends on ARCH_BCM_IPROC
+ - Get rid of redundant check on resource returned by platform_get_resource
+
+Changes from v1:
+ - Fix function argument parenthesis
+ - Get rid of redundant driver owner field
+
+Ray Jui (3):
+  i2c: iProc: define Broadcom iProc I2C binding
+  i2c: iproc: Add Broadcom iProc I2C Driver
+  ARM: dts: add I2C device nodes for Broadcom Cygnus
+
+ .../devicetree/bindings/i2c/brcm,iproc-i2c.txt     |   37 ++
+ arch/arm/boot/dts/bcm-cygnus.dtsi                  |   20 +
+ drivers/i2c/busses/Kconfig                         |   10 +
+ drivers/i2c/busses/Makefile                        |    1 +
+ drivers/i2c/busses/i2c-bcm-iproc.c                 |  493 ++++++++++++++++++++
+ 5 files changed, 561 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/i2c/brcm,iproc-i2c.txt
+ create mode 100644 drivers/i2c/busses/i2c-bcm-iproc.c
+
 -- 
-2.2.0.rc0.207.ga3a616c
+1.7.9.5
 
