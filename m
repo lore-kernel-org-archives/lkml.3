@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754471AbbAPLR2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 06:17:28 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:44521 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751421AbbAPLR1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 06:17:27 -0500
-Date: Fri, 16 Jan 2015 11:17:06 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Sylvain Rochet <sylvain.rochet@finsecur.com>
-Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Daniel Lezcano <daniel.lezcano@linaro.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] clockevents: don't suspend/resume if unused
-Message-ID: <20150116111706.GE12302@n2100.arm.linux.org.uk>
-References: <1421399151-26800-1-git-send-email-alexandre.belloni@free-electrons.com>
- <20150116092014.GA27945@gradator.net>
+	id S1754562AbbAPLSD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 06:18:03 -0500
+Received: from mail.skyhub.de ([78.46.96.112]:53258 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754507AbbAPLSB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 06:18:01 -0500
+Date: Fri, 16 Jan 2015 12:17:58 +0100
+From: Borislav Petkov <bp@alien8.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>,
+        Joerg Roedel <joro@8bytes.org>, x86@kernel.org,
+        Tony Luck <tony.luck@intel.com>
+Subject: Re: [patch 05/23] x86/apic: Make disable x2apic work really
+Message-ID: <20150116111758.GF18880@pd.tnic>
+References: <20150115210458.625399149@linutronix.de>
+ <20150115211702.621431109@linutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20150116092014.GA27945@gradator.net>
+In-Reply-To: <20150115211702.621431109@linutronix.de>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 16, 2015 at 10:20:14AM +0100, Sylvain Rochet wrote:
-> Hello Alexandre,
+On Thu, Jan 15, 2015 at 09:22:16PM -0000, Thomas Gleixner wrote:
+> If x2apic_preenabled is not enabled, then disable_x2apic() is not
+> called from various places which results in x2apic_disabled not being
+> set. So other code pathes can happily reenable the x2apic.
 > 
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> ---
+>  arch/x86/kernel/apic/apic.c |   14 +++++---------
+>  1 file changed, 5 insertions(+), 9 deletions(-)
 > 
-> On Fri, Jan 16, 2015 at 10:05:51AM +0100, Alexandre Belloni wrote:
-> > There is no point in calling suspend/resume for unused
-> > clockevents as they are already stopped and disabled.
-> > 
-> > Furthermore, it can take some time to wait for some IPs to stop counting.
-> > 
-> > Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> > Reported-by: Sylvain Rochet <sylvain.rochet@finsecur.com>
-> 
-> Indeed, this is way better from what I did.
-> 
-> 
-> > +		if (dev->suspend && dev->mode != CLOCK_EVT_MODE_UNUSED)
-> 
-> I wonder if we should use > CLOCK_EVT_MODE_SHUTDOWN
-> (or CLOCK_EVT_MODE_UNUSED || CLOCK_EVT_MODE_SHUTDOWN) instead of 
-> !CLOCK_EVT_MODE_UNUSED.
+> Index: tip/arch/x86/kernel/apic/apic.c
+> ===================================================================
+> --- tip.orig/arch/x86/kernel/apic/apic.c
+> +++ tip/arch/x86/kernel/apic/apic.c
+> @@ -1479,8 +1479,6 @@ static bool nox2apic __initdata;
+>  
+>  #ifdef CONFIG_X86_X2APIC
+>  int x2apic_mode;
+> -/* x2apic enabled before OS handover */
+> -static int x2apic_preenabled;
+>  static int x2apic_disabled;
+>  static int __init setup_nox2apic(char *str)
+>  {
+> @@ -1535,18 +1533,19 @@ static __init void disable_x2apic(void)
+>  			setup_clear_cpu_cap(X86_FEATURE_X2APIC);
+>  		}
+>  
+> -		x2apic_disabled = 1;
+>  		x2apic_mode = 0;
 
-Definitely - consider the effect of the original patch set on a clock
-source which is being used, has PM support, but does not have an
-->enable callback.
+Should we move out that write to x2apic_mode too?
+
+>  
+>  		register_lapic_address(mp_lapic_addr);
+>  	}
+> +
+> +	x2apic_disabled = 1;
+
+i.e., here?
+
+Just in case.
 
 -- 
-FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
-according to speedtest.net.
+Regards/Gruss,
+    Boris.
+
+Sent from a fat crate under my desk. Formatting is fine.
+--
