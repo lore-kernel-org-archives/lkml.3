@@ -1,81 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756449AbbAPRsT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 12:48:19 -0500
-Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:55212 "EHLO
-	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752045AbbAPRsS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 12:48:18 -0500
-Date: Fri, 16 Jan 2015 12:48:11 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Wang Nan <wangnan0@huawei.com>
-Cc: linux@arm.linux.org.uk, mingo@redhat.com, x86@kernel.org,
-        masami.hiramatsu.pt@hitachi.com, anil.s.keshavamurthy@intel.com,
-        davem@davemloft.net, ananth@in.ibm.com, dave.long@linaro.org,
-        tixy@linaro.org, lizefan@huawei.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 00/11] Early kprobe: enable kprobes at very early
-Message-ID: <20150116174811.GA7817@home.goodmis.org>
-References: <1420616086-42692-1-git-send-email-wangnan0@huawei.com>
+	id S1756646AbbAPRuO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 12:50:14 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:38607 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753212AbbAPRuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 12:50:12 -0500
+Message-ID: <54B94F2F.3050303@ti.com>
+Date: Fri, 16 Jan 2015 11:49:35 -0600
+From: Suman Anna <s-anna@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1420616086-42692-1-git-send-email-wangnan0@huawei.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-RR-Connecting-IP: 107.14.168.118:25
-X-Cloudmark-Score: 0
+To: Mark Rutland <mark.rutland@arm.com>, Rob Herring <robherring2@gmail.com>
+CC: Ohad Ben-Cohen <ohad@wizery.com>, Kumar Gala <galak@codeaurora.org>,
+        Bjorn Andersson <bjorn@kryo.se>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: Re: [PATCH v7 1/4] Documentation: dt: add common bindings for hwspinlock
+References: <1421269101-51105-1-git-send-email-s-anna@ti.com> <1421269101-51105-2-git-send-email-s-anna@ti.com> <20150115135201.GG16217@leverpostej> <20150115135556.GH16217@leverpostej> <CAL_JsqL2LZAooMk-V8+xeF2g6acZE21M+-OBRw8aEVa-5wVHuQ@mail.gmail.com> <20150116101903.GB21809@leverpostej>
+In-Reply-To: <20150116101903.GB21809@leverpostej>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 07, 2015 at 03:34:46PM +0800, Wang Nan wrote:
+On 01/16/2015 04:19 AM, Mark Rutland wrote:
+> On Thu, Jan 15, 2015 at 02:42:23PM +0000, Rob Herring wrote:
+>> On Thu, Jan 15, 2015 at 7:55 AM, Mark Rutland <mark.rutland@arm.com> wrote:
+>>> On Thu, Jan 15, 2015 at 01:52:01PM +0000, Mark Rutland wrote:
+>>>> On Wed, Jan 14, 2015 at 08:58:18PM +0000, Suman Anna wrote:
+>>>>> This patch adds the generic common bindings used to represent
+>>>>> a hwlock device and use/request locks in a device-tree build.
+>>>>>
+>>>>> All the platform-specific hwlock driver implementations need the
+>>>>> number of locks and associated base id for registering the locks
+>>>>> present within the device with the driver core. This base id
+>>>>> needs to be unique across multiple IP instances of a hwspinlock
+>>>>> device, so that each hwlock can be represented uniquely in a
+>>>>> system.
+>>>>>
+>>>>> The number of locks is represented by 'hwlock-num-locks' property,
+>>>>> and the base id is represented by the 'hwlock-base-id' property.
+>>>>> The args specifier length is dependent on each vendor-specific
+>>>>> implementation and is represented through the '#hwlock-cells'
+>>>>> property. Client users need to use the property 'hwlocks' for
+>>>>> requesting specific lock(s).
+>>>>>
+>>>>> Note that the document is named hwlock.txt deliberately to keep
+>>>>> it a bit more generic.
+>>>>>
+>>>>> Cc: Rob Herring <robh+dt@kernel.org>
+>>>>> Signed-off-by: Suman Anna <s-anna@ti.com>
+>>>>> ---
+>>>>> v7: Revised binding info for hwlock-base-id, it is mandatory now
+>>>>>
+>>>>>  .../devicetree/bindings/hwlock/hwlock.txt          | 55 ++++++++++++++++++++++
+>>>>>  1 file changed, 55 insertions(+)
+>>>>>  create mode 100644 Documentation/devicetree/bindings/hwlock/hwlock.txt
+>>>>>
+>>>>> diff --git a/Documentation/devicetree/bindings/hwlock/hwlock.txt b/Documentation/devicetree/bindings/hwlock/hwlock.txt
+>>>>> new file mode 100644
+>>>>> index 000000000000..8de7aaf878f9
+>>>>> --- /dev/null
+>>>>> +++ b/Documentation/devicetree/bindings/hwlock/hwlock.txt
+>>>>> @@ -0,0 +1,55 @@
+>>>>> +Generic hwlock bindings
+>>>>> +=======================
+>>>>> +
+>>>>> +Generic bindings that are common to all the hwlock platform specific driver
+>>>>> +implementations.
+>>>>> +
+>>>>> +The validity and need of these common properties may vary from one platform
+>>>>> +implementation to another. The platform specific bindings should explicitly
+>>>>> +state if an optional property is used. Please also look through the individual
+>>>>> +platform specific hwlock binding documentations for identifying the applicable
+>>>>> +properties.
+>>>>> +
+>>>>> +Common properties:
+>>>>> +- #hwlock-cells:   Specifies the number of cells needed to represent a
+>>>>> +                   specific lock. This property is mandatory for all
+>>>>> +                   platform implementations.
+>>>>> +- hwlock-num-locks:        Number of locks present in a hwlock device. This
+>>>>> +                   property is needed on hwlock devices, where the number
+>>>>> +                   of supported locks within a hwlock device cannot be
+>>>>> +                   read from a register.
+>>>>> +- hwlock-base-id:  An unique base Id for the locks for a particular hwlock
+>>>>> +                   device. This property is mandatory for all platform
+>>>>> +                   implementations.
+>>>>
+>>>> This property makes no sense. The ID encoded in the hwlock cells is
+>>>> relative to the instance (identified by phandle), not global. So the DT
+>>>> has no global ID space.
+>>>>
+>>>> Why do you think you need this?
+>>>
+>>> Having looked at the way this proeprty is used, NAK.
+>>>
+>>> If you need to carve up a Linux-internal ID space, do that dynamically.
+>>> There is no need for this property.
+>>
+>> Better yet, don't create a Linux ID space for this. Everywhere we have
+>> one, we want to get rid of it.
 > 
-> Patch 10 enables cmdline option 'ekprobe=', allows setup probe at
-> cmdline. However, currently the kprobe handler is only a simple printk.
-> 
-> Patch 11 introduces required Kconfig options to actually enable early
-> kprobes.
-> 
-> Usage of early kprobe is as follow:
-> 
-> Booting kernel with cmdline 'ekprobe=', like:
-> 
-> ... rdinit=/sbin/init ekprobe=0xc00f3c2c ekprobe=__free_pages ...
+> Agreed. A completely opaque token / desc structure would prevent a lot
+> of potential abuse and save us from painful breakage.
 
-Perhaps you should specify what the probe will do. For now it is only printk.
-For example:
+The regular API to acquire or release a lock on Linux does indeed use
+opaque handles, but the id space is needed for communication with other
+processors as the handles have no meaning on non-Linux processors. The
+id space is the simplest to exchange which lock to use with other
+processors compared to the device instance plus the lock number within
+that device.
 
-  ekprobe=printk,__free_pages
+regards
+Suman
 
-That is, here you are attaching a printk to __free_pages.
-
-Later, when you implement tracing, you could have:
-
- ekprobe=trace,__free_pages
-
-where it will be sent to the ring buffer.
-
-This will maintain backward compatibility when you add new features. Instead
-of getting something like printk working now, and people use it for such,
-and then when you switch it over to tracing, it breaks the printk version.
-
-Also, if you plan on converting early kprobes to normal kprobes during boot,
-then it should just be kprobes=..., why add the 'e'. It being early is just
-an implementation detail, not something that should be expressed by the users
-of the facility.
-
--- Steve
-
-
-> 
-> During boot, kernel will print trace using printk:
-> 
->  ...
->  Hit early kprobe at __alloc_pages_nodemask+0x4
->  Hit early kprobe at __free_pages+0x0
->  Hit early kprobe at __alloc_pages_nodemask+0x4
->  Hit early kprobe at __free_pages+0x0
->  Hit early kprobe at __free_pages+0x0
->  Hit early kprobe at __alloc_pages_nodemask+0x4
->  ...
