@@ -1,49 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751795AbbAPWcc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 17:32:32 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:49236 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751441AbbAPWca (ORCPT
+	id S1752014AbbAPWfz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 17:35:55 -0500
+Received: from casper.infradead.org ([85.118.1.10]:46692 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750968AbbAPWfy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 17:32:30 -0500
+	Fri, 16 Jan 2015 17:35:54 -0500
+Message-ID: <54B99244.8080404@infradead.org>
+Date: Fri, 16 Jan 2015 14:35:48 -0800
+From: Randy Dunlap <rdunlap@infradead.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <54AD59DC.4020703@plexistor.com>
-References: <54AD5893.9040701@plexistor.com>
-	<54AD59DC.4020703@plexistor.com>
-Date: Fri, 16 Jan 2015 14:32:29 -0800
-Message-ID: <CA+8MBbJbKwyJJoFy2uyNvR5La3hFac-pSh8mZBV=BnNJzKQMhg@mail.gmail.com>
-Subject: Re: [PATCH 3/4 v4] brd: Fix all partitions BUGs
-From: Tony Luck <tony.luck@gmail.com>
-To: Boaz Harrosh <boaz@plexistor.com>
-Cc: Jens Axboe <axboe@fb.com>, Matthew Wilcox <willy@linux.intel.com>,
-        Dmitry Monakhov <dmonakhov@openvz.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>
-Content-Type: text/plain; charset=UTF-8
+To: LKML <linux-kernel@vger.kernel.org>, fengguang.wu@intel.com,
+        Steven Miao <realmz6@gmail.com>
+CC: adi-buildroot-devel@lists.sourceforge.net,
+        Jonathan Corbet <corbet@lwn.net>
+Subject: [PATCH] Documentation: fix blackfin gptimers-example build errors
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 7, 2015 at 8:07 AM, Boaz Harrosh <boaz@plexistor.com> wrote:
-> From: Boaz Harrosh <boaz@plexistor.com>
->
-> This patch fixes up brd's partitions scheme, now enjoying all worlds.
+From: Randy Dunlap <rdunlap@infradead.org>
 
-linux-next-20150116 includes this as commit
-937af5ecd0591e84ee54180fa97dcbe9bbe5fed6
+Don't build the blackfin gptimers-example module when BFIN_GPTIMERS
+is not enabled. Allow the build when BFIN_GPTIMERS is =y or =m.
 
-On ia64 I'm seeing:
-ram0: unknown partition table
-ram1: unknown partition table
-...
-ram15: unknown partition table
+I believe that this patch fixes these build errors, but I don't
+have a build environment to test this.
 
-At first I blamed c8fa31730fc7 "brd: Request from fdisk 4k alignment" because it
-has all sorts of comments about PAGE_SIZE and 4k ... and my page size isn't
-4k.  But, reverting that one didn't help.
+ERROR: "disable_gptimers" [Documentation/blackfin/gptimers-example.ko] undefined!
+ERROR: "enable_gptimers" [Documentation/blackfin/gptimers-example.ko] undefined!
+ERROR: "set_gptimer_config" [Documentation/blackfin/gptimers-example.ko] undefined!
+ERROR: "clear_gptimer_intr" [Documentation/blackfin/gptimers-example.ko] undefined!
+ERROR: "get_gptimer_period" [Documentation/blackfin/gptimers-example.ko] undefined!
+ERROR: "get_gptimer_pwidth" [Documentation/blackfin/gptimers-example.ko] undefined!
+ERROR: "get_gptimer_intr" [Documentation/blackfin/gptimers-example.ko] undefined!
 
-reverting 937af5ecd0 does make the message go away.
+Reported-by: Fenggaung Wu <fengguang.wu@intel.com>
+Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
+---
+ Documentation/blackfin/Makefile |    2 ++
+ 1 file changed, 2 insertions(+)
 
--Tony
+--- lnx-319-rc4.orig/Documentation/blackfin/Makefile
++++ lnx-319-rc4/Documentation/blackfin/Makefile
+@@ -1,3 +1,5 @@
+ ifneq ($(CONFIG_BLACKFIN),)
++ifneq ($(CONFIG_BFIN_GPTIMERS,)
+ obj-m := gptimers-example.o
+ endif
++endif
