@@ -1,92 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753106AbbAPIce (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 03:32:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59112 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752747AbbAPIcd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 03:32:33 -0500
-Message-ID: <1421397146.21318.16.camel@nilsson.home.kraxel.org>
-Subject: Re: [PATCH v3 00/16] virtio-pci: towards virtio 1.0 guest support
-From: Gerd Hoffmann <kraxel@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org
-Date: Fri, 16 Jan 2015 09:32:26 +0100
-In-Reply-To: <20150115213256.GA4813@redhat.com>
-References: <1421256142-11512-1-git-send-email-mst@redhat.com>
-	 <1421356698.3933.18.camel@nilsson.home.kraxel.org>
-	 <20150115213256.GA4813@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753411AbbAPIei (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 03:34:38 -0500
+Received: from bastet.se.axis.com ([195.60.68.11]:34905 "EHLO
+	bastet.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753229AbbAPIeh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 03:34:37 -0500
+Date: Fri, 16 Jan 2015 09:34:33 +0100
+From: Jesper Nilsson <jesper.nilsson@axis.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Jesper Nilsson <jespern@axis.com>,
+        "viro@ZenIV.linux.org.uk" <viro@ZenIV.linux.org.uk>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-cris-kernel <linux-cris-kernel@axis.com>
+Subject: Re: [PATCH] VFS: Convert file->f_dentry->d_inode to file_inode()
+ [ver #2]
+Message-ID: <20150116083433.GZ26817@axis.com>
+References: <20150113175753.29073.20788.stgit@warthog.procyon.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150113175753.29073.20788.stgit@warthog.procyon.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hi,
-
-> >  * I'd like to see some more flexibility in the pci bar layout.  Stuff
-> >    I have in mind:
-> >     - New devices which don't need a legacy bar can use bar 0 for
-> >       modern.
-> >     - One MMIO bar is enough, we can place both virtio regions and
-> >       msi-x regions there.  I'd suggest to add msi-x sub-regions to
-> >       the modern bar.
+On Tue, Jan 13, 2015 at 06:57:53PM +0100, David Howells wrote:
+> Convert file->f_dentry->d_inode to file_inode() so as to get layered
+> filesystems right.
 > 
-> Why exactly? It seems simpler to separate things, extra BARs
-> have no cost.
+> Found with: git grep '[.>]f_dentry'
 
-Well, there are only six BARs.  legacy bar, modern mmio bar, msi-x bar,
-modern io bar (for fast isr).  That already four out of six ...
+Yes, compile works with this patch. Do you want me to take it through
+the CRIS tree or do you have any other tree in mind?
 
-We have a mmio bar, which we partition into subregions for virtio-1.0
-anyway.  Also placing msi-x there is a single msix_init() call.  xhci is
-doing that too:
+> Signed-off-by: David Howells <dhowells@redhat.com>
 
-    00000000febf0000-00000000febf3fff (prio 1, RW): xhci
-      00000000febf0000-00000000febf003f (prio 0, RW): capabilities
-      00000000febf0040-00000000febf043f (prio 0, RW): operational
-      00000000febf0440-00000000febf044f (prio 0, RW): usb3 port #1
-      00000000febf0450-00000000febf045f (prio 0, RW): usb3 port #2
-      00000000febf0460-00000000febf046f (prio 0, RW): usb3 port #3
-      00000000febf0470-00000000febf047f (prio 0, RW): usb3 port #4
-      00000000febf0480-00000000febf048f (prio 0, RW): usb2 port #1
-      00000000febf0490-00000000febf049f (prio 0, RW): usb2 port #2
-      00000000febf04a0-00000000febf04af (prio 0, RW): usb2 port #3
-      00000000febf04b0-00000000febf04bf (prio 0, RW): usb2 port #4
-      00000000febf1000-00000000febf121f (prio 0, RW): runtime
-      00000000febf2000-00000000febf281f (prio 0, RW): doorbell
-      00000000febf3000-00000000febf30ff (prio 0, RW): msix-table
-      00000000febf3800-00000000febf3807 (prio 0, RW): msix-pba
+In any case:
 
+Reviewed-by: Jesper Nilsson <jesper.nilsson@axis.com>
 
-> >  * What is the reason for making the modern bar 8M in size?  Looks a bit
-> >    excessive, given that only 64k or so of that are actually used ...
+>  arch/cris/arch-v32/drivers/sync_serial.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> I use a page per VQ for architectures that can locate the offset of the
-> accessed page that triggered EPT violation faster than the offset within
-> page.  I think this is the case for SVM.
-
-8M still looks excessive, given that we typically have a small number of
-queues per device.  Do you allocate address space for the maximum
-possible number of queues unconditionally?
-
-> > virtio-scsi seems to be broken, at least my usual fedora guest didn't
-> > boot up from virtio-scsi disk when using a guest kernel with this patch
-> > series applied.
+> diff --git a/arch/cris/arch-v32/drivers/sync_serial.c b/arch/cris/arch-v32/drivers/sync_serial.c
+> index 08a313fc2241..f772068d9e79 100644
+> --- a/arch/cris/arch-v32/drivers/sync_serial.c
+> +++ b/arch/cris/arch-v32/drivers/sync_serial.c
+> @@ -604,7 +604,7 @@ static ssize_t __sync_serial_read(struct file *file,
+>  				  struct timespec *ts)
+>  {
+>  	unsigned long flags;
+> -	int dev = MINOR(file->f_dentry->d_inode->i_rdev);
+> +	int dev = MINOR(file_inode(file)->i_rdev);
+>  	int avail;
+>  	struct sync_port *port;
+>  	unsigned char *start;
 > 
-> I'll re-test. Do other devices work for you? Thanks!
 
-Didn't came very far yet in my testing due to the guest not booting.  I
-plan to try other storage for the image, but didn't found the time yet.
-
-I've tried to boot a F21 live iso with virtio-net (legacy guest driver
-obviously), which seems to work ok in light testing.
-
-BTW: is there a tool (or pciutils patch) which can decode the virtio
-capabilities?
-
-cheers,
-  Gerd
-
-
+/^JN - Jesper Nilsson
+-- 
+               Jesper Nilsson -- jesper.nilsson@axis.com
