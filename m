@@ -1,44 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751711AbbAPHF7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 02:05:59 -0500
-Received: from mail-ob0-f169.google.com ([209.85.214.169]:50082 "EHLO
-	mail-ob0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751405AbbAPHF6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 02:05:58 -0500
+	id S1752031AbbAPHIJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 02:08:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42609 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751405AbbAPHIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 02:08:07 -0500
+Date: Fri, 16 Jan 2015 09:07:44 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Johannes Weiner <hannes@cmpxchg.org>,
+        Vladimir Davydov <vdavydov@parallels.com>,
+        Rik van Riel <riel@redhat.com>, Michal Hocko <mhocko@suse.cz>,
+        Mel Gorman <mgorman@suse.de>, Vlastimil Babka <vbabka@suse.cz>,
+        Suleiman Souhlal <suleiman@google.com>, linux-mm@kvack.org
+Subject: Re: [PATCH] mm/vmscan: fix highidx argument type
+Message-ID: <20150116070744.GA12190@redhat.com>
+References: <1421360175-18899-1-git-send-email-mst@redhat.com>
+ <20150115144920.33c446af388ed74c11dc573e@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <201501161410.qF6rUO8n%fengguang.wu@intel.com>
-References: <201501161410.qF6rUO8n%fengguang.wu@intel.com>
-Date: Fri, 16 Jan 2015 12:35:57 +0530
-Message-ID: <CAKohpon55ycK+BeUK4KPFuiWbZb39S_4xc9G8fDtXwM4LuGHJw@mail.gmail.com>
-Subject: Re: [vireshk:cpufreq/core/locking 57/60] drivers/cpufreq/cpufreq.c:512:5:
- sparse: symbol '__cpufreq_boost_supported' was not declared. Should it be static?
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: kbuild test robot <fengguang.wu@intel.com>
-Cc: kbuild-all@01.org, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150115144920.33c446af388ed74c11dc573e@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 January 2015 at 12:25, kbuild test robot <fengguang.wu@intel.com> wrote:
-> tree:   https://git.linaro.org/people/vireshk/linux cpufreq/core/locking
-> head:   12d5339e685739289c2f629c943b8bfad4c64f1e
-> commit: fbce49b78afdaeeaee3017cfbd968e44ddba8496 [57/60] cpufreq: Drop forward declaration of __cpufreq_boost_trigger_state()
-> reproduce:
->   # apt-get install sparse
->   git checkout fbce49b78afdaeeaee3017cfbd968e44ddba8496
->   make ARCH=x86_64 allmodconfig
->   make C=1 CF=-D__CHECK_ENDIAN__
->
->
-> sparse warnings: (new ones prefixed by >>)
->
->>> drivers/cpufreq/cpufreq.c:512:5: sparse: symbol '__cpufreq_boost_supported' was not declared. Should it be static?
->
-> Please review and possibly fold the followup patch.
+On Thu, Jan 15, 2015 at 02:49:20PM -0800, Andrew Morton wrote:
+> On Fri, 16 Jan 2015 00:18:12 +0200 "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> 
+> > for_each_zone_zonelist_nodemask wants an enum zone_type
+> > argument, but is passed gfp_t:
+> > 
+> > mm/vmscan.c:2658:9:    expected int enum zone_type [signed] highest_zoneidx
+> > mm/vmscan.c:2658:9:    got restricted gfp_t [usertype] gfp_mask
+> > mm/vmscan.c:2658:9: warning: incorrect type in argument 2 (different base types)
+> > mm/vmscan.c:2658:9:    expected int enum zone_type [signed] highest_zoneidx
+> > mm/vmscan.c:2658:9:    got restricted gfp_t [usertype] gfp_mask
+> 
+> Which tool emitted these warnings?
 
-Fixed. Thanks.
+Oh, sorry.
+It's sparce.
+
+> > convert argument to the correct type.
+> > 
+> > ...
+> >
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -2656,7 +2656,7 @@ static bool throttle_direct_reclaim(gfp_t gfp_mask, struct zonelist *zonelist,
+> >  	 * should make reasonable progress.
+> >  	 */
+> >  	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+> > -					gfp_mask, nodemask) {
+> > +					gfp_zone(gfp_mask), nodemask) {
+> >  		if (zone_idx(zone) > ZONE_NORMAL)
+> >  			continue;
+> 
+> hm, I wonder what the runtime effects are.
+> 
+> The throttle_direct_reclaim() comment isn't really accurate, is it? 
+> "Throttle direct reclaimers if backing storage is backed by the
+> network".  The code is applicable to all types of backing, but was
+> added to address problems which are mainly observed with network
+> backing?
+
+
+As far as I can tell, yes. It would seem that it can cause
+deadlocks in theory.  Cc stable on the grounds that it's obvious?
+
+-- 
+MST
