@@ -1,139 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754016AbbAPJBY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 04:01:24 -0500
-Received: from mail1.bemta14.messagelabs.com ([193.109.254.113]:8098 "EHLO
-	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753156AbbAPJBW (ORCPT
+	id S1753800AbbAPJAs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 04:00:48 -0500
+Received: from www.linutronix.de ([62.245.132.108]:60785 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752475AbbAPJAp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 04:01:22 -0500
-X-Env-Sender: James.Ban.opensource@diasemi.com
-X-Msg-Ref: server-12.tower-194.messagelabs.com!1421398880!28099696!1
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.12.5; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <201501160901.t0G91F19021262@krsrvapps-01.diasemi.com>
-From: James Ban <james.ban.opensource@diasemi.com>
-Date: Fri, 16 Jan 2015 17:59:38 +0900
-Subject: [PATCH V1] regulator: da9211: Add gpio control for enable/disable of
- buck
-To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Support Opensource <support.opensource@diasemi.com>,
-        LKML <linux-kernel@vger.kernel.org>
-CC: David Dajun Chen <david.chen@diasemi.com>
+	Fri, 16 Jan 2015 04:00:45 -0500
+Message-ID: <54B8D32E.5000805@linutronix.de>
+Date: Fri, 16 Jan 2015 10:00:30 +0100
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Michal Simek <michal.simek@xilinx.com>, linux-kernel@vger.kernel.org,
+        monstr@monstr.eu
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-serial@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Alan Cox <alan@linux.intel.com>, Tony Lindgren <tony@atomide.com>,
+        Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 2/2] tty: serial: 8250_core: Check that port->line is
+ >=0
+References: <3293c93689f5d8c684133a9d9952411a201609dc.1421333585.git.michal.simek@xilinx.com> <d3a26f5ecd44e1415f213e6ee7f33005c1b23f4a.1421333585.git.michal.simek@xilinx.com>
+In-Reply-To: <d3a26f5ecd44e1415f213e6ee7f33005c1b23f4a.1421333585.git.michal.simek@xilinx.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001,URIBL_BLOCKED=0.001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch for adding gpio control about enable/disable of buck.
+On 01/15/2015 03:55 PM, Michal Simek wrote:
+> This patch should be the part of:
+> "tty: serial: 8250_core: use the ->line argument as a hint in
+> serial8250_find_match_or_unused()"
+> (sha1: 59b3e898ddfc81a65975043b5eb44103cc29ff6e)
+> 
+> port->line can be setup by DT driver to -1 which needs to
+> be also checked.
 
-Signed-off-by: James Ban <james.ban.opensource@diasemi.com>
----
+This is what I have in 8250_omap to make sure it does not get < 0:
 
-This patch is relative to linux-next repository tag next-20150115.
+         if (pdev->dev.of_node) {
+                 ret = of_alias_get_id(pdev->dev.of_node, "serial");
 
+                 of_property_read_u32(pdev->dev.of_node, "clock-frequency",
+                                      &up.port.uartclk);
+                 priv->wakeirq = irq_of_parse_and_map(pdev->dev.of_node, 1);
+         } else {
+                 ret = pdev->id;
+         }
+         if (ret < 0) {
+                 dev_err(&pdev->dev, "failed to get alias/pdev id\n");
+                 return ret;
+         }
+         up.port.line = ret;
 
- .../devicetree/bindings/regulator/da9211.txt       |    7 ++++++-
- drivers/regulator/da9211-regulator.c               |    6 ++++++
- include/linux/regulator/da9211.h                   |    1 +
- 3 files changed, 13 insertions(+), 1 deletion(-)
+but I didn't think of that others might pass < 0 since it wasn't used
+before.
+Does the original patch (you noted) break anything as of now? Because
+then this patch should go stable.
 
-diff --git a/Documentation/devicetree/bindings/regulator/da9211.txt b/Documentation/devicetree/bindings/regulator/da9211.txt
-index 240019a..ad777ac 100644
---- a/Documentation/devicetree/bindings/regulator/da9211.txt
-+++ b/Documentation/devicetree/bindings/regulator/da9211.txt
-@@ -11,6 +11,7 @@ Required properties:
-   BUCKA and BUCKB.
- 
- Optional properties:
-+- buck-enable-platform-gpio: platform gpio for control of BUCKA/BUCKB.
- - Any optional property defined in regulator.txt
- 
- Example 1) DA9211
-@@ -27,6 +28,7 @@ Example 1) DA9211
- 				regulator-max-microvolt = <1570000>;
- 				regulator-min-microamp 	= <2000000>;
- 				regulator-max-microamp 	= <5000000>;
-+				buck-enable-platform-gpio = <&gpio 27 0>;
- 			};
- 			BUCKB {
- 				regulator-name = "VBUCKB";
-@@ -34,11 +36,12 @@ Example 1) DA9211
- 				regulator-max-microvolt = <1570000>;
- 				regulator-min-microamp 	= <2000000>;
- 				regulator-max-microamp 	= <5000000>;
-+				buck-enable-platform-gpio = <&gpio 17 0>;
- 			};
- 		};
- 	};
- 
--Example 2) DA92113
-+Example 2) DA9213
- 	pmic: da9213@68 {
- 		compatible = "dlg,da9213";
- 		reg = <0x68>;
-@@ -51,6 +54,7 @@ Example 2) DA92113
- 				regulator-max-microvolt = <1570000>;
- 				regulator-min-microamp 	= <3000000>;
- 				regulator-max-microamp 	= <6000000>;
-+				buck-enable-platform-gpio = <&gpio 27 0>;
- 			};
- 			BUCKB {
- 				regulator-name = "VBUCKB";
-@@ -58,6 +62,7 @@ Example 2) DA92113
- 				regulator-max-microvolt = <1570000>;
- 				regulator-min-microamp 	= <3000000>;
- 				regulator-max-microamp 	= <6000000>;
-+				buck-enable-platform-gpio = <&gpio 17 0>;
- 			};
- 		};
- 	};
-diff --git a/drivers/regulator/da9211-regulator.c b/drivers/regulator/da9211-regulator.c
-index c78d210..d299b0f 100644
---- a/drivers/regulator/da9211-regulator.c
-+++ b/drivers/regulator/da9211-regulator.c
-@@ -24,6 +24,7 @@
- #include <linux/regmap.h>
- #include <linux/irq.h>
- #include <linux/interrupt.h>
-+#include <linux/of_gpio.h>
- #include <linux/regulator/of_regulator.h>
- #include <linux/regulator/da9211.h>
- #include "da9211-regulator.h"
-@@ -277,6 +278,10 @@ static struct da9211_pdata *da9211_parse_regulators_dt(
- 
- 		pdata->init_data[n] = da9211_matches[i].init_data;
- 
-+		pdata->gpio_ren[n] =
-+			of_get_named_gpio(da9211_matches[i].of_node,
-+				"buck-enable-platform-gpio", 0);
-+
- 		n++;
- 	}
- 
-@@ -365,6 +370,7 @@ static int da9211_regulator_init(struct da9211 *chip)
- 		config.driver_data = chip;
- 		config.regmap = chip->regmap;
- 		config.of_node = chip->dev->of_node;
-+		config.ena_gpio = chip->pdata->gpio_ren[i];
- 
- 		chip->rdev[i] = devm_regulator_register(chip->dev,
- 			&da9211_regulators[i], &config);
-diff --git a/include/linux/regulator/da9211.h b/include/linux/regulator/da9211.h
-index 5479394..530b5ea 100644
---- a/include/linux/regulator/da9211.h
-+++ b/include/linux/regulator/da9211.h
-@@ -32,6 +32,7 @@ struct da9211_pdata {
- 	 * 2 : 2 phase 2 buck
- 	 */
- 	int num_buck;
-+	int gpio_ren[DA9211_MAX_REGULATORS];
- 	struct regulator_init_data *init_data[DA9211_MAX_REGULATORS];
- };
- #endif
--- 
-end-of-patch for regulator: da9211: Add gpio control for enable/disable of buck V1
+> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+Acked-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
 
+> ---
+> 
+> I have similar patch to 59b3e898ddfc81a65975043b5eb44103cc29ff6e
+> in xilinx tree for a while and port->line can be -1.
+> 
+> The second part of this also should be (what other drivers do)
+> reading aliases via of_alias_get_id() in of_serial.c:of_platform_serial_probe()
+> which setup port.line.
+
+Which second part?
+Hmmm. You could use of_alias_get_id(port.dev->of_node, "serial") here,
+correct. But I think additionally, since it won't work for the
+non-DT devices like pure platform devices.
+
+> ---
+>  drivers/tty/serial/8250/8250_core.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/tty/serial/8250/8250_core.c b/drivers/tty/serial/8250/8250_core.c
+> index 65e52c9109e2..aab765177763 100644
+> --- a/drivers/tty/serial/8250/8250_core.c
+> +++ b/drivers/tty/serial/8250/8250_core.c
+> @@ -3512,7 +3512,8 @@ static struct uart_8250_port *serial8250_find_match_or_unused(struct uart_port *
+> 
+>  	/* try line number first if still available */
+>  	i = port->line;
+> -	if (i < nr_uarts && serial8250_ports[i].port.type == PORT_UNKNOWN &&
+> +	if (i >= 0 && i < nr_uarts &&
+> +	    serial8250_ports[i].port.type == PORT_UNKNOWN &&
+>  			serial8250_ports[i].port.iobase == 0)
+>  		return &serial8250_ports[i];
+>  	/*
+> --
+> 1.8.2.3
+
+Sebastian
