@@ -1,98 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756071AbbAPChN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 21:37:13 -0500
-Received: from lucky1.263xmail.com ([211.157.147.130]:49235 "EHLO
-	lucky1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755966AbbAPChL (ORCPT
+	id S1754796AbbAPCpg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 21:45:36 -0500
+Received: from nasmtp01.atmel.com ([192.199.1.245]:46989 "EHLO
+	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752971AbbAPCpf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 21:37:11 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 1
-X-MAIL-DELIVERY: 0
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-ADDR-CHECKED: 0
-X-RL-SENDER: hl@rock-chips.com
-X-FST-TO: djkurtz@chromium.org
-X-SENDER-IP: 104.167.231.190
-X-LOGIN-NAME: hl@rock-chips.com
-X-UNIQUE-TAG: <5e8ca858ee4c071ca51442764a1a1160>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: huang lin <hl@rock-chips.com>
-To: djkurtz@chromium.org
-Cc: dianders@chromium.org, linux-rockchip@lists.infradead.org,
-        huang lin <hl@rock-chips.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3] drm/panel: Add support for AUO b101ean01 panel
-Date: Fri, 16 Jan 2015 10:36:57 +0800
-Message-Id: <1421375817-21793-1-git-send-email-hl@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
+	Thu, 15 Jan 2015 21:45:35 -0500
+From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>
+CC: Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH v2 1/8] ARM: at91: pm: rework cpu detection
+Thread-Topic: [PATCH v2 1/8] ARM: at91: pm: rework cpu detection
+Thread-Index: AQHQMNR+hjBWudJsRUu9qbNKeOgQTZzCCQAw
+Date: Fri, 16 Jan 2015 02:44:39 +0000
+Message-ID: <B256D81BAE5131468A838E5D7A243641BFCE1327@penmbx01>
+References: <1421333971-7581-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <1421333971-7581-2-git-send-email-alexandre.belloni@free-electrons.com>
+In-Reply-To: <1421333971-7581-2-git-send-email-alexandre.belloni@free-electrons.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.168.5.13]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The AUO b101ean01 panel is a 10.1" 1280x800 panel,
-which can be supported by the simple panel driver.
+Hi Alexandre,
 
-Signed-off-by: huang lin <hl@rock-chips.com>
+> -----Original Message-----
+> From: linux-arm-kernel [mailto:linux-arm-kernel-bounces@lists.infradead.org] On
+> Behalf Of Alexandre Belloni
+> Sent: Thursday, January 15, 2015 10:59 PM
+> To: Ferre, Nicolas
+> Cc: Boris Brezillon; Arnd Bergmann; linux-kernel@vger.kernel.org; Alexandre
+> Belloni; Jean-Christophe Plagniol-Villard; linux-arm-kernel@lists.infradead.org
+> Subject: [PATCH v2 1/8] ARM: at91: pm: rework cpu detection
+> 
+> Store SoC differences in a struct to remove cpu_is_* usage.
+> 
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> ---
+>  arch/arm/mach-at91/pm.c | 54 ++++++++++++++++++++++++++++++-----------------
+> --
+>  1 file changed, 33 insertions(+), 21 deletions(-)
+> 
+> diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c index
+> 9b15169a1c62..79aa793d1f00 100644
+> --- a/arch/arm/mach-at91/pm.c
+> +++ b/arch/arm/mach-at91/pm.c
+> @@ -17,6 +17,7 @@
+>  #include <linux/interrupt.h>
+>  #include <linux/sysfs.h>
+>  #include <linux/module.h>
+> +#include <linux/of.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/io.h>
+>  #include <linux/clk/at91_pmc.h>
+> @@ -32,6 +33,11 @@
+>  #include "generic.h"
+>  #include "pm.h"
+> 
+> +static struct {
+> +	unsigned long uhp_udp_mask;
+> +	int memctrl;
+> +} at91_pm_data;
+> +
+>  static void (*at91_pm_standby)(void);
+> 
+>  static int at91_pm_valid_state(suspend_state_t state) @@ -71,17 +77,9 @@ static
+> int at91_pm_verify_clocks(void)
+>  	scsr = at91_pmc_read(AT91_PMC_SCSR);
+> 
+>  	/* USB must not be using PLLB */
+> -	if (cpu_is_at91rm9200()) {
+> -		if ((scsr & (AT91RM9200_PMC_UHP |
+> AT91RM9200_PMC_UDP)) != 0) {
+> -			pr_err("AT91: PM - Suspend-to-RAM with USB still
+> active\n");
+> -			return 0;
+> -		}
+> -	} else if (cpu_is_at91sam9260() || cpu_is_at91sam9261() ||
+> cpu_is_at91sam9263()
+> -			|| cpu_is_at91sam9g20() || cpu_is_at91sam9g10()) {
+> -		if ((scsr & (AT91SAM926x_PMC_UHP |
+> AT91SAM926x_PMC_UDP)) != 0) {
+> -			pr_err("AT91: PM - Suspend-to-RAM with USB still
+> active\n");
+> -			return 0;
+> -		}
+> +	if ((scsr & at91_pm_data.uhp_udp_mask) != 0) {
+> +		pr_err("AT91: PM - Suspend-to-RAM with USB still active\n");
+> +		return 0;
+>  	}
+> 
+>  	/* PCK0..PCK3 must be disabled, or configured to use clk32k */ @@ -
+> 149,18 +147,13 @@ static int at91_pm_enter(suspend_state_t state)
+>  			 * turning off the main oscillator; reverse on wakeup.
+>  			 */
+>  			if (slow_clock) {
+> -				int memctrl = AT91_MEMCTRL_SDRAMC;
+> -
+> -				if (cpu_is_at91rm9200())
+> -					memctrl = AT91_MEMCTRL_MC;
+> -				else if (cpu_is_at91sam9g45())
+> -					memctrl = AT91_MEMCTRL_DDRSDR;
+>  #ifdef CONFIG_AT91_SLOW_CLOCK
+>  				/* copy slow_clock handler to SRAM, and call it */
+>  				memcpy(slow_clock, at91_slow_clock,
+> at91_slow_clock_sz);  #endif
+>  				slow_clock(at91_pmc_base, at91_ramc_base[0],
+> -					   at91_ramc_base[1], memctrl);
+> +					   at91_ramc_base[1],
+> +					   at91_pm_data.memctrl);
+>  				break;
+>  			} else {
+>  				pr_info("AT91: PM - no slow clock mode
+> enabled ...\n"); @@ -237,10 +230,29 @@ static int __init at91_pm_init(void)
+> 
+>  	pr_info("AT91: Power Management%s\n", (slow_clock ? " (with slow clock
+> mode)" : ""));
+> 
+> -	/* AT91RM9200 SDRAM low-power mode cannot be used with self-refresh.
+> */
+> -	if (cpu_is_at91rm9200())
+> +	at91_pm_data.memctrl = AT91_MEMCTRL_SDRAMC;
+> +
+> +	if (of_machine_is_compatible("atmel,at91rm9200")) {
+> +		/*
+> +		 * AT91RM9200 SDRAM low-power mode cannot be used with
+> +		 * self-refresh.
+> +		 */
+>  		at91_ramc_write(0, AT91RM9200_SDRAMC_LPR, 0);
+> -
+> +
+> +		at91_pm_data.uhp_udp_mask = AT91RM9200_PMC_UHP |
+> +					    AT91RM9200_PMC_UDP;
+> +		at91_pm_data.memctrl = AT91_MEMCTRL_MC;
+> +	} else if (of_machine_is_compatible("atmel,at91sam9260") ||
+> +		   of_machine_is_compatible("atmel,at91sam9g20") ||
+> +		   of_machine_is_compatible("atmel,at91sam9261") ||
+> +		   of_machine_is_compatible("atmel,at91sam9g10") ||
+> +		   of_machine_is_compatible("atmel,at91sam9263")) {
+> +		at91_pm_data.uhp_udp_mask = AT91SAM926x_PMC_UHP |
+> +					    AT91SAM926x_PMC_UDP;
+> +	} else if (of_machine_is_compatible("atmel,at91sam9g45")) {
+> +		at91_pm_data.memctrl = AT91_MEMCTRL_DDRSDR;
+> +	}
+> +
+About the memory controller type, I prefer to get it during the memory controller initialization, from the sram_ids[].data which defined in the setup.c,
+As this,
+static const struct at91_ramc_of_data at91rm9200_ramc_of_data = {
+	.ramc_type = AT91_MEMCTRL_MC,
+};
+...
+static struct of_device_id ramc_ids[] = {
+	{ .compatible = "atmel,at91rm9200-sdramc", .data = &at91rm9200_ramc_of_data},
+	... ...
+	{ /*sentinel*/ }
+};
 
----
+What about you? 
 
-Changes in v3:
-- changed moving auo_b101ean01 definitions under auo_b101aw03
+>  	if (at91_cpuidle_device.dev.platform_data)
+>  		platform_device_register(&at91_cpuidle_device);
+> 
+> --
+> 2.1.0
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 
- drivers/gpu/drm/panel/panel-simple.c | 26 ++++++++++++++++++++++++++
- 1 file changed, 26 insertions(+)
-
-diff --git a/drivers/gpu/drm/panel/panel-simple.c b/drivers/gpu/drm/panel/panel-simple.c
-index e95385b..24828e0 100644
---- a/drivers/gpu/drm/panel/panel-simple.c
-+++ b/drivers/gpu/drm/panel/panel-simple.c
-@@ -345,6 +345,29 @@ static const struct panel_desc auo_b101aw03 = {
- 	},
- };
- 
-+static const struct drm_display_mode auo_b101ean01_mode = {
-+	.clock = 72500,
-+	.hdisplay = 1280,
-+	.hsync_start = 1280 + 147,
-+	.hsync_end = 1280 + 147 + 32,
-+	.htotal = 1280 + 147 + 32 + 21,
-+	.vdisplay = 800,
-+	.vsync_start = 800 + 4,
-+	.vsync_end = 800 + 4 + 4,
-+	.vtotal = 800 + 4 + 4 + 8,
-+	.vrefresh = 60,
-+};
-+
-+static const struct panel_desc auo_b101ean01 = {
-+	.modes = &auo_b101ean01_mode,
-+	.num_modes = 1,
-+	.bpc = 6,
-+	.size = {
-+		.width = 217,
-+		.height = 136,
-+	},
-+};
-+
- static const struct drm_display_mode auo_b101xtn01_mode = {
- 	.clock = 72000,
- 	.hdisplay = 1366,
-@@ -727,6 +750,9 @@ static const struct of_device_id platform_of_match[] = {
- 		.compatible = "auo,b101aw03",
- 		.data = &auo_b101aw03,
- 	}, {
-+		.compatible = "auo,b101ean01",
-+		.data = &auo_b101ean01,
-+	}, {
- 		.compatible = "auo,b101xtn01",
- 		.data = &auo_b101xtn01,
- 	}, {
--- 
-1.9.1
-
-
+Best Regards,
+Wenyou Yang
