@@ -1,73 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753042AbbAPV3k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 16:29:40 -0500
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:64423 "EHLO
-	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752674AbbAPV3i (ORCPT
+	id S1752260AbbAPVeJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 16:34:09 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:62084 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492AbbAPVeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 16:29:38 -0500
-From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-To: linux-kernel@vger.kernel.org
-Cc: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        kernel@savoirfairelinux.com
-Subject: [PATCH] sysfs: group: allow is_visible to drop permissions
-Date: Fri, 16 Jan 2015 16:29:10 -0500
-Message-Id: <1421443750-12935-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-X-Mailer: git-send-email 2.2.2
+	Fri, 16 Jan 2015 16:34:07 -0500
+Message-ID: <54B983CC.6090507@linaro.org>
+Date: Fri, 16 Jan 2015 16:34:04 -0500
+From: David Long <dave.long@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
+MIME-Version: 1.0
+To: Pratyush Anand <pratyush.anand@gmail.com>
+CC: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        William Cohen <wcohen@redhat.com>,
+        Steve Capper <steve.capper@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>,
+        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        davem@davemloft.net, linux-kernel@vger.kernel.org,
+        Pratyush Anand <panand@redhat.com>
+Subject: Re: [PATCH v4 4/6] arm64: Kprobes instruction simulation support
+References: <1420949002-3726-1-git-send-email-dave.long@linaro.org>	<1420949002-3726-5-git-send-email-dave.long@linaro.org> <CAHM4w1n6wCUSX1QjP8EyA9zkJBZTM=6Vc32Vjm3wPuDv=FXZzw@mail.gmail.com>
+In-Reply-To: <CAHM4w1n6wCUSX1QjP8EyA9zkJBZTM=6Vc32Vjm3wPuDv=FXZzw@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using the optional is_visible function, it is actually possible to
-either hide an attribute, or add a new permission, but not remove one.
+On 01/14/15 04:32, Pratyush Anand wrote:
+> On Sun, Jan 11, 2015 at 9:33 AM, David Long <dave.long@linaro.org> wrote:
+>> From: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
+>>
+>> Add support for AArch64 instruction simulation in kprobes.
+>>
+>> Kprobes needs simulation of instructions that cannot be stepped
+>> from different memory location, e.g.: those instructions
+>> that uses PC-relative addressing. In simulation, the behaviour
+>> of the instruction is implemented using a copy of pt_regs.
+>>
+>> Following instruction catagories are simulated:
+>>   - All branching instructions(conditional, register, and immediate)
+>>   - Literal access instructions(load-literal, adr/adrp)
+>>
+>> Conditional execution is limited to branching instructions in
+>> ARM v8. If conditions at PSTATE do not match the condition fields
+>> of opcode, the instruction is effectively NOP. Kprobes considers
+>> this case as 'miss'.
+>> changes since v3:
+>> from David A. Long:
+>> 1) Fix incorrect simulate_ldrsw_literal() semantics.
+>> 2) Use instruction test functions instead of private parse table.
+>> from Will Cohen:
+>> 3) Remove PC adjustments when simulating an instruction.
+>> 4) Fix displacement calculations.
+>>
+>> Signed-off-by: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
+>> Signed-off-by: William Cohen <wcohen@redhat.com>
+>> Signed-off-by: David A. Long <dave.long@linaro.org>
+>> ---
+>
+> [...]
+>
+>>   static bool aarch64_insn_is_steppable(u32 insn)
+>>   {
+>> @@ -60,6 +130,32 @@ arm_kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi)
+>>           */
+>>          if (aarch64_insn_is_steppable(insn))
+>>                  return INSN_GOOD;
+>> +
+>> +       asi->prepare = prepare_none;
+>> +
+>> +       if (aarch64_insn_is_bcond(insn)) {
+>> +               asi->prepare = prepare_bcond;
+>> +               asi->handler = simulate_b_cond;
+>> +       } else if (aarch64_insn_is_cb(insn)) {
+>> +               asi->prepare = prepare_cbz_cbnz;
+>> +               asi->handler = simulate_cbz_cbnz;
+>> +       } else if (aarch64_insn_is_tb(insn)) {
+>> +               asi->prepare = prepare_tbz_tbnz;
+>> +               asi->handler = simulate_tbz_tbnz;
+>> +       } else if (aarch64_insn_is_adr(insn))
+>
+> aarch64_insn_is_adr should be modified to aarch64_insn_is_adr_adrp
 
-This commit uses all the UGO bits returned by is_visible instead of
-OR'ing them with the default attribute mode.
+Yes.
 
-Concretely, this allows a driver to use macros like DEVICE_ATTR_RW to
-set the attribute show and store functions and remove the S_IWUSR
-permission in is_visible if the implementation doesn't provide a setter.
+>> +               asi->handler = simulate_adr_adrp;
+>> +       else if (aarch64_insn_is_b_bl(insn))
+>> +               asi->handler = simulate_b_bl;
+>> +       else if (aarch64_insn_is_ldr_lit(insn))
+>> +               asi->handler = simulate_ldr_literal;
+>> +       else if (aarch64_insn_is_ldrsw_lit(insn))
+>> +               asi->handler = simulate_ldrsw_literal;
+>
+> also
+>
+> else if (aarch64_insn_is_br_blr(insn) || aarch64_insn_is_ret(insn))
+>                 asi->handler = simulate_br_blr_ret;
 
-Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
----
- fs/sysfs/group.c | 12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+Yes.
 
-diff --git a/fs/sysfs/group.c b/fs/sysfs/group.c
-index 7d2a860..a8cfe03 100644
---- a/fs/sysfs/group.c
-+++ b/fs/sysfs/group.c
-@@ -41,7 +41,7 @@ static int create_files(struct kernfs_node *parent, struct kobject *kobj,
- 
- 	if (grp->attrs) {
- 		for (i = 0, attr = grp->attrs; *attr && !error; i++, attr++) {
--			umode_t mode = 0;
-+			umode_t mode = (*attr)->mode;
- 
- 			/*
- 			 * In update mode, we're changing the permissions or
-@@ -51,13 +51,15 @@ static int create_files(struct kernfs_node *parent, struct kobject *kobj,
- 			if (update)
- 				kernfs_remove_by_name(parent, (*attr)->name);
- 			if (grp->is_visible) {
--				mode = grp->is_visible(kobj, *attr, i);
--				if (!mode)
-+				umode_t ugo = grp->is_visible(kobj, *attr, i);
-+
-+				if (!(ugo & S_IRWXUGO))
- 					continue;
-+
-+				mode = (mode & ~S_IRWXUGO) | (ugo & S_IRWXUGO);
- 			}
- 			error = sysfs_add_file_mode_ns(parent, *attr, false,
--						       (*attr)->mode | mode,
--						       NULL);
-+						       mode, NULL);
- 			if (unlikely(error))
- 				break;
- 		}
--- 
-2.2.2
+>
+> ~Pratyush
+>
+
+-dl
 
