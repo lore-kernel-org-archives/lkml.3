@@ -1,104 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754112AbbAPJBv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 04:01:51 -0500
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:64251 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754029AbbAPJBs (ORCPT
+	id S1752999AbbAPJF6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 04:05:58 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:60365 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752142AbbAPJF4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 04:01:48 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAAObsKCad9O_=TUQrF7fVbBvjDTmfJsLPgr+EasCyhvY+xhdHg@mail.gmail.com>
-References: <1421338359-27467-1-git-send-email-tomeu.vizoso@collabora.com>
- <1421338359-27467-4-git-send-email-tomeu.vizoso@collabora.com>
- <54B7F757.5060002@wwwdotorg.org> <CAAObsKCad9O_=TUQrF7fVbBvjDTmfJsLPgr+EasCyhvY+xhdHg@mail.gmail.com>
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Date: Fri, 16 Jan 2015 10:01:27 +0100
-X-Google-Sender-Auth: etXtimu9MujeFVVA5Z2JeoKZRCg
-Message-ID: <CAAObsKBKnU_wBaxNFN-buz71qL-te4s6bqrrnxao_N-TwBVkAQ@mail.gmail.com>
-Subject: Re: [PATCH v2 03/11] ARM: tegra: Set the sound card model that
- alsaucm expects
-To: Stephen Warren <swarren@wwwdotorg.org>
-Cc: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Dylan Reid <dgreid@chromium.org>, Simon Glass <sjg@chromium.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 16 Jan 2015 04:05:56 -0500
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        sylvain.rochet@finsecur.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Subject: [PATCH] clockevents: don't suspend/resume if unused
+Date: Fri, 16 Jan 2015 10:05:51 +0100
+Message-Id: <1421399151-26800-1-git-send-email-alexandre.belloni@free-electrons.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 January 2015 at 09:50, Tomeu Vizoso <tomeu.vizoso@collabora.com> wrote:
-> On 15 January 2015 at 18:22, Stephen Warren <swarren@wwwdotorg.org> wrote:
->> On 01/15/2015 09:12 AM, Tomeu Vizoso wrote:
->>>
->>> Patches are on its way to add a config file to alsaucm for the Nyan
->>> boards. Use the same card ID that alsaucm will expect.
->>>
->>> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
->>> ---
->>>   arch/arm/boot/dts/tegra124-nyan-big.dts | 4 ++--
->>>   1 file changed, 2 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/arch/arm/boot/dts/tegra124-nyan-big.dts
->>> b/arch/arm/boot/dts/tegra124-nyan-big.dts
->>> index 43e58a4..9a9cffe 100644
->>> --- a/arch/arm/boot/dts/tegra124-nyan-big.dts
->>> +++ b/arch/arm/boot/dts/tegra124-nyan-big.dts
->>> @@ -1976,9 +1976,9 @@
->>>         };
->>>
->>>         sound {
->>> -               compatible = "nvidia,tegra-audio-max98090-nyan-big",
->>> +               compatible = "nvidia,tegra-audio-max98090-nyan",
->>>                              "nvidia,tegra-audio-max98090";
->>
->>
->> If all the boards that are derived from Nyan truly have identical audio HW
->> (or at least any differences can be described by this binding), then it
->> seems fine to add "nvidia,tegra-audio-max98090-nyan" to the compatible
->> value.
->
->
->
->> However, I don't see a reason to remove the board-specific compatible value
->> "nvidia,tegra-audio-max98090-nyan-big"; we should always include all the
->> values that are relevant.
->
-> Ok.
+There is no point in calling suspend/resume for unused
+clockevents as they are already stopped and disabled.
 
-Oh, actually, my intention was to move the whole sound node to the
-nyan dtsi, as there isn't anything specific to the blaze regarding
-sound.
+Furthermore, it can take some time to wait for some IPs to stop counting.
 
-Regards,
+Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Reported-by: Sylvain Rochet <sylvain.rochet@finsecur.com>
+---
+ kernel/time/clockevents.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Tomeu
+diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
+index 55449909f114..0eff982c1c11 100644
+--- a/kernel/time/clockevents.c
++++ b/kernel/time/clockevents.c
+@@ -525,7 +525,7 @@ void clockevents_suspend(void)
+ 	struct clock_event_device *dev;
+ 
+ 	list_for_each_entry_reverse(dev, &clockevent_devices, list)
+-		if (dev->suspend)
++		if (dev->suspend && dev->mode != CLOCK_EVT_MODE_UNUSED)
+ 			dev->suspend(dev);
+ }
+ 
+@@ -537,7 +537,7 @@ void clockevents_resume(void)
+ 	struct clock_event_device *dev;
+ 
+ 	list_for_each_entry(dev, &clockevent_devices, list)
+-		if (dev->resume)
++		if (dev->resume && dev->mode != CLOCK_EVT_MODE_UNUSED)
+ 			dev->resume(dev);
+ }
+ 
+-- 
+2.1.0
 
->>> -               nvidia,model = "Acer Chromebook 13";
->>> +               nvidia,model = "GoogleNyan";
->>
->>
->> Why not just name the UCM config file after the ASoC card name that's
->> already in use? Perhaps it's not likely to be unique enough though:-(
->
-> Yeah, that would be A13, which isn't terribly useful.
->
-> Regards,
->
-> Tomeu
->
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
