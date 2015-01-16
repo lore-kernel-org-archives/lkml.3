@@ -1,52 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754922AbbAPMwS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 07:52:18 -0500
-Received: from mta-out1.inet.fi ([62.71.2.195]:60458 "EHLO jenni1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751708AbbAPMwR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 07:52:17 -0500
-Date: Fri, 16 Jan 2015 14:51:42 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Michel Lespinasse <walken@google.com>,
-        Andrew Jones <drjones@redhat.com>, Hugh Dickins <hughd@google.com>,
-        Mel Gorman <mgorman@suse.de>,
-        Andres Lagar-Cavilla <andreslc@google.com>,
-        Minchan Kim <minchan@kernel.org>,
-        KOSAKI Motohiro <kosaki.motohiro@gmail.com>,
-        "\\\"Dr. David Alan Gilbert\\\"" <dgilbert@redhat.com>,
-        Peter Feiner <pfeiner@google.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        David Miller <davem@davemloft.net>,
-        Steve Capper <steve.capper@linaro.org>,
-        Johannes Weiner <jweiner@redhat.com>
-Subject: Re: [PATCH 2/5] mm: gup: add __get_user_pages_unlocked to customize
- gup_flags
-Message-ID: <20150116125142.GD29085@node.dhcp.inet.fi>
-References: <1421167074-9789-1-git-send-email-aarcange@redhat.com>
- <1421167074-9789-3-git-send-email-aarcange@redhat.com>
+	id S1755277AbbAPMxV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 07:53:21 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:51271 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752224AbbAPMxS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 07:53:18 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421167074-9789-3-git-send-email-aarcange@redhat.com>
-User-Agent: Mutt/1.5.23.1 (2014-03-12)
+In-Reply-To: <20150116102135.GC21809@leverpostej>
+References: <1421402411-3479-1-git-send-email-chunyan.zhang@spreadtrum.com>
+	<1421402411-3479-3-git-send-email-chunyan.zhang@spreadtrum.com>
+	<20150116102135.GC21809@leverpostej>
+Date: Fri, 16 Jan 2015 20:53:16 +0800
+Message-ID: <CAAfSe-teDdPzRUnvzM+NErfZwmqM04yUMgic--hyZL8-Jjd8jw@mail.gmail.com>
+Subject: Re: [PATCH v5 2/5] Documentation: DT: Add bindings for Spreadtrum SoC Platform
+From: Lyra Zhang <zhang.lyra@gmail.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Chunyan Zhang <chunyan.zhang@spreadtrum.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "gnomes@lxorguk.ukuu.org.uk" <gnomes@lxorguk.ukuu.org.uk>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "jslaby@suse.cz" <jslaby@suse.cz>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        "heiko@sntech.de" <heiko@sntech.de>,
+        "florian.vaussard@epfl.ch" <florian.vaussard@epfl.ch>,
+        "andrew@lunn.ch" <andrew@lunn.ch>,
+        "rrichter@cavium.com" <rrichter@cavium.com>,
+        "hytszk@gmail.com" <hytszk@gmail.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "antonynpavlov@gmail.com" <antonynpavlov@gmail.com>,
+        "Joel.Schopp@amd.com" <Joel.Schopp@amd.com>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "jorge.ramirez-ortiz@linaro.org" <jorge.ramirez-ortiz@linaro.org>,
+        "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        "orsonzhai@gmail.com" <orsonzhai@gmail.com>,
+        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
+        "zhizhou.zhang@spreadtrum.com" <zhizhou.zhang@spreadtrum.com>,
+        "lanqing.liu@spreadtrum.com" <lanqing.liu@spreadtrum.com>,
+        "wei.qiao@spreadtrum.com" <wei.qiao@spreadtrum.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        Leo Yan <leo.yan@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 05:37:51PM +0100, Andrea Arcangeli wrote:
-> Some caller (like KVM) may want to set the gup_flags like
-> FOLL_HWPOSION to get a proper -EHWPOSION retval instead of -EFAULT to
-> take a more appropriate action if get_user_pages runs into a memory
-> failure.
-> 
-> Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
+Hi, Mark
 
-Reviewed-by: Kirill A. Shutemov <kirill.shutemov@linux.intel.com>
+>> +
+>> +Required properties:
+>> +- compatible: must be "sprd,sc9836-uart"
+>> +- reg: offset and length of the register set for the device
+>> +- interrupts: exactly one interrupt specifier
+>> +- clocks: phandles to input clocks.
+>
+> The order and relevance of each should be specified. If you have
+> multiple clocks I would strongly recommend you use clock-names to
+> distinguish them.
+>
 
--- 
- Kirill A. Shutemov
+Thank you for the recommendation.
+but, since we haven't made the clock driver ready, for this initial
+commit, we just let 4 UARTs share a single fixed 26 MHz clock source.
+we'll do like you've recommended when we will submit the clock driver
+in the future.
+
+Best regards,
+Chunyan
+
+
+
+> Otherwise this looks fine.
+>
+> Mark.
+>
