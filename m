@@ -1,52 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756791AbbAPSyQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 13:54:16 -0500
-Received: from smtpauth03h.mfg.siteprotect.com ([64.26.60.134]:33221 "EHLO
-	smtpauth03.mfg.siteprotect.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751896AbbAPSyN (ORCPT
+	id S1755762AbbAPS5i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 13:57:38 -0500
+Received: from mail-qg0-f47.google.com ([209.85.192.47]:42359 "EHLO
+	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753041AbbAPS5g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 13:54:13 -0500
-Date: Fri, 16 Jan 2015 13:54:09 -0500 (EST)
-From: Vince Weaver <vince@deater.net>
-X-X-Sender: vince@pianoman.cluster.toy
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
-        mark.rutland@arm.com, Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: perf fuzzer crash [PATCH] perf: Get group events reference before
- moving the group
-In-Reply-To: <20150116141104.GD21958@worktop.programming.kicks-ass.net>
-Message-ID: <alpine.DEB.2.10.1501161352070.8204@pianoman.cluster.toy>
-References: <20150116075746.GB2658@krava.brq.redhat.com> <20150116104644.GW23965@worktop.programming.kicks-ass.net> <20150116141104.GD21958@worktop.programming.kicks-ass.net>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Fri, 16 Jan 2015 13:57:36 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A020205.54B95E54.015B,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+From: Alexei Starovoitov <ast@plumgrid.com>
+Date: Fri, 16 Jan 2015 10:57:15 -0800
+Message-ID: <CAMEtUuxhjef+9QaFccfSyA3DbVJ3H6qP=eu-uZCkku1rVWViSQ@mail.gmail.com>
+Subject: Re: [PATCH tip 0/9] tracing: attach eBPF programs to tracepoints/syscalls/kprobe
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Brendan Gregg <brendan.d.gregg@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Jan 2015, Peter Zijlstra wrote:
-> On Fri, Jan 16, 2015 at 11:46:44AM +0100, Peter Zijlstra wrote:
-> > Its a bandaid at best :/ The problem is (again) that we changes
-> > event->ctx without any kind of serialization.
-> > 
-> > The issue came up before:
-> > 
-> >   https://lkml.org/lkml/2014/9/5/397
-> > 
-> > and I've not been able to come up with anything much saner.
-> 
-> A little something like the below is the best I could come up with; I
-> know Linus hated it, but I figure we ought to do something to stop
-> crashing.
+On Fri, Jan 16, 2015 at 7:02 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Thu, 15 Jan 2015 20:16:01 -0800
+> Alexei Starovoitov <ast@plumgrid.com> wrote:
+>
+>> Hi Ingo, Steven,
+>>
+>> This patch set is based on tip/master.
+>
+> Note, the tracing code isn't maintained in tip/master, but perf code is.
 
-I just wanted to report that I've tested both this patch and Jiri's 
-original one and they both keep my easy-to-trigger-testcase from crashing 
-my core2 machine (when applied against 3.18).
+I know. I can rebase against linux-trace tree, but wanted to go
+through tip to get advantage of tip-bot ;)
 
-This is great!  I've been chasing this bug for months.
+> Do you have a git repo somewhere that I can look at? It makes it easier
+> than loading in 9 patches ;-)
 
-Vince
+https://git.kernel.org/cgit/linux/kernel/git/ast/bpf.git/
+
+> For syscalls this is fine as the parameters are usually set. But
+> there's a lot of tracepoints that we need to know the result of the
+> copied data to decide to filter or not, where the result happens at the
+> TP_fast_assign() part which requires allocating the buffers.
+...
+> Again, for syscalls it may not be a problem, but for other tracepoints,
+> I'm not sure we can do that. How do you handle sched_switch for
+> example? The tracepoint only gets two pointers to task structs, you
+> need to then dereference them to get the pid, prio, state and other
+> data.
+
+exactly. In this patch set the user can use bpf_fetch_*()
+helpers to dereference task_struct to get to pid, prio, anything.
+The user is not limited by what tracepoints hard coded as
+part of TP_fast_assign.
+In the future when generic type/field infra is ready,
+the bpf program will have faster way to access such fields
+without going through bpf_fetch_*() helpers.
+
+In other words the program is a superset of existing
+TP_fast_assign + TP_print + filters + triggers + stack dumps.
+All are done from the program on demand.
+Some programs may just count number of events
+without accessing arguments at all.
+
+> Maybe we should have a way to do the program before and/or after the
+> buffering depending on what to filter on. There's no way to know what
+> the parameters of the tracepoint are without looking at the source.
+
+right now most of the tracepoints copy as much as possible
+fields as part of TP_fast_assign, since there is no way to
+know what will be needed later.
+And despite copying a lot, often it's not enough for analytics.
+With program is attached before the copy, the overhead
+is much lower. The program will look at whatever fields
+necessary, may do some operations on them and even
+store these fields into maps for further processing.
+
+>> - dump_stack
+>> - trace_printk
+>> The last two are mainly to debug the programs and to print data for user
+>> space consumptions.
+>
+> I have to look at the code, but currently trace_printk() isn't made to
+> be used in production systems.
+
+other than allocating a bunch of per_cpu pages.
+what concerns do you have?
+Some printk-like facility from the program is needed.
+I'd rather fix whatever necessary in trace_printk instead
+of inventing another way of printing.
+Anyway, I think I will drop these two helpers for now.
+
+> One last thing. If the ebpf is used for anything but filtering, it
+> should go into the trigger file. The filtering is only a way to say if
+> the event should be recorded or not. But the trigger could do something
+> else (a printk, a stacktrace, etc).
+
+it does way more than just filtering, but
+invoking program as a trigger is too slow.
+When program is called as soon as tracepoint fires,
+it can fetch other fields, evaluate them, printk some of them,
+optionally dump stack, aggregate into maps.
+We can let it call triggers too, so that user program will
+be able to enable/disable other events.
+I'm not against invoking programs as a trigger, but I don't
+see a use case for it. It's just too slow for production
+analytics that needs to act on huge number of events
+per second.
+We must minimize the overhead between tracepoint
+firing and program executing, so that programs can
+be used on events like packet receive which will be
+in millions per second. Every nsec counts.
+For example:
+- raw dd if=/dev/zero of=/dev/null
+  does 760 MB/s (on my debug kernel)
+- echo 1 > events/syscalls/sys_enter_write/enable
+  drops it to 400 MB/s
+- echo "echo "count == 123 " > events/syscalls/sys_enter_write/filter
+  drops it even further down to 388 MB/s
+This slowdown is too high for this to be used on a live system.
+- tracex4 that computes histogram of sys_write sizes
+  and stores log2(count) into a map does 580 MB/s
+  This is still not great, but this slowdown is now usable
+  and we can work further on minimizing the overhead.
