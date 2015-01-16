@@ -1,101 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754043AbbAPKST (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 05:18:19 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:35571 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752558AbbAPKSQ (ORCPT
+	id S1754068AbbAPKSk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 05:18:40 -0500
+Received: from mail-ie0-f174.google.com ([209.85.223.174]:35618 "EHLO
+	mail-ie0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752766AbbAPKSi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 05:18:16 -0500
-Date: Fri, 16 Jan 2015 10:17:47 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Rob Herring <robherring2@gmail.com>, Suman Anna <s-anna@ti.com>,
-        Kumar Gala <galak@codeaurora.org>, Bjorn Andersson <bjorn@kryo.se>,
-        Josh Cartwright <joshc@codeaurora.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+	Fri, 16 Jan 2015 05:18:38 -0500
+MIME-Version: 1.0
+In-Reply-To: <20150113114101.GO12302@n2100.arm.linux.org.uk>
+References: <1418342706-14755-2-git-send-email-rjui@broadcom.com>
+	<1918116.UxUgDPTmcq@wuerfel>
+	<CAAVeFuL2MKRA7YLm_wsyftNy-sxgEYPrmqBm8XTRZQb66YF-qw@mail.gmail.com>
+	<1628217.66frkAqHMc@wuerfel>
+	<CAAVeFuJhiten-eVLCa2sMG-nsRwjPMiZap8UJM1kNCuRyK-b1w@mail.gmail.com>
+	<20141217104428.GV11285@n2100.arm.linux.org.uk>
+	<CACRpkdZbGjNecrggrFr_18zjobXMBpkrSjBMAUfyfs2ZCebB0w@mail.gmail.com>
+	<20150113114101.GO12302@n2100.arm.linux.org.uk>
+Date: Fri, 16 Jan 2015 11:18:37 +0100
+Message-ID: <CACRpkdYNU8MgnZz2kqLFQMiDSeMCuWRkAVXW4BVcMqLT2muBVw@mail.gmail.com>
+Subject: Re: [PATCH v5 1/3] gpio: Cygnus: define Broadcom Cygnus GPIO binding
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Alexandre Courbot <gnurou@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        Ray Jui <rjui@broadcom.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Florian Fainelli <f.fainelli@gmail.com>, Joe Perches <joe@perches.com>,
+        Scott Branden <sbranden@broadcom.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        Rob Herring <robh+dt@kernel.org>
-Subject: Re: [PATCH v7 1/4] Documentation: dt: add common bindings for
- hwspinlock
-Message-ID: <20150116101746.GA21809@leverpostej>
-References: <1421269101-51105-1-git-send-email-s-anna@ti.com>
- <1421269101-51105-2-git-send-email-s-anna@ti.com>
- <20150115135201.GG16217@leverpostej>
- <20150115135556.GH16217@leverpostej>
- <CAL_JsqL2LZAooMk-V8+xeF2g6acZE21M+-OBRw8aEVa-5wVHuQ@mail.gmail.com>
- <CAK=WgbYQ=BbinqJ5fsw2Y+FKdy=nasLsw9mX8pw6S_o3owy9-g@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAK=WgbYQ=BbinqJ5fsw2Y+FKdy=nasLsw9mX8pw6S_o3owy9-g@mail.gmail.com>
-Thread-Topic: [PATCH v7 1/4] Documentation: dt: add common bindings for
- hwspinlock
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 16, 2015 at 06:09:00AM +0000, Ohad Ben-Cohen wrote:
-> On Thu, Jan 15, 2015 at 4:42 PM, Rob Herring <robherring2@gmail.com> wrote:
-> > On Thu, Jan 15, 2015 at 7:55 AM, Mark Rutland <mark.rutland@arm.com> wrote:
-> >> On Thu, Jan 15, 2015 at 01:52:01PM +0000, Mark Rutland wrote:
-> >>> On Wed, Jan 14, 2015 at 08:58:18PM +0000, Suman Anna wrote:
-> >>> > +- hwlock-base-id:  An unique base Id for the locks for a particular hwlock
-> >>> > +                   device. This property is mandatory for all platform
-> >>> > +                   implementations.
-> >>>
-> >>> This property makes no sense. The ID encoded in the hwlock cells is
-> >>> relative to the instance (identified by phandle), not global. So the DT
-> >>> has no global ID space.
-> >>>
-> >>> Why do you think you need this?
-> >>
-> >> Having looked at the way this proeprty is used, NAK.
-> >>
-> >> If you need to carve up a Linux-internal ID space, do that dynamically.
-> >> There is no need for this property.
-> >
-> > Better yet, don't create a Linux ID space for this. Everywhere we have
-> > one, we want to get rid of it.
-> 
-> Rob, Mark,
-> 
-> The hwlock is a basic hardware primitive that allow synchronization
-> between different processors in the system, which may be running Linux
-> as well as other operating systems, and may have no other means of
-> communication.
-> 
-> The hwlock id numbers are predefined, global and static across the
-> entire system: Linux may boot well after other operating systems are
-> already running and using these hwlocks to communicate, and therefore,
-> in order to use these hardware devices, it must not enumerate them
-> differently than the rest of the system.
+On Tue, Jan 13, 2015 at 12:41 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Tue, Jan 13, 2015 at 09:06:15AM +0100, Linus Walleij wrote:
+>> On Wed, Dec 17, 2014 at 11:44 AM, Russell King - ARM Linux
+>> <linux@arm.linux.org.uk> wrote:
+>> > On Wed, Dec 17, 2014 at 11:45:01AM +0900, Alexandre Courbot wrote:
+>> >> Actually we are not that far from being able to do completely without
+>> >> any GPIO number, and maybe that's what we should aim for. I think the
+>> >> only remaining offender is the sysfs interface.
+>> >
+>> > And that is a user API, and there's lots of users of it (eg, on Raspberry
+>> > Pi platforms.)  So changing it isn't going to be easy - I'd say that it's
+>> > impractical.
+>> >
+>> > What you're suggesting would be like re-numbering Linux syscalls.
+>>
+>> The problem is that right now if we set the .base of a gpio_chip
+>> to -1 for dynamic allocation of GPIO numbers and we have more
+>> than one GPIO chip in the system, the numbers basically depend
+>> on probe order, and may theoretically even differ between two boots.
+>>
+>> So in these cases preserving the ABI means preserving the
+>> unpredictability of these assigned numbers or something.
+>>
+>> For the old usecases with a single GPIO controller and a fixed
+>> base offset of e.g. 0 (which I suspect was implicit in the initial
+>> design of the subsystem) things work fine as always, it's these new
+>> dynamic use cases that destabilize the ABI.
+>
+> Since GPIOs are exported through sysfs into userland by GPIO number,
+> and we know that there are users of it (see
+> https://github.com/pilight/wiringX) which hard encode GPIO numbers,
+> so this is *really* something that we as kernel developers can't
+> change without breaking such users.
 
-That's not true.
+I agree.
 
-In order to communicate it must agree with the other users as to the
-meaning of each instance, and the protocol for use. That doesn't
-necessarily mean that Linux needs to know the numerical ID from a
-datasheet, and regardless that ID is separate from the logical ID Linux
-uses internally.
+In some other thread I came up with the idea that if
+we add enumerated aliases for the GPIO controllers in the
+device tree (so that each can be assigned a sequence number,
+like we do on the PL011 ttys) we can assign them numbers
+starting from 0.
 
-> Given that these id numbers are global, system-wide, static and
-> predefined, where Linux may just be one user of them, please
-> reconsider the approach as implemented by Suman, or suggest an
-> alternative one you may prefer.
+The only reason that dynamic GPIO start from some random
+high offset is that the on-chip GPIOs are assumed to be present
+at offset 0+, so this is done so that the dynamic controllers
+avoid colliding with them. (At least that is how I understand it.)
+So on a fully DT-enabled system assigning numbers starting
+from 0 should be kind of default.
 
-To communicate with the other processors, Linux will need to understand
-the protocol. So there will need to be nodes in the DT describing the
-protocol. Those nodes can refer to the relevant locks using phandle +
-args (with a hwlock-names list if indexing is not appropriate). The
-entire point of the hwlock-cells is to allow individual locks to be
-referred to in this way.
-
-Thanks,
-Mark.
+Yours,
+Linus Walleij
