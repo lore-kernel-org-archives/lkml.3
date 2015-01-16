@@ -1,74 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932131AbbAPCXD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 21:23:03 -0500
-Received: from ozlabs.org ([103.22.144.67]:54299 "EHLO ozlabs.org"
+	id S1755984AbbAPC10 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 21:27:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34822 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754919AbbAPCXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 21:23:00 -0500
-Date: Fri, 16 Jan 2015 13:22:53 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Wolfram Sang <wsa@the-dreams.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-Subject: linux-next: build failure after merge of the i2c tree
-Message-ID: <20150116132253.1c5f7a8d@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1753396AbbAPC1Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 21:27:25 -0500
+Message-ID: <54B876FD.3060702@redhat.com>
+Date: Thu, 15 Jan 2015 21:27:09 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/jGvSC2bZ6OcEPUT28vnmVe3"; protocol="application/pgp-signature"
+To: Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Suresh Siddha <sbsiddha@gmail.com>
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        matt.fleming@intel.com, bp@suse.de, pbonzini@redhat.com,
+        tglx@linutronix.de, luto@amacapital.net
+Subject: Re: [PATCH 2/3] x86, fpu: don't abuse ->has_fpu in __kernel_fpu_{begin,end}()
+References: <1421012793-30106-1-git-send-email-riel@redhat.com> <20150115191918.GA27332@redhat.com> <20150115192005.GC27332@redhat.com>
+In-Reply-To: <20150115192005.GC27332@redhat.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/jGvSC2bZ6OcEPUT28vnmVe3
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
 
-Hi Wolfram,
+On 01/15/2015 02:20 PM, Oleg Nesterov wrote:
+> Now that we have in_kernel_fpu we can remove
+> __thread_clear_has_fpu() in __kernel_fpu_begin(). And this allows
+> to replace the asymmetrical and nontrivial use_eager_fpu +
+> tsk_used_math check in kernel_fpu_end() with the same
+> __thread_has_fpu() check.
+> 
+> The logic becomes really simple; if _begin() does save() then
+> _end() needs restore(), this is controlled by __thread_has_fpu().
+> Otherwise they do clts/stts unless use_eager_fpu().
+> 
+> Not only this makes begin/end symmetrical and imo more
+> understandable, potentially this allows to change irq_fpu_usable()
+> to avoid all other checks except "in_kernel_fpu".
+> 
+> Also, with this patch __kernel_fpu_end() does
+> restore_fpu_checking() and WARNs if it fails instead of
+> math_state_restore(). I think this looks better because we no
+> longer need __thread_fpu_begin(), and it would be better to report
+> the failure in this case.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com> --- 
+> arch/x86/kernel/i387.c |   19 ++++++------------- 1 files changed,
+> 6 insertions(+), 13 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c index
+> a815723..12088a3 100644 --- a/arch/x86/kernel/i387.c +++
+> b/arch/x86/kernel/i387.c @@ -81,9 +81,7 @@ void
+> __kernel_fpu_begin(void) this_cpu_write(in_kernel_fpu, true);
+> 
+> if (__thread_has_fpu(me)) { -		__thread_clear_has_fpu(me);
 
-After merging the i2c tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+I will put that line back in the patch series that defers the
+loading of FPU state until the switch to user space, but I
+guess we can go either way for now...
 
-drivers/i2c/i2c-core.c: In function 'i2c_unregister_device':
-drivers/i2c/i2c-core.c:1016:3: error: implicit declaration of function 'of_=
-node_clear_flag' [-Werror=3Dimplicit-function-declaration]
-   of_node_clear_flag(client->dev.of_node, OF_POPULATED);
-   ^
-drivers/i2c/i2c-core.c:1016:43: error: 'OF_POPULATED' undeclared (first use=
- in this function)
-   of_node_clear_flag(client->dev.of_node, OF_POPULATED);
-                                           ^
+> __save_init_fpu(me); -		/* We do 'stts()' in __kernel_fpu_end() */ 
+> } else if (!use_eager_fpu()) { this_cpu_write(fpu_owner_task,
+> NULL); clts(); @@ -93,17 +91,12 @@
+> EXPORT_SYMBOL(__kernel_fpu_begin);
+> 
+> void __kernel_fpu_end(void) { -	if (use_eager_fpu()) { -		/* -		 *
+> For eager fpu, most the time, tsk_used_math() is true. -		 *
+> Restore the user math as we are done with the kernel usage. -		 *
+> At few instances during thread exit, signal handling etc, -		 *
+> tsk_used_math() is false. Those few places will take proper -		 *
+> actions, so we don't need to restore the math here. -		 */ -		if
+> (likely(tsk_used_math(current))) -			math_state_restore(); -	} else
+> { +	struct task_struct *me = current; + +	if (__thread_has_fpu(me))
+> { +		if (WARN_ON(restore_fpu_checking(me))) +			drop_init_fpu(me); 
+> +	} else if (!use_eager_fpu()) { stts(); }
+> 
+> 
 
-Caused by commit d5285c36e6d2 ("i2c: Mark instantiated device nodes
-with OF_POPULATE").
 
-I have used the version of the i2c tree from next-20150115 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-
---Sig_/jGvSC2bZ6OcEPUT28vnmVe3
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
+- -- 
+All rights reversed
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Version: GnuPG v1
 
-iQIcBAEBCAAGBQJUuHYCAAoJEMDTa8Ir7ZwVYEQP/3ZUsJJYPQxxZjGxaAWxjHSV
-SX8+gDIb66cr5C4lC9tKSMpgWmi6OCZJtuS3TmSeQQZS2WKsgklPvAfJhF71qJoH
-MtKwQBnPZgruDJZOK6b38tgwujf/XOfZW9Y7qFbAKYEq49A0FyzNRbaFZRvcCa+6
-KccEZ8ii/shexfvFUXyZKhVjVyIMQYjcnvJYyPJkH3ydCsZXhasOL+2iVAZPJAF/
-s47OJanquDPUJZlMQpJkGQhiQaXAXCdSdPQRYG4tlO07NpGbYDRauCfooyPXW/iK
-ay1kND4yseLya7/Ni0yMoif++L7T+L3u+wUSBwWONNVcsJaCrLmN3Kjj10QMbGh9
-LieDNwJVUvSzXdgmb8PfG11IBj3954hKvq838i4k4wIMooW+pV8mRnfrmQdiuhKY
-edugd1U8NWcQMfmaqstWKdDSdWEipiRAnMwfzh16wnS+XHZrnnJ3lOp4rKFab1rB
-ewbh94Ijd9R2jTic++sT+c5vFPWw746UR2QWTK511MwY2y9o/XJ4qEFkb3/5qvFI
-TcK0DV8yvdhGIAeElVv6isa3Zgpzhv043ripedrvbJVhpqv2dqGnZxMOzFUWqlJ0
-eUUTFt8YFqFS3lTchEqLPZX4g4eHLk2mYtrlOLrKzQ0ctcYNG2ctQPAsrOOB+5Vu
-INFFaKHsig7loez4aR+h
-=mPyV
+iQEcBAEBAgAGBQJUuHb9AAoJEM553pKExN6DOqAIALCVqEtQ9yZEA6G9a4n4wf2r
+2FHhz+H1KXUcFSVQp/KeqPq2ZJ4/1rO/omai49m1isXnjmOOLGF4Ur4E0gg6WM5W
+cBgN4HYNaFIr0JMWbMfFo7hnwL7BiQLoMwqxJDxi7HQcGoIkFFDIRtezZz75acey
+dKhOUz4p6C8EMgOEc1ssa5Vgo011hIfuB6aCS6NRNDJAlYornhzf0bt7HILw4tFj
+1IGR+yBpb7AmlWm6EvY4NluQ3M0KjtWErpBMSMCubVMBSa62e7Twv2K9eDLx+dbz
+eScoNZiy0aTgMGlN4hfXoSIwbxUkOaBl+6yAMOLn0OEV00OxxRKOAuZdQS0NUsE=
+=M7Fz
 -----END PGP SIGNATURE-----
-
---Sig_/jGvSC2bZ6OcEPUT28vnmVe3--
