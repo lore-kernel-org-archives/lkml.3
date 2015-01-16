@@ -1,25 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752219AbbAPXdg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 18:33:36 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:48251 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122AbbAPXdY (ORCPT
+	id S1751134AbbAPXdi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 18:33:38 -0500
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:43193 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751873AbbAPXd0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 18:33:24 -0500
+	Fri, 16 Jan 2015 18:33:26 -0500
 From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         "Luis R . Rodriguez" <mcgrof@suse.com>, Tejun Heo <tj@kernel.org>
 Cc: linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@linux.intel.com>,
         Rusty Russell <rusty@rustcorp.com.au>, Olof Johansson <olof@lixom.net>,
-        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-        cocci@systeme.lip6.fr, Christoph Hellwig <hch@infradead.org>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Ewan Milne <emilne@redhat.com>, Jean Delvare <jdelvare@suse.de>,
-        Hannes Reinecke <hare@suse.de>, Jani Nikula <jani.nikula@intel.com>
-Subject: [PATCH 1/8] module: add extra argument for parse_params() callback
-Date: Fri, 16 Jan 2015 15:33:10 -0800
-Message-Id: <1421451197-19723-2-git-send-email-dmitry.torokhov@gmail.com>
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Subject: [PATCH 2/8] driver-core: add asynchronous probing support for drivers
+Date: Fri, 16 Jan 2015 15:33:11 -0800
+Message-Id: <1421451197-19723-3-git-send-email-dmitry.torokhov@gmail.com>
 X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
 In-Reply-To: <1421451197-19723-1-git-send-email-dmitry.torokhov@gmail.com>
 References: <1421451197-19723-1-git-send-email-dmitry.torokhov@gmail.com>
@@ -27,344 +23,343 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Luis R. Rodriguez <mcgrof@suse.com>
+Some devices take a long time when initializing, and not all drivers are
+suited to initialize their devices when they are open. For example,
+input drivers need to interrogate their devices in order to publish
+device's capabilities before userspace will open them. When such drivers
+are compiled into kernel they may stall entire kernel initialization.
 
-This adds an extra argument onto parse_params() to be used
-as a way to make the unused callback a bit more useful and
-generic by allowing the caller to pass on a data structure
-of its choice. An example use case is to allow us to easily
-make module parameters for every module which we will do
-next.
+This change allows drivers request for their probe functions to be
+called asynchronously during driver and device registration (manual
+binding is still synchronous). Because async_schedule is used to perform
+asynchronous calls module loading will still wait for the probing to
+complete.
 
-@ parse @
-identifier name, args, params, num, level_min, level_max;
-identifier unknown, param, val, doing;
-type s16;
-@@
- extern char *parse_args(const char *name,
- 			 char *args,
- 			 const struct kernel_param *params,
- 			 unsigned num,
- 			 s16 level_min,
- 			 s16 level_max,
-+			 void *arg,
- 			 int (*unknown)(char *param, char *val,
-					const char *doing
-+					, void *arg
-					));
+This change is based on earlier patch by "Luis R. Rodriguez"
+<mcgrof@suse.com>
 
-@ parse_mod @
-identifier name, args, params, num, level_min, level_max;
-identifier unknown, param, val, doing;
-type s16;
-@@
- char *parse_args(const char *name,
- 			 char *args,
- 			 const struct kernel_param *params,
- 			 unsigned num,
- 			 s16 level_min,
- 			 s16 level_max,
-+			 void *arg,
- 			 int (*unknown)(char *param, char *val,
-					const char *doing
-+					, void *arg
-					))
-{
-	...
-}
-
-@ parse_args_found @
-expression R, E1, E2, E3, E4, E5, E6;
-identifier func;
-@@
-
-(
-	R =
-	parse_args(E1, E2, E3, E4, E5, E6,
-+		   NULL,
-		   func);
-|
-	R =
-	parse_args(E1, E2, E3, E4, E5, E6,
-+		   NULL,
-		   &func);
-|
-	R =
-	parse_args(E1, E2, E3, E4, E5, E6,
-+		   NULL,
-		   NULL);
-|
-	parse_args(E1, E2, E3, E4, E5, E6,
-+		   NULL,
-		   func);
-|
-	parse_args(E1, E2, E3, E4, E5, E6,
-+		   NULL,
-		   &func);
-|
-	parse_args(E1, E2, E3, E4, E5, E6,
-+		   NULL,
-		   NULL);
-)
-
-@ parse_args_unused depends on parse_args_found @
-identifier parse_args_found.func;
-@@
-
-int func(char *param, char *val, const char *unused
-+		 , void *arg
-		 )
-{
-	...
-}
-
-@ mod_unused depends on parse_args_found @
-identifier parse_args_found.func;
-expression A1, A2, A3;
-@@
-
--	func(A1, A2, A3);
-+	func(A1, A2, A3, NULL);
-
-Generated-by: Coccinelle SmPL
-Cc: cocci@systeme.lip6.fr
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Christoph Hellwig <hch@infradead.org>
-Cc: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Ewan Milne <emilne@redhat.com>
-Cc: Jean Delvare <jdelvare@suse.de>
-Cc: Hannes Reinecke <hare@suse.de>
-Cc: Jani Nikula <jani.nikula@intel.com>
-Cc: linux-kernel@vger.kernel.org
-Reviewed-by: Tejun Heo <tj@kernel.org>
-Acked-by: Rusty Russell <rusty@rustcorp.com.au>
-Signed-off-by: Luis R. Rodriguez <mcgrof@suse.com>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 ---
- arch/powerpc/mm/hugetlbpage.c |  4 ++--
- include/linux/moduleparam.h   |  3 ++-
- init/main.c                   | 25 +++++++++++++++----------
- kernel/module.c               |  6 ++++--
- kernel/params.c               | 11 +++++++----
- lib/dynamic_debug.c           |  4 ++--
- 6 files changed, 32 insertions(+), 21 deletions(-)
+ drivers/base/base.h    |   1 +
+ drivers/base/bus.c     |  31 +++++++---
+ drivers/base/dd.c      | 149 ++++++++++++++++++++++++++++++++++++++++++-------
+ include/linux/device.h |  21 +++++++
+ 4 files changed, 175 insertions(+), 27 deletions(-)
 
-diff --git a/arch/powerpc/mm/hugetlbpage.c b/arch/powerpc/mm/hugetlbpage.c
-index 620d0ec..ae0c479 100644
---- a/arch/powerpc/mm/hugetlbpage.c
-+++ b/arch/powerpc/mm/hugetlbpage.c
-@@ -336,7 +336,7 @@ int alloc_bootmem_huge_page(struct hstate *hstate)
- unsigned long gpage_npages[MMU_PAGE_COUNT];
- 
- static int __init do_gpage_early_setup(char *param, char *val,
--				       const char *unused)
-+				       const char *unused, void *arg)
+diff --git a/drivers/base/base.h b/drivers/base/base.h
+index 251c5d3..fd3347d 100644
+--- a/drivers/base/base.h
++++ b/drivers/base/base.h
+@@ -116,6 +116,7 @@ static inline int driver_match_device(struct device_driver *drv,
  {
- 	static phys_addr_t size;
- 	unsigned long npages;
-@@ -385,7 +385,7 @@ void __init reserve_hugetlb_gpages(void)
+ 	return drv->bus->match ? drv->bus->match(dev, drv) : 1;
+ }
++extern bool driver_allows_async_probing(struct device_driver *drv);
  
- 	strlcpy(cmdline, boot_command_line, COMMAND_LINE_SIZE);
- 	parse_args("hugetlb gpages", cmdline, NULL, 0, 0, 0,
--			&do_gpage_early_setup);
-+			NULL, &do_gpage_early_setup);
+ extern int driver_add_groups(struct device_driver *drv,
+ 			     const struct attribute_group **groups);
+diff --git a/drivers/base/bus.c b/drivers/base/bus.c
+index 876bae5..a3d71ad 100644
+--- a/drivers/base/bus.c
++++ b/drivers/base/bus.c
+@@ -10,6 +10,7 @@
+  *
+  */
  
- 	/*
- 	 * Walk gpage list in reverse, allocating larger page sizes first.
-diff --git a/include/linux/moduleparam.h b/include/linux/moduleparam.h
-index 1c9effa..1392370 100644
---- a/include/linux/moduleparam.h
-+++ b/include/linux/moduleparam.h
-@@ -357,8 +357,9 @@ extern char *parse_args(const char *name,
- 		      unsigned num,
- 		      s16 level_min,
- 		      s16 level_max,
-+		      void *arg,
- 		      int (*unknown)(char *param, char *val,
--			      const char *doing));
-+				     const char *doing, void *arg));
- 
- /* Called by module remove. */
- #ifdef CONFIG_SYSFS
-diff --git a/init/main.c b/init/main.c
-index cf95428..9596c65 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -238,7 +238,8 @@ static int __init loglevel(char *str)
- early_param("loglevel", loglevel);
- 
- /* Change NUL term back to "=", to make "param" the whole string. */
--static int __init repair_env_string(char *param, char *val, const char *unused)
-+static int __init repair_env_string(char *param, char *val,
-+				    const char *unused, void *arg)
++#include <linux/async.h>
+ #include <linux/device.h>
+ #include <linux/module.h>
+ #include <linux/errno.h>
+@@ -549,15 +550,12 @@ void bus_probe_device(struct device *dev)
  {
- 	if (val) {
- 		/* param=val or param="val"? */
-@@ -255,14 +256,15 @@ static int __init repair_env_string(char *param, char *val, const char *unused)
+ 	struct bus_type *bus = dev->bus;
+ 	struct subsys_interface *sif;
+-	int ret;
+ 
+ 	if (!bus)
+ 		return;
+ 
+-	if (bus->p->drivers_autoprobe) {
+-		ret = device_attach(dev);
+-		WARN_ON(ret < 0);
+-	}
++	if (bus->p->drivers_autoprobe)
++		device_initial_probe(dev);
+ 
+ 	mutex_lock(&bus->p->mutex);
+ 	list_for_each_entry(sif, &bus->p->interfaces, node)
+@@ -659,6 +657,17 @@ static ssize_t uevent_store(struct device_driver *drv, const char *buf,
+ }
+ static DRIVER_ATTR_WO(uevent);
+ 
++static void driver_attach_async(void *_drv, async_cookie_t cookie)
++{
++	struct device_driver *drv = _drv;
++	int ret;
++
++	ret = driver_attach(drv);
++
++	pr_debug("bus: '%s': driver %s async attach completed: %d\n",
++		 drv->bus->name, drv->name, ret);
++}
++
+ /**
+  * bus_add_driver - Add a driver to the bus.
+  * @drv: driver.
+@@ -691,9 +700,15 @@ int bus_add_driver(struct device_driver *drv)
+ 
+ 	klist_add_tail(&priv->knode_bus, &bus->p->klist_drivers);
+ 	if (drv->bus->p->drivers_autoprobe) {
+-		error = driver_attach(drv);
+-		if (error)
+-			goto out_unregister;
++		if (driver_allows_async_probing(drv)) {
++			pr_debug("bus: '%s': probing driver %s asynchronously\n",
++				drv->bus->name, drv->name);
++			async_schedule(driver_attach_async, drv);
++		} else {
++			error = driver_attach(drv);
++			if (error)
++				goto out_unregister;
++		}
+ 	}
+ 	module_add_driver(drv->owner, drv);
+ 
+diff --git a/drivers/base/dd.c b/drivers/base/dd.c
+index cdc779c..f9f4831 100644
+--- a/drivers/base/dd.c
++++ b/drivers/base/dd.c
+@@ -402,31 +402,95 @@ int driver_probe_device(struct device_driver *drv, struct device *dev)
+ 	return ret;
  }
  
- /* Anything after -- gets handed straight to init. */
--static int __init set_init_arg(char *param, char *val, const char *unused)
-+static int __init set_init_arg(char *param, char *val,
-+			       const char *unused, void *arg)
+-static int __device_attach(struct device_driver *drv, void *data)
++bool driver_allows_async_probing(struct device_driver *drv)
  {
- 	unsigned int i;
+-	struct device *dev = data;
++	return drv->probe_type == PROBE_PREFER_ASYNCHRONOUS;
++}
++
++struct device_attach_data {
++	struct device *dev;
++
++	/*
++	 * Indicates whether we are are considering asynchronous probing or
++	 * not. Only initial binding after device or driver registration
++	 * (including deferral processing) may be done asynchronously, the
++	 * rest is always synchronous, as we expect it is being done by
++	 * request from userspace.
++	 */
++	bool check_async;
++
++	/*
++	 * Indicates if we are binding synchronous or asynchronous drivers.
++	 * When asynchronous probing is enabled we'll execute 2 passes
++	 * over drivers: first pass doing synchronous probing and second
++	 * doing asynchronous probing (if synchronous did not succeed -
++	 * most likely because there was no driver requiring synchronous
++	 * probing - and we found asynchronous driver during first pass).
++	 * The 2 passes are done because we can't shoot asynchronous
++	 * probe for given device and driver from bus_for_each_drv() since
++	 * driver pointer is not guaranteed to stay valid once
++	 * bus_for_each_drv() iterates to the next driver on the bus.
++	 */
++	bool want_async;
++
++	/*
++	 * We'll set have_async to 'true' if, while scanning for matching
++	 * driver, we'll encounter one that requests asynchronous probing.
++	 */
++	bool have_async;
++};
++
++static int __device_attach_driver(struct device_driver *drv, void *_data)
++{
++	struct device_attach_data *data = _data;
++	struct device *dev = data->dev;
++	bool async_allowed;
++
++	/*
++	 * Check if device has already been claimed. This may
++	 * happen with driver loading, device discovery/registration,
++	 * and deferred probe processing happens all at once with
++	 * multiple threads.
++	 */
++	if (dev->driver)
++		return -EBUSY;
  
- 	if (panic_later)
+ 	if (!driver_match_device(drv, dev))
  		return 0;
  
--	repair_env_string(param, val, unused);
-+	repair_env_string(param, val, unused, NULL);
- 
- 	for (i = 0; argv_init[i]; i++) {
- 		if (i == MAX_INIT_ARGS) {
-@@ -279,9 +281,10 @@ static int __init set_init_arg(char *param, char *val, const char *unused)
-  * Unknown boot options get handed to init, unless they look like
-  * unused parameters (modprobe will find them in /proc/cmdline).
-  */
--static int __init unknown_bootoption(char *param, char *val, const char *unused)
-+static int __init unknown_bootoption(char *param, char *val,
-+				     const char *unused, void *arg)
- {
--	repair_env_string(param, val, unused);
-+	repair_env_string(param, val, unused, NULL);
- 
- 	/* Handle obsolete-style parameters */
- 	if (obsolete_checksetup(param))
-@@ -421,7 +424,8 @@ static noinline void __init_refok rest_init(void)
++	async_allowed = driver_allows_async_probing(drv);
++
++	if (async_allowed)
++		data->have_async = true;
++
++	if (data->check_async && async_allowed != data->want_async)
++		return 0;
++
+ 	return driver_probe_device(drv, dev);
  }
  
- /* Check for early params. */
--static int __init do_early_param(char *param, char *val, const char *unused)
-+static int __init do_early_param(char *param, char *val,
-+				 const char *unused, void *arg)
+-/**
+- * device_attach - try to attach device to a driver.
+- * @dev: device.
+- *
+- * Walk the list of drivers that the bus has and call
+- * driver_probe_device() for each pair. If a compatible
+- * pair is found, break out and return.
+- *
+- * Returns 1 if the device was bound to a driver;
+- * 0 if no matching driver was found;
+- * -ENODEV if the device is not registered.
+- *
+- * When called for a USB interface, @dev->parent lock must be held.
+- */
+-int device_attach(struct device *dev)
++static void __device_attach_async_helper(void *_dev, async_cookie_t cookie)
++{
++	struct device *dev = _dev;
++	struct device_attach_data data = {
++		.dev		= dev,
++		.check_async	= true,
++		.want_async	= true,
++	};
++
++	device_lock(dev);
++
++	bus_for_each_drv(dev->bus, NULL, &data, __device_attach_driver);
++	dev_dbg(dev, "async probe completed\n");
++
++	pm_request_idle(dev);
++
++	device_unlock(dev);
++
++	put_device(dev);
++}
++
++int __device_attach(struct device *dev, bool allow_async)
  {
- 	const struct obs_kernel_param *p;
+ 	int ret = 0;
  
-@@ -440,7 +444,8 @@ static int __init do_early_param(char *param, char *val, const char *unused)
- 
- void __init parse_early_options(char *cmdline)
- {
--	parse_args("early options", cmdline, NULL, 0, 0, 0, do_early_param);
-+	parse_args("early options", cmdline, NULL, 0, 0, 0, NULL,
-+		   do_early_param);
- }
- 
- /* Arch code calls this early on, or if not, just before other parsing. */
-@@ -545,10 +550,10 @@ asmlinkage __visible void __init start_kernel(void)
- 	after_dashes = parse_args("Booting kernel",
- 				  static_command_line, __start___param,
- 				  __stop___param - __start___param,
--				  -1, -1, &unknown_bootoption);
-+				  -1, -1, NULL, &unknown_bootoption);
- 	if (!IS_ERR_OR_NULL(after_dashes))
- 		parse_args("Setting init args", after_dashes, NULL, 0, -1, -1,
--			   set_init_arg);
-+			   NULL, set_init_arg);
- 
- 	jump_label_init();
- 
-@@ -857,7 +862,7 @@ static void __init do_initcall_level(int level)
- 		   initcall_command_line, __start___param,
- 		   __stop___param - __start___param,
- 		   level, level,
--		   &repair_env_string);
-+		   NULL, &repair_env_string);
- 
- 	for (fn = initcall_levels[level]; fn < initcall_levels[level+1]; fn++)
- 		do_one_initcall(*fn);
-diff --git a/kernel/module.c b/kernel/module.c
-index 3965511..f5b28b6 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -3178,7 +3178,8 @@ out:
- 	return err;
- }
- 
--static int unknown_module_param_cb(char *param, char *val, const char *modname)
-+static int unknown_module_param_cb(char *param, char *val, const char *modname,
-+				   void *arg)
- {
- 	/* Check for magic 'dyndbg' arg */
- 	int ret = ddebug_dyndbg_module_param_cb(param, val, modname);
-@@ -3283,7 +3284,8 @@ static int load_module(struct load_info *info, const char __user *uargs,
- 
- 	/* Module is ready to execute: parsing args may do that. */
- 	after_dashes = parse_args(mod->name, mod->args, mod->kp, mod->num_kp,
--				  -32768, 32767, unknown_module_param_cb);
-+				  -32768, 32767, NULL,
-+				  unknown_module_param_cb);
- 	if (IS_ERR(after_dashes)) {
- 		err = PTR_ERR(after_dashes);
- 		goto bug_cleanup;
-diff --git a/kernel/params.c b/kernel/params.c
-index bd65d136..8534681 100644
---- a/kernel/params.c
-+++ b/kernel/params.c
-@@ -100,8 +100,9 @@ static int parse_one(char *param,
- 		     unsigned num_params,
- 		     s16 min_level,
- 		     s16 max_level,
-+		     void *arg,
- 		     int (*handle_unknown)(char *param, char *val,
--				     const char *doing))
-+				     const char *doing, void *arg))
- {
- 	unsigned int i;
- 	int err;
-@@ -128,7 +129,7 @@ static int parse_one(char *param,
- 
- 	if (handle_unknown) {
- 		pr_debug("doing %s: %s='%s'\n", doing, param, val);
--		return handle_unknown(param, val, doing);
-+		return handle_unknown(param, val, doing, arg);
+@@ -444,15 +508,59 @@ int device_attach(struct device *dev)
+ 			ret = 0;
+ 		}
+ 	} else {
+-		ret = bus_for_each_drv(dev->bus, NULL, dev, __device_attach);
+-		pm_request_idle(dev);
++		struct device_attach_data data = {
++			.dev = dev,
++			.check_async = allow_async,
++			.want_async = false,
++		};
++
++		ret = bus_for_each_drv(dev->bus, NULL, &data,
++					__device_attach_driver);
++		if (!ret && allow_async && data.have_async) {
++			/*
++			 * If we could not find appropriate driver
++			 * synchronously and we are allowed to do
++			 * async probes and there are drivers that
++			 * want to probe asynchronously, we'll
++			 * try them.
++			 */
++			dev_dbg(dev, "scheduling asynchronous probe\n");
++			get_device(dev);
++			async_schedule(__device_attach_async_helper, dev);
++		} else {
++			pm_request_idle(dev);
++		}
  	}
+ out_unlock:
+ 	device_unlock(dev);
+ 	return ret;
+ }
++
++/**
++ * device_attach - try to attach device to a driver.
++ * @dev: device.
++ *
++ * Walk the list of drivers that the bus has and call
++ * driver_probe_device() for each pair. If a compatible
++ * pair is found, break out and return.
++ *
++ * Returns 1 if the device was bound to a driver;
++ * 0 if no matching driver was found;
++ * -ENODEV if the device is not registered.
++ *
++ * When called for a USB interface, @dev->parent lock must be held.
++ */
++int device_attach(struct device *dev)
++{
++	return __device_attach(dev, false);
++}
+ EXPORT_SYMBOL_GPL(device_attach);
  
- 	pr_debug("Unknown argument '%s'\n", param);
-@@ -194,7 +195,9 @@ char *parse_args(const char *doing,
- 		 unsigned num,
- 		 s16 min_level,
- 		 s16 max_level,
--		 int (*unknown)(char *param, char *val, const char *doing))
-+		 void *arg,
-+		 int (*unknown)(char *param, char *val,
-+				const char *doing, void *arg))
++void device_initial_probe(struct device *dev)
++{
++	__device_attach(dev, true);
++}
++
+ static int __driver_attach(struct device *dev, void *data)
  {
- 	char *param, *val;
+ 	struct device_driver *drv = data;
+@@ -507,6 +615,9 @@ static void __device_release_driver(struct device *dev)
  
-@@ -214,7 +217,7 @@ char *parse_args(const char *doing,
- 			return args;
- 		irq_was_disabled = irqs_disabled();
- 		ret = parse_one(param, val, doing, params, num,
--				min_level, max_level, unknown);
-+				min_level, max_level, arg, unknown);
- 		if (irq_was_disabled && !irqs_disabled())
- 			pr_warn("%s: option '%s' enabled irq's!\n",
- 				doing, param);
-diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index d8f3d31..e491e02 100644
---- a/lib/dynamic_debug.c
-+++ b/lib/dynamic_debug.c
-@@ -887,7 +887,7 @@ static int ddebug_dyndbg_param_cb(char *param, char *val,
+ 	drv = dev->driver;
+ 	if (drv) {
++		if (driver_allows_async_probing(drv))
++			async_synchronize_full();
++
+ 		pm_runtime_get_sync(dev);
  
- /* handle both dyndbg and $module.dyndbg params at boot */
- static int ddebug_dyndbg_boot_param_cb(char *param, char *val,
--				const char *unused)
-+				const char *unused, void *arg)
- {
- 	vpr_info("%s=\"%s\"\n", param, val);
- 	return ddebug_dyndbg_param_cb(param, val, NULL, 0);
-@@ -1028,7 +1028,7 @@ static int __init dynamic_debug_init(void)
- 	 */
- 	cmdline = kstrdup(saved_command_line, GFP_KERNEL);
- 	parse_args("dyndbg params", cmdline, NULL,
--		   0, 0, 0, &ddebug_dyndbg_boot_param_cb);
-+		   0, 0, 0, NULL, &ddebug_dyndbg_boot_param_cb);
- 	kfree(cmdline);
- 	return 0;
+ 		driver_sysfs_remove(dev);
+diff --git a/include/linux/device.h b/include/linux/device.h
+index fb50673..9ace4c0 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -195,6 +195,25 @@ extern struct kset *bus_get_kset(struct bus_type *bus);
+ extern struct klist *bus_get_device_klist(struct bus_type *bus);
  
+ /**
++  * enum probe_type - device driver probe type to try
++  *	Device drivers may opt in for special handling of their
++  *	respective probe routines. This tells the core what to
++  *	expect and prefer.
++  *
++  * @PROBE_SYNCHRONOUS: Default. Drivers expect their probe routines
++  *	to run synchronously with driver and device registration
++  *	(with the exception of -EPROBE_DEFER handling - re-probing
++  *	always ends up being done asynchronously).
++  * @PROBE_PREFER_ASYNCHRONOUS: Drivers for "slow" devices which
++  *	probing order is not essential for booting the system may
++  *	opt into executing their probes asynchronously.
++  */
++enum probe_type {
++	PROBE_SYNCHRONOUS,
++	PROBE_PREFER_ASYNCHRONOUS,
++};
++
++/**
+  * struct device_driver - The basic device driver structure
+  * @name:	Name of the device driver.
+  * @bus:	The bus which the device of this driver belongs to.
+@@ -234,6 +253,7 @@ struct device_driver {
+ 	const char		*mod_name;	/* used for built-in modules */
+ 
+ 	bool suppress_bind_attrs;	/* disables bind/unbind via sysfs */
++	enum probe_type probe_type;
+ 
+ 	const struct of_device_id	*of_match_table;
+ 	const struct acpi_device_id	*acpi_match_table;
+@@ -972,6 +992,7 @@ extern int __must_check device_bind_driver(struct device *dev);
+ extern void device_release_driver(struct device *dev);
+ extern int  __must_check device_attach(struct device *dev);
+ extern int __must_check driver_attach(struct device_driver *drv);
++extern void device_initial_probe(struct device *dev);
+ extern int __must_check device_reprobe(struct device *dev);
+ 
+ /*
 -- 
 2.2.0.rc0.207.ga3a616c
 
