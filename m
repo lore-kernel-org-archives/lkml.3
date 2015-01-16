@@ -1,132 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754742AbbAPT5i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 14:57:38 -0500
-Received: from mail-ob0-f181.google.com ([209.85.214.181]:37051 "EHLO
-	mail-ob0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754041AbbAPT5f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 14:57:35 -0500
+	id S932313AbbAPUBJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 15:01:09 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:48324 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753102AbbAPUBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 15:01:08 -0500
+Message-ID: <54B96E00.7040909@suse.cz>
+Date: Fri, 16 Jan 2015 21:01:04 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <20150116161752.GL12302@n2100.arm.linux.org.uk>
-References: <1420986751-30364-1-git-send-email-r.peniaev@gmail.com>
-	<1420986751-30364-2-git-send-email-r.peniaev@gmail.com>
-	<20150112183955.GO13360@arm.com>
-	<CACZ9PQXW9G4Vw-dcPwkdVE=uoYmDYEQnJWDnnpup1LxC3s5QPg@mail.gmail.com>
-	<CAGXu5jLO-YSaF8P9o3jcXP4VZCPYVshz73krnchYuv9pPGY6Sw@mail.gmail.com>
-	<CACZ9PQVo0SF4Z-rdNk4e=yY17Xt9n5hAqm4ZRNLEw3jGYYcvtA@mail.gmail.com>
-	<CAGXu5j+O6znN=7-gc3PqwqFA5MFRPLGBUzabOmQjWn_9WTjvpg@mail.gmail.com>
-	<CACZ9PQUEprgKrpHazDULA5mf-OaoX=MAjEeWdspZTXT_+iUKWw@mail.gmail.com>
-	<20150116155923.GK12302@n2100.arm.linux.org.uk>
-	<CACZ9PQUVFtCQg6XjDbokEPy_R2fZcHiq6+EEUZnx4FVfpfZxJg@mail.gmail.com>
-	<20150116161752.GL12302@n2100.arm.linux.org.uk>
-Date: Fri, 16 Jan 2015 11:57:35 -0800
-X-Google-Sender-Auth: 7X3oawOCXH6QgmWveCeY0sRqwBk
-Message-ID: <CAGXu5j+XHFNyhaBndQr1Q2uthsFP9ZQGbaw5hofDmXyKXZ-H5g@mail.gmail.com>
-Subject: Re: [PATCH 1/2] ARM: entry-common: fix forgotten set of thread_info->syscall
-From: Kees Cook <keescook@chromium.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Roman Peniaev <r.peniaev@gmail.com>, Will Deacon <will.deacon@arm.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Sekhar Nori <nsekhar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        akpm@linux-foundation.org, "Kirill A. Shutemov" <kirill@shutemov.name>,
+        David Rientjes <rientjes@google.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3] mm/thp: Allocate transparent hugepages on local node
+References: <1421393196-20915-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+In-Reply-To: <1421393196-20915-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=iso-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 16, 2015 at 8:17 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Sat, Jan 17, 2015 at 01:08:11AM +0900, Roman Peniaev wrote:
->> On Sat, Jan 17, 2015 at 12:59 AM, Russell King - ARM Linux
->> <linux@arm.linux.org.uk> wrote:
->> > On Sat, Jan 17, 2015 at 12:57:02AM +0900, Roman Peniaev wrote:
->> >> On Fri, Jan 16, 2015 at 7:54 AM, Kees Cook <keescook@chromium.org> wrote:
->> >> > One interesting thing I noticed (which is unchanged by this series),
->> >> > but pulling ARM_r7 during the seccomp ptrace event shows __NR_poll,
->> >> > not __NR_restart_syscall, even though it was a __NR_restart_syscall
->> >> > trap from seccomp. Is there a better place to see the actual syscall?
->> >>
->> >> As I understand we do not push new r7 to the stack, and ptrace uses the
->> >> old value.
->> >
->> > And why should we push r7 to the stack?  ptrace should be using the
->> > recorded system call number, rather than poking about on the stack
->> > itself.
->>
->> Probably we should not, but the behaviour comparing arm to x86 is different.
->
-> We definitely should not, because changing the stacked value changes the
-> value in r7 after the syscall has returned.  We have guaranteed that the
-> value will be preserved across syscalls for years, so we really should
-> not be changing that.
+On 01/16/2015 08:26 AM, Aneesh Kumar K.V wrote:
+> This make sure that we try to allocate hugepages from local node if
+> allowed by mempolicy. If we can't, we fallback to small page allocation
+> based on mempolicy. This is based on the observation that allocating pages
+> on local node is more beneficial than allocating hugepages on remote node.
+> 
+> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
-Yeah, we can't mess with the registers. I was just asking for
-clarification on how this is visible to userspace.
+Acked-by: Vlastimil Babka <vbabka@suse.cz>
 
->
->> Also there is no any way from userspace to figure out what syscall was
->> restarted, if you do not trace each syscall enter and exit from the
->> very beginning.
->
-> Thinking about ptrace, that's been true for years.
->
-> It really depends whether you consider the restart syscall a userspace
-> thing or a kernelspace thing.  When you consider that the vast majority
-> of syscall restarts are done internally in the kernel, and we just
-> re-issue the syscall, it immediately brings up the question "why is
-> the restart block method different?" and "should the restart block
-> method be visible to userspace?"
->
-> IMHO, it is prudent not to expose kernel internals to userspace unless
-> there is a real reason to, otherwise they become part of the userspace
-> API.
+> ---
+> Changes from V2:
+> * Rebase to latest linus tree (cb59670870d90ff8bc31f5f2efc407c6fe4938c0)
+> 
+>  include/linux/gfp.h |  4 ++++
+>  mm/huge_memory.c    | 24 +++++++++---------------
+>  mm/mempolicy.c      | 40 ++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 53 insertions(+), 15 deletions(-)
+> 
+> diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+> index b840e3b2770d..60110e06419d 100644
+> --- a/include/linux/gfp.h
+> +++ b/include/linux/gfp.h
+> @@ -335,11 +335,15 @@ alloc_pages(gfp_t gfp_mask, unsigned int order)
+>  extern struct page *alloc_pages_vma(gfp_t gfp_mask, int order,
+>  			struct vm_area_struct *vma, unsigned long addr,
+>  			int node);
+> +extern struct page *alloc_hugepage_vma(gfp_t gfp, struct vm_area_struct *vma,
+> +				       unsigned long addr, int order);
+>  #else
+>  #define alloc_pages(gfp_mask, order) \
+>  		alloc_pages_node(numa_node_id(), gfp_mask, order)
+>  #define alloc_pages_vma(gfp_mask, order, vma, addr, node)	\
+>  	alloc_pages(gfp_mask, order)
+> +#define alloc_hugepage_vma(gfp_mask, vma, addr, order)	\
+> +	alloc_pages(gfp_mask, order)
+>  #endif
+>  #define alloc_page(gfp_mask) alloc_pages(gfp_mask, 0)
+>  #define alloc_page_vma(gfp_mask, vma, addr)			\
+> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+> index 817a875f2b8c..031fb1584bbf 100644
+> --- a/mm/huge_memory.c
+> +++ b/mm/huge_memory.c
+> @@ -766,15 +766,6 @@ static inline gfp_t alloc_hugepage_gfpmask(int defrag, gfp_t extra_gfp)
+>  	return (GFP_TRANSHUGE & ~(defrag ? 0 : __GFP_WAIT)) | extra_gfp;
+>  }
+>  
+> -static inline struct page *alloc_hugepage_vma(int defrag,
+> -					      struct vm_area_struct *vma,
+> -					      unsigned long haddr, int nd,
+> -					      gfp_t extra_gfp)
+> -{
+> -	return alloc_pages_vma(alloc_hugepage_gfpmask(defrag, extra_gfp),
+> -			       HPAGE_PMD_ORDER, vma, haddr, nd);
+> -}
+> -
+>  /* Caller must hold page table lock. */
+>  static bool set_huge_zero_page(pgtable_t pgtable, struct mm_struct *mm,
+>  		struct vm_area_struct *vma, unsigned long haddr, pmd_t *pmd,
+> @@ -795,6 +786,7 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>  			       unsigned long address, pmd_t *pmd,
+>  			       unsigned int flags)
+>  {
+> +	gfp_t gfp;
+>  	struct page *page;
+>  	unsigned long haddr = address & HPAGE_PMD_MASK;
+>  
+> @@ -829,8 +821,8 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>  		}
+>  		return 0;
+>  	}
+> -	page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
+> -			vma, haddr, numa_node_id(), 0);
+> +	gfp = alloc_hugepage_gfpmask(transparent_hugepage_defrag(vma), 0);
+> +	page = alloc_hugepage_vma(gfp, vma, haddr, HPAGE_PMD_ORDER);
+>  	if (unlikely(!page)) {
+>  		count_vm_event(THP_FAULT_FALLBACK);
+>  		return VM_FAULT_FALLBACK;
+> @@ -1118,10 +1110,12 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>  	spin_unlock(ptl);
+>  alloc:
+>  	if (transparent_hugepage_enabled(vma) &&
+> -	    !transparent_hugepage_debug_cow())
+> -		new_page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
+> -					      vma, haddr, numa_node_id(), 0);
+> -	else
+> +	    !transparent_hugepage_debug_cow()) {
+> +		gfp_t gfp;
+> +
+> +		gfp = alloc_hugepage_gfpmask(transparent_hugepage_defrag(vma), 0);
+> +		new_page = alloc_hugepage_vma(gfp, vma, haddr, HPAGE_PMD_ORDER);
+> +	} else
+>  		new_page = NULL;
+>  
+>  	if (unlikely(!new_page)) {
+> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
+> index 0e0961b8c39c..14604142c2c2 100644
+> --- a/mm/mempolicy.c
+> +++ b/mm/mempolicy.c
+> @@ -2030,6 +2030,46 @@ retry_cpuset:
+>  	return page;
+>  }
+>  
+> +struct page *alloc_hugepage_vma(gfp_t gfp, struct vm_area_struct *vma,
+> +				unsigned long addr, int order)
+> +{
+> +	struct page *page;
+> +	nodemask_t *nmask;
+> +	struct mempolicy *pol;
+> +	int node = numa_node_id();
+> +	unsigned int cpuset_mems_cookie;
+> +
+> +retry_cpuset:
+> +	pol = get_vma_policy(vma, addr);
+> +	cpuset_mems_cookie = read_mems_allowed_begin();
+> +
+> +	if (pol->mode != MPOL_INTERLEAVE) {
+> +		/*
+> +		 * For interleave policy, we don't worry about
+> +		 * current node. Otherwise if current node is
+> +		 * in nodemask, try to allocate hugepage from
+> +		 * current node. Don't fall back to other nodes
+> +		 * for THP.
+> +		 */
+> +		nmask = policy_nodemask(gfp, pol);
+> +		if (!nmask || node_isset(node, *nmask)) {
+> +			mpol_cond_put(pol);
+> +			page = alloc_pages_exact_node(node, gfp, order);
+> +			if (unlikely(!page &&
+> +				     read_mems_allowed_retry(cpuset_mems_cookie)))
+> +				goto retry_cpuset;
+> +			return page;
+> +		}
+> +	}
+> +	mpol_cond_put(pol);
+> +	/*
+> +	 * if current node is not part of node mask, try
+> +	 * the allocation from any node, and we can do retry
+> +	 * in that case.
+> +	 */
+> +	return alloc_pages_vma(gfp, order, vma, addr, node);
+> +}
+> +
+>  /**
+>   * 	alloc_pages_current - Allocate pages.
+>   *
+> 
 
-I couldn't agree more, but restart_syscall is already visible to
-userspace: it can be called directly, for example. And it's visible to
-tracers.
-
-Unfortunately, the difference here is the visibility during trace
-trap. On x86, it's exposed but on ARM, there's no way (that I can
-find) to query the "true" syscall, even though the true syscall is
-what triggers the tracer. The syscall number isn't provided by any
-element of the ptrace event system, nor through siginfo, and must be
-examined on a per-arch basis from registers.
-
-Seccomp does, however, provide a mechanism to pass arbitrary event
-data on a TRACE event, so poll vs restart_syscall can be distinguished
-that way.
-
-It seems even strace doesn't know how to find this information. For example:
-
-x86:
-poll([{fd=3, events=POLLIN}], 1, 4294967295
-) = ? ERESTART_RESTARTBLOCK (Interrupted by signal)
---- SIGSTOP {si_signo=SIGSTOP, si_code=SI_USER, si_pid=994, si_uid=1000} ---
---- stopped by SIGSTOP ---
---- SIGCONT {si_signo=SIGCONT, si_code=SI_USER, si_pid=994, si_uid=1000} ---
-restart_syscall(<... resuming interrupted call ...>
-
-ARM:
-poll([{fd=3, events=POLLIN}], 1, -1
-)    = ? ERESTART_RESTARTBLOCK (Interrupted by signal)
---- SIGSTOP {si_signo=SIGSTOP, si_code=SI_USER, si_pid=20563, si_uid=0} ---
---- stopped by SIGSTOP ---
---- SIGCONT {si_signo=SIGCONT, si_code=SI_USER, si_pid=20563, si_uid=0} ---
-poll([{fd=3, events=POLLIN}], 1, -1
-
-Would it make sense to add REGSET_SYSTEM_CALL to ARM? (Though this
-begs the question, "Is restart_syscall visible during a trace on
-arm64?", which I'll have to go check...)
-
--Kees
-
--- 
-Kees Cook
-Chrome OS Security
