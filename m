@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756423AbbAPOkg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 09:40:36 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:51082 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756184AbbAPOkW (ORCPT
+	id S1756379AbbAPOkd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 09:40:33 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:48500 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756216AbbAPOkX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 09:40:22 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-c2-54b922d5539f
+	Fri, 16 Jan 2015 09:40:23 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-de-54b922d4a9e7
 From: Paul Osmialowski <p.osmialowsk@samsung.com>
 To: Wolfram Sang <wsa@the-dreams.de>, Jonathan Corbet <corbet@lwn.net>,
         Mark Brown <broonie@kernel.org>,
@@ -16,26 +16,29 @@ To: Wolfram Sang <wsa@the-dreams.de>, Jonathan Corbet <corbet@lwn.net>,
         linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-samsung-soc@vger.kernel.org
 Cc: Paul Osmialowski <p.osmialowsk@samsung.com>
-Subject: [RFC 1/3] i2c: Enhancement of i2c API to address circular lock
+Subject: [RFC 2/3] regmap: Use the enhancement of i2c API to address circular
  dependency problem
-Date: Fri, 16 Jan 2015 15:39:52 +0100
-Message-id: <1421419194-1849-1-git-send-email-p.osmialowsk@samsung.com>
+Date: Fri, 16 Jan 2015 15:39:53 +0100
+Message-id: <1421419194-1849-2-git-send-email-p.osmialowsk@samsung.com>
 X-Mailer: git-send-email 1.9.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrEJMWRmVeSWpSXmKPExsVy+t/xy7pXlXaGGPz8wWEx9eETNosnB9oZ
-	LZoXr2ez6H/8mtliYdsSFouOv18YLS7vmsNmMeP8PiaLCW8OMFusPDGL2YHLY9OqTjaP/XPX
-	sHss7pvM6tG3ZRWjx8lTT1g8Pm+SC2CL4rJJSc3JLEst0rdL4MrY8eQmS8Gb8IqLT++wNjC+
-	culi5OSQEDCRmH5sDzOELSZx4d56ti5GLg4hgaWMEo9fn2YDSQgJ9DJJ7HnOD2KzCRhK3Px/
-	mBGkSERgB5PEw3uHwYqYBfQlmvqfgk0SFoiRaO1+A2azCKhKfHrwmxXE5hVwl/h6bCELxDY5
-	iZPHJrNOYORewMiwilE0tTS5oDgpPddIrzgxt7g0L10vOT93EyMknL7uYFx6zOoQowAHoxIP
-	r8OmHSFCrIllxZW5hxglOJiVRHgzBHaGCPGmJFZWpRblxxeV5qQWH2Jk4uCUamCcddv11uRM
-	2alr7TuMmvID+523+vbNqozqO9dkp/ylNzoswb4k1kOgiTtnz9ELNy69KT8UyNT2X9XO+VGB
-	2V3e0PCwCtvq74pKjOtiqzTN7k2KWmi4+5/g1CjxP3nLf2xeP2XGhXbjLbusbiks9+rhmHMy
-	aCMnW9ElXVHrEz1WrxxePo55u0iJpTgj0VCLuag4EQBA5rKOBQIAAA==
+In-reply-to: <1421419194-1849-1-git-send-email-p.osmialowsk@samsung.com>
+References: <1421419194-1849-1-git-send-email-p.osmialowsk@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupiluLIzCtJLcpLzFFi42I5/e/4Zd0rSjtDDA7N4rCY+vAJm8WTA+2M
+	Fs2L17NZ9D9+zWyxsG0Ji0XH3y+MFpd3zWGzmHF+H5PFhDcHmC1WnpjF7MDlsWlVJ5vH/rlr
+	2D0W901m9ejbsorR4+SpJywenzfJBbBFcdmkpOZklqUW6dslcGXM2XySreBpQcXppd2sDYwf
+	I7sYOTkkBEwk7nx8wAxhi0lcuLeerYuRi0NIYCmjxIbja9hBEkICvUwSe57zg9hsAoYSN/8f
+	ZgQpEhHYwSTx8N5hNpAEs4C+RFP/U7BJwgJJEu//NYHFWQRUJQ4tuM8KYvMKuEusbXrDDrFN
+	TuLksclgcU4BD4mlZ38zQyxzl3j+uJttAiPvAkaGVYyiqaXJBcVJ6bmGesWJucWleel6yfm5
+	mxgh4fdlB+PiY1aHGAU4GJV4eGds2REixJpYVlyZe4hRgoNZSYQ3Q2BniBBvSmJlVWpRfnxR
+	aU5q8SFGJg5OqQbG5dun/u/jtsxhm5huc6dO6JGbkEBA/T2x6CW/VA/9nHOzx/TDG6dO1XXm
+	M3be65iquLiUcTLLhKbfadc5TzS4rbVffDyjfaVwhkJI5Gq5zMcdaZqnjtrd2MF51caq4O13
+	hvqoTd3OMff/7Jqk/UZIcPlZCdme3GUnl9+efGIW67E0gSCD8z5tSizFGYmGWsxFxYkAZ/mY
+	9h0CAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This enhancement of i2c API is designed to address following problem
+This uses the enhancement of i2c API in order to address following problem
 caused by circular lock dependency:
 
 -> #1 (prepare_lock){+.+.+.}:
@@ -103,201 +106,374 @@ To solve this, i2c clock should be started before attempting operation on
 regulator (which requires locked regmap).
 Exposing preparation and unpreparation stage of i2c transfer serves this
 purpose.
-Note that this change does not require modifications in other places:
-old behaviour is kept preserved. Anyone who requires this new way of using i2c
-transfer can adapt their drivers voluntarily.
-Separate commit adapts regmap to use this new feature.
+Proposed changes in regmap and regmap-i2c make use of exposed i2c transfer
+preparation and unpreparation stages.
+Note that this change does not require modifications in other places.
 
 Signed-off-by: Paul Osmialowski <p.osmialowsk@samsung.com>
 ---
- Documentation/i2c/writing-clients |  15 ++++++
- drivers/i2c/i2c-core.c            | 105 ++++++++++++++++++++++++++++++++++++++
- include/linux/i2c.h               |  16 ++++++
- 3 files changed, 136 insertions(+)
+ drivers/base/regmap/internal.h   |   2 +
+ drivers/base/regmap/regmap-i2c.c |  18 +++++++
+ drivers/base/regmap/regmap.c     | 107 ++++++++++++++++++++++++++++++++++++++-
+ include/linux/regmap.h           |   7 +++
+ 4 files changed, 133 insertions(+), 1 deletion(-)
 
-diff --git a/Documentation/i2c/writing-clients b/Documentation/i2c/writing-clients
-index a755b14..d6732a8 100644
---- a/Documentation/i2c/writing-clients
-+++ b/Documentation/i2c/writing-clients
-@@ -343,6 +343,21 @@ stop bit is sent between transaction. The i2c_msg structure contains
- for each message the client address, the number of bytes of the message
- and the message data itself.
+diff --git a/drivers/base/regmap/internal.h b/drivers/base/regmap/internal.h
+index 0da5865..fc8cbc9 100644
+--- a/drivers/base/regmap/internal.h
++++ b/drivers/base/regmap/internal.h
+@@ -94,6 +94,8 @@ struct regmap {
+ 	const struct regmap_access_table *volatile_table;
+ 	const struct regmap_access_table *precious_table;
  
-+	int i2c_transfer_prepare(struct i2c_adapter *adap);
-+	void i2c_transfer_unprepare(struct i2c_adapter *adap);
-+
-+These routines are used for calling exposed prepare and unprepare stages of
-+the i2c_transfer() function. Normally i2c_transfer() does some operations
-+(e.g. clock preparation) before actual transfer. These operations are undone
-+when transfer is finished. Unfortunately these preparations may take locks,
-+even causing circular lock dependency. Sometimes the only way to avoid this
-+is to call i2c_transfer_prepare() earlier. Note that these routines do
-+nothing when bus driver does not implement `master_prepare_xfer' nor
-+`master_unprepare_xfer' callbacks pointed by struct i2c_algorithm.
-+Note that underlying bus driver implementing `master_xfer` callback
-+should be aware of the fact that preparation stage was or was not invoked
-+before i2c_transfer() function call and act accordingly.
-+
- You can read the file `i2c-protocol' for more information about the
- actual I2C protocol.
++	int (*reg_prepare_sync_io)(void *context);
++	void (*reg_unprepare_sync_io)(void *context);
+ 	int (*reg_read)(void *context, unsigned int reg, unsigned int *val);
+ 	int (*reg_write)(void *context, unsigned int reg, unsigned int val);
  
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index 39d25a8..d649475 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -2064,6 +2064,111 @@ module_exit(i2c_exit);
-  */
+diff --git a/drivers/base/regmap/regmap-i2c.c b/drivers/base/regmap/regmap-i2c.c
+index 053150a..09e95a6 100644
+--- a/drivers/base/regmap/regmap-i2c.c
++++ b/drivers/base/regmap/regmap-i2c.c
+@@ -87,6 +87,22 @@ static struct regmap_bus regmap_smbus_word = {
+ 	.reg_read = regmap_smbus_word_reg_read,
+ };
  
- /**
-+ * __i2c_transfer_prepare - unlocked flavor of prepare stage of transfer of
-+ *                          a single or combined I2C message (may sleep).
-+ * @adap: Handle to I2C bus
-+ *
-+ * This stage, if exposed by underlying driver, can be called before transfer
-+ * in order to avoid deadlock caused by circular lock dependency.
-+ *
-+ * Returns 0 on success.
-+ *
-+ * Adapter lock must be held when calling this function. No debug logging
-+ * takes place.
-+ */
-+int __i2c_transfer_prepare(struct i2c_adapter *adap)
++static int regmap_i2c_transfer_prepare(void *context)
 +{
-+	if (adap->algo->master_prepare_xfer)
-+		return adap->algo->master_prepare_xfer(adap);
++	struct device *dev = context;
++	struct i2c_client *i2c = to_i2c_client(dev);
++
++	return i2c_transfer_prepare(i2c->adapter);
++}
++
++static void regmap_i2c_transfer_unprepare(void *context)
++{
++	struct device *dev = context;
++	struct i2c_client *i2c = to_i2c_client(dev);
++
++	i2c_transfer_unprepare(i2c->adapter);
++}
++
+ static int regmap_i2c_write(void *context, const void *data, size_t count)
+ {
+ 	struct device *dev = context;
+@@ -165,6 +181,8 @@ static int regmap_i2c_read(void *context,
+ }
+ 
+ static struct regmap_bus regmap_i2c = {
++	.prepare_sync_io = regmap_i2c_transfer_prepare,
++	.unprepare_sync_io = regmap_i2c_transfer_unprepare,
+ 	.write = regmap_i2c_write,
+ 	.gather_write = regmap_i2c_gather_write,
+ 	.read = regmap_i2c_read,
+diff --git a/drivers/base/regmap/regmap.c b/drivers/base/regmap/regmap.c
+index d2f8a81..69e7d6b 100644
+--- a/drivers/base/regmap/regmap.c
++++ b/drivers/base/regmap/regmap.c
+@@ -36,6 +36,9 @@ static int _regmap_update_bits(struct regmap *map, unsigned int reg,
+ 			       unsigned int mask, unsigned int val,
+ 			       bool *change);
+ 
++static int regmap_bus_prepare_sync_io(void *context);
++static void regmap_bus_unprepare_sync_io(void *context);
++
+ static int _regmap_bus_reg_read(void *context, unsigned int reg,
+ 				unsigned int *val);
+ static int _regmap_bus_read(void *context, unsigned int reg,
+@@ -617,6 +620,11 @@ struct regmap *regmap_init(struct device *dev,
+ 		map->reg_read  = _regmap_bus_read;
+ 	}
+ 
++	if (bus) {
++		map->reg_prepare_sync_io = regmap_bus_prepare_sync_io;
++		map->reg_unprepare_sync_io = regmap_bus_unprepare_sync_io;
++	}
++
+ 	reg_endian = regmap_get_reg_endian(bus, config);
+ 	val_endian = regmap_get_val_endian(dev, bus, config);
+ 
+@@ -1440,11 +1448,48 @@ static int _regmap_bus_raw_write(void *context, unsigned int reg,
+ 				 map->format.val_bytes);
+ }
+ 
++static int regmap_bus_prepare_sync_io(void *context)
++{
++	struct regmap *map = context;
++
++	if (map->bus->prepare_sync_io)
++		return map->bus->prepare_sync_io(map->bus_context);
 +
 +	return 0;
 +}
-+EXPORT_SYMBOL(__i2c_transfer_prepare);
 +
-+/**
-+ * i2c_transfer_prepare - prepare transfer of a single or combined I2C message
-+ *                        (may sleep).
-+ * @adap: Handle to I2C bus
-+ *
-+ * Returns 0 on success.
-+ *
-+ * This stage, if exposed by underlying driver, can be called before transfer
-+ * in order to avoid deadlock caused by circular lock dependency.
-+ */
-+int i2c_transfer_prepare(struct i2c_adapter *adap)
++static void regmap_bus_unprepare_sync_io(void *context)
 +{
-+	int ret = 0;
++	struct regmap *map = context;
 +
-+	if (adap->algo->master_prepare_xfer) {
-+		if (in_atomic() || irqs_disabled()) {
-+			ret = i2c_trylock_adapter(adap);
-+			if (!ret)
-+				/* I2C activity is ongoing. */
-+				return -EAGAIN;
-+		} else {
-+			i2c_lock_adapter(adap);
-+		}
-+		ret = __i2c_transfer_prepare(adap);
-+		i2c_unlock_adapter(adap);
-+	}
-+
-+	return ret;
++	if (map->bus->unprepare_sync_io)
++		map->bus->unprepare_sync_io(map->bus_context);
 +}
-+EXPORT_SYMBOL(i2c_transfer_prepare);
 +
-+/**
-+ * __i2c_transfer_unprepare - unlocked flavor of prepare stage of transfer of
-+ *                          a single or combined I2C message (may sleep).
-+ * @adap: Handle to I2C bus
-+ *
-+ * This stage, if exposed by underlying driver, can be called afrer transfer
-+ * in order to avoid deadlock caused by circular lock dependency.
-+ *
-+ * Adapter lock must be held when calling this function. No debug logging
-+ * takes place.
-+ */
-+void __i2c_transfer_unprepare(struct i2c_adapter *adap)
-+{
-+	if (adap->algo->master_unprepare_xfer)
-+		adap->algo->master_unprepare_xfer(adap);
-+}
-+EXPORT_SYMBOL(__i2c_transfer_unprepare);
-+
-+/**
-+ * i2c_transfer_unprepare - unprepare after transfer of a single or combined
-+ *                          I2C message (may sleep).
-+ * @adap: Handle to I2C bus
-+ *
-+ * This stage, if exposed by underlying driver, can be called afrer transfer
-+ * in order to avoid deadlock caused by circular lock dependency.
-+ */
-+void i2c_transfer_unprepare(struct i2c_adapter *adap)
-+{
-+	if (adap->algo->master_unprepare_xfer) {
-+		if (in_atomic() || irqs_disabled()) {
-+			/* Wait max 20 ms */
-+			int timeout = 20;
-+
-+			while (!(i2c_trylock_adapter(adap))) {
-+				if (timeout == 0) {
-+					/* I2C activity is still ongoing. */
-+					pr_err("%s: can't unprepare transfer\n",
-+					__func__);
-+					return;
-+				}
-+				timeout--;
-+				mdelay(1);
-+			}
-+		} else {
-+			i2c_lock_adapter(adap);
-+		}
-+		__i2c_transfer_unprepare(adap);
-+		i2c_unlock_adapter(adap);
-+	}
-+}
-+EXPORT_SYMBOL(i2c_transfer_unprepare);
-+
-+/**
-  * __i2c_transfer - unlocked flavor of i2c_transfer
-  * @adap: Handle to I2C bus
-  * @msgs: One or more messages to execute before STOP is issued to
-diff --git a/include/linux/i2c.h b/include/linux/i2c.h
-index e3a1721..fce2a5a 100644
---- a/include/linux/i2c.h
-+++ b/include/linux/i2c.h
-@@ -64,6 +64,14 @@ extern int i2c_master_send(const struct i2c_client *client, const char *buf,
- extern int i2c_master_recv(const struct i2c_client *client, char *buf,
- 			   int count);
+ static inline void *_regmap_map_get_context(struct regmap *map)
+ {
+ 	return (map->bus) ? map : map->bus_context;
+ }
  
-+/* Transfer prepare/unprepare stage (if needed/exposed).
-+ */
-+extern int i2c_transfer_prepare(struct i2c_adapter *adap);
-+extern void i2c_transfer_unprepare(struct i2c_adapter *adap);
-+/* Unlocked flavor */
-+extern int __i2c_transfer_prepare(struct i2c_adapter *adap);
-+extern void __i2c_transfer_unprepare(struct i2c_adapter *adap);
++static int regmap_prepare_sync_io(struct regmap *map)
++{
++	void *context = _regmap_map_get_context(map);
 +
- /* Transfer num messages.
++	if (map->reg_prepare_sync_io)
++		return map->reg_prepare_sync_io(context);
++
++	return 0;
++}
++
++static void regmap_unprepare_sync_io(struct regmap *map)
++{
++	void *context = _regmap_map_get_context(map);
++
++	if (map->reg_unprepare_sync_io)
++		map->reg_unprepare_sync_io(context);
++}
++
++
+ int _regmap_write(struct regmap *map, unsigned int reg,
+ 		  unsigned int val)
+ {
+@@ -1491,12 +1536,18 @@ int regmap_write(struct regmap *map, unsigned int reg, unsigned int val)
+ 	if (reg % map->reg_stride)
+ 		return -EINVAL;
+ 
++	ret = regmap_prepare_sync_io(map);
++	if (ret)
++		return ret;
++
+ 	map->lock(map->lock_arg);
+ 
+ 	ret = _regmap_write(map, reg, val);
+ 
+ 	map->unlock(map->lock_arg);
+ 
++	regmap_unprepare_sync_io(map);
++
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(regmap_write);
+@@ -1558,12 +1609,18 @@ int regmap_raw_write(struct regmap *map, unsigned int reg,
+ 	if (val_len % map->format.val_bytes)
+ 		return -EINVAL;
+ 
++	ret = regmap_prepare_sync_io(map);
++	if (ret)
++		return ret;
++
+ 	map->lock(map->lock_arg);
+ 
+ 	ret = _regmap_raw_write(map, reg, val, val_len);
+ 
+ 	map->unlock(map->lock_arg);
+ 
++	regmap_unprepare_sync_io(map);
++
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(regmap_raw_write);
+@@ -1669,7 +1726,7 @@ EXPORT_SYMBOL_GPL(regmap_fields_update_bits);
+ int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
+ 		     size_t val_count)
+ {
+-	int ret = 0, i;
++	int ret = 0, i, retv;
+ 	size_t val_bytes = map->format.val_bytes;
+ 
+ 	if (map->bus && !map->format.parse_inplace)
+@@ -1682,6 +1739,9 @@ int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
+ 	 * them we have a series of single write operations.
+ 	 */
+ 	if (!map->bus || map->use_single_rw) {
++		retv = regmap_prepare_sync_io(map);
++		if (retv)
++			return retv;
+ 		map->lock(map->lock_arg);
+ 		for (i = 0; i < val_count; i++) {
+ 			unsigned int ival;
+@@ -1713,15 +1773,21 @@ int regmap_bulk_write(struct regmap *map, unsigned int reg, const void *val,
+ 		}
+ out:
+ 		map->unlock(map->lock_arg);
++		regmap_unprepare_sync_io(map);
+ 	} else {
+ 		void *wval;
+ 
+ 		if (!val_count)
+ 			return -EINVAL;
+ 
++		retv = regmap_prepare_sync_io(map);
++		if (retv)
++			return retv;
++
+ 		wval = kmemdup(val, val_count * val_bytes, GFP_KERNEL);
+ 		if (!wval) {
+ 			dev_err(map->dev, "Error in memory allocation\n");
++			regmap_unprepare_sync_io(map);
+ 			return -ENOMEM;
+ 		}
+ 		for (i = 0; i < val_count * val_bytes; i += val_bytes)
+@@ -1732,6 +1798,8 @@ out:
+ 		map->unlock(map->lock_arg);
+ 
+ 		kfree(wval);
++
++		regmap_unprepare_sync_io(map);
+ 	}
+ 	return ret;
+ }
+@@ -1936,12 +2004,18 @@ int regmap_multi_reg_write(struct regmap *map, const struct reg_default *regs,
+ {
+ 	int ret;
+ 
++	ret = regmap_prepare_sync_io(map);
++	if (ret)
++		return ret;
++
+ 	map->lock(map->lock_arg);
+ 
+ 	ret = _regmap_multi_reg_write(map, regs, num_regs);
+ 
+ 	map->unlock(map->lock_arg);
+ 
++	regmap_unprepare_sync_io(map);
++
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(regmap_multi_reg_write);
+@@ -1970,6 +2044,10 @@ int regmap_multi_reg_write_bypassed(struct regmap *map,
+ 	int ret;
+ 	bool bypass;
+ 
++	ret = regmap_prepare_sync_io(map);
++	if (ret)
++		return ret;
++
+ 	map->lock(map->lock_arg);
+ 
+ 	bypass = map->cache_bypass;
+@@ -1981,6 +2059,8 @@ int regmap_multi_reg_write_bypassed(struct regmap *map,
+ 
+ 	map->unlock(map->lock_arg);
+ 
++	regmap_unprepare_sync_io(map);
++
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(regmap_multi_reg_write_bypassed);
+@@ -2148,12 +2228,18 @@ int regmap_read(struct regmap *map, unsigned int reg, unsigned int *val)
+ 	if (reg % map->reg_stride)
+ 		return -EINVAL;
+ 
++	ret = regmap_prepare_sync_io(map);
++	if (ret)
++		return ret;
++
+ 	map->lock(map->lock_arg);
+ 
+ 	ret = _regmap_read(map, reg, val);
+ 
+ 	map->unlock(map->lock_arg);
+ 
++	regmap_unprepare_sync_io(map);
++
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(regmap_read);
+@@ -2184,6 +2270,10 @@ int regmap_raw_read(struct regmap *map, unsigned int reg, void *val,
+ 	if (reg % map->reg_stride)
+ 		return -EINVAL;
+ 
++	ret = regmap_prepare_sync_io(map);
++	if (ret)
++		return ret;
++
+ 	map->lock(map->lock_arg);
+ 
+ 	if (regmap_volatile_range(map, reg, val_count) || map->cache_bypass ||
+@@ -2208,6 +2298,8 @@ int regmap_raw_read(struct regmap *map, unsigned int reg, void *val,
+  out:
+ 	map->unlock(map->lock_arg);
+ 
++	regmap_unprepare_sync_io(map);
++
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(regmap_raw_read);
+@@ -2370,10 +2462,16 @@ int regmap_update_bits(struct regmap *map, unsigned int reg,
+ {
+ 	int ret;
+ 
++	ret = regmap_prepare_sync_io(map);
++	if (ret)
++		return ret;
++
+ 	map->lock(map->lock_arg);
+ 	ret = _regmap_update_bits(map, reg, mask, val, NULL);
+ 	map->unlock(map->lock_arg);
+ 
++	regmap_unprepare_sync_io(map);
++
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(regmap_update_bits);
+@@ -2430,9 +2528,16 @@ int regmap_update_bits_check(struct regmap *map, unsigned int reg,
+ {
+ 	int ret;
+ 
++	ret = regmap_prepare_sync_io(map);
++	if (ret)
++		return ret;
++
+ 	map->lock(map->lock_arg);
+ 	ret = _regmap_update_bits(map, reg, mask, val, change);
+ 	map->unlock(map->lock_arg);
++
++	regmap_unprepare_sync_io(map);
++
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(regmap_update_bits_check);
+diff --git a/include/linux/regmap.h b/include/linux/regmap.h
+index 4419b99..74aace5 100644
+--- a/include/linux/regmap.h
++++ b/include/linux/regmap.h
+@@ -265,6 +265,8 @@ struct regmap_range_cfg {
+ 
+ struct regmap_async;
+ 
++typedef int (*regmap_hw_prepare_sync_io)(void *context);
++typedef void (*regmap_hw_unprepare_sync_io)(void *context);
+ typedef int (*regmap_hw_write)(void *context, const void *data,
+ 			       size_t count);
+ typedef int (*regmap_hw_gather_write)(void *context,
+@@ -291,6 +293,9 @@ typedef void (*regmap_hw_free_context)(void *context);
+  *	     to perform locking. This field is ignored if custom lock/unlock
+  *	     functions are used (see fields lock/unlock of
+  *	     struct regmap_config).
++ * @prepare_sync_io: Prepare for read/write operation (if needed, e.g. to obtain
++ *           locks earlier).
++ * @unprepare_sync_io: Unprepare after read/write operation (if needed).
+  * @write: Write operation.
+  * @gather_write: Write operation with split register/value, return -ENOTSUPP
+  *                if not implemented  on a given device.
+@@ -311,6 +316,8 @@ typedef void (*regmap_hw_free_context)(void *context);
   */
- extern int i2c_transfer(struct i2c_adapter *adap, struct i2c_msg *msgs,
-@@ -371,6 +379,12 @@ i2c_register_board_info(int busnum, struct i2c_board_info const *info,
-  * @master_xfer: Issue a set of i2c transactions to the given I2C adapter
-  *   defined by the msgs array, with num messages available to transfer via
-  *   the adapter specified by adap.
-+ * @master_prepare_xfer: Exposed preparation stage of @master_xfer - use when
-+ *   master_xfer must be split into stages: prepare, xfer, unprepare.
-+ *   Set to NULL when not exposed.
-+ * @master_unprepare_xfer: Exposed unpreparation stage of @master_xfer -
-+ *   use when master_xfer must be split into stages: prepare, xfer, unprepare.
-+ *   Set to NULL when not exposed.
-  * @smbus_xfer: Issue smbus transactions to the given I2C adapter. If this
-  *   is not present, then the bus layer will try and convert the SMBus calls
-  *   into I2C transfers instead.
-@@ -397,6 +411,8 @@ struct i2c_algorithm {
- 	   processed, or a negative value on error */
- 	int (*master_xfer)(struct i2c_adapter *adap, struct i2c_msg *msgs,
- 			   int num);
-+	int (*master_prepare_xfer)(struct i2c_adapter *adap);
-+	void (*master_unprepare_xfer)(struct i2c_adapter *adap);
- 	int (*smbus_xfer) (struct i2c_adapter *adap, u16 addr,
- 			   unsigned short flags, char read_write,
- 			   u8 command, int size, union i2c_smbus_data *data);
+ struct regmap_bus {
+ 	bool fast_io;
++	regmap_hw_prepare_sync_io prepare_sync_io;
++	regmap_hw_unprepare_sync_io unprepare_sync_io;
+ 	regmap_hw_write write;
+ 	regmap_hw_gather_write gather_write;
+ 	regmap_hw_async_write async_write;
 -- 
 1.9.1
 
