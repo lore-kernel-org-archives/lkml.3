@@ -1,75 +1,514 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756697AbbAPQso (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 11:48:44 -0500
-Received: from mout.kundenserver.de ([212.227.17.10]:50370 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756616AbbAPQsm (ORCPT
+	id S1756714AbbAPQsy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 11:48:54 -0500
+Received: from smtprelay0223.hostedemail.com ([216.40.44.223]:48820 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756616AbbAPQsv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 11:48:42 -0500
-From: Stefan Wahren <stefan.wahren@i2se.com>
-To: swarren@wwwdotorg.org, lee@kernel.org, linux@arm.linux.org.uk,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org
-Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-rpi-kernel@lists.infradead.org
-Subject: [PATCH 3/4] ARM: bcm2835: Add header file for pinctrl constants
-Date: Fri, 16 Jan 2015 16:48:16 +0000
-Message-Id: <1421426897-27225-4-git-send-email-stefan.wahren@i2se.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1421426897-27225-1-git-send-email-stefan.wahren@i2se.com>
-References: <1421426897-27225-1-git-send-email-stefan.wahren@i2se.com>
-X-Provags-ID: V03:K0:Xw8qPL28i56tAegpQNjF80vLhIwdAZmXlJt7o0LwwJvxv53FJhZ
- sIBsGBk/izHhJp7srX4FnSTbzaNHgNbP6YKTxNz5lmGekj1V4lm5hxfHsuycM4vE/uig8Sv
- 5HFwjyO9chwGoFhbrldck4M4c1bZMg8av0/DnZfasP/moyw6/3uim9u9OO8oVLxPKHYAIor
- iMe4sun/WDxhoGJ3rxkSg==
-X-UI-Out-Filterresults: notjunk:1;
+	Fri, 16 Jan 2015 11:48:51 -0500
+X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::::::::::,RULES_HIT:4:41:69:355:379:541:599:800:960:968:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1593:1594:1605:1730:1747:1777:1792:2198:2199:2393:2553:2559:2562:2898:2904:3138:3139:3140:3141:3142:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4250:4321:4470:4605:5007:6117:6119:6261:7875:7903:7974:8531:8660:9010:10004:10848:10967:11026:11232:11473:11658:11914:12043:12291:12294:12295:12296:12438:12517:12519:12555:12683:12740:13148:13161:13229:13230:14096:14097:21067:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: boy90_86ed1fa5cb136
+X-Filterd-Recvd-Size: 17706
+Date: Fri, 16 Jan 2015 11:48:46 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Steven Rostedt <srostedt@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, kvm@vger.kernel.org,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [patch -rt 1/2] KVM: use simple waitqueue for vcpu->wq
+Message-ID: <20150116114846.4e7b718d@gandalf.local.home>
+In-Reply-To: <20150114171459.593877145@redhat.com>
+References: <20150114171251.882318257@redhat.com>
+	<20150114171459.593877145@redhat.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This new header file defines pincontrol constants to use
-from bcm2835 DTS files for pincontrol properties option.
+On Fri, 16 Jan 2015 11:40:45 -0500
+Marcelo Tosatti <mtosatti@redhat.com> wrote:
 
-Signed-off-by: Stefan Wahren <stefan.wahren@i2se.com>
----
- include/dt-bindings/pinctrl/bcm2835.h |   27 +++++++++++++++++++++++++++
- 1 file changed, 27 insertions(+)
- create mode 100644 include/dt-bindings/pinctrl/bcm2835.h
+> The problem:
+> 
+> On -RT, an emulated LAPIC timer instances has the following path:
+> 
+> 1) hard interrupt
+> 2) ksoftirqd is scheduled
+> 3) ksoftirqd wakes up vcpu thread
+> 4) vcpu thread is scheduled
+> 
+> This extra context switch introduces unnecessary latency in the 
+> LAPIC path for a KVM guest.
+> 
+> The solution:
+> 
+> Allow waking up vcpu thread from hardirq context,
+> thus avoiding the need for ksoftirqd to be scheduled.
+> 
+> Normal waitqueues make use of spinlocks, which on -RT 
+> are sleepable locks. Therefore, waking up a waitqueue 
+> waiter involves locking a sleeping lock, which 
+> is not allowed from hard interrupt context.
+> 
 
-diff --git a/include/dt-bindings/pinctrl/bcm2835.h b/include/dt-bindings/pinctrl/bcm2835.h
-new file mode 100644
-index 0000000..6f0bc37
---- /dev/null
-+++ b/include/dt-bindings/pinctrl/bcm2835.h
-@@ -0,0 +1,27 @@
-+/*
-+ * Header providing constants for bcm2835 pinctrl bindings.
-+ *
-+ * Copyright (C) 2015 Stefan Wahren <stefan.wahren@i2se.com>
-+ *
-+ * The code contained herein is licensed under the GNU General Public
-+ * License. You may obtain a copy of the GNU General Public License
-+ * Version 2 at the following locations:
-+ *
-+ * http://www.opensource.org/licenses/gpl-license.html
-+ * http://www.gnu.org/copyleft/gpl.html
-+ */
-+
-+#ifndef __DT_BINDINGS_PINCTRL_BCM2835_H__
-+#define __DT_BINDINGS_PINCTRL_BCM2835_H__
-+
-+/* brcm,function property */
-+#define BCM2835_FSEL_GPIO_IN	0
-+#define BCM2835_FSEL_GPIO_OUT	1
-+#define BCM2835_FSEL_ALT5	2
-+#define BCM2835_FSEL_ALT4	3
-+#define BCM2835_FSEL_ALT0	4
-+#define BCM2835_FSEL_ALT1	5
-+#define BCM2835_FSEL_ALT2	6
-+#define BCM2835_FSEL_ALT3	7
-+
-+#endif /* __DT_BINDINGS_PINCTRL_BCM2835_H__ */
--- 
-1.7.9.5
+I have no issue in pulling this into stable-rt, but read below.
+
+> cyclictest command line:
+> # cyclictest -m -n -q -p99 -l 1000000 -h60  -D 1m
+> 
+> This patch reduces the average latency in my tests from 14us to 11us.
+> 
+> Signed-off-by: Marcelo Tosatti <mtosatti@redhat.com>
+> 
+> ---
+>  arch/arm/kvm/arm.c                  |    4 ++--
+>  arch/arm/kvm/psci.c                 |    4 ++--
+>  arch/mips/kvm/kvm_mips.c            |    8 ++++----
+>  arch/powerpc/include/asm/kvm_host.h |    4 ++--
+>  arch/powerpc/kvm/book3s_hv.c        |   20 ++++++++++----------
+>  arch/s390/include/asm/kvm_host.h    |    2 +-
+>  arch/s390/kvm/interrupt.c           |   22 ++++++++++------------
+>  arch/s390/kvm/sigp.c                |   16 ++++++++--------
+>  arch/x86/kvm/lapic.c                |    6 +++---
+>  include/linux/kvm_host.h            |    4 ++--
+>  virt/kvm/async_pf.c                 |    4 ++--
+>  virt/kvm/kvm_main.c                 |   16 ++++++++--------
+>  12 files changed, 54 insertions(+), 56 deletions(-)
+> 
+> Index: linux-stable-rt/arch/arm/kvm/arm.c
+> ===================================================================
+> --- linux-stable-rt.orig/arch/arm/kvm/arm.c	2014-11-25 14:13:39.188899952 -0200
+> +++ linux-stable-rt/arch/arm/kvm/arm.c	2014-11-25 14:14:38.620810092 -0200
+> @@ -495,9 +495,9 @@
+>  
+>  static void vcpu_pause(struct kvm_vcpu *vcpu)
+>  {
+> -	wait_queue_head_t *wq = kvm_arch_vcpu_wq(vcpu);
+> +	struct swait_head *wq = kvm_arch_vcpu_wq(vcpu);
+>  
+> -	wait_event_interruptible(*wq, !vcpu->arch.pause);
+> +	swait_event_interruptible(*wq, !vcpu->arch.pause);
+>  }
+>  
+>  static int kvm_vcpu_initialized(struct kvm_vcpu *vcpu)
+> Index: linux-stable-rt/arch/arm/kvm/psci.c
+> ===================================================================
+> --- linux-stable-rt.orig/arch/arm/kvm/psci.c	2014-11-25 14:13:39.189899951 -0200
+> +++ linux-stable-rt/arch/arm/kvm/psci.c	2014-11-25 14:14:38.620810092 -0200
+> @@ -36,7 +36,7 @@
+>  {
+>  	struct kvm *kvm = source_vcpu->kvm;
+>  	struct kvm_vcpu *vcpu = NULL, *tmp;
+> -	wait_queue_head_t *wq;
+> +	struct swait_head *wq;
+>  	unsigned long cpu_id;
+>  	unsigned long mpidr;
+>  	phys_addr_t target_pc;
+> @@ -80,7 +80,7 @@
+>  	smp_mb();		/* Make sure the above is visible */
+>  
+>  	wq = kvm_arch_vcpu_wq(vcpu);
+> -	wake_up_interruptible(wq);
+> +	swait_wake_interruptible(wq);
+>  
+>  	return KVM_PSCI_RET_SUCCESS;
+>  }
+> Index: linux-stable-rt/arch/mips/kvm/kvm_mips.c
+> ===================================================================
+> --- linux-stable-rt.orig/arch/mips/kvm/kvm_mips.c	2014-11-25 14:13:39.191899948 -0200
+> +++ linux-stable-rt/arch/mips/kvm/kvm_mips.c	2014-11-25 14:14:38.621810091 -0200
+> @@ -464,8 +464,8 @@
+>  
+>  	dvcpu->arch.wait = 0;
+>  
+> -	if (waitqueue_active(&dvcpu->wq)) {
+> -		wake_up_interruptible(&dvcpu->wq);
+> +	if (swaitqueue_active(&dvcpu->wq)) {
+> +		swait_wake_interruptible(&dvcpu->wq);
+>  	}
+>  
+>  	return 0;
+> @@ -971,8 +971,8 @@
+>  	kvm_mips_callbacks->queue_timer_int(vcpu);
+>  
+>  	vcpu->arch.wait = 0;
+> -	if (waitqueue_active(&vcpu->wq)) {
+> -		wake_up_interruptible(&vcpu->wq);
+> +	if (swaitqueue_active(&vcpu->wq)) {
+> +		swait_wake_nterruptible(&vcpu->wq);
+
+Sure you compiled this patch?
+
+>  	}
+>  }
+>  
+> Index: linux-stable-rt/arch/powerpc/include/asm/kvm_host.h
+> ===================================================================
+> --- linux-stable-rt.orig/arch/powerpc/include/asm/kvm_host.h	2014-11-25 14:13:39.193899944 -0200
+> +++ linux-stable-rt/arch/powerpc/include/asm/kvm_host.h	2014-11-25 14:14:38.621810091 -0200
+> @@ -295,7 +295,7 @@
+>  	u8 in_guest;
+>  	struct list_head runnable_threads;
+>  	spinlock_t lock;
+> -	wait_queue_head_t wq;
+> +	struct swait_head wq;
+>  	u64 stolen_tb;
+>  	u64 preempt_tb;
+>  	struct kvm_vcpu *runner;
+> @@ -612,7 +612,7 @@
+>  	u8 prodded;
+>  	u32 last_inst;
+>  
+> -	wait_queue_head_t *wqp;
+> +	struct swait_head *wqp;
+>  	struct kvmppc_vcore *vcore;
+>  	int ret;
+>  	int trap;
+> Index: linux-stable-rt/arch/powerpc/kvm/book3s_hv.c
+> ===================================================================
+> --- linux-stable-rt.orig/arch/powerpc/kvm/book3s_hv.c	2014-11-25 14:13:39.195899942 -0200
+> +++ linux-stable-rt/arch/powerpc/kvm/book3s_hv.c	2014-11-25 14:14:38.625810085 -0200
+> @@ -74,11 +74,11 @@
+>  {
+>  	int me;
+>  	int cpu = vcpu->cpu;
+> -	wait_queue_head_t *wqp;
+> +	struct swait_head *wqp;
+>  
+>  	wqp = kvm_arch_vcpu_wq(vcpu);
+> -	if (waitqueue_active(wqp)) {
+> -		wake_up_interruptible(wqp);
+> +	if (swaitqueue_active(wqp)) {
+> +		swait_wake_interruptible(wqp);
+>  		++vcpu->stat.halt_wakeup;
+>  	}
+>  
+> @@ -583,8 +583,8 @@
+>  		tvcpu->arch.prodded = 1;
+>  		smp_mb();
+>  		if (vcpu->arch.ceded) {
+> -			if (waitqueue_active(&vcpu->wq)) {
+> -				wake_up_interruptible(&vcpu->wq);
+> +			if (swaitqueue_active(&vcpu->wq)) {
+> +				swait_wake_interruptible(&vcpu->wq);
+>  				vcpu->stat.halt_wakeup++;
+>  			}
+>  		}
+> @@ -1199,7 +1199,7 @@
+>  		if (vcore) {
+>  			INIT_LIST_HEAD(&vcore->runnable_threads);
+>  			spin_lock_init(&vcore->lock);
+> -			init_waitqueue_head(&vcore->wq);
+> +			init_swait_head(&vcore->wq);
+>  			vcore->preempt_tb = TB_NIL;
+>  			vcore->lpcr = kvm->arch.lpcr;
+>  			vcore->first_vcpuid = core * threads_per_core;
+> @@ -1566,13 +1566,13 @@
+>   */
+>  static void kvmppc_vcore_blocked(struct kvmppc_vcore *vc)
+>  {
+> -	DEFINE_WAIT(wait);
+> +	DEFINE_SWAITER(wait);
+>  
+> -	prepare_to_wait(&vc->wq, &wait, TASK_INTERRUPTIBLE);
+> +	swait_prepare(&vc->wq, &wait, TASK_INTERRUPTIBLE);
+>  	vc->vcore_state = VCORE_SLEEPING;
+>  	spin_unlock(&vc->lock);
+>  	schedule();
+> -	finish_wait(&vc->wq, &wait);
+> +	swait_finish(&vc->wq, &wait);
+>  	spin_lock(&vc->lock);
+>  	vc->vcore_state = VCORE_INACTIVE;
+>  }
+> @@ -1613,7 +1613,7 @@
+>  			kvmppc_create_dtl_entry(vcpu, vc);
+>  			kvmppc_start_thread(vcpu);
+>  		} else if (vc->vcore_state == VCORE_SLEEPING) {
+> -			wake_up(&vc->wq);
+> +			swait_wake(&vc->wq);
+
+I notice everywhere you have a swait_wake_interruptible() but here. Is
+there a reason why?
+
+IIRC, Peter wants to make swait wakeup usage homogenous. That is, you
+either sleep in an interruptible state, or you don't. You can't mix and
+match it.
+
+Peter is that what you plan?
+
+-- Steve
+
+
+>  		}
+>  
+>  	}
+> Index: linux-stable-rt/arch/s390/include/asm/kvm_host.h
+> ===================================================================
+> --- linux-stable-rt.orig/arch/s390/include/asm/kvm_host.h	2014-11-25 14:13:39.196899940 -0200
+> +++ linux-stable-rt/arch/s390/include/asm/kvm_host.h	2014-11-25 14:14:38.627810082 -0200
+> @@ -233,7 +233,7 @@
+>  	atomic_t active;
+>  	struct kvm_s390_float_interrupt *float_int;
+>  	int timer_due; /* event indicator for waitqueue below */
+> -	wait_queue_head_t *wq;
+> +	struct swait_head *wq;
+>  	atomic_t *cpuflags;
+>  	unsigned int action_bits;
+>  };
+> Index: linux-stable-rt/arch/s390/kvm/interrupt.c
+> ===================================================================
+> --- linux-stable-rt.orig/arch/s390/kvm/interrupt.c	2014-11-25 14:13:39.197899939 -0200
+> +++ linux-stable-rt/arch/s390/kvm/interrupt.c	2014-11-25 14:14:38.630810077 -0200
+> @@ -403,7 +403,7 @@
+>  int kvm_s390_handle_wait(struct kvm_vcpu *vcpu)
+>  {
+>  	u64 now, sltime;
+> -	DECLARE_WAITQUEUE(wait, current);
+> +	DECLARE_SWAITER(wait);
+>  
+>  	vcpu->stat.exit_wait_state++;
+>  	if (kvm_cpu_has_interrupt(vcpu))
+> @@ -440,12 +440,11 @@
+>  	srcu_read_unlock(&vcpu->kvm->srcu, vcpu->srcu_idx);
+>  	spin_lock(&vcpu->arch.local_int.float_int->lock);
+>  	spin_lock_bh(&vcpu->arch.local_int.lock);
+> -	add_wait_queue(&vcpu->wq, &wait);
+> +	swait_prepare(&vcpu->wq, &wait, TASK_INTERRUPTIBLE);
+>  	while (list_empty(&vcpu->arch.local_int.list) &&
+>  		list_empty(&vcpu->arch.local_int.float_int->list) &&
+>  		(!vcpu->arch.local_int.timer_due) &&
+>  		!signal_pending(current)) {
+> -		set_current_state(TASK_INTERRUPTIBLE);
+>  		spin_unlock_bh(&vcpu->arch.local_int.lock);
+>  		spin_unlock(&vcpu->arch.local_int.float_int->lock);
+>  		schedule();
+> @@ -453,8 +452,7 @@
+>  		spin_lock_bh(&vcpu->arch.local_int.lock);
+>  	}
+>  	__unset_cpu_idle(vcpu);
+> -	__set_current_state(TASK_RUNNING);
+> -	remove_wait_queue(&vcpu->wq, &wait);
+> +	swait_finish(&vcpu->wq, &wait);
+>  	spin_unlock_bh(&vcpu->arch.local_int.lock);
+>  	spin_unlock(&vcpu->arch.local_int.float_int->lock);
+>  	vcpu->srcu_idx = srcu_read_lock(&vcpu->kvm->srcu);
+> @@ -469,8 +467,8 @@
+>  
+>  	spin_lock(&vcpu->arch.local_int.lock);
+>  	vcpu->arch.local_int.timer_due = 1;
+> -	if (waitqueue_active(&vcpu->wq))
+> -		wake_up_interruptible(&vcpu->wq);
+> +	if (swaitqueue_active(&vcpu->wq))
+> +		swait_wake_interruptible(&vcpu->wq);
+>  	spin_unlock(&vcpu->arch.local_int.lock);
+>  }
+>  
+> @@ -617,7 +615,7 @@
+>  	spin_lock_bh(&li->lock);
+>  	list_add(&inti->list, &li->list);
+>  	atomic_set(&li->active, 1);
+> -	BUG_ON(waitqueue_active(li->wq));
+> +	BUG_ON(swaitqueue_active(li->wq));
+>  	spin_unlock_bh(&li->lock);
+>  	return 0;
+>  }
+> @@ -750,8 +748,8 @@
+>  	li = fi->local_int[sigcpu];
+>  	spin_lock_bh(&li->lock);
+>  	atomic_set_mask(CPUSTAT_EXT_INT, li->cpuflags);
+> -	if (waitqueue_active(li->wq))
+> -		wake_up_interruptible(li->wq);
+> +	if (swaitqueue_active(li->wq))
+> +		swait_wake_interruptible(li->wq);
+>  	spin_unlock_bh(&li->lock);
+>  	spin_unlock(&fi->lock);
+>  	mutex_unlock(&kvm->lock);
+> @@ -836,8 +834,8 @@
+>  	if (inti->type == KVM_S390_SIGP_STOP)
+>  		li->action_bits |= ACTION_STOP_ON_STOP;
+>  	atomic_set_mask(CPUSTAT_EXT_INT, li->cpuflags);
+> -	if (waitqueue_active(&vcpu->wq))
+> -		wake_up_interruptible(&vcpu->wq);
+> +	if (swaitqueue_active(&vcpu->wq))
+> +		swait_wake_interruptible(&vcpu->wq);
+>  	spin_unlock_bh(&li->lock);
+>  	mutex_unlock(&vcpu->kvm->lock);
+>  	return 0;
+> Index: linux-stable-rt/arch/s390/kvm/sigp.c
+> ===================================================================
+> --- linux-stable-rt.orig/arch/s390/kvm/sigp.c	2014-11-25 14:13:39.198899937 -0200
+> +++ linux-stable-rt/arch/s390/kvm/sigp.c	2014-11-25 14:14:38.633810073 -0200
+> @@ -79,8 +79,8 @@
+>  	list_add_tail(&inti->list, &li->list);
+>  	atomic_set(&li->active, 1);
+>  	atomic_set_mask(CPUSTAT_EXT_INT, li->cpuflags);
+> -	if (waitqueue_active(li->wq))
+> -		wake_up_interruptible(li->wq);
+> +	if (swaitqueue_active(li->wq))
+> +		swait_wake_interruptible(li->wq);
+>  	spin_unlock_bh(&li->lock);
+>  	rc = SIGP_CC_ORDER_CODE_ACCEPTED;
+>  	VCPU_EVENT(vcpu, 4, "sent sigp emerg to cpu %x", cpu_addr);
+> @@ -148,8 +148,8 @@
+>  	list_add_tail(&inti->list, &li->list);
+>  	atomic_set(&li->active, 1);
+>  	atomic_set_mask(CPUSTAT_EXT_INT, li->cpuflags);
+> -	if (waitqueue_active(li->wq))
+> -		wake_up_interruptible(li->wq);
+> +	if (swaitqueue_active(li->wq))
+> +		swait_wake_interruptible(li->wq);
+>  	spin_unlock_bh(&li->lock);
+>  	rc = SIGP_CC_ORDER_CODE_ACCEPTED;
+>  	VCPU_EVENT(vcpu, 4, "sent sigp ext call to cpu %x", cpu_addr);
+> @@ -179,8 +179,8 @@
+>  	atomic_set(&li->active, 1);
+>  	atomic_set_mask(CPUSTAT_STOP_INT, li->cpuflags);
+>  	li->action_bits |= action;
+> -	if (waitqueue_active(li->wq))
+> -		wake_up_interruptible(li->wq);
+> +	if (swaitqueue_active(li->wq))
+> +		swait_wake_interruptible(li->wq);
+>  out:
+>  	spin_unlock_bh(&li->lock);
+>  
+> @@ -288,8 +288,8 @@
+>  
+>  	list_add_tail(&inti->list, &li->list);
+>  	atomic_set(&li->active, 1);
+> -	if (waitqueue_active(li->wq))
+> -		wake_up_interruptible(li->wq);
+> +	if (swaitqueue_active(li->wq))
+> +		swait_wake_interruptible(li->wq);
+>  	rc = SIGP_CC_ORDER_CODE_ACCEPTED;
+>  
+>  	VCPU_EVENT(vcpu, 4, "set prefix of cpu %02x to %x", cpu_addr, address);
+> Index: linux-stable-rt/arch/x86/kvm/lapic.c
+> ===================================================================
+> --- linux-stable-rt.orig/arch/x86/kvm/lapic.c	2014-11-25 14:13:39.199899935 -0200
+> +++ linux-stable-rt/arch/x86/kvm/lapic.c	2015-01-14 15:02:41.135771065 -0200
+> @@ -1533,7 +1533,7 @@
+>  	struct kvm_timer *ktimer = container_of(data, struct kvm_timer, timer);
+>  	struct kvm_lapic *apic = container_of(ktimer, struct kvm_lapic, lapic_timer);
+>  	struct kvm_vcpu *vcpu = apic->vcpu;
+> -	wait_queue_head_t *q = &vcpu->wq;
+> +	struct swait_head *q = &vcpu->wq;
+>  
+>  	/*
+>  	 * There is a race window between reading and incrementing, but we do
+> @@ -1547,8 +1547,8 @@
+>  		kvm_make_request(KVM_REQ_PENDING_TIMER, vcpu);
+>  	}
+>  
+> -	if (waitqueue_active(q))
+> -		wake_up_interruptible(q);
+> +	if (swaitqueue_active(q))
+> +		swait_wake_interruptible(q);
+>  
+>  	if (lapic_is_periodic(apic)) {
+>  		hrtimer_add_expires_ns(&ktimer->timer, ktimer->period);
+> Index: linux-stable-rt/include/linux/kvm_host.h
+> ===================================================================
+> --- linux-stable-rt.orig/include/linux/kvm_host.h	2014-11-25 14:13:39.201899932 -0200
+> +++ linux-stable-rt/include/linux/kvm_host.h	2014-11-25 14:14:38.638810065 -0200
+> @@ -231,7 +231,7 @@
+>  
+>  	int fpu_active;
+>  	int guest_fpu_loaded, guest_xcr0_loaded;
+> -	wait_queue_head_t wq;
+> +	struct swait_head wq;
+>  	struct pid *pid;
+>  	int sigset_active;
+>  	sigset_t sigset;
+> @@ -677,7 +677,7 @@
+>  }
+>  #endif
+>  
+> -static inline wait_queue_head_t *kvm_arch_vcpu_wq(struct kvm_vcpu *vcpu)
+> +static inline struct swait_head *kvm_arch_vcpu_wq(struct kvm_vcpu *vcpu)
+>  {
+>  #ifdef __KVM_HAVE_ARCH_WQP
+>  	return vcpu->arch.wqp;
+> Index: linux-stable-rt/virt/kvm/async_pf.c
+> ===================================================================
+> --- linux-stable-rt.orig/virt/kvm/async_pf.c	2014-11-25 14:13:39.202899931 -0200
+> +++ linux-stable-rt/virt/kvm/async_pf.c	2014-11-25 14:14:38.639810063 -0200
+> @@ -82,8 +82,8 @@
+>  
+>  	trace_kvm_async_pf_completed(addr, gva);
+>  
+> -	if (waitqueue_active(&vcpu->wq))
+> -		wake_up_interruptible(&vcpu->wq);
+> +	if (swaitqueue_active(&vcpu->wq))
+> +		swait_wake_interruptible(&vcpu->wq);
+>  
+>  	mmput(mm);
+>  	kvm_put_kvm(vcpu->kvm);
+> Index: linux-stable-rt/virt/kvm/kvm_main.c
+> ===================================================================
+> --- linux-stable-rt.orig/virt/kvm/kvm_main.c	2014-11-25 14:13:39.204899928 -0200
+> +++ linux-stable-rt/virt/kvm/kvm_main.c	2014-11-25 14:14:38.641810060 -0200
+> @@ -219,7 +219,7 @@
+>  	vcpu->kvm = kvm;
+>  	vcpu->vcpu_id = id;
+>  	vcpu->pid = NULL;
+> -	init_waitqueue_head(&vcpu->wq);
+> +	init_swait_head(&vcpu->wq);
+>  	kvm_async_pf_vcpu_init(vcpu);
+>  
+>  	page = alloc_page(GFP_KERNEL | __GFP_ZERO);
+> @@ -1675,10 +1675,10 @@
+>   */
+>  void kvm_vcpu_block(struct kvm_vcpu *vcpu)
+>  {
+> -	DEFINE_WAIT(wait);
+> +	DEFINE_SWAITER(wait);
+>  
+>  	for (;;) {
+> -		prepare_to_wait(&vcpu->wq, &wait, TASK_INTERRUPTIBLE);
+> +		swait_prepare(&vcpu->wq, &wait, TASK_INTERRUPTIBLE);
+>  
+>  		if (kvm_arch_vcpu_runnable(vcpu)) {
+>  			kvm_make_request(KVM_REQ_UNHALT, vcpu);
+> @@ -1692,7 +1692,7 @@
+>  		schedule();
+>  	}
+>  
+> -	finish_wait(&vcpu->wq, &wait);
+> +	swait_finish(&vcpu->wq, &wait);
+>  }
+>  EXPORT_SYMBOL_GPL(kvm_vcpu_block);
+>  
+> @@ -1704,11 +1704,11 @@
+>  {
+>  	int me;
+>  	int cpu = vcpu->cpu;
+> -	wait_queue_head_t *wqp;
+> +	struct swait_head *wqp;
+>  
+>  	wqp = kvm_arch_vcpu_wq(vcpu);
+> -	if (waitqueue_active(wqp)) {
+> -		wake_up_interruptible(wqp);
+> +	if (swaitqueue_active(wqp)) {
+> +		swait_wake_interruptible(wqp);
+>  		++vcpu->stat.halt_wakeup;
+>  	}
+>  
+> @@ -1814,7 +1814,7 @@
+>  				continue;
+>  			if (vcpu == me)
+>  				continue;
+> -			if (waitqueue_active(&vcpu->wq))
+> +			if (swaitqueue_active(&vcpu->wq))
+>  				continue;
+>  			if (!kvm_vcpu_eligible_for_directed_yield(vcpu))
+>  				continue;
+> 
 
