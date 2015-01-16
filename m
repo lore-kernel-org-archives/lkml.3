@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754902AbbAPOwP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 09:52:15 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:36031 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751795AbbAPOwO (ORCPT
+	id S1756309AbbAPOw6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 09:52:58 -0500
+Received: from hedwig.cmf.nrl.navy.mil ([134.207.12.162]:36521 "EHLO
+	hedwig.cmf.nrl.navy.mil" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752213AbbAPOw5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 09:52:14 -0500
-Message-ID: <54B92596.2040206@roeck-us.net>
-Date: Fri, 16 Jan 2015 06:52:06 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Fri, 16 Jan 2015 09:52:57 -0500
+Date: Fri, 16 Jan 2015 09:52:44 -0500
+From: chas williams - CONTRACTOR <chas@cmf.nrl.navy.mil>
+To: Quentin Lambert <lambert.quentin@gmail.com>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [net-next PATCH v3 1/1] atm: remove deprecated use of pci api
+Message-ID: <20150116095244.40249284@thirdoffive.cmf.nrl.navy.mil>
+In-Reply-To: <54B91BD1.70909@gmail.com>
+References: <20150112161042.GA11374@sloth>
+	<20150113.215944.1703977685948196746.davem@davemloft.net>
+	<063D6719AE5E284EB5DD2968C1650D6D1CAC79B3@AcuExch.aculab.com>
+	<20150116085721.56aa8075@thirdoffive.cmf.nrl.navy.mil>
+	<54B91BD1.70909@gmail.com>
+X-Mailer: Claws Mail 3.9.3 (GTK+ 2.24.22; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-To: Robert Rosengren <robert.rosengren@axis.com>,
-        Jean Delvare <jdelvare@suse.de>, lm-sensors@lm-sensors.org
-CC: linux-kernel@vger.kernel.org, Robert Rosengren <robertr@axis.com>,
-        Johan Adolfsson <johana@axis.com>
-Subject: Re: [PATCH] hwmon: (ads7828) Make sample interval configurable
-References: <1421409922-28299-1-git-send-email-robert.rosengren@axis.com>
-In-Reply-To: <1421409922-28299-1-git-send-email-robert.rosengren@axis.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020204.54B9259D.0305,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 3
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+X-NRLCMF-Spam-Score: () hits=-0.001
+X-NRLCMF-Virus-Scanned: No virus found
+X-NRLCMF-Languages: en
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2015 04:05 AM, Robert Rosengren wrote:
-> The default sample interval may be too slow for certain clients. This
-> patch makes it configurable via the platform_data.
->
-> Signed-off-by: Robert Rosengren <robert.rosengren@axis.com>
-> Signed-off-by: Johan Adolfsson <johan.adolfsson@axis.com>
+On Fri, 16 Jan 2015 15:10:25 +0100
+Quentin Lambert <lambert.quentin@gmail.com> wrote:
 
-I am basically fine with the patch, though I would prefer replacing
-the entire update handling and chip access with regmap. Would you be
-interested in doing that ?
 
-Thanks,
-Guenter
+> > -    u32 dma_addr = pci_map_single((struct pci_dev*)fore200e->bus_dev, virt_addr, size, direction);
+> > +    u32 dma_addr = dma_map_single(&((struct pci_dev *) fore200e->bus_dev)->dev, virt_addr, size, direction);
+> >   
+> >       DPRINTK(3, "PCI DVMA mapping: virt_addr = 0x%p, size = %d, direction = %d,  --> dma_addr = 0x%08x\n",
+> >   	    virt_addr, size, direction, dma_addr);
+> >
+> []
+> 
+> I am going try to make similar changes in some other part of the kernel and
+> I was wondering if you could explain how you decided it wasn't necessary to
+> check for "((struct pci_dev *) fore200e->bus_dev" nullity for instance.
 
+This gets set up in fore200e_pca_detect() which is pretty early in the
+intialization process.  We don't get as far as using any of the "DVMA"
+stubs unless pci_enable_device() succeeds, meaning pci_dev is good, and
+fore200e->bus_dev is assigned to pci_dev (around line 2724).
+
+fore200e->bus_dev is never cleared back to NULL, but obviously you
+shouldn't be using any of the DMA routines after disabling the pci
+device.  Hopefully the driver shuts down in an orderly fashion such
+that all DMA is over by the time the driver disables the pci device.
