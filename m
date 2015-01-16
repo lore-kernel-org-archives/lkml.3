@@ -1,121 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752857AbbAPJ7c (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 04:59:32 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:39421 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751365AbbAPJ7a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 04:59:30 -0500
-Date: Fri, 16 Jan 2015 10:59:27 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>,
-        Joerg Roedel <joro@8bytes.org>, x86@kernel.org,
-        Tony Luck <tony.luck@intel.com>
-Subject: Re: [patch 01/23] x86/apic: Avoid open coded x2apic detection
-Message-ID: <20150116095927.GA18880@pd.tnic>
-References: <20150115210458.625399149@linutronix.de>
- <20150115211702.285038186@linutronix.de>
+	id S1754309AbbAPLIp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 06:08:45 -0500
+Received: from sci-ig2.spreadtrum.com ([222.66.158.135]:50885 "EHLO
+	SHSQR01.spreadtrum.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751477AbbAPLIn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 06:08:43 -0500
+From: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
+To: <gregkh@linuxfoundation.org>, <mark.rutland@arm.com>, <arnd@arndb.de>,
+        <gnomes@lxorguk.ukuu.org.uk>, <broonie@kernel.org>,
+        <robh+dt@kernel.org>, <pawel.moll@arm.com>,
+        <ijc+devicetree@hellion.org.uk>, <galak@codeaurora.org>,
+        <will.deacon@arm.com>, <catalin.marinas@arm.com>, <jslaby@suse.cz>,
+        <jason@lakedaemon.net>, <heiko@sntech.de>, <florian.vaussard@epfl.ch>,
+        <andrew@lunn.ch>, <rrichter@cavium.com>, <hytszk@gmail.com>,
+        <grant.likely@linaro.org>, <antonynpavlov@gmail.com>,
+        <Joel.Schopp@amd.com>, <Suravee.Suthikulpanit@amd.com>,
+        <shawn.guo@linaro.org>, <lea.yan@linaro.org>,
+        <jorge.ramirez-ortiz@linaro.org>, <lee.jones@linaro.org>,
+        <orsonzhai@gmail.com>, <geng.ren@spreadtrum.com>,
+        <zhizhou.zhang@spreadtrum.com>, <lanqing.liu@spreadtrum.com>,
+        <zhang.lyra@gmail.com>, <wei.qiao@spreadtrum.com>
+CC: <devicetree@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <linux-serial@vger.kernel.org>,
+        <linux-api@vger.kernel.org>
+Subject: [PATCH v5 0/5] Add Spreadtrum Sharkl64 Platform support
+Date: Fri, 16 Jan 2015 18:00:06 +0800
+Message-ID: <1421402411-3479-1-git-send-email-chunyan.zhang@spreadtrum.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <sc9836-v5>
+References: <sc9836-v5>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20150115211702.285038186@linutronix.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Originating-IP: [10.0.67.142]
+X-ClientProxiedBy: SHCAS01.spreadtrum.com (10.0.1.201) To
+ SHMBX01.spreadtrum.com (10.0.1.203)
+X-MAIL: SHSQR01.spreadtrum.com t0GA1fUP040662
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 15, 2015 at 09:22:09PM -0000, Thomas Gleixner wrote:
-> enable_IR_x2apic() grew a open coded x2apic detection. Implement a
-> proper helper function which shares the code with the already existing
-> x2apic_enabled().
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  arch/x86/include/asm/apic.h |   18 +++++++++---------
->  arch/x86/kernel/apic/apic.c |    5 +----
->  2 files changed, 10 insertions(+), 13 deletions(-)
-> 
-> Index: tip/arch/x86/include/asm/apic.h
-> ===================================================================
-> --- tip.orig/arch/x86/include/asm/apic.h
-> +++ tip/arch/x86/include/asm/apic.h
-> @@ -108,6 +108,14 @@ extern u64 native_apic_icr_read(void);
->  
->  extern int x2apic_mode;
->  
-> +static inline bool apic_is_x2apic_enabled(void)
-> +{
-> +	u64 msr;
-> +
-> +	rdmsrl(MSR_IA32_APICBASE, msr);
+Spreadtrum is a rapid growing chip vendor providing smart phone total solutions.
 
-Let's do
+Sharkl64 Platform is nominated as a SoC infrastructure that supports 4G/3G/2G
+standards based on ARMv8 multiple core architecture. Now we have only one
+SoC(SC9836) based on this Platform in developing.
 
-	struct msr m;
+This patchset adds Sharkl64 support in arm64 device tree and adds the serial
+driver of SC9836-UART.
 
-	if (msr_read(MSR_IA32_APICBASE, &m))
-		return false;
+This patchset also has patches which address "sprd" prefix and DT compatible
+strings for nodes which appear un-documented.
 
-	return m.l & X2APIC_ENABLE;
+This version code was tesed on SC9836 mobile phone.
 
-so that we do the safe MSR access too. Who knows where this code gets
-executed in the future.
+Changes from v4:
+* Addressed review comments from last version:
+	- Remove compitible string "arm,psci-0.2"
+	- Add the properties of psci v0.1
+	- Remove the "clocks" container node
+* Addressed review comments from Shawn Guo, Lea Yan, Jorge Ramirez-Ortiz:
+	- Turn the 'clocks' property of uart into a required property
+	- Use GIC macro instead of the value
+	- Update the CPU mask to match the number of described CPUs
+	- Use the more explicit compatible string "arm,gic-400" for GIC
+	- sprd_serial.c: Add a cpu_relax() in the busy loop of sprd_putc
+	- sprd_serial.c: Add calling uart_suspend_port and uart_resume_port in
+	  the function sprd_suspend and sprd_resume respectively
+	- sprd_serial.c: Use SIMPLE_DEV_PM_OPS to register sprd_suspend and
+	  sprd_resume
 
-> +}
-> +
->  #ifdef CONFIG_X86_X2APIC
->  /*
->   * Make previous memory operations globally visible before
-> @@ -175,15 +183,7 @@ extern void check_x2apic(void);
->  extern void enable_x2apic(void);
->  static inline int x2apic_enabled(void)
->  {
-> -	u64 msr;
-> -
-> -	if (!cpu_has_x2apic)
-> -		return 0;
-> -
-> -	rdmsrl(MSR_IA32_APICBASE, msr);
-> -	if (msr & X2APIC_ENABLE)
-> -		return 1;
-> -	return 0;
-> +	return cpu_has_x2apic && apic_is_x2apic_enabled();
+Changes from v3:
+* Addressed review comments:
+	- Added the description of clock property for sc9836-uart
+	- Revised the size of GICC to be 8KiB
+	- Added another compatible string for psci-0.1
+	- Removed the clock-frequency property of timer in DT
+	- Removed ARCH_SHARKL64, just left ARCH_SPRD only
+	- sprd_serial.c: Removed .owner of platform_driver.driver
+	- sprd_serial.c: Removed all usages of unlikely
+	- sprd_serial.c: Used the .port member of sprd_port instead of the cast
+	- sprd_serial.c: sed dynamic allocation for major/minor device id
+	- sprd_serial.c: Added a timeout and a cpu_relax for clearing rx/tx fifo
+	- sprd_serial.c: clear CMSPAR in termios->c_cflag
+	- sprd_serial.c: Set the resulting baud back into the termios
+	- sprd_serial.c: Implemented a shared interrupt handler
 
-... and then there's
+Changes from v2:
+* Addressed review comments:
+	- Added a specific compitible string 'sc9836-uart' for the serial
+	- Added a full serial driver
+	- Added the property 'clock-frequency' for timer node in dtsi.
+	- Replaceed the old macro prefix 'UART_' with 'SPRD_' in the 
+	  Spreadtrum serial driver code.
+* Revised the name of SoC and board from 'sharkl3' to 'sc9836'
+* Used dual-license for DTS files
+* Added a menuconfig 'ARCH_SPRD' in arch/arm64/Kconfig
 
-#define x2apic_supported()      (cpu_has_x2apic)
+Changes from v1:
+* Addressed review comments:
+        - Added "sprd" prefix to vendor-prefixes.txt
+        - Created serial/sprd-serial.txt and remove the properties for serial-sprd
+          from of-serial.txt to it.
+        - Renamed of-serial.txt to 8250.txt according to Arnd's review comments
+        - Splited and revised .dts for Sharkl64 Platform
+        - Changed to PSCI method for cpu power management
+        - Revised Kconfig Makefile to match the alphabetical ordering
+        - Renamed serial-sprd-earlycon.c to serial-sprd.c
 
-which does the cpufeature test.
+Chunyan Zhang (3):
+  Documentation: DT: Renamed of-serial.txt to 8250.txt
+  Documentation: DT: Add bindings for Spreadtrum SoC Platform
+  tty/serial: Add Spreadtrum sc9836-uart driver support
 
-Can we agree on one interface only and simplify this a bit more?
+Zhizhou Zhang (2):
+  arm64: dts: Add support for Spreadtrum SC9836 SoC in dts and Makefile
+  arm64: Add support for Spreadtrum's Sharkl64 Platform in Kconfig and
+    defconfig
 
->  }
->  
->  #define x2apic_supported()	(cpu_has_x2apic)
-> Index: tip/arch/x86/kernel/apic/apic.c
-> ===================================================================
-> --- tip.orig/arch/x86/kernel/apic/apic.c
-> +++ tip/arch/x86/kernel/apic/apic.c
-> @@ -1625,10 +1625,7 @@ void __init enable_IR_x2apic(void)
->  	int ret, ir_stat;
->  
->  	if (!IS_ENABLED(CONFIG_X86_X2APIC)) {
-> -		u64 msr;
-> -
-> -		rdmsrl(MSR_IA32_APICBASE, msr);
-> -		if (msr & X2APIC_ENABLE)
-> +		if (apic_is_x2apic_enabled())
->  			panic("BIOS has enabled x2apic but kernel doesn't support x2apic, please disable x2apic in BIOS.\n");
->  	}
->  
-> 
-> 
-> 
+ Documentation/devicetree/bindings/arm/sprd.txt     |   11 +
+ .../bindings/serial/{of-serial.txt => 8250.txt}    |    0
+ .../devicetree/bindings/serial/sprd-uart.txt       |    7 +
+ .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+ arch/arm64/Kconfig                                 |    5 +
+ arch/arm64/boot/dts/Makefile                       |    1 +
+ arch/arm64/boot/dts/sprd/Makefile                  |    5 +
+ arch/arm64/boot/dts/sprd/sc9836-openphone.dts      |   49 ++
+ arch/arm64/boot/dts/sprd/sc9836.dtsi               |   73 ++
+ arch/arm64/boot/dts/sprd/sharkl64.dtsi             |   67 ++
+ arch/arm64/configs/defconfig                       |    1 +
+ drivers/tty/serial/Kconfig                         |   18 +
+ drivers/tty/serial/Makefile                        |    1 +
+ drivers/tty/serial/sprd_serial.c                   |  772 ++++++++++++++++++++
+ include/uapi/linux/serial_core.h                   |    3 +
+ 15 files changed, 1014 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/arm/sprd.txt
+ rename Documentation/devicetree/bindings/serial/{of-serial.txt => 8250.txt} (100%)
+ create mode 100644 Documentation/devicetree/bindings/serial/sprd-uart.txt
+ create mode 100644 arch/arm64/boot/dts/sprd/Makefile
+ create mode 100644 arch/arm64/boot/dts/sprd/sc9836-openphone.dts
+ create mode 100644 arch/arm64/boot/dts/sprd/sc9836.dtsi
+ create mode 100644 arch/arm64/boot/dts/sprd/sharkl64.dtsi
+ create mode 100644 drivers/tty/serial/sprd_serial.c
 
 -- 
-Regards/Gruss,
-    Boris.
+1.7.9.5
 
-Sent from a fat crate under my desk. Formatting is fine.
---
