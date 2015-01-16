@@ -1,84 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752801AbbAPXm2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 18:42:28 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:49482 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751648AbbAPXld (ORCPT
+	id S1751921AbbAQSls (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 13:41:48 -0500
+Received: from mtaout-1.viettel.vn ([203.113.188.17]:42171 "EHLO viettel.vn"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750994AbbAQSlr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 18:41:33 -0500
-X-IronPort-AV: E=Sophos;i="5.09,413,1418112000"; 
-   d="scan'208";a="55002156"
-From: Ray Jui <rjui@broadcom.com>
-To: Wolfram Sang <wsa@the-dreams.de>,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Rob Herring <robh+dt@kernel.org>, "Pawel Moll" <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "Grant Likely" <grant.likely@linaro.org>,
-        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>
-CC: Scott Branden <sbranden@broadcom.com>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>,
-        "Ray Jui" <rjui@broadcom.com>
-Subject: [PATCH v5 3/3] ARM: dts: add I2C device nodes for Broadcom Cygnus
-Date: Fri, 16 Jan 2015 15:42:17 -0800
-Message-ID: <1421451737-7107-4-git-send-email-rjui@broadcom.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1421451737-7107-1-git-send-email-rjui@broadcom.com>
-References: <Ray Jui <rjui@broadcom.com>
- <1421451737-7107-1-git-send-email-rjui@broadcom.com>
+	Sat, 17 Jan 2015 13:41:47 -0500
+X-Greylist: delayed 68233 seconds by postgrey-1.27 at vger.kernel.org; Sat, 17 Jan 2015 13:41:46 EST
+From: info@viettel.vn
+Message-Id: <201501162337.t0GLiKxk023682@viettel.vn>
+Content-Type: text/plain; charset=US-ASCII
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7BIT
+Content-Description: Mail message body
+Subject: 
+To: Recipients <info@viettel.vn>
+Date: Sat, 17 Jan 2015 05:13:55 +0530
+Reply-To: sandraloanfm9@gmail.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add I2C device nodes and its properties in bcm-cygnus.dtsi but keep
-them disabled there. Individual I2C devices can be enabled in board
-specific dts file when I2C slave devices are enabled in the future
-
-Signed-off-by: Ray Jui <rjui@broadcom.com>
-Reviewed-by: Scott Branden <sbranden@broadcom.com>
----
- arch/arm/boot/dts/bcm-cygnus.dtsi |   20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
-
-diff --git a/arch/arm/boot/dts/bcm-cygnus.dtsi b/arch/arm/boot/dts/bcm-cygnus.dtsi
-index 5126f9e..ff5fb6a 100644
---- a/arch/arm/boot/dts/bcm-cygnus.dtsi
-+++ b/arch/arm/boot/dts/bcm-cygnus.dtsi
-@@ -70,6 +70,26 @@
- 		};
- 	};
- 
-+	i2c0: i2c@18008000 {
-+		compatible = "brcm,cygnus-iproc-i2c", "brcm,iproc-i2c";
-+		reg = <0x18008000 0x100>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		interrupts = <GIC_SPI 85 IRQ_TYPE_NONE>;
-+		clock-frequency = <100000>;
-+		status = "disabled";
-+	};
-+
-+	i2c1: i2c@1800b000 {
-+		compatible = "brcm,cygnus-iproc-i2c", "brcm,iproc-i2c";
-+		reg = <0x1800b000 0x100>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		interrupts = <GIC_SPI 86 IRQ_TYPE_NONE>;
-+		clock-frequency = <100000>;
-+		status = "disabled";
-+	};
-+
- 	uart0: serial@18020000 {
- 		compatible = "snps,dw-apb-uart";
- 		reg = <0x18020000 0x100>;
--- 
-1.7.9.5
-
+Get a loan here at %3 interest rate,
+Amount needed: 
+Country:
+Duration:
+Phone Number:
