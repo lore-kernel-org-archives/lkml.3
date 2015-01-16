@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932584AbbAPDsA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 22:48:00 -0500
-Received: from [119.145.14.66] ([119.145.14.66]:22852 "EHLO
+	id S932618AbbAPDsG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 22:48:06 -0500
+Received: from [119.145.14.66] ([119.145.14.66]:22886 "EHLO
 	szxga03-in.huawei.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S932468AbbAPDr5 (ORCPT
+	with ESMTP id S932540AbbAPDr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 22:47:57 -0500
+	Thu, 15 Jan 2015 22:47:56 -0500
 From: Yijing Wang <wangyijing@huawei.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
 CC: Jiang Liu <jiang.liu@linux.intel.com>, <linux-pci@vger.kernel.org>,
@@ -21,9 +21,9 @@ CC: Jiang Liu <jiang.liu@linux.intel.com>, <linux-pci@vger.kernel.org>,
         "Arnd Bergmann" <arnd@arndb.de>,
         Geert Uytterhoeven <geert@linux-m68k.org>,
         "Yijing Wang" <wangyijing@huawei.com>
-Subject: [PATCH 06/28] PCI: Combine PCI domain and bus number in u32 arg
-Date: Fri, 16 Jan 2015 09:44:04 +0800
-Message-ID: <1421372666-12288-7-git-send-email-wangyijing@huawei.com>
+Subject: [PATCH 07/28] PCI: Pass PCI domain number combined with root bus number
+Date: Fri, 16 Jan 2015 09:44:05 +0800
+Message-ID: <1421372666-12288-8-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1421372666-12288-1-git-send-email-wangyijing@huawei.com>
 References: <1421372666-12288-1-git-send-email-wangyijing@huawei.com>
@@ -32,151 +32,276 @@ Content-Type: text/plain
 X-Originating-IP: [10.175.100.166]
 X-CFilter-Loop: Reflected
 X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020206.54B889C1.00D8,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	refid=str=0001.0A020203.54B889C2.0019,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
 	ip=0.0.0.0,
 	so=2013-05-26 15:14:31,
 	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 1e8958ee880f50a1e3c457e0755ca634
+X-Mirapoint-Loop-Id: 6dfe7ad394c9a6a922d15c8a9343fb87
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, we use int type for bus number in
-pci_create_root_bus(), pci_scan_root_bus() and
-pci_scan_bus_legacy. Because PCI bus number
-always <= 255, so we could change the bus number
-argument type to u32, and combine PCI domain and
-bus number in one. Also add a domain member in
-pci_host_bridge to save domain number. Finally,
-we could eliminate lots of the platform specific
-pci_domain_nr() in the last of the series.
+Now we could pass PCI domain combined with bus number
+in u32 argu. Because in arm/arm64, PCI domain number
+is assigned by pci_bus_assign_domain_nr(). So we leave
+pci_scan_root_bus() and pci_create_root_bus() in arm/arm64
+unchanged. A new function pci_host_assign_domain_nr()
+will be introduced for arm/arm64 to assign domain number
+in later patch.
 
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 ---
- drivers/pci/probe.c      |   16 +++++++++-------
- include/linux/pci.h      |    7 ++++---
- include/uapi/linux/pci.h |    3 +++
- 3 files changed, 16 insertions(+), 10 deletions(-)
+ arch/alpha/kernel/pci.c          |    5 +++--
+ arch/alpha/kernel/sys_nautilus.c |    3 ++-
+ arch/ia64/pci/pci.c              |    4 ++--
+ arch/ia64/sn/kernel/io_init.c    |    5 +++--
+ arch/microblaze/pci/pci-common.c |    5 +++--
+ arch/mips/pci/pci.c              |    4 ++--
+ arch/powerpc/kernel/pci-common.c |    5 +++--
+ arch/s390/pci/pci.c              |    5 +++--
+ arch/sh/drivers/pci/pci.c        |    5 +++--
+ arch/sparc/kernel/pci.c          |    5 +++--
+ arch/tile/kernel/pci.c           |    4 ++--
+ arch/tile/kernel/pci_gx.c        |    5 +++--
+ arch/x86/pci/acpi.c              |    6 +++---
+ arch/x86/pci/common.c            |    3 ++-
+ drivers/pci/xen-pcifront.c       |    5 +++--
+ 15 files changed, 40 insertions(+), 29 deletions(-)
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index ed894cb..50f58b3 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1889,7 +1889,7 @@ void __weak pcibios_remove_bus(struct pci_bus *bus)
- {
- }
+diff --git a/arch/alpha/kernel/pci.c b/arch/alpha/kernel/pci.c
+index 97f9730..b15f9f2 100644
+--- a/arch/alpha/kernel/pci.c
++++ b/arch/alpha/kernel/pci.c
+@@ -332,8 +332,9 @@ common_init_pci(void)
+ 		pci_add_resource_offset(&resources, hose->mem_space,
+ 					hose->mem_space->start);
  
--struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
-+struct pci_bus *pci_create_root_bus(struct device *parent, u32 db,
- 		struct pci_ops *ops, void *sysdata, struct list_head *resources)
- {
- 	int error;
-@@ -1900,6 +1900,7 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- 	resource_size_t offset;
- 	char bus_addr[64];
- 	char *fmt;
-+	u8	bus = PCI_BUSNUM(db);
+-		bus = pci_scan_root_bus(NULL, next_busno, alpha_mv.pci_ops,
+-					hose, &resources);
++		bus = pci_scan_root_bus(NULL,
++				PCI_DOMBUS(hose->index, next_busno), alpha_mv.pci_ops,
++				hose, &resources);
+ 		if (bus)
+ 			pci_bus_add_devices(bus);
+ 		hose->bus = bus;
+diff --git a/arch/alpha/kernel/sys_nautilus.c b/arch/alpha/kernel/sys_nautilus.c
+index 2c864bb..f7bfdf3 100644
+--- a/arch/alpha/kernel/sys_nautilus.c
++++ b/arch/alpha/kernel/sys_nautilus.c
+@@ -206,7 +206,8 @@ nautilus_init_pci(void)
+ 	unsigned long memtop = max_low_pfn << PAGE_SHIFT;
  
- 	b = pci_alloc_bus(NULL);
- 	if (!b)
-@@ -1920,6 +1921,7 @@ struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
- 	if (!bridge)
- 		goto err_out;
+ 	/* Scan our single hose.  */
+-	bus = pci_scan_bus_legacy(0, alpha_mv.pci_ops, hose);
++	bus = pci_scan_bus_legacy(PCI_DOMBUS(hose->index, 0),
++			alpha_mv.pci_ops, hose);
+ 	hose->bus = bus;
+ 	pcibios_claim_one_bus(bus);
  
-+	bridge->domain = PCI_DOMAIN(db);
- 	bridge->dev.parent = parent;
- 	bridge->dev.release = pci_release_host_bridge_dev;
- 	dev_set_name(&bridge->dev, "pci%04x:%02x", pci_domain_nr(b), bus);
-@@ -2057,7 +2059,7 @@ void pci_bus_release_busn_res(struct pci_bus *b)
- 			res, ret ? "can not be" : "is");
- }
+diff --git a/arch/ia64/pci/pci.c b/arch/ia64/pci/pci.c
+index 291a582..e457015 100644
+--- a/arch/ia64/pci/pci.c
++++ b/arch/ia64/pci/pci.c
+@@ -465,8 +465,8 @@ struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
+ 	 * should handle the case here, but it appears that IA64 hasn't
+ 	 * such quirk. So we just ignore the case now.
+ 	 */
+-	pbus = pci_create_root_bus(NULL, bus, &pci_root_ops, controller,
+-				   &info->resources);
++	pbus = pci_create_root_bus(NULL, PCI_DOMBUS(domain, bus),
++			&pci_root_ops, controller, &info->resources);
+ 	if (!pbus) {
+ 		pci_free_resource_list(&info->resources);
+ 		__release_pci_root_info(info);
+diff --git a/arch/ia64/sn/kernel/io_init.c b/arch/ia64/sn/kernel/io_init.c
+index 63b43a6..bcdc5b8 100644
+--- a/arch/ia64/sn/kernel/io_init.c
++++ b/arch/ia64/sn/kernel/io_init.c
+@@ -266,8 +266,9 @@ sn_pci_controller_fixup(int segment, int busnum, struct pci_bus *bus)
+ 	pci_add_resource_offset(&resources,	&res[1],
+ 			prom_bussoft_ptr->bs_legacy_mem);
  
--struct pci_bus *pci_scan_root_bus(struct device *parent, int bus,
-+struct pci_bus *pci_scan_root_bus(struct device *parent, u32 db,
- 		struct pci_ops *ops, void *sysdata, struct list_head *resources)
- {
- 	struct pci_host_bridge_window *window;
-@@ -2071,15 +2073,15 @@ struct pci_bus *pci_scan_root_bus(struct device *parent, int bus,
- 			break;
- 		}
+-	bus = pci_scan_root_bus(NULL, busnum, &pci_root_ops, controller,
+-				&resources);
++	bus = pci_scan_root_bus(NULL,
++			PCI_DOMBUS(controller->segment, busnum),
++			&pci_root_ops, controller, &resources);
+  	if (bus == NULL) {
+ 		kfree(res);
+ 		kfree(controller);
+diff --git a/arch/microblaze/pci/pci-common.c b/arch/microblaze/pci/pci-common.c
+index 009b271..890bd36 100644
+--- a/arch/microblaze/pci/pci-common.c
++++ b/arch/microblaze/pci/pci-common.c
+@@ -1339,8 +1339,9 @@ static void pcibios_scan_phb(struct pci_controller *hose)
  
--	b = pci_create_root_bus(parent, bus, ops, sysdata, resources);
-+	b = pci_create_root_bus(parent, db, ops, sysdata, resources);
- 	if (!b)
- 		return NULL;
+ 	pcibios_setup_phb_resources(hose, &resources);
  
- 	if (!found) {
- 		dev_info(&b->dev,
- 		 "No busn resource found for root bus, will use [bus %02x-ff]\n",
--			bus);
--		pci_bus_insert_busn_res(b, bus, 255);
-+			PCI_BUSNUM(db));
-+		pci_bus_insert_busn_res(b, PCI_BUSNUM(db), 255);
+-	bus = pci_scan_root_bus(hose->parent, hose->first_busno,
+-				hose->ops, hose, &resources);
++	bus = pci_scan_root_bus(hose->parent,
++			PCI_DOMBUS(hose->global_number, hose->first_busno),
++			hose->ops, hose, &resources);
+ 	if (bus == NULL) {
+ 		pr_err("Failed to create bus for PCI domain %04x\n",
+ 		       hose->global_number);
+diff --git a/arch/mips/pci/pci.c b/arch/mips/pci/pci.c
+index 9eb54b5..980755a 100644
+--- a/arch/mips/pci/pci.c
++++ b/arch/mips/pci/pci.c
+@@ -92,8 +92,8 @@ static void pcibios_scanbus(struct pci_controller *hose)
+ 	pci_add_resource_offset(&resources,
+ 				hose->mem_resource, hose->mem_offset);
+ 	pci_add_resource_offset(&resources, hose->io_resource, hose->io_offset);
+-	bus = pci_scan_root_bus(NULL, next_busno, hose->pci_ops, hose,
+-				&resources);
++	bus = pci_scan_root_bus(NULL, PCI_DOMBUS(hose->index, next_busno),
++			hose->pci_ops, hose, &resources);
+ 	if (!bus)
+ 		pci_free_resource_list(&resources);
+ 
+diff --git a/arch/powerpc/kernel/pci-common.c b/arch/powerpc/kernel/pci-common.c
+index 37d512d..927c3dd 100644
+--- a/arch/powerpc/kernel/pci-common.c
++++ b/arch/powerpc/kernel/pci-common.c
+@@ -1602,8 +1602,9 @@ void pcibios_scan_phb(struct pci_controller *hose)
+ 	pci_add_resource(&resources, &hose->busn);
+ 
+ 	/* Create an empty bus for the toplevel */
+-	bus = pci_create_root_bus(hose->parent, hose->first_busno,
+-				  hose->ops, hose, &resources);
++	bus = pci_create_root_bus(hose->parent,
++			PCI_DOMBUS(hose->global_number, hose->first_busno),
++			hose->ops, hose, &resources);
+ 	if (bus == NULL) {
+ 		pr_err("Failed to create bus for PCI domain %04x\n",
+ 			hose->global_number);
+diff --git a/arch/s390/pci/pci.c b/arch/s390/pci/pci.c
+index 0b32769..612decf 100644
+--- a/arch/s390/pci/pci.c
++++ b/arch/s390/pci/pci.c
+@@ -750,8 +750,9 @@ static int zpci_scan_bus(struct zpci_dev *zdev)
+ 	if (ret)
+ 		return ret;
+ 
+-	zdev->bus = pci_scan_root_bus(NULL, ZPCI_BUS_NR, &pci_root_ops,
+-				      zdev, &resources);
++	zdev->bus = pci_scan_root_bus(NULL,
++			PCI_DOMBUS(zdev->domain, ZPCI_BUS_NR), &pci_root_ops,
++			zdev, &resources);
+ 	if (!zdev->bus) {
+ 		zpci_cleanup_bus_resources(zdev);
+ 		return -EIO;
+diff --git a/arch/sh/drivers/pci/pci.c b/arch/sh/drivers/pci/pci.c
+index efc1051..7ee0772 100644
+--- a/arch/sh/drivers/pci/pci.c
++++ b/arch/sh/drivers/pci/pci.c
+@@ -52,8 +52,9 @@ static void pcibios_scanbus(struct pci_channel *hose)
+ 		pci_add_resource_offset(&resources, res, offset);
  	}
  
- 	max = pci_scan_child_bus(b);
-@@ -2091,7 +2093,7 @@ struct pci_bus *pci_scan_root_bus(struct device *parent, int bus,
- }
- EXPORT_SYMBOL(pci_scan_root_bus);
+-	bus = pci_scan_root_bus(NULL, next_busno, hose->pci_ops, hose,
+-				&resources);
++	bus = pci_scan_root_bus(NULL,
++			PCI_DOMBUS(hose->index, next_busno),
++			hose->pci_ops, hose, &resources);
+ 	hose->bus = bus;
  
--struct pci_bus *pci_scan_bus_legacy(int bus, struct pci_ops *ops,
-+struct pci_bus *pci_scan_bus_legacy(u32 db, struct pci_ops *ops,
- 					void *sysdata)
- {
- 	LIST_HEAD(resources);
-@@ -2100,7 +2102,7 @@ struct pci_bus *pci_scan_bus_legacy(int bus, struct pci_ops *ops,
- 	pci_add_resource(&resources, &ioport_resource);
- 	pci_add_resource(&resources, &iomem_resource);
- 	pci_add_resource(&resources, &busn_resource);
--	b = pci_create_root_bus(NULL, bus, ops, sysdata, &resources);
-+	b = pci_create_root_bus(NULL, db, ops, sysdata, &resources);
- 	if (b) {
- 		pci_scan_child_bus(b);
- 	} else {
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index a6fa2f1..c771508 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -402,6 +402,7 @@ struct pci_host_bridge_window {
- };
+ 	need_domain_info = need_domain_info || hose->index;
+diff --git a/arch/sparc/kernel/pci.c b/arch/sparc/kernel/pci.c
+index b36365f..d798b42 100644
+--- a/arch/sparc/kernel/pci.c
++++ b/arch/sparc/kernel/pci.c
+@@ -664,8 +664,9 @@ struct pci_bus *pci_scan_one_pbm(struct pci_pbm_info *pbm,
+ 	pbm->busn.end	= pbm->pci_last_busno;
+ 	pbm->busn.flags	= IORESOURCE_BUS;
+ 	pci_add_resource(&resources, &pbm->busn);
+-	bus = pci_create_root_bus(parent, pbm->pci_first_busno, pbm->pci_ops,
+-				  pbm, &resources);
++	bus = pci_create_root_bus(parent,
++			PCI_DOMBUS(pbm->index, pbm->pci_first_busno),
++			pbm->pci_ops, pbm, &resources);
+ 	if (!bus) {
+ 		printk(KERN_ERR "Failed to create bus for %s\n",
+ 		       node->full_name);
+diff --git a/arch/tile/kernel/pci.c b/arch/tile/kernel/pci.c
+index 83d3e30..2603db5 100644
+--- a/arch/tile/kernel/pci.c
++++ b/arch/tile/kernel/pci.c
+@@ -306,8 +306,8 @@ int __init pcibios_init(void)
  
- struct pci_host_bridge {
-+	u16	domain;
- 	struct device dev;
- 	struct pci_bus *bus;		/* root bus */
- 	struct list_head windows;	/* pci_host_bridge_windows */
-@@ -769,14 +770,14 @@ void pcibios_bus_to_resource(struct pci_bus *bus, struct resource *res,
- void pcibios_scan_specific_bus(int busn);
- struct pci_bus *pci_find_bus(int domain, int busnr);
- void pci_bus_add_devices(const struct pci_bus *bus);
--struct pci_bus *pci_scan_bus_legacy(int bus, struct pci_ops *ops, void *sysdata);
--struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
-+struct pci_bus *pci_scan_bus_legacy(u32 dombus, struct pci_ops *ops, void *sysdata);
-+struct pci_bus *pci_create_root_bus(struct device *parent, u32 dombus,
- 				    struct pci_ops *ops, void *sysdata,
- 				    struct list_head *resources);
- int pci_bus_insert_busn_res(struct pci_bus *b, int bus, int busmax);
- int pci_bus_update_busn_res_end(struct pci_bus *b, int busmax);
- void pci_bus_release_busn_res(struct pci_bus *b);
--struct pci_bus *pci_scan_root_bus(struct device *parent, int bus,
-+struct pci_bus *pci_scan_root_bus(struct device *parent, u32 dombus,
- 					     struct pci_ops *ops, void *sysdata,
- 					     struct list_head *resources);
- struct pci_bus *pci_add_new_bus(struct pci_bus *parent, struct pci_dev *dev,
-diff --git a/include/uapi/linux/pci.h b/include/uapi/linux/pci.h
-index 3c292bc..89c6f15 100644
---- a/include/uapi/linux/pci.h
-+++ b/include/uapi/linux/pci.h
-@@ -30,6 +30,9 @@
- #define PCI_DEVFN(slot, func)	((((slot) & 0x1f) << 3) | ((func) & 0x07))
- #define PCI_SLOT(devfn)		(((devfn) >> 3) & 0x1f)
- #define PCI_FUNC(devfn)		((devfn) & 0x07)
-+#define PCI_DOMAIN(db)		((db) >> 16)
-+#define PCI_BUSNUM(db)		((db) & 0xffff)
-+#define PCI_DOMBUS(domain, bus)		(((domain) << 16) | (bus))
+ 			pci_add_resource(&resources, &ioport_resource);
+ 			pci_add_resource(&resources, &iomem_resource);
+-			bus = pci_scan_root_bus(NULL, 0, controller->ops,
+-						controller, &resources);
++			bus = pci_scan_root_bus(NULL, PCI_DOMBUS(controller->index, 0),
++					controller->ops, controller, &resources);
+ 			controller->root_bus = bus;
+ 			controller->last_busno = bus->busn_res.end;
+ 		}
+diff --git a/arch/tile/kernel/pci_gx.c b/arch/tile/kernel/pci_gx.c
+index d7a0729..1e6ff84 100644
+--- a/arch/tile/kernel/pci_gx.c
++++ b/arch/tile/kernel/pci_gx.c
+@@ -881,8 +881,9 @@ int __init pcibios_init(void)
+ 					controller->mem_offset);
+ 		pci_add_resource(&resources, &controller->io_space);
+ 		controller->first_busno = next_busno;
+-		bus = pci_scan_root_bus(NULL, next_busno, controller->ops,
+-					controller, &resources);
++		bus = pci_scan_root_bus(NULL,
++				PCI_DOMBUS(controller->index, next_busno),
++				controller->ops, controller, &resources);
+ 		controller->root_bus = bus;
+ 		next_busno = bus->busn_res.end + 1;
+ 	}
+diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
+index cfd1b13..8edea63 100644
+--- a/arch/x86/pci/acpi.c
++++ b/arch/x86/pci/acpi.c
+@@ -536,9 +536,9 @@ struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
+ 		}
  
- /* Ioctls for /proc/bus/pci/X/Y nodes. */
- #define PCIIOC_BASE		('P' << 24 | 'C' << 16 | 'I' << 8)
+ 		if (!setup_mcfg_map(info, domain, (u8)root->secondary.start,
+-				    (u8)root->secondary.end, root->mcfg_addr))
+-			bus = pci_create_root_bus(NULL, busnum, &pci_root_ops,
+-						  sd, &resources);
++					(u8)root->secondary.end, root->mcfg_addr))
++			bus = pci_create_root_bus(NULL, PCI_DOMBUS(domain, busnum),
++					&pci_root_ops, sd, &resources);
+ 
+ 		if (bus) {
+ 			pci_scan_child_bus(bus);
+diff --git a/arch/x86/pci/common.c b/arch/x86/pci/common.c
+index 300d39e..d6879ee 100644
+--- a/arch/x86/pci/common.c
++++ b/arch/x86/pci/common.c
+@@ -470,7 +470,8 @@ void pcibios_scan_root(int busnum)
+ 	sd->node = x86_pci_root_bus_node(busnum);
+ 	x86_pci_root_bus_resources(busnum, &resources);
+ 	printk(KERN_DEBUG "PCI: Probing PCI hardware (bus %02x)\n", busnum);
+-	bus = pci_scan_root_bus(NULL, busnum, &pci_root_ops, sd, &resources);
++	bus = pci_scan_root_bus(NULL, PCI_DOMBUS(0, busnum),
++			&pci_root_ops, sd, &resources);
+ 	if (!bus) {
+ 		pci_free_resource_list(&resources);
+ 		kfree(sd);
+diff --git a/drivers/pci/xen-pcifront.c b/drivers/pci/xen-pcifront.c
+index 240ddbc..a010dfa 100644
+--- a/drivers/pci/xen-pcifront.c
++++ b/drivers/pci/xen-pcifront.c
+@@ -477,8 +477,9 @@ static int pcifront_scan_root(struct pcifront_device *pdev,
+ 
+ 	pci_lock_rescan_remove();
+ 
+-	b = pci_scan_root_bus(&pdev->xdev->dev, bus,
+-				  &pcifront_bus_ops, sd, &resources);
++	b = pci_scan_root_bus(&pdev->xdev->dev,
++			PCI_DOMBUS(sd->domain, bus),
++			&pcifront_bus_ops, sd, &resources);
+ 	if (!b) {
+ 		dev_err(&pdev->xdev->dev,
+ 			"Error creating PCI Frontend Bus!\n");
 -- 
 1.7.1
 
