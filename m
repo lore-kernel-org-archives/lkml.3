@@ -1,81 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754058AbbAPKuV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 05:50:21 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:49633 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751249AbbAPKuS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 05:50:18 -0500
-Date: Fri, 16 Jan 2015 11:50:15 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jiang Liu <jiang.liu@linux.intel.com>,
-        Joerg Roedel <joro@8bytes.org>, x86@kernel.org,
-        Tony Luck <tony.luck@intel.com>
-Subject: Re: [patch 02/23] x86/apic: Make x2apic_mode depend on
- CONFIG_X86_X2APIC
-Message-ID: <20150116105015.GB18880@pd.tnic>
-References: <20150115210458.625399149@linutronix.de>
- <20150115211702.363274310@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20150115211702.363274310@linutronix.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1754113AbbAPKu3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 05:50:29 -0500
+Received: from mail-la0-f45.google.com ([209.85.215.45]:36633 "EHLO
+	mail-la0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751918AbbAPKu1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 05:50:27 -0500
+From: Alexander Kuleshov <kuleshovmail@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        Alexander Kuleshov <kuleshovmail@gmail.com>
+Subject: [PATCH] x86/boot/edd: return from query_edd so early as we can if EDD disabled
+Date: Fri, 16 Jan 2015 16:50:17 +0600
+Message-Id: <1421405417-23041-1-git-send-email-kuleshovmail@gmail.com>
+X-Mailer: git-send-email 2.3.0.rc0.44.ga94655d.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 15, 2015 at 09:22:11PM -0000, Thomas Gleixner wrote:
-> No point in having a static variable around which is always 0. Let the
-> compiler optimize code out if disabled.
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Return from query_edd routine as early as we can if CONFIG_EDD_OFF was set 'Y'
+and 'edd=on | skip[mbr]' parameter have not been transfered to the kernel.
 
-Acked-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Alexander Kuleshov <kuleshovmail@gmail.com>
+---
+ arch/x86/boot/edd.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-> ---
->  arch/x86/include/asm/apic.h |    8 ++++----
->  arch/x86/kernel/apic/apic.c |    2 +-
->  2 files changed, 5 insertions(+), 5 deletions(-)
-> 
-> Index: tip/arch/x86/include/asm/apic.h
-> ===================================================================
-> --- tip.orig/arch/x86/include/asm/apic.h
-> +++ tip/arch/x86/include/asm/apic.h
-> @@ -106,8 +106,6 @@ extern u32 native_safe_apic_wait_icr_idl
->  extern void native_apic_icr_write(u32 low, u32 id);
->  extern u64 native_apic_icr_read(void);
->  
-> -extern int x2apic_mode;
-> -
->  static inline bool apic_is_x2apic_enabled(void)
->  {
->  	u64 msr;
-> @@ -177,6 +175,7 @@ static inline u64 native_x2apic_icr_read
->  	return val;
->  }
->  
-> +extern int x2apic_mode;
->  extern int x2apic_phys;
->  extern int x2apic_preenabled;
->  extern void check_x2apic(void);
-> @@ -209,8 +208,9 @@ static inline void x2apic_force_phys(voi
->  {
->  }
->  
-> -#define	x2apic_preenabled 0
-> -#define	x2apic_supported()	0
-> +#define x2apic_mode		(0)
-> +#define	x2apic_preenabled	(0)
-
-Btw, while you're at it, you can kill this yet another knob
-x2apic_preenabled and use check_x2apic() directly. There are just too
-many useless knobs in there.
-
+diff --git a/arch/x86/boot/edd.c b/arch/x86/boot/edd.c
+index 223e425..79040d6 100644
+--- a/arch/x86/boot/edd.c
++++ b/arch/x86/boot/edd.c
+@@ -139,19 +139,19 @@ void query_edd(void)
+ 			do_mbr = 0;
+ 		}
+ 		else if (!strcmp(eddarg, "off"))
+-			do_edd = 0;
++			return;
+ 		else if (!strcmp(eddarg, "on"))
+ 			do_edd = 1;
+ 	}
+ 
++	if (!do_edd)
++		return;
++
+ 	be_quiet = cmdline_find_option_bool("quiet");
+ 
+ 	edp    = boot_params.eddbuf;
+ 	mbrptr = boot_params.edd_mbr_sig_buffer;
+ 
+-	if (!do_edd)
+-		return;
+-
+ 	/* Bugs in OnBoard or AddOnCards Bios may hang the EDD probe,
+ 	 * so give a hint if this happens.
+ 	 */
 -- 
-Regards/Gruss,
-    Boris.
+2.3.0.rc0.44.ga94655d.dirty
 
-Sent from a fat crate under my desk. Formatting is fine.
---
