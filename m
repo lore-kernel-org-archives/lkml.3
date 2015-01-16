@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757222AbbAPVYh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 16:24:37 -0500
-Received: from mail.kernel.org ([198.145.29.136]:54201 "EHLO mail.kernel.org"
+	id S1757089AbbAPVXS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 16:23:18 -0500
+Received: from mail.kernel.org ([198.145.29.136]:54214 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756981AbbAPVXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 16:23:11 -0500
+	id S1756960AbbAPVXO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 16:23:14 -0500
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Alexey Brodkin <abrodkin@synopsys.com>,
-        Borislav Petkov <bp@suse.de>, Cody P Schafer <dev@codyps.com>,
+Cc: linux-kernel@vger.kernel.org, Vineet Gupta <Vineet.Gupta1@synopsys.com>,
+        Vineet Gupta <vgupta@synopsys.com>,
+        Alexey Brodkin <Alexey.Brodkin@synopsys.com>,
         Jiri Olsa <jolsa@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
         Peter Zijlstra <peterz@infradead.org>,
-        Vineet Gupta <Vineet.Gupta1@synopsys.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 05/10] perf tools: Fix statfs.f_type data type mismatch build error with uclibc
-Date: Fri, 16 Jan 2015 18:22:37 -0300
-Message-Id: <1421443362-10709-6-git-send-email-acme@kernel.org>
+Subject: [PATCH 06/10] perf tools: Elide strlcpy warning with uclibc
+Date: Fri, 16 Jan 2015 18:22:38 -0300
+Message-Id: <1421443362-10709-7-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1421443362-10709-1-git-send-email-acme@kernel.org>
 References: <1421443362-10709-1-git-send-email-acme@kernel.org>
@@ -24,65 +24,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexey Brodkin <abrodkin@synopsys.com>
+From: Vineet Gupta <Vineet.Gupta1@synopsys.com>
 
-ARC Linux uses the no legacy syscalls abi and corresponding uClibc headers
-statfs defines f_type to be U32 which causes perf build breakage
+   ----------------->8------------------
+  CC       bench/sched-pipe.o
+In file included from builtin-annotate.c:13:0:
+util/cache.h:76:15: warning: redundant redeclaration of 'strlcpy'
+[-Wredundant-decls]
+ extern size_t strlcpy(char *dest, const char *src, size_t size);
+               ^
+In file included from util/util.h:55:0,
+                 from builtin.h:4,
+                 from builtin-annotate.c:8:
+~/vineetg/arc/gnu/INSTALL_1412-arc-2014.12-rc1/arc-snps-linux-uclibc/sysroot/usr/include/string.h:396:15:
+note: previous declaration of 'strlcpy' was here
+ extern size_t strlcpy(char *__restrict dst, const char *__restrict src,
+   ----------------->8------------------
 
-http://git.uclibc.org/uClibc/tree/libc/sysdeps/linux/common-generic/bits/statfs.h
-
-  ----------->8---------------
-    CC       fs/fs.o
-  fs/fs.c: In function 'fs__valid_mount':
-  fs/fs.c:82:24: error: comparison between signed and unsigned integer
-  expressions [-Werror=sign-compare]
-    else if (st_fs.f_type != magic)
-                          ^
-  cc1: all warnings being treated as errors
-  ----------->8---------------
-
-Signed-off-by: Alexey Brodkin <abrodkin@synopsys.com>
-Acked-by: Jiri Olsa <jolsa@kernel.org>
-Cc: Borislav Petkov <bp@suse.de>
-Cc: Cody P Schafer <dev@codyps.com>
+Signed-off-by: Vineet Gupta <vgupta@synopsys.com>
+Cc: Alexey Brodkin <Alexey.Brodkin@synopsys.com>
 Cc: Ingo Molnar <mingo@kernel.org>
 Cc: Jiri Olsa <jolsa@kernel.org>
 Cc: Namhyung Kim <namhyung@kernel.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Link: http://lkml.kernel.org/r/1420888254-17504-2-git-send-email-vgupta@synopsys.com
+Link: http://lkml.kernel.org/r/1421156604-30603-3-git-send-email-vgupta@synopsys.com
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/lib/api/fs/debugfs.c | 2 +-
- tools/lib/api/fs/fs.c      | 2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ tools/perf/util/cache.h | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/tools/lib/api/fs/debugfs.c b/tools/lib/api/fs/debugfs.c
-index a74fba6d7743..86ea2d7b8845 100644
---- a/tools/lib/api/fs/debugfs.c
-+++ b/tools/lib/api/fs/debugfs.c
-@@ -67,7 +67,7 @@ int debugfs_valid_mountpoint(const char *debugfs)
+diff --git a/tools/perf/util/cache.h b/tools/perf/util/cache.h
+index 5cf9e1b5989d..d04d770d90f6 100644
+--- a/tools/perf/util/cache.h
++++ b/tools/perf/util/cache.h
+@@ -71,7 +71,9 @@ extern char *perf_path(const char *fmt, ...) __attribute__((format (printf, 1, 2
+ extern char *perf_pathdup(const char *fmt, ...)
+ 	__attribute__((format (printf, 1, 2)));
  
- 	if (statfs(debugfs, &st_fs) < 0)
- 		return -ENOENT;
--	else if (st_fs.f_type != (long) DEBUGFS_MAGIC)
-+	else if ((long)st_fs.f_type != (long)DEBUGFS_MAGIC)
- 		return -ENOENT;
++#ifndef __UCLIBC__
+ /* Matches the libc/libbsd function attribute so we declare this unconditionally: */
+ extern size_t strlcpy(char *dest, const char *src, size_t size);
++#endif
  
- 	return 0;
-diff --git a/tools/lib/api/fs/fs.c b/tools/lib/api/fs/fs.c
-index 65d9be3f9887..128ef6332a6b 100644
---- a/tools/lib/api/fs/fs.c
-+++ b/tools/lib/api/fs/fs.c
-@@ -79,7 +79,7 @@ static int fs__valid_mount(const char *fs, long magic)
- 
- 	if (statfs(fs, &st_fs) < 0)
- 		return -ENOENT;
--	else if (st_fs.f_type != magic)
-+	else if ((long)st_fs.f_type != magic)
- 		return -ENOENT;
- 
- 	return 0;
+ #endif /* __PERF_CACHE_H */
 -- 
 1.9.3
 
