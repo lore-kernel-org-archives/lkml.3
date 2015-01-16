@@ -1,75 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932271AbbAPQfV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 11:35:21 -0500
-Received: from lists.s-osg.org ([54.187.51.154]:44592 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752166AbbAPQfT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 11:35:19 -0500
-Message-ID: <54B93DA1.2010601@osg.samsung.com>
-Date: Fri, 16 Jan 2015 09:34:41 -0700
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1756631AbbAPQgN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 11:36:13 -0500
+Received: from mout.kundenserver.de ([212.227.17.24]:54436 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756545AbbAPQgL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 11:36:11 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Al Stone <al.stone@linaro.org>
+Cc: linaro-acpi@lists.linaro.org, Rob Herring <robh@kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>, Robert Richter <rric@kernel.org>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, Jon Masters <jcm@redhat.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Robert Moore <robert.moore@intel.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Mark Brown <broonie@kernel.org>, Lv Zheng <lv.zheng@intel.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Liviu Dudau <Liviu.Dudau@arm.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Olof Johansson <olof@lixom.net>
+Subject: Re: [Linaro-acpi] [PATCH v5 18/18] Documentation: ACPI for ARM64
+Date: Fri, 16 Jan 2015 17:35:24 +0100
+Message-ID: <3666560.Yq8BxWCZ3E@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <54B7F767.6060808@linaro.org>
+References: <1413553034-20956-1-git-send-email-hanjun.guo@linaro.org> <2277974.2klgILPa2Q@wuerfel> <54B7F767.6060808@linaro.org>
 MIME-Version: 1.0
-To: Michael Ellerman <mpe@ellerman.id.au>, linux-kernel@vger.kernel.org
-CC: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
-        rostedt@goodmis.org, mingo@redhat.com, davem@davemloft.net,
-        keescook@chromium.org, tranmanphong@gmail.com, cov@codeaurora.org,
-        dh.herrmann@gmail.com, hughd@google.com, bobby.prani@gmail.com,
-        serge.hallyn@ubuntu.com, ebiederm@xmission.com,
-        tim.bird@sonymobile.com, josh@joshtriplett.org, koct9i@gmail.com,
-        linux-kbuild@vger.kernel.org, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 4/6] kbuild: add a new kselftest_install make target to
- install selftests
-References: <1420794375-31881-1-git-send-email-mpe@ellerman.id.au> <1420794375-31881-4-git-send-email-mpe@ellerman.id.au>
-In-Reply-To: <1420794375-31881-4-git-send-email-mpe@ellerman.id.au>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:0eCXve5G5DCs58CsvFywiPhGNgW9ZatQf5LpotrpN58A3bSCZPw
+ d5sxUFfETqzihHXxFc+A+Kooj66uhJGtm/CWdZ+UJn/AfoysU6WBr9pCcIwG6PR0Ko81N/5
+ nQqC8s2XucuNiJbmn7Y9eEaB9JK3+pvUr6P505earJonLDoyvsNZKbRC0RKn7kjP3PuYtS8
+ LTo6hpI4psny8wbMHAYsg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09/2015 02:06 AM, Michael Ellerman wrote:
-> Add a new make target to install kernel selftests. This new target will
-> build and install selftests.
+On Thursday 15 January 2015 10:22:47 Al Stone wrote:
 > 
-> The default is just $(objtree)/selftests. This is preferable to
-> something based on $(INSTALL_MOD_PATH) (which defaults to /), as it
-> allows a normal user to install the tests. This is similar to the
-> default behaviour of make headers_install.
+> Can I restate the position as I hear it, then?  I want to make sure
+> I'm understanding what's being said.
+> 
+> What I'm reading seems to say: if an ARMv8 vendor wants Linux support
+> in the upstream kernel, regardless of whether or not it is a mobile or
+> server product, they must submit DT-based patches until such time as
+> ACPI on arm64 is deemed "mature."  Do I have that correct?
 
-A normal user can install tests at any location they choose by
-overriding the default path. For example:
+I was specifically referring to SoC specific device drivers here.
+It's a bit unclear what a 'vendor' is in this context, but I'd hope
+that as long as we have basic support for a SoC, other people can
+build DT blobs for these machines and have them run Linux out of
+the box.
 
-INSTALL_MOD_PATH=/tmp make kselftest_install
+> That implies to me that if I want to build an ACPI-only product, there
+> is no way to predict when or if I can get Linux support.  And, that if
+> I do want Linux support, and need ACPI for my end-users, I have to
+> maintain both sets of firmware for some unknown time into the future.
+> Is that what was meant?
 
-will install under tmp.
+The firmware is normally not written by the people that do the SoC,
+and we have very little control over what someone puts in their
+firmware. Shipping an ACPI-only firmware would still work, but has
+the danger of breaking if we ever have to make incompatible changes
+to the way we interpret the ACPI tables and we have to support users
+that can't upgrade their firmware.
 
-The approach I used also ties test installs to kernel release.
-This addresses an important use-case for kernel developers
-that want to compare results from release to release.
+Hopefully we can quickly get to the point where we don't have to
+make incompatible changes, but I don't think that is realistic
+from the day we first merge ACPI support.
 
-The use-case for any user to be able to install tests at
-any location is addressed by the above example.
-
-I would like these two above use-cases continued to be supported,
-especially the one that tries the test installs to kernel release.
-Another goal is to keep changes to the main Makefile minimal and
-the rest of the install support belongs under selftests/Makefile
-and any other include file (like the one you proposed).
-
-The patch I have in patch v4 addresses the use-cases mentioned above.
-I do like the lib.mk approach in general and I am going to review that
-patch and give you feedback.
-
-thanks,
--- Shuah
-
--- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Open Source Innovation Group
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+	Arnd
