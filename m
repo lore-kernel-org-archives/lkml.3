@@ -1,111 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756256AbbAPPtY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 10:49:24 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:36267 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751465AbbAPPtW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 10:49:22 -0500
-Date: Fri, 16 Jan 2015 15:49:13 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        linaro-acpi <linaro-acpi@lists.linaro.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Yijing Wang <wangyijing@huawei.com>, Rob Herring <robh@kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Timur Tabi <timur@codeaurora.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        Tom Lendacky <thomas.lendacky@amd.com>,
-        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>, "jcm@redhat.com" <jcm@redhat.com>,
-        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v7 00/17] Introduce ACPI for ARM64 based on ACPI 5.1
-Message-ID: <20150116154913.GW7091@arm.com>
-References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org>
- <2198633.UpIyI82Yon@wuerfel>
- <20150116153320.GU7091@arm.com>
- <1809831.d9GPSfLUEN@wuerfel>
+	id S1756420AbbAPPta (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 10:49:30 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44241 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756280AbbAPPtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 10:49:25 -0500
+Date: Fri, 16 Jan 2015 16:49:22 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Vinayak Menon <vinmenon@codeaurora.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, hannes@cmpxchg.org, vdavydov@parallels.com,
+        mgorman@suse.de, minchan@kernel.org, Christoph Lameter <cl@gentwo.org>
+Subject: Re: [PATCH v2] mm: vmscan: fix the page state calculation in
+ too_many_isolated
+Message-ID: <20150116154922.GB4650@dhcp22.suse.cz>
+References: <1421235419-30736-1-git-send-email-vinmenon@codeaurora.org>
+ <20150114165036.GI4706@dhcp22.suse.cz>
+ <54B7F7C4.2070105@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1809831.d9GPSfLUEN@wuerfel>
+In-Reply-To: <54B7F7C4.2070105@codeaurora.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 16, 2015 at 03:40:28PM +0000, Arnd Bergmann wrote:
-> On Friday 16 January 2015 15:33:20 Will Deacon wrote:
-> > On Fri, Jan 16, 2015 at 03:14:13PM +0000, Arnd Bergmann wrote:
-> > > On Friday 16 January 2015 14:55:45 Will Deacon wrote:
-> > > > On Fri, Jan 16, 2015 at 02:45:30PM +0000, Tom Lendacky wrote:
-> > > > > I have tested ACPI-enablement patches for the amd-xgbe/amd-xgbe-phy
-> > > > > drivers that I'm about to submit upstream with the V7 patch series
-> > > > > on the AMD Seattle server platform. There does not appear to be support
-> > > > > for the _CCA attribute in this patch series. The amd-xgbe driver will
-> > > > > setup the device domain and cache attributes based on the presence of
-> > > > > this attribute, but it requires the arch support to assign the proper
-> > > > > DMA operations in order for it to all work correctly.
-> > > > > 
-> > > > > Overriding the _CCA attribute in the driver, I was able to successfully
-> > > > > test the driver and this patch series.
-> > > > 
-> > > > Hopefully this will all be addressed when the IORT parts of ACPI have
-> > > > settled down (the current proposal allows for these attributes to be
-> > > > described as well as their interaction with things like IOMMUs).
-> > > > 
-> > > > In the meantime, are you falling back to non-coherent DMA? If so, what
-> > > > attributes have you settled on? We need to be really careful not to
-> > > > corrupt data during cache invalidatation when mapping a non-coherent
-> > > > buffer for the CPU.
-> > > 
-> > > I think in case of ACPI we should use cache-coherent as the default,
-> > > as this is what all servers will use for DMA masters.
-> > 
-> > I don't agree. The dma-coherent we have for device-tree isn't nearly
-> > expressive enough for the kind of things we want to describe and there's
-> > no reason to make the same mistake in ACPI, especially as it *is* being
-> > addressed by IORT. If we run with _CCA, then we're going to be stuck
-> > supporting something that isn't fit for purpose and which will likely be
-> > abused to describe both fixed features of the system and software
-> > configuration preferences. It also opens up a can of worms if we have to
-> > support a mixture of _CCA and IORT in the future.
-> > 
-> > Or are you suggesting that we ignore _CCA and just assume cache-coherency?
-> > In that case, how do we support systems that aren't cache coherent, where
-> > not being cache coherent includes devices that require either device or
-> > IOMMU configuration to enable cacheable transactions?
+On Thu 15-01-15 22:54:20, Vinayak Menon wrote:
+> On 01/14/2015 10:20 PM, Michal Hocko wrote:
+> >On Wed 14-01-15 17:06:59, Vinayak Menon wrote:
+> >[...]
+> >>In one such instance, zone_page_state(zone, NR_ISOLATED_FILE)
+> >>had returned 14, zone_page_state(zone, NR_INACTIVE_FILE)
+> >>returned 92, and GFP_IOFS was set, and this resulted
+> >>in too_many_isolated returning true. But one of the CPU's
+> >>pageset vm_stat_diff had NR_ISOLATED_FILE as "-14". So the
+> >>actual isolated count was zero. As there weren't any more
+> >>updates to NR_ISOLATED_FILE and vmstat_update deffered work
+> >>had not been scheduled yet, 7 tasks were spinning in the
+> >>congestion wait loop for around 4 seconds, in the direct
+> >>reclaim path.
+> >
+> >Not syncing for such a long time doesn't sound right. I am not familiar
+> >with the vmstat syncing but sysctl_stat_interval is HZ so it should
+> >happen much more often that every 4 seconds.
+> >
 > 
-> I was thinking we'd ignore _CCA because as you say a simple on/off flag
-> would not be enough to describe what we have to do for noncoherent
-> devices. I can't think of any reason why a server hardware would include
-> noncoherent devices, so if they are configurable they should be configured
-> into coherent mode by the firmware.
+> Though the interval is HZ, since the vmstat_work is declared as a
+> deferrable work, IIUC the timer trigger can be deferred to the next
+> non-defferable timer expiry on the CPU which is in idle. This results
+> in the vmstat syncing on an idle CPU delayed by seconds. May be in
+> most cases this behavior is fine, except in cases like this.
 
-The on-board ethernet on Seattle requires the driver to program its AXI
-attributes, so configuring it to be a coherent master actually means
-"program the same cacheable AXI settings as you have on the CPU". That
-sounds like Linux should be doing it to me, but even if the firmware takes
-a guess at "normal cacheable WBRWA", it's not clear to me whether that
-register persists across things like adapter reset.
+I am not sure I understand the above because CPU being idle doesn't
+seem important AFAICS. Anyway I have checked the current code which has
+changed quite recently by 7cc36bbddde5 (vmstat: on-demand vmstat workers
+V8). Let's CC Christoph (the thread starts here:
+http://thread.gmane.org/gmane.linux.kernel.mm/127229).
 
-Tom?
+__round_jiffies_relative can easily make timeout 2HZ from 1HZ. Now we
+have vmstat_shepherd which waits to be queued and then wait to run. When
+it runs finally it only queues per-cpu vmstat_work which can also end
+up being 2HZ for some CPUs. So we can indeed have 4 seconds spent just
+for queuing. Not even mentioning work item latencies. Especially when
+workers are overloaded e.g. by fs work items and no additional workers
+cannot be created e.g. due to memory pressure so they are processed only
+by the workqueue rescuer. And latencies would grow a lot.
 
-There's also the situation where the firmware hasn't initialised the
-register and Linux realises this during probe. What should it do then?
+We have seen an issue where rescuer had to process thousands of work
+items because all workers where blocked on memory allocation - see
+http://thread.gmane.org/gmane.linux.kernel/1816452 - which is mainline
+already 008847f66c38 (workqueue: allow rescuer thread to do more work.)
+the patch reduces the latency considerably but it doesn't remove it
+completely.
 
-Will
+If the time between two syncs is large then the per-cpu drift might be
+really large as well. Isn't this going to hurt other places where we
+rely on stats as well?
+
+In this particular case the reclaimers are throttled because they see
+too many isolated pages which was just a result of the per-cpu drift and
+small LRU list. The system seems to be under serious memory pressure
+already because there is basically no file cache. If the reclaimers
+wouldn't be throttled they would fail the reclaim probably and trigger
+OOM killer which might help to resolve the situation. Reclaimers are
+throttled instead.
+
+Why cannot we simply update the global counters from vmstat_shepherd
+directly? Sure we would access remote CPU counters but that wouldn't
+happen often. That still wouldn't be enough because there is the
+workqueue latency. So why cannot we do that whole shepherd thing from a
+kernel thread instead? If the NUMA zone->pageset->pcp thing has to be
+done locally then it could have per-node kthread rather than being part
+of the unrelated vmstat code.
+I might be missing obvious things because I still haven't digested the
+code completely but this whole thing seems overly complicated and I
+do not see a good reason for that. If the primary motivation was cpu
+isolation then kthreads would sound like a better idea because you can
+play with the explicit affinity from the userspace.
+
+> Even in usual cases were the timer triggers in 1-2 secs, is it fine to
+> let the tasks in reclaim path wait that long unnecessarily when there
+> isn't any real congestion?
+
+But how do we find that out?
+
+-- 
+Michal Hocko
+SUSE Labs
