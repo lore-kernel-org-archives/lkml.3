@@ -1,66 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752525AbbAPPa5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 10:30:57 -0500
-Received: from cpsmtpb-ews06.kpnxchange.com ([213.75.39.9]:55197 "EHLO
-	cpsmtpb-ews06.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751427AbbAPPa4 (ORCPT
+	id S1756211AbbAPPdi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 10:33:38 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:36231 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753044AbbAPPdg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 10:30:56 -0500
-Message-ID: <1421422253.8562.8.camel@x220>
-Subject: Re: [PATCH] mm/page_owner: Fix memory leak
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Valentin Ilie <valentin.ilie@gmail.com>
-Cc: iamjoonsoo.kim@lge.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Date: Fri, 16 Jan 2015 16:30:53 +0100
-In-Reply-To: <1421420621.8562.1.camel@x220>
-References: <1421410284-23776-1-git-send-email-valentin.ilie@gmail.com>
-	 <1421420621.8562.1.camel@x220>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 16 Jan 2015 15:30:53.0208 (UTC) FILETIME=[6A06F180:01D031A1]
-X-RcptDomain: vger.kernel.org
+	Fri, 16 Jan 2015 10:33:36 -0500
+Date: Fri, 16 Jan 2015 15:33:20 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Tom Lendacky <thomas.lendacky@amd.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        linaro-acpi <linaro-acpi@lists.linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Yijing Wang <wangyijing@huawei.com>, Rob Herring <robh@kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Timur Tabi <timur@codeaurora.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
+        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, "jcm@redhat.com" <jcm@redhat.com>,
+        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v7 00/17] Introduce ACPI for ARM64 based on ACPI 5.1
+Message-ID: <20150116153320.GU7091@arm.com>
+References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org>
+ <54B9240A.7060003@amd.com>
+ <20150116145545.GR7091@arm.com>
+ <2198633.UpIyI82Yon@wuerfel>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2198633.UpIyI82Yon@wuerfel>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(I dislike it when people set a trap for me, so on second thought I tell
-you what I should have added right away.) 
-
-On Fri, 2015-01-16 at 16:03 +0100, Paul Bolle wrote:
-> On Fri, 2015-01-16 at 14:11 +0200, Valentin Ilie wrote:
-> > Call kfree on list2 after using it.
+On Fri, Jan 16, 2015 at 03:14:13PM +0000, Arnd Bergmann wrote:
+> On Friday 16 January 2015 14:55:45 Will Deacon wrote:
+> > On Fri, Jan 16, 2015 at 02:45:30PM +0000, Tom Lendacky wrote:
+> > > I have tested ACPI-enablement patches for the amd-xgbe/amd-xgbe-phy
+> > > drivers that I'm about to submit upstream with the V7 patch series
+> > > on the AMD Seattle server platform. There does not appear to be support
+> > > for the _CCA attribute in this patch series. The amd-xgbe driver will
+> > > setup the device domain and cache attributes based on the presence of
+> > > this attribute, but it requires the arch support to assign the proper
+> > > DMA operations in order for it to all work correctly.
+> > > 
+> > > Overriding the _CCA attribute in the driver, I was able to successfully
+> > > test the driver and this patch series.
 > > 
-> > Signed-off-by: Valentin Ilie <valentin.ilie@gmail.com>
-> > ---
-> >  tools/vm/page_owner_sort.c | 2 ++
-> >  1 file changed, 2 insertions(+)
+> > Hopefully this will all be addressed when the IORT parts of ACPI have
+> > settled down (the current proposal allows for these attributes to be
+> > described as well as their interaction with things like IOMMUs).
 > > 
-> > diff --git a/tools/vm/page_owner_sort.c b/tools/vm/page_owner_sort.c
-> > index 77147b4..92292d5 100644
-> > --- a/tools/vm/page_owner_sort.c
-> > +++ b/tools/vm/page_owner_sort.c
-> > @@ -139,6 +139,8 @@ int main(int argc, char **argv)
-> >  
-> >  	for (i = 0; i < count; i++)
-> >  		fprintf(fout, "%d times:\n%s\n", list2[i].num, list2[i].txt);
-> > +	
+> > In the meantime, are you falling back to non-coherent DMA? If so, what
+> > attributes have you settled on? We need to be really careful not to
+> > corrupt data during cache invalidatation when mapping a non-coherent
+> > buffer for the CPU.
 > 
-> Checkpatch would have caught the tab you added here.
-> 
-> > +	kfree(list2);
-> 
-> You didn't even compile this, did you?
->  
-> >  	return 0;
-> >  }
+> I think in case of ACPI we should use cache-coherent as the default,
+> as this is what all servers will use for DMA masters.
 
-Before you resend: what happens to the resources of a userspace program
-when its main() returns?
+I don't agree. The dma-coherent we have for device-tree isn't nearly
+expressive enough for the kind of things we want to describe and there's
+no reason to make the same mistake in ACPI, especially as it *is* being
+addressed by IORT. If we run with _CCA, then we're going to be stuck
+supporting something that isn't fit for purpose and which will likely be
+abused to describe both fixed features of the system and software
+configuration preferences. It also opens up a can of worms if we have to
+support a mixture of _CCA and IORT in the future.
 
+Or are you suggesting that we ignore _CCA and just assume cache-coherency?
+In that case, how do we support systems that aren't cache coherent, where
+not being cache coherent includes devices that require either device or
+IOMMU configuration to enable cacheable transactions?
 
-Paul Bolle
-
+Will
