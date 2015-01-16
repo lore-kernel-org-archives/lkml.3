@@ -1,106 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753384AbbAPKRf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 05:17:35 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:35290 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751931AbbAPKRb (ORCPT
+	id S1754043AbbAPKST (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 05:18:19 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:35571 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752558AbbAPKSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 05:17:31 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-24-54b8e538ae31
-Message-id: <54B8E534.5080506@samsung.com>
-Date: Fri, 16 Jan 2015 11:17:24 +0100
-From: Sylwester Nawrocki <s.nawrocki@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
- Thunderbird/31.1.2
-MIME-version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Mark Brown <broonie@kernel.org>, Rob Herring <robherring2@gmail.com>,
-        Jacek Anaszewski <j.anaszewski@samsung.com>,
-        linux-leds@vger.kernel.org,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Fri, 16 Jan 2015 05:18:16 -0500
+Date: Fri, 16 Jan 2015 10:17:47 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Rob Herring <robherring2@gmail.com>, Suman Anna <s-anna@ti.com>,
+        Kumar Gala <galak@codeaurora.org>, Bjorn Andersson <bjorn@kryo.se>,
+        Josh Cartwright <joshc@codeaurora.org>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
-        sakari.ailus@iki.fi, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Liam Girdwood <lgirdwood@gmail.com>
-Subject: Re: [PATCH/RFC v10 03/19] DT: leds: Add led-sources property
-References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
- <1420816989-1808-4-git-send-email-j.anaszewski@samsung.com>
- <CAL_JsqJKEp6TWaRhJimg3AWBh+MCCr2Bk9+1o7orLLdp5E+n-g@mail.gmail.com>
- <54B38682.5080605@samsung.com>
- <CAL_Jsq+UaA41DvawdOMmOib=Fi0hC-nBdKV-+P4DFo+MoOy-bQ@mail.gmail.com>
- <54B3F1EF.4060506@samsung.com>
- <CAL_JsqKpJtUG0G6g1GOuSVpc31oe-dp3qdrKJUE0upG-xRDFhA@mail.gmail.com>
- <20150112170644.GO4160@sirena.org.uk> <54B7B39C.7080204@samsung.com>
- <20150115210310.GB24008@amd>
-In-reply-to: <20150115210310.GB24008@amd>
-Content-type: text/plain; charset=windows-1252
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEIsWRmVeSWpSXmKPExsVy+t/xa7oWT3eEGJw9pG6xccZ6VoupD5+w
-	WRzdOZHJYv6Rc6wW/W8Wslqce7WS0aL36nNGi7NNb9gtvl3pYLK4vGsOm8XWN+sYLXo2bGW1
-	WHr9IpPF3VNH2SwmTF/LYtG69wi7xfdv39gsdu96ympxZv9KNgdhjzXz1jB6XO7rZfLYOesu
-	u8fK5V/YPA5/XcjisWlVJ5vHnvk/WD36tqxi9Fix+ju7x+dNcgFcUVw2Kak5mWWpRfp2CVwZ
-	+6dJFizmrrjz6AprA+Nyji5GTg4JAROJP5dbWCBsMYkL99azdTFycQgJLGWUmPH+MhOE84lR
-	Ytqua2BVvAJaEod//WUDsVkEVCVePN4BZrMJGEr0Hu1jBLFFBSIkTt7dww5RLyjxY/I9sF4R
-	AXmJrX0rmEGGMgt8ZZW4MXE6M0hCWMBVYnb7YmaIbU0sEstuHWcCSXAKaEps6tvC2sXIAdSh
-	J3H/ohZImBlo0OY1b5knMArMQrJjFkLVLCRVCxiZVzGKppYmFxQnpeca6hUn5haX5qXrJefn
-	bmKExOOXHYyLj1kdYhTgYFTi4Z2xZUeIEGtiWXFl7iFGCQ5mJRHejduAQrwpiZVVqUX58UWl
-	OanFhxiZODilGhhNPK1POOnqPTv6JpC9pMQmdDGDdcL2eUdkDJiFu+zmLi/IevWvamJn5NrN
-	5mUbTXfrVAXG+3+VeHdg9Rs1Q5eanAmVdgrcd7lkLn91Np3HdUd92YuoHUoznrnnHvDa+9tO
-	JMtogovd0SQ7K8Xdex2VlCce/iXXarr1NHtUU9jVI909LYbu8kosxRmJhlrMRcWJAOVxrWul	AgAA
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: Re: [PATCH v7 1/4] Documentation: dt: add common bindings for
+ hwspinlock
+Message-ID: <20150116101746.GA21809@leverpostej>
+References: <1421269101-51105-1-git-send-email-s-anna@ti.com>
+ <1421269101-51105-2-git-send-email-s-anna@ti.com>
+ <20150115135201.GG16217@leverpostej>
+ <20150115135556.GH16217@leverpostej>
+ <CAL_JsqL2LZAooMk-V8+xeF2g6acZE21M+-OBRw8aEVa-5wVHuQ@mail.gmail.com>
+ <CAK=WgbYQ=BbinqJ5fsw2Y+FKdy=nasLsw9mX8pw6S_o3owy9-g@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAK=WgbYQ=BbinqJ5fsw2Y+FKdy=nasLsw9mX8pw6S_o3owy9-g@mail.gmail.com>
+Thread-Topic: [PATCH v7 1/4] Documentation: dt: add common bindings for
+ hwspinlock
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Jan 16, 2015 at 06:09:00AM +0000, Ohad Ben-Cohen wrote:
+> On Thu, Jan 15, 2015 at 4:42 PM, Rob Herring <robherring2@gmail.com> wrote:
+> > On Thu, Jan 15, 2015 at 7:55 AM, Mark Rutland <mark.rutland@arm.com> wrote:
+> >> On Thu, Jan 15, 2015 at 01:52:01PM +0000, Mark Rutland wrote:
+> >>> On Wed, Jan 14, 2015 at 08:58:18PM +0000, Suman Anna wrote:
+> >>> > +- hwlock-base-id:  An unique base Id for the locks for a particular hwlock
+> >>> > +                   device. This property is mandatory for all platform
+> >>> > +                   implementations.
+> >>>
+> >>> This property makes no sense. The ID encoded in the hwlock cells is
+> >>> relative to the instance (identified by phandle), not global. So the DT
+> >>> has no global ID space.
+> >>>
+> >>> Why do you think you need this?
+> >>
+> >> Having looked at the way this proeprty is used, NAK.
+> >>
+> >> If you need to carve up a Linux-internal ID space, do that dynamically.
+> >> There is no need for this property.
+> >
+> > Better yet, don't create a Linux ID space for this. Everywhere we have
+> > one, we want to get rid of it.
+> 
+> Rob, Mark,
+> 
+> The hwlock is a basic hardware primitive that allow synchronization
+> between different processors in the system, which may be running Linux
+> as well as other operating systems, and may have no other means of
+> communication.
+> 
+> The hwlock id numbers are predefined, global and static across the
+> entire system: Linux may boot well after other operating systems are
+> already running and using these hwlocks to communicate, and therefore,
+> in order to use these hardware devices, it must not enumerate them
+> differently than the rest of the system.
 
-On 15/01/15 22:03, Pavel Machek wrote:
->> Perhaps we could use the 'reg' property to describe actual connections,
->> > I'm not sure if it's better than a LED specific property, e.g.
->> > 
->> > max77387@52 {
->> >         compatible = "nxp,max77387";
->> >         #address-cells = <2>;
->> >         #size-cells = <0>;
->> >         reg = <0x52>;
->> > 
->> > 	flash_led {
->> > 		reg = <1 1>;	
->> > 		...
->> > 	};	
->> > };
->
-> Normally, reg property is <start length>, if I understand things
-> correctly? Would that be enough here, or would we be doing list of
-> outputs?
+That's not true.
 
-In general the exact meaning depends on value of the #address-cells and
-#size-cells properties in the parent node.  In case as above #size-cells
-is 0.  You can find exact explanation in [1], at page 25.
+In order to communicate it must agree with the other users as to the
+meaning of each instance, and the protocol for use. That doesn't
+necessarily mean that Linux needs to know the numerical ID from a
+datasheet, and regardless that ID is separate from the logical ID Linux
+uses internally.
 
-Anyway, the above example might an abuse of the simple bus. I thought more
-about a list of outputs, but the indexes wouldn't be contiguous, e.g.
+> Given that these id numbers are global, system-wide, static and
+> predefined, where Linux may just be one user of them, please
+> reconsider the approach as implemented by Suman, or suggest an
+> alternative one you may prefer.
 
- curr. reg. outputs | "addres" value
---------------------------------
-FLED2    FLED1      |  reg
---------------------+-----------
-  0        1        | 0x00000001
-  1        0        | 0x00010000
-  1        1        | 0x00010001
+To communicate with the other processors, Linux will need to understand
+the protocol. So there will need to be nodes in the DT describing the
+protocol. Those nodes can refer to the relevant locks using phandle +
+args (with a hwlock-names list if indexing is not appropriate). The
+entire point of the hwlock-cells is to allow individual locks to be
+referred to in this way.
 
-But it might be not a good idea as Rob pointed out.
-
-OTOH we could simply assign indices 1,2,3 to the above FLED1/2 output
-combinations.
-
-[1] https://www.power.org/wp-content/uploads/2012/06/Power_ePAPR_APPROVED_v1.1.pdf
-
---
-Regards,
-Sylwester
+Thanks,
+Mark.
