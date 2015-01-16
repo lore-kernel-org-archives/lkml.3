@@ -1,259 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756250AbbAPEQx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 23:16:53 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:49769 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756095AbbAPEQb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 23:16:31 -0500
-From: Alexei Starovoitov <ast@plumgrid.com>
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Brendan Gregg <brendan.d.gregg@gmail.com>, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH tip 9/9] samples: bpf: simple kprobe example
-Date: Thu, 15 Jan 2015 20:16:10 -0800
-Message-Id: <1421381770-4866-10-git-send-email-ast@plumgrid.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1421381770-4866-1-git-send-email-ast@plumgrid.com>
-References: <1421381770-4866-1-git-send-email-ast@plumgrid.com>
+	id S1756286AbbAPEVA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 23:21:00 -0500
+Received: from ozlabs.org ([103.22.144.67]:41793 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753508AbbAPEU6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 23:20:58 -0500
+Date: Fri, 16 Jan 2015 15:20:51 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Kalle Valo <kvalo@codeaurora.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        David Spinadel <david.spinadel@intel.com>,
+        Emmanuel Grumbach <emmanuel.grumbach@intel.com>,
+        Haim Dreyfuss <haim.dreyfuss@intel.com>
+Subject: linux-next: manual merge of the wireless-drivers-next tree with the
+ wireless-drivers tree
+Message-ID: <20150116152051.7ce1ecf2@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/NfuPdjV_SwTv8uXMPLVjQc."; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-the logic of the example is similar to tracex2, but syscall 'write' statistics
-is capturead from kprobe placed at sys_write function instead of through
-syscall instrumentation.
-Also tracex4_kern.c has a different way of doing log2 in C.
-Note, unlike tracepoint and syscall programs, kprobe programs receive
-'struct pt_regs' as an input. It's responsibility of the program author
-or higher level dynamic tracing tool to match registers to function arguments.
-Since pt_regs are architecture dependent, programs are also arch dependent,
-unlike tracepoint/syscalls programs which are universal.
+--Sig_/NfuPdjV_SwTv8uXMPLVjQc.
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Usage:
-$ sudo tracex4
-writing bpf-6 -> /sys/kernel/debug/tracing/events/kprobes/sys_write/filter
-2216443+0 records in
-2216442+0 records out
-1134818304 bytes (1.1 GB) copied, 2.00746 s, 565 MB/s
+Hi Kalle,
 
-           kprobe sys_write() stats
-     byte_size       : count     distribution
-       1 -> 1        : 0        |                                      |
-       2 -> 3        : 0        |                                      |
-       4 -> 7        : 0        |                                      |
-       8 -> 15       : 0        |                                      |
-      16 -> 31       : 0        |                                      |
-      32 -> 63       : 0        |                                      |
-      64 -> 127      : 1        |                                      |
-     128 -> 255      : 0        |                                      |
-     256 -> 511      : 0        |                                      |
-     512 -> 1023     : 2214734  |************************************* |
+Today's linux-next merge of the wireless-drivers-next tree got a
+conflict in drivers/net/wireless/iwlwifi/mvm/scan.c between commit
+1f9c418fd94c ("iwlwifi: mvm: fix EBS on single scan") from the
+wireless-drivers tree and commit a1ed4025765c ("iwlwifi: mvm: Configure
+EBS scan ratio") from the wireless-drivers-next tree.
 
-Signed-off-by: Alexei Starovoitov <ast@plumgrid.com>
----
- samples/bpf/Makefile       |    4 +++
- samples/bpf/bpf_load.c     |    3 ++
- samples/bpf/tracex4_kern.c |   36 +++++++++++++++++++
- samples/bpf/tracex4_user.c |   83 ++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 126 insertions(+)
- create mode 100644 samples/bpf/tracex4_kern.c
- create mode 100644 samples/bpf/tracex4_user.c
+I fixed it up (the latter moved the code modified by the former, but
+also seems to have included the fix from the former patch) and can
+carry the fix as necessary (no action is required).
 
-diff --git a/samples/bpf/Makefile b/samples/bpf/Makefile
-index da0efd8032ab..22c7a38f3f95 100644
---- a/samples/bpf/Makefile
-+++ b/samples/bpf/Makefile
-@@ -10,6 +10,7 @@ hostprogs-y += dropmon
- hostprogs-y += tracex1
- hostprogs-y += tracex2
- hostprogs-y += tracex3
-+hostprogs-y += tracex4
- 
- dropmon-objs := dropmon.o libbpf.o
- test_verifier-objs := test_verifier.o libbpf.o
-@@ -20,6 +21,7 @@ sockex2-objs := bpf_load.o libbpf.o sockex2_user.o
- tracex1-objs := bpf_load.o libbpf.o tracex1_user.o
- tracex2-objs := bpf_load.o libbpf.o tracex2_user.o
- tracex3-objs := bpf_load.o libbpf.o tracex3_user.o
-+tracex4-objs := bpf_load.o libbpf.o tracex4_user.o
- 
- # Tell kbuild to always build the programs
- always := $(hostprogs-y)
-@@ -28,6 +30,7 @@ always += sockex2_kern.o
- always += tracex1_kern.o
- always += tracex2_kern.o
- always += tracex3_kern.o
-+always += tracex4_kern.o
- 
- HOSTCFLAGS += -I$(objtree)/usr/include
- 
-@@ -37,6 +40,7 @@ HOSTLOADLIBES_sockex2 += -lelf
- HOSTLOADLIBES_tracex1 += -lelf
- HOSTLOADLIBES_tracex2 += -lelf
- HOSTLOADLIBES_tracex3 += -lelf
-+HOSTLOADLIBES_tracex4 += -lelf
- 
- # point this to your LLVM backend with bpf support
- LLC=$(srctree)/tools/bpf/llvm/bld/Debug+Asserts/bin/llc
-diff --git a/samples/bpf/bpf_load.c b/samples/bpf/bpf_load.c
-index 788ac51c1024..d8c5176f0564 100644
---- a/samples/bpf/bpf_load.c
-+++ b/samples/bpf/bpf_load.c
-@@ -25,6 +25,7 @@ int prog_cnt;
- static int load_and_attach(const char *event, struct bpf_insn *prog, int size)
- {
- 	bool is_socket = strncmp(event, "socket", 6) == 0;
-+	bool is_kprobe = strncmp(event, "events/kprobes/", 15) == 0;
- 	enum bpf_prog_type prog_type;
- 	char path[256] = DEBUGFS;
- 	char fmt[32];
-@@ -32,6 +33,8 @@ static int load_and_attach(const char *event, struct bpf_insn *prog, int size)
- 
- 	if (is_socket)
- 		prog_type = BPF_PROG_TYPE_SOCKET_FILTER;
-+	else if (is_kprobe)
-+		prog_type = BPF_PROG_TYPE_KPROBE_FILTER;
- 	else
- 		prog_type = BPF_PROG_TYPE_TRACING_FILTER;
- 
-diff --git a/samples/bpf/tracex4_kern.c b/samples/bpf/tracex4_kern.c
-new file mode 100644
-index 000000000000..9646f9e43417
---- /dev/null
-+++ b/samples/bpf/tracex4_kern.c
-@@ -0,0 +1,36 @@
-+#include <linux/skbuff.h>
-+#include <linux/netdevice.h>
-+#include <uapi/linux/bpf.h>
-+#include <trace/bpf_trace.h>
-+#include "bpf_helpers.h"
-+
-+static unsigned int log2l(unsigned long long n)
-+{
-+#define S(k) if (n >= (1ull << k)) { i += k; n >>= k; }
-+	int i = -(n == 0);
-+	S(32); S(16); S(8); S(4); S(2); S(1);
-+	return i;
-+#undef S
-+}
-+
-+struct bpf_map_def SEC("maps") my_hist_map = {
-+	.type = BPF_MAP_TYPE_ARRAY,
-+	.key_size = sizeof(u32),
-+	.value_size = sizeof(long),
-+	.max_entries = 64,
-+};
-+
-+SEC("events/kprobes/sys_write")
-+int bpf_prog4(struct pt_regs *regs)
-+{
-+	long write_size = regs->dx; /* $rdx contains 3rd argument to a function */
-+	long init_val = 1;
-+	void *value;
-+	u32 index = log2l(write_size);
-+
-+	value = bpf_map_lookup_elem(&my_hist_map, &index);
-+	if (value)
-+		__sync_fetch_and_add((long *)value, 1);
-+	return 0;
-+}
-+char _license[] SEC("license") = "GPL";
-diff --git a/samples/bpf/tracex4_user.c b/samples/bpf/tracex4_user.c
-new file mode 100644
-index 000000000000..47dde2791f9e
---- /dev/null
-+++ b/samples/bpf/tracex4_user.c
-@@ -0,0 +1,83 @@
-+#include <stdio.h>
-+#include <unistd.h>
-+#include <stdlib.h>
-+#include <signal.h>
-+#include <linux/bpf.h>
-+#include "libbpf.h"
-+#include "bpf_load.h"
-+
-+#define MAX_INDEX	64
-+#define MAX_STARS	38
-+
-+static void stars(char *str, long val, long max, int width)
-+{
-+	int i;
-+
-+	for (i = 0; i < (width * val / max) - 1 && i < width - 1; i++)
-+		str[i] = '*';
-+	if (val > max)
-+		str[i - 1] = '+';
-+	str[i] = '\0';
-+}
-+
-+static void print_hist(int fd)
-+{
-+	int key;
-+	long value;
-+	long data[MAX_INDEX] = {};
-+	char starstr[MAX_STARS];
-+	int i;
-+	int max_ind = -1;
-+	long max_value = 0;
-+
-+	for (key = 0; key < MAX_INDEX; key++) {
-+		bpf_lookup_elem(fd, &key, &value);
-+		data[key] = value;
-+		if (value && key > max_ind)
-+			max_ind = key;
-+		if (value > max_value)
-+			max_value = value;
-+	}
-+
-+	printf("\n           kprobe sys_write() stats\n");
-+	printf("     byte_size       : count     distribution\n");
-+	for (i = 1; i <= max_ind + 1; i++) {
-+		stars(starstr, data[i - 1], max_value, MAX_STARS);
-+		printf("%8ld -> %-8ld : %-8ld |%-*s|\n",
-+		       (1l << i) >> 1, (1l << i) - 1, data[i - 1],
-+		       MAX_STARS, starstr);
-+	}
-+}
-+static void int_exit(int sig)
-+{
-+	print_hist(map_fd[0]);
-+	exit(0);
-+}
-+
-+int main(int ac, char **argv)
-+{
-+	char filename[256];
-+	FILE *f;
-+	int i;
-+
-+	snprintf(filename, sizeof(filename), "%s_kern.o", argv[0]);
-+
-+	signal(SIGINT, int_exit);
-+
-+	i = system("echo 'p:sys_write sys_write' > /sys/kernel/debug/tracing/kprobe_events");
-+	(void) i;
-+	
-+	/* start 'dd' in the background to have plenty of 'write' syscalls */
-+	f = popen("dd if=/dev/zero of=/dev/null", "r");
-+	(void) f;
-+
-+	if (load_bpf_file(filename)) {
-+		printf("%s", bpf_log_buf);
-+		return 1;
-+	}
-+
-+	sleep(2);
-+	kill(0, SIGINT); /* send Ctrl-C to self and to 'dd' */
-+
-+	return 0;
-+}
--- 
-1.7.9.5
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+--Sig_/NfuPdjV_SwTv8uXMPLVjQc.
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUuJGoAAoJEMDTa8Ir7ZwV1bwP/0R60PTzflz0/Zz04R/jvd+x
+pUVzRKer7+fqpXTCMjxYs2bHpJpgFs5911J5JN5vgQ61Te29BCM7HQ767Bq212kS
++bK5CFqCJ6152If56NG8UsAn/NtfG9yfEDXgVdkWF6xk1d8x/M6WddaQhHENOD61
+jT/quz9GiMsbvxi+mLtdEf3TGC6wR4eU0i1ZEPlhGldAg81wE53pAFXRTAi9AADq
+6Y9LveUe5dNlMtrpkGiLVsn2lxMPiUf+wDO12/ZnTPkcjRSatNvyxU6WumCGob94
+ZFagwjUbZ/r6JSQhnHw4dd9QnAaIHRR3Zbl5+AfDQiPJiZnBRd4b2VPs2v8qbOBv
+Rpg/DXiKaDiM5aZ1RLPGaFxoPmNXRiBMibbpOsZeqrhyKpwdG/5KnIxfZT44WLPX
++HF0s2pbm2VkPl6+tH40vLyhbTPbSCDk/q5NYxFMunUVTGYpzp7B2nFV+2NKFcVc
+QRe3nAf9BC/TwbG+tjhM1d4hCwZzGObES71acBGbH04X1z/4QqLk05Ims52yIKPd
+Luv9cG+JqjTJUuDxr/lsYjLaymeVM+2yBlIBciIdg4e4HXK7xSG91tslIZvK0a44
+HnbS6DfHF6fWORBGKbhZUirwCGEHxvnbyg01t4mZGP9001uAA+PBE1lDyRyml1oQ
+yJJ+Q0ia/oZFQiHUF/px
+=9r8b
+-----END PGP SIGNATURE-----
+
+--Sig_/NfuPdjV_SwTv8uXMPLVjQc.--
