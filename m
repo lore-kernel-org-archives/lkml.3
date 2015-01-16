@@ -1,149 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756329AbbAPPXI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 10:23:08 -0500
-Received: from netz39.de ([78.46.22.20]:53937 "EHLO mail.netz39.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752446AbbAPPXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 10:23:05 -0500
-X-Spam-Report: 0.0 URIBL_BLOCKED          ADMINISTRATOR NOTICE: The query to URIBL was blocked.
-	See
-	http://wiki.apache.org/spamassassin/DnsBlocklists#dnsbl-block
-	for more information.
-	[URIs: netz39.de]
-	-1.0 ALL_TRUSTED            Passed through trusted hosts only via SMTP
-	-1.9 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
-	0.6 INVALID_MSGID          Message-Id is not valid, according to RFC 2822
-From: y@vger.kernel.org
-To: John McCutchan <john@johnmccutchan.com>, Robert Love <rlove@rlove.org>,
-        Eric Paris <eparis@parisplace.org>
-Cc: linux-kernel@vger.kernel.org, Stefan Haun <tux@netz39.de>
-Subject: [PATCH 2/2] fs: fix checkpatch code warnings for inotify
-Date: Fri, 16 Jan 2015 16:15:11 +0100
-Message-Id: <1421421311-4475-2-git-send-email-y>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1421421311-4475-1-git-send-email-y>
-References: <1421421311-4475-1-git-send-email-y>
+	id S1754640AbbAPPbb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 10:31:31 -0500
+Received: from mail-bn1bn0109.outbound.protection.outlook.com ([157.56.110.109]:45179
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752376AbbAPPb3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 10:31:29 -0500
+X-WSS-ID: 0NI9ZQZ-07-I1P-02
+X-M-MSG: 
+Message-ID: <54B92B36.6080700@amd.com>
+Date: Fri, 16 Jan 2015 09:16:06 -0600
+From: Tom Lendacky <thomas.lendacky@amd.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Will Deacon <will.deacon@arm.com>
+CC: "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        linaro-acpi <linaro-acpi@lists.linaro.org>,
+        Yijing Wang <wangyijing@huawei.com>, "Rob Herring" <robh@kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Timur Tabi <timur@codeaurora.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
+        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        "jcm@redhat.com" <jcm@redhat.com>, Mark Brown <broonie@kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, "Olof Johansson" <olof@lixom.net>
+Subject: Re: [PATCH v7 00/17] Introduce ACPI for ARM64 based on ACPI 5.1
+References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org>
+ <CACxGe6v_BvCQqp8d=LaQ8HeaOU1Zh_HPpwFTdwOjHUbqXsnQ8g@mail.gmail.com>
+ <20150115182346.GE2329@e104818-lin.cambridge.arm.com>
+ <54B8BB24.2020408@linaro.org> <54B9240A.7060003@amd.com>
+ <20150116145545.GR7091@arm.com>
+In-Reply-To: <20150116145545.GR7091@arm.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.180.168.240]
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=none (sender IP is 165.204.84.221)
+ smtp.mailfrom=Thomas.Lendacky@amd.com; 
+X-Forefront-Antispam-Report: CIP:165.204.84.221;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(24454002)(479174004)(55674003)(377454003)(199003)(189002)(51704005)(92566002)(59896002)(62966003)(36756003)(110136001)(106466001)(105586002)(93886004)(2950100001)(86362001)(77156002)(68736005)(46102003)(50466002)(77096005)(23746002)(64126003)(83506001)(561944003)(87266999)(101416001)(50986999)(76176999)(97736003)(54356999)(80316001)(87936001)(64706001)(65816999)(33656002)(65956001)(65806001)(47776003);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR02MB206;H:atltwp01.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-DmarcAction-Test: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:CO1PR02MB206;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:CO1PR02MB206;
+X-Forefront-PRVS: 04583CED1A
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB206;
+X-OriginatorOrg: amd4.onmicrosoft.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 16 Jan 2015 15:16:14.3766
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: fde4dada-be84-483f-92cc-e026cbee8e96
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=fde4dada-be84-483f-92cc-e026cbee8e96;Ip=[165.204.84.221]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: CO1PR02MB206
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefan Haun <tux@netz39.de>
+Hi Will,
 
-./fs/notify/inotify/inotify.h:23:
-CHECK: extern prototypes should be avoided in .h files
-./fs/notify/inotify/inotify.h:25:
-CHECK: extern prototypes should be avoided in .h files
+On 01/16/2015 08:55 AM, Will Deacon wrote:
+> Hi Tom,
+>
+> On Fri, Jan 16, 2015 at 02:45:30PM +0000, Tom Lendacky wrote:
+>> I have tested ACPI-enablement patches for the amd-xgbe/amd-xgbe-phy
+>> drivers that I'm about to submit upstream with the V7 patch series
+>> on the AMD Seattle server platform. There does not appear to be support
+>> for the _CCA attribute in this patch series. The amd-xgbe driver will
+>> setup the device domain and cache attributes based on the presence of
+>> this attribute, but it requires the arch support to assign the proper
+>> DMA operations in order for it to all work correctly.
+>>
+>> Overriding the _CCA attribute in the driver, I was able to successfully
+>> test the driver and this patch series.
+>
+> Hopefully this will all be addressed when the IORT parts of ACPI have
+> settled down (the current proposal allows for these attributes to be
+> described as well as their interaction with things like IOMMUs).
+>
+> In the meantime, are you falling back to non-coherent DMA? If so, what
+> attributes have you settled on? We need to be really careful not to
+> corrupt data during cache invalidatation when mapping a non-coherent
+> buffer for the CPU.
+>
 
-	Removed extrn keywords; the matter, however, seems to be an open
-	debate.
+The override I used in the driver was to set the device to use AxDOMAIN
+of 3 and AxCACHE of 0 so that the caches are not accessed.
 
-./fs/notify/inotify/inotify_fsnotify.c:140:
-ERROR: do not initialise statics to 0 or NULL
+Tom
 
-	Replace the initialization by a comment:
-	Compiler takes care of the proper initialization.
-
-./fs/notify/inotify/inotify_fsnotify.c:159:
-WARNING: Prefer [subsystem eg: netdev]_warn([subsystem]dev, ... then
-dev_warn(dev, ... then pr_warn(...  to printk(KERN_WARNING ...
-./fs/notify/inotify/inotify_user.c:473:
-WARNING: Prefer [subsystem eg: netdev]_err([subsystem]dev, ... then
-dev_err(dev, ... then pr_err(...  to printk(KERN_ERR ...
-./fs/notify/inotify/inotify_user.c:474:
-WARNING: quoted string split across lines
-
-	Use pr_warn instead of printk and fix line break.
-
-./fs/notify/inotify/inotify_user.c:645:
-CHECK: Prefer kmalloc(sizeof(*oevent)...) over
-kmalloc(sizeof(struct inotify_event_info)...)
-
-	Done that (complies to coding stlye).
-
-Signed-off-by: Stefan Haun <tux@netz39.de>
----
- fs/notify/inotify/inotify.h          |   16 ++++++++--------
- fs/notify/inotify/inotify_fsnotify.c |    6 +++---
- fs/notify/inotify/inotify_user.c     |    8 ++++----
- 3 files changed, 15 insertions(+), 15 deletions(-)
-
-diff --git a/fs/notify/inotify/inotify.h b/fs/notify/inotify/inotify.h
-index ed855ef..9d6d4e2 100644
---- a/fs/notify/inotify/inotify.h
-+++ b/fs/notify/inotify/inotify.h
-@@ -20,13 +20,13 @@ static inline struct inotify_event_info *INOTIFY_E(struct fsnotify_event *fse)
- 	return container_of(fse, struct inotify_event_info, fse);
- }
- 
--extern void inotify_ignored_and_remove_idr(struct fsnotify_mark *fsn_mark,
--					   struct fsnotify_group *group);
--extern int inotify_handle_event(struct fsnotify_group *group,
--				struct inode *inode,
--				struct fsnotify_mark *inode_mark,
--				struct fsnotify_mark *vfsmount_mark,
--				u32 mask, void *data, int data_type,
--				const unsigned char *file_name, u32 cookie);
-+void inotify_ignored_and_remove_idr(struct fsnotify_mark *fsn_mark,
-+				    struct fsnotify_group *group);
-+
-+int inotify_handle_event(struct fsnotify_group *group, struct inode *inode,
-+			 struct fsnotify_mark *inode_mark,
-+			 struct fsnotify_mark *vfsmount_mark,
-+			 u32 mask, void *data, int data_type,
-+			 const unsigned char *file_name, u32 cookie);
- 
- extern const struct fsnotify_ops inotify_fsnotify_ops;
-diff --git a/fs/notify/inotify/inotify_fsnotify.c b/fs/notify/inotify/inotify_fsnotify.c
-index 0238615..16efe98 100644
---- a/fs/notify/inotify/inotify_fsnotify.c
-+++ b/fs/notify/inotify/inotify_fsnotify.c
-@@ -137,7 +137,7 @@ static int idr_callback(int id, void *p, void *data)
- {
- 	struct fsnotify_mark *fsn_mark;
- 	struct inotify_inode_mark *i_mark;
--	static bool warned = false;
-+	static bool warned; /* = false;  default by GCC */
- 
- 	if (warned)
- 		return 0;
-@@ -156,8 +156,8 @@ static int idr_callback(int id, void *p, void *data)
- 	 * BUG() that was here.
- 	 */
- 	if (fsn_mark)
--		printk(KERN_WARNING "fsn_mark->group=%p inode=%p wd=%d\n",
--		       fsn_mark->group, fsn_mark->inode, i_mark->wd);
-+		pr_warn("fsn_mark->group=%p inode=%p wd=%d\n",
-+			fsn_mark->group, fsn_mark->inode, i_mark->wd);
- 	return 0;
- }
- 
-diff --git a/fs/notify/inotify/inotify_user.c b/fs/notify/inotify/inotify_user.c
-index 3214e2b..d7e3e58 100644
---- a/fs/notify/inotify/inotify_user.c
-+++ b/fs/notify/inotify/inotify_user.c
-@@ -470,9 +470,9 @@ static void inotify_remove_from_idr(struct fsnotify_group *group,
- 	 * one ref grabbed by inotify_idr_find
- 	 */
- 	if (unlikely(atomic_read(&i_mark->fsn_mark.refcnt) < 3)) {
--		printk(KERN_ERR "%s: i_mark=%p i_mark->wd=%d i_mark->group=%p"
--			" i_mark->inode=%p\n", __func__, i_mark, i_mark->wd,
--			i_mark->fsn_mark.group, i_mark->fsn_mark.inode);
-+		pr_err("%s: i_mark=%p i_mark->wd=%d i_mark->group=%p i_mark->inode=%p\n",
-+		       __func__, i_mark, i_mark->wd, i_mark->fsn_mark.group,
-+		       i_mark->fsn_mark.inode);
- 		/* we can't really recover with bad ref cnting.. */
- 		BUG();
- 	}
-@@ -642,7 +642,7 @@ static struct fsnotify_group *inotify_new_group(unsigned int max_events)
- 	if (IS_ERR(group))
- 		return group;
- 
--	oevent = kmalloc(sizeof(struct inotify_event_info), GFP_KERNEL);
-+	oevent = kmalloc(sizeof(*oevent), GFP_KERNEL);
- 	if (unlikely(!oevent)) {
- 		fsnotify_destroy_group(group);
- 		return ERR_PTR(-ENOMEM);
--- 
-1.7.10.4
+> Will
+>
