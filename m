@@ -1,79 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752874AbbAPJnm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 04:43:42 -0500
-Received: from e06smtp13.uk.ibm.com ([195.75.94.109]:60845 "EHLO
-	e06smtp13.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752515AbbAPJnk (ORCPT
+	id S1752374AbbAPJpA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 04:45:00 -0500
+Received: from mout.kundenserver.de ([212.227.126.187]:62418 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750965AbbAPJo4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 04:43:40 -0500
-Message-ID: <54B8DD44.1020402@de.ibm.com>
-Date: Fri, 16 Jan 2015 10:43:32 +0100
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Fri, 16 Jan 2015 04:44:56 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@linux.intel.com>,
+        linux-pci@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        linux-kernel@vger.kernel.org, Marc Zyngier <marc.zyngier@arm.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        linux-ia64@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>, linux-alpha@vger.kernel.org,
+        linux-m68k@vger.kernel.org, Liviu Dudau <liviu@dudau.co.uk>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: [PATCH 27/28] PCI: Remove platform specific pci_domain_nr()
+Date: Fri, 16 Jan 2015 10:44:29 +0100
+Message-ID: <1561857.t9qV46uRjC@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1421372666-12288-28-git-send-email-wangyijing@huawei.com>
+References: <1421372666-12288-1-git-send-email-wangyijing@huawei.com> <1421372666-12288-28-git-send-email-wangyijing@huawei.com>
 MIME-Version: 1.0
-To: Michael Ellerman <mpe@ellerman.id.au>
-CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        kvm@vger.kernel.org, kvm-ppc@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org, x86@kernel.org,
-        xen-devel@lists.xenproject.org, linux-mm@kvack.org
-Subject: Re: [PATCH 1/8] ppc/kvm: Replace ACCESS_ONCE with READ_ONCE
-References: <1421312314-72330-1-git-send-email-borntraeger@de.ibm.com> <1421312314-72330-2-git-send-email-borntraeger@de.ibm.com> <1421363369.23332.8.camel@ellerman.id.au>
-In-Reply-To: <1421363369.23332.8.camel@ellerman.id.au>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15011609-0013-0000-0000-000002A1083D
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:Av2Ns9LjAPfBAT7yQFqQLezOcJ+WhrHRcKhwm6fYHNovZJXj+BB
+ RAoKP+OHFnau8mAW9GPSqLfkYY/Xcr5lwtPrAIZcj8py6DxMCrlgYzQRwNyFTKRa1iEAzK5
+ aYU8D42RZuLSmbtkYSMKhiMF/szEZSQDpQioWKcx3G4kuki5u3a1Xz6ERZy5L3VySeqgmbw
+ vYGaN4gXF7ntmjixX9PfA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 16.01.2015 um 00:09 schrieb Michael Ellerman:
-> On Thu, 2015-01-15 at 09:58 +0100, Christian Borntraeger wrote:
->> ACCESS_ONCE does not work reliably on non-scalar types. For
->> example gcc 4.6 and 4.7 might remove the volatile tag for such
->> accesses during the SRA (scalar replacement of aggregates) step
->> (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=58145)
->>
->> Change the ppc/kvm code to replace ACCESS_ONCE with READ_ONCE.
->>
->> Signed-off-by: Christian Borntraeger <borntraeger@de.ibm.com>
->> ---
->>  arch/powerpc/kvm/book3s_hv_rm_xics.c |  8 ++++----
->>  arch/powerpc/kvm/book3s_xics.c       | 16 ++++++++--------
->>  2 files changed, 12 insertions(+), 12 deletions(-)
->>
->> diff --git a/arch/powerpc/kvm/book3s_hv_rm_xics.c b/arch/powerpc/kvm/book3s_hv_rm_xics.c
->> index 7b066f6..7c22997 100644
->> --- a/arch/powerpc/kvm/book3s_hv_rm_xics.c
->> +++ b/arch/powerpc/kvm/book3s_hv_rm_xics.c
->> @@ -152,7 +152,7 @@ static void icp_rm_down_cppr(struct kvmppc_xics *xics, struct kvmppc_icp *icp,
->>  	 * in virtual mode.
->>  	 */
->>  	do {
->> -		old_state = new_state = ACCESS_ONCE(icp->state);
->> +		old_state = new_state = READ_ONCE(icp->state);
+On Friday 16 January 2015 09:44:25 Yijing Wang wrote:
 > 
-> These are all icp->state.
-> 
-> Which is a union, but it's only the size of unsigned long. So in practice there
-> shouldn't be a bug here right?
+> +int pci_domain_nr(struct pci_bus *bus)
+> +{
+> +       struct pci_host_bridge *host = find_pci_host_bridge(bus);
+> +
+> +       return host->domain;
+> +}
+> +EXPORT_SYMBOL_GPL(pci_domain_nr);
+> +
 
-This bug was that gcc lost the volatile tag when propagating aggregates to scalar types.
-So in theory a union could be affected. See the original problem
- ( http://marc.info/?i=54611D86.4040306%40de.ibm.com ) 
-which happened on 
+Since most of the existing functions are exported as EXPORT_SYMBOL
+rather than EXPORT_SYMBOL_GPL, I think the new version should do
+the same.
 
-union ipte_control {
-        unsigned long val;
-        struct {
-                unsigned long k  : 1;
-                unsigned long kh : 31;
-                unsigned long kg : 32;
-        };
-};
-
-Christian
-
-
+	Arnd
