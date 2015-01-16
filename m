@@ -1,234 +1,340 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756113AbbAPNtD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 08:49:03 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:40181 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754653AbbAPNtA (ORCPT
+	id S1756162AbbAPNtm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 08:49:42 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:35995 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753438AbbAPNtk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 08:49:00 -0500
-MIME-Version: 1.0
-In-Reply-To: <54B8D4D0.3000904@samsung.com>
-References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
- <1420816989-1808-4-git-send-email-j.anaszewski@samsung.com>
- <CAL_JsqJKEp6TWaRhJimg3AWBh+MCCr2Bk9+1o7orLLdp5E+n-g@mail.gmail.com>
- <54B38682.5080605@samsung.com> <CAL_Jsq+UaA41DvawdOMmOib=Fi0hC-nBdKV-+P4DFo+MoOy-bQ@mail.gmail.com>
- <54B3F1EF.4060506@samsung.com> <CAL_JsqKpJtUG0G6g1GOuSVpc31oe-dp3qdrKJUE0upG-xRDFhA@mail.gmail.com>
- <54B4DA81.7060900@samsung.com> <CAL_JsqLYxB5hzLAWXpU=uncM5DEMZU78mP673H9oSSNB-cgcYQ@mail.gmail.com>
- <54B8D4D0.3000904@samsung.com>
-From: Rob Herring <robherring2@gmail.com>
-Date: Fri, 16 Jan 2015 07:48:38 -0600
-Message-ID: <CAL_Jsq+EFWzs1HP1tVt6P=p=HZn2AtSPjp55YrmMQi_mE+kNfQ@mail.gmail.com>
-Subject: Re: [PATCH/RFC v10 03/19] DT: leds: Add led-sources property
-To: Jacek Anaszewski <j.anaszewski@samsung.com>
-Cc: linux-leds@vger.kernel.org,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+	Fri, 16 Jan 2015 08:49:40 -0500
+Date: Fri, 16 Jan 2015 13:49:10 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: Will Deacon <Will.Deacon@arm.com>, Jiri Olsa <jolsa@kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Pavel Machek <pavel@ucw.cz>, Bryan Wu <cooloney@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>, sakari.ailus@iki.fi,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Alexis Berlemont <alexis.berlemont@gmail.com>,
+        Andi Kleen <ak@linux.intel.com>, Anton Blanchard <anton@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Borislav Petkov <bp@alien8.de>, Borislav Petkov <bp@suse.de>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Florian Fainelli <florian@openwrt.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "msalter@redhat.com" <msalter@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "S. Lockwood-Childs" <sjl@vctlabs.com>,
+        Sam Ravnborg <sam@ravnborg.org>, Sasha Levin <sasha.levin@oracle.com>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Subject: Re: [PATCHv2 00/36] perf tools: New build framework
+Message-ID: <20150116134910.GA22569@leverpostej>
+References: <1421326532-25660-1-git-send-email-jolsa@kernel.org>
+ <20150116113921.GL7091@arm.com>
+ <20150116121214.GI21809@leverpostej>
+ <20150116122221.GN7091@arm.com>
+ <20150116123013.GB15672@krava.brq.redhat.com>
+ <20150116124349.GA23967@krava.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150116124349.GA23967@krava.brq.redhat.com>
+Thread-Topic: [PATCHv2 00/36] perf tools: New build framework
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 16, 2015 at 3:07 AM, Jacek Anaszewski
-<j.anaszewski@samsung.com> wrote:
-> On 01/15/2015 03:24 PM, Rob Herring wrote:
->>
->> On Tue, Jan 13, 2015 at 2:42 AM, Jacek Anaszewski
->> <j.anaszewski@samsung.com> wrote:
->>>
->>> On 01/12/2015 05:55 PM, Rob Herring wrote:
->>>>
->>>>
->>>> Adding Mark B and Liam...
->>>>
->>>> On Mon, Jan 12, 2015 at 10:10 AM, Jacek Anaszewski
->>>> <j.anaszewski@samsung.com> wrote:
->>>>>
->>>>>
->>>>> On 01/12/2015 02:52 PM, Rob Herring wrote:
->>>>>>
->>>>>>
->>>>>>
->>>>>> On Mon, Jan 12, 2015 at 2:32 AM, Jacek Anaszewski
->>>>>> <j.anaszewski@samsung.com> wrote:
->>>>>>>
->>>>>>>
->>>>>>> On 01/09/2015 07:33 PM, Rob Herring wrote:
->>>>>>>>
->>>>>>>>
->>>>>>>> On Fri, Jan 9, 2015 at 9:22 AM, Jacek Anaszewski
->>>>>>>> <j.anaszewski@samsung.com> wrote:
->>>>>>>>>
->>>>>>>>>
->>>>>>>>> Add a property for defining the device outputs the LED
->>>>>>>>> represented by the DT child node is connected to.
->>>>
->>>>
->>>>
->>>> [...]
->>>>
->>>>>>>>> b/Documentation/devicetree/bindings/leds/common.txt
->>>>>>>>> index a2c3f7a..29295bf 100644
->>>>>>>>> --- a/Documentation/devicetree/bindings/leds/common.txt
->>>>>>>>> +++ b/Documentation/devicetree/bindings/leds/common.txt
->>>>>>>>> @@ -1,6 +1,10 @@
->>>>>>>>>      Common leds properties.
->>>>>>>>>
->>>>>>>>>      Optional properties for child nodes:
->>>>>>>>> +- led-sources : Array of bits signifying the LED current regulator
->>>>>>>>> outputs the
->>>>>>>>> +               LED represented by the child node is connected to
->>>>>>>>> (1
->>>>>>>>> -
->>>>>>>>> the LED
->>>>>>>>> +               is connected to the output, 0 - the LED isn't
->>>>>>>>> connected
->>>>>>>>> to the
->>>>>>>>> +               output).
->>>>>>>>
->>>>>>>>
->>>>>>>>
->>>>>>>>
->>>>>>>>
->>>>>>>> Sorry, I just don't understand this.
->>>>>>>
->>>>>>>
->>>>>>>
->>>>>>>
->>>>>>>
->>>>>>> In some Flash LED devices one LED can be connected to one or more
->>>>>>> electric current outputs, which allows for multiplying the maximum
->>>>>>> current allowed for the LED. Each sub-LED is represented by a child
->>>>>>> node in the DT binding of the Flash LED device and it needs to
->>>>>>> declare
->>>>>>> which outputs it is connected to. In the example below the
->>>>>>> led-sources
->>>>>>> property is a two element array, which means that the flash LED
->>>>>>> device
->>>>>>> has two current outputs, and the bits signify if the LED is connected
->>>>>>> to the output.
->>>>>>
->>>>>>
->>>>>>
->>>>>>
->>>>>> Sounds like a regulator for which we already have bindings for and we
->>>>>> have a driver for regulator based LEDs (but no binding for it).
->>>>>
->>>>>
->>>>>
->>>>>
->>>>> Do you think of drivers/leds/leds-regulator.c driver? This driver just
->>>>> allows for registering an arbitrary regulator device as a LED subsystem
->>>>> device.
->>>>>
->>>>> There are however devices that don't fall into this category, i.e. they
->>>>> have many outputs, that can be connected to a single LED or to many
->>>>> LEDs
->>>>> and the driver has to know what is the actual arrangement.
->>>>
->>>>
->>>>
->>>> We may need to extend the regulator binding slightly and allow for
->>>> multiple phandles on a supply property, but wouldn't something like
->>>> this work:
->>>>
->>>> led-supply = <&led-reg0>, <&led-reg1>, <&led-reg2>, <&led-reg3>;
->>>>
->>>> The shared source is already supported by the regulator binding.
->>>
->>>
->>>
->>> I think that we shouldn't split the LED devices into power supply
->>> providers and consumers as in case of generic regulators. From this
->>> point of view a LED device current output is a provider and a discrete
->>> LED element is a consumer. In this approach each discrete LED element
->>> should have a related driver which is not how LED devices are being
->>> handled in the LED subsystem, where there is a single binding for a LED
->>> device and there is a single driver for it which creates separate LED
->>> class devices for each LED connected to the LED device output. Each
->>> discrete LED is represented by a child node in the LED device binding.
->>>
->>> I am aware that it may be tempting to treat LED devices as common
->>> regulators, but they have their specific features which gave a
->>> reason for introducing LED class for them. Besides, there is already
->>> drivers/leds/leds-regulator.c driver for LED devices which support only
->>> turning on/off and setting brightness level.
->>>
->>> In your proposition a separate regulator provider binding would have
->>> to be created for each current output and a separate binding for
->>> each discrete LED connected to the LED device. It would create
->>> unnecessary noise in a dts file.
->>>
->>> Moreover, using regulator binding implies that we want to treat it
->>> as a sheer power supply for our device (which would be a discrete LED
->>> element in this case), whereas LED devices provide more features like
->>> blinking pattern and for flash LED devices - flash timeout, external
->>> strobe and flash faults.
->>
->>
->> Okay, fair enough. Please include some of this explanation in the
->> binding description.
->>
->> I do still have some concerns about led-sources and whether it can
->> support other scenarios. It is very much tied to the parent node. Are
->> there any cases where we don't want the LEDs to be sub nodes? Perhaps
->> the LEDs are on a separate daughterboard from the driver/supply and we
->> can have different drivers. It's a stretch maybe.
->
->
-> I think it is. Such arrangements would introduce problems also to the
-> other existing bindings. Probably not only LED subsystem related ones.
->
->> Or are there cases
->> where you need more information than just the connection?
->
->
-> Currently I can't think of any.
->
-> Modified rough proposal of the description:
->
->
-> -Optional properties for child nodes:
-> +LED and flash LED devices provide the same basic functionality as
-> +current regulators, but extended with LED and flash LED specific +features
-> like blinking patterns, flash timeout, flash faults and
-> +external flash strobe mode.
-> +
-> +Many LED devices expose more than one current output that can be
-> +connected to one or more discrete LED component. Since the arrangement
-> +of connections can influence the way of the LED device initialization,
-> +the LED components have to be tightly coupled with the LED device
-> +binding. They are represented in the form of its child nodes.
-> +
-> +Optional properties for child nodes (if a LED device exposes only one
-> +current output the properties can be placed directly in the LED device
-> +node):
+Hi,
 
-Why special case 1 output case? Just always require a child node.
+[...]
 
-> +- led-sources : Array of connection states between all LED current
-> +               sources exposed by the device and this LED (1 - this LED
-> +               is connected to the current output with index N, 0 -
-> +               this LED isn't connected to the current output with
-> +               index N); the mapping of N-th element of the array to
-> +               the physical device output should be defined in the LED
-> +               driver binding.
+> > > > I just tried a cross-build for arm, and that blew up when trying to do
+> > > > something with arch/arm/util/libperf-in.o (log below). I bisected that
+> > > > to f169fbc4c59dd9d4 "perf build: Add arch x86 objects building". I'm
+> > > > looking into why now.
+> > > 
+> > > I get a similar failure doing a native arm64 build. I think the problem is
+> > > because the arch/ files for arm and arm64 aren't always required (i.e. there
+> > > are configurations where nothing is built under there) and, consequently,
+> > > libperf-in.o isn't actually needed and we try to link against something that
+> > > doesn't exist.
+> > 
+> > exactly ;-) I'll spin v3 shortly..
+> 
+> this fixes the issue for me
+> 
+> jirka
+> 
+> 
+> ---
+> diff --git a/tools/build/Makefile.build b/tools/build/Makefile.build
+> index d35b66014992..396b33b124d1 100644
+> --- a/tools/build/Makefile.build
+> +++ b/tools/build/Makefile.build
+> @@ -52,7 +52,7 @@ quiet_cmd_cc_s_c = AS       $@
+>  
+>  # Link agregate command
+>  quiet_cmd_ld_multi = LD       $@
+> -      cmd_ld_multi = $(LD) -r -o $@ $^
+> +      cmd_ld_multi = $(LD) -r -o $@ $(wildcard $^)
+>  
+>  # Build rules
+>  $(OUTPUT)%.o: %.c FORCE
+> 
 
-I think this should be a list of connected output numbers rather than
-effectively a bitmask.
+Unfortunately that doesn't seem to be sufficient for me when
+cross-compiling. It looks like it supresses the warning from Make, but
+then LD explodes anyway because it wasn't provided any input files (log
+below).
 
-You may want to add something like led-output-cnt or led-driver-cnt in
-the parent so you know the max list size.
+Thanks,
+Mark.
 
-Rob
+[mark@leverpostej:~/src/linux/tools/perf]% uselinaro 14.09 make ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-
+  BUILD:   Doing 'make -j8' parallel build
+config/Makefile:341: No libelf found, disables 'probe' tool, please install elfutils-libelf-devel/libelf-dev
+config/Makefile:417: Disabling post unwind, no support found.
+config/Makefile:458: No libaudit.h found, disables 'trace' tool, please install audit-libs-devel or libaudit-dev
+config/Makefile:473: slang not found, disables TUI support. Please install slang-devel or libslang-dev
+config/Makefile:487: GTK2 not found, disables GTK2 support. Please install gtk2-devel or libgtk2.0-dev
+config/Makefile:515: Missing perl devel files. Disabling perl scripting support, consider installing perl-ExtUtils-Embed
+config/Makefile:560: No Python.h (for Python 2.x) was found
+config/Makefile:560: Python support will not be built
+config/Makefile:653: No numa.h found, disables 'perf bench numa mem' benchmark, please install numactl-devel/libnuma-devel/libnuma-dev
+
+Auto-detecting system features:
+...                         dwarf: [ OFF ]
+...                         glibc: [ on  ]
+...                          gtk2: [ OFF ]
+...                      libaudit: [ OFF ]
+...                        libbfd: [ OFF ]
+...                        libelf: [ OFF ]
+...                       libnuma: [ OFF ]
+...                       libperl: [ OFF ]
+...                     libpython: [ OFF ]
+...                      libslang: [ OFF ]
+...                     libunwind: [ OFF ]
+...            libdw-dwarf-unwind: [ OFF ]
+...                          zlib: [ OFF ]
+
+  SUBDIR   /home/mark/src/linux/tools/lib/api/
+  FLAGS:   * new build flags or prefix
+  GEN      common-cmds.h
+  MKDIR    libapi_dirs
+  SUBDIR   /home/mark/src/linux/tools/lib/traceevent/
+  CC       fs/debugfs.o
+  CC       arch/common.o
+  CC       fs/fs.o
+  CC       fd/array.o
+  CC       util/abspath.o
+  FLAGS:   * new build flags or cross compiler
+  CC       ui/setup.o
+  CC       ui/helpline.o
+  CC       ui/progress.o
+  AR       libapikfs.a
+  CC       util/alias.o
+  CC       util/annotate.o
+  CC       ui/util.o
+  CC       ui/hist.o
+  CC       ui/stdio/hist.o
+  PERF_VERSION = 3.19.rc2.gb7973a
+  CC       builtin-bench.o
+  LD       arch/libperf-in.o
+arm-linux-gnueabihf-ld: no input files
+make[3]: *** [arch/libperf-in.o] Error 1
+make[2]: *** [arch] Error 2
+make[2]: *** Waiting for unfinished jobs....
+  CC       builtin-annotate.o
+  CC       util/build-id.o
+  CC FPIC  event-parse.o
+  CC FPIC  event-plugin.o
+  CC FPIC  trace-seq.o
+  CC       builtin-diff.o
+  CC FPIC  parse-filter.o
+  CC       builtin-evlist.o
+  CC       util/config.o
+  CC       util/ctype.o
+  CC FPIC  parse-utils.o
+  CC       util/db-export.o
+  CC FPIC  kbuffer-parse.o
+  CC       builtin-help.o
+  CC       util/environment.o
+  CC FPIC  plugin_jbd2.o
+  CC FPIC  plugin_hrtimer.o
+  CC       util/event.o
+  CC FPIC  plugin_kmem.o
+  CC FPIC  plugin_kvm.o
+  CC FPIC  plugin_mac80211.o
+  CC       util/evlist.o
+  CC FPIC  plugin_sched_switch.o
+  CC       builtin-sched.o
+  CC       util/evsel.o
+  CC       util/exec_cmd.o
+  CC FPIC  plugin_function.o
+  CC FPIC  plugin_xen.o
+  CC       builtin-buildid-list.o
+  CC FPIC  plugin_scsi.o
+  CC FPIC  plugin_cfg80211.o
+  CC       builtin-buildid-cache.o
+  LINK     libtraceevent.a
+  LINK     plugin_jbd2.so
+  GEN      perf-archive
+  CC       util/find_next_bit.o
+  LINK     plugin_hrtimer.so
+  LINK     plugin_kmem.so
+  LINK     plugin_kvm.so
+  CC       util/help.o
+  LINK     plugin_mac80211.so
+  CC       util/kallsyms.o
+  LINK     plugin_sched_switch.so
+  LINK     plugin_function.so
+  LINK     plugin_xen.so
+  LD       ui/libperf-in.o
+  CC       builtin-list.o
+arm-linux-gnueabihf-ld: no input files
+make[3]: *** [ui/libperf-in.o] Error 1
+make[2]: *** [ui] Error 2
+  CC       builtin-record.o
+  LINK     plugin_scsi.so
+  LINK     plugin_cfg80211.so
+  GEN      perf-with-kcore
+  CC       builtin-report.o
+  CC       builtin-stat.o
+  CC       builtin-timechart.o
+  CC       util/levenshtein.o
+  CC       builtin-top.o
+  CC       builtin-script.o
+  CC       builtin-kmem.o
+  CC       builtin-lock.o
+  CC       util/parse-options.o
+  CC       builtin-kvm.o
+  CC       builtin-inject.o
+  CC       builtin-mem.o
+  CC       bench/sched-messaging.o
+  CC       tests/builtin-test.o
+  CC       perf.o
+  BISON    util/parse-events-bison.c
+  CC       util/path.o
+  CC       util/rbtree.o
+  CC       util/bitmap.o
+  CC       tests/parse-events.o
+  CC       bench/sched-pipe.o
+  CC       util/hweight.o
+  CC       util/run-command.o
+  CC       bench/mem-memcpy.o
+  CC       bench/futex-hash.o
+  CC       bench/futex-wake.o
+  CC       util/quote.o
+  CC       bench/futex-requeue.o
+  CC       tests/dso-data.o
+  CC       util/strbuf.o
+  CC       util/string.o
+  CC       util/strlist.o
+  CC       tests/attr.o
+  CC       tests/vmlinux-kallsyms.o
+  LD       bench/perf-in.o
+arm-linux-gnueabihf-ld: no input files
+make[3]: *** [bench/perf-in.o] Error 1
+make[2]: *** [bench] Error 2
+make[2]: *** Waiting for unfinished jobs....
+  CC       tests/open-syscall.o
+  CC       util/strfilter.o
+  CC       util/top.o
+  CC       util/usage.o
+  CC       tests/open-syscall-all-cpus.o
+  CC       tests/open-syscall-tp-fields.o
+  CC       tests/mmap-basic.o
+  CC       tests/perf-record.o
+  CC       util/wrapper.o
+  CC       tests/rdpmc.o
+  CC       util/sigchain.o
+  CC       tests/evsel-roundtrip-name.o
+  CC       tests/evsel-tp-sched.o
+  CC       tests/fdarray.o
+  CC       util/dso.o
+  CC       tests/pmu.o
+  CC       tests/hists_common.o
+  CC       util/symbol.o
+  CC       tests/hists_link.o
+  CC       tests/hists_filter.o
+  CC       tests/hists_output.o
+  CC       tests/hists_cumulate.o
+  CC       tests/python-use.o
+  CC       tests/bp_signal.o
+  CC       util/color.o
+  CC       tests/bp_signal_overflow.o
+  CC       tests/task-exit.o
+  CC       util/pager.o
+  CC       util/header.o
+  CC       util/callchain.o
+  CC       tests/sw-clock.o
+  CC       tests/mmap-thread-lookup.o
+  CC       util/values.o
+  CC       tests/thread-mg-share.o
+  CC       tests/switch-tracking.o
+  CC       tests/keep-tracking.o
+  CC       tests/code-reading.o
+  CC       util/debug.o
+  CC       tests/sample-parsing.o
+  CC       util/machine.o
+  CC       tests/parse-no-sample-id-all.o
+  CC       util/map.o
+  CC       util/pstack.o
+  CC       util/session.o
+  CC       util/ordered-events.o
+  LD       tests/perf-in.o
+arm-linux-gnueabihf-ld: no input files
+make[3]: *** [tests/perf-in.o] Error 1
+make[2]: *** [tests] Error 2
+make[1]: *** [perf-in.o] Error 2
+make[1]: *** Waiting for unfinished jobs....
+  CC       util/comm.o
+  CC       util/thread.o
+  CC       util/thread_map.o
+  CC       util/trace-event-parse.o
+  CC       util/parse-events-bison.o
+  BISON    util/pmu-bison.c
+  CC       util/trace-event-read.o
+  CC       util/trace-event-info.o
+  CC       util/trace-event-scripting.o
+  CC       util/trace-event.o
+  CC       util/svghelper.o
+  CC       util/sort.o
+  CC       util/hist.o
+  CC       util/util.o
+  CC       util/xyarray.o
+  CC       util/cpumap.o
+  CC       util/cgroup.o
+  CC       util/target.o
+  CC       util/rblist.o
+  CC       util/intlist.o
+  CC       util/vdso.o
+  CC       util/stat.o
+  CC       util/record.o
+  CC       util/srcline.o
+  CC       util/data.o
+  CC       util/tsc.o
+  CC       util/cloexec.o
+  CC       util/thread-stack.o
+  CC       util/symbol-minimal.o
+  CC       util/perf_regs.o
+  FLEX     util/parse-events-flex.c
+  FLEX     util/pmu-flex.c
+  CC       util/pmu-bison.o
+  CC       util/parse-events.o
+  CC       util/parse-events-flex.o
+  CC       util/pmu.o
+  CC       util/pmu-flex.o
+  LD       util/libperf-in.o
+arm-linux-gnueabihf-ld: no input files
+make[3]: *** [util/libperf-in.o] Error 1
+make[2]: *** [util] Error 2
+make[1]: *** [libperf-in.o] Error 2
+make: *** [all] Error 2
