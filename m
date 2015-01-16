@@ -1,98 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756640AbbAPQhJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 11:37:09 -0500
-Received: from lists.s-osg.org ([54.187.51.154]:44616 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752505AbbAPQhG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 11:37:06 -0500
-Message-ID: <54B93E30.3060002@osg.samsung.com>
-Date: Fri, 16 Jan 2015 09:37:04 -0700
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1756658AbbAPQhn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 11:37:43 -0500
+Received: from smtprelay0229.hostedemail.com ([216.40.44.229]:46848 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753858AbbAPQhm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 11:37:42 -0500
+X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:965:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1537:1567:1593:1594:1711:1714:1730:1747:1777:1792:2393:2553:2559:2562:2693:3138:3139:3140:3141:3142:3622:3866:3871:3873:3874:4362:4390:5007:6261:7514:7875:7901:7903:9040:10004:10400:10848:10967:11232:11658:11914:12517:12519:12740:13069:13255:13311:13357:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: doll26_2590679a1384f
+X-Filterd-Recvd-Size: 1920
+Date: Fri, 16 Jan 2015 11:37:36 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Jesper Dangaard Brouer <brouer@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH v2 1/2] mm/slub: optimize alloc/free fastpath by
+ removing preemption on/off
+Message-ID: <20150116113736.59406ea8@gandalf.local.home>
+In-Reply-To: <1421415659.11734.131.camel@edumazet-glaptop2.roam.corp.google.com>
+References: <1421307633-24045-1-git-send-email-iamjoonsoo.kim@lge.com>
+	<20150115171634.685237a4.akpm@linux-foundation.org>
+	<20150115203045.00e9fb73@grimm.local.home>
+	<alpine.DEB.2.11.1501152126300.13976@gentwo.org>
+	<20150115225130.00c0c99a@grimm.local.home>
+	<alpine.DEB.2.11.1501152155480.14236@gentwo.org>
+	<20150115230749.5d73ad49@grimm.local.home>
+	<1421415659.11734.131.camel@edumazet-glaptop2.roam.corp.google.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Michael Ellerman <mpe@ellerman.id.au>, linux-kernel@vger.kernel.org
-CC: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
-        rostedt@goodmis.org, mingo@redhat.com, davem@davemloft.net,
-        keescook@chromium.org, tranmanphong@gmail.com, cov@codeaurora.org,
-        dh.herrmann@gmail.com, hughd@google.com, bobby.prani@gmail.com,
-        serge.hallyn@ubuntu.com, ebiederm@xmission.com,
-        tim.bird@sonymobile.com, josh@joshtriplett.org, koct9i@gmail.com,
-        linux-kbuild@vger.kernel.org, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 6/6] selftests: Set CC using CROSS_COMPILE once in lib.mk
-References: <1420794375-31881-1-git-send-email-mpe@ellerman.id.au> <1420794375-31881-6-git-send-email-mpe@ellerman.id.au>
-In-Reply-To: <1420794375-31881-6-git-send-email-mpe@ellerman.id.au>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09/2015 02:06 AM, Michael Ellerman wrote:
+On Fri, 16 Jan 2015 05:40:59 -0800
+Eric Dumazet <eric.dumazet@gmail.com> wrote:
 
-Missing commit log. Please make sure your future include
-a meaningful commit log that describes what the patch does.
-
-> Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
-> ---
->  tools/testing/selftests/efivarfs/Makefile | 1 -
->  tools/testing/selftests/exec/Makefile     | 1 -
->  tools/testing/selftests/kcmp/Makefile     | 1 -
->  tools/testing/selftests/lib.mk            | 6 ++++++
->  tools/testing/selftests/net/Makefile      | 1 -
->  tools/testing/selftests/powerpc/Makefile  | 3 +--
->  tools/testing/selftests/size/Makefile     | 2 --
->  tools/testing/selftests/vm/Makefile       | 1 -
->  8 files changed, 7 insertions(+), 9 deletions(-)
+> I made same observation about 3 years ago, on old cpus.
 > 
-> diff --git a/tools/testing/selftests/efivarfs/Makefile b/tools/testing/selftests/efivarfs/Makefile
-> index 3052d0bda24b..d683486a859b 100644
-> --- a/tools/testing/selftests/efivarfs/Makefile
-> +++ b/tools/testing/selftests/efivarfs/Makefile
-> @@ -1,4 +1,3 @@
-> -CC = $(CROSS_COMPILE)gcc
->  CFLAGS = -Wall
->  
->  test_objs = open-unlink create-read
-> diff --git a/tools/testing/selftests/exec/Makefile b/tools/testing/selftests/exec/Makefile
-> index 886cabe307b1..4edb7d0da29b 100644
-> --- a/tools/testing/selftests/exec/Makefile
-> +++ b/tools/testing/selftests/exec/Makefile
-> @@ -1,4 +1,3 @@
-> -CC = $(CROSS_COMPILE)gcc
->  CFLAGS = -Wall
->  BINARIES = execveat
->  DEPS = execveat.symlink execveat.denatured script subdir
-> diff --git a/tools/testing/selftests/kcmp/Makefile b/tools/testing/selftests/kcmp/Makefile
-> index 0eecd183058c..2ae7450a9a89 100644
-> --- a/tools/testing/selftests/kcmp/Makefile
-> +++ b/tools/testing/selftests/kcmp/Makefile
-> @@ -1,4 +1,3 @@
-> -CC := $(CROSS_COMPILE)$(CC)
->  CFLAGS += -I../../../../usr/include/
->  
->  all: kcmp_test
-> diff --git a/tools/testing/selftests/lib.mk b/tools/testing/selftests/lib.mk
-> index 7bd3dabe2846..abae16396c43 100644
-> --- a/tools/testing/selftests/lib.mk
-> +++ b/tools/testing/selftests/lib.mk
-> @@ -1,3 +1,9 @@
-> +# When we're called from kbuild $(CC) already contains $(CROSS_COMPILE), so
-> +# here we need to use "cc", otherwise we'll get $(CROSS_COMPILE) twice. The
-> +# only downside is it breaks someone overriding $(CC), but that's probably OK,
-> +# they can probably cope by changing their path.
 
-I don't want to see the compiles broken and users needing to
-work-around. Pleas find a way to not break the compiles.
+Thank you for letting me know. I was thinking I was going insane!
 
-thanks,
--- Shuah
+(yeah yeah, there's lots of people who will still say that I've already
+gone insane, but at least I know my memory is still intact)
 
--- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Open Source Innovation Group
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+-- Steve
