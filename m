@@ -1,102 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687AbbAPPk3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 10:40:29 -0500
-Received: from mail-yh0-f49.google.com ([209.85.213.49]:52238 "EHLO
-	mail-yh0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751810AbbAPPk1 (ORCPT
+	id S1756364AbbAPPlW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 10:41:22 -0500
+Received: from mout.kundenserver.de ([212.227.17.13]:57249 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752233AbbAPPlV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 10:40:27 -0500
+	Fri, 16 Jan 2015 10:41:21 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Will Deacon <will.deacon@arm.com>, Mark Rutland <Mark.Rutland@arm.com>,
+        linaro-acpi <linaro-acpi@lists.linaro.org>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Yijing Wang <wangyijing@huawei.com>, Rob Herring <robh@kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Timur Tabi <timur@codeaurora.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        Tom Lendacky <thomas.lendacky@amd.com>,
+        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
+        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, "jcm@redhat.com" <jcm@redhat.com>,
+        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v7 00/17] Introduce ACPI for ARM64 based on ACPI 5.1
+Date: Fri, 16 Jan 2015 16:40:28 +0100
+Message-ID: <1809831.d9GPSfLUEN@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <20150116153320.GU7091@arm.com>
+References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org> <2198633.UpIyI82Yon@wuerfel> <20150116153320.GU7091@arm.com>
 MIME-Version: 1.0
-In-Reply-To: <20150114163905.1c0cf7d1@linux.lan.towertech.it>
-References: <1421163897-8020-1-git-send-email-xlpang@126.com>
-	<1421163897-8020-4-git-send-email-xlpang@126.com>
-	<20150113171904.6b2327d5@linux.lan.towertech.it>
-	<CADcy93WPZCmPLUsa9kmz6GtD7E3+8td1PJteJxnZi0R2mLAYKw@mail.gmail.com>
-	<20150114160308.08a7f45b@linux.lan.towertech.it>
-	<CADcy93Vo6BoU6noPHXRCy7nYtW3q9DUZFXO4v9LE+iMn=Kk4cw@mail.gmail.com>
-	<20150114163905.1c0cf7d1@linux.lan.towertech.it>
-Date: Fri, 16 Jan 2015 23:40:26 +0800
-Message-ID: <CADcy93V3C8h5RBnZGThJ7cjBJ6pf1vR4HH8bzSPXTqpUe9npXQ@mail.gmail.com>
-Subject: Re: [RFC PATCH v2 3/9] rtc/test: Update driver to address y2038/y2106 issues
-From: Xunlei Pang <pang.xunlei@linaro.org>
-To: Alessandro Zummo <a.zummo@towertech.it>
-Cc: Xunlei Pang <xlpang@126.com>, lkml <linux-kernel@vger.kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:Sx35rvRh5S/2DLa0CMRLfwUgA9MTVpdlu6rn/2L6HahQyeNrOGF
+ jmcvT/zTc12NEzg0+91sMzpn5WWG+ee/Lm0BlBjPnzuC81BCwlrCGyVWvxPsb2ptJdYDgGF
+ UjWZXZVnZfo3oWolwQeEaYyp0o7483p/Af0+Kib8TvqBM5xdUHdKclzSS/egDMhWwKaV4BT
+ oOnNxPU3vabZrEb99wKog==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 January 2015 at 23:39, Alessandro Zummo <a.zummo@towertech.it> wrote:
-> On Wed, 14 Jan 2015 23:26:37 +0800
-> Xunlei Pang <pang.xunlei@linaro.org> wrote:
->
->> But on the other hand, we will have no test for  set_mmss64(),
->> because adding the set_mmss64() will make set_mmss() dysfunctional.
->
->  add a module parameter
+On Friday 16 January 2015 15:33:20 Will Deacon wrote:
+> On Fri, Jan 16, 2015 at 03:14:13PM +0000, Arnd Bergmann wrote:
+> > On Friday 16 January 2015 14:55:45 Will Deacon wrote:
+> > > On Fri, Jan 16, 2015 at 02:45:30PM +0000, Tom Lendacky wrote:
+> > > > I have tested ACPI-enablement patches for the amd-xgbe/amd-xgbe-phy
+> > > > drivers that I'm about to submit upstream with the V7 patch series
+> > > > on the AMD Seattle server platform. There does not appear to be support
+> > > > for the _CCA attribute in this patch series. The amd-xgbe driver will
+> > > > setup the device domain and cache attributes based on the presence of
+> > > > this attribute, but it requires the arch support to assign the proper
+> > > > DMA operations in order for it to all work correctly.
+> > > > 
+> > > > Overriding the _CCA attribute in the driver, I was able to successfully
+> > > > test the driver and this patch series.
+> > > 
+> > > Hopefully this will all be addressed when the IORT parts of ACPI have
+> > > settled down (the current proposal allows for these attributes to be
+> > > described as well as their interaction with things like IOMMUs).
+> > > 
+> > > In the meantime, are you falling back to non-coherent DMA? If so, what
+> > > attributes have you settled on? We need to be really careful not to
+> > > corrupt data during cache invalidatation when mapping a non-coherent
+> > > buffer for the CPU.
+> > 
+> > I think in case of ACPI we should use cache-coherent as the default,
+> > as this is what all servers will use for DMA masters.
+> 
+> I don't agree. The dma-coherent we have for device-tree isn't nearly
+> expressive enough for the kind of things we want to describe and there's
+> no reason to make the same mistake in ACPI, especially as it *is* being
+> addressed by IORT. If we run with _CCA, then we're going to be stuck
+> supporting something that isn't fit for purpose and which will likely be
+> abused to describe both fixed features of the system and software
+> configuration preferences. It also opens up a can of worms if we have to
+> support a mixture of _CCA and IORT in the future.
+> 
+> Or are you suggesting that we ignore _CCA and just assume cache-coherency?
+> In that case, how do we support systems that aren't cache coherent, where
+> not being cache coherent includes devices that require either device or
+> IOMMU configuration to enable cacheable transactions?
 
-Hi Alessandro,
+I was thinking we'd ignore _CCA because as you say a simple on/off flag
+would not be enough to describe what we have to do for noncoherent
+devices. I can't think of any reason why a server hardware would include
+noncoherent devices, so if they are configurable they should be configured
+into coherent mode by the firmware.
 
-Thanks for your advice, how about the following one?
-
----
- drivers/rtc/rtc-test.c | 19 +++++++++++++++++--
- 1 file changed, 17 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/rtc/rtc-test.c b/drivers/rtc/rtc-test.c
-index 8f86fa9..3a2da4c 100644
---- a/drivers/rtc/rtc-test.c
-+++ b/drivers/rtc/rtc-test.c
-@@ -13,6 +13,10 @@
- #include <linux/rtc.h>
- #include <linux/platform_device.h>
-
-+static int test_mmss64;
-+module_param(test_mmss64, int, 0644);
-+MODULE_PARM_DESC(test_mmss64, "Test struct rtc_class_ops.set_mmss64().");
-+
- static struct platform_device *test0 = NULL, *test1 = NULL;
-
- static int test_rtc_read_alarm(struct device *dev,
-@@ -30,7 +34,13 @@ static int test_rtc_set_alarm(struct device *dev,
- static int test_rtc_read_time(struct device *dev,
-  struct rtc_time *tm)
- {
-- rtc_time_to_tm(get_seconds(), tm);
-+ rtc_time64_to_tm(ktime_get_real_seconds(), tm);
-+ return 0;
-+}
-+
-+static int test_rtc_set_mmss64(struct device *dev, time64_t secs)
-+{
-+ dev_info(dev, "%s, secs = %lld\n", __func__, (long long)secs);
-  return 0;
- }
-
-@@ -55,7 +65,7 @@ static int test_rtc_alarm_irq_enable(struct device
-*dev, unsigned int enable)
-  return 0;
- }
-
--static const struct rtc_class_ops test_rtc_ops = {
-+static struct rtc_class_ops test_rtc_ops = {
-  .proc = test_rtc_proc,
-  .read_time = test_rtc_read_time,
-  .read_alarm = test_rtc_read_alarm,
-@@ -101,6 +111,11 @@ static int test_probe(struct platform_device *plat_dev)
-  int err;
-  struct rtc_device *rtc;
-
-+ if (test_mmss64) {
-+ test_rtc_ops.set_mmss64 = test_rtc_set_mmss64;
-+ test_rtc_ops.set_mmss = NULL;
-+ }
-+
-  rtc = devm_rtc_device_register(&plat_dev->dev, "test",
-  &test_rtc_ops, THIS_MODULE);
-  if (IS_ERR(rtc)) {
+	Arnd
