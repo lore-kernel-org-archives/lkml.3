@@ -1,43 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932071AbbAPQcm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 11:32:42 -0500
-Received: from mta-out1.inet.fi ([62.71.2.227]:46797 "EHLO kirsi1.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752775AbbAPQcl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 11:32:41 -0500
-Date: Fri, 16 Jan 2015 18:32:17 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
-        Peter Feiner <pfeiner@google.com>,
-        Jerome Marchand <jmarchan@redhat.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+	id S932169AbbAPQdS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 11:33:18 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:36331 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752342AbbAPQdR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 11:33:17 -0500
+Date: Fri, 16 Jan 2015 16:32:54 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Will Deacon <will.deacon@arm.com>
+Cc: Suzuki Poulose <Suzuki.Poulose@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "leo.yan@linaro.org" <leo.yan@linaro.org>,
+        "yexl@marvell.com" <yexl@marvell.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -mm v7 00/13] pagewalk: improve vma handling, apply to
- new users
-Message-ID: <20150116163217.GA509@node.dhcp.inet.fi>
-References: <1415343692-6314-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: Re: [PATCH 2/3] arm64: Consolidate hotplug notifier for instruction
+ emulation
+Message-ID: <20150116163254.GC32155@leverpostej>
+References: <1421325366-13263-1-git-send-email-suzuki.poulose@arm.com>
+ <1421325366-13263-3-git-send-email-suzuki.poulose@arm.com>
+ <20150116160730.GY7091@arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1415343692-6314-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.23.1 (2014-03-12)
+In-Reply-To: <20150116160730.GY7091@arm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 07, 2014 at 07:01:51AM +0000, Naoya Horiguchi wrote:
-> This series is ver.7 of page table walker patchset.
+On Fri, Jan 16, 2015 at 04:07:30PM +0000, Will Deacon wrote:
+> On Thu, Jan 15, 2015 at 12:36:05PM +0000, Suzuki K. Poulose wrote:
+> > From: "Suzuki K. Poulose" <suzuki.poulose@arm.com>
+> > 
+> > As of now each insn_emulation has a cpu hotplug notifier that
+> > enables/disables the CPU feature bit for the functionality. This
+> > patch re-arranges the code, such that there is only one notifier
+> > that runs through the list of registered emulation hooks and runs
+> > their corresponding set_hw_mode.
+> > 
+> > We do nothing when a CPU is dying as we will set the appropriate bits
+> > as it comes back online based on the state of the hooks.
+> > 
+> > Signed-off-by: Suzuki K. Poulose <suzuki.poulose@arm.com>
+> > Signed-off-by: Mark Rutland <mark.rutland@arm.com>
+> > ---
+> >  Documentation/arm64/legacy_instructions.txt |    4 +
+> >  arch/arm64/include/asm/cpufeature.h         |    2 +
+> >  arch/arm64/kernel/armv8_deprecated.c        |  113 +++++++++++++++------------
+> >  3 files changed, 69 insertions(+), 50 deletions(-)
+> > 
+> > diff --git a/Documentation/arm64/legacy_instructions.txt b/Documentation/arm64/legacy_instructions.txt
+> > index a3b3da2..0a4dc26 100644
+> > --- a/Documentation/arm64/legacy_instructions.txt
+> > +++ b/Documentation/arm64/legacy_instructions.txt
+> > @@ -27,6 +27,10 @@ behaviours and the corresponding values of the sysctl nodes -
+> >    instructions. Using hardware execution generally provides better
+> >    performance, but at the loss of ability to gather runtime statistics
+> >    about the use of the deprecated instructions.
+> > +  Note: Emulation of a deprecated instruction depends on the availability
+> > +  of the feature on all the active CPUs. In case of CPU hotplug, if a new
+> > +  CPU doesn't support a feature, it could result in the abortion of the
+> > +  hotplug operation.
 > 
-> I apologize about my long delay since previous version (I have moved to
-> Japan last month and no machine access for a while.)
-> I just rebased this onto mmotm-2014-11-05-16-01. I had some conflicts but
-> the resolution was not hard.
-> Trinity showed no bug at least in my environment.
+> Is this true? We should be able to *emulate* the instruction anywhere,
+> it's the "hardware execution" setting that needs CPU support.
 
-Andrew, any chance you'll find time for the patchset?
+Not quite. In ARMv8 there are three possible cases for endianness
+support:
 
--- 
- Kirill A. Shutemov
+(a) Mixed endian support at all levels
+    ID_AA64MMFR0_EL1.BigEnd == 0b0001
+    ID_AA64MMFR0_EL1.BigEnd0 == 0b0000 (RES0, invalid)
+
+(b) Mixed endian support at EL0 only
+    ID_AA64MMFR0_EL1.BigEnd == 0b0000
+    ID_AA64MMFR0_EL1.BigEnd0 == 0b0001
+    SCTLR_EL1.EE has a fixed value
+
+(c) No mixed endian support at all
+    ID_AA64MMFR0_EL1.BigEnd == 0b0000
+    ID_AA64MMFR0_EL1.BigEnd0 == 0b0000
+    SCTLR_EL1.{EE,E0E} have fixed values
+
+We can emulate setend in cases (a) and (b), but not (c) unless we
+trapped every single instruction that could access memory. I don't think
+that's feasible.
+
+Also fun in case (c) is that the kernel may not be able to run on all
+CPUs (consider a BE kernel where some CPUs are fixed to LE at EL1).
+
+I hope no-one builds a system where CPUs are mismatched w.r.t.
+endianness support.
+
+Thanks,
+Mark.
