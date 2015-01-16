@@ -1,174 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932313AbbAPUBJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 15:01:09 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:48324 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753102AbbAPUBI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 15:01:08 -0500
-Message-ID: <54B96E00.7040909@suse.cz>
-Date: Fri, 16 Jan 2015 21:01:04 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752578AbbAPV2t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 16:28:49 -0500
+Received: from correo.sic.gov.co ([190.248.49.3]:18292 "EHLO
+	correo3.sic.gov.co" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752132AbbAPV2s (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 16:28:48 -0500
+Date: Fri, 16 Jan 2015 15:01:56 -0500 (COT)
+From: Finance Department <webmaster@sic.gov.co>
+Reply-To: Finance Department <defnce@qq.com>
+Message-ID: <270354706.1592400.1421438516121.JavaMail.root@sic.gov.co>
+Subject: Payment
 MIME-Version: 1.0
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        akpm@linux-foundation.org, "Kirill A. Shutemov" <kirill@shutemov.name>,
-        David Rientjes <rientjes@google.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3] mm/thp: Allocate transparent hugepages on local node
-References: <1421393196-20915-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-In-Reply-To: <1421393196-20915-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=iso-8859-2
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [197.220.169.14]
+X-Mailer: Zimbra 8.0.2_GA_5569 (zclient/8.0.2_GA_5569)
+Thread-Topic: Payment
+Thread-Index: mmoT+VplX/gMG6pdS1G4SZdEUDQ8fg==
+X-NAI-Spam-Flag: NO
+X-NAI-Spam-Level: ****
+X-NAI-Spam-Threshold: 5
+X-NAI-Spam-Score: 4.7
+X-NAI-Spam-Report: 3 Rules triggered
+	*  4.5 -- NAI_BODY_PHRASES_1
+	*  0.2 -- GEN_SPAM_FEATRE
+	*  0 -- RV5188
+X-NAI-Spam-Version: 2.3.0.9366 : core <5188> : inlines <1796> : streams
+ <1374481> : uri <1842644>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2015 08:26 AM, Aneesh Kumar K.V wrote:
-> This make sure that we try to allocate hugepages from local node if
-> allowed by mempolicy. If we can't, we fallback to small page allocation
-> based on mempolicy. This is based on the observation that allocating pages
-> on local node is more beneficial than allocating hugepages on remote node.
-> 
-> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Dear Recipient,
 
-Acked-by: Vlastimil Babka <vbabka@suse.cz>
+You have been awarded the sum of  8,000,000.00 (Eight Million Pounds sterling) with reference number 77100146 by office of the ministry of finance UK.Send us your personal details to deliver your funds.
 
-> ---
-> Changes from V2:
-> * Rebase to latest linus tree (cb59670870d90ff8bc31f5f2efc407c6fe4938c0)
-> 
->  include/linux/gfp.h |  4 ++++
->  mm/huge_memory.c    | 24 +++++++++---------------
->  mm/mempolicy.c      | 40 ++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 53 insertions(+), 15 deletions(-)
-> 
-> diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-> index b840e3b2770d..60110e06419d 100644
-> --- a/include/linux/gfp.h
-> +++ b/include/linux/gfp.h
-> @@ -335,11 +335,15 @@ alloc_pages(gfp_t gfp_mask, unsigned int order)
->  extern struct page *alloc_pages_vma(gfp_t gfp_mask, int order,
->  			struct vm_area_struct *vma, unsigned long addr,
->  			int node);
-> +extern struct page *alloc_hugepage_vma(gfp_t gfp, struct vm_area_struct *vma,
-> +				       unsigned long addr, int order);
->  #else
->  #define alloc_pages(gfp_mask, order) \
->  		alloc_pages_node(numa_node_id(), gfp_mask, order)
->  #define alloc_pages_vma(gfp_mask, order, vma, addr, node)	\
->  	alloc_pages(gfp_mask, order)
-> +#define alloc_hugepage_vma(gfp_mask, vma, addr, order)	\
-> +	alloc_pages(gfp_mask, order)
->  #endif
->  #define alloc_page(gfp_mask) alloc_pages(gfp_mask, 0)
->  #define alloc_page_vma(gfp_mask, vma, addr)			\
-> diff --git a/mm/huge_memory.c b/mm/huge_memory.c
-> index 817a875f2b8c..031fb1584bbf 100644
-> --- a/mm/huge_memory.c
-> +++ b/mm/huge_memory.c
-> @@ -766,15 +766,6 @@ static inline gfp_t alloc_hugepage_gfpmask(int defrag, gfp_t extra_gfp)
->  	return (GFP_TRANSHUGE & ~(defrag ? 0 : __GFP_WAIT)) | extra_gfp;
->  }
->  
-> -static inline struct page *alloc_hugepage_vma(int defrag,
-> -					      struct vm_area_struct *vma,
-> -					      unsigned long haddr, int nd,
-> -					      gfp_t extra_gfp)
-> -{
-> -	return alloc_pages_vma(alloc_hugepage_gfpmask(defrag, extra_gfp),
-> -			       HPAGE_PMD_ORDER, vma, haddr, nd);
-> -}
-> -
->  /* Caller must hold page table lock. */
->  static bool set_huge_zero_page(pgtable_t pgtable, struct mm_struct *mm,
->  		struct vm_area_struct *vma, unsigned long haddr, pmd_t *pmd,
-> @@ -795,6 +786,7 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
->  			       unsigned long address, pmd_t *pmd,
->  			       unsigned int flags)
->  {
-> +	gfp_t gfp;
->  	struct page *page;
->  	unsigned long haddr = address & HPAGE_PMD_MASK;
->  
-> @@ -829,8 +821,8 @@ int do_huge_pmd_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
->  		}
->  		return 0;
->  	}
-> -	page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
-> -			vma, haddr, numa_node_id(), 0);
-> +	gfp = alloc_hugepage_gfpmask(transparent_hugepage_defrag(vma), 0);
-> +	page = alloc_hugepage_vma(gfp, vma, haddr, HPAGE_PMD_ORDER);
->  	if (unlikely(!page)) {
->  		count_vm_event(THP_FAULT_FALLBACK);
->  		return VM_FAULT_FALLBACK;
-> @@ -1118,10 +1110,12 @@ int do_huge_pmd_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
->  	spin_unlock(ptl);
->  alloc:
->  	if (transparent_hugepage_enabled(vma) &&
-> -	    !transparent_hugepage_debug_cow())
-> -		new_page = alloc_hugepage_vma(transparent_hugepage_defrag(vma),
-> -					      vma, haddr, numa_node_id(), 0);
-> -	else
-> +	    !transparent_hugepage_debug_cow()) {
-> +		gfp_t gfp;
-> +
-> +		gfp = alloc_hugepage_gfpmask(transparent_hugepage_defrag(vma), 0);
-> +		new_page = alloc_hugepage_vma(gfp, vma, haddr, HPAGE_PMD_ORDER);
-> +	} else
->  		new_page = NULL;
->  
->  	if (unlikely(!new_page)) {
-> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-> index 0e0961b8c39c..14604142c2c2 100644
-> --- a/mm/mempolicy.c
-> +++ b/mm/mempolicy.c
-> @@ -2030,6 +2030,46 @@ retry_cpuset:
->  	return page;
->  }
->  
-> +struct page *alloc_hugepage_vma(gfp_t gfp, struct vm_area_struct *vma,
-> +				unsigned long addr, int order)
-> +{
-> +	struct page *page;
-> +	nodemask_t *nmask;
-> +	struct mempolicy *pol;
-> +	int node = numa_node_id();
-> +	unsigned int cpuset_mems_cookie;
-> +
-> +retry_cpuset:
-> +	pol = get_vma_policy(vma, addr);
-> +	cpuset_mems_cookie = read_mems_allowed_begin();
-> +
-> +	if (pol->mode != MPOL_INTERLEAVE) {
-> +		/*
-> +		 * For interleave policy, we don't worry about
-> +		 * current node. Otherwise if current node is
-> +		 * in nodemask, try to allocate hugepage from
-> +		 * current node. Don't fall back to other nodes
-> +		 * for THP.
-> +		 */
-> +		nmask = policy_nodemask(gfp, pol);
-> +		if (!nmask || node_isset(node, *nmask)) {
-> +			mpol_cond_put(pol);
-> +			page = alloc_pages_exact_node(node, gfp, order);
-> +			if (unlikely(!page &&
-> +				     read_mems_allowed_retry(cpuset_mems_cookie)))
-> +				goto retry_cpuset;
-> +			return page;
-> +		}
-> +	}
-> +	mpol_cond_put(pol);
-> +	/*
-> +	 * if current node is not part of node mask, try
-> +	 * the allocation from any node, and we can do retry
-> +	 * in that case.
-> +	 */
-> +	return alloc_pages_vma(gfp, order, vma, addr, node);
-> +}
-> +
->  /**
->   * 	alloc_pages_current - Allocate pages.
->   *
-> 
-
+Gloria Peter
