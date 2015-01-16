@@ -1,127 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753425AbbAPJj5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 04:39:57 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:36845 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751041AbbAPJjy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 04:39:54 -0500
-Date: Fri, 16 Jan 2015 10:37:34 +0100
-From: Jan Kara <jack@suse.cz>
-To: Konstantin Khebnikov <khlebnikov@yandex-team.ru>
-Cc: linux-mm@kvack.org, cgroups@vger.kernel.org,
-        Roman Gushchin <klamm@yandex-team.ru>, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, linux-fsdevel@vger.kernel.org,
-        koct9i@gmail.com
-Subject: Re: [PATCHSET RFC 0/6] memcg: inode-based dirty-set controller
-Message-ID: <20150116093734.GD25884@quack.suse.cz>
-References: <20150115180242.10450.92.stgit@buzz>
+	id S1752783AbbAPJmI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 04:42:08 -0500
+Received: from mout.kundenserver.de ([212.227.17.10]:62978 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751315AbbAPJmE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 04:42:04 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Cc: Yijing Wang <wangyijing@huawei.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Liviu Dudau <liviu@dudau.co.uk>, Tony Luck <tony.luck@intel.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Marc Zyngier <marc.zyngier@arm.com>, linux-pci@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, linux-m68k@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>, linux-alpha@vger.kernel.org,
+        linux-ia64@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Subject: Re: [PATCH 08/28] PCI: Introduce pci_host_assign_domain_nr() to assign domain
+Date: Fri, 16 Jan 2015 10:40:26 +0100
+Message-ID: <3026954.09KG7UaUTi@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <13182982.DnZJMY2KHL@wuerfel>
+References: <1421372666-12288-1-git-send-email-wangyijing@huawei.com> <1421372666-12288-9-git-send-email-wangyijing@huawei.com> <13182982.DnZJMY2KHL@wuerfel>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150115180242.10450.92.stgit@buzz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:v+2DdU5jvvHa/zckgtsCpbKmwG4Z3iU/JnURckB6+/z53/cPVOP
+ s9/gnR00ndIANAAlHy5W70cHECXVCC5dPByz+r3WgULpxifxUQt2iqxn6LOB+saW4uavy1j
+ XzdaOgM7cjNC040mmDgmeE/waa0aFG1txlZLLDhrYL1bJUrKuvmS6MW32sXzFewjnmmOawW
+ v74GfDZE5IqnuuBa8C9jw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello,
+On Friday 16 January 2015 10:08:45 Arnd Bergmann wrote:
+> On Friday 16 January 2015 09:44:06 Yijing Wang wrote:
+> > Introduce pci_host_assign_domain_nr() to assign domain
+> > number for pci_host_bridge. Later we will remove
+> > pci_bus_assign_domain_nr().
+> > 
+> > Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+> 
+> I'm confused: the same code is already part of the PCI tree, but with
+> Lorenzo Pieralisi listed as the patch author. The code is good,
+> and I acked it in the past, but one of you is (probably by accident)
+> misattributing the patch.
+> 
+> Assuming that the patch that is already merged in next is the right
+> one, I think you should rebase your series on top of
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git#next
+> 
+> to avoid conflicts like this one.
+>
 
-On Thu 15-01-15 21:49:10, Konstantin Khebnikov wrote:
-> This is ressurection of my old RFC patch for dirty-set accounting cgroup [1]
-> Now it's merged into memory cgroup and got bandwidth controller as a bonus.
-> 
-> That shows alternative solution: less accurate but much less monstrous than
-> accurate page-based dirty-set controller from Tejun Heo.
-> 
-> Memory overhead: +1 pointer into struct address_space.
-> Perfomance overhead is almost zero, no new locks added.
-> 
-> Idea is stright forward: link each inode to some cgroup when first dirty
-> page appers and account all dirty pages to it. Writeback is implemented
-> as single per-bdi writeback work which writes only inodes which belong
-> to memory cgroups where amount of dirty memory is beyond thresholds.
-> 
-> Third patch adds trick for handling shared inodes which have dirty pages
-> from several cgroups: it marks whole inode as shared and alters writeback
-> filter for it.
-> 
-> The rest is an example of bandwith and iops controller build on top of that.
-> Design is completely original, I bet nobody ever used task-works for that =)
-  So I like the simplicity of your code but there are a few downsides too
-(please correct me if I've got something wrong - btw the documentation of
-high-level design would be welcome so that one doesn't have to understand
-that from the patches):
-1) The bandwidth controller simply accounts number of bytes submitted for
-IO in submit_bio().  This doesn't reflect HW capabilities in any way. There
-a huge difference between a process submitting single block random IO and a
-process doing the same amount of sequential IO. This could be somewhat
-dealt with by not accounting number of bytes but rather time it took to
-complete a bio (but that somewhat complicates the code and block layer
-already does similar counting so it would be good you used that).
+I think I just got confused because the code duplicates most of
+pci_bus_assign_domain_nr(). Maybe this can be done in a better way
+by splitting the existing function into 
 
-2) The controller accounts bio to current task - that makes the limiting
-useless for background writeback. You need to somehow propagate i_memcg
-into submit_bio() so that IO is properly accounted.
+static int pci_assign_domain_nr(struct device *)
+{
+	... /* most of pci_bus_assign_domain_nr */
 
-3) The controller doesn't seem to guarantee any quality of service at the
-IO level like blkcg does. The controller limits amount of IO userspace is
-able to submit to kernel but only after we decide to submit the IO to disk.
-So at that time cgroup may have generated lots of IO - e.g. by dirtying lots
-of pages - and there's nothing to protect other cgroups from starvation
-because of writeback of these pages.
+	return domain;
+}
 
-Especially the last point seems to be essential to your approach (although
-you could somewhat mitigate the issue by accounting the IO already when
-it is entering the kernel) and I'm not sure whether that's really
-acceptable for potential users of this feature.
+void pci_host_assign_domain_nr(struct pci_host_bridge *host)
+{
+	host->domain = pci_assign_domain_nr(host->dev.parent);
+}
 
-								Honza
-> [1] [PATCH RFC] fsio: filesystem io accounting cgroup
-> http://marc.info/?l=linux-kernel&m=137331569501655&w=2
-> 
-> Patches also available here:
-> https://github.com/koct9i/linux.git branch memcg_dirty_control
-> 
-> ---
-> 
-> Konstantin Khebnikov (6):
->       memcg: inode-based dirty and writeback pages accounting
->       memcg: dirty-set limiting and filtered writeback
->       memcg: track shared inodes with dirty pages
->       percpu_ratelimit: high-performance ratelimiting counter
->       delay-injection: resource management via procrastination
->       memcg: filesystem bandwidth controller
-> 
-> 
->  block/blk-core.c                 |    2 
->  fs/direct-io.c                   |    2 
->  fs/fs-writeback.c                |   22 ++
->  fs/inode.c                       |    1 
->  include/linux/backing-dev.h      |    1 
->  include/linux/fs.h               |   14 +
->  include/linux/memcontrol.h       |   27 +++
->  include/linux/percpu_ratelimit.h |   45 ++++
->  include/linux/sched.h            |    7 +
->  include/linux/writeback.h        |    1 
->  include/trace/events/sched.h     |    7 +
->  include/trace/events/writeback.h |    1 
->  kernel/sched/core.c              |   66 +++++++
->  kernel/sched/fair.c              |   12 +
->  lib/Makefile                     |    1 
->  lib/percpu_ratelimit.c           |  168 +++++++++++++++++
->  mm/memcontrol.c                  |  381 ++++++++++++++++++++++++++++++++++++++
->  mm/page-writeback.c              |   32 +++
->  mm/readahead.c                   |    2 
->  mm/truncate.c                    |    1 
->  mm/vmscan.c                      |    4 
->  21 files changed, 787 insertions(+), 10 deletions(-)
->  create mode 100644 include/linux/percpu_ratelimit.h
->  create mode 100644 lib/percpu_ratelimit.c
-> 
-> --
-> Signature
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+void pci_bus_assign_domain_nr(struct pci_bus *bus, struct device *parent)
+{
+	bus->domain_nr = pci_assign_domain_nr(parent);
+}
