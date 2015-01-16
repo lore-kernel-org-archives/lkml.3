@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752697AbbAPHU1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 02:20:27 -0500
-Received: from nasmtp01.atmel.com ([192.199.1.245]:34310 "EHLO
-	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752498AbbAPHUC (ORCPT
+	id S1752136AbbAPHY1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 02:24:27 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:38328 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751834AbbAPHYZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 02:20:02 -0500
-From: Bo Shen <voice.shen@atmel.com>
-To: Mark Brown <broonie@kernel.org>
-CC: <nicolas.ferre@atmel.com>, <alsa-devel@alsa-project.org>,
-        <linux-sound@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, Bo Shen <voice.shen@atmel.com>
-Subject: [PATCH 2/2] ASoC: atmel_ssc_dai: remove clock pin comments
-Date: Fri, 16 Jan 2015 15:19:44 +0800
-Message-ID: <1421392784-32298-2-git-send-email-voice.shen@atmel.com>
-X-Mailer: git-send-email 2.3.0.rc0
-In-Reply-To: <1421392784-32298-1-git-send-email-voice.shen@atmel.com>
-References: <1421392784-32298-1-git-send-email-voice.shen@atmel.com>
+	Fri, 16 Jan 2015 02:24:25 -0500
+Message-ID: <54B8BC9F.3020106@linaro.org>
+Date: Fri, 16 Jan 2015 15:24:15 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Mark Brown <broonie@kernel.org>, Jason Cooper <jason@lakedaemon.net>
+CC: Catalin Marinas <catalin.marinas@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, "jcm@redhat.com" <jcm@redhat.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
+        Timur Tabi <timur@codeaurora.org>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linaro-acpi <linaro-acpi@lists.linaro.org>
+Subject: Re: [PATCH v7 00/17] Introduce ACPI for ARM64 based on ACPI 5.1
+References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org> <CACxGe6v_BvCQqp8d=LaQ8HeaOU1Zh_HPpwFTdwOjHUbqXsnQ8g@mail.gmail.com> <20150115182346.GE2329@e104818-lin.cambridge.arm.com> <20150115190220.GF3043@sirena.org.uk> <20150115200437.GF24989@titan.lakedaemon.net> <20150115203159.GG3043@sirena.org.uk>
+In-Reply-To: <20150115203159.GG3043@sirena.org.uk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As the clock can be get from TK/RK pin, so remove the comments.
+On 2015年01月16日 04:31, Mark Brown wrote:
+> On Thu, Jan 15, 2015 at 03:04:37PM -0500, Jason Cooper wrote:
+>> On Thu, Jan 15, 2015 at 07:02:20PM +0000, Mark Brown wrote:
+>
+>>> There's probably a bit of a process problem here - these patches are all
+>>> being posted as part of big and apparently controversial threads with
+>>> subject lines in the form "ARM / ACPI:" so people could be forgiven for
+>>> just not even reading the e-mails enough to notice changes to their
+>>> subsystems.  Is it worth posting those patches separately more directly
+>>> to the relevant maintainers?
+>
+>> I think it's beneficial to post the entire series as one thread, but to
+>> change the subject line of each patch to adequately reflect the affected
+>> subsystem.
+>
+> Just changing the subject lines to be more suitable would help, but
 
-Signed-off-by: Bo Shen <voice.shen@atmel.com>
----
+OK, I will repost this patch set as you and Jason suggested soon.
 
- sound/soc/atmel/atmel_ssc_dai.c | 4 ----
- 1 file changed, 4 deletions(-)
-
-diff --git a/sound/soc/atmel/atmel_ssc_dai.c b/sound/soc/atmel/atmel_ssc_dai.c
-index e691aab..198661b 100644
---- a/sound/soc/atmel/atmel_ssc_dai.c
-+++ b/sound/soc/atmel/atmel_ssc_dai.c
-@@ -452,10 +452,6 @@ static int atmel_ssc_hw_params(struct snd_pcm_substream *substream,
- 	case SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBM_CFM:
- 		/*
- 		 * I2S format, CODEC supplies BCLK and LRC clocks.
--		 *
--		 * The SSC transmit clock is obtained from the BCLK signal on
--		 * on the TK line, and the SSC receive clock is
--		 * generated from the transmit clock.
- 		 */
- 		rcmr =	  SSC_BF(RCMR_PERIOD, 0)
- 			| SSC_BF(RCMR_STTDLY, START_DELAY)
--- 
-2.3.0.rc0
-
+Thanks
+Hanjun
