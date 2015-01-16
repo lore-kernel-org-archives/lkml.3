@@ -1,111 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756420AbbAPPta (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 10:49:30 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44241 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756280AbbAPPtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 10:49:25 -0500
-Date: Fri, 16 Jan 2015 16:49:22 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Vinayak Menon <vinmenon@codeaurora.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, hannes@cmpxchg.org, vdavydov@parallels.com,
-        mgorman@suse.de, minchan@kernel.org, Christoph Lameter <cl@gentwo.org>
-Subject: Re: [PATCH v2] mm: vmscan: fix the page state calculation in
- too_many_isolated
-Message-ID: <20150116154922.GB4650@dhcp22.suse.cz>
-References: <1421235419-30736-1-git-send-email-vinmenon@codeaurora.org>
- <20150114165036.GI4706@dhcp22.suse.cz>
- <54B7F7C4.2070105@codeaurora.org>
+	id S1756427AbbAPP5H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 10:57:07 -0500
+Received: from mail-we0-f179.google.com ([74.125.82.179]:42516 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752953AbbAPP5F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 10:57:05 -0500
+Message-ID: <54B93346.4090307@linaro.org>
+Date: Fri, 16 Jan 2015 15:50:30 +0000
+From: Zoltan Kiss <zoltan.kiss@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54B7F7C4.2070105@codeaurora.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: William Cohen <wcohen@redhat.com>, oprofile-list@lists.sf.net,
+        linux-kernel@vger.kernel.org
+Subject: Re: Thread scheduler misbehaviour OR Oprofile bug?
+References: <54B919B5.4020300@linaro.org> <54B9305F.5020800@redhat.com>
+In-Reply-To: <54B9305F.5020800@redhat.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 15-01-15 22:54:20, Vinayak Menon wrote:
-> On 01/14/2015 10:20 PM, Michal Hocko wrote:
-> >On Wed 14-01-15 17:06:59, Vinayak Menon wrote:
-> >[...]
-> >>In one such instance, zone_page_state(zone, NR_ISOLATED_FILE)
-> >>had returned 14, zone_page_state(zone, NR_INACTIVE_FILE)
-> >>returned 92, and GFP_IOFS was set, and this resulted
-> >>in too_many_isolated returning true. But one of the CPU's
-> >>pageset vm_stat_diff had NR_ISOLATED_FILE as "-14". So the
-> >>actual isolated count was zero. As there weren't any more
-> >>updates to NR_ISOLATED_FILE and vmstat_update deffered work
-> >>had not been scheduled yet, 7 tasks were spinning in the
-> >>congestion wait loop for around 4 seconds, in the direct
-> >>reclaim path.
-> >
-> >Not syncing for such a long time doesn't sound right. I am not familiar
-> >with the vmstat syncing but sysctl_stat_interval is HZ so it should
-> >happen much more often that every 4 seconds.
-> >
-> 
-> Though the interval is HZ, since the vmstat_work is declared as a
-> deferrable work, IIUC the timer trigger can be deferred to the next
-> non-defferable timer expiry on the CPU which is in idle. This results
-> in the vmstat syncing on an idle CPU delayed by seconds. May be in
-> most cases this behavior is fine, except in cases like this.
+Hi,
 
-I am not sure I understand the above because CPU being idle doesn't
-seem important AFAICS. Anyway I have checked the current code which has
-changed quite recently by 7cc36bbddde5 (vmstat: on-demand vmstat workers
-V8). Let's CC Christoph (the thread starts here:
-http://thread.gmane.org/gmane.linux.kernel.mm/127229).
+On 16/01/15 15:38, William Cohen wrote:
+> On 01/16/2015 09:01 AM, Zoltan Kiss wrote:
+>> Hi,
+>>
+>> I'm using OProfile to check some suspicious behaviour of dpdk-pktgen,
+>> and I can see something which troubles me. Either the scheduler lies
+>> about core affinity or Oprofile accounts some samples wrongly.
+>> This userspace app runs in threads, which are assigned explicitly to one
+>> single core with pthread_setaffinity_np (I've added some debug lines
+>> which checks the affinity with pthread_getaffinity_np to make sure that
+>> the affinity was correctly set indeed)
+>> These threads run infinite loops, calling different functions. In my
+>> example one of these functions (pktgen_main_rxtx_loop) should only be
+>> called by the thread on core #1, but in the oprofile results I can see
+>> samples from all other cores as well. I've added a sched_getcpu() call
+>> to every iteration of that infinite loop to check if it runs anywhere
+>> else than core #1, but it seems to be fine.
+>> So my conclusion is that either the scheduler doesn't care about thread
+>> affinity and even sched_getcpu() can't see that, OR, Oprofile falsely
+>> accounts samples to the wrong CPU. Or to the wrong symbol, although I've
+>> added "__attribute__ ((noinline))" to every called function to make sure
+>> that inlineing doesn't screw up anything.
+>> I'm running my tests on Ubuntu Servers with 14.04 with 3.13.0-32 kernel,
+>> the CPU is a desktop kind, i5-4570 @ 3.20GHz (no-HT!) with oprofile 0.9.9.
+>> Anyone have a suggestion about what happens?
+>>
+>> Regards,
+>>
+>> Zoltan
+>
+> Hi Zoltan,
+>
+> Are you using operf or opcontrol to set up the data measurements?  It would be good to provide the command lines that you are using to do the data collection with oprofile.
 
-__round_jiffies_relative can easily make timeout 2HZ from 1HZ. Now we
-have vmstat_shepherd which waits to be queued and then wait to run. When
-it runs finally it only queues per-cpu vmstat_work which can also end
-up being 2HZ for some CPUs. So we can indeed have 4 seconds spent just
-for queuing. Not even mentioning work item latencies. Especially when
-workers are overloaded e.g. by fs work items and no additional workers
-cannot be created e.g. due to memory pressure so they are processed only
-by the workqueue rescuer. And latencies would grow a lot.
+Thanks for your reply! I'm using operf, here are the command sequence 
+I'm using:
 
-We have seen an issue where rescuer had to process thousands of work
-items because all workers where blocked on memory allocation - see
-http://thread.gmane.org/gmane.linux.kernel/1816452 - which is mainline
-already 008847f66c38 (workqueue: allow rescuer thread to do more work.)
-the patch reduces the latency considerably but it doesn't remove it
-completely.
+rm -rf oprofile_data
+operf -scl --event CPU_CLK_UNHALTED:100000:0:1:1 --vmlinux 
+/usr/lib/debug/boot/vmlinux-`uname -r` &
+sleep 20
+killall -s SIGINT operf
+sleep 1
+opreport --image-path /local/pktgen-dpdk/app/build/ --symbols|less
 
-If the time between two syncs is large then the per-cpu drift might be
-really large as well. Isn't this going to hurt other places where we
-rely on stats as well?
+I'll check the rest of your suggestions later on.
 
-In this particular case the reclaimers are throttled because they see
-too many isolated pages which was just a result of the per-cpu drift and
-small LRU list. The system seems to be under serious memory pressure
-already because there is basically no file cache. If the reclaimers
-wouldn't be throttled they would fail the reclaim probably and trigger
-OOM killer which might help to resolve the situation. Reclaimers are
-throttled instead.
+Zoltan
 
-Why cannot we simply update the global counters from vmstat_shepherd
-directly? Sure we would access remote CPU counters but that wouldn't
-happen often. That still wouldn't be enough because there is the
-workqueue latency. So why cannot we do that whole shepherd thing from a
-kernel thread instead? If the NUMA zone->pageset->pcp thing has to be
-done locally then it could have per-node kthread rather than being part
-of the unrelated vmstat code.
-I might be missing obvious things because I still haven't digested the
-code completely but this whole thing seems overly complicated and I
-do not see a good reason for that. If the primary motivation was cpu
-isolation then kthreads would sound like a better idea because you can
-play with the explicit affinity from the userspace.
-
-> Even in usual cases were the timer triggers in 1-2 secs, is it fine to
-> let the tasks in reclaim path wait that long unnecessarily when there
-> isn't any real congestion?
-
-But how do we find that out?
-
--- 
-Michal Hocko
-SUSE Labs
+>
+> "perf stat <command>" or "perf stat -p <list_of_pids>" can show task migration.  Look for the non-zero "cpu-migrations" in the output like in the output below.
+>
+> $ perf stat -p 29600
+> ^C
+>   Performance counter stats for process id '29600':
+>
+>         4303.761019      task-clock (msec)         #    0.305 CPUs utilized           [100.00%]
+>              17,980      context-switches          #    0.004 M/sec                   [100.00%]
+>                 595      cpu-migrations            #    0.138 K/sec                   [100.00%]
+>              44,212      page-faults               #    0.010 M/sec
+>      10,585,868,260      cycles                    #    2.460 GHz                     [100.00%]
+>       6,463,554,435      stalled-cycles-frontend   #   61.06% frontend cycles idle    [100.00%]
+>     <not supported>      stalled-cycles-backend
+>      10,400,529,789      instructions              #    0.98  insns per cycle
+>                                                    #    0.62  stalled cycles per insn [100.00%]
+>       2,049,813,299      branches                  #  476.284 M/sec                   [100.00%]
+>          48,441,881      branch-misses             #    2.36% of all branches
+>
+>        14.112614437 seconds time elapsed
+>
+>
+>
+> As a check you might try using "perf record <command>" or "perf record -p <list_of_pids>".  Once data collection is done use "perf report --sort=cpu" to see whether samples were recorded on other processors.  That would determine how much the monitored process is beoing scheduled on other cpus.
+>
+> There is also a systemtap (https://sourceware.org/systemtap/) script cycle_thief (https://sourceware.org/systemtap/examples/#process/cycle_thief.stp) that shows how often tasks are migrated and what other tasks are competing with the pid for time.
+>
+> These suggestions should help determine whether oprofile is getting the attribution of samples wrong or the scheduler is migrating the tasks.
+>
+> -Will
+>
