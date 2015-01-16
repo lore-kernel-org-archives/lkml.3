@@ -1,69 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753239AbbAPPZc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 10:25:32 -0500
-Received: from fieldses.org ([174.143.236.118]:38770 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752435AbbAPPZ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 10:25:28 -0500
-Date: Fri, 16 Jan 2015 10:25:27 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Ian Kent <ikent@redhat.com>
-Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>,
-        Oleg Nesterov <onestero@redhat.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Benjamin Coddington <bcodding@redhat.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Jeff Layton <jeff.layton@primarydata.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [RFC PATCH 0/5] Second attempt at contained helper execution
-Message-ID: <20150116152527.GD17315@fieldses.org>
-References: <20150114092704.30252.60446.stgit@pluto.fritz.box>
- <20150114215525.GB7071@fieldses.org>
- <20150114221011.GC7071@fieldses.org>
- <1421281572.2688.4.camel@pluto.fritz.box>
- <20150115162741.GA14902@fieldses.org>
- <1421370073.2630.4.camel@pluto.fritz.box>
+	id S1756429AbbAPPZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 10:25:56 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:36197 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753408AbbAPPZz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 10:25:55 -0500
+Date: Fri, 16 Jan 2015 15:25:41 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Tom Lendacky <thomas.lendacky@amd.com>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        linaro-acpi <linaro-acpi@lists.linaro.org>,
+        Yijing Wang <wangyijing@huawei.com>, Rob Herring <robh@kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Timur Tabi <timur@codeaurora.org>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
+        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>, "jcm@redhat.com" <jcm@redhat.com>,
+        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v7 00/17] Introduce ACPI for ARM64 based on ACPI 5.1
+Message-ID: <20150116152541.GG13634@e104818-lin.cambridge.arm.com>
+References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org>
+ <54B9240A.7060003@amd.com>
+ <20150116145545.GR7091@arm.com>
+ <2198633.UpIyI82Yon@wuerfel>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1421370073.2630.4.camel@pluto.fritz.box>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <2198633.UpIyI82Yon@wuerfel>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 16, 2015 at 09:01:13AM +0800, Ian Kent wrote:
-> On Thu, 2015-01-15 at 11:27 -0500, J. Bruce Fields wrote:
-> > On Thu, Jan 15, 2015 at 08:26:12AM +0800, Ian Kent wrote:
-> > > On Wed, 2015-01-14 at 17:10 -0500, J. Bruce Fields wrote:
-> > > > > On Wed, Jan 14, 2015 at 05:32:22PM +0800, Ian Kent wrote:
-> > > > > > There are other difficulties to tackle as well, such as how to decide
-> > > > > > if contained helper execution is needed. For example, if a mount has
-> > > > > > been propagated to a container or bound into the container tree (such
-> > > > > > as with the --volume option of "docker run") the root init namespace
-> > > > > > may need to be used and not the container namespace.
-> > > > 
-> > > > I think you have to go through each of the existing upcall examples and
-> > > > decide what's needed for each.
-> > > > 
-> > > > At least for the nfsv4 idmapper I would've thought the namespace the
-> > > > mount was done in would be the right choice, hence my previous question.
+On Fri, Jan 16, 2015 at 03:14:13PM +0000, Arnd Bergmann wrote:
+> On Friday 16 January 2015 14:55:45 Will Deacon wrote:
+> > On Fri, Jan 16, 2015 at 02:45:30PM +0000, Tom Lendacky wrote:
+> > > I have tested ACPI-enablement patches for the amd-xgbe/amd-xgbe-phy
+> > > drivers that I'm about to submit upstream with the V7 patch series
+> > > on the AMD Seattle server platform. There does not appear to be support
+> > > for the _CCA attribute in this patch series. The amd-xgbe driver will
+> > > setup the device domain and cache attributes based on the presence of
+> > > this attribute, but it requires the arch support to assign the proper
+> > > DMA operations in order for it to all work correctly.
 > > > 
-> > > Probably but you don't necessarily know what namespace the mount was
-> > > done in. It may have been propagated from another namespace or (although
-> > > I don't think it works yet) bound from another container using the
-> > > volumes-from docker option.
+> > > Overriding the _CCA attribute in the driver, I was able to successfully
+> > > test the driver and this patch series.
 > > 
-> > Name-id mappings should be associated with the superblock, I guess--so
-> > don't you store a pointer to the right thing there?
+> > Hopefully this will all be addressed when the IORT parts of ACPI have
+> > settled down (the current proposal allows for these attributes to be
+> > described as well as their interaction with things like IOMMUs).
+> > 
+> > In the meantime, are you falling back to non-coherent DMA? If so, what
+> > attributes have you settled on? We need to be really careful not to
+> > corrupt data during cache invalidatation when mapping a non-coherent
+> > buffer for the CPU.
 > 
-> Quite possibly but my original point was, without an acceptable
-> mechanism to execute the helper we can't know what might need to be done
-> to use it.
+> I think in case of ACPI we should use cache-coherent as the default,
+> as this is what all servers will use for DMA masters.
 
-At least for me it would be easier to review if it came with at least
-one example user.
+Last time I heard in some call, it was agreed that _CCA properties
+should always be present and Linux should not make any assumption (there
+is no safe assumption here). While better options may appear in ACPI,
+_CCA is what we currently have.
 
---b.
+-- 
+Catalin
