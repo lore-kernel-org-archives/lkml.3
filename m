@@ -1,127 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756685AbbAPSg0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 13:36:26 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47389 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751720AbbAPSgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 13:36:25 -0500
-Date: Fri, 16 Jan 2015 19:36:11 +0100
-From: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
-To: Li Kaihang <li.kaihang@zte.com.cn>
-Cc: gleb@kernel.org, pbonzini@redhat.com, tglx@linutronix.de, mingo@redhat.com,
-        hpa@zytor.com, x86@kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] arch/x86/kvm/vmx.c: Fix external interrupts inject
- directly bug with guestos RFLAGS.IF=0
-Message-ID: <20150116183611.GB1283@potion.brq.redhat.com>
-References: <OF9FB4191F.311C876C-ON48257DCE.003C223F-48257DCE.0044DE9C@zte.com.cn>
- <20150115180911.GB1298@potion.brq.redhat.com>
- <OFDF2356C5.36A499FB-ON48257DCF.002B5B04-48257DCF.002C4489@zte.com.cn>
+	id S1756730AbbAPSg4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 13:36:56 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40209 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751896AbbAPSgx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 13:36:53 -0500
+Date: Fri, 16 Jan 2015 18:36:35 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Paul Osmialowski <p.osmialowsk@samsung.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Jonathan Corbet <corbet@lwn.net>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Kukjin Kim <kgene@kernel.org>, linux-i2c@vger.kernel.org,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org
+Message-ID: <20150116183635.GH3856@sirena.org.uk>
+References: <1421419194-1849-1-git-send-email-p.osmialowsk@samsung.com>
+ <1421419194-1849-2-git-send-email-p.osmialowsk@samsung.com>
+ <20150116162314.GB3856@sirena.org.uk>
+ <alpine.DEB.2.10.1501161811280.21618@AMDC1262.digital.local>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="K1n7F7fSdjvFAEnM"
 Content-Disposition: inline
-In-Reply-To: <OFDF2356C5.36A499FB-ON48257DCF.002B5B04-48257DCF.002C4489@zte.com.cn>
+In-Reply-To: <alpine.DEB.2.10.1501161811280.21618@AMDC1262.digital.local>
+X-Cookie: I've Been Moved!
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [RFC 2/3] regmap: Use the enhancement of i2c API to address
+ circular dependency problem
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2015-01-16 16:07+0800, Li Kaihang:
-> > GuestOS is running and handling some interrupt with RFLAGS.IF = 0 while a external interrupt coming,
-> > then can lead to a vm exit,in this case,we must avoid inject this external interrupt or it will generate
-> > a processor hardware exception causing virtual machine crash.
-> 
-> What is the source of this exception?  (Is there a reproducer?)
-> 
-> Li Kaihang: exception is produced by intel processor hardware because injecting a external interrupt vector is forbidden by intel processor when GuestOS RFLAGS.IF = 0,
->             this need to be ensured by hypervisor software according to Intel 64 and IA-32 Architectures Software Developer's Manual Volume 3.
 
-(Found it, happens on VMENTRY ... 26.3.1.4 Checks on Guest RIP and RFLAGS
-   The IF flag (RFLAGS[bit 9]) must be 1 if the valid bit (bit 31) in the
-   VM-entry interruption-information field is 1 and the interruption type
-   (bits 10:8) is external interrupt.)
+--K1n7F7fSdjvFAEnM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
->             This bug has a certain probability, if code is designed to be very short between cli and sti in a guestos's interrupt processing, probability of occurrence
->             is very low, this event is like moving trap, bug is produced that guestos is running between cli and sti instruction while a external interrupt coming, it
->             may be verified by constructing a special guestos interrupt code. General OS running on kvm vm has also probability to hit this bug.
+On Fri, Jan 16, 2015 at 06:36:14PM +0100, Paul Osmialowski wrote:
+> On Fri, 16 Jan 2015, Mark Brown wrote:
 
-Is APICv enabled?  (Does togging it avoid the bug?)
+> >I don't know what this means, sorry.  I'm also very worried about the
+> >fact that this is being discussed purely in terms of I2C - why would
+> >this not affect other buses?
 
-> > Step 1:
-> >      a ext intr gen a vm_exit --> vmx_complete_interrupts --> __vmx_complete_interrupts --> case INTR_TYPE_EXT_INR: kvm_queue_interrupt(vcpu, vector, type == INTR_TYPE_SOFT_INTR);
-> >
-> > Step 2:
-> >      kvm_x86_ops->handle_external_intr(vcpu);
-> > for the above steps, step 4 and 5 will be a processor hardware exception if step1 happen while guestos RFLAGS.IF = 0, that is to say, guestos interrupt is disabled.
-> > So we should add a logic to judge in step 1 whether a external interrupt need to be pended then inject directly, in the process, we don't need to worry about
-> > this external interrupt lost because the next Step 2 will handle and choose a best chance to inject it by virtual interrupt controller.
-> 
-> Can you explain the relation between vectored events (Step 1) and
-> external interrupts (Step 2)?
-> (The bug happens when external interrupt arrives during event delivery?)
-> 
-> Li Kaihang: a external interrupt to running vm can trigger a vm_exit event handled in step 1, then this interrupt vector can be processed in step2
->             kvm_x86_ops->handle_external_intr(vcpu) and this function can jump to HOSTOS IDT to complete external interrupt handling,external interrupt handler in HOSTOS
->             IDT may inject the external interrupt into virtual interrupt controller if it has been registered to be needed by virtual machine.
+> I tried to open some gate for further extension to any bus that is used for
+> regmap communications. Currently it goes down to regmap-i2c.c since I
+> enhanced i2c API for this. Anyone who feels it is useful or saves oneself
+> from locking troubles can voluntarily adapt other regmap-i2c.* places (as
+> needed?).
 
-Proposed non-accidental relation between first two steps confuses me ...
+> My whole point is that I proposed a way to solve nasty deadlock which is
+> better to fix than just leave as it is. I got a feeling that situation I
+> adressed here may occur others too, so I proposed this extension that allows
+> future adaptations. I don't expect it to be accepted easily (i.e. I'm new
+> here and have mixed feelins about proposing changes that go so far),
+> therefore I prepared other solution for this particular deadlock that occurs
+> on this particular device.
 
-1) External interrupt in Step 1 should be from incomplete event delivery
-   to the guest,
-2) External interrupt in Step 2 from an interrupt for the host.
-3) Interrupts should be unrelated, because if not, then we either
-   deliver host's interrupts directly to the guest, or the other way
-   around.  (Both cases are buggy, regardless of CLI.)
-   - What is stored in "VM-exit interruption information" (Step 2) and
-     "IDT-vectoring information" (Step 1)?
+What I'm saying is that I want to understand this change from a point of
+view that isn't tied to I2C - at the regmap level what is this doing,
+I2C is a bus that has some properties which you're saying needs some
+changes, what are those properties and those changes?
 
-=> Interrupts in first two steps are independent and we have interrupted
-   external interrupt delivery to the guest.
+> >>+	void (*reg_unprepare_sync_io)(void *context);
 
-Can you provide a KVM trace of what is happening before the crash?
-(Or just point out where I made a mistake.)
+> >The first question here is why this only affects synchronous I/O or
+> >alternatively why these operations have _sync in the name if they aren't
+> >for synchronous I/O.
 
-Thank you.
+> IMHO this whole idea is against asynchronous I/O.
 
->             The Bug has never happened in step 1 and 2, but vcpu->arch.interrupt.pending is set in step 1, if this pending should not be injected, it also will be passed
->             to step4 to complete the dangerous external interrupt injecting. Please see the above answer about what is "pending should not be injected"? Our solution
->             is that clearing invalid external interrupt pending to prevent error inject pass by adding a logical judge in step 1.
+Can you be more specific please?  If something needs preparing it seems
+like it'd need preparing over an async transaction just as much as over
+a synchronous one.
 
-(I agree that we shouldn't inject events that fail VMENTRY,
- I'm just not sure that this solution is correct.)
+> >>+	if (bus) {
+> >>+		map->reg_prepare_sync_io = regmap_bus_prepare_sync_io;
+> >>+		map->reg_unprepare_sync_io = regmap_bus_unprepare_sync_io;
+> >>+	}
 
-> Why isn't the delivered event lost?
-> (It should be different from the external interrupt.)
-> 
-> Li Kaihang: please refer to the above answer, a external interrupt in step1 only can get to case INTR_TYPE_EXT_INR branch in patch code, so it should not affect other
+> >Why are we using these indirections instead of assigning the operation
+> >directly?  They...
 
-(It is the same type of interrupt, but with a different meaning ...
- You don't save the incomplete event delivery in Step 1, so it has to be
- recorded somewhere, otherwise it is lost -- where is it?)
+> I followed the pattern used throughout this file.
 
->             type events delivering, but there is another possibility that the external interrupt needed by running vm is not registered in hostos idt handler chain,of
->             course, this situation is another problem, even so it is dangerous action to inject the external interrupt directly if not judge current guestos RFLAGS.IF
->             state.
+Not in this pattern where the caller needs to check too.
 
-(This would be a major blunder -- does it happen?)
+--K1n7F7fSdjvFAEnM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> > Signed-off-by: Li kaihang <li.kaihang@zte.com.cn>
-> > ---
-> > diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-> > index d4c58d8..e8311ee 100644
-> > --- a/arch/x86/kvm/vmx.c
-> > +++ b/arch/x86/kvm/vmx.c
-> > @@ -7711,10 +7711,26 @@ static void __vmx_complete_interrupts(struct kvm_vcpu *vcpu,
-[...]
-> > +       case INTR_TYPE_EXT_INTR:
-> > +               /*
-> > +               * GuestOS is running and handling some interrupt with
-> > +               * RFLAGS.IF = 0 while a external interrupt coming,
-> > +               * then can lead a vm exit getting here,in this case,
-> > +               * we must avoid inject this external interrupt or it will
-> > +               * generate a processor hardware exception causing vm crash.
-> > +               */
-> > +               if (kvm_x86_ops->interrupt_allowed(vcpu))
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-(I missed this on the first reading ...
- in vmx.c, it is better to use vmx_interrupt_allowed() directly.)
+iQEcBAEBCAAGBQJUuVozAAoJECTWi3JdVIfQbYAH/ix7oPKXdufia6/f1X0FOCBc
+Vs+T5D2wsvooUXEJclL9QA4Vfz2ICeXS90RWUAlGaXWaPJbjD0Y/ywRKpvCUQLlQ
+b0pVakfzjkbcPHcFZvmXuRtreFI7J6BfyJKAShpXWFN6ECTbalMWWMdhagmvpOJM
+GBEdiXme90MK6jUvyL+yr6P65SV5LqW7heYikkxaAMXX2CoUjAcbxwNTWZbBQA7y
+IRF6sYcjvHXEsi3yII4QXx4CWL1ZBY1qCM7DnzalpB8dOFSY27NbD5is1mZaL7tv
+3cpJfV1gBByTUDTR462t/hNxb5swq4pxiDnjFd9cKP6a0XMqkMOXZNn41FLz3m4=
+=fuPx
+-----END PGP SIGNATURE-----
+
+--K1n7F7fSdjvFAEnM--
