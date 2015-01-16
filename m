@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754862AbbAPMF6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 07:05:58 -0500
-Received: from casper.infradead.org ([85.118.1.10]:44171 "EHLO
+	id S1754931AbbAPMGA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 07:06:00 -0500
+Received: from casper.infradead.org ([85.118.1.10]:44175 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753829AbbAPMF4 (ORCPT
+	with ESMTP id S1754630AbbAPMF6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 07:05:56 -0500
+	Fri, 16 Jan 2015 07:05:58 -0500
 From: Christoph Hellwig <hch@lst.de>
 To: Jens Axboe <axboe@kernel.dk>, Dongsu Park <dongsu.park@profitbricks.com>
 Cc: Kent Overstreet <kmo@daterainc.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/7] block: use blk_rq_map_user_iov to implement blk_rq_map_user
-Date: Fri, 16 Jan 2015 13:04:50 +0100
-Message-Id: <1421409895-21377-3-git-send-email-hch@lst.de>
+Subject: [PATCH 3/7] block: add a helper to free bio bounce buffer pages
+Date: Fri, 16 Jan 2015 13:04:51 +0100
+Message-Id: <1421409895-21377-4-git-send-email-hch@lst.de>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1421409895-21377-1-git-send-email-hch@lst.de>
 References: <1421409895-21377-1-git-send-email-hch@lst.de>
@@ -22,268 +22,174 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The code sniplet to walk all bio_vecs and free their pages is opencoded in
+way to many places, so factor it into a helper.  Also convert the slightly
+more complex cases in bio_kern_endio and __bio_copy_iov where we break
+the freeing from an existing loop into a separate one.
+
 Signed-off-by: Christoph Hellwig <hch@lst.de>
 ---
- block/bio.c         |  53 +-------------------
- block/blk-map.c     | 137 +++++-----------------------------------------------
- include/linux/bio.h |   4 --
- 3 files changed, 14 insertions(+), 180 deletions(-)
+ block/bio.c | 65 +++++++++++++++++++++++++++++++------------------------------
+ 1 file changed, 33 insertions(+), 32 deletions(-)
 
 diff --git a/block/bio.c b/block/bio.c
-index 54da51e..879921e 100644
+index 879921e..0895f69 100644
 --- a/block/bio.c
 +++ b/block/bio.c
-@@ -1102,7 +1102,7 @@ static int __bio_copy_iov(struct bio *bio, const struct sg_iovec *iov, int iov_c
-  *	bio_uncopy_user	-	finish previously mapped bio
-  *	@bio: bio being terminated
-  *
-- *	Free pages allocated from bio_copy_user() and write back data
-+ *	Free pages allocated from bio_copy_user_iov() and write back data
-  *	to user space in case of a read.
-  */
- int bio_uncopy_user(struct bio *bio)
-@@ -1256,32 +1256,6 @@ out_bmd:
- 	return ERR_PTR(ret);
+@@ -1048,7 +1048,7 @@ static struct bio_map_data *bio_alloc_map_data(unsigned int iov_count,
  }
  
--/**
-- *	bio_copy_user	-	copy user data to bio
-- *	@q: destination block queue
-- *	@map_data: pointer to the rq_map_data holding pages (if necessary)
-- *	@uaddr: start of user address
-- *	@len: length in bytes
-- *	@write_to_vm: bool indicating writing to pages or not
-- *	@gfp_mask: memory allocation flags
-- *
-- *	Prepares and returns a bio for indirect user io, bouncing data
-- *	to/from kernel pages as necessary. Must be paired with
-- *	call bio_uncopy_user() on io completion.
-- */
--struct bio *bio_copy_user(struct request_queue *q, struct rq_map_data *map_data,
--			  unsigned long uaddr, unsigned int len,
--			  int write_to_vm, gfp_t gfp_mask)
--{
--	struct sg_iovec iov;
+ static int __bio_copy_iov(struct bio *bio, const struct sg_iovec *iov, int iov_count,
+-			  int to_user, int from_user, int do_free_page)
++                          int to_user, int from_user)
+ {
+ 	int ret = 0, i;
+ 	struct bio_vec *bvec;
+@@ -1090,14 +1090,20 @@ static int __bio_copy_iov(struct bio *bio, const struct sg_iovec *iov, int iov_c
+ 				iov_off = 0;
+ 			}
+ 		}
 -
--	iov.iov_base = (void __user *)uaddr;
--	iov.iov_len = len;
--
--	return bio_copy_user_iov(q, map_data, &iov, 1, write_to_vm, gfp_mask);
--}
--EXPORT_SYMBOL(bio_copy_user);
--
- static struct bio *__bio_map_user_iov(struct request_queue *q,
- 				      struct block_device *bdev,
- 				      const struct sg_iovec *iov, int iov_count,
-@@ -1395,31 +1369,6 @@ static struct bio *__bio_map_user_iov(struct request_queue *q,
- }
+-		if (do_free_page)
+-			__free_page(bvec->bv_page);
+ 	}
  
- /**
-- *	bio_map_user	-	map user address into bio
-- *	@q: the struct request_queue for the bio
-- *	@bdev: destination block device
-- *	@uaddr: start of user address
-- *	@len: length in bytes
-- *	@write_to_vm: bool indicating writing to pages or not
-- *	@gfp_mask: memory allocation flags
-- *
-- *	Map the user space address into a bio suitable for io to a block
-- *	device. Returns an error pointer in case of error.
-- */
--struct bio *bio_map_user(struct request_queue *q, struct block_device *bdev,
--			 unsigned long uaddr, unsigned int len, int write_to_vm,
--			 gfp_t gfp_mask)
--{
--	struct sg_iovec iov;
--
--	iov.iov_base = (void __user *)uaddr;
--	iov.iov_len = len;
--
--	return bio_map_user_iov(q, bdev, &iov, 1, write_to_vm, gfp_mask);
--}
--EXPORT_SYMBOL(bio_map_user);
--
--/**
-  *	bio_map_user_iov - map user sg_iovec table into bio
-  *	@q: the struct request_queue for the bio
-  *	@bdev: destination block device
-diff --git a/block/blk-map.c b/block/blk-map.c
-index f890d43..152a5fe 100644
---- a/block/blk-map.c
-+++ b/block/blk-map.c
-@@ -39,130 +39,6 @@ static int __blk_rq_unmap_user(struct bio *bio)
  	return ret;
  }
  
--static int __blk_rq_map_user(struct request_queue *q, struct request *rq,
--			     struct rq_map_data *map_data, void __user *ubuf,
--			     unsigned int len, gfp_t gfp_mask)
--{
--	unsigned long uaddr;
--	struct bio *bio, *orig_bio;
--	int reading, ret;
--
--	reading = rq_data_dir(rq) == READ;
--
--	/*
--	 * if alignment requirement is satisfied, map in user pages for
--	 * direct dma. else, set up kernel bounce buffers
--	 */
--	uaddr = (unsigned long) ubuf;
--	if (blk_rq_aligned(q, uaddr, len) && !map_data)
--		bio = bio_map_user(q, NULL, uaddr, len, reading, gfp_mask);
--	else
--		bio = bio_copy_user(q, map_data, uaddr, len, reading, gfp_mask);
--
--	if (IS_ERR(bio))
--		return PTR_ERR(bio);
--
--	if (map_data && map_data->null_mapped)
--		bio->bi_flags |= (1 << BIO_NULL_MAPPED);
--
--	orig_bio = bio;
--	blk_queue_bounce(q, &bio);
--
--	/*
--	 * We link the bounce buffer in and could have to traverse it
--	 * later so we have to get a ref to prevent it from being freed
--	 */
--	bio_get(bio);
--
--	ret = blk_rq_append_bio(q, rq, bio);
--	if (!ret)
--		return bio->bi_iter.bi_size;
--
--	/* if it was boucned we must call the end io function */
--	bio_endio(bio, 0);
--	__blk_rq_unmap_user(orig_bio);
--	bio_put(bio);
--	return ret;
--}
--
--/**
-- * blk_rq_map_user - map user data to a request, for REQ_TYPE_BLOCK_PC usage
-- * @q:		request queue where request should be inserted
-- * @rq:		request structure to fill
-- * @map_data:   pointer to the rq_map_data holding pages (if necessary)
-- * @ubuf:	the user buffer
-- * @len:	length of user data
-- * @gfp_mask:	memory allocation flags
-- *
-- * Description:
-- *    Data will be mapped directly for zero copy I/O, if possible. Otherwise
-- *    a kernel bounce buffer is used.
-- *
-- *    A matching blk_rq_unmap_user() must be issued at the end of I/O, while
-- *    still in process context.
-- *
-- *    Note: The mapped bio may need to be bounced through blk_queue_bounce()
-- *    before being submitted to the device, as pages mapped may be out of
-- *    reach. It's the callers responsibility to make sure this happens. The
-- *    original bio must be passed back in to blk_rq_unmap_user() for proper
-- *    unmapping.
-- */
--int blk_rq_map_user(struct request_queue *q, struct request *rq,
--		    struct rq_map_data *map_data, void __user *ubuf,
--		    unsigned long len, gfp_t gfp_mask)
--{
--	unsigned long bytes_read = 0;
--	struct bio *bio = NULL;
--	int ret;
--
--	if (len > (queue_max_hw_sectors(q) << 9))
--		return -EINVAL;
--	if (!len)
--		return -EINVAL;
--
--	if (!ubuf && (!map_data || !map_data->null_mapped))
--		return -EINVAL;
--
--	while (bytes_read != len) {
--		unsigned long map_len, end, start;
--
--		map_len = min_t(unsigned long, len - bytes_read, BIO_MAX_SIZE);
--		end = ((unsigned long)ubuf + map_len + PAGE_SIZE - 1)
--								>> PAGE_SHIFT;
--		start = (unsigned long)ubuf >> PAGE_SHIFT;
--
--		/*
--		 * A bad offset could cause us to require BIO_MAX_PAGES + 1
--		 * pages. If this happens we just lower the requested
--		 * mapping len by a page so that we can fit
--		 */
--		if (end - start > BIO_MAX_PAGES)
--			map_len -= PAGE_SIZE;
--
--		ret = __blk_rq_map_user(q, rq, map_data, ubuf, map_len,
--					gfp_mask);
--		if (ret < 0)
--			goto unmap_rq;
--		if (!bio)
--			bio = rq->bio;
--		bytes_read += ret;
--		ubuf += ret;
--
--		if (map_data)
--			map_data->offset += ret;
--	}
--
--	if (!bio_flagged(bio, BIO_USER_MAPPED))
--		rq->cmd_flags |= REQ_COPY_USER;
--
--	return 0;
--unmap_rq:
--	blk_rq_unmap_user(bio);
--	rq->bio = NULL;
--	return ret;
--}
--EXPORT_SYMBOL(blk_rq_map_user);
--
- /**
-  * blk_rq_map_user_iov - map user data to a request, for REQ_TYPE_BLOCK_PC usage
-  * @q:		request queue where request should be inserted
-@@ -241,6 +117,19 @@ int blk_rq_map_user_iov(struct request_queue *q, struct request *rq,
- }
- EXPORT_SYMBOL(blk_rq_map_user_iov);
- 
-+int blk_rq_map_user(struct request_queue *q, struct request *rq,
-+		    struct rq_map_data *map_data, void __user *ubuf,
-+		    unsigned long len, gfp_t gfp_mask)
++static void bio_free_pages(struct bio *bio)
 +{
-+	struct sg_iovec iov;
++	struct bio_vec *bvec;
++	int i;
 +
-+	iov.iov_base = (void __user *)ubuf;
-+	iov.iov_len = len;
-+
-+	return blk_rq_map_user_iov(q, rq, map_data, &iov, 1, len, gfp_mask);
++	bio_for_each_segment_all(bvec, bio, i)
++		__free_page(bvec->bv_page);
 +}
-+EXPORT_SYMBOL(blk_rq_map_user);
 +
  /**
-  * blk_rq_unmap_user - unmap a request with user data
-  * @bio:	       start of bio list
-diff --git a/include/linux/bio.h b/include/linux/bio.h
-index efead0b..d0d6735 100644
---- a/include/linux/bio.h
-+++ b/include/linux/bio.h
-@@ -428,8 +428,6 @@ extern int bio_add_page(struct bio *, struct page *, unsigned int,unsigned int);
- extern int bio_add_pc_page(struct request_queue *, struct bio *, struct page *,
- 			   unsigned int, unsigned int);
- extern int bio_get_nr_vecs(struct block_device *);
--extern struct bio *bio_map_user(struct request_queue *, struct block_device *,
--				unsigned long, unsigned int, int, gfp_t);
- struct sg_iovec;
- struct rq_map_data;
- extern struct bio *bio_map_user_iov(struct request_queue *,
-@@ -462,8 +460,6 @@ static inline void bio_flush_dcache_pages(struct bio *bi)
- extern void bio_copy_data(struct bio *dst, struct bio *src);
- extern int bio_alloc_pages(struct bio *bio, gfp_t gfp);
+  *	bio_uncopy_user	-	finish previously mapped bio
+  *	@bio: bio being terminated
+@@ -1108,8 +1114,7 @@ static int __bio_copy_iov(struct bio *bio, const struct sg_iovec *iov, int iov_c
+ int bio_uncopy_user(struct bio *bio)
+ {
+ 	struct bio_map_data *bmd = bio->bi_private;
+-	struct bio_vec *bvec;
+-	int ret = 0, i;
++	int ret = 0;
  
--extern struct bio *bio_copy_user(struct request_queue *, struct rq_map_data *,
--				 unsigned long, unsigned int, int, gfp_t);
- extern struct bio *bio_copy_user_iov(struct request_queue *,
- 				     struct rq_map_data *,
- 				     const struct sg_iovec *,
+ 	if (!bio_flagged(bio, BIO_NULL_MAPPED)) {
+ 		/*
+@@ -1118,11 +1123,9 @@ int bio_uncopy_user(struct bio *bio)
+ 		 */
+ 		if (current->mm)
+ 			ret = __bio_copy_iov(bio, bmd->sgvecs, bmd->nr_sgvecs,
+-					     bio_data_dir(bio) == READ,
+-					     0, bmd->is_our_pages);
+-		else if (bmd->is_our_pages)
+-			bio_for_each_segment_all(bvec, bio, i)
+-				__free_page(bvec->bv_page);
++					     bio_data_dir(bio) == READ, 0);
++		if (bmd->is_our_pages)
++			bio_free_pages(bio);
+ 	}
+ 	kfree(bmd);
+ 	bio_put(bio);
+@@ -1149,7 +1152,6 @@ struct bio *bio_copy_user_iov(struct request_queue *q,
+ 			      int write_to_vm, gfp_t gfp_mask)
+ {
+ 	struct bio_map_data *bmd;
+-	struct bio_vec *bvec;
+ 	struct page *page;
+ 	struct bio *bio;
+ 	int i, ret;
+@@ -1238,7 +1240,7 @@ struct bio *bio_copy_user_iov(struct request_queue *q,
+ 	 */
+ 	if ((!write_to_vm && (!map_data || !map_data->null_mapped)) ||
+ 	    (map_data && map_data->from_user)) {
+-		ret = __bio_copy_iov(bio, iov, iov_count, 0, 1, 0);
++		ret = __bio_copy_iov(bio, iov, iov_count, 0, 1);
+ 		if (ret)
+ 			goto cleanup;
+ 	}
+@@ -1247,9 +1249,7 @@ struct bio *bio_copy_user_iov(struct request_queue *q,
+ 	return bio;
+ cleanup:
+ 	if (!map_data)
+-		bio_for_each_segment_all(bvec, bio, i)
+-			__free_page(bvec->bv_page);
+-
++		bio_free_pages(bio);
+ 	bio_put(bio);
+ out_bmd:
+ 	kfree(bmd);
+@@ -1510,22 +1510,22 @@ EXPORT_SYMBOL(bio_map_kern);
+ 
+ static void bio_copy_kern_endio(struct bio *bio, int err)
+ {
+-	struct bio_vec *bvec;
+-	const int read = bio_data_dir(bio) == READ;
++	bio_free_pages(bio);
++	bio_put(bio);
++}
++
++static void bio_copy_kern_endio_read(struct bio *bio, int err)
++{
+ 	char *p = bio->bi_private;
++	struct bio_vec *bvec;
+ 	int i;
+ 
+ 	bio_for_each_segment_all(bvec, bio, i) {
+-		char *addr = page_address(bvec->bv_page);
+-
+-		if (read)
+-			memcpy(p, addr, bvec->bv_len);
+-
+-		__free_page(bvec->bv_page);
++		memcpy(p, page_address(bvec->bv_page), bvec->bv_len);
+ 		p += bvec->bv_len;
+ 	}
+ 
+-	bio_put(bio);
++	bio_copy_kern_endio(bio, err);
+ }
+ 
+ /**
+@@ -1545,10 +1545,9 @@ struct bio *bio_copy_kern(struct request_queue *q, void *data, unsigned int len,
+ 	unsigned long kaddr = (unsigned long)data;
+ 	unsigned long end = (kaddr + len + PAGE_SIZE - 1) >> PAGE_SHIFT;
+ 	unsigned long start = kaddr >> PAGE_SHIFT;
+-	struct bio_vec *bvec;
+ 	struct bio *bio;
+ 	void *p = data;
+-	int nr_pages = 0, i;
++	int nr_pages = 0;
+ 
+ 	/*
+ 	 * Overflow, abort
+@@ -1582,16 +1581,18 @@ struct bio *bio_copy_kern(struct request_queue *q, void *data, unsigned int len,
+ 		p += bytes;
+ 	}
+ 
+-	if (!reading)
++	if (reading) {
++		bio->bi_end_io = bio_copy_kern_endio_read;
++		bio->bi_private = data;
++	} else {
++		bio->bi_end_io = bio_copy_kern_endio;
+ 		bio->bi_rw |= REQ_WRITE;
++	}
+ 
+-	bio->bi_private = data;
+-	bio->bi_end_io = bio_copy_kern_endio;
+ 	return bio;
+ 
+ cleanup:
+-	bio_for_each_segment_all(bvec, bio, i)
+-		__free_page(bvec->bv_page);
++	bio_free_pages(bio);
+ 	bio_put(bio);
+ 	return ERR_PTR(-ENOMEM);
+ }
 -- 
 1.9.1
 
