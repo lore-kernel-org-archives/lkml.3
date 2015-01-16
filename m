@@ -1,186 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751348AbbAPFKL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 00:10:11 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:40895 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750741AbbAPFKK (ORCPT
+	id S1751449AbbAPFWn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 00:22:43 -0500
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49014 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750741AbbAPFWl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 00:10:10 -0500
-Message-ID: <54B89D29.5000702@codeaurora.org>
-Date: Fri, 16 Jan 2015 10:40:01 +0530
-From: Vinayak Menon <vinmenon@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+	Fri, 16 Jan 2015 00:22:41 -0500
+X-SecurityPolicyCheck: OK by SHieldMailChecker v2.0.1
+X-SHieldMailCheckerPolicyVersion: FJ-ISEC-20120718-3
+Message-ID: <54B8A014.7050003@jp.fujitsu.com>
+Date: Fri, 16 Jan 2015 14:22:28 +0900
+From: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org, hannes@cmpxchg.org,
-        vdavydov@parallels.com, mhocko@suse.cz, mgorman@suse.de,
-        minchan@kernel.org
-Subject: Re: [PATCH v2] mm: vmscan: fix the page state calculation in too_many_isolated
-References: <1421235419-30736-1-git-send-email-vinmenon@codeaurora.org> <20150115171728.ebc77a48.akpm@linux-foundation.org>
-In-Reply-To: <20150115171728.ebc77a48.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+CC: <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
+        "Gu, Zheng" <guz.fnst@cn.fujitsu.com>,
+        tangchen <tangchen@cn.fujitsu.com>,
+        Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [RFC PATCH 0/2 shit_A shit_B] workqueue: fix wq_numa bug
+References: <54B5D8B4.7010708@cn.fujitsu.com> <1421225658-3978-1-git-send-email-laijs@cn.fujitsu.com>
+In-Reply-To: <1421225658-3978-1-git-send-email-laijs@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
 Content-Transfer-Encoding: 7bit
+X-SecurityPolicyCheck-GC: OK by FENCE-Mail
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2015 06:47 AM, Andrew Morton wrote:
-> On Wed, 14 Jan 2015 17:06:59 +0530 Vinayak Menon <vinmenon@codeaurora.org> wrote:
->
->> It is observed that sometimes multiple tasks get blocked for long
->> in the congestion_wait loop below, in shrink_inactive_list. This
->> is because of vm_stat values not being synced.
->>
->> (__schedule) from [<c0a03328>]
->> (schedule_timeout) from [<c0a04940>]
->> (io_schedule_timeout) from [<c01d585c>]
->> (congestion_wait) from [<c01cc9d8>]
->> (shrink_inactive_list) from [<c01cd034>]
->> (shrink_zone) from [<c01cdd08>]
->> (try_to_free_pages) from [<c01c442c>]
->> (__alloc_pages_nodemask) from [<c01f1884>]
->> (new_slab) from [<c09fcf60>]
->> (__slab_alloc) from [<c01f1a6c>]
->>
->> In one such instance, zone_page_state(zone, NR_ISOLATED_FILE)
->> had returned 14, zone_page_state(zone, NR_INACTIVE_FILE)
->> returned 92, and GFP_IOFS was set, and this resulted
->> in too_many_isolated returning true. But one of the CPU's
->> pageset vm_stat_diff had NR_ISOLATED_FILE as "-14". So the
->> actual isolated count was zero. As there weren't any more
->> updates to NR_ISOLATED_FILE and vmstat_update deffered work
->> had not been scheduled yet, 7 tasks were spinning in the
->> congestion wait loop for around 4 seconds, in the direct
->> reclaim path.
->>
->> This patch uses zone_page_state_snapshot instead, but restricts
->> its usage to avoid performance penalty.
->
-> Seems reasonable.
->
->>
->> ...
->>
->> @@ -1516,15 +1531,18 @@ shrink_inactive_list(unsigned long nr_to_scan, struct lruvec *lruvec,
->>   	unsigned long nr_immediate = 0;
->>   	isolate_mode_t isolate_mode = 0;
->>   	int file = is_file_lru(lru);
->> +	int safe = 0;
->>   	struct zone *zone = lruvec_zone(lruvec);
->>   	struct zone_reclaim_stat *reclaim_stat = &lruvec->reclaim_stat;
->>
->> -	while (unlikely(too_many_isolated(zone, file, sc))) {
->> +	while (unlikely(too_many_isolated(zone, file, sc, safe))) {
->>   		congestion_wait(BLK_RW_ASYNC, HZ/10);
->>
->>   		/* We are about to die and free our memory. Return now. */
->>   		if (fatal_signal_pending(current))
->>   			return SWAP_CLUSTER_MAX;
->> +
->> +		safe = 1;
->>   	}
->
-> But here and under the circumstances you describe, we'll call
-> congestion_wait() a single time.  That shouldn't have occurred.
->
-> So how about we put the fallback logic into too_many_isolated() itself?
->
->
+Hi Lai,
 
-congestion_wait was allowed to run once as an optimization, considering 
-that __too_many_isolated (unsafe and faster) can be correct in returning 
-true most of the time. So we avoid calling the safe version, in most of 
-the cases. But I agree that we should not call congestion_wait 
-unnecessarily even in those rare cases. So this looks correct to me.
+Thanks you for posting the patch-set.
+
+I'll try your it next Monday. So, please wait a while.
+
+Thanks,
+Yasuaki Ishimatsu
 
 
->
-> From: Andrew Morton <akpm@linux-foundation.org>
-> Subject: mm-vmscan-fix-the-page-state-calculation-in-too_many_isolated-fix
->
-> Move the zone_page_state_snapshot() fallback logic into
-> too_many_isolated(), so shrink_inactive_list() doesn't incorrectly call
-> congestion_wait().
->
-> Cc: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: Mel Gorman <mgorman@suse.de>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Cc: Minchan Kim <minchan@kernel.org>
-> Cc: Vinayak Menon <vinmenon@codeaurora.org>
-> Cc: Vladimir Davydov <vdavydov@parallels.com>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> ---
->
->   mm/vmscan.c |   23 +++++++++++------------
->   1 file changed, 11 insertions(+), 12 deletions(-)
->
-> diff -puN mm/vmscan.c~mm-vmscan-fix-the-page-state-calculation-in-too_many_isolated-fix mm/vmscan.c
-> --- a/mm/vmscan.c~mm-vmscan-fix-the-page-state-calculation-in-too_many_isolated-fix
-> +++ a/mm/vmscan.c
-> @@ -1402,7 +1402,7 @@ int isolate_lru_page(struct page *page)
->   }
->
->   static int __too_many_isolated(struct zone *zone, int file,
-> -	struct scan_control *sc, int safe)
-> +			       struct scan_control *sc, int safe)
->   {
->   	unsigned long inactive, isolated;
->
-> @@ -1435,7 +1435,7 @@ static int __too_many_isolated(struct zo
->    * unnecessary swapping, thrashing and OOM.
->    */
->   static int too_many_isolated(struct zone *zone, int file,
-> -		struct scan_control *sc, int safe)
-> +			     struct scan_control *sc)
->   {
->   	if (current_is_kswapd())
->   		return 0;
-> @@ -1443,12 +1443,14 @@ static int too_many_isolated(struct zone
->   	if (!global_reclaim(sc))
->   		return 0;
->
-> -	if (unlikely(__too_many_isolated(zone, file, sc, 0))) {
-> -		if (safe)
-> -			return __too_many_isolated(zone, file, sc, safe);
-> -		else
-> -			return 1;
-> -	}
-> +	/*
-> +	 * __too_many_isolated(safe=0) is fast but inaccurate, because it
-> +	 * doesn't account for the vm_stat_diff[] counters.  So if it looks
-> +	 * like too_many_isolated() is about to return true, fall back to the
-> +	 * slower, more accurate zone_page_state_snapshot().
-> +	 */
-> +	if (unlikely(__too_many_isolated(zone, file, sc, 0)))
-> +		return __too_many_isolated(zone, file, sc, safe);
->
->   	return 0;
->   }
-> @@ -1540,18 +1542,15 @@ shrink_inactive_list(unsigned long nr_to
->   	unsigned long nr_immediate = 0;
->   	isolate_mode_t isolate_mode = 0;
->   	int file = is_file_lru(lru);
-> -	int safe = 0;
->   	struct zone *zone = lruvec_zone(lruvec);
->   	struct zone_reclaim_stat *reclaim_stat = &lruvec->reclaim_stat;
->
-> -	while (unlikely(too_many_isolated(zone, file, sc, safe))) {
-> +	while (unlikely(too_many_isolated(zone, file, sc))) {
->   		congestion_wait(BLK_RW_ASYNC, HZ/10);
->
->   		/* We are about to die and free our memory. Return now. */
->   		if (fatal_signal_pending(current))
->   			return SWAP_CLUSTER_MAX;
-> -
-> -		safe = 1;
->   	}
->
->   	lru_add_drain();
-> _
->
+(2015/01/14 17:54), Lai Jiangshan wrote:
+> Hi, All
+> 
+> This patches are un-changloged, un-compiled, un-booted, un-tested,
+> they are just shits, I even hope them un-sent or blocked.
+> 
+> The patches include two -solutions-:
+> 
+> Shit_A:
+>    workqueue: reset pool->node and unhash the pool when the node is
+>      offline
+>    update wq_numa when cpu_present_mask changed
+> 
+>   kernel/workqueue.c | 107 +++++++++++++++++++++++++++++++++++++++++------------
+>   1 file changed, 84 insertions(+), 23 deletions(-)
+> 
+> 
+> Shit_B:
+>    workqueue: reset pool->node and unhash the pool when the node is
+>      offline
+>    workqueue: remove wq_numa_possible_cpumask
+>    workqueue: directly update attrs of pools when cpu hot[un]plug
+> 
+>   kernel/workqueue.c | 135 +++++++++++++++++++++++++++++++++++++++--------------
+>   1 file changed, 101 insertions(+), 34 deletions(-)
+> 
+> 
+> Both patch1 of the both solutions are: reset pool->node and unhash the pool,
+> it is suggested by TJ, I found it is a good leading-step for fixing the bug.
+> 
+> The other patches are handling wq_numa_possible_cpumask where the solutions
+> diverge.
+> 
+> Solution_A uses present_mask rather than possible_cpumask. It adds
+> wq_numa_notify_cpu_present_set/cleared() for notifications of
+> the changes of cpu_present_mask.  But the notifications are un-existed
+> right now, so I fake one (wq_numa_check_present_cpumask_changes())
+> to imitate them.  I hope the memory people add a real one.
+> 
+> Solution_B uses online_mask rather than possible_cpumask.
+> this solution remove more coupling between numa_code and workqueue,
+> it just depends on cpumask_of_node(node).
+> 
+> Patch2_of_Solution_B removes the wq_numa_possible_cpumask and add
+> overhead when cpu hot[un]plug, Patch3 reduce this overhead.
+> 
+> Thanks,
+> Lai
+> 
+> 
+> Reported-by: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+> Cc: "Gu, Zheng" <guz.fnst@cn.fujitsu.com>
+> Cc: tangchen <tangchen@cn.fujitsu.com>
+> Cc: Hiroyuki KAMEZAWA <kamezawa.hiroyu@jp.fujitsu.com>
+> 
 
 
--- 
-QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a
-member of the Code Aurora Forum, hosted by The Linux Foundation
