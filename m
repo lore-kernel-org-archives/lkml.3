@@ -1,181 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932762AbbAPDwm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 22:52:42 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:41531 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756103AbbAPDrn (ORCPT
+	id S1754520AbbAPBo5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 20:44:57 -0500
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:53311 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751533AbbAPBo4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 22:47:43 -0500
-From: Yijing Wang <wangyijing@huawei.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-CC: Jiang Liu <jiang.liu@linux.intel.com>, <linux-pci@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, <linux-kernel@vger.kernel.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        <linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>, <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        <linux-ia64@vger.kernel.org>, "David S. Miller" <davem@davemloft.net>,
-        "Guan Xuetao" <gxt@mprc.pku.edu.cn>, <linux-alpha@vger.kernel.org>,
-        <linux-m68k@vger.kernel.org>, Liviu Dudau <liviu@dudau.co.uk>,
-        "Arnd Bergmann" <arnd@arndb.de>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "Yijing Wang" <wangyijing@huawei.com>
-Subject: [PATCH 28/28] PCI: Remove pci_bus_assign_domain_nr()
-Date: Fri, 16 Jan 2015 09:44:26 +0800
-Message-ID: <1421372666-12288-29-git-send-email-wangyijing@huawei.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1421372666-12288-1-git-send-email-wangyijing@huawei.com>
-References: <1421372666-12288-1-git-send-email-wangyijing@huawei.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.175.100.166]
-X-CFilter-Loop: Reflected
+	Thu, 15 Jan 2015 20:44:56 -0500
+From: Jia He <hejianet@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jia He <hejianet@gmail.com>, Jeremiah Mahler <jmmahler@gmail.com>,
+        Oleg Drokin <oleg.drokin@intel.com>,
+        Andreas Dilger <andreas.dilger@intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Subject: [PATCH 1/2] staging: lustre: libcfs: fix sparse warnings about static declaration
+Date: Fri, 16 Jan 2015 09:45:46 +0800
+Message-Id: <1421372747-2954-1-git-send-email-hejianet@gmail.com>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <20150114063518.GA18644@hudson.localdomain>
+References: <20150114063518.GA18644@hudson.localdomain>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now we save the domain number in pci_host_bridge,
-we could remove pci_bus_assign_domain_nr() and
-clean the domain member in pci_bus.
+These functions aren't used outside of this file so making them static
+to suppress the sparse warnings about static declaration.
 
-Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+Signed-off-by: Jia He <hejianet@gmail.com>
+Cc: Jeremiah Mahler <jmmahler@gmail.com>
+Cc: Oleg Drokin <oleg.drokin@intel.com>
+Cc: Andreas Dilger <andreas.dilger@intel.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 ---
- drivers/pci/pci.c   |   48 +-----------------------------------------------
- drivers/pci/probe.c |   12 ++++--------
- include/linux/pci.h |    3 ---
- 3 files changed, 5 insertions(+), 58 deletions(-)
+ drivers/staging/lustre/lustre/libcfs/module.c | 6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
-index 72232d4..3eb3d8e 100644
---- a/drivers/pci/pci.c
-+++ b/drivers/pci/pci.c
-@@ -4472,6 +4472,7 @@ int pci_domain_nr(struct pci_bus *bus)
- 	return host->domain;
- }
- EXPORT_SYMBOL_GPL(pci_domain_nr);
-+#endif
+diff --git a/drivers/staging/lustre/lustre/libcfs/module.c b/drivers/staging/lustre/lustre/libcfs/module.c
+index 2c4fc74..b9ee37c 100644
+--- a/drivers/staging/lustre/lustre/libcfs/module.c
++++ b/drivers/staging/lustre/lustre/libcfs/module.c
+@@ -42,8 +42,7 @@
+ #include "../../include/linux/lnet/lnet.h"
+ #include "tracefile.h"
  
- #ifdef CONFIG_PCI_DOMAINS_GENERIC
- void pci_host_assign_domain_nr(struct pci_host_bridge *host)
-@@ -4519,53 +4520,6 @@ void pci_host_assign_domain_nr(struct pci_host_bridge *host)
- 
- 	host->domain_nr = domain;
- }
--
--
--void pci_bus_assign_domain_nr(struct pci_bus *bus, struct device *parent)
--{
--	static int use_dt_domains = -1;
--	int domain = of_get_pci_domain_nr(parent->of_node);
--
--	/*
--	 * Check DT domain and use_dt_domains values.
--	 *
--	 * If DT domain property is valid (domain >= 0) and
--	 * use_dt_domains != 0, the DT assignment is valid since this means
--	 * we have not previously allocated a domain number by using
--	 * pci_get_new_domain_nr(); we should also update use_dt_domains to
--	 * 1, to indicate that we have just assigned a domain number from
--	 * DT.
--	 *
--	 * If DT domain property value is not valid (ie domain < 0), and we
--	 * have not previously assigned a domain number from DT
--	 * (use_dt_domains != 1) we should assign a domain number by
--	 * using the:
--	 *
--	 * pci_get_new_domain_nr()
--	 *
--	 * API and update the use_dt_domains value to keep track of method we
--	 * are using to assign domain numbers (use_dt_domains = 0).
--	 *
--	 * All other combinations imply we have a platform that is trying
--	 * to mix domain numbers obtained from DT and pci_get_new_domain_nr(),
--	 * which is a recipe for domain mishandling and it is prevented by
--	 * invalidating the domain value (domain = -1) and printing a
--	 * corresponding error.
--	 */
--	if (domain >= 0 && use_dt_domains) {
--		use_dt_domains = 1;
--	} else if (domain < 0 && use_dt_domains != 1) {
--		use_dt_domains = 0;
--		domain = pci_get_new_domain_nr();
--	} else {
--		dev_err(parent, "Node %s has inconsistent \"linux,pci-domain\" property in DT\n",
--			parent->of_node->full_name);
--		domain = -1;
--	}
--
--	bus->domain_nr = domain;
--}
--#endif
- #endif
- 
- /**
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 0817910..d8b76ef 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -480,7 +480,7 @@ void pci_read_bridge_bases(struct pci_bus *child)
- 	}
- }
- 
--static struct pci_bus *pci_alloc_bus(struct pci_bus *parent)
-+static struct pci_bus *pci_alloc_bus(void)
+-void
+-kportal_memhog_free (struct libcfs_device_userstate *ldu)
++static void kportal_memhog_free (struct libcfs_device_userstate *ldu)
  {
- 	struct pci_bus *b;
- 
-@@ -495,10 +495,7 @@ static struct pci_bus *pci_alloc_bus(struct pci_bus *parent)
- 	INIT_LIST_HEAD(&b->resources);
- 	b->max_bus_speed = PCI_SPEED_UNKNOWN;
- 	b->cur_bus_speed = PCI_SPEED_UNKNOWN;
--#ifdef CONFIG_PCI_DOMAINS_GENERIC
--	if (parent)
--		b->domain_nr = parent->domain_nr;
--#endif
-+
- 	return b;
+ 	struct page **level0p = &ldu->ldu_memhog_root_page;
+ 	struct page **level1p;
+@@ -86,8 +85,7 @@ kportal_memhog_free (struct libcfs_device_userstate *ldu)
+ 	LASSERT (ldu->ldu_memhog_pages == 0);
  }
  
-@@ -645,7 +642,7 @@ static struct pci_bus *pci_alloc_child_bus(struct pci_bus *parent,
- 	/*
- 	 * Allocate a new bus, and inherit stuff from the parent..
- 	 */
--	child = pci_alloc_bus(parent);
-+	child = pci_alloc_bus();
- 	if (!child)
- 		return NULL;
- 
-@@ -1865,14 +1862,13 @@ static struct pci_bus *pci_create_root_bus(
- 	char *fmt;
- 
- 	parent = bridge->dev.parent;
--	b = pci_alloc_bus(NULL);
-+	b = pci_alloc_bus();
- 	if (!b)
- 		return NULL;
- 
- 	b->sysdata = dev_get_drvdata(&bridge->dev);
- 	b->ops = ops;
- 	b->number = b->busn_res.start = bridge->busnum;
--	pci_bus_assign_domain_nr(b, parent);
- 
- 	bridge->bus = b;
- 	b->bridge = get_device(&bridge->dev);
-diff --git a/include/linux/pci.h b/include/linux/pci.h
-index e7ca546..ac25d2a 100644
---- a/include/linux/pci.h
-+++ b/include/linux/pci.h
-@@ -475,9 +475,6 @@ struct pci_bus {
- 	unsigned char	primary;	/* number of primary bridge */
- 	unsigned char	max_bus_speed;	/* enum pci_bus_speed */
- 	unsigned char	cur_bus_speed;	/* enum pci_bus_speed */
--#ifdef CONFIG_PCI_DOMAINS_GENERIC
--	int		domain_nr;
--#endif
- 
- 	char		name[48];
- 
+-int
+-kportal_memhog_alloc(struct libcfs_device_userstate *ldu, int npages,
++static int kportal_memhog_alloc(struct libcfs_device_userstate *ldu, int npages,
+ 		     gfp_t flags)
+ {
+ 	struct page **level0p;
 -- 
-1.7.1
+1.9.1
 
