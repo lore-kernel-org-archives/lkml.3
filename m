@@ -1,84 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752462AbbAPXS3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 18:18:29 -0500
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:44236 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752342AbbAPXS1 (ORCPT
+	id S1751721AbbAPXdX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 18:33:23 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:48401 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751122AbbAPXdW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 18:18:27 -0500
-X-IronPort-AV: E=Sophos;i="5.09,413,1418112000"; 
-   d="scan'208";a="54869147"
-Message-ID: <54B99C34.3040106@broadcom.com>
-Date: Fri, 16 Jan 2015 15:18:12 -0800
-From: Ray Jui <rjui@broadcom.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
-MIME-Version: 1.0
-To: =?windows-1252?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: Wolfram Sang <wsa@the-dreams.de>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "Scott Branden" <sbranden@broadcom.com>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v4 3/3] ARM: dts: add I2C device nodes for Broadcom Cygnus
-References: <rjui@broadcom.com> <1421274213-3544-1-git-send-email-rjui@broadcom.com> <1421274213-3544-4-git-send-email-rjui@broadcom.com> <20150115084456.GO22880@pengutronix.de> <54B96559.1010007@broadcom.com> <20150116194831.GV22880@pengutronix.de>
-In-Reply-To: <20150116194831.GV22880@pengutronix.de>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
+	Fri, 16 Jan 2015 18:33:22 -0500
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        "Luis R . Rodriguez" <mcgrof@suse.com>, Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@linux.intel.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, Olof Johansson <olof@lixom.net>,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Subject: [PATCH 0/8] Asynchronous device/driver probing support
+Date: Fri, 16 Jan 2015 15:33:09 -0800
+Message-Id: <1421451197-19723-1-git-send-email-dmitry.torokhov@gmail.com>
+X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This series is a combination of changes proposed by Luis a couple months
+ago and implementation used by Chrome OS. The issue we are trying to solve
+here is "slow" devices and drivers spending "too much time" in their probe()
+methods and it affects:
+
+- overall kernel boot process when drivers are compiled into the kernel
+  and slow devices stall entire boot progress;
+- systemd desire to time out module loading process.
+
+Unlike Luis' proposal we do make use of asycn_schedule() infrastructure
+instead of using a dedicated workqueue, so all  existing synchronization
+points in kernel that wait for device registration still work the same.
+Also, the asynchronous probing is done not only during driver registration
+(i.e. when devices are probed asynchronously only if they are registered
+before the driver), but also during device registration and deferred probe
+handling. This way slow devices do not stall kernel boot even when drivers
+are compiled into the kernel.
+
+The last patch is for adventurous people to try and force
+fully-asynchronous boot. It works for me with limited success - I can boot
+Rockhip-based box to userspace as long as I force serial to be sychronously
+probed and ignore the fact that most devices are using "dummy" regulators
+as regulator subsystem really expects regulators to be registered in
+orderly fashion on OF-based systems.
+
+Thanks,
+Dmitry
 
 
-On 1/16/2015 11:48 AM, Uwe Kleine-König wrote:
-> Hello,
-> 
-> On Fri, Jan 16, 2015 at 11:24:09AM -0800, Ray Jui wrote:
->>>> +	i2c0: i2c@18008000 {
->>>> +		compatible = "brcm,iproc-i2c";
->>> in patch 2 you wrote the driver is for a family of SoCs, right? Then I'd
->>> make this:
->>>
->>> 	compatible = "brcm,$mysoc-iproc-i2c", "brcm,iproc-i2c";
->>>
->> Sorry could you please help to explain the intention here? Note the
->> iProc I2C IP can be found in various iProc family of SoCs, but to my
->> best knowledge, there hasn't been any changes of the IP in any of those
->> SoCs.
-> This is just for making the device tree stable in the future. Consider
-> your gentle hardware engineers "fix" a small issue for the next
-> generation iproc SoC "pony" that needs an incompatible software change.
-> 
-> Then you can fix the driver without updating the device trees by
-> switching to the SoC specific compatible string for "pony". And in case
-> the hardware engineers didn't tell you that there is a change and the
-> need for the software change is only detected when the machines are
-> already shipped, you're happy if you can fix your kernel without needing
-> to change the bootloader that provides the dtb.
-> So start already today to add the (for now unused) compatible string.
-> 
->> Is the compatible ID "brcm,$mysoc-iproc-i2c" only to clarify that it's
->> for a specific SoC? If so, what should the compatible ID array look
->> like? Should it be changed to the following?
->>
->> static const struct of_device_id bcm_iproc_i2c_of_match[] = {
->> 	{ .compatible = "brcm,iproc-i2c" },
->> 	{ .compatible = "brcm,$mysoc-iproc-i2c" },
->> 	{},
->> };
-> No, there is no need, see above.
-> 
-> If something is still unclear, don't hesitate to ask.
-> 
-> Best regards
-> Uwe
-> 
-Okay got it. Thanks for the explanation!
+Dmitry Torokhov (3):
+  driver-core: add asynchronous probing support for drivers
+  driver-core: platform_driver_probe() must probe synchronously
+  module: add core_param_unsafe
+
+Luis R. Rodriguez (5):
+  module: add extra argument for parse_params() callback
+  driver-core: add driver module asynchronous probe support
+  driver-core: enable drivers to opt-out of async probe
+  amd64_edac: enforce synchronous probe
+  driver-core: allow forcing async probing for modules and builtins
+
+ Documentation/kernel-parameters.txt |  13 +++
+ arch/powerpc/mm/hugetlbpage.c       |   4 +-
+ drivers/base/base.h                 |   1 +
+ drivers/base/bus.c                  |  31 +++++--
+ drivers/base/dd.c                   | 166 +++++++++++++++++++++++++++++++-----
+ drivers/base/platform.c             |  13 +++
+ drivers/edac/amd64_edac.c           |   1 +
+ include/linux/device.h              |  26 ++++++
+ include/linux/module.h              |   2 +
+ include/linux/moduleparam.h         |  12 ++-
+ init/main.c                         |  25 +++---
+ kernel/module.c                     |  25 +++++-
+ kernel/params.c                     |  11 ++-
+ lib/dynamic_debug.c                 |   4 +-
+ 14 files changed, 284 insertions(+), 50 deletions(-)
+
+-- 
+2.2.0.rc0.207.ga3a616c
+
