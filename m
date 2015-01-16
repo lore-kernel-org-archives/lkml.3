@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932563AbbAPDr4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 22:47:56 -0500
-Received: from [119.145.14.66] ([119.145.14.66]:22587 "EHLO
+	id S932523AbbAPDru (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 22:47:50 -0500
+Received: from [119.145.14.66] ([119.145.14.66]:22547 "EHLO
 	szxga03-in.huawei.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S932485AbbAPDrq (ORCPT
+	with ESMTP id S932477AbbAPDrq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 15 Jan 2015 22:47:46 -0500
 From: Yijing Wang <wangyijing@huawei.com>
@@ -21,9 +21,9 @@ CC: Jiang Liu <jiang.liu@linux.intel.com>, <linux-pci@vger.kernel.org>,
         "Arnd Bergmann" <arnd@arndb.de>,
         Geert Uytterhoeven <geert@linux-m68k.org>,
         "Yijing Wang" <wangyijing@huawei.com>
-Subject: [PATCH 04/28] PCI: Remove deprecated pci_scan_bus_parented()
-Date: Fri, 16 Jan 2015 09:44:02 +0800
-Message-ID: <1421372666-12288-5-git-send-email-wangyijing@huawei.com>
+Subject: [PATCH 05/28] PCI: Rename pci_scan_bus() to pci_scan_bus_legacy()
+Date: Fri, 16 Jan 2015 09:44:03 +0800
+Message-ID: <1421372666-12288-6-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1421372666-12288-1-git-send-email-wangyijing@huawei.com>
 References: <1421372666-12288-1-git-send-email-wangyijing@huawei.com>
@@ -32,67 +32,132 @@ Content-Type: text/plain
 X-Originating-IP: [10.175.100.166]
 X-CFilter-Loop: Reflected
 X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020206.54B889BD.0066,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	refid=str=0001.0A020206.54B889BC.00DB,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
 	ip=0.0.0.0,
 	so=2013-05-26 15:14:31,
 	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: b9478fa3a6edec6804c95914e5c4b920
+X-Mirapoint-Loop-Id: 6ff9667a6f761bc834db4fdcc2e5b216
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No one uses pci_scan_bus_parented() any more,
-remove it.
+Pci_scan_bus() is called by legacy pci host drivers,
+the legacy host drivers mean they use NUll as parent
+device, use all IO/MEM as default resources. Rename
+pci_scan_bus() to pci_scan_bus_legacy() for better
+readability.
 
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 ---
- drivers/pci/probe.c |   19 -------------------
- include/linux/pci.h |    2 --
- 2 files changed, 0 insertions(+), 21 deletions(-)
+ arch/alpha/kernel/sys_nautilus.c  |    2 +-
+ arch/m68k/coldfire/pci.c          |    2 +-
+ arch/sparc/kernel/pcic.c          |    2 +-
+ arch/unicore32/kernel/pci.c       |    2 +-
+ drivers/pci/hotplug/ibmphp_core.c |    2 +-
+ drivers/pci/probe.c               |    4 ++--
+ include/linux/pci.h               |    2 +-
+ 7 files changed, 8 insertions(+), 8 deletions(-)
 
+diff --git a/arch/alpha/kernel/sys_nautilus.c b/arch/alpha/kernel/sys_nautilus.c
+index 4ae4a40..2c864bb 100644
+--- a/arch/alpha/kernel/sys_nautilus.c
++++ b/arch/alpha/kernel/sys_nautilus.c
+@@ -206,7 +206,7 @@ nautilus_init_pci(void)
+ 	unsigned long memtop = max_low_pfn << PAGE_SHIFT;
+ 
+ 	/* Scan our single hose.  */
+-	bus = pci_scan_bus(0, alpha_mv.pci_ops, hose);
++	bus = pci_scan_bus_legacy(0, alpha_mv.pci_ops, hose);
+ 	hose->bus = bus;
+ 	pcibios_claim_one_bus(bus);
+ 
+diff --git a/arch/m68k/coldfire/pci.c b/arch/m68k/coldfire/pci.c
+index d45f087..0ef4dd4 100644
+--- a/arch/m68k/coldfire/pci.c
++++ b/arch/m68k/coldfire/pci.c
+@@ -312,7 +312,7 @@ static int __init mcf_pci_init(void)
+ 	set_current_state(TASK_UNINTERRUPTIBLE);
+ 	schedule_timeout(msecs_to_jiffies(200));
+ 
+-	rootbus = pci_scan_bus(0, &mcf_pci_ops, NULL);
++	rootbus = pci_scan_bus_legacy(0, &mcf_pci_ops, NULL);
+ 	rootbus->resource[0] = &mcf_pci_io;
+ 	rootbus->resource[1] = &mcf_pci_mem;
+ 
+diff --git a/arch/sparc/kernel/pcic.c b/arch/sparc/kernel/pcic.c
+index 7a82fe2..f7edc97 100644
+--- a/arch/sparc/kernel/pcic.c
++++ b/arch/sparc/kernel/pcic.c
+@@ -390,7 +390,7 @@ static void __init pcic_pbm_scan_bus(struct linux_pcic *pcic)
+ {
+ 	struct linux_pbm_info *pbm = &pcic->pbm;
+ 
+-	pbm->pci_bus = pci_scan_bus(pbm->pci_first_busno, &pcic_ops, pbm);
++	pbm->pci_bus = pci_scan_bus_legacy(pbm->pci_first_busno, &pcic_ops, pbm);
+ 	if (pbm->pci_bus)
+ 		pci_bus_add_devices(pbm->pci_bus);
+ #if 0 /* deadwood transplanted from sparc64 */
+diff --git a/arch/unicore32/kernel/pci.c b/arch/unicore32/kernel/pci.c
+index 3d82024..2e238b4 100644
+--- a/arch/unicore32/kernel/pci.c
++++ b/arch/unicore32/kernel/pci.c
+@@ -258,7 +258,7 @@ static int __init pci_common_init(void)
+ 
+ 	pci_puv3_preinit();
+ 
+-	puv3_bus = pci_scan_bus(0, &pci_puv3_ops, NULL);
++	puv3_bus = pci_scan_bus_legacy(0, &pci_puv3_ops, NULL);
+ 
+ 	if (!puv3_bus)
+ 		panic("PCI: unable to scan bus!");
+diff --git a/drivers/pci/hotplug/ibmphp_core.c b/drivers/pci/hotplug/ibmphp_core.c
+index 86e3bfd..4ade1b4 100644
+--- a/drivers/pci/hotplug/ibmphp_core.c
++++ b/drivers/pci/hotplug/ibmphp_core.c
+@@ -765,7 +765,7 @@ static u8 bus_structure_fixup(u8 busno)
+ 					(l != 0x0000) && (l != 0xffff)) {
+ 			debug("%s - Inside bus_structure_fixup()\n",
+ 							__func__);
+-			b = pci_scan_bus(busno, ibmphp_pci_bus->ops, NULL);
++			b = pci_scan_bus_legacy(busno, ibmphp_pci_bus->ops, NULL);
+ 			if (b)
+ 				pci_bus_add_devices(b);
+ 			break;
 diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 7cf577f..e44de73 100644
+index e44de73..ed894cb 100644
 --- a/drivers/pci/probe.c
 +++ b/drivers/pci/probe.c
-@@ -2091,25 +2091,6 @@ struct pci_bus *pci_scan_root_bus(struct device *parent, int bus,
+@@ -2091,7 +2091,7 @@ struct pci_bus *pci_scan_root_bus(struct device *parent, int bus,
  }
  EXPORT_SYMBOL(pci_scan_root_bus);
  
--/* Deprecated; use pci_scan_root_bus() instead */
--struct pci_bus *pci_scan_bus_parented(struct device *parent,
--		int bus, struct pci_ops *ops, void *sysdata)
--{
--	LIST_HEAD(resources);
--	struct pci_bus *b;
--
--	pci_add_resource(&resources, &ioport_resource);
--	pci_add_resource(&resources, &iomem_resource);
--	pci_add_resource(&resources, &busn_resource);
--	b = pci_create_root_bus(parent, bus, ops, sysdata, &resources);
--	if (b)
--		pci_scan_child_bus(b);
--	else
--		pci_free_resource_list(&resources);
--	return b;
--}
--EXPORT_SYMBOL(pci_scan_bus_parented);
--
- struct pci_bus *pci_scan_bus(int bus, struct pci_ops *ops,
+-struct pci_bus *pci_scan_bus(int bus, struct pci_ops *ops,
++struct pci_bus *pci_scan_bus_legacy(int bus, struct pci_ops *ops,
  					void *sysdata)
  {
+ 	LIST_HEAD(resources);
+@@ -2108,7 +2108,7 @@ struct pci_bus *pci_scan_bus(int bus, struct pci_ops *ops,
+ 	}
+ 	return b;
+ }
+-EXPORT_SYMBOL(pci_scan_bus);
++EXPORT_SYMBOL(pci_scan_bus_legacy);
+ 
+ /**
+  * pci_rescan_bus_bridge_resize - scan a PCI bus for devices.
 diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 360a966..55b2c81 100644
+index 55b2c81..a6fa2f1 100644
 --- a/include/linux/pci.h
 +++ b/include/linux/pci.h
-@@ -769,8 +769,6 @@ void pcibios_bus_to_resource(struct pci_bus *bus, struct resource *res,
+@@ -769,7 +769,7 @@ void pcibios_bus_to_resource(struct pci_bus *bus, struct resource *res,
  void pcibios_scan_specific_bus(int busn);
  struct pci_bus *pci_find_bus(int domain, int busnr);
  void pci_bus_add_devices(const struct pci_bus *bus);
--struct pci_bus *pci_scan_bus_parented(struct device *parent, int bus,
--				      struct pci_ops *ops, void *sysdata);
- struct pci_bus *pci_scan_bus(int bus, struct pci_ops *ops, void *sysdata);
+-struct pci_bus *pci_scan_bus(int bus, struct pci_ops *ops, void *sysdata);
++struct pci_bus *pci_scan_bus_legacy(int bus, struct pci_ops *ops, void *sysdata);
  struct pci_bus *pci_create_root_bus(struct device *parent, int bus,
  				    struct pci_ops *ops, void *sysdata,
+ 				    struct list_head *resources);
 -- 
 1.7.1
 
