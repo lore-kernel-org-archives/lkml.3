@@ -1,135 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755462AbbAPNqL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 08:46:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:36359 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751733AbbAPNqI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 08:46:08 -0500
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>, devel@linuxdriverproject.org
-Cc: Haiyang Zhang <haiyangz@microsoft.com>, linux-kernel@vger.kernel.org,
-        Dexuan Cui <decui@microsoft.com>, Jason Wang <jasowang@redhat.com>,
-        =?UTF-8?q?Radim=20Kr=C4=8Dm=C3=A1=C5=99?= <rkrcmar@redhat.com>
-Subject: [PATCH] Drivers: hv: vmbus: serialize Offer and Rescind offer processing
-Date: Fri, 16 Jan 2015 14:45:58 +0100
-Message-Id: <1421415958-19015-1-git-send-email-vkuznets@redhat.com>
+	id S1754153AbbAPNrt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 08:47:49 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:54491 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751314AbbAPNrs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 08:47:48 -0500
 MIME-Version: 1.0
+In-Reply-To: <1421352518-27220-1-git-send-email-sasha.levin@oracle.com>
+References: <1421352518-27220-1-git-send-email-sasha.levin@oracle.com>
+Date: Fri, 16 Jan 2015 21:47:45 +0800
+Message-ID: <CACVXFVPNo1j2SjzvCyUtuoebSHY-be=kN8P_OC8CzTNbeLKPjg@mail.gmail.com>
+Subject: Re: [PATCH] blk-mq: free hctx only when the kobject is released
+From: Ming Lei <ming.lei@canonical.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 4b2f9abea52a ("staging: hv: convert channel_mgmt.c to not call
-osd_schedule_callback")' was written under an assumption that we never receive
-Rescind offer while we're still processing the initial Offer request. However,
-the issue we fixed in 04a258c162a8 could be caused by this assumption not
-always being true.
+On Fri, Jan 16, 2015 at 4:08 AM, Sasha Levin <sasha.levin@oracle.com> wrote:
+> When releasing hctx, we do not know that the embedded kobject has been
+> released until it's ->release() callback has been called. It is unsafe
+> to unconditionally free the underlying memory until the ->release()
+> callback has been called since it may cause use-after-free bugs.
+>
+> In practice, this patch fixes a use-after-free when destroying devices
+> (encountered with loop devices, in my case).
 
-In particular, we need to protect against the following:
-1) Receiving a Rescind offer after we do queue_work() for processing an Offer
-   request and before we actually enter vmbus_process_offer(). work.func points
-   to vmbus_process_offer() at this moment and in vmbus_onoffer_rescind() we do
-   another queue_work() without a check so we'll enter vmbus_process_offer()
-   twice.
-2) Receiving a Rescind offer after we enter vmbus_process_offer() and
-   especially after we set >state = CHANNEL_OPEN_STATE. Many things can go
-   wrong in that case, e.g. we can call free_channel() while we're still using
-   it.
+Indeed, it is one bug since driver core can access kobject any time
+before it is released.
 
-Implement the required protection by changing work->func at the very end of
-vmbus_process_offer() and checking work->func in vmbus_onoffer_rescind().
-pr_warn here serves only one purpose, it shows us the collision between
-Offer and Rescind offer actually happened. In case the assumption in
-4b2f9abea52af3 was right and such collision is impossible this commit changes
-nothing.
+ctx kobjects has the same problem, and that is a bit tricky
+because all ctx share one single per-cpu variable which is associated
+with request_queue, one idea is to free q->queue_ctx in release
+handler of q->mq_kobj, and let ctx kobject hold ref counter of
+q->mq_kobj. Could you fix ctx kobject lifetime in this patch too?
 
-I also fix one additional issue with this patch: vmbus_device_create() result
-is not being checked in vmbus_process_offer() and it can fail if kzalloc()
-fails.
-
-Reported-by: Jason Wang <jasowang@redhat.com>
-Suggested-by: Radim Krčmář <rkrcmar@redhat.com>
-Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
----
- drivers/hv/channel_mgmt.c | 33 +++++++++++++++++++++++----------
- 1 file changed, 23 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/hv/channel_mgmt.c b/drivers/hv/channel_mgmt.c
-index 2c59f03..0bd2a21 100644
---- a/drivers/hv/channel_mgmt.c
-+++ b/drivers/hv/channel_mgmt.c
-@@ -279,9 +279,6 @@ static void vmbus_process_offer(struct work_struct *work)
- 	int ret;
- 	unsigned long flags;
- 
--	/* The next possible work is rescind handling */
--	INIT_WORK(&newchannel->work, vmbus_process_rescind_offer);
--
- 	/* Make sure this is a new offer */
- 	spin_lock_irqsave(&vmbus_connection.channel_lock, flags);
- 
-@@ -340,12 +337,9 @@ static void vmbus_process_offer(struct work_struct *work)
- 			newchannel->state = CHANNEL_OPEN_STATE;
- 			if (channel->sc_creation_callback != NULL)
- 				channel->sc_creation_callback(newchannel);
--
--			return;
-+			goto out;
- 		}
--
--		free_channel(newchannel);
--		return;
-+		goto error;
- 	}
- 
- 	/*
-@@ -365,6 +359,9 @@ static void vmbus_process_offer(struct work_struct *work)
- 		&newchannel->offermsg.offer.if_instance,
- 		newchannel);
- 
-+	if (!newchannel->device_obj)
-+		goto error;
-+
- 	/*
- 	 * Add the new device to the bus. This will kick off device-driver
- 	 * binding which eventually invokes the device driver's AddDevice()
-@@ -379,9 +376,16 @@ static void vmbus_process_offer(struct work_struct *work)
- 		list_del(&newchannel->listentry);
- 		spin_unlock_irqrestore(&vmbus_connection.channel_lock, flags);
- 		kfree(newchannel->device_obj);
--
--		free_channel(newchannel);
-+		goto error;
- 	}
-+out:
-+	/* The next possible work is rescind handling */
-+	INIT_WORK(&newchannel->work, vmbus_process_rescind_offer);
-+	return;
-+
-+error:
-+	free_channel(newchannel);
-+	return;
- }
- 
- enum {
-@@ -524,6 +528,15 @@ static void vmbus_onoffer_rescind(struct vmbus_channel_message_header *hdr)
- 		/* Just return here, no channel found */
- 		return;
- 
-+	if (channel->work.func != vmbus_process_rescind_offer) {
-+		/*
-+		 * We're still processing offer request rescind offer can't be
-+		 * processed safely. This should not normally happen.
-+		 */
-+		pr_warn("Got Rescind offer during Offer processing!\n");
-+		return;
-+	}
-+
- 	channel->rescind = true;
- 
- 	/* work is initialized for vmbus_process_rescind_offer() from
--- 
-1.9.3
-
+>
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> ---
+>  block/blk-mq-sysfs.c |   11 ++++++++++-
+>  block/blk-mq.c       |    4 +---
+>  2 files changed, 11 insertions(+), 4 deletions(-)
+>
+> diff --git a/block/blk-mq-sysfs.c b/block/blk-mq-sysfs.c
+> index 1630a20..83d4bd8 100644
+> --- a/block/blk-mq-sysfs.c
+> +++ b/block/blk-mq-sysfs.c
+> @@ -17,6 +17,15 @@ static void blk_mq_sysfs_release(struct kobject *kobj)
+>  {
+>  }
+>
+> +static void blk_mq_hw_sysfs_release(struct kobject *kobj)
+> +{
+> +       struct blk_mq_hw_ctx *hctx;
+> +
+> +       hctx = container_of(kobj, struct blk_mq_hw_ctx, kobj);
+> +
+> +       kfree(hctx);
+> +}
+> +
+>  struct blk_mq_ctx_sysfs_entry {
+>         struct attribute attr;
+>         ssize_t (*show)(struct blk_mq_ctx *, char *);
+> @@ -324,7 +333,7 @@ static struct kobj_type blk_mq_ctx_ktype = {
+>  static struct kobj_type blk_mq_hw_ktype = {
+>         .sysfs_ops      = &blk_mq_hw_sysfs_ops,
+>         .default_attrs  = default_hw_ctx_attrs,
+> -       .release        = blk_mq_sysfs_release,
+> +       .release        = blk_mq_hw_sysfs_release,
+>  };
+>
+>  static void blk_mq_unregister_hctx(struct blk_mq_hw_ctx *hctx)
+> diff --git a/block/blk-mq.c b/block/blk-mq.c
+> index 04caf9f..7701eb2 100644
+> --- a/block/blk-mq.c
+> +++ b/block/blk-mq.c
+> @@ -1593,10 +1593,8 @@ static void blk_mq_free_hw_queues(struct request_queue *q,
+>         struct blk_mq_hw_ctx *hctx;
+>         unsigned int i;
+>
+> -       queue_for_each_hw_ctx(q, hctx, i) {
+> +       queue_for_each_hw_ctx(q, hctx, i)
+>                 free_cpumask_var(hctx->cpumask);
+> -               kfree(hctx);
+> -       }
+>  }
+>
+>  static int blk_mq_init_hctx(struct request_queue *q,
+> --
+> 1.7.10.4
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
