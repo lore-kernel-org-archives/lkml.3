@@ -1,233 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756935AbbAPUGP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 15:06:15 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:62654 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756776AbbAPUF5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 15:05:57 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>,
-        Christian Riesch <christian.riesch@omicron.at>,
-        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
-        Denis Du <dudenis2000@yahoo.ca>,
-        =?UTF-8?q?M=C3=A5ns=20Rullg=C3=A5rd?= <mans@mansr.com>,
-        Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH v3 6/6] n_tty: Fix read buffer overwrite when no newline
-Date: Fri, 16 Jan 2015 15:05:39 -0500
-Message-Id: <1421438739-29672-7-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 2.2.2
-In-Reply-To: <1421438739-29672-1-git-send-email-peter@hurleysoftware.com>
-References: <1421113668-20468-1-git-send-email-peter@hurleysoftware.com>
- <1421438739-29672-1-git-send-email-peter@hurleysoftware.com>
+	id S1757122AbbAPUKL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 15:10:11 -0500
+Received: from skprod3.natinst.com ([130.164.80.24]:44178 "EHLO ni.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753094AbbAPUKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 15:10:09 -0500
+Message-ID: <54B97012.4050402@ni.com>
+Date: Fri, 16 Jan 2015 14:09:54 -0600
+From: Xander Huff <xander.huff@ni.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+MIME-Version: 1.0
+To: "Vick, Matthew" <matthew.vick@intel.com>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
+        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        "Allan, Bruce W" <bruce.w.allan@intel.com>,
+        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
+        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
+        "Rose, Gregory V" <gregory.v.rose@intel.com>,
+        "Ronciak, John" <john.ronciak@intel.com>,
+        "Williams, Mitch A" <mitch.a.williams@intel.com>
+CC: Linux NICS <Linux-nics@isotope.jf.intel.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jeff.westfahl@ni.com" <jeff.westfahl@ni.com>,
+        "Fujinaka, Todd" <todd.fujinaka@intel.com>
+Subject: Re: [PATCH RESEND] igb: Reset TXPBSIZE to default value
+References: <1421434779-20586-1-git-send-email-xander.huff@ni.com> <D0DEA929.671EB%matthew.vick@intel.com>
+In-Reply-To: <D0DEA929.671EB%matthew.vick@intel.com>
+X-MIMETrack: Itemize by SMTP Server on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP6|November
+ 21, 2013) at 01/16/2015 02:09:54 PM,
+	Serialize by Router on US-AUS-MGWOut2/AUS/H/NIC(Release 8.5.3FP6|November
+ 21, 2013) at 01/16/2015 02:09:55 PM,
+	Serialize complete at 01/16/2015 02:09:55 PM
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=windows-1252; format=flowed
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-16_07:2015-01-16,2015-01-16,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In canon mode, the read buffer head will advance over the buffer tail
-if the input > 4095 bytes without receiving a line termination char.
+On 1/16/2015 1:41 PM, Vick, Matthew wrote:
+> On 1/16/15, 10:59 AM, "Xander Huff" <xander.huff@ni.com> wrote:
+>
+>> From: Jeff Westfahl <jeff.westfahl@ni.com>
+>>
+>> The TXPBSIZE register of the i210 resets to its default value only
+>> at power-on. It doesn't reset if you reboot the system, only if you
+>> pull power. If something (another driver, another OS, etc.) modifies
+>> this register from its default value, the igb driver doesn't function
+>> correctly. It detects a hang of the transmitter and continuously resets
+>> the adapter. Here we set this value to its default when resetting the
+>> i210 to resolve this issue.
+>
+> This should have already been resolved last May in commit
+> 27dff8b2f680ce966b5d959be9d69dd0edd92e3b ("igb: add defaults for i210
+> TX/RX PBSIZE"). Are you running the latest upstream kernel?
+>
+> Cheers,
+> Matthew
+>
+Looks like you're correct. Please disregard this patch.
 
-Discard additional input until a line termination is received.
-Before evaluating for overflow, the 'room' value is normalized for
-I_PARMRK and 1 byte is reserved for line termination (even in !icanon
-mode, in case the mode is switched). The following table shows the
-transform:
-
- actual buffer |  'room' value before overflow calc
-  space avail  |    !I_PARMRK    |    I_PARMRK
- --------------------------------------------------
-      0        |       -1        |       -1
-      1        |        0        |        0
-      2        |        1        |        0
-      3        |        2        |        0
-      4+       |        3        |        1
-
-When !icanon or when icanon and the read buffer contains newlines,
-normalized 'room' values of -1 and 0 are clamped to 0, and
-'overflow' is 0, so read_head is not adjusted and the input i/o loop
-exits (setting no_room if called from flush_to_ldisc()). No input
-is discarded since the reader does have input available to read
-which ensures forward progress.
-
-When icanon and the read buffer does not contain newlines and the
-normalized 'room' value is 0, then overflow and room are reset to 1,
-so that the i/o loop will process the next input char normally
-(except for parity errors which are ignored). Thus, erasures, signalling
-chars, 7-bit mode, etc. will continue to be handled properly.
-
-If the input char processed was not a line termination char, then
-the canon_head index will not have advanced, so the normalized 'room'
-value will now be -1 and 'overflow' will be set, which indicates the
-read_head can safely be reset, effectively erasing the last char
-processed.
-
-If the input char processed was a line termination, then the
-canon_head index will have advanced, so 'overflow' is cleared to 0,
-the read_head is not reset, and 'room' is cleared to 0, which exits
-the i/o loop (because the reader now have input available to read
-which ensures forward progress).
-
-Note that it is possible for a line termination to be received, and
-for the reader to copy the line to the user buffer before the
-input i/o loop is ready to process the next input char. This is
-why the i/o loop recomputes the room/overflow state with every
-input char while handling overflow.
-
-Finally, if the input data was processed without receiving
-a line termination (so that overflow is still set), the pty
-driver must receive a write wakeup. A pty writer may be waiting
-to write more data in n_tty_write() but without unthrottling
-here that wakeup will not arrive, and forward progress will halt.
-(Normally, the pty writer is woken when the reader reads data out
-of the buffer and more space become available).
-
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/n_tty.c | 92 ++++++++++++++++++++++++++++++++++++-----------------
- 1 file changed, 62 insertions(+), 30 deletions(-)
-
-diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
-index 7aeabb7..5793aa0 100644
---- a/drivers/tty/n_tty.c
-+++ b/drivers/tty/n_tty.c
-@@ -225,8 +225,6 @@ static void n_tty_check_throttle(struct tty_struct *tty)
- {
- 	struct n_tty_data *ldata = tty->disc_data;
- 
--	if (tty->driver->type == TTY_DRIVER_TYPE_PTY)
--		return;
- 	/*
- 	 * Check the remaining room for the input canonicalization
- 	 * mode.  We don't want to throttle the driver if we're in
-@@ -1483,23 +1481,6 @@ n_tty_receive_char_lnext(struct tty_struct *tty, unsigned char c, char flag)
- 		n_tty_receive_char_flagged(tty, c, flag);
- }
- 
--/**
-- *	n_tty_receive_buf	-	data receive
-- *	@tty: terminal device
-- *	@cp: buffer
-- *	@fp: flag buffer
-- *	@count: characters
-- *
-- *	Called by the terminal driver when a block of characters has
-- *	been received. This function must be called from soft contexts
-- *	not from interrupt context. The driver is responsible for making
-- *	calls one at a time and in order (or using flush_to_ldisc)
-- *
-- *	n_tty_receive_buf()/producer path:
-- *		claims non-exclusive termios_rwsem
-- *		publishes commit_head or canon_head
-- */
--
- static void
- n_tty_receive_buf_real_raw(struct tty_struct *tty, const unsigned char *cp,
- 			   char *fp, int count)
-@@ -1658,12 +1639,45 @@ static void __receive_buf(struct tty_struct *tty, const unsigned char *cp,
- 	}
- }
- 
-+/**
-+ *	n_tty_receive_buf_common	-	process input
-+ *	@tty: device to receive input
-+ *	@cp: input chars
-+ *	@fp: flags for each char (if NULL, all chars are TTY_NORMAL)
-+ *	@count: number of input chars in @cp
-+ *
-+ *	Called by the terminal driver when a block of characters has
-+ *	been received. This function must be called from soft contexts
-+ *	not from interrupt context. The driver is responsible for making
-+ *	calls one at a time and in order (or using flush_to_ldisc)
-+ *
-+ *	Returns the # of input chars from @cp which were processed.
-+ *
-+ *	In canonical mode, the maximum line length is 4096 chars (including
-+ *	the line termination char); lines longer than 4096 chars are
-+ *	truncated. After 4095 chars, input data is still processed but
-+ *	not stored. Overflow processing ensures the tty can always
-+ *	receive more input until at least one line can be read.
-+ *
-+ *	In non-canonical mode, the read buffer will only accept 4095 chars;
-+ *	this provides the necessary space for a newline char if the input
-+ *	mode is switched to canonical.
-+ *
-+ *	Note it is possible for the read buffer to _contain_ 4096 chars
-+ *	in non-canonical mode: the read buffer could already contain the
-+ *	maximum canon line of 4096 chars when the mode is switched to
-+ *	non-canonical.
-+ *
-+ *	n_tty_receive_buf()/producer path:
-+ *		claims non-exclusive termios_rwsem
-+ *		publishes commit_head or canon_head
-+ */
- static int
- n_tty_receive_buf_common(struct tty_struct *tty, const unsigned char *cp,
- 			 char *fp, int count, int flow)
- {
- 	struct n_tty_data *ldata = tty->disc_data;
--	int room, n, rcvd = 0;
-+	int room, n, rcvd = 0, overflow;
- 
- 	down_read(&tty->termios_rwsem);
- 
-@@ -1683,19 +1697,27 @@ n_tty_receive_buf_common(struct tty_struct *tty, const unsigned char *cp,
- 		 */
- 		size_t tail = smp_load_acquire(&ldata->read_tail);
- 
--		room = N_TTY_BUF_SIZE - (ldata->read_head - tail) - 1;
-+		room = N_TTY_BUF_SIZE - (ldata->read_head - tail);
- 		if (I_PARMRK(tty))
--			room /= 3;
--		if (room <= 0)
--			room = ldata->icanon && ldata->canon_head == tail;
-+			room = (room + 2) / 3;
-+		room--;
-+		if (room <= 0) {
-+			overflow = ldata->icanon && ldata->canon_head == tail;
-+			if (overflow && room < 0)
-+				ldata->read_head--;
-+			room = overflow;
-+			ldata->no_room = flow && !room;
-+		} else
-+			overflow = 0;
- 
- 		n = min(count, room);
--		if (!n) {
--			if (flow && !room)
--				ldata->no_room = 1;
-+		if (!n)
- 			break;
--		}
--		__receive_buf(tty, cp, fp, n);
-+
-+		/* ignore parity errors if handling overflow */
-+		if (!overflow || !fp || *fp != TTY_PARITY)
-+			__receive_buf(tty, cp, fp, n);
-+
- 		cp += n;
- 		if (fp)
- 			fp += n;
-@@ -1704,7 +1726,17 @@ n_tty_receive_buf_common(struct tty_struct *tty, const unsigned char *cp,
- 	}
- 
- 	tty->receive_room = room;
--	n_tty_check_throttle(tty);
-+
-+	/* Unthrottle if handling overflow on pty */
-+	if (tty->driver->type == TTY_DRIVER_TYPE_PTY) {
-+		if (overflow) {
-+			tty_set_flow_change(tty, TTY_UNTHROTTLE_SAFE);
-+			tty_unthrottle_safe(tty);
-+			__tty_set_flow_change(tty, 0);
-+		}
-+	} else
-+		n_tty_check_throttle(tty);
-+
- 	up_read(&tty->termios_rwsem);
- 
- 	return rcvd;
 -- 
-2.2.2
-
+Xander Huff
+Staff Software Engineer
+National Instruments
