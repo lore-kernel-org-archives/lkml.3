@@ -1,187 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419AbbAPKLY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 05:11:24 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:52924 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751621AbbAPKLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 05:11:21 -0500
-Message-ID: <54B8E38A.6020709@redhat.com>
-Date: Fri, 16 Jan 2015 11:10:18 +0100
-From: Hans de Goede <hdegoede@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1753319AbbAPKLB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 05:11:01 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:35547 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751854AbbAPKK6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 05:10:58 -0500
+Date: Fri, 16 Jan 2015 10:10:34 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Mark Brown <broonie@kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, "jcm@redhat.com" <jcm@redhat.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Rob Herring <robh@kernel.org>,
+        Robert Richter <rric@kernel.org>, Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
+        Timur Tabi <timur@codeaurora.org>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        Yijing Wang <wangyijing@huawei.com>,
+        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linaro-acpi <linaro-acpi@lists.linaro.org>
+Subject: Re: [PATCH v7 00/17] Introduce ACPI for ARM64 based on ACPI 5.1
+Message-ID: <20150116101034.GC13634@e104818-lin.cambridge.arm.com>
+References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org>
+ <CACxGe6v_BvCQqp8d=LaQ8HeaOU1Zh_HPpwFTdwOjHUbqXsnQ8g@mail.gmail.com>
+ <20150115182346.GE2329@e104818-lin.cambridge.arm.com>
+ <20150115190220.GF3043@sirena.org.uk>
+ <20150115200437.GF24989@titan.lakedaemon.net>
 MIME-Version: 1.0
-To: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-CC: =?windows-1252?Q?Antoine_T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org
-Subject: Re: [PATCH v4 4/4] ARM: mvebu: Armada 385 GP: Add regulators to the
- SATA port
-References: <1421330978-9694-1-git-send-email-gregory.clement@free-electrons.com> <1421330978-9694-5-git-send-email-gregory.clement@free-electrons.com> <54B8C933.7020502@redhat.com> <54B8D97B.3090908@free-electrons.com>
-In-Reply-To: <54B8D97B.3090908@free-electrons.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150115200437.GF24989@titan.lakedaemon.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Jan 15, 2015 at 08:04:37PM +0000, Jason Cooper wrote:
+> On Thu, Jan 15, 2015 at 07:02:20PM +0000, Mark Brown wrote:
+> > On Thu, Jan 15, 2015 at 06:23:47PM +0000, Catalin Marinas wrote:
+> > > On Thu, Jan 15, 2015 at 04:26:20PM +0000, Grant Likely wrote:
+> > 
+> > > > I'll get right to the point: Can we please have this series queued up
+> > > > for v3.20?
+> > 
+> > > Before you even ask for this, please look at the patches and realise
+> > > that there is a complete lack of Reviewed-by tags on the code (well,
+> > > apart from trivial Kconfig changes). In addition, the series touches on
+> > > other subsystems like clocksource, irqchip, acpi and I don't see any
+> > > acks from the corresponding maintainers. So even if I wanted to merge
+> > > the series, there is no way it can be done without additional
+> > > reviews/acks. On the document (last patch), I'd like to see a statement
+> > 
+> > There's probably a bit of a process problem here - these patches are all
+> > being posted as part of big and apparently controversial threads with
+> > subject lines in the form "ARM / ACPI:" so people could be forgiven for
+> > just not even reading the e-mails enough to notice changes to their
+> > subsystems.  Is it worth posting those patches separately more directly
+> > to the relevant maintainers?
+> 
+> I think it's beneficial to post the entire series as one thread, but to
+> change the subject line of each patch to adequately reflect the affected
+> subsystem.
 
-On 16-01-15 10:27, Gregory CLEMENT wrote:
-> Hi Hans,
->
-> On 16/01/2015 09:17, Hans de Goede wrote:
->> Hi,
->>
->> On 15-01-15 15:09, Gregory CLEMENT wrote:
->>> Add the regulators to each SATA port.
->>>
->>> Signed-off-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
->>> ---
->>>    arch/arm/boot/dts/armada-388-gp.dts | 126 ++++++++++++++++++++++++++++++++++++
->>>    1 file changed, 126 insertions(+)
->>>
->>> diff --git a/arch/arm/boot/dts/armada-388-gp.dts b/arch/arm/boot/dts/armada-388-gp.dts
->>> index 4df22bf91683..590b383db323 100644
->>> --- a/arch/arm/boot/dts/armada-388-gp.dts
->>> +++ b/arch/arm/boot/dts/armada-388-gp.dts
->>> @@ -173,6 +173,16 @@
->>>    				status = "okay";
->>>    				#address-cells = <1>;
->>>    				#size-cells = <0>;
->>> +
->>> +				sata0: sata-port@0 {
->>> +					reg = <0>;
->>> +					target-supply = <&reg_5v_sata0>;
->>> +				};
->>> +
->>> +				sata1: sata-port@1 {
->>> +					reg = <1>;
->>> +					target-supply = <&reg_5v_sata1>;
->>> +				};
->>>    			};
->>>
->>>    			sata@e0000 {
->>> @@ -181,6 +191,16 @@
->>>    				status = "okay";
->>>    				#address-cells = <1>;
->>>    				#size-cells = <0>;
->>> +
->>> +				sata2: sata-port@0 {
->>> +					reg = <0>;
->>> +					target-supply = <&reg_5v_sata2>;
->>> +				};
->>> +
->>> +				sata3: sata-port@1 {
->>> +					reg = <1>;
->>> +					target-supply = <&reg_5v_sata3>;
->>> +				};
->>>    			};
->>>
->>>    			sdhci@d8000 {
->>> @@ -278,6 +298,112 @@
->>>    		regulator-always-on;
->>>    		gpio = <&expander0 4 GPIO_ACTIVE_HIGH>;
->>>    	};
->>> +
->>> +	reg_sata0: pwr-sata0 {
->>> +		compatible = "regulator-fixed";
->>> +		regulator-name = "pwr_en_sata0";
->>> +		enable-active-high;
->>> +		regulator-always-on;
->>> +
->>> +	};
->>> +
->>> +	reg_5v_sata0: v5-sata0 {
->>> +		compatible = "regulator-fixed";
->>> +		regulator-name = "v5.0-sata0";
->>> +		regulator-min-microvolt = <5000000>;
->>> +		regulator-max-microvolt = <5000000>;
->>> +		regulator-always-on;
->>> +		vin-supply = <&reg_sata0>;
->>> +	};
->>> +
->>> +	reg_12v_sata0: v12-sata0 {
->>> +		compatible = "regulator-fixed";
->>> +		regulator-name = "v12.0-sata0";
->>> +		regulator-min-microvolt = <12000000>;
->>> +		regulator-max-microvolt = <12000000>;
->>> +		regulator-always-on;
->>> +		vin-supply = <&reg_sata0>;
->>> +	};
->>
->> AFAIK the separate v5 / 12v regulators you're creating here
->> are not used anywhere. So I guess there just here to
->> accurately / completely describe the power topology ?
->
-> Yes it was the point.
+Indeed, keeping the series as one thread is better. Apart from a
+slightly less misleading subject, I suggest Hanjun that he passes each
+patch via get_maintainer.pl and adds the corresponding Cc: lines to the
+commit log. I think that's a clearer way keep track of who needs to
+ack/review the patches.
 
-Ok.
-
->>> +
->>> +	reg_sata1: pwr-sata1 {
->>> +		regulator-name = "pwr_en_sata1";
->>> +		compatible = "regulator-fixed";
->>> +		regulator-min-microvolt = <12000000>;
->>> +		regulator-max-microvolt = <12000000>;
->>> +		enable-active-high;
->>> +		regulator-always-on;
->>
->>
->> The always on here seems to a bit weird, wasn't the
->> whole purpose of this patch set to teach ahci_platform
->> to turn it on as needed ?
->
-> Maybe I misunderstood the regulator binding, but I thought
-> that (once the suspend will be available on this platform) I
-> could use:
->
-> regulator-state-mem {
-> 			regulator-off-in-suspend;
-> 		};
->
->>
->> You do probably want to put a regulator-boot-on here so
->> that disks do not get an unwanted powercycle (bad for
->> their lifetime) when the firmware has already turned on
->> the disk. Downside of using regulator-boot-on is that if
->> the power is not actually turned on no power-on-delay is
->
-> That's why I didn't use it
->
->> done, but we're not using a power on delay anyways.
->
-> But if regulator-always-on prevent to switch it off in
-> suspend then yes using regulator-boot-on is better.
-
-AFAIK regulator-always-on means exactly that and thus likely
-is not what you want. As for using regulator-off-in-suspend
-that is not necessary as the suspend method for the acpi
-driver will already turn it off.
-
-Note that you can test this today by doing (IIRC):
-
-echo devices > /sys/power/pm_test
-echo mem > /sys/power/state
-
-This is how I tested ahci_platform suspend handling on
-the freescale imx processor on the wandboard.
-
-It is probably a good idea to use regulator-boot-on and
-then test things this way, and if that works use
-regulator-boot-on.
-
-Regards,
-
-Hans
+-- 
+Catalin
