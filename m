@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754449AbbAPK7j (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 05:59:39 -0500
-Received: from mail-wi0-f176.google.com ([209.85.212.176]:65393 "EHLO
-	mail-wi0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752595AbbAPK7h (ORCPT
+	id S1754536AbbAPLAf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 06:00:35 -0500
+Received: from smtp05.smtpout.orange.fr ([80.12.242.127]:53327 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752505AbbAPLAd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 05:59:37 -0500
-Message-ID: <54B8EF15.4000602@linaro.org>
-Date: Fri, 16 Jan 2015 11:59:33 +0100
-From: Daniel Lezcano <daniel.lezcano@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, John Stultz <john.stultz@linaro.org>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC 2/2] clocksource: don't suspend/resume when unused
-References: <1421399874-29119-1-git-send-email-alexandre.belloni@free-electrons.com> <1421399874-29119-3-git-send-email-alexandre.belloni@free-electrons.com> <alpine.DEB.2.11.1501161122320.5526@nanos> <20150116103530.GB3843@piout.net> <54B8EA54.5020002@linaro.org> <20150116104804.GE3843@piout.net>
-In-Reply-To: <20150116104804.GE3843@piout.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Fri, 16 Jan 2015 06:00:33 -0500
+X-ME-Helo: beldin.home
+X-ME-Date: Fri, 16 Jan 2015 12:00:31 +0100
+X-ME-IP: 109.214.23.205
+From: Robert Jarzmik <robert.jarzmik@free.fr>
+To: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Daniel Mack <daniel@zonque.org>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Robert Jarzmik <robert.jarzmik@free.fr>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v3 1/3] dt-bindings: mfd: add lubbock-io binding
+Date: Fri, 16 Jan 2015 12:00:08 +0100
+Message-Id: <1421406010-14851-1-git-send-email-robert.jarzmik@free.fr>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2015 11:48 AM, Alexandre Belloni wrote:
-> Hi,
->
-> On 16/01/2015 at 11:39:16 +0100, Daniel Lezcano wrote :
->>> Isn't that already the case?
->>> Right now, if you call clocksource_suspend, it doesn't matter whether
->>> the clocksource has an enable or not, it will be suspended. Maybe I'm
->>> mistaken but my patch doesn't seem to change that behaviour.
->>
->> Actually, if there is no enable/disable callback, then CLOCK_SOURCE_USED
->> will be never set, hence the condition will always fail and the suspend
->> callback won't be called.
->>
->
-> It is set in clocksource_enable/disable, even if there is no
-> enable/disable callback.
+Add a binding for lubbock motherboard IO board.
 
-Ah, right. But shouldn't we set the flag only if the callback is present 
-and succeed as Boris mentioned it ?
+Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
+---
+ .../devicetree/bindings/mfd/lubbock-io.txt         | 26 ++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/lubbock-io.txt
 
-> I only found direct calls to ->enable() in
-> timekeeper.c, did I miss some?
-
-
-
-
+diff --git a/Documentation/devicetree/bindings/mfd/lubbock-io.txt b/Documentation/devicetree/bindings/mfd/lubbock-io.txt
+new file mode 100644
+index 0000000..33c9e21
+--- /dev/null
++++ b/Documentation/devicetree/bindings/mfd/lubbock-io.txt
+@@ -0,0 +1,26 @@
++Intel's pxa255 system development platform motherboard.
++
++This is the motherboard, or IO board, of the pxa25x development system,
++supporting a lubbock pxa25x SoC board.
++
++Required properties:
++  - compatible : One of the following chip-specific strings:
++        "intel,lubbock-io"
++  - interrupts : The first interrupt is the line the /IRQ signal the IO board
++                 multiplex is connected to. The only known case is GPIO0 on the
++                 pxa25x SoC.
++
++Optional properties:
++  - interrupts : The second optional interrupt is the base of the interrupts
++                 multiplexed by the lubbock motherboard. If unspecified, the
++                 range is fully dynamic, and the irqdomain will generate its
++                 interrupt base on the fly.
++
++Example:
++
++mb: lubbock-mb@0 {
++	compatible = "intel,lubbock-io";
++	interrupts = <0 IRQ_TYPE_EDGE_FALLING 400 IRQ_TYPE_NONE>;
++	#interrupt-cells = <2>;
++        interrupt-parent = <&pxairq>;
++};
 -- 
-  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
-
-Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
-<http://twitter.com/#!/linaroorg> Twitter |
-<http://www.linaro.org/linaro-blog/> Blog
+2.1.0
 
