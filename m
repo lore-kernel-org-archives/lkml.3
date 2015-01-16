@@ -1,55 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752014AbbAPWfz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 17:35:55 -0500
-Received: from casper.infradead.org ([85.118.1.10]:46692 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750968AbbAPWfy (ORCPT
+	id S1752193AbbAPWhB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 17:37:01 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:56719 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751506AbbAPWg7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 17:35:54 -0500
-Message-ID: <54B99244.8080404@infradead.org>
-Date: Fri, 16 Jan 2015 14:35:48 -0800
-From: Randy Dunlap <rdunlap@infradead.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Fri, 16 Jan 2015 17:36:59 -0500
+From: Peter Korsgaard <peter@korsgaard.com>
+To: Max Filippov <jcmvbkbc@gmail.com>
+Cc: Peter Korsgaard <jacmet@sunsite.dk>, Wolfram Sang <wsa@the-dreams.de>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c-ocores: add common clock support
+References: <1421230899-7843-1-git-send-email-jcmvbkbc@gmail.com>
+Date: Fri, 16 Jan 2015 23:36:50 +0100
+In-Reply-To: <1421230899-7843-1-git-send-email-jcmvbkbc@gmail.com> (Max
+	Filippov's message of "Wed, 14 Jan 2015 13:21:39 +0300")
+Message-ID: <87wq4m9wu5.fsf@dell.be.48ers.dk>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4 (gnu/linux)
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>, fengguang.wu@intel.com,
-        Steven Miao <realmz6@gmail.com>
-CC: adi-buildroot-devel@lists.sourceforge.net,
-        Jonathan Corbet <corbet@lwn.net>
-Subject: [PATCH] Documentation: fix blackfin gptimers-example build errors
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <rdunlap@infradead.org>
+>>>>> "Max" == Max Filippov <jcmvbkbc@gmail.com> writes:
 
-Don't build the blackfin gptimers-example module when BFIN_GPTIMERS
-is not enabled. Allow the build when BFIN_GPTIMERS is =y or =m.
+ > Allow bus clock specification as a common clock handle. This makes this
+ > controller easier to use in a setup based on common clock framework.
 
-I believe that this patch fixes these build errors, but I don't
-have a build environment to test this.
+ > Signed-off-by: Max Filippov <jcmvbkbc@gmail.com>
 
-ERROR: "disable_gptimers" [Documentation/blackfin/gptimers-example.ko] undefined!
-ERROR: "enable_gptimers" [Documentation/blackfin/gptimers-example.ko] undefined!
-ERROR: "set_gptimer_config" [Documentation/blackfin/gptimers-example.ko] undefined!
-ERROR: "clear_gptimer_intr" [Documentation/blackfin/gptimers-example.ko] undefined!
-ERROR: "get_gptimer_period" [Documentation/blackfin/gptimers-example.ko] undefined!
-ERROR: "get_gptimer_pwidth" [Documentation/blackfin/gptimers-example.ko] undefined!
-ERROR: "get_gptimer_intr" [Documentation/blackfin/gptimers-example.ko] undefined!
+Looks sensible to me - Thanks.
 
-Reported-by: Fenggaung Wu <fengguang.wu@intel.com>
-Signed-off-by: Randy Dunlap <rdunlap@infradead.org>
----
- Documentation/blackfin/Makefile |    2 ++
- 1 file changed, 2 insertions(+)
+Acked-by: Peter Korsgaard <peter@korsgaard.com>
 
---- lnx-319-rc4.orig/Documentation/blackfin/Makefile
-+++ lnx-319-rc4/Documentation/blackfin/Makefile
-@@ -1,3 +1,5 @@
- ifneq ($(CONFIG_BLACKFIN),)
-+ifneq ($(CONFIG_BFIN_GPTIMERS,)
- obj-m := gptimers-example.o
- endif
-+endif
+-- 
+Bye, Peter Korsgaard
