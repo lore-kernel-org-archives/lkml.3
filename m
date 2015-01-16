@@ -1,71 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753897AbbAPKNT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 05:13:19 -0500
-Received: from mout.kundenserver.de ([212.227.17.24]:57557 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753344AbbAPKNN (ORCPT
+	id S1752454AbbAPKOY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 05:14:24 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:35554 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751567AbbAPKOW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 05:13:13 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Yijing Wang <wangyijing@huawei.com>
-Cc: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@linux.intel.com>,
-        linux-pci@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
-        linux-kernel@vger.kernel.org, Marc Zyngier <marc.zyngier@arm.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        linux-ia64@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, linux-alpha@vger.kernel.org,
-        linux-m68k@vger.kernel.org, Liviu Dudau <liviu@dudau.co.uk>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: [PATCH 00/28] Refine PCI scan interfaces and make generic pci host bridge
-Date: Fri, 16 Jan 2015 11:12:43 +0100
-Message-ID: <3853153.SqP6BVNhms@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1421372666-12288-1-git-send-email-wangyijing@huawei.com>
-References: <1421372666-12288-1-git-send-email-wangyijing@huawei.com>
+	Fri, 16 Jan 2015 05:14:22 -0500
+Date: Fri, 16 Jan 2015 10:14:14 +0000
+From: Javi Merino <javi.merino@arm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dave P Martin <Dave.Martin@arm.com>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [RESEND PATCH v2 1/2] tracing: Add array printing helpers
+Message-ID: <20150116101413.GA2898@e104805>
+References: <1421340659-18063-1-git-send-email-javi.merino@arm.com>
+ <20150115212202.7939072a@grimm.local.home>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:9Mf8EGrUsk7Uj739obAtoB382C1Ns4WitHbxO53pBmKuyGAN7e9
- F5kJ4CA1Vy2LVZ1wT5HSpNatKFD+HZ9jqAKPgAIx77hTHyE4cSuahq1c590Os9mMcH0aBaS
- 4QnBjLh6ANDp0jhgqf5LD/GGeIsKLb+qHp6mO2mdPDiXpG6yDXijxyOfmoEap00W66/Ztpw
- tpvopF3gZ7iGq+1WdRIig==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20150115212202.7939072a@grimm.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 16 January 2015 09:43:58 Yijing Wang wrote:
-> This series is based on Bjorn's pci-next branch.
-
-I think this is a very nice series, hope we can get this into 3.20.
-
-I've replied with a few specific comments, but I see no show-stoppers
-and I've already retracted a few comments after seeing the bigger
-picture.
-
-> After applied this series, we have following scan interfaces:
+On Fri, Jan 16, 2015 at 02:22:02AM +0000, Steven Rostedt wrote:
+> On Thu, 15 Jan 2015 16:50:58 +0000
+> Javi Merino <javi.merino@arm.com> wrote:
+>  
+> > +const char *
+> > +ftrace_print_array_seq(struct trace_seq *p, const void *buf, int
+> > buf_len,
+> > +		       size_t el_size)
+> > +{
+> > +	const char *ret = trace_seq_buffer_ptr(p);
+> > +	const char *prefix = "";
+> > +	void *ptr = (void *)buf;
+> > +
+> > +	trace_seq_putc(p, '{');
+> > +
+> > +	while (ptr < buf + buf_len) {
+> > +		switch (el_size) {
+> > +		case 8:
+> > +			trace_seq_printf(p, "%s0x%x", prefix,
+> > +					 *(u8 *)ptr);
+> > +			break;
+> > +		case 16:
+> > +			trace_seq_printf(p, "%s0x%x", prefix,
+> > +					 *(u16 *)ptr);
+> > +			break;
+> > +		case 32:
+> > +			trace_seq_printf(p, "%s0x%x", prefix,
+> > +					 *(u32 *)ptr);
+> > +			break;
+> > +		case 64:
+> > +			trace_seq_printf(p, "%s0x%llx", prefix,
+> > +					 *(u64 *)ptr);
+> > +			break;
+> > +		default:
+> > +			BUG();
 > 
-> 1. pci_scan_bus_legacy() 
->    parent = NULL, default io/mem/bus resources.
->    for legacy pci scan
+> BUG() is a bit extreme don't you think? I'm not sure it even deserves a
+> WARN_ON().
+
+Ok, I used BUG() because that's what you suggested:
+
+http://article.gmane.org/gmane.linux.kernel/1846749
+
+The only way I could think of turning it into a BUILD_BUG was by
+moving it to the __print_array macro, but I think it's ugly.
+
+> I would suggest doing:
 > 
-> 2. pci_scan_root_bus()
->    for callers provide its own parent and io/mem/bus resources
->    but no platform specific pci_host_bridge operations
+> 			trace_seq_printf(p, "BAD SIZE:%d 0x%x", el_size,
+> 					*(u8 *)ptr);
+> 			el_size = 8;
 > 
-> 3. pci_scan_root_bridge()
->    for callers provide its own parent and io/mem/bus resources
->    and pci_host_bridge_ops.
+> No need to go crashing the kernel or even messing with dmesg over
+> somebody's tracepoint mistake.
 
-I still think we will need a split interface for drivers to use
-that want to call pci_create_host_bridge() manually, but that can
-come later as we try to migrate the arm32 host bridge drivers to
-a generic interface away from pci_common_init_dev().
+Ok, I'll change it to that.
 
-Another follow-up would be to move more of the pcibios_*() functions
-into pci_host_bridge_ops.
+> The rest looks fine.
+> 
+> > +		}
+> > +		prefix = ",";
+> > +		ptr += el_size / 8;
+> > +	}
+> > +
+> > +	trace_seq_putc(p, '}');
+> > +	trace_seq_putc(p, 0);
+> 
+> I need to add a trace_seq_terminate() for this.
 
-	Arnd
+That would make it more readable.  Cheers,
+Javi
