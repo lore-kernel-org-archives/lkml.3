@@ -1,75 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752016AbbAPJx4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 04:53:56 -0500
-Received: from mail-ig0-f170.google.com ([209.85.213.170]:50407 "EHLO
-	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751567AbbAPJxw (ORCPT
+	id S1752492AbbAPJ4s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 04:56:48 -0500
+Received: from mga09.intel.com ([134.134.136.24]:36480 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751314AbbAPJ4q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 04:53:52 -0500
-MIME-Version: 1.0
-In-Reply-To: <20150113161614.GF23940@pengutronix.de>
-References: <1415709535-31515-1-git-send-email-hongzhou.yang@mediatek.com>
-	<1415709535-31515-3-git-send-email-hongzhou.yang@mediatek.com>
-	<CACRpkdYSe_BH_qiHma2BA+c2otEi3wd0TBXy83t8vwrNL+3U2g@mail.gmail.com>
-	<20141127101830.GP30369@pengutronix.de>
-	<CACRpkdbMdJT6y-NL36RgQe0-CAFAVGqKiwY9+yFcwA7JDLmA+Q@mail.gmail.com>
-	<20141202135527.GM30369@pengutronix.de>
-	<CACRpkdZeRd+j7d_iRphruHRg8p3XjqWK8_HQzLH2PTZ_pqOrYA@mail.gmail.com>
-	<20150112122200.GC18908@pengutronix.de>
-	<CACRpkdYXrdiRWMV8YpxrSLe2rLEV-ZnX7=36w21zGquh==6WgA@mail.gmail.com>
-	<20150113161614.GF23940@pengutronix.de>
-Date: Fri, 16 Jan 2015 10:53:51 +0100
-Message-ID: <CACRpkdYRrs2=gNM1XGSh1cSo5Pvx6iNLt4HjL6gdTqGPWYSRDw@mail.gmail.com>
-Subject: Re: [PATCH v3 2/3] dt-bindings: Add pinctrl bindings for mt65xx/mt81xx.
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Rob Herring <robh+dt@kernel.org>,
-        Hongzhou Yang <hongzhou.yang@mediatek.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Sascha Hauer <kernel@pengutronix.de>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Grant Likely <grant.likely@linaro.org>,
-        "Joe.C" <yingjoe.chen@mediatek.com>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Vladimir Murzin <vladimir.murzin@arm.com>,
-        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+	Fri, 16 Jan 2015 04:56:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="441323146"
+From: "Kaukab, Yousaf" <yousaf.kaukab@intel.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Felipe Balbi <balbi@ti.com>,
+        "Greg KH" <greg@kroah.com>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        huang eddie <eddie.huang@mediatek.com>, dandan.he@mediatek.com,
-        alan.cheng@mediatek.com, toby.liu@mediatek.com
-Content-Type: text/plain; charset=UTF-8
+        Robert Baldyga <r.baldyga@samsung.com>
+Subject: RE: linux-next: manual merge of the usb-gadget tree with the
+ usb.current tree
+Thread-Topic: linux-next: manual merge of the usb-gadget tree with the
+ usb.current tree
+Thread-Index: AQHQMVUFV4KyeZL6/kefSEFRWf/Ei5zCfaCw
+Date: Fri, 16 Jan 2015 09:56:42 +0000
+Message-ID: <B1AFEC30BE3ADF488E833B59904F5C3209836D93@IRSMSX107.ger.corp.intel.com>
+References: <20150116172346.4add4867@canb.auug.org.au>
+In-Reply-To: <20150116172346.4add4867@canb.auug.org.au>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [163.33.239.182]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 5:16 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
-> On Tue, Jan 13, 2015 at 11:05:22AM +0100, Linus Walleij wrote:
+Hi,
+> -----Original Message-----
+> From: Stephen Rothwell [mailto:sfr@canb.auug.org.au]
+> Sent: Friday, January 16, 2015 7:24 AM
+> To: Felipe Balbi; Greg KH
+> Cc: linux-next@vger.kernel.org; linux-kernel@vger.kernel.org; Robert Baldyga;
+> Kaukab, Yousaf
+> Subject: linux-next: manual merge of the usb-gadget tree with the usb.current
+> tree
+> 
+> Hi Felipe,
+> 
+> Today's linux-next merge of the usb-gadget tree got a conflict in
+> drivers/usb/dwc2/gadget.c between commit 62f4f0651ce8 ("usb: dwc2:
+> gadget: kill requests with 'force' in s3c_hsotg_udc_stop()") from the usb.current
+> tree and commit c6f5c050e2a7 ("usb: dwc2: gadget: add bi-directional
+> endpoint support") and 1141ea01d5fa ("usb: dwc2: gadget:
+> kill requests after disabling ep") from the usb-gadget tree.
 
->> > You often talk about ambiguities. Could you give an example what
->> > ambiguities you mean?
->>
->> What happened was this pins = ; arguments were sometimes
->> strings and sometimes integers, that becomes strange to handle
->> in code, ambiguous.
->
-> I see. I like naming it 'pinmux' because that's what it is: pins and
-> mux settings. A plain 'pinno' suggests that it contains only pin mubers,
-> without mux setting. How about 'pin-no-mux'? We also could add an
-> explicit "pins-are-numbered" property instead of distinguishing this
-> by property names.
+commit 62f4f0651ce8 ("usb: dwc2: gadget: kill requests with 'force' in s3c_hsotg_udc_stop()")
+should have been reverted by http://www.spinics.net/lists/linux-usb/msg119287.html.
+Somehow it didn't make it to linux-next.
 
-I kind of like this "pins-are-numbered" thing.
+6b448af46e2a ("drivers: usb: dwc2: remove 'force' parameter from kill_all_requests()"),
+which is added by this merge, is the replacement.
 
-The other property for the pin, whether pinmux or pin-no-mux or
-pin-num-and-mux etc is no such big deal, as long as it's
-consistent and documented with the generic bindings.
+> 
+> I fixed it up (I think - see below) and can carry the fix as necessary (no action is
+> required).
+> 
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc drivers/usb/dwc2/gadget.c
+> index 79242008085b,882a1a8953f5..000000000000
+> --- a/drivers/usb/dwc2/gadget.c
+> +++ b/drivers/usb/dwc2/gadget.c
+> @@@ -2927,8 -2960,12 +2964,12 @@@ static int s3c_hsotg_udc_stop(struct
+> us
+>   	mutex_lock(&hsotg->init_mutex);
+> 
+>   	/* all endpoints should be shutdown */
+> - 	for (ep = 1; ep < hsotg->num_of_eps; ep++)
+> - 		s3c_hsotg_ep_disable_force(&hsotg->eps[ep].ep,
+> true);
+> + 	for (ep = 1; ep < hsotg->num_of_eps; ep++) {
+> + 		if (hsotg->eps_in[ep])
+>  -			s3c_hsotg_ep_disable(&hsotg-
+> >eps_in[ep]->ep);
+> ++
+> 	s3c_hsotg_ep_disable_force(&hsotg->eps_in[ep]->ep, true);
+> + 		if (hsotg->eps_out[ep])
+>  -			s3c_hsotg_ep_disable(&hsotg-
+> >eps_out[ep]->ep);
+> ++
+> 	s3c_hsotg_ep_disable_force(&hsotg->eps_out[ep]->ep, true);
+> + 	}
+> 
+>   	spin_lock_irqsave(&hsotg->lock, flags);
+> 
 
-Yours,
-Linus Walleij
+This can work. However, the force argument to s3c_hsotg_ep_disable_force is unused now. So might just leave s3c_hsotg_ep_disable as is, as done by c6f5c050e2a7.
+
+BR,
+Yousaf
