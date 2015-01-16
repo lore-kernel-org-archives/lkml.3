@@ -1,81 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932085AbbAPOLt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 09:11:49 -0500
-Received: from mail-we0-f176.google.com ([74.125.82.176]:33449 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756270AbbAPOLp (ORCPT
+	id S1756246AbbAPONX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 09:13:23 -0500
+Received: from mx2.parallels.com ([199.115.105.18]:58836 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752716AbbAPONV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 09:11:45 -0500
+	Fri, 16 Jan 2015 09:13:21 -0500
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, <linux-mm@kvack.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH -mm 0/6] memcg: release kmemcg_id on css offline
+Date: Fri, 16 Jan 2015 17:13:00 +0300
+Message-ID: <cover.1421411660.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-In-Reply-To: <1421402411-3479-2-git-send-email-chunyan.zhang@spreadtrum.com>
-References: <1421402411-3479-1-git-send-email-chunyan.zhang@spreadtrum.com> <1421402411-3479-2-git-send-email-chunyan.zhang@spreadtrum.com>
-From: Rob Herring <robherring2@gmail.com>
-Date: Fri, 16 Jan 2015 08:11:23 -0600
-Message-ID: <CAL_JsqL9hkfuGi-BmRHTZ=F3KVL8miu2LXkftbswpVuuSx0dtA@mail.gmail.com>
-Subject: Re: [PATCH v5 1/5] Documentation: DT: Renamed of-serial.txt to 8250.txt
-To: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Rutland <mark.rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>, Jiri Slaby <jslaby@suse.cz>,
-        Jason Cooper <jason@lakedaemon.net>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Florian Vaussard <florian.vaussard@epfl.ch>,
-        Andrew Lunn <andrew@lunn.ch>, Robert Richter <rrichter@cavium.com>,
-        Hayato Suzuki <hytszk@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Antony Pavlov <antonynpavlov@gmail.com>,
-        Joel Schopp <Joel.Schopp@amd.com>,
-        Suravee Suthikulanit <Suravee.Suthikulpanit@amd.com>,
-        Shawn Guo <shawn.guo@linaro.org>, lea.yan@linaro.org,
-        jorge.ramirez-ortiz@linaro.org, Lee Jones <lee.jones@linaro.org>,
-        Orson Zhai <orsonzhai@gmail.com>, geng.ren@spreadtrum.com,
-        zhizhou.zhang@spreadtrum.com, lanqing.liu@spreadtrum.com,
-        Lyra Zhang <zhang.lyra@gmail.com>, wei.qiao@spreadtrum.com,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        linux-api@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 16, 2015 at 4:00 AM, Chunyan Zhang
-<chunyan.zhang@spreadtrum.com> wrote:
-> The file of-serial.txt was only for 8250 compatible UART implementations,
-> so renamed it to 8250.txt to avoid confusing other persons.
-> This is suggested by Arnd, see:
-> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-September/291455.html
->
-> Signed-off-by: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
-> Acked-by: Mark Rutland <mark.rutland@arm.com>
+Hi,
 
-This is pretty much un-related to the rest of the series, so I will apply it.
+There's one thing about kmemcg implementation that's bothering me. It's
+about arrays holding per-memcg data (e.g. kmem_cache->memcg_params->
+memcg_caches). On kmalloc or list_lru_{add,del} we want to quickly
+lookup the copy of kmem_cache or list_lru corresponding to the current
+cgroup. Currently, we hold all per-memcg caches/lists in an array
+indexed by mem_cgroup->kmemcg_id. This allows us to lookup quickly, and
+that's nice, but the arrays can grow indefinitely, because we reserve
+slots for all cgroups, including offlined, and this is disastrous and
+must be fixed.
 
-Rob
+There are several ways to fix this issue [1], but it seems the best we
+can do is to free kmemcg_id on css offline (solution #2). The idea is
+that we actually only need kmemcg_id on kmem cache allocations, in order
+to lookup the kmem cache copy corresponding to the allocating memory
+cgroup, while it is never used of kmem frees. We do rely on kmemcg_id
+being unique for each cgroup in some places, but they are easy to fix.
+And regarding per memcg list_lru, which are indexed by kmemcg_id, we can
+easily reparent them - it is as simple as splicing lists. This patch set
+therefore implements this approach.
 
-> ---
->  .../bindings/serial/{of-serial.txt => 8250.txt}    |    0
->  1 file changed, 0 insertions(+), 0 deletions(-)
->  rename Documentation/devicetree/bindings/serial/{of-serial.txt => 8250.txt} (100%)
->
-> diff --git a/Documentation/devicetree/bindings/serial/of-serial.txt b/Documentation/devicetree/bindings/serial/8250.txt
-> similarity index 100%
-> rename from Documentation/devicetree/bindings/serial/of-serial.txt
-> rename to Documentation/devicetree/bindings/serial/8250.txt
-> --
-> 1.7.9.5
->
->
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+It is organized as follows:
+ - Currently, sl[AU]b core relies on kmemcg_id being unique per
+   kmem_cache. Patches 1-3 fix that.
+ - Patch 4 makes memcg_cache_params->memcg_caches entries released on
+   css offline.
+ - Patch 5 alters the list_lru API a bit to facilitate reparenting.
+ - Patch 6 implements per memcg list_lru reparenting on css offline.
+   After list_lrus have been reparented, there's no need to keep
+   kmemcg_id any more, so we can free it on css offline.
+
+[1] https://lkml.org/lkml/2015/1/13/107
+
+Thanks,
+
+Vladimir Davydov (6):
+  slab: embed memcg_cache_params to kmem_cache
+  slab: link memcg caches of the same kind into a list
+  slab: use css id for naming per memcg caches
+  memcg: free memcg_caches slot on css offline
+  list_lru: add helpers to isolate items
+  memcg: reparent list_lrus and free kmemcg_id on css offline
+
+ fs/dcache.c              |   21 +++---
+ fs/gfs2/quota.c          |    5 +-
+ fs/inode.c               |    8 +--
+ fs/xfs/xfs_buf.c         |    6 +-
+ fs/xfs/xfs_qm.c          |    5 +-
+ include/linux/list_lru.h |   12 +++-
+ include/linux/slab.h     |   31 +++++----
+ include/linux/slab_def.h |    2 +-
+ include/linux/slub_def.h |    2 +-
+ mm/list_lru.c            |   65 ++++++++++++++++--
+ mm/memcontrol.c          |   86 ++++++++++++++++++-----
+ mm/slab.c                |   13 ++--
+ mm/slab.h                |   65 +++++++++++-------
+ mm/slab_common.c         |  172 +++++++++++++++++++++++++++-------------------
+ mm/slub.c                |   24 +++----
+ mm/workingset.c          |    3 +-
+ 16 files changed, 336 insertions(+), 184 deletions(-)
+
+-- 
+1.7.10.4
+
