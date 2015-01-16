@@ -1,72 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752461AbbAPHSH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 02:18:07 -0500
-Received: from mail-pd0-f173.google.com ([209.85.192.173]:64400 "EHLO
-	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751569AbbAPHSF (ORCPT
+	id S1752577AbbAPHUD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 02:20:03 -0500
+Received: from nasmtp01.atmel.com ([192.199.1.246]:50744 "EHLO
+	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751192AbbAPHUA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 02:18:05 -0500
-Message-ID: <54B8BB24.2020408@linaro.org>
-Date: Fri, 16 Jan 2015 15:17:56 +0800
-From: Hanjun Guo <hanjun.guo@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Fri, 16 Jan 2015 02:20:00 -0500
+From: Bo Shen <voice.shen@atmel.com>
+To: Mark Brown <broonie@kernel.org>
+CC: <nicolas.ferre@atmel.com>, <alsa-devel@alsa-project.org>,
+        <linux-sound@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, Bo Shen <voice.shen@atmel.com>
+Subject: [PATCH 1/2] ASoC: atmel_ssc_dai: fix start event for I2S mode
+Date: Fri, 16 Jan 2015 15:19:43 +0800
+Message-ID: <1421392784-32298-1-git-send-email-voice.shen@atmel.com>
+X-Mailer: git-send-email 2.3.0.rc0
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        Grant Likely <grant.likely@linaro.org>
-CC: Will Deacon <Will.Deacon@arm.com>, "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, "jcm@redhat.com" <jcm@redhat.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Mark Brown <broonie@kernel.org>,
-        Rob Herring <robh@kernel.org>, Robert Richter <rric@kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
-        Timur Tabi <timur@codeaurora.org>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        Yijing Wang <wangyijing@huawei.com>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linaro-acpi <linaro-acpi@lists.linaro.org>
-Subject: Re: [PATCH v7 00/17] Introduce ACPI for ARM64 based on ACPI 5.1
-References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org> <CACxGe6v_BvCQqp8d=LaQ8HeaOU1Zh_HPpwFTdwOjHUbqXsnQ8g@mail.gmail.com> <20150115182346.GE2329@e104818-lin.cambridge.arm.com>
-In-Reply-To: <20150115182346.GE2329@e104818-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2015年01月16日 02:23, Catalin Marinas wrote:
-> Hi Grant,
->
-> On Thu, Jan 15, 2015 at 04:26:20PM +0000, Grant Likely wrote:
->> On Wed, Jan 14, 2015 at 3:04 PM, Hanjun Guo <hanjun.guo@linaro.org> wrote:
->>> This is the v7 of ACPI core patches for ARM64 based on ACPI 5.1
->>
->> I'll get right to the point: Can we please have this series queued up
->> for v3.20?
->
-> Before you even ask for this, please look at the patches and realise
-> that there is a complete lack of Reviewed-by tags on the code (well,
-> apart from trivial Kconfig changes). In addition, the series touches on
-> other subsystems like clocksource, irqchip, acpi and I don't see any
-> acks from the corresponding maintainers. So even if I wanted to merge
+According to the I2S specification information as following:
+  - WS = 0, channel 1 (left)
+  - WS = 1, channel 2 (right)
+So, the start event should be TF/RF falling edge.
 
-For the ACPI part, Rafael already said that "Having looked at the
-patches recently, I don't see any major problems in them from the ACPI
-core perspective, so to me they are good to go." [1]
-Is that kind of ack for this ?
+Reported-by: Songjun Wu <songjun.wu@atmel.com>
+Signed-off-by: Bo Shen <voice.shen@atmel.com>
+---
 
-Thanks
-Hanjun
+ sound/soc/atmel/atmel_ssc_dai.c | 18 ++++--------------
+ 1 file changed, 4 insertions(+), 14 deletions(-)
 
-[1]:
-http://lkml.iu.edu/hypermail/linux/kernel/1409.1/03363.html
+diff --git a/sound/soc/atmel/atmel_ssc_dai.c b/sound/soc/atmel/atmel_ssc_dai.c
+index 99ff35e..e691aab 100644
+--- a/sound/soc/atmel/atmel_ssc_dai.c
++++ b/sound/soc/atmel/atmel_ssc_dai.c
+@@ -348,7 +348,6 @@ static int atmel_ssc_hw_params(struct snd_pcm_substream *substream,
+ 	struct atmel_pcm_dma_params *dma_params;
+ 	int dir, channels, bits;
+ 	u32 tfmr, rfmr, tcmr, rcmr;
+-	int start_event;
+ 	int ret;
+ 	int fslen, fslen_ext;
+ 
+@@ -457,19 +456,10 @@ static int atmel_ssc_hw_params(struct snd_pcm_substream *substream,
+ 		 * The SSC transmit clock is obtained from the BCLK signal on
+ 		 * on the TK line, and the SSC receive clock is
+ 		 * generated from the transmit clock.
+-		 *
+-		 *  For single channel data, one sample is transferred
+-		 * on the falling edge of the LRC clock.
+-		 * For two channel data, one sample is
+-		 * transferred on both edges of the LRC clock.
+ 		 */
+-		start_event = ((channels == 1)
+-				? SSC_START_FALLING_RF
+-				: SSC_START_EDGE_RF);
+-
+ 		rcmr =	  SSC_BF(RCMR_PERIOD, 0)
+ 			| SSC_BF(RCMR_STTDLY, START_DELAY)
+-			| SSC_BF(RCMR_START, start_event)
++			| SSC_BF(RCMR_START, SSC_START_FALLING_RF)
+ 			| SSC_BF(RCMR_CKI, SSC_CKI_RISING)
+ 			| SSC_BF(RCMR_CKO, SSC_CKO_NONE)
+ 			| SSC_BF(RCMR_CKS, ssc->clk_from_rk_pin ?
+@@ -478,14 +468,14 @@ static int atmel_ssc_hw_params(struct snd_pcm_substream *substream,
+ 		rfmr =	  SSC_BF(RFMR_FSEDGE, SSC_FSEDGE_POSITIVE)
+ 			| SSC_BF(RFMR_FSOS, SSC_FSOS_NONE)
+ 			| SSC_BF(RFMR_FSLEN, 0)
+-			| SSC_BF(RFMR_DATNB, 0)
++			| SSC_BF(RFMR_DATNB, (channels - 1))
+ 			| SSC_BIT(RFMR_MSBF)
+ 			| SSC_BF(RFMR_LOOP, 0)
+ 			| SSC_BF(RFMR_DATLEN, (bits - 1));
+ 
+ 		tcmr =	  SSC_BF(TCMR_PERIOD, 0)
+ 			| SSC_BF(TCMR_STTDLY, START_DELAY)
+-			| SSC_BF(TCMR_START, start_event)
++			| SSC_BF(TCMR_START, SSC_START_FALLING_RF)
+ 			| SSC_BF(TCMR_CKI, SSC_CKI_FALLING)
+ 			| SSC_BF(TCMR_CKO, SSC_CKO_NONE)
+ 			| SSC_BF(TCMR_CKS, ssc->clk_from_rk_pin ?
+@@ -495,7 +485,7 @@ static int atmel_ssc_hw_params(struct snd_pcm_substream *substream,
+ 			| SSC_BF(TFMR_FSDEN, 0)
+ 			| SSC_BF(TFMR_FSOS, SSC_FSOS_NONE)
+ 			| SSC_BF(TFMR_FSLEN, 0)
+-			| SSC_BF(TFMR_DATNB, 0)
++			| SSC_BF(TFMR_DATNB, (channels - 1))
+ 			| SSC_BIT(TFMR_MSBF)
+ 			| SSC_BF(TFMR_DATDEF, 0)
+ 			| SSC_BF(TFMR_DATLEN, (bits - 1));
+-- 
+2.3.0.rc0
+
