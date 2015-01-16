@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756530AbbAPSfE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 13:35:04 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:44733 "EHLO
+	id S1756622AbbAPSfW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 13:35:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:44751 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755679AbbAPSfB (ORCPT
+	with ESMTP id S1751935AbbAPSfV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 13:35:01 -0500
-Date: Fri, 16 Jan 2015 10:35:00 -0800
+	Fri, 16 Jan 2015 13:35:21 -0500
+Date: Fri, 16 Jan 2015 10:35:20 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: [GIT PULL] Driver core fix for 3.19-rc5
-Message-ID: <20150116183500.GA28375@kroah.com>
+        Andrew Morton <akpm@linux-foundation.org>,
+        Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] char/misc driver fixes for 3.19-rc5
+Message-ID: <20150116183520.GA28424@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -28,24 +29,32 @@ The following changes since commit b7392d2247cfe6771f95d256374f1a8e6a6f48d6:
 
 are available in the git repository at:
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/driver-core.git/ tags/driver-core-3.19-rc5
+  git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/char-misc.git/ tags/char-misc-3.19-rc5
 
-for you to fetch changes up to 72392ed0eb6fde96826cb9d66bd4f50a7ba61450:
+for you to fetch changes up to 7b7c54914f73966976893747ee8e2ca58166a627:
 
-  kernfs: Fix kernfs_name_compare (2015-01-09 15:51:08 -0800)
+  mcb: mcb-pci: Only remap the 1st 0x200 bytes of BAR 0 (2015-01-09 15:46:37 -0800)
 
 ----------------------------------------------------------------
-Driver core fixes for 3.19-rc5
+Char/Misc driver fixes for 3.19-rc5
 
-Here is one kernfs fix for a reported issue for 3.19-rc5.
-
-It has been in linux-next for a while.
+Here are 3 small driver fixes for reported issues for 3.19-rc5.  All of
+these have been in linux-next for a while with no reported problems.
 
 Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
 ----------------------------------------------------------------
-Rasmus Villemoes (1):
-      kernfs: Fix kernfs_name_compare
+Alexander Usyskin (1):
+      mei: clean reset bit before reset
 
- fs/kernfs/dir.c | 12 ++++++++----
- 1 file changed, 8 insertions(+), 4 deletions(-)
+Johannes Thumshirn (1):
+      mcb: mcb-pci: Only remap the 1st 0x200 bytes of BAR 0
+
+Tomas Winkler (1):
+      mei: add ABI documentation for fw_status exported through sysfs
+
+ Documentation/ABI/testing/sysfs-class-mei | 15 +++++++++++++++
+ drivers/mcb/mcb-internal.h                |  1 +
+ drivers/mcb/mcb-pci.c                     | 27 ++++++++++++++++++---------
+ drivers/misc/mei/hw-me.c                  | 12 ++++++++++++
+ 4 files changed, 46 insertions(+), 9 deletions(-)
