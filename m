@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756570AbbAPP7p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 10:59:45 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:45051 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756293AbbAPP7n (ORCPT
+	id S1756589AbbAPQAt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 11:00:49 -0500
+Received: from casper.infradead.org ([85.118.1.10]:45232 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752949AbbAPQAr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 10:59:43 -0500
-Date: Fri, 16 Jan 2015 15:59:23 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Roman Peniaev <r.peniaev@gmail.com>
-Cc: Kees Cook <keescook@chromium.org>, Will Deacon <will.deacon@arm.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Sekhar Nori <nsekhar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/2] ARM: entry-common: fix forgotten set of
- thread_info->syscall
-Message-ID: <20150116155923.GK12302@n2100.arm.linux.org.uk>
-References: <1420986751-30364-1-git-send-email-r.peniaev@gmail.com>
- <1420986751-30364-2-git-send-email-r.peniaev@gmail.com>
- <20150112183955.GO13360@arm.com>
- <CACZ9PQXW9G4Vw-dcPwkdVE=uoYmDYEQnJWDnnpup1LxC3s5QPg@mail.gmail.com>
- <CAGXu5jLO-YSaF8P9o3jcXP4VZCPYVshz73krnchYuv9pPGY6Sw@mail.gmail.com>
- <CACZ9PQVo0SF4Z-rdNk4e=yY17Xt9n5hAqm4ZRNLEw3jGYYcvtA@mail.gmail.com>
- <CAGXu5j+O6znN=7-gc3PqwqFA5MFRPLGBUzabOmQjWn_9WTjvpg@mail.gmail.com>
- <CACZ9PQUEprgKrpHazDULA5mf-OaoX=MAjEeWdspZTXT_+iUKWw@mail.gmail.com>
+	Fri, 16 Jan 2015 11:00:47 -0500
+Date: Fri, 16 Jan 2015 16:00:45 +0000
+From: Thomas Graf <tgraf@suug.ch>
+To: Patrick McHardy <kaber@trash.net>
+Cc: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        herbert@gondor.apana.org.au, paulmck@linux.vnet.ibm.com,
+        edumazet@google.com, john.r.fastabend@intel.com, josh@joshtriplett.org,
+        netfilter-devel@vger.kernel.org
+Subject: Re: [PATCH 1/9] rhashtable: Do hashing inside of
+ rhashtable_lookup_compare()
+Message-ID: <20150116160045.GB15052@casper.infradead.org>
+References: <cover.1420230585.git.tgraf@suug.ch>
+ <d579f486c3d4a88744dffc23a794601b025b41f4.1420230585.git.tgraf@suug.ch>
+ <20150116153740.GG30132@acer.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CACZ9PQUEprgKrpHazDULA5mf-OaoX=MAjEeWdspZTXT_+iUKWw@mail.gmail.com>
+In-Reply-To: <20150116153740.GG30132@acer.localdomain>
 User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <tgraf@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 17, 2015 at 12:57:02AM +0900, Roman Peniaev wrote:
-> On Fri, Jan 16, 2015 at 7:54 AM, Kees Cook <keescook@chromium.org> wrote:
-> > One interesting thing I noticed (which is unchanged by this series),
-> > but pulling ARM_r7 during the seccomp ptrace event shows __NR_poll,
-> > not __NR_restart_syscall, even though it was a __NR_restart_syscall
-> > trap from seccomp. Is there a better place to see the actual syscall?
+On 01/16/15 at 03:37pm, Patrick McHardy wrote:
+> On 02.01, Thomas Graf wrote:
+> > +{
+> > +	struct nft_hash_elem *he = ptr;
+> > +	struct nft_compare_arg *x = arg;
+> > +
+> > +	if (!nft_data_cmp(&he->key, &x->elem->key, x->set->klen)) {
+> > +		x->elem->cookie = &he->node;
+> > +		x->elem->flags = 0;
+> > +		if (x->set->flags & NFT_SET_MAP)
+> > +			nft_data_copy(&x->elem->data, he->data);
 > 
-> As I understand we do not push new r7 to the stack, and ptrace uses the
-> old value.
+> Is there any reason why we need to perform the assignments in the
+> compare function? The reason why I'm asking is because to add
+> timeout support, I need another compare function for nft_hash_lookup()
+> and I'd prefer to use a single one for both cases.
 
-And why should we push r7 to the stack?  ptrace should be using the
-recorded system call number, rather than poking about on the stack
-itself.
-
--- 
-FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
-according to speedtest.net.
+No. I kept the nft_hash code as intact as possible without changing
+any semantics (aside from the lost optimiztion of keeping the pprev
+pointer from the lookup when doing removals). No reason speaks against
+moving it out.
