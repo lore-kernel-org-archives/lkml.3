@@ -1,185 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753980AbbAPKgd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 05:36:33 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:35647 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751567AbbAPKga (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 05:36:30 -0500
-Date: Fri, 16 Jan 2015 10:35:59 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
-Cc: "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "arnd@arndb.de" <arnd@arndb.de>,
-        "gnomes@lxorguk.ukuu.org.uk" <gnomes@lxorguk.ukuu.org.uk>,
-        "broonie@kernel.org" <broonie@kernel.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "galak@codeaurora.org" <galak@codeaurora.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        "jslaby@suse.cz" <jslaby@suse.cz>,
-        "jason@lakedaemon.net" <jason@lakedaemon.net>,
-        "heiko@sntech.de" <heiko@sntech.de>,
-        "florian.vaussard@epfl.ch" <florian.vaussard@epfl.ch>,
-        "andrew@lunn.ch" <andrew@lunn.ch>,
-        "rrichter@cavium.com" <rrichter@cavium.com>,
-        "hytszk@gmail.com" <hytszk@gmail.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "antonynpavlov@gmail.com" <antonynpavlov@gmail.com>,
-        "Joel.Schopp@amd.com" <Joel.Schopp@amd.com>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
-        "lea.yan@linaro.org" <lea.yan@linaro.org>,
-        "jorge.ramirez-ortiz@linaro.org" <jorge.ramirez-ortiz@linaro.org>,
-        "lee.jones@linaro.org" <lee.jones@linaro.org>,
-        "orsonzhai@gmail.com" <orsonzhai@gmail.com>,
-        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
-        "zhizhou.zhang@spreadtrum.com" <zhizhou.zhang@spreadtrum.com>,
-        "lanqing.liu@spreadtrum.com" <lanqing.liu@spreadtrum.com>,
-        "zhang.lyra@gmail.com" <zhang.lyra@gmail.com>,
-        "wei.qiao@spreadtrum.com" <wei.qiao@spreadtrum.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
-Subject: Re: [PATCH v5 3/5] arm64: dts: Add support for Spreadtrum SC9836 SoC
- in dts and Makefile
-Message-ID: <20150116103558.GD21809@leverpostej>
-References: <sc9836-v5>
- <1421402411-3479-1-git-send-email-chunyan.zhang@spreadtrum.com>
- <1421402411-3479-4-git-send-email-chunyan.zhang@spreadtrum.com>
+	id S1754256AbbAPKwZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 05:52:25 -0500
+Received: from mail-bl2on0097.outbound.protection.outlook.com ([65.55.169.97]:14512
+	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751750AbbAPKwW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 05:52:22 -0500
+X-Greylist: delayed 903 seconds by postgrey-1.27 at vger.kernel.org; Fri, 16 Jan 2015 05:52:22 EST
+Date: Fri, 16 Jan 2015 11:37:01 +0100
+From: Michal Simek <michal.simek@xilinx.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421402411-3479-4-git-send-email-chunyan.zhang@spreadtrum.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Michal Simek <michal.simek@xilinx.com>, <linux-kernel@vger.kernel.org>,
+        <monstr@monstr.eu>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        <linux-serial@vger.kernel.org>, Jiri Slaby <jslaby@suse.cz>,
+        Peter Hurley <peter@hurleysoftware.com>,
+        Alan Cox <alan@linux.intel.com>, Tony Lindgren <tony@atomide.com>,
+        Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
+        Yoshihiro YUNOMAE <yoshihiro.yunomae.ez@hitachi.com>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 2/2] tty: serial: 8250_core: Check that port->line is
+ >=0
+References: <3293c93689f5d8c684133a9d9952411a201609dc.1421333585.git.michal.simek@xilinx.com>
+ <d3a26f5ecd44e1415f213e6ee7f33005c1b23f4a.1421333585.git.michal.simek@xilinx.com>
+ <54B8D32E.5000805@linutronix.de>
+In-Reply-To: <54B8D32E.5000805@linutronix.de>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21256.003
+X-TM-AS-User-Approved-Sender: Yes
+Message-ID: <df5d7450de9f4382b1cb43791f69e25c@BL2FFO11FD013.protection.gbl>
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=pass (sender IP is 62.221.5.235)
+ smtp.mailfrom=michal.simek@xilinx.com; 
+X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(979002)(6009001)(438002)(479174004)(189002)(377454003)(51704005)(24454002)(164054003)(199003)(77096005)(2201001)(92726002)(2950100001)(108616004)(92566002)(19580395003)(106466001)(6806004)(104016003)(86362001)(65956001)(65806001)(87936001)(54356999)(76176999)(23746002)(74316001)(64706001)(83506001)(77156002)(62966003)(47776003)(50466002)(50986999)(46102003)(64126003)(65826006)(107986001)(24736002)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2FFO11HUB065;H:xir-pvapsmtpgw01;FPR:;SPF:Pass;MLV:ovrnspm;PTR:unknown-62-221-5-235.ipspace.xilinx.com;MX:1;A:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB065;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BL2FFO11HUB065;
+X-Forefront-PRVS: 04583CED1A
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB065;
+X-OriginatorOrg: xilinx.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 16 Jan 2015 10:37:16.8933
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: 657af505-d5df-48d0-8300-c31994686c5c
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=657af505-d5df-48d0-8300-c31994686c5c;Ip=[62.221.5.235]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BL2FFO11HUB065
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 16, 2015 at 10:00:09AM +0000, Chunyan Zhang wrote:
-> From: Zhizhou Zhang <zhizhou.zhang@spreadtrum.com>
+Hi,
+
+On 01/16/2015 10:00 AM, Sebastian Andrzej Siewior wrote:
+> On 01/15/2015 03:55 PM, Michal Simek wrote:
+>> This patch should be the part of:
+>> "tty: serial: 8250_core: use the ->line argument as a hint in
+>> serial8250_find_match_or_unused()"
+>> (sha1: 59b3e898ddfc81a65975043b5eb44103cc29ff6e)
+>>
+>> port->line can be setup by DT driver to -1 which needs to
+>> be also checked.
 > 
-> Adds the device tree support for Spreadtrum SC9836 SoC which is based on
-> Sharkl64 platform.
+> This is what I have in 8250_omap to make sure it does not get < 0:
 > 
-> Sharkl64 platform contains the common nodes of Spreadtrum's arm64-based SoCs.
+>          if (pdev->dev.of_node) {
+>                  ret = of_alias_get_id(pdev->dev.of_node, "serial");
 > 
-> Signed-off-by: Zhizhou Zhang <zhizhou.zhang@spreadtrum.com>
-> Signed-off-by: Orson Zhai <orson.zhai@spreadtrum.com>
-> Signed-off-by: Chunyan Zhang <chunyan.zhang@spreadtrum.com>
-> ---
->  arch/arm64/boot/dts/Makefile                  |    1 +
->  arch/arm64/boot/dts/sprd/Makefile             |    5 ++
->  arch/arm64/boot/dts/sprd/sc9836-openphone.dts |   49 +++++++++++++++++
->  arch/arm64/boot/dts/sprd/sc9836.dtsi          |   73 +++++++++++++++++++++++++
->  arch/arm64/boot/dts/sprd/sharkl64.dtsi        |   67 +++++++++++++++++++++++
->  5 files changed, 195 insertions(+)
->  create mode 100644 arch/arm64/boot/dts/sprd/Makefile
->  create mode 100644 arch/arm64/boot/dts/sprd/sc9836-openphone.dts
->  create mode 100644 arch/arm64/boot/dts/sprd/sc9836.dtsi
->  create mode 100644 arch/arm64/boot/dts/sprd/sharkl64.dtsi
+>                  of_property_read_u32(pdev->dev.of_node, "clock-frequency",
+>                                       &up.port.uartclk);
+>                  priv->wakeirq = irq_of_parse_and_map(pdev->dev.of_node, 1);
+>          } else {
+>                  ret = pdev->id;
+>          }
+>          if (ret < 0) {
+>                  dev_err(&pdev->dev, "failed to get alias/pdev id\n");
+>                  return ret;
+>          }
+>          up.port.line = ret;
+> 
+> but I didn't think of that others might pass < 0 since it wasn't used
+> before.
+> Does the original patch (you noted) break anything as of now? Because
+> then this patch should go stable.
 
-[...]
+Origin patch looks good to me but this checking will be good to add.
+Are you using of_serial.c because I didn't find any of_alias_get_id call
+for 8250?
 
-> +	cpus {
-> +		#address-cells = <2>;
-> +		#size-cells = <0>;
-> +
-> +		cpu@0 {
-> +			device_type = "cpu";
-> +			compatible = "arm,cortex-a53", "arm,armv8";
-> +			reg = <0x0 0x0>;
-> +			enable-method = "psci";
-> +		};
-> +
-> +		cpu@1 {
-> +			device_type = "cpu";
-> +			compatible = "arm,cortex-a53", "arm,armv8";
-> +			reg = <0x0 0x1>;
-> +			enable-method = "psci";
-> +		};
-> +
-> +		cpu@2 {
-> +			device_type = "cpu";
-> +			compatible = "arm,cortex-a53", "arm,armv8";
-> +			reg = <0x0 0x2>;
-> +			enable-method = "psci";
-> +		};
-> +
-> +		cpu@3 {
-> +			device_type = "cpu";
-> +			compatible = "arm,cortex-a53", "arm,armv8";
-> +			reg = <0x0 0x3>;
-> +			enable-method = "psci";
-> +		};
-> +	};
-
-Just to check, all CPUs may be hotplugged off and on, yes?
-
-Including CPU0?
-
-How is your implementation tested?
-
-You boot CPUs at EL2?
-
-> +
-> +	gic: interrupt-controller@12001000 {
-> +		compatible = "arm,gic-400";
-> +		#interrupt-cells = <3>;
-> +		interrupt-controller;
-> +		reg = <0 0x12001000 0 0x1000>,
-> +		      <0 0x12002000 0 0x2000>,
-> +		      <0 0x12004000 0 0x2000>,
-> +		      <0 0x12006000 0 0x2000>;
-> +	};
-
-You're missing the maintenance interrupt here.
-
-[...]
-
-> diff --git a/arch/arm64/boot/dts/sprd/sharkl64.dtsi b/arch/arm64/boot/dts/sprd/sharkl64.dtsi
-> new file mode 100644
-> index 0000000..b08989d
-> --- /dev/null
-> +++ b/arch/arm64/boot/dts/sprd/sharkl64.dtsi
-> @@ -0,0 +1,67 @@
-> +/*
-> + * Spreadtrum Sharkl64 platform DTS file
-> + *
-> + * Copyright (C) 2014, Spreadtrum Communications Inc.
-> + *
-> + * This file is licensed under a dual GPLv2 or X11 license.
-> + */
-> +
-> +/ {
-> +	interrupt-parent = <&gic>;
-> +	#address-cells = <2>;
-> +	#size-cells = <2>;
-> +
-> +	soc {
-> +		compatible = "simple-bus";
-> +		reg = <0x0 0x0 0x0 0x80000000>;
-
-What is this reg for? It's not required by simple-bus.
-
-If you want to encode that this covers a particular portion of the
-address space, do so with the ranges proeprty.
-
-> +		#address-cells = <2>;
-> +		#size-cells = <2>;
-> +		ranges;
-> +
-> +		ap_apb: apb@70000000 {
-> +			compatible = "simple-bus";
-> +			reg = <0x0 0x70000000 0x0 0x10000000>;
-
-Likewise here.
+Your logic here is a little bit different than I have in my tree.
+(Some sort of pl011 solution). You don't need to failed if you port.line is
+below 0 but if you are not able to read aliases port enumeration
+may be unpredictable.
 
 Thanks,
-Mark.
+Michal
+
+
+
+
