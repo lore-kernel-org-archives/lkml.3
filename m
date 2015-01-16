@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754571AbbAPUW0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 15:22:26 -0500
-Received: from mail-qa0-f53.google.com ([209.85.216.53]:62631 "EHLO
-	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751925AbbAPUWY (ORCPT
+	id S1755899AbbAPUYH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 15:24:07 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:46850 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751886AbbAPUYG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 15:22:24 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jiri Slaby <jslaby@suse.cz>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>
-Subject: [PATCH] pty: Fix overlimit memory use
-Date: Fri, 16 Jan 2015 15:22:14 -0500
-Message-Id: <1421439734-17335-1-git-send-email-peter@hurleysoftware.com>
-X-Mailer: git-send-email 2.2.2
+	Fri, 16 Jan 2015 15:24:06 -0500
+Date: Fri, 16 Jan 2015 12:24:04 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>, linux-kernel@vger.kernel.org
+Subject: Re: Issue with 'lib/vsprintf.c: don't try to fix pointer
+ wrap-around'
+Message-Id: <20150116122404.e82eb86b5c46afdd0d00df1d@linux-foundation.org>
+In-Reply-To: <20150116162357.GA10859@phnom.home.cmpxchg.org>
+References: <20150116162357.GA10859@phnom.home.cmpxchg.org>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pty_space() computation is broken; the space already consumed
-in the tty buffer is not accounted for.
+On Fri, 16 Jan 2015 11:23:57 -0500 Johannes Weiner <hannes@cmpxchg.org> wrote:
 
-Use tty_buffer_set_limit(), which enforces the limit automatically.
+> Hi Rasmus,
+> 
+> I have trouble booting my test machine with this patch in -mm:
+> 
+> commit bb2e066c6943e62e9650bb129f416dacf138f8b1
+> Author: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+> Date:   Wed Jan 14 01:00:44 2015 +0000
+> 
+>     lib/vsprintf.c: don't try to fix pointer wrap-around
+>     
+>     Actual kernel buffers can't wrap into the user address space.  If someone
+>     manages to pass a buf/size combination that wraps, it is most likely due
+>     to a bug in the caller.  Instead of trying to fix it by using a smaller
+>     part of the buffer, bail out.
+>     
+>     Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+>     Cc: Jiri Kosina <jkosina@suse.cz>
+>     Cc: Randy Dunlap <rdunlap@infradead.org>
+>     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> 
+> After I get "Loading bzImage-new... ok" from the bootloader, the
+> serial console remains quiet.
+> 
+> A WARN_ON_ONCE() inside vsnprintf() looks like it would deadlock
+> instantly when triggering this overflow from printk(), no?
 
-Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
----
- drivers/tty/pty.c | 17 +++--------------
- 1 file changed, 3 insertions(+), 14 deletions(-)
+Dammit, I was starting at that printk, ended up deciding it was OK,
+didn't think about deadlocks.  logbuf_lock and recursion_bug, for a
+start...
 
-diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
-index a9d256d..2cf2567 100644
---- a/drivers/tty/pty.c
-+++ b/drivers/tty/pty.c
-@@ -88,19 +88,6 @@ static void pty_unthrottle(struct tty_struct *tty)
- }
- 
- /**
-- *	pty_space	-	report space left for writing
-- *	@to: tty we are writing into
-- *
-- *	Limit the buffer space used by ptys to 8k.
-- */
--
--static int pty_space(struct tty_struct *to)
--{
--	int n = tty_buffer_space_avail(to->port);
--	return min(n, 8192);
--}
--
--/**
-  *	pty_write		-	write to a pty
-  *	@tty: the tty we write from
-  *	@buf: kernel buffer of data
-@@ -141,7 +128,7 @@ static int pty_write_room(struct tty_struct *tty)
- {
- 	if (tty->stopped)
- 		return 0;
--	return pty_space(tty->link);
-+	return tty_buffer_space_avail(tty->link->port);
- }
- 
- /**
-@@ -429,6 +416,8 @@ static int pty_common_install(struct tty_driver *driver, struct tty_struct *tty,
- 	o_tty->link = tty;
- 	tty_port_init(ports[0]);
- 	tty_port_init(ports[1]);
-+	tty_buffer_set_limit(ports[0], 8192);
-+	tty_buffer_set_limit(ports[1], 8192);
- 	o_tty->port = ports[0];
- 	tty->port = ports[1];
- 	o_tty->port->itty = o_tty;
--- 
-2.2.2
+I'll drop the patch.  I assume all this means that your machine is
+trying to trigger that warning condition?  I wonder what the call
+site is.
 
