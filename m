@@ -1,69 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756904AbbAPTmD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 14:42:03 -0500
-Received: from mga02.intel.com ([134.134.136.20]:46129 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755480AbbAPTmA convert rfc822-to-8bit (ORCPT
+	id S1756873AbbAPTpF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 14:45:05 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:40445 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753904AbbAPTpB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 14:42:00 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,412,1418112000"; 
-   d="scan'208";a="671232757"
-From: "Vick, Matthew" <matthew.vick@intel.com>
-To: Xander Huff <xander.huff@ni.com>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>,
-        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
-        "Allan, Bruce W" <bruce.w.allan@intel.com>,
-        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
-        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
-        "Rose, Gregory V" <gregory.v.rose@intel.com>,
-        "Ronciak, John" <john.ronciak@intel.com>,
-        "Williams, Mitch A" <mitch.a.williams@intel.com>
-CC: Linux NICS <Linux-nics@isotope.jf.intel.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jeff.westfahl@ni.com" <jeff.westfahl@ni.com>,
-        "Fujinaka, Todd" <todd.fujinaka@intel.com>
-Subject: Re: [PATCH RESEND] igb: Reset TXPBSIZE to default value
-Thread-Topic: [PATCH RESEND] igb: Reset TXPBSIZE to default value
-Thread-Index: AQHQMb7Od3J6scTQL0GR9X8HxaM9MZzDJX0A
-Date: Fri, 16 Jan 2015 19:41:59 +0000
-Message-ID: <D0DEA929.671EB%matthew.vick@intel.com>
-References: <1421434779-20586-1-git-send-email-xander.huff@ni.com>
-In-Reply-To: <1421434779-20586-1-git-send-email-xander.huff@ni.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-user-agent: Microsoft-MacOutlook/14.4.7.141117
-x-originating-ip: [10.166.14.15]
-Content-Type: text/plain; charset="us-ascii"
-Content-ID: <2815939F00305243919A51C2BD802613@intel.com>
-Content-Transfer-Encoding: 8BIT
+	Fri, 16 Jan 2015 14:45:01 -0500
+Date: Fri, 16 Jan 2015 19:44:00 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Hans de Goede <hdegoede@redhat.com>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org
+Message-ID: <20150116194400.GK3856@sirena.org.uk>
+References: <1421330978-9694-1-git-send-email-gregory.clement@free-electrons.com>
+ <1421330978-9694-5-git-send-email-gregory.clement@free-electrons.com>
+ <54B8C933.7020502@redhat.com>
+ <54B8D97B.3090908@free-electrons.com>
+ <54B8E38A.6020709@redhat.com>
+ <20150116123705.GM3043@sirena.org.uk>
+ <54B91FB4.5080707@free-electrons.com>
+ <20150116153451.GA3856@sirena.org.uk>
+ <54B962E0.9060504@redhat.com>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="ee6FjwWxuMujAVRe"
+Content-Disposition: inline
+In-Reply-To: <54B962E0.9060504@redhat.com>
+X-Cookie: I've Been Moved!
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v4 4/4] ARM: mvebu: Armada 385 GP: Add regulators to the
+ SATA port
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/16/15, 10:59 AM, "Xander Huff" <xander.huff@ni.com> wrote:
 
->From: Jeff Westfahl <jeff.westfahl@ni.com>
->
->The TXPBSIZE register of the i210 resets to its default value only
->at power-on. It doesn't reset if you reboot the system, only if you
->pull power. If something (another driver, another OS, etc.) modifies
->this register from its default value, the igb driver doesn't function
->correctly. It detects a hang of the transmitter and continuously resets
->the adapter. Here we set this value to its default when resetting the
->i210 to resolve this issue.
+--ee6FjwWxuMujAVRe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-This should have already been resolved last May in commit
-27dff8b2f680ce966b5d959be9d69dd0edd92e3b ("igb: add defaults for i210
-TX/RX PBSIZE"). Are you running the latest upstream kernel?
+On Fri, Jan 16, 2015 at 08:13:36PM +0100, Hans de Goede wrote:
+> On 16-01-15 16:34, Mark Brown wrote:
 
-Cheers,
-Matthew
+> >>As pointed by Hans my concern here was be sure that during boot the disk
+> >>are not power off. In this case which property would be accurate?
 
+> >None, the core won't do anything with the regulator until the end of
+> >init anyway.
+
+> That us simply not true, see my other mail gpio enabled regulators will
+> be turned off *at register time* unless they have regulator-boot-on set.
+
+That's not the core, that's the specific driver (which I didn't know
+this board happened to be using).
+
+--ee6FjwWxuMujAVRe
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBCAAGBQJUuWoAAAoJECTWi3JdVIfQFFEH/izR/KnypACxdtv6a63svd6L
+KPE+tH6FoKUos0h/U6kD6XU4HlNKrnP5HTteU0hJAnLsrJU7BYmtRzin8mXKwEyw
+NQX9ab1S6xLcJv/kKfwgbX/SFGCvhD1S1GiL2acs6TqkolLBziB5/pWcqLDzi8cv
+ykhD3Vd5j5TXnKP2JDKRXRaK+F0/Q/ob/2hhfX8b70+sWze4E677S0UhRn89NDAA
+NY8viI2JhVFbhQrdGoT0sR3xKhNO/ZBihtDcU3eFSQx7BquOAkoWJc8JTspmqgMS
+eYUy7FjZYnGgcSVygsF3lsrvHa9pyOiApFVjmln5eQO0GB6pKxYuoE/VgteJzo8=
+=eodk
+-----END PGP SIGNATURE-----
+
+--ee6FjwWxuMujAVRe--
