@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754762AbbAPCW3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 21:22:29 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44418 "EHLO mx1.redhat.com"
+	id S932131AbbAPCXD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 21:23:03 -0500
+Received: from ozlabs.org ([103.22.144.67]:54299 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753948AbbAPCW2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 21:22:28 -0500
-Message-ID: <54B875D3.30204@redhat.com>
-Date: Thu, 15 Jan 2015 21:22:11 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1754919AbbAPCXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 21:23:00 -0500
+Date: Fri, 16 Jan 2015 13:22:53 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+Subject: linux-next: build failure after merge of the i2c tree
+Message-ID: <20150116132253.1c5f7a8d@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Suresh Siddha <sbsiddha@gmail.com>
-CC: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        matt.fleming@intel.com, bp@suse.de, pbonzini@redhat.com,
-        tglx@linutronix.de, luto@amacapital.net
-Subject: Re: [PATCH 1/3] x86, fpu: introduce per-cpu "bool in_kernel_fpu"
-References: <1421012793-30106-1-git-send-email-riel@redhat.com> <20150115191918.GA27332@redhat.com> <20150115191943.GB27332@redhat.com>
-In-Reply-To: <20150115191943.GB27332@redhat.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/jGvSC2bZ6OcEPUT28vnmVe3"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+--Sig_/jGvSC2bZ6OcEPUT28vnmVe3
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-On 01/15/2015 02:19 PM, Oleg Nesterov wrote:
-> interrupted_kernel_fpu_idle() tries to detect if
-> kernel_fpu_begin() is safe or not. In particular it should
-> obviously deny the nested kernel_fpu_begin() and this logic looks
-> very confusing.
-> 
-> If use_eager_fpu() == T we rely on a) __thread_has_fpu() check in 
-> interrupted_kernel_fpu_idle(), and b) on the fact that _begin()
-> does __thread_clear_has_fpu().
-> 
-> Otherwise we demand that the interrupted task has no FPU if it is
-> in kernel mode, this works because __kernel_fpu_begin() does clts()
-> and interrupted_kernel_fpu_idle() checks X86_CR0_TS.
-> 
-> Add the per-cpu "bool in_kernel_fpu" variable, and change this
-> code to check/set/clear it. This allows to do more cleanups and
-> fixes, see the next changes.
-> 
-> The patch also moves WARN_ON_ONCE() under preempt_disable() just
-> to make this_cpu_read() look better, this is not really needed. And
-> in fact I think we should move it into __kernel_fpu_begin().
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Hi Wolfram,
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+After merging the i2c tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
+
+drivers/i2c/i2c-core.c: In function 'i2c_unregister_device':
+drivers/i2c/i2c-core.c:1016:3: error: implicit declaration of function 'of_=
+node_clear_flag' [-Werror=3Dimplicit-function-declaration]
+   of_node_clear_flag(client->dev.of_node, OF_POPULATED);
+   ^
+drivers/i2c/i2c-core.c:1016:43: error: 'OF_POPULATED' undeclared (first use=
+ in this function)
+   of_node_clear_flag(client->dev.of_node, OF_POPULATED);
+                                           ^
+
+Caused by commit d5285c36e6d2 ("i2c: Mark instantiated device nodes
+with OF_POPULATE").
+
+I have used the version of the i2c tree from next-20150115 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
 
-- -- 
-All rights reversed
+--Sig_/jGvSC2bZ6OcEPUT28vnmVe3
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Version: GnuPG v2
 
-iQEcBAEBAgAGBQJUuHXTAAoJEM553pKExN6Di2kIAL4HZ8qbOhHOaNKBvAA7uvdj
-3uFZcDdgoviKKT5yi4Q/49+AvXulKVxLuwpZoZXy74wID2J2AQ1bEiVkUKXhhbrl
-4FKW412VAD61fsAXvGp4n3l++ITTfjX4rL0hk6ntJlegqnI3l2sEYIWGa+Hnlh7e
-nTabtEOl3Ib1rkIKlR+6wVgogTzzLxLboGKY0aHHqYZmhlbGzWvnJ04PkgWPGFND
-9rQWz/+ZhbBgpeQRQSW8syluswcs/gQah3BygIRnPFW500zDQzihxjssDSd7/X2Z
-3lYq+TCWab8EGSpc4kOqgq+LU8nXxggP9nIA7LplqgpnIdAyg4YrxLvyWL5Y2Ys=
-=t5LD
+iQIcBAEBCAAGBQJUuHYCAAoJEMDTa8Ir7ZwVYEQP/3ZUsJJYPQxxZjGxaAWxjHSV
+SX8+gDIb66cr5C4lC9tKSMpgWmi6OCZJtuS3TmSeQQZS2WKsgklPvAfJhF71qJoH
+MtKwQBnPZgruDJZOK6b38tgwujf/XOfZW9Y7qFbAKYEq49A0FyzNRbaFZRvcCa+6
+KccEZ8ii/shexfvFUXyZKhVjVyIMQYjcnvJYyPJkH3ydCsZXhasOL+2iVAZPJAF/
+s47OJanquDPUJZlMQpJkGQhiQaXAXCdSdPQRYG4tlO07NpGbYDRauCfooyPXW/iK
+ay1kND4yseLya7/Ni0yMoif++L7T+L3u+wUSBwWONNVcsJaCrLmN3Kjj10QMbGh9
+LieDNwJVUvSzXdgmb8PfG11IBj3954hKvq838i4k4wIMooW+pV8mRnfrmQdiuhKY
+edugd1U8NWcQMfmaqstWKdDSdWEipiRAnMwfzh16wnS+XHZrnnJ3lOp4rKFab1rB
+ewbh94Ijd9R2jTic++sT+c5vFPWw746UR2QWTK511MwY2y9o/XJ4qEFkb3/5qvFI
+TcK0DV8yvdhGIAeElVv6isa3Zgpzhv043ripedrvbJVhpqv2dqGnZxMOzFUWqlJ0
+eUUTFt8YFqFS3lTchEqLPZX4g4eHLk2mYtrlOLrKzQ0ctcYNG2ctQPAsrOOB+5Vu
+INFFaKHsig7loez4aR+h
+=mPyV
 -----END PGP SIGNATURE-----
+
+--Sig_/jGvSC2bZ6OcEPUT28vnmVe3--
