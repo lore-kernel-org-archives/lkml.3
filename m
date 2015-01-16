@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755593AbbAPRqf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 12:46:35 -0500
-Received: from lists.s-osg.org ([54.187.51.154]:44910 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755203AbbAPRqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 12:46:32 -0500
-Message-ID: <54B94E75.8030504@osg.samsung.com>
-Date: Fri, 16 Jan 2015 10:46:29 -0700
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1756449AbbAPRsT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 12:48:19 -0500
+Received: from cdptpa-outbound-snat.email.rr.com ([107.14.166.226]:55212 "EHLO
+	cdptpa-oedge-vip.email.rr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752045AbbAPRsS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 12:48:18 -0500
+Date: Fri, 16 Jan 2015 12:48:11 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Wang Nan <wangnan0@huawei.com>
+Cc: linux@arm.linux.org.uk, mingo@redhat.com, x86@kernel.org,
+        masami.hiramatsu.pt@hitachi.com, anil.s.keshavamurthy@intel.com,
+        davem@davemloft.net, ananth@in.ibm.com, dave.long@linaro.org,
+        tixy@linaro.org, lizefan@huawei.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 00/11] Early kprobe: enable kprobes at very early
+Message-ID: <20150116174811.GA7817@home.goodmis.org>
+References: <1420616086-42692-1-git-send-email-wangnan0@huawei.com>
 MIME-Version: 1.0
-To: Michael Ellerman <mpe@ellerman.id.au>, linux-kernel@vger.kernel.org
-CC: mmarek@suse.cz, gregkh@linuxfoundation.org, akpm@linux-foundation.org,
-        rostedt@goodmis.org, mingo@redhat.com, davem@davemloft.net,
-        keescook@chromium.org, tranmanphong@gmail.com, cov@codeaurora.org,
-        dh.herrmann@gmail.com, hughd@google.com, bobby.prani@gmail.com,
-        serge.hallyn@ubuntu.com, ebiederm@xmission.com,
-        tim.bird@sonymobile.com, josh@joshtriplett.org, koct9i@gmail.com,
-        linux-kbuild@vger.kernel.org, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 2/6] selftests: Add install target
-References: <1420794375-31881-1-git-send-email-mpe@ellerman.id.au> <1420794375-31881-2-git-send-email-mpe@ellerman.id.au>
-In-Reply-To: <1420794375-31881-2-git-send-email-mpe@ellerman.id.au>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1420616086-42692-1-git-send-email-wangnan0@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-RR-Connecting-IP: 107.14.168.118:25
+X-Cloudmark-Score: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/09/2015 02:06 AM, Michael Ellerman wrote:
-> This adds make install support to selftests. The basic usage is:
+On Wed, Jan 07, 2015 at 03:34:46PM +0800, Wang Nan wrote:
 > 
-> $ cd tools/testing/selftests
-> $ make install
+> Patch 10 enables cmdline option 'ekprobe=', allows setup probe at
+> cmdline. However, currently the kprobe handler is only a simple printk.
 > 
-> That installs into tools/testing/selftests/install, which can then be
-> copied where ever necessary.
+> Patch 11 introduces required Kconfig options to actually enable early
+> kprobes.
 > 
-> The install destination is also configurable using eg:
+> Usage of early kprobe is as follow:
 > 
-> $ INSTALL_PATH=/mnt/selftests make install
+> Booting kernel with cmdline 'ekprobe=', like:
+> 
+> ... rdinit=/sbin/init ekprobe=0xc00f3c2c ekprobe=__free_pages ...
 
-Please see my response to [PATCH 4/6] kbuild: add a new
-kselftest_install make target to install selftests
+Perhaps you should specify what the probe will do. For now it is only printk.
+For example:
 
-These are addressed by the current approach to use existing
-INSTALL_MOD_PATH.
+  ekprobe=printk,__free_pages
+
+That is, here you are attaching a printk to __free_pages.
+
+Later, when you implement tracing, you could have:
+
+ ekprobe=trace,__free_pages
+
+where it will be sent to the ring buffer.
+
+This will maintain backward compatibility when you add new features. Instead
+of getting something like printk working now, and people use it for such,
+and then when you switch it over to tracing, it breaks the printk version.
+
+Also, if you plan on converting early kprobes to normal kprobes during boot,
+then it should just be kprobes=..., why add the 'e'. It being early is just
+an implementation detail, not something that should be expressed by the users
+of the facility.
+
+-- Steve
+
 
 > 
-> The implementation uses two targets in the child makefiles. The first
-> "install" is expected to install all files into $(INSTALL_PATH).
+> During boot, kernel will print trace using printk:
 > 
-> The second, "emit_tests", is expected to emit the test instructions (ie.
-> bash script) on stdout. Separating this from install means the child
-> makefiles need no knowledge of the location of the test script.
-
-Yes. Removing the need for individual makefiles to know the install
-path details would be a good improvement to make on top of my patch v4
-series.
-
-thanks,
--- Shuah
-
-
--- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Open Source Innovation Group
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+>  ...
+>  Hit early kprobe at __alloc_pages_nodemask+0x4
+>  Hit early kprobe at __free_pages+0x0
+>  Hit early kprobe at __alloc_pages_nodemask+0x4
+>  Hit early kprobe at __free_pages+0x0
+>  Hit early kprobe at __free_pages+0x0
+>  Hit early kprobe at __alloc_pages_nodemask+0x4
+>  ...
