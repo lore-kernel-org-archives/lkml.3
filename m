@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270AbbAPIH7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 03:07:59 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59544 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752097AbbAPIHz (ORCPT
+	id S1753391AbbAPIIM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 03:08:12 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:39428 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752097AbbAPIIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 03:07:55 -0500
-Date: Fri, 16 Jan 2015 00:07:41 -0800
-From: tip-bot for Alexander Kuleshov <tipbot@zytor.com>
-Message-ID: <tip-b34630014dad0ba69aadd8deb231ddc6d2efcf53@git.kernel.org>
-Cc: bp@suse.de, hpa@zytor.com, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, kuleshovmail@gmail.com
-Reply-To: linux-kernel@vger.kernel.org, mingo@kernel.org, tglx@linutronix.de,
-        bp@suse.de, hpa@zytor.com, kuleshovmail@gmail.com
-In-Reply-To: <1420009958-4803-1-git-send-email-kuleshovmail@gmail.com>
-References: <1420009958-4803-1-git-send-email-kuleshovmail@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cleanups] x86, early_serial_console:
-  Remove unnecessary check
-Git-Commit-ID: b34630014dad0ba69aadd8deb231ddc6d2efcf53
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 16 Jan 2015 03:08:10 -0500
+Date: Fri, 16 Jan 2015 00:08:05 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Mark Brown <broonie@kernel.org>
+Cc: Geert Uytterhoeven <geert+renesas@glider.be>,
+        Grant Likely <grant.likely@linaro.org>, linux-spi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] spi: of: do not try load modules for of-registered devices
+Message-ID: <20150116080805.GA8206@dtor-ws>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b34630014dad0ba69aadd8deb231ddc6d2efcf53
-Gitweb:     http://git.kernel.org/tip/b34630014dad0ba69aadd8deb231ddc6d2efcf53
-Author:     Alexander Kuleshov <kuleshovmail@gmail.com>
-AuthorDate: Wed, 31 Dec 2014 13:12:38 +0600
-Committer:  Borislav Petkov <bp@suse.de>
-CommitDate: Tue, 13 Jan 2015 12:14:44 +0100
+Trying to register an SPI device asynchronously (via async_schedule() call)
+results in an ugly warning from request_module() warning about potential
+deadlock (because request_module tries to wait for async works to
+complete). While we could try to switch to request_module_nowait(), other
+buses, as well as SPI itself when not using device tree, do not try to load
+modules, but rather rely on the standard infrastructure (udev) to execute
+module loading, and we should be doing the same.
 
-x86, early_serial_console: Remove unnecessary check
-
-We do this check already a couple of lines up.
-
-Signed-off-by: Alexander Kuleshov <kuleshovmail@gmail.com>
-Link: http://lkml.kernel.org/r/1420009958-4803-1-git-send-email-kuleshovmail@gmail.com
-Signed-off-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 ---
- arch/x86/boot/early_serial_console.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/spi/spi.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/arch/x86/boot/early_serial_console.c b/arch/x86/boot/early_serial_console.c
-index 790586d..45a0768 100644
---- a/arch/x86/boot/early_serial_console.c
-+++ b/arch/x86/boot/early_serial_console.c
-@@ -72,8 +72,8 @@ static void parse_earlyprintk(void)
- 			static const int bases[] = { 0x3f8, 0x2f8 };
- 			int idx = 0;
+diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+index 66a70e9..e1b15d5 100644
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -20,7 +20,6 @@
+  */
  
--			if (!strncmp(arg + pos, "ttyS", 4))
--				pos += 4;
-+			/* += strlen("ttyS"); */
-+			pos += 4;
+ #include <linux/kernel.h>
+-#include <linux/kmod.h>
+ #include <linux/device.h>
+ #include <linux/init.h>
+ #include <linux/cache.h>
+@@ -1320,7 +1319,6 @@ of_register_spi_device(struct spi_master *master, struct device_node *nc)
+ 	spi->dev.of_node = nc;
  
- 			if (arg[pos++] == '1')
- 				idx = 1;
+ 	/* Register the new device */
+-	request_module("%s%s", SPI_MODULE_PREFIX, spi->modalias);
+ 	rc = spi_add_device(spi);
+ 	if (rc) {
+ 		dev_err(&master->dev, "spi_device register error %s\n",
+-- 
+2.2.0.rc0.207.ga3a616c
+
+
+-- 
+Dmitry
