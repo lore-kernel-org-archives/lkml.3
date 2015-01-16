@@ -1,231 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754896AbbAPUr5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 15:47:57 -0500
-Received: from mail.kernel.org ([198.145.29.136]:53126 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751581AbbAPUr4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 15:47:56 -0500
-Date: Fri, 16 Jan 2015 17:47:51 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Namhyung Kim <namhyung@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        David Ahern <dsahern@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: Re: [PATCH v3 1/3] perf tools: Add from argument to
- dso__find_symbol_by_name()
-Message-ID: <20150116204751.GC18698@kernel.org>
-References: <1421279302-7105-1-git-send-email-namhyung@kernel.org>
+	id S1756947AbbAPUyV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 15:54:21 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:51401 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753696AbbAPUyT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 15:54:19 -0500
+Message-ID: <54B97A72.2050205@gmail.com>
+Date: Fri, 16 Jan 2015 21:54:10 +0100
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421279302-7105-1-git-send-email-namhyung@kernel.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: mtk.manpages@gmail.com, "Carlos O'Donell" <carlos@redhat.com>,
+        Darren Hart <dvhart@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Jakub Jelinek <jakub@redhat.com>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Torvald Riegel <triegel@redhat.com>,
+        Roland McGrath <roland@redhat.com>, Darren Hart <dvhart@infradead.org>,
+        Anton Blanchard <anton@samba.org>, Petr Baudis <pasky@suse.cz>,
+        Eric Dumazet <edumazet@google.com>,
+        bill o gallmeister <bgallmeister@gmail.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Daniel Wagner <wagi@monom.org>,
+        Rich Felker <dalias@libc.org>
+Subject: Re: futex(2) man page update help request
+References: <537346E5.4050407@gmail.com> <CF98E3EF.90564%dvhart@linux.intel.com> <CAKgNAkh+PWzT2SByaLk_OtiAXeZSkWoMgu+ivDOt1dTWVtaatQ@mail.gmail.com> <5373D0CA.2050204@redhat.com> <alpine.DEB.2.02.1405150121230.6261@ionos.tec.linutronix.de> <CAKgNAkjQ5Dd_U9OojXdgeforpRevvPHNFAw99kBFPCwHgf7Ggg@mail.gmail.com> <alpine.DEB.2.02.1405151144390.6261@ionos.tec.linutronix.de> <54B7D87C.3090901@gmail.com> <alpine.DEB.2.11.1501152313330.5526@nanos> <54B92B71.2090509@gmail.com> <alpine.DEB.2.11.1501161618080.5526@nanos>
+In-Reply-To: <alpine.DEB.2.11.1501161618080.5526@nanos>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Jan 15, 2015 at 08:48:20AM +0900, Namhyung Kim escreveu:
-> When a dso contains multiple symbols which have same name, current
-> dso__find_symbol_by_name() only finds an one of them and there's no way
-> to get the all symbols without going through the rbtree.
+On 01/16/2015 04:20 PM, Thomas Gleixner wrote:
+> On Fri, 16 Jan 2015, Michael Kerrisk (man-pages) wrote:
 > 
-> So add the new 'from' argument to dso__find_symbol_by_name() to remember
-> current symbol position and returns next symbol if it provided.  For the
-> first call the from should be NULL and the returned symbol should be
-> used as from to the next call.  It will return NULL if there's no symbol
-> that has given name anymore.
-
-I had some issues with this patch that made me to split it into multiple
-ones and use a slightly different approach, I put those patches in a
-tmp.perf/urgent branch at my tree:
-
-https://git.kernel.org/cgit/linux/kernel/git/acme/linux.git/log/?h=tmp.perf/urgent
-
-I tested it with a ret probe for do_fork and it work well, thanks for
-fixing this up!
-
-See below for the issues:
- 
-> Signed-off-by: Namhyung Kim <namhyung@kernel.org>
-> ---
->  tools/perf/util/map.c    | 13 ++++++++++---
->  tools/perf/util/map.h    |  3 +++
->  tools/perf/util/symbol.c | 41 ++++++++++++++++++++++++++++++++++++-----
->  tools/perf/util/symbol.h |  2 +-
->  4 files changed, 50 insertions(+), 9 deletions(-)
+>> Hello Thomas,
+>>
+>> On 01/15/2015 11:23 PM, Thomas Gleixner wrote:
+>>> On Thu, 15 Jan 2015, Michael Kerrisk (man-pages) wrote:
+>>>>> [EINVAL] uaddr equal uaddr2. Requeue to same futex.
+>>>>
+>>>> ??? I added this, but does this error not occur only for PI requeues?
+>>>
+>>> It's equally wrong for normal futexes. And its actually the same code
+>>> checking for this for all variants.
+>>
+>> I don't understand "equally wrong" in your reply, I'm sorry. Do you
+>> mean:
+>>
+>> a) This error text should be there for both normal and PI requeues
 > 
-> diff --git a/tools/perf/util/map.c b/tools/perf/util/map.c
-> index 62ca9f2607d5..01e2696ca8b5 100644
-> --- a/tools/perf/util/map.c
-> +++ b/tools/perf/util/map.c
-> @@ -301,8 +301,9 @@ struct symbol *map__find_symbol(struct map *map, u64 addr,
->  	return dso__find_symbol(map->dso, map->type, addr);
->  }
->  
-> -struct symbol *map__find_symbol_by_name(struct map *map, const char *name,
-> -					symbol_filter_t filter)
-> +struct symbol *map__find_symbol_by_name_from(struct map *map, const char *name,
-> +					     symbol_filter_t filter,
-> +					     struct symbol *from)
->  {
->  	if (map__load(map, filter) < 0)
->  		return NULL;
-> @@ -310,7 +311,13 @@ struct symbol *map__find_symbol_by_name(struct map *map, const char *name,
->  	if (!dso__sorted_by_name(map->dso, map->type))
->  		dso__sort_by_name(map->dso, map->type);
->  
-> -	return dso__find_symbol_by_name(map->dso, map->type, name);
-> +	return dso__find_symbol_by_name(map->dso, map->type, name, from);
-> +}
-> +
-> +struct symbol *map__find_symbol_by_name(struct map *map, const char *name,
-> +					symbol_filter_t filter)
-> +{
-> +	return map__find_symbol_by_name_from(map, name, filter, NULL);
->  }
->  
->  struct map *map__clone(struct map *map)
-> diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-> index 6951a9d42339..69acc58e6f9a 100644
-> --- a/tools/perf/util/map.h
-> +++ b/tools/perf/util/map.h
-> @@ -138,6 +138,9 @@ struct symbol *map__find_symbol(struct map *map,
->  				u64 addr, symbol_filter_t filter);
->  struct symbol *map__find_symbol_by_name(struct map *map, const char *name,
->  					symbol_filter_t filter);
-> +struct symbol *map__find_symbol_by_name_from(struct map *map, const char *name,
-> +					     symbol_filter_t filter,
-> +					     struct symbol *from);
->  void map__fixup_start(struct map *map);
->  void map__fixup_end(struct map *map);
->  
-> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-> index c24c5b83156c..e5800497ca61 100644
-> --- a/tools/perf/util/symbol.c
-> +++ b/tools/perf/util/symbol.c
-> @@ -396,6 +396,7 @@ static struct symbol *symbols__find_by_name(struct rb_root *symbols,
->  					    const char *name)
->  {
->  	struct rb_node *n;
-> +	struct symbol_name_rb_node *s;
->  
->  	if (symbols == NULL)
->  		return NULL;
-> @@ -403,7 +404,6 @@ static struct symbol *symbols__find_by_name(struct rb_root *symbols,
->  	n = symbols->rb_node;
->  
->  	while (n) {
-> -		struct symbol_name_rb_node *s;
->  		int cmp;
->  
->  		s = rb_entry(n, struct symbol_name_rb_node, rb_node);
-> @@ -414,10 +414,24 @@ static struct symbol *symbols__find_by_name(struct rb_root *symbols,
->  		else if (cmp > 0)
->  			n = n->rb_right;
->  		else
-> -			return &s->sym;
-> +			break;
->  	}
->  
-> -	return NULL;
-> +	if (n == NULL)
-> +		return NULL;
-> +
-> +	/* return first symbol that has same name (if any) */
-> +	for (n = rb_prev(n); n; n = rb_prev(n)) {
-> +		struct symbol_name_rb_node *tmp;
-> +
-> +		tmp = rb_entry(n, struct symbol_name_rb_node, rb_node);
-> +		if (strcmp(tmp->sym.name, s->sym.name))
-> +			break;
-> +
-> +		s = tmp;
-> +	}
-> +
-> +	return &s->sym;
->  }
+> It is there for both. The requeue code has that check independent of
+> the requeue type (normal/pi). It never makes sense to requeue
+> something to itself whether normal or pi futex. We added this for PI,
+> because there it is harmful, but we did not special case it. So normal
+> futexes get the same treatment.
 
-Up to here we have a standalone patch, one that fixes
-symbols__find_by_name to return the first entry with the given symbol
-name, so I split it as-is and kept your authorship credit.
->  
->  struct symbol *dso__find_symbol(struct dso *dso,
-> @@ -436,10 +450,27 @@ struct symbol *dso__next_symbol(struct symbol *sym)
->  	return symbols__next(sym);
->  }
->  
-> +/*
-> + * When @from is NULL, returns first symbol that matched with @name.
-> + * Otherwise, returns next symbol after @from in case some (local) symbols
-> + * have same name, or NULL.
-> + */
->  struct symbol *dso__find_symbol_by_name(struct dso *dso, enum map_type type,
-> -					const char *name)
-> +					const char *name, struct symbol *from)
+Hello Thomas, 
 
+Color me stupid, but I can't see this in futex_requeue(). Where is that
+check that is "independent of the requeue type (normal/pi)"?
 
-Here I think this method should've been renamed
-dso__find_symbol_by_name_from(), to keep the semantic coherent, matching
-the map__find_symbol_by_name_from() counterpart.
+When I look through futex_requeue(), all the likely looking sources
+of EINVAL are governed by a check on the 'requeue_pi' argument.
 
-But then, since when from is !NULL, it is not about finding anything,
-instead it is about asking for the next entry in the sorted-by-name
-rbtree, so instead I introduced a symbol__next_by_name() that does just
-that.
+Thanks,
 
-The callers then will see if there is a next entry (sorted by name) and
-if that entry has the same name.
+Michael
 
-I.e. keeping the name "find_symbol_by_name" when there is no "find"
-operation being made is confusing.
-
-Then, after introducing it, I further introduced a
-map__for_each_symbol_with_name(map, sym_name, sym) that wraps it all up
-and provides all the symbols with a given name for the loop block in
-front of it.
-
-Also:
-
->  {
-> -	return symbols__find_by_name(&dso->symbol_names[type], name);
-> +	struct rb_node *n;
-> +	struct symbol_name_rb_node *s;
-> +
-> +	if (from == NULL)
-> +		return symbols__find_by_name(&dso->symbol_names[type], name);
-> +
-> +	s = container_of(from, struct symbol_name_rb_node, sym);
-> +	n = rb_prev(&s->rb_node);
-
-Why are you going backwards here? Since you above stated that
-"Otherwise, returns next symbol after @from".
-
-And since you, in symbols__find_by_name as well go on backwards
-(rb_prev), rightly, to find the first entry with a given name?
-
-> +	if (n == NULL)
-> +		return NULL;
-> +
-> +	s = rb_entry(n, struct symbol_name_rb_node, rb_node);
-> +	return strcmp(s->sym.name, name) ? NULL : &s->sym;
->  }
->  
->  void dso__sort_by_name(struct dso *dso, enum map_type type)
-> diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-> index 9d602e9c6f59..cd4f51d95bd0 100644
-> --- a/tools/perf/util/symbol.h
-> +++ b/tools/perf/util/symbol.h
-> @@ -230,7 +230,7 @@ int dso__load_kallsyms(struct dso *dso, const char *filename, struct map *map,
->  struct symbol *dso__find_symbol(struct dso *dso, enum map_type type,
->  				u64 addr);
->  struct symbol *dso__find_symbol_by_name(struct dso *dso, enum map_type type,
-> -					const char *name);
-> +					const char *name, struct symbol *from);
->  
->  struct symbol *dso__first_symbol(struct dso *dso, enum map_type type);
->  struct symbol *dso__next_symbol(struct symbol *sym);
-> -- 
-> 2.2.1
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
