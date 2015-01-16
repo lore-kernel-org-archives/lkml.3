@@ -1,106 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755599AbbAPBCw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 20:02:52 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:50023 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753283AbbAPBCv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 20:02:51 -0500
-Message-ID: <54B86334.9060507@hitachi.com>
-Date: Fri, 16 Jan 2015 10:02:44 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1755863AbbAPBHM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 20:07:12 -0500
+Received: from mga02.intel.com ([134.134.136.20]:1657 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752757AbbAPBHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 20:07:10 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,407,1418112000"; 
+   d="scan'208";a="670760166"
+Date: Fri, 16 Jan 2015 09:06:14 +0800
+From: kbuild test robot <fengguang.wu@intel.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: kbuild-all@01.org, Thierry Reding <thierry.reding@gmail.com>,
+        linux-pwm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] fix platform_no_drv_owner.cocci warnings
+Message-ID: <20150116010614.GA27751@waimea>
+References: <201501160912.S502Nlmz%fengguang.wu@intel.com>
 MIME-Version: 1.0
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Dave Hansen <dave.hansen@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        X86 ML <x86@kernel.org>
-Subject: Re: [PATCH 3.19 v4 2/2] x86: Enforce maximum instruction size in
- the instruction decoder
-References: <cover.1421183147.git.luto@amacapital.net> <6ceb805aba0291431f19f72d7f2e765f3a0a9fcf.1421183147.git.luto@amacapital.net> <54B7B49C.90003@hitachi.com> <CALCETrXG5wr+aT122O5YY=9TLGtXhJreXc5thFmVYgCj_J04bg@mail.gmail.com>
-In-Reply-To: <CALCETrXG5wr+aT122O5YY=9TLGtXhJreXc5thFmVYgCj_J04bg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201501160912.S502Nlmz%fengguang.wu@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: fengguang.wu@intel.com
+X-SA-Exim-Scanned: No (on bee); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2015/01/16 0:22), Andy Lutomirski wrote:
-> On Jan 15, 2015 4:37 AM, "Masami Hiramatsu"
-> <masami.hiramatsu.pt@hitachi.com> wrote:
->>
->> (2015/01/14 6:49), Andy Lutomirski wrote:
->>> x86 instructions cannot exceed 15 bytes, and the instruction decoder
->>> should enforce that.  Prior to 6ba48ff46f76, the instruction length
->>> limit was implicitly set to 16, which was an approximation of 15,
->>> but there is currently no limit at all.
->>>
->>> Fix the decoder to reject instructions that exceed 15 bytes.
->>> A subsequent patch (targetted for 3.20) will fix MAX_INSN_SIZE.
->>
->> Hmm, is there any problem to just change MAX_INSN_SIZE to 15?
-> 
-> I don't want to do that for 3.19.  It's kind of late.
-> 
->>
->>> Other than potentially confusing some of the decoder sanity checks,
->>> I'm not aware of any actual problems that omitting this check would
->>> cause.
->>>
->>> Fixes: 6ba48ff46f76 x86: Remove arbitrary instruction size limit in instruction decoder
->>> Signed-off-by: Andy Lutomirski <luto@amacapital.net>
->>> ---
->>>  arch/x86/lib/insn.c | 7 +++++++
->>>  1 file changed, 7 insertions(+)
->>>
->>> diff --git a/arch/x86/lib/insn.c b/arch/x86/lib/insn.c
->>> index 2480978b31cc..7b80745d2c5a 100644
->>> --- a/arch/x86/lib/insn.c
->>> +++ b/arch/x86/lib/insn.c
->>> @@ -52,6 +52,13 @@
->>>   */
->>>  void insn_init(struct insn *insn, const void *kaddr, int buf_len, int x86_64)
->>>  {
->>> +     /*
->>> +      * Instructions longer than 15 bytes are invalid even if the
->>> +      * input buffer is long enough to hold them.
->>> +      */
->>> +     if (buf_len > 15)
->>> +             buf_len = 15;
->>> +
->>
->> Without changing the MAX_INSN_SIZE, this looks very odd, since all other
->> code suppose that the max length of an instruction is 16 (MAX_INSN_SIZE)
->> except here.
-> 
-> I thought this was your suggestion.  Did I misunderstand?
+drivers/pwm/pwm-stmpe.c:99:3-8: No need to set .owner here. The core will do it.
 
-Yes, what I meant about "15" was the the "15" in the comment.
-So
+ Remove .owner field if calls are used which set it automatically
 
-+     /*
-+      * Instructions longer than MAX_INSN_SIZE bytes are invalid even if the
-+      * input buffer is long enough to hold them.
-+      */
-+     if (buf_len > MAX_INSN_SIZE)
-+             buf_len = MAX_INSN_SIZE;
+Generated by: scripts/coccinelle/api/platform_no_drv_owner.cocci
 
-is acceptable.
+Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+---
 
-> If you think the current code is okay for 3.19, I can fold the two
-> patches together and send for 3.20.
+ pwm-stmpe.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-If it does really cause a bug or a real problem, it must fix asap.
-If not, I'd like to fix this issue with changing MAX_INSN_SIZE to 15.
-
-Thank you,
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+--- a/drivers/pwm/pwm-stmpe.c
++++ b/drivers/pwm/pwm-stmpe.c
+@@ -96,7 +96,6 @@ static int stmpe_pwm_remove(struct platf
+ static struct platform_driver stmpe_pwm_driver = {
+ 	.driver = {
+ 		.name = "stmpe-pwm",
+-		.owner = THIS_MODULE,
+ 	},
+ 	.probe = stmpe_pwm_probe,
+ 	.remove = stmpe_pwm_remove,
