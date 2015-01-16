@@ -1,121 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753886AbbAPOps (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 09:45:48 -0500
-Received: from mail-bn1bon0116.outbound.protection.outlook.com ([157.56.111.116]:4768
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751312AbbAPOpq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 09:45:46 -0500
-X-WSS-ID: 0NI9YBY-08-UTE-02
-X-M-MSG: 
-Message-ID: <54B9240A.7060003@amd.com>
-Date: Fri, 16 Jan 2015 08:45:30 -0600
-From: Tom Lendacky <thomas.lendacky@amd.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Hanjun Guo <hanjun.guo@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Grant Likely <grant.likely@linaro.org>
-CC: Mark Rutland <Mark.Rutland@arm.com>,
-        linaro-acpi <linaro-acpi@lists.linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "Yijing Wang" <wangyijing@huawei.com>, Rob Herring <robh@kernel.org>,
-        "Lorenzo Pieralisi" <Lorenzo.Pieralisi@arm.com>,
-        Timur Tabi <timur@codeaurora.org>,
-        ACPI Devel Mailing List <linux-acpi@vger.kernel.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        "jcm@redhat.com" <jcm@redhat.com>, Mark Brown <broonie@kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, "Olof Johansson" <olof@lixom.net>
-Subject: Re: [PATCH v7 00/17] Introduce ACPI for ARM64 based on ACPI 5.1
-References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org>
- <CACxGe6v_BvCQqp8d=LaQ8HeaOU1Zh_HPpwFTdwOjHUbqXsnQ8g@mail.gmail.com>
- <20150115182346.GE2329@e104818-lin.cambridge.arm.com>
- <54B8BB24.2020408@linaro.org>
-In-Reply-To: <54B8BB24.2020408@linaro.org>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-X-Originating-IP: [10.180.168.240]
-Content-Transfer-Encoding: 8BIT
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=none (sender IP is 165.204.84.222)
- smtp.mailfrom=Thomas.Lendacky@amd.com; 
-X-Forefront-Antispam-Report: CIP:165.204.84.222;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(428002)(24454002)(377454003)(164054003)(199003)(189002)(51704005)(479174004)(65956001)(2950100001)(93886004)(68736005)(77096005)(64706001)(47776003)(65806001)(33656002)(23676002)(77156002)(62966003)(101416001)(87266999)(15975445007)(86362001)(50986999)(92566002)(46102003)(87936001)(59896002)(97736003)(105586002)(83506001)(54356999)(1720100001)(19580395003)(65816999)(76176999)(50466002)(106466001)(80316001)(64126003)(19580405001)(36756003);DIR:OUT;SFP:1102;SCL:1;SRVR:CO1PR02MB207;H:atltwp02.amd.com;FPR:;SPF:None;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-DmarcAction-Test: None
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:CO1PR02MB207;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:CO1PR02MB207;
-X-Forefront-PRVS: 04583CED1A
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CO1PR02MB207;
-X-OriginatorOrg: amd4.onmicrosoft.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 16 Jan 2015 14:45:37.9609
- (UTC)
-X-MS-Exchange-CrossTenant-Id: fde4dada-be84-483f-92cc-e026cbee8e96
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=fde4dada-be84-483f-92cc-e026cbee8e96;Ip=[165.204.84.222]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: CO1PR02MB207
+	id S1756274AbbAPOqB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 09:46:01 -0500
+Received: from mga14.intel.com ([192.55.52.115]:33644 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754838AbbAPOp7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 09:45:59 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,411,1418112000"; 
+   d="asc'?scan'208";a="513300989"
+Message-ID: <1421419558.2632.111.camel@jtkirshe-mobl>
+Subject: Re: [PATCHv2] ixgbe: Re-enable relaxed ordering as part of
+ init/restart sequence for non-DCA config
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: Sowmini Varadhan <sowmini.varadhan@oracle.com>
+Cc: jesse.brandeburg@intel.com, bruce.w.allan@intel.com,
+        carolyn.wyborny@intel.com, donald.c.skidmore@intel.com,
+        gregory.v.rose@intel.com, matthew.vick@intel.com,
+        john.ronciak@intel.com, mitch.a.williams@intel.com,
+        linux.nics@intel.com, e1000-devel@lists.sourceforge.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sparclinux@vger.kernel.org, emil.s.tantilov@intel.com
+Date: Fri, 16 Jan 2015 06:45:58 -0800
+In-Reply-To: <20150115010352.GK24238@oracle.com>
+References: <20150115010352.GK24238@oracle.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-3MiGRmuaAV6qzmqb4nyP"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2015 01:17 AM, Hanjun Guo wrote:
-> On 2015年01月16日 02:23, Catalin Marinas wrote:
->> Hi Grant,
->>
->> On Thu, Jan 15, 2015 at 04:26:20PM +0000, Grant Likely wrote:
->>> On Wed, Jan 14, 2015 at 3:04 PM, Hanjun Guo <hanjun.guo@linaro.org>
->>> wrote:
->>>> This is the v7 of ACPI core patches for ARM64 based on ACPI 5.1
->>>
->>> I'll get right to the point: Can we please have this series queued up
->>> for v3.20?
->>
->> Before you even ask for this, please look at the patches and realise
->> that there is a complete lack of Reviewed-by tags on the code (well,
->> apart from trivial Kconfig changes). In addition, the series touches on
->> other subsystems like clocksource, irqchip, acpi and I don't see any
->> acks from the corresponding maintainers. So even if I wanted to merge
->
-> For the ACPI part, Rafael already said that "Having looked at the
-> patches recently, I don't see any major problems in them from the ACPI
-> core perspective, so to me they are good to go." [1]
-> Is that kind of ack for this ?
->
-> Thanks
-> Hanjun
->
-> [1]:
-> http://lkml.iu.edu/hypermail/linux/kernel/1409.1/03363.html
->
 
-I have tested ACPI-enablement patches for the amd-xgbe/amd-xgbe-phy
-drivers that I'm about to submit upstream with the V7 patch series
-on the AMD Seattle server platform. There does not appear to be support
-for the _CCA attribute in this patch series. The amd-xgbe driver will
-setup the device domain and cache attributes based on the presence of
-this attribute, but it requires the arch support to assign the proper
-DMA operations in order for it to all work correctly.
+--=-3MiGRmuaAV6qzmqb4nyP
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Overriding the _CCA attribute in the driver, I was able to successfully
-test the driver and this patch series.
+On Wed, 2015-01-14 at 20:03 -0500, Sowmini Varadhan wrote:
+> Relaxed ordering is disabled by default at driver initialization
+> and re-enabled when DCA is used. The reason it is disabled  was
+> due to an issue on some chipsets (see comments in
+> ixgbe_update_tx_dca()).
+> But when DCA is not used, RO needs to be re-enabled, else we have
+> a serialization bottleneck on platforms like SPARC.
+>=20
+> This patch eliminates the bottleneck for ixgbe when DCA is not
+> configured.
+>=20
+> Signed-off-by: Sowmini Varadhan <sowmini.varadhan@oracle.com>
+> Cc: Emil Tantilov <emil.s.tantilov@intel.com>
+>=20
+> ---
+> v2: incoroporate comments from Emil Tantilov
+>=20
+>  drivers/net/ethernet/intel/ixgbe/ixgbe_82598.c  |   23
+> +++++++++++++++++++++++
+>  drivers/net/ethernet/intel/ixgbe/ixgbe_common.c |   20
+> ++++++++++++++++++++
+>  drivers/net/ethernet/intel/ixgbe/ixgbe_common.h |    1 +
+>  drivers/net/ethernet/intel/ixgbe/ixgbe_main.c   |   11 +++++++++++
+>  drivers/net/ethernet/intel/ixgbe/ixgbe_type.h   |    1 +
+>  drivers/net/ethernet/intel/ixgbe/ixgbe_x540.c   |    1 +
+>  6 files changed, 57 insertions(+), 0 deletions(-)
 
-Thanks,
-Tom
+Thanks Sowmini, I have added your patch to my queue.
 
+I know that Emil and others are looking into whether we can do this for
+all ixgbe silicon, so we may have a follow-on patch to the work you have
+done already to enable this for all devices.
 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+--=-3MiGRmuaAV6qzmqb4nyP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAABCgAGBQJUuSQmAAoJEOVv75VaS+3OhYMP/1suBFxAMFKUxRMOkNAciBTn
+hiPFFmyrsvJUnG4FEaNBNcjdZr41RKFMKEjasEyVyzcihEamxTZzK7YDRx5Z2qrc
+eezMzXP/73Oi4R7NiCU4ESmfX8pO8BAGg/r2SaCnLKuETcHzHFa5hPDK5mqphMAE
+rI0fPCIWGkVUaoFc3r6Gb7F/EW0rRlxwCP7Yj0u7gG8nNvl9RmuHDDQR+G+WK4Je
+iB4jriDmtNv4jQ2cOdBFyBWA9L8yVrNnBgKemtH8tOWcOXw5ZmxXFP5p8EaMm9yc
+v5/dGGx3mdwZwfHG8FqvDwCKZqtMknozNBe0GQqUF4TIQmhuHCPf0pefh9dyhiQH
+v/BLfRriik2bNO+L+gdLj8W7qRf/pX3+tDe3S44ohAonQTX1psmbK/UgczPLA5Dl
+yJgLTXrLlxv26ZBhuG6iHP+za6w77lwU1UHk+NfW12Lmbc+iVaQ/RSfLXrquKbTj
+i/i4o5EmPeENXG3cCGry6kLNRkuWRVslPGvi8Y9liZ4M0BKy3vsGl9l3cBpkgwJj
+EGbD9uB0v57Fp5PpbyavBikT9XypzZjThH+bJJmxDeL1cm3zO9jbbJ7Bd0Lz04Kj
+vCZgJl/DsS7+FwXjwFAz96u0/yB0X0xrvvgCOgssSq5KxyujzzVLVEbYteJwlyr/
+QNeqnXEmvRazVDaKtUn3
+=kP7P
+-----END PGP SIGNATURE-----
+
+--=-3MiGRmuaAV6qzmqb4nyP--
+
