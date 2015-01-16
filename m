@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849AbbAPIHV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 03:07:21 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:59525 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752736AbbAPIHQ (ORCPT
+	id S1753045AbbAPIHf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 03:07:35 -0500
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:51606 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751217AbbAPIH3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 03:07:16 -0500
-Date: Fri, 16 Jan 2015 00:07:04 -0800
-From: tip-bot for Alexander Kuleshov <tipbot@zytor.com>
-Message-ID: <tip-60b217a03b1156a22926ec0770c2aa08679ea769@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org, bp@suse.de,
-        kuleshovmail@gmail.com, tglx@linutronix.de
-Reply-To: linux-kernel@vger.kernel.org, mingo@kernel.org, hpa@zytor.com,
-        tglx@linutronix.de, bp@suse.de, kuleshovmail@gmail.com
-In-Reply-To: <1420267941-26390-1-git-send-email-kuleshovmail@gmail.com>
-References: <1420267941-26390-1-git-send-email-kuleshovmail@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cleanups] x86, setup:
-  Rename BOOT_ISDIGIT_H to BOOT_CTYPE_H
-Git-Commit-ID: 60b217a03b1156a22926ec0770c2aa08679ea769
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Fri, 16 Jan 2015 03:07:29 -0500
+Date: Fri, 16 Jan 2015 00:07:22 -0800
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Wolfram Sang <wsa@the-dreams.de>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] i2c: do not try to load modules for of-registered devices
+Message-ID: <20150116080722.GA7813@dtor-ws>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  60b217a03b1156a22926ec0770c2aa08679ea769
-Gitweb:     http://git.kernel.org/tip/60b217a03b1156a22926ec0770c2aa08679ea769
-Author:     Alexander Kuleshov <kuleshovmail@gmail.com>
-AuthorDate: Sat, 3 Jan 2015 12:52:21 +0600
-Committer:  Borislav Petkov <bp@suse.de>
-CommitDate: Tue, 13 Jan 2015 11:59:04 +0100
+Trying to register an I2C device asynchronously (via async_schedule() call)
+results in an ugly warning from request_module() warning about potential
+deadlock (because request_module tries to wait for async works to
+complete). While we could try to switch to request_module_nowait(), other
+buses, as well as I2C itself when not using device tree, do not try to load
+modules, but rather rely on the standard infrastructure (udev) to execute
+module loading, and we should be doing the same.
 
-x86, setup: Rename BOOT_ISDIGIT_H to BOOT_CTYPE_H
-
-arch/x86/boot/isdigit.h was renamed to arch/x86/boot/ctype.h in
-6238b47b5848 ("x86, setup: move isdigit.h to ctype.h, header files on top.")
-Adjust guards too.
-
-Signed-off-by: Alexander Kuleshov <kuleshovmail@gmail.com>
-Link: http://lkml.kernel.org/r/1420267941-26390-1-git-send-email-kuleshovmail@gmail.com
-Signed-off-by: Borislav Petkov <bp@suse.de>
+Signed-off-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 ---
- arch/x86/boot/ctype.h | 5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/i2c/i2c-core.c | 2 --
+ 1 file changed, 2 deletions(-)
 
-diff --git a/arch/x86/boot/ctype.h b/arch/x86/boot/ctype.h
-index 25e1340..020f137 100644
---- a/arch/x86/boot/ctype.h
-+++ b/arch/x86/boot/ctype.h
-@@ -1,6 +1,5 @@
--#ifndef BOOT_ISDIGIT_H
--
--#define BOOT_ISDIGIT_H
-+#ifndef BOOT_CTYPE_H
-+#define BOOT_CTYPE_H
+diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
+index 39d25a8..706caea 100644
+--- a/drivers/i2c/i2c-core.c
++++ b/drivers/i2c/i2c-core.c
+@@ -1419,8 +1419,6 @@ static struct i2c_client *of_i2c_register_device(struct i2c_adapter *adap,
+ 	if (of_get_property(node, "wakeup-source", NULL))
+ 		info.flags |= I2C_CLIENT_WAKE;
  
- static inline int isdigit(int ch)
- {
+-	request_module("%s%s", I2C_MODULE_PREFIX, info.type);
+-
+ 	result = i2c_new_device(adap, &info);
+ 	if (result == NULL) {
+ 		dev_err(&adap->dev, "of_i2c: Failure registering %s\n",
+-- 
+2.2.0.rc0.207.ga3a616c
+
+
+-- 
+Dmitry
