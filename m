@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754335AbbAPA2i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 19:28:38 -0500
-Received: from mail-ob0-f171.google.com ([209.85.214.171]:59723 "EHLO
-	mail-ob0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753998AbbAPA2g (ORCPT
+	id S1754157AbbAPAou (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 19:44:50 -0500
+Received: from mga01.intel.com ([192.55.52.88]:57784 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752082AbbAPAos convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 19:28:36 -0500
-Date: Thu, 15 Jan 2015 18:28:02 -0600
-From: Bjorn Helgaas <bhelgaas@google.com>
-To: Alex Williamson <alex.williamson@redhat.com>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/4] PCI: Reset exclusions
-Message-ID: <20150116002802.GE29776@google.com>
-References: <20141121180322.26669.65689.stgit@gimli.home>
+	Thu, 15 Jan 2015 19:44:48 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="441160135"
+From: "Zheng, Lv" <lv.zheng@intel.com>
+To: "Purdila, Octavian" <octavian.purdila@intel.com>
+CC: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        "Box, David E" <david.e.box@intel.com>,
+        "Moore, Robert" <robert.moore@intel.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Brown, Len" <len.brown@intel.com>
+Subject: About 2 ACPICA table patches
+Thread-Topic: About 2 ACPICA table patches
+Thread-Index: AdAxInxpvXNapHmAS86BpsqdPFELKA==
+Date: Fri, 16 Jan 2015 00:44:38 +0000
+Message-ID: <1AE640813FDE7649BE1B193DEA596E88026B7CAD@SHSMSX101.ccr.corp.intel.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141121180322.26669.65689.stgit@gimli.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Nov 21, 2014 at 11:24:02AM -0700, Alex Williamson wrote:
-> This is really 2 sets of 2 patches, but they both add bits to
-> dev_flags so are included together.
-> 
-> This fixes two problems we've seen with resets.  The first is for
-> devices that advertise a PM reset mechanism, but it doesn't appear to
-> do anything.  We add a quirk and flags bit to indicate the PM reset
-> mechanism isn't viable.  This happens on some AMD GPUs and causes
-> vfio-pci to assume the PM reset was successful when it really did
-> nothing and we should have escalated to a PCI bus reset.  Alex
-> Deucher confirms that PM reset isn't used by graphics drivers.  The
-> exclusion here is for users of pci_reset_function(), which mostly
-> only includes pci-sysfs and drivers like legacy KVM device assignment
-> and VFIO.
-> 
-> The second issue is a problem identified with an Atheros wifi chip
-> where in performing a bus reset of the device, we not only permanently
-> lose access to the device, but it introduces host stability issues if
-> we try to access it.  I've been unsuccessful in finding any way to
-> make the device behave or in finding anyone with access to hardware
-> documentation and errata for this device, so it seems like the most
-> appropriate path is to blacklist bus resets for topologies including
-> this device.  The second two patches add infrastructure and quirks to
-> do this.  Thanks,
-> 
-> Alex
-> 
-> ---
-> 
-> Alex Williamson (4):
->       PCI: quirk Atheros AR93xx to avoid bus reset
->       PCI: Allow device quirks to exclude bus reset
+Hi, Octavian
 
-I applied these two (above) to for-linus for v3.19, thanks.
+I noticed there are 2 patches you've sent to the community.
+But unfortunately I didn't find them in my mailbox.
+Let me comment you here.
 
->       PCI: quirk AMD/ATI VGA cards to avoid PM reset
->       PCI: Allow device quirks to exclude D3->D0 PM reset
-> 
-> 
->  drivers/pci/pci.c    |   42 +++++++++++++++++++++++++++++++++++++-----
->  drivers/pci/quirks.c |   35 +++++++++++++++++++++++++++++++++++
->  include/linux/pci.h  |    4 ++++
->  3 files changed, 76 insertions(+), 5 deletions(-)
+https://patchwork.kernel.org/patch/5501621/
+This patch seem to be correct.
+But Rafael should merge it directly via Linux because acpi_unload_table_id() is not in the ACPICA upstream.
+We expect the OSPMs to use acpi_unload_parent_table() instead.
+I have a divergences reduction series to achieve the transition.
+But they are pending for review for almost half a year.
+If you have an environment to test.
+Could you help to test this again?
+I can prepare the patchset for you.
+
+https://patchwork.kernel.org/patch/5501561/
+This patch is correct, I've put it in the 201501 ACPICA release materials for review:
+https://patchwork.kernel.org/patch/5501621/
+The patch can be found at:
+https://github.com/zetalog/acpica/commit/281ff873
+So if it is merged, you'll see it in the upstream after 201501 ACPICA release cycle.
+And hence Linux trees doesn't need to merge this patch directly.
+
+Thanks and best regards
+-Lv
