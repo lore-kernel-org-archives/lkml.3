@@ -1,237 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668AbbAPJt2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 04:49:28 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:35475 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751041AbbAPJtZ (ORCPT
+	id S1752016AbbAPJx4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 04:53:56 -0500
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:50407 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751567AbbAPJxw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 04:49:25 -0500
-Date: Fri, 16 Jan 2015 09:49:13 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Mark Rutland <Mark.Rutland@arm.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, "jcm@redhat.com" <jcm@redhat.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Mark Brown <broonie@kernel.org>,
-        Rob Herring <robh@kernel.org>, Robert Richter <rric@kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
-        Timur Tabi <timur@codeaurora.org>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        "wangyijing@huawei.com" <wangyijing@huawei.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+	Fri, 16 Jan 2015 04:53:52 -0500
+MIME-Version: 1.0
+In-Reply-To: <20150113161614.GF23940@pengutronix.de>
+References: <1415709535-31515-1-git-send-email-hongzhou.yang@mediatek.com>
+	<1415709535-31515-3-git-send-email-hongzhou.yang@mediatek.com>
+	<CACRpkdYSe_BH_qiHma2BA+c2otEi3wd0TBXy83t8vwrNL+3U2g@mail.gmail.com>
+	<20141127101830.GP30369@pengutronix.de>
+	<CACRpkdbMdJT6y-NL36RgQe0-CAFAVGqKiwY9+yFcwA7JDLmA+Q@mail.gmail.com>
+	<20141202135527.GM30369@pengutronix.de>
+	<CACRpkdZeRd+j7d_iRphruHRg8p3XjqWK8_HQzLH2PTZ_pqOrYA@mail.gmail.com>
+	<20150112122200.GC18908@pengutronix.de>
+	<CACRpkdYXrdiRWMV8YpxrSLe2rLEV-ZnX7=36w21zGquh==6WgA@mail.gmail.com>
+	<20150113161614.GF23940@pengutronix.de>
+Date: Fri, 16 Jan 2015 10:53:51 +0100
+Message-ID: <CACRpkdYRrs2=gNM1XGSh1cSo5Pvx6iNLt4HjL6gdTqGPWYSRDw@mail.gmail.com>
+Subject: Re: [PATCH v3 2/3] dt-bindings: Add pinctrl bindings for mt65xx/mt81xx.
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: Rob Herring <robh+dt@kernel.org>,
+        Hongzhou Yang <hongzhou.yang@mediatek.com>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        Sascha Hauer <kernel@pengutronix.de>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        "Joe.C" <yingjoe.chen@mediatek.com>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Vladimir Murzin <vladimir.murzin@arm.com>,
+        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
-Subject: Re: [PATCH v7 06/17] ARM64 / ACPI: Make PCI optional for ACPI on
- ARM64
-Message-ID: <20150116094913.GA13634@e104818-lin.cambridge.arm.com>
-References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org>
- <1421247905-3749-7-git-send-email-hanjun.guo@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421247905-3749-7-git-send-email-hanjun.guo@linaro.org>
-Thread-Topic: [PATCH v7 06/17] ARM64 / ACPI: Make PCI optional for ACPI on
- ARM64
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.23 (2014-03-12)
+        huang eddie <eddie.huang@mediatek.com>, dandan.he@mediatek.com,
+        alan.cheng@mediatek.com, toby.liu@mediatek.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 14, 2015 at 03:04:54PM +0000, Hanjun Guo wrote:
-> Since PCI is not required in ACPI spec and ARM can run without
-> it, introduce some stub functions to make PCI optional for ACPI,
-> and make ACPI core run without CONFIG_PCI on ARM64.
-> 
-> When PCI is enabled on ARM64, ACPI core will need some PCI functions
-> to make it functional, so introduce some empty functions here and
-> implement it later.
-> 
-> Since ACPI on X86 and IA64 depends on PCI and this patch only makes
-> PCI optional for ARM64, it will not break anything on X86 and IA64.
-> 
-> Tested-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
-> Tested-by: Yijing Wang <wangyijing@huawei.com>
-> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
+On Tue, Jan 13, 2015 at 5:16 PM, Sascha Hauer <s.hauer@pengutronix.de> wrote:
+> On Tue, Jan 13, 2015 at 11:05:22AM +0100, Linus Walleij wrote:
 
-Is this patch still required, now that we have PCI for arm64? I know the
-ACPI spec doesn't require PCI but do we expect any arm64 servers aimed
-at ACPI without PCIe?
+>> > You often talk about ambiguities. Could you give an example what
+>> > ambiguities you mean?
+>>
+>> What happened was this pins = ; arguments were sometimes
+>> strings and sometimes integers, that becomes strange to handle
+>> in code, ambiguous.
+>
+> I see. I like naming it 'pinmux' because that's what it is: pins and
+> mux settings. A plain 'pinno' suggests that it contains only pin mubers,
+> without mux setting. How about 'pin-no-mux'? We also could add an
+> explicit "pins-are-numbered" property instead of distinguishing this
+> by property names.
 
-Anyway, that's not the main point, see more below.
+I kind of like this "pins-are-numbered" thing.
 
-> diff --git a/arch/arm64/include/asm/pci.h b/arch/arm64/include/asm/pci.h
-> index 872ba93..fded096 100644
-> --- a/arch/arm64/include/asm/pci.h
-> +++ b/arch/arm64/include/asm/pci.h
-> @@ -24,6 +24,12 @@
->   */
->  #define PCI_DMA_BUS_IS_PHYS	(0)
->  
-> +static inline int pci_get_legacy_ide_irq(struct pci_dev *dev, int channel)
-> +{
-> +	/* no legacy IRQ on arm64 */
-> +	return -ENODEV;
-> +}
-> +
->  extern int isa_dma_bridge_buggy;
->  
->  #ifdef CONFIG_PCI
-> diff --git a/arch/arm64/kernel/pci.c b/arch/arm64/kernel/pci.c
-> index ce5836c..42fb195 100644
-> --- a/arch/arm64/kernel/pci.c
-> +++ b/arch/arm64/kernel/pci.c
-> @@ -10,6 +10,7 @@
->   *
->   */
->  
-> +#include <linux/acpi.h>
->  #include <linux/init.h>
->  #include <linux/io.h>
->  #include <linux/kernel.h>
-> @@ -68,3 +69,30 @@ void pci_bus_assign_domain_nr(struct pci_bus *bus, struct device *parent)
->  	bus->domain_nr = domain;
->  }
->  #endif
-> +
-> +/*
-> + * raw_pci_read/write - Platform-specific PCI config space access.
-> + *
-> + * Default empty implementation.  Replace with an architecture-specific setup
-> + * routine, if necessary.
-> + */
-> +int raw_pci_read(unsigned int domain, unsigned int bus,
-> +		  unsigned int devfn, int reg, int len, u32 *val)
-> +{
-> +	return -EINVAL;
-> +}
-> +
-> +int raw_pci_write(unsigned int domain, unsigned int bus,
-> +		unsigned int devfn, int reg, int len, u32 val)
-> +{
-> +	return -EINVAL;
-> +}
-> +
-> +#ifdef CONFIG_ACPI
-> +/* Root bridge scanning */
-> +struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
-> +{
-> +	/* TODO: Should be revisited when implementing PCI on ACPI */
-> +	return NULL;
-> +}
-> +#endif
+The other property for the pin, whether pinmux or pin-no-mux or
+pin-num-and-mux etc is no such big deal, as long as it's
+consistent and documented with the generic bindings.
 
-Do these functions have anything to do with the subject? You add them in
-arch/arm64/kernel/pci.c which is compiled only when CONFIG_PCI while the
-commit log implies that you add them to allow CONFIG_PCI to be off.
-
-When PCI is enabled and the above functions are compiled in, do they
-need to return any useful data or just -EINVAL. Are they ever called?
-
-> diff --git a/drivers/acpi/Makefile b/drivers/acpi/Makefile
-> index 39f3ec1..c346011 100644
-> --- a/drivers/acpi/Makefile
-> +++ b/drivers/acpi/Makefile
-> @@ -43,7 +43,7 @@ acpi-y				+= processor_core.o
->  acpi-$(CONFIG_ARCH_MIGHT_HAVE_ACPI_PDC) += processor_pdc.o
->  acpi-y				+= ec.o
->  acpi-$(CONFIG_ACPI_DOCK)	+= dock.o
-> -acpi-y				+= pci_root.o pci_link.o pci_irq.o
-> +acpi-$(CONFIG_PCI)		+= pci_root.o pci_link.o pci_irq.o
->  acpi-y				+= acpi_lpss.o
->  acpi-y				+= acpi_platform.o
->  acpi-y				+= acpi_pnp.o
-> diff --git a/drivers/acpi/internal.h b/drivers/acpi/internal.h
-> index 163e82f..c5ff8ba 100644
-> --- a/drivers/acpi/internal.h
-> +++ b/drivers/acpi/internal.h
-> @@ -26,8 +26,13 @@
->  acpi_status acpi_os_initialize1(void);
->  int init_acpi_device_notify(void);
->  int acpi_scan_init(void);
-> +#ifdef CONFIG_PCI
->  void acpi_pci_root_init(void);
->  void acpi_pci_link_init(void);
-> +#else
-> +static inline void acpi_pci_root_init(void) {}
-> +static inline void acpi_pci_link_init(void) {}
-> +#endif
->  void acpi_processor_init(void);
->  void acpi_platform_init(void);
->  void acpi_pnp_init(void);
-
-That's a good clean-up.
-
-> diff --git a/include/linux/pci.h b/include/linux/pci.h
-> index 360a966..1476a66 100644
-> --- a/include/linux/pci.h
-> +++ b/include/linux/pci.h
-> @@ -564,15 +564,6 @@ struct pci_ops {
->  	int (*write)(struct pci_bus *bus, unsigned int devfn, int where, int size, u32 val);
->  };
->  
-> -/*
-> - * ACPI needs to be able to access PCI config space before we've done a
-> - * PCI bus scan and created pci_bus structures.
-> - */
-> -int raw_pci_read(unsigned int domain, unsigned int bus, unsigned int devfn,
-> -		 int reg, int len, u32 *val);
-> -int raw_pci_write(unsigned int domain, unsigned int bus, unsigned int devfn,
-> -		  int reg, int len, u32 val);
-> -
->  struct pci_bus_region {
->  	dma_addr_t start;
->  	dma_addr_t end;
-> @@ -1329,6 +1320,16 @@ typedef int (*arch_set_vga_state_t)(struct pci_dev *pdev, bool decode,
->  		      unsigned int command_bits, u32 flags);
->  void pci_register_set_vga_state(arch_set_vga_state_t func);
->  
-> +/*
-> + * ACPI needs to be able to access PCI config space before we've done a
-> + * PCI bus scan and created pci_bus structures.
-> + */
-> +int raw_pci_read(unsigned int domain, unsigned int bus, unsigned int devfn,
-> +		 int reg, int len, u32 *val);
-> +int raw_pci_write(unsigned int domain, unsigned int bus, unsigned int devfn,
-> +		  int reg, int len, u32 val);
-> +void pcibios_penalize_isa_irq(int irq, int active);
-> +
->  #else /* CONFIG_PCI is not enabled */
->  
->  /*
-> @@ -1430,6 +1431,23 @@ static inline struct pci_dev *pci_get_bus_and_slot(unsigned int bus,
->  						unsigned int devfn)
->  { return NULL; }
->  
-> +static inline struct pci_bus *pci_find_bus(int domain, int busnr)
-> +{ return NULL; }
-> +
-> +static inline int pci_bus_write_config_byte(struct pci_bus *bus,
-> +				unsigned int devfn, int where, u8 val)
-> +{ return -ENOSYS; }
-> +
-> +static inline int raw_pci_read(unsigned int domain, unsigned int bus,
-> +			unsigned int devfn, int reg, int len, u32 *val)
-> +{ return -ENOSYS; }
-> +
-> +static inline int raw_pci_write(unsigned int domain, unsigned int bus,
-> +			unsigned int devfn, int reg, int len, u32 val)
-> +{ return -ENOSYS; }
-
-So you implement the !CONFIG_PCI functions here to return -ENOSYS while
-the arm64 CONFIG_PCI ones would return -EINVAL. I'm confused.
-
--- 
-Catalin
+Yours,
+Linus Walleij
