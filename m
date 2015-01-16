@@ -1,251 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756399AbbAPONj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 09:13:39 -0500
-Received: from mx2.parallels.com ([199.115.105.18]:59065 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756378AbbAPONh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 09:13:37 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, <linux-mm@kvack.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH -mm 6/6] memcg: reparent list_lrus and free kmemcg_id on css offline
-Date: Fri, 16 Jan 2015 17:13:06 +0300
-Message-ID: <8a3066a28a960e8fb0169b4318ed476a99376831.1421411661.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1421411660.git.vdavydov@parallels.com>
-References: <cover.1421411660.git.vdavydov@parallels.com>
+	id S1755937AbbAPORL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 09:17:11 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57769 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751465AbbAPORJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 09:17:09 -0500
+Date: Fri, 16 Jan 2015 15:15:52 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: Will Deacon <Will.Deacon@arm.com>, Jiri Olsa <jolsa@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Adrian Hunter <adrian.hunter@intel.com>,
+        Alexis Berlemont <alexis.berlemont@gmail.com>,
+        Andi Kleen <ak@linux.intel.com>, Anton Blanchard <anton@samba.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Borislav Petkov <bp@alien8.de>, Borislav Petkov <bp@suse.de>,
+        Cody P Schafer <cody@linux.vnet.ibm.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        David Ahern <dsahern@gmail.com>,
+        Florian Fainelli <florian@openwrt.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>,
+        "msalter@redhat.com" <msalter@redhat.com>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "S. Lockwood-Childs" <sjl@vctlabs.com>,
+        Sam Ravnborg <sam@ravnborg.org>, Sasha Levin <sasha.levin@oracle.com>,
+        Stephane Eranian <eranian@google.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Subject: Re: [PATCHv2 00/36] perf tools: New build framework
+Message-ID: <20150116141552.GB23967@krava.brq.redhat.com>
+References: <1421326532-25660-1-git-send-email-jolsa@kernel.org>
+ <20150116113921.GL7091@arm.com>
+ <20150116121214.GI21809@leverpostej>
+ <20150116122221.GN7091@arm.com>
+ <20150116123013.GB15672@krava.brq.redhat.com>
+ <20150116124349.GA23967@krava.brq.redhat.com>
+ <20150116134910.GA22569@leverpostej>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150116134910.GA22569@leverpostej>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, the only reason to keep kmemcg_id till css free is list_lru, which
-uses it to distribute elements between per-memcg lists. However, it can
-be easily sorted out - we only need to change kmemcg_id of an offline
-cgroup to its parent's id, making further list_lru_add()'s add elements
-to the parent's list, and then move all elements from the offline
-cgroup's list to the one of its parent. It will work, because a racing
-list_lru_del() does not need to know the list it is deleting the element
-from. It can decrement the wrong nr_items counter though, but the
-ongoing reparenting will fix it. After list_lru reparenting is done we
-are free to release kmemcg_id saving a valuable slot in a per-memcg
-array for new cgroups.
+On Fri, Jan 16, 2015 at 01:49:10PM +0000, Mark Rutland wrote:
+> Hi,
+> 
+> [...]
+> 
+> > > > > I just tried a cross-build for arm, and that blew up when trying to do
+> > > > > something with arch/arm/util/libperf-in.o (log below). I bisected that
+> > > > > to f169fbc4c59dd9d4 "perf build: Add arch x86 objects building". I'm
+> > > > > looking into why now.
+> > > > 
+> > > > I get a similar failure doing a native arm64 build. I think the problem is
+> > > > because the arch/ files for arm and arm64 aren't always required (i.e. there
+> > > > are configurations where nothing is built under there) and, consequently,
+> > > > libperf-in.o isn't actually needed and we try to link against something that
+> > > > doesn't exist.
+> > > 
+> > > exactly ;-) I'll spin v3 shortly..
+> > 
+> > this fixes the issue for me
+> > 
+> > jirka
+> > 
+> > 
+> > ---
+> > diff --git a/tools/build/Makefile.build b/tools/build/Makefile.build
+> > index d35b66014992..396b33b124d1 100644
+> > --- a/tools/build/Makefile.build
+> > +++ b/tools/build/Makefile.build
+> > @@ -52,7 +52,7 @@ quiet_cmd_cc_s_c = AS       $@
+> >  
+> >  # Link agregate command
+> >  quiet_cmd_ld_multi = LD       $@
+> > -      cmd_ld_multi = $(LD) -r -o $@ $^
+> > +      cmd_ld_multi = $(LD) -r -o $@ $(wildcard $^)
+> >  
+> >  # Build rules
+> >  $(OUTPUT)%.o: %.c FORCE
+> > 
+> 
+> Unfortunately that doesn't seem to be sufficient for me when
+> cross-compiling. It looks like it supresses the warning from Make, but
+> then LD explodes anyway because it wasn't provided any input files (log
+> below).
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
----
- include/linux/list_lru.h |    3 ++-
- mm/list_lru.c            |   46 +++++++++++++++++++++++++++++++++++++++++++---
- mm/memcontrol.c          |   39 ++++++++++++++++++++++++++++++++++-----
- mm/vmscan.c              |    2 +-
- 4 files changed, 80 insertions(+), 10 deletions(-)
+argh.. right, when there are no source objects at all :-\ fix is comming ;-)
 
-diff --git a/include/linux/list_lru.h b/include/linux/list_lru.h
-index 7edf9c9ab9eb..2a6b9947aaa3 100644
---- a/include/linux/list_lru.h
-+++ b/include/linux/list_lru.h
-@@ -26,7 +26,7 @@ enum lru_status {
- 
- struct list_lru_one {
- 	struct list_head	list;
--	/* kept as signed so we can catch imbalance bugs */
-+	/* may become negative during memcg reparenting */
- 	long			nr_items;
- };
- 
-@@ -62,6 +62,7 @@ int __list_lru_init(struct list_lru *lru, bool memcg_aware,
- #define list_lru_init_memcg(lru)	__list_lru_init((lru), true, NULL)
- 
- int memcg_update_all_list_lrus(int num_memcgs);
-+void memcg_drain_all_list_lrus(int src_idx, int dst_idx);
- 
- /**
-  * list_lru_add: add an element to the lru list's tail
-diff --git a/mm/list_lru.c b/mm/list_lru.c
-index 8d9d168c6c38..909eca2c820e 100644
---- a/mm/list_lru.c
-+++ b/mm/list_lru.c
-@@ -100,7 +100,6 @@ bool list_lru_add(struct list_lru *lru, struct list_head *item)
- 
- 	spin_lock(&nlru->lock);
- 	l = list_lru_from_kmem(nlru, item);
--	WARN_ON_ONCE(l->nr_items < 0);
- 	if (list_empty(item)) {
- 		list_add_tail(item, &l->list);
- 		l->nr_items++;
-@@ -123,7 +122,6 @@ bool list_lru_del(struct list_lru *lru, struct list_head *item)
- 	if (!list_empty(item)) {
- 		list_del_init(item);
- 		l->nr_items--;
--		WARN_ON_ONCE(l->nr_items < 0);
- 		spin_unlock(&nlru->lock);
- 		return true;
- 	}
-@@ -156,7 +154,6 @@ static unsigned long __list_lru_count_one(struct list_lru *lru,
- 
- 	spin_lock(&nlru->lock);
- 	l = list_lru_from_memcg_idx(nlru, memcg_idx);
--	WARN_ON_ONCE(l->nr_items < 0);
- 	count = l->nr_items;
- 	spin_unlock(&nlru->lock);
- 
-@@ -458,6 +455,49 @@ fail:
- 		memcg_cancel_update_list_lru(lru, old_size, new_size);
- 	goto out;
- }
-+
-+static void memcg_drain_list_lru_node(struct list_lru_node *nlru,
-+				      int src_idx, int dst_idx)
-+{
-+	struct list_lru_one *src, *dst;
-+
-+	/*
-+	 * Since list_lru_{add,del} may be called under an IRQ-safe lock,
-+	 * we have to use IRQ-safe primitives here to avoid deadlock.
-+	 */
-+	spin_lock_irq(&nlru->lock);
-+
-+	src = list_lru_from_memcg_idx(nlru, src_idx);
-+	dst = list_lru_from_memcg_idx(nlru, dst_idx);
-+
-+	list_splice_init(&src->list, &dst->list);
-+	dst->nr_items += src->nr_items;
-+	src->nr_items = 0;
-+
-+	spin_unlock_irq(&nlru->lock);
-+}
-+
-+static void memcg_drain_list_lru(struct list_lru *lru,
-+				 int src_idx, int dst_idx)
-+{
-+	int i;
-+
-+	if (!list_lru_memcg_aware(lru))
-+		return;
-+
-+	for (i = 0; i < nr_node_ids; i++)
-+		memcg_drain_list_lru_node(&lru->node[i], src_idx, dst_idx);
-+}
-+
-+void memcg_drain_all_list_lrus(int src_idx, int dst_idx)
-+{
-+	struct list_lru *lru;
-+
-+	mutex_lock(&list_lrus_mutex);
-+	list_for_each_entry(lru, &list_lrus, list)
-+		memcg_drain_list_lru(lru, src_idx, dst_idx);
-+	mutex_unlock(&list_lrus_mutex);
-+}
- #else
- static int memcg_init_list_lru(struct list_lru *lru, bool memcg_aware)
- {
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index b82ddb68ffd6..850e1fdf3ea9 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -347,6 +347,7 @@ struct mem_cgroup {
- #if defined(CONFIG_MEMCG_KMEM)
-         /* Index in the kmem_cache->memcg_params.memcg_caches array */
- 	int kmemcg_id;
-+	bool kmem_acct_activated;
- 	bool kmem_acct_active;
- #endif
- 
-@@ -608,14 +609,10 @@ void memcg_put_cache_ids(void)
- struct static_key memcg_kmem_enabled_key;
- EXPORT_SYMBOL(memcg_kmem_enabled_key);
- 
--static void memcg_free_cache_id(int id);
--
- static void disarm_kmem_keys(struct mem_cgroup *memcg)
- {
--	if (memcg->kmemcg_id >= 0) {
-+	if (memcg->kmem_acct_activated)
- 		static_key_slow_dec(&memcg_kmem_enabled_key);
--		memcg_free_cache_id(memcg->kmemcg_id);
--	}
- 	/*
- 	 * This check can't live in kmem destruction function,
- 	 * since the charges will outlive the cgroup
-@@ -3331,6 +3328,7 @@ static int memcg_activate_kmem(struct mem_cgroup *memcg,
- 	int memcg_id;
- 
- 	BUG_ON(memcg->kmemcg_id >= 0);
-+	BUG_ON(memcg->kmem_acct_activated);
- 	BUG_ON(memcg->kmem_acct_active);
- 
- 	/*
-@@ -3374,6 +3372,7 @@ static int memcg_activate_kmem(struct mem_cgroup *memcg,
- 	 * patched.
- 	 */
- 	memcg->kmemcg_id = memcg_id;
-+	memcg->kmem_acct_activated = true;
- 	memcg->kmem_acct_active = true;
- out:
- 	return err;
-@@ -4052,6 +4051,10 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
- 
- static void memcg_deactivate_kmem(struct mem_cgroup *memcg)
- {
-+	struct cgroup_subsys_state *css;
-+	struct mem_cgroup *parent, *child;
-+	int kmemcg_id;
-+
- 	if (!memcg->kmem_acct_active)
- 		return;
- 
-@@ -4064,6 +4067,32 @@ static void memcg_deactivate_kmem(struct mem_cgroup *memcg)
- 	memcg->kmem_acct_active = false;
- 
- 	memcg_deactivate_kmem_caches(memcg);
-+
-+	kmemcg_id = memcg->kmemcg_id;
-+	BUG_ON(kmemcg_id < 0);
-+
-+	parent = parent_mem_cgroup(memcg);
-+	if (!parent)
-+		parent = root_mem_cgroup;
-+
-+	/*
-+	 * Change kmemcg_id of this cgroup and all its descendants to the
-+	 * parent's id, and then move all entries from this cgroup's list_lrus
-+	 * to ones of the parent. After we have finished, all list_lrus
-+	 * corresponding to this cgroup are guaranteed to remain empty. The
-+	 * ordering is imposed by list_lru_node->lock taken by
-+	 * memcg_drain_all_list_lrus().
-+	 */
-+	css_for_each_descendant_pre(css, &memcg->css) {
-+		child = mem_cgroup_from_css(css);
-+		BUG_ON(child->kmemcg_id != kmemcg_id);
-+		child->kmemcg_id = parent->kmemcg_id;
-+		if (!memcg->use_hierarchy)
-+			break;
-+	}
-+	memcg_drain_all_list_lrus(kmemcg_id, parent->kmemcg_id);
-+
-+	memcg_free_cache_id(kmemcg_id);
- }
- 
- static void memcg_destroy_kmem(struct mem_cgroup *memcg)
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 87ef846d5709..16f3e45742d6 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -377,7 +377,7 @@ static unsigned long shrink_slab(gfp_t gfp_mask, int nid,
- 	struct shrinker *shrinker;
- 	unsigned long freed = 0;
- 
--	if (memcg_cache_id(memcg) < 0)
-+	if (memcg && !memcg_kmem_is_active(memcg))
- 		return 0;
- 
- 	if (nr_scanned == 0)
--- 
-1.7.10.4
-
+thanks,
+jirka
