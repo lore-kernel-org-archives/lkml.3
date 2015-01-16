@@ -1,91 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755551AbbAPMb1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 07:31:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45909 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751506AbbAPMb0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 07:31:26 -0500
-Date: Fri, 16 Jan 2015 13:30:13 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Will Deacon <will.deacon@arm.com>
-Cc: Mark Rutland <mark.rutland@arm.com>, Jiri Olsa <jolsa@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Alexis Berlemont <alexis.berlemont@gmail.com>,
-        Andi Kleen <ak@linux.intel.com>, Anton Blanchard <anton@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Borislav Petkov <bp@alien8.de>, Borislav Petkov <bp@suse.de>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Florian Fainelli <florian@openwrt.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jean Pihet <jean.pihet@linaro.org>,
-        "msalter@redhat.com" <msalter@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "S. Lockwood-Childs" <sjl@vctlabs.com>,
-        Sam Ravnborg <sam@ravnborg.org>, Sasha Levin <sasha.levin@oracle.com>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Subject: Re: [PATCHv2 00/36] perf tools: New build framework
-Message-ID: <20150116123013.GB15672@krava.brq.redhat.com>
-References: <1421326532-25660-1-git-send-email-jolsa@kernel.org>
- <20150116113921.GL7091@arm.com>
- <20150116121214.GI21809@leverpostej>
- <20150116122221.GN7091@arm.com>
+	id S1754957AbbAPMdC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 07:33:02 -0500
+Received: from mx08-00178001.pphosted.com ([91.207.212.93]:41243 "EHLO
+	mx08-00178001.pphosted.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751353AbbAPMdA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 07:33:00 -0500
+Message-ID: <54B904C3.1080002@st.com>
+Date: Fri, 16 Jan 2015 13:32:03 +0100
+From: Maxime Coquelin <maxime.coquelin@st.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150116122221.GN7091@arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Grant Likely <grant.likely@linaro.org>
+Cc: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>, <kernel@stlinux.com>,
+        Lee Jones <lee.jones@linaro.org>,
+        Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Subject: Re: [PATCH 0/3] Enable myphy28lp support
+References: <1421229299-8206-1-git-send-email-gabriel.fernandez@linaro.org> <54B8FC56.8080400@st.com>
+In-Reply-To: <54B8FC56.8080400@st.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.201.23.80]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-16_04:2015-01-16,2015-01-16,1970-01-01 signatures=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 16, 2015 at 12:22:21PM +0000, Will Deacon wrote:
-> On Fri, Jan 16, 2015 at 12:12:14PM +0000, Mark Rutland wrote:
-> > On Fri, Jan 16, 2015 at 11:39:22AM +0000, Will Deacon wrote:
-> > > On Thu, Jan 15, 2015 at 12:54:56PM +0000, Jiri Olsa wrote:
-> > > > hi,
-> > > > I'm following up on latest post from Alexis:
-> > > >   http://marc.info/?l=linux-kernel&m=141427580405357&w=2
-> > > > 
-> > > > v2 changes:
-> > > >   - build Makefiles librarized and moved to 'tools/build' [Ingo]
-> > > >   - several minor fixies [Namhyung]
-> > > >   - tested on other archs now - x86_64, i386, powerpc
-> > > >   - moved tools/lib/* under new build framework to show
-> > > >     that it's possible ;-)
-> > > >     included traceevent/lockdep maintainers to get the feedback
-> > > >   - omitted last 2 patches
-> > > > 
-> > > > The patchset is also available in:
-> > > >   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
-> > > >   perf/build
-> > > > 
-> > > > All tests/make tests passed.
-> > > > 
-> > > > Any feedback from ARM guys would be great ;-)
-> > > 
-> > > [adding Mark Rutland to Cc]
-> > 
-> > Cheers.
-> > 
-> > I just tried a cross-build for arm, and that blew up when trying to do
-> > something with arch/arm/util/libperf-in.o (log below). I bisected that
-> > to f169fbc4c59dd9d4 "perf build: Add arch x86 objects building". I'm
-> > looking into why now.
-> 
-> I get a similar failure doing a native arm64 build. I think the problem is
-> because the arch/ files for arm and arm64 aren't always required (i.e. there
-> are configurations where nothing is built under there) and, consequently,
-> libperf-in.o isn't actually needed and we try to link against something that
-> doesn't exist.
 
-exactly ;-) I'll spin v3 shortly..
+On 01/16/2015 12:56 PM, Maxime Coquelin wrote:
+> Hi Gabriel,
+>
+>     For the series:
+> Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
+>
+>     Kishon, could you take care of adding PHY driver patch for v3.20?
+Hi Kishon,
 
-thanks,
-jirka
+     Don't apply the patch, since we have 2 other PHY driver patches, I 
+will send you a pull request.
+
+Best regards,
+Maxime
+
+
+>
+> Thanks,
+> Maxime
+> On 01/14/2015 10:54 AM, Gabriel FERNANDEZ wrote:
+>> The goal of this series is to enable the support of MiPHY28lp Generic 
+>> PHY.
+>>
+>> The first patch is to update miphy28lp phy driver to access sysconfig 
+>> register
+>> offsets via syscfg dt property. It's based on Arnds review comments here
+>> https://lkml.org/lkml/2014/11/13/161
+>> I have updated the miphy28lp phy driver same way as Peter's 
+>> implementation.
+>>
+>> Gabriel Fernandez (3):
+>>    phy: miphy28lp: Pass sysconfig register offsets via syscfg dt
+>>      property.
+>>    ARM: DT: STi: STiH407: Add DT node for MiPHY28lp
+>>    ARM: multi_v7_defconfig: Enable MiPHY28lp - ST's Generic (SATA, 
+>> PCIe &
+>>      USB3) PHY
+>>
+>>   .../devicetree/bindings/phy/phy-miphy28lp.txt      | 43 
+>> ++++++---------
+>>   arch/arm/boot/dts/stih407-family.dtsi              | 53 
+>> +++++++++++++++++++
+>>   arch/arm/boot/dts/stihxxx-b2120.dtsi               | 11 ++++
+>>   arch/arm/configs/multi_v7_defconfig                |  1 +
+>>   drivers/phy/phy-miphy28lp.c                        | 61 
+>> ++++++++++++----------
+>>   5 files changed, 113 insertions(+), 56 deletions(-)
+>>
+>
+
