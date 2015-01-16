@@ -1,132 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755762AbbAPS5i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 13:57:38 -0500
-Received: from mail-qg0-f47.google.com ([209.85.192.47]:42359 "EHLO
-	mail-qg0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753041AbbAPS5g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 13:57:36 -0500
+	id S1756797AbbAPS5s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 13:57:48 -0500
+Received: from mail.kernel.org ([198.145.29.136]:48366 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755914AbbAPS5p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 13:57:45 -0500
+Date: Fri, 16 Jan 2015 19:57:28 +0100
+From: Sebastian Reichel <sre@kernel.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: rtc-linux@googlegroups.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Alessandro Zummo <a.zummo@towertech.it>
+Subject: Re: [PATCH] MAINTAINERS: Add entry for Maxim PMIC-s on Samsung boards
+Message-ID: <20150116185727.GB6422@earth.universe>
+References: <1421407190-6771-1-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-From: Alexei Starovoitov <ast@plumgrid.com>
-Date: Fri, 16 Jan 2015 10:57:15 -0800
-Message-ID: <CAMEtUuxhjef+9QaFccfSyA3DbVJ3H6qP=eu-uZCkku1rVWViSQ@mail.gmail.com>
-Subject: Re: [PATCH tip 0/9] tracing: attach eBPF programs to tracepoints/syscalls/kprobe
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Brendan Gregg <brendan.d.gregg@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="yEPQxsgoJgBvi8ip"
+Content-Disposition: inline
+In-Reply-To: <1421407190-6771-1-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 16, 2015 at 7:02 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Thu, 15 Jan 2015 20:16:01 -0800
-> Alexei Starovoitov <ast@plumgrid.com> wrote:
->
->> Hi Ingo, Steven,
->>
->> This patch set is based on tip/master.
->
-> Note, the tracing code isn't maintained in tip/master, but perf code is.
 
-I know. I can rebase against linux-trace tree, but wanted to go
-through tip to get advantage of tip-bot ;)
+--yEPQxsgoJgBvi8ip
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Do you have a git repo somewhere that I can look at? It makes it easier
-> than loading in 9 patches ;-)
+Hi,
 
-https://git.kernel.org/cgit/linux/kernel/git/ast/bpf.git/
+On Fri, Jan 16, 2015 at 12:19:50PM +0100, Krzysztof Kozlowski wrote:
+> Add myself as supporter for Maxim 77686 PMIC and Maxim 14577/77693 MUIC
+> drivers:
+>  - mfd (all of them),
+>  - extcon (extcon-max14577, extcon-max77693)
+>  - power (max14577_charger.c, 77693 on LKML [1]),
+>  - regulator (all of them),
+>  - clock (clk-max77686.c)
+>  - RTC (rtc-max77686.c).
+>=20
+> Lately I am the author of major contributors to them. These
+> drivers are used on Exynos-based boards (Trats 2, Gear 1 and Gear 2).
 
-> For syscalls this is fine as the parameters are usually set. But
-> there's a lot of tracepoints that we need to know the result of the
-> copied data to decide to filter or not, where the result happens at the
-> TP_fast_assign() part which requires allocating the buffers.
-...
-> Again, for syscalls it may not be a problem, but for other tracepoints,
-> I'm not sure we can do that. How do you handle sched_switch for
-> example? The tracepoint only gets two pointers to task structs, you
-> need to then dereference them to get the pid, prio, state and other
-> data.
+Acked-By: Sebastian Reichel <sre@kernel.org>
 
-exactly. In this patch set the user can use bpf_fetch_*()
-helpers to dereference task_struct to get to pid, prio, anything.
-The user is not limited by what tracepoints hard coded as
-part of TP_fast_assign.
-In the future when generic type/field infra is ready,
-the bpf program will have faster way to access such fields
-without going through bpf_fetch_*() helpers.
+-- Sebastian
 
-In other words the program is a superset of existing
-TP_fast_assign + TP_print + filters + triggers + stack dumps.
-All are done from the program on demand.
-Some programs may just count number of events
-without accessing arguments at all.
+--yEPQxsgoJgBvi8ip
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-> Maybe we should have a way to do the program before and/or after the
-> buffering depending on what to filter on. There's no way to know what
-> the parameters of the tracepoint are without looking at the source.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-right now most of the tracepoints copy as much as possible
-fields as part of TP_fast_assign, since there is no way to
-know what will be needed later.
-And despite copying a lot, often it's not enough for analytics.
-With program is attached before the copy, the overhead
-is much lower. The program will look at whatever fields
-necessary, may do some operations on them and even
-store these fields into maps for further processing.
+iQIcBAEBCgAGBQJUuV8UAAoJENju1/PIO/qajo0P/R4YpdVXsja1M96iSi8WGJm/
+cTm/1qXQaltsC7+0G1W6aF9o/5ofNsH+ybc4pVcMLTnvZVT1JgQK+i0LoMbN7gHk
+N5w7qH7JJ4z6wPQ+4v7YBpGZZsIlpZL3IW/HsV3lxw6JrQXlKTj8PFjp5sQ8sVFb
+OZJbO7yRU3rF7crcC2oCodBWys9dDeSgfx04Gzee+7RF9JA+bQ8M93+XD0EsmH+Y
+7l5QbMmjH10rNOiMqQ5NxubQNgB+dOJRDFJdNiMIBglQwT5mDXup0Siu7OjqiAKy
+3cq7tODHV6D0ZSwrpDnP2xf9Nl5m0d0Iioav3toZrXBGlhrd70dqnqEfpebj5T2L
+Sq1IG93vOJBbO6prSY9C3QF9kfIt0PCf6ZaugwfTOiUNob2phhegHEAbVTJViRsn
+aMqDZ8zfoQKJPyYUjJ6Wqc8pIxz28ROCWNnmBIdERnw1px+2HjejJKp2dLKjupz5
+Qn8PDdSgLhaBmNTHJt3e73/eR9Bwys150uOV7BCruf3KS3+kxoDg4eO7gPw0beyu
+VvZjW+WJ22HYa9/rM+Dci/HER+JUv0HsgtGj645NrMA1L6Z4L+IFZMHXfbwHLBri
+0jtKypTbYbPJxmw/3eCZgoVqo03fkZuIU2wEtnCkD6c8hb8WBl7oxlHYPQ5Wvp+s
+hUavmfMWQ6i/bX/jgzwu
+=lpyl
+-----END PGP SIGNATURE-----
 
->> - dump_stack
->> - trace_printk
->> The last two are mainly to debug the programs and to print data for user
->> space consumptions.
->
-> I have to look at the code, but currently trace_printk() isn't made to
-> be used in production systems.
-
-other than allocating a bunch of per_cpu pages.
-what concerns do you have?
-Some printk-like facility from the program is needed.
-I'd rather fix whatever necessary in trace_printk instead
-of inventing another way of printing.
-Anyway, I think I will drop these two helpers for now.
-
-> One last thing. If the ebpf is used for anything but filtering, it
-> should go into the trigger file. The filtering is only a way to say if
-> the event should be recorded or not. But the trigger could do something
-> else (a printk, a stacktrace, etc).
-
-it does way more than just filtering, but
-invoking program as a trigger is too slow.
-When program is called as soon as tracepoint fires,
-it can fetch other fields, evaluate them, printk some of them,
-optionally dump stack, aggregate into maps.
-We can let it call triggers too, so that user program will
-be able to enable/disable other events.
-I'm not against invoking programs as a trigger, but I don't
-see a use case for it. It's just too slow for production
-analytics that needs to act on huge number of events
-per second.
-We must minimize the overhead between tracepoint
-firing and program executing, so that programs can
-be used on events like packet receive which will be
-in millions per second. Every nsec counts.
-For example:
-- raw dd if=/dev/zero of=/dev/null
-  does 760 MB/s (on my debug kernel)
-- echo 1 > events/syscalls/sys_enter_write/enable
-  drops it to 400 MB/s
-- echo "echo "count == 123 " > events/syscalls/sys_enter_write/filter
-  drops it even further down to 388 MB/s
-This slowdown is too high for this to be used on a live system.
-- tracex4 that computes histogram of sys_write sizes
-  and stores log2(count) into a map does 580 MB/s
-  This is still not great, but this slowdown is now usable
-  and we can work further on minimizing the overhead.
+--yEPQxsgoJgBvi8ip--
