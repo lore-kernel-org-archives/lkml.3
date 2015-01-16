@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754631AbbAPUm0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 15:42:26 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:54081 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751581AbbAPUmZ (ORCPT
+	id S1756778AbbAPUxz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 15:53:55 -0500
+Received: from na3sys009aog123.obsmtp.com ([74.125.149.149]:40256 "HELO
+	na3sys009aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751581AbbAPUxy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 15:42:25 -0500
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org
-Subject: Re: Issue with 'lib/vsprintf.c: don't try to fix pointer wrap-around'
-Organization: D03
-References: <20150116162357.GA10859@phnom.home.cmpxchg.org>
-	<20150116122404.e82eb86b5c46afdd0d00df1d@linux-foundation.org>
-X-Hashcash: 1:20:150116:hannes@cmpxchg.org::8HIc5soRr5frtk8o:00000000000000000000000000000000000000000004n9t
-X-Hashcash: 1:20:150116:linux-kernel@vger.kernel.org::GDVHlnQgtc/uwRG5:000000000000000000000000000000000BP8N
-X-Hashcash: 1:20:150116:akpm@linux-foundation.org::BXFd7Mi0FSvM8wsJ:000000000000000000000000000000000000AiQF
-Date: Fri, 16 Jan 2015 21:42:21 +0100
-In-Reply-To: <20150116122404.e82eb86b5c46afdd0d00df1d@linux-foundation.org>
-	(Andrew Morton's message of "Fri, 16 Jan 2015 12:24:04 -0800")
-Message-ID: <87mw5izccy.fsf@rasmusvillemoes.dk>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
+	Fri, 16 Jan 2015 15:53:54 -0500
+X-Greylist: delayed 405 seconds by postgrey-1.27 at vger.kernel.org; Fri, 16 Jan 2015 15:53:54 EST
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CALnjE+o5kXhDK+uaE4ajF2MAWwgG21rhYNgpD70rWLQc9AQqHg@mail.gmail.com>
+References: <1421358507-5992-1-git-send-email-joestringer@nicira.com>
+ <1421358507-5992-6-git-send-email-joestringer@nicira.com> <CALnjE+o5kXhDK+uaE4ajF2MAWwgG21rhYNgpD70rWLQc9AQqHg@mail.gmail.com>
+From: Joe Stringer <joestringer@nicira.com>
+Date: Fri, 16 Jan 2015 12:46:48 -0800
+Message-ID: <CANr6G5wYcm_2wrhE--6=fW9mTy2hjw5VJ4SyJa+JZQPZoHN8Hg@mail.gmail.com>
+Subject: Re: [PATCH net-next v12 5/5] openvswitch: Add support for unique flow IDs.
+To: Pravin Shelar <pshelar@nicira.com>
+Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        "dev@openvswitch.org" <dev@openvswitch.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 16 2015, Andrew Morton <akpm@linux-foundation.org> wrote:
-
-> On Fri, 16 Jan 2015 11:23:57 -0500 Johannes Weiner <hannes@cmpxchg.org> wrote:
+On 16 January 2015 at 00:07, Pravin Shelar <pshelar@nicira.com> wrote:
+>> @@ -213,13 +223,15 @@ struct flow_stats {
+>>
+>>  struct sw_flow {
+>>         struct rcu_head rcu;
+>> -       struct hlist_node hash_node[2];
+>> -       u32 hash;
+>> +       struct {
+>> +               struct hlist_node node[2];
+>> +               u32 hash;
+>> +       } flow_table, ufid_table;
+>>         int stats_last_writer;          /* NUMA-node id of the last writer on
+>>                                          * 'stats[0]'.
+>>                                          */
+>>         struct sw_flow_key key;
+>> -       struct sw_flow_key unmasked_key;
+>> +       struct sw_flow_id *id;
+>>         struct sw_flow_mask *mask;
+>>         struct sw_flow_actions __rcu *sf_acts;
+>>         struct flow_stats __rcu *stats[]; /* One for each NUMA node.  First one
+>> @@ -243,6 +255,16 @@ struct arp_eth_header {
+>>         unsigned char       ar_tip[4];          /* target IP address        */
+>>  } __packed;
+>>
+> In last round we agreed on following struct flow-id which saves around
+> four hundred bytes per flow and kmalloc per flow add operation for
+> common case. Is there any reason for not doing it?
 >
->> Hi Rasmus,
->> 
->> I have trouble booting my test machine with this patch in -mm:
->> 
->> commit bb2e066c6943e62e9650bb129f416dacf138f8b1
->> Author: Rasmus Villemoes <linux@rasmusvillemoes.dk>
->> Date:   Wed Jan 14 01:00:44 2015 +0000
->> 
->>     lib/vsprintf.c: don't try to fix pointer wrap-around
->>     
->>     Actual kernel buffers can't wrap into the user address space.  If someone
->>     manages to pass a buf/size combination that wraps, it is most likely due
->>     to a bug in the caller.  Instead of trying to fix it by using a smaller
->>     part of the buffer, bail out.
->>     
->>     Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
->>     Cc: Jiri Kosina <jkosina@suse.cz>
->>     Cc: Randy Dunlap <rdunlap@infradead.org>
->>     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
->> 
->> After I get "Loading bzImage-new... ok" from the bootloader, the
->> serial console remains quiet.
->> 
->> A WARN_ON_ONCE() inside vsnprintf() looks like it would deadlock
->> instantly when triggering this overflow from printk(), no?
->
-> Dammit, I was starting at that printk, ended up deciding it was OK,
-> didn't think about deadlocks.  logbuf_lock and recursion_bug, for a
-> start...
->
-> I'll drop the patch.
+> struct {
+>      u32 ufid_len;
+>      union {
+>          u32 ufid[MAX_UFID_LENGTH / 4];
+>          struct sw_flow_key *unmasked_key;
+>      }
+> } id;
 
-Good, because the bug is in my brain. I think the cause may be a sprintf
-or vsprintf call that doesn't actually print what it is supposed to,
-since they pass INT_MAX for size, and that can of course easily cause
-buf+size to wrap-around (it is basically guaranteed on 32 bit).
-
-Sorry about this. Thanks for reporting, Johannes.
-
-Rasmus
+Ah, I thought I had addressed this before the holidays but it's
+clearly not we had discussed. Thanks for bringing this up, I'll make
+this change and repost.
