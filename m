@@ -1,117 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260AbbAPVeJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 16:34:09 -0500
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:62084 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751492AbbAPVeH (ORCPT
+	id S1752279AbbAPViX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 16:38:23 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47407 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750703AbbAPViW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 16:34:07 -0500
-Message-ID: <54B983CC.6090507@linaro.org>
-Date: Fri, 16 Jan 2015 16:34:04 -0500
-From: David Long <dave.long@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.2.0
-MIME-Version: 1.0
-To: Pratyush Anand <pratyush.anand@gmail.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
-        William Cohen <wcohen@redhat.com>,
-        Steve Capper <steve.capper@linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        "Jon Medhurst (Tixy)" <tixy@linaro.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        davem@davemloft.net, linux-kernel@vger.kernel.org,
-        Pratyush Anand <panand@redhat.com>
-Subject: Re: [PATCH v4 4/6] arm64: Kprobes instruction simulation support
-References: <1420949002-3726-1-git-send-email-dave.long@linaro.org>	<1420949002-3726-5-git-send-email-dave.long@linaro.org> <CAHM4w1n6wCUSX1QjP8EyA9zkJBZTM=6Vc32Vjm3wPuDv=FXZzw@mail.gmail.com>
-In-Reply-To: <CAHM4w1n6wCUSX1QjP8EyA9zkJBZTM=6Vc32Vjm3wPuDv=FXZzw@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Fri, 16 Jan 2015 16:38:22 -0500
+Date: Fri, 16 Jan 2015 13:38:20 -0800
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Dave Hansen <dave.hansen@intel.com>, Hugh Dickins <hughd@google.com>,
+        Peter Feiner <pfeiner@google.com>,
+        Jerome Marchand <jmarchan@redhat.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -mm v7 00/13] pagewalk: improve vma handling, apply to
+ new users
+Message-Id: <20150116133820.ab5754f94201697fae3cefcc@linux-foundation.org>
+In-Reply-To: <20150116163217.GA509@node.dhcp.inet.fi>
+References: <1415343692-6314-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	<20150116163217.GA509@node.dhcp.inet.fi>
+X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/14/15 04:32, Pratyush Anand wrote:
-> On Sun, Jan 11, 2015 at 9:33 AM, David Long <dave.long@linaro.org> wrote:
->> From: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
->>
->> Add support for AArch64 instruction simulation in kprobes.
->>
->> Kprobes needs simulation of instructions that cannot be stepped
->> from different memory location, e.g.: those instructions
->> that uses PC-relative addressing. In simulation, the behaviour
->> of the instruction is implemented using a copy of pt_regs.
->>
->> Following instruction catagories are simulated:
->>   - All branching instructions(conditional, register, and immediate)
->>   - Literal access instructions(load-literal, adr/adrp)
->>
->> Conditional execution is limited to branching instructions in
->> ARM v8. If conditions at PSTATE do not match the condition fields
->> of opcode, the instruction is effectively NOP. Kprobes considers
->> this case as 'miss'.
->> changes since v3:
->> from David A. Long:
->> 1) Fix incorrect simulate_ldrsw_literal() semantics.
->> 2) Use instruction test functions instead of private parse table.
->> from Will Cohen:
->> 3) Remove PC adjustments when simulating an instruction.
->> 4) Fix displacement calculations.
->>
->> Signed-off-by: Sandeepa Prabhu <sandeepa.prabhu@linaro.org>
->> Signed-off-by: William Cohen <wcohen@redhat.com>
->> Signed-off-by: David A. Long <dave.long@linaro.org>
->> ---
->
-> [...]
->
->>   static bool aarch64_insn_is_steppable(u32 insn)
->>   {
->> @@ -60,6 +130,32 @@ arm_kprobe_decode_insn(kprobe_opcode_t insn, struct arch_specific_insn *asi)
->>           */
->>          if (aarch64_insn_is_steppable(insn))
->>                  return INSN_GOOD;
->> +
->> +       asi->prepare = prepare_none;
->> +
->> +       if (aarch64_insn_is_bcond(insn)) {
->> +               asi->prepare = prepare_bcond;
->> +               asi->handler = simulate_b_cond;
->> +       } else if (aarch64_insn_is_cb(insn)) {
->> +               asi->prepare = prepare_cbz_cbnz;
->> +               asi->handler = simulate_cbz_cbnz;
->> +       } else if (aarch64_insn_is_tb(insn)) {
->> +               asi->prepare = prepare_tbz_tbnz;
->> +               asi->handler = simulate_tbz_tbnz;
->> +       } else if (aarch64_insn_is_adr(insn))
->
-> aarch64_insn_is_adr should be modified to aarch64_insn_is_adr_adrp
+On Fri, 16 Jan 2015 18:32:17 +0200 "Kirill A. Shutemov" <kirill@shutemov.name> wrote:
 
-Yes.
+> On Fri, Nov 07, 2014 at 07:01:51AM +0000, Naoya Horiguchi wrote:
+> > This series is ver.7 of page table walker patchset.
+> > 
+> > I apologize about my long delay since previous version (I have moved to
+> > Japan last month and no machine access for a while.)
+> > I just rebased this onto mmotm-2014-11-05-16-01. I had some conflicts but
+> > the resolution was not hard.
+> > Trinity showed no bug at least in my environment.
+> 
+> Andrew, any chance you'll find time for the patchset?
+> 
 
->> +               asi->handler = simulate_adr_adrp;
->> +       else if (aarch64_insn_is_b_bl(insn))
->> +               asi->handler = simulate_b_bl;
->> +       else if (aarch64_insn_is_ldr_lit(insn))
->> +               asi->handler = simulate_ldr_literal;
->> +       else if (aarch64_insn_is_ldrsw_lit(insn))
->> +               asi->handler = simulate_ldrsw_literal;
->
-> also
->
-> else if (aarch64_insn_is_br_blr(insn) || aarch64_insn_is_ret(insn))
->                 asi->handler = simulate_br_blr_ret;
+That was 2+ months ago - the patches have decayed somewhat.  I'm only
+seeing a few rejects so I'll have a play with them, see how it all
+looks.
 
-Yes.
-
->
-> ~Pratyush
->
-
--dl
 
