@@ -1,81 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756947AbbAPUyV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 15:54:21 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:51401 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753696AbbAPUyT (ORCPT
+	id S1757032AbbAPU7L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 15:59:11 -0500
+Received: from 38-89-136-45.emailpraja.com ([38.89.136.45]:52955 "EHLO
+	cloud6294.josebolsassl.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752337AbbAPU7E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 15:54:19 -0500
-Message-ID: <54B97A72.2050205@gmail.com>
-Date: Fri, 16 Jan 2015 21:54:10 +0100
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Fri, 16 Jan 2015 15:59:04 -0500
+Message-ID: <6398b02bb139bc13f72a6eafd19c88b5.squirrel@38.89.136.45>
+Date: Fri, 16 Jan 2015 20:56:37 -0000
+Subject: Please respond!!!
+From: =?iso-8859-1?Q?=22Antonio_Vi=F1al=22?= <ferderodcal@aol.jp>
+Reply-To: barr.antoniovinal@yahoo.com.hk
+User-Agent: SquirrelMail/1.5.2 [SVN]
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: mtk.manpages@gmail.com, "Carlos O'Donell" <carlos@redhat.com>,
-        Darren Hart <dvhart@linux.intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Jakub Jelinek <jakub@redhat.com>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Torvald Riegel <triegel@redhat.com>,
-        Roland McGrath <roland@redhat.com>, Darren Hart <dvhart@infradead.org>,
-        Anton Blanchard <anton@samba.org>, Petr Baudis <pasky@suse.cz>,
-        Eric Dumazet <edumazet@google.com>,
-        bill o gallmeister <bgallmeister@gmail.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Daniel Wagner <wagi@monom.org>,
-        Rich Felker <dalias@libc.org>
-Subject: Re: futex(2) man page update help request
-References: <537346E5.4050407@gmail.com> <CF98E3EF.90564%dvhart@linux.intel.com> <CAKgNAkh+PWzT2SByaLk_OtiAXeZSkWoMgu+ivDOt1dTWVtaatQ@mail.gmail.com> <5373D0CA.2050204@redhat.com> <alpine.DEB.2.02.1405150121230.6261@ionos.tec.linutronix.de> <CAKgNAkjQ5Dd_U9OojXdgeforpRevvPHNFAw99kBFPCwHgf7Ggg@mail.gmail.com> <alpine.DEB.2.02.1405151144390.6261@ionos.tec.linutronix.de> <54B7D87C.3090901@gmail.com> <alpine.DEB.2.11.1501152313330.5526@nanos> <54B92B71.2090509@gmail.com> <alpine.DEB.2.11.1501161618080.5526@nanos>
-In-Reply-To: <alpine.DEB.2.11.1501161618080.5526@nanos>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - cloud6294.josebolsassl.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - aol.jp
+X-Get-Message-Sender-Via: cloud6294.josebolsassl.com: authenticated_id: rodferncarlo/only user confirmed/virtual account not confirmed
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2015 04:20 PM, Thomas Gleixner wrote:
-> On Fri, 16 Jan 2015, Michael Kerrisk (man-pages) wrote:
-> 
->> Hello Thomas,
->>
->> On 01/15/2015 11:23 PM, Thomas Gleixner wrote:
->>> On Thu, 15 Jan 2015, Michael Kerrisk (man-pages) wrote:
->>>>> [EINVAL] uaddr equal uaddr2. Requeue to same futex.
->>>>
->>>> ??? I added this, but does this error not occur only for PI requeues?
->>>
->>> It's equally wrong for normal futexes. And its actually the same code
->>> checking for this for all variants.
->>
->> I don't understand "equally wrong" in your reply, I'm sorry. Do you
->> mean:
->>
->> a) This error text should be there for both normal and PI requeues
-> 
-> It is there for both. The requeue code has that check independent of
-> the requeue type (normal/pi). It never makes sense to requeue
-> something to itself whether normal or pi futex. We added this for PI,
-> because there it is harmful, but we did not special case it. So normal
-> futexes get the same treatment.
+Please respond!!!
+Hello friend!
 
-Hello Thomas, 
+I would like to contact you personally for an important proposal that
+could of interest to you.
+I send this email only to know if this email address is functional.
+I have something very important to discuss with you. Contact me for
+details by:  Email: fernrodyup12@aol.jp with your direct contacts.
 
-Color me stupid, but I can't see this in futex_requeue(). Where is that
-check that is "independent of the requeue type (normal/pi)"?
+Kind regards.
+Antonio Viñal.
 
-When I look through futex_requeue(), all the likely looking sources
-of EINVAL are governed by a check on the 'requeue_pi' argument.
 
-Thanks,
-
-Michael
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
