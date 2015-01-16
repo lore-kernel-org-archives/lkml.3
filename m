@@ -1,94 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755987AbbAPDO7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 22:14:59 -0500
-Received: from mail-vc0-f173.google.com ([209.85.220.173]:65407 "EHLO
-	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752940AbbAPDO6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 22:14:58 -0500
+	id S1756062AbbAPDSx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 22:18:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:35670 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754470AbbAPDSu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 22:18:50 -0500
+Message-ID: <54B88302.2070903@redhat.com>
+Date: Thu, 15 Jan 2015 22:18:26 -0500
+From: Jon Masters <jcm@redhat.com>
+Organization: Red Hat, Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-In-Reply-To: <1421375817-21793-1-git-send-email-hl@rock-chips.com>
-References: <1421375817-21793-1-git-send-email-hl@rock-chips.com>
-From: Daniel Kurtz <djkurtz@chromium.org>
-Date: Fri, 16 Jan 2015 11:14:37 +0800
-X-Google-Sender-Auth: 4K2wUECk8_mGMyADiHFjjrQc1-w
-Message-ID: <CAGS+omAvxNFaVkKJs2e4fWF-xeuMHrYSHFFeJZtdPETx+o4LFw@mail.gmail.com>
-Subject: Re: [PATCH v3] drm/panel: Add support for AUO b101ean01 panel
-To: huang lin <hl@rock-chips.com>
-Cc: Douglas Anderson <dianders@chromium.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        David Airlie <airlied@linux.ie>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: SPCR table parsing
+References: <54B880B5.6010907@redhat.com>
+In-Reply-To: <54B880B5.6010907@redhat.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 16, 2015 at 10:36 AM, huang lin <hl@rock-chips.com> wrote:
-> The AUO b101ean01 panel is a 10.1" 1280x800 panel,
-> which can be supported by the simple panel driver.
->
-> Signed-off-by: huang lin <hl@rock-chips.com>
+On 01/15/2015 10:08 PM, Jon Masters wrote:
 
-Reviewed-by: Daniel Kurtz <djkurtz@chromium.org>
+> We're implementing support for SPCR table parsing shortly[0], since it
+> will allow to deprecate supplying a "console=" (and eventually, also
+> "earlycon=") on 64-bit ARM servers, where it's not always the case that
+> we can assume a 16550 at a specific address. SPCR has been provided on
+> x86 systems since 2000 but is not (yet) supported by Linux.
+> 
+> If anyone knows of existing efforts on e.g. x86 or IA64, please get in
+> touch. I expect the initial implementation to require revision 2+ modern
+> server systems and possibly be limited to ARM initially.
 
->
-> ---
->
-> Changes in v3:
-> - changed moving auo_b101ean01 definitions under auo_b101aw03
->
->  drivers/gpu/drm/panel/panel-simple.c | 26 ++++++++++++++++++++++++++
->  1 file changed, 26 insertions(+)
->
-> diff --git a/drivers/gpu/drm/panel/panel-simple.c b/drivers/gpu/drm/panel/panel-simple.c
-> index e95385b..24828e0 100644
-> --- a/drivers/gpu/drm/panel/panel-simple.c
-> +++ b/drivers/gpu/drm/panel/panel-simple.c
-> @@ -345,6 +345,29 @@ static const struct panel_desc auo_b101aw03 = {
->         },
->  };
->
-> +static const struct drm_display_mode auo_b101ean01_mode = {
-> +       .clock = 72500,
-> +       .hdisplay = 1280,
-> +       .hsync_start = 1280 + 147,
-> +       .hsync_end = 1280 + 147 + 32,
-> +       .htotal = 1280 + 147 + 32 + 21,
-> +       .vdisplay = 800,
-> +       .vsync_start = 800 + 4,
-> +       .vsync_end = 800 + 4 + 4,
-> +       .vtotal = 800 + 4 + 4 + 8,
-> +       .vrefresh = 60,
-> +};
-> +
-> +static const struct panel_desc auo_b101ean01 = {
-> +       .modes = &auo_b101ean01_mode,
-> +       .num_modes = 1,
-> +       .bpc = 6,
-> +       .size = {
-> +               .width = 217,
-> +               .height = 136,
-> +       },
-> +};
-> +
->  static const struct drm_display_mode auo_b101xtn01_mode = {
->         .clock = 72000,
->         .hdisplay = 1366,
-> @@ -727,6 +750,9 @@ static const struct of_device_id platform_of_match[] = {
->                 .compatible = "auo,b101aw03",
->                 .data = &auo_b101aw03,
->         }, {
-> +               .compatible = "auo,b101ean01",
-> +               .data = &auo_b101ean01,
-> +       }, {
->                 .compatible = "auo,b101xtn01",
->                 .data = &auo_b101xtn01,
->         }, {
-> --
-> 1.9.1
->
->
+Side note: I preemptively had this added to the SBBR so it's already
+required on ARM servers, and have confirmed the reference systems out
+there have valid tables for us to use ahead of time.
+
+Jon.
+
