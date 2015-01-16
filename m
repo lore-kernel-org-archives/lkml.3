@@ -1,88 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756407AbbAPQSK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 11:18:10 -0500
-Received: from gw-1.arm.linux.org.uk ([78.32.30.217]:45092 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751736AbbAPQSH (ORCPT
+	id S1754083AbbAPQWu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 11:22:50 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:36314 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751736AbbAPQWt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 11:18:07 -0500
-Date: Fri, 16 Jan 2015 16:17:52 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Roman Peniaev <r.peniaev@gmail.com>
-Cc: Kees Cook <keescook@chromium.org>, Will Deacon <will.deacon@arm.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Sekhar Nori <nsekhar@ti.com>,
+	Fri, 16 Jan 2015 11:22:49 -0500
+Date: Fri, 16 Jan 2015 16:22:44 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: Pratyush Anand <panand@redhat.com>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        Steve Capper <steve.capper@linaro.org>,
+        Oleg Nesterov <oleg@redhat.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
+        David Long <dave.long@linaro.org>, William Cohen <wcohen@redhat.com>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/2] ARM: entry-common: fix forgotten set of
- thread_info->syscall
-Message-ID: <20150116161752.GL12302@n2100.arm.linux.org.uk>
-References: <1420986751-30364-1-git-send-email-r.peniaev@gmail.com>
- <1420986751-30364-2-git-send-email-r.peniaev@gmail.com>
- <20150112183955.GO13360@arm.com>
- <CACZ9PQXW9G4Vw-dcPwkdVE=uoYmDYEQnJWDnnpup1LxC3s5QPg@mail.gmail.com>
- <CAGXu5jLO-YSaF8P9o3jcXP4VZCPYVshz73krnchYuv9pPGY6Sw@mail.gmail.com>
- <CACZ9PQVo0SF4Z-rdNk4e=yY17Xt9n5hAqm4ZRNLEw3jGYYcvtA@mail.gmail.com>
- <CAGXu5j+O6znN=7-gc3PqwqFA5MFRPLGBUzabOmQjWn_9WTjvpg@mail.gmail.com>
- <CACZ9PQUEprgKrpHazDULA5mf-OaoX=MAjEeWdspZTXT_+iUKWw@mail.gmail.com>
- <20150116155923.GK12302@n2100.arm.linux.org.uk>
- <CACZ9PQUVFtCQg6XjDbokEPy_R2fZcHiq6+EEUZnx4FVfpfZxJg@mail.gmail.com>
+Subject: Re: Query: ARM64: Behavior of el1_dbg exception while executing
+ el0_dbg
+Message-ID: <20150116162244.GA7091@arm.com>
+References: <20150108162312.GO11583@arm.com>
+ <54AEBE45.9080203@redhat.com>
+ <20150109154635.GG11258@arm.com>
+ <54B00C39.1070809@redhat.com>
+ <20150112173005.GK13360@arm.com>
+ <54B4BF4C.2030009@redhat.com>
+ <20150113155221.GG16524@e104818-lin.cambridge.arm.com>
+ <54B55B95.1070402@redhat.com>
+ <54B7EF3C.8060909@redhat.com>
+ <54B8FD49.2060503@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CACZ9PQUVFtCQg6XjDbokEPy_R2fZcHiq6+EEUZnx4FVfpfZxJg@mail.gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <54B8FD49.2060503@redhat.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 17, 2015 at 01:08:11AM +0900, Roman Peniaev wrote:
-> On Sat, Jan 17, 2015 at 12:59 AM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
-> > On Sat, Jan 17, 2015 at 12:57:02AM +0900, Roman Peniaev wrote:
-> >> On Fri, Jan 16, 2015 at 7:54 AM, Kees Cook <keescook@chromium.org> wrote:
-> >> > One interesting thing I noticed (which is unchanged by this series),
-> >> > but pulling ARM_r7 during the seccomp ptrace event shows __NR_poll,
-> >> > not __NR_restart_syscall, even though it was a __NR_restart_syscall
-> >> > trap from seccomp. Is there a better place to see the actual syscall?
-> >>
-> >> As I understand we do not push new r7 to the stack, and ptrace uses the
-> >> old value.
+On Fri, Jan 16, 2015 at 12:00:09PM +0000, Pratyush Anand wrote:
+> On Thursday 15 January 2015 10:17 PM, Pratyush Anand wrote:
+> > On Tuesday 13 January 2015 11:23 PM, Pratyush Anand wrote:
+> >> I will still try to find some way to capture enable_dbg macro path.H
 > >
-> > And why should we push r7 to the stack?  ptrace should be using the
-> > recorded system call number, rather than poking about on the stack
-> > itself.
+> > I did instrumented debug tap points at all the location from where
+> > enable_debug macro is called(see attached debug patch). But, I do not
+> > see that, execution reaches to any of those tap points between el0_dbg
+> > and el1_dbg, and tap points debug log also confirms that el1_dbg is
+> > raised before el0_dbg is returned.
 > 
-> Probably we should not, but the behaviour comparing arm to x86 is different.
+> Probably we all missed this, ARMv8 specs is very clear about it. In 
+> section "D2.1 About debug exceptions" it says:
+> 
+> Software Breakpoint Instruction exceptions cannot be masked. The PE 
+> takes Software Breakpoint Instruction exceptions regardless of both of 
+> the following:
+> • The current Exception level.
+> • The current Security state.
 
-We definitely should not, because changing the stacked value changes the
-value in r7 after the syscall has returned.  We have guaranteed that the
-value will be preserved across syscalls for years, so we really should
-not be changing that.
+Ah, of course, I completely forgot you were using software breakpoints!
 
-> Also there is no any way from userspace to figure out what syscall was
-> restarted, if you do not trace each syscall enter and exit from the
-> very beginning.
+> So, reception of el1_dbg while executing el0_dbg seems perfectly normal 
+> to me. If you agree then I am back with the original query which I asked 
+> in the beginning of the 
+> thread,(http://permalink.gmane.org/gmane.linux.ports.arm.kernel/383672) 
+> ie how can instruction_pointer be wrong when second el1_dbg is called 
+> recursively(as follows).
+> 
+> [1]-> el0_dbg (After executing BRK instruction by user)
+> [2]	-> el1_dbg (when uprobe break handler at [1] executes BRK instruction)
+> 		(At the end of this ELR_EL1 is programmed with fffffdfffc000004)
+> [3]		-> el1_dbg (when kprobe break handler at [2] enables single stepping)
+> 		(Here ELR_EL1 was found fffffe0000092470).So When this el1_dbg was 
+> received, then regs->pc  values are not same what was programmed in 
+> ELR_EL1 at the return of [2].
 
-Thinking about ptrace, that's been true for years.
+Perhaps you're not removing the BRK instruction properly, and so you try to
+single-step a trapping instruction and end up stepping into the exception?
 
-It really depends whether you consider the restart syscall a userspace
-thing or a kernelspace thing.  When you consider that the vast majority
-of syscall restarts are done internally in the kernel, and we just
-re-issue the syscall, it immediately brings up the question "why is
-the restart block method different?" and "should the restart block
-method be visible to userspace?"
-
-IMHO, it is prudent not to expose kernel internals to userspace unless
-there is a real reason to, otherwise they become part of the userspace
-API.
-
--- 
-FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
-according to speedtest.net.
+Will
