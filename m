@@ -1,31 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755967AbbAPC7h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 21:59:37 -0500
-Received: from ozlabs.org ([103.22.144.67]:34718 "EHLO ozlabs.org"
+	id S1753450AbbAPDCo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 22:02:44 -0500
+Received: from ozlabs.org ([103.22.144.67]:59136 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752271AbbAPC7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 21:59:35 -0500
-Message-ID: <1421377171.18166.1.camel@ellerman.id.au>
-Subject: Re: [PATCH v4 20/20] kbuild: add a new kselftest_install make
- target to install selftests
+	id S1751343AbbAPDCn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jan 2015 22:02:43 -0500
+Message-ID: <1421377361.18166.2.camel@ellerman.id.au>
+Subject: Re: [PATCH] pseries/le: Fix another endiannes issue in RTAS call
+ from xmon
 From: Michael Ellerman <mpe@ellerman.id.au>
-To: Shuah Khan <shuahkh@osg.samsung.com>
-Cc: mmarek@suse.cz, masami.hiramatsu.pt@hitachi.com,
-        gregkh@linuxfoundation.org, akpm@linux-foundation.org,
-        rostedt@goodmis.org, mingo@redhat.com, davem@davemloft.net,
-        keescook@chromium.org, tranmanphong@gmail.com, cov@codeaurora.org,
-        dh.herrmann@gmail.com, hughd@google.com, bobby.prani@gmail.com,
-        serge.hallyn@ubuntu.com, ebiederm@xmission.com,
-        tim.bird@sonymobile.com, josh@joshtriplett.org, koct9i@gmail.com,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, netdev@vger.kernel.org
-Date: Fri, 16 Jan 2015 13:59:31 +1100
-In-Reply-To: <54B8502C.2040708@osg.samsung.com>
-References: <cover.1420571615.git.shuahkh@osg.samsung.com>
-	 <2c5a28faaa79d9c2415854a08817ada509fcb943.1420571615.git.shuahkh@osg.samsung.com>
-	 <54B69A1B.80006@osg.samsung.com> <1421362698.23332.6.camel@ellerman.id.au>
-	 <54B8502C.2040708@osg.samsung.com>
+To: Tyrel Datwyler <tyreld@linux.vnet.ibm.com>
+Cc: linuxppc-dev@lists.ozlabs.org, Laurent Dufour <ldufour@linux.vnet.ibm.com>,
+        paulus@samba.org, linux-kernel@vger.kernel.org
+Date: Fri, 16 Jan 2015 14:02:41 +1100
+In-Reply-To: <54B85016.4080906@linux.vnet.ibm.com>
+References: <1421295950.11409.3.camel@ellerman.id.au>
+	 <1421342627-7214-1-git-send-email-ldufour@linux.vnet.ibm.com>
+	 <54B8188D.1060907@linux.vnet.ibm.com>
+	 <1421360377.23332.1.camel@ellerman.id.au>
+	 <54B85016.4080906@linux.vnet.ibm.com>
 Content-Type: text/plain; charset="UTF-8"
 X-Mailer: Evolution 3.12.7-0ubuntu1 
 Mime-Version: 1.0
@@ -34,50 +28,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2015-01-15 at 16:41 -0700, Shuah Khan wrote:
-> On 01/15/2015 03:58 PM, Michael Ellerman wrote:
-> > On Wed, 2015-01-14 at 09:32 -0700, Shuah Khan wrote:
-> >> On 01/06/2015 12:43 PM, Shuah Khan wrote:
-> >>> Add a new make target to install to install kernel selftests.
-> >>> This new target will build and install selftests. kselftest
-> >>> target now depends on kselftest_install and runs the generated
-> >>> kselftest script to reduce duplicate work and for common look
-> >>> and feel when running tests.
+On Thu, 2015-01-15 at 15:41 -0800, Tyrel Datwyler wrote:
+> On 01/15/2015 02:19 PM, Michael Ellerman wrote:
+> > On Thu, 2015-01-15 at 11:44 -0800, Tyrel Datwyler wrote:
+> >> On 01/15/2015 09:23 AM, Laurent Dufour wrote:
+> >>> The commit 3b8a3c010969 ("powerpc/pseries: Fix endiannes issue in RTAS
+> >>> call from xmon") was fixing an endianness issue in the call made from
+> >>> xmon to RTAS.
 > >>>
-> >>> make kselftest_target:
-> >>> -- exports kselftest INSTALL_KSFT_PATH
-> >>>    default $(INSTALL_MOD_PATH)/lib/kselftest/$(KERNELRELEASE)
-> >>> -- exports INSTALL_KSFT_PATH
-> >>> -- runs selftests make install target
-> >>>
-> >>> Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
+> >>> However, as Michael Ellerman noticed, this fix was not complete, the
+> >>> token value was not byte swapped. This lead to call an unexpected and
+> >>> most of the time unexisting RTAS function, which is silently ignored
+> >>> by RTAS.
 > >>
-> >> Hi Marek,
-> >>
-> >> Could you please Ack this patch, if this version looks good,
-> >> so I can take this through ksefltest tree.
+> >> Nit. Not so much that is silently ignored by RTAS as much as
+> >> disable_surveillance silently doesn't check the return status of the
+> >> RTAS call. Maybe a check is warranted and reporting of non-success.
 > > 
-> > Hi Shuah,
-> > 
-> > I posted what I think is a better approach last week. It's less code and less
-> > repetition, and installs the majority of tests this series missed - ie. the
-> > powerpc ones.
-> > 
-> > Please at least respond to it before you put this series into next.
-> > 
-> > https://lkml.org/lkml/2015/1/9/45
+> > Yeah you're right, I added a printf of the result and got -3, which is also
+> > wrong as far as I can tell, but I didn't have the energy to chase it any
+> > further.
 > 
-> Michael,
-> 
-> I didn't get a chance to review your patches yet. I plan to
-> review and give you feedback by end of this week. 
+> If this was on a powerkvm guest set-indicator should be present for
+> hotplug (DLPAR) support. However, the surveillance indicator would not
+> be implemented. I know sometimes I forget if I'm on a powervm or
+> powerkvm guest. Just a thought.
 
-Thanks. My week ends quite soon (.au time zone), so early next week is fine.
+Right that does explain it. I went looking for the KVM kernel/qemu code that
+implements set-indicator but couldn't find it. Presumably it's in some branch
+other than the one I was looking at, or I was grepping for the wrong thing.
 
-> This patch is needed in any case for either approach.
-
-The version in my series is slightly different, but probably similar enough. I
-CC'ed Michal on my series also.
+So I guess a printf there is probably not helpful, because it will fire always
+on PowerKVM (at least at the moment).
 
 cheers
 
