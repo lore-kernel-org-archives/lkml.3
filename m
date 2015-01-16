@@ -1,188 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754796AbbAPCpg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jan 2015 21:45:36 -0500
-Received: from nasmtp01.atmel.com ([192.199.1.245]:46989 "EHLO
-	DVREDG01.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752971AbbAPCpf convert rfc822-to-8bit (ORCPT
+	id S1755872AbbAPCuv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jan 2015 21:50:51 -0500
+Received: from mailgw01.mediatek.com ([210.61.82.183]:46033 "EHLO
+	mailgw01.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752271AbbAPCut (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jan 2015 21:45:35 -0500
-From: "Yang, Wenyou" <Wenyou.Yang@atmel.com>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        "Ferre, Nicolas" <Nicolas.FERRE@atmel.com>
-CC: Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Arnd Bergmann <arnd@arndb.de>,
+	Thu, 15 Jan 2015 21:50:49 -0500
+X-Listener-Flag: 11101
+Subject: Re: [PATCH v4 4/5] ARM: mediatek: Add EINT support to MTK pinctrl
+ driver.
+From: Yingjoe Chen <yingjoe.chen@mediatek.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Grant Likely <grant.likely@linaro.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Vladimir Murzin <vladimir.murzin@arm.com>,
+        <maoguang.meng@mediatek.com>, Russell King <linux@arm.linux.org.uk>,
+        <srv_heupstream@mediatek.com>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Hongzhou Yang <hongzhou.yang@mediatek.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>, <alan.cheng@mediatek.com>,
+        <toby.liu@mediatek.com>, Sascha Hauer <kernel@pengutronix.de>,
+        Kumar Gala <galak@codeaurora.org>, <dandan.he@mediatek.com>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [PATCH v2 1/8] ARM: at91: pm: rework cpu detection
-Thread-Topic: [PATCH v2 1/8] ARM: at91: pm: rework cpu detection
-Thread-Index: AQHQMNR+hjBWudJsRUu9qbNKeOgQTZzCCQAw
-Date: Fri, 16 Jan 2015 02:44:39 +0000
-Message-ID: <B256D81BAE5131468A838E5D7A243641BFCE1327@penmbx01>
-References: <1421333971-7581-1-git-send-email-alexandre.belloni@free-electrons.com>
- <1421333971-7581-2-git-send-email-alexandre.belloni@free-electrons.com>
-In-Reply-To: <1421333971-7581-2-git-send-email-alexandre.belloni@free-electrons.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.168.5.13]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <CACRpkdY7_A_rORDvDrGtV0aa6mJGj=Sr-k=KVGu_=0et-gNpiQ@mail.gmail.com>
+References: <1418772873-19747-1-git-send-email-hongzhou.yang@mediatek.com>
+	 <1418772873-19747-5-git-send-email-hongzhou.yang@mediatek.com>
+	 <1418807365.6443.17.camel@mtksdaap41>
+	 <1420535817.17567.10.camel@mtksdaap41>
+	 <CACRpkdb2KJbjzFgTmDvHSw7jNAExxVtU3y4_fgyn6J8hcW5OrQ@mail.gmail.com>
+	 <1421202745.27675.148.camel@mtksdaap41>
+	 <CACRpkdY7_A_rORDvDrGtV0aa6mJGj=Sr-k=KVGu_=0et-gNpiQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 16 Jan 2015 10:50:39 +0800
+Message-ID: <1421376639.31355.169.camel@mtksdaap41>
 MIME-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-MTK: N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alexandre,
+On Thu, 2015-01-15 at 18:30 +0100, Linus Walleij wrote:
+> On Wed, Jan 14, 2015 at 3:32 AM, Yingjoe Chen <yingjoe.chen@mediatek.com> wrote:
+> 
+> > Let's me describe my problem more clearly. On our SoC, if a pin support
+> > interrupt it will have 2 different numbers for it. For examples, here's
+> > a partial list for the gpio and EINT number mappings on mt8135:
+> >
+> >    gpio  EINT
+> >      0     49
+> >      1     48
+> >     ...........
+> >     36     97
+> >     37     19
+> >     ...........
+> >
+> > To control interrupt related function, we'll need EINT number to locate
+> > corresponding register bits. When interrupt occurs, the interrupt
+> > handler will know which EINT interrupt occurs. In irq_chip functions,
+> > only .irq_request_resources and .irq_release_resources use gpio number
+> > to set pinmux to EINT mode and all the others need EINT number.
+> >
+> > Because EINT number is used more frequently in interrupt related
+> > functions, it make sense to use EINT number as hwirq instead of gpio
+> > number. That means irq_domain will translate EINT number to virq.
+> > So what mtk_gpio_to_irq actually do is translate gpio number to EINT
+> > number and use irq domain to translate it to virq.
+> 
+> But the EINT is not a hardware number is it?
 
-> -----Original Message-----
-> From: linux-arm-kernel [mailto:linux-arm-kernel-bounces@lists.infradead.org] On
-> Behalf Of Alexandre Belloni
-> Sent: Thursday, January 15, 2015 10:59 PM
-> To: Ferre, Nicolas
-> Cc: Boris Brezillon; Arnd Bergmann; linux-kernel@vger.kernel.org; Alexandre
-> Belloni; Jean-Christophe Plagniol-Villard; linux-arm-kernel@lists.infradead.org
-> Subject: [PATCH v2 1/8] ARM: at91: pm: rework cpu detection
-> 
-> Store SoC differences in a struct to remove cpu_is_* usage.
-> 
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-> ---
->  arch/arm/mach-at91/pm.c | 54 ++++++++++++++++++++++++++++++-----------------
-> --
->  1 file changed, 33 insertions(+), 21 deletions(-)
-> 
-> diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c index
-> 9b15169a1c62..79aa793d1f00 100644
-> --- a/arch/arm/mach-at91/pm.c
-> +++ b/arch/arm/mach-at91/pm.c
-> @@ -17,6 +17,7 @@
->  #include <linux/interrupt.h>
->  #include <linux/sysfs.h>
->  #include <linux/module.h>
-> +#include <linux/of.h>
->  #include <linux/platform_device.h>
->  #include <linux/io.h>
->  #include <linux/clk/at91_pmc.h>
-> @@ -32,6 +33,11 @@
->  #include "generic.h"
->  #include "pm.h"
-> 
-> +static struct {
-> +	unsigned long uhp_udp_mask;
-> +	int memctrl;
-> +} at91_pm_data;
-> +
->  static void (*at91_pm_standby)(void);
-> 
->  static int at91_pm_valid_state(suspend_state_t state) @@ -71,17 +77,9 @@ static
-> int at91_pm_verify_clocks(void)
->  	scsr = at91_pmc_read(AT91_PMC_SCSR);
-> 
->  	/* USB must not be using PLLB */
-> -	if (cpu_is_at91rm9200()) {
-> -		if ((scsr & (AT91RM9200_PMC_UHP |
-> AT91RM9200_PMC_UDP)) != 0) {
-> -			pr_err("AT91: PM - Suspend-to-RAM with USB still
-> active\n");
-> -			return 0;
-> -		}
-> -	} else if (cpu_is_at91sam9260() || cpu_is_at91sam9261() ||
-> cpu_is_at91sam9263()
-> -			|| cpu_is_at91sam9g20() || cpu_is_at91sam9g10()) {
-> -		if ((scsr & (AT91SAM926x_PMC_UHP |
-> AT91SAM926x_PMC_UDP)) != 0) {
-> -			pr_err("AT91: PM - Suspend-to-RAM with USB still
-> active\n");
-> -			return 0;
-> -		}
-> +	if ((scsr & at91_pm_data.uhp_udp_mask) != 0) {
-> +		pr_err("AT91: PM - Suspend-to-RAM with USB still active\n");
-> +		return 0;
->  	}
-> 
->  	/* PCK0..PCK3 must be disabled, or configured to use clk32k */ @@ -
-> 149,18 +147,13 @@ static int at91_pm_enter(suspend_state_t state)
->  			 * turning off the main oscillator; reverse on wakeup.
->  			 */
->  			if (slow_clock) {
-> -				int memctrl = AT91_MEMCTRL_SDRAMC;
-> -
-> -				if (cpu_is_at91rm9200())
-> -					memctrl = AT91_MEMCTRL_MC;
-> -				else if (cpu_is_at91sam9g45())
-> -					memctrl = AT91_MEMCTRL_DDRSDR;
->  #ifdef CONFIG_AT91_SLOW_CLOCK
->  				/* copy slow_clock handler to SRAM, and call it */
->  				memcpy(slow_clock, at91_slow_clock,
-> at91_slow_clock_sz);  #endif
->  				slow_clock(at91_pmc_base, at91_ramc_base[0],
-> -					   at91_ramc_base[1], memctrl);
-> +					   at91_ramc_base[1],
-> +					   at91_pm_data.memctrl);
->  				break;
->  			} else {
->  				pr_info("AT91: PM - no slow clock mode
-> enabled ...\n"); @@ -237,10 +230,29 @@ static int __init at91_pm_init(void)
-> 
->  	pr_info("AT91: Power Management%s\n", (slow_clock ? " (with slow clock
-> mode)" : ""));
-> 
-> -	/* AT91RM9200 SDRAM low-power mode cannot be used with self-refresh.
-> */
-> -	if (cpu_is_at91rm9200())
-> +	at91_pm_data.memctrl = AT91_MEMCTRL_SDRAMC;
-> +
-> +	if (of_machine_is_compatible("atmel,at91rm9200")) {
-> +		/*
-> +		 * AT91RM9200 SDRAM low-power mode cannot be used with
-> +		 * self-refresh.
-> +		 */
->  		at91_ramc_write(0, AT91RM9200_SDRAMC_LPR, 0);
-> -
-> +
-> +		at91_pm_data.uhp_udp_mask = AT91RM9200_PMC_UHP |
-> +					    AT91RM9200_PMC_UDP;
-> +		at91_pm_data.memctrl = AT91_MEMCTRL_MC;
-> +	} else if (of_machine_is_compatible("atmel,at91sam9260") ||
-> +		   of_machine_is_compatible("atmel,at91sam9g20") ||
-> +		   of_machine_is_compatible("atmel,at91sam9261") ||
-> +		   of_machine_is_compatible("atmel,at91sam9g10") ||
-> +		   of_machine_is_compatible("atmel,at91sam9263")) {
-> +		at91_pm_data.uhp_udp_mask = AT91SAM926x_PMC_UHP |
-> +					    AT91SAM926x_PMC_UDP;
-> +	} else if (of_machine_is_compatible("atmel,at91sam9g45")) {
-> +		at91_pm_data.memctrl = AT91_MEMCTRL_DDRSDR;
-> +	}
-> +
-About the memory controller type, I prefer to get it during the memory controller initialization, from the sram_ids[].data which defined in the setup.c,
-As this,
-static const struct at91_ramc_of_data at91rm9200_ramc_of_data = {
-	.ramc_type = AT91_MEMCTRL_MC,
-};
-...
-static struct of_device_id ramc_ids[] = {
-	{ .compatible = "atmel,at91rm9200-sdramc", .data = &at91rm9200_ramc_of_data},
-	... ...
-	{ /*sentinel*/ }
-};
+It is a hardware number. eg, to mask irq for the gpio 0 above, we have
+to set bit49 in EINT mask_set register. When this irq triggered, it is
+reported using EINT status register bit49.
 
-What about you? 
+We can find out EINT number for a GPIO using mtk_desc_pin tables. In
+drivers/pinctrl/mediatek/pinctrl-mtk-mt8135.h, for GPIO0, we can see its
+EINT is 49 and must set to function 2 for EINT. I believe this is
+similar to sunxi.
 
->  	if (at91_cpuidle_device.dev.platform_data)
->  		platform_device_register(&at91_cpuidle_device);
-> 
-> --
-> 2.1.0
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+        MTK_PIN(
+                PINCTRL_PIN(0, "MSDC0_DAT7"),
+                "D21", "mt8135",
+                MTK_EINT_FUNCTION(2, 49),
+                MTK_FUNCTION(0, "GPIO0"),
+                MTK_FUNCTION(1, "MSDC0_DAT7"),
+                MTK_FUNCTION(2, "EINT49"),
+                MTK_FUNCTION(3, "I2SOUT_DAT"),
+                MTK_FUNCTION(4, "DAC_DAT_OUT"),
+                MTK_FUNCTION(5, "PCM1_DO"),
+                MTK_FUNCTION(6, "SPI1_MO"),
+                MTK_FUNCTION(7, "NALE")
+        ),
 
-Best Regards,
-Wenyou Yang
+Joe.C
+
+
