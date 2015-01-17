@@ -1,140 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752718AbbAQALU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 19:11:20 -0500
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:65189 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751216AbbAQALS (ORCPT
+	id S1752389AbbAQATi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 19:19:38 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:37504 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751622AbbAQATg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 19:11:18 -0500
-X-IronPort-AV: E=Sophos;i="5.09,414,1418112000"; 
-   d="scan'208";a="55174385"
-Message-ID: <54B9A8A2.6090209@broadcom.com>
-Date: Fri, 16 Jan 2015 16:11:14 -0800
-From: Ray Jui <rjui@broadcom.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
-MIME-Version: 1.0
-To: Linus Walleij <linus.walleij@linaro.org>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        "Mark Rutland" <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "Alexandre Courbot" <gnurou@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        "Christian Daudt" <bcm@fixthebug.org>,
-        Matt Porter <mporter@linaro.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, Joe Perches <joe@perches.com>,
-        Arnd Bergmann <arnd@arndb.de>, Scott Branden <sbranden@broadcom.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v6 2/3] gpio: Cygnus: add GPIO driver
-References: <rjui@broadcom.com>	<1418696307-19392-1-git-send-email-rjui@broadcom.com>	<1418696307-19392-3-git-send-email-rjui@broadcom.com>	<CACRpkdYGksEseGaO49=1rUi5WBdOxwAd-F1gpgZn+BFatRCdDg@mail.gmail.com>	<54B55068.8050500@broadcom.com> <CACRpkdZef8S-EAbShjJ1eg+-3wQKn+yx4u1k_Mf8F7uFkJYdFw@mail.gmail.com>
-In-Reply-To: <CACRpkdZef8S-EAbShjJ1eg+-3wQKn+yx4u1k_Mf8F7uFkJYdFw@mail.gmail.com>
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	Fri, 16 Jan 2015 19:19:36 -0500
+From: Andy Lutomirski <luto@amacapital.net>
+To: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: =?UTF-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, kvm list <kvm@vger.kernel.org>,
+        Borislav Petkov <bp@suse.de>, Rik van Riel <riel@redhat.com>,
+        Andy Lutomirski <luto@amacapital.net>
+Subject: [PATCH v2 0/3] x86_64,entry: Rearrange the syscall exit optimizations
+Date: Fri, 16 Jan 2015 16:19:26 -0800
+Message-Id: <cover.1421453410.git.luto@amacapital.net>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Linus, I suspect you'll either like or hate this series.  Or maybe
+you'll think it's crazy but you'll like it anyway.  I'm curious
+which of those is the case. :)
 
+The syscall exit asm is a big mess.  There's a really fast path, some
+kind of fast path code (with a hard-coded optimization for audit), and
+the really slow path.  The result is that it's very hard to work with
+this code.  There are some asm paths that are much slower than they
+should be (context tracking is a major offender), but no one really
+wants to add even more asm to speed them up.
 
-On 1/16/2015 2:14 AM, Linus Walleij wrote:
-> On Tue, Jan 13, 2015 at 6:05 PM, Ray Jui <rjui@broadcom.com> wrote:
->> On 1/13/2015 12:53 AM, Linus Walleij wrote:
->>> On Tue, Dec 16, 2014 at 3:18 AM, Ray Jui <rjui@broadcom.com> wrote:
->>>
->>>> +/* drive strength control for ASIU GPIO */
->>>> +#define CYGNUS_GPIO_ASIU_DRV0_CTRL_OFFSET 0x58
->>>> +
->>>> +/* drive strength control for CCM GPIO */
->>>> +#define CYGNUS_GPIO_CCM_DRV0_CTRL_OFFSET  0x00
->>>
->>> This stuff (drive strength) is pin control, pin config.
->>> It does not belong in a pure GPIO driver. If you're
->>> making a combined pin control + GPIO driver, it
->>> shall be put in drivers/pinctrl/*
->>>
->> Okay, I have some questions here. Are you suggesting me to register this
->> driver to both the pinctrl subsystem and gpiolib and move it to under
->> drivers/pinctrl/*?
-> 
-> Either you can have a combined driver in drivers/pinctrl/*
-> which has one probe() function calling pinctrl_register(),
-> gpiochip_add(), gpiochip_add_pin_range(), having the gpio
-> parts call into the pin control backend with
-> pinctrl_request_gpio(), pinctrl_free_gpio(),
-> pinctrl_gpio_direction_input(), pinctrl_gpio_direction_output().
-> 
-> Or you can split it in one driver in drivers/pinctrl/*
-> dealing with just the pin control stuff, and another driver
-> in drivers/gpio/* dealing with the GPIO stuff, each with one
-> probe() function.
-> 
-> If they are using the same register range, the first approach
-> is probably most intuitive. If the pin control and GPIO parts
-> are separated in different register ranges, probably the
-> second approach is the best.
-> 
->> Or Are you suggesting me to combine this driver with the other Cygnus
->> pinctrl driver (which only supports pinmux)?
-> 
-> Depends on which hardware block the pin control-like
-> registers belongs in. See per above.
-> 
->> Note in Cygnus, all pinmux logic is done in the pinmux block. And there
->> are 3 GPIO controllers, that handle GPIO, drive strength of the GPIO
->> pins, internal pull up/down of the GPIO pins, which are handled in this
->> driver. So this driver is generic to all 3 GPIO controllers, as you can
->> see from the device tree bindings, there are 3 nodes.
->>
->> Therefore, I think it makes sense to have one pinmux driver that handles
->> the pinmux block, and one generic pinctrl + gpio driver that handles
->> functions supported by all 3 GPIO controllers. Does this make sense to you?
-> 
-> Yep.
-> 
-> Some hardware designs put the software-controlled biasing
-> resistors in the GPIO block electronically connected to the actual
-> pins, so that e.g. the biasing will be available if some MMC or
-> whatever is using the same pins in another muxing. In such
-> situations it's quite evident that they need to be a combined
-> GPIO and pin controller.
-> 
-> I have some regrets that bolting a second pin controller to the
-> GPIO chip make things a bit complex but it's a price we have
-> to pay for getting some kind of generic interface.
-> 
-> Yours,
-> Linus Walleij
-> 
-Okay. In summary, I think both of us think the following approach makes
-sense in my situation:
-- leave pinmux in pinctrl-bcm-cygnus.c
-- leave pinctrl + gpio in pinctrl-bcm-cygnus-gpio.c under drivers/pinctrl/*
+This series takes a different, unorthodox approach.  Rather than trying
+to avoid entering the very slow iret path, it adds a way back out of the
+iret path.  The result is a dramatic speedup for context tracking, user
+return notification, and similar code, as the cost of a few lines of
+tricky asm.  Nonetheless, it's barely a net addition of asm code,
+because we get to remove the fast path optimizations for audit and
+rescheduling.
 
-But by thinking about this more, I thought this would create duplicated
-pinctrl descriptors in our system, one from the pinmux driver, and the
-other from this pinctrl+gpio driver. That is probably undesirable?
+Thoughts?  If this works, it opens the door for a lot of further
+consolidation of the exit code.
 
-By reviewing various drivers in the pinctrl directory, I found what
-pinctrl-u300.c and pinctrl-coh901.c does seems to serve as a good model
-for me to follow:
-- pinctrl-u300.c is the pinmux driver
-- pinctrl-coh901.c is the gpio+pinctrl driver
+Note: patch 1 in this series has been floating around on the list
+for quite a while.  It's mandatory for this series to work, because
+the buglet that it fixes almost completely defeats the optimization
+that I'm introducing.
 
-The GPIO pinctrl logic is in the coh901 block, so pinctrl-coh901.c
-exposed two public functions u300_gpio_config_get, u300_gpio_config_set
-that pinctrl-u300.c can use. The u300 populates all pinmux/pinctrl
-related functions into the subsystem. This way there's only one pinctrl
-descriptor, populated through pinctrl-u300.c.
+Note: Some optimization along these lines is probably certainly needed
+to get anything resembling acceptable performance out of the FPU changes
+that Rik is working on.
 
-Does that model make more sense to you?
+Andy Lutomirski (3):
+  x86_64,entry: Fix RCX for traced syscalls
+  x86_64,entry: Use sysret to return to userspace when possible
+  x86_64,entry: Remove the syscall exit audit and schedule optimizations
 
-Thanks,
+ arch/x86/kernel/entry_64.S | 109 +++++++++++++++++++++++++--------------------
+ 1 file changed, 61 insertions(+), 48 deletions(-)
 
-Ray
+-- 
+2.1.0
+
