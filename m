@@ -1,60 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817AbbAQVLf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 16:11:35 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55696 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752552AbbAQVLd (ORCPT
+	id S1751926AbbAQVPr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 16:15:47 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:45423 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750831AbbAQVPo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 16:11:33 -0500
-Date: Sat, 17 Jan 2015 22:11:30 +0100
-From: Pavel Machek <pavel@denx.de>
-To: atull <atull@opensource.altera.com>
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        gregkh@linuxfoundation.org,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>, hpa@zytor.com,
-        monstr@monstr.eu, michal.simek@xilinx.com, rdunlap@infradead.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        pantelis.antoniou@konsulko.com, robh+dt@kernel.org,
-        grant.likely@linaro.org, iws@ovro.caltech.edu,
-        linux-doc@vger.kernel.org, broonie@kernel.org, philip@balister.org,
-        rubini@gnudd.com, s.trumtrar@pengutronix.de, jason@lakedaemon.net,
-        kyle.teske@ni.com, nico@linaro.org, balbi@ti.com, m.chehab@samsung.com,
-        davidb@codeaurora.org, rob@landley.net, davem@davemloft.net,
-        cesarb@cesarb.net, sameo@linux.intel.com, akpm@linux-foundation.org,
-        linus.walleij@linaro.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        devel@driverdev.osuosl.org, delicious.quinoa@gmail.com,
-        dinguyen@opensource.altera.com, yvanderv@opensource.altera.com
-Subject: Re: [PATCH v8 2/4] fpga manager: add sysfs interface document
-Message-ID: <20150117211130.GA22044@amd>
-References: <20150107084819.GA1887@amd>
- <alpine.DEB.2.02.1501091302370.30067@linuxheads99>
- <20150109205643.GA5761@amd>
- <20150112210134.687176ed@lxorguk.ukuu.org.uk>
- <20150112214314.GA18610@obsidianresearch.com>
- <20150113162847.2778b5a5@lxorguk.ukuu.org.uk>
- <20150113200032.GA16205@obsidianresearch.com>
- <alpine.DEB.2.02.1501131455130.30192@linuxheads99>
- <20150113222450.GA17475@obsidianresearch.com>
- <alpine.DEB.2.02.1501150936390.16760@linuxheads99>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.02.1501150936390.16760@linuxheads99>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sat, 17 Jan 2015 16:15:44 -0500
+From: Dmitry Tunin <hanipouspilot@gmail.com>
+To: linux-bluetooth <linux-bluetooth@vger.kernel.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Dmitry Tunin <hanipouspilot@gmail.com>, stable@vger.kernel.org
+Subject: [PATCH] ath3k: Add support of AR3012 bluetooth 13d3:3423 device
+Date: Sun, 18 Jan 2015 00:15:17 +0300
+Message-Id: <1421529317-25075-1-git-send-email-hanipouspilot@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+T: Bus=01 Lev=02 Prnt=03 Port=00 Cnt=01 Dev#= 5 Spd=12 MxCh= 0
+D: Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs= 1
+P: Vendor=13d3 ProdID=3423 Rev= 0.01
+C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+A: FirstIf#= 0 IfCount= 2 Cls=e0(wlcon) Sub=01 Prot=01
+I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E: Ad=81(I) Atr=03(Int.) MxPS= 16 Ivl=1ms
+E: Ad=82(I) Atr=02(Bulk) MxPS= 64 Ivl=0ms
+E: Ad=02(O) Atr=02(Bulk) MxPS= 64 Ivl=0ms
+I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E: Ad=83(I) Atr=01(Isoc) MxPS= 0 Ivl=1ms
+E: Ad=03(O) Atr=01(Isoc) MxPS= 0 Ivl=1ms
+I: If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E: Ad=83(I) Atr=01(Isoc) MxPS= 9 Ivl=1ms
+E: Ad=03(O) Atr=01(Isoc) MxPS= 9 Ivl=1ms
+I: If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E: Ad=83(I) Atr=01(Isoc) MxPS= 17 Ivl=1ms
+E: Ad=03(O) Atr=01(Isoc) MxPS= 17 Ivl=1ms
+I: If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E: Ad=83(I) Atr=01(Isoc) MxPS= 25 Ivl=1ms
+E: Ad=03(O) Atr=01(Isoc) MxPS= 25 Ivl=1ms
+I: If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E: Ad=83(I) Atr=01(Isoc) MxPS= 33 Ivl=1ms
+E: Ad=03(O) Atr=01(Isoc) MxPS= 33 Ivl=1ms
+I: If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+E: Ad=83(I) Atr=01(Isoc) MxPS= 49 Ivl=1ms
+E: Ad=03(O) Atr=01(Isoc) MxPS= 49 Ivl=1ms
 
-> I'm looking into moving the sysfs interface to debugfs.  Doesn't look too
-> hard and you and Alan are making lots of sense about this.
+Signed-off-by: Dmitry Tunin <hanipouspilot@gmail.com>
+Cc: stable@vger.kernel.org
+---
+ drivers/bluetooth/ath3k.c | 2 ++
+ drivers/bluetooth/btusb.c | 1 +
+ 2 files changed, 3 insertions(+)
 
-Debugfs: please don't. That's meant for debugging, not for production
-use.
-									Pavel
+diff --git a/drivers/bluetooth/ath3k.c b/drivers/bluetooth/ath3k.c
+index 1ee27ac..13a64d0 100644
+--- a/drivers/bluetooth/ath3k.c
++++ b/drivers/bluetooth/ath3k.c
+@@ -108,6 +108,7 @@ static const struct usb_device_id ath3k_table[] = {
+ 	{ USB_DEVICE(0x13d3, 0x3393) },
+ 	{ USB_DEVICE(0x13d3, 0x3402) },
+ 	{ USB_DEVICE(0x13d3, 0x3408) },
++	{ USB_DEVICE(0x13d3, 0x3423) },
+ 	{ USB_DEVICE(0x13d3, 0x3432) },
+ 
+ 	/* Atheros AR5BBU12 with sflash firmware */
+@@ -162,6 +163,7 @@ static const struct usb_device_id ath3k_blist_tbl[] = {
+ 	{ USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3408), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x13d3, 0x3423), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3432), .driver_info = BTUSB_ATH3012 },
+ 
+ 	/* Atheros AR5BBU22 with sflash firmware */
+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
+index 4a6495a..1211c74 100644
+--- a/drivers/bluetooth/btusb.c
++++ b/drivers/bluetooth/btusb.c
+@@ -189,6 +189,7 @@ static const struct usb_device_id blacklist_table[] = {
+ 	{ USB_DEVICE(0x13d3, 0x3393), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3402), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3408), .driver_info = BTUSB_ATH3012 },
++	{ USB_DEVICE(0x13d3, 0x3423), .driver_info = BTUSB_ATH3012 },
+ 	{ USB_DEVICE(0x13d3, 0x3432), .driver_info = BTUSB_ATH3012 },
+ 
+ 	/* Atheros AR5BBU12 with sflash firmware */
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+1.9.1
+
