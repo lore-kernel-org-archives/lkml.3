@@ -1,12 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752952AbbAQBUC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 20:20:02 -0500
-Received: from mail-bn1bbn0101.outbound.protection.outlook.com ([157.56.111.101]:40688
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	id S1752655AbbAQBT1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 20:19:27 -0500
+Received: from mail-by2on0146.outbound.protection.outlook.com ([207.46.100.146]:61344
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752743AbbAQBUA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 20:20:00 -0500
+	id S1751741AbbAQBT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 20:19:26 -0500
+X-Greylist: delayed 855 seconds by postgrey-1.27 at vger.kernel.org; Fri, 16 Jan 2015 20:19:26 EST
 From: "J. German Rivera" <German.Rivera@freescale.com>
 To: <gregkh@linuxfoundation.org>, <arnd@arndb.de>,
         <linux-kernel@vger.kernel.org>
@@ -16,179 +17,97 @@ CC: <stuart.yoder@freescale.com>, <Kim.Phillips@freescale.com>,
         <bhupesh.sharma@freescale.com>, <nir.erez@freescale.com>,
         <richard.schmitt@freescale.com>,
         "J. German Rivera" <German.Rivera@freescale.com>
-Subject: [PATCH 2/3 v6] drivers/bus: Freescale Management Complex (fsl-mc) bus driver
-Date: Fri, 16 Jan 2015 19:01:16 -0600
-Message-ID: <1421456477-27041-3-git-send-email-German.Rivera@freescale.com>
+Subject: [PATCH 3/3 v6] drivers/bus: Device driver for FSL-MC DPRC devices
+Date: Fri, 16 Jan 2015 19:01:17 -0600
+Message-ID: <1421456477-27041-4-git-send-email-German.Rivera@freescale.com>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <1421456477-27041-1-git-send-email-German.Rivera@freescale.com>
 References: <1421456477-27041-1-git-send-email-German.Rivera@freescale.com>
 X-EOPAttributedMessage: 0
 Authentication-Results: spf=fail (sender IP is 192.88.158.2)
  smtp.mailfrom=German.Rivera@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(199003)(189002)(62966003)(2950100001)(77156002)(229853001)(68736005)(77096005)(104016003)(105606002)(106466001)(92566002)(36756003)(19580405001)(81156004)(46102003)(87936001)(19580395003)(76176999)(48376002)(69596002)(6806004)(47776003)(50226001)(2201001)(97736003)(85426001)(50986999)(50466002)(64706001)(86362001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR03MB428;H:az84smr01.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(199003)(189002)(46102003)(97736003)(62966003)(36756003)(50226001)(50986999)(64706001)(77156002)(92566002)(2201001)(104016003)(87936001)(76176999)(50466002)(6806004)(77096005)(2950100001)(229853001)(86362001)(106466001)(105606002)(19580405001)(85426001)(48376002)(68736005)(575784001)(69596002)(47776003)(81156004)(19580395003);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB501;H:az84smr01.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
 MIME-Version: 1.0
 Content-Type: text/plain
 X-DmarcAction-Test: None
 X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:BY2PR03MB428;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:BLUPR03MB501;
 X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR03MB428;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BLUPR03MB501;
 X-Forefront-PRVS: 04599F3534
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB428;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB501;
 X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 17 Jan 2015 01:05:07.1762
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 17 Jan 2015 01:05:07.4934
  (UTC)
 X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
 X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.158.2]
 X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR03MB428
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BLUPR03MB501
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Platform device driver that sets up the basic bus infrastructure
-for the fsl-mc bus type, including support for adding/removing
-fsl-mc devices, register/unregister of fsl-mc drivers, and bus
-match support to bind devices to drivers.
+A DPRC (Data Path Resource Container) is an isolation device
+that contains a set of DPAA networking devices to be
+assigned to an isolation domain (e.g., a virtual machine).
 
 Signed-off-by: J. German Rivera <German.Rivera@freescale.com>
 Signed-off-by: Stuart Yoder <stuart.yoder@freescale.com>
 ---
-Changes addressed in v6:
+Changes in v6:
 - Fixed new checkpatch warnings
 
-Changes addressed in v5:
-- Addressed comments from Alex Graf:
-  * Renamed dprc_get_container_id() call as dpmng_get_container_id().
-  * Added TODO comment to use the 'ranges' property of the
-    fsl-mc DT node.
+Changes in v5:
+None
 
-Changes addressed in v4:
+Changes in v4:
 - Addressed comments from Alex Graf:
-  * Added missing scope limitations and more descriptive help
-    text for the FSL_MC_BUS config option.
-- Fixed bug related to setting fsl_mc_bus_type.dev_root too
-  late.
+  * Fixed typo in comment
 
 Changes in v3:
-- Addressed changes from Kim Phillips:
+- Addressed comments from Kim Phillips:
   * Renamed files:
-	drivers/bus/fsl-mc/fsl_mc_bus.c -> drivers/bus/fsl-mc/mc-bus.c
-	include/linux/fsl_mc.h -> include/linux/fsl/mc.h
-	include/linux/fsl_mc_private.h -> include/linux/fsl/mc-private.h
+    drivers/bus/fsl-mc/fsl_mc_dprc.c -> drivers/bus/fsl-mc/dprc-driver.c
 
 - Addressed comments from Timur Tabi:
+  * Changed dprc_scan_container() to just return dprc_scan_objects()
   * Changed all functions that had goto out/error when no common cleanup
     was done, to just have multiple return points.
   * Replaced error cleanup boolean flags with multiple exit points.
+  * REmoved __must_chewck from dprc_scan_*() functions
 
 Changes in v2:
-- Addressed comment from Joe Perches:
-  * Changed pr_debug to dev_dbg in fsl_mc_bus_match
+- Addressed comments from Kim Phillips:
+  * Fix warning in drivers/bus/fsl-mc/fsl_mc_dprc.c:173
+  * Fixed linker errors when MC bus driver built as module
 
-- Addressed comments from Kim Phillips and Alex Graf:
-  * Changed version check to allow the driver to run with MC
-    firmware that has major version number greater than or equal
-    to the driver's major version number.
-  * Removed minor version check
+ drivers/bus/fsl-mc/Makefile      |   3 +-
+ drivers/bus/fsl-mc/dprc-driver.c | 383 +++++++++++++++++++++++++++++++++++++++
+ drivers/bus/fsl-mc/mc-bus.c      |   8 +
+ include/linux/fsl/mc-private.h   |  10 +
+ 4 files changed, 403 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/bus/fsl-mc/dprc-driver.c
 
-- Removed unused variable parent_dev in fsl_mc_device_remove
-
- drivers/bus/Kconfig            |   3 +
- drivers/bus/Makefile           |   3 +
- drivers/bus/fsl-mc/Kconfig     |  24 ++
- drivers/bus/fsl-mc/Makefile    |  14 +
- drivers/bus/fsl-mc/mc-bus.c    | 585 +++++++++++++++++++++++++++++++++++++++++
- include/linux/fsl/mc-private.h |  33 +++
- include/linux/fsl/mc.h         | 137 ++++++++++
- 7 files changed, 799 insertions(+)
- create mode 100644 drivers/bus/fsl-mc/Kconfig
- create mode 100644 drivers/bus/fsl-mc/Makefile
- create mode 100644 drivers/bus/fsl-mc/mc-bus.c
- create mode 100644 include/linux/fsl/mc-private.h
- create mode 100644 include/linux/fsl/mc.h
-
-diff --git a/drivers/bus/Kconfig b/drivers/bus/Kconfig
-index b99729e..dde3ec2 100644
---- a/drivers/bus/Kconfig
-+++ b/drivers/bus/Kconfig
-@@ -67,4 +67,7 @@ config VEXPRESS_CONFIG
- 	help
- 	  Platform configuration infrastructure for the ARM Ltd.
- 	  Versatile Express.
-+
-+source "drivers/bus/fsl-mc/Kconfig"
-+
- endmenu
-diff --git a/drivers/bus/Makefile b/drivers/bus/Makefile
-index 2973c18..6abcab1 100644
---- a/drivers/bus/Makefile
-+++ b/drivers/bus/Makefile
-@@ -15,3 +15,6 @@ obj-$(CONFIG_ARM_CCI)		+= arm-cci.o
- obj-$(CONFIG_ARM_CCN)		+= arm-ccn.o
-
- obj-$(CONFIG_VEXPRESS_CONFIG)	+= vexpress-config.o
-+
-+# Freescale Management Complex (MC) bus drivers
-+obj-$(CONFIG_FSL_MC_BUS)	+= fsl-mc/
-diff --git a/drivers/bus/fsl-mc/Kconfig b/drivers/bus/fsl-mc/Kconfig
-new file mode 100644
-index 0000000..0d779d9
---- /dev/null
-+++ b/drivers/bus/fsl-mc/Kconfig
-@@ -0,0 +1,24 @@
-+#
-+# Freescale Management Complex (MC) bus drivers
-+#
-+# Copyright (C) 2014 Freescale Semiconductor, Inc.
-+#
-+# This file is released under the GPLv2
-+#
-+
-+config FSL_MC_BUS
-+	tristate "Freescale Management Complex (MC) bus driver"
-+	depends on OF && ARM64
-+	help
-+	  Driver to enable the bus infrastructure for the Freescale
-+          QorIQ Management Complex (fsl-mc). The fsl-mc is a hardware
-+	  module of the QorIQ LS2 SoCs, that does resource management
-+	  for hardware building-blocks in the SoC that can be used
-+	  to dynamically create networking hardware objects such as
-+	  network interfaces (NICs), crypto accelerator instances,
-+	  or L2 switches.
-+
-+	  Only enable this option when building the kernel for
-+	  Freescale QorQIQ LS2xxxx SoCs.
-+
-+
 diff --git a/drivers/bus/fsl-mc/Makefile b/drivers/bus/fsl-mc/Makefile
-new file mode 100644
-index 0000000..decd339
---- /dev/null
+index decd339..424e58e 100644
+--- a/drivers/bus/fsl-mc/Makefile
 +++ b/drivers/bus/fsl-mc/Makefile
-@@ -0,0 +1,14 @@
-+#
-+# Freescale Management Complex (MC) bus drivers
-+#
-+# Copyright (C) 2014 Freescale Semiconductor, Inc.
-+#
-+# This file is released under the GPLv2
-+#
-+obj-$(CONFIG_FSL_MC_BUS) += mc-bus-driver.o
-+
-+mc-bus-driver-objs := mc-bus.o \
-+		      mc-sys.o \
-+		      dprc.o \
-+		      dpmng.o
-+
-diff --git a/drivers/bus/fsl-mc/mc-bus.c b/drivers/bus/fsl-mc/mc-bus.c
+@@ -10,5 +10,6 @@ obj-$(CONFIG_FSL_MC_BUS) += mc-bus-driver.o
+ mc-bus-driver-objs := mc-bus.o \
+ 		      mc-sys.o \
+ 		      dprc.o \
+-		      dpmng.o
++		      dpmng.o \
++		      dprc-driver.o
+
+diff --git a/drivers/bus/fsl-mc/dprc-driver.c b/drivers/bus/fsl-mc/dprc-driver.c
 new file mode 100644
-index 0000000..e6f3d62
+index 0000000..5d07e30
 --- /dev/null
-+++ b/drivers/bus/fsl-mc/mc-bus.c
-@@ -0,0 +1,585 @@
++++ b/drivers/bus/fsl-mc/dprc-driver.c
+@@ -0,0 +1,383 @@
 +/*
-+ * Freescale Management Complex (MC) bus driver
++ * Freescale data path resource container (DPRC) driver
 + *
 + * Copyright (C) 2014 Freescale Semiconductor, Inc.
 + * Author: German Rivera <German.Rivera@freescale.com>
@@ -199,761 +118,431 @@ index 0000000..e6f3d62
 + */
 +
 +#include <linux/fsl/mc-private.h>
-+#include <linux/module.h>
-+#include <linux/of_device.h>
-+#include <linux/of_address.h>
-+#include <linux/ioport.h>
-+#include <linux/slab.h>
-+#include <linux/limits.h>
-+#include <linux/fsl/dpmng.h>
 +#include <linux/fsl/mc-sys.h>
++#include <linux/module.h>
++#include <linux/slab.h>
 +#include "dprc-cmd.h"
 +
-+static struct kmem_cache *mc_dev_cache;
-+
-+/**
-+ * fsl_mc_bus_match - device to driver matching callback
-+ * @dev: the MC object device structure to match against
-+ * @drv: the device driver to search for matching MC object device id
-+ * structures
-+ *
-+ * Returns 1 on success, 0 otherwise.
-+ */
-+static int fsl_mc_bus_match(struct device *dev, struct device_driver *drv)
-+{
-+	const struct fsl_mc_device_match_id *id;
-+	struct fsl_mc_device *mc_dev = to_fsl_mc_device(dev);
-+	struct fsl_mc_driver *mc_drv = to_fsl_mc_driver(drv);
-+	bool found = false;
-+
-+	if (!mc_drv->match_id_table)
-+		goto out;
-+
-+	if (WARN_ON(!fsl_mc_bus_type.dev_root))
-+		goto out;
-+
-+	/*
-+	 * If the object is not 'plugged' don't match.
-+	 * Only exception is the root DPRC, which is a special case.
-+	 */
-+	if ((mc_dev->obj_desc.state & DPRC_OBJ_STATE_PLUGGED) == 0 &&
-+	    &mc_dev->dev != fsl_mc_bus_type.dev_root)
-+		goto out;
-+
-+	/*
-+	 * Traverse the match_id table of the given driver, trying to find
-+	 * a matching for the given MC object device.
-+	 */
-+	for (id = mc_drv->match_id_table; id->vendor != 0x0; id++) {
-+		if (id->vendor == mc_dev->obj_desc.vendor &&
-+		    strcmp(id->obj_type, mc_dev->obj_desc.type) == 0 &&
-+		    id->ver_major == mc_dev->obj_desc.ver_major &&
-+		    id->ver_minor == mc_dev->obj_desc.ver_minor) {
-+			found = true;
-+			break;
-+		}
-+	}
-+
-+out:
-+	dev_dbg(dev, "%smatched\n", found ? "" : "not ");
-+	return found;
-+}
-+
-+/**
-+ * fsl_mc_bus_uevent - callback invoked when a device is added
-+ */
-+static int fsl_mc_bus_uevent(struct device *dev, struct kobj_uevent_env *env)
-+{
-+	pr_debug("%s invoked\n", __func__);
-+	return 0;
-+}
-+
-+struct bus_type fsl_mc_bus_type = {
-+	.name = "fsl-mc",
-+	.match = fsl_mc_bus_match,
-+	.uevent = fsl_mc_bus_uevent,
++struct dprc_child_objs {
++	int child_count;
++	struct dprc_obj_desc *child_array;
 +};
-+EXPORT_SYMBOL_GPL(fsl_mc_bus_type);
 +
-+static int fsl_mc_driver_probe(struct device *dev)
-+{
-+	struct fsl_mc_driver *mc_drv;
-+	struct fsl_mc_device *mc_dev = to_fsl_mc_device(dev);
-+	int error;
-+
-+	if (WARN_ON(!dev->driver))
-+		return -EINVAL;
-+
-+	mc_drv = to_fsl_mc_driver(dev->driver);
-+	if (WARN_ON(!mc_drv->probe))
-+		return -EINVAL;
-+
-+	error = mc_drv->probe(mc_dev);
-+	if (error < 0) {
-+		dev_err(dev, "MC object device probe callback failed: %d\n",
-+			error);
-+		return error;
-+	}
-+
-+	return 0;
-+}
-+
-+static int fsl_mc_driver_remove(struct device *dev)
-+{
-+	struct fsl_mc_driver *mc_drv = to_fsl_mc_driver(dev->driver);
-+	struct fsl_mc_device *mc_dev = to_fsl_mc_device(dev);
-+	int error;
-+
-+	if (WARN_ON(!dev->driver))
-+		return -EINVAL;
-+
-+	error = mc_drv->remove(mc_dev);
-+	if (error < 0) {
-+		dev_err(dev,
-+			"MC object device remove callback failed: %d\n",
-+			error);
-+		return error;
-+	}
-+
-+	return 0;
-+}
-+
-+static void fsl_mc_driver_shutdown(struct device *dev)
-+{
-+	struct fsl_mc_driver *mc_drv = to_fsl_mc_driver(dev->driver);
-+	struct fsl_mc_device *mc_dev = to_fsl_mc_device(dev);
-+
-+	mc_drv->shutdown(mc_dev);
-+}
-+
-+/**
-+ * __fsl_mc_driver_register - registers a child device driver with the
-+ * MC bus
-+ *
-+ * This function is implicitly invoked from the registration function of
-+ * fsl_mc device drivers, which is generated by the
-+ * module_fsl_mc_driver() macro.
-+ */
-+int __fsl_mc_driver_register(struct fsl_mc_driver *mc_driver,
-+			     struct module *owner)
-+{
-+	int error;
-+
-+	mc_driver->driver.owner = owner;
-+	mc_driver->driver.bus = &fsl_mc_bus_type;
-+
-+	/*
-+	 * Set default driver callbacks, if not set by the child driver:
-+	 */
-+	if (mc_driver->probe)
-+		mc_driver->driver.probe = fsl_mc_driver_probe;
-+
-+	if (mc_driver->remove)
-+		mc_driver->driver.remove = fsl_mc_driver_remove;
-+
-+	if (mc_driver->shutdown)
-+		mc_driver->driver.shutdown = fsl_mc_driver_shutdown;
-+
-+	error = driver_register(&mc_driver->driver);
-+	if (error < 0) {
-+		pr_err("driver_register() failed for %s: %d\n",
-+		       mc_driver->driver.name, error);
-+		return error;
-+	}
-+
-+	pr_info("MC object device driver %s registered\n",
-+		mc_driver->driver.name);
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(__fsl_mc_driver_register);
-+
-+/**
-+ * fsl_mc_driver_unregister - unregisters a device driver from the
-+ * MC bus
-+ */
-+void fsl_mc_driver_unregister(struct fsl_mc_driver *mc_driver)
-+{
-+	driver_unregister(&mc_driver->driver);
-+}
-+EXPORT_SYMBOL_GPL(fsl_mc_driver_unregister);
-+
-+static int get_dprc_icid(struct fsl_mc_io *mc_io,
-+			 int container_id, uint16_t *icid)
-+{
-+	uint16_t dprc_handle;
-+	struct dprc_attributes attr;
-+	int error;
-+
-+	error = dprc_open(mc_io, container_id, &dprc_handle);
-+	if (error < 0) {
-+		pr_err("dprc_open() failed: %d\n", error);
-+		return error;
-+	}
-+
-+	memset(&attr, 0, sizeof(attr));
-+	error = dprc_get_attributes(mc_io, dprc_handle, &attr);
-+	if (error < 0) {
-+		pr_err("dprc_get_attributes() failed: %d\n", error);
-+		goto common_cleanup;
-+	}
-+
-+	*icid = attr.icid;
-+	error = 0;
-+
-+common_cleanup:
-+	(void)dprc_close(mc_io, dprc_handle);
-+	return error;
-+}
-+
-+static int fsl_mc_device_get_mmio_regions(struct fsl_mc_device *mc_dev,
-+					  struct fsl_mc_device *mc_bus_dev)
++static int __fsl_mc_device_remove_if_not_in_mc(struct device *dev, void *data)
 +{
 +	int i;
-+	int error;
-+	struct resource *regions;
-+	struct dprc_obj_desc *obj_desc = &mc_dev->obj_desc;
-+	struct device *parent_dev = mc_dev->dev.parent;
++	struct dprc_child_objs *objs;
++	struct fsl_mc_device *mc_dev;
 +
-+	regions = kmalloc_array(obj_desc->region_count,
-+				sizeof(regions[0]), GFP_KERNEL);
-+	if (!regions)
-+		return -ENOMEM;
++	WARN_ON(!dev);
++	WARN_ON(!data);
++	mc_dev = to_fsl_mc_device(dev);
++	objs = data;
 +
-+	for (i = 0; i < obj_desc->region_count; i++) {
-+		struct dprc_region_desc region_desc;
++	for (i = 0; i < objs->child_count; i++) {
++		struct dprc_obj_desc *obj_desc = &objs->child_array[i];
 +
-+		error = dprc_get_obj_region(mc_bus_dev->mc_io,
-+					    mc_bus_dev->mc_handle,
-+					    obj_desc->type,
-+					    obj_desc->id, i, &region_desc);
-+		if (error < 0) {
-+			dev_err(parent_dev,
-+				"dprc_get_obj_region() failed: %d\n", error);
-+			goto error_cleanup_regions;
-+		}
-+
-+		WARN_ON(region_desc.base_paddr == 0x0);
-+		WARN_ON(region_desc.size == 0);
-+		regions[i].start = region_desc.base_paddr;
-+		regions[i].end = region_desc.base_paddr + region_desc.size - 1;
-+		regions[i].name = "fsl-mc object MMIO region";
-+		regions[i].flags = IORESOURCE_IO;
++		if (strlen(obj_desc->type) != 0 &&
++		    FSL_MC_DEVICE_MATCH(mc_dev, obj_desc))
++			break;
 +	}
 +
-+	mc_dev->regions = regions;
-+	return 0;
++	if (i == objs->child_count)
++		fsl_mc_device_remove(mc_dev);
 +
-+error_cleanup_regions:
-+	kfree(regions);
-+	return error;
++	return 0;
++}
++
++static int __fsl_mc_device_remove(struct device *dev, void *data)
++{
++	WARN_ON(!dev);
++	WARN_ON(data);
++	fsl_mc_device_remove(to_fsl_mc_device(dev));
++	return 0;
 +}
 +
 +/**
-+ * Add a newly discovered MC object device to be visible in Linux
++ * dprc_remove_devices - Removes devices for objects removed from a DPRC
++ *
++ * @mc_bus_dev: pointer to the fsl-mc device that represents a DPRC object
++ * @obj_desc_array: array of object descriptors for child objects currently
++ * present in the DPRC in the MC.
++ * @num_child_objects_in_mc: number of entries in obj_desc_array
++ *
++ * Synchronizes the state of the Linux bus driver with the actual state of
++ * the MC by removing devices that represent MC objects that have
++ * been dynamically removed in the physical DPRC.
 + */
-+int fsl_mc_device_add(struct dprc_obj_desc *obj_desc,
-+		      struct fsl_mc_io *mc_io,
-+		      struct device *parent_dev,
-+		      struct fsl_mc_device **new_mc_dev)
++static void dprc_remove_devices(struct fsl_mc_device *mc_bus_dev,
++				struct dprc_obj_desc *obj_desc_array,
++				int num_child_objects_in_mc)
 +{
-+	int error;
-+	struct fsl_mc_device *mc_dev = NULL;
-+	struct fsl_mc_device *parent_mc_dev;
-+
-+	if (parent_dev->bus == &fsl_mc_bus_type)
-+		parent_mc_dev = to_fsl_mc_device(parent_dev);
-+	else
-+		parent_mc_dev = NULL;
-+
-+	/*
-+	 * DPRC devices must have a dedicated MC portal
-+	 */
-+	if (WARN_ON(strcmp(obj_desc->type, "dprc") == 0 && !mc_io))
-+		return -EINVAL;
-+
-+	mc_dev = kmem_cache_zalloc(mc_dev_cache, GFP_KERNEL);
-+	if (!mc_dev) {
-+		dev_err(parent_dev,
-+			"No memory to allocate fsl_mc_device\n");
-+		return -ENOMEM;
-+	}
-+
-+	mc_dev->obj_desc = *obj_desc;
-+	mc_dev->mc_io = mc_io;
-+	device_initialize(&mc_dev->dev);
-+	mc_dev->dev.parent = parent_dev;
-+	mc_dev->dev.bus = &fsl_mc_bus_type;
-+	dev_set_name(&mc_dev->dev, "%s.%x", obj_desc->type, obj_desc->id);
-+
-+	if (strcmp(obj_desc->type, "dprc") == 0) {
-+		struct fsl_mc_io *mc_io2;
-+
-+		mc_dev->flags |= FSL_MC_IS_DPRC;
-+
++	if (num_child_objects_in_mc != 0) {
 +		/*
-+		 * To get the DPRC's ICID, we need to open the DPRC
-+		 * in get_dprc_icid(). For child DPRCs, we do so using the
-+		 * parent DPRC's MC portal instead of the child DPRC's MC
-+		 * portal, in case the child DPRC is already opened with
-+		 * its own portal (e.g., the DPRC used by AIOP).
-+		 *
-+		 * NOTE: There cannot be more than one active open for a
-+		 * given MC object, using the same MC portal.
++		 * Remove child objects that are in the DPRC in Linux,
++		 * but not in the MC:
 +		 */
-+		if (parent_mc_dev) {
-+			/*
-+			 * device being added is a child DPRC device
-+			 */
-+			mc_io2 = parent_mc_dev->mc_io;
-+		} else {
-+			/*
-+			 * device being added is the root DPRC device
-+			 */
-+			mc_io2 = mc_io;
++		struct dprc_child_objs objs;
 +
-+			if (!fsl_mc_bus_type.dev_root)
-+				fsl_mc_bus_type.dev_root = &mc_dev->dev;
-+		}
-+
-+		error = get_dprc_icid(mc_io2, obj_desc->id, &mc_dev->icid);
-+		if (error < 0)
-+			goto error_cleanup_dev;
++		objs.child_count = num_child_objects_in_mc;
++		objs.child_array = obj_desc_array;
++		device_for_each_child(&mc_bus_dev->dev, &objs,
++				      __fsl_mc_device_remove_if_not_in_mc);
 +	} else {
 +		/*
-+		 * A non-DPRC MC object device has to be a child of another
-+		 * MC object (specifically a DPRC object)
++		 * There are no child objects for this DPRC in the MC.
++		 * So, remove all the child devices from Linux:
 +		 */
-+		mc_dev->icid = parent_mc_dev->icid;
-+		mc_dev->dma_mask = FSL_MC_DEFAULT_DMA_MASK;
-+		mc_dev->dev.dma_mask = &mc_dev->dma_mask;
-+		if (obj_desc->region_count != 0) {
-+			error = fsl_mc_device_get_mmio_regions(mc_dev,
-+							       parent_mc_dev);
++		device_for_each_child(&mc_bus_dev->dev, NULL,
++				      __fsl_mc_device_remove);
++	}
++}
++
++static int __fsl_mc_device_match(struct device *dev, void *data)
++{
++	struct dprc_obj_desc *obj_desc = data;
++	struct fsl_mc_device *mc_dev = to_fsl_mc_device(dev);
++
++	return FSL_MC_DEVICE_MATCH(mc_dev, obj_desc);
++}
++
++static struct fsl_mc_device *fsl_mc_device_lookup(struct dprc_obj_desc
++								*obj_desc,
++						  struct fsl_mc_device
++								*mc_bus_dev)
++{
++	struct device *dev;
++
++	dev = device_find_child(&mc_bus_dev->dev, obj_desc,
++				__fsl_mc_device_match);
++
++	return dev ? to_fsl_mc_device(dev) : NULL;
++}
++
++/**
++ * dprc_add_new_devices - Adds devices to the logical bus for a DPRC
++ *
++ * @mc_bus_dev: pointer to the fsl-mc device that represents a DPRC object
++ * @obj_desc_array: array of device descriptors for child devices currently
++ * present in the physical DPRC.
++ * @num_child_objects_in_mc: number of entries in obj_desc_array
++ *
++ * Synchronizes the state of the Linux bus driver with the actual
++ * state of the MC by adding objects that have been newly discovered
++ * in the physical DPRC.
++ */
++static void dprc_add_new_devices(struct fsl_mc_device *mc_bus_dev,
++				 struct dprc_obj_desc *obj_desc_array,
++				 int num_child_objects_in_mc)
++{
++	int error;
++	int i;
++
++	for (i = 0; i < num_child_objects_in_mc; i++) {
++		struct dprc_region_desc region_desc;
++		struct fsl_mc_device *child_dev;
++		struct fsl_mc_io *mc_io = NULL;
++		struct dprc_obj_desc *obj_desc = &obj_desc_array[i];
++
++		if (strlen(obj_desc->type) == 0)
++			continue;
++		/*
++		 * Check if device is already known to Linux:
++		 */
++		child_dev = fsl_mc_device_lookup(obj_desc, mc_bus_dev);
++		if (child_dev)
++			continue;
++
++		if (strcmp(obj_desc->type, "dprc") == 0) {
++			/*
++			 * Get the MC portal physical address for the device
++			 * (specified in the device's first MMIO region):
++			 */
++			if (WARN_ON(obj_desc->region_count == 0))
++				continue;
++
++			error = dprc_get_obj_region(mc_bus_dev->mc_io,
++						    mc_bus_dev->mc_handle,
++						    obj_desc->type,
++						    obj_desc->id,
++						    0, &region_desc);
++			if (error < 0) {
++				dev_err(&mc_bus_dev->dev,
++					"dprc_get_obj_region() failed: %d\n",
++					error);
++				continue;
++			}
++
++			if (region_desc.size !=
++					mc_bus_dev->mc_io->portal_size) {
++				error = -EINVAL;
++				dev_err(&mc_bus_dev->dev,
++					"Invalid MC portal size: %u\n",
++					region_desc.size);
++				continue;
++			}
++
++			error = fsl_create_mc_io(&mc_bus_dev->dev,
++						 region_desc.base_paddr,
++						 region_desc.size, 0, &mc_io);
 +			if (error < 0)
-+				goto error_cleanup_dev;
++				continue;
++		}
++
++		error = fsl_mc_device_add(obj_desc, mc_io, &mc_bus_dev->dev,
++					  &child_dev);
++		if (error < 0) {
++			if (mc_io)
++				fsl_destroy_mc_io(mc_io);
++
++			continue;
++		}
++	}
++}
++
++/**
++ * dprc_scan_objects - Discover objects in a DPRC
++ *
++ * @mc_bus_dev: pointer to the fsl-mc device that represents a DPRC object
++ *
++ * Detects objects added and removed from a DPRC and synchronizes the
++ * state of the Linux bus driver, MC by adding and removing
++ * devices accordingly.
++ */
++int dprc_scan_objects(struct fsl_mc_device *mc_bus_dev)
++{
++	int num_child_objects;
++	int dprc_get_obj_failures;
++	int error;
++	struct dprc_obj_desc *child_obj_desc_array = NULL;
++
++	error = dprc_get_obj_count(mc_bus_dev->mc_io,
++				   mc_bus_dev->mc_handle,
++				   &num_child_objects);
++	if (error < 0) {
++		dev_err(&mc_bus_dev->dev, "dprc_get_obj_count() failed: %d\n",
++			error);
++		return error;
++	}
++
++	if (num_child_objects != 0) {
++		int i;
++
++		child_obj_desc_array =
++		    devm_kmalloc_array(&mc_bus_dev->dev, num_child_objects,
++				       sizeof(*child_obj_desc_array),
++				       GFP_KERNEL);
++		if (!child_obj_desc_array)
++			return -ENOMEM;
++
++		/*
++		 * Discover objects currently present in the physical DPRC:
++		 */
++		dprc_get_obj_failures = 0;
++		for (i = 0; i < num_child_objects; i++) {
++			struct dprc_obj_desc *obj_desc =
++			    &child_obj_desc_array[i];
++
++			error = dprc_get_obj(mc_bus_dev->mc_io,
++					     mc_bus_dev->mc_handle,
++					     i, obj_desc);
++			if (error < 0) {
++				dev_err(&mc_bus_dev->dev,
++					"dprc_get_obj(i=%d) failed: %d\n",
++					i, error);
++				/*
++				 * Mark the obj entry as "invalid", by using the
++				 * empty string as obj type:
++				 */
++				obj_desc->type[0] = '\0';
++				obj_desc->id = error;
++				dprc_get_obj_failures++;
++				continue;
++			}
++
++			dev_info(&mc_bus_dev->dev,
++				 "Discovered object: type %s, id %d\n",
++				 obj_desc->type, obj_desc->id);
++		}
++
++		if (dprc_get_obj_failures != 0) {
++			dev_err(&mc_bus_dev->dev,
++				"%d out of %d devices could not be retrieved\n",
++				dprc_get_obj_failures, num_child_objects);
 +		}
 +	}
 +
-+	/*
-+	 * The device-specific probe callback will get invoked by device_add()
-+	 */
-+	error = device_add(&mc_dev->dev);
-+	if (error < 0) {
-+		dev_err(parent_dev,
-+			"device_add() failed for device %s: %d\n",
-+			dev_name(&mc_dev->dev), error);
-+		goto error_cleanup_dev;
-+	}
++	dprc_remove_devices(mc_bus_dev, child_obj_desc_array,
++			    num_child_objects);
 +
-+	(void)get_device(&mc_dev->dev);
-+	dev_dbg(parent_dev, "Added MC object device %s\n",
-+		dev_name(&mc_dev->dev));
++	dprc_add_new_devices(mc_bus_dev, child_obj_desc_array,
++			     num_child_objects);
 +
-+	*new_mc_dev = mc_dev;
++	if (child_obj_desc_array)
++		devm_kfree(&mc_bus_dev->dev, child_obj_desc_array);
++
 +	return 0;
-+
-+error_cleanup_dev:
-+	kfree(mc_dev->regions);
-+	kmem_cache_free(mc_dev_cache, mc_dev);
-+	return error;
 +}
-+EXPORT_SYMBOL_GPL(fsl_mc_device_add);
++EXPORT_SYMBOL_GPL(dprc_scan_objects);
 +
 +/**
-+ * fsl_mc_device_remove - Remove a MC object device from being visible to
-+ * Linux
++ * dprc_scan_container - Scans a physical DPRC and synchronizes Linux bus state
 + *
-+ * @mc_dev: Pointer to a MC object device object
++ * @mc_bus_dev: pointer to the fsl-mc device that represents a DPRC object
++ *
++ * Scans the physical DPRC and synchronizes the state of the Linux
++ * bus driver with the actual state of the MC by adding and removing
++ * devices as appropriate.
 + */
-+void fsl_mc_device_remove(struct fsl_mc_device *mc_dev)
++int dprc_scan_container(struct fsl_mc_device *mc_bus_dev)
 +{
-+	kfree(mc_dev->regions);
-+
-+	/*
-+	 * The device-specific remove callback will get invoked by device_del()
-+	 */
-+	device_del(&mc_dev->dev);
-+	put_device(&mc_dev->dev);
-+
-+	if (strcmp(mc_dev->obj_desc.type, "dprc") == 0) {
-+		fsl_destroy_mc_io(mc_dev->mc_io);
-+		if (&mc_dev->dev == fsl_mc_bus_type.dev_root)
-+			fsl_mc_bus_type.dev_root = NULL;
-+	}
-+
-+	mc_dev->mc_io = NULL;
-+	kmem_cache_free(mc_dev_cache, mc_dev);
++	return dprc_scan_objects(mc_bus_dev);
 +}
-+EXPORT_SYMBOL_GPL(fsl_mc_device_remove);
++EXPORT_SYMBOL_GPL(dprc_scan_container);
 +
 +/**
-+ * fsl_mc_bus_probe - callback invoked when the root MC bus is being
-+ * added
++ * dprc_probe - callback invoked when a DPRC is being bound to this driver
++ *
++ * @mc_dev: Pointer to fsl-mc device representing a DPRC
++ *
++ * It opens the physical DPRC in the MC.
++ * It scans the DPRC to discover the MC objects contained in it.
 + */
-+static int fsl_mc_bus_probe(struct platform_device *pdev)
++static int dprc_probe(struct fsl_mc_device *mc_dev)
 +{
-+	struct dprc_obj_desc obj_desc;
 +	int error;
-+	struct fsl_mc_device *mc_bus_dev = NULL;
-+	struct fsl_mc_io *mc_io = NULL;
-+	int container_id;
-+	phys_addr_t mc_portal_phys_addr;
-+	uint32_t mc_portal_size;
-+	struct mc_version mc_version;
-+	struct resource res;
 +
-+	dev_info(&pdev->dev, "Root MC bus device probed");
-+
-+	/*
-+	 * TODO: When the 'ranges' property gets added to the fsl-mc
-+	 * node in the device tree, we need to use it here, to validate
-+	 * the MC portal base address. For example, given the following
-+	 * ranges property:
-+	 *	ranges = <0x8 0x0 0x8 0x0 0x20000000>;
-+	 *
-+	 * we could check that the portal address  falls in the
-+	 * 512MiB region that starts at 0x8_0000_0000 in the physical
-+	 * address map.  Also, we can use the 'range' property to translate
-+	 * the MC portal address from the 'reg' propertu, into a physical,
-+	 * if in the future the MC portal address specified specified
-+	 * in the 'reg' property becomes an MC-relative address (offset).
-+	 */
-+	error = of_address_to_resource(pdev->dev.of_node, 0, &res);
-+	if (error < 0) {
-+		dev_err(&pdev->dev,
-+			"of_address_to_resource() failed for %s\n",
-+			pdev->dev.of_node->full_name);
-+		return error;
-+	}
-+
-+	mc_portal_phys_addr = res.start;
-+	mc_portal_size = resource_size(&res);
-+	error = fsl_create_mc_io(&pdev->dev, mc_portal_phys_addr,
-+				 mc_portal_size, 0, &mc_io);
-+	if (error < 0)
-+		return error;
-+
-+	error = mc_get_version(mc_io, &mc_version);
-+	if (error != 0) {
-+		dev_err(&pdev->dev,
-+			"mc_get_version() failed with error %d\n", error);
-+		goto error_cleanup_mc_io;
-+	}
-+
-+	dev_info(&pdev->dev,
-+		 "Freescale Management Complex Firmware version: %u.%u.%u\n",
-+		 mc_version.major, mc_version.minor, mc_version.revision);
-+
-+	if (mc_version.major < MC_VER_MAJOR) {
-+		dev_err(&pdev->dev,
-+			"ERROR: MC firmware version not supported by driver (driver version: %u.%u)\n",
-+			MC_VER_MAJOR, MC_VER_MINOR);
-+		error = -ENOTSUPP;
-+		goto error_cleanup_mc_io;
-+	}
-+
-+	if (mc_version.major > MC_VER_MAJOR) {
-+		dev_warn(&pdev->dev,
-+			 "WARNING: driver may not support newer MC firmware features (driver version: %u.%u)\n",
-+			 MC_VER_MAJOR, MC_VER_MINOR);
-+	}
-+
-+	error = dpmng_get_container_id(mc_io, &container_id);
-+	if (error < 0) {
-+		dev_err(&pdev->dev,
-+			"dpmng_get_container_id() failed: %d\n", error);
-+		goto error_cleanup_mc_io;
-+	}
-+
-+	obj_desc.vendor = FSL_MC_VENDOR_FREESCALE;
-+	strcpy(obj_desc.type, "dprc");
-+	obj_desc.id = container_id;
-+	obj_desc.ver_major = DPRC_VER_MAJOR;
-+	obj_desc.ver_minor = DPRC_VER_MINOR;
-+	obj_desc.region_count = 0;
-+
-+	error = fsl_mc_device_add(&obj_desc, mc_io, &pdev->dev, &mc_bus_dev);
-+	if (error < 0)
-+		goto error_cleanup_mc_io;
-+
-+	platform_set_drvdata(pdev, mc_bus_dev);
-+	return 0;
-+
-+error_cleanup_mc_io:
-+	fsl_destroy_mc_io(mc_io);
-+	return error;
-+}
-+
-+/**
-+ * fsl_mc_bus_remove - callback invoked when the root MC bus is being
-+ * removed
-+ */
-+static int fsl_mc_bus_remove(struct platform_device *pdev)
-+{
-+	struct fsl_mc_device *mc_bus_dev = platform_get_drvdata(pdev);
-+
-+	if (WARN_ON(&mc_bus_dev->dev != fsl_mc_bus_type.dev_root))
++	if (WARN_ON(strcmp(mc_dev->obj_desc.type, "dprc") != 0))
 +		return -EINVAL;
 +
-+	fsl_mc_device_remove(mc_bus_dev);
-+	dev_info(&pdev->dev, "Root MC bus device removed");
-+	return 0;
-+}
-+
-+static const struct of_device_id fsl_mc_bus_match_table[] = {
-+	{.compatible = "fsl,qoriq-mc",},
-+	{},
-+};
-+
-+MODULE_DEVICE_TABLE(of, fsl_mc_bus_match_table);
-+
-+static struct platform_driver fsl_mc_bus_driver = {
-+	.driver = {
-+		   .name = "fsl_mc_bus",
-+		   .owner = THIS_MODULE,
-+		   .pm = NULL,
-+		   .of_match_table = fsl_mc_bus_match_table,
-+		   },
-+	.probe = fsl_mc_bus_probe,
-+	.remove = fsl_mc_bus_remove,
-+};
-+
-+static int __init fsl_mc_bus_driver_init(void)
-+{
-+	int error;
-+
-+	mc_dev_cache = kmem_cache_create("fsl_mc_device",
-+					 sizeof(struct fsl_mc_device), 0, 0,
-+					 NULL);
-+	if (!mc_dev_cache) {
-+		pr_err("Could not create fsl_mc_device cache\n");
-+		return -ENOMEM;
-+	}
-+
-+	error = bus_register(&fsl_mc_bus_type);
++	error = dprc_open(mc_dev->mc_io, mc_dev->obj_desc.id,
++			  &mc_dev->mc_handle);
 +	if (error < 0) {
-+		pr_err("fsl-mc bus type registration failed: %d\n", error);
-+		goto error_cleanup_cache;
++		dev_err(&mc_dev->dev, "dprc_open() failed: %d\n", error);
++		return error;
 +	}
 +
-+	pr_info("fsl-mc bus type registered\n");
++	error = dprc_scan_container(mc_dev);
++	if (error < 0)
++		goto error_cleanup_open;
 +
-+	error = platform_driver_register(&fsl_mc_bus_driver);
-+	if (error < 0) {
-+		pr_err("platform_driver_register() failed: %d\n", error);
-+		goto error_cleanup_bus;
-+	}
-+
++	dev_info(&mc_dev->dev, "DPRC device bound to driver");
 +	return 0;
 +
-+error_cleanup_bus:
-+	bus_unregister(&fsl_mc_bus_type);
-+
-+error_cleanup_cache:
-+	kmem_cache_destroy(mc_dev_cache);
++error_cleanup_open:
++	(void)dprc_close(mc_dev->mc_io, mc_dev->mc_handle);
 +	return error;
 +}
 +
-+postcore_initcall(fsl_mc_bus_driver_init);
-+
-+static void __exit fsl_mc_bus_driver_exit(void)
++/**
++ * dprc_remove - callback invoked when a DPRC is being unbound from this driver
++ *
++ * @mc_dev: Pointer to fsl-mc device representing the DPRC
++ *
++ * It removes the DPRC's child objects from Linux (not from the MC) and
++ * closes the DPRC device in the MC.
++ */
++static int dprc_remove(struct fsl_mc_device *mc_dev)
 +{
-+	if (WARN_ON(!mc_dev_cache))
-+		return;
++	int error;
 +
-+	platform_driver_unregister(&fsl_mc_bus_driver);
-+	bus_unregister(&fsl_mc_bus_type);
-+	kmem_cache_destroy(mc_dev_cache);
-+	pr_info("MC bus unregistered\n");
++	if (WARN_ON(strcmp(mc_dev->obj_desc.type, "dprc") != 0))
++		return -EINVAL;
++	if (WARN_ON(!mc_dev->mc_io))
++		return -EINVAL;
++
++	device_for_each_child(&mc_dev->dev, NULL, __fsl_mc_device_remove);
++	error = dprc_close(mc_dev->mc_io, mc_dev->mc_handle);
++	if (error < 0)
++		dev_err(&mc_dev->dev, "dprc_close() failed: %d\n", error);
++
++	dev_info(&mc_dev->dev, "DPRC device unbound from driver");
++	return 0;
 +}
 +
-+module_exit(fsl_mc_bus_driver_exit);
++static const struct fsl_mc_device_match_id match_id_table[] = {
++	{
++	 .vendor = FSL_MC_VENDOR_FREESCALE,
++	 .obj_type = "dprc",
++	 .ver_major = DPRC_VER_MAJOR,
++	 .ver_minor = DPRC_VER_MINOR},
++	{.vendor = 0x0},
++};
 +
-+MODULE_AUTHOR("Freescale Semiconductor Inc.");
-+MODULE_DESCRIPTION("Freescale Management Complex (MC) bus driver");
-+MODULE_LICENSE("GPL");
++static struct fsl_mc_driver dprc_driver = {
++	.driver = {
++		   .name = FSL_MC_DPRC_DRIVER_NAME,
++		   .owner = THIS_MODULE,
++		   .pm = NULL,
++		   },
++	.match_id_table = match_id_table,
++	.probe = dprc_probe,
++	.remove = dprc_remove,
++};
++
++int __init dprc_driver_init(void)
++{
++	return fsl_mc_driver_register(&dprc_driver);
++}
++
++void __exit dprc_driver_exit(void)
++{
++	fsl_mc_driver_unregister(&dprc_driver);
++}
+diff --git a/drivers/bus/fsl-mc/mc-bus.c b/drivers/bus/fsl-mc/mc-bus.c
+index e6f3d62..1967807 100644
+--- a/drivers/bus/fsl-mc/mc-bus.c
++++ b/drivers/bus/fsl-mc/mc-bus.c
+@@ -555,8 +555,15 @@ static int __init fsl_mc_bus_driver_init(void)
+ 		goto error_cleanup_bus;
+ 	}
+
++	error = dprc_driver_init();
++	if (error < 0)
++		goto error_cleanup_driver;
++
+ 	return 0;
+
++error_cleanup_driver:
++	platform_driver_unregister(&fsl_mc_bus_driver);
++
+ error_cleanup_bus:
+ 	bus_unregister(&fsl_mc_bus_type);
+
+@@ -572,6 +579,7 @@ static void __exit fsl_mc_bus_driver_exit(void)
+ 	if (WARN_ON(!mc_dev_cache))
+ 		return;
+
++	dprc_driver_exit();
+ 	platform_driver_unregister(&fsl_mc_bus_driver);
+ 	bus_unregister(&fsl_mc_bus_type);
+ 	kmem_cache_destroy(mc_dev_cache);
 diff --git a/include/linux/fsl/mc-private.h b/include/linux/fsl/mc-private.h
-new file mode 100644
-index 0000000..604832a
---- /dev/null
+index 604832a..431a0b1 100644
+--- a/include/linux/fsl/mc-private.h
 +++ b/include/linux/fsl/mc-private.h
-@@ -0,0 +1,33 @@
-+/*
-+ * Freescale Management Complex (MC) bus private declarations
-+ *
-+ * Copyright (C) 2014 Freescale Semiconductor, Inc.
-+ * Author: German Rivera <German.Rivera@freescale.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2. This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+#ifndef _FSL_MC_PRIVATE_H_
-+#define _FSL_MC_PRIVATE_H_
+@@ -15,6 +15,8 @@
+ #include <linux/mutex.h>
+ #include <linux/stringify.h>
+
++#define FSL_MC_DPRC_DRIVER_NAME    "fsl_mc_dprc"
 +
-+#include <linux/fsl/mc.h>
-+#include <linux/mutex.h>
-+#include <linux/stringify.h>
+ #define FSL_MC_DEVICE_MATCH(_mc_dev, _obj_desc) \
+ 	(strcmp((_mc_dev)->obj_desc.type, (_obj_desc)->type) == 0 && \
+ 	 (_mc_dev)->obj_desc.id == (_obj_desc)->id)
+@@ -30,4 +32,12 @@ int __must_check fsl_mc_device_add(struct dprc_obj_desc *obj_desc,
+
+ void fsl_mc_device_remove(struct fsl_mc_device *mc_dev);
+
++int dprc_scan_container(struct fsl_mc_device *mc_bus_dev);
 +
-+#define FSL_MC_DEVICE_MATCH(_mc_dev, _obj_desc) \
-+	(strcmp((_mc_dev)->obj_desc.type, (_obj_desc)->type) == 0 && \
-+	 (_mc_dev)->obj_desc.id == (_obj_desc)->id)
++int dprc_scan_objects(struct fsl_mc_device *mc_bus_dev);
 +
-+#define FSL_MC_IS_ALLOCATABLE(_obj_type) \
-+	(strcmp(_obj_type, "dpbp") == 0 || \
-+	 strcmp(_obj_type, "dpcon") == 0)
++int __init dprc_driver_init(void);
 +
-+int __must_check fsl_mc_device_add(struct dprc_obj_desc *obj_desc,
-+				   struct fsl_mc_io *mc_io,
-+				   struct device *parent_dev,
-+				   struct fsl_mc_device **new_mc_dev);
++void __exit dprc_driver_exit(void);
 +
-+void fsl_mc_device_remove(struct fsl_mc_device *mc_dev);
-+
-+#endif /* _FSL_MC_PRIVATE_H_ */
-diff --git a/include/linux/fsl/mc.h b/include/linux/fsl/mc.h
-new file mode 100644
-index 0000000..5d89d1bf
---- /dev/null
-+++ b/include/linux/fsl/mc.h
-@@ -0,0 +1,137 @@
-+/*
-+ * Freescale Management Complex (MC) bus public interface
-+ *
-+ * Copyright (C) 2014 Freescale Semiconductor, Inc.
-+ * Author: German Rivera <German.Rivera@freescale.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2. This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+#ifndef _FSL_MC_H_
-+#define _FSL_MC_H_
-+
-+#include <linux/device.h>
-+#include <linux/mod_devicetable.h>
-+#include <linux/list.h>
-+#include <linux/spinlock.h>
-+#include <linux/fsl/dprc.h>
-+
-+#define FSL_MC_VENDOR_FREESCALE	0x1957
-+
-+struct fsl_mc_device;
-+struct fsl_mc_io;
-+
-+/**
-+ * struct fsl_mc_driver - MC object device driver object
-+ * @driver: Generic device driver
-+ * @match_id_table: table of supported device matching Ids
-+ * @probe: Function called when a device is added
-+ * @remove: Function called when a device is removed
-+ * @shutdown: Function called at shutdown time to quiesce the device
-+ * @suspend: Function called when a device is stopped
-+ * @resume: Function called when a device is resumed
-+ *
-+ * Generic DPAA device driver object for device drivers that are registered
-+ * with a DPRC bus. This structure is to be embedded in each device-specific
-+ * driver structure.
-+ */
-+struct fsl_mc_driver {
-+	struct device_driver driver;
-+	const struct fsl_mc_device_match_id *match_id_table;
-+	int (*probe)(struct fsl_mc_device *dev);
-+	int (*remove)(struct fsl_mc_device *dev);
-+	void (*shutdown)(struct fsl_mc_device *dev);
-+	int (*suspend)(struct fsl_mc_device *dev, pm_message_t state);
-+	int (*resume)(struct fsl_mc_device *dev);
-+};
-+
-+#define to_fsl_mc_driver(_drv) \
-+	container_of(_drv, struct fsl_mc_driver, driver)
-+
-+/**
-+ * struct fsl_mc_device_match_id - MC object device Id entry for driver matching
-+ * @vendor: vendor ID
-+ * @obj_type: MC object type
-+ * @ver_major: MC object version major number
-+ * @ver_minor: MC object version minor number
-+ *
-+ * Type of entries in the "device Id" table for MC object devices supported by
-+ * a MC object device driver. The last entry of the table has vendor set to 0x0
-+ */
-+struct fsl_mc_device_match_id {
-+	uint16_t vendor;
-+	const char obj_type[16];
-+	uint32_t ver_major;
-+	uint32_t ver_minor;
-+};
-+
-+/**
-+ * Bit masks for a MC object device (struct fsl_mc_device) flags
-+ */
-+#define FSL_MC_IS_DPRC	0x0001
-+
-+/**
-+ * Default DMA mask for devices on a fsl-mc bus
-+ */
-+#define FSL_MC_DEFAULT_DMA_MASK	(~0ULL)
-+
-+/**
-+ * struct fsl_mc_device - MC object device object
-+ * @dev: Linux driver model device object
-+ * @dma_mask: Default DMA mask
-+ * @flags: MC object device flags
-+ * @icid: Isolation context ID for the device
-+ * @mc_handle: MC handle for the corresponding MC object opened
-+ * @mc_io: Pointer to MC IO object assigned to this device or
-+ * NULL if none.
-+ * @obj_desc: MC description of the DPAA device
-+ * @regions: pointer to array of MMIO region entries
-+ *
-+ * Generic device object for MC object devices that are "attached" to a
-+ * MC bus.
-+ *
-+ * NOTES:
-+ * - For a non-DPRC object its icid is the same as its parent DPRC's icid.
-+ * - The SMMU notifier callback gets invoked after device_add() has been
-+ *   called for an MC object device, but before the device-specific probe
-+ *   callback gets called.
-+ */
-+struct fsl_mc_device {
-+	struct device dev;
-+	uint64_t dma_mask;
-+	uint16_t flags;
-+	uint16_t icid;
-+	uint16_t mc_handle;
-+	struct fsl_mc_io *mc_io;
-+	struct dprc_obj_desc obj_desc;
-+	struct resource *regions;
-+};
-+
-+#define to_fsl_mc_device(_dev) \
-+	container_of(_dev, struct fsl_mc_device, dev)
-+
-+/*
-+ * module_fsl_mc_driver() - Helper macro for drivers that don't do
-+ * anything special in module init/exit.  This eliminates a lot of
-+ * boilerplate.  Each module may only use this macro once, and
-+ * calling it replaces module_init() and module_exit()
-+ */
-+#define module_fsl_mc_driver(__fsl_mc_driver) \
-+	module_driver(__fsl_mc_driver, fsl_mc_driver_register, \
-+		      fsl_mc_driver_unregister)
-+
-+/*
-+ * Macro to avoid include chaining to get THIS_MODULE
-+ */
-+#define fsl_mc_driver_register(drv) \
-+	__fsl_mc_driver_register(drv, THIS_MODULE)
-+
-+int __must_check __fsl_mc_driver_register(struct fsl_mc_driver *fsl_mc_driver,
-+					  struct module *owner);
-+
-+void fsl_mc_driver_unregister(struct fsl_mc_driver *driver);
-+
-+extern struct bus_type fsl_mc_bus_type;
-+
-+#endif /* _FSL_MC_H_ */
+ #endif /* _FSL_MC_PRIVATE_H_ */
 --
 2.2.2
 
