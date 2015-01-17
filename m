@@ -1,50 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751981AbbAQS7y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 13:59:54 -0500
-Received: from senator.holtmann.net ([87.106.208.187]:52221 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751399AbbAQS7w convert rfc822-to-8bit (ORCPT
+	id S1751871AbbAQTOr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 14:14:47 -0500
+Received: from mail-lb0-f182.google.com ([209.85.217.182]:42891 "EHLO
+	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751348AbbAQTOq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 13:59:52 -0500
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
-Subject: Re: [PATCH] ath3k: Add support of AR3012 bluetooth 13d3:3423 device
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <54BA1CC9.8060601@gmail.com>
-Date: Sat, 17 Jan 2015 10:59:43 -0800
-Cc: linux-bluetooth <linux-bluetooth@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <F80A6947-61FA-46A1-8742-51129F4E18C3@holtmann.org>
-References: <54B98679.5060104@gmail.com> <2E4EB7E1-D16C-4633-8E86-337D42190298@holtmann.org> <54BA1CC9.8060601@gmail.com>
-To: Dmitry Tunin <hanipouspilot@gmail.com>
-X-Mailer: Apple Mail (2.1993)
+	Sat, 17 Jan 2015 14:14:46 -0500
+From: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
+To: gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] driver core: use *switch* statement in really_probe()
+Date: Sat, 17 Jan 2015 22:14:41 +0300
+Message-ID: <4800070.0oRyxTVZ40@wasted.cogentembedded.com>
+Organization: Cogent Embedded Inc.
+User-Agent: KMail/4.14.3 (Linux/3.17.8-200.fc20.x86_64; KDE/4.14.3; x86_64; ; )
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+There are series of comparisons of the 'ret' variable on the failure path of
+really_probe(),  so the  *switch* statement  seems  more appropriate there.
 
-please do not top post on this mailing list.
+Signed-off-by: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>
 
-> This patch is against git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.git
-> Or is it another branch?
-> 
-> I pulled it again, but still no changes. Why it can be?
+---
+The patch is against the 'driver-core-next' branch of Greg KH's 'driver-core.git'
+repo.
 
-it neither applies with git am, nor manually running patch.
+ drivers/base/dd.c |   14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
 
-checking file drivers/bluetooth/ath3k.c
-Hunk #1 FAILED at 108.
-Hunk #2 FAILED at 162.
-2 out of 2 hunks FAILED
-checking file drivers/bluetooth/btusb.c
-Hunk #1 FAILED at 189.
-1 out of 1 hunk FAILED
-
-Regards
-
-Marcel
+Index: driver-core/drivers/base/dd.c
+===================================================================
+--- driver-core.orig/drivers/base/dd.c
++++ driver-core/drivers/base/dd.c
+@@ -320,21 +320,25 @@ probe_failed:
+ 	dev->driver = NULL;
+ 	dev_set_drvdata(dev, NULL);
+ 
+-	if (ret == -EPROBE_DEFER) {
++	switch (ret) {
++	case -EPROBE_DEFER:
+ 		/* Driver requested deferred probing */
+ 		dev_info(dev, "Driver %s requests probe deferral\n", drv->name);
+ 		driver_deferred_probe_add(dev);
+ 		/* Did a trigger occur while probing? Need to re-trigger if yes */
+ 		if (local_trigger_count != atomic_read(&deferred_trigger_count))
+ 			driver_deferred_probe_trigger();
+-	} else if (ret != -ENODEV && ret != -ENXIO) {
++		break;
++	case -ENODEV:
++	case -ENXIO:
++		pr_debug("%s: probe of %s rejects match %d\n",
++			 drv->name, dev_name(dev), ret);
++		break;
++	default:
+ 		/* driver matched but the probe failed */
+ 		printk(KERN_WARNING
+ 		       "%s: probe of %s failed with error %d\n",
+ 		       drv->name, dev_name(dev), ret);
+-	} else {
+-		pr_debug("%s: probe of %s rejects match %d\n",
+-		       drv->name, dev_name(dev), ret);
+ 	}
+ 	/*
+ 	 * Ignore errors returned by ->probe so that the next driver can try
 
