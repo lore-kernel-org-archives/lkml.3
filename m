@@ -1,47 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753087AbbAQIOL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 03:14:11 -0500
-Received: from mout.kundenserver.de ([212.227.126.131]:49696 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752122AbbAQIOJ (ORCPT
+	id S1752829AbbAQI0y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 03:26:54 -0500
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:53047 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752216AbbAQI0w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 03:14:09 -0500
-Date: Sat, 17 Jan 2015 09:13:26 +0100
-From: Heinz Diehl <htd+ml@fritha.org>
-To: linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, torvalds@linux-foundation.org,
-        stable@vger.kernel.org, lwn@lwn.net, Jiri Slaby <jslaby@suse.cz>
-Subject: Re: Linux 3.18.3
-Message-ID: <20150117081326.GB1863@fritha.org>
-References: <20150116183905.GA15290@kroah.com>
- <20150117080519.GA1863@fritha.org>
+	Sat, 17 Jan 2015 03:26:52 -0500
+Message-ID: <54BA1CC9.8060601@gmail.com>
+Date: Sat, 17 Jan 2015 11:26:49 +0300
+From: Dmitry Tunin <hanipouspilot@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150117080519.GA1863@fritha.org>
-Organization: private site
-OpenPGP: id=60F4A92C; url=http://www.fritha.org/htd.asc;
- preference=signencrypt
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Provags-ID: V03:K0:U1Gw7n4zPU058/rX7JIO/IPfoIYVirRkf8dW+bKBSe+i3l+Xj6N
- BV+eFOt8w/erxI9aeOPy8wUtkRYvDyNp5kKrBRHUOFM9KxOyeWyOnsEVonDkWPAEqfiL/q8
- Gt9+0uvdxRpFbXEIMz5c2Nxv7P0Bqi3zDAhO8+9zqgrx/ilbyTFkjnvbPG6ekM4Yd7zmM4M
- vzPXfxwpeRG1O72gGJCXA==
-X-UI-Out-Filterresults: notjunk:1;
+To: Marcel Holtmann <marcel@holtmann.org>
+CC: linux-bluetooth <linux-bluetooth@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [PATCH] ath3k: Add support of AR3012 bluetooth 13d3:3423 device
+References: <54B98679.5060104@gmail.com> <2E4EB7E1-D16C-4633-8E86-337D42190298@holtmann.org>
+In-Reply-To: <2E4EB7E1-D16C-4633-8E86-337D42190298@holtmann.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17.01.2015, Heinz Diehl wrote: 
+Hi Marcel,
 
-> Since 3.18, machines with Ironlake Intel Graphics are left with a
-> black screen when booting into X. I reported the bug here:
-> 
-> https://www.libreoffice.org/bugzilla/show_bug.cgi?id=87330
+This patch is against git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.git
+Or is it another branch?
 
-Here's a bit more explanation and the recommendation of/link to the
-fix (in the last reply):
+I pulled it again, but still no changes. Why it can be?
 
-https://www.libreoffice.org/bugzilla/show_bug.cgi?id=86679
-
+17.01.2015 07:32, Marcel Holtmann пишет:
+> Hi Dmitry,
+>
+>> Add support of 13d3:3423 device.
+>>
+>> BugLink: https://bugs.launchpad.net/bugs/1411193
+>>
+>> ---
+>>
+>> T: Bus=01 Lev=02 Prnt=03 Port=00 Cnt=01 Dev#= 5 Spd=12 MxCh= 0
+>> D: Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs= 1
+>> P: Vendor=13d3 ProdID=3423 Rev= 0.01
+>> C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
+>> A: FirstIf#= 0 IfCount= 2 Cls=e0(wlcon) Sub=01 Prot=01
+>> I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+>> E: Ad=81(I) Atr=03(Int.) MxPS= 16 Ivl=1ms
+>> E: Ad=82(I) Atr=02(Bulk) MxPS= 64 Ivl=0ms
+>> E: Ad=02(O) Atr=02(Bulk) MxPS= 64 Ivl=0ms
+>> I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+>> E: Ad=83(I) Atr=01(Isoc) MxPS= 0 Ivl=1ms
+>> E: Ad=03(O) Atr=01(Isoc) MxPS= 0 Ivl=1ms
+>> I: If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+>> E: Ad=83(I) Atr=01(Isoc) MxPS= 9 Ivl=1ms
+>> E: Ad=03(O) Atr=01(Isoc) MxPS= 9 Ivl=1ms
+>> I: If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+>> E: Ad=83(I) Atr=01(Isoc) MxPS= 17 Ivl=1ms
+>> E: Ad=03(O) Atr=01(Isoc) MxPS= 17 Ivl=1ms
+>> I: If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+>> E: Ad=83(I) Atr=01(Isoc) MxPS= 25 Ivl=1ms
+>> E: Ad=03(O) Atr=01(Isoc) MxPS= 25 Ivl=1ms
+>> I: If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+>> E: Ad=83(I) Atr=01(Isoc) MxPS= 33 Ivl=1ms
+>> E: Ad=03(O) Atr=01(Isoc) MxPS= 33 Ivl=1ms
+>> I: If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
+>> E: Ad=83(I) Atr=01(Isoc) MxPS= 49 Ivl=1ms
+>> E: Ad=03(O) Atr=01(Isoc) MxPS= 49 Ivl=1ms
+>>
+>> Signed-off-by: Dmitry Tunin <hanipouspilot@gmail.com>
+>> Cc: stable@vger.kernel.org
+>> ---
+>> drivers/bluetooth/ath3k.c | 2 ++
+>> drivers/bluetooth/btusb.c | 1 +
+>> 2 files changed, 3 insertions(+)
+>
+> your patch does not apply cleanly:
+>
+> Applying: ath3k: Add support of AR3012 bluetooth 13d3:3423 device
+> error: patch failed: drivers/bluetooth/ath3k.c:108
+> error: drivers/bluetooth/ath3k.c: patch does not apply
+> error: patch failed: drivers/bluetooth/btusb.c:189
+> error: drivers/bluetooth/btusb.c: patch does not apply
+> Patch failed at 0001 ath3k: Add support of AR3012 bluetooth 13d3:3423 device
+>
+> Please send patches that can be applied against bluetooth-next tree.
+>
+> Regards
+>
+> Marcel
+>
