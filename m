@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751676AbbAQTzW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 14:55:22 -0500
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:57631 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305AbbAQTzU (ORCPT
+	id S1752332AbbAQT5L (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 14:57:11 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:58204 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751352AbbAQT5J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 14:55:20 -0500
-Message-ID: <54BABE25.4030009@landley.net>
-Date: Sat, 17 Jan 2015 13:55:17 -0600
-From: Rob Landley <rob@landley.net>
+	Sat, 17 Jan 2015 14:57:09 -0500
+Message-ID: <54BABE91.8020609@gmail.com>
+Date: Sat, 17 Jan 2015 22:57:05 +0300
+From: Dmitry Tunin <hanipouspilot@gmail.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>, Andrew Morton <akpm@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] out out damn perl
-References: <54AC72AF.5090609@landley.net> <20150106155024.5efa209d575fff4868758482@linux-foundation.org> <20150117080136.GA7396@amd>
-In-Reply-To: <20150117080136.GA7396@amd>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+To: Marcel Holtmann <marcel@holtmann.org>
+CC: linux-bluetooth <linux-bluetooth@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Subject: Re: [PATCH] ath3k: Add support of AR3012 bluetooth 13d3:3423 device
+References: <54B98679.5060104@gmail.com> <2E4EB7E1-D16C-4633-8E86-337D42190298@holtmann.org> <54BA1CC9.8060601@gmail.com> <F80A6947-61FA-46A1-8742-51129F4E18C3@holtmann.org>
+In-Reply-To: <F80A6947-61FA-46A1-8742-51129F4E18C3@holtmann.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/17/2015 02:01 AM, Pavel Machek wrote:
-> 
-> On Tue 2015-01-06 15:50:24, Andrew Morton wrote:
->> On Tue, 06 Jan 2015 17:41:35 -0600 Rob Landley <rob@landley.net> wrote:
+Any ideas what may be wrong? Is the tree URL correct or there is another bluetooth-next branch I dot know about?
+I just clean cloned it again and applied with no problem.
+
+17.01.2015 21:59, Marcel Holtmann пишет:
+> Hi Dmitry,
+>
+> please do not top post on this mailing list.
+>
+>> This patch is against git://git.kernel.org/pub/scm/linux/kernel/git/bluetooth/bluetooth-next.git
+>> Or is it another branch?
 >>
->>> Commit e6023367d779 added perl back to the kernel build in -rc6.
->>> Replace 39 lines of perl with 4 lines of shell script.
-...
->> - The offending commit has cc:stable, so have a think about adding a
->>   cc:stable to this one as well.
-> 
-> Actually, I don't think this should go to stable. I like the patch,
-> but it is not a bug, and certainly not serious enough one.
-
-As long as the kernel doesn't make a habit of it, I don't care if
-there's a release or two embedded developers should skip. Under ideal
-conditions BSPs only tend to update about once every 18 months, and
-that's the _good_ ones.
-
-Rob
+>> I pulled it again, but still no changes. Why it can be?
+>
+> it neither applies with git am, nor manually running patch.
+>
+> checking file drivers/bluetooth/ath3k.c
+> Hunk #1 FAILED at 108.
+> Hunk #2 FAILED at 162.
+> 2 out of 2 hunks FAILED
+> checking file drivers/bluetooth/btusb.c
+> Hunk #1 FAILED at 189.
+> 1 out of 1 hunk FAILED
+>
+> Regards
+>
+> Marcel
+>
