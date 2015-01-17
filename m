@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752371AbbAQXcJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 18:32:09 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55902 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751839AbbAQXcH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 18:32:07 -0500
-Date: Sat, 17 Jan 2015 14:49:05 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Emrys Bayliss <emrys@paradise.net.nz>
-Cc: forest@alittletooquiet.net, tvboxspy@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] Staging: vt6656: Checkpatch fix: else after break or
- return
-Message-ID: <20150117224905.GA6847@kroah.com>
-References: <1421169178-30345-1-git-send-email-emrys@paradise.net.nz>
+	id S1752812AbbAQWx2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 17:53:28 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47984 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751379AbbAQWx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Jan 2015 17:53:27 -0500
+Message-ID: <54BAE7CB.2010705@redhat.com>
+Date: Sat, 17 Jan 2015 17:52:59 -0500
+From: Jon Masters <jcm@redhat.com>
+Organization: Red Hat, Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421169178-30345-1-git-send-email-emrys@paradise.net.nz>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Olof Johansson <olof@lixom.net>
+CC: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: SMBIOS/DMI data under CONFIG_STRICT_DEVMEM
+References: <54BAC21D.9040009@redhat.com> <CAOesGMi3=QkiQ326nFfGTjsOKrGqgO-q+r+A4Uc_9YWCDrAtwA@mail.gmail.com>
+In-Reply-To: <CAOesGMi3=QkiQ326nFfGTjsOKrGqgO-q+r+A4Uc_9YWCDrAtwA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 14, 2015 at 04:12:58AM +1100, Emrys Bayliss wrote:
-> This patch fixes the following checkpatch.pl error:
-> rxtx.c:558: WARNING: else is not generally useful after a break or return
-> 
-> Signed-off-by: Emrys Bayliss <emrys@paradise.net.nz>
-> ---
-> The else statement was replaced with a block to avoid the following
-> compiler error:
-> "warning: ISO C90 forbids mixed declarations and code"
-> due to this declaration:
-> struct vnt_cts *buf = &head->cts_g; (line 559)
-> 
-> Is there a better way such as using head (a union) directly instead?
-> 
-> The last patch I sent removed the return 0. Since this isn't related to
-> the error in the title I left it for a separate patch.
-> 
->  drivers/staging/vt6656/rxtx.c | 4 +++-
->  1 file changed, 3 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/staging/vt6656/rxtx.c b/drivers/staging/vt6656/rxtx.c
-> index ea5140a..831a051 100644
-> --- a/drivers/staging/vt6656/rxtx.c
-> +++ b/drivers/staging/vt6656/rxtx.c
-> @@ -555,7 +555,9 @@ static u16 vnt_fill_cts_head(struct vnt_usb_send_context *tx_context,
->  		memcpy(buf->data.ra, priv->current_net_addr, ETH_ALEN);
->  
->  		return vnt_rxtx_datahead_g_fb(tx_context, &buf->data_head);
-> -	} else {
-> +	}
-> +
-> +	{
->  		struct vnt_cts *buf = &head->cts_g;
->  		/* Get SignalField,ServiceField,Length */
->  		vnt_get_phy_field(priv, cts_frame_len,
+Hi Olof,
 
-As I said before, this is not correct, please fix it up properly.
+On 01/17/2015 04:10 PM, Olof Johansson wrote:
+> Hi,
+> 
+> On Sat, Jan 17, 2015 at 12:12 PM, Jon Masters <jcm@redhat.com> wrote:
+>> Hi Catalin, all,
+>>
+>> I would like to ensure that the SMBIOS data provided by firmware is
+>> always readable from userspace on AArch64, through /dev/mem.
+> 
+> Seems like this would be a good opportunity for cleanup and fixing
+> userspace to use /sys/firmware/dmi interfaces instead of having to go
+> poking through /dev/mem. That way they don't have to be privileged
+> process any more and is a general security benefit for everybody.
+
+I don't disagree :)
+
+Indeed, I was pushing within RH years ago to help get it into
+/sys/firmware/dmi where it lives today. Someone went over this code for
+us a few months ago and the determination was that there's a chunk of
+refactoring that needs doing to get it to do the right thing. I think in
+the interim some of the vendor kernels might need another solution, but
+I've already asked that Linaro refactor the tool to do it right.
+
+There's probably good reasons to be able to poke at the tables directly
+from userspace under certain circumstances too. For example, one of the
+reference platforms I am using has bogus checksums in the tables so they
+fail to load in the Linux interpreter which means you never see the
+entries in /sys/firmware/dmi being created and could not debug why if
+you had no direct access to read the raw ones. That means that probably
+people would still carry hacks to allow such access.
+
+Jon.
+
