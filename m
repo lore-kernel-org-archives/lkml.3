@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751349AbbAQGCj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 01:02:39 -0500
-Received: from mail-wg0-f44.google.com ([74.125.82.44]:33683 "EHLO
-	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751135AbbAQGCh (ORCPT
+	id S1751373AbbAQGNM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 01:13:12 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:56741 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751115AbbAQGNL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 01:02:37 -0500
-MIME-Version: 1.0
-In-Reply-To: <1AE640813FDE7649BE1B193DEA596E88026B7CAD@SHSMSX101.ccr.corp.intel.com>
-References: <1AE640813FDE7649BE1B193DEA596E88026B7CAD@SHSMSX101.ccr.corp.intel.com>
-Date: Sat, 17 Jan 2015 17:02:31 +1100
-Message-ID: <CAE1zotJapkp83cSWndWuw5brR-rCZyAyr4a1rJCO3xRucq1-Og@mail.gmail.com>
-Subject: Re: About 2 ACPICA table patches
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: "Zheng, Lv" <lv.zheng@intel.com>
-Cc: "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        "Box, David E" <david.e.box@intel.com>,
-        "Moore, Robert" <robert.moore@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Brown, Len" <len.brown@intel.com>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 17 Jan 2015 01:13:11 -0500
+From: Shailendra Verma <shailendra.capricorn@gmail.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Mitchel Humpherys <mitchelh@codeaurora.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org,
+        Shailendra Verma <shailendra.capricorn@gmail.com>
+Subject: [PATCH 1/1] Fix Kernel Panic due to dereference of the invalid handle. First validate the handle and then derefer it in BUG_ON.
+Date: Sat, 17 Jan 2015 11:42:41 +0530
+Message-Id: <1421475161-17755-1-git-send-email-shailendra.capricorn@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 16, 2015 at 11:44 AM, Zheng, Lv <lv.zheng@intel.com> wrote:
-> Hi, Octavian
->
 
-Hi Lv,
+Signed-off-by: Shailendra Verma <shailendra.capricorn@gmail.com>
+---
+ drivers/staging/android/ion/ion.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-> I noticed there are 2 patches you've sent to the community.
-> But unfortunately I didn't find them in my mailbox.
-> Let me comment you here.
->
-> https://patchwork.kernel.org/patch/5501621/
-> This patch seem to be correct.
-> But Rafael should merge it directly via Linux because acpi_unload_table_id() is not in the ACPICA upstream.
+diff --git a/drivers/staging/android/ion/ion.c b/drivers/staging/android/ion/ion.c
+index 296d347..9e56d32 100644
+--- a/drivers/staging/android/ion/ion.c
++++ b/drivers/staging/android/ion/ion.c
+@@ -536,8 +536,6 @@ void ion_free(struct ion_client *client, struct ion_handle *handle)
+ {
+ 	bool valid_handle;
 
-OK, thanks for letting me know. Rafel, does the patch look ok to you?
+-	BUG_ON(client != handle->client);
+-
+ 	mutex_lock(&client->lock);
+ 	valid_handle = ion_handle_validate(client, handle);
 
-> We expect the OSPMs to use acpi_unload_parent_table() instead.
-> I have a divergences reduction series to achieve the transition.
-> But they are pending for review for almost half a year.
-> If you have an environment to test.
-> Could you help to test this again?
-> I can prepare the patchset for you.
->
+@@ -547,6 +545,7 @@ void ion_free(struct ion_client *client, struct ion_handle *handle)
+ 		return;
+ 	}
+ 	mutex_unlock(&client->lock);
++	BUG_ON(client != handle->client);
+ 	ion_handle_put(handle);
+ }
+ EXPORT_SYMBOL(ion_free);
+--
+1.7.9.5
 
-Sure, if you can point me to the patch-set I can test it on my setup.
-
-> https://patchwork.kernel.org/patch/5501561/
-> This patch is correct, I've put it in the 201501 ACPICA release materials for review:
-> https://patchwork.kernel.org/patch/5501621/
-> The patch can be found at:
-> https://github.com/zetalog/acpica/commit/281ff873
-> So if it is merged, you'll see it in the upstream after 201501 ACPICA release cycle.
-> And hence Linux trees doesn't need to merge this patch directly.
->
-
-Thanks,
-Tavi
