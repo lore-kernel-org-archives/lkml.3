@@ -1,281 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144AbbAQDBq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 22:01:46 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:36961 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033AbbAQDBo (ORCPT
+	id S1751717AbbAQDMz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 22:12:55 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:50371 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751033AbbAQDMy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 22:01:44 -0500
-Message-ID: <54B9D082.9050601@oracle.com>
-Date: Sat, 17 Jan 2015 11:01:22 +0800
-From: ethan zhao <ethan.zhao@oracle.com>
-Organization: Oracle Corporation
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	Fri, 16 Jan 2015 22:12:54 -0500
+X-IronPort-AV: E=Sophos;i="5.09,415,1418112000"; 
+   d="scan'208";a="54877573"
+Message-ID: <54B9D329.2050201@broadcom.com>
+Date: Fri, 16 Jan 2015 19:12:41 -0800
+From: Ray Jui <rjui@broadcom.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-CC: "Dev, Vasu" <vasu.dev@intel.com>, Ethan Zhao <ethan.kernel@gmail.com>,
-        "Ronciak, John" <john.ronciak@intel.com>,
-        "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
-        "Allan, Bruce W" <bruce.w.allan@intel.com>,
-        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
-        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
-        "Rose, Gregory V" <gregory.v.rose@intel.com>,
-        "Vick, Matthew" <matthew.vick@intel.com>,
-        "Williams, Mitch A" <mitch.a.williams@intel.com>,
-        "Parikh, Neerav" <neerav.parikh@intel.com>,
-        Linux NICS <Linux-nics@isotope.jf.intel.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "brian.maly@oracle.com" <brian.maly@oracle.com>
-Subject: Re: [PATCH] i40e: don't enable and init FCOE by default when do PF
- reset
-References: <933BEC2E04D6A5458F4B0239FB547F9A34CCCD35@fmsmsx118.amr.corp.intel.com>  <54B86DF8.3040206@oracle.com> <1421419628.2632.112.camel@jtkirshe-mobl>
-In-Reply-To: <1421419628.2632.112.camel@jtkirshe-mobl>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Florian Fainelli <f.fainelli@gmail.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: How to handle access to multiple PHYs through MDIO
+References: <54B9B66C.70308@broadcom.com> <54B9BF16.2020608@gmail.com>
+In-Reply-To: <54B9BF16.2020608@gmail.com>
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vasu,
-
-   What' your idea about the v2, any suggestion ?  Jeff is looking 
-forward to see it.
-
-Thanks,
-Ethan
 
 
-On 2015/1/16 22:47, Jeff Kirsher wrote:
-> On Fri, 2015-01-16 at 09:48 +0800, ethan zhao wrote:
->> Vasu,
+On 1/16/2015 5:47 PM, Florian Fainelli wrote:
+> Hi Ray,
+> 
+> On 16/01/15 17:10, Ray Jui wrote:
+>> Hi,
 >>
->>      OK, disable FCOE as default configuration as a temporary step to
->> make it  work.
-> Sounds like I should expect a v2 coming, correct?
->
+>> Our SoC, Cygnus, uses a generic MDC/MDIO controller to talk to various
+>> PHYs, including 2 x Ethernet GPHY, 2 x PCIe Serdes, and 3 x USB PHYs. In
+>> this case, how should I work out a generic PHY driver to handle this?
+> 
+> Interesting, I have typically seen separate MDIO controllers for at
+> least Ethernet and USB/PCIe/SATA.
+> 
 >>
->> Thanks,
->> Ethan
+>> I notice that most generic PHY drivers are in drivers/phy/*, but
+>> Ethernet seems to have its own interface of talking to a PHY through
+>> MDIO (drivers/net/phy/*).
+> 
+> That's right, the Ethernet PHY library predates the generic PHY library
+> from Kishon and they have little to no common ground.
+> 
 >>
->> On 2015/1/16 7:45, Dev, Vasu wrote:
->>>> -----Original Message-----
->>>> From: ethan zhao [mailto:ethan.zhao@oracle.com]
->>>> Sent: Tuesday, January 13, 2015 6:41 PM
->>>> To: Dev, Vasu
->>>> Cc: Ethan Zhao; Ronciak, John; Kirsher, Jeffrey T; Brandeburg, Jesse; Allan,
->>>> Bruce W; Wyborny, Carolyn; Skidmore, Donald C; Rose, Gregory V; Vick,
->>>> Matthew; Williams, Mitch A; Parikh, Neerav; Linux NICS; e1000-
->>>> devel@lists.sourceforge.net; netdev@vger.kernel.org; linux-
->>>> kernel@vger.kernel.org; brian.maly@oracle.com
->>>> Subject: Re: [PATCH] i40e: don't enable and init FCOE by default when do PF
->>>> reset
->>>>
->>>> Vasu,
->>>>
->>>> On 2015/1/14 3:38, Dev, Vasu wrote:
->>>>>> -----Original Message-----
->>>>>>>>> diff --git a/drivers/net/ethernet/intel/i40e/i40e_main.c
->>>>>>>>> b/drivers/net/ethernet/intel/i40e/i40e_main.c
->>>>>>>>> index a5f2660..a2572cc 100644
->>>>>>>>> --- a/drivers/net/ethernet/intel/i40e/i40e_main.c
->>>>>>>>> +++ b/drivers/net/ethernet/intel/i40e/i40e_main.c
->>>>>>>>> @@ -6180,9 +6180,12 @@ static void i40e_reset_and_rebuild(struct
->>>>>>>>> i40e_pf *pf, bool reinit)
->>>>>>>>>        }
->>>>>>>>>     #endif /* CONFIG_I40E_DCB */
->>>>>>>>>     #ifdef I40E_FCOE
->>>>>>>>> -   ret = i40e_init_pf_fcoe(pf);
->>>>>>>>> -   if (ret)
->>>>>>>>> -           dev_info(&pf->pdev->dev, "init_pf_fcoe failed: %d\n", ret);
->>>>>>>>> +   if (pf->flags & I40E_FLAG_FCOE_ENABLED) {
->>>>>>>>> +           ret = i40e_init_pf_fcoe(pf);
->>>>>>> Calling i40e_init_pf_fcoe() here conflicts with its
->>>>>> I40E_FLAG_FCOE_ENABLED pre-condition since
->>>> I40E_FLAG_FCOE_ENABLED is
->>>>>> set by very same i40e_init_pf_fcoe(), in turn i40e_init_pf_fcoe()
->>>>>> will never get called.
->>>>>>
->>>>>> I don't think so,  here ,i40e_reset_and_rebuild()  is not the only
->>>>>> and the first place that  i40e_init_pf_fcoe() is called, see
->>>>>> i40e_probe(), that is the first chance.
->>>>>>
->>>>>> i40e_probe()
->>>>>> -->i40e_sw_init()
->>>>>>         -->i40e_init_pf_fcoe()
->>>>>>
->>>>>> And the I40E_FLAG_FCOE_ENABLED is possible be set by
->>>>>> i40e_fcoe_enable() or i40e_fcoe_disable() interface before the reset
->>>>>> action is to be done.
->>>>>>
->>>>> It is set by i40e_init_pf_fcoe() and you are right that the modified call flow
->>>> by your patch won't impact setting of I40E_FLAG_FCOE_ENABLED anyway
->>>> which could have prevented calling i40e_init_pf_fcoe() as I described above,
->>>> so this is not an issue with the patch.
->>>>>> BTW, the reason I post this patch is that we hit a bug, after setup
->>>>>> vlan, the PF is enabled to FCOE.
->>>>>>
->>>>> Then that BUG would still remain un-fixed and calling i40e_init_pf_fcoe()
->>>> under I40E_FLAG_FCOE_ENABLED  flag really won't affect call flow to fix
->>>> anything. I mean I40E_FLAG_FCOE_ENABLED  condition will be true with "pf-
->>>>> hw.func_caps.fcoe == true" and otherwise calling i40e_init_pf_fcoe() simply
->>>> returns back early on after checking "pf->hw.func_caps.fcoe == false", so
->>>> how that bug is fixed here by added I40E_FLAG_FCOE_ENABLED  condition ?
->>>> What is the bug ?
->>>>     The func_caps.fcoe is assigned by following call path, under our test
->>>> environment,
->>>>
->>>>     i40e_probe()
->>>>      ->i40e_get_capabilities()
->>>>         ->i40e_aq_discover_capabilities()
->>>>            ->i40e_parse_discover_capabilities()
->>>>
->>>>     Or
->>>>
->>>>     i40e_reset_and_rebuild()
->>>>      ->i40e_get_capabilities()
->>>>        ->i40e_aq_discover_capabilities()
->>>>          ->i40e_parse_discover_capabilities()
->>>>
->>>>     Under our test environment, the "pf->hw.func_caps.fcoe" is true. so if
->>>> i40e_reset_and_rebuild() is called for VLAN setup, ethtool diagnostic test.
->>>>     And then i40e_init_pf_fcoe() is to be called,
->>>>
->>>>     While if (!pf->hw.func_caps.fcoe) wouldn't return,
->>>>
->>> I said it would return with "pf->hw.func_caps.fcoe == false" in my last response, more details below.
->>>
->>>>     So  pf->flags is set to I40E_FLAG_FCOE_ENABLED.
->>>>
->>>>     With my patch,  i40e_init_pf_fcoe() is only called after
->>>> I40E_FLAG_FCOE_ENABLED is set before reset.
->>>>
->>>> Enable FCOE in i40e_probe() or not is another issue.
->>>>
->>> Nope since both cases we should do i40e_init_pf_fcoe() or don't based on fcoe cap true or false.
->>>
->>> I don't have much to add as I described before with the your patch that "calling i40e_init_pf_fcoe() under I40E_FLAG_FCOE_ENABLED  flag really won't affect call flow to fix anything. I mean I40E_FLAG_FCOE_ENABLED  condition will be true with "pf->hw.func_caps.fcoe == true" and otherwise calling i40e_init_pf_fcoe() simply returns back early on after checking "pf->hw.func_caps.fcoe == false".
->>>
->>> May be I'm missing something, I guess next either go with CONFIG_I40E_FCOE disable as I suggested before and now it in upstream kernel or we can have further off list discussion to fix the issue you are trying to fix with the patch.
->>>
->>> Thanks,
->>> Vasu
->>>
->>>> Thanks,
->>>> Ethan
->>>>
->>>>
->>>>>>> Jeff Kirsher should be getting out a patch queued by me which adds
->>>>>> I40E_FCoE Kbuild option, in that FCoE is disabled by default and
->>>>>> user could enable FCoE only if needed, that patch would do same of
->>>>>> skipping
->>>>>> i40e_init_pf_fcoe() whether FCoE capability in device enabled or not
->>>>>> in default config.
->>>>>> The following patch will not fix the above issue -- configuration of
->>>>>> PF will be changed via reset.
->>>>>> How about the FCOE is configured and disabled by  i40e_fcoe_disable()
->>>>>> , then reset happens ?
->>>>>>
->>>>> May be but if the BUG is due to FCoE being enabled then having it disabled
->>>> in config will avoid the bug for non FCoE config option and once bug is
->>>> understood then that has to be fixed for FCoE enabled config also as I asked
->>>> above.
->>>>> Thanks Ethan for detailed response.
->>>>> Vasu
->>>>>
->>>>>>>    From patchwork Wed Oct  2 23:26:08 2013
->>>>>>> Content-Type: text/plain; charset="utf-8"
->>>>>>> MIME-Version: 1.0
->>>>>>> Content-Transfer-Encoding: 7bit
->>>>>>> Subject: [net] i40e: adds FCoE configure option
->>>>>>> Date: Thu, 03 Oct 2013 07:26:08 -0000
->>>>>>> From: Vasu Dev <vasu.dev@intel.com>
->>>>>>> X-Patchwork-Id: 11797
->>>>>>>
->>>>>>> Adds FCoE config option I40E_FCOE, so that FCoE can be enabled as
->>>>>>> needed but otherwise have it disabled by default.
->>>>>>>
->>>>>>> This also eliminate multiple FCoE config checks, instead now just
->>>>>>> one config check for CONFIG_I40E_FCOE.
->>>>>>>
->>>>>>> The I40E FCoE was added with 3.17 kernel and therefore this patch
->>>>>>> shall be applied to stable 3.17 kernel also.
->>>>>>>
->>>>>>> CC: <stable@vger.kernel.org>
->>>>>>> Signed-off-by: Vasu Dev <vasu.dev@intel.com>
->>>>>>> Tested-by: Jim Young <jamesx.m.young@intel.com>
->>>>>>>
->>>>>>> ---
->>>>>>> drivers/net/ethernet/intel/Kconfig           |   11 +++++++++++
->>>>>>>     drivers/net/ethernet/intel/i40e/Makefile     |    2 +-
->>>>>>>     drivers/net/ethernet/intel/i40e/i40e_osdep.h |    4 ++--
->>>>>>>     3 files changed, 14 insertions(+), 3 deletions(-)
->>>>>>>
->>>>>>> diff --git a/drivers/net/ethernet/intel/Kconfig
->>>>>>> b/drivers/net/ethernet/intel/Kconfig
->>>>>>> index 5b8300a..4d61ef5 100644
->>>>>>> --- a/drivers/net/ethernet/intel/Kconfig
->>>>>>> +++ b/drivers/net/ethernet/intel/Kconfig
->>>>>>> @@ -281,6 +281,17 @@ config I40E_DCB
->>>>>>>
->>>>>>>              If unsure, say N.
->>>>>>>
->>>>>>> +config I40E_FCOE
->>>>>>> +       bool "Fibre Channel over Ethernet (FCoE)"
->>>>>>> +       default n
->>>>>>> +       depends on I40E && DCB && FCOE
->>>>>>> +       ---help---
->>>>>>> +         Say Y here if you want to use Fibre Channel over Ethernet (FCoE)
->>>>>>> +         in the driver. This will create new netdev for exclusive FCoE
->>>>>>> +         use with XL710 FCoE offloads enabled.
->>>>>>> +
->>>>>>> +         If unsure, say N.
->>>>>>> +
->>>>>>>     config I40EVF
->>>>>>>            tristate "Intel(R) XL710 X710 Virtual Function Ethernet support"
->>>>>>>            depends on PCI_MSI
->>>>>>> diff --git a/drivers/net/ethernet/intel/i40e/Makefile
->>>>>>> b/drivers/net/ethernet/intel/i40e/Makefile
->>>>>>> index 4b94ddb..c405819 100644
->>>>>>> --- a/drivers/net/ethernet/intel/i40e/Makefile
->>>>>>> +++ b/drivers/net/ethernet/intel/i40e/Makefile
->>>>>>> @@ -44,4 +44,4 @@ i40e-objs := i40e_main.o \
->>>>>>>            i40e_virtchnl_pf.o
->>>>>>>
->>>>>>>     i40e-$(CONFIG_I40E_DCB) += i40e_dcb.o i40e_dcb_nl.o
->>>>>>> -i40e-$(CONFIG_FCOE:m=y) += i40e_fcoe.o
->>>>>>> +i40e-$(CONFIG_I40E_FCOE) += i40e_fcoe.o
->>>>>>> diff --git a/drivers/net/ethernet/intel/i40e/i40e_osdep.h
->>>>>>> b/drivers/net/ethernet/intel/i40e/i40e_osdep.h
->>>>>>> index 045b5c4..ad802dd 100644
->>>>>>> --- a/drivers/net/ethernet/intel/i40e/i40e_osdep.h
->>>>>>> +++ b/drivers/net/ethernet/intel/i40e/i40e_osdep.h
->>>>>>> @@ -78,7 +78,7 @@ do {                                                            \
->>>>>>>     } while (0)
->>>>>>>
->>>>>>>     typedef enum i40e_status_code i40e_status; -#if
->>>>>>> defined(CONFIG_FCOE)
->>>>>>> || defined(CONFIG_FCOE_MODULE)
->>>>>>> +#ifdef CONFIG_I40E_FCOE
->>>>>>>     #define I40E_FCOE
->>>>>>> -#endif /* CONFIG_FCOE or CONFIG_FCOE_MODULE */
->>>>>>> +#endif
->>>>>>>     #endif /* _I40E_OSDEP_H_ */
->>>>>>>
->>>>>>>>> +           if (ret)
->>>>>>>>> +                   dev_info(&pf->pdev->dev,
->>>>>>>>> +                            "init_pf_fcoe failed: %d\n", ret);
->>>>>>>>> +   }
->>>>>>>>>
->>>>>>>>>     #endif
->>>>>>>>>        /* do basic switch setup */
->>>>>>>>> --
->>>>>>>>> 1.8.3.1
->>>>>> Thanks,
->>>>>> Ethan
->
+>> I need a single driver to handle these so there isn't any race condition
+>> for this single MDIO access in our system.
+> 
+> How about the following design:
+> 
+> - you create a MDIO bus controller library in e.g:
+> drivers/phy/cygnus-mdio.c which offers generic generic read/write
+> operations with a prototype looking like this:
+> 
+> 	int mdio_read(void *device, enum device_type, int reg, int addr);
+> 	- int mdio_write(void *device, enum device_type, int reg, int addr, int
+> value)
+> 	- where device_type is MDIO_DEV_SERDES or MDIO_DEV_GPHY
+> 
+> 	- these reads and writes are protected by a local spinlock which is not
+> exposed to the caller, it just needs to know that it gets serialized
+> access to the controller
+> 
+> - you write a MDIO controller in drivers/phy/ for the USB and PCIe PHYs
+> which uses this library and interfaces with Kishon's PHY Library operations
+> 
+> - you create a MDIO bus controller driver in drivers/net/phy/ which also
+> uses this library and registers with Linux using mdiobus_register()
+> 
+> This is imho the easiest way to achieve what you want here, however, you
+> could also stash all of what I describe above in a single MDIO bus
+> driver in drivers/phy/ and ifdef out what is relevant based on your
+> kernel configuration, up to you, there could be some tricky dependencies
+> to solve though.
+> 
+Thanks, Florian. This makes sense to me.
 
+Note this means I'll need to create public headers under include/linux
+for the mdio library. But yes, having a shared mdio library and
+protected with spinlock is the only way to guarantee serialized access
+to the mdio controller.
+
+Ray
