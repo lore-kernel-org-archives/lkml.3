@@ -1,95 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752676AbbAQT6g (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 14:58:36 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:15445 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305AbbAQT6f (ORCPT
+	id S1751906AbbAQUFZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 15:05:25 -0500
+Received: from senator.holtmann.net ([87.106.208.187]:33052 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750788AbbAQUFX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 14:58:35 -0500
-X-IronPort-AV: E=Sophos;i="5.09,417,1418112000"; 
-   d="scan'208";a="55033074"
-Message-ID: <54BABEE9.8070801@broadcom.com>
-Date: Sat, 17 Jan 2015 11:58:33 -0800
-From: Ray Jui <rjui@broadcom.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
-MIME-Version: 1.0
-To: =?windows-1252?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: Wolfram Sang <wsa@the-dreams.de>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "Scott Branden" <sbranden@broadcom.com>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v4 2/3] i2c: iproc: Add Broadcom iProc I2C Driver
-References: <rjui@broadcom.com> <1421274213-3544-1-git-send-email-rjui@broadcom.com> <1421274213-3544-3-git-send-email-rjui@broadcom.com> <20150115084119.GN22880@pengutronix.de> <54B98C18.4080807@broadcom.com> <20150117160113.GA22880@pengutronix.de>
-In-Reply-To: <20150117160113.GA22880@pengutronix.de>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 8bit
+	Sat, 17 Jan 2015 15:05:23 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
+Subject: Re: [PATCH] ath3k: Add support of AR3012 bluetooth 13d3:3423 device
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <54BABE91.8020609@gmail.com>
+Date: Sat, 17 Jan 2015 12:05:18 -0800
+Cc: linux-bluetooth <linux-bluetooth@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <CC6A652A-8BB2-45C8-B483-4B70E0554A0B@holtmann.org>
+References: <54B98679.5060104@gmail.com> <2E4EB7E1-D16C-4633-8E86-337D42190298@holtmann.org> <54BA1CC9.8060601@gmail.com> <F80A6947-61FA-46A1-8742-51129F4E18C3@holtmann.org> <54BABE91.8020609@gmail.com>
+To: Dmitry Tunin <hanipouspilot@gmail.com>
+X-Mailer: Apple Mail (2.1993)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Dmitry,
 
+> Any ideas what may be wrong? Is the tree URL correct or there is another bluetooth-next branch I dot know about?
+> I just clean cloned it again and applied with no problem.
 
-On 1/17/2015 8:01 AM, Uwe Kleine-König wrote:
-> Hello,
-> 
-> On Fri, Jan 16, 2015 at 02:09:28PM -0800, Ray Jui wrote:
->> On 1/15/2015 12:41 AM, Uwe Kleine-König wrote:
->>> On Wed, Jan 14, 2015 at 02:23:32PM -0800, Ray Jui wrote:
->>>> +	 */
->>>> +	val = 1 << M_CMD_START_BUSY_SHIFT;
->>>> +	if (msg->flags & I2C_M_RD) {
->>>> +		val |= (M_CMD_PROTOCOL_BLK_RD << M_CMD_PROTOCOL_SHIFT) |
->>>> +		       (msg->len << M_CMD_RD_CNT_SHIFT);
->>>> +	} else {
->>>> +		val |= (M_CMD_PROTOCOL_BLK_WR << M_CMD_PROTOCOL_SHIFT);
->>>> +	}
->>>> +	writel(val, iproc_i2c->base + M_CMD_OFFSET);
->>>> +
->>>> +	time_left = wait_for_completion_timeout(&iproc_i2c->done, time_left);
->>>
->>> When the interrupt fires here after the complete timed out and before
->>> you disable the irq you still throw the result away.
->> Yes, but then this comes down to the fact that if it has reached the
->> point that is determined to be a timeout condition in the driver, one
->> should really treat it as timeout error. In a normal condition,
->> time_left should never reach zero.
-> I don't agree here. I'm not sure there is a real technical reason,
-> though. But still if you're in a "success after timeout already over"
-> situation it's IMHO better to interpret it as success, not timeout.
-> 
-The thing is, the interrupt should never fire after
-wait_for_completion_timeout returns zero here. If it does, then the
-issue is really that the timeout value set in the driver is probably not
-long enough. I just checked other I2C drivers. I think the way how
-timeout is handled here is consistent with other I2C drivers.
+I did ask nicely to not top post on this mailing list. Please respect our netiquette.
 
->>>> +static int bcm_iproc_i2c_remove(struct platform_device *pdev)
->>>> +{
->>>> +	struct bcm_iproc_i2c_dev *iproc_i2c = platform_get_drvdata(pdev);
->>>> +
->>>> +	i2c_del_adapter(&iproc_i2c->adapter);
->>> You need to free the irq before i2c_del_adapter.
->>>
->> Yes. Thanks. Change back to use devm_request_irq, and use disable_irq
->> here before removing the adapter.
-> The more lightweight approach is to set your device's irq-enable
-> register to zero and call synchronize_irq. (For a shared irq calling
-> disable_irq is even wrong here.)
-> 
-The fact that IRQF_SHARED flag is not set indicates this is a dedicated
-IRQ line, so I thought using disable_irq here makes sense. But if both
-you and Wolfram think masking all I2C interrupts at the block level +
-synchronize_irq is a better approach, I can change to that. Thanks!
+Save the original email as it arrives on the mailing list and try by yourself. I tried twice now and it just does not apply. It could be well that your email client messed it up somewhere along the lines. Maybe Johan has more luck, but on my tree it does not apply.
 
-> Best regards
-> Uwe
-> 
+Regards
+
+Marcel
+
