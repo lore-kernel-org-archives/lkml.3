@@ -1,50 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752581AbbAQH57 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 02:57:59 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:57503 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751915AbbAQH56 (ORCPT
+	id S1752891AbbAQH7X (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 02:59:23 -0500
+Received: from mail-pd0-f178.google.com ([209.85.192.178]:34715 "EHLO
+	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752712AbbAQH7V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 02:57:58 -0500
-Date: Sat, 17 Jan 2015 08:57:44 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-rt-users@vger.kernel.org,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Steven Rostedt <srostedt@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, kvm@vger.kernel.org,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: [patch -rt 1/2] KVM: use simple waitqueue for vcpu->wq
-Message-ID: <20150117075744.GM25256@twins.programming.kicks-ass.net>
-References: <20150114171251.882318257@redhat.com>
- <20150114171459.593877145@redhat.com>
- <20150116114846.4e7b718d@gandalf.local.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150116114846.4e7b718d@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+	Sat, 17 Jan 2015 02:59:21 -0500
+From: Shailendra Verma <shailendra.capricorn@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Shailendra Verma <shailendra.capricorn@gmail.com>
+Subject: [PATCH 8/8] Coding Style Correction.
+Date: Sat, 17 Jan 2015 13:28:49 +0530
+Message-Id: <1421481529-19304-1-git-send-email-shailendra.capricorn@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 16, 2015 at 11:48:46AM -0500, Steven Rostedt wrote:
-> I notice everywhere you have a swait_wake_interruptible() but here. Is
-> there a reason why?
-> 
-> IIRC, Peter wants to make swait wakeup usage homogenous. That is, you
-> either sleep in an interruptible state, or you don't. You can't mix and
-> match it.
-> 
-> Peter is that what you plan?
 
-Yes, this is required for the single wakeup case to be bounded.
+Signed-off-by: Shailendra Verma <shailendra.capricorn@gmail.com>
+---
+ drivers/input/evdev.c    |   30 ++++++++++++++++++++----------
+ drivers/input/mousedev.c |   18 ++++++++++++------
+ 2 files changed, 32 insertions(+), 16 deletions(-)
 
-If you have both INTERRUPTIBLE and UNINTERRUPTIBLE waiters on a list,
-and you were allowed to do INTERRUPTIBLE/UNINTERRUPTIBLE wakeups, the
-wakeup would have to do O(n) iteration to find a matching waiter.
+diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
+index 18d4b2c..85ee594 100644
+--- a/drivers/input/evdev.c
++++ b/drivers/input/evdev.c
+@@ -667,16 +667,26 @@ static int handle_eviocgbit(struct input_dev *dev,
+ 
+ 	switch (type) {
+ 
+-	case      0: bits = dev->evbit;  len = EV_MAX;  break;
+-	case EV_KEY: bits = dev->keybit; len = KEY_MAX; break;
+-	case EV_REL: bits = dev->relbit; len = REL_MAX; break;
+-	case EV_ABS: bits = dev->absbit; len = ABS_MAX; break;
+-	case EV_MSC: bits = dev->mscbit; len = MSC_MAX; break;
+-	case EV_LED: bits = dev->ledbit; len = LED_MAX; break;
+-	case EV_SND: bits = dev->sndbit; len = SND_MAX; break;
+-	case EV_FF:  bits = dev->ffbit;  len = FF_MAX;  break;
+-	case EV_SW:  bits = dev->swbit;  len = SW_MAX;  break;
+-	default: return -EINVAL;
++	case      0:
++		bits = dev->evbit;  len = EV_MAX;  break;
++	case EV_KEY:
++		bits = dev->keybit; len = KEY_MAX; break;
++	case EV_REL:
++		bits = dev->relbit; len = REL_MAX; break;
++	case EV_ABS:
++		bits = dev->absbit; len = ABS_MAX; break;
++	case EV_MSC:
++		bits = dev->mscbit; len = MSC_MAX; break;
++	case EV_LED:
++		bits = dev->ledbit; len = LED_MAX; break;
++	case EV_SND:
++		bits = dev->sndbit; len = SND_MAX; break;
++	case EV_FF:
++		bits = dev->ffbit;  len = FF_MAX;  break;
++	case EV_SW:
++		bits = dev->swbit;  len = SW_MAX;  break;
++	default:
++		return -EINVAL;
+ 	}
+ 
+ 	return bits_to_user(bits, len, size, p, compat_mode);
+diff --git a/drivers/input/mousedev.c b/drivers/input/mousedev.c
+index b604564..a9857dd 100644
+--- a/drivers/input/mousedev.c
++++ b/drivers/input/mousedev.c
+@@ -230,25 +230,31 @@ static void mousedev_key_event(struct mousedev *mousedev,
+ 
+ 	case BTN_TOUCH:
+ 	case BTN_0:
+-	case BTN_LEFT:		index = 0; break;
++	case BTN_LEFT:
++		index = 0; break;
+ 
+ 	case BTN_STYLUS:
+ 	case BTN_1:
+-	case BTN_RIGHT:		index = 1; break;
++	case BTN_RIGHT:
++		index = 1; break;
+ 
+ 	case BTN_2:
+ 	case BTN_FORWARD:
+ 	case BTN_STYLUS2:
+-	case BTN_MIDDLE:	index = 2; break;
++	case BTN_MIDDLE:
++		index = 2; break;
+ 
+ 	case BTN_3:
+ 	case BTN_BACK:
+-	case BTN_SIDE:		index = 3; break;
++	case BTN_SIDE:
++		index = 3; break;
+ 
+ 	case BTN_4:
+-	case BTN_EXTRA:		index = 4; break;
++	case BTN_EXTRA:
++		index = 4; break;
+ 
+-	default:		return;
++	default:
++		return;
+ 	}
+ 
+ 	if (value) {
+-- 
+1.7.9.5
 
-Seeing that the entire purpose of simple wait queues was to retain RT
-properties, that's entirely retarded ;-)
