@@ -1,66 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752112AbbAQXVs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 18:21:48 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:60705 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751467AbbAQXVq (ORCPT
+	id S1752980AbbAQXkh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 18:40:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56009 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751590AbbAQXkf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 18:21:46 -0500
-Date: Sat, 17 Jan 2015 23:21:42 +0000
-From: Leif Lindholm <leif.lindholm@linaro.org>
-To: Jon Masters <jcm@redhat.com>
-Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: SMBIOS/DMI data under CONFIG_STRICT_DEVMEM
-Message-ID: <20150117232142.GN3827@bivouac.eciton.net>
-References: <54BAC21D.9040009@redhat.com>
+	Sat, 17 Jan 2015 18:40:35 -0500
+Date: Sat, 17 Jan 2015 15:23:28 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Arjun AK <arjunak234@gmail.com>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Subject: Re: [PATCH] staging: ft1000: Fix code style issue
+Message-ID: <20150117232328.GA27041@kroah.com>
+References: <1420615625-25738-1-git-send-email-arjunak234@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54BAC21D.9040009@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1420615625-25738-1-git-send-email-arjunak234@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 17, 2015 at 03:12:13PM -0500, Jon Masters wrote:
-> Hi Catalin, all,
+On Wed, Jan 07, 2015 at 12:57:05PM +0530, Arjun AK wrote:
+> Remove unnecessary braces from single statement blocks.
 > 
-> I would like to ensure that the SMBIOS data provided by firmware is
-> always readable from userspace on AArch64, through /dev/mem.
+> Signed-off-by: Arjun AK <arjunak234@gmail.com>
+> ---
+>  drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c | 101 ++++++++---------------
+>  1 file changed, 35 insertions(+), 66 deletions(-)
 
-No, we need to ensure /dev/mem can be completely disabled on any
-system that ever wants to have any level of reliability.
-
-Fortunately, for SMBIOS there is /sys/firmware/dmi. Expect to see some
-patches from Ivan Khoronzhuk on this next week. (He has a working
-prototype of dmidecode, and a couple of minor kernel patches, as of
-yesterday.)
-
-For acpidump, there is /sys/firmware/acpi, and we're looking into that
-as well.
-
-> When building a kernel with CONFIG_STRICT_DEVMEM, arm64 follows broadly
-> x86 with the exception of an assumption surrounding the low range of
-> memory (which doesn't apply on AArch64 platforms universally anyway).
-> Thus on x86, they can directly read the SMBIOS table from dmidecode when
-> it tries to map /dev/mem due to its location. I'm hacking something up
-> for the moment, but I would like to solve this.
-
-STRICT_DEVMEM is a trainwreck on all architectures, but particularly
-bad on ARM*, since we don't have anything resembling a predictable
-memory map. While I like Ard's approach to improve it with data
-actually available, I would also like add the ability to make it
-tweakable as read-write, read-only or no access.
-
-I sent out a series looking to consolidate STRICT_DEVMEM handling
-across architectures (i.e. not have separate definitions per
-architecture Kconfig), but had little response. If anyone is
-interested in seeing that happening, let me know and I'll resend with
-you on cc.
-
-/
-    Leif
+Doesn't apply to my staging-testing tree :(
