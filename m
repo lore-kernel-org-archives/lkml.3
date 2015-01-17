@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751589AbbAQGRA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 01:17:00 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:53192 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751115AbbAQGQ6 (ORCPT
+	id S1751459AbbAQGet (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 01:34:49 -0500
+Received: from mail-pa0-f42.google.com ([209.85.220.42]:57765 "EHLO
+	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751115AbbAQGes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 01:16:58 -0500
-From: tolga ceylan <tolga.ceylan@gmail.com>
+	Sat, 17 Jan 2015 01:34:48 -0500
+From: Shailendra Verma <shailendra.capricorn@gmail.com>
 To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ganesan Ramalingam <ganesanr@broadcom.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Himangi Saraogi <himangi774@gmail.com>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Iulia Manda <iulia.manda21@gmail.com>, Toby Smith <toby@tismith.id.au>,
-        devel@driverdev.osuosl.org
-Cc: linux-kernel@vger.kernel.org, tolga ceylan <tolga.ceylan@gmail.com>
-Subject: [PATCH] Staging: NetLogic: Coding style correction
-Date: Fri, 16 Jan 2015 22:16:13 -0800
-Message-Id: <1421475373-6328-1-git-send-email-tolga.ceylan@gmail.com>
-X-Mailer: git-send-email 1.9.1
+        John Stultz <john.stultz@linaro.org>,
+        Mitchel Humpherys <mitchelh@codeaurora.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org,
+        Shailendra Verma <shailendra.capricorn@gmail.com>
+Subject: [PATCH 2/2] ION handle already destroyed in ion_free.
+Date: Sat, 17 Jan 2015 12:04:21 +0530
+Message-Id: <1421476461-18070-1-git-send-email-shailendra.capricorn@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Misspelled comment corrected
 
-Signed-off-by: tolga ceylan <tolga.ceylan@gmail.com>
+Signed-off-by: Shailendra Verma <shailendra.capricorn@gmail.com>
 ---
- drivers/staging/netlogic/xlr_net.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/android/ion/ion.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/staging/netlogic/xlr_net.c b/drivers/staging/netlogic/xlr_net.c
-index 5ecb3e6..e8aae09 100644
---- a/drivers/staging/netlogic/xlr_net.c
-+++ b/drivers/staging/netlogic/xlr_net.c
-@@ -788,7 +788,7 @@ void xlr_set_gmac_speed(struct xlr_net_priv *priv)
- 			xlr_nae_wreg(priv->base_addr, R_MAC_CONFIG_2, 0x7117);
- 			priv->phy_speed = speed;
- 		}
--		/* Set SGMII speed in Interface controll reg */
-+		/* Set SGMII speed in Interface control reg */
- 		if (phydev->interface == PHY_INTERFACE_MODE_SGMII) {
- 			if (speed == SPEED_10)
- 				xlr_nae_wreg(priv->base_addr,
--- 
-1.9.1
-
+diff --git a/drivers/staging/android/ion/ion.c b/drivers/staging/android/ion/ion.c
+index 9e56d32..0d2b9a3 100644
+--- a/drivers/staging/android/ion/ion.c
++++ b/drivers/staging/android/ion/ion.c
+@@ -1279,7 +1279,6 @@ static long ion_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+		if (IS_ERR(handle))
+			return PTR_ERR(handle);
+		ion_free(client, handle);
+-		ion_handle_put(handle);
+		break;
+	}
+	case ION_IOC_SHARE:
+--
+1.7.9.5
