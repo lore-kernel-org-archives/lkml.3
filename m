@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753120AbbAQW5A (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 17:57:00 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:48623 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752039AbbAQW47 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 17:56:59 -0500
-Message-ID: <54BAE8A0.6070408@redhat.com>
-Date: Sat, 17 Jan 2015 17:56:32 -0500
-From: Jon Masters <jcm@redhat.com>
-Organization: Red Hat, Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752732AbbAQXe2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 18:34:28 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55927 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751402AbbAQXe1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Jan 2015 18:34:27 -0500
+Date: Sat, 17 Jan 2015 14:56:33 -0800
+From: Greg KH <gregkh@linuxfoundation.org>
+To: Mohammad Jamal <md.jamalmohiuddin@gmail.com>
+Cc: josh@joshtriplett.org, gulsah.1004@gmail.com, daniel.dy.ngu@gmail.com,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging : gdm724x: Remove space before , in function
+ arguments
+Message-ID: <20150117225633.GA25264@kroah.com>
+References: <1419130099-6256-1-git-send-email-md.jamalmohiuddin@gmail.com>
 MIME-Version: 1.0
-To: Olof Johansson <olof@lixom.net>
-CC: Catalin Marinas <Catalin.Marinas@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: SMBIOS/DMI data under CONFIG_STRICT_DEVMEM
-References: <54BAC21D.9040009@redhat.com> <CAOesGMi3=QkiQ326nFfGTjsOKrGqgO-q+r+A4Uc_9YWCDrAtwA@mail.gmail.com> <54BAE7CB.2010705@redhat.com>
-In-Reply-To: <54BAE7CB.2010705@redhat.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1419130099-6256-1-git-send-email-md.jamalmohiuddin@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/17/2015 05:52 PM, Jon Masters wrote:
-> Hi Olof,
+On Sun, Dec 21, 2014 at 08:18:19AM +0530, Mohammad Jamal wrote:
+> This patch solves space prohibited before , warning in gdm_mux.c
 > 
-> On 01/17/2015 04:10 PM, Olof Johansson wrote:
->> Hi,
->>
->> On Sat, Jan 17, 2015 at 12:12 PM, Jon Masters <jcm@redhat.com> wrote:
->>> Hi Catalin, all,
->>>
->>> I would like to ensure that the SMBIOS data provided by firmware is
->>> always readable from userspace on AArch64, through /dev/mem.
->>
->> Seems like this would be a good opportunity for cleanup and fixing
->> userspace to use /sys/firmware/dmi interfaces instead of having to go
->> poking through /dev/mem. That way they don't have to be privileged
->> process any more and is a general security benefit for everybody.
+> Signed-off-by: Mohammad Jamal <md.jamalmohiuddin@gmail.com>
+> ---
+>  drivers/staging/gdm724x/gdm_mux.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> I don't disagree :)
-> 
-> Indeed, I was pushing within RH years ago to help get it into
-> /sys/firmware/dmi where it lives today. Someone went over this code for
-> us a few months ago and the determination was that there's a chunk of
-> refactoring that needs doing to get it to do the right thing. I think in
-> the interim some of the vendor kernels might need another solution, but
-> I've already asked that Linaro refactor the tool to do it right.
-> 
-> There's probably good reasons to be able to poke at the tables directly
-> from userspace under certain circumstances too. For example, one of the
-> reference platforms I am using has bogus checksums in the tables so they
-> fail to load in the Linux interpreter which means you never see the
-> entries in /sys/firmware/dmi being created and could not debug why if
-> you had no direct access to read the raw ones. That means that probably
-> people would still carry hacks to allow such access.
+> diff --git a/drivers/staging/gdm724x/gdm_mux.c b/drivers/staging/gdm724x/gdm_mux.c
+> index b5b063a..d1ab996 100644
+> --- a/drivers/staging/gdm724x/gdm_mux.c
+> +++ b/drivers/staging/gdm724x/gdm_mux.c
+> @@ -220,7 +220,7 @@ static int up_to_host(struct mux_rx *r)
+>  static void do_rx(struct work_struct *work)
+>  {
+>  	struct mux_dev *mux_dev =
+> -		container_of(work, struct mux_dev , work_rx.work);
+> +		container_of(work, struct mux_dev, work_rx.work);
+>  	struct mux_rx *r;
+>  	struct rx_cxt *rx = (struct rx_cxt *)&mux_dev->rx;
+>  	unsigned long flags;
+> -- 
+> 1.7.9.5
 
-(the reference platform in question above will be corrected shortly)
-
-
+Someone else sent this same fix before you did :(
