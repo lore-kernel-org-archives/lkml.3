@@ -1,548 +1,458 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752655AbbAQBT1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 20:19:27 -0500
-Received: from mail-by2on0146.outbound.protection.outlook.com ([207.46.100.146]:61344
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751741AbbAQBT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 20:19:26 -0500
-X-Greylist: delayed 855 seconds by postgrey-1.27 at vger.kernel.org; Fri, 16 Jan 2015 20:19:26 EST
-From: "J. German Rivera" <German.Rivera@freescale.com>
-To: <gregkh@linuxfoundation.org>, <arnd@arndb.de>,
-        <linux-kernel@vger.kernel.org>
-CC: <stuart.yoder@freescale.com>, <Kim.Phillips@freescale.com>,
-        <scottwood@freescale.com>, <agraf@suse.de>, <bhamciu1@freescale.com>,
-        <R89243@freescale.com>, <Geoff.Thorpe@freescale.com>,
-        <bhupesh.sharma@freescale.com>, <nir.erez@freescale.com>,
-        <richard.schmitt@freescale.com>,
-        "J. German Rivera" <German.Rivera@freescale.com>
-Subject: [PATCH 3/3 v6] drivers/bus: Device driver for FSL-MC DPRC devices
-Date: Fri, 16 Jan 2015 19:01:17 -0600
-Message-ID: <1421456477-27041-4-git-send-email-German.Rivera@freescale.com>
-X-Mailer: git-send-email 2.2.2
-In-Reply-To: <1421456477-27041-1-git-send-email-German.Rivera@freescale.com>
-References: <1421456477-27041-1-git-send-email-German.Rivera@freescale.com>
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=fail (sender IP is 192.88.158.2)
- smtp.mailfrom=German.Rivera@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.158.2;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(199003)(189002)(46102003)(97736003)(62966003)(36756003)(50226001)(50986999)(64706001)(77156002)(92566002)(2201001)(104016003)(87936001)(76176999)(50466002)(6806004)(77096005)(2950100001)(229853001)(86362001)(106466001)(105606002)(19580405001)(85426001)(48376002)(68736005)(575784001)(69596002)(47776003)(81156004)(19580395003);DIR:OUT;SFP:1102;SCL:1;SRVR:BLUPR03MB501;H:az84smr01.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+	id S1752657AbbAQBCo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 20:02:44 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:33262 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751216AbbAQBCm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 20:02:42 -0500
+Date: Fri, 16 Jan 2015 17:02:38 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Cc: linux-kernel@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH RESEND v8 1/2] clk: Make clk API return per-user struct
+ clk instances
+Message-ID: <20150117010238.GA27202@codeaurora.org>
+References: <1421071809-17402-1-git-send-email-tomeu.vizoso@collabora.com>
+ <1421071809-17402-2-git-send-email-tomeu.vizoso@collabora.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DmarcAction-Test: None
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:BLUPR03MB501;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BLUPR03MB501;
-X-Forefront-PRVS: 04599F3534
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BLUPR03MB501;
-X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 17 Jan 2015 01:05:07.4934
- (UTC)
-X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.158.2]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BLUPR03MB501
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421071809-17402-2-git-send-email-tomeu.vizoso@collabora.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A DPRC (Data Path Resource Container) is an isolation device
-that contains a set of DPAA networking devices to be
-assigned to an isolation domain (e.g., a virtual machine).
+On 01/12, Tomeu Vizoso wrote:
+> Moves clock state to struct clk_core, but takes care to change as little API as
+> possible.
+> 
+> struct clk_hw still has a pointer to a struct clk, which is the
+> implementation's per-user clk instance, for backwards compatibility.
+> 
+> The struct clk that clk_get_parent() returns isn't owned by the caller, but by
+> the clock implementation, so the former shouldn't call clk_put() on it.
+> 
+> Because some boards in mach-omap2 still register clocks statically, their clock
+> registration had to be updated to take into account that the clock information
+> is stored in struct clk_core now.
+> 
+> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+> 
 
-Signed-off-by: J. German Rivera <German.Rivera@freescale.com>
-Signed-off-by: Stuart Yoder <stuart.yoder@freescale.com>
----
-Changes in v6:
-- Fixed new checkpatch warnings
+Looks mostly good. Missing some NULL checks mostly.
 
-Changes in v5:
-None
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index f4963b7..7eddfd8 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -114,7 +123,7 @@ static struct hlist_head *orphan_list[] = {
+> +static void clk_summary_show_one(struct seq_file *s, struct clk_core *c, int level)
+>  {
+>  	if (!c)
+>  		return;
+> @@ -122,14 +131,14 @@ static void clk_summary_show_one(struct seq_file *s, struct clk *c, int level)
+[...]
+> -static void clk_summary_show_subtree(struct seq_file *s, struct clk *c,
+> +static void clk_summary_show_subtree(struct seq_file *s, struct clk_core *c,
+>  				     int level)
+>  {
+> -	struct clk *child;
+> +	struct clk_core *child;
+>  
+>  	if (!c)
+>  		return;
+> @@ -172,7 +181,7 @@ static const struct file_operations clk_summary_fops = {
+>  	.release	= single_release,
+>  };
+>  
+> -static void clk_dump_one(struct seq_file *s, struct clk *c, int level)
+> +static void clk_dump_one(struct seq_file *s, struct clk_core *c, int level)
+>  {
+>  	if (!c)
+>  		return;
+> @@ -180,14 +189,14 @@ static void clk_dump_one(struct seq_file *s, struct clk *c, int level)
+[...]
+> -static void clk_dump_subtree(struct seq_file *s, struct clk *c, int level)
+> +static void clk_dump_subtree(struct seq_file *s, struct clk_core *c, int level)
+>  {
+> -	struct clk *child;
+> +	struct clk_core *child;
+>  
+>  	if (!c)
+>  		return;
+> @@ -418,19 +427,20 @@ static int __init clk_debug_init(void)
+[...]
+>  
+>  /* caller must hold prepare_lock */
+> -static void clk_unprepare_unused_subtree(struct clk *clk)
+> +static void clk_unprepare_unused_subtree(struct clk_core *clk)
+>  {
+> -	struct clk *child;
+> +	struct clk_core *child;
+>  
+>  	if (!clk)
+>  		return;
+> @@ -453,9 +463,9 @@ static void clk_unprepare_unused_subtree(struct clk *clk)
+>  }
+>  
+>  /* caller must hold prepare_lock */
+> -static void clk_disable_unused_subtree(struct clk *clk)
+> +static void clk_disable_unused_subtree(struct clk_core *clk)
+>  {
+> -	struct clk *child;
+> +	struct clk_core *child;
+>  	unsigned long flags;
+>  
+>  	if (!clk)
 
-Changes in v4:
-- Addressed comments from Alex Graf:
-  * Fixed typo in comment
+Note: These NULL checks look bogus. No need to fix them here, but
+a patch to remove them would be nice.
 
-Changes in v3:
-- Addressed comments from Kim Phillips:
-  * Renamed files:
-    drivers/bus/fsl-mc/fsl_mc_dprc.c -> drivers/bus/fsl-mc/dprc-driver.c
+> @@ -532,48 +542,59 @@ late_initcall_sync(clk_disable_unused);
+[...]
+> +
+> +struct clk *clk_get_parent_by_index(struct clk *clk, u8 index)
+> +{
+> +	struct clk_core *parent;
+> +
+> +	parent = clk_core_get_parent_by_index(clk->core, index);
 
-- Addressed comments from Timur Tabi:
-  * Changed dprc_scan_container() to just return dprc_scan_objects()
-  * Changed all functions that had goto out/error when no common cleanup
-    was done, to just have multiple return points.
-  * Replaced error cleanup boolean flags with multiple exit points.
-  * REmoved __must_chewck from dprc_scan_*() functions
+I suppose clk could be NULL here (although this is mostly a
+clk-provider function). At least before we would return NULL in
+such a case so we should keep the same behavior instead of NULL
+deref.
 
-Changes in v2:
-- Addressed comments from Kim Phillips:
-  * Fix warning in drivers/bus/fsl-mc/fsl_mc_dprc.c:173
-  * Fixed linker errors when MC bus driver built as module
+> +
+> +	return !parent ? NULL : parent->hw->clk;
+> +}
+>  EXPORT_SYMBOL_GPL(clk_get_parent_by_index);
+>  
+> @@ -593,9 +614,14 @@ unsigned long __clk_get_rate(struct clk *clk)
+>  out:
+>  	return ret;
+>  }
+> +
+> +unsigned long __clk_get_rate(struct clk *clk)
+> +{
+> +	return clk_core_get_rate_nolock(clk->core);
 
- drivers/bus/fsl-mc/Makefile      |   3 +-
- drivers/bus/fsl-mc/dprc-driver.c | 383 +++++++++++++++++++++++++++++++++++++++
- drivers/bus/fsl-mc/mc-bus.c      |   8 +
- include/linux/fsl/mc-private.h   |  10 +
- 4 files changed, 403 insertions(+), 1 deletion(-)
- create mode 100644 drivers/bus/fsl-mc/dprc-driver.c
+Oops. clk can be NULL here. We should check for that and return
+0.
 
-diff --git a/drivers/bus/fsl-mc/Makefile b/drivers/bus/fsl-mc/Makefile
-index decd339..424e58e 100644
---- a/drivers/bus/fsl-mc/Makefile
-+++ b/drivers/bus/fsl-mc/Makefile
-@@ -10,5 +10,6 @@ obj-$(CONFIG_FSL_MC_BUS) += mc-bus-driver.o
- mc-bus-driver-objs := mc-bus.o \
- 		      mc-sys.o \
- 		      dprc.o \
--		      dpmng.o
-+		      dpmng.o \
-+		      dprc-driver.o
+> +}
+>  EXPORT_SYMBOL_GPL(__clk_get_rate);
+>  
+> @@ -630,7 +656,12 @@ out:
+>  	return !!ret;
+>  }
+>  
+> -bool __clk_is_enabled(struct clk *clk)
+> +bool __clk_is_prepared(struct clk *clk)
+> +{
+> +	return clk_core_is_prepared(clk->core);
 
-diff --git a/drivers/bus/fsl-mc/dprc-driver.c b/drivers/bus/fsl-mc/dprc-driver.c
-new file mode 100644
-index 0000000..5d07e30
---- /dev/null
-+++ b/drivers/bus/fsl-mc/dprc-driver.c
-@@ -0,0 +1,383 @@
-+/*
-+ * Freescale data path resource container (DPRC) driver
-+ *
-+ * Copyright (C) 2014 Freescale Semiconductor, Inc.
-+ * Author: German Rivera <German.Rivera@freescale.com>
-+ *
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2. This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/fsl/mc-private.h>
-+#include <linux/fsl/mc-sys.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include "dprc-cmd.h"
-+
-+struct dprc_child_objs {
-+	int child_count;
-+	struct dprc_obj_desc *child_array;
-+};
-+
-+static int __fsl_mc_device_remove_if_not_in_mc(struct device *dev, void *data)
-+{
-+	int i;
-+	struct dprc_child_objs *objs;
-+	struct fsl_mc_device *mc_dev;
-+
-+	WARN_ON(!dev);
-+	WARN_ON(!data);
-+	mc_dev = to_fsl_mc_device(dev);
-+	objs = data;
-+
-+	for (i = 0; i < objs->child_count; i++) {
-+		struct dprc_obj_desc *obj_desc = &objs->child_array[i];
-+
-+		if (strlen(obj_desc->type) != 0 &&
-+		    FSL_MC_DEVICE_MATCH(mc_dev, obj_desc))
-+			break;
-+	}
-+
-+	if (i == objs->child_count)
-+		fsl_mc_device_remove(mc_dev);
-+
-+	return 0;
-+}
-+
-+static int __fsl_mc_device_remove(struct device *dev, void *data)
-+{
-+	WARN_ON(!dev);
-+	WARN_ON(data);
-+	fsl_mc_device_remove(to_fsl_mc_device(dev));
-+	return 0;
-+}
-+
-+/**
-+ * dprc_remove_devices - Removes devices for objects removed from a DPRC
-+ *
-+ * @mc_bus_dev: pointer to the fsl-mc device that represents a DPRC object
-+ * @obj_desc_array: array of object descriptors for child objects currently
-+ * present in the DPRC in the MC.
-+ * @num_child_objects_in_mc: number of entries in obj_desc_array
-+ *
-+ * Synchronizes the state of the Linux bus driver with the actual state of
-+ * the MC by removing devices that represent MC objects that have
-+ * been dynamically removed in the physical DPRC.
-+ */
-+static void dprc_remove_devices(struct fsl_mc_device *mc_bus_dev,
-+				struct dprc_obj_desc *obj_desc_array,
-+				int num_child_objects_in_mc)
-+{
-+	if (num_child_objects_in_mc != 0) {
-+		/*
-+		 * Remove child objects that are in the DPRC in Linux,
-+		 * but not in the MC:
-+		 */
-+		struct dprc_child_objs objs;
-+
-+		objs.child_count = num_child_objects_in_mc;
-+		objs.child_array = obj_desc_array;
-+		device_for_each_child(&mc_bus_dev->dev, &objs,
-+				      __fsl_mc_device_remove_if_not_in_mc);
-+	} else {
-+		/*
-+		 * There are no child objects for this DPRC in the MC.
-+		 * So, remove all the child devices from Linux:
-+		 */
-+		device_for_each_child(&mc_bus_dev->dev, NULL,
-+				      __fsl_mc_device_remove);
-+	}
-+}
-+
-+static int __fsl_mc_device_match(struct device *dev, void *data)
-+{
-+	struct dprc_obj_desc *obj_desc = data;
-+	struct fsl_mc_device *mc_dev = to_fsl_mc_device(dev);
-+
-+	return FSL_MC_DEVICE_MATCH(mc_dev, obj_desc);
-+}
-+
-+static struct fsl_mc_device *fsl_mc_device_lookup(struct dprc_obj_desc
-+								*obj_desc,
-+						  struct fsl_mc_device
-+								*mc_bus_dev)
-+{
-+	struct device *dev;
-+
-+	dev = device_find_child(&mc_bus_dev->dev, obj_desc,
-+				__fsl_mc_device_match);
-+
-+	return dev ? to_fsl_mc_device(dev) : NULL;
-+}
-+
-+/**
-+ * dprc_add_new_devices - Adds devices to the logical bus for a DPRC
-+ *
-+ * @mc_bus_dev: pointer to the fsl-mc device that represents a DPRC object
-+ * @obj_desc_array: array of device descriptors for child devices currently
-+ * present in the physical DPRC.
-+ * @num_child_objects_in_mc: number of entries in obj_desc_array
-+ *
-+ * Synchronizes the state of the Linux bus driver with the actual
-+ * state of the MC by adding objects that have been newly discovered
-+ * in the physical DPRC.
-+ */
-+static void dprc_add_new_devices(struct fsl_mc_device *mc_bus_dev,
-+				 struct dprc_obj_desc *obj_desc_array,
-+				 int num_child_objects_in_mc)
-+{
-+	int error;
-+	int i;
-+
-+	for (i = 0; i < num_child_objects_in_mc; i++) {
-+		struct dprc_region_desc region_desc;
-+		struct fsl_mc_device *child_dev;
-+		struct fsl_mc_io *mc_io = NULL;
-+		struct dprc_obj_desc *obj_desc = &obj_desc_array[i];
-+
-+		if (strlen(obj_desc->type) == 0)
-+			continue;
-+		/*
-+		 * Check if device is already known to Linux:
-+		 */
-+		child_dev = fsl_mc_device_lookup(obj_desc, mc_bus_dev);
-+		if (child_dev)
-+			continue;
-+
-+		if (strcmp(obj_desc->type, "dprc") == 0) {
-+			/*
-+			 * Get the MC portal physical address for the device
-+			 * (specified in the device's first MMIO region):
-+			 */
-+			if (WARN_ON(obj_desc->region_count == 0))
-+				continue;
-+
-+			error = dprc_get_obj_region(mc_bus_dev->mc_io,
-+						    mc_bus_dev->mc_handle,
-+						    obj_desc->type,
-+						    obj_desc->id,
-+						    0, &region_desc);
-+			if (error < 0) {
-+				dev_err(&mc_bus_dev->dev,
-+					"dprc_get_obj_region() failed: %d\n",
-+					error);
-+				continue;
-+			}
-+
-+			if (region_desc.size !=
-+					mc_bus_dev->mc_io->portal_size) {
-+				error = -EINVAL;
-+				dev_err(&mc_bus_dev->dev,
-+					"Invalid MC portal size: %u\n",
-+					region_desc.size);
-+				continue;
-+			}
-+
-+			error = fsl_create_mc_io(&mc_bus_dev->dev,
-+						 region_desc.base_paddr,
-+						 region_desc.size, 0, &mc_io);
-+			if (error < 0)
-+				continue;
-+		}
-+
-+		error = fsl_mc_device_add(obj_desc, mc_io, &mc_bus_dev->dev,
-+					  &child_dev);
-+		if (error < 0) {
-+			if (mc_io)
-+				fsl_destroy_mc_io(mc_io);
-+
-+			continue;
-+		}
-+	}
-+}
-+
-+/**
-+ * dprc_scan_objects - Discover objects in a DPRC
-+ *
-+ * @mc_bus_dev: pointer to the fsl-mc device that represents a DPRC object
-+ *
-+ * Detects objects added and removed from a DPRC and synchronizes the
-+ * state of the Linux bus driver, MC by adding and removing
-+ * devices accordingly.
-+ */
-+int dprc_scan_objects(struct fsl_mc_device *mc_bus_dev)
-+{
-+	int num_child_objects;
-+	int dprc_get_obj_failures;
-+	int error;
-+	struct dprc_obj_desc *child_obj_desc_array = NULL;
-+
-+	error = dprc_get_obj_count(mc_bus_dev->mc_io,
-+				   mc_bus_dev->mc_handle,
-+				   &num_child_objects);
-+	if (error < 0) {
-+		dev_err(&mc_bus_dev->dev, "dprc_get_obj_count() failed: %d\n",
-+			error);
-+		return error;
-+	}
-+
-+	if (num_child_objects != 0) {
-+		int i;
-+
-+		child_obj_desc_array =
-+		    devm_kmalloc_array(&mc_bus_dev->dev, num_child_objects,
-+				       sizeof(*child_obj_desc_array),
-+				       GFP_KERNEL);
-+		if (!child_obj_desc_array)
-+			return -ENOMEM;
-+
-+		/*
-+		 * Discover objects currently present in the physical DPRC:
-+		 */
-+		dprc_get_obj_failures = 0;
-+		for (i = 0; i < num_child_objects; i++) {
-+			struct dprc_obj_desc *obj_desc =
-+			    &child_obj_desc_array[i];
-+
-+			error = dprc_get_obj(mc_bus_dev->mc_io,
-+					     mc_bus_dev->mc_handle,
-+					     i, obj_desc);
-+			if (error < 0) {
-+				dev_err(&mc_bus_dev->dev,
-+					"dprc_get_obj(i=%d) failed: %d\n",
-+					i, error);
-+				/*
-+				 * Mark the obj entry as "invalid", by using the
-+				 * empty string as obj type:
-+				 */
-+				obj_desc->type[0] = '\0';
-+				obj_desc->id = error;
-+				dprc_get_obj_failures++;
-+				continue;
-+			}
-+
-+			dev_info(&mc_bus_dev->dev,
-+				 "Discovered object: type %s, id %d\n",
-+				 obj_desc->type, obj_desc->id);
-+		}
-+
-+		if (dprc_get_obj_failures != 0) {
-+			dev_err(&mc_bus_dev->dev,
-+				"%d out of %d devices could not be retrieved\n",
-+				dprc_get_obj_failures, num_child_objects);
-+		}
-+	}
-+
-+	dprc_remove_devices(mc_bus_dev, child_obj_desc_array,
-+			    num_child_objects);
-+
-+	dprc_add_new_devices(mc_bus_dev, child_obj_desc_array,
-+			     num_child_objects);
-+
-+	if (child_obj_desc_array)
-+		devm_kfree(&mc_bus_dev->dev, child_obj_desc_array);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(dprc_scan_objects);
-+
-+/**
-+ * dprc_scan_container - Scans a physical DPRC and synchronizes Linux bus state
-+ *
-+ * @mc_bus_dev: pointer to the fsl-mc device that represents a DPRC object
-+ *
-+ * Scans the physical DPRC and synchronizes the state of the Linux
-+ * bus driver with the actual state of the MC by adding and removing
-+ * devices as appropriate.
-+ */
-+int dprc_scan_container(struct fsl_mc_device *mc_bus_dev)
-+{
-+	return dprc_scan_objects(mc_bus_dev);
-+}
-+EXPORT_SYMBOL_GPL(dprc_scan_container);
-+
-+/**
-+ * dprc_probe - callback invoked when a DPRC is being bound to this driver
-+ *
-+ * @mc_dev: Pointer to fsl-mc device representing a DPRC
-+ *
-+ * It opens the physical DPRC in the MC.
-+ * It scans the DPRC to discover the MC objects contained in it.
-+ */
-+static int dprc_probe(struct fsl_mc_device *mc_dev)
-+{
-+	int error;
-+
-+	if (WARN_ON(strcmp(mc_dev->obj_desc.type, "dprc") != 0))
-+		return -EINVAL;
-+
-+	error = dprc_open(mc_dev->mc_io, mc_dev->obj_desc.id,
-+			  &mc_dev->mc_handle);
-+	if (error < 0) {
-+		dev_err(&mc_dev->dev, "dprc_open() failed: %d\n", error);
-+		return error;
-+	}
-+
-+	error = dprc_scan_container(mc_dev);
-+	if (error < 0)
-+		goto error_cleanup_open;
-+
-+	dev_info(&mc_dev->dev, "DPRC device bound to driver");
-+	return 0;
-+
-+error_cleanup_open:
-+	(void)dprc_close(mc_dev->mc_io, mc_dev->mc_handle);
-+	return error;
-+}
-+
-+/**
-+ * dprc_remove - callback invoked when a DPRC is being unbound from this driver
-+ *
-+ * @mc_dev: Pointer to fsl-mc device representing the DPRC
-+ *
-+ * It removes the DPRC's child objects from Linux (not from the MC) and
-+ * closes the DPRC device in the MC.
-+ */
-+static int dprc_remove(struct fsl_mc_device *mc_dev)
-+{
-+	int error;
-+
-+	if (WARN_ON(strcmp(mc_dev->obj_desc.type, "dprc") != 0))
-+		return -EINVAL;
-+	if (WARN_ON(!mc_dev->mc_io))
-+		return -EINVAL;
-+
-+	device_for_each_child(&mc_dev->dev, NULL, __fsl_mc_device_remove);
-+	error = dprc_close(mc_dev->mc_io, mc_dev->mc_handle);
-+	if (error < 0)
-+		dev_err(&mc_dev->dev, "dprc_close() failed: %d\n", error);
-+
-+	dev_info(&mc_dev->dev, "DPRC device unbound from driver");
-+	return 0;
-+}
-+
-+static const struct fsl_mc_device_match_id match_id_table[] = {
-+	{
-+	 .vendor = FSL_MC_VENDOR_FREESCALE,
-+	 .obj_type = "dprc",
-+	 .ver_major = DPRC_VER_MAJOR,
-+	 .ver_minor = DPRC_VER_MINOR},
-+	{.vendor = 0x0},
-+};
-+
-+static struct fsl_mc_driver dprc_driver = {
-+	.driver = {
-+		   .name = FSL_MC_DPRC_DRIVER_NAME,
-+		   .owner = THIS_MODULE,
-+		   .pm = NULL,
-+		   },
-+	.match_id_table = match_id_table,
-+	.probe = dprc_probe,
-+	.remove = dprc_remove,
-+};
-+
-+int __init dprc_driver_init(void)
-+{
-+	return fsl_mc_driver_register(&dprc_driver);
-+}
-+
-+void __exit dprc_driver_exit(void)
-+{
-+	fsl_mc_driver_unregister(&dprc_driver);
-+}
-diff --git a/drivers/bus/fsl-mc/mc-bus.c b/drivers/bus/fsl-mc/mc-bus.c
-index e6f3d62..1967807 100644
---- a/drivers/bus/fsl-mc/mc-bus.c
-+++ b/drivers/bus/fsl-mc/mc-bus.c
-@@ -555,8 +555,15 @@ static int __init fsl_mc_bus_driver_init(void)
- 		goto error_cleanup_bus;
- 	}
+Oops. clk can be NULL here. Return false if so. Or drop the
+function entirely? It looks like it may become unused.
 
-+	error = dprc_driver_init();
-+	if (error < 0)
-+		goto error_cleanup_driver;
-+
- 	return 0;
+> +}
+> @@ -650,12 +681,17 @@ bool __clk_is_enabled(struct clk *clk)
+>  out:
+>  	return !!ret;
+>  }
+> +
+> +bool __clk_is_enabled(struct clk *clk)
+> +{
+> +	return clk_core_is_enabled(clk->core);
 
-+error_cleanup_driver:
-+	platform_driver_unregister(&fsl_mc_bus_driver);
-+
- error_cleanup_bus:
- 	bus_unregister(&fsl_mc_bus_type);
+Oops. clk can be NULL here. Return false if so.
 
-@@ -572,6 +579,7 @@ static void __exit fsl_mc_bus_driver_exit(void)
- 	if (WARN_ON(!mc_dev_cache))
- 		return;
+> +}
+>  EXPORT_SYMBOL_GPL(__clk_is_enabled);
+>  
+> @@ -762,7 +805,12 @@ void __clk_unprepare(struct clk *clk)
+>  	if (clk->ops->unprepare)
+>  		clk->ops->unprepare(clk->hw);
+>  
+> -	__clk_unprepare(clk->parent);
+> +	clk_core_unprepare(clk->parent);
+> +}
+> +
+> +void __clk_unprepare(struct clk *clk)
+> +{
+> +	clk_core_unprepare(clk->core);
 
-+	dprc_driver_exit();
- 	platform_driver_unregister(&fsl_mc_bus_driver);
- 	bus_unregister(&fsl_mc_bus_type);
- 	kmem_cache_destroy(mc_dev_cache);
-diff --git a/include/linux/fsl/mc-private.h b/include/linux/fsl/mc-private.h
-index 604832a..431a0b1 100644
---- a/include/linux/fsl/mc-private.h
-+++ b/include/linux/fsl/mc-private.h
-@@ -15,6 +15,8 @@
- #include <linux/mutex.h>
- #include <linux/stringify.h>
+OOps. clk can be NULL here. Bail early if so.
 
-+#define FSL_MC_DPRC_DRIVER_NAME    "fsl_mc_dprc"
-+
- #define FSL_MC_DEVICE_MATCH(_mc_dev, _obj_desc) \
- 	(strcmp((_mc_dev)->obj_desc.type, (_obj_desc)->type) == 0 && \
- 	 (_mc_dev)->obj_desc.id == (_obj_desc)->id)
-@@ -30,4 +32,12 @@ int __must_check fsl_mc_device_add(struct dprc_obj_desc *obj_desc,
+>  }
+>  
+>  /**
+> @@ -813,6 +861,11 @@ int __clk_prepare(struct clk *clk)
+>  	return 0;
+>  }
+>  
+> +int __clk_prepare(struct clk *clk)
+> +{
+> +	return clk_core_prepare(clk->core);
 
- void fsl_mc_device_remove(struct fsl_mc_device *mc_dev);
+Oops. clk can be NULL here. Return 0 if so.
 
-+int dprc_scan_container(struct fsl_mc_device *mc_bus_dev);
-+
-+int dprc_scan_objects(struct fsl_mc_device *mc_bus_dev);
-+
-+int __init dprc_driver_init(void);
-+
-+void __exit dprc_driver_exit(void);
-+
- #endif /* _FSL_MC_PRIVATE_H_ */
---
-2.2.2
+> +}
+> +
+> @@ -851,7 +904,12 @@ static void __clk_disable(struct clk *clk)
+[...]
+> +
+> +static void __clk_disable(struct clk *clk)
+> +{
+> +	clk_core_disable(clk->core);
 
+Oops. clk can be NULL here. Bail early if so. Is this function
+used though?
+
+>  }
+>  
+>  /**
+> @@ -908,6 +966,11 @@ static int __clk_enable(struct clk *clk)
+>  	return 0;
+>  }
+>  
+> +static int __clk_enable(struct clk *clk)
+> +{
+> +	return clk_core_enable(clk->core);
+> +}
+
+Same problem. Is this function used either?
+
+> +
+>  /**
+>   * clk_enable - ungate a clock
+>   * @clk: the clk being ungated
+> @@ -961,12 +1018,35 @@ unsigned long __clk_round_rate(struct clk *clk, unsigned long rate)
+[...]
+> +unsigned long __clk_round_rate(struct clk *clk, unsigned long rate)
+> +{
+> +	return clk_core_round_rate_nolock(clk->core, rate);
+
+Oops. clk can be NULL here. Return 0 if so.
+
+> +}
+>  EXPORT_SYMBOL_GPL(__clk_round_rate);
+>  
+> @@ -978,13 +1058,7 @@ EXPORT_SYMBOL_GPL(__clk_round_rate);
+>   */
+>  long clk_round_rate(struct clk *clk, unsigned long rate)
+>  {
+> -	unsigned long ret;
+> -
+> -	clk_prepare_lock();
+> -	ret = __clk_round_rate(clk, rate);
+> -	clk_prepare_unlock();
+> -
+> -	return ret;
+> +	return clk_core_round_rate(clk->core, rate);
+
+Oops. clk can be NULL here. Return 0 if so.
+
+>  }
+>  EXPORT_SYMBOL_GPL(clk_round_rate);
+>  
+> @@ -1002,22 +1076,21 @@ EXPORT_SYMBOL_GPL(clk_round_rate);
+>   * called if all went well, or NOTIFY_STOP or NOTIFY_BAD immediately if
+>   * a driver returns that.
+>   */
+> -static int __clk_notify(struct clk *clk, unsigned long msg,
+> +static int __clk_notify(struct clk_core *clk, unsigned long msg,
+>  		unsigned long old_rate, unsigned long new_rate)
+>  {
+>  	struct clk_notifier *cn;
+>  	struct clk_notifier_data cnd;
+>  	int ret = NOTIFY_DONE;
+>  
+> -	cnd.clk = clk;
+>  	cnd.old_rate = old_rate;
+>  	cnd.new_rate = new_rate;
+>  
+>  	list_for_each_entry(cn, &clk_notifier_list, node) {
+> -		if (cn->clk == clk) {
+> +		if (cn->clk->core == clk) {
+> +			cnd.clk = cn->clk;
+>  			ret = srcu_notifier_call_chain(&cn->notifier_head, msg,
+>  					&cnd);
+> -			break;
+
+Ah now the list is full of struct clk pointers that are unique so
+we drop the break here? It would be good if someone:
+
+ 1) Made a notifier_head per clk_core structure
+ 2) Hooked up clk notifiers to that head instead of a global list
+ 3) Hid struct clk_notifier in clk.c
+
+This way when we notify the chain we don't have to loop through
+all possible notifiers to find blocks containing clks that we care about
+and then notify that chain which is probably only ever going to
+be a single notifier long because struct clk is unique now.
+
+>  		}
+>  	}
+>  
+> @@ -1139,14 +1210,29 @@ unsigned long clk_get_rate(struct clk *clk)
+>  	if (clk && (clk->flags & CLK_GET_RATE_NOCACHE))
+>  		__clk_recalc_rates(clk, 0);
+>  
+> -	rate = __clk_get_rate(clk);
+> +	rate = clk_core_get_rate_nolock(clk);
+>  	clk_prepare_unlock();
+>  
+>  	return rate;
+>  }
+> +EXPORT_SYMBOL_GPL(clk_core_get_rate);
+> +
+> +/**
+> + * clk_get_rate - return the rate of clk
+> + * @clk: the clk whose rate is being returned
+> + *
+> + * Simply returns the cached rate of the clk, unless CLK_GET_RATE_NOCACHE flag
+> + * is set, which means a recalc_rate will be issued.
+> + * If clk is NULL then returns 0.
+> + */
+> +unsigned long clk_get_rate(struct clk *clk)
+> +{
+> +	return clk_core_get_rate(clk->core);
+> +}
+>  EXPORT_SYMBOL_GPL(clk_get_rate);
+>  
+> -static int clk_fetch_parent_index(struct clk *clk, struct clk *parent)
+> +static int clk_fetch_parent_index(struct clk_core *clk,
+> +				  struct clk_core *parent)
+>  {
+>  	int i;
+>  
+> @@ -1366,7 +1457,7 @@ static struct clk *clk_calc_new_rates(struct clk *clk, unsigned long rate)
+>  		new_rate = clk->ops->determine_rate(clk->hw, rate,
+>  						    &best_parent_rate,
+>  						    &parent_hw);
+> -		parent = parent_hw->clk;
+> +		parent = parent_hw ? parent_hw->core : NULL;
+
+Here's the fix!
+
+>  	} else if (clk->ops->round_rate) {
+>  		new_rate = clk->ops->round_rate(clk->hw, rate,
+>  						&best_parent_rate);
+> @@ -1574,6 +1667,18 @@ out:
+>  }
+>  EXPORT_SYMBOL_GPL(clk_set_rate);
+>  
+> +static struct clk_core *clk_core_get_parent(struct clk_core *core)
+> +{
+> +	struct clk_core *parent;
+> +
+> +	clk_prepare_lock();
+> +	parent = !core ? NULL : core->parent;
+
+Looks wrong. core should never be NULL?
+
+> +	clk_prepare_unlock();
+> +
+> +	return parent;
+> +}
+> +EXPORT_SYMBOL_GPL(clk_core_get_parent);
+> +
+>  /**
+>   * clk_get_parent - return the parent of a clk
+>   * @clk: the clk whose parent gets returned
+> @@ -1582,13 +1687,11 @@ EXPORT_SYMBOL_GPL(clk_set_rate);
+>   */
+>  struct clk *clk_get_parent(struct clk *clk)
+>  {
+> -	struct clk *parent;
+> +	struct clk_core *parent;
+>  
+> -	clk_prepare_lock();
+> -	parent = __clk_get_parent(clk);
+> -	clk_prepare_unlock();
+> +	parent = clk_core_get_parent(clk->core);
+
+Oops if clk is NULL. So far we've allowed that and returned NULL.
+
+>  
+> -	return parent;
+> +	return !parent ? NULL : parent->hw->clk;
+>  }
+>  EXPORT_SYMBOL_GPL(clk_get_parent);
+> @@ -2258,33 +2381,42 @@ void devm_clk_unregister(struct device *dev, struct clk *clk)
+>  }
+>  EXPORT_SYMBOL_GPL(devm_clk_unregister);
+>  
+> +static void clk_core_put(struct clk_core *core)
+> +{
+> +	struct module *owner;
+> +
+> +	if (!core || WARN_ON_ONCE(IS_ERR(core)))
+> +		return;
+
+This doesn't look right. When would the clk_core structure ever
+be NULL or some error pointer? I would think we want to leave
+this check in __clk_put() and leave it checking the struct clk
+instance that we may get from some random driver.
+
+> +
+> +	owner = core->owner;
+> +
+> +	clk_prepare_lock();
+> +	kref_put(&core->ref, __clk_release);
+> +	clk_prepare_unlock();
+> +
+> +	module_put(owner);
+> +}
+
+Can you also move this next to __clk_put() and after __clk_get() please?
+
+> +
+>  /*
+>   * clkdev helpers
+>   */
+>  int __clk_get(struct clk *clk)
+>  {
+> -	if (clk) {
+> -		if (!try_module_get(clk->owner))
+> +	struct clk_core *core = !clk ? NULL : clk->core;
+> +
+> +	if (core) {
+> +		if (!try_module_get(core->owner))
+>  			return 0;
+>  
+> -		kref_get(&clk->ref);
+> +		kref_get(&core->ref);
+>  	}
+>  	return 1;
+>  }
+>  
+>  void __clk_put(struct clk *clk)
+>  {
+> -	struct module *owner;
+> -
+> -	if (!clk || WARN_ON_ONCE(IS_ERR(clk)))
+> -		return;
+> -
+> -	clk_prepare_lock();
+> -	owner = clk->owner;
+> -	kref_put(&clk->ref, __clk_release);
+> -	clk_prepare_unlock();
+> -
+> -	module_put(owner);
+> +	clk_core_put(clk->core);
+
+clk can be NULL here.
+
+> +	kfree(clk);
+>  }
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+a Linux Foundation Collaborative Project
