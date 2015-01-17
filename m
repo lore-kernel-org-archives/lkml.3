@@ -1,54 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751453AbbAQImO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 03:42:14 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:50979 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750826AbbAQImN (ORCPT
+	id S1751626AbbAQIr1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 03:47:27 -0500
+Received: from mail-oi0-f47.google.com ([209.85.218.47]:50306 "EHLO
+	mail-oi0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750826AbbAQIrZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 03:42:13 -0500
-Message-ID: <54BA2063.1020702@gmail.com>
-Date: Sat, 17 Jan 2015 09:42:11 +0100
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Sat, 17 Jan 2015 03:47:25 -0500
 MIME-Version: 1.0
-To: Darren Hart <dvhart@infradead.org>
-CC: mtk.manpages@gmail.com, Thomas Gleixner <tglx@linutronix.de>,
-        lkml <linux-kernel@vger.kernel.org>, Darren Hart <darren@dvhart.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 2/2] futex: Fix argument handling in futex_lock_pi() calls
-References: <54B96646.8010200@gmail.com> <20150117020401.GB6494@vmdeb7>
-In-Reply-To: <20150117020401.GB6494@vmdeb7>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20150116140926.GB22569@leverpostej>
+References: <1421402411-3479-1-git-send-email-chunyan.zhang@spreadtrum.com>
+	<1421402411-3479-4-git-send-email-chunyan.zhang@spreadtrum.com>
+	<20150116103558.GD21809@leverpostej>
+	<CA+H2tpGPKc8Gu=s+d4PnO=Wp_Uv=o338hxj_1opPRkZ3KZH+rw@mail.gmail.com>
+	<20150116140926.GB22569@leverpostej>
+Date: Sat, 17 Jan 2015 16:47:25 +0800
+Message-ID: <CA+H2tpFenKzBEvkaHOh7shX7GaYyGFc2CbBTDxgSL9=Wq1Q++g@mail.gmail.com>
+Subject: Re: [PATCH v5 3/5] arm64: dts: Add support for Spreadtrum SC9836 SoC
+ in dts and Makefile
+From: Orson Zhai <orsonzhai@gmail.com>
+To: Mark Rutland <mark.rutland@arm.com>
+Cc: marc.zyngier@arm.com, Chunyan Zhang <chunyan.zhang@spreadtrum.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "arnd@arndb.de" <arnd@arndb.de>,
+        "gnomes@lxorguk.ukuu.org.uk" <gnomes@lxorguk.ukuu.org.uk>,
+        "broonie@kernel.org" <broonie@kernel.org>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        Pawel Moll <Pawel.Moll@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        "jslaby@suse.cz" <jslaby@suse.cz>,
+        "jason@lakedaemon.net" <jason@lakedaemon.net>,
+        "heiko@sntech.de" <heiko@sntech.de>,
+        "florian.vaussard@epfl.ch" <florian.vaussard@epfl.ch>,
+        "andrew@lunn.ch" <andrew@lunn.ch>,
+        "rrichter@cavium.com" <rrichter@cavium.com>,
+        "hytszk@gmail.com" <hytszk@gmail.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        "antonynpavlov@gmail.com" <antonynpavlov@gmail.com>,
+        "Joel.Schopp@amd.com" <Joel.Schopp@amd.com>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        "shawn.guo@linaro.org" <shawn.guo@linaro.org>,
+        "jorge.ramirez-ortiz@linaro.org" <jorge.ramirez-ortiz@linaro.org>,
+        "lee.jones@linaro.org" <lee.jones@linaro.org>,
+        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
+        "zhizhou.zhang@spreadtrum.com" <zhizhou.zhang@spreadtrum.com>,
+        "lanqing.liu@spreadtrum.com" <lanqing.liu@spreadtrum.com>,
+        "zhang.lyra@gmail.com" <zhang.lyra@gmail.com>,
+        "wei.qiao@spreadtrum.com" <wei.qiao@spreadtrum.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Leo Yan <leo.yan@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/17/2015 03:04 AM, Darren Hart wrote:
-> On Fri, Jan 16, 2015 at 08:28:06PM +0100, Michael Kerrisk (man-pages) wrote:
->> From: Michael Kerrisk <mtk.manpages@gmail.com>
+On Fri, Jan 16, 2015 at 10:09 PM, Mark Rutland <mark.rutland@arm.com> wrote:
+> On Fri, Jan 16, 2015 at 12:49:20PM +0000, Orson Zhai wrote:
+>> Hi, Mark,
 >>
->> This patch fixes two separate buglets in calls to futex_lock_pi():
+>> On Fri, Jan 16, 2015 at 6:35 PM, Mark Rutland <mark.rutland@arm.com> wrote:
+>[...]
 >>
->>   * Eliminate unused 'detect' argument
->>   * Change unused 'timeout' argument of FUTEX_TRYLOCK_PI to NULL
-> 
-> One might argue these should be two separate fixes. Since both are trivial and functional
-> no-ops, I'm going to ignore it and consider it a "cleanup" :-) Thomas may
-> disagree.
+>>  It returns "status busy" after I type the command below.
+>
+> Is this while other CPUs are active, or after you've hotplugged out all
+> other CPUs? The latter is expected, but the former is not.
+>
+> Are you able to hotplug CPU0 out and back in while other CPUs are
+> active
 
-Yup, and that's what I was going to do until I realized that the patches 
-changed the same line. Then I thought it easier to combine them (rather 
-than make dependent patches), since they're fairly trivial. But,
-I'll split them if Thomas wishes.
+Yes, I have just tested again and confirm that cpu0 could be
+turned on/off when one of the other 3 CPUs was active.
 
-Thanks,
+>
+> [...]
+>
+> For this bus you could instead use addresses relative to the bus inside,
+> rather than absolute addresses,
 
-Michael
+Do you mean something like  apb@0 {...} apb@1 {...} ?
 
+> or you could have:
+>
+> ranges = <0x0 0x70000000 0x0 0x70000000 0x0 0x10000000>;
+>
+> [...]
+>>
+>> This initial patch is picked up from a very big dt file.
+>> There are several apb buses in this chip.
+>
+> At the same level us the bus hierarchy?
+>
+These buses are led by some bus matrix to different areas.
+But I'd like treat them simply at same level.
+Is it right to do that?
 
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+>> So I use apb@starting-address to separate them.
+>> But I remember another rule that the @address needs to equal  first
+>> address in property reg array.
+>> Do I have to delete @7000000 as well if i delete reg line?
+>
+> Hmm. I'm not too keen on encoding a reg or unit-address here, because
+> the control interface of the bus isn't at that address. If we want to
+> add that later then the reg would be different in those cases. Given
+> there's no control interface here, there shouldn't be a reg or
+> unit-address.
+>
+
+Do you mean something like
+
+   ap-ahb { ... };
+   aon-ahb { ... };
+
+without using @xxxx ?
+
+   Thanks, Orson
+
+> Just ensure that the name before the unit-address is unique.
+>
+> Thanks,
+> Mark.
