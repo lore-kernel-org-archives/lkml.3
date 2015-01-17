@@ -1,86 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752411AbbAQQKx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 11:10:53 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:64642 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244AbbAQQKv (ORCPT
+	id S1752730AbbAQQ3l (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 11:29:41 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:53663 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435AbbAQQ3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 11:10:51 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Jon Maloy <jon.maloy@ericsson.com>,
-        Allan Stephens <allan.stephens@windriver.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        tipc-discussion@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [PATCH] tipc: link: Remove unused function
-Date: Sat, 17 Jan 2015 17:13:51 +0100
-Message-Id: <1421511231-14482-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	Sat, 17 Jan 2015 11:29:40 -0500
+Message-ID: <54BA8DEC.1080508@codeaurora.org>
+Date: Sat, 17 Jan 2015 21:59:32 +0530
+From: Vinayak Menon <vinmenon@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130329 Thunderbird/17.0.5
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org, hannes@cmpxchg.org,
+        vdavydov@parallels.com, mhocko@suse.cz, mgorman@suse.de,
+        minchan@kernel.org
+Subject: Re: [PATCH v2] mm: vmscan: fix the page state calculation in too_many_isolated
+References: <1421235419-30736-1-git-send-email-vinmenon@codeaurora.org> <20150115171728.ebc77a48.akpm@linux-foundation.org>
+In-Reply-To: <20150115171728.ebc77a48.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the function tipc_link_get_max_pkt() that is not used anywhere.
+On 01/16/2015 06:47 AM, Andrew Morton wrote:
 
-This was partially found by using a static code analysis program called cppcheck.
+> From: Andrew Morton <akpm@linux-foundation.org>
+> Subject: mm-vmscan-fix-the-page-state-calculation-in-too_many_isolated-fix
+>
+> Move the zone_page_state_snapshot() fallback logic into
+> too_many_isolated(), so shrink_inactive_list() doesn't incorrectly call
+> congestion_wait().
+>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: Vinayak Menon <vinmenon@codeaurora.org>
+> Cc: Vladimir Davydov <vdavydov@parallels.com>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> ---
+>
+>   mm/vmscan.c |   23 +++++++++++------------
+>   1 file changed, 11 insertions(+), 12 deletions(-)
+>
+> diff -puN mm/vmscan.c~mm-vmscan-fix-the-page-state-calculation-in-too_many_isolated-fix mm/vmscan.c
+> --- a/mm/vmscan.c~mm-vmscan-fix-the-page-state-calculation-in-too_many_isolated-fix
+> +++ a/mm/vmscan.c
+> @@ -1402,7 +1402,7 @@ int isolate_lru_page(struct page *page)
+>   }
+>
+>   static int __too_many_isolated(struct zone *zone, int file,
+> -	struct scan_control *sc, int safe)
+> +			       struct scan_control *sc, int safe)
+>   {
+>   	unsigned long inactive, isolated;
+>
+> @@ -1435,7 +1435,7 @@ static int __too_many_isolated(struct zo
+>    * unnecessary swapping, thrashing and OOM.
+>    */
+>   static int too_many_isolated(struct zone *zone, int file,
+> -		struct scan_control *sc, int safe)
+> +			     struct scan_control *sc)
+>   {
+>   	if (current_is_kswapd())
+>   		return 0;
+> @@ -1443,12 +1443,14 @@ static int too_many_isolated(struct zone
+>   	if (!global_reclaim(sc))
+>   		return 0;
+>
+> -	if (unlikely(__too_many_isolated(zone, file, sc, 0))) {
+> -		if (safe)
+> -			return __too_many_isolated(zone, file, sc, safe);
+> -		else
+> -			return 1;
+> -	}
+> +	/*
+> +	 * __too_many_isolated(safe=0) is fast but inaccurate, because it
+> +	 * doesn't account for the vm_stat_diff[] counters.  So if it looks
+> +	 * like too_many_isolated() is about to return true, fall back to the
+> +	 * slower, more accurate zone_page_state_snapshot().
+> +	 */
+> +	if (unlikely(__too_many_isolated(zone, file, sc, 0)))
+> +		return __too_many_isolated(zone, file, sc, safe);
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- net/tipc/link.c |   27 ---------------------------
- net/tipc/link.h |    1 -
- 2 files changed, 28 deletions(-)
+Just noticed now that, in the above statement it should be "1", instead 
+of "safe". "safe" is not declared.
 
-diff --git a/net/tipc/link.c b/net/tipc/link.c
-index 23bcc11..e92fcfb 100644
---- a/net/tipc/link.c
-+++ b/net/tipc/link.c
-@@ -2266,33 +2266,6 @@ struct sk_buff *tipc_link_cmd_show_stats(const void *req_tlv_area, int req_tlv_s
- 	return buf;
- }
- 
--/**
-- * tipc_link_get_max_pkt - get maximum packet size to use when sending to destination
-- * @dest: network address of destination node
-- * @selector: used to select from set of active links
-- *
-- * If no active link can be found, uses default maximum packet size.
-- */
--u32 tipc_link_get_max_pkt(u32 dest, u32 selector)
--{
--	struct tipc_node *n_ptr;
--	struct tipc_link *l_ptr;
--	u32 res = MAX_PKT_DEFAULT;
--
--	if (dest == tipc_own_addr)
--		return MAX_MSG_SIZE;
--
--	n_ptr = tipc_node_find(dest);
--	if (n_ptr) {
--		tipc_node_lock(n_ptr);
--		l_ptr = n_ptr->active_links[selector & 1];
--		if (l_ptr)
--			res = l_ptr->max_pkt;
--		tipc_node_unlock(n_ptr);
--	}
--	return res;
--}
--
- static void link_print(struct tipc_link *l_ptr, const char *str)
- {
- 	struct tipc_bearer *b_ptr;
-diff --git a/net/tipc/link.h b/net/tipc/link.h
-index 55812e8..084bd4e 100644
---- a/net/tipc/link.h
-+++ b/net/tipc/link.h
-@@ -216,7 +216,6 @@ void tipc_link_reset_list(unsigned int bearer_id);
- int tipc_link_xmit_skb(struct sk_buff *skb, u32 dest, u32 selector);
- int tipc_link_xmit(struct sk_buff_head *list, u32 dest, u32 selector);
- int __tipc_link_xmit(struct tipc_link *link, struct sk_buff_head *list);
--u32 tipc_link_get_max_pkt(u32 dest, u32 selector);
- void tipc_link_bundle_rcv(struct sk_buff *buf);
- void tipc_link_proto_xmit(struct tipc_link *l_ptr, u32 msg_typ, int prob,
- 			  u32 gap, u32 tolerance, u32 priority, u32 acked_mtu);
+
+
 -- 
-1.7.10.4
-
+QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a
+member of the Code Aurora Forum, hosted by The Linux Foundation
