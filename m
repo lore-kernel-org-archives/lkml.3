@@ -1,53 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752908AbbAQA0e (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 19:26:34 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:57829 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752354AbbAQA0d (ORCPT
+	id S1752823AbbAQA0K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 19:26:10 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:38218 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752353AbbAQA0I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 19:26:33 -0500
-Message-ID: <1421454236.7996.38.camel@mail.huji.ac.il>
-Subject: [PATCH 01/01] modules: Add missing word to comment
-From: Sharon Dvir <sharon.dvir1@mail.huji.ac.il>
-To: gregkh@linuxfoundation.org
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org
-Date: Sat, 17 Jan 2015 02:23:56 +0200
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.9-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Fri, 16 Jan 2015 19:26:08 -0500
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Peter Zijlstra (Intel)" <peterz@infradead.org>,
+        Oleg Nesterov <oleg@redhat.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Prarit Bhargava <prarit@redhat.com>, Fabian Frederick <fabf@skynet.be>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>, linux-kernel@vger.kernel.org
+Subject: [RFC/PATCH] init/main.c: Simplify initcall_blacklisted()
+Date: Sat, 17 Jan 2015 01:25:11 +0100
+Message-Id: <1421454312-30505-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Using kasprintf to get the function name makes us look up the name
+twice, along with all the vsnprintf overhead of parsing the format
+string etc. It also means there is an allocation failure case to deal
+with. Since symbol_string in vsprintf.c would anyway allocate an array
+of size KSYM_SYMBOL_LEN on the stack, that might as well be done up
+here.
 
-Add missing 'which' in comment. 
-Signed-off-by: Sharon Dvir <sharon.dvir1@mail.huji.ac.il>
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 ---
-diff --git a/include/linux/mod_devicetable.h
-b/include/linux/mod_devicetable.h
-index 745def8..470a240 100644
---- a/include/linux/mod_devicetable.h
-+++ b/include/linux/mod_devicetable.h
-@@ -53,9 +53,9 @@ struct ieee1394_device_id {
- 
- /**
-  * struct usb_device_id - identifies USB devices for probing and
-hotplugging
-- * @match_flags: Bit mask controlling of the other fields are used to
-match
-- *     against new devices.  Any field except for driver_info may be
-used,
-- *     although some only make sense in conjunction with other fields.
-+ * @match_flags: Bit mask controlling which of the other fields are
-used to
-+ *     match against new devices. Any field except for driver_info may
-be
-+ *     used, although some only make sense in conjunction with other
-fields.
-  *     This is usually set by a USB_DEVICE_*() macro, which sets all
-  *     other fields in this structure except for driver_info.
-  * @idVendor: USB vendor ID for a device; numbers are assigned
 
+Notes:
+    I don't know how expensive it is to do the symbol lookup for each
+    initcall. It might be worthwhile adding an
+    
+      if (list_empty(&blacklisted_initcalls))
+        return false;
+    
+    at the very beginning of initcall_blacklisted(), since this is a debug
+    feature and the blacklist is indeed usually empty.
+
+ init/main.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
+
+diff --git a/init/main.c b/init/main.c
+index 61b993767db5..286602b677de 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -733,22 +733,18 @@ static bool __init_or_module initcall_blacklisted(initcall_t fn)
+ {
+ 	struct list_head *tmp;
+ 	struct blacklist_entry *entry;
+-	char *fn_name;
++	char fn_name[KSYM_SYMBOL_LEN];
+ 
+-	fn_name = kasprintf(GFP_KERNEL, "%pf", fn);
+-	if (!fn_name)
+-		return false;
++	sprint_symbol_no_offset(fn_name, (unsigned long)fn);
+ 
+ 	list_for_each(tmp, &blacklisted_initcalls) {
+ 		entry = list_entry(tmp, struct blacklist_entry, next);
+ 		if (!strcmp(fn_name, entry->buf)) {
+ 			pr_debug("initcall %s blacklisted\n", fn_name);
+-			kfree(fn_name);
+ 			return true;
+ 		}
+ 	}
+ 
+-	kfree(fn_name);
+ 	return false;
+ }
+ #else
+-- 
+2.1.3
 
