@@ -1,63 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753106AbbAQWqZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 17:46:25 -0500
-Received: from mail-pd0-f174.google.com ([209.85.192.174]:33048 "EHLO
-	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751607AbbAQWqY (ORCPT
+	id S1753242AbbAQWsM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 17:48:12 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:27299 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751956AbbAQWsK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 17:46:24 -0500
-Date: Sat, 17 Jan 2015 14:46:20 -0800
-From: Jeremiah Mahler <jmmahler@gmail.com>
-To: David Solda <dso@cypress.com>
-Cc: Dudley Du <dudl@cypress.com>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        "rydberg@euromail.se" <rydberg@euromail.se>,
-        "bleung@google.com" <bleung@google.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v18 00/12] input: cyapa: instruction of cyapa patches
-Message-ID: <20150117224620.GA2855@hudson.localdomain>
-Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
-	David Solda <dso@cypress.com>, Dudley Du <dudl@cypress.com>,
-	"dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-	"rydberg@euromail.se" <rydberg@euromail.se>,
-	"bleung@google.com" <bleung@google.com>,
-	"linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1421390055-32760-1-git-send-email-dudl@cypress.com>
- <20150117104415.GA2083@hudson.localdomain>
- <0F1DD2F3-F620-4161-A406-43C8F56A1304@cypress.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0F1DD2F3-F620-4161-A406-43C8F56A1304@cypress.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sat, 17 Jan 2015 17:48:10 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+To: linux-kernel@vger.kernel.org
+Cc: dgilbert@interlog.com, hch@lst.de, Sasha Levin <sasha.levin@oracle.com>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        linux-scsi@vger.kernel.org (open list:SCSI SUBSYSTEM)
+Subject: [PATCH] scsi_debug: use atomic allocation in resp_rsup_opcodes
+Date: Sat, 17 Jan 2015 17:47:37 -0500
+Message-Id: <1421534857-4683-1-git-send-email-sasha.levin@oracle.com>
+X-Mailer: git-send-email 2.1.0
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave,
+resp_rsup_opcodes() may get called from atomic context and would need to
+use GFP_ATOMIC for allocations:
 
-On Sat, Jan 17, 2015 at 06:00:29PM +0000, David Solda wrote:
-> Can we just reverse the prior change that caused the bug, or are you saying that the owner of the prior patch has to fix it?
-> 
-> Dave
-> 
+[ 1237.913419] BUG: sleeping function called from invalid context at mm/slub.c:1262
+[ 1237.914865] in_atomic(): 1, irqs_disabled(): 0, pid: 7556, name: trinity-c311
+[ 1237.916142] 3 locks held by trinity-c311/7556:
+[ 1237.916981] #0: (sb_writers#5){.+.+.+}, at: do_readv_writev (include/linux/fs.h:2346 fs/read_write.c:844)
+[ 1237.919713] #1: (&of->mutex){+.+.+.}, at: kernfs_fop_write (fs/kernfs/file.c:297)
+[ 1237.922626] Mutex: counter: -1 owner: trinity-c311
+[ 1237.924044] #2: (s_active#51){.+.+.+}, at: kernfs_fop_write (fs/kernfs/file.c:297)
+[ 1237.925960] Preemption disabled blk_execute_rq_nowait (block/blk-exec.c:95)
+[ 1237.927416]
+[ 1237.927680] CPU: 24 PID: 7556 Comm: trinity-c311 Not tainted 3.19.0-rc4-next-20150116-sasha-00054-g4ad498c-dirty #1744
+[ 1237.929603]  ffff8804fc9d8000 ffff8804d9bc3548 ffffffff9d439fb2 0000000000000000
+[ 1237.931097]  0000000000000000 ffff8804d9bc3588 ffffffff9a18389a ffff8804d9bc3598
+[ 1237.932466]  ffffffff9a1b1715 ffffffffa15935d8 ffffffff9e6f8cb1 00000000000004ee
+[ 1237.933984] Call Trace:
+[ 1237.934434] dump_stack (lib/dump_stack.c:52)
+[ 1237.935323] ___might_sleep (kernel/sched/core.c:7339)
+[ 1237.936259] ? mark_held_locks (kernel/locking/lockdep.c:2549)
+[ 1237.937293] __might_sleep (kernel/sched/core.c:7305)
+[ 1237.938272] __kmalloc (mm/slub.c:1262 mm/slub.c:2419 mm/slub.c:2491 mm/slub.c:3291)
+[ 1237.939137] ? resp_rsup_opcodes (include/linux/slab.h:435 drivers/scsi/scsi_debug.c:1689)
+[ 1237.940173] resp_rsup_opcodes (include/linux/slab.h:435 drivers/scsi/scsi_debug.c:1689)
+[ 1237.941211] ? add_host_store (drivers/scsi/scsi_debug.c:1584)
+[ 1237.942261] scsi_debug_queuecommand (drivers/scsi/scsi_debug.c:5276)
+[ 1237.943404] ? blk_rq_map_sg (block/blk-merge.c:254)
+[ 1237.944398] ? scsi_init_sgtable (drivers/scsi/scsi_lib.c:1095)
+[ 1237.945402] sdebug_queuecommand_lock_or_not (drivers/scsi/scsi_debug.c:5300)
+[ 1237.946735] scsi_dispatch_cmd (drivers/scsi/scsi_lib.c:1706)
+[ 1237.947720] scsi_queue_rq (drivers/scsi/scsi_lib.c:1996)
+[ 1237.948687] __blk_mq_run_hw_queue (block/blk-mq.c:816)
+[ 1237.949796] blk_mq_run_hw_queue (block/blk-mq.c:896)
+[ 1237.950903] ? _raw_spin_unlock (./arch/x86/include/asm/preempt.h:95 include/linux/spinlock_api_smp.h:154 kernel/locking/spinlock.c:183)
+[ 1237.951862] blk_mq_insert_request (block/blk-mq.c:1037)
+[ 1237.952876] blk_execute_rq_nowait (block/blk-exec.c:95)
+[ 1237.953981] ? lockdep_init_map (kernel/locking/lockdep.c:3034)
+[ 1237.954967] blk_execute_rq (block/blk-exec.c:131)
+[ 1237.955929] ? blk_rq_bio_prep (block/blk-core.c:2835)
+[ 1237.956913] scsi_execute (drivers/scsi/scsi_lib.c:252)
+[ 1237.957821] scsi_execute_req_flags (drivers/scsi/scsi_lib.c:281)
+[ 1237.958968] scsi_report_opcode (drivers/scsi/scsi.c:956)
+[ 1237.960009] sd_revalidate_disk (drivers/scsi/sd.c:2707 drivers/scsi/sd.c:2792)
+[ 1237.961139] revalidate_disk (fs/block_dev.c:1081)
+[ 1237.962223] sd_rescan (drivers/scsi/sd.c:1532)
+[ 1237.963142] scsi_rescan_device (drivers/scsi/scsi_scan.c:1579)
+[ 1237.964165] store_rescan_field (drivers/scsi/scsi_sysfs.c:672)
+[ 1237.965254] dev_attr_store (drivers/base/core.c:138)
+[ 1237.966319] sysfs_kf_write (fs/sysfs/file.c:131)
+[ 1237.967289] kernfs_fop_write (fs/kernfs/file.c:311)
+[ 1237.968274] do_readv_writev (fs/read_write.c:722 fs/read_write.c:854)
+[ 1237.969295] ? __acct_update_integrals (kernel/tsacct.c:145)
+[ 1237.970452] ? kernfs_fop_open (fs/kernfs/file.c:271)
+[ 1237.971505] ? _raw_spin_unlock (./arch/x86/include/asm/preempt.h:95 include/linux/spinlock_api_smp.h:154 kernel/locking/spinlock.c:183)
+[ 1237.972512] ? context_tracking_user_exit (include/linux/vtime.h:89 include/linux/jump_label.h:114 include/trace/events/context_tracking.h:47 kernel/context_tracking.c:140)
+[ 1237.973668] ? trace_hardirqs_on_caller (kernel/locking/lockdep.c:2578 kernel/locking/lockdep.c:2625)
+[ 1237.974882] ? trace_hardirqs_on (kernel/locking/lockdep.c:2633)
+[ 1237.975850] vfs_writev (fs/read_write.c:893)
+[ 1237.976691] SyS_writev (fs/read_write.c:926 fs/read_write.c:917)
+[ 1237.977538] system_call_fastpath (arch/x86/kernel/entry_64.S:423)
 
-I tried to revert the patch but it didn't do so cleanly.
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+---
+ drivers/scsi/scsi_debug.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-  git revert ea2c67bb4aff
-
-So I just reverted back to next-20150112.
-
-  git reset --hard next-20150112
-
-I hope the owner of the prior patch responds promptly and fixes their
-bug.  But for the time being the cyapa patch series works when that
-other bug is avoided.
-
-If you have any suggestions, let me know.
-
+diff --git a/drivers/scsi/scsi_debug.c b/drivers/scsi/scsi_debug.c
+index 8bcf6ad..f828ba7 100644
+--- a/drivers/scsi/scsi_debug.c
++++ b/drivers/scsi/scsi_debug.c
+@@ -1686,7 +1686,7 @@ resp_rsup_opcodes(struct scsi_cmnd *scp, struct sdebug_dev_info *devip)
+ 		a_len = 8192;
+ 	else
+ 		a_len = alloc_len;
+-	arr = kzalloc((a_len < 256) ? 320 : a_len + 64, GFP_KERNEL);
++	arr = kzalloc((a_len < 256) ? 320 : a_len + 64, GFP_ATOMIC);
+ 	if (NULL == arr) {
+ 		mk_sense_buffer(scp, ILLEGAL_REQUEST, INSUFF_RES_ASC,
+ 				INSUFF_RES_ASCQ);
 -- 
-- Jeremiah Mahler
+1.7.10.4
+
