@@ -1,121 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751963AbbAQKGl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 05:06:41 -0500
-Received: from mail-pd0-f169.google.com ([209.85.192.169]:50787 "EHLO
-	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751310AbbAQKGj (ORCPT
+	id S1752262AbbAQKGz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 05:06:55 -0500
+Received: from mail-we0-f179.google.com ([74.125.82.179]:46495 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751309AbbAQKGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 05:06:39 -0500
-Date: Sat, 17 Jan 2015 02:06:35 -0800
-From: Jeremiah Mahler <jmmahler@gmail.com>
-To: Matt Roper <matthew.d.roper@intel.com>
-Cc: Daniel Vetter <daniel.vetter@intel.com>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>,
-        Ander Conselvan de Oliveira <conselvan2@gmail.com>,
-        linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org
-Subject: [BUG, bisect] drm/i915: mouse pointer lags and overshoots
-Message-ID: <20150117100635.GA1281@hudson.localdomain>
-Mail-Followup-To: Jeremiah Mahler <jmmahler@gmail.com>,
-	Matt Roper <matthew.d.roper@intel.com>,
-	Daniel Vetter <daniel.vetter@intel.com>,
-	Jani Nikula <jani.nikula@linux.intel.com>,
-	David Airlie <airlied@linux.ie>,
-	Alex Deucher <alexander.deucher@amd.com>,
-	Dave Airlie <airlied@redhat.com>,
-	Ander Conselvan de Oliveira <conselvan2@gmail.com>,
-	linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-	dri-devel@lists.freedesktop.org
+	Sat, 17 Jan 2015 05:06:50 -0500
+Date: Sat, 17 Jan 2015 11:06:45 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Arnaldo Carvalho de Melo <acme@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
+        Alexey Brodkin <abrodkin@synopsys.com>, Borislav Petkov <bp@suse.de>,
+        Cody P Schafer <dev@codyps.com>, David Ahern <dsahern@gmail.com>,
+        Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jan Beulich <JBeulich@suse.com>, Jiri Olsa <jolsa@redhat.com>,
+        Li Zefan <lizefan@huawei.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Michael Ellerman <mpe@ellerman.id.au>, Mike Galbraith <efault@gmx.de>,
+        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Vineet Gupta <vgupta@synopsys.com>, Wang Nan <wangnan0@huawei.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL 00/10] perf/urgent fixes
+Message-ID: <20150117100645.GA14534@gmail.com>
+References: <1421443362-10709-1-git-send-email-acme@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1421443362-10709-1-git-send-email-acme@kernel.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matt, all,
 
-Commit ea2c67bb4aff introduces a bug which causes the mouse to move in a
-very unusual way, as if it has a lot of inertia.  It will lag behind and
-then overshoot the expected position.
+* Arnaldo Carvalho de Melo <acme@kernel.org> wrote:
 
-I reproduced this bug on all my machines which use the drm/i915 drivers
-and it affects all forms of mouse pointers including both touchpads and
-usb mice.  The patch is present in linux-next 20150116.
+> Hi Ingo,
+> 
+> 	Please consider pulling,
+> 
+> - Arnaldo
+> 
+> The following changes since commit 33636732dcd7cc738a5913bb730d663c6b03c8fb:
+> 
+>   perf/x86/intel: Fix bug for "cycles:p" and "cycles:pp" on SLM (2015-01-16 09:06:59 +0100)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux.git tags/perf-urgent-for-mingo
+> 
+> for you to fetch changes up to 6bcf9c1ff3ec22fd81eba336737d9865476509b1:
+> 
+>   perf tools powerpc: Use dwfl_report_elf() instead of offline. (2015-01-16 17:49:30 -0300)
+> 
+> ----------------------------------------------------------------
+> perf/urgent fixes:
+> 
+> User visible:
+> 
+> - Fix segfault when using both the map symtab viewer and annotation
+>   in the TUI (Namhyung Kim).
+> 
+> Developer stuff:
+> 
+> - uClibc build fixes (Alexey Brodkin, Vineet Gupta).
+> 
+> - bitops/hweight were moved from tools/perf/ too tools/include, move
+>   some leftovers (Arnaldo Carvalho de Melo)
+> 
+> - Fix dwarf unwind x86_64 build error (Namhyung Kim)
+> 
+> - Fix __machine__findnew_thread() error path (Namhyung Kim)
+> 
+> - Propagate error code when write(2) failed in 'perf probe' (Namhyung Kim)
+> 
+> - Use dwfl_report_elf() instead of offline in powerpc bits to
+>   properly handle non prelinked DSOs (Sukadev Bhattiprolu).
+> 
+> - Fix dwarf unwind using libunwind in 'perf test' (Wang Nan)
+> 
+> Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> ----------------------------------------------------------------
+> Alexey Brodkin (1):
+>       perf tools: Fix statfs.f_type data type mismatch build error with uclibc
+> 
+> Arnaldo Carvalho de Melo (1):
+>       tools: Remove bitops/hweight usage of bits in tools/perf
+> 
+> Namhyung Kim (4):
+>       perf probe: Propagate error code when write(2) failed
+>       perf tools: Fix building error in x86_64 when dwarf unwind is on
+>       perf machine: Fix __machine__findnew_thread() error path
+>       perf tools: Fix segfault for symbol annotation on TUI
+> 
+> Sukadev Bhattiprolu (1):
+>       perf tools powerpc: Use dwfl_report_elf() instead of offline.
+> 
+> Vineet Gupta (2):
+>       perf tools: Elide strlcpy warning with uclibc
+>       perf tools: Avoid build splat for syscall numbers with uclibc
+> 
+> Wang Nan (1):
+>       perf test: Fix dwarf unwind using libunwind.
+> 
+>  tools/include/asm-generic/bitops.h                |  2 ++
+>  tools/include/asm-generic/bitops/arch_hweight.h   |  1 +
+>  tools/include/asm-generic/bitops/const_hweight.h  |  1 +
+>  tools/include/asm-generic/bitops/hweight.h        |  7 +++++
+>  tools/include/linux/bitops.h                      |  7 ++++-
+>  tools/lib/api/fs/debugfs.c                        |  2 +-
+>  tools/lib/api/fs/fs.c                             |  2 +-
+>  tools/perf/MANIFEST                               |  6 ++++
+>  tools/perf/Makefile.perf                          | 11 +++++--
+>  tools/perf/arch/powerpc/util/skip-callchain-idx.c | 19 +++++++-----
+>  tools/perf/bench/sched-pipe.c                     |  2 +-
+>  tools/perf/builtin-top.c                          |  1 -
+>  tools/perf/config/Makefile                        |  2 +-
+>  tools/perf/config/Makefile.arch                   | 26 ++++++++--------
+>  tools/perf/perf-sys.h                             |  1 -
+>  tools/perf/tests/dwarf-unwind.c                   | 36 +++++++++++++++++++++--
+>  tools/perf/util/annotate.h                        |  8 +----
+>  tools/perf/util/cache.h                           |  2 ++
+>  tools/perf/util/hweight.c                         | 31 -------------------
+>  tools/perf/util/include/asm/hweight.h             |  8 -----
+>  tools/perf/util/machine.c                         |  4 ++-
+>  tools/perf/util/probe-event.c                     |  4 ++-
+>  tools/perf/util/python-ext-sources                |  2 +-
+>  tools/perf/util/unwind-libunwind.c                | 28 +++++++++++++++++-
+>  24 files changed, 131 insertions(+), 82 deletions(-)
+>  create mode 100644 tools/include/asm-generic/bitops/arch_hweight.h
+>  create mode 100644 tools/include/asm-generic/bitops/const_hweight.h
+>  create mode 100644 tools/include/asm-generic/bitops/hweight.h
+>  delete mode 100644 tools/perf/util/hweight.c
+>  delete mode 100644 tools/perf/util/include/asm/hweight.h
 
-  commit ea2c67bb4affa84080c616920f3899f123786e56
-  Author: Matt Roper <matthew.d.roper@intel.com>
-  Date:   Tue Dec 23 10:41:52 2014 -0800
-  
-      drm/i915: Move to atomic plane helpers (v9)
-      
-      Switch plane handling to use the atomic plane helpers.  This means that
-      rather than provide our own implementations of .update_plane() and
-      .disable_plane(), we expose the lower-level check/prepare/commit/cleanup
-      entrypoints and let the DRM core implement update/disable for us using
-      those entrypoints.
-      
-      The other main change that falls out of this patch is that our
-      drm_plane's will now always have a valid plane->state that contains the
-      relevant plane state (initial state is allocated at plane creation).
-      The base drm_plane_state pointed to holds the requested source/dest
-      coordinates, and the subclassed intel_plane_state holds the adjusted
-      values that our driver actually uses.
-      
-      v2:
-       - Renamed file from intel_atomic.c to intel_atomic_plane.c (Daniel)
-       - Fix a copy/paste comment mistake (Bob)
-      
-      v3:
-       - Use prepare/cleanup functions that we've already factored out
-       - Use newly refactored pre_commit/commit/post_commit to avoid sleeping
-         during vblank evasion
-      
-      v4:
-       - Rebase to latest di-nightly requires adding an 'old_state' parameter
-         to atomic_update;
-      
-      v5:
-       - Must have botched a rebase somewhere and lost some work.  Restore
-         state 'dirty' flag to let begin/end code know which planes to
-         run the pre_commit/post_commit hooks for.  This would have actually
-         shown up as broken in the next commit rather than this one.
-      
-      v6:
-       - Squash kerneldoc patch into this one.
-       - Previous patches have now already taken care of most of the
-         infrastructure that used to be in this patch.  All we're adding here
-         now is some thin wrappers.
-      
-      v7:
-       - Check return of intel_plane_duplicate_state() for allocation
-         failures.
-      
-      v8:
-       - Drop unused drm_plane_state -> intel_plane_state cast.  (Ander)
-       - Squash in actual transition to plane helpers.  Significant
-         refactoring earlier in the patchset has made the combined
-         prep+transition much easier to swallow than it was in earlier
-         iterations. (Ander)
-      
-      v9:
-       - s/track_fbs/disabled_planes/ in the atomic crtc flags.  The only fb's
-         we need to update frontbuffer tracking for are those on a plane about
-         to be disabled (since the atomic helpers never call prepare_fb() when
-         disabling a plane), so the new name more accurately describes what
-         we're actually tracking.
-      
-      Testcase: igt/kms_plane
-      Testcase: igt/kms_universal_plane
-      Testcase: igt/kms_cursor_crc
-      Signed-off-by: Matt Roper <matthew.d.roper@intel.com>
-      Reviewed-by: Ander Conselvan de Oliveira <conselvan2@gmail.com>
-      Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Pulled, thanks a lot Arnaldo!
 
--- 
-- Jeremiah Mahler
+	Ingo
