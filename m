@@ -1,50 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115AbbAQPvN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 10:51:13 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:49035 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244AbbAQPvM (ORCPT
+	id S1751686AbbAQQBv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 11:01:51 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:57857 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751244AbbAQQBt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 10:51:12 -0500
+	Sat, 17 Jan 2015 11:01:49 -0500
+Date: Sat, 17 Jan 2015 17:01:13 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Ray Jui <rjui@broadcom.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Scott Branden <sbranden@broadcom.com>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        bcm-kernel-feedback-list@broadcom.com, devicetree@vger.kernel.org
+Subject: Re: [PATCH v4 2/3] i2c: iproc: Add Broadcom iProc I2C Driver
+Message-ID: <20150117160113.GA22880@pengutronix.de>
+References: <rjui@broadcom.com>
+ <1421274213-3544-1-git-send-email-rjui@broadcom.com>
+ <1421274213-3544-3-git-send-email-rjui@broadcom.com>
+ <20150115084119.GN22880@pengutronix.de>
+ <54B98C18.4080807@broadcom.com>
 MIME-Version: 1.0
-In-Reply-To: <20150113033445.GA31207@kroah.com>
-References: <1417989764-18481-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<20150113033445.GA31207@kroah.com>
-Date: Sat, 17 Jan 2015 16:51:10 +0100
-Message-ID: <CAKXHbyPHNcaju7SG4A3xw2jUpN7qVQKPDWx4NKvKLCM4yfOM+Q@mail.gmail.com>
-Subject: Re: [PATCH] staging: vt6655: mac.c: Remove unused function
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Forest Bond <forest@alittletooquiet.net>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Guillaume Clement <gclement@baobob.org>,
-        Malcolm Priestley <tvboxspy@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Joe Perches <joe@perches.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <54B98C18.4080807@broadcom.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2015-01-13 4:34 GMT+01:00 Greg Kroah-Hartman <gregkh@linuxfoundation.org>:
-> On Sun, Dec 07, 2014 at 11:02:44PM +0100, Rickard Strandqvist wrote:
->> Remove the function MACbCompareContext() that is not used anywhere.
->>
->> This was partially found by using a static code analysis program called cppcheck.
->>
->> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
->> ---
->>  drivers/staging/vt6655/mac.c |   42 ------------------------------------------
->>  drivers/staging/vt6655/mac.h |    1 -
->>  2 files changed, 43 deletions(-)
->
-> This doesn't apply to any tree that I can determine :(
+Hello,
 
-Hi
+On Fri, Jan 16, 2015 at 02:09:28PM -0800, Ray Jui wrote:
+> On 1/15/2015 12:41 AM, Uwe Kleine-König wrote:
+> > On Wed, Jan 14, 2015 at 02:23:32PM -0800, Ray Jui wrote:
+> >> +	 */
+> >> +	val = 1 << M_CMD_START_BUSY_SHIFT;
+> >> +	if (msg->flags & I2C_M_RD) {
+> >> +		val |= (M_CMD_PROTOCOL_BLK_RD << M_CMD_PROTOCOL_SHIFT) |
+> >> +		       (msg->len << M_CMD_RD_CNT_SHIFT);
+> >> +	} else {
+> >> +		val |= (M_CMD_PROTOCOL_BLK_WR << M_CMD_PROTOCOL_SHIFT);
+> >> +	}
+> >> +	writel(val, iproc_i2c->base + M_CMD_OFFSET);
+> >> +
+> >> +	time_left = wait_for_completion_timeout(&iproc_i2c->done, time_left);
+> > 
+> > When the interrupt fires here after the complete timed out and before
+> > you disable the irq you still throw the result away.
+> Yes, but then this comes down to the fact that if it has reached the
+> point that is determined to be a timeout condition in the driver, one
+> should really treat it as timeout error. In a normal condition,
+> time_left should never reach zero.
+I don't agree here. I'm not sure there is a real technical reason,
+though. But still if you're in a "success after timeout already over"
+situation it's IMHO better to interpret it as success, not timeout.
 
+> >> +static int bcm_iproc_i2c_remove(struct platform_device *pdev)
+> >> +{
+> >> +	struct bcm_iproc_i2c_dev *iproc_i2c = platform_get_drvdata(pdev);
+> >> +
+> >> +	i2c_del_adapter(&iproc_i2c->adapter);
+> > You need to free the irq before i2c_del_adapter.
+> > 
+> Yes. Thanks. Change back to use devm_request_irq, and use disable_irq
+> here before removing the adapter.
+The more lightweight approach is to set your device's irq-enable
+register to zero and call synchronize_irq. (For a shared irq calling
+disable_irq is even wrong here.)
 
-Sorry, I have now investigated this and these function is now removed.
+Best regards
+Uwe
 
-Kind regards
-Rickard Strandqvist
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
