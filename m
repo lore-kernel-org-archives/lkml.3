@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855AbbAQXWw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 18:22:52 -0500
-Received: from nacho.alt.net ([208.90.169.18]:52282 "EHLO nacho.alt.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751192AbbAQXWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 18:22:51 -0500
-Comment: DKIM? See http://www.dkim.org
-Comment: DomainKeys? See http://antispam.yahoo.com/domainkeys
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-	s=default; d=alt.net;
-	h=Received:Received:Received:Date:To:cc:Subject:Message-ID:MIME-Version:Content-Type:X-Delivery-Agent:From:Reply-To;
-	b=qZ4iX6QpsOf1mntk3TsHdnRL4UJ9upUWBx2P083Fgws4c+GBKtRL17WeWsbfS1
-	qUF+m7f/U6ocWYbR6JX7Xi9S9aUB/zHplG0sxTc97jxVVlfpGzZepVRQuLiM5W5B
-	I0HbbH83MtHPpzOs9S3Zst1MgoZGezHXBx2uidHg1VZBQ=;
-Date: Sat, 17 Jan 2015 23:16:09 +0000 (UTC)
-To: Wensong Zhang <wensong@linux-vs.org>, Julian Anastasov <ja@ssi.bg>,
-        Simon Horman <horms@verge.net.au>
-cc: lvs-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] IPVS: add wlib & wlip schedulers
-Message-ID: <Pine.LNX.4.64.1501172310300.8217@nacho.alt.net>
+	id S1752112AbbAQXVs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 18:21:48 -0500
+Received: from mail-wg0-f45.google.com ([74.125.82.45]:60705 "EHLO
+	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751467AbbAQXVq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Jan 2015 18:21:46 -0500
+Date: Sat, 17 Jan 2015 23:21:42 +0000
+From: Leif Lindholm <leif.lindholm@linaro.org>
+To: Jon Masters <jcm@redhat.com>
+Cc: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: SMBIOS/DMI data under CONFIG_STRICT_DEVMEM
+Message-ID: <20150117232142.GN3827@bivouac.eciton.net>
+References: <54BAC21D.9040009@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Delivery-Agent: TMDA/1.1.12 (Macallan)
-From: Chris Caputo <ccaputo@alt.net>
-Reply-To: Chris Caputo <ccaputo-dated-1431904570.dcd98e@alt.net>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54BAC21D.9040009@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chris Caputo <ccaputo@alt.net> 
+On Sat, Jan 17, 2015 at 03:12:13PM -0500, Jon Masters wrote:
+> Hi Catalin, all,
+> 
+> I would like to ensure that the SMBIOS data provided by firmware is
+> always readable from userspace on AArch64, through /dev/mem.
 
-IPVS wlib (Weighted Least Incoming Byterate) and wlip (Weighted Least Incoming 
-Packetrate) scheduler docs for ipvsadm-1.27.
+No, we need to ensure /dev/mem can be completely disabled on any
+system that ever wants to have any level of reliability.
 
-Signed-off-by: Chris Caputo <ccaputo@alt.net>
----
-diff -upr ipvsadm-1.27-stock/SCHEDULERS ipvsadm-1.27/SCHEDULERS
---- ipvsadm-1.27-stock/SCHEDULERS	2013-09-06 08:37:27.000000000 +0000
-+++ ipvsadm-1.27/SCHEDULERS	2015-01-17 22:14:32.812597191 +0000
-@@ -1 +1 @@
--rr|wrr|lc|wlc|lblc|lblcr|dh|sh|sed|nq
-+rr|wrr|lc|wlc|lblc|lblcr|dh|sh|sed|nq|wlib|wlip
-diff -upr ipvsadm-1.27-stock/ipvsadm.8 ipvsadm-1.27/ipvsadm.8
---- ipvsadm-1.27-stock/ipvsadm.8	2013-09-06 08:37:27.000000000 +0000
-+++ ipvsadm-1.27/ipvsadm.8	2015-01-17 22:14:32.812597191 +0000
-@@ -261,6 +261,14 @@ fixed service rate (weight) of the ith s
- \fBnq\fR - Never Queue: assigns an incoming job to an idle server if
- there is, instead of waiting for a fast one; if all the servers are
- busy, it adopts the Shortest Expected Delay policy to assign the job.
-+.sp
-+\fBwlib\fR - Weighted Least Incoming Byterate: directs network
-+connections to the real server with the least incoming byterate
-+normalized by the server weight.
-+.sp
-+\fBwlip\fR - Weighted Least Incoming Packetrate: directs network
-+connections to the real server with the least incoming packetrate
-+normalized by the server weight.
- .TP
- .B -p, --persistent [\fItimeout\fP]
- Specify that a virtual service is persistent. If this option is
+Fortunately, for SMBIOS there is /sys/firmware/dmi. Expect to see some
+patches from Ivan Khoronzhuk on this next week. (He has a working
+prototype of dmidecode, and a couple of minor kernel patches, as of
+yesterday.)
+
+For acpidump, there is /sys/firmware/acpi, and we're looking into that
+as well.
+
+> When building a kernel with CONFIG_STRICT_DEVMEM, arm64 follows broadly
+> x86 with the exception of an assumption surrounding the low range of
+> memory (which doesn't apply on AArch64 platforms universally anyway).
+> Thus on x86, they can directly read the SMBIOS table from dmidecode when
+> it tries to map /dev/mem due to its location. I'm hacking something up
+> for the moment, but I would like to solve this.
+
+STRICT_DEVMEM is a trainwreck on all architectures, but particularly
+bad on ARM*, since we don't have anything resembling a predictable
+memory map. While I like Ard's approach to improve it with data
+actually available, I would also like add the ability to make it
+tweakable as read-write, read-only or no access.
+
+I sent out a series looking to consolidate STRICT_DEVMEM handling
+across architectures (i.e. not have separate definitions per
+architecture Kconfig), but had little response. If anyone is
+interested in seeing that happening, let me know and I'll resend with
+you on cc.
+
+/
+    Leif
