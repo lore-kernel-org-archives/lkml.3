@@ -1,67 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750AbbAQKHr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 05:07:47 -0500
-Received: from 78-32-181-23.static.enta.net ([78.32.181.23]:58223 "EHLO
-	mail.linicks.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752526AbbAQKHq (ORCPT
+	id S1752906AbbAQKLK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 05:11:10 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:44253 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751309AbbAQKLH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 05:07:46 -0500
-Message-ID: <54BA3470.8040302@linicks.net>
-Date: Sat, 17 Jan 2015 10:07:44 +0000
-From: Nick Warne <nick@linicks.net>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Sat, 17 Jan 2015 05:11:07 -0500
+Date: Sat, 17 Jan 2015 02:10:27 -0800
+From: tip-bot for Namhyung Kim <tipbot@zytor.com>
+Message-ID: <tip-7949ba1fa249caa7e611abb8d92f40b0a46c8617@git.kernel.org>
+Cc: jolsa@redhat.com, masami.hiramatsu.pt@hitachi.com, acme@redhat.com,
+        namhyung@kernel.org, tglx@linutronix.de, linux-kernel@vger.kernel.org,
+        dsahern@gmail.com, mingo@kernel.org, a.p.zijlstra@chello.nl,
+        hpa@zytor.com
+Reply-To: acme@redhat.com, namhyung@kernel.org, mingo@kernel.org,
+        hpa@zytor.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org, dsahern@gmail.com, jolsa@redhat.com,
+        masami.hiramatsu.pt@hitachi.com
+In-Reply-To: <1420886028-15135-4-git-send-email-namhyung@kernel.org>
+References: <1420886028-15135-4-git-send-email-namhyung@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf probe: Propagate error code when write(2)
+  failed
+Git-Commit-ID: 7949ba1fa249caa7e611abb8d92f40b0a46c8617
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: Re: Linux 3.18.3
-References: <54BA2EC1.8060606@linicks.net>
-In-Reply-To: <54BA2EC1.8060606@linicks.net>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/01/15 09:43, Nick Warne wrote:
-> On 17.01.2015, Heinz Diehl wrote:
->
->   > Since 3.18, machines with Ironlake Intel Graphics are left with a
->   > black screen when booting into X. I reported the bug here:
->   >
->   > https://www.libreoffice.org/bugzilla/show_bug.cgi?id=87330
->
-> Yes (since 3.18.), and on my notebook with:
->
-> 00:02.0 VGA compatible controller: Intel Corporation Atom Processor
-> D4xx/D5xx/N4xx/N5xx Integrated Graphics Controller
-> 00:02.1 Display controller: Intel Corporation Atom Processor
-> D4xx/D5xx/N4xx/N5xx Integrated Graphics Controller
->
-> if I use the Intel sna driver, just running glxgears crashes X to the
-> console, and videos run in mplayer but just appear black.  Strangely
-> enough, after X crashes, if I restart it, all works fine?
->
-> I am currently using the Intel uxa driver which works OK on any occasion.
->
-> The above symptoms are still the same in 3.18.3
+Commit-ID:  7949ba1fa249caa7e611abb8d92f40b0a46c8617
+Gitweb:     http://git.kernel.org/tip/7949ba1fa249caa7e611abb8d92f40b0a46c8617
+Author:     Namhyung Kim <namhyung@kernel.org>
+AuthorDate: Sat, 10 Jan 2015 19:33:48 +0900
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Fri, 16 Jan 2015 17:49:28 -0300
 
-OK, perhaps I should have reported this when it happened, but I thought 
-it was the notebook/me/the dog causing it.
+perf probe: Propagate error code when write(2) failed
 
-I applied the changes from here:
+When it failed to write probe commands to the probe_event file in
+debugfs, it needs to propagate the error code properly.  Current code
+blindly uses the return value of the write(2) so it always uses
+-1 (-EPERM) and it might confuse users.
 
-http://cgit.freedesktop.org/drm-intel/patch/?id=d472fcc8379c062bd56a3876fc6ef22258f14a91
+Signed-off-by: Namhyung Kim <namhyung@kernel.org>
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Ingo Molnar <mingo@kernel.org>
+Cc: Jiri Olsa <jolsa@redhat.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Link: http://lkml.kernel.org/r/1420886028-15135-4-git-send-email-namhyung@kernel.org
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/probe-event.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-albeit on different code lines on 3.18.3 and all is hunky dory again 
-using driver sna!
-
-Greg, me thinks this should go in next -stable.
-
-Thanks!
-
-Nick
--- 
-"A bug in the code is worth two in the documentation."
-http://linicks.net/
-http://slackpi.linicks.net/
-http://fishpi.linicks.net/
+diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+index 7f9b863..94a717b 100644
+--- a/tools/perf/util/probe-event.c
++++ b/tools/perf/util/probe-event.c
+@@ -2052,9 +2052,11 @@ static int write_probe_trace_event(int fd, struct probe_trace_event *tev)
+ 	pr_debug("Writing event: %s\n", buf);
+ 	if (!probe_event_dry_run) {
+ 		ret = write(fd, buf, strlen(buf));
+-		if (ret <= 0)
++		if (ret <= 0) {
++			ret = -errno;
+ 			pr_warning("Failed to write event: %s\n",
+ 				   strerror_r(errno, sbuf, sizeof(sbuf)));
++		}
+ 	}
+ 	free(buf);
+ 	return ret;
