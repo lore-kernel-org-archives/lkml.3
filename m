@@ -1,62 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753417AbbAQXgr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 18:36:47 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55960 "EHLO
+	id S1752467AbbAQXhu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 18:37:50 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55978 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753356AbbAQXgp (ORCPT
+	with ESMTP id S1751149AbbAQXht (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 18:36:45 -0500
-Date: Sat, 17 Jan 2015 15:03:55 -0800
+	Sat, 17 Jan 2015 18:37:49 -0500
+Date: Sat, 17 Jan 2015 15:09:22 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Simone Weiss <simone.weiss@fau.de>
-Cc: devel@driverdev.osuosl.org, linux-kernel@i4.cs.fau.de,
-        lidza.louina@gmail.com, driverdev-devel@linuxdriverproject.org,
-        helene.gsaenger@studium.fau.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/6] dgnc/dpacompat.h: checkpatch: fixed long lines bei
- moving comments
-Message-ID: <20150117230355.GB9418@kroah.com>
-References: <1419211054-3052-1-git-send-email-simone.weiss@fau.de>
- <1419211054-3052-4-git-send-email-simone.weiss@fau.de>
+To: Arno Tiemersma <arno.tiemersma@gmail.com>
+Cc: jason@lakedaemon.net, jake@lwn.net, antonysaraev@gmail.com,
+        eric.rost@mybabylon.net, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: skein: Fix checkpatch warnings
+Message-ID: <20150117230922.GA20761@kroah.com>
+References: <1420902047-7569-1-git-send-email-arno.tiemersma@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1419211054-3052-4-git-send-email-simone.weiss@fau.de>
+In-Reply-To: <1420902047-7569-1-git-send-email-arno.tiemersma@gmail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Dec 22, 2014 at 02:17:31AM +0100, Simone Weiss wrote:
+On Sat, Jan 10, 2015 at 04:00:47PM +0100, Arno Tiemersma wrote:
+> Remove do {} while (0) loops around single statements in
+> skein/skein_block.c
 > 
-> Signed-off-by: Simone Weiss <simone.weiss@fau.de>
-> Signed-off-by: Helene Gsaenger <helene.gsaenger@studium.fau.de>
+> Signed-off-by: Arno Tiemersma <arno.tiemersma@gmail.com>
 > ---
->  drivers/staging/dgnc/dpacompat.h | 6 ++++--
->  1 file changed, 4 insertions(+), 2 deletions(-)
+>  drivers/staging/skein/skein_block.c | 16 ++++------------
+>  1 file changed, 4 insertions(+), 12 deletions(-)
 > 
-> diff --git a/drivers/staging/dgnc/dpacompat.h b/drivers/staging/dgnc/dpacompat.h
-> index b2d2dc0..feb4f60 100644
-> --- a/drivers/staging/dgnc/dpacompat.h
-> +++ b/drivers/staging/dgnc/dpacompat.h
-> @@ -111,5 +111,7 @@ struct ni_info {
->  #define DIGI_GET_NI_INFO ('d'<<8) | 250		/* nonintelligent state snfo */
+> diff --git a/drivers/staging/skein/skein_block.c b/drivers/staging/skein/skein_block.c
+> index 66261ab..39dccf8 100644
+> --- a/drivers/staging/skein/skein_block.c
+> +++ b/drivers/staging/skein/skein_block.c
+> @@ -83,9 +83,7 @@ do {                                                                      \
+>  #else
+>  /* looping version */
+>  #define R256(p0, p1, p2, p3, ROT, r_num) \
+> -do { \
+> -	ROUND256(p0, p1, p2, p3, ROT, r_num); \
+> -} while (0)
+> +	ROUND256(p0, p1, p2, p3, ROT, r_num)
 >  
->  /* Other special ioctls */
-> -#define DIGI_TIMERIRQ ('d'<<8) | 251		/* Enable/disable RS_TIMER use */
-> -#define DIGI_LOOPBACK ('d'<<8) | 252		/* Enable/disable UART internal loopback */
-> +#define DIGI_TIMERIRQ ('d'<<8) | 251		/* Enable/disable
-> +						 * RS_TIMER use */
-> +#define DIGI_LOOPBACK ('d'<<8) | 252		/* Enable/disable UART
-> +						 * internal loopback */
+>  #define I256(R) \
+>  do { \
+> @@ -174,9 +172,7 @@ do {                                                                      \
+>  
+>  #else /* looping version */
+>  #define R512(p0, p1, p2, p3, p4, p5, p6, p7, ROT, r_num)                 \
+> -do {                                                                     \
+> -	ROUND512(p0, p1, p2, p3, p4, p5, p6, p7, ROT, r_num);            \
+> -} while (0)
+> +	ROUND512(p0, p1, p2, p3, p4, p5, p6, p7, ROT, r_num)
+>  
+>  #define I512(R)                                                           \
+>  do {                                                                      \
+> @@ -263,10 +259,8 @@ do {                                                                          \
+>  #if SKEIN_UNROLL_1024 == 0
+>  #define R1024(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, pA, pB, pC, pD, pE, pF, \
+>  	      ROT, rn)                                                        \
+> -do {                                                                          \
+>  	ROUND1024(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, pA, pB, pC, pD, pE, \
+> -		  pF, ROT, rn);                                               \
+> -} while (0)
+> +		  pF, ROT, rn)
+>  
+>  #define I1024(R)                                                          \
+>  do {                                                                      \
+> @@ -291,10 +285,8 @@ do {                                                                      \
+>  #else /* looping version */
+>  #define R1024(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, pA, pB, pC, pD, pE, pF, \
+>  	      ROT, rn)                                                        \
+> -do {                                                                          \
+>  	ROUND1024(p0, p1, p2, p3, p4, p5, p6, p7, p8, p9, pA, pB, pC, pD, pE, \
+> -		  pF, ROT, rn);                                               \
+> -} while (0)
+> +		  pF, ROT, rn)
+>  
+>  #define I1024(R)                                                           \
+>  do {                                                                       \
 > -- 
-> 1.9.1
+> 2.1.0
+> 
 
-That really doesn't look better, does it?
-
-Please resend a fixed up series, I'm too confused by all of the
-different patches you have sent to figure out what to apply.
-
-thanks,
-
-greg k-h
+Doesn't apply to my tree :(
