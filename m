@@ -1,93 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752929AbbAQNOp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 08:14:45 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:44055 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752060AbbAQNOm (ORCPT
+	id S1752714AbbAQNqJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 08:46:09 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:60709 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751232AbbAQNqH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 08:14:42 -0500
-Date: Sat, 17 Jan 2015 13:14:05 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Hans de Goede <hdegoede@redhat.com>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        Liam Girdwood <lgirdwood@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org
-Message-ID: <20150117131404.GA6414@sirena.org.uk>
-References: <1421330978-9694-1-git-send-email-gregory.clement@free-electrons.com>
- <1421330978-9694-5-git-send-email-gregory.clement@free-electrons.com>
- <54B8C933.7020502@redhat.com>
- <54B8D97B.3090908@free-electrons.com>
- <54B8E38A.6020709@redhat.com>
- <20150116123705.GM3043@sirena.org.uk>
- <54B9629C.9090800@redhat.com>
- <20150116202516.GL3856@sirena.org.uk>
- <54BA21F9.5050408@redhat.com>
+	Sat, 17 Jan 2015 08:46:07 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="5mCyUwZo2JvN/JJP"
-Content-Disposition: inline
-In-Reply-To: <54BA21F9.5050408@redhat.com>
-X-Cookie: You should go home.
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v4 4/4] ARM: mvebu: Armada 385 GP: Add regulators to the
- SATA port
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+In-Reply-To: <CAKMK7uFCO5ytkckRVtT66pqpwEa9jK=J2CJqjWRS7BuXoJkjig@mail.gmail.com>
+References: <1421187484-13875-1-git-send-email-sviau@codeaurora.org>
+	<1421187484-13875-3-git-send-email-sviau@codeaurora.org>
+	<CAKMK7uH0GUjkksG5RJ03qtf=bqdPvAK1PpayQ6Wz9dq2KMe9Tw@mail.gmail.com>
+	<CAF6AEGvCf=7bQWJMxXgzn6DKWPR6TKXJ3+06aRrCg9nV62J7cA@mail.gmail.com>
+	<CAKMK7uFCO5ytkckRVtT66pqpwEa9jK=J2CJqjWRS7BuXoJkjig@mail.gmail.com>
+Date: Sat, 17 Jan 2015 08:46:05 -0500
+Message-ID: <CAF6AEGvmGbmUQarTHeY2ZSSpTcPJTqpt8eax9Wg=gS=jpnTY_w@mail.gmail.com>
+Subject: Re: [PATCH 2/2] drm/msm/mdp5: Add hardware cursor support
+From: Rob Clark <robdclark@gmail.com>
+To: Daniel Vetter <daniel@ffwll.ch>
+Cc: Stephane Viau <sviau@codeaurora.org>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        Beeresh Gopal <gbeeresh@codeaurora.org>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jan 16, 2015 at 11:06 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
+> On Thu, Jan 15, 2015 at 08:46:46AM -0500, Rob Clark wrote:
+>> On Wed, Jan 14, 2015 at 7:55 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
+>> > On Tue, Jan 13, 2015 at 05:18:04PM -0500, Stephane Viau wrote:
+>> >> From: Beeresh Gopal <gbeeresh@codeaurora.org>
+>> >>
+>> >> This patch implements the hardware accelarated cursor
+>> >> support for MDP5 platforms.
+>> >>
+>> >> Signed-off-by: Beeresh Gopal <gbeeresh@codeaurora.org>
+>> >> Signed-off-by: Wentao Xu <wentaox@codeaurora.org>
+>> >> Signed-off-by: Stephane Viau <sviau@codeaurora.org>
+>> >
+>> > Imo implementing legacy cursor support instead of with universal planes
+>> > makes no sense. Especially since msm is converted to atomic already, and
+>> > you can't move the cursor with atomic when it's legacy only. See the
+>> > cursor argument for the drm_crtc_init_with_planes function and how it's
+>> > used in e.g. i915.
+>> >
+>>
+>> well, I'm still not 100% convinced about going through the whole
+>> atomic mechanism for cursors..  in particular stuff that tries to
+>> enable/disable the cursor at 1000fps, goes *really* badly when things
+>> start waiting for vsync.
+>>
+>> I'll probably try some experiments with it at some point, but at this
+>> point something that works with x11 is a lot more interesting for me
+>> (since every time I switch from mdp4 device to mdp5 device I forget to
+>> disable hw cursor the first time I start x)
+>
+> Well for one this uses the legacy cursor callbacks directly, at least a
+> cursor plane is imo in order.
+>
+> Otoh we just need to fix up the cursor atomic implementation to allow
+> drivers to do fully async updates which get merged down to one update.
+> Which Ville's original atomic stuff already had. So all recoverable by
+> adding a flag somewhere and setting that in the plane_update-on-atomic
+> function.
 
---5mCyUwZo2JvN/JJP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+something that could merge multiple intra-vsync updates would, I
+think, make cursor planes usable
 
-On Sat, Jan 17, 2015 at 09:48:57AM +0100, Hans de Goede wrote:
+> Merging legacy code just because the new stuff isn't 100% perfect yet imo
+> just doesn't make that much sense.
 
-> and leave these regulators on, rather then turn them of $random time,
-> because as I've advocated before (see the simplefb thread) there is
-> no simple magic moment when it is right to turn things off, so doing
-> it when userspace starts is more or less as good as any moment, and if
-> it turns out that that is not a good moment, then maybe we need to
-> re-think the turning off in general.
+but merging legacy because new stuff isn't usable yet does ;-)
 
-Following your argument to the logical conclusion means we can never
-turn any regualtor off - we always have the risk that there's another
-shared user which is going to get a power bounce if we power down.  More
-directly we'll also get people complaining that we're burning power
-pointlessly on their systems for devices they've not even got drivers
-enabled for.  This powering down is something there's been user demand
-for.
+BR,
+-R
 
---5mCyUwZo2JvN/JJP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBCAAGBQJUumAcAAoJECTWi3JdVIfQlH0IAIaIzrngaQ6SB0xsjq9eZMgi
-sqS7M9Oi9AveSVZraYdpQ4AgmkgddW+Mqkn3eiojRw75prISheVi09T7veN5C0+t
-nq4MhUM8spaInxnT7Ns4GQP7wHwzhWohR6++b24V8olea2Mp+iUQ0C3e7cgxiJLQ
-vCQvE8CjYH6o6I57XLx2NsvheHh3CsOK6wdfJnb9f8e7kgK6E1vi9ICOvWsTBaMs
-BMzJojO0OgM3GqU9A6XIwbW8OvLUDMStN0lCRgRjXWgD19dZIuEqR4zfCzRXiIz+
-CjLOYUZ5deaxrLjS5c4epyO37eBgfSwZfpAMLZpE3h9ANKG0ealiW6aIN71MtSY=
-=3ctk
------END PGP SIGNATURE-----
-
---5mCyUwZo2JvN/JJP--
+> -Daniel
+> --
+> Daniel Vetter
+> Software Engineer, Intel Corporation
+> +41 (0) 79 365 57 48 - http://blog.ffwll.ch
