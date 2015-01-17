@@ -1,114 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752891AbbAQH7X (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 02:59:23 -0500
-Received: from mail-pd0-f178.google.com ([209.85.192.178]:34715 "EHLO
-	mail-pd0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752712AbbAQH7V (ORCPT
+	id S1753033AbbAQIBl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 03:01:41 -0500
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:55659 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751135AbbAQIBk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 02:59:21 -0500
-From: Shailendra Verma <shailendra.capricorn@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Shailendra Verma <shailendra.capricorn@gmail.com>
-Subject: [PATCH 8/8] Coding Style Correction.
-Date: Sat, 17 Jan 2015 13:28:49 +0530
-Message-Id: <1421481529-19304-1-git-send-email-shailendra.capricorn@gmail.com>
-X-Mailer: git-send-email 1.7.9.5
+	Sat, 17 Jan 2015 03:01:40 -0500
+Date: Sat, 17 Jan 2015 09:01:36 +0100
+From: Pavel Machek <pavel@ucw.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rob Landley <rob@landley.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] out out damn perl
+Message-ID: <20150117080136.GA7396@amd>
+References: <54AC72AF.5090609@landley.net>
+ <20150106155024.5efa209d575fff4868758482@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150106155024.5efa209d575fff4868758482@linux-foundation.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Signed-off-by: Shailendra Verma <shailendra.capricorn@gmail.com>
----
- drivers/input/evdev.c    |   30 ++++++++++++++++++++----------
- drivers/input/mousedev.c |   18 ++++++++++++------
- 2 files changed, 32 insertions(+), 16 deletions(-)
+On Tue 2015-01-06 15:50:24, Andrew Morton wrote:
+> On Tue, 06 Jan 2015 17:41:35 -0600 Rob Landley <rob@landley.net> wrote:
+> 
+> > Commit e6023367d779 added perl back to the kernel build in -rc6.
+> > Replace 39 lines of perl with 4 lines of shell script.
+> 
+> Please resend this:
+> 
+> - Express the commit in the conventional fashion
+> 
+>   e6023367d779 ("x86, kaslr: Prevent .bss from overlaping initrd")
+> 
+>   - So that we all don't have to go look up the commit to find out
+>     what happened.
+> 
+>   - So people can look up the commit in other trees, where the hash
+>     might change.
+> 
+> - Cc the people who wrote and committed the patch.
+> 
+> - The offending commit has cc:stable, so have a think about adding a
+>   cc:stable to this one as well.
 
-diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
-index 18d4b2c..85ee594 100644
---- a/drivers/input/evdev.c
-+++ b/drivers/input/evdev.c
-@@ -667,16 +667,26 @@ static int handle_eviocgbit(struct input_dev *dev,
- 
- 	switch (type) {
- 
--	case      0: bits = dev->evbit;  len = EV_MAX;  break;
--	case EV_KEY: bits = dev->keybit; len = KEY_MAX; break;
--	case EV_REL: bits = dev->relbit; len = REL_MAX; break;
--	case EV_ABS: bits = dev->absbit; len = ABS_MAX; break;
--	case EV_MSC: bits = dev->mscbit; len = MSC_MAX; break;
--	case EV_LED: bits = dev->ledbit; len = LED_MAX; break;
--	case EV_SND: bits = dev->sndbit; len = SND_MAX; break;
--	case EV_FF:  bits = dev->ffbit;  len = FF_MAX;  break;
--	case EV_SW:  bits = dev->swbit;  len = SW_MAX;  break;
--	default: return -EINVAL;
-+	case      0:
-+		bits = dev->evbit;  len = EV_MAX;  break;
-+	case EV_KEY:
-+		bits = dev->keybit; len = KEY_MAX; break;
-+	case EV_REL:
-+		bits = dev->relbit; len = REL_MAX; break;
-+	case EV_ABS:
-+		bits = dev->absbit; len = ABS_MAX; break;
-+	case EV_MSC:
-+		bits = dev->mscbit; len = MSC_MAX; break;
-+	case EV_LED:
-+		bits = dev->ledbit; len = LED_MAX; break;
-+	case EV_SND:
-+		bits = dev->sndbit; len = SND_MAX; break;
-+	case EV_FF:
-+		bits = dev->ffbit;  len = FF_MAX;  break;
-+	case EV_SW:
-+		bits = dev->swbit;  len = SW_MAX;  break;
-+	default:
-+		return -EINVAL;
- 	}
- 
- 	return bits_to_user(bits, len, size, p, compat_mode);
-diff --git a/drivers/input/mousedev.c b/drivers/input/mousedev.c
-index b604564..a9857dd 100644
---- a/drivers/input/mousedev.c
-+++ b/drivers/input/mousedev.c
-@@ -230,25 +230,31 @@ static void mousedev_key_event(struct mousedev *mousedev,
- 
- 	case BTN_TOUCH:
- 	case BTN_0:
--	case BTN_LEFT:		index = 0; break;
-+	case BTN_LEFT:
-+		index = 0; break;
- 
- 	case BTN_STYLUS:
- 	case BTN_1:
--	case BTN_RIGHT:		index = 1; break;
-+	case BTN_RIGHT:
-+		index = 1; break;
- 
- 	case BTN_2:
- 	case BTN_FORWARD:
- 	case BTN_STYLUS2:
--	case BTN_MIDDLE:	index = 2; break;
-+	case BTN_MIDDLE:
-+		index = 2; break;
- 
- 	case BTN_3:
- 	case BTN_BACK:
--	case BTN_SIDE:		index = 3; break;
-+	case BTN_SIDE:
-+		index = 3; break;
- 
- 	case BTN_4:
--	case BTN_EXTRA:		index = 4; break;
-+	case BTN_EXTRA:
-+		index = 4; break;
- 
--	default:		return;
-+	default:
-+		return;
- 	}
- 
- 	if (value) {
+Actually, I don't think this should go to stable. I like the patch,
+but it is not a bug, and certainly not serious enough one.
+
+> - The title is cute, but not terribly informative.
+
+Cute :-).
+
 -- 
-1.7.9.5
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
