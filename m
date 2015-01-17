@@ -1,83 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751731AbbAQTea (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 14:34:30 -0500
-Received: from mail-bl2on0117.outbound.protection.outlook.com ([65.55.169.117]:12579
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751348AbbAQTe1 convert rfc822-to-8bit (ORCPT
+	id S1752081AbbAQSMR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 13:12:17 -0500
+Received: from smtp-4.sys.kth.se ([130.237.48.193]:52328 "EHLO
+	smtp-4.sys.kth.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750994AbbAQSMO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 14:34:27 -0500
-X-Greylist: delayed 3606 seconds by postgrey-1.27 at vger.kernel.org; Sat, 17 Jan 2015 14:34:27 EST
-From: David Solda <dso@cypress.com>
-To: Jeremiah Mahler <jmmahler@gmail.com>
-CC: Dudley Du <dudl@cypress.com>,
-        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
-        "rydberg@euromail.se" <rydberg@euromail.se>,
-        "bleung@google.com" <bleung@google.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v18 00/12] input: cyapa: instruction of cyapa patches
-Thread-Topic: [PATCH v18 00/12] input: cyapa: instruction of cyapa patches
-Thread-Index: AQHQMVaQ/56jTavvUEucirYXn2E7N5zEImWAgAB542U=
-Date: Sat, 17 Jan 2015 18:00:29 +0000
-Message-ID: <0F1DD2F3-F620-4161-A406-43C8F56A1304@cypress.com>
-References: <1421390055-32760-1-git-send-email-dudl@cypress.com>,<20150117104415.GA2083@hudson.localdomain>
-In-Reply-To: <20150117104415.GA2083@hudson.localdomain>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [2600:1010:b00e:1e2a:114b:6ad6:cbcf:838f]
-authentication-results: spf=none (sender IP is )
- smtp.mailfrom=dso@cypress.com; 
-x-dmarcaction-test: None
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:BN1PR06MB072;UriScan:;
-x-exchange-antispam-report-test: UriScan:;
-x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR06MB072;
-x-forefront-prvs: 04599F3534
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(199003)(51704005)(24454002)(51164003)(377454003)(189002)(110136001)(97736003)(46102003)(36756003)(102836002)(15975445007)(68736005)(54356999)(76176999)(50986999)(1411001)(2900100001)(64706001)(19580395003)(19580405001)(2656002)(87936001)(83716003)(122556002)(33656002)(82746002)(105586002)(40100003)(101416001)(106356001)(2950100001)(106116001)(99286002)(92566002)(86362001)(62966003)(77156002)(104396002)(42262002);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR06MB072;H:BN3PR0601MB1074.namprd06.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Sat, 17 Jan 2015 13:12:14 -0500
+X-KTH-Auth: niso [89.233.231.155]
+X-KTH-mail-from: niso@kth.se
+Date: Sat, 17 Jan 2015 19:11:59 +0100
+From: Niklas =?iso-8859-1?Q?S=F6derlund?= <niso@kth.se>
+To: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+Cc: linux-kernel@vger.kernel.org, linus.walleij@linaro.org,
+        devicetree@vger.kernel.org, linux-sh@vger.kernel.org,
+        magnus.damm@gmail.com
+Subject: Re: [PATCH 2/4] sh-pfc: Add emev2 pinmux support
+Message-ID: <20150117181159.GA11372@bigcity.berto.se>
+References: <1418414497-23741-1-git-send-email-niso@kth.se>
+ <1418414497-23741-3-git-send-email-niso@kth.se>
+ <4306343.ZxG2x6FY5Y@avalon>
 MIME-Version: 1.0
-X-MS-Exchange-CrossTenant-originalarrivaltime: 17 Jan 2015 18:00:29.5944
- (UTC)
-X-MS-Exchange-CrossTenant-fromentityheader: Hosted
-X-MS-Exchange-CrossTenant-id: 011addfc-2c09-450d-8938-e0bbc2dd2376
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN1PR06MB072
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1PR06MB151;
-X-OriginatorOrg: cypress.com
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4306343.ZxG2x6FY5Y@avalon>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Can we just reverse the prior change that caused the bug, or are you saying that the owner of the prior patch has to fix it?
+Hi Laurent,
 
-Dave
+Thanks for your review. I will send a updated patch shortly.
 
+Regards
+// Niklas
 
+* Laurent Pinchart <laurent.pinchart@ideasonboard.com> [2015-01-13 16:27:06 +0200]:
 
-> On Jan 17, 2015, at 2:44 AM, Jeremiah Mahler <jmmahler@gmail.com> wrote:
+> Hi Niklas,
 >
-> Dudley,
+> Thank you for the patch.
 >
-> Your patch series applies without issue but unfortunately I
-> could not test them because I ran in to a bug created by someone
-> elses patch (not yours) [1].
+> On Friday 12 December 2014 21:01:35 Niklas Söderlund wrote:
+> > Add PFC support for the EMMA Mobile EV2 SoC including pin groups for
+> > on-chip devices.
+> >
+> > Signed-off-by: Niklas Söderlund <niso@kth.se>
+> > ---
+> >  .../bindings/pinctrl/renesas,pfc-pinctrl.txt       |    1 +
+> >  drivers/pinctrl/sh-pfc/Kconfig                     |    5 +
+> >  drivers/pinctrl/sh-pfc/Makefile                    |    1 +
+> >  drivers/pinctrl/sh-pfc/core.c                      |    9 +
+> >  drivers/pinctrl/sh-pfc/core.h                      |    1 +
+> >  drivers/pinctrl/sh-pfc/pfc-emev2.c                 | 1915 +++++++++++++++++
+> >  6 files changed, 1932 insertions(+)
+> >  create mode 100644 drivers/pinctrl/sh-pfc/pfc-emev2.c
 >
->  [1]: https://lkml.org/lkml/2015/1/17/24
+> [snip]
 >
-> Once that issue gets resolved I would be happy to test your patch
-> series.
+> > diff --git a/drivers/pinctrl/sh-pfc/pfc-emev2.c
+> > b/drivers/pinctrl/sh-pfc/pfc-emev2.c new file mode 100644
+> > index 0000000..22c9e15
+> > --- /dev/null
+> > +++ b/drivers/pinctrl/sh-pfc/pfc-emev2.c
 >
->> On Fri, Jan 16, 2015 at 02:34:03PM +0800, Dudley Du wrote:
->> V18 patches have below updates, details of other updates see history list:
->> 1) Fix 'cyapa_runtime_suspend' undeclared compiling issue in latest
->>   kernel-next source code. Verified on next-20150114 with make C=1.
->> 2) Optimize enter bootloader failed for some chipset takes longer time issue.
-> [...]
+> [snip]
+>
+> > +#define CPU_ALL_PORT(fn, sfx)						\
+> > +	PORT_GP_32(0, fn, sfx),						\
+> > +	PORT_GP_32(1, fn, sfx),						\
+> > +	PORT_GP_32(2, fn, sfx),						\
+> > +	PORT_GP_32(3, fn, sfx),						\
+> > +	PORT_GP_32(4, fn, sfx)
+>
+> GPIOs are numbered linearly in the datasheet, not using a bank number.
+> Shouldn't that be reflected here ? Additionally the chip has 159 GPIOs, and
+> you define 160 of them.
+>
+> [snip]
+>
+> I'm afraid I can't review all the data tables, I'll trust you on that :-)
+>
+> > +/* Pin numbers for pins without a corresponding GPIO port number are
+> > computed
+> > + * from the row and column numbers with a 1000 offset to avoid collisions
+> > with
+> > + * GPIO port numbers. */
+> > +#define PIN_NUMBER(row, col)            (1000+((row)-1)*25+(col)-1)
+>
+> The chip is an 23x23 BGA, shouldn't you multiply by 23 instead of 25 ?
+>
+> [snip]
+>
+> > +#define EMEV_MUX_PIN(name, pin, mark) \
+> > +	static const unsigned int name##_pins[] = { pin }; \
+> > +	static const unsigned int name##_mux[] = { mark##_MARK }
+>
+> [snip]
+>
+> > +/* = [ IIC ] ============== */
+> > +EMEV_MUX_PIN(iic0_scl, 44, IIC0_SCL);
+> > +EMEV_MUX_PIN(iic0_sda, 45, IIC0_SDA);
+>
+> [snip]
+>
+> > +static const struct sh_pfc_pin_group pinmux_groups[] = {
+>
+> [snip]
+>
+> > +	SH_PFC_PIN_GROUP(iic0_scl),
+> > +	SH_PFC_PIN_GROUP(iic0_sda),
+>
+> [snip]
+>
+> > +};
+>
+> [snip]
+>
+> > +static const char * const iic0_groups[] = {
+> > +	"iic0_scl",
+> > +	"iic0_sda",
+> > +};
+>
+> (Taking IIC0 as an example)
+>
+> You're defining one pin group per pin. While this isn't an invalid decision,
+> the sh-pfc driver tried so far to group related pins in the same group. For
+> instance, with IIC0, SCL and SDA can't be used independently, so you always
+> need to request both. They could thus be grouped together. Is there a reason
+> not to follow the same design for EMEV2 ?
+>
+> [snip]
+>
+> > +static const struct sh_pfc_function pinmux_functions[] = {
+> > +	SH_PFC_FUNCTION(jtag),
+> > +	SH_PFC_FUNCTION(lcd),
+> > +	SH_PFC_FUNCTION(yuv),
+> > +	SH_PFC_FUNCTION(tp33),
+> > +	SH_PFC_FUNCTION(iic0),
+> > +	SH_PFC_FUNCTION(iic1),
+> > +	SH_PFC_FUNCTION(uart1),
+> > +	SH_PFC_FUNCTION(uart2),
+> > +	SH_PFC_FUNCTION(uart3),
+> > +	SH_PFC_FUNCTION(sd),
+> > +	SH_PFC_FUNCTION(sdi0),
+> > +	SH_PFC_FUNCTION(sdi1),
+> > +	SH_PFC_FUNCTION(sdi2),
+> > +	SH_PFC_FUNCTION(ab),
+> > +	SH_PFC_FUNCTION(dtv),
+> > +	SH_PFC_FUNCTION(cf),
+> > +	SH_PFC_FUNCTION(usi0),
+> > +	SH_PFC_FUNCTION(usi1),
+> > +	SH_PFC_FUNCTION(usi2),
+> > +	SH_PFC_FUNCTION(usi3),
+> > +	SH_PFC_FUNCTION(usi4),
+> > +	SH_PFC_FUNCTION(usi5),
+> > +	SH_PFC_FUNCTION(ntsc),
+> > +	SH_PFC_FUNCTION(cam),
+> > +	SH_PFC_FUNCTION(hsi),
+> > +};
+>
+> Could you please order the functions alphabetically, here and above ?
+>
+> [snip]
 >
 > --
-> - Jeremiah Mahler
-
-This message and any attachments may contain Cypress (or its subsidiaries) confidential information. If it has been received in error, please advise the sender and immediately delete this message.
+> Regards,
+>
+> Laurent Pinchart
+>
