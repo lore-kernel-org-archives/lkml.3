@@ -1,54 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751887AbbAQRSx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 12:18:53 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:64179 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268AbbAQRSv (ORCPT
+	id S1751946AbbAQR2f (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 12:28:35 -0500
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:35107 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268AbbAQR2e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 12:18:51 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAEUsAPaJcx-3uzH5e-wfYgicejdPt8R88hZ5X8K2gH4eXHVaVw@mail.gmail.com>
-References: <1421511231-14482-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<CAEUsAPaJcx-3uzH5e-wfYgicejdPt8R88hZ5X8K2gH4eXHVaVw@mail.gmail.com>
-Date: Sat, 17 Jan 2015 18:18:49 +0100
-Message-ID: <CAKXHbyOkeijHz_czx=7uczbeCUKk=At8-Wp0gov71bsVuPKfYg@mail.gmail.com>
-Subject: Re: [PATCH] tipc: link: Remove unused function
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Chris Rorvick <chris@rorvick.com>
-Cc: Jon Maloy <jon.maloy@ericsson.com>,
-        Allan Stephens <allan.stephens@windriver.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Network Development <netdev@vger.kernel.org>,
-        tipc-discussion@lists.sourceforge.net,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sat, 17 Jan 2015 12:28:34 -0500
+From: Jason Lee Cragg <jcragg@gmail.com>
+X-Google-Original-From: Jason Lee Cragg < jcragg@gmail.com >
+To: perex@perex.cz, tiwai@suse.de
+Cc: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        Jason Lee Cragg <jcragg@gmail.com>
+Subject: [PATCH] Add Logitech Webcam C210 to list of Logitech webcams that require mic volume fix
+Date: Sat, 17 Jan 2015 12:28:29 -0500
+Message-Id: <1421515709-9923-1-git-send-email-jcragg@gmail.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2015-01-17 17:55 GMT+01:00 Chris Rorvick <chris@rorvick.com>:
-> On Sat, Jan 17, 2015 at 10:13 AM, Rickard Strandqvist
-> <rickard_strandqvist@spectrumdigital.se> wrote:
->> Remove the function tipc_link_get_max_pkt() that is not used anywhere.
->
-> This is already in the next tree:
->
-> commit 54fef04ad05f15984082c225fe47ce6af8ea1c5c
-> Author: Ying Xue <ying.xue@windriver.com>
-> Date:   Fri Jan 9 15:27:03 2015 +0800
->
->     tipc: remove unused tipc_link_get_max_pkt routine
->
->     Signed-off-by: Ying Xue <ying.xue@windriver.com>
->     Tested-by: Tero Aho <Tero.Aho@coriant.com>
->     Reviewed-by: Jon Maloy <jon.maloy@ericsson.com>
->     Signed-off-by: David S. Miller <davem@davemloft.net>
+From: Jason Lee Cragg <jcragg@gmail.com>
 
+Signed-off-by: Jason Lee Cragg <jcragg@gmail.com>
+---
+ sound/usb/mixer.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-Hi
+diff --git a/sound/usb/mixer.c b/sound/usb/mixer.c
+index 41650d5..3e2ef61 100644
+--- a/sound/usb/mixer.c
++++ b/sound/usb/mixer.c
+@@ -913,6 +913,7 @@ static void volume_control_quirks(struct usb_mixer_elem_info *cval,
+ 	case USB_ID(0x046d, 0x0807): /* Logitech Webcam C500 */
+ 	case USB_ID(0x046d, 0x0808):
+ 	case USB_ID(0x046d, 0x0809):
++	case USB_ID(0x046d, 0x0819): /* Logitech Webcam C210 */
+ 	case USB_ID(0x046d, 0x081b): /* HD Webcam c310 */
+ 	case USB_ID(0x046d, 0x081d): /* HD Webcam c510 */
+ 	case USB_ID(0x046d, 0x0825): /* HD Webcam c270 */
+-- 
+1.9.1
 
-Ok sorry, I update my linux-next clon
-
-Kind regards
-Rickard Strandqvist
