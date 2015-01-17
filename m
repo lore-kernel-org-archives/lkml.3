@@ -1,121 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752034AbbAQDxV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 22:53:21 -0500
-Received: from resqmta-po-03v.sys.comcast.net ([96.114.154.162]:37595 "EHLO
-	resqmta-po-03v.sys.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751315AbbAQDxU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 22:53:20 -0500
-From: Shuah Khan <shuahkh@osg.samsung.com>
-To: joro@8bytes.org, alex.williamson@redhat.com, rostedt@goodmis.org,
-        mingo@redhat.com
-Cc: Shuah Khan <shuahkh@osg.samsung.com>, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] iommu: change trace unmap api to report unmapped size
-Date: Fri, 16 Jan 2015 20:53:17 -0700
-Message-Id: <1421466797-8885-1-git-send-email-shuahkh@osg.samsung.com>
-X-Mailer: git-send-email 2.1.0
+	id S1752203AbbAQEOG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 23:14:06 -0500
+Received: from www.osadl.org ([62.245.132.105]:55578 "EHLO www.osadl.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751618AbbAQEOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 23:14:04 -0500
+From: Nicholas Mc Guire <der.herr@hofr.at>
+To: Ingo Molnar <mingo@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Nicholas Mc Guire <der.herr@hofr.at>
+Subject: [PATCH] locks should not be needed for reading completion state
+Date: Sat, 17 Jan 2015 05:05:34 +0100
+Message-Id: <1421467534-22834-1-git-send-email-der.herr@hofr.at>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently map and unmap are implemented as events under a
-common trace class declaration. The common class forces
-trace_unmap() to require a bogus physical address argument
-that it doesn't use. Changing unmap to report unmapped size
-will provide useful information for debugging. Remove common
-map_unmap trace class and change map and unmap into separate
-events as opposed to events under the same class to allow for
-differences in the reporting information. In addition, map and
-unmap are changed to handle size value as size_t instead of int
-to match the passed size value and avoid overflow.
-
-Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
-Suggested-by: Alex Williamson <alex.williamson@redhat.com>
+Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
 ---
- drivers/iommu/iommu.c        |  2 +-
- include/trace/events/iommu.h | 31 ++++++++++++++++++-------------
- 2 files changed, 19 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
-index 2eb7554..9e0dcdb 100644
---- a/drivers/iommu/iommu.c
-+++ b/drivers/iommu/iommu.c
-@@ -1134,7 +1134,7 @@ size_t iommu_unmap(struct iommu_domain *domain, unsigned long iova, size_t size)
- 		unmapped += unmapped_page;
- 	}
- 
--	trace_unmap(orig_iova, 0, size);
-+	trace_unmap(orig_iova, size, unmapped);
- 	return unmapped;
- }
- EXPORT_SYMBOL_GPL(iommu_unmap);
-diff --git a/include/trace/events/iommu.h b/include/trace/events/iommu.h
-index a8f5c32..2c7befb 100644
---- a/include/trace/events/iommu.h
-+++ b/include/trace/events/iommu.h
-@@ -83,7 +83,7 @@ DEFINE_EVENT(iommu_device_event, detach_device_from_domain,
- 	TP_ARGS(dev)
- );
- 
--DECLARE_EVENT_CLASS(iommu_map_unmap,
-+TRACE_EVENT(map,
- 
- 	TP_PROTO(unsigned long iova, phys_addr_t paddr, size_t size),
- 
-@@ -92,7 +92,7 @@ DECLARE_EVENT_CLASS(iommu_map_unmap,
- 	TP_STRUCT__entry(
- 		__field(u64, iova)
- 		__field(u64, paddr)
--		__field(int, size)
-+		__field(size_t, size)
- 	),
- 
- 	TP_fast_assign(
-@@ -101,26 +101,31 @@ DECLARE_EVENT_CLASS(iommu_map_unmap,
- 		__entry->size = size;
- 	),
- 
--	TP_printk("IOMMU: iova=0x%016llx paddr=0x%016llx size=0x%x",
-+	TP_printk("IOMMU: iova=0x%016llx paddr=0x%016llx size=%zu",
- 			__entry->iova, __entry->paddr, __entry->size
- 	)
- );
- 
--DEFINE_EVENT(iommu_map_unmap, map,
-+TRACE_EVENT(unmap,
- 
--	TP_PROTO(unsigned long iova, phys_addr_t paddr, size_t size),
+Should that not be enough to wrap it into ACCESS_ONCE() here ?
+
+Not a wild performance benefit - but might be worth it anyway
+
+ kernel/sched/completion.c |    9 +--------
+ 1 file changed, 1 insertion(+), 8 deletions(-)
+
+diff --git a/kernel/sched/completion.c b/kernel/sched/completion.c
+index 607f852..7c5cd70 100644
+--- a/kernel/sched/completion.c
++++ b/kernel/sched/completion.c
+@@ -288,13 +288,6 @@ EXPORT_SYMBOL(try_wait_for_completion);
+  */
+ bool completion_done(struct completion *x)
+ {
+-	unsigned long flags;
+-	int ret = 1;
 -
--	TP_ARGS(iova, paddr, size)
--);
-+	TP_PROTO(unsigned long iova, size_t size, size_t unmapped_size),
- 
--DEFINE_EVENT_PRINT(iommu_map_unmap, unmap,
-+	TP_ARGS(iova, size, unmapped_size),
- 
--	TP_PROTO(unsigned long iova, phys_addr_t paddr, size_t size),
-+	TP_STRUCT__entry(
-+		__field(u64, iova)
-+		__field(size_t, size)
-+		__field(size_t, unmapped_size)
-+	),
- 
--	TP_ARGS(iova, paddr, size),
-+	TP_fast_assign(
-+		__entry->iova = iova;
-+		__entry->size = size;
-+		__entry->unmapped_size = unmapped_size;
-+	),
- 
--	TP_printk("IOMMU: iova=0x%016llx size=0x%x",
--			__entry->iova, __entry->size
-+	TP_printk("IOMMU: iova=0x%016llx size=%zu unmapped_size=%zu",
-+			__entry->iova, __entry->size, __entry->unmapped_size
- 	)
- );
- 
+-	spin_lock_irqsave(&x->wait.lock, flags);
+-	if (!x->done)
+-		ret = 0;
+-	spin_unlock_irqrestore(&x->wait.lock, flags);
+-	return ret;
++	return !ACCESS_ONCE(x->done);
+ }
+ EXPORT_SYMBOL(completion_done);
 -- 
-2.1.0
+1.7.10.4
 
