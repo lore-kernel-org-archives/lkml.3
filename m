@@ -1,44 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752628AbbAQAFl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 19:05:41 -0500
-Received: from mga01.intel.com ([192.55.52.88]:57437 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751216AbbAQAFk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 19:05:40 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,413,1418112000"; 
-   d="scan'208";a="663208457"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: Kees Cook <keescook@chromium.org>, Mark Salyzyn <salyzyn@android.com>
-CC: LKML <linux-kernel@vger.kernel.org>, Anton Vorontsov <anton@enomsg.org>,
-        Colin Cross <ccross@android.com>
-Subject: RE: [PATCH v4 4/5] pstore: add pmsg
-Thread-Topic: [PATCH v4 4/5] pstore: add pmsg
-Thread-Index: AQHQL49oEs/5c81oGU6fcq+a+XAfAZzAc04AgAL/ZaA=
-Date: Sat, 17 Jan 2015 00:05:18 +0000
-Message-ID: <3908561D78D1C84285E8C5FCA982C28F329AC184@ORSMSX114.amr.corp.intel.com>
-References: <1421194580-20230-1-git-send-email-salyzyn@android.com>
- <CAGXu5jKz8Thhf8ZncVg-j-t1BCZTvQLkS1FN4yTtLkO1MY2CLA@mail.gmail.com>
-In-Reply-To: <CAGXu5jKz8Thhf8ZncVg-j-t1BCZTvQLkS1FN4yTtLkO1MY2CLA@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="utf-8"
+	id S1752718AbbAQALU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 19:11:20 -0500
+Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:65189 "EHLO
+	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751216AbbAQALS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 19:11:18 -0500
+X-IronPort-AV: E=Sophos;i="5.09,414,1418112000"; 
+   d="scan'208";a="55174385"
+Message-ID: <54B9A8A2.6090209@broadcom.com>
+Date: Fri, 16 Jan 2015 16:11:14 -0800
+From: Ray Jui <rjui@broadcom.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "Alexandre Courbot" <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        "Christian Daudt" <bcm@fixthebug.org>,
+        Matt Porter <mporter@linaro.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, Joe Perches <joe@perches.com>,
+        Arnd Bergmann <arnd@arndb.de>, Scott Branden <sbranden@broadcom.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH v6 2/3] gpio: Cygnus: add GPIO driver
+References: <rjui@broadcom.com>	<1418696307-19392-1-git-send-email-rjui@broadcom.com>	<1418696307-19392-3-git-send-email-rjui@broadcom.com>	<CACRpkdYGksEseGaO49=1rUi5WBdOxwAd-F1gpgZn+BFatRCdDg@mail.gmail.com>	<54B55068.8050500@broadcom.com> <CACRpkdZef8S-EAbShjJ1eg+-3wQKn+yx4u1k_Mf8F7uFkJYdFw@mail.gmail.com>
+In-Reply-To: <CACRpkdZef8S-EAbShjJ1eg+-3wQKn+yx4u1k_Mf8F7uFkJYdFw@mail.gmail.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0H05j9H025895
 
-> Cool, seems reasonable to me. Thanks for the respins!
 
-I've applied it - but I have a nagging worry about it being user accessible.  We've limited
-access to some pstore features on platforms that only support backend drivers that
-write to limited lifetime flash storage - efivars & erst.  Should we do that for this too?
 
--Tony
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+On 1/16/2015 2:14 AM, Linus Walleij wrote:
+> On Tue, Jan 13, 2015 at 6:05 PM, Ray Jui <rjui@broadcom.com> wrote:
+>> On 1/13/2015 12:53 AM, Linus Walleij wrote:
+>>> On Tue, Dec 16, 2014 at 3:18 AM, Ray Jui <rjui@broadcom.com> wrote:
+>>>
+>>>> +/* drive strength control for ASIU GPIO */
+>>>> +#define CYGNUS_GPIO_ASIU_DRV0_CTRL_OFFSET 0x58
+>>>> +
+>>>> +/* drive strength control for CCM GPIO */
+>>>> +#define CYGNUS_GPIO_CCM_DRV0_CTRL_OFFSET  0x00
+>>>
+>>> This stuff (drive strength) is pin control, pin config.
+>>> It does not belong in a pure GPIO driver. If you're
+>>> making a combined pin control + GPIO driver, it
+>>> shall be put in drivers/pinctrl/*
+>>>
+>> Okay, I have some questions here. Are you suggesting me to register this
+>> driver to both the pinctrl subsystem and gpiolib and move it to under
+>> drivers/pinctrl/*?
+> 
+> Either you can have a combined driver in drivers/pinctrl/*
+> which has one probe() function calling pinctrl_register(),
+> gpiochip_add(), gpiochip_add_pin_range(), having the gpio
+> parts call into the pin control backend with
+> pinctrl_request_gpio(), pinctrl_free_gpio(),
+> pinctrl_gpio_direction_input(), pinctrl_gpio_direction_output().
+> 
+> Or you can split it in one driver in drivers/pinctrl/*
+> dealing with just the pin control stuff, and another driver
+> in drivers/gpio/* dealing with the GPIO stuff, each with one
+> probe() function.
+> 
+> If they are using the same register range, the first approach
+> is probably most intuitive. If the pin control and GPIO parts
+> are separated in different register ranges, probably the
+> second approach is the best.
+> 
+>> Or Are you suggesting me to combine this driver with the other Cygnus
+>> pinctrl driver (which only supports pinmux)?
+> 
+> Depends on which hardware block the pin control-like
+> registers belongs in. See per above.
+> 
+>> Note in Cygnus, all pinmux logic is done in the pinmux block. And there
+>> are 3 GPIO controllers, that handle GPIO, drive strength of the GPIO
+>> pins, internal pull up/down of the GPIO pins, which are handled in this
+>> driver. So this driver is generic to all 3 GPIO controllers, as you can
+>> see from the device tree bindings, there are 3 nodes.
+>>
+>> Therefore, I think it makes sense to have one pinmux driver that handles
+>> the pinmux block, and one generic pinctrl + gpio driver that handles
+>> functions supported by all 3 GPIO controllers. Does this make sense to you?
+> 
+> Yep.
+> 
+> Some hardware designs put the software-controlled biasing
+> resistors in the GPIO block electronically connected to the actual
+> pins, so that e.g. the biasing will be available if some MMC or
+> whatever is using the same pins in another muxing. In such
+> situations it's quite evident that they need to be a combined
+> GPIO and pin controller.
+> 
+> I have some regrets that bolting a second pin controller to the
+> GPIO chip make things a bit complex but it's a price we have
+> to pay for getting some kind of generic interface.
+> 
+> Yours,
+> Linus Walleij
+> 
+Okay. In summary, I think both of us think the following approach makes
+sense in my situation:
+- leave pinmux in pinctrl-bcm-cygnus.c
+- leave pinctrl + gpio in pinctrl-bcm-cygnus-gpio.c under drivers/pinctrl/*
+
+But by thinking about this more, I thought this would create duplicated
+pinctrl descriptors in our system, one from the pinmux driver, and the
+other from this pinctrl+gpio driver. That is probably undesirable?
+
+By reviewing various drivers in the pinctrl directory, I found what
+pinctrl-u300.c and pinctrl-coh901.c does seems to serve as a good model
+for me to follow:
+- pinctrl-u300.c is the pinmux driver
+- pinctrl-coh901.c is the gpio+pinctrl driver
+
+The GPIO pinctrl logic is in the coh901 block, so pinctrl-coh901.c
+exposed two public functions u300_gpio_config_get, u300_gpio_config_set
+that pinctrl-u300.c can use. The u300 populates all pinmux/pinctrl
+related functions into the subsystem. This way there's only one pinctrl
+descriptor, populated through pinctrl-u300.c.
+
+Does that model make more sense to you?
+
+Thanks,
+
+Ray
