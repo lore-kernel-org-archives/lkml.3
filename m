@@ -1,122 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753192AbbAQQD4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 11:03:56 -0500
-Received: from mail-we0-f178.google.com ([74.125.82.178]:51616 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751344AbbAQQDz (ORCPT
+	id S1752411AbbAQQKx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 11:10:53 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:64642 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751244AbbAQQKv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 11:03:55 -0500
-From: Bruno E O Meneguele <bmeneguele@gmail.com>
-To: peterhuewe@gmx.de
-Cc: linux-kernel@vger.kernel.org, Bruno E O Meneguele <bmeneguele@gmail.com>
-Subject: [PATCH] Char: tpm: fixed white spaces and braces coding style issues
-Date: Sat, 17 Jan 2015 17:03:30 +0100
-Message-Id: <1421510610-12139-1-git-send-email-bmeneguele@gmail.com>
-X-Mailer: git-send-email 2.2.1
+	Sat, 17 Jan 2015 11:10:51 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Jon Maloy <jon.maloy@ericsson.com>,
+        Allan Stephens <allan.stephens@windriver.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        tipc-discussion@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [PATCH] tipc: link: Remove unused function
+Date: Sat, 17 Jan 2015 17:13:51 +0100
+Message-Id: <1421511231-14482-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed some coding style issues.
+Remove the function tipc_link_get_max_pkt() that is not used anywhere.
 
-Signed-off-by: Bruno E O Meneguele <bmeneguele@gmail.com>
+This was partially found by using a static code analysis program called cppcheck.
+
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/char/tpm/tpm.h              | 10 +++++-----
- drivers/char/tpm/tpm_i2c_stm_st33.c | 10 ++++++----
- 2 files changed, 11 insertions(+), 9 deletions(-)
+ net/tipc/link.c |   27 ---------------------------
+ net/tipc/link.h |    1 -
+ 2 files changed, 28 deletions(-)
 
-diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-index e4d0888d2eab..51d843c43b25 100644
---- a/drivers/char/tpm/tpm.h
-+++ b/drivers/char/tpm/tpm.h
-@@ -10,13 +10,13 @@
-  * Maintained by: <tpmdd-devel@lists.sourceforge.net>
-  *
-  * Device driver for TCG/TCPA TPM (trusted platform module).
-- * Specifications at www.trustedcomputinggroup.org	 
-+ * Specifications at www.trustedcomputinggroup.org
-  *
-  * This program is free software; you can redistribute it and/or
-  * modify it under the terms of the GNU General Public License as
-  * published by the Free Software Foundation, version 2 of the
-  * License.
-- * 
-+ *
-  */
- #include <linux/module.h>
- #include <linux/delay.h>
-@@ -88,7 +88,7 @@ struct tpm_vendor_specific {
- 	u16 manufacturer_id;
- };
+diff --git a/net/tipc/link.c b/net/tipc/link.c
+index 23bcc11..e92fcfb 100644
+--- a/net/tipc/link.c
++++ b/net/tipc/link.c
+@@ -2266,33 +2266,6 @@ struct sk_buff *tipc_link_cmd_show_stats(const void *req_tlv_area, int req_tlv_s
+ 	return buf;
+ }
  
--#define TPM_VPRIV(c)	(c)->vendor.priv
-+#define TPM_VPRIV(c)	 ((c)->vendor.priv)
- 
- #define TPM_VID_INTEL    0x8086
- #define TPM_VID_WINBOND  0x1050
-@@ -110,7 +110,7 @@ struct tpm_chip {
- 	struct dentry **bios_dir;
- 
- 	struct list_head list;
--	void (*release) (struct device *);
-+	void (*release)(struct device *);
- };
- 
- #define to_tpm_chip(n) container_of(n, struct tpm_chip, vendor)
-@@ -321,7 +321,7 @@ extern int tpm_get_timeouts(struct tpm_chip *);
- extern void tpm_gen_interrupt(struct tpm_chip *);
- extern int tpm_do_selftest(struct tpm_chip *);
- extern unsigned long tpm_calc_ordinal_duration(struct tpm_chip *, u32);
--extern struct tpm_chip* tpm_register_hardware(struct device *,
-+extern struct tpm_chip *tpm_register_hardware(struct device *,
- 					      const struct tpm_class_ops *ops);
- extern void tpm_dev_vendor_release(struct tpm_chip *);
- extern void tpm_remove_hardware(struct device *);
-diff --git a/drivers/char/tpm/tpm_i2c_stm_st33.c b/drivers/char/tpm/tpm_i2c_stm_st33.c
-index 4669e3713428..02cd398bef14 100644
---- a/drivers/char/tpm/tpm_i2c_stm_st33.c
-+++ b/drivers/char/tpm/tpm_i2c_stm_st33.c
-@@ -157,6 +157,7 @@ static int read8_reg(struct i2c_client *client, u8 tpm_register,
- static void clear_interruption(struct i2c_client *client)
- {
- 	u8 interrupt;
-+
- 	I2C_READ_DATA(client, TPM_INT_STATUS, &interrupt, 1);
- 	I2C_WRITE_DATA(client, TPM_INT_STATUS, &interrupt, 1);
- 	I2C_READ_DATA(client, TPM_INT_STATUS, &interrupt, 1);
-@@ -233,6 +234,7 @@ static u8 tpm_stm_i2c_status(struct tpm_chip *chip)
- {
- 	struct i2c_client *client;
- 	u8 data;
-+
- 	client = (struct i2c_client *)TPM_VPRIV(chip);
- 
- 	I2C_READ_DATA(client, TPM_STS, &data, 1);
-@@ -679,7 +681,7 @@ tpm_st33_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
- 				IRQF_TRIGGER_HIGH,
- 				"TPM SERIRQ management", chip);
- 		if (err < 0) {
--			dev_err(chip->dev , "TPM SERIRQ signals %d not available\n",
-+			dev_err(chip->dev, "TPM SERIRQ signals %d not available\n",
- 				gpio_to_irq(platform_data->io_serirq));
- 			goto _irq_set;
- 		}
-@@ -784,11 +786,11 @@ static int tpm_st33_i2c_pm_suspend(struct device *dev)
- 	struct st33zp24_platform_data *pin_infos = dev->platform_data;
- 	int ret = 0;
- 
--	if (power_mgt) {
-+	if (power_mgt)
- 		gpio_set_value(pin_infos->io_lpcpd, 0);
--	} else {
-+	else
- 		ret = tpm_pm_suspend(dev);
+-/**
+- * tipc_link_get_max_pkt - get maximum packet size to use when sending to destination
+- * @dest: network address of destination node
+- * @selector: used to select from set of active links
+- *
+- * If no active link can be found, uses default maximum packet size.
+- */
+-u32 tipc_link_get_max_pkt(u32 dest, u32 selector)
+-{
+-	struct tipc_node *n_ptr;
+-	struct tipc_link *l_ptr;
+-	u32 res = MAX_PKT_DEFAULT;
+-
+-	if (dest == tipc_own_addr)
+-		return MAX_MSG_SIZE;
+-
+-	n_ptr = tipc_node_find(dest);
+-	if (n_ptr) {
+-		tipc_node_lock(n_ptr);
+-		l_ptr = n_ptr->active_links[selector & 1];
+-		if (l_ptr)
+-			res = l_ptr->max_pkt;
+-		tipc_node_unlock(n_ptr);
 -	}
-+
- 	return ret;
- }				/* tpm_st33_i2c_suspend() */
- 
+-	return res;
+-}
+-
+ static void link_print(struct tipc_link *l_ptr, const char *str)
+ {
+ 	struct tipc_bearer *b_ptr;
+diff --git a/net/tipc/link.h b/net/tipc/link.h
+index 55812e8..084bd4e 100644
+--- a/net/tipc/link.h
++++ b/net/tipc/link.h
+@@ -216,7 +216,6 @@ void tipc_link_reset_list(unsigned int bearer_id);
+ int tipc_link_xmit_skb(struct sk_buff *skb, u32 dest, u32 selector);
+ int tipc_link_xmit(struct sk_buff_head *list, u32 dest, u32 selector);
+ int __tipc_link_xmit(struct tipc_link *link, struct sk_buff_head *list);
+-u32 tipc_link_get_max_pkt(u32 dest, u32 selector);
+ void tipc_link_bundle_rcv(struct sk_buff *buf);
+ void tipc_link_proto_xmit(struct tipc_link *l_ptr, u32 msg_typ, int prob,
+ 			  u32 gap, u32 tolerance, u32 priority, u32 acked_mtu);
 -- 
-2.2.1
+1.7.10.4
 
