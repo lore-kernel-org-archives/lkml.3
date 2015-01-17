@@ -1,36 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752732AbbAQXe2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 18:34:28 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:55927 "EHLO
+	id S1753265AbbAQXej (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 18:34:39 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:55931 "EHLO
 	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751402AbbAQXe1 (ORCPT
+	with ESMTP id S1752687AbbAQXei (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 18:34:27 -0500
-Date: Sat, 17 Jan 2015 14:56:33 -0800
+	Sat, 17 Jan 2015 18:34:38 -0500
+Date: Sat, 17 Jan 2015 14:57:11 -0800
 From: Greg KH <gregkh@linuxfoundation.org>
-To: Mohammad Jamal <md.jamalmohiuddin@gmail.com>
-Cc: josh@joshtriplett.org, gulsah.1004@gmail.com, daniel.dy.ngu@gmail.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging : gdm724x: Remove space before , in function
- arguments
-Message-ID: <20150117225633.GA25264@kroah.com>
-References: <1419130099-6256-1-git-send-email-md.jamalmohiuddin@gmail.com>
+To: Robert Nachlinger <robert.nachlinger@googlemail.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: gdm724x: fix space before comma coding style
+ issue in gdm_mux.c
+Message-ID: <20150117225711.GA30146@kroah.com>
+References: <1419158683-6113-1-git-send-email-robert.nachlinger@googlemail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1419130099-6256-1-git-send-email-md.jamalmohiuddin@gmail.com>
+In-Reply-To: <1419158683-6113-1-git-send-email-robert.nachlinger@googlemail.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Dec 21, 2014 at 08:18:19AM +0530, Mohammad Jamal wrote:
-> This patch solves space prohibited before , warning in gdm_mux.c
+On Sun, Dec 21, 2014 at 11:44:43AM +0100, Robert Nachlinger wrote:
+> This is a patch to the gdm_mux.c file that fixes a space before comma
+> coding style issue found by the checkpatch.pl tool.
 > 
-> Signed-off-by: Mohammad Jamal <md.jamalmohiuddin@gmail.com>
+> Signed-off-by: Robert Nachlinger <robert.nachlinger@googlemail.com>
 > ---
->  drivers/staging/gdm724x/gdm_mux.c |    2 +-
+>  drivers/staging/gdm724x/gdm_mux.c | 2 +-
 >  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
 > diff --git a/drivers/staging/gdm724x/gdm_mux.c b/drivers/staging/gdm724x/gdm_mux.c
@@ -47,6 +47,6 @@ On Sun, Dec 21, 2014 at 08:18:19AM +0530, Mohammad Jamal wrote:
 >  	struct rx_cxt *rx = (struct rx_cxt *)&mux_dev->rx;
 >  	unsigned long flags;
 > -- 
-> 1.7.9.5
+> 2.2.0
 
-Someone else sent this same fix before you did :(
+Someone else sent this same patch :(
