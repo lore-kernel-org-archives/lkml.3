@@ -1,112 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753036AbbAQB1U (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 20:27:20 -0500
-Received: from mail-bn1on0113.outbound.protection.outlook.com ([157.56.110.113]:44096
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752735AbbAQB1T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 20:27:19 -0500
-From: KY Srinivasan <kys@microsoft.com>
-To: Vitaly Kuznetsov <vkuznets@redhat.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-CC: Haiyang Zhang <haiyangz@microsoft.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dexuan Cui <decui@microsoft.com>, Jason Wang <jasowang@redhat.com>,
-        =?utf-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>
-Subject: RE: [PATCH] Drivers: hv: vmbus: serialize Offer and Rescind offer
- processing
-Thread-Topic: [PATCH] Drivers: hv: vmbus: serialize Offer and Rescind offer
- processing
-Thread-Index: AQHQMZLJKQ9LfE6z90moxAURaxgT/5zDe0Pw
-Date: Sat, 17 Jan 2015 01:27:17 +0000
-Message-ID: <BY2PR0301MB0711FD36DA9AB5E1BA2B8B2FA04C0@BY2PR0301MB0711.namprd03.prod.outlook.com>
-References: <1421415958-19015-1-git-send-email-vkuznets@redhat.com>
-In-Reply-To: <1421415958-19015-1-git-send-email-vkuznets@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [167.220.67.234]
-authentication-results: spf=none (sender IP is )
- smtp.mailfrom=kys@microsoft.com; 
-x-dmarcaction-test: None
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:BY2PR0301MB0775;
-x-exchange-antispam-report-test: UriScan:;
-x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0775;
-x-forefront-prvs: 04599F3534
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(377454003)(13464003)(189002)(199003)(164054003)(51704005)(40100003)(122556002)(77156002)(62966003)(74316001)(102836002)(68736005)(2950100001)(2900100001)(101416001)(76576001)(86612001)(2501002)(86362001)(33656002)(19580395003)(46102003)(64706001)(97736003)(105586002)(87936001)(66066001)(2656002)(92566002)(54206007)(54356999)(19580405001)(54606007)(106356001)(50986999)(76176999)(99286002)(106116001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0775;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OriginatorOrg: microsoft.onmicrosoft.com
-X-MS-Exchange-CrossTenant-originalarrivaltime: 17 Jan 2015 01:27:17.2500
- (UTC)
-X-MS-Exchange-CrossTenant-fromentityheader: Hosted
-X-MS-Exchange-CrossTenant-id: 72f988bf-86f1-41af-91ab-2d7cd011db47
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR0301MB0775
+	id S1752541AbbAQBdQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 20:33:16 -0500
+Received: from mga09.intel.com ([134.134.136.24]:27671 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751122AbbAQBdO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jan 2015 20:33:14 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,414,1418112000"; 
+   d="scan'208";a="671369518"
+User-Agent: Microsoft-MacOutlook/14.4.6.141106
+Date: Fri, 16 Jan 2015 17:33:05 -0800
+Subject: Re: futex(2) man page update help request
+From: Darren Hart <dvhart@linux.intel.com>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: "Carlos O'Donell" <carlos@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Jakub Jelinek <jakub@redhat.com>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Davidlohr Bueso <dave@stgolabs.net>
+Message-ID: <D0DEF1AE.B7EDE%dvhart@linux.intel.com>
+Thread-Topic: futex(2) man page update help request
+References: <537346E5.4050407@gmail.com>
+ <CF98E3EF.90564%dvhart@linux.intel.com>
+ <CAKgNAkh+PWzT2SByaLk_OtiAXeZSkWoMgu+ivDOt1dTWVtaatQ@mail.gmail.com>
+ <5373D0CA.2050204@redhat.com>
+ <alpine.DEB.2.02.1405150121230.6261@ionos.tec.linutronix.de>
+ <CAKgNAkjQ5Dd_U9OojXdgeforpRevvPHNFAw99kBFPCwHgf7Ggg@mail.gmail.com>
+ <alpine.DEB.2.02.1405151144390.6261@ionos.tec.linutronix.de>
+ <CF9A731D.913E6%dvhart@linux.intel.com>
+ <54B7D8D4.2070203@gmail.com>
+In-Reply-To: <54B7D8D4.2070203@gmail.com>
+Mime-version: 1.0
+Content-type: text/plain;
+	charset="US-ASCII"
+Content-transfer-encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0H1RPAj026350
 
+Corrected Davidlohr's email address.
 
+On 1/15/15, 7:12 AM, "Michael Kerrisk (man-pages)"
+<mtk.manpages@gmail.com> wrote:
 
-> -----Original Message-----
-> From: Vitaly Kuznetsov [mailto:vkuznets@redhat.com]
-> Sent: Friday, January 16, 2015 5:46 AM
-> To: KY Srinivasan; devel@linuxdriverproject.org
-> Cc: Haiyang Zhang; linux-kernel@vger.kernel.org; Dexuan Cui; Jason Wang;
-> Radim KrÄmÃ¡Å™
-> Subject: [PATCH] Drivers: hv: vmbus: serialize Offer and Rescind offer
-> processing
-> 
-> Commit 4b2f9abea52a ("staging: hv: convert channel_mgmt.c to not call
-> osd_schedule_callback")' was written under an assumption that we never
-> receive Rescind offer while we're still processing the initial Offer request.
-> However, the issue we fixed in 04a258c162a8 could be caused by this
-> assumption not always being true.
-> 
-> In particular, we need to protect against the following:
-> 1) Receiving a Rescind offer after we do queue_work() for processing an
-> Offer
->    request and before we actually enter vmbus_process_offer(). work.func
-> points
->    to vmbus_process_offer() at this moment and in vmbus_onoffer_rescind()
-> we do
->    another queue_work() without a check so we'll enter
-> vmbus_process_offer()
->    twice.
-> 2) Receiving a Rescind offer after we enter vmbus_process_offer() and
->    especially after we set >state = CHANNEL_OPEN_STATE. Many things can
-> go
->    wrong in that case, e.g. we can call free_channel() while we're still using
->    it.
-> 
-> Implement the required protection by changing work->func at the very end
-> of
-> vmbus_process_offer() and checking work->func in
-> vmbus_onoffer_rescind().
-> pr_warn here serves only one purpose, it shows us the collision between
-> Offer and Rescind offer actually happened. In case the assumption in
-> 4b2f9abea52af3 was right and such collision is impossible this commit changes
-> nothing.
+>Hello Darren,
+>
+>I give you the same apology as to Thomas for the
+>long-delayed response to your mail.
+>
+>And I repeat my note to Thomas:
+>In the next day or two, I hope to send out the new version
+>of the futex(2) page for review. The new draft is a bit
+>bigger (okay -- 4 x bigger) than the current page. And there
+>are a quite number of FIXMEs that I've placed in the page
+>for various points--some minor, but a few major--that need
+>to be checked or fixed. Would you have some time to review
+>that page?
 
-It is clear that an offer that has not been made cannot be rescinded. So if a rescind were to come while 
-we are in the process of handling the offer, we should deal with the rescind as well after the processing of the offer is done.
-Your patch does not do this; essentially we could miss handling a rescind message. We could tweak your patch to
-deal with this case. If a rescind message comes in while we are still processing the offer, we should process the
-rescind message in the same context. We can add this check at the end of the function that processes the offer.
-If the offer is processed fully when the rescind message comes in then we can process the rescind request in its own
-work context.
+I'll make the time for that. I've wanted to see this for a while, so thank
+you for working on it!
 
 > 
-> I also fix one additional issue with this patch: vmbus_device_create() result is
-> not being checked in vmbus_process_offer() and it can fail if kzalloc() fails.
+>
+>In the meantime, I have a couple of questions, which, if
+>you could answer them, I would work some changes into the
+>page before sending.
+>
+>1. In various places, distinction is made between non-PI
+>   futexs and PI futexes. But what determines that distinction?
+>   From the kernel's perspective, hat make a futex one type
+>   or another? I presume it is to do with the types of blocking
+>   waiters on the futex, but it would be good to have a formal
+>   definition.
 
-Please have this fix in a separate patch.
+You're right in that a uaddr is a uaddr is a uaddr. Also "there is no such
+thing as a futex", it doesn't exist as any kind of identifiable object, so
+these discussions can get rather confusing :-)
 
-Thanks,
+A "futex" becomes a PI futex when it is "created" via a PI futex op code.
+At that point, the syscall will ensure a pi_state is populated for the
+futex_q entry. See futex_lock_pi() for example. Before the locks are
+taken, there is a call to refill_pi_state_cache() which preps a pi_state
+for assignment later in futex_lock_pi_atomic(). This pi_state provides the
+necessary linkage to perform the priority boosting in the event of a
+priority inversion. This is handled externally from the futexes via the
+rt_mutex construct.
 
-K. Y
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Clear as mud?
+
+
+>
+>2. Can you say something about the pairing requirements of
+>   FUTEX_WAIT_REQUEUE_PI and FUTEX_CMP_REQUEUE_PI.
+>   What is the requirement and why do we need it?
+
+Briefly, these op codes exist to support a fairly specific use case:
+support for PI aware pthread condvars (glibc patch acceptance STILL
+PENDING FOR LOVE OF EVERYTHING HOLY WHY?!?!?! But is shipped with various
+PREEMPT_RT enabled Linux systems. Because these calls are paired, and more
+of the logic can happen on the kernel side (to preserve ownership of an
+rt_mutex with waiters), so in order to ensure userspace and kernelspace
+remain in sync, we pre-specify the target of the requeue in
+futex_wait_requeue_pi. This also limits the attack surface by only
+supporting exactly what it was meant to do. The corner cases get insane
+otherwise.
+
+We could walk through the various ways in which it would break if these
+pairing restrictions were not in place, but I'll have to take some serious
+time to page all those into working memory. Let me know if we need more
+detail here and I will.
+
+>
+>Most of the rest of this mail is just a checklist noting
+>what I did with your comments. No response is needed
+>in most cases, but there is one that I have marked with
+>"???". If you could reply to that. I'd be grateful.
+
+...
+
+>> For all the PI opcodes, we should probably mention something about the
+>> futex value scheme (TID), whereas the other opcodes do not require any
+>> specific value scheme.
+>> 
+>> No Owner:	0
+>> Owner:		TID
+>> Waiters:	TID | FUTEX_WAITERS
+>> 
+>> This is the relevant section from the referenced paper:
+>> 				
+>> The PI futex operations diverge from the oth-
+>> ers in that they impose a policy describing how
+>> the futex value is to be used. If the lock is un-
+>> owned, the futex value shall be 0. If owned, it
+>> shall be the thread id (tid) of the owning thread.
+>> If there are threads contending for the lock, then
+>> the FUTEX_WAITERS flag is set. With this policy in
+>> place, userspace can atomically acquire an unowned
+>> lock or release an uncontended lock using an atomic
+>> instruction and their own tid. A non-zero futex
+>> value will force waiters into the kernel to lock. The
+>> FUTEX_WAITERS flag forces the owner into the kernel
+>> to unlock. If the callers are forced into the kernel,
+>> they then deal directly with an underlying rt_mutex
+>> which implements the priority inheritance semantics.
+>> After the rt_mutex is acquired, the futex value is up-
+>> dated accordingly, before the calling thread returns
+>> to userspace.
+>>
+>> It is important to note that the kernel will update the futex value
+>>prior
+>> to returning to userspace. Unlike other futex op codes,
+>> FUTEX_CMP_REUQUE_PI (and FUTEX_WAIT_REQUEUE_PI, FUTEX_LOCK_PI are
+>>designed
+>> for the implementation of very specific IPC mechanisms).
+>
+>??? Great text. May I presume that I can take this text
+>and freely adapt it for the man page? (Actually, this is a
+>request for forgiveness, rather than permission :-).)
+
+Thanks, and no objection from me.
+
+--
+Darren Hart
+Intel Open Source Technology Center
+
+
