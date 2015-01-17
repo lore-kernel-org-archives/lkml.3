@@ -1,85 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752524AbbAQEcY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jan 2015 23:32:24 -0500
-Received: from senator.holtmann.net ([87.106.208.187]:48029 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751691AbbAQEcW (ORCPT
+	id S1752165AbbAQE6N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jan 2015 23:58:13 -0500
+Received: from mail-pa0-f52.google.com ([209.85.220.52]:55183 "EHLO
+	mail-pa0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751498AbbAQE6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jan 2015 23:32:22 -0500
-Content-Type: text/plain; charset=us-ascii
-Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
-Subject: Re: [PATCH] ath3k: Add support of AR3012 bluetooth 13d3:3423 device
-From: Marcel Holtmann <marcel@holtmann.org>
-In-Reply-To: <54B98679.5060104@gmail.com>
-Date: Fri, 16 Jan 2015 20:32:18 -0800
-Cc: linux-bluetooth <linux-bluetooth@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>
-Content-Transfer-Encoding: 7bit
-Message-Id: <2E4EB7E1-D16C-4633-8E86-337D42190298@holtmann.org>
-References: <54B98679.5060104@gmail.com>
-To: Dmitry Tunin <hanipouspilot@gmail.com>
-X-Mailer: Apple Mail (2.1993)
+	Fri, 16 Jan 2015 23:58:12 -0500
+From: Andrew Milkovich <amilkovich@gmail.com>
+To: benjamin.romer@unisys.com
+Cc: david.kershner@unisys.com, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, Andrew Milkovich <amilkovich@gmail.com>
+Subject: [PATCH] Staging: unisys: virtpci: fixed coding style errors
+Date: Fri, 16 Jan 2015 20:58:10 -0800
+Message-Id: <1421470690-9534-1-git-send-email-amilkovich@gmail.com>
+X-Mailer: git-send-email 2.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+Fixed coding style errors per checkpatch.pl. Inline comments removed; chanptr
+comment is implied by the first argument being the channel. No parent bus
+comment is already understood by the argument being NULL.
 
-> Add support of 13d3:3423 device.
-> 
-> BugLink: https://bugs.launchpad.net/bugs/1411193
-> 
-> ---
-> 
-> T: Bus=01 Lev=02 Prnt=03 Port=00 Cnt=01 Dev#= 5 Spd=12 MxCh= 0
-> D: Ver= 1.10 Cls=e0(wlcon) Sub=01 Prot=01 MxPS=64 #Cfgs= 1
-> P: Vendor=13d3 ProdID=3423 Rev= 0.01
-> C:* #Ifs= 2 Cfg#= 1 Atr=e0 MxPwr=100mA
-> A: FirstIf#= 0 IfCount= 2 Cls=e0(wlcon) Sub=01 Prot=01
-> I:* If#= 0 Alt= 0 #EPs= 3 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-> E: Ad=81(I) Atr=03(Int.) MxPS= 16 Ivl=1ms
-> E: Ad=82(I) Atr=02(Bulk) MxPS= 64 Ivl=0ms
-> E: Ad=02(O) Atr=02(Bulk) MxPS= 64 Ivl=0ms
-> I:* If#= 1 Alt= 0 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-> E: Ad=83(I) Atr=01(Isoc) MxPS= 0 Ivl=1ms
-> E: Ad=03(O) Atr=01(Isoc) MxPS= 0 Ivl=1ms
-> I: If#= 1 Alt= 1 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-> E: Ad=83(I) Atr=01(Isoc) MxPS= 9 Ivl=1ms
-> E: Ad=03(O) Atr=01(Isoc) MxPS= 9 Ivl=1ms
-> I: If#= 1 Alt= 2 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-> E: Ad=83(I) Atr=01(Isoc) MxPS= 17 Ivl=1ms
-> E: Ad=03(O) Atr=01(Isoc) MxPS= 17 Ivl=1ms
-> I: If#= 1 Alt= 3 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-> E: Ad=83(I) Atr=01(Isoc) MxPS= 25 Ivl=1ms
-> E: Ad=03(O) Atr=01(Isoc) MxPS= 25 Ivl=1ms
-> I: If#= 1 Alt= 4 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-> E: Ad=83(I) Atr=01(Isoc) MxPS= 33 Ivl=1ms
-> E: Ad=03(O) Atr=01(Isoc) MxPS= 33 Ivl=1ms
-> I: If#= 1 Alt= 5 #EPs= 2 Cls=e0(wlcon) Sub=01 Prot=01 Driver=btusb
-> E: Ad=83(I) Atr=01(Isoc) MxPS= 49 Ivl=1ms
-> E: Ad=03(O) Atr=01(Isoc) MxPS= 49 Ivl=1ms
-> 
-> Signed-off-by: Dmitry Tunin <hanipouspilot@gmail.com>
-> Cc: stable@vger.kernel.org
-> ---
-> drivers/bluetooth/ath3k.c | 2 ++
-> drivers/bluetooth/btusb.c | 1 +
-> 2 files changed, 3 insertions(+)
+Signed-off-by: Andrew Milkovich <amilkovich@gmail.com>
+---
+ drivers/staging/unisys/virtpci/virtpci.c | 24 ++++++++----------------
+ 1 file changed, 8 insertions(+), 16 deletions(-)
 
-your patch does not apply cleanly:
+diff --git a/drivers/staging/unisys/virtpci/virtpci.c b/drivers/staging/unisys/virtpci/virtpci.c
+index 39b828d..1bb0946 100644
+--- a/drivers/staging/unisys/virtpci/virtpci.c
++++ b/drivers/staging/unisys/virtpci/virtpci.c
+@@ -279,10 +279,8 @@ static int add_vbus(struct add_vbus_guestpart *addparams)
+		POSTCODE_LINUX_2(VPCI_CREATE_FAILURE_PC, POSTCODE_SEVERITY_ERR);
+		return 0;
+	}
+-	write_vbus_chp_info(vbus->platform_data /* chanptr */ ,
+-			    &chipset_driver_info);
+-	write_vbus_bus_info(vbus->platform_data /* chanptr */ ,
+-			    &bus_driver_info);
++	write_vbus_chp_info(vbus->platform_data, &chipset_driver_info);
++	write_vbus_bus_info(vbus->platform_data, &bus_driver_info);
+	LOGINF("Added vbus %d; device %s created successfully\n",
+	       addparams->bus_no, BUS_ID(vbus));
+	POSTCODE_LINUX_2(VPCI_CREATE_EXIT_PC, POSTCODE_SEVERITY_INFO);
+@@ -466,8 +464,7 @@ static int pause_vhba(struct pause_virt_guestpart *pauseparams)
+	GET_SCSIADAPINFO_FROM_CHANPTR(pauseparams->chanptr);
 
-Applying: ath3k: Add support of AR3012 bluetooth 13d3:3423 device
-error: patch failed: drivers/bluetooth/ath3k.c:108
-error: drivers/bluetooth/ath3k.c: patch does not apply
-error: patch failed: drivers/bluetooth/btusb.c:189
-error: drivers/bluetooth/btusb.c: patch does not apply
-Patch failed at 0001 ath3k: Add support of AR3012 bluetooth 13d3:3423 device
+	LOGINF("Pausing vhba wwnn:%x:%x\n", scsi.wwnn.wwnn1, scsi.wwnn.wwnn2);
+-	i = virtpci_device_serverdown(NULL /*no parent bus */ , VIRTHBA_TYPE,
+-				      &scsi.wwnn, NULL);
++	i = virtpci_device_serverdown(NULL, VIRTHBA_TYPE, &scsi.wwnn, NULL);
+	if (i)
+		LOGINF("Paused vhba wwnn:%x:%x\n", scsi.wwnn.wwnn1,
+		       scsi.wwnn.wwnn2);
+@@ -487,8 +484,7 @@ static int pause_vnic(struct pause_virt_guestpart *pauseparams)
+	LOGINF("Pausing vnic macaddr:%02x:%02x:%02x:%02x:%02x:%02x\n",
+	       net.mac_addr[0], net.mac_addr[1], net.mac_addr[2],
+	       net.mac_addr[3], net.mac_addr[4], net.mac_addr[5]);
+-	i = virtpci_device_serverdown(NULL /*no parent bus */ , VIRTNIC_TYPE,
+-				      NULL, net.mac_addr);
++	i = virtpci_device_serverdown(NULL, VIRTNIC_TYPE, NULL, net.mac_addr);
+	if (i) {
+		LOGINF(" Paused vnic macaddr:%02x:%02x:%02x:%02x:%02x:%02x\n",
+		       net.mac_addr[0], net.mac_addr[1], net.mac_addr[2],
+@@ -508,8 +504,7 @@ static int resume_vhba(struct resume_virt_guestpart *resumeparams)
+	GET_SCSIADAPINFO_FROM_CHANPTR(resumeparams->chanptr);
 
-Please send patches that can be applied against bluetooth-next tree.
+	LOGINF("Resuming vhba wwnn:%x:%x\n", scsi.wwnn.wwnn1, scsi.wwnn.wwnn2);
+-	i = virtpci_device_serverup(NULL /*no parent bus */ , VIRTHBA_TYPE,
+-				    &scsi.wwnn, NULL);
++	i = virtpci_device_serverup(NULL, VIRTHBA_TYPE, &scsi.wwnn, NULL);
+	if (i)
+		LOGINF("Resumed vhba wwnn:%x:%x\n", scsi.wwnn.wwnn1,
+		       scsi.wwnn.wwnn2);
+@@ -530,8 +525,7 @@ resume_vnic(struct resume_virt_guestpart *resumeparams)
+	LOGINF("Resuming vnic macaddr:%02x:%02x:%02x:%02x:%02x:%02x\n",
+	       net.mac_addr[0], net.mac_addr[1], net.mac_addr[2],
+	       net.mac_addr[3], net.mac_addr[4], net.mac_addr[5]);
+-	i = virtpci_device_serverup(NULL /*no parent bus */ , VIRTNIC_TYPE,
+-				    NULL, net.mac_addr);
++	i = virtpci_device_serverup(NULL, VIRTNIC_TYPE, NULL, net.mac_addr);
+	if (i) {
+		LOGINF(" Resumed vnic macaddr:%02x:%02x:%02x:%02x:%02x:%02x\n",
+		       net.mac_addr[0], net.mac_addr[1], net.mac_addr[2],
+@@ -551,8 +545,7 @@ static int delete_vhba(struct del_virt_guestpart *delparams)
+	GET_SCSIADAPINFO_FROM_CHANPTR(delparams->chanptr);
 
-Regards
-
-Marcel
-
+	LOGINF("Deleting vhba wwnn:%x:%x\n", scsi.wwnn.wwnn1, scsi.wwnn.wwnn2);
+-	i = virtpci_device_del(NULL /*no parent bus */ , VIRTHBA_TYPE,
+-			       &scsi.wwnn, NULL);
++	i = virtpci_device_del(NULL, VIRTHBA_TYPE, &scsi.wwnn, NULL);
+	if (i) {
+		LOGINF("Deleted vhba wwnn:%x:%x\n", scsi.wwnn.wwnn1,
+		       scsi.wwnn.wwnn2);
+@@ -574,8 +567,7 @@ static int delete_vnic(struct del_virt_guestpart *delparams)
+	LOGINF("Deleting vnic macaddr:%02x:%02x:%02x:%02x:%02x:%02x\n",
+	       net.mac_addr[0], net.mac_addr[1], net.mac_addr[2],
+	       net.mac_addr[3], net.mac_addr[4], net.mac_addr[5]);
+-	i = virtpci_device_del(NULL /*no parent bus */ , VIRTNIC_TYPE, NULL,
+-			       net.mac_addr);
++	i = virtpci_device_del(NULL, VIRTNIC_TYPE, NULL, net.mac_addr);
+	if (i) {
+		LOGINF("Deleted vnic macaddr:%02x:%02x:%02x:%02x:%02x:%02x\n",
+		       net.mac_addr[0], net.mac_addr[1], net.mac_addr[2],
+--
+2.2.2
