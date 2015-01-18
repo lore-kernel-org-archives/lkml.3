@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751778AbbARACq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 19:02:46 -0500
-Received: from outpost1.zedat.fu-berlin.de ([130.133.4.66]:33589 "EHLO
-	outpost1.zedat.fu-berlin.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751149AbbARACo (ORCPT
+	id S1751947AbbARAFU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 19:05:20 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:56257 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751373AbbARAFS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 19:02:44 -0500
-From: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
-To: Jonathan Woithe <jwoithe@just42.net>, Darren Hart <dvhart@infradead.org>,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Michael Karcher <karcher@physik.fu-berlin.de>
-Subject: [PATCH] fujitsu-laptop: use FB_BLANK_* constants
-Date: Sun, 18 Jan 2015 01:02:11 +0100
-Message-Id: <1421539331-32515-1-git-send-email-kernel@mkarcher.dialup.fu-berlin.de>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1421537580-28554-1-git-send-email-kernel@mkarcher.dialup.fu-berlin.de>
-References: <1421537580-28554-1-git-send-email-kernel@mkarcher.dialup.fu-berlin.de>
-X-Originating-IP: 85.25.239.52
+	Sat, 17 Jan 2015 19:05:18 -0500
+Date: Sat, 17 Jan 2015 16:02:14 -0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Luca Ceresoli <luca@lucaceresoli.net>
+Cc: Oleg Drokin <oleg.drokin@intel.com>,
+        Andreas Dilger <andreas.dilger@intel.com>,
+        Srikrishan Malik <srikrishanmalik@gmail.com>,
+        devel@driverdev.osuosl.org, Peng Tao <bergwolf@gmail.com>,
+        linux-kernel@vger.kernel.org, HPDD-discuss@ml01.01.org,
+        Jinshan Xiong <jinshan.xiong@intel.com>
+Subject: Re: [PATCH 2/2] staging: lustre: declare internal symbols as static
+Message-ID: <20150118000214.GA25744@kroah.com>
+References: <1421188383-14216-1-git-send-email-luca@lucaceresoli.net>
+ <1421188383-14216-2-git-send-email-luca@lucaceresoli.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421188383-14216-2-git-send-email-luca@lucaceresoli.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Karcher <karcher@physik.fu-berlin.de>
+On Tue, Jan 13, 2015 at 11:33:03PM +0100, Luca Ceresoli wrote:
+> Fixes dozens of sparse warnings like:
+>   warning: symbol 'cfs_tracefile_sem' was not declared. Should it be static?
+> 
+> Signed-off-by: Luca Ceresoli <luca@lucaceresoli.net>
+> Cc: Peng Tao <bergwolf@gmail.com>
+> Cc: Jinshan Xiong <jinshan.xiong@intel.com>
+> Cc: Srikrishan Malik <srikrishanmalik@gmail.com>
+> Cc: HPDD-discuss@lists.01.org
+> Cc: devel@driverdev.osuosl.org
+> Cc: linux-kernel@vger.kernel.org
 
-Signed-off-by: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
----
- drivers/platform/x86/fujitsu-laptop.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
+This patch fails to apply to my staging-next branch, sorry :(
 
-diff --git a/drivers/platform/x86/fujitsu-laptop.c b/drivers/platform/x86/fujitsu-laptop.c
-index 7c21c1c..2a9afa2 100644
---- a/drivers/platform/x86/fujitsu-laptop.c
-+++ b/drivers/platform/x86/fujitsu-laptop.c
-@@ -64,6 +64,7 @@
- #include <linux/acpi.h>
- #include <linux/dmi.h>
- #include <linux/backlight.h>
-+#include <linux/fb.h>
- #include <linux/input.h>
- #include <linux/kfifo.h>
- #include <linux/platform_device.h>
-@@ -398,7 +399,7 @@ static int bl_get_brightness(struct backlight_device *b)
- static int bl_update_status(struct backlight_device *b)
- {
- 	int ret;
--	if (b->props.power == 4)
-+	if (b->props.power == FB_BLANK_POWERDOWN)
- 		ret = call_fext_func(FUNC_BACKLIGHT, 0x1, 0x4, 0x3);
- 	else
- 		ret = call_fext_func(FUNC_BACKLIGHT, 0x1, 0x4, 0x0);
-@@ -1139,9 +1140,9 @@ static int __init fujitsu_init(void)
- 
- 	if (!acpi_video_backlight_support()) {
- 		if (call_fext_func(FUNC_BACKLIGHT, 0x2, 0x4, 0x0) == 3)
--			fujitsu->bl_device->props.power = 4;
-+			fujitsu->bl_device->props.power = FB_BLANK_POWERDOWN;
- 		else
--			fujitsu->bl_device->props.power = 0;
-+			fujitsu->bl_device->props.power = FB_BLANK_UNBLANK;
- 	}
- 
- 	pr_info("driver " FUJITSU_DRIVER_VERSION " successfully loaded\n");
--- 
-2.1.3
-
+greg k-h
