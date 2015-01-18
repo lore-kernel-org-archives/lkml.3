@@ -1,116 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751403AbbARXGx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 18:06:53 -0500
-Received: from mail-qa0-f54.google.com ([209.85.216.54]:37377 "EHLO
-	mail-qa0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751127AbbARXGv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 18:06:51 -0500
-Message-ID: <54BC3C89.3070006@hurleysoftware.com>
-Date: Sun, 18 Jan 2015 18:06:49 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1751317AbbASFZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 00:25:28 -0500
+Received: from mail.eperm.de ([89.247.134.16]:59536 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750751AbbASFZ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 00:25:27 -0500
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: "'Herbert Xu'" <herbert@gondor.apana.org.au>
+Cc: linux-crypto@vger.kernel.org, "'LKML'" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] crypto: Documentation: remove colons in comments
+Date: Mon, 19 Jan 2015 00:13:39 +0100
+Message-ID: <4431066.AhB5zCO9nr@tachyon.chronox.de>
+User-Agent: KMail/4.14.3 (Linux/3.17.8-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
 MIME-Version: 1.0
-To: Howard Chu <hyc@symas.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH] n_tty: Remove LINEMODE support
-References: <1421616632-4077-1-git-send-email-peter@hurleysoftware.com> <54BC2F0A.8040404@symas.com> <54BC3236.1030004@hurleysoftware.com> <54BC3730.706@symas.com>
-In-Reply-To: <54BC3730.706@symas.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/18/2015 05:44 PM, Howard Chu wrote:
-> Peter Hurley wrote:
->> Hi Howard,
->>
->> On 01/18/2015 05:09 PM, Howard Chu wrote:
->>> Peter Hurley wrote:
->>>> Commit 26df6d13406d1 ("tty: Add EXTPROC support for LINEMODE") added
->>>> the undocumented EXTPROC input processing mode, which ignores the ICANON
->>>> setting and forces pty slave input to be processed in non-canonical
->>>> mode.
->>>>
->>>> Although intended to provide a transparent mechanism for local line
->>>> edit with telnetd (and other remote shell protocols), the transparency
->>>> is limited.
->>>>
->>>> Userspace usage is abandoned; telnetd does not even compile with
->>>> LINEMODE support. readline/bash and sshd never supported this.
->>>
->>> I object to this. Code for all of the above exists and works. I use this code daily.
->>>
->>> https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=585527
->>> http://lists.gnu.org/archive/html/bug-readline/2011-01/msg00004.html
->>> https://github.com/hyc/OpenSSH-LINEMODE
->>>
->>> The lack of LINEMODE support in upstream sshd can only be considered a security hole.
->>>
->>> http://www.metzdowd.com/pipermail/cryptography/2015-January/024288.html
->>
->> These are all bug reports about userspace _not_ supporting this extension.
-> 
-> Bug reports *with working patches* attached. And the fact remains that not supporting this feature *is* a security liability.
+As documented in Documentation/kernel-doc-nano-HOWTO.txt lines
+terminated with a colon are treated as headings.
 
-Sure, I get that, but mainline kernel is not for one-off features.
-I have huge patchsets for debugging kernel code that I don't foist
-off on mainline, and that I constantly have to rebase.
+The current layout of the documentation when compiling the kernel
+crypto API DocBook documentation is messed up by by treating some lines
+as headings. The patch removes colons from comments that shall not be
+treated as headings.
 
+Signed-off-by: Stephan Mueller <smueller@chronox.de>
+---
+ include/linux/crypto.h | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
->> Where is a working userspace consumer of this interface?
-> 
-> The OpenSSH fork on github is a full working client and server using this interface.
+diff --git a/include/linux/crypto.h b/include/linux/crypto.h
+index 9099834..fb5ef16 100644
+--- a/include/linux/crypto.h
++++ b/include/linux/crypto.h
+@@ -1147,7 +1147,7 @@ static inline void ablkcipher_request_free(struct ablkcipher_request *req)
+  * cipher operation completes.
+  *
+  * The callback function is registered with the ablkcipher_request handle and
+- * must comply with the following template:
++ * must comply with the following template
+  *
+  *	void callback_function(struct crypto_async_request *req, int error)
+  */
+@@ -1174,7 +1174,7 @@ static inline void ablkcipher_request_set_callback(
+  *
+  * For encryption, the source is treated as the plaintext and the
+  * destination is the ciphertext. For a decryption operation, the use is
+- * reversed: the source is the ciphertext and the destination is the plaintext.
++ * reversed - the source is the ciphertext and the destination is the plaintext.
+  */
+ static inline void ablkcipher_request_set_crypt(
+ 	struct ablkcipher_request *req,
+@@ -1509,7 +1509,7 @@ static inline void aead_request_free(struct aead_request *req)
+  * completes
+  *
+  * The callback function is registered with the aead_request handle and
+- * must comply with the following template:
++ * must comply with the following template
+  *
+  *	void callback_function(struct crypto_async_request *req, int error)
+  */
+@@ -1536,7 +1536,7 @@ static inline void aead_request_set_callback(struct aead_request *req,
+  *
+  * For encryption, the source is treated as the plaintext and the
+  * destination is the ciphertext. For a decryption operation, the use is
+- * reversed: the source is the ciphertext and the destination is the plaintext.
++ * reversed - the source is the ciphertext and the destination is the plaintext.
+  *
+  * IMPORTANT NOTE AEAD requires an authentication tag (MAC). For decryption,
+  *		  the caller must concatenate the ciphertext followed by the
+-- 
+2.1.0
 
-Ok, I can look into that.
-
-But I'm concerned the expectation is that your personal fork of OpenSSH is
-basically defining the terminal driver requirements right now.
-
-Missing documentation really hurts too, because I can't even write
-unit tests to this. Pointing at userspace patches is not documentation.
-Look at man termios and man tty_ioctl.
-
-
->> I seriously doubt this works reliably.
->> What happens when the pty slave reader is in canonical mode and gets unterminated
->> input because only a portion of the input is available yet? The way this is
->> coded does _not_ require line termination before returning data to userspace.
-> 
-> Userspace already has to deal with incomplete lines if the input line is longer than the input buffer.
-
-That's what I mean about not reliable:
-
-	int n;
-	char buffer[8192];
-
-	n = read(tty, buffer, sizeof(buffer));
-
-This had better contain a newline in canonical mode: in EXTPROC mode
-the reader does not get that guarantee.
-
-
->> Also, ioctl(FIONREAD) doesn't match what read() returns, nor that poll()/select()
->> indicated input was available.
-> 
-> Hm, I think you're mistaken about poll/select.
-> 
->     if ((!ldata->icanon && (ldata->read_cnt >= tty->minimum_to_wake)) ||
->         L_EXTPROC(tty)) {
->         kill_fasync(&tty->fasync, SIGIO, POLL_IN);
->         if (waitqueue_active(&tty->read_wait))
->             wake_up_interruptible(&tty->read_wait);
->     }
-
-That's not the code for poll()/select(): that's the input worker which wakes up
-waiters on the read_wait queue, which is n_tty_read() and/or n_tty_poll().
-Compare the input_available_p() logic with n_tty_ioctl(TIOCINQ).
-
-Regards,
-Peter Hurley
 
