@@ -1,87 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752337AbbARKQz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 05:16:55 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:38954 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751357AbbARKQw (ORCPT
+	id S1752474AbbARKRy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 05:17:54 -0500
+Received: from mail-ig0-f174.google.com ([209.85.213.174]:60261 "EHLO
+	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751357AbbARKRv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 05:16:52 -0500
+	Sun, 18 Jan 2015 05:17:51 -0500
+Date: Sun, 18 Jan 2015 10:17:44 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: rtc-linux@googlegroups.com, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Mike Turquette <mturquette@linaro.org>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Alessandro Zummo <a.zummo@towertech.it>
+Subject: Re: [PATCH] MAINTAINERS: Add entry for Maxim PMIC-s on Samsung boards
+Message-ID: <20150118101744.GF3574@x1>
+References: <1421407190-6771-1-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-Date: Sun, 18 Jan 2015 11:16:51 +0100
-Message-ID: <CACRpkdZXugs-HBjad6_dbAudaMMMMSRavvPjuSRGoq0fM-85jQ@mail.gmail.com>
-Subject: [GIT PULL] GPIO fixes for the v3.19 series
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        Johan Hovold <johan@kernel.org>,
-        "Holmberg, Hans" <hans.holmberg@intel.com>,
-        Aaron Lu <aaron.lu@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1421407190-6771-1-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, 16 Jan 2015, Krzysztof Kozlowski wrote:
 
-here is a set of fixes that mainly appeared when Johan Hovold
-started exercising the removal path of the GPIO library, dealing
-with hotplugging of GPIO controllers.
+> Add myself as supporter for Maxim 77686 PMIC and Maxim 14577/77693 MUIC
+> drivers:
+>  - mfd (all of them),
+>  - extcon (extcon-max14577, extcon-max77693)
+>  - power (max14577_charger.c, 77693 on LKML [1]),
+>  - regulator (all of them),
+>  - clock (clk-max77686.c)
+>  - RTC (rtc-max77686.c).
+> 
+> Lately I am the author of major contributors to them. These
+> drivers are used on Exynos-based boards (Trats 2, Gear 1 and Gear 2).
+> 
+> [1] https://lkml.org/lkml/2015/1/5/139
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
+> cc: Chanwoo Choi <cw00.choi@samsung.com>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Cc: Lee Jones <lee.jones@linaro.org>
+> Cc: Sebastian Reichel <sre@kernel.org>
+> Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+> Cc: David Woodhouse <dwmw2@infradead.org>
+> Cc: Liam Girdwood <lgirdwood@gmail.com>
+> Cc: Mark Brown <broonie@kernel.org>
+> Cc: Mike Turquette <mturquette@linaro.org>
+> Cc: Stephen Boyd <sboyd@codeaurora.org>
+> Cc: Alessandro Zummo <a.zummo@towertech.it>
+> ---
+>  MAINTAINERS | 15 +++++++++++++++
+>  1 file changed, 15 insertions(+)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index f017a30eb280..b033fb499186 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -6143,6 +6143,21 @@ F:	Documentation/devicetree/bindings/i2c/max6697.txt
+>  F:	drivers/hwmon/max6697.c
+>  F:	include/linux/platform_data/max6697.h
+>  
+> +MAXIM PMIC AND MUIC DRIVERS FOR EXYNOS BASED BOARDS
+> +M:	Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> +L:	linux-kernel@vger.kernel.org
+> +S:	Supported
+> +F:	drivers/*/*max14577*.c
+> +F:	drivers/*/*max77686*.c
+> +F:	drivers/*/*max77693*.c
+> +F:	Documentation/devicetree/bindings/mfd/max14577.txt
+> +F:	Documentation/devicetree/bindings/mfd/max77686.txt
+> +F:	Documentation/devicetree/bindings/mfd/max77693.txt
+> +F:	Documentation/devicetree/bindings/clock/maxim,max77686.txt
+> +F:	include/linux/mfd/max14577*.h
+> +F:	include/linux/mfd/max77686*.h
+> +F:	include/linux/mfd/max77693*.h
 
-Please pull it in!
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
-Yours,
-Linus Walleij
+>  MAXIRADIO FM RADIO RECEIVER DRIVER
+>  M:	Hans Verkuil <hverkuil@xs4all.nl>
+>  L:	linux-media@vger.kernel.org
 
-
-The following changes since commit eaa27f34e91a14cdceed26ed6c6793ec1d186115:
-
-  linux 3.19-rc4 (2015-01-11 12:44:53 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio.git
-tags/gpio-v3.19-4
-
-for you to fetch changes up to 7b8792bbdffdff3abda704f89c6a45ea97afdc62:
-
-  gpiolib: of: Correct error handling in of_get_named_gpiod_flags
-(2015-01-15 18:31:47 +0100)
-
-----------------------------------------------------------------
-A slew of fixes dealing with some irritating bugs (non-regressions)
-that have been around forever in the GPIO subsystem, most of them
-also tagged for stable:
-
-- A large slew of fixes from Johan Hovold who is finally testing and
-  reviewing the removal path of the GPIO drivers.
-
-- Fix of_get_named_gpiod_flags() so it works as expected.
-
-- Fix an IRQ handling bug in the crystalcove driver.
-
-----------------------------------------------------------------
-Aaron Lu (1):
-      gpio: crystalcove: use handle_nested_irq
-
-Hans Holmberg (1):
-      gpiolib: of: Correct error handling in of_get_named_gpiod_flags
-
-Johan Hovold (9):
-      gpio: fix memory and reference leaks in gpiochip_add error path
-      gpio: fix gpio-chip list corruption
-      gpio: clean up gpiochip_add error handling
-      gpio: fix memory leak and sleep-while-atomic
-      gpio: fix sleep-while-atomic in gpiochip_remove
-      gpio: unregister gpiochip device before removing it
-      gpio: sysfs: fix gpio-chip device-attribute leak
-      gpio: sysfs: fix gpio device-attribute leak
-      gpio: sysfs: fix gpio attribute-creation race
-
- drivers/gpio/gpio-crystalcove.c |  2 +-
- drivers/gpio/gpiolib-of.c       | 10 ++++-
- drivers/gpio/gpiolib-sysfs.c    | 92 +++++++++++++++++++++++------------------
- drivers/gpio/gpiolib.c          | 58 +++++++++++++-------------
- drivers/gpio/gpiolib.h          |  1 +
- 5 files changed, 92 insertions(+), 71 deletions(-)
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
