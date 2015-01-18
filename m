@@ -1,162 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751622AbbARAiR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 19:38:17 -0500
-Received: from mail-we0-f176.google.com ([74.125.82.176]:64143 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751225AbbARAiQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 19:38:16 -0500
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Larry Finger <Larry.Finger@lwfinger.net>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>
-Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Vaishali Thakkar <vthakkar1994@gmail.com>,
-        linux-wireless@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] staging: rtl8723au: os_dep: usb_intf: Remove unused functions
-Date: Sun, 18 Jan 2015 01:41:23 +0100
-Message-Id: <1421541683-17523-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-X-Mailer: git-send-email 1.7.10.4
+	id S1751462AbbARAuC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 19:50:02 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:42543 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751183AbbARAuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Jan 2015 19:50:00 -0500
+Message-ID: <54BB031A.6050005@redhat.com>
+Date: Sat, 17 Jan 2015 19:49:30 -0500
+From: Jon Masters <jcm@redhat.com>
+Organization: Red Hat, Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Leif Lindholm <leif.lindholm@linaro.org>
+CC: Catalin Marinas <Catalin.Marinas@arm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: SMBIOS/DMI data under CONFIG_STRICT_DEVMEM
+References: <54BAC21D.9040009@redhat.com> <20150117232142.GN3827@bivouac.eciton.net>
+In-Reply-To: <20150117232142.GN3827@bivouac.eciton.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removes some functions that are not used anywhere:
-rtw_hw_resume23a() rtw_hw_suspend23a()
+On 01/17/2015 06:21 PM, Leif Lindholm wrote:
+> On Sat, Jan 17, 2015 at 03:12:13PM -0500, Jon Masters wrote:
+>> Hi Catalin, all,
+>>
+>> I would like to ensure that the SMBIOS data provided by firmware is
+>> always readable from userspace on AArch64, through /dev/mem.
+> 
+> No, we need to ensure /dev/mem can be completely disabled on any
+> system that ever wants to have any level of reliability.
 
-This was partially found by using a static code analysis program called cppcheck.
+I think that's a wonderful goal! And so is world peace. It's even
+slightly more achievable than world peace, but in the interim people are
+going to want to be able to access memory through /dev/mem. However, in
+the short term, if the below patches dmidecode for me, then I'll stop
+whining about it and we'll wait for the next person ;)
 
-Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
----
- drivers/staging/rtl8723au/include/osdep_intf.h |    3 -
- drivers/staging/rtl8723au/os_dep/usb_intf.c    |   98 ------------------------
- 2 files changed, 101 deletions(-)
+> Fortunately, for SMBIOS there is /sys/firmware/dmi.
 
-diff --git a/drivers/staging/rtl8723au/include/osdep_intf.h b/drivers/staging/rtl8723au/include/osdep_intf.h
-index 33afa62..a157eb2 100644
---- a/drivers/staging/rtl8723au/include/osdep_intf.h
-+++ b/drivers/staging/rtl8723au/include/osdep_intf.h
-@@ -19,9 +19,6 @@
- #include <osdep_service.h>
- #include <drv_types.h>
- 
--int rtw_hw_suspend23a(struct rtw_adapter *padapter);
--int rtw_hw_resume23a(struct rtw_adapter *padapter);
--
- int rtw_init_drv_sw23a(struct rtw_adapter *padapter);
- int rtw_free_drv_sw23a(struct rtw_adapter *padapter);
- int rtw_reset_drv_sw23a(struct rtw_adapter *padapter);
-diff --git a/drivers/staging/rtl8723au/os_dep/usb_intf.c b/drivers/staging/rtl8723au/os_dep/usb_intf.c
-index 373a617..936414d 100644
---- a/drivers/staging/rtl8723au/os_dep/usb_intf.c
-+++ b/drivers/staging/rtl8723au/os_dep/usb_intf.c
-@@ -273,104 +273,6 @@ static void rtw_dev_unload(struct rtw_adapter *padapter)
- 	RT_TRACE(_module_hci_intfs_c_, _drv_err_, ("-rtw_dev_unload\n"));
- }
- 
--int rtw_hw_suspend23a(struct rtw_adapter *padapter)
--{
--	struct pwrctrl_priv *pwrpriv = &padapter->pwrctrlpriv;
--	struct net_device *pnetdev = padapter->pnetdev;
--	struct mlme_priv *pmlmepriv = &padapter->mlmepriv;
--
--	if ((!padapter->bup) || (padapter->bDriverStopped) ||
--	    (padapter->bSurpriseRemoved)) {
--		DBG_8723A("padapter->bup =%d bDriverStopped =%d bSurpriseRemoved = %d\n",
--			  padapter->bup, padapter->bDriverStopped,
--			  padapter->bSurpriseRemoved);
--		goto error_exit;
--	}
--
--	if (padapter) { /* system suspend */
--		LeaveAllPowerSaveMode23a(padapter);
--
--		DBG_8723A("==> rtw_hw_suspend23a\n");
--		down(&pwrpriv->lock);
--		pwrpriv->bips_processing = true;
--		/* padapter->net_closed = true; */
--		/* s1. */
--		if (pnetdev) {
--			netif_carrier_off(pnetdev);
--			netif_tx_stop_all_queues(pnetdev);
--		}
--
--		/* s2. */
--		rtw_disassoc_cmd23a(padapter, 500, false);
--
--		/* s2-2.  indicate disconnect to os */
--		/* rtw_indicate_disconnect23a(padapter); */
--		if (check_fwstate(pmlmepriv, _FW_LINKED)) {
--			_clr_fwstate_(pmlmepriv, _FW_LINKED);
--
--			rtw_os_indicate_disconnect23a(padapter);
--
--			/* donnot enqueue cmd */
--			rtw_lps_ctrl_wk_cmd23a(padapter,
--					       LPS_CTRL_DISCONNECT, 0);
--		}
--		/* s2-3. */
--		rtw_free_assoc_resources23a(padapter, 1);
--
--		/* s2-4. */
--		rtw_free_network_queue23a(padapter);
--		rtw_ips_dev_unload23a(padapter);
--		pwrpriv->rf_pwrstate = rf_off;
--		pwrpriv->bips_processing = false;
--		up(&pwrpriv->lock);
--	} else {
--		goto error_exit;
--	}
--	return 0;
--error_exit:
--	DBG_8723A("%s, failed\n", __func__);
--	return -1;
--}
--
--int rtw_hw_resume23a(struct rtw_adapter *padapter)
--{
--	struct pwrctrl_priv *pwrpriv = &padapter->pwrctrlpriv;
--	struct net_device *pnetdev = padapter->pnetdev;
--
--	if (padapter) { /* system resume */
--		DBG_8723A("==> rtw_hw_resume23a\n");
--		down(&pwrpriv->lock);
--		pwrpriv->bips_processing = true;
--		rtw_reset_drv_sw23a(padapter);
--
--		if (pm_netdev_open23a(pnetdev, false)) {
--			up(&pwrpriv->lock);
--			goto error_exit;
--		}
--
--		netif_device_attach(pnetdev);
--		netif_carrier_on(pnetdev);
--
--		if (!rtw_netif_queue_stopped(pnetdev))
--			netif_tx_start_all_queues(pnetdev);
--		else
--			netif_tx_wake_all_queues(pnetdev);
--
--		pwrpriv->bkeepfwalive = false;
--
--		pwrpriv->rf_pwrstate = rf_on;
--		pwrpriv->bips_processing = false;
--
--		up(&pwrpriv->lock);
--	} else {
--		goto error_exit;
--	}
--	return 0;
--error_exit:
--	DBG_8723A("%s, Open net dev failed\n", __func__);
--	return -1;
--}
--
- static int rtw_suspend(struct usb_interface *pusb_intf, pm_message_t message)
- {
- 	struct dvobj_priv *dvobj = usb_get_intfdata(pusb_intf);
--- 
-1.7.10.4
+Indeed there is.
+
+> Expect to see some
+> patches from Ivan Khoronzhuk on this next week. (He has a working
+> prototype of dmidecode, and a couple of minor kernel patches, as of
+> yesterday.)
+
+Great! I knew it was coming, I just hadn't heard when.
+
+> For acpidump, there is /sys/firmware/acpi, and we're looking into that
+> as well.
+
+That one I'm not so worried about since I just copy the files and run
+iasl -d, which I think is what most others do, and very few sysadmin
+type tools need to do that directly. But things do call dmidecode.
+
+>> When building a kernel with CONFIG_STRICT_DEVMEM, arm64 follows broadly
+>> x86 with the exception of an assumption surrounding the low range of
+>> memory (which doesn't apply on AArch64 platforms universally anyway).
+>> Thus on x86, they can directly read the SMBIOS table from dmidecode when
+>> it tries to map /dev/mem due to its location. I'm hacking something up
+>> for the moment, but I would like to solve this.
+> 
+> STRICT_DEVMEM is a trainwreck on all architectures
+
+Yep. It does seem to be particularly unpleasant.
+
+> but particularly bad on ARM*, since we don't have anything resembling
+> a predictable memory map.
+
+In case anyone cares, I did make several formal proposals to standardize
+the memory map rigorously on ARM servers precisely for this reason (I
+even warned ahead of time about this situation, and that of the runtime
+location of EFI, etc.), but hw vendors did not want that. I can but push
+to make everything rigidly uniform and boring ;)
+
+> While I like Ard's approach to improve it with data
+> actually available, I would also like add the ability to make it
+> tweakable as read-write, read-only or no access.
+
+Cool.
+
+> I sent out a series looking to consolidate STRICT_DEVMEM handling
+> across architectures (i.e. not have separate definitions per
+> architecture Kconfig), but had little response. If anyone is
+> interested in seeing that happening, let me know and I'll resend with
+> you on cc.
+
+I would love to take a look.
+
+Jon.
 
