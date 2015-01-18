@@ -1,246 +1,398 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751558AbbARXic (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 18:38:32 -0500
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:41939 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751179AbbARXia (ORCPT
+	id S1751453AbbARXeb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 18:34:31 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:57901 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751179AbbARXea (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 18:38:30 -0500
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AiYXAFtDvFR5LLLkPGdsb2JhbABbgwZSgw2xMwEBAQEBAQaSRIVvAgIBAQKBD0QBAQEBAQYBAQEBODuEDAEBAQMBJxMcIwULCAMYCSUPBSUDBxoTiCQHDs4QAQEBAQEBAQMBAQEBARkEGIVthAqDXYINB4MWgRMFhD4DiDmFJoVPgRWBG4FhjhqEJCoxgkMBAQE
-Date: Mon, 19 Jan 2015 10:33:34 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Namjae Jeon <namjae.jeon@samsung.com>
-Cc: "Theodore Ts'o" <tytso@mit.edu>,
-        "'Alexander Viro'" <viro@zeniv.linux.org.uk>,
-        Brian Foster <bfoster@redhat.com>,
-        Dmitry Monakhov <dmonakhov@openvz.org>,
-        =?utf-8?B?THVrw6HFoQ==?= Czerner <lczerner@redhat.com>,
-        linux-fsdevel@vger.kernel.org, Ashish Sangwan <a.sangwan@samsung.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] fs: file freeze support
-Message-ID: <20150118233334.GB16552@dastard>
-References: <005c01d030b7$90ab2cb0$b2018610$@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <005c01d030b7$90ab2cb0$b2018610$@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Sun, 18 Jan 2015 18:34:30 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Sekhar Nori <nsekhar@ti.com>, Kevin Hilman <khilman@deeprootsystems.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ARM: mach-davinci: Remove driver CDCE949
+Date: Mon, 19 Jan 2015 00:37:39 +0100
+Message-Id: <1421624259-24127-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 15, 2015 at 08:36:55PM +0900, Namjae Jeon wrote:
-> We introduce per-file freeze feature for unifying defrag ext4 and xfs
-> as first ingredient. We get the idea courtesy of Dave Chinner
-> (https://lkml.org/lkml/2014/7/14/759)
+Remove driver CDCE949 because it is not used anywhere.
 
-/me pages the context back in
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ arch/arm/mach-davinci/Makefile               |    2 +-
+ arch/arm/mach-davinci/board-dm646x-evm.c     |    4 -
+ arch/arm/mach-davinci/cdce949.c              |  295 --------------------------
+ arch/arm/mach-davinci/include/mach/cdce949.h |   19 --
+ 4 files changed, 1 insertion(+), 319 deletions(-)
+ delete mode 100644 arch/arm/mach-davinci/cdce949.c
+ delete mode 100644 arch/arm/mach-davinci/include/mach/cdce949.h
 
-> per-file freeze will be used to avoid that file is not modified while
-> userspace is doing the defrag.
-> 
-> This patch tries to implement file write freeze functionality.
-> Introduce new inode state, I_WRITE_FREEZED.
-
-I_WRITE_FROZEN.
-
-> When this state is set, any process which tries to modify the file's address
-> space, either by pagefault mmap writes or using write(2), will block until
-> the this state is cleared. I_WRITE_FREEZED is set by calling FS_IOC_FWFREEZE
-> ioctl and clear by FS_IOC_FWTHAW ioctl.
-> 
-> File write freeze functionality, when used in conjunction with
-> inode's immutable flag can be used for creating truly stable file snapshots
-> wherein write freeze will prevent any modification to the file from already
-> open file descriptors and immutable flag will prevent any new modification
-> to the file. One of the intended uses for stable file snapshots would be in
-> the defragmentation applications which defrags single file.
-
-I don't quite understand why the full filesystem freeze is
-necessary? The thaw occurs immediately after I_WRITE_FREEZED is set,
-which means there's nothing that prevent the file from being
-truncated or otherwise modified by fallocate, etc while it is
-frozen....
-
-AFAICT, fsync will bring the file down to a consistent state and
-we've already got freeze hooks for all inode modification
-operations. We also have IO barriers for truncate operations so that
-we can wait for all outstanding IO to complete, so I would have
-thought this covers all bases for an inode freeze. i.e.:
-
-i_mutex -> I_FROZEN -> fsync -> inode_dio_wait
-
-Should give us a clean inode where there are not ongoing operations
-by the time that inode_dio_wait() completes. All new modification
-operations need to check I_FROZEN in addition to the superblock
-freeze checks...
-
-> For implementation purpose, initially we tried to keep percpu usage counters
-> inside struct inode just like there is struct sb_writers in super_block.
-> But considering that it will significantly bloat up struct inode when actually
-> the usage of file write freeze will be infrequent, we dropped this idea.
-> Instead we have tried to use already present filesystem freezing infrastructure.
-> Current approach makes it possible for implementing file write freeze without
-> bloating any of struct super_block/inode.
-> In FS_IOC_FWFREEZE, we wait for complete fs to be frozen, set I_WRITE_FREEZED to
-> inode's state and unfreeze the fs. 
-> 
-> TODO : prevent inode eviction when I_WRITE_FREEZED state is set.
-
-The app needs to retain a reference to the inode (i.e. open
-file descriptor) for the length of time that the inode is to be
-frozen. That will prevent reclaim of the inode.
-
-If the app fails to thaw the inode before it drops all references
-to it, then all bets are off - we do not want to give userspace a
-mechanism to pin arbitrarily large amounts of memory....
-
-> TODO : xfstests testcase for file freeze.
-> 
-> Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
-> Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
-> ---
->  fs/btrfs/inode.c        |  1 +
->  fs/buffer.c             |  1 +
->  fs/ext4/inode.c         |  1 +
->  fs/f2fs/file.c          |  1 +
->  fs/gfs2/file.c          |  1 +
->  fs/inode.c              | 19 ++++++++++++++++++
->  fs/ioctl.c              | 30 +++++++++++++++++++++++++++++
->  fs/nilfs2/file.c        |  1 +
->  fs/ocfs2/mmap.c         |  1 +
->  fs/super.c              | 51 +++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/fs.h      | 13 +++++++++++++
->  include/uapi/linux/fs.h |  2 ++
->  mm/filemap.c            |  1 +
->  13 files changed, 123 insertions(+)
-> 
-> diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
-> index e687bb0..357c749 100644
-> --- a/fs/btrfs/inode.c
-> +++ b/fs/btrfs/inode.c
-> @@ -8262,6 +8262,7 @@ int btrfs_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
->  	u64 page_start;
->  	u64 page_end;
->  
-> +	inode_start_write(inode);
->  	sb_start_pagefault(inode->i_sb);
-
-Wouldn't it be better to have:
-
-	inode_start_pagefault(inode);
-
-and then have it call sb_start_pagefault() internally?
-
-> +void inode_start_write(struct inode *inode)
-> +{
-> +	struct super_block *sb = inode->i_sb;
-> +
-> +retry:
-> +	spin_lock(&inode->i_lock);
-> +	if (inode->i_state & I_WRITE_FREEZED) {
-> +		DEFINE_WAIT(wait);
-> +
-> +		prepare_to_wait(&sb->s_writers.wait_unfrozen, &wait,
-> +				TASK_UNINTERRUPTIBLE);
-> +		spin_unlock(&inode->i_lock);
-> +		schedule();
-> +		finish_wait(&sb->s_writers.wait_unfrozen, &wait);
-> +		goto retry;
-> +	}
-> +	spin_unlock(&inode->i_lock);
-
-Please use a while() loop, not goto.
-
-	spin_lock(&inode->i_lock);
-	while(inode->i_state & I_WRITE_FROZEN) {
-		DEFINE_WAIT(wait);
-
-		prepare_to_wait(&sb->s_writers.wait_unfrozen, &wait,
-				TASK_UNINTERRUPTIBLE);
-		spin_unlock(&inode->i_lock);
-		schedule();
-		finish_wait(&sb->s_writers.wait_unfrozen, &wait);
-		spin_lock(&inode->i_lock);
-	}
-	spin_unlock(&inode->i_lock);
-
-> +
-> +int file_write_freeze(struct inode *inode)
-> +{
-> +	struct super_block *sb = inode->i_sb;
-> +	int ret = 0;
-> +
-> +	if (!S_ISREG(inode->i_mode))
-> +		return -EINVAL;
-> +
-> +	spin_lock(&inode->i_lock);
-> +
-> +	if (inode->i_state & I_WRITE_FREEZED)
-> +		ret = -EBUSY;
-> +	spin_unlock(&inode->i_lock);
-> +	if (ret)
-> +		return ret;
-> +
-> +	ret = freeze_super(sb);
-> +	if (ret)
-> +		return ret;
-> +
-> +	spin_lock(&inode->i_lock);
-> +	inode->i_state |= I_WRITE_FREEZED;
-> +	smp_wmb();
-> +	spin_unlock(&inode->i_lock);
-> +
-> +	return thaw_super(sb);
-> +}
-> +EXPORT_SYMBOL(file_write_freeze);
-> +
-> +int file_write_unfreeze(struct inode *inode)
-> +{
-> +	struct super_block *sb = inode->i_sb;
-> +
-> +	if (!S_ISREG(inode->i_mode))
-> +		return -EINVAL;
-> +
-> +	spin_lock(&inode->i_lock);
-> +
-> +	if (!(inode->i_state & I_WRITE_FREEZED)) {
-> +		spin_unlock(&inode->i_lock);
-> +		return -EINVAL;
-> +	}
-> +
-> +	inode->i_state &= ~I_WRITE_FREEZED;
-> +	smp_wmb();
-> +	wake_up(&sb->s_writers.wait_unfrozen);
-> +	spin_unlock(&inode->i_lock);
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(file_write_unfreeze);
-
-These look terrible racy. Freeze can race with other filesystem
-freeze and thaw operations, so if thaw_super() fails you could have
-frozen the inode but you still get -EINVAL for the ioctl. Or you
-could have multiple applications doing file freeze/thaw, and so an
-unfreeze occurs while a freeze if waiting on a thaw, and so the app
-waiting on a freeze might return with an unfrozen inode, even though
-there were no errors....
-
-
-> @@ -2328,6 +2340,7 @@ static inline bool file_start_write_trylock(struct file *file)
->  {
->  	if (!S_ISREG(file_inode(file)->i_mode))
->  		return true;
-> +	inode_start_write(file_inode(file));
->  	return __sb_start_write(file_inode(file)->i_sb, SB_FREEZE_WRITE, false);
->  }
-
-This needs "trylock" semantics, not blocking semantics.
-
-Cheers,
-
-Dave.
+diff --git a/arch/arm/mach-davinci/Makefile b/arch/arm/mach-davinci/Makefile
+index 2204239..2e3464b 100644
+--- a/arch/arm/mach-davinci/Makefile
++++ b/arch/arm/mach-davinci/Makefile
+@@ -27,7 +27,7 @@ obj-$(CONFIG_MACH_SFFSDR)		+= board-sffsdr.o
+ obj-$(CONFIG_MACH_NEUROS_OSD2)		+= board-neuros-osd2.o
+ obj-$(CONFIG_MACH_DAVINCI_DM355_EVM)	+= board-dm355-evm.o
+ obj-$(CONFIG_MACH_DM355_LEOPARD)	+= board-dm355-leopard.o
+-obj-$(CONFIG_MACH_DAVINCI_DM6467_EVM)	+= board-dm646x-evm.o cdce949.o
++obj-$(CONFIG_MACH_DAVINCI_DM6467_EVM)	+= board-dm646x-evm.o
+ obj-$(CONFIG_MACH_DAVINCI_DM365_EVM)	+= board-dm365-evm.o
+ obj-$(CONFIG_MACH_DAVINCI_DA830_EVM)	+= board-da830-evm.o
+ obj-$(CONFIG_MACH_DAVINCI_DA850_EVM)	+= board-da850-evm.o
+diff --git a/arch/arm/mach-davinci/board-dm646x-evm.c b/arch/arm/mach-davinci/board-dm646x-evm.c
+index ae129bc..8be5aef 100644
+--- a/arch/arm/mach-davinci/board-dm646x-evm.c
++++ b/arch/arm/mach-davinci/board-dm646x-evm.c
+@@ -45,7 +45,6 @@
+ #include <mach/irqs.h>
+ #include <mach/serial.h>
+ #include <mach/clock.h>
+-#include <mach/cdce949.h>
+ 
+ #include "davinci.h"
+ #include "clock.h"
+@@ -399,9 +398,6 @@ static struct i2c_board_info __initdata i2c_info[] =  {
+ 	{
+ 		I2C_BOARD_INFO("cpld_video", 0x3b),
+ 	},
+-	{
+-		I2C_BOARD_INFO("cdce949", 0x6c),
+-	},
+ };
+ 
+ static struct davinci_i2c_platform_data i2c_pdata = {
+diff --git a/arch/arm/mach-davinci/cdce949.c b/arch/arm/mach-davinci/cdce949.c
+deleted file mode 100644
+index abafb92..0000000
+--- a/arch/arm/mach-davinci/cdce949.c
++++ /dev/null
+@@ -1,295 +0,0 @@
+-/*
+- * TI CDCE949 clock synthesizer driver
+- *
+- * Note: This implementation assumes an input of 27MHz to the CDCE.
+- * This is by no means constrained by CDCE hardware although the datasheet
+- * does use this as an example for all illustrations and more importantly:
+- * that is the crystal input on boards it is currently used on.
+- *
+- * Copyright (C) 2009 Texas Instruments Incorporated. http://www.ti.com/
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- *
+- */
+-#include <linux/kernel.h>
+-#include <linux/clk.h>
+-#include <linux/platform_device.h>
+-#include <linux/i2c.h>
+-#include <linux/module.h>
+-
+-#include <mach/clock.h>
+-#include <mach/cdce949.h>
+-
+-#include "clock.h"
+-
+-static struct i2c_client *cdce_i2c_client;
+-static DEFINE_MUTEX(cdce_mutex);
+-
+-/* CDCE register descriptor */
+-struct cdce_reg {
+-	u8	addr;
+-	u8	val;
+-};
+-
+-/* Per-Output (Y1, Y2 etc.) frequency descriptor */
+-struct cdce_freq {
+-	/* Frequency in KHz */
+-	unsigned long frequency;
+-	/*
+-	 * List of registers to program to obtain a particular frequency.
+-	 * 0x0 in register address and value is the end of list marker.
+-	 */
+-	struct cdce_reg *reglist;
+-};
+-
+-#define CDCE_FREQ_TABLE_ENTRY(line, out)		\
+-{							\
+-	.reglist	= cdce_y ##line## _ ##out,		\
+-	.frequency	= out,				\
+-}
+-
+-/* List of CDCE outputs  */
+-struct cdce_output {
+-	/* List of frequencies on this output */
+-	struct cdce_freq *freq_table;
+-	/* Number of possible frequencies */
+-	int size;
+-};
+-
+-/*
+- * Finding out the values to program into CDCE949 registers for a particular
+- * frequency output is not a simple calculation. Have a look at the datasheet
+- * for the details. There is desktop software available to help users with
+- * the calculations. Here, we just depend on the output of that software
+- * (or hand calculations) instead trying to runtime calculate the register
+- * values and inflicting misery on ourselves.
+- */
+-static struct cdce_reg cdce_y1_148500[] = {
+-	{ 0x13, 0x00 },
+-	/* program PLL1_0 multiplier */
+-	{ 0x18, 0xaf },
+-	{ 0x19, 0x50 },
+-	{ 0x1a, 0x02 },
+-	{ 0x1b, 0xc9 },
+-	/* program PLL1_11 multiplier */
+-	{ 0x1c, 0x00 },
+-	{ 0x1d, 0x40 },
+-	{ 0x1e, 0x02 },
+-	{ 0x1f, 0xc9 },
+-	/* output state selection */
+-	{ 0x15, 0x00 },
+-	{ 0x14, 0xef },
+-	/* switch MUX to PLL1 output */
+-	{ 0x14, 0x6f },
+-	{ 0x16, 0x06 },
+-	/* set P2DIV divider, P3DIV and input crystal */
+-	{ 0x17, 0x06 },
+-	{ 0x01, 0x00 },
+-	{ 0x05, 0x48 },
+-	{ 0x02, 0x80 },
+-	/* enable and disable PLL */
+-	{ 0x02, 0xbc },
+-	{ 0x03, 0x01 },
+-	{ },
+-};
+-
+-static struct cdce_reg cdce_y1_74250[] = {
+-	{ 0x13, 0x00 },
+-	{ 0x18, 0xaf },
+-	{ 0x19, 0x50 },
+-	{ 0x1a, 0x02 },
+-	{ 0x1b, 0xc9 },
+-	{ 0x1c, 0x00 },
+-	{ 0x1d, 0x40 },
+-	{ 0x1e, 0x02 },
+-	{ 0x1f, 0xc9 },
+-	/* output state selection */
+-	{ 0x15, 0x00 },
+-	{ 0x14, 0xef },
+-	/* switch MUX to PLL1 output */
+-	{ 0x14, 0x6f },
+-	{ 0x16, 0x06 },
+-	/* set P2DIV divider, P3DIV and input crystal */
+-	{ 0x17, 0x06 },
+-	{ 0x01, 0x00 },
+-	{ 0x05, 0x48 },
+-	{ 0x02, 0x80 },
+-	/* enable and disable PLL */
+-	{ 0x02, 0xbc },
+-	{ 0x03, 0x02 },
+-	{ },
+-};
+-
+-static struct cdce_reg cdce_y1_27000[] = {
+-	{ 0x13, 0x00 },
+-	{ 0x18, 0x00 },
+-	{ 0x19, 0x40 },
+-	{ 0x1a, 0x02 },
+-	{ 0x1b, 0x08 },
+-	{ 0x1c, 0x00 },
+-	{ 0x1d, 0x40 },
+-	{ 0x1e, 0x02 },
+-	{ 0x1f, 0x08 },
+-	{ 0x15, 0x02 },
+-	{ 0x14, 0xed },
+-	{ 0x16, 0x01 },
+-	{ 0x17, 0x01 },
+-	{ 0x01, 0x00 },
+-	{ 0x05, 0x50 },
+-	{ 0x02, 0xb4 },
+-	{ 0x03, 0x01 },
+-	{ },
+-};
+-
+-static struct cdce_freq cdce_y1_freqs[] = {
+-	CDCE_FREQ_TABLE_ENTRY(1, 148500),
+-	CDCE_FREQ_TABLE_ENTRY(1, 74250),
+-	CDCE_FREQ_TABLE_ENTRY(1, 27000),
+-};
+-
+-static struct cdce_reg cdce_y5_13500[] = {
+-	{ 0x27, 0x08 },
+-	{ 0x28, 0x00 },
+-	{ 0x29, 0x40 },
+-	{ 0x2a, 0x02 },
+-	{ 0x2b, 0x08 },
+-	{ 0x24, 0x6f },
+-	{ },
+-};
+-
+-static struct cdce_reg cdce_y5_16875[] = {
+-	{ 0x27, 0x08 },
+-	{ 0x28, 0x9f },
+-	{ 0x29, 0xb0 },
+-	{ 0x2a, 0x02 },
+-	{ 0x2b, 0x89 },
+-	{ 0x24, 0x6f },
+-	{ },
+-};
+-
+-static struct cdce_reg cdce_y5_27000[] = {
+-	{ 0x27, 0x04 },
+-	{ 0x28, 0x00 },
+-	{ 0x29, 0x40 },
+-	{ 0x2a, 0x02 },
+-	{ 0x2b, 0x08 },
+-	{ 0x24, 0x6f },
+-	{ },
+-};
+-static struct cdce_reg cdce_y5_54000[] = {
+-	{ 0x27, 0x04 },
+-	{ 0x28, 0xff },
+-	{ 0x29, 0x80 },
+-	{ 0x2a, 0x02 },
+-	{ 0x2b, 0x07 },
+-	{ 0x24, 0x6f },
+-	{ },
+-};
+-
+-static struct cdce_reg cdce_y5_81000[] = {
+-	{ 0x27, 0x02 },
+-	{ 0x28, 0xbf },
+-	{ 0x29, 0xa0 },
+-	{ 0x2a, 0x03 },
+-	{ 0x2b, 0x0a },
+-	{ 0x24, 0x6f },
+-	{ },
+-};
+-
+-static struct cdce_freq cdce_y5_freqs[] = {
+-	CDCE_FREQ_TABLE_ENTRY(5, 13500),
+-	CDCE_FREQ_TABLE_ENTRY(5, 16875),
+-	CDCE_FREQ_TABLE_ENTRY(5, 27000),
+-	CDCE_FREQ_TABLE_ENTRY(5, 54000),
+-	CDCE_FREQ_TABLE_ENTRY(5, 81000),
+-};
+-
+-
+-static struct cdce_output output_list[] = {
+-	[1]	= { cdce_y1_freqs, ARRAY_SIZE(cdce_y1_freqs) },
+-	[5]	= { cdce_y5_freqs, ARRAY_SIZE(cdce_y5_freqs) },
+-};
+-
+-int cdce_set_rate(struct clk *clk, unsigned long rate)
+-{
+-	int i, ret = 0;
+-	struct cdce_freq *freq_table = output_list[clk->lpsc].freq_table;
+-	struct cdce_reg  *regs = NULL;
+-
+-	if (!cdce_i2c_client)
+-		return -ENODEV;
+-
+-	if (!freq_table)
+-		return -EINVAL;
+-
+-	for (i = 0; i < output_list[clk->lpsc].size; i++) {
+-		if (freq_table[i].frequency == rate / 1000) {
+-			regs = freq_table[i].reglist;
+-			break;
+-		}
+-	}
+-
+-	if (!regs)
+-		return -EINVAL;
+-
+-	mutex_lock(&cdce_mutex);
+-	for (i = 0; regs[i].addr; i++) {
+-		ret = i2c_smbus_write_byte_data(cdce_i2c_client,
+-					regs[i].addr | 0x80, regs[i].val);
+-		if (ret)
+-			break;
+-	}
+-	mutex_unlock(&cdce_mutex);
+-
+-	if (!ret)
+-		clk->rate = rate;
+-
+-	return ret;
+-}
+-
+-static int cdce_probe(struct i2c_client *client,
+-					const struct i2c_device_id *id)
+-{
+-	cdce_i2c_client = client;
+-	return 0;
+-}
+-
+-static int cdce_remove(struct i2c_client *client)
+-{
+-	cdce_i2c_client = NULL;
+-	return 0;
+-}
+-
+-static const struct i2c_device_id cdce_id[] = {
+-	{"cdce949", 0},
+-	{},
+-};
+-MODULE_DEVICE_TABLE(i2c, cdce_id);
+-
+-static struct i2c_driver cdce_driver = {
+-	.driver = {
+-		.owner	= THIS_MODULE,
+-		.name	= "cdce949",
+-	},
+-	.probe		= cdce_probe,
+-	.remove		= cdce_remove,
+-	.id_table	= cdce_id,
+-};
+-
+-static int __init cdce_init(void)
+-{
+-	return i2c_add_driver(&cdce_driver);
+-}
+-subsys_initcall(cdce_init);
+-
+-static void __exit cdce_exit(void)
+-{
+-	i2c_del_driver(&cdce_driver);
+-}
+-module_exit(cdce_exit);
+-
+-MODULE_AUTHOR("Texas Instruments");
+-MODULE_DESCRIPTION("CDCE949 clock synthesizer driver");
+-MODULE_LICENSE("GPL v2");
+diff --git a/arch/arm/mach-davinci/include/mach/cdce949.h b/arch/arm/mach-davinci/include/mach/cdce949.h
+deleted file mode 100644
+index c73331f..0000000
+--- a/arch/arm/mach-davinci/include/mach/cdce949.h
++++ /dev/null
+@@ -1,19 +0,0 @@
+-/*
+- * TI CDCE949 off-chip clock synthesizer support
+- *
+- * 2009 (C) Texas Instruments, Inc. http://www.ti.com/
+- *
+- * This file is licensed under the terms of the GNU General Public License
+- * version 2. This program is licensed "as is" without any warranty of any
+- * kind, whether express or implied.
+- */
+-#ifndef _MACH_DAVINCI_CDCE949_H
+-#define _MACH_DAVINCI_CDCE949_H
+-
+-#include <linux/clk.h>
+-
+-#include <mach/clock.h>
+-
+-int cdce_set_rate(struct clk *clk, unsigned long rate);
+-
+-#endif
 -- 
-Dave Chinner
-david@fromorbit.com
+1.7.10.4
+
