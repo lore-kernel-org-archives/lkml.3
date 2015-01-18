@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688AbbARRNW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 12:13:22 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:51081 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751562AbbARRNV (ORCPT
+	id S1752642AbbARRUO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 12:20:14 -0500
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:51553 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751642AbbARRUL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 12:13:21 -0500
-Date: Sun, 18 Jan 2015 22:43:16 +0530
-From: Shiraz Hashim <shashim@codeaurora.org>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "oleg@redhat.com" <oleg@redhat.com>,
-        "gorcunov@openvz.org" <gorcunov@openvz.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] mm: pagemap: limit scan to virtual region being asked
-Message-ID: <20150118171315.GA25218@shashim-linux.in.qualcomm.com>
-References: <1421152024-6204-1-git-send-email-shashim@codeaurora.org>
- <20150114010830.GA16100@hori1.linux.bs1.fc.nec.co.jp>
+	Sun, 18 Jan 2015 12:20:11 -0500
+Date: Sun, 18 Jan 2015 17:20:03 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Beomho Seo <beomho.seo@samsung.com>,
+        Valentin Rothberg <valentinrothberg@gmail.com>,
+        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org, sre@kernel.org, broonie@kernel.org,
+        dbaryshkov@gmail.com, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, cw00.choi@samsung.com, inki.dae@samsung.com,
+        sw0312.kim@samsung.com
+Subject: Re: [PATCH v2 0/3] power: rt5033: Add Richtek RT533 drivers
+Message-ID: <20150118172003.GC3574@x1>
+References: <1420793114-20586-1-git-send-email-beomho.seo@samsung.com>
+ <1421059225.22660.33.camel@x220>
+ <54B3A72A.8020700@samsung.com>
+ <1421061017.22660.41.camel@x220>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20150114010830.GA16100@hori1.linux.bs1.fc.nec.co.jp>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1421061017.22660.41.camel@x220>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 14, 2015 at 01:08:40AM +0000, Naoya Horiguchi wrote:
-> On Tue, Jan 13, 2015 at 05:57:04PM +0530, Shiraz Hashim wrote:
-> > pagemap_read scans through the virtual address space of a
-> > task till it prepares 'count' pagemaps or it reaches end
-> > of task.
-> > 
-> > This presents a problem when the page walk doesn't happen
-> > for vma with VM_PFNMAP set. In which case walk is silently
-> > skipped and no pagemap is prepare, in turn making
-> > pagemap_read to scan through task end, even crossing beyond
-> > 'count', landing into a different vma region. This leads to
-> > wrong presentation of mappings for that vma.
-> > 
-> > Fix this by limiting end_vaddr to the end of the virtual
-> > address region being scanned.
-> > 
-> > Signed-off-by: Shiraz Hashim <shashim@codeaurora.org>
-> 
-> This patch works in some case, but there still seems a problem in
-> another case.
-> 
-> Consider that we have two vmas within some narrow
-> (PAGEMAP_WALK_SIZE) region.  One vma in lower address is VM_PFNMAP,
-> and the other vma in higher address is not.  Then a single call of
-> walk_page_range() skips the first vma and scans the second vma, but
-> the pagemap record of the second vma will be stored on the wrong
-> offset in the buffer, because we just skip vma(VM_PFNMAP) without
-> calling any callbacks (within which add_to_pagemap() increments
-> pm.pos).
-> 
-> So calling pte_hole() for vma(VM_PFNMAP) looks a better fix to me.
-> 
+On Mon, 12 Jan 2015, Paul Bolle wrote:
 
-Thanks. That makes sense, If you are okay, I can send following patch formally.
+> Hi Beomho,
+> 
+> On Mon, 2015-01-12 at 19:51 +0900, Beomho Seo wrote:
+> > On 01/12/2015 07:40 PM, Paul Bolle wrote:
+> > > When is the Kconfig symbol MFD_RT5033 expected to be included in the
+> > > tree? 
+> > 
+> > MFD_RT5033 have been applied in 09 Dec 2014.
+> > http://marc.info/?l=linux-pm&m=141822463218774&w=2
+> > According to the mail, That is expected to include next version.
+> 
+> I see. I'd expected v3.20 stuff to be included in linux-next by now, but
+> I guess that this commit will be added in a few weeks or so.
 
-diff --git a/mm/pagewalk.c b/mm/pagewalk.c
-index ad83195..b16ea60 100644
---- a/mm/pagewalk.c
-+++ b/mm/pagewalk.c
-@@ -200,6 +200,11 @@ int walk_page_range(unsigned long addr, unsigned long end,
-                        if ((vma->vm_start <= addr) &&
-                            (vma->vm_flags & VM_PFNMAP)) {
-                                next = vma->vm_end;
-+                               if (walk->pte_hole)
-+                                       err = walk->pte_hole(addr, next, walk);
-+                               if (err)
-+                                       break;
-+
-                                pgd = pgd_offset(walk->mm, next);
-                                continue;
-                        }
+Sorry for the delay, I've been on vacation for a few weeks.
 
-regards
-Shiraz
+It will be in within the next couple of days.
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
