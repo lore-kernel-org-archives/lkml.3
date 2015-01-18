@@ -1,75 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752302AbbARCFV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 21:05:21 -0500
-Received: from mail-pa0-f48.google.com ([209.85.220.48]:47278 "EHLO
-	mail-pa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751936AbbARCE7 (ORCPT
+	id S1751685AbbARDBt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 22:01:49 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:59562 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751225AbbARDBr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 21:04:59 -0500
-From: mathieu.poirier@linaro.org
-To: forest@alittletooquiet.net, gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        mathieu.poirier@linaro.org
-Subject: [PATCH 4/4] staging: vt6655: correcting parameter related sparse error
-Date: Sat, 17 Jan 2015 19:04:26 -0700
-Message-Id: <1421546666-21461-5-git-send-email-mathieu.poirier@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1421546666-21461-1-git-send-email-mathieu.poirier@linaro.org>
-References: <1421546666-21461-1-git-send-email-mathieu.poirier@linaro.org>
+	Sat, 17 Jan 2015 22:01:47 -0500
+From: Andrew Milkovich <amilkovich@gmail.com>
+X-Google-Original-From: Andrew Milkovich <root@zenbook.hsd1.ca.comcast.net>
+Date: Sat, 17 Jan 2015 19:01:41 -0800
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Andrew Milkovich <amilkovich@gmail.com>, benjamin.romer@unisys.com,
+        david.kershner@unisys.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: unisys: virtpci: fixed coding style errors
+Message-ID: <20150118030141.GA1937@zenbook.hsd1.ca.comcast.net>
+References: <1421470690-9534-1-git-send-email-amilkovich@gmail.com>
+ <20150118002235.GA10241@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150118002235.GA10241@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathieu Poirier <mathieu.poirier@linaro.org>
+Hi,
 
-mpoirier@t430:~/work/kernel1$ make C=1 M=drivers/staging/vt6655/
-  LD      drivers/staging/vt6655/built-in.o
-  CHECK   drivers/staging/vt6655/device_main.c
-drivers/staging/vt6655/device_main.c:1503:25: warning: incorrect type in argument 1 (different address spaces)
-drivers/staging/vt6655/device_main.c:1503:25:    expected void [noderef] <asn:2>*<noident>
-drivers/staging/vt6655/device_main.c:1503:25:    got struct vnt_private *
-drivers/staging/vt6655/device_main.c:1503:25: warning: incorrect type in argument 2 (different address spaces)
-drivers/staging/vt6655/device_main.c:1503:25:    expected void [noderef] <asn:2>*<noident>
-drivers/staging/vt6655/device_main.c:1503:25:    got struct vnt_private *
-drivers/staging/vt6655/device_main.c:1505:25: warning: incorrect type in argument 1 (different address spaces)
-drivers/staging/vt6655/device_main.c:1505:25:    expected void [noderef] <asn:2>*<noident>
-drivers/staging/vt6655/device_main.c:1505:25:    got struct vnt_private *
-drivers/staging/vt6655/device_main.c:1505:25: warning: incorrect type in argument 2 (different address spaces)
-drivers/staging/vt6655/device_main.c:1505:25:    expected void [noderef] <asn:2>*<noident>
-drivers/staging/vt6655/device_main.c:1505:25:    got struct vnt_private *
+On Sat, Jan 17, 2015 at 04:22:35PM -0800, Greg KH wrote:
+> On Fri, Jan 16, 2015 at 08:58:10PM -0800, Andrew Milkovich wrote:
+> > Fixed coding style errors per checkpatch.pl. Inline comments removed; chanptr
+> > comment is implied by the first argument being the channel. No parent bus
+> > comment is already understood by the argument being NULL.
+> > 
+> > Signed-off-by: Andrew Milkovich <amilkovich@gmail.com>
+> > ---
+> >  drivers/staging/unisys/virtpci/virtpci.c | 24 ++++++++----------------
+> >  1 file changed, 8 insertions(+), 16 deletions(-)
+> 
+> This doesn't apply to my staging-testing branch at all, sorry.
+> 
+> greg k-h
 
-In this case a pointer to "struct vnt_private" is given to macros @MACvRegBitsOn()
-and @MACvRegBitsOff().  These in turn eventually call @ioread8(), which take a
-"void __iomem *" as parameter.  The first field of "struct vnt_private" is a
-pointer to a "struct pci_dev", whose first field is a "struct list_head".
+Processing the patch with 'git apply' complains about a corruption; this is due
+to the fact that I ran cleanfile on the patch. The checkpatch.pl script was
+giving errors about trailing whitespace. I ran cleanpatch, errors still showed
+up, I ran cleanfile and it passed.
 
-Correcting the problem by following the trend set fort in every other calls to
-the macros by passing "->PortOffset", declared as "void __iomem *".
+Using 'patch -p1 < patchname' seems to work.
 
-Signed-off-by: Mathieu Poirier <mathieu.poirier@linaro.org>
----
- drivers/staging/vt6655/device_main.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+I can resubmit the patch but for 'git apply' to work it will be failing the
+checkpatch.pl script. What should I do in this case?
 
-diff --git a/drivers/staging/vt6655/device_main.c b/drivers/staging/vt6655/device_main.c
-index a3f5cd84259a..951ea5321d61 100644
---- a/drivers/staging/vt6655/device_main.c
-+++ b/drivers/staging/vt6655/device_main.c
-@@ -1500,9 +1500,11 @@ static void vnt_bss_info_changed(struct ieee80211_hw *hw,
- 		if (conf->enable_beacon) {
- 			vnt_beacon_enable(priv, vif, conf);
- 
--			MACvRegBitsOn(priv, MAC_REG_TCR, TCR_AUTOBCNTX);
-+			MACvRegBitsOn(priv->PortOffset,
-+				      MAC_REG_TCR, TCR_AUTOBCNTX);
- 		} else {
--			MACvRegBitsOff(priv, MAC_REG_TCR, TCR_AUTOBCNTX);
-+			MACvRegBitsOff(priv->PortOffset,
-+				       MAC_REG_TCR, TCR_AUTOBCNTX);
- 		}
- 	}
- 
--- 
-1.9.1
-
+Andrew Milkovich
