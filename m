@@ -1,116 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751473AbbARVMb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 16:12:31 -0500
-Received: from netrider.rowland.org ([192.131.102.5]:49574 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751244AbbARVM1 (ORCPT
+	id S1751244AbbARVau (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 16:30:50 -0500
+Received: from mail-qa0-f51.google.com ([209.85.216.51]:57747 "EHLO
+	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751079AbbARVar (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 16:12:27 -0500
-Date: Sun, 18 Jan 2015 16:12:26 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Jim Keir <jimkeir@oracledbadirect.com>
-cc: linux-input@vger.kernel.org, <linux-usb@vger.kernel.org>,
-        <jkosina@suse.cz>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 001/001] usbhid: Fix initialisation and force effect
- modifications for the Microsoft Sidewinder Force Feedback Pro 2 joystick
-In-Reply-To: <0000014afdcc643d-a943b494-4c10-4fa0-a85b-d36e89d6b09a-000000@email.amazonses.com>
-Message-ID: <Pine.LNX.4.44L0.1501181605050.5911-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 18 Jan 2015 16:30:47 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Jiri Slaby <jslaby@suse.cz>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org, Peter Hurley <peter@hurleysoftware.com>,
+        Howard Chu <hyc@symas.com>
+Subject: [PATCH] n_tty: Remove LINEMODE support
+Date: Sun, 18 Jan 2015 16:30:32 -0500
+Message-Id: <1421616632-4077-1-git-send-email-peter@hurleysoftware.com>
+X-Mailer: git-send-email 2.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 18 Jan 2015, Jim Keir wrote:
+Commit 26df6d13406d1 ("tty: Add EXTPROC support for LINEMODE") added
+the undocumented EXTPROC input processing mode, which ignores the ICANON
+setting and forces pty slave input to be processed in non-canonical
+mode.
 
-> From: Jim Keir <jimkeir@yahoo.co.uk>
-> Signed-off-by: Jim Keir <jimkeir@yahoo.co.uk>
-> 
-> Currently the SWFF2 driver fails during initialisation, making the force
-> capability of the joystick unusable. Further, there is a long-standing
-> bug in the same driver where commands to update force parameters are
-> addressed to the last-created force effect instead of the specified one,
-> making it impossible to modify effects after their creation.
-> 
-> Three bugs are addressed:
-> 
-> 1) The FF2 driver (usbhid/hid-pidff.c) sends commands to the stick
-> during ff_init. However, this is called inside a block where
-> driver_input_lock is locked, so the results of these initial commands
-> are discarded. This one is the "killer", without this nothing else works.
-> 
-> ff_init issues commands using "hid_hw_request". This eventually goes to
-> hid_input_report, which returns -EBUSY because driver_input_lock is
-> locked. The change is to delay the ff_init call in hid-core.c until
-> after this lock has been released.
-> 
-> 2) The usbhid driver ignores an endpoint stall when sending control
-> commands, causing the first few commands of the hid-pidff.c
-> initialisation to get lost.
-> 
-> usbhid/hid-core.c has been modified by copying lines into "hid_ctrl"
-> from the "hid_irq_in" function in the same file.
-> 
-> 3) The FF2 driver (usbhid/hid-pidff.c) does not set the effect ID when
-> uploading an effect. The result is that the initial upload works but
-> subsequent uploads to modify effect parameters are all directed at the
-> last-created effect.
-> 
-> The targeted effect ID must be passed back to the device when effect
-> parameters are changed. This is done at the start of
-> "pidff_set_condition_report", "pidff_set_periodic_report" etc. based on
-> the value of "pidff->block_load[PID_EFFECT_BLOCK_INDEX].value[0]".
-> However, this value is only ever set during pidff_request_effect_upload.
-> The result is stored in "pidff->pid_id[effect->id]" at the end of
-> pid_upload_effect, for later use. However, if an effect is modified and
-> re-sent then this identifier is not being copied back from
-> pidff->pid_id[effect->id] before sending the command to the device. The
-> fix is to do this at the start of pidff_upload_effect.
-> 
-> This patch taken against kernel 3.13.0
+Although intended to provide a transparent mechanism for local line
+edit with telnetd (and other remote shell protocols), the transparency
+is limited.
 
-Three different changes should be split up into three different 
-patches.  Also, you should test the patch by running it through 
-checkpatch.pl before submitting it.
+Userspace usage is abandoned; telnetd does not even compile with
+LINEMODE support. readline/bash and sshd never supported this.
 
-Regardless of those things, the second change (stall response to
-control messages) is wrong for several reasons.
+Cc: Howard Chu <hyc@symas.com>
+Signed-off-by: Peter Hurley <peter@hurleysoftware.com>
+---
+ drivers/tty/n_tty.c | 22 ++++++----------------
+ drivers/tty/pty.c   | 24 +-----------------------
+ 2 files changed, 7 insertions(+), 39 deletions(-)
 
-> diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
-> index 029965e..5d34dd7 100644
-> --- a/drivers/hid/usbhid/hid-core.c
-> +++ b/drivers/hid/usbhid/hid-core.c
-> @@ -505,7 +505,12 @@ static void hid_ctrl(struct urb *urb)
->       case -EPROTO:        /* protocol error or unplug */
->       case -ECONNRESET:    /* unlink */
->       case -ENOENT:
-> +        break;
->       case -EPIPE:        /* report not available */
-> +        usbhid_mark_busy(usbhid);
-> +        clear_bit(HID_IN_RUNNING, &usbhid->iofl);
-
-This is wrong.  The interrupt-IN endpoint is still running, because it 
-is unaffected by an error on the control endpoint.
-
-> +        set_bit(HID_CLEAR_HALT, &usbhid->iofl);
-
-This makes no sense.  Stalls on a control endpoint do not need a
-clear-halt because the endpoint does not halt.  In any case, this flag
-tells the driver to clear a halt condition on the interrupt-IN 
-endpoint, not on the control endpoint.
-
-> +        schedule_work(&usbhid->reset_work);
->           break;
->       default:        /* error */
->           hid_warn(urb->dev, "ctrl urb status %d received\n", status);
-
-In general, there isn't much you can do about a control stall.  It 
-means the device did not understand or does not support the request it 
-received.  You can't force the device to respond to a request it 
-doesn't understand; all you can do is report that the transfer failed.  
-Which is what the driver currently does.
-
-Alan Stern
+diff --git a/drivers/tty/n_tty.c b/drivers/tty/n_tty.c
+index eb9f114..5120d2b 100644
+--- a/drivers/tty/n_tty.c
++++ b/drivers/tty/n_tty.c
+@@ -1562,10 +1562,6 @@ n_tty_receive_buf_standard(struct tty_struct *tty, const unsigned char *cp,
+ 				c &= 0x7f;
+ 			if (I_IUCLC(tty) && L_IEXTEN(tty))
+ 				c = tolower(c);
+-			if (L_EXTPROC(tty)) {
+-				put_tty_queue(c, ldata);
+-				continue;
+-			}
+ 			if (!test_bit(c, ldata->char_map))
+ 				n_tty_receive_char_inline(tty, c);
+ 			else if (n_tty_receive_char_special(tty, c) && count) {
+@@ -1613,9 +1609,9 @@ static void __receive_buf(struct tty_struct *tty, const unsigned char *cp,
+ 
+ 	if (ldata->real_raw)
+ 		n_tty_receive_buf_real_raw(tty, cp, fp, count);
+-	else if (ldata->raw || (L_EXTPROC(tty) && !preops))
++	else if (ldata->raw)
+ 		n_tty_receive_buf_raw(tty, cp, fp, count);
+-	else if (tty->closing && !L_EXTPROC(tty))
++	else if (tty->closing)
+ 		n_tty_receive_buf_closing(tty, cp, fp, count);
+ 	else {
+ 		if (ldata->lnext) {
+@@ -1637,13 +1633,13 @@ static void __receive_buf(struct tty_struct *tty, const unsigned char *cp,
+ 			tty->ops->flush_chars(tty);
+ 	}
+ 
+-	if (ldata->icanon && !L_EXTPROC(tty))
++	if (ldata->icanon)
+ 		return;
+ 
+ 	/* publish read_head to consumer */
+ 	smp_store_release(&ldata->commit_head, ldata->read_head);
+ 
+-	if ((read_cnt(ldata) >= ldata->minimum_to_wake) || L_EXTPROC(tty)) {
++	if (read_cnt(ldata) >= ldata->minimum_to_wake) {
+ 		kill_fasync(&tty->fasync, SIGIO, POLL_IN);
+ 		if (waitqueue_active(&tty->read_wait))
+ 			wake_up_interruptible_poll(&tty->read_wait, POLLIN);
+@@ -1939,7 +1935,7 @@ static inline int input_available_p(struct tty_struct *tty, int poll)
+ 	struct n_tty_data *ldata = tty->disc_data;
+ 	int amt = poll && !TIME_CHAR(tty) && MIN_CHAR(tty) ? MIN_CHAR(tty) : 1;
+ 
+-	if (ldata->icanon && !L_EXTPROC(tty))
++	if (ldata->icanon)
+ 		return ldata->canon_head != ldata->read_tail;
+ 	else
+ 		return ldata->commit_head - ldata->read_tail >= amt;
+@@ -1973,7 +1969,6 @@ static int copy_from_read_buf(struct tty_struct *tty,
+ 	struct n_tty_data *ldata = tty->disc_data;
+ 	int retval;
+ 	size_t n;
+-	bool is_eof;
+ 	size_t head = smp_load_acquire(&ldata->commit_head);
+ 	size_t tail = ldata->read_tail & (N_TTY_BUF_SIZE - 1);
+ 
+@@ -1983,14 +1978,9 @@ static int copy_from_read_buf(struct tty_struct *tty,
+ 	if (n) {
+ 		retval = copy_to_user(*b, read_buf_addr(ldata, tail), n);
+ 		n -= retval;
+-		is_eof = n == 1 && read_buf(ldata, tail) == EOF_CHAR(tty);
+ 		tty_audit_add_data(tty, read_buf_addr(ldata, tail), n,
+ 				ldata->icanon);
+ 		smp_store_release(&ldata->read_tail, ldata->read_tail + n);
+-		/* Turn single EOF into zero-length read */
+-		if (L_EXTPROC(tty) && ldata->icanon && is_eof &&
+-		    (head == ldata->read_tail))
+-			n = 0;
+ 		*b += n;
+ 		*nr -= n;
+ 	}
+@@ -2257,7 +2247,7 @@ static ssize_t n_tty_read(struct tty_struct *tty, struct file *file,
+ 			continue;
+ 		}
+ 
+-		if (ldata->icanon && !L_EXTPROC(tty)) {
++		if (ldata->icanon) {
+ 			retval = canon_copy_from_read_buf(tty, &b, &nr);
+ 			if (retval == -EAGAIN) {
+ 				retval = 0;
+diff --git a/drivers/tty/pty.c b/drivers/tty/pty.c
+index ee06b77..01ac182 100644
+--- a/drivers/tty/pty.c
++++ b/drivers/tty/pty.c
+@@ -192,20 +192,6 @@ static int pty_get_pktmode(struct tty_struct *tty, int __user *arg)
+ 	return put_user(pktmode, arg);
+ }
+ 
+-/* Send a signal to the slave */
+-static int pty_signal(struct tty_struct *tty, int sig)
+-{
+-	struct pid *pgrp;
+-
+-	if (tty->link) {
+-		pgrp = tty_get_pgrp(tty->link);
+-		if (pgrp)
+-			kill_pgrp(pgrp, sig, 1);
+-		put_pid(pgrp);
+-	}
+-	return 0;
+-}
+-
+ static void pty_flush_buffer(struct tty_struct *tty)
+ {
+ 	struct tty_struct *to = tty->link;
+@@ -254,15 +240,13 @@ static void pty_set_termios(struct tty_struct *tty,
+ {
+ 	/* See if packet mode change of state. */
+ 	if (tty->link && tty->link->packet) {
+-		int extproc = (old_termios->c_lflag & EXTPROC) |
+-				(tty->termios.c_lflag & EXTPROC);
+ 		int old_flow = ((old_termios->c_iflag & IXON) &&
+ 				(old_termios->c_cc[VSTOP] == '\023') &&
+ 				(old_termios->c_cc[VSTART] == '\021'));
+ 		int new_flow = (I_IXON(tty) &&
+ 				STOP_CHAR(tty) == '\023' &&
+ 				START_CHAR(tty) == '\021');
+-		if ((old_flow != new_flow) || extproc) {
++		if (old_flow != new_flow) {
+ 			spin_lock_irq(&tty->ctrl_lock);
+ 			if (old_flow != new_flow) {
+ 				tty->ctrl_status &= ~(TIOCPKT_DOSTOP | TIOCPKT_NOSTOP);
+@@ -271,8 +255,6 @@ static void pty_set_termios(struct tty_struct *tty,
+ 				else
+ 					tty->ctrl_status |= TIOCPKT_NOSTOP;
+ 			}
+-			if (extproc)
+-				tty->ctrl_status |= TIOCPKT_IOCTL;
+ 			spin_unlock_irq(&tty->ctrl_lock);
+ 			wake_up_interruptible(&tty->link->read_wait);
+ 		}
+@@ -482,8 +464,6 @@ static int pty_bsd_ioctl(struct tty_struct *tty,
+ 		return pty_set_pktmode(tty, (int __user *)arg);
+ 	case TIOCGPKT: /* Get PT packet mode */
+ 		return pty_get_pktmode(tty, (int __user *)arg);
+-	case TIOCSIG:    /* Send signal to other side of pty */
+-		return pty_signal(tty, (int) arg);
+ 	case TIOCGPTN: /* TTY returns ENOTTY, but glibc expects EINVAL here */
+ 		return -EINVAL;
+ 	}
+@@ -607,8 +587,6 @@ static int pty_unix98_ioctl(struct tty_struct *tty,
+ 		return pty_get_pktmode(tty, (int __user *)arg);
+ 	case TIOCGPTN: /* Get PT Number */
+ 		return put_user(tty->index, (unsigned int __user *)arg);
+-	case TIOCSIG:    /* Send signal to other side of pty */
+-		return pty_signal(tty, (int) arg);
+ 	}
+ 
+ 	return -ENOIOCTLCMD;
+-- 
+2.2.2
 
