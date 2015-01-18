@@ -1,208 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751543AbbARSlp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 13:41:45 -0500
-Received: from mail-pa0-f50.google.com ([209.85.220.50]:55264 "EHLO
-	mail-pa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750893AbbARSlo (ORCPT
+	id S1751281AbbARSqv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 13:46:51 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:42798 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750893AbbARSqu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 13:41:44 -0500
-From: Andrew Milkovich <amilkovich@gmail.com>
-To: lidza.louina@gmail.com
-Cc: markh@compro.net, gregkh@linuxfoundation.org, linux-kernel@vger.kernel.org,
-        Andrew Milkovich <amilkovich@gmail.com>
-Subject: [PATCH] Staging: dgnc: fixed some coding style errors
-Date: Sun, 18 Jan 2015 10:41:30 -0800
-Message-Id: <1421606490-2863-1-git-send-email-amilkovich@gmail.com>
-X-Mailer: git-send-email 2.2.2
+	Sun, 18 Jan 2015 13:46:50 -0500
+Date: Sun, 18 Jan 2015 10:46:48 -0800
+From: Darren Hart <dvhart@infradead.org>
+To: Azael Avalos <coproscefalo@gmail.com>
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] toshiba_acpi: Add support for USB Sleep and Charge
+ function
+Message-ID: <20150118184648.GD56582@vmdeb7>
+References: <1421271621-8330-1-git-send-email-coproscefalo@gmail.com>
+ <1421271621-8330-2-git-send-email-coproscefalo@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421271621-8330-2-git-send-email-coproscefalo@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the following checkpatch.pl error:
-ERROR: Macros with complex values should be enclosed in parentheses
-Outer parentheses were added to macro definitions.
+On Wed, Jan 14, 2015 at 02:40:18PM -0700, Azael Avalos wrote:
+> Newer Toshiba models now come with a feature called Sleep and Charge,
+> where the computer USB ports remain powered when the computer is
+> asleep or turned off.
+> 
+> This patch adds support to such feature, creating a sysfs entry
+> called "usb_sleep_charge" to set the desired charging mode or to
+> disable it.
+> 
+> The sysfs entry accepts three parameters, 0x0, 0x9 and 0x21, beign
+> disabled, alternate and auto respectively.
+> 
+> Signed-off-by: Azael Avalos <coproscefalo@gmail.com>
+> ---
+>  drivers/platform/x86/toshiba_acpi.c | 112 ++++++++++++++++++++++++++++++++++++
+>  1 file changed, 112 insertions(+)
+> 
+> diff --git a/drivers/platform/x86/toshiba_acpi.c b/drivers/platform/x86/toshiba_acpi.c
+> index 71ac7c12..b03129d 100644
+> --- a/drivers/platform/x86/toshiba_acpi.c
+> +++ b/drivers/platform/x86/toshiba_acpi.c
+> @@ -122,6 +122,7 @@ MODULE_LICENSE("GPL");
+>  #define HCI_ECO_MODE			0x0097
+>  #define HCI_ACCELEROMETER2		0x00a6
+>  #define SCI_ILLUMINATION		0x014e
+> +#define SCI_USB_SLEEP_CHARGE		0x0150
+>  #define SCI_KBD_ILLUM_STATUS		0x015c
+>  #define SCI_TOUCHPAD			0x050e
+>  
+> @@ -146,6 +147,10 @@ MODULE_LICENSE("GPL");
+>  #define SCI_KBD_MODE_ON			0x8
+>  #define SCI_KBD_MODE_OFF		0x10
+>  #define SCI_KBD_TIME_MAX		0x3c001a
+> +#define SCI_USB_CHARGE_MODE_MASK	0xff
+> +#define SCI_USB_CHARGE_DISABLED		0x30000
+> +#define SCI_USB_CHARGE_ALTERNATE	0x30009
+> +#define SCI_USB_CHARGE_AUTO		0x30021
+>  
+>  struct toshiba_acpi_dev {
+>  	struct acpi_device *acpi_dev;
+> @@ -177,6 +182,7 @@ struct toshiba_acpi_dev {
+>  	unsigned int touchpad_supported:1;
+>  	unsigned int eco_supported:1;
+>  	unsigned int accelerometer_supported:1;
+> +	unsigned int usb_sleep_charge_supported:1;
+>  	unsigned int sysfs_created:1;
+>  
+>  	struct mutex mutex;
+> @@ -761,6 +767,53 @@ static int toshiba_accelerometer_get(struct toshiba_acpi_dev *dev,
+>  	return 0;
+>  }
+>  
+> +/* Sleep (Charge and Music) utilities support */
+> +static int toshiba_usb_sleep_charge_get(struct toshiba_acpi_dev *dev,
+> +					u32 *mode)
+> +{
+> +	u32 result;
+> +
+> +	if (!sci_open(dev))
+> +		return -EIO;
+> +
+> +	result = sci_read(dev, SCI_USB_SLEEP_CHARGE, mode);
+> +	sci_close(dev);
+> +	if (result == TOS_FAILURE) {
+> +		pr_err("ACPI call to set USB S&C mode failed\n");
+> +		return -EIO;
+> +	} else if (result == TOS_NOT_SUPPORTED) {
+> +		pr_info("USB Sleep and Charge not supported\n");
+> +		return -ENODEV;
+> +	} else if (result == TOS_INPUT_DATA_ERROR) {
+> +		return -EIO;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int toshiba_usb_sleep_charge_set(struct toshiba_acpi_dev *dev,
+> +					u32 mode)
+> +{
+> +	u32 result;
+> +
+> +	if (!sci_open(dev))
+> +		return -EIO;
+> +
+> +	result = sci_write(dev, SCI_USB_SLEEP_CHARGE, mode);
+> +	sci_close(dev);
+> +	if (result == TOS_FAILURE) {
+> +		pr_err("ACPI call to set USB S&C mode failed\n");
+> +		return -EIO;
+> +	} else if (result == TOS_NOT_SUPPORTED) {
+> +		pr_info("USB Sleep and Charge not supported\n");
+> +		return -ENODEV;
+> +	} else if (result == TOS_INPUT_DATA_ERROR) {
+> +		return -EIO;
 
-Signed-off-by: Andrew Milkovich <amilkovich@gmail.com>
----
- drivers/staging/dgnc/digi.h      | 60 ++++++++++++++++++++--------------------
- drivers/staging/dgnc/dpacompat.h | 12 ++++----
- 2 files changed, 36 insertions(+), 36 deletions(-)
+Personally I would feel more comfortable relying on our own data input
+validation than that of the AML.
 
-diff --git a/drivers/staging/dgnc/digi.h b/drivers/staging/dgnc/digi.h
-index 3181a35..d6e0b9f 100644
---- a/drivers/staging/dgnc/digi.h
-+++ b/drivers/staging/dgnc/digi.h
-@@ -38,8 +38,8 @@
- 
- #if !defined(TIOCMODG)
- 
--#define	TIOCMODG	('d'<<8) | 250		/* get modem ctrl state	*/
--#define	TIOCMODS	('d'<<8) | 251		/* set modem ctrl state	*/
-+#define	TIOCMODG	(('d'<<8) | 250)	/* get modem ctrl state	*/
-+#define	TIOCMODS	(('d'<<8) | 251)	/* set modem ctrl state	*/
- 
- #ifndef TIOCM_LE
- #define		TIOCM_LE	0x01		/* line enable		*/
-@@ -58,44 +58,44 @@
- #endif
- 
- #if !defined(TIOCMSET)
--#define	TIOCMSET	('d'<<8) | 252		/* set modem ctrl state	*/
--#define	TIOCMGET	('d'<<8) | 253		/* set modem ctrl state	*/
-+#define	TIOCMSET	(('d'<<8) | 252)	/* set modem ctrl state	*/
-+#define	TIOCMGET	(('d'<<8) | 253)	/* set modem ctrl state	*/
- #endif
- 
- #if !defined(TIOCMBIC)
--#define	TIOCMBIC	('d'<<8) | 254		/* set modem ctrl state */
--#define	TIOCMBIS	('d'<<8) | 255		/* set modem ctrl state */
-+#define	TIOCMBIC	(('d'<<8) | 254)	/* set modem ctrl state */
-+#define	TIOCMBIS	(('d'<<8) | 255)	/* set modem ctrl state */
- #endif
- 
- 
- #if !defined(TIOCSDTR)
--#define	TIOCSDTR	('e'<<8) | 0		/* set DTR		*/
--#define	TIOCCDTR	('e'<<8) | 1		/* clear DTR		*/
-+#define	TIOCSDTR	(('e'<<8) | 0)		/* set DTR		*/
-+#define	TIOCCDTR	(('e'<<8) | 1)		/* clear DTR		*/
- #endif
- 
- /************************************************************************
-  * Ioctl command arguments for DIGI parameters.
-  ************************************************************************/
--#define DIGI_GETA	('e'<<8) | 94		/* Read params		*/
-+#define DIGI_GETA	(('e'<<8) | 94)		/* Read params		*/
- 
--#define DIGI_SETA	('e'<<8) | 95		/* Set params		*/
--#define DIGI_SETAW	('e'<<8) | 96		/* Drain & set params	*/
--#define DIGI_SETAF	('e'<<8) | 97		/* Drain, flush & set params */
-+#define DIGI_SETA	(('e'<<8) | 95)		/* Set params		*/
-+#define DIGI_SETAW	(('e'<<8) | 96)		/* Drain & set params	*/
-+#define DIGI_SETAF	(('e'<<8) | 97)		/* Drain, flush & set params */
- 
--#define DIGI_KME	('e'<<8) | 98		/* Read/Write Host	*/
-+#define DIGI_KME	(('e'<<8) | 98)		/* Read/Write Host	*/
- 						/* Adapter Memory	*/
- 
--#define	DIGI_GETFLOW	('e'<<8) | 99		/* Get startc/stopc flow */
-+#define	DIGI_GETFLOW	(('e'<<8) | 99)		/* Get startc/stopc flow */
- 						/* control characters	 */
--#define	DIGI_SETFLOW	('e'<<8) | 100		/* Set startc/stopc flow */
-+#define	DIGI_SETFLOW	(('e'<<8) | 100)	/* Set startc/stopc flow */
- 						/* control characters	 */
--#define	DIGI_GETAFLOW	('e'<<8) | 101		/* Get Aux. startc/stopc */
-+#define	DIGI_GETAFLOW	(('e'<<8) | 101)	/* Get Aux. startc/stopc */
- 						/* flow control chars	 */
--#define	DIGI_SETAFLOW	('e'<<8) | 102		/* Set Aux. startc/stopc */
-+#define	DIGI_SETAFLOW	(('e'<<8) | 102)	/* Set Aux. startc/stopc */
- 						/* flow control chars	 */
- 
--#define DIGI_GEDELAY	('d'<<8) | 246		/* Get edelay */
--#define DIGI_SEDELAY	('d'<<8) | 247		/* Set edelay */
-+#define DIGI_GEDELAY	(('d'<<8) | 246)	/* Get edelay */
-+#define DIGI_SEDELAY	(('d'<<8) | 247)	/* Set edelay */
- 
- struct	digiflow_t {
- 	unsigned char	startc;				/* flow cntl start char	*/
-@@ -104,8 +104,8 @@ struct	digiflow_t {
- 
- 
- #ifdef	FLOW_2200
--#define	F2200_GETA	('e'<<8) | 104		/* Get 2x36 flow cntl flags */
--#define	F2200_SETAW	('e'<<8) | 105		/* Set 2x36 flow cntl flags */
-+#define	F2200_GETA	(('e'<<8) | 104)	/* Get 2x36 flow cntl flags */
-+#define	F2200_SETAW	(('e'<<8) | 105)	/* Set 2x36 flow cntl flags */
- #define		F2200_MASK	0x03		/* 2200 flow cntl bit mask  */
- #define		FCNTL_2200	0x01		/* 2x36 terminal flow cntl  */
- #define		PCNTL_2200	0x02		/* 2x36 printer flow cntl   */
-@@ -241,7 +241,7 @@ struct digi_dinfo {
- 	char		dinfo_version[16];	/* driver version       */
- };
- 
--#define	DIGI_GETDD	('d'<<8) | 248		/* get driver info      */
-+#define	DIGI_GETDD	(('d'<<8) | 248)	/* get driver info      */
- 
- /************************************************************************
-  * Structure used with ioctl commands for per-board information
-@@ -261,7 +261,7 @@ struct digi_info {
- 	char		info_reserved[7];	/* for future expansion    */
- };
- 
--#define	DIGI_GETBD	('d'<<8) | 249		/* get board info          */
-+#define	DIGI_GETBD	(('d'<<8) | 249)	/* get board info          */
- 
- struct digi_stat {
- 	unsigned int	info_chan;		/* Channel number (0 based)  */
-@@ -276,7 +276,7 @@ struct digi_stat {
- 	unsigned int	info_reserved[8];	/* for future expansion    */
- };
- 
--#define	DIGI_GETSTAT	('d'<<8) | 244		/* get board info          */
-+#define	DIGI_GETSTAT	(('d'<<8) | 244)	/* get board info          */
- /************************************************************************
-  *
-  * Structure used with ioctl commands for per-channel information
-@@ -339,7 +339,7 @@ struct digi_getcounter {
- #define INFO_CH_WLOW	0x0020
- #define INFO_XXBUF_BUSY 0x0040
- 
--#define	DIGI_GETCH	('d'<<8) | 245		/* get board info          */
-+#define	DIGI_GETCH	(('d'<<8) | 245)	/* get board info          */
- 
- /* Board type definitions */
- 
-@@ -384,15 +384,15 @@ struct digi_getcounter {
- #define BD_TRIBOOT	0x8
- #define	BD_BADKME	0x80
- 
--#define DIGI_SPOLL            ('d'<<8) | 254  /* change poller rate   */
-+#define DIGI_SPOLL            (('d'<<8) | 254)  /* change poller rate   */
- 
- #define DIGI_SETCUSTOMBAUD	_IOW('e', 106, int)	/* Set integer baud rate */
- #define DIGI_GETCUSTOMBAUD	_IOR('e', 107, int)	/* Get integer baud rate */
- 
--#define DIGI_REALPORT_GETBUFFERS ('e'<<8) | 108
--#define DIGI_REALPORT_SENDIMMEDIATE ('e'<<8) | 109
--#define DIGI_REALPORT_GETCOUNTERS ('e'<<8) | 110
--#define DIGI_REALPORT_GETEVENTS ('e'<<8) | 111
-+#define DIGI_REALPORT_GETBUFFERS (('e'<<8) | 108)
-+#define DIGI_REALPORT_SENDIMMEDIATE (('e'<<8) | 109)
-+#define DIGI_REALPORT_GETCOUNTERS (('e'<<8) | 110)
-+#define DIGI_REALPORT_GETEVENTS (('e'<<8) | 111)
- 
- #define EV_OPU		0x0001		/* !<Output paused by client */
- #define EV_OPS		0x0002		/* !<Output paused by reqular sw flowctrl */
-diff --git a/drivers/staging/dgnc/dpacompat.h b/drivers/staging/dgnc/dpacompat.h
-index b2d2dc0..33cb394 100644
---- a/drivers/staging/dgnc/dpacompat.h
-+++ b/drivers/staging/dgnc/dpacompat.h
-@@ -51,7 +51,7 @@ struct ni_info {
- 
- #define RW_READ		1
- #define RW_WRITE        2
--#define DIGI_KME        ('e'<<8) | 98           /* Read/Write Host */
-+#define DIGI_KME        (('e'<<8) | 98)         /* Read/Write Host */
- 
- #define SUBTYPE         0007
- #define T_PCXI          0000
-@@ -106,10 +106,10 @@ struct ni_info {
- 
- /* Ioctls needed for dpa operation */
- 
--#define DIGI_GETDD      ('d'<<8) | 248          /* get driver info      */
--#define DIGI_GETBD      ('d'<<8) | 249          /* get board info       */
--#define DIGI_GET_NI_INFO ('d'<<8) | 250		/* nonintelligent state snfo */
-+#define DIGI_GETDD      (('d'<<8) | 248)       /* get driver info      */
-+#define DIGI_GETBD      (('d'<<8) | 249)       /* get board info       */
-+#define DIGI_GET_NI_INFO (('d'<<8) | 250)	/* nonintelligent state snfo */
- 
- /* Other special ioctls */
--#define DIGI_TIMERIRQ ('d'<<8) | 251		/* Enable/disable RS_TIMER use */
--#define DIGI_LOOPBACK ('d'<<8) | 252		/* Enable/disable UART internal loopback */
-+#define DIGI_TIMERIRQ (('d'<<8) | 251)		/* Enable/disable RS_TIMER use */
-+#define DIGI_LOOPBACK (('d'<<8) | 252)		/* Enable/disable UART internal loopback */
+We can also present the user with an abstracted interface, we don't need to have
+them send in register values that match the underlying hardware. In fact, should
+the firmware in future machines change, you will be faced with having to remap
+values should they mean different things. I would suggest defining a user
+visible namespace for these, consider:
+
+0: Disabled
+1: Auto
+2: Alternate (what does this mean anyway?)
+
+Also, per Documentation/sysfs-rules.txt, which I believe I added based on
+previous review with you?, -EIO is typically returned by sysfs itself from some
+sort of general failure, like a NULL read or store pointer.
+
+When the read or store operation fails as above, -ENXIO is the preferred error
+code.
+
 -- 
-2.2.2
-
+Darren Hart
+Intel Open Source Technology Center
