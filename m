@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752336AbbARIYW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 03:24:22 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:36952 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752137AbbARIYS (ORCPT
+	id S1752324AbbARI1R (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 03:27:17 -0500
+Received: from mail-ig0-f180.google.com ([209.85.213.180]:34530 "EHLO
+	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751442AbbARI1P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 03:24:18 -0500
-Date: Sun, 18 Jan 2015 00:24:13 -0800
+	Sun, 18 Jan 2015 03:27:15 -0500
+Date: Sun, 18 Jan 2015 00:27:10 -0800
 From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: [git pull] Input updates for 3.19-rc4
-Message-ID: <20150118082413.GB15720@dtor-ws>
+To: Dudley Du <dudl@cypress.com>
+Cc: jmmahler@gmail.com, rydberg@euromail.se, bleung@google.com,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v18 01/12] input: cyapa: re-design driver to support
+ multi-trackpad in one driver
+Message-ID: <20150118082710.GC15720@dtor-ws>
+References: <1421390055-32760-1-git-send-email-dudl@cypress.com>
+ <1421390055-32760-2-git-send-email-dudl@cypress.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1421390055-32760-2-git-send-email-dudl@cypress.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi Dudley,
 
-Please pull from:
+On Fri, Jan 16, 2015 at 02:34:04PM +0800, Dudley Du wrote:
+> In order to support multiple different chipsets and communication protocols
+> trackpad devices in one cyapa driver, the new cyapa driver is re-designed
+> with one cyapa driver core and multiple device specific functions component.
+> The cyapa driver core is contained in this patch, it supplies basic functions
+> that working with kernel and input subsystem, and also supplies the interfaces
+> that the specific devices' component can connect and work together with as
+> one driver.
+> TEST=test on Chromebooks.
+> 
+> Signed-off-by: Dudley Du <dudl@cypress.com>
+> ---
+>  drivers/input/mouse/Kconfig      |   10 -
+>  drivers/input/mouse/Makefile     |    3 +-
+>  drivers/input/mouse/cyapa.c      | 1076 +++++++++++++++-----------------------
+>  drivers/input/mouse/cyapa.h      |  296 +++++++++++
+>  drivers/input/mouse/cyapa_gen3.c |  807 ++++++++++++++++++++++++++++
+>  5 files changed, 1516 insertions(+), 676 deletions(-)
+>  create mode 100644 drivers/input/mouse/cyapa.h
+>  create mode 100644 drivers/input/mouse/cyapa_gen3.c
+> 
+> diff --git a/drivers/input/mouse/Kconfig b/drivers/input/mouse/Kconfig
+> index 2541bfa..d8b46b0 100644
+> --- a/drivers/input/mouse/Kconfig
+> +++ b/drivers/input/mouse/Kconfig
+> @@ -146,16 +146,6 @@ config MOUSE_PS2_OLPC
+>  
+>  	  If unsure, say N.
+>  
+> -config MOUSE_PS2_FOCALTECH
+> -	bool "FocalTech PS/2 mouse protocol extension" if EXPERT
+> -	default y
+> -	depends on MOUSE_PS2
+> -	help
+> -	  Say Y here if you have a FocalTech PS/2 TouchPad connected to
+> -	  your system.
+> -
+> -	  If unsure, say Y.
+> -
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
-or
-	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+Hmm, I wonder why you do not like Focaltech ;) I fixed it up locally, no
+need to resubmit.
 
-to receive updates for the input subsystem.
-
-Changelog:
----------
-
-Dmitry Torokhov (2):
-      MAINTAINERS: remove Dmitry Torokhov's alternate address
-      Input: I8042 - add Acer Aspire 7738 to the nomux list
-
-Gabriel Laskar (1):
-      Input: uinput - fix ioctl nr overflow for UI_GET_SYSNAME/VERSION
-
-Sam hung (1):
-      Input: elantech - support new ICs types for version 4
-
-Srihari Vijayaraghavan (1):
-      Input: i8042 - reset keyboard to fix Elantech touchpad detection
-
-
-Diffstat:
---------
-
- Documentation/kernel-parameters.txt   |  1 +
- MAINTAINERS                           |  1 -
- drivers/input/mouse/elantech.c        |  2 ++
- drivers/input/serio/i8042-x86ia64io.h | 39 +++++++++++++++++++++++++++++++++++
- drivers/input/serio/i8042.c           | 14 +++++++++++++
- include/uapi/linux/uinput.h           |  4 ++--
- 6 files changed, 58 insertions(+), 3 deletions(-)
+Thanks.
 
 -- 
 Dmitry
-
