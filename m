@@ -1,96 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751639AbbARMNi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 07:13:38 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:60903 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143AbbARMNg (ORCPT
+	id S1751778AbbARMUa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 07:20:30 -0500
+Received: from smtp-4.sys.kth.se ([130.237.48.193]:36501 "EHLO
+	smtp-4.sys.kth.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751244AbbARMU0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 07:13:36 -0500
-X-IronPort-AV: E=Sophos;i="5.09,420,1418112000"; 
-   d="scan'208";a="55046981"
-Message-ID: <54BBA36A.10608@broadcom.com>
-Date: Sun, 18 Jan 2015 13:13:30 +0100
-From: Arend van Spriel <arend@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
+	Sun, 18 Jan 2015 07:20:26 -0500
+X-KTH-Auth: niso [89.233.231.155]
+X-KTH-mail-from: niso@kth.se
+From: =?UTF-8?q?Niklas=20S=C3=B6derlund?= <niso@kth.se>
+To: linux-kernel@vger.kernel.org, laurent.pinchart@ideasonboard.com,
+        linus.walleij@linaro.org
+Cc: devicetree@vger.kernel.org, linux-sh@vger.kernel.org,
+        magnus.damm@gmail.com,
+        =?UTF-8?q?Niklas=20S=C3=B6derlund?= <niso@kth.se>
+Subject: [PATCH v2 0/4] Add emev2 pinmux support
+Date: Sun, 18 Jan 2015 13:20:00 +0100
+Message-Id: <1421583604-27256-1-git-send-email-niso@kth.se>
+X-Mailer: git-send-email 2.2.1
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-CC: Mark Rutland <mark.rutland@arm.com>, <devicetree@vger.kernel.org>,
-        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, Pawel Moll <pawel.moll@arm.com>,
-        Scott Branden <sbranden@broadcom.com>,
-        Wolfram Sang <wsa@the-dreams.de>, Ray Jui <rjui@broadcom.com>,
-        Christian Daudt <bcm@fixthebug.org>, <linux-kernel@vger.kernel.org>,
-        Matt Porter <mporter@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        <bcm-kernel-feedback-list@broadcom.com>, <linux-i2c@vger.kernel.org>,
-        "Kumar Gala" <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v5 2/3] i2c: iproc: Add Broadcom iProc I2C Driver
-References: <rjui@broadcom.com> <1421451737-7107-1-git-send-email-rjui@broadcom.com> <1421451737-7107-3-git-send-email-rjui@broadcom.com> <54BB795C.6040402@broadcom.com> <20150118094741.GE22880@pengutronix.de> <20150118110658.GA1113@katana> <20150118111759.GG22880@pengutronix.de> <54BB9D2B.20408@broadcom.com> <20150118115650.GH22880@pengutronix.de>
-In-Reply-To: <20150118115650.GH22880@pengutronix.de>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/18/15 12:56, Uwe Kleine-König wrote:
-> Hello,
->
-> On Sun, Jan 18, 2015 at 12:46:51PM +0100, Arend van Spriel wrote:
->> On 01/18/15 12:17, Uwe Kleine-König wrote:
->>> Hello Wolfram,
->>>
->>> On Sun, Jan 18, 2015 at 12:06:58PM +0100, Wolfram Sang wrote:
->>>> On Sun, Jan 18, 2015 at 10:47:41AM +0100, Uwe Kleine-König wrote:
->>>>> On Sun, Jan 18, 2015 at 10:14:04AM +0100, Arend van Spriel wrote:
->>>>>> On 01/17/15 00:42, Ray Jui wrote:
->>>>>>> +	complete_all(&iproc_i2c->done);
->>>>>>
->>>>>> Looking over this code it seems to me there is always a single
->>>>>> process waiting for iproc_i2c->done to complete. So using complete()
->>>>>> here would suffice.
->>>>> Yeah, there is always only a single thread waiting. That means both
->>>>> complete and complete_all are suitable. AFAIK there is no reason to pick
->>>>> one over the other in this case.
->>>>
->>>> Clarity?
->>> And which do you consider more clear? complete_all might result in the
->>> question: "Is there>1 waiter?" and complete might yield to "What about
->>> the other waiters?". If you already know there is only one, both are on
->>> par on clarity. Might only be me?! I don't care much.
->>
->> Maybe it is me, but it is not about questions but it is about
->> implicit statements that the code makes (or reader derives from it).
->> When using complete_all you indicate to the reader "there can be
->> more than one waiter". When using complete it indicates "there is
->> only one waiter". If those statements are not true that is a code
-> No, complete works just fine in the presence of>1 waiter. It just wakes
-> a single waiter and all others continue to wait.
+Greetings,
 
-Yes. Agree.
+This is v2 of a patchset that introduces pinmux support for the EMMA
+Mobile EV2 board to the sh-pfc pin-controller driver. Devicetree
+bindings for gpio and the populated serial connector are also defined in
+3/4 and 4/4.
 
-> That is, for single-waiter situations there is no semantic difference
-> between complete and complete_all. But there is a difference for
-> multi-waiter queues.
+Changes since v1:
 
-Indeed.
+* GPIOs numbered linearly instead of using a bank_number schema
+* Group pins in larger groups instead of one group per pin
+* Only define the actual 159 GPIOs instead of 160
+* There are 23 pins per row not 25, correct PIN_NUMBER macro
+* Define one larger reg entry in dts for pfc instead of four small
 
-> I think this is just a matter of your POV in the single-waiter
-> situation: complete might be intuitive because you just completed a
-> single task and complete_all might be intuitive because it signals
-> "I'm completely done, there is noone waiting for me any more.".
+Niklas SÃ¶derlund (4):
+  sh-pfc: add macro to define pinmux without function
+  sh-pfc: Add emev2 pinmux support
+  ARM: shmobile: emev2: Add PFC information to emev2.dtsi
+  ARM: shmobile: emev2-kzm9d: Add PFC information for uart1
 
-Ok. Let's leave it to the author's intuition or to say it differently 
-"sorry for the noise" ;-)
+ .../bindings/pinctrl/renesas,pfc-pinctrl.txt       |    1 +
+ arch/arm/boot/dts/emev2-kzm9d.dts                  |   13 +
+ arch/arm/boot/dts/emev2.dtsi                       |   10 +
+ drivers/pinctrl/sh-pfc/Kconfig                     |    5 +
+ drivers/pinctrl/sh-pfc/Makefile                    |    1 +
+ drivers/pinctrl/sh-pfc/core.c                      |    9 +
+ drivers/pinctrl/sh-pfc/core.h                      |    1 +
+ drivers/pinctrl/sh-pfc/pfc-emev2.c                 | 1774 ++++++++++++++++++++
+ drivers/pinctrl/sh-pfc/sh_pfc.h                    |    2 +
+ 9 files changed, 1816 insertions(+)
+ create mode 100644 drivers/pinctrl/sh-pfc/pfc-emev2.c
 
-Regards,
-Arend
-
-> Best regards
-> Uwe
->
+--
+2.2.1
 
