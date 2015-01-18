@@ -1,168 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752713AbbARPSR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 10:18:17 -0500
-Received: from casper.infradead.org ([85.118.1.10]:52095 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752168AbbARPRk (ORCPT
+	id S1752307AbbARPXV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 10:23:21 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:49701 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751496AbbARPXS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 10:17:40 -0500
-From: Christoph Hellwig <hch@lst.de>
-To: Jens Axboe <axboe@kernel.dk>, Dongsu Park <dongsu.park@profitbricks.com>
-Cc: Kent Overstreet <kmo@daterainc.com>, linux-kernel@vger.kernel.org,
-        Al Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH 7/7] block: rewrite and split __bio_copy_iov()
-Date: Sun, 18 Jan 2015 16:16:34 +0100
-Message-Id: <1421594194-25918-8-git-send-email-hch@lst.de>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1421594194-25918-1-git-send-email-hch@lst.de>
-References: <1421594194-25918-1-git-send-email-hch@lst.de>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Sun, 18 Jan 2015 10:23:18 -0500
+Message-ID: <54BBCFE2.9030801@gmail.com>
+Date: Sun, 18 Jan 2015 17:23:14 +0200
+From: =?UTF-8?B?R2llZHJpdXMgU3RhdGtldmnEjWl1cw==?= 
+	<giedrius.statkevicius@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+MIME-Version: 1.0
+To: Ahmadposten <ahmad.hassan612@gmail.com>, devel@driverdev.osuosl.org
+CC: gclement@baobob.org, tvboxspy@gmail.com, gregkh@linuxfoundation.org,
+        linux-kernel@vger.kernel.org, forest@alittletooquiet.net,
+        joe@perches.com
+Subject: Re: [PATCH] staging: vt6655: fix space prohibted before that ','
+ Signed-off-by: Ahmadposten <ahmad.hassan612@gmail.com>
+References: <20150118233831.GA22696@Arch-Thinkpad>
+In-Reply-To: <20150118233831.GA22696@Arch-Thinkpad>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dongsu Park <dongsu.park@profitbricks.com>
+On 2015.01.19 01:38, Ahmadposten wrote:
+> ---
+>  drivers/staging/vt6655/device_main.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/staging/vt6655/device_main.c b/drivers/staging/vt6655/device_main.c
+> index f5cc78e..34e3a76 100644
+> --- a/drivers/staging/vt6655/device_main.c
+> +++ b/drivers/staging/vt6655/device_main.c
+> @@ -1090,7 +1090,7 @@ static  irqreturn_t  device_intr(int irq,  void *dev_instance)
+>  	// Must do this after doing rx/tx, cause ISR bit is slow
+>  	// than RD/TD write back
+>  	// update ISR counter
+> -	STAvUpdate802_11Counter(&pDevice->s802_11Counter, &pDevice->scStatistic , dwMIBCounter);
+> +	STAvUpdate802_11Counter(&pDevice->s802_11Counter, &pDevice->scStatistic, dwMIBCounter);
+>  	while (pDevice->dwIsr != 0) {
+>  		STAvUpdateIsrStatCounter(&pDevice->scStatistic, pDevice->dwIsr);
+>  		MACvWriteISR(pDevice->PortOffset, pDevice->dwIsr);
+> 
+Your subject is messed up. The Signed-off-by part should be in the
+message before "---". Also, consider adding some text that describes
+more precisely what you've changed. By the way, as a newbie you can
+always send your patches to yourself before sending it off to a ML to
+see if everything is okay.
 
-Rewrite __bio_copy_iov using the copy_page_{from,to}_iter helpers, and
-split it into two simpler functions.
-
-This commit should contain only literal replacements, without
-functional changes.
-
-Cc: Kent Overstreet <kmo@daterainc.com>
-Cc: Jens Axboe <axboe@kernel.dk>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Dongsu Park <dongsu.park@profitbricks.com>
-[hch: removed the __bio_copy_iov wrapper]
-Signed-off-by: Christoph Hellwig <hch@lst.de>
----
- block/bio.c | 90 ++++++++++++++++++++++++++++++++++++++-----------------------
- 1 file changed, 56 insertions(+), 34 deletions(-)
-
-diff --git a/block/bio.c b/block/bio.c
-index 0723d4c..f66a4ea 100644
---- a/block/bio.c
-+++ b/block/bio.c
-@@ -1036,43 +1036,66 @@ static struct bio_map_data *bio_alloc_map_data(unsigned int iov_count,
- 		       sizeof(struct iovec) * iov_count, gfp_mask);
- }
- 
--static int __bio_copy_iov(struct bio *bio, const struct iov_iter *iter,
--			  int to_user, int from_user)
-+/**
-+ * bio_copy_from_iter - copy all pages from iov_iter to bio
-+ * @bio: The &struct bio which describes the I/O as destination
-+ * @iter: iov_iter as source
-+ *
-+ * Copy all pages from iov_iter to bio.
-+ * Returns 0 on success, or error on failure.
-+ */
-+static int bio_copy_from_iter(struct bio *bio, struct iov_iter iter)
- {
--	int ret = 0, i;
-+	int i;
- 	struct bio_vec *bvec;
--	struct iov_iter iov_iter = *iter;
- 
- 	bio_for_each_segment_all(bvec, bio, i) {
--		char *bv_addr = page_address(bvec->bv_page);
--		unsigned int bv_len = bvec->bv_len;
--
--		while (bv_len && iov_iter.count) {
--			struct iovec iov = iov_iter_iovec(&iov_iter);
--			unsigned int bytes = min_t(unsigned int, bv_len,
--						   iov.iov_len);
--
--			if (!ret) {
--				if (to_user)
--					ret = copy_to_user(iov.iov_base,
--							   bv_addr, bytes);
--
--				if (from_user)
--					ret = copy_from_user(bv_addr,
--							     iov.iov_base,
--							     bytes);
--
--				if (ret)
--					ret = -EFAULT;
--			}
-+		ssize_t ret;
- 
--			bv_len -= bytes;
--			bv_addr += bytes;
--			iov_iter_advance(&iov_iter, bytes);
--		}
-+		ret = copy_page_from_iter(bvec->bv_page,
-+					  bvec->bv_offset,
-+					  bvec->bv_len,
-+					  &iter);
-+
-+		if (!iov_iter_count(&iter))
-+			break;
-+
-+		if (ret < bvec->bv_len)
-+			return -EFAULT;
- 	}
- 
--	return ret;
-+	return 0;
-+}
-+
-+/**
-+ * bio_copy_to_iter - copy all pages from bio to iov_iter
-+ * @bio: The &struct bio which describes the I/O as source
-+ * @iter: iov_iter as destination
-+ *
-+ * Copy all pages from bio to iov_iter.
-+ * Returns 0 on success, or error on failure.
-+ */
-+static int bio_copy_to_iter(struct bio *bio, struct iov_iter iter)
-+{
-+	int i;
-+	struct bio_vec *bvec;
-+
-+	bio_for_each_segment_all(bvec, bio, i) {
-+		ssize_t ret;
-+
-+		ret = copy_page_to_iter(bvec->bv_page,
-+					bvec->bv_offset,
-+					bvec->bv_len,
-+					&iter);
-+
-+		if (!iov_iter_count(&iter))
-+			break;
-+
-+		if (ret < bvec->bv_len)
-+			return -EFAULT;
-+	}
-+
-+	return 0;
- }
- 
- static void bio_free_pages(struct bio *bio)
-@@ -1101,9 +1124,8 @@ int bio_uncopy_user(struct bio *bio)
- 		 * if we're in a workqueue, the request is orphaned, so
- 		 * don't copy into a random user address space, just free.
- 		 */
--		if (current->mm)
--			ret = __bio_copy_iov(bio, &bmd->iter,
--					     bio_data_dir(bio) == READ, 0);
-+		if (current->mm && bio_data_dir(bio) == READ)
-+			ret = bio_copy_to_iter(bio, bmd->iter);
- 		if (bmd->is_our_pages)
- 			bio_free_pages(bio);
- 	}
-@@ -1228,7 +1250,7 @@ struct bio *bio_copy_user_iov(struct request_queue *q,
- 	 */
- 	if (((iter->type & WRITE) && (!map_data || !map_data->null_mapped)) ||
- 	    (map_data && map_data->from_user)) {
--		ret = __bio_copy_iov(bio, iter, 0, 1);
-+		ret = bio_copy_from_iter(bio, *iter);
- 		if (ret)
- 			goto cleanup;
- 	}
 -- 
-1.9.1
-
+Thanks,
+Giedrius
