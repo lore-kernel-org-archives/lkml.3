@@ -1,44 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752577AbbARPYl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 10:24:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46720 "EHLO mx1.redhat.com"
+	id S1752330AbbARP37 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 10:29:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57268 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751924AbbARPYj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 10:24:39 -0500
-From: Jes Sorensen <Jes.Sorensen@redhat.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Emil Renner Berthing <kernel@esmil.dk>,
-        Larry Finger <Larry.Finger@lwfinger.net>, devel@driverdev.osuosl.org,
-        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: staging: rtl8723au: get rid of unneeded memset/memcpy
-References: <1417963040-9014-1-git-send-email-kernel@esmil.dk>
-	<20150117215040.GA16839@kroah.com>
-Date: Sun, 18 Jan 2015 10:24:28 -0500
-In-Reply-To: <20150117215040.GA16839@kroah.com> (Greg Kroah-Hartman's message
-	of "Sat, 17 Jan 2015 13:50:40 -0800")
-Message-ID: <wrfjzj9gt8lv.fsf@redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4 (gnu/linux)
+	id S1751646AbbARP3x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Jan 2015 10:29:53 -0500
+Message-ID: <54BBD13E.6030901@redhat.com>
+Date: Sun, 18 Jan 2015 16:29:02 +0100
+From: Hans de Goede <hdegoede@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Mark Brown <broonie@kernel.org>
+CC: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        =?windows-1252?Q?Antoine_T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org
+Subject: Re: [PATCH v4 4/4] ARM: mvebu: Armada 385 GP: Add regulators to the
+ SATA port
+References: <1421330978-9694-5-git-send-email-gregory.clement@free-electrons.com> <54B8C933.7020502@redhat.com> <54B8D97B.3090908@free-electrons.com> <54B8E38A.6020709@redhat.com> <20150116123705.GM3043@sirena.org.uk> <54B9629C.9090800@redhat.com> <20150116202516.GL3856@sirena.org.uk> <54BA21F9.5050408@redhat.com> <20150117131404.GA6414@sirena.org.uk> <54BA7197.40301@redhat.com> <20150118123531.GA2809@sirena.org.uk>
+In-Reply-To: <20150118123531.GA2809@sirena.org.uk>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg Kroah-Hartman <gregkh@linuxfoundation.org> writes:
-> On Sun, Dec 07, 2014 at 03:37:20PM +0100, Emil Renner Berthing wrote:
->> This also fixes a sparse warning.
+Hi,
+
+On 18-01-15 13:35, Mark Brown wrote:
+> On Sat, Jan 17, 2015 at 03:28:39PM +0100, Hans de Goede wrote:
+>> On 17-01-15 14:14, Mark Brown wrote:
 >
-> What sparse warning?  What's wrong with the original code?  Unless Jes
-> resends this to me, I don't see the need to apply it, sorry.
+>>> Following your argument to the logical conclusion means we can never
+>>> turn any regualtor off - we always have the risk that there's another
+>>> shared user which is going to get a power bounce if we power down.  More
+>>> directly we'll also get people complaining that we're burning power
+>>> pointlessly on their systems for devices they've not even got drivers
+>>> enabled for.  This powering down is something there's been user demand
+>>> for.
+>
+>> Right, note I'm only advocating to not turn off regulators marked as
+>> regulator-boot-on. I would expect any regulator to have such a
+>> marking to have at least one user with an actual driver. If people decide
+>> to not build that driver, and then complain we can simply tell them to
+>> build the driver ...
+>
+> Right, but that's not what regulator-boot-on actually means (and I'm not
+> sure why you would think it would TBH)
 
-I agree, I cannot see what this is fixing, it does however add an ugly
-cast.
+Well, the meaning of regulator-boot-on is not clearly defined really, to
+begin we need with fixing that, currently all the bindings file says is:
 
-If you want to change the paramters passed to FillH2CCmd() then change
-the prototype and create something like struct h2c_cmd_arg{} and apply
-that across the board.
+- regulator-boot-on: bootloader/firmware enabled regulator
 
-NACK
+One could easily argue that the bootloader likely has a good reason to turn
+the regulator on, and that unless there is a specific driver which claims
+the regulator and thus knows what to do with it it is best left alone ...
 
-Jes
+> so this will disrupt existing
+> users who are expecting the current behaviour.  We could try adding a
+> new property but it doesn't feel very idiomatic for DT which isn't very
+> nice.
+>
+> Telling people not to build the driver doesn't in general work any
+> better than telling them to build it in I fear, it seems like it's
+> essentially just shuffling things around so people have to change their
+> kernel config in a different way to avoid issues.
+
+Regards,
+
+Hans
+
