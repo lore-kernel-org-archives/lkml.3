@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752895AbbARLlg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 06:41:36 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:45014 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752350AbbARLj4 (ORCPT
+	id S1752857AbbARLlP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 06:41:15 -0500
+Received: from mail-la0-f52.google.com ([209.85.215.52]:62652 "EHLO
+	mail-la0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752466AbbARLj6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 06:39:56 -0500
+	Sun, 18 Jan 2015 06:39:58 -0500
 From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 To: linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
         Linus Walleij <linus.walleij@linaro.org>,
         Alexandre Courbot <gnurou@gmail.com>,
-        John Crispin <blogic@openwrt.org>
-Subject: [PATCH 5/8] gpio/gpio-mm-lantiq: Use of_mm_gpiochip_remove
-Date: Sun, 18 Jan 2015 12:39:30 +0100
-Message-Id: <1421581173-28416-6-git-send-email-ricardo.ribalda@gmail.com>
+        Fabian Vogt <fabian@ritter-vogt.de>
+Subject: [PATCH 6/8] gpio/zevio: Use of_mm_gpiochip_remove
+Date: Sun, 18 Jan 2015 12:39:31 +0100
+Message-Id: <1421581173-28416-7-git-send-email-ricardo.ribalda@gmail.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421581173-28416-1-git-send-email-ricardo.ribalda@gmail.com>
 References: <1421581173-28416-1-git-send-email-ricardo.ribalda@gmail.com>
@@ -31,59 +31,49 @@ it.
 
 Cc: Linus Walleij <linus.walleij@linaro.org>
 Cc: Alexandre Courbot <gnurou@gmail.com>
-Cc: John Crispin <blogic@openwrt.org>
+Cc: Fabian Vogt <fabian@ritter-vogt.de>
 Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 ---
- drivers/gpio/gpio-mm-lantiq.c | 18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
+ drivers/gpio/gpio-zevio.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
-diff --git a/drivers/gpio/gpio-mm-lantiq.c b/drivers/gpio/gpio-mm-lantiq.c
-index b511a6b..082c1d5 100644
---- a/drivers/gpio/gpio-mm-lantiq.c
-+++ b/drivers/gpio/gpio-mm-lantiq.c
-@@ -110,6 +110,8 @@ static int ltq_mm_probe(struct platform_device *pdev)
- 	if (!chip)
+diff --git a/drivers/gpio/gpio-zevio.c b/drivers/gpio/gpio-zevio.c
+index f769cd5..6f02d7c 100644
+--- a/drivers/gpio/gpio-zevio.c
++++ b/drivers/gpio/gpio-zevio.c
+@@ -181,6 +181,8 @@ static int zevio_gpio_probe(struct platform_device *pdev)
+ 	if (!controller)
  		return -ENOMEM;
  
-+	platform_set_drvdata(pdev, chip);
++	platform_set_drvdata(pdev, controller);
 +
- 	chip->mmchip.gc.ngpio = 16;
- 	chip->mmchip.gc.direction_output = ltq_mm_dir_out;
- 	chip->mmchip.gc.set = ltq_mm_set;
-@@ -122,6 +124,15 @@ static int ltq_mm_probe(struct platform_device *pdev)
- 	return of_mm_gpiochip_add(pdev->dev.of_node, &chip->mmchip);
+ 	/* Copy our reference */
+ 	controller->chip.gc = zevio_gpio_chip;
+ 	controller->chip.gc.dev = &pdev->dev;
+@@ -202,6 +204,15 @@ static int zevio_gpio_probe(struct platform_device *pdev)
+ 	return 0;
  }
  
-+static int ltq_mm_remove(struct platform_device *pdev)
++static int zevio_gpio_remove(struct platform_device *pdev)
 +{
-+	struct ltq_mm *chip = platform_get_drvdata(pdev);
++	struct zevio_gpio *controller = platform_get_drvdata(pdev);
 +
-+	of_mm_gpiochip_remove(&chip->mmchip);
++	of_mm_gpiochip_remove(&controller->chip);
 +
 +	return 0;
 +}
 +
- static const struct of_device_id ltq_mm_match[] = {
- 	{ .compatible = "lantiq,gpio-mm" },
- 	{},
-@@ -130,6 +141,7 @@ MODULE_DEVICE_TABLE(of, ltq_mm_match);
+ static const struct of_device_id zevio_gpio_of_match[] = {
+ 	{ .compatible = "lsi,zevio-gpio", },
+ 	{ },
+@@ -215,6 +226,7 @@ static struct platform_driver zevio_gpio_driver = {
+ 		.of_match_table = zevio_gpio_of_match,
+ 	},
+ 	.probe		= zevio_gpio_probe,
++	.remove		= zevio_gpio_remove,
+ };
+ module_platform_driver(zevio_gpio_driver);
  
- static struct platform_driver ltq_mm_driver = {
- 	.probe = ltq_mm_probe,
-+	.remove = ltq_mm_remove,
- 	.driver = {
- 		.name = "gpio-mm-ltq",
- 		.of_match_table = ltq_mm_match,
-@@ -142,3 +154,9 @@ static int __init ltq_mm_init(void)
- }
- 
- subsys_initcall(ltq_mm_init);
-+
-+static void __exit ltq_mm_exit(void)
-+{
-+	platform_driver_unregister(&ltq_mm_driver);
-+}
-+module_exit(ltq_mm_exit);
 -- 
 2.1.4
 
