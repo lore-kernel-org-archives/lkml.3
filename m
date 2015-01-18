@@ -1,125 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995AbbARTIR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 14:08:17 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:34982 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751129AbbARTIO (ORCPT
+	id S1751896AbbARTH1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 14:07:27 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:43785 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751442AbbARTHY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 14:08:14 -0500
-Date: Sun, 18 Jan 2015 11:06:47 -0800
-From: tip-bot for Martin Kepplinger <tipbot@zytor.com>
-Message-ID: <tip-7e9358073d3f0ed0a028c48aa54009b3296dffc9@git.kernel.org>
-Cc: martink@posteo.de, torvalds@linux-foundation.org,
-        paulmck@linux.vnet.ibm.com, linux@rasmusvillemoes.dk,
-        christoph.muellner@theobroma-systems.com, jsrhbz@kanargh.force9.co.uk,
-        hpa@zytor.com, mingo@kernel.org, akpm@linux-foundation.org,
-        peterz@infradead.org, linux-kernel@vger.kernel.org, linux@roeck-us.net,
-        tglx@linutronix.de, tytso@mit.edu, maxime.coquelin@st.com
-Reply-To: martink@posteo.de, christoph.muellner@theobroma-systems.com,
-        torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-        linux@rasmusvillemoes.dk, linux@roeck-us.net, tglx@linutronix.de,
-        peterz@infradead.org, linux-kernel@vger.kernel.org, hpa@zytor.com,
-        jsrhbz@kanargh.force9.co.uk, akpm@linux-foundation.org,
-        mingo@kernel.org, maxime.coquelin@st.com, tytso@mit.edu
-In-Reply-To: <1421083370-24924-1-git-send-email-martink@posteo.de>
-References: <1421083370-24924-1-git-send-email-martink@posteo.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/types] bitops: Add sign_extend8(), 16 and 64 functions
-Git-Commit-ID: 7e9358073d3f0ed0a028c48aa54009b3296dffc9
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Sun, 18 Jan 2015 14:07:24 -0500
+Date: Sun, 18 Jan 2015 11:07:23 -0800
+From: Darren Hart <dvhart@infradead.org>
+To: Azael Avalos <coproscefalo@gmail.com>
+Cc: platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/4] toshiba_acpi: Add support for USB Sleep functions
+Message-ID: <20150118190723.GH56582@vmdeb7>
+References: <1421271621-8330-1-git-send-email-coproscefalo@gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <1421271621-8330-1-git-send-email-coproscefalo@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  7e9358073d3f0ed0a028c48aa54009b3296dffc9
-Gitweb:     http://git.kernel.org/tip/7e9358073d3f0ed0a028c48aa54009b3296dffc9
-Author:     Martin Kepplinger <martink@posteo.de>
-AuthorDate: Mon, 12 Jan 2015 18:22:50 +0100
-Committer:  Ingo Molnar <mingo@kernel.org>
-CommitDate: Sun, 18 Jan 2015 20:03:51 +0100
+On Wed, Jan 14, 2015 at 02:40:17PM -0700, Azael Avalos wrote:
+> The following patches add support to several USB Sleep functions
+> found on newer Toshiba laptops, allowing to use th USB ports while
+> the laptop is asleep or turned off.
+> 
+> Azael Avalos (4):
+>   toshiba_acpi: Add support for USB Sleep and Charge function
+>   toshiba_acpi: Add support for USB Sleep functions under battery
+>   toshiba_acpi: Add support for USB Rapid Charge
+>   toshiba_acpi: Add support for USB Sleep and Music
+> 
+>  drivers/platform/x86/toshiba_acpi.c | 449 ++++++++++++++++++++++++++++++++++++
+>  1 file changed, 449 insertions(+)
 
-bitops: Add sign_extend8(), 16 and 64 functions
+Hi Azael,
 
-This adds helper functions for sign-extending signed values of any
-lower (hardware-)given size to s8, s16 or s64 respectively, just like
-sign_extend32() for s32.
+Ignore my comments on input validation and error codes, you cover the former,
+and the latter keeps the driver internally consistent. That only leaves the
+Disable/Auto/Alternate values and a couple trivial formatting and typos to
+address.
 
-This completes the sign_extend*() API family to work on all bit sizes
-like most other bitops APIs do.
+Thanks,
 
-Suggested-by: Christoph Muellner <christoph.muellner@theobroma-systems.com>
-Signed-off-by: Martin Kepplinger <martink@posteo.de>
-Reviewed-by: Guenter Roeck <linux@roeck-us.net>
-Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-Cc: John Sullivan <jsrhbz@kanargh.force9.co.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Maxime COQUELIN <maxime.coquelin@st.com>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Cc: Theodore Ts'o <tytso@mit.edu>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/1421083370-24924-1-git-send-email-martink@posteo.de
-Signed-off-by: Ingo Molnar <mingo@kernel.org>
----
- include/linux/bitops.h | 33 +++++++++++++++++++++++++++++++++
- 1 file changed, 33 insertions(+)
-
-diff --git a/include/linux/bitops.h b/include/linux/bitops.h
-index 5d858e0..9c31680 100644
---- a/include/linux/bitops.h
-+++ b/include/linux/bitops.h
-@@ -161,6 +161,28 @@ static inline __u8 ror8(__u8 word, unsigned int shift)
- }
- 
- /**
-+ * sign_extend8 - sign extend a 8-bit value using specified bit as sign-bit
-+ * @value: value to sign extend
-+ * @index: 0 based bit index (0<=index<8) to sign bit
-+ */
-+static inline __s8 sign_extend8(__u8 value, int index)
-+{
-+	__u8 shift = 7 - index;
-+	return (__s8)(value << shift) >> shift;
-+}
-+
-+/**
-+ * sign_extend16 - sign extend a 16-bit value using specified bit as sign-bit
-+ * @value: value to sign extend
-+ * @index: 0 based bit index (0<=index<16) to sign bit
-+ */
-+static inline __s16 sign_extend16(__u16 value, int index)
-+{
-+	__u8 shift = 15 - index;
-+	return (__s16)(value << shift) >> shift;
-+}
-+
-+/**
-  * sign_extend32 - sign extend a 32-bit value using specified bit as sign-bit
-  * @value: value to sign extend
-  * @index: 0 based bit index (0<=index<32) to sign bit
-@@ -171,6 +193,17 @@ static inline __s32 sign_extend32(__u32 value, int index)
- 	return (__s32)(value << shift) >> shift;
- }
- 
-+/**
-+ * sign_extend64 - sign extend a 64-bit value using specified bit as sign-bit
-+ * @value: value to sign extend
-+ * @index: 0 based bit index (0<=index<64) to sign bit
-+ */
-+static inline __s64 sign_extend64(__u64 value, int index)
-+{
-+	__u8 shift = 63 - index;
-+	return (__s64)(value << shift) >> shift;
-+}
-+
- static inline unsigned fls_long(unsigned long l)
- {
- 	if (sizeof(l) == 4)
+-- 
+Darren Hart
+Intel Open Source Technology Center
