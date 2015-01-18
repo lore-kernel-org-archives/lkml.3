@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751632AbbARBvG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 20:51:06 -0500
-Received: from darkboxed.org ([82.199.155.50]:44901 "EHLO dash.darkboxed.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751225AbbARBvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 20:51:04 -0500
-X-Greylist: delayed 2514 seconds by postgrey-1.27 at vger.kernel.org; Sat, 17 Jan 2015 20:51:03 EST
-Date: Sun, 18 Jan 2015 02:08:53 +0100 (CET)
-Message-Id: <20150118.020853.431804627633243635.dxld@darkboxed.org>
-To: richard@nod.at
-Cc: hch@infradead.org, user-mode-linux-devel@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] hostfs: Use noop_fsync for directories
-From: Daniel =?iso-8859-1?Q?Gr=F6ber?= <dxld@darkboxed.org>
-In-Reply-To: <54B62C49.7030309@nod.at>
-References: <54B59B9E.4000806@nod.at>
-	<20150114083951.GA29714@infradead.org>
-	<54B62C49.7030309@nod.at>
-X-Mailer: Mew version 6.6 on Emacs 24.3 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Multipart/Signed; protocol="application/pgp-signature";
- micalg=pgp-sha1;
- boundary="--Security_Multipart(Sun_Jan_18_02_08_53_2015_201)--"
-Content-Transfer-Encoding: 7bit
-X-Spam-Score: -1.0 (-)
+	id S1751480AbbARBRr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 20:17:47 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:47181 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751225AbbARBRp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Jan 2015 20:17:45 -0500
+X-Sasl-enc: msYohuBGfrVLtM9JH49hFSfPFWuJwT+STOefqvxBhBw5 1421543864
+From: Alexander van Heukelum <heukelum@fastmail.fm>
+To: Andy Lutomirski <luto@amacapital.net>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        Borislav Petkov <bp@suse.de>, Rik van Riel <riel@redhat.com>
+Subject: [PATCH 0/3] x86_64, entry: some cleanup and simplification...
+Date: Sun, 18 Jan 2015 02:17:39 +0100
+Message-Id: <1421543862-3552-1-git-send-email-heukelum@fastmail.fm>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-----Security_Multipart(Sun_Jan_18_02_08_53_2015_201)--
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Hi Andy,
 
-From: Richard Weinberger <richard@nod.at>
-Subject: Re: [PATCH] hostfs: Use noop_fsync for directories
-Date: Wed, 14 Jan 2015 09:43:53 +0100
+Seems you are the person to talk now :). Good to see some activity in
+the "entry" area of the kernel. I found some (very) old patches in this
+area lying around and some time to dust them off.
 
-> Daniel, are you interested in a small kernel project?
+Any chance you can review them?
 
-Sure, I'm just pretty busy with university right now, I'll probably
-pick this back up after exams are finished in a month or so.
+They were redone on top of 22f2aa4a0361707a5cfb1de9d45260b39965dead
+(x86/entry-devel in your tree) and this kernel is now running happily
+on my laptop. I didn't try any benchmarking, though.
 
---Daniel
+Greetings,
+   Alexander
 
-----Security_Multipart(Sun_Jan_18_02_08_53_2015_201)--
-Content-Type: application/pgp-signature
-Content-Transfer-Encoding: 7bit
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+Alexander van Heukelum (3):
+  x86_64: remove KERNEL_STACK_OFFSET from THREAD_INFO macro
+  x86_64: don't use KERNEL_STACK_OFFSET for syscall and sysenter
+  x86_64, entry: Create IRET-compatible stack frame at syscall entry
 
-iQIcBAABAgAGBQJUuwelAAoJENOUga4eeaz3F9wP+QEe27kQ8i4saXF0dfSFXwjw
-E8Mdfcjjc6ZqmFLQ715OXX29cC8xxvCWY2+gXzS/XpBhdVnJmosc72JdUsULjULj
-jyb222dT+gpOXDUYevX61Dz7De+9wfUCyjt3K2KMYkI7X2RyH7Y+w94YzSKsHy5R
-sOJWb0s83Ir2ecdkN+WElZ1aD1F3EN+65QVldP5O4+eWpTwhuZdXgZkmB76VrEm1
-VidK4Uy0IQSbdnX3b3woe93zV5ZLLvzJWt468lU07bwHxrL/6mpqeP80v/cYSjNL
-BD5rNcKH0LgsCXR+gMlYzTeqNKLfnZYWjQ5GcSTlo2jqrbg7LsftaiqYNeZJiNrs
-sBykyo/1l2RIX0qv660HXxBszSAxk27KqZFAbawn4a90HqQhuu1t6GHYE3R2g/+B
-pALhAUW5gQ43rJBRHAU7uIOCEC82Wb0VRWNBJ8khirND7slbf81qxZRrfoh+99Va
-qiNDnlaXsaS5vizBNbKVnUEybu443fcF2v+Hv32FZMpFlOUrZnw2hpVae+w0po4q
-9v0c3mo6YqDfgN82OtpcXTP+LLI+FYP1lolWdUcbE1qR5kf3TqNnLKMrQOwletlm
-wR9PqgmC2AWVg59Ysy3kIK6fgDzQxdyUiKeMkTBIMkLYzKZaOC6NFEN2N5oh+mmE
-0idEZFLEH4AeFZd97wv2
-=BVue
------END PGP SIGNATURE-----
+ arch/x86/ia32/ia32entry.S          | 34 ++++++++--------
+ arch/x86/include/asm/calling.h     |  1 +
+ arch/x86/include/asm/thread_info.h |  8 ++--
+ arch/x86/kernel/cpu/common.c       |  2 +-
+ arch/x86/kernel/entry_64.S         | 82 ++++++++++++--------------------------
+ arch/x86/kernel/process_64.c       |  3 +-
+ arch/x86/kernel/smpboot.c          |  3 +-
+ arch/x86/xen/smp.c                 |  3 +-
+ 8 files changed, 50 insertions(+), 86 deletions(-)
 
-----Security_Multipart(Sun_Jan_18_02_08_53_2015_201)----
+-- 
+2.1.0
+
