@@ -1,104 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751659AbbARTFp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 14:05:45 -0500
-Received: from mout.web.de ([212.227.17.12]:53919 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751119AbbARTFn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 14:05:43 -0500
-Message-ID: <54BC03DD.30608@users.sourceforge.net>
-Date: Sun, 18 Jan 2015 20:05:01 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S1751995AbbARTIR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 14:08:17 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:34982 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751129AbbARTIO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Jan 2015 14:08:14 -0500
+Date: Sun, 18 Jan 2015 11:06:47 -0800
+From: tip-bot for Martin Kepplinger <tipbot@zytor.com>
+Message-ID: <tip-7e9358073d3f0ed0a028c48aa54009b3296dffc9@git.kernel.org>
+Cc: martink@posteo.de, torvalds@linux-foundation.org,
+        paulmck@linux.vnet.ibm.com, linux@rasmusvillemoes.dk,
+        christoph.muellner@theobroma-systems.com, jsrhbz@kanargh.force9.co.uk,
+        hpa@zytor.com, mingo@kernel.org, akpm@linux-foundation.org,
+        peterz@infradead.org, linux-kernel@vger.kernel.org, linux@roeck-us.net,
+        tglx@linutronix.de, tytso@mit.edu, maxime.coquelin@st.com
+Reply-To: martink@posteo.de, christoph.muellner@theobroma-systems.com,
+        torvalds@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+        linux@rasmusvillemoes.dk, linux@roeck-us.net, tglx@linutronix.de,
+        peterz@infradead.org, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        jsrhbz@kanargh.force9.co.uk, akpm@linux-foundation.org,
+        mingo@kernel.org, maxime.coquelin@st.com, tytso@mit.edu
+In-Reply-To: <1421083370-24924-1-git-send-email-martink@posteo.de>
+References: <1421083370-24924-1-git-send-email-martink@posteo.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:core/types] bitops: Add sign_extend8(), 16 and 64 functions
+Git-Commit-ID: 7e9358073d3f0ed0a028c48aa54009b3296dffc9
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: linux-pcmcia@lists.infradead.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 2/2] PCMCIA: Less function calls in bcm63xx_drv_pcmcia_probe()
- after error detection
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <54BC02D2.8010008@users.sourceforge.net>
-In-Reply-To: <54BC02D2.8010008@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:iciYTNkD8XPcX0Xy4kHf2Huciqp9/oWx5jIWcARZZPgFmsoz1k5
- 1kszqMs2wPTNSQWS/tJ0EcAOEnK+g0+gxbe9nFIj74jOZkOqGj6dbxAmzXT4qfK6PyBfB9J
- IlyI9F6P46iQhGzxcHirtKRaY81LjDU64hYUpf6wynjwbKFp7KjJvEDYr9bH1KWt1b27Wna
- XC6SEbbkzjUMptvhXId0g==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Sun, 18 Jan 2015 19:45:45 +0100
+Commit-ID:  7e9358073d3f0ed0a028c48aa54009b3296dffc9
+Gitweb:     http://git.kernel.org/tip/7e9358073d3f0ed0a028c48aa54009b3296dffc9
+Author:     Martin Kepplinger <martink@posteo.de>
+AuthorDate: Mon, 12 Jan 2015 18:22:50 +0100
+Committer:  Ingo Molnar <mingo@kernel.org>
+CommitDate: Sun, 18 Jan 2015 20:03:51 +0100
 
-The functions "iounmap", "kfree" and "release_mem_region" were called in some
-cases by the bcm63xx_drv_pcmcia_probe() function during error handling
-even if the passed variable contained a null pointer.
+bitops: Add sign_extend8(), 16 and 64 functions
 
-* Corresponding details could be improved by adjustments for jump labels.
+This adds helper functions for sign-extending signed values of any
+lower (hardware-)given size to s8, s16 or s64 respectively, just like
+sign_extend32() for s32.
 
-* Let us delete also another unnecessary check for the data structure
-  member "reg_res" there.
+This completes the sign_extend*() API family to work on all bit sizes
+like most other bitops APIs do.
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+Suggested-by: Christoph Muellner <christoph.muellner@theobroma-systems.com>
+Signed-off-by: Martin Kepplinger <martink@posteo.de>
+Reviewed-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
+Cc: John Sullivan <jsrhbz@kanargh.force9.co.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Maxime COQUELIN <maxime.coquelin@st.com>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Cc: Theodore Ts'o <tytso@mit.edu>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Link: http://lkml.kernel.org/r/1421083370-24924-1-git-send-email-martink@posteo.de
+Signed-off-by: Ingo Molnar <mingo@kernel.org>
 ---
- drivers/pcmcia/bcm63xx_pcmcia.c | 14 ++++++++------
- 1 file changed, 8 insertions(+), 6 deletions(-)
+ include/linux/bitops.h | 33 +++++++++++++++++++++++++++++++++
+ 1 file changed, 33 insertions(+)
 
-diff --git a/drivers/pcmcia/bcm63xx_pcmcia.c b/drivers/pcmcia/bcm63xx_pcmcia.c
-index 9e7ad1b..9848d91a2 100644
---- a/drivers/pcmcia/bcm63xx_pcmcia.c
-+++ b/drivers/pcmcia/bcm63xx_pcmcia.c
-@@ -346,7 +346,7 @@ static int bcm63xx_drv_pcmcia_probe(struct platform_device *pdev)
- 	skt->pd = pdev->dev.platform_data;
- 	if (!skt->common_res || !skt->attr_res || !irq_res || !skt->pd) {
- 		ret = -EINVAL;
--		goto err;
-+		goto free_memory;
- 	}
- 
- 	/* remap pcmcia registers */
-@@ -354,14 +354,14 @@ static int bcm63xx_drv_pcmcia_probe(struct platform_device *pdev)
- 	regmem_size = resource_size(res);
- 	if (!request_mem_region(res->start, regmem_size, "bcm63xx_pcmcia")) {
- 		ret = -EINVAL;
--		goto err;
-+		goto free_memory;
- 	}
- 	skt->reg_res = res;
- 
- 	skt->base = ioremap(res->start, regmem_size);
- 	if (!skt->base) {
- 		ret = -ENOMEM;
--		goto err;
-+		goto release_memory_region;
- 	}
- 
- 	/* remap io registers */
-@@ -370,7 +370,7 @@ static int bcm63xx_drv_pcmcia_probe(struct platform_device *pdev)
- 	skt->io_base = ioremap(res->start, iomem_size);
- 	if (!skt->io_base) {
- 		ret = -ENOMEM;
--		goto err;
-+		goto io_unmap_base;
- 	}
- 
- 	/* resources are static */
-@@ -427,9 +427,11 @@ static int bcm63xx_drv_pcmcia_probe(struct platform_device *pdev)
- 
- err:
- 	iounmap(skt->io_base);
-+io_unmap_base:
- 	iounmap(skt->base);
--	if (skt->reg_res)
--		release_mem_region(skt->reg_res->start, regmem_size);
-+release_memory_region:
-+	release_mem_region(skt->reg_res->start, regmem_size);
-+free_memory:
- 	kfree(skt);
- 	return ret;
+diff --git a/include/linux/bitops.h b/include/linux/bitops.h
+index 5d858e0..9c31680 100644
+--- a/include/linux/bitops.h
++++ b/include/linux/bitops.h
+@@ -161,6 +161,28 @@ static inline __u8 ror8(__u8 word, unsigned int shift)
  }
--- 
-2.2.2
-
+ 
+ /**
++ * sign_extend8 - sign extend a 8-bit value using specified bit as sign-bit
++ * @value: value to sign extend
++ * @index: 0 based bit index (0<=index<8) to sign bit
++ */
++static inline __s8 sign_extend8(__u8 value, int index)
++{
++	__u8 shift = 7 - index;
++	return (__s8)(value << shift) >> shift;
++}
++
++/**
++ * sign_extend16 - sign extend a 16-bit value using specified bit as sign-bit
++ * @value: value to sign extend
++ * @index: 0 based bit index (0<=index<16) to sign bit
++ */
++static inline __s16 sign_extend16(__u16 value, int index)
++{
++	__u8 shift = 15 - index;
++	return (__s16)(value << shift) >> shift;
++}
++
++/**
+  * sign_extend32 - sign extend a 32-bit value using specified bit as sign-bit
+  * @value: value to sign extend
+  * @index: 0 based bit index (0<=index<32) to sign bit
+@@ -171,6 +193,17 @@ static inline __s32 sign_extend32(__u32 value, int index)
+ 	return (__s32)(value << shift) >> shift;
+ }
+ 
++/**
++ * sign_extend64 - sign extend a 64-bit value using specified bit as sign-bit
++ * @value: value to sign extend
++ * @index: 0 based bit index (0<=index<64) to sign bit
++ */
++static inline __s64 sign_extend64(__u64 value, int index)
++{
++	__u8 shift = 63 - index;
++	return (__s64)(value << shift) >> shift;
++}
++
+ static inline unsigned fls_long(unsigned long l)
+ {
+ 	if (sizeof(l) == 4)
