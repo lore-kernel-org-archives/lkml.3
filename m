@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752956AbbARLl4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 06:41:56 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:38612 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751580AbbARLjw (ORCPT
+	id S1752570AbbARLj7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 06:39:59 -0500
+Received: from mail-la0-f41.google.com ([209.85.215.41]:41508 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752096AbbARLjy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 06:39:52 -0500
+	Sun, 18 Jan 2015 06:39:54 -0500
 From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 To: linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
         Linus Walleij <linus.walleij@linaro.org>,
         Alexandre Courbot <gnurou@gmail.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [PATCH 1/8] gpio/mpc5200: Use of_mm_gpiochip_remove
-Date: Sun, 18 Jan 2015 12:39:26 +0100
-Message-Id: <1421581173-28416-2-git-send-email-ricardo.ribalda@gmail.com>
+        John Crispin <blogic@openwrt.org>
+Subject: [PATCH 2/8] gpio/-mm-lantiq: Use devm_kzalloc
+Date: Sun, 18 Jan 2015 12:39:27 +0100
+Message-Id: <1421581173-28416-3-git-send-email-ricardo.ribalda@gmail.com>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421581173-28416-1-git-send-email-ricardo.ribalda@gmail.com>
 References: <1421581173-28416-1-git-send-email-ricardo.ribalda@gmail.com>
@@ -23,84 +23,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since d621e8bae5ac9c67 (Create of_mm_gpiochip_remove), there is a
-counterpart for of_mm_gpiochip_add.
-
-This patch implements the remove function of the driver making use of
-it.
+Replace kzalloc with the device managed devm_kzalloc
 
 Cc: Linus Walleij <linus.walleij@linaro.org>
 Cc: Alexandre Courbot <gnurou@gmail.com>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: John Crispin <blogic@openwrt.org>
 Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 ---
- drivers/gpio/gpio-mpc5200.c | 23 ++++++++++++++++++-----
- 1 file changed, 18 insertions(+), 5 deletions(-)
+ drivers/gpio/gpio-mm-lantiq.c | 8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/gpio/gpio-mpc5200.c b/drivers/gpio/gpio-mpc5200.c
-index 8ce6c95..4c54215 100644
---- a/drivers/gpio/gpio-mpc5200.c
-+++ b/drivers/gpio/gpio-mpc5200.c
-@@ -155,10 +155,12 @@ static int mpc52xx_wkup_gpiochip_probe(struct platform_device *ofdev)
- 	struct gpio_chip *gc;
- 	int ret;
+diff --git a/drivers/gpio/gpio-mm-lantiq.c b/drivers/gpio/gpio-mm-lantiq.c
+index f228b1c..7890163 100644
+--- a/drivers/gpio/gpio-mm-lantiq.c
++++ b/drivers/gpio/gpio-mm-lantiq.c
+@@ -107,14 +107,13 @@ static int ltq_mm_probe(struct platform_device *pdev)
+ 	struct resource *res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	struct ltq_mm *chip;
+ 	const __be32 *shadow;
+-	int ret = 0;
+ 
+ 	if (!res) {
+ 		dev_err(&pdev->dev, "failed to get memory resource\n");
+ 		return -ENOENT;
+ 	}
  
 -	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
-+	chip = devm_kzalloc(&ofdev->dev, sizeof(*chip), GFP_KERNEL);
++	chip = devm_kzalloc(&pdev->dev, sizeof(*chip), GFP_KERNEL);
  	if (!chip)
  		return -ENOMEM;
  
-+	platform_set_drvdata(ofdev, chip);
-+
- 	gc = &chip->mmchip.gc;
+@@ -129,10 +128,7 @@ static int ltq_mm_probe(struct platform_device *pdev)
+ 	if (shadow)
+ 		chip->shadow = be32_to_cpu(*shadow);
  
- 	gc->ngpio            = 8;
-@@ -181,7 +183,11 @@ static int mpc52xx_wkup_gpiochip_probe(struct platform_device *ofdev)
- 
- static int mpc52xx_gpiochip_remove(struct platform_device *ofdev)
- {
--	return -EBUSY;
-+	struct mpc52xx_gpiochip *chip = platform_get_drvdata(ofdev);
-+
-+	of_mm_gpiochip_remove(&chip->mmchip);
-+
-+	return 0;
+-	ret = of_mm_gpiochip_add(pdev->dev.of_node, &chip->mmchip);
+-	if (ret)
+-		kfree(chip);
+-	return ret;
++	return of_mm_gpiochip_add(pdev->dev.of_node, &chip->mmchip);
  }
  
- static const struct of_device_id mpc52xx_wkup_gpiochip_match[] = {
-@@ -314,10 +320,12 @@ static int mpc52xx_simple_gpiochip_probe(struct platform_device *ofdev)
- 	struct mpc52xx_gpio __iomem *regs;
- 	int ret;
- 
--	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
-+	chip = devm_kzalloc(&ofdev->dev, sizeof(*chip), GFP_KERNEL);
- 	if (!chip)
- 		return -ENOMEM;
- 
-+	platform_set_drvdata(ofdev, chip);
-+
- 	gc = &chip->mmchip.gc;
- 
- 	gc->ngpio            = 32;
-@@ -363,11 +371,16 @@ static int __init mpc52xx_gpio_init(void)
- 	return 0;
- }
- 
--
- /* Make sure we get initialised before anyone else tries to use us */
- subsys_initcall(mpc52xx_gpio_init);
- 
--/* No exit call at the moment as we cannot unregister of gpio chips */
-+static void __exit mpc52xx_gpio_exit(void)
-+{
-+	platform_driver_unregister(&mpc52xx_wkup_gpiochip_driver);
-+
-+	platform_driver_unregister(&mpc52xx_simple_gpiochip_driver);
-+}
-+module_exit(mpc52xx_gpio_exit);
- 
- MODULE_DESCRIPTION("Freescale MPC52xx gpio driver");
- MODULE_AUTHOR("Sascha Hauer <s.hauer@pengutronix.de");
+ static const struct of_device_id ltq_mm_match[] = {
 -- 
 2.1.4
 
