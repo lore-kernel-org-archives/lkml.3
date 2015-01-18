@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752062AbbARBSE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 20:18:04 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:38995 "EHLO
+	id S1751958AbbARBSB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 20:18:01 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:41460 "EHLO
 	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751513AbbARBRs (ORCPT
+	by vger.kernel.org with ESMTP id S1751603AbbARBRu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 20:17:48 -0500
-X-Sasl-enc: bVtLTqpNVo+fTj9AcQf3gNDvqL8/WfzbN0+RTF6L9blW 1421543867
+	Sat, 17 Jan 2015 20:17:50 -0500
+X-Sasl-enc: gw3xHjfm6KivddJYwofzsW/2JUTyZFetsmWTOxmSz3iU 1421543869
 From: Alexander van Heukelum <heukelum@fastmail.fm>
 To: Andy Lutomirski <luto@amacapital.net>, x86@kernel.org,
         linux-kernel@vger.kernel.org
 Cc: Frederic Weisbecker <fweisbec@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
         Borislav Petkov <bp@suse.de>, Rik van Riel <riel@redhat.com>
-Subject: [PATCH 2/3] x86_64: don't use KERNEL_STACK_OFFSET for syscall and sysenter
-Date: Sun, 18 Jan 2015 02:17:41 +0100
-Message-Id: <1421543862-3552-3-git-send-email-heukelum@fastmail.fm>
+Subject: [PATCH 3/3] x86_64, entry: Create IRET-compatible stack frame at syscall entry
+Date: Sun, 18 Jan 2015 02:17:42 +0100
+Message-Id: <1421543862-3552-4-git-send-email-heukelum@fastmail.fm>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1421543862-3552-1-git-send-email-heukelum@fastmail.fm>
 References: <1421543862-3552-1-git-send-email-heukelum@fastmail.fm>
@@ -23,156 +23,220 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The syscall and sysenter code use KERNEL_STACK_OFFSET to set the
-initial stack pointer a bit below the top of the kernel stack page.
-Stop doing that.
+Create an IRET-compatible top of stack at syscall entry and use this
+information to return to user mode in the sysret path. This removes
+the need for the FIXUP_TOP_OF_STACK and RESTORE_TOP_OF_STACK macros.
 
 Signed-off-by: Alexander van Heukelum <heukelum@fastmail.fm>
 ---
- arch/x86/ia32/ia32entry.S          | 4 ++--
- arch/x86/include/asm/thread_info.h | 6 ++----
- arch/x86/kernel/cpu/common.c       | 2 +-
- arch/x86/kernel/entry_64.S         | 3 ++-
- arch/x86/kernel/process_64.c       | 3 +--
- arch/x86/kernel/smpboot.c          | 3 +--
- arch/x86/xen/smp.c                 | 3 +--
- 7 files changed, 10 insertions(+), 14 deletions(-)
+ arch/x86/kernel/entry_64.S | 77 +++++++++++++---------------------------------
+ 1 file changed, 22 insertions(+), 55 deletions(-)
 
-diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
-index 1c74f39..93b30a1 100644
---- a/arch/x86/ia32/ia32entry.S
-+++ b/arch/x86/ia32/ia32entry.S
-@@ -122,7 +122,6 @@ ENTRY(ia32_sysenter_target)
- 	CFI_REGISTER	rsp,rbp
- 	SWAPGS_UNSAFE_STACK
- 	movq	PER_CPU_VAR(kernel_stack), %rsp
--	addq	$(KERNEL_STACK_OFFSET),%rsp
- 	/*
- 	 * No need to follow this irqs on/off section: the syscall
- 	 * disabled irqs, here we enable it straight after entry:
-@@ -292,13 +291,14 @@ ENDPROC(ia32_sysenter_target)
- ENTRY(ia32_cstar_target)
- 	CFI_STARTPROC32	simple
- 	CFI_SIGNAL_FRAME
--	CFI_DEF_CFA	rsp,KERNEL_STACK_OFFSET
-+	CFI_DEF_CFA	rsp,0
- 	CFI_REGISTER	rip,rcx
- 	/*CFI_REGISTER	rflags,r11*/
- 	SWAPGS_UNSAFE_STACK
- 	movl	%esp,%r8d
- 	CFI_REGISTER	rsp,r8
- 	movq	PER_CPU_VAR(kernel_stack),%rsp
-+	sub $(PTREGS_SIZE-RIP),%rsp
- 	/*
- 	 * No need to follow this irqs on/off section: the syscall
- 	 * disabled irqs and here we enable it straight after entry:
-diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
-index 471037d..2caaaf2 100644
---- a/arch/x86/include/asm/thread_info.h
-+++ b/arch/x86/include/asm/thread_info.h
-@@ -149,7 +149,6 @@ struct thread_info {
- #define _TIF_WORK_CTXSW_NEXT (_TIF_WORK_CTXSW)
- 
- #define STACK_WARN		(THREAD_SIZE/8)
--#define KERNEL_STACK_OFFSET	(5*(BITS_PER_LONG/8))
- 
- /*
-  * macros/functions for gaining access to the thread information structure
-@@ -163,8 +162,7 @@ DECLARE_PER_CPU(unsigned long, kernel_stack);
- static inline struct thread_info *current_thread_info(void)
- {
- 	struct thread_info *ti;
--	ti = (void *)(this_cpu_read_stable(kernel_stack) +
--		      KERNEL_STACK_OFFSET - THREAD_SIZE);
-+	ti = (void *)(this_cpu_read_stable(kernel_stack) - THREAD_SIZE);
- 	return ti;
- }
- 
-@@ -184,7 +182,7 @@ static inline unsigned long current_stack_pointer(void)
- /* how to get the thread information struct from ASM */
- #define GET_THREAD_INFO(reg) \
- 	_ASM_MOV PER_CPU_VAR(kernel_stack),reg ; \
--	_ASM_SUB $(THREAD_SIZE-KERNEL_STACK_OFFSET),reg ;
-+	_ASM_SUB $THREAD_SIZE,reg ;
- 
- /*
-  * Same if PER_CPU_VAR(kernel_stack) is, perhaps with some offset, already in
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index c604965..aa76c69 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -1116,7 +1116,7 @@ static __init int setup_disablecpuid(char *arg)
- __setup("clearcpuid=", setup_disablecpuid);
- 
- DEFINE_PER_CPU(unsigned long, kernel_stack) =
--	(unsigned long)&init_thread_union - KERNEL_STACK_OFFSET + THREAD_SIZE;
-+	(unsigned long)&init_thread_union + THREAD_SIZE;
- EXPORT_PER_CPU_SYMBOL(kernel_stack);
- 
- #ifdef CONFIG_X86_64
 diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 9f9ca20..7adff94 100644
+index 7adff94..e952839 100644
 --- a/arch/x86/kernel/entry_64.S
 +++ b/arch/x86/kernel/entry_64.S
-@@ -321,7 +321,7 @@ END(ret_from_fork)
- ENTRY(system_call)
- 	CFI_STARTPROC	simple
- 	CFI_SIGNAL_FRAME
--	CFI_DEF_CFA	rsp,KERNEL_STACK_OFFSET
-+	CFI_DEF_CFA	rsp,0
- 	CFI_REGISTER	rip,rcx
- 	/*CFI_REGISTER	rflags,r11*/
- 	SWAPGS_UNSAFE_STACK
-@@ -334,6 +334,7 @@ GLOBAL(system_call_after_swapgs)
+@@ -33,8 +33,6 @@
+  * - SAVE_REST/RESTORE_REST - Handle the registers not saved by SAVE_ARGS.
+  * Gives a full stack frame.
+  * - ENTRY/END Define functions in the symbol table.
+- * - FIXUP_TOP_OF_STACK/RESTORE_TOP_OF_STACK - Fix up the hardware stack
+- * frame that is otherwise undefined after a SYSCALL
+  * - TRACE_IRQ_* - Trace hard interrupt state for lock debugging.
+  * - idtentry - Define exception entry points.
+  */
+@@ -130,33 +128,6 @@ ENDPROC(native_usergs_sysret64)
+ #endif
+ 
+ /*
+- * C code is not supposed to know about undefined top of stack. Every time
+- * a C function with an pt_regs argument is called from the SYSCALL based
+- * fast path FIXUP_TOP_OF_STACK is needed.
+- * RESTORE_TOP_OF_STACK syncs the syscall state after any possible ptregs
+- * manipulation.
+- */
+-
+-	/* %rsp:at FRAMEEND */
+-	.macro FIXUP_TOP_OF_STACK tmp offset=0
+-	movq PER_CPU_VAR(old_rsp),\tmp
+-	movq \tmp,RSP+\offset(%rsp)
+-	movq $__USER_DS,SS+\offset(%rsp)
+-	movq $__USER_CS,CS+\offset(%rsp)
+-	movq RIP+\offset(%rsp),\tmp  /* get rip */
+-	movq \tmp,RCX+\offset(%rsp)  /* copy it to rcx as sysret would do */
+-	movq R11+\offset(%rsp),\tmp  /* get eflags */
+-	movq \tmp,EFLAGS+\offset(%rsp)
+-	.endm
+-
+-	.macro RESTORE_TOP_OF_STACK tmp offset=0
+-	movq RSP+\offset(%rsp),\tmp
+-	movq \tmp,PER_CPU_VAR(old_rsp)
+-	movq EFLAGS+\offset(%rsp),\tmp
+-	movq \tmp,R11+\offset(%rsp)
+-	.endm
+-
+-/*
+  * initial frame state for interrupts (and exceptions without error code)
+  */
+ 	.macro EMPTY_FRAME start=1 offset=0
+@@ -272,7 +243,6 @@ ENTRY(ret_from_fork)
+ 	testl $_TIF_IA32, TI_flags(%rcx)	# 32-bit compat task needs IRET
+ 	jnz  int_ret_from_sys_call
+ 
+-	RESTORE_TOP_OF_STACK %rdi, -ARGOFFSET
+ 	jmp ret_from_sys_call			# go to the SYSRET fastpath
+ 
+ 1:
+@@ -334,16 +304,30 @@ GLOBAL(system_call_after_swapgs)
  
  	movq	%rsp,PER_CPU_VAR(old_rsp)
  	movq	PER_CPU_VAR(kernel_stack),%rsp
-+	sub $(PTREGS_SIZE-RIP),%rsp
+-	sub $(PTREGS_SIZE-RIP),%rsp
  	/*
  	 * No need to follow this irqs off/on section - it's straight
  	 * and short:
-diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index 5a2c029..0747dbf 100644
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -414,8 +414,7 @@ __switch_to(struct task_struct *prev_p, struct task_struct *next_p)
- 	this_cpu_write(__preempt_count, task_thread_info(next_p)->saved_preempt_count);
+ 	 */
+ 	ENABLE_INTERRUPTS(CLBR_NONE)
+-	SAVE_ARGS 8, 0, rax_enosys=1
++
++	/*
++	 * Save user mode rsp (temporarily saved above in old_rsp),
++	 * rflags (%r11), rip (%rcx) and segments (fixed values) on
++	 * the stack as a regular interrupt frame.
++	 */
++	pushq_cfi $__USER_DS
++	/* CFI_REL_OFFSET ss, 0 */
++	pushq_cfi PER_CPU_VAR(old_rsp)
++	CFI_REL_OFFSET rsp, 0
++	pushq_cfi %r11 /* %r11 clobbered (userspace %rflags) */
++	/* CFI_REL_OFFSET rflags, 0 */
++	pushq_cfi $__USER_CS
++	/* CFI_REL_OFFSET cs, 0 */
++	pushq_cfi %rcx /* %rcx clobbered (userspace %rip) */
++	CFI_REL_OFFSET rip, 0
++
++	SAVE_ARGS 8, rax_enosys=1
+ 	movq_cfi rax,(ORIG_RAX-ARGOFFSET)
+-	movq  %rcx,RIP-ARGOFFSET(%rsp)
+-	CFI_REL_OFFSET rip,RIP-ARGOFFSET
+ 	testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,ARGOFFSET)
+ 	jnz tracesys
+ system_call_fastpath:
+@@ -363,7 +347,7 @@ system_call_fastpath:
+  */
+ ret_from_sys_call:
+ 	testl $_TIF_ALLWORK_MASK,TI_flags+THREAD_INFO(%rsp,ARGOFFSET)
+-	jnz int_ret_from_sys_call_fixup	/* Go the the slow path */
++	jnz int_ret_from_sys_call	/* Go the the slow path */
  
- 	this_cpu_write(kernel_stack,
--		  (unsigned long)task_stack_page(next_p) +
--		  THREAD_SIZE - KERNEL_STACK_OFFSET);
-+		  (unsigned long)task_stack_page(next_p) + THREAD_SIZE);
+ 	LOCKDEP_SYS_EXIT
+ 	DISABLE_INTERRUPTS(CLBR_NONE)
+@@ -373,19 +357,16 @@ ret_from_sys_call:
+ 	 * sysretq will re-enable interrupts:
+ 	 */
+ 	TRACE_IRQS_ON
++	RESTORE_ARGS addskip=-ARG_SKIP, rstor_rcx=0, rstor_r11=0
+ 	movq RIP-ARGOFFSET(%rsp),%rcx
+ 	CFI_REGISTER	rip,rcx
+-	RESTORE_ARGS 1,-ARG_SKIP,0
++	mov EFLAGS-ARGOFFSET(%rsp), %r11
+ 	/*CFI_REGISTER	rflags,r11*/
+-	movq	PER_CPU_VAR(old_rsp), %rsp
++	mov RSP-ARGOFFSET(%rsp), %rsp
+ 	USERGS_SYSRET64
  
- 	/*
- 	 * Now maybe reload the debug registers and handle I/O bitmaps
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 6d7022c..66fd449 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -776,8 +776,7 @@ static int do_boot_cpu(int apicid, int cpu, struct task_struct *idle)
- 	initial_gs = per_cpu_offset(cpu);
- #endif
- 	per_cpu(kernel_stack, cpu) =
--		(unsigned long)task_stack_page(idle) -
--		KERNEL_STACK_OFFSET + THREAD_SIZE;
-+		(unsigned long)task_stack_page(idle) + THREAD_SIZE;
- 	early_gdt_descr.address = (unsigned long)get_cpu_gdt_table(cpu);
- 	initial_code = (unsigned long)start_secondary;
- 	stack_start  = idle->thread.sp;
-diff --git a/arch/x86/xen/smp.c b/arch/x86/xen/smp.c
-index 4c071ae..4e71a3b 100644
---- a/arch/x86/xen/smp.c
-+++ b/arch/x86/xen/smp.c
-@@ -452,8 +452,7 @@ static int xen_cpu_up(unsigned int cpu, struct task_struct *idle)
- 	clear_tsk_thread_flag(idle, TIF_FORK);
- #endif
- 	per_cpu(kernel_stack, cpu) =
--		(unsigned long)task_stack_page(idle) -
--		KERNEL_STACK_OFFSET + THREAD_SIZE;
-+		(unsigned long)task_stack_page(idle) + THREAD_SIZE;
+ 	CFI_RESTORE_STATE
  
- 	xen_setup_runstate_info(cpu);
- 	xen_setup_timer(cpu);
+-int_ret_from_sys_call_fixup:
+-	FIXUP_TOP_OF_STACK %r11, -ARGOFFSET
+-	jmp int_ret_from_sys_call
+-
+ 	/* Do syscall tracing */
+ tracesys:
+ 	leaq -REST_SKIP(%rsp), %rdi
+@@ -398,7 +379,6 @@ tracesys:
+ 
+ tracesys_phase2:
+ 	SAVE_REST
+-	FIXUP_TOP_OF_STACK %rdi
+ 	movq %rsp, %rdi
+ 	movq $AUDIT_ARCH_X86_64, %rsi
+ 	movq %rax,%rdx
+@@ -494,10 +474,8 @@ ENTRY(stub_\func)
+ 	PARTIAL_FRAME 0
+ 	SAVE_REST
+ 	pushq	%r11			/* put it back on stack */
+-	FIXUP_TOP_OF_STACK %r11, 8
+ 	DEFAULT_FRAME 0 8		/* offset 8: return address */
+ 	call sys_\func
+-	RESTORE_TOP_OF_STACK %r11, 8
+ 	ret $REST_SKIP		/* pop extended registers */
+ 	CFI_ENDPROC
+ END(stub_\func)
+@@ -507,9 +485,7 @@ END(stub_\func)
+ ENTRY(\label)
+ 	CFI_STARTPROC
+ 	PARTIAL_FRAME 0 8		/* offset 8: return address */
+-	FIXUP_TOP_OF_STACK %r11, 8-ARGOFFSET
+ 	call \func
+-	RESTORE_TOP_OF_STACK %r11, 8-ARGOFFSET
+ 	ret
+ 	CFI_ENDPROC
+ END(\label)
+@@ -525,7 +501,6 @@ ENTRY(stub_execve)
+ 	addq $8, %rsp
+ 	PARTIAL_FRAME 0
+ 	SAVE_REST
+-	FIXUP_TOP_OF_STACK %r11
+ 	call sys_execve
+ 	movq %rax,RAX(%rsp)
+ 	RESTORE_REST
+@@ -538,9 +513,7 @@ ENTRY(stub_execveat)
+ 	addq $8, %rsp
+ 	PARTIAL_FRAME 0
+ 	SAVE_REST
+-	FIXUP_TOP_OF_STACK %r11
+ 	call sys_execveat
+-	RESTORE_TOP_OF_STACK %r11
+ 	movq %rax,RAX(%rsp)
+ 	RESTORE_REST
+ 	jmp int_ret_from_sys_call
+@@ -556,7 +529,6 @@ ENTRY(stub_rt_sigreturn)
+ 	addq $8, %rsp
+ 	PARTIAL_FRAME 0
+ 	SAVE_REST
+-	FIXUP_TOP_OF_STACK %r11
+ 	call sys_rt_sigreturn
+ 	movq %rax,RAX(%rsp) # fixme, this could be done at the higher layer
+ 	RESTORE_REST
+@@ -570,7 +542,6 @@ ENTRY(stub_x32_rt_sigreturn)
+ 	addq $8, %rsp
+ 	PARTIAL_FRAME 0
+ 	SAVE_REST
+-	FIXUP_TOP_OF_STACK %r11
+ 	call sys32_x32_rt_sigreturn
+ 	movq %rax,RAX(%rsp) # fixme, this could be done at the higher layer
+ 	RESTORE_REST
+@@ -583,9 +554,7 @@ ENTRY(stub_x32_execve)
+ 	addq $8, %rsp
+ 	PARTIAL_FRAME 0
+ 	SAVE_REST
+-	FIXUP_TOP_OF_STACK %r11
+ 	call compat_sys_execve
+-	RESTORE_TOP_OF_STACK %r11
+ 	movq %rax,RAX(%rsp)
+ 	RESTORE_REST
+ 	jmp int_ret_from_sys_call
+@@ -597,9 +566,7 @@ ENTRY(stub_x32_execveat)
+ 	addq $8, %rsp
+ 	PARTIAL_FRAME 0
+ 	SAVE_REST
+-	FIXUP_TOP_OF_STACK %r11
+ 	call compat_sys_execveat
+-	RESTORE_TOP_OF_STACK %r11
+ 	movq %rax,RAX(%rsp)
+ 	RESTORE_REST
+ 	jmp int_ret_from_sys_call
 -- 
 2.1.0
 
