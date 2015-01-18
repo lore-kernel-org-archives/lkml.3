@@ -1,117 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752626AbbARQRJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 11:17:09 -0500
-Received: from regular2.263xmail.com ([211.157.152.4]:39978 "EHLO
-	regular2.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751922AbbARQRE (ORCPT
+	id S1752645AbbARQjU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 11:39:20 -0500
+Received: from mail-la0-f51.google.com ([209.85.215.51]:63716 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751590AbbARQjT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 11:17:04 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-ADDR-CHECKED: 0
-X-RL-SENDER: caesar.wang@rock-chips.com
-X-SENDER-IP: 173.208.56.148
-X-LOGIN-NAME: caesar.wang@rock-chips.com
-X-UNIQUE-TAG: <624b0ace62b5abc33ef2ba8851c849f4>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 5
-From: Caesar Wang <wxt@rock-chips.com>
-To: Heiko Stuebner <heiko@sntech.de>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <edubezval@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Caesar Wang <wxt@rock-chips.com>, linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v1] thermal: rockchip: make temperature reporting much more accurate
-Date: Mon, 19 Jan 2015 00:15:53 +0800
-Message-Id: <1421597753-2082-2-git-send-email-wxt@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1421597753-2082-1-git-send-email-wxt@rock-chips.com>
-References: <1421597753-2082-1-git-send-email-wxt@rock-chips.com>
+	Sun, 18 Jan 2015 11:39:19 -0500
+MIME-Version: 1.0
+In-Reply-To: <1421581520-2816-5-git-send-email-heukelum@fastmail.fm>
+References: <1421581520-2816-1-git-send-email-heukelum@fastmail.fm> <1421581520-2816-5-git-send-email-heukelum@fastmail.fm>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Sun, 18 Jan 2015 08:38:55 -0800
+Message-ID: <CALCETrU84yDv+k=KojhODKfaJ-HHCWMuJteH98FR6md-JbmiQQ@mail.gmail.com>
+Subject: Re: [PATCHv2 4/4] x86_64, entry: Create IRET-compatible stack frame
+ at syscall entry
+To: Alexander van Heukelum <heukelum@fastmail.fm>
+Cc: X86 ML <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, Borislav Petkov <bp@suse.de>,
+        Rik van Riel <riel@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In general, the kernel should report temperature readings exactly as
-reported by the hardware. The cpu / gpu thermal driver works in 5 degree
-increments,but we ought to do more accurate. The temperature will do
-linear interpolation between the entries in the table.
+On Sun, Jan 18, 2015 at 3:45 AM, Alexander van Heukelum
+<heukelum@fastmail.fm> wrote:
+> Create an IRET-compatible top of stack at syscall entry and use this
+> information to return to user mode in the sysret path. This removes
+> the need for the FIXUP_TOP_OF_STACK and RESTORE_TOP_OF_STACK macros.
 
-Test= $md5sum /dev/zero &
-$while true; do grep "" /sys/class/thermal/thermal_zone[1-2]/temp;
-sleep .5; done
+Since I have limited bandwidth, I'd like to tackle these one at a time.
 
-e.g. We can get the result as follows:
-    /sys/class/thermal/thermal_zone1/temp:39994
-    /sys/class/thermal/thermal_zone2/temp:39086
-    /sys/class/thermal/thermal_zone1/temp:39994
-    /sys/class/thermal/thermal_zone2/temp:39540
-    /sys/class/thermal/thermal_zone1/temp:39540
-    /sys/class/thermal/thermal_zone2/temp:39540
-    /sys/class/thermal/thermal_zone1/temp:39540
-    /sys/class/thermal/thermal_zone2/temp:39994
+I like the idea of this patch, but it has some issues.
 
-Signed-off-by: Caesar Wang <wxt@rock-chips.com>
+First, it needs to be benchmarked.  The syscall fast path entry code
+is *very* hot in some workloads, and it needs to be fast.
 
----
+Second, I think you're really making three changes here.
 
- drivers/thermal/rockchip_thermal.c | 26 +++++++++++++++++---------
- 1 file changed, 17 insertions(+), 9 deletions(-)
+a) You're putting rsp where it belongs -- it's in pt_regs instead of
+being magically shoved into a combination of per-cpu variables and
+extra arch state (thread->usersp).  This ideally consists of (AFAICS)
+two tiny asm changes: one extra mov (most likely cache-hot) on entry
+and a change of where you're reading from when you reload rsp on exit.
+The former change could easily add a cycle (or zero cycles, or lots of
+cycles -- hardware can be complicated, and I have no idea how well
+store forwarding works on gs-relative accesses).  The latter change is
+probably a speedup -- we'd be reading from pt_regs (almost certainly
+hot or at least easily detected by the hardware prefetcher) instead of
+a random percpu variable on exit.
 
-diff --git a/drivers/thermal/rockchip_thermal.c b/drivers/thermal/rockchip_thermal.c
-index 1bcddfc..a7ae23a 100644
---- a/drivers/thermal/rockchip_thermal.c
-+++ b/drivers/thermal/rockchip_thermal.c
-@@ -193,19 +193,18 @@ static u32 rk_tsadcv2_temp_to_code(long temp)
- 
- static long rk_tsadcv2_code_to_temp(u32 code)
- {
--	int high, low, mid;
--
--	low = 0;
--	high = ARRAY_SIZE(v2_code_table) - 1;
--	mid = (high + low) / 2;
-+	unsigned int low = 0;
-+	unsigned int high = ARRAY_SIZE(v2_code_table) - 1;
-+	unsigned int mid = (low + high) / 2;
-+	unsigned int scale;
- 
- 	if (code > v2_code_table[low].code || code < v2_code_table[high].code)
- 		return 125000; /* No code available, return max temperature */
- 
- 	while (low <= high) {
--		if (code >= v2_code_table[mid].code && code <
--		    v2_code_table[mid - 1].code)
--			return v2_code_table[mid].temp;
-+		if (code >= v2_code_table[mid].code &&
-+		    code < v2_code_table[mid - 1].code)
-+			break;
- 		else if (code < v2_code_table[mid].code)
- 			low = mid + 1;
- 		else
-@@ -213,7 +212,16 @@ static long rk_tsadcv2_code_to_temp(u32 code)
- 		mid = (low + high) / 2;
- 	}
- 
--	return 125000;
-+	/*
-+	 * The 5C granularity provided by the table is too much. Let's
-+	 * assume that the relationship between sensor readings and
-+	 * temperature between 2 table entries is linear and extrapolate
-+	 * to produce less granular result.
-+	 */
-+	scale = (v2_code_table[mid].temp - v2_code_table[mid - 1].temp) /
-+		(v2_code_table[mid - 1].code - v2_code_table[mid].code);
-+	return v2_code_table[mid - 1].temp +
-+			(v2_code_table[mid - 1].code - code) * scale;
- }
- 
- /**
--- 
-1.9.1
+*However*, this change enables the removal of all the usersp crap when
+context switching, and all of the old_rsp references need to be
+audited, and (having added yet another of them a week or two ago) I
+know that you missed at least one and probably three or four :)  Also,
+removing the usersp crap could easily speed up context switches by a
+cache line or so.
 
+Can you do that and split out just the old_rsp, usersp, and rsp part
+as its own patch?
 
+b) You're putting the saved flags into the EFLAGS pt_regs slot, which
+seems to me to be an unambiguous win -- it removes two instructions
+from RESTORE_TOP_OF_STACK, and it adds nothing whatsoever (except to
+the extent that you continue to initialize R11 on entry instead of in
+FIXUP_TOP_OF_STACK).
+
+(a) and (b) alone should be enough to eliminate RESTORE_TOP_OF_STACK.
+
+c) You're initializing the rest of the "top of stack" (cs, ss, and
+rcx) unconditionally.  This is simpler, but I'm not sure it's
+worthwhile -- we still lazily save the caller-saved regs, and
+FIXUP_TOP_OF_STACK fits right in.  It also may have a performance
+impact.
+
+I think that (a) and (b) are clear wins (a is a really nice cleanup
+and I bet it's a speedup, too, and b seems to be better in all
+respects).  (c) is much less clearly a win to me.
+
+Would you be willing to send split-out patches along with benchmarks?
+
+--Andy
