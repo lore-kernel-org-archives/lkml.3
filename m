@@ -1,67 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751844AbbARBkc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 20:40:32 -0500
-Received: from mga03.intel.com ([134.134.136.65]:52615 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751225AbbARBka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 20:40:30 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,419,1418112000"; 
-   d="scan'208";a="652700818"
-Message-ID: <54BB0E42.9070209@intel.com>
-Date: Sat, 17 Jan 2015 17:37:06 -0800
-From: Tadeusz Struk <tadeusz.struk@intel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S1752016AbbARBpf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 20:45:35 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:47306 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751671AbbARBpd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Jan 2015 20:45:33 -0500
+Message-ID: <54BB102B.1060606@roeck-us.net>
+Date: Sat, 17 Jan 2015 17:45:15 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Stephan Mueller <smueller@chronox.de>, aidan.o.mahony@intel.com,
-        gabriele.paoloni@intel.com, adrian.hoban@intel.com
-CC: linux-crypto@vger.kernel.org, herbert@gondor.apana.org.au,
-        "'LKML'" <linux-kernel@vger.kernel.org>
-Subject: Re: Intel GCM: __driver-gcm-aes-aesni setkey missing
-References: <1976848.LqsUs5V3zD@tachyon.chronox.de>
-In-Reply-To: <1976848.LqsUs5V3zD@tachyon.chronox.de>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: linux-kernel@vger.kernel.org, kernel@savoirfairelinux.com
+Subject: Re: [PATCH] sysfs: group: allow is_visible to drop permissions
+References: <526250410.74266.1421532551922.JavaMail.root@mail>
+In-Reply-To: <526250410.74266.1421532551922.JavaMail.root@mail>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020204.54BB103D.002B,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 2
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephan,
-On 01/17/2015 10:23 AM, Stephan Mueller wrote:
-> during testing of my algif_aead patch with the different GCM implementations I 
-> am able to trigger a kernel crash from user space using __driver-gcm-aes-
-> aesni.
-> 
-> As I hope that algif_aead is going to be included, unprivileged userspace 
-> would then reliably crash the kernel -- with the current kernel code, 
-> userspace has no interface to trigger the issue.
+On 01/17/2015 02:09 PM, Vivien Didelot wrote:
+> Hi Guenter, Greg,
+>
+[ .. ]
 
-Yes, that's a problem.
+>
+> BTW Guenter, does this patch make sense to you?
+>
 
-> 
-> As I am not sure what the purpose of __driver-gcm-aes-aesni is (only a backend 
-> for RFC4106 GCM or a regular cipher), I did not yet create a patch. IMHO there 
-> are two solutions:
-> 
-> - either create a valid setkey callback so that a key is set
-> 
-> - or create a noop setkey that returns -EOPNOTSUPP which effectively disables 
-> that cipher for regular consumption.
+It does make sense to me to only use the return value from is_visible
+for the mode.
 
-__driver-gcm-aes-aesni is only a helper for rfc4106-gcm-aesni and it
-never supposed to be used on it's own. I think implementing a setkey
-function that only returns an error would be a good solution for this.
-Another question is what if someone will ignore the error or skip the
-setsockopt(ALG_SET_KEY) altogether and still call the sendmsg() and
-read() to trigger encrypt()?
+As for which bits to use, I am not entirely sure. I think it would be
+more important to first decide which bits should be acceptable to start with.
 
-> Note, if it is only a backend for the RFC4106 implementation, may I ask why 
-> __driver-gcm-aes-aesni is implemented as a separate cipher that is registered 
-> with the kernel crypto API?
+Then I would _always_ only use the bits from mode, masked against the
+valid bits, whatever they are.
 
-This is because we need to have one instance of the helper tfm with its
-context per each of the rfc4106-gcm-aesni tfm instance and that was one
-convenient way to do this.
+	umode_t mode = (*attr)->mode;
+	...
+	if (grp->is_visible) {
+		mode = grp->is_visible(kobj, *attr, i);
+		if (!mode)
+			continue;
+	}
 
-Tadeusz
+	WARN(mode & ~(S_IRUGO | S_IWUGO | SYSFS_PREALLOC),	/* optional */
+	     "Attribute %s: Invalid permission 0x%x\n", (*attr)->name, mode);
+
+	mode &= S_IRUGO | S_IWUGO | SYSFS_PREALLOC;
+	error = sysfs_add_file_mode_ns(parent, *attr, false, mode, NULL);
+	...
+
+>
+> My assumption here was that the attribute group is_visible function
+> should just be able to adjust the UGO bits. Am I correct?
+>
+I would think so.
+
+> I'm not even sure about the execute permission though. Only one driver
+> uses it for an attribute and it seems wrong, in drivers/hid/hid-lg4ff.c:
+>
+> static DEVICE_ATTR(range, S_IRWXU | S_IRWXG | S_IROTH, lg4ff_range_show, lg4ff_range_store);
+>
+That seems wrong.
+
+>
+> The actual behavior seems wrong to me. Again, what happens is you return
+> SYSFS_PREALLOC, that the underlying sysfs_add_file_mode_ns() function is
+> actually checking?
+>
+Ultimately, the implementor asked for it.
+
+> IMHO, if we want an attribute group to only be able to "hide or show" an
+> attribute, then is_visible (as the name suggests) should return a
+> boolean. If we want it be able to adjust permissions (as it seems
+> correct, given the examples), we should identify which permissions are
+> OK to change, deprecate is_visible function (to avoid code break) in
+> favor of a new one which limits the bits to that scope.
+>
+
+Up to Greg to decide. From my perspective, we have lived with is_visible
+for several years and overall it seems to work. Sure, it lacks a clear
+API, but that can be fixed without changing a lot of code just to replace
+the function name.
+
+Guenter
+
