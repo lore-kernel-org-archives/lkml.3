@@ -1,95 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752061AbbARNlv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 08:41:51 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48955 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751586AbbARNlt (ORCPT
+	id S1751809AbbARNts (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 08:49:48 -0500
+Received: from srv-hp10.netsons.net ([94.141.22.72]:33313 "EHLO
+	srv-hp10.netsons.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751184AbbARNtp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 08:41:49 -0500
-Date: Sun, 18 Jan 2015 13:41:24 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>,
-        Paul Osmialowski <p.osmialowsk@samsung.com>,
-        Wolfram Sang <wsa@the-dreams.de>, Jonathan Corbet <corbet@lwn.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Kukjin Kim <kgene@kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>,
-        Michael Turquette <mturquette@linaro.org>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>
-Message-ID: <20150118134124.GC2809@sirena.org.uk>
-References: <1421419194-1849-1-git-send-email-p.osmialowsk@samsung.com>
- <CA+Ln22GrsCj0291dVccFPzPW8pmxyc8JHtPo5ijsAdDXw6RC1Q@mail.gmail.com>
- <54BB9100.7000506@samsung.com>
+	Sun, 18 Jan 2015 08:49:45 -0500
+Message-ID: <54BBB9F4.1010404@lucaceresoli.net>
+Date: Sun, 18 Jan 2015 14:49:40 +0100
+From: Luca Ceresoli <luca@lucaceresoli.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="9Ek0hoCL9XbhcSqy"
-Content-Disposition: inline
-In-Reply-To: <54BB9100.7000506@samsung.com>
-X-Cookie: MERYL STREEP is my obstetrician!
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [RFC 1/3] i2c: Enhancement of i2c API to address circular lock
- dependency problem
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: Oleg Drokin <oleg.drokin@intel.com>,
+        Andreas Dilger <andreas.dilger@intel.com>,
+        Srikrishan Malik <srikrishanmalik@gmail.com>,
+        devel@driverdev.osuosl.org, Peng Tao <bergwolf@gmail.com>,
+        linux-kernel@vger.kernel.org, HPDD-discuss@ml01.01.org,
+        Jinshan Xiong <jinshan.xiong@intel.com>
+Subject: Re: [PATCH 2/2] staging: lustre: declare internal symbols as static
+References: <1421188383-14216-1-git-send-email-luca@lucaceresoli.net> <1421188383-14216-2-git-send-email-luca@lucaceresoli.net> <20150118000214.GA25744@kroah.com>
+In-Reply-To: <20150118000214.GA25744@kroah.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - srv-hp10.netsons.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - lucaceresoli.net
+X-Get-Message-Sender-Via: srv-hp10.netsons.net: authenticated_id: luca+lucaceresoli.net/only user confirmed/virtual account not confirmed
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dear Greg,
 
---9Ek0hoCL9XbhcSqy
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Greg Kroah-Hartman wrote:
+> On Tue, Jan 13, 2015 at 11:33:03PM +0100, Luca Ceresoli wrote:
+>> Fixes dozens of sparse warnings like:
+>>    warning: symbol 'cfs_tracefile_sem' was not declared. Should it be static?
+>>
+>> Signed-off-by: Luca Ceresoli <luca@lucaceresoli.net>
+>> Cc: Peng Tao <bergwolf@gmail.com>
+>> Cc: Jinshan Xiong <jinshan.xiong@intel.com>
+>> Cc: Srikrishan Malik <srikrishanmalik@gmail.com>
+>> Cc: HPDD-discuss@lists.01.org
+>> Cc: devel@driverdev.osuosl.org
+>> Cc: linux-kernel@vger.kernel.org
+>
+> This patch fails to apply to my staging-next branch, sorry :(
 
-On Sun, Jan 18, 2015 at 11:54:56AM +0100, Krzysztof Kozlowski wrote:
-> W dniu 18.01.2015 o 07:30, Tomasz Figa pisze:
+Some of my fixes were done by somebody else in the meantime.
 
-> >So, the question is, do we actually have hardware that _really_
-> >requires _actual_ preparation or all the clk_prepare_enable()s in I2C
-> >drivers (at least in i2c-s3c2410) are just to simplify the code?
+Several people are sending small fixes for staging every day.
+So, to reduce the probability of further conflicts, I'm resending
+this patch as a set of smaller ones.
 
-> I completely forgot that you already thought about this deadlock in 2014. I
-> think we can try the no-prepare way for i2c-s3c2410. However this would be
-> only workaround for specific chip. Other buses (like SPI) would require
-> similar changes.
-
-Right, and it's every single driver which would need an update too which
-is a bit icky and sad.  On the other hand a more detailed fix is going
-to involve trying to make the clock API locking more fine grained which
-isn't fun.
-
-> I wondered why this was not observed (at least not observed by me with
-> lockdep) on Gear 2 (Rinato) board. This is quite similar case: the S2MPS14
-> PMIC provides regulators and 32kHz clocks. I think it is exactly the same
-> pattern as for max77686... but somehow lockdep never reported that deadlock
-> there.
-
-Mostly the clocks on PMICs never get changed at runtime which helps a
-lot here.
-
---9Ek0hoCL9XbhcSqy
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBCAAGBQJUu7gDAAoJECTWi3JdVIfQPmMH/3afYEY4WeiR+Sf1FQumwTFo
-ed0ITCeLzT0D1WSSg75AL1WMOdkwRILhNkFWN9KKwOI2gAbWFJhF4Eg8fsyHGjuu
-u17mnrg8okxJjbWRP7fykFhXMhjNy5etUghTwVxgUYsM6UW982F91HrHFUgv9Fkd
-BgfnfBE9Md4nbIhD8b1K5BECpD61dteSjzWAGd7BXQ4UpJhdDhpUEnccykjvy5jC
-s9AJQEQIU7ttsiNF+mBUktT4TjXqiJFj7j3lI1MIFwK4NMqHGCeZooRlmo441hEO
-zKJszwMdFNjKVR87rUMSn4m9IwySIWQEhLbBL859X+rLl2XBQfECf72ednVpB+U=
-=Hh0i
------END PGP SIGNATURE-----
-
---9Ek0hoCL9XbhcSqy--
+-- 
+Luca
