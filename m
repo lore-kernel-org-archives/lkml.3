@@ -1,408 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584AbbARKSz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 05:18:55 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49197 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752538AbbARKSx (ORCPT
+	id S1752534AbbARKSc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 05:18:32 -0500
+Received: from mail-we0-f173.google.com ([74.125.82.173]:36398 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751357AbbARKS3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 05:18:53 -0500
-Date: Sun, 18 Jan 2015 11:18:16 +0100
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Eddie Huang <eddie.huang@mediatek.com>
-Cc: Wolfram Sang <wsa@the-dreams.de>,
-        Matthias Brugger <matthias.bgg@gmail.com>, srv_heupstream@mediatek.com,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Jean Delvare <jdelvare@suse.de>, Arnd Bergmann <arnd@arndb.de>,
-        Doug Anderson <dianders@chromium.org>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Max Schwarz <max.schwarz@online.de>,
-        Uwe Kleine-Konig <u.kleine-koenig@pengutronix.de>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Anders Berg <anders.berg@avagotech.com>,
-        Neelesh Gupta <neelegup@linux.vnet.ibm.com>,
-        Wei Yan <sledge.yanwei@huawei.com>, Lee Jones <lee.jones@linaro.org>,
-        Simon Glass <sjg@chromium.org>, Jim Cromie <jim.cromie@gmail.com>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Beniamino Galvani <b.galvani@gmail.com>,
-        Xudong Chen <xudong.chen@mediatek.com>,
-        Eddie Huang <eddie.huang@mediatek.com>, linux-i2c@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, yingjoe.chen@mediatek.com,
-        yh.chen@mediatek.com, Sascha Hauer <kernel@pengutronix.de>
-Subject: Re: [PATCH v4 2/2] I2C: mediatek: Add driver for MediaTek I2C
- controller
-Message-ID: <20150118101816.GF22880@pengutronix.de>
-References: <1421404418-50718-1-git-send-email-eddie.huang@mediatek.com>
- <1421404418-50718-3-git-send-email-eddie.huang@mediatek.com>
+	Sun, 18 Jan 2015 05:18:29 -0500
+Message-ID: <54BB886F.2080908@gmail.com>
+Date: Sun, 18 Jan 2015 11:18:23 +0100
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1421404418-50718-3-git-send-email-eddie.huang@mediatek.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Darren Hart <dvhart@linux.intel.com>, Thomas Gleixner <tglx@linutronix.de>
+CC: mtk.manpages@gmail.com, "Carlos O'Donell" <carlos@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Jakub Jelinek <jakub@redhat.com>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Davidlohr Bueso <dave@stgolabs.net>,
+        Jan Kiszka <jan.kiszka@siemens.com>
+Subject: Re: futex(2) man page update help request
+References: <537346E5.4050407@gmail.com> <CF98E3EF.90564%dvhart@linux.intel.com> <CAKgNAkh+PWzT2SByaLk_OtiAXeZSkWoMgu+ivDOt1dTWVtaatQ@mail.gmail.com> <5373D0CA.2050204@redhat.com> <alpine.DEB.2.02.1405150121230.6261@ionos.tec.linutronix.de> <CAKgNAkjQ5Dd_U9OojXdgeforpRevvPHNFAw99kBFPCwHgf7Ggg@mail.gmail.com> <alpine.DEB.2.02.1405151144390.6261@ionos.tec.linutronix.de> <CF9A731D.913E6%dvhart@linux.intel.com> <54B7D8D4.2070203@gmail.com> <D0DEF1AE.B7EDE%dvhart@linux.intel.com> <54BA2872.5040003@gmail.com> <D0DFF430.B7F94%dvhart@linux.intel.com>
+In-Reply-To: <D0DFF430.B7F94%dvhart@linux.intel.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hello Darren,
 
-On Fri, Jan 16, 2015 at 06:33:38PM +0800, Eddie Huang wrote:
-> +config I2C_MT65XX
-> +	tristate "MediaTek I2C adapter"
-> +	depends on ARCH_MEDIATEK
-depends on ARCH_MEDIATEK || COMPILE_TEST
-default ARCH_MEDIATEK
+On 01/17/2015 08:26 PM, Darren Hart wrote:
+> 
+> On 1/17/15, 1:16 AM, "Michael Kerrisk (man-pages)"
+> <mtk.manpages@gmail.com> wrote:
 
-would be nice to have to get better compile coverage.
+[...]
 
-> +struct mtk_i2c {
-> +	struct i2c_adapter adap;	/* i2c host adapter */
-> +	struct device *dev;
-> +	wait_queue_head_t wait;		/* i2c transfer wait queue */
-> +	/* set in i2c probe */
-> +	void __iomem *base;		/* i2c base addr */
-> +	void __iomem *pdmabase;		/* dma base address*/
-> +	int irqnr;			/* i2c interrupt number */
-irqs are unsigned quantities
+>>>> In the meantime, I have a couple of questions, which, if
+>>>> you could answer them, I would work some changes into the
+>>>> page before sending.
+>>>>
+>>>> 1. In various places, distinction is made between non-PI
+>>>>   futexs and PI futexes. But what determines that distinction?
+>>>>   From the kernel's perspective, hat make a futex one type
+>>>>   or another? I presume it is to do with the types of blocking
+>>>>   waiters on the futex, but it would be good to have a formal
+>>>>   definition.
+>>>
+>>> You're right in that a uaddr is a uaddr is a uaddr. Also "there is no
+>>> such
+>>> thing as a futex", it doesn't exist as any kind of identifiable object,
+>>> so
+>>> these discussions can get rather confusing :-)
+>>
+>> So, I want to make sure that I am clear on what you mean you say this.
+>> You say "there is no such thing as a futex" because from the kernel's
+>> perspective there is no visible entity in the uncontended case
+>> (where everything can be dealt with in user space). And from user-space,
+>> in the uncontended case all we're doing is memory operations. Right?
+>>
+>> On the other hand, from a kernel perspective, we could say that a
+>> futex "exists" in the contended phases, since the kernel has allocated
+>> state associated with the uaddr. Right?
+> 
+> 
+> Sorry, this was more anecdotal, and probably more of a distraction than
+> constructive. I just meant that unlike other things which you can point to
+> a specific struct for (task, rt_mutex, etc.), a "futex" has it's state
+> distributed across the backing store (uaddr), the queue (futex_q), the
+> pi_state, the rt_mutex, etc, and these span kernel space and userspace.
+> Your description above is correct.
 
-> +	struct i2c_dma_buf dma_buf;	/* memory alloc for DMA mode */
-> +	struct clk *clk_main;		/* main clock for i2c bus */
-> +	struct clk *clk_dma;		/* DMA clock for i2c via DMA */
-> +	struct clk *clk_pmic;		/* PMIC clock for i2c from PMIC */
-> +	bool have_pmic;			/* can use i2c pins from PMIC */
-> +	bool use_push_pull;		/* IO config push-pull mode */
-> +	u32 platform_compat;		/* platform compatible data */
-> +	/* set when doing the transfer */
-> +	u16 irq_stat;			/* interrupt status */
-> +	unsigned int speed_hz;		/* The speed in transfer */
-> +	bool trans_stop;		/* i2c transfer stop */
-> +	enum mtk_trans_op op;
-> +	u16 msg_len;
-> +	u8 *msg_buf;			/* pointer to msg data */
-> +	u16 msg_aux_len;		/* WRRD mode to set AUX_LEN register*/
-> +	u16 addr;	/* 7bit slave address, without read/write bit */
-Wouldn't it be easier to maintain a pointer to the message to be
-transferred?
+Okay. Thanks. I've added a few more words to the page noting that
+the kernel maintains no state for a futex in the uncontended state.
 
-> +	u16 timing_reg;
-> +	u16 high_speed_reg;
-> +};
-> +
-> +static const struct of_device_id mtk_i2c_of_match[] = {
-> +	{ .compatible = "mediatek,mt6577-i2c", .data = (void *)COMPAT_MT6577 },
-> +	{ .compatible = "mediatek,mt6589-i2c", .data = (void *)COMPAT_MT6589 },
-> +	{},
-There is usually no , after the sentinel entry.
+>>> A "futex" becomes a PI futex when it is "created" via a PI futex op
+>>> code.
+>>
+>> Precisely which PI op codes? Is it: FUTEX_LOCK_PI, FUTEX_TRYLOCK_PI, and
+>> FUTEX_CMP_REQUEUE_PI, and not FUTEX_WAIT_REQUEUE_PI or FUTEX_UNLOCK_PI?
+> 
+> Based on your wording below about taking a user POV on this, I'm going to
+> say "yes" here. These opcodes paired with the PI futex value policy
+> (described below) defines a "futex" as PI aware. These were created very
+> specifically in support of PI pthread_mutexes, so it makes a lot more
+> sense to talk about a PI aware pthread_mutex, than a PI aware futex, since
+> there is a lot of policy and scaffolding that has to be built up around it
+> to use it properly (this is what a PI pthread_mutex is).
 
-> +};
-> +MODULE_DEVICE_TABLE(of, mtk_i2c_match);
-> +
-> +static inline void i2c_writew(u16 value, struct mtk_i2c *i2c, u8 offset)
-> +{
-> +	writew(value, i2c->base + offset);
-> +}
-hmm, these simple wrappers are fine in general for me because they might
-ease debugging or changing the accessor-function. Still "i2c_writew"
-sounds too generic. IMHO you should spend the few chars to make this
-mtk_i2c_writew. And to match my taste completely, move the driver data
-parameter to the front. (But there are too much different tastes out
-there to really request a certain style here.) Same for the other
-wrappers of course.
+See below.
 
-> +	/* Prepare buffer data to start transfer */
-> +	if (i2c->op == I2C_MASTER_RD) {
-> +		i2c_writel_dma(I2C_DMA_INT_FLAG_NONE, i2c, OFFSET_INT_FLAG);
-> +		i2c_writel_dma(I2C_DMA_CON_RX, i2c, OFFSET_CON);
-> +		i2c_writel_dma((u32)i2c->msg_buf, i2c, OFFSET_RX_MEM_ADDR);
-> +		i2c_writel_dma(i2c->msg_len, i2c, OFFSET_RX_LEN);
-> +	} else if (i2c->op == I2C_MASTER_WR) {
-> +		i2c_writel_dma(I2C_DMA_INT_FLAG_NONE, i2c, OFFSET_INT_FLAG);
-> +		i2c_writel_dma(I2C_DMA_CON_TX, i2c, OFFSET_CON);
-> +		i2c_writel_dma((u32)i2c->msg_buf, i2c, OFFSET_TX_MEM_ADDR);
-> +		i2c_writel_dma(i2c->msg_len, i2c, OFFSET_TX_LEN);
-> +	} else {
-		/* i2c->op == I2C_MASTER_WRRD */
+>>> At that point, the syscall will ensure a pi_state is populated for the
+>>> futex_q entry. See futex_lock_pi() for example. Before the locks are
+>>> taken, there is a call to refill_pi_state_cache() which preps a pi_state
+>>> for assignment later in futex_lock_pi_atomic(). This pi_state provides
+>>> the
+>>> necessary linkage to perform the priority boosting in the event of a
+>>> priority inversion. This is handled externally from the futexes via the
+>>> rt_mutex construct.
+>>>
+>>> Clear as mud?
+>>
+>> Not quite that bad, but... The thing is, still, the man page has text
+>> such as the following (based on your wording):
+>>
+>>       FUTEX_CMP_REQUEUE_PI (since Linux 2.6.31)
+>>              This operation is a PI-aware variant of FUTEX_CMP_REQUEUE.
+>>              It    requeues    waiters    that    are    blocked    via
+>>              FUTEX_WAIT_REQUEUE_PI  on uaddr from a non-PI source futex
+>>              (uaddr) to a PI target futex (uaddr2).
+>>
+>> And elsewhere you said
+>>
+>>    EINVAL is returned if the non-pi to pi or
+>>    op pairing semantics are violated.
+>>
+>> When someone in user-land (e.g., me) reads pieces like that, they then
+>> want to find somewhere in the man page a description of what makes a
+>> futex a *PI futex* and probably some statements of the distinction
+>> between PI and non-PI futexes. And those statements should be from a
+>> perspective that is somewhat comprehensible to user-space. I'm not
+>> yet confident that I can do that. Do you care to take a shot at it?
+> 
+> Hrm, tricky indeed. From userspace, what makes a "futex" PI is the policy
+> agreement between kernel and userspace (which is the value of the futex:
+> 0, TID, TID|WAITERS, and never just WAITERS, and the use of PI aware futex
+> op codes when making the futex syscalls.
 
-> +		i2c_writel_dma(I2C_DMA_CLR_FLAG, i2c, OFFSET_INT_FLAG);
-> +		i2c_writel_dma(I2C_DMA_CLR_FLAG, i2c, OFFSET_CON);
-> +		i2c_writel_dma((u32)i2c->msg_buf, i2c, OFFSET_TX_MEM_ADDR);
-> +		i2c_writel_dma((u32)i2c->dma_buf.paddr, i2c,
-> +			OFFSET_RX_MEM_ADDR);
-> +		i2c_writel_dma(i2c->msg_len, i2c, OFFSET_TX_LEN);
-> +		i2c_writel_dma(i2c->msg_aux_len, i2c, OFFSET_RX_LEN);
-> +	}
-> +
-> +	/* flush before sending start */
-> +	mb();
-> +	i2c_writel_dma(I2C_DMA_START_EN, i2c, OFFSET_EN);
-> +	i2c_writew(I2C_TRANSAC_START, i2c, OFFSET_START);
-> +
-> +	tmo = wait_event_timeout(i2c->wait, i2c->trans_stop, tmo);
-If the request completes just when wait_event_timeout returned 0 you
-shouldn't throw it away.
+Okay -- I've attempted to capture this in some text that I added to the 
+page.
 
-> +	if (tmo == 0) {
-> +		dev_dbg(i2c->dev, "addr: %x, transfer timeout\n", i2c->addr);
-> +		mtk_i2c_init_hw(i2c);
-> +		return -ETIMEDOUT;
-> +	}
-> [...]
-> +	if (msgs->addr == 0) {
-> +		dev_dbg(i2c->dev, " addr is invalid.\n");
-Is this a hardware limitation?
+> For a longer discussion of this policy, see Documentation/pi-futex.txt.
 
-I'd remove the leading space in the message. (Applies also to other
-places.)
+Sad to say, that document doesn't supply that much more detail, in
+my reading of it, at least.
 
-> +		ret = -EINVAL;
-> +		goto err_exit;
-> +	}
-> +
-> +	if (msgs->buf == NULL) {
-> +		dev_dbg(i2c->dev, " data buffer is NULL.\n");
-> +		ret = -EINVAL;
-> +		goto err_exit;
-> +	}
-> +
-> +	i2c->addr = msgs->addr;
-> +	i2c->msg_len = msgs->len;
-> +	i2c->msg_buf = msgs->buf;
-> +
-> +	if (msgs->flags & I2C_M_RD)
-> +		i2c->op = I2C_MASTER_RD;
-> +	else
-> +		i2c->op = I2C_MASTER_WR;
-> +
-> +	/* combined two messages into one transaction */
-> +	if (num > 1) {
-> +		i2c->msg_aux_len = (msgs + 1)->len;
-> +		i2c->op = I2C_MASTER_WRRD;
-> +	}
-This means "write then read", right? You should check here that the
-first message is really a write and the 2nd a read then.
-Can this happen at all with the quirks defined below (.max_num_msgs =
-1)?
+> Also note that this policy can be combined with that for robust futexes,
+> adding the OWNERDIED component.
 
-> +	/*
-> +	 * always use DMA mode.
-Out of interest: Did you benchmark DMA vs manual mode for a typical
-(what ever that means) scenario?
+Now there's two other stories that have yet to be dealt with ;-). 
 
-> +	 * 1st when write need copy the data of message to dma memory
-> +	 * 2nd when read need copy the DMA data to the message buffer.
-> +	 */
-> +	mtk_i2c_copy_to_dma(i2c, msgs);
-> +	i2c->msg_buf = (u8 *)i2c->dma_buf.paddr;
-> +	ret = mtk_i2c_do_transfer(i2c);
-> +	if (ret < 0)
-> +		goto err_exit;
-> +
-> +	if (i2c->op == I2C_MASTER_WRRD)
-> +		mtk_i2c_copy_from_dma(i2c, msgs + 1);
-> +	else
-> +		mtk_i2c_copy_from_dma(i2c, msgs);
-> +
-> +	/* the return value is number of executed messages */
-> +	ret = num;
-> +
-> +err_exit:
-> +	mtk_i2c_clock_disable(i2c);
-> +	return ret;
-> +}
-> +
-> +static irqreturn_t mtk_i2c_irq(int irqno, void *dev_id)
-> +{
-> +	struct mtk_i2c *i2c = dev_id;
-> +
-> +	/* Clear interrupt mask */
-> +	i2c_writew(~(I2C_HS_NACKERR | I2C_ACKERR | I2C_TRANSAC_COMP),
-> +		i2c, OFFSET_INTR_MASK);
-What is the effect of this. Does it disable further irqs?
+I have a FIXME already in the page regarding OWNERDIED, and
+get_robust_list(2) is another page that seems like it could do with 
+a fair bit of work, but that's a story for another day.
 
-> +	i2c->irq_stat = i2c_readw(i2c, OFFSET_INTR_STAT);
-Maybe you need locking here to modify your driver data in the irq?
+Cheers,
 
-> +	i2c_writew(I2C_HS_NACKERR | I2C_ACKERR | I2C_TRANSAC_COMP,
-> +		i2c, OFFSET_INTR_STAT);
-This is the ack? Then this is racy; I guess you want
+Michael
 
-	i2c_writew(i2c->irq_stat & (I2C_HS_NACKERR | I2C_ACKERR ...),
-		   i2c, OFFSET_INTR_STAT);
-
-then.
-
-> +	i2c->trans_stop = true;
-> +	wake_up(&i2c->wait);
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static u32 mtk_i2c_functionality(struct i2c_adapter *adap)
-> +{
-> +	return I2C_FUNC_I2C | I2C_FUNC_10BIT_ADDR | I2C_FUNC_SMBUS_EMUL;
-Does your hardware handle 10bit addresses that nice that there is
-nothing visible in the driver apart from this functionality
-announcement?
-
-> +}
-> +
-> +static const struct i2c_algorithm mtk_i2c_algorithm = {
-> +	.master_xfer = mtk_i2c_transfer,
-> +	.functionality = mtk_i2c_functionality,
-> +};
-> +
-> +static inline u32 mtk_get_device_prop(struct platform_device *pdev)
-> +{
-> +	const struct of_device_id *match;
-> +
-> +	match = of_match_node(mtk_i2c_of_match, pdev->dev.of_node);
-> +	return (u32)match->data;
-> +}
-> +
-> +static int mtk_i2c_parse_dt(struct device_node *np, struct mtk_i2c *i2c,
-> +	unsigned int *clk_src_div)
-> +{
-> +	i2c->speed_hz = I2C_DEFAUT_SPEED;
-> +	of_property_read_u32(np, "clock-frequency", &i2c->speed_hz);
-> +	of_property_read_u32(np, "clock-div", clk_src_div);
-You should check the return value of of_property_read_u32.
-
-> [...]
-> +	ret = devm_request_irq(&pdev->dev, i2c->irqnr, mtk_i2c_irq,
-> +		IRQF_TRIGGER_NONE, I2C_DRV_NAME, i2c);
-> +	if (ret < 0) {
-> +		dev_err(&pdev->dev,
-> +			"Request I2C IRQ %d fail\n", i2c->irqnr);
-> +		return ret;
-> +	}
-I think the devm_request_irq should go near the end of probing.
-Otherwise the irq might fire before the used resources are ready.
-
-> +
-> +	i2c->adap.dev.of_node = pdev->dev.of_node;
-> +	i2c->dev = &i2c->adap.dev;
-> +	i2c->adap.dev.parent = &pdev->dev;
-> +	i2c->adap.owner = THIS_MODULE;
-> +	i2c->adap.algo = &mtk_i2c_algorithm;
-> +	i2c->adap.quirks = &mt6577_i2c_quirks;
-> +	i2c->adap.algo_data = NULL;
-No need to initialize this to NULL as the struct was allocated using
-kzalloc.
-
-> +	i2c->adap.timeout = 2 * HZ;
-> +	i2c->adap.retries = 1;
-> +
-> +	i2c->clk_main = devm_clk_get(&pdev->dev, "main");
-> +	if (IS_ERR(i2c->clk_main)) {
-> +		dev_err(&pdev->dev, "cannot get main clock\n");
-> +		return PTR_ERR(i2c->clk_main);
-> +	}
-> +
-> +	i2c->clk_dma = devm_clk_get(&pdev->dev, "dma");
-> +	if (IS_ERR(i2c->clk_dma)) {
-> +		dev_err(&pdev->dev, "cannot get dma clock\n");
-> +		return PTR_ERR(i2c->clk_dma);
-> +	}
-> +
-> +	if (i2c->have_pmic) {
-> +		i2c->clk_pmic = devm_clk_get(&pdev->dev, "pmic");
-> +		if (IS_ERR(i2c->clk_pmic)) {
-> +			dev_err(&pdev->dev, "cannot get pmic clock\n");
-> +			return PTR_ERR(i2c->clk_pmic);
-> +		}
-> +		clk_src_in_hz = clk_get_rate(i2c->clk_pmic) / clk_src_div;
-> +	} else {
-> +		clk_src_in_hz = clk_get_rate(i2c->clk_main) / clk_src_div;
-> +	}
-This can be simplified, i.e. the common line can go after the if block
-and then the else branch can be dropped.
-
-> +	dev_dbg(&pdev->dev, "clock source %p,clock src frequency %d\n",
-> +		i2c->clk_main, clk_src_in_hz);
-> +	strlcpy(i2c->adap.name, I2C_DRV_NAME, sizeof(i2c->adap.name));
-> +	init_waitqueue_head(&i2c->wait);
-> +
-> +	ret = i2c_set_speed(i2c, clk_src_in_hz);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "Failed to set the speed.\n");
-> +		return -EINVAL;
-> +	}
-> +
-> +	ret = mtk_i2c_clock_enable(i2c);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "clock enable failed!\n");
-> +		return ret;
-> +	}
-> +	mtk_i2c_init_hw(i2c);
-> +	mtk_i2c_clock_disable(i2c);
-> +
-> +	i2c->dma_buf.vaddr = dma_alloc_coherent(&pdev->dev,
-> +		PAGE_SIZE, &i2c->dma_buf.paddr, GFP_KERNEL);
-> +	if (i2c->dma_buf.vaddr == NULL) {
-> +		dev_err(&pdev->dev, "dma_alloc_coherent fail\n");
-> +		return -ENOMEM;
-> +	}
-> +
-> +	i2c_set_adapdata(&i2c->adap, i2c);
-> +	ret = i2c_add_adapter(&i2c->adap);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "Failed to add i2c bus to i2c core\n");
-> +		free_i2c_dma_bufs(i2c);
-> +		return ret;
-> +	}
-> +
-> +	platform_set_drvdata(pdev, i2c);
-> +
-> +	return 0;
-> +}
-> +
-> +static int mtk_i2c_remove(struct platform_device *pdev)
-> +{
-> +	struct mtk_i2c *i2c = platform_get_drvdata(pdev);
-> +
-> +	i2c_del_adapter(&i2c->adap);
-> +	free_i2c_dma_bufs(i2c);
-> +	platform_set_drvdata(pdev, NULL);
-> +
-Here you need to make sure that no irq is running when i2c_del_adapter
-is called.
-
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver mtk_i2c_driver = {
-> +	.probe = mtk_i2c_probe,
-> +	.remove = mtk_i2c_remove,
-> +	.driver = {
-> +		.name = I2C_DRV_NAME,
-> +		.owner = THIS_MODULE,
-You don't need to set .owner any more. That's included in
-module_platform_driver since some time.
-
-> +		.of_match_table = of_match_ptr(mtk_i2c_of_match),
-> +	},
-> +};
-> +
-> +module_platform_driver(mtk_i2c_driver);
-> +
-> +MODULE_LICENSE("GPL");
-MODULE_LICENSE("GPL v2");
-> +MODULE_DESCRIPTION("MediaTek I2C Bus Driver");
-> +MODULE_AUTHOR("Xudong Chen <xudong.chen@mediatek.com>");
-
-Best regards
-Uwe
 
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
