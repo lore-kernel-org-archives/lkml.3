@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751886AbbARAEa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 19:04:30 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56242 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750953AbbARAE3 (ORCPT
+	id S1751778AbbARACq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 19:02:46 -0500
+Received: from outpost1.zedat.fu-berlin.de ([130.133.4.66]:33589 "EHLO
+	outpost1.zedat.fu-berlin.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751149AbbARACo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 19:04:29 -0500
-Date: Sat, 17 Jan 2015 16:00:01 -0800
-From: Greg KH <gregkh@linuxfoundation.org>
-To: Nickolaus Woodruff <nickolauswoodruff@gmail.com>
-Cc: andreas.dilger@intel.com, oleg.drokin@intel.com, HPDD-discuss@ml01.01.org,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCH] staging: lustre: Fix spacing error in libcfs_string.c
-Message-ID: <20150118000001.GA10033@kroah.com>
-References: <20150111184403.GA17805@Caladan>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150111184403.GA17805@Caladan>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Sat, 17 Jan 2015 19:02:44 -0500
+From: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
+To: Jonathan Woithe <jwoithe@just42.net>, Darren Hart <dvhart@infradead.org>,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Michael Karcher <karcher@physik.fu-berlin.de>
+Subject: [PATCH] fujitsu-laptop: use FB_BLANK_* constants
+Date: Sun, 18 Jan 2015 01:02:11 +0100
+Message-Id: <1421539331-32515-1-git-send-email-kernel@mkarcher.dialup.fu-berlin.de>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1421537580-28554-1-git-send-email-kernel@mkarcher.dialup.fu-berlin.de>
+References: <1421537580-28554-1-git-send-email-kernel@mkarcher.dialup.fu-berlin.de>
+X-Originating-IP: 85.25.239.52
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 11, 2015 at 01:44:03PM -0500, Nickolaus Woodruff wrote:
-> This patch fixes the following checkpatch.pl error in libcfs_string.c:
-> 
-> ERROR: spaces required around that '='
-> 
-> Signed-off-by: Nickolaus Woodruff <nickolauswoodruff@gmail.com>
-> ---
->  drivers/staging/lustre/lustre/libcfs/libcfs_string.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/staging/lustre/lustre/libcfs/libcfs_string.c b/drivers/staging/lustre/lustre/libcfs/libcfs_string.c
-> index fb88733..e67a18d 100644
-> --- a/drivers/staging/lustre/lustre/libcfs/libcfs_string.c
-> +++ b/drivers/staging/lustre/lustre/libcfs/libcfs_string.c
-> @@ -132,7 +132,7 @@ char *cfs_firststr(char *str, size_t size)
->  		++end;
->  	}
->  
-> -	*end= '\0';
-> +	*end = '\0';
->  out:
->  	return str;
->  }
-> -- 
-> 1.9.1
+From: Michael Karcher <karcher@physik.fu-berlin.de>
 
-Someone already sent this patch before you did, sorry.
+Signed-off-by: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
+---
+ drivers/platform/x86/fujitsu-laptop.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
-greg k-h
+diff --git a/drivers/platform/x86/fujitsu-laptop.c b/drivers/platform/x86/fujitsu-laptop.c
+index 7c21c1c..2a9afa2 100644
+--- a/drivers/platform/x86/fujitsu-laptop.c
++++ b/drivers/platform/x86/fujitsu-laptop.c
+@@ -64,6 +64,7 @@
+ #include <linux/acpi.h>
+ #include <linux/dmi.h>
+ #include <linux/backlight.h>
++#include <linux/fb.h>
+ #include <linux/input.h>
+ #include <linux/kfifo.h>
+ #include <linux/platform_device.h>
+@@ -398,7 +399,7 @@ static int bl_get_brightness(struct backlight_device *b)
+ static int bl_update_status(struct backlight_device *b)
+ {
+ 	int ret;
+-	if (b->props.power == 4)
++	if (b->props.power == FB_BLANK_POWERDOWN)
+ 		ret = call_fext_func(FUNC_BACKLIGHT, 0x1, 0x4, 0x3);
+ 	else
+ 		ret = call_fext_func(FUNC_BACKLIGHT, 0x1, 0x4, 0x0);
+@@ -1139,9 +1140,9 @@ static int __init fujitsu_init(void)
+ 
+ 	if (!acpi_video_backlight_support()) {
+ 		if (call_fext_func(FUNC_BACKLIGHT, 0x2, 0x4, 0x0) == 3)
+-			fujitsu->bl_device->props.power = 4;
++			fujitsu->bl_device->props.power = FB_BLANK_POWERDOWN;
+ 		else
+-			fujitsu->bl_device->props.power = 0;
++			fujitsu->bl_device->props.power = FB_BLANK_UNBLANK;
+ 	}
+ 
+ 	pr_info("driver " FUJITSU_DRIVER_VERSION " successfully loaded\n");
+-- 
+2.1.3
+
