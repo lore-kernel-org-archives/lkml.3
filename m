@@ -1,103 +1,408 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752474AbbARKRy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 05:17:54 -0500
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:60261 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751357AbbARKRv (ORCPT
+	id S1752584AbbARKSz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 05:18:55 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49197 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752538AbbARKSx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 05:17:51 -0500
-Date: Sun, 18 Jan 2015 10:17:44 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: rtc-linux@googlegroups.com, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Alessandro Zummo <a.zummo@towertech.it>
-Subject: Re: [PATCH] MAINTAINERS: Add entry for Maxim PMIC-s on Samsung boards
-Message-ID: <20150118101744.GF3574@x1>
-References: <1421407190-6771-1-git-send-email-k.kozlowski@samsung.com>
+	Sun, 18 Jan 2015 05:18:53 -0500
+Date: Sun, 18 Jan 2015 11:18:16 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Eddie Huang <eddie.huang@mediatek.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>,
+        Matthias Brugger <matthias.bgg@gmail.com>, srv_heupstream@mediatek.com,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Jean Delvare <jdelvare@suse.de>, Arnd Bergmann <arnd@arndb.de>,
+        Doug Anderson <dianders@chromium.org>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Max Schwarz <max.schwarz@online.de>,
+        Uwe Kleine-Konig <u.kleine-koenig@pengutronix.de>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Anders Berg <anders.berg@avagotech.com>,
+        Neelesh Gupta <neelegup@linux.vnet.ibm.com>,
+        Wei Yan <sledge.yanwei@huawei.com>, Lee Jones <lee.jones@linaro.org>,
+        Simon Glass <sjg@chromium.org>, Jim Cromie <jim.cromie@gmail.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Beniamino Galvani <b.galvani@gmail.com>,
+        Xudong Chen <xudong.chen@mediatek.com>,
+        Eddie Huang <eddie.huang@mediatek.com>, linux-i2c@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, yingjoe.chen@mediatek.com,
+        yh.chen@mediatek.com, Sascha Hauer <kernel@pengutronix.de>
+Subject: Re: [PATCH v4 2/2] I2C: mediatek: Add driver for MediaTek I2C
+ controller
+Message-ID: <20150118101816.GF22880@pengutronix.de>
+References: <1421404418-50718-1-git-send-email-eddie.huang@mediatek.com>
+ <1421404418-50718-3-git-send-email-eddie.huang@mediatek.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1421407190-6771-1-git-send-email-k.kozlowski@samsung.com>
+In-Reply-To: <1421404418-50718-3-git-send-email-eddie.huang@mediatek.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Jan 2015, Krzysztof Kozlowski wrote:
+Hello,
 
-> Add myself as supporter for Maxim 77686 PMIC and Maxim 14577/77693 MUIC
-> drivers:
->  - mfd (all of them),
->  - extcon (extcon-max14577, extcon-max77693)
->  - power (max14577_charger.c, 77693 on LKML [1]),
->  - regulator (all of them),
->  - clock (clk-max77686.c)
->  - RTC (rtc-max77686.c).
-> 
-> Lately I am the author of major contributors to them. These
-> drivers are used on Exynos-based boards (Trats 2, Gear 1 and Gear 2).
-> 
-> [1] https://lkml.org/lkml/2015/1/5/139
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
-> cc: Chanwoo Choi <cw00.choi@samsung.com>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Cc: Lee Jones <lee.jones@linaro.org>
-> Cc: Sebastian Reichel <sre@kernel.org>
-> Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-> Cc: David Woodhouse <dwmw2@infradead.org>
-> Cc: Liam Girdwood <lgirdwood@gmail.com>
-> Cc: Mark Brown <broonie@kernel.org>
-> Cc: Mike Turquette <mturquette@linaro.org>
-> Cc: Stephen Boyd <sboyd@codeaurora.org>
-> Cc: Alessandro Zummo <a.zummo@towertech.it>
-> ---
->  MAINTAINERS | 15 +++++++++++++++
->  1 file changed, 15 insertions(+)
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index f017a30eb280..b033fb499186 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -6143,6 +6143,21 @@ F:	Documentation/devicetree/bindings/i2c/max6697.txt
->  F:	drivers/hwmon/max6697.c
->  F:	include/linux/platform_data/max6697.h
->  
-> +MAXIM PMIC AND MUIC DRIVERS FOR EXYNOS BASED BOARDS
-> +M:	Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> +L:	linux-kernel@vger.kernel.org
-> +S:	Supported
-> +F:	drivers/*/*max14577*.c
-> +F:	drivers/*/*max77686*.c
-> +F:	drivers/*/*max77693*.c
-> +F:	Documentation/devicetree/bindings/mfd/max14577.txt
-> +F:	Documentation/devicetree/bindings/mfd/max77686.txt
-> +F:	Documentation/devicetree/bindings/mfd/max77693.txt
-> +F:	Documentation/devicetree/bindings/clock/maxim,max77686.txt
-> +F:	include/linux/mfd/max14577*.h
-> +F:	include/linux/mfd/max77686*.h
-> +F:	include/linux/mfd/max77693*.h
+On Fri, Jan 16, 2015 at 06:33:38PM +0800, Eddie Huang wrote:
+> +config I2C_MT65XX
+> +	tristate "MediaTek I2C adapter"
+> +	depends on ARCH_MEDIATEK
+depends on ARCH_MEDIATEK || COMPILE_TEST
+default ARCH_MEDIATEK
 
-Acked-by: Lee Jones <lee.jones@linaro.org>
+would be nice to have to get better compile coverage.
 
->  MAXIRADIO FM RADIO RECEIVER DRIVER
->  M:	Hans Verkuil <hverkuil@xs4all.nl>
->  L:	linux-media@vger.kernel.org
+> +struct mtk_i2c {
+> +	struct i2c_adapter adap;	/* i2c host adapter */
+> +	struct device *dev;
+> +	wait_queue_head_t wait;		/* i2c transfer wait queue */
+> +	/* set in i2c probe */
+> +	void __iomem *base;		/* i2c base addr */
+> +	void __iomem *pdmabase;		/* dma base address*/
+> +	int irqnr;			/* i2c interrupt number */
+irqs are unsigned quantities
+
+> +	struct i2c_dma_buf dma_buf;	/* memory alloc for DMA mode */
+> +	struct clk *clk_main;		/* main clock for i2c bus */
+> +	struct clk *clk_dma;		/* DMA clock for i2c via DMA */
+> +	struct clk *clk_pmic;		/* PMIC clock for i2c from PMIC */
+> +	bool have_pmic;			/* can use i2c pins from PMIC */
+> +	bool use_push_pull;		/* IO config push-pull mode */
+> +	u32 platform_compat;		/* platform compatible data */
+> +	/* set when doing the transfer */
+> +	u16 irq_stat;			/* interrupt status */
+> +	unsigned int speed_hz;		/* The speed in transfer */
+> +	bool trans_stop;		/* i2c transfer stop */
+> +	enum mtk_trans_op op;
+> +	u16 msg_len;
+> +	u8 *msg_buf;			/* pointer to msg data */
+> +	u16 msg_aux_len;		/* WRRD mode to set AUX_LEN register*/
+> +	u16 addr;	/* 7bit slave address, without read/write bit */
+Wouldn't it be easier to maintain a pointer to the message to be
+transferred?
+
+> +	u16 timing_reg;
+> +	u16 high_speed_reg;
+> +};
+> +
+> +static const struct of_device_id mtk_i2c_of_match[] = {
+> +	{ .compatible = "mediatek,mt6577-i2c", .data = (void *)COMPAT_MT6577 },
+> +	{ .compatible = "mediatek,mt6589-i2c", .data = (void *)COMPAT_MT6589 },
+> +	{},
+There is usually no , after the sentinel entry.
+
+> +};
+> +MODULE_DEVICE_TABLE(of, mtk_i2c_match);
+> +
+> +static inline void i2c_writew(u16 value, struct mtk_i2c *i2c, u8 offset)
+> +{
+> +	writew(value, i2c->base + offset);
+> +}
+hmm, these simple wrappers are fine in general for me because they might
+ease debugging or changing the accessor-function. Still "i2c_writew"
+sounds too generic. IMHO you should spend the few chars to make this
+mtk_i2c_writew. And to match my taste completely, move the driver data
+parameter to the front. (But there are too much different tastes out
+there to really request a certain style here.) Same for the other
+wrappers of course.
+
+> +	/* Prepare buffer data to start transfer */
+> +	if (i2c->op == I2C_MASTER_RD) {
+> +		i2c_writel_dma(I2C_DMA_INT_FLAG_NONE, i2c, OFFSET_INT_FLAG);
+> +		i2c_writel_dma(I2C_DMA_CON_RX, i2c, OFFSET_CON);
+> +		i2c_writel_dma((u32)i2c->msg_buf, i2c, OFFSET_RX_MEM_ADDR);
+> +		i2c_writel_dma(i2c->msg_len, i2c, OFFSET_RX_LEN);
+> +	} else if (i2c->op == I2C_MASTER_WR) {
+> +		i2c_writel_dma(I2C_DMA_INT_FLAG_NONE, i2c, OFFSET_INT_FLAG);
+> +		i2c_writel_dma(I2C_DMA_CON_TX, i2c, OFFSET_CON);
+> +		i2c_writel_dma((u32)i2c->msg_buf, i2c, OFFSET_TX_MEM_ADDR);
+> +		i2c_writel_dma(i2c->msg_len, i2c, OFFSET_TX_LEN);
+> +	} else {
+		/* i2c->op == I2C_MASTER_WRRD */
+
+> +		i2c_writel_dma(I2C_DMA_CLR_FLAG, i2c, OFFSET_INT_FLAG);
+> +		i2c_writel_dma(I2C_DMA_CLR_FLAG, i2c, OFFSET_CON);
+> +		i2c_writel_dma((u32)i2c->msg_buf, i2c, OFFSET_TX_MEM_ADDR);
+> +		i2c_writel_dma((u32)i2c->dma_buf.paddr, i2c,
+> +			OFFSET_RX_MEM_ADDR);
+> +		i2c_writel_dma(i2c->msg_len, i2c, OFFSET_TX_LEN);
+> +		i2c_writel_dma(i2c->msg_aux_len, i2c, OFFSET_RX_LEN);
+> +	}
+> +
+> +	/* flush before sending start */
+> +	mb();
+> +	i2c_writel_dma(I2C_DMA_START_EN, i2c, OFFSET_EN);
+> +	i2c_writew(I2C_TRANSAC_START, i2c, OFFSET_START);
+> +
+> +	tmo = wait_event_timeout(i2c->wait, i2c->trans_stop, tmo);
+If the request completes just when wait_event_timeout returned 0 you
+shouldn't throw it away.
+
+> +	if (tmo == 0) {
+> +		dev_dbg(i2c->dev, "addr: %x, transfer timeout\n", i2c->addr);
+> +		mtk_i2c_init_hw(i2c);
+> +		return -ETIMEDOUT;
+> +	}
+> [...]
+> +	if (msgs->addr == 0) {
+> +		dev_dbg(i2c->dev, " addr is invalid.\n");
+Is this a hardware limitation?
+
+I'd remove the leading space in the message. (Applies also to other
+places.)
+
+> +		ret = -EINVAL;
+> +		goto err_exit;
+> +	}
+> +
+> +	if (msgs->buf == NULL) {
+> +		dev_dbg(i2c->dev, " data buffer is NULL.\n");
+> +		ret = -EINVAL;
+> +		goto err_exit;
+> +	}
+> +
+> +	i2c->addr = msgs->addr;
+> +	i2c->msg_len = msgs->len;
+> +	i2c->msg_buf = msgs->buf;
+> +
+> +	if (msgs->flags & I2C_M_RD)
+> +		i2c->op = I2C_MASTER_RD;
+> +	else
+> +		i2c->op = I2C_MASTER_WR;
+> +
+> +	/* combined two messages into one transaction */
+> +	if (num > 1) {
+> +		i2c->msg_aux_len = (msgs + 1)->len;
+> +		i2c->op = I2C_MASTER_WRRD;
+> +	}
+This means "write then read", right? You should check here that the
+first message is really a write and the 2nd a read then.
+Can this happen at all with the quirks defined below (.max_num_msgs =
+1)?
+
+> +	/*
+> +	 * always use DMA mode.
+Out of interest: Did you benchmark DMA vs manual mode for a typical
+(what ever that means) scenario?
+
+> +	 * 1st when write need copy the data of message to dma memory
+> +	 * 2nd when read need copy the DMA data to the message buffer.
+> +	 */
+> +	mtk_i2c_copy_to_dma(i2c, msgs);
+> +	i2c->msg_buf = (u8 *)i2c->dma_buf.paddr;
+> +	ret = mtk_i2c_do_transfer(i2c);
+> +	if (ret < 0)
+> +		goto err_exit;
+> +
+> +	if (i2c->op == I2C_MASTER_WRRD)
+> +		mtk_i2c_copy_from_dma(i2c, msgs + 1);
+> +	else
+> +		mtk_i2c_copy_from_dma(i2c, msgs);
+> +
+> +	/* the return value is number of executed messages */
+> +	ret = num;
+> +
+> +err_exit:
+> +	mtk_i2c_clock_disable(i2c);
+> +	return ret;
+> +}
+> +
+> +static irqreturn_t mtk_i2c_irq(int irqno, void *dev_id)
+> +{
+> +	struct mtk_i2c *i2c = dev_id;
+> +
+> +	/* Clear interrupt mask */
+> +	i2c_writew(~(I2C_HS_NACKERR | I2C_ACKERR | I2C_TRANSAC_COMP),
+> +		i2c, OFFSET_INTR_MASK);
+What is the effect of this. Does it disable further irqs?
+
+> +	i2c->irq_stat = i2c_readw(i2c, OFFSET_INTR_STAT);
+Maybe you need locking here to modify your driver data in the irq?
+
+> +	i2c_writew(I2C_HS_NACKERR | I2C_ACKERR | I2C_TRANSAC_COMP,
+> +		i2c, OFFSET_INTR_STAT);
+This is the ack? Then this is racy; I guess you want
+
+	i2c_writew(i2c->irq_stat & (I2C_HS_NACKERR | I2C_ACKERR ...),
+		   i2c, OFFSET_INTR_STAT);
+
+then.
+
+> +	i2c->trans_stop = true;
+> +	wake_up(&i2c->wait);
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static u32 mtk_i2c_functionality(struct i2c_adapter *adap)
+> +{
+> +	return I2C_FUNC_I2C | I2C_FUNC_10BIT_ADDR | I2C_FUNC_SMBUS_EMUL;
+Does your hardware handle 10bit addresses that nice that there is
+nothing visible in the driver apart from this functionality
+announcement?
+
+> +}
+> +
+> +static const struct i2c_algorithm mtk_i2c_algorithm = {
+> +	.master_xfer = mtk_i2c_transfer,
+> +	.functionality = mtk_i2c_functionality,
+> +};
+> +
+> +static inline u32 mtk_get_device_prop(struct platform_device *pdev)
+> +{
+> +	const struct of_device_id *match;
+> +
+> +	match = of_match_node(mtk_i2c_of_match, pdev->dev.of_node);
+> +	return (u32)match->data;
+> +}
+> +
+> +static int mtk_i2c_parse_dt(struct device_node *np, struct mtk_i2c *i2c,
+> +	unsigned int *clk_src_div)
+> +{
+> +	i2c->speed_hz = I2C_DEFAUT_SPEED;
+> +	of_property_read_u32(np, "clock-frequency", &i2c->speed_hz);
+> +	of_property_read_u32(np, "clock-div", clk_src_div);
+You should check the return value of of_property_read_u32.
+
+> [...]
+> +	ret = devm_request_irq(&pdev->dev, i2c->irqnr, mtk_i2c_irq,
+> +		IRQF_TRIGGER_NONE, I2C_DRV_NAME, i2c);
+> +	if (ret < 0) {
+> +		dev_err(&pdev->dev,
+> +			"Request I2C IRQ %d fail\n", i2c->irqnr);
+> +		return ret;
+> +	}
+I think the devm_request_irq should go near the end of probing.
+Otherwise the irq might fire before the used resources are ready.
+
+> +
+> +	i2c->adap.dev.of_node = pdev->dev.of_node;
+> +	i2c->dev = &i2c->adap.dev;
+> +	i2c->adap.dev.parent = &pdev->dev;
+> +	i2c->adap.owner = THIS_MODULE;
+> +	i2c->adap.algo = &mtk_i2c_algorithm;
+> +	i2c->adap.quirks = &mt6577_i2c_quirks;
+> +	i2c->adap.algo_data = NULL;
+No need to initialize this to NULL as the struct was allocated using
+kzalloc.
+
+> +	i2c->adap.timeout = 2 * HZ;
+> +	i2c->adap.retries = 1;
+> +
+> +	i2c->clk_main = devm_clk_get(&pdev->dev, "main");
+> +	if (IS_ERR(i2c->clk_main)) {
+> +		dev_err(&pdev->dev, "cannot get main clock\n");
+> +		return PTR_ERR(i2c->clk_main);
+> +	}
+> +
+> +	i2c->clk_dma = devm_clk_get(&pdev->dev, "dma");
+> +	if (IS_ERR(i2c->clk_dma)) {
+> +		dev_err(&pdev->dev, "cannot get dma clock\n");
+> +		return PTR_ERR(i2c->clk_dma);
+> +	}
+> +
+> +	if (i2c->have_pmic) {
+> +		i2c->clk_pmic = devm_clk_get(&pdev->dev, "pmic");
+> +		if (IS_ERR(i2c->clk_pmic)) {
+> +			dev_err(&pdev->dev, "cannot get pmic clock\n");
+> +			return PTR_ERR(i2c->clk_pmic);
+> +		}
+> +		clk_src_in_hz = clk_get_rate(i2c->clk_pmic) / clk_src_div;
+> +	} else {
+> +		clk_src_in_hz = clk_get_rate(i2c->clk_main) / clk_src_div;
+> +	}
+This can be simplified, i.e. the common line can go after the if block
+and then the else branch can be dropped.
+
+> +	dev_dbg(&pdev->dev, "clock source %p,clock src frequency %d\n",
+> +		i2c->clk_main, clk_src_in_hz);
+> +	strlcpy(i2c->adap.name, I2C_DRV_NAME, sizeof(i2c->adap.name));
+> +	init_waitqueue_head(&i2c->wait);
+> +
+> +	ret = i2c_set_speed(i2c, clk_src_in_hz);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Failed to set the speed.\n");
+> +		return -EINVAL;
+> +	}
+> +
+> +	ret = mtk_i2c_clock_enable(i2c);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "clock enable failed!\n");
+> +		return ret;
+> +	}
+> +	mtk_i2c_init_hw(i2c);
+> +	mtk_i2c_clock_disable(i2c);
+> +
+> +	i2c->dma_buf.vaddr = dma_alloc_coherent(&pdev->dev,
+> +		PAGE_SIZE, &i2c->dma_buf.paddr, GFP_KERNEL);
+> +	if (i2c->dma_buf.vaddr == NULL) {
+> +		dev_err(&pdev->dev, "dma_alloc_coherent fail\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	i2c_set_adapdata(&i2c->adap, i2c);
+> +	ret = i2c_add_adapter(&i2c->adap);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Failed to add i2c bus to i2c core\n");
+> +		free_i2c_dma_bufs(i2c);
+> +		return ret;
+> +	}
+> +
+> +	platform_set_drvdata(pdev, i2c);
+> +
+> +	return 0;
+> +}
+> +
+> +static int mtk_i2c_remove(struct platform_device *pdev)
+> +{
+> +	struct mtk_i2c *i2c = platform_get_drvdata(pdev);
+> +
+> +	i2c_del_adapter(&i2c->adap);
+> +	free_i2c_dma_bufs(i2c);
+> +	platform_set_drvdata(pdev, NULL);
+> +
+Here you need to make sure that no irq is running when i2c_del_adapter
+is called.
+
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver mtk_i2c_driver = {
+> +	.probe = mtk_i2c_probe,
+> +	.remove = mtk_i2c_remove,
+> +	.driver = {
+> +		.name = I2C_DRV_NAME,
+> +		.owner = THIS_MODULE,
+You don't need to set .owner any more. That's included in
+module_platform_driver since some time.
+
+> +		.of_match_table = of_match_ptr(mtk_i2c_of_match),
+> +	},
+> +};
+> +
+> +module_platform_driver(mtk_i2c_driver);
+> +
+> +MODULE_LICENSE("GPL");
+MODULE_LICENSE("GPL v2");
+> +MODULE_DESCRIPTION("MediaTek I2C Bus Driver");
+> +MODULE_AUTHOR("Xudong Chen <xudong.chen@mediatek.com>");
+
+Best regards
+Uwe
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org â”‚ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
