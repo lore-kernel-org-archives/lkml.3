@@ -1,137 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752411AbbARMfS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 07:35:18 -0500
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:41534 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751721AbbARMfO (ORCPT
+	id S1752628AbbARMgQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 07:36:16 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:48732 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751652AbbARMgJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 07:35:14 -0500
-Date: Sun, 18 Jan 2015 12:35:02 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: micky_ching@realsil.com.cn
-Cc: sameo@linux.intel.com, devel@linuxdriverproject.org,
-        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
-        rogerable@realtek.com, wei_wang@realsil.com.cn
-Subject: Re: [PATCH 03/10] mfd: rtsx: add debug info when access register
- failed
-Message-ID: <20150118123502.GP3574@x1>
-References: <cover.1421320541.git.micky_ching@realsil.com.cn>
- <12574843e5abb5c02430c4f0cdf0c615c5eaebc3.1421320541.git.micky_ching@realsil.com.cn>
+	Sun, 18 Jan 2015 07:36:09 -0500
+Date: Sun, 18 Jan 2015 12:35:31 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Hans de Goede <hdegoede@redhat.com>
+Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        Tejun Heo <tj@kernel.org>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        Liam Girdwood <lgirdwood@gmail.com>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org
+Message-ID: <20150118123531.GA2809@sirena.org.uk>
+References: <1421330978-9694-5-git-send-email-gregory.clement@free-electrons.com>
+ <54B8C933.7020502@redhat.com>
+ <54B8D97B.3090908@free-electrons.com>
+ <54B8E38A.6020709@redhat.com>
+ <20150116123705.GM3043@sirena.org.uk>
+ <54B9629C.9090800@redhat.com>
+ <20150116202516.GL3856@sirena.org.uk>
+ <54BA21F9.5050408@redhat.com>
+ <20150117131404.GA6414@sirena.org.uk>
+ <54BA7197.40301@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="vkogqOf2sHV7VnPd"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <12574843e5abb5c02430c4f0cdf0c615c5eaebc3.1421320541.git.micky_ching@realsil.com.cn>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <54BA7197.40301@redhat.com>
+X-Cookie: MERYL STREEP is my obstetrician!
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v4 4/4] ARM: mvebu: Armada 385 GP: Add regulators to the
+ SATA port
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Jan 2015, micky_ching@realsil.com.cn wrote:
 
-> From: Micky Ching <micky_ching@realsil.com.cn>
-> 
-> Add debug info when access register failed, this is useful for
-> debug.
+--vkogqOf2sHV7VnPd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Pull the creation of the macro into another patch.  I'm happy to apply
-that, but I don't really want dbg prints scattered everywhere.  Feel
-free to keep this patch on a branch and apply it when you need it, but
-I'm not keen on having them in Mainline.
+On Sat, Jan 17, 2015 at 03:28:39PM +0100, Hans de Goede wrote:
+> On 17-01-15 14:14, Mark Brown wrote:
 
-> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
-> ---
->  drivers/mfd/rtsx_pcr.c       | 22 +++++++++++++++++-----
->  include/linux/mfd/rtsx_pci.h |  2 ++
->  2 files changed, 19 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
-> index 30f7ca8..92f5a41 100644
-> --- a/drivers/mfd/rtsx_pcr.c
-> +++ b/drivers/mfd/rtsx_pcr.c
-> @@ -96,12 +96,16 @@ int rtsx_pci_write_register(struct rtsx_pcr *pcr, u16 addr, u8 mask, u8 data)
->  	for (i = 0; i < MAX_RW_REG_CNT; i++) {
->  		val = rtsx_pci_readl(pcr, RTSX_HAIMR);
->  		if ((val & HAIMR_TRANS_END) == 0) {
-> -			if (data != (u8)val)
-> +			if (data != (u8)val) {
-> +				pcr_dbg(pcr, "write register 0x%02x failed\n",
-> +					addr);
->  				return -EIO;
-> +			}
->  			return 0;
->  		}
->  	}
->  
-> +	pcr_dbg(pcr, "write register 0x%02x failed\n", addr);
->  	return -ETIMEDOUT;
->  }
->  EXPORT_SYMBOL_GPL(rtsx_pci_write_register);
-> @@ -120,8 +124,10 @@ int rtsx_pci_read_register(struct rtsx_pcr *pcr, u16 addr, u8 *data)
->  			break;
->  	}
->  
-> -	if (i >= MAX_RW_REG_CNT)
-> +	if (i >= MAX_RW_REG_CNT) {
-> +		pcr_dbg(pcr, "read register 0x%02x failed\n", addr);
->  		return -ETIMEDOUT;
-> +	}
->  
->  	if (data)
->  		*data = (u8)(val & 0xFF);
-> @@ -157,8 +163,10 @@ int rtsx_pci_write_phy_register(struct rtsx_pcr *pcr, u8 addr, u16 val)
->  		}
->  	}
->  
-> -	if (!finished)
-> +	if (!finished) {
-> +		pcr_dbg(pcr, "write phy 0x%x failed\n", addr);
->  		return -ETIMEDOUT;
-> +	}
->  
->  	return 0;
->  }
-> @@ -190,8 +198,10 @@ int rtsx_pci_read_phy_register(struct rtsx_pcr *pcr, u8 addr, u16 *val)
->  		}
->  	}
->  
-> -	if (!finished)
-> +	if (!finished) {
-> +		pcr_dbg(pcr, "read phy 0x%x failed\n", addr);
->  		return -ETIMEDOUT;
-> +	}
->  
->  	rtsx_pci_init_cmd(pcr);
->  
-> @@ -199,8 +209,10 @@ int rtsx_pci_read_phy_register(struct rtsx_pcr *pcr, u8 addr, u16 *val)
->  	rtsx_pci_add_cmd(pcr, READ_REG_CMD, PHYDATA1, 0, 0);
->  
->  	err = rtsx_pci_send_cmd(pcr, 100);
-> -	if (err < 0)
-> +	if (err < 0) {
-> +		pcr_dbg(pcr, "read phy 0x%x failed\n", addr);
->  		return err;
-> +	}
->  
->  	ptr = rtsx_pci_get_cmd_data(pcr);
->  	data = ((u16)ptr[1] << 8) | ptr[0];
-> diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
-> index e81f2bb..a680427 100644
-> --- a/include/linux/mfd/rtsx_pci.h
-> +++ b/include/linux/mfd/rtsx_pci.h
-> @@ -838,6 +838,8 @@ struct rtsx_pcr {
->  #define PCI_VID(pcr)			((pcr)->pci->vendor)
->  #define PCI_PID(pcr)			((pcr)->pci->device)
->  
-> +#define pcr_dbg(pcr, fmt, arg...)			\
-> +	dev_dbg(&(pcr)->pci->dev, fmt, ##arg)
->  #define SDR104_PHASE(val)		((val) & 0xFF)
->  #define SDR50_PHASE(val)		(((val) >> 8) & 0xFF)
->  #define DDR50_PHASE(val)		(((val) >> 16) & 0xFF)
+> >Following your argument to the logical conclusion means we can never
+> >turn any regualtor off - we always have the risk that there's another
+> >shared user which is going to get a power bounce if we power down.  More
+> >directly we'll also get people complaining that we're burning power
+> >pointlessly on their systems for devices they've not even got drivers
+> >enabled for.  This powering down is something there's been user demand
+> >for.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+> Right, note I'm only advocating to not turn off regulators marked as
+> regulator-boot-on. I would expect any regulator to have such a
+> marking to have at least one user with an actual driver. If people decide
+> to not build that driver, and then complain we can simply tell them to
+> build the driver ...
+
+Right, but that's not what regulator-boot-on actually means (and I'm not
+sure why you would think it would TBH) so this will disrupt existing
+users who are expecting the current behaviour.  We could try adding a
+new property but it doesn't feel very idiomatic for DT which isn't very
+nice.
+
+Telling people not to build the driver doesn't in general work any
+better than telling them to build it in I fear, it seems like it's
+essentially just shuffling things around so people have to change their
+kernel config in a different way to avoid issues.
+
+--vkogqOf2sHV7VnPd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBCAAGBQJUu6iSAAoJECTWi3JdVIfQT5IIAINLhGsWZ56mnsaeos3XRjtX
+jQIimV1Gj7q0PM01cdhS4lwZgdvfaFAvL12lCBrnJ69Jyk9Jywa4O9Ic/5p03bum
+ikk2WJuNUqm0KIGSBT9FOvH6EI3ArwZ5FhzdvxxUaOauB4g+IaJhZAMJ0/Kjlnp/
+dVYb2yGatkVdt8nSS5IqBVH80dclnNhEsw+ZBt4k04IG4XjnYrGYORx8tI7L9vD+
+QvoDMjmklOZgCr9dY3XkDqDBVI6qXIvRNuHE34nRCOTpc6SHNZUcnZfxXkLsc1Zn
+1gvWdgtnB6C1gnY+r/RQv6flT5NPbF43SDis2XzfNidHWO3Arta9pA0piE1BynA=
+=/l0+
+-----END PGP SIGNATURE-----
+
+--vkogqOf2sHV7VnPd--
