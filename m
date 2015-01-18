@@ -1,159 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752534AbbARKSc (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 05:18:32 -0500
-Received: from mail-we0-f173.google.com ([74.125.82.173]:36398 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751357AbbARKS3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 05:18:29 -0500
-Message-ID: <54BB886F.2080908@gmail.com>
-Date: Sun, 18 Jan 2015 11:18:23 +0100
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752621AbbARKT7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 05:19:59 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:33705 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751441AbbARKT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Jan 2015 05:19:58 -0500
+Message-ID: <54BB88CB.7080107@suse.cz>
+Date: Sun, 18 Jan 2015 11:19:55 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Darren Hart <dvhart@linux.intel.com>, Thomas Gleixner <tglx@linutronix.de>
-CC: mtk.manpages@gmail.com, "Carlos O'Donell" <carlos@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Jakub Jelinek <jakub@redhat.com>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Davidlohr Bueso <dave@stgolabs.net>,
-        Jan Kiszka <jan.kiszka@siemens.com>
-Subject: Re: futex(2) man page update help request
-References: <537346E5.4050407@gmail.com> <CF98E3EF.90564%dvhart@linux.intel.com> <CAKgNAkh+PWzT2SByaLk_OtiAXeZSkWoMgu+ivDOt1dTWVtaatQ@mail.gmail.com> <5373D0CA.2050204@redhat.com> <alpine.DEB.2.02.1405150121230.6261@ionos.tec.linutronix.de> <CAKgNAkjQ5Dd_U9OojXdgeforpRevvPHNFAw99kBFPCwHgf7Ggg@mail.gmail.com> <alpine.DEB.2.02.1405151144390.6261@ionos.tec.linutronix.de> <CF9A731D.913E6%dvhart@linux.intel.com> <54B7D8D4.2070203@gmail.com> <D0DEF1AE.B7EDE%dvhart@linux.intel.com> <54BA2872.5040003@gmail.com> <D0DFF430.B7F94%dvhart@linux.intel.com>
-In-Reply-To: <D0DFF430.B7F94%dvhart@linux.intel.com>
-Content-Type: text/plain; charset=windows-1252
+To: Hui Zhu <teawater@gmail.com>, akpm@linux-foundation.org, mgorman@suse.de,
+        hannes@cmpxchg.org, rientjes@google.com, iamjoonsoo.kim@lge.com,
+        sasha.levin@oracle.com, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+CC: Hui Zhu <zhuhui@xiaomi.com>
+Subject: Re: [PATCH] mm/page_alloc: Fix race conditions on getting migratetype
+ in buffered_rmqueue
+References: <1421572634-3399-1-git-send-email-teawater@gmail.com>
+In-Reply-To: <1421572634-3399-1-git-send-email-teawater@gmail.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Darren,
+On 18.1.2015 10:17, Hui Zhu wrote:
+> From: Hui Zhu <zhuhui@xiaomi.com>
+>
+> To test the patch [1], I use KGTP and a script [2] to show NR_FREE_CMA_PAGES
+> and gross of cma_nr_free.  The values are always not same.
+> I check the code of pages alloc and free and found that race conditions
+> on getting migratetype in buffered_rmqueue.
 
-On 01/17/2015 08:26 PM, Darren Hart wrote:
-> 
-> On 1/17/15, 1:16 AM, "Michael Kerrisk (man-pages)"
-> <mtk.manpages@gmail.com> wrote:
+Can you elaborate? What does this races with, are you dynamically changing
+the size of CMA area, or what? The migratetype here is based on which free
+list the page was found on. Was it misplaced then? Wasn't Joonsoo's recent
+series supposed to eliminate this?
 
-[...]
+> Then I add move the code of getting migratetype inside the zone->lock
+> protection part.
 
->>>> In the meantime, I have a couple of questions, which, if
->>>> you could answer them, I would work some changes into the
->>>> page before sending.
->>>>
->>>> 1. In various places, distinction is made between non-PI
->>>>   futexs and PI futexes. But what determines that distinction?
->>>>   From the kernel's perspective, hat make a futex one type
->>>>   or another? I presume it is to do with the types of blocking
->>>>   waiters on the futex, but it would be good to have a formal
->>>>   definition.
->>>
->>> You're right in that a uaddr is a uaddr is a uaddr. Also "there is no
->>> such
->>> thing as a futex", it doesn't exist as any kind of identifiable object,
->>> so
->>> these discussions can get rather confusing :-)
->>
->> So, I want to make sure that I am clear on what you mean you say this.
->> You say "there is no such thing as a futex" because from the kernel's
->> perspective there is no visible entity in the uncontended case
->> (where everything can be dealt with in user space). And from user-space,
->> in the uncontended case all we're doing is memory operations. Right?
->>
->> On the other hand, from a kernel perspective, we could say that a
->> futex "exists" in the contended phases, since the kernel has allocated
->> state associated with the uaddr. Right?
-> 
-> 
-> Sorry, this was more anecdotal, and probably more of a distraction than
-> constructive. I just meant that unlike other things which you can point to
-> a specific struct for (task, rt_mutex, etc.), a "futex" has it's state
-> distributed across the backing store (uaddr), the queue (futex_q), the
-> pi_state, the rt_mutex, etc, and these span kernel space and userspace.
-> Your description above is correct.
+Not just that, you are also reading migratetype from pageblock bitmap
+instead of the one embedded in the free page. Which is more expensive
+and we already do that more often than we would like to because of CMA.
+And it appears to be a wrong fix for a possible misplacement bug. If there's
+such misplacement, the wrong stats are not the only problem.
 
-Okay. Thanks. I've added a few more words to the page noting that
-the kernel maintains no state for a futex in the uncontended state.
+>
+> Because this issue will affect system even if the Linux kernel does't
+> have [1].  So I post this patch separately.
 
->>> A "futex" becomes a PI futex when it is "created" via a PI futex op
->>> code.
->>
->> Precisely which PI op codes? Is it: FUTEX_LOCK_PI, FUTEX_TRYLOCK_PI, and
->> FUTEX_CMP_REQUEUE_PI, and not FUTEX_WAIT_REQUEUE_PI or FUTEX_UNLOCK_PI?
-> 
-> Based on your wording below about taking a user POV on this, I'm going to
-> say "yes" here. These opcodes paired with the PI futex value policy
-> (described below) defines a "futex" as PI aware. These were created very
-> specifically in support of PI pthread_mutexes, so it makes a lot more
-> sense to talk about a PI aware pthread_mutex, than a PI aware futex, since
-> there is a lot of policy and scaffolding that has to be built up around it
-> to use it properly (this is what a PI pthread_mutex is).
+But we can't test that without [1], right? Maybe the issue is introduced 
+by [1]?
 
-See below.
+>
+> This patchset is based on fc7f0dd381720ea5ee5818645f7d0e9dece41cb0.
+>
+> [1] https://lkml.org/lkml/2015/1/18/28
+> [2] https://github.com/teawater/kgtp/blob/dev/add-ons/cma_free.py
+>
+> Signed-off-by: Hui Zhu <zhuhui@xiaomi.com>
+> ---
+>   mm/page_alloc.c | 11 +++++++----
+>   1 file changed, 7 insertions(+), 4 deletions(-)
+>
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 7633c50..f3d6922 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -1694,11 +1694,12 @@ again:
+>   		}
+>   		spin_lock_irqsave(&zone->lock, flags);
+>   		page = __rmqueue(zone, order, migratetype);
+> +		if (page)
+> +			migratetype = get_pageblock_migratetype(page);
+> +		else
+> +			goto failed_unlock;
+>   		spin_unlock(&zone->lock);
+> -		if (!page)
+> -			goto failed;
+> -		__mod_zone_freepage_state(zone, -(1 << order),
+> -					  get_freepage_migratetype(page));
+> +		__mod_zone_freepage_state(zone, -(1 << order), migratetype);
+>   	}
+>   
+>   	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
+> @@ -1715,6 +1716,8 @@ again:
+>   		goto again;
+>   	return page;
+>   
+> +failed_unlock:
+> +	spin_unlock(&zone->lock);
+>   failed:
+>   	local_irq_restore(flags);
+>   	return NULL;
 
->>> At that point, the syscall will ensure a pi_state is populated for the
->>> futex_q entry. See futex_lock_pi() for example. Before the locks are
->>> taken, there is a call to refill_pi_state_cache() which preps a pi_state
->>> for assignment later in futex_lock_pi_atomic(). This pi_state provides
->>> the
->>> necessary linkage to perform the priority boosting in the event of a
->>> priority inversion. This is handled externally from the futexes via the
->>> rt_mutex construct.
->>>
->>> Clear as mud?
->>
->> Not quite that bad, but... The thing is, still, the man page has text
->> such as the following (based on your wording):
->>
->>       FUTEX_CMP_REQUEUE_PI (since Linux 2.6.31)
->>              This operation is a PI-aware variant of FUTEX_CMP_REQUEUE.
->>              It    requeues    waiters    that    are    blocked    via
->>              FUTEX_WAIT_REQUEUE_PI  on uaddr from a non-PI source futex
->>              (uaddr) to a PI target futex (uaddr2).
->>
->> And elsewhere you said
->>
->>    EINVAL is returned if the non-pi to pi or
->>    op pairing semantics are violated.
->>
->> When someone in user-land (e.g., me) reads pieces like that, they then
->> want to find somewhere in the man page a description of what makes a
->> futex a *PI futex* and probably some statements of the distinction
->> between PI and non-PI futexes. And those statements should be from a
->> perspective that is somewhat comprehensible to user-space. I'm not
->> yet confident that I can do that. Do you care to take a shot at it?
-> 
-> Hrm, tricky indeed. From userspace, what makes a "futex" PI is the policy
-> agreement between kernel and userspace (which is the value of the futex:
-> 0, TID, TID|WAITERS, and never just WAITERS, and the use of PI aware futex
-> op codes when making the futex syscalls.
-
-Okay -- I've attempted to capture this in some text that I added to the 
-page.
-
-> For a longer discussion of this policy, see Documentation/pi-futex.txt.
-
-Sad to say, that document doesn't supply that much more detail, in
-my reading of it, at least.
-
-> Also note that this policy can be combined with that for robust futexes,
-> adding the OWNERDIED component.
-
-Now there's two other stories that have yet to be dealt with ;-). 
-
-I have a FIXME already in the page regarding OWNERDIED, and
-get_robust_list(2) is another page that seems like it could do with 
-a fair bit of work, but that's a story for another day.
-
-Cheers,
-
-Michael
-
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
