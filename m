@@ -1,126 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198AbbARR3N (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 12:29:13 -0500
-Received: from mail-we0-f172.google.com ([74.125.82.172]:40990 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751592AbbARR3L (ORCPT
+	id S1752759AbbARRWZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 12:22:25 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:42077 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752676AbbARRWX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 12:29:11 -0500
-From: Bruno Meneguele <bmeneguele@gmail.com>
-X-Google-Original-From: Bruno Meneguele <bruno@bmeneg.bmeneg>
-Date: Sun, 18 Jan 2015 18:20:43 +0100
-To: Peter =?iso-8859-1?Q?H=FCwe?= <PeterHuewe@gmx.de>
-Cc: Bruno E O Meneguele <bmeneguele@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Char: tpm: fixed white spaces and braces coding style
- issues
-Message-ID: <20150118172043.GC3103@bmeneg.bmeneg>
-References: <1421510610-12139-1-git-send-email-bmeneguele@gmail.com>
- <201501181433.24247.PeterHuewe@gmx.de>
+	Sun, 18 Jan 2015 12:22:23 -0500
+Message-Id: <1421601742.2738022.215400221.24202740@webmail.messagingengine.com>
+X-Sasl-Enc: JVKK/l0Sh4Lbsa8lmMRqTbshAuKNiWQRk2Hr7frzmfyZ 1421601742
+From: Alexander van Heukelum <heukelum@fastmail.fm>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: X86 ML <x86@kernel.org>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, Borislav Petkov <bp@suse.de>,
+        Rik van Riel <riel@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201501181433.24247.PeterHuewe@gmx.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Mailer: MessagingEngine.com Webmail Interface - ajax-46f3f2c7
+Subject: Re: [PATCHv2 4/4] x86_64,
+ entry: Create IRET-compatible stack frame at syscall entry
+Date: Sun, 18 Jan 2015 18:22:22 +0100
+In-Reply-To: <CALCETrU84yDv+k=KojhODKfaJ-HHCWMuJteH98FR6md-JbmiQQ@mail.gmail.com>
+References: <1421581520-2816-1-git-send-email-heukelum@fastmail.fm>
+ <1421581520-2816-5-git-send-email-heukelum@fastmail.fm>
+ <CALCETrU84yDv+k=KojhODKfaJ-HHCWMuJteH98FR6md-JbmiQQ@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Peter, 
+On Sun, Jan 18, 2015, at 17:38, Andy Lutomirski wrote:
+> On Sun, Jan 18, 2015 at 3:45 AM, Alexander van Heukelum
+> <heukelum@fastmail.fm> wrote:
+> > Create an IRET-compatible top of stack at syscall entry and use this
+> > information to return to user mode in the sysret path. This removes
+> > the need for the FIXUP_TOP_OF_STACK and RESTORE_TOP_OF_STACK macros.
+> 
+> Since I have limited bandwidth, I'd like to tackle these one at a time.
+> 
+> I like the idea of this patch, but it has some issues.
+> 
+> First, it needs to be benchmarked.  The syscall fast path entry code
+> is *very* hot in some workloads, and it needs to be fast.
 
-sorry about that! But thank you very much for the advice.
-This is my first patch on Linux Kernel, so each word will help me a lot.
+Yeah. I didn't even try to benchmark it. What do you propose to use in this case?
 
-Thanks, 
-Bruno
+> Second, I think you're really making three changes here.
+> 
+> a) You're putting rsp where it belongs -- it's in pt_regs instead of
+> being magically shoved into a combination of per-cpu variables and
+> extra arch state (thread->usersp).  This ideally consists of (AFAICS)
+> two tiny asm changes: one extra mov (most likely cache-hot) on entry
+> and a change of where you're reading from when you reload rsp on exit.
+> The former change could easily add a cycle (or zero cycles, or lots of
+> cycles -- hardware can be complicated, and I have no idea how well
+> store forwarding works on gs-relative accesses).  The latter change is
+> probably a speedup -- we'd be reading from pt_regs (almost certainly
+> hot or at least easily detected by the hardware prefetcher) instead of
+> a random percpu variable on exit.
+> 
+> *However*, this change enables the removal of all the usersp crap when
+> context switching, and all of the old_rsp references need to be
+> audited, and (having added yet another of them a week or two ago) I
+> know that you missed at least one and probably three or four :)  Also,
+> removing the usersp crap could easily speed up context switches by a
+> cache line or so.
 
-On Sun, Jan 18, 2015 at 02:33:23PM +0100, Peter Hüwe wrote:
-> Hi Bruno,
+Yes. I missed that part. I'll  look into it. But nothing seems to blow up :)
+
+> Can you do that and split out just the old_rsp, usersp, and rsp part
+> as its own patch?
 > 
-> thanks for your patch!
-> The patch is fine, 
-> but unfortunately not against the latest version of the tpm subsytem code.
+> b) You're putting the saved flags into the EFLAGS pt_regs slot, which
+> seems to me to be an unambiguous win -- it removes two instructions
+> from RESTORE_TOP_OF_STACK, and it adds nothing whatsoever (except to
+> the extent that you continue to initialize R11 on entry instead of in
+> FIXUP_TOP_OF_STACK).
 > 
-> You can find the latest version of the tpm subsystem at   
-> https://github.com/PeterHuewe/linux-tpmdd 
-> the for-james branch is usually the best choice here.
+> (a) and (b) alone should be enough to eliminate RESTORE_TOP_OF_STACK.
 > 
-> Nevertheless, I quickly ported it to the latest code (see below)
-> --> applied.
+> c) You're initializing the rest of the "top of stack" (cs, ss, and
+> rcx) unconditionally.  This is simpler, but I'm not sure it's
+> worthwhile -- we still lazily save the caller-saved regs, and
+> FIXUP_TOP_OF_STACK fits right in.  It also may have a performance
+> impact.
 > 
+> I think that (a) and (b) are clear wins (a is a really nice cleanup
+> and I bet it's a speedup, too, and b seems to be better in all
+> respects).  (c) is much less clearly a win to me.
 > 
-> 
-> > Fixed some coding style issues.
-> Usually it is quite good if you include the reports by checkpatch.
-> 
-> Thanks,
-> Peter
-> 
-> 
-> So this is what got merged, the rest does not apply anymore due to recent code 
-> changes:
-> 
-> 
-> 
-> From: Bruno E O Meneguele <bmeneguele@gmail.com>
-> Date: Sat, 17 Jan 2015 17:03:30 +0100
-> Subject: [PATCH] char/tpm: fixed white spaces coding style issues
-> 
-> Fixed some coding style issues reported by checkpatch.
-> 
-> Signed-off-by: Bruno E O Meneguele <bmeneguele@gmail.com>
-> [phuewe: ported to latest code]
-> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
-> ---
->  drivers/char/tpm/tpm.h              | 6 +++---
->  drivers/char/tpm/tpm_i2c_stm_st33.c | 2 +-
->  2 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-> index cc421cf..7b0727c 100644
-> --- a/drivers/char/tpm/tpm.h
-> +++ b/drivers/char/tpm/tpm.h
-> @@ -10,13 +10,13 @@
->   * Maintained by: <tpmdd-devel@lists.sourceforge.net>
->   *
->   * Device driver for TCG/TCPA TPM (trusted platform module).
-> - * Specifications at www.trustedcomputinggroup.org	 
-> + * Specifications at www.trustedcomputinggroup.org
->   *
->   * This program is free software; you can redistribute it and/or
->   * modify it under the terms of the GNU General Public License as
->   * published by the Free Software Foundation, version 2 of the
->   * License.
-> - * 
-> + *
->   */
->  #include <linux/module.h>
->  #include <linux/delay.h>
-> @@ -141,7 +141,7 @@ struct tpm_vendor_specific {
->  	u16 manufacturer_id;
->  };
->  
-> -#define TPM_VPRIV(c)	(c)->vendor.priv
-> +#define TPM_VPRIV(c)     ((c)->vendor.priv)
->  
->  #define TPM_VID_INTEL    0x8086
->  #define TPM_VID_WINBOND  0x1050
-> diff --git a/drivers/char/tpm/tpm_i2c_stm_st33.c 
-> b/drivers/char/tpm/tpm_i2c_stm_st33.c
-> index dbab8d0..612845b 100644
-> --- a/drivers/char/tpm/tpm_i2c_stm_st33.c
-> +++ b/drivers/char/tpm/tpm_i2c_stm_st33.c
-> @@ -777,7 +777,7 @@ tpm_stm_i2c_probe(struct i2c_client *client, const struct 
-> i2c_device_id *id)
->  				IRQF_TRIGGER_HIGH,
->  				"TPM SERIRQ management", chip);
->  		if (ret < 0) {
-> -			dev_err(chip->pdev , "TPM SERIRQ signals %d not available\n",
-> +			dev_err(chip->pdev, "TPM SERIRQ signals %d not available\n",
->  				client->irq);
->  			goto _tpm_clean_answer;
->  		}
-> -- 
-> 2.0.5
-> 
+> Would you be willing to send split-out patches along with benchmarks?
+
+Timing will depend highly on amounts of spare time, but I will give it
+a shot.
+
+Thanks for your valuable input!
+
+Greetings,
+    Alexander 
+
+> --Andy
