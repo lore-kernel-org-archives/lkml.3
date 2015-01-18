@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751887AbbARMaB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 07:30:01 -0500
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:56936 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751480AbbARM37 (ORCPT
+	id S1752132AbbARMbY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 07:31:24 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:50576 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374AbbARMbX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 07:29:59 -0500
-Date: Sun, 18 Jan 2015 12:29:47 +0000
+	Sun, 18 Jan 2015 07:31:23 -0500
+Date: Sun, 18 Jan 2015 12:31:17 +0000
 From: Lee Jones <lee.jones@linaro.org>
 To: micky_ching@realsil.com.cn
 Cc: sameo@linux.intel.com, devel@linuxdriverproject.org,
         linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
         rogerable@realtek.com, wei_wang@realsil.com.cn
-Subject: Re: [PATCH 06/10] mfd: rtsx: update phy register
-Message-ID: <20150118122947.GM3574@x1>
+Subject: Re: [PATCH 04/10] mfd: rtsx: update PETXCFG address
+Message-ID: <20150118123117.GN3574@x1>
 References: <cover.1421320541.git.micky_ching@realsil.com.cn>
- <38141c346f29fcf48b4dc168c1841c8732c70b4c.1421320541.git.micky_ching@realsil.com.cn>
+ <962a523f7376c5773c73a9c60991e2ebd775ccf2.1421320541.git.micky_ching@realsil.com.cn>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <38141c346f29fcf48b4dc168c1841c8732c70b4c.1421320541.git.micky_ching@realsil.com.cn>
+In-Reply-To: <962a523f7376c5773c73a9c60991e2ebd775ccf2.1421320541.git.micky_ching@realsil.com.cn>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -31,93 +31,73 @@ On Thu, 15 Jan 2015, micky_ching@realsil.com.cn wrote:
 
 > From: Micky Ching <micky_ching@realsil.com.cn>
 > 
-> update phy register value and using direct value instead of macros.
-> It is much easier to debug using constant value than a lot of macros.
-> We usually need compare the value directly to check the configure.
-
-NACK.  This is the opposite of what I would like to see.
-
+> PETXCFG is defined at 0xFF03, the old 0xFE49 not used any more.
+> 
 > Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
 > ---
->  drivers/mfd/rts5249.c | 46 ++++++++++++++--------------------------------
->  1 file changed, 14 insertions(+), 32 deletions(-)
-> 
+>  drivers/mfd/rts5227.c        | 6 ++----
+>  drivers/mfd/rts5249.c        | 6 ++----
+>  include/linux/mfd/rtsx_pci.h | 2 +-
+>  3 files changed, 5 insertions(+), 9 deletions(-)
+
+Acked-by: Lee Jones <lee.jones@linaro.org>
+
+> diff --git a/drivers/mfd/rts5227.c b/drivers/mfd/rts5227.c
+> index 3240740..1f387d4 100644
+> --- a/drivers/mfd/rts5227.c
+> +++ b/drivers/mfd/rts5227.c
+> @@ -118,11 +118,9 @@ static int rts5227_extra_init_hw(struct rtsx_pcr *pcr)
+>  	rts5227_fill_driving(pcr, OUTPUT_3V3);
+>  	/* Configure force_clock_req */
+>  	if (pcr->flags & PCR_REVERSE_SOCKET)
+> -		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD,
+> -				AUTOLOAD_CFG_BASE + 3, 0xB8, 0xB8);
+> +		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PETXCFG, 0xB8, 0xB8);
+>  	else
+> -		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD,
+> -				AUTOLOAD_CFG_BASE + 3, 0xB8, 0x88);
+> +		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PETXCFG, 0xB8, 0x88);
+>  	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PM_CTRL3, 0x10, 0x00);
+>  
+>  	return rtsx_pci_send_cmd(pcr, 100);
 > diff --git a/drivers/mfd/rts5249.c b/drivers/mfd/rts5249.c
-> index 2fe2854..00208d1 100644
+> index cf425cc..225ad55 100644
 > --- a/drivers/mfd/rts5249.c
 > +++ b/drivers/mfd/rts5249.c
-> @@ -132,57 +132,39 @@ static int rts5249_optimize_phy(struct rtsx_pcr *pcr)
->  	if (err < 0)
->  		return err;
+> @@ -116,11 +116,9 @@ static int rts5249_extra_init_hw(struct rtsx_pcr *pcr)
+>  	/* Configure driving */
+>  	rts5249_fill_driving(pcr, OUTPUT_3V3);
+>  	if (pcr->flags & PCR_REVERSE_SOCKET)
+> -		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD,
+> -				AUTOLOAD_CFG_BASE + 3, 0xB0, 0xB0);
+> +		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PETXCFG, 0xB0, 0xB0);
+>  	else
+> -		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD,
+> -				AUTOLOAD_CFG_BASE + 3, 0xB0, 0x80);
+> +		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PETXCFG, 0xB0, 0x80);
+>  	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PM_CTRL3, 0x10, 0x00);
 >  
-> -	err = rtsx_pci_write_phy_register(pcr, PHY_REG_REV,
-> -			PHY_REG_REV_RESV | PHY_REG_REV_RXIDLE_LATCHED |
-> -			PHY_REG_REV_P1_EN | PHY_REG_REV_RXIDLE_EN |
-> -			PHY_REG_REV_RX_PWST | PHY_REG_REV_CLKREQ_DLY_TIMER_1_0 |
-> -			PHY_REG_REV_STOP_CLKRD | PHY_REG_REV_STOP_CLKWR);
-> +	err = rtsx_pci_write_phy_register(pcr, 0x19, 0xFE6C);
->  	if (err < 0)
->  		return err;
+>  	return rtsx_pci_send_cmd(pcr, 100);
+> diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
+> index a680427..80baa10 100644
+> --- a/include/linux/mfd/rtsx_pci.h
+> +++ b/include/linux/mfd/rtsx_pci.h
+> @@ -572,7 +572,6 @@
+>  #define MSGTXDATA2			0xFE46
+>  #define MSGTXDATA3			0xFE47
+>  #define MSGTXCTL			0xFE48
+> -#define PETXCFG				0xFE49
+>  #define LTR_CTL				0xFE4A
+>  #define OBFF_CFG			0xFE4C
 >  
->  	msleep(1);
+> @@ -606,6 +605,7 @@
+>  #define DUMMY_REG_RESET_0		0xFE90
 >  
-> -	err = rtsx_pci_write_phy_register(pcr, PHY_BPCR,
-> -			PHY_BPCR_IBRXSEL | PHY_BPCR_IBTXSEL |
-> -			PHY_BPCR_IB_FILTER | PHY_BPCR_CMIRROR_EN);
-> +	err = rtsx_pci_write_phy_register(pcr, 0x0A, 0x05C0);
->  	if (err < 0)
->  		return err;
-> -	err = rtsx_pci_write_phy_register(pcr, PHY_PCR,
-> -			PHY_PCR_FORCE_CODE | PHY_PCR_OOBS_CALI_50 |
-> -			PHY_PCR_OOBS_VCM_08 | PHY_PCR_OOBS_SEN_90 |
-> -			PHY_PCR_RSSI_EN);
-> +
-> +	err = rtsx_pci_write_phy_register(pcr, 0x00, 0xBA43);
-> +	if (err < 0)
-> +		return err;
-> +	err = rtsx_pci_write_phy_register(pcr, 0x03, 0xC152);
->  	if (err < 0)
->  		return err;
-> -	err = rtsx_pci_write_phy_register(pcr, PHY_RCR2,
-> -			PHY_RCR2_EMPHASE_EN | PHY_RCR2_NADJR |
-> -			PHY_RCR2_CDR_CP_10 | PHY_RCR2_CDR_SR_2 |
-> -			PHY_RCR2_FREQSEL_12 | PHY_RCR2_CPADJEN |
-> -			PHY_RCR2_CDR_SC_8 | PHY_RCR2_CALIB_LATE);
-> +	err = rtsx_pci_write_phy_register(pcr, 0x1E, 0x78EB);
->  	if (err < 0)
->  		return err;
-> -	err = rtsx_pci_write_phy_register(pcr, PHY_FLD4,
-> -			PHY_FLD4_FLDEN_SEL | PHY_FLD4_REQ_REF |
-> -			PHY_FLD4_RXAMP_OFF | PHY_FLD4_REQ_ADDA |
-> -			PHY_FLD4_BER_COUNT | PHY_FLD4_BER_TIMER |
-> -			PHY_FLD4_BER_CHK_EN);
-> +	err = rtsx_pci_write_phy_register(pcr, 0x05, 0x4600);
->  	if (err < 0)
->  		return err;
-> -	err = rtsx_pci_write_phy_register(pcr, PHY_RDR, PHY_RDR_RXDSEL_1_9);
-> +	err = rtsx_pci_write_phy_register(pcr, 0x02, 0x041F);
->  	if (err < 0)
->  		return err;
-> -	err = rtsx_pci_write_phy_register(pcr, PHY_RCR1,
-> -			PHY_RCR1_ADP_TIME | PHY_RCR1_VCO_COARSE);
-> +	err = rtsx_pci_write_phy_register(pcr, 0x1D, 0x0824);
->  	if (err < 0)
->  		return err;
-> -	err = rtsx_pci_write_phy_register(pcr, PHY_FLD3,
-> -			PHY_FLD3_TIMER_4 | PHY_FLD3_TIMER_6 |
-> -			PHY_FLD3_RXDELINK);
-> +	err = rtsx_pci_write_phy_register(pcr, 0x08, 0x4FE4);
->  	if (err < 0)
->  		return err;
-> -	return rtsx_pci_write_phy_register(pcr, PHY_TUNE,
-> -			PHY_TUNE_TUNEREF_1_0 | PHY_TUNE_VBGSEL_1252 |
-> -			PHY_TUNE_SDBUS_33 | PHY_TUNE_TUNED18 |
-> -			PHY_TUNE_TUNED12);
-> +
-> +	return 0;
->  }
+>  #define AUTOLOAD_CFG_BASE		0xFF00
+> +#define PETXCFG				0xFF03
 >  
->  static int rts5249_turn_on_led(struct rtsx_pcr *pcr)
+>  #define PM_CTRL1			0xFF44
+>  #define PM_CTRL2			0xFF45
 
 -- 
 Lee Jones
