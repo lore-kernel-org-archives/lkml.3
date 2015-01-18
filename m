@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752492AbbARKii (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 05:38:38 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:46582 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752438AbbARKia (ORCPT
+	id S1752451AbbARKne (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 05:43:34 -0500
+Received: from mail-ig0-f171.google.com ([209.85.213.171]:47153 "EHLO
+	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751341AbbARKnd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 05:38:30 -0500
-From: Lorenzo Stoakes <lstoakes@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: anarey@gmail.com, mcgrof@do-not-panic.com, tapaswenipathak@gmail.com,
-        joe@perches.com, rmfrfs@gmail.com, yejiayily@gmail.com,
-        gdonald@gmail.com, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Lorenzo Stoakes <lstoakes@gmail.com>
-Subject: [PATCH RESEND 2 4/4] staging: rtl8192u: Refactor heavy nesting
-Date: Sun, 18 Jan 2015 10:37:00 +0000
-Message-Id: <1421577420-10115-4-git-send-email-lstoakes@gmail.com>
-X-Mailer: git-send-email 2.2.2
-In-Reply-To: <1421577420-10115-1-git-send-email-lstoakes@gmail.com>
-References: <1421577420-10115-1-git-send-email-lstoakes@gmail.com>
+	Sun, 18 Jan 2015 05:43:33 -0500
+Date: Sun, 18 Jan 2015 10:43:27 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: micky_ching@realsil.com.cn
+Cc: sameo@linux.intel.com, devel@linuxdriverproject.org,
+        linux-kernel@vger.kernel.org, gregkh@linuxfoundation.org,
+        rogerable@realtek.com, wei_wang@realsil.com.cn
+Subject: Re: [PATCH 10/10] mfd: rtsx: using pcr_dbg replace dev_dbg
+Message-ID: <20150118104327.GI3574@x1>
+References: <cover.1421320541.git.micky_ching@realsil.com.cn>
+ <7d0f1b3fe7f9f323480286d50b4ee7066a0fa4c6.1421320541.git.micky_ching@realsil.com.cn>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <7d0f1b3fe7f9f323480286d50b4ee7066a0fa4c6.1421320541.git.micky_ching@realsil.com.cn>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes warnings raised by checkpatch.pl relating to heavily indented
-lines in r8192U_dm.c by refactoring code to achieve the same outcome indented by
-one less tab.
+On Thu, 15 Jan 2015, micky_ching@realsil.com.cn wrote:
 
-Signed-off-by: Lorenzo Stoakes <lstoakes@gmail.com>
----
- drivers/staging/rtl8192u/r8192U_dm.c | 27 ++++++++++++---------------
- 1 file changed, 12 insertions(+), 15 deletions(-)
+> From: Micky Ching <micky_ching@realsil.com.cn>
+> 
+> pcr_dbg is a wrapper of dev_dbg, which can save some code,
+> and help to enable/disable debug message static.
+> 
+> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+> ---
+>  drivers/mfd/rtl8411.c  | 11 +++++------
+>  drivers/mfd/rts5209.c  |  4 ++--
+>  drivers/mfd/rts5227.c  |  4 ++--
+>  drivers/mfd/rts5229.c  |  4 ++--
+>  drivers/mfd/rts5249.c  |  4 ++--
+>  drivers/mfd/rtsx_pcr.c | 49 ++++++++++++++++++++++---------------------------
+>  6 files changed, 35 insertions(+), 41 deletions(-)
 
-diff --git a/drivers/staging/rtl8192u/r8192U_dm.c b/drivers/staging/rtl8192u/r8192U_dm.c
-index aeb8aa2..f024782 100644
---- a/drivers/staging/rtl8192u/r8192U_dm.c
-+++ b/drivers/staging/rtl8192u/r8192U_dm.c
-@@ -2637,28 +2637,25 @@ static void dm_rxpath_sel_byrssi(struct net_device *dev)
- 						cck_rx_ver2_sec_index = cck_rx_ver2_max_index;
- 						tmp_cck_max_pwdb = cur_cck_pwdb;
- 						cck_rx_ver2_max_index = i;
--					} else if (cur_cck_pwdb == tmp_cck_max_pwdb) { /* let sec and min point to the different index */
-+					} else if (cur_cck_pwdb == tmp_cck_max_pwdb) {
-+						/* let sec and min point to the different index */
- 						tmp_cck_sec_pwdb = cur_cck_pwdb;
- 						cck_rx_ver2_sec_index = i;
- 					} else if ((cur_cck_pwdb < tmp_cck_max_pwdb) && (cur_cck_pwdb > tmp_cck_sec_pwdb)) {
- 						tmp_cck_sec_pwdb = cur_cck_pwdb;
- 						cck_rx_ver2_sec_index = i;
--					} else if (cur_cck_pwdb == tmp_cck_sec_pwdb) {
--						if (tmp_cck_sec_pwdb == tmp_cck_min_pwdb) { /* let sec and min point to the different index */
--							tmp_cck_sec_pwdb = cur_cck_pwdb;
--							cck_rx_ver2_sec_index = i;
--						} else {
--							/*  This case we don't need to set any index */
--						}
-+					} else if (cur_cck_pwdb == tmp_cck_sec_pwdb && tmp_cck_sec_pwdb == tmp_cck_min_pwdb) {
-+						/* let sec and min point to the different index */
-+						tmp_cck_sec_pwdb = cur_cck_pwdb;
-+						cck_rx_ver2_sec_index = i;
-+						/* otherwise we don't need to set any index */
- 					} else if ((cur_cck_pwdb < tmp_cck_sec_pwdb) && (cur_cck_pwdb > tmp_cck_min_pwdb)) {
- 						/*  This case we don't need to set any index */
--					} else if (cur_cck_pwdb == tmp_cck_min_pwdb) {
--						if (tmp_cck_sec_pwdb == tmp_cck_min_pwdb) { /*  let sec and min point to the different index */
--							tmp_cck_min_pwdb = cur_cck_pwdb;
--							cck_rx_ver2_min_index = i;
--						} else {
--							/*  This case we don't need to set any index */
--						}
-+					} else if (cur_cck_pwdb == tmp_cck_min_pwdb && tmp_cck_sec_pwdb == tmp_cck_min_pwdb) {
-+						/*  let sec and min point to the different index */
-+						tmp_cck_min_pwdb = cur_cck_pwdb;
-+						cck_rx_ver2_min_index = i;
-+						/* otherwise we don't need to set any index */
- 					} else if (cur_cck_pwdb < tmp_cck_min_pwdb) {
- 						tmp_cck_min_pwdb = cur_cck_pwdb;
- 						cck_rx_ver2_min_index = i;
---
-2.2.2
+Looks fine.
+
+Acked-by: Lee Jones <lee.jones@linaro.org>
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
