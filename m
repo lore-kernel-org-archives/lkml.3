@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136AbbAROIW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 09:08:22 -0500
-Received: from srv-hp10.netsons.net ([94.141.22.72]:48471 "EHLO
+	id S1752668AbbAROJQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 09:09:16 -0500
+Received: from srv-hp10.netsons.net ([94.141.22.72]:39310 "EHLO
 	srv-hp10.netsons.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751853AbbAROIM (ORCPT
+	with ESMTP id S1751858AbbAROIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 18 Jan 2015 09:08:12 -0500
 From: Luca Ceresoli <luca@lucaceresoli.net>
@@ -15,9 +15,9 @@ Cc: Luca Ceresoli <luca@lucaceresoli.net>, Peng Tao <bergwolf@gmail.com>,
         Jinshan Xiong <jinshan.xiong@intel.com>,
         Srikrishan Malik <srikrishanmalik@gmail.com>, HPDD-discuss@ml01.01.org,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/6] staging: lustre: llite: declare internal symbols as static
-Date: Sun, 18 Jan 2015 15:06:50 +0100
-Message-Id: <1421590012-7082-5-git-send-email-luca@lucaceresoli.net>
+Subject: [PATCH 5/6] staging: lustre: fld: declare internal symbols as static
+Date: Sun, 18 Jan 2015 15:06:51 +0100
+Message-Id: <1421590012-7082-6-git-send-email-luca@lucaceresoli.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1421590012-7082-1-git-send-email-luca@lucaceresoli.net>
 References: <1421590012-7082-1-git-send-email-luca@lucaceresoli.net>
@@ -45,39 +45,40 @@ Cc: HPDD-discuss@lists.01.org
 Cc: devel@driverdev.osuosl.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/staging/lustre/lustre/llite/dir.c  | 4 ++--
- drivers/staging/lustre/lustre/llite/file.c | 3 ++-
- 2 files changed, 4 insertions(+), 3 deletions(-)
+ drivers/staging/lustre/lustre/fld/fld_cache.c | 6 +++---
+ drivers/staging/lustre/lustre/fld/lproc_fld.c | 2 +-
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/staging/lustre/lustre/llite/dir.c b/drivers/staging/lustre/lustre/llite/dir.c
-index 1ac7a70..babba60 100644
---- a/drivers/staging/lustre/lustre/llite/dir.c
-+++ b/drivers/staging/lustre/lustre/llite/dir.c
-@@ -652,8 +652,8 @@ static int ll_send_mgc_param(struct obd_export *mgc, char *string)
- 	return rc;
- }
+diff --git a/drivers/staging/lustre/lustre/fld/fld_cache.c b/drivers/staging/lustre/lustre/fld/fld_cache.c
+index 5d95d0b..0d0a737 100644
+--- a/drivers/staging/lustre/lustre/fld/fld_cache.c
++++ b/drivers/staging/lustre/lustre/fld/fld_cache.c
+@@ -257,9 +257,9 @@ void fld_cache_flush(struct fld_cache *cache)
+  * entry accordingly.
+  */
  
--int ll_dir_setdirstripe(struct inode *dir, struct lmv_user_md *lump,
--			char *filename)
-+static int ll_dir_setdirstripe(struct inode *dir, struct lmv_user_md *lump,
-+			       char *filename)
+-void fld_cache_punch_hole(struct fld_cache *cache,
+-			  struct fld_cache_entry *f_curr,
+-			  struct fld_cache_entry *f_new)
++static void fld_cache_punch_hole(struct fld_cache *cache,
++				 struct fld_cache_entry *f_curr,
++				 struct fld_cache_entry *f_new)
  {
- 	struct ptlrpc_request *request = NULL;
- 	struct md_op_data *op_data;
-diff --git a/drivers/staging/lustre/lustre/llite/file.c b/drivers/staging/lustre/lustre/llite/file.c
-index 35a2df0..ca270f4 100644
---- a/drivers/staging/lustre/lustre/llite/file.c
-+++ b/drivers/staging/lustre/lustre/llite/file.c
-@@ -1587,7 +1587,8 @@ ll_get_grouplock(struct inode *inode, struct file *file, unsigned long arg)
+ 	const struct lu_seq_range *range = &f_new->fce_range;
+ 	const u64 new_start  = range->lsr_start;
+diff --git a/drivers/staging/lustre/lustre/fld/lproc_fld.c b/drivers/staging/lustre/lustre/fld/lproc_fld.c
+index 74b4db9..562b991 100644
+--- a/drivers/staging/lustre/lustre/fld/lproc_fld.c
++++ b/drivers/staging/lustre/lustre/fld/lproc_fld.c
+@@ -159,7 +159,7 @@ static int fld_proc_cache_flush_release(struct inode *inode, struct file *file)
  	return 0;
  }
  
--int ll_put_grouplock(struct inode *inode, struct file *file, unsigned long arg)
-+static int ll_put_grouplock(struct inode *inode, struct file *file,
-+			    unsigned long arg)
- {
- 	struct ll_inode_info   *lli = ll_i2info(inode);
- 	struct ll_file_data    *fd = LUSTRE_FPRIVATE(file);
+-struct file_operations fld_proc_cache_flush_fops = {
++static struct file_operations fld_proc_cache_flush_fops = {
+ 	.owner		= THIS_MODULE,
+ 	.open		= fld_proc_cache_flush_open,
+ 	.write		= fld_proc_cache_flush_write,
 -- 
 1.9.1
 
