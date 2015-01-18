@@ -1,81 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752270AbbARJ3x (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 04:29:53 -0500
-Received: from www.xora.org.uk ([80.68.91.202]:57455 "EHLO
-	xora.vm.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750728AbbARJ3t (ORCPT
+	id S1752374AbbARJeD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 04:34:03 -0500
+Received: from mail-pa0-f46.google.com ([209.85.220.46]:43247 "EHLO
+	mail-pa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751080AbbARJd4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 04:29:49 -0500
-Date: Sun, 18 Jan 2015 09:29:56 +0000
-From: Graeme Gregory <gg@slimlogic.co.uk>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: Jon Masters <jcm@redhat.com>, Mark Rutland <Mark.Rutland@arm.com>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "wangyijing@huawei.com" <wangyijing@huawei.com>,
-        Rob Herring <robh@kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Timur Tabi <timur@codeaurora.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v7 06/17] ARM64 / ACPI: Make PCI optional for ACPI on
- ARM64
-Message-ID: <20150118092955.GE6182@xora-haswell.xora.org.uk>
-References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org>
- <1421247905-3749-7-git-send-email-hanjun.guo@linaro.org>
- <20150116094913.GA13634@e104818-lin.cambridge.arm.com>
- <54BB51F1.8000900@linaro.org>
- <508480149.12941388.1421562696311.JavaMail.zimbra@zmail15.collab.prod.int.phx2.redhat.com>
- <54BB56CB.7040701@linaro.org>
+	Sun, 18 Jan 2015 04:33:56 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <54BB56CB.7040701@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CADxyqMGtew47Gfzq=1u46qjkLsn+AkB-fGWbAtODAbHgi3DM9g@mail.gmail.com>
+References: <CADxyqMFnDnFNvTL7Yuzd-1WP9RRddFYAd7UVXmLT2SOMRmOx9g@mail.gmail.com>
+	<CADxyqMHXMjXPVnGSpQSS=_FUpH=Hz-=P1FbcFfJ8Omp3k74dGA@mail.gmail.com>
+	<20150108134849.671ee761@lxorguk.ukuu.org.uk>
+	<CADxyqME4=vnZh4J8BDw63r6L=hA8OpO4GJWxuuOgwuFwHb+8Lg@mail.gmail.com>
+	<20150114163317.46a1ecec@lxorguk.ukuu.org.uk>
+	<CADxyqMGtew47Gfzq=1u46qjkLsn+AkB-fGWbAtODAbHgi3DM9g@mail.gmail.com>
+Date: Sun, 18 Jan 2015 15:03:55 +0530
+Message-ID: <CADxyqMEjs7Xpy7Xqi7zbyOtCwNWfT1bK22Paf3wSMP8YEVjyUQ@mail.gmail.com>
+Subject: Re: Question about kernel interfaces
+From: Siddhartha De <siddhartha.de87@gmail.com>
+To: kernelnewbies@kernelnewbies.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 18, 2015 at 02:46:35PM +0800, Hanjun Guo wrote:
-> On 2015年01月18日 14:31, Jon Masters wrote:
-> >Hi Folks,
-> >
-> >Sorry for top posting from bed. The mainstream servers will all likely do
-> > PCIe but there are several that may not. They should not be excluded. That
-> said,
-> >if we booted a previously built kernel on a system without an MCFG and
-> > got no ECAM/root then things would probably still work.
-> >
-> >I think it'll work out either way but for the record there is no requirement to do PCIe on ARM servers that conform to spec.
-> 
-> OK, Catalin already said that was not the main point of the
-> comments for this patch, I think the title and change log
-> of the patch is inconsistent with the code makes Catalin confused,
-> I will update them in next version.
-> 
-Well what we are talking about is the presence of CONFIG_PCI=y which even
-in Jons case will be true as he wants to run the same kernel on both
-sets of hardware.
+Hi Alan Thanks for your reply ... really helped a lot
 
-Now the architecture has PCI support I think its safe to remove the make
-PCI optional part of the patch as this should be handled runtime not
-compile time.
+>> Taking this idea further , could we also expose driver IOCTL's over
+>> the network ?
+>>
+>> For eg to open the cd rom drive we would be calling the following url :-
+>
+> You could but why would you make the network visible. If you look at real
+> clustered systems they all hide the network. You don't care where it is,
+> often you don't even care where the drive is.
+>
+> eject /dev/cdrom
+>
+> on such a system lets the kernel figure out who to ask to eject it.
+>
+> The job of an OS is to abstract details like that. In a clustered OS I
+> want to be able to type
+>
+>         mount mydisk
+>
+> and I don't care who, where or how it gets mounted so long as it appears.
+>
+> Alan
 
-Graeme
+OK ... the idea of exposing driver ioctl 's or low level system calls
+or library calls over the network isn't for use in clustered systems (
+although it certainly could be used  there ) ... the reason I want to
+expose all these systems is to provide an universal interface that any
+programming language can request services from .
 
+To bring home the point to the Linux folks let's talk about a
+particular example ....
+
+Let's say you need to call an ioctl from a shell script ( I know its a
+very rare use case but please bear with me ... :) )
+
+So the current way of doing it is probably to write a C program which
+actually calls the ioctl and then call the C program from the shell
+script ...
+
+However if we exposed the IOCTL as a web url we could easily call its
+services by using a simple utility like curl . So in our shell script
+we would probably write :-
+
+curl http://localhost:7000/IOCTL/IOCTL_EJECT?device=/dev/cdrom
+
+and the IOCTL_EJECT ioctl would get called on /dev/cdrom
+that is ioctl ( &handle_to_/dev/cdrom , IOCTL_EJECT , &some_buffer )
+would get called ( by our translator running as a separate program or
+as a service daemon )
+
+Taking this concept further all libraries could expose their functions
+via such an interface .
+
+And the benefits would go far beyond just shell scripts . Once the
+interface has been exposed any high level language can use the
+functionality provided by drivers , libraries to their full extent .
+
+If we want to expose the full power of drivers and other libraries to
+the entire gamut of programmers regardless of whatever language they
+are coding in , this could be a good way of doing it  :)
+
+Thanking you ,
+Yours sincerely ,
+Kernel Newbie
+
+
+On Sat, Jan 17, 2015 at 1:07 AM, Siddhartha De
+<siddhartha.de87@gmail.com> wrote:
+> FYI ...
+>
+>
+> ---------- Forwarded message ----------
+> From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+> Date: Wed, Jan 14, 2015 at 10:03 PM
+> Subject: Re: Question about kernel interfaces
+> To: Siddhartha De <siddhartha.de87@gmail.com>
+> Cc: linux-kernel <linux-kernel@vger.kernel.org>
+>
+>
+>> Just wanted to point out something  :-
+>>
+>> Quoting from makelinux website :-
+>> http://www.makelinux.net/books/lkd2/ch17lev1sec8
+>>
+>> "The sysfs filesystem is currently the place for implementing
+>> functionality previously reserved for ioctl() calls on device nodes or
+>> the procfs filesystem. These days, the chic thing to do is implement
+>> such functionality as sysfs attributes in the appropriate directory.
+>> For example, instead of a new ioctl() on a device node, add a sysfs
+>> attribute in the driver's sysfs directory. Such an approach avoids the
+>> type-unsafe use of obscure ioctl() arguments and the haphazard mess of
+>> /proc. "
+>
+> And is wrong. Certainly rather clueless people had the idea they could
+> make ioctl go away using sysfs, and then everyone wrote about it. Anyone
+> who actually thought about the problem realised immediately they are not
+> semantically equivalent.
+>
+>> sysfs is the new ioctl
+>
+> And as was pointed out even then they are not semantically equivalent so
+> everyone who was talking about "sysfs being the new ioctl" was basically
+> talking out the wrong end.
+>
+> What was done was to stop filling drivers with ioctls for pieces of
+> general information which didn't have a context attached to it or
+> sequence. Things like power state, what type it is, what bus it is on
+> etc. That avoided having zillions of ioctls but at the cost of memory.
+>
+>> Taking this idea further , could we also expose driver IOCTL's over
+>> the network ?
+>>
+>> For eg to open the cd rom drive we would be calling the following url :-
+>
+> You could but why would you make the network visible. If you look at real
+> clustered systems they all hide the network. You don't care where it is,
+> often you don't even care where the drive is.
+>
+> eject /dev/cdrom
+>
+> on such a system lets the kernel figure out who to ask to eject it.
+>
+> The job of an OS is to abstract details like that. In a clustered OS I
+> want to be able to type
+>
+>         mount mydisk
+>
+> and I don't care who, where or how it gets mounted so long as it appears.
+>
+> Alan
