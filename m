@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751880AbbARObW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 09:31:22 -0500
-Received: from mout.web.de ([212.227.15.3]:64180 "EHLO mout.web.de"
+	id S1752300AbbAROdt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 09:33:49 -0500
+Received: from mga01.intel.com ([192.55.52.88]:31246 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750857AbbARObU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 09:31:20 -0500
-Message-ID: <54BBC3AB.6040207@users.sourceforge.net>
-Date: Sun, 18 Jan 2015 15:31:07 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S1751398AbbAROdq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Jan 2015 09:33:46 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,421,1418112000"; 
+   d="scan'208";a="652833736"
+Date: Sun, 18 Jan 2015 20:02:26 +0530
+From: Vinod Koul <vinod.koul@intel.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: dmaengine@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>,
+        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Maxime Ripard <maxime.ripard@free-electrons.com>
+Subject: Re: [PATCH] dma: coh901318: fix function return types build warnings
+Message-ID: <20150118143226.GQ15411@intel.com>
+References: <2760189.hGZZQd3ELS@wuerfel>
 MIME-Version: 1.0
-To: Don Brace <don.brace@pmcs.com>, iss_storagedev@hp.com, storagedev@pmcs.com,
-        linux-scsi@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 0/3] block: Deletion of checks before three function calls
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
-In-Reply-To: <5317A59D.4@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:+8kHET24s0ZyonQ8MjFSKrZTABBKnR1VgafjnewMO4hv6VB3nFW
- 6UcEw5X90ao6MREX33HwGTePNOQzN+gnm6W30Yxss7AIHmfuZ3lGzhV7yAlhX0H32/Agr+H
- CAiX8elZG9JgrcsWrw6k0CIAVnmcnPAvgUlcZaQCTJisrp3QKJIy7SQ8VEQMI80OuOhYa9x
- TSRqQ04JU2ZVFj0jvORPg==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <2760189.hGZZQd3ELS@wuerfel>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Sun, 18 Jan 2015 14:50:06 +0100
+On Tue, Jan 13, 2015 at 10:17:03PM +0100, Arnd Bergmann wrote:
+> A recent patch that removed coh901318_control() replaced it
+> with a number of pointers to existing functions, but those
+> unfortunately have the wrong return  type and need to be
+> changed to return an 'int' with an error value rather than
+> a 'void' to avoid these build warnings:
+> 
+> drivers/dma/coh901318.c:2697:32: warning: assignment from incompatible pointer type
+>   base->dma_slave.device_config = coh901318_dma_set_runtimeconfig;
+>                                 ^
+> drivers/dma/coh901318.c:2698:31: warning: assignment from incompatible pointer type
+>   base->dma_slave.device_pause = coh901318_pause;
+>                                ^
+> drivers/dma/coh901318.c:2699:32: warning: assignment from incompatible pointer type
+>   base->dma_slave.device_resume = coh901318_resume
+> 
+> The coh901318_base_init function has the correct return type
+> already, but needs to be marked 'static' to avoid a sparse
+> warning about a missing declaration.
+> 
+Please use the right subsystem name
 
-Functions which release a system resource are occasionally documented in the way
-that they tolerate the passing of a null pointer for example. I do not see a need
-because of this fact that a function caller repeats a corresponding check.
+Applied now
 
-Markus Elfring (3):
-  cciss: Deletion of an unnecessary check before the function call "put_disk"
-  z2ram: Delete an unnecessary check before the function call "kfree"
-  Deletion of checks before the function call "iounmap"
-
- drivers/block/cciss.c    | 18 ++++++------------
- drivers/block/mg_disk.c  |  3 +--
- drivers/block/skd_main.c |  6 ++----
- 3 files changed, 9 insertions(+), 18 deletions(-)
-
+Thanks
 -- 
-2.2.2
+~Vinod
 
