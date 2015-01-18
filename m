@@ -1,83 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751564AbbARHLq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 02:11:46 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:63690 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750710AbbARHLn (ORCPT
+	id S1751603AbbARHeh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 02:34:37 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:58862 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750880AbbARHeg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 02:11:43 -0500
-Date: Sun, 18 Jan 2015 09:11:39 +0200
-From: Asaf Vertz <asaf.vertz@tandemg.com>
-To: gregkh@linuxfoundation.org
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: wlan-ng: hfa384x_usb: fix sparse endianness
- warnings
-Message-ID: <20150118071139.GA2248@ubuntu>
+	Sun, 18 Jan 2015 02:34:36 -0500
+Date: Sun, 18 Jan 2015 16:33:24 +0900
+From: Greg KH <gregkh@linuxfoundation.org>
+To: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Cc: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+        Riley Andrews <riandrews@android.com>
+Subject: [PATCH] MAINTAINERS: add Android driver entries
+Message-ID: <20150118073324.GA12187@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed the following warnings (reported by sparse):
-drivers/staging/wlan-ng/hfa384x_usb.c:3828:36: warning: cast to restricted __le16
-drivers/staging/wlan-ng/hfa384x_usb.c:3229:16: warning: cast to restricted __le16
-drivers/staging/wlan-ng/hfa384x_usb.c:3430:18: warning: cast to restricted __le16
-drivers/staging/wlan-ng/hfa384x_usb.c:3349:51: warning: restricted __le16 degrades to integer
-drivers/staging/wlan-ng/hfa384x_usb.c:3357:37: warning: cast to restricted __le16
-drivers/staging/wlan-ng/hfa384x_usb.c:3358:37: warning: cast to restricted __le16
-drivers/staging/wlan-ng/hfa384x_usb.c:3393:36: warning: cast to restricted __le16
-drivers/staging/wlan-ng/hfa384x_usb.c:3102:28: warning: cast to restricted __le16
-drivers/staging/wlan-ng/hfa384x_usb.c:3004:28: warning: cast to restricted __le16
-drivers/staging/wlan-ng/hfa384x_usb.c:1308:37: warning: cast to restricted __le16
-drivers/staging/wlan-ng/hfa384x_usb.c:2713:25: warning: incorrect type in assignment (different base types)
-drivers/staging/wlan-ng/hfa384x_usb.c:2713:25:    expected unsigned short [unsigned] [usertype] type
-drivers/staging/wlan-ng/hfa384x_usb.c:2713:25:    got restricted __le16 [usertype] <noident>
+Put down me, Arve, and Riley as maintainers for the android drivers.
 
-Signed-off-by: Asaf Vertz <asaf.vertz@tandemg.com>
----
- drivers/staging/wlan-ng/hfa384x.h     |    4 ++--
- drivers/staging/wlan-ng/hfa384x_usb.c |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+Cc: Arve Hjønnevåg <arve@android.com>
+Cc: Riley Andrews <riandrews@android.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 
-diff --git a/drivers/staging/wlan-ng/hfa384x.h b/drivers/staging/wlan-ng/hfa384x.h
-index 20d146b..964a662 100644
---- a/drivers/staging/wlan-ng/hfa384x.h
-+++ b/drivers/staging/wlan-ng/hfa384x.h
-@@ -879,7 +879,7 @@ typedef struct hfa384x_usb_error {
- /* Unions for packaging all the known packet types together */
- 
- typedef union hfa384x_usbout {
--	u16 type;
-+	__le16 type;
- 	hfa384x_usb_txfrm_t txfrm;
- 	hfa384x_usb_cmdreq_t cmdreq;
- 	hfa384x_usb_wridreq_t wridreq;
-@@ -889,7 +889,7 @@ typedef union hfa384x_usbout {
- } __packed hfa384x_usbout_t;
- 
- typedef union hfa384x_usbin {
--	u16 type;
-+	__le16 type;
- 	hfa384x_usb_rxfrm_t rxfrm;
- 	hfa384x_usb_txfrm_t txfrm;
- 	hfa384x_usb_infofrm_t infofrm;
-diff --git a/drivers/staging/wlan-ng/hfa384x_usb.c b/drivers/staging/wlan-ng/hfa384x_usb.c
-index 55d2f56..e84ebb9 100644
---- a/drivers/staging/wlan-ng/hfa384x_usb.c
-+++ b/drivers/staging/wlan-ng/hfa384x_usb.c
-@@ -3346,7 +3346,7 @@ retry:
- 		if (unlocked_usbctlx_cancel_async(hw, ctlx) == 0)
- 			run_queue = 1;
- 	} else {
--		const u16 intype = (usbin->type & ~cpu_to_le16(0x8000));
-+		const __le16 intype = (usbin->type & ~cpu_to_le16(0x8000));
- 
- 		/*
- 		 * Check that our message is what we're expecting ...
--- 
-1.7.0.4
 
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 3589d67437f8..95fd5c66ba09 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -708,6 +708,16 @@ X:	drivers/iio/*/adjd*
+ F:	drivers/staging/iio/*/ad*
+ F:	staging/iio/trigger/iio-trig-bfin-timer.c
+ 
++ANDROID DRIVERS
++M:	Greg Kroah-Hartman <gregkh@linuxfoundation.org>
++M:	Arve Hjønnevåg <arve@android.com>
++M:	Riley Andrews <riandrews@android.com>
++T:	git git://git.kernel.org/pub/scm/linux/kernel/gregkh/staging.git
++L:	devel@driverdev.osuosl.org
++S:	Supported
++F:	drivers/android/
++F:	drivers/staging/android/
++
+ AOA (Apple Onboard Audio) ALSA DRIVER
+ M:	Johannes Berg <johannes@sipsolutions.net>
+ L:	linuxppc-dev@lists.ozlabs.org
