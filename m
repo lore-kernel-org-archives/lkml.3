@@ -1,193 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752251AbbARAem (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 19:34:42 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:52091 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751321AbbARAek (ORCPT
+	id S1751627AbbARA4E (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 19:56:04 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:64583 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751392AbbARA4B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 19:34:40 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Linux PCI <linux-pci@vger.kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Alan Stern <stern@rowland.harvard.edu>, Aaron Lu <aaron.lu@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: [RFC][PATCH][v2] PCI / PM: Avoid resuming PCI devices during system suspend
-Date: Sun, 18 Jan 2015 01:57:05 +0100
-Message-ID: <1520491.dCOodSBFV9@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1460212.bInrzeZle0@vostro.rjw.lan>
-References: <1460212.bInrzeZle0@vostro.rjw.lan>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+	Sat, 17 Jan 2015 19:56:01 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Larry Finger <Larry.Finger@lwfinger.net>,
+        Jes Sorensen <Jes.Sorensen@redhat.com>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Tina Ruchandani <ruchandani.tina@gmail.com>,
+        linux-wireless@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] staging: rtl8723au: core: rtw_cmd: Remove unused functions
+Date: Sun, 18 Jan 2015 01:59:09 +0100
+Message-Id: <1421542749-17843-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Removes some functions that are not used anywhere:
+rtw_set_ch_cmd23a() rtw_cmd_clr_isr23a()
 
-Commit f25c0ae2b4c4 (ACPI / PM: Avoid resuming devices in ACPI PM
-domain during system suspend) modified the ACPI PM domain's system
-suspend callbacks to allow devices attached to it to be left in the
-runtime-suspended state during system suspend so as to optimize
-the suspend process.
+This was partially found by using a static code analysis program called cppcheck.
 
-This was based on the general mechanism introduced by commit
-aae4518b3124 (PM / sleep: Mechanism to avoid resuming runtime-suspended
-devices unnecessarily).
-
-Extend that approach to PCI devices by modifying the PCI bus type's
-->prepare callback to return 1 for devices that are runtime-suspended
-when it is being executed and that are in a suitable power state and
-need not be resumed going forward.
-
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
 ---
- drivers/pci/pci-acpi.c   |   17 +++++++++++++++++
- drivers/pci/pci-driver.c |   11 ++++++-----
- drivers/pci/pci.c        |   26 ++++++++++++++++++++++++++
- drivers/pci/pci.h        |    6 ++++++
- 4 files changed, 55 insertions(+), 5 deletions(-)
+ drivers/staging/rtl8723au/core/rtw_cmd.c    |   61 ---------------------------
+ drivers/staging/rtl8723au/include/rtw_cmd.h |    2 -
+ 2 files changed, 63 deletions(-)
 
-Index: linux-pm/drivers/pci/pci.c
-===================================================================
---- linux-pm.orig/drivers/pci/pci.c
-+++ linux-pm/drivers/pci/pci.c
-@@ -521,6 +521,11 @@ static inline int platform_pci_run_wake(
- 			pci_platform_pm->run_wake(dev, enable) : -ENODEV;
+diff --git a/drivers/staging/rtl8723au/core/rtw_cmd.c b/drivers/staging/rtl8723au/core/rtw_cmd.c
+index 60e0ded..2447a56 100644
+--- a/drivers/staging/rtl8723au/core/rtw_cmd.c
++++ b/drivers/staging/rtl8723au/core/rtw_cmd.c
+@@ -245,11 +245,6 @@ exit:
+ 	return res;
  }
  
-+static inline bool platform_pci_need_resume(struct pci_dev *dev)
-+{
-+	return pci_platform_pm ? pci_platform_pm->need_resume(dev) : false;
-+}
-+
- /**
-  * pci_raw_set_power_state - Use PCI PM registers to set the power state of
-  *                           given PCI device
-@@ -1999,6 +2004,27 @@ bool pci_dev_run_wake(struct pci_dev *de
- }
- EXPORT_SYMBOL_GPL(pci_dev_run_wake);
- 
-+/**
-+ * pci_dev_keep_suspended - Check if the device can stay in the suspended state.
-+ * @pci_dev: Device to check.
-+ *
-+ * Return 'true' if the device is runtime-suspended, it doesn't have to be
-+ * reconfigured due to wakeup settings difference between system and runtime
-+ * suspend and the current power state of it is suitable for the upcoming
-+ * (system) transition.
-+ */
-+bool pci_dev_keep_suspended(struct pci_dev *pci_dev)
-+{
-+	struct device *dev = &pci_dev->dev;
-+
-+	if (!pm_runtime_suspended(dev)
-+	    || (device_can_wakeup(dev) && !device_may_wakeup(dev))
-+	    || platform_pci_need_resume(pci_dev))
-+		return false;
-+
-+	return pci_target_state(dev) == dev->current_state;
-+}
-+
- void pci_config_pm_runtime_get(struct pci_dev *pdev)
- {
- 	struct device *dev = &pdev->dev;
-Index: linux-pm/drivers/pci/pci.h
-===================================================================
---- linux-pm.orig/drivers/pci/pci.h
-+++ linux-pm/drivers/pci/pci.h
-@@ -50,6 +50,10 @@ int pci_probe_reset_function(struct pci_
-  *		for given device (the device's wake-up capability has to be
-  *		enabled by @sleep_wake for this feature to work)
-  *
-+ * @need_resume: returns 'true' if the given device (which is currently
-+ *		suspended) needs to be resumed to be configured for system
-+ *		wakeup.
-+ *
-  * If given platform is generally capable of power managing PCI devices, all of
-  * these callbacks are mandatory.
-  */
-@@ -59,6 +63,7 @@ struct pci_platform_pm_ops {
- 	pci_power_t (*choose_state)(struct pci_dev *dev);
- 	int (*sleep_wake)(struct pci_dev *dev, bool enable);
- 	int (*run_wake)(struct pci_dev *dev, bool enable);
-+	bool (*need_resume)(struct pci_dev *dev);
- };
- 
- int pci_set_platform_pm(struct pci_platform_pm_ops *ops);
-@@ -67,6 +72,7 @@ void pci_power_up(struct pci_dev *dev);
- void pci_disable_enabled_device(struct pci_dev *dev);
- int pci_finish_runtime_suspend(struct pci_dev *dev);
- int __pci_pme_wakeup(struct pci_dev *dev, void *ign);
-+bool pci_dev_keep_suspended(struct pci_dev *dev);
- void pci_config_pm_runtime_get(struct pci_dev *dev);
- void pci_config_pm_runtime_put(struct pci_dev *dev);
- void pci_pm_init(struct pci_dev *dev);
-Index: linux-pm/drivers/pci/pci-acpi.c
-===================================================================
---- linux-pm.orig/drivers/pci/pci-acpi.c
-+++ linux-pm/drivers/pci/pci-acpi.c
-@@ -501,12 +501,29 @@ static int acpi_pci_run_wake(struct pci_
- 	return 0;
- }
- 
-+static bool acpi_pci_need_resume(struct pci_dev *dev)
-+{
-+	struct acpi_device *adev = ACPI_COMPANION(&dev->dev);
-+
-+	if (!adev || !acpi_device_power_manageable(adev))
-+		return false;
-+
-+	if (device_may_wakeup(&dev->dev) != !!adev->wakeup.prepare_count)
-+		return true;
-+
-+	if (acpi_target_system_state() == ACPI_STATE_S0)
-+		return false;
-+
-+	return !!adev->power.flags.dsw_present;
-+}
-+
- static struct pci_platform_pm_ops acpi_pci_platform_pm = {
- 	.is_manageable = acpi_pci_power_manageable,
- 	.set_state = acpi_pci_set_power_state,
- 	.choose_state = acpi_pci_choose_state,
- 	.sleep_wake = acpi_pci_sleep_wake,
- 	.run_wake = acpi_pci_run_wake,
-+	.need_resume = acpi_pci_need_resume,
- };
- 
- void acpi_pci_add_bus(struct pci_bus *bus)
-Index: linux-pm/drivers/pci/pci-driver.c
-===================================================================
---- linux-pm.orig/drivers/pci/pci-driver.c
-+++ linux-pm/drivers/pci/pci-driver.c
-@@ -653,7 +653,6 @@ static bool pci_has_legacy_pm_support(st
- static int pci_pm_prepare(struct device *dev)
- {
- 	struct device_driver *drv = dev->driver;
--	int error = 0;
- 
- 	/*
- 	 * Devices having power.ignore_children set may still be necessary for
-@@ -662,10 +661,12 @@ static int pci_pm_prepare(struct device
- 	if (dev->power.ignore_children)
- 		pm_runtime_resume(dev);
- 
--	if (drv && drv->pm && drv->pm->prepare)
--		error = drv->pm->prepare(dev);
+-void rtw_cmd_clr_isr23a(struct	cmd_priv *pcmdpriv)
+-{
+-	pcmdpriv->cmd_done_cnt++;
+-}
 -
--	return error;
-+	if (drv && drv->pm && drv->pm->prepare) {
-+		int error = drv->pm->prepare(dev);
-+		if (error)
-+			return error;
-+	}
-+	return pci_dev_keep_suspended(to_pci_dev(dev));
+ void rtw_free_cmd_obj23a(struct cmd_obj *pcmd)
+ {
+ 
+@@ -852,62 +847,6 @@ exit:
+ 	return res;
  }
  
+-/*
+- * This is only ever called from on_action_spct23a_ch_switch () which isn't
+- * called from anywhere itself
+- */
+-int rtw_set_ch_cmd23a(struct rtw_adapter *padapter, u8 ch, u8 bw, u8 ch_offset,
+-		      u8 enqueue)
+-{
+-	struct cmd_obj *pcmdobj;
+-	struct set_ch_parm *set_ch_parm;
+-	struct cmd_priv *pcmdpriv = &padapter->cmdpriv;
+-	int res = _SUCCESS;
+-
+-	DBG_8723A("%s(%s): ch:%u, bw:%u, ch_offset:%u\n", __func__,
+-		  padapter->pnetdev->name, ch, bw, ch_offset);
+-
+-	/* check input parameter */
+-
+-	/* prepare cmd parameter */
+-	set_ch_parm = kzalloc(sizeof(*set_ch_parm), GFP_KERNEL);
+-	if (!set_ch_parm) {
+-		res = _FAIL;
+-		goto exit;
+-	}
+-	set_ch_parm->ch = ch;
+-	set_ch_parm->bw = bw;
+-	set_ch_parm->ch_offset = ch_offset;
+-
+-	if (enqueue) {
+-		/* need enqueue, prepare cmd_obj and enqueue */
+-		pcmdobj = kzalloc(sizeof(struct cmd_obj), GFP_KERNEL);
+-		if (!pcmdobj) {
+-			kfree(set_ch_parm);
+-			res = _FAIL;
+-			goto exit;
+-		}
+-
+-		init_h2fwcmd_w_parm_no_rsp(pcmdobj, set_ch_parm,
+-					   GEN_CMD_CODE(_SetChannel));
+-		res = rtw_enqueue_cmd23a(pcmdpriv, pcmdobj);
+-	} else {
+-		/* no need to enqueue, do the cmd hdl directly and
+-		   free cmd parameter */
+-		if (H2C_SUCCESS != set_ch_hdl23a(padapter, (u8 *)set_ch_parm))
+-			res = _FAIL;
+-
+-		kfree(set_ch_parm);
+-	}
+-
+-	/* do something based on res... */
+-exit:
+-
+-	DBG_8723A("%s(%s): res:%u\n", __func__, padapter->pnetdev->name, res);
+-
+-	return res;
+-}
+-
+ static void traffic_status_watchdog(struct rtw_adapter *padapter)
+ {
+ 	u8 bEnterPS;
+diff --git a/drivers/staging/rtl8723au/include/rtw_cmd.h b/drivers/staging/rtl8723au/include/rtw_cmd.h
+index 7104410..204c10d 100644
+--- a/drivers/staging/rtl8723au/include/rtw_cmd.h
++++ b/drivers/staging/rtl8723au/include/rtw_cmd.h
+@@ -99,7 +99,6 @@ int rtw_init_cmd_priv23a(struct cmd_priv *pcmdpriv);
  
+ u32 rtw_init_evt_priv23a (struct evt_priv *pevtpriv);
+ void rtw_free_evt_priv23a (struct evt_priv *pevtpriv);
+-void rtw_cmd_clr_isr23a(struct cmd_priv *pcmdpriv);
+ void rtw_evt_notify_isr(struct evt_priv *pevtpriv);
+ 
+ enum rtw_drvextra_cmd_id
+@@ -713,7 +712,6 @@ int rtw_ps_cmd23a(struct rtw_adapter*padapter);
+ int rtw_chk_hi_queue_cmd23a(struct rtw_adapter*padapter);
+ #endif
+ 
+-int rtw_set_ch_cmd23a(struct rtw_adapter*padapter, u8 ch, u8 bw, u8 ch_offset, u8 enqueue);
+ int rtw_set_chplan_cmd(struct rtw_adapter*padapter, u8 chplan, u8 enqueue);
+ int rtw_led_blink_cmd(struct rtw_adapter*padapter, struct led_8723a *pLed);
+ int rtw_set_csa_cmd(struct rtw_adapter*padapter, u8 new_ch_no);
+-- 
+1.7.10.4
 
