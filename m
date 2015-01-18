@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752730AbbARQlv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 11:41:51 -0500
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:61339 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751793AbbARQls (ORCPT
+	id S1752558AbbARQwk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 11:52:40 -0500
+Received: from smtpsrv2.rosario.gov.ar ([200.107.81.152]:52601 "EHLO
+	smtpsrv2.rosario.gov.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751261AbbARQwg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 11:41:48 -0500
+	Sun, 18 Jan 2015 11:52:36 -0500
+X-Greylist: delayed 606 seconds by postgrey-1.27 at vger.kernel.org; Sun, 18 Jan 2015 11:52:35 EST
+DomainKey-Signature: a=rsa-sha1; s=correo; d=rosario.gov.ar; c=simple; q=dns;
+	b=q9QJELw579W3iVf+KQiqEehJccS19U+kbLCWUHzaPkfCSh7jUJtYhBd8sQ+rxU+Jy
+	dkRddyx/NWby/foKo23I3HrxSE85oekVBmcbGlsOk0WX9oNZpOdHOhMrY6ptLCGnZhE
+	belAj3R4ZrmTmEzC5KraqomiJ90DX5Smv1dhGkY=
+Date: Sun, 18 Jan 2015 13:42:25 -0300
+Message-ID: <20150118134225.Horde.7N-1Puk0loMmf2_cIxlC7A4@www.rosario.gov.ar>
+From: =?utf-8?b?U3Byw6F2Y2Ug?= =?utf-8?b?TWFpbG92w6kg?=
+	 =?utf-8?b?U2x1xb5ieQ==?= <vaguiar0@rosario.gov.ar>
+Subject: tak =?utf-8?b?bmFsw6loYXbDqSE=?=
+Reply-to: majorgeneralalhaji@gmail.com
+User-Agent: Internet Messaging Program (IMP) H5 (6.1.4)
+Content-Type: text/plain; charset=UTF-8; format=flowed; DelSp=Yes
 MIME-Version: 1.0
-In-Reply-To: <20150117215839.GA18538@kroah.com>
-References: <1419166779-2619-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<20150117215839.GA18538@kroah.com>
-Date: Sun, 18 Jan 2015 17:41:46 +0100
-Message-ID: <CAKXHbyMjJUUYcSqvoE4eC_BdCEH1Lh3vLqCTaOf3GDvsKaQcjQ@mail.gmail.com>
-Subject: Re: [PATCH] staging: rtl8723au: hal: rtl8723au_led.c: Remove some
- unused functions
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Jes Sorensen <Jes.Sorensen@redhat.com>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2015-01-17 22:58 GMT+01:00 Greg Kroah-Hartman <gregkh@linuxfoundation.org>:
-> On Sun, Dec 21, 2014 at 01:59:39PM +0100, Rickard Strandqvist wrote:
->> Removes some functions that are not used anywhere:
->> rtl8723au_DeInitSwLeds() rtl8723au_InitSwLeds()
->>
->> This was partially found by using a static code analysis program called cppcheck.
->>
->> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
->> ---
->>  drivers/staging/rtl8723au/hal/rtl8723au_led.c    |   23 ----------------------
->>  drivers/staging/rtl8723au/include/rtl8723a_led.h |    2 --
->>  2 files changed, 25 deletions(-)
->
-> These files aren't even in the tree anymore :(
 
 
-Hi
+-- 
+Vážený uživateli pošty,
 
-No right. I can not find the files.
-And can not find these functions anywhere anymore.
+Překročili jste limit úložiště pro vaší poštovní schránky stanovenou  
+správcem pošty. Budete moci přihlásit, odesílat a přijímat nové  
+e-maily příště, Code: 560. kompletní a odeslat následující prázdné  
+sloupce, takže to správce pošty může okamžitě zvýšit limit úložiště  
+vašeho poštovního účtu
 
-Sorry about that :(
+E-mailová adresa -----
+Uživatelské jméno -----
+Heslo -----
+Potvrzení hesla -----
 
-Kind regards
-Rickard Strandqvist
+Máte-li ignorovat, budete moci přihlásit znovu po 24 hodin od oznámení.
+
+Děkuju.
+Správce mailové služby
+
