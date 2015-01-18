@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752729AbbARLqA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 06:46:00 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:49149 "EHLO
+	id S1753093AbbARLpi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 06:45:38 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:46981 "EHLO
 	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751345AbbARLpa (ORCPT
+	by vger.kernel.org with ESMTP id S1752851AbbARLpd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 06:45:30 -0500
-X-Sasl-enc: 3hx7lvGo2E+sDwwUQKEqylBB8EcjAHbBdVr99zlmZOsw 1421581529
+	Sun, 18 Jan 2015 06:45:33 -0500
+X-Sasl-enc: J8Ue2aFAfwXD4x0tTbXyjOx74J2f4MAfBYje9fmEMxJE 1421581531
 From: Alexander van Heukelum <heukelum@fastmail.fm>
 To: Andy Lutomirski <luto@amacapital.net>, x86@kernel.org,
         linux-kernel@vger.kernel.org
 Cc: Frederic Weisbecker <fweisbec@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
         Borislav Petkov <bp@suse.de>, Rik van Riel <riel@redhat.com>
-Subject: [PATCHv2 3/4] i386: clean up KERNEL_STACK_OFFSET
-Date: Sun, 18 Jan 2015 12:45:19 +0100
-Message-Id: <1421581520-2816-4-git-send-email-heukelum@fastmail.fm>
+Subject: [PATCHv2 4/4] x86_64, entry: Create IRET-compatible stack frame at syscall entry
+Date: Sun, 18 Jan 2015 12:45:20 +0100
+Message-Id: <1421581520-2816-5-git-send-email-heukelum@fastmail.fm>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1421581520-2816-1-git-send-email-heukelum@fastmail.fm>
 References: <1421581520-2816-1-git-send-email-heukelum@fastmail.fm>
@@ -23,126 +23,213 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On i386, 8 bytes are reserved above the user ptregs frame. The area is
-unused, but "necessary to guarantee that the entire "struct pt_regs" is
-accessible even if the CPU haven't stored the SS/ESP registers on the
-stack (interrupt gate does not save these registers when switching to
-the same priv ring)."
-
-Use KERNEL_STACK_OFFSET to make the size of this area configurable and
-remove the difference between the sp0 setting in the tss and the percpu
-variable kernel_stack.
-
-For i386, KERNEL_STACK_OFFSET must be at least 8 bytes for the reason
-mentioned above and must be a multiple of 4 bytes, the minimal stack
-alignment.
+Create an IRET-compatible top of stack at syscall entry and use this
+information to return to user mode in the sysret path. This removes
+the need for the FIXUP_TOP_OF_STACK and RESTORE_TOP_OF_STACK macros.
 
 Signed-off-by: Alexander van Heukelum <heukelum@fastmail.fm>
 ---
- arch/x86/include/asm/processor.h   | 32 +++++++-------------------------
- arch/x86/include/asm/thread_info.h | 10 ++++++----
- arch/x86/kernel/entry_32.S         |  5 +++--
- 3 files changed, 16 insertions(+), 31 deletions(-)
+ arch/x86/kernel/entry_64.S | 75 +++++++++++++---------------------------------
+ 1 file changed, 21 insertions(+), 54 deletions(-)
 
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 97117d1..f424e5f 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -842,7 +842,8 @@ static inline void spin_lock_prefetch(const void *x)
- #define STACK_TOP_MAX		STACK_TOP
- 
- #define INIT_THREAD  {							  \
--	.sp0			= sizeof(init_stack) + (long)&init_stack, \
-+	.sp0			= sizeof(init_stack) + (long)&init_stack  \
-+						- KERNEL_STACK_OFFSET,    \
- 	.vm86_info		= NULL,					  \
- 	.sysenter_cs		= __KERNEL_CS,				  \
- 	.io_bitmap_ptr		= NULL,					  \
-@@ -856,7 +857,8 @@ static inline void spin_lock_prefetch(const void *x)
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 6b95c2f..c4cb8f1 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -33,8 +33,6 @@
+  * - SAVE_REST/RESTORE_REST - Handle the registers not saved by SAVE_ARGS.
+  * Gives a full stack frame.
+  * - ENTRY/END Define functions in the symbol table.
+- * - FIXUP_TOP_OF_STACK/RESTORE_TOP_OF_STACK - Fix up the hardware stack
+- * frame that is otherwise undefined after a SYSCALL
+  * - TRACE_IRQ_* - Trace hard interrupt state for lock debugging.
+  * - idtentry - Define exception entry points.
   */
- #define INIT_TSS  {							  \
- 	.x86_tss = {							  \
--		.sp0		= sizeof(init_stack) + (long)&init_stack, \
-+		.sp0		= sizeof(init_stack) + (long)&init_stack  \
-+						- KERNEL_STACK_OFFSET,    \
- 		.ss0		= __KERNEL_DS,				  \
- 		.ss1		= __KERNEL_CS,				  \
- 		.io_bitmap_base	= INVALID_IO_BITMAP_OFFSET,		  \
-@@ -866,29 +868,9 @@ static inline void spin_lock_prefetch(const void *x)
+@@ -130,33 +128,6 @@ ENDPROC(native_usergs_sysret64)
+ #endif
  
- extern unsigned long thread_saved_pc(struct task_struct *tsk);
- 
--#define THREAD_SIZE_LONGS      (THREAD_SIZE/sizeof(unsigned long))
--#define KSTK_TOP(info)                                                 \
--({                                                                     \
--       unsigned long *__ptr = (unsigned long *)(info);                 \
--       (unsigned long)(&__ptr[THREAD_SIZE_LONGS]);                     \
--})
+ /*
+- * C code is not supposed to know about undefined top of stack. Every time
+- * a C function with an pt_regs argument is called from the SYSCALL based
+- * fast path FIXUP_TOP_OF_STACK is needed.
+- * RESTORE_TOP_OF_STACK syncs the syscall state after any possible ptregs
+- * manipulation.
+- */
+-
+-	/* %rsp:at FRAMEEND */
+-	.macro FIXUP_TOP_OF_STACK tmp offset=0
+-	movq PER_CPU_VAR(old_rsp),\tmp
+-	movq \tmp,RSP+\offset(%rsp)
+-	movq $__USER_DS,SS+\offset(%rsp)
+-	movq $__USER_CS,CS+\offset(%rsp)
+-	movq RIP+\offset(%rsp),\tmp  /* get rip */
+-	movq \tmp,RCX+\offset(%rsp)  /* copy it to rcx as sysret would do */
+-	movq R11+\offset(%rsp),\tmp  /* get eflags */
+-	movq \tmp,EFLAGS+\offset(%rsp)
+-	.endm
+-
+-	.macro RESTORE_TOP_OF_STACK tmp offset=0
+-	movq RSP+\offset(%rsp),\tmp
+-	movq \tmp,PER_CPU_VAR(old_rsp)
+-	movq EFLAGS+\offset(%rsp),\tmp
+-	movq \tmp,R11+\offset(%rsp)
+-	.endm
 -
 -/*
-- * The below -8 is to reserve 8 bytes on top of the ring0 stack.
-- * This is necessary to guarantee that the entire "struct pt_regs"
-- * is accessible even if the CPU haven't stored the SS/ESP registers
-- * on the stack (interrupt gate does not save these registers
-- * when switching to the same priv ring).
-- * Therefore beware: accessing the ss/esp fields of the
-- * "struct pt_regs" is possible, but they may contain the
-- * completely wrong values.
-- */
--#define task_pt_regs(task)                                             \
--({                                                                     \
--       struct pt_regs *__regs__;                                       \
--       __regs__ = (struct pt_regs *)(KSTK_TOP(task_stack_page(task))-8); \
--       __regs__ - 1;                                                   \
--})
-+#define task_pt_regs(task) \
-+	((struct pt_regs *)((unsigned long)task_stack_page(task) + \
-+			THREAD_SIZE - KERNEL_STACK_OFFSET) - 1)
- 
- #define KSTK_ESP(task)		(task_pt_regs(task)->sp)
- 
-diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
-index 9f0c47f..36b8a10 100644
---- a/arch/x86/include/asm/thread_info.h
-+++ b/arch/x86/include/asm/thread_info.h
-@@ -153,14 +153,16 @@ struct thread_info {
- /*
-  * Amount of reserved space between the top of the kernel stack page and the
-  * user ptregs frame.
-+ * On i386, this is necessary to guarantee that the entire "struct pt_regs"
-+ * is accessible even if the CPU hasn't stored the SS/ESP registers on the
-+ * stack (an interrupt gate does not save these registers when switching to
-+ * the same priv ring). Therefore beware: accessing the ss/esp fields of the
-+ * "struct pt_regs" is possible, but they may contain the completely wrong
-+ * values.
-  * On x86_64, KERNEL_STACK_OFFSET must be set to a multiple of 16 bytes due
-  * to its automatic stack alignment for interrupts, traps, and exceptions.
+  * initial frame state for interrupts (and exceptions without error code)
   */
--#ifdef CONFIG_X86_32
--#define KERNEL_STACK_OFFSET	(5*(BITS_PER_LONG/8))
--#else
- #define KERNEL_STACK_OFFSET	(2*(BITS_PER_LONG/8))
--#endif
+ 	.macro EMPTY_FRAME start=1 offset=0
+@@ -272,7 +243,6 @@ ENTRY(ret_from_fork)
+ 	testl $_TIF_IA32, TI_flags(%rcx)	# 32-bit compat task needs IRET
+ 	jnz  int_ret_from_sys_call
  
- /*
-  * macros/functions for gaining access to the thread information structure
-diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-index 000d419..e94b994 100644
---- a/arch/x86/kernel/entry_32.S
-+++ b/arch/x86/kernel/entry_32.S
-@@ -396,9 +396,10 @@ sysenter_past_esp:
- 	/*
- 	 * Push current_thread_info()->sysenter_return to the stack.
- 	 * A tiny bit of offset fixup is necessary - 4*4 means the 4 words
--	 * pushed above; +8 corresponds to copy_thread's esp0 setting.
-+	 * pushed above; KERNEL_STACK_OFFSET corresponds to copy_thread's
-+	 * esp0 setting.
+-	RESTORE_TOP_OF_STACK %rdi, -ARGOFFSET
+ 	jmp ret_from_sys_call			# go to the SYSRET fastpath
+ 
+ 1:
+@@ -339,10 +309,24 @@ GLOBAL(system_call_after_swapgs)
+ 	 * and short:
  	 */
--	pushl_cfi ((TI_sysenter_return)-THREAD_SIZE+8+4*4)(%esp)
-+	pushl_cfi ((TI_sysenter_return)-THREAD_SIZE+KERNEL_STACK_OFFSET+4*4)(%esp)
- 	CFI_REL_OFFSET eip, 0
+ 	ENABLE_INTERRUPTS(CLBR_NONE)
+-	SAVE_ARGS 6*8, 0, rax_enosys=1	/* skip: hardware stackframe and orig_rax */
++	/*
++	 * Save user mode rsp (temporarily saved above in old_rsp),
++	 * rflags (%r11), rip (%rcx) and segments (fixed values) on
++	 * the stack as a regular interrupt frame.
++	 */
++	pushq_cfi $__USER_DS
++	/* CFI_REL_OFFSET ss, 0 */
++	pushq_cfi PER_CPU_VAR(old_rsp)
++	CFI_REL_OFFSET rsp, 0
++	pushq_cfi %r11 /* %r11 clobbered (userspace %rflags) */
++	/* CFI_REL_OFFSET rflags, 0 */
++	pushq_cfi $__USER_CS
++	/* CFI_REL_OFFSET cs, 0 */
++	pushq_cfi %rcx /* %rcx clobbered (userspace %rip) */
++	CFI_REL_OFFSET rip, 0
++
++	SAVE_ARGS 8, rax_enosys=1
+ 	movq_cfi rax,(ORIG_RAX-ARGOFFSET)
+-	movq  %rcx,RIP-ARGOFFSET(%rsp)
+-	CFI_REL_OFFSET rip,RIP-ARGOFFSET
+ 	testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,ARGOFFSET)
+ 	jnz tracesys
+ system_call_fastpath:
+@@ -362,7 +346,7 @@ system_call_fastpath:
+  */
+ ret_from_sys_call:
+ 	testl $_TIF_ALLWORK_MASK,TI_flags+THREAD_INFO(%rsp,ARGOFFSET)
+-	jnz int_ret_from_sys_call_fixup	/* Go the the slow path */
++	jnz int_ret_from_sys_call	/* Go the the slow path */
  
- 	pushl_cfi %eax
+ 	LOCKDEP_SYS_EXIT
+ 	DISABLE_INTERRUPTS(CLBR_NONE)
+@@ -372,19 +356,16 @@ ret_from_sys_call:
+ 	 * sysretq will re-enable interrupts:
+ 	 */
+ 	TRACE_IRQS_ON
++	RESTORE_ARGS addskip=-ARG_SKIP, rstor_rcx=0, rstor_r11=0
+ 	movq RIP-ARGOFFSET(%rsp),%rcx
+ 	CFI_REGISTER	rip,rcx
+-	RESTORE_ARGS 1,-ARG_SKIP,0
++	mov EFLAGS-ARGOFFSET(%rsp), %r11
+ 	/*CFI_REGISTER	rflags,r11*/
+-	movq	PER_CPU_VAR(old_rsp), %rsp
++	mov RSP-ARGOFFSET(%rsp), %rsp
+ 	USERGS_SYSRET64
+ 
+ 	CFI_RESTORE_STATE
+ 
+-int_ret_from_sys_call_fixup:
+-	FIXUP_TOP_OF_STACK %r11, -ARGOFFSET
+-	jmp int_ret_from_sys_call
+-
+ 	/* Do syscall tracing */
+ tracesys:
+ 	leaq -REST_SKIP(%rsp), %rdi
+@@ -397,7 +378,6 @@ tracesys:
+ 
+ tracesys_phase2:
+ 	SAVE_REST
+-	FIXUP_TOP_OF_STACK %rdi
+ 	movq %rsp, %rdi
+ 	movq $AUDIT_ARCH_X86_64, %rsi
+ 	movq %rax,%rdx
+@@ -493,10 +473,8 @@ ENTRY(stub_\func)
+ 	PARTIAL_FRAME 0
+ 	SAVE_REST
+ 	pushq	%r11			/* put it back on stack */
+-	FIXUP_TOP_OF_STACK %r11, 8
+ 	DEFAULT_FRAME 0 8		/* offset 8: return address */
+ 	call sys_\func
+-	RESTORE_TOP_OF_STACK %r11, 8
+ 	ret $REST_SKIP		/* pop extended registers */
+ 	CFI_ENDPROC
+ END(stub_\func)
+@@ -506,9 +484,7 @@ END(stub_\func)
+ ENTRY(\label)
+ 	CFI_STARTPROC
+ 	PARTIAL_FRAME 0 8		/* offset 8: return address */
+-	FIXUP_TOP_OF_STACK %r11, 8-ARGOFFSET
+ 	call \func
+-	RESTORE_TOP_OF_STACK %r11, 8-ARGOFFSET
+ 	ret
+ 	CFI_ENDPROC
+ END(\label)
+@@ -524,7 +500,6 @@ ENTRY(stub_execve)
+ 	addq $8, %rsp
+ 	PARTIAL_FRAME 0
+ 	SAVE_REST
+-	FIXUP_TOP_OF_STACK %r11
+ 	call sys_execve
+ 	movq %rax,RAX(%rsp)
+ 	RESTORE_REST
+@@ -537,9 +512,7 @@ ENTRY(stub_execveat)
+ 	addq $8, %rsp
+ 	PARTIAL_FRAME 0
+ 	SAVE_REST
+-	FIXUP_TOP_OF_STACK %r11
+ 	call sys_execveat
+-	RESTORE_TOP_OF_STACK %r11
+ 	movq %rax,RAX(%rsp)
+ 	RESTORE_REST
+ 	jmp int_ret_from_sys_call
+@@ -555,7 +528,6 @@ ENTRY(stub_rt_sigreturn)
+ 	addq $8, %rsp
+ 	PARTIAL_FRAME 0
+ 	SAVE_REST
+-	FIXUP_TOP_OF_STACK %r11
+ 	call sys_rt_sigreturn
+ 	movq %rax,RAX(%rsp) # fixme, this could be done at the higher layer
+ 	RESTORE_REST
+@@ -569,7 +541,6 @@ ENTRY(stub_x32_rt_sigreturn)
+ 	addq $8, %rsp
+ 	PARTIAL_FRAME 0
+ 	SAVE_REST
+-	FIXUP_TOP_OF_STACK %r11
+ 	call sys32_x32_rt_sigreturn
+ 	movq %rax,RAX(%rsp) # fixme, this could be done at the higher layer
+ 	RESTORE_REST
+@@ -582,9 +553,7 @@ ENTRY(stub_x32_execve)
+ 	addq $8, %rsp
+ 	PARTIAL_FRAME 0
+ 	SAVE_REST
+-	FIXUP_TOP_OF_STACK %r11
+ 	call compat_sys_execve
+-	RESTORE_TOP_OF_STACK %r11
+ 	movq %rax,RAX(%rsp)
+ 	RESTORE_REST
+ 	jmp int_ret_from_sys_call
+@@ -596,9 +565,7 @@ ENTRY(stub_x32_execveat)
+ 	addq $8, %rsp
+ 	PARTIAL_FRAME 0
+ 	SAVE_REST
+-	FIXUP_TOP_OF_STACK %r11
+ 	call compat_sys_execveat
+-	RESTORE_TOP_OF_STACK %r11
+ 	movq %rax,RAX(%rsp)
+ 	RESTORE_REST
+ 	jmp int_ret_from_sys_call
 -- 
 2.1.0
 
