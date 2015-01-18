@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751981AbbAROIS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 09:08:18 -0500
-Received: from srv-hp10.netsons.net ([94.141.22.72]:54568 "EHLO
+	id S1752368AbbAROI2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 09:08:28 -0500
+Received: from srv-hp10.netsons.net ([94.141.22.72]:54570 "EHLO
 	srv-hp10.netsons.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750953AbbAROIK (ORCPT
+	with ESMTP id S1751827AbbAROIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 09:08:10 -0500
+	Sun, 18 Jan 2015 09:08:12 -0500
 From: Luca Ceresoli <luca@lucaceresoli.net>
 To: Oleg Drokin <oleg.drokin@intel.com>,
         Andreas Dilger <andreas.dilger@intel.com>,
@@ -15,9 +15,9 @@ Cc: Luca Ceresoli <luca@lucaceresoli.net>, Peng Tao <bergwolf@gmail.com>,
         Jinshan Xiong <jinshan.xiong@intel.com>,
         Srikrishan Malik <srikrishanmalik@gmail.com>, HPDD-discuss@ml01.01.org,
         devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/6] staging: lustre: mdc: declare internal symbols as static
-Date: Sun, 18 Jan 2015 15:06:47 +0100
-Message-Id: <1421590012-7082-2-git-send-email-luca@lucaceresoli.net>
+Subject: [PATCH 2/6] staging: lustre: lmv: declare internal symbols as static
+Date: Sun, 18 Jan 2015 15:06:48 +0100
+Message-Id: <1421590012-7082-3-git-send-email-luca@lucaceresoli.net>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1421590012-7082-1-git-send-email-luca@lucaceresoli.net>
 References: <1421590012-7082-1-git-send-email-luca@lucaceresoli.net>
@@ -45,158 +45,261 @@ Cc: HPDD-discuss@lists.01.org
 Cc: devel@driverdev.osuosl.org
 Cc: linux-kernel@vger.kernel.org
 ---
- drivers/staging/lustre/lustre/mdc/mdc_request.c | 54 ++++++++++++-------------
- 1 file changed, 27 insertions(+), 27 deletions(-)
+ drivers/staging/lustre/lustre/lmv/lmv_obd.c   | 87 ++++++++++++++-------------
+ drivers/staging/lustre/lustre/lmv/lproc_lmv.c |  4 +-
+ 2 files changed, 47 insertions(+), 44 deletions(-)
 
-diff --git a/drivers/staging/lustre/lustre/mdc/mdc_request.c b/drivers/staging/lustre/lustre/mdc/mdc_request.c
-index 05d05ce..ef27447 100644
---- a/drivers/staging/lustre/lustre/mdc/mdc_request.c
-+++ b/drivers/staging/lustre/lustre/mdc/mdc_request.c
-@@ -855,8 +855,8 @@ static void mdc_close_handle_reply(struct ptlrpc_request *req,
- 	}
- }
- 
--int mdc_close(struct obd_export *exp, struct md_op_data *op_data,
--	      struct md_open_data *mod, struct ptlrpc_request **request)
-+static int mdc_close(struct obd_export *exp, struct md_op_data *op_data,
-+		     struct md_open_data *mod, struct ptlrpc_request **request)
- {
- 	struct obd_device     *obd = class_exp2obd(exp);
- 	struct ptlrpc_request *req;
-@@ -974,8 +974,8 @@ int mdc_close(struct obd_export *exp, struct md_op_data *op_data,
- 	return rc < 0 ? rc : saved_rc;
- }
- 
--int mdc_done_writing(struct obd_export *exp, struct md_op_data *op_data,
--		     struct md_open_data *mod)
-+static int mdc_done_writing(struct obd_export *exp, struct md_op_data *op_data,
-+			    struct md_open_data *mod)
- {
- 	struct obd_device     *obd = class_exp2obd(exp);
- 	struct ptlrpc_request *req;
-@@ -1044,8 +1044,8 @@ int mdc_done_writing(struct obd_export *exp, struct md_op_data *op_data,
- }
- 
- 
--int mdc_readpage(struct obd_export *exp, struct md_op_data *op_data,
--		 struct page **pages, struct ptlrpc_request **request)
-+static int mdc_readpage(struct obd_export *exp, struct md_op_data *op_data,
-+			struct page **pages, struct ptlrpc_request **request)
- {
- 	struct ptlrpc_request   *req;
- 	struct ptlrpc_bulk_desc *desc;
-@@ -1974,9 +1974,9 @@ out:
+diff --git a/drivers/staging/lustre/lustre/lmv/lmv_obd.c b/drivers/staging/lustre/lustre/lmv/lmv_obd.c
+index 9f38374..b779f47 100644
+--- a/drivers/staging/lustre/lustre/lmv/lmv_obd.c
++++ b/drivers/staging/lustre/lustre/lmv/lmv_obd.c
+@@ -128,7 +128,7 @@ static int lmv_set_mdc_active(struct lmv_obd *lmv, struct obd_uuid *uuid,
  	return rc;
  }
  
--int mdc_get_info_rpc(struct obd_export *exp,
--		     u32 keylen, void *key,
--		     int vallen, void *val)
-+static int mdc_get_info_rpc(struct obd_export *exp,
-+			    u32 keylen, void *key,
-+			    int vallen, void *val)
+-struct obd_uuid *lmv_get_uuid(struct obd_export *exp)
++static struct obd_uuid *lmv_get_uuid(struct obd_export *exp)
  {
- 	struct obd_import      *imp = class_exp2cliimp(exp);
- 	struct ptlrpc_request  *req;
-@@ -2148,11 +2148,11 @@ static int mdc_kuc_reregister(struct obd_import *imp)
- 					 (void *)imp);
+ 	struct lmv_obd *lmv = &exp->exp_obd->u.lmv;
+ 
+@@ -335,7 +335,7 @@ static int lmv_init_ea_size(struct obd_export *exp, int easize,
+ 
+ #define MAX_STRING_SIZE 128
+ 
+-int lmv_connect_mdc(struct obd_device *obd, struct lmv_tgt_desc *tgt)
++static int lmv_connect_mdc(struct obd_device *obd, struct lmv_tgt_desc *tgt)
+ {
+ 	struct proc_dir_entry   *lmv_proc_dir;
+ 	struct lmv_obd	  *lmv = &obd->u.lmv;
+@@ -1663,10 +1663,10 @@ struct lmv_tgt_desc
+ 	return tgt;
  }
  
--int mdc_set_info_async(const struct lu_env *env,
--		       struct obd_export *exp,
--		       u32 keylen, void *key,
--		       u32 vallen, void *val,
--		       struct ptlrpc_request_set *set)
-+static int mdc_set_info_async(const struct lu_env *env,
-+			      struct obd_export *exp,
-+			      u32 keylen, void *key,
-+			      u32 vallen, void *val,
-+			      struct ptlrpc_request_set *set)
+-int lmv_create(struct obd_export *exp, struct md_op_data *op_data,
+-	       const void *data, int datalen, int mode, __u32 uid,
+-	       __u32 gid, cfs_cap_t cap_effective, __u64 rdev,
+-	       struct ptlrpc_request **request)
++static int lmv_create(struct obd_export *exp, struct md_op_data *op_data,
++		      const void *data, int datalen, int mode, __u32 uid,
++		      __u32 gid, cfs_cap_t cap_effective, __u64 rdev,
++		      struct ptlrpc_request **request)
  {
- 	struct obd_import	*imp = class_exp2cliimp(exp);
- 	int			 rc;
-@@ -2199,9 +2199,9 @@ int mdc_set_info_async(const struct lu_env *env,
+ 	struct obd_device       *obd = exp->exp_obd;
+ 	struct lmv_obd	  *lmv = &obd->u.lmv;
+@@ -2387,9 +2387,9 @@ static int lmv_get_info(const struct lu_env *env, struct obd_export *exp,
  	return -EINVAL;
  }
  
--int mdc_get_info(const struct lu_env *env, struct obd_export *exp,
--		 __u32 keylen, void *key, __u32 *vallen, void *val,
--		 struct lov_stripe_md *lsm)
-+static int mdc_get_info(const struct lu_env *env, struct obd_export *exp,
-+			__u32 keylen, void *key, __u32 *vallen, void *val,
-+			struct lov_stripe_md *lsm)
+-int lmv_set_info_async(const struct lu_env *env, struct obd_export *exp,
+-		       u32 keylen, void *key, u32 vallen,
+-		       void *val, struct ptlrpc_request_set *set)
++static int lmv_set_info_async(const struct lu_env *env, struct obd_export *exp,
++			      u32 keylen, void *key, u32 vallen,
++			      void *val, struct ptlrpc_request_set *set)
  {
- 	int rc = -EINVAL;
+ 	struct lmv_tgt_desc    *tgt;
+ 	struct obd_device      *obd;
+@@ -2425,8 +2425,8 @@ int lmv_set_info_async(const struct lu_env *env, struct obd_export *exp,
+ 	return -EINVAL;
+ }
  
-@@ -2263,8 +2263,8 @@ int mdc_get_info(const struct lu_env *env, struct obd_export *exp,
+-int lmv_packmd(struct obd_export *exp, struct lov_mds_md **lmmp,
+-	       struct lov_stripe_md *lsm)
++static int lmv_packmd(struct obd_export *exp, struct lov_mds_md **lmmp,
++		      struct lov_stripe_md *lsm)
+ {
+ 	struct obd_device	 *obd = class_exp2obd(exp);
+ 	struct lmv_obd	    *lmv = &obd->u.lmv;
+@@ -2473,8 +2473,8 @@ int lmv_packmd(struct obd_export *exp, struct lov_mds_md **lmmp,
+ 	return mea_size;
+ }
+ 
+-int lmv_unpackmd(struct obd_export *exp, struct lov_stripe_md **lsmp,
+-		 struct lov_mds_md *lmm, int lmm_size)
++static int lmv_unpackmd(struct obd_export *exp, struct lov_stripe_md **lsmp,
++			struct lov_mds_md *lmm, int lmm_size)
+ {
+ 	struct obd_device	  *obd = class_exp2obd(exp);
+ 	struct lmv_stripe_md      **tmea = (struct lmv_stripe_md **)lsmp;
+@@ -2551,8 +2551,8 @@ static int lmv_cancel_unused(struct obd_export *exp, const struct lu_fid *fid,
  	return rc;
  }
  
--int mdc_sync(struct obd_export *exp, const struct lu_fid *fid,
--	     struct obd_capa *oc, struct ptlrpc_request **request)
-+static int mdc_sync(struct obd_export *exp, const struct lu_fid *fid,
-+		    struct obd_capa *oc, struct ptlrpc_request **request)
+-int lmv_set_lock_data(struct obd_export *exp, __u64 *lockh, void *data,
+-		      __u64 *bits)
++static int lmv_set_lock_data(struct obd_export *exp, __u64 *lockh, void *data,
++			     __u64 *bits)
  {
- 	struct ptlrpc_request *req;
- 	int		    rc;
-@@ -2356,7 +2356,7 @@ int mdc_fid_alloc(struct obd_export *exp, struct lu_fid *fid,
- 	return seq_client_alloc_fid(NULL, seq, fid);
+ 	struct lmv_obd	  *lmv = &exp->exp_obd->u.lmv;
+ 	int		      rc;
+@@ -2561,10 +2561,10 @@ int lmv_set_lock_data(struct obd_export *exp, __u64 *lockh, void *data,
+ 	return rc;
  }
  
--struct obd_uuid *mdc_get_uuid(struct obd_export *exp)
-+static struct obd_uuid *mdc_get_uuid(struct obd_export *exp)
+-ldlm_mode_t lmv_lock_match(struct obd_export *exp, __u64 flags,
+-			   const struct lu_fid *fid, ldlm_type_t type,
+-			   ldlm_policy_data_t *policy, ldlm_mode_t mode,
+-			   struct lustre_handle *lockh)
++static ldlm_mode_t lmv_lock_match(struct obd_export *exp, __u64 flags,
++				  const struct lu_fid *fid, ldlm_type_t type,
++				  ldlm_policy_data_t *policy, ldlm_mode_t mode,
++				  struct lustre_handle *lockh)
  {
- 	struct client_obd *cli = &exp->exp_obd->u.cli;
- 
-@@ -2390,7 +2390,7 @@ static int mdc_resource_inode_free(struct ldlm_resource *res)
+ 	struct obd_device       *obd = exp->exp_obd;
+ 	struct lmv_obd	  *lmv = &obd->u.lmv;
+@@ -2594,16 +2594,18 @@ ldlm_mode_t lmv_lock_match(struct obd_export *exp, __u64 flags,
  	return 0;
  }
  
--struct ldlm_valblock_ops inode_lvbo = {
-+static struct ldlm_valblock_ops inode_lvbo = {
- 	.lvbo_free = mdc_resource_inode_free,
- };
- 
-@@ -2550,9 +2550,9 @@ static int mdc_process_config(struct obd_device *obd, u32 len, void *buf)
- 
- 
- /* get remote permission for current user on fid */
--int mdc_get_remote_perm(struct obd_export *exp, const struct lu_fid *fid,
--			struct obd_capa *oc, __u32 suppgid,
--			struct ptlrpc_request **request)
-+static int mdc_get_remote_perm(struct obd_export *exp, const struct lu_fid *fid,
-+			       struct obd_capa *oc, __u32 suppgid,
-+			       struct ptlrpc_request **request)
+-int lmv_get_lustre_md(struct obd_export *exp, struct ptlrpc_request *req,
+-		      struct obd_export *dt_exp, struct obd_export *md_exp,
+-		      struct lustre_md *md)
++static int lmv_get_lustre_md(struct obd_export *exp,
++			     struct ptlrpc_request *req,
++			     struct obd_export *dt_exp,
++			     struct obd_export *md_exp,
++			     struct lustre_md *md)
  {
- 	struct ptlrpc_request  *req;
- 	int		    rc;
-@@ -2647,7 +2647,7 @@ static int mdc_renew_capa(struct obd_export *exp, struct obd_capa *oc,
- 	return 0;
+ 	struct lmv_obd	  *lmv = &exp->exp_obd->u.lmv;
+ 
+ 	return md_get_lustre_md(lmv->tgts[0]->ltd_exp, req, dt_exp, md_exp, md);
  }
  
--struct obd_ops mdc_obd_ops = {
-+static struct obd_ops mdc_obd_ops = {
- 	.o_owner	    = THIS_MODULE,
- 	.o_setup	    = mdc_setup,
- 	.o_precleanup       = mdc_precleanup,
-@@ -2670,7 +2670,7 @@ struct obd_ops mdc_obd_ops = {
- 	.o_quotacheck       = mdc_quotacheck
- };
- 
--struct md_ops mdc_md_ops = {
-+static struct md_ops mdc_md_ops = {
- 	.m_getstatus	= mdc_getstatus,
- 	.m_null_inode	    = mdc_null_inode,
- 	.m_find_cbdata      = mdc_find_cbdata,
-@@ -2705,7 +2705,7 @@ struct md_ops mdc_md_ops = {
- 	.m_revalidate_lock      = mdc_revalidate_lock
- };
- 
--int __init mdc_init(void)
-+static int __init mdc_init(void)
+-int lmv_free_lustre_md(struct obd_export *exp, struct lustre_md *md)
++static int lmv_free_lustre_md(struct obd_export *exp, struct lustre_md *md)
  {
- 	int rc;
- 	struct lprocfs_static_vars lvars = { NULL };
+ 	struct obd_device       *obd = exp->exp_obd;
+ 	struct lmv_obd	  *lmv = &obd->u.lmv;
+@@ -2613,9 +2615,9 @@ int lmv_free_lustre_md(struct obd_export *exp, struct lustre_md *md)
+ 	return md_free_lustre_md(lmv->tgts[0]->ltd_exp, md);
+ }
+ 
+-int lmv_set_open_replay_data(struct obd_export *exp,
+-			     struct obd_client_handle *och,
+-			     struct lookup_intent *it)
++static int lmv_set_open_replay_data(struct obd_export *exp,
++				    struct obd_client_handle *och,
++				    struct lookup_intent *it)
+ {
+ 	struct obd_device       *obd = exp->exp_obd;
+ 	struct lmv_obd	  *lmv = &obd->u.lmv;
+@@ -2628,8 +2630,8 @@ int lmv_set_open_replay_data(struct obd_export *exp,
+ 	return md_set_open_replay_data(tgt->ltd_exp, och, it);
+ }
+ 
+-int lmv_clear_open_replay_data(struct obd_export *exp,
+-			       struct obd_client_handle *och)
++static int lmv_clear_open_replay_data(struct obd_export *exp,
++				      struct obd_client_handle *och)
+ {
+ 	struct obd_device       *obd = exp->exp_obd;
+ 	struct lmv_obd	  *lmv = &obd->u.lmv;
+@@ -2684,17 +2686,18 @@ static int lmv_renew_capa(struct obd_export *exp, struct obd_capa *oc,
+ 	return rc;
+ }
+ 
+-int lmv_unpack_capa(struct obd_export *exp, struct ptlrpc_request *req,
+-		    const struct req_msg_field *field, struct obd_capa **oc)
++static int lmv_unpack_capa(struct obd_export *exp, struct ptlrpc_request *req,
++			   const struct req_msg_field *field,
++			   struct obd_capa **oc)
+ {
+ 	struct lmv_obd *lmv = &exp->exp_obd->u.lmv;
+ 
+ 	return md_unpack_capa(lmv->tgts[0]->ltd_exp, req, field, oc);
+ }
+ 
+-int lmv_intent_getattr_async(struct obd_export *exp,
+-			     struct md_enqueue_info *minfo,
+-			     struct ldlm_enqueue_info *einfo)
++static int lmv_intent_getattr_async(struct obd_export *exp,
++				    struct md_enqueue_info *minfo,
++				    struct ldlm_enqueue_info *einfo)
+ {
+ 	struct md_op_data       *op_data = &minfo->mi_data;
+ 	struct obd_device       *obd = exp->exp_obd;
+@@ -2714,8 +2717,8 @@ int lmv_intent_getattr_async(struct obd_export *exp,
+ 	return rc;
+ }
+ 
+-int lmv_revalidate_lock(struct obd_export *exp, struct lookup_intent *it,
+-			struct lu_fid *fid, __u64 *bits)
++static int lmv_revalidate_lock(struct obd_export *exp, struct lookup_intent *it,
++			       struct lu_fid *fid, __u64 *bits)
+ {
+ 	struct obd_device       *obd = exp->exp_obd;
+ 	struct lmv_obd	  *lmv = &obd->u.lmv;
+@@ -2739,8 +2742,8 @@ int lmv_revalidate_lock(struct obd_export *exp, struct lookup_intent *it,
+  * process with other slave MDTs. The only exception is Q_GETOQUOTA for which
+  * we directly fetch data from the slave MDTs.
+  */
+-int lmv_quotactl(struct obd_device *unused, struct obd_export *exp,
+-		 struct obd_quotactl *oqctl)
++static int lmv_quotactl(struct obd_device *unused, struct obd_export *exp,
++			struct obd_quotactl *oqctl)
+ {
+ 	struct obd_device   *obd = class_exp2obd(exp);
+ 	struct lmv_obd      *lmv = &obd->u.lmv;
+@@ -2786,8 +2789,8 @@ int lmv_quotactl(struct obd_device *unused, struct obd_export *exp,
+ 	return rc;
+ }
+ 
+-int lmv_quotacheck(struct obd_device *unused, struct obd_export *exp,
+-		   struct obd_quotactl *oqctl)
++static int lmv_quotacheck(struct obd_device *unused, struct obd_export *exp,
++			  struct obd_quotactl *oqctl)
+ {
+ 	struct obd_device   *obd = class_exp2obd(exp);
+ 	struct lmv_obd      *lmv = &obd->u.lmv;
+@@ -2810,7 +2813,7 @@ int lmv_quotacheck(struct obd_device *unused, struct obd_export *exp,
+ 	return rc;
+ }
+ 
+-struct obd_ops lmv_obd_ops = {
++static struct obd_ops lmv_obd_ops = {
+ 	.o_owner		= THIS_MODULE,
+ 	.o_setup		= lmv_setup,
+ 	.o_cleanup	      = lmv_cleanup,
+@@ -2830,7 +2833,7 @@ struct obd_ops lmv_obd_ops = {
+ 	.o_quotactl	     = lmv_quotactl
+ };
+ 
+-struct md_ops lmv_md_ops = {
++static struct md_ops lmv_md_ops = {
+ 	.m_getstatus	    = lmv_getstatus,
+ 	.m_null_inode		= lmv_null_inode,
+ 	.m_find_cbdata	  = lmv_find_cbdata,
+@@ -2864,7 +2867,7 @@ struct md_ops lmv_md_ops = {
+ 	.m_revalidate_lock      = lmv_revalidate_lock
+ };
+ 
+-int __init lmv_init(void)
++static int __init lmv_init(void)
+ {
+ 	struct lprocfs_static_vars lvars;
+ 	int			rc;
+diff --git a/drivers/staging/lustre/lustre/lmv/lproc_lmv.c b/drivers/staging/lustre/lustre/lmv/lproc_lmv.c
+index 1170020..5be4176 100644
+--- a/drivers/staging/lustre/lustre/lmv/lproc_lmv.c
++++ b/drivers/staging/lustre/lustre/lmv/lproc_lmv.c
+@@ -175,7 +175,7 @@ static int lmv_tgt_seq_show(struct seq_file *p, void *v)
+ 			  tgt->ltd_uuid.uuid, tgt->ltd_active ? "" : "IN");
+ }
+ 
+-struct seq_operations lmv_tgt_sops = {
++static struct seq_operations lmv_tgt_sops = {
+ 	.start		 = lmv_tgt_seq_start,
+ 	.stop		  = lmv_tgt_seq_stop,
+ 	.next		  = lmv_tgt_seq_next,
+@@ -199,7 +199,7 @@ static int lmv_target_seq_open(struct inode *inode, struct file *file)
+ 
+ LPROC_SEQ_FOPS_RO_TYPE(lmv, uuid);
+ 
+-struct lprocfs_vars lprocfs_lmv_obd_vars[] = {
++static struct lprocfs_vars lprocfs_lmv_obd_vars[] = {
+ 	{ "numobd",	  &lmv_numobd_fops,	  NULL, 0 },
+ 	{ "placement",	  &lmv_placement_fops,    NULL, 0 },
+ 	{ "activeobd",	  &lmv_activeobd_fops,    NULL, 0 },
 -- 
 1.9.1
 
