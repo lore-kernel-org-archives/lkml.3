@@ -1,77 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752097AbbARKLU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 05:11:20 -0500
-Received: from server.atrad.com.au ([150.101.241.2]:43627 "EHLO
-	server.atrad.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751341AbbARKLS (ORCPT
+	id S1752184AbbARJ4c (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 04:56:32 -0500
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32965 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751357AbbARJ43 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 05:11:18 -0500
-X-Greylist: delayed 775 seconds by postgrey-1.27 at vger.kernel.org; Sun, 18 Jan 2015 05:11:16 EST
-Date: Sun, 18 Jan 2015 20:24:44 +1030
-From: Jonathan Woithe <jwoithe@just42.net>
-To: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
-Cc: Darren Hart <dvhart@infradead.org>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Michael Karcher <karcher@physik.fu-berlin.de>
-Subject: Re: [PATCH] fujitsu-laptop: use FB_BLANK_* constants
-Message-ID: <20150118095443.GB16157@marvin.atrad.com.au>
-References: <1421537580-28554-1-git-send-email-kernel@mkarcher.dialup.fu-berlin.de>
- <1421539331-32515-1-git-send-email-kernel@mkarcher.dialup.fu-berlin.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421539331-32515-1-git-send-email-kernel@mkarcher.dialup.fu-berlin.de>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-MIMEDefang-action: accept
+	Sun, 18 Jan 2015 04:56:29 -0500
+Message-ID: <1421574950.31046.97.camel@decadent.org.uk>
+Subject: Re: [PATCH] staging: speakup: Fix warning of line over 80
+ characters.
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Shirish Gajera <gajerashirish@gmail.com>
+Cc: w.d.hubbs@gmail.com, chris@the-brannons.com, kirk@reisers.ca,
+        samuel.thibault@ens-lyon.org, gregkh@linuxfoundation.org,
+        domagoj.trsan@gmail.com, dan.carpenter@oracle.com,
+        roxanagabriela10@gmail.com, dilekuzulmez@gmail.com,
+        daeseok.youn@gmail.com, sulamiification@gmail.com,
+        aysemelikeyurtoglu@gmail.com, rusty@rustcorp.com.au,
+        tapaswenipathak@gmail.com, sasha.levin@oracle.com,
+        speakup@linux-speakup.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Date: Sun, 18 Jan 2015 09:55:50 +0000
+In-Reply-To: <20150118075753.GA2612@shirish-ThinkPad-Edge-E430>
+References: <20150118075753.GA2612@shirish-ThinkPad-Edge-E430>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-njdwXf2lKnZ4rFAN39qv"
+X-Mailer: Evolution 3.12.9-1+b1 
+Mime-Version: 1.0
+X-SA-Exim-Connect-IP: 81.2.76.188
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 18, 2015 at 01:02:11AM +0100, Michael Karcher wrote:
-> From: Michael Karcher <karcher@physik.fu-berlin.de>
 
-This looks ok to me.
+--=-njdwXf2lKnZ4rFAN39qv
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Jonathan Woithe <jwoithe@just42.net>
+On Sat, 2015-01-17 at 23:57 -0800, Shirish Gajera wrote:
+> This patch fixes the checkpatch.pl warning:
+>=20
+> WARNING: line over 80 characters
+>=20
+> All line over 80 characters in driver/staging/speakup/* are fixed
+[...]
 
-> Signed-off-by: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
-> ---
->  drivers/platform/x86/fujitsu-laptop.c | 7 ++++---
->  1 file changed, 4 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/platform/x86/fujitsu-laptop.c b/drivers/platform/x86/fujitsu-laptop.c
-> index 7c21c1c..2a9afa2 100644
-> --- a/drivers/platform/x86/fujitsu-laptop.c
-> +++ b/drivers/platform/x86/fujitsu-laptop.c
-> @@ -64,6 +64,7 @@
->  #include <linux/acpi.h>
->  #include <linux/dmi.h>
->  #include <linux/backlight.h>
-> +#include <linux/fb.h>
->  #include <linux/input.h>
->  #include <linux/kfifo.h>
->  #include <linux/platform_device.h>
-> @@ -398,7 +399,7 @@ static int bl_get_brightness(struct backlight_device *b)
->  static int bl_update_status(struct backlight_device *b)
->  {
->  	int ret;
-> -	if (b->props.power == 4)
-> +	if (b->props.power == FB_BLANK_POWERDOWN)
->  		ret = call_fext_func(FUNC_BACKLIGHT, 0x1, 0x4, 0x3);
->  	else
->  		ret = call_fext_func(FUNC_BACKLIGHT, 0x1, 0x4, 0x0);
-> @@ -1139,9 +1140,9 @@ static int __init fujitsu_init(void)
->  
->  	if (!acpi_video_backlight_support()) {
->  		if (call_fext_func(FUNC_BACKLIGHT, 0x2, 0x4, 0x0) == 3)
-> -			fujitsu->bl_device->props.power = 4;
-> +			fujitsu->bl_device->props.power = FB_BLANK_POWERDOWN;
->  		else
-> -			fujitsu->bl_device->props.power = 0;
-> +			fujitsu->bl_device->props.power = FB_BLANK_UNBLANK;
->  	}
->  
->  	pr_info("driver " FUJITSU_DRIVER_VERSION " successfully loaded\n");
-> -- 
-> 2.1.3
+It is not important to fix all such warnings.  The code seems perfectly
+readable as it is.
+
+Ben.
+
+--=20
+Ben Hutchings
+The generation of random numbers is too important to be left to chance.
+                                                            - Robert Coveyo=
+u
+
+--=-njdwXf2lKnZ4rFAN39qv
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIVAwUAVLuDK+e/yOyVhhEJAQo1IhAAhyuggs+iyv1rVCMN2GToBG9Cl2gPBcSq
+hqrxKVGuzhGwYckEv8Qdqy+xCp7yjYtZXKCZIE8yUjOOfUkf8GKH8ogEla/oQ1OU
+sGaXCZlMdrLCwaMDCirTXpmbuKwABikVUZYBJGtzHeTv4IHNOo+WTckKYuqOzsDi
+UIgZw66pYV+Zg4i2JESAb8xbP+e09bt1LI9+rIsckjNECB212Z1X9PqqIO3NdGM7
+qVXuq8jkfZp11fUP7ake/HOn/LTy5gD+Q0SyQvI8AIGmwou4nfrgAAS9rOZQ1Rmx
+Avl7giZgZavYIilmtwvQ4HDFkqJQrh9jFXrPUZGoI1AYBRFMLwoy8bg155KRtLe8
+eAHbIaxWph25xdtc3wNVHCeW3yXs/VCxLWSHB/FjnJJIjk8OkzDgXaXww3KVoz6Q
+UbSq+h6JKl3JdRaLprV2xzuyBQxn3HbHKzizs0nAZg6TdP1+OjXgbYNsmxE6rAmD
+uJJDonlk9M+r9sSPSkEMF8oJ3zJXxjtGcyMrSOIpJHpKegnrv2/2GEf3Ch8ldqLS
+yli6jTFeNKmYMkp2vAUKrmTOrcCjsED631HSnWXaFAyxWTPsJ/6DlgDv2k4n/wjP
+QZAi3ooKPZkrVqOzoKKBM/nNVyeTR3bvwnq8PI82/hQgtTO+x4Uyps9iufSdJ/cy
+C+FIcM0FDvU=
+=jVWO
+-----END PGP SIGNATURE-----
+
+--=-njdwXf2lKnZ4rFAN39qv--
