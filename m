@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752477AbbARORw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 09:17:52 -0500
-Received: from mail-pd0-f179.google.com ([209.85.192.179]:33053 "EHLO
-	mail-pd0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751649AbbARORv (ORCPT
+	id S1752126AbbAROY1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 09:24:27 -0500
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:62470 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553AbbAROY0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 09:17:51 -0500
-MIME-Version: 1.0
-In-Reply-To: <20150117223312.GA15083@kroah.com>
-References: <1420865403-4932-1-git-send-email-jkhasdev@gmail.com>
-	<20150117223312.GA15083@kroah.com>
-Date: Sun, 18 Jan 2015 19:47:50 +0530
-Message-ID: <CAN-6CVnkeaVMOWjyx8N-R3uK4N48PficrCgSt7_0_NX0r3-5hg@mail.gmail.com>
-Subject: Re: [PATCH v7] Staging: comedi: patch to fix line over 80 characters warning
-From: jitendra kumar khasdev <jkhasdev@gmail.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Sun, 18 Jan 2015 09:24:26 -0500
+From: Sergey Dyasly <dserrg@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Sergey Dyasly <dserrg@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
+        Andy Whitcroft <apw@canonical.com>, Joe Perches <joe@perches.com>
+Subject: [PATCH] checkpatch: add check for the buggy while_each_thread()
+Date: Sun, 18 Jan 2015 17:24:00 +0300
+Message-Id: <1421591040-4892-1-git-send-email-dserrg@gmail.com>
+X-Mailer: git-send-email 2.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Will you give reason for not apply my patch on your tree. I have
-tested by appling on linux main tree.
+Now it's preferable to use for_each_thread() instead of while_each_thread().
+Add a check to checkpatch.pl in order to prevent any new usages of the buggy
+while_each_thread() when possible.
 
+Cc: Oleg Nesterov <oleg@redhat.com>
+Cc: Andy Whitcroft <apw@canonical.com>
+Cc: Joe Perches <joe@perches.com>
+Signed-off-by: Sergey Dyasly <dserrg@gmail.com>
+---
+ scripts/checkpatch.pl | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-On Sat, Jan 10, 2015 at 10:20:03AM +0530, jitendra kumar khasdev wrote:
-> This is patch to pcl812.c that fix line over 80 characters warning
-> which is found by checkpatch.pl tool. Reduce the extra space around
-> equal sign that fix warning.
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index f0bb6d6..0c5cc0b 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -3255,6 +3255,12 @@ sub process {
+ 			     "Prefer dev_$level(... to dev_printk(KERN_$orig, ...\n" . $herecurr);
+ 		}
+ 
++# Check for the buggy while_each_thread()
++		if ($line =~ /\bwhile_each_thread\(/) {
++			WARN("WHILE_EACH_THREAD",
++			     "Prefer to use for_each_thread() instead of the buggy while_each_thread(). See commit 0c740d0afc3bff0a097ad03a1c8df92757516f5c for details.\n" . $herecurr);
++		}
++
+ # function brace can't be on same line, except for #defines of do while,
+ # or if closed on same line
+ 		if (($line=~/$Type\s*$Ident\(.*\).*\s*{/) and
+-- 
+2.2.2
 
-Regards,
-JItendra kumar khasdev,
-jitendra-02.github.io | Mo. 8871242083
-
-
-On 1/18/15, Greg KH <gregkh@linuxfoundation.org> wrote:
-> On Sat, Jan 10, 2015 at 10:20:03AM +0530, jitendra kumar khasdev wrote:
->> This is patch to pcl812.c that fix line over 80 characters warning
->> which is found by checkpatch.pl tool. Reduce the extra space around
->> equal sign that fix warning.
->>
->> Signed-off-by: Jitendra kumar khasdev <jkhasdev@gmail.com>
->> ---
->>  drivers/staging/comedi/drivers/pcl812.c | 2 +-
->>  1 file changed, 1 insertion(+), 1 deletion(-)
->
-> Does not apply to my tree :(
->
