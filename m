@@ -1,78 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752532AbbARJRi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 04:17:38 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:60675 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752454AbbARJRd (ORCPT
+	id S1752270AbbARJ3x (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 04:29:53 -0500
+Received: from www.xora.org.uk ([80.68.91.202]:57455 "EHLO
+	xora.vm.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750728AbbARJ3t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 04:17:33 -0500
-From: Hui Zhu <teawater@gmail.com>
-To: akpm@linux-foundation.org, mgorman@suse.de, vbabka@suse.cz,
-        hannes@cmpxchg.org, rientjes@google.com, iamjoonsoo.kim@lge.com,
-        sasha.levin@oracle.com, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org
-Cc: teawater@gmail.com, Hui Zhu <zhuhui@xiaomi.com>
-Subject: [PATCH] mm/page_alloc: Fix race conditions on getting migratetype in buffered_rmqueue
-Date: Sun, 18 Jan 2015 17:17:14 +0800
-Message-Id: <1421572634-3399-1-git-send-email-teawater@gmail.com>
-X-Mailer: git-send-email 1.9.3
+	Sun, 18 Jan 2015 04:29:49 -0500
+Date: Sun, 18 Jan 2015 09:29:56 +0000
+From: Graeme Gregory <gg@slimlogic.co.uk>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: Jon Masters <jcm@redhat.com>, Mark Rutland <Mark.Rutland@arm.com>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "wangyijing@huawei.com" <wangyijing@huawei.com>,
+        Rob Herring <robh@kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Timur Tabi <timur@codeaurora.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
+        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v7 06/17] ARM64 / ACPI: Make PCI optional for ACPI on
+ ARM64
+Message-ID: <20150118092955.GE6182@xora-haswell.xora.org.uk>
+References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org>
+ <1421247905-3749-7-git-send-email-hanjun.guo@linaro.org>
+ <20150116094913.GA13634@e104818-lin.cambridge.arm.com>
+ <54BB51F1.8000900@linaro.org>
+ <508480149.12941388.1421562696311.JavaMail.zimbra@zmail15.collab.prod.int.phx2.redhat.com>
+ <54BB56CB.7040701@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <54BB56CB.7040701@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hui Zhu <zhuhui@xiaomi.com>
+On Sun, Jan 18, 2015 at 02:46:35PM +0800, Hanjun Guo wrote:
+> On 2015年01月18日 14:31, Jon Masters wrote:
+> >Hi Folks,
+> >
+> >Sorry for top posting from bed. The mainstream servers will all likely do
+> > PCIe but there are several that may not. They should not be excluded. That
+> said,
+> >if we booted a previously built kernel on a system without an MCFG and
+> > got no ECAM/root then things would probably still work.
+> >
+> >I think it'll work out either way but for the record there is no requirement to do PCIe on ARM servers that conform to spec.
+> 
+> OK, Catalin already said that was not the main point of the
+> comments for this patch, I think the title and change log
+> of the patch is inconsistent with the code makes Catalin confused,
+> I will update them in next version.
+> 
+Well what we are talking about is the presence of CONFIG_PCI=y which even
+in Jons case will be true as he wants to run the same kernel on both
+sets of hardware.
 
-To test the patch [1], I use KGTP and a script [2] to show NR_FREE_CMA_PAGES
-and gross of cma_nr_free.  The values are always not same.
-I check the code of pages alloc and free and found that race conditions
-on getting migratetype in buffered_rmqueue.
-Then I add move the code of getting migratetype inside the zone->lock
-protection part.
+Now the architecture has PCI support I think its safe to remove the make
+PCI optional part of the patch as this should be handled runtime not
+compile time.
 
-Because this issue will affect system even if the Linux kernel does't
-have [1].  So I post this patch separately.
-
-This patchset is based on fc7f0dd381720ea5ee5818645f7d0e9dece41cb0.
-
-[1] https://lkml.org/lkml/2015/1/18/28
-[2] https://github.com/teawater/kgtp/blob/dev/add-ons/cma_free.py
-
-Signed-off-by: Hui Zhu <zhuhui@xiaomi.com>
----
- mm/page_alloc.c | 11 +++++++----
- 1 file changed, 7 insertions(+), 4 deletions(-)
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 7633c50..f3d6922 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -1694,11 +1694,12 @@ again:
- 		}
- 		spin_lock_irqsave(&zone->lock, flags);
- 		page = __rmqueue(zone, order, migratetype);
-+		if (page)
-+			migratetype = get_pageblock_migratetype(page);
-+		else
-+			goto failed_unlock;
- 		spin_unlock(&zone->lock);
--		if (!page)
--			goto failed;
--		__mod_zone_freepage_state(zone, -(1 << order),
--					  get_freepage_migratetype(page));
-+		__mod_zone_freepage_state(zone, -(1 << order), migratetype);
- 	}
- 
- 	__mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
-@@ -1715,6 +1716,8 @@ again:
- 		goto again;
- 	return page;
- 
-+failed_unlock:
-+	spin_unlock(&zone->lock);
- failed:
- 	local_irq_restore(flags);
- 	return NULL;
--- 
-1.9.3
+Graeme
 
