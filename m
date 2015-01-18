@@ -1,129 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752523AbbARGn0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 01:43:26 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:47983 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752442AbbARGnW (ORCPT
+	id S1751928AbbARGlp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 01:41:45 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:56445 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751209AbbARGlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 01:43:22 -0500
-From: Tina Johnson <tinajohnson.1234@gmail.com>
-To: JBottomley@parallels.com
-Cc: praveen.krishnamoorthy@avagotech.com, sreekanth.reddy@avagotech.com,
-        julia.lawall@lip6.fr, abhijit.mahajan@avagotech.com,
-        nagalakshmi.nandigama@avagotech.com, MPT-FusionLinux.pdl@avagotech.com,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tina Johnson <tinajohnson.1234@gmail.com>
-Subject: [PATCH 2/2] drivers: scsi: mpt2sas: Clean up error handling for calls to pci_map_single
-Date: Sun, 18 Jan 2015 12:11:03 +0530
-Message-Id: <88d75f3ab255a7f0d485544adb81d6e0d35d6f7c.1421489699.git.tinajohnson.1234@gmail.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1421489699.git.tinajohnson.1234@gmail.com>
-References: <cover.1421489699.git.tinajohnson.1234@gmail.com>
-In-Reply-To: <cover.1421489699.git.tinajohnson.1234@gmail.com>
-References: <cover.1421489699.git.tinajohnson.1234@gmail.com>
+	Sun, 18 Jan 2015 01:41:44 -0500
+Date: Sat, 17 Jan 2015 22:41:44 -0800
+From: Tristan Lelong <tristan@lelong.xyz>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: oleg.drokin@intel.com, andreas.dilger@intel.com, askb23@gmail.com,
+        john.hammond@intel.com, gdonald@gmail.com, anhlq2110@gmail.com,
+        fabio.falzoi84@gmail.com, oort10@gmail.com, agimenez@sysvalve.es,
+        rupran@einserver.de, surya.seetharaman9@gmail.com,
+        Julia.Lawall@lip6.fr, joe@perches.com, a.terekhov@gmail.com,
+        liang.zhen@intel.com, vthakkar1994@gmail.com, amk@cray.com,
+        srikrishanmalik@gmail.com, rd@radekdostal.com, bergwolf@gmail.com,
+        dan.carpenter@oracle.com, paul.gortmaker@windriver.com,
+        tapaswenipathak@gmail.com, email@christophjaeger.info,
+        uja.ornl@gmail.com, brilliantov@inbox.ru, dmitry.eremin@intel.com,
+        HPDD-discuss@ml01.01.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] staging: lustre: fix sparse warning on LPROC_SEQ_FOPS
+ macros
+Message-ID: <20150118064144.GA7158@lenderer>
+References: <1417910602-20953-1-git-send-email-tristan@lelong.xyz>
+ <20150117232827.GA17007@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150117232827.GA17007@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-*Currently, the error handling code is organized to free dma_addr_out,
- dma_addr_in and then pci_addr_out, pci_addr_in. Since dma_addr_out and
- pci_addr_out are allocated first and then dma_addr_in and  pci_addr_in,
- the error handling code is reorganized to free the in variables first and
- then the out variables. Labels were renamed and gotos altered accordingly.
+Hi Greg,
 
-*At the point of the goto free_pci, neither the in nor the out variables
- are allocated and hence no freeing required. The free_pci label is removed
- and the goto free_pci is replaced with goto out.
+On Sat, Jan 17, 2015 at 03:28:27PM -0800, Greg KH wrote:
+> 
+> I took your v2 version, please send me the difference as this is a
+> mess...
 
-Signed-off-by: Tina Johnson <tinajohnson.1234@gmail.com>
-Acked-by: Julia Lawall <julia.lawall@lip6.fr>
----
- drivers/scsi/mpt2sas/mpt2sas_transport.c |   31 +++++++++++++++---------------
- 1 file changed, 15 insertions(+), 16 deletions(-)
+Not sure I understand what you meant here. 
+Do you want me to submit a new patch that contains only the differences between v2 and v3?
 
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_transport.c b/drivers/scsi/mpt2sas/mpt2sas_transport.c
-index b283140..1740506 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_transport.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_transport.c
-@@ -1966,7 +1966,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 			printk(MPT2SAS_INFO_FMT "%s(): DMA Addr out = NULL\n",
- 			    ioc->name, __func__);
- 			rc = -ENOMEM;
--			goto free_pci;
-+			goto out;
- 		}
- 	}
- 
-@@ -1979,7 +1979,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 			printk(MPT2SAS_INFO_FMT "%s(): PCI Addr in = NULL\n",
- 			    ioc->name, __func__);
- 			rc = -ENOMEM;
--			goto unmap;
-+			goto release_out;
- 		}
- 	} else {
- 		dma_addr_in =  pci_map_single(ioc->pdev, bio_data(rsp->bio),
-@@ -1988,7 +1988,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 			printk(MPT2SAS_INFO_FMT "%s(): DMA Addr in = NULL\n",
- 			    ioc->name, __func__);
- 			rc = -ENOMEM;
--			goto unmap;
-+			goto release_out;
- 		}
- 	}
- 
-@@ -2000,7 +2000,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 			    "%s: failed due to ioc not operational\n",
- 			    ioc->name, __func__);
- 			rc = -EFAULT;
--			goto unmap;
-+			goto release_in;
- 		}
- 		ssleep(1);
- 		ioc_state = mpt2sas_base_get_iocstate(ioc, 1);
-@@ -2017,7 +2017,7 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 		printk(MPT2SAS_ERR_FMT "%s: failed obtaining a smid\n",
- 		    ioc->name, __func__);
- 		rc = -EAGAIN;
--		goto unmap;
-+		goto release_in;
- 	}
- 
- 	rc = 0;
-@@ -2132,22 +2132,21 @@ _transport_smp_handler(struct Scsi_Host *shost, struct sas_rphy *rphy,
- 		rc = -ETIMEDOUT;
- 	}
- 
-- unmap:
--	if (dma_addr_out)
--		pci_unmap_single(ioc->pdev, dma_addr_out, blk_rq_bytes(req),
--		    PCI_DMA_BIDIRECTIONAL);
-+ release_in:
- 	if (dma_addr_in)
- 		pci_unmap_single(ioc->pdev, dma_addr_in, blk_rq_bytes(rsp),
--		    PCI_DMA_BIDIRECTIONAL);
-+				 PCI_DMA_BIDIRECTIONAL);
-+	if (pci_addr_in)
-+		pci_free_consistent(ioc->pdev, blk_rq_bytes(rsp), pci_addr_in,
-+				    pci_dma_in);
- 
-- free_pci:
-+ release_out:
-+	if (dma_addr_out)
-+		pci_unmap_single(ioc->pdev, dma_addr_out, blk_rq_bytes(req),
-+				 PCI_DMA_BIDIRECTIONAL);
- 	if (pci_addr_out)
- 		pci_free_consistent(ioc->pdev, blk_rq_bytes(req), pci_addr_out,
--		    pci_dma_out);
--
--	if (pci_addr_in)
--		pci_free_consistent(ioc->pdev, blk_rq_bytes(rsp), pci_addr_in,
--		    pci_dma_in);
-+				    pci_dma_out);
- 
-  out:
- 	ioc->transport_cmds.status = MPT2_CMD_NOT_USED;
--- 
-1.7.10.4
+Thanks,
 
+Regards
