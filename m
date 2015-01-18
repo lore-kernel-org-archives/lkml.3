@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751914AbbARTAv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 14:00:51 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:53129 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185AbbARTAr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 14:00:47 -0500
-From: Rabin Vincent <rabin@rab.in>
-To: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Rabin Vincent <rabin@rab.in>
-Subject: [PATCH 2/2] perf annotate: fix memory leaks in LOCK handling
-Date: Sun, 18 Jan 2015 20:00:21 +0100
-Message-Id: <1421607621-15005-2-git-send-email-rabin@rab.in>
-X-Mailer: git-send-email 2.1.4
-In-Reply-To: <1421607621-15005-1-git-send-email-rabin@rab.in>
-References: <1421607621-15005-1-git-send-email-rabin@rab.in>
+	id S1752012AbbARTBL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 14:01:11 -0500
+Received: from mout.web.de ([212.227.17.11]:55124 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751185AbbARTBH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Jan 2015 14:01:07 -0500
+Message-ID: <54BC02D2.8010008@users.sourceforge.net>
+Date: Sun, 18 Jan 2015 20:00:34 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+MIME-Version: 1.0
+To: linux-pcmcia@lists.infradead.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 0/2] PCMCIA: Deletion of a few unnecessary checks
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:uSog/0+dhrqzlArfkAuULkH2F+cipSldov9EPE3lCWo2QcNkyrv
+ tm0zk6NIiG0X12S5Auyej63GQ6s0JjDVCgRnkr56Os5Ks7KMwgszM9eDHWXyHbw5VNsBvtm
+ Evz12BNzY9twMScilkjIKKGXuVm+nILJotHMnudoyZZE7nFo7ND4fN825esqQdYizgawkNI
+ aXMNWsDYQoKkMcXa5zU6Q==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The lock prefix handling fails to free the strdup()'d name as well as
-the fields allocated by the instruction parsing.
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Sun, 18 Jan 2015 19:49:16 +0100
 
-Signed-off-by: Rabin Vincent <rabin@rab.in>
----
- tools/perf/util/annotate.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
+Another update suggestion was taken into account after a patch was applied
+from static source code analysis.
 
-diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-index 5ae428b..53d11c1 100644
---- a/tools/perf/util/annotate.c
-+++ b/tools/perf/util/annotate.c
-@@ -177,6 +177,8 @@ static int lock__parse(struct ins_operands *ops)
- 		goto out_free_ops;
- 
- 	ops->locked.ins = ins__find(name);
-+	free(name);
-+
- 	if (ops->locked.ins == NULL)
- 		goto out_free_ops;
- 
-@@ -209,6 +211,13 @@ static int lock__scnprintf(struct ins *ins, char *bf, size_t size,
- 
- static void lock__delete(struct ins_operands *ops)
- {
-+	struct ins *ins = ops->locked.ins;
-+
-+	if (ins && ins->ops->free)
-+		ins->ops->free(ops->locked.ops);
-+	else
-+		ins__delete(ops->locked.ops);
-+
- 	zfree(&ops->locked.ops);
- 	zfree(&ops->target.raw);
- 	zfree(&ops->target.name);
+Markus Elfring (2):
+  Deletion of checks before the function call "iounmap"
+  Less function calls in bcm63xx_drv_pcmcia_probe() after error detection
+
+ drivers/pcmcia/bcm63xx_pcmcia.c | 20 ++++++++++----------
+ drivers/pcmcia/cistpl.c         |  3 +--
+ drivers/pcmcia/electra_cf.c     |  6 ++----
+ drivers/pcmcia/yenta_socket.c   |  3 +--
+ 4 files changed, 14 insertions(+), 18 deletions(-)
+
 -- 
-2.1.4
+2.2.2
 
