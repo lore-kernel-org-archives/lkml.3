@@ -1,235 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753093AbbARLpi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 06:45:38 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:46981 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752851AbbARLpd (ORCPT
+	id S1753212AbbARLq7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 06:46:59 -0500
+Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:57864 "EHLO
+	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751441AbbARLq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 06:45:33 -0500
-X-Sasl-enc: J8Ue2aFAfwXD4x0tTbXyjOx74J2f4MAfBYje9fmEMxJE 1421581531
-From: Alexander van Heukelum <heukelum@fastmail.fm>
-To: Andy Lutomirski <luto@amacapital.net>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
-        Borislav Petkov <bp@suse.de>, Rik van Riel <riel@redhat.com>
-Subject: [PATCHv2 4/4] x86_64, entry: Create IRET-compatible stack frame at syscall entry
-Date: Sun, 18 Jan 2015 12:45:20 +0100
-Message-Id: <1421581520-2816-5-git-send-email-heukelum@fastmail.fm>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1421581520-2816-1-git-send-email-heukelum@fastmail.fm>
-References: <1421581520-2816-1-git-send-email-heukelum@fastmail.fm>
+	Sun, 18 Jan 2015 06:46:57 -0500
+X-IronPort-AV: E=Sophos;i="5.09,420,1418112000"; 
+   d="scan'208";a="54915944"
+Message-ID: <54BB9D2B.20408@broadcom.com>
+Date: Sun, 18 Jan 2015 12:46:51 +0100
+From: Arend van Spriel <arend@broadcom.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.24) Gecko/20111103 Lightning/1.0b2 Thunderbird/3.1.16
+MIME-Version: 1.0
+To: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: Wolfram Sang <wsa@the-dreams.de>, Ray Jui <rjui@broadcom.com>,
+        "Mark Rutland" <mark.rutland@arm.com>, <devicetree@vger.kernel.org>,
+        "Christian Daudt" <bcm@fixthebug.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "Scott Branden" <sbranden@broadcom.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Matt Porter <mporter@linaro.org>, <linux-kernel@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>,
+        <bcm-kernel-feedback-list@broadcom.com>, <linux-i2c@vger.kernel.org>,
+        "Grant Likely" <grant.likely@linaro.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH v5 2/3] i2c: iproc: Add Broadcom iProc I2C Driver
+References: <rjui@broadcom.com> <1421451737-7107-1-git-send-email-rjui@broadcom.com> <1421451737-7107-3-git-send-email-rjui@broadcom.com> <54BB795C.6040402@broadcom.com> <20150118094741.GE22880@pengutronix.de> <20150118110658.GA1113@katana> <20150118111759.GG22880@pengutronix.de>
+In-Reply-To: <20150118111759.GG22880@pengutronix.de>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Create an IRET-compatible top of stack at syscall entry and use this
-information to return to user mode in the sysret path. This removes
-the need for the FIXUP_TOP_OF_STACK and RESTORE_TOP_OF_STACK macros.
+On 01/18/15 12:17, Uwe Kleine-König wrote:
+> Hello Wolfram,
+>
+> On Sun, Jan 18, 2015 at 12:06:58PM +0100, Wolfram Sang wrote:
+>> On Sun, Jan 18, 2015 at 10:47:41AM +0100, Uwe Kleine-König wrote:
+>>> On Sun, Jan 18, 2015 at 10:14:04AM +0100, Arend van Spriel wrote:
+>>>> On 01/17/15 00:42, Ray Jui wrote:
+>>>>> +	complete_all(&iproc_i2c->done);
+>>>>
+>>>> Looking over this code it seems to me there is always a single
+>>>> process waiting for iproc_i2c->done to complete. So using complete()
+>>>> here would suffice.
+>>> Yeah, there is always only a single thread waiting. That means both
+>>> complete and complete_all are suitable. AFAIK there is no reason to pick
+>>> one over the other in this case.
+>>
+>> Clarity?
+> And which do you consider more clear? complete_all might result in the
+> question: "Is there>1 waiter?" and complete might yield to "What about
+> the other waiters?". If you already know there is only one, both are on
+> par on clarity. Might only be me?! I don't care much.
 
-Signed-off-by: Alexander van Heukelum <heukelum@fastmail.fm>
----
- arch/x86/kernel/entry_64.S | 75 +++++++++++++---------------------------------
- 1 file changed, 21 insertions(+), 54 deletions(-)
+Maybe it is me, but it is not about questions but it is about implicit 
+statements that the code makes (or reader derives from it). When using 
+complete_all you indicate to the reader "there can be more than one 
+waiter". When using complete it indicates "there is only one waiter". If 
+those statements are not true that is a code issue/bug.
 
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index 6b95c2f..c4cb8f1 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -33,8 +33,6 @@
-  * - SAVE_REST/RESTORE_REST - Handle the registers not saved by SAVE_ARGS.
-  * Gives a full stack frame.
-  * - ENTRY/END Define functions in the symbol table.
-- * - FIXUP_TOP_OF_STACK/RESTORE_TOP_OF_STACK - Fix up the hardware stack
-- * frame that is otherwise undefined after a SYSCALL
-  * - TRACE_IRQ_* - Trace hard interrupt state for lock debugging.
-  * - idtentry - Define exception entry points.
-  */
-@@ -130,33 +128,6 @@ ENDPROC(native_usergs_sysret64)
- #endif
- 
- /*
-- * C code is not supposed to know about undefined top of stack. Every time
-- * a C function with an pt_regs argument is called from the SYSCALL based
-- * fast path FIXUP_TOP_OF_STACK is needed.
-- * RESTORE_TOP_OF_STACK syncs the syscall state after any possible ptregs
-- * manipulation.
-- */
--
--	/* %rsp:at FRAMEEND */
--	.macro FIXUP_TOP_OF_STACK tmp offset=0
--	movq PER_CPU_VAR(old_rsp),\tmp
--	movq \tmp,RSP+\offset(%rsp)
--	movq $__USER_DS,SS+\offset(%rsp)
--	movq $__USER_CS,CS+\offset(%rsp)
--	movq RIP+\offset(%rsp),\tmp  /* get rip */
--	movq \tmp,RCX+\offset(%rsp)  /* copy it to rcx as sysret would do */
--	movq R11+\offset(%rsp),\tmp  /* get eflags */
--	movq \tmp,EFLAGS+\offset(%rsp)
--	.endm
--
--	.macro RESTORE_TOP_OF_STACK tmp offset=0
--	movq RSP+\offset(%rsp),\tmp
--	movq \tmp,PER_CPU_VAR(old_rsp)
--	movq EFLAGS+\offset(%rsp),\tmp
--	movq \tmp,R11+\offset(%rsp)
--	.endm
--
--/*
-  * initial frame state for interrupts (and exceptions without error code)
-  */
- 	.macro EMPTY_FRAME start=1 offset=0
-@@ -272,7 +243,6 @@ ENTRY(ret_from_fork)
- 	testl $_TIF_IA32, TI_flags(%rcx)	# 32-bit compat task needs IRET
- 	jnz  int_ret_from_sys_call
- 
--	RESTORE_TOP_OF_STACK %rdi, -ARGOFFSET
- 	jmp ret_from_sys_call			# go to the SYSRET fastpath
- 
- 1:
-@@ -339,10 +309,24 @@ GLOBAL(system_call_after_swapgs)
- 	 * and short:
- 	 */
- 	ENABLE_INTERRUPTS(CLBR_NONE)
--	SAVE_ARGS 6*8, 0, rax_enosys=1	/* skip: hardware stackframe and orig_rax */
-+	/*
-+	 * Save user mode rsp (temporarily saved above in old_rsp),
-+	 * rflags (%r11), rip (%rcx) and segments (fixed values) on
-+	 * the stack as a regular interrupt frame.
-+	 */
-+	pushq_cfi $__USER_DS
-+	/* CFI_REL_OFFSET ss, 0 */
-+	pushq_cfi PER_CPU_VAR(old_rsp)
-+	CFI_REL_OFFSET rsp, 0
-+	pushq_cfi %r11 /* %r11 clobbered (userspace %rflags) */
-+	/* CFI_REL_OFFSET rflags, 0 */
-+	pushq_cfi $__USER_CS
-+	/* CFI_REL_OFFSET cs, 0 */
-+	pushq_cfi %rcx /* %rcx clobbered (userspace %rip) */
-+	CFI_REL_OFFSET rip, 0
-+
-+	SAVE_ARGS 8, rax_enosys=1
- 	movq_cfi rax,(ORIG_RAX-ARGOFFSET)
--	movq  %rcx,RIP-ARGOFFSET(%rsp)
--	CFI_REL_OFFSET rip,RIP-ARGOFFSET
- 	testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,ARGOFFSET)
- 	jnz tracesys
- system_call_fastpath:
-@@ -362,7 +346,7 @@ system_call_fastpath:
-  */
- ret_from_sys_call:
- 	testl $_TIF_ALLWORK_MASK,TI_flags+THREAD_INFO(%rsp,ARGOFFSET)
--	jnz int_ret_from_sys_call_fixup	/* Go the the slow path */
-+	jnz int_ret_from_sys_call	/* Go the the slow path */
- 
- 	LOCKDEP_SYS_EXIT
- 	DISABLE_INTERRUPTS(CLBR_NONE)
-@@ -372,19 +356,16 @@ ret_from_sys_call:
- 	 * sysretq will re-enable interrupts:
- 	 */
- 	TRACE_IRQS_ON
-+	RESTORE_ARGS addskip=-ARG_SKIP, rstor_rcx=0, rstor_r11=0
- 	movq RIP-ARGOFFSET(%rsp),%rcx
- 	CFI_REGISTER	rip,rcx
--	RESTORE_ARGS 1,-ARG_SKIP,0
-+	mov EFLAGS-ARGOFFSET(%rsp), %r11
- 	/*CFI_REGISTER	rflags,r11*/
--	movq	PER_CPU_VAR(old_rsp), %rsp
-+	mov RSP-ARGOFFSET(%rsp), %rsp
- 	USERGS_SYSRET64
- 
- 	CFI_RESTORE_STATE
- 
--int_ret_from_sys_call_fixup:
--	FIXUP_TOP_OF_STACK %r11, -ARGOFFSET
--	jmp int_ret_from_sys_call
--
- 	/* Do syscall tracing */
- tracesys:
- 	leaq -REST_SKIP(%rsp), %rdi
-@@ -397,7 +378,6 @@ tracesys:
- 
- tracesys_phase2:
- 	SAVE_REST
--	FIXUP_TOP_OF_STACK %rdi
- 	movq %rsp, %rdi
- 	movq $AUDIT_ARCH_X86_64, %rsi
- 	movq %rax,%rdx
-@@ -493,10 +473,8 @@ ENTRY(stub_\func)
- 	PARTIAL_FRAME 0
- 	SAVE_REST
- 	pushq	%r11			/* put it back on stack */
--	FIXUP_TOP_OF_STACK %r11, 8
- 	DEFAULT_FRAME 0 8		/* offset 8: return address */
- 	call sys_\func
--	RESTORE_TOP_OF_STACK %r11, 8
- 	ret $REST_SKIP		/* pop extended registers */
- 	CFI_ENDPROC
- END(stub_\func)
-@@ -506,9 +484,7 @@ END(stub_\func)
- ENTRY(\label)
- 	CFI_STARTPROC
- 	PARTIAL_FRAME 0 8		/* offset 8: return address */
--	FIXUP_TOP_OF_STACK %r11, 8-ARGOFFSET
- 	call \func
--	RESTORE_TOP_OF_STACK %r11, 8-ARGOFFSET
- 	ret
- 	CFI_ENDPROC
- END(\label)
-@@ -524,7 +500,6 @@ ENTRY(stub_execve)
- 	addq $8, %rsp
- 	PARTIAL_FRAME 0
- 	SAVE_REST
--	FIXUP_TOP_OF_STACK %r11
- 	call sys_execve
- 	movq %rax,RAX(%rsp)
- 	RESTORE_REST
-@@ -537,9 +512,7 @@ ENTRY(stub_execveat)
- 	addq $8, %rsp
- 	PARTIAL_FRAME 0
- 	SAVE_REST
--	FIXUP_TOP_OF_STACK %r11
- 	call sys_execveat
--	RESTORE_TOP_OF_STACK %r11
- 	movq %rax,RAX(%rsp)
- 	RESTORE_REST
- 	jmp int_ret_from_sys_call
-@@ -555,7 +528,6 @@ ENTRY(stub_rt_sigreturn)
- 	addq $8, %rsp
- 	PARTIAL_FRAME 0
- 	SAVE_REST
--	FIXUP_TOP_OF_STACK %r11
- 	call sys_rt_sigreturn
- 	movq %rax,RAX(%rsp) # fixme, this could be done at the higher layer
- 	RESTORE_REST
-@@ -569,7 +541,6 @@ ENTRY(stub_x32_rt_sigreturn)
- 	addq $8, %rsp
- 	PARTIAL_FRAME 0
- 	SAVE_REST
--	FIXUP_TOP_OF_STACK %r11
- 	call sys32_x32_rt_sigreturn
- 	movq %rax,RAX(%rsp) # fixme, this could be done at the higher layer
- 	RESTORE_REST
-@@ -582,9 +553,7 @@ ENTRY(stub_x32_execve)
- 	addq $8, %rsp
- 	PARTIAL_FRAME 0
- 	SAVE_REST
--	FIXUP_TOP_OF_STACK %r11
- 	call compat_sys_execve
--	RESTORE_TOP_OF_STACK %r11
- 	movq %rax,RAX(%rsp)
- 	RESTORE_REST
- 	jmp int_ret_from_sys_call
-@@ -596,9 +565,7 @@ ENTRY(stub_x32_execveat)
- 	addq $8, %rsp
- 	PARTIAL_FRAME 0
- 	SAVE_REST
--	FIXUP_TOP_OF_STACK %r11
- 	call compat_sys_execveat
--	RESTORE_TOP_OF_STACK %r11
- 	movq %rax,RAX(%rsp)
- 	RESTORE_REST
- 	jmp int_ret_from_sys_call
--- 
-2.1.0
+Regards,
+Arend
+
+> Best regards
+> Uwe
+>
 
