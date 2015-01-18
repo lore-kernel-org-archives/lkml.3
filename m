@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753164AbbARLqX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 06:46:23 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:50079 "EHLO
+	id S1753062AbbARLpd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 06:45:33 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:50998 "EHLO
 	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751441AbbARLp0 (ORCPT
+	by vger.kernel.org with ESMTP id S1752629AbbARLp2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 06:45:26 -0500
-X-Sasl-enc: 22fJdACTj3mTknfBSSc9OcCHyQJhEEgfA62GqeNYrBn8 1421581525
+	Sun, 18 Jan 2015 06:45:28 -0500
+X-Sasl-enc: NTCv70KPO7LbhuMjzr6GU+vhOVefDfO3De9Zffnf4K14 1421581527
 From: Alexander van Heukelum <heukelum@fastmail.fm>
 To: Andy Lutomirski <luto@amacapital.net>, x86@kernel.org,
         linux-kernel@vger.kernel.org
 Cc: Frederic Weisbecker <fweisbec@gmail.com>, Oleg Nesterov <oleg@redhat.com>,
         Borislav Petkov <bp@suse.de>, Rik van Riel <riel@redhat.com>
-Subject: [PATCHv2 1/4] x86_64: cleanup THREAD_INFO(reg,offset) macro
-Date: Sun, 18 Jan 2015 12:45:17 +0100
-Message-Id: <1421581520-2816-2-git-send-email-heukelum@fastmail.fm>
+Subject: [PATCHv2 2/4] x86_64: embrace KERNEL_STACK_OFFSET
+Date: Sun, 18 Jan 2015 12:45:18 +0100
+Message-Id: <1421581520-2816-3-git-send-email-heukelum@fastmail.fm>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1421581520-2816-1-git-send-email-heukelum@fastmail.fm>
 References: <1421581520-2816-1-git-send-email-heukelum@fastmail.fm>
@@ -23,174 +23,143 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The macro THREAD_INFO(reg,offset) is used in assembly to compute the
-offset between the user ptregs and the thread_info struct. Change
-the macro and all its uses so that offset is given as the current
-top of stack in the pt_regs frame. The generated code is identical.
+KERNEL_STACK_OFFSET is the offset from the top of the kernel stack
+page to the value of the kernel_stack percpu variable. This patch
+changes KERNEL_STACK_OFFSET to configure a reserved space of 16
+bytes above the user ptregs frame. KERNEL_STACK_OFFSET must be
+set to a multiple of 16 bytes due to the automatic stack alignment
+of interrupts, traps, and exceptions on x86_64.
+
+Also change task_pt_regs to be independant of the thread's current
+sp0 setting, like i386, and use it to initialize thread.sp0 in
+copy_thread.
 
 Signed-off-by: Alexander van Heukelum <heukelum@fastmail.fm>
 ---
- arch/x86/ia32/ia32entry.S          | 30 +++++++++++++++---------------
- arch/x86/include/asm/calling.h     |  1 +
- arch/x86/include/asm/thread_info.h |  2 +-
- arch/x86/kernel/entry_64.S         |  4 ++--
- 4 files changed, 19 insertions(+), 18 deletions(-)
+ arch/x86/ia32/ia32entry.S          |  3 +--
+ arch/x86/include/asm/processor.h   | 11 ++++++++---
+ arch/x86/include/asm/thread_info.h | 13 ++++++++++++-
+ arch/x86/kernel/entry_64.S         |  2 +-
+ arch/x86/kernel/process_64.c       |  5 ++---
+ 5 files changed, 24 insertions(+), 10 deletions(-)
 
 diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
-index 156ebca..1c74f39 100644
+index 1c74f39..4c6c5d9 100644
 --- a/arch/x86/ia32/ia32entry.S
 +++ b/arch/x86/ia32/ia32entry.S
-@@ -135,7 +135,7 @@ ENTRY(ia32_sysenter_target)
- 	CFI_REL_OFFSET rsp,0
- 	pushfq_cfi
- 	/*CFI_REL_OFFSET rflags,0*/
--	movl	TI_sysenter_return+THREAD_INFO(%rsp,3*8-KERNEL_STACK_OFFSET),%r10d
-+	movl	TI_sysenter_return+THREAD_INFO(%rsp,EFLAGS),%r10d
- 	CFI_REGISTER rip,r10
- 	pushq_cfi $__USER32_CS
- 	/*CFI_REL_OFFSET cs,0*/
-@@ -161,8 +161,8 @@ ENTRY(ia32_sysenter_target)
- 	jnz sysenter_fix_flags
- sysenter_flags_fixed:
- 
--	orl     $TS_COMPAT,TI_status+THREAD_INFO(%rsp,RIP-ARGOFFSET)
--	testl   $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-+	orl     $TS_COMPAT,TI_status+THREAD_INFO(%rsp,ARGOFFSET)
-+	testl   $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,ARGOFFSET)
- 	CFI_REMEMBER_STATE
- 	jnz  sysenter_tracesys
- 	cmpq	$(IA32_NR_syscalls-1),%rax
-@@ -174,10 +174,10 @@ sysenter_dispatch:
- 	movq	%rax,RAX-ARGOFFSET(%rsp)
- 	DISABLE_INTERRUPTS(CLBR_NONE)
- 	TRACE_IRQS_OFF
--	testl	$_TIF_ALLWORK_MASK,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-+	testl	$_TIF_ALLWORK_MASK,TI_flags+THREAD_INFO(%rsp,ARGOFFSET)
- 	jnz	sysexit_audit
- sysexit_from_sys_call:
--	andl    $~TS_COMPAT,TI_status+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-+	andl    $~TS_COMPAT,TI_status+THREAD_INFO(%rsp,ARGOFFSET)
- 	/* clear IF, that popfq doesn't enable interrupts early */
- 	andl	$~0x200,EFLAGS-ARGOFFSET(%rsp)
- 	movl	RIP-ARGOFFSET(%rsp),%edx		/* User %eip */
-@@ -216,7 +216,7 @@ sysexit_from_sys_call:
- 	.endm
- 
- 	.macro auditsys_exit exit
--	testl $(_TIF_ALLWORK_MASK & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-+	testl $(_TIF_ALLWORK_MASK & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,ARGOFFSET)
- 	jnz ia32_ret_from_sys_call
- 	TRACE_IRQS_ON
+@@ -122,7 +122,6 @@ ENTRY(ia32_sysenter_target)
+ 	CFI_REGISTER	rsp,rbp
+ 	SWAPGS_UNSAFE_STACK
+ 	movq	PER_CPU_VAR(kernel_stack), %rsp
+-	addq	$(KERNEL_STACK_OFFSET),%rsp
+ 	/*
+ 	 * No need to follow this irqs on/off section: the syscall
+ 	 * disabled irqs, here we enable it straight after entry:
+@@ -304,7 +303,7 @@ ENTRY(ia32_cstar_target)
+ 	 * disabled irqs and here we enable it straight after entry:
+ 	 */
  	ENABLE_INTERRUPTS(CLBR_NONE)
-@@ -231,7 +231,7 @@ sysexit_from_sys_call:
- 	movl $(_TIF_ALLWORK_MASK & ~_TIF_SYSCALL_AUDIT),%edi
- 	DISABLE_INTERRUPTS(CLBR_NONE)
- 	TRACE_IRQS_OFF
--	testl %edi,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-+	testl %edi,TI_flags+THREAD_INFO(%rsp,ARGOFFSET)
- 	jz \exit
- 	CLEAR_RREGS -ARGOFFSET
- 	jmp int_with_check
-@@ -253,7 +253,7 @@ sysenter_fix_flags:
+-	SAVE_ARGS 8,0,0
++	SAVE_ARGS 6*8,0,0	/* skip: hardware stackframe and orig_rax */
+ 	movl 	%eax,%eax	/* zero extension */
+ 	movq	%rax,ORIG_RAX-ARGOFFSET(%rsp)
+ 	movq	%rcx,RIP-ARGOFFSET(%rsp)
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index a092a0c..97117d1 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -919,11 +919,13 @@ extern unsigned long thread_saved_pc(struct task_struct *tsk);
+ #define STACK_TOP_MAX		TASK_SIZE_MAX
  
- sysenter_tracesys:
- #ifdef CONFIG_AUDITSYSCALL
--	testl	$(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-+	testl	$(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,ARGOFFSET)
- 	jz	sysenter_auditsys
- #endif
- 	SAVE_REST
-@@ -324,8 +324,8 @@ ENTRY(ia32_cstar_target)
- 1:	movl	(%r8),%r9d
- 	_ASM_EXTABLE(1b,ia32_badarg)
- 	ASM_CLAC
--	orl     $TS_COMPAT,TI_status+THREAD_INFO(%rsp,RIP-ARGOFFSET)
--	testl   $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-+	orl     $TS_COMPAT,TI_status+THREAD_INFO(%rsp,ARGOFFSET)
-+	testl   $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,ARGOFFSET)
- 	CFI_REMEMBER_STATE
- 	jnz   cstar_tracesys
- 	cmpq $IA32_NR_syscalls-1,%rax
-@@ -337,10 +337,10 @@ cstar_dispatch:
- 	movq %rax,RAX-ARGOFFSET(%rsp)
- 	DISABLE_INTERRUPTS(CLBR_NONE)
- 	TRACE_IRQS_OFF
--	testl $_TIF_ALLWORK_MASK,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-+	testl $_TIF_ALLWORK_MASK,TI_flags+THREAD_INFO(%rsp,ARGOFFSET)
- 	jnz sysretl_audit
- sysretl_from_sys_call:
--	andl $~TS_COMPAT,TI_status+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-+	andl $~TS_COMPAT,TI_status+THREAD_INFO(%rsp,ARGOFFSET)
- 	RESTORE_ARGS 0,-ARG_SKIP,0,0,0
- 	movl RIP-ARGOFFSET(%rsp),%ecx
- 	CFI_REGISTER rip,rcx
-@@ -368,7 +368,7 @@ sysretl_audit:
+ #define INIT_THREAD  { \
+-	.sp0 = (unsigned long)&init_stack + sizeof(init_stack) \
++	.sp0 = (unsigned long)&init_stack + \
++		sizeof(init_stack) - KERNEL_STACK_OFFSET \
+ }
  
- cstar_tracesys:
- #ifdef CONFIG_AUDITSYSCALL
--	testl $(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-+	testl $(_TIF_WORK_SYSCALL_ENTRY & ~_TIF_SYSCALL_AUDIT),TI_flags+THREAD_INFO(%rsp,ARGOFFSET)
- 	jz cstar_auditsys
- #endif
- 	xchgl %r9d,%ebp
-@@ -434,8 +434,8 @@ ENTRY(ia32_syscall)
- 	/* note the registers are not zero extended to the sf.
- 	   this could be a problem. */
- 	SAVE_ARGS 0,1,0
--	orl $TS_COMPAT,TI_status+THREAD_INFO(%rsp,RIP-ARGOFFSET)
--	testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-+	orl $TS_COMPAT,TI_status+THREAD_INFO(%rsp,ARGOFFSET)
-+	testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,ARGOFFSET)
- 	jnz ia32_tracesys
- 	cmpq $(IA32_NR_syscalls-1),%rax
- 	ja ia32_badsys
-diff --git a/arch/x86/include/asm/calling.h b/arch/x86/include/asm/calling.h
-index 1f1297b..16ab13d 100644
---- a/arch/x86/include/asm/calling.h
-+++ b/arch/x86/include/asm/calling.h
-@@ -81,6 +81,7 @@ For 32-bit we have the following conventions - kernel is built with
- #define EFLAGS		144
- #define RSP		152
- #define SS		160
-+#define PTREGS_SIZE	168
+ #define INIT_TSS  { \
+-	.x86_tss.sp0 = (unsigned long)&init_stack + sizeof(init_stack) \
++	.x86_tss.sp0 = (unsigned long)&init_stack + \
++		sizeof(init_stack) - KERNEL_STACK_OFFSET \
+ }
  
- #define ARGOFFSET	R11
+ /*
+@@ -932,7 +934,10 @@ extern unsigned long thread_saved_pc(struct task_struct *tsk);
+  */
+ #define thread_saved_pc(t)	(*(unsigned long *)((t)->thread.sp - 8))
  
+-#define task_pt_regs(tsk)	((struct pt_regs *)(tsk)->thread.sp0 - 1)
++#define task_pt_regs(task) \
++	((struct pt_regs *)((unsigned long)task_stack_page(task) + \
++			THREAD_SIZE - KERNEL_STACK_OFFSET) - 1)
++
+ extern unsigned long KSTK_ESP(struct task_struct *task);
+ 
+ /*
 diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
-index e82e95a..471037d 100644
+index 471037d..9f0c47f 100644
 --- a/arch/x86/include/asm/thread_info.h
 +++ b/arch/x86/include/asm/thread_info.h
-@@ -190,7 +190,7 @@ static inline unsigned long current_stack_pointer(void)
+@@ -149,7 +149,18 @@ struct thread_info {
+ #define _TIF_WORK_CTXSW_NEXT (_TIF_WORK_CTXSW)
+ 
+ #define STACK_WARN		(THREAD_SIZE/8)
++
++/*
++ * Amount of reserved space between the top of the kernel stack page and the
++ * user ptregs frame.
++ * On x86_64, KERNEL_STACK_OFFSET must be set to a multiple of 16 bytes due
++ * to its automatic stack alignment for interrupts, traps, and exceptions.
++ */
++#ifdef CONFIG_X86_32
+ #define KERNEL_STACK_OFFSET	(5*(BITS_PER_LONG/8))
++#else
++#define KERNEL_STACK_OFFSET	(2*(BITS_PER_LONG/8))
++#endif
+ 
+ /*
+  * macros/functions for gaining access to the thread information structure
+@@ -190,7 +201,7 @@ static inline unsigned long current_stack_pointer(void)
   * Same if PER_CPU_VAR(kernel_stack) is, perhaps with some offset, already in
   * a certain register (to be used in assembler memory operands).
   */
--#define THREAD_INFO(reg, off) KERNEL_STACK_OFFSET+(off)-THREAD_SIZE(reg)
-+#define THREAD_INFO(reg, off) PTREGS_SIZE-(off)-THREAD_SIZE(reg)
+-#define THREAD_INFO(reg, off) PTREGS_SIZE-(off)-THREAD_SIZE(reg)
++#define THREAD_INFO(reg, off) PTREGS_SIZE+KERNEL_STACK_OFFSET-(off)-THREAD_SIZE(reg)
  
  #endif
  
 diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index db13655..9f9ca20 100644
+index 9f9ca20..6b95c2f 100644
 --- a/arch/x86/kernel/entry_64.S
 +++ b/arch/x86/kernel/entry_64.S
-@@ -343,7 +343,7 @@ GLOBAL(system_call_after_swapgs)
+@@ -339,7 +339,7 @@ GLOBAL(system_call_after_swapgs)
+ 	 * and short:
+ 	 */
+ 	ENABLE_INTERRUPTS(CLBR_NONE)
+-	SAVE_ARGS 8, 0, rax_enosys=1
++	SAVE_ARGS 6*8, 0, rax_enosys=1	/* skip: hardware stackframe and orig_rax */
  	movq_cfi rax,(ORIG_RAX-ARGOFFSET)
  	movq  %rcx,RIP-ARGOFFSET(%rsp)
  	CFI_REL_OFFSET rip,RIP-ARGOFFSET
--	testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-+	testl $_TIF_WORK_SYSCALL_ENTRY,TI_flags+THREAD_INFO(%rsp,ARGOFFSET)
- 	jnz tracesys
- system_call_fastpath:
- #if __SYSCALL_MASK == ~0
-@@ -361,7 +361,7 @@ system_call_fastpath:
-  * Has incomplete stack frame and undefined top of stack.
-  */
- ret_from_sys_call:
--	testl $_TIF_ALLWORK_MASK,TI_flags+THREAD_INFO(%rsp,RIP-ARGOFFSET)
-+	testl $_TIF_ALLWORK_MASK,TI_flags+THREAD_INFO(%rsp,ARGOFFSET)
- 	jnz int_ret_from_sys_call_fixup	/* Go the the slow path */
+diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
+index 5a2c029..d579ebf 100644
+--- a/arch/x86/kernel/process_64.c
++++ b/arch/x86/kernel/process_64.c
+@@ -155,12 +155,11 @@ int copy_thread(unsigned long clone_flags, unsigned long sp,
+ 		unsigned long arg, struct task_struct *p)
+ {
+ 	int err;
+-	struct pt_regs *childregs;
++	struct pt_regs *childregs = task_pt_regs(p);
+ 	struct task_struct *me = current;
  
- 	LOCKDEP_SYS_EXIT
+-	p->thread.sp0 = (unsigned long)task_stack_page(p) + THREAD_SIZE;
+-	childregs = task_pt_regs(p);
+ 	p->thread.sp = (unsigned long) childregs;
++	p->thread.sp0 = (unsigned long) (childregs + 1);
+ 	p->thread.usersp = me->thread.usersp;
+ 	set_tsk_thread_flag(p, TIF_FORK);
+ 	p->thread.io_bitmap_ptr = NULL;
 -- 
 2.1.0
 
