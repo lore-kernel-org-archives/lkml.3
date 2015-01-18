@@ -1,95 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751293AbbARSgq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 13:36:46 -0500
-Received: from mail-lb0-f182.google.com ([209.85.217.182]:37135 "EHLO
-	mail-lb0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750776AbbARSgp (ORCPT
+	id S1751448AbbARSlB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 13:41:01 -0500
+Received: from mail-wg0-f41.google.com ([74.125.82.41]:64243 "EHLO
+	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750838AbbARSlA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 13:36:45 -0500
+	Sun, 18 Jan 2015 13:41:00 -0500
+Message-ID: <54BBFE38.5000204@linaro.org>
+Date: Sun, 18 Jan 2015 19:40:56 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <54BB9A32.7080703@oracle.com>
-References: <20140624201606.18273.44270.stgit@zurg>
-	<20140624201614.18273.39034.stgit@zurg>
-	<54BB9A32.7080703@oracle.com>
-Date: Sun, 18 Jan 2015 22:36:43 +0400
-Message-ID: <CALYGNiPbTpTNme_Cp4AF0cDjRB=rQ2FJ=qRJ+G5cihQMhzsZEw@mail.gmail.com>
-Subject: Re: [PATCH 3/3] mm: catch memory commitment underflow
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Dave Hansen <dave.hansen@intel.com>
-Content-Type: text/plain; charset=UTF-8
+To: Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/5] clocksource: sun5i: Switch to request_irq
+References: <1420976410-7826-1-git-send-email-maxime.ripard@free-electrons.com> <1420976410-7826-2-git-send-email-maxime.ripard@free-electrons.com>
+In-Reply-To: <1420976410-7826-2-git-send-email-maxime.ripard@free-electrons.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 18, 2015 at 2:34 PM, Sasha Levin <sasha.levin@oracle.com> wrote:
-> On 06/24/2014 04:16 PM, Konstantin Khlebnikov wrote:
->> This patch prints warning (if CONFIG_DEBUG_VM=y) when
->> memory commitment becomes too negative.
->>
->> Signed-off-by: Konstantin Khlebnikov <koct9i@gmail.com>
+On 01/11/2015 12:40 PM, Maxime Ripard wrote:
+> The current code uses setup_irq, while it could perfectly use the much simpler
+> request_irq. Switch to that.
 >
-> Hi Konstantin,
+> Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
+> ---
+>   drivers/clocksource/timer-sun5i.c | 10 ++--------
+>   1 file changed, 2 insertions(+), 8 deletions(-)
 >
-> I seem to be hitting this warning when fuzzing on the latest -next kernel:
-
-That might be unexpected change of shmem file which holds anon-vma data,
-thanks to checkpoint-restore they are expoted via /proc/.../map_files
-
-I've fixed truncate (https://lkml.org/lkml/2014/6/24/729) but there
-are some other ways
-to change i_size: write, fallocate and maybe something else.
-
-We could seal this promblem (literally).
-
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -3355,6 +3355,9 @@ static struct file *__shmem_file_setup(const
-char *name, loff_t size,
-        if (!inode)
-                goto put_memory;
-
-+       if (!(flags & VM_NORESERVE))
-+               SHMEM_I(inode)->seals |= F_SEAL_SHRINK | F_SEAL_GROW;
-+
-        inode->i_flags |= i_flags;
-        d_instantiate(path.dentry, inode);
-        inode->i_size = size;
-
-
-
+> diff --git a/drivers/clocksource/timer-sun5i.c b/drivers/clocksource/timer-sun5i.c
+> index 02268448dc85..738853873a3b 100644
+> --- a/drivers/clocksource/timer-sun5i.c
+> +++ b/drivers/clocksource/timer-sun5i.c
+> @@ -130,13 +130,6 @@ static irqreturn_t sun5i_timer_interrupt(int irq, void *dev_id)
+>   	return IRQ_HANDLED;
+>   }
 >
-> [  683.674323] ------------[ cut here ]------------
-> [  683.675552] WARNING: CPU: 12 PID: 25654 at mm/mmap.c:157 __vm_enough_memory+0x1b7/0x1d0()
-> [  683.676972] memory commitment underflow
-> [  683.678212] Modules linked in:
-> [  683.678219] CPU: 12 PID: 25654 Comm: trinity-c373 Not tainted 3.19.0-rc4-next-20150116-sasha-00054-g4ad498c-dirty #1744
-> [  683.678227]  ffffffff9c6f7e73 ffff8802c0883a58 ffffffff9b439fb2 0000000000000000
-> [  683.678231]  ffff8802c0883aa8 ffff8802c0883a98 ffffffff98159e1a ffff8802c0883ae8
-> [  683.678236]  0000000000000001 0000000000000000 ffffffffffff76f1 ffff8802a9749000
-> [  683.678243] Call Trace:
-> [  683.678288] dump_stack (lib/dump_stack.c:52)
-> [  683.678297] warn_slowpath_common (kernel/panic.c:447)
-> [  683.678302] warn_slowpath_fmt (kernel/panic.c:461)
-> [  683.678307] __vm_enough_memory (mm/mmap.c:157 (discriminator 3))
-> [  683.678317] cap_vm_enough_memory (security/commoncap.c:958)
-> [  683.678323] security_vm_enough_memory_mm (security/security.c:212)
-> [  683.678331] shmem_getpage_gfp (mm/shmem.c:1161)
-> [  683.678337] shmem_write_begin (mm/shmem.c:1495)
-> [  683.678343] generic_perform_write (mm/filemap.c:2491)
-> [  683.678447] __generic_file_write_iter (mm/filemap.c:2632)
-> [  683.678452] generic_file_write_iter (mm/filemap.c:2659)
-> [  683.678458] do_iter_readv_writev (fs/read_write.c:680)
-> [  683.678461] do_readv_writev (fs/read_write.c:848)
-> [  683.678512] vfs_writev (fs/read_write.c:893)
-> [  683.678515] SyS_writev (fs/read_write.c:926 fs/read_write.c:917)
-> [  683.678520] tracesys_phase2 (arch/x86/kernel/entry_64.S:529)
+> -static struct irqaction sun5i_timer_irq = {
+> -	.name = "sun5i_timer0",
+> -	.flags = IRQF_TIMER | IRQF_IRQPOLL,
+> -	.handler = sun5i_timer_interrupt,
+> -	.dev_id = &sun5i_clockevent,
+> -};
+> -
+>   static u64 sun5i_timer_sched_read(void)
+>   {
+>   	return ~readl(timer_base + TIMER_CNTVAL_LO_REG(1));
+> @@ -178,7 +171,8 @@ static void __init sun5i_timer_init(struct device_node *node)
+>
+>   	ticks_per_jiffy = DIV_ROUND_UP(rate, HZ);
+>
+> -	ret = setup_irq(irq, &sun5i_timer_irq);
+> +	ret = request_irq(irq, sun5i_timer_interrupt, IRQF_TIMER | IRQF_IRQPOLL,
+> +			  "sun5i_timer", &sun5i_clockevent);
+
+Is the timer name change done in purpose ?
+
+>   	if (ret)
+>   		pr_warn("failed to setup irq %d\n", irq);
 >
 >
-> Thanks,
-> Sasha
+
+
+-- 
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
+
