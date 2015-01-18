@@ -1,84 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752184AbbARJ4c (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 04:56:32 -0500
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32965 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751357AbbARJ43 (ORCPT
+	id S1752337AbbARKQz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 05:16:55 -0500
+Received: from mail-ie0-f169.google.com ([209.85.223.169]:38954 "EHLO
+	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751357AbbARKQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 04:56:29 -0500
-Message-ID: <1421574950.31046.97.camel@decadent.org.uk>
-Subject: Re: [PATCH] staging: speakup: Fix warning of line over 80
- characters.
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Shirish Gajera <gajerashirish@gmail.com>
-Cc: w.d.hubbs@gmail.com, chris@the-brannons.com, kirk@reisers.ca,
-        samuel.thibault@ens-lyon.org, gregkh@linuxfoundation.org,
-        domagoj.trsan@gmail.com, dan.carpenter@oracle.com,
-        roxanagabriela10@gmail.com, dilekuzulmez@gmail.com,
-        daeseok.youn@gmail.com, sulamiification@gmail.com,
-        aysemelikeyurtoglu@gmail.com, rusty@rustcorp.com.au,
-        tapaswenipathak@gmail.com, sasha.levin@oracle.com,
-        speakup@linux-speakup.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Date: Sun, 18 Jan 2015 09:55:50 +0000
-In-Reply-To: <20150118075753.GA2612@shirish-ThinkPad-Edge-E430>
-References: <20150118075753.GA2612@shirish-ThinkPad-Edge-E430>
-Content-Type: multipart/signed; micalg="pgp-sha512";
-	protocol="application/pgp-signature"; boundary="=-njdwXf2lKnZ4rFAN39qv"
-X-Mailer: Evolution 3.12.9-1+b1 
-Mime-Version: 1.0
-X-SA-Exim-Connect-IP: 81.2.76.188
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	Sun, 18 Jan 2015 05:16:52 -0500
+MIME-Version: 1.0
+Date: Sun, 18 Jan 2015 11:16:51 +0100
+Message-ID: <CACRpkdZXugs-HBjad6_dbAudaMMMMSRavvPjuSRGoq0fM-85jQ@mail.gmail.com>
+Subject: [GIT PULL] GPIO fixes for the v3.19 series
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Johan Hovold <johan@kernel.org>,
+        "Holmberg, Hans" <hans.holmberg@intel.com>,
+        Aaron Lu <aaron.lu@intel.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
---=-njdwXf2lKnZ4rFAN39qv
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+here is a set of fixes that mainly appeared when Johan Hovold
+started exercising the removal path of the GPIO library, dealing
+with hotplugging of GPIO controllers.
 
-On Sat, 2015-01-17 at 23:57 -0800, Shirish Gajera wrote:
-> This patch fixes the checkpatch.pl warning:
->=20
-> WARNING: line over 80 characters
->=20
-> All line over 80 characters in driver/staging/speakup/* are fixed
-[...]
+Please pull it in!
 
-It is not important to fix all such warnings.  The code seems perfectly
-readable as it is.
+Yours,
+Linus Walleij
 
-Ben.
 
---=20
-Ben Hutchings
-The generation of random numbers is too important to be left to chance.
-                                                            - Robert Coveyo=
-u
+The following changes since commit eaa27f34e91a14cdceed26ed6c6793ec1d186115:
 
---=-njdwXf2lKnZ4rFAN39qv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+  linux 3.19-rc4 (2015-01-11 12:44:53 -0800)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+are available in the git repository at:
 
-iQIVAwUAVLuDK+e/yOyVhhEJAQo1IhAAhyuggs+iyv1rVCMN2GToBG9Cl2gPBcSq
-hqrxKVGuzhGwYckEv8Qdqy+xCp7yjYtZXKCZIE8yUjOOfUkf8GKH8ogEla/oQ1OU
-sGaXCZlMdrLCwaMDCirTXpmbuKwABikVUZYBJGtzHeTv4IHNOo+WTckKYuqOzsDi
-UIgZw66pYV+Zg4i2JESAb8xbP+e09bt1LI9+rIsckjNECB212Z1X9PqqIO3NdGM7
-qVXuq8jkfZp11fUP7ake/HOn/LTy5gD+Q0SyQvI8AIGmwou4nfrgAAS9rOZQ1Rmx
-Avl7giZgZavYIilmtwvQ4HDFkqJQrh9jFXrPUZGoI1AYBRFMLwoy8bg155KRtLe8
-eAHbIaxWph25xdtc3wNVHCeW3yXs/VCxLWSHB/FjnJJIjk8OkzDgXaXww3KVoz6Q
-UbSq+h6JKl3JdRaLprV2xzuyBQxn3HbHKzizs0nAZg6TdP1+OjXgbYNsmxE6rAmD
-uJJDonlk9M+r9sSPSkEMF8oJ3zJXxjtGcyMrSOIpJHpKegnrv2/2GEf3Ch8ldqLS
-yli6jTFeNKmYMkp2vAUKrmTOrcCjsED631HSnWXaFAyxWTPsJ/6DlgDv2k4n/wjP
-QZAi3ooKPZkrVqOzoKKBM/nNVyeTR3bvwnq8PI82/hQgtTO+x4Uyps9iufSdJ/cy
-C+FIcM0FDvU=
-=jVWO
------END PGP SIGNATURE-----
+  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-gpio.git
+tags/gpio-v3.19-4
 
---=-njdwXf2lKnZ4rFAN39qv--
+for you to fetch changes up to 7b8792bbdffdff3abda704f89c6a45ea97afdc62:
+
+  gpiolib: of: Correct error handling in of_get_named_gpiod_flags
+(2015-01-15 18:31:47 +0100)
+
+----------------------------------------------------------------
+A slew of fixes dealing with some irritating bugs (non-regressions)
+that have been around forever in the GPIO subsystem, most of them
+also tagged for stable:
+
+- A large slew of fixes from Johan Hovold who is finally testing and
+  reviewing the removal path of the GPIO drivers.
+
+- Fix of_get_named_gpiod_flags() so it works as expected.
+
+- Fix an IRQ handling bug in the crystalcove driver.
+
+----------------------------------------------------------------
+Aaron Lu (1):
+      gpio: crystalcove: use handle_nested_irq
+
+Hans Holmberg (1):
+      gpiolib: of: Correct error handling in of_get_named_gpiod_flags
+
+Johan Hovold (9):
+      gpio: fix memory and reference leaks in gpiochip_add error path
+      gpio: fix gpio-chip list corruption
+      gpio: clean up gpiochip_add error handling
+      gpio: fix memory leak and sleep-while-atomic
+      gpio: fix sleep-while-atomic in gpiochip_remove
+      gpio: unregister gpiochip device before removing it
+      gpio: sysfs: fix gpio-chip device-attribute leak
+      gpio: sysfs: fix gpio device-attribute leak
+      gpio: sysfs: fix gpio attribute-creation race
+
+ drivers/gpio/gpio-crystalcove.c |  2 +-
+ drivers/gpio/gpiolib-of.c       | 10 ++++-
+ drivers/gpio/gpiolib-sysfs.c    | 92 +++++++++++++++++++++++------------------
+ drivers/gpio/gpiolib.c          | 58 +++++++++++++-------------
+ drivers/gpio/gpiolib.h          |  1 +
+ 5 files changed, 92 insertions(+), 71 deletions(-)
