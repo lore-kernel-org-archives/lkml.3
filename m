@@ -1,86 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752645AbbARQjU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 11:39:20 -0500
-Received: from mail-la0-f51.google.com ([209.85.215.51]:63716 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751590AbbARQjT (ORCPT
+	id S1752730AbbARQlv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 11:41:51 -0500
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:61339 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751793AbbARQls (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 11:39:19 -0500
+	Sun, 18 Jan 2015 11:41:48 -0500
 MIME-Version: 1.0
-In-Reply-To: <1421581520-2816-5-git-send-email-heukelum@fastmail.fm>
-References: <1421581520-2816-1-git-send-email-heukelum@fastmail.fm> <1421581520-2816-5-git-send-email-heukelum@fastmail.fm>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Sun, 18 Jan 2015 08:38:55 -0800
-Message-ID: <CALCETrU84yDv+k=KojhODKfaJ-HHCWMuJteH98FR6md-JbmiQQ@mail.gmail.com>
-Subject: Re: [PATCHv2 4/4] x86_64, entry: Create IRET-compatible stack frame
- at syscall entry
-To: Alexander van Heukelum <heukelum@fastmail.fm>
-Cc: X86 ML <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>, Borislav Petkov <bp@suse.de>,
-        Rik van Riel <riel@redhat.com>
+In-Reply-To: <20150117215839.GA18538@kroah.com>
+References: <1419166779-2619-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+	<20150117215839.GA18538@kroah.com>
+Date: Sun, 18 Jan 2015 17:41:46 +0100
+Message-ID: <CAKXHbyMjJUUYcSqvoE4eC_BdCEH1Lh3vLqCTaOf3GDvsKaQcjQ@mail.gmail.com>
+Subject: Re: [PATCH] staging: rtl8723au: hal: rtl8723au_led.c: Remove some
+ unused functions
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Jes Sorensen <Jes.Sorensen@redhat.com>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 18, 2015 at 3:45 AM, Alexander van Heukelum
-<heukelum@fastmail.fm> wrote:
-> Create an IRET-compatible top of stack at syscall entry and use this
-> information to return to user mode in the sysret path. This removes
-> the need for the FIXUP_TOP_OF_STACK and RESTORE_TOP_OF_STACK macros.
+2015-01-17 22:58 GMT+01:00 Greg Kroah-Hartman <gregkh@linuxfoundation.org>:
+> On Sun, Dec 21, 2014 at 01:59:39PM +0100, Rickard Strandqvist wrote:
+>> Removes some functions that are not used anywhere:
+>> rtl8723au_DeInitSwLeds() rtl8723au_InitSwLeds()
+>>
+>> This was partially found by using a static code analysis program called cppcheck.
+>>
+>> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+>> ---
+>>  drivers/staging/rtl8723au/hal/rtl8723au_led.c    |   23 ----------------------
+>>  drivers/staging/rtl8723au/include/rtl8723a_led.h |    2 --
+>>  2 files changed, 25 deletions(-)
+>
+> These files aren't even in the tree anymore :(
 
-Since I have limited bandwidth, I'd like to tackle these one at a time.
 
-I like the idea of this patch, but it has some issues.
+Hi
 
-First, it needs to be benchmarked.  The syscall fast path entry code
-is *very* hot in some workloads, and it needs to be fast.
+No right. I can not find the files.
+And can not find these functions anywhere anymore.
 
-Second, I think you're really making three changes here.
+Sorry about that :(
 
-a) You're putting rsp where it belongs -- it's in pt_regs instead of
-being magically shoved into a combination of per-cpu variables and
-extra arch state (thread->usersp).  This ideally consists of (AFAICS)
-two tiny asm changes: one extra mov (most likely cache-hot) on entry
-and a change of where you're reading from when you reload rsp on exit.
-The former change could easily add a cycle (or zero cycles, or lots of
-cycles -- hardware can be complicated, and I have no idea how well
-store forwarding works on gs-relative accesses).  The latter change is
-probably a speedup -- we'd be reading from pt_regs (almost certainly
-hot or at least easily detected by the hardware prefetcher) instead of
-a random percpu variable on exit.
-
-*However*, this change enables the removal of all the usersp crap when
-context switching, and all of the old_rsp references need to be
-audited, and (having added yet another of them a week or two ago) I
-know that you missed at least one and probably three or four :)  Also,
-removing the usersp crap could easily speed up context switches by a
-cache line or so.
-
-Can you do that and split out just the old_rsp, usersp, and rsp part
-as its own patch?
-
-b) You're putting the saved flags into the EFLAGS pt_regs slot, which
-seems to me to be an unambiguous win -- it removes two instructions
-from RESTORE_TOP_OF_STACK, and it adds nothing whatsoever (except to
-the extent that you continue to initialize R11 on entry instead of in
-FIXUP_TOP_OF_STACK).
-
-(a) and (b) alone should be enough to eliminate RESTORE_TOP_OF_STACK.
-
-c) You're initializing the rest of the "top of stack" (cs, ss, and
-rcx) unconditionally.  This is simpler, but I'm not sure it's
-worthwhile -- we still lazily save the caller-saved regs, and
-FIXUP_TOP_OF_STACK fits right in.  It also may have a performance
-impact.
-
-I think that (a) and (b) are clear wins (a is a really nice cleanup
-and I bet it's a speedup, too, and b seems to be better in all
-respects).  (c) is much less clearly a win to me.
-
-Would you be willing to send split-out patches along with benchmarks?
-
---Andy
+Kind regards
+Rickard Strandqvist
