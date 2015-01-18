@@ -1,240 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752070AbbARNbA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 08:31:00 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:46684 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751398AbbARNa6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 08:30:58 -0500
+	id S1752386AbbARNbZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 08:31:25 -0500
+Received: from mout.gmx.net ([212.227.17.22]:60152 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751398AbbARNbX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Jan 2015 08:31:23 -0500
+From: Peter =?iso-8859-15?q?H=FCwe?= <PeterHuewe@gmx.de>
+To: Bruno E O Meneguele <bmeneguele@gmail.com>
+Subject: Re: [PATCH] Char: tpm: fixed white spaces and braces coding style issues
+Date: Sun, 18 Jan 2015 14:33:23 +0100
+User-Agent: KMail/1.13.7 (Linux/3.18.3-dirty; KDE/4.14.3; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <1421510610-12139-1-git-send-email-bmeneguele@gmail.com>
+In-Reply-To: <1421510610-12139-1-git-send-email-bmeneguele@gmail.com>
 MIME-Version: 1.0
-From: Kirill Elagin <kirelagin@gmail.com>
-Date: Sun, 18 Jan 2015 17:30:36 +0400
-Message-ID: <CABVT_gf-rx0ymvtCrCotkO5=qoDifG1yAMg8U_aTgXEN=x6gvg@mail.gmail.com>
-Subject: USB autosuspend causing trouble with bluetooth
-To: linux-kernel@vger.kernel.org
-Cc: marcel@holtmann.org
-Content-Type: multipart/mixed; boundary=001a11c2623e3a8a0c050ced37d6
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201501181433.24247.PeterHuewe@gmx.de>
+X-Provags-ID: V03:K0:VaQf18MZNH7Qoy9Q5EBr3P9BaRswr31DK7o9q9SPPHfg+ljno/U
+ AnGp0MpapncMMDZ3EAg9dAWu9GqnESS4BpZfDHs8HCnPh5lhTGfSKEhI+4eeR1ZsdDTozmn
+ 42dG1iOxt0pofAcudTZUEDouL3gyBCf+L1xLzXn/LF5YJXCqNqNS8WQeRnkBQG/km7dwz6n
+ k8aJ28CExi6MmuaUZhD+Q==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001a11c2623e3a8a0c050ced37d6
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Hi Bruno,
 
-Hello,
+thanks for your patch!
+The patch is fine, 
+but unfortunately not against the latest version of the tpm subsytem code.
 
-Recently I started having issues with my Apple Magic Trackpad and I
-realised that the problem was with autosuspend. Whenever I have `auto`
-in `power/control` of my BT adapter, `btmon` shows no packets,
-nothing. As soon as I `echo on`, all the missing packets arrive.
+You can find the latest version of the tpm subsystem at   
+https://github.com/PeterHuewe/linux-tpmdd 
+the for-james branch is usually the best choice here.
 
-The situation looks very similar to this thread:
-https://lkml.org/lkml/2014/4/2/574.
-As suggested, I tried `hci-tester` and I=E2=80=99m attaching the complete
-output, but, I guess, the interesting part is that with `on` in
-`power/control` I get:
-
-~~~~
-Inquiry (LIAC)      Passed      10.254 seconds
-~~~~
-
-and with `auto` I get:
-
-~~~~
-Inquiry (LIAC)        Timed out   30.365 seconds
-~~~~
-
-This is Acer 4810TG laptop with BCM2046. The kernel is 3.17.7, but I=E2=80=
-=99m
-pretty sure I was also seeing this on 3.18.1. Bluez is 5.25.
+Nevertheless, I quickly ported it to the latest code (see below)
+--> applied.
 
 
-P.S. Please, CC me as I=E2=80=99m not a subscriber.
 
---001a11c2623e3a8a0c050ced37d6
-Content-Type: text/plain; charset=UTF-8; name="hci-tester_on.log"
-Content-Disposition: attachment; filename="hci-tester_on.log"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_i52gn3i40
+> Fixed some coding style issues.
+Usually it is quite good if you include the reports by checkpatch.
 
-4pSU4pSAIyAuL3Rvb2xzL2hjaS10ZXN0ZXIgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAK
-ClJlc2V0IC0gaW5pdApSZXNldCAtIHNldHVwClJlc2V0IC0gc2V0dXAgY29tcGxldGUKUmVzZXQg
-LSBydW4KUmVzZXQgLSB0ZXN0IHBhc3NlZApSZXNldCAtIHRlYXJkb3duClJlc2V0IC0gdGVhcmRv
-d24gY29tcGxldGUKUmVzZXQgLSBkb25lCgpSZWFkIExvY2FsIFZlcnNpb24gSW5mb3JtYXRpb24g
-LSBpbml0ClJlYWQgTG9jYWwgVmVyc2lvbiBJbmZvcm1hdGlvbiAtIHNldHVwClJlYWQgTG9jYWwg
-VmVyc2lvbiBJbmZvcm1hdGlvbiAtIHNldHVwIGNvbXBsZXRlClJlYWQgTG9jYWwgVmVyc2lvbiBJ
-bmZvcm1hdGlvbiAtIHJ1bgpSZWFkIExvY2FsIFZlcnNpb24gSW5mb3JtYXRpb24gLSB0ZXN0IHBh
-c3NlZApSZWFkIExvY2FsIFZlcnNpb24gSW5mb3JtYXRpb24gLSB0ZWFyZG93bgpSZWFkIExvY2Fs
-IFZlcnNpb24gSW5mb3JtYXRpb24gLSB0ZWFyZG93biBjb21wbGV0ZQpSZWFkIExvY2FsIFZlcnNp
-b24gSW5mb3JtYXRpb24gLSBkb25lCgpSZWFkIExvY2FsIFN1cHBvcnRlZCBDb21tYW5kcyAtIGlu
-aXQKUmVhZCBMb2NhbCBTdXBwb3J0ZWQgQ29tbWFuZHMgLSBzZXR1cApSZWFkIExvY2FsIFN1cHBv
-cnRlZCBDb21tYW5kcyAtIHNldHVwIGNvbXBsZXRlClJlYWQgTG9jYWwgU3VwcG9ydGVkIENvbW1h
-bmRzIC0gcnVuClJlYWQgTG9jYWwgU3VwcG9ydGVkIENvbW1hbmRzIC0gdGVzdCBwYXNzZWQKUmVh
-ZCBMb2NhbCBTdXBwb3J0ZWQgQ29tbWFuZHMgLSB0ZWFyZG93bgpSZWFkIExvY2FsIFN1cHBvcnRl
-ZCBDb21tYW5kcyAtIHRlYXJkb3duIGNvbXBsZXRlClJlYWQgTG9jYWwgU3VwcG9ydGVkIENvbW1h
-bmRzIC0gZG9uZQoKUmVhZCBMb2NhbCBTdXBwb3J0ZWQgRmVhdHVyZXMgLSBpbml0ClJlYWQgTG9j
-YWwgU3VwcG9ydGVkIEZlYXR1cmVzIC0gc2V0dXAKUmVhZCBMb2NhbCBTdXBwb3J0ZWQgRmVhdHVy
-ZXMgLSBzZXR1cCBjb21wbGV0ZQpSZWFkIExvY2FsIFN1cHBvcnRlZCBGZWF0dXJlcyAtIHJ1bgpS
-ZWFkIExvY2FsIFN1cHBvcnRlZCBGZWF0dXJlcyAtIHRlc3QgcGFzc2VkClJlYWQgTG9jYWwgU3Vw
-cG9ydGVkIEZlYXR1cmVzIC0gdGVhcmRvd24KUmVhZCBMb2NhbCBTdXBwb3J0ZWQgRmVhdHVyZXMg
-LSB0ZWFyZG93biBjb21wbGV0ZQpSZWFkIExvY2FsIFN1cHBvcnRlZCBGZWF0dXJlcyAtIGRvbmUK
-ClJlYWQgTG9jYWwgRXh0ZW5kZWQgRmVhdHVyZXMgLSBpbml0ClJlYWQgTG9jYWwgRXh0ZW5kZWQg
-RmVhdHVyZXMgLSBzZXR1cApSZWFkIExvY2FsIEV4dGVuZGVkIEZlYXR1cmVzIC0gc2V0dXAgY29t
-cGxldGUKUmVhZCBMb2NhbCBFeHRlbmRlZCBGZWF0dXJlcyAtIHJ1bgpSZWFkIExvY2FsIEV4dGVu
-ZGVkIEZlYXR1cmVzIC0gdGVzdCBwYXNzZWQKUmVhZCBMb2NhbCBFeHRlbmRlZCBGZWF0dXJlcyAt
-IHRlYXJkb3duClJlYWQgTG9jYWwgRXh0ZW5kZWQgRmVhdHVyZXMgLSB0ZWFyZG93biBjb21wbGV0
-ZQpSZWFkIExvY2FsIEV4dGVuZGVkIEZlYXR1cmVzIC0gZG9uZQoKUmVhZCBCdWZmZXIgU2l6ZSAt
-IGluaXQKUmVhZCBCdWZmZXIgU2l6ZSAtIHNldHVwClJlYWQgQnVmZmVyIFNpemUgLSBzZXR1cCBj
-b21wbGV0ZQpSZWFkIEJ1ZmZlciBTaXplIC0gcnVuClJlYWQgQnVmZmVyIFNpemUgLSB0ZXN0IHBh
-c3NlZApSZWFkIEJ1ZmZlciBTaXplIC0gdGVhcmRvd24KUmVhZCBCdWZmZXIgU2l6ZSAtIHRlYXJk
-b3duIGNvbXBsZXRlClJlYWQgQnVmZmVyIFNpemUgLSBkb25lCgpSZWFkIENvdW50cnkgQ29kZSAt
-IGluaXQKUmVhZCBDb3VudHJ5IENvZGUgLSBzZXR1cApSZWFkIENvdW50cnkgQ29kZSAtIHNldHVw
-IGNvbXBsZXRlClJlYWQgQ291bnRyeSBDb2RlIC0gcnVuCiAgSENJIGNvbW1hbmQgZmFpbGVkICgw
-eDAxKQpSZWFkIENvdW50cnkgQ29kZSAtIHRlc3QgZmFpbGVkClJlYWQgQ291bnRyeSBDb2RlIC0g
-dGVhcmRvd24KUmVhZCBDb3VudHJ5IENvZGUgLSB0ZWFyZG93biBjb21wbGV0ZQpSZWFkIENvdW50
-cnkgQ29kZSAtIGRvbmUKClJlYWQgQkRfQUREUiAtIGluaXQKUmVhZCBCRF9BRERSIC0gc2V0dXAK
-UmVhZCBCRF9BRERSIC0gc2V0dXAgY29tcGxldGUKUmVhZCBCRF9BRERSIC0gcnVuClJlYWQgQkRf
-QUREUiAtIHRlc3QgcGFzc2VkClJlYWQgQkRfQUREUiAtIHRlYXJkb3duClJlYWQgQkRfQUREUiAt
-IHRlYXJkb3duIGNvbXBsZXRlClJlYWQgQkRfQUREUiAtIGRvbmUKClJlYWQgTG9jYWwgU3VwcG9y
-dGVkIENvZGVjcyAtIGluaXQKUmVhZCBMb2NhbCBTdXBwb3J0ZWQgQ29kZWNzIC0gc2V0dXAKUmVh
-ZCBMb2NhbCBTdXBwb3J0ZWQgQ29kZWNzIC0gc2V0dXAgY29tcGxldGUKUmVhZCBMb2NhbCBTdXBw
-b3J0ZWQgQ29kZWNzIC0gcnVuCiAgSENJIGNvbW1hbmQgZmFpbGVkICgweDAxKQpSZWFkIExvY2Fs
-IFN1cHBvcnRlZCBDb2RlY3MgLSB0ZXN0IGZhaWxlZApSZWFkIExvY2FsIFN1cHBvcnRlZCBDb2Rl
-Y3MgLSB0ZWFyZG93bgpSZWFkIExvY2FsIFN1cHBvcnRlZCBDb2RlY3MgLSB0ZWFyZG93biBjb21w
-bGV0ZQpSZWFkIExvY2FsIFN1cHBvcnRlZCBDb2RlY3MgLSBkb25lCgpMRSBSZWFkIFdoaXRlIExp
-c3QgU2l6ZSAtIGluaXQKTEUgUmVhZCBXaGl0ZSBMaXN0IFNpemUgLSBzZXR1cApMRSBSZWFkIFdo
-aXRlIExpc3QgU2l6ZSAtIHNldHVwIGNvbXBsZXRlCkxFIFJlYWQgV2hpdGUgTGlzdCBTaXplIC0g
-cnVuCiAgSENJIGNvbW1hbmQgZmFpbGVkICgweDAxKQpMRSBSZWFkIFdoaXRlIExpc3QgU2l6ZSAt
-IHRlc3QgZmFpbGVkCkxFIFJlYWQgV2hpdGUgTGlzdCBTaXplIC0gdGVhcmRvd24KTEUgUmVhZCBX
-aGl0ZSBMaXN0IFNpemUgLSB0ZWFyZG93biBjb21wbGV0ZQpMRSBSZWFkIFdoaXRlIExpc3QgU2l6
-ZSAtIGRvbmUKCkxFIENsZWFyIFdoaXRlIExpc3QgLSBpbml0CkxFIENsZWFyIFdoaXRlIExpc3Qg
-LSBzZXR1cApMRSBDbGVhciBXaGl0ZSBMaXN0IC0gc2V0dXAgY29tcGxldGUKTEUgQ2xlYXIgV2hp
-dGUgTGlzdCAtIHJ1bgogIEhDSSBjb21tYW5kIGZhaWxlZCAoMHgwMSkKTEUgQ2xlYXIgV2hpdGUg
-TGlzdCAtIHRlc3QgZmFpbGVkCkxFIENsZWFyIFdoaXRlIExpc3QgLSB0ZWFyZG93bgpMRSBDbGVh
-ciBXaGl0ZSBMaXN0IC0gdGVhcmRvd24gY29tcGxldGUKTEUgQ2xlYXIgV2hpdGUgTGlzdCAtIGRv
-bmUKCklucXVpcnkgKExJQUMpIC0gaW5pdApJbnF1aXJ5IChMSUFDKSAtIHNldHVwCklucXVpcnkg
-KExJQUMpIC0gc2V0dXAgY29tcGxldGUKSW5xdWlyeSAoTElBQykgLSBydW4KSW5xdWlyeSAoTElB
-QykgLSB0ZXN0IHBhc3NlZApJbnF1aXJ5IChMSUFDKSAtIHRlYXJkb3duCklucXVpcnkgKExJQUMp
-IC0gdGVhcmRvd24gY29tcGxldGUKSW5xdWlyeSAoTElBQykgLSBkb25lCgpDcmVhdGUgQ29ubmVj
-dGlvbiAtIGluaXQKICBGYWlsZWQgdG8gc2V0dXAgbG93ZXIgdGVzdGVyIHVzZXIgY2hhbm5lbApD
-cmVhdGUgQ29ubmVjdGlvbiAtIHByZSBzZXR1cCBmYWlsZWQKQ3JlYXRlIENvbm5lY3Rpb24gLSBk
-b25lCgpUUC9EU1UvQlYtMDItQyBSZXNldCBpbiBBZHZlcnRpc2luZyBTdGF0ZSAtIGluaXQKICBG
-YWlsZWQgdG8gc2V0dXAgdXBwZXIgdGVzdGVyIHVzZXIgY2hhbm5lbApUUC9EU1UvQlYtMDItQyBS
-ZXNldCBpbiBBZHZlcnRpc2luZyBTdGF0ZSAtIHByZSBzZXR1cCBmYWlsZWQKVFAvRFNVL0JWLTAy
-LUMgUmVzZXQgaW4gQWR2ZXJ0aXNpbmcgU3RhdGUgLSBkb25lCgoKVGVzdCBTdW1tYXJ5Ci0tLS0t
-LS0tLS0tLQpSZXNldCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgIFBhc3NlZCAgICAgICAwLjAwNyBzZWNvbmRzClJlYWQgTG9jYWwgVmVyc2lvbiBJbmZvcm1h
-dGlvbiAgICAgICAgICAgICAgICAgICAgICAgUGFzc2VkICAgICAgIDAuMDA3IHNlY29uZHMKUmVh
-ZCBMb2NhbCBTdXBwb3J0ZWQgQ29tbWFuZHMgICAgICAgICAgICAgICAgICAgICAgICBQYXNzZWQg
-ICAgICAgMC4wMTEgc2Vjb25kcwpSZWFkIExvY2FsIFN1cHBvcnRlZCBGZWF0dXJlcyAgICAgICAg
-ICAgICAgICAgICAgICAgIFBhc3NlZCAgICAgICAwLjAwOCBzZWNvbmRzClJlYWQgTG9jYWwgRXh0
-ZW5kZWQgRmVhdHVyZXMgICAgICAgICAgICAgICAgICAgICAgICAgUGFzc2VkICAgICAgIDAuMDEw
-IHNlY29uZHMKUmVhZCBCdWZmZXIgU2l6ZSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICBQYXNzZWQgICAgICAgMC4wMDggc2Vjb25kcwpSZWFkIENvdW50cnkgQ29kZSAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgIEZhaWxlZCAgICAgICAwLjAwOCBzZWNvbmRzClJl
-YWQgQkRfQUREUiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgUGFzc2Vk
-ICAgICAgIDAuMDA3IHNlY29uZHMKUmVhZCBMb2NhbCBTdXBwb3J0ZWQgQ29kZWNzICAgICAgICAg
-ICAgICAgICAgICAgICAgICBGYWlsZWQgICAgICAgMC4wMDkgc2Vjb25kcwpMRSBSZWFkIFdoaXRl
-IExpc3QgU2l6ZSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIEZhaWxlZCAgICAgICAwLjAw
-NyBzZWNvbmRzCkxFIENsZWFyIFdoaXRlIExpc3QgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgRmFpbGVkICAgICAgIDAuMDA5IHNlY29uZHMKSW5xdWlyeSAoTElBQykgICAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICBQYXNzZWQgICAgICAxMC4yNTQgc2Vjb25kcwpD
-cmVhdGUgQ29ubmVjdGlvbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIE5vdCBS
-dW4gICAKVFAvRFNVL0JWLTAyLUMgUmVzZXQgaW4gQWR2ZXJ0aXNpbmcgU3RhdGUgICAgICAgICAg
-ICBOb3QgUnVuICAgCgpUb3RhbDogMTQsIFBhc3NlZDogOCAoNTcuMSUpLCBGYWlsZWQ6IDQsIE5v
-dCBSdW46IDIKT3ZlcmFsbCBleGVjdXRpb24gdGltZTogMTAuNCBzZWNvbmRzCg==
---001a11c2623e3a8a0c050ced37d6
-Content-Type: text/plain; charset=UTF-8; name="hci-tester_auto.log"
-Content-Disposition: attachment; filename="hci-tester_auto.log"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_i52gn3j91
+Thanks,
+Peter
 
-4pSAIyAuL3Rvb2xzL2hjaS10ZXN0ZXIgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIAoK
-UmVzZXQgLSBpbml0ClJlc2V0IC0gc2V0dXAKUmVzZXQgLSBzZXR1cCBjb21wbGV0ZQpSZXNldCAt
-IHJ1bgpSZXNldCAtIHRlc3QgcGFzc2VkClJlc2V0IC0gdGVhcmRvd24KUmVzZXQgLSB0ZWFyZG93
-biBjb21wbGV0ZQpSZXNldCAtIGRvbmUKClJlYWQgTG9jYWwgVmVyc2lvbiBJbmZvcm1hdGlvbiAt
-IGluaXQKUmVhZCBMb2NhbCBWZXJzaW9uIEluZm9ybWF0aW9uIC0gc2V0dXAKUmVhZCBMb2NhbCBW
-ZXJzaW9uIEluZm9ybWF0aW9uIC0gc2V0dXAgY29tcGxldGUKUmVhZCBMb2NhbCBWZXJzaW9uIElu
-Zm9ybWF0aW9uIC0gcnVuClJlYWQgTG9jYWwgVmVyc2lvbiBJbmZvcm1hdGlvbiAtIHRlc3QgcGFz
-c2VkClJlYWQgTG9jYWwgVmVyc2lvbiBJbmZvcm1hdGlvbiAtIHRlYXJkb3duClJlYWQgTG9jYWwg
-VmVyc2lvbiBJbmZvcm1hdGlvbiAtIHRlYXJkb3duIGNvbXBsZXRlClJlYWQgTG9jYWwgVmVyc2lv
-biBJbmZvcm1hdGlvbiAtIGRvbmUKClJlYWQgTG9jYWwgU3VwcG9ydGVkIENvbW1hbmRzIC0gaW5p
-dApSZWFkIExvY2FsIFN1cHBvcnRlZCBDb21tYW5kcyAtIHNldHVwClJlYWQgTG9jYWwgU3VwcG9y
-dGVkIENvbW1hbmRzIC0gc2V0dXAgY29tcGxldGUKUmVhZCBMb2NhbCBTdXBwb3J0ZWQgQ29tbWFu
-ZHMgLSBydW4KUmVhZCBMb2NhbCBTdXBwb3J0ZWQgQ29tbWFuZHMgLSB0ZXN0IHBhc3NlZApSZWFk
-IExvY2FsIFN1cHBvcnRlZCBDb21tYW5kcyAtIHRlYXJkb3duClJlYWQgTG9jYWwgU3VwcG9ydGVk
-IENvbW1hbmRzIC0gdGVhcmRvd24gY29tcGxldGUKUmVhZCBMb2NhbCBTdXBwb3J0ZWQgQ29tbWFu
-ZHMgLSBkb25lCgpSZWFkIExvY2FsIFN1cHBvcnRlZCBGZWF0dXJlcyAtIGluaXQKUmVhZCBMb2Nh
-bCBTdXBwb3J0ZWQgRmVhdHVyZXMgLSBzZXR1cApSZWFkIExvY2FsIFN1cHBvcnRlZCBGZWF0dXJl
-cyAtIHNldHVwIGNvbXBsZXRlClJlYWQgTG9jYWwgU3VwcG9ydGVkIEZlYXR1cmVzIC0gcnVuClJl
-YWQgTG9jYWwgU3VwcG9ydGVkIEZlYXR1cmVzIC0gdGVzdCBwYXNzZWQKUmVhZCBMb2NhbCBTdXBw
-b3J0ZWQgRmVhdHVyZXMgLSB0ZWFyZG93bgpSZWFkIExvY2FsIFN1cHBvcnRlZCBGZWF0dXJlcyAt
-IHRlYXJkb3duIGNvbXBsZXRlClJlYWQgTG9jYWwgU3VwcG9ydGVkIEZlYXR1cmVzIC0gZG9uZQoK
-UmVhZCBMb2NhbCBFeHRlbmRlZCBGZWF0dXJlcyAtIGluaXQKUmVhZCBMb2NhbCBFeHRlbmRlZCBG
-ZWF0dXJlcyAtIHNldHVwClJlYWQgTG9jYWwgRXh0ZW5kZWQgRmVhdHVyZXMgLSBzZXR1cCBjb21w
-bGV0ZQpSZWFkIExvY2FsIEV4dGVuZGVkIEZlYXR1cmVzIC0gcnVuClJlYWQgTG9jYWwgRXh0ZW5k
-ZWQgRmVhdHVyZXMgLSB0ZXN0IHBhc3NlZApSZWFkIExvY2FsIEV4dGVuZGVkIEZlYXR1cmVzIC0g
-dGVhcmRvd24KUmVhZCBMb2NhbCBFeHRlbmRlZCBGZWF0dXJlcyAtIHRlYXJkb3duIGNvbXBsZXRl
-ClJlYWQgTG9jYWwgRXh0ZW5kZWQgRmVhdHVyZXMgLSBkb25lCgpSZWFkIEJ1ZmZlciBTaXplIC0g
-aW5pdApSZWFkIEJ1ZmZlciBTaXplIC0gc2V0dXAKUmVhZCBCdWZmZXIgU2l6ZSAtIHNldHVwIGNv
-bXBsZXRlClJlYWQgQnVmZmVyIFNpemUgLSBydW4KUmVhZCBCdWZmZXIgU2l6ZSAtIHRlc3QgcGFz
-c2VkClJlYWQgQnVmZmVyIFNpemUgLSB0ZWFyZG93bgpSZWFkIEJ1ZmZlciBTaXplIC0gdGVhcmRv
-d24gY29tcGxldGUKUmVhZCBCdWZmZXIgU2l6ZSAtIGRvbmUKClJlYWQgQ291bnRyeSBDb2RlIC0g
-aW5pdApSZWFkIENvdW50cnkgQ29kZSAtIHNldHVwClJlYWQgQ291bnRyeSBDb2RlIC0gc2V0dXAg
-Y29tcGxldGUKUmVhZCBDb3VudHJ5IENvZGUgLSBydW4KICBIQ0kgY29tbWFuZCBmYWlsZWQgKDB4
-MDEpClJlYWQgQ291bnRyeSBDb2RlIC0gdGVzdCBmYWlsZWQKUmVhZCBDb3VudHJ5IENvZGUgLSB0
-ZWFyZG93bgpSZWFkIENvdW50cnkgQ29kZSAtIHRlYXJkb3duIGNvbXBsZXRlClJlYWQgQ291bnRy
-eSBDb2RlIC0gZG9uZQoKUmVhZCBCRF9BRERSIC0gaW5pdApSZWFkIEJEX0FERFIgLSBzZXR1cApS
-ZWFkIEJEX0FERFIgLSBzZXR1cCBjb21wbGV0ZQpSZWFkIEJEX0FERFIgLSBydW4KUmVhZCBCRF9B
-RERSIC0gdGVzdCBwYXNzZWQKUmVhZCBCRF9BRERSIC0gdGVhcmRvd24KUmVhZCBCRF9BRERSIC0g
-dGVhcmRvd24gY29tcGxldGUKUmVhZCBCRF9BRERSIC0gZG9uZQoKUmVhZCBMb2NhbCBTdXBwb3J0
-ZWQgQ29kZWNzIC0gaW5pdApSZWFkIExvY2FsIFN1cHBvcnRlZCBDb2RlY3MgLSBzZXR1cApSZWFk
-IExvY2FsIFN1cHBvcnRlZCBDb2RlY3MgLSBzZXR1cCBjb21wbGV0ZQpSZWFkIExvY2FsIFN1cHBv
-cnRlZCBDb2RlY3MgLSBydW4KICBIQ0kgY29tbWFuZCBmYWlsZWQgKDB4MDEpClJlYWQgTG9jYWwg
-U3VwcG9ydGVkIENvZGVjcyAtIHRlc3QgZmFpbGVkClJlYWQgTG9jYWwgU3VwcG9ydGVkIENvZGVj
-cyAtIHRlYXJkb3duClJlYWQgTG9jYWwgU3VwcG9ydGVkIENvZGVjcyAtIHRlYXJkb3duIGNvbXBs
-ZXRlClJlYWQgTG9jYWwgU3VwcG9ydGVkIENvZGVjcyAtIGRvbmUKCkxFIFJlYWQgV2hpdGUgTGlz
-dCBTaXplIC0gaW5pdApMRSBSZWFkIFdoaXRlIExpc3QgU2l6ZSAtIHNldHVwCkxFIFJlYWQgV2hp
-dGUgTGlzdCBTaXplIC0gc2V0dXAgY29tcGxldGUKTEUgUmVhZCBXaGl0ZSBMaXN0IFNpemUgLSBy
-dW4KICBIQ0kgY29tbWFuZCBmYWlsZWQgKDB4MDEpCkxFIFJlYWQgV2hpdGUgTGlzdCBTaXplIC0g
-dGVzdCBmYWlsZWQKTEUgUmVhZCBXaGl0ZSBMaXN0IFNpemUgLSB0ZWFyZG93bgpMRSBSZWFkIFdo
-aXRlIExpc3QgU2l6ZSAtIHRlYXJkb3duIGNvbXBsZXRlCkxFIFJlYWQgV2hpdGUgTGlzdCBTaXpl
-IC0gZG9uZQoKTEUgQ2xlYXIgV2hpdGUgTGlzdCAtIGluaXQKTEUgQ2xlYXIgV2hpdGUgTGlzdCAt
-IHNldHVwCkxFIENsZWFyIFdoaXRlIExpc3QgLSBzZXR1cCBjb21wbGV0ZQpMRSBDbGVhciBXaGl0
-ZSBMaXN0IC0gcnVuCiAgSENJIGNvbW1hbmQgZmFpbGVkICgweDAxKQpMRSBDbGVhciBXaGl0ZSBM
-aXN0IC0gdGVzdCBmYWlsZWQKTEUgQ2xlYXIgV2hpdGUgTGlzdCAtIHRlYXJkb3duCkxFIENsZWFy
-IFdoaXRlIExpc3QgLSB0ZWFyZG93biBjb21wbGV0ZQpMRSBDbGVhciBXaGl0ZSBMaXN0IC0gZG9u
-ZQoKSW5xdWlyeSAoTElBQykgLSBpbml0CklucXVpcnkgKExJQUMpIC0gc2V0dXAKSW5xdWlyeSAo
-TElBQykgLSBzZXR1cCBjb21wbGV0ZQpJbnF1aXJ5IChMSUFDKSAtIHJ1bgpJbnF1aXJ5IChMSUFD
-KSAtIHRlc3QgdGltZWQgb3V0CklucXVpcnkgKExJQUMpIC0gdGVhcmRvd24KSW5xdWlyeSAoTElB
-QykgLSB0ZWFyZG93biBjb21wbGV0ZQpJbnF1aXJ5IChMSUFDKSAtIGRvbmUKCkNyZWF0ZSBDb25u
-ZWN0aW9uIC0gaW5pdAogIEZhaWxlZCB0byBzZXR1cCBsb3dlciB0ZXN0ZXIgdXNlciBjaGFubmVs
-CkNyZWF0ZSBDb25uZWN0aW9uIC0gcHJlIHNldHVwIGZhaWxlZApDcmVhdGUgQ29ubmVjdGlvbiAt
-IGRvbmUKClRQL0RTVS9CVi0wMi1DIFJlc2V0IGluIEFkdmVydGlzaW5nIFN0YXRlIC0gaW5pdAog
-IEZhaWxlZCB0byBzZXR1cCB1cHBlciB0ZXN0ZXIgdXNlciBjaGFubmVsClRQL0RTVS9CVi0wMi1D
-IFJlc2V0IGluIEFkdmVydGlzaW5nIFN0YXRlIC0gcHJlIHNldHVwIGZhaWxlZApUUC9EU1UvQlYt
-MDItQyBSZXNldCBpbiBBZHZlcnRpc2luZyBTdGF0ZSAtIGRvbmUKCgpUZXN0IFN1bW1hcnkKLS0t
-LS0tLS0tLS0tClJlc2V0ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgUGFzc2VkICAgICAgIDAuMDY2IHNlY29uZHMKUmVhZCBMb2NhbCBWZXJzaW9uIEluZm9y
-bWF0aW9uICAgICAgICAgICAgICAgICAgICAgICBQYXNzZWQgICAgICAgMC4wMDggc2Vjb25kcwpS
-ZWFkIExvY2FsIFN1cHBvcnRlZCBDb21tYW5kcyAgICAgICAgICAgICAgICAgICAgICAgIFBhc3Nl
-ZCAgICAgICAwLjAxNiBzZWNvbmRzClJlYWQgTG9jYWwgU3VwcG9ydGVkIEZlYXR1cmVzICAgICAg
-ICAgICAgICAgICAgICAgICAgUGFzc2VkICAgICAgIDAuMDA5IHNlY29uZHMKUmVhZCBMb2NhbCBF
-eHRlbmRlZCBGZWF0dXJlcyAgICAgICAgICAgICAgICAgICAgICAgICBQYXNzZWQgICAgICAgMC4w
-MTAgc2Vjb25kcwpSZWFkIEJ1ZmZlciBTaXplICAgICAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgIFBhc3NlZCAgICAgICAwLjAwOCBzZWNvbmRzClJlYWQgQ291bnRyeSBDb2RlICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgRmFpbGVkICAgICAgIDAuMDA4IHNlY29uZHMK
-UmVhZCBCRF9BRERSICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBQYXNz
-ZWQgICAgICAgMC4wMDcgc2Vjb25kcwpSZWFkIExvY2FsIFN1cHBvcnRlZCBDb2RlY3MgICAgICAg
-ICAgICAgICAgICAgICAgICAgIEZhaWxlZCAgICAgICAwLjAwNyBzZWNvbmRzCkxFIFJlYWQgV2hp
-dGUgTGlzdCBTaXplICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgRmFpbGVkICAgICAgIDAu
-MDA4IHNlY29uZHMKTEUgQ2xlYXIgV2hpdGUgTGlzdCAgICAgICAgICAgICAgICAgICAgICAgICAg
-ICAgICAgICBGYWlsZWQgICAgICAgMC4wMDkgc2Vjb25kcwpJbnF1aXJ5IChMSUFDKSAgICAgICAg
-ICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIFRpbWVkIG91dCAgIDMwLjM2NSBzZWNvbmRz
-CkNyZWF0ZSBDb25uZWN0aW9uICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgTm90
-IFJ1biAgIApUUC9EU1UvQlYtMDItQyBSZXNldCBpbiBBZHZlcnRpc2luZyBTdGF0ZSAgICAgICAg
-ICAgIE5vdCBSdW4gICAKClRvdGFsOiAxNCwgUGFzc2VkOiA3ICg1MC4wJSksIEZhaWxlZDogNSwg
-Tm90IFJ1bjogMgpPdmVyYWxsIGV4ZWN1dGlvbiB0aW1lOiAzMC41IHNlY29uZHMK
---001a11c2623e3a8a0c050ced37d6--
+
+So this is what got merged, the rest does not apply anymore due to recent code 
+changes:
+
+
+
+From: Bruno E O Meneguele <bmeneguele@gmail.com>
+Date: Sat, 17 Jan 2015 17:03:30 +0100
+Subject: [PATCH] char/tpm: fixed white spaces coding style issues
+
+Fixed some coding style issues reported by checkpatch.
+
+Signed-off-by: Bruno E O Meneguele <bmeneguele@gmail.com>
+[phuewe: ported to latest code]
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ drivers/char/tpm/tpm.h              | 6 +++---
+ drivers/char/tpm/tpm_i2c_stm_st33.c | 2 +-
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
+index cc421cf..7b0727c 100644
+--- a/drivers/char/tpm/tpm.h
++++ b/drivers/char/tpm/tpm.h
+@@ -10,13 +10,13 @@
+  * Maintained by: <tpmdd-devel@lists.sourceforge.net>
+  *
+  * Device driver for TCG/TCPA TPM (trusted platform module).
+- * Specifications at www.trustedcomputinggroup.org	 
++ * Specifications at www.trustedcomputinggroup.org
+  *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+  * published by the Free Software Foundation, version 2 of the
+  * License.
+- * 
++ *
+  */
+ #include <linux/module.h>
+ #include <linux/delay.h>
+@@ -141,7 +141,7 @@ struct tpm_vendor_specific {
+ 	u16 manufacturer_id;
+ };
+ 
+-#define TPM_VPRIV(c)	(c)->vendor.priv
++#define TPM_VPRIV(c)     ((c)->vendor.priv)
+ 
+ #define TPM_VID_INTEL    0x8086
+ #define TPM_VID_WINBOND  0x1050
+diff --git a/drivers/char/tpm/tpm_i2c_stm_st33.c 
+b/drivers/char/tpm/tpm_i2c_stm_st33.c
+index dbab8d0..612845b 100644
+--- a/drivers/char/tpm/tpm_i2c_stm_st33.c
++++ b/drivers/char/tpm/tpm_i2c_stm_st33.c
+@@ -777,7 +777,7 @@ tpm_stm_i2c_probe(struct i2c_client *client, const struct 
+i2c_device_id *id)
+ 				IRQF_TRIGGER_HIGH,
+ 				"TPM SERIRQ management", chip);
+ 		if (ret < 0) {
+-			dev_err(chip->pdev , "TPM SERIRQ signals %d not available\n",
++			dev_err(chip->pdev, "TPM SERIRQ signals %d not available\n",
+ 				client->irq);
+ 			goto _tpm_clean_answer;
+ 		}
+-- 
+2.0.5
+
