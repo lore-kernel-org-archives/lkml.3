@@ -1,64 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751858AbbARB67 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jan 2015 20:58:59 -0500
-Received: from www.osadl.org ([62.245.132.105]:33562 "EHLO www.osadl.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751225AbbARB66 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jan 2015 20:58:58 -0500
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: Tony Olech <tony.olech@elandigitalsystems.com>
-Cc: Chris Ball <chris@printf.net>, Ulf Hansson <ulf.hansson@linaro.org>,
-        linux-mmc@vger.kernel.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Nicholas Mc Guire <der.herr@hofr.at>
-Subject: [PATCH] mmc: vub300: remove unreachable return value handling
-Date: Sun, 18 Jan 2015 02:51:02 +0100
-Message-Id: <1421545862-24102-1-git-send-email-der.herr@hofr.at>
-X-Mailer: git-send-email 1.7.10.4
+	id S1751910AbbARCE4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jan 2015 21:04:56 -0500
+Received: from mail-pd0-f172.google.com ([209.85.192.172]:65091 "EHLO
+	mail-pd0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751225AbbARCEy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Jan 2015 21:04:54 -0500
+From: mathieu.poirier@linaro.org
+To: forest@alittletooquiet.net, gregkh@linuxfoundation.org
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        mathieu.poirier@linaro.org
+Subject: [PATCH 0/4] staging: vt6655: fixing various sparse problems
+Date: Sat, 17 Jan 2015 19:04:22 -0700
+Message-Id: <1421546666-21461-1-git-send-email-mathieu.poirier@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
----
+From: Mathieu Poirier <mathieu.poirier@linaro.org>
 
-The return value of wait_for_completion_timeout is unsigned long, 
-as it is used here for wait_for_completion_timeout only the type 
-of commretval was changed to unsigned long.
+>From a v3.19-rc4 baseline sparse finds the following errors:
 
-As wait_for_completion_timeout does not return negative values
-the commretval < 0 case is not reachable and can be removed.
+  LD      drivers/staging/vt6655/built-in.o
+  CHECK   drivers/staging/vt6655/device_main.c
+drivers/staging/vt6655/device_main.c:1503:25: warning: incorrect type in argument 1 (different address spaces)
+drivers/staging/vt6655/device_main.c:1503:25:    expected void [noderef] <asn:2>*<noident>
+drivers/staging/vt6655/device_main.c:1503:25:    got struct vnt_private *
+drivers/staging/vt6655/device_main.c:1503:25: warning: incorrect type in argument 2 (different address spaces)
+drivers/staging/vt6655/device_main.c:1503:25:    expected void [noderef] <asn:2>*<noident>
+drivers/staging/vt6655/device_main.c:1503:25:    got struct vnt_private *
+drivers/staging/vt6655/device_main.c:1505:25: warning: incorrect type in argument 1 (different address spaces)
+drivers/staging/vt6655/device_main.c:1505:25:    expected void [noderef] <asn:2>*<noident>
+drivers/staging/vt6655/device_main.c:1505:25:    got struct vnt_private *
+drivers/staging/vt6655/device_main.c:1505:25: warning: incorrect type in argument 2 (different address spaces)
+drivers/staging/vt6655/device_main.c:1505:25:    expected void [noderef] <asn:2>*<noident>
+drivers/staging/vt6655/device_main.c:1505:25:    got struct vnt_private *
+drivers/staging/vt6655/device_main.c:1672:5: warning: symbol 'vnt_init' was not declared. Should it be static?
+  CC [M]  drivers/staging/vt6655/device_main.o
+  CHECK   drivers/staging/vt6655/card.c
+  CC [M]  drivers/staging/vt6655/card.o
+  CHECK   drivers/staging/vt6655/channel.c
+  CC [M]  drivers/staging/vt6655/channel.o
+  CHECK   drivers/staging/vt6655/mac.c
+drivers/staging/vt6655/mac.c:162:6: warning: symbol 'MACvGetShortRetryLimit' was not declared. Should it be static?
+  CC [M]  drivers/staging/vt6655/mac.o
+  CHECK   drivers/staging/vt6655/baseband.c
+drivers/staging/vt6655/baseband.c:2180:45: warning: incorrect type in argument 1 (different address spaces)
+drivers/staging/vt6655/baseband.c:2180:45:    expected struct vnt_private *priv
+drivers/staging/vt6655/baseband.c:2180:45:    got void [noderef] <asn:2>*dwIoBase
+  CC [M]  drivers/staging/vt6655/baseband.o
+  CHECK   drivers/staging/vt6655/rxtx.c
 
-This was only compile-tested for x86_64_defconfig + CONFIG_MMC=m,
-CONFIG_MMC_VUB300=m
 
-Patch is against 3.19.0-rc4 -next-20150116
+The following pachset provides a fix for the above.
 
- drivers/mmc/host/vub300.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+Mathieu Poirier (4):
+  staging: vt6655: correcting function declaration sparse error
+  staging: vt6655: removing dead function as reported by sparse
+  staging: vt6655: fix wrong parameter as reported by sparse
+  staging: vt6655: correcting parameter related sparse error
 
-diff --git a/drivers/mmc/host/vub300.c b/drivers/mmc/host/vub300.c
-index 4262296..fbabbb8 100644
---- a/drivers/mmc/host/vub300.c
-+++ b/drivers/mmc/host/vub300.c
-@@ -659,7 +659,7 @@ static void __vub300_irqpoll_response(struct vub300_mmc_host *vub300)
- static void __do_poll(struct vub300_mmc_host *vub300)
- {
- 	/* cmd_mutex is held by vub300_pollwork_thread */
--	long commretval;
-+	unsigned long commretval;
- 	mod_timer(&vub300->inactivity_timer, jiffies + HZ);
- 	init_completion(&vub300->irqpoll_complete);
- 	send_irqpoll(vub300);
-@@ -671,8 +671,6 @@ static void __do_poll(struct vub300_mmc_host *vub300)
- 		vub300->usb_timed_out = 1;
- 		usb_kill_urb(vub300->command_out_urb);
- 		usb_kill_urb(vub300->command_res_urb);
--	} else if (commretval < 0) {
--		vub300_queue_poll_work(vub300, 1);
- 	} else { /* commretval > 0 */
- 		__vub300_irqpoll_response(vub300);
- 	}
+ drivers/staging/vt6655/baseband.c    |  2 +-
+ drivers/staging/vt6655/device_main.c |  8 +++++---
+ drivers/staging/vt6655/mac.c         | 19 -------------------
+ 3 files changed, 6 insertions(+), 23 deletions(-)
+
 -- 
-1.7.10.4
+1.9.1
 
