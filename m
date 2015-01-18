@@ -1,77 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752094AbbASJIX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 04:08:23 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:51496 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751404AbbASJIV (ORCPT
+	id S1751467AbbARXZg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 18:25:36 -0500
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:55744 "EHLO
+	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221AbbARXZf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 04:08:21 -0500
-Date: Sun, 18 Jan 2015 15:22:55 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Sasha Levin <sasha.levin@oracle.com>
-Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: Re: rcu, sched: WARNING: CPU: 30 PID: 23771 at
- kernel/rcu/tree_plugin.h:337 rcu_read_unlock_special+0x369/0x550()
-Message-ID: <20150118232255.GD9719@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <54BBC084.2030604@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54BBC084.2030604@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15011909-0033-0000-0000-0000036042B8
+	Sun, 18 Jan 2015 18:25:35 -0500
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+To: platform-driver-x86@vger.kernel.org
+Cc: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
+        Darren Hart <dvhart@infradead.org>,
+        Corentin Chary <corentin.chary@gmail.com>,
+        acpi4asus-user@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        kernel@savoirfairelinux.com
+Subject: [PATCH v2 1/3] asus-laptop: fix is_visible return value
+Date: Sun, 18 Jan 2015 18:25:24 -0500
+Message-Id: <1421623526-20555-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+X-Mailer: git-send-email 2.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 18, 2015 at 09:17:40AM -0500, Sasha Levin wrote:
-> Hi Paul, Lai,
-> 
-> While fuzzing with trinity inside a KVM tools guest running the latest -next
-> kernel, I've stumbled on the following spew:
-> 
-> [  598.188036] WARNING: CPU: 30 PID: 23771 at kernel/rcu/tree_plugin.h:337 rcu_read_unlock_special+0x369/0x550()
-> [  598.188036] Modules linked in:
-> [  598.188036] CPU: 30 PID: 23771 Comm: trinity-c118 Not tainted 3.19.0-rc4-next-20150116-sasha-00055-gb8e1507-dirty #1745
-> [  598.188036]  ffffffff926e52dc ffff8801b4403c38 ffffffff91439fb2 0000000000000000
-> [  598.188036]  0000000000000000 ffff8801b4403c78 ffffffff8e159e1a ffff8801b4403c58
-> [  598.188036]  0000000000000000 ffff88002f093000 00000000ffffffff ffff8801b23b9290
-> [  598.188036] Call Trace:
-> [  598.188036] <IRQ> dump_stack (lib/dump_stack.c:52)
-> [  598.212152] warn_slowpath_common (kernel/panic.c:447)
-> [  598.212152] warn_slowpath_null (kernel/panic.c:481)
-> [  598.212152] rcu_read_unlock_special (kernel/rcu/tree_plugin.h:337 (discriminator 9))
-> [  598.212152] ? select_task_rq_fair (include/linux/rcupdate.h:889 kernel/sched/fair.c:4740)
-> [  598.212152] __rcu_read_unlock (kernel/rcu/update.c:97)
-> [  598.212152] select_task_rq_fair (kernel/sched/fair.c:4805)
-> [  598.212152] ? select_task_rq_fair (include/linux/rcupdate.h:889 kernel/sched/fair.c:4740)
-> [  598.212152] ? try_to_wake_up (kernel/sched/core.c:1701)
-> [  598.212152] try_to_wake_up (kernel/sched/core.c:1415 kernel/sched/core.c:1729)
-> [  598.212152] wake_up_process (kernel/sched/core.c:1797 (discriminator 3))
-> [  598.212152] hrtimer_wakeup (kernel/time/hrtimer.c:1490)
-> [  598.212152] __run_hrtimer (kernel/time/hrtimer.c:1218 (discriminator 3))
-> [  598.212152] ? hrtimer_interrupt (kernel/time/hrtimer.c:622 kernel/time/hrtimer.c:1254)
-> [  598.212152] ? hrtimer_get_res (kernel/time/hrtimer.c:1480)
-> [  598.212152] hrtimer_interrupt (kernel/time/hrtimer.c:1307)
-> [  598.212152] local_apic_timer_interrupt (arch/x86/kernel/apic/apic.c:921)
-> [  598.212152] smp_apic_timer_interrupt (./arch/x86/include/asm/apic.h:660 arch/x86/kernel/apic/apic.c:945)
-> [  598.212152] apic_timer_interrupt (arch/x86/kernel/entry_64.S:983)
-> [  598.212152] <EOI> ? context_tracking_user_enter (./arch/x86/include/asm/paravirt.h:809 kernel/context_tracking.c:106)
-> [  598.212152] syscall_trace_leave (arch/x86/kernel/ptrace.c:1640)
-> [  598.212152] int_check_syscall_exit_work (arch/x86/kernel/entry_64.S:577)
+With a Lucid platform, asus_sysfs_is_visible() returned a boolean for
+ls_switch and ls_level attributes.
 
-So RCU believes that an RCU read-side critical section that ended within
-an interrupt handler (in this case, an hrtimer) somehow got preempted.
-Which is not supposed to happen.
+Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+---
+ drivers/platform/x86/asus-laptop.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Do you have CONFIG_PROVE_RCU enabled?  If not, could you please enable it
-and retry?
-
-							Thanx, Paul
+diff --git a/drivers/platform/x86/asus-laptop.c b/drivers/platform/x86/asus-laptop.c
+index f71700e..00f5e82 100644
+--- a/drivers/platform/x86/asus-laptop.c
++++ b/drivers/platform/x86/asus-laptop.c
+@@ -1616,7 +1616,7 @@ static umode_t asus_sysfs_is_visible(struct kobject *kobj,
+ 		else
+ 			goto normal;
+ 
+-		return supported;
++		return supported ? attr->mode : 0;
+ 	}
+ 
+ normal:
+-- 
+2.2.2
 
