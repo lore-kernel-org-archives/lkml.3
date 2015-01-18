@@ -1,287 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752830AbbARRyN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 12:54:13 -0500
-Received: from mail-ig0-f182.google.com ([209.85.213.182]:43883 "EHLO
-	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751479AbbARRyK (ORCPT
+	id S1752677AbbARSAM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 13:00:12 -0500
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:44507 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751223AbbARSAJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 12:54:10 -0500
+	Sun, 18 Jan 2015 13:00:09 -0500
+Date: Sun, 18 Jan 2015 18:00:02 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        linux-pm@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-api@vger.kernel.org
+Subject: Re: [PATCH v4 0/4] power: Add max77693 charger driver
+Message-ID: <20150118180002.GJ3574@x1>
+References: <1420453019-28614-1-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <1AE640813FDE7649BE1B193DEA596E88026B79CC@SHSMSX101.ccr.corp.intel.com>
-References: <1420384974-11745-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
-	<1AE640813FDE7649BE1B193DEA596E88026B7475@SHSMSX101.ccr.corp.intel.com>
-	<CAKXHbyN4ypE3W-exxYUy_TW8HLuBc3hbdwgcX7WkN9mXM5w76Q@mail.gmail.com>
-	<1AE640813FDE7649BE1B193DEA596E88026B79CC@SHSMSX101.ccr.corp.intel.com>
-Date: Sun, 18 Jan 2015 18:54:08 +0100
-Message-ID: <CAKXHbyMDH-j362ebMio46xDOXaEyPGaHrC+xY4o4xOC1Wm_-Cw@mail.gmail.com>
-Subject: Re: [PATCH] acpica: utpredef: Remove some unused functions
-From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
-To: "Zheng, Lv" <lv.zheng@intel.com>
-Cc: "Moore, Robert" <robert.moore@intel.com>,
-        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
-        Len Brown <lenb@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "devel@acpica.org" <devel@acpica.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1420453019-28614-1-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2015-01-15 3:00 GMT+01:00 Zheng, Lv <lv.zheng@intel.com>:
-> Hi,
->
->> From: Rickard Strandqvist [mailto:rickard_strandqvist@spectrumdigital.se]
->> Sent: Thursday, January 15, 2015 6:50 AM
->>
->> 2015-01-14 9:55 GMT+01:00 Zheng, Lv <lv.zheng@intel.com>:
->> > Hi, Rickard
->> >
->> > The functions below seem already marked by "ACPI_ASL_COMPILER || ACPI_HELP_APP".
->> > How did you detect them as used functions?
->
-> Do you mean something like this?
->
-> <?xml version="1.0"?>
-> <def>
->   <define name="ACPI_ASL_COMPILER" value="0"/>
->   <define name="ACPI_HELP_APP" value="0"/>
-> </def>
->
-> Can Cppcheck automatically remove code blocks depending on the define settings during preprocessor stage?
->
-> Thanks and best regards
-> -Lv
->
->> >
->> > Thanks
->> > -Lv
->> >
->> >
->> >> -----Original Message-----
->> >> From: Rickard Strandqvist [mailto:rickard_strandqvist@spectrumdigital.se]
->> >> Sent: Sunday, January 04, 2015 11:23 PM
->> >> To: Moore, Robert; Zheng, Lv
->> >> Cc: Rickard Strandqvist; Wysocki, Rafael J; Len Brown; linux-acpi@vger.kernel.org; devel@acpica.org; linux-kernel@vger.kernel.org
->> >> Subject: [PATCH] acpica: utpredef: Remove some unused functions
->> >>
->> >> Removes some functions that are not used anywhere:
->> >> acpi_ut_get_resource_bit_width() acpi_ut_display_predefined_method() acpi_ut_match_resource_name()
->> >>
->> >> This was partially found by using a static code analysis program called cppcheck.
->> >>
->> >> Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
->> >> ---
->> >>  drivers/acpi/acpica/acutils.h  |    9 ---
->> >>  drivers/acpi/acpica/utpredef.c |  134 ----------------------------------------
->> >>  2 files changed, 143 deletions(-)
->> >>
->> >> diff --git a/drivers/acpi/acpica/acutils.h b/drivers/acpi/acpica/acutils.h
->> >> index 486d342..9b3fab1 100644
->> >> --- a/drivers/acpi/acpica/acutils.h
->> >> +++ b/drivers/acpi/acpica/acutils.h
->> >> @@ -502,17 +502,8 @@ const union acpi_predefined_info *acpi_ut_get_next_predefined_method(const union
->> >>
->> >>  const union acpi_predefined_info *acpi_ut_match_predefined_method(char *name);
->> >>
->> >> -const union acpi_predefined_info *acpi_ut_match_resource_name(char *name);
->> >> -
->> >> -void
->> >> -acpi_ut_display_predefined_method(char *buffer,
->> >> -                               const union acpi_predefined_info *this_name,
->> >> -                               u8 multi_line);
->> >> -
->> >>  void acpi_ut_get_expected_return_types(char *buffer, u32 expected_btypes);
->> >>
->> >> -u32 acpi_ut_get_resource_bit_width(char *buffer, u16 types);
->> >> -
->> >>  /*
->> >>   * utstate - Generic state creation/cache routines
->> >>   */
->> >> diff --git a/drivers/acpi/acpica/utpredef.c b/drivers/acpi/acpica/utpredef.c
->> >> index db30caf..f1ff33c 100644
->> >> --- a/drivers/acpi/acpica/utpredef.c
->> >> +++ b/drivers/acpi/acpica/utpredef.c
->> >> @@ -209,105 +209,6 @@ static const char *ut_resource_type_names[] = {
->> >>
->> >>  /*******************************************************************************
->> >>   *
->> >> - * FUNCTION:    acpi_ut_match_resource_name
->> >> - *
->> >> - * PARAMETERS:  name                - Name to find
->> >> - *
->> >> - * RETURN:      Pointer to entry in the resource table. NULL indicates not
->> >> - *              found.
->> >> - *
->> >> - * DESCRIPTION: Check an object name against the predefined resource
->> >> - *              descriptor object list.
->> >> - *
->> >> - ******************************************************************************/
->> >> -
->> >> -const union acpi_predefined_info *acpi_ut_match_resource_name(char *name)
->> >> -{
->> >> -     const union acpi_predefined_info *this_name;
->> >> -
->> >> -     /* Quick check for a predefined name, first character must be underscore */
->> >> -
->> >> -     if (name[0] != '_') {
->> >> -             return (NULL);
->> >> -     }
->> >> -
->> >> -     /* Search info table for a predefined method/object name */
->> >> -
->> >> -     this_name = acpi_gbl_resource_names;
->> >> -     while (this_name->info.name[0]) {
->> >> -             if (ACPI_COMPARE_NAME(name, this_name->info.name)) {
->> >> -                     return (this_name);
->> >> -             }
->> >> -
->> >> -             this_name++;
->> >> -     }
->> >> -
->> >> -     return (NULL);          /* Not found */
->> >> -}
->> >> -
->> >> -/*******************************************************************************
->> >> - *
->> >> - * FUNCTION:    acpi_ut_display_predefined_method
->> >> - *
->> >> - * PARAMETERS:  buffer              - Scratch buffer for this function
->> >> - *              this_name           - Entry in the predefined method/name table
->> >> - *              multi_line          - TRUE if output should be on >1 line
->> >> - *
->> >> - * RETURN:      None
->> >> - *
->> >> - * DESCRIPTION: Display information about a predefined method. Number and
->> >> - *              type of the input arguments, and expected type(s) for the
->> >> - *              return value, if any.
->> >> - *
->> >> - ******************************************************************************/
->> >> -
->> >> -void
->> >> -acpi_ut_display_predefined_method(char *buffer,
->> >> -                               const union acpi_predefined_info *this_name,
->> >> -                               u8 multi_line)
->> >> -{
->> >> -     u32 arg_count;
->> >> -
->> >> -     /*
->> >> -      * Get the argument count and the string buffer
->> >> -      * containing all argument types
->> >> -      */
->> >> -     arg_count = acpi_ut_get_argument_types(buffer,
->> >> -                                            this_name->info.argument_list);
->> >> -
->> >> -     if (multi_line) {
->> >> -             printf("      ");
->> >> -     }
->> >> -
->> >> -     printf("%4.4s    Requires %s%u argument%s",
->> >> -            this_name->info.name,
->> >> -            (this_name->info.argument_list & ARG_COUNT_IS_MINIMUM) ?
->> >> -            "(at least) " : "", arg_count, arg_count != 1 ? "s" : "");
->> >> -
->> >> -     /* Display the types for any arguments */
->> >> -
->> >> -     if (arg_count > 0) {
->> >> -             printf(" (%s)", buffer);
->> >> -     }
->> >> -
->> >> -     if (multi_line) {
->> >> -             printf("\n    ");
->> >> -     }
->> >> -
->> >> -     /* Get the return value type(s) allowed */
->> >> -
->> >> -     if (this_name->info.expected_btypes) {
->> >> -             acpi_ut_get_expected_return_types(buffer,
->> >> -                                               this_name->info.
->> >> -                                               expected_btypes);
->> >> -             printf("  Return value types: %s\n", buffer);
->> >> -     } else {
->> >> -             printf("  No return value\n");
->> >> -     }
->> >> -}
->> >> -
->> >> -/*******************************************************************************
->> >> - *
->> >>   * FUNCTION:    acpi_ut_get_argument_types
->> >>   *
->> >>   * PARAMETERS:  buffer              - Where to return the formatted types
->> >> @@ -361,39 +262,4 @@ static u32 acpi_ut_get_argument_types(char *buffer, u16 argument_types)
->> >>       return (arg_count);
->> >>  }
->> >>
->> >> -/*******************************************************************************
->> >> - *
->> >> - * FUNCTION:    acpi_ut_get_resource_bit_width
->> >> - *
->> >> - * PARAMETERS:  buffer              - Where the formatted string is returned
->> >> - *              types               - Bitfield of expected data types
->> >> - *
->> >> - * RETURN:      Count of return types. Formatted string in Buffer.
->> >> - *
->> >> - * DESCRIPTION: Format the resource bit widths into a printable string.
->> >> - *
->> >> - ******************************************************************************/
->> >> -
->> >> -u32 acpi_ut_get_resource_bit_width(char *buffer, u16 types)
->> >> -{
->> >> -     u32 i;
->> >> -     u16 sub_index;
->> >> -     u32 found;
->> >> -
->> >> -     *buffer = 0;
->> >> -     sub_index = 1;
->> >> -     found = 0;
->> >> -
->> >> -     for (i = 0; i < NUM_RESOURCE_WIDTHS; i++) {
->> >> -             if (types & 1) {
->> >> -                     strcat(buffer, &(ut_resource_type_names[i][sub_index]));
->> >> -                     sub_index = 0;
->> >> -                     found++;
->> >> -             }
->> >> -
->> >> -             types >>= 1;
->> >> -     }
->> >> -
->> >> -     return (found);
->> >> -}
->> >>  #endif
->> >> --
->> >> 1.7.10.4
->> >
->>
->> Hi
->>
->> Cppcheck running depending on the settings all define on and off, if
->> that's what you wonder.
->>
->> Otherwise, I did a little deeper explanation how I made did this with
->> cppcheck, and same scripts.
->> https://lkml.org/lkml/2015/1/9/531
->>
->>
->> Kind regards
->> Rickard Strandqvist
+Tell us what you need?
 
+> Changes since v3
+> ================
+> 1. Patch 3/4: Don't create platform data structure for charger settings
+>    because driver won't be used on non-DT SoCs (its for Exynos based
+>    Trats2).
+> 2. Patch 3/4: Drop Sebastian's ack [1] because of change above.
+> 
+> Changes since v2
+> ================
+> 1. Add ack from Sebastian Reichel (charger driver).
+> 2. Drop patch "mfd: max77693: Map charger device to its own of_node"
+>    (applied by Lee Jones).
+> 
+> 
+> Changes since v1
+> ================
+> 1. Add patch 2/5: mfd: max77693: Map charger device to its own of_node
+>    (forgot to send it in v1)
+> 2. Remove patches for DTS and configs. I'll send them later.
+> 3. Add ack from Lee Jones (patch 3/5).
+> 
+> 
+> Description
+> ===========
+> The patchset adds max77693 charger driver present on Trats2 board
+> (and Galaxy S III). The driver configures battery charger and exposes
+> power supply interface.
+> 
+> Driver is necessary to provide full charging stack on Trats2 device
+> (extcon, charger-manager etc.).
+> 
+> [1] https://lkml.org/lkml/2014/10/27/774
+> 
+> 
+> Best regards,
+> Krzysztof
+> 
+> 
+> 
+> Krzysztof Kozlowski (4):
+>   devicetree: power/mfd: max77693: Document new bindings for charger
+>   mfd: max77693: Add defines for MAX77693 charger driver
+>   power: max77693: Add charger driver for Maxim 77693
+>   Documentation: power: max77693-charger: Document exported sysfs entry
+> 
+>  Documentation/ABI/testing/sysfs-class-power        |  42 ++
+>  Documentation/devicetree/bindings/mfd/max77693.txt |  45 ++
+>  drivers/power/Kconfig                              |   6 +
+>  drivers/power/Makefile                             |   1 +
+>  drivers/power/max77693_charger.c                   | 758 +++++++++++++++++++++
+>  include/linux/mfd/max77693-private.h               | 108 +++
+>  6 files changed, 960 insertions(+)
+>  create mode 100644 drivers/power/max77693_charger.c
+> 
 
-Hi Lv
-
-Interesting question, myself have not had reason to investigate it.
-
-By default cppcheck will check all preprocessor configurations.
-I'm not sure if you can do so via an xml file, but you can give
-arguments to cppcheck define and unset with the -D and -U
-Ex:
-check all configurations when macro A is defined
-cppcheck -DA --force file.c
-
-Se the manual for cppcheck here see: "Chapter 3. Preprocessor configurations"
-
-http://cppcheck.sourceforge.net/manual.pdf
-
-
-Kind regards
-Rickard Strandqvist
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
