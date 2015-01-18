@@ -1,114 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752750AbbARLkj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 06:40:39 -0500
-Received: from mail-lb0-f170.google.com ([209.85.217.170]:49222 "EHLO
-	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752608AbbARLkA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 06:40:00 -0500
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-To: linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Peter Korsgaard <jacmet@sunsite.dk>
-Subject: [PATCH 8/8] gpio/mpc8xxx: Use of_mm_gpiochip_remove
-Date: Sun, 18 Jan 2015 12:39:33 +0100
-Message-Id: <1421581173-28416-9-git-send-email-ricardo.ribalda@gmail.com>
-X-Mailer: git-send-email 2.1.4
-In-Reply-To: <1421581173-28416-1-git-send-email-ricardo.ribalda@gmail.com>
-References: <1421581173-28416-1-git-send-email-ricardo.ribalda@gmail.com>
+	id S1753031AbbARLnH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 06:43:07 -0500
+Received: from sauhun.de ([89.238.76.85]:53965 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751586AbbARLnD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Jan 2015 06:43:03 -0500
+Date: Sun, 18 Jan 2015 12:42:55 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>
+Cc: Arend van Spriel <arend@broadcom.com>, Ray Jui <rjui@broadcom.com>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Christian Daudt <bcm@fixthebug.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Scott Branden <sbranden@broadcom.com>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Matt Porter <mporter@linaro.org>, linux-kernel@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>,
+        bcm-kernel-feedback-list@broadcom.com, linux-i2c@vger.kernel.org,
+        Grant Likely <grant.likely@linaro.org>,
+        Kumar Gala <galak@codeaurora.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v5 2/3] i2c: iproc: Add Broadcom iProc I2C Driver
+Message-ID: <20150118114255.GB1113@katana>
+References: <rjui@broadcom.com>
+ <1421451737-7107-1-git-send-email-rjui@broadcom.com>
+ <1421451737-7107-3-git-send-email-rjui@broadcom.com>
+ <54BB795C.6040402@broadcom.com>
+ <20150118094741.GE22880@pengutronix.de>
+ <20150118110658.GA1113@katana>
+ <20150118111759.GG22880@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="xgyAXRrhYN0wYx8y"
+Content-Disposition: inline
+In-Reply-To: <20150118111759.GG22880@pengutronix.de>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since d621e8bae5ac9c67 (Create of_mm_gpiochip_remove), there is a
-counterpart for of_mm_gpiochip_add.
 
-This patch implements the remove function of the driver making use of
-it.
+--xgyAXRrhYN0wYx8y
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Cc: Linus Walleij <linus.walleij@linaro.org>
-Cc: Alexandre Courbot <gnurou@gmail.com>
-Cc: Peter Korsgaard <jacmet@sunsite.dk>
-Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
----
- drivers/gpio/gpio-mpc8xxx.c | 28 +++++++++++++++++++++++-----
- 1 file changed, 23 insertions(+), 5 deletions(-)
+On Sun, Jan 18, 2015 at 12:17:59PM +0100, Uwe Kleine-K=C3=B6nig wrote:
+> Hello Wolfram,
+>=20
+> On Sun, Jan 18, 2015 at 12:06:58PM +0100, Wolfram Sang wrote:
+> > On Sun, Jan 18, 2015 at 10:47:41AM +0100, Uwe Kleine-K=C3=B6nig wrote:
+> > > On Sun, Jan 18, 2015 at 10:14:04AM +0100, Arend van Spriel wrote:
+> > > > On 01/17/15 00:42, Ray Jui wrote:
+> > > > >+	complete_all(&iproc_i2c->done);
+> > > >=20
+> > > > Looking over this code it seems to me there is always a single
+> > > > process waiting for iproc_i2c->done to complete. So using complete()
+> > > > here would suffice.
+> > > Yeah, there is always only a single thread waiting. That means both
+> > > complete and complete_all are suitable. AFAIK there is no reason to p=
+ick
+> > > one over the other in this case.
+> >=20
+> > Clarity?
+> And which do you consider more clear? complete_all might result in the
+> question: "Is there >1 waiter?" and complete might yield to "What about
+> the other waiters?". If you already know there is only one, both are on
+> par on clarity. Might only be me?! I don't care much.
 
-diff --git a/drivers/gpio/gpio-mpc8xxx.c b/drivers/gpio/gpio-mpc8xxx.c
-index 57eb794..a6952ba3 100644
---- a/drivers/gpio/gpio-mpc8xxx.c
-+++ b/drivers/gpio/gpio-mpc8xxx.c
-@@ -40,6 +40,7 @@ struct mpc8xxx_gpio_chip {
- 	 */
- 	u32 data;
- 	struct irq_domain *irq;
-+	unsigned int irqn;
- 	const void *of_dev_id_data;
- };
- 
-@@ -350,13 +351,14 @@ static int mpc8xxx_probe(struct platform_device *pdev)
- 	struct of_mm_gpio_chip *mm_gc;
- 	struct gpio_chip *gc;
- 	const struct of_device_id *id;
--	unsigned hwirq;
- 	int ret;
- 
- 	mpc8xxx_gc = devm_kzalloc(&pdev->dev, sizeof(*mpc8xxx_gc), GFP_KERNEL);
- 	if (!mpc8xxx_gc)
- 		return -ENOMEM;
- 
-+	platform_set_drvdata(pdev, mpc8xxx_gc);
-+
- 	spin_lock_init(&mpc8xxx_gc->lock);
- 
- 	mm_gc = &mpc8xxx_gc->mm_gc;
-@@ -377,8 +379,8 @@ static int mpc8xxx_probe(struct platform_device *pdev)
- 	if (ret)
- 		return ret;
- 
--	hwirq = irq_of_parse_and_map(np, 0);
--	if (hwirq == NO_IRQ)
-+	mpc8xxx_gc->irqn = irq_of_parse_and_map(np, 0);
-+	if (mpc8xxx_gc->irqn == NO_IRQ)
- 		return 0;
- 
- 	mpc8xxx_gc->irq = irq_domain_add_linear(np, MPC8XXX_GPIO_PINS,
-@@ -394,14 +396,30 @@ static int mpc8xxx_probe(struct platform_device *pdev)
- 	out_be32(mm_gc->regs + GPIO_IER, 0xffffffff);
- 	out_be32(mm_gc->regs + GPIO_IMR, 0);
- 
--	irq_set_handler_data(hwirq, mpc8xxx_gc);
--	irq_set_chained_handler(hwirq, mpc8xxx_gpio_irq_cascade);
-+	irq_set_handler_data(mpc8xxx_gc->irqn, mpc8xxx_gc);
-+	irq_set_chained_handler(mpc8xxx_gc->irqn, mpc8xxx_gpio_irq_cascade);
-+
-+	return 0;
-+}
-+
-+static int mpc8xxx_remove(struct platform_device *pdev)
-+{
-+	struct mpc8xxx_gpio_chip *mpc8xxx_gc = platform_get_drvdata(pdev);
-+
-+	if (mpc8xxx_gc->irq) {
-+		irq_set_handler_data(mpc8xxx_gc->irqn, NULL);
-+		irq_set_chained_handler(mpc8xxx_gc->irqn, NULL);
-+		irq_domain_remove(mpc8xxx_gc->irq);
-+	}
-+
-+	of_mm_gpiochip_remove(&mpc8xxx_gc->mm_gc);
- 
- 	return 0;
- }
- 
- static struct platform_driver mpc8xxx_plat_driver = {
- 	.probe		= mpc8xxx_probe,
-+	.remove		= mpc8xxx_remove,
- 	.driver		= {
- 		.name = "gpio-mpc8xxx",
- 		.of_match_table	= mpc8xxx_gpio_ids,
--- 
-2.1.4
+It is minor, I agree: If I read complete_all, I assume there is
+something fishy if there is only one waiter. It doesn't match. It might
+work, but I'll wonder if this is accidently or intentionally.
 
+
+--xgyAXRrhYN0wYx8y
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUu5w/AAoJEBQN5MwUoCm2geUQAJEnu7R/+Jk/gusjSDqXbpJu
+CYFKdbI/TrT2YVaSMZBDeUAbv1/TPP3r0hrSxwRNHlUvaM/k/cCj62xm/CG9t2Xq
+7YEjjyAFa6jRWeumMbreNcjCLeS2KfeH3L/TNY6C6ZfUJRFlAMyisYJc/Pn4DHdA
+vsYSik2pPYF9Q0E15ZxrRiO4ixg3BuPwjbyVfhl0XdcjJafQ1WpetCz4HTxD5SJ5
+rOA+sqTeClIQ6HoNalk1HytZdarN+i//C8q+WrIzkDBQA9E09CSkaErwYpqiaDU+
+PzfdCzZC+wo9+/Qx0c4G+XTeKyMAi7+Qupp+ckUHQI80QIgT6tb8UB6PLSnX212f
+YQVa0dnD1yUMrxwicKDCUholu5OeTmd1YyEYmIWIPZyb3xNwDPp5cs5pLu9vlTOi
+Xu6Dw4bqxWQBeKG/RbBTaGunrWA0ALquumya81p6mKhvnCxlWd8B70hdjitD2OXT
+TU2JugP1s2SV7LAEnFLVPH9IsoJQMGyNgea+uqBaO6shWP68/SryDhJuFRQxvJXY
+2sJY22kOG1YIfQCwIRRymxTGlhRmBkU3b4yWvPgTxKfJQNj4rhgOMeNjUsc8Kcdw
+enZVJRV7RCrMEtGbt3Cuk087DI0MzjBcdp+EXuP3MxZoTUf8C3KaiKsMK/4/WtWK
+g4tJdmBigKm9ndgaVRRG
+=KVgA
+-----END PGP SIGNATURE-----
+
+--xgyAXRrhYN0wYx8y--
