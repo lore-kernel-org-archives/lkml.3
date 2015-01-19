@@ -1,59 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752068AbbASR6l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 12:58:41 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:45253 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751535AbbASR6j (ORCPT
+	id S1752312AbbASR7N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 12:59:13 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:39468 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752087AbbASR7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 12:58:39 -0500
-Date: Mon, 19 Jan 2015 09:58:35 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-mtd@lists.infradead.org, LKML <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH] MTD: Deletion of checks before the function call
- "iounmap"
-Message-ID: <20150119175835.GH9759@ld-irv-0074>
-References: <530C5E18.1020800@users.sourceforge.net>
- <alpine.DEB.2.10.1402251014170.2080@hadrien>
- <530CD2C4.4050903@users.sourceforge.net>
- <alpine.DEB.2.10.1402251840450.7035@hadrien>
- <530CF8FF.8080600@users.sourceforge.net>
- <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
- <530DD06F.4090703@users.sourceforge.net>
- <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
- <5317A59D.4@users.sourceforge.net>
- <54BBE87C.9020705@users.sourceforge.net>
+	Mon, 19 Jan 2015 12:59:11 -0500
+Date: Mon, 19 Jan 2015 20:58:58 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Vitaly Kuznetsov <vkuznets@redhat.com>
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>, devel@linuxdriverproject.org,
+        Jason Wang <jasowang@redhat.com>,
+        Haiyang Zhang <haiyangz@microsoft.com>, linux-kernel@vger.kernel.org,
+        Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>
+Subject: Re: [PATCH v2 1/3] Drivers: hv: check vmbus_device_create() return
+ value in vmbus_process_offer()
+Message-ID: <20150119175857.GE6456@mwanda>
+References: <1421686573-12771-1-git-send-email-vkuznets@redhat.com>
+ <1421686573-12771-2-git-send-email-vkuznets@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54BBE87C.9020705@users.sourceforge.net>
+In-Reply-To: <1421686573-12771-2-git-send-email-vkuznets@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 18, 2015 at 06:08:12PM +0100, SF Markus Elfring wrote:
-> From: Markus Elfring <elfring@users.sourceforge.net>
-> Date: Sun, 18 Jan 2015 17:30:23 +0100
+On Mon, Jan 19, 2015 at 05:56:11PM +0100, Vitaly Kuznetsov wrote:
+> vmbus_device_create() result is not being checked in vmbus_process_offer() and
+> it can fail if kzalloc() fails. Add the check and do minor cleanup to avoid
+> additional duplication of "free_channel(); return;" block.
 > 
-> The iounmap() function performs also input parameter validation.
-> Thus the test around the call is not needed.
+> Reported-by: Jason Wang <jasowang@redhat.com>
+> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
 
-Is this guaranteed for all arch'es? I expect that it would be, but I see
-that, for instance, ARM allows replaceable iounmap() for
-subarchitectures. Also, I see checks for various sorts of static
-mappings in ARM and x86; these likely (always?) cover the NULL case, but
-they're not always straightforward.
+"out" is always a bad name for a label.  It's too vague.  It implies
+that the code uses "One Err" style error handling which is bug prone and
+I've ranted about that in the past so I won't here.  This kind of coding
+is buggier than direct returns.  But recently I've been looking at bugs
+where we return zero where the code should return a negative error code
+and, wow, do I hate "out" labels!
 
-Anyway, I'm essentially saying that I'd like to be 100% sure we have a
-guarantee before dropping all these.
+	if (function_whatever(xxx))
+		goto out;
 
-> This issue was detected by using the Coccinelle software.
+[ thousands of lines removed. ]
 
-What script? Hand-rolled I guess?
+out:
+	return ret;
 
-Brian
+Oh crap...  Did the coder mean to return success or not???
+
+If you use a direct return then the code looks like:
+
+	if (function_whatever(xxx))
+		return 0;
+
+In that case, you can immediately see that the coder typed "0"
+deliberately.  Direct returns are best.  I guess that's not directly
+related to this code.  But I didn't know that until I read to the bottom
+of the patch and I already had this rant prepared in my head ready to
+go...
+
+"error" is a crap label name because it doesn't tell you what the code
+does.  A better name is "err_free_chan" or something which talks about
+freeing the channel.
+
+regards,
+dan carpenter
+
