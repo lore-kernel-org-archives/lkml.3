@@ -1,276 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752184AbbASJp7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 04:45:59 -0500
-Received: from lb2-smtp-cloud2.xs4all.net ([194.109.24.25]:51602 "EHLO
-	lb2-smtp-cloud2.xs4all.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751963AbbASJp4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 04:45:56 -0500
-Message-ID: <54BCD238.3010904@xs4all.nl>
-Date: Mon, 19 Jan 2015 10:45:28 +0100
-From: Hans Verkuil <hverkuil@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
+	id S1752301AbbASJqT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 04:46:19 -0500
+Received: from mta-out1.inet.fi ([62.71.2.203]:47055 "EHLO jenni2.inet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751412AbbASJqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 04:46:17 -0500
+Date: Mon, 19 Jan 2015 11:45:53 +0200
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: linux-next: build failure after merge of the akpm-current tree
+Message-ID: <20150119094553.GA9332@node.dhcp.inet.fi>
+References: <20150119191718.365d4c98@canb.auug.org.au>
+ <20150119083817.GA3203@moon>
 MIME-Version: 1.0
-To: Hao Liang <hliang1025@gmail.com>
-CC: scott.jiang.linux@gmail.com, mchehab@osg.samsung.com,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hao.Liang@analog.com, adi-buildroot-devel@lists.sourceforge.net,
-        Steven Miao <realmz6@gmail.com>
-Subject: Re: [PATCH] BLACKFIN MEDIA DRIVER: rewrite the blackfin style of
- read/write into common style
-References: <1421218653-16165-1-git-send-email-hliang1025@gmail.com>	<54B8F752.3050600@xs4all.nl> <CAPig_tmCBeNQXqc+8-Sn+5h-Gq_XT8VBHmhtfy48eoAgm75bCw@mail.gmail.com>
-In-Reply-To: <CAPig_tmCBeNQXqc+8-Sn+5h-Gq_XT8VBHmhtfy48eoAgm75bCw@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150119083817.GA3203@moon>
+User-Agent: Mutt/1.5.23.1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/2015 04:13 AM, Hao Liang wrote:
-> Hi Hans,
+On Mon, Jan 19, 2015 at 11:38:17AM +0300, Cyrill Gorcunov wrote:
+> On Mon, Jan 19, 2015 at 07:17:18PM +1100, Stephen Rothwell wrote:
+> > Hi Andrew,
+> > 
+> > After merging the akpm tree, today's linux-next build (sparc defconfig)
+> > failed like this:
+> > 
+> > In file included from arch/sparc/include/asm/bug.h:20:0,
+> >                  from include/linux/bug.h:4,
+> >                  from include/linux/thread_info.h:11,
+> >                  from include/asm-generic/preempt.h:4,
+> >                  from arch/sparc/include/generated/asm/preempt.h:1,
+> >                  from include/linux/preempt.h:18,
+> >                  from include/linux/spinlock.h:50,
+> >                  from include/linux/mmzone.h:7,
+> >                  from include/linux/gfp.h:5,
+> >                  from include/linux/slab.h:14,
+> >                  from mm/mmap.c:12:
+> > mm/mmap.c: In function 'exit_mmap':
+> > mm/mmap.c:2858:46: error: 'PUD_SHIFT' undeclared (first use in this function)
+> >     round_up(FIRST_USER_ADDRESS, PUD_SIZE) >> PUD_SHIFT);
+> >                                               ^
+> > include/asm-generic/bug.h:86:25: note: in definition of macro 'WARN_ON'
+> >   int __ret_warn_on = !!(condition);    \
+> >                          ^
+> > mm/mmap.c:2858:46: note: each undeclared identifier is reported only once for each function it appears in
+> >     round_up(FIRST_USER_ADDRESS, PUD_SIZE) >> PUD_SHIFT);
+> >                                               ^
+> > include/asm-generic/bug.h:86:25: note: in definition of macro 'WARN_ON'
+> >   int __ret_warn_on = !!(condition);    \
+> >                          ^
+> > 
+> > Caused by commit b316feb3c37f ("mm: account pmd page tables to the
+> > process").  32 bit sparc does not seem to define PUD_SHIFT ...
+> > 
+> > I am not sure what the correct fix is here, so I just did the following
+> > patch for today.
+> > 
+> > From: Stephen Rothwell <sfr@canb.auug.org.au>
+> > Date: Mon, 19 Jan 2015 19:10:53 +1100
+> > Subject: [PATCH] mm: account pmd page tables to the process fix
+> > 
+> > Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> > ---
+> >  mm/mmap.c | 2 ++
+> >  1 file changed, 2 insertions(+)
+> > 
+> > diff --git a/mm/mmap.c b/mm/mmap.c
+> > index 6a7d36d133fb..25271805ab39 100644
+> > --- a/mm/mmap.c
+> > +++ b/mm/mmap.c
+> > @@ -2854,8 +2854,10 @@ void exit_mmap(struct mm_struct *mm)
+> >  
+> >  	WARN_ON(atomic_long_read(&mm->nr_ptes) >
+> >  			round_up(FIRST_USER_ADDRESS, PMD_SIZE) >> PMD_SHIFT);
+> > +#ifdef PUD_SHIFT
+> >  	WARN_ON(mm_nr_pmds(mm) >
+> >  			round_up(FIRST_USER_ADDRESS, PUD_SIZE) >> PUD_SHIFT);
+> > +#endif
+> >  }
+> >  
+> >  /* Insert vm structure into process list sorted by address
 > 
-> Thank you for your reply.
-> This change comes largely from a non-blackfin architecture dsp processor of ADI want to reuse this driver.
-> And i have tested common read/write function on blackfin board to ensure usability and stability.
+> Looks like it should be #ifdef CONFIG_MMU, Kirill?
 
-Well, looking at arch/blackfin/include/asm/def_LPBlackfin.h it seems that for certain
-blackfin variants the bfin_read/write functions insert an extra nop, so unless you
-test on one of those variants you wouldn't see any problems relating to this change
-(and possibly not even then if this is a rare race condition).
+No. The problem is that <asm-generic/4level-fixup.h> doesn't define
+PUD_SHIFT. The fix is proposed:
 
-You will have to check this with the blackfin architecture maintainer, Steven Miao
-(added to the CC list). Without the OK of someone who actually understands that
-architecture and the 'ANOMALY_05000198' issues I am not going to merge this.
+http://www.spinics.net/lists/linux-mm/msg83249.html
 
-If the bfin_read/write functions are really needed for the blackfin architecture,
-then you can always make ppi_read/write functions that check the architecture and use
-bfin_read/write if it is a blackfin and readw/writew otherwise.
-
-That should be safe.
-
-Regards,
-
-	Hans
-
-> 
-> BR
-> Hao
-> 
-> 2015-01-16 19:34 GMT+08:00 Hans Verkuil <hverkuil@xs4all.nl <mailto:hverkuil@xs4all.nl>>:
-> 
->     Hi Hao,
-> 
->     Why would you do this? read/writew() is AFAICT not the same as bfin_read/write16
->     (defined in arch/blackfin/include/asm/def_LPBlackfin.h). And all other blackfin
->     sources I've seen all use bfin_read/write.
-> 
->     So unless there is a good reason for this change I am not going to accept this.
-> 
->     Regards,
-> 
->             Hans
-> 
->     On 01/14/2015 07:57 AM, Hao Liang wrote:
->     > Signed-off-by: Hao Liang <hliang1025@gmail.com <mailto:hliang1025@gmail.com>>
->     > ---
->     >  drivers/media/platform/blackfin/ppi.c |   72 ++++++++++++++++-----------------
->     >  1 file changed, 35 insertions(+), 37 deletions(-)
->     >
->     > diff --git a/drivers/media/platform/blackfin/ppi.c b/drivers/media/platform/blackfin/ppi.c
->     > index cff63e5..de4b5c7 100644
->     > --- a/drivers/media/platform/blackfin/ppi.c
->     > +++ b/drivers/media/platform/blackfin/ppi.c
->     > @@ -20,6 +20,7 @@
->     >  #include <linux/module.h>
->     >  #include <linux/slab.h>
->     >  #include <linux/platform_device.h>
->     > +#include <linux/io.h>
->     >
->     >  #include <asm/bfin_ppi.h>
->     >  #include <asm/blackfin.h>
->     > @@ -59,10 +60,10 @@ static irqreturn_t ppi_irq_err(int irq, void *dev_id)
->     >               /* register on bf561 is cleared when read
->     >                * others are W1C
->     >                */
->     > -             status = bfin_read16(&reg->status);
->     > +             status = readw(&reg->status);
->     >               if (status & 0x3000)
->     >                       ppi->err = true;
->     > -             bfin_write16(&reg->status, 0xff00);
->     > +             writew(0xff00, &reg->status);
->     >               break;
->     >       }
->     >       case PPI_TYPE_EPPI:
->     > @@ -70,10 +71,10 @@ static irqreturn_t ppi_irq_err(int irq, void *dev_id)
->     >               struct bfin_eppi_regs *reg = info->base;
->     >               unsigned short status;
->     >
->     > -             status = bfin_read16(&reg->status);
->     > +             status = readw(&reg->status);
->     >               if (status & 0x2)
->     >                       ppi->err = true;
->     > -             bfin_write16(&reg->status, 0xffff);
->     > +             writew(0xffff, &reg->status);
->     >               break;
->     >       }
->     >       case PPI_TYPE_EPPI3:
->     > @@ -81,10 +82,10 @@ static irqreturn_t ppi_irq_err(int irq, void *dev_id)
->     >               struct bfin_eppi3_regs *reg = info->base;
->     >               unsigned long stat;
->     >
->     > -             stat = bfin_read32(&reg->stat);
->     > +             stat = readl(&reg->stat);
->     >               if (stat & 0x2)
->     >                       ppi->err = true;
->     > -             bfin_write32(&reg->stat, 0xc0ff);
->     > +             writel(0xc0ff, &reg->stat);
->     >               break;
->     >       }
->     >       default:
->     > @@ -139,26 +140,25 @@ static int ppi_start(struct ppi_if *ppi)
->     >       case PPI_TYPE_PPI:
->     >       {
->     >               struct bfin_ppi_regs *reg = info->base;
->     > -             bfin_write16(&reg->control, ppi->ppi_control);
->     > +             writew(ppi->ppi_control, &reg->control);
->     >               break;
->     >       }
->     >       case PPI_TYPE_EPPI:
->     >       {
->     >               struct bfin_eppi_regs *reg = info->base;
->     > -             bfin_write32(&reg->control, ppi->ppi_control);
->     > +             writel(ppi->ppi_control, &reg->control);
->     >               break;
->     >       }
->     >       case PPI_TYPE_EPPI3:
->     >       {
->     >               struct bfin_eppi3_regs *reg = info->base;
->     > -             bfin_write32(&reg->ctl, ppi->ppi_control);
->     > +             writel(ppi->ppi_control, &reg->ctl);
->     >               break;
->     >       }
->     >       default:
->     >               return -EINVAL;
->     >       }
->     >
->     > -     SSYNC();
->     >       return 0;
->     >  }
->     >
->     > @@ -172,19 +172,19 @@ static int ppi_stop(struct ppi_if *ppi)
->     >       case PPI_TYPE_PPI:
->     >       {
->     >               struct bfin_ppi_regs *reg = info->base;
->     > -             bfin_write16(&reg->control, ppi->ppi_control);
->     > +             writew(ppi->ppi_control, &reg->control);
->     >               break;
->     >       }
->     >       case PPI_TYPE_EPPI:
->     >       {
->     >               struct bfin_eppi_regs *reg = info->base;
->     > -             bfin_write32(&reg->control, ppi->ppi_control);
->     > +             writel(ppi->ppi_control, &reg->control);
->     >               break;
->     >       }
->     >       case PPI_TYPE_EPPI3:
->     >       {
->     >               struct bfin_eppi3_regs *reg = info->base;
->     > -             bfin_write32(&reg->ctl, ppi->ppi_control);
->     > +             writel(ppi->ppi_control, &reg->ctl);
->     >               break;
->     >       }
->     >       default:
->     > @@ -195,7 +195,6 @@ static int ppi_stop(struct ppi_if *ppi)
->     >       clear_dma_irqstat(info->dma_ch);
->     >       disable_dma(info->dma_ch);
->     >
->     > -     SSYNC();
->     >       return 0;
->     >  }
->     >
->     > @@ -242,9 +241,9 @@ static int ppi_set_params(struct ppi_if *ppi, struct ppi_params *params)
->     >               if (params->ppi_control & DMA32)
->     >                       dma32 = 1;
->     >
->     > -             bfin_write16(&reg->control, ppi->ppi_control);
->     > -             bfin_write16(&reg->count, samples_per_line - 1);
->     > -             bfin_write16(&reg->frame, params->frame);
->     > +             writew(ppi->ppi_control, &reg->control);
->     > +             writew(samples_per_line - 1, &reg->count);
->     > +             writew(params->frame, &reg->frame);
->     >               break;
->     >       }
->     >       case PPI_TYPE_EPPI:
->     > @@ -255,13 +254,13 @@ static int ppi_set_params(struct ppi_if *ppi, struct ppi_params *params)
->     >                       || (params->ppi_control & 0x38000) > DLEN_16)
->     >                       dma32 = 1;
->     >
->     > -             bfin_write32(&reg->control, ppi->ppi_control);
->     > -             bfin_write16(&reg->line, samples_per_line);
->     > -             bfin_write16(&reg->frame, params->frame);
->     > -             bfin_write16(&reg->hdelay, hdelay);
->     > -             bfin_write16(&reg->vdelay, params->vdelay);
->     > -             bfin_write16(&reg->hcount, hcount);
->     > -             bfin_write16(&reg->vcount, params->height);
->     > +             writel(ppi->ppi_control, &reg->control);
->     > +             writew(samples_per_line, &reg->line);
->     > +             writew(params->frame, &reg->frame);
->     > +             writew(hdelay, &reg->hdelay);
->     > +             writew(params->vdelay, &reg->vdelay);
->     > +             writew(hcount, &reg->hcount);
->     > +             writew(params->height, &reg->vcount);
->     >               break;
->     >       }
->     >       case PPI_TYPE_EPPI3:
->     > @@ -272,15 +271,15 @@ static int ppi_set_params(struct ppi_if *ppi, struct ppi_params *params)
->     >                       || (params->ppi_control & 0x70000) > DLEN_16)
->     >                       dma32 = 1;
->     >
->     > -             bfin_write32(&reg->ctl, ppi->ppi_control);
->     > -             bfin_write32(&reg->line, samples_per_line);
->     > -             bfin_write32(&reg->frame, params->frame);
->     > -             bfin_write32(&reg->hdly, hdelay);
->     > -             bfin_write32(&reg->vdly, params->vdelay);
->     > -             bfin_write32(&reg->hcnt, hcount);
->     > -             bfin_write32(&reg->vcnt, params->height);
->     > +             writel(ppi->ppi_control, &reg->ctl);
->     > +             writel(samples_per_line, &reg->line);
->     > +             writel(params->frame, &reg->frame);
->     > +             writel(hdelay, &reg->hdly);
->     > +             writel(params->vdelay, &reg->vdly);
->     > +             writel(hcount, &reg->hcnt);
->     > +             writel(params->height, &reg->vcnt);
->     >               if (params->int_mask)
->     > -                     bfin_write32(&reg->imsk, params->int_mask & 0xFF);
->     > +                     writel(params->int_mask & 0xFF, &reg->imsk);
->     >               if (ppi->ppi_control & PORT_DIR) {
->     >                       u32 hsync_width, vsync_width, vsync_period;
->     >
->     > @@ -288,10 +287,10 @@ static int ppi_set_params(struct ppi_if *ppi, struct ppi_params *params)
->     >                                       * params->bpp / params->dlen;
->     >                       vsync_width = params->vsync * samples_per_line;
->     >                       vsync_period = samples_per_line * params->frame;
->     > -                     bfin_write32(&reg->fs1_wlhb, hsync_width);
->     > -                     bfin_write32(&reg->fs1_paspl, samples_per_line);
->     > -                     bfin_write32(&reg->fs2_wlvb, vsync_width);
->     > -                     bfin_write32(&reg->fs2_palpf, vsync_period);
->     > +                     writel(hsync_width, &reg->fs1_wlhb);
->     > +                     writel(samples_per_line, &reg->fs1_paspl);
->     > +                     writel(vsync_width, &reg->fs2_wlvb);
->     > +                     writel(vsync_period, &reg->fs2_palpf);
->     >               }
->     >               break;
->     >       }
->     > @@ -313,7 +312,6 @@ static int ppi_set_params(struct ppi_if *ppi, struct ppi_params *params)
->     >       set_dma_y_count(info->dma_ch, params->height);
->     >       set_dma_config(info->dma_ch, dma_config);
->     >
->     > -     SSYNC();
->     >       return 0;
->     >  }
->     >
->     >
-> 
-> 
-
+-- 
+ Kirill A. Shutemov
