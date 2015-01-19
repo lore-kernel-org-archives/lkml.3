@@ -1,38 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752005AbbASVKz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 16:10:55 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:36296 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751914AbbASVKy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 16:10:54 -0500
-Date: Mon, 19 Jan 2015 21:10:50 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Fabian Frederick <fabf@skynet.be>
-Cc: linux-kernel@vger.kernel.org, Jan Kara <jack@suse.cz>
-Subject: Re: [RFC 1/2] FS: mount_bdev from vfs instead of filesystem specific
- mount function.
-Message-ID: <20150119211050.GG29656@ZenIV.linux.org.uk>
-References: <1421700440-15128-1-git-send-email-fabf@skynet.be>
+	id S1752086AbbASVL2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 16:11:28 -0500
+Received: from imap.thunk.org ([74.207.234.97]:49551 "EHLO imap.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751526AbbASVL1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 16:11:27 -0500
+Date: Mon, 19 Jan 2015 16:11:22 -0500
+From: "Theodore Ts'o" <tytso@mit.edu>
+To: "Darrick J. Wong" <darrick.wong@oracle.com>
+Cc: linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] jbd2: complain about descriptor block checksum errors
+Message-ID: <20150119211122.GH11708@thunk.org>
+Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
+	"Darrick J. Wong" <darrick.wong@oracle.com>,
+	linux-ext4 <linux-ext4@vger.kernel.org>,
+	linux-kernel <linux-kernel@vger.kernel.org>
+References: <20150108200334.GB9976@birch.djwong.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1421700440-15128-1-git-send-email-fabf@skynet.be>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20150108200334.GB9976@birch.djwong.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 19, 2015 at 09:47:20PM +0100, Fabian Frederick wrote:
-> Currently, a lot of filesystem mounting functions feature in
-> file_system_type only to be called from vfs mount_fs and call mount_bdev.
+On Thu, Jan 08, 2015 at 12:03:34PM -0800, Darrick J. Wong wrote:
+> We should complain in dmesg when journal recovery fails on account of
+> the descriptor block being corrupt, so that the diagnostic data can
+> be recovered.
 > 
-> This patch adds fill_super function to that structure and lets vfs
-> call mount_bdev when no mount function is declared.
+> Signed-off-by: Darrick J. Wong <darrick.wong@oracle.com>
 
-NAK.  First of all, quite a few of them are _not_ mount_bdev() users.
-What's more, you are trading about 4 lines per filesystem (two of them
-being { and }) for a layering violation.
+Thanks, applied.
 
-No point whatsoever.  fill_super() is no more a method than e.g. get_block().
+					- Ted
