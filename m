@@ -1,485 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752347AbbASO2b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 09:28:31 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:38064 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751473AbbASO23 (ORCPT
+	id S1752393AbbASO2x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 09:28:53 -0500
+Received: from mga09.intel.com ([134.134.136.24]:25480 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751467AbbASO2w convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 09:28:29 -0500
-Date: Mon, 19 Jan 2015 14:28:06 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Aleksey Makarov <aleksey.makarov@auriga.com>
-Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Daney <david.daney@cavium.com>,
-        Leonid Rosenboim <lrosenboim@caviumnetworks.com>,
-        Aaron Williams <aaron.williams@cavium.com>,
-        Chandrakala Chavva <cchavva@caviumnetworks.com>,
-        Peter Swain <pswain@cavium.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Chris Ball <chris@printf.net>,
-        Ulf Hansson <ulf.hansson@linaro.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH] mmc: OCTEON: Add host driver for OCTEON MMC controller
-Message-ID: <20150119142805.GE21553@leverpostej>
-References: <1421675198-30213-1-git-send-email-aleksey.makarov@auriga.com>
+	Mon, 19 Jan 2015 09:28:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="442280841"
+From: "Liang, Kan" <kan.liang@intel.com>
+To: "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "eranian@google.com" <eranian@google.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>
+Subject: RE: [PATCH V2 1/1] perf, core: Use sample period avg as child
+ event's initial period
+Thread-Topic: [PATCH V2 1/1] perf, core: Use sample period avg as child
+ event's initial period
+Thread-Index: AQHQGWkZzmFCxc1lG0KLVSVMTyWYFpzHsFfQ
+Date: Mon, 19 Jan 2015 14:28:46 +0000
+Message-ID: <37D7C6CF3E00A74B8858931C1DB2F077016A14E3@SHSMSX103.ccr.corp.intel.com>
+References: <1418757918-27893-1-git-send-email-kan.liang@intel.com>
+In-Reply-To: <1418757918-27893-1-git-send-email-kan.liang@intel.com>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421675198-30213-1-git-send-email-aleksey.makarov@auriga.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Peter,
 
-On Mon, Jan 19, 2015 at 01:46:36PM +0000, Aleksey Makarov wrote:
-> The OCTEON MMC controller is currently found on cn61XX and cnf71XX
-> devices.  Device parameters are configured from device tree data.
-> 
-> Currenly supported are eMMC, MMC and SD devices.
-
-Does that mean there are other devices that this could support in
-future, or that this supports everything it possibly can already?
-
-[...]
-
-> diff --git a/Documentation/devicetree/bindings/mmc/octeon-mmc.txt b/Documentation/devicetree/bindings/mmc/octeon-mmc.txt
-> new file mode 100644
-> index 0000000..ce373cf
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mmc/octeon-mmc.txt
-> @@ -0,0 +1,51 @@
-> +* OCTEON SD/MMC Host Controller
-> +
-> +This controller is present on some members of the Cavium OCTEON SoC
-> +family, provide an interface for eMMC, MMC and SD devices.  There is a
-> +single controller that may have several "slots" connected.  These
-> +slots appear as children of the main controller node.
-> +
-> +Required properties:
-> +- compatible : Should be "cavium,octeon-6130-mmc" or "cavium,octeon-7890-mmc"
-> +- reg : Two entries:
-> +       1) The base address of the MMC controller register bank.
-> +       2) The base address of the MMC DMA engine register bank.
-> +- interrupts : Two entries:
-> +       1) The MMC controller interrupt line.
-> +       2) The MMC DMA engine interrupt line.
-
-Is the DMA engine part of the MMC controller block, or is it a
-separate/generic component that happens to be used in combination with
-the MMC controller?
-
-> +- #address-cells : Must be <1>
-> +- #size-cells : Must be <0>
-> +
-> +Required properties of child nodes:
-> +- compatible : Should be "cavium,octeon-6130-mmc-slot".
-> +- reg : The slot number.
-> +- cavium,bus-max-width : The number of data lines present in the slot.
-> +- spi-max-frequency : The maximum operating frequency of the slot.
-> +
-> +Optional properties of child nodes:
-> +- cd-gpios : Specify GPIOs for card detection
-> +- wp-gpios : Specify GPIOs for write protection
-> +- power-gpios : Specify GPIOs for power control
-
-No clocks in the DT?
-
-> +
-> +Example:
-> +       mmc@1180000002000 {
-> +               compatible = "cavium,octeon-6130-mmc";
-> +               reg = <0x11800 0x00002000 0x0 0x100>,
-> +                     <0x11800 0x00000168 0x0 0x20>;
-> +               #address-cells = <1>;
-> +               #size-cells = <0>;
-> +               /* EMM irq, DMA irq */
-> +               interrupts = <1 19>, <0 63>;
-> +
-> +               /* The board only has a single MMC slot */
-> +               mmc-slot@0 {
-> +                       compatible = "cavium,octeon-6130-mmc-slot";
-> +                       reg = <0>;
-> +                       spi-max-frequency = <20000000>;
-> +                       /* bus width can be 1, 4 or 8 */
-> +                       cavium,bus-max-width = <8>;
-> +                       cd-gpios = <&gpio 9 0>;
-> +                       wp-gpios = <&gpio 10 0>;
-> +                       power-gpios = <&gpio 8 0>;
-> +               };
-> +       };
-
-[...]
-
-> +static inline void *phys_to_ptr(u64 address)
-> +{
-> +       return (void *)(address | (1ull<<63)); /* XKPHYS */
-> +}
-> +
-> +/**
-> + * Lock a single line into L2. The line is zeroed before locking
-> + * to make sure no dram accesses are made.
-> + *
-> + * @addr   Physical address to lock
-> + */
-> +static void l2c_lock_line(u64 addr)
-> +{
-> +       char *addr_ptr = phys_to_ptr(addr);
-> +
-> +       asm volatile (
-> +               "cache 31, %[line]"     /* Unlock the line */
-> +               :: [line] "m" (*addr_ptr));
-> +}
-> +
-> +/**
-> + * Locks a memory region in the L2 cache
-> + *
-> + * @start - start address to begin locking
-> + * @len - length in bytes to lock
-> + */
-> +static void l2c_lock_mem_region(u64 start, u64 len)
-> +{
-> +       u64 end;
-> +
-> +       /* Round start/end to cache line boundaries */
-> +       end = ALIGN(start + len - 1, CVMX_CACHE_LINE_SIZE);
-> +       start = ALIGN(start, CVMX_CACHE_LINE_SIZE);
-> +
-> +       while (start <= end) {
-> +               l2c_lock_line(start);
-> +               start += CVMX_CACHE_LINE_SIZE;
-> +       }
-> +       asm volatile("sync");
-> +}
-> +
-> +/**
-> + * Unlock a single line in the L2 cache.
-> + *
-> + * @addr       Physical address to unlock
-> + *
-> + * Return Zero on success
-> + */
-> +static void l2c_unlock_line(u64 addr)
-> +{
-> +       char *addr_ptr = phys_to_ptr(addr);
-> +       asm volatile (
-> +               "cache 23, %[line]"     /* Unlock the line */
-> +               :: [line] "m" (*addr_ptr));
-> +}
-> +
-> +/**
-> + * Unlock a memory region in the L2 cache
-> + *
-> + * @start - start address to unlock
-> + * @len - length to unlock in bytes
-> + */
-> +static void l2c_unlock_mem_region(u64 start, u64 len)
-> +{
-> +       u64 end;
-> +
-> +       /* Round start/end to cache line boundaries */
-> +       end = ALIGN(start + len - 1, CVMX_CACHE_LINE_SIZE);
-> +       start = ALIGN(start, CVMX_CACHE_LINE_SIZE);
-> +
-> +       while (start <= end) {
-> +               l2c_unlock_line(start);
-> +               start += CVMX_CACHE_LINE_SIZE;
-> +       }
-> +}
-
-Why do you need to mess with the cache in this way within an MMC driver?
-To me it seems somewhat surprising that you need to do that, and again
-surprising that you have custom functions within the MMC driver.
-
-[...]
-
-> +static int octeon_mmc_probe(struct platform_device *pdev)
-> +{
-> +       union cvmx_mio_emm_cfg emm_cfg;
-> +       struct octeon_mmc_host *host;
-> +       struct resource *res;
-> +       void __iomem *base;
-> +       int mmc_irq[9];
-> +       int i;
-> +       int ret = 0;
-> +       struct device_node *node = pdev->dev.of_node;
-> +       int found = 0;
-> +       bool cn78xx_style;
-> +       u64 t;
-> +       enum of_gpio_flags f;
-> +
-> +       host = devm_kzalloc(&pdev->dev, sizeof(*host), GFP_KERNEL);
-> +       if (!host)
-> +               return -ENOMEM;
-> +
-> +       spin_lock_init(&host->irq_handler_lock);
-> +       sema_init(&host->mmc_serializer, 1);
-> +
-> +       cn78xx_style = of_device_is_compatible(node, "cavium,octeon-7890-mmc");
-> +       if (cn78xx_style) {
-> +               host->need_bootbus_lock = false;
-> +               host->big_dma_addr = true;
-> +               host->need_irq_handler_lock = true;
-> +               /*
-> +                * First seven are the EMM_INT bits 0..6, then two for
-> +                * the EMM_DMA_INT bits
-> +                */
-> +               for (i = 0; i < 9; i++) {
-> +                       mmc_irq[i] = platform_get_irq(pdev, i);
-> +                       if (mmc_irq[i] < 0)
-> +                               return mmc_irq[i];
-
-The documentation describes two interrupts, yet here you try to acquire
-nine. Please document which interrupts you expect (i.e. in what order
-and what the logical function of each is), and when you expect them.
-
-If some interrupts might not always be present, use interrupt-names.
-
-> +               }
-> +       } else {
-> +               host->need_bootbus_lock = true;
-> +               host->big_dma_addr = false;
-> +               host->need_irq_handler_lock = false;
-> +               /* First one is EMM second NDF_DMA */
-> +               for (i = 0; i < 2; i++) {
-> +                       mmc_irq[i] = platform_get_irq(pdev, i);
-> +                       if (mmc_irq[i] < 0)
-> +                               return mmc_irq[i];
-> +               }
-> +       }
-> +       host->last_slot = -1;
-> +
-> +       if (bb_size < 512 || bb_size >= (1 << 24))
-> +               bb_size = 1 << 18;
-> +       host->linear_buf_size = bb_size;
-> +       host->linear_buf = devm_kzalloc(&pdev->dev, host->linear_buf_size,
-> +                                       GFP_KERNEL);
-> +
-> +       if (!host->linear_buf) {
-> +               dev_err(&pdev->dev, "devm_kzalloc failed\n");
-> +               return -ENOMEM;
-> +       }
-> +
-> +       host->pdev = pdev;
-> +
-> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +       if (!res) {
-> +               dev_err(&pdev->dev, "Platform resource[0] is missing\n");
-> +               return -ENXIO;
-> +       }
-> +       base = devm_ioremap_resource(&pdev->dev, res);
-> +       if (IS_ERR(base))
-> +               return PTR_ERR(base);
-> +       host->base = (u64)base;
-
-I take it this can only be used on a 64-bit platform?
-
-> +
-> +       res = platform_get_resource(pdev, IORESOURCE_MEM, 1);
-> +       if (!res) {
-> +               dev_err(&pdev->dev, "Platform resource[1] is missing\n");
-> +               ret = -EINVAL;
-> +               goto err;
-> +       }
-> +       base = devm_ioremap_resource(&pdev->dev, res);
-> +       if (IS_ERR(base)) {
-> +               ret = PTR_ERR(base);
-> +               goto err;
-> +       }
-> +       host->ndf_base = (u64)base;
-> +       /*
-> +        * Clear out any pending interrupts that may be left over from
-> +        * bootloader.
-> +        */
-> +       t = cvmx_read_csr(host->base + OCT_MIO_EMM_INT);
-> +       cvmx_write_csr(host->base + OCT_MIO_EMM_INT, t);
-> +       if (cn78xx_style) {
-> +               /* Only CMD_DONE, DMA_DONE, CMD_ERR, DMA_ERR */
-> +               for (i = 1; i <= 4; i++) {
-> +                       ret = devm_request_irq(&pdev->dev, mmc_irq[i],
-> +                                              octeon_mmc_interrupt,
-> +                                              0, DRV_NAME, host);
-> +                       if (ret < 0) {
-> +                               dev_err(&pdev->dev, "Error: devm_request_irq %d\n",
-> +                                       mmc_irq[i]);
-> +                               goto err;
-> +                       }
-> +               }
-> +       } else {
-> +               ret = devm_request_irq(&pdev->dev, mmc_irq[0],
-> +                                      octeon_mmc_interrupt, 0, DRV_NAME, host);
-> +               if (ret < 0) {
-> +                       dev_err(&pdev->dev, "Error: devm_request_irq %d\n",
-> +                               mmc_irq[0]);
-> +                       goto err;
-> +               }
-> +       }
-> +
-> +       ret = of_get_named_gpio_flags(node, "power-gpios", 0, &f);
-> +       if (ret == -EPROBE_DEFER)
-> +               goto err;
-> +
-> +       host->global_pwr_gpio = ret;
-> +       host->global_pwr_gpio_low =
-> +               (host->global_pwr_gpio >= 0 && f == OF_GPIO_ACTIVE_LOW);
-> +
-> +       if (host->global_pwr_gpio >= 0) {
-> +               ret = gpio_request(host->global_pwr_gpio, "mmc global power");
-> +               if (ret) {
-> +                       dev_err(&pdev->dev,
-> +                               "Could not request mmc global power gpio %d\n",
-> +                               host->global_pwr_gpio);
-> +                       goto err;
-> +               }
-> +               dev_dbg(&pdev->dev, "Global power on\n");
-> +               gpio_direction_output(host->global_pwr_gpio,
-> +                                     !host->global_pwr_gpio_low);
-> +       }
-> +
-> +       platform_set_drvdata(pdev, host);
-> +
-> +       node = of_get_next_child(pdev->dev.of_node, NULL);
-> +       while (node) {
-
-You should use for_each_child_of_node here.
-
-Also, you'll want to skip nodes that aren't compatible with
-"cavium,octeon-6130-mmc-slot", and you'll probably want to log a warning
-in that case.
-
-> +               int r;
-> +               u32 slot;
-> +
-> +               found = 0;
-> +
-> +               r = of_property_read_u32(node, "reg", &slot);
-> +               if (!r) {
-
-If you use for_each_child_of_node, you can just skip ahead in this case,
-rather than having 90% of this block conditional.
-
-e.g.
-
-for_each_child_of_node(pdev->dev.of_node, node) {
-	
-	if (!of_device_is_compatible(node, "cavium,octeon-6130-mmc-slot") {
-		pr_warn("sub node isn't slot: %s\n", of_node_full_name(node));
-		continue;
-	}
-
-	if (of_property_read_u32(node, "reg", &slot) != 0) {
-		pr_warn("Missing or invalid reg property on %s\n",
-			of_node_full_name(node));
-		continue;
-	}
-
-	other_stuff();
-	not_indented();
-
-}
-
-> +                       int ro_gpio, cd_gpio, pwr_gpio;
-> +                       bool ro_low, cd_low, pwr_low;
-> +                       u32 bus_width, max_freq, cmd_skew, dat_skew;
-> +
-> +                       r = of_property_read_u32(node, "cavium,bus-max-width",
-> +                                                &bus_width);
-> +                       if (r) {
-> +                               pr_info("Bus width not found for slot %d\n",
-> +                                       slot);
-> +                               bus_width = 8;
-
-If the default assumption is 8 lanes, document that in the binding.
-Otherwise, make this mandatory and skip the slot if this is missing from
-the DT.
-
-> +                       } else {
-> +                               switch (bus_width) {
-> +                               case 1:
-> +                               case 4:
-> +                               case 8:
-> +                                       break;
-> +                               default:
-> +                                       bus_width = 8;
-> +                                       break;
-> +                               }
-> +                       }
-
-Silently modifying this value is not a good idea. If you get an invalid
-value, warn and skip the node. If the DT was wrong then you have no
-chance of guessing better anyway.
-
-> +
-> +                       r = of_property_read_u32(node, "cavium,cmd-clk-skew",
-> +                                                &cmd_skew);
-> +                       if (r)
-> +                               cmd_skew = 0;
-> +
-> +                       r = of_property_read_u32(node, "cavium,dat-clk-skew",
-> +                                                &dat_skew);
-> +                       if (r)
-> +                               dat_skew = 0;
-> +
-
-These weren't in the binding. They need to be documented.
-
-
-> +                       r = of_property_read_u32(node, "spi-max-frequency",
-> +                                                &max_freq);
-> +                       if (r) {
-> +                               max_freq = 52000000;
-> +                               pr_info("no spi-max-frequency for slot %d, defautling to %d\n",
-
-s/defautling/defaulting/
-
-> +                                       slot, max_freq);
-> +                       }
-> +
-> +                       ro_gpio = of_get_named_gpio_flags(node, "wp-gpios",
-> +                                                         0, &f);
-> +                       ro_low = (ro_gpio >= 0 && f == OF_GPIO_ACTIVE_LOW);
-> +                       cd_gpio = of_get_named_gpio_flags(node, "cd-gpios",
-> +                                                         0, &f);
-> +                       cd_low = (cd_gpio >= 0 && f == OF_GPIO_ACTIVE_LOW);
-> +                       pwr_gpio = of_get_named_gpio_flags(node, "power-gpios",
-> +                                                          0, &f);
-> +                       pwr_low = (pwr_gpio >= 0 && f == OF_GPIO_ACTIVE_LOW);
-> +
-> +                       ret = octeon_init_slot(host, slot, bus_width, max_freq,
-> +                                              ro_gpio, cd_gpio, pwr_gpio,
-> +                                              ro_low, cd_low, pwr_low,
-> +                                              cmd_skew, dat_skew);
-> +                       octeon_mmc_dbg("init slot %d, ret = %d\n", slot, ret);
-> +                       if (ret)
-> +                               goto err;
-> +               }
-> +               node = of_get_next_child(pdev->dev.of_node, node);
-> +       }
-> +
-> +       return ret;
-> +
-> +err:
-> +       /* Disable MMC controller */
-> +       emm_cfg.s.bus_ena = 0;
-> +       cvmx_write_csr(host->base + OCT_MIO_EMM_CFG, emm_cfg.u64);
-> +
-> +       if (host->global_pwr_gpio >= 0) {
-> +               dev_dbg(&pdev->dev, "Global power off\n");
-> +               gpio_set_value_cansleep(host->global_pwr_gpio,
-> +                                       host->global_pwr_gpio_low);
-> +               gpio_free(host->global_pwr_gpio);
-> +       }
-> +
-> +       return ret;
-> +}
-
-It's probably worth having some logging in this error path.
+The patch is month old. I checked that it still apply to current tip.
+Could you please take a look?
 
 Thanks,
-Mark.
+Kan
+
+> 
+> From: Kan Liang <kan.liang@intel.com>
+> 
+> For perf record frequency mode, the initial sample_period is 1. That's
+> because perf doesn't know what period should be set. It uses the
+> minimum period 1 as the first period. It will trigger an interrupt soon. Then
+> there will be enough data to calculate the period for the given frequency.
+> But too many very short period like 1 may cause various problems and
+> increase the overhead. It's better to limit the 1 period to just the first
+> several period setting.
+> 
+> However, for some workload, 1 period is frequently set. For example, perf
+> record a busy loop for 10 seconds.
+> 
+> perf record ./finity_busy_loop.sh 10
+> 
+> while [ "A" != "B" ]
+> do
+> date > /dev/null
+> done
+> 
+> Period was changed 150503 times in 10 seconds. 22.5% (33861 times) of the
+> period is set to 1. That's because, in the inherit_event, the period for child
+> event is inherit from parent's parent's event, which is usually the default
+> sample_period 1. Each child event has to recalculate the period from 1
+> everytime. That brings high overhead.
+> 
+> This patch keeps the sample period average in parent event. Each new
+> child event can use it as its initial sample period.
+> The avg_sample_period was introduced in struct perf_event to track the
+> average sample period information. The information is kept in the parent
+> event, since it's the only node everyone knows. For reducing the
+> contention of updating parent event, the value is updated every tick.
+> We also need to get rid of 1 period as earlier as possible. So the value is
+> also updated in the first period adjustment.
+> For each new child event, the average sample period of parent event will
+> be assigned to the child as its first sample period.
+> For each new child event, the parent event refcount++. Parent will not go
+> away until all children go away. So it's safe to access its parent.
+> 
+> After applying this patch, the 1 period rate reduces to 0.1%.
+> 
+> Signed-off-by: Kan Liang <kan.liang@intel.com>
+> 
+> ---
+> 
+> Changes since V1
+>  - The average sample period will be kept in parent event
+>  - Use atomic64_t to replace local64_t
+>  - Only update the AVG every tick or the first time
+> 
+>  include/linux/perf_event.h |  2 ++
+>  kernel/events/core.c       | 21 +++++++++++++++++++--
+>  2 files changed, 21 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h index
+> 486e84c..bb886f0 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -403,6 +403,8 @@ struct perf_event {
+>  	struct list_head		child_list;
+>  	struct perf_event		*parent;
+> 
+> +	atomic64_t			avg_sample_period;
+> +
+>  	int				oncpu;
+>  	int				cpu;
+> 
+> diff --git a/kernel/events/core.c b/kernel/events/core.c index
+> af0a5ba..3404d52 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -2796,6 +2796,7 @@ static void perf_adjust_period(struct perf_event
+> *event, u64 nsec, u64 count, bo
+>  	struct hw_perf_event *hwc = &event->hw;
+>  	s64 period, sample_period;
+>  	s64 delta;
+> +	struct perf_event *head_event = (event->parent != NULL) ?
+> +event->parent : event;
+> 
+>  	period = perf_calculate_period(event, nsec, count);
+> 
+> @@ -2809,6 +2810,17 @@ static void perf_adjust_period(struct
+> perf_event *event, u64 nsec, u64 count, bo
+> 
+>  	hwc->sample_period = sample_period;
+> 
+> +	/*
+> +	 * Update the AVG sample period in first period adjustment
+> +	 * Then update it every tick to reduce contention.
+> +	 */
+> +	if (!disable || (atomic64_read(&head_event->avg_sample_period)
+> == 1)) {
+> +		s64 avg_period;
+> +
+> +		avg_period = (atomic64_read(&head_event-
+> >avg_sample_period) + sample_period) / 2;
+> +		atomic64_set(&head_event->avg_sample_period,
+> avg_period);
+> +	}
+> +
+>  	if (local64_read(&hwc->period_left) > 8*sample_period) {
+>  		if (disable)
+>  			event->pmu->stop(event, PERF_EF_UPDATE); @@
+> -7030,8 +7042,13 @@ perf_event_alloc(struct perf_event_attr *attr, int
+> cpu,
+> 
+>  	hwc = &event->hw;
+>  	hwc->sample_period = attr->sample_period;
+> -	if (attr->freq && attr->sample_freq)
+> +	if (attr->freq && attr->sample_freq) {
+>  		hwc->sample_period = 1;
+> +		if (parent_event)
+> +			hwc->sample_period =
+> atomic64_read(&parent_event->avg_sample_period);
+> +		else
+> +			atomic64_set(&event->avg_sample_period, hwc-
+> >sample_period);
+> +	}
+>  	hwc->last_period = hwc->sample_period;
+> 
+>  	local64_set(&hwc->period_left, hwc->sample_period); @@ -
+> 7902,7 +7919,7 @@ inherit_event(struct perf_event *parent_event,
+>  		child_event->state = PERF_EVENT_STATE_OFF;
+> 
+>  	if (parent_event->attr.freq) {
+> -		u64 sample_period = parent_event->hw.sample_period;
+> +		u64 sample_period = atomic64_read(&parent_event-
+> >avg_sample_period);
+>  		struct hw_perf_event *hwc = &child_event->hw;
+> 
+>  		hwc->sample_period = sample_period;
+> --
+> 1.8.3.2
+
