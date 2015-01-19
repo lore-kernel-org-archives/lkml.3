@@ -1,64 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752340AbbASVbp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 16:31:45 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:52308 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752257AbbASVbj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 16:31:39 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/rf+qQsTLKQfs/ttZKQv1r
-Date: Mon, 19 Jan 2015 13:28:09 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>, Santosh <ssantosh@kernel.org>,
-        Sekhar Nori <nsekhar@ti.com>
-Subject: Re: [PATCH 0/2] ARM: l2c: OMAP4/AM437x: Additional register
- programming support.
-Message-ID: <20150119212808.GI18552@atomide.com>
-References: <1420219072-6521-1-git-send-email-nm@ti.com>
- <20150102173859.GE3298@atomide.com>
- <54A6DAE8.90609@ti.com>
+	id S1752412AbbASVcj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 16:32:39 -0500
+Received: from vps0.lunn.ch ([178.209.37.122]:58126 "EHLO vps0.lunn.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751293AbbASVch (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 16:32:37 -0500
+Date: Mon, 19 Jan 2015 22:30:28 +0100
+From: Andrew Lunn <andrew@lunn.ch>
+To: Daniel Lezcano <daniel.lezcano@linaro.org>
+Cc: arnd@arndb.de, olof@lixom.net, linux@arm.linux.org.uk,
+        thomas.petazzoni@free-electrons.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] ARM: Marvell: Remove init cpus function
+Message-ID: <20150119213028.GB2938@lunn.ch>
+References: <1421686381-12397-1-git-send-email-daniel.lezcano@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54A6DAE8.90609@ti.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1421686381-12397-1-git-send-email-daniel.lezcano@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nishanth Menon <nm@ti.com> [150102 09:55]:
-> On 01/02/2015 11:38 AM, Tony Lindgren wrote:
-> > * Nishanth Menon <nm@ti.com> [150102 09:20]:
-> >> Hi,
-> >>
-> >> OMAP4 and AM437x ROM code provides services to program PL310's latency
-> >> registers and AM437x provides service for programming Address filter
-> >> registers.
-> >>
-> >> Provide support in the kernel for the same.
-> >>
-> >> This provides some support to the series: http://marc.info/?l=linux-arm-kernel&m=141933190912495&w=2
-> > 
-> > Are these to be applied before Thomasz's series as fixes? If we
-> > don't need these as fixes for the -rc, then probably makes sense
-> > for RMK to merge them all together for v3.20.
-> > 
-> These dont need to go in fixes. Can easily wait till 3.20. Thomaz
-> series wont exercise these path by default until someone modifies the
-> DT properties. Yes, will be nice to have them along with other changes
-> in v3.20. just for the record, i made a couple of typos in v1 of this
-> series and have updated a retested v2 of the series.
+On Mon, Jan 19, 2015 at 05:52:59PM +0100, Daniel Lezcano wrote:
+> With the next patches, the init cpus function will be changed to be factored
+> out.
+> 
+> The function 'armada_xp_smp_init_cpus' does nothing more than a sanity check
+> after the DT has been parsed. Even if this code is valid, it does not give a
+> real benefit as the DT should be correctly filled.
+> 
+> Remove this callback.
 
-Applying both int omap-for-v3.20/fixes thanks.
+Hi Daniel
 
-Regards,
+What is your plan for getting these merged? Do you want me to take the
+mvebu patch? Or are you thinking of sending the complete series to the
+arm-soc maintainers?
 
-Tony
+Thanks
+	Andrew
+
+> 
+> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+> ---
+>  arch/arm/mach-mvebu/platsmp.c | 11 -----------
+>  1 file changed, 11 deletions(-)
+> 
+> diff --git a/arch/arm/mach-mvebu/platsmp.c b/arch/arm/mach-mvebu/platsmp.c
+> index 58cc8c1..3e93422 100644
+> --- a/arch/arm/mach-mvebu/platsmp.c
+> +++ b/arch/arm/mach-mvebu/platsmp.c
+> @@ -30,8 +30,6 @@
+>  #include "pmsu.h"
+>  #include "coherency.h"
+>  
+> -#define ARMADA_XP_MAX_CPUS 4
+> -
+>  #define AXP_BOOTROM_BASE 0xfff00000
+>  #define AXP_BOOTROM_SIZE 0x100000
+>  
+> @@ -114,14 +112,6 @@ static void armada_xp_secondary_init(unsigned int cpu)
+>  	mvebu_v7_pmsu_idle_exit();
+>  }
+>  
+> -static void __init armada_xp_smp_init_cpus(void)
+> -{
+> -	unsigned int ncores = num_possible_cpus();
+> -
+> -	if (ncores == 0 || ncores > ARMADA_XP_MAX_CPUS)
+> -		panic("Invalid number of CPUs in DT\n");
+> -}
+> -
+>  static void __init armada_xp_smp_prepare_cpus(unsigned int max_cpus)
+>  {
+>  	struct device_node *node;
+> @@ -171,7 +161,6 @@ static int armada_xp_cpu_kill(unsigned int cpu)
+>  #endif
+>  
+>  struct smp_operations armada_xp_smp_ops __initdata = {
+> -	.smp_init_cpus		= armada_xp_smp_init_cpus,
+>  	.smp_prepare_cpus	= armada_xp_smp_prepare_cpus,
+>  	.smp_boot_secondary	= armada_xp_boot_secondary,
+>  	.smp_secondary_init     = armada_xp_secondary_init,
+> -- 
+> 1.9.1
+> 
+> 
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
