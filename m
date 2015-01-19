@@ -1,119 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752307AbbASOAc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 09:00:32 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:35755 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751963AbbASOA0 (ORCPT
+	id S1752362AbbASOBJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 09:01:09 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:38328 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751404AbbASOBG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 09:00:26 -0500
+	Mon, 19 Jan 2015 09:01:06 -0500
+Date: Mon, 19 Jan 2015 15:01:01 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Dmitry Osipenko <digetx@gmail.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] ARM: tegra: Store tegra_resume() address in IRAM
+Message-ID: <20150119140059.GE23778@ulmo.nvidia.com>
+References: <1421319545-23920-1-git-send-email-digetx@gmail.com>
+ <1421319545-23920-3-git-send-email-digetx@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20150119135144.GI11835@e104818-lin.cambridge.arm.com>
-References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org>
-	<1421247905-3749-5-git-send-email-hanjun.guo@linaro.org>
-	<20150119114255.GF11835@e104818-lin.cambridge.arm.com>
-	<CAKv+Gu8vPKAdsNg7QC7xW+i8_BemWEx4mvBx6NrnAHi8Y+bNtw@mail.gmail.com>
-	<20150119135144.GI11835@e104818-lin.cambridge.arm.com>
-Date: Mon, 19 Jan 2015 14:00:24 +0000
-Message-ID: <CAKv+Gu_KmJOHM5-QHQFHc5eDtUMQjmf=7jD4+e32aq0JerTcLg@mail.gmail.com>
-Subject: Re: [PATCH v7 04/17] ARM64 / ACPI: Introduce early_param for "acpi"
- and pass acpi=force to enable ACPI
-From: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "wangyijing@huawei.com" <wangyijing@huawei.com>,
-        Rob Herring <robh@kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Al Stone <al.stone@linaro.org>, Timur Tabi <timur@codeaurora.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        "jcm@redhat.com" <jcm@redhat.com>, Mark Brown <broonie@kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jTMWTj4UTAEmbWeb"
+Content-Disposition: inline
+In-Reply-To: <1421319545-23920-3-git-send-email-digetx@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 January 2015 at 13:51, Catalin Marinas <catalin.marinas@arm.com> wrote:
-> On Mon, Jan 19, 2015 at 11:55:32AM +0000, Ard Biesheuvel wrote:
->> On 19 January 2015 at 11:42, Catalin Marinas <catalin.marinas@arm.com> wrote:
->> > On Wed, Jan 14, 2015 at 03:04:52PM +0000, Hanjun Guo wrote:
->> >> From: Al Stone <al.stone@linaro.org>
->> >>
->> >> Introduce one early parameters "off" and "force" for "acpi", acpi=off
->> >> will be the default behavior for ARM64, so introduce acpi=force to
->> >> enable ACPI on ARM64.
->> >>
->> >> Disable ACPI before early parameters parsed, and enable it to pass
->> >> "acpi=force" if people want use ACPI on ARM64. This ensures DT be
->> >> the prefer one if ACPI table and DT both are provided at this moment.
->> > [...]
->> >> --- a/arch/arm64/kernel/setup.c
->> >> +++ b/arch/arm64/kernel/setup.c
->> >> @@ -62,6 +62,7 @@
->> >>  #include <asm/memblock.h>
->> >>  #include <asm/psci.h>
->> >>  #include <asm/efi.h>
->> >> +#include <asm/acpi.h>
->> >>
->> >>  unsigned int processor_id;
->> >>  EXPORT_SYMBOL(processor_id);
->> >> @@ -388,6 +389,8 @@ void __init setup_arch(char **cmdline_p)
->> >>       early_fixmap_init();
->> >>       early_ioremap_init();
->> >>
->> >> +     disable_acpi();
->> >> +
->> >>       parse_early_param();
->> >>
->> >>       /*
->> >
->> > Did we get to any conclusion here? DT being the preferred one is fine
->> > when both DT and ACPI are present but do we still want the kernel to
->> > ignore ACPI altogether if DT is not present? It's a bit harder to detect
->> > the presence of DT at this point since the EFI_STUB added one already. I
->> > guess we could move the "acpi=force" argument passing to EFI_STUB if no
->> > DT is present at boot.
->>
->> Since the EFI stub populates the /chosen node in DT, I would prefer
->> for it to add a property there to indicate whether it created the DT
->> from scratch rather than adding ACPI specific stuff in there (even if
->> it is just a string to concatenate)
->
-> This works for me. So we could pass "acpi=force" in EFI stub if it
-> created the DT from scratch *and* ACPI tables are present (can it detect
-> the latter? And maybe it could print something if none are available).
-> If that works, the actual kernel can assume that ACPI needs to be
-> explicitly enabled via acpi=force, irrespective of how much information
-> it has in DT.
->
 
-Erm, that is not at all what I meant. What I meant was, that if it is
-interesting to the kernel proper to know whether the DT was created
-from scratch by the stub rather than received from the firmware, we
-can record that particular fact in the /chosen node, and nothing else.
-How this is interpreted is up to the kernel proper entirely.
+--jTMWTj4UTAEmbWeb
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Note that the stub may outlive many subsequent kexec reboots, so
-dividing policy like this across the stub/kernel boundary is asking
-for trouble imo. For instance, booting with a DT via kexec would be
-impossible unless we add special handling for this case, which is
-exactly what I tried to avoid with my latest virtmap series.
+On Thu, Jan 15, 2015 at 01:58:58PM +0300, Dmitry Osipenko wrote:
+> Commit 7232398abc6a ("ARM: tegra: Convert PMC to a driver") changed tegra=
+_resume()
+> location storing from late to early and, as a result, broke suspend on Te=
+gra20.
+> PMC scratch register 41 is used by tegra LP1 resume code for retrieving s=
+tored
+> physical memory address of common resume function and in the same time us=
+ed by
+> tegra20_cpu_shutdown() (shared by Tegra20 cpuidle driver and platform SMP=
+ code),
+> which is storing CPU1 "resettable" status. It implies strict order of scr=
+atch
+> register usage, otherwise resume function address is lost on Tegra20 after
+> disabling non-boot CPU's on suspend. Fix it by storing tegra_resume() phy=
+sical
+> address in IRAM instead of PMC scratch register.
+>=20
+> Signed-off-by: Dmitry Osipenko <digetx@gmail.com>
+> Fixes: 7232398abc6a (ARM: tegra: Convert PMC to a driver)
+> Cc: <stable@vger.kernel.org> # v3.17+
+> ---
+>  arch/arm/mach-tegra/pm.c            |  3 +++
+>  arch/arm/mach-tegra/reset-handler.S |  4 ++++
+>  arch/arm/mach-tegra/reset.h         |  4 ++++
+>  arch/arm/mach-tegra/sleep-tegra20.S |  7 ++++---
+>  arch/arm/mach-tegra/sleep-tegra30.S |  7 ++++---
+>  drivers/soc/tegra/pmc.c             | 19 -------------------
+>  6 files changed, 19 insertions(+), 25 deletions(-)
 
--- 
-Ard.
+I don't think this is a good variant. I'm sure it'll work, but storing a
+pointer to tegra_resume() is actually the documented purpose of the PMC
+scratch 41 register. That is, some software (like bootloaders and
+whatnot) may actually rely on this behaviour.
+
+Thierry
+
+--jTMWTj4UTAEmbWeb
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUvQ4bAAoJEN0jrNd/PrOhEq0QAIbOqwSoLUJdyKmB5gLoJ9eD
+TWtACxINVQW+8zXcfz7aVvMYOrv7AJnIIjLGmV3e9vIQCp6igQ5jMcZtiFrSEHe3
+0nPtbeAwUMrZ5H95ouHsTmKPAN/Er4TirhaFFT5HG0ts0zrFMZqha1A9/lKz/BNx
+d6fprKk249sbTqst4IizXnjv6xQecEdlWH+YsGeLlF3YUHySt18N+sOLl3otwPQu
+c08D7l5W2j6R2E2gD9uNc9r2WC9J0VxtcEZzaNzE98aKApU/+giXzZWdVV+KSJY/
+wB0lyYd6Zx9YJXfAzw5B2jXs56BK5DMCzayAwXHfoxdweNLHqD+v0yW9fKUM1QP1
+Y5Nwf6cPwWRfN75xjfyUYe2GmtbSTHr7YdugsV/SrdnfolWVO44wgeHfLQrJDMeX
+tNOChN5mhtXGdG8ckPr5VO4KACfeUtm29ZNBr/DXVZZk0Ean2OKnrAgRiMX4nA2p
+unT86kPhDu/N20CnN8ArzyEZXwFPbqK9hCYfIYCDnqa77jPTlFLFocNSAM7AfFSa
+y/X26N/RTam8sShF1B0jkDB6VZogNJbWnreYVLcudCsJ2Dx1JM2EY+rpfPfD/uhd
+2cEnO4E7lWOdv+WQady9+s9YWt9noPnpClVDhK1jKcKWuVsUabebOv41NRQuDdIe
+ddoWnkVIHugTml0gMP2k
+=vcfL
+-----END PGP SIGNATURE-----
+
+--jTMWTj4UTAEmbWeb--
