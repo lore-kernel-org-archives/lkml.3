@@ -1,68 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751921AbbASMpm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 07:45:42 -0500
-Received: from bombadil.infradead.org ([198.137.202.9]:52194 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750728AbbASMpl (ORCPT
+	id S1752197AbbASMpo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 07:45:44 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:53614 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751609AbbASMpm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 07:45:41 -0500
-Date: Mon, 19 Jan 2015 13:45:28 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-Cc: Ingo Molnar <mingo@redhat.com>, Juri Lelli <juri.lelli@arm.com>,
-        Kirill Tkhai <ktkhai@parallels.com>, linux-kernel@vger.kernel.org,
-        tim.c.chen@linux.intel.com, riel@redhat.com, jason.low2@hp.com,
-        fweisbec@gmail.com
-Subject: Re: [PATCH v6 5/7] sched/fair: fix idle balance when remaining tasks
- are all non-CFS tasks
-Message-ID: <20150119124528.GO25256@twins.programming.kicks-ass.net>
-References: <1416962647-76792-1-git-send-email-wanpeng.li@linux.intel.com>
- <1416962647-76792-6-git-send-email-wanpeng.li@linux.intel.com>
+	Mon, 19 Jan 2015 07:45:42 -0500
+Message-ID: <54BCFC6E.1080007@hitachi.com>
+Date: Mon, 19 Jan 2015 21:45:34 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1416962647-76792-6-git-send-email-wanpeng.li@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+To: Wang Nan <wangnan0@huawei.com>
+Cc: tixy@linaro.org, linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, lizefan@huawei.com
+Subject: Re: [PATCH] kprobes: bugfix: checks kprobes_all_disarmed in unoptimized_kprobe().
+References: <54B3B32E.7070709@hitachi.com> <1421064563-77831-1-git-send-email-wangnan0@huawei.com> <54B3C3A0.6010708@hitachi.com> <54BC742E.80006@huawei.com> <54BCC8C0.40706@hitachi.com> <54BCE8C3.4080903@huawei.com>
+In-Reply-To: <54BCE8C3.4080903@huawei.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Nov 26, 2014 at 08:44:05AM +0800, Wanpeng Li wrote:
-> The overload indicator is used for knowing when we can totally avoid load
-> balancing to a cpu that is about to go idle. We can avoid load balancing
-> when no cpu has cfs task and both rt and deadline have push/pull mechanism
-> to do their own balancing.
+(2015/01/19 20:21), Wang Nan wrote:
+> On 2015/1/19 17:05, Masami Hiramatsu wrote:
+>> Hi Wang,
+>>
+>> I've found a problem on this patch, since kprobes calls unoptioize_kprobe
+>> with kprobes_all_disarmed=true when trying to disable all kprobes, this
+>> cause a serious problem.
+>>
+>> Moreover, I couldn't reproduce your reported bug on my 3.19-rc4 kernel.
+>> Could you test it again?
+>>
 > 
-> However, rq->nr_running on behalf of the total number of each class tasks
-> on the cpu, do idle balance when remaining tasks are all non-CFS tasks does
-> not make any sense.
+> I tested it again based on 3.19-rc5 and found that the problem still exists.
+> My testing is based on QEMU.
 > 
-> This patch fix it by idle balance when there are still other CFS tasks in
-> the rq's root domain.
-> 
+> First I tested my kprobeopt for ARM, then on x86_64. The test results are pasted
+> at the bottom of this mail. Commands after 'gdb attaches to QEMU' is my actions
+> on a gdb console attached to QEMU; commands after 'inside virtual machine' is
+> what I do in Linux run under QEMU.
 
-Please always try and Cc the people who touched that code last; for the
-idle_balance bits commit 4486edd12b5a ("sched/fair: Implement fast
-idling of CPUs when the system is partially loaded") gives a fair clue
-as to who that would be.
+Thank you for the reporting.
+So, now I know what happened, the problem is "debugfs/kprobes/enabled doesn't work
+correctly on optimized kprobes". Please make update the patch description.
 
-> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
-> index 31f1e4d..f7dd978 100644
-> --- a/kernel/sched/sched.h
-> +++ b/kernel/sched/sched.h
-> @@ -1269,7 +1269,8 @@ static inline void add_nr_running(struct rq *rq, unsigned count)
->  
->  	rq->nr_running = prev_nr + count;
->  
-> -	if (prev_nr < 2 && rq->nr_running >= 2) {
-> +	if (prev_nr < 2 && rq->nr_running >= 2 &&
-> +		rq->cfs.h_nr_running > 0) {
->  #ifdef CONFIG_SMP
->  		if (!rq->rd->overload)
->  			rq->rd->overload = true;
+I also reproduced the bug without gdb.
+Here is the log.
 
-Here 3882ec643997 ("nohz: Use IPI implicit full barrier against
-rq->nr_running r/w") might be a clue.
+----
+[root@localhost ~]# cd /sys/kernel/debug/tracing/
+[root@localhost tracing]# echo p do_fork+5 > kprobe_events	# setup new event
+[root@localhost tracing]# echo $$ > set_ftrace_pid		# trace only this process
+[root@localhost tracing]# echo 1 > events/kprobes/p_do_fork_5/enable	# enable it
+[root@localhost tracing]# cat trace				# check the trace data
+# tracer: nop
+#
+# entries-in-buffer/entries-written: 1/1   #P:8
+#
+#                              _-----=> irqs-off
+#                             / _----=> need-resched
+#                            | / _---=> hardirq/softirq
+#                            || / _--=> preempt-depth
+#                            ||| /     delay
+#           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
+#              | |       |   ||||       |         |
+            bash-3883  [006] d...   279.799023: p_do_fork_5: (do_fork+0x5/0x360) # OK, now tracing
+[root@localhost tracing]# cat ../kprobes/list
+ffffffff810bc1c5  k  do_fork+0x5    [OPTIMIZED]			# and it is actually optimized
+[root@localhost tracing]# echo 0 > ../kprobes/enabled		# disable *ALL* kprobes
+[root@localhost tracing]# echo > trace				# clear events
+[root@localhost tracing]# cat trace				# this should show empty buffer
+# tracer: nop
+#
+# entries-in-buffer/entries-written: 1/1   #P:8
+#
+#                              _-----=> irqs-off
+#                             / _----=> need-resched
+#                            | / _---=> hardirq/softirq
+#                            || / _--=> preempt-depth
+#                            ||| /     delay
+#           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
+#              | |       |   ||||       |         |
+            bash-3883  [006] d...   337.770785: p_do_fork_5: (do_fork+0x5/0x360)  # But still tracing!
+[root@localhost tracing]# cat trace				# Check again
+# tracer: nop
+#
+# entries-in-buffer/entries-written: 2/2   #P:8
+#
+#                              _-----=> irqs-off
+#                             / _----=> need-resched
+#                            | / _---=> hardirq/softirq
+#                            || / _--=> preempt-depth
+#                            ||| /     delay
+#           TASK-PID   CPU#  ||||    TIMESTAMP  FUNCTION
+#              | |       |   ||||       |         |
+            bash-3883  [006] d...   337.770785: p_do_fork_5: (do_fork+0x5/0x360)
+            bash-3883  [006] d...   345.592178: p_do_fork_5: (do_fork+0x5/0x360) # We are tracing!!
 
-Also, this is wrong, it breaks NOHZ_FULL.
+So, after global disabling kprobes, ALL kprobes event should be disabled, but not.
+
+OK, I think your first patch is better than the second one, but not enough.
+What we should do is use kprobes_all_disarmed for force option like below.
+
+	unoptimize_kprobe(p, kprobes_all_disarmed);    /* Try to unoptimize */
+
+We also would better to check the flag in unregistering path for skipping unneeded
+disarming process when kprobes globally disarmed.
+
+Thank you,
+
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
+
+
