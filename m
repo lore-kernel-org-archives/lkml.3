@@ -1,88 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130AbbASLvt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 06:51:49 -0500
-Received: from mga09.intel.com ([134.134.136.24]:48059 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752004AbbASLvo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 06:51:44 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,426,1418112000"; 
-   d="scan'208";a="514247937"
-From: Octavian Purdila <octavian.purdila@intel.com>
-To: lee.jones@linaro.org
-Cc: johan@kernel.org, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Octavian Purdila <octavian.purdila@intel.com>
-Subject: [PATCH v3 2/2] mfd: dln2: add suspend/resume functionality
-Date: Mon, 19 Jan 2015 13:51:36 +0200
-Message-Id: <1421668296-28470-3-git-send-email-octavian.purdila@intel.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1421668296-28470-1-git-send-email-octavian.purdila@intel.com>
-References: <1421668296-28470-1-git-send-email-octavian.purdila@intel.com>
+	id S1752017AbbASLwh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 06:52:37 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:62757 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750850AbbASLwf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 06:52:35 -0500
+Message-ID: <54BCEFDA.4050803@huawei.com>
+Date: Mon, 19 Jan 2015 19:51:54 +0800
+From: Wang Nan <wangnan0@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: Jiri Olsa <jolsa@redhat.com>
+CC: <acme@kernel.org>, <paulus@samba.org>, <mingo@redhat.com>,
+        <namhyung@kernel.org>, <lizefan@huawei.com>,
+        <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@kernel.org>
+Subject: Re: [PATCH] perf: perl: force to use stdbool.
+References: <1421301354-58012-1-git-send-email-wangnan0@huawei.com> <54BCDF89.5070008@huawei.com> <20150119112313.GC11009@krava.brq.redhat.com>
+In-Reply-To: <20150119112313.GC11009@krava.brq.redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.69.129]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without suspend/resume functionality in the USB driver the USB core
-will disconnect and reconnect the DLN2 port and because the GPIO
-framework does not yet support removal of an in-use controller a
-suspend/resume operation will result in a crash.
+On 2015/1/19 19:23, Jiri Olsa wrote:
+> On Mon, Jan 19, 2015 at 06:42:17PM +0800, Wang Nan wrote:
+>> Add Jiri Olsa jolsa@kernel.org to CC list. I think jolsa@kernel.org should be the main
+>> email address he uses.
+> 
+> ack ;-)
+> 
+> jirka
+> 
+>>
+>> On 2015/1/15 13:55, Wang Nan wrote:
+>>> When building perf for arm64 I hit a warning (and be treated as an
+>>> error) like below:
+>>>
+>>>  aarch64-oe-linux-gcc -o .../util/scripting-engines/trace-event-python.o -c -Wbad-function-cast \
+>>> 	 ... util/scripting-engines/trace-event-python.c
+>>>
+>>>  In file included from .../usr/lib64/perl/5.14.3/CORE/perl.h:2464:0,
+>>>                   from Context.xs:23:
+>>>  /.../usr/lib64/perl/5.14.3/CORE/handy.h:108:0: error: "bool" redefined [-Werror]
+>>>   #  define bool char
+>>>   ^
+>>>  In file included from /.../usr/src/kernel/tools/include/linux/types.h:4:0,
+>>>                   from /.../usr/src/kernel/arch/arm64/include/uapi/asm/sigcontext.h:19,
+>>> 		  from /.../usr/include/bits/sigcontext.h:27,
+>>> 		  from /.../usr/include/signal.h:340,
+>>> 		  from /.../usr/include/sys/param.h:28,
+>>> 		  from /.../usr/lib64/perl/5.14.3/CORE/perl.h:678,
+>>> 		  from Context.xs:23:
+>>>   /.../usr/lib/aarch64-oe-linux/gcc/aarch64-oe-linux/4.9.2/include/stdbool.h:33:0: note: this is the location of the previous definition
+>>>     #define bool _Bool
+>>>
+>>> Looks like the failure is caused by arm64 uapi/asm/sigcontext.h, which
+>>> includes linux/types.h while other archs not.
+>>>
+>>> This patch includes stdbool.h before Context.xs and define HAS_BOOL to
+>>> prevent perl'e headers define its own 'bool'.
+>>>
+>>> Signed-off-by: Wang Nan <wangnan0@huawei.com>
+>>> ---
+>>>  tools/perf/scripts/perl/Perf-Trace-Util/Context.c | 3 ++-
+>>>  1 file changed, 2 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/tools/perf/scripts/perl/Perf-Trace-Util/Context.c b/tools/perf/scripts/perl/Perf-Trace-Util/Context.c
+>>> index 790ceba..69c3572 100644
+>>> --- a/tools/perf/scripts/perl/Perf-Trace-Util/Context.c
+>>> +++ b/tools/perf/scripts/perl/Perf-Trace-Util/Context.c
+>>> @@ -5,7 +5,8 @@
+>>>   *	ANY CHANGES MADE HERE WILL BE LOST! 
+>>>   *
+>>>   */
+>>> -
+>>> +#include <stdbool.h>
+>>> +#define HAS_BOOL 1
+> 
+> I saw this patch before.. but I had no idea ;-)
+> 
+> seems hacky to me? Is there any doc saying 'this is how you handle this with perl' ? ;-)
+> 
 
-This patch provides suspend and resume functions for the DLN2 driver
-so that the above scenario is avoided, if the host controller does not
-drop VBUS during suspend, since in this case the device state is
-preserved.
+It is hacky. I'm not very familiar with perl, I just try to build it.
 
-We chose not implemented reset_resume so that if the host controller
-does drop VBUS the resume path will go through above the
-disconnect/reconnect process since it is probably better to fix the
-GPIO framework disconnect issue then to save and restore the device
-state for every driver.
+I checked perl's repository and found that newest perl does consider this problem:
 
-Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
-Reviewed-by: Johan Hovold <johan@kernel.org>
----
- drivers/mfd/dln2.c | 20 ++++++++++++++++++++
- 1 file changed, 20 insertions(+)
+http://perl5.git.perl.org/perl.git/commit/bd31be4baa3ee68abdb92c0db3200efe0fad903b
 
-diff --git a/drivers/mfd/dln2.c b/drivers/mfd/dln2.c
-index 8311820..1be9bd1 100644
---- a/drivers/mfd/dln2.c
-+++ b/drivers/mfd/dln2.c
-@@ -791,6 +791,24 @@ out_free:
- 	return ret;
- }
- 
-+static int dln2_suspend(struct usb_interface *iface, pm_message_t message)
-+{
-+	struct dln2_dev *dln2 = usb_get_intfdata(iface);
-+
-+	dln2_stop(dln2);
-+
-+	return 0;
-+}
-+
-+static int dln2_resume(struct usb_interface *iface)
-+{
-+	struct dln2_dev *dln2 = usb_get_intfdata(iface);
-+
-+	dln2->disconnect = false;
-+
-+	return dln2_start_rx_urbs(dln2, GFP_NOIO);
-+}
-+
- static const struct usb_device_id dln2_table[] = {
- 	{ USB_DEVICE(0xa257, 0x2013) },
- 	{ }
-@@ -803,6 +821,8 @@ static struct usb_driver dln2_driver = {
- 	.probe = dln2_probe,
- 	.disconnect = dln2_disconnect,
- 	.id_table = dln2_table,
-+	.suspend = dln2_suspend,
-+	.resume = dln2_resume,
- };
- 
- module_usb_driver(dln2_driver);
--- 
-1.9.1
+So the root cause is in my perl version.
+
+What's your policy then? Do you think we should provid a workaround or just force
+users update their perl?
+
+Thank you.
+
+> I couldn't find any.. or more detailed explanation why we should
+> define HAS_BOOL and not perl headers..
+> 
+> thanks,
+> jirka
+> 
+
 
