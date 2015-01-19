@@ -1,127 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752119AbbASQhr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 11:37:47 -0500
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.174]:8587 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751922AbbASQhp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 11:37:45 -0500
-X-Env-Sender: stwiss.opensource@diasemi.com
-X-Msg-Ref: server-14.tower-39.messagelabs.com!1421685462!20103396!1
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.12.5; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <d765ef11de06a4ac5721ecf3283ba1333a6d0c8c.1421684991.git.stwiss.opensource@diasemi.com>
-In-Reply-To: <cover.1421684991.git.stwiss.opensource@diasemi.com>
-References: <cover.1421684991.git.stwiss.opensource@diasemi.com>
-From: Steve Twiss <stwiss.opensource@diasemi.com>
-Date: Mon, 19 Jan 2015 16:29:51 +0000
-Subject: [PATCH V2 1/2] mfd: da9063: Add device tree support
-To: Grant Likely <grant.likely@linaro.org>, Lee Jones <lee.jones@linaro.org>,
-        Mark Brown <broonie@linaro.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        "Rob Herring" <robh+dt@kernel.org>,
-        Samuel Ortiz <sameo@linux.intel.com>
-CC: DT <devicetree@vger.kernel.org>, David Dajun Chen <david.chen@diasemi.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        "Kumar Gala" <galak@codeaurora.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "Mark Rutland" <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        "Philipp Zabel" <p.zabel@pengutronix.de>,
-        Support Opensource <support.opensource@diasemi.com>
+	id S1751819AbbASQe2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 11:34:28 -0500
+Received: from lists.s-osg.org ([54.187.51.154]:53280 "EHLO lists.s-osg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750824AbbASQe0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 11:34:26 -0500
+Message-ID: <54BD3208.1040409@osg.samsung.com>
+Date: Mon, 19 Jan 2015 09:34:16 -0700
+From: Shuah Khan <shuahkh@osg.samsung.com>
+Organization: Samsung Open Source Group
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Michael Ellerman <mpe@ellerman.id.au>
+CC: linux-kernel@vger.kernel.org, mmarek@suse.cz, gregkh@linuxfoundation.org,
+        akpm@linux-foundation.org, rostedt@goodmis.org, mingo@redhat.com,
+        davem@davemloft.net, keescook@chromium.org, tranmanphong@gmail.com,
+        cov@codeaurora.org, dh.herrmann@gmail.com, hughd@google.com,
+        bobby.prani@gmail.com, serge.hallyn@ubuntu.com, ebiederm@xmission.com,
+        tim.bird@sonymobile.com, josh@joshtriplett.org, koct9i@gmail.com,
+        linux-kbuild@vger.kernel.org, linux-api@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 4/6] kbuild: add a new kselftest_install make target to
+ install selftests
+References: <1420794375-31881-1-git-send-email-mpe@ellerman.id.au> <1420794375-31881-4-git-send-email-mpe@ellerman.id.au> <54B93DA1.2010601@osg.samsung.com> <1421627747.3787.7.camel@ellerman.id.au>
+In-Reply-To: <1421627747.3787.7.camel@ellerman.id.au>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steve Twiss <stwiss.opensource@diasemi.com>
+On 01/18/2015 05:35 PM, Michael Ellerman wrote:
+> On Fri, 2015-01-16 at 09:34 -0700, Shuah Khan wrote:
+>> On 01/09/2015 02:06 AM, Michael Ellerman wrote:
+>>> Add a new make target to install kernel selftests. This new target will
+>>> build and install selftests.
+>>>
+>>> The default is just $(objtree)/selftests. This is preferable to
+>>> something based on $(INSTALL_MOD_PATH) (which defaults to /), as it
+>>> allows a normal user to install the tests. This is similar to the
+>>> default behaviour of make headers_install.
+>>
+>> A normal user can install tests at any location they choose by
+>> overriding the default path. For example:
+>>
+>> INSTALL_MOD_PATH=/tmp make kselftest_install
+>>
+>> will install under tmp.
+> 
+> Why default to a directory that most users can't write to? That's not helpful.
+> 
+> Users who are root can override the path, for example:
+> 
+> INSTALL_MOD_PATH=/ make kselftest_install
+> 
+>> The approach I used also ties test installs to kernel release.
+>> This addresses an important use-case for kernel developers
+>> that want to compare results from release to release.
+> 
+> Sure, I'm happy to add the kernel release, so the default would be
+> $(objtree)/selftests/$(kernel-release)/.
+> 
+>> The use-case for any user to be able to install tests at
+>> any location is addressed by the above example.
+> 
+> The default should work for most users most of the time, / does not achieve
+> that.
+> 
+>> I would like these two above use-cases continued to be supported,
+>> especially the one that tries the test installs to kernel release.
+> 
+> That's fine, I'm happy to update this to use kernel release. But defaulting to
+> / doesn't make sense.
+> 
 
-Add device tree support for DA9063 regulators; Real-Time Clock
-and Watchdog.
+I want to keep the kselftest installs to default to the location
+other kernel installs such as firmware and modules default to.
+This keep the use-case the same as other kernel installs. As user
+can override the location, I don't any problems with this.
 
-This patch is dependent on PATCH V2 2/2 
+For most kernel developers, INSTALL_MOD_PATH is the familiar place
+to cleanup kernels and I don't see any reason to change that.
 
-Signed-off-by: Steve Twiss <stwiss.opensource@diasemi.com>
+You are welcome to send patches to simply the install process for
+the individual tests for the next release. I want individual patches
+for each test and a separate patch for the shared logic patch.
 
----
-This patch applies against linux-next and v3.19-rc4 
+thanks,
+-- Shuah
 
- drivers/mfd/da9063-core.c       |  2 ++
- drivers/mfd/da9063-i2c.c        | 11 +++++++++++
- include/linux/mfd/da9063/core.h |  1 +
- 3 files changed, 14 insertions(+)
 
-diff --git a/drivers/mfd/da9063-core.c b/drivers/mfd/da9063-core.c
-index f38bc98..facd361 100644
---- a/drivers/mfd/da9063-core.c
-+++ b/drivers/mfd/da9063-core.c
-@@ -86,6 +86,7 @@ static const struct mfd_cell da9063_devs[] = {
- 	},
- 	{
- 		.name		= DA9063_DRVNAME_WATCHDOG,
-+		.of_compatible	= "dlg,da9063-watchdog",
- 	},
- 	{
- 		.name		= DA9063_DRVNAME_HWMON,
-@@ -101,6 +102,7 @@ static const struct mfd_cell da9063_devs[] = {
- 		.name		= DA9063_DRVNAME_RTC,
- 		.num_resources	= ARRAY_SIZE(da9063_rtc_resources),
- 		.resources	= da9063_rtc_resources,
-+		.of_compatible	= "dlg,da9063-rtc",
- 	},
- 	{
- 		.name		= DA9063_DRVNAME_VIBRATION,
-diff --git a/drivers/mfd/da9063-i2c.c b/drivers/mfd/da9063-i2c.c
-index 21fd8d9..0e94b20 100644
---- a/drivers/mfd/da9063-i2c.c
-+++ b/drivers/mfd/da9063-i2c.c
-@@ -25,6 +25,9 @@
- #include <linux/mfd/da9063/pdata.h>
- #include <linux/mfd/da9063/registers.h>
- 
-+#include <linux/of.h>
-+#include <linux/regulator/of_regulator.h>
-+
- static const struct regmap_range da9063_ad_readable_ranges[] = {
- 	{
- 		.range_min = DA9063_REG_PAGE_CON,
-@@ -203,6 +206,13 @@ static struct regmap_config da9063_regmap_config = {
- 	.cache_type = REGCACHE_RBTREE,
- };
- 
-+static const struct of_device_id da9063_dt_ids[] = {
-+	{ .compatible = "dlg,da9063-ad", },
-+	{ .compatible = "dlg,da9063-bb", },
-+	{ .compatible = "dlg,da9063-ca", },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(of, da9063_dt_ids);
- static int da9063_i2c_probe(struct i2c_client *i2c,
- 	const struct i2c_device_id *id)
- {
-@@ -257,6 +267,7 @@ static struct i2c_driver da9063_i2c_driver = {
- 	.driver = {
- 		.name = "da9063",
- 		.owner = THIS_MODULE,
-+		.of_match_table = of_match_ptr(da9063_dt_ids),
- 	},
- 	.probe    = da9063_i2c_probe,
- 	.remove   = da9063_i2c_remove,
-diff --git a/include/linux/mfd/da9063/core.h b/include/linux/mfd/da9063/core.h
-index b92a326..79f4d82 100644
---- a/include/linux/mfd/da9063/core.h
-+++ b/include/linux/mfd/da9063/core.h
-@@ -36,6 +36,7 @@ enum da9063_models {
- enum da9063_variant_codes {
- 	PMIC_DA9063_AD = 0x3,
- 	PMIC_DA9063_BB = 0x5,
-+	PMIC_DA9063_CA = 0x6,
- };
- 
- /* Interrupts */
 -- 
-end-of-patch for PATCH V2
-
+Shuah Khan
+Sr. Linux Kernel Developer
+Open Source Innovation Group
+Samsung Research America (Silicon Valley)
+shuahkh@osg.samsung.com | (970) 217-8978
