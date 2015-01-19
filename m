@@ -1,88 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752424AbbASVoG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 16:44:06 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:53422 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752237AbbASVnw (ORCPT
+	id S1752123AbbASVta (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 16:49:30 -0500
+Received: from smtprelay0171.hostedemail.com ([216.40.44.171]:41287 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751621AbbASVt3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 16:43:52 -0500
-From: Guenter Roeck <linux@roeck-us.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
-        linux-kernel@vger.kernel.org, Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH 3/3] sysfs: Document struct attribute_group
-Date: Mon, 19 Jan 2015 13:43:26 -0800
-Message-Id: <1421703806-29791-4-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 2.1.0
-In-Reply-To: <1421703806-29791-1-git-send-email-linux@roeck-us.net>
-References: <1421703806-29791-1-git-send-email-linux@roeck-us.net>
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020201.54BD7A98.01C7,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 12
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Mon, 19 Jan 2015 16:49:29 -0500
+X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2553:2559:2562:2741:2897:3138:3139:3140:3141:3142:3353:3865:3867:3868:3871:3872:3874:4250:4321:4605:5007:6119:6120:6261:7875:9040:9121:10004:10400:10848:11026:11657:11658:11914:12043:12262:12294:12296:12438:12517:12519:12555:12679:12740:14096:14097:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: color47_1854257f9e34b
+X-Filterd-Recvd-Size: 2863
+Date: Mon, 19 Jan 2015 16:49:26 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>,
+        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH][v3.2] Revert: x86, 64bit, mm: Mark data/bss/brk to nx
+Message-ID: <20150119164926.168e8101@gandalf.local.home>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Document variables defined in struct attribute_group to ensure
-correct usage.
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Testing v3.2-rt I found that after merging the latest v3.2 stable tree,
+hotplug stopped working. I tested the latest v3.2 stable, and it was
+not working there either. I bisected it down to:
+
+commit e105c8187b7101e8a8a54ac0218c9d9c9463c636
+Author: Yinghai Lu <yinghai@kernel.org>
+Date:   Thu Jan 24 12:20:13 2013 -0800
+
+    x86, 64bit, mm: Mark data/bss/brk to nx
+    
+    commit 72212675d1c96f5db8ec6fb35701879911193158 upstream.
+
+Simply doing:
+
+ # echo 0 > /sys/devices/system/cpu/cpu1/online
+ # echo 1 > /sys/devices/system/cpu/cpu1/online
+
+caused the system to reboot.
+
+After reverting that commit, hotplug works again on the v3.2 stable
+tree.
+
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/sysfs.h | 15 +++++++++++++++
- 1 file changed, 15 insertions(+)
-
-diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
-index ddad161..99382c0 100644
---- a/include/linux/sysfs.h
-+++ b/include/linux/sysfs.h
-@@ -57,6 +57,21 @@ do {							\
- #define sysfs_attr_init(attr) do {} while (0)
- #endif
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 266f71719e42..783eba48d00c 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -778,7 +778,6 @@ void mark_rodata_ro(void)
+ 	unsigned long text_end = PAGE_ALIGN((unsigned long) &__stop___ex_table);
+ 	unsigned long rodata_end = PAGE_ALIGN((unsigned long) &__end_rodata);
+ 	unsigned long data_start = (unsigned long) &_sdata;
+-	unsigned long all_end;
  
-+/**
-+ * struct attribute_group - data structure used to declare an attribute group.
-+ * @name:	Optional: Attribute group name
-+ *		If specified, the attribute group will be created in
-+ *		a new subdirectory with this name.
-+ * @is_visible:	Optional: Function to return permissions associated with an
-+ *		attribute of the group. Will be called repeatedly for each
-+ *		attribute in the group. Only read/write permissions as well as
-+ *		SYSFS_PREALLOC are accepted. Must return 0 if an attribute is
-+ *		not visible. The returned value will replace static permissions
-+ *		defined in struct attribute or struct bin_attribute.
-+ * @attrs:	Pointer to NULL terminated list of attributes.
-+ * @bin_attrs:	Pointer to NULL terminated list of binary attributes.
-+ *		Either attrs or bin_attrs or both must be provided.
-+ */
- struct attribute_group {
- 	const char		*name;
- 	umode_t			(*is_visible)(struct kobject *,
--- 
-2.1.0
-
+ 	printk(KERN_INFO "Write protecting the kernel read-only data: %luk\n",
+ 	       (end - start) >> 10);
+@@ -787,8 +786,8 @@ void mark_rodata_ro(void)
+ 	kernel_set_to_readonly = 1;
+ 
+ 	/*
+-	 * The rodata/data/bss/brk section (but not the kernel text!)
+-	 * should also be not-executable.
++	 * The rodata section (but not the kernel text!) should also be
++	 * not-executable.
+ 	 *
+ 	 * We align all_end to PMD_SIZE because the existing mapping
+ 	 * is a full PMD. If we would align _brk_end to PAGE_SIZE we
+@@ -798,8 +797,7 @@ void mark_rodata_ro(void)
+ 	 * Any PMD which was setup after the one which covers _brk_end
+ 	 * has been zapped already via cleanup_highmem().
+ 	 */
+-	all_end = roundup((unsigned long)_brk_end, PMD_SIZE);
+-	set_memory_nx(rodata_start, (all_end - rodata_start) >> PAGE_SHIFT);
++	set_memory_nx(rodata_start, (end - rodata_start) >> PAGE_SHIFT);
+ 
+ 	rodata_test();
+ 
