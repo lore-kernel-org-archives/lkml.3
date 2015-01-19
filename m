@@ -1,302 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752597AbbASQpx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 11:45:53 -0500
-Received: from mail-wg0-f41.google.com ([74.125.82.41]:41076 "EHLO
-	mail-wg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752479AbbASQpg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 11:45:36 -0500
-From: Eric Auger <eric.auger@linaro.org>
-To: eric.auger@st.com, eric.auger@linaro.org, christoffer.dall@linaro.org,
-        marc.zyngier@arm.com, andre.przywara@arm.com,
-        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
-        kvm@vger.kernel.org, gleb@kernel.org, pbonzini@redhat.com
-Cc: linux-kernel@vger.kernel.org, patches@linaro.org
-Subject: [PATCH v8 5/5] KVM: arm/arm64: add irqfd support
-Date: Mon, 19 Jan 2015 17:43:13 +0100
-Message-Id: <1421685793-3547-6-git-send-email-eric.auger@linaro.org>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1421685793-3547-1-git-send-email-eric.auger@linaro.org>
-References: <1421685793-3547-1-git-send-email-eric.auger@linaro.org>
+	id S1752166AbbASQoq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 11:44:46 -0500
+Received: from mga11.intel.com ([192.55.52.93]:28778 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751520AbbASQoo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 11:44:44 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="442322225"
+From: "Pandruvada, Srinivas" <srinivas.pandruvada@intel.com>
+To: "Baluta, Daniel" <daniel.baluta@intel.com>
+CC: "lars@metafoo.de" <lars@metafoo.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "knaack.h@gmx.de" <knaack.h@gmx.de>,
+        "jic23@kernel.org" <jic23@kernel.org>,
+        "Purdila, Octavian" <octavian.purdila@intel.com>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "Westerberg, Mika" <mika.westerberg@intel.com>,
+        "pmeerw@pmeerw.net" <pmeerw@pmeerw.net>,
+        "beomho.seo@samsung.com" <beomho.seo@samsung.com>,
+        "gwendal@chromium.org" <gwendal@chromium.org>
+Subject: Re: [RFC PATCH] iio: ak8975: Make sure chipset is always initialized
+Thread-Topic: [RFC PATCH] iio: ak8975: Make sure chipset is always
+ initialized
+Thread-Index: AQHQHJv/pV0/XzoQpUK45pIcNb1+QJzIOKwAgAAiaIA=
+Date: Mon, 19 Jan 2015 16:44:31 +0000
+Message-ID: <1421685827.4459.397.camel@spandruv-desktop.jf.intel.com>
+References: <1418923002-901-1-git-send-email-daniel.baluta@intel.com>
+	 <5494A3D6.60607@gmx.de>
+	 <CAEnQRZABxH5MuWEnS=RHmQqGUN0QhFTtXxnM1uyrLxvP2a-Rmg@mail.gmail.com>
+	 <1419110796.2843.6.camel@spandruv-hsb-test>
+	 <1419110952.2843.8.camel@spandruv-hsb-test>
+	 <CAEnQRZC_SR_p2oYq9EpDDfBi2nCAAWvYmf0tR7V7WPZRZEp79g@mail.gmail.com>
+In-Reply-To: <CAEnQRZC_SR_p2oYq9EpDDfBi2nCAAWvYmf0tR7V7WPZRZEp79g@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.7.199.150]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <6216D29E7E51AA4E82131928876AC75C@intel.com>
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0JGipqj004754
 
-This patch enables irqfd on arm/arm64.
+On Mon, 2015-01-19 at 16:40 +0200, Daniel Baluta wrote: 
+> Hello,
+> 
+> On Sat, Dec 20, 2014 at 11:29 PM, Pandruvada, Srinivas
+> <srinivas.pandruvada@intel.com> wrote:
+> > +Mika
+> >
+> > On Sat, 2014-12-20 at 13:26 -0800, Srinivas Pandruvada wrote:
+> >> On Sat, 2014-12-20 at 00:25 +0200, Daniel Baluta wrote:
+> >> > On Sat, Dec 20, 2014 at 12:16 AM, Hartmut Knaack <knaack.h@gmx.de> wrote:
+> >> > > Daniel Baluta schrieb am 18.12.2014 um 18:16:
+> >> > >> When using ACPI, if acpi_match_device fails then chipset enum will be
+> >> > >> uninitialized and &ak_def_array[chipset] will point to some bad address.
+> >> > >>
+> >> I am missing something. You are enumerated over i2c device, which was
+> >> created from ACPI PNP resource. There is a valid handle or and the
+> >> device has an ACPI companion at the least. If this failing, I have to
+> >> check the code for acpi i2c.
+> >> Can you check why this check failed? We may have bug in i2c handling.
+> 
+> You are right about this. Under normal circumstances, if probe is called
+> then acpi_match_device will not fail. I even tried to remove the
+> device after probe
+> but before acpi_match_device, anyhow acpi_match_device was still successful :)
+> 
+> This is more a matter of code correctness.
+> 
+> In ak8975_match_acpi_device we have:
+> 
+> Â»       const struct acpi_device_id *id;
+> 
+> Â»       id = acpi_match_device(dev->driver->acpi_match_table, dev);
+> Â»       if (!id)
+> Â»       Â»       return NULL;
+> Â»       *chipset = (int)id->driver_data;
+> 
+> Compiler complains on the fact that chipset might be uninitialized
+> if this returns NULL, and we shouldn't ignore this warning even this case
+> will never happen.
+> 
+Will this fix?
+data->chipset = AK8975;
+before
+ak8975_match_acpi_device(&client->dev, &data->chipset);
 
-Both irqfd and resamplefd are supported. Injection is implemented
-in vgic.c without routing.
+Thanks,
+Srinivas 
+> We could use some code injection techniques to force acpi_match_device
+> to return NULL tough.
+> 
+> >> > >> This fixes the following compilation warning:
+> >> > >>
+> >> > >> drivers/iio/magnetometer/ak8975.c: In function â€˜ak8975_probeâ€™:
+> >> > >> drivers/iio/magnetometer/ak8975.c:788:14: warning: â€˜chipsetâ€™ may be used
+> >> > >> uninitialized in this function [-Wmaybe-uninitialized]
+> >> > >>   data->def =ak_def_array[chipset];
+> >> > >>
+> >> > >> Reported-by: Octavian Purdila <octavian.purdila@intel.com>
+> >> > >> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
+> >> > >> ---
+> >> > >> This is a RFC because while I'm pretty sure that chipset should be initialized
+> >> > >> with AK_MAX_TYPE in ak8975_match_acpi_device, I am not sure if we can live with
+> >> > >> a NULL return value of ak8975_match_acpi_device. Current implementation ignores
+> >> > >> return value of ak8975_match_acpi_device.
+> >> > > This seems to be the actual problem: these _match_acpi_device functions return
+> >> > > NULL on failure, and this should be checked for.
+> >> >
+> >> > Ok, so this would acceptable?
+> >> >
+> >> > diff --git a/drivers/iio/magnetometer/ak8975.c
+> >> > b/drivers/iio/magnetometer/ak8975.c
+> >> > index 0d10a4b..68d99e9 100644
+> >> > --- a/drivers/iio/magnetometer/ak8975.c
+> >> > +++ b/drivers/iio/magnetometer/ak8975.c
+> >> > @@ -776,8 +776,9 @@ static int ak8975_probe(struct i2c_client *client,
+> >> >                 name = id->name;
+> >> >         } else if (ACPI_HANDLE(&client->dev))
+> >> >                 name = ak8975_match_acpi_device(&client->dev, &chipset);
+> >> > -       else
+> >> > -               return -ENOSYS;
+> >> > +
+> >> > +       if (!name)
+> >> > +               return -ENODEV;
+> >> >
+> >> >
+> >> > I still have some doubts about return code in case of error.
+> >> >
+> >> > For ak8975 we use -ENOSYS, but for kxcjk-1013 we use -ENODEV.
+> >> >
+> >> > I will send a patch after we clear this out.
+> >> >
+> >> > thanks,
+> >> > Daniel.
+> >>
+> >
 
-This patch enables CONFIG_HAVE_KVM_EVENTFD and CONFIG_HAVE_KVM_IRQFD.
-
-KVM_CAP_IRQFD is now advertised. KVM_CAP_IRQFD_RESAMPLE capability
-automatically is advertised as soon as CONFIG_HAVE_KVM_IRQFD is set.
-
-Irqfd injection is restricted to SPI. The rationale behind not
-supporting PPI irqfd injection is that any device using a PPI would
-be a private-to-the-CPU device (timer for instance), so its state
-would have to be context-switched along with the VCPU and would
-require in-kernel wiring anyhow. It is not a relevant use case for
-irqfds.
-
-Signed-off-by: Eric Auger <eric.auger@linaro.org>
-
----
-v7 -> v8:
-- remove kvm_irq_has_notifier call
-- part of dist locking changes now are part of previous patch file
-- remove gic_initialized() check in kvm_set_irq
-- remove Christoffer's Reviewed-by after this change
-
-v5 -> v6:
-- KVM_CAP_IRQFD support depends on vgic_present
-- add Christoffer's Reviewed-by
-
-v4 -> v5:
-- squash [PATCH v4 3/3] KVM: arm64: add irqfd support into this patch
-- some rewording in Documentation/virtual/kvm/api.txt and in vgic
-  vgic_process_maintenance unlock comment.
-- move explanation of why not supporting PPI into commit message
-- in case of injection before gic readiness, -ENODEV is returned. It is
-  up to the user space to avoid this situation.
-
-v3 -> v4:
-- reword commit message
-- explain why we unlock the distributor before calling kvm_notify_acked_irq
-- rename is_assigned_irq into has_notifier
-- change EOI and injection kvm_debug format string
-- remove error local variable in kvm_set_irq
-- Move HAVE_KVM_IRQCHIP unset in a separate patch
-- handle case were the irqfd injection is attempted before the vgic is ready.
-  in such a case the notifier, if any, is called immediatly
-- use nr_irqs to test spi is within correct range
-
-v2 -> v3:
-- removal of irq.h from eventfd.c put in a separate patch to increase
-  visibility
-- properly expose KVM_CAP_IRQFD capability in arm.c
-- remove CONFIG_HAVE_KVM_IRQCHIP meaningfull only if irq_comm.c is used
-
-v1 -> v2:
-- rebase on 3.17rc1
-- move of the dist unlock in process_maintenance
-- remove of dist lock in __kvm_vgic_sync_hwstate
-- rewording of the commit message (add resamplefd reference)
-- remove irq.h
----
- Documentation/virtual/kvm/api.txt |  6 +++++-
- arch/arm/include/uapi/asm/kvm.h   |  3 +++
- arch/arm/kvm/Kconfig              |  2 ++
- arch/arm/kvm/Makefile             |  2 +-
- arch/arm/kvm/arm.c                |  5 +++++
- arch/arm64/include/uapi/asm/kvm.h |  3 +++
- arch/arm64/kvm/Kconfig            |  2 ++
- arch/arm64/kvm/Makefile           |  2 +-
- virt/kvm/arm/vgic.c               | 45 +++++++++++++++++++++++++++++++++++++++
- 9 files changed, 67 insertions(+), 3 deletions(-)
-
-diff --git a/Documentation/virtual/kvm/api.txt b/Documentation/virtual/kvm/api.txt
-index 0007fef..5ed8088 100644
---- a/Documentation/virtual/kvm/api.txt
-+++ b/Documentation/virtual/kvm/api.txt
-@@ -2231,7 +2231,7 @@ into the hash PTE second double word).
- 4.75 KVM_IRQFD
- 
- Capability: KVM_CAP_IRQFD
--Architectures: x86 s390
-+Architectures: x86 s390 arm arm64
- Type: vm ioctl
- Parameters: struct kvm_irqfd (in)
- Returns: 0 on success, -1 on error
-@@ -2257,6 +2257,10 @@ Note that closing the resamplefd is not sufficient to disable the
- irqfd.  The KVM_IRQFD_FLAG_RESAMPLE is only necessary on assignment
- and need not be specified with KVM_IRQFD_FLAG_DEASSIGN.
- 
-+On ARM/ARM64, the gsi field in the kvm_irqfd struct specifies the Shared
-+Peripheral Interrupt (SPI) index, such that the GIC interrupt ID is
-+given by gsi + 32.
-+
- 4.76 KVM_PPC_ALLOCATE_HTAB
- 
- Capability: KVM_CAP_PPC_ALLOC_HTAB
-diff --git a/arch/arm/include/uapi/asm/kvm.h b/arch/arm/include/uapi/asm/kvm.h
-index 0db25bc..2499867 100644
---- a/arch/arm/include/uapi/asm/kvm.h
-+++ b/arch/arm/include/uapi/asm/kvm.h
-@@ -198,6 +198,9 @@ struct kvm_arch_memory_slot {
- /* Highest supported SPI, from VGIC_NR_IRQS */
- #define KVM_ARM_IRQ_GIC_MAX		127
- 
-+/* One single KVM irqchip, ie. the VGIC */
-+#define KVM_NR_IRQCHIPS          1
-+
- /* PSCI interface */
- #define KVM_PSCI_FN_BASE		0x95c1ba5e
- #define KVM_PSCI_FN(n)			(KVM_PSCI_FN_BASE + (n))
-diff --git a/arch/arm/kvm/Kconfig b/arch/arm/kvm/Kconfig
-index 9f581b1..e519a40 100644
---- a/arch/arm/kvm/Kconfig
-+++ b/arch/arm/kvm/Kconfig
-@@ -24,6 +24,7 @@ config KVM
- 	select KVM_MMIO
- 	select KVM_ARM_HOST
- 	depends on ARM_VIRT_EXT && ARM_LPAE
-+	select HAVE_KVM_EVENTFD
- 	---help---
- 	  Support hosting virtualized guest machines. You will also
- 	  need to select one or more of the processor modules below.
-@@ -55,6 +56,7 @@ config KVM_ARM_MAX_VCPUS
- config KVM_ARM_VGIC
- 	bool "KVM support for Virtual GIC"
- 	depends on KVM_ARM_HOST && OF
-+	select HAVE_KVM_IRQFD
- 	default y
- 	---help---
- 	  Adds support for a hardware assisted, in-kernel GIC emulation.
-diff --git a/arch/arm/kvm/Makefile b/arch/arm/kvm/Makefile
-index f7057ed..859db09 100644
---- a/arch/arm/kvm/Makefile
-+++ b/arch/arm/kvm/Makefile
-@@ -15,7 +15,7 @@ AFLAGS_init.o := -Wa,-march=armv7-a$(plus_virt)
- AFLAGS_interrupts.o := -Wa,-march=armv7-a$(plus_virt)
- 
- KVM := ../../../virt/kvm
--kvm-arm-y = $(KVM)/kvm_main.o $(KVM)/coalesced_mmio.o
-+kvm-arm-y = $(KVM)/kvm_main.o $(KVM)/coalesced_mmio.o $(KVM)/eventfd.o
- 
- obj-y += kvm-arm.o init.o interrupts.o
- obj-y += arm.o handle_exit.o guest.o mmu.o emulate.o reset.o
-diff --git a/arch/arm/kvm/arm.c b/arch/arm/kvm/arm.c
-index 9c905b4..8f8c1da 100644
---- a/arch/arm/kvm/arm.c
-+++ b/arch/arm/kvm/arm.c
-@@ -172,6 +172,11 @@ int kvm_vm_ioctl_check_extension(struct kvm *kvm, long ext)
- 	case KVM_CAP_IRQCHIP:
- 		r = vgic_present;
- 		break;
-+#ifdef CONFIG_HAVE_KVM_IRQFD
-+	case KVM_CAP_IRQFD:
-+		r = vgic_present;
-+		break;
-+#endif
- 	case KVM_CAP_DEVICE_CTRL:
- 	case KVM_CAP_USER_MEMORY:
- 	case KVM_CAP_SYNC_MMU:
-diff --git a/arch/arm64/include/uapi/asm/kvm.h b/arch/arm64/include/uapi/asm/kvm.h
-index 480af34..b35c95a 100644
---- a/arch/arm64/include/uapi/asm/kvm.h
-+++ b/arch/arm64/include/uapi/asm/kvm.h
-@@ -184,6 +184,9 @@ struct kvm_arch_memory_slot {
- /* Highest supported SPI, from VGIC_NR_IRQS */
- #define KVM_ARM_IRQ_GIC_MAX		127
- 
-+/* One single KVM irqchip, ie. the VGIC */
-+#define KVM_NR_IRQCHIPS          1
-+
- /* PSCI interface */
- #define KVM_PSCI_FN_BASE		0x95c1ba5e
- #define KVM_PSCI_FN(n)			(KVM_PSCI_FN_BASE + (n))
-diff --git a/arch/arm64/kvm/Kconfig b/arch/arm64/kvm/Kconfig
-index 279e1a0..09c25c2 100644
---- a/arch/arm64/kvm/Kconfig
-+++ b/arch/arm64/kvm/Kconfig
-@@ -26,6 +26,7 @@ config KVM
- 	select KVM_ARM_HOST
- 	select KVM_ARM_VGIC
- 	select KVM_ARM_TIMER
-+	select HAVE_KVM_EVENTFD
- 	---help---
- 	  Support hosting virtualized guest machines.
- 
-@@ -50,6 +51,7 @@ config KVM_ARM_MAX_VCPUS
- config KVM_ARM_VGIC
- 	bool
- 	depends on KVM_ARM_HOST && OF
-+	select HAVE_KVM_IRQFD
- 	---help---
- 	  Adds support for a hardware assisted, in-kernel GIC emulation.
- 
-diff --git a/arch/arm64/kvm/Makefile b/arch/arm64/kvm/Makefile
-index 32a0961..2e6b827 100644
---- a/arch/arm64/kvm/Makefile
-+++ b/arch/arm64/kvm/Makefile
-@@ -11,7 +11,7 @@ ARM=../../../arch/arm/kvm
- 
- obj-$(CONFIG_KVM_ARM_HOST) += kvm.o
- 
--kvm-$(CONFIG_KVM_ARM_HOST) += $(KVM)/kvm_main.o $(KVM)/coalesced_mmio.o
-+kvm-$(CONFIG_KVM_ARM_HOST) += $(KVM)/kvm_main.o $(KVM)/coalesced_mmio.o $(KVM)/eventfd.o
- kvm-$(CONFIG_KVM_ARM_HOST) += $(ARM)/arm.o $(ARM)/mmu.o $(ARM)/mmio.o
- kvm-$(CONFIG_KVM_ARM_HOST) += $(ARM)/psci.o $(ARM)/perf.o
- 
-diff --git a/virt/kvm/arm/vgic.c b/virt/kvm/arm/vgic.c
-index 18060ea..2c269dd 100644
---- a/virt/kvm/arm/vgic.c
-+++ b/virt/kvm/arm/vgic.c
-@@ -1449,6 +1449,7 @@ static bool vgic_process_maintenance(struct kvm_vcpu *vcpu)
- 	u32 status = vgic_get_interrupt_status(vcpu);
- 	struct vgic_dist *dist = &vcpu->kvm->arch.vgic;
- 	bool level_pending = false;
-+	struct kvm *kvm = vcpu->kvm;
- 
- 	kvm_debug("STATUS = %08x\n", status);
- 
-@@ -1484,6 +1485,17 @@ static bool vgic_process_maintenance(struct kvm_vcpu *vcpu)
- 			 */
- 			vgic_dist_irq_clear_soft_pend(vcpu, vlr.irq);
- 
-+			/*
-+			 * kvm_notify_acked_irq calls kvm_set_irq()
-+			 * to reset the IRQ level. Need to release the
-+			 * lock for kvm_set_irq to grab it.
-+			 */
-+			spin_unlock(&dist->lock);
-+
-+			kvm_notify_acked_irq(kvm, 0,
-+					     vlr.irq - VGIC_NR_PRIVATE_IRQS);
-+			spin_lock(&dist->lock);
-+
- 			/* Any additional pending interrupt? */
- 			if (vgic_dist_irq_get_level(vcpu, vlr.irq)) {
- 				vgic_cpu_irq_set(vcpu, vlr.irq);
-@@ -2490,3 +2502,36 @@ out_free_irq:
- 	free_percpu_irq(vgic->maint_irq, kvm_get_running_vcpus());
- 	return ret;
- }
-+
-+int kvm_irq_map_gsi(struct kvm *kvm,
-+		    struct kvm_kernel_irq_routing_entry *entries,
-+		    int gsi)
-+{
-+	return gsi;
-+}
-+
-+int kvm_irq_map_chip_pin(struct kvm *kvm, unsigned irqchip, unsigned pin)
-+{
-+	return pin;
-+}
-+
-+int kvm_set_irq(struct kvm *kvm, int irq_source_id,
-+		u32 irq, int level, bool line_status)
-+{
-+	unsigned int spi = irq + VGIC_NR_PRIVATE_IRQS;
-+
-+	kvm_debug("irqfd sets vIRQ %d to %d\n", irq, level);
-+
-+	if (spi > kvm->arch.vgic.nr_irqs)
-+		return -EINVAL;
-+	return kvm_vgic_inject_irq(kvm, 0, spi, level);
-+
-+}
-+
-+/* MSI not implemented yet */
-+int kvm_set_msi(struct kvm_kernel_irq_routing_entry *e,
-+		struct kvm *kvm, int irq_source_id,
-+		int level, bool line_status)
-+{
-+	return 0;
-+}
--- 
-1.9.1
-
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
