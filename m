@@ -1,96 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531AbbASTol (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 14:44:41 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:47589 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751502AbbASToh (ORCPT
+	id S1752095AbbASTsX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 14:48:23 -0500
+Received: from us01smtprelay-2.synopsys.com ([198.182.60.111]:53668 "EHLO
+	smtprelay.synopsys.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751341AbbASTsV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 14:44:37 -0500
-Message-ID: <54BD5EA3.6070106@codeaurora.org>
-Date: Mon, 19 Jan 2015 11:44:35 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Mon, 19 Jan 2015 14:48:21 -0500
+From: John Youn <John.Youn@synopsys.com>
+To: "balbi@ti.com" <balbi@ti.com>, Sneeker Yeh <sneeker.yeh@gmail.com>,
+        "Paul Zimmerman" <paul.zimmerman@synopsys.com>,
+        John Youn <John.Youn@synopsys.com>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        "Grant Likely" <grant.likely@linaro.org>,
+        Huang Rui <ray.huang@amd.com>,
+        "Kishon Vijay Abraham I" <kishon@ti.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        Andy Green <andy.green@linaro.org>,
+        Jassi Brar <jaswinder.singh@linaro.org>,
+        Sneeker Yeh <Sneeker.Yeh@tw.fujitsu.com>
+Subject: RE: [PATCH v2 2/5] usb: dwc3: add revision number DWC3_REVISION_300A
+Thread-Topic: [PATCH v2 2/5] usb: dwc3: add revision number
+ DWC3_REVISION_300A
+Thread-Index: AQHQM73816IGjyXuOkyEPN1WkU86SpzIDBoA///Ii7A=
+Date: Mon, 19 Jan 2015 19:45:31 +0000
+Message-ID: <2B3535C5ECE8B5419E3ECBE3007729090174814C4D@us01wembx1.internal.synopsys.com>
+References: <1421654209-6486-1-git-send-email-Sneeker.Yeh@tw.fujitsu.com>
+ <1421654209-6486-3-git-send-email-Sneeker.Yeh@tw.fujitsu.com>
+ <20150119144642.GD20386@saruman>
+In-Reply-To: <20150119144642.GD20386@saruman>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.13.184.19]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
-        Mike Turquette <mturquette@linaro.org>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] clk: Fix debugfs clk removal before inited
-References: <1421661433-27141-1-git-send-email-srinivas.kandagatla@linaro.org>
-In-Reply-To: <1421661433-27141-1-git-send-email-srinivas.kandagatla@linaro.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/2015 01:57 AM, Srinivas Kandagatla wrote:
-> Some of the clks can be registered & unregistered before the clk related debugfs
-> entries are initialized at late_initcall. In the unregister path checking for only
-> dentry before clk_debug_init() would lead dangling pointers in the debug clk list,
-> because the list is already populated in register path and the clk pointer freed in
-> unregister path.
-> The side effect of not removing it from the list is either a null pointer
-> dereference or if lucky to boot the system, the number of clk entries in
-> debugfs disappear.
->
-> We could add more checks like if (inited && !clk->dentry) but just removing
-> the check for dentry made more sense as debugfs_remove_recursive() seems to be
-> safe with null pointers. This will ensure that the unregistering clk would be
-> removed from the debug list in all the code paths.
->
-> Without this patch kernel would crash with log:
-> Unable to handle kernel NULL pointer dereference at virtual address 00000000
-> pgd = c0204000
-> [00000000] *pgd=00000000
-> Internal error: Oops: 5 [#1] SMP ARM
-> Modules linked in:
-> CPU: 1 PID: 1 Comm: swapper/0 Tainted: G    B          3.19.0-rc3-00007-g412f9ba-dirty #840
-> Hardware name: Qualcomm (Flattened Device Tree)
-> task: ed948000 ti: ed944000 task.ti: ed944000
-> PC is at strlen+0xc/0x40
-> LR is at __create_file+0x64/0x1dc
-> pc : [<c04ee604>]    lr : [<c049f1c4>]    psr: 60000013
-> sp : ed945e40  ip : ed945e50  fp : ed945e4c
-> r10: 00000000  r9 : c1006094  r8 : 00000000
-> r7 : 000041ed  r6 : 00000000  r5 : ed4af998  r4 : c11b5e28
-> r3 : 00000000  r2 : ed945e38  r1 : a0000013  r0 : 00000000
-> Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
-> Control: 10c5787d  Table: 8020406a  DAC: 00000015
-> Process swapper/0 (pid: 1, stack limit = 0xed944248)
-> Stack: (0xed945e40 to 0xed946000)
-> 5e40: ed945e7c ed945e50 c049f1c4 c04ee604 c0fc2fa4 00000000 ecb748c0 c11c2b80
-> 5e60: c0beec04 0000011c c0fc2fa4 00000000 ed945e94 ed945e80 c049f3e0 c049f16c
-> 5e80: 00000000 00000000 ed945eac ed945e98 c08cbc50 c049f3c0 ecb748c0 c11c2b80
-> 5ea0: ed945ed4 ed945eb0 c0fc3080 c08cbc30 c0beec04 c107e1d8 ecdf0600 c107e1d8
-> 5ec0: c107e1d8 ecdf0600 ed945f54 ed945ed8 c0208ed4 c0fc2fb0 c026a784 c04ee628
-> 5ee0: ed945f0c ed945ef0 c0f5d600 c04ee604 c0f5d5ec ef7fcc7d c0b40ecc 0000011c
-> 5f00: ed945f54 ed945f10 c026a994 c0f5d5f8 c04ecc00 00000007 ef7fcc95 00000007
-> 5f20: c0e90744 c0dd0884 ed945f54 c106cde0 00000007 c117f8c0 0000011c c0f5d5ec
-> 5f40: c1006094 c100609c ed945f94 ed945f58 c0f5de34 c0208e50 00000007 00000007
-> 5f60: c0f5d5ec be9b5ae0 00000000 c117f8c0 c0af1680 00000000 00000000 00000000
-> 5f80: 00000000 00000000 ed945fac ed945f98 c0af169c c0f5dd2c ed944000 00000000
-> 5fa0: 00000000 ed945fb0 c020f298 c0af168c 00000000 00000000 00000000 00000000
-> 5fc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
-> 5fe0: 00000000 00000000 00000000 00000000 00000013 00000000 ebcc6d33 bfffca73
-> [<c04ee604>] (strlen) from [<c049f1c4>] (__create_file+0x64/0x1dc)
-> [<c049f1c4>] (__create_file) from [<c049f3e0>] (debugfs_create_dir+0x2c/0x34)
-> [<c049f3e0>] (debugfs_create_dir) from [<c08cbc50>] (clk_debug_create_one+0x2c/0x16c)
-> [<c08cbc50>] (clk_debug_create_one) from [<c0fc3080>] (clk_debug_init+0xdc/0x144)
-> [<c0fc3080>] (clk_debug_init) from [<c0208ed4>] (do_one_initcall+0x90/0x1e0)
-> [<c0208ed4>] (do_one_initcall) from [<c0f5de34>] (kernel_init_freeable+0x114/0x1e0)
-> [<c0f5de34>] (kernel_init_freeable) from [<c0af169c>] (kernel_init+0x1c/0xfc)
-> [<c0af169c>] (kernel_init) from [<c020f298>] (ret_from_fork+0x14/0x3c)
-> Code: c0b40ecc e1a0c00d e92dd800 e24cb004 (e5d02000)
-> ---[ end trace b940e45b5e25c1e7 ]---
->
-> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
->
+> -----Original Message-----
+> From: Felipe Balbi [mailto:balbi@ti.com]
+> Sent: Monday, January 19, 2015 6:47 AM
+> 	
+> looking at Synopsys Solvnet for this IP, it shows that current version
+> is 2.90a. There's no 3.00a. Paul, John, is there a 3.00a version of the
+> DWC USB3 IP ?
 
-Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
-Fixes: 6314b6796e3c "clk: Don't hold prepare_lock across debugfs creation"
+Yes there is, but it has not been released yet, thus it's not in Solvnet.
 
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-a Linux Foundation Collaborative Project
+John
+
 
