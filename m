@@ -1,110 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752206AbbASO0H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 09:26:07 -0500
-Received: from mga14.intel.com ([192.55.52.115]:35295 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751317AbbASO0E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 09:26:04 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,427,1418112000"; 
-   d="scan'208";a="514303051"
-Message-ID: <54BD13F8.2040105@linux.intel.com>
-Date: Mon, 19 Jan 2015 22:26:00 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1752293AbbASO1N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 09:27:13 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:36443 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751520AbbASO1L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 09:27:11 -0500
+Date: Mon, 19 Jan 2015 23:26:56 +0900
+From: Namhyung Kim <namhyung@kernel.org>
+To: Wang Nan <wangnan0@huawei.com>
+Cc: jolsa@redhat.com, linux-kernel@vger.kernel.org, lizefan@huawei.com,
+        acme@kernel.org
+Subject: Re: [PATCH v2] perf: perl: force to use stdbool.
+Message-ID: <20150119142656.GB4624@danjae>
+References: <20150119123808.GB12706@krava.brq.redhat.com>
+ <1421671397-4659-1-git-send-email-wangnan0@huawei.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-CC: Thomas Gleixner <tglx@linutronix.de>, Bjorn Helgaas <bhelgaas@google.com>,
-        Yinghai Lu <yinghai@kernel.org>, Borislav Petkov <bp@alien8.de>,
-        Tony Luck <tony.luck@intel.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: Re: [RFC Patch 00/19] Improve ACPI resource parsing interfaces and
- data structures
-References: <1420684386-5975-1-git-send-email-jiang.liu@linux.intel.com> <2025625.5YhoBnTE03@vostro.rjw.lan>
-In-Reply-To: <2025625.5YhoBnTE03@vostro.rjw.lan>
 Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <1421671397-4659-1-git-send-email-wangnan0@huawei.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2015/1/12 6:38, Rafael J. Wysocki wrote:
-> On Thursday, January 08, 2015 10:32:47 AM Jiang Liu wrote:
->> During enabling ACPI based IOAPIC hotplug, Thomas noticed some issues
->> in ACPI resource parsing interfaces. So this is an effort to improve them.
->>
->> Patch 1-12 improve ACPI resource parsing interfaces and also fixes some
->> bugs.
->>
->> Patch 13-19 try to share the common data structure resource_list_entry
->> between PCI and ACPI. It may also be shared with PNP too.
+On Mon, Jan 19, 2015 at 08:43:17PM +0800, Wang Nan wrote:
+> When building perf for arm64 I hit a warning (and be treated as an
+> error) like below:
 > 
-> I've looked at the patches briefly.
-> 
-> I like the changes at the general level, but there are some things I'm
-> potentially concerned about in them.  Need more time to look at them,
-> I'll do my best to do that this week while at the conference.
-Hi Rafael,
-	Thanks for your time. Any comments about this series?
-Regards,
-Gerry
+>  aarch64-oe-linux-gcc -o .../util/scripting-engines/trace-event-python.o -c -Wbad-function-cast \
+> 	 ... util/scripting-engines/trace-event-python.c
+
+s/python/perl/g ?
+
 
 > 
->> The patchset is based on v3.19-rc3 and you may get it from:
->> https://github.com/jiangliu/linux.git acpires_v1
->>
->> Jiang Liu (11):
->>   ACPI: Fix a bug in parsing ACPI Memroy24 resource
->>   ACPI: Normalize return value of resource parser functions
->>   ACPI: Set flag IORESOURCE_UNSET for unassigned resources
->>   ACPI: Enforce stricter checks for address space descriptors
->>   ACPI: Return translation offset when parsing ACPI address space
->>     resources
->>   ACPI: Translate resource into master side address for bridge window
->>     resources
->>   ACPI: Add field offset to struct resource_list_entry
->>   ACPI: Introduce helper function acpi_dev_filter_resource_type()
->>   resources: Move struct resource_list_entry from ACPI into resource
->>     core
->>   PCI: Use common resource list management code instead of private
->>     implementation
->>   x86/PCI/ACPI: Use common ACPI resource interfaces to simplify
->>     implementation
->>
->> Thomas Gleixner (8):
->>   ACPI: Remove redundant check in function
->>     acpi_dev_resource_address_space()
->>   ACPI: Implement proper length checks for mem resources
->>   ACPI: Use the length check for io resources as well
->>   ACPI: Let the parser return false for disabled resources
->>   ACPI: Provide union for address_space64 and ext_address_space64
->>   ACPI: Unify the parsing of address_space and ext_address_space
->>   ACPI: Move the window flag logic to the combined parser
->>   ACPI: Add prefetch decoding to the address space parser
->>
->>  arch/arm/kernel/bios32.c            |    5 +-
->>  arch/x86/pci/acpi.c                 |  297 ++++++++++---------------------
->>  arch/x86/pci/bus_numa.c             |    4 +-
->>  drivers/acpi/acpi_lpss.c            |    6 +-
->>  drivers/acpi/acpi_platform.c        |    2 +-
->>  drivers/acpi/resource.c             |  333 ++++++++++++++++++++++-------------
->>  drivers/dma/acpi-dma.c              |    8 +-
->>  drivers/pci/bus.c                   |   18 +-
->>  drivers/pci/host-bridge.c           |    8 +-
->>  drivers/pci/host/pci-host-generic.c |    4 +-
->>  drivers/pci/host/pci-xgene.c        |    4 +-
->>  drivers/pci/host/pcie-xilinx.c      |    4 +-
->>  drivers/pci/probe.c                 |   10 +-
->>  drivers/pnp/pnpacpi/rsparser.c      |    4 +-
->>  include/acpi/acrestyp.h             |   49 ++++--
->>  include/linux/acpi.h                |   12 +-
->>  include/linux/ioport.h              |   25 +++
->>  include/linux/pci.h                 |    8 +-
->>  kernel/resource.c                   |   48 +++++
->>  19 files changed, 452 insertions(+), 397 deletions(-)
->>
->>
+>  In file included from .../usr/lib64/perl/5.14.3/CORE/perl.h:2464:0,
+>                   from Context.xs:23:
+>  /.../usr/lib64/perl/5.14.3/CORE/handy.h:108:0: error: "bool" redefined [-Werror]
+>   #  define bool char
+>   ^
+>  In file included from /.../usr/src/kernel/tools/include/linux/types.h:4:0,
+>                   from /.../usr/src/kernel/arch/arm64/include/uapi/asm/sigcontext.h:19,
+> 		  from /.../usr/include/bits/sigcontext.h:27,
+> 		  from /.../usr/include/signal.h:340,
+> 		  from /.../usr/include/sys/param.h:28,
+> 		  from /.../usr/lib64/perl/5.14.3/CORE/perl.h:678,
+> 		  from Context.xs:23:
+>   /.../usr/lib/aarch64-oe-linux/gcc/aarch64-oe-linux/4.9.2/include/stdbool.h:33:0: note: this is the location of the previous definition
+>     #define bool _Bool
+> 
+> Looks like the failure is caused by arm64 uapi/asm/sigcontext.h, which
+> includes linux/types.h while other archs not.
+> 
+> Current perl consider this problem:
+> 
+> http://perl5.git.perl.org/perl.git/commit/bd31be4baa3ee68abdb92c0db3200efe0fad903b
+> 
+> However there are users which use old version of perl.
+> 
+> This patch includes stdbool.h before Context.xs and define HAS_BOOL to
+> prevent perl'e headers define its own 'bool'. Code is learn from perl's
+> git tree.
+> 
+> Signed-off-by: Wang Nan <wangnan0@huawei.com>
+
+Other than that, looks good to me.
+
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+
+Thanks,
+Namhyung
+
+
+> ---
+>  tools/perf/scripts/perl/Perf-Trace-Util/Context.c | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/tools/perf/scripts/perl/Perf-Trace-Util/Context.c b/tools/perf/scripts/perl/Perf-Trace-Util/Context.c
+> index 790ceba..28431d1 100644
+> --- a/tools/perf/scripts/perl/Perf-Trace-Util/Context.c
+> +++ b/tools/perf/scripts/perl/Perf-Trace-Util/Context.c
+> @@ -5,7 +5,10 @@
+>   *	ANY CHANGES MADE HERE WILL BE LOST! 
+>   *
+>   */
+> -
+> +#include <stdbool.h>
+> +#ifndef HAS_BOOL
+> +# define HAS_BOOL 1
+> +#endif
+>  #line 1 "Context.xs"
+>  /*
+>   * Context.xs.  XS interfaces for perf script.
+> -- 
+> 1.8.4
 > 
