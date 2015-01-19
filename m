@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752096AbbASUCp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 15:02:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40899 "EHLO mx1.redhat.com"
+	id S1751702AbbASUH6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 15:07:58 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56570 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751849AbbASUCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 15:02:44 -0500
-Date: Mon, 19 Jan 2015 14:02:39 -0600
-From: Josh Poimboeuf <jpoimboe@redhat.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Seth Jennings <sjenning@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
-        live-patching@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] livepatch: support for repatching a function
-Message-ID: <20150119200239.GA15916@treble.redhat.com>
-References: <b211111ad4f29886a44871dddc313a542c48960b.1420834026.git.jpoimboe@redhat.com>
- <alpine.LNX.2.10.1501161743220.1074@wotan.suse.de>
- <20150119145431.GC1737@treble.redhat.com>
- <alpine.LNX.2.00.1501192046130.10817@pobox.suse.cz>
+	id S1751396AbbASUH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 15:07:57 -0500
+Subject: [PATCH 0/5] Overhaul the audit filename handling
+From: Paul Moore <pmoore@redhat.com>
+To: linux-fsdevel@vger.kernel.org, linux-audit@redhat.com
+Cc: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org
+Date: Mon, 19 Jan 2015 15:07:54 -0500
+Message-ID: <20150119200408.29706.24386.stgit@localhost>
+User-Agent: StGit/0.17.1-dirty
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1501192046130.10817@pobox.suse.cz>
-User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 19, 2015 at 08:48:42PM +0100, Jiri Kosina wrote:
-> On Mon, 19 Jan 2015, Josh Poimboeuf wrote:
-> 
-> > > If this is implemented really in a fully stackable manner (i.e. you 
-> > > basically would be able to disable only the function that is currently 
-> > > "active", i.e. on top of the stack), woudln't that provide more 
-> > > predictable semantics?
-> > 
-> > Yes, I agree.  Thanks for the comment.
-> > 
-> > Would you want to enforce stacking even if there are no dependencies
-> > between the patches?  I think that would be easiest (and cleanest).
-> 
-> Yup, I think that makes the most sense (especially in this "first step"). 
-> Relaxing the revert rules to cover only patches which are really dependent 
-> on each other (and we'd have to be careful about defining the meaning 
-> this, especially with repsect to various consistency models coming in the 
-> future) is something tha can always be done later on top.
+This is the same patchset that was sent earlier with the RFC prefix,
+the only differences are the inclusion of a reviewer and the fact that
+I've stripped the RFC prefix.  I'm including this in the audit-next
+branch and plan on pushing this to Linus in the next merge window.
 
-Sounds good.  I'll do a v2.
+For those of you who didn't bother looking at the RFC posting, this
+patchset resolves various problems in the way audit handles filenames.
+The patches rework the way audit handles filenames, removing a lot of
+nasty hacks added recently, and fixing a few bugs that still remain.
+Most significant to folks outside of audit, patch 5/5 does away with
+the nasty getname()/putname() kludge in favor of a less ugly reference
+count approach.
 
-FYI, I've also been working on a prototype of a consistency model, based
-on my discussions with Vojtech on the list a few months ago
-(LEAVE_PATCHED_SET + SWITCH_THREAD).  I'll probably have some patches to
-send out for comments in a few weeks.  That should hopefully be a good
-starting point for more discussion about the consistency model(s).
+---
 
--- 
-Josh
+Paul Moore (5):
+      fs: rework getname_kernel to handle up to PATH_MAX sized filenames
+      fs: create proper filename objects using getname_kernel()
+      audit: enable filename recording via getname_kernel()
+      audit: fix filename matching in __audit_inode() and __audit_inode_child()
+      audit: replace getname()/putname() hacks with reference counters
+
+
+ fs/exec.c             |   11 +++
+ fs/namei.c            |   98 ++++++++++++++++++-----------
+ fs/open.c             |   11 +++
+ include/linux/audit.h |    3 -
+ include/linux/fs.h    |    9 +--
+ kernel/audit.h        |   17 +----
+ kernel/auditsc.c      |  167 +++++++++----------------------------------------
+ 7 files changed, 115 insertions(+), 201 deletions(-)
