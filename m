@@ -1,146 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752621AbbASSiS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 13:38:18 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:49602 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752384AbbASSiQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 13:38:16 -0500
-Date: Tue, 20 Jan 2015 02:38:06 +0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Johannes Stezenbach <js@sig21.net>
-Cc: arnd@arndb.de, ebiederm@xmission.com, gnomes@lxorguk.ukuu.org.uk,
-        teg@jklm.no, jkosina@suse.cz, luto@amacapital.net,
-        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
-        daniel@zonque.org, dh.herrmann@gmail.com, tixxdz@opendz.org
-Subject: Re: [PATCH v3 00/13] Add kdbus implementation
-Message-ID: <20150119183806.GA8479@kroah.com>
-References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>
- <20150119180642.GA27957@sig21.net>
+	id S1752325AbbASSif (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 13:38:35 -0500
+Received: from mout.web.de ([212.227.17.11]:55791 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752419AbbASSiR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 13:38:17 -0500
+Message-ID: <54BD4F10.9040401@users.sourceforge.net>
+Date: Mon, 19 Jan 2015 19:38:08 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20150119180642.GA27957@sig21.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 5/9] video: Less function calls in trident_pci_probe() after
+ error detection
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <54BD44F0.3040705@users.sourceforge.net>
+In-Reply-To: <54BD44F0.3040705@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:fKoxAnPOtwDvSdY4ocfboj15fRVq2ISBw8y3tNHWF/ctk23aOEz
+ wSDEVaARhvy32bX+8nyLA0u1I98FQU52qmQTaJkhRMV2iN07bDOKY0EH7hvCodhQIW2oXD3
+ YqO0Qd1rpdW5rm62gpKPabhMtPcuxS61eQR4wclMpZ1B+cAgDLFpedfN/VCfkKwEQ5ezNRP
+ bzJxqcmapv4v/5BApxrhg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 19, 2015 at 07:06:42PM +0100, Johannes Stezenbach wrote:
-> Hi Greg and Daniel,
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Mon, 19 Jan 2015 14:18:47 +0100
 
-[Fixing Daniel's email, which I messed up originally...]
+The functions "iounmap" and "kfree" could be called in a few cases by the
+trident_pci_probe() function during error handling even if the passed data
+structure element contained still a null pointer.
 
-> On Fri, Jan 16, 2015 at 11:16:04AM -0800, Greg Kroah-Hartman wrote:
-> > kdbus is a kernel-level IPC implementation that aims for resemblance to
-> > the the protocol layer with the existing userspace D-Bus daemon while
-> > enabling some features that couldn't be implemented before in userspace.
-> > 
-> > The documentation in the first patch in this series explains the
-> > protocol and the API details.
-> 
-> How about the big picture?
-> 
-> > Reasons why this should be done in the kernel, instead of userspace as
-> > it is currently done today include the following:
-> [abbreviated]
-> > - performance
-> > - security
-> > - semantics for apps with heavy data payloads
-> 
-> 
-> First of all I wonder about the relationship with D-Bus.
-> http://dbus.freedesktop.org/doc/dbus-specification.html says:
-> 
->    D-Bus is designed for two specific use cases:
-> 
->        A "system bus" for notifications from the system to user
->        sessions, and to allow the system to request input from
->        user sessions.
-> 
->        A "session bus" used to implement desktop environments such
->        as GNOME and KDE. 
-> 
->    D-Bus is not intended to be a generic IPC system for any
->    possible application, and intentionally omits many features
->    found in other IPC systems for this reason. 
-> 
-> Does this also apply to kdbus?  If not, what are the
-> suggested uses of kdbus beyond those where D-Bus is
-> currently used?
+This implementation detail could be improved by adjustments for jump labels.
 
-I don't really know.  I have heard from lots of random people who are
-starting to look into kdbus as to if it will work for their use cases,
-which seem quite varied.  I'll leave it to them to pop up and say if it
-will work for them outside of the above specific ways.  But even then,
-the above two things are something almost all Linux boxes rely on today,
-so it's not like this is a solution searching for a problem to solve :)
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/video/fbdev/tridentfb.c | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
 
-> Another related quote by Havoc Pennington:
-> http://lists.freedesktop.org/archives/dbus/2012-March/015024.html
-> 
->    In general, reading this, I think in some cases there are
->    problems that make sense to fix in dbus, and in other cases
->    there are problems that are best solved by not using dbus.
->    ...
->    there are about 10000 IPC solutions already, from ICE (both of
->    them) to ZeroMQ to AMQP to CORBA to X11 to HTTP to SOAP to
->    WebSockets to SUN-RPC to whatever-the-heck. To me, trying to
->    make dbus configurable so that it can substitute for any of
->    these is a Bad Idea (tm).
-> 
-> Do you think it also applies to kdbus?
+diff --git a/drivers/video/fbdev/tridentfb.c b/drivers/video/fbdev/tridentfb.c
+index 71567401..86d4733 100644
+--- a/drivers/video/fbdev/tridentfb.c
++++ b/drivers/video/fbdev/tridentfb.c
+@@ -1436,7 +1436,7 @@ static int trident_pci_probe(struct pci_dev *dev,
+ 	if (!default_par->io_virt) {
+ 		debug("ioremap failed\n");
+ 		err = -1;
+-		goto out_unmap1;
++		goto release_memory_region_mmio;
+ 	}
+ 
+ 	enable_mmio(default_par);
+@@ -1459,7 +1459,7 @@ static int trident_pci_probe(struct pci_dev *dev,
+ 	if (!info->screen_base) {
+ 		debug("ioremap failed\n");
+ 		err = -1;
+-		goto out_unmap2;
++		goto release_memory_region_smem;
+ 	}
+ 
+ 	default_par->flatpanel = is_flatpanel(default_par);
+@@ -1485,7 +1485,7 @@ static int trident_pci_probe(struct pci_dev *dev,
+ 	info->pixmap.addr = kmalloc(4096, GFP_KERNEL);
+ 	if (!info->pixmap.addr) {
+ 		err = -ENOMEM;
+-		goto out_unmap2;
++		goto io_unmap_screenbase;
+ 	}
+ 
+ 	info->pixmap.size = 4096;
+@@ -1531,11 +1531,14 @@ static int trident_pci_probe(struct pci_dev *dev,
+ 
+ out_unmap2:
+ 	kfree(info->pixmap.addr);
++io_unmap_screenbase:
+ 	iounmap(info->screen_base);
++release_memory_region_smem:
+ 	release_mem_region(tridentfb_fix.smem_start, tridentfb_fix.smem_len);
+ 	disable_mmio(info->par);
+ out_unmap1:
+ 	iounmap(default_par->io_virt);
++release_memory_region_mmio:
+ 	release_mem_region(tridentfb_fix.mmio_start, tridentfb_fix.mmio_len);
+ 	framebuffer_release(info);
+ 	return err;
+-- 
+2.2.2
 
-Yes, I do agree, there are lots of existing ipc solutions today that
-kdbus is not designed for, nor would it be good to use it for.  The
-majority of them being IPC that crosses the network layer, as there are
-lots of good solutions today for that problem.  That being said, I do
-know one research group that has kdbus working cross-network, just "to
-try it out", but I don't know what ever came of it.
-
-> Wrt the performance improvement achieved by kdbus, my impression
-> about D-Bus is that the number of messages on my system is
-> about a dozen per minute.  Are there actually any existing
-> applications using D-Bus that have a performance issue?
-> Or is this only about future possible uses?
-
-There are a number of existing applications that have this performance
-issue today.  The majority of them have been ported from other operating
-systems that have a fast message bus, so their process model is all
-about messages.  They use a library layer on Linux to turn that message
-bus into D-Bus messages, and have suffered a huge hit in performance
-from their previous operating system.  Using kdbus has brought it back
-in line to make it reasonable to use.
-
-These applications can be usually found in the Automotive sector, which
-has been playing with light-weight dbus library implementations for a
-while now, and have done some initial kdbus testing to verify this will
-work for them.
-
-> Linked from http://kroah.com/log/blog/2014/01/15/kdbus-details/,
-> http://lwn.net/Articles/580194/ "The unveiling of kdbus" says:
-> 
->    Unlike most other kernels, Linux has never had a well-designed
->    IPC mechanism. Windows and Mac OS have this feature; even
->    Android, based on Linux, has one in the form of the "binder"
->    subsystem. Linux, instead, has only had the primitives —
->    sockets, FIFOs, and shared memory — but those have never been
->    knitted together into a reasonable application-level API. Kdbus
->    is an attempt to do that knitting and create something that is
->    at least as good as the mechanisms found on other systems.
-> 
-> These are bold words. I'm not sure what Windows and Mac OS
-> have in terms of IPC, but the above suggests that kdbus
-> is *the* new Linux IPC that everyone will use for everything,
-> rather than a special purpose facility.
-
-Everyone uses D-Bus today for everything on their system, so by
-replacing the underlying library with kdbus, they will continue to use
-it for everything without having to change any application or library
-code at all.
-
-Hope this helps,
-
-greg k-h
