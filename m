@@ -1,106 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752403AbbASOLr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 09:11:47 -0500
-Received: from mail-wg0-f50.google.com ([74.125.82.50]:65336 "EHLO
-	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751520AbbASOLo (ORCPT
+	id S1752451AbbASOMd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 09:12:33 -0500
+Received: from mail-pa0-f45.google.com ([209.85.220.45]:54860 "EHLO
+	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751396AbbASOMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 09:11:44 -0500
+	Mon, 19 Jan 2015 09:12:31 -0500
+Date: Mon, 19 Jan 2015 15:12:26 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Dmitry Osipenko <digetx@gmail.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] ARM: tegra20: Store CPU "resettable" status in IRAM
+Message-ID: <20150119141224.GF23778@ulmo.nvidia.com>
+References: <1421319545-23920-1-git-send-email-digetx@gmail.com>
+ <1421319545-23920-2-git-send-email-digetx@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CAAfSe-vqqpvbYe0bEeD-3_QsLYz4r7pxMuA1-L4cYRw9TY=NgA@mail.gmail.com>
-References: <1421402411-3479-1-git-send-email-chunyan.zhang@spreadtrum.com>
- <1421402411-3479-6-git-send-email-chunyan.zhang@spreadtrum.com>
- <CAL_JsqJg=BtanmR_rhYthCUhKbErs8viZ7MMMXr-PmPjUV4BRQ@mail.gmail.com> <CAAfSe-vqqpvbYe0bEeD-3_QsLYz4r7pxMuA1-L4cYRw9TY=NgA@mail.gmail.com>
-From: Rob Herring <robherring2@gmail.com>
-Date: Mon, 19 Jan 2015 08:11:20 -0600
-Message-ID: <CAL_JsqLTArm1v8ka39_KLq2jMKkK2ZXQ6-an=JSWVgTK1LWmOg@mail.gmail.com>
-Subject: Re: [PATCH v5 5/5] tty/serial: Add Spreadtrum sc9836-uart driver support
-To: Lyra Zhang <zhang.lyra@gmail.com>
-Cc: Chunyan Zhang <chunyan.zhang@spreadtrum.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mark Rutland <mark.rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Mark Brown <broonie@kernel.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>, Jiri Slaby <jslaby@suse.cz>,
-        Jason Cooper <jason@lakedaemon.net>,
-        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
-        Florian Vaussard <florian.vaussard@epfl.ch>,
-        Andrew Lunn <andrew@lunn.ch>, Robert Richter <rrichter@cavium.com>,
-        Hayato Suzuki <hytszk@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Antony Pavlov <antonynpavlov@gmail.com>,
-        Joel Schopp <Joel.Schopp@amd.com>,
-        Suravee Suthikulanit <Suravee.Suthikulpanit@amd.com>,
-        Shawn Guo <shawn.guo@linaro.org>, lea.yan@linaro.org,
-        Jorge Ramirez-Ortiz <jorge.ramirez-ortiz@linaro.org>,
-        Lee Jones <lee.jones@linaro.org>, Orson Zhai <orsonzhai@gmail.com>,
-        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
-        "zhizhou.zhang" <zhizhou.zhang@spreadtrum.com>,
-        "lanqing.liu@spreadtrum.com" <lanqing.liu@spreadtrum.com>,
-        =?UTF-8?B?V2VpIFFpYW8gKOS5lOS8nyk=?= <wei.qiao@spreadtrum.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="mrJd9p1Ce66CJMxE"
+Content-Disposition: inline
+In-Reply-To: <1421319545-23920-2-git-send-email-digetx@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 19, 2015 at 3:55 AM, Lyra Zhang <zhang.lyra@gmail.com> wrote:
-> On Sat, Jan 17, 2015 at 12:41 AM, Rob Herring <robherring2@gmail.com> wrote:
->> On Fri, Jan 16, 2015 at 4:00 AM, Chunyan Zhang
->> <chunyan.zhang@spreadtrum.com> wrote:
->>> Add a full sc9836-uart driver for SC9836 SoC which is based on the
->>> spreadtrum sharkl64 platform.
->>> This driver also support earlycon.
->>> This patch also replaced the spaces between the macros and their
->>> values with the tabs in serial_core.h
 
-[...]
+--mrJd9p1Ce66CJMxE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
->>> +static int __init sprd_serial_init(void)
->>> +{
->>> +       int ret = 0;
->>> +
->>> +       ret = uart_register_driver(&sprd_uart_driver);
->>
->> This can be done in probe now. Then you can use module_platform_driver().
->>
->
-> Question:
-> 1. there are 4 uart ports configured in dt for sprd_serial, so probe
-> will be called 4 times, but uart_register_driver only needs to be
-> called one time, so can we use uart_driver.state to check if
-> uart_register_driver has already been called ?
+On Thu, Jan 15, 2015 at 01:58:57PM +0300, Dmitry Osipenko wrote:
+> Commit 7232398abc6a ("ARM: tegra: Convert PMC to a driver") changed tegra=
+_resume()
+> location storing from late to early and, as a result, broke suspend on Te=
+gra20.
+> PMC scratch register 41 is used by tegra LP1 resume code for retrieving s=
+tored
+> physical memory address of common resume function and in the same time us=
+ed by
+> tegra20_cpu_shutdown() (shared by Tegra20 cpuidle driver and platform SMP=
+ code),
+> which is storing CPU1 "resettable" status. It implies strict order of scr=
+atch
+> register usage, otherwise resume function address is lost on Tegra20 after
+> disabling non-boot CPU's on suspend. Fix it by storing "resettable" statu=
+s in
+> IRAM instead of PMC scratch register.
+>=20
+> Signed-off-by: Dmitry Osipenko <digetx@gmail.com>
+> Fixes: 7232398abc6a (ARM: tegra: Convert PMC to a driver)
+> Cc: <stable@vger.kernel.org> # v3.17+
+> ---
+>  arch/arm/mach-tegra/cpuidle-tegra20.c |  5 ++---
+>  arch/arm/mach-tegra/reset-handler.S   | 10 +++++++---
+>  arch/arm/mach-tegra/reset.h           |  4 ++++
+>  arch/arm/mach-tegra/sleep-tegra20.S   | 37 ++++++++++++++++++++---------=
+------
+>  arch/arm/mach-tegra/sleep.h           |  4 ++++
+>  5 files changed, 38 insertions(+), 22 deletions(-)
 
-Yes.
+I'm leaning towards applying this. Stephen, Alex, Peter: any objections?
 
-> 2. if I use module_platform_driver() instead of
-> module_init(sprd_serial_init)  and  module_exit(sprd_serial_exit) , I
-> must move uart_unregister_driver() which is now processed in
-> sprd_serial_exit() to sprd_remove(), there is a similar problem with
-> probe(), sprd_remove() will also be called 4 times, and actually it
-> should be called only one time. How can we deal with this case?
+Thierry
 
-Look at pl01x or Samsung UART drivers which have done this conversion.
+--mrJd9p1Ce66CJMxE
+Content-Type: application/pgp-signature
 
-> 3. for the second question, we can check the platform_device->id, if
-> it is equal to the index of last port (e.g. 4 for this case), then
-> uart_unregister_driver() can be called. Does it work correctly? since
-> for this case, we must keep the order of releasing ports.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-The id will not be the line index in the DT case. I don't think you
-can guarantee the order either.
+iQIcBAEBAgAGBQJUvRDIAAoJEN0jrNd/PrOhQI0P/0UiH/0lmXvhrbH7ldOTHQdJ
+lCqbMCqZPelKJ3ck0wZnhNqvunK9EmOdQPXDUKdkHG7m6kofOXyn0JyYJ3ypfQho
+K8wobRCUJd5gTVEp3+noiOQbuRsusavDYP6818Vd+BEtG8thB2oxKOMcJBqqPOAT
+a0mF2+cEnOJsp7t+zut4Pp+Za0WJmD58LtOJMt3bh1l17kC20rfvrSKEyq5rORnw
+uKv6SBAm9ml9tOdPlEQbHV5/pZaH0wOgam4oL1uqMs3CXWPS61G3bJw7t+UKkA7U
+0Jsd7PrDwhWk93od/iJN2YR/NrRFrATxsL9RaGRrjWRslx4jJibfEE5YiQ3snxZy
+FYNpZG8de+uhd6w60Cog+zjcxIIh1xWGHjElsgOSUQURDbQmDOxtpFAgwhX2YZYy
+CnefEzmJmI+uZCQ37SNRLac7ULv3PfiOnKDt6vd44bIPLwRPEXXNim7nKmjUZVS9
+6vqMHdppua2kWSHOjMSI0xjaRzUQmXroDDmu+Pdli2U1qwK4Dg0KbshsnVYUSit5
+Pu0x2+T+pWGQXhfmZkL48cfEcWyE+FYYcs/xqXdTkuECIffvSgBuXvKfqNqII1Pv
+raAAfA4dn4iavODZWbE0yxcbmflVWGfJuKSpOqeAx5H7J6gAWIXbqL3snetGCrZn
+iJj618yi25S0h5bepkEz
+=UTNB
+-----END PGP SIGNATURE-----
 
-It would be better to make uart_{un}register_driver deal with being
-called multiple times so drivers don't have to deal with getting this
-correct. I'm not sure if that is feasible though.
-
-Rob
+--mrJd9p1Ce66CJMxE--
