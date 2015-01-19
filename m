@@ -1,219 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752319AbbASKiX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 05:38:23 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:44047 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752276AbbASKiS (ORCPT
+	id S1752169AbbASKhy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 05:37:54 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:37658 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751553AbbASKhu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 05:38:18 -0500
-Message-ID: <54BCDE4C.5000305@huawei.com>
-Date: Mon, 19 Jan 2015 18:37:00 +0800
-From: Wang Nan <wangnan0@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Mon, 19 Jan 2015 05:37:50 -0500
+Date: Mon, 19 Jan 2015 10:37:39 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Graeme Gregory <gg@slimlogic.co.uk>
+Cc: "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        "jcm@redhat.com" <jcm@redhat.com>, Mark Rutland <Mark.Rutland@arm.com>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "wangyijing@huawei.com" <wangyijing@huawei.com>,
+        Rob Herring <robh@kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Timur Tabi <timur@codeaurora.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
+        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v7 06/17] ARM64 / ACPI: Make PCI optional for ACPI on
+ ARM64
+Message-ID: <20150119103737.GD11835@e104818-lin.cambridge.arm.com>
+References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org>
+ <1421247905-3749-7-git-send-email-hanjun.guo@linaro.org>
+ <20150116094913.GA13634@e104818-lin.cambridge.arm.com>
+ <54BB51F1.8000900@linaro.org>
+ <508480149.12941388.1421562696311.JavaMail.zimbra@zmail15.collab.prod.int.phx2.redhat.com>
+ <54BB56CB.7040701@linaro.org>
+ <20150118092955.GE6182@xora-haswell.xora.org.uk>
 MIME-Version: 1.0
-To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
-CC: <masami.hiramatsu.pt@hitachi.com>, <lizefan@huawei.com>,
-        <linux@arm.linux.org.uk>, <linux-kernel@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] ARM: kprobes: check register usage for probed instruction
-References: <1420457284-76923-1-git-send-email-wangnan0@huawei.com>	 <1420457384-77449-1-git-send-email-wangnan0@huawei.com>	 <1421161268.4215.56.camel@linaro.org> <1421165628.4215.63.camel@linaro.org>
-In-Reply-To: <1421165628.4215.63.camel@linaro.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.69.129]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020204.54BCDE66.0136,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 5752001fade86e337d7f0723161a614e
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20150118092955.GE6182@xora-haswell.xora.org.uk>
+Thread-Topic: [PATCH v7 06/17] ARM64 / ACPI: Make PCI optional for ACPI on
+ ARM64
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think this patch is better than mo original one.
+On Sun, Jan 18, 2015 at 09:29:56AM +0000, Graeme Gregory wrote:
+> On Sun, Jan 18, 2015 at 02:46:35PM +0800, Hanjun Guo wrote:
+> > On 2015年01月18日 14:31, Jon Masters wrote:
+> > >Hi Folks,
+> > >
+> > >Sorry for top posting from bed. The mainstream servers will all likely do
+> > > PCIe but there are several that may not. They should not be excluded. That
+> > said,
+> > >if we booted a previously built kernel on a system without an MCFG and
+> > > got no ECAM/root then things would probably still work.
+> > >
+> > >I think it'll work out either way but for the record there is no requirement to do PCIe on ARM servers that conform to spec.
+> > 
+> > OK, Catalin already said that was not the main point of the
+> > comments for this patch, I think the title and change log
+> > of the patch is inconsistent with the code makes Catalin confused,
+> > I will update them in next version.
+> 
+> Well what we are talking about is the presence of CONFIG_PCI=y which even
+> in Jons case will be true as he wants to run the same kernel on both
+> sets of hardware.
+> 
+> Now the architecture has PCI support I think its safe to remove the make
+> PCI optional part of the patch as this should be handled runtime not
+> compile time.
 
-Thanks to Tixy.
+I agree, if we never see a reason to build a kernel image with
+!PCI && ACPI, we can simplify this patch.
 
-On 2015/1/14 0:13, Jon Medhurst (Tixy) wrote:
-> This patch utilizes the previously introduced checker to check
-> register usage for probed ARM instruction and saves it in a mask.
-> A further patch will use such information to avoid simulation or
-> emulation.
-> 
-> Signed-off-by: Wang Nan <wangnan0@huawei.com>
-> Reviewed-by: Jon Medhurst <tixy@linaro.org>
-> Signed-off-by: Jon Medhurst <tixy@linaro.org>
-> ---
-> 
-> This patch applies my review comments on "[PATCH v19 10/11] ARM:
-> kprobes: check register usage for probed instruction."
-> 
-> It is also rebased on top of the kprobes-opt branch at
-> git://git.linaro.org/people/tixy/kernel.git
-> 
->  arch/arm/include/asm/probes.h          |  1 +
->  arch/arm/probes/decode.c               |  7 +++
->  arch/arm/probes/kprobes/actions-arm.c  |  2 +-
->  arch/arm/probes/kprobes/checkers-arm.c | 93 ++++++++++++++++++++++++++++++++++
->  arch/arm/probes/kprobes/checkers.h     |  1 +
->  5 files changed, 103 insertions(+), 1 deletion(-)
-> 
-> diff --git a/arch/arm/include/asm/probes.h b/arch/arm/include/asm/probes.h
-> index cd9e815..b668e60 100644
-> --- a/arch/arm/include/asm/probes.h
-> +++ b/arch/arm/include/asm/probes.h
-> @@ -41,6 +41,7 @@ struct arch_probes_insn {
->  	probes_insn_singlestep_t	*insn_singlestep;
->  	probes_insn_fn_t		*insn_fn;
->  	int				stack_space;
-> +	unsigned long			register_usage_flags;
->  };
->  
->  #endif /* __ASSEMBLY__ */
-> diff --git a/arch/arm/probes/decode.c b/arch/arm/probes/decode.c
-> index f9d7c42..880ebe0 100644
-> --- a/arch/arm/probes/decode.c
-> +++ b/arch/arm/probes/decode.c
-> @@ -435,6 +435,13 @@ probes_decode_insn(probes_opcode_t insn, struct arch_probes_insn *asi,
->  	 */
->  	asi->stack_space = 0;
->  
-> +	/*
-> +	 * Similarly to stack_space, register_usage_flags is filled by
-> +	 * checkers. Its default value is set to ~0, which is 'all
-> +	 * registers are used', to prevent any potential optimization.
-> +	 */
-> +	asi->register_usage_flags = ~0UL;
-> +
->  	if (emulate)
->  		insn = prepare_emulated_insn(insn, asi, thumb);
->  
-> diff --git a/arch/arm/probes/kprobes/actions-arm.c b/arch/arm/probes/kprobes/actions-arm.c
-> index 06988ef..b9056d6 100644
-> --- a/arch/arm/probes/kprobes/actions-arm.c
-> +++ b/arch/arm/probes/kprobes/actions-arm.c
-> @@ -341,4 +341,4 @@ const union decode_action kprobes_arm_actions[NUM_PROBES_ARM_ACTIONS] = {
->  	[PROBES_LDMSTM] = {.decoder = kprobe_decode_ldmstm}
->  };
->  
-> -const struct decode_checker *kprobes_arm_checkers[] = {arm_stack_checker, NULL};
-> +const struct decode_checker *kprobes_arm_checkers[] = {arm_stack_checker, arm_regs_checker, NULL};
-> diff --git a/arch/arm/probes/kprobes/checkers-arm.c b/arch/arm/probes/kprobes/checkers-arm.c
-> index f817663..7b98173 100644
-> --- a/arch/arm/probes/kprobes/checkers-arm.c
-> +++ b/arch/arm/probes/kprobes/checkers-arm.c
-> @@ -97,3 +97,96 @@ const struct decode_checker arm_stack_checker[NUM_PROBES_ARM_ACTIONS] = {
->  	[PROBES_STORE] = {.checker = arm_check_stack},
->  	[PROBES_LDMSTM] = {.checker = arm_check_stack},
->  };
-> +
-> +static enum probes_insn __kprobes arm_check_regs_nouse(probes_opcode_t insn,
-> +		struct arch_probes_insn *asi,
-> +		const struct decode_header *h)
-> +{
-> +	asi->register_usage_flags = 0;
-> +	return INSN_GOOD;
-> +}
-> +
-> +static enum probes_insn arm_check_regs_normal(probes_opcode_t insn,
-> +		struct arch_probes_insn *asi,
-> +		const struct decode_header *h)
-> +{
-> +	u32 regs = h->type_regs.bits >> DECODE_TYPE_BITS;
-> +	int i;
-> +
-> +	asi->register_usage_flags = 0;
-> +	for (i = 0; i < 5; regs >>= 4, insn >>= 4, i++)
-> +		if (regs & 0xf)
-> +			asi->register_usage_flags |= 1 << (insn & 0xf);
-> +
-> +	return INSN_GOOD;
-> +}
-> +
-> +
-> +static enum probes_insn arm_check_regs_ldmstm(probes_opcode_t insn,
-> +		struct arch_probes_insn *asi,
-> +		const struct decode_header *h)
-> +{
-> +	unsigned int reglist = insn & 0xffff;
-> +	unsigned int rn = (insn >> 16) & 0xf;
-> +	asi->register_usage_flags = reglist | (1 << rn);
-> +	return INSN_GOOD;
-> +}
-> +
-> +static enum probes_insn arm_check_regs_mov_ip_sp(probes_opcode_t insn,
-> +		struct arch_probes_insn *asi,
-> +		const struct decode_header *h)
-> +{
-> +	/* Instruction is 'mov ip, sp' i.e. 'mov r12, r13' */
-> +	asi->register_usage_flags = (1 << 12) | (1<< 13);
-> +	return INSN_GOOD;
-> +}
-> +
-> +/*
-> + *                                    | Rn |Rt/d|         | Rm |
-> + * LDRD (register)      cccc 000x x0x0 xxxx xxxx xxxx 1101 xxxx
-> + * STRD (register)      cccc 000x x0x0 xxxx xxxx xxxx 1111 xxxx
-> + *                                    | Rn |Rt/d|         |imm4L|
-> + * LDRD (immediate)     cccc 000x x1x0 xxxx xxxx xxxx 1101 xxxx
-> + * STRD (immediate)     cccc 000x x1x0 xxxx xxxx xxxx 1111 xxxx
-> + *
-> + * Such instructions access Rt/d and its next register, so different
-> + * from others, a specific checker is required to handle this extra
-> + * implicit register usage.
-> + */
-> +static enum probes_insn arm_check_regs_ldrdstrd(probes_opcode_t insn,
-> +		struct arch_probes_insn *asi,
-> +		const struct decode_header *h)
-> +{
-> +	int rdt = (insn >> 12) & 0xf;
-> +	arm_check_regs_normal(insn, asi, h);
-> +	asi->register_usage_flags |= 1 << (rdt + 1);
-> +	return INSN_GOOD;
-> +}
-> +
-> +
-> +const struct decode_checker arm_regs_checker[NUM_PROBES_ARM_ACTIONS] = {
-> +	[PROBES_MRS] = {.checker = arm_check_regs_normal},
-> +	[PROBES_SATURATING_ARITHMETIC] = {.checker = arm_check_regs_normal},
-> +	[PROBES_MUL1] = {.checker = arm_check_regs_normal},
-> +	[PROBES_MUL2] = {.checker = arm_check_regs_normal},
-> +	[PROBES_MUL_ADD_LONG] = {.checker = arm_check_regs_normal},
-> +	[PROBES_MUL_ADD] = {.checker = arm_check_regs_normal},
-> +	[PROBES_LOAD] = {.checker = arm_check_regs_normal},
-> +	[PROBES_LOAD_EXTRA] = {.checker = arm_check_regs_normal},
-> +	[PROBES_STORE] = {.checker = arm_check_regs_normal},
-> +	[PROBES_STORE_EXTRA] = {.checker = arm_check_regs_normal},
-> +	[PROBES_DATA_PROCESSING_REG] = {.checker = arm_check_regs_normal},
-> +	[PROBES_DATA_PROCESSING_IMM] = {.checker = arm_check_regs_normal},
-> +	[PROBES_SEV] = {.checker = arm_check_regs_nouse},
-> +	[PROBES_WFE] = {.checker = arm_check_regs_nouse},
-> +	[PROBES_SATURATE] = {.checker = arm_check_regs_normal},
-> +	[PROBES_REV] = {.checker = arm_check_regs_normal},
-> +	[PROBES_MMI] = {.checker = arm_check_regs_normal},
-> +	[PROBES_PACK] = {.checker = arm_check_regs_normal},
-> +	[PROBES_EXTEND] = {.checker = arm_check_regs_normal},
-> +	[PROBES_EXTEND_ADD] = {.checker = arm_check_regs_normal},
-> +	[PROBES_BITFIELD] = {.checker = arm_check_regs_normal},
-> +	[PROBES_LDMSTM] = {.checker = arm_check_regs_ldmstm},
-> +	[PROBES_MOV_IP_SP] = {.checker = arm_check_regs_mov_ip_sp},
-> +	[PROBES_LDRSTRD] = {.checker = arm_check_regs_ldrdstrd},
-> +};
-> diff --git a/arch/arm/probes/kprobes/checkers.h b/arch/arm/probes/kprobes/checkers.h
-> index bddfa0e..cf6c9e7 100644
-> --- a/arch/arm/probes/kprobes/checkers.h
-> +++ b/arch/arm/probes/kprobes/checkers.h
-> @@ -47,6 +47,7 @@ extern const union decode_action stack_check_actions[];
->  
->  #ifndef CONFIG_THUMB2_KERNEL
->  extern const struct decode_checker arm_stack_checker[];
-> +extern const struct decode_checker arm_regs_checker[];
->  #else
->  #endif
->  extern const struct decode_checker t32_stack_checker[];
-> 
-
-
+-- 
+Catalin
