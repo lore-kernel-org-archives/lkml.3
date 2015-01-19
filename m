@@ -1,112 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752065AbbASCEx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 21:04:53 -0500
-Received: from mga11.intel.com ([192.55.52.93]:5060 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751954AbbASCEv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 21:04:51 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,424,1418112000"; 
-   d="scan'208";a="663831115"
-From: Feng Tang <feng.tang@intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>, John Stultz <john.stultz@linaro.org>,
-        linux-kernel@vger.kernel.org
-Cc: Colin Cross <ccross@android.com>, Heesub Shin <heesub.shin@samsung.com>,
-        Mitchel Humpherys <mitchelh@codeaurora.org>,
-        Feng Tang <feng.tang@intel.com>
-Subject: [PATCH 2/2] staging: android: ion: Add pss info for each ion_client
-Date: Mon, 19 Jan 2015 10:00:25 +0800
-Message-Id: <1421632825-1538-1-git-send-email-feng.tang@intel.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752017AbbASCEe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 21:04:34 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:58738 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751396AbbASCEb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Jan 2015 21:04:31 -0500
+Message-ID: <54BC6611.9020002@huawei.com>
+Date: Mon, 19 Jan 2015 10:04:01 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+MIME-Version: 1.0
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@linux.intel.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Marc Zyngier <marc.zyngier@arm.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        "Thomas Gleixner" <tglx@linutronix.de>,
+        Tony Luck <tony.luck@intel.com>,
+        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>, <linux-alpha@vger.kernel.org>,
+        <linux-m68k@vger.kernel.org>, Liviu Dudau <liviu@dudau.co.uk>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "sparclinux@vger.kernel.org" <sparclinux@vger.kernel.org>
+Subject: Re: [PATCH 01/28] PCI: Rip out pci_bus_add_devices() from pci_scan_bus()
+References: <1421372666-12288-1-git-send-email-wangyijing@huawei.com>	<1421372666-12288-2-git-send-email-wangyijing@huawei.com>	<CAE9FiQUoocCzBKsHL_D4ypH1-DV7XxZMdREX7n=Tz1Kq3kHHeA@mail.gmail.com> <CAE9FiQV97PuDWBZYRxh8R0ADnUFTbo1NO3wAufj97en0yseYSQ@mail.gmail.com>
+In-Reply-To: <CAE9FiQV97PuDWBZYRxh8R0ADnUFTbo1NO3wAufj97en0yseYSQ@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In real ION buffer usage, many of the ion buffer are shared
-by several clients(imported and exported), and current ion
-debugfs only provides size of all buffers a client may use.
-This patch will considers the sharing and adds a "pss" info
-for each ion_client, which will help on profiling the ion
-memory usage.
+On 2015/1/17 7:16, Yinghai Lu wrote:
+> On Fri, Jan 16, 2015 at 3:15 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> On Thu, Jan 15, 2015 at 5:43 PM, Yijing Wang <wangyijing@huawei.com> wrote:
+>>> Pci_bus_add_devices() should not be placed in pci_scan_bus().
+>>> Now pci device will be added to driver core once its
+>>> creation. All things left in pci_bus_add_devices() are
+>>> driver attachment and other trivial sysfs things.
+>>> Pci_scan_bus() should be the function responsible for
+>>> scanning PCI devices, not including driver attachment.
+>>> Other, some callers(m68k,unicore32,alpha) of pci_scan_bus()
+>>> will call pci_bus_size_bridges() and pci_bus_assign_resources()
+>>> after pci_scan_bus().
+>>>
+>>> E.g.
+>>> In m68k
+>>> mcf_pci_init()
+>>>         pci_scan_bus()
+>>>                 ...
+>>>                 pci_bus_add_devices() --- try to attach driver
+>>>         pci_fixup_irqs()
+>>>         pci_bus_size_bridges()
+>>>         pci_bus_assign_resources()
+>>>
+>>> It is not correct, resources should be assigned correctly
+>>> before attaching driver.
+>>
+> No, for booting path, at that time pci drivers are *NOT* loaded yet.
 
-Actually we can do more aggressively in android world, in
-which the "surfaceflinger" is a main proxy to help other
-apps to do the ion buffer allocation, and we can consider
-this and extract "surfaceflinger" related size out. And
-this could be the next step.
+Hi Yinghai, I knew code flow here would not cause problems, sorry the log
+confused you, I will refresh it. But I think pci_scan_bus()/pci_scan_root_bus()
+which could only be used during system boot up(before module_init) make
+the pci scan logic obscure. Because most callers additionally call
+pci_bus_size_bridges() and pci_bus_assign_resources() later,
+so rip out pci_bus_add_devices() from pci_scan_bus()/pci_scan_root_bus()
+make code have better readability.
 
-Signed-off-by: Feng Tang <feng.tang@intel.com>
----
- drivers/staging/android/ion/ion.c |   25 +++++++++++++++++--------
- 1 file changed, 17 insertions(+), 8 deletions(-)
+Thanks!
+Yijing.
 
-diff --git a/drivers/staging/android/ion/ion.c b/drivers/staging/android/ion/ion.c
-index 3d378ef..0b8fd56 100644
---- a/drivers/staging/android/ion/ion.c
-+++ b/drivers/staging/android/ion/ion.c
-@@ -1386,18 +1386,25 @@ static const struct file_operations ion_fops = {
- };
- 
- static size_t ion_debug_heap_total(struct ion_client *client,
--				   unsigned int id)
-+				   unsigned int id, size_t *psize)
- {
- 	size_t size = 0;
- 	struct rb_node *n;
- 
-+	*psize = 0;
-+
- 	mutex_lock(&client->lock);
- 	for (n = rb_first(&client->handles); n; n = rb_next(n)) {
- 		struct ion_handle *handle = rb_entry(n,
- 						     struct ion_handle,
- 						     node);
--		if (handle->buffer->heap->id == id)
-+		if (handle->buffer->heap->id == id) {
- 			size += handle->buffer->size;
-+			if (handle->buffer->handle_count)
-+				*psize += handle->buffer->size /
-+					handle->buffer->handle_count;
-+		}
-+
- 	}
- 	mutex_unlock(&client->lock);
- 	return size;
-@@ -1411,13 +1418,15 @@ static int ion_debug_heap_show(struct seq_file *s, void *unused)
- 	size_t total_size = 0;
- 	size_t total_orphaned_size = 0;
- 
--	seq_printf(s, "%16.s %16.s %16.s\n", "client", "pid", "size");
-+	seq_printf(s, "%16.s %16.s %16.s %16.s\n",
-+			"client", "pid", "size", "psize");
- 	seq_puts(s, "----------------------------------------------------\n");
- 
- 	for (n = rb_first(&dev->clients); n; n = rb_next(n)) {
- 		struct ion_client *client = rb_entry(n, struct ion_client,
- 						     node);
--		size_t size = ion_debug_heap_total(client, heap->id);
-+		size_t psize;
-+		size_t size = ion_debug_heap_total(client, heap->id, &psize);
- 
- 		if (!size)
- 			continue;
-@@ -1425,11 +1434,11 @@ static int ion_debug_heap_show(struct seq_file *s, void *unused)
- 			char task_comm[TASK_COMM_LEN];
- 
- 			get_task_comm(task_comm, client->task);
--			seq_printf(s, "%16.s %16u %16zu\n", task_comm,
--				   client->pid, size);
-+			seq_printf(s, "%16.s %16u %16zu %16zu\n", task_comm,
-+				   client->pid, size, psize);
- 		} else {
--			seq_printf(s, "%16.s %16u %16zu\n", client->name,
--				   client->pid, size);
-+			seq_printf(s, "%16.s %16u %16zu %16zu\n", client->name,
-+				   client->pid, size, psize);
- 		}
- 	}
- 	seq_puts(s, "----------------------------------------------------\n");
+> 
+> Thanks
+> 
+> Yinghai
+> 
+> .
+> 
+
+
 -- 
-1.7.9.5
+Thanks!
+Yijing
 
