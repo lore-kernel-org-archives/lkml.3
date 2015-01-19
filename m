@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752201AbbASUIN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 15:08:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:55909 "EHLO mx1.redhat.com"
+	id S1752272AbbASUIV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 15:08:21 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56724 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751844AbbASUIK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 15:08:10 -0500
-Subject: [PATCH 2/5] fs: create proper filename objects using
- getname_kernel()
+	id S1752216AbbASUIQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 15:08:16 -0500
+Subject: [PATCH 3/5] audit: enable filename recording via getname_kernel()
 From: Paul Moore <pmoore@redhat.com>
 To: linux-fsdevel@vger.kernel.org, linux-audit@redhat.com
 Cc: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org
-Date: Mon, 19 Jan 2015 15:08:08 -0500
-Message-ID: <20150119200808.29706.73419.stgit@localhost>
+Date: Mon, 19 Jan 2015 15:08:14 -0500
+Message-ID: <20150119200814.29706.19644.stgit@localhost>
 In-Reply-To: <20150119200408.29706.24386.stgit@localhost>
 References: <20150119200408.29706.24386.stgit@localhost>
 User-Agent: StGit/0.17.1-dirty
@@ -23,144 +22,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are several areas in the kernel that create temporary filename
-objects using the following pattern:
-
-	int func(const char *name)
-	{
-		struct filename *file = { .name = name };
-		...
-		return 0;
-	}
-
-... which for the most part works okay, but it causes havoc within the
-audit subsystem as the filename object does not persist beyond the
-lifetime of the function.  This patch converts all of these temporary
-filename objects into proper filename objects using getname_kernel()
-and putname() which ensure that the filename object persists until the
-audit subsystem is finished with it.
+Enable recording of filenames in getname_kernel() and remove the
+kludgy workaround in __audit_inode() now that we have proper filename
+logging for kernel users.
 
 CC: viro@zeniv.linux.org.uk
 CC: linux-fsdevel@vger.kernel.org
 Signed-off-by: Paul Moore <pmoore@redhat.com>
 Reviewed-by: Richard Guy Briggs <rgb@redhat.com>
 ---
- fs/exec.c  |   11 +++++++++--
- fs/namei.c |   34 ++++++++++++++++++++++++++--------
- fs/open.c  |   11 +++++++++--
- 3 files changed, 44 insertions(+), 12 deletions(-)
+ fs/namei.c       |    1 +
+ kernel/auditsc.c |   40 +++-------------------------------------
+ 2 files changed, 4 insertions(+), 37 deletions(-)
 
-diff --git a/fs/exec.c b/fs/exec.c
-index a3d33fe..d067771 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -789,8 +789,15 @@ exit:
- 
- struct file *open_exec(const char *name)
- {
--	struct filename tmp = { .name = name };
--	return do_open_exec(&tmp);
-+	struct file *file;
-+	struct filename *tmp;
-+
-+	tmp = getname_kernel(name);
-+	if (unlikely(IS_ERR(tmp)))
-+		return (void *)tmp;
-+	file = do_open_exec(tmp);
-+	putname(tmp);
-+	return file;
- }
- EXPORT_SYMBOL(open_exec);
- 
 diff --git a/fs/namei.c b/fs/namei.c
-index eeb3b83..c3d21b7 100644
+index c3d21b7..1c0d4c7 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
-@@ -2001,9 +2001,15 @@ static int filename_lookup(int dfd, struct filename *name,
- static int do_path_lookup(int dfd, const char *name,
- 				unsigned int flags, struct nameidata *nd)
- {
--	struct filename filename = { .name = name };
-+	int retval;
-+	struct filename *filename;
+@@ -242,6 +242,7 @@ getname_kernel(const char * filename)
+ 	strlcpy((char *)result->name, filename, len);
+ 	result->uptr = NULL;
+ 	result->aname = NULL;
++	audit_getname(result);
  
--	return filename_lookup(dfd, &filename, flags, nd);
-+	filename = getname_kernel(name);
-+	if (unlikely(IS_ERR(filename)))
-+		return PTR_ERR(filename);
-+	retval = filename_lookup(dfd, filename, flags, nd);
-+	putname(filename);
-+	return retval;
+ 	return result;
  }
+diff --git a/kernel/auditsc.c b/kernel/auditsc.c
+index 793e9e9..c967ffc 100644
+--- a/kernel/auditsc.c
++++ b/kernel/auditsc.c
+@@ -1882,44 +1882,10 @@ out_alloc:
+ 	n = audit_alloc_name(context, AUDIT_TYPE_UNKNOWN);
+ 	if (!n)
+ 		return;
+-	/* unfortunately, while we may have a path name to record with the
+-	 * inode, we can't always rely on the string lasting until the end of
+-	 * the syscall so we need to create our own copy, it may fail due to
+-	 * memory allocation issues, but we do our best */
+-	if (name) {
+-		/* we can't use getname_kernel() due to size limits */
+-		size_t len = strlen(name->name) + 1;
+-		struct filename *new = __getname();
+-
+-		if (unlikely(!new))
+-			goto out;
++	if (name)
++		/* no need to set ->name_put as the original will cleanup */
++		n->name = name;
  
- /* does lookup, returns the object with parent locked */
-@@ -2368,8 +2374,15 @@ int
- kern_path_mountpoint(int dfd, const char *name, struct path *path,
- 			unsigned int flags)
- {
--	struct filename s = {.name = name};
--	return filename_mountpoint(dfd, &s, path, flags);
-+	int retval;
-+	struct filename *s;
-+
-+	s = getname_kernel(name);
-+	if (unlikely(IS_ERR(s)))
-+		return PTR_ERR(s);
-+	retval = filename_mountpoint(dfd, s, path, flags);
-+	putname(s);
-+	return retval;
- }
- EXPORT_SYMBOL(kern_path_mountpoint);
- 
-@@ -3259,7 +3272,7 @@ struct file *do_file_open_root(struct dentry *dentry, struct vfsmount *mnt,
- {
- 	struct nameidata nd;
- 	struct file *file;
--	struct filename filename = { .name = name };
-+	struct filename *filename;
- 	int flags = op->lookup_flags | LOOKUP_ROOT;
- 
- 	nd.root.mnt = mnt;
-@@ -3268,11 +3281,16 @@ struct file *do_file_open_root(struct dentry *dentry, struct vfsmount *mnt,
- 	if (d_is_symlink(dentry) && op->intent & LOOKUP_OPEN)
- 		return ERR_PTR(-ELOOP);
- 
--	file = path_openat(-1, &filename, &nd, op, flags | LOOKUP_RCU);
-+	filename = getname_kernel(name);
-+	if (unlikely(IS_ERR(filename)))
-+		return (void *)filename;
-+
-+	file = path_openat(-1, filename, &nd, op, flags | LOOKUP_RCU);
- 	if (unlikely(file == ERR_PTR(-ECHILD)))
--		file = path_openat(-1, &filename, &nd, op, flags);
-+		file = path_openat(-1, filename, &nd, op, flags);
- 	if (unlikely(file == ERR_PTR(-ESTALE)))
--		file = path_openat(-1, &filename, &nd, op, flags | LOOKUP_REVAL);
-+		file = path_openat(-1, filename, &nd, op, flags | LOOKUP_REVAL);
-+	putname(filename);
- 	return file;
- }
- 
-diff --git a/fs/open.c b/fs/open.c
-index d6fd3ac..666982b 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -940,8 +940,15 @@ struct file *file_open_name(struct filename *name, int flags, umode_t mode)
-  */
- struct file *filp_open(const char *filename, int flags, umode_t mode)
- {
--	struct filename name = {.name = filename};
--	return file_open_name(&name, flags, mode);
-+	struct file *file;
-+	struct filename *name;
-+
-+	name = getname_kernel(filename);
-+	if (unlikely(IS_ERR(name)))
-+		return (void *)name;
-+	file = file_open_name(name, flags, mode);
-+	putname(name);
-+	return file;
- }
- EXPORT_SYMBOL(filp_open);
- 
+-		if (len <= (PATH_MAX - sizeof(*new))) {
+-			new->name = (char *)(new) + sizeof(*new);
+-			new->separate = false;
+-		} else if (len <= PATH_MAX) {
+-			/* this looks odd, but is due to final_putname() */
+-			struct filename *new2;
+-
+-			new2 = kmalloc(sizeof(*new2), GFP_KERNEL);
+-			if (unlikely(!new2)) {
+-				__putname(new);
+-				goto out;
+-			}
+-			new2->name = (char *)new;
+-			new2->separate = true;
+-			new = new2;
+-		} else {
+-			/* we should never get here, but let's be safe */
+-			__putname(new);
+-			goto out;
+-		}
+-		strlcpy((char *)new->name, name->name, len);
+-		new->uptr = NULL;
+-		new->aname = n;
+-		n->name = new;
+-		n->name_put = true;
+-	}
+ out:
+ 	if (parent) {
+ 		n->name_len = n->name ? parent_len(n->name->name) : AUDIT_NAME_FULL;
 
