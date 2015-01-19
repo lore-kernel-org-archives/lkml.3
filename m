@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752298AbbASRon (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 12:44:43 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:55578 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751423AbbASRom (ORCPT
+	id S1752086AbbASRsf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 12:48:35 -0500
+Received: from pandora.arm.linux.org.uk ([78.32.30.218]:38967 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751465AbbASRse (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 12:44:42 -0500
-Message-ID: <54BD42D0.3020107@wwwdotorg.org>
-Date: Mon, 19 Jan 2015 10:45:52 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Mon, 19 Jan 2015 12:48:34 -0500
+Date: Mon, 19 Jan 2015 17:48:18 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        patches@linaro.org, linaro-kernel@lists.linaro.org,
+        John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Dirk Behme <dirk.behme@de.bosch.com>,
+        Daniel Drake <drake@endlessm.com>,
+        Dmitry Pervushin <dpervushin@gmail.com>,
+        Tim Sander <tim@krieglstein.org>, Stephen Boyd <sboyd@codeaurora.org>
+Subject: Re: [RFC PATCH 5/5] arm: perf: Use FIQ to handle PMU events.
+Message-ID: <20150119174818.GD26493@n2100.arm.linux.org.uk>
+References: <1421166931-14134-1-git-send-email-daniel.thompson@linaro.org>
+ <1421166931-14134-6-git-send-email-daniel.thompson@linaro.org>
 MIME-Version: 1.0
-To: Dmitry Osipenko <digetx@gmail.com>,
-        Thierry Reding <thierry.reding@gmail.com>
-CC: Alexandre Courbot <gnurou@gmail.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] ARM: tegra20: Store CPU "resettable" status in IRAM
-References: <1421319545-23920-1-git-send-email-digetx@gmail.com> <1421319545-23920-2-git-send-email-digetx@gmail.com> <20150119141224.GF23778@ulmo.nvidia.com> <54BD3E3E.2040801@wwwdotorg.org> <54BD41D3.7030703@gmail.com>
-In-Reply-To: <54BD41D3.7030703@gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421166931-14134-6-git-send-email-daniel.thompson@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/2015 10:41 AM, Dmitry Osipenko wrote:
-> 19.01.2015 20:26, Stephen Warren пишет:
->> Hopefully this works out. I suppose it's unlikely anyone will be
->> running code on
->> the AVP upstrem, so any potential conflict with AVP's usage of IRAM
->> isn't likely
->> to occur.
->>
-> I don't see how it can conflict with AVP code. First KB of IRAM is
-> reserved for reset handler. Am I missing something?
->
->  From reset.h:
->
-> /* The first 1K of IRAM is permanently reserved for the CPU reset
-> handler */
+On Tue, Jan 13, 2015 at 04:35:31PM +0000, Daniel Thompson wrote:
+> +/*
+> + * This handler is called *unconditionally* from the default NMI/FIQ
+> + * handler. The irq may not be anything to do with us so the main
+> + * job of this function is to figure out if the irq passed in is ours
+> + * or not.
+> + */
+> +void cpu_pmu_handle_fiq(int irq)
+> +{
+> +	int cpu = smp_processor_id();
 
-I believe "CPU" in that context means AVP CPU. Still, I may not be 
-correct, and to be honest it's likely not too well defined even if that 
-comment seems clear-cut.
+This can be either debug_smp_processor_id() or raw_smp_processor_id().
+raw_smp_processor_id() is fine from FIQ contexts, as seems to be
+debug_smp_processor_id(), but only because we guarantee that
+irqs_disabled() in there will be true.
 
->> __tegra20_cpu1_resettable_status_offset has a lot of _ at the start.
->> Should the
->> symbol be named more normally? I guess at least it's consistent with the
->> existing very "underscory" __tegra_cpu_reset_handler_start.
-> I also wasn't happy with "underscory" :) And yes, I left it for
-> consistency. Please feel free to rename it, if needed.
+> +
+> +	if (irq != get_cpu_var(cpu_pmu_irqs))
+> +		return;
 
+get_cpu_var() needs put_cpu_var() to undo its effects.  get_cpu_var()
+calls preempt_disable(), which calls into lockdep...  I think we
+determined that was fine last time we went digging?  put_cpu_var()
+would call preempt_enable() which I'd hope would be safe in FIQ/NMI
+contexts?
+
+> +
+> +	(void)armpmu_dispatch_irq(irq,
+> +				  get_cpu_ptr(&cpu_pmu->hw_events->percpu_pmu));
+
+Again, get_cpu_xxx() needs to be balanced with a put_cpu_xxx().
+
+
+-- 
+FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
+according to speedtest.net.
