@@ -1,161 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752425AbbASTng (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 14:43:36 -0500
-Received: from zill.ext.symas.net ([69.43.206.106]:59178 "EHLO
-	zill.ext.symas.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396AbbASTnc (ORCPT
-	<rfc822;Linux-Kernel@Vger.Kernel.ORG>);
-	Mon, 19 Jan 2015 14:43:32 -0500
-Message-ID: <54BD5E54.3050909@symas.com>
-Date: Mon, 19 Jan 2015 19:43:16 +0000
-From: Howard Chu <hyc@symas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:37.0) Gecko/20100101 Firefox/37.0 SeaMonkey/2.34a1
+	id S1752487AbbASToi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 14:44:38 -0500
+Received: from pandora.arm.linux.org.uk ([78.32.30.218]:39257 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751462AbbASTog (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 14:44:36 -0500
+Date: Mon, 19 Jan 2015 19:44:20 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Ray Jui <rjui@broadcom.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Arend van Spriel <arend@broadcom.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Scott Branden <sbranden@broadcom.com>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        bcm-kernel-feedback-list@broadcom.com, devicetree@vger.kernel.org
+Subject: Re: [PATCH v6 2/3] i2c: iproc: Add Broadcom iProc I2C Driver
+Message-ID: <20150119194420.GG26493@n2100.arm.linux.org.uk>
+References: <rjui@broadcom.com>
+ <1421695428-19102-1-git-send-email-rjui@broadcom.com>
+ <1421695428-19102-3-git-send-email-rjui@broadcom.com>
 MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Linux Kernel Mailing List <Linux-Kernel@vger.kernel.org>,
-        linux-serial@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>
-Subject: Re: [PATCH] n_tty: Remove LINEMODE support
-References: <1421616632-4077-1-git-send-email-peter@hurleysoftware.com> <54BC3771.7030204@symas.com> <54BC5EC7.1090202@hurleysoftware.com> <54BCFC94.1040605@symas.com> <54BD1B53.9030901@hurleysoftware.com> <54BD328F.9090208@symas.com> <54BD567C.8070200@hurleysoftware.com>
-In-Reply-To: <54BD567C.8070200@hurleysoftware.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421695428-19102-3-git-send-email-rjui@broadcom.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Hurley wrote:
-> On 01/19/2015 11:36 AM, Howard Chu wrote:
->> Peter Hurley wrote:
->>> Thanks, Howard.
->>>
->>> [ adding Ted too ]
->>>
->>> On 01/19/2015 07:46 AM, Howard Chu wrote:
->>>> Peter Hurley wrote:
->>>>> On 01/18/2015 05:45 PM, Howard Chu wrote:
->>>>>> Peter Hurley wrote:
->>>>>>> Commit 26df6d13406d1 ("tty: Add EXTPROC support for LINEMODE") added
->>>>>>> the undocumented EXTPROC input processing mode, which ignores the ICANON
->>>>>>> setting and forces pty slave input to be processed in non-canonical
->>>>>>> mode.
->>>>>>
->>>>>> What's the motivation to remove this code, rather than improve it if it
->>>>>> needs fixing? It has been removed from the Linux kernel at least once
->>>>>> before already, and that was a mistake back then too.
->>>>>
->>>>> It is a significant maintenance burden, and I have concerns about the
->>>>> level of support it's receiving. Here's some outstanding issues:
->>>>>
->>>>> 1. No man page documentation. At a minimum, tty_ioctl(4) and termios(3)
->>>>>       need the userspace visible definitions and behavior documented. Better
->>>>>       would be a LINEMODE (7) description of how this implementation works
->>>>>       wrt supporting RFC 1116.
->>>>
->>>> That can be added easily enough.
->>>
->>> Is this you signing up?  :)
->>
->> Sure. I suppose the obvious place to add it is near the TIOCPKT doc in tty_ioctl(4). But, about your further comment:
->
-> Thanks.
->
->>> Which brings up another point: only a pty master should be able to set EXTPROC
->>> mode. Right now, any tty can be set to EXTPROC and the pty slave can even
->>> accidentally unset it. This argues for a new pty ioctl() to set EXTPROC in
->>> termios. pty_set_termios() can silently merge the bit.
->>
->> Historically EXTPROC could also be set on regular ttys, for lines that were hooked up to special terminal interfaces. E.g. X.29 PADs that did their own input processing. I'm not sure how relevant this is now, but this is the reason EXTPROC is not a pty-specific ioctl.
->
-> How does the remote end find out when non-canon mode is selected?
-> And who does the EXTPROC setting, because if it's the program that opened the
-> tty, then it can just select raw mode instead.
+To see why atomic_t is pure obfuscation:
 
-There's a few significant differences in semantics between raw mode and 
-EXTPROC mode. The point of EXTPROC is to maintain the tty driver state 
-as if cooked mode were still in effect. One obvious difference is that 
-VMIN/VTIME are overlaid on VEOL/VEOF in raw mode, so the two are not 
-directly interchangeable.
+typedef struct {
+        int counter;
+} atomic_t;
 
-The fact that EXTPROC can be manually unset is by design. Quoting from 
-the original again:
+So, counter is a plain int.
 
-> stty.diff:
->     This file contains the changes needed for the stty(1) program
->     to report on the current status of the TS_EXTPROC bit.  It also
->     allows the user to turn on/off the TS_EXTPROC bit.  This is useful
->     because it allows the user to say "stty -extproc", and the
->     LINEMODE option will be automatically disabled, and saying "stty
->     extproc" will re-enable the LINEMODE option.
+On Mon, Jan 19, 2015 at 11:23:47AM -0800, Ray Jui wrote:
+> +static irqreturn_t bcm_iproc_i2c_isr(int irq, void *data)
+> +{
+> +	struct bcm_iproc_i2c_dev *iproc_i2c = data;
+> +	u32 status = readl(iproc_i2c->base + IS_OFFSET);
+> +
+> +	status &= ISR_MASK;
+> +
+> +	if (!status)
+> +		return IRQ_NONE;
+> +
+> +	writel(status, iproc_i2c->base + IS_OFFSET);
+> +	atomic_set(&iproc_i2c->xfer_is_done, 1);
 
+#define atomic_set(v,i) (((v)->counter) = (i))
 
->>>>> 6. EXTPROC still does some input processing on the server. For example,
->>>>>       7-bit mode (ISTRIP), tolower mode (IUCLC) and processing while
->>>>>       closing; if input processing is being done on the local/client side,
->>>>>       why the extra work here?
->>>>
->>>> That's defensive, on the assumption that something else might break if e.g. the tty expected only 7-bit input but 8-bit characters were sent to it.
->>>
->>> Ok, is that because RFC 1116 doesn't specify ISTRIP and IUCLC handling so
->>> the server can't be sure the client did it? If so, that should be documented
->>> so that refactors don't remove that handling.
->
-> Could you get back to me about this, as well?
+So, this is the same as doing:
 
-The telnet protocol (RFC854) defines a Network Virtual Terminal (NVT) as 
-using 7-bit USASCII in an 8-bit field. As such, it expects the client to 
-be able to generate both upper and lower case itself, so there's no 
-analogue to IUCLC, and there would be no reason to use ISTRIP.
+	iproc_i2c->xfer_is_done.counter = 1;
 
-RFC5198 updates the protocols to use UTF8. So again, it assumes full 
-octets are being transmitted.
+which is merely setting the 'int' to 1.
 
-Perhaps we can drop these special cases from the driver.
+> +	time_left = wait_for_completion_timeout(&iproc_i2c->done, time_left);
+> +
+> +	/* disable all interrupts */
+> +	writel(0, iproc_i2c->base + IE_OFFSET);
+> +
+> +	if (!time_left && !atomic_read(&iproc_i2c->xfer_is_done)) {
 
->>> Regular ptys dump input while closing so this should too.
->>>
->>>>> 7. This needs a reference userspace implementation which for the moment
->>>>>       could double as regression testing. A library with unit tests would
->>>>>       be ideal.
->>>>
->>>> telnet/telnetd can probably used as a starting point for this.
->>>
->>> Except telnet is unmaintained except by each distro. Your patches don't apply
->>> to my distro telnet; they had been applied but are now ifdef'd out. I messed
->>> around with rebuilding it but never got telnetd to actually set EXTPROC.
->>>
->>> My point is there is no straightforward way to test this, and that's a problem.
->>>
->>> In fact, this is my main concern: no matter how useful this might be, it's
->>> pointless if the complementary userspace puzzle piece is unsupported.
->>> I know you have written patches but that's not the same as support; for example
->>> your OpenSSH fork is 4 years old, which is a non-starter because I'm sure
->>> there's known exploits which have been fixed in those 4 years.
->>>
->>> Why doesn't Ubuntu/Debian telnet even compile for line mode support? Did the
->>> package maintainer shut it off because it was causing bug reports?
->>
->> I don't know. Looking at the package history it appears they have never enabled it. https://launchpad.net/ubuntu/+source/netkit-telnet/+changelog
->>
->> I also don't know where the actual VCS repo is for this code.
->
-> There isn't one. The base code is from downloaded tarball.
->
-> I don't know what distro you use (or if you even do), but for Ubuntu/Debian
-> the base package information is here https://packages.debian.org/wheezy/telnetd
-> including maintainer email, etc.
->
-> Typically, to get changes merged requires making a patch(es) against the package
-> source and sending/uploading those.
+#define atomic_read(v)  ACCESS_ONCE((v)->counter)
 
-This was already done, and the package maintainer said he was going to 
-integrate it. https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=585527
+This is practically the same as:
+
+	if (!time_left && !iproc_i2c->xfer_is_done.counter) {
+
+except that this access will be guaranteed to happen just once at this
+location (see ACCESS_ONCE() in include/linux/compiler.h).
+
+However, complete()..wait_for_completion() ensures that there are
+barriers in the way: complete takes a spinlock on the waiter, so the
+write to iproc_i2c->xfer_is_done.counter will be visible by the time
+wait_for_completion() returns, and wait_for_completion() also does.
+The same spinlock is also manipulated by wait_for_completion(), which
+means there's barriers there as well, so it can't cache the value of
+"counter" across that call.
+
+So, the "volatile" access guaranteed by ACCESS_ONCE() isn't even
+needed here.
+
+(It would be needed if you were spinning in a loop, calling no other
+functions - but then you're supposed to use cpu_relax() in that
+circumstance, which has a compiler barrier in it, which ensures that
+it will re-read such a variable each time.)
 
 -- 
-   -- Howard Chu
-   CTO, Symas Corp.           http://www.symas.com
-   Director, Highland Sun     http://highlandsun.com/hyc/
-   Chief Architect, OpenLDAP  http://www.openldap.org/project/
+FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
+according to speedtest.net.
