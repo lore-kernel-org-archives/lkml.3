@@ -1,81 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752289AbbASXiN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 18:38:13 -0500
-Received: from mga14.intel.com ([192.55.52.115]:39398 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752119AbbASXiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 18:38:12 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,430,1418112000"; 
-   d="scan'208";a="664313042"
-Date: Tue, 20 Jan 2015 07:18:37 +0800
-From: Wanpeng Li <wanpeng.li@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Ingo Molnar <mingo@redhat.com>, Juri Lelli <juri.lelli@arm.com>,
-        Kirill Tkhai <ktkhai@parallels.com>, linux-kernel@vger.kernel.org,
-        riel@redhat.com, jason.low2@hp.com, fweisbec@gmail.com,
-        Tim Chen <tim.c.chen@linux.intel.com>
-Subject: Re: [PATCH v6 5/7] sched/fair: fix idle balance when remaining tasks
- are all non-CFS tasks
-Message-ID: <20150119231837.GB3687@kernel>
-Reply-To: Wanpeng Li <wanpeng.li@linux.intel.com>
-References: <1416962647-76792-1-git-send-email-wanpeng.li@linux.intel.com>
- <1416962647-76792-6-git-send-email-wanpeng.li@linux.intel.com>
- <20150119124528.GO25256@twins.programming.kicks-ass.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150119124528.GO25256@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752084AbbASXYB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 18:24:01 -0500
+Received: from mail-we0-f172.google.com ([74.125.82.172]:54606 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751552AbbASXX7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 18:23:59 -0500
+From: Beniamino Galvani <b.galvani@gmail.com>
+To: Carlo Caione <carlo@caione.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Russell King <linux@arm.linux.org.uk>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Jerry Cao <jerry.cao@amlogic.com>,
+        Victor Wan <victor.wan@amlogic.com>,
+        Beniamino Galvani <b.galvani@gmail.com>
+Subject: [PATCH 0/3] ARM: meson: add support for MINIX NEO-X8
+Date: Tue, 20 Jan 2015 00:22:56 +0100
+Message-Id: <1421709779-25691-1-git-send-email-b.galvani@gmail.com>
+X-Mailer: git-send-email 2.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 19, 2015 at 01:45:28PM +0100, Peter Zijlstra wrote:
->On Wed, Nov 26, 2014 at 08:44:05AM +0800, Wanpeng Li wrote:
->> The overload indicator is used for knowing when we can totally avoid load
->> balancing to a cpu that is about to go idle. We can avoid load balancing
->> when no cpu has cfs task and both rt and deadline have push/pull mechanism
->> to do their own balancing.
->> 
->> However, rq->nr_running on behalf of the total number of each class tasks
->> on the cpu, do idle balance when remaining tasks are all non-CFS tasks does
->> not make any sense.
->> 
->> This patch fix it by idle balance when there are still other CFS tasks in
->> the rq's root domain.
->> 
->
->Please always try and Cc the people who touched that code last; for the
->idle_balance bits commit 4486edd12b5a ("sched/fair: Implement fast
->idling of CPUs when the system is partially loaded") gives a fair clue
->as to who that would be.
->
->> diff --git a/kernel/sched/sched.h b/kernel/sched/sched.h
->> index 31f1e4d..f7dd978 100644
->> --- a/kernel/sched/sched.h
->> +++ b/kernel/sched/sched.h
->> @@ -1269,7 +1269,8 @@ static inline void add_nr_running(struct rq *rq, unsigned count)
->>  
->>  	rq->nr_running = prev_nr + count;
->>  
->> -	if (prev_nr < 2 && rq->nr_running >= 2) {
->> +	if (prev_nr < 2 && rq->nr_running >= 2 &&
->> +		rq->cfs.h_nr_running > 0) {
->>  #ifdef CONFIG_SMP
->>  		if (!rq->rd->overload)
->>  			rq->rd->overload = true;
->
->Here 3882ec643997 ("nohz: Use IPI implicit full barrier against
->rq->nr_running r/w") might be a clue.
->
->Also, this is wrong, it breaks NOHZ_FULL.
+This series adds support for MINIX NEO-X8, a digital media player
+based on a Amlogic S802 (Meson8) SoC. It depends on the pinctrl
+support for Meson8 submitted here:
 
-Got it. If the modification in update_sg_lb_stats of my patch is still
-corrrect, if so I can send out a new version.
+  https://lkml.org/lkml/2015/1/17/87
 
-Regards,
-Wanpeng Li 
+Beniamino Galvani (3):
+  of: Add vendor prefix for MINIX
+  of: Define board compatible for MINIX NEO-X8
+  ARM: dts: meson: add DTS file for MINIX NEO-X8
+
+ Documentation/devicetree/bindings/arm/amlogic.txt  |   4 +
+ .../devicetree/bindings/arm/geniatech.txt          |   5 -
+ .../devicetree/bindings/vendor-prefixes.txt        |   1 +
+ arch/arm/boot/dts/Makefile                         |   1 +
+ arch/arm/boot/dts/meson8-minix-neo-x8.dts          | 128 +++++++++++++++++++++
+ 5 files changed, 134 insertions(+), 5 deletions(-)
+ delete mode 100644 Documentation/devicetree/bindings/arm/geniatech.txt
+ create mode 100644 arch/arm/boot/dts/meson8-minix-neo-x8.dts
+
+-- 
+2.1.4
+
