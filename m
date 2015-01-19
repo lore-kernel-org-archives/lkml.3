@@ -1,74 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751936AbbASQkd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 11:40:33 -0500
-Received: from mga03.intel.com ([134.134.136.65]:39730 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751166AbbASQkc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 11:40:32 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,428,1418112000"; 
-   d="scan'208";a="653237578"
-Date: Mon, 19 Jan 2015 08:40:24 -0800
-From: Matt Roper <matthew.d.roper@intel.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@intel.com>,
-        Ville =?iso-8859-1?Q?Syrj=E4l=E4?= 
-	<ville.syrjala@linux.intel.com>,
-        Jeremiah Mahler <jmmahler@gmail.com>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>,
-        Ander Conselvan de Oliveira <conselvan2@gmail.com>,
-        linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [BUG, bisect] drm/i915: mouse pointer lags and
- overshoots
-Message-ID: <20150119164024.GI22549@intel.com>
-References: <20150117100635.GA1281@hudson.localdomain>
- <20150119090847.GQ10649@intel.com>
- <54BCE1BF.5050808@intel.com>
- <20150119110404.GA26577@nuc-i3427.alporthouse.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150119110404.GA26577@nuc-i3427.alporthouse.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752325AbbASQp0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 11:45:26 -0500
+Received: from mail-wg0-f42.google.com ([74.125.82.42]:34000 "EHLO
+	mail-wg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752056AbbASQpW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 11:45:22 -0500
+From: Eric Auger <eric.auger@linaro.org>
+To: eric.auger@st.com, eric.auger@linaro.org, christoffer.dall@linaro.org,
+        marc.zyngier@arm.com, andre.przywara@arm.com,
+        linux-arm-kernel@lists.infradead.org, kvmarm@lists.cs.columbia.edu,
+        kvm@vger.kernel.org, gleb@kernel.org, pbonzini@redhat.com
+Cc: linux-kernel@vger.kernel.org, patches@linaro.org
+Subject: [PATCH v8 0/5] irqfd support for arm/arm64
+Date: Mon, 19 Jan 2015 17:43:08 +0100
+Message-Id: <1421685793-3547-1-git-send-email-eric.auger@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 19, 2015 at 11:04:04AM +0000, Chris Wilson wrote:
-> On Mon, Jan 19, 2015 at 11:51:43AM +0100, Daniel Vetter wrote:
-> > There's also an issue in (most) X drivers which exaberates this
-> > issues: When changing the cursor buffer the X cursor code does a a)
-> > disable cursor b) update cursor image c) enable cursor cycle.
-> 
-> Notably not -intel on which the bug has been observed. And more
-> importantly, the slow downs don't seem to correlate with cursor change,
-> just cursor movement.
-> -Chris
-> 
-> -- 
-> Chris Wilson, Intel Open Source Technology Centre
+This patch series enables irqfd on arm and arm64.
 
-It seems that the simple fix for this case (movement only) is to just
-skip the prepare_fb/cleanup_fb calls (and the associated vblank wait) in
-the transitional plane helper when newfb == oldfb.  I just posted a
-small patch that makes that change (and solves the cursor lag for me).
+Irqfd framework enables to inject a virtual IRQ into a guest upon an
+eventfd trigger. User-side uses KVM_IRQFD VM ioctl to provide KVM with
+a kvm_irqfd struct that associates a VM, an eventfd, a virtual IRQ number
+(aka. the gsi). When an actor signals the eventfd (typically a VFIO
+platform driver), the kvm irqfd subsystem injects the gsi into the VM.
 
-This won't solve the case if userspace uses a different framebuffer for
-each update (while trying to update faster than the refresh rate).  Is
-there any existing userspace that behaves this way that we can test
-with?
+Resamplefd also is supported for level sensitive interrupts, ie. the
+user can provide another eventfd that is triggered when the completion
+of the virtual IRQ (gsi) is detected by the GIC.
+
+The gsi must correspond to a shared peripheral interrupt (SPI), ie the
+GIC interrupt ID is gsi + 32.
+
+The rationale behind not supporting PPI irqfd injection is that
+any device using a PPI would be a private-to-the-CPU device (timer for
+instance), so its state would have to be context-switched along with the
+VCPU and would require in-kernel wiring anyhow. It is not a relevant use
+case for irqfds.
+
+This patch enables CONFIG_HAVE_KVM_EVENTFD and CONFIG_HAVE_KVM_IRQFD.
+
+No IRQ routing table is used, enabling to remove CONFIG_HAVE_KVM_IRQCHIP
+
+The ARM virtual interrupt controller, the VGIC, is dynamically
+instantiated. The user-space may attempt to assign an irqfd before
+the virtual interrupt controller is ready. For that reason a
+check is added in the generic irqfd code to test whether the virtual
+interrupt controller is ready.
+
+This work was tested with Calxeda Midway xgmac main interrupt with
+qemu-system-arm and QEMU VFIO platform device. Also irqfd was proven
+functional on several vhost-net prototypes.
+
+Available on ssh://git.linaro.org/people/eric.auger/linux.git
+branch irqfd_v8_integrated_official_release
+
+v7 -> v8:
+- Address Andre's comments:
+  - introduce a separate patch file for coarse grain dist lock removal at
+    kvm_vgic_sync_hwstate level
+  - update comment above __kvm_vgic_sync_hwstate
+  - remove kvm_irq_has_notifier call
+  - remove gic_initialized() check in kvm_set_irq
+  - fix a typo in one comment (kvm_host.h)
+
+v6 -> v7:
+- kvm_arch_intc_initialized call introduced in first patch file
+  related to kvm_arch_intc_initialized (generic part)
+- add Christoffer's acks
+
+v5 -> v6:
+- take into account Christoffer's comments:
+  - rename macro and function enabling to check the state of virtual
+    interrupt controller (kvm_arch_intc_initialized)
+  - kvm_arch_intc_initialized is declared in kvm_host.h whatever the
+    archi support.
+  - squash v5 patch files 3 & 4
+  - KVM_CAP_IRQFD support depends on vgic_present
+  - add Christoffer's Reviewed-by on last patch file
+
+v4 -> v5:
+- add the capability to check whether vgic is initialized when
+  assigning an irqfd.  objective is to avoid injecting IRQ before
+  this vgic is ready: this corresponds to new patch files 2, 3, 4.
+- do not specifically handle early virtual IRQ injections in
+  kvm_set_irq.  In case of injection when vgic is not yet ready,
+  simply return an error.  User-space now has means to force vgic
+  init and get notified if irqfd assign takes place too early.
+- squash [PATCH v4 2/3] KVM: arm: add irqfd support and
+         [PATCH v4 3/3] KVM: arm64: add irqfd support
+- add Acked-by's in KVM: arm/arm64: unset CONFIG_HAVE_KVM_IRQCHIP
+- some comment rewording in vgic
+
+v3 -> v4:
+- rebase on 3.18rc5
+- vgic dynamic instantiation brought new challenges:
+  handling of irqfd injection when vgic is not ready
+- unset of CONFIG_HAVE_KVM_IRQCHIP in a separate patch
+- add arm64 enable
+- vgic.c style modifications according to Christoffer comments
+
+v2 -> v3:
+- removal of irq.h from eventfd.c put in a separate patch to increase
+  visibility
+- properly expose KVM_CAP_IRQFD capability in arm.c
+- remove CONFIG_HAVE_KVM_IRQCHIP meaningfull only if irq_comm.c is used
+
+v1 -> v2:
+- rebase on 3.17rc1
+- move of the dist unlock in process_maintenance
+- remove of dist lock in __kvm_vgic_sync_hwstate
+- rewording of the commit message (add resamplefd reference)
+- remove irq.h
 
 
-Matt
+Eric Auger (5):
+  KVM: arm/arm64: unset CONFIG_HAVE_KVM_IRQCHIP
+  KVM: introduce kvm_arch_intc_initialized and use it in irqfd
+  KVM: arm/arm64: implement kvm_arch_intc_initialized
+  KVM: arm/arm64: remove coarse grain dist locking at
+    kvm_vgic_sync_hwstate
+  KVM: arm/arm64: add irqfd support
+
+ Documentation/virtual/kvm/api.txt |  6 +++-
+ arch/arm/include/asm/kvm_host.h   |  2 ++
+ arch/arm/include/uapi/asm/kvm.h   |  3 ++
+ arch/arm/kvm/Kconfig              |  4 +--
+ arch/arm/kvm/Makefile             |  2 +-
+ arch/arm/kvm/arm.c                | 10 +++++++
+ arch/arm64/include/asm/kvm_host.h |  2 ++
+ arch/arm64/include/uapi/asm/kvm.h |  3 ++
+ arch/arm64/kvm/Kconfig            |  3 +-
+ arch/arm64/kvm/Makefile           |  2 +-
+ include/linux/kvm_host.h          | 14 ++++++++++
+ virt/kvm/arm/vgic.c               | 58 +++++++++++++++++++++++++++++++++------
+ virt/kvm/eventfd.c                |  3 ++
+ 13 files changed, 98 insertions(+), 14 deletions(-)
 
 -- 
-Matt Roper
-Graphics Software Engineer
-IoTG Platform Enabling & Development
-Intel Corporation
-(916) 356-2795
+1.9.1
+
