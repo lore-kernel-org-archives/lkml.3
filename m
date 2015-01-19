@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751462AbbASDuR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 22:50:17 -0500
-Received: from smtpauth15.mfg.siteprotect.com ([64.26.60.147]:59486 "EHLO
-	smtpauth05.mfg.siteprotect.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751090AbbASDuQ (ORCPT
+	id S1751435AbbASEA0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 23:00:26 -0500
+Received: from mail-qc0-f171.google.com ([209.85.216.171]:42908 "EHLO
+	mail-qc0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090AbbASEAY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 22:50:16 -0500
-Date: Sun, 18 Jan 2015 22:49:46 -0500 (EST)
-From: Vince Weaver <vince@deater.net>
-X-X-Sender: vince@pianoman.cluster.toy
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Jiri Olsa <jolsa@redhat.com>, Ingo Molnar <mingo@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>, linux-kernel@vger.kernel.org,
-        mark.rutland@arm.com, Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: perf fuzzer crash [PATCH] perf: Get group events reference before
- moving the group
-In-Reply-To: <alpine.DEB.2.10.1501161352070.8204@pianoman.cluster.toy>
-Message-ID: <alpine.DEB.2.10.1501182245470.16482@pianoman.cluster.toy>
-References: <20150116075746.GB2658@krava.brq.redhat.com> <20150116104644.GW23965@worktop.programming.kicks-ass.net> <20150116141104.GD21958@worktop.programming.kicks-ass.net> <alpine.DEB.2.10.1501161352070.8204@pianoman.cluster.toy>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+	Sun, 18 Jan 2015 23:00:24 -0500
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-CTCH-Spam: Unknown
-X-CTCH-RefID: str=0001.0A020205.54BC7EF7.00A2,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+In-Reply-To: <CA+55aFyc7TbnLBi3rcQDrtkwg9TgDnb5dAfupMGSbTKZC6Xd0g@mail.gmail.com>
+References: <1421083370-24924-1-git-send-email-martink@posteo.de>
+	<tip-7e9358073d3f0ed0a028c48aa54009b3296dffc9@git.kernel.org>
+	<CA+55aFyc7TbnLBi3rcQDrtkwg9TgDnb5dAfupMGSbTKZC6Xd0g@mail.gmail.com>
+Date: Mon, 19 Jan 2015 16:00:23 +1200
+X-Google-Sender-Auth: O_mFMBpSzbqT39SmQGWjV3eO6vw
+Message-ID: <CA+55aFycO_d0oO9rw9fXa13NSNc0Am8v+3rV+eSH9YdsCi-2Mg@mail.gmail.com>
+Subject: Re: [tip:core/types] bitops: Add sign_extend8(), 16 and 64 functions
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: jsrhbz@kanargh.force9.co.uk, christoph.muellner@theobroma-systems.com,
+        Guenter Roeck <linux@roeck-us.net>,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Paul McKenney <paulmck@linux.vnet.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Peter Anvin <hpa@zytor.com>,
+        Maxime Coquelin <maxime.coquelin@st.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, martink@posteo.de,
+        "Theodore Ts'o" <tytso@mit.edu>
+Cc: "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Jan 2015, Vince Weaver wrote:
-> 
-> I just wanted to report that I've tested both this patch and Jiri's 
-> original one and they both keep my easy-to-trigger-testcase from crashing 
-> my core2 machine (when applied against 3.18).
+On Mon, Jan 19, 2015 at 7:54 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> The 8- and 16- bit versions are the same as the 32-bit one.
 
-I've continued fuzzing all weekend, with PeterZ's patch 
-applied to 3.19-rc4.  It has managed to stay up without crashing, 
-impressive.   
+Side note: the 64-bit one is actually different on 32-bit
+architectures, not because it would generate a different value, but
+because the 64-bit overhead likely kills you. It might be that the
+compiler is smart enough that we'd *only* need the 64-bit version, but
+for non-constant bit numbers, it's likely hard for gcc to generate
+sane single-register versions, and so the 64-bit version is likely
+fine.
 
-Fuzzing still turns up a few issues but no crashes:
+But I don't see the 8-bit and 16-bit versions generating better code
+on any sane architecture.
 
-[ 1753.904001] WARNING: CPU: 0 PID: 23800 at arch/x86/kernel/hw_breakpoint.c:119 arch_install_hw_breakpoint+0x6a/0xf6()
-[ 1753.904001] Can't find any breakpoint slot
-
-(I thought we had fixed that one).
-
-[80608.209702] Uhhuh. NMI received for unknown reason 3d on CPU 0.
-[80608.212041] Do you have a strange power saving mode enabled?
-[80608.212041] Dazed and confused, but trying to continue
-
-(these are common but don't seem to affect system stability).
-
-Vince
+           Linus
