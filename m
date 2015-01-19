@@ -1,66 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752056AbbASILm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 03:11:42 -0500
-Received: from mail-pd0-f170.google.com ([209.85.192.170]:62481 "EHLO
-	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751479AbbASILk (ORCPT
+	id S1751597AbbASIPM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 03:15:12 -0500
+Received: from mail-ig0-f169.google.com ([209.85.213.169]:34962 "EHLO
+	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751244AbbASIPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 03:11:40 -0500
-From: Sudip Mukherjee <sudipm.mukherjee@gmail.com>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Sudip Mukherjee <sudipm.mukherjee@gmail.com>,
-        Teddy Wang <teddy.wang@siliconmotion.com>,
-        linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-fbdev@vger.kernel.org
-Subject: [PATCH v2 7/7] staging: sm7xxfb: fix alignment
-Date: Mon, 19 Jan 2015 13:41:06 +0530
-Message-Id: <1421655067-7490-7-git-send-email-sudipm.mukherjee@gmail.com>
-X-Mailer: git-send-email 1.8.1.2
-In-Reply-To: <1421655067-7490-1-git-send-email-sudipm.mukherjee@gmail.com>
-References: <1421655067-7490-1-git-send-email-sudipm.mukherjee@gmail.com>
+	Mon, 19 Jan 2015 03:15:09 -0500
+Date: Mon, 19 Jan 2015 08:15:02 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Beomho Seo <beomho.seo@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        devicetree@vger.kernel.org, sre@kernel.org, lee.jone@linaro.org,
+        broonie@kernel.org, dbaryshkov@gmail.com, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        cw00.choi@samsung.com, inki.dae@samsung.com, sw0312.kim@samsung.com
+Subject: Re: [PATCH v2 3/3] Documentation: Add documentation for rt5033
+ multifunction device
+Message-ID: <20150119081502.GD21886@x1>
+References: <1420793114-20586-1-git-send-email-beomho.seo@samsung.com>
+ <1420793114-20586-4-git-send-email-beomho.seo@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1420793114-20586-4-git-send-email-beomho.seo@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-checkpatch cleanup: alignment should match open parenthesis
+DT Ack please gents.
 
-Signed-off-by: Sudip Mukherjee <sudip@vectorindia.org>
----
- drivers/staging/sm7xxfb/sm7xxfb.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+> This patch device tree binding documentation for rt5033 multifunction device.
+> 
+> Cc: Sebastian Reichel <sre@kernel.org>
+> Cc: Lee Jones <lee.jones@linaro.org>
+> Cc: Mark Brown <broonie@kernel.org>
+> Cc: Rob Herring <robh+dt@kernel.org>
+> Cc: Pawel Moll <pawel.moll@arm.com>
+> Cc: Mark Rutland <mark.rutland@arm.com>
+> Cc: Ian campbell <ijc+devicetree@hellion.org.uk>
+> Cc: Kumar Gala <galak@codeaurora.org>
+> Signed-off-by: Beomho Seo <beomho.seo@samsung.com>
+> Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
+> ---
+> Changes in v2
+> - Fix incorrect typo.
+> - Align -uamp and -uvolt names with regulator binding suffixes.
+> - Drop incorrect phandle.
+> - Fix incorrect example.
+> ---
+>  Documentation/devicetree/bindings/mfd/rt5033.txt   |  101 ++++++++++++++++++++
+>  .../devicetree/bindings/vendor-prefixes.txt        |    1 +
+>  2 files changed, 102 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/mfd/rt5033.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/mfd/rt5033.txt b/Documentation/devicetree/bindings/mfd/rt5033.txt
+> new file mode 100644
+> index 0000000..64b23e8
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/mfd/rt5033.txt
+> @@ -0,0 +1,101 @@
+> +Richtek RT5033 Power management Integrated Circuit
+> +
+> +RT5033 is a Multifunction device which includes battery charger, fuel gauge,
+> +flash LED current source, LDO and synchronous Buck converter for portable
+> +applications. It is interfaced to host controller using i2c interface.
+> +
+> +Required properties:
+> +- compatible : Must be "richtek,rt5033"
+> +- reg : Specifies the i2c slave address of general part.
+> +- interrupts : This i2c devices has an IRQ line connected to the main SoC.
+> +- interrupt-parent : The parent interrupt controller.
+> +
+> +Optional node:
+> +Regulators: The regulators of RT5033 have to be instantiated under sub-node
+> +named "regulators" using the following format.
+> +
+> +	regulators {
+> +		regulator-name {
+> +			regulator-name = LDO/BUCK
+> +			regulator subnodes called X, Y and Z
+> +		};
+> +	};
+> +	refer Documentation/devicetree/bindings/regulator/regulator.txt
+> +
+> +
+> +Battery charger: There battery charger of RT5033 have to be instantiated under
+> +sub-node named "charger" using the following format.
+> +
+> +Required properties:
+> +- compatible : Must be "richtek,rt5033-charger".
+> +- richtek,pre-uamp : Current of pre-charge mode. The pre-charge current levels
+> +  are 350 mA to 650 mA programmed by I2C per 100 mA.
+> +- richtek,fast-uamp : Current of fast-charge mode. The fast-charge current
+> +  levels are 700 mA to 2000 mA programmed by I2C per 100 mA.
+> +- richtek,eoc-uamp : This property is end of charge current. Its level 150 mA
+> +  to 200 mA.
+> +- richtek,pre-threshold-uvolt : Voltage of threshold pre-charge mode. Battery
+> +  voltage is below pre-charge threshold voltage, the charger is in pre-charge
+> +  mode with pre-charge current. Its levels are 2.3 V  to 3.8 V programmed
+> +  by I2C per 0.1 V.
+> +- richtek,const-uvolt :  Battery regulation voltage of constant voltage mode.
+> +  This voltage level 3.65 V to 4.4 V bye I2C per 0.025 V.
+> +
+> +	charger {
+> +		compatible = "richtek,rt5033-charger";
+> +		richtek,pre-uamp = <350000>;
+> +		richtek,fast-uamp = <2000000>;
+> +		richtek,eoc-uamp = <250000>;
+> +		richtek,pre-threshold-uvolt = <3400000>;
+> +		richtek,const-uvolt = <4350000>;
+> +
+> +	};
+> +
+> +
+> +Fuelgauge: There fuelgauge of RT5033 to be instantiated node named "fuelgauge"
+> +using the following format.
+> +
+> +Required properties:
+> +- compatible = Must be "richtek,rt5033-battery".
+> +
+> +	rt5033@35 {
+> +		compatible = "richtek,rt5033-battery";
+> +		interrupt-parent = <&gpx2>;
+> +		interrupts = <3 0>;
+> +		reg = <0x35>;
+> +	};
+> +
+> +Example:
+> +
+> +		rt5033@34 {
+> +			compatible = "richtek,rt5033";
+> +			reg = <0x34>;
+> +			interrupt-parent = <&gpx1>;
+> +			interrupts = <5 0>;
+> +
+> +			regulators {
+> +				buck_reg: BUCK {
+> +					regulator-name = "BUCK";
+> +					regulator-min-microvolt = <1200000>;
+> +					regulator-max-microvolt = <1200000>;
+> +					regulator-always-on;
+> +				};
+> +			};
+> +
+> +			charger {
+> +				compatible = "richtek,rt5033-charger";
+> +				richtek,pre-uamp = <350000>;
+> +				richtek,fast-uamp = <2000000>;
+> +				richtek,eoc-uamp = <250000>;
+> +				richtek,pre-threshold-uvolt = <3400000>;
+> +				richtek,const-uvolt = <4350000>;
+> +			};
+> +
+> +		};
+> +
+> +		rt5033@35 {
+> +				compatible = "richtek,rt5033-battery";
+> +				interrupt-parent = <&gpx2>;
+> +				interrupts = <3 0>;
+> +				reg = <0x35>;
+> +		};
+> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
+> index 723999d..611b543 100644
+> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
+> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
+> @@ -124,6 +124,7 @@ ralink	Mediatek/Ralink Technology Corp.
+>  ramtron	Ramtron International
+>  realtek Realtek Semiconductor Corp.
+>  renesas	Renesas Electronics Corporation
+> +richtek	Richtek Technology Corporation
+>  ricoh	Ricoh Co. Ltd.
+>  rockchip	Fuzhou Rockchip Electronics Co., Ltd
+>  samsung	Samsung Semiconductor
 
-diff --git a/drivers/staging/sm7xxfb/sm7xxfb.c b/drivers/staging/sm7xxfb/sm7xxfb.c
-index 097747c..2ae9fd0 100644
---- a/drivers/staging/sm7xxfb/sm7xxfb.c
-+++ b/drivers/staging/sm7xxfb/sm7xxfb.c
-@@ -509,7 +509,7 @@ static void sm7xx_set_timing(struct smtcfb_info *sfb)
- 				    (i + 0x30) != 0x6a &&
- 				    (i + 0x30) != 0x6b)
- 					smtc_seqw(i + 0x30,
--						VGAMode[j].Init_SR30_SR75[i]);
-+						  VGAMode[j].Init_SR30_SR75[i]);
- 
- 			/* init SEQ register SR80 - SR93 */
- 			for (i = 0; i < SIZE_SR80_SR93; i++)
-@@ -720,7 +720,7 @@ static void smtc_unmap_mmio(struct smtcfb_info *sfb)
-  */
- 
- static int smtc_map_smem(struct smtcfb_info *sfb,
--		struct pci_dev *pdev, u_long smem_len)
-+			 struct pci_dev *pdev, u_long smem_len)
- {
- 	sfb->fb.fix.smem_start = pci_resource_start(pdev, 0);
- 
-@@ -764,7 +764,7 @@ static inline void sm7xx_init_hw(void)
- }
- 
- static int smtcfb_pci_probe(struct pci_dev *pdev,
--				   const struct pci_device_id *ent)
-+			    const struct pci_device_id *ent)
- {
- 	struct smtcfb_info *sfb;
- 	u_long smem_size = 0x00800000;	/* default 8MB */
 -- 
-1.8.1.2
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
