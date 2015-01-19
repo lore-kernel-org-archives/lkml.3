@@ -1,94 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751603AbbASLEr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 06:04:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52022 "EHLO mx2.suse.de"
+	id S1751999AbbASLHH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 06:07:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:45432 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751066AbbASLEp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 06:04:45 -0500
-Date: Mon, 19 Jan 2015 12:04:44 +0100
-From: Jan Kara <jack@suse.cz>
-To: Venkatesh Srinivas <venkateshs@google.com>
-Cc: Jan Kara <jack@suse.cz>, lsf-pc@lists.linux-foundation.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Lsf-pc] [LSF/MM ATTEND]: Linux SCSI experiences in Google
- Compute Engine & SCSI multiqueue-per-target discussion
-Message-ID: <20150119110444.GD5662@quack.suse.cz>
-References: <CAHdzE--ypgihzrWadAt81TP=gPSY0SvwYdPsyAywG8g2vs0HAg@mail.gmail.com>
- <20150116095006.GE25884@quack.suse.cz>
- <CAHdzE-8PvKAfBmPx-UPz-7R5_rEJEq7=TKji4o8zXySwFwqQHA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAHdzE-8PvKAfBmPx-UPz-7R5_rEJEq7=TKji4o8zXySwFwqQHA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1751403AbbASLHE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 06:07:04 -0500
+Message-ID: <1421665620.3610.13.camel@nilsson.home.kraxel.org>
+Subject: Re: [PATCH v3 00/16] virtio-pci: towards virtio 1.0 guest support
+From: Gerd Hoffmann <kraxel@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org
+Date: Mon, 19 Jan 2015 12:07:00 +0100
+In-Reply-To: <1421397146.21318.16.camel@nilsson.home.kraxel.org>
+References: <1421256142-11512-1-git-send-email-mst@redhat.com>
+	 <1421356698.3933.18.camel@nilsson.home.kraxel.org>
+	 <20150115213256.GA4813@redhat.com>
+	 <1421397146.21318.16.camel@nilsson.home.kraxel.org>
+Content-Type: multipart/mixed; boundary="=-0zWL1zFiJykP2TPP5hvE"
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 16-01-15 09:38:23, Venkatesh Srinivas wrote:
-> On Fri, Jan 16, 2015 at 1:50 AM, Jan Kara <jack@suse.cz> wrote:
-> >   Hello,
-> >
-> > On Thu 15-01-15 15:14:01, Venkatesh Srinivas wrote:
-> >> I work at Google on the SCSI emulation and virtual storage array
-> >> (Persistent Disk) in Google Compute Engine; we emulate a VirtioScsi
-> >> PCI adapter and a SCSI storage target for use by (primarily) Linux
-> >> virtual machines running on our hardware.
-> >>
-> >> I'd be interested in attending LSF/MM 2015, to participate in
-> >> discussions around scsi-mq in the virtio-scsi driver and the SCSI
-> >> midlayer. I'd also like to discuss ultimately driving a single scsi
-> >> target from multiple request queues -- we have experimented with this
-> >> in Google Compute Engine and it would allow interfacing very high IOPS
-> >> storage devices to the SCSI midlayer.
-> >>
-> >> I'd also like to talk about a couple of pain points we've had running
-> >> in our environment -- around "backpressure" (BUSY statuses); around
-> >> the SCSI midlayer not having access to per-request REQ_END flags; and
-> >> around CFQ and nonrotational media.
-> >   Well, CFQ was never meant for non-rotational media AFAIK so why are you
-> > using it?
-> 
-> 1) The Debian project's default scheduler (even for VM guests) is CFQ; Debian
->     stable (+ the backports kernel, 3.16 currently) is GCE's default and most
->     popular image. The default guest configuration should really work well,
->     customer manual tuning is less than ideal.
-  Then you should talk to Debian. VM guests shouldn't definitely use CFQ by
-default. In most cases that's just a way to waste CPU cycles only to
-increase IO latency - i.e. a loose-loose situation :).
 
-> 2) CFQ does have logic to handle nonrotational media (see the test in
->     cfq_shoud_idle()); however the logic also takes into account blockdev queue
->     depth over time, I'd like to talk about why that logic is there.
-  Yes, I know it does have logic for non-rotational media. But in most
-cases using deadline or noop IO scheduler just ends up yielding better
-results for non-rotational media. I specifically talked to block layer guys
-(Jeff Moyer, Jens Axboe) about some shortcomings of CFQ we have observed in
-SUSE or upstream and their answer was that CFQ is good for rotating drives.
-For anything else you should use a different IO scheduler.
+--=-0zWL1zFiJykP2TPP5hvE
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 
-> 3) To a first order, our disk emulation has no seek penalties, so any of
-> CFQ's heuristics to optimize for seek order are not necessary. However,
-> our disk emulation (like many real SSDs!) does benefit from larger I/O
-> batches; we have observed bandwidth-constrained workloads generate larger
-> request batches per doorbell write/device kick with CFQ is told it has a
-> rotational disk. We'd like to not lose this benefit by wholesale
-> disabling CFQ.
-  If you have some data on this, I think it would be interesting to block
-layer guys. And comparison what request sizes you achieve with different
-CFQ settings and different IO schedulers is worthwhile. The factor to
-consider as well is the additional CPU load though - whether the additional
-CPU cost for finding mergeable requests is worth the increase in size of
-requests. That's always something to consider and how things work out
-depends on the details of the workload.
+  Hi,
 
-> 4) (minor) IIUC CFQ provides users with better block stats currently?
-  Hum, I'm not aware of that. Which stats? CFQ allows you to use IO
-priorities, priority classes, and block cgroups which is the main advantage
-of CFQ in this area I'm aware of.
+> BTW: is there a tool (or pciutils patch) which can decode the virtio
+> capabilities?
 
-								Honza
+Searched for a patch today, and all google found me was this mail asking
+for one :-o
+
+So I went ahead and coded one up.  Attached.
+
+While hacking it up I've noticed spec doesn't match reality.  The
+"Virtio Structure PCI Capabilities" section here ...
+
+http://docs.oasis-open.org/virtio/virtio/v1.0/cs01/virtio-v1.0-cs01.html#x1-690004
+
+... doesn't match what qemu is doing.  Huh?
+
+
+Also note:
+
+[root@fedora ~]# ~kraxel/projects/pciutils/lspci -vvsa
+00:0a.0 Communication controller: Red Hat, Inc Virtio console
+[ ... ]
+	Capabilities: [64] VirtIO: Notify
+		BAR=2 offset=00003000 size=00400000
+		multiplier=00010000
+[ ... ]
+
+Why multiplier is 64k instead of 4k?  Just a tyops?
+
+
+cheers,
+  Gerd
+
+
+--=-0zWL1zFiJykP2TPP5hvE
+Content-Disposition: attachment; filename="0001-add-virtio-vendor-caps.patch"
+Content-Type: text/x-patch; name="0001-add-virtio-vendor-caps.patch"; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+
+>From 0d5d99c20b079c986128c3d98c4bbaba51ebe65c Mon Sep 17 00:00:00 2001
+From: Gerd Hoffmann <kraxel@redhat.com>
+Date: Mon, 19 Jan 2015 11:46:37 +0100
+Subject: [PATCH] add virtio vendor caps
+
+---
+ Makefile         |  2 +-
+ ls-caps-vendor.c | 57 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ ls-caps.c        |  9 ++++++++-
+ lspci.h          |  4 ++++
+ 4 files changed, 70 insertions(+), 2 deletions(-)
+ create mode 100644 ls-caps-vendor.c
+
+diff --git a/Makefile b/Makefile
+index 8d49afa..39a07d1 100644
+--- a/Makefile
++++ b/Makefile
+@@ -69,7 +69,7 @@ force:
+ lib/config.h lib/config.mk:
+ 	cd lib && ./configure
+ 
+-lspci: lspci.o ls-vpd.o ls-caps.o ls-ecaps.o ls-kernel.o ls-tree.o ls-map.o common.o lib/$(PCILIB)
++lspci: lspci.o ls-vpd.o ls-caps.o ls-caps-vendor.o ls-ecaps.o ls-kernel.o ls-tree.o ls-map.o common.o lib/$(PCILIB)
+ setpci: setpci.o common.o lib/$(PCILIB)
+ 
+ LSPCIINC=lspci.h pciutils.h $(PCIINC)
+diff --git a/ls-caps-vendor.c b/ls-caps-vendor.c
+new file mode 100644
+index 0000000..5f8b3e1
+--- /dev/null
++++ b/ls-caps-vendor.c
+@@ -0,0 +1,57 @@
++/*
++ *	The PCI Utilities -- Show Vendor-specific Capabilities
++ *
++ *	Copyright (c) 2014 Gerd Hoffmann <kraxel@redhat.com>
++ *
++ *	Can be freely distributed and used under the terms of the GNU GPL.
++ */
++
++#include <stdio.h>
++#include <string.h>
++
++#include "lspci.h"
++
++void
++show_vendor_caps_virtio(struct device *d, int where, int cap)
++{
++  int length = BITS(cap, 0, 8);
++  int type = BITS(cap, 8, 5);
++  int bar = BITS(cap, 13, 3);
++  char *tname;
++
++  if (length < 12)
++    return;
++  if (!config_fetch(d, where, length))
++    return;
++
++  switch (type) {
++  case 1:
++      tname = "CommonCfg";
++      break;
++  case 2:
++      tname = "Notify";
++      break;
++  case 3:
++      tname = "ISR";
++      break;
++  case 4:
++      tname = "DeviceCfg";
++      break;
++  default:
++      tname = "<unknown>";
++      break;
++  }
++
++  printf("VirtIO: %s\n", tname);
++
++  if (verbose < 2)
++    return;
++
++  printf("\t\tBAR=%d offset=%08x size=%08x\n", bar,
++         get_conf_long(d, where+4),
++         get_conf_long(d, where+8));
++  if (type != 2 || length < 16)
++    return;
++  printf("\t\tmultiplier=%08x\n",
++         get_conf_long(d, where+12));
++}
+diff --git a/ls-caps.c b/ls-caps.c
+index 7de55ef..438b580 100644
+--- a/ls-caps.c
++++ b/ls-caps.c
+@@ -1315,7 +1315,14 @@ show_caps(struct device *d, int where)
+ 	      cap_ht(d, where, cap);
+ 	      break;
+ 	    case PCI_CAP_ID_VNDR:
+-	      printf("Vendor Specific Information: Len=%02x <?>\n", BITS(cap, 0, 8));
++              switch (get_conf_word(d, PCI_VENDOR_ID)) {
++              case 0x1af4: /* Red Hat, devices 0x1000 -> 0x107f are virtio */
++                show_vendor_caps_virtio(d, where, cap);
++                break;
++              default:
++                printf("Vendor Specific Information: Len=%02x <?>\n", BITS(cap, 0, 8));
++                break;
++              }
+ 	      break;
+ 	    case PCI_CAP_ID_DBG:
+ 	      cap_debug_port(cap);
+diff --git a/lspci.h b/lspci.h
+index 86429b2..5ca9899 100644
+--- a/lspci.h
++++ b/lspci.h
+@@ -70,6 +70,10 @@ void show_caps(struct device *d, int where);
+ 
+ void show_ext_caps(struct device *d);
+ 
++/* ls-caps-vendor.c */
++
++void show_vendor_caps_virtio(struct device *d, int where, int cap);
++
+ /* ls-kernel.c */
+ 
+ void show_kernel_machine(struct device *d UNUSED);
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.8.3.1
+
+
+--=-0zWL1zFiJykP2TPP5hvE--
+
