@@ -1,105 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751641AbbASIfl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 03:35:41 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:61444 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751535AbbASIfj (ORCPT
+	id S1751734AbbASIiW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 03:38:22 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:58243 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751404AbbASIiV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 03:35:39 -0500
-Date: Mon, 19 Jan 2015 08:35:33 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Robert Jarzmik <robert.jarzmik@free.fr>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Daniel Mack <daniel@zonque.org>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 1/3] dt-bindings: mfd: add lubbock-io binding
-Message-ID: <20150119083533.GF21886@x1>
-References: <1421406010-14851-1-git-send-email-robert.jarzmik@free.fr>
+	Mon, 19 Jan 2015 03:38:21 -0500
+Date: Mon, 19 Jan 2015 11:38:17 +0300
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: linux-next: build failure after merge of the akpm-current tree
+Message-ID: <20150119083817.GA3203@moon>
+References: <20150119191718.365d4c98@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1421406010-14851-1-git-send-email-robert.jarzmik@free.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20150119191718.365d4c98@canb.auug.org.au>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Jan 2015, Robert Jarzmik wrote:
-
-> Add a binding for lubbock motherboard IO board.
+On Mon, Jan 19, 2015 at 07:17:18PM +1100, Stephen Rothwell wrote:
+> Hi Andrew,
 > 
-> Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
+> After merging the akpm tree, today's linux-next build (sparc defconfig)
+> failed like this:
+> 
+> In file included from arch/sparc/include/asm/bug.h:20:0,
+>                  from include/linux/bug.h:4,
+>                  from include/linux/thread_info.h:11,
+>                  from include/asm-generic/preempt.h:4,
+>                  from arch/sparc/include/generated/asm/preempt.h:1,
+>                  from include/linux/preempt.h:18,
+>                  from include/linux/spinlock.h:50,
+>                  from include/linux/mmzone.h:7,
+>                  from include/linux/gfp.h:5,
+>                  from include/linux/slab.h:14,
+>                  from mm/mmap.c:12:
+> mm/mmap.c: In function 'exit_mmap':
+> mm/mmap.c:2858:46: error: 'PUD_SHIFT' undeclared (first use in this function)
+>     round_up(FIRST_USER_ADDRESS, PUD_SIZE) >> PUD_SHIFT);
+>                                               ^
+> include/asm-generic/bug.h:86:25: note: in definition of macro 'WARN_ON'
+>   int __ret_warn_on = !!(condition);    \
+>                          ^
+> mm/mmap.c:2858:46: note: each undeclared identifier is reported only once for each function it appears in
+>     round_up(FIRST_USER_ADDRESS, PUD_SIZE) >> PUD_SHIFT);
+>                                               ^
+> include/asm-generic/bug.h:86:25: note: in definition of macro 'WARN_ON'
+>   int __ret_warn_on = !!(condition);    \
+>                          ^
+> 
+> Caused by commit b316feb3c37f ("mm: account pmd page tables to the
+> process").  32 bit sparc does not seem to define PUD_SHIFT ...
+> 
+> I am not sure what the correct fix is here, so I just did the following
+> patch for today.
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Mon, 19 Jan 2015 19:10:53 +1100
+> Subject: [PATCH] mm: account pmd page tables to the process fix
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 > ---
->  .../devicetree/bindings/mfd/lubbock-io.txt         | 26 ++++++++++++++++++++++
->  1 file changed, 26 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/mfd/lubbock-io.txt
+>  mm/mmap.c | 2 ++
+>  1 file changed, 2 insertions(+)
 > 
-> diff --git a/Documentation/devicetree/bindings/mfd/lubbock-io.txt b/Documentation/devicetree/bindings/mfd/lubbock-io.txt
-> new file mode 100644
-> index 0000000..33c9e21
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mfd/lubbock-io.txt
-> @@ -0,0 +1,26 @@
-> +Intel's pxa255 system development platform motherboard.
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index 6a7d36d133fb..25271805ab39 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -2854,8 +2854,10 @@ void exit_mmap(struct mm_struct *mm)
+>  
+>  	WARN_ON(atomic_long_read(&mm->nr_ptes) >
+>  			round_up(FIRST_USER_ADDRESS, PMD_SIZE) >> PMD_SHIFT);
+> +#ifdef PUD_SHIFT
+>  	WARN_ON(mm_nr_pmds(mm) >
+>  			round_up(FIRST_USER_ADDRESS, PUD_SIZE) >> PUD_SHIFT);
+> +#endif
+>  }
+>  
+>  /* Insert vm structure into process list sorted by address
 
-s/pxa25/PXA25/
-
-"system development platform motherboard" doesn't quite sit right with me.
-
-How about "Intel Xscale PXA255 development platform (Lubbock)"?
-
-> +This is the motherboard, or IO board, of the pxa25x development system,
-> +supporting a lubbock pxa25x SoC board.
-
-Again, this sounds weird.
-
-> +Required properties:
-> +  - compatible : One of the following chip-specific strings:
-> +        "intel,lubbock-io"
-
-An odd thing to say with only one entry.
-
-Also, please line it up to the right of the ':' above.
-
-> +  - interrupts : The first interrupt is the line the /IRQ signal the IO board
-> +                 multiplex is connected to. The only known case is GPIO0 on the
-> +                 pxa25x SoC.
-
-Can you get someone to help you re-word this into a more fluid
-sentence?
-
-> +Optional properties:
-> +  - interrupts : The second optional interrupt is the base of the interrupts
-> +                 multiplexed by the lubbock motherboard. If unspecified, the
-> +                 range is fully dynamic, and the irqdomain will generate its
-> +                 interrupt base on the fly.
-> +
-> +Example:
-> +
-> +mb: lubbock-mb@0 {
-> +	compatible = "intel,lubbock-io";
-> +	interrupts = <0 IRQ_TYPE_EDGE_FALLING 400 IRQ_TYPE_NONE>;
-> +	#interrupt-cells = <2>;
-> +        interrupt-parent = <&pxairq>;
-
-Whitespace error.
-
-> +};
-
-I'm guessing mb means motherboard?  I think it's unusual for a
-motherboard to have it's own driver.  Usually we provide drivers for
-the individual components/peripherals situated on the board.
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Looks like it should be #ifdef CONFIG_MMU, Kirill?
