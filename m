@@ -1,122 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751851AbbASLdE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 06:33:04 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:56189 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751498AbbASLdC (ORCPT
+	id S1751522AbbASLeW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 06:34:22 -0500
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:57924 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750925AbbASLeT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 06:33:02 -0500
-Subject: [PATCH] cpuidle/powernv: Read target_residency value of idle states
- from DT if available
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-To: rafael.j.wysocki@intel.com
-Cc: linux-pm@vger.kernel.org, benh@kernel.crashing.org,
-        linux-kernel@vger.kernel.org, mpe@ellerman.id.au,
-        svaidy@linux.vnet.ibm.com, linuxppc-dev@lists.ozlabs.org
-Date: Mon, 19 Jan 2015 17:02:51 +0530
-Message-ID: <20150119113251.23984.16931.stgit@preeti.in.ibm.com>
-User-Agent: StGit/0.17-dirty
+	Mon, 19 Jan 2015 06:34:19 -0500
+Date: Mon, 19 Jan 2015 11:33:32 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, Jonathan Cameron <jic23@kernel.org>,
+        Hartmut Knaack <knaack.h@gmx.de>, linux-iio@vger.kernel.org,
+        Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-pm@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>, linux-kernel@vger.kernel.org,
+        support.opensource@diasemi.com
+Subject: Re: [PATCH v5 1/7] mfd: Add support for DA9150 combined charger &
+ fuel-gauge device
+Message-ID: <20150119113332.GP21886@x1>
+References: <cover.1419264383.git.Adam.Thomson.Opensource@diasemi.com>
+ <8768cf84babd1bc3e16dadc25bdbb50cebfb44b6.1419264383.git.Adam.Thomson.Opensource@diasemi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15011911-0005-0000-0000-00000824D594
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <8768cf84babd1bc3e16dadc25bdbb50cebfb44b6.1419264383.git.Adam.Thomson.Opensource@diasemi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The device tree now exposes the residency values for different idle states. Read
-these values instead of calculating residency from the latency values. The values
-exposed in the DT are validated for optimal power efficiency. However to maintain
-compatibility with the older firmware code which does not expose residency
-values, use default values as a fallback mechanism. While at it, clump
-the common parts of device tree parsing into one chunk.
+On Mon, 22 Dec 2014, Adam Thomson wrote:
 
-Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
----
+> DA9150 is a combined Charger and Fuel-Gauge IC, with additional
+> GPIO and GPADC functionality.
+> 
+> Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+> ---
+>  drivers/mfd/Kconfig                  |   12 +
+>  drivers/mfd/Makefile                 |    2 +-
+>  drivers/mfd/da9150-core.c            |  413 ++++++++++++
+>  include/linux/mfd/da9150/core.h      |   68 ++
+>  include/linux/mfd/da9150/registers.h | 1155 ++++++++++++++++++++++++++++++++++
+>  5 files changed, 1649 insertions(+), 1 deletion(-)
+>  create mode 100644 drivers/mfd/da9150-core.c
+>  create mode 100644 include/linux/mfd/da9150/core.h
+>  create mode 100644 include/linux/mfd/da9150/registers.h
+> 
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index 2e6b731..56e80d2 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -195,6 +195,18 @@ config MFD_DA9063
+>  	  Additional drivers must be enabled in order to use the functionality
+>  	  of the device.
+> 
+> +config MFD_DA9150
+> +	tristate "Dialog Semiconductor DA9150 Charger Fuel-Gauge chip"
+> +	depends on I2C=y
+> +	select MFD_CORE
+> +	select REGMAP_I2C
+> +	select REGMAP_IRQ
+> +	help
+> +	  This adds support for the DA9150 integrated charger and fuel-gauge
+> +	  chip. This driver provides common support for accessing the device.
+> +	  Additional drivers must be enabled in order to use the specific
+> +	  features of the device.
+> +
+>  config MFD_DLN2
+>  	tristate "Diolan DLN2 support"
+>  	select MFD_CORE
+> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> index 53467e2..f06f4c6 100644
+> --- a/drivers/mfd/Makefile
+> +++ b/drivers/mfd/Makefile
+> @@ -113,7 +113,7 @@ obj-$(CONFIG_MFD_DA9055)	+= da9055.o
+> 
+>  da9063-objs			:= da9063-core.o da9063-irq.o da9063-i2c.o
+>  obj-$(CONFIG_MFD_DA9063)	+= da9063.o
+> -
+> +obj-$(CONFIG_MFD_DA9150)	+= da9150-core.o
+>  obj-$(CONFIG_MFD_MAX14577)	+= max14577.o
+>  obj-$(CONFIG_MFD_MAX77686)	+= max77686.o
+>  obj-$(CONFIG_MFD_MAX77693)	+= max77693.o
+> diff --git a/drivers/mfd/da9150-core.c b/drivers/mfd/da9150-core.c
+> new file mode 100644
+> index 0000000..4d757b9
+> --- /dev/null
+> +++ b/drivers/mfd/da9150-core.c
+> @@ -0,0 +1,413 @@
+> +/*
+> + * DA9150 Core MFD Driver
+> + *
+> + * Copyright (c) 2014 Dialog Semiconductor
+> + *
+> + * Author: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+> + *
+> + * This program is free software; you can redistribute  it and/or modify it
+> + * under  the terms of  the GNU General  Public License as published by the
+> + * Free Software Foundation;  either version 2 of the  License, or (at your
+> + * option) any later version.
+> + */
 
- drivers/cpuidle/cpuidle-powernv.c |   39 ++++++++++++++++++++++++-------------
- 1 file changed, 25 insertions(+), 14 deletions(-)
+[...]
 
-diff --git a/drivers/cpuidle/cpuidle-powernv.c b/drivers/cpuidle/cpuidle-powernv.c
-index 2726663..9e732e1 100644
---- a/drivers/cpuidle/cpuidle-powernv.c
-+++ b/drivers/cpuidle/cpuidle-powernv.c
-@@ -162,7 +162,8 @@ static int powernv_add_idle_states(void)
- 	int dt_idle_states;
- 	const __be32 *idle_state_flags;
- 	const __be32 *idle_state_latency;
--	u32 len_flags, flags, latency_ns;
-+	const __be32 *idle_state_residency;
-+	u32 len_flags, flags, latency_ns, residency_ns;
- 	int i;
- 
- 	/* Currently we have snooze statically defined */
-@@ -186,14 +187,21 @@ static int powernv_add_idle_states(void)
- 		return nr_idle_states;
- 	}
- 
-+	idle_state_residency = of_get_property(power_mgt,
-+			"ibm,cpu-idle-state-residency-ns", NULL);
-+	if (!idle_state_residency) {
-+		pr_warn("DT-PowerMgmt: missing ibm,cpu-idle-state-residency-ns\n");
-+		pr_warn("Falling back to default values\n");
-+	}
-+
- 	dt_idle_states = len_flags / sizeof(u32);
- 
- 	for (i = 0; i < dt_idle_states; i++) {
- 
- 		flags = be32_to_cpu(idle_state_flags[i]);
--
--		/* Cpuidle accepts exit_latency in us and we estimate
--		 * target residency to be 10x exit_latency
-+		/*
-+		 * Cpuidle accepts exit_latency and target_residency in us.
-+		 * Use default target_residency values if f/w does not expose it.
- 		 */
- 		latency_ns = be32_to_cpu(idle_state_latency[i]);
- 		if (flags & OPAL_PM_NAP_ENABLED) {
-@@ -201,12 +209,8 @@ static int powernv_add_idle_states(void)
- 			strcpy(powernv_states[nr_idle_states].name, "Nap");
- 			strcpy(powernv_states[nr_idle_states].desc, "Nap");
- 			powernv_states[nr_idle_states].flags = 0;
--			powernv_states[nr_idle_states].exit_latency =
--					((unsigned int)latency_ns) / 1000;
--			powernv_states[nr_idle_states].target_residency =
--					((unsigned int)latency_ns / 100);
-+			powernv_states[nr_idle_states].target_residency = 100;
- 			powernv_states[nr_idle_states].enter = &nap_loop;
--			nr_idle_states++;
- 		}
- 
- 		if (flags & OPAL_PM_SLEEP_ENABLED ||
-@@ -215,13 +219,20 @@ static int powernv_add_idle_states(void)
- 			strcpy(powernv_states[nr_idle_states].name, "FastSleep");
- 			strcpy(powernv_states[nr_idle_states].desc, "FastSleep");
- 			powernv_states[nr_idle_states].flags = CPUIDLE_FLAG_TIMER_STOP;
--			powernv_states[nr_idle_states].exit_latency =
--					((unsigned int)latency_ns) / 1000;
--			powernv_states[nr_idle_states].target_residency =
--					((unsigned int)latency_ns / 100);
-+			powernv_states[nr_idle_states].target_residency = 300000;
- 			powernv_states[nr_idle_states].enter = &fastsleep_loop;
--			nr_idle_states++;
- 		}
-+
-+		powernv_states[nr_idle_states].exit_latency =
-+				((unsigned int)latency_ns) / 1000;
-+
-+		if (idle_state_residency) {
-+			residency_ns = be32_to_cpu(idle_state_residency[i]);
-+			powernv_states[nr_idle_states].target_residency =
-+				((unsigned int)residency_ns) / 1000;
-+		}
-+
-+		nr_idle_states++;
- 	}
- 
- 	return nr_idle_states;
+> +u8 da9150_reg_read(struct da9150 *da9150, u16 reg)
+> +{
+> +	int val, ret;
+> +
+> +	ret = regmap_read(da9150->regmap, reg, &val);
+> +	if (ret)
+> +		dev_err(da9150->dev, "Failed to read from reg 0x%x: %d\n",
+> +			reg, ret);
+> +
+> +	return (u8) val;
+> +}
+> +EXPORT_SYMBOL_GPL(da9150_reg_read);
+> +
+> +void da9150_reg_write(struct da9150 *da9150, u16 reg, u8 val)
+> +{
+> +	int ret;
+> +
+> +	ret = regmap_write(da9150->regmap, reg, val);
+> +	if (ret)
+> +		dev_err(da9150->dev, "Failed to write to reg 0x%x: %d\n",
+> +			reg, ret);
+> +}
+> +EXPORT_SYMBOL_GPL(da9150_reg_write);
+> +
+> +void da9150_set_bits(struct da9150 *da9150, u16 reg, u8 mask, u8 val)
+> +{
+> +	int ret;
+> +
+> +	ret = regmap_update_bits(da9150->regmap, reg, mask, val);
+> +	if (ret)
+> +		dev_err(da9150->dev, "Failed to set bits in reg 0x%x: %d\n",
+> +			reg, ret);
+> +}
+> +EXPORT_SYMBOL_GPL(da9150_set_bits);
+> +
+> +void da9150_bulk_read(struct da9150 *da9150, u16 reg, int count, u8 *buf)
+> +{
+> +	int ret;
+> +
+> +	ret = regmap_bulk_read(da9150->regmap, reg, buf, count);
+> +	if (ret)
+> +		dev_err(da9150->dev, "Failed to bulk read from reg 0x%x: %d\n",
+> +			reg, ret);
+> +}
+> +EXPORT_SYMBOL_GPL(da9150_bulk_read);
+> +
+> +void da9150_bulk_write(struct da9150 *da9150, u16 reg, int count, const u8 *buf)
+> +{
+> +	int ret;
+> +
+> +	ret = regmap_raw_write(da9150->regmap, reg, buf, count);
+> +	if (ret)
+> +		dev_err(da9150->dev, "Failed to bulk write to reg 0x%x %d\n",
+> +			reg, ret);
+> +}
+> +EXPORT_SYMBOL_GPL(da9150_bulk_write);
 
+I've never been a fan of this type of aggregation.  Can you explain to
+me what the point of them is?
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
