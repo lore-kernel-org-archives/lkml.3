@@ -1,95 +1,408 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752186AbbASOr7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 09:47:59 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:36358 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751844AbbASOr4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 09:47:56 -0500
-Date: Mon, 19 Jan 2015 08:46:42 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: Sneeker Yeh <sneeker.yeh@gmail.com>,
-        Paul Zimmerman <paul.zimmerman@synopsys.com>,
-        John Youn <johnyoun@synopsys.com>
-CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Felipe Balbi <balbi@ti.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Grant Likely <grant.likely@linaro.org>, Huang Rui <ray.huang@amd.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>, <devicetree@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, Andy Green <andy.green@linaro.org>,
-        Jassi Brar <jaswinder.singh@linaro.org>,
-        Sneeker Yeh <Sneeker.Yeh@tw.fujitsu.com>
-Subject: Re: [PATCH v2 2/5] usb: dwc3: add revision number DWC3_REVISION_300A
-Message-ID: <20150119144642.GD20386@saruman>
-Reply-To: <balbi@ti.com>
-References: <1421654209-6486-1-git-send-email-Sneeker.Yeh@tw.fujitsu.com>
- <1421654209-6486-3-git-send-email-Sneeker.Yeh@tw.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="SO98HVl1bnMOfKZd"
-Content-Disposition: inline
-In-Reply-To: <1421654209-6486-3-git-send-email-Sneeker.Yeh@tw.fujitsu.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751778AbbASOrz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 09:47:55 -0500
+Received: from smtp105.iad3a.emailsrvr.com ([173.203.187.105]:33313 "EHLO
+	smtp105.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751461AbbASOrx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 09:47:53 -0500
+X-Sender-Id: abbotti@mev.co.uk
+From: Ian Abbott <abbotti@mev.co.uk>
+To: <driverdev-devel@linuxdriverproject.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ian Abbott <abbotti@mev.co.uk>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        <linux-kernel@vger.kernel.org>, <stable@vger.kernel.org>
+Subject: [PATCH] staging: comedi: cb_pcidas64: fix incorrect AI range code handling
+Date: Mon, 19 Jan 2015 14:47:27 +0000
+Message-Id: <1421678847-10978-1-git-send-email-abbotti@mev.co.uk>
+X-Mailer: git-send-email 2.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---SO98HVl1bnMOfKZd
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The hardware range code values and list of valid ranges for the AI
+subdevice is incorrect for several supported boards.  The hardware range
+code values for all boards except PCI-DAS4020/12 is determined by
+calling `ai_range_bits_6xxx()` based on the maximum voltage of the range
+and whether it is bipolar or unipolar, however it only returns the
+correct hardware range code for the PCI-DAS60xx boards.  For
+PCI-DAS6402/16 (and /12) it returns the wrong code for the unipolar
+ranges.  For PCI-DAS64/Mx/16 it returns the wrong code for all the
+ranges and the comedi range table is incorrect.
 
-Hi,
+Change `ai_range_bits_6xxx()` to use a look-up table pointed to by new
+member `ai_range_codes` of `struct pcidas64_board` to map the comedi
+range table indices to the hardware range codes.  Use a new comedi range
+table for the PCI-DAS64/Mx/16 boards (and the commented out variants).
 
-On Mon, Jan 19, 2015 at 03:56:46PM +0800, Sneeker Yeh wrote:
-> Add the contstant for v3.00a dwc3 IP detection
->=20
-> Signed-off-by: Sneeker Yeh <Sneeker.Yeh@tw.fujitsu.com>
-> ---
->  drivers/usb/dwc3/core.h |    1 +
->  1 file changed, 1 insertion(+)
->=20
-> diff --git a/drivers/usb/dwc3/core.h b/drivers/usb/dwc3/core.h
-> index 4bb9aa6..8090249 100644
-> --- a/drivers/usb/dwc3/core.h
-> +++ b/drivers/usb/dwc3/core.h
-> @@ -776,6 +776,7 @@ struct dwc3 {
->  #define DWC3_REVISION_260A	0x5533260a
->  #define DWC3_REVISION_270A	0x5533270a
->  #define DWC3_REVISION_280A	0x5533280a
-> +#define DWC3_REVISION_300A	0x5533300a
+Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Cc: <stable@vger.kernel.org> # 3.18.x
+---
+Patch fails to apply to kernels prior to 3.18.x - needs backporting.
+---
+ drivers/staging/comedi/drivers/cb_pcidas64.c | 122 ++++++++++++++++-----------
+ 1 file changed, 75 insertions(+), 47 deletions(-)
 
-looking at Synopsys Solvnet for this IP, it shows that current version
-is 2.90a. There's no 3.00a. Paul, John, is there a 3.00a version of the
-DWC USB3 IP ?
+diff --git a/drivers/staging/comedi/drivers/cb_pcidas64.c b/drivers/staging/comedi/drivers/cb_pcidas64.c
+index eddb7ac..569310a 100644
+--- a/drivers/staging/comedi/drivers/cb_pcidas64.c
++++ b/drivers/staging/comedi/drivers/cb_pcidas64.c
+@@ -439,6 +439,29 @@ static const struct comedi_lrange ai_ranges_64xx = {
+ 	}
+ };
+ 
++static const uint8_t ai_range_code_64xx[8] = {
++	0x0, 0x1, 0x2, 0x3,	/* bipolar 10, 5, 2,5, 1.25 */
++	0x8, 0x9, 0xa, 0xb	/* unipolar 10, 5, 2.5, 1.25 */
++};
++
++/* analog input ranges for 64-Mx boards */
++static const struct comedi_lrange ai_ranges_64_mx = {
++	7, {
++		BIP_RANGE(5),
++		BIP_RANGE(2.5),
++		BIP_RANGE(1.25),
++		BIP_RANGE(0.625),
++		UNI_RANGE(5),
++		UNI_RANGE(2.5),
++		UNI_RANGE(1.25)
++	}
++};
++
++static const uint8_t ai_range_code_64_mx[7] = {
++	0x0, 0x1, 0x2, 0x3,	/* bipolar 5, 2.5, 1.25, 0.625 */
++	0x9, 0xa, 0xb		/* unipolar 5, 2.5, 1.25 */
++};
++
+ /* analog input ranges for 60xx boards */
+ static const struct comedi_lrange ai_ranges_60xx = {
+ 	4, {
+@@ -449,6 +472,10 @@ static const struct comedi_lrange ai_ranges_60xx = {
+ 	}
+ };
+ 
++static const uint8_t ai_range_code_60xx[4] = {
++	0x0, 0x1, 0x4, 0x7	/* bipolar 10, 5, 0.5, 0.05 */
++};
++
+ /* analog input ranges for 6030, etc boards */
+ static const struct comedi_lrange ai_ranges_6030 = {
+ 	14, {
+@@ -469,6 +496,11 @@ static const struct comedi_lrange ai_ranges_6030 = {
+ 	}
+ };
+ 
++static const uint8_t ai_range_code_6030[14] = {
++	0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, /* bip 10, 5, 2, 1, 0.5, 0.2, 0.1 */
++	0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf  /* uni 10, 5, 2, 1, 0.5, 0.2, 0.1 */
++};
++
+ /* analog input ranges for 6052, etc boards */
+ static const struct comedi_lrange ai_ranges_6052 = {
+ 	15, {
+@@ -490,6 +522,11 @@ static const struct comedi_lrange ai_ranges_6052 = {
+ 	}
+ };
+ 
++static const uint8_t ai_range_code_6052[15] = {
++	0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7,	/* bipolar 10 ... 0.05 */
++	0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf	/* unipolar 10 ... 0.1 */
++};
++
+ /* analog input ranges for 4020 board */
+ static const struct comedi_lrange ai_ranges_4020 = {
+ 	2, {
+@@ -593,6 +630,7 @@ struct pcidas64_board {
+ 	int ai_bits;		/*  analog input resolution */
+ 	int ai_speed;		/*  fastest conversion period in ns */
+ 	const struct comedi_lrange *ai_range_table;
++	const uint8_t *ai_range_code;
+ 	int ao_nchan;		/*  number of analog out channels */
+ 	int ao_bits;		/*  analog output resolution */
+ 	int ao_scan_speed;	/*  analog output scan speed */
+@@ -651,6 +689,7 @@ static const struct pcidas64_board pcidas64_boards[] = {
+ 		.ao_scan_speed	= 10000,
+ 		.layout		= LAYOUT_64XX,
+ 		.ai_range_table	= &ai_ranges_64xx,
++		.ai_range_code	= ai_range_code_64xx,
+ 		.ao_range_table	= &ao_ranges_64xx,
+ 		.ao_range_code	= ao_range_code_64xx,
+ 		.ai_fifo	= &ai_fifo_64xx,
+@@ -666,6 +705,7 @@ static const struct pcidas64_board pcidas64_boards[] = {
+ 		.ao_scan_speed	= 10000,
+ 		.layout		= LAYOUT_64XX,
+ 		.ai_range_table	= &ai_ranges_64xx,
++		.ai_range_code	= ai_range_code_64xx,
+ 		.ao_range_table	= &ao_ranges_64xx,
+ 		.ao_range_code	= ao_range_code_64xx,
+ 		.ai_fifo	= &ai_fifo_64xx,
+@@ -680,7 +720,8 @@ static const struct pcidas64_board pcidas64_boards[] = {
+ 		.ao_bits	= 16,
+ 		.ao_scan_speed	= 10000,
+ 		.layout		= LAYOUT_64XX,
+-		.ai_range_table	= &ai_ranges_64xx,
++		.ai_range_table	= &ai_ranges_64_mx,
++		.ai_range_code	= ai_range_code_64_mx,
+ 		.ao_range_table	= &ao_ranges_64xx,
+ 		.ao_range_code	= ao_range_code_64xx,
+ 		.ai_fifo	= &ai_fifo_64xx,
+@@ -695,7 +736,8 @@ static const struct pcidas64_board pcidas64_boards[] = {
+ 		.ao_bits	= 16,
+ 		.ao_scan_speed	= 10000,
+ 		.layout		= LAYOUT_64XX,
+-		.ai_range_table	= &ai_ranges_64xx,
++		.ai_range_table	= &ai_ranges_64_mx,
++		.ai_range_code	= ai_range_code_64_mx,
+ 		.ao_range_table	= &ao_ranges_64xx,
+ 		.ao_range_code	= ao_range_code_64xx,
+ 		.ai_fifo	= &ai_fifo_64xx,
+@@ -710,7 +752,8 @@ static const struct pcidas64_board pcidas64_boards[] = {
+ 		.ao_bits	= 16,
+ 		.ao_scan_speed	= 10000,
+ 		.layout		= LAYOUT_64XX,
+-		.ai_range_table	= &ai_ranges_64xx,
++		.ai_range_table	= &ai_ranges_64_mx,
++		.ai_range_code	= ai_range_code_64_mx,
+ 		.ao_range_table	= &ao_ranges_64xx,
+ 		.ao_range_code	= ao_range_code_64xx,
+ 		.ai_fifo	= &ai_fifo_64xx,
+@@ -725,6 +768,7 @@ static const struct pcidas64_board pcidas64_boards[] = {
+ 		.ao_bits	= 16,
+ 		.layout		= LAYOUT_60XX,
+ 		.ai_range_table	= &ai_ranges_60xx,
++		.ai_range_code	= ai_range_code_60xx,
+ 		.ao_range_table	= &range_bipolar10,
+ 		.ao_range_code	= ao_range_code_60xx,
+ 		.ai_fifo	= &ai_fifo_60xx,
+@@ -740,6 +784,7 @@ static const struct pcidas64_board pcidas64_boards[] = {
+ 		.ao_scan_speed	= 100000,
+ 		.layout		= LAYOUT_60XX,
+ 		.ai_range_table	= &ai_ranges_60xx,
++		.ai_range_code	= ai_range_code_60xx,
+ 		.ao_range_table	= &range_bipolar10,
+ 		.ao_range_code	= ao_range_code_60xx,
+ 		.ai_fifo	= &ai_fifo_60xx,
+@@ -754,6 +799,7 @@ static const struct pcidas64_board pcidas64_boards[] = {
+ 		.ao_scan_speed	= 100000,
+ 		.layout		= LAYOUT_60XX,
+ 		.ai_range_table	= &ai_ranges_60xx,
++		.ai_range_code	= ai_range_code_60xx,
+ 		.ao_range_table	= &range_bipolar10,
+ 		.ao_range_code	= ao_range_code_60xx,
+ 		.ai_fifo	= &ai_fifo_60xx,
+@@ -769,6 +815,7 @@ static const struct pcidas64_board pcidas64_boards[] = {
+ 		.ao_scan_speed	= 100000,
+ 		.layout		= LAYOUT_60XX,
+ 		.ai_range_table	= &ai_ranges_60xx,
++		.ai_range_code	= ai_range_code_60xx,
+ 		.ao_range_table	= &range_bipolar10,
+ 		.ao_range_code	= ao_range_code_60xx,
+ 		.ai_fifo	= &ai_fifo_60xx,
+@@ -784,6 +831,7 @@ static const struct pcidas64_board pcidas64_boards[] = {
+ 		.ao_scan_speed	= 10000,
+ 		.layout		= LAYOUT_60XX,
+ 		.ai_range_table	= &ai_ranges_6030,
++		.ai_range_code	= ai_range_code_6030,
+ 		.ao_range_table	= &ao_ranges_6030,
+ 		.ao_range_code	= ao_range_code_6030,
+ 		.ai_fifo	= &ai_fifo_60xx,
+@@ -799,6 +847,7 @@ static const struct pcidas64_board pcidas64_boards[] = {
+ 		.ao_scan_speed	= 10000,
+ 		.layout		= LAYOUT_60XX,
+ 		.ai_range_table	= &ai_ranges_6030,
++		.ai_range_code	= ai_range_code_6030,
+ 		.ao_range_table	= &ao_ranges_6030,
+ 		.ao_range_code	= ao_range_code_6030,
+ 		.ai_fifo	= &ai_fifo_60xx,
+@@ -812,6 +861,7 @@ static const struct pcidas64_board pcidas64_boards[] = {
+ 		.ao_nchan	= 0,
+ 		.layout		= LAYOUT_60XX,
+ 		.ai_range_table	= &ai_ranges_6030,
++		.ai_range_code	= ai_range_code_6030,
+ 		.ai_fifo	= &ai_fifo_60xx,
+ 		.has_8255	= 0,
+ 	},
+@@ -823,6 +873,7 @@ static const struct pcidas64_board pcidas64_boards[] = {
+ 		.ao_nchan	= 0,
+ 		.layout		= LAYOUT_60XX,
+ 		.ai_range_table	= &ai_ranges_6030,
++		.ai_range_code	= ai_range_code_6030,
+ 		.ai_fifo	= &ai_fifo_60xx,
+ 		.has_8255	= 0,
+ 	},
+@@ -835,6 +886,7 @@ static const struct pcidas64_board pcidas64_boards[] = {
+ 		.ao_scan_speed	= 0,
+ 		.layout		= LAYOUT_60XX,
+ 		.ai_range_table	= &ai_ranges_60xx,
++		.ai_range_code	= ai_range_code_60xx,
+ 		.ai_fifo	= &ai_fifo_60xx,
+ 		.has_8255	= 0,
+ 	},
+@@ -848,6 +900,7 @@ static const struct pcidas64_board pcidas64_boards[] = {
+ 		.ao_scan_speed	= 100000,
+ 		.layout		= LAYOUT_60XX,
+ 		.ai_range_table	= &ai_ranges_60xx,
++		.ai_range_code	= ai_range_code_60xx,
+ 		.ao_range_table	= &range_bipolar10,
+ 		.ao_range_code	= ao_range_code_60xx,
+ 		.ai_fifo	= &ai_fifo_60xx,
+@@ -863,6 +916,7 @@ static const struct pcidas64_board pcidas64_boards[] = {
+ 		.ao_scan_speed	= 100000,
+ 		.layout		= LAYOUT_60XX,
+ 		.ai_range_table	= &ai_ranges_60xx,
++		.ai_range_code	= ai_range_code_60xx,
+ 		.ao_range_table	= &range_bipolar10,
+ 		.ao_range_code	= ao_range_code_60xx,
+ 		.ai_fifo	= &ai_fifo_60xx,
+@@ -878,6 +932,7 @@ static const struct pcidas64_board pcidas64_boards[] = {
+ 		.ao_scan_speed	= 1000,
+ 		.layout		= LAYOUT_60XX,
+ 		.ai_range_table	= &ai_ranges_6052,
++		.ai_range_code	= ai_range_code_6052,
+ 		.ao_range_table	= &ao_ranges_6030,
+ 		.ao_range_code	= ao_range_code_6030,
+ 		.ai_fifo	= &ai_fifo_60xx,
+@@ -893,6 +948,7 @@ static const struct pcidas64_board pcidas64_boards[] = {
+ 		.ao_scan_speed	= 3333,
+ 		.layout		= LAYOUT_60XX,
+ 		.ai_range_table	= &ai_ranges_6052,
++		.ai_range_code	= ai_range_code_6052,
+ 		.ao_range_table	= &ao_ranges_6030,
+ 		.ao_range_code	= ao_range_code_6030,
+ 		.ai_fifo	= &ai_fifo_60xx,
+@@ -908,6 +964,7 @@ static const struct pcidas64_board pcidas64_boards[] = {
+ 		.ao_scan_speed	= 1000,
+ 		.layout		= LAYOUT_60XX,
+ 		.ai_range_table	= &ai_ranges_6052,
++		.ai_range_code	= ai_range_code_6052,
+ 		.ao_range_table	= &ao_ranges_6030,
+ 		.ao_range_code	= ao_range_code_6030,
+ 		.ai_fifo	= &ai_fifo_60xx,
+@@ -923,6 +980,7 @@ static const struct pcidas64_board pcidas64_boards[] = {
+ 		.ao_scan_speed	= 1000,
+ 		.layout		= LAYOUT_60XX,
+ 		.ai_range_table	= &ai_ranges_6052,
++		.ai_range_code	= ai_range_code_6052,
+ 		.ao_range_table	= &ao_ranges_6030,
+ 		.ao_range_code	= ao_range_code_6030,
+ 		.ai_fifo	= &ai_fifo_60xx,
+@@ -957,6 +1015,7 @@ static const struct pcidas64_board pcidas64_boards[] = {
+ 		.ao_scan_speed	= 10000,
+ 		.layout		= LAYOUT_64XX,
+ 		.ai_range_table	= &ai_ranges_64xx,
++		.ai_range_code	= ai_range_code_64xx,
+ 		.ai_fifo	= ai_fifo_64xx,
+ 		.has_8255	= 1,
+ 	},
+@@ -968,7 +1027,8 @@ static const struct pcidas64_board pcidas64_boards[] = {
+ 		.ao_nchan	= 0,
+ 		.ao_scan_speed	= 10000,
+ 		.layout		= LAYOUT_64XX,
+-		.ai_range_table	= &ai_ranges_64xx,
++		.ai_range_table	= &ai_ranges_64_mx,
++		.ai_range_code	= ai_range_code_64_mx,
+ 		.ai_fifo	= ai_fifo_64xx,
+ 		.has_8255	= 1,
+ 	},
+@@ -980,7 +1040,8 @@ static const struct pcidas64_board pcidas64_boards[] = {
+ 		.ao_nchan	= 0,
+ 		.ao_scan_speed	= 10000,
+ 		.layout		= LAYOUT_64XX,
+-		.ai_range_table	= &ai_ranges_64xx,
++		.ai_range_table	= &ai_ranges_64_mx,
++		.ai_range_code	= ai_range_code_64_mx,
+ 		.ai_fifo	= ai_fifo_64xx,
+ 		.has_8255	= 1,
+ 	},
+@@ -992,7 +1053,8 @@ static const struct pcidas64_board pcidas64_boards[] = {
+ 		.ao_nchan	= 0,
+ 		.ao_scan_speed	= 10000,
+ 		.layout		= LAYOUT_64XX,
+-		.ai_range_table	= &ai_ranges_64xx,
++		.ai_range_table	= &ai_ranges_64_mx,
++		.ai_range_code	= ai_range_code_64_mx,
+ 		.ai_fifo	= ai_fifo_64xx,
+ 		.has_8255	= 1,
+ 	},
+@@ -1004,7 +1066,8 @@ static const struct pcidas64_board pcidas64_boards[] = {
+ 		.ao_nchan	= 2,
+ 		.ao_scan_speed	= 10000,
+ 		.layout		= LAYOUT_64XX,
+-		.ai_range_table	= &ai_ranges_64xx,
++		.ai_range_table	= &ai_ranges_64_mx,
++		.ai_range_code	= ai_range_code_64_mx,
+ 		.ai_fifo	= ai_fifo_64xx,
+ 		.has_8255	= 1,
+ 	},
+@@ -1016,7 +1079,8 @@ static const struct pcidas64_board pcidas64_boards[] = {
+ 		.ao_nchan	= 2,
+ 		.ao_scan_speed	= 10000,
+ 		.layout		= LAYOUT_64XX,
+-		.ai_range_table	= &ai_ranges_64xx,
++		.ai_range_table	= &ai_ranges_64_mx,
++		.ai_range_code	= ai_range_code_64_mx,
+ 		.ai_fifo	= ai_fifo_64xx,
+ 		.has_8255	= 1,
+ 	},
+@@ -1028,7 +1092,8 @@ static const struct pcidas64_board pcidas64_boards[] = {
+ 		.ao_nchan	= 2,
+ 		.ao_scan_speed	= 10000,
+ 		.layout		= LAYOUT_64XX,
+-		.ai_range_table	= &ai_ranges_64xx,
++		.ai_range_table	= &ai_ranges_64_mx,
++		.ai_range_code	= ai_range_code_64_mx,
+ 		.ai_fifo	= ai_fifo_64xx,
+ 		.has_8255	= 1,
+ 	},
+@@ -1115,45 +1180,8 @@ static unsigned int ai_range_bits_6xxx(const struct comedi_device *dev,
+ 				       unsigned int range_index)
+ {
+ 	const struct pcidas64_board *thisboard = dev->board_ptr;
+-	const struct comedi_krange *range =
+-		&thisboard->ai_range_table->range[range_index];
+-	unsigned int bits = 0;
+ 
+-	switch (range->max) {
+-	case 10000000:
+-		bits = 0x000;
+-		break;
+-	case 5000000:
+-		bits = 0x100;
+-		break;
+-	case 2000000:
+-	case 2500000:
+-		bits = 0x200;
+-		break;
+-	case 1000000:
+-	case 1250000:
+-		bits = 0x300;
+-		break;
+-	case 500000:
+-		bits = 0x400;
+-		break;
+-	case 200000:
+-	case 250000:
+-		bits = 0x500;
+-		break;
+-	case 100000:
+-		bits = 0x600;
+-		break;
+-	case 50000:
+-		bits = 0x700;
+-		break;
+-	default:
+-		dev_err(dev->class_dev, "bug! in %s\n", __func__);
+-		break;
+-	}
+-	if (range->min == 0)
+-		bits += 0x900;
+-	return bits;
++	return thisboard->ai_range_code[range_index] << 8;
+ }
+ 
+ static unsigned int hw_revision(const struct comedi_device *dev,
+-- 
+2.1.4
 
---=20
-balbi
-
---SO98HVl1bnMOfKZd
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUvRjSAAoJEIaOsuA1yqREqyIP/3XBnqW9XhXxzuZNM0P+I+cZ
-0lXliX5TJ6N31c7IxzxWxLizG7oOKCTm7t9dHJtzIWVYIyXg529kslfnl7SYO+2+
-0Nc5uMY3a8EF3Cz5CCwjkhqJIrq8OfNPh1ACBCg60CxY1G956hannwjKIo97RIsG
-PLoxPQW7ryPkK09gi6f1ZCfsj3xMNFma5ulFIogVctor40Psy3bRRT0WdlCkLUi0
-GApw/+jFcDzTgblHrf5B5USuC0rIbWMpdgjuws5XTxbRsqKiC49wpCkB4/Q9URFl
-acinYw9zUsP+FCU0W1dVVQcc8h74nBAOFbqOm/ta6Nbj994euyMKKtgDfXx4gN/F
-k/UT42+qxxP4i7AtijN1s0bEGZl5xCqZ60vVrgdcqjJkDQvBZgbNRT3v0PsobNdL
-+CtFAn82N9I2x43Cw5JWlHmT7xeiNYrlVh0Lf67atf6Md0KIvEM2F+T3k7VtjPs7
-6w0ORgRkZQZFggRXP7X4EBOi5KglOGdsVasTldo5l19AeSP6NLrEgbd5WWXMxzWg
-2+3LSirwYcpr0T/Z7Z+Ll8Goh+kUaYRuFZbuwDV3KZ4dVlkPahTTInNxakcAL8Yq
-M/pN0GOG06xqhnYGJdIL2/SgqIOozbNXEbU7dgvqKaWOSMe1aEX92EdsOfyaQL0C
-tXt8D7GzV5GOSHr982z9
-=mmjK
------END PGP SIGNATURE-----
-
---SO98HVl1bnMOfKZd--
