@@ -1,89 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751969AbbASJEM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 04:04:12 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:33404 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751633AbbASJEH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 04:04:07 -0500
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID t0J944sX024186, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: <netdev@vger.kernel.org>
-CC: <nic_swsd@realtek.com>, <linux-kernel@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net 2/2] r8152: remove sram_read
-Date: Mon, 19 Jan 2015 17:02:46 +0800
-Message-ID: <1394712342-15778-128-Taiwan-albertk@realtek.com>
-X-Mailer: Microsoft Office Outlook 11
-In-Reply-To: <1394712342-15778-126-Taiwan-albertk@realtek.com>
-References: <1394712342-15778-126-Taiwan-albertk@realtek.com>
+	id S1752085AbbASJHJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 04:07:09 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50400 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751671AbbASJEI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 04:04:08 -0500
+Message-ID: <54BCC852.60203@redhat.com>
+Date: Mon, 19 Jan 2015 14:33:14 +0530
+From: Pratyush Anand <panand@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [172.21.71.122]
+To: David Long <dave.long@linaro.org>,
+        Pratyush Anand <pratyush.anand@gmail.com>
+CC: "Jon Medhurst (Tixy)" <tixy@linaro.org>,
+        Steve Capper <steve.capper@linaro.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Sandeepa Prabhu <sandeepa.prabhu@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        William Cohen <wcohen@redhat.com>, davem@davemloft.net,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH v4 3/6] arm64: Kprobes with single stepping support
+References: <1420949002-3726-1-git-send-email-dave.long@linaro.org>	<1420949002-3726-4-git-send-email-dave.long@linaro.org> <CAHM4w1no=A1kTxN26znXD42USzO+ByHWHy76F2UMnmXhPKH0kQ@mail.gmail.com> <54B96662.3030201@linaro.org>
+In-Reply-To: <54B96662.3030201@linaro.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Read OCP register 0xa43a~0xa43b would clear some flags which the hw
-would use, and it may let the device lost. However, the unit of
-reading is 4 bytes. That is, it would read 0xa438~0xa43b when calling
-sram_read() to read OCP_SRAM_DATA.
 
-Signed-off-by: Hayes Wang <hayeswang@realtek.com>
----
- drivers/net/usb/r8152.c | 24 ++++++------------------
- 1 file changed, 6 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-index 0aa83fb..bf405f1 100644
---- a/drivers/net/usb/r8152.c
-+++ b/drivers/net/usb/r8152.c
-@@ -920,12 +920,6 @@ static void sram_write(struct r8152 *tp, u16 addr, u16 data)
- 	ocp_reg_write(tp, OCP_SRAM_DATA, data);
- }
- 
--static u16 sram_read(struct r8152 *tp, u16 addr)
--{
--	ocp_reg_write(tp, OCP_SRAM_ADDR, addr);
--	return ocp_reg_read(tp, OCP_SRAM_DATA);
--}
--
- static int read_mii_word(struct net_device *netdev, int phy_id, int reg)
- {
- 	struct r8152 *tp = netdev_priv(netdev);
-@@ -2512,24 +2506,18 @@ static void r8153_hw_phy_cfg(struct r8152 *tp)
- 	data = ocp_reg_read(tp, OCP_POWER_CFG);
- 	data |= EN_10M_PLLOFF;
- 	ocp_reg_write(tp, OCP_POWER_CFG, data);
--	data = sram_read(tp, SRAM_IMPEDANCE);
--	data &= ~RX_DRIVING_MASK;
--	sram_write(tp, SRAM_IMPEDANCE, data);
-+	sram_write(tp, SRAM_IMPEDANCE, 0x0b13);
- 
- 	ocp_data = ocp_read_word(tp, MCU_TYPE_PLA, PLA_PHY_PWR);
- 	ocp_data |= PFM_PWM_SWITCH;
- 	ocp_write_word(tp, MCU_TYPE_PLA, PLA_PHY_PWR, ocp_data);
- 
--	data = sram_read(tp, SRAM_LPF_CFG);
--	data |= LPF_AUTO_TUNE;
--	sram_write(tp, SRAM_LPF_CFG, data);
-+	/* Enable LPF corner auto tune */
-+	sram_write(tp, SRAM_LPF_CFG, 0xf70f);
- 
--	data = sram_read(tp, SRAM_10M_AMP1);
--	data |= GDAC_IB_UPALL;
--	sram_write(tp, SRAM_10M_AMP1, data);
--	data = sram_read(tp, SRAM_10M_AMP2);
--	data |= AMP_DN;
--	sram_write(tp, SRAM_10M_AMP2, data);
-+	/* Adjust 10M Amplitude */
-+	sram_write(tp, SRAM_10M_AMP1, 0x00af);
-+	sram_write(tp, SRAM_10M_AMP2, 0x0208);
- 
- 	set_bit(PHY_RESET, &tp->flags);
- }
--- 
-2.1.0
+On Saturday 17 January 2015 12:58 AM, David Long wrote:
+>>> +static bool aarch64_insn_is_steppable(u32 insn)
+>>> +{
+>>> +       if (aarch64_get_insn_class(insn) == AARCH64_INSN_CLS_BR_SYS) {
+>>> +               if (aarch64_insn_is_branch(insn))
+>>> +                       return false;
+>>> +
+>>> +               /* modification of daif creates issues */
+>>> +               if (aarch64_insn_is_msr_daif(insn))
+>>> +                       return false;
+>>> +
+>>> +               if (aarch64_insn_is_hint(insn))
+>>> +                       return aarch64_insn_is_nop(insn);
+>>> +
+>>> +               return true;
+>>> +       }
+>>> +
+>>> +       if (aarch64_insn_uses_literal(insn))
+>>> +               return false;
+>>> +
+>>> +       if (aarch64_insn_is_exclusive(insn))
+>>> +               return false;
+>>> +
+>>> +       return true;
+>>
+>> Default true return may not be a good idea until we are sure that we
+>> are returning false for all possible
+>> simulation and rejection cases. In my opinion, its better to return
+>> true only for steppable and false for
+>> all remaining.
+>>
+>
+> I struggled a little with this when I did it but I decided if the
+> question was:  "should we have to recognize every instruction before
+> deciding it was single-steppable or should we only recognize
+> instructions that are *not* single-steppable", maybe it was OK to do the
+> latter while recognizing extensions to the instruction set *could* end
+> up (temporarly) allowing us to try and fail (badly) at single-stepping
+> any problematic new instructions.  Certainly opinions could differ.  If
 
+Lets see what others say, but I see that this approach will result in 
+undesired behavior. For example: a probe has been tried to insert to svc 
+instruction. SVC or any other exception generation instruction is 
+expected to be rejected. But, current aarch64_insn_is_steppable will 
+return true for it and then kprobe/uprobe code will allow to insert 
+probe at that instruction, which will be wrong, no? I mean, I do not see 
+a way to get into last else (INSN_REJECTED) of arm_kprobe_decode_insn.
+
+So, if we go with this approach we need to insure that we cover all 
+simulation-able and reject-able cases in aarch64_insn_is_steppable.
+
+~Pratyush
+
+
+
+> the consensus is that we can't allow this to ever happen (because old
+> kprobe code is running on new hardware) then I think the only choice is
+> to return to parsing binary tables.  Hopefully I could still find a way
+> to leverage insn.c in that case.
