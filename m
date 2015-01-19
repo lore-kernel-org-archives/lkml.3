@@ -1,84 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751410AbbASDFV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 22:05:21 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:1034 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751090AbbASDFU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 22:05:20 -0500
-Message-ID: <54BC742E.80006@huawei.com>
-Date: Mon, 19 Jan 2015 11:04:14 +0800
-From: Wang Nan <wangnan0@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	id S1751575AbbASDGU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 22:06:20 -0500
+Received: from ozlabs.org ([103.22.144.67]:34961 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750788AbbASDGS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Jan 2015 22:06:18 -0500
+Date: Mon, 19 Jan 2015 14:06:10 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jiri Pirko <jiri@resnulli.us>, Scott Feldman <sfeldma@gmail.com>,
+        Gustavo Padovan <gustavo@padovan.org>
+Subject: linux-next: build failure after merge of the net-next tree
+Message-ID: <20150119140610.6b41b5ef@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-CC: <tixy@linaro.org>, <linux@arm.linux.org.uk>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <lizefan@huawei.com>
-Subject: Re: [PATCH] kprobes: bugfix: checks kprobes_all_disarmed in unoptimized_kprobe().
-References: <54B3B32E.7070709@hitachi.com> <1421064563-77831-1-git-send-email-wangnan0@huawei.com> <54B3C3A0.6010708@hitachi.com>
-In-Reply-To: <54B3C3A0.6010708@hitachi.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.69.129]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020204.54BC743B.0087,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 5a4604bdb76a0625fff4be99928e3aa2
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/f+KABpqlzq61FD8th6Oe4hx"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Masami Hiramatsu,
+--Sig_/f+KABpqlzq61FD8th6Oe4hx
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-I can't find this patch and '[PATCH] kprobes: bugfix: checks kprobes_all_disarmed
-in unoptimized_kprobe().' in current mainline. How do these patches get there?
-Should they be merged into Russell King's tree first?
+Hi all,
 
-Thank you!
+After merging the net-next tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-On 2015/1/12 20:52, Masami Hiramatsu wrote:
-> (2015/01/12 21:09), Wang Nan wrote:
->> Original code failed to disarm the probed instruction after
->>
->> echo 0 > /sys/kernel/debug/kprobes/enabled
->>
->> if OPTPROBE is enabled.
->>
->> This patch checks kprobes_all_disarmed in unoptimized_kprobe().
->>
-> 
-> Looks good :)
-> 
-> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> 
-> Thank you!
-> 
->> Signed-off-by: Wang Nan <wangnan0@huawei.com>
->> ---
->>  kernel/kprobes.c | 3 +++
->>  1 file changed, 3 insertions(+)
->>
->> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
->> index 9471710..f16936b 100644
->> --- a/kernel/kprobes.c
->> +++ b/kernel/kprobes.c
->> @@ -630,6 +630,9 @@ static void unoptimize_kprobe(struct kprobe *p, bool force)
->>  {
->>  	struct optimized_kprobe *op;
->>  
->> +	if (kprobes_all_disarmed)
->> +		return;
->> +
->>  	if (!kprobe_aggrprobe(p) || kprobe_disarmed(p))
->>  		return; /* This is not an optprobe nor optimized */
->>  
->>
-> 
-> 
+In file included from net/bridge/br.c:22:0:
+include/net/switchdev.h:73:1: error: expected identifier or '(' before '{' =
+token
+ {
+ ^
+include/net/switchdev.h:71:19: warning: 'call_netdev_switch_notifiers' decl=
+ared 'static' but never defined [-Wunused-function]
+ static inline int call_netdev_switch_notifiers(unsigned long val, struct n=
+et_device *dev,
+                   ^
 
+Caused by commit 03bf0c281234 ("switchdev: introduce switchdev notifier").
 
+I have used the net-next tree from next-20150116 for today.  I also had
+to use the bluetooth tree from next-20150116 as it was fast forwarded
+to be the same as the net-next tree today.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/f+KABpqlzq61FD8th6Oe4hx
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUvHSnAAoJEMDTa8Ir7ZwVC9EP/16734XQidexho/rbTWlTbrB
+VrRJx9cNyGPCvVSi6Gev1jf3ctfis6vPskyOTnfy6F4cWDCsrbuBck1qxH7DhtHX
+Jvl4/Uko9R/A7XSCdGLw6Bv7pDUuvyG7Twz8seuoogLJON/K4k3Plpi79rgsIgNn
+o3Q5qwY/fZJwH3FJBElytoszKJK3/zdKrdGnlmotT5lNag0VMdb+hwiY57T245Pk
+ido3H+J1xyNM/YphrLCy+iqreDHbJOIxBROnvSBip1As93oZWHmJEayOy6OQLPUn
+jQRjBSSylgOuEAO/mv4w6kN9eEURR11nnWo5HGySyoV7vMiTZ7tPxPhoAWf4fpZP
+p3IPw0Rh2dTiRIzam+FKxatT1xNPsWtxbk8SefwTxOcwNtafaOeWwcVmFvhdkHM4
+wPGYeZsW0/F5yNX1jPMWseD3VuN2b/6yfWmLhEUgjv2ONyhAO+omBoK3HIyigkuv
+81C176fwVHIJg5qN/M1d18TwUCvQWIHFVeSyVaHsHveGVWxe2oSec4JMyHQjxWvG
+AanCSoSvyU1WYAMm8CebWKZUcrDkSg8rRzinSz+9oCjDg140qXKxevGh+/Mm9W7u
+qjH1x/dhhKmbcae18/KY+NXgZOSJJw4wafiMyMOrxkT4agNIYdubreUWo7+lbgeT
+bVM07I4CBfWStlitRrvX
+=jr+B
+-----END PGP SIGNATURE-----
+
+--Sig_/f+KABpqlzq61FD8th6Oe4hx--
