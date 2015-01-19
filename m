@@ -1,96 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751592AbbASIFw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 03:05:52 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:52606 "EHLO
+	id S1751823AbbASIF6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 03:05:58 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:52618 "EHLO
 	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143AbbASIFv (ORCPT
+	with ESMTP id S1751642AbbASIFy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 03:05:51 -0500
+	Mon, 19 Jan 2015 03:05:54 -0500
 From: "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>,
-        Michael Ellerman <mpe@ellerman.id.au>, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH v2 1/2] powerpc: Add helpers for LPCR PECE1 operations
-Date: Mon, 19 Jan 2015 13:35:26 +0530
-Message-Id: <1421654727-31656-1-git-send-email-shreyas@linux.vnet.ibm.com>
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Paul Mackerras <paulus@samba.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH v2 2/2] powerpc: powernv: winkle: Restore LPCR with LPCR_PECE1 cleared
+Date: Mon, 19 Jan 2015 13:35:27 +0530
+Message-Id: <1421654727-31656-2-git-send-email-shreyas@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1421654727-31656-1-git-send-email-shreyas@linux.vnet.ibm.com>
+References: <1421654727-31656-1-git-send-email-shreyas@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15011908-0009-0000-0000-0000081738B9
+x-cbid: 15011908-0009-0000-0000-0000081738CC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PECE1 bit in LPCR is used to control whether decrementer can cause exit
-from powersaving states. PECE1 bit is cleared before entering fastsleep
-or deeper powersaving state and it is set on waking up. Since both
-cpuidle and cpu offline operations use these powersaving states, add
-helper functions to be used in both these places.
+LPCR_PECE1 bit controls whether decrementer interrupts are allowed to
+cause exit from power-saving mode. While waking up from winkle, restoring
+LPCR with LPCR_PECE1 set (i.e Decrementer interrupts allowed) can cause
+issue in the following scenario:
+
+- All the threads in a core are offlined. The core enters deep winkle.
+- Spurious interrupt wakes up a thread in the core. Here LPCR is restored
+  with LPCR_PECE1 bit set.
+- Since it was a spurious interrupt on a offline thread, the thread clears
+  the interrupt and goes back to winkle.
+- Here before the thread executes winkle and puts the core into deep winkle,
+  if a decrementer interrupt occurs on any of the sibling threads in the core
+  that thread wakes up.
+- Since in offline loop we are flushing interrupt only in case of external
+  interrupt, the decrementer interrupt does not get flushed. So at this stage
+  the thread is stuck in this is loop of waking up at 0x100 due to decrementer
+  interrupt, not flushing the interrupt as only external interrupts get flushed,
+  entering winkle, waking up at 0x100 again.
+
+Fix this by programming PORE to restore LPCR with LPCR_PECE1 bit
+cleared when waking up from winkle.
 
 Signed-off-by: Shreyas B. Prabhu <shreyas@linux.vnet.ibm.com>
 Cc: Michael Ellerman <mpe@ellerman.id.au>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: linuxppc-dev@lists.ozlabs.org
 ---
- arch/powerpc/include/asm/reg.h       | 4 ++++
- arch/powerpc/platforms/powernv/smp.c | 4 ++--
- drivers/cpuidle/cpuidle-powernv.c    | 3 +--
- 3 files changed, 7 insertions(+), 4 deletions(-)
+Changes is v2:
+==============
+Using the helper function introduced in the previous patch.
 
-diff --git a/arch/powerpc/include/asm/reg.h b/arch/powerpc/include/asm/reg.h
-index c870e38..0847303 100644
---- a/arch/powerpc/include/asm/reg.h
-+++ b/arch/powerpc/include/asm/reg.h
-@@ -339,6 +339,10 @@
- #define   LPCR_LPES_SH	2
- #define   LPCR_RMI     0x00000002      /* real mode is cache inhibit */
- #define   LPCR_HDICE   0x00000001      /* Hyp Decr enable (HV,PR,EE) */
-+/* LPCR PECE1 helpers. Used to disable/enable wake up due to decrementer */
-+#define   LPCR_CLEAR_PECE1(old)	(old & ~(u64)LPCR_PECE1)
-+#define   LPCR_SET_PECE1(old)	(old | (u64)LPCR_PECE1)
-+
- #ifndef SPRN_LPID
- #define SPRN_LPID	0x13F	/* Logical Partition Identifier */
- #endif
-diff --git a/arch/powerpc/platforms/powernv/smp.c b/arch/powerpc/platforms/powernv/smp.c
-index 781ec45..ab61cb0 100644
---- a/arch/powerpc/platforms/powernv/smp.c
-+++ b/arch/powerpc/platforms/powernv/smp.c
-@@ -165,7 +165,7 @@ static void pnv_smp_cpu_kill_self(void)
- 	/* We don't want to take decrementer interrupts while we are offline,
- 	 * so clear LPCR:PECE1. We keep PECE2 enabled.
+ arch/powerpc/platforms/powernv/setup.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/powerpc/platforms/powernv/setup.c b/arch/powerpc/platforms/powernv/setup.c
+index ad0e32e..ded7fc8 100644
+--- a/arch/powerpc/platforms/powernv/setup.c
++++ b/arch/powerpc/platforms/powernv/setup.c
+@@ -298,7 +298,7 @@ int pnv_save_sprs_for_winkle(void)
+ 	 * all cpus at boot. Get these reg values of current cpu and use the
+ 	 * same accross all cpus.
  	 */
--	mtspr(SPRN_LPCR, mfspr(SPRN_LPCR) & ~(u64)LPCR_PECE1);
-+	mtspr(SPRN_LPCR, LPCR_CLEAR_PECE1(mfspr(SPRN_LPCR)));
- 	while (!generic_check_cpu_restart(cpu)) {
- 
- 		ppc64_runlatch_off();
-@@ -203,7 +203,7 @@ static void pnv_smp_cpu_kill_self(void)
- 		if (!generic_check_cpu_restart(cpu))
- 			DBG("CPU%d Unexpected exit while offline !\n", cpu);
- 	}
--	mtspr(SPRN_LPCR, mfspr(SPRN_LPCR) | LPCR_PECE1);
-+	mtspr(SPRN_LPCR, LPCR_SET_PECE1(mfspr(SPRN_LPCR)));
- 	DBG("CPU%d coming online...\n", cpu);
- }
- 
-diff --git a/drivers/cpuidle/cpuidle-powernv.c b/drivers/cpuidle/cpuidle-powernv.c
-index de61b9a..ed0be4c 100644
---- a/drivers/cpuidle/cpuidle-powernv.c
-+++ b/drivers/cpuidle/cpuidle-powernv.c
-@@ -69,11 +69,10 @@ static int fastsleep_loop(struct cpuidle_device *dev,
- 	if (unlikely(system_state < SYSTEM_RUNNING))
- 		return index;
- 
--	new_lpcr = old_lpcr;
- 	/* Do not exit powersave upon decrementer as we've setup the timer
- 	 * offload.
- 	 */
--	new_lpcr &= ~LPCR_PECE1;
-+	new_lpcr = LPCR_CLEAR_PECE1(old_lpcr);
- 
- 	mtspr(SPRN_LPCR, new_lpcr);
- 	power7_sleep();
+-	uint64_t lpcr_val = mfspr(SPRN_LPCR);
++	uint64_t lpcr_val = LPCR_CLEAR_PECE1(mfspr(SPRN_LPCR));
+ 	uint64_t hid0_val = mfspr(SPRN_HID0);
+ 	uint64_t hid1_val = mfspr(SPRN_HID1);
+ 	uint64_t hid4_val = mfspr(SPRN_HID4);
 -- 
 1.9.3
 
