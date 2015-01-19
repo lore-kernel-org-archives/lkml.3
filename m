@@ -1,158 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751537AbbASBML (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 20:12:11 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:44374 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185AbbASBMK (ORCPT
+	id S1751703AbbASBMe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 20:12:34 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:37545 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751214AbbASBMc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 20:12:10 -0500
-Message-ID: <54BC59C3.8010208@roeck-us.net>
-Date: Sun, 18 Jan 2015 17:11:31 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Sun, 18 Jan 2015 20:12:32 -0500
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID t0J1CC6P026185, This message is accepted by code: ctloc85258
+From: =?utf-8?B?5pWs6ZSQ?= <micky_ching@realsil.com.cn>
+To: Lee Jones <lee.jones@linaro.org>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "rogerable@realtek.com" <rogerable@realtek.com>,
+        =?utf-8?B?546L54Kc?= <wei_wang@realsil.com.cn>
+Subject: Re: [PATCH 07/10] mfd: rtsx: remove LCTLR defination
+Thread-Topic: [PATCH 07/10] mfd: rtsx: remove LCTLR defination
+Thread-Index: AQHQMxpFdFTodZXXV0OeYt+Q20nm3pzGHZcA
+Date: Mon, 19 Jan 2015 01:12:12 +0000
+Message-ID: <54BC59EC.8060205@realsil.com.cn>
+References: <cover.1421320541.git.micky_ching@realsil.com.cn>
+ <157a06b4ac167e755e109962caca526f69955acb.1421320541.git.micky_ching@realsil.com.cn>
+ <20150118122821.GL3574@x1>
+In-Reply-To: <20150118122821.GL3574@x1>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.29.41.103]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <951319E99C00E146B4931E72D713B5A3@realsil.com.cn>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        jsrhbz@kanargh.force9.co.uk, christoph.muellner@theobroma-systems.com,
-        linux@rasmusvillemoes.dk, paulmck@linux.vnet.ibm.com,
-        tglx@linutronix.de, mingo@kernel.org, akpm@linux-foundation.org,
-        hpa@zytor.com, maxime.coquelin@st.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, martink@posteo.de, tytso@mit.edu
-CC: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:core/types] bitops: Add sign_extend8(), 16 and 64 functions
-References: <1421083370-24924-1-git-send-email-martink@posteo.de>	<tip-7e9358073d3f0ed0a028c48aa54009b3296dffc9@git.kernel.org> <CA+55aFyc7TbnLBi3rcQDrtkwg9TgDnb5dAfupMGSbTKZC6Xd0g@mail.gmail.com>
-In-Reply-To: <CA+55aFyc7TbnLBi3rcQDrtkwg9TgDnb5dAfupMGSbTKZC6Xd0g@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020205.54BC59E9.01CB,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 5
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0J1ChR3032540
 
-On 01/18/2015 11:54 AM, Linus Torvalds wrote:
-> Why?
->
 
-Probably because some of us are, unfortunately, sometimes clueless :-(.
-
-Guenter
-
-> The 8- and 16- bit versions are the same as the 32-bit one. This seems pointless. If you want something where the sign is in bit 3, they all return the same value, just the return type differs, but that's really a *caller* thing, no?
+On 01/18/2015 08:28 PM, Lee Jones wrote:
+> On Thu, 15 Jan 2015, micky_ching@realsil.com.cn wrote:
 >
->       Linus
+>> From: Micky Ching <micky_ching@realsil.com.cn>
+>>
+>> To enable/disable ASPM we should find LINK CONTROL register
+>> in PCI config space. All old chip use 0x80 address, but new
+>> chip may use another address, so we using pci_find_capability()
+>> to get LINK CONTROL address.
+>>
+>> rtsx_gops.c was removed, we consider to put some common operations
+>> to this file, but the actual thing is, only a group of chips
+>> are in common ops1, and another group of chips in common ops2,
+>> it is hard to decide put which ops into generic ops file.
+>>
+>> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+>> ---
+>>   drivers/mfd/Makefile         |  2 +-
+>>   drivers/mfd/rts5227.c        |  2 +-
+>>   drivers/mfd/rts5249.c        |  3 +--
+>>   drivers/mfd/rtsx_gops.c      | 37 -------------------------------------
+>>   drivers/mfd/rtsx_pcr.c       | 25 ++++++++++++++++++++-----
+>>   include/linux/mfd/rtsx_pci.h |  9 ---------
+>>   6 files changed, 23 insertions(+), 55 deletions(-)
+>>   delete mode 100644 drivers/mfd/rtsx_gops.c
+>>
+>> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+>> index 53467e2..2cd7e74 100644
+>> --- a/drivers/mfd/Makefile
+>> +++ b/drivers/mfd/Makefile
+>> @@ -13,7 +13,7 @@ obj-$(CONFIG_MFD_CROS_EC)	+= cros_ec.o
+>>   obj-$(CONFIG_MFD_CROS_EC_I2C)	+= cros_ec_i2c.o
+>>   obj-$(CONFIG_MFD_CROS_EC_SPI)	+= cros_ec_spi.o
+>>   
+>> -rtsx_pci-objs			:= rtsx_pcr.o rtsx_gops.o rts5209.o rts5229.o rtl8411.o rts5227.o rts5249.o
+>> +rtsx_pci-objs			:= rtsx_pcr.o rts5209.o rts5229.o rtl8411.o rts5227.o rts5249.o
+>>   obj-$(CONFIG_MFD_RTSX_PCI)	+= rtsx_pci.o
+>>   obj-$(CONFIG_MFD_RTSX_USB)	+= rtsx_usb.o
+>>   
+>> diff --git a/drivers/mfd/rts5227.c b/drivers/mfd/rts5227.c
+>> index 1f387d4..0c02831 100644
+>> --- a/drivers/mfd/rts5227.c
+>> +++ b/drivers/mfd/rts5227.c
+>> @@ -130,7 +130,7 @@ static int rts5227_optimize_phy(struct rtsx_pcr *pcr)
+>>   {
+>>   	int err;
+>>   
+>> -	err = rtsx_gops_pm_reset(pcr);
+>> +	err = rtsx_pci_write_register(pcr, PM_CTRL3, D3_DELINK_MODE_EN, 0x00);
+>>   	if (err < 0)
+>>   		return err;
+>>   
+>> diff --git a/drivers/mfd/rts5249.c b/drivers/mfd/rts5249.c
+>> index 00208d1..5eb9819 100644
+>> --- a/drivers/mfd/rts5249.c
+>> +++ b/drivers/mfd/rts5249.c
+>> @@ -119,7 +119,6 @@ static int rts5249_extra_init_hw(struct rtsx_pcr *pcr)
+>>   		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PETXCFG, 0xB0, 0xB0);
+>>   	else
+>>   		rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PETXCFG, 0xB0, 0x80);
+>> -	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, PM_CTRL3, 0x10, 0x00);
+> What's this doing?  Why is it not required anymore?
+PM_CTRL3 have been set in rts5249_optimize_phy, this function
+rts5249_extra_init will be call for rts524A/rts525A, but their PM_CTRL3
+address is redefined to RTS524A_PM_CTRL3, using a different address.
+if we set PM_CTRL3 here, the rts524A/rts525A will also set,
+but it's not a right address.
 >
-> On Jan 19, 2015 7:07 AM, "tip-bot for Martin Kepplinger" <tipbot@zytor.com <mailto:tipbot@zytor.com>> wrote:
+>>   	return rtsx_pci_send_cmd(pcr, 100);
+>>   }
+>> @@ -128,7 +127,7 @@ static int rts5249_optimize_phy(struct rtsx_pcr *pcr)
+>>   {
+>>   	int err;
+>>   
+>> -	err = rtsx_gops_pm_reset(pcr);
+>> +	err = rtsx_pci_write_register(pcr, PM_CTRL3, D3_DELINK_MODE_EN, 0x00);
+>>   	if (err < 0)
+>>   		return err;
+>>   
+>> diff --git a/drivers/mfd/rtsx_gops.c b/drivers/mfd/rtsx_gops.c
+>> deleted file mode 100644
+>> index b1a98c6..0000000
+>> --- a/drivers/mfd/rtsx_gops.c
+>> +++ /dev/null
+>> @@ -1,37 +0,0 @@
+>> -/* Driver for Realtek PCI-Express card reader
+>> - *
+>> - * Copyright(c) 2009-2013 Realtek Semiconductor Corp. All rights reserved.
+>> - *
+>> - * This program is free software; you can redistribute it and/or modify it
+>> - * under the terms of the GNU General Public License as published by the
+>> - * Free Software Foundation; either version 2, or (at your option) any
+>> - * later version.
+>> - *
+>> - * This program is distributed in the hope that it will be useful, but
+>> - * WITHOUT ANY WARRANTY; without even the implied warranty of
+>> - * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+>> - * General Public License for more details.
+>> - *
+>> - * You should have received a copy of the GNU General Public License along
+>> - * with this program; if not, see <http://www.gnu.org/licenses/>.
+>> - *
+>> - * Author:
+>> - *   Micky Ching <micky_ching@realsil.com.cn>
+>> - */
+>> -
+>> -#include <linux/mfd/rtsx_pci.h>
+>> -#include "rtsx_pcr.h"
+>> -
+>> -int rtsx_gops_pm_reset(struct rtsx_pcr *pcr)
+>> -{
+>> -	int err;
+>> -
+>> -	/* init aspm */
+>> -	rtsx_pci_write_register(pcr, ASPM_FORCE_CTL, 0xFF, 0x00);
+>> -	err = rtsx_pci_update_cfg_byte(pcr, LCTLR, ~LCTLR_ASPM_CTL_MASK, 0x00);
+>> -	if (err < 0)
+>> -		return err;
+>> -
+>> -	/* reset PM_CTRL3 before send buffer cmd */
+>> -	return rtsx_pci_write_register(pcr, PM_CTRL3, D3_DELINK_MODE_EN, 0x00);
+>> -}
+>> diff --git a/drivers/mfd/rtsx_pcr.c b/drivers/mfd/rtsx_pcr.c
+>> index 92f5a41..3065edc 100644
+>> --- a/drivers/mfd/rtsx_pcr.c
+>> +++ b/drivers/mfd/rtsx_pcr.c
+>> @@ -63,6 +63,20 @@ static const struct pci_device_id rtsx_pci_ids[] = {
+>>   
+>>   MODULE_DEVICE_TABLE(pci, rtsx_pci_ids);
+>>   
+>> +static inline void rtsx_pci_enable_aspm(struct rtsx_pcr *pcr)
+>> +{
+>> +	int exp = pci_find_capability(pcr->pci, PCI_CAP_ID_EXP);
+>> +
+>> +	rtsx_pci_update_cfg_byte(pcr, exp + PCI_EXP_LNKCTL, 0xFC, pcr->aspm_en);
+>> +}
+>> +
+>> +static inline void rtsx_pci_disable_aspm(struct rtsx_pcr *pcr)
+>> +{
+>> +	int exp = pci_find_capability(pcr->pci, PCI_CAP_ID_EXP);
+>> +
+>> +	rtsx_pci_update_cfg_byte(pcr, exp + PCI_EXP_LNKCTL, 0xFC, 0);
+>> +}
+>> +
+>>   void rtsx_pci_start_run(struct rtsx_pcr *pcr)
+>>   {
+>>   	/* If pci device removed, don't queue idle work any more */
+>> @@ -75,7 +89,8 @@ void rtsx_pci_start_run(struct rtsx_pcr *pcr)
+>>   			pcr->ops->enable_auto_blink(pcr);
+>>   
+>>   		if (pcr->aspm_en)
+>> -			rtsx_pci_write_config_byte(pcr, LCTLR, 0);
+>> +			rtsx_pci_disable_aspm(pcr);
+>> +
+> ?
+We set LCTLR to disable aspm, all old chip using 0x80 address,
+but new chip will not use this address, the best way to find
+this address is using pci_find_capability().
 >
->     Commit-ID:  7e9358073d3f0ed0a028c48aa54009b3296dffc9
->     Gitweb: http://git.kernel.org/tip/7e9358073d3f0ed0a028c48aa54009b3296dffc9
->     Author:     Martin Kepplinger <martink@posteo.de <mailto:martink@posteo.de>>
->     AuthorDate: Mon, 12 Jan 2015 18:22:50 +0100
->     Committer:  Ingo Molnar <mingo@kernel.org <mailto:mingo@kernel.org>>
->     CommitDate: Sun, 18 Jan 2015 20:03:51 +0100
->
->     bitops: Add sign_extend8(), 16 and 64 functions
->
->     This adds helper functions for sign-extending signed values of any
->     lower (hardware-)given size to s8, s16 or s64 respectively, just like
->     sign_extend32() for s32.
->
->     This completes the sign_extend*() API family to work on all bit sizes
->     like most other bitops APIs do.
->
->     Suggested-by: Christoph Muellner <christoph.muellner@theobroma-systems.com <mailto:christoph.muellner@theobroma-systems.com>>
->     Signed-off-by: Martin Kepplinger <martink@posteo.de <mailto:martink@posteo.de>>
->     Reviewed-by: Guenter Roeck <linux@roeck-us.net <mailto:linux@roeck-us.net>>
->     Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org <mailto:peterz@infradead.org>>
->     Cc: John Sullivan <jsrhbz@kanargh.force9.co.uk <mailto:jsrhbz@kanargh.force9.co.uk>>
->     Cc: Linus Torvalds <torvalds@linux-foundation.org <mailto:torvalds@linux-foundation.org>>
->     Cc: Maxime COQUELIN <maxime.coquelin@st.com <mailto:maxime.coquelin@st.com>>
->     Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com <mailto:paulmck@linux.vnet.ibm.com>>
->     Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk <mailto:linux@rasmusvillemoes.dk>>
->     Cc: Theodore Ts'o <tytso@mit.edu <mailto:tytso@mit.edu>>
->     Cc: Andrew Morton <akpm@linux-foundation.org <mailto:akpm@linux-foundation.org>>
->     Link: http://lkml.kernel.org/r/1421083370-24924-1-git-send-email-martink@posteo.de
->     Signed-off-by <http://lkml.kernel.org/r/1421083370-24924-1-git-send-email-martink@posteo.de Signed-off-by>: Ingo Molnar <mingo@kernel.org <mailto:mingo@kernel.org>>
->     ---
->       include/linux/bitops.h | 33 +++++++++++++++++++++++++++++++++
->       1 file changed, 33 insertions(+)
->
->     diff --git a/include/linux/bitops.h b/include/linux/bitops.h
->     index 5d858e0..9c31680 100644
->     --- a/include/linux/bitops.h
->     +++ b/include/linux/bitops.h
->     @@ -161,6 +161,28 @@ static inline __u8 ror8(__u8 word, unsigned int shift)
->       }
->
->       /**
->     + * sign_extend8 - sign extend a 8-bit value using specified bit as sign-bit
->     + * @value: value to sign extend
->     + * @index: 0 based bit index (0<=index<8) to sign bit
->     + */
->     +static inline __s8 sign_extend8(__u8 value, int index)
->     +{
->     +       __u8 shift = 7 - index;
->     +       return (__s8)(value << shift) >> shift;
->     +}
->     +
->     +/**
->     + * sign_extend16 - sign extend a 16-bit value using specified bit as sign-bit
->     + * @value: value to sign extend
->     + * @index: 0 based bit index (0<=index<16) to sign bit
->     + */
->     +static inline __s16 sign_extend16(__u16 value, int index)
->     +{
->     +       __u8 shift = 15 - index;
->     +       return (__s16)(value << shift) >> shift;
->     +}
->     +
->     +/**
->        * sign_extend32 - sign extend a 32-bit value using specified bit as sign-bit
->        * @value: value to sign extend
->        * @index: 0 based bit index (0<=index<32) to sign bit
->     @@ -171,6 +193,17 @@ static inline __s32 sign_extend32(__u32 value, int index)
->              return (__s32)(value << shift) >> shift;
->       }
->
->     +/**
->     + * sign_extend64 - sign extend a 64-bit value using specified bit as sign-bit
->     + * @value: value to sign extend
->     + * @index: 0 based bit index (0<=index<64) to sign bit
->     + */
->     +static inline __s64 sign_extend64(__u64 value, int index)
->     +{
->     +       __u8 shift = 63 - index;
->     +       return (__s64)(value << shift) >> shift;
->     +}
->     +
->       static inline unsigned fls_long(unsigned long l)
->       {
->              if (sizeof(l) == 4)
->
-
+>>   	}
+>>   
+>>   	mod_delayed_work(system_wq, &pcr->idle_work, msecs_to_jiffies(200));
+>> @@ -954,7 +969,7 @@ static void rtsx_pci_idle_work(struct work_struct *work)
+>>   		pcr->ops->turn_off_led(pcr);
+>>   
+>>   	if (pcr->aspm_en)
+>> -		rtsx_pci_write_config_byte(pcr, LCTLR, pcr->aspm_en);
+>> +		rtsx_pci_enable_aspm(pcr);
+>>   
+>>   	mutex_unlock(&pcr->pcr_mutex);
+>>   }
+>> @@ -979,6 +994,7 @@ static void rtsx_pci_power_off(struct rtsx_pcr *pcr, u8 pm_state)
+>>   static int rtsx_pci_init_hw(struct rtsx_pcr *pcr)
+>>   {
+>>   	int err;
+>> +	int exp = pci_find_capability(pcr->pci, PCI_CAP_ID_EXP);
+>>   
+>>   	rtsx_pci_writel(pcr, RTSX_HCBAR, pcr->host_cmds_addr);
+>>   
+>> @@ -992,6 +1008,7 @@ static int rtsx_pci_init_hw(struct rtsx_pcr *pcr)
+>>   	/* Wait SSC power stable */
+>>   	udelay(200);
+>>   
+>> +	rtsx_pci_disable_aspm(pcr);
+>>   	if (pcr->ops->optimize_phy) {
+>>   		err = pcr->ops->optimize_phy(pcr);
+>>   		if (err < 0)
+>> @@ -1040,10 +1057,8 @@ static int rtsx_pci_init_hw(struct rtsx_pcr *pcr)
+>>   	if (err < 0)
+>>   		return err;
+>>   
+>> -	rtsx_pci_write_config_byte(pcr, LCTLR, 0);
+>> -
+>>   	/* Enable clk_request_n to enable clock power management */
+>> -	rtsx_pci_write_config_byte(pcr, 0x81, 1);
+>> +	rtsx_pci_write_config_byte(pcr, exp + PCI_EXP_LNKCTL + 1, 1);
+>>   	/* Enter L1 when host tx idle */
+>>   	rtsx_pci_write_config_byte(pcr, 0x70F, 0x5B);
+>>   
+>> diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
+>> index 80baa10..f7cebdb 100644
+>> --- a/include/linux/mfd/rtsx_pci.h
+>> +++ b/include/linux/mfd/rtsx_pci.h
+>> @@ -662,15 +662,6 @@
+>>   #define PHY_FLD4			0x1E
+>>   #define PHY_DUM_REG			0x1F
+>>   
+>> -#define LCTLR				0x80
+>> -#define   LCTLR_EXT_SYNC		0x80
+>> -#define   LCTLR_COMMON_CLOCK_CFG	0x40
+>> -#define   LCTLR_RETRAIN_LINK		0x20
+>> -#define   LCTLR_LINK_DISABLE		0x10
+>> -#define   LCTLR_RCB			0x08
+>> -#define   LCTLR_RESERVED		0x04
+>> -#define   LCTLR_ASPM_CTL_MASK		0x03
+>> -
+>>   #define PCR_SETTING_REG1		0x724
+>>   #define PCR_SETTING_REG2		0x814
+>>   #define PCR_SETTING_REG3		0x747
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
