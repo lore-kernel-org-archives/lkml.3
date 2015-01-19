@@ -1,73 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752346AbbASShv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 13:37:51 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:24094 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751617AbbASSht (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 13:37:49 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+r9tX3AYwN84l5WBWdW8vz
-Date: Mon, 19 Jan 2015 10:34:09 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Jason Cooper <jason@lakedaemon.net>
-Cc: Felipe Balbi <balbi@ti.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Linux ARM Kernel Mailing List 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Peter =?utf-8?Q?K=C3=BCmmel?= <syntheticpp@gmx.net>,
-        Pavel Machek <pavel@ucw.cz>, Santosh Shilimkar <ssantosh@kernel.org>,
-        stable@vger.kernel.org
-Subject: Re: [PATCH v2] irqchip: omap-intc: fix legacy DMA regression
-Message-ID: <20150119183409.GZ18552@atomide.com>
-References: <1420563093-26026-1-git-send-email-balbi@ti.com>
- <1420576688-10604-1-git-send-email-balbi@ti.com>
- <20150107030029.GE24989@titan.lakedaemon.net>
+	id S1752787AbbASSfQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 13:35:16 -0500
+Received: from mout.web.de ([212.227.17.12]:57112 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752656AbbASSfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 13:35:14 -0500
+Message-ID: <54BD4E52.7000308@users.sourceforge.net>
+Date: Mon, 19 Jan 2015 19:34:58 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150107030029.GE24989@titan.lakedaemon.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 4/9] video: Add check for return value of ioremap() in cirrusfb_pci_register()
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <54BD44F0.3040705@users.sourceforge.net>
+In-Reply-To: <54BD44F0.3040705@users.sourceforge.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:WU2NbGJ2AUKJJOHMfHiJmrPIxev+77+/Nb5TCsxLLmLWy3kGYCr
+ ztMfoM9QLzVO4fqQZhJBaE8JN2WDgJCwI6xjZqtPSu1YLlyc/Bq+PSGOyrYkYNouiz3KrnN
+ GPlbND2jPy799kRQ3iHUBJeED5wT+Feq/eE5zRRqzyg5QJFvsJOtcStbzuAv/Fx7Z3tFl4v
+ vVpBFhy+58CTM5tgt0/qQ==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Jason Cooper <jason@lakedaemon.net> [150106 19:03]:
-> On Tue, Jan 06, 2015 at 02:38:08PM -0600, Felipe Balbi wrote:
-> > commit 55601c9f2467 (arm: omap: intc: switch over
-> > to linear irq domain) introduced a regression with
-> > SDMA legacy driver because that driver strictly depends
-> > on INTC's IRQs starting at NR_IRQs. Aparently
-> > irq_domain_add_linear() won't guarantee that, since we see
-> > a 7 IRQs difference when booting with and without the
-> > commit cited above.
-> > 
-> > Until arch/arm/plat-omap/dma.c is properly fixed, we
-> > must maintain OMAP2/3 using irq_domain_add_legacy().
-> > 
-> > A FIXME note was added so people know to delete that
-> > code once that legacy DMA driver is fixed up.
-> > 
-> > Fixes: 55601c9f2467 (arm: omap: intc: switch over to linear irq domain)
-> > Cc: <stable@vger.kernel.org> # v3.18
-> > Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-> > Tested-by: Tony Lindgren <tony@atomide.com>
-> > Signed-off-by: Felipe Balbi <balbi@ti.com>
-> > ---
-> >  drivers/irqchip/irq-omap-intc.c | 26 +++++++++++++++++++++-----
-> >  1 file changed, 21 insertions(+), 5 deletions(-)
-> 
-> Applied to irqchip/urgent.  Thanks for taking care of the Fixes and
-> stable tags!
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Mon, 19 Jan 2015 13:18:50 +0100
 
-Jason, I'm not seeing this merged into v3.19-rc5, seems to be
-in Linux next though.
+The return value from a call of the ioremap() function was not checked
+by the implementation of the cirrusfb_pci_register() function.
+Let us complete the corresponding error detection and exception handling
+at this source code place.
 
-Regards,
+Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+---
+ drivers/video/fbdev/cirrusfb.c | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
 
-Tony
+diff --git a/drivers/video/fbdev/cirrusfb.c b/drivers/video/fbdev/cirrusfb.c
+index d8b3359..aa4050c 100644
+--- a/drivers/video/fbdev/cirrusfb.c
++++ b/drivers/video/fbdev/cirrusfb.c
+@@ -2111,6 +2111,10 @@ static int cirrusfb_pci_register(struct pci_dev *pdev,
+ 	/* FIXME: this forces VGA.  alternatives? */
+ 	cinfo->regbase = NULL;
+ 	cinfo->laguna_mmio = ioremap(info->fix.mmio_start, 0x1000);
++	if (!cinfo->laguna_mmio) {
++		ret = -EIO;
++		goto err_release_fb;
++	}
+ 
+ 	dev_dbg(info->device, "Board address: 0x%lx, register address: 0x%lx\n",
+ 		board_addr, info->fix.mmio_start);
+@@ -2122,7 +2126,7 @@ static int cirrusfb_pci_register(struct pci_dev *pdev,
+ 	if (ret < 0) {
+ 		dev_err(info->device, "cannot reserve region 0x%lx, abort\n",
+ 			board_addr);
+-		goto err_release_fb;
++		goto io_unmap_laguna;
+ 	}
+ #if 0 /* if the system didn't claim this region, we would... */
+ 	if (!request_mem_region(0xA0000, 65535, "cirrusfb")) {
+@@ -2163,8 +2167,9 @@ err_release_legacy:
+ err_release_regions:
+ #endif
+ 	pci_release_regions(pdev);
+-err_release_fb:
++io_unmap_laguna:
+ 	iounmap(cinfo->laguna_mmio);
++err_release_fb:
+ 	framebuffer_release(info);
+ err_out:
+ 	return ret;
+-- 
+2.2.2
+
