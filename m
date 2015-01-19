@@ -1,205 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751598AbbASLJn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 06:09:43 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:40260 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751090AbbASLJl (ORCPT
+	id S1752068AbbASLKb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 06:10:31 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43069 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751474AbbASLK3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 06:09:41 -0500
-Date: Mon, 19 Jan 2015 03:09:35 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Zhang Zhen <zhenzhang.zhang@huawei.com>
-Cc: linux-kernel@vger.kernel.org, morgan.wang@huawei.com, josh@freedesktop.org,
-        dzickus@redhat.com, dipankar@in.ibm.com
-Subject: Re: RCU CPU stall console spews  leads to soft lockup disabled is
- reasonable ?
-Message-ID: <20150119110935.GH9719@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <54BCBB33.6060608@huawei.com>
- <20150119084200.GE9719@linux.vnet.ibm.com>
- <54BCC89D.9040702@huawei.com>
+	Mon, 19 Jan 2015 06:10:29 -0500
+Date: Mon, 19 Jan 2015 03:10:09 -0800
+From: tip-bot for Michael Kerrisk <tipbot@zytor.com>
+Message-ID: <tip-40a35503401a5a5ffd8bb03b120724e213160584@git.kernel.org>
+Cc: mingo@kernel.org, hpa@zytor.com, tglx@linutronix.de, darren@dvhart.com,
+        linux-kernel@vger.kernel.org, mtk.manpages@gmail.com
+Reply-To: darren@dvhart.com, tglx@linutronix.de, mtk.manpages@gmail.com,
+        linux-kernel@vger.kernel.org, mingo@kernel.org, hpa@zytor.com
+In-Reply-To: <54B9663D.9070000@gmail.com>
+References: <54B9663D.9070000@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:locking/core] doc:
+  Fix misnamed FUTEX_CMP_REQUEUE_PI op constants
+Git-Commit-ID: 40a35503401a5a5ffd8bb03b120724e213160584
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <54BCC89D.9040702@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15011911-0033-0000-0000-000003606952
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 19, 2015 at 05:04:29PM +0800, Zhang Zhen wrote:
-> On 2015/1/19 16:42, Paul E. McKenney wrote:
-> > On Mon, Jan 19, 2015 at 04:07:15PM +0800, Zhang Zhen wrote:
-> >> Hi,
-> >>
-> >> On my x86_64 qemu virtual machine, RCU CPU stall console spews may
-> >> lead to soft lockup disabled.
-> >>
-> >> If softlockup_thresh > rcu_cpu_stall_timeout (softlockup_thresh = 2 * watchdog_thresh):
-> >>
-> >> / #
-> >> / # busybox cat /sys/module/rcupdate/parameters/rcu_cpu_stall_timeout
-> >> 21
-> >> / # echo 60 > /proc/sys/kernel/watchdog_thresh
-> >> / # busybox insmod softlockup_test.ko
-> >> [   44.959044] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=21002 jiffies, g=85, c=84, q=4)
-> >> [   44.959044] INFO: Stall ended before state dump start
-> >> [  107.964045] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=84007 jiffies, g=85, c=84, q=4)
-> >> [  107.964045] INFO: Stall ended before state dump start
-> >> [  170.969060] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=147012 jiffies, g=85, c=84, q=4)
-> >> [  170.969060] INFO: Stall ended before state dump start
-> >> [  233.974057] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=210017 jiffies, g=85, c=84, q=4)
-> >> [  233.974057] INFO: Stall ended before state dump start
-> >> [  296.979059] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=273022 jiffies, g=85, c=84, q=4)
-> >> [  296.979059] INFO: Stall ended before state dump start
-> >> [  359.984058] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=336027 jiffies, g=85, c=84, q=4)
-> >> [  359.984058] INFO: Stall ended before state dump start
-> >> [  422.989059] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=399032 jiffies, g=85, c=84, q=4)
-> >> [  422.989059] INFO: Stall ended before state dump start
-> >> [  485.994056] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=462037 jiffies, g=85, c=84, q=4)
-> >> [  485.994056] INFO: Stall ended before state dump start
-> >> [  548.999059] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=525042 jiffies, g=85, c=84, q=4)
-> >> [  548.999059] INFO: Stall ended before state dump start
-> >> [  612.004061] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=588047 jiffies, g=85, c=84, q=4)
-> >> [  612.004061] INFO: Stall ended before state dump start
-> >> [  675.009058] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=651052 jiffies, g=85, c=84, q=4)
-> >> [  675.009058] INFO: Stall ended before state dump start
-> >>
-> >> If softlockup_thresh < rcu_cpu_stall_timeout:
-> >>
-> >> / #
-> >> / # busybox cat /sys/module/rcupdate/parameters/rcu_cpu_stall_timeout
-> >> 21
-> >> / # echo 5 > /proc/sys/kernel/watchdog_thresh
-> >> / # busybox insmod softlockup_test.ko
-> >> [   38.450061] BUG: soft lockup - CPU#0 stuck for 11s! [busybox:53]
-> >> [   52.450061] BUG: soft lockup - CPU#0 stuck for 11s! [busybox:53]
-> >> [   66.450073] BUG: soft lockup - CPU#0 stuck for 11s! [busybox:53]
-> >> [   80.450060] BUG: soft lockup - CPU#0 stuck for 11s! [busybox:53]
-> >> [   94.450061] BUG: soft lockup - CPU#0 stuck for 11s! [busybox:53]
-> >>
-> >> The softlockup_test.ko source code is:
-> >> //
-> >> #include <linux/kernel.h>
-> >> #include <linux/module.h>
-> >> #include <linux/spinlock.h>
-> >> #include <linux/slab.h>
-> >>
-> >> static int hello_start(void)
-> >> {
-> >>         DEFINE_SPINLOCK(hello_lock);
-> >>         spin_lock_init(&hello_lock);
-> >>         spin_lock(&hello_lock);
-> >>         spin_lock(&hello_lock);
-> > 
-> > Did you really intend to acquire the same spinlock twice in a row,
-> > forcing a self-deadlock?  If not, I of course suggest changing the second
-> > "spin_lock()" to "spin_unlock()".
-> 
-> Yes, i acquire the same spinlock twice in order to reproduce the problem.
+Commit-ID:  40a35503401a5a5ffd8bb03b120724e213160584
+Gitweb:     http://git.kernel.org/tip/40a35503401a5a5ffd8bb03b120724e213160584
+Author:     Michael Kerrisk <mtk.manpages@gmail.com>
+AuthorDate: Fri, 16 Jan 2015 20:27:57 +0100
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Mon, 19 Jan 2015 12:05:32 +0100
 
-Good, I was wondering about that.  ;-)
+doc: Fix misnamed FUTEX_CMP_REQUEUE_PI op constants
 
-> > If your .config has CONFIG_TREE_RCU=y, the above is quite likely to
-> > give you an RCU CPU stall warning.
-> 
-> In my .config CONFIG_TREE_RCU=y.
+FUTEX_CMP_REQUEUE_PI was misnamed in two different ways:
+FUTEX_REQUEUE_CMP_PI and FUTEX_REQUEUE_PI. The existence of two
+different misnamings leaves the reader wondering if we are talking
+about two different operations. Furthermore, the misnamings mean
+that grepping the source for the correct name (which doesn't
+appear at all) won't find this documentation file.
 
-Which is consistent.
+Signed-off-by: Michael Kerrisk <mtk.manpages@gmail.com>
+Reviewed-by: Darren Hart <darren@dvhart.com>
+Link: http://lkml.kernel.org/r/54B9663D.9070000@gmail.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ Documentation/futex-requeue-pi.txt | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-> If softlockup_thresh < rcu_cpu_stall_timeout, it will give soft lockup warning.
-> If softlockup_thresh > rcu_cpu_stall_timeout, it will likely to give RCU CPU stall warning
-> just like above and no give soft lockup warning.
-> 
-> It means that RCU CPU stall console spews leads to soft lockup disabled.
-> Is this reasonable ?
-
-It depends.  You will often see both of them, but they can interfere
-with each other, especially if all these messages are going across a
-serial line.  And sometimes the activity of the one will suppress the
-other, though I would not expect that in your spinlock deadlock case.
-
-							Thanx, Paul
-
-> Thanks!
-> 
-> >>         return 0;
-> >> }
-> >>
-> >> static int __init test_init(void)
-> >> {
-> >>         hello_start();
-> >>
-> >>         printk(KERN_INFO "Module init\n");
-> >>         return 0;
-> >> }
-> >>
-> >> static void __exit test_exit(void)
-> >> {
-> >>         printk(KERN_INFO "Module exit!\n");
-> >> }
-> >>
-> >> module_init(test_init)
-> >> module_exit(test_exit)
-> >> MODULE_LICENSE("GPL");
-> >> //
-> >>
-> >> My kernel version is v3.10.63, and i checked the kernel source code,
-> >>
-> >> update_process_times
-> >> 	-> run_local_timers
-> >> 		-> hrtimer_run_queues
-> >> 			-> __run_hrtimer
-> >> 				-> watchdog_timer_fn
-> >> 					-> is_softlockup
-> >> 					
-> >> 	-> rcu_check_callbacks
-> >> 		-> __rcu_pending
-> >> 			-> check_cpu_stall
-> >> 				-> print_cpu_stall
-> >>
-> >> If softlockup_thresh > rcu_cpu_stall_timeout, print_cpu_stall will print log to serial port.
-> >>
-> >> The 8250 serial driver will call serial8250_console_write => touch_nmi_watchdog() which reset
-> >> watchdog_touch_ts to 0. So the softlockup will not be triggered.
-> >>
-> >> Is this reasonable? Why?
-> > 
-> > Is exactly what reasonable?  ;-)
-> > 
-> > Yes, it is reasonable that your code triggers an RCU CPU stall warning.
-> > 
-> > No, it is not reasonable that the RCU CPU stall warning does not include
-> > a stack trace, and the fix for that bug will be going into the next merge
-> > window.
-> > 
-> > Yes, is is reasonable that varying the softlockup and RCU CPU stall
-> > timeouts might change the behavior.
-> > 
-> > No, your code is not reasonable, except perhaps as a test of the
-> > generation of softlockup and RCU CPU stall warnings.  If you are not
-> > trying to test softlockup and RCU CPU stall warnings, you should of course
-> > not try to acquire any non-recursive exclusive lock that you already hold.
-> > 
-> >> If it is not reasonable, we should adjust the printk loglevel from *KERN_ERR* to *KERN_INFO*
-> >> in print_cpu_stall.
-> > 
-> > Given that RCU CPU stall warnings are supposed to be pointing out errors
-> > elsewhere in the kernel, and in this case are pointing out errors elsewhere
-> > in the kernel, namely in your hello_start() function, it is reasonable
-> > that the RCU CPU stall warnings use the KERN_ERR loglevel.
-> > 
-> > Or am I missing something here?
-> > 
-> > 							Thanx, Paul
-> > 
-> > 
-> > .
-> > 
-> 
-> 
-
+diff --git a/Documentation/futex-requeue-pi.txt b/Documentation/futex-requeue-pi.txt
+index 31b1661..77b36f5 100644
+--- a/Documentation/futex-requeue-pi.txt
++++ b/Documentation/futex-requeue-pi.txt
+@@ -98,7 +98,7 @@ rt_mutex_start_proxy_lock() and rt_mutex_finish_proxy_lock(), which
+ allow the requeue code to acquire an uncontended rt_mutex on behalf
+ of the waiter and to enqueue the waiter on a contended rt_mutex.
+ Two new system calls provide the kernel<->user interface to
+-requeue_pi: FUTEX_WAIT_REQUEUE_PI and FUTEX_REQUEUE_CMP_PI.
++requeue_pi: FUTEX_WAIT_REQUEUE_PI and FUTEX_CMP_REQUEUE_PI.
+ 
+ FUTEX_WAIT_REQUEUE_PI is called by the waiter (pthread_cond_wait()
+ and pthread_cond_timedwait()) to block on the initial futex and wait
+@@ -107,7 +107,7 @@ result of a high-speed collision between futex_wait() and
+ futex_lock_pi(), with some extra logic to check for the additional
+ wake-up scenarios.
+ 
+-FUTEX_REQUEUE_CMP_PI is called by the waker
++FUTEX_CMP_REQUEUE_PI is called by the waker
+ (pthread_cond_broadcast() and pthread_cond_signal()) to requeue and
+ possibly wake the waiting tasks. Internally, this system call is
+ still handled by futex_requeue (by passing requeue_pi=1).  Before
+@@ -120,12 +120,12 @@ task as a waiter on the underlying rt_mutex.  It is possible that
+ the lock can be acquired at this stage as well, if so, the next
+ waiter is woken to finish the acquisition of the lock.
+ 
+-FUTEX_REQUEUE_PI accepts nr_wake and nr_requeue as arguments, but
++FUTEX_CMP_REQUEUE_PI accepts nr_wake and nr_requeue as arguments, but
+ their sum is all that really matters.  futex_requeue() will wake or
+ requeue up to nr_wake + nr_requeue tasks.  It will wake only as many
+ tasks as it can acquire the lock for, which in the majority of cases
+ should be 0 as good programming practice dictates that the caller of
+ either pthread_cond_broadcast() or pthread_cond_signal() acquire the
+-mutex prior to making the call. FUTEX_REQUEUE_PI requires that
++mutex prior to making the call. FUTEX_CMP_REQUEUE_PI requires that
+ nr_wake=1.  nr_requeue should be INT_MAX for broadcast and 0 for
+ signal.
