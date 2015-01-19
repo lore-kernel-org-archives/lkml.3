@@ -1,92 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751726AbbASFJO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 00:09:14 -0500
-Received: from icp-osb-irony-out8.external.iinet.net.au ([203.59.1.225]:29305
-	"EHLO icp-osb-irony-out8.external.iinet.net.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750701AbbASFJM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 00:09:12 -0500
-X-Greylist: delayed 560 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Jan 2015 00:09:10 EST
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Aq8CAByOvFSVhxBY/2dsb2JhbAANToc2yAGBJgKBWgEBAQEBhQoBAQQjVQEQCw0LAgIFFgsCAgkDAgECAUUGAQwBBQIBAYgTAboxcJNMAQEBAQEBAQEBAQEBAQEBAQEBGoEhjlgHgmiBQQEElCiKDYNViBCEIl2CQwEBAQ
-X-IronPort-AV: E=Sophos;i="5.09,424,1418054400"; 
-   d="scan'208";a="891150811"
-Message-ID: <54BC8F40.1080405@westnet.com.au>
-Date: Mon, 19 Jan 2015 14:59:44 +1000
-From: Greg Ungerer <gregungerer@westnet.com.au>
+	id S1751248AbbASFFb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 00:05:31 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:43616 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750713AbbASFFa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 00:05:30 -0500
+Message-ID: <54BC9095.9080506@suse.com>
+Date: Mon, 19 Jan 2015 06:05:25 +0100
+From: Juergen Gross <jgross@suse.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Yijing Wang <wangyijing@huawei.com>, Yinghai Lu <yinghai@kernel.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@linux.intel.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, linux-alpha@vger.kernel.org,
-        linux-m68k@vger.kernel.org, Liviu Dudau <liviu@dudau.co.uk>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "sparclinux@vger.kernel.org" <sparclinux@vger.kernel.org>
-Subject: Re: [PATCH 01/28] PCI: Rip out pci_bus_add_devices() from pci_scan_bus()
-References: <1421372666-12288-1-git-send-email-wangyijing@huawei.com>	<1421372666-12288-2-git-send-email-wangyijing@huawei.com>	<CAE9FiQUoocCzBKsHL_D4ypH1-DV7XxZMdREX7n=Tz1Kq3kHHeA@mail.gmail.com> <CAE9FiQV97PuDWBZYRxh8R0ADnUFTbo1NO3wAufj97en0yseYSQ@mail.gmail.com> <54BC6611.9020002@huawei.com>
-In-Reply-To: <54BC6611.9020002@huawei.com>
-Content-Type: text/plain; charset=utf-8
+To: hpa@zytor.com, x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
+        linux-kernel@vger.kernel.org
+CC: akataria@vmware.com, jongman.heo@samsung.com
+Subject: Re: [Patch RESEND] x86: don't rely on VMWare emulating PAT MSR correctly
+References: <1421039745-14335-1-git-send-email-jgross@suse.com>
+In-Reply-To: <1421039745-14335-1-git-send-email-jgross@suse.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/01/15 12:04, Yijing Wang wrote:
-> On 2015/1/17 7:16, Yinghai Lu wrote:
->> On Fri, Jan 16, 2015 at 3:15 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->>> On Thu, Jan 15, 2015 at 5:43 PM, Yijing Wang <wangyijing@huawei.com> wrote:
->>>> Pci_bus_add_devices() should not be placed in pci_scan_bus().
->>>> Now pci device will be added to driver core once its
->>>> creation. All things left in pci_bus_add_devices() are
->>>> driver attachment and other trivial sysfs things.
->>>> Pci_scan_bus() should be the function responsible for
->>>> scanning PCI devices, not including driver attachment.
->>>> Other, some callers(m68k,unicore32,alpha) of pci_scan_bus()
->>>> will call pci_bus_size_bridges() and pci_bus_assign_resources()
->>>> after pci_scan_bus().
->>>>
->>>> E.g.
->>>> In m68k
->>>> mcf_pci_init()
->>>>         pci_scan_bus()
->>>>                 ...
->>>>                 pci_bus_add_devices() --- try to attach driver
->>>>         pci_fixup_irqs()
->>>>         pci_bus_size_bridges()
->>>>         pci_bus_assign_resources()
->>>>
->>>> It is not correct, resources should be assigned correctly
->>>> before attaching driver.
->>>
->> No, for booting path, at that time pci drivers are *NOT* loaded yet.
-> 
-> Hi Yinghai, I knew code flow here would not cause problems, sorry the log
-> confused you, I will refresh it. But I think pci_scan_bus()/pci_scan_root_bus()
-> which could only be used during system boot up(before module_init) make
-> the pci scan logic obscure. Because most callers additionally call
-> pci_bus_size_bridges() and pci_bus_assign_resources() later,
-> so rip out pci_bus_add_devices() from pci_scan_bus()/pci_scan_root_bus()
-> make code have better readability.
+PING!
 
-I agree that ordering seems odd. I recall there was a reason I had
-to put it in that order (at that time - which is a few years back now).
-I can't remember exactly now, but it was something like bridges
-didn't get resourced properly without a pci scan first.
+The patch repairs a bug with VMWARE, which has been reported by several
+users. All of them have confirmed the patch is working. And VMWARE has
+acked the patch. What else do you need to take it? It is available for
+over a month now!
 
-Regards
-Greg
+Juergen
 
-
+On 01/12/2015 06:15 AM, Juergen Gross wrote:
+> VMWare seems not to emulate the PAT MSR correctly: reaeding
+> MSR_IA32_CR_PAT returns 0 even after writing another value to it.
+>
+> Detect this bug and don't use the read value if it is 0.
+>
+> Commit bd809af16e3ab1f8d55b3e2928c47c67e2a865d2 ("x86: Enable PAT to
+> use cache mode translation tables") triggers this VMWare bug when the
+> kernel is booted as a VMWare guest.
+>
+> Reported-by: Jongman Heo <jongman.heo@samsung.com>
+> Signed-off-by: Juergen Gross <jgross@suse.com>
+> Tested-by: Jongman Heo <jongman.heo@samsung.com>
+> Acked-by: Alok N Kataria <akataria@vmware.com>
+> ---
+>   arch/x86/mm/pat.c | 7 ++++++-
+>   1 file changed, 6 insertions(+), 1 deletion(-)
+>
+> diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
+> index edf299c..7ac6869 100644
+> --- a/arch/x86/mm/pat.c
+> +++ b/arch/x86/mm/pat.c
+> @@ -234,8 +234,13 @@ void pat_init(void)
+>   	      PAT(4, WB) | PAT(5, WC) | PAT(6, UC_MINUS) | PAT(7, UC);
+>
+>   	/* Boot CPU check */
+> -	if (!boot_pat_state)
+> +	if (!boot_pat_state) {
+>   		rdmsrl(MSR_IA32_CR_PAT, boot_pat_state);
+> +		if (!boot_pat_state) {
+> +			pat_disable("PAT read returns always zero, disabled.");
+> +			return;
+> +		}
+> +	}
+>
+>   	wrmsrl(MSR_IA32_CR_PAT, pat);
+>
+>
 
