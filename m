@@ -1,78 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751799AbbASTjV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 14:39:21 -0500
-Received: from sauhun.de ([89.238.76.85]:59121 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751448AbbASTjU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 14:39:20 -0500
-Date: Mon, 19 Jan 2015 20:39:15 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Julia Lawall <julia.lawall@lip6.fr>,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        Jean Delvare <jdelvare@suse.de>
-Subject: Re: [PATCH] i2c: drop ancient protection against sysfs refcounting
- issues
-Message-ID: <20150119193915.GA9969@katana>
-References: <1421693756-12917-1-git-send-email-wsa@the-dreams.de>
- <20150119191210.GE26493@n2100.arm.linux.org.uk>
+	id S1752071AbbASTjq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 14:39:46 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:55049 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751954AbbASTjp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 14:39:45 -0500
+Date: Mon, 19 Jan 2015 11:39:43 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, arm@kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: Re: [GIT PULL] at91: drivers for 3.20 #1
+Message-ID: <20150119193943.GH16883@quad.lixom.net>
+References: <1421341350-13936-1-git-send-email-nicolas.ferre@atmel.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Kj7319i9nmIyA2yE"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150119191210.GE26493@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1421341350-13936-1-git-send-email-nicolas.ferre@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jan 15, 2015 at 06:02:30PM +0100, Nicolas Ferre wrote:
+> Arnd, Olof, Kevin,
+> 
+> This is a pull-request about AT91 drivers for 3.20. We took the USB gadget part
+> with us as it depends on the Matrix syscon part. There is no dependency anyway.
+> 
+> Thanks, best regards,
+> 
+> The following changes since commit eaa27f34e91a14cdceed26ed6c6793ec1d186115:
+> 
+>   linux 3.19-rc4 (2015-01-11 12:44:53 -0800)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git tags/at91-drivers
+> 
+> for you to fetch changes up to a5514d142e7f5cff8e02a6fb4cfcb3e301c0eb59:
+> 
+>   usb: gadget: at91_udc: Allocate udc instance (2015-01-15 14:53:23 +0100)
+> 
+> ----------------------------------------------------------------
+> First batch of drivers changes for 3.20:
+> - Internal AHB bus matrix (Matrix) and Static Memory Controller (SMC) are now
+>   mfd/syscon drivers.
+> - USB gadget full speed (at91_udc): fixes, simplification and multi-platform awareness
+>   DT enhancement.
+> 
+> ----------------------------------------------------------------
+> Boris Brezillon (12):
+>       mfd: syscon: Add atmel-matrix registers definition
+>       mfd: syscon: Add Atmel Matrix bus DT binding documentation
+>       mfd: syscon: Add atmel-smc registers definition
+>       mfd: syscon: Add Atmel SMC binding doc
+>       usb: gadget: at91_udc: Fix clock names
+>       usb: gadget: at91_udc: Drop uclk clock
+>       usb: gadget: at91_udc: Document DT clocks and clock-names property
+>       usb: gadget: at91_udc: Remove non-DT handling code
+>       usb: gadget: at91_udc: Simplify probe and remove functions
+>       usb: gadget: at91_udc: Rework for multi-platform kernel support
+>       usb: gadget: at91_udc: Update DT binding documentation
+>       usb: gadget: at91_udc: Allocate udc instance
 
---Kj7319i9nmIyA2yE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Mon, Jan 19, 2015 at 07:12:10PM +0000, Russell King - ARM Linux wrote:
-> On Mon, Jan 19, 2015 at 07:55:56PM +0100, Wolfram Sang wrote:
-> > Back in the days, sysfs seemed to have refcounting issues and subsystems
-> > needed a completion to be safe. This is not the case anymore, so I2C can
-> > get rid of this code. There is noone else besides I2C doing something
-> > like this currently (checked with the attached coccinelle script which
-> > checks if a release function exists and if it contains a completion).
->=20
-> Have you validated this with DEBUG_KOBJECT_RELEASE enabled?
-
-You saved me, thank you a lot for this pointer! Patch discarded.
-
-I assume other subsystems also moved away from 'struct device_type' for
-the release function as well; but this is just a guess for now and I'll
-call it a day for today.
+Merged into next/drivers. Thanks.
 
 
---Kj7319i9nmIyA2yE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUvV1iAAoJEBQN5MwUoCm27koP/jPOmSfj8D5Vt7pOnePBcVts
-w0FiFCQ7XSQufLhPQ3CXTjWRGriI5YNnxBfwCZygwglKQybEinzTW7H+unFlJmrd
-ZRRDJ1gOKjGcU2SktuwIW5Ljs695M52oTDTP1IwXnPFndv27ZhkN0gRCh04v2yJl
-rKuC7aGZEdvZLqHR8FIbvmNrkk5kALwav2tVKRG8jw1GK+3me2qsblnAOHhfbaUx
-1wiuQJ98pIZV0EqESLkn0M/99r5iGO51Yt8GPNkR0HoTP8uEWQi5yLPIhPWstZz6
-jCF9d9jGBy5FIBvii+b0etdxqforhls3YdK0W0DupkYtcaDqXTkwt1KrWjCerEYC
-CWBsfgAnN5oNAqvG9inleH5TK/gHba8+WLFIpDJ17Ok0137++Qsi3TdgMuuXUQni
-Y1XD9Srt3vvmEi4zQJi6WaJoxYII1QACKIZBtv3ak+gRVw+TgCpMVLaufYiDP49b
-jmH1I/jZA39wQOd+8fx63pkxwTQEAx1DsBhiTGqRKSAMYMA/zZ6hTeEMbzTDVFm3
-jf0NKx2nwjzwlb4cH17y/CfDxgRYEHwomwkqzgR0V0AYCONy+4xmCJNjQd4inV0n
-/hRjiyqIyNRO2lFmtmByuK5xN2hI7UdpL6N1jrKbvaLBFyU84ZD8Kwvw5YAYNzvb
-bIszLmjrWtbH4Rq4ARDz
-=IGop
------END PGP SIGNATURE-----
-
---Kj7319i9nmIyA2yE--
+-Olof
