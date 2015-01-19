@@ -1,152 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752396AbbASUNF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 15:13:05 -0500
-Received: from gloria.sntech.de ([95.129.55.99]:56691 "EHLO gloria.sntech.de"
+	id S1751954AbbASUTe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 15:19:34 -0500
+Received: from mail.sig21.net ([80.244.240.74]:40321 "EHLO mail.sig21.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751341AbbASUND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 15:13:03 -0500
-From: Heiko =?ISO-8859-1?Q?St=FCbner?= <heiko@sntech.de>
-To: Romain Perier <romain.perier@gmail.com>
-Cc: peppe.cavallaro@st.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-rockchip@lists.infradead.org,
-        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
-        roger.chen@rock-chips.com
-Subject: Re: [PATCH v1 3/4] net: stmmac: dwmac-rk: Use standard devicetree property for phy regulator
-Date: Mon, 19 Jan 2015 21:12:44 +0100
-Message-ID: <4603622.ltPA9iTIiK@phil>
-User-Agent: KMail/4.14.2 (Linux/3.16.0-4-amd64; KDE/4.14.1; x86_64; ; )
-In-Reply-To: <1421690889-11901-4-git-send-email-romain.perier@gmail.com>
-References: <1421690889-11901-1-git-send-email-romain.perier@gmail.com> <1421690889-11901-4-git-send-email-romain.perier@gmail.com>
+	id S1751396AbbASUTc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 15:19:32 -0500
+Date: Mon, 19 Jan 2015 21:19:06 +0100
+From: Johannes Stezenbach <js@sig21.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: arnd@arndb.de, ebiederm@xmission.com, gnomes@lxorguk.ukuu.org.uk,
+        teg@jklm.no, jkosina@suse.cz, luto@amacapital.net,
+        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
+        daniel@zonque.org, dh.herrmann@gmail.com, tixxdz@opendz.org
+Subject: Re: [PATCH v3 00/13] Add kdbus implementation
+Message-ID: <20150119201906.GA337@sig21.net>
+References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>
+ <20150119180642.GA27957@sig21.net>
+ <20150119183806.GA8479@kroah.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150119183806.GA8479@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Spam-21-Score: -2.9 (--)
+X-Spam-21-Report: No, score=-2.9 required=8.0 tests=ALL_TRUSTED=-1,BAYES_00=-1.9 autolearn=ham
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 19. Januar 2015, 18:08:08 schrieb Romain Perier:
-> Currently, dwmac-rk uses a custom propety "phy_regulator" to get the name of
-> the right regulator to use to power on or power off the phy. This commit
-> converts the driver to use phy-supply devicetree property and the
-> corresponding API, it cleans the code a bit and make it simpler to
-> maintain.
-> 
-> Signed-off-by: Romain Perier <romain.perier@gmail.com>
+On Tue, Jan 20, 2015 at 02:38:06AM +0800, Greg Kroah-Hartman wrote:
+> Yes, I do agree, there are lots of existing ipc solutions today that
+> kdbus is not designed for, nor would it be good to use it for.  The
+> majority of them being IPC that crosses the network layer, as there are
+> lots of good solutions today for that problem.  That being said, I do
+> know one research group that has kdbus working cross-network, just "to
+> try it out", but I don't know what ever came of it.
+...
+> Everyone uses D-Bus today for everything on their system, so by
+> replacing the underlying library with kdbus, they will continue to use
+> it for everything without having to change any application or library
+> code at all.
 
-I don't see updated binding documentation in here.
+These two statements somehow contradict. From my admittedly very
+limited experience, I never used D-Bus because it did not
+fit my usage scenarios: I never needed a bus, only point-to-point
+links like pipes or sockets.
 
-Secondly I think patch4 which changes the property in the evb-rk808 could be 
-in here. The change is simple enough and would keep it bisectable without 
-needing transistional patches.
+Let me rephrase my previous, lengthy mail: Will kdbus only
+support the same IPC model as D-Bus (just with higher
+performance and some bells and whistles), or will it
+be useful for other scenarios?  Like, can two programs
+use it to communicate directly without the need of
+any daemon?  (And if so, would there be any advantage
+compared to traditional UNIX IPC methods?)
 
-And there is the one warning down below.
+You were comparing kdbus and Binder.  Why?
+So far my impression is that D-Bus and Binder are
+completely seperate things, not just because of
+the thread vs. event-loop programming model but
+also because Binder is not a bus (i.e. no multicast messaging).
 
+> Hope this helps,
 
-> ---
->  drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c | 61
-> ++++++++------------------ 1 file changed, 19 insertions(+), 42
-> deletions(-)
-> 
-> diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c
-> b/drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c index 06e1637..8a8091c
-> 100644
-> --- a/drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c
-> +++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c
-> @@ -32,7 +32,7 @@
->  struct rk_priv_data {
->  	struct platform_device *pdev;
->  	int phy_iface;
-> -	char regulator[32];
-> +	struct regulator *regulator;
-> 
->  	bool clk_enabled;
->  	bool clock_input;
-> @@ -287,46 +287,25 @@ static int gmac_clk_enable(struct rk_priv_data
-> *bsp_priv, bool enable)
-> 
->  static int phy_power_on(struct rk_priv_data *bsp_priv, bool enable)
->  {
-> -	struct regulator *ldo;
-> -	char *ldostr = bsp_priv->regulator;
-> +	struct regulator *ldo = bsp_priv->regulator;
->  	int ret;
->  	struct device *dev = &bsp_priv->pdev->dev;
-> 
-> -	if (!ldostr) {
-> -		dev_err(dev, "%s: no ldo found\n", __func__);
-> +	if (!ldo) {
-> +		dev_err(dev, "%s: no regulator found\n", __func__);
->  		return -1;
->  	}
-> 
-> -	ldo = regulator_get(NULL, ldostr);
-> -	if (!ldo) {
-> -		dev_err(dev, "\n%s get ldo %s failed\n", __func__, ldostr);
-> +	if (enable) {
-> +		ret = regulator_enable(ldo);
-> +		if (ret)
-> +			dev_err(dev, "%s: fail to enable phy-supply\n",
-> +				__func__);
->  	} else {
-> -		if (enable) {
-> -			if (!regulator_is_enabled(ldo)) {
-> -				ret = regulator_enable(ldo);
-> -				if (ret != 0)
-> -					dev_err(dev, "%s: fail to enable %s\n",
-> -						__func__, ldostr);
-> -				else
-> -					dev_info(dev, "turn on ldo done.\n");
-> -			} else {
-> -				dev_warn(dev, "%s is enabled before enable",
-> -					 ldostr);
-> -			}
-> -		} else {
-> -			if (regulator_is_enabled(ldo)) {
-> -				ret = regulator_disable(ldo);
-> -				if (ret != 0)
-> -					dev_err(dev, "%s: fail to disable %s\n",
-> -						__func__, ldostr);
-> -				else
-> -					dev_info(dev, "turn off ldo done.\n");
-> -			} else {
-> -				dev_warn(dev, "%s is disabled before disable",
-> -					 ldostr);
-> -			}
-> -		}
-> -		regulator_put(ldo);
-> +		ret = regulator_disable(ldo);
-> +		if (ret)
-> +			dev_err(dev, "%s: fail to disable phy-supply\n",
-> +				__func__);
->  	}
-> 
->  	return 0;
-> @@ -346,14 +325,12 @@ static void *rk_gmac_setup(struct platform_device
-> *pdev)
-> 
->  	bsp_priv->phy_iface = of_get_phy_mode(dev->of_node);
-> 
-> -	ret = of_property_read_string(dev->of_node, "phy_regulator", &strings);
-> -	if (ret) {
-> -		dev_warn(dev, "%s: Can not read property: phy_regulator.\n",
-> -			 __func__);
-> -	} else {
-> -		dev_info(dev, "%s: PHY power controlled by regulator(%s).\n",
-> -			 __func__, strings);
-> -		strcpy(bsp_priv->regulator, strings);
-> +	bsp_priv->regulator = devm_regulator_get_optional(dev, "phy");
-> +	if (IS_ERR(bsp_priv->regulator)) {
-> +		if (PTR_ERR(bsp_priv->regulator) == -EPROBE_DEFER)
-> +			return -EPROBE_DEFER;
-
-this should be return ERR_PTR(-EPROBE_DEFER) and produces a warning in its 
-current state
+Well, it made your intentions a bit clearer, but it does
+not help to sell kdbus to me, sorry ;-/
 
 
-> +		dev_err(dev, "no regulator found\n");
-> +		bsp_priv->regulator = NULL;
->  	}
-> 
->  	ret = of_property_read_string(dev->of_node, "clock_in_out", &strings);
-
+Thanks,
+Johannes
