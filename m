@@ -1,121 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752118AbbAST3o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 14:29:44 -0500
-Received: from smtp05.smtpout.orange.fr ([80.12.242.127]:18544 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751596AbbAST3n (ORCPT
+	id S1751791AbbASTfq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 14:35:46 -0500
+Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:43381 "EHLO
+	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751267AbbASTfo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 14:29:43 -0500
-X-ME-Helo: beldin
-X-ME-Date: Mon, 19 Jan 2015 20:29:41 +0100
-X-ME-IP: 109.222.126.211
-From: Robert Jarzmik <robert.jarzmik@free.fr>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Daniel Mack <daniel@zonque.org>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 1/3] dt-bindings: mfd: add lubbock-io binding
-References: <1421406010-14851-1-git-send-email-robert.jarzmik@free.fr>
-	<20150119083533.GF21886@x1>
-X-URL: http://belgarath.falguerolles.org/
-Date: Mon, 19 Jan 2015 20:29:40 +0100
-In-Reply-To: <20150119083533.GF21886@x1> (Lee Jones's message of "Mon, 19 Jan
-	2015 08:35:33 +0000")
-Message-ID: <87lhkyh8m3.fsf@free.fr>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.92 (gnu/linux)
+	Mon, 19 Jan 2015 14:35:44 -0500
+Message-ID: <54BD5C89.1000205@de.ibm.com>
+Date: Mon, 19 Jan 2015 20:35:37 +0100
+From: Christian Borntraeger <borntraeger@de.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: kbuild test robot <fengguang.wu@intel.com>
+CC: kbuild-all@01.org, Paolo Bonzini <pbonzini@redhat.com>,
+        Gleb Natapov <gleb@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [kvm:master 1/1] arch/x86/kvm/../../../virt/kvm/kvm_main.c:2062:25:
+ sparse: incorrect type in assignment (different address spaces)
+References: <201501192223.rdrTzdYB%fengguang.wu@intel.com>
+In-Reply-To: <201501192223.rdrTzdYB%fengguang.wu@intel.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15011919-0029-0000-0000-000002DE6F93
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lee Jones <lee.jones@linaro.org> writes:
+Am 19.01.2015 um 15:33 schrieb kbuild test robot:
+> tree:   git://git.kernel.org/pub/scm/virt/kvm/kvm.git master
+> head:   cdef511985374dd042a40bb32c1c346c2662c9dc
+> commit: cdef511985374dd042a40bb32c1c346c2662c9dc [1/1] KVM: fix sparse warning in include/trace/events/kvm.h
+> reproduce:
+>   # apt-get install sparse
+>   git checkout cdef511985374dd042a40bb32c1c346c2662c9dc
+>   make ARCH=x86_64 allmodconfig
+>   make C=1 CF=-D__CHECK_ENDIAN__
+> 
+> 
+> sparse warnings: (new ones prefixed by >>)
 
-> On Fri, 16 Jan 2015, Robert Jarzmik wrote:
->
->> Add a binding for lubbock motherboard IO board.
->> 
->> Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
->> ---
->>  .../devicetree/bindings/mfd/lubbock-io.txt         | 26 ++++++++++++++++++++++
->>  1 file changed, 26 insertions(+)
->>  create mode 100644 Documentation/devicetree/bindings/mfd/lubbock-io.txt
->> 
->> diff --git a/Documentation/devicetree/bindings/mfd/lubbock-io.txt b/Documentation/devicetree/bindings/mfd/lubbock-io.txt
->> new file mode 100644
->> index 0000000..33c9e21
->> --- /dev/null
->> +++ b/Documentation/devicetree/bindings/mfd/lubbock-io.txt
->> @@ -0,0 +1,26 @@
->> +Intel's pxa255 system development platform motherboard.
->
-> s/pxa25/PXA25/
-Ok.
->
-> "system development platform motherboard" doesn't quite sit right with me.
->
-> How about "Intel Xscale PXA255 development platform (Lubbock)"?
-OK.
+FWIW,
 
->
->> +This is the motherboard, or IO board, of the pxa25x development system,
->> +supporting a lubbock pxa25x SoC board.
->
-> Again, this sounds weird.
-Would it sound better with :
-  This regroups all the CPLDs on the Lubbock motherboard, providing interrupt
-  muxing, leds handling, ...
->
->> +Required properties:
->> +  - compatible : One of the following chip-specific strings:
->> +        "intel,lubbock-io"
->
-> An odd thing to say with only one entry.
-Right, a simple "should be" would fit better.
->
->> +  - interrupts : The first interrupt is the line the /IRQ signal the IO board
->> +                 multiplex is connected to. The only known case is GPIO0 on the
->> +                 pxa25x SoC.
->
-> Can you get someone to help you re-word this into a more fluid
-> sentence?
-Aouch, how about this :
-interrupts : The first interrupt is the SoC input interrupt connected to the
-             lubbock IO board interrupt multiplexer output. The only known
-             working configuration is GPIO0 on the pxa25x SoC.
+looks like my previous fix re-enabled sparse for that code. It bailed out previously due to the 
+".include/trace/events/kvm.h:163:1: error: directive in argument list
+include/trace/events/kvm.h:167:1: error: directive in argument list
+include/trace/events/kvm.h:169:1: error: directive in argument list"
+errors.
 
->
->> +Optional properties:
->> +  - interrupts : The second optional interrupt is the base of the interrupts
->> +                 multiplexed by the lubbock motherboard. If unspecified, the
->> +                 range is fully dynamic, and the irqdomain will generate its
->> +                 interrupt base on the fly.
->> +
->> +Example:
->> +
->> +mb: lubbock-mb@0 {
->> +	compatible = "intel,lubbock-io";
->> +	interrupts = <0 IRQ_TYPE_EDGE_FALLING 400 IRQ_TYPE_NONE>;
->> +	#interrupt-cells = <2>;
->> +        interrupt-parent = <&pxairq>;
->
-> Whitespace error.
-Right.
+Since that was fixed with commit: cdef511985374dd042a40bb32c1c346c2662c9dc [1/1] KVM: fix sparse warning in include/trace/events/kvm.h, we now we have more sparse errors than before and still its an improvement :-)
 
-> I'm guessing mb means motherboard?  I think it's unusual for a
-> motherboard to have it's own driver.  Usually we provide drivers for
-> the individual components/peripherals situated on the board.
-Yes, mb for motherboard. Well, this driver is actually for the CPLDs on the
-motherboard.  Would "lubbock-cplds" be a better choice ?
+Christian
 
-Cheers.
+> 
+>>> arch/x86/kvm/../../../virt/kvm/kvm_main.c:2062:25: sparse: incorrect type in assignment (different address spaces)
+>    arch/x86/kvm/../../../virt/kvm/kvm_main.c:2062:25:    expected struct pid *volatile <noident>
+>    arch/x86/kvm/../../../virt/kvm/kvm_main.c:2062:25:    got struct pid [noderef] <asn:4>*<noident>
+>>> arch/x86/kvm/../../../virt/kvm/kvm_main.c:741:9: sparse: incorrect type in assignment (different address spaces)
+>    arch/x86/kvm/../../../virt/kvm/kvm_main.c:741:9:    expected struct kvm_memslots *volatile <noident>
+>    arch/x86/kvm/../../../virt/kvm/kvm_main.c:741:9:    got struct kvm_memslots [noderef] <asn:4>*<noident>
+>    include/linux/kvm_host.h:482:16: sparse: incompatible types in comparison expression (different address spaces)
+>    include/linux/kvm_host.h:482:16: sparse: incompatible types in comparison expression (different address spaces)
+>    include/linux/kvm_host.h:482:16: sparse: incompatible types in comparison expression (different address spaces)
+>    include/linux/kvm_host.h:482:16: sparse: incompatible types in comparison expression (different address spaces)
+>    arch/x86/kvm/../../../virt/kvm/kvm_main.c:1790:15: sparse: incompatible types in comparison expression (different address spaces)
+>    arch/x86/kvm/../../../virt/kvm/kvm_main.c:2957:15: sparse: incompatible types in comparison expression (different address spaces)
+>    arch/x86/kvm/../../../virt/kvm/kvm_main.c:2974:15: sparse: incompatible types in comparison expression (different address spaces)
+>    arch/x86/kvm/../../../virt/kvm/kvm_main.c:3024:15: sparse: incompatible types in comparison expression (different address spaces)
+> --
+>>> arch/x86/kvm/../../../virt/kvm/irqchip.c:125:18: sparse: incorrect type in argument 1 (different address spaces)
+>    arch/x86/kvm/../../../virt/kvm/irqchip.c:125:18:    expected void const *<noident>
+>    arch/x86/kvm/../../../virt/kvm/irqchip.c:125:18:    got struct kvm_irq_routing_table [noderef] <asn:4>*irq_routing
+>>> arch/x86/kvm/../../../virt/kvm/irqchip.c:201:13: sparse: incorrect type in assignment (different address spaces)
+>    arch/x86/kvm/../../../virt/kvm/irqchip.c:201:13:    expected struct kvm_irq_routing_table *old
+>    arch/x86/kvm/../../../virt/kvm/irqchip.c:201:13:    got struct kvm_irq_routing_table [noderef] <asn:4>*irq_routing
+> --
+>>> arch/x86/kvm/x86.c:495:5: sparse: symbol 'kvm_read_nested_guest_page' was not declared. Should it be static?
+>>> arch/x86/kvm/x86.c:646:5: sparse: symbol '__kvm_set_xcr' was not declared. Should it be static?
+>>> arch/x86/kvm/x86.c:1183:15: sparse: symbol 'max_tsc_khz' was not declared. Should it be static?
+>>> arch/x86/kvm/x86.c:1237:6: sparse: symbol 'kvm_track_tsc_matching' was not declared. Should it be static?
+>>> arch/x86/kvm/x86.c:1898:38: sparse: incorrect type in argument 1 (different address spaces)
+>    arch/x86/kvm/x86.c:1898:38:    expected void const [noderef] <asn:1>*<noident>
+>    arch/x86/kvm/x86.c:1898:38:    got unsigned char [usertype] *
+>    include/linux/kvm_host.h:482:16: sparse: incompatible types in comparison expression (different address spaces)
+>    include/linux/kvm_host.h:482:16: sparse: incompatible types in comparison expression (different address spaces)
+>    arch/x86/kvm/x86.c:7431:15: sparse: incompatible types in comparison expression (different address spaces)
+> 
+> Please review and possibly fold the followup patch.
+> 
+> vim +2062 arch/x86/kvm/../../../virt/kvm/kvm_main.c
+> 
+> 2122ff5e virt/kvm/kvm_main.c    Avi Kivity            2010-05-13  2046  		return kvm_arch_vcpu_ioctl(filp, ioctl, arg);
+> 2122ff5e virt/kvm/kvm_main.c    Avi Kivity            2010-05-13  2047  #endif
+> 2122ff5e virt/kvm/kvm_main.c    Avi Kivity            2010-05-13  2048  
+> 2122ff5e virt/kvm/kvm_main.c    Avi Kivity            2010-05-13  2049  
+> 9fc77441 virt/kvm/kvm_main.c    Michael S. Tsirkin    2012-09-16  2050  	r = vcpu_load(vcpu);
+> 9fc77441 virt/kvm/kvm_main.c    Michael S. Tsirkin    2012-09-16  2051  	if (r)
+> 9fc77441 virt/kvm/kvm_main.c    Michael S. Tsirkin    2012-09-16  2052  		return r;
+> 6aa8b732 drivers/kvm/kvm_main.c Avi Kivity            2006-12-10  2053  	switch (ioctl) {
+> 9a2bb7f4 drivers/kvm/kvm_main.c Avi Kivity            2007-02-22  2054  	case KVM_RUN:
+> f0fe5108 drivers/kvm/kvm_main.c Avi Kivity            2007-03-07  2055  		r = -EINVAL;
+> f0fe5108 drivers/kvm/kvm_main.c Avi Kivity            2007-03-07  2056  		if (arg)
+> f0fe5108 drivers/kvm/kvm_main.c Avi Kivity            2007-03-07  2057  			goto out;
+> 7a72f7a1 virt/kvm/kvm_main.c    Christian Borntraeger 2014-08-05  2058  		if (unlikely(vcpu->pid != current->pids[PIDTYPE_PID].pid)) {
+> 7a72f7a1 virt/kvm/kvm_main.c    Christian Borntraeger 2014-08-05  2059  			/* The thread running this VCPU changed. */
+> 7a72f7a1 virt/kvm/kvm_main.c    Christian Borntraeger 2014-08-05  2060  			struct pid *oldpid = vcpu->pid;
+> 7a72f7a1 virt/kvm/kvm_main.c    Christian Borntraeger 2014-08-05  2061  			struct pid *newpid = get_task_pid(current, PIDTYPE_PID);
+> 7a72f7a1 virt/kvm/kvm_main.c    Christian Borntraeger 2014-08-05 @2062  			rcu_assign_pointer(vcpu->pid, newpid);
+> 7a72f7a1 virt/kvm/kvm_main.c    Christian Borntraeger 2014-08-05  2063  			if (oldpid)
+> 7a72f7a1 virt/kvm/kvm_main.c    Christian Borntraeger 2014-08-05  2064  				synchronize_rcu();
+> 7a72f7a1 virt/kvm/kvm_main.c    Christian Borntraeger 2014-08-05  2065  			put_pid(oldpid);
+> 7a72f7a1 virt/kvm/kvm_main.c    Christian Borntraeger 2014-08-05  2066  		}
+> b6c7a5dc drivers/kvm/kvm_main.c Hollis Blanchard      2007-11-01  2067  		r = kvm_arch_vcpu_ioctl_run(vcpu, vcpu->run);
+> 64be5007 virt/kvm/kvm_main.c    Gleb Natapov          2010-10-24  2068  		trace_kvm_userspace_exit(vcpu->run->exit_reason, r);
+> 6aa8b732 drivers/kvm/kvm_main.c Avi Kivity            2006-12-10  2069  		break;
+> 6aa8b732 drivers/kvm/kvm_main.c Avi Kivity            2006-12-10  2070  	case KVM_GET_REGS: {
+> 
+> :::::: The code at line 2062 was first introduced by commit
+> :::::: 7a72f7a140bfd3a5dae73088947010bfdbcf6a40 KVM: track pid for VCPU only on KVM_RUN ioctl
+> 
+> :::::: TO: Christian Borntraeger <borntraeger@de.ibm.com>
+> :::::: CC: Paolo Bonzini <pbonzini@redhat.com>
+> 
+> ---
+> 0-DAY kernel test infrastructure                Open Source Technology Center
+> http://lists.01.org/mailman/listinfo/kbuild                 Intel Corporation
+> 
 
--- 
-Robert
+
