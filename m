@@ -1,151 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751595AbbASCiq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 21:38:46 -0500
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.148]:53392 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751335AbbASCip (ORCPT
+	id S1751451AbbASCcz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 21:32:55 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:37812 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751128AbbASCcx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 21:38:45 -0500
-X-Env-Sender: James.Ban.opensource@diasemi.com
-X-Msg-Ref: server-12.tower-179.messagelabs.com!1421635121!37751913!1
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.12.5; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <201501190238.t0J2cH7R013166@krsrvapps-01.diasemi.com>
-From: James Ban <james.ban.opensource@diasemi.com>
-Date: Mon, 19 Jan 2015 11:27:05 +0900
-Subject: [PATCH V2] regulator: da9211: Add gpio control for enable/disable of
- buck
-To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Support Opensource <support.opensource@diasemi.com>,
-        LKML <linux-kernel@vger.kernel.org>
-CC: David Dajun Chen <david.chen@diasemi.com>
+	Sun, 18 Jan 2015 21:32:53 -0500
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID t0J2WHKb032051, This message is accepted by code: ctloc85258
+From: =?utf-8?B?5pWs6ZSQ?= <micky_ching@realsil.com.cn>
+To: Lee Jones <lee.jones@linaro.org>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "rogerable@realtek.com" <rogerable@realtek.com>,
+        =?utf-8?B?546L54Kc?= <wei_wang@realsil.com.cn>
+Subject: Re: [PATCH 08/10] mfd: rtsx: add support for rts524A
+Thread-Topic: [PATCH 08/10] mfd: rtsx: add support for rts524A
+Thread-Index: AQHQMxk67WPZwH/qcEuSOn1+BP1sXJzGM/gA
+Date: Mon, 19 Jan 2015 02:32:16 +0000
+Message-ID: <54BC6CB0.6090402@realsil.com.cn>
+References: <cover.1421320541.git.micky_ching@realsil.com.cn>
+ <007fcaa1986088c968cd4d1627c294a55df73e9f.1421320541.git.micky_ching@realsil.com.cn>
+ <20150118122055.GK3574@x1>
+In-Reply-To: <20150118122055.GK3574@x1>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.29.41.103]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <50452DDF46EBE0499FEE4D720962878E@realsil.com.cn>
 MIME-Version: 1.0
-Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0J2X1YH000303
 
-This is a patch for adding gpio control about enable/disable of buck.
 
-Signed-off-by: James Ban <james.ban.opensource@diasemi.com>
----
-
-This patch is relative to linux-next repository tag next-20150115.
-
-Changes in V2:
-- gpio name from gpio to gpios.
-- add ena_gpio_initialized.
- .../devicetree/bindings/regulator/da9211.txt       |    7 ++++++-
- drivers/regulator/da9211-regulator.c               |   16 ++++++++++++++++
- include/linux/regulator/da9211.h                   |    1 +
- 3 files changed, 23 insertions(+), 1 deletion(-)
-
-diff --git a/Documentation/devicetree/bindings/regulator/da9211.txt b/Documentation/devicetree/bindings/regulator/da9211.txt
-index 240019a..a3b58e8 100644
---- a/Documentation/devicetree/bindings/regulator/da9211.txt
-+++ b/Documentation/devicetree/bindings/regulator/da9211.txt
-@@ -11,6 +11,7 @@ Required properties:
-   BUCKA and BUCKB.
- 
- Optional properties:
-+- buck-enable-platform-gpios: platform gpio for control of BUCKA/BUCKB.
- - Any optional property defined in regulator.txt
- 
- Example 1) DA9211
-@@ -27,6 +28,7 @@ Example 1) DA9211
- 				regulator-max-microvolt = <1570000>;
- 				regulator-min-microamp 	= <2000000>;
- 				regulator-max-microamp 	= <5000000>;
-+				buck-enable-platform-gpios = <&gpio 27 0>;
- 			};
- 			BUCKB {
- 				regulator-name = "VBUCKB";
-@@ -34,11 +36,12 @@ Example 1) DA9211
- 				regulator-max-microvolt = <1570000>;
- 				regulator-min-microamp 	= <2000000>;
- 				regulator-max-microamp 	= <5000000>;
-+				buck-enable-platform-gpios = <&gpio 17 0>;
- 			};
- 		};
- 	};
- 
--Example 2) DA92113
-+Example 2) DA9213
- 	pmic: da9213@68 {
- 		compatible = "dlg,da9213";
- 		reg = <0x68>;
-@@ -51,6 +54,7 @@ Example 2) DA92113
- 				regulator-max-microvolt = <1570000>;
- 				regulator-min-microamp 	= <3000000>;
- 				regulator-max-microamp 	= <6000000>;
-+				buck-enable-platform-gpios = <&gpio 27 0>;
- 			};
- 			BUCKB {
- 				regulator-name = "VBUCKB";
-@@ -58,6 +62,7 @@ Example 2) DA92113
- 				regulator-max-microvolt = <1570000>;
- 				regulator-min-microamp 	= <3000000>;
- 				regulator-max-microamp 	= <6000000>;
-+				buck-enable-platform-gpios = <&gpio 17 0>;
- 			};
- 		};
- 	};
-diff --git a/drivers/regulator/da9211-regulator.c b/drivers/regulator/da9211-regulator.c
-index c78d210..84ab88f 100644
---- a/drivers/regulator/da9211-regulator.c
-+++ b/drivers/regulator/da9211-regulator.c
-@@ -24,6 +24,7 @@
- #include <linux/regmap.h>
- #include <linux/irq.h>
- #include <linux/interrupt.h>
-+#include <linux/of_gpio.h>
- #include <linux/regulator/of_regulator.h>
- #include <linux/regulator/da9211.h>
- #include "da9211-regulator.h"
-@@ -277,6 +278,10 @@ static struct da9211_pdata *da9211_parse_regulators_dt(
- 
- 		pdata->init_data[n] = da9211_matches[i].init_data;
- 
-+		pdata->gpio_ren[n] =
-+			of_get_named_gpio(da9211_matches[i].of_node,
-+				"buck-enable-platform-gpios", 0);
-+
- 		n++;
- 	}
- 
-@@ -366,6 +371,17 @@ static int da9211_regulator_init(struct da9211 *chip)
- 		config.regmap = chip->regmap;
- 		config.of_node = chip->dev->of_node;
- 
-+		if (gpio_is_valid(chip->pdata->gpio_ren[i])) {
-+			config.ena_gpio = chip->pdata->gpio_ren[i];
-+			config.ena_gpio_initialized = true;
-+		} else {
-+			config.ena_gpio = -EINVAL;
-+			config.ena_gpio_initialized = false;
-+			dev_warn(chip->dev,
-+				"gpio control : GPIO[%d] not valid, ignoring\n",
-+				chip->pdata->gpio_ren[i]);
-+		}
-+
- 		chip->rdev[i] = devm_regulator_register(chip->dev,
- 			&da9211_regulators[i], &config);
- 		if (IS_ERR(chip->rdev[i])) {
-diff --git a/include/linux/regulator/da9211.h b/include/linux/regulator/da9211.h
-index 5479394..530b5ea 100644
---- a/include/linux/regulator/da9211.h
-+++ b/include/linux/regulator/da9211.h
-@@ -32,6 +32,7 @@ struct da9211_pdata {
- 	 * 2 : 2 phase 2 buck
- 	 */
- 	int num_buck;
-+	int gpio_ren[DA9211_MAX_REGULATORS];
- 	struct regulator_init_data *init_data[DA9211_MAX_REGULATORS];
- };
- #endif
--- 
-end-of-patch for regulator: da9211: Add gpio control for enable/disable of buck V2
-
+On 01/18/2015 08:20 PM, Lee Jones wrote:
+>> @@ -72,8 +72,10 @@ static void rts5249_fetch_vendor_settings(struct rtsx_pcr *pcr)
+>> >  	rtsx_pci_read_config_dword(pcr, PCR_SETTING_REG1, &reg);
+>> >  	dev_dbg(&(pcr->pci->dev), "Cfg 0x%x: 0x%x\n", PCR_SETTING_REG1, reg);
+>> >  
+>> >-	if (!rtsx_vendor_setting_valid(reg))
+>> >+	if (!rtsx_vendor_setting_valid(reg)) {
+>> >+		pcr_dbg(pcr, "skip fetch vendor setting\n");
+>> >  		return;
+>> >+	}
+> This doesn't have anything to do with adding the new chip.
+>
+> And I'm not sure it's even required.
+>
+Yes, it can be removed, but it is useful for debug,
+help us to know whether config is load from hardware.ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
