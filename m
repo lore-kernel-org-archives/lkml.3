@@ -1,92 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751999AbbASUBW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 15:01:22 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:50051 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751849AbbASUBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 15:01:20 -0500
-Date: Mon, 19 Jan 2015 14:00:05 -0600
-From: Felipe Balbi <balbi@ti.com>
-To: John Youn <John.Youn@synopsys.com>
-CC: "balbi@ti.com" <balbi@ti.com>, Sneeker Yeh <sneeker.yeh@gmail.com>,
-        Paul Zimmerman <paul.zimmerman@synopsys.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Mathias Nyman <mathias.nyman@intel.com>,
-        Grant Likely <grant.likely@linaro.org>, Huang Rui <ray.huang@amd.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        Andy Green <andy.green@linaro.org>,
-        Jassi Brar <jaswinder.singh@linaro.org>,
-        Sneeker Yeh <Sneeker.Yeh@tw.fujitsu.com>
-Subject: Re: [PATCH v2 2/5] usb: dwc3: add revision number DWC3_REVISION_300A
-Message-ID: <20150119200005.GP20386@saruman>
-Reply-To: <balbi@ti.com>
-References: <1421654209-6486-1-git-send-email-Sneeker.Yeh@tw.fujitsu.com>
- <1421654209-6486-3-git-send-email-Sneeker.Yeh@tw.fujitsu.com>
- <20150119144642.GD20386@saruman>
- <2B3535C5ECE8B5419E3ECBE3007729090174814C4D@us01wembx1.internal.synopsys.com>
+	id S1751621AbbASUAI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 15:00:08 -0500
+Received: from smtp-out-179.synserver.de ([212.40.185.179]:1113 "EHLO
+	smtp-out-179.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751473AbbASUAH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 15:00:07 -0500
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: lars@laprican.de
+X-SynServer-PPID: 20306
+Message-ID: <54BD62B5.7050205@metafoo.de>
+Date: Mon, 19 Jan 2015 21:01:57 +0100
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1LW0Rr0Uq98qh6Rv"
-Content-Disposition: inline
-In-Reply-To: <2B3535C5ECE8B5419E3ECBE3007729090174814C4D@us01wembx1.internal.synopsys.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Wolfram Sang <wsa@the-dreams.de>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Jean Delvare <jdelvare@suse.de>, Julia Lawall <julia.lawall@lip6.fr>,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+Subject: Re: [PATCH] i2c: drop ancient protection against sysfs refcounting
+ issues
+References: <1421693756-12917-1-git-send-email-wsa@the-dreams.de>
+In-Reply-To: <1421693756-12917-1-git-send-email-wsa@the-dreams.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---1LW0Rr0Uq98qh6Rv
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 01/19/2015 07:55 PM, Wolfram Sang wrote:
+[...]
+>
+> Let's get rid of this code before really nobody knows/understands
+> anymore what this was for and if it has a subtle use.
 
-On Mon, Jan 19, 2015 at 07:45:31PM +0000, John Youn wrote:
-> > -----Original Message-----
-> > From: Felipe Balbi [mailto:balbi@ti.com]
-> > Sent: Monday, January 19, 2015 6:47 AM
-> > =09
-> > looking at Synopsys Solvnet for this IP, it shows that current version
-> > is 2.90a. There's no 3.00a. Paul, John, is there a 3.00a version of the
-> > DWC USB3 IP ?
->=20
-> Yes there is, but it has not been released yet, thus it's not in Solvnet.
+Getting rid of this is the right thing, cause it's just not how it should be 
+done, but unfortunately it is not as simple as this. The problem is that the 
+adapter is typically embedded in the parent device's state struct. This state 
+struct is typically freed directly after calling i2c_del_adapter(). If there is 
+still something holding a reference to the adapter this will result in a use 
+after free. To do this properly i2c_add_adapter() needs to be changed to 
+i2c_alloc_adapter() that returns a pointer to a newly allocated adapter. 
+i2c_free_adapter() will then only drop a reference to the adapter, but not free 
+any memory. Once the last reference has been removed the memory can then be 
+freed in the release callback.
 
-alright, in that case, Sneeker, can you update this patch to add 2.90a
-and 3.00a macros ?
+The other issue is as long as something has a reference to the adapter they can 
+run operations on the adapter. So freeing the adapter also has to make sure 
+that any further operations that are performed on the adapter do no longer call 
+into the device specific ops, but rather returns -ENODEV, or similar.
 
-Thanks
-
---=20
-balbi
-
---1LW0Rr0Uq98qh6Rv
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUvWJFAAoJEIaOsuA1yqREmfoP/3wjs5yS5hXLHKZAr+OfVNj9
-IefA2Y0gNvM7KDUmT506nJH8A5Q3k5knlmBAkh6tJBezhqlweimc5E36I3uHQaWr
-XDDHrcJMTpTbyf4iRCeDR9BzcJYW2x1WMEZQw+pEj13SplnsSp94MiieBVvkXGHl
-mH6ZMWBJilSlhrCI6fTfqWwLc+/lRa/HRhbLK+IrwGS3/ks/w2lNpuZF9GcG0mCK
-tYGuKhkUMLjATBK1NBChaKTmruEqToWhRtbu4Bho5Gksxxt/fPFMM7Wm8Vpr178d
-w9Cbj8c5B5Ql2yXrRccmW9AaUHOSZHLNxMzQO3wKJtR+1nts/+SkcOMeB+wzrl7Z
-DZltoDNVgO18LcVbIhRqJtprWZ4+4jDz77e2wlF4TL1Z3OgFB/MN8fvYY4cZuM1B
-SbgZIVlvM9PnVnLkBsQP9QuFPdAGTa2GaFLpXMaEGpy9pzO60D/cqOapyse49jHD
-kq219+YFhGOyZjERZIZZ9z+Ef/d3LMxyKuLfRe+P4bFCGdl7MwE8GHIWxC8RynvJ
-+xXPxfaIMO5EeHmk/j4X/5xiORkdHmfzDctdKmQBpcS5rUqkT97AYHj1ESII7lMT
-YcT8537uBFBR6wu5EZGyZun5zZPhRxbUXPuk0bCXb6HLrILuJmwT5+sJPCSjtBbJ
-NpjMFH9D3YFi5ZtTRPfA
-=ar0/
------END PGP SIGNATURE-----
-
---1LW0Rr0Uq98qh6Rv--
+- Lars
