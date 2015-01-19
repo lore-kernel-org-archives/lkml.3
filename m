@@ -1,69 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752322AbbASLyK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 06:54:10 -0500
-Received: from mga03.intel.com ([134.134.136.65]:1971 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751687AbbASLyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 06:54:09 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="442235860"
-Date: Mon, 19 Jan 2015 13:53:55 +0200
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Alexandre Courbot <gnurou@gmail.com>
-Cc: Linus Walleij <linus.walleij@linaro.org>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Darren Hart <dvhart@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH] gpio: support for GPIO forwarding
-Message-ID: <20150119115355.GA21244@kuha.fi.intel.com>
-References: <1418890998-23811-1-git-send-email-heikki.krogerus@linux.intel.com>
- <CACRpkdY-yFKsYbCrMpnViMFoQEugyGQivaV0M+GDzLrbDO7i6Q@mail.gmail.com>
- <CAAVeFuJUxad0dJ9vK1DaDJPDLM+rc5b77=PgcJT5+Bv1=iWGxg@mail.gmail.com>
+	id S1751801AbbASMKu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 07:10:50 -0500
+Received: from mail-by2on0053.outbound.protection.outlook.com ([207.46.100.53]:52893
+	"EHLO na01-by2-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751143AbbASMKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 07:10:48 -0500
+X-Greylist: delayed 931 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Jan 2015 07:10:48 EST
+Date: Mon, 19 Jan 2015 12:55:05 +0100
+From: Michal Simek <michals@xilinx.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAAVeFuJUxad0dJ9vK1DaDJPDLM+rc5b77=PgcJT5+Bv1=iWGxg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Mark Rutland <mark.rutland@arm.com>,
+        Michal Simek <michal.simek@xilinx.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "monstr@monstr.eu" <monstr@monstr.eu>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH 1/2] remoteproc: microblaze: Document device tree bindings
+References: <a458462d2dc6901440bded015608f7a9df9e7942.1421662385.git.michal.simek@xilinx.com>
+ <20150119110436.GD21553@leverpostej>
+In-Reply-To: <20150119110436.GD21553@leverpostej>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+Message-ID: <75f6ce848b694b7bb5912229f5ab9428@BL2FFO11FD019.protection.gbl>
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=pass (sender IP is 62.221.5.235)
+ smtp.mailfrom=michals@xilinx.com; 
+X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(24454002)(479174004)(199003)(51704005)(377454003)(164054003)(189002)(46102003)(64126003)(74316001)(50466002)(47776003)(83506001)(19580395003)(19580405001)(86362001)(6806004)(92566002)(54356999)(76176999)(64706001)(62966003)(2950100001)(92726002)(77156002)(77096005)(106466001)(50986999)(87936001)(104016003)(108616004)(65826006)(107986001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2FFO11HUB008;H:xir-pvapsmtpgw01;FPR:;SPF:Pass;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB008;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BL2FFO11HUB008;
+X-Forefront-PRVS: 046164D5C4
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB008;
+X-OriginatorOrg: xilinx.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 19 Jan 2015 11:55:15.5975
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: 657af505-d5df-48d0-8300-c31994686c5c
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=657af505-d5df-48d0-8300-c31994686c5c;Ip=[62.221.5.235]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BL2FFO11HUB008
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 19, 2015 at 02:59:54PM +0900, Alexandre Courbot wrote:
-> I am not really fond of this idea since it adds complexity to the
-> (already too complex) GPIO lookup, and only solves to a local level
-> (GPIO) what is a more global problem (bad ACPI tables that can affect
-> any subsystem).
+Hi Mark,
+
+On 01/19/2015 12:04 PM, Mark Rutland wrote:
+> On Mon, Jan 19, 2015 at 10:30:19AM +0000, Michal Simek wrote:
+>> Add device tree binding documentation for the Microblaze remoteproc
+>> on Xilinx Zynq.
+>>
+>> Signed-off-by: Michal Simek <michal.simek@xilinx.com>
+>> ---
+>>
+>>  .../bindings/remoteproc/mb_remoteproc.txt          | 46 ++++++++++++++++++++++
+>>  1 file changed, 46 insertions(+)
+>>  create mode 100644 Documentation/devicetree/bindings/remoteproc/mb_remoteproc.txt
+>>
+>> diff --git a/Documentation/devicetree/bindings/remoteproc/mb_remoteproc.txt b/Documentation/devicetree/bindings/remoteproc/mb_remoteproc.txt
+>> new file mode 100644
+>> index 000000000000..a2490eac0208
+>> --- /dev/null
+>> +++ b/Documentation/devicetree/bindings/remoteproc/mb_remoteproc.txt
+>> @@ -0,0 +1,46 @@
+>> +Xilinx ARM-Microblaze remoteproc driver
+>> +
+>> +This driver requires specific Zynq hardware design where Microblaze is added
+>> +to the programmable logic.
 > 
-> Also I don't think any new functions is actually needed: on an ACPI
-> system we can safely assume that the platform lookup tables are not
-> used at all. So, although it is a hack as well, you can just call
-> gpiod_add_lookup_table() with a runtime-built table from the driver
-> that needs to pass the GPIO so the receipient can receive it through
-> the lookup table fallback gpiod_get() uses if no GPIO is defined via
-> ACPI.
+> The binding should describe the _hardware_, not the particular driver.
+> Please remove any references to the 'driver'.
+> 
+> What hardware does this binding describe? Please focus on that.
 
-Unfortunately that would require us to determine details about the
-gpios in the consumer driver, details like the chip_label, chip_hwnum
-and flags. Stuff that I don't think the consumers should touch.
+It is Xilinx Zynq with Microblaze in programmable logic which is remote cpu
+where Linux on Zynq can load software on Microblaze and communicate with it.
 
-In order to dig those out of the gpio description, the driver would
-either need to include linux/gpio/machine.h, linux/gpio/driver.h and
-linux/gpio/consumer.h or we would need to add helper functions to
-gpiolib.c that do the digging for us. Most likely it would not be
-possible to avoid the helpers. We would in any case have to add
-removal function for the lookups and gpiod_add_lookup_table would need
-to be exported.
+> 
+>> +Microblaze is connected with PS block via axi bus connected to PS HP port
+>> +to ensure access to PS DDR.
+>> +Communication channels are done via soft GPIO IP connected to PS block
+>> +and to Microblaze. There are also 2 gpio control signals reset and debug
+>> +which are used for resetting Microblaze.
+>> +
+>> +Required properties:
+>> +- compatible : Should be "xlnx,mb_remoteproc"
+> 
+> s/_/-/ in compatible strings please.
 
-It simply ended up being less of a hack to add the simple function
-explicitly for consumers to be used in a case like this for creating
-the lookups.
+no problem.
 
-Br,
+> 
+>> +- reg : Address and length of the ddr address space
+>> +- bram: Phandle to bram controller which can access Microblaze BRAM
+>> +- bram-firmware : Microblaze BRAM bootloader name
+> 
+> Huh? What's this aname used for?
+> 
+> This looks like a filesystem name, which shouldn't be in the DT.
 
--- 
-heikki
+It is firmware name called via firmware interface. It doesn't need to be on filesystem.
+What's the way how to describe default firmware?
+Or this should be out of binding at all and just setup default firmware in the driver
+and add options to change it via module parameters?
+
+> 
+>> +- firmware : Default firmware name which can be override by
+>> +	     "firmware" module parameter
+> 
+> Likewise on all points.
+> 
+>> +- reset : Gpio phandle which reset Microblaze remoteproc
+>> +- debug : Gpio phandle which setup Microblaze to debug state
+>> +- ipino : Gpio phandle for Microblaze to ARM communication
+>> +- vring0 : Gpio phandle for ARM to Microblaze communication vring 0
+>> +- vring1 : Gpio phandle for ARM to Microblaze communication vring 1
+> 
+> s/phandle/ / -- there's a gpio-specifier too, but we may as well just
+> ignore the specifics of the format and leave that to the GPIO bindings.
+> 
+> These should all have a "-gpio" suffix, too.
+
+ok. Will add.
+
+> 
+>> +
+>> +Microblaze SoC can be also connected to the PS block via a axi bus.
+>> +That's why there is the option to allocate interrupts for Microblaze use only.
+>> +The driver will allocate interrupts to itself and Microblaze sw has to ensure
+>> +that interrupts are properly enabled and handled by Microblaze interrupt
+>> +controller.
+> 
+> I'm not sure I follow? What is this for?
+
+Microblaze cpu soft core is in programmable logic on Zynq. Zynq is Cortex-a9 dual core.
+This binding describes how microblaze is added to PL and how Linux on a9 communicates with
+it Microblaze. Interrupts from all IPs on the system can be connected to arm gic and also
+to Microblaze SoC interrupt controller that's why this driver provides the option to allocate
+all shared interrupts and for example count how many times this interrupt was triggered.
+The second use is to monitor if interrupts were properly forwarded to correct CPU and
+restrict others drivers not to allocate them.
+
+Thanks,
+Michal
+
