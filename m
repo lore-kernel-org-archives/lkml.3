@@ -1,106 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752338AbbAST00 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 14:26:26 -0500
-Received: from mail.skyhub.de ([78.46.96.112]:50530 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751341AbbAST0X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 14:26:23 -0500
-Date: Mon, 19 Jan 2015 20:26:16 +0100
-From: Borislav Petkov <bp@alien8.de>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Joerg Roedel <jroedel@suse.de>,
-        Vivek Goyal <vgoyal@redhat.com>, Dave Young <dyoung@redhat.com>,
-        kexec@lists.infradead.org
-Subject: Re: [PATCH 0/3 v2] Fix kdump failures with crashkernel=high
-Message-ID: <20150119192616.GB4398@pd.tnic>
-References: <1420555874-11506-1-git-send-email-joro@8bytes.org>
+	id S1751985AbbAST2d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 14:28:33 -0500
+Received: from pandora.arm.linux.org.uk ([78.32.30.218]:39198 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751166AbbAST2c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 14:28:32 -0500
+Date: Mon, 19 Jan 2015 19:28:05 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Ray Jui <rjui@broadcom.com>
+Cc: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Wolfram Sang <wsa@the-dreams.de>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Scott Branden <sbranden@broadcom.com>, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        bcm-kernel-feedback-list@broadcom.com, devicetree@vger.kernel.org
+Subject: Re: [PATCH v4 2/3] i2c: iproc: Add Broadcom iProc I2C Driver
+Message-ID: <20150119192805.GF26493@n2100.arm.linux.org.uk>
+References: <20150115084119.GN22880@pengutronix.de>
+ <54B98C18.4080807@broadcom.com>
+ <20150117160113.GA22880@pengutronix.de>
+ <54BABEE9.8070801@broadcom.com>
+ <20150117201849.GC22880@pengutronix.de>
+ <54BACB66.6040909@broadcom.com>
+ <20150117211017.GD22880@pengutronix.de>
+ <54BAD391.9080909@broadcom.com>
+ <20150117224021.GA26493@n2100.arm.linux.org.uk>
+ <54BAFEA9.9040900@broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1420555874-11506-1-git-send-email-joro@8bytes.org>
+In-Reply-To: <54BAFEA9.9040900@broadcom.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding some more people to CC.
+On Sat, Jan 17, 2015 at 04:30:33PM -0800, Ray Jui wrote:
+> 
+> 
+> On 1/17/2015 2:40 PM, Russell King - ARM Linux wrote:
+> > On Sat, Jan 17, 2015 at 01:26:41PM -0800, Ray Jui wrote:
+> >> 	time_left = wait_for_completion_timeout(&iproc_i2c->done, time_left);
+> >>
+> >> 	/* disable all interrupts */
+> >> 	writel(0, iproc_i2c->base + IE_OFFSET);
+> >>
+> >> 	if (!time_left && !atomic_read(&iproc_i2c->transfer_is_successful)) {
+> > 
+> > Why are you using atomic_read() here?
+> > 
+> transfer_is_successful 1) will be reset to 0 in this function (before
+> kick start the I2C transfer), 2) will be set to 1 in the ISR (to signal
+> completion of the I2C transfer), and 3) will be checked in this function
+> here. I thought that means I should declare it volatile, because it can
+> be modified in both the process context and interrupt context (and I use
+> atomic because I remember Linux checkpatch warns against using volatile)?
 
-On Tue, Jan 06, 2015 at 03:51:11PM +0100, Joerg Roedel wrote:
-> v1->v2:
-> 
-> * Updated comments based on feedback from Konrad
-> * Added Acked-bys
-> * Rebased to v3.19-rc3
-> 
-> Hi,
-> 
-> here is a patch-set to fix failed kdump kernel boots when
-> the systems was booted with crashkernel=X,high. On those
-> systems the kernel allocates only 72MiB of low-memory for
-> DMA buffers, which showed to be too low on some systems.
-> 
-> The problem is that 64MiB of the low-memory is allocated by
-> swiotlb, leaving 8MB for the page-allocator. But swiotlb
-> tries to allocate DMA memory from the page-allocator first,
-> which fails pretty fast in the boot sequence, causing
-> warnings. This patch-set removes these warnings.
-> 
-> But even the 64MiB for swiotlb are eaten up on some systems,
-> so that the default of low-memory allocated for the
-> crash-kernel is increase from 72MB to 256MB (only changing
-> the defaults, can still be overwritten by crashkernel=X,low).
-> 
-> This number comes from experiments on the affected systems,
-> 128MiB low-memory was still not enough there, thus I set the
-> value to 256MiB to fix the issues.
-> 
-> Any feedback appreciated.
-> 
-> Thanks,
-> 
-> 	Joerg
-> 
-> Joerg Roedel (3):
->   swiotlb: Warn on allocation failure in swiotlb_alloc_coherent
->   x86, swiotlb: Try coherent allocations with __GFP_NOWARN
->   x86, crash: Allocate enough low-mem when crashkernel=high
-> 
->  arch/x86/kernel/pci-swiotlb.c |  8 ++++++++
->  arch/x86/kernel/setup.c       |  5 ++++-
->  lib/swiotlb.c                 | 11 +++++++++--
->  3 files changed, 21 insertions(+), 3 deletions(-)
-> 
-> -- 
-> 1.9.1
-> 
-> Joerg Roedel (3):
->   swiotlb: Warn on allocation failure in swiotlb_alloc_coherent
->   x86, swiotlb: Try coherent allocations with __GFP_NOWARN
->   x86, crash: Allocate enough low-mem when crashkernel=high
-> 
->  arch/x86/kernel/pci-swiotlb.c |  8 ++++++++
->  arch/x86/kernel/setup.c       |  5 ++++-
->  lib/swiotlb.c                 | 11 +++++++++--
->  3 files changed, 21 insertions(+), 3 deletions(-)
-> 
-> -- 
-> 1.9.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
+You don't need volatile or atomic_t for that.
+
+Rather than switching to atomic_t when seeing the checkpatch warning,
+you'd do better to read Documentation/volatile-considered-harmful.txt
+to understand why checkpatch issues the warning, and realise that you
+don't need it for the above.
+
+Note that in the above code, the compiler can't make an assumption
+about iproc_i2c->transfer_is_successful because it can't tell whether
+a called function (eg, wait_for_completion_timeout()) could modify it.
+
+Another possible issue with the above code are these lines:
+
+	/* disable all interrupts */
+	writel(0, iproc_i2c->base + IE_OFFSET);
+
+It would be nice to think that would hit the hardware immediately, but
+that's making assumptions about hardware which are not necessary true.
+Your interrupt handler could even be running on another CPU after you've
+asked for that register to be written.
+
+Depending on what you're trying to achieve here, you may need:
+
+	/* disable all interrupts */
+	writel(0, iproc_i2c->base + IE_OFFSET);
+	/* read it back to ensure the write has hit */
+	readl(iproc_i2c->base + IE_OFFSET);
+
+	/* make sure the interrupt handler isn't running */
+	synchronize_irq(...->irq);
+
+if what you're trying to do is to ensure that the interrupt handler has
+finished running.
 
 -- 
-Regards/Gruss,
-    Boris.
-
-ECO tip #101: Trim your mails when you reply.
---
+FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
+according to speedtest.net.
