@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751621AbbASUAI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 15:00:08 -0500
-Received: from smtp-out-179.synserver.de ([212.40.185.179]:1113 "EHLO
-	smtp-out-179.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751473AbbASUAH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 15:00:07 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 20306
-Message-ID: <54BD62B5.7050205@metafoo.de>
-Date: Mon, 19 Jan 2015 21:01:57 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131103 Icedove/17.0.10
+	id S1752096AbbASUCp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 15:02:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40899 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751849AbbASUCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 15:02:44 -0500
+Date: Mon, 19 Jan 2015 14:02:39 -0600
+From: Josh Poimboeuf <jpoimboe@redhat.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Seth Jennings <sjenning@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
+        live-patching@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] livepatch: support for repatching a function
+Message-ID: <20150119200239.GA15916@treble.redhat.com>
+References: <b211111ad4f29886a44871dddc313a542c48960b.1420834026.git.jpoimboe@redhat.com>
+ <alpine.LNX.2.10.1501161743220.1074@wotan.suse.de>
+ <20150119145431.GC1737@treble.redhat.com>
+ <alpine.LNX.2.00.1501192046130.10817@pobox.suse.cz>
 MIME-Version: 1.0
-To: Wolfram Sang <wsa@the-dreams.de>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Jean Delvare <jdelvare@suse.de>, Julia Lawall <julia.lawall@lip6.fr>,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-Subject: Re: [PATCH] i2c: drop ancient protection against sysfs refcounting
- issues
-References: <1421693756-12917-1-git-send-email-wsa@the-dreams.de>
-In-Reply-To: <1421693756-12917-1-git-send-email-wsa@the-dreams.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1501192046130.10817@pobox.suse.cz>
+User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/2015 07:55 PM, Wolfram Sang wrote:
-[...]
->
-> Let's get rid of this code before really nobody knows/understands
-> anymore what this was for and if it has a subtle use.
+On Mon, Jan 19, 2015 at 08:48:42PM +0100, Jiri Kosina wrote:
+> On Mon, 19 Jan 2015, Josh Poimboeuf wrote:
+> 
+> > > If this is implemented really in a fully stackable manner (i.e. you 
+> > > basically would be able to disable only the function that is currently 
+> > > "active", i.e. on top of the stack), woudln't that provide more 
+> > > predictable semantics?
+> > 
+> > Yes, I agree.  Thanks for the comment.
+> > 
+> > Would you want to enforce stacking even if there are no dependencies
+> > between the patches?  I think that would be easiest (and cleanest).
+> 
+> Yup, I think that makes the most sense (especially in this "first step"). 
+> Relaxing the revert rules to cover only patches which are really dependent 
+> on each other (and we'd have to be careful about defining the meaning 
+> this, especially with repsect to various consistency models coming in the 
+> future) is something tha can always be done later on top.
 
-Getting rid of this is the right thing, cause it's just not how it should be 
-done, but unfortunately it is not as simple as this. The problem is that the 
-adapter is typically embedded in the parent device's state struct. This state 
-struct is typically freed directly after calling i2c_del_adapter(). If there is 
-still something holding a reference to the adapter this will result in a use 
-after free. To do this properly i2c_add_adapter() needs to be changed to 
-i2c_alloc_adapter() that returns a pointer to a newly allocated adapter. 
-i2c_free_adapter() will then only drop a reference to the adapter, but not free 
-any memory. Once the last reference has been removed the memory can then be 
-freed in the release callback.
+Sounds good.  I'll do a v2.
 
-The other issue is as long as something has a reference to the adapter they can 
-run operations on the adapter. So freeing the adapter also has to make sure 
-that any further operations that are performed on the adapter do no longer call 
-into the device specific ops, but rather returns -ENODEV, or similar.
+FYI, I've also been working on a prototype of a consistency model, based
+on my discussions with Vojtech on the list a few months ago
+(LEAVE_PATCHED_SET + SWITCH_THREAD).  I'll probably have some patches to
+send out for comments in a few weeks.  That should hopefully be a good
+starting point for more discussion about the consistency model(s).
 
-- Lars
+-- 
+Josh
