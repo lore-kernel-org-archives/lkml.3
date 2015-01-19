@@ -1,64 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752084AbbASUs0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 15:48:26 -0500
-Received: from mailrelay109.isp.belgacom.be ([195.238.20.136]:63769 "EHLO
-	mailrelay109.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751396AbbASUsZ (ORCPT
+	id S1752148AbbASUtO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 15:49:14 -0500
+Received: from mail-qa0-f48.google.com ([209.85.216.48]:64654 "EHLO
+	mail-qa0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751630AbbASUtN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 15:48:25 -0500
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=hkFBDakPHWYIOok4y3pcivnmCJQbEK2MeX2RAJ8hs1E= c=1 sm=2
- a=Zf25LCYKITnOQeVSTvgA:9
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmEPABJtvVTD7gau/2dsb2JhbABbgwaBKrNuBQEBAQEBAQUBd5dCgSZDAQEBAQF9hQyBUYgwAb9/jmCGBYl0HYQTBZdwihqIECKBRYIqboJDAQEB
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-From: Fabian Frederick <fabf@skynet.be>
-To: linux-kernel@vger.kernel.org
-Cc: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Fabian Frederick <fabf@skynet.be>
-Subject: [RFC 2/2] fs/affs/super.c: let vfs do mount_bdev
-Date: Mon, 19 Jan 2015 21:48:18 +0100
-Message-Id: <1421700498-15179-1-git-send-email-fabf@skynet.be>
-X-Mailer: git-send-email 1.9.3
+	Mon, 19 Jan 2015 15:49:13 -0500
+MIME-Version: 1.0
+In-Reply-To: <54BCD3CF.9040205@hitachi.com>
+References: <1421381770-4866-1-git-send-email-ast@plumgrid.com> <54BCD3CF.9040205@hitachi.com>
+From: Alexei Starovoitov <ast@plumgrid.com>
+Date: Mon, 19 Jan 2015 12:48:50 -0800
+Message-ID: <CAMEtUuwzx-HZqEaTS30JFfF_RX5kGaZfsgE8wmogzcb2k5=k1g@mail.gmail.com>
+Subject: Re: [PATCH tip 0/9] tracing: attach eBPF programs to tracepoints/syscalls/kprobe
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Namhyung Kim <namhyung@kernel.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Jiri Olsa <jolsa@redhat.com>, "David S. Miller" <davem@davemloft.net>,
+        Daniel Borkmann <dborkman@redhat.com>,
+        Hannes Frederic Sowa <hannes@stressinduktion.org>,
+        Brendan Gregg <brendan.d.gregg@gmail.com>,
+        Linux API <linux-api@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-share fill_super with vfs and remove local mount function.
+On Mon, Jan 19, 2015 at 1:52 AM, Masami Hiramatsu
+<masami.hiramatsu.pt@hitachi.com> wrote:
+> If we can write the script as
+>
+> int bpf_prog4(s64 write_size)
+> {
+>    ...
+> }
+>
+> This will be much easier to play with.
 
-Signed-off-by: Fabian Frederick <fabf@skynet.be>
----
- fs/affs/super.c | 8 +-------
- 1 file changed, 1 insertion(+), 7 deletions(-)
+yes. that's the intent for user space to do.
 
-diff --git a/fs/affs/super.c b/fs/affs/super.c
-index ee8eca7..9f7bba9 100644
---- a/fs/affs/super.c
-+++ b/fs/affs/super.c
-@@ -588,12 +588,6 @@ affs_statfs(struct dentry *dentry, struct kstatfs *buf)
- 	return 0;
- }
- 
--static struct dentry *affs_mount(struct file_system_type *fs_type,
--	int flags, const char *dev_name, void *data)
--{
--	return mount_bdev(fs_type, flags, dev_name, data, affs_fill_super);
--}
--
- static void affs_kill_sb(struct super_block *sb)
- {
- 	struct affs_sb_info *sbi = AFFS_SB(sb);
-@@ -610,7 +604,7 @@ static void affs_kill_sb(struct super_block *sb)
- static struct file_system_type affs_fs_type = {
- 	.owner		= THIS_MODULE,
- 	.name		= "affs",
--	.mount		= affs_mount,
-+	.fill_super	= affs_fill_super,
- 	.kill_sb	= affs_kill_sb,
- 	.fs_flags	= FS_REQUIRES_DEV,
- };
--- 
-1.9.3
+>>   The example of this arbitrary pointer walking is tracex1_kern.c
+>>   which does skb->dev->name == "lo" filtering.
+>
+> At least I would like to see this way on kprobes event too, since it should be
+> treated as a traceevent.
 
+it's done already... one can do the same skb->dev->name logic
+in kprobe attached program... so from bpf program point of view,
+tracepoints and kprobes feature-wise are exactly the same.
+Only input is different.
+
+>> - kprobe programs are architecture dependent and need user scripting
+>>   language like ktap/stap/dtrace/perf that will dynamically generate
+>>   them based on debug info in vmlinux
+>
+> If we can use kprobe event as a normal traceevent, user scripting can be
+> architecture independent too. Only perf-probe fills the gap. All other
+> userspace tools can collaborate with perf-probe to setup the events.
+> If so, we can avoid redundant works on debuginfo. That is my point.
+
+yes. perf already has infra to read debug info and it can be extended
+to understand C like script as:
+int kprobe:sys_write(int fd, char *buf, size_t count)
+{
+   // do stuff with 'count'
+}
+perf can be made to parse this text, recognize that it wants
+to create kprobe on 'sys_write' function. Then based on
+debuginfo figure out where 'count' is (either register or stack)
+and generate corresponding bpf program either
+using llvm/gcc backends or directly.
+perf facility of extracting debug info can be made into
+library too and used by ktap/dtrace tools for their
+languages.
+User space can innovate in many directions.
+and, yes, once we have a scripting language whether
+it's C like with perf or else, this language hides architecture
+depend things from users.
+Such scripting language will also hide the kernel
+side differences between tracepoint and kprobe.
+Just look how ktap scripts look alike for kprobes and tracepoints.
+Whether ktap syntax becomes part of perf or perf invents
+its own language, it's going to be good for users regardless.
+The C examples here are just examples. Something
+users can play with already until more user friendly
+tools are being worked on.
