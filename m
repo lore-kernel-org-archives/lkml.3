@@ -1,240 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752071AbbASLYM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 06:24:12 -0500
-Received: from mx2.parallels.com ([199.115.105.18]:36353 "EHLO
-	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752122AbbASLYJ (ORCPT
+	id S1752279AbbASL2t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 06:28:49 -0500
+Received: from mail-la0-f46.google.com ([209.85.215.46]:45484 "EHLO
+	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751982AbbASL1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 06:24:09 -0500
-From: Vladimir Davydov <vdavydov@parallels.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
-        Tejun Heo <tj@kernel.org>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Dave Chinner <david@fromorbit.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH -mm v2 7/7] memcg: reparent list_lrus and free kmemcg_id on css offline
-Date: Mon, 19 Jan 2015 14:23:25 +0300
-Message-ID: <2c3295a1660bc13d034b42b040b9cb18e8ac30f1.1421664712.git.vdavydov@parallels.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <cover.1421664712.git.vdavydov@parallels.com>
-References: <cover.1421664712.git.vdavydov@parallels.com>
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 19 Jan 2015 06:27:48 -0500
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+To: linux-gpio@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, John Crispin <blogic@openwrt.org>,
+        devicetree@vger.kernel.org, Mark Rutland <mark.rutland@arm.com>
+Subject: [PATCH v2 4/8] gpio-mm-lantiq: Use of_property_read_u32
+Date: Mon, 19 Jan 2015 12:27:24 +0100
+Message-Id: <1421666844-14599-1-git-send-email-ricardo.ribalda@gmail.com>
+X-Mailer: git-send-email 2.1.4
+In-Reply-To: <20150119105753.GC21553@leverpostej>
+References: <20150119105753.GC21553@leverpostej>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, the only reason to keep kmemcg_id till css free is list_lru, which
-uses it to distribute elements between per-memcg lists. However, it can
-be easily sorted out - we only need to change kmemcg_id of an offline
-cgroup to its parent's id, making further list_lru_add()'s add elements
-to the parent's list, and then move all elements from the offline
-cgroup's list to the one of its parent. It will work, because a racing
-list_lru_del() does not need to know the list it is deleting the element
-from. It can decrement the wrong nr_items counter though, but the
-ongoing reparenting will fix it. After list_lru reparenting is done we
-are free to release kmemcg_id saving a valuable slot in a per-memcg
-array for new cgroups.
+Instead of parsing manually the shadow content, use the much simpler
+helper of_property_read_u32.
 
-Signed-off-by: Vladimir Davydov <vdavydov@parallels.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>
+Cc: Alexandre Courbot <gnurou@gmail.com>
+Cc: Grant Likely <grant.likely@linaro.org>
+Cc: Rob Herring <robh+dt@kernel.org>
+Cc: John Crispin <blogic@openwrt.org>
+Cc: devicetree@vger.kernel.org
+Cc: Mark Rutland <mark.rutland@arm.com>
+Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
 ---
- include/linux/list_lru.h |    3 ++-
- mm/list_lru.c            |   46 +++++++++++++++++++++++++++++++++++++++++++---
- mm/memcontrol.c          |   39 ++++++++++++++++++++++++++++++++++-----
- 3 files changed, 79 insertions(+), 9 deletions(-)
 
-diff --git a/include/linux/list_lru.h b/include/linux/list_lru.h
-index 7edf9c9ab9eb..2a6b9947aaa3 100644
---- a/include/linux/list_lru.h
-+++ b/include/linux/list_lru.h
-@@ -26,7 +26,7 @@ enum lru_status {
+v2: Reported by Mark Rutland <mark.rutland@arm.com>
+ -use of_property_read_u32 instead of u16
+
+ drivers/gpio/gpio-mm-lantiq.c | 7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/gpio/gpio-mm-lantiq.c b/drivers/gpio/gpio-mm-lantiq.c
+index 7d55161..95ff180 100644
+--- a/drivers/gpio/gpio-mm-lantiq.c
++++ b/drivers/gpio/gpio-mm-lantiq.c
+@@ -105,7 +105,7 @@ static void ltq_mm_save_regs(struct of_mm_gpio_chip *mm_gc)
+ static int ltq_mm_probe(struct platform_device *pdev)
+ {
+ 	struct ltq_mm *chip;
+-	const __be32 *shadow;
++	u32 shadow;
  
- struct list_lru_one {
- 	struct list_head	list;
--	/* kept as signed so we can catch imbalance bugs */
-+	/* may become negative during memcg reparenting */
- 	long			nr_items;
- };
+ 	chip = devm_kzalloc(&pdev->dev, sizeof(*chip), GFP_KERNEL);
+ 	if (!chip)
+@@ -117,9 +117,8 @@ static int ltq_mm_probe(struct platform_device *pdev)
+ 	chip->mmchip.save_regs = ltq_mm_save_regs;
  
-@@ -62,6 +62,7 @@ int __list_lru_init(struct list_lru *lru, bool memcg_aware,
- #define list_lru_init_memcg(lru)	__list_lru_init((lru), true, NULL)
+ 	/* store the shadow value if one was passed by the devicetree */
+-	shadow = of_get_property(pdev->dev.of_node, "lantiq,shadow", NULL);
+-	if (shadow)
+-		chip->shadow = be32_to_cpu(*shadow);
++	if (!of_property_read_u32(pdev->dev.of_node, "lantiq,shadow", &shadow))
++		chip->shadow = shadow;
  
- int memcg_update_all_list_lrus(int num_memcgs);
-+void memcg_drain_all_list_lrus(int src_idx, int dst_idx);
- 
- /**
-  * list_lru_add: add an element to the lru list's tail
-diff --git a/mm/list_lru.c b/mm/list_lru.c
-index 8d9d168c6c38..909eca2c820e 100644
---- a/mm/list_lru.c
-+++ b/mm/list_lru.c
-@@ -100,7 +100,6 @@ bool list_lru_add(struct list_lru *lru, struct list_head *item)
- 
- 	spin_lock(&nlru->lock);
- 	l = list_lru_from_kmem(nlru, item);
--	WARN_ON_ONCE(l->nr_items < 0);
- 	if (list_empty(item)) {
- 		list_add_tail(item, &l->list);
- 		l->nr_items++;
-@@ -123,7 +122,6 @@ bool list_lru_del(struct list_lru *lru, struct list_head *item)
- 	if (!list_empty(item)) {
- 		list_del_init(item);
- 		l->nr_items--;
--		WARN_ON_ONCE(l->nr_items < 0);
- 		spin_unlock(&nlru->lock);
- 		return true;
- 	}
-@@ -156,7 +154,6 @@ static unsigned long __list_lru_count_one(struct list_lru *lru,
- 
- 	spin_lock(&nlru->lock);
- 	l = list_lru_from_memcg_idx(nlru, memcg_idx);
--	WARN_ON_ONCE(l->nr_items < 0);
- 	count = l->nr_items;
- 	spin_unlock(&nlru->lock);
- 
-@@ -458,6 +455,49 @@ fail:
- 		memcg_cancel_update_list_lru(lru, old_size, new_size);
- 	goto out;
+ 	return of_mm_gpiochip_add(pdev->dev.of_node, &chip->mmchip);
  }
-+
-+static void memcg_drain_list_lru_node(struct list_lru_node *nlru,
-+				      int src_idx, int dst_idx)
-+{
-+	struct list_lru_one *src, *dst;
-+
-+	/*
-+	 * Since list_lru_{add,del} may be called under an IRQ-safe lock,
-+	 * we have to use IRQ-safe primitives here to avoid deadlock.
-+	 */
-+	spin_lock_irq(&nlru->lock);
-+
-+	src = list_lru_from_memcg_idx(nlru, src_idx);
-+	dst = list_lru_from_memcg_idx(nlru, dst_idx);
-+
-+	list_splice_init(&src->list, &dst->list);
-+	dst->nr_items += src->nr_items;
-+	src->nr_items = 0;
-+
-+	spin_unlock_irq(&nlru->lock);
-+}
-+
-+static void memcg_drain_list_lru(struct list_lru *lru,
-+				 int src_idx, int dst_idx)
-+{
-+	int i;
-+
-+	if (!list_lru_memcg_aware(lru))
-+		return;
-+
-+	for (i = 0; i < nr_node_ids; i++)
-+		memcg_drain_list_lru_node(&lru->node[i], src_idx, dst_idx);
-+}
-+
-+void memcg_drain_all_list_lrus(int src_idx, int dst_idx)
-+{
-+	struct list_lru *lru;
-+
-+	mutex_lock(&list_lrus_mutex);
-+	list_for_each_entry(lru, &list_lrus, list)
-+		memcg_drain_list_lru(lru, src_idx, dst_idx);
-+	mutex_unlock(&list_lrus_mutex);
-+}
- #else
- static int memcg_init_list_lru(struct list_lru *lru, bool memcg_aware)
- {
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 0875217ceb68..695ea3162f1d 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -334,6 +334,7 @@ struct mem_cgroup {
- #if defined(CONFIG_MEMCG_KMEM)
-         /* Index in the kmem_cache->memcg_params.memcg_caches array */
- 	int kmemcg_id;
-+	bool kmem_acct_activated;
- 	bool kmem_acct_active;
- #endif
- 
-@@ -582,14 +583,10 @@ void memcg_put_cache_ids(void)
- struct static_key memcg_kmem_enabled_key;
- EXPORT_SYMBOL(memcg_kmem_enabled_key);
- 
--static void memcg_free_cache_id(int id);
--
- static void disarm_kmem_keys(struct mem_cgroup *memcg)
- {
--	if (memcg->kmemcg_id >= 0) {
-+	if (memcg->kmem_acct_activated)
- 		static_key_slow_dec(&memcg_kmem_enabled_key);
--		memcg_free_cache_id(memcg->kmemcg_id);
--	}
- 	/*
- 	 * This check can't live in kmem destruction function,
- 	 * since the charges will outlive the cgroup
-@@ -3328,6 +3325,7 @@ static int memcg_activate_kmem(struct mem_cgroup *memcg,
- 	int memcg_id;
- 
- 	BUG_ON(memcg->kmemcg_id >= 0);
-+	BUG_ON(memcg->kmem_acct_activated);
- 	BUG_ON(memcg->kmem_acct_active);
- 
- 	/*
-@@ -3371,6 +3369,7 @@ static int memcg_activate_kmem(struct mem_cgroup *memcg,
- 	 * patched.
- 	 */
- 	memcg->kmemcg_id = memcg_id;
-+	memcg->kmem_acct_activated = true;
- 	memcg->kmem_acct_active = true;
- out:
- 	return err;
-@@ -4061,6 +4060,10 @@ static int memcg_init_kmem(struct mem_cgroup *memcg, struct cgroup_subsys *ss)
- 
- static void memcg_deactivate_kmem(struct mem_cgroup *memcg)
- {
-+	struct cgroup_subsys_state *css;
-+	struct mem_cgroup *parent, *child;
-+	int kmemcg_id;
-+
- 	if (!memcg->kmem_acct_active)
- 		return;
- 
-@@ -4073,6 +4076,32 @@ static void memcg_deactivate_kmem(struct mem_cgroup *memcg)
- 	memcg->kmem_acct_active = false;
- 
- 	memcg_deactivate_kmem_caches(memcg);
-+
-+	kmemcg_id = memcg->kmemcg_id;
-+	BUG_ON(kmemcg_id < 0);
-+
-+	parent = parent_mem_cgroup(memcg);
-+	if (!parent)
-+		parent = root_mem_cgroup;
-+
-+	/*
-+	 * Change kmemcg_id of this cgroup and all its descendants to the
-+	 * parent's id, and then move all entries from this cgroup's list_lrus
-+	 * to ones of the parent. After we have finished, all list_lrus
-+	 * corresponding to this cgroup are guaranteed to remain empty. The
-+	 * ordering is imposed by list_lru_node->lock taken by
-+	 * memcg_drain_all_list_lrus().
-+	 */
-+	css_for_each_descendant_pre(css, &memcg->css) {
-+		child = mem_cgroup_from_css(css);
-+		BUG_ON(child->kmemcg_id != kmemcg_id);
-+		child->kmemcg_id = parent->kmemcg_id;
-+		if (!memcg->use_hierarchy)
-+			break;
-+	}
-+	memcg_drain_all_list_lrus(kmemcg_id, parent->kmemcg_id);
-+
-+	memcg_free_cache_id(kmemcg_id);
- }
- 
- static void memcg_destroy_kmem(struct mem_cgroup *memcg)
 -- 
-1.7.10.4
+2.1.4
 
