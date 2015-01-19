@@ -1,108 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752248AbbASKvv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 05:51:51 -0500
-Received: from mga11.intel.com ([192.55.52.93]:40900 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751865AbbASKvs convert rfc822-to-8bit (ORCPT
+	id S1752358AbbASKyu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 05:54:50 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:47983 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752240AbbASKys (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 05:51:48 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="442221702"
-Message-ID: <54BCE1BF.5050808@intel.com>
-Date: Mon, 19 Jan 2015 11:51:43 +0100
-From: Daniel Vetter <daniel.vetter@intel.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Mon, 19 Jan 2015 05:54:48 -0500
+Message-ID: <54BCE228.2020907@huawei.com>
+Date: Mon, 19 Jan 2015 18:53:28 +0800
+From: Yijing Wang <wangyijing@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: =?windows-1252?Q?Ville_Syrj=E4l=E4?= 
-	<ville.syrjala@linux.intel.com>,
-        Jeremiah Mahler <jmmahler@gmail.com>,
-        Matt Roper <matthew.d.roper@intel.com>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>,
-        Ander Conselvan de Oliveira <conselvan2@gmail.com>,
-        linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [BUG, bisect] drm/i915: mouse pointer lags and overshoots
-References: <20150117100635.GA1281@hudson.localdomain> <20150119090847.GQ10649@intel.com>
-In-Reply-To: <20150119090847.GQ10649@intel.com>
-Content-Type: text/plain; charset="windows-1252"; format="flowed"
-Content-Transfer-Encoding: 8BIT
+To: Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
+CC: Liviu Dudau <liviu@dudau.co.uk>, Tony Luck <tony.luck@intel.com>,
+        "Russell King" <linux@arm.linux.org.uk>,
+        Marc Zyngier <marc.zyngier@arm.com>, <linux-pci@vger.kernel.org>,
+        <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>, <linux-m68k@vger.kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        <linux-alpha@vger.kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        <linux-ia64@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "Guan Xuetao" <gxt@mprc.pku.edu.cn>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@linux.intel.com>
+Subject: Re: [PATCH 18/28] PCI/sparc: Use pci_scan_root_bridge() for simplicity
+References: <1421372666-12288-1-git-send-email-wangyijing@huawei.com> <2658988.B0VmbMPdJ9@wuerfel> <54BC772E.6020103@huawei.com> <7748275.Tf0dzsPZdA@wuerfel>
+In-Reply-To: <7748275.Tf0dzsPZdA@wuerfel>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.177.27.212]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/01/2015 10:08, Ville Syrjälä wrote:
-> On Sat, Jan 17, 2015 at 02:06:35AM -0800, Jeremiah Mahler wrote:
->> Matt, all,
+On 2015/1/19 16:44, Arnd Bergmann wrote:
+> On Monday 19 January 2015 11:17:02 Yijing Wang wrote:
+>> On 2015/1/16 18:01, Arnd Bergmann wrote:
+>>> On Friday 16 January 2015 09:44:16 Yijing Wang wrote:
+>>>> +static void pci_host_bridge_probe_mode(
+>>>> +               struct pci_host_bridge *host)
+>>>> +{
+>>>> +       host->of_scan = true;
+>>>> +}
+>>>>
+>>>
+>>> I probably missed something here, but where does host->of_scan
+>>> get used?
+>>>
 >>
->> Commit ea2c67bb4aff introduces a bug which causes the mouse to move in a
->> very unusual way, as if it has a lot of inertia.  It will lag behind and
->> then overshoot the expected position.
+>> It is used in __pci_scan_root_bus() to detect whether of scan bus is needed in patch 11.
+> 
+> Ok, I see it now.
+> 
+>> @@ -2051,10 +2053,17 @@ static struct pci_bus *__pci_scan_root_bus(
+>>  		pci_bus_insert_busn_res(b, host->busnum, 255);
+>>  	}
 >>
->> I reproduced this bug on all my machines which use the drm/i915 drivers
->> and it affects all forms of mouse pointers including both touchpads and
->> usb mice.  The patch is present in linux-next 20150116.
+>> -	max = pci_scan_child_bus(b);
+>> +	if (host->ops && host->ops->phb_probe_mode)
+>> +		host->ops->phb_probe_mode(host);
 >>
->>    commit ea2c67bb4affa84080c616920f3899f123786e56
->>    Author: Matt Roper <matthew.d.roper@intel.com>
->>    Date:   Tue Dec 23 10:41:52 2014 -0800
->>    
->>        drm/i915: Move to atomic plane helpers (v9)
-> I guess this is caused by the atomic code refusing to update the plane
-> more than once per vrefresh. So we need to allow the fps>vrefresh rate
-> case to remove the regression.
->
-> The old cursor code had basically a gross hack to allow this. It just
-> unpinned the old fb before the display engine was done with it, and
-> _after_ unpinning it flipped to the new buffer (with the obvious extra
-> delay of the flip happening on the next vblank). So there was no
-> guarantee the old buffer was still around (or had the correct content)
-> while the display engine was still scanning it out. So to fix this
-> properly we need a vblank worker of some sort.
->
-> The other issues we nee to know which fb is being scanned out at which
-> point to unpin the correct old buffer. For that we can use the hardware
-> frame counter. We could use some other mechanims too (SURFLIVE, flip
-> counter etc.) but the frame counter is the most ubiqitious method we
-> have.
->
-> The one extra problem is gen2 doesn't have even the frame counter, so
-> some extra care would be needed there. I'm thinking for gen2 we might
-> allow the driver to call into the vblank core code to update the cooked
-> counter at any time based on the scanline counter and monotonic timestamp.
-> That combined with the vblank evade mechanism should make reasonably sure
-> we have an up to date notion of which frame is currently getting scanned
-> out.
->
-> We need the extra call into the vblank core since just after the vblank
-> start, the vblank interrupt handler may not have executed yet (especially
-> since gen2 vblank irq fires actually at the frame start which is a delayed
-> version of the vblank start, even though the flip happes at vblank start).
-> So we need an explicit call to make sure the cooked counter is already
-> updated before the irq handler has executed. I have some changes lined
-> up for the vblank code which I think could help make sure he extra call
-> won't increment the counter spuriously, but I have to clean those up a
-> bit before sending them out.
->
-There's also an issue in (most) X drivers which exaberates this issues: 
-When changing the cursor buffer the X cursor code does a a) disable 
-cursor b) update cursor image c) enable cursor cycle. With latest 
-upstream we /should/ be able to not block for just moving the cursor 
-though when nothing crazy happens. Checking for that would be good.
+>> -	if (!found)
+>> -		pci_bus_update_busn_res_end(b, max);
+>> +	if (host->of_scan) {
+>> +		if (host->ops &&host->ops->phb_of_scan_bus)
+>> +			host->ops->phb_of_scan_bus(host);
+>> +	} else {
+>> +		max = pci_scan_child_bus(b);
+>> +		if (!found)
+>> +			pci_bus_update_busn_res_end(b, max);
+>> +	}
+>>
+> 
+> I think we can simplify this based on the knowledge that this code
+> will remain powerpc specific. How about removing the phb_probe_mode()
+> callback and replacing it with just a phb_scan_bus() callback that
+> will always get set on sparc, and do this on powerpc:
+> 
+> +static void pci_host_bridge_of_scan_bus(struct pci_host_bridge *host)
+> +{
+> +       int mode = PCI_PROBE_NORMAL;
+> +       struct pci_bus *bus = host->bus;
+> +       struct pci_controller *hose = dev_get_drvdata(&host->dev);
+> +
+> +       /* Get probe mode and perform scan */
+> +       if (hose->dn && ppc_md.pci_probe_mode)
+> +               mode = ppc_md.pci_probe_mode(bus);
+> +
+> +       pr_debug("    probe mode: %d\n", mode);
+> +       if (mode == PCI_PROBE_DEVTREE) {
+> +               of_scan_bus(host->dn, bus);
+> +		return max; // XXX need to get this from somewhere
+> +	}
+> +	return pci_scan_child_bus(b);
+> +}
+> 
+> Would that work?
 
-For the real thing: Rob Clark also noticed this on msm with his atomic, 
-I think we need a hint flag (only used internally) so that the 
-legacy2atomic helpers and the driver core can correctly pass around 
-semantics and we could recover the optimization. As long as we don't 
-allow this hint flag to be set by userspace we could just completely 
-drop the vblank wait - that would be buggy, but so is the old legacy 
-implementation.
--Daniel
-Intel Semiconductor AG
-Registered No. 020.30.913.786-7
-Registered Office: Badenerstrasse 549, 8048 Zurich, Switzerland
+This looks good to me, it is more simple.
+
+Thanks!
+Yijing.
+
+
+> 	Arnd
+> 
+> .
+> 
+
+
+-- 
+Thanks!
+Yijing
 
