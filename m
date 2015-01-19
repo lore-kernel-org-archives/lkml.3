@@ -1,92 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506AbbASQjO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 11:39:14 -0500
-Received: from lists.s-osg.org ([54.187.51.154]:53317 "EHLO lists.s-osg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750824AbbASQjL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 11:39:11 -0500
-Message-ID: <54BD332D.6010907@osg.samsung.com>
-Date: Mon, 19 Jan 2015 09:39:09 -0700
-From: Shuah Khan <shuahkh@osg.samsung.com>
-Organization: Samsung Open Source Group
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Michael Ellerman <mpe@ellerman.id.au>
-CC: linux-kernel@vger.kernel.org, mmarek@suse.cz, gregkh@linuxfoundation.org,
-        akpm@linux-foundation.org, rostedt@goodmis.org, mingo@redhat.com,
-        davem@davemloft.net, keescook@chromium.org, tranmanphong@gmail.com,
-        cov@codeaurora.org, dh.herrmann@gmail.com, hughd@google.com,
-        bobby.prani@gmail.com, serge.hallyn@ubuntu.com, ebiederm@xmission.com,
-        tim.bird@sonymobile.com, josh@joshtriplett.org, koct9i@gmail.com,
-        linux-kbuild@vger.kernel.org, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 1/6] selftests: Introduce minimal shared logic for running
- tests
-References: <1420794375-31881-1-git-send-email-mpe@ellerman.id.au> <54B95006.3080502@osg.samsung.com> <1421627742.3787.6.camel@ellerman.id.au>
-In-Reply-To: <1421627742.3787.6.camel@ellerman.id.au>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S1752544AbbASQkh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 11:40:37 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:38201 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752024AbbASQke (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 11:40:34 -0500
+From: Javi Merino <javi.merino@arm.com>
+To: linux-kernel@vger.kernel.org
+Cc: Dave Martin <Dave.Martin@arm.com>, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@redhat.com>, Javi Merino <javi.merino@arm.com>
+Subject: [PATCH v3 1/3] tracing: Add array printing helpers
+Date: Mon, 19 Jan 2015 16:39:55 +0000
+Message-Id: <1421685597-15416-1-git-send-email-javi.merino@arm.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/18/2015 05:35 PM, Michael Ellerman wrote:
-> On Fri, 2015-01-16 at 10:53 -0700, Shuah Khan wrote:
->> On 01/09/2015 02:06 AM, Michael Ellerman wrote:
->>> This adds a Make include file which most selftests can then include to
->>> get the run_tests logic.
->>>
->>> On its own this has the advantage of some reduction in repetition, and
->>> also means the pass/fail message is defined in fewer places.
->>>
->>> However the key advantage is it will allow us to implement install very
->>> simply in a subsequent patch.
->>>
->>> The default implementation just executes each program in $(TEST_PROGS).
->>>
->>> We use a variable to hold the default implementation of $(RUN_TESTS)
->>> because that gives us a clean way to override it if necessary, ie. using
->>> override. The mount, memory-hotplug and mqueue tests use that to provide
->>> a different implementation.
->>>
->>> Tests are not run via /bin/bash, so if they are scripts they must be
->>> executable, we add u+x to several.
->>>
->>> Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
->>
->> I like the shared logic approach in general provided it leaves the
->> flexibility to not use the shared logic if a test have the need to
->> do so.
-> 
-> Yes of course it does, it's entirely optional to include lib.mk.
-> 
->> This series requires some patch planning. shared logic patch
->> followed by individual test patches as opposed a single patch.
-> 
-> It could be a single patch too, but there's no reason to do it that way. The
-> series works fine as I sent it.
-> 
->> I would like to see the shared logic work done on top of my patch v4
->> series.
-> 
-> That's a waste of time. This series replaces your v4. Doing this "on top" of
-> your v4 would just mean reverting your v4 series and then applying this.
-> 
+From: Dave Martin <Dave.Martin@arm.com>
 
-No necessarily if the work is done as evolutionary step. In any case,
-I want the first step install target support going into the upcoming
-release and then make improvements to it. Please send separate patch
-for the shared logic and individual test patches that use the shared
-logic if you would like to make the improvements.
+If a trace event contains an array, there is currently no standard
+way to format this for text output.  Drivers are currently hacking
+around this by a) local hacks that use the trace_seq functionailty
+directly, or b) just not printing that information.  For fixed size
+arrays, formatting of the elements can be open-coded, but this gets
+cumbersome for arrays of non-trivial size.
 
-thanks,
--- Shuah
+These approaches result in non-standard content of the event format
+description delivered to userspace, so userland tools needs to be
+taught to understand and parse each array printing method
+individually.
 
+This patch implements common __print_<type>_array() helpers that
+tracepoint implementations can use instead of reinventing them.  A
+simple C-style syntax is used to delimit the array and its elements
+{like,this}.
 
+So that the helpers can be used with large static arrays as well as
+dynamic arrays, they take a pointer and element count: they can be
+used with __get_dynamic_array() for use with dynamic arrays.
+
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@redhat.com>
+Signed-off-by: Dave Martin <Dave.Martin@arm.com>
+Signed-off-by: Javi Merino <javi.merino@arm.com>
+---
+
+Changes since v2[0]:
+  - Changed BUG() into a trace_seq_printf()
+  - Add BUILD_BUG_ON() to chase mistakes in element sizes on build
+
+[0] http://article.gmane.org/gmane.linux.kernel/1867165
+
+ include/linux/ftrace_event.h |  4 ++++
+ include/trace/ftrace.h       |  9 +++++++++
+ kernel/trace/trace_output.c  | 44 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 57 insertions(+)
+
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 0bebb5c348b8..5aa4a9269547 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -44,6 +44,10 @@ const char *ftrace_print_bitmask_seq(struct trace_seq *p, void *bitmask_ptr,
+ const char *ftrace_print_hex_seq(struct trace_seq *p,
+ 				 const unsigned char *buf, int len);
+ 
++const char *ftrace_print_array_seq(struct trace_seq *p,
++				   const void *buf, int buf_len,
++				   size_t el_size);
++
+ struct trace_iterator;
+ struct trace_event;
+ 
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index 139b5067345b..36afd0ed3458 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -263,6 +263,14 @@
+ #undef __print_hex
+ #define __print_hex(buf, buf_len) ftrace_print_hex_seq(p, buf, buf_len)
+ 
++#undef __print_array
++#define __print_array(array, count, el_size)				\
++	({								\
++		BUILD_BUG_ON(el_size != 8 && el_size != 16 &&		\
++			el_size != 32 && el_size != 64);		\
++		ftrace_print_array_seq(p, array, count, el_size);	\
++	})
++
+ #undef DECLARE_EVENT_CLASS
+ #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
+ static notrace enum print_line_t					\
+@@ -674,6 +682,7 @@ static inline void ftrace_test_probe_##call(void)			\
+ #undef __get_dynamic_array_len
+ #undef __get_str
+ #undef __get_bitmask
++#undef __print_array
+ 
+ #undef TP_printk
+ #define TP_printk(fmt, args...) "\"" fmt "\", "  __stringify(args)
+diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
+index b77b9a697619..8955e1da83ce 100644
+--- a/kernel/trace/trace_output.c
++++ b/kernel/trace/trace_output.c
+@@ -177,6 +177,50 @@ ftrace_print_hex_seq(struct trace_seq *p, const unsigned char *buf, int buf_len)
+ }
+ EXPORT_SYMBOL(ftrace_print_hex_seq);
+ 
++const char *
++ftrace_print_array_seq(struct trace_seq *p, const void *buf, int buf_len,
++		       size_t el_size)
++{
++	const char *ret = trace_seq_buffer_ptr(p);
++	const char *prefix = "";
++	void *ptr = (void *)buf;
++
++	trace_seq_putc(p, '{');
++
++	while (ptr < buf + buf_len) {
++		switch (el_size) {
++		case 8:
++			trace_seq_printf(p, "%s0x%x", prefix,
++					 *(u8 *)ptr);
++			break;
++		case 16:
++			trace_seq_printf(p, "%s0x%x", prefix,
++					 *(u16 *)ptr);
++			break;
++		case 32:
++			trace_seq_printf(p, "%s0x%x", prefix,
++					 *(u32 *)ptr);
++			break;
++		case 64:
++			trace_seq_printf(p, "%s0x%llx", prefix,
++					 *(u64 *)ptr);
++			break;
++		default:
++			trace_seq_printf(p, "BAD SIZE:%lu 0x%x", el_size,
++					*(u8 *)ptr);
++			el_size = 8;
++		}
++		prefix = ",";
++		ptr += el_size / 8;
++	}
++
++	trace_seq_putc(p, '}');
++	trace_seq_putc(p, 0);
++
++	return ret;
++}
++EXPORT_SYMBOL(ftrace_print_array_seq);
++
+ int ftrace_raw_output_prep(struct trace_iterator *iter,
+ 			   struct trace_event *trace_event)
+ {
 -- 
-Shuah Khan
-Sr. Linux Kernel Developer
-Open Source Innovation Group
-Samsung Research America (Silicon Valley)
-shuahkh@osg.samsung.com | (970) 217-8978
+1.9.1
+
