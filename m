@@ -1,296 +1,619 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751981AbbASPYP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 10:24:15 -0500
-Received: from nivc-ms1.auriga.com ([80.240.102.146]:27577 "EHLO
-	nivc-ms1.auriga.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751166AbbASPYN (ORCPT
+	id S1752090AbbASPCQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 10:02:16 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:57894 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751659AbbASPCO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 10:24:13 -0500
-From: Aleksey Makarov <aleksey.makarov@auriga.com>
-To: <linux-ide@vger.kernel.org>
-CC: <linux-mips@linux-mips.org>, <linux-kernel@vger.kernel.org>,
-        David Daney <david.daney@cavium.com>,
-        Aleksey Makarov <aleksey.makarov@auriga.com>,
-        "Anton Vorontsov" <avorontsov@ru.mvista.com>,
-        Vinita Gupta <vgupta@caviumnetworks.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "Ralf Baechle" <ralf@linux-mips.org>, Tejun Heo <tj@kernel.org>,
-        Hans de Goede <hdegoede@redhat.com>, <devicetree@vger.kernel.org>
-Subject: [PATCH] SATA: OCTEON: support SATA on OCTEON platform
-Date: Mon, 19 Jan 2015 18:23:58 +0300
-Message-ID: <1421681040-3392-1-git-send-email-aleksey.makarov@auriga.com>
-X-Mailer: git-send-email 2.2.2
+	Mon, 19 Jan 2015 10:02:14 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: "Li, Aubrey" <aubrey.li@linux.intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: "Brown, Len" <len.brown@intel.com>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM list <linux-pm@vger.kernel.org>
+Subject: Re: [PATCH v3]PM/Sleep: Timer quiesce in freeze state
+Date: Mon, 19 Jan 2015 16:24:48 +0100
+Message-ID: <5541724.ryTEJUkIdN@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <54B5B724.4020108@linux.intel.com>
+References: <54866625.8010406@linux.intel.com> <54B5B724.4020108@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [80.240.102.213]
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The OCTEON SATA controller is currently found on cn71XX devices.
+On Wednesday, January 14, 2015 08:24:04 AM Li, Aubrey wrote:
+> Happy New Year, can you please take a look at this patch now?
 
-Signed-off-by: David Daney <david.daney@cavium.com>
-Signed-off-by: Vinita Gupta <vgupta@caviumnetworks.com>
-[aleksey.makarov@auriga.com: preparing for submission,
-conflict resolution, fixes for the platform code]
-Signed-off-by: Aleksey Makarov <aleksey.makarov@auriga.com>
----
- .../devicetree/bindings/ata/ahci-platform.txt      |   1 +
- .../devicetree/bindings/mips/cavium/sata-uctl.txt  |  31 ++++++
- arch/mips/cavium-octeon/octeon-platform.c          |   1 +
- drivers/ata/Kconfig                                |   9 ++
- drivers/ata/Makefile                               |   1 +
- drivers/ata/ahci_platform.c                        |  10 ++
- drivers/ata/sata_octeon.c                          | 107 +++++++++++++++++++++
- 7 files changed, 160 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mips/cavium/sata-uctl.txt
- create mode 100644 drivers/ata/sata_octeon.c
+Thomas, Peter, any comments?
 
-diff --git a/Documentation/devicetree/bindings/ata/ahci-platform.txt b/Documentation/devicetree/bindings/ata/ahci-platform.txt
-index 4ab09f2..1a5d3be 100644
---- a/Documentation/devicetree/bindings/ata/ahci-platform.txt
-+++ b/Documentation/devicetree/bindings/ata/ahci-platform.txt
-@@ -11,6 +11,7 @@ Required properties:
- - compatible        : compatible string, one of:
-   - "allwinner,sun4i-a10-ahci"
-   - "hisilicon,hisi-ahci"
-+  - "cavium,octeon-7130-ahci"
-   - "ibm,476gtr-ahci"
-   - "marvell,armada-380-ahci"
-   - "snps,dwc-ahci"
-diff --git a/Documentation/devicetree/bindings/mips/cavium/sata-uctl.txt b/Documentation/devicetree/bindings/mips/cavium/sata-uctl.txt
-new file mode 100644
-index 0000000..222e66e
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mips/cavium/sata-uctl.txt
-@@ -0,0 +1,31 @@
-+* UCTL SATA controller glue
-+
-+Properties:
-+- compatible: "cavium,octeon-7130-sata-uctl"
-+
-+  Compatibility with the cn7130 SOC.
-+
-+- reg: The base address of the UCTL register bank.
-+
-+- #address-cells: Must be <2>.
-+
-+- #size-cells: Must be <2>.
-+
-+- ranges: Empty to signify direct mapping of the children.
-+
-+Example:
-+
-+	uctl@118006c000000 {
-+	        compatible = "cavium,octeon-7130-sata-uctl";
-+	        reg = <0x00011800 0x6c000000 0x00000000 0x00000100>;
-+	        ranges;
-+	        #address-cells = <0x00000002>;
-+	        #size-cells = <0x00000002>;
-+	        sata@16c00 {
-+	                compatible = "cavium,octeon-7130-ahci";
-+	                reg = <0x00016c00 0x00000000 0x00000000 0x00000200>;
-+	                interrupt-parent = <0x0000000d>;
-+	                interrupts = <0x00000002 0x00000004>;
-+	                cavium,qlm-trim-alias = "sata";
-+	        };
-+	};
-diff --git a/arch/mips/cavium-octeon/octeon-platform.c b/arch/mips/cavium-octeon/octeon-platform.c
-index b67ddf0..6518231 100644
---- a/arch/mips/cavium-octeon/octeon-platform.c
-+++ b/arch/mips/cavium-octeon/octeon-platform.c
-@@ -445,6 +445,7 @@ static struct of_device_id __initdata octeon_ids[] = {
- 	{ .compatible = "cavium,octeon-3860-bootbus", },
- 	{ .compatible = "cavium,mdio-mux", },
- 	{ .compatible = "gpio-leds", },
-+	{ .compatible = "cavium,octeon-7130-sata-uctl", },
- 	{},
- };
- 
-diff --git a/drivers/ata/Kconfig b/drivers/ata/Kconfig
-index a3a1360..28a11fe 100644
---- a/drivers/ata/Kconfig
-+++ b/drivers/ata/Kconfig
-@@ -188,6 +188,15 @@ config SATA_SIL24
- 
- 	  If unsure, say N.
- 
-+config SATA_OCTEON
-+	tristate "Cavium Octeon Soc Serial ATA"
-+	depends on SATA_AHCI_PLATFORM && CAVIUM_OCTEON_SOC
-+	default y
-+	help
-+	  This option enables support for Cavium Octeon SoC Serial ATA.
-+
-+	  If unsure, say N.
-+
- config ATA_SFF
- 	bool "ATA SFF support (for legacy IDE and PATA)"
- 	default y
-diff --git a/drivers/ata/Makefile b/drivers/ata/Makefile
-index ae41107..4a0e5e3 100644
---- a/drivers/ata/Makefile
-+++ b/drivers/ata/Makefile
-@@ -17,6 +17,7 @@ obj-$(CONFIG_AHCI_SUNXI)	+= ahci_sunxi.o libahci.o libahci_platform.o
- obj-$(CONFIG_AHCI_ST)		+= ahci_st.o libahci.o libahci_platform.o
- obj-$(CONFIG_AHCI_TEGRA)	+= ahci_tegra.o libahci.o libahci_platform.o
- obj-$(CONFIG_AHCI_XGENE)	+= ahci_xgene.o libahci.o libahci_platform.o
-+obj-$(CONFIG_SATA_OCTEON)	+= sata_octeon.o
- 
- # SFF w/ custom DMA
- obj-$(CONFIG_PDC_ADMA)		+= pdc_adma.o
-diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
-index 18d5398..bb36396 100644
---- a/drivers/ata/ahci_platform.c
-+++ b/drivers/ata/ahci_platform.c
-@@ -22,6 +22,12 @@
- #include <linux/ahci_platform.h>
- #include "ahci.h"
- 
-+#if IS_ENABLED(CONFIG_SATA_OCTEON)
-+void ahci_octeon_config(struct platform_device *pdev);
-+#else
-+static inline void ahci_octeon_config(struct platform_device *pdev) {}
-+#endif
-+
- static const struct ata_port_info ahci_port_info = {
- 	.flags		= AHCI_FLAG_COMMON,
- 	.pio_mask	= ATA_PIO4,
-@@ -46,6 +52,9 @@ static int ahci_probe(struct platform_device *pdev)
- 	if (of_device_is_compatible(dev->of_node, "hisilicon,hisi-ahci"))
- 		hpriv->flags |= AHCI_HFLAG_NO_FBS | AHCI_HFLAG_NO_NCQ;
- 
-+	if (of_device_is_compatible(dev->of_node, "cavium,octeon-7130-ahci"))
-+		ahci_octeon_config(pdev);
-+
- 	rc = ahci_platform_init_host(pdev, hpriv, &ahci_port_info);
- 	if (rc)
- 		goto disable_resources;
-@@ -67,6 +76,7 @@ static const struct of_device_id ahci_of_match[] = {
- 	{ .compatible = "ibm,476gtr-ahci", },
- 	{ .compatible = "snps,dwc-ahci", },
- 	{ .compatible = "hisilicon,hisi-ahci", },
-+	{ .compatible = "cavium,octeon-7130-ahci", },
- 	{},
- };
- MODULE_DEVICE_TABLE(of, ahci_of_match);
-diff --git a/drivers/ata/sata_octeon.c b/drivers/ata/sata_octeon.c
-new file mode 100644
-index 0000000..e24cc27
---- /dev/null
-+++ b/drivers/ata/sata_octeon.c
-@@ -0,0 +1,107 @@
-+/*
-+ * SATA glue for Cavium Octeon III SOCs.
-+ *
-+ *
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
-+ *
-+ * Copyright (C) 2010-2015 Cavium Networks
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/dma-mapping.h>
-+#include <linux/platform_device.h>
-+
-+#include <asm/octeon/octeon.h>
-+#include <asm/bitfield.h>
-+
-+/**
-+ * cvmx_sata_uctl_shim_cfg
-+ * from cvmx-sata-defs.h
-+ *
-+ * Accessible by: only when A_CLKDIV_EN
-+ * Reset by: IOI reset (srst_n) or SATA_UCTL_CTL[SATA_UCTL_RST]
-+ * This register allows configuration of various shim (UCTL) features.
-+ * Fields XS_NCB_OOB_* are captured when there are no outstanding OOB errors
-+ * indicated in INTSTAT and a new OOB error arrives.
-+ * Fields XS_BAD_DMA_* are captured when there are no outstanding DMA errors
-+ * indicated in INTSTAT and a new DMA error arrives.
-+ */
-+union cvmx_sata_uctl_shim_cfg {
-+	uint64_t u64;
-+	struct cvmx_sata_uctl_shim_cfg_s {
-+	/*
-+	 * Read/write error log for out-of-bound UAHC register access.
-+	 * 0 = read, 1 = write.
-+	 */
-+	__BITFIELD_FIELD(uint64_t xs_ncb_oob_wrn               : 1,
-+	__BITFIELD_FIELD(uint64_t reserved_57_62               : 6,
-+	/*
-+	 * SRCID error log for out-of-bound UAHC register access.
-+	 * The IOI outbound SRCID for the OOB error.
-+	 */
-+	__BITFIELD_FIELD(uint64_t xs_ncb_oob_osrc              : 9,
-+	/*
-+	 * Read/write error log for bad DMA access from UAHC.
-+	 * 0 = read error log, 1 = write error log.
-+	 */
-+	__BITFIELD_FIELD(uint64_t xm_bad_dma_wrn               : 1,
-+	__BITFIELD_FIELD(uint64_t reserved_44_46               : 3,
-+	/*
-+	 * ErrType error log for bad DMA access from UAHC. Encodes the type of
-+	 * error encountered (error largest encoded value has priority).
-+	 * See SATA_UCTL_XM_BAD_DMA_TYPE_E.
-+	 */
-+	__BITFIELD_FIELD(uint64_t xm_bad_dma_type              : 4,
-+	__BITFIELD_FIELD(uint64_t reserved_13_39               : 27,
-+	/*
-+	 * Selects the IOI read command used by DMA accesses.
-+	 * See SATA_UCTL_DMA_READ_CMD_E.
-+	 */
-+	__BITFIELD_FIELD(uint64_t dma_read_cmd                 : 1,
-+	__BITFIELD_FIELD(uint64_t reserved_10_11               : 2,
-+	/*
-+	 * Selects the endian format for DMA accesses to the L2C.
-+	 * See SATA_UCTL_ENDIAN_MODE_E.
-+	 */
-+	__BITFIELD_FIELD(uint64_t dma_endian_mode              : 2,
-+	__BITFIELD_FIELD(uint64_t reserved_2_7                 : 6,
-+	/*
-+	 * Selects the endian format for IOI CSR accesses to the UAHC.
-+	 * Note that when UAHC CSRs are accessed via RSL, they are returned
-+	 * as big-endian. See SATA_UCTL_ENDIAN_MODE_E.
-+	 */
-+	__BITFIELD_FIELD(uint64_t csr_endian_mode              : 2,
-+		;))))))))))))
-+	} s;
-+};
-+
-+#define CVMX_SATA_UCTL_SHIM_CFG (CVMX_ADD_IO_SEG(0x000118006C0000E8ull))
-+
-+void ahci_octeon_config(struct platform_device *pdev)
-+{
-+	union cvmx_sata_uctl_shim_cfg shim_cfg;
-+
-+	/* set-up endian mode */
-+	shim_cfg.u64 = cvmx_read_csr(CVMX_SATA_UCTL_SHIM_CFG);
-+#ifdef __BIG_ENDIAN
-+	shim_cfg.s.dma_endian_mode = 1;
-+	shim_cfg.s.csr_endian_mode = 1;
-+#else
-+	shim_cfg.s.dma_endian_mode = 0;
-+	shim_cfg.s.csr_endian_mode = 0;
-+#endif
-+	shim_cfg.s.dma_read_cmd = 1; /* No allocate L2C */
-+	cvmx_write_csr(CVMX_SATA_UCTL_SHIM_CFG, shim_cfg.u64);
-+
-+	/* Set a good dma_mask */
-+	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
-+	pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
-+}
-+EXPORT_SYMBOL(ahci_octeon_config);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Cavium, Inc. <support@cavium.com>");
-+MODULE_DESCRIPTION("Cavium Inc. sata config.");
+
+> On 2014/12/9 11:01, Li, Aubrey wrote:
+> > The patch is based on v3.18.
+> > 
+> > Freeze is a general power saving state that processes are frozen, devices
+> > are suspended and CPUs are in idle state. However, when the system enters
+> > freeze state, there are a few timers keep ticking and hence consumes more
+> > power unnecessarily. The observed timer events in freeze state are:
+> > - tick_sched_timer
+> > - watchdog lockup detector
+> > - realtime scheduler period timer
+> > 
+> > The system power consumption in freeze state will be reduced significantly
+> > if we quiesce these timers.
+> > 
+> > The patch is tested on:
+> > - Sandybrdige-EP system, both RTC alarm and power button are able to wake
+> >   the system up from freeze state.
+> > - HP laptop EliteBook 8460p, both RTC alarm and power button are able to
+> >   wake the system up from freeze state.
+> > - Baytrail-T(ASUS_T100) platform, power button is able to wake the system
+> >   up from freeze state.
+> > 
+> > Suggested-by: Thomas Gleixner <tglx@linutronix.de>
+> > Signed-off-by: Aubrey Li <aubrey.li@linux.intel.com>
+> > Cc: Peter Zijlstra <peterz@infradead.org>
+> > Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+> > Cc: Len Brown <len.brown@intel.com>
+> > Cc: Alan Cox <alan@linux.intel.com>
+> > ---
+> >  drivers/cpuidle/cpuidle.c   | 13 ++++++++
+> >  include/linux/clockchips.h  |  4 +++
+> >  include/linux/suspend.h     |  4 +++
+> >  include/linux/timekeeping.h |  2 ++
+> >  kernel/power/suspend.c      | 50 ++++++++++++++++++++++++++---
+> >  kernel/sched/idle.c         | 45 ++++++++++++++++++++++++++
+> >  kernel/softirq.c            |  5 +--
+> >  kernel/time/clockevents.c   | 13 ++++++++
+> >  kernel/time/tick-common.c   | 53 +++++++++++++++++++++++++++++++
+> >  kernel/time/tick-internal.h |  3 ++
+> >  kernel/time/timekeeping.c   | 77 +++++++++++++++++++++++++++++++++------------
+> >  11 files changed, 243 insertions(+), 26 deletions(-)
+> > 
+> > diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+> > index 125150d..b9a3ada 100644
+> > --- a/drivers/cpuidle/cpuidle.c
+> > +++ b/drivers/cpuidle/cpuidle.c
+> > @@ -20,6 +20,7 @@
+> >  #include <linux/hrtimer.h>
+> >  #include <linux/module.h>
+> >  #include <trace/events/power.h>
+> > +#include <linux/suspend.h>
+> >  
+> >  #include "cpuidle.h"
+> >  
+> > @@ -119,6 +120,18 @@ int cpuidle_enter_state(struct cpuidle_device *dev, struct cpuidle_driver *drv,
+> >  	ktime_t time_start, time_end;
+> >  	s64 diff;
+> >  
+> > +	/*
+> > +	 * under the freeze scenario, the timekeeping is suspended
+> > +	 * as well as the clock source device, so we bypass the idle
+> > +	 * counter update in freeze idle
+> > +	 */
+> > +	if (in_freeze()) {
+> > +		entered_state = target_state->enter(dev, drv, index);
+> > +		if (!cpuidle_state_is_coupled(dev, drv, entered_state))
+> > +			local_irq_enable();
+> > +		return entered_state;
+> > +	}
+> > +
+> >  	trace_cpu_idle_rcuidle(index, dev->cpu);
+> >  	time_start = ktime_get();
+> >  
+> > diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
+> > index 2e4cb67..d118e0b 100644
+> > --- a/include/linux/clockchips.h
+> > +++ b/include/linux/clockchips.h
+> > @@ -18,6 +18,9 @@ enum clock_event_nofitiers {
+> >  	CLOCK_EVT_NOTIFY_BROADCAST_EXIT,
+> >  	CLOCK_EVT_NOTIFY_SUSPEND,
+> >  	CLOCK_EVT_NOTIFY_RESUME,
+> > +	CLOCK_EVT_NOTIFY_FREEZE_PREPARE,
+> > +	CLOCK_EVT_NOTIFY_FREEZE,
+> > +	CLOCK_EVT_NOTIFY_UNFREEZE,
+> >  	CLOCK_EVT_NOTIFY_CPU_DYING,
+> >  	CLOCK_EVT_NOTIFY_CPU_DEAD,
+> >  };
+> > @@ -95,6 +98,7 @@ enum clock_event_mode {
+> >   */
+> >  struct clock_event_device {
+> >  	void			(*event_handler)(struct clock_event_device *);
+> > +	void			(*real_handler)(struct clock_event_device *);
+> >  	int			(*set_next_event)(unsigned long evt,
+> >  						  struct clock_event_device *);
+> >  	int			(*set_next_ktime)(ktime_t expires,
+> > diff --git a/include/linux/suspend.h b/include/linux/suspend.h
+> > index 3388c1b..86a651c 100644
+> > --- a/include/linux/suspend.h
+> > +++ b/include/linux/suspend.h
+> > @@ -203,6 +203,8 @@ extern void suspend_set_ops(const struct platform_suspend_ops *ops);
+> >  extern int suspend_valid_only_mem(suspend_state_t state);
+> >  extern void freeze_set_ops(const struct platform_freeze_ops *ops);
+> >  extern void freeze_wake(void);
+> > +extern bool in_freeze(void);
+> > +extern bool idle_should_freeze(void);
+> >  
+> >  /**
+> >   * arch_suspend_disable_irqs - disable IRQs for suspend
+> > @@ -230,6 +232,8 @@ static inline void suspend_set_ops(const struct platform_suspend_ops *ops) {}
+> >  static inline int pm_suspend(suspend_state_t state) { return -ENOSYS; }
+> >  static inline void freeze_set_ops(const struct platform_freeze_ops *ops) {}
+> >  static inline void freeze_wake(void) {}
+> > +static inline bool in_freeze(void) { return false; }
+> > +static inline bool idle_should_freeze(void) { return false; }
+> >  #endif /* !CONFIG_SUSPEND */
+> >  
+> >  /* struct pbe is used for creating lists of pages that should be restored
+> > diff --git a/include/linux/timekeeping.h b/include/linux/timekeeping.h
+> > index 1caa6b0..07957a9 100644
+> > --- a/include/linux/timekeeping.h
+> > +++ b/include/linux/timekeeping.h
+> > @@ -5,6 +5,8 @@
+> >  
+> >  void timekeeping_init(void);
+> >  extern int timekeeping_suspended;
+> > +extern void timekeeping_freeze(void);
+> > +extern void timekeeping_unfreeze(void);
+> >  
+> >  /*
+> >   * Get and set timeofday
+> > diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
+> > index c347e3c..6467fb8 100644
+> > --- a/kernel/power/suspend.c
+> > +++ b/kernel/power/suspend.c
+> > @@ -28,6 +28,7 @@
+> >  #include <linux/ftrace.h>
+> >  #include <trace/events/power.h>
+> >  #include <linux/compiler.h>
+> > +#include <linux/clockchips.h>
+> >  
+> >  #include "power.h"
+> >  
+> > @@ -37,7 +38,15 @@ const char *pm_states[PM_SUSPEND_MAX];
+> >  static const struct platform_suspend_ops *suspend_ops;
+> >  static const struct platform_freeze_ops *freeze_ops;
+> >  static DECLARE_WAIT_QUEUE_HEAD(suspend_freeze_wait_head);
+> > -static bool suspend_freeze_wake;
+> > +
+> > +/* freeze state machine */
+> > +enum freeze_state {
+> > +	FREEZE_STATE_NONE,      /* not in freeze */
+> > +	FREEZE_STATE_ENTER,     /* enter freeze */
+> > +	FREEZE_STATE_WAKE,      /* in freeze wakeup context */
+> > +};
+> > +
+> > +static enum freeze_state suspend_freeze_state;
+> >  
+> >  void freeze_set_ops(const struct platform_freeze_ops *ops)
+> >  {
+> > @@ -46,23 +55,56 @@ void freeze_set_ops(const struct platform_freeze_ops *ops)
+> >  	unlock_system_sleep();
+> >  }
+> >  
+> > +bool in_freeze(void)
+> > +{
+> > +	return (suspend_freeze_state > FREEZE_STATE_NONE);
+> > +}
+> > +EXPORT_SYMBOL_GPL(in_freeze);
+> > +
+> > +bool idle_should_freeze(void)
+> > +{
+> > +	return (suspend_freeze_state == FREEZE_STATE_ENTER);
+> > +}
+> > +EXPORT_SYMBOL_GPL(idle_should_freeze);
+> > +
+> >  static void freeze_begin(void)
+> >  {
+> > -	suspend_freeze_wake = false;
+> > +	suspend_freeze_state = FREEZE_STATE_NONE;
+> >  }
+> >  
+> >  static void freeze_enter(void)
+> >  {
+> > +	suspend_freeze_state = FREEZE_STATE_ENTER;
+> > +	get_online_cpus();
+> >  	cpuidle_use_deepest_state(true);
+> >  	cpuidle_resume();
+> > -	wait_event(suspend_freeze_wait_head, suspend_freeze_wake);
+> > +	clockevents_notify(CLOCK_EVT_NOTIFY_FREEZE_PREPARE, NULL);
+> > +	/*
+> > +	 * push all the CPUs into freeze idle loop
+> > +	 */
+> > +	wake_up_all_idle_cpus();
+> > +	printk(KERN_INFO "PM: suspend to idle\n");
+> > +	/*
+> > +	 * put the current CPU into wait queue so that this CPU
+> > +	 * is able to enter freeze idle loop as well
+> > +	 */
+> > +	wait_event(suspend_freeze_wait_head,
+> > +		(suspend_freeze_state == FREEZE_STATE_WAKE));
+> > +	printk(KERN_INFO "PM: resume from freeze\n");
+> >  	cpuidle_pause();
+> >  	cpuidle_use_deepest_state(false);
+> > +	put_online_cpus();
+> > +	suspend_freeze_state = FREEZE_STATE_NONE;
+> >  }
+> >  
+> >  void freeze_wake(void)
+> >  {
+> > -	suspend_freeze_wake = true;
+> > +	if (!in_freeze())
+> > +		return;
+> > +	/*
+> > +	 * wake freeze task up
+> > +	 */
+> > +	suspend_freeze_state = FREEZE_STATE_WAKE;
+> >  	wake_up(&suspend_freeze_wait_head);
+> >  }
+> >  EXPORT_SYMBOL_GPL(freeze_wake);
+> > diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
+> > index c47fce7..f28f8cb 100644
+> > --- a/kernel/sched/idle.c
+> > +++ b/kernel/sched/idle.c
+> > @@ -7,6 +7,7 @@
+> >  #include <linux/tick.h>
+> >  #include <linux/mm.h>
+> >  #include <linux/stackprotector.h>
+> > +#include <linux/suspend.h>
+> >  
+> >  #include <asm/tlb.h>
+> >  
+> > @@ -182,6 +183,45 @@ exit_idle:
+> >  }
+> >  
+> >  /*
+> > + * cpu idle freeze function
+> > + */
+> > +static void cpu_idle_freeze(void)
+> > +{
+> > +	struct cpuidle_device *dev = __this_cpu_read(cpuidle_devices);
+> > +	struct cpuidle_driver *drv = cpuidle_get_cpu_driver(dev);
+> > +
+> > +	/*
+> > +	 * suspend tick, the last CPU suspend timekeeping
+> > +	 */
+> > +	clockevents_notify(CLOCK_EVT_NOTIFY_FREEZE, NULL);
+> > +	/*
+> > +	 * idle loop here if idle_should_freeze()
+> > +	 */
+> > +	while (idle_should_freeze()) {
+> > +		int next_state;
+> > +		/*
+> > +		 * interrupt must be disabled before cpu enters idle
+> > +		 */
+> > +		local_irq_disable();
+> > +
+> > +		next_state = cpuidle_select(drv, dev);
+> > +		if (next_state < 0) {
+> > +			arch_cpu_idle();
+> > +			continue;
+> > +		}
+> > +		/*
+> > +		 * cpuidle_enter will return with interrupt enabled
+> > +		 */
+> > +		cpuidle_enter(drv, dev, next_state);
+> > +	}
+> > +
+> > +	/*
+> > +	 * resume tick, the first wakeup CPU resume timekeeping
+> > +	 */
+> > +	clockevents_notify(CLOCK_EVT_NOTIFY_UNFREEZE, NULL);
+> > +}
+> > +
+> > +/*
+> >   * Generic idle loop implementation
+> >   *
+> >   * Called with polling cleared.
+> > @@ -208,6 +248,11 @@ static void cpu_idle_loop(void)
+> >  			if (cpu_is_offline(smp_processor_id()))
+> >  				arch_cpu_idle_dead();
+> >  
+> > +			if (idle_should_freeze()) {
+> > +				cpu_idle_freeze();
+> > +				continue;
+> > +			}
+> > +
+> >  			local_irq_disable();
+> >  			arch_cpu_idle_enter();
+> >  
+> > diff --git a/kernel/softirq.c b/kernel/softirq.c
+> > index 0699add..a231bf6 100644
+> > --- a/kernel/softirq.c
+> > +++ b/kernel/softirq.c
+> > @@ -26,6 +26,7 @@
+> >  #include <linux/smpboot.h>
+> >  #include <linux/tick.h>
+> >  #include <linux/irq.h>
+> > +#include <linux/suspend.h>
+> >  
+> >  #define CREATE_TRACE_POINTS
+> >  #include <trace/events/irq.h>
+> > @@ -321,7 +322,7 @@ asmlinkage __visible void do_softirq(void)
+> >  void irq_enter(void)
+> >  {
+> >  	rcu_irq_enter();
+> > -	if (is_idle_task(current) && !in_interrupt()) {
+> > +	if (is_idle_task(current) && !in_interrupt() && !in_freeze()) {
+> >  		/*
+> >  		 * Prevent raise_softirq from needlessly waking up ksoftirqd
+> >  		 * here, as softirq will be serviced on return from interrupt.
+> > @@ -364,7 +365,7 @@ static inline void tick_irq_exit(void)
+> >  
+> >  	/* Make sure that timer wheel updates are propagated */
+> >  	if ((idle_cpu(cpu) && !need_resched()) || tick_nohz_full_cpu(cpu)) {
+> > -		if (!in_interrupt())
+> > +		if (!in_interrupt() && !in_freeze())
+> >  			tick_nohz_irq_exit();
+> >  	}
+> >  #endif
+> > diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
+> > index 5544990..6d9a4a3 100644
+> > --- a/kernel/time/clockevents.c
+> > +++ b/kernel/time/clockevents.c
+> > @@ -17,6 +17,7 @@
+> >  #include <linux/module.h>
+> >  #include <linux/smp.h>
+> >  #include <linux/device.h>
+> > +#include <linux/suspend.h>
+> >  
+> >  #include "tick-internal.h"
+> >  
+> > @@ -579,6 +580,18 @@ int clockevents_notify(unsigned long reason, void *arg)
+> >  		tick_resume();
+> >  		break;
+> >  
+> > +	case CLOCK_EVT_NOTIFY_FREEZE_PREPARE:
+> > +		tick_freeze_prepare();
+> > +		break;
+> > +
+> > +	case CLOCK_EVT_NOTIFY_FREEZE:
+> > +		tick_freeze();
+> > +		break;
+> > +
+> > +	case CLOCK_EVT_NOTIFY_UNFREEZE:
+> > +		tick_unfreeze();
+> > +		break;
+> > +
+> >  	case CLOCK_EVT_NOTIFY_CPU_DEAD:
+> >  		tick_shutdown_broadcast_oneshot(arg);
+> >  		tick_shutdown_broadcast(arg);
+> > diff --git a/kernel/time/tick-common.c b/kernel/time/tick-common.c
+> > index 7efeedf..0bbc886 100644
+> > --- a/kernel/time/tick-common.c
+> > +++ b/kernel/time/tick-common.c
+> > @@ -19,6 +19,7 @@
+> >  #include <linux/profile.h>
+> >  #include <linux/sched.h>
+> >  #include <linux/module.h>
+> > +#include <linux/suspend.h>
+> >  
+> >  #include <asm/irq_regs.h>
+> >  
+> > @@ -51,6 +52,16 @@ ktime_t tick_period;
+> >  int tick_do_timer_cpu __read_mostly = TICK_DO_TIMER_BOOT;
+> >  
+> >  /*
+> > + * Tick device is per CPU device, when we freeze the timekeeping stuff, we
+> > + * want to freeze the tick device on all of the online CPUs.
+> > + *
+> > + * tick_freeze_target_depth is a counter used for freezing tick device, the
+> > + * initial value of it is online CPU number. When it is counted down to ZERO,
+> > + * all of the tick devices are freezed.
+> > + */
+> > +static unsigned int tick_freeze_target_depth;
+> > +
+> > +/*
+> >   * Debugging: see timer_list.c
+> >   */
+> >  struct tick_device *tick_get_device(int cpu)
+> > @@ -375,15 +386,21 @@ void tick_shutdown(unsigned int *cpup)
+> >  void tick_suspend(void)
+> >  {
+> >  	struct tick_device *td = this_cpu_ptr(&tick_cpu_device);
+> > +	struct clock_event_device *dev = td->evtdev;
+> >  
+> > +	dev->real_handler = dev->event_handler;
+> > +	dev->event_handler = clockevents_handle_noop;
+> >  	clockevents_shutdown(td->evtdev);
+> >  }
+> >  
+> >  void tick_resume(void)
+> >  {
+> >  	struct tick_device *td = this_cpu_ptr(&tick_cpu_device);
+> > +	struct clock_event_device *dev = td->evtdev;
+> >  	int broadcast = tick_resume_broadcast();
+> >  
+> > +	dev->event_handler = dev->real_handler;
+> > +	dev->real_handler = NULL;
+> >  	clockevents_set_mode(td->evtdev, CLOCK_EVT_MODE_RESUME);
+> >  
+> >  	if (!broadcast) {
+> > @@ -394,6 +411,42 @@ void tick_resume(void)
+> >  	}
+> >  }
+> >  
+> > +void tick_freeze_prepare(void)
+> > +{
+> > +	tick_freeze_target_depth = num_online_cpus();
+> > +}
+> > +
+> > +void tick_freeze(void)
+> > +{
+> > +	/*
+> > +	 * This is serialized against a concurrent wakeup
+> > +	 * via clockevents_lock
+> > +	 */
+> > +	tick_freeze_target_depth--;
+> > +	tick_suspend();
+> > +
+> > +	/*
+> > +	 * the last tick_suspend CPU suspends timekeeping
+> > +	 */
+> > +	if (!tick_freeze_target_depth)
+> > +		timekeeping_freeze();
+> > +}
+> > +
+> > +void tick_unfreeze(void)
+> > +{
+> > +	/*
+> > +	 * the first wakeup CPU resumes timekeeping
+> > +	 */
+> > +	if (timekeeping_suspended) {
+> > +		timekeeping_unfreeze();
+> > +		touch_softlockup_watchdog();
+> > +		tick_resume();
+> > +		hrtimers_resume();
+> > +	} else {
+> > +		tick_resume();
+> > +	}
+> > +}
+> > +
+> >  /**
+> >   * tick_init - initialize the tick control
+> >   */
+> > diff --git a/kernel/time/tick-internal.h b/kernel/time/tick-internal.h
+> > index 366aeb4..8b5bab6 100644
+> > --- a/kernel/time/tick-internal.h
+> > +++ b/kernel/time/tick-internal.h
+> > @@ -27,6 +27,9 @@ extern void tick_handover_do_timer(int *cpup);
+> >  extern void tick_shutdown(unsigned int *cpup);
+> >  extern void tick_suspend(void);
+> >  extern void tick_resume(void);
+> > +extern void tick_freeze_prepare(void);
+> > +extern void tick_freeze(void);
+> > +extern void tick_unfreeze(void);
+> >  extern bool tick_check_replacement(struct clock_event_device *curdev,
+> >  				   struct clock_event_device *newdev);
+> >  extern void tick_install_replacement(struct clock_event_device *dev);
+> > diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+> > index ec1791f..a11065f 100644
+> > --- a/kernel/time/timekeeping.c
+> > +++ b/kernel/time/timekeeping.c
+> > @@ -1107,14 +1107,7 @@ void timekeeping_inject_sleeptime(struct timespec *delta)
+> >  	clock_was_set();
+> >  }
+> >  
+> > -/**
+> > - * timekeeping_resume - Resumes the generic timekeeping subsystem.
+> > - *
+> > - * This is for the generic clocksource timekeeping.
+> > - * xtime/wall_to_monotonic/jiffies/etc are
+> > - * still managed by arch specific suspend/resume code.
+> > - */
+> > -static void timekeeping_resume(void)
+> > +static void timekeeping_resume_compensate_time(void)
+> >  {
+> >  	struct timekeeper *tk = &tk_core.timekeeper;
+> >  	struct clocksource *clock = tk->tkr.clock;
+> > @@ -1127,9 +1120,6 @@ static void timekeeping_resume(void)
+> >  	read_persistent_clock(&tmp);
+> >  	ts_new = timespec_to_timespec64(tmp);
+> >  
+> > -	clockevents_resume();
+> > -	clocksource_resume();
+> > -
+> >  	raw_spin_lock_irqsave(&timekeeper_lock, flags);
+> >  	write_seqcount_begin(&tk_core.seq);
+> >  
+> > @@ -1186,16 +1176,9 @@ static void timekeeping_resume(void)
+> >  	timekeeping_update(tk, TK_MIRROR | TK_CLOCK_WAS_SET);
+> >  	write_seqcount_end(&tk_core.seq);
+> >  	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
+> > -
+> > -	touch_softlockup_watchdog();
+> > -
+> > -	clockevents_notify(CLOCK_EVT_NOTIFY_RESUME, NULL);
+> > -
+> > -	/* Resume hrtimers */
+> > -	hrtimers_resume();
+> >  }
+> >  
+> > -static int timekeeping_suspend(void)
+> > +static void timekeeping_suspend_get_time(void)
+> >  {
+> >  	struct timekeeper *tk = &tk_core.timekeeper;
+> >  	unsigned long flags;
+> > @@ -1242,11 +1225,65 @@ static int timekeeping_suspend(void)
+> >  	timekeeping_update(tk, TK_MIRROR);
+> >  	write_seqcount_end(&tk_core.seq);
+> >  	raw_spin_unlock_irqrestore(&timekeeper_lock, flags);
+> > +}
+> >  
+> > -	clockevents_notify(CLOCK_EVT_NOTIFY_SUSPEND, NULL);
+> > +/*
+> > + * The following operations:
+> > + *	clockevents_notify(CLOCK_EVT_NOTIFY_SUSPEND, NULL);
+> > + *	clockevents_notify(CLOCK_EVT_NOTIFY_RESUME, NULL);
+> > + * are moved out of
+> > + *	timekeeping_freeze() and timekeeping_unfreeze()
+> > + * and, replaced by
+> > + *	tick_suspend() and tick_resume()
+> > + * and, put into:
+> > + *	tick_freeze() and tick_unfreeze()
+> > + * so we avoid clockevents_lock multiple access
+> > + */
+> > +void timekeeping_freeze(void)
+> > +{
+> > +	/*
+> > +	 * clockevents_lock being held
+> > +	 */
+> > +	timekeeping_suspend_get_time();
+> >  	clocksource_suspend();
+> >  	clockevents_suspend();
+> > +}
+> >  
+> > +void timekeeping_unfreeze(void)
+> > +{
+> > +	/*
+> > +	 * clockevents_lock being held
+> > +	 */
+> > +	clockevents_resume();
+> > +	clocksource_resume();
+> > +	timekeeping_resume_compensate_time();
+> > +}
+> > +
+> > +/**
+> > + * timekeeping_resume - Resumes the generic timekeeping subsystem.
+> > + *
+> > + * This is for the generic clocksource timekeeping.
+> > + * xtime/wall_to_monotonic/jiffies/etc are
+> > + * still managed by arch specific suspend/resume code.
+> > + */
+> > +static void timekeeping_resume(void)
+> > +{
+> > +	clockevents_resume();
+> > +	clocksource_resume();
+> > +	timekeeping_resume_compensate_time();
+> > +
+> > +	touch_softlockup_watchdog();
+> > +	clockevents_notify(CLOCK_EVT_NOTIFY_RESUME, NULL);
+> > +	/* Resume hrtimers */
+> > +	hrtimers_resume();
+> > +}
+> > +
+> > +static int timekeeping_suspend(void)
+> > +{
+> > +	timekeeping_suspend_get_time();
+> > +	clockevents_notify(CLOCK_EVT_NOTIFY_SUSPEND, NULL);
+> > +	clocksource_suspend();
+> > +	clockevents_suspend();
+> >  	return 0;
+> >  }
+> >  
+> > 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-pm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
 -- 
-2.2.2
-
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
