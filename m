@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751557AbbASEjf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 23:39:35 -0500
-Received: from mga14.intel.com ([192.55.52.115]:62171 "EHLO mga14.intel.com"
+	id S1751680AbbASElb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 23:41:31 -0500
+Received: from mga14.intel.com ([192.55.52.115]:13310 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751090AbbASEjd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 23:39:33 -0500
+	id S1751185AbbASEl3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Jan 2015 23:41:29 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.09,424,1418112000"; 
-   d="scan'208";a="514124897"
-Message-ID: <54BC8A7F.5070502@linux.intel.com>
-Date: Mon, 19 Jan 2015 12:39:27 +0800
+   d="scan'208";a="514125293"
+Message-ID: <54BC8AF4.6010504@linux.intel.com>
+Date: Mon, 19 Jan 2015 12:41:24 +0800
 From: Jiang Liu <jiang.liu@linux.intel.com>
 Organization: Intel
 User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
@@ -56,11 +56,7 @@ On 2015/1/17 2:13, Konrad Rzeszutek Wilk wrote:
 > ...
 > -bash-4.1# cat /proc/interrupts |grep acpi
 >  20:          0          0          0  xen-pirq-ioapic-level  acpi
-> 
-Thanks Konrad, it works as expected. Previously IRQ9 was assigned
-to ACPI SCI GSI 20, now it assigns IRQ20. But that's OK, ACPI has
-no special requirement about the assigned IRQ number, we could
-assign any valid IRQ number for ACPI SCI GSI.
+Hi Konrad,
+	May I assume an Tested-by from you here?
 Thanks!
 Gerry
-
