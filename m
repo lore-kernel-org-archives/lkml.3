@@ -1,58 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752244AbbASTRD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 14:17:03 -0500
-Received: from shards.monkeyblade.net ([149.20.54.216]:32823 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751410AbbASTRA (ORCPT
+	id S1751758AbbASTTU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 14:19:20 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:44687 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751424AbbASTTT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 14:17:00 -0500
-Date: Mon, 19 Jan 2015 14:16:53 -0500 (EST)
-Message-Id: <20150119.141653.1430392722084939705.davem@davemloft.net>
-To: nicolas.dichtel@6wind.com
-Cc: netdev@vger.kernel.org, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-api@vger.kernel.org,
-        ebiederm@xmission.com, stephen@networkplumber.org,
-        akpm@linux-foundation.org, luto@amacapital.net, cwang@twopensource.com
-Subject: Re: [PATCH net-next v5 0/4] netns: allow to identify peer netns
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1421331078-21622-1-git-send-email-nicolas.dichtel@6wind.com>
-References: <87wq7g831b.fsf@x220.int.ebiederm.org>
-	<1421331078-21622-1-git-send-email-nicolas.dichtel@6wind.com>
-X-Mailer: Mew version 6.5 on Emacs 24.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Mon, 19 Jan 2015 14:19:19 -0500
+Message-ID: <54BD58B5.8010009@codeaurora.org>
+Date: Mon, 19 Jan 2015 11:19:17 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+MIME-Version: 1.0
+To: Tomeu Vizoso <tomeu.vizoso@collabora.com>, linux-kernel@vger.kernel.org,
+        Mike Turquette <mturquette@linaro.org>
+CC: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Subject: Re: [PATCH v9 1/3] clk: Remove unneeded NULL checks
+References: <1421688067-24426-1-git-send-email-tomeu.vizoso@collabora.com> <1421688067-24426-2-git-send-email-tomeu.vizoso@collabora.com>
+In-Reply-To: <1421688067-24426-2-git-send-email-tomeu.vizoso@collabora.com>
+Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 19 Jan 2015 11:16:59 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-Date: Thu, 15 Jan 2015 15:11:14 +0100
+On 01/19/2015 09:20 AM, Tomeu Vizoso wrote:
+> As clk_unprepare_unused_subtree and clk_disable_unused_subtree are
+> always called with a valid struct clk.
+>
+> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
 
-> The goal of this serie is to be able to multicast netlink messages with an
-> attribute that identify a peer netns.
-> This is needed by the userland to interpret some information contained in
-> netlink messages (like IFLA_LINK value, but also some other attributes in case
-> of x-netns netdevice (see also
-> http://thread.gmane.org/gmane.linux.network/315933/focus=316064 and
-> http://thread.gmane.org/gmane.linux.kernel.containers/28301/focus=4239)).
-> 
-> Ids of peer netns can be set by userland via a new rtnl cmd RTM_NEWNSID. When
-> the kernel needs an id for a peer (for example when advertising a new x-netns
-> interface via netlink), if the user didn't allocate an id, one will be
-> automatically allocated.
-> These ids are stored per netns and are local (ie only valid in the netns where
-> they are set). To avoid allocating an int for each peer netns, I use
-> idr_for_each() to retrieve the id of a peer netns. Note that it will be possible
-> to add a table (struct net -> id) later to optimize this lookup if needed.
-> 
-> Patch 1/4 introduces the rtnetlink API mechanism to set and get these ids.
-> Patch 2/4 and 3/4 implements an example of how to use these ids when advertising
-> information about a x-netns interface.
-> And patch 4/4 shows that the netlink messages can be symetric between a GET and
-> a SET.
- ...
+Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
 
-Seires applied, thanks.
+thanks.
+
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+a Linux Foundation Collaborative Project
+
