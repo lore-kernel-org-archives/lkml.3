@@ -1,105 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752487AbbASToi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 14:44:38 -0500
-Received: from pandora.arm.linux.org.uk ([78.32.30.218]:39257 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751462AbbASTog (ORCPT
+	id S1752531AbbASTol (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 14:44:41 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:47589 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751502AbbASToh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 14:44:36 -0500
-Date: Mon, 19 Jan 2015 19:44:20 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Ray Jui <rjui@broadcom.com>
-Cc: Wolfram Sang <wsa@the-dreams.de>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Arend van Spriel <arend@broadcom.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Scott Branden <sbranden@broadcom.com>, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        bcm-kernel-feedback-list@broadcom.com, devicetree@vger.kernel.org
-Subject: Re: [PATCH v6 2/3] i2c: iproc: Add Broadcom iProc I2C Driver
-Message-ID: <20150119194420.GG26493@n2100.arm.linux.org.uk>
-References: <rjui@broadcom.com>
- <1421695428-19102-1-git-send-email-rjui@broadcom.com>
- <1421695428-19102-3-git-send-email-rjui@broadcom.com>
+	Mon, 19 Jan 2015 14:44:37 -0500
+Message-ID: <54BD5EA3.6070106@codeaurora.org>
+Date: Mon, 19 Jan 2015 11:44:35 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686 on x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421695428-19102-3-git-send-email-rjui@broadcom.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
+        Mike Turquette <mturquette@linaro.org>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] clk: Fix debugfs clk removal before inited
+References: <1421661433-27141-1-git-send-email-srinivas.kandagatla@linaro.org>
+In-Reply-To: <1421661433-27141-1-git-send-email-srinivas.kandagatla@linaro.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To see why atomic_t is pure obfuscation:
+On 01/19/2015 01:57 AM, Srinivas Kandagatla wrote:
+> Some of the clks can be registered & unregistered before the clk related debugfs
+> entries are initialized at late_initcall. In the unregister path checking for only
+> dentry before clk_debug_init() would lead dangling pointers in the debug clk list,
+> because the list is already populated in register path and the clk pointer freed in
+> unregister path.
+> The side effect of not removing it from the list is either a null pointer
+> dereference or if lucky to boot the system, the number of clk entries in
+> debugfs disappear.
+>
+> We could add more checks like if (inited && !clk->dentry) but just removing
+> the check for dentry made more sense as debugfs_remove_recursive() seems to be
+> safe with null pointers. This will ensure that the unregistering clk would be
+> removed from the debug list in all the code paths.
+>
+> Without this patch kernel would crash with log:
+> Unable to handle kernel NULL pointer dereference at virtual address 00000000
+> pgd = c0204000
+> [00000000] *pgd=00000000
+> Internal error: Oops: 5 [#1] SMP ARM
+> Modules linked in:
+> CPU: 1 PID: 1 Comm: swapper/0 Tainted: G    B          3.19.0-rc3-00007-g412f9ba-dirty #840
+> Hardware name: Qualcomm (Flattened Device Tree)
+> task: ed948000 ti: ed944000 task.ti: ed944000
+> PC is at strlen+0xc/0x40
+> LR is at __create_file+0x64/0x1dc
+> pc : [<c04ee604>]    lr : [<c049f1c4>]    psr: 60000013
+> sp : ed945e40  ip : ed945e50  fp : ed945e4c
+> r10: 00000000  r9 : c1006094  r8 : 00000000
+> r7 : 000041ed  r6 : 00000000  r5 : ed4af998  r4 : c11b5e28
+> r3 : 00000000  r2 : ed945e38  r1 : a0000013  r0 : 00000000
+> Flags: nZCv  IRQs on  FIQs on  Mode SVC_32  ISA ARM  Segment kernel
+> Control: 10c5787d  Table: 8020406a  DAC: 00000015
+> Process swapper/0 (pid: 1, stack limit = 0xed944248)
+> Stack: (0xed945e40 to 0xed946000)
+> 5e40: ed945e7c ed945e50 c049f1c4 c04ee604 c0fc2fa4 00000000 ecb748c0 c11c2b80
+> 5e60: c0beec04 0000011c c0fc2fa4 00000000 ed945e94 ed945e80 c049f3e0 c049f16c
+> 5e80: 00000000 00000000 ed945eac ed945e98 c08cbc50 c049f3c0 ecb748c0 c11c2b80
+> 5ea0: ed945ed4 ed945eb0 c0fc3080 c08cbc30 c0beec04 c107e1d8 ecdf0600 c107e1d8
+> 5ec0: c107e1d8 ecdf0600 ed945f54 ed945ed8 c0208ed4 c0fc2fb0 c026a784 c04ee628
+> 5ee0: ed945f0c ed945ef0 c0f5d600 c04ee604 c0f5d5ec ef7fcc7d c0b40ecc 0000011c
+> 5f00: ed945f54 ed945f10 c026a994 c0f5d5f8 c04ecc00 00000007 ef7fcc95 00000007
+> 5f20: c0e90744 c0dd0884 ed945f54 c106cde0 00000007 c117f8c0 0000011c c0f5d5ec
+> 5f40: c1006094 c100609c ed945f94 ed945f58 c0f5de34 c0208e50 00000007 00000007
+> 5f60: c0f5d5ec be9b5ae0 00000000 c117f8c0 c0af1680 00000000 00000000 00000000
+> 5f80: 00000000 00000000 ed945fac ed945f98 c0af169c c0f5dd2c ed944000 00000000
+> 5fa0: 00000000 ed945fb0 c020f298 c0af168c 00000000 00000000 00000000 00000000
+> 5fc0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+> 5fe0: 00000000 00000000 00000000 00000000 00000013 00000000 ebcc6d33 bfffca73
+> [<c04ee604>] (strlen) from [<c049f1c4>] (__create_file+0x64/0x1dc)
+> [<c049f1c4>] (__create_file) from [<c049f3e0>] (debugfs_create_dir+0x2c/0x34)
+> [<c049f3e0>] (debugfs_create_dir) from [<c08cbc50>] (clk_debug_create_one+0x2c/0x16c)
+> [<c08cbc50>] (clk_debug_create_one) from [<c0fc3080>] (clk_debug_init+0xdc/0x144)
+> [<c0fc3080>] (clk_debug_init) from [<c0208ed4>] (do_one_initcall+0x90/0x1e0)
+> [<c0208ed4>] (do_one_initcall) from [<c0f5de34>] (kernel_init_freeable+0x114/0x1e0)
+> [<c0f5de34>] (kernel_init_freeable) from [<c0af169c>] (kernel_init+0x1c/0xfc)
+> [<c0af169c>] (kernel_init) from [<c020f298>] (ret_from_fork+0x14/0x3c)
+> Code: c0b40ecc e1a0c00d e92dd800 e24cb004 (e5d02000)
+> ---[ end trace b940e45b5e25c1e7 ]---
+>
+> Signed-off-by: Srinivas Kandagatla <srinivas.kandagatla@linaro.org>
+>
 
-typedef struct {
-        int counter;
-} atomic_t;
-
-So, counter is a plain int.
-
-On Mon, Jan 19, 2015 at 11:23:47AM -0800, Ray Jui wrote:
-> +static irqreturn_t bcm_iproc_i2c_isr(int irq, void *data)
-> +{
-> +	struct bcm_iproc_i2c_dev *iproc_i2c = data;
-> +	u32 status = readl(iproc_i2c->base + IS_OFFSET);
-> +
-> +	status &= ISR_MASK;
-> +
-> +	if (!status)
-> +		return IRQ_NONE;
-> +
-> +	writel(status, iproc_i2c->base + IS_OFFSET);
-> +	atomic_set(&iproc_i2c->xfer_is_done, 1);
-
-#define atomic_set(v,i) (((v)->counter) = (i))
-
-So, this is the same as doing:
-
-	iproc_i2c->xfer_is_done.counter = 1;
-
-which is merely setting the 'int' to 1.
-
-> +	time_left = wait_for_completion_timeout(&iproc_i2c->done, time_left);
-> +
-> +	/* disable all interrupts */
-> +	writel(0, iproc_i2c->base + IE_OFFSET);
-> +
-> +	if (!time_left && !atomic_read(&iproc_i2c->xfer_is_done)) {
-
-#define atomic_read(v)  ACCESS_ONCE((v)->counter)
-
-This is practically the same as:
-
-	if (!time_left && !iproc_i2c->xfer_is_done.counter) {
-
-except that this access will be guaranteed to happen just once at this
-location (see ACCESS_ONCE() in include/linux/compiler.h).
-
-However, complete()..wait_for_completion() ensures that there are
-barriers in the way: complete takes a spinlock on the waiter, so the
-write to iproc_i2c->xfer_is_done.counter will be visible by the time
-wait_for_completion() returns, and wait_for_completion() also does.
-The same spinlock is also manipulated by wait_for_completion(), which
-means there's barriers there as well, so it can't cache the value of
-"counter" across that call.
-
-So, the "volatile" access guaranteed by ACCESS_ONCE() isn't even
-needed here.
-
-(It would be needed if you were spinning in a loop, calling no other
-functions - but then you're supposed to use cpu_relax() in that
-circumstance, which has a compiler barrier in it, which ensures that
-it will re-read such a variable each time.)
+Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
+Fixes: 6314b6796e3c "clk: Don't hold prepare_lock across debugfs creation"
 
 -- 
-FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
-according to speedtest.net.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+a Linux Foundation Collaborative Project
+
