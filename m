@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751665AbbASAvD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 19:51:03 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:51009 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751179AbbASAvA (ORCPT
+	id S1751799AbbASAyX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 19:54:23 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:21062 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751185AbbASAyV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 19:51:00 -0500
-X-AuditID: cbfee690-f79ab6d0000046f7-10-54bc54f2db25
-Message-id: <54BC54F2.8090001@samsung.com>
-Date: Mon, 19 Jan 2015 09:50:58 +0900
+	Sun, 18 Jan 2015 19:54:21 -0500
+X-AuditID: cbfee68f-f791c6d000004834-a5-54bc55bbbe6a
+Message-id: <54BC55BB.7050809@samsung.com>
+Date: Mon, 19 Jan 2015 09:54:19 +0900
 From: Chanwoo Choi <cw00.choi@samsung.com>
 User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
  Thunderbird/17.0.2
 MIME-version: 1.0
-To: myungjoo.ham@samsung.com, kgene@kernel.org
-Cc: Chanwoo Choi <cw00.choi@samsung.com>, kyungmin.park@samsung.com,
-        rafael.j.wysocki@intel.com, mark.rutland@arm.com,
-        a.kesavan@samsung.com, tomasz.figa@gmail.com, k.kozlowski@samsung.com,
-        b.zolnierkie@samsung.com, robh+dt@kernel.org, inki.dae@samsung.com,
-        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+To: Daniel Lezcano <daniel.lezcano@linaro.org>, Kukjin Kim <kgene@kernel.org>
+Cc: tglx@linutronix.de, inki.dae@samsung.com, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org
-Subject: Re: [PATCH v4 0/9] devfreq: Add generic exynos memory-bus frequency
- driver
-References: <1421286657-4720-1-git-send-email-cw00.choi@samsung.com>
-In-reply-to: <1421286657-4720-1-git-send-email-cw00.choi@samsung.com>
-Content-type: text/plain; charset=ISO-8859-1
+        linux-samsung-soc@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Doug Anderson <dianders@chromium.org>,
+        "'Olof Johansson'" <olof@lixom.net>
+Subject: Re: [RESEND PATCH v3] clocksource: exynos_mct: Add the support for
+ Exynos 64bit SoC
+References: <1421213603-5020-1-git-send-email-cw00.choi@samsung.com>
+ <54B69072.4080607@kernel.org> <54B692FB.7030703@linaro.org>
+In-reply-to: <54B692FB.7030703@linaro.org>
+Content-type: text/plain; charset=UTF-8
 Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrJIsWRmVeSWpSXmKPExsWyRsSkSPdTyJ4Qg1l7VSwer1nMZLFxxnpW
-	i+tfnrNaTLo/gcXi9QtDi/7Hr5ktzja9YbfY9Pgaq8XlXXPYLD73HmG0mHF+H5PF0usXmSxu
-	N65gs3i84i27ReveI+wWq3b9YXQQ8Fgzbw2jx85Zd9k9Fu95yeSxaVUnm8fmJfUefVtWMXp8
-	3iQXwB7FZZOSmpNZllqkb5fAlXH5xBumgmkqFd9mHGFtYGyS6WLk5JAQMJE4eXYjI4QtJnHh
-	3nq2LkYuDiGBpYwSG7qfMsMUHWmbxQJiCwlMZ5RY02wBUfSaUeLkx61gCV4BLYmvd+ewgtgs
-	AqoSK2YvBrPZgOL7X9xgA7FFBcIkVk6/AlUvKPFj8j0wW0RAT6Lz2B52kKHMAt3MEq+3PGAC
-	SQgLhEqcOvGbGWKzi8Squ5PBTuUUcJXo+bWfHcRmFtCR2N86jQ3ClpfYvOYtM8ggCYGZHBLX
-	t+xlgbhIQOLb5ENANgdQQlZi0wGozyQlDq64wTKBUWwWkptmIRk7C8nYBYzMqxhFUwuSC4qT
-	0otM9IoTc4tL89L1kvNzNzECY/z0v2cTdjDeO2B9iFGAg1GJh3eD754QIdbEsuLK3EOMpkBX
-	TGSWEk3OByaSvJJ4Q2MzIwtTE1NjI3NLMyVx3tdSP4OFBNITS1KzU1MLUovii0pzUosPMTJx
-	cEo1ME57vOOQcHKKo3jh1ltJ7iU6vAWy5vVTbz1Q4sh56lxjOX/bpbT2r/tVnfcv0L91TUlg
-	+7EfUWWTT7kcSVMPrrrO2DvdSW0nb0BDu+cajRdfsx5Hip/gc71w6GOIwp/Kukk1ua+rT80M
-	V60uPPNm+XyHU7Kzku5v2utkvtNk5olCjvob54/rzFViKc5INNRiLipOBADFg8QN7AIAAA==
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrMKsWRmVeSWpSXmKPExsVy+t9jQd1PIXtCDBatlrZ4vGYxk8XGGetZ
-	La5/ec5qMen+BBaL1y8MLfofv2a2ONv0ht1i0+NrrBaXd81hs/jce4TRYsb5fUwWS69fZLK4
-	3biCzeLxirfsFq17j7BbrNr1h9FBwGPNvDWMHjtn3WX3WLznJZPHplWdbB6bl9R79G1Zxejx
-	eZNcAHtUA6NNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+Arltm
-	DtDxSgpliTmlQKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCGsaMyyfeMBVMU6n4NuMI
-	awNjk0wXIyeHhICJxJG2WSwQtpjEhXvr2UBsIYHpjBJrmi26GLmA7NeMEic/bgUr4hXQkvh6
-	dw4riM0ioCqxYvZiMJsNKL7/xQ2wZlGBMImV069A1QtK/Jh8D8wWEdCT6Dy2hx1kKLNAN7PE
-	6y0PmEASwgKhEqdO/GaG2OwiseruZEYQm1PAVaLn1352EJtZQEdif+s0NghbXmLzmrfMExgF
-	ZiHZMQtJ2SwkZQsYmVcxiqYWJBcUJ6XnGuoVJ+YWl+al6yXn525iBCeQZ1I7GFc2WBxiFOBg
-	VOLh5QjYEyLEmlhWXJl7iFGCg1lJhFdGDyjEm5JYWZValB9fVJqTWnyI0RQYBBOZpUST84HJ
-	La8k3tDYxMzI0sjc0MLI2FxJnFfJvi1ESCA9sSQ1OzW1ILUIpo+Jg1OqgTE+9fLzqkVf5Rbf
-	nZQ5/ezOPUuPHLwQX5mUq/Lwx1aV8Cf7nB7VpadfC/jvz8g2y/RQq998loUPj2efS5t17uCj
-	iRcE+S6zbwgPePckS3jhx9T+aTaSyeJNR6buWlf7btsXvx8293Nc331r723vunJx8qrnd9fn
-	H2QyrkxdnzknoSk77efel78klFiKMxINtZiLihMB6dzsbjYDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrNIsWRmVeSWpSXmKPExsWyRsSkSHd36J4Qg+mPlS3mfZa1OLvsIJvF
+	pPsTWCx6F1xls+h//JrZYtPja6wWl3fNYbOYcX4fk8XS6xeZLE5d/8xmsXnTVGYHbo8189Yw
+	esxuuMjisWlVJ5vHnWt72DzenTvH7rF5Sb3HlRNNrB59W1YxenzeJBfAGcVlk5Kak1mWWqRv
+	l8CVseP7J+aClVIVl25NZ29gnCraxcjJISFgIrFxwzM2CFtM4sK99UA2F4eQwFJGiWPz5zPB
+	FE28/4AFIrGIUWLX60tQzmtGif1vvrGDVPEKaEnsOLGRFcRmEVCVuHGhAaybDSi+/8UNsBWi
+	AmESK6dfYYGoF5T4MfkemC0i4CvROm8RI4jNLLCGSWL9TycQW1ggTuL3kc1Qy5oYJX7OWQE2
+	lBNo6PSfL6Aa1CUmzVvEDGHLS2xe85YZpEFCoJFDYtuypewQFwlIfJt8CGgSB1BCVmLTAWaI
+	1yQlDq64wTKBUWwWkptmIRk7C8nYBYzMqxhFUwuSC4qT0ouM9YoTc4tL89L1kvNzNzEC4/j0
+	v2f9OxjvHrA+xCjAwajEw7vBd0+IEGtiWXFl7iFGU6ArJjJLiSbnA5NFXkm8obGZkYWpiamx
+	kbmlmZI470Kpn8FCAumJJanZqakFqUXxRaU5qcWHGJk4OKUaGFl9HAJ+bHrNajTfRXLSmcs7
+	on+UpcxKaGdYG2BlLbjsVJ/GmyVhLRH/VjZPErdqT/MU3BB3/+aWR0XqzFY5xV23sgR0OQ7N
+	/1RnPpFzp71hbND6yja5p7liaRd63/Uf+3b3cbAzYynvbZ15v4LXy83QmRXH2PTMTpa9dR2/
+	i0maeVLAEoZlSizFGYmGWsxFxYkAjS/W6N4CAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKKsWRmVeSWpSXmKPExsVy+t9jAd3doXtCDGZ0S1nM+yxrcXbZQTaL
+	SfcnsFj0LrjKZtH/+DWzxabH11gtLu+aw2Yx4/w+Joul1y8yWZy6/pnNYvOmqcwO3B5r5q1h
+	9JjdcJHFY9OqTjaPO9f2sHm8O3eO3WPzknqPKyeaWD36tqxi9Pi8SS6AM6qB0SYjNTEltUgh
+	NS85PyUzL91WyTs43jne1MzAUNfQ0sJcSSEvMTfVVsnFJ0DXLTMH6FolhbLEnFKgUEBicbGS
+	vh2mCaEhbroWMI0Rur4hQXA9RgZoIGENY8aO75+YC1ZKVVy6NZ29gXGqaBcjJ4eEgInExPsP
+	WCBsMYkL99azdTFycQgJLGKU2PX6EguE85pRYv+bb+wgVbwCWhI7TmxkBbFZBFQlblxoYAKx
+	2YDi+1/cYAOxRQXCJFZOv8ICUS8o8WPyPTBbRMBXonXeIkYQm1lgDZPE+p9OILawQJzE7yOb
+	oZY1MUr8nLMCbCgn0NDpP19ANahLTJq3iBnClpfYvOYt8wRGgVlIdsxCUjYLSdkCRuZVjKKp
+	BckFxUnpuUZ6xYm5xaV56XrJ+bmbGMFJ4pn0DsZVDRaHGAU4GJV4eDf47gkRYk0sK67MPcQo
+	wcGsJMIrowcU4k1JrKxKLcqPLyrNSS0+xGgKDIKJzFKiyfnABJZXEm9obGJmZGlkbmhhZGyu
+	JM6rZN8WIiSQnliSmp2aWpBaBNPHxMEp1cBo+D/At5vl6OH5KiGvNSTPdFz+03DYI+t96943
+	HrmVC7+Ffl5dk+50r5/xseSDIPVp9QmKf3P53jruUr/pxvrnjnJO1bc9Am/ecP17d1op84f3
+	isosrRL71zJ3wy3z2TZrWj9Yftb8bUhG5LpPbOs/73raPCFm1ueocC29RTpW81UkF/NwfzBU
+	YinOSDTUYi4qTgQAksmgdigDAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -62,96 +62,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Myungjoo and Kukjin,
+Dear Daniel and Kukjin,
 
-Could you please review this patchset?
+On 01/15/2015 01:02 AM, Daniel Lezcano wrote:
+> On 01/14/2015 04:51 PM, Kukjin Kim wrote:
+>> On 01/14/15 14:33, Chanwoo Choi wrote:
+>>
+>> Hi,
+>>
+>> + Doug, Olof
+>>
+>>> This patch adds the support for Exynos 64bit SoC. The delay_timer is only used
+>>> for Exynos 32bit SoC.
+>>>
+>> Yes, the Exynos MCT(Multi-Core Timer) is 64bit timer and it is available
+>> on 64bit exynos SoC such as exynos7. But basically ARMv8 architecture is
+>> including ARM ARCH timer (ARM Generic Timer) and exynos7 also has
+>> implemented it and additionally its access is faster than using memory
+>> mapped register called SFR for MCT...so Doug submitted patch to use MCT
+>> on 32bit exynos SoCs before.
+>>
+>> I know using MCT on 64bit exynos is usefulness for Power Management and
+>> I need to talk to relevant guys in office again. If anything, I'll let
+>> you know.
+> 
+> I will wait for your answer before digging more the patch.
+> 
+> Thanks
+>   -- Daniel
+> 
+>>> Cc: Daniel Lezcano <daniel.lezcano@linaro.org>
+>>> Cc: Thomas Gleixner <tglx@linutronix.de>
+>>> Cc: Kukjin Kim <kgene.kim@samsung.com>
+>>> Cc: Mark Rutland <mark.rutland@arm.com>
+>>> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+>>> ---
+>>> This patch set is tested on 64-bit Exynos SoC. I send only this patch from
+>>> following patchst[1].
+>>> [1] https://lkml.org/lkml/2014/12/2/134
+>>>
+>>> Changes from v2:
+>>> - None
+>>> Changes from v1:
+>>> - Use CONFIG_ARM instead of CONFIG_ARM64
+>>>
+>>>   drivers/clocksource/Kconfig      | 1 -
+>>>   drivers/clocksource/exynos_mct.c | 4 ++++
+>>>   2 files changed, 4 insertions(+), 1 deletion(-)
+>>>
+>>> diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
+>>> index fc01ec2..be38119 100644
+>>> --- a/drivers/clocksource/Kconfig
+>>> +++ b/drivers/clocksource/Kconfig
+>>> @@ -135,7 +135,6 @@ config CLKSRC_METAG_GENERIC
+>>>
+>>>   config CLKSRC_EXYNOS_MCT
+>>>       def_bool y if ARCH_EXYNOS
+>>> -    depends on !ARM64
+>>>       help
+>>>         Support for Multi Core Timer controller on Exynos SoCs.
+>>>
+>>> diff --git a/drivers/clocksource/exynos_mct.c b/drivers/clocksource/exynos_mct.c
+>>> index 9403061..b840ea1 100644
+>>> --- a/drivers/clocksource/exynos_mct.c
+>>> +++ b/drivers/clocksource/exynos_mct.c
+>>> @@ -223,6 +223,7 @@ static u64 notrace exynos4_read_sched_clock(void)
+>>>       return exynos4_read_count_32();
+>>>   }
+>>>
+>>> +#if defined(CONFIG_ARM)
+>>>   static struct delay_timer exynos4_delay_timer;
+>>>
+>>>   static cycles_t exynos4_read_current_timer(void)
+>>> @@ -231,14 +232,17 @@ static cycles_t exynos4_read_current_timer(void)
+>>>                "cycles_t needs to move to 32-bit for ARM64 usage");
+>>>       return exynos4_read_count_32();
+>>>   }
+>>> +#endif
+>>>
+>>>   static void __init exynos4_clocksource_init(void)
+>>>   {
+>>>       exynos4_mct_frc_start();
+>>>
+>>> +#if defined(CONFIG_ARM)
+>>>       exynos4_delay_timer.read_current_timer = &exynos4_read_current_timer;
+>>>       exynos4_delay_timer.freq = clk_rate;
+>>>       register_current_timer_delay(&exynos4_delay_timer);
+>>> +#endif
+>>>
+>>>       if (clocksource_register_hz(&mct_frc, clk_rate))
+>>>           panic("%s: can't register clocksource\n", mct_frc.name);
+> 
+> 
+
+Do you have any comment about this patch?
 
 Best Regards,
 Chanwoo Choi
 
-On 01/15/2015 10:50 AM, Chanwoo Choi wrote:
-> This patch-set adds the generic exynos bus frequency driver for memory bus
-> with DEVFREQ framework. The Samsung Exynos SoCs have the common architecture
-> for memory bus between DRAM memory and MMC/sub IP in SoC. This driver can
-> support the memory bus frequency driver for Exynos SoCs.
-> 
-> Each memory bus block has a clock for memory bus speed and frequency
-> table which is changed according to the utilization of memory bus on runtime.
-> And then each memory bus group has the one more memory bus blocks and
-> OPP table (including frequency and voltage), regulator, devfreq-event
-> devices.
-> 
-> There are a little difference about the number of memory bus because each Exynos
-> SoC have the different sub-IP and different memory bus speed. In spite of this
-> difference among Exynos SoCs, we can support almost Exynos SoC by adding
-> unique data of memory bus to devicetree file.
-> 
-> Depend on:
-> - [PATCHv8 0/9] devfreq: Add devfreq-event class to provide raw data for devfreq device
->   : https://lkml.org/lkml/2015/1/7/795
-> 
-> Changelog:
-> 
-> Changes from v3:
-> (https://lkml.org/lkml/2015/1/7/872)
-> - Change the driver name and path by comment
->   : drivers/devfreq/exynos-busfreq.c -> drivers/devfreq/exynos/exynos-bus.c
-> - Disable regulator when entering suspend state in exynos-bus.c
->   and enable it after wake-up from suspend state.
-> - Add 'exynos,saturation-ratio' property to calibrate the performance count
->   against cycle count.
-> - Add new patch to remove unused old driver
->   : drivers/devfreq/exynos/exynos4_bus.{c|h}
-> - Clean-up code for minor issue
-> - Add acked tag by Myungjoo Ham (DEVFREQ maintainer)
-> 
-> Changes from v2:
-> (https://lkml.org/lkml/2014/12/31/2)
-> - Support the memory bus frequency feature for Exynos3250-based Monk board
-> - Fix build warning about variable uninitialized
-> 
-> Changes from v1:
-> (https://lkml.org/lkml/2014/12/23/178)
-> - This patchset is rebased on v3.19-rc2.
-> - Fix bug after wake-up from suspend state. If devfreq device fail to get event,
->   exynos-busfreq retry to set the event for starting.
-> - Add memory bus group of Exynos4x12/Exynos4210
-> - Add divider clock id for Exynos4 memory bus frequency
-> - Support memory bus frequency driver on Exynos4412-based TRATS2 board
-> - This patch-set has the dependency on following patch-set[1]:
->   [1] [PATCHv6 0/9] devfreq: Add devfreq-event class to provide raw data for devfreq device
->   : https://lkml.org/lkml/2014/12/28/139
-> 
-> Chanwoo Choi (9):
->   devfreq: exynos: Add generic exynos memory bus frequency driver
->   devfreq: exynos: Add documentation for generic exynos memory bus frequency driver
->   ARM: dts: Add memory bus node for Exynos3250
->   clk: samsung: exynos4: Add divider clock id for memory bus frequency
->   ARM: dts: Add memory bus node for Exynos4x12
->   ARM: dts: Add memory bus node for Exynos4210
->   ARM: dts: Add the support for exynos busfreq on Exynos3250-based Rinato/Monk board
->   ARM: dts: Add the support for exynos busfreq on Exynos4412-based TRATS2 board
->   devfreq: exynos: Remove unused exynos4 memory busfreq driver
-> 
->  .../devicetree/bindings/devfreq/exynos-bus.txt     |  188 ++++
->  arch/arm/boot/dts/exynos3250-monk.dts              |   12 +
->  arch/arm/boot/dts/exynos3250-rinato.dts            |   12 +
->  arch/arm/boot/dts/exynos3250.dtsi                  |  125 +++
->  arch/arm/boot/dts/exynos4210.dtsi                  |   93 ++
->  arch/arm/boot/dts/exynos4412-trats2.dts            |   12 +
->  arch/arm/boot/dts/exynos4x12.dtsi                  |  121 +++
->  drivers/clk/samsung/clk-exynos4.c                  |   10 +-
->  drivers/devfreq/Kconfig                            |   17 +-
->  drivers/devfreq/Makefile                           |    1 +
->  drivers/devfreq/exynos/Makefile                    |    2 +-
->  drivers/devfreq/exynos/exynos-bus.c                |  598 +++++++++++
->  drivers/devfreq/exynos/exynos4_bus.c               | 1055 --------------------
->  drivers/devfreq/exynos/exynos4_bus.h               |  110 --
->  include/dt-bindings/clock/exynos4.h                |    7 +-
->  15 files changed, 1184 insertions(+), 1179 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/devfreq/exynos-bus.txt
->  create mode 100644 drivers/devfreq/exynos/exynos-bus.c
->  delete mode 100644 drivers/devfreq/exynos/exynos4_bus.c
->  delete mode 100644 drivers/devfreq/exynos/exynos4_bus.h
-> 
 
