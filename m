@@ -1,159 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751659AbbASOJI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 09:09:08 -0500
-Received: from mail-by2on0093.outbound.protection.outlook.com ([207.46.100.93]:49227
-	"EHLO na01-by2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751901AbbASOJG convert rfc822-to-8bit (ORCPT
+	id S1752403AbbASOLr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 09:11:47 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:65336 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751520AbbASOLo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 09:09:06 -0500
-From: Appana Durga Kedareswara Rao <appana.durga.rao@xilinx.com>
-To: Arnd Bergmann <arnd@arndb.de>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "vinod.koul@intel.com" <vinod.koul@intel.com>,
-        Srikanth Vemula <svemula@xilinx.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Srikanth Thokala <sthokal@xilinx.com>,
-        "dmaengine@vger.kernel.org" <dmaengine@vger.kernel.org>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        Michal Simek <michals@xilinx.com>,
-        Anirudha Sarangi <anirudh@xilinx.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        "dan.j.williams@intel.com" <dan.j.williams@intel.com>
-Subject: RE: [PATCH v4] dma: Add Xilinx AXI Direct Memory Access Engine
- driver support
-Thread-Topic: [PATCH v4] dma: Add Xilinx AXI Direct Memory Access Engine
- driver support
-Thread-Index: AQHP6G+qFNHlEI1cgUeqDvA2b+1TW5w444MAgAFq8cCABQYD64B8/m2A
-Date: Mon, 19 Jan 2015 14:08:59 +0000
-References: <1413374436-14410-1-git-send-email-sthokal@xilinx.com>
- <3236720.MHeqOodrCV@wuerfel>
- <7dc11ef7ccec49bcb052c30b9aa916c3@BL2FFO11FD044.protection.gbl>
- <1967130.oYyZRWCcEF@wuerfel>
-In-Reply-To: <1967130.oYyZRWCcEF@wuerfel>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.23.96.232]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 19 Jan 2015 09:11:44 -0500
 MIME-Version: 1.0
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21262.007
-X-TM-AS-User-Approved-Sender: Yes;Yes
-Message-ID: <8a27d97f74e548b6a01487c82b471013@BL2FFO11FD047.protection.gbl>
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=pass (sender IP is 149.199.60.83)
- smtp.mailfrom=appana.durga.rao@xilinx.com; 
-X-Forefront-Antispam-Report: CIP:149.199.60.83;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(51704005)(13464003)(377454003)(189002)(24454002)(199003)(76176999)(6806004)(50986999)(19580395003)(54356999)(74316001)(77156002)(87936001)(62966003)(19580405001)(19300405004)(2656002)(50466002)(23726002)(93886004)(102836002)(97756001)(106466001)(108616004)(64706001)(2501002)(86362001)(53416004)(2950100001)(104016003)(46102003)(46406003)(47776003)(106116001)(15975445007)(92566002)(92726002)(2690400003)(107986001)(24736002)(562404015);DIR:OUT;SFP:1101;SCL:1;SRVR:BL2FFO11HUB043;H:xsj-pvapsmtpgw01;FPR:;SPF:Pass;MLV:sfv;PTR:unknown-60-83.xilinx.com;MX:1;A:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB043;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BL2FFO11HUB043;
-X-Forefront-PRVS: 046164D5C4
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BL2FFO11HUB043;
-X-OriginatorOrg: xilinx.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 19 Jan 2015 14:09:03.1337
- (UTC)
-X-MS-Exchange-CrossTenant-Id: 657af505-d5df-48d0-8300-c31994686c5c
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=657af505-d5df-48d0-8300-c31994686c5c;Ip=[149.199.60.83]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BL2FFO11HUB043
+In-Reply-To: <CAAfSe-vqqpvbYe0bEeD-3_QsLYz4r7pxMuA1-L4cYRw9TY=NgA@mail.gmail.com>
+References: <1421402411-3479-1-git-send-email-chunyan.zhang@spreadtrum.com>
+ <1421402411-3479-6-git-send-email-chunyan.zhang@spreadtrum.com>
+ <CAL_JsqJg=BtanmR_rhYthCUhKbErs8viZ7MMMXr-PmPjUV4BRQ@mail.gmail.com> <CAAfSe-vqqpvbYe0bEeD-3_QsLYz4r7pxMuA1-L4cYRw9TY=NgA@mail.gmail.com>
+From: Rob Herring <robherring2@gmail.com>
+Date: Mon, 19 Jan 2015 08:11:20 -0600
+Message-ID: <CAL_JsqLTArm1v8ka39_KLq2jMKkK2ZXQ6-an=JSWVgTK1LWmOg@mail.gmail.com>
+Subject: Re: [PATCH v5 5/5] tty/serial: Add Spreadtrum sc9836-uart driver support
+To: Lyra Zhang <zhang.lyra@gmail.com>
+Cc: Chunyan Zhang <chunyan.zhang@spreadtrum.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Rutland <mark.rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>, Jiri Slaby <jslaby@suse.cz>,
+        Jason Cooper <jason@lakedaemon.net>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Florian Vaussard <florian.vaussard@epfl.ch>,
+        Andrew Lunn <andrew@lunn.ch>, Robert Richter <rrichter@cavium.com>,
+        Hayato Suzuki <hytszk@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Antony Pavlov <antonynpavlov@gmail.com>,
+        Joel Schopp <Joel.Schopp@amd.com>,
+        Suravee Suthikulanit <Suravee.Suthikulpanit@amd.com>,
+        Shawn Guo <shawn.guo@linaro.org>, lea.yan@linaro.org,
+        Jorge Ramirez-Ortiz <jorge.ramirez-ortiz@linaro.org>,
+        Lee Jones <lee.jones@linaro.org>, Orson Zhai <orsonzhai@gmail.com>,
+        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
+        "zhizhou.zhang" <zhizhou.zhang@spreadtrum.com>,
+        "lanqing.liu@spreadtrum.com" <lanqing.liu@spreadtrum.com>,
+        =?UTF-8?B?V2VpIFFpYW8gKOS5lOS8nyk=?= <wei.qiao@spreadtrum.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On Mon, Jan 19, 2015 at 3:55 AM, Lyra Zhang <zhang.lyra@gmail.com> wrote:
+> On Sat, Jan 17, 2015 at 12:41 AM, Rob Herring <robherring2@gmail.com> wrote:
+>> On Fri, Jan 16, 2015 at 4:00 AM, Chunyan Zhang
+>> <chunyan.zhang@spreadtrum.com> wrote:
+>>> Add a full sc9836-uart driver for SC9836 SoC which is based on the
+>>> spreadtrum sharkl64 platform.
+>>> This driver also support earlycon.
+>>> This patch also replaced the spaces between the macros and their
+>>> values with the tabs in serial_core.h
 
-> -----Original Message-----
-> From: Arnd Bergmann [mailto:arnd@arndb.de]
-> Sent: Friday, October 24, 2014 7:29 PM
-> To: Appana Durga Kedareswara Rao
-> Cc: linux-arm-kernel@lists.infradead.org; devicetree@vger.kernel.org;
-> vinod.koul@intel.com; Srikanth Vemula; linux-kernel@vger.kernel.org;
-> Srikanth Thokala; dmaengine@vger.kernel.org; robh+dt@kernel.org; Michal
-> Simek; Anirudha Sarangi; grant.likely@linaro.org; dan.j.williams@intel.com
-> Subject: Re: [PATCH v4] dma: Add Xilinx AXI Direct Memory Access Engine
-> driver support
+[...]
+
+>>> +static int __init sprd_serial_init(void)
+>>> +{
+>>> +       int ret = 0;
+>>> +
+>>> +       ret = uart_register_driver(&sprd_uart_driver);
+>>
+>> This can be done in probe now. Then you can use module_platform_driver().
+>>
 >
-> On Friday 24 October 2014 12:08:26 Appana Durga Kedareswara Rao wrote:
-> > From: Arnd Bergmann [mailto:arnd@arndb.de]
-> > > On Tuesday 21 October 2014 09:06:13 Appana Durga Kedareswara Rao
-> wrote:
-> > > > The above mentioned API's  and structures will be used by the dma
-> > > > test client driver's to set hardware configuration information.
-> > > > The dma client drivers are not mainlined  yet and it is Internally
-> > > > used by our git-tree  to test the DMA functionality in loopback .
-> > >
-> > > I would suggest you add the test driver into the main dmaengine
-> > > driver file directly then, so you don't need to export the symbols.
-> > > If there are important reasons to keep that as separate files, just
-> > > move the header to the drivers/dma/ directory and add the test driver
-> there.
-> >
-> > Sorry I forgot to mention the below things in the mail .The Config
-> > API's and structures not only used by the dmaengine driver's but also
-> > used by the  various IP's  (Ex: Ethernet driver and SRIO driver these
-> > drivers are under development).For example the Ethernet driver is
-> > resides under drivers/net/ethernet but it needs to set some specific
-> > configuration parameters of the dma that's why created a separate
-> > header file for the h/w configurable parameters.
->
-> That is a bug in the ethernet driver, and we should not merge such code.
->
-> Please fix those drivers before submitting them, so they don't rely on
-> additional interfaces beyond what the DMA engine API provides.
->
-> If you need something that the common interface is missing, you can send a
-> patch to extend the dmaengine core driver, but more likely it already does
-> what you need and you are just not using it right.
->
+> Question:
+> 1. there are 4 uart ports configured in dt for sprd_serial, so probe
+> will be called 4 times, but uart_register_driver only needs to be
+> called one time, so can we use uart_driver.state to check if
+> uart_register_driver has already been called ?
 
-Sorry for the delay in the reply.
-We need that header file in the include/linux/ directory for various  reasons.
+Yes.
 
- As you know the Xilinx DMA's have a set of configurable parameters which we expect the DMA users to take advantage of.
+> 2. if I use module_platform_driver() instead of
+> module_init(sprd_serial_init)  and  module_exit(sprd_serial_exit) , I
+> must move uart_unregister_driver() which is now processed in
+> sprd_serial_exit() to sprd_remove(), there is a similar problem with
+> probe(), sprd_remove() will also be called 4 times, and actually it
+> should be called only one time. How can we deal with this case?
 
- For example:
- For Axi DMA we have the following parameters that we expect to be commonly used.
- Coalesce count --> Used to configure the coalesce value.
- Delay timer ---> Used to set the delay value.
+Look at pl01x or Samsung UART drivers which have done this conversion.
 
- We expect the Xilinx AXI Ethernet driver to use the Axi DMA driver in
- near furture. If so, using ethtool, we expect the driver users to play with the above parameters to do performance tuning.
+> 3. for the second question, we can check the platform_device->id, if
+> it is equal to the index of last port (e.g. 4 for this case), then
+> uart_unregister_driver() can be called. Does it work correctly? since
+> for this case, we must keep the order of releasing ports.
 
- Hence AxiDMA driver must expose means to change coalese count or delay timer.
+The id will not be the line index in the DT case. I don't think you
+can guarantee the order either.
 
- Similarly For Axi VDMA we have the following parameters that will be used by the users of this driver.
- hsize  --> Used to configure number of bytes per line.
- vsize  -->Number of lines per frame.
- stride  --> Number of bytes per line.
+It would be better to make uart_{un}register_driver deal with being
+called multiple times so drivers don't have to deal with getting this
+correct. I'm not sure if that is feasible though.
 
-
- Earlier in the driver we are embedding dma_slave_config into custom
- structs But Lars suggested to modify it. please refer to the below thread for more details.
- http://www.spinics.net/lists/dmaengine/msg00010.html
-
- And later we thought of creating a separate private member in
- dma_slave_config for sharing additional configuration between slave
- device and dma engine Or a new dma_ctrl_cmd like
- FSLDMA_EXTERNAL_START(http://www.kernelhub.org/?msg=405535&p=2 )
-
- Finally Vinod was ok with the existing suggestion so we dropped the above thought.
-
- @Vinod : Could you please comment on this.
-
-Regards,
-Kedar.
-
->       Arnd
-
-
-
-This email and any attachments are intended for the sole use of the named recipient(s) and contain(s) confidential information that may be proprietary, privileged or copyrighted under applicable law. If you are not the intended recipient, do not read, copy, or forward this email message or any attachments. Delete this email message and any attachments immediately.
-
+Rob
