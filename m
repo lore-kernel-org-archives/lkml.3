@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752339AbbASOyW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 09:54:22 -0500
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:53134 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751659AbbASOyS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 09:54:18 -0500
-Date: Mon, 19 Jan 2015 09:54:13 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Hans de Goede <hdegoede@redhat.com>
-Cc: Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>, Andrew Lunn <andrew@lunn.ch>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org
-Subject: Re: [PATCH v4 0/4] ata: libahci: Allow using a regulator for each
- port
-Message-ID: <20150119145413.GJ8140@htj.dyndns.org>
-References: <1421330978-9694-1-git-send-email-gregory.clement@free-electrons.com>
- <54B8C49A.9070302@redhat.com>
+	id S1752384AbbASOyh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 09:54:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33975 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752363AbbASOyf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 09:54:35 -0500
+Date: Mon, 19 Jan 2015 08:54:31 -0600
+From: Josh Poimboeuf <jpoimboe@redhat.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Seth Jennings <sjenning@redhat.com>, Vojtech Pavlik <vojtech@suse.cz>,
+        live-patching@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] livepatch: support for repatching a function
+Message-ID: <20150119145431.GC1737@treble.redhat.com>
+References: <b211111ad4f29886a44871dddc313a542c48960b.1420834026.git.jpoimboe@redhat.com>
+ <alpine.LNX.2.10.1501161743220.1074@wotan.suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <54B8C49A.9070302@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <alpine.LNX.2.10.1501161743220.1074@wotan.suse.de>
+User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 16, 2015 at 08:58:18AM +0100, Hans de Goede wrote:
-> Hi,
+On Fri, Jan 16, 2015 at 05:51:11PM +0100, Jiri Kosina wrote:
+> One thing that makes me worried here is we basically apply patches in a 
+> 'stackable' manner, but then this allows them to be removed (disabled) in 
+> an arbitrary order. Is this really the semantics we want?
 > 
-> On 15-01-15 15:09, Gregory CLEMENT wrote:
-> >The current implementation of the libahci allows using one PHY per
-> >port but we still have one single regulator for the whole
-> >controller. This series adds the support of multiple regulators.
-> >
-> >This is the forth version of the series.
-> >
-> >The improvement of this version is the use of
-> >ahci_platform_put_resources to put the reference to the regulators.
-> >
-> >Thanks,
-> >
-> >Grégory
+> The scenario I am concerned about, in a nutshell:
 > 
-> Thanks, patches 1 - 3 look good and are:
+> foo_unpatched()
+> 	foo_patch1()
+> 		foo_patch2()
+> 			foo_patch3()
+> 		disable(foo_patch2)
+> 		disable(foo_patch3)
+> 	foo_patch1()
 > 
-> Acked-by: Hans de Goede <hdegoede@redhat.com>
+> I.e. basically due to reverting of foo_patch2() while it wasn't in use, we 
+> turn subsequent revert of foo_patch3() into foo_patch1() state, although 
+> the function foo_patch3() was originally patching was foo_patch2().
 > 
-> Tejun, can you please queue up 1 - 3 ?
+> If this is implemented really in a fully stackable manner (i.e. you 
+> basically would be able to disable only the function that is currently 
+> "active", i.e. on top of the stack), woudln't that provide more 
+> predictable semantics?
 
-Applied 1-3 to libata/for-3.20.
+Yes, I agree.  Thanks for the comment.
 
-Thanks.
+Would you want to enforce stacking even if there are no dependencies
+between the patches?  I think that would be easiest (and cleanest).
 
 -- 
-tejun
+Josh
