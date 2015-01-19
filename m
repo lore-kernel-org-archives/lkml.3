@@ -1,67 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751630AbbASIJX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 03:09:23 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49807 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244AbbASIJW (ORCPT
+	id S1751923AbbASIKb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 03:10:31 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:49029 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194AbbASIK3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 03:09:22 -0500
-Message-ID: <1421654951.3758.2.camel@pengutronix.de>
-Subject: Re: [PATCH] gpu: ipu-v3: wait_for_completion_timeout does not
- return negativ status
-From: Philipp Zabel <p.zabel@pengutronix.de>
-To: Nicholas Mc Guire <der.herr@hofr.at>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Lucas Stach <l.stach@pengutronix.de>,
-        Emil Renner Berthing <kernel@esmil.dk>,
-        Antoine Schweitzer-Chaput <antoine@schweitzer-chaput.fr>,
-        linux-kernel@vger.kernel.org
-Date: Mon, 19 Jan 2015 09:09:11 +0100
-In-Reply-To: <1421405282-8951-1-git-send-email-der.herr@hofr.at>
-References: <1421405282-8951-1-git-send-email-der.herr@hofr.at>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.9-1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:96de:80ff:fec2:9969
-X-SA-Exim-Mail-From: p.zabel@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Mon, 19 Jan 2015 03:10:29 -0500
+Date: Mon, 19 Jan 2015 08:10:20 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Gyungoh Yoo <gyungoh@gmail.com>
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        sameo@linux.intel.com, grant.likely@linaro.org, jg1.han@samsung.com,
+        cooloney@gmail.com, trivial@kernel.org, akpm@linux-foundation.org,
+        jic23@kernel.org, thomas.petazzoni@free-electrons.com,
+        ktsai@capellamicro.com, hs@denx.de, stwiss.opensource@diasemi.com,
+        matti.vaittinen@nsn.com, broonie@kernel.org, jason@lakedaemon.net,
+        heiko@sntech.de, shawn.guo@freescale.com, florian.vaussard@epfl.ch,
+        andrew@lunn.ch, antonynpavlov@gmail.com, hytszk@gmail.com,
+        plagnioj@jcrosoft.com, tomi.valkeinen@ti.com, jack.yoo@skyworksinc.com,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v10 0/6] Add Skyworks SKY81452 device drivers
+Message-ID: <20150119081020.GC21886@x1>
+References: <1420597167-3188-1-git-send-email-jack.yoo@skyworksinc.com>
+ <20150118174037.GF3574@x1>
+ <20150119014134.GA3333@jack-ThinkPad-T520>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20150119014134.GA3333@jack-ThinkPad-T520>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nicholas,
+On Mon, 19 Jan 2015, Gyungoh Yoo wrote:
 
-thank you for the patch.
-
-Am Freitag, den 16.01.2015, 11:48 +0100 schrieb Nicholas Mc Guire:
-> Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
-> ---
+> On Sun, Jan 18, 2015 at 05:40:37PM +0000, Lee Jones wrote:
+> > > From: Gyungoh Yoo <jack.yoo@skyworksinc.com>
+> > > 
+> > > This patch set includes regulator and backlight driver for SKY81452.
+> > > Also it includes documents for device tree and module.
+> > > sky81452-regulator was already applied. So this series doesn't
+> > > include it.
+> > 
+> > Tell us what you need?  What's missing?
 > 
-> Patch is against 3.19.0-rc3 -next-20150109
-> 
-> This patch was compiletested with imx_v6_v7_defconfig + 
-> CONFIG_RESET_CONTROLLER=y, CONFIG_IMX_IPUV3_CORE=m
-> 
->  drivers/gpu/ipu-v3/ipu-dc.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/drivers/gpu/ipu-v3/ipu-dc.c b/drivers/gpu/ipu-v3/ipu-dc.c
-> index 2326c75..0ffa659 100644
-> --- a/drivers/gpu/ipu-v3/ipu-dc.c
-> +++ b/drivers/gpu/ipu-v3/ipu-dc.c
-> @@ -282,7 +282,7 @@ void ipu_dc_disable_channel(struct ipu_dc *dc)
->  	enable_irq(irq);
->  	ret = wait_for_completion_timeout(&priv->comp, msecs_to_jiffies(50));
->  	disable_irq(irq);
-> -	if (ret <= 0) {
-> +	if (ret == 0) {
+> I need DT's Ack for 3/6 and 4/6.
 
-In addition to this, I think ret should be changed to unsigned long.
+Patch 3 looks simple enough.
 
-regards
-Philipp
+Patch 4 _does_ need a DT ack though.
 
+> > > v10:
+> > > Removed trivial get_brightness implementations for sky81452-backlight
+> > > 
+> > > v9:
+> > > Removed the change to remove MODULE_VERSION() for sky81452-regulator
+> > > 
+> > > v8:
+> > > Renamed property names for backlight with vendor prefix
+> > > Modified gpio-enable property to generic property for GPIO
+> > > Made up the example for backlight DT
+> > > Changed the DT parsing of regulator using regulator_node and of_match
+> > > 
+> > > v7:
+> > > Modified licensing text to GPLv2
+> > > Splitted Kconfig renaming from DT patch
+> > > 
+> > > v6:
+> > > Added new line character at the end of line of dev_err()
+> > > 
+> > > v5:
+> > > Changed DT for regulator : 'lout' node should be defined under 'regulator'
+> > > Removed compatible string from sky81452-regulator driver
+> > > Modified sky81452-regulator to return EINVAL when of_node is NULL
+> > > Move sky81452-backlight.h to include/linux/platform_data
+> > > 
+> > > v4:
+> > > Removed MODULE_VERSION()
+> > > Modified license to GPLv2
+> > > Removed calling to backlight_device_unregister() in sky81452-backlight
+> > > 
+> > > v3:
+> > > Cleaned-up DBG messages
+> > > Cleaned-up DT
+> > > Fixed the backlight name from 'sky81452-bl' to 'sky81452-backlight'
+> > > Assigned mfd_cell.of_compatible for binding device node
+> > > Modified error messages
+> > > Modified sky81452-regulator to return ENODATA when of_node is NULL
+> > > 
+> > > v2:
+> > > Split the patches for each sub-system
+> > > Added 'reg' attribute for I2C address in device tree documents
+> > > Added 'compatible' attribute in child drivers
+> > > Renamed CONFIG_SKY81452 to CONFIG_MFD_SKY81452
+> > > Changed the dependency from I2C=y to I2C, for CONFIG_MFD_SKY81452
+> > > Added message for exception or errors.
+> > > Added vendor prefix for Skyworks Solutions, Inc.
+> > > Add SKY81452 to the Trivial Devices list
+> > > 
+> > > Gyungoh Yoo (6):
+> > >   mfd: Add support for Skyworks SKY81452 driver
+> > >   backlight: Add support Skyworks SKY81452 backlight driver
+> > >   devicetree: mfd: Add new SKY81452 mfd binding
+> > >   devicetree: backlight: Add new SKY81452 backlight binding
+> > >   devicetree: Add vendor prefix for Skyworks Solutions, Inc.
+> > >   devicetree: i2c: Add SKY81452 to the Trivial Devices list
+> > > 
+> > >  .../devicetree/bindings/i2c/trivial-devices.txt    |   1 +
+> > >  Documentation/devicetree/bindings/mfd/sky81452.txt |  36 +++
+> > >  .../devicetree/bindings/vendor-prefixes.txt        |   1 +
+> > >  .../video/backlight/sky81452-backlight.txt         |  29 ++
+> > >  drivers/mfd/Kconfig                                |  12 +
+> > >  drivers/mfd/Makefile                               |   1 +
+> > >  drivers/mfd/sky81452.c                             | 108 +++++++
+> > >  drivers/video/backlight/Kconfig                    |  10 +
+> > >  drivers/video/backlight/Makefile                   |   1 +
+> > >  drivers/video/backlight/sky81452-backlight.c       | 334 +++++++++++++++++++++
+> > >  include/linux/mfd/sky81452.h                       |  31 ++
+> > >  include/linux/platform_data/sky81452-backlight.h   |  46 +++
+> > >  12 files changed, 610 insertions(+)
+> > >  create mode 100644 Documentation/devicetree/bindings/mfd/sky81452.txt
+> > >  create mode 100644 Documentation/devicetree/bindings/video/backlight/sky81452-backlight.txt
+> > >  create mode 100644 drivers/mfd/sky81452.c
+> > >  create mode 100644 drivers/video/backlight/sky81452-backlight.c
+> > >  create mode 100644 include/linux/mfd/sky81452.h
+> > >  create mode 100644 include/linux/platform_data/sky81452-backlight.h
+> > > 
+> > 
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
