@@ -1,102 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751446AbbASHeB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 02:34:01 -0500
-Received: from www.osadl.org ([62.245.132.105]:42680 "EHLO www.osadl.org"
+	id S1751364AbbASH3K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 02:29:10 -0500
+Received: from ozlabs.org ([103.22.144.67]:55354 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751066AbbASHeA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 02:34:00 -0500
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: Surya Seetharaman <surya.seetharaman9@gmail.com>,
-        Keerthimai Janarthanan <keerthimaipb@gmail.com>,
-        Tina Johnson <tinajohnson.1234@gmail.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Fabio Falzoi <fabio.falzoi84@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Nicholas Mc Guire <der.herr@hofr.at>
-Subject: [PATCH] staging: rts5028: use msecs_to_jiffies for timeouts
-Date: Mon, 19 Jan 2015 08:25:47 +0100
-Message-Id: <1421652347-8484-1-git-send-email-der.herr@hofr.at>
-X-Mailer: git-send-email 1.7.10.4
+	id S1751167AbbASH3D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 02:29:03 -0500
+Date: Mon, 19 Jan 2015 18:28:53 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Subject: linux-next: build failure after merge of the akpm-current tree
+Message-ID: <20150119182853.35f278b5@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/0Q/EYCdme_LQbLdQyjLeaFw"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is only an API consolidation and should make things more readable
+--Sig_/0Q/EYCdme_LQbLdQyjLeaFw
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+Hi Andrew,
+
+After merging the akpm-current tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
+
+
+mm/filemap_xip.c:304:2: error: unknown field 'remap_pages' specified in ini=
+tializer
+  .remap_pages =3D generic_file_remap_pages,
+  ^
+mm/filemap_xip.c:304:17: error: 'generic_file_remap_pages' undeclared here =
+(not in a function)
+  .remap_pages =3D generic_file_remap_pages,
+                 ^
+
+Caused by commit 76f0255272b6 ("mm: drop vm_ops->remap_pages and
+generic_file_remap_pages() stub").  Looks like one was missed - grep is
+your friend.
+
+I have added this patch for today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 19 Jan 2015 18:16:15 +1100
+Subject: [PATCH] mm: drop vm_ops->remap_pages and generic_file_remap_pages(=
+) stub fix
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
+ mm/filemap_xip.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-Converting milliseconds to jiffies by val * HZ / 1000 is technically
-not wrong but msecs_to_jiffies(val) is the cleaner solution and handles
-corner cases correctly.
+diff --git a/mm/filemap_xip.c b/mm/filemap_xip.c
+index 0d105aeff82f..70c09da1a419 100644
+--- a/mm/filemap_xip.c
++++ b/mm/filemap_xip.c
+@@ -301,7 +301,6 @@ out:
+ static const struct vm_operations_struct xip_file_vm_ops =3D {
+ 	.fault	=3D xip_file_fault,
+ 	.page_mkwrite	=3D filemap_page_mkwrite,
+-	.remap_pages =3D generic_file_remap_pages,
+ };
+=20
+ int xip_file_mmap(struct file * file, struct vm_area_struct * vma)
+--=20
+2.1.4
 
-This patch was only compile tested with x86_64_defconfig + CONFIG_STAGING=y, 
-CONFIG_RTS5208=m
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Patch is against 3.19.0-rc4 -next-20150116
+--Sig_/0Q/EYCdme_LQbLdQyjLeaFw
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
 
- drivers/staging/rts5208/rtsx_transport.c |   12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-diff --git a/drivers/staging/rts5208/rtsx_transport.c b/drivers/staging/rts5208/rtsx_transport.c
-index 756a968..dab1995 100644
---- a/drivers/staging/rts5208/rtsx_transport.c
-+++ b/drivers/staging/rts5208/rtsx_transport.c
-@@ -271,7 +271,7 @@ int rtsx_send_cmd(struct rtsx_chip *chip, u8 card, int timeout)
- 
- 	/* Wait for TRANS_OK_INT */
- 	timeleft = wait_for_completion_interruptible_timeout(
--		&trans_done, timeout * HZ / 1000);
-+		&trans_done, msecs_to_jiffies(timeout));
- 	if (timeleft <= 0) {
- 		dev_dbg(rtsx_dev(chip), "chip->int_reg = 0x%x\n",
- 			chip->int_reg);
-@@ -431,7 +431,7 @@ static int rtsx_transfer_sglist_adma_partial(struct rtsx_chip *chip, u8 card,
- 	spin_unlock_irq(&rtsx->reg_lock);
- 
- 	timeleft = wait_for_completion_interruptible_timeout(
--		&trans_done, timeout * HZ / 1000);
-+		&trans_done, msecs_to_jiffies(timeout));
- 	if (timeleft <= 0) {
- 		dev_dbg(rtsx_dev(chip), "Timeout (%s %d)\n",
- 			__func__, __LINE__);
-@@ -455,7 +455,7 @@ static int rtsx_transfer_sglist_adma_partial(struct rtsx_chip *chip, u8 card,
- 		init_completion(&trans_done);
- 		spin_unlock_irq(&rtsx->reg_lock);
- 		timeleft = wait_for_completion_interruptible_timeout(
--			&trans_done, timeout * HZ / 1000);
-+			&trans_done, msecs_to_jiffies(timeout));
- 		if (timeleft <= 0) {
- 			dev_dbg(rtsx_dev(chip), "Timeout (%s %d)\n",
- 				__func__, __LINE__);
-@@ -575,7 +575,7 @@ static int rtsx_transfer_sglist_adma(struct rtsx_chip *chip, u8 card,
- 		spin_unlock_irq(&rtsx->reg_lock);
- 
- 		timeleft = wait_for_completion_interruptible_timeout(
--			&trans_done, timeout * HZ / 1000);
-+			&trans_done, msecs_to_jiffies(timeout));
- 		if (timeleft <= 0) {
- 			dev_dbg(rtsx_dev(chip), "Timeout (%s %d)\n",
- 				__func__, __LINE__);
-@@ -602,7 +602,7 @@ static int rtsx_transfer_sglist_adma(struct rtsx_chip *chip, u8 card,
- 		init_completion(&trans_done);
- 		spin_unlock_irq(&rtsx->reg_lock);
- 		timeleft = wait_for_completion_interruptible_timeout(
--			&trans_done, timeout * HZ / 1000);
-+			&trans_done, msecs_to_jiffies(timeout));
- 		if (timeleft <= 0) {
- 			dev_dbg(rtsx_dev(chip), "Timeout (%s %d)\n",
- 				__func__, __LINE__);
-@@ -688,7 +688,7 @@ static int rtsx_transfer_buf(struct rtsx_chip *chip, u8 card, void *buf,
- 
- 	/* Wait for TRANS_OK_INT */
- 	timeleft = wait_for_completion_interruptible_timeout(
--		&trans_done, timeout * HZ / 1000);
-+		&trans_done, msecs_to_jiffies(timeout));
- 	if (timeleft <= 0) {
- 		dev_dbg(rtsx_dev(chip), "Timeout (%s %d)\n",
- 			__func__, __LINE__);
--- 
-1.7.10.4
+iQIcBAEBCAAGBQJUvLI7AAoJEMDTa8Ir7ZwVuckP/iEmt4hhBamuUjMNmZk2qNvl
+OpAmCfxM1JxF5IPc/fbcpn/O/IXxEE/C0ku1UPwiokVwLlKTGcCi4Bff0usK985x
+9jXEFGwbUwb6bbZvTuMs5v82H8L5ONxpRjQpBSqX34ltVQoDWbV9jEeZJXl2O0qf
+8MSKbl+oEMFnwYDHG5rNOj7BitI9JP647mgHZOgTUJihY3DwF2tZhhqp+o75IiOZ
+MAWKHzoJFOuQLdp+BW9wuGP3PGMQWZHe/ud+EQwa+pHUXduU8O+aW9FB0CCxoSdh
+PVUceYAO6XenYHPTzhjgiGbdcO3YRU0UVrUbD3Es1AG85QMMzEaBJTRlcDzmFxvV
+uuhsPe7NrPdg339MV2JnchHWTcutPwjD5ePkznZyQ6Q2aPn/E9jmLuBQ/HSjGZ35
+fH4HLxWncWkynNJhAy7JwS+6rWFHMIWjPRgvnppja4dUgTekHoaCa85H0h2oYzGT
+0qoR4K0IZmI7Ped9q0EpFS5WvXW1tzNKapTuO3RMjyclDL2/PZ7qvBBUuY4vY3JE
+qjCR+TnXb2b0bsAXlR/2MYmyJLWuLJZChDphR0X/q0Uc1WttUQpuKSkvujjxbiX8
+Eys7CmqiIN4sm83YlIYqgbsRjh+5gPZOVp0pYcn2bh0pAnxABgA+zIhqJFi8aosq
+9D8v9UbtVccu50HPQkWm
+=cHpH
+-----END PGP SIGNATURE-----
 
+--Sig_/0Q/EYCdme_LQbLdQyjLeaFw--
