@@ -1,101 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692AbbASRyA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 12:54:00 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:49655 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751622AbbASRx5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 12:53:57 -0500
-Message-ID: <54BD44AE.20006@free-electrons.com>
-Date: Mon, 19 Jan 2015 18:53:50 +0100
-From: Gregory CLEMENT <gregory.clement@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1752744AbbASRzP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 12:55:15 -0500
+Received: from mout.web.de ([212.227.15.14]:52419 "EHLO mout.web.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752716AbbASRzM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 12:55:12 -0500
+Message-ID: <54BD44F0.3040705@users.sourceforge.net>
+Date: Mon, 19 Jan 2015 18:54:56 +0100
+From: SF Markus Elfring <elfring@users.sourceforge.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-CC: arnd@arndb.de, olof@lixom.net, linux@arm.linux.org.uk,
-        thomas.petazzoni@free-electrons.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/3] ARM: Marvell: Remove init cpus function
-References: <1421686381-12397-1-git-send-email-daniel.lezcano@linaro.org>
-In-Reply-To: <1421686381-12397-1-git-send-email-daniel.lezcano@linaro.org>
+To: Antonino Daplas <adaplas@gmail.com>,
+        Ferenc Bakonyi <fero@drama.obuda.kando.hu>,
+        Hans de Goede <hdegoede@redhat.com>, Helge Deller <deller@gmx.de>,
+        "James E. J. Bottomley" <jejb@parisc-linux.org>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Kristoffer Ericson <kristoffer.ericson@gmail.com>,
+        Peter Jones <pjones@redhat.com>,
+        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org,
+        linux-nvidia@lists.surfsouth.com, linux-parisc@vger.kernel.org
+CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
+        Julia Lawall <julia.lawall@lip6.fr>
+Subject: [PATCH 0/9] video: fbdev: Deletion of some unnecessary checks
+References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net>
+In-Reply-To: <5317A59D.4@users.sourceforge.net>
 Content-Type: text/plain; charset=windows-1252
 Content-Transfer-Encoding: 7bit
+X-Provags-ID: V03:K0:iJAuW2wBQmpjNBaao0Fc2WuL9tyyLHfejrBwH7suR9swY7cxB62
+ D8Oyp0Dgbi2svR8XIulduC2OWtdYXNwQyAz+a04EIL7qsvSWWIDGNEaQXHCJZSJ0kGxQMXU
+ uOVWJHmbT6BVCIWeltU3Tsrlwxsife3p/O47mZRJu08zoT/XgOGH8zcmjA04gsgACTfGfMz
+ GZ6fijkQBIvYY2M5mWgsg==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+From: Markus Elfring <elfring@users.sourceforge.net>
+Date: Mon, 19 Jan 2015 17:57:25 +0100
 
-On 19/01/2015 17:52, Daniel Lezcano wrote:
-> With the next patches, the init cpus function will be changed to be factored
-> out.
-> 
-> The function 'armada_xp_smp_init_cpus' does nothing more than a sanity check
-> after the DT has been parsed. Even if this code is valid, it does not give a
-> real benefit as the DT should be correctly filled.
-> 
-> Remove this callback.
+Further update suggestions were taken into account after a patch was applied
+from static source code analysis.
 
-In the course of the factorization of the smp functions, this function
-has been more and more reduced. As stated, the remaining part is not so
-useful now, it makes sens to remove it now.
+Markus Elfring (9):
+  fbdev: Deletion of checks before the function call "iounmap"
+  One function call less in tdfxfb_probe() after error detection
+  One function call less in vesafb_probe() after error detection
+  Add check for return value of ioremap() in cirrusfb_pci_register()
+  Less function calls in trident_pci_probe() after error detection
+  One function call less in pvr2fb_common_init() after error detection
+  One function call less in tgafb_register() after error detection
+  Less function calls in valkyriefb_init() after error detection
+  Less function calls in w100fb_probe() after error detection
 
-Acked-by: Gregory CLEMENT <gregory.clement@free-electrons.com>
-
-
-Thanks,
-
-Gregory
-
-
-> 
-> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> ---
->  arch/arm/mach-mvebu/platsmp.c | 11 -----------
->  1 file changed, 11 deletions(-)
-> 
-> diff --git a/arch/arm/mach-mvebu/platsmp.c b/arch/arm/mach-mvebu/platsmp.c
-> index 58cc8c1..3e93422 100644
-> --- a/arch/arm/mach-mvebu/platsmp.c
-> +++ b/arch/arm/mach-mvebu/platsmp.c
-> @@ -30,8 +30,6 @@
->  #include "pmsu.h"
->  #include "coherency.h"
->  
-> -#define ARMADA_XP_MAX_CPUS 4
-> -
->  #define AXP_BOOTROM_BASE 0xfff00000
->  #define AXP_BOOTROM_SIZE 0x100000
->  
-> @@ -114,14 +112,6 @@ static void armada_xp_secondary_init(unsigned int cpu)
->  	mvebu_v7_pmsu_idle_exit();
->  }
->  
-> -static void __init armada_xp_smp_init_cpus(void)
-> -{
-> -	unsigned int ncores = num_possible_cpus();
-> -
-> -	if (ncores == 0 || ncores > ARMADA_XP_MAX_CPUS)
-> -		panic("Invalid number of CPUs in DT\n");
-> -}
-> -
->  static void __init armada_xp_smp_prepare_cpus(unsigned int max_cpus)
->  {
->  	struct device_node *node;
-> @@ -171,7 +161,6 @@ static int armada_xp_cpu_kill(unsigned int cpu)
->  #endif
->  
->  struct smp_operations armada_xp_smp_ops __initdata = {
-> -	.smp_init_cpus		= armada_xp_smp_init_cpus,
->  	.smp_prepare_cpus	= armada_xp_smp_prepare_cpus,
->  	.smp_boot_secondary	= armada_xp_boot_secondary,
->  	.smp_secondary_init     = armada_xp_secondary_init,
-> 
-
+ drivers/video/fbdev/aty/atyfb_base.c   | 15 +++++--------
+ drivers/video/fbdev/cirrusfb.c         | 10 ++++++---
+ drivers/video/fbdev/controlfb.c        |  6 ++---
+ drivers/video/fbdev/efifb.c            |  3 +--
+ drivers/video/fbdev/hgafb.c            |  3 +--
+ drivers/video/fbdev/hpfb.c             |  3 +--
+ drivers/video/fbdev/i810/i810_main.c   |  6 ++---
+ drivers/video/fbdev/macfb.c            | 15 +++++--------
+ drivers/video/fbdev/offb.c             |  3 +--
+ drivers/video/fbdev/pvr2fb.c           | 15 ++++++-------
+ drivers/video/fbdev/s1d13xxxfb.c       |  3 +--
+ drivers/video/fbdev/s3fb.c             |  6 ++---
+ drivers/video/fbdev/sh_mobile_hdmi.c   |  6 ++---
+ drivers/video/fbdev/sh_mobile_lcdcfb.c |  3 +--
+ drivers/video/fbdev/simplefb.c         |  3 +--
+ drivers/video/fbdev/stifb.c            |  3 +--
+ drivers/video/fbdev/tdfxfb.c           | 22 +++++++++----------
+ drivers/video/fbdev/tgafb.c            | 20 ++++++++---------
+ drivers/video/fbdev/tridentfb.c        | 15 +++++++------
+ drivers/video/fbdev/valkyriefb.c       | 37 ++++++++++++++++++-------------
+ drivers/video/fbdev/vesafb.c           | 11 +++++-----
+ drivers/video/fbdev/w100fb.c           | 40 +++++++++++++++++-----------------
+ 22 files changed, 116 insertions(+), 132 deletions(-)
 
 -- 
-Gregory Clement, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+2.2.2
+
