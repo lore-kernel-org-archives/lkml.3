@@ -1,87 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752331AbbASJq7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 04:46:59 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50502 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751293AbbASJq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 04:46:58 -0500
-Date: Mon, 19 Jan 2015 10:46:56 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: "long.wanglong" <long.wanglong@huawei.com>
-Cc: hannes@cmpxchg.org, shijie8@gmail.com, torvalds@linux-foundation.org,
-        azurit@pobox.sk, hugh.dickins@tiscali.co.uk, rientjes@google.com,
-        kosaki.motohiro@jp.fujitsu.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        peifeiyue@huawei.com
-Subject: Re: does the semantics of MAP_LOCKED is equal to mlock() function?
-Message-ID: <20150119094656.GA21052@dhcp22.suse.cz>
-References: <54BCA187.6070601@huawei.com>
+	id S1752346AbbASJrN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 04:47:13 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:34629 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751801AbbASJrK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 04:47:10 -0500
+Date: Mon, 19 Jan 2015 09:47:04 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Roger Tseng <rogerable@realtek.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, driverdev-devel@linuxdriverproject.org,
+        wei_wang@realsil.com.cn, micky_ching@realsil.com.cn
+Subject: Re: [PATCH 2/2] mfd: rtsx_usb: Defer autosuspend while card exists
+Message-ID: <20150119094704.GL21886@x1>
+References: <1421306085-32254-1-git-send-email-rogerable@realtek.com>
+ <1421306085-32254-3-git-send-email-rogerable@realtek.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <54BCA187.6070601@huawei.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1421306085-32254-3-git-send-email-rogerable@realtek.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-See http://marc.info/?l=linux-mm&m=142122902313315&w=2 for more
-information.
+On Thu, 15 Jan 2015, Roger Tseng wrote:
 
-On Mon 19-01-15 14:17:43, long.wanglong wrote:
-> Hi all:
+> A card insertion happens after the lastest polling before reader is
+> suspended may never have a chance to be detected. Under current 1-HZ
+> polling interval setting in mmc_core, the worst case of such
+> undetectablility is about 1 second.
 > 
-> In the latest kernel, i set the memory limit (4096) in a test cgroup. and add the test task.
-> the test code code is:
+> To further reduce the undetectability, detect card slot again in suspend
+> method and defer the autosuspend if the slot is loaded. The default 2
+> second autosuspend delay of USB subsystem should let the next polling
+> detects the card.
 > 
-> testcase 1: mmap with MAP_LOCKED flag(memsize = 8192)
-> 
-> 185                 p = mmap(NULL, memsize, PROT_WRITE | PROT_READ,
-> 186                          MAP_PRIVATE | MAP_ANONYMOUS | MAP_LOCKED, 0, 0);
-> 187                 if (p == MAP_FAILED)
-> 188                         err(1, "mmap(lock) failed");
-> 					
-> expect: invoke OOM killer.
-> result: not invoke OOM killer.
-> 
-> 
-> testcase 2: mmap without MAP_LOCKED flag and the call mlock (memsize = 8192)
-> 
-> 185                 p = mmap(NULL, memsize, PROT_WRITE | PROT_READ,
-> 186                          MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
-> 187                 if (p == MAP_FAILED)
-> 188                         err(1, "mmap(lock) failed");
-> 189
-> 190                 if (mlock(p, memsize) == -1)
-> 191                         err(1, "mlock failed")
-> 
-> expect: invoke OOM killer.
-> result: invoke OOM killer.
-> 
-> in the Linux Programmer's Manual:
-> 
-> MAP_LOCKED (since Linux 2.5.37)
-> 		Lock the pages of the mapped region into memory in the manner
-> 		of mlock(2).  This flag is ignored in older kernels.
-> 	
-> and
->        mlock() locks pages in the address range starting at addr and
->        continuing for len bytes.  All pages that contain a part of the
->        specified address range are guaranteed to be resident in RAM when the
->        call returns successfully; the pages are guaranteed to stay in RAM
->        until later unlocked.
-> 	
-> According to the description in the manual, the two testcases are equivalent.
-> 
-> why the first testcase does not invoke OOM killer?
-> does the mmap with MAP_LOCKED flag will not immediately allocate physical memory?
-> 
-> 
-> Best Regards
-> Wang Long
-> 
+> Signed-off-by: Roger Tseng <rogerable@realtek.com>
+> ---
+>  drivers/mfd/rtsx_usb.c | 14 ++++++++++++++
+>  1 file changed, 14 insertions(+)
+
+Applied, thanks.
+
+> diff --git a/drivers/mfd/rtsx_usb.c b/drivers/mfd/rtsx_usb.c
+> index 076694126e5d..63883fd025c0 100644
+> --- a/drivers/mfd/rtsx_usb.c
+> +++ b/drivers/mfd/rtsx_usb.c
+> @@ -687,6 +687,20 @@ static int rtsx_usb_suspend(struct usb_interface *intf, pm_message_t message)
+>  	dev_dbg(&intf->dev, "%s called with pm message 0x%04x\n",
+>  			__func__, message.event);
+>  
+> +	if (PMSG_IS_AUTO(message)) {
+> +		if (mutex_trylock(&ucr->dev_mutex)) {
+> +			rtsx_usb_get_card_status(ucr, &val);
+> +			mutex_unlock(&ucr->dev_mutex);
+> +
+> +			/* Defer the autosuspend if card exists */
+> +			if (val & (SD_CD | MS_CD))
+> +				return -EAGAIN;
+> +		} else {
+> +			/* There is an ongoing operation*/
+> +			return -EAGAIN;
+> +		}
+> +	}
+> +
+>  	return 0;
+>  }
+>  
 
 -- 
-Michal Hocko
-SUSE Labs
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
