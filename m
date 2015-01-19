@@ -1,33 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752219AbbASQhs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 11:37:48 -0500
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.162]:10563 "EHLO
+	id S1752119AbbASQhr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 11:37:47 -0500
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.174]:8587 "EHLO
 	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751930AbbASQhp (ORCPT
+	by vger.kernel.org with ESMTP id S1751922AbbASQhp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 19 Jan 2015 11:37:45 -0500
 X-Env-Sender: stwiss.opensource@diasemi.com
-X-Msg-Ref: server-8.tower-38.messagelabs.com!1421685461!8060873!1
+X-Msg-Ref: server-14.tower-39.messagelabs.com!1421685462!20103396!1
 X-Originating-IP: [82.210.246.133]
 X-StarScan-Received: 
 X-StarScan-Version: 6.12.5; banners=-,-,-
 X-VirusChecked: Checked
-Message-ID: <cover.1421684991.git.stwiss.opensource@diasemi.com>
-From: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
+Message-ID: <d765ef11de06a4ac5721ecf3283ba1333a6d0c8c.1421684991.git.stwiss.opensource@diasemi.com>
+In-Reply-To: <cover.1421684991.git.stwiss.opensource@diasemi.com>
+References: <cover.1421684991.git.stwiss.opensource@diasemi.com>
+From: Steve Twiss <stwiss.opensource@diasemi.com>
 Date: Mon, 19 Jan 2015 16:29:51 +0000
-Subject: [PATCH V2 0/2]  Add device tree support for DA9063 
-To: David Dajun Chen <david.chen@diasemi.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Lee Jones <lee.jones@linaro.org>,
-        "Mark Brown" <broonie@linaro.org>, Mark Rutland <mark.rutland@arm.com>,
-        "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>,
-        Pawel Moll <pawel.moll@arm.com>,
+Subject: [PATCH V2 1/2] mfd: da9063: Add device tree support
+To: Grant Likely <grant.likely@linaro.org>, Lee Jones <lee.jones@linaro.org>,
+        Mark Brown <broonie@linaro.org>,
         Philipp Zabel <p.zabel@pengutronix.de>,
-        Rob Herring <robh+dt@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        "Support Opensource" <support.opensource@diasemi.com>
-CC: DT <devicetree@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+        "Rob Herring" <robh+dt@kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+CC: DT <devicetree@vger.kernel.org>, David Dajun Chen <david.chen@diasemi.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "Kumar Gala" <galak@codeaurora.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Mark Rutland" <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        "Philipp Zabel" <p.zabel@pengutronix.de>,
+        Support Opensource <support.opensource@diasemi.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
@@ -36,27 +39,89 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steve Twiss <stwiss.opensource@diasemi.com>
 
-This patch set adds device tree support for the Dialog
-Semiconductor DA9063 PMIC. Support is provided for the
-Regulators; Real-Time Clock and Watchdog.
+Add device tree support for DA9063 regulators; Real-Time Clock
+and Watchdog.
 
-[PATCH V2 1/2]: kernel driver device tree support
-[PATCH V2 2/2]: device tree bindings document
+This patch is dependent on PATCH V2 2/2 
 
-Thank you,
-Steve Twiss, Dialog Semiconductor Ltd.
+Signed-off-by: Steve Twiss <stwiss.opensource@diasemi.com>
 
-S Twiss (2):
-  mfd: da9063: Add device tree support
-  devicetree: Add bindings for DA9063
+---
+This patch applies against linux-next and v3.19-rc4 
 
- Documentation/devicetree/bindings/mfd/da9063.txt | 94 ++++++++++++++++++++++++
- drivers/mfd/da9063-core.c                        |  2 +
- drivers/mfd/da9063-i2c.c                         | 11 +++
- include/linux/mfd/da9063/core.h                  |  1 +
- 4 files changed, 108 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mfd/da9063.txt
+ drivers/mfd/da9063-core.c       |  2 ++
+ drivers/mfd/da9063-i2c.c        | 11 +++++++++++
+ include/linux/mfd/da9063/core.h |  1 +
+ 3 files changed, 14 insertions(+)
 
+diff --git a/drivers/mfd/da9063-core.c b/drivers/mfd/da9063-core.c
+index f38bc98..facd361 100644
+--- a/drivers/mfd/da9063-core.c
++++ b/drivers/mfd/da9063-core.c
+@@ -86,6 +86,7 @@ static const struct mfd_cell da9063_devs[] = {
+ 	},
+ 	{
+ 		.name		= DA9063_DRVNAME_WATCHDOG,
++		.of_compatible	= "dlg,da9063-watchdog",
+ 	},
+ 	{
+ 		.name		= DA9063_DRVNAME_HWMON,
+@@ -101,6 +102,7 @@ static const struct mfd_cell da9063_devs[] = {
+ 		.name		= DA9063_DRVNAME_RTC,
+ 		.num_resources	= ARRAY_SIZE(da9063_rtc_resources),
+ 		.resources	= da9063_rtc_resources,
++		.of_compatible	= "dlg,da9063-rtc",
+ 	},
+ 	{
+ 		.name		= DA9063_DRVNAME_VIBRATION,
+diff --git a/drivers/mfd/da9063-i2c.c b/drivers/mfd/da9063-i2c.c
+index 21fd8d9..0e94b20 100644
+--- a/drivers/mfd/da9063-i2c.c
++++ b/drivers/mfd/da9063-i2c.c
+@@ -25,6 +25,9 @@
+ #include <linux/mfd/da9063/pdata.h>
+ #include <linux/mfd/da9063/registers.h>
+ 
++#include <linux/of.h>
++#include <linux/regulator/of_regulator.h>
++
+ static const struct regmap_range da9063_ad_readable_ranges[] = {
+ 	{
+ 		.range_min = DA9063_REG_PAGE_CON,
+@@ -203,6 +206,13 @@ static struct regmap_config da9063_regmap_config = {
+ 	.cache_type = REGCACHE_RBTREE,
+ };
+ 
++static const struct of_device_id da9063_dt_ids[] = {
++	{ .compatible = "dlg,da9063-ad", },
++	{ .compatible = "dlg,da9063-bb", },
++	{ .compatible = "dlg,da9063-ca", },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, da9063_dt_ids);
+ static int da9063_i2c_probe(struct i2c_client *i2c,
+ 	const struct i2c_device_id *id)
+ {
+@@ -257,6 +267,7 @@ static struct i2c_driver da9063_i2c_driver = {
+ 	.driver = {
+ 		.name = "da9063",
+ 		.owner = THIS_MODULE,
++		.of_match_table = of_match_ptr(da9063_dt_ids),
+ 	},
+ 	.probe    = da9063_i2c_probe,
+ 	.remove   = da9063_i2c_remove,
+diff --git a/include/linux/mfd/da9063/core.h b/include/linux/mfd/da9063/core.h
+index b92a326..79f4d82 100644
+--- a/include/linux/mfd/da9063/core.h
++++ b/include/linux/mfd/da9063/core.h
+@@ -36,6 +36,7 @@ enum da9063_models {
+ enum da9063_variant_codes {
+ 	PMIC_DA9063_AD = 0x3,
+ 	PMIC_DA9063_BB = 0x5,
++	PMIC_DA9063_CA = 0x6,
+ };
+ 
+ /* Interrupts */
 -- 
 end-of-patch for PATCH V2
 
