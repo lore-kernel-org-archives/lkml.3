@@ -1,96 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752345AbbASKqT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 05:46:19 -0500
-Received: from www.linutronix.de ([62.245.132.108]:41668 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751029AbbASKqR (ORCPT
+	id S1752165AbbASKvm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 05:51:42 -0500
+Received: from smtp73.iad3a.emailsrvr.com ([173.203.187.73]:48836 "EHLO
+	smtp73.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751357AbbASKvl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 05:46:17 -0500
-Date: Mon, 19 Jan 2015 11:45:48 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Darren Hart <dvhart@linux.intel.com>
-cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        "Carlos O'Donell" <carlos@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Jakub Jelinek <jakub@redhat.com>,
-        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Davidlohr Bueso <davidlohr.bueso@hp.com>,
-        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Linux API <linux-api@vger.kernel.org>,
-        Torvald Riegel <triegel@redhat.com>,
-        Roland McGrath <roland@redhat.com>, Darren Hart <dvhart@infradead.org>,
-        Anton Blanchard <anton@samba.org>, Petr Baudis <pasky@suse.cz>,
-        Eric Dumazet <edumazet@google.com>,
-        bill o gallmeister <bgallmeister@gmail.com>,
-        Jan Kiszka <jan.kiszka@siemens.com>, Daniel Wagner <wagi@monom.org>,
-        Rich Felker <dalias@libc.org>
-Subject: Re: futex(2) man page update help request
-In-Reply-To: <D0DEECA2.B7EAD%dvhart@linux.intel.com>
-Message-ID: <alpine.DEB.2.11.1501191144320.5526@nanos>
-References: <537346E5.4050407@gmail.com> <CF98E3EF.90564%dvhart@linux.intel.com> <CAKgNAkh+PWzT2SByaLk_OtiAXeZSkWoMgu+ivDOt1dTWVtaatQ@mail.gmail.com> <5373D0CA.2050204@redhat.com> <alpine.DEB.2.02.1405150121230.6261@ionos.tec.linutronix.de>
- <CAKgNAkjQ5Dd_U9OojXdgeforpRevvPHNFAw99kBFPCwHgf7Ggg@mail.gmail.com> <alpine.DEB.2.02.1405151144390.6261@ionos.tec.linutronix.de> <54B7D87C.3090901@gmail.com> <alpine.DEB.2.11.1501152313330.5526@nanos> <54B92B71.2090509@gmail.com> <alpine.DEB.2.11.1501161618080.5526@nanos>
- <54B97A72.2050205@gmail.com> <D0DEECA2.B7EAD%dvhart@linux.intel.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Mon, 19 Jan 2015 05:51:41 -0500
+X-Sender-Id: abbotti@mev.co.uk
+Message-ID: <54BCE1BA.1050608@mev.co.uk>
+Date: Mon, 19 Jan 2015 10:51:38 +0000
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+To: Nicholas Mc Guire <der.herr@hofr.at>
+CC: H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] comedi: rtd520: if condition with no effect - if
+ identical to else
+References: <1421582004-2398-1-git-send-email-der.herr@hofr.at>
+In-Reply-To: <1421582004-2398-1-git-send-email-der.herr@hofr.at>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Jan 2015, Darren Hart wrote:
-> On 1/16/15, 12:54 PM, "Michael Kerrisk (man-pages)"
-> <mtk.manpages@gmail.com> wrote:
-> 
-> >On 01/16/2015 04:20 PM, Thomas Gleixner wrote:
-> >> On Fri, 16 Jan 2015, Michael Kerrisk (man-pages) wrote:
-> >> 
-> >>> Hello Thomas,
-> >>>
-> >>> On 01/15/2015 11:23 PM, Thomas Gleixner wrote:
-> >>>> On Thu, 15 Jan 2015, Michael Kerrisk (man-pages) wrote:
-> >>>>>> [EINVAL] uaddr equal uaddr2. Requeue to same futex.
-> >>>>>
-> >>>>> ??? I added this, but does this error not occur only for PI requeues?
-> >>>>
-> >>>> It's equally wrong for normal futexes. And its actually the same code
-> >>>> checking for this for all variants.
-> >>>
-> >>> I don't understand "equally wrong" in your reply, I'm sorry. Do you
-> >>> mean:
-> >>>
-> >>> a) This error text should be there for both normal and PI requeues
-> >> 
-> >> It is there for both. The requeue code has that check independent of
-> >> the requeue type (normal/pi). It never makes sense to requeue
-> >> something to itself whether normal or pi futex. We added this for PI,
-> >> because there it is harmful, but we did not special case it. So normal
-> >> futexes get the same treatment.
-> >
-> >Hello Thomas, 
-> >
-> >Color me stupid, but I can't see this in futex_requeue(). Where is that
-> >check that is "independent of the requeue type (normal/pi)"?
-> >
-> >When I look through futex_requeue(), all the likely looking sources
-> >of EINVAL are governed by a check on the 'requeue_pi' argument.
-> 
-> 
-> Right, in the non-PI case, I believe there are valid use cases: move to
-> the back of the FIFO, for example (OK, maybe the only example?). Both
-> tests ensuring uaddr1 != uaddr2 are under the requeue_pi conditional
-> block. The second compares the keys in case they are not FUTEX_PRIVATE
-> (uaddrs would be different, but still the same backing store).
-> 
-> Thomas, am I missing a test for this someplace else?
+On 18/01/15 11:53, Nicholas Mc Guire wrote:
+> The if and the else branch code are identical - so the condition has no
+> effect on the effective code - this patch removes the condition and the
+> duplicated code.
+>
+> Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+> ---
+>
+> Patch is against 3.19.0-rc4 -next-20150116
+>
+> This patch was only compile tested with x86_64_defconfig + CONFIG_STAGING=y
+> CONFIG_COMEDI=m, CONFIG_COMEDI_PCI_DRIVERS=m, CONFIG_COMEDI_RTD520=m
+>
+> commit c5930d66 (staging: comedi: rtd520: use the comedi_device 'mmio'
+> member) introduced the current code, the probably bug was though
+> present before this commit:
+>
+>          if (devpriv->xfer_count > 0)    /* transfer every N samples */
+>                  writew(IRQM_ADC_ABOUT_CNT, dev->mmio + LAS0_IT);
+>          else                            /* 1/2 FIFO transfers */
+>                  writew(IRQM_ADC_ABOUT_CNT, dev->mmio + LAS0_IT);
+>
+> as the if and else branch are identical but the comments indicate that
+> they are serving different purposes this looks like a bug. The code has
+> though been in use in this form for more than 2 years - so maybe the
+> condition is simply unnecessary. In any case this needs a review
+> by someone who knows the details of the driver - the below patch
+> is only cleaning up the current situation and may thus be wrong.
+>
+> ...and how did this pass multiple modifications and reviews ?...
 
-No, I had a short look at the code misread it. So, yes, it's a valid
-operation for the non PI case. Sorry for the confusion.
+The two halves used to output different kernel debug messages which were 
+removed in commit d62bc468.  Prior to that, in commit 60aeb080, a whole 
+bunch of unused #ifdef code was removed, which made the 'else' branch 
+the same as the 'if' branch, apart from the debug messages, as can be 
+seen here around line 1319 on the left side:
 
-Thanks,
+https://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/drivers/staging/comedi/drivers/?id=60aeb08024dcd8a392917ab72a107ad451a59030&context=5&ignorews=0&dt=1
 
-	tglx
+>
+>   drivers/staging/comedi/drivers/rtd520.c |    6 ++----
+>   1 file changed, 2 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/staging/comedi/drivers/rtd520.c b/drivers/staging/comedi/drivers/rtd520.c
+> index 06ae436..3ccdade 100644
+> --- a/drivers/staging/comedi/drivers/rtd520.c
+> +++ b/drivers/staging/comedi/drivers/rtd520.c
+> @@ -1012,10 +1012,8 @@ static int rtd_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+>   	readw(dev->mmio + LAS0_CLEAR);
+>
+>   	/* TODO: allow multiple interrupt sources */
+> -	if (devpriv->xfer_count > 0)	/* transfer every N samples */
+> -		writew(IRQM_ADC_ABOUT_CNT, dev->mmio + LAS0_IT);
+> -	else				/* 1/2 FIFO transfers */
+> -		writew(IRQM_ADC_ABOUT_CNT, dev->mmio + LAS0_IT);
+> +	/* transfer every N samples */
+> +	writew(IRQM_ADC_ABOUT_CNT, dev->mmio + LAS0_IT);
+>
+>   	/* BUG: start_src is ASSUMED to be TRIG_NOW */
+>   	/* BUG? it seems like things are running before the "start" */
+>
+
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
+
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk> )=-
+-=(                          Web: http://www.mev.co.uk/  )=-
