@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751927AbbASMXp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 07:23:45 -0500
-Received: from aserp1040.oracle.com ([141.146.126.69]:43199 "EHLO
-	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143AbbASMXn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 07:23:43 -0500
-Date: Mon, 19 Jan 2015 15:23:00 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: Shirish Gajera <gajerashirish@gmail.com>
-Cc: w.d.hubbs@gmail.com, chris@the-brannons.com, kirk@reisers.ca,
-        samuel.thibault@ens-lyon.org, gregkh@linuxfoundation.org,
-        domagoj.trsan@gmail.com, roxanagabriela10@gmail.com,
-        dilekuzulmez@gmail.com, ben@decadent.org.uk, daeseok.youn@gmail.com,
-        sulamiification@gmail.com, aysemelikeyurtoglu@gmail.com,
-        rusty@rustcorp.com.au, tapaswenipathak@gmail.com,
-        sasha.levin@oracle.com, speakup@linux-speakup.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: speakup: Fix warning of line over 80 characters.
-Message-ID: <20150119122300.GB6456@mwanda>
-References: <20150118075753.GA2612@shirish-ThinkPad-Edge-E430>
+	id S1752020AbbASMYB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 07:24:01 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53436 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751948AbbASMYA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 07:24:00 -0500
+Date: Mon, 19 Jan 2015 13:23:10 +0100
+From: Cyril Hrubis <chrubis@suse.cz>
+To: ltp-list@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+        libc-alpha@sourceware.org
+Cc: lwn@lwn.net, akpm@linux-foundation.org, torvalds@linux-foundation.org
+Subject: The Linux Test Project has been released for JANUARY 2015
+Message-ID: <20150119122310.GA27065@rei>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150118075753.GA2612@shirish-ThinkPad-Edge-E430>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+God news everyone,
 
-Generally this patch is fine.  There were a couple places which weren't
-perfect.
+the Linux Test Project test suite stable release for *January 2015* has
+been released.
 
-On Sat, Jan 17, 2015 at 11:57:53PM -0800, Shirish Gajera wrote:
-> +	if ((spk_bleeps & 2) && (msg_id < edge_quiet)) {
-> +		synth_printf("%s\n",
-> +		spk_msg_get(MSG_EDGE_MSGS_START + msg_id - 1));
-> +	}
+Since the last release 139 patches by 21 authors were merged.
 
-This should be:
+Notable changes are:
 
-	if ((spk_bleeps & 2) && (msg_id < edge_quiet)) {
-		synth_printf("%s\n",
-			     spk_msg_get(MSG_EDGE_MSGS_START + msg_id - 1));
-	}
+* Fixes and enhancements of network testcases by Alexey Kodanev
 
-> +#define spk_serial_tx_busy() \
-> +((inb(speakup_info.port_tts + UART_LSR) & BOTH_EMPTY) != BOTH_EMPTY)
+* New testcases for mount, network and ipc namespaces by Matus Marhefka
 
-This should be:
+* New testcase for fanotify ignore masks
 
-#define spk_serial_tx_busy() \
-	((inb(speakup_info.port_tts + UART_LSR) & BOTH_EMPTY) != BOTH_EMPTY)
+* New policy and library helpers to install and access testcase datafailes
 
-Otherwise this patch is nice.  I'm fine with merging it as-is if people
-want.
+* Use of coccinelle and spatch to fix bugs and cleanup old code
 
-regards,
-dan carpenter
+* And many more smaller fixes and enhancements
 
+
+If you are not familiar with LTP there is a nice article at LWN.net
+https://lwn.net/Articles/625969/.
+
+The latest version of the test-suite contains 3000+ tests for the Linux
+and can be downloaded at:
+
+http://sourceforge.net/projects/ltp/files/LTP%20Source/ltp-20150119/
+
+The project pages as well as GIT repository are hosted on GitHub for
+quite some time now:
+
+https://github.com/linux-test-project/ltp
+http://linux-test-project.github.io/
+
+If you ever wondered how to write a LTP testcase, don't miss our developer
+documentation at:
+
+https://github.com/linux-test-project/ltp/wiki/Test-Writing-Guidelines
+https://github.com/linux-test-project/ltp/wiki/BuildSystem
+
+Patches, new tests, bugs, comments or questions should go to
+to our mailing list at ltp-list@lists.sourceforge.net.
+
+-- 
+Cyril Hrubis
+chrubis@suse.cz
