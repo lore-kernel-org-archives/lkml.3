@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752068AbbASLKb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 06:10:31 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:43069 "EHLO
+	id S1752115AbbASLKn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 06:10:43 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:43077 "EHLO
 	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751474AbbASLK3 (ORCPT
+	with ESMTP id S1751194AbbASLKk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 06:10:29 -0500
-Date: Mon, 19 Jan 2015 03:10:09 -0800
+	Mon, 19 Jan 2015 06:10:40 -0500
+Date: Mon, 19 Jan 2015 03:10:28 -0800
 From: tip-bot for Michael Kerrisk <tipbot@zytor.com>
-Message-ID: <tip-40a35503401a5a5ffd8bb03b120724e213160584@git.kernel.org>
-Cc: mingo@kernel.org, hpa@zytor.com, tglx@linutronix.de, darren@dvhart.com,
-        linux-kernel@vger.kernel.org, mtk.manpages@gmail.com
-Reply-To: darren@dvhart.com, tglx@linutronix.de, mtk.manpages@gmail.com,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, hpa@zytor.com
-In-Reply-To: <54B9663D.9070000@gmail.com>
-References: <54B9663D.9070000@gmail.com>
+Message-ID: <tip-996636ddae5cab8883bd76b996cd4f2ea9a152be@git.kernel.org>
+Cc: hpa@zytor.com, darren@dvhart.com, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, mingo@kernel.org, mtk.manpages@gmail.com
+Reply-To: mtk.manpages@gmail.com, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, darren@dvhart.com,
+        hpa@zytor.com
+In-Reply-To: <54B96646.8010200@gmail.com>
+References: <54B96646.8010200@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:locking/core] doc:
-  Fix misnamed FUTEX_CMP_REQUEUE_PI op constants
-Git-Commit-ID: 40a35503401a5a5ffd8bb03b120724e213160584
+Subject: [tip:locking/core] futex: Fix argument handling in futex_lock_pi(
+ ) calls
+Git-Commit-ID: 996636ddae5cab8883bd76b996cd4f2ea9a152be
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
@@ -32,64 +33,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  40a35503401a5a5ffd8bb03b120724e213160584
-Gitweb:     http://git.kernel.org/tip/40a35503401a5a5ffd8bb03b120724e213160584
+Commit-ID:  996636ddae5cab8883bd76b996cd4f2ea9a152be
+Gitweb:     http://git.kernel.org/tip/996636ddae5cab8883bd76b996cd4f2ea9a152be
 Author:     Michael Kerrisk <mtk.manpages@gmail.com>
-AuthorDate: Fri, 16 Jan 2015 20:27:57 +0100
+AuthorDate: Fri, 16 Jan 2015 20:28:06 +0100
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Mon, 19 Jan 2015 12:05:32 +0100
 
-doc: Fix misnamed FUTEX_CMP_REQUEUE_PI op constants
+futex: Fix argument handling in futex_lock_pi() calls
 
-FUTEX_CMP_REQUEUE_PI was misnamed in two different ways:
-FUTEX_REQUEUE_CMP_PI and FUTEX_REQUEUE_PI. The existence of two
-different misnamings leaves the reader wondering if we are talking
-about two different operations. Furthermore, the misnamings mean
-that grepping the source for the correct name (which doesn't
-appear at all) won't find this documentation file.
+This patch fixes two separate buglets in calls to futex_lock_pi():
+
+  * Eliminate unused 'detect' argument
+  * Change unused 'timeout' argument of FUTEX_TRYLOCK_PI to NULL
+
+The 'detect' argument of futex_lock_pi() seems never to have been
+used (when it was included with the initial PI mutex implementation
+in Linux 2.6.18, all checks against its value were disabled by
+ANDing against 0 (i.e., if (detect... && 0)), and with
+commit 778e9a9c3e7193ea9f434f382947155ffb59c755, any mention of
+this argument in futex_lock_pi() went way altogether. Its presence
+now serves only to confuse readers of the code, by giving the
+impression that the futex() FUTEX_LOCK_PI operation actually does
+use the 'val' argument. This patch removes the argument.
+
+The futex_lock_pi() call that corresponds to FUTEX_TRYLOCK_PI includes
+'timeout' as one of its arguments. This misleads the reader into thinking
+that the FUTEX_TRYLOCK_PI operation does employ timeouts for some sensible
+purpose; but it does not.  Indeed, it cannot, because the checks at the
+start of sys_futex() exclude FUTEX_TRYLOCK_PI from the set of operations
+that do copy_from_user() on the timeout argument. So, in the
+FUTEX_TRYLOCK_PI futex_lock_pi() call it would be simplest to change
+'timeout' to 'NULL'. This patch does that.
 
 Signed-off-by: Michael Kerrisk <mtk.manpages@gmail.com>
 Reviewed-by: Darren Hart <darren@dvhart.com>
-Link: http://lkml.kernel.org/r/54B9663D.9070000@gmail.com
+Link: http://lkml.kernel.org/r/54B96646.8010200@gmail.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- Documentation/futex-requeue-pi.txt | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/Documentation/futex-requeue-pi.txt b/Documentation/futex-requeue-pi.txt
-index 31b1661..77b36f5 100644
---- a/Documentation/futex-requeue-pi.txt
-+++ b/Documentation/futex-requeue-pi.txt
-@@ -98,7 +98,7 @@ rt_mutex_start_proxy_lock() and rt_mutex_finish_proxy_lock(), which
- allow the requeue code to acquire an uncontended rt_mutex on behalf
- of the waiter and to enqueue the waiter on a contended rt_mutex.
- Two new system calls provide the kernel<->user interface to
--requeue_pi: FUTEX_WAIT_REQUEUE_PI and FUTEX_REQUEUE_CMP_PI.
-+requeue_pi: FUTEX_WAIT_REQUEUE_PI and FUTEX_CMP_REQUEUE_PI.
- 
- FUTEX_WAIT_REQUEUE_PI is called by the waiter (pthread_cond_wait()
- and pthread_cond_timedwait()) to block on the initial futex and wait
-@@ -107,7 +107,7 @@ result of a high-speed collision between futex_wait() and
- futex_lock_pi(), with some extra logic to check for the additional
- wake-up scenarios.
- 
--FUTEX_REQUEUE_CMP_PI is called by the waker
-+FUTEX_CMP_REQUEUE_PI is called by the waker
- (pthread_cond_broadcast() and pthread_cond_signal()) to requeue and
- possibly wake the waiting tasks. Internally, this system call is
- still handled by futex_requeue (by passing requeue_pi=1).  Before
-@@ -120,12 +120,12 @@ task as a waiter on the underlying rt_mutex.  It is possible that
- the lock can be acquired at this stage as well, if so, the next
- waiter is woken to finish the acquisition of the lock.
- 
--FUTEX_REQUEUE_PI accepts nr_wake and nr_requeue as arguments, but
-+FUTEX_CMP_REQUEUE_PI accepts nr_wake and nr_requeue as arguments, but
- their sum is all that really matters.  futex_requeue() will wake or
- requeue up to nr_wake + nr_requeue tasks.  It will wake only as many
- tasks as it can acquire the lock for, which in the majority of cases
- should be 0 as good programming practice dictates that the caller of
- either pthread_cond_broadcast() or pthread_cond_signal() acquire the
--mutex prior to making the call. FUTEX_REQUEUE_PI requires that
-+mutex prior to making the call. FUTEX_CMP_REQUEUE_PI requires that
- nr_wake=1.  nr_requeue should be INT_MAX for broadcast and 0 for
- signal.
+---
+ kernel/futex.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 63678b5..4eeb63d 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -2258,7 +2258,7 @@ static long futex_wait_restart(struct restart_block *restart)
+  * if there are waiters then it will block, it does PI, etc. (Due to
+  * races the kernel might see a 0 value of the futex too.)
+  */
+-static int futex_lock_pi(u32 __user *uaddr, unsigned int flags, int detect,
++static int futex_lock_pi(u32 __user *uaddr, unsigned int flags,
+ 			 ktime_t *time, int trylock)
+ {
+ 	struct hrtimer_sleeper timeout, *to = NULL;
+@@ -2953,11 +2953,11 @@ long do_futex(u32 __user *uaddr, int op, u32 val, ktime_t *timeout,
+ 	case FUTEX_WAKE_OP:
+ 		return futex_wake_op(uaddr, flags, uaddr2, val, val2, val3);
+ 	case FUTEX_LOCK_PI:
+-		return futex_lock_pi(uaddr, flags, val, timeout, 0);
++		return futex_lock_pi(uaddr, flags, timeout, 0);
+ 	case FUTEX_UNLOCK_PI:
+ 		return futex_unlock_pi(uaddr, flags);
+ 	case FUTEX_TRYLOCK_PI:
+-		return futex_lock_pi(uaddr, flags, 0, timeout, 1);
++		return futex_lock_pi(uaddr, flags, NULL, 1);
+ 	case FUTEX_WAIT_REQUEUE_PI:
+ 		val3 = FUTEX_BITSET_MATCH_ANY;
+ 		return futex_wait_requeue_pi(uaddr, flags, val, timeout, val3,
