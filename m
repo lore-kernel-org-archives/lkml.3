@@ -1,145 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752561AbbASStx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 13:49:53 -0500
-Received: from mout.web.de ([212.227.17.11]:55567 "EHLO mout.web.de"
+	id S1753493AbbATTng (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 14:43:36 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:21922 "EHLO smtp6-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752199AbbASStv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 13:49:51 -0500
-Message-ID: <54BD51C3.8000507@users.sourceforge.net>
-Date: Mon, 19 Jan 2015 19:49:39 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
-MIME-Version: 1.0
-To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 9/9] video: Less function calls in w100fb_probe() after error
- detection
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <54BD44F0.3040705@users.sourceforge.net>
-In-Reply-To: <54BD44F0.3040705@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:QQXltPHHle777ZD8HbMSr1GeNwQuAKtwiNmjbFC5gTqqDHEL3KH
- +iAxv6FwZstysPNtCBKbS3VrV4esCd7nEGEI3ac57rFerq7HVXeMV/CJEw8AXaUTg9NU1Fx
- LZ5hFXqEXBOe+2PdfYIsbENAB6C7xlRwDNQ2ZyeG2JlI7nEV+NNfrJ/dDIkUsYXhrjrnbSG
- l+fiTsuUOKnWkBv/Po7/g==
-X-UI-Out-Filterresults: notjunk:1;
+	id S1753335AbbATTnd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 14:43:33 -0500
+X-Mailbox-Line: From 18425fc3a59ca2f1fed6cf056c3d2700adee7d4a Mon Sep 17 00:00:00 2001
+Message-Id: <18425fc3a59ca2f1fed6cf056c3d2700adee7d4a.1421782532.git.moinejf@free.fr>
+In-Reply-To: <cover.1421782532.git.moinejf@free.fr>
+References: <cover.1421782532.git.moinejf@free.fr>
+From: Jean-Francois Moine <moinejf@free.fr>
+Date: Mon, 19 Jan 2015 19:50:54 +0100
+Subject: [PATCH v10 3/9] ASoC: kirkwood: accept the DAI definitions from a
+ graph of ports
+To: Mark Brown <broonie@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Dave Airlie <airlied@gmail.com>, Andrew Jackson <Andrew.Jackson@arm.com>,
+        Jyri Sarha <jsarha@ti.com>, alsa-devel@alsa-project.org,
+        devicetree@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Mon, 19 Jan 2015 17:56:11 +0100
+By default, both output ports 0 (I2S) and 1 (S/PDIF) are defined.
+A graph of port permits to define only the really connected ports of
+the board and to identify the remote ends.
 
-The iounmap() function could be called in three cases by the w100fb_probe()
-function during error handling even if the passed data structure element
-contained still a null pointer.
-
-* This implementation detail could be improved by adjustments for
-  jump labels.
-
-* Let us also delete two unnecessary null pointer checks for the
-  variable "info".
-
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
+Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
 ---
- drivers/video/fbdev/w100fb.c | 31 +++++++++++++++++--------------
- 1 file changed, 17 insertions(+), 14 deletions(-)
+ .../devicetree/bindings/sound/mvebu-audio.txt      | 30 ++++++++++++++++
+ sound/soc/kirkwood/kirkwood-i2s.c                  | 41 ++++++++++++++++++----
+ sound/soc/kirkwood/kirkwood.h                      |  3 +-
+ 3 files changed, 67 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/video/fbdev/w100fb.c b/drivers/video/fbdev/w100fb.c
-index aeb53eb..67ddc57 100644
---- a/drivers/video/fbdev/w100fb.c
-+++ b/drivers/video/fbdev/w100fb.c
-@@ -645,12 +645,12 @@ int w100fb_probe(struct platform_device *pdev)
- 	/* Remap the chip base address */
- 	remapped_base = ioremap_nocache(mem->start+W100_CFG_BASE, W100_CFG_LEN);
- 	if (remapped_base == NULL)
--		goto out;
-+		goto exit;
+diff --git a/Documentation/devicetree/bindings/sound/mvebu-audio.txt b/Documentation/devicetree/bindings/sound/mvebu-audio.txt
+index cb8c07c..ae81bf1 100644
+--- a/Documentation/devicetree/bindings/sound/mvebu-audio.txt
++++ b/Documentation/devicetree/bindings/sound/mvebu-audio.txt
+@@ -23,6 +23,19 @@ Required properties:
+ 	"internal" for the internal clock
+ 	"extclk" for the external clock
  
- 	/* Map the register space */
- 	remapped_regs = ioremap_nocache(mem->start+W100_REG_BASE, W100_REG_LEN);
- 	if (remapped_regs == NULL)
--		goto out;
-+		goto io_unmap_base;
++Optional nodes:
++
++- port: one or two ports.
++  Each port must contain the following property:
++
++  - port-type: must be "i2s" or "spdif"
++
++  and the following node:
++
++  - endpoint: reference of the remote endpoint - see [1]
++
++[1] Documentation/devicetree/bindings/graph.txt
++
+ Example:
  
- 	/* Identify the chip */
- 	printk("Found ");
-@@ -662,19 +662,19 @@ int w100fb_probe(struct platform_device *pdev)
- 		default:
- 			printk("Unknown imageon chip ID\n");
- 			err = -ENODEV;
--			goto out;
-+			goto io_unmap_regs;
+ i2s1: audio-controller@b4000 {
+@@ -31,4 +44,21 @@ i2s1: audio-controller@b4000 {
+ 	interrupts = <21>, <22>;
+ 	clocks = <&gate_clk 13>;
+ 	clock-names = "internal";
++
++	port@0 {
++		port-type = "spdif";
++		audio1_spdif0: endpoint@0 {
++			remote-endpoint = <&spdif_out>;
++		};
++		audio1_spdif1: endpoint@1 {
++			remote-endpoint = <&tda998x_spdif>;
++		};
++	};
++	port@1 {
++		port-type = "i2s";
++		audio1_i2s: endpoint {
++			remote-endpoint = <&tda998x_i2s>;
++		};
++	};
++
+ };
+diff --git a/sound/soc/kirkwood/kirkwood-i2s.c b/sound/soc/kirkwood/kirkwood-i2s.c
+index 357f963..8e62bb8 100644
+--- a/sound/soc/kirkwood/kirkwood-i2s.c
++++ b/sound/soc/kirkwood/kirkwood-i2s.c
+@@ -466,13 +466,42 @@ static const struct snd_soc_component_driver kirkwood_i2s_component = {
+ };
+ 
+ /* create the DAIs */
+-static int kirkwood_i2s_create_dais(struct kirkwood_dma_data *priv)
++static int kirkwood_i2s_create_dais(struct device_node *np,
++				struct kirkwood_dma_data *priv)
+ {
+-	int i, ndai, dai[2];
++	struct device_node *of_port;
++	const char *name;
++	int i, ret, ndai, dai[2];
+ 
+-	ndai = 2;
+-	dai[0] = 0;		/* i2s(0) - spdif(1) */
+-	dai[1] = 1;
++	ndai = 0;
++	if (np) {
++		for_each_child_of_node(np, of_port) {
++			if (!of_port->name ||
++			     of_node_cmp(of_port->name, "port") != 0)
++				continue;
++			ret = of_property_read_string(of_port,
++						"port-type",
++						&name);
++			if (ret)
++				continue;
++			if (strcmp(name, "i2s") == 0) {
++				dai[ndai] = 0;
++			} else if (strcmp(name, "spdif") == 0) {
++				dai[ndai] = 1;
++			} else {
++				continue;
++			}
++			if (++ndai >= 2)
++				break;
++		}
++	}
++	if (ndai == 0) {		/* no DT or no port */
++		ndai = 2;
++		dai[0] = 0;		/* i2s(0) - spdif(1) */
++		dai[1] = 1;
++	} else {
++		priv->is_graph = 1;	/* graph of the ports */
++	}
+ 	for (i = 0; i < ndai; i++) {
+ 		memcpy(&priv->dais[i], &kirkwood_i2s_dai_i2s_ext,
+ 				sizeof(priv->dais[0]));
+@@ -570,7 +599,7 @@ static int kirkwood_i2s_dev_probe(struct platform_device *pdev)
+ 		priv->ctl_rec |= KIRKWOOD_RECCTL_BURST_128;
  	}
- 	printk(" at 0x%08lx.\n", (unsigned long) mem->start+W100_CFG_BASE);
  
- 	/* Remap the framebuffer */
- 	remapped_fbuf = ioremap_nocache(mem->start+MEM_WINDOW_BASE, MEM_WINDOW_SIZE);
- 	if (remapped_fbuf == NULL)
--		goto out;
-+		goto io_unmap_regs;
+-	ndais = kirkwood_i2s_create_dais(priv);
++	ndais = kirkwood_i2s_create_dais(np, priv);
  
- 	info=framebuffer_alloc(sizeof(struct w100fb_par), &pdev->dev);
- 	if (!info) {
- 		err = -ENOMEM;
--		goto out;
-+		goto io_unmap_framebuffer;
- 	}
+ 	err = snd_soc_register_component(&pdev->dev, &kirkwood_i2s_component,
+ 					 priv->dais, ndais);
+diff --git a/sound/soc/kirkwood/kirkwood.h b/sound/soc/kirkwood/kirkwood.h
+index a24d2c2..b4cbefe 100644
+--- a/sound/soc/kirkwood/kirkwood.h
++++ b/sound/soc/kirkwood/kirkwood.h
+@@ -141,7 +141,8 @@ struct kirkwood_dma_data {
+ 	struct snd_pcm_substream *substream_play;
+ 	struct snd_pcm_substream *substream_rec;
+ 	int irq;
+-	int burst;
++	short burst;
++	short is_graph;
+ };
  
- 	par = info->par;
-@@ -690,13 +690,13 @@ int w100fb_probe(struct platform_device *pdev)
- 	if (!par->pll_table) {
- 		printk(KERN_ERR "No matching Xtal definition found\n");
- 		err = -EINVAL;
--		goto out;
-+		goto release_framebuffer;
- 	}
- 
- 	info->pseudo_palette = kmalloc(sizeof (u32) * MAX_PALETTES, GFP_KERNEL);
- 	if (!info->pseudo_palette) {
- 		err = -ENOMEM;
--		goto out;
-+		goto release_framebuffer;
- 	}
- 
- 	info->fbops = &w100fb_ops;
-@@ -716,7 +716,7 @@ int w100fb_probe(struct platform_device *pdev)
- 
- 	if (fb_alloc_cmap(&info->cmap, 256, 0) < 0) {
- 		err = -ENOMEM;
--		goto out;
-+		goto free_palette;
- 	}
- 
- 	par->mode = &inf->modelist[0];
-@@ -766,15 +766,18 @@ int w100fb_probe(struct platform_device *pdev)
- 	fb_info(info, "%s frame buffer device\n", info->fix.id);
- 	return 0;
- out:
--	if (info) {
--		fb_dealloc_cmap(&info->cmap);
--		kfree(info->pseudo_palette);
--	}
-+	fb_dealloc_cmap(&info->cmap);
-+free_palette:
-+	kfree(info->pseudo_palette);
-+release_framebuffer:
-+	framebuffer_release(info);
-+io_unmap_framebuffer:
- 	iounmap(remapped_fbuf);
-+io_unmap_regs:
- 	iounmap(remapped_regs);
-+io_unmap_base:
- 	iounmap(remapped_base);
--	if (info)
--		framebuffer_release(info);
-+exit:
- 	return err;
- }
- 
+ extern struct snd_soc_platform_driver kirkwood_soc_platform;
 -- 
-2.2.2
+2.1.4
 
