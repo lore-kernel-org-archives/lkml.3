@@ -1,93 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751767AbbASDTd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 22:19:33 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:10694 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751200AbbASDTb (ORCPT
+	id S1751602AbbASDSG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 22:18:06 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:43634 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090AbbASDSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 22:19:31 -0500
-Message-ID: <54BC772E.6020103@huawei.com>
-Date: Mon, 19 Jan 2015 11:17:02 +0800
+	Sun, 18 Jan 2015 22:18:04 -0500
+Message-ID: <54BC775B.5020400@huawei.com>
+Date: Mon, 19 Jan 2015 11:17:47 +0800
 From: Yijing Wang <wangyijing@huawei.com>
 User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>, <linux-arm-kernel@lists.infradead.org>
+To: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
+        Bjorn Helgaas <bhelgaas@google.com>
 CC: Liviu Dudau <liviu@dudau.co.uk>, Tony Luck <tony.luck@intel.com>,
-        "Russell King" <linux@arm.linux.org.uk>,
+        "Russell King" <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
         Marc Zyngier <marc.zyngier@arm.com>, <linux-pci@vger.kernel.org>,
         <x86@kernel.org>, <linux-kernel@vger.kernel.org>,
-        Jiang Liu <jiang.liu@linux.intel.com>,
-        "Bjorn Helgaas" <bhelgaas@google.com>, <linux-m68k@vger.kernel.org>,
-        "Geert Uytterhoeven" <geert@linux-m68k.org>,
+        "David S. Miller" <davem@davemloft.net>, <linux-m68k@vger.kernel.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
         <linux-alpha@vger.kernel.org>, <linux-ia64@vger.kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>,
-        "Guan Xuetao" <gxt@mprc.pku.edu.cn>, Yinghai Lu <yinghai@kernel.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 18/28] PCI/sparc: Use pci_scan_root_bridge() for simplicity
-References: <1421372666-12288-1-git-send-email-wangyijing@huawei.com> <1421372666-12288-19-git-send-email-wangyijing@huawei.com> <2658988.B0VmbMPdJ9@wuerfel>
-In-Reply-To: <2658988.B0VmbMPdJ9@wuerfel>
-Content-Type: text/plain; charset="ISO-8859-1"
+        Guan Xuetao <gxt@mprc.pku.edu.cn>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 23/28] PCI/designware: Use pci_scan_root_bus() for simplicity
+References: <1421372666-12288-1-git-send-email-wangyijing@huawei.com> <1421372666-12288-24-git-send-email-wangyijing@huawei.com> <54BA9052.9080904@cogentembedded.com>
+In-Reply-To: <54BA9052.9080904@cogentembedded.com>
+Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 7bit
 X-Originating-IP: [10.177.27.212]
 X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020202.54BC7743.0013,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 4fe34d0b696de2a0712b95d78de6cb07
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2015/1/16 18:01, Arnd Bergmann wrote:
-> On Friday 16 January 2015 09:44:16 Yijing Wang wrote:
->> +static void pci_host_bridge_probe_mode(
->> +               struct pci_host_bridge *host)
->> +{
->> +       host->of_scan = true;
->> +}
+On 2015/1/18 0:39, Sergei Shtylyov wrote:
+> Hello.
+> 
+> On 1/16/2015 4:44 AM, Yijing Wang wrote:
+> 
+>> Use pci_scan_root_bus() instead of pci_create_root_bus() +
+>> pci_scan_child_bus() for simplicity.
+> 
+>> Signed-off-by: Yijing Wang <wangyijing@huawei.com>
+>> ---
+>>   drivers/pci/host/pcie-designware.c |    4 +---
+>>   1 files changed, 1 insertions(+), 3 deletions(-)
+> 
+>> diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
+>> index eef3111..d37fe27 100644
+>> --- a/drivers/pci/host/pcie-designware.c
+>> +++ b/drivers/pci/host/pcie-designware.c
+>> @@ -725,13 +725,11 @@ static struct pci_bus *dw_pcie_scan_bus(int nr, struct pci_sys_data *sys)
+>>       struct pcie_port *pp = sys_to_pcie(sys);
 >>
+>>       pp->root_bus_nr = sys->busnr;
+>> -    bus = pci_create_root_bus(pp->dev, sys->busnr,
+>> +    bus = pci_scan_root_bus(pp->dev, sys->busnr,
+>>                     &dw_pcie_ops, sys, &sys->resources);
 > 
-> I probably missed something here, but where does host->of_scan
-> get used?
+>    Please realign this line, so that it still starts under 'pp'.
+
+ok.
+
 > 
-
-It is used in __pci_scan_root_bus() to detect whether of scan bus is needed in patch 11.
-
-
-@@ -2051,10 +2053,17 @@ static struct pci_bus *__pci_scan_root_bus(
- 		pci_bus_insert_busn_res(b, host->busnum, 255);
- 	}
-
--	max = pci_scan_child_bus(b);
-+	if (host->ops && host->ops->phb_probe_mode)
-+		host->ops->phb_probe_mode(host);
-
--	if (!found)
--		pci_bus_update_busn_res_end(b, max);
-+	if (host->of_scan) {
-+		if (host->ops &&host->ops->phb_of_scan_bus)
-+			host->ops->phb_of_scan_bus(host);
-+	} else {
-+		max = pci_scan_child_bus(b);
-+		if (!found)
-+			pci_bus_update_busn_res_end(b, max);
-+	}
-
- 	return b;
-
-Thanks!
-Yijing.
-
-
-> 	Arnd
+> WBR, Sergei
 > 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 > 
 > .
 > 
