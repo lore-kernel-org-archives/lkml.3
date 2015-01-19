@@ -1,145 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751757AbbASJUK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 04:20:10 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:37201 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751435AbbASJUG (ORCPT
+	id S1751845AbbASJU3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 04:20:29 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:12381 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751772AbbASJUY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 04:20:06 -0500
-Date: Mon, 19 Jan 2015 09:20:03 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Roman Peniaev <r.peniaev@gmail.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Sekhar Nori <nsekhar@ti.com>,
+	Mon, 19 Jan 2015 04:20:24 -0500
+X-AuditID: cbfee68d-f79296d000004278-04-54bccc51c3fa
+Date: Mon, 19 Jan 2015 09:20:17 +0000 (GMT)
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: Re: [PATCH v4 1/9] devfreq: exynos: Add generic exynos memory bus
+ frequency driver
+To: =?utf-8?Q?=EC=B5=9C=EC=B0=AC=EC=9A=B0?= <cw00.choi@samsung.com>,
+        "kgene@kernel.org" <kgene@kernel.org>
+Cc: =?utf-8?Q?=EB=B0=95=EA=B2=BD=EB=AF=BC?= <kyungmin.park@samsung.com>,
+        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        ABHILASH KESAVAN <a.kesavan@samsung.com>,
+        "tomasz.figa@gmail.com" <tomasz.figa@gmail.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        =?utf-8?Q?=EB=8C=80=EC=9D=B8=EA=B8=B0?= <inki.dae@samsung.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
         "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/2] ARM: entry-common: fix forgotten set of
- thread_info->syscall
-Message-ID: <20150119092002.GA32131@arm.com>
-References: <CACZ9PQXW9G4Vw-dcPwkdVE=uoYmDYEQnJWDnnpup1LxC3s5QPg@mail.gmail.com>
- <CAGXu5jLO-YSaF8P9o3jcXP4VZCPYVshz73krnchYuv9pPGY6Sw@mail.gmail.com>
- <CACZ9PQVo0SF4Z-rdNk4e=yY17Xt9n5hAqm4ZRNLEw3jGYYcvtA@mail.gmail.com>
- <CAGXu5j+O6znN=7-gc3PqwqFA5MFRPLGBUzabOmQjWn_9WTjvpg@mail.gmail.com>
- <CACZ9PQUEprgKrpHazDULA5mf-OaoX=MAjEeWdspZTXT_+iUKWw@mail.gmail.com>
- <20150116155923.GK12302@n2100.arm.linux.org.uk>
- <CACZ9PQUVFtCQg6XjDbokEPy_R2fZcHiq6+EEUZnx4FVfpfZxJg@mail.gmail.com>
- <20150116161752.GL12302@n2100.arm.linux.org.uk>
- <CAGXu5j+XHFNyhaBndQr1Q2uthsFP9ZQGbaw5hofDmXyKXZ-H5g@mail.gmail.com>
- <CAGXu5j+9p1T29NoHnCNywd0T=H2mzWhCou5nSRfXZktEOC7_=A@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5j+9p1T29NoHnCNywd0T=H2mzWhCou5nSRfXZktEOC7_=A@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>
+Reply-to: myungjoo.ham@samsung.com
+MIME-version: 1.0
+X-MTR: 20150119091320775@myungjoo.ham
+Msgkey: 20150119091320775@myungjoo.ham
+X-EPLocale: ko_KR.utf-8
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-MLAttribute: 
+X-RootMTR: 20150119091320775@myungjoo.ham
+X-ParentMTR: 
+X-ArchiveUser: 
+X-CPGSPASS: N
+X-ConfirmMail: N,general
+Content-type: text/plain; charset=utf-8
+MIME-version: 1.0
+Message-id: <27342443.1253691421659213933.JavaMail.weblogic@epmlwas05d>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrMIsWRmVeSWpSXmKPExsWyRsSkQDfwzJ4Qg7tb+S0u75rD5sDo8XmT
+	XABjFJdNSmpOZllqkb5dAldG9/m/LAXbZCpWvp3E3sB4RbqLkZNDSEBdYtGSk2xdjBwcEgIm
+	EosvaYGEJQTEJC7cWw8U5gIqWcoo0XF0FyNEwkTi68YOFojEHEaJncsfM4EkWARUJZZvusgC
+	MohNQE9i5udkkLCwQLTE4y0n2EBsEYE8iSt3ZzCC9DIL9LBJdFz9zgxxhJLEmn2vWEBsXgFB
+	iZMzn7BALFOVeLl1GzNEXE2iZfVSqCPEJS7MvcQOYfNKzGh/ClUvJzHt6xpmCFta4vysDYww
+	3yz+/hgqzi9x7PYOJghbQGLqmYNQNVoSBzZNgarhk1iz8C0LTP2uU8uZYXbd3zIXqldCYmvL
+	E1YQm1lAUWJK90N2kN+ZBTQl1u/SR/cKr4C7xIKpP8HhJiEwlUOi9eYj9gmMSrOQ1M1CMmoW
+	wihkJQsYWVYxiqYWJBcUJ6UXGeoVJ+YWl+al6yXn525iBKaF0/+e9e5gvH3A+hCjAAejEg/v
+	Bt89IUKsiWXFlbmHGE2BsTSRWUo0OR+YfPJK4g2NzYwsTE1MjY3MLc2UxHkVpX4GCwmkJ5ak
+	ZqemFqQWxReV5qQWH2Jk4uCUamDsEw5oTTvRPjn01izJ6KSiRL60S4u+XU4rltF7tlBcfcuX
+	9Uze3nfn6JWuZFOy8bxwsJyXof2Iyc6bcYHnS77NXDPzhPncZsPbxdc2FPbxuxTviV64Rnrp
+	tosaR9j3rFnQHru31frt7CuhpTYrN3GfTH56q3hTZdq0NQmsPI92NdmEmX8Sm2SgxFKckWio
+	xVxUnAgAdSQrIQYDAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrKKsWRmVeSWpSXmKPExsVy+t/tPt3AM3tCDNbO5LC4vGsOmwOjx+dN
+	cgGMUWk2GamJKalFCql5yfkpmXnptkrewfHO8aZmBoa6hpYW5koKeYm5qbZKLj4Bum6ZOUBD
+	lRTKEnNKgUIBicXFSvp2NkX5pSWpChn5xSW2StGG5kZ6RgZ6pkZ6hsaxVoYGBkamQDUJaRnd
+	5/+yFGyTqVj5dhJ7A+MV6S5GTg4hAXWJRUtOsoHYEgImEl83drBA2GISF+6tB4pzAdXMYZTY
+	ufwxE0iCRUBVYvmmi0BFHBxsAnoSMz8ng4SFBaIlHm85ATZHRCBP4srdGYwgvcwCPWwSHVe/
+	M0MsU5JYs+8V2AJeAUGJkzOfQC1TlXi5dRszRFxNomX1UkaIuLjEhbmX2CFsXokZ7U+h6uUk
+	pn1dwwxhS0ucn7WBEeboxd8fQ8X5JY7d3sEEYQtITD1zEKpGS+LApilQNXwSaxa+ZYGp33Vq
+	OTPMrvtb5kL1SkhsbXnCCmIzCyhKTOl+yA7yO7OApsT6XfroXuEVcJdYMPUnywRG2VlIUrOQ
+	dM9C6EZWsoCRZRWjaGpBckFxUnqFsV5xYm5xaV66XnJ+7iZGcBJ6tngH4//z1ocYBTgYlXh4
+	N/juCRFiTSwrrsw9xCjBwawkwsu3HijEm5JYWZValB9fVJqTWnyI0RQYZxOZpUST84EJMq8k
+	3tDY2MTMxNTSxMLA1FxJnPf/udwQIYH0xJLU7NTUgtQimD4mDk6pBsbGkD+mxj1lKZMS/nk0
+	P2/uLLC7JiiWKrtBZovA2QtCQpl9L1zmVr/3XFr5cz7L9nmTfzxxsue6sWrZqqTMqMde0U+W
+	3wh5eC1cdQFDuGAkI7fBYvHpnBst27/yRl5ZUPHo7KGgqLvxqU6zP567k81frntm6k7u7nNt
+	wmz/tVvnKv9vvHv12SklluKMREMt5qLiRABnspm3WAMAAA==
+DLP-Filter: Pass
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0J9Kagi001675
 
-On Fri, Jan 16, 2015 at 11:54:45PM +0000, Kees Cook wrote:
-> On Fri, Jan 16, 2015 at 11:57 AM, Kees Cook <keescook@chromium.org> wrote:
-> > On Fri, Jan 16, 2015 at 8:17 AM, Russell King - ARM Linux
-> > <linux@arm.linux.org.uk> wrote:
-> >> On Sat, Jan 17, 2015 at 01:08:11AM +0900, Roman Peniaev wrote:
-> >>> On Sat, Jan 17, 2015 at 12:59 AM, Russell King - ARM Linux
-> >>> <linux@arm.linux.org.uk> wrote:
-> >>> > On Sat, Jan 17, 2015 at 12:57:02AM +0900, Roman Peniaev wrote:
-> >>> >> On Fri, Jan 16, 2015 at 7:54 AM, Kees Cook <keescook@chromium.org> wrote:
-> >>> >> > One interesting thing I noticed (which is unchanged by this series),
-> >>> >> > but pulling ARM_r7 during the seccomp ptrace event shows __NR_poll,
-> >>> >> > not __NR_restart_syscall, even though it was a __NR_restart_syscall
-> >>> >> > trap from seccomp. Is there a better place to see the actual syscall?
-> >>> >>
-> >>> >> As I understand we do not push new r7 to the stack, and ptrace uses the
-> >>> >> old value.
-> >>> >
-> >>> > And why should we push r7 to the stack?  ptrace should be using the
-> >>> > recorded system call number, rather than poking about on the stack
-> >>> > itself.
-> >>>
-> >>> Probably we should not, but the behaviour comparing arm to x86 is different.
-> >>
-> >> We definitely should not, because changing the stacked value changes the
-> >> value in r7 after the syscall has returned.  We have guaranteed that the
-> >> value will be preserved across syscalls for years, so we really should
-> >> not be changing that.
-> >
-> > Yeah, we can't mess with the registers. I was just asking for
-> > clarification on how this is visible to userspace.
-> >
-> >>
-> >>> Also there is no any way from userspace to figure out what syscall was
-> >>> restarted, if you do not trace each syscall enter and exit from the
-> >>> very beginning.
-> >>
-> >> Thinking about ptrace, that's been true for years.
-> >>
-> >> It really depends whether you consider the restart syscall a userspace
-> >> thing or a kernelspace thing.  When you consider that the vast majority
-> >> of syscall restarts are done internally in the kernel, and we just
-> >> re-issue the syscall, it immediately brings up the question "why is
-> >> the restart block method different?" and "should the restart block
-> >> method be visible to userspace?"
-> >>
-> >> IMHO, it is prudent not to expose kernel internals to userspace unless
-> >> there is a real reason to, otherwise they become part of the userspace
-> >> API.
-> >
-> > I couldn't agree more, but restart_syscall is already visible to
-> > userspace: it can be called directly, for example. And it's visible to
-> > tracers.
-> >
-> > Unfortunately, the difference here is the visibility during trace
-> > trap. On x86, it's exposed but on ARM, there's no way (that I can
-> > find) to query the "true" syscall, even though the true syscall is
-> > what triggers the tracer. The syscall number isn't provided by any
-> > element of the ptrace event system, nor through siginfo, and must be
-> > examined on a per-arch basis from registers.
-> >
-> > Seccomp does, however, provide a mechanism to pass arbitrary event
-> > data on a TRACE event, so poll vs restart_syscall can be distinguished
-> > that way.
-> >
-> > It seems even strace doesn't know how to find this information. For example:
-> >
-> > x86:
-> > poll([{fd=3, events=POLLIN}], 1, 4294967295
-> > ) = ? ERESTART_RESTARTBLOCK (Interrupted by signal)
-> > --- SIGSTOP {si_signo=SIGSTOP, si_code=SI_USER, si_pid=994, si_uid=1000} ---
-> > --- stopped by SIGSTOP ---
-> > --- SIGCONT {si_signo=SIGCONT, si_code=SI_USER, si_pid=994, si_uid=1000} ---
-> > restart_syscall(<... resuming interrupted call ...>
-> >
-> > ARM:
-> > poll([{fd=3, events=POLLIN}], 1, -1
-> > )    = ? ERESTART_RESTARTBLOCK (Interrupted by signal)
-> > --- SIGSTOP {si_signo=SIGSTOP, si_code=SI_USER, si_pid=20563, si_uid=0} ---
-> > --- stopped by SIGSTOP ---
-> > --- SIGCONT {si_signo=SIGCONT, si_code=SI_USER, si_pid=20563, si_uid=0} ---
-> > poll([{fd=3, events=POLLIN}], 1, -1
-> >
-> > Would it make sense to add REGSET_SYSTEM_CALL to ARM? (Though this
-> > begs the question, "Is restart_syscall visible during a trace on
-> > arm64?", which I'll have to go check...)
+>   
+>  This patch adds the generic exynos bus frequency driver for memory bus
+> with DEVFREQ framework. The Samsung Exynos SoCs have the common architecture
+> for memory bus between DRAM memory and MMC/sub IP in SoC. This driver can
+> support the memory bus frequency driver for Exynos SoCs.
 > 
-> So, some further testing:
-> - native arm64 presents "poll" again even to seccomp when
-> restart_syscall is triggered (both via regs[8] and
-> NT_ARM_SYSTEM_CALL).
+> Each memory bus block has a clock for memory bus speed and frequency
+> table which is changed according to the utilization of memory bus on runtime.
+> And then each memory bus group has the one more memory bus blocks and
+> OPP table (including frequency and voltage), regulator, devfreq-event
+> devices.
+> 
+> There are a little difference about the number of memory bus because each Exynos
+> SoC have the different sub-IP and different memory bus speed. In spite of this
+> difference among Exynos SoCs, we can support almost Exynos SoC by adding
+> unique data of memory bus to devicetree file.
+> 
+> Cc: Myungjoo Ham <myungjoo.ham@samsung.com>
+> Cc: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Kukjin Kim <kgene@kernel.org>
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> ---
+>  drivers/devfreq/Kconfig             |  15 +
+>  drivers/devfreq/Makefile            |   1 +
+>  drivers/devfreq/exynos/Makefile     |   1 +
+>  drivers/devfreq/exynos/exynos-bus.c | 598 ++++++++++++++++++++++++++++++++++++
+>  4 files changed, 615 insertions(+)
+>  create mode 100644 drivers/devfreq/exynos/exynos-bus.c
+> 
 
-I'm fine either way for the native case, but we should stick with whetever
-we end up with. Being compatible with ARM is probably a good idea. Do you
-have a preference?
+[]
 
-> - compat mode on arm64 _does_ show syscall_restart (via ARM_r7).
+> +static void exynos_bus_exit(struct device *dev)
+> +{
+> +	struct exynos_memory_bus *bus = dev_get_drvdata(dev);
+> +	int i, ret;
+> +
+> +	ret = exynos_bus_disable_edev(bus);
+> +	if (ret < 0)
+> +		dev_warn(dev, "failed to disable the devfreq-event devices\n");
+> +
+> +	for (i = 0; i < bus->block_count; i++)
+> +		clk_disable_unprepare(bus->block[i].clk);
+> +
+> +	if (regulator_is_enabled(bus->regulator))
+> +		regulator_disable(bus->regulator);
 
-That sounds like a bug, then. Any chance you could look into a patch?
+This is_enabled check is itchy.
 
-Will
+Why do you need this here?
+Please let me know what kind of errors here.
+(note that this may simply hide errors made by other drivers)
+
+Adding this condition does not introduce additional error, but
+could you please let me know why it is here? This is supposed to be
+paired with probe.
+
+
+Except this point (valid if addressed or {explained and understood}),
+Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+
+
+Cheers,
+MyungJoo
+
+> +
+> +	of_free_opp_table(dev);
+> +}
+> +
+> +static struct devfreq_dev_profile exynos_memory_bus_profile = {
+> +	.polling_ms	= 100,
+> +	.target		= exynos_bus_target,
+> +	.get_dev_status	= exynos_bus_get_dev_status,
+> +	.exit		= exynos_bus_exit,
+> +};
+> +
+
+[]
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
