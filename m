@@ -1,90 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752094AbbASLYI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 06:24:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56228 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751387AbbASLXZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 06:23:25 -0500
-Date: Mon, 19 Jan 2015 12:23:13 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Wang Nan <wangnan0@huawei.com>
-Cc: acme@kernel.org, paulus@samba.org, mingo@redhat.com, namhyung@kernel.org,
-        lizefan@huawei.com, linux-kernel@vger.kernel.org,
-        Jiri Olsa <jolsa@kernel.org>
-Subject: Re: [PATCH] perf: perl: force to use stdbool.
-Message-ID: <20150119112313.GC11009@krava.brq.redhat.com>
-References: <1421301354-58012-1-git-send-email-wangnan0@huawei.com>
- <54BCDF89.5070008@huawei.com>
+	id S1752141AbbASLYJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 06:24:09 -0500
+Received: from mx2.parallels.com ([199.115.105.18]:35970 "EHLO
+	mx2.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751498AbbASLXj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 06:23:39 -0500
+From: Vladimir Davydov <vdavydov@parallels.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Johannes Weiner <hannes@cmpxchg.org>, Michal Hocko <mhocko@suse.cz>,
+        "Tejun Heo" <tj@kernel.org>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Dave Chinner <david@fromorbit.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        <linux-mm@kvack.org>, <cgroups@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: [PATCH -mm v2 0/7] memcg: release kmemcg_id on css offline
+Date: Mon, 19 Jan 2015 14:23:18 +0300
+Message-ID: <cover.1421664712.git.vdavydov@parallels.com>
+X-Mailer: git-send-email 1.7.10.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54BCDF89.5070008@huawei.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 19, 2015 at 06:42:17PM +0800, Wang Nan wrote:
-> Add Jiri Olsa jolsa@kernel.org to CC list. I think jolsa@kernel.org should be the main
-> email address he uses.
+Hi,
 
-ack ;-)
+There's one thing about kmemcg implementation that's bothering me. It's
+about arrays holding per-memcg data (e.g. kmem_cache->memcg_params->
+memcg_caches). On kmalloc or list_lru_{add,del} we want to quickly
+lookup the copy of kmem_cache or list_lru corresponding to the current
+cgroup. Currently, we hold all per-memcg caches/lists in an array
+indexed by mem_cgroup->kmemcg_id. This allows us to lookup quickly, and
+that's nice, but the arrays can grow indefinitely, because we reserve
+slots for all cgroups, including offlined, and this is disastrous and
+must be fixed.
 
-jirka
+There are several ways to fix this issue [1], but it seems the best we
+can do is to free kmemcg_id on css offline (solution #2). The idea is
+that we actually only need kmemcg_id on kmem cache allocations, in order
+to lookup the kmem cache copy corresponding to the allocating memory
+cgroup, while it is never used of kmem frees. We do rely on kmemcg_id
+being unique for each cgroup in some places, but they are easy to fix.
+And regarding per memcg list_lru, which are indexed by kmemcg_id, we can
+easily reparent them - it is as simple as splicing lists. This patch set
+therefore implements this approach.
 
-> 
-> On 2015/1/15 13:55, Wang Nan wrote:
-> > When building perf for arm64 I hit a warning (and be treated as an
-> > error) like below:
-> > 
-> >  aarch64-oe-linux-gcc -o .../util/scripting-engines/trace-event-python.o -c -Wbad-function-cast \
-> > 	 ... util/scripting-engines/trace-event-python.c
-> > 
-> >  In file included from .../usr/lib64/perl/5.14.3/CORE/perl.h:2464:0,
-> >                   from Context.xs:23:
-> >  /.../usr/lib64/perl/5.14.3/CORE/handy.h:108:0: error: "bool" redefined [-Werror]
-> >   #  define bool char
-> >   ^
-> >  In file included from /.../usr/src/kernel/tools/include/linux/types.h:4:0,
-> >                   from /.../usr/src/kernel/arch/arm64/include/uapi/asm/sigcontext.h:19,
-> > 		  from /.../usr/include/bits/sigcontext.h:27,
-> > 		  from /.../usr/include/signal.h:340,
-> > 		  from /.../usr/include/sys/param.h:28,
-> > 		  from /.../usr/lib64/perl/5.14.3/CORE/perl.h:678,
-> > 		  from Context.xs:23:
-> >   /.../usr/lib/aarch64-oe-linux/gcc/aarch64-oe-linux/4.9.2/include/stdbool.h:33:0: note: this is the location of the previous definition
-> >     #define bool _Bool
-> > 
-> > Looks like the failure is caused by arm64 uapi/asm/sigcontext.h, which
-> > includes linux/types.h while other archs not.
-> > 
-> > This patch includes stdbool.h before Context.xs and define HAS_BOOL to
-> > prevent perl'e headers define its own 'bool'.
-> > 
-> > Signed-off-by: Wang Nan <wangnan0@huawei.com>
-> > ---
-> >  tools/perf/scripts/perl/Perf-Trace-Util/Context.c | 3 ++-
-> >  1 file changed, 2 insertions(+), 1 deletion(-)
-> > 
-> > diff --git a/tools/perf/scripts/perl/Perf-Trace-Util/Context.c b/tools/perf/scripts/perl/Perf-Trace-Util/Context.c
-> > index 790ceba..69c3572 100644
-> > --- a/tools/perf/scripts/perl/Perf-Trace-Util/Context.c
-> > +++ b/tools/perf/scripts/perl/Perf-Trace-Util/Context.c
-> > @@ -5,7 +5,8 @@
-> >   *	ANY CHANGES MADE HERE WILL BE LOST! 
-> >   *
-> >   */
-> > -
-> > +#include <stdbool.h>
-> > +#define HAS_BOOL 1
+It is organized as follows:
+ - Currently, sl[AU]b core relies on kmemcg_id being unique per
+   kmem_cache. Patches 1-4 fix that.
+ - Patch 5 makes memcg_cache_params->memcg_caches entries released on
+   css offline.
+ - Patch 6 alters the list_lru API a bit to facilitate reparenting.
+ - Patch 7 implements per memcg list_lru reparenting on css offline.
+   After list_lrus have been reparented, there's no need to keep
+   kmemcg_id any more, so we can free it on css offline.
 
-I saw this patch before.. but I had no idea ;-)
+Changes in v2:
+ - rebase on top of v3.19-rc4-mmotm-2015-01-16-15-50
+ - release css->id after css_free to avoid kmem cache name clashes
 
-seems hacky to me? Is there any doc saying 'this is how you handle this with perl' ? ;-)
+v1: https://lkml.org/lkml/2015/1/16/285
 
-I couldn't find any.. or more detailed explanation why we should
-define HAS_BOOL and not perl headers..
+[1] https://lkml.org/lkml/2015/1/13/107
 
-thanks,
-jirka
+Thanks,
+
+Vladimir Davydov (7):
+  slab: embed memcg_cache_params to kmem_cache
+  slab: link memcg caches of the same kind into a list
+  cgroup: release css->id after css_free
+  slab: use css id for naming per memcg caches
+  memcg: free memcg_caches slot on css offline
+  list_lru: add helpers to isolate items
+  memcg: reparent list_lrus and free kmemcg_id on css offline
+
+ fs/dcache.c              |   21 +++---
+ fs/gfs2/quota.c          |    5 +-
+ fs/inode.c               |    8 +--
+ fs/xfs/xfs_buf.c         |    6 +-
+ fs/xfs/xfs_qm.c          |    5 +-
+ include/linux/list_lru.h |   12 +++-
+ include/linux/slab.h     |   31 +++++----
+ include/linux/slab_def.h |    2 +-
+ include/linux/slub_def.h |    2 +-
+ kernel/cgroup.c          |   10 ++-
+ mm/list_lru.c            |   65 ++++++++++++++++--
+ mm/memcontrol.c          |   86 ++++++++++++++++++-----
+ mm/slab.c                |   13 ++--
+ mm/slab.h                |   65 +++++++++++-------
+ mm/slab_common.c         |  172 +++++++++++++++++++++++++++-------------------
+ mm/slub.c                |   24 +++----
+ mm/workingset.c          |    3 +-
+ 17 files changed, 343 insertions(+), 187 deletions(-)
+
+-- 
+1.7.10.4
+
