@@ -1,75 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752096AbbASPIq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 10:08:46 -0500
-Received: from mail.kernel.org ([198.145.29.136]:36515 "EHLO mail.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751895AbbASPIp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 10:08:45 -0500
-Date: Mon, 19 Jan 2015 12:08:38 -0300
-From: Arnaldo Carvalho de Melo <acme@kernel.org>
-To: Rabin Vincent <rabin@rab.in>
-Cc: Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] perf annotate: handle ins parsing failures
-Message-ID: <20150119150838.GA3451@kernel.org>
-References: <1421607621-15005-1-git-send-email-rabin@rab.in>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421607621-15005-1-git-send-email-rabin@rab.in>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1751922AbbASPN5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 10:13:57 -0500
+Received: from mail-wg0-f54.google.com ([74.125.82.54]:63879 "EHLO
+	mail-wg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751356AbbASPNz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 10:13:55 -0500
+From: Grant Likely <grant.likely@linaro.org>
+Subject: Re: [PATCH v7 04/17] ARM64 / ACPI: Introduce early_param for
+ =?iso-8859-1?Q?=22acpi=22=0D?= and pass acpi=force to enable ACPI
+To: Catalin Marinas <catalin.marinas@arm.com>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>
+Cc: "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "wangyijing@huawei.com" <wangyijing@huawei.com>,
+        Rob Herring <robh@kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Al Stone <al.stone@linaro.org>, Timur Tabi <timur@codeaurora.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
+        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        "jcm@redhat.com" <jcm@redhat.com>, Mark Brown <broonie@kernel.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
+In-Reply-To: <20150119135144.GI11835@e104818-lin.cambridge.arm.com>
+References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org>
+	<1421247905-3749-5-git-send-email-hanjun.guo@linaro.org>
+	<20150119114255.GF11835@e104818-lin.cambridge.arm.com>
+	<CAKv+Gu8vPKAdsNg7QC7xW+i8_BemWEx4mvBx6NrnAHi8Y+bNtw@mail.gmail.com>
+	<20150119135144.GI11835@e104818-lin.cambridge.arm.com>
+Date: Mon, 19 Jan 2015 15:13:50 +0000
+Message-Id: <20150119151350.21B65C40948@trevor.secretlab.ca>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Sun, Jan 18, 2015 at 08:00:20PM +0100, Rabin Vincent escreveu:
-> Don't use the ins's ->sncprintf() if the parsing failed.
+On Mon, 19 Jan 2015 13:51:45 +0000
+, Catalin Marinas <catalin.marinas@arm.com>
+ wrote:
+> On Mon, Jan 19, 2015 at 11:55:32AM +0000, Ard Biesheuvel wrote:
+> > On 19 January 2015 at 11:42, Catalin Marinas <catalin.marinas@arm.com> wrote:
+> > > On Wed, Jan 14, 2015 at 03:04:52PM +0000, Hanjun Guo wrote:
+> > >> From: Al Stone <al.stone@linaro.org>
+> > >>
+> > >> Introduce one early parameters "off" and "force" for "acpi", acpi=off
+> > >> will be the default behavior for ARM64, so introduce acpi=force to
+> > >> enable ACPI on ARM64.
+> > >>
+> > >> Disable ACPI before early parameters parsed, and enable it to pass
+> > >> "acpi=force" if people want use ACPI on ARM64. This ensures DT be
+> > >> the prefer one if ACPI table and DT both are provided at this moment.
+> > > [...]
+> > >> --- a/arch/arm64/kernel/setup.c
+> > >> +++ b/arch/arm64/kernel/setup.c
+> > >> @@ -62,6 +62,7 @@
+> > >>  #include <asm/memblock.h>
+> > >>  #include <asm/psci.h>
+> > >>  #include <asm/efi.h>
+> > >> +#include <asm/acpi.h>
+> > >>
+> > >>  unsigned int processor_id;
+> > >>  EXPORT_SYMBOL(processor_id);
+> > >> @@ -388,6 +389,8 @@ void __init setup_arch(char **cmdline_p)
+> > >>       early_fixmap_init();
+> > >>       early_ioremap_init();
+> > >>
+> > >> +     disable_acpi();
+> > >> +
+> > >>       parse_early_param();
+> > >>
+> > >>       /*
+> > >
+> > > Did we get to any conclusion here? DT being the preferred one is fine
+> > > when both DT and ACPI are present but do we still want the kernel to
+> > > ignore ACPI altogether if DT is not present? It's a bit harder to detect
+> > > the presence of DT at this point since the EFI_STUB added one already. I
+> > > guess we could move the "acpi=force" argument passing to EFI_STUB if no
+> > > DT is present at boot.
+> > 
+> > Since the EFI stub populates the /chosen node in DT, I would prefer
+> > for it to add a property there to indicate whether it created the DT
+> > from scratch rather than adding ACPI specific stuff in there (even if
+> > it is just a string to concatenate)
 > 
-> For example, this fixes the display of "imul %edx".  Without this patch:
-> 
->        |      imul   (null),(null)
-> 
-> After this patch:
-> 
->        |      imul   %edx
+> This works for me. So we could pass "acpi=force" in EFI stub if it
+> created the DT from scratch *and* ACPI tables are present (can it detect
+> the latter? And maybe it could print something if none are available).
+> If that works, the actual kernel can assume that ACPI needs to be
+> explicitly enabled via acpi=force, irrespective of how much information
+> it has in DT.
 
-Thanks, both applied!
+Ditto for me. I think this is a fine solution. And, yes, the stub can
+easily detect the presence of ACPI by looking in the UEFI config table.
 
-- Arnaldo
- 
-> Signed-off-by: Rabin Vincent <rabin@rab.in>
-> ---
->  tools/perf/util/annotate.c | 9 +++++----
->  1 file changed, 5 insertions(+), 4 deletions(-)
-> 
-> diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
-> index 79999ce..5ae428b 100644
-> --- a/tools/perf/util/annotate.c
-> +++ b/tools/perf/util/annotate.c
-> @@ -183,8 +183,9 @@ static int lock__parse(struct ins_operands *ops)
->  	if (!ops->locked.ins->ops)
->  		return 0;
->  
-> -	if (ops->locked.ins->ops->parse)
-> -		ops->locked.ins->ops->parse(ops->locked.ops);
-> +	if (ops->locked.ins->ops->parse
-> +	    && ops->locked.ins->ops->parse(ops->locked.ops) < 0)
-> +		goto out_free_ops;
->  
->  	return 0;
->  
-> @@ -531,8 +532,8 @@ static void disasm_line__init_ins(struct disasm_line *dl)
->  	if (!dl->ins->ops)
->  		return;
->  
-> -	if (dl->ins->ops->parse)
-> -		dl->ins->ops->parse(&dl->ops);
-> +	if (dl->ins->ops->parse && dl->ins->ops->parse(&dl->ops) < 0)
-> +		dl->ins = NULL;
->  }
->  
->  static int disasm_line__parse(char *line, char **namep, char **rawp)
-> -- 
-> 2.1.4
+g.
+
