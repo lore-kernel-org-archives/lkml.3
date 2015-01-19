@@ -1,77 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751660AbbASIDq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 03:03:46 -0500
-Received: from mail-wg0-f48.google.com ([74.125.82.48]:35321 "EHLO
-	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751066AbbASIDo (ORCPT
+	id S1751592AbbASIFw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 03:05:52 -0500
+Received: from e33.co.us.ibm.com ([32.97.110.151]:52606 "EHLO
+	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751143AbbASIFv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 03:03:44 -0500
-MIME-Version: 1.0
-In-Reply-To: <1394712342-15778-119-Taiwan-albertk@realtek.com>
-References: <1394712342-15778-118-Taiwan-albertk@realtek.com>
-	<1394712342-15778-119-Taiwan-albertk@realtek.com>
-Date: Mon, 19 Jan 2015 00:03:42 -0800
-Message-ID: <CAE4R7bAv26f-+DW-TmjspJxAb-3Add5sf563mnMUTGCyiqG3rQ@mail.gmail.com>
-Subject: Re: [PATCH net-next 1/7] r8152: adjust rx_bottom
-From: Scott Feldman <sfeldma@gmail.com>
-To: Hayes Wang <hayeswang@realtek.com>
-Cc: Netdev <netdev@vger.kernel.org>, nic_swsd@realtek.com,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Mon, 19 Jan 2015 03:05:51 -0500
+From: "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: "Shreyas B. Prabhu" <shreyas@linux.vnet.ibm.com>,
+        Michael Ellerman <mpe@ellerman.id.au>, linuxppc-dev@lists.ozlabs.org
+Subject: [PATCH v2 1/2] powerpc: Add helpers for LPCR PECE1 operations
+Date: Mon, 19 Jan 2015 13:35:26 +0530
+Message-Id: <1421654727-31656-1-git-send-email-shreyas@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.9.3
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15011908-0009-0000-0000-0000081738B9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 18, 2015 at 11:13 PM, Hayes Wang <hayeswang@realtek.com> wrote:
-> If a error occurs when submitting rx, skip the remaining submissions
-> and try to submit them again next time.
->
-> Signed-off-by: Hayes Wang <hayeswang@realtek.com>
-> ---
->  drivers/net/usb/r8152.c | 15 +++++++++++++--
->  1 file changed, 13 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/net/usb/r8152.c b/drivers/net/usb/r8152.c
-> index 2e22442..78a8917 100644
-> --- a/drivers/net/usb/r8152.c
-> +++ b/drivers/net/usb/r8152.c
-> @@ -1655,7 +1655,7 @@ static int rx_bottom(struct r8152 *tp, int budget)
->  {
->         unsigned long flags;
->         struct list_head *cursor, *next, rx_queue;
-> -       int work_done = 0;
-> +       int ret = 0, work_done = 0;
->
->         if (!skb_queue_empty(&tp->rx_queue)) {
->                 while (work_done < budget) {
-> @@ -1746,7 +1746,18 @@ find_next_rx:
->                 }
->
->  submit:
-> -               r8152_submit_rx(tp, agg, GFP_ATOMIC);
-> +               if (!ret) {
-> +                       ret = r8152_submit_rx(tp, agg, GFP_ATOMIC);
-> +               } else {
-> +                       urb->actual_length = 0;
-> +                       list_add_tail(&agg->list, next);
+PECE1 bit in LPCR is used to control whether decrementer can cause exit
+from powersaving states. PECE1 bit is cleared before entering fastsleep
+or deeper powersaving state and it is set on waking up. Since both
+cpuidle and cpu offline operations use these powersaving states, add
+helper functions to be used in both these places.
 
-Do you need a spin_lock_irqsave(&tp->rx_lock, flags) around this?
+Signed-off-by: Shreyas B. Prabhu <shreyas@linux.vnet.ibm.com>
+Cc: Michael Ellerman <mpe@ellerman.id.au>
+Cc: linuxppc-dev@lists.ozlabs.org
+---
+ arch/powerpc/include/asm/reg.h       | 4 ++++
+ arch/powerpc/platforms/powernv/smp.c | 4 ++--
+ drivers/cpuidle/cpuidle-powernv.c    | 3 +--
+ 3 files changed, 7 insertions(+), 4 deletions(-)
 
-> +               }
-> +       }
-> +
-> +       if (!list_empty(&rx_queue)) {
-> +               spin_lock_irqsave(&tp->rx_lock, flags);
-> +               list_splice_tail(&rx_queue, &tp->rx_done);
-> +               spin_unlock_irqrestore(&tp->rx_lock, flags);
->         }
->
->  out1:
-> --
-> 2.1.0
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+diff --git a/arch/powerpc/include/asm/reg.h b/arch/powerpc/include/asm/reg.h
+index c870e38..0847303 100644
+--- a/arch/powerpc/include/asm/reg.h
++++ b/arch/powerpc/include/asm/reg.h
+@@ -339,6 +339,10 @@
+ #define   LPCR_LPES_SH	2
+ #define   LPCR_RMI     0x00000002      /* real mode is cache inhibit */
+ #define   LPCR_HDICE   0x00000001      /* Hyp Decr enable (HV,PR,EE) */
++/* LPCR PECE1 helpers. Used to disable/enable wake up due to decrementer */
++#define   LPCR_CLEAR_PECE1(old)	(old & ~(u64)LPCR_PECE1)
++#define   LPCR_SET_PECE1(old)	(old | (u64)LPCR_PECE1)
++
+ #ifndef SPRN_LPID
+ #define SPRN_LPID	0x13F	/* Logical Partition Identifier */
+ #endif
+diff --git a/arch/powerpc/platforms/powernv/smp.c b/arch/powerpc/platforms/powernv/smp.c
+index 781ec45..ab61cb0 100644
+--- a/arch/powerpc/platforms/powernv/smp.c
++++ b/arch/powerpc/platforms/powernv/smp.c
+@@ -165,7 +165,7 @@ static void pnv_smp_cpu_kill_self(void)
+ 	/* We don't want to take decrementer interrupts while we are offline,
+ 	 * so clear LPCR:PECE1. We keep PECE2 enabled.
+ 	 */
+-	mtspr(SPRN_LPCR, mfspr(SPRN_LPCR) & ~(u64)LPCR_PECE1);
++	mtspr(SPRN_LPCR, LPCR_CLEAR_PECE1(mfspr(SPRN_LPCR)));
+ 	while (!generic_check_cpu_restart(cpu)) {
+ 
+ 		ppc64_runlatch_off();
+@@ -203,7 +203,7 @@ static void pnv_smp_cpu_kill_self(void)
+ 		if (!generic_check_cpu_restart(cpu))
+ 			DBG("CPU%d Unexpected exit while offline !\n", cpu);
+ 	}
+-	mtspr(SPRN_LPCR, mfspr(SPRN_LPCR) | LPCR_PECE1);
++	mtspr(SPRN_LPCR, LPCR_SET_PECE1(mfspr(SPRN_LPCR)));
+ 	DBG("CPU%d coming online...\n", cpu);
+ }
+ 
+diff --git a/drivers/cpuidle/cpuidle-powernv.c b/drivers/cpuidle/cpuidle-powernv.c
+index de61b9a..ed0be4c 100644
+--- a/drivers/cpuidle/cpuidle-powernv.c
++++ b/drivers/cpuidle/cpuidle-powernv.c
+@@ -69,11 +69,10 @@ static int fastsleep_loop(struct cpuidle_device *dev,
+ 	if (unlikely(system_state < SYSTEM_RUNNING))
+ 		return index;
+ 
+-	new_lpcr = old_lpcr;
+ 	/* Do not exit powersave upon decrementer as we've setup the timer
+ 	 * offload.
+ 	 */
+-	new_lpcr &= ~LPCR_PECE1;
++	new_lpcr = LPCR_CLEAR_PECE1(old_lpcr);
+ 
+ 	mtspr(SPRN_LPCR, new_lpcr);
+ 	power7_sleep();
+-- 
+1.9.3
+
