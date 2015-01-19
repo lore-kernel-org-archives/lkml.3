@@ -1,852 +1,310 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751374AbbASNGb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 08:06:31 -0500
-Received: from mail-ob0-f182.google.com ([209.85.214.182]:39478 "EHLO
-	mail-ob0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751226AbbASNG3 (ORCPT
+	id S1752240AbbASNHH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 08:07:07 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:14081 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752025AbbASNHE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 08:06:29 -0500
-MIME-Version: 1.0
-In-Reply-To: <000f01d01a88$60405e50$20c11af0$%han@samsung.com>
-References: <1418812486-12394-1-git-send-email-gabriel.fernandez@linaro.org>
-	<1418812486-12394-4-git-send-email-gabriel.fernandez@linaro.org>
-	<000f01d01a88$60405e50$20c11af0$%han@samsung.com>
-Date: Mon, 19 Jan 2015 14:06:28 +0100
-Message-ID: <CAG374jB9AaEr4rAwCT_19eySgP5paGke_ms_cJO7i8E7-oqr9g@mail.gmail.com>
-Subject: Re: [PATCH 3/5] PCI: st: Provide support for the sti PCIe controller
-From: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-To: Jingoo Han <jg1.han@samsung.com>
-Cc: Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Bjorn Helgaas <bhelgaas@google.com>, Mohit Kumar <mohit.kumar@st.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Fabrice Gasnier <fabrice.gasnier@st.com>,
-        Arnd Bergmann <arnd@arndb.de>, Viresh Kumar <viresh.kumar@linaro.org>,
-        Thierry Reding <treding@nvidia.com>,
-        Minghuan Lian <Minghuan.Lian@freescale.com>,
-        Magnus Damm <damm@opensource.se>, Will Deacon <will.deacon@arm.com>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Murali Karicheri <m-karicheri2@ti.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Pratyush Anand <pratyush.anand@st.com>,
-        Sachin Kamat <sachin.kamat@samsung.com>, Andrew Lunn <andrew@lunn.ch>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Srikanth Thokala <sthokal@xilinx.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "kernel@stlinux.com" <kernel@stlinux.com>, linux-pci@vger.kernel.org,
-        Lee Jones <lee.jones@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 19 Jan 2015 08:07:04 -0500
+X-AuditID: cbfee68f-f791c6d000004834-28-54bd0176c974
+From: Namjae Jeon <namjae.jeon@samsung.com>
+To: "'Dave Chinner'" <david@fromorbit.com>
+Cc: "'Theodore Ts'o'" <tytso@mit.edu>,
+        "'Alexander Viro'" <viro@zeniv.linux.org.uk>,
+        "'Brian Foster'" <bfoster@redhat.com>,
+        "'Dmitry Monakhov'" <dmonakhov@openvz.org>,
+        "=?iso-8859-2?Q?'Luk=E1=B9_Czerner'?=" <lczerner@redhat.com>,
+        linux-fsdevel@vger.kernel.org,
+        "'Ashish Sangwan'" <a.sangwan@samsung.com>,
+        linux-kernel@vger.kernel.org
+References: <005c01d030b7$90ab2cb0$b2018610$@samsung.com>
+ <20150118233334.GB16552@dastard>
+In-reply-to: <20150118233334.GB16552@dastard>
+Subject: RE: [RFC PATCH] fs: file freeze support
+Date: Mon, 19 Jan 2015 22:07:01 +0900
+Message-id: <005601d033e8$d0b338a0$7219a9e0$@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=iso-8859-2
+Content-transfer-encoding: 7bit
+X-Mailer: Microsoft Outlook 14.0
+Thread-index: AQIaHX/tiVElMfpe/JaCs3xh3Ky4MgJ33GV2nB/OnFA=
+Content-language: ko
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGIsWRmVeSWpSXmKPExsWyRsSkSLeMcW+Iwdl38hZLJ15itnj3ucpi
+	y7F7jBYnZnpaLHuwmcViz96TLBaXd81hs2jt+clucf7vcVYHTo9TiyQ8ms4cZfaYdPgzk8f7
+	fVfZPPq2rGL0+LxJzmPTk7dMAexRXDYpqTmZZalF+nYJXBn/L19hLDjrVNG/ZTp7A+Mkky5G
+	Tg4JAROJH9tWskLYYhIX7q1n62Lk4hASWMoosevqK3aYomWbDzBDJKYzSmzb9IwdwvnLKDGj
+	+zlQhoODTUBb4s8WUZAGEQENiWl7jzCD2MwCp5kkzm7iA7GFBGIkdv9cwAJicwroShz6vgus
+	RljAQOJIz3mwZSwCqhLzPm8Ci/MKWEp8/foLyhaU+DH5HgvIKmYBHYmvkyIgxstLbF7zlhni
+	TgWJHWdfM0KcYCWx7s4dqBNEJPa9eMcIcrKEQCOHxKqFz6B2CUh8m3wIbKaEgKzEpgNQcyQl
+	Dq64wTKBUWIWks2zEDbPQrJ5FpINCxhZVjGKphYkFxQnpRcZ6xUn5haX5qXrJefnbmIERvfp
+	f8/6dzDePWB9iFGAg1GJh3eD754QIdbEsuLK3EOMpkAHTWSWEk3OB6aQvJJ4Q2MzIwtTE1Nj
+	I3NLMyVx3oVSP4OFBNITS1KzU1MLUovii0pzUosPMTJxcEo1MHLG39q4vUsm8Zhc+0MW4R2P
+	o/MOWjQEBojwvzK+f/FS3MSWypzpM9jZbxvs8Gx63vO/luP57+i6iQ9z/p5ZG+SrWWw89/PH
+	RsHZCoXiMUye87q2dSulvw9ZELZFdkGVlPqWL2d0lmd3Spo/6vfW/lUWz3HGKXm26qTPAfXO
+	pYuTPp0+Pc2MU4mlOCPRUIu5qDgRAI4EhI/pAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrAKsWRmVeSWpSXmKPExsVy+t9jQd0yxr0hBnuvi1osnXiJ2eLd5yqL
+	LcfuMVqcmOlpsezBZhaLPXtPslhc3jWHzaK15ye7xfm/x1kdOD1OLZLwaDpzlNlj0uHPTB7v
+	911l8+jbsorR4/MmOY9NT94yBbBHNTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpa
+	mCsp5CXmptoqufgE6Lpl5gAdpqRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0k
+	rGHM+H/5CmPBWaeK/i3T2RsYJ5l0MXJySAiYSCzbfIAZwhaTuHBvPVsXIxeHkMB0Roltm56x
+	Qzh/GSVmdD8HquLgYBPQlvizRRSkQURAQ2La3iNgzcwCp5kkzm7iA7GFBGIkdv9cwAJicwro
+	Shz6vgusRljAQOJIz3l2EJtFQFVi3udNYHFeAUuJr19/QdmCEj8m32MBWcUsoCPxdVIExHh5
+	ic1r3kLdqSCx4+xrRogTrCTW3bkDdYKIxL4X7xgnMArNQjJpFsKkWUgmzULSsYCRZRWjaGpB
+	ckFxUnqukV5xYm5xaV66XnJ+7iZGcOp4Jr2DcVWDxSFGAQ5GJR7eDb57QoRYE8uKK3MPMUpw
+	MCuJ8AZ8AQrxpiRWVqUW5ccXleakFh9iNAX6cyKzlGhyPjCt5ZXEGxqbmBlZGpkbWhgZmyuJ
+	8yrZt4UICaQnlqRmp6YWpBbB9DFxcEo1MK6waNklpfsvZ0Wuj+QJi7cz1i99P0180rW67KM6
+	uzNnX2N0/633Ln5+QGHjlJpTu26sv1+hdPRex/nlHgwXP1atZ3mx/mkX5x+dGSHmoQo7nF2O
+	rk+9N+3rxFeKB84FyJ2bcLf+kKyvg5KKiU2UdMmb52vbPhimTJ2S0TFz8j32lEO28yQXbnBQ
+	YinOSDTUYi4qTgQAx467MDMDAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jingoo,
+> On Thu, Jan 15, 2015 at 08:36:55PM +0900, Namjae Jeon wrote:
+> > We introduce per-file freeze feature for unifying defrag ext4 and xfs
+> > as first ingredient. We get the idea courtesy of Dave Chinner
+> > (https://lkml.org/lkml/2014/7/14/759)
+Hi Dave,
+> 
+> /me pages the context back in
+> 
+> > per-file freeze will be used to avoid that file is not modified while
+> > userspace is doing the defrag.
+> >
+> > This patch tries to implement file write freeze functionality.
+> > Introduce new inode state, I_WRITE_FREEZED.
+> 
+> I_WRITE_FROZEN.
+Okay.
+> 
+> > When this state is set, any process which tries to modify the file's address
+> > space, either by pagefault mmap writes or using write(2), will block until
+> > the this state is cleared. I_WRITE_FREEZED is set by calling FS_IOC_FWFREEZE
+> > ioctl and clear by FS_IOC_FWTHAW ioctl.
+> >
+> > File write freeze functionality, when used in conjunction with
+> > inode's immutable flag can be used for creating truly stable file snapshots
+> > wherein write freeze will prevent any modification to the file from already
+> > open file descriptors and immutable flag will prevent any new modification
+> > to the file. One of the intended uses for stable file snapshots would be in
+> > the defragmentation applications which defrags single file.
+> 
+> I don't quite understand why the full filesystem freeze is
+> necessary? The thaw occurs immediately after I_WRITE_FREEZED is set,
+We started by looking at fs freeze for file freeze implementation,
+So got biased for using fs freeze or similar approach.
+Thanks for suggesting a better way.
 
-Thanks for reviewing
+> which means there's nothing that prevent the file from being
+> truncated or otherwise modified by fallocate, etc while it is
+> frozen....
+Right, So, After that, we had also thought of setting immutable
+flag of inode. Immutable flag + I_WRITE_FROZEN => truly frozen file.
 
-On 18 December 2014 at 07:03, Jingoo Han <jg1.han@samsung.com> wrote:
-> On Wednesday, December 17, 2014 7:35 PM, Gabriel FERNANDEZ wrote:
->>
->> sti pcie is built around a Synopsis Designware PCIe IP.
->>
->> Signed-off-by: Fabrice Gasnier <fabrice.gasnier@st.com>
->> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
->> ---
->>  drivers/pci/host/Kconfig  |   5 +
->>  drivers/pci/host/Makefile |   1 +
->>  drivers/pci/host/pci-st.c | 713 ++++++++++++++++++++++++++++++++++++++++++++++
->>  3 files changed, 719 insertions(+)
->>  create mode 100644 drivers/pci/host/pci-st.c
->>
->> diff --git a/drivers/pci/host/Kconfig b/drivers/pci/host/Kconfig
->> index c4b6568..999d2b9 100644
->> --- a/drivers/pci/host/Kconfig
->> +++ b/drivers/pci/host/Kconfig
->> @@ -102,4 +102,9 @@ config PCI_LAYERSCAPE
->>       help
->>         Say Y here if you want PCIe controller support on Layerscape SoCs.
->>
->> +config PCI_ST
->> +     bool "ST STiH41x PCIe controller"
->> +     depends on ARCH_STI
->> +     select PCIE_DW
->> +
->>  endmenu
->> diff --git a/drivers/pci/host/Makefile b/drivers/pci/host/Makefile
->> index 44c2699..ca14829 100644
->> --- a/drivers/pci/host/Makefile
->> +++ b/drivers/pci/host/Makefile
->> @@ -12,3 +12,4 @@ obj-$(CONFIG_PCI_KEYSTONE) += pci-keystone-dw.o pci-keystone.o
->>  obj-$(CONFIG_PCIE_XILINX) += pcie-xilinx.o
->>  obj-$(CONFIG_PCI_XGENE) += pci-xgene.o
->>  obj-$(CONFIG_PCI_LAYERSCAPE) += pci-layerscape.o
->> +obj-$(CONFIG_PCI_ST) += pci-st.o
->> diff --git a/drivers/pci/host/pci-st.c b/drivers/pci/host/pci-st.c
->> new file mode 100644
->> index 0000000..bd3d32d
->> --- /dev/null
->> +++ b/drivers/pci/host/pci-st.c
->> @@ -0,0 +1,713 @@
->> +/*
->> + * Copyright (C) 2014 STMicroelectronics
->> + *
->> + * STMicroelectronics PCI express Driver for sti SoCs.
->> + * ST PCIe IPs are built around a Synopsys IP Core.
->> + *
->> + * Author: Fabrice Gasnier <fabrice.gasnier@st.com>
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2, as
->> + * published by the Free Software Foundation.
->> + *
->> + */
->> +
->> +#include <linux/module.h>
->> +#include <linux/interrupt.h>
->> +#include <linux/of_address.h>
->> +#include <linux/of_pci.h>
->> +#include <linux/of_platform.h>
->> +#include <linux/of_gpio.h>
->> +#include <linux/regmap.h>
->> +#include <linux/mfd/syscon.h>
->> +#include <linux/delay.h>
->> +#include <linux/reset.h>
->> +#include <linux/phy/phy.h>
->
-> Please, re-order these headers alphabetically.
-> It enhances the readability.
->
+> 
+> AFAICT, fsync will bring the file down to a consistent state and
+> we've already got freeze hooks for all inode modification
+> operations. We also have IO barriers for truncate operations so that
+> we can wait for all outstanding IO to complete, so I would have
+> thought this covers all bases for an inode freeze. i.e.:
+Right.
 
-sure
+> 
+> i_mutex -> I_FROZEN -> fsync -> inode_dio_wait
+> 
+> Should give us a clean inode where there are not ongoing operations
+> by the time that inode_dio_wait() completes. All new modification
+> operations need to check I_FROZEN in addition to the superblock
+> freeze checks...
+I checked the routines where checks for I_FROZEN would be required.
+Most of them are Ok but do_unlinkat() confuses me a little.
+vfs_unlink is called under parent inode's i_mutex, so we cannot sleep
+keeping parent's i_mutex held.
+i.e while freezing file, all file in directory are blocked by parent
+i_mutex. Is it ok to release parnets->mutex before checking for I_FROZEN
+or there is some idea?
 
->> +
->> +#include "pcie-designware.h"
->> +
->> +#define TRANSLATION_CONTROL          0x900
->> +/* Controls if area is inclusive or exclusive */
->> +#define RC_PASS_ADDR_RANGE           BIT(1)
->> +
->> +/* Base of area reserved for config accesses. Fixed size of 64K. */
->> +#define CFG_BASE_ADDRESS             0x92c
->> +#define CFG_REGION_SIZE                      65536
->> +
->> +/* First 4K of config space has this BDF (bus,device,function) */
->> +#define FUNC0_BDF_NUM                        0x930
->> +
->> +/* Mem regions */
->> +#define IN0_MEM_ADDR_START           0x964
->> +#define IN0_MEM_ADDR_LIMIT           0x968
->> +#define IN1_MEM_ADDR_START           0x974
->> +#define IN1_MEM_ADDR_LIMIT           0x978
->> +
->> +/* This actually contains the LTSSM state machine state */
->> +#define PORT_LOGIC_DEBUG_REG_0               0x728
->> +
->> +/* LTSSM state machine values        */
->> +#define DEBUG_REG_0_LTSSM_MASK               0x1f
->> +#define S_DETECT_QUIET                       0x00
->> +#define S_DETECT_ACT                 0x01
->> +#define S_POLL_ACTIVE                        0x02
->> +#define S_POLL_COMPLIANCE            0x03
->> +#define S_POLL_CONFIG                        0x04
->> +#define S_PRE_DETECT_QUIET           0x05
->> +#define S_DETECT_WAIT                        0x06
->> +#define S_CFG_LINKWD_START           0x07
->> +#define S_CFG_LINKWD_ACEPT           0x08
->> +#define S_CFG_LANENUM_WAIT           0x09
->> +#define S_CFG_LANENUM_ACEPT          0x0A
->> +#define S_CFG_COMPLETE                       0x0B
->> +#define S_CFG_IDLE                   0x0C
->> +#define S_RCVRY_LOCK                 0x0D
->> +#define S_RCVRY_SPEED                        0x0E
->> +#define S_RCVRY_RCVRCFG                      0x0F
->> +#define S_RCVRY_IDLE                 0x10
->> +#define S_L0                         0x11
->> +#define S_L0S                                0x12
->> +#define S_L123_SEND_EIDLE            0x13
->> +#define S_L1_IDLE                    0x14
->> +#define S_L2_IDLE                    0x15
->> +#define S_L2_WAKE                    0x16
->> +#define S_DISABLED_ENTRY             0x17
->> +#define S_DISABLED_IDLE                      0x18
->> +#define S_DISABLED                   0x19
->> +#define S_LPBK_ENTRY                 0x1A
->> +#define S_LPBK_ACTIVE                        0x1B
->> +#define S_LPBK_EXIT                  0x1C
->> +#define S_LPBK_EXIT_TIMEOUT          0x1D
->> +#define S_HOT_RESET_ENTRY            0x1E
->> +#define S_HOT_RESET                  0x1F
->> +
->> +/* syscfg bits */
->> +#define PCIE_SYS_INT                 BIT(5)
->> +#define PCIE_APP_REQ_RETRY_EN                BIT(3)
->> +#define PCIE_APP_LTSSM_ENABLE                BIT(2)
->> +#define PCIE_APP_INIT_RST            BIT(1)
->> +#define PCIE_DEVICE_TYPE             BIT(0)
->> +#define PCIE_DEFAULT_VAL             PCIE_DEVICE_TYPE
->> +
->> +/* Time to wait between testing the link in msecs (hardware poll interval) */
->> +#define LINK_LOOP_DELAY_MS 1
->> +/* Total amount of time to wait for the link to come up in msecs */
->> +#define LINK_WAIT_MS 120
->> +#define LINK_LOOP_COUNT (LINK_WAIT_MS / LINK_LOOP_DELAY_MS)
->> +
->> +/* st,syscfg offsets */
->> +#define SYSCFG0_REG  1
->> +#define SYSCFG1_REG  2
->> +
->> +#define to_st_pcie(x)        container_of(x, struct st_pcie, pp)
->> +
->> +/**
->> + * struct st_pcie_ops - SOC dependent data
->> + * @init: reference to controller power & reset init routine
->> + * @enable_ltssm: reference to controller link enable routine
->> + * @disable_ltssm:  reference to controller link disable routine
->> + * @phy_auto: flag when phy automatically configured
->> + */
->> +struct st_pcie_ops {
->> +     int (*init)(struct pcie_port *pp);
->> +     int (*enable_ltssm)(struct pcie_port *pp);
->> +     int (*disable_ltssm)(struct pcie_port *pp);
->> +     bool phy_auto;
->> +};
->> +
->> +/**
->> + * struct st_pcie - private data of the controller
->> + * @pp: designware pcie port
->> + * @syscfg0: PCIe configuration 0 register, regmap offset
->> + * @syscfg1: PCIe configuration 1 register, regmap offset
->> + * @phy: associated pcie phy
->> + * @config_area: PCIe configuration space
->> + * @lmi: memory made available to the controller
->> + * @data: SOC dependent data
->> + * @regmap: Syscfg registers bank in which PCIe port is configured
->> + * @pwr: power control
->> + * @rst: reset control
->> + * @reset_gpio: optional reset gpio
->> + * @config_window_start: start address of 64K config space area
->> + */
->> +struct st_pcie {
->> +     struct pcie_port pp;
->> +     int syscfg0;
->> +     int syscfg1;
->> +     struct phy *phy;
->> +     void __iomem *config_area;
->> +     struct resource *lmi;
->> +     const struct st_pcie_ops *data;
->> +     struct regmap *regmap;
->> +     struct reset_control *pwr;
->> +     struct reset_control *rst;
->> +     int reset_gpio;
->> +     phys_addr_t config_window_start;
->> +};
->> +
->> +/*
->> + * Function to test if the link is in an operational state or not. We must
->> + * ensure the link is operational before we try to do a configuration access.
->> + */
->> +static int st_pcie_link_up(struct pcie_port *pp)
->> +{
->> +     u32 status;
->> +     int link_up;
->> +     int count = 0;
->> +
->> +     /*
->> +      * We have to be careful here. This is used in config read/write,
->> +      * The higher levels switch off interrupts, so you cannot use
->> +      * jiffies to do a timeout, or reschedule
->> +      */
->> +     do {
->> +             /*
->> +              * What about L2? I think software intervention is
->> +              * required to get it out of L2, so in effect the link
->> +              * is down. Requires more work when/if we implement power
->> +              * management
->> +              */
->> +             status = readl_relaxed(pp->dbi_base + PORT_LOGIC_DEBUG_REG_0);
->> +             status &= DEBUG_REG_0_LTSSM_MASK;
->> +
->> +             link_up = (status == S_L0) || (status == S_L0S) ||
->> +                       (status == S_L1_IDLE);
->> +
->> +             /*
->> +              * It can take some considerable time for the link to actually
->> +              * come up, caused by the PLLs. Experiments indicate it takes
->> +              * about 8ms to actually bring the link up, but this can vary
->> +              * considerably according to the specification. This code should
->> +              * allow sufficient time
->> +              */
->> +             if (!link_up)
->> +                     mdelay(LINK_LOOP_DELAY_MS);
->> +
->> +     } while (!link_up && ++count < LINK_LOOP_COUNT);
->> +
->> +     return link_up;
->> +}
->> +
->> +/*
->> + * On ARM platforms, we actually get a bus error returned when the PCIe IP
->> + * returns a UR or CRS instead of an OK.
->> + */
->> +static int st_pcie_abort_handler(unsigned long addr, unsigned int fsr,
->> +                              struct pt_regs *regs)
->> +{
->> +     return 0;
->> +}
->> +
->> +/*
->> + * The PCI express core IP expects the following arrangement on it's address
->> + * bus (slv_haddr) when driving config cycles.
->> + * bus_number                [31:24]
->> + * dev_number                [23:19]
->> + * func_number               [18:16]
->> + * unused            [15:12]
->> + * ext_reg_number    [11:8]
->> + * reg_number                [7:2]
->> + *
->> + * Bits [15:12] are unused.
->> + *
->> + * In the glue logic there is a 64K region of address space that can be
->> + * written/read to generate config cycles. The base address of this is
->> + * controlled by CFG_BASE_ADDRESS. There are 8 16 bit registers called
->> + * FUNC0_BDF_NUM to FUNC8_BDF_NUM. These split the bottom half of the 64K
->> + * window into 8 regions at 4K boundaries. These control the bus,device and
->> + * function number you are trying to talk to.
->> + *
->> + * The decision on whether to generate a type 0 or type 1 access is controlled
->> + * by bits 15:12 of the address you write to.  If they are zero, then a type 0
->> + * is generated, if anything else it will be a type 1. Thus the bottom 4K
->> + * region controlled by FUNC0_BDF_NUM can only generate type 0, all the others
->> + * can only generate type 1.
->> + *
->> + * We only use FUNC0_BDF_NUM and FUNC1_BDF_NUM. Which one you use is selected
->> + * by bit 12 of the address you write to. The selected register is then used
->> + * for the top 16 bits of the slv_haddr to form the bus/dev/func, bit 15:12 are
->> + * wired to zero, and bits 11:2 form the address of the register you want to
->> + * read in config space.
->> + *
->> + * We always write FUNC0_BDF_NUM as a 32 bit write. So if we want type 1
->> + * accesses we have to shift by 16 so in effect we are writing to FUNC1_BDF_NUM
->> + */
->> +static inline u32 bdf_num(int bus, int devfn, int is_root_bus)
->> +{
->> +     return ((bus << 8) | devfn) << (is_root_bus ? 0 : 16);
->> +}
->> +
->> +static inline unsigned config_addr(int where, int is_root_bus)
->> +{
->> +     return (where & ~3) | (!is_root_bus << 12);
->> +}
->> +
->> +static int st_pcie_rd_other_conf(struct pcie_port *pp, struct pci_bus *bus,
->> +                              unsigned int devfn, int where, int size,
->> +                              u32 *val)
->> +{
->> +     u32 data;
->> +     u32 bdf;
->> +     struct st_pcie *pcie = to_st_pcie(pp);
->> +     int is_root_bus = pci_is_root_bus(bus);
->> +     int retry_count = 0;
->> +     int ret;
->> +     void __iomem *addr;
->> +
->> +     /*
->> +      * Prerequisite
->> +      * PCI express devices will respond to all config type 0 cycles, since
->> +      * they are point to point links. Thus to avoid probing for multiple
->> +      * devices on the root, dw-pcie already check for us if it is on the
->> +      * root bus / other slots. Also, dw-pcie checks for the link being up
->> +      * as we will hang if we issue a config request and the link is down.
->> +      * A switch will reject requests for slots it knows do not exist.
->> +      */
->> +     bdf = bdf_num(bus->number, devfn, is_root_bus);
->> +     addr = pcie->config_area + config_addr(where,
->> +                     bus->parent->number == pp->root_bus_nr);
->> +retry:
->> +     /* Set the config packet devfn */
->> +     writel_relaxed(bdf, pp->dbi_base + FUNC0_BDF_NUM);
->> +     readl_relaxed(pp->dbi_base + FUNC0_BDF_NUM);
->> +
->> +     ret = dw_pcie_cfg_read(addr, where, size, &data);
->> +
->> +     /*
->> +      * This is intended to help with when we are probing the bus. The
->> +      * problem is that the wrapper logic doesn't have any way to
->> +      * interrogate if the configuration request failed or not.
->> +      * On the ARM we actually get a real bus error.
->> +      *
->> +      * Unfortunately this means it is impossible to tell the difference
->> +      * between when a device doesn't exist (the switch will return a UR
->> +      * completion) or the device does exist but isn't yet ready to accept
->> +      * configuration requests (the device will return a CRS completion)
->> +      *
->> +      * The result of this is that we will miss devices when probing.
->> +      *
->> +      * So if we are trying to read the dev/vendor id on devfn 0 and we
->> +      * appear to get zero back, then we retry the request.  We know that
->> +      * zero can never be a valid device/vendor id. The specification says
->> +      * we must retry for up to a second before we decide the device is
->> +      * dead. If we are still dead then we assume there is nothing there and
->> +      * return ~0
->> +      *
->> +      * The downside of this is that we incur a delay of 1s for every pci
->> +      * express link that doesn't have a device connected.
->> +      */
->> +     if (((where & ~3) == 0) && devfn == 0 && (data == 0 || data == ~0)) {
->> +             if (retry_count++ < 1000) {
->> +                     mdelay(1);
->> +                     goto retry;
->> +             } else {
->> +                     *val = ~0;
->> +                     return PCIBIOS_DEVICE_NOT_FOUND;
->> +             }
->> +     }
->> +
->> +     *val = data;
->> +     return ret;
->> +}
->> +
->> +static int st_pcie_wr_other_conf(struct pcie_port *pp, struct pci_bus *bus,
->> +                              unsigned int devfn, int where, int size,
->> +                              u32 val)
->> +{
->> +     u32 bdf;
->> +     struct st_pcie *pcie = to_st_pcie(pp);
->> +     int is_root_bus = pci_is_root_bus(bus);
->> +     void __iomem *addr;
->> +
->> +     bdf = bdf_num(bus->number, devfn, is_root_bus);
->> +     addr = pcie->config_area + config_addr(where,
->> +                     bus->parent->number == pp->root_bus_nr);
->> +
->> +     /* Set the config packet devfn */
->> +     writel_relaxed(bdf, pp->dbi_base + FUNC0_BDF_NUM);
->> +     readl_relaxed(pp->dbi_base + FUNC0_BDF_NUM);
->> +
->> +     return dw_pcie_cfg_write(addr, where, size, val);
->> +}
->> +
->> +static void st_pcie_board_reset(struct pcie_port *pp)
->> +{
->> +     struct st_pcie *pcie = to_st_pcie(pp);
->> +
->> +     if (!gpio_is_valid(pcie->reset_gpio))
->> +             return;
->> +
->> +     if (gpio_direction_output(pcie->reset_gpio, 0)) {
->> +             dev_err(pp->dev, "Cannot set PERST# (gpio %u) to output\n",
->> +                     pcie->reset_gpio);
->> +             return;
->> +     }
->> +
->> +     /* From PCIe spec */
->> +     usleep_range(1000, 2000);
->> +     gpio_direction_output(pcie->reset_gpio, 1);
->> +
->> +     /*
->> +      * PCIe specification states that you should not issue any config
->> +      * requests until 100ms after asserting reset, so we enforce that here
->> +      */
->> +     usleep_range(100000, 150000);
->> +}
->> +
->> +static void st_pcie_hw_setup(struct pcie_port *pp)
->> +{
->> +     struct st_pcie *pcie = to_st_pcie(pp);
->> +
->> +     dw_pcie_setup_rc(pp);
->> +
->> +     /* Set up the config window to the top of the PCI address space */
->> +     writel_relaxed(pcie->config_window_start,
->> +                    pp->dbi_base + CFG_BASE_ADDRESS);
->> +
->> +     /*
->> +      * Open up memory to the PCI controller. We could do slightly
->> +      * better than this and exclude the kernel text segment and bss etc.
->> +      * They are base/limit registers so can be of arbitrary alignment
->> +      * presumably
->> +      */
->> +     writel_relaxed(pcie->lmi->start, pp->dbi_base + IN0_MEM_ADDR_START);
->> +     writel_relaxed(pcie->lmi->end, pp->dbi_base + IN0_MEM_ADDR_LIMIT);
->> +
->> +     /* Disable the 2nd region */
->> +     writel_relaxed(~0, pp->dbi_base + IN1_MEM_ADDR_START);
->> +     writel_relaxed(0, pp->dbi_base + IN1_MEM_ADDR_LIMIT);
->> +
->> +     writel_relaxed(RC_PASS_ADDR_RANGE, pp->dbi_base + TRANSLATION_CONTROL);
->> +
->> +     /* Now assert the board level reset to the other PCIe device */
->> +     st_pcie_board_reset(pp);
->> +}
->> +
->> +static irqreturn_t st_pcie_msi_irq_handler(int irq, void *arg)
->> +{
->> +     struct pcie_port *pp = arg;
->> +
->> +     return dw_handle_msi_irq(pp);
->> +}
->> +
->> +static void st_msi_init_one(struct pcie_port *pp)
->> +{
->> +     struct st_pcie *pcie = to_st_pcie(pp);
->> +
->> +     /*
->> +      * Set the magic address the hardware responds to. This has to be in
->> +      * the range the PCI controller can write to.
->> +      */
->> +     dw_pcie_msi_init(pp);
->> +
->> +     if ((virt_to_phys((void *)pp->msi_data) < pcie->lmi->start) ||
->> +         (virt_to_phys((void *)pp->msi_data) > pcie->lmi->end))
->> +             dev_err(pp->dev, "MSI addr miss-configured\n");
->> +}
->> +
->> +static void st_pcie_host_init(struct pcie_port *pp)
->> +{
->> +     struct st_pcie *pcie = to_st_pcie(pp);
->> +     int err;
->> +
->> +     /*
->> +      * We have to initialise the PCIe cell on some hardware before we can
->> +      * talk to the phy
->> +      */
->> +     err = pcie->data->init(pp);
->> +     if (err)
->> +             return;
->> +
->> +     err = pcie->data->disable_ltssm(pp);
->> +     if (err) {
->> +             dev_err(pp->dev, "disable ltssm failed, %d\n", err);
->> +             return;
->> +     }
->> +
->> +     if (!pcie->data->phy_auto) {
->> +             /* Now init the associated miphy */
->> +             err = phy_init(pcie->phy);
->> +             if (err < 0) {
->> +                     dev_err(pp->dev, "Cannot init PHY: %d\n", err);
->> +                     return;
->> +             }
->> +     }
->> +
->> +     /* Now do all the register poking */
->> +     st_pcie_hw_setup(pp);
->> +
->> +     /* Re-enable the link */
->> +     err = pcie->data->enable_ltssm(pp);
->> +     if (err)
->> +             dev_err(pp->dev, "enable ltssm failed, %d\n", err);
->> +
->> +     if (IS_ENABLED(CONFIG_PCI_MSI))
->> +             st_msi_init_one(pp);
->> +}
->> +
->> +static struct pcie_host_ops st_pcie_host_ops = {
->> +     .rd_other_conf = st_pcie_rd_other_conf,
->> +     .wr_other_conf = st_pcie_wr_other_conf,
->> +     .link_up = st_pcie_link_up,
->> +     .host_init = st_pcie_host_init,
->> +};
->> +
->> +static int st_pcie_init(struct pcie_port *pp)
->> +{
->> +     struct st_pcie *pcie = to_st_pcie(pp);
->> +     int ret;
->> +
->> +     ret = reset_control_deassert(pcie->pwr);
->> +     if (ret) {
->> +             dev_err(pp->dev, "unable to bring out of powerdown\n");
->> +             return ret;
->> +     }
->> +
->> +     ret = reset_control_deassert(pcie->rst);
->> +     if (ret) {
->> +             dev_err(pp->dev, "unable to bring out of softreset\n");
->> +             return ret;
->> +     }
->> +
->> +     /* Set device type : Root Complex */
->> +     ret = regmap_write(pcie->regmap, pcie->syscfg0, PCIE_DEVICE_TYPE);
->> +     if (ret < 0) {
->> +             dev_err(pp->dev, "unable to set device type\n");
->> +             return ret;
->> +     }
->> +
->> +     usleep_range(1000, 2000);
->> +     return ret;
->> +}
->> +
->> +/* STiH407 */
->> +static int stih407_pcie_enable_ltssm(struct pcie_port *pp)
->> +{
->> +     struct st_pcie *pcie = to_st_pcie(pp);
->> +
->> +     if (!pcie->syscfg1)
->> +             return -EINVAL;
->> +
->> +     return regmap_update_bits(pcie->regmap, pcie->syscfg1,
->> +                               PCIE_APP_LTSSM_ENABLE, PCIE_APP_LTSSM_ENABLE);
->> +}
->> +
->> +static int stih407_pcie_disable_ltssm(struct pcie_port *pp)
->> +{
->> +     struct st_pcie *pcie = to_st_pcie(pp);
->> +
->> +     if (!pcie->syscfg1)
->> +             return -EINVAL;
->> +
->> +     return regmap_update_bits(pcie->regmap, pcie->syscfg1,
->> +                               PCIE_APP_LTSSM_ENABLE, 0);
->> +}
->> +
->> +static struct st_pcie_ops stih407_pcie_ops = {
->> +     .init = st_pcie_init,
->> +     .enable_ltssm = stih407_pcie_enable_ltssm,
->> +     .disable_ltssm = stih407_pcie_disable_ltssm,
->> +};
->> +
->> +static const struct of_device_id st_pcie_of_match[] = {
->> +     { .compatible = "st,stih407-pcie", .data = (void *)&stih407_pcie_ops},
->> +     { },
->> +};
->> +
->> +#ifdef CONFIG_PM
->> +static int st_pcie_suspend(struct device *pcie_dev)
->> +{
->> +     struct st_pcie *pcie = dev_get_drvdata(pcie_dev);
->> +
->> +     /* To guarantee a real phy initialization on resume */
->> +     if (!pcie->data->phy_auto)
->> +             phy_exit(pcie->phy);
->> +
->> +     return 0;
->> +}
->> +
->> +static int st_pcie_resume(struct device *pcie_dev)
->> +{
->> +     struct st_pcie *pcie = dev_get_drvdata(pcie_dev);
->> +
->> +     st_pcie_host_init(&pcie->pp);
->> +
->> +     return 0;
->> +}
->> +#endif
->> +
->> +const struct dev_pm_ops st_pcie_pm_ops = {
->> +     .suspend_noirq = st_pcie_suspend,
->> +     .resume_noirq = st_pcie_resume,
->> +};
->> +
->> +static int __init st_pcie_probe(struct platform_device *pdev)
->> +{
->> +     struct resource *res;
->> +     struct st_pcie *pcie;
->> +     struct device_node *np = pdev->dev.of_node;
->> +     struct pcie_port *pp;
->> +     int ret;
->> +
->> +     pcie = devm_kzalloc(&pdev->dev, sizeof(*pcie), GFP_KERNEL);
->> +     if (!pcie)
->> +             return -ENOMEM;
->> +
->> +     memset(pcie, 0, sizeof(*pcie));
->> +
->> +     pp = &pcie->pp;
->> +     pp->dev = &pdev->dev;
->> +
->> +     /* mem regions */
->> +     res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "dbi");
->> +     pp->dbi_base = devm_ioremap_resource(&pdev->dev, res);
->> +     if (IS_ERR(pp->dbi_base))
->> +             return PTR_ERR(pp->dbi_base);
->> +
->> +     res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "config");
->> +     if (!res)
->> +             return -ENXIO;
->> +
->> +     /* Check that this has sensible values */
->> +     if ((resource_size(res) != CFG_REGION_SIZE) ||
->> +         (res->start & (CFG_REGION_SIZE - 1))) {
->> +             dev_err(&pdev->dev, "Invalid config space properties\n");
->> +             return -EINVAL;
->> +     }
->> +     pcie->config_window_start = res->start;
->> +
->> +     pcie->config_area = devm_ioremap_resource(&pdev->dev, res);
->> +     if (IS_ERR(pcie->config_area))
->> +             return PTR_ERR(pcie->config_area);
->> +
->> +     pcie->lmi = platform_get_resource_byname(pdev, IORESOURCE_MEM,
->> +                                              "mem-window");
->> +     if (!pcie->lmi)
->> +             return -ENXIO;
->> +
->> +     /* regmap registers for PCIe IP configuration */
->> +     pcie->regmap = syscon_regmap_lookup_by_phandle(np, "st,syscfg");
->> +     if (IS_ERR(pcie->regmap)) {
->> +             dev_err(&pdev->dev, "No syscfg phandle specified\n");
->> +             return PTR_ERR(pcie->regmap);
->> +     }
->> +
->> +     ret = of_property_read_u32_index(np, "st,syscfg", SYSCFG0_REG,
->> +                                      &pcie->syscfg0);
->> +     if (ret) {
->> +             dev_err(&pdev->dev, "can't get syscfg0 offset (%d)\n", ret);
->> +             return ret;
->> +     }
->> +
->> +     ret = of_property_read_u32_index(np, "st,syscfg", SYSCFG1_REG,
->> +                                      &pcie->syscfg1);
->> +     if (ret) {
->> +             dev_err(&pdev->dev, "can't get syscfg1 offset (%d)\n", ret);
->> +             return ret;
->> +     }
->> +
->> +     /* retrieve data opts from compatible */
->> +     pcie->data = of_match_node(st_pcie_of_match, np)->data;
->> +     if (!pcie->data) {
->> +             dev_err(&pdev->dev, "compatible data not provided\n");
->> +             return -EINVAL;
->> +     }
->> +
->> +     /* powerdown / resets */
->> +     pcie->pwr = devm_reset_control_get(&pdev->dev, "powerdown");
->> +     if (IS_ERR(pcie->pwr)) {
->> +             dev_err(&pdev->dev, "powerdown reset control not defined\n");
->> +             return -EINVAL;
->
-> Please return PTR_ERR(pcie->pwr) instead of '-EINVAL'.
->
-ok
+> 
+> > For implementation purpose, initially we tried to keep percpu usage counters
+> > inside struct inode just like there is struct sb_writers in super_block.
+> > But considering that it will significantly bloat up struct inode when actually
+> > the usage of file write freeze will be infrequent, we dropped this idea.
+> > Instead we have tried to use already present filesystem freezing infrastructure.
+> > Current approach makes it possible for implementing file write freeze without
+> > bloating any of struct super_block/inode.
+> > In FS_IOC_FWFREEZE, we wait for complete fs to be frozen, set I_WRITE_FREEZED to
+> > inode's state and unfreeze the fs.
+> >
+> > TODO : prevent inode eviction when I_WRITE_FREEZED state is set.
+> 
+> The app needs to retain a reference to the inode (i.e. open
+> file descriptor) for the length of time that the inode is to be
+> frozen. That will prevent reclaim of the inode.
+> 
+> If the app fails to thaw the inode before it drops all references
+> to it, then all bets are off - we do not want to give userspace a
+> mechanism to pin arbitrarily large amounts of memory....
+Okay.
 
->> +     }
->> +
->> +     pcie->rst = devm_reset_control_get(&pdev->dev, "softreset");
->> +     if (IS_ERR(pcie->rst)) {
->> +             dev_err(&pdev->dev, "Soft reset control not defined\n");
->> +             return -EINVAL;
->
-> Please return PTR_ERR(pcie->pwr) instead of '-EINVAL'.
->
-ok
+> 
+> > TODO : xfstests testcase for file freeze.
+> >
+> > Signed-off-by: Namjae Jeon <namjae.jeon@samsung.com>
+> > Signed-off-by: Ashish Sangwan <a.sangwan@samsung.com>
+> > ---
+> >  fs/btrfs/inode.c        |  1 +
+> >  fs/buffer.c             |  1 +
+> >  fs/ext4/inode.c         |  1 +
+> >  fs/f2fs/file.c          |  1 +
+> >  fs/gfs2/file.c          |  1 +
+> >  fs/inode.c              | 19 ++++++++++++++++++
+> >  fs/ioctl.c              | 30 +++++++++++++++++++++++++++++
+> >  fs/nilfs2/file.c        |  1 +
+> >  fs/ocfs2/mmap.c         |  1 +
+> >  fs/super.c              | 51 +++++++++++++++++++++++++++++++++++++++++++++++++
+> >  include/linux/fs.h      | 13 +++++++++++++
+> >  include/uapi/linux/fs.h |  2 ++
+> >  mm/filemap.c            |  1 +
+> >  13 files changed, 123 insertions(+)
+> >
+> > diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+> > index e687bb0..357c749 100644
+> > --- a/fs/btrfs/inode.c
+> > +++ b/fs/btrfs/inode.c
+> > @@ -8262,6 +8262,7 @@ int btrfs_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
+> >  	u64 page_start;
+> >  	u64 page_end;
+> >
+> > +	inode_start_write(inode);
+> >  	sb_start_pagefault(inode->i_sb);
+> 
+> Wouldn't it be better to have:
+> 
+> 	inode_start_pagefault(inode);
+> 
+> and then have it call sb_start_pagefault() internally?
+Right.
 
->> +     }
->> +
->> +     /* phy */
->> +     if (!pcie->data->phy_auto) {
->> +             pcie->phy = devm_phy_get(&pdev->dev, "pcie_phy");
->> +             if (IS_ERR(pcie->phy)) {
->> +                     dev_err(&pdev->dev, "no PHY configured\n");
->> +                     return PTR_ERR(pcie->phy);
->> +             }
->> +     }
->> +
->> +     /* Claim the GPIO for PRST# if available */
->> +     pcie->reset_gpio = of_get_named_gpio(np, "reset-gpio", 0);
->> +     if (!gpio_is_valid(pcie->reset_gpio))
->> +             dev_dbg(&pdev->dev, "No reset-gpio configured\n");
->> +     else {
->> +             ret = devm_gpio_request(&pdev->dev,
->> +                                     pcie->reset_gpio,
->> +                                     "PCIe reset");
->> +             if (ret) {
->> +                     dev_err(&pdev->dev, "Cannot request reset-gpio %d\n",
->> +                             pcie->reset_gpio);
->> +                     return ret;
->> +             }
->> +     }
->> +
->> +     if (IS_ENABLED(CONFIG_PCI_MSI)) {
->> +             pp->msi_irq = platform_get_irq_byname(pdev, "msi");
->> +             if (pp->msi_irq <= 0) {
->> +                     dev_err(&pdev->dev, "failed to get MSI irq\n");
->> +                     return -ENODEV;
->> +             }
->> +
->> +             ret = devm_request_irq(&pdev->dev, pp->msi_irq,
->> +                                    st_pcie_msi_irq_handler,
->> +                                    IRQF_SHARED, "st-pcie-msi", pp);
->> +             if (ret) {
->> +                     dev_err(&pdev->dev, "failed to request MSI irq\n");
->> +                     return -ENODEV;
->> +             }
->> +     }
->> +
->> +     if (IS_ENABLED(CONFIG_ARM)) {
->> +             /*
->> +              * We have to hook the abort handler so that we can intercept
->> +              * bus errors when doing config read/write that return UR,
->> +              * which is flagged up as a bus error
->> +              */
->> +             hook_fault_code(16+6, st_pcie_abort_handler, SIGBUS, 0,
->> +                             "imprecise external abort");
->> +     }
->> +
->> +     pp->root_bus_nr = -1;
->> +     pp->ops = &st_pcie_host_ops;
->> +
->> +     ret = dw_pcie_host_init(pp);
->> +     if (ret) {
->> +             dev_err(&pdev->dev, "failed to initialize host\n");
->> +             return ret;
->> +     }
->> +
->> +     platform_set_drvdata(pdev, pcie);
->> +
->> +     dev_info(&pdev->dev, "Initialized\n");
->> +     return 0;
->> +}
->> +
->> +MODULE_DEVICE_TABLE(of, st_pcie_of_match);
->> +
->> +static struct platform_driver st_pcie_driver = {
->> +     .driver = {
->> +             .name = "st-pcie",
->> +             .of_match_table = st_pcie_of_match,
->> +             .pm = &st_pcie_pm_ops,
->> +     },
->> +};
->> +
->> +/* ST PCIe driver does not allow module unload */
->> +static int __init pcie_init(void)
->> +{
->> +     return platform_driver_probe(&st_pcie_driver, st_pcie_probe);
->> +}
->> +device_initcall(pcie_init);
->> +
->> +MODULE_AUTHOR("Fabrice Gasnier <fabrice.gasnier@st.com>");
->> +MODULE_DESCRIPTION("PCI express Driver for ST SoCs");
->> +MODULE_LICENSE("GPLv2");
->
-> Please add one space between 'GPL' and 'v2'.
->
-> s/"GPLv2"/"GPL v2"
->
-> According to the license_is_gpl_compatible(), the MODULE_LICENSE() string
-> for GPL v2 is "GPL v2" not "GPLv2".
->
+> 
+> > +void inode_start_write(struct inode *inode)
+> > +{
+> > +	struct super_block *sb = inode->i_sb;
+> > +
+> > +retry:
+> > +	spin_lock(&inode->i_lock);
+> > +	if (inode->i_state & I_WRITE_FREEZED) {
+> > +		DEFINE_WAIT(wait);
+> > +
+> > +		prepare_to_wait(&sb->s_writers.wait_unfrozen, &wait,
+> > +				TASK_UNINTERRUPTIBLE);
+> > +		spin_unlock(&inode->i_lock);
+> > +		schedule();
+> > +		finish_wait(&sb->s_writers.wait_unfrozen, &wait);
+> > +		goto retry;
+> > +	}
+> > +	spin_unlock(&inode->i_lock);
+> 
+> Please use a while() loop, not goto.
+Okay.
 
-ok
+> 
+> 	spin_lock(&inode->i_lock);
+> 	while(inode->i_state & I_WRITE_FROZEN) {
+> 		DEFINE_WAIT(wait);
+> 
+> 		prepare_to_wait(&sb->s_writers.wait_unfrozen, &wait,
+> 				TASK_UNINTERRUPTIBLE);
+> 		spin_unlock(&inode->i_lock);
+> 		schedule();
+> 		finish_wait(&sb->s_writers.wait_unfrozen, &wait);
+> 		spin_lock(&inode->i_lock);
+> 	}
+> 	spin_unlock(&inode->i_lock);
+> 
+> > +
+> > +int file_write_freeze(struct inode *inode)
+> > +{
+> > +	struct super_block *sb = inode->i_sb;
+> > +	int ret = 0;
+> > +
+> > +	if (!S_ISREG(inode->i_mode))
+> > +		return -EINVAL;
+> > +
+> > +	spin_lock(&inode->i_lock);
+> > +
+> > +	if (inode->i_state & I_WRITE_FREEZED)
+> > +		ret = -EBUSY;
+> > +	spin_unlock(&inode->i_lock);
+> > +	if (ret)
+> > +		return ret;
+> > +
+> > +	ret = freeze_super(sb);
+> > +	if (ret)
+> > +		return ret;
+> > +
+> > +	spin_lock(&inode->i_lock);
+> > +	inode->i_state |= I_WRITE_FREEZED;
+> > +	smp_wmb();
+> > +	spin_unlock(&inode->i_lock);
+> > +
+> > +	return thaw_super(sb);
+> > +}
+> > +EXPORT_SYMBOL(file_write_freeze);
+> > +
+> > +int file_write_unfreeze(struct inode *inode)
+> > +{
+> > +	struct super_block *sb = inode->i_sb;
+> > +
+> > +	if (!S_ISREG(inode->i_mode))
+> > +		return -EINVAL;
+> > +
+> > +	spin_lock(&inode->i_lock);
+> > +
+> > +	if (!(inode->i_state & I_WRITE_FREEZED)) {
+> > +		spin_unlock(&inode->i_lock);
+> > +		return -EINVAL;
+> > +	}
+> > +
+> > +	inode->i_state &= ~I_WRITE_FREEZED;
+> > +	smp_wmb();
+> > +	wake_up(&sb->s_writers.wait_unfrozen);
+> > +	spin_unlock(&inode->i_lock);
+> > +	return 0;
+> > +}
+> > +EXPORT_SYMBOL(file_write_unfreeze);
+> 
+> These look terrible racy. Freeze can race with other filesystem
+> freeze and thaw operations, so if thaw_super() fails you could have
+> frozen the inode but you still get -EINVAL for the ioctl. Or you
+> could have multiple applications doing file freeze/thaw, and so an
+> unfreeze occurs while a freeze if waiting on a thaw, and so the app
+> waiting on a freeze might return with an unfrozen inode, even though
+> there were no errors....
+True.
 
+> 
+> 
+> > @@ -2328,6 +2340,7 @@ static inline bool file_start_write_trylock(struct file *file)
+> >  {
+> >  	if (!S_ISREG(file_inode(file)->i_mode))
+> >  		return true;
+> > +	inode_start_write(file_inode(file));
+> >  	return __sb_start_write(file_inode(file)->i_sb, SB_FREEZE_WRITE, false);
+> >  }
+> 
+> This needs "trylock" semantics, not blocking semantics.
+Okay.
 
-> Best regards,
-> Jingoo Han
->
->> --
->> 1.9.1
->
+Thanks for your review!!
+> 
+> Cheers,
+> 
+> Dave.
+> --
+> Dave Chinner
+> david@fromorbit.com
 
-BR
-
-Gabriel
