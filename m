@@ -1,317 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752362AbbASKGd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 05:06:33 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:50990 "EHLO mx2.suse.de"
+	id S1752135AbbASKFp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 05:05:45 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:50994 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751667AbbASKFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751928AbbASKFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 19 Jan 2015 05:05:42 -0500
 From: Vlastimil Babka <vbabka@suse.cz>
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Vlastimil Babka <vbabka@suse.cz>, David Rientjes <rientjes@google.com>,
-        Christoph Lameter <cl@linux.com>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Mel Gorman <mgorman@suse.de>, Michal Nazarewicz <mina86@mina86.com>,
-        Minchan Kim <minchan@kernel.org>,
+        Vlastimil Babka <vbabka@suse.cz>, Minchan Kim <minchan@kernel.org>,
+        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
         Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Rik van Riel <riel@redhat.com>
-Subject: [RFC PATCH 0/5] compaction: changing initial position of scanners
-Date: Mon, 19 Jan 2015 11:05:15 +0100
-Message-Id: <1421661920-4114-1-git-send-email-vbabka@suse.cz>
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        David Rientjes <rientjes@google.com>
+Subject: [PATCH 1/5] mm, compaction: more robust check for scanners meeting
+Date: Mon, 19 Jan 2015 11:05:16 +0100
+Message-Id: <1421661920-4114-2-git-send-email-vbabka@suse.cz>
 X-Mailer: git-send-email 2.1.2
+In-Reply-To: <1421661920-4114-1-git-send-email-vbabka@suse.cz>
+References: <1421661920-4114-1-git-send-email-vbabka@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Even after all the patches compaction received in last several versions, it
-turns out that its effectivneess degrades considerably as the system ages
-after reboot. For example, see how success rates of stress-highalloc from
-mmtests degrades when we re-execute it several times, first time being after
-fresh reboot:
-                             3.19-rc4              3.19-rc4              3.19-rc4
-                            4-nothp-1             4-nothp-2             4-nothp-3
-Success 1 Min         25.00 (  0.00%)       13.00 ( 48.00%)        9.00 ( 64.00%)
-Success 1 Mean        36.20 (  0.00%)       23.40 ( 35.36%)       16.40 ( 54.70%)
-Success 1 Max         41.00 (  0.00%)       34.00 ( 17.07%)       25.00 ( 39.02%)
-Success 2 Min         25.00 (  0.00%)       15.00 ( 40.00%)       10.00 ( 60.00%)
-Success 2 Mean        37.20 (  0.00%)       25.00 ( 32.80%)       17.20 ( 53.76%)
-Success 2 Max         44.00 (  0.00%)       36.00 ( 18.18%)       25.00 ( 43.18%)
-Success 3 Min         84.00 (  0.00%)       81.00 (  3.57%)       78.00 (  7.14%)
-Success 3 Mean        85.80 (  0.00%)       82.80 (  3.50%)       80.40 (  6.29%)
-Success 3 Max         87.00 (  0.00%)       84.00 (  3.45%)       82.00 (  5.75%)
+Compaction should finish when the migration and free scanner meet, i.e. they
+reach the same pageblock. Currently however, the test in compact_finished()
+simply just compares the exact pfns, which may yield a false negative when the
+free scanner position is in the middle of a pageblock and the migration
+scanner reaches the begining of the same pageblock.
 
-Wouldn't it be much better, if it looked like this?
+This hasn't been a problem until commit e14c720efdd7 ("mm, compaction:
+remember position within pageblock in free pages scanner") allowed the free
+scanner position to be in the middle of a pageblock between invocations.
+The hot-fix 1d5bfe1ffb5b ("mm, compaction: prevent infinite loop in
+compact_zone") prevented the issue by adding a special check in the migration
+scanner to satisfy the current detection of scanners meeting.
 
-                           3.18                  3.18                  3.18
-                             3.19-rc4              3.19-rc4              3.19-rc4
-                            5-nothp-1             5-nothp-2             5-nothp-3
-Success 1 Min         49.00 (  0.00%)       42.00 ( 14.29%)       41.00 ( 16.33%)
-Success 1 Mean        51.00 (  0.00%)       45.00 ( 11.76%)       42.60 ( 16.47%)
-Success 1 Max         55.00 (  0.00%)       51.00 (  7.27%)       46.00 ( 16.36%)
-Success 2 Min         53.00 (  0.00%)       47.00 ( 11.32%)       44.00 ( 16.98%)
-Success 2 Mean        59.60 (  0.00%)       50.80 ( 14.77%)       48.20 ( 19.13%)
-Success 2 Max         64.00 (  0.00%)       56.00 ( 12.50%)       52.00 ( 18.75%)
-Success 3 Min         84.00 (  0.00%)       82.00 (  2.38%)       78.00 (  7.14%)
-Success 3 Mean        85.60 (  0.00%)       82.80 (  3.27%)       79.40 (  7.24%)
-Success 3 Max         86.00 (  0.00%)       83.00 (  3.49%)       80.00 (  6.98%)
+However, the proper fix is to make the detection more robust. This patch
+introduces the compact_scanners_met() function that returns true when the free
+scanner position is in the same or lower pageblock than the migration scanner.
+The special case in isolate_migratepages() introduced by 1d5bfe1ffb5b is
+removed.
 
-In my humble opinion, it would :) Much lower degradation, and a nice
-improvement in the first iteration as a bonus.
+Suggested-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Mel Gorman <mgorman@suse.de>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: Michal Nazarewicz <mina86@mina86.com>
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Christoph Lameter <cl@linux.com>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: David Rientjes <rientjes@google.com>
+---
+ mm/compaction.c | 22 ++++++++++++++--------
+ 1 file changed, 14 insertions(+), 8 deletions(-)
 
-So what sorcery is this? Nothing much, just a fundamental change of the
-compaction scanners operation...
-
-As everyone knows [1] the migration scanner starts at the first pageblock
-of a zone, and goes towards the end, and the free scanner starts at the
-last pageblock and goes towards the beginning. Somewhere in the middle of the
-zone, the scanners meet:
-
-   zone_start                                                   zone_end
-       |                                                           |
-       -------------------------------------------------------------
-       MMMMMMMMMMMMM| =>                            <= |FFFFFFFFFFFF
-               migrate_pfn                         free_pfn
-
-In my tests, the scanners meet around the middle of the pageblock on the first
-iteration, and around the 1/3 on subsequent iterations. Which means the
-migration scanner doesn't see the larger part of the zone at all. For more
-details why it's bad, see Patch 4 description.
-
-To make sure we eventually scan the whole zone with the migration scanner, we
-could e.g. reverse the directions after each run. But that would still be
-biased, and with 1/3 of zone reachable from each side, we would still omit the
-middle 1/3 of a zone.
-
-Or we could stop terminating compaction when the scanners meet, and let them
-continue to scan the whole zone. Mel told me it used to be the case long ago,
-but that approach would result in migrating pages back and forth during single
-compaction run, which wouldn't be cool.
-
-So the approach taken by this patchset is to let scanners start at any
-so-called pivot pfn within the zone, and keep their direction:
-
-   zone_start                     pivot                         zone_end
-       |                            |                              |
-       -------------------------------------------------------------
-                         <= |FFFFFFFMMMMMM| =>
-                        free_pfn     migrate_pfn
-
-Eventually, one of the scanners will reach the zone boundary and wrap around,
-e.g. the in the case of the free scanner:
-
-   zone_start                     pivot                         zone_end
-       |                            |                              |
-       -------------------------------------------------------------
-       FFFFFFFFFFFFFFFFFFFFFFFFFFFFFMMMMMMMMMMMM| =>           <= |F
-                                           migrate_pfn        free_pfn
-
-Compaction will again terminate when the scanners meet.
-
-
-As you can imagine, the required code changes made the termination detection
-and the scanners themselves quite hairy. There are lots of corner cases and
-the code is often hard to wrap one's head around [puns intended]. The scanner
-functions isolate_migratepages() and isolate_freepages() were recently cleaned
-up a lot, and this makes them messy again, as they can no longer rely on the
-fact that they will meet the other scanner and not the zone boundary.
-
-But the improvements seem to make these complications worth, and I hope
-somebody can suggest more elegant solutions to the various parts of the code.
-So here it is as a RFC. Patches 1-3 are cleanups that could be applied in any
-case. Patch 4 implements the main changes, but leaves the pivot to be the
-first zone's pfn, so that free scanner wraps immediately and there's no
-actual change. Patch 5 updates the pivot in a conservative way, as explained
-in the changelog.
-
-Even with the conservative approach, stress-highalloc results are improved,
-mainly on the 2+ iterations after fresh reboot. Here are again the results
-before the patches, including compaction stats:
-
-                             3.19-rc4              3.19-rc4              3.19-rc4
-                            4-nothp-1             4-nothp-2             4-nothp-3
-Success 1 Min         25.00 (  0.00%)       13.00 ( 48.00%)        9.00 ( 64.00%)
-Success 1 Mean        36.20 (  0.00%)       23.40 ( 35.36%)       16.40 ( 54.70%)
-Success 1 Max         41.00 (  0.00%)       34.00 ( 17.07%)       25.00 ( 39.02%)
-Success 2 Min         25.00 (  0.00%)       15.00 ( 40.00%)       10.00 ( 60.00%)
-Success 2 Mean        37.20 (  0.00%)       25.00 ( 32.80%)       17.20 ( 53.76%)
-Success 2 Max         44.00 (  0.00%)       36.00 ( 18.18%)       25.00 ( 43.18%)
-Success 3 Min         84.00 (  0.00%)       81.00 (  3.57%)       78.00 (  7.14%)
-Success 3 Mean        85.80 (  0.00%)       82.80 (  3.50%)       80.40 (  6.29%)
-Success 3 Max         87.00 (  0.00%)       84.00 (  3.45%)       82.00 (  5.75%)
-
-            3.19-rc4    3.19-rc4    3.19-rc4
-           4-nothp-1   4-nothp-2   4-nothp-3
-User         6781.16     6931.44     6905.44
-System       1073.97     1071.20     1067.92                                                                                                                                                                   
-Elapsed      2349.71     2290.40     2255.59                                                                                                                                                                   
-                                                                                                                                                                                                               
-                              3.19-rc4    3.19-rc4    3.19-rc4                                                                                                                                                 
-                             4-nothp-1   4-nothp-2   4-nothp-3                                                                                                                                                 
-Minor Faults                 198270153   197020929   197146656                                                                                                                                                 
-Major Faults                       498         470         527                                                                                                                                                 
-Swap Ins                            60          34         105                                                                                                                                                 
-Swap Outs                         2780        1011         425                                                                                                                                                 
-Allocation stalls                 8325        4615        4769                                                                                                                                                 
-DMA allocs                         161         177         141                                                                                                                                                 
-DMA32 allocs                 124477754   123412713   123385291                                                                                                                                                 
-Normal allocs                 59366406    59040066    58909035                                                                                                                                                 
-Movable allocs                       0           0           0                                                                                                                                                 
-Direct pages scanned            413858      280997      267341                                                                                                                                                 
-Kswapd pages scanned           2204723     2184556     2147546                                                                                                                                                 
-Kswapd pages reclaimed         2199430     2181305     2144395                                                                                                                                                 
-Direct pages reclaimed          413062      280323      266557                                                                                                                                                 
-Kswapd efficiency                  99%         99%         99%                                                                                                                                                 
-Kswapd velocity                914.497     977.868     943.877                                                                                                                                                 
-Direct efficiency                  99%         99%         99%                                                                                                                                                 
-Direct velocity                171.664     125.782     117.500                                                                                                                                                 
-Percentage direct scans            15%         11%         11%
-Zone normal velocity           359.993     356.888     339.577
-Zone dma32 velocity            726.152     746.745     721.784
-Zone dma velocity                0.016       0.017       0.016
-Page writes by reclaim        2893.000    1119.800     507.600
-Page writes file                   112         108          81
-Page writes anon                  2780        1011         425
-Page reclaim immediate            1134        1197        1412
-Sector Reads                   4747006     4606605     4524025
-Sector Writes                 12759301    12562316    12629243
-Page rescued immediate               0           0           0
-Slabs scanned                  1807821     1528751     1498929
-Direct inode steals              24428       12649       13346
-Kswapd inode steals              33213       29804       30194
-Kswapd skipped wait                  0           0           0
-THP fault alloc                    217         207         222
-THP collapse alloc                 500         539         373
-THP splits                          13          14          13
-THP fault fallback                  50           9          16
-THP collapse fail                   16          17          22
-Compaction stalls                 3136        2310        2072
-Compaction success                1123         897         828
-Compaction failures               2012        1413        1244
-Page migrate success           4319697     3682666     3133699
-Page migrate failure             19012        9964        7488
-Compaction pages isolated      8974417     7634911     6528981
-Compaction migrate scanned   182447073   122423031   127292737
-Compaction free scanned      389193883   291257587   269516820
-Compaction cost                   5931        4824        4267
-
-As the allocation success rates degrade, so do the compaction success rates,
-and so does the scanner activity.
-
-Now after the series:
-
-                             3.19-rc4              3.19-rc4              3.19-rc4
-                            5-nothp-1             5-nothp-2             5-nothp-3
-Success 1 Min         49.00 (  0.00%)       42.00 ( 14.29%)       41.00 ( 16.33%)
-Success 1 Mean        51.00 (  0.00%)       45.00 ( 11.76%)       42.60 ( 16.47%)
-Success 1 Max         55.00 (  0.00%)       51.00 (  7.27%)       46.00 ( 16.36%)
-Success 2 Min         53.00 (  0.00%)       47.00 ( 11.32%)       44.00 ( 16.98%)
-Success 2 Mean        59.60 (  0.00%)       50.80 ( 14.77%)       48.20 ( 19.13%)
-Success 2 Max         64.00 (  0.00%)       56.00 ( 12.50%)       52.00 ( 18.75%)
-Success 3 Min         84.00 (  0.00%)       82.00 (  2.38%)       78.00 (  7.14%)
-Success 3 Mean        85.60 (  0.00%)       82.80 (  3.27%)       79.40 (  7.24%)
-Success 3 Max         86.00 (  0.00%)       83.00 (  3.49%)       80.00 (  6.98%)
-
-            3.19-rc4    3.19-rc4    3.19-rc4
-           5-nothp-1   5-nothp-2   5-nothp-3
-User         6675.75     6742.26     6707.92
-System       1069.78     1070.77     1070.25
-Elapsed      2450.31     2363.98     2442.21
-
-                              3.19-rc4    3.19-rc4    3.19-rc4
-                             5-nothp-1   5-nothp-2   5-nothp-3
-Minor Faults                 197652452   197164571   197946824
-Major Faults                       882         743         934
-Swap Ins                           113          96         144
-Swap Outs                         2144        1340        1799
-Allocation stalls                10304        9060       10261
-DMA allocs                         142         227         181
-DMA32 allocs                 124497911   123947671   124010151                                                                                                                                                 
-Normal allocs                 59233600    59160910    59669421                                                                                                                                                 
-Movable allocs                       0           0           0                                                                                                                                                 
-Direct pages scanned            591368      481119      525158                                                                                                                                                 
-Kswapd pages scanned           2217381     2164036     2170388                                                                                                                                                 
-Kswapd pages reclaimed         2212285     2160162     2166794                                                                                                                                                 
-Direct pages reclaimed          590064      480297      524013                                                                                                                                                 
-Kswapd efficiency                  99%         99%         99%                                                                                                                                                 
-Kswapd velocity                921.119     937.864     936.558                                                                                                                                                 
-Direct efficiency                  99%         99%         99%                                                                                                                                                 
-Direct velocity                245.659     208.511     226.615                                                                                                                                                 
-Percentage direct scans            21%         18%         19%                                                                                                                                                 
-Zone normal velocity           378.957     376.819     383.604                                                                                                                                                 
-Zone dma32 velocity            787.805     769.530     779.552                                                                                                                                                 
-Zone dma velocity                0.015       0.025       0.016                                                                                                                                                 
-Page writes by reclaim        2284.600    1432.400    1972.400                                                                                                                                                 
-Page writes file                   140          92         173                                                                                                                                                 
-Page writes anon                  2144        1340        1799                                                                                                                                                 
-Page reclaim immediate            1689        1315        1440                                                                                                                                                 
-Sector Reads                   4920699     4830343     4830263                                                                                                                                                 
-Sector Writes                 12643658    12588410    12713518                                                                                                                                                 
-Page rescued immediate               0           0           0                                                                                                                                                 
-Slabs scanned                  2084358     1922421     1962867
-Direct inode steals              35881       37170       45512
-Kswapd inode steals              35973       35741       30339
-Kswapd skipped wait                  0           0           0
-THP fault alloc                    191         224         170
-THP collapse alloc                 554         533         516
-THP splits                          15          15          11
-THP fault fallback                  45           0          76
-THP collapse fail                   16          18          18
-Compaction stalls                 4069        3746        3951
-Compaction success                1507        1388        1366
-Compaction failures               2562        2357        2585
-Page migrate success           4533617     4912832     5278583
-Page migrate failure             20127       15273       17862
-Compaction pages isolated      9495626    10235697    10993942
-Compaction migrate scanned    93585708    99204656    92052138
-Compaction free scanned      510786018   503529022   541298357
-Compaction cost                   5541        5988        6332
-
-Less degradation in success rates and no degradation in activity.
-Let's look again at compactions stats without the series:
-
-Compaction stalls                 3136        2310        2072
-Compaction success                1123         897         828
-Compaction failures               2012        1413        1244
-Page migrate success           4319697     3682666     3133699
-Page migrate failure             19012        9964        7488
-Compaction pages isolated      8974417     7634911     6528981
-Compaction migrate scanned   182447073   122423031   127292737
-Compaction free scanned      389193883   291257587   269516820
-Compaction cost                   5931        4824        4267
-
-Interestingly, the number of migrate scanned pages was higher before the
-series, even twice in the first iteration. That suggests that the scanner
-was indeed scanning in a limited number of pageblocks over and over, despite
-their compaction potential "depleted". After the patches, it achieves better
-results with less scanned blocks, as it has a better chance of encountering
-non-depleted blocks. The free scanner activity has increased after the series,
-which just means that higher success rates lead to less deferred compaction.
-There is also some increase in page migrations, but it is likely also a
-consequence of better success and not due to useless back and forth migrations
-due to pivot changes.
-
-Preliminary testing with THP-like allocations has shown similar improvements,
-which is somewhat surprising, because THP allocations do not use sync
-and thus do not defer compaction; but changing the pivot is currently tied
-to restarting from deferred compaction. Possibly this is due to the other
-allocation activity than the stress-highalloc test itself. I will post these
-results when full measurements are done.
-
-[1] http://lwn.net/Articles/368869/
-
-Vlastimil Babka (5):
-  mm, compaction: more robust check for scanners meeting
-  mm, compaction: simplify handling restart position in free pages
-    scanner
-  mm, compaction: encapsulate resetting cached scanner positions
-  mm, compaction: allow scanners to start at any pfn within the zone
-  mm, compaction: set pivot pfn to the pfn when scanners met last time
-
- include/linux/mmzone.h |   4 +
- mm/compaction.c        | 276 ++++++++++++++++++++++++++++++++++++++++---------
- mm/internal.h          |   1 +
- 3 files changed, 234 insertions(+), 47 deletions(-)
-
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 546e571..5fdbdb8 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -803,6 +803,16 @@ isolate_migratepages_range(struct compact_control *cc, unsigned long start_pfn,
+ #endif /* CONFIG_COMPACTION || CONFIG_CMA */
+ #ifdef CONFIG_COMPACTION
+ /*
++ * Test whether the free scanner has reached the same or lower pageblock than
++ * the migration scanner, and compaction should thus terminate.
++ */
++static inline bool compact_scanners_met(struct compact_control *cc)
++{
++	return (cc->free_pfn >> pageblock_order)
++		<= (cc->migrate_pfn >> pageblock_order);
++}
++
++/*
+  * Based on information in the current compact_control, find blocks
+  * suitable for isolating free pages from and then isolate them.
+  */
+@@ -1027,12 +1037,8 @@ static isolate_migrate_t isolate_migratepages(struct zone *zone,
+ 	}
+ 
+ 	acct_isolated(zone, cc);
+-	/*
+-	 * Record where migration scanner will be restarted. If we end up in
+-	 * the same pageblock as the free scanner, make the scanners fully
+-	 * meet so that compact_finished() terminates compaction.
+-	 */
+-	cc->migrate_pfn = (end_pfn <= cc->free_pfn) ? low_pfn : cc->free_pfn;
++	/* Record where migration scanner will be restarted. */
++	cc->migrate_pfn = low_pfn;
+ 
+ 	return cc->nr_migratepages ? ISOLATE_SUCCESS : ISOLATE_NONE;
+ }
+@@ -1047,7 +1053,7 @@ static int compact_finished(struct zone *zone, struct compact_control *cc,
+ 		return COMPACT_PARTIAL;
+ 
+ 	/* Compaction run completes if the migrate and free scanner meet */
+-	if (cc->free_pfn <= cc->migrate_pfn) {
++	if (compact_scanners_met(cc)) {
+ 		/* Let the next compaction start anew. */
+ 		zone->compact_cached_migrate_pfn[0] = zone->zone_start_pfn;
+ 		zone->compact_cached_migrate_pfn[1] = zone->zone_start_pfn;
+@@ -1238,7 +1244,7 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+ 			 * migrate_pages() may return -ENOMEM when scanners meet
+ 			 * and we want compact_finished() to detect it
+ 			 */
+-			if (err == -ENOMEM && cc->free_pfn > cc->migrate_pfn) {
++			if (err == -ENOMEM && !compact_scanners_met(cc)) {
+ 				ret = COMPACT_PARTIAL;
+ 				goto out;
+ 			}
 -- 
 2.1.2
 
