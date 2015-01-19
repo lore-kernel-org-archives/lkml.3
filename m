@@ -1,92 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752044AbbASMmv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 07:42:51 -0500
-Received: from denmail01-v4020.amcc.com ([192.195.68.30]:35726 "EHLO
-	denmail01.apm.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751939AbbASMmu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 07:42:50 -0500
-From: Rameshwar Prasad Sahu <rsahu@apm.com>
-To: vinod.koul@intel.com, dan.j.williams@intel.com
-Cc: dmaengine@vger.kernel.org, arnd@arndb.de, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        ddutile@redhat.com, jcm@redhat.com, patches@apm.com,
-        Rameshwar Prasad Sahu <rsahu@apm.com>, Loc Ho <lho@apm.com>
-Subject: [PATCH v3 3/3] Documentation: dma: Add APM X-Gene SoC DMA engine driver documentation
-Date: Mon, 19 Jan 2015 18:11:09 +0530
-Message-Id: <1421671269-19441-4-git-send-email-rsahu@apm.com>
-X-Mailer: git-send-email 1.8.2.1
-In-Reply-To: <1421671269-19441-1-git-send-email-rsahu@apm.com>
-References: <1421671269-19441-1-git-send-email-rsahu@apm.com>
+	id S1751720AbbASMmO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 07:42:14 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:53706 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751090AbbASMmM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 07:42:12 -0500
+Date: Mon, 19 Jan 2015 13:42:10 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: akpm@linux-foundation.org, Joonsoo Kim <iamjoonsoo.kim@lge.com>
+Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+        linux-next@vger.kernel.org, sfr@canb.auug.org.au
+Subject: compaction tracepoint broken with CONFIG_COMPACTION enabled (was:
+ mmotm 2015-01-16-15-50 uploaded)
+Message-ID: <20150119124210.GC21052@dhcp22.suse.cz>
+References: <54b9a3ce.lQ94nh84G4XJawsQ%akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <54b9a3ce.lQ94nh84G4XJawsQ%akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds device tree binding for APM X-Gene SoC DMA engine driver.
+Hi,
+compaction trace points seem to be broken without CONFIG_COMPACTION
+enabled after
+mm-compaction-more-trace-to-understand-when-why-compaction-start-finish.patch.
 
-Signed-off-by: Rameshwar Prasad Sahu <rsahu@apm.com>
-Signed-off-by: Loc Ho <lho@apm.com>
----
- .../devicetree/bindings/dma/apm-xgene-dma.txt      | 49 ++++++++++++++++++++++
- 1 file changed, 49 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/dma/apm-xgene-dma.txt
+My config is
+# CONFIG_COMPACTION is not set
+CONFIG_CMA=y
 
-diff --git a/Documentation/devicetree/bindings/dma/apm-xgene-dma.txt b/Documentation/devicetree/bindings/dma/apm-xgene-dma.txt
-new file mode 100644
-index 0000000..c661cc6
---- /dev/null
-+++ b/Documentation/devicetree/bindings/dma/apm-xgene-dma.txt
-@@ -0,0 +1,49 @@
-+Applied Micro X-Gene SoC DMA nodes
-+
-+DMA nodes are defined to describe on-chip DMA interfaces in
-+APM X-Gene SoC.
-+
-+Required properties for DMA interfaces:
-+- compatible: Should be "apm,xgene-dma".
-+- device_type: set to "dma".
-+- reg: Address and length of the register set for the device.
-+  It contains the information of registers in the same order
-+  as described by reg-names.
-+- reg-names: Should contain the register set names.
-+  - "dma_csr": DMA control and status register address space.
-+  - "ring_csr": Descriptor ring control and status register
-+                address space.
-+  - "ring_cmd": Descriptor ring command register address space.
-+- interrupts: DMA has 5 interrupts sources. 1st interrupt is
-+  DMA error reporting interrupt. 2nd, 3rd, 4th and 5th interrupts
-+  are completion interrupts for each DMA channels.
-+- clocks: Reference to the clock entry.
-+
-+Optional properties:
-+- dma-coherent : Present if dma operations are coherent
-+
-+Example:
-+	dmaclk: dmaclk@1f27c000 {
-+		compatible = "apm,xgene-device-clock";
-+		#clock-cells = <1>;
-+		clocks = <&socplldiv2 0>;
-+		reg = <0x0 0x1f27c000 0x0 0x1000>;
-+		reg-names = "csr-reg";
-+		clock-output-names = "dmaclk";
-+	};
-+
-+	dma: dma@1f270000 {
-+		compatible = "apm,xgene-dma";
-+		device_type = "dma";
-+		reg = <0x0 0x1f270000 0x0 0x10000>,
-+		      <0x0 0x1f200000 0x0 0x10000>,
-+		      <0x0 0x1b008000 0x0 0x2000>;
-+		reg-names = "dma_csr", "ring_csr", "ring_cmd";
-+		interrupts = <0x0 0xb8 0x4>,
-+			     <0x0 0xb9 0x4>,
-+			     <0x0 0xba 0x4>,
-+			     <0x0 0xbb 0x4>,
-+			     <0x0 0x82 0x4>;
-+		dma-coherent;
-+		clocks = <&dmaclk 0>;
-+	};
---
-1.8.2.1
+which might be a bit unusual but I am getting
+  CC      mm/compaction.o
+In file included from include/trace/define_trace.h:90:0,
+                 from include/trace/events/compaction.h:298,
+                 from mm/compaction.c:49:
+include/trace/events/compaction.h: In function ‘ftrace_raw_output_mm_compaction_end’:
+include/trace/events/compaction.h:164:3: error: ‘compaction_status_string’ undeclared (first use in this function)
+   compaction_status_string[__entry->status])
+   ^
+[...]
+include/trace/events/compaction.h: In function ‘ftrace_raw_output_mm_compaction_suitable_template’:
+include/trace/events/compaction.h:220:3: error: ‘compaction_status_string’ undeclared (first use in this function)
+   compaction_status_string[__entry->ret])
+[...]
+scripts/Makefile.build:257: recipe for target 'mm/compaction.o' failed
+make[1]: *** [mm/compaction.o] Error 1
+Makefile:1528: recipe for target 'mm/compaction.o' failed
+make: *** [mm/compaction.o] Error 2
 
+Moving compaction_status_string outside of CONFIG_COMPACTION doesn't
+help much because of other failures:
+include/trace/events/compaction.h:261:30: error: ‘struct zone’ has no member named ‘compact_defer_shift’
+   __entry->defer_shift = zone->compact_defer_shift;
+
+So I guess the tracepoint need a better fix.
+-- 
+Michal Hocko
+SUSE Labs
