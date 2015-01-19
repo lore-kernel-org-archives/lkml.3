@@ -1,108 +1,304 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751484AbbASHfv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 02:35:51 -0500
-Received: from ozlabs.org ([103.22.144.67]:52314 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751066AbbASHft (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 02:35:49 -0500
-Date: Mon, 19 Jan 2015 18:35:43 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
-Subject: Re: linux-next: build failure after merge of the akpm-current tree
-Message-ID: <20150119183543.54830c54@canb.auug.org.au>
-In-Reply-To: <20150119182853.35f278b5@canb.auug.org.au>
-References: <20150119182853.35f278b5@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1751474AbbASHhs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 02:37:48 -0500
+Received: from mail-oi0-f52.google.com ([209.85.218.52]:58557 "EHLO
+	mail-oi0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751066AbbASHhr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 02:37:47 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/2=BAbkKR2DuO41PtdW_8SqC"; protocol="application/pgp-signature"
+In-Reply-To: <20150119065544.GA18473@blaptop>
+References: <1421569979-2596-1-git-send-email-teawater@gmail.com> <20150119065544.GA18473@blaptop>
+From: Hui Zhu <teawater@gmail.com>
+Date: Mon, 19 Jan 2015 15:37:06 +0800
+Message-ID: <CANFwon0w0=bGbcd1Di7qk8N6wBVdomzQ-z2sxXkg0hUuSpo16g@mail.gmail.com>
+Subject: Re: [PATCH] CMA: treat free cma pages as non-free if not ALLOC_CMA on
+ watermark checking
+To: Minchan Kim <minchan@kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, mgorman@suse.de,
+        hannes@cmpxchg.org, Rik van Riel <riel@redhat.com>, vbabka@suse.cz,
+        iamjoonsoo.kim@lge.com, isimatu.yasuaki@jp.fujitsu.com,
+        wangnan0@huawei.com, davidlohr@hp.com, cl@linux.com,
+        rientjes@google.com, sasha.levin@oracle.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        Hui Zhu <zhuhui@xiaomi.com>, Weixing Liu <liuweixing@xiaomi.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/2=BAbkKR2DuO41PtdW_8SqC
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
-
-Hi Andrew,
-
-On Mon, 19 Jan 2015 18:28:53 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
+On Mon, Jan 19, 2015 at 2:55 PM, Minchan Kim <minchan@kernel.org> wrote:
+> Hello,
 >
-> After merging the akpm-current tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
->=20
-> mm/filemap_xip.c:304:2: error: unknown field 'remap_pages' specified in i=
-nitializer
->   .remap_pages =3D generic_file_remap_pages,
->   ^
-> mm/filemap_xip.c:304:17: error: 'generic_file_remap_pages' undeclared her=
-e (not in a function)
->   .remap_pages =3D generic_file_remap_pages,
->                  ^
->=20
-> Caused by commit 76f0255272b6 ("mm: drop vm_ops->remap_pages and
-> generic_file_remap_pages() stub").  Looks like one was missed - grep is
-> your friend.
->=20
-> I have added this patch for today:
->=20
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Mon, 19 Jan 2015 18:16:15 +1100
-> Subject: [PATCH] mm: drop vm_ops->remap_pages and generic_file_remap_page=
-s() stub fix
->=20
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  mm/filemap_xip.c | 1 -
->  1 file changed, 1 deletion(-)
->=20
-> diff --git a/mm/filemap_xip.c b/mm/filemap_xip.c
-> index 0d105aeff82f..70c09da1a419 100644
-> --- a/mm/filemap_xip.c
-> +++ b/mm/filemap_xip.c
-> @@ -301,7 +301,6 @@ out:
->  static const struct vm_operations_struct xip_file_vm_ops =3D {
->  	.fault	=3D xip_file_fault,
->  	.page_mkwrite	=3D filemap_page_mkwrite,
-> -	.remap_pages =3D generic_file_remap_pages,
->  };
-> =20
->  int xip_file_mmap(struct file * file, struct vm_area_struct * vma)
-> --=20
-> 2.1.4
+> On Sun, Jan 18, 2015 at 04:32:59PM +0800, Hui Zhu wrote:
+>> From: Hui Zhu <zhuhui@xiaomi.com>
+>>
+>> The original of this patch [1] is part of Joonsoo's CMA patch series.
+>> I made a patch [2] to fix the issue of this patch.  Joonsoo reminded me
+>> that this issue affect current kernel too.  So made a new one for upstream.
+>
+> Recently, we found many problems of CMA and Joonsoo tried to add more
+> hooks into MM like agressive allocation but I suggested adding new zone
+> would be more desirable than more hooks in mm fast path in various aspect.
+> (ie, remove lots of hooks in hot path of MM, don't need reclaim hooks
+>  for special CMA pages, don't need custom fair allocation for CMA).
+>
+> Joonsoo is investigating the direction so please wait.
+> If it turns out we have lots of hurdle to go that way,
+> this direction(ie, putting more hooks) should be second plan.
 
-I then had to fix up the later patch "dax,ext2: replace the XIP page
-fault handler with the DAX page fault handler" because the above line
-was already removed.
+OK.  Thanks.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Best,
+Hui
 
---Sig_/2=BAbkKR2DuO41PtdW_8SqC
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUvLPTAAoJEMDTa8Ir7ZwV2GAP+QHTGwhu4L9U4uOpEo1AUNs4
-OO8nxfOFHZ6GWjMAENPRhdYkD1Fx4/yuQzjtuyFiEnNOJKCOetRDYGZIjIjdXZdR
-SmzYPXJcqImHRa97AiBBYpioZwGojDkpe5cOaHzi0HNLIjfuvBwc6L3DZjpopktk
-fD4rEiz5R+0HXI7sqWKDXvADFU8usZEmKhdSVMKw7nb/DDltN+eckEUkHkFdVY1K
-flocVyyZG5BaBaJDxzJwoyaPNY/rw/zYxBx3NXIf8rHb+PbjdY0fLafUuyfZBFs1
-VZaFUIRxMsMVikOlQYQUwdcmjdFzt3QqXbNzlH5DitkEXlljcenWKzCVVv/DiD9o
-fEQtRxp1yMy6RwUX/FJEaYVor6nliT9MEwHNogc5pz1cZklg7kXpdw1WjEY9jahW
-w0Wz4zA/yD0EYsp1xG+dwq+38KRUo8ptZf2tTYdroZcKmilRcx1bTby6E7taC6il
-lcb+nNCXNOtsa2/c7oUnvHgB+B4f4TbXptLlvb/uLzc3z3J2g34XLko2taPE5feF
-nrFojQblaB1aqNRqcU3TwYn9CQXh/9JqL1OOgXafXEBtwW30AoBYUphUIvfFXIfm
-FvoXKbEB0uBJNf9ZMAqNGe1OEQLN2dI7aWNc88L7aaoB8et6yDh72B4OqTZKWUlM
-2AEb1w7rWXh8IbdXUvpL
-=k2zC
------END PGP SIGNATURE-----
-
---Sig_/2=BAbkKR2DuO41PtdW_8SqC--
+>
+> Thanks.
+>
+>>
+>> Current code treat free cma pages as non-free if not ALLOC_CMA in the first
+>> check:
+>> if (free_pages - free_cma <= min + z->lowmem_reserve[classzone_idx])
+>>       return false;
+>> But in the loop after that, it treat free cma pages as free memory even
+>> if not ALLOC_CMA.
+>> So this one substruct free_cma from free_pages before the loop if not
+>> ALLOC_CMA to treat free cma pages as non-free in the loop.
+>>
+>> But there still have a issue is that CMA memory in each order is part
+>> of z->free_area[o].nr_free, then the CMA page number of this order is
+>> substructed twice.  This bug will make __zone_watermark_ok return more false.
+>> This patch add cma_nr_free to struct free_area that just record the number
+>> of CMA pages.  And add it back in the order loop to handle the substruct
+>> twice issue.
+>>
+>> The last issue of this patch should handle is pointed by Joonsoo in [3].
+>> If pageblock for CMA is isolated, cma_nr_free would be miscalculated.
+>> This patch add two functions nr_free_inc and nr_free_dec to change the
+>> values of nr_free and cma_nr_free.  If the migratetype is MIGRATE_ISOLATE,
+>> they will not change the value of nr_free.
+>> Change __mod_zone_freepage_state to doesn't record isolated page to
+>> NR_FREE_PAGES.
+>> And add code to move_freepages to record the page number that isolated:
+>>               if (is_migrate_isolate(migratetype))
+>>                       nr_free_dec(&zone->free_area[order],
+>>                                   get_freepage_migratetype(page));
+>>               else
+>>                       nr_free_inc(&zone->free_area[order], migratetype);
+>> Then the isolate issue is handled.
+>>
+>> This patchset is based on fc7f0dd381720ea5ee5818645f7d0e9dece41cb0.
+>>
+>> [1] https://lkml.org/lkml/2014/5/28/110
+>> [2] https://lkml.org/lkml/2014/12/25/43
+>> [3] https://lkml.org/lkml/2015/1/4/220
+>>
+>> Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+>> Signed-off-by: Hui Zhu <zhuhui@xiaomi.com>
+>> Signed-off-by: Weixing Liu <liuweixing@xiaomi.com>
+>> ---
+>>  include/linux/mmzone.h |  3 +++
+>>  include/linux/vmstat.h |  4 +++-
+>>  mm/page_alloc.c        | 59 +++++++++++++++++++++++++++++++++++++++++---------
+>>  3 files changed, 55 insertions(+), 11 deletions(-)
+>>
+>> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+>> index 2f0856d..094476b 100644
+>> --- a/include/linux/mmzone.h
+>> +++ b/include/linux/mmzone.h
+>> @@ -92,6 +92,9 @@ static inline int get_pfnblock_migratetype(struct page *page, unsigned long pfn)
+>>  struct free_area {
+>>       struct list_head        free_list[MIGRATE_TYPES];
+>>       unsigned long           nr_free;
+>> +#ifdef CONFIG_CMA
+>> +     unsigned long           cma_nr_free;
+>> +#endif
+>>  };
+>>
+>>  struct pglist_data;
+>> diff --git a/include/linux/vmstat.h b/include/linux/vmstat.h
+>> index 82e7db7..f18ef00 100644
+>> --- a/include/linux/vmstat.h
+>> +++ b/include/linux/vmstat.h
+>> @@ -6,6 +6,7 @@
+>>  #include <linux/mm.h>
+>>  #include <linux/mmzone.h>
+>>  #include <linux/vm_event_item.h>
+>> +#include <linux/page-isolation.h>
+>>  #include <linux/atomic.h>
+>>
+>>  extern int sysctl_stat_interval;
+>> @@ -280,7 +281,8 @@ static inline void drain_zonestat(struct zone *zone,
+>>  static inline void __mod_zone_freepage_state(struct zone *zone, int nr_pages,
+>>                                            int migratetype)
+>>  {
+>> -     __mod_zone_page_state(zone, NR_FREE_PAGES, nr_pages);
+>> +     if (!is_migrate_isolate(migratetype))
+>> +             __mod_zone_page_state(zone, NR_FREE_PAGES, nr_pages);
+>>       if (is_migrate_cma(migratetype))
+>>               __mod_zone_page_state(zone, NR_FREE_CMA_PAGES, nr_pages);
+>>  }
+>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+>> index 7633c50..9a2b6da 100644
+>> --- a/mm/page_alloc.c
+>> +++ b/mm/page_alloc.c
+>> @@ -576,6 +576,28 @@ static inline int page_is_buddy(struct page *page, struct page *buddy,
+>>       return 0;
+>>  }
+>>
+>> +static inline void nr_free_inc(struct free_area *area, int migratetype)
+>> +{
+>> +     if (!is_migrate_isolate(migratetype))
+>> +             area->nr_free++;
+>> +
+>> +#ifdef CONFIG_CMA
+>> +     if (is_migrate_cma(migratetype))
+>> +             area->cma_nr_free++;
+>> +#endif
+>> +}
+>> +
+>> +static inline void nr_free_dec(struct free_area *area, int migratetype)
+>> +{
+>> +     if (!is_migrate_isolate(migratetype))
+>> +             area->nr_free--;
+>> +
+>> +#ifdef CONFIG_CMA
+>> +     if (is_migrate_cma(migratetype))
+>> +             area->cma_nr_free--;
+>> +#endif
+>> +}
+>> +
+>>  /*
+>>   * Freeing function for a buddy system allocator.
+>>   *
+>> @@ -649,7 +671,7 @@ static inline void __free_one_page(struct page *page,
+>>                       clear_page_guard(zone, buddy, order, migratetype);
+>>               } else {
+>>                       list_del(&buddy->lru);
+>> -                     zone->free_area[order].nr_free--;
+>> +                     nr_free_dec(&zone->free_area[order], migratetype);
+>>                       rmv_page_order(buddy);
+>>               }
+>>               combined_idx = buddy_idx & page_idx;
+>> @@ -682,7 +704,7 @@ static inline void __free_one_page(struct page *page,
+>>
+>>       list_add(&page->lru, &zone->free_area[order].free_list[migratetype]);
+>>  out:
+>> -     zone->free_area[order].nr_free++;
+>> +     nr_free_inc(&zone->free_area[order], migratetype);
+>>  }
+>>
+>>  static inline int free_pages_check(struct page *page)
+>> @@ -936,7 +958,7 @@ static inline void expand(struct zone *zone, struct page *page,
+>>                       continue;
+>>               }
+>>               list_add(&page[size].lru, &area->free_list[migratetype]);
+>> -             area->nr_free++;
+>> +             nr_free_inc(area, migratetype);
+>>               set_page_order(&page[size], high);
+>>       }
+>>  }
+>> @@ -1019,7 +1041,7 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
+>>                                                       struct page, lru);
+>>               list_del(&page->lru);
+>>               rmv_page_order(page);
+>> -             area->nr_free--;
+>> +             nr_free_dec(area, migratetype);
+>>               expand(zone, page, order, current_order, area, migratetype);
+>>               set_freepage_migratetype(page, migratetype);
+>>               return page;
+>> @@ -1089,6 +1111,11 @@ int move_freepages(struct zone *zone,
+>>               order = page_order(page);
+>>               list_move(&page->lru,
+>>                         &zone->free_area[order].free_list[migratetype]);
+>> +             if (is_migrate_isolate(migratetype))
+>> +                     nr_free_dec(&zone->free_area[order],
+>> +                                 get_freepage_migratetype(page));
+>> +             else
+>> +                     nr_free_inc(&zone->free_area[order], migratetype);
+>>               set_freepage_migratetype(page, migratetype);
+>>               page += 1 << order;
+>>               pages_moved += 1 << order;
+>> @@ -1207,7 +1234,7 @@ __rmqueue_fallback(struct zone *zone, unsigned int order, int start_migratetype)
+>>
+>>                       page = list_entry(area->free_list[migratetype].next,
+>>                                       struct page, lru);
+>> -                     area->nr_free--;
+>> +                     nr_free_dec(area, migratetype);
+>>
+>>                       new_type = try_to_steal_freepages(zone, page,
+>>                                                         start_migratetype,
+>> @@ -1596,7 +1623,7 @@ int __isolate_free_page(struct page *page, unsigned int order)
+>>
+>>       /* Remove page from free list */
+>>       list_del(&page->lru);
+>> -     zone->free_area[order].nr_free--;
+>> +     nr_free_dec(&zone->free_area[order], mt);
+>>       rmv_page_order(page);
+>>
+>>       /* Set the pageblock if the isolated page is at least a pageblock */
+>> @@ -1808,7 +1835,6 @@ static bool __zone_watermark_ok(struct zone *z, unsigned int order,
+>>       /* free_pages may go negative - that's OK */
+>>       long min = mark;
+>>       int o;
+>> -     long free_cma = 0;
+>>
+>>       free_pages -= (1 << order) - 1;
+>>       if (alloc_flags & ALLOC_HIGH)
+>> @@ -1818,15 +1844,24 @@ static bool __zone_watermark_ok(struct zone *z, unsigned int order,
+>>  #ifdef CONFIG_CMA
+>>       /* If allocation can't use CMA areas don't use free CMA pages */
+>>       if (!(alloc_flags & ALLOC_CMA))
+>> -             free_cma = zone_page_state(z, NR_FREE_CMA_PAGES);
+>> +             free_pages -= zone_page_state(z, NR_FREE_CMA_PAGES);
+>>  #endif
+>>
+>> -     if (free_pages - free_cma <= min + z->lowmem_reserve[classzone_idx])
+>> +     if (free_pages <= min + z->lowmem_reserve[classzone_idx])
+>>               return false;
+>>       for (o = 0; o < order; o++) {
+>>               /* At the next order, this order's pages become unavailable */
+>>               free_pages -= z->free_area[o].nr_free << o;
+>>
+>> +#ifdef CONFIG_CMA
+>> +             /* If CMA's page number of this order was substructed as part
+>> +                of "zone_page_state(z, NR_FREE_CMA_PAGES)", subtracting
+>> +                "z->free_area[o].nr_free << o" substructed CMA's page
+>> +                number of this order again.  So add it back.  */
+>> +             if (!(alloc_flags & ALLOC_CMA)) {
+>> +                     free_pages += z->free_area[o].cma_nr_free << o;
+>> +#endif
+>> +
+>>               /* Require fewer higher order pages to be free */
+>>               min >>= 1;
+>>
+>> @@ -4238,6 +4273,9 @@ static void __meminit zone_init_free_lists(struct zone *zone)
+>>       for_each_migratetype_order(order, t) {
+>>               INIT_LIST_HEAD(&zone->free_area[order].free_list[t]);
+>>               zone->free_area[order].nr_free = 0;
+>> +#ifdef CONFIG_CMA
+>> +             zone->free_area[order].cma_nr_free = 0;
+>> +#endif
+>>       }
+>>  }
+>>
+>> @@ -6609,7 +6647,8 @@ __offline_isolated_pages(unsigned long start_pfn, unsigned long end_pfn)
+>>  #endif
+>>               list_del(&page->lru);
+>>               rmv_page_order(page);
+>> -             zone->free_area[order].nr_free--;
+>> +             nr_free_dec(&zone->free_area[order],
+>> +                         get_pageblock_migratetype(page));
+>>               for (i = 0; i < (1 << order); i++)
+>>                       SetPageReserved((page+i));
+>>               pfn += (1 << order);
+>> --
+>> 1.9.3
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
