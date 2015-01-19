@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751938AbbASUrd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 15:47:33 -0500
-Received: from mailrelay115.isp.belgacom.be ([195.238.20.142]:37061 "EHLO
-	mailrelay115.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751341AbbASUrc (ORCPT
+	id S1752084AbbASUs0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 15:48:26 -0500
+Received: from mailrelay109.isp.belgacom.be ([195.238.20.136]:63769 "EHLO
+	mailrelay109.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751396AbbASUsZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 15:47:32 -0500
+	Mon, 19 Jan 2015 15:48:25 -0500
 X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.1 cv=wcGNbXEvJ1+lRvjKRe8ww5ZIB0ZoB9oB8wjQofnwvDA= c=1 sm=2
- a=iBTyMBLzZVNNl2LLs9kA:9
+X-Cloudmark-SP-Result: v=1.1 cv=hkFBDakPHWYIOok4y3pcivnmCJQbEK2MeX2RAJ8hs1E= c=1 sm=2
+ a=Zf25LCYKITnOQeVSTvgA:9
 X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AmEPAC1svVTD7gaz/2dsb2JhbABbgwaBKrNuBQEBAQEBAQUBd5dCgSZDAQEBAQF9hDpSgVGIMAHAA44zLIYFiRBkHYQTBZdwihqIECKBRYIqboEDgUABAQE
+X-IronPort-Anti-Spam-Result: AmEPABJtvVTD7gau/2dsb2JhbABbgwaBKrNuBQEBAQEBAQUBd5dCgSZDAQEBAQF9hQyBUYgwAb9/jmCGBYl0HYQTBZdwihqIECKBRYIqboJDAQEB
 X-Belgacom-Dynamic: yes
 X-IronPort-Anti-Spam-Filtered: true
 From: Fabian Frederick <fabf@skynet.be>
 To: linux-kernel@vger.kernel.org
 Cc: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
         Fabian Frederick <fabf@skynet.be>
-Subject: [RFC 1/2] FS: mount_bdev from vfs instead of filesystem specific mount function.
-Date: Mon, 19 Jan 2015 21:47:20 +0100
-Message-Id: <1421700440-15128-1-git-send-email-fabf@skynet.be>
+Subject: [RFC 2/2] fs/affs/super.c: let vfs do mount_bdev
+Date: Mon, 19 Jan 2015 21:48:18 +0100
+Message-Id: <1421700498-15179-1-git-send-email-fabf@skynet.be>
 X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, a lot of filesystem mounting functions feature in
-file_system_type only to be called from vfs mount_fs and call mount_bdev.
-
-This patch adds fill_super function to that structure and lets vfs
-call mount_bdev when no mount function is declared.
+share fill_super with vfs and remove local mount function.
 
 Signed-off-by: Fabian Frederick <fabf@skynet.be>
 ---
- fs/super.c         | 6 +++++-
- include/linux/fs.h | 2 ++
- 2 files changed, 7 insertions(+), 1 deletion(-)
+ fs/affs/super.c | 8 +-------
+ 1 file changed, 1 insertion(+), 7 deletions(-)
 
-diff --git a/fs/super.c b/fs/super.c
-index a89d625..7c37355 100644
---- a/fs/super.c
-+++ b/fs/super.c
-@@ -1112,7 +1112,11 @@ mount_fs(struct file_system_type *type, int flags, const char *name, void *data)
- 			goto out_free_secdata;
- 	}
+diff --git a/fs/affs/super.c b/fs/affs/super.c
+index ee8eca7..9f7bba9 100644
+--- a/fs/affs/super.c
++++ b/fs/affs/super.c
+@@ -588,12 +588,6 @@ affs_statfs(struct dentry *dentry, struct kstatfs *buf)
+ 	return 0;
+ }
  
--	root = type->mount(type, flags, name, data);
-+	if (type->mount)
-+		root = type->mount(type, flags, name, data);
-+	else
-+		root = mount_bdev(type, flags, name, data, type->fill_super);
-+
- 	if (IS_ERR(root)) {
- 		error = PTR_ERR(root);
- 		goto out_free_secdata;
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 0bd9669..3e19349 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1846,8 +1846,10 @@ struct file_system_type {
- #define FS_USERNS_MOUNT		8	/* Can be mounted by userns root */
- #define FS_USERNS_DEV_MOUNT	16 /* A userns mount does not imply MNT_NODEV */
- #define FS_RENAME_DOES_D_MOVE	32768	/* FS will handle d_move() during rename() internally. */
-+	int (*fill_super)(struct super_block *, void *, int);
- 	struct dentry *(*mount) (struct file_system_type *, int,
- 		       const char *, void *);
-+
- 	void (*kill_sb) (struct super_block *);
- 	struct module *owner;
- 	struct file_system_type * next;
+-static struct dentry *affs_mount(struct file_system_type *fs_type,
+-	int flags, const char *dev_name, void *data)
+-{
+-	return mount_bdev(fs_type, flags, dev_name, data, affs_fill_super);
+-}
+-
+ static void affs_kill_sb(struct super_block *sb)
+ {
+ 	struct affs_sb_info *sbi = AFFS_SB(sb);
+@@ -610,7 +604,7 @@ static void affs_kill_sb(struct super_block *sb)
+ static struct file_system_type affs_fs_type = {
+ 	.owner		= THIS_MODULE,
+ 	.name		= "affs",
+-	.mount		= affs_mount,
++	.fill_super	= affs_fill_super,
+ 	.kill_sb	= affs_kill_sb,
+ 	.fs_flags	= FS_REQUIRES_DEV,
+ };
 -- 
 1.9.3
 
