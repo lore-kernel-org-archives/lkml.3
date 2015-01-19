@@ -1,112 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752529AbbASQ4x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 11:56:53 -0500
-Received: from mga02.intel.com ([134.134.136.20]:59230 "EHLO mga02.intel.com"
+	id S1752159AbbASRkh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 12:40:37 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:43859 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752494AbbASQ4u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 11:56:50 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,428,1418112000"; 
-   d="scan'208";a="514368842"
-From: "Pandruvada, Srinivas" <srinivas.pandruvada@intel.com>
-To: "Baluta, Daniel" <daniel.baluta@intel.com>
-CC: "lars@metafoo.de" <lars@metafoo.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "knaack.h@gmx.de" <knaack.h@gmx.de>,
-        "jic23@kernel.org" <jic23@kernel.org>,
-        "Purdila, Octavian" <octavian.purdila@intel.com>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "Westerberg, Mika" <mika.westerberg@intel.com>,
-        "pmeerw@pmeerw.net" <pmeerw@pmeerw.net>,
-        "beomho.seo@samsung.com" <beomho.seo@samsung.com>,
-        "gwendal@chromium.org" <gwendal@chromium.org>
-Subject: Re: [RFC PATCH] iio: ak8975: Make sure chipset is always initialized
-Thread-Topic: [RFC PATCH] iio: ak8975: Make sure chipset is always
- initialized
-Thread-Index: AQHQHJv/pV0/XzoQpUK45pIcNb1+QJzIOKwAgAAiaICAAAGLAIAAAd8A
-Date: Mon, 19 Jan 2015 16:56:45 +0000
-Message-ID: <1421686560.4459.400.camel@spandruv-desktop.jf.intel.com>
-References: <1418923002-901-1-git-send-email-daniel.baluta@intel.com>
-	 <5494A3D6.60607@gmx.de>
-	 <CAEnQRZABxH5MuWEnS=RHmQqGUN0QhFTtXxnM1uyrLxvP2a-Rmg@mail.gmail.com>
-	 <1419110796.2843.6.camel@spandruv-hsb-test>
-	 <1419110952.2843.8.camel@spandruv-hsb-test>
-	 <CAEnQRZC_SR_p2oYq9EpDDfBi2nCAAWvYmf0tR7V7WPZRZEp79g@mail.gmail.com>
-	 <1421685827.4459.397.camel@spandruv-desktop.jf.intel.com>
-	 <CAEnQRZAfRJ+-1x_ZgRAC2Kkr2js4EQB1xA6gTJ5n0uCAZS4y2g@mail.gmail.com>
-In-Reply-To: <CAEnQRZAfRJ+-1x_ZgRAC2Kkr2js4EQB1xA6gTJ5n0uCAZS4y2g@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.7.199.150]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <2D26A7C13AC7424199C30616CF3BCCED@intel.com>
+	id S1752024AbbASRkf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 12:40:35 -0500
+Message-ID: <54BD3803.6020307@redhat.com>
+Date: Mon, 19 Jan 2015 11:59:47 -0500
+From: Jon Masters <jcm@redhat.com>
+Organization: Red Hat, Inc.
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
+To: Grant Likely <grant.likely@linaro.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Ard Biesheuvel <ard.biesheuvel@linaro.org>
+CC: "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
+        Mark Rutland <Mark.Rutland@arm.com>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        "wangyijing@huawei.com" <wangyijing@huawei.com>,
+        Rob Herring <robh@kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Al Stone <al.stone@linaro.org>, Timur Tabi <timur@codeaurora.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
+        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
+        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
+Subject: Re: [PATCH v7 04/17] ARM64 / ACPI: Introduce early_param for "acpi"
+ and pass acpi=force to enable ACPI
+References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org>	<1421247905-3749-5-git-send-email-hanjun.guo@linaro.org>	<20150119114255.GF11835@e104818-lin.cambridge.arm.com>	<CAKv+Gu8vPKAdsNg7QC7xW+i8_BemWEx4mvBx6NrnAHi8Y+bNtw@mail.gmail.com>	<20150119135144.GI11835@e104818-lin.cambridge.arm.com> <20150119151350.21B65C40948@trevor.secretlab.ca>
+In-Reply-To: <20150119151350.21B65C40948@trevor.secretlab.ca>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0JGuwq2004867
 
-On Mon, 2015-01-19 at 18:49 +0200, Daniel Baluta wrote: 
-> On Mon, Jan 19, 2015 at 6:44 PM, Pandruvada, Srinivas
-> <srinivas.pandruvada@intel.com> wrote:
-> > On Mon, 2015-01-19 at 16:40 +0200, Daniel Baluta wrote:
-> >> Hello,
-> >>
-> >> On Sat, Dec 20, 2014 at 11:29 PM, Pandruvada, Srinivas
-> >> <srinivas.pandruvada@intel.com> wrote:
-> >> > +Mika
-> >> >
-> >> > On Sat, 2014-12-20 at 13:26 -0800, Srinivas Pandruvada wrote:
-> >> >> On Sat, 2014-12-20 at 00:25 +0200, Daniel Baluta wrote:
-> >> >> > On Sat, Dec 20, 2014 at 12:16 AM, Hartmut Knaack <knaack.h@gmx.de> wrote:
-> >> >> > > Daniel Baluta schrieb am 18.12.2014 um 18:16:
-> >> >> > >> When using ACPI, if acpi_match_device fails then chipset enum will be
-> >> >> > >> uninitialized and &ak_def_array[chipset] will point to some bad address.
-> >> >> > >>
-> >> >> I am missing something. You are enumerated over i2c device, which was
-> >> >> created from ACPI PNP resource. There is a valid handle or and the
-> >> >> device has an ACPI companion at the least. If this failing, I have to
-> >> >> check the code for acpi i2c.
-> >> >> Can you check why this check failed? We may have bug in i2c handling.
-> >>
-> >> You are right about this. Under normal circumstances, if probe is called
-> >> then acpi_match_device will not fail. I even tried to remove the
-> >> device after probe
-> >> but before acpi_match_device, anyhow acpi_match_device was still successful :)
-> >>
-> >> This is more a matter of code correctness.
-> >>
-> >> In ak8975_match_acpi_device we have:
-> >>
-> >> Â»       const struct acpi_device_id *id;
-> >>
-> >> Â»       id = acpi_match_device(dev->driver->acpi_match_table, dev);
-> >> Â»       if (!id)
-> >> Â»       Â»       return NULL;
-> >> Â»       *chipset = (int)id->driver_data;
-> >>
-> >> Compiler complains on the fact that chipset might be uninitialized
-> >> if this returns NULL, and we shouldn't ignore this warning even this case
-> >> will never happen.
-> >>
-> > Will this fix?
-> > data->chipset = AK8975;
-> > before
-> > ak8975_match_acpi_device(&client->dev, &data->chipset);
-> >
+On 01/19/2015 10:13 AM, Grant Likely wrote:
+> On Mon, 19 Jan 2015 13:51:45 +0000
+> , Catalin Marinas <catalin.marinas@arm.com>
+>  wrote:
+>> On Mon, Jan 19, 2015 at 11:55:32AM +0000, Ard Biesheuvel wrote:
+>>> On 19 January 2015 at 11:42, Catalin Marinas <catalin.marinas@arm.com> wrote:
+>>>> On Wed, Jan 14, 2015 at 03:04:52PM +0000, Hanjun Guo wrote:
+>>>>> From: Al Stone <al.stone@linaro.org>
+>>>>>
+>>>>> Introduce one early parameters "off" and "force" for "acpi", acpi=off
+>>>>> will be the default behavior for ARM64, so introduce acpi=force to
+>>>>> enable ACPI on ARM64.
+>>>>>
+>>>>> Disable ACPI before early parameters parsed, and enable it to pass
+>>>>> "acpi=force" if people want use ACPI on ARM64. This ensures DT be
+>>>>> the prefer one if ACPI table and DT both are provided at this moment.
+>>>> [...]
+>>>>> --- a/arch/arm64/kernel/setup.c
+>>>>> +++ b/arch/arm64/kernel/setup.c
+>>>>> @@ -62,6 +62,7 @@
+>>>>>  #include <asm/memblock.h>
+>>>>>  #include <asm/psci.h>
+>>>>>  #include <asm/efi.h>
+>>>>> +#include <asm/acpi.h>
+>>>>>
+>>>>>  unsigned int processor_id;
+>>>>>  EXPORT_SYMBOL(processor_id);
+>>>>> @@ -388,6 +389,8 @@ void __init setup_arch(char **cmdline_p)
+>>>>>       early_fixmap_init();
+>>>>>       early_ioremap_init();
+>>>>>
+>>>>> +     disable_acpi();
+>>>>> +
+>>>>>       parse_early_param();
+>>>>>
+>>>>>       /*
+>>>>
+>>>> Did we get to any conclusion here? DT being the preferred one is fine
+>>>> when both DT and ACPI are present but do we still want the kernel to
+>>>> ignore ACPI altogether if DT is not present? It's a bit harder to detect
+>>>> the presence of DT at this point since the EFI_STUB added one already. I
+>>>> guess we could move the "acpi=force" argument passing to EFI_STUB if no
+>>>> DT is present at boot.
+>>>
+>>> Since the EFI stub populates the /chosen node in DT, I would prefer
+>>> for it to add a property there to indicate whether it created the DT
+>>> from scratch rather than adding ACPI specific stuff in there (even if
+>>> it is just a string to concatenate)
+>>
+>> This works for me. So we could pass "acpi=force" in EFI stub if it
+>> created the DT from scratch *and* ACPI tables are present (can it detect
+>> the latter? And maybe it could print something if none are available).
+>> If that works, the actual kernel can assume that ACPI needs to be
+>> explicitly enabled via acpi=force, irrespective of how much information
+>> it has in DT.
 > 
-> Yes, this is done in the original patch:
-> 
-> +       *chipset = AK_MAX_TYPE;
-Since data memory is not zero alloced, other member of data are anyway
-initialized, so adding this also may be better. 
-> 
-> .. and fixes the warning.
-> 
-> Daniel.
+> Ditto for me. I think this is a fine solution. And, yes, the stub can
+> easily detect the presence of ACPI by looking in the UEFI config table.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+I get the point behind doing this, but could we not have it pass in a
+different parameter than =force? Perhaps something new? I'd like to
+separate out the case that it was enabled automatically vs explicitly
+forced on by a user wanting to use ACPI on a system with both tables.
+
+Jon.
+
