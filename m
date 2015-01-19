@@ -1,97 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751730AbbASUnz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 15:43:55 -0500
-Received: from mail.fireflyinternet.com ([87.106.93.118]:60682 "EHLO
-	fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751317AbbASUny (ORCPT
+	id S1752040AbbASUro (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 15:47:44 -0500
+Received: from mout.kundenserver.de ([212.227.126.187]:53597 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751341AbbASUrl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 15:43:54 -0500
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.65.138;
-Date: Mon, 19 Jan 2015 20:43:34 +0000
-From: Chris Wilson <chris@chris-wilson.co.uk>
-To: Matt Roper <matthew.d.roper@intel.com>
-Cc: Daniel Vetter <daniel.vetter@intel.com>,
-        Ville =?iso-8859-1?Q?Syrj=E4l=E4?= 
-	<ville.syrjala@linux.intel.com>,
-        Jeremiah Mahler <jmmahler@gmail.com>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>,
-        Ander Conselvan de Oliveira <conselvan2@gmail.com>,
-        linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [BUG, bisect] drm/i915: mouse pointer lags and
- overshoots
-Message-ID: <20150119204334.GI26577@nuc-i3427.alporthouse.com>
-Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
-	Matt Roper <matthew.d.roper@intel.com>,
-	Daniel Vetter <daniel.vetter@intel.com>,
-	Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>,
-	Jeremiah Mahler <jmmahler@gmail.com>,
-	Jani Nikula <jani.nikula@linux.intel.com>,
-	David Airlie <airlied@linux.ie>,
-	Alex Deucher <alexander.deucher@amd.com>,
-	Dave Airlie <airlied@redhat.com>,
-	Ander Conselvan de Oliveira <conselvan2@gmail.com>,
-	linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-	dri-devel@lists.freedesktop.org
-References: <20150117100635.GA1281@hudson.localdomain>
- <20150119090847.GQ10649@intel.com>
- <54BCE1BF.5050808@intel.com>
- <20150119110404.GA26577@nuc-i3427.alporthouse.com>
- <20150119164024.GI22549@intel.com>
+	Mon, 19 Jan 2015 15:47:41 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Rob Herring <robherring2@gmail.com>
+Cc: David Daney <ddaney.cavm@gmail.com>, Mark Rutland <mark.rutland@arm.com>,
+        Aleksey Makarov <aleksey.makarov@auriga.com>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Daney <david.daney@cavium.com>,
+        Anton Vorontsov <avorontsov@ru.mvista.com>,
+        Vinita Gupta <vgupta@caviumnetworks.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Ralf Baechle <ralf@linux-mips.org>,
+        Tejun Heo <tj@kernel.org>, Hans de Goede <hdegoede@redhat.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH] SATA: OCTEON: support SATA on OCTEON platform
+Date: Mon, 19 Jan 2015 21:46:52 +0100
+Message-ID: <1657896.cG5R2xLFfX@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAL_JsqKq22K3kk7m09J1GZn9xXB+0tCUe75u3x+S3oWC0kyDcw@mail.gmail.com>
+References: <1421681040-3392-1-git-send-email-aleksey.makarov@auriga.com> <54BD580C.6030701@gmail.com> <CAL_JsqKq22K3kk7m09J1GZn9xXB+0tCUe75u3x+S3oWC0kyDcw@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150119164024.GI22549@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:540wG67se4TLuWNRSqikIKpRuD5km1mHJq7AiuoZIGXOELbhKak
+ tZBvHs19dh+jh6nRbZe6BBKT4aBlx/CMO6oc1IfQTI30M66nQqTiHiI5N1JYJUNvxUHS0jD
+ ru66g788qlVWH1VA90owcaPGUNmpaY+AVuH4j3A7jAzHmPgVpJ9tG5L/oeopcAQw0WyUicG
+ p+FEjRhZh/3enC2UCZMIw==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 19, 2015 at 08:40:24AM -0800, Matt Roper wrote:
-> On Mon, Jan 19, 2015 at 11:04:04AM +0000, Chris Wilson wrote:
-> > On Mon, Jan 19, 2015 at 11:51:43AM +0100, Daniel Vetter wrote:
-> > > There's also an issue in (most) X drivers which exaberates this
-> > > issues: When changing the cursor buffer the X cursor code does a a)
-> > > disable cursor b) update cursor image c) enable cursor cycle.
-> > 
-> > Notably not -intel on which the bug has been observed. And more
-> > importantly, the slow downs don't seem to correlate with cursor change,
-> > just cursor movement.
-> > -Chris
-> > 
-> > -- 
-> > Chris Wilson, Intel Open Source Technology Centre
+On Monday 19 January 2015 14:30:22 Rob Herring wrote:
+> On Mon, Jan 19, 2015 at 1:16 PM, David Daney <ddaney.cavm@gmail.com> wrote:
+> > On 01/19/2015 07:43 AM, Mark Rutland wrote:
+> >>
+> >> On Mon, Jan 19, 2015 at 03:23:58PM +0000, Aleksey Makarov wrote:
+> >>>
+> >>> The OCTEON SATA controller is currently found on cn71XX devices.
 > 
-> It seems that the simple fix for this case (movement only) is to just
-> skip the prepare_fb/cleanup_fb calls (and the associated vblank wait) in
-> the transitional plane helper when newfb == oldfb.  I just posted a
-> small patch that makes that change (and solves the cursor lag for me).
+> [...]
 > 
-> This won't solve the case if userspace uses a different framebuffer for
-> each update (while trying to update faster than the refresh rate).  Is
-> there any existing userspace that behaves this way that we can test
-> with?
+> >>> +
+> >>> +       /* Set a good dma_mask */
+> >>> +       pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
+> >>> +       pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
+> >>
+> >>
+> >> I thought a dma-ranges property in the DT could be used to set up the
+> >> DMA mask appropriately?
+> >
+> >
+> > The DT contains no dma-ranges property, and we know a priori, that it should
+> > be 64-bits.
+> 
+> Neither this code nor dma-ranges should be necessary. The AHCI core
+> code will set the mask to 32 or 64 bits based on the AHCI Capabilities
+> register.
 
--modesetting and say moving the cursor in/out of an xterm very fast. or
-similarly with
+You should however have a dma-ranges property in the parent bus of the
+device that contains the allowed range for DMA. The current dma_set_mask
+function is broken and will accept whatever a device driver asks for,
+and we need to fix this so masks larger than what is specified in dma-ranges
+are rejected.
 
-diff --git a/src/sna/sna_display.c b/src/sna/sna_display.c
-index 5b45618..3873893 100644
---- a/src/sna/sna_display.c
-+++ b/src/sna/sna_display.c
-@@ -5182,7 +5182,6 @@ sna_cursors_init(ScreenPtr screen, struct sna *sna)
-        cursor_info->MaxWidth = sna->cursor.max_size;
-        cursor_info->MaxHeight = sna->cursor.max_size;
-        cursor_info->Flags = (HARDWARE_CURSOR_TRUECOLOR_AT_8BPP |
--                             HARDWARE_CURSOR_UPDATE_UNHIDDEN |
-                              HARDWARE_CURSOR_ARGB);
- 
-        cursor_info->RealizeCursor = sna_realize_cursor;
-
-
--- 
-Chris Wilson, Intel Open Source Technology Centre
+	Arnd
