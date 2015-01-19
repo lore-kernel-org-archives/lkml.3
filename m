@@ -1,200 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751999AbbASLHH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 06:07:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45432 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751403AbbASLHE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 06:07:04 -0500
-Message-ID: <1421665620.3610.13.camel@nilsson.home.kraxel.org>
-Subject: Re: [PATCH v3 00/16] virtio-pci: towards virtio 1.0 guest support
-From: Gerd Hoffmann <kraxel@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org
-Date: Mon, 19 Jan 2015 12:07:00 +0100
-In-Reply-To: <1421397146.21318.16.camel@nilsson.home.kraxel.org>
-References: <1421256142-11512-1-git-send-email-mst@redhat.com>
-	 <1421356698.3933.18.camel@nilsson.home.kraxel.org>
-	 <20150115213256.GA4813@redhat.com>
-	 <1421397146.21318.16.camel@nilsson.home.kraxel.org>
-Content-Type: multipart/mixed; boundary="=-0zWL1zFiJykP2TPP5hvE"
-Mime-Version: 1.0
+	id S1751598AbbASLJn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 06:09:43 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:40260 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090AbbASLJl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 06:09:41 -0500
+Date: Mon, 19 Jan 2015 03:09:35 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Zhang Zhen <zhenzhang.zhang@huawei.com>
+Cc: linux-kernel@vger.kernel.org, morgan.wang@huawei.com, josh@freedesktop.org,
+        dzickus@redhat.com, dipankar@in.ibm.com
+Subject: Re: RCU CPU stall console spews  leads to soft lockup disabled is
+ reasonable ?
+Message-ID: <20150119110935.GH9719@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <54BCBB33.6060608@huawei.com>
+ <20150119084200.GE9719@linux.vnet.ibm.com>
+ <54BCC89D.9040702@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54BCC89D.9040702@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15011911-0033-0000-0000-000003606952
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 19, 2015 at 05:04:29PM +0800, Zhang Zhen wrote:
+> On 2015/1/19 16:42, Paul E. McKenney wrote:
+> > On Mon, Jan 19, 2015 at 04:07:15PM +0800, Zhang Zhen wrote:
+> >> Hi,
+> >>
+> >> On my x86_64 qemu virtual machine, RCU CPU stall console spews may
+> >> lead to soft lockup disabled.
+> >>
+> >> If softlockup_thresh > rcu_cpu_stall_timeout (softlockup_thresh = 2 * watchdog_thresh):
+> >>
+> >> / #
+> >> / # busybox cat /sys/module/rcupdate/parameters/rcu_cpu_stall_timeout
+> >> 21
+> >> / # echo 60 > /proc/sys/kernel/watchdog_thresh
+> >> / # busybox insmod softlockup_test.ko
+> >> [   44.959044] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=21002 jiffies, g=85, c=84, q=4)
+> >> [   44.959044] INFO: Stall ended before state dump start
+> >> [  107.964045] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=84007 jiffies, g=85, c=84, q=4)
+> >> [  107.964045] INFO: Stall ended before state dump start
+> >> [  170.969060] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=147012 jiffies, g=85, c=84, q=4)
+> >> [  170.969060] INFO: Stall ended before state dump start
+> >> [  233.974057] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=210017 jiffies, g=85, c=84, q=4)
+> >> [  233.974057] INFO: Stall ended before state dump start
+> >> [  296.979059] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=273022 jiffies, g=85, c=84, q=4)
+> >> [  296.979059] INFO: Stall ended before state dump start
+> >> [  359.984058] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=336027 jiffies, g=85, c=84, q=4)
+> >> [  359.984058] INFO: Stall ended before state dump start
+> >> [  422.989059] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=399032 jiffies, g=85, c=84, q=4)
+> >> [  422.989059] INFO: Stall ended before state dump start
+> >> [  485.994056] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=462037 jiffies, g=85, c=84, q=4)
+> >> [  485.994056] INFO: Stall ended before state dump start
+> >> [  548.999059] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=525042 jiffies, g=85, c=84, q=4)
+> >> [  548.999059] INFO: Stall ended before state dump start
+> >> [  612.004061] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=588047 jiffies, g=85, c=84, q=4)
+> >> [  612.004061] INFO: Stall ended before state dump start
+> >> [  675.009058] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=651052 jiffies, g=85, c=84, q=4)
+> >> [  675.009058] INFO: Stall ended before state dump start
+> >>
+> >> If softlockup_thresh < rcu_cpu_stall_timeout:
+> >>
+> >> / #
+> >> / # busybox cat /sys/module/rcupdate/parameters/rcu_cpu_stall_timeout
+> >> 21
+> >> / # echo 5 > /proc/sys/kernel/watchdog_thresh
+> >> / # busybox insmod softlockup_test.ko
+> >> [   38.450061] BUG: soft lockup - CPU#0 stuck for 11s! [busybox:53]
+> >> [   52.450061] BUG: soft lockup - CPU#0 stuck for 11s! [busybox:53]
+> >> [   66.450073] BUG: soft lockup - CPU#0 stuck for 11s! [busybox:53]
+> >> [   80.450060] BUG: soft lockup - CPU#0 stuck for 11s! [busybox:53]
+> >> [   94.450061] BUG: soft lockup - CPU#0 stuck for 11s! [busybox:53]
+> >>
+> >> The softlockup_test.ko source code is:
+> >> //
+> >> #include <linux/kernel.h>
+> >> #include <linux/module.h>
+> >> #include <linux/spinlock.h>
+> >> #include <linux/slab.h>
+> >>
+> >> static int hello_start(void)
+> >> {
+> >>         DEFINE_SPINLOCK(hello_lock);
+> >>         spin_lock_init(&hello_lock);
+> >>         spin_lock(&hello_lock);
+> >>         spin_lock(&hello_lock);
+> > 
+> > Did you really intend to acquire the same spinlock twice in a row,
+> > forcing a self-deadlock?  If not, I of course suggest changing the second
+> > "spin_lock()" to "spin_unlock()".
+> 
+> Yes, i acquire the same spinlock twice in order to reproduce the problem.
 
---=-0zWL1zFiJykP2TPP5hvE
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Good, I was wondering about that.  ;-)
 
-  Hi,
+> > If your .config has CONFIG_TREE_RCU=y, the above is quite likely to
+> > give you an RCU CPU stall warning.
+> 
+> In my .config CONFIG_TREE_RCU=y.
 
-> BTW: is there a tool (or pciutils patch) which can decode the virtio
-> capabilities?
+Which is consistent.
 
-Searched for a patch today, and all google found me was this mail asking
-for one :-o
+> If softlockup_thresh < rcu_cpu_stall_timeout, it will give soft lockup warning.
+> If softlockup_thresh > rcu_cpu_stall_timeout, it will likely to give RCU CPU stall warning
+> just like above and no give soft lockup warning.
+> 
+> It means that RCU CPU stall console spews leads to soft lockup disabled.
+> Is this reasonable ?
 
-So I went ahead and coded one up.  Attached.
+It depends.  You will often see both of them, but they can interfere
+with each other, especially if all these messages are going across a
+serial line.  And sometimes the activity of the one will suppress the
+other, though I would not expect that in your spinlock deadlock case.
 
-While hacking it up I've noticed spec doesn't match reality.  The
-"Virtio Structure PCI Capabilities" section here ...
+							Thanx, Paul
 
-http://docs.oasis-open.org/virtio/virtio/v1.0/cs01/virtio-v1.0-cs01.html#x1-690004
-
-... doesn't match what qemu is doing.  Huh?
-
-
-Also note:
-
-[root@fedora ~]# ~kraxel/projects/pciutils/lspci -vvsa
-00:0a.0 Communication controller: Red Hat, Inc Virtio console
-[ ... ]
-	Capabilities: [64] VirtIO: Notify
-		BAR=2 offset=00003000 size=00400000
-		multiplier=00010000
-[ ... ]
-
-Why multiplier is 64k instead of 4k?  Just a tyops?
-
-
-cheers,
-  Gerd
-
-
---=-0zWL1zFiJykP2TPP5hvE
-Content-Disposition: attachment; filename="0001-add-virtio-vendor-caps.patch"
-Content-Type: text/x-patch; name="0001-add-virtio-vendor-caps.patch"; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-
->From 0d5d99c20b079c986128c3d98c4bbaba51ebe65c Mon Sep 17 00:00:00 2001
-From: Gerd Hoffmann <kraxel@redhat.com>
-Date: Mon, 19 Jan 2015 11:46:37 +0100
-Subject: [PATCH] add virtio vendor caps
-
----
- Makefile         |  2 +-
- ls-caps-vendor.c | 57 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- ls-caps.c        |  9 ++++++++-
- lspci.h          |  4 ++++
- 4 files changed, 70 insertions(+), 2 deletions(-)
- create mode 100644 ls-caps-vendor.c
-
-diff --git a/Makefile b/Makefile
-index 8d49afa..39a07d1 100644
---- a/Makefile
-+++ b/Makefile
-@@ -69,7 +69,7 @@ force:
- lib/config.h lib/config.mk:
- 	cd lib && ./configure
- 
--lspci: lspci.o ls-vpd.o ls-caps.o ls-ecaps.o ls-kernel.o ls-tree.o ls-map.o common.o lib/$(PCILIB)
-+lspci: lspci.o ls-vpd.o ls-caps.o ls-caps-vendor.o ls-ecaps.o ls-kernel.o ls-tree.o ls-map.o common.o lib/$(PCILIB)
- setpci: setpci.o common.o lib/$(PCILIB)
- 
- LSPCIINC=lspci.h pciutils.h $(PCIINC)
-diff --git a/ls-caps-vendor.c b/ls-caps-vendor.c
-new file mode 100644
-index 0000000..5f8b3e1
---- /dev/null
-+++ b/ls-caps-vendor.c
-@@ -0,0 +1,57 @@
-+/*
-+ *	The PCI Utilities -- Show Vendor-specific Capabilities
-+ *
-+ *	Copyright (c) 2014 Gerd Hoffmann <kraxel@redhat.com>
-+ *
-+ *	Can be freely distributed and used under the terms of the GNU GPL.
-+ */
-+
-+#include <stdio.h>
-+#include <string.h>
-+
-+#include "lspci.h"
-+
-+void
-+show_vendor_caps_virtio(struct device *d, int where, int cap)
-+{
-+  int length = BITS(cap, 0, 8);
-+  int type = BITS(cap, 8, 5);
-+  int bar = BITS(cap, 13, 3);
-+  char *tname;
-+
-+  if (length < 12)
-+    return;
-+  if (!config_fetch(d, where, length))
-+    return;
-+
-+  switch (type) {
-+  case 1:
-+      tname = "CommonCfg";
-+      break;
-+  case 2:
-+      tname = "Notify";
-+      break;
-+  case 3:
-+      tname = "ISR";
-+      break;
-+  case 4:
-+      tname = "DeviceCfg";
-+      break;
-+  default:
-+      tname = "<unknown>";
-+      break;
-+  }
-+
-+  printf("VirtIO: %s\n", tname);
-+
-+  if (verbose < 2)
-+    return;
-+
-+  printf("\t\tBAR=%d offset=%08x size=%08x\n", bar,
-+         get_conf_long(d, where+4),
-+         get_conf_long(d, where+8));
-+  if (type != 2 || length < 16)
-+    return;
-+  printf("\t\tmultiplier=%08x\n",
-+         get_conf_long(d, where+12));
-+}
-diff --git a/ls-caps.c b/ls-caps.c
-index 7de55ef..438b580 100644
---- a/ls-caps.c
-+++ b/ls-caps.c
-@@ -1315,7 +1315,14 @@ show_caps(struct device *d, int where)
- 	      cap_ht(d, where, cap);
- 	      break;
- 	    case PCI_CAP_ID_VNDR:
--	      printf("Vendor Specific Information: Len=%02x <?>\n", BITS(cap, 0, 8));
-+              switch (get_conf_word(d, PCI_VENDOR_ID)) {
-+              case 0x1af4: /* Red Hat, devices 0x1000 -> 0x107f are virtio */
-+                show_vendor_caps_virtio(d, where, cap);
-+                break;
-+              default:
-+                printf("Vendor Specific Information: Len=%02x <?>\n", BITS(cap, 0, 8));
-+                break;
-+              }
- 	      break;
- 	    case PCI_CAP_ID_DBG:
- 	      cap_debug_port(cap);
-diff --git a/lspci.h b/lspci.h
-index 86429b2..5ca9899 100644
---- a/lspci.h
-+++ b/lspci.h
-@@ -70,6 +70,10 @@ void show_caps(struct device *d, int where);
- 
- void show_ext_caps(struct device *d);
- 
-+/* ls-caps-vendor.c */
-+
-+void show_vendor_caps_virtio(struct device *d, int where, int cap);
-+
- /* ls-kernel.c */
- 
- void show_kernel_machine(struct device *d UNUSED);
--- 
-1.8.3.1
-
-
---=-0zWL1zFiJykP2TPP5hvE--
+> Thanks!
+> 
+> >>         return 0;
+> >> }
+> >>
+> >> static int __init test_init(void)
+> >> {
+> >>         hello_start();
+> >>
+> >>         printk(KERN_INFO "Module init\n");
+> >>         return 0;
+> >> }
+> >>
+> >> static void __exit test_exit(void)
+> >> {
+> >>         printk(KERN_INFO "Module exit!\n");
+> >> }
+> >>
+> >> module_init(test_init)
+> >> module_exit(test_exit)
+> >> MODULE_LICENSE("GPL");
+> >> //
+> >>
+> >> My kernel version is v3.10.63, and i checked the kernel source code,
+> >>
+> >> update_process_times
+> >> 	-> run_local_timers
+> >> 		-> hrtimer_run_queues
+> >> 			-> __run_hrtimer
+> >> 				-> watchdog_timer_fn
+> >> 					-> is_softlockup
+> >> 					
+> >> 	-> rcu_check_callbacks
+> >> 		-> __rcu_pending
+> >> 			-> check_cpu_stall
+> >> 				-> print_cpu_stall
+> >>
+> >> If softlockup_thresh > rcu_cpu_stall_timeout, print_cpu_stall will print log to serial port.
+> >>
+> >> The 8250 serial driver will call serial8250_console_write => touch_nmi_watchdog() which reset
+> >> watchdog_touch_ts to 0. So the softlockup will not be triggered.
+> >>
+> >> Is this reasonable? Why?
+> > 
+> > Is exactly what reasonable?  ;-)
+> > 
+> > Yes, it is reasonable that your code triggers an RCU CPU stall warning.
+> > 
+> > No, it is not reasonable that the RCU CPU stall warning does not include
+> > a stack trace, and the fix for that bug will be going into the next merge
+> > window.
+> > 
+> > Yes, is is reasonable that varying the softlockup and RCU CPU stall
+> > timeouts might change the behavior.
+> > 
+> > No, your code is not reasonable, except perhaps as a test of the
+> > generation of softlockup and RCU CPU stall warnings.  If you are not
+> > trying to test softlockup and RCU CPU stall warnings, you should of course
+> > not try to acquire any non-recursive exclusive lock that you already hold.
+> > 
+> >> If it is not reasonable, we should adjust the printk loglevel from *KERN_ERR* to *KERN_INFO*
+> >> in print_cpu_stall.
+> > 
+> > Given that RCU CPU stall warnings are supposed to be pointing out errors
+> > elsewhere in the kernel, and in this case are pointing out errors elsewhere
+> > in the kernel, namely in your hello_start() function, it is reasonable
+> > that the RCU CPU stall warnings use the KERN_ERR loglevel.
+> > 
+> > Or am I missing something here?
+> > 
+> > 							Thanx, Paul
+> > 
+> > 
+> > .
+> > 
+> 
+> 
 
