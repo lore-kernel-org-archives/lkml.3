@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751871AbbASPHt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 10:07:49 -0500
-Received: from vps0.lunn.ch ([178.209.37.122]:57899 "EHLO vps0.lunn.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751356AbbASPHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 10:07:47 -0500
-Date: Mon, 19 Jan 2015 16:05:26 +0100
-From: Andrew Lunn <andrew@lunn.ch>
-To: Tejun Heo <tj@kernel.org>
-Cc: Hans de Goede <hdegoede@redhat.com>,
-        Gregory CLEMENT <gregory.clement@free-electrons.com>,
-        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Antoine =?iso-8859-1?Q?T=E9nart?= 
-	<antoine.tenart@free-electrons.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
-        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org
-Subject: Re: [PATCH v4 0/4] ata: libahci: Allow using a regulator for each
- port
-Message-ID: <20150119150526.GB32663@lunn.ch>
-References: <1421330978-9694-1-git-send-email-gregory.clement@free-electrons.com>
- <54B8C49A.9070302@redhat.com>
- <20150119145413.GJ8140@htj.dyndns.org>
+	id S1752356AbbASOng (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 09:43:36 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:55997 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751741AbbASOnd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 09:43:33 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Bjorn Helgaas <bhelgaas@google.com>,
+        Yinghai Lu <yinghai@kernel.org>, Borislav Petkov <bp@alien8.de>,
+        Tony Luck <tony.luck@intel.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: Re: [RFC Patch 00/19] Improve ACPI resource parsing interfaces and data structures
+Date: Mon, 19 Jan 2015 16:06:06 +0100
+Message-ID: <1650558.f4xRROdpd4@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <54BD13F8.2040105@linux.intel.com>
+References: <1420684386-5975-1-git-send-email-jiang.liu@linux.intel.com> <2025625.5YhoBnTE03@vostro.rjw.lan> <54BD13F8.2040105@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20150119145413.GJ8140@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 19, 2015 at 09:54:13AM -0500, Tejun Heo wrote:
-> On Fri, Jan 16, 2015 at 08:58:18AM +0100, Hans de Goede wrote:
-> > Hi,
+On Monday, January 19, 2015 10:26:00 PM Jiang Liu wrote:
+> On 2015/1/12 6:38, Rafael J. Wysocki wrote:
+> > On Thursday, January 08, 2015 10:32:47 AM Jiang Liu wrote:
+> >> During enabling ACPI based IOAPIC hotplug, Thomas noticed some issues
+> >> in ACPI resource parsing interfaces. So this is an effort to improve them.
+> >>
+> >> Patch 1-12 improve ACPI resource parsing interfaces and also fixes some
+> >> bugs.
+> >>
+> >> Patch 13-19 try to share the common data structure resource_list_entry
+> >> between PCI and ACPI. It may also be shared with PNP too.
 > > 
-> > On 15-01-15 15:09, Gregory CLEMENT wrote:
-> > >The current implementation of the libahci allows using one PHY per
-> > >port but we still have one single regulator for the whole
-> > >controller. This series adds the support of multiple regulators.
-> > >
-> > >This is the forth version of the series.
-> > >
-> > >The improvement of this version is the use of
-> > >ahci_platform_put_resources to put the reference to the regulators.
-> > >
-> > >Thanks,
-> > >
-> > >Grégory
+> > I've looked at the patches briefly.
 > > 
-> > Thanks, patches 1 - 3 look good and are:
-> > 
-> > Acked-by: Hans de Goede <hdegoede@redhat.com>
-> > 
-> > Tejun, can you please queue up 1 - 3 ?
-> 
-> Applied 1-3 to libata/for-3.20.
+> > I like the changes at the general level, but there are some things I'm
+> > potentially concerned about in them.  Need more time to look at them,
+> > I'll do my best to do that this week while at the conference.
+> Hi Rafael,
+> 	Thanks for your time. Any comments about this series?
 
-Thanks
+Please give me some more time.
 
-I will add 4/4 to mvebu/dt.
 
-  Andrew
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
