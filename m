@@ -1,44 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752110AbbASNdb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 08:33:31 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:35672 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751659AbbASNd3 (ORCPT
+	id S1752014AbbASN2V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 08:28:21 -0500
+Received: from mail-oi0-f53.google.com ([209.85.218.53]:34819 "EHLO
+	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751595AbbASN2U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 08:33:29 -0500
-X-Sasl-enc: dBkXlciJtXcJOzWKLk7lLgSj1cbe2gu97PeO3IlSFiMC 1421674408
-Date: Mon, 19 Jan 2015 21:26:17 +0800
-From: Greg KH <greg@kroah.com>
-To: Vineet Gupta <Vineet.Gupta1@synopsys.com>
-Cc: "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: stable 3.14 backport request for ARC
-Message-ID: <20150119132617.GA32038@kroah.com>
-References: <C2D7FE5348E1B147BCA15975FBA2307565BC9324@IN01WEMBXA.internal.synopsys.com>
+	Mon, 19 Jan 2015 08:28:20 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <C2D7FE5348E1B147BCA15975FBA2307565BC9324@IN01WEMBXA.internal.synopsys.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20150118062531.GA8968@kroah.com>
+References: <54BB4DD2.1070602@gmail.com>
+	<20150118062531.GA8968@kroah.com>
+Date: Mon, 19 Jan 2015 08:28:19 -0500
+X-Google-Sender-Auth: jpMa32TsXXS9yIJwBD0JNEGCJEU
+Message-ID: <CA+5PVA65KS+_ujc2yQ=zOnFPMZz__2K8Vm+wV5YJKkuEuHwn3Q@mail.gmail.com>
+Subject: Re: 3.18 regression: Error while assigning device slot ID, USB3
+ devices not detected
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: Greg KH <gregkh@linuxfoundation.org>
+Cc: Robert Hancock <hancockrwd@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Linux-usb <linux-usb@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Dec 23, 2014 at 08:08:51AM +0000, Vineet Gupta wrote:
-> Hi,
-> 
-> Can you please backport the following mainline commits to 3.14 stable.
-> 
-> 2014-02-07 ec7ac6afd07b ARC: switch to generic ENTRY/END assembler annotations
+On Sun, Jan 18, 2015 at 1:25 AM, Greg KH <gregkh@linuxfoundation.org> wrote:
+> On Sun, Jan 18, 2015 at 12:08:18AM -0600, Robert Hancock wrote:
+>> I've got an Intel Haswell-based system with a Gigabyte Z87X-D3H motherboard
+>> under Fedora 21. After updating to the 3.18.2-200 Fedora kernel, I noticed
+>> some errors in dmesg and at least some of my USB3 ports don't recognize any
+>> USB3 devices plugged into them:
+>>
+>> [    0.560838] xhci_hcd 0000:00:14.0: Error while assigning device slot ID
+>> [    0.560912] xhci_hcd 0000:00:14.0: Max number of devices this xHCI host
+>> supports is 32.
+>> [    0.560990] usb usb2-port2: couldn't allocate usb_device
+>> [    0.561098] xhci_hcd 0000:00:14.0: Error while assigning device slot ID
+>> [    0.561163] xhci_hcd 0000:00:14.0: Max number of devices this xHCI host
+>> supports is 32.
+>> [    0.561239] usb usb2-port5: couldn't allocate usb_device
+>> [    0.561344] xhci_hcd 0000:00:14.0: Error while assigning device slot ID
+>> [    0.561409] xhci_hcd 0000:00:14.0: Max number of devices this xHCI host
+>> supports is 32.
+>> [    0.561484] usb usb2-port6: couldn't allocate usb_device
+>>
+>> This worked fine under 3.17. Is this a known problem?
+>
+> Yes it is, should be fixed in Linus's tree now and will be backported to
+> the latest 3.18-stable tree in a week or so.
 
-Now queued up.
+Do you happen to know the commit id?
 
-> 2014-04-18 64ee9f32c33c ARC: Delete stale barrier.h
-
-I don't see how this is an issue for 3.14, it says it fixes a 3.15 build
-issue only, so I didn't apply it.  Why did you ask for it?
-
-thanks,
-
-greg k-h
+josh
