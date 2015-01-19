@@ -1,63 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752707AbbASS0V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 13:26:21 -0500
-Received: from mail-la0-f43.google.com ([209.85.215.43]:49733 "EHLO
-	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752674AbbASS0R (ORCPT
+	id S1752730AbbASS1T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 13:27:19 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:41433 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751852AbbASS1R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 13:26:17 -0500
-Message-ID: <54BD4C42.6090407@gmail.com>
-Date: Mon, 19 Jan 2015 21:26:10 +0300
-From: Dmitry Osipenko <digetx@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Mon, 19 Jan 2015 13:27:17 -0500
+Date: Mon, 19 Jan 2015 12:27:15 -0600 (CST)
+From: Kumar Gala <galak@codeaurora.org>
+X-X-Sender: galak@galak-ubuntu.qualcomm.com
+To: arm@kernel.org
+cc: Kevin Hilman <khilman@linaro.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, Olof Johansson <olof@lixom.net>,
+        linux-arm-kernel@lists.infradead.org,
+        Stephen Boyd <sboyd@codeaurora.org>, lina.iyer@linaro.org,
+        skannan@codeaurora.org, ohaugan@codeaurora.org, markivx@codeaurora.org
+Subject: [GIT PULL] qcom SoC changes for v3.20
+Message-ID: <alpine.DEB.2.02.1501191226010.2973@galak-ubuntu.qualcomm.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>
-CC: Alexandre Courbot <gnurou@gmail.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] ARM: tegra20: Store CPU "resettable" status in IRAM
-References: <1421319545-23920-1-git-send-email-digetx@gmail.com> <1421319545-23920-2-git-send-email-digetx@gmail.com> <20150119141224.GF23778@ulmo.nvidia.com> <54BD3E3E.2040801@wwwdotorg.org> <54BD41D3.7030703@gmail.com> <54BD42D0.3020107@wwwdotorg.org> <54BD4626.70902@gmail.com>
-In-Reply-To: <54BD4626.70902@gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-19.01.2015 21:00, Dmitry Osipenko пишет:
-> 19.01.2015 20:45, Stephen Warren пишет:
->> On 01/19/2015 10:41 AM, Dmitry Osipenko wrote:
->>> 19.01.2015 20:26, Stephen Warren пишет:
->>>> Hopefully this works out. I suppose it's unlikely anyone will be
->>>> running code on
->>>> the AVP upstrem, so any potential conflict with AVP's usage of IRAM
->>>> isn't likely
->>>> to occur.
->>>>
->>> I don't see how it can conflict with AVP code. First KB of IRAM is
->>> reserved for reset handler. Am I missing something?
->>>
->>>  From reset.h:
->>>
->>> /* The first 1K of IRAM is permanently reserved for the CPU reset
->>> handler */
->>
->> I believe "CPU" in that context means AVP CPU. Still, I may not be correct, and
->> to be honest it's likely not too well defined even if that comment seems
->> clear-cut.
->>
-> Hmm... Suddenly I recalled that LP2 was always disabled in downstream kernel. I
-> remember that I tried it once (couple years ago) and it didn't work, however I
-> presume it was just broken. Now I don't feel good with it.
->
-Can't generic RAM be used for "resettable" status? Or it will be too slow?...
+The following changes since commit 97bf6af1f928216fd6c5a66e8a57bfa95a659672:
 
-CPU1 always come up after CPU0, so RAM is already init'ed. Given that CPU0 can't 
-be halted with running CPU1, I suppose CPU1 can't be booted first, right? Anyway 
-it's not the case for linux.
+   Linux 3.19-rc1 (2014-12-20 17:08:50 -0800)
 
--- 
-Dmitry
+are available in the git repository at:
+
+   git://git.kernel.org/pub/scm/linux/kernel/git/galak/linux-qcom.git tags/qcom-soc-for-3.20
+
+for you to fetch changes up to ae0a6075c046f9c8dbac18f53a779592f97b402e:
+
+   soc: qcom: scm: Clarify boot interface (2015-01-19 11:55:12 -0600)
+
+----------------------------------------------------------------
+Qualcomm ARM Based SoC Updates for v3.20
+
+* Moved scm support into drivers/soc/qcom (allows for use by drivers)
+* Various bug fixes and minor feature additions to scm code
+* Added big-endian support to debug MSM uart
+* Added big-endian support to ARCH_QCOM
+
+----------------------------------------------------------------
+Lina Iyer (2):
+       ARM: qcom: Add SCM warmboot flags for quad core targets.
+       soc: qcom: scm: Move scm-boot files to drivers/soc and include/soc
+
+Olav Haugan (1):
+       ARM: qcom: scm: Add logging of actual return code from scm call
+
+Saravana Kannan (1):
+       ARM: qcom: scm: Add API to query for service/command availability.
+
+Stephen Boyd (9):
+       ARM: debug: Update MSM and QCOM DEBUG_LL help
+       ARM: debug: msm: Support big-endian CPUs
+       ARM: qcom: Select ARCH_SUPPORTS_BIG_ENDIAN
+       ARM: qcom: scm: Fix incorrect cache invalidation
+       ARM: qcom: scm: Get cacheline size from CTR
+       ARM: qcom: scm: Add a feat version query API
+       soc: qcom: scm: Move the scm driver to drivers/soc/qcom
+       soc: qcom: scm: Add atomic SCM APIs
+       soc: qcom: scm: Clarify boot interface
+
+Vikram Mulukutla (1):
+       ARM: qcom: scm: Flush the command buffer only instead of the entire cache
+
+  arch/arm/Kconfig.debug                             |   5 +-
+  arch/arm/include/debug/msm.S                       |   6 +
+  arch/arm/mach-qcom/Kconfig                         |   4 +-
+  arch/arm/mach-qcom/Makefile                        |   3 -
+  arch/arm/mach-qcom/platsmp.c                       |   2 +-
+  drivers/soc/qcom/Kconfig                           |   2 +
+  drivers/soc/qcom/Makefile                          |   2 +
+  .../arm/mach-qcom => drivers/soc/qcom}/scm-boot.c  |   6 +-
+  {arch/arm/mach-qcom => drivers/soc/qcom}/scm.c     | 162 ++++++++++++++++++---
+  .../arm/mach-qcom => include/soc/qcom}/scm-boot.h  |   4 +-
+  {arch/arm/mach-qcom => include/soc/qcom}/scm.h     |   8 +-
+  11 files changed, 173 insertions(+), 31 deletions(-)
+  rename {arch/arm/mach-qcom => drivers/soc/qcom}/scm-boot.c (91%)
+  rename {arch/arm/mach-qcom => drivers/soc/qcom}/scm.c (62%)
+  rename {arch/arm/mach-qcom => include/soc/qcom}/scm-boot.h (87%)
+  rename {arch/arm/mach-qcom => include/soc/qcom}/scm.h (70%)
+
+--
+Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
+a Linux Foundation Collaborative Project
