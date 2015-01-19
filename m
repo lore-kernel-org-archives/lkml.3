@@ -1,58 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751599AbbASNTE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 08:19:04 -0500
-Received: from www.osadl.org ([62.245.132.105]:44971 "EHLO www.osadl.org"
+	id S1751918AbbASNTx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 08:19:53 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:3152 "EHLO SMTP02.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751410AbbASNTB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 08:19:01 -0500
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: Alex Deucher <alexander.deucher@amd.com>
-Cc: Christian Koenig <christian.koenig@amd.com>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Nicholas Mc Guire <der.herr@hofr.at>
-Subject: [PATCH] drm/radeon: remove unreachable code
-Date: Mon, 19 Jan 2015 14:10:40 +0100
-Message-Id: <1421673040-12305-1-git-send-email-der.herr@hofr.at>
-X-Mailer: git-send-email 1.7.10.4
+	id S1751617AbbASNTv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 08:19:51 -0500
+X-IronPort-AV: E=Sophos;i="5.09,427,1418083200"; 
+   d="scan'208";a="219246421"
+From: Ross Lagerwall <ross.lagerwall@citrix.com>
+To: <xen-devel@lists.xenproject.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        David Vrabel <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
+        Ross Lagerwall <ross.lagerwall@citrix.com>
+Subject: [PATCH] xen/manage: Fix USB interaction issues when resuming
+Date: Mon, 19 Jan 2015 13:19:38 +0000
+Message-ID: <1421673578-12127-1-git-send-email-ross.lagerwall@citrix.com>
+X-Mailer: git-send-email 1.9.3
+MIME-Version: 1.0
+Content-Type: text/plain
+X-DLP: MIA2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+Commit 61a734d305e1 ("xen/manage: Always freeze/thaw processes when
+suspend/resuming") ensured that userspace processes were always frozen
+before suspending to reduce interaction issues when resuming devices.
+However, freeze_processes() does not freeze kernel threads.  Freeze
+kernel threads as well to prevent deadlocks with the khubd thread when
+resuming devices.
+
+This is what native suspend and resume does.
+
+Example deadlock:
+[ 7279.648010]  [<ffffffff81446bde>] ? xen_poll_irq_timeout+0x3e/0x50
+[ 7279.648010]  [<ffffffff81448d60>] xen_poll_irq+0x10/0x20
+[ 7279.648010]  [<ffffffff81011723>] xen_lock_spinning+0xb3/0x120
+[ 7279.648010]  [<ffffffff810115d1>] __raw_callee_save_xen_lock_spinning+0x11/0x20
+[ 7279.648010]  [<ffffffff815620b6>] ? usb_control_msg+0xe6/0x120
+[ 7279.648010]  [<ffffffff81747e50>] ? _raw_spin_lock_irq+0x50/0x60
+[ 7279.648010]  [<ffffffff8174522c>] wait_for_completion+0xac/0x160
+[ 7279.648010]  [<ffffffff8109c520>] ? try_to_wake_up+0x2c0/0x2c0
+[ 7279.648010]  [<ffffffff814b60f2>] dpm_wait+0x32/0x40
+[ 7279.648010]  [<ffffffff814b6eb0>] device_resume+0x90/0x210
+[ 7279.648010]  [<ffffffff814b7d71>] dpm_resume+0x121/0x250
+[ 7279.648010]  [<ffffffff8144c570>] ? xenbus_dev_request_and_reply+0xc0/0xc0
+[ 7279.648010]  [<ffffffff814b80d5>] dpm_resume_end+0x15/0x30
+[ 7279.648010]  [<ffffffff81449fba>] do_suspend+0x10a/0x200
+[ 7279.648010]  [<ffffffff8144a2f0>] ? xen_pre_suspend+0x20/0x20
+[ 7279.648010]  [<ffffffff8144a1d0>] shutdown_handler+0x120/0x150
+[ 7279.648010]  [<ffffffff8144c60f>] xenwatch_thread+0x9f/0x160
+[ 7279.648010]  [<ffffffff810ac510>] ? finish_wait+0x80/0x80
+[ 7279.648010]  [<ffffffff8108d189>] kthread+0xc9/0xe0
+[ 7279.648010]  [<ffffffff8108d0c0>] ? flush_kthread_worker+0x80/0x80
+[ 7279.648010]  [<ffffffff8175087c>] ret_from_fork+0x7c/0xb0
+[ 7279.648010]  [<ffffffff8108d0c0>] ? flush_kthread_worker+0x80/0x80
+
+[ 7441.216287] INFO: task khubd:89 blocked for more than 120 seconds.
+[ 7441.219457]       Tainted: G            X 3.13.11-ckt12.kz #1
+[ 7441.222176] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+[ 7441.225827] khubd           D ffff88003f433440     0    89      2 0x00000000
+[ 7441.229258]  ffff88003ceb9b98 0000000000000046 ffff88003ce83000 0000000000013440
+[ 7441.232959]  ffff88003ceb9fd8 0000000000013440 ffff88003cd13000 ffff88003ce83000
+[ 7441.236658]  0000000000000286 ffff88003d3e0000 ffff88003ceb9bd0 00000001001aa01e
+[ 7441.240415] Call Trace:
+[ 7441.241614]  [<ffffffff817442f9>] schedule+0x29/0x70
+[ 7441.243930]  [<ffffffff81743406>] schedule_timeout+0x166/0x2c0
+[ 7441.246681]  [<ffffffff81075b80>] ? call_timer_fn+0x110/0x110
+[ 7441.249339]  [<ffffffff8174357e>] schedule_timeout_uninterruptible+0x1e/0x20
+[ 7441.252644]  [<ffffffff81077710>] msleep+0x20/0x30
+[ 7441.254812]  [<ffffffff81555f00>] hub_port_reset+0xf0/0x580
+[ 7441.257400]  [<ffffffff81558465>] hub_port_init+0x75/0xb40
+[ 7441.259981]  [<ffffffff814bb3c9>] ? update_autosuspend+0x39/0x60
+[ 7441.262817]  [<ffffffff814bb4f0>] ? pm_runtime_set_autosuspend_delay+0x50/0xa0
+[ 7441.266212]  [<ffffffff8155a64a>] hub_thread+0x71a/0x1750
+[ 7441.268728]  [<ffffffff810ac510>] ? finish_wait+0x80/0x80
+[ 7441.271272]  [<ffffffff81559f30>] ? usb_port_resume+0x670/0x670
+[ 7441.274067]  [<ffffffff8108d189>] kthread+0xc9/0xe0
+[ 7441.276305]  [<ffffffff8108d0c0>] ? flush_kthread_worker+0x80/0x80
+[ 7441.279131]  [<ffffffff8175087c>] ret_from_fork+0x7c/0xb0
+[ 7441.281659]  [<ffffffff8108d0c0>] ? flush_kthread_worker+0x80/0x80
+
+Signed-off-by: Ross Lagerwall <ross.lagerwall@citrix.com>
 ---
+ drivers/xen/manage.c | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
 
-As the if (CISLAND_MINIMUM_ENGINE_CLOCK != CISLAND_MINIMUM_ENGINE_CLOCK) is never
-satisfied - the entire else branch is never going to be executed and could be 
-removed - provided this is not simply a bug and needs to be fixed...
-
-Patch is against 3.19.0-rc5 -next-20150119
-
-Patch was only compile tested with x86_64_defconfig + CONFIG_DRM=m,
-CONFIG_DRM_RADEON=m
-
- drivers/gpu/drm/radeon/ci_dpm.c |    7 +------
- 1 file changed, 1 insertion(+), 6 deletions(-)
-
-diff --git a/drivers/gpu/drm/radeon/ci_dpm.c b/drivers/gpu/drm/radeon/ci_dpm.c
-index f373a81..28db529 100644
---- a/drivers/gpu/drm/radeon/ci_dpm.c
-+++ b/drivers/gpu/drm/radeon/ci_dpm.c
-@@ -3805,13 +3805,8 @@ static void ci_find_dpm_states_clocks_in_dpm_table(struct radeon_device *rdev,
- 			break;
+diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
+index f8bb36f..bf19407 100644
+--- a/drivers/xen/manage.c
++++ b/drivers/xen/manage.c
+@@ -105,10 +105,16 @@ static void do_suspend(void)
+ 
+ 	err = freeze_processes();
+ 	if (err) {
+-		pr_err("%s: freeze failed %d\n", __func__, err);
++		pr_err("%s: freeze processes failed %d\n", __func__, err);
+ 		goto out;
  	}
  
--	if (i >= sclk_table->count) {
-+	if (i >= sclk_table->count)
- 		pi->need_update_smu7_dpm_table |= DPMTABLE_OD_UPDATE_SCLK;
--	} else {
--		/* XXX check display min clock requirements */
--		if (CISLAND_MINIMUM_ENGINE_CLOCK != CISLAND_MINIMUM_ENGINE_CLOCK)
--			pi->need_update_smu7_dpm_table |= DPMTABLE_UPDATE_SCLK;
--	}
- 
- 	for (i = 0; i < mclk_table->count; i++) {
- 		if (mclk == mclk_table->dpm_levels[i].value)
++	err = freeze_kernel_threads();
++	if (err) {
++		pr_err("%s: freeze kernel threads failed %d\n", __func__, err);
++		goto out_thaw;
++	}
++
+ 	err = dpm_suspend_start(PMSG_FREEZE);
+ 	if (err) {
+ 		pr_err("%s: dpm_suspend_start %d\n", __func__, err);
 -- 
-1.7.10.4
+1.9.3
 
