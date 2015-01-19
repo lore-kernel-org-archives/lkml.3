@@ -1,46 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751981AbbASLG0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 06:06:26 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:48344 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751876AbbASLGZ (ORCPT
+	id S1752514AbbASWHP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 17:07:15 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:59958 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751730AbbASWHN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 06:06:25 -0500
-Date: Mon, 19 Jan 2015 13:05:52 -0900
-From: Ahmad Hassan <ahmad.hassan612@gmail.com>
-To: devel@driverdev.osuosl.org
-Cc: forest@alittletooquiet.net, gregkh@linuxfoundation.org, tvboxspy@gmail.com,
-        gclement@baobob.org, joe@perches.com, guido@vanguardiasur.com.ar,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: vt6655: fix space prohibted before that ','
- Signed-off-by: Ahmad Hassan <ahmad.hassan612@gmail.com>
-Message-ID: <20150119220552.GA28271@Arch-Thinkpad>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 19 Jan 2015 17:07:13 -0500
+From: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
+To: stable@vger.kernel.org, Chris Ball <chris@printf.net>
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Tyler Baker <tyler.baker@linaro.org>
+Subject: [PATCH] mmc: sdhci: Don't signal the sdio irq if it's not setup
+Date: Mon, 19 Jan 2015 23:07:09 +0100
+Message-Id: <1421705229-20260-1-git-send-email-sjoerd.simons@collabora.co.uk>
+X-Mailer: git-send-email 2.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+With 3.14.29 (and older kernels) some of my I.mx6 Sabrelite boards were
+crashing with the following oops:
+
+  sdhci: Secure Digital Host Controller Interface driver
+  sdhci: Copyright(c) Pierre Ossman
+  sdhci-pltfm: SDHCI platform and OF driver helper
+  sdhci-esdhc-imx 2198000.usdhc: could not get ultra high speed state, work on normal mode
+  mmc0: no vqmmc regulator found
+  mmc0: SDHCI controller on 2198000.usdhc [2198000.usdhc] using ADMA
+  Unable to handle kernel NULL pointer dereference at virtual address 00000000
+  pgd = c0004000
+  [00000000] *pgd=00000000
+  Internal error: Oops: 5 [#1] SMP ARM
+  Modules linked in:
+  CPU: 0 PID: 0 Comm: swapper/0 Not tainted 3.14.29 #1
+  task: c08a7120 ti: c089c000 task.ti: c089c000
+  PC is at wake_up_process+0x8/0x40
+  LR is at sdhci_irq+0x748/0x9c4
+
+Full boot log can be found at:
+  http://storage.kernelci.org/stable/v3.14.29/arm-multi_v7_defconfig/lab-collabora/boot-imx6q-sabrelite.html
+
+This happens if the sdhci interrupt status contains SDHCI_INT_CARD_INT,
+while the sdio irq was never setup.  This patch fixes that in a minimal
+way by checking if the sdio irq was setup.
+
+In more recent kernels this bug went away due to refactoring done by
+Russel King. So an alternative (potentially better?) fix for this patch
+is to cherrypick the following patches from a recent kernel:
+
+18258f7239a6 - genirq: Provide synchronize_hardirq()
+bf3b5ec66bd0 - mmc: sdio_irq: rework sdio irq handling
+41005003bcaf - mmc: sdhci: clean up interrupt handling
+781e989cf593 - mmc: sdhci: convert to new SDIO IRQ handling
+
+Signed-off-by: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
 ---
- drivers/staging/vt6655/device_main.c | 2 +-
+ drivers/mmc/host/sdhci.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/vt6655/device_main.c b/drivers/staging/vt6655/device_main.c
-index f5cc78e..34e3a76 100644
---- a/drivers/staging/vt6655/device_main.c
-+++ b/drivers/staging/vt6655/device_main.c
-@@ -1090,7 +1090,7 @@ static  irqreturn_t  device_intr(int irq,  void *dev_instance)
- 	// Must do this after doing rx/tx, cause ISR bit is slow
- 	// than RD/TD write back
- 	// update ISR counter
--	STAvUpdate802_11Counter(&pDevice->s802_11Counter, &pDevice->scStatistic , dwMIBCounter);
-+	STAvUpdate802_11Counter(&pDevice->s802_11Counter, &pDevice->scStatistic, dwMIBCounter);
- 	while (pDevice->dwIsr != 0) {
- 		STAvUpdateIsrStatCounter(&pDevice->scStatistic, pDevice->dwIsr);
- 		MACvWriteISR(pDevice->PortOffset, pDevice->dwIsr);
+diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+index 7e01763..881bf89 100644
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -2537,7 +2537,7 @@ out:
+ 	/*
+ 	 * We have to delay this as it calls back into the driver.
+ 	 */
+-	if (cardint)
++	if (cardint && host->mmc->sdio_irqs)
+ 		mmc_signal_sdio_irq(host->mmc);
+ 
+ 	return result;
 -- 
-2.2.1
+2.1.4
 
