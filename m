@@ -1,142 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752203AbbASXhb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 18:37:31 -0500
-Received: from mail-la0-f51.google.com ([209.85.215.51]:63962 "EHLO
-	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751514AbbASXha (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 18:37:30 -0500
+	id S1752447AbbASXig (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 18:38:36 -0500
+Received: from mail.sig21.net ([80.244.240.74]:40958 "EHLO mail.sig21.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752371AbbASXif (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 18:38:35 -0500
+Date: Tue, 20 Jan 2015 00:38:12 +0100
+From: Johannes Stezenbach <js@sig21.net>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: arnd@arndb.de, ebiederm@xmission.com, gnomes@lxorguk.ukuu.org.uk,
+        teg@jklm.no, jkosina@suse.cz, luto@amacapital.net,
+        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
+        daniel@zonque.org, dh.herrmann@gmail.com, tixxdz@opendz.org
+Subject: Re: [PATCH v3 00/13] Add kdbus implementation
+Message-ID: <20150119233812.GA1874@sig21.net>
+References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>
+ <20150119180642.GA27957@sig21.net>
+ <20150119183806.GA8479@kroah.com>
+ <20150119201906.GA337@sig21.net>
+ <20150119203155.GA15441@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <87k30i9ykv.fsf@dell.be.48ers.dk>
-References: <1421581173-28416-1-git-send-email-ricardo.ribalda@gmail.com>
- <1421581173-28416-8-git-send-email-ricardo.ribalda@gmail.com> <87k30i9ykv.fsf@dell.be.48ers.dk>
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Date: Tue, 20 Jan 2015 00:37:07 +0100
-Message-ID: <CAPybu_180vMPMx4yhFAoL9H2b34+tWtqQCTHjxqkTRt9e_VA5g@mail.gmail.com>
-Subject: Re: [PATCH 7/8] gpio/mpc8xxx: Convert to platform device interface.
-To: Peter Korsgaard <peter@korsgaard.com>
-Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Rob Herring <robh+dt@kernel.org>, Peter Korsgaard <jacmet@sunsite.dk>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150119203155.GA15441@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Spam-21-Score: -2.9 (--)
+X-Spam-21-Report: No, score=-2.9 required=8.0 tests=ALL_TRUSTED=-1,BAYES_00=-1.9 autolearn=ham
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Peter
+On Tue, Jan 20, 2015 at 04:31:55AM +0800, Greg Kroah-Hartman wrote:
+> On Mon, Jan 19, 2015 at 09:19:06PM +0100, Johannes Stezenbach wrote:
+> > These two statements somehow contradict. From my admittedly very
+> > limited experience, I never used D-Bus because it did not
+> > fit my usage scenarios: I never needed a bus, only point-to-point
+> > links like pipes or sockets.
+> 
+> Great, then you don't need this, no need to worry about it at all, why
+> are we having this conversation? :)
 
-I thought the logic behind the original driver was:
+Well, for one because that's what I wanted to find out...
 
-1) Create gpiochip so it can be used by other modules/userland
-2) if there is also a irq available for it, create a irqdomain.
-otherwise continue.
+> > Well, it made your intentions a bit clearer, but it does
+> > not help to sell kdbus to me, sorry ;-/
+> 
+> It's not my "goal" to sell kdbus to you, if you don't want it, great,
 
-I can change the code so it does not continue, and exit cleanly if the
-irqdomain fails.
+I used this language because I think you're not providing
+the facts that would allow me to judge for myself whether
+kdbus is a good idea.  Those automotive applications you
+were talking about, what was the OS they were ported from
+and what was the messaging API they used?
 
-You are the original developer of the driver. So: do you think it
-makes sense to continue only as a gpiochip? :P
+> But odds are, you are using a system with D-Bus today, if not, then you
+> are using Linux in a very specific and limited manner, which is
+> wonderful, in that case this whole thread isn't really pertinent.
+> 
+> Lots of people do use D-Bus, and for those users, that is what this
+> patchset is for.
 
-If I need to change it I rather add it as a another patch to the
-patchset, so if it causes an issue somewhere it can be found easier
-via bisect.
+As I said before, I'm seeing about a dozen D-Bus messages per minute,
+nothing that would justify adding kdbus to the kernel for
+performance reasons.  Wrt security I'm also not aware of any
+open issues with D-Bus.  Thus I doubt normal users of D-Bus
+would see any benefit from kdbus.  I also think none of the
+applications I can install from my distribution has any performance
+issue with D-Bus.
 
-
-Regards!
-
-
-
-
-
-
-
-On Mon, Jan 19, 2015 at 11:48 PM, Peter Korsgaard <peter@korsgaard.com> wrote:
->>>>>> "Ricardo" == Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com> writes:
->
->  > This way we do not need to transverse the device tree manually.
->  > Cc: Linus Walleij <linus.walleij@linaro.org>
->  > Cc: Alexandre Courbot <gnurou@gmail.com>
->  > Cc: Grant Likely <grant.likely@linaro.org>
->  > Cc: Rob Herring <robh+dt@kernel.org>
->  > Cc: Peter Korsgaard <jacmet@sunsite.dk>
->  > Cc: devicetree@vger.kernel.org
->  > Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
->  > ---
->  >  drivers/gpio/gpio-mpc8xxx.c | 48 +++++++++++++++++++++------------------------
->  >  1 file changed, 22 insertions(+), 26 deletions(-)
->
->  > diff --git a/drivers/gpio/gpio-mpc8xxx.c b/drivers/gpio/gpio-mpc8xxx.c
->  > index d1ff879..57eb794 100644
->  > --- a/drivers/gpio/gpio-mpc8xxx.c
->  > +++ b/drivers/gpio/gpio-mpc8xxx.c
->  > @@ -15,6 +15,7 @@
->  >  #include <linux/of.h>
->  >  #include <linux/of_gpio.h>
->  >  #include <linux/of_irq.h>
->  > +#include <linux/of_platform.h>
->  >  #include <linux/gpio.h>
->  >  #include <linux/slab.h>
->  >  #include <linux/irq.h>
->  > @@ -342,8 +343,9 @@ static struct of_device_id mpc8xxx_gpio_ids[] __initdata = {
->  >      {}
->  >  };
->
->  > -static void __init mpc8xxx_add_controller(struct device_node *np)
->  > +static int mpc8xxx_probe(struct platform_device *pdev)
->  >  {
->  > +    struct device_node *np = pdev->dev.of_node;
->  >      struct mpc8xxx_gpio_chip *mpc8xxx_gc;
->  >      struct of_mm_gpio_chip *mm_gc;
->  >      struct gpio_chip *gc;
->  > @@ -351,11 +353,9 @@ static void __init mpc8xxx_add_controller(struct device_node *np)
->  >      unsigned hwirq;
->  >      int ret;
->
->  > -    mpc8xxx_gc = kzalloc(sizeof(*mpc8xxx_gc), GFP_KERNEL);
->  > -    if (!mpc8xxx_gc) {
->  > -            ret = -ENOMEM;
->  > -            goto err;
->  > -    }
->  > +    mpc8xxx_gc = devm_kzalloc(&pdev->dev, sizeof(*mpc8xxx_gc), GFP_KERNEL);
->  > +    if (!mpc8xxx_gc)
->  > +            return -ENOMEM;
->
->  >      spin_lock_init(&mpc8xxx_gc->lock);
->
->  > @@ -375,16 +375,16 @@ static void __init mpc8xxx_add_controller(struct device_node *np)
->
->  >      ret = of_mm_gpiochip_add(np, mm_gc);
->  >      if (ret)
->  > -            goto err;
->  > +            return ret;
->
->  >      hwirq = irq_of_parse_and_map(np, 0);
->  >      if (hwirq == NO_IRQ)
->  > -            goto skip_irq;
->  > +            return 0;
->
-> Actually, looking closer - Isn't this leaking mm_gc? It was as well
-> before, but it would be good to get it fixed.
->
->
->  >       mpc8xxx_gc-> irq = irq_domain_add_linear(np, MPC8XXX_GPIO_PINS,
->  >                                      &mpc8xxx_gpio_irq_ops, mpc8xxx_gc);
->  >      if (!mpc8xxx_gc->irq)
->  > -            goto skip_irq;
->  > +            return 0;
->
-> And here as well?
->
->
-> --
-> Bye, Peter Korsgaard
+And this is the point where I ask myself if I missed something.
 
 
-
--- 
-Ricardo Ribalda
+Thanks,
+Johannes
