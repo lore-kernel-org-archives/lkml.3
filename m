@@ -1,92 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751341AbbASFTK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 00:19:10 -0500
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:54591 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750701AbbASFTI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 00:19:08 -0500
-Message-ID: <54BC93C3.7010808@hitachi.com>
-Date: Mon, 19 Jan 2015 14:18:59 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1751895AbbASF2L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 00:28:11 -0500
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:37574 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750850AbbASF2J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 00:28:09 -0500
+Subject: [PATCH] idle/tick-broadcast: Exit cpu idle poll loop when cleared
+ from tick_broadcast_force_mask
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+To: tglx@linutronix.de
+Cc: peterz@infradead.org, linuxppc-dev@lists.ozlabs.org, mingo@kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 19 Jan 2015 10:57:54 +0530
+Message-ID: <20150119052754.20256.54721.stgit@preeti.in.ibm.com>
+User-Agent: StGit/0.17-dirty
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: module: fix module_refcount() return when running in a module
- exit routine
-References: <1421600146.2080.8.camel@HansenPartnership.com>
-In-Reply-To: <1421600146.2080.8.camel@HansenPartnership.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15011905-0037-0000-0000-000000635D62
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2015/01/19 1:55), James Bottomley wrote:
-> From: James Bottomley <JBottomley@Parallels.com>
-> 
-> After e513cc1 module: Remove stop_machine from module unloading,
-> module_refcount() is returning (unsigned long)-1 when called from within
-> a routine that runs in module_exit.  This is confusing the scsi device
-> put code which is coded to detect a module_refcount() of zero for
-> running within a module exit routine and not try to do another
-> module_put.  The fix is to restore the original behaviour of
-> module_refcount() and return zero if we're running inside an exit
-> routine.
-> 
-> Fixes: e513cc1c07e2ab93a4514eec9833e031df3e30bb
-> Reported-by: Bart Van Assche <bvanassche@acm.org>
-> Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-> 
+An idle cpu enters cpu_idle_poll() if it is set in the tick_broadcast_force_mask.
+This is so that it does not incur the overhead of entering idle states when it is expected
+to be woken up anytime then through a broadcast IPI. The condition that forces an exit out
+of the idle polling is the check on setting of the TIF_NEED_RESCHED flag for the idle thread.
 
-Yes, this should be fixed as you said, since it must return "unsigned long" value.
+When the broadcast IPI does arrive, it is not guarenteed that the handler sets the
+TIF_NEED_RESCHED flag. Hence although the cpu is cleared in the tick_broadcast_force_mask,
+it continues to loop in cpu_idle_poll unnecessarily wasting power. Hence exit the idle
+poll loop if the tick_broadcast_force_mask gets cleared and enter idle states.
 
-Reviewed-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Of course if the cpu has entered cpu_idle_poll() on being asked to poll explicitly,
+it continues to poll till it is asked to reschedule.
 
-Just one comment below;
+Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+---
 
-> diff --git a/kernel/module.c b/kernel/module.c
-> index 3965511..c33a113 100644
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -774,7 +774,12 @@ static int try_stop_module(struct module *mod, int flags, int *forced)
->  
->  unsigned long module_refcount(struct module *mod)
->  {
-> -	return (unsigned long)atomic_read(&mod->refcnt) - MODULE_REF_BASE;
-> +	unsigned long ret = atomic_read(&mod->refcnt);
-> +
-> +	if (ret == 0)
+ kernel/sched/idle.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-This would better be "if (unlikely(ret == 0))".
-
-Thank you,
-
-> +		/* ref is already zero (probably in module exit) */
-> +		return 0;
-> +	return ret - MODULE_REF_BASE;
->  }
->  EXPORT_SYMBOL(module_refcount);
->  
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
+diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
+index c47fce7..aaf1c1d 100644
+--- a/kernel/sched/idle.c
++++ b/kernel/sched/idle.c
+@@ -47,7 +47,8 @@ static inline int cpu_idle_poll(void)
+ 	rcu_idle_enter();
+ 	trace_cpu_idle_rcuidle(0, smp_processor_id());
+ 	local_irq_enable();
+-	while (!tif_need_resched())
++	while (!tif_need_resched() &&
++		(cpu_idle_force_poll || tick_check_broadcast_expired()))
+ 		cpu_relax();
+ 	trace_cpu_idle_rcuidle(PWR_EVENT_EXIT, smp_processor_id());
+ 	rcu_idle_exit();
 
