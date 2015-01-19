@@ -1,153 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752007AbbASJlp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 04:41:45 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:56703 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751477AbbASJln convert rfc822-to-8bit (ORCPT
+	id S1751643AbbASJmd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 04:42:33 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:44235 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751357AbbASJmb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 04:41:43 -0500
-Message-ID: <54BCD155.6060606@arm.com>
-Date: Mon, 19 Jan 2015 09:41:41 +0000
-From: "Suzuki K. Poulose" <Suzuki.Poulose@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Mon, 19 Jan 2015 04:42:31 -0500
+Date: Mon, 19 Jan 2015 09:42:24 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+Cc: Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Samuel Ortiz <sameo@linux.intel.com>, Wim Van Sebroeck <wim@iguana.be>,
+        Guenter Roeck <linux@roeck-us.net>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH v3 2/8] mfd: Add atmel-st driver
+Message-ID: <20150119094224.GJ21886@x1>
+References: <1421077023-30954-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <1421077023-30954-3-git-send-email-alexandre.belloni@free-electrons.com>
 MIME-Version: 1.0
-To: Will Deacon <Will.Deacon@arm.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "leo.yan@linaro.org" <leo.yan@linaro.org>,
-        "yexl@marvell.com" <yexl@marvell.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] arm64: Track system support for mixed endian EL0
-References: <1421325366-13263-1-git-send-email-suzuki.poulose@arm.com> <1421325366-13263-2-git-send-email-suzuki.poulose@arm.com> <20150116155322.GX7091@arm.com> <54B93930.1090409@arm.com>
-In-Reply-To: <54B93930.1090409@arm.com>
-X-OriginalArrivalTime: 19 Jan 2015 09:41:41.0416 (UTC) FILETIME=[21067280:01D033CC]
-X-MC-Unique: 115011909414200201
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1421077023-30954-3-git-send-email-alexandre.belloni@free-electrons.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16/01/15 16:15, Suzuki K. Poulose wrote:
-> On 16/01/15 15:53, Will Deacon wrote:
->> On Thu, Jan 15, 2015 at 12:36:04PM +0000, Suzuki K. Poulose wrote:
->>> From: "Suzuki K. Poulose" <suzuki.poulose@arm.com>
->>>
->>> This patch keeps track of the mixed endian EL0 support across
->>> the system and provides helper functions to export it. The status
->>> is a boolean indicating whether all the CPUs on the system supports
->>> mixed endian at EL0.
->>>
->>> Signed-off-by: Suzuki K. Poulose <suzuki.poulose@arm.com>
->>> ---
->>>    arch/arm64/include/asm/cpufeature.h |   10 ++++++++++
->>>    arch/arm64/kernel/cpuinfo.c         |   22 ++++++++++++++++++++++
->>>    2 files changed, 32 insertions(+)
->>>
->>> diff --git a/arch/arm64/include/asm/cpufeature.h b/arch/arm64/include/asm/cpufeature.h
->>> index 07547cc..c7f68d1 100644
->>> --- a/arch/arm64/include/asm/cpufeature.h
->>> +++ b/arch/arm64/include/asm/cpufeature.h
->>> @@ -26,6 +26,9 @@
->>>
->>>    #define ARM64_NCAPS				2
->>>
->>> +#define ID_AA64MMFR0_EL1_BigEndEL0	(0x1UL << 16)
->>> +#define ID_AA64MMFR0_EL1_BigEnd		(0x1UL << 8)
->>
->> I don't like the CaMeLcAsE. Also, perhaps these definitions should be
->> somewhere like cputype.h?
-> Yeah, I tried to keep it aligned withe ARMv8 architecture definition of
-> those bits. Will change it.
-> Things are a bit messy w.r.t the definitions. We have cpu.h,
-> cpufeature.h and cputype.h. I could move it to cputype.h, where we
-> already have MIDR_ defintions.
->
->>
->>> +
->>>    #ifndef __ASSEMBLY__
->>>
->>>    extern DECLARE_BITMAP(cpu_hwcaps, ARM64_NCAPS);
->>> @@ -51,7 +54,14 @@ static inline void cpus_set_cap(unsigned int num)
->>>    		__set_bit(num, cpu_hwcaps);
->>>    }
->>>
->>> +static inline bool id_aa64mmfr0_mixed_endian_el0(unsigned long mmfr0)
->>> +{
->>> +	return !!(mmfr0 & (ID_AA64MMFR0_EL1_BigEndEL0 | ID_AA64MMFR0_EL1_BigEnd));
->>> +}
->>
->> These are 4-bit fields and I think you think you should be treating them
->> as such.
-> OK
->
->>
->>> +
->>>    void check_local_cpu_errata(void);
->>> +bool system_supports_mixed_endian_el0(void);
->>> +bool cpu_supports_mixed_endian_el0(void);
->>>
->>>    #endif /* __ASSEMBLY__ */
->>>
->>> diff --git a/arch/arm64/kernel/cpuinfo.c b/arch/arm64/kernel/cpuinfo.c
->>> index 07d435c..b6d1135 100644
->>> --- a/arch/arm64/kernel/cpuinfo.c
->>> +++ b/arch/arm64/kernel/cpuinfo.c
->>> @@ -35,6 +35,7 @@
->>>     */
->>>    DEFINE_PER_CPU(struct cpuinfo_arm64, cpu_data);
->>>    static struct cpuinfo_arm64 boot_cpu_data;
->>> +static bool mixed_endian_el0 = true;
->>>
->>>    static char *icache_policy_str[] = {
->>>    	[ICACHE_POLICY_RESERVED] = "RESERVED/UNKNOWN",
->>> @@ -68,6 +69,26 @@ static void cpuinfo_detect_icache_policy(struct cpuinfo_arm64 *info)
->>>    	pr_info("Detected %s I-cache on CPU%d\n", icache_policy_str[l1ip], cpu);
->>>    }
->>>
->>> +bool cpu_supports_mixed_endian_el0(void)
->>> +{
->>> +	return id_aa64mmfr0_mixed_endian_el0(read_cpuid(ID_AA64MMFR0_EL1));
->>> +}
->>
->> Can we not just define a mask/value pair and have code do the MMFR0 access
->> inline? It also feels a bit over-engineered like this.
-> Sure, will change this.
+On Mon, 12 Jan 2015, Alexandre Belloni wrote:
 
-On a second thought, we need the id_aa64mmfr0_mixed_endian_el0() for 
-another code path. For a new CPU detected at boot time via 
-cpuinfo_store_cpu(), where we get the 'filled' cpuinfo_arm64 which 
-already has the id_aa64mmfr0. So we do:
+> The Atmel System Timer IP available on the at91rm9200 exposes both a timer and a
+> watchdog.
+> 
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> Acked-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> ---
+>  drivers/mfd/Kconfig          |  7 ++++
+>  drivers/mfd/Makefile         |  1 +
+>  drivers/mfd/atmel-st.c       | 77 ++++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/mfd/atmel-st.h | 47 +++++++++++++++++++++++++++
+>  4 files changed, 132 insertions(+)
+>  create mode 100644 drivers/mfd/atmel-st.c
+>  create mode 100644 include/linux/mfd/atmel-st.h
 
-+
-+static void update_mixed_endian_el0_support(struct cpuinfo_arm64 *info)
-+{
-+	mixed_endian_el0 &= id_aa64mmfr0_mixed_endian_el0(info->reg_id_aa64mmfr0);
-+}
+This driver looks pretty pointless.  Why can't you request the sysconf
+registers from within the drivers themselves?
 
-So, having a helper to extract the support from the id_aa64mmfr0 makes 
-it a bit more ordered.
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index 2e6b7311fabc..3c5185c0cf06 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -78,6 +78,13 @@ config MFD_BCM590XX
+>  	help
+>  	  Support for the BCM590xx PMUs from Broadcom
+>  
+> +config MFD_ATMEL_ST
+> +	bool "Atmel System Timer"
+> +	select MFD_CORE
+> +	default SOC_AT91RM9200
+> +	help
+> +	  If you say Y here you get support for the Atmel System Timer.
+> +
+>  config MFD_AXP20X
+>  	bool "X-Powers AXP20X"
+>  	select MFD_CORE
+> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> index 53467e211381..1ecd416f25c5 100644
+> --- a/drivers/mfd/Makefile
+> +++ b/drivers/mfd/Makefile
+> @@ -104,6 +104,7 @@ obj-$(CONFIG_PMIC_DA9052)	+= da9052-core.o
+>  obj-$(CONFIG_MFD_DA9052_SPI)	+= da9052-spi.o
+>  obj-$(CONFIG_MFD_DA9052_I2C)	+= da9052-i2c.o
+>  obj-$(CONFIG_MFD_AXP20X)	+= axp20x.o
+> +obj-$(CONFIG_MFD_ATMEL_ST)	+= atmel-st.o
+>  
+>  obj-$(CONFIG_MFD_LP3943)	+= lp3943.o
+>  obj-$(CONFIG_MFD_LP8788)	+= lp8788.o lp8788-irq.o
+> diff --git a/drivers/mfd/atmel-st.c b/drivers/mfd/atmel-st.c
+> new file mode 100644
+> index 000000000000..54106fcfe898
+> --- /dev/null
+> +++ b/drivers/mfd/atmel-st.c
+> @@ -0,0 +1,77 @@
+> +/*
+> + * Copyright (C) 2014 Free Electrons
+> + * Copyright (C) 2014 Atmel
+> + *
+> + * Author: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms of the GNU General Public License version 2 as published by
+> + * the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope that it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + *
+> + * You should have received a copy of the GNU General Public License along with
+> + * this program.  If not, see <http://www.gnu.org/licenses/>.
+> + */
+> +
+> +#include <linux/mfd/atmel-st.h>
+> +#include <linux/mfd/core.h>
+> +#include <linux/mfd/syscon.h>
+> +#include <linux/module.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/regmap.h>
+> +
+> +static const struct mfd_cell atmel_st_cells[] = {
+> +	{
+> +		.name = "atmel_st_timer",
+> +	},
+> +	{
+> +		.name = "atmel_st_watchdog",
+> +	},
+> +};
+> +
+> +static int atmel_st_probe(struct platform_device *pdev)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	struct regmap *regmap_st;
+> +
+> +	regmap_st = syscon_node_to_regmap(dev->of_node);
+> +	if (IS_ERR(regmap_st))
+> +		return PTR_ERR(regmap_st);
+> +	dev_set_drvdata(dev, regmap_st);
+> +
+> +	return mfd_add_devices(dev, -1, atmel_st_cells,
+> +			       ARRAY_SIZE(atmel_st_cells),
+> +			       NULL, 0, NULL);
+> +}
+> +
+> +static int atmel_st_remove(struct platform_device *pdev)
+> +{
+> +	mfd_remove_devices(&pdev->dev);
+> +
+> +	return 0;
+> +}
+> +
+> +static const struct of_device_id atmel_st_match[] = {
+> +	{ .compatible = "atmel,at91rm9200-st" },
+> +	{ /* sentinel */ },
+> +};
+> +
+> +static struct platform_driver atmel_st_driver = {
+> +	.probe = atmel_st_probe,
+> +	.remove = atmel_st_remove,
+> +	.driver = {
+> +		.name = "atmel-system-timer",
+> +		.owner = THIS_MODULE,
+> +		.of_match_table = atmel_st_match,
+> +	},
+> +};
+> +module_platform_driver(atmel_st_driver);
+> +
+> +MODULE_ALIAS("platform:atmel-st");
+> +MODULE_AUTHOR("Alexandre Belloni <alexandre.belloni@free-electrons.com>");
+> +MODULE_DESCRIPTION("Atmel ST (System Timer) driver");
+> +MODULE_LICENSE("GPL");
+> diff --git a/include/linux/mfd/atmel-st.h b/include/linux/mfd/atmel-st.h
+> new file mode 100644
+> index 000000000000..88c6cf8eeb2b
+> --- /dev/null
+> +++ b/include/linux/mfd/atmel-st.h
+> @@ -0,0 +1,47 @@
+> +/*
+> + * Copyright (C) 2005 Ivan Kokshaysky
+> + * Copyright (C) SAN People
+> + *
+> + * System Timer (ST) - System peripherals registers.
+> + * Based on AT91RM9200 datasheet revision E.
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + */
+> +
+> +#ifndef __LINUX_MFD_ATMEL_ST_H
+> +#define __LINUX_MFD_ATMEL_ST_H
+> +
+> +#define	AT91_ST_CR		0x00			/* Control Register */
+> +#define 	AT91_ST_WDRST		(1 << 0)		/* Watchdog Timer Restart */
+> +
+> +#define	AT91_ST_PIMR		0x04			/* Period Interval Mode Register */
+> +#define		AT91_ST_PIV		(0xffff <<  0)		/* Period Interval Value */
+> +
+> +#define	AT91_ST_WDMR		0x08			/* Watchdog Mode Register */
+> +#define		AT91_ST_WDV		(0xffff <<  0)		/* Watchdog Counter Value */
+> +#define		AT91_ST_RSTEN		(1	<< 16)		/* Reset Enable */
+> +#define		AT91_ST_EXTEN		(1	<< 17)		/* External Signal Assertion Enable */
+> +
+> +#define	AT91_ST_RTMR		0x0c			/* Real-time Mode Register */
+> +#define		AT91_ST_RTPRES		(0xffff <<  0)		/* Real-time Prescalar Value */
+> +
+> +#define	AT91_ST_SR		0x10			/* Status Register */
+> +#define		AT91_ST_PITS		(1 << 0)		/* Period Interval Timer Status */
+> +#define		AT91_ST_WDOVF		(1 << 1) 		/* Watchdog Overflow */
+> +#define		AT91_ST_RTTINC		(1 << 2) 		/* Real-time Timer Increment */
+> +#define		AT91_ST_ALMS		(1 << 3) 		/* Alarm Status */
+> +
+> +#define	AT91_ST_IER		0x14			/* Interrupt Enable Register */
+> +#define	AT91_ST_IDR		0x18			/* Interrupt Disable Register */
+> +#define	AT91_ST_IMR		0x1c			/* Interrupt Mask Register */
+> +
+> +#define	AT91_ST_RTAR		0x20			/* Real-time Alarm Register */
+> +#define		AT91_ST_ALMV		(0xfffff << 0)		/* Alarm Value */
+> +
+> +#define	AT91_ST_CRTR		0x24			/* Current Real-time Register */
+> +#define		AT91_ST_CRTV		(0xfffff << 0)		/* Current Real-Time Value */
+> +
+> +#endif /* __LINUX_MFD_ATMEL_ST_H */
 
-But yes, we could switch to mask/value pair.
-
-Thanks
-Suzuki
->
-> Thanks
-> Suzuki
->>
->> Will
->>
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
-
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
