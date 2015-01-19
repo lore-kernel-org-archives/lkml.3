@@ -1,117 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752027AbbASNWA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 08:22:00 -0500
-Received: from vserver.eikelenboom.it ([84.200.39.61]:44089 "EHLO
-	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751593AbbASNV7 (ORCPT
+	id S1752171AbbASNXZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 08:23:25 -0500
+Received: from mail1.bemta5.messagelabs.com ([195.245.231.153]:31665 "EHLO
+	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752055AbbASNXW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 08:21:59 -0500
-Date: Mon, 19 Jan 2015 14:21:55 +0100
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <13866742.20150119142155@eikelenboom.it>
-To: Sander Eikelenboom <linux@eikelenboom.it>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>
-CC: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: if power button pressed 1x it creates the same ACPI event twice
-In-Reply-To: <577867575.20150119140934@eikelenboom.it>
-References: <618666178.20150113173510@eikelenboom.it> <1202643605.20150113174724@eikelenboom.it> <577867575.20150119140934@eikelenboom.it>
+	Mon, 19 Jan 2015 08:23:22 -0500
+X-Env-Sender: Adam.Thomson.Opensource@diasemi.com
+X-Msg-Ref: server-10.tower-178.messagelabs.com!1421673797!40771714!1
+X-Originating-IP: [94.185.165.51]
+X-StarScan-Received: 
+X-StarScan-Version: 6.12.5; banners=-,-,-
+X-VirusChecked: Checked
+From: "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>
+To: Lee Jones <lee.jones@linaro.org>,
+        "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>
+CC: Samuel Ortiz <sameo@linux.intel.com>, Jonathan Cameron <jic23@kernel.org>,
+        Hartmut Knaack <knaack.h@gmx.de>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        Sebastian Reichel <sre@kernel.org>,
+        "Dmitry Eremin-Solenikov" <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Support Opensource" <Support.Opensource@diasemi.com>
+Subject: RE: [PATCH v5 1/7] mfd: Add support for DA9150 combined charger &
+ fuel-gauge device
+Thread-Topic: [PATCH v5 1/7] mfd: Add support for DA9150 combined charger &
+ fuel-gauge device
+Thread-Index: AQHQHgd+W2OiD6n4RUaNlFSB0FVd3JzHe3IAgAAcpYA=
+Date: Mon, 19 Jan 2015 13:23:15 +0000
+Message-ID: <2E89032DDAA8B9408CB92943514A0337AB52874E@SW-EX-MBX01.diasemi.com>
+References: <cover.1419264383.git.Adam.Thomson.Opensource@diasemi.com>
+ <8768cf84babd1bc3e16dadc25bdbb50cebfb44b6.1419264383.git.Adam.Thomson.Opensource@diasemi.com>
+ <20150119113332.GP21886@x1>
+In-Reply-To: <20150119113332.GP21886@x1>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.26.15]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0JDNUjM003525
 
+On January 19, 2015 11:34, Lee Jones wrote:
 
-Monday, January 19, 2015, 2:09:34 PM, you wrote:
+> On Mon, 22 Dec 2014, Adam Thomson wrote:
+> 
+> > DA9150 is a combined Charger and Fuel-Gauge IC, with additional
+> > GPIO and GPADC functionality.
+> >
+> > Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+> > ---
+> >  drivers/mfd/Kconfig                  |   12 +
+> >  drivers/mfd/Makefile                 |    2 +-
+> >  drivers/mfd/da9150-core.c            |  413 ++++++++++++
+> >  include/linux/mfd/da9150/core.h      |   68 ++
+> >  include/linux/mfd/da9150/registers.h | 1155
+> ++++++++++++++++++++++++++++++++++
+> >  5 files changed, 1649 insertions(+), 1 deletion(-)
+> >  create mode 100644 drivers/mfd/da9150-core.c
+> >  create mode 100644 include/linux/mfd/da9150/core.h
+> >  create mode 100644 include/linux/mfd/da9150/registers.h
+> >
+> > diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> > index 2e6b731..56e80d2 100644
+> > --- a/drivers/mfd/Kconfig
+> > +++ b/drivers/mfd/Kconfig
+> > @@ -195,6 +195,18 @@ config MFD_DA9063
+> >  	  Additional drivers must be enabled in order to use the functionality
+> >  	  of the device.
+> >
+> > +config MFD_DA9150
+> > +	tristate "Dialog Semiconductor DA9150 Charger Fuel-Gauge chip"
+> > +	depends on I2C=y
+> > +	select MFD_CORE
+> > +	select REGMAP_I2C
+> > +	select REGMAP_IRQ
+> > +	help
+> > +	  This adds support for the DA9150 integrated charger and fuel-gauge
+> > +	  chip. This driver provides common support for accessing the device.
+> > +	  Additional drivers must be enabled in order to use the specific
+> > +	  features of the device.
+> > +
+> >  config MFD_DLN2
+> >  	tristate "Diolan DLN2 support"
+> >  	select MFD_CORE
+> > diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> > index 53467e2..f06f4c6 100644
+> > --- a/drivers/mfd/Makefile
+> > +++ b/drivers/mfd/Makefile
+> > @@ -113,7 +113,7 @@ obj-$(CONFIG_MFD_DA9055)	+= da9055.o
+> >
+> >  da9063-objs			:= da9063-core.o da9063-irq.o da9063-i2c.o
+> >  obj-$(CONFIG_MFD_DA9063)	+= da9063.o
+> > -
+> > +obj-$(CONFIG_MFD_DA9150)	+= da9150-core.o
+> >  obj-$(CONFIG_MFD_MAX14577)	+= max14577.o
+> >  obj-$(CONFIG_MFD_MAX77686)	+= max77686.o
+> >  obj-$(CONFIG_MFD_MAX77693)	+= max77693.o
+> > diff --git a/drivers/mfd/da9150-core.c b/drivers/mfd/da9150-core.c
+> > new file mode 100644
+> > index 0000000..4d757b9
+> > --- /dev/null
+> > +++ b/drivers/mfd/da9150-core.c
+> > @@ -0,0 +1,413 @@
+> > +/*
+> > + * DA9150 Core MFD Driver
+> > + *
+> > + * Copyright (c) 2014 Dialog Semiconductor
+> > + *
+> > + * Author: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+> > + *
+> > + * This program is free software; you can redistribute  it and/or modify it
+> > + * under  the terms of  the GNU General  Public License as published by the
+> > + * Free Software Foundation;  either version 2 of the  License, or (at your
+> > + * option) any later version.
+> > + */
+> 
+> [...]
+> 
+> > +u8 da9150_reg_read(struct da9150 *da9150, u16 reg)
+> > +{
+> > +	int val, ret;
+> > +
+> > +	ret = regmap_read(da9150->regmap, reg, &val);
+> > +	if (ret)
+> > +		dev_err(da9150->dev, "Failed to read from reg 0x%x: %d\n",
+> > +			reg, ret);
+> > +
+> > +	return (u8) val;
+> > +}
+> > +EXPORT_SYMBOL_GPL(da9150_reg_read);
+> > +
+> > +void da9150_reg_write(struct da9150 *da9150, u16 reg, u8 val)
+> > +{
+> > +	int ret;
+> > +
+> > +	ret = regmap_write(da9150->regmap, reg, val);
+> > +	if (ret)
+> > +		dev_err(da9150->dev, "Failed to write to reg 0x%x: %d\n",
+> > +			reg, ret);
+> > +}
+> > +EXPORT_SYMBOL_GPL(da9150_reg_write);
+> > +
+> > +void da9150_set_bits(struct da9150 *da9150, u16 reg, u8 mask, u8 val)
+> > +{
+> > +	int ret;
+> > +
+> > +	ret = regmap_update_bits(da9150->regmap, reg, mask, val);
+> > +	if (ret)
+> > +		dev_err(da9150->dev, "Failed to set bits in reg 0x%x: %d\n",
+> > +			reg, ret);
+> > +}
+> > +EXPORT_SYMBOL_GPL(da9150_set_bits);
+> > +
+> > +void da9150_bulk_read(struct da9150 *da9150, u16 reg, int count, u8 *buf)
+> > +{
+> > +	int ret;
+> > +
+> > +	ret = regmap_bulk_read(da9150->regmap, reg, buf, count);
+> > +	if (ret)
+> > +		dev_err(da9150->dev, "Failed to bulk read from reg 0x%x: %d\n",
+> > +			reg, ret);
+> > +}
+> > +EXPORT_SYMBOL_GPL(da9150_bulk_read);
+> > +
+> > +void da9150_bulk_write(struct da9150 *da9150, u16 reg, int count, const u8
+> *buf)
+> > +{
+> > +	int ret;
+> > +
+> > +	ret = regmap_raw_write(da9150->regmap, reg, buf, count);
+> > +	if (ret)
+> > +		dev_err(da9150->dev, "Failed to bulk write to reg 0x%x %d\n",
+> > +			reg, ret);
+> > +}
+> > +EXPORT_SYMBOL_GPL(da9150_bulk_write);
+> 
+> I've never been a fan of this type of aggregation.  Can you explain to
+> me what the point of them is?
 
-> Hello Sander,
+I refer you back to our previous discussion some time back:
 
-> Tuesday, January 13, 2015, 5:47:24 PM, you wrote:
+https://lkml.org/lkml/2014/9/9/284
 
->> Tuesday, January 13, 2015, 5:35:10 PM, you wrote:
-
->>> Hi Rafael / Len,
-
->>> When i press the power-button on my intel NUC, i get twp ACPI power-events shortly 
->>> after one another (within a second), instead of just one. 
-
->>> It doesn't matter if i have the old /proc/acpi interface enabled or disabled in the kernel config.
-
->>> I have tested a few older kernels lingering around on the box and 3.14 already 
->>> has this problem. 3.2 (from the debian repo) doesn't have the problem, it only 
->>> fires one event.
-
->>> I did find another report:
->>>     Re: lenovo ultrabay docking station: if power button pressed 1x it creates 2x the same ACPI event
->>>     http://www.spinics.net/lists/linux-acpi/msg54723.html
->>> But that hasn't come to a conclusion ...
-
-
->>> Unfortunately 3.2 - 3.19-rc4 is a bit of a largish bisect window, so that's 
->>> unfeasible :-)
-
->>> I compiled in apci debug support and tried:
->>>  echo "0x00080000" > /sys/module/acpi/parameters/debug_layer
->>>  echo "0xffffffff" > /sys/module/acpi/parameters/debug_level
-
->>> But i don't get any extra output in dmesg ?
-
->>> Do you have any ideas for a debug patch or better values to figure out what is going on ?
-
->>> --
->>> Sander
-
->> Hmm is it normal that it registers in this way (twice) ?
-
->> [    5.817980] input: Power Button as /devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0C:00/input/input0
->> [    5.837907] ACPI: Power Button [PWRB]
->> [    5.847540] input: Power Button as /devices/LNXSYSTM:00/LNXPWRBN:00/input/input1
->> [    5.866915] ACPI: Power Button [PWRF]
-
->> --
->> Sander
-
-> Hi Rafael / Len,
-
-> Got some more time to test:
-
-> - It's indeed giving one event for both registered power buttons (which in reality 
->   are just one hardware button) printing acpid's "%e" revealed that:
->   1421672289-161192235 | button/power PBTN 00000080 00000000
->   1421672289-279647745 | button/power LNXPWRBN:00 00000080 00000004
-
-> So i tested on another box (amd instead of intel), and that also registers 2 
-> power buttons:
-
-> # dmesg | grep -i button
-> [   13.435060] input: Power Button as /devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0C:00/input/input0
-> [   13.435294] ACPI: Power Button [PWRB]
-> [   13.435495] input: Power Button as /devices/LNXSYSTM:00/LNXPWRBN:00/input/input1
-> [   13.435683] ACPI: Power Button [PWRF]
->  
-> So the question is .. should both register and should scripts adjust to pick up just one of them ?
-> Or can, as a more general solution, just one be ignored when registering ?
-
-> --
-> Sander
-
-Whoops sorry for the fragmentation of the report ... but just thought the output 
-under kernel 3.2.0 could be handy as well .. as that only fires one event:
-
-[    4.003753] input: Power Button as /devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0C:00/input/input1
-[    4.003838] ACPI: Power Button [PWRB]
-[    4.003977] input: Power Button as /devices/LNXSYSTM:00/LNXPWRBN:00/input/input2
-[    4.005530] ACPI: Power Button [PWRF]
-
-It registers also two ..
-But when the power button is pressed only fires this one:
-
-1421673524-817561070 | button/power PBTN 00000080 00000000
-
---
-Sander
-
+'The reason for these is because future patches to add additional functionality
+will introduce I2C access functions which do not use regmap and access the
+device via a separate I2C address for this purpose. I will need to provide
+access functions for that, and so having a common style of I2C access makes
+sense for this driver. Means any access just needs to provide the MFD private
+data, and the relevant functions take care of the rest. I think this is cleaner
+in this instance.'
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
