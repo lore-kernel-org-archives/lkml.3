@@ -1,93 +1,391 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115AbbASJIz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 04:08:55 -0500
-Received: from mga02.intel.com ([134.134.136.20]:16681 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751468AbbASJIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 04:08:52 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="442193793"
-Date: Mon, 19 Jan 2015 11:08:47 +0200
-From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
-To: Jeremiah Mahler <jmmahler@gmail.com>,
-        Matt Roper <matthew.d.roper@intel.com>,
-        Daniel Vetter <daniel.vetter@intel.com>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>,
-        Ander Conselvan de Oliveira <conselvan2@gmail.com>,
-        linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [BUG, bisect] drm/i915: mouse pointer lags and
- overshoots
-Message-ID: <20150119090847.GQ10649@intel.com>
-References: <20150117100635.GA1281@hudson.localdomain>
+	id S1751609AbbASJRP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 04:17:15 -0500
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:39822 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751506AbbASJRM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 04:17:12 -0500
+Date: Mon, 19 Jan 2015 09:17:05 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Robert Jarzmik <robert.jarzmik@free.fr>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Daniel Mack <daniel@zonque.org>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 2/3] mfd: lubbock_io: add lubbock_io board
+Message-ID: <20150119091705.GG21886@x1>
+References: <1421406010-14851-1-git-send-email-robert.jarzmik@free.fr>
+ <1421406010-14851-2-git-send-email-robert.jarzmik@free.fr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20150117100635.GA1281@hudson.localdomain>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <1421406010-14851-2-git-send-email-robert.jarzmik@free.fr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 17, 2015 at 02:06:35AM -0800, Jeremiah Mahler wrote:
-> Matt, all,
+On Fri, 16 Jan 2015, Robert Jarzmik wrote:
+
+> Lubbock () board is the IO motherboard of the Intel PXA25x Development
+> Platform, which supports the Lubbock pxa25x soc board.
 > 
-> Commit ea2c67bb4aff introduces a bug which causes the mouse to move in a
-> very unusual way, as if it has a lot of inertia.  It will lag behind and
-> then overshoot the expected position.
+> Historically, this support was in arch/arm/mach-pxa/lubbock.c. When
+> gpio-pxa was moved to drivers/pxa, it became a driver, and its
+> initialization and probing happened at postcore initcall. The lubbock
+> code used to install the chained lubbock interrupt handler at init_irq()
+> time.
 > 
-> I reproduced this bug on all my machines which use the drm/i915 drivers
-> and it affects all forms of mouse pointers including both touchpads and
-> usb mice.  The patch is present in linux-next 20150116.
+> The consequence of the gpio-pxa change is that the installed chained irq
+> handler lubbock_irq_handler() was overwritten in pxa_gpio_probe(_dt)(),
+> removing :
+>  - the handler
+>  - the falling edge detection setting of GPIO0, which revealed the
+>    interrupt request from the lubbock IO board.
 > 
->   commit ea2c67bb4affa84080c616920f3899f123786e56
->   Author: Matt Roper <matthew.d.roper@intel.com>
->   Date:   Tue Dec 23 10:41:52 2014 -0800
->   
->       drm/i915: Move to atomic plane helpers (v9)
+> As a fix, move the gpio0 chained handler setup to a place where we have
+> the guarantee that pxa_gpio_probe() was called before, so that lubbock
+> handler becomes the true IRQ chained handler of GPIO0, demuxing the
+> lubbock IO board interrupts.
 
-I guess this is caused by the atomic code refusing to update the plane
-more than once per vrefresh. So we need to allow the fps>vrefresh rate
-case to remove the regression.
+How is this guaranteed?
 
-The old cursor code had basically a gross hack to allow this. It just
-unpinned the old fb before the display engine was done with it, and
-_after_ unpinning it flipped to the new buffer (with the obvious extra
-delay of the flip happening on the next vblank). So there was no
-guarantee the old buffer was still around (or had the correct content)
-while the display engine was still scanning it out. So to fix this
-properly we need a vblank worker of some sort.
+> This patch moves all that handling to a mfd driver. It's only purpose
+> for the time being is the interrupt handling, but in the future it
+> should encompass all the motherboard CPLDs handling :
+>  - leds
+>  - switches
+>  - hexleds
+> 
+> Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
+> ---
+> Since v1: change the name from cottula to lubbock_io
+>             Dmitry pointed out the Cottula was the pxa25x family name,
+> 	    lubbock was the pxa25x development board name. Therefore the
+> 	    name was changed to lubbock_io (lubbock IO board)
+> 	  change the resources to bi-irq ioresource
+> 	    Discussion between Arnd and Robert to change the gpio
+> 	    request by a irq request.
+> Since v2: take into account Mark's review
+>       	    Use irq flags from resources (DT case and pdata case).
+> 	    Change of name from lubbock_io to lubbock-io
+> ---
+>  drivers/mfd/Kconfig   |  10 +++
+>  drivers/mfd/Makefile  |   1 +
+>  drivers/mfd/lubbock.c | 196 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 207 insertions(+)
+>  create mode 100644 drivers/mfd/lubbock.c
+> 
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index 2e6b731..4d8939f 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -91,6 +91,16 @@ config MFD_AXP20X
+>  	  components like regulators or the PEK (Power Enable Key) under the
+>  	  corresponding menus.
+>  
+> +config MFD_LUBBOCK
+> +	bool "Lubbock Motherboard"
+> +	def_bool ARCH_LUBBOCK
+> +	select MFD_CORE
+> +	help
+> +	  This driver supports the Lubbock multifunction chip found on the
+> +	  pxa25x development platform system (named Lubbock). This IO board
+> +	  supports the interrupts handling, ethernet controller, flash chips,
+> +	  etc ...
+> +
+>  config MFD_CROS_EC
+>  	tristate "ChromeOS Embedded Controller"
+>  	select MFD_CORE
+> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> index 53467e2..aff1f4f 100644
+> --- a/drivers/mfd/Makefile
+> +++ b/drivers/mfd/Makefile
+> @@ -9,6 +9,7 @@ obj-$(CONFIG_MFD_88PM805)	+= 88pm805.o 88pm80x.o
+>  obj-$(CONFIG_MFD_SM501)		+= sm501.o
+>  obj-$(CONFIG_MFD_ASIC3)		+= asic3.o tmio_core.o
+>  obj-$(CONFIG_MFD_BCM590XX)	+= bcm590xx.o
+> +obj-$(CONFIG_MFD_LUBBOCK)	+= lubbock.o
+>  obj-$(CONFIG_MFD_CROS_EC)	+= cros_ec.o
+>  obj-$(CONFIG_MFD_CROS_EC_I2C)	+= cros_ec_i2c.o
+>  obj-$(CONFIG_MFD_CROS_EC_SPI)	+= cros_ec_spi.o
+> diff --git a/drivers/mfd/lubbock.c b/drivers/mfd/lubbock.c
+> new file mode 100644
+> index 0000000..6025135
+> --- /dev/null
+> +++ b/drivers/mfd/lubbock.c
+> @@ -0,0 +1,196 @@
+> +/*
+> + * Intel Cotulla MFD - lubbock motherboard
+> + *
+> + * Copyright (C) 2014 Robert Jarzmik
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * Lubbock motherboard driver, supporting lubbock (aka. pxa25x) soc board.
 
-The other issues we nee to know which fb is being scanned out at which
-point to unpin the correct old buffer. For that we can use the hardware
-frame counter. We could use some other mechanims too (SURFLIVE, flip
-counter etc.) but the frame counter is the most ubiqitious method we
-have.
+Please use uppercase characters i.e. Lubbock, PXA25X, SoC, etc.
 
-The one extra problem is gen2 doesn't have even the frame counter, so
-some extra care would be needed there. I'm thinking for gen2 we might
-allow the driver to call into the vblank core code to update the cooked
-counter at any time based on the scanline counter and monotonic timestamp.
-That combined with the vblank evade mechanism should make reasonably sure
-we have an up to date notion of which frame is currently getting scanned
-out.
+> + *
 
-We need the extra call into the vblank core since just after the vblank
-start, the vblank interrupt handler may not have executed yet (especially
-since gen2 vblank irq fires actually at the frame start which is a delayed
-version of the vblank start, even though the flip happes at vblank start).
-So we need an explicit call to make sure the cooked counter is already
-updated before the irq handler has executed. I have some changes lined
-up for the vblank code which I think could help make sure he extra call
-won't increment the counter spuriously, but I have to clean those up a
-bit before sending them out.
+Superfluous '\n'.
+
+> + */
+> +
+> +#include <linux/bitops.h>
+> +#include <linux/gpio.h>
+> +#include <linux/gpio/consumer.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/io.h>
+> +#include <linux/irq.h>
+> +#include <linux/irqdomain.h>
+> +#include <linux/mfd/core.h>
+> +#include <linux/module.h>
+
+Can this be built as a module?
+
+If so, why isn't it a tristate?
+
+> +#include <linux/of_platform.h>
+> +
+> +#define COT_IRQ_MASK_EN 0xc0
+> +#define COT_IRQ_SET_CLR 0xd0
+> +
+> +#define LUBBOCK_NB_IRQ	8
+> +
+> +struct lubbock {
+> +	void __iomem	*base;
+
+Random spacing.
+
+> +	int irq;
+> +	unsigned int irq_mask;
+> +	struct gpio_desc *gpio0;
+> +	struct irq_domain *irqdomain;
+> +};
+> +
+> +static irqreturn_t lubbock_irq_handler(int in_irq, void *d)
+> +{
+> +	struct lubbock *cot = d;
+> +	unsigned long pending;
+> +	unsigned int bit;
+> +
+> +	pending = readl(cot->base + COT_IRQ_SET_CLR) & cot->irq_mask;
+> +	for_each_set_bit(bit, &pending, LUBBOCK_NB_IRQ)
+> +		generic_handle_irq(irq_find_mapping(cot->irqdomain, bit));
+
+I'd like to see a '\n' here.
+
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static void lubbock_irq_mask_ack(struct irq_data *d)
+> +{
+> +	struct lubbock *cot = irq_data_get_irq_chip_data(d);
+> +	unsigned int lubbock_irq = irqd_to_hwirq(d);
+> +	unsigned int set, bit = BIT(lubbock_irq);
+> +
+> +	cot->irq_mask &= ~bit;
+> +	writel(cot->irq_mask, cot->base + COT_IRQ_MASK_EN);
+> +	set = readl(cot->base + COT_IRQ_SET_CLR);
+> +	writel(set & ~bit, cot->base + COT_IRQ_SET_CLR);
+> +}
+> +
+> +static void lubbock_irq_unmask(struct irq_data *d)
+> +{
+> +	struct lubbock *cot = irq_data_get_irq_chip_data(d);
+> +	unsigned int lubbock_irq = irqd_to_hwirq(d);
+> +	unsigned int bit = BIT(lubbock_irq);
+> +
+> +	cot->irq_mask |= bit;
+> +	writel(cot->irq_mask, cot->base + COT_IRQ_MASK_EN);
+> +}
+> +
+> +static struct irq_chip lubbock_irq_chip = {
+> +	.name		= "lubbock",
+> +	.irq_mask_ack	= lubbock_irq_mask_ack,
+> +	.irq_unmask	= lubbock_irq_unmask,
+> +	.flags		= IRQCHIP_MASK_ON_SUSPEND | IRQCHIP_SKIP_SET_WAKE,
+> +};
+> +
+> +static int lubbock_irq_domain_map(struct irq_domain *d, unsigned int irq,
+> +				   irq_hw_number_t hwirq)
+> +{
+> +	struct lubbock *cot = d->host_data;
+> +
+> +	irq_set_chip_and_handler(irq, &lubbock_irq_chip, handle_level_irq);
+> +	irq_set_chip_data(irq, cot);
+
+Again, I'd prefer some separation between code and the return.
+
+(same in all cases below).
+
+> +	return 0;
+> +}
+> +
+> +static const struct irq_domain_ops lubbock_irq_domain_ops = {
+> +	.xlate = irq_domain_xlate_twocell,
+> +	.map = lubbock_irq_domain_map,
+> +};
+> +
+> +static int lubbock_resume(struct platform_device *pdev)
+> +{
+> +	struct lubbock *cot = platform_get_drvdata(pdev);
+> +
+> +	writel(cot->irq_mask, cot->base + COT_IRQ_MASK_EN);
+> +	return 0;
+> +}
+> +
+> +static int lubbock_probe(struct platform_device *pdev)
+> +{
+> +	struct resource *res;
+> +	struct lubbock *cot;
+> +	int ret;
+> +	unsigned int base_irq = 0;
+> +	unsigned long irqflags;
+> +
+> +	cot = devm_kzalloc(&pdev->dev, sizeof(*cot), GFP_KERNEL);
+> +	if (!cot)
+> +		return -ENOMEM;
+
+'\n' here.
+
+> +	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
+
+platform_get_irq()?
+
+> +	if (res) {
+> +		cot->irq = (unsigned int)res->start;
+> +		irqflags = res->flags;
+> +	}
+> +	if (!cot->irq)
+> +		return -ENODEV;
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_IRQ, 1);
+
+platform_get_irq()?
+
+> +	if (res)
+> +		base_irq = (unsigned int)res->start;
+> +
+> +	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	cot->base = devm_ioremap_resource(&pdev->dev, res);
+> +	if (IS_ERR(cot->base))
+> +		return PTR_ERR(cot->base);
+> +
+> +	platform_set_drvdata(pdev, cot);
+> +
+> +	writel(cot->irq_mask, cot->base + COT_IRQ_MASK_EN);
+> +	writel(0, cot->base + COT_IRQ_SET_CLR);
+
+'\n'
+
+> +	ret = devm_request_irq(&pdev->dev, cot->irq, lubbock_irq_handler,
+> +			       irqflags, dev_name(&pdev->dev), cot);
+> +	if (ret == -ENOSYS)
+> +		return -EPROBE_DEFER;
+
+I haven't seen anyone do this after devm_request_irq() before.
+
+Why is it required here?
+
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Couldn't request main irq : ret = %d\n",
+> +			ret);
+
+I'm not keen on this type of formatting.  Besides the system will
+print out the returned error on failure.
+
+> +		return ret;
+> +	}
+> +	irq_set_irq_wake(cot->irq, 1);
+> +
+> +	cot->irqdomain =
+> +		irq_domain_add_linear(pdev->dev.of_node, LUBBOCK_NB_IRQ,
+> +				      &lubbock_irq_domain_ops, cot);
+
+As a personal preference, I would prefer to see:
+
+	cot->irqdomain = irq_domain_add_linear(pdev->dev.of_node,
+					       LUBBOCK_NB_IRQ,
+					       &lubbock_irq_domain_ops, cot);
+
+> +	if (!cot->irqdomain)
+> +		return -ENODEV;
+> +
+> +	ret = 0;
+
+'ret' will be zero here, or we would have returned already.
+
+> +	if (base_irq)
+> +		ret = irq_create_strict_mappings(cot->irqdomain, base_irq, 0,
+> +						 LUBBOCK_NB_IRQ);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Couldn't create the irq mapping %d..%d\n",
+> +			base_irq, base_irq + LUBBOCK_NB_IRQ);
+> +		return ret;
+> +	}
+
+Is this solely the check from irq_create_strict_mappings(), therefore
+it should be inside the previous if () { ... }.
+
+> +	dev_info(&pdev->dev, "base=%p, irq=%d, base_irq=%d\n",
+> +		 cot->base, cot->irq, base_irq);
+
+Please remove this line.
+
+> +	return 0;
+> +}
+> +
+> +static int lubbock_remove(struct platform_device *pdev)
+> +{
+> +	struct lubbock *cot = platform_get_drvdata(pdev);
+> +
+> +	irq_set_chip_and_handler(cot->irq, NULL, NULL);
+> +	return 0;
+> +}
+> +
+> +static const struct of_device_id lubbock_id_table[] = {
+> +	{ .compatible = "intel,lubbock-io", },
+> +	{ }
+> +};
+> +MODULE_DEVICE_TABLE(of, lubbock_id_table);
+> +
+> +static struct platform_driver lubbock_driver = {
+> +	.driver		= {
+> +		.name	= "lubbock_io",
+> +		.of_match_table = of_match_ptr(lubbock_id_table),
+> +	},
+> +	.probe		= lubbock_probe,
+> +	.remove		= lubbock_remove,
+> +	.resume		= lubbock_resume,
+> +};
+> +
+> +module_platform_driver(lubbock_driver);
+> +
+> +MODULE_DESCRIPTION("Lubbock driver");
+
+"Lubbock MFD Driver"?
+
+> +MODULE_AUTHOR("Robert Jarzmik");
+
+Email.
+
+> +MODULE_LICENSE("GPL");
 
 -- 
-Ville Syrjälä
-Intel OTC
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org â”‚ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
