@@ -1,133 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752024AbbASOXQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 09:23:16 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:38057 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750728AbbASOXN (ORCPT
+	id S1752431AbbASO34 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 09:29:56 -0500
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.164]:37550 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751403AbbASO3z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 09:23:13 -0500
-Date: Mon, 19 Jan 2015 14:22:53 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Cc: "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "wangyijing@huawei.com" <wangyijing@huawei.com>,
-        Rob Herring <robh@kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Al Stone <al.stone@linaro.org>, Timur Tabi <timur@codeaurora.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        "jcm@redhat.com" <jcm@redhat.com>, Mark Brown <broonie@kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v7 04/17] ARM64 / ACPI: Introduce early_param for "acpi"
- and pass acpi=force to enable ACPI
-Message-ID: <20150119142253.GJ11835@e104818-lin.cambridge.arm.com>
-References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org>
- <1421247905-3749-5-git-send-email-hanjun.guo@linaro.org>
- <20150119114255.GF11835@e104818-lin.cambridge.arm.com>
- <CAKv+Gu8vPKAdsNg7QC7xW+i8_BemWEx4mvBx6NrnAHi8Y+bNtw@mail.gmail.com>
- <20150119135144.GI11835@e104818-lin.cambridge.arm.com>
- <CAKv+Gu_KmJOHM5-QHQFHc5eDtUMQjmf=7jD4+e32aq0JerTcLg@mail.gmail.com>
+	Mon, 19 Jan 2015 09:29:55 -0500
+X-Greylist: delayed 410 seconds by postgrey-1.27 at vger.kernel.org; Mon, 19 Jan 2015 09:29:54 EST
+X-Env-Sender: stwiss.opensource@diasemi.com
+X-Msg-Ref: server-15.tower-39.messagelabs.com!1421677381!27723493!1
+X-Originating-IP: [94.185.165.51]
+X-StarScan-Received: 
+X-StarScan-Version: 6.12.5; banners=-,-,-
+X-VirusChecked: Checked
+From: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
+To: Lee Jones <lee.jones@linaro.org>
+CC: Grant Likely <grant.likely@linaro.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        "Mark Rutland" <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        Rob Herring <robh+dt@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        DT <devicetree@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        LKML <linux-kernel@vger.kernel.org>, Mark Brown <broonie@linaro.org>,
+        "Philipp Zabel" <p.zabel@pengutronix.de>,
+        Support Opensource <Support.Opensource@diasemi.com>
+Subject: RE: [PATCH V1] mfd: da9063: Add device tree support
+Thread-Topic: [PATCH V1] mfd: da9063: Add device tree support
+Thread-Index: AQHQMAfIRQ9Taq9op0KhnMfi9yaqmZzHO76AgAAv/sA=
+Date: Mon, 19 Jan 2015 14:22:59 +0000
+Message-ID: <6ED8E3B22081A4459DAC7699F3695FB7D0B52C08@SW-EX-MBX02.diasemi.com>
+References: <201501141438.t0EEcMBg010491@swsrvapps-01.diasemi.com>
+ <20150119095423.GM21886@x1>
+In-Reply-To: <20150119095423.GM21886@x1>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.26.77]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKv+Gu_KmJOHM5-QHQFHc5eDtUMQjmf=7jD4+e32aq0JerTcLg@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0JEU2x5004074
 
-On Mon, Jan 19, 2015 at 02:00:24PM +0000, Ard Biesheuvel wrote:
-> On 19 January 2015 at 13:51, Catalin Marinas <catalin.marinas@arm.com> wrote:
-> > On Mon, Jan 19, 2015 at 11:55:32AM +0000, Ard Biesheuvel wrote:
-> >> On 19 January 2015 at 11:42, Catalin Marinas <catalin.marinas@arm.com> wrote:
-> >> > On Wed, Jan 14, 2015 at 03:04:52PM +0000, Hanjun Guo wrote:
-> >> >> From: Al Stone <al.stone@linaro.org>
-> >> >>
-> >> >> Introduce one early parameters "off" and "force" for "acpi", acpi=off
-> >> >> will be the default behavior for ARM64, so introduce acpi=force to
-> >> >> enable ACPI on ARM64.
-> >> >>
-> >> >> Disable ACPI before early parameters parsed, and enable it to pass
-> >> >> "acpi=force" if people want use ACPI on ARM64. This ensures DT be
-> >> >> the prefer one if ACPI table and DT both are provided at this moment.
-> >> > [...]
-> >> >> --- a/arch/arm64/kernel/setup.c
-> >> >> +++ b/arch/arm64/kernel/setup.c
-> >> >> @@ -62,6 +62,7 @@
-> >> >>  #include <asm/memblock.h>
-> >> >>  #include <asm/psci.h>
-> >> >>  #include <asm/efi.h>
-> >> >> +#include <asm/acpi.h>
-> >> >>
-> >> >>  unsigned int processor_id;
-> >> >>  EXPORT_SYMBOL(processor_id);
-> >> >> @@ -388,6 +389,8 @@ void __init setup_arch(char **cmdline_p)
-> >> >>       early_fixmap_init();
-> >> >>       early_ioremap_init();
-> >> >>
-> >> >> +     disable_acpi();
-> >> >> +
-> >> >>       parse_early_param();
-> >> >>
-> >> >>       /*
-> >> >
-> >> > Did we get to any conclusion here? DT being the preferred one is fine
-> >> > when both DT and ACPI are present but do we still want the kernel to
-> >> > ignore ACPI altogether if DT is not present? It's a bit harder to detect
-> >> > the presence of DT at this point since the EFI_STUB added one already. I
-> >> > guess we could move the "acpi=force" argument passing to EFI_STUB if no
-> >> > DT is present at boot.
-> >>
-> >> Since the EFI stub populates the /chosen node in DT, I would prefer
-> >> for it to add a property there to indicate whether it created the DT
-> >> from scratch rather than adding ACPI specific stuff in there (even if
-> >> it is just a string to concatenate)
+On 19 January 2015 09:54, Lee Jones wrote:
+
+> On Wed, 14 Jan 2015, Steve Twiss wrote:
+> > From: Steve Twiss <stwiss.opensource@diasemi.com>
 > >
-> > This works for me. So we could pass "acpi=force" in EFI stub if it
-> > created the DT from scratch *and* ACPI tables are present (can it detect
-> > the latter? And maybe it could print something if none are available).
-> > If that works, the actual kernel can assume that ACPI needs to be
-> > explicitly enabled via acpi=force, irrespective of how much information
-> > it has in DT.
+> > ---
+> > Checks performed with linux-next/v3.19-rc4/scripts/checkpatch.pl
+> >  da9063.txt                total: 0 errors, 0 warnings, 94 lines checked
+> >  da9063-core.c             total: 0 errors, 0 warnings, 192 lines checked
+> >  da9063-i2c.c              total: 0 errors, 0 warnings, 277 lines checked
+> >  core.h                    total: 0 errors, 0 warnings, 99 lines checked
 > 
-> Erm, that is not at all what I meant. What I meant was, that if it is
-> interesting to the kernel proper to know whether the DT was created
-> from scratch by the stub rather than received from the firmware, we
-> can record that particular fact in the /chosen node, and nothing else.
-> How this is interpreted is up to the kernel proper entirely.
+> There is no need to put this in here really.  It is assumed that
+> checkpatch.pl has been run and that no warnings/errors exists.
+> 
 
-That works as well and I agree with you that splitting the decision
-between EFI stub and the kernel could cause trouble.
+ok -- I will remove this in future
 
-Basically what we need is to know whether DT has platform description or
-just the chosen node. There could be many ways to achieve this but EFI
-stub passing such information is a good place (and acpi=force went a bit
-too far ;)).
+[...]
 
-> Note that the stub may outlive many subsequent kexec reboots, so
-> dividing policy like this across the stub/kernel boundary is asking
-> for trouble imo. For instance, booting with a DT via kexec would be
-> impossible unless we add special handling for this case, which is
-> exactly what I tried to avoid with my latest virtmap series.
+> > +Required properties:
+> > +
+> > +- compatible : Should be "dlg,da9063-ca", "dlg,da9063-bb" or/and
+> > +  "dlg,da9063-ad".
+> 
+> What are 'ca', 'bb' and 'ad'?
 
-I haven't paid much attention to the kexec series yet but I assume a
-kexec'ed kernel doesn't go through EFI stub again.
+There are multiple variants of the DA9063 chip -- historical support.
+The AD chip has a different register map to BB and CA  silicon and the
+variant information is read from the chip at run-time and used to set
+up the correct regmap_config tables during initialisation.
 
--- 
-Catalin
+[...]
+
+> > +++ b/drivers/mfd/da9063-core.c
+> > @@ -85,6 +85,7 @@ static const struct mfd_cell da9063_devs[] = {
+> >  		.name		= DA9063_DRVNAME_LEDS,
+> >  	},
+> >  	{
+> > +		.of_compatible = "dlg,da9063-watchdog",
+> 
+> Can you put the of_compatible attribute at the end of the structure
+> please?
+> 
+> >  		.name		= DA9063_DRVNAME_WATCHDOG,
+> >  	},
+> >  	{
+> > @@ -98,6 +99,7 @@ static const struct mfd_cell da9063_devs[] = {
+> >  		.resources	= da9063_onkey_resources,
+> >  	},
+> >  	{
+> > +		.of_compatible = "dlg,da9063-rtc",
+> 
+> Same here.
+
+Sure.
+
+[...]
+> >
+> > +static const struct of_device_id da9063_dt_ids[] = {
+> > +	{ .compatible = "dlg,da9063-ad", },
+> > +	{ .compatible = "dlg,da9063-bb", },
+> > +	{ .compatible = "dlg,da9063-ca", },
+> 
+> Why is there a need to differientiae between 'ad', 'bb' and 'ca'
+> (whatever they are)?
+
+As described above.
+
+> > +	{ /* sentinel */ }
+> 
+> Nit: You can drop this comment.
+
+ok.
+
+[...]
+
+I will also make changes to separate into multiple patches
+as described in https://lkml.org/lkml/2015/1/19/149
+Will re-send as patch V2 ...
+
+Regards,
+Steve
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
