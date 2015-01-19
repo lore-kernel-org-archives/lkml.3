@@ -1,86 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123AbbASVta (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 16:49:30 -0500
-Received: from smtprelay0171.hostedemail.com ([216.40.44.171]:41287 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751621AbbASVt3 (ORCPT
+	id S1752277AbbASVvD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 16:51:03 -0500
+Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:32677 "EHLO
+	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751621AbbASVvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 16:49:29 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::,RULES_HIT:41:355:379:541:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1437:1515:1516:1518:1534:1542:1593:1594:1711:1730:1747:1777:1792:2194:2199:2393:2553:2559:2562:2741:2897:3138:3139:3140:3141:3142:3353:3865:3867:3868:3871:3872:3874:4250:4321:4605:5007:6119:6120:6261:7875:9040:9121:10004:10400:10848:11026:11657:11658:11914:12043:12262:12294:12296:12438:12517:12519:12555:12679:12740:14096:14097:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: color47_1854257f9e34b
-X-Filterd-Recvd-Size: 2863
-Date: Mon, 19 Jan 2015 16:49:26 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: LKML <linux-kernel@vger.kernel.org>, stable <stable@vger.kernel.org>,
-        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH][v3.2] Revert: x86, 64bit, mm: Mark data/bss/brk to nx
-Message-ID: <20150119164926.168e8101@gandalf.local.home>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
+	Mon, 19 Jan 2015 16:51:00 -0500
+X-IronPort-AV: E=Sophos;i="5.09,429,1418112000"; 
+   d="scan'208";a="55126452"
+From: Ray Jui <rjui@broadcom.com>
+To: Wolfram Sang <wsa@the-dreams.de>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Arend van Spriel <arend@broadcom.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>
+CC: Scott Branden <sbranden@broadcom.com>, <linux-i2c@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>,
+        "Ray Jui" <rjui@broadcom.com>
+Subject: [PATCH v7 0/3] Add I2C support to Broadcom iProc
+Date: Mon, 19 Jan 2015 13:51:47 -0800
+Message-ID: <1421704310-26857-1-git-send-email-rjui@broadcom.com>
+X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <Ray Jui <rjui@broadcom.com>
+References: <Ray Jui <rjui@broadcom.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patchset contains the initial I2C support for Broadcom iProc family of
+SoCs.
 
-Testing v3.2-rt I found that after merging the latest v3.2 stable tree,
-hotplug stopped working. I tested the latest v3.2 stable, and it was
-not working there either. I bisected it down to:
+The iProc I2C controller has separate internal TX and RX FIFOs, each has a
+size of 64 bytes. The iProc I2C controller supports two bus speeds including
+standard mode (100 kHz) and fast mode (400 kHz)
 
-commit e105c8187b7101e8a8a54ac0218c9d9c9463c636
-Author: Yinghai Lu <yinghai@kernel.org>
-Date:   Thu Jan 24 12:20:13 2013 -0800
+Changes from v6:
+ - Get rid of unnecessary atomic variable usage in the driver
+ - Improve the "waiting for transaction to complete" logic further by making
+   sure there's no pending/ongoing interrupt by the time when flag
+   'xfer_is_done' is checked
+ - After disabling interrupt with 'writel', add 'readl' to the same register
+   to flush the bus to ensure the write has gone through
 
-    x86, 64bit, mm: Mark data/bss/brk to nx
-    
-    commit 72212675d1c96f5db8ec6fb35701879911193158 upstream.
+Changes from v5:
+ - Improve the "waiting for transaction to be complete" logic to take care of
+   the corner case when an interrupt fires after wait_for_completion_timeout
+   times out
+ - Improve the logic to disable I2C interrupt in the remove function. Make it
+   more generic so it works for both dedicated and shared interrupt
 
-Simply doing:
+Changes from v4:
+ - Remove redundant header file includes
+ - Change the logic that waits for the host controller to be idle to
+   simply return -EBUSY
+ - Use proper print level and error codes in the driver
+ - Allow zero length message in the driver to support I2C_SMBUS_QUICK
+ - Change back to use devm_request_irq. Disable interrupt in the remove
+   function so there's no outstanding I2C interrupt when the driver is
+   being removed from the framework
+ - Other minor miscellaneous improvements and fixes
 
- # echo 0 > /sys/devices/system/cpu/cpu1/online
- # echo 1 > /sys/devices/system/cpu/cpu1/online
+Changes from v3:
+ - Add config dependency to COMPILE_TEST to allow the driver to be build tested
+   by other platforms
+ - Improve CPU utilization efficiency in the loop of waiting for bus to idle
+ - Add more comment in the driver to clarify the way how the "start busy"
+   interrupt is triggered from the I2C controller
+ - Fix inconsistent coding style and format
+ - Improve the bus speed validation logic in the driver
+ - Add code to free the interrupt line in driver's remove function. Also
+   change to use non-devm API to request the interrupt line
+ - Other miscellaneous improvements and fixes
 
-caused the system to reboot.
+Changes from v2:
+ - Have the I2C driver default to y so it does not need to be selected from
+   ARCH_BCM_IPROC. This also helps to get rid of one patch. The driver still
+   depends on ARCH_BCM_IPROC
+ - Get rid of redundant check on resource returned by platform_get_resource
 
-After reverting that commit, hotplug works again on the v3.2 stable
-tree.
+Changes from v1:
+ - Fix function argument parenthesis
+ - Get rid of redundant driver owner field
 
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 266f71719e42..783eba48d00c 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -778,7 +778,6 @@ void mark_rodata_ro(void)
- 	unsigned long text_end = PAGE_ALIGN((unsigned long) &__stop___ex_table);
- 	unsigned long rodata_end = PAGE_ALIGN((unsigned long) &__end_rodata);
- 	unsigned long data_start = (unsigned long) &_sdata;
--	unsigned long all_end;
- 
- 	printk(KERN_INFO "Write protecting the kernel read-only data: %luk\n",
- 	       (end - start) >> 10);
-@@ -787,8 +786,8 @@ void mark_rodata_ro(void)
- 	kernel_set_to_readonly = 1;
- 
- 	/*
--	 * The rodata/data/bss/brk section (but not the kernel text!)
--	 * should also be not-executable.
-+	 * The rodata section (but not the kernel text!) should also be
-+	 * not-executable.
- 	 *
- 	 * We align all_end to PMD_SIZE because the existing mapping
- 	 * is a full PMD. If we would align _brk_end to PAGE_SIZE we
-@@ -798,8 +797,7 @@ void mark_rodata_ro(void)
- 	 * Any PMD which was setup after the one which covers _brk_end
- 	 * has been zapped already via cleanup_highmem().
- 	 */
--	all_end = roundup((unsigned long)_brk_end, PMD_SIZE);
--	set_memory_nx(rodata_start, (all_end - rodata_start) >> PAGE_SHIFT);
-+	set_memory_nx(rodata_start, (end - rodata_start) >> PAGE_SHIFT);
- 
- 	rodata_test();
- 
+Ray Jui (3):
+  i2c: iProc: define Broadcom iProc I2C binding
+  i2c: iproc: Add Broadcom iProc I2C Driver
+  ARM: dts: add I2C device nodes for Broadcom Cygnus
+
+ .../devicetree/bindings/i2c/brcm,iproc-i2c.txt     |   37 ++
+ arch/arm/boot/dts/bcm-cygnus.dtsi                  |   20 +
+ drivers/i2c/busses/Kconfig                         |   10 +
+ drivers/i2c/busses/Makefile                        |    1 +
+ drivers/i2c/busses/i2c-bcm-iproc.c                 |  505 ++++++++++++++++++++
+ 5 files changed, 573 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/i2c/brcm,iproc-i2c.txt
+ create mode 100644 drivers/i2c/busses/i2c-bcm-iproc.c
+
+-- 
+1.7.9.5
+
