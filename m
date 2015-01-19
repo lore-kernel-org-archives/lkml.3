@@ -1,58 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752336AbbASUbu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 15:31:50 -0500
-Received: from mail-pa0-f47.google.com ([209.85.220.47]:58209 "EHLO
-	mail-pa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752237AbbASUbr (ORCPT
+	id S1752226AbbASVUl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 16:20:41 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:52112 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752164AbbASVUh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 15:31:47 -0500
-Date: Mon, 19 Jan 2015 12:31:43 -0800
-From: Brian Norris <computersforpeace@gmail.com>
-To: SF Markus Elfring <elfring@users.sourceforge.net>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-mtd@lists.infradead.org, LKML <linux-kernel@vger.kernel.org>,
-        kernel-janitors@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>
-Subject: Re: [PATCH] MTD: Deletion of checks before the function call
- "iounmap"
-Message-ID: <20150119203143.GL9759@ld-irv-0074>
-References: <530CF8FF.8080600@users.sourceforge.net>
- <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6>
- <530DD06F.4090703@users.sourceforge.net>
- <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6>
- <5317A59D.4@users.sourceforge.net>
- <54BBE87C.9020705@users.sourceforge.net>
- <20150119175835.GH9759@ld-irv-0074>
- <54BD4AB6.70708@users.sourceforge.net>
- <20150119183057.GI9759@ld-irv-0074>
- <54BD55F6.6090609@users.sourceforge.net>
+	Mon, 19 Jan 2015 16:20:37 -0500
+Date: Tue, 20 Jan 2015 04:31:55 +0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Johannes Stezenbach <js@sig21.net>
+Cc: arnd@arndb.de, ebiederm@xmission.com, gnomes@lxorguk.ukuu.org.uk,
+        teg@jklm.no, jkosina@suse.cz, luto@amacapital.net,
+        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
+        daniel@zonque.org, dh.herrmann@gmail.com, tixxdz@opendz.org
+Subject: Re: [PATCH v3 00/13] Add kdbus implementation
+Message-ID: <20150119203155.GA15441@kroah.com>
+References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>
+ <20150119180642.GA27957@sig21.net>
+ <20150119183806.GA8479@kroah.com>
+ <20150119201906.GA337@sig21.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54BD55F6.6090609@users.sourceforge.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20150119201906.GA337@sig21.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 19, 2015 at 08:07:34PM +0100, SF Markus Elfring wrote:
-> >> I published scripts for static source code analysis in March 2004.
-
-^^ That would be March 2014, not March 2004.
-
-> > I didn't ask "when?"; where?
+On Mon, Jan 19, 2015 at 09:19:06PM +0100, Johannes Stezenbach wrote:
+> On Tue, Jan 20, 2015 at 02:38:06AM +0800, Greg Kroah-Hartman wrote:
+> > Yes, I do agree, there are lots of existing ipc solutions today that
+> > kdbus is not designed for, nor would it be good to use it for.  The
+> > majority of them being IPC that crosses the network layer, as there are
+> > lots of good solutions today for that problem.  That being said, I do
+> > know one research group that has kdbus working cross-network, just "to
+> > try it out", but I don't know what ever came of it.
+> ...
+> > Everyone uses D-Bus today for everything on their system, so by
+> > replacing the underlying library with kdbus, they will continue to use
+> > it for everything without having to change any application or library
+> > code at all.
 > 
-> https://lkml.org/lkml/2014/3/5/356
-> http://article.gmane.org/gmane.comp.version-control.coccinelle/3513/
-> https://systeme.lip6.fr/pipermail/cocci/2014-March/000676.html
+> These two statements somehow contradict. From my admittedly very
+> limited experience, I never used D-Bus because it did not
+> fit my usage scenarios: I never needed a bus, only point-to-point
+> links like pipes or sockets.
+
+Great, then you don't need this, no need to worry about it at all, why
+are we having this conversation? :)
+
+> Let me rephrase my previous, lengthy mail: Will kdbus only
+> support the same IPC model as D-Bus (just with higher
+> performance and some bells and whistles), or will it
+> be useful for other scenarios?  Like, can two programs
+> use it to communicate directly without the need of
+> any daemon?  (And if so, would there be any advantage
+> compared to traditional UNIX IPC methods?)
+
+It's a totally different model, as you point out from what you are
+thinking of "traditional" IPC methods (side note, which of the 15+
+current IPC methods do you consider "traditional", we have a lot of them
+these days...)
+
+> You were comparing kdbus and Binder.  Why?
+
+Why not?  :)
+
+Seriously, they are related in a way, see my long blog post for all of
+the details about it if you are curious.
+
+> So far my impression is that D-Bus and Binder are
+> completely seperate things, not just because of
+> the thread vs. event-loop programming model but
+> also because Binder is not a bus (i.e. no multicast messaging).
+
+People compare them a lot, which is why I brought it up, it's a
+discussion that needed to be made.
+
+> > Hope this helps,
 > 
-> Do you get further ideas from this software analysis approach?
+> Well, it made your intentions a bit clearer, but it does
+> not help to sell kdbus to me, sorry ;-/
 
-I suppose. I've gotten the idea that I can generate a ton of patches
-using an automated tool, not test or research them, possibly add bugs to
-the kernel, and still get a good percentage of my patches merged.
+It's not my "goal" to sell kdbus to you, if you don't want it, great,
+don't worry about it, don't build it on your kernels, and the world will
+be fine.  Consider it like any other "driver" or filesystem, if you
+don't need it, there's nothing to even discuss.
 
-Now, have *you* learned anything from this approach?
+But odds are, you are using a system with D-Bus today, if not, then you
+are using Linux in a very specific and limited manner, which is
+wonderful, in that case this whole thread isn't really pertinent.
 
-Brian
+Lots of people do use D-Bus, and for those users, that is what this
+patchset is for.
+
+Hope that helps clear things up,
+
+greg k-h
