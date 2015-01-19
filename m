@@ -1,149 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752177AbbASOGg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 09:06:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40031 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751404AbbASOGf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 09:06:35 -0500
-Date: Mon, 19 Jan 2015 09:06:12 -0500
-From: Don Zickus <dzickus@redhat.com>
-To: Zhang Zhen <zhenzhang.zhang@huawei.com>
-Cc: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        morgan.wang@huawei.com, josh@freedesktop.org, dipankar@in.ibm.com
-Subject: Re: RCU CPU stall console spews  leads to soft lockup disabled is
- reasonable ?
-Message-ID: <20150119140612.GI116159@redhat.com>
-References: <54BCBB33.6060608@huawei.com>
- <20150119084200.GE9719@linux.vnet.ibm.com>
- <54BCC89D.9040702@huawei.com>
+	id S1752316AbbASOHu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 09:07:50 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:48531 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751552AbbASOHt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 09:07:49 -0500
+Message-ID: <54BD0FA8.60606@gmail.com>
+Date: Mon, 19 Jan 2015 15:07:36 +0100
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54BCC89D.9040702@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Thomas Gleixner <tglx@linutronix.de>, Darren Hart <dvhart@linux.intel.com>
+CC: mtk.manpages@gmail.com, "Carlos O'Donell" <carlos@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, Jakub Jelinek <jakub@redhat.com>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Torvald Riegel <triegel@redhat.com>,
+        Roland McGrath <roland@redhat.com>, Darren Hart <dvhart@infradead.org>,
+        Anton Blanchard <anton@samba.org>, Petr Baudis <pasky@suse.cz>,
+        Eric Dumazet <edumazet@google.com>,
+        bill o gallmeister <bgallmeister@gmail.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Daniel Wagner <wagi@monom.org>,
+        Rich Felker <dalias@libc.org>
+Subject: Re: futex(2) man page update help request
+References: <537346E5.4050407@gmail.com> <CF98E3EF.90564%dvhart@linux.intel.com> <CAKgNAkh+PWzT2SByaLk_OtiAXeZSkWoMgu+ivDOt1dTWVtaatQ@mail.gmail.com> <5373D0CA.2050204@redhat.com> <alpine.DEB.2.02.1405150121230.6261@ionos.tec.linutronix.de> <CAKgNAkjQ5Dd_U9OojXdgeforpRevvPHNFAw99kBFPCwHgf7Ggg@mail.gmail.com> <alpine.DEB.2.02.1405151144390.6261@ionos.tec.linutronix.de> <54B7D87C.3090901@gmail.com> <alpine.DEB.2.11.1501152313330.5526@nanos> <54B92B71.2090509@gmail.com> <alpine.DEB.2.11.1501161618080.5526@nanos> <54B97A72.2050205@gmail.com> <D0DEECA2.B7EAD%dvhart@linux.intel.com> <alpine.DEB.2.11.1501191144320.5526@nanos>
+In-Reply-To: <alpine.DEB.2.11.1501191144320.5526@nanos>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 19, 2015 at 05:04:29PM +0800, Zhang Zhen wrote:
-> > 
-> > Did you really intend to acquire the same spinlock twice in a row,
-> > forcing a self-deadlock?  If not, I of course suggest changing the second
-> > "spin_lock()" to "spin_unlock()".
-> > 
+On 01/19/2015 11:45 AM, Thomas Gleixner wrote:
+> On Fri, 16 Jan 2015, Darren Hart wrote:
+>> On 1/16/15, 12:54 PM, "Michael Kerrisk (man-pages)"
+>> <mtk.manpages@gmail.com> wrote:
+>>
+>>> On 01/16/2015 04:20 PM, Thomas Gleixner wrote:
+>>>> On Fri, 16 Jan 2015, Michael Kerrisk (man-pages) wrote:
+>>>>
+>>>>> Hello Thomas,
+>>>>>
+>>>>> On 01/15/2015 11:23 PM, Thomas Gleixner wrote:
+>>>>>> On Thu, 15 Jan 2015, Michael Kerrisk (man-pages) wrote:
+>>>>>>>> [EINVAL] uaddr equal uaddr2. Requeue to same futex.
+>>>>>>>
+>>>>>>> ??? I added this, but does this error not occur only for PI requeues?
+>>>>>>
+>>>>>> It's equally wrong for normal futexes. And its actually the same code
+>>>>>> checking for this for all variants.
+>>>>>
+>>>>> I don't understand "equally wrong" in your reply, I'm sorry. Do you
+>>>>> mean:
+>>>>>
+>>>>> a) This error text should be there for both normal and PI requeues
+>>>>
+>>>> It is there for both. The requeue code has that check independent of
+>>>> the requeue type (normal/pi). It never makes sense to requeue
+>>>> something to itself whether normal or pi futex. We added this for PI,
+>>>> because there it is harmful, but we did not special case it. So normal
+>>>> futexes get the same treatment.
+>>>
+>>> Hello Thomas, 
+>>>
+>>> Color me stupid, but I can't see this in futex_requeue(). Where is that
+>>> check that is "independent of the requeue type (normal/pi)"?
+>>>
+>>> When I look through futex_requeue(), all the likely looking sources
+>>> of EINVAL are governed by a check on the 'requeue_pi' argument.
+>>
+>>
+>> Right, in the non-PI case, I believe there are valid use cases: move to
+>> the back of the FIFO, for example (OK, maybe the only example?). Both
+>> tests ensuring uaddr1 != uaddr2 are under the requeue_pi conditional
+>> block. The second compares the keys in case they are not FUTEX_PRIVATE
+>> (uaddrs would be different, but still the same backing store).
+>>
+>> Thomas, am I missing a test for this someplace else?
 > 
-> Yes, i acquire the same spinlock twice in order to reproduce the problem.
-> 
-> > If your .config has CONFIG_TREE_RCU=y, the above is quite likely to
-> > give you an RCU CPU stall warning.
-> > 
-> 
-> In my .config CONFIG_TREE_RCU=y.
-> 
-> If softlockup_thresh < rcu_cpu_stall_timeout, it will give soft lockup warning.
-> If softlockup_thresh > rcu_cpu_stall_timeout, it will likely to give RCU CPU stall warning
-> just like above and no give soft lockup warning.
-> 
-> It means that RCU CPU stall console spews leads to soft lockup disabled.
-> Is this reasonable ?
+> No, I had a short look at the code misread it. So, yes, it's a valid
+> operation for the non PI case. Sorry for the confusion.
 
-I believe so.  In kernel v3.10.., all activity to the console executed
-touch_nmi_watchdog() which calls touch_softlockup_watchdog, which delayed
-the softlockup for another round of 'softlockup_thresh'.
-
-Of course back then, touch_nmi_watchdog touched all cpus.  So a problem
-like this was masked.  I believe this upstream commit 62572e29bc53, solved
-the problem.
-
-You can apply that commit and see if you if you get both RCU stall
-messages _and_ softlockup messages.  I believe that is what you were
-expecting, correct?
-
-
-Of course, on a non-virt guest, your test case would normally trigger a
-hardlockup warning first.  And a later kernel version for the guest may
-actually do that (not quite sure if the emulated PMU stuff is upstream or
-not yet).  Just to set your expectations correctly.
+Thanks for the confirmation, Thomas. Page updated to remove 
+FUTEX_CMP_REQUEUE from that error case.
 
 Cheers,
-Don
 
-> 
-> Thanks!
-> 
-> >>         return 0;
-> >> }
-> >>
-> >> static int __init test_init(void)
-> >> {
-> >>         hello_start();
-> >>
-> >>         printk(KERN_INFO "Module init\n");
-> >>         return 0;
-> >> }
-> >>
-> >> static void __exit test_exit(void)
-> >> {
-> >>         printk(KERN_INFO "Module exit!\n");
-> >> }
-> >>
-> >> module_init(test_init)
-> >> module_exit(test_exit)
-> >> MODULE_LICENSE("GPL");
-> >> //
-> >>
-> >> My kernel version is v3.10.63, and i checked the kernel source code,
-> >>
-> >> update_process_times
-> >> 	-> run_local_timers
-> >> 		-> hrtimer_run_queues
-> >> 			-> __run_hrtimer
-> >> 				-> watchdog_timer_fn
-> >> 					-> is_softlockup
-> >> 					
-> >> 	-> rcu_check_callbacks
-> >> 		-> __rcu_pending
-> >> 			-> check_cpu_stall
-> >> 				-> print_cpu_stall
-> >>
-> >> If softlockup_thresh > rcu_cpu_stall_timeout, print_cpu_stall will print log to serial port.
-> >>
-> >> The 8250 serial driver will call serial8250_console_write => touch_nmi_watchdog() which reset
-> >> watchdog_touch_ts to 0. So the softlockup will not be triggered.
-> >>
-> >> Is this reasonable? Why?
-> > 
-> > Is exactly what reasonable?  ;-)
-> > 
-> > Yes, it is reasonable that your code triggers an RCU CPU stall warning.
-> > 
-> > No, it is not reasonable that the RCU CPU stall warning does not include
-> > a stack trace, and the fix for that bug will be going into the next merge
-> > window.
-> > 
-> > Yes, is is reasonable that varying the softlockup and RCU CPU stall
-> > timeouts might change the behavior.
-> > 
-> > No, your code is not reasonable, except perhaps as a test of the
-> > generation of softlockup and RCU CPU stall warnings.  If you are not
-> > trying to test softlockup and RCU CPU stall warnings, you should of course
-> > not try to acquire any non-recursive exclusive lock that you already hold.
-> > 
-> >> If it is not reasonable, we should adjust the printk loglevel from *KERN_ERR* to *KERN_INFO*
-> >> in print_cpu_stall.
-> > 
-> > Given that RCU CPU stall warnings are supposed to be pointing out errors
-> > elsewhere in the kernel, and in this case are pointing out errors elsewhere
-> > in the kernel, namely in your hello_start() function, it is reasonable
-> > that the RCU CPU stall warnings use the KERN_ERR loglevel.
-> > 
-> > Or am I missing something here?
-> > 
-> > 							Thanx, Paul
-> > 
-> > 
-> > .
-> > 
-> 
-> 
+Michael
+
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
