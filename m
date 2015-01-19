@@ -1,108 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511AbbASKnD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 05:43:03 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:37696 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751879AbbASKm7 (ORCPT
+	id S1752492AbbASKmt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 05:42:49 -0500
+Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:64249 "EHLO
+	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752014AbbASKms (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 05:42:59 -0500
-Date: Mon, 19 Jan 2015 10:42:40 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Hanjun Guo <hanjun.guo@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Olof Johansson <olof@lixom.net>,
-        Arnd Bergmann <arnd@arndb.de>, Mark Rutland <Mark.Rutland@arm.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, "jcm@redhat.com" <jcm@redhat.com>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, Mark Brown <broonie@kernel.org>,
-        Rob Herring <robh@kernel.org>, Robert Richter <rric@kernel.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
-        Timur Tabi <timur@codeaurora.org>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        "wangyijing@huawei.com" <wangyijing@huawei.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
-Subject: Re: [PATCH v7 06/17] ARM64 / ACPI: Make PCI optional for ACPI on
- ARM64
-Message-ID: <20150119104240.GE11835@e104818-lin.cambridge.arm.com>
-References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org>
- <1421247905-3749-7-git-send-email-hanjun.guo@linaro.org>
- <20150116094913.GA13634@e104818-lin.cambridge.arm.com>
- <54BB51F1.8000900@linaro.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <54BB51F1.8000900@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Mon, 19 Jan 2015 05:42:48 -0500
+Message-ID: <1421664165.9655.54.camel@x220>
+Subject: [PATCH 3/4] ASoC: samsung: MACH_SMDKC100 isn't supported anymore
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Kukjin Kim <kgene@kernel.org>, Sangbeom Kim <sbkim73@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
+Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
+        linux-samsung-soc@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Mon, 19 Jan 2015 11:42:45 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 19 Jan 2015 10:42:46.0464 (UTC) FILETIME=[A9906400:01D033D4]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 18, 2015 at 06:25:53AM +0000, Hanjun Guo wrote:
-> On 2015年01月16日 17:49, Catalin Marinas wrote:
-> > On Wed, Jan 14, 2015 at 03:04:54PM +0000, Hanjun Guo wrote:
-> >> --- a/arch/arm64/kernel/pci.c
-> >> +++ b/arch/arm64/kernel/pci.c
-> >> @@ -10,6 +10,7 @@
-> >>    *
-> >>    */
-> >>
-> >> +#include <linux/acpi.h>
-> >>   #include <linux/init.h>
-> >>   #include <linux/io.h>
-> >>   #include <linux/kernel.h>
-> >> @@ -68,3 +69,30 @@ void pci_bus_assign_domain_nr(struct pci_bus *bus, struct device *parent)
-> >>   	bus->domain_nr = domain;
-> >>   }
-> >>   #endif
-> >> +
-> >> +/*
-> >> + * raw_pci_read/write - Platform-specific PCI config space access.
-> >> + *
-> >> + * Default empty implementation.  Replace with an architecture-specific setup
-> >> + * routine, if necessary.
-> >> + */
-> >> +int raw_pci_read(unsigned int domain, unsigned int bus,
-> >> +		  unsigned int devfn, int reg, int len, u32 *val)
-> >> +{
-> >> +	return -EINVAL;
-> >> +}
-> >> +
-> >> +int raw_pci_write(unsigned int domain, unsigned int bus,
-> >> +		unsigned int devfn, int reg, int len, u32 val)
-> >> +{
-> >> +	return -EINVAL;
-> >> +}
-> >> +
-> >> +#ifdef CONFIG_ACPI
-> >> +/* Root bridge scanning */
-> >> +struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
-> >> +{
-> >> +	/* TODO: Should be revisited when implementing PCI on ACPI */
-> >> +	return NULL;
-> >> +}
-> >> +#endif
-[...]
-> > When PCI is enabled and the above functions are compiled in, do they
-> > need to return any useful data or just -EINVAL. Are they ever called?
-> 
-> They will be called if PCI root bridge is defined in DSDT, should I
-> print some warning message before it is implemented?
+Commit b8529ec1c1b0 ("ARM: S5PC100: no more support S5PC100 SoC")
+removed Kconfig symbol MACH_SMDKC100. But there are still two references
+to that symbol left. These are now pointless. Remove them too.
 
-My point: do they need to return real data when a PCI root bridge is
-defined in DSDT or you always expect them to always return some -E*? Can
-you explain why?
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Apparently Kukjin had a fixup queued (see
+http://mailman.alsa-project.org/pipermail/alsa-devel/2014-September/081482.html ). But that fixup never entered the tree, so let's try again.
 
+ sound/soc/samsung/Kconfig | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/sound/soc/samsung/Kconfig b/sound/soc/samsung/Kconfig
+index 3be649098b30..5f983d064920 100644
+--- a/sound/soc/samsung/Kconfig
++++ b/sound/soc/samsung/Kconfig
+@@ -53,7 +53,7 @@ config SND_SOC_SAMSUNG_JIVE_WM8750
+ 
+ config SND_SOC_SAMSUNG_SMDK_WM8580
+ 	tristate "SoC I2S Audio support for WM8580 on SMDK"
+-	depends on SND_SOC_SAMSUNG && (MACH_SMDK6410 || MACH_SMDKC100 || MACH_SMDKV210 || MACH_SMDKC110)
++	depends on SND_SOC_SAMSUNG && (MACH_SMDK6410 || MACH_SMDKV210 || MACH_SMDKC110)
+ 	depends on REGMAP_I2C
+ 	select SND_SOC_WM8580
+ 	select SND_SAMSUNG_I2S
+@@ -134,7 +134,7 @@ config SND_SOC_SAMSUNG_RX1950_UDA1380
+ 
+ config SND_SOC_SAMSUNG_SMDK_WM9713
+ 	tristate "SoC AC97 Audio support for SMDK with WM9713"
+-	depends on SND_SOC_SAMSUNG && (MACH_SMDK6410 || MACH_SMDKC100 || MACH_SMDKV210 || MACH_SMDKC110)
++	depends on SND_SOC_SAMSUNG && (MACH_SMDK6410 || MACH_SMDKV210 || MACH_SMDKC110)
+ 	select SND_SOC_WM9713
+ 	select SND_SAMSUNG_AC97
+ 	help
 -- 
-Catalin
+1.9.3
+
