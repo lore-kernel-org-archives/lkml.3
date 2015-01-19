@@ -1,106 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751976AbbASLo5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 06:44:57 -0500
-Received: from mail-qc0-f176.google.com ([209.85.216.176]:63180 "EHLO
-	mail-qc0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751901AbbASLo4 (ORCPT
+	id S1752035AbbASLpa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 06:45:30 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:37845 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751520AbbASLp2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 06:44:56 -0500
+	Mon, 19 Jan 2015 06:45:28 -0500
+Date: Mon, 19 Jan 2015 11:45:15 +0000
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, Mark Rutland <Mark.Rutland@arm.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, "jcm@redhat.com" <jcm@redhat.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Mark Brown <broonie@kernel.org>,
+        Rob Herring <robh@kernel.org>, Robert Richter <rric@kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
+        Timur Tabi <timur@codeaurora.org>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        "wangyijing@huawei.com" <wangyijing@huawei.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
+Subject: Re: [PATCH v7 05/17] ARM64 / ACPI: If we chose to boot from acpi
+ then disable FDT
+Message-ID: <20150119114515.GG11835@e104818-lin.cambridge.arm.com>
+References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org>
+ <1421247905-3749-6-git-send-email-hanjun.guo@linaro.org>
 MIME-Version: 1.0
-In-Reply-To: <1421144746-23845-1-git-send-email-kiran.kumar@linaro.org>
-References: <1421144746-23845-1-git-send-email-kiran.kumar@linaro.org>
-Date: Mon, 19 Jan 2015 17:14:55 +0530
-Message-ID: <CA+RfmHaF_tQWFEj6XcWTijP0q8c58yPJmLwZ23ggZXJ807=H2A@mail.gmail.com>
-Subject: Re: [RFC v5] debug: prevent entering debug mode on panic/exception.
-From: Kiran Raparthy <kiran.kumar@linaro.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Colin Cross <ccross@android.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        kgdb-bugreport@lists.sourceforge.net,
-        Android Kernel Team <kernel-team@android.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Kiran Raparthy <kiran.kumar@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421247905-3749-6-git-send-email-hanjun.guo@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13 January 2015 at 15:55, Kiran Raparthy <kiran.kumar@linaro.org> wrote:
-> From: Colin Cross <ccross@android.com>
->
-> debug: prevent entering debug mode on panic/exception.
->
-> On non-developer devices, kgdb prevents the device from rebooting
-> after a panic.
->
-> Incase of panics and exceptions, to allow the device to reboot, prevent entering
-> debug mode to avoid getting stuck waiting for the user to interact with debugger.
->
-> To avoid entering the debugger on panic/exception without any extra configuration,
-> panic_timeout is being used which can be set via /proc/sys/kernel/panic at run time
-> and CONFIG_PANIC_TIMEOUT sets the default value.
->
-> Setting panic_timeout indicates that the user requested machine to perform
-> unattended reboot after panic. We dont want to get stuck waiting for the user
-> input incase of panic.
->
-> Cc: Jason Wessel <jason.wessel@windriver.com>
-> Cc: kgdb-bugreport@lists.sourceforge.net
-> Cc: linux-kernel@vger.kernel.org
-> Cc: Android Kernel Team <kernel-team@android.com>
-> Cc: John Stultz <john.stultz@linaro.org>
-> Cc: Sumit Semwal <sumit.semwal@linaro.org>
-> Signed-off-by: Colin Cross <ccross@android.com>
-> [Kiran: Added context to commit message.
-> panic_timeout is used instead of break_on_panic and
-> break_on_exception to honor CONFIG_PANIC_TIMEOUT
-> Modified the commit as per community feedback]
-> Signed-off-by: Kiran Raparthy <kiran.kumar@linaro.org>
-> Reviewed-by: Daniel Thompson <daniel.thompson@linaro.org>
+On Wed, Jan 14, 2015 at 03:04:53PM +0000, Hanjun Guo wrote:
+> From: Graeme Gregory <graeme.gregory@linaro.org>
+> 
+> If the early boot methods of acpi are happy that we have valid ACPI
+> tables and acpi=force has been passed, then do not unflat devicetree
+> effectively disabling further hardware probing from DT.
+> 
+> Tested-by: Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+> Tested-by: Yijing Wang <wangyijing@huawei.com>
+> Signed-off-by: Graeme Gregory <graeme.gregory@linaro.org>
+> Signed-off-by: Hanjun Guo <hanjun.guo@linaro.org>
 > ---
->  kernel/debug/debug_core.c | 17 +++++++++++++++++
->  1 file changed, 17 insertions(+)
->
-> diff --git a/kernel/debug/debug_core.c b/kernel/debug/debug_core.c
-> index 1adf62b..0012a1f 100644
-> --- a/kernel/debug/debug_core.c
-> +++ b/kernel/debug/debug_core.c
-> @@ -689,6 +689,14 @@ kgdb_handle_exception(int evector, int signo, int ecode, struct pt_regs *regs)
->
->         if (arch_kgdb_ops.enable_nmi)
->                 arch_kgdb_ops.enable_nmi(0);
-> +       /*
-> +        * Avoid entering the debugger if we were triggered due to an oops
-> +        * but panic_timeout indicates the system should automatically
-> +        * reboot on panic. We don't want to get stuck waiting for input
-> +        * on such systems, especially if its "just" an oops.
-> +        */
-> +       if (signo != SIGTRAP && panic_timeout)
-> +               return 1;
->
->         memset(ks, 0, sizeof(struct kgdb_state));
->         ks->cpu                 = raw_smp_processor_id();
-> @@ -821,6 +829,15 @@ static int kgdb_panic_event(struct notifier_block *self,
->                             unsigned long val,
->                             void *data)
->  {
-> +       /*
-> +        * Avoid entering the debugger if we were triggered due to a panic
-> +        * We don't want to get stuck waiting for input from user in such case.
-> +        * panic_timeout indicates the system should automatically
-> +        * reboot on panic.
-> +        */
-> +       if (panic_timeout)
-> +               return NOTIFY_DONE;
-> +
->         if (dbg_kdb_mode)
->                 kdb_printf("PANIC: %s\n", (char *)data);
->         kgdb_breakpoint();
-> --
-> 1.8.2.1
->
-Gentle reminder.
-Regards,
-Kiran
+>  arch/arm64/kernel/setup.c | 3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/arm64/kernel/setup.c b/arch/arm64/kernel/setup.c
+> index 4580ed3..5d139e1 100644
+> --- a/arch/arm64/kernel/setup.c
+> +++ b/arch/arm64/kernel/setup.c
+> @@ -411,7 +411,8 @@ void __init setup_arch(char **cmdline_p)
+>  	efi_idmap_init();
+>  	early_ioremap_reset();
+>  
+> -	unflatten_device_tree();
+> +	if (acpi_disabled)
+> +		unflatten_device_tree();
+
+Nitpick: you could actually squash this patch into the previous one to
+keep the acpi disable/enable logic in one place.
+
+-- 
+Catalin
