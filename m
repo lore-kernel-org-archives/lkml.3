@@ -1,87 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751911AbbASRJG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 12:09:06 -0500
-Received: from avon.wwwdotorg.org ([70.85.31.133]:50504 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751453AbbASRJF (ORCPT
+	id S1751993AbbASRKc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 12:10:32 -0500
+Received: from smtprelay0099.hostedemail.com ([216.40.44.99]:59122 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751501AbbASRKb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 12:09:05 -0500
-Message-ID: <54BD3A75.80009@wwwdotorg.org>
-Date: Mon, 19 Jan 2015 10:10:13 -0700
-From: Stephen Warren <swarren@wwwdotorg.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Mon, 19 Jan 2015 12:10:31 -0500
+X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
+X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::,RULES_HIT:41:355:379:541:599:800:960:967:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2198:2199:2393:2525:2553:2560:2563:2682:2685:2859:2893:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4321:5007:6261:6671:6672:7875:7903:7974:8599:8987:9025:9040:9388:10004:10400:10848:10967:11232:11658:11914:12043:12517:12519:12555:12663:12740:13007:13008:13025:13069:13311:13357:14094:14096:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: comb65_3e90d70cec218
+X-Filterd-Recvd-Size: 2413
+Date: Mon, 19 Jan 2015 12:10:28 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] scripts/recordmcount.pl: There is no -m32 option on
+ Super-H
+Message-ID: <20150119121028.5b345d0b@gandalf.local.home>
+In-Reply-To: <54BCBDD4.10102@physik.fu-berlin.de>
+References: <54BCBDD4.10102@physik.fu-berlin.de>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-CC: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Dylan Reid <dgreid@chromium.org>, Simon Glass <sjg@chromium.org>,
-        Ulf Hansson <ulf.hansson@linaro.org>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 03/11] ARM: tegra: Set the sound card model that alsaucm
- expects
-References: <1421338359-27467-1-git-send-email-tomeu.vizoso@collabora.com> <1421338359-27467-4-git-send-email-tomeu.vizoso@collabora.com> <54B7F757.5060002@wwwdotorg.org> <CAAObsKCad9O_=TUQrF7fVbBvjDTmfJsLPgr+EasCyhvY+xhdHg@mail.gmail.com> <CAAObsKBKnU_wBaxNFN-buz71qL-te4s6bqrrnxao_N-TwBVkAQ@mail.gmail.com>
-In-Reply-To: <CAAObsKBKnU_wBaxNFN-buz71qL-te4s6bqrrnxao_N-TwBVkAQ@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2015 02:01 AM, Tomeu Vizoso wrote:
-> On 16 January 2015 at 09:50, Tomeu Vizoso <tomeu.vizoso@collabora.com> wrote:
->> On 15 January 2015 at 18:22, Stephen Warren <swarren@wwwdotorg.org> wrote:
->>> On 01/15/2015 09:12 AM, Tomeu Vizoso wrote:
->>>>
->>>> Patches are on its way to add a config file to alsaucm for the Nyan
->>>> boards. Use the same card ID that alsaucm will expect.
->>>>
->>>> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
->>>> ---
->>>>    arch/arm/boot/dts/tegra124-nyan-big.dts | 4 ++--
->>>>    1 file changed, 2 insertions(+), 2 deletions(-)
->>>>
->>>> diff --git a/arch/arm/boot/dts/tegra124-nyan-big.dts
->>>> b/arch/arm/boot/dts/tegra124-nyan-big.dts
->>>> index 43e58a4..9a9cffe 100644
->>>> --- a/arch/arm/boot/dts/tegra124-nyan-big.dts
->>>> +++ b/arch/arm/boot/dts/tegra124-nyan-big.dts
->>>> @@ -1976,9 +1976,9 @@
->>>>          };
->>>>
->>>>          sound {
->>>> -               compatible = "nvidia,tegra-audio-max98090-nyan-big",
->>>> +               compatible = "nvidia,tegra-audio-max98090-nyan",
->>>>                               "nvidia,tegra-audio-max98090";
->>>
->>>
->>> If all the boards that are derived from Nyan truly have identical audio HW
->>> (or at least any differences can be described by this binding), then it
->>> seems fine to add "nvidia,tegra-audio-max98090-nyan" to the compatible
->>> value.
->>
->>
->>
->>> However, I don't see a reason to remove the board-specific compatible value
->>> "nvidia,tegra-audio-max98090-nyan-big"; we should always include all the
->>> values that are relevant.
->>
->> Ok.
->
-> Oh, actually, my intention was to move the whole sound node to the
-> nyan dtsi, as there isn't anything specific to the blaze regarding
-> sound.
+On Mon, 19 Jan 2015 09:18:28 +0100
+John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de> wrote:
 
-There are zero differences between the sound circuits of the boards? If 
-so, that sounds fine. I suppose if we do need to apply a quirk to one 
-board but not the other, we can always fall back on the top-level 
-compatible value if we absolutely have to.
+> Hi Steven!
+> 
+> >> The Super-H architecure seems to be without any maintainer.
+> >> Maybe Steven cares to pick this patch up. Dunno...
+> 
+> > Yeah, I remember when the SH maintainer left.
+> 
+> > I can pick it up. How urgent is it? Does it need to go in before the
+> > next merge window? And does it need to be tagged for stable?
+> 
+> I am one of the Debian porters of the SH port. Currently, the kernel
+> package fails to build from source on our automatic build machines
+> due to this bug. Here is the full build log where you can see it
+> fail with gcc-4.8:
+
+Unfortunately I don't have a 4.8 cross compiler for superH. It seems to
+work fine with -m32 with 4.6 and earlier (which I do have).
+
+> 
+> >
+> http://buildd.debian-ports.org/status/fetch.php?pkg=linux&arch=sh4&ver=3.16.7-ckt4-1&stamp=1421425783
+> 
+> Since the SH port of Debian was long time poorly maintained, this
+> issue hasn't got any attention for quite a while which means the
+> most current kernel version we have at the moment on SH is 3.2.0
+> something. I asked Michael to submit this change on my behalf since
+> he has submitted kernel patches in the past.
+> 
+> Thus, it would be nice if this fix could be merged ASAP upstream
+> and included in all stable releases as well such that we get a
+> working up-to-date kernel on SH soon.
+
+I'll add this info as well to the change log.
+
+-- Steve
+
