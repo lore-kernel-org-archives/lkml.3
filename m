@@ -1,141 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752347AbbASOmF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 09:42:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58072 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751543AbbASOmC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 09:42:02 -0500
-Date: Mon, 19 Jan 2015 12:41:00 -0200
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>, Paul Mackerras <paulus@samba.org>
-Cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Steven Rostedt <srostedt@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, kvm@vger.kernel.org,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [patch -rt 1/2] KVM: use simple waitqueue for vcpu->wq
-Message-ID: <20150119144100.GA10794@amt.cnet>
-References: <20150114171251.882318257@redhat.com>
- <20150114171459.593877145@redhat.com>
- <20150116114846.4e7b718d@gandalf.local.home>
+	id S1752121AbbASOp5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 09:45:57 -0500
+Received: from exprod5og103.obsmtp.com ([64.18.0.145]:52067 "EHLO
+	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751864AbbASOpz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 09:45:55 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150116114846.4e7b718d@gandalf.local.home>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAFd313wyVqsqGNdxrAzmGCCYd-RAEcrX6f4y2Gngi44OOkbx-Q@mail.gmail.com>
+References: <1421671269-19441-1-git-send-email-rsahu@apm.com>
+	<1421671269-19441-3-git-send-email-rsahu@apm.com>
+	<2407238.x2YxDm0cd4@wuerfel>
+	<CAFd313wyVqsqGNdxrAzmGCCYd-RAEcrX6f4y2Gngi44OOkbx-Q@mail.gmail.com>
+Date: Mon, 19 Jan 2015 20:15:54 +0530
+Message-ID: <CAFd313zc_4fNMGvVNWqUOP+tzHoaCZDbFKVSyBsmT-OtwzHBHQ@mail.gmail.com>
+Subject: Re: [PATCH v3 2/3] arm64: dts: Add APM X-Gene DMA device and DMA
+ clock DTS nodes
+From: Rameshwar Sahu <rsahu@apm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: vinod.koul@intel.com, dan.j.williams@intel.com, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, ddutile@redhat.com,
+        jcm@redhat.com, patches@apm.com, Loc Ho <lho@apm.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 16, 2015 at 11:48:46AM -0500, Steven Rostedt wrote:
-> > @@ -971,8 +971,8 @@
-> >  	kvm_mips_callbacks->queue_timer_int(vcpu);
-> >  
-> >  	vcpu->arch.wait = 0;
-> > -	if (waitqueue_active(&vcpu->wq)) {
-> > -		wake_up_interruptible(&vcpu->wq);
-> > +	if (swaitqueue_active(&vcpu->wq)) {
-> > +		swait_wake_nterruptible(&vcpu->wq);
-> 
-> Sure you compiled this patch?
+Thanks,
+with regards,
+Ram
 
-Only x86.
 
-> > Index: linux-stable-rt/arch/powerpc/include/asm/kvm_host.h
-> > ===================================================================
-> > --- linux-stable-rt.orig/arch/powerpc/include/asm/kvm_host.h	2014-11-25 14:13:39.193899944 -0200
-> > +++ linux-stable-rt/arch/powerpc/include/asm/kvm_host.h	2014-11-25 14:14:38.621810091 -0200
-> > @@ -295,7 +295,7 @@
-> >  	u8 in_guest;
-> >  	struct list_head runnable_threads;
-> >  	spinlock_t lock;
-> > -	wait_queue_head_t wq;
-> > +	struct swait_head wq;
-> >  	u64 stolen_tb;
-> >  	u64 preempt_tb;
-> >  	struct kvm_vcpu *runner;
-> > @@ -612,7 +612,7 @@
-> >  	u8 prodded;
-> >  	u32 last_inst;
-> >  
-> > -	wait_queue_head_t *wqp;
-> > +	struct swait_head *wqp;
-> >  	struct kvmppc_vcore *vcore;
-> >  	int ret;
-> >  	int trap;
-> > Index: linux-stable-rt/arch/powerpc/kvm/book3s_hv.c
-> > ===================================================================
-> > --- linux-stable-rt.orig/arch/powerpc/kvm/book3s_hv.c	2014-11-25 14:13:39.195899942 -0200
-> > +++ linux-stable-rt/arch/powerpc/kvm/book3s_hv.c	2014-11-25 14:14:38.625810085 -0200
-> > @@ -74,11 +74,11 @@
-> >  {
-> >  	int me;
-> >  	int cpu = vcpu->cpu;
-> > -	wait_queue_head_t *wqp;
-> > +	struct swait_head *wqp;
-> >  
-> >  	wqp = kvm_arch_vcpu_wq(vcpu);
-> > -	if (waitqueue_active(wqp)) {
-> > -		wake_up_interruptible(wqp);
-> > +	if (swaitqueue_active(wqp)) {
-> > +		swait_wake_interruptible(wqp);
-> >  		++vcpu->stat.halt_wakeup;
-> >  	}
-> >  
-> > @@ -583,8 +583,8 @@
-> >  		tvcpu->arch.prodded = 1;
-> >  		smp_mb();
-> >  		if (vcpu->arch.ceded) {
-> > -			if (waitqueue_active(&vcpu->wq)) {
-> > -				wake_up_interruptible(&vcpu->wq);
-> > +			if (swaitqueue_active(&vcpu->wq)) {
-> > +				swait_wake_interruptible(&vcpu->wq);
-> >  				vcpu->stat.halt_wakeup++;
-> >  			}
-> >  		}
-> > @@ -1199,7 +1199,7 @@
-> >  		if (vcore) {
-> >  			INIT_LIST_HEAD(&vcore->runnable_threads);
-> >  			spin_lock_init(&vcore->lock);
-> > -			init_waitqueue_head(&vcore->wq);
-> > +			init_swait_head(&vcore->wq);
-> >  			vcore->preempt_tb = TB_NIL;
-> >  			vcore->lpcr = kvm->arch.lpcr;
-> >  			vcore->first_vcpuid = core * threads_per_core;
-> > @@ -1566,13 +1566,13 @@
-> >   */
-> >  static void kvmppc_vcore_blocked(struct kvmppc_vcore *vc)
-> >  {
-> > -	DEFINE_WAIT(wait);
-> > +	DEFINE_SWAITER(wait);
-> >  
-> > -	prepare_to_wait(&vc->wq, &wait, TASK_INTERRUPTIBLE);
-> > +	swait_prepare(&vc->wq, &wait, TASK_INTERRUPTIBLE);
-> >  	vc->vcore_state = VCORE_SLEEPING;
-> >  	spin_unlock(&vc->lock);
-> >  	schedule();
-> > -	finish_wait(&vc->wq, &wait);
-> > +	swait_finish(&vc->wq, &wait);
-> >  	spin_lock(&vc->lock);
-> >  	vc->vcore_state = VCORE_INACTIVE;
-> >  }
-> > @@ -1613,7 +1613,7 @@
-> >  			kvmppc_create_dtl_entry(vcpu, vc);
-> >  			kvmppc_start_thread(vcpu);
-> >  		} else if (vc->vcore_state == VCORE_SLEEPING) {
-> > -			wake_up(&vc->wq);
-> > +			swait_wake(&vc->wq);
-> 
-> I notice everywhere you have a swait_wake_interruptible() but here. Is
-> there a reason why?
-> 
-> IIRC, Peter wants to make swait wakeup usage homogenous. That is, you
-> either sleep in an interruptible state, or you don't. You can't mix and
-> match it.
-
-IIUC there is only one waiter on this waitqueue at any given time.
-
-Paul is that correct?
-
+On Mon, Jan 19, 2015 at 8:11 PM, Rameshwar Sahu <rsahu@apm.com> wrote:
+> Hi Arnd,
+>
+>
+>
+>
+>
+>
+> Thanks,
+> with regards,
+> Ram
+>
+> On Mon, Jan 19, 2015 at 7:10 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+>>
+>> On Monday 19 January 2015 18:11:08 Rameshwar Prasad Sahu wrote:
+>> > diff --git a/arch/arm64/boot/dts/apm/apm-storm.dtsi
+>> > b/arch/arm64/boot/dts/apm/apm-storm.dtsi
+>> > index f1ad9c2..e20da23 100644
+>> > --- a/arch/arm64/boot/dts/apm/apm-storm.dtsi
+>> > +++ b/arch/arm64/boot/dts/apm/apm-storm.dtsi
+>> > @@ -103,6 +103,9 @@
+>> >                 #size-cells = <2>;
+>> >                 ranges;
+>> >
+>> > +               /* DDR range is 42-bit addressing */
+>> > +               dma-ranges = <0x40 0x0 0x40 0x0 0x1ff 0xffffffff>;
+>> > +
+>> >
+>>
+>> The comment above is misleading, and the value is wrong. I assume you
+>>
+>> copied these from the AMD patch that introduced the respective property.
+>
+>
+> I referred this patch from AMD only.
+>>
+>>
+>> The value should be
+>>
+>>         dma-ranges = <0x40 0x0 0x40 0x0 0x200 0>;
+>
+>
+> then it should be :
+>
+> dma-ranges = <0x40 0x0 0x40 0x0 0x400 0>;
+>
+>
+>> to say that any DMA to physical addresses from 0 to 0x3f.ffffffff
+>> is disallowed and dma to physical addresses from 0x40.00000000
+>> to 0x23f.ffffffff is allowed and gets translated using an
+>> identity mapping.
+>>
+>> I also see that on Mustang, all memory is outside of this range,
+>
+>
+> Do you mean all other device controller node in DT here??
+> Basically these are all device controller memory, as what I understood is
+> dma-ranges tells about DDR ranges like start address of DDR
+> and length.
+>
+>
+>>
+>> which is a bit suspicious, while your PCI memory space is
+>> included.
+>
+>
+>>
+>> It would be best to match the numbers up with your data sheet.
+>>
+>>         Arnd
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe dmaengine" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
