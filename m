@@ -1,169 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751226AbbASF7C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 00:59:02 -0500
-Received: from mail-wi0-f173.google.com ([209.85.212.173]:38638 "EHLO
-	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750713AbbASF7A (ORCPT
+	id S1751495AbbASGAR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 01:00:17 -0500
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:61860 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750733AbbASGAP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 00:59:00 -0500
+	Mon, 19 Jan 2015 01:00:15 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAGXu5j+9p1T29NoHnCNywd0T=H2mzWhCou5nSRfXZktEOC7_=A@mail.gmail.com>
-References: <1420986751-30364-1-git-send-email-r.peniaev@gmail.com>
-	<1420986751-30364-2-git-send-email-r.peniaev@gmail.com>
-	<20150112183955.GO13360@arm.com>
-	<CACZ9PQXW9G4Vw-dcPwkdVE=uoYmDYEQnJWDnnpup1LxC3s5QPg@mail.gmail.com>
-	<CAGXu5jLO-YSaF8P9o3jcXP4VZCPYVshz73krnchYuv9pPGY6Sw@mail.gmail.com>
-	<CACZ9PQVo0SF4Z-rdNk4e=yY17Xt9n5hAqm4ZRNLEw3jGYYcvtA@mail.gmail.com>
-	<CAGXu5j+O6znN=7-gc3PqwqFA5MFRPLGBUzabOmQjWn_9WTjvpg@mail.gmail.com>
-	<CACZ9PQUEprgKrpHazDULA5mf-OaoX=MAjEeWdspZTXT_+iUKWw@mail.gmail.com>
-	<20150116155923.GK12302@n2100.arm.linux.org.uk>
-	<CACZ9PQUVFtCQg6XjDbokEPy_R2fZcHiq6+EEUZnx4FVfpfZxJg@mail.gmail.com>
-	<20150116161752.GL12302@n2100.arm.linux.org.uk>
-	<CAGXu5j+XHFNyhaBndQr1Q2uthsFP9ZQGbaw5hofDmXyKXZ-H5g@mail.gmail.com>
-	<CAGXu5j+9p1T29NoHnCNywd0T=H2mzWhCou5nSRfXZktEOC7_=A@mail.gmail.com>
-Date: Mon, 19 Jan 2015 14:58:57 +0900
-Message-ID: <CACZ9PQXw3hER11qG1ni5Qb+AcNK2hqcP6NgQDOOufjkuMs-u8g@mail.gmail.com>
-Subject: Re: [PATCH 1/2] ARM: entry-common: fix forgotten set of thread_info->syscall
-From: Roman Peniaev <r.peniaev@gmail.com>
-To: Kees Cook <keescook@chromium.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Will Deacon <will.deacon@arm.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Sekhar Nori <nsekhar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <CACRpkdY-yFKsYbCrMpnViMFoQEugyGQivaV0M+GDzLrbDO7i6Q@mail.gmail.com>
+References: <1418890998-23811-1-git-send-email-heikki.krogerus@linux.intel.com>
+ <CACRpkdY-yFKsYbCrMpnViMFoQEugyGQivaV0M+GDzLrbDO7i6Q@mail.gmail.com>
+From: Alexandre Courbot <gnurou@gmail.com>
+Date: Mon, 19 Jan 2015 14:59:54 +0900
+Message-ID: <CAAVeFuJUxad0dJ9vK1DaDJPDLM+rc5b77=PgcJT5+Bv1=iWGxg@mail.gmail.com>
+Subject: Re: [RFC PATCH] gpio: support for GPIO forwarding
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Darren Hart <dvhart@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 17, 2015 at 8:54 AM, Kees Cook <keescook@chromium.org> wrote:
-> On Fri, Jan 16, 2015 at 11:57 AM, Kees Cook <keescook@chromium.org> wrote:
->> On Fri, Jan 16, 2015 at 8:17 AM, Russell King - ARM Linux
->> <linux@arm.linux.org.uk> wrote:
->>> On Sat, Jan 17, 2015 at 01:08:11AM +0900, Roman Peniaev wrote:
->>>> On Sat, Jan 17, 2015 at 12:59 AM, Russell King - ARM Linux
->>>> <linux@arm.linux.org.uk> wrote:
->>>> > On Sat, Jan 17, 2015 at 12:57:02AM +0900, Roman Peniaev wrote:
->>>> >> On Fri, Jan 16, 2015 at 7:54 AM, Kees Cook <keescook@chromium.org> wrote:
->>>> >> > One interesting thing I noticed (which is unchanged by this series),
->>>> >> > but pulling ARM_r7 during the seccomp ptrace event shows __NR_poll,
->>>> >> > not __NR_restart_syscall, even though it was a __NR_restart_syscall
->>>> >> > trap from seccomp. Is there a better place to see the actual syscall?
->>>> >>
->>>> >> As I understand we do not push new r7 to the stack, and ptrace uses the
->>>> >> old value.
->>>> >
->>>> > And why should we push r7 to the stack?  ptrace should be using the
->>>> > recorded system call number, rather than poking about on the stack
->>>> > itself.
->>>>
->>>> Probably we should not, but the behaviour comparing arm to x86 is different.
->>>
->>> We definitely should not, because changing the stacked value changes the
->>> value in r7 after the syscall has returned.  We have guaranteed that the
->>> value will be preserved across syscalls for years, so we really should
->>> not be changing that.
->>
->> Yeah, we can't mess with the registers. I was just asking for
->> clarification on how this is visible to userspace.
->>
->>>
->>>> Also there is no any way from userspace to figure out what syscall was
->>>> restarted, if you do not trace each syscall enter and exit from the
->>>> very beginning.
->>>
->>> Thinking about ptrace, that's been true for years.
->>>
->>> It really depends whether you consider the restart syscall a userspace
->>> thing or a kernelspace thing.  When you consider that the vast majority
->>> of syscall restarts are done internally in the kernel, and we just
->>> re-issue the syscall, it immediately brings up the question "why is
->>> the restart block method different?" and "should the restart block
->>> method be visible to userspace?"
->>>
->>> IMHO, it is prudent not to expose kernel internals to userspace unless
->>> there is a real reason to, otherwise they become part of the userspace
->>> API.
->>
->> I couldn't agree more, but restart_syscall is already visible to
->> userspace: it can be called directly, for example. And it's visible to
->> tracers.
->>
->> Unfortunately, the difference here is the visibility during trace
->> trap. On x86, it's exposed but on ARM, there's no way (that I can
->> find) to query the "true" syscall, even though the true syscall is
->> what triggers the tracer. The syscall number isn't provided by any
->> element of the ptrace event system, nor through siginfo, and must be
->> examined on a per-arch basis from registers.
->>
->> Seccomp does, however, provide a mechanism to pass arbitrary event
->> data on a TRACE event, so poll vs restart_syscall can be distinguished
->> that way.
->>
->> It seems even strace doesn't know how to find this information. For example:
->>
->> x86:
->> poll([{fd=3, events=POLLIN}], 1, 4294967295
->> ) = ? ERESTART_RESTARTBLOCK (Interrupted by signal)
->> --- SIGSTOP {si_signo=SIGSTOP, si_code=SI_USER, si_pid=994, si_uid=1000} ---
->> --- stopped by SIGSTOP ---
->> --- SIGCONT {si_signo=SIGCONT, si_code=SI_USER, si_pid=994, si_uid=1000} ---
->> restart_syscall(<... resuming interrupted call ...>
->>
->> ARM:
->> poll([{fd=3, events=POLLIN}], 1, -1
->> )    = ? ERESTART_RESTARTBLOCK (Interrupted by signal)
->> --- SIGSTOP {si_signo=SIGSTOP, si_code=SI_USER, si_pid=20563, si_uid=0} ---
->> --- stopped by SIGSTOP ---
->> --- SIGCONT {si_signo=SIGCONT, si_code=SI_USER, si_pid=20563, si_uid=0} ---
->> poll([{fd=3, events=POLLIN}], 1, -1
->>
->> Would it make sense to add REGSET_SYSTEM_CALL to ARM? (Though this
->> begs the question, "Is restart_syscall visible during a trace on
->> arm64?", which I'll have to go check...)
+On Wed, Jan 14, 2015 at 9:58 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> On Thu, Dec 18, 2014 at 9:23 AM, Heikki Krogerus
+> <heikki.krogerus@linux.intel.com> wrote:
 >
-> So, some further testing:
-> - native arm64 presents "poll" again even to seccomp when
-> restart_syscall is triggered (both via regs[8] and
-> NT_ARM_SYSTEM_CALL).
-> - compat mode on arm64 _does_ show syscall_restart (via ARM_r7).
+>> This makes it possible to assign GPIOs at runtime. The
+>> motivation for it is because of need to forward GPIOs from
+>> one device to an other. That feature may be useful for
+>> example with some mfd devices, but initially it is needed
+>> because on some Intel Braswell based ACPI platforms the GPIO
+>> resources controlling signals of the USB PHY are given to
+>> the controller device object for whatever reason, so the
+>> driver of that controller needs be able to pass them to the
+>> PHY device somehow.
+>>
+>> So basically this is meant to allow patching of bad (bad
+>> from Linux kernels point of view) hardware descriptions
+>> provided by system fw in the drivers.
+>>
+>> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+>> ---
+>>
+>> Hi,
+>>
+>> I'm sending this first as a RFC in case you guys have some better
+>> idea how to solve our problem. I actually already have couple
+>> platforms where the GPIO resources are given to the "wrong" device
+>> objects now.
+>>
+>> Originally we were thinking about simply handling our problem with
+>> hacks to the PHY drivers, basically also checking if the parent has
+>> GPIOs. That would only work if the controller is always the parent,
+>> which it's not, but even if it was, it would be too risky. The PHY
+>> drivers don't know which controller they are attached to, so what is
+>> to say that the GPIOs aren't really attached to the controller.
+>>
+>> So the safest way to handle our problem is to deal with it in quirks
+>> in the controller drivers. Solving it by bouncing the GPIOs did not
+>> feel ideal there doesn't seem to be any other way. The API is copied
+>> from clkdev (clk_register_clkdev). In the end it's really only one
+>> function for adding the lookups and one for removing them.
+>>
+>> The way it's implemented is by modifying the current style of handling
+>> the lookups a little bit. The per device lookup table is basically
+>> reverted back to the single linked-list format since it seems that
+>> these lookups may have to be assigned from several sources.
 >
-> Which of these behaviors is intentional? :)
+> Oh ain't that great.
 >
+> So now we start patching around the kernel because the ACPI
+> tables are erroneous for GPIOs. I'd like some feedback from
+> Rafael &| Darren on this patch, i.e. if you two think this is a good
+> way of accounting for bad GPIO descriptions in ACPI tables then
+> ACK this patch.
+>
+> I guess the other option would be to fix up the ACPI DSDT
+> itself to put resources right, correct? Is this not possible?
+>
+> Alexandre also need to ACK it before I dare do anything with
+> it.
 
+I am not really fond of this idea since it adds complexity to the
+(already too complex) GPIO lookup, and only solves to a local level
+(GPIO) what is a more global problem (bad ACPI tables that can affect
+any subsystem).
 
-Just want to summarize the difference.
-(please, correct me if i am mistaken)
+Also I don't think any new functions is actually needed: on an ACPI
+system we can safely assume that the platform lookup tables are not
+used at all. So, although it is a hack as well, you can just call
+gpiod_add_lookup_table() with a runtime-built table from the driver
+that needs to pass the GPIO so the receipient can receive it through
+the lookup table fallback gpiod_get() uses if no GPIO is defined via
+ACPI.
 
-Userspace has two ways to see actual syscall number:
-   1. /proc/pid/syscall file
-   2. ptrace
-
-So the following is the table showing what syscall number
-userspace sees using proc file or doing ptrace in case of restarted poll:
-
-                         x86           ARM              ARM64     ARM64 compat
-cat /proc/pid/syscall:   NR_restart    Not supported    ?????     ?????
-               ptrace:   NR_restart    NR_poll          NR_poll   NR_restart
-
-
-Not supported - should be fixed by these two patches, the behaviour should
-                be similar to x86, i.e. userspace will see NR_restart
-
-         ???? - I do not have ARM64 for testing.
-                Kees, could you please cat /proc/pid/syscall for those two?
-                I took a quick look into arm64 syscall.h/entry.S and seems it
-                is supported fine and the result should be equal to ptrace.
-
-So, yes, compatibility is important, but /proc/pid/syscall never works on ARM
-and ptrace output is different even among ARM architectures.
-
---
-Roman
+So I think that even with the current state of the code you can
+achieve what you need. Should you do it, that's another question - it
+seems more to-the-point to find a way to fix/patch the ACPI tables at
+runtime, if that is possible at all, to provide a more general
+solution to this issue.
