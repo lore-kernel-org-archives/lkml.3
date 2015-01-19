@@ -1,108 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751495AbbASGAR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 01:00:17 -0500
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:61860 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750733AbbASGAP (ORCPT
+	id S1751396AbbASGGD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 01:06:03 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:39786 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750713AbbASGGA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 01:00:15 -0500
+	Mon, 19 Jan 2015 01:06:00 -0500
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdY-yFKsYbCrMpnViMFoQEugyGQivaV0M+GDzLrbDO7i6Q@mail.gmail.com>
-References: <1418890998-23811-1-git-send-email-heikki.krogerus@linux.intel.com>
- <CACRpkdY-yFKsYbCrMpnViMFoQEugyGQivaV0M+GDzLrbDO7i6Q@mail.gmail.com>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Mon, 19 Jan 2015 14:59:54 +0900
-Message-ID: <CAAVeFuJUxad0dJ9vK1DaDJPDLM+rc5b77=PgcJT5+Bv1=iWGxg@mail.gmail.com>
-Subject: Re: [RFC PATCH] gpio: support for GPIO forwarding
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Heikki Krogerus <heikki.krogerus@linux.intel.com>,
-        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
-        Darren Hart <dvhart@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+In-Reply-To: <20150108165722.GG31926@saruman>
+References: <CALHRZuotPpSoX9bnQin=93k0Hr7tEp_HZDaaBvfKaPfmoi_EBQ@mail.gmail.com>
+	<A2CA0424C0A6F04399FB9E1CD98E03048450126C@US01WEMBX2.internal.synopsys.com>
+	<CALHRZupFbTxTn9KiUCmvcmgYxUUcNfvAoMqOq=Drq0gZ+H246w@mail.gmail.com>
+	<20141222161123.GE12815@saruman>
+	<20141222161218.GF12815@saruman>
+	<CALHRZuqq5Cc+WsQDzOjKOcF6HNH+OKw_7Pkkp3qssuu7kpSeLw@mail.gmail.com>
+	<20150108165722.GG31926@saruman>
+Date: Mon, 19 Jan 2015 11:35:58 +0530
+Message-ID: <CALHRZupVqrcPfMVxJgKrpVSbYfHbeQgumt=7m7unhXy6YUC++A@mail.gmail.com>
+Subject: Re: query on DWC3
+From: sundeep subbaraya <sundeep.lkml@gmail.com>
+To: "balbi@ti.com" <balbi@ti.com>
+Cc: Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 14, 2015 at 9:58 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Thu, Dec 18, 2014 at 9:23 AM, Heikki Krogerus
-> <heikki.krogerus@linux.intel.com> wrote:
->
->> This makes it possible to assign GPIOs at runtime. The
->> motivation for it is because of need to forward GPIOs from
->> one device to an other. That feature may be useful for
->> example with some mfd devices, but initially it is needed
->> because on some Intel Braswell based ACPI platforms the GPIO
->> resources controlling signals of the USB PHY are given to
->> the controller device object for whatever reason, so the
->> driver of that controller needs be able to pass them to the
->> PHY device somehow.
->>
->> So basically this is meant to allow patching of bad (bad
->> from Linux kernels point of view) hardware descriptions
->> provided by system fw in the drivers.
->>
->> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
->> ---
->>
->> Hi,
->>
->> I'm sending this first as a RFC in case you guys have some better
->> idea how to solve our problem. I actually already have couple
->> platforms where the GPIO resources are given to the "wrong" device
->> objects now.
->>
->> Originally we were thinking about simply handling our problem with
->> hacks to the PHY drivers, basically also checking if the parent has
->> GPIOs. That would only work if the controller is always the parent,
->> which it's not, but even if it was, it would be too risky. The PHY
->> drivers don't know which controller they are attached to, so what is
->> to say that the GPIOs aren't really attached to the controller.
->>
->> So the safest way to handle our problem is to deal with it in quirks
->> in the controller drivers. Solving it by bouncing the GPIOs did not
->> feel ideal there doesn't seem to be any other way. The API is copied
->> from clkdev (clk_register_clkdev). In the end it's really only one
->> function for adding the lookups and one for removing them.
->>
->> The way it's implemented is by modifying the current style of handling
->> the lookups a little bit. The per device lookup table is basically
->> reverted back to the single linked-list format since it seems that
->> these lookups may have to be assigned from several sources.
->
-> Oh ain't that great.
->
-> So now we start patching around the kernel because the ACPI
-> tables are erroneous for GPIOs. I'd like some feedback from
-> Rafael &| Darren on this patch, i.e. if you two think this is a good
-> way of accounting for bad GPIO descriptions in ACPI tables then
-> ACK this patch.
->
-> I guess the other option would be to fix up the ACPI DSDT
-> itself to put resources right, correct? Is this not possible?
->
-> Alexandre also need to ACK it before I dare do anything with
-> it.
+Hi Felipe,
 
-I am not really fond of this idea since it adds complexity to the
-(already too complex) GPIO lookup, and only solves to a local level
-(GPIO) what is a more global problem (bad ACPI tables that can affect
-any subsystem).
+On Thu, Jan 8, 2015 at 10:27 PM, Felipe Balbi <balbi@ti.com> wrote:
+> Hi,
+>
+> On Tue, Jan 06, 2015 at 12:39:55PM +0530, sundeep subbaraya wrote:
+>> >> On Sun, Dec 14, 2014 at 08:39:18AM +0530, sundeep subbaraya wrote:
+>> >> > Hi Paul,
+>> >> >
+>> >> > As per my understanding, for BULK OUT we do queue a request with 512
+>> >> > bytes length since we do not
+>> >>
+>> >> sometimes we _do_ know the size. In case of Mass Storage, we _know_ that
+>> >> the first bulk out transfer will be 31-bytes (CBW), if we were to start
+>> >> a 31-byte transfer, we would't receive anything.
+>> >>
+>> >> > know the length of the transfer Host is going to send. For Control OUT
+>> >> > we know the length in wLength of
+>> >> > Setup packet, hence I assumed there is no difference in programming
+>> >> > model of Control IN and OUT.
+>> >>
+>> >> there is _no_ difference. It's just that it was agreed that for anything
+>> >> other than control ep, the function drivers would take care of it. See
+>> >> the uses of quirk_ep_out_aligned_size.
+>>
+>> got it..:)
+>>
+>> >
+>> > btw, why are you reimplementing the driver when there's a perfectly good
+>> > driver to use in mainline kernel ?
+>>
+>> I am writing a bare metal driver and it didn't work without alignment
+>> check mentioned above.
+>
+> just make sure you don't copy GPL code into your bare metal driver,
+> otherwise your bare metal driver will be GPL by definition. Also, since
 
-Also I don't think any new functions is actually needed: on an ACPI
-system we can safely assume that the platform lookup tables are not
-used at all. So, although it is a hack as well, you can just call
-gpiod_add_lookup_table() with a runtime-built table from the driver
-that needs to pass the GPIO so the receipient can receive it through
-the lookup table fallback gpiod_get() uses if no GPIO is defined via
-ACPI.
+I didn't copy linux code. I have gone through dwc3 driver while
+writing udc-xilinx.c
+and now it is helping me to understand dwc3 controller quickly.:)
 
-So I think that even with the current state of the code you can
-achieve what you need. Should you do it, that's another question - it
-seems more to-the-point to find a way to fix/patch the ACPI tables at
-runtime, if that is possible at all, to provide a more general
-solution to this issue.
+> you're not using Linux at all, you should be asking support from
+> Synopsys instead, not the Linux USB mailing list.
+
+Sure will ask support from Synopsis.
+
+Thanks,
+Sundeep
+
+>
+> --
+> balbi
