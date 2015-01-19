@@ -1,49 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752244AbbASRlt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 12:41:49 -0500
-Received: from mail-la0-f47.google.com ([209.85.215.47]:40922 "EHLO
-	mail-la0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751506AbbASRlr (ORCPT
+	id S1751922AbbASRoR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 12:44:17 -0500
+Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:49668 "EHLO
+	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751424AbbASRoQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 12:41:47 -0500
-Message-ID: <54BD41D3.7030703@gmail.com>
-Date: Mon, 19 Jan 2015 20:41:39 +0300
-From: Dmitry Osipenko <digetx@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Thierry Reding <thierry.reding@gmail.com>
-CC: Alexandre Courbot <gnurou@gmail.com>,
-        Peter De Schrijver <pdeschrijver@nvidia.com>,
-        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
-        stable@vger.kernel.org
-Subject: Re: [PATCH] ARM: tegra20: Store CPU "resettable" status in IRAM
-References: <1421319545-23920-1-git-send-email-digetx@gmail.com> <1421319545-23920-2-git-send-email-digetx@gmail.com> <20150119141224.GF23778@ulmo.nvidia.com> <54BD3E3E.2040801@wwwdotorg.org>
-In-Reply-To: <54BD3E3E.2040801@wwwdotorg.org>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Mon, 19 Jan 2015 12:44:16 -0500
+Message-ID: <1421689454.9655.58.camel@x220>
+Subject: [PATCH] coresight-etm: remove check for unknown Kconfig macro
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Mathieu Poirier <mathieu.poirier@linaro.org>
+Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Date: Mon, 19 Jan 2015 18:44:14 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 19 Jan 2015 17:44:14.0429 (UTC) FILETIME=[8A5DA0D0:01D0340F]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-19.01.2015 20:26, Stephen Warren пишет:
-> Hopefully this works out. I suppose it's unlikely anyone will be running code on
-> the AVP upstrem, so any potential conflict with AVP's usage of IRAM isn't likely
-> to occur.
->
-I don't see how it can conflict with AVP code. First KB of IRAM is reserved for 
-reset handler. Am I missing something?
+The CoreSight ETM/PTM driver contains a check for a
+CONFIG_CORESIGHT_SOURCE_ETM_DEFAULT_ENABLE macro. But there's no related
+Kconfig symbol CORESIGHT_SOURCE_ETM_DEFAULT_ENABLE. Remove that check
+and the single line of code it hides.
 
- From reset.h:
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Cross-compile tested only (on top of next-20150119).
 
-/* The first 1K of IRAM is permanently reserved for the CPU reset handler */
+ drivers/coresight/coresight-etm3x.c | 4 ----
+ 1 file changed, 4 deletions(-)
 
-> __tegra20_cpu1_resettable_status_offset has a lot of _ at the start. Should the
-> symbol be named more normally? I guess at least it's consistent with the
-> existing very "underscory" __tegra_cpu_reset_handler_start.
-I also wasn't happy with "underscory" :) And yes, I left it for consistency. 
-Please feel free to rename it, if needed.
-
+diff --git a/drivers/coresight/coresight-etm3x.c b/drivers/coresight/coresight-etm3x.c
+index 73c36696f1b6..f312dc4dd95c 100644
+--- a/drivers/coresight/coresight-etm3x.c
++++ b/drivers/coresight/coresight-etm3x.c
+@@ -34,11 +34,7 @@
+ 
+ #include "coresight-etm.h"
+ 
+-#ifdef CONFIG_CORESIGHT_SOURCE_ETM_DEFAULT_ENABLE
+-static int boot_enable = 1;
+-#else
+ static int boot_enable;
+-#endif
+ module_param_named(
+ 	boot_enable, boot_enable, int, S_IRUGO
+ );
 -- 
-Dmitry
+1.9.3
+
