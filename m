@@ -1,152 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751651AbbASU7M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 15:59:12 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:51421 "EHLO
-	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750953AbbASU7L (ORCPT
+	id S1752027AbbASVDH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 16:03:07 -0500
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:55473 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751630AbbASVDG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 15:59:11 -0500
-Date: Mon, 19 Jan 2015 12:59:08 -0800
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Cc: linux-kernel@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v9 2/3] clk: Make clk API return per-user struct clk
- instances
-Message-ID: <20150119205908.GC27202@codeaurora.org>
-References: <1421688067-24426-1-git-send-email-tomeu.vizoso@collabora.com>
- <1421688067-24426-3-git-send-email-tomeu.vizoso@collabora.com>
+	Mon, 19 Jan 2015 16:03:06 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421688067-24426-3-git-send-email-tomeu.vizoso@collabora.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1421700835-22157-7-git-send-email-benjamin.tissoires@redhat.com>
+References: <1421700835-22157-1-git-send-email-benjamin.tissoires@redhat.com>
+	<1421700835-22157-7-git-send-email-benjamin.tissoires@redhat.com>
+Date: Mon, 19 Jan 2015 16:03:04 -0500
+Message-ID: <CAN+gG=Ejxc0hX7eqW6K7QP9NzarereRrOJT0t_G5ikXUcJZn1w@mail.gmail.com>
+Subject: Re: [RFC 6/6] Input: mt: introduce dmax in in-kernel tracking
+From: Benjamin Tissoires <benjamin.tissoires@gmail.com>
+To: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Peter Hutterer <peter.hutterer@who-t.net>,
+        linux-input <linux-input@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19, Tomeu Vizoso wrote:
-> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
-> index 97f3425..f2a1ff3 100644
-> --- a/drivers/clk/clk.c
-> +++ b/drivers/clk/clk.c
-> @@ -694,32 +751,32 @@ long __clk_mux_determine_rate(struct clk_hw *hw, unsigned long rate,
->  			      unsigned long *best_parent_rate,
->  			      struct clk_hw **best_parent_p)
->  {
-> -	struct clk *clk = hw->clk, *parent, *best_parent = NULL;
-> +	struct clk_core *core = hw->clk->core, *parent, *best_parent = NULL;
+On Mon, Jan 19, 2015 at 3:53 PM, Benjamin Tissoires
+<benjamin.tissoires@redhat.com> wrote:
+> When tapping a clickpad with two fingers, there is a chance that the sensor
+> sees first only one finger, and at the next scan only the second one.
+> In this case, the sensors says that there has been only one finger
+> on the clickpad, which moved really fast between two scans.
+>
+> We can try to counter this by adding a limit to what an actual finger
+> can move between 2 scans.
+> We can try to provide a reasonable distance of 1cm between two scans for
+> one finger. This is what is used in the synaptcs.c portion of the patch.
+>
+> However, this is not really accurate because the resolution in X and in Y
+> differs. But heh, that's how the in-kernel tracking works right now, and
+> its job is quite good even with this approximation.
+>
+> Once a driver has set the maximum distance for a jump of a finger between
+> two scans, we can tell the in-kernel tracking to dissociate the slots
+> and the touch with input_mt_check_slots().
+>
+> In order not to penalize better sensors, this parameter is not
+> automatically enabled, but each driver has to manually set it to a
+> reasonable value.
+>
+> Fixes: https://bugs.freedesktop.org/show_bug.cgi?id=76722
+>
+> Signed-off-by: Benjamin Tissoires <benjamin.tissoires@redhat.com>
+> ---
+>  drivers/input/input-mt.c        | 67 +++++++++++++++++++++++++++++++++++++++--
+>  drivers/input/mouse/synaptics.c |  3 +-
+>  include/linux/input/mt.h        |  4 +++
+>  3 files changed, 71 insertions(+), 3 deletions(-)
+>
+> diff --git a/drivers/input/input-mt.c b/drivers/input/input-mt.c
+> index c7b3752..d326262 100644
+> --- a/drivers/input/input-mt.c
+> +++ b/drivers/input/input-mt.c
+> @@ -403,9 +403,51 @@ static int input_mt_set_matrix(struct input_mt *mt,
+>  }
+>
+>  /**
+> + * input_mt_check_slots() - validate the slot assignments
+> + * @mt: the input_mt handle of the current device
+> + * @pos: the position array to match
+> + * @slots: the slot assignment to be filled
+> + * @num_pos: number of positions
+> + *
+> + * For each assigned touch in pos, check if the distance between this touch
+> + * and the previously reported position is not too big.
+> + * If it is too big, break the assignment by resetting the slot value to -1.
+> + * While syncing the frame, the previously matched slot will be freed, and
+> + * a new one will be assigned in input_mt_set_slots().
+> + *
+> + * The "too big" parameter is stored in mt->dmax2.
+> + */
+> +static void input_mt_check_slots(struct input_mt *mt,
+> +                                const struct input_mt_pos *pos, int *slots,
+> +                                int num_pos)
+> +{
+> +       struct input_mt_slot *s;
+> +       int *p;
+> +       int i, x, y, d2, dx, dy;
+> +       struct input_mt_pos *mt_pos;
 
-Can't we just use hw->core here?
+Grmbl... checkpatch.pl complained about a missing line between the
+declarations and the actual code (I first declared mt_pos within the
+for loop). So I re-scrambled the things, and of course I forget to
+re-add the "const" qualifer. So this line shows a pretty warning which
+will be fixed in v2 :(
 
->  	int i, num_parents;
->  	unsigned long parent_rate, best = 0;
->  
->  
-> @@ -820,15 +877,18 @@ int clk_prepare(struct clk *clk)
->  {
->  	int ret;
->  
-> +	if (IS_ERR_OR_NULL(clk))
-> +		return PTR_ERR(clk);
-
-What's going on here? Should be if (!clk)?
+Cheers,
+Benjamin
 
 > +
->  	clk_prepare_lock();
-> -	ret = __clk_prepare(clk);
-> +	ret = clk_core_prepare(clk->core);
->  	clk_prepare_unlock();
->  
->  	return ret;
->  }
->  EXPORT_SYMBOL_GPL(clk_prepare);
-> @@ -1066,9 +1149,24 @@ long clk_get_accuracy(struct clk *clk)
->  
->  	return accuracy;
->  }
+> +       if (!mt->dmax2)
+> +               return;
+> +
+> +       for (i = 0; i < num_pos; i++) {
+> +               mt_pos = pos + i;
+> +               p = slots + i;
+> +               s = mt->slots + *p;
+> +               x = input_mt_get_value(s, ABS_MT_POSITION_X);
+> +               y = input_mt_get_value(s, ABS_MT_POSITION_Y);
+> +               dx = x - mt_pos->x;
+> +               dy = y - mt_pos->y;
+> +               d2 = dx * dx + dy * dy;
+> +               if (d2 >= mt->dmax2)
+> +                       *p = -1;
+> +       }
+> +}
 > +
 > +/**
-> + * clk_get_accuracy - return the accuracy of clk
-> + * @clk: the clk whose accuracy is being returned
-> + *
-> + * Simply returns the cached accuracy of the clk, unless
-> + * CLK_GET_ACCURACY_NOCACHE flag is set, which means a recalc_rate will be
-> + * issued.
-> + * If clk is NULL then returns 0.
-> + */
-> +long clk_get_accuracy(struct clk *clk)
-> +{
-> +	return clk_core_get_accuracy(clk->core);
-
-Oops. Missing NULL check.
-
-> +}
->  EXPORT_SYMBOL_GPL(clk_get_accuracy);
->  
-> @@ -1130,14 +1220,29 @@ unsigned long clk_get_rate(struct clk *clk)
-[...]
-> + *
-> + * Simply returns the cached rate of the clk, unless CLK_GET_RATE_NOCACHE flag
-> + * is set, which means a recalc_rate will be issued.
-> + * If clk is NULL then returns 0.
-> + */
-> +unsigned long clk_get_rate(struct clk *clk)
-> +{
-> +	return clk_core_get_rate(clk->core);
-
-Oops. Missing NULL check.
-
-> +}
->  EXPORT_SYMBOL_GPL(clk_get_rate);
-> @@ -1629,37 +1741,26 @@ static struct clk *__clk_init_parent(struct clk *clk)
-[...]
-> -int clk_set_parent(struct clk *clk, struct clk *parent)
-> +void __clk_reparent(struct clk *clk, struct clk *new_parent)
-> +{
-> +	clk_core_reparent(clk->core, new_parent->core);
-> +}
-
-Is this used? Looks like we can remove it. Sorry, not sure how I
-missed this last time.
-
-> +
-> +static int clk_core_set_parent(struct clk_core *clk, struct clk_core *parent)
+>   * input_mt_set_slots() - assign slots to the list of pos thanks to the reduced
+>   * cost matrix
+>   * @mt: the input_mt handle of the current device
+> + * @pos: the position array to match
+>   * @slots: the slot assignment to be filled
+>   * @num_pos: number of positions
+>   *
+> @@ -414,7 +456,8 @@ static int input_mt_set_matrix(struct input_mt *mt,
+>   * sent slots.
+>   */
+>  static void input_mt_set_slots(struct input_mt *mt,
+> -                              int *slots, int num_pos)
+> +                              const struct input_mt_pos *pos, int *slots,
+> +                              int num_pos)
 >  {
->  	int ret = 0;
->  	int p_index = 0;
-> @@ -1719,6 +1820,28 @@ out:
-[...]
-> +int clk_set_parent(struct clk *clk, struct clk *parent)
-> +{
-> +	return clk_core_set_parent(clk->core, parent->core);
-
-Oops. Missing NULL check for both inputs.
-
-> +}
->  EXPORT_SYMBOL_GPL(clk_set_parent);
->  
->  /**
-> @@ -1793,18 +1909,31 @@ out:
+>         struct input_mt_slot *s;
+>         int *red_cost_matrix = mt->red;
+> @@ -436,6 +479,8 @@ static void input_mt_set_slots(struct input_mt *mt,
+>                                 *p = s - mt->slots;
+>         }
+>
+> +       input_mt_check_slots(mt, pos, slots, num_pos);
+> +
+>         /* for each unassigned touch in pos, assign a new slot for it */
+>         for (s = mt->slots; s != mt->slots + mt->num_slots; s++) {
+>                 if (input_mt_is_active(s))
+> @@ -478,13 +523,31 @@ int input_mt_assign_slots(struct input_dev *dev, int *slots,
+>         n_rows = n_elems / num_pos;
+>         n_columns = num_pos;
+>         find_reduced_matrix(mt->red, n_columns, n_rows, n_elems);
+> -       input_mt_set_slots(mt, slots, num_pos);
+> +       input_mt_set_slots(mt, pos, slots, num_pos);
+>
+>         return 0;
 >  }
->  
+>  EXPORT_SYMBOL(input_mt_assign_slots);
+>
 >  /**
-> + * clk_get_phase - return the phase shift of a clock signal
-> + * @clk: clock signal source
+> + * input_mt_set_dmax_tracking() - enhance tracking
+> + * @dev: input device with allocated MT slots
+> + * @dmax: the max distance between two touches to be considered as the same
 > + *
-> + * Returns the phase shift of a clock node in degrees, otherwise returns
-> + * -EERROR.
+> + * Enhance the in-kernel tracking by providing a maximum distance between
+> + * 2 touches to be considered as the same slot.
+> + * The stored value is the square of the provided distance to ease the tests
+> + * later on. The input distance has to be given in the device coordinate system.
 > + */
-> +int clk_get_phase(struct clk *clk)
+> +void input_mt_set_dmax_tracking(struct input_dev *dev, int dmax)
 > +{
-> +	return clk_core_get_phase(clk->core);
-
-Oops. Missing NULL check.
-
--- 
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-a Linux Foundation Collaborative Project
+> +       struct input_mt *mt = dev->mt;
+> +
+> +       mt->dmax2 = dmax * dmax;
+> +}
+> +EXPORT_SYMBOL(input_mt_set_dmax_tracking);
+> +
+> +/**
+>   * input_mt_get_slot_by_key() - return slot matching key
+>   * @dev: input device with allocated MT slots
+>   * @key: the key of the sought slot
+> diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+> index f89de89..95c15451 100644
+> --- a/drivers/input/mouse/synaptics.c
+> +++ b/drivers/input/mouse/synaptics.c
+> @@ -1077,7 +1077,8 @@ static void set_input_params(struct psmouse *psmouse,
+>                                         ABS_MT_POSITION_Y);
+>                 /* Image sensors can report per-contact pressure */
+>                 input_set_abs_params(dev, ABS_MT_PRESSURE, 0, 255, 0, 0);
+> -               input_mt_init_slots(dev, 2, INPUT_MT_POINTER | INPUT_MT_TRACK);
+> +               input_mt_init_slots(dev, 4, INPUT_MT_POINTER | INPUT_MT_TRACK);
+> +               input_mt_set_dmax_tracking(dev, 10 * priv->x_res);
+>
+>                 /* Image sensors can signal 4 and 5 finger clicks */
+>                 __set_bit(BTN_TOOL_QUADTAP, dev->keybit);
+> diff --git a/include/linux/input/mt.h b/include/linux/input/mt.h
+> index f583ff6..c4b35c4 100644
+> --- a/include/linux/input/mt.h
+> +++ b/include/linux/input/mt.h
+> @@ -41,6 +41,7 @@ struct input_mt_slot {
+>   * @flags: input_mt operation flags
+>   * @frame: increases every time input_mt_sync_frame() is called
+>   * @red: reduced cost matrix for in-kernel tracking
+> + * @dmax2: max (squared) distance between 2 points when using in-kernel tracking
+>   * @slots: array of slots holding current values of tracked contacts
+>   */
+>  struct input_mt {
+> @@ -50,6 +51,7 @@ struct input_mt {
+>         unsigned int flags;
+>         unsigned int frame;
+>         int *red;
+> +       int dmax2;
+>         struct input_mt_slot slots[];
+>  };
+>
+> @@ -100,6 +102,8 @@ static inline bool input_is_mt_axis(int axis)
+>         return axis == ABS_MT_SLOT || input_is_mt_value(axis);
+>  }
+>
+> +void input_mt_set_dmax_tracking(struct input_dev *dev, int dmax);
+> +
+>  void input_mt_report_slot_state(struct input_dev *dev,
+>                                 unsigned int tool_type, bool active);
+>
+> --
+> 2.1.0
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
