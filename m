@@ -1,274 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751581AbbASNIv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 08:08:51 -0500
-Received: from mail-ob0-f170.google.com ([209.85.214.170]:63874 "EHLO
-	mail-ob0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751461AbbASNIt (ORCPT
+	id S1752241AbbASNJk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 08:09:40 -0500
+Received: from vserver.eikelenboom.it ([84.200.39.61]:43989 "EHLO
+	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751437AbbASNJj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 08:08:49 -0500
+	Mon, 19 Jan 2015 08:09:39 -0500
+Date: Mon, 19 Jan 2015 14:09:34 +0100
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <577867575.20150119140934@eikelenboom.it>
+To: Sander Eikelenboom <linux@eikelenboom.it>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>
+CC: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: if power button pressed 1x it creates the same ACPI event twice
+In-Reply-To: <1202643605.20150113174724@eikelenboom.it>
+References: <618666178.20150113173510@eikelenboom.it> <1202643605.20150113174724@eikelenboom.it>
 MIME-Version: 1.0
-In-Reply-To: <8467440.C7CR1EqfOe@wuerfel>
-References: <1418812486-12394-1-git-send-email-gabriel.fernandez@linaro.org>
-	<1418812486-12394-4-git-send-email-gabriel.fernandez@linaro.org>
-	<8467440.C7CR1EqfOe@wuerfel>
-Date: Mon, 19 Jan 2015 14:08:48 +0100
-Message-ID: <CAG374jDDn9OWZm0=46zmk5MwYbX-orwJ=_k=mR-33dFPFMjdLw@mail.gmail.com>
-Subject: Re: [PATCH 3/5] PCI: st: Provide support for the sti PCIe controller
-From: Gabriel Fernandez <gabriel.fernandez@linaro.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Bjorn Helgaas <bhelgaas@google.com>, Mohit Kumar <mohit.kumar@st.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Fabrice Gasnier <fabrice.gasnier@st.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Thierry Reding <treding@nvidia.com>,
-        Minghuan Lian <Minghuan.Lian@freescale.com>,
-        Magnus Damm <damm@opensource.se>, Will Deacon <will.deacon@arm.com>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Murali Karicheri <m-karicheri2@ti.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Pratyush Anand <pratyush.anand@st.com>,
-        Sachin Kamat <sachin.kamat@samsung.com>, Andrew Lunn <andrew@lunn.ch>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "kernel@stlinux.com" <kernel@stlinux.com>, linux-pci@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+Hello Sander,
 
-On 17 December 2014 at 23:14, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Wednesday 17 December 2014 11:34:44 Gabriel FERNANDEZ wrote:
->> sti pcie is built around a Synopsis Designware PCIe IP.
->>
->> Signed-off-by: Fabrice Gasnier <fabrice.gasnier@st.com>
->> Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
->> ---
->>  drivers/pci/host/Kconfig  |   5 +
->>  drivers/pci/host/Makefile |   1 +
->>  drivers/pci/host/pci-st.c | 713 ++++++++++++++++++++++++++++++++++++++++++++++
->>  3 files changed, 719 insertions(+)
->>  create mode 100644 drivers/pci/host/pci-st.c
->>
->> diff --git a/drivers/pci/host/Kconfig b/drivers/pci/host/Kconfig
->> index c4b6568..999d2b9 100644
->> --- a/drivers/pci/host/Kconfig
->> +++ b/drivers/pci/host/Kconfig
->> @@ -102,4 +102,9 @@ config PCI_LAYERSCAPE
->>       help
->>         Say Y here if you want PCIe controller support on Layerscape SoCs.
->>
->> +config PCI_ST
->> +     bool "ST STiH41x PCIe controller"
->> +     depends on ARCH_STI
->> +     select PCIE_DW
->
-> I'd use 'depends on ARCH_STI || (ARM && COMPILE_TEST)' to enable
-> building this on other platforms for test purposes.
->
-ok
+Tuesday, January 13, 2015, 5:47:24 PM, you wrote:
 
->> +
->> +#define to_st_pcie(x)        container_of(x, struct st_pcie, pp)
->> +
->> +/**
->> + * struct st_pcie_ops - SOC dependent data
->> + * @init: reference to controller power & reset init routine
->> + * @enable_ltssm: reference to controller link enable routine
->> + * @disable_ltssm:  reference to controller link disable routine
->> + * @phy_auto: flag when phy automatically configured
->> + */
->> +struct st_pcie_ops {
->> +     int (*init)(struct pcie_port *pp);
->> +     int (*enable_ltssm)(struct pcie_port *pp);
->> +     int (*disable_ltssm)(struct pcie_port *pp);
->> +     bool phy_auto;
->> +};
->
-ok, i will fix it.
+> Tuesday, January 13, 2015, 5:35:10 PM, you wrote:
 
-> It would be better not to invent another level of indirection. Try
-> turning this around so you have a driver that binds to the specific
-> SoC compatible string for the PCIe port while calling into a common
-> library module for things that are shared.
->
->> +/*
->> + * On ARM platforms, we actually get a bus error returned when the PCIe IP
->> + * returns a UR or CRS instead of an OK.
->> + */
->> +static int st_pcie_abort_handler(unsigned long addr, unsigned int fsr,
->> +                              struct pt_regs *regs)
->> +{
->> +     return 0;
->> +}
->
-> You should check that it's actually PCI that caused the abort. Don't
-> just ignore a hard error condition.
->
-> Usually there are registers in the PCI core that let you identify what
-> happened.
->
-We return 0 because abort handler is not activated during boot.
+>> Hi Rafael / Len,
 
->> +static int st_pcie_rd_other_conf(struct pcie_port *pp, struct pci_bus *bus,
->> +                              unsigned int devfn, int where, int size,
->> +                              u32 *val)
->> +{
->> +     u32 data;
->> +     u32 bdf;
->> +     struct st_pcie *pcie = to_st_pcie(pp);
->> +     int is_root_bus = pci_is_root_bus(bus);
->> +     int retry_count = 0;
->> +     int ret;
->> +     void __iomem *addr;
->> +
->> +     /*
->> +      * Prerequisite
->> +      * PCI express devices will respond to all config type 0 cycles, since
->> +      * they are point to point links. Thus to avoid probing for multiple
->> +      * devices on the root, dw-pcie already check for us if it is on the
->> +      * root bus / other slots. Also, dw-pcie checks for the link being up
->> +      * as we will hang if we issue a config request and the link is down.
->> +      * A switch will reject requests for slots it knows do not exist.
->> +      */
->> +     bdf = bdf_num(bus->number, devfn, is_root_bus);
->> +     addr = pcie->config_area + config_addr(where,
->> +                     bus->parent->number == pp->root_bus_nr);
->> +retry:
->> +     /* Set the config packet devfn */
->> +     writel_relaxed(bdf, pp->dbi_base + FUNC0_BDF_NUM);
->> +     readl_relaxed(pp->dbi_base + FUNC0_BDF_NUM);
->> +
->> +     ret = dw_pcie_cfg_read(addr, where, size, &data);
->> +
->> +     /*
->> +      * This is intended to help with when we are probing the bus. The
->> +      * problem is that the wrapper logic doesn't have any way to
->> +      * interrogate if the configuration request failed or not.
->> +      * On the ARM we actually get a real bus error.
->> +      *
->> +      * Unfortunately this means it is impossible to tell the difference
->> +      * between when a device doesn't exist (the switch will return a UR
->> +      * completion) or the device does exist but isn't yet ready to accept
->> +      * configuration requests (the device will return a CRS completion)
->> +      *
->> +      * The result of this is that we will miss devices when probing.
->> +      *
->> +      * So if we are trying to read the dev/vendor id on devfn 0 and we
->> +      * appear to get zero back, then we retry the request.  We know that
->> +      * zero can never be a valid device/vendor id. The specification says
->> +      * we must retry for up to a second before we decide the device is
->> +      * dead. If we are still dead then we assume there is nothing there and
->> +      * return ~0
->> +      *
->> +      * The downside of this is that we incur a delay of 1s for every pci
->> +      * express link that doesn't have a device connected.
->> +      */
->> +     if (((where & ~3) == 0) && devfn == 0 && (data == 0 || data == ~0)) {
->> +             if (retry_count++ < 1000) {
->> +                     mdelay(1);
->> +                     goto retry;
->> +             } else {
->> +                     *val = ~0;
->> +                     return PCIBIOS_DEVICE_NOT_FOUND;
->> +             }
->> +     }
->> +
->> +     *val = data;
->> +     return ret;
->> +}
->
-> A busy-loop is extremely nasty. If this is only during the initial bus
-> scan, could you use an msleep instead?
->
-yes it's during the initial bus scan.
-But we can't use msleep because we are under raw_spin_lock_irqsave()
-see PCI_OP_READ() macro in drivers/pci/access.c
+>> When i press the power-button on my intel NUC, i get twp ACPI power-events shortly 
+>> after one another (within a second), instead of just one. 
 
-> Also, it sounds like the error you get is actually the fault that you
-> are catching above. If this is correct, then use the fault handler to
-> communicate this to the probe function.
->
-Same as above the handler is not activated during the boot and initial bus scan.
+>> It doesn't matter if i have the old /proc/acpi interface enabled or disabled in the kernel config.
+
+>> I have tested a few older kernels lingering around on the box and 3.14 already 
+>> has this problem. 3.2 (from the debian repo) doesn't have the problem, it only 
+>> fires one event.
+
+>> I did find another report:
+>>     Re: lenovo ultrabay docking station: if power button pressed 1x it creates 2x the same ACPI event
+>>     http://www.spinics.net/lists/linux-acpi/msg54723.html
+>> But that hasn't come to a conclusion ...
 
 
->> +
->> +static void st_pcie_board_reset(struct pcie_port *pp)
->> +{
->> +     struct st_pcie *pcie = to_st_pcie(pp);
->> +
->> +     if (!gpio_is_valid(pcie->reset_gpio))
->> +             return;
->> +
->> +     if (gpio_direction_output(pcie->reset_gpio, 0)) {
->> +             dev_err(pp->dev, "Cannot set PERST# (gpio %u) to output\n",
->> +                     pcie->reset_gpio);
->> +             return;
->> +     }
->> +
->> +     /* From PCIe spec */
->> +     usleep_range(1000, 2000);
->> +     gpio_direction_output(pcie->reset_gpio, 1);
->> +
->> +     /*
->> +      * PCIe specification states that you should not issue any config
->> +      * requests until 100ms after asserting reset, so we enforce that here
->> +      */
->> +     usleep_range(100000, 150000);
->> +}
->
-> This seems hardly performance critical, just use msleep(2) and
-> msleep(100) instead of the usleep_range().
->
+>> Unfortunately 3.2 - 3.19-rc4 is a bit of a largish bisect window, so that's 
+>> unfeasible :-)
 
-ok i will fix it.
+>> I compiled in apci debug support and tried:
+>>  echo "0x00080000" > /sys/module/acpi/parameters/debug_layer
+>>  echo "0xffffffff" > /sys/module/acpi/parameters/debug_level
 
+>> But i don't get any extra output in dmesg ?
 
->> +static void st_msi_init_one(struct pcie_port *pp)
->> +{
->> +     struct st_pcie *pcie = to_st_pcie(pp);
->> +
->> +     /*
->> +      * Set the magic address the hardware responds to. This has to be in
->> +      * the range the PCI controller can write to.
->> +      */
->> +     dw_pcie_msi_init(pp);
->> +
->> +     if ((virt_to_phys((void *)pp->msi_data) < pcie->lmi->start) ||
->> +         (virt_to_phys((void *)pp->msi_data) > pcie->lmi->end))
->> +             dev_err(pp->dev, "MSI addr miss-configured\n");
->> +}
->
-> Why do you call virt_to_phys() here? Isn't msi_data a physical address?
->
-msi_data is a virtual address, it's obtained through a
-__get_free_pages() function in dw_pcie_msi_init() procedure.
+>> Do you have any ideas for a debug patch or better values to figure out what is going on ?
 
->> +static int __init st_pcie_probe(struct platform_device *pdev)
->
-> I'd suggest removing the __init here, as discussed in the review for
-> the qualcomm driver.
->
-ok
+>> --
+>> Sander
 
->         Arnd
+> Hmm is it normal that it registers in this way (twice) ?
 
-BR
+> [    5.817980] input: Power Button as /devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0C:00/input/input0
+> [    5.837907] ACPI: Power Button [PWRB]
+> [    5.847540] input: Power Button as /devices/LNXSYSTM:00/LNXPWRBN:00/input/input1
+> [    5.866915] ACPI: Power Button [PWRF]
 
-Gabriel.
+> --
+> Sander
+
+Hi Rafael / Len,
+
+Got some more time to test:
+
+- It's indeed giving one event for both registered power buttons (which in reality 
+  are just one hardware button) printing acpid's "%e" revealed that:
+  1421672289-161192235 | button/power PBTN 00000080 00000000
+  1421672289-279647745 | button/power LNXPWRBN:00 00000080 00000004
+
+So i tested on another box (amd instead of intel), and that also registers 2 
+power buttons:
+
+# dmesg | grep -i button
+[   13.435060] input: Power Button as /devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0C:00/input/input0
+[   13.435294] ACPI: Power Button [PWRB]
+[   13.435495] input: Power Button as /devices/LNXSYSTM:00/LNXPWRBN:00/input/input1
+[   13.435683] ACPI: Power Button [PWRF]
+ 
+So the question is .. should both register and should scripts adjust to pick up just one of them ?
+Or can, as a more general solution, just one be ignored when registering ?
+
+--
+Sander
+
