@@ -1,105 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677AbbASSxW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 13:53:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42451 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751922AbbASSxU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 13:53:20 -0500
-Date: Mon, 19 Jan 2015 19:52:12 +0100
-From: Oleg Nesterov <oleg@redhat.com>
-To: Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Suresh Siddha <sbsiddha@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        matt.fleming@intel.com, bp@suse.de, pbonzini@redhat.com,
-        tglx@linutronix.de, luto@amacapital.net
-Subject: [PATCH 3/3] x86, fpu: don't abuse FPU in kernel threads if
-	use_eager_fpu()
-Message-ID: <20150119185212.GD16427@redhat.com>
-References: <1421012793-30106-1-git-send-email-riel@redhat.com> <20150115191918.GA27332@redhat.com> <20150119185109.GA16427@redhat.com>
+	id S1752474AbbASSzY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 13:55:24 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:61725 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751617AbbASSzW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 13:55:22 -0500
+Date: Mon, 19 Jan 2015 10:55:19 -0800
+From: Brian Norris <computersforpeace@gmail.com>
+To: Dan Carpenter <dan.carpenter@oracle.com>,
+        SF Markus Elfring <elfring@users.sourceforge.net>
+Cc: SF Markus Elfring <elfring@users.sourceforge.net>,
+        Ursula Braun <ursula.braun@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Frank Blaschka <blaschka@linux.vnet.ibm.com>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] s390/net: Deletion of unnecessary checks before two
+ function calls
+Message-ID: <20150119185519.GK9759@ld-irv-0074>
+References: <530C5E18.1020800@users.sourceforge.net>
+ <alpine.DEB.2.10.1402251014170.2080@hadrien>
+ <530CD2C4.4050903@users.sourceforge.net>
+ <alpine.DEB.2.10.1402251840450.7035@hadrien>
+ <530CF8FF.8080600@users.sourceforge.net>
+ <20141103095059.GL6879@mwanda>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150119185109.GA16427@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20141103095059.GL6879@mwanda>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Afaics there is no reason why kernel threads should have FPU context
-even if use_eager_fpu() == T. Now that interrupted_kernel_fpu_idle()
-does not check __thread_has_fpu() we can remove the init_fpu() code
-from eager_fpu_init() and change flush_thread() called by do_execve()
-to initialize FPU.
+I went digging through some of Markus's old patch history, and noticed
+this...
 
-Note: of course, the change in flush_thread() is horrible and must be
-cleanuped. We need the new helper, and flush_thread() should return the
-error if init_fpu() fails.
+On Mon, Nov 03, 2014 at 12:50:59PM +0300, Dan Carpenter wrote:
+> This one is buggy.
+> 
+> I'm sorry, but please stop sending these.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
- arch/x86/kernel/process.c |    7 +++++++
- arch/x86/kernel/xsave.c   |   13 +------------
- 2 files changed, 8 insertions(+), 12 deletions(-)
+I'm tending to concur.
 
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index e127dda..dd9a069 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -130,6 +130,7 @@ void flush_thread(void)
- 
- 	flush_ptrace_hw_breakpoint(tsk);
- 	memset(tsk->thread.tls_array, 0, sizeof(tsk->thread.tls_array));
-+
- 	drop_init_fpu(tsk);
- 	/*
- 	 * Free the FPU state for non xsave platforms. They get reallocated
-@@ -137,6 +138,12 @@ void flush_thread(void)
- 	 */
- 	if (!use_eager_fpu())
- 		free_thread_xstate(tsk);
-+	else if (!used_math()) {
-+		/* kthread execs. TODO: cleanup this horror. */
-+		if (WARN_ON(init_fpu(current)))
-+			force_sig(SIGKILL, current);
-+		math_state_restore();
-+	}
- }
- 
- static void hard_disable_TSC(void)
-diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
-index 0de1fae..de9dcf8 100644
---- a/arch/x86/kernel/xsave.c
-+++ b/arch/x86/kernel/xsave.c
-@@ -688,7 +688,7 @@ void eager_fpu_init(void)
- {
- 	static __refdata void (*boot_func)(void) = eager_fpu_init_bp;
- 
--	clear_used_math();
-+	WARN_ON(used_math());
- 	current_thread_info()->status = 0;
- 
- 	if (eagerfpu == ENABLE)
-@@ -703,17 +703,6 @@ void eager_fpu_init(void)
- 		boot_func();
- 		boot_func = NULL;
- 	}
--
--	/*
--	 * This is same as math_state_restore(). But use_xsave() is
--	 * not yet patched to use math_state_restore().
--	 */
--	init_fpu(current);
--	__thread_fpu_begin(current);
--	if (cpu_has_xsave)
--		xrstor_state(init_xstate_buf, -1);
--	else
--		fxrstor_checking(&init_xstate_buf->i387);
- }
- 
- /*
--- 
-1.5.5.1
+> For kfree(), at least we all know that kfree() accepts NULL pointer.
+> But for this one:
+> 1) I don't know what the functions do so I have to look at the code.
+> 2) It's in a arch that I don't compile so cscope isn't set up meaning
+>    it's hard to find the functions.
+> 
+> You're sending a lot of patches and they are all hard to review and some
+> of them are buggy and none of them really add any value.  It's a waste
+> of your time and it's a waste of my time.
 
+And you're still sending buggy patches that exhibit the same qualities.
+They're still wasting Dan's time, and now they're wasting mine.
 
+I appreciate automated checkers where they provide added value, but I
+really feel you haven't done your diligence on them.
+
+Regards,
+Brian
