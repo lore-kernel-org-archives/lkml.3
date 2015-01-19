@@ -1,119 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752714AbbASSeZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 13:34:25 -0500
-Received: from mail.sig21.net ([80.244.240.74]:59019 "EHLO mail.sig21.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751954AbbASSeY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 13:34:24 -0500
-Date: Mon, 19 Jan 2015 19:33:52 +0100
-From: Johannes Stezenbach <js@sig21.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: arnd@arndb.de, ebiederm@xmission.com, gnomes@lxorguk.ukuu.org.uk,
-        teg@jklm.no, jkosina@suse.cz, luto@amacapital.net,
-        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Daniel Mack <daniel@zonque.org>, dh.herrmann@gmail.com,
-        tixxdz@opendz.org
-Subject: Re: [PATCH v3 00/13] Add kdbus implementation
-Message-ID: <20150119183352.GA29289@sig21.net>
-References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>
+	id S1752346AbbASShv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 13:37:51 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:24094 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751617AbbASSht (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 13:37:49 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+r9tX3AYwN84l5WBWdW8vz
+Date: Mon, 19 Jan 2015 10:34:09 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Jason Cooper <jason@lakedaemon.net>
+Cc: Felipe Balbi <balbi@ti.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Linux ARM Kernel Mailing List 
+	<linux-arm-kernel@lists.infradead.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Peter =?utf-8?Q?K=C3=BCmmel?= <syntheticpp@gmx.net>,
+        Pavel Machek <pavel@ucw.cz>, Santosh Shilimkar <ssantosh@kernel.org>,
+        stable@vger.kernel.org
+Subject: Re: [PATCH v2] irqchip: omap-intc: fix legacy DMA regression
+Message-ID: <20150119183409.GZ18552@atomide.com>
+References: <1420563093-26026-1-git-send-email-balbi@ti.com>
+ <1420576688-10604-1-git-send-email-balbi@ti.com>
+ <20150107030029.GE24989@titan.lakedaemon.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>
+In-Reply-To: <20150107030029.GE24989@titan.lakedaemon.net>
 User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Spam-21-Score: -2.9 (--)
-X-Spam-21-Report: No, score=-2.9 required=8.0 tests=ALL_TRUSTED=-1,BAYES_00=-1.9,URIBL_BLOCKED=0.001 autolearn=ham
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(resend, fix Daniel's email address)
-
-Hi Greg and Daniel,
-
-I don't have a clue so I need to ask some stupid questions...
-
-On Fri, Jan 16, 2015 at 11:16:04AM -0800, Greg Kroah-Hartman wrote:
-> kdbus is a kernel-level IPC implementation that aims for resemblance to
-> the the protocol layer with the existing userspace D-Bus daemon while
-> enabling some features that couldn't be implemented before in userspace.
+* Jason Cooper <jason@lakedaemon.net> [150106 19:03]:
+> On Tue, Jan 06, 2015 at 02:38:08PM -0600, Felipe Balbi wrote:
+> > commit 55601c9f2467 (arm: omap: intc: switch over
+> > to linear irq domain) introduced a regression with
+> > SDMA legacy driver because that driver strictly depends
+> > on INTC's IRQs starting at NR_IRQs. Aparently
+> > irq_domain_add_linear() won't guarantee that, since we see
+> > a 7 IRQs difference when booting with and without the
+> > commit cited above.
+> > 
+> > Until arch/arm/plat-omap/dma.c is properly fixed, we
+> > must maintain OMAP2/3 using irq_domain_add_legacy().
+> > 
+> > A FIXME note was added so people know to delete that
+> > code once that legacy DMA driver is fixed up.
+> > 
+> > Fixes: 55601c9f2467 (arm: omap: intc: switch over to linear irq domain)
+> > Cc: <stable@vger.kernel.org> # v3.18
+> > Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+> > Tested-by: Tony Lindgren <tony@atomide.com>
+> > Signed-off-by: Felipe Balbi <balbi@ti.com>
+> > ---
+> >  drivers/irqchip/irq-omap-intc.c | 26 +++++++++++++++++++++-----
+> >  1 file changed, 21 insertions(+), 5 deletions(-)
 > 
-> The documentation in the first patch in this series explains the
-> protocol and the API details.
+> Applied to irqchip/urgent.  Thanks for taking care of the Fixes and
+> stable tags!
 
-How about the big picture?
+Jason, I'm not seeing this merged into v3.19-rc5, seems to be
+in Linux next though.
 
-> Reasons why this should be done in the kernel, instead of userspace as
-> it is currently done today include the following:
-[abbreviated]
-> - performance
-> - security
-> - semantics for apps with heavy data payloads
+Regards,
 
-
-First of all I wonder about the relationship with D-Bus.
-http://dbus.freedesktop.org/doc/dbus-specification.html says:
-
-   D-Bus is designed for two specific use cases:
-
-       A "system bus" for notifications from the system to user
-       sessions, and to allow the system to request input from
-       user sessions.
-
-       A "session bus" used to implement desktop environments such
-       as GNOME and KDE. 
-
-   D-Bus is not intended to be a generic IPC system for any
-   possible application, and intentionally omits many features
-   found in other IPC systems for this reason. 
-
-Does this also apply to kdbus?  If not, what are the
-suggested uses of kdbus beyond those where D-Bus is
-currently used?
-
-Another related quote by Havoc Pennington:
-http://lists.freedesktop.org/archives/dbus/2012-March/015024.html
-
-   In general, reading this, I think in some cases there are
-   problems that make sense to fix in dbus, and in other cases
-   there are problems that are best solved by not using dbus.
-   ...
-   there are about 10000 IPC solutions already, from ICE (both of
-   them) to ZeroMQ to AMQP to CORBA to X11 to HTTP to SOAP to
-   WebSockets to SUN-RPC to whatever-the-heck. To me, trying to
-   make dbus configurable so that it can substitute for any of
-   these is a Bad Idea (tm).
-
-Do you think it also applies to kdbus?
-
-
-Wrt the performance improvement achieved by kdbus, my impression
-about D-Bus is that the number of messages on my system is
-about a dozen per minute.  Are there actually any existing
-applications using D-Bus that have a performance issue?
-Or is this only about future possible uses?
-
-
-Linked from http://kroah.com/log/blog/2014/01/15/kdbus-details/,
-http://lwn.net/Articles/580194/ "The unveiling of kdbus" says:
-
-   Unlike most other kernels, Linux has never had a well-designed
-   IPC mechanism. Windows and Mac OS have this feature; even
-   Android, based on Linux, has one in the form of the "binder"
-   subsystem. Linux, instead, has only had the primitives —
-   sockets, FIFOs, and shared memory — but those have never been
-   knitted together into a reasonable application-level API. Kdbus
-   is an attempt to do that knitting and create something that is
-   at least as good as the mechanisms found on other systems.
-
-These are bold words. I'm not sure what Windows and Mac OS
-have in terms of IPC, but the above suggests that kdbus
-is *the* new Linux IPC that everyone will use for everything,
-rather than a special purpose facility.
-True?
-
-
-Thanks,
-Johannes
+Tony
