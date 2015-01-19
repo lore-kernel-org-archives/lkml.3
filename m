@@ -1,68 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752537AbbASKnH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 05:43:07 -0500
-Received: from cpsmtpb-ews04.kpnxchange.com ([213.75.39.7]:51987 "EHLO
-	cpsmtpb-ews04.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751839AbbASKnE (ORCPT
+	id S1752345AbbASKqT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 05:46:19 -0500
+Received: from www.linutronix.de ([62.245.132.108]:41668 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751029AbbASKqR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 05:43:04 -0500
-Message-ID: <1421664182.9655.55.camel@x220>
-Subject: [PATCH 4/4] ASoC: samsung: remove outdated Kconfig references
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Kukjin Kim <kgene@kernel.org>, Sangbeom Kim <sbkim73@samsung.com>,
-        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
-Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
-        linux-samsung-soc@vger.kernel.org, alsa-devel@alsa-project.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Mon, 19 Jan 2015 11:43:02 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 19 Jan 2015 10:43:02.0638 (UTC) FILETIME=[B33458E0:01D033D4]
-X-RcptDomain: vger.kernel.org
+	Mon, 19 Jan 2015 05:46:17 -0500
+Date: Mon, 19 Jan 2015 11:45:48 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Darren Hart <dvhart@linux.intel.com>
+cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        "Carlos O'Donell" <carlos@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        Jakub Jelinek <jakub@redhat.com>,
+        "linux-man@vger.kernel.org" <linux-man@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Davidlohr Bueso <davidlohr.bueso@hp.com>,
+        Arnd Bergmann <arnd@arndb.de>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Torvald Riegel <triegel@redhat.com>,
+        Roland McGrath <roland@redhat.com>, Darren Hart <dvhart@infradead.org>,
+        Anton Blanchard <anton@samba.org>, Petr Baudis <pasky@suse.cz>,
+        Eric Dumazet <edumazet@google.com>,
+        bill o gallmeister <bgallmeister@gmail.com>,
+        Jan Kiszka <jan.kiszka@siemens.com>, Daniel Wagner <wagi@monom.org>,
+        Rich Felker <dalias@libc.org>
+Subject: Re: futex(2) man page update help request
+In-Reply-To: <D0DEECA2.B7EAD%dvhart@linux.intel.com>
+Message-ID: <alpine.DEB.2.11.1501191144320.5526@nanos>
+References: <537346E5.4050407@gmail.com> <CF98E3EF.90564%dvhart@linux.intel.com> <CAKgNAkh+PWzT2SByaLk_OtiAXeZSkWoMgu+ivDOt1dTWVtaatQ@mail.gmail.com> <5373D0CA.2050204@redhat.com> <alpine.DEB.2.02.1405150121230.6261@ionos.tec.linutronix.de>
+ <CAKgNAkjQ5Dd_U9OojXdgeforpRevvPHNFAw99kBFPCwHgf7Ggg@mail.gmail.com> <alpine.DEB.2.02.1405151144390.6261@ionos.tec.linutronix.de> <54B7D87C.3090901@gmail.com> <alpine.DEB.2.11.1501152313330.5526@nanos> <54B92B71.2090509@gmail.com> <alpine.DEB.2.11.1501161618080.5526@nanos>
+ <54B97A72.2050205@gmail.com> <D0DEECA2.B7EAD%dvhart@linux.intel.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Kconfig symbols MACH_SMDKC110 and MACH_SMDKV210 were removed in
-v3.17. But the Kconfig entries for SND_SOC_SAMSUNG_SMDK_WM8580 and
-SND_SOC_SAMSUNG_SMDK_WM9713 still reference them.
+On Fri, 16 Jan 2015, Darren Hart wrote:
+> On 1/16/15, 12:54 PM, "Michael Kerrisk (man-pages)"
+> <mtk.manpages@gmail.com> wrote:
+> 
+> >On 01/16/2015 04:20 PM, Thomas Gleixner wrote:
+> >> On Fri, 16 Jan 2015, Michael Kerrisk (man-pages) wrote:
+> >> 
+> >>> Hello Thomas,
+> >>>
+> >>> On 01/15/2015 11:23 PM, Thomas Gleixner wrote:
+> >>>> On Thu, 15 Jan 2015, Michael Kerrisk (man-pages) wrote:
+> >>>>>> [EINVAL] uaddr equal uaddr2. Requeue to same futex.
+> >>>>>
+> >>>>> ??? I added this, but does this error not occur only for PI requeues?
+> >>>>
+> >>>> It's equally wrong for normal futexes. And its actually the same code
+> >>>> checking for this for all variants.
+> >>>
+> >>> I don't understand "equally wrong" in your reply, I'm sorry. Do you
+> >>> mean:
+> >>>
+> >>> a) This error text should be there for both normal and PI requeues
+> >> 
+> >> It is there for both. The requeue code has that check independent of
+> >> the requeue type (normal/pi). It never makes sense to requeue
+> >> something to itself whether normal or pi futex. We added this for PI,
+> >> because there it is harmful, but we did not special case it. So normal
+> >> futexes get the same treatment.
+> >
+> >Hello Thomas, 
+> >
+> >Color me stupid, but I can't see this in futex_requeue(). Where is that
+> >check that is "independent of the requeue type (normal/pi)"?
+> >
+> >When I look through futex_requeue(), all the likely looking sources
+> >of EINVAL are governed by a check on the 'requeue_pi' argument.
+> 
+> 
+> Right, in the non-PI case, I believe there are valid use cases: move to
+> the back of the FIFO, for example (OK, maybe the only example?). Both
+> tests ensuring uaddr1 != uaddr2 are under the requeue_pi conditional
+> block. The second compares the keys in case they are not FUTEX_PRIVATE
+> (uaddrs would be different, but still the same backing store).
+> 
+> Thomas, am I missing a test for this someplace else?
 
-Perhaps these references to those removed symbols should be changed into
-references to an existing symbol (such as MACH_S5PV210_DT). But
-apparently no one noticed that these references were pointless ever
-since v3.17. So it seems they can simply be removed. Let's do that now.
+No, I had a short look at the code misread it. So, yes, it's a valid
+operation for the non PI case. Sorry for the confusion.
 
-Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
----
- sound/soc/samsung/Kconfig | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Thanks,
 
-diff --git a/sound/soc/samsung/Kconfig b/sound/soc/samsung/Kconfig
-index 5f983d064920..01980bb2c6e7 100644
---- a/sound/soc/samsung/Kconfig
-+++ b/sound/soc/samsung/Kconfig
-@@ -53,7 +53,7 @@ config SND_SOC_SAMSUNG_JIVE_WM8750
- 
- config SND_SOC_SAMSUNG_SMDK_WM8580
- 	tristate "SoC I2S Audio support for WM8580 on SMDK"
--	depends on SND_SOC_SAMSUNG && (MACH_SMDK6410 || MACH_SMDKV210 || MACH_SMDKC110)
-+	depends on SND_SOC_SAMSUNG && MACH_SMDK6410
- 	depends on REGMAP_I2C
- 	select SND_SOC_WM8580
- 	select SND_SAMSUNG_I2S
-@@ -134,7 +134,7 @@ config SND_SOC_SAMSUNG_RX1950_UDA1380
- 
- config SND_SOC_SAMSUNG_SMDK_WM9713
- 	tristate "SoC AC97 Audio support for SMDK with WM9713"
--	depends on SND_SOC_SAMSUNG && (MACH_SMDK6410 || MACH_SMDKV210 || MACH_SMDKC110)
-+	depends on SND_SOC_SAMSUNG && MACH_SMDK6410
- 	select SND_SOC_WM9713
- 	select SND_SAMSUNG_AC97
- 	help
--- 
-1.9.3
-
+	tglx
