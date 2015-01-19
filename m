@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751916AbbASGIX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 01:08:23 -0500
-Received: from lgeamrelo01.lge.com ([156.147.1.125]:37833 "EHLO
+	id S1751836AbbASGIQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 01:08:16 -0500
+Received: from lgeamrelo01.lge.com ([156.147.1.125]:37793 "EHLO
 	lgeamrelo01.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751644AbbASGIT (ORCPT
+	with ESMTP id S1751644AbbASGIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 01:08:19 -0500
+	Mon, 19 Jan 2015 01:08:13 -0500
 X-Original-SENDERIP: 10.177.222.153
 X-Original-MAILFROM: iamjoonsoo.kim@lge.com
 From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
@@ -18,178 +18,91 @@ Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
         Jesper Dangaard Brouer <brouer@redhat.com>, rostedt@goodmis.org,
         Thomas Gleixner <tglx@linutronix.de>,
         Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH v3 1/2] mm/slub: optimize alloc/free fastpath by removing preemption on/off
-Date: Mon, 19 Jan 2015 15:08:49 +0900
-Message-Id: <1421647730-11568-1-git-send-email-iamjoonsoo.kim@lge.com>
+Subject: [PATCH v3 2/2] mm: don't use compound_head() in virt_to_head_page()
+Date: Mon, 19 Jan 2015 15:08:50 +0900
+Message-Id: <1421647730-11568-2-git-send-email-iamjoonsoo.kim@lge.com>
 X-Mailer: git-send-email 1.7.9.5
+In-Reply-To: <1421647730-11568-1-git-send-email-iamjoonsoo.kim@lge.com>
+References: <1421647730-11568-1-git-send-email-iamjoonsoo.kim@lge.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We had to insert a preempt enable/disable in the fastpath a while ago
-in order to guarantee that tid and kmem_cache_cpu are retrieved on the
-same cpu. It is the problem only for CONFIG_PREEMPT in which scheduler
-can move the process to other cpu during retrieving data.
+compound_head() is implemented with assumption that there would be
+race condition when checking tail flag. This assumption is only true
+when we try to access arbitrary positioned struct page.
 
-Now, I reach the solution to remove preempt enable/disable in the fastpath.
-If tid is matched with kmem_cache_cpu's tid after tid and kmem_cache_cpu
-are retrieved by separate this_cpu operation, it means that they are
-retrieved on the same cpu. If not matched, we just have to retry it.
+The situation that virt_to_head_page() is called is different case.
+We call virt_to_head_page() only in the range of allocated pages,
+so there is no race condition on tail flag. In this case, we don't
+need to handle race condition and we can reduce overhead slightly.
+This patch implements compound_head_fast() which is similar with
+compound_head() except tail flag race handling. And then,
+virt_to_head_page() uses this optimized function to improve performance.
 
-With this guarantee, preemption enable/disable isn't need at all even if
-CONFIG_PREEMPT, so this patch removes it.
+I saw 1.8% win in a fast-path loop over kmem_cache_alloc/free,
+(14.063 ns -> 13.810 ns) if target object is on tail page.
 
-I saw roughly 5% win in a fast-path loop over kmem_cache_alloc/free
-in CONFIG_PREEMPT. (14.821 ns -> 14.049 ns)
-
-Below is the result of Christoph's slab_test reported by
-Jesper Dangaard Brouer.
-
-* Before
-
- Single thread testing
- =====================
- 1. Kmalloc: Repeatedly allocate then free test
- 10000 times kmalloc(8) -> 49 cycles kfree -> 62 cycles
- 10000 times kmalloc(16) -> 48 cycles kfree -> 64 cycles
- 10000 times kmalloc(32) -> 53 cycles kfree -> 70 cycles
- 10000 times kmalloc(64) -> 64 cycles kfree -> 77 cycles
- 10000 times kmalloc(128) -> 74 cycles kfree -> 84 cycles
- 10000 times kmalloc(256) -> 84 cycles kfree -> 114 cycles
- 10000 times kmalloc(512) -> 83 cycles kfree -> 116 cycles
- 10000 times kmalloc(1024) -> 81 cycles kfree -> 120 cycles
- 10000 times kmalloc(2048) -> 104 cycles kfree -> 136 cycles
- 10000 times kmalloc(4096) -> 142 cycles kfree -> 165 cycles
- 10000 times kmalloc(8192) -> 238 cycles kfree -> 226 cycles
- 10000 times kmalloc(16384) -> 403 cycles kfree -> 264 cycles
- 2. Kmalloc: alloc/free test
- 10000 times kmalloc(8)/kfree -> 68 cycles
- 10000 times kmalloc(16)/kfree -> 68 cycles
- 10000 times kmalloc(32)/kfree -> 69 cycles
- 10000 times kmalloc(64)/kfree -> 68 cycles
- 10000 times kmalloc(128)/kfree -> 68 cycles
- 10000 times kmalloc(256)/kfree -> 68 cycles
- 10000 times kmalloc(512)/kfree -> 74 cycles
- 10000 times kmalloc(1024)/kfree -> 75 cycles
- 10000 times kmalloc(2048)/kfree -> 74 cycles
- 10000 times kmalloc(4096)/kfree -> 74 cycles
- 10000 times kmalloc(8192)/kfree -> 75 cycles
- 10000 times kmalloc(16384)/kfree -> 510 cycles
-
-* After
-
- Single thread testing
- =====================
- 1. Kmalloc: Repeatedly allocate then free test
- 10000 times kmalloc(8) -> 46 cycles kfree -> 61 cycles
- 10000 times kmalloc(16) -> 46 cycles kfree -> 63 cycles
- 10000 times kmalloc(32) -> 49 cycles kfree -> 69 cycles
- 10000 times kmalloc(64) -> 57 cycles kfree -> 76 cycles
- 10000 times kmalloc(128) -> 66 cycles kfree -> 83 cycles
- 10000 times kmalloc(256) -> 84 cycles kfree -> 110 cycles
- 10000 times kmalloc(512) -> 77 cycles kfree -> 114 cycles
- 10000 times kmalloc(1024) -> 80 cycles kfree -> 116 cycles
- 10000 times kmalloc(2048) -> 102 cycles kfree -> 131 cycles
- 10000 times kmalloc(4096) -> 135 cycles kfree -> 163 cycles
- 10000 times kmalloc(8192) -> 238 cycles kfree -> 218 cycles
- 10000 times kmalloc(16384) -> 399 cycles kfree -> 262 cycles
- 2. Kmalloc: alloc/free test
- 10000 times kmalloc(8)/kfree -> 65 cycles
- 10000 times kmalloc(16)/kfree -> 66 cycles
- 10000 times kmalloc(32)/kfree -> 65 cycles
- 10000 times kmalloc(64)/kfree -> 66 cycles
- 10000 times kmalloc(128)/kfree -> 66 cycles
- 10000 times kmalloc(256)/kfree -> 71 cycles
- 10000 times kmalloc(512)/kfree -> 72 cycles
- 10000 times kmalloc(1024)/kfree -> 71 cycles
- 10000 times kmalloc(2048)/kfree -> 71 cycles
- 10000 times kmalloc(4096)/kfree -> 71 cycles
- 10000 times kmalloc(8192)/kfree -> 65 cycles
- 10000 times kmalloc(16384)/kfree -> 511 cycles
-
-Most of the results are better than before.
-
-Note that this change slightly worses performance in !CONFIG_PREEMPT,
-roughly 0.3%. Implementing each case separately would help performance,
-but, since it's so marginal, I didn't do that. This would help
-maintanance since we have same code for all cases.
-
-Change from v1: add comment about barrier() usage
-Change from v2:
-- use raw_cpu_ptr() rather than this_cpu_ptr() to avoid warning from
- preemption debug check since this is intended behaviour
-- fix typo alogorithm -> algorithm
+Change from v2: Add some code comments
 
 Acked-by: Christoph Lameter <cl@linux.com>
-Acked-by: Jesper Dangaard Brouer <brouer@redhat.com>
-Tested-by: Jesper Dangaard Brouer <brouer@redhat.com>
 Signed-off-by: Joonsoo Kim <iamjoonsoo.kim@lge.com>
 ---
- mm/slub.c |   35 +++++++++++++++++++++++------------
- 1 file changed, 23 insertions(+), 12 deletions(-)
+ include/linux/mm.h |   27 ++++++++++++++++++++++++++-
+ 1 file changed, 26 insertions(+), 1 deletion(-)
 
-diff --git a/mm/slub.c b/mm/slub.c
-index fe376fe..e7ed6f8 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2398,13 +2398,24 @@ redo:
- 	 * reading from one cpu area. That does not matter as long
- 	 * as we end up on the original cpu again when doing the cmpxchg.
- 	 *
--	 * Preemption is disabled for the retrieval of the tid because that
--	 * must occur from the current processor. We cannot allow rescheduling
--	 * on a different processor between the determination of the pointer
--	 * and the retrieval of the tid.
-+	 * We should guarantee that tid and kmem_cache are retrieved on
-+	 * the same cpu. It could be different if CONFIG_PREEMPT so we need
-+	 * to check if it is matched or not.
- 	 */
--	preempt_disable();
--	c = this_cpu_ptr(s->cpu_slab);
-+	do {
-+		tid = this_cpu_read(s->cpu_slab->tid);
-+		c = raw_cpu_ptr(s->cpu_slab);
-+	} while (IS_ENABLED(CONFIG_PREEMPT) && unlikely(tid != c->tid));
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index f80d019..1148fc6 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -446,6 +446,12 @@ static inline struct page *compound_head_by_tail(struct page *tail)
+ 	return tail;
+ }
+ 
++/*
++ * Since either compound page could be dismantled asynchronously in THP
++ * or we access asynchronously arbitrary positioned struct page, there
++ * would be tail flag race. To handle this race, we should call
++ * smp_rmb() before checking tail flag. compound_head_by_tail() did it.
++ */
+ static inline struct page *compound_head(struct page *page)
+ {
+ 	if (unlikely(PageTail(page)))
+@@ -454,6 +460,18 @@ static inline struct page *compound_head(struct page *page)
+ }
+ 
+ /*
++ * If we access compound page synchronously such as access to
++ * allocated page, there is no need to handle tail flag race, so we can
++ * check tail flag directly without any synchronization primitive.
++ */
++static inline struct page *compound_head_fast(struct page *page)
++{
++	if (unlikely(PageTail(page)))
++		return page->first_page;
++	return page;
++}
++
++/*
+  * The atomic page->_mapcount, starts from -1: so that transitions
+  * both from it and to it can be tracked, using atomic_inc_and_test
+  * and atomic_add_negative(-1).
+@@ -531,7 +549,14 @@ static inline void get_page(struct page *page)
+ static inline struct page *virt_to_head_page(const void *x)
+ {
+ 	struct page *page = virt_to_page(x);
+-	return compound_head(page);
 +
 +	/*
-+	 * Irqless object alloc/free algorithm used here depends on sequence
-+	 * of fetching cpu_slab's data. tid should be fetched before anything
-+	 * on c to guarantee that object and page associated with previous tid
-+	 * won't be used with current tid. If we fetch tid first, object and
-+	 * page could be one associated with next tid and our alloc/free
-+	 * request will be failed. In this case, we will retry. So, no problem.
++	 * We don't need to worry about synchronization of tail flag
++	 * when we call virt_to_head_page() since it is only called for
++	 * already allocated page and this page won't be freed until
++	 * this virt_to_head_page() is finished. So use _fast variant.
 +	 */
-+	barrier();
++	return compound_head_fast(page);
+ }
  
- 	/*
- 	 * The transaction ids are globally unique per cpu and per operation on
-@@ -2412,8 +2423,6 @@ redo:
- 	 * occurs on the right processor and that there was no operation on the
- 	 * linked list in between.
- 	 */
--	tid = c->tid;
--	preempt_enable();
- 
- 	object = c->freelist;
- 	page = c->page;
-@@ -2659,11 +2668,13 @@ redo:
- 	 * data is retrieved via this pointer. If we are on the same cpu
- 	 * during the cmpxchg then the free will succedd.
- 	 */
--	preempt_disable();
--	c = this_cpu_ptr(s->cpu_slab);
-+	do {
-+		tid = this_cpu_read(s->cpu_slab->tid);
-+		c = raw_cpu_ptr(s->cpu_slab);
-+	} while (IS_ENABLED(CONFIG_PREEMPT) && unlikely(tid != c->tid));
- 
--	tid = c->tid;
--	preempt_enable();
-+	/* Same with comment on barrier() in slab_alloc_node() */
-+	barrier();
- 
- 	if (likely(page == c->page)) {
- 		set_freepointer(s, object, c->freelist);
+ /*
 -- 
 1.7.9.5
 
