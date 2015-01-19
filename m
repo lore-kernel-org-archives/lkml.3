@@ -1,55 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752371AbbASWCr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 17:02:47 -0500
-Received: from smtp08.smtpout.orange.fr ([80.12.242.130]:31619 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752257AbbASWCq (ORCPT
+	id S1752506AbbASWDD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 17:03:03 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:46419 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752459AbbASWDB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 17:02:46 -0500
-X-ME-Helo: localhost.localdomain
-X-ME-Auth: Y2hyaXN0b3BoZS5qYWlsbGV0QHdhbmFkb28uZnI=
-X-ME-Date: Mon, 19 Jan 2015 23:02:40 +0100
-X-ME-IP: 90.20.161.114
-From: Christophe Jaillet <christophe.jaillet@wanadoo.fr>
-To: schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com, rhoppe@de.ibm.com,
-        linux390@de.ibm.com
-Cc: linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org,
-        Christophe Jaillet <christophe.jaillet@wanadoo.fr>
-Subject: [PATCH] s390: char: Free memory on error path.
-Date: Mon, 19 Jan 2015 23:02:00 +0100
-Message-Id: <1421704920-29820-1-git-send-email-christophe.jaillet@wanadoo.fr>
-X-Mailer: git-send-email 2.1.0
-X-Antivirus: avast! (VPS 150119-0, 19/01/2015), Outbound message
-X-Antivirus-Status: Clean
+	Mon, 19 Jan 2015 17:03:01 -0500
+Message-ID: <54BD7F10.7030803@linaro.org>
+Date: Mon, 19 Jan 2015 23:02:56 +0100
+From: Daniel Lezcano <daniel.lezcano@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Andrew Lunn <andrew@lunn.ch>
+CC: arnd@arndb.de, olof@lixom.net, linux@arm.linux.org.uk,
+        thomas.petazzoni@free-electrons.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/3] ARM: Marvell: Remove init cpus function
+References: <1421686381-12397-1-git-send-email-daniel.lezcano@linaro.org> <20150119213028.GB2938@lunn.ch>
+In-Reply-To: <20150119213028.GB2938@lunn.ch>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Free allocated page in case of error returned by hmcdrv_ftp_startup.
+On 01/19/2015 10:30 PM, Andrew Lunn wrote:
+> On Mon, Jan 19, 2015 at 05:52:59PM +0100, Daniel Lezcano wrote:
+>> With the next patches, the init cpus function will be changed to be factored
+>> out.
+>>
+>> The function 'armada_xp_smp_init_cpus' does nothing more than a sanity check
+>> after the DT has been parsed. Even if this code is valid, it does not give a
+>> real benefit as the DT should be correctly filled.
+>>
+>> Remove this callback.
+>
+> Hi Daniel
+>
+> What is your plan for getting these merged? Do you want me to take the
+> mvebu patch? Or are you thinking of sending the complete series to the
+> arm-soc maintainers?
 
-Signed-off-by: Christophe Jaillet <christophe.jaillet@wanadoo.fr>
----
- drivers/s390/char/hmcdrv_ftp.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+Hi Andrew,
 
-diff --git a/drivers/s390/char/hmcdrv_ftp.c b/drivers/s390/char/hmcdrv_ftp.c
-index 4bd6332..f6e00af 100644
---- a/drivers/s390/char/hmcdrv_ftp.c
-+++ b/drivers/s390/char/hmcdrv_ftp.c
-@@ -199,8 +199,10 @@ int hmcdrv_ftp_probe(void)
- 
- 	rc = hmcdrv_ftp_startup();
- 
--	if (rc)
-+	if (rc) {
-+		free_page((unsigned long) ftp.buf);
- 		return rc;
-+	}
- 
- 	rc = hmcdrv_ftp_do(&ftp);
- 	free_page((unsigned long) ftp.buf);
+If possible it would be preferable to have those 3 patches going through 
+arm-soc.
+
+>>
+>> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
+>> ---
+>>   arch/arm/mach-mvebu/platsmp.c | 11 -----------
+>>   1 file changed, 11 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-mvebu/platsmp.c b/arch/arm/mach-mvebu/platsmp.c
+>> index 58cc8c1..3e93422 100644
+>> --- a/arch/arm/mach-mvebu/platsmp.c
+>> +++ b/arch/arm/mach-mvebu/platsmp.c
+>> @@ -30,8 +30,6 @@
+>>   #include "pmsu.h"
+>>   #include "coherency.h"
+>>
+>> -#define ARMADA_XP_MAX_CPUS 4
+>> -
+>>   #define AXP_BOOTROM_BASE 0xfff00000
+>>   #define AXP_BOOTROM_SIZE 0x100000
+>>
+>> @@ -114,14 +112,6 @@ static void armada_xp_secondary_init(unsigned int cpu)
+>>   	mvebu_v7_pmsu_idle_exit();
+>>   }
+>>
+>> -static void __init armada_xp_smp_init_cpus(void)
+>> -{
+>> -	unsigned int ncores = num_possible_cpus();
+>> -
+>> -	if (ncores == 0 || ncores > ARMADA_XP_MAX_CPUS)
+>> -		panic("Invalid number of CPUs in DT\n");
+>> -}
+>> -
+>>   static void __init armada_xp_smp_prepare_cpus(unsigned int max_cpus)
+>>   {
+>>   	struct device_node *node;
+>> @@ -171,7 +161,6 @@ static int armada_xp_cpu_kill(unsigned int cpu)
+>>   #endif
+>>
+>>   struct smp_operations armada_xp_smp_ops __initdata = {
+>> -	.smp_init_cpus		= armada_xp_smp_init_cpus,
+>>   	.smp_prepare_cpus	= armada_xp_smp_prepare_cpus,
+>>   	.smp_boot_secondary	= armada_xp_boot_secondary,
+>>   	.smp_secondary_init     = armada_xp_secondary_init,
+>> --
+>> 1.9.1
+>>
+>>
+>> _______________________________________________
+>> linux-arm-kernel mailing list
+>> linux-arm-kernel@lists.infradead.org
+>> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+
+
 -- 
-2.1.0
+  <http://www.linaro.org/> Linaro.org │ Open source software for ARM SoCs
+
+Follow Linaro:  <http://www.facebook.com/pages/Linaro> Facebook |
+<http://twitter.com/#!/linaroorg> Twitter |
+<http://www.linaro.org/linaro-blog/> Blog
 
