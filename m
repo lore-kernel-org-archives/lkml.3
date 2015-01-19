@@ -1,56 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751427AbbASCyN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 21:54:13 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:50316 "EHLO
-	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750788AbbASCyM (ORCPT
+	id S1751410AbbASDFV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 22:05:21 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:1034 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751090AbbASDFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 21:54:12 -0500
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID t0J2rpJ7019610, This message is accepted by code: ctloc85258
-From: =?utf-8?B?5pWs6ZSQ?= <micky_ching@realsil.com.cn>
-To: Lee Jones <lee.jones@linaro.org>
-CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "rogerable@realtek.com" <rogerable@realtek.com>,
-        =?utf-8?B?546L54Kc?= <wei_wang@realsil.com.cn>
-Subject: Re: [PATCH 09/10] mfd: rtsx: add support for rts525A
-Thread-Topic: [PATCH 09/10] mfd: rtsx: add support for rts525A
-Thread-Index: AQHQMw/gx8aF/NYUFEqyWqI0jH0+RJzGOhCA
-Date: Mon, 19 Jan 2015 02:53:49 +0000
-Message-ID: <54BC71BD.2030202@realsil.com.cn>
-References: <cover.1421320541.git.micky_ching@realsil.com.cn>
- <06f009ff0bdcb1183412cb0172dc687f0b173747.1421320541.git.micky_ching@realsil.com.cn>
- <20150118111339.GJ3574@x1>
-In-Reply-To: <20150118111339.GJ3574@x1>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.29.41.103]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <09113E2257998E41ACAA9C6EC9813310@realsil.com.cn>
+	Sun, 18 Jan 2015 22:05:20 -0500
+Message-ID: <54BC742E.80006@huawei.com>
+Date: Mon, 19 Jan 2015 11:04:14 +0800
+From: Wang Nan <wangnan0@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: <tixy@linaro.org>, <linux@arm.linux.org.uk>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <lizefan@huawei.com>
+Subject: Re: [PATCH] kprobes: bugfix: checks kprobes_all_disarmed in unoptimized_kprobe().
+References: <54B3B32E.7070709@hitachi.com> <1421064563-77831-1-git-send-email-wangnan0@huawei.com> <54B3C3A0.6010708@hitachi.com>
+In-Reply-To: <54B3C3A0.6010708@hitachi.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.69.129]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020204.54BC743B.0087,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 5a4604bdb76a0625fff4be99928e3aa2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0J2sVrh000340
+
+Hi Masami Hiramatsu,
+
+I can't find this patch and '[PATCH] kprobes: bugfix: checks kprobes_all_disarmed
+in unoptimized_kprobe().' in current mainline. How do these patches get there?
+Should they be merged into Russell King's tree first?
+
+Thank you!
+
+On 2015/1/12 20:52, Masami Hiramatsu wrote:
+> (2015/01/12 21:09), Wang Nan wrote:
+>> Original code failed to disarm the probed instruction after
+>>
+>> echo 0 > /sys/kernel/debug/kprobes/enabled
+>>
+>> if OPTPROBE is enabled.
+>>
+>> This patch checks kprobes_all_disarmed in unoptimized_kprobe().
+>>
+> 
+> Looks good :)
+> 
+> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> 
+> Thank you!
+> 
+>> Signed-off-by: Wang Nan <wangnan0@huawei.com>
+>> ---
+>>  kernel/kprobes.c | 3 +++
+>>  1 file changed, 3 insertions(+)
+>>
+>> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+>> index 9471710..f16936b 100644
+>> --- a/kernel/kprobes.c
+>> +++ b/kernel/kprobes.c
+>> @@ -630,6 +630,9 @@ static void unoptimize_kprobe(struct kprobe *p, bool force)
+>>  {
+>>  	struct optimized_kprobe *op;
+>>  
+>> +	if (kprobes_all_disarmed)
+>> +		return;
+>> +
+>>  	if (!kprobe_aggrprobe(p) || kprobe_disarmed(p))
+>>  		return; /* This is not an optprobe nor optimized */
+>>  
+>>
+> 
+> 
 
 
-On 01/18/2015 07:13 PM, Lee Jones wrote:
->> @@ -97,7 +97,7 @@ static void rts5249_force_power_down(struct rtsx_pcr *pcr, u8 pm_state)
->> >  	rtsx_pci_write_register(pcr, AUTOLOAD_CFG_BASE + 3, 0x01, 0);
->> >  
->> >  	if (pm_state == HOST_ENTER_S3) {
->> >-		if (PCI_PID(pcr) == 0x524A)
->> >+		if (PCI_PID(pcr) == 0x524A || PCI_PID(pcr) == 0x525A)
-> Shouldn't these be defined somewhere?
->
-> I have a particular distaste for magic numbers.
->
-This is the chip ID number, no need define, just using it.
-if we define, it will like RTS525A_PCI_ID, so bad.ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
