@@ -1,100 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752071AbbASJFR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 04:05:17 -0500
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:47978 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752039AbbASJFM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 04:05:12 -0500
-Message-ID: <54BCC8C0.40706@hitachi.com>
-Date: Mon, 19 Jan 2015 18:05:04 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	id S1752115AbbASJIz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 04:08:55 -0500
+Received: from mga02.intel.com ([134.134.136.20]:16681 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751468AbbASJIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 04:08:52 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="442193793"
+Date: Mon, 19 Jan 2015 11:08:47 +0200
+From: Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>
+To: Jeremiah Mahler <jmmahler@gmail.com>,
+        Matt Roper <matthew.d.roper@intel.com>,
+        Daniel Vetter <daniel.vetter@intel.com>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        David Airlie <airlied@linux.ie>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>,
+        Ander Conselvan de Oliveira <conselvan2@gmail.com>,
+        linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [BUG, bisect] drm/i915: mouse pointer lags and
+ overshoots
+Message-ID: <20150119090847.GQ10649@intel.com>
+References: <20150117100635.GA1281@hudson.localdomain>
 MIME-Version: 1.0
-To: Wang Nan <wangnan0@huawei.com>
-Cc: tixy@linaro.org, linux@arm.linux.org.uk, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, lizefan@huawei.com
-Subject: Re: [PATCH] kprobes: bugfix: checks kprobes_all_disarmed in unoptimized_kprobe().
-References: <54B3B32E.7070709@hitachi.com> <1421064563-77831-1-git-send-email-wangnan0@huawei.com> <54B3C3A0.6010708@hitachi.com> <54BC742E.80006@huawei.com>
-In-Reply-To: <54BC742E.80006@huawei.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20150117100635.GA1281@hudson.localdomain>
+User-Agent: Mutt/1.5.22 (2013-10-16)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wang,
-
-I've found a problem on this patch, since kprobes calls unoptioize_kprobe
-with kprobes_all_disarmed=true when trying to disable all kprobes, this
-cause a serious problem.
-
-Moreover, I couldn't reproduce your reported bug on my 3.19-rc4 kernel.
-Could you test it again?
-
-Unless I could reproduce this bug, I'd like to keep this uncommitted.
-
-Thank you,
-
-(2015/01/19 12:04), Wang Nan wrote:
-> Hi Masami Hiramatsu,
+On Sat, Jan 17, 2015 at 02:06:35AM -0800, Jeremiah Mahler wrote:
+> Matt, all,
 > 
-> I can't find this patch and '[PATCH] kprobes: bugfix: checks kprobes_all_disarmed
-> in unoptimized_kprobe().' in current mainline. How do these patches get there?
-> Should they be merged into Russell King's tree first?
+> Commit ea2c67bb4aff introduces a bug which causes the mouse to move in a
+> very unusual way, as if it has a lot of inertia.  It will lag behind and
+> then overshoot the expected position.
 > 
-> Thank you!
+> I reproduced this bug on all my machines which use the drm/i915 drivers
+> and it affects all forms of mouse pointers including both touchpads and
+> usb mice.  The patch is present in linux-next 20150116.
 > 
-> On 2015/1/12 20:52, Masami Hiramatsu wrote:
->> (2015/01/12 21:09), Wang Nan wrote:
->>> Original code failed to disarm the probed instruction after
->>>
->>> echo 0 > /sys/kernel/debug/kprobes/enabled
->>>
->>> if OPTPROBE is enabled.
->>>
->>> This patch checks kprobes_all_disarmed in unoptimized_kprobe().
->>>
->>
->> Looks good :)
->>
->> Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
->>
->> Thank you!
->>
->>> Signed-off-by: Wang Nan <wangnan0@huawei.com>
->>> ---
->>>  kernel/kprobes.c | 3 +++
->>>  1 file changed, 3 insertions(+)
->>>
->>> diff --git a/kernel/kprobes.c b/kernel/kprobes.c
->>> index 9471710..f16936b 100644
->>> --- a/kernel/kprobes.c
->>> +++ b/kernel/kprobes.c
->>> @@ -630,6 +630,9 @@ static void unoptimize_kprobe(struct kprobe *p, bool force)
->>>  {
->>>  	struct optimized_kprobe *op;
->>>  
->>> +	if (kprobes_all_disarmed)
->>> +		return;
->>> +
->>>  	if (!kprobe_aggrprobe(p) || kprobe_disarmed(p))
->>>  		return; /* This is not an optprobe nor optimized */
->>>  
->>>
->>
->>
-> 
-> 
-> 
+>   commit ea2c67bb4affa84080c616920f3899f123786e56
+>   Author: Matt Roper <matthew.d.roper@intel.com>
+>   Date:   Tue Dec 23 10:41:52 2014 -0800
+>   
+>       drm/i915: Move to atomic plane helpers (v9)
 
+I guess this is caused by the atomic code refusing to update the plane
+more than once per vrefresh. So we need to allow the fps>vrefresh rate
+case to remove the regression.
+
+The old cursor code had basically a gross hack to allow this. It just
+unpinned the old fb before the display engine was done with it, and
+_after_ unpinning it flipped to the new buffer (with the obvious extra
+delay of the flip happening on the next vblank). So there was no
+guarantee the old buffer was still around (or had the correct content)
+while the display engine was still scanning it out. So to fix this
+properly we need a vblank worker of some sort.
+
+The other issues we nee to know which fb is being scanned out at which
+point to unpin the correct old buffer. For that we can use the hardware
+frame counter. We could use some other mechanims too (SURFLIVE, flip
+counter etc.) but the frame counter is the most ubiqitious method we
+have.
+
+The one extra problem is gen2 doesn't have even the frame counter, so
+some extra care would be needed there. I'm thinking for gen2 we might
+allow the driver to call into the vblank core code to update the cooked
+counter at any time based on the scanline counter and monotonic timestamp.
+That combined with the vblank evade mechanism should make reasonably sure
+we have an up to date notion of which frame is currently getting scanned
+out.
+
+We need the extra call into the vblank core since just after the vblank
+start, the vblank interrupt handler may not have executed yet (especially
+since gen2 vblank irq fires actually at the frame start which is a delayed
+version of the vblank start, even though the flip happes at vblank start).
+So we need an explicit call to make sure the cooked counter is already
+updated before the irq handler has executed. I have some changes lined
+up for the vblank code which I think could help make sure he extra call
+won't increment the counter spuriously, but I have to clean those up a
+bit before sending them out.
 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Ville Syrjälä
+Intel OTC
