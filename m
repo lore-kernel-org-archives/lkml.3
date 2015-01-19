@@ -1,106 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752322AbbASNv7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 08:51:59 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:37999 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751641AbbASNv5 (ORCPT
+	id S1752264AbbASPU0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 10:20:26 -0500
+Received: from mout.kundenserver.de ([212.227.126.131]:57152 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751143AbbASPUY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 08:51:57 -0500
-Date: Mon, 19 Jan 2015 13:51:45 +0000
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Ard Biesheuvel <ard.biesheuvel@linaro.org>
-Cc: "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "wangyijing@huawei.com" <wangyijing@huawei.com>,
-        Rob Herring <robh@kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Al Stone <al.stone@linaro.org>, Timur Tabi <timur@codeaurora.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        "jcm@redhat.com" <jcm@redhat.com>, Mark Brown <broonie@kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
+	Mon, 19 Jan 2015 10:20:24 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+Cc: Jingoo Han <jg1.han@samsung.com>,
+        Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Maxime Coquelin <maxime.coquelin@st.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Bjorn Helgaas <bhelgaas@google.com>, Mohit Kumar <mohit.kumar@st.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Fabrice Gasnier <fabrice.gasnier@st.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Thierry Reding <treding@nvidia.com>,
+        Minghuan Lian <Minghuan.Lian@freescale.com>,
+        Magnus Damm <damm@opensource.se>, Will Deacon <will.deacon@arm.com>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Murali Karicheri <m-karicheri2@ti.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Pratyush Anand <pratyush.anand@st.com>,
+        Sachin Kamat <sachin.kamat@samsung.com>, Andrew Lunn <andrew@lunn.ch>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        Srikanth Thokala <sthokal@xilinx.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>
-Subject: Re: [PATCH v7 04/17] ARM64 / ACPI: Introduce early_param for "acpi"
- and pass acpi=force to enable ACPI
-Message-ID: <20150119135144.GI11835@e104818-lin.cambridge.arm.com>
-References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org>
- <1421247905-3749-5-git-send-email-hanjun.guo@linaro.org>
- <20150119114255.GF11835@e104818-lin.cambridge.arm.com>
- <CAKv+Gu8vPKAdsNg7QC7xW+i8_BemWEx4mvBx6NrnAHi8Y+bNtw@mail.gmail.com>
+        "kernel@stlinux.com" <kernel@stlinux.com>, linux-pci@vger.kernel.org,
+        Lee Jones <lee.jones@linaro.org>
+Subject: Re: [PATCH 4/5] PCI: designware: Add setup bus-related to pcie_host_ops
+Date: Mon, 19 Jan 2015 14:54:26 +0100
+Message-ID: <6696411.b9yjvPTFJo@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <CAG374jBZCn+V2zjcAwdKEb0COzBT2VES5uiw0gc40mFvoraERA@mail.gmail.com>
+References: <1418812486-12394-1-git-send-email-gabriel.fernandez@linaro.org> <000e01d01a7f$47592e20$d60b8a60$%han@samsung.com> <CAG374jBZCn+V2zjcAwdKEb0COzBT2VES5uiw0gc40mFvoraERA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAKv+Gu8vPKAdsNg7QC7xW+i8_BemWEx4mvBx6NrnAHi8Y+bNtw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+X-Provags-ID: V03:K0:BQPsijKpCDzymso+/XWy8RA6Jh1nO1O8utEmE91Bud7qj0f8WKm
+ 3PrjN69w85GVSQttMvPKWwGK2mJCN/qOq7JMZ9eUUx5keki3ieYuiarLzS2kY1Y6OduhnCx
+ WKkQaE2TY0AkQRoJmnZxNSqbg+MHjQCQCZjvJCAWFI+jrprQnIq1bm1CYQoH7p+RaAzrG2a
+ yBPyITMnvA2a9QF2cx//w==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 19, 2015 at 11:55:32AM +0000, Ard Biesheuvel wrote:
-> On 19 January 2015 at 11:42, Catalin Marinas <catalin.marinas@arm.com> wrote:
-> > On Wed, Jan 14, 2015 at 03:04:52PM +0000, Hanjun Guo wrote:
-> >> From: Al Stone <al.stone@linaro.org>
-> >>
-> >> Introduce one early parameters "off" and "force" for "acpi", acpi=off
-> >> will be the default behavior for ARM64, so introduce acpi=force to
-> >> enable ACPI on ARM64.
-> >>
-> >> Disable ACPI before early parameters parsed, and enable it to pass
-> >> "acpi=force" if people want use ACPI on ARM64. This ensures DT be
-> >> the prefer one if ACPI table and DT both are provided at this moment.
-> > [...]
-> >> --- a/arch/arm64/kernel/setup.c
-> >> +++ b/arch/arm64/kernel/setup.c
-> >> @@ -62,6 +62,7 @@
-> >>  #include <asm/memblock.h>
-> >>  #include <asm/psci.h>
-> >>  #include <asm/efi.h>
-> >> +#include <asm/acpi.h>
-> >>
-> >>  unsigned int processor_id;
-> >>  EXPORT_SYMBOL(processor_id);
-> >> @@ -388,6 +389,8 @@ void __init setup_arch(char **cmdline_p)
-> >>       early_fixmap_init();
-> >>       early_ioremap_init();
-> >>
-> >> +     disable_acpi();
-> >> +
-> >>       parse_early_param();
-> >>
-> >>       /*
-> >
-> > Did we get to any conclusion here? DT being the preferred one is fine
-> > when both DT and ACPI are present but do we still want the kernel to
-> > ignore ACPI altogether if DT is not present? It's a bit harder to detect
-> > the presence of DT at this point since the EFI_STUB added one already. I
-> > guess we could move the "acpi=force" argument passing to EFI_STUB if no
-> > DT is present at boot.
+On Monday 19 January 2015 13:38:53 Gabriel Fernandez wrote:
 > 
-> Since the EFI stub populates the /chosen node in DT, I would prefer
-> for it to add a property there to indicate whether it created the DT
-> from scratch rather than adding ACPI specific stuff in there (even if
-> it is just a string to concatenate)
+> On 18 December 2014 at 05:58, Jingoo Han <jg1.han@samsung.com> wrote:
+> 
+> > On Thursday, December 18, 2014 7:16 AM, Arnd Bergmann wrote:
+> > > On Wednesday 17 December 2014 11:34:45 Gabriel FERNANDEZ wrote:
+> > > > ST sti SoCs PCIe IPs are built around DesignWare IP Core.
+> > > > But in these SoCs PCIe IP doesn't support IO.
+> > I cannot understand how ST sti SoCs PCIe IP does not support I/O.
+> > As far as I know, it cannot be selected by the 'parameter'.
+> > Then, H/W engineers dropped out the I/O control logic?
+> >
+> > > >
+> > > > To support this, add setup_bus() to pcie_host_ops.
+> >
+> >
+> > > >
+> > > > Signed-off-by: Fabrice Gasnier <fabrice.gasnier@st.com>
+> > > > Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+> > >
+> > > The dw-pcie driver should be able to tell whether the device has
+> > > an I/O space or not, and do the right thing based on that. Don't
+> > > add an implementation specific callback for that.
+> >
+> > I agree with Arnd's opinion.
+> >
+> > In addition, I have one more question.
+> > Then, if a device that requires I/O region is connected to
+> > PCIe slot of ST sti SoCs PCIe, what will happen?
+> > It just prints error messages?
+> >
+> >
+> Arnd i
+> n other post mention to add an empty I/O space to workaround lack of I/O
+> port access.
+> Is it the right thing to do ?
+> ​
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2014-November/299623.html
+> 
 
-This works for me. So we could pass "acpi=force" in EFI stub if it
-created the DT from scratch *and* ACPI tables are present (can it detect
-the latter? And maybe it could print something if none are available).
-If that works, the actual kernel can assume that ACPI needs to be
-explicitly enabled via acpi=force, irrespective of how much information
-it has in DT.
+Good question. Given the latest development, I'd feel tempted to
+try moving the entire pcie-designware driver to use the generic probing
+that bypassses pci_common_init_dev(). Rob Herring posted a patch
+for the versatile PCI driver, you could try doing the same thing
+here, see http://permalink.gmane.org/gmane.linux.kernel.pci/30346.
 
--- 
-Catalin
+I think that would completely avoid this problem, and also help everyone
+that wants to use this driver on arm64.
+
+	Arnd
