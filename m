@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752601AbbASSwl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 13:52:41 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42237 "EHLO mx1.redhat.com"
+	id S1752639AbbASSxD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 13:53:03 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38703 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752462AbbASSwk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 13:52:40 -0500
-Date: Mon, 19 Jan 2015 19:51:32 +0100
+	id S1752605AbbASSxB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 13:53:01 -0500
+Date: Mon, 19 Jan 2015 19:51:51 +0100
 From: Oleg Nesterov <oleg@redhat.com>
 To: Rik van Riel <riel@redhat.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
@@ -14,9 +14,9 @@ To: Rik van Riel <riel@redhat.com>,
 Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
         matt.fleming@intel.com, bp@suse.de, pbonzini@redhat.com,
         tglx@linutronix.de, luto@amacapital.net
-Subject: [PATCH 1/3] x86, fpu: __kernel_fpu_begin() should clear
-	fpu_owner_task even if use_eager_fpu()
-Message-ID: <20150119185132.GB16427@redhat.com>
+Subject: [PATCH 2/3] x86, fpu: always allow FPU in interrupt if
+	use_eager_fpu()
+Message-ID: <20150119185151.GC16427@redhat.com>
 References: <1421012793-30106-1-git-send-email-riel@redhat.com> <20150115191918.GA27332@redhat.com> <20150119185109.GA16427@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -27,39 +27,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-__kernel_fpu_begin() does nothing if !__thread_has_fpu() && use_eager_fpu(),
-perhaps it assumes that this case is simply impossible. This is certainly
-not possible if in_interrupt() == T; interrupted_user_mode() should have
-FPU, and interrupted_kernel_fpu_idle() should fail if !__thread_has_fpu().
+The __thread_has_fpu() check in interrupted_kernel_fpu_idle() was needed
+to prevent the nested kernel_fpu_begin(). Now that we have in_kernel_fpu
+and !__thread_has_fpu() case in __kernel_fpu_begin() does not depend on
+use_eager_fpu() (except clts) we can remove it.
 
-However, even if use_eager_fpu() == T a task can do drop_fpu(), then switch
-to another thread which becomes fpu_owner_task, then resume and call some
-function which does kernel_fpu_begin(). Say, an exiting task does a lot of
-things after exit_thread(), it is not safe to assume that it can't use FPU
-in these paths.
+__thread_has_fpu() can be false even if use_eager_fpu(), but this case
+does not differ from !use_eager_fpu() case except we should not worry
+about X86_CR0_TS, __kernel_fpu_begin/end will not touch this bit.
+
+Note: I think we can kill all irq_fpu_usable() checks except in_kernel_fpu,
+just we need to record the state of X86_CR0_TS in __kernel_fpu_begin() and
+conditionalize stts() in __kernel_fpu_end(), but this needs another patch.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 ---
- arch/x86/kernel/i387.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ arch/x86/kernel/i387.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-index 81049ff..26f0e80 100644
+index 26f0e80..4734865 100644
 --- a/arch/x86/kernel/i387.c
 +++ b/arch/x86/kernel/i387.c
-@@ -93,9 +93,10 @@ void __kernel_fpu_begin(void)
+@@ -41,8 +41,8 @@ void kernel_fpu_enable(void)
+  * be set (so that the clts/stts pair does nothing that is
+  * visible in the interrupted kernel thread).
+  *
+- * Except for the eagerfpu case when we return 1 unless we've already
+- * been eager and saved the state in kernel_fpu_begin().
++ * Except for the eagerfpu case when we return true; in the likely case
++ * the thread has FPU but we are not going to set/clear TS.
+  */
+ static inline bool interrupted_kernel_fpu_idle(void)
+ {
+@@ -50,7 +50,7 @@ static inline bool interrupted_kernel_fpu_idle(void)
+ 		return false;
  
- 	if (__thread_has_fpu(me)) {
- 		__save_init_fpu(me);
--	} else if (!use_eager_fpu()) {
-+	} else {
- 		this_cpu_write(fpu_owner_task, NULL);
--		clts();
-+		if (!use_eager_fpu())
-+			clts();
- 	}
- }
- EXPORT_SYMBOL(__kernel_fpu_begin);
+ 	if (use_eager_fpu())
+-		return __thread_has_fpu(current);
++		return true;
+ 
+ 	return !__thread_has_fpu(current) &&
+ 		(read_cr0() & X86_CR0_TS);
 -- 
 1.5.5.1
 
