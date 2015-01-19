@@ -1,581 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421AbbASKmE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 05:42:04 -0500
-Received: from mail-oi0-f45.google.com ([209.85.218.45]:51111 "EHLO
-	mail-oi0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752377AbbASKmB (ORCPT
+	id S1752466AbbASKmO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 05:42:14 -0500
+Received: from cpsmtpb-ews01.kpnxchange.com ([213.75.39.4]:59147 "EHLO
+	cpsmtpb-ews01.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752426AbbASKmK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 05:42:01 -0500
-MIME-Version: 1.0
-In-Reply-To: <1420797291-15972-3-git-send-email-pi-cheng.chen@linaro.org>
-References: <1420797291-15972-1-git-send-email-pi-cheng.chen@linaro.org>
-	<1420797291-15972-3-git-send-email-pi-cheng.chen@linaro.org>
-Date: Mon, 19 Jan 2015 16:12:00 +0530
-Message-ID: <CAKohpokoS9UiwuuzzAs=1RCaAkBpVDK_AVNNGe7VCe=7SScmnw@mail.gmail.com>
-Subject: Re: [PATCH 2/2] cpufreq: add cpufreq driver for Mediatek MT8173 SoC
-From: Viresh Kumar <viresh.kumar@linaro.org>
-To: "pi-cheng.chen" <pi-cheng.chen@linaro.org>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Linaro Kernel Mailman List <linaro-kernel@lists.linaro.org>,
-        Eddie Huang <eddie.huang@mediatek.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 19 Jan 2015 05:42:10 -0500
+Message-ID: <1421664127.9655.53.camel@x220>
+Subject: [PATCH 2/4] ASoC: samsung: Remove PCM support for WM8580 on SMDK
+From: Paul Bolle <pebolle@tiscali.nl>
+To: Kukjin Kim <kgene@kernel.org>, Sangbeom Kim <sbkim73@samsung.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>
+Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-samsung-soc@vger.kernel.org,
+        alsa-devel@alsa-project.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Mon, 19 Jan 2015 11:42:07 +0100
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 19 Jan 2015 10:42:08.0088 (UTC) FILETIME=[92B0AD80:01D033D4]
+X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 January 2015 at 15:24, pi-cheng.chen <pi-cheng.chen@linaro.org> wrote:
-> When doing DVFS on MT8173 SoC, 2 rules should be followed to make sure the
-> SoC works properly:
-> 1. When doing frequency scaling of CPUs, the clock source should be switched
->    to another PLL, then switched back to the orignal until it's stable.
-> 2. When doing voltage scaling of CA57 cluster, Vproc and Vsram need to be
->    controlled concurrently and 2 limitations should be followed:
->    a. Vsram > Vproc
->    b. Vsram - Vproc < 200 mV
->
-> To address these needs, we reuse cpufreq-dt but do voltage scaling in the
-> cpufreq notifier.
+Commit 28c8331d386a ("ARM: S5PV210: Remove support for board files")
+removed the Kconfig symbols MACH_SMDKC110 and MACH_SMDKV210. As a result
+the dependencies of SND_SOC_SMDK_WM8580_PCM can never be met. So remove
+the unbuildable "SoC PCM Audio support for WM8580 on SMDK".
 
-I haven't understood how is all this working..
-- How are you switching to intermediate freq when its support isn't there
-in cpufreq-dt.
-- How is changing of volt after switching to freq working? Specially when freq
-is higher than older freq and it requires changing of voltage before freq..
+Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
+---
+Suggested by Arnd Bergmann (see https://lkml.org/lkml/2014/9/4/381 ).
 
->
-> Signed-off-by: pi-cheng.chen <pi-cheng.chen@linaro.org>
-> ---
->  drivers/cpufreq/Kconfig.arm      |   6 +
->  drivers/cpufreq/Makefile         |   1 +
->  drivers/cpufreq/mt8173-cpufreq.c | 459 +++++++++++++++++++++++++++++++++++++++
->  3 files changed, 466 insertions(+)
->  create mode 100644 drivers/cpufreq/mt8173-cpufreq.c
->
-> diff --git a/drivers/cpufreq/Kconfig.arm b/drivers/cpufreq/Kconfig.arm
-> index 0f9a2c3..97ed7dd 100644
-> --- a/drivers/cpufreq/Kconfig.arm
-> +++ b/drivers/cpufreq/Kconfig.arm
-> @@ -255,3 +255,9 @@ config ARM_PXA2xx_CPUFREQ
->           This add the CPUFreq driver support for Intel PXA2xx SOCs.
->
->           If in doubt, say N.
-> +
-> +config ARM_MT8173_CPUFREQ
-> +       bool "Mediatek MT8173 CPUFreq support"
-> +       depends on ARCH_MEDIATEK && CPUFREQ_DT && REGULATOR
-> +       help
-> +         This adds the CPUFreq driver support for Mediatek MT8173 SoC.
-> diff --git a/drivers/cpufreq/Makefile b/drivers/cpufreq/Makefile
-> index b3ca7b0..67b7f17 100644
-> --- a/drivers/cpufreq/Makefile
-> +++ b/drivers/cpufreq/Makefile
-> @@ -76,6 +76,7 @@ obj-$(CONFIG_ARM_SA1110_CPUFREQ)      += sa1110-cpufreq.o
->  obj-$(CONFIG_ARM_SPEAR_CPUFREQ)                += spear-cpufreq.o
->  obj-$(CONFIG_ARM_TEGRA_CPUFREQ)                += tegra-cpufreq.o
->  obj-$(CONFIG_ARM_VEXPRESS_SPC_CPUFREQ) += vexpress-spc-cpufreq.o
-> +obj-$(CONFIG_ARM_MT8173_CPUFREQ)       += mt8173-cpufreq.o
+Previously submitted in https://lkml.org/lkml/2014/9/18/147 , but again
+in an awkward way. So this is a resend too.
 
-Add this in alphanumeric order please.
 
->
->  ##################################################################################
->  # PowerPC platform drivers
-> diff --git a/drivers/cpufreq/mt8173-cpufreq.c b/drivers/cpufreq/mt8173-cpufreq.c
-> new file mode 100644
-> index 0000000..b578c10
-> --- /dev/null
-> +++ b/drivers/cpufreq/mt8173-cpufreq.c
-> @@ -0,0 +1,459 @@
-> +/*
-> +* Copyright (c) 2015 Linaro.
-> +* Author: Pi-Cheng Chen <pi-cheng.chen@linaro.org>
-> +*
-> +* This program is free software; you can redistribute it and/or modify
-> +* it under the terms of the GNU General Public License version 2 as
-> +* published by the Free Software Foundation.
-> +*
-> +* This program is distributed in the hope that it will be useful,
-> +* but WITHOUT ANY WARRANTY; without even the implied warranty of
-> +* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> +* GNU General Public License for more details.
-> +*/
-> +
-> +#include <linux/module.h>
-> +#include <linux/of.h>
-> +#include <linux/of_address.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/cpufreq.h>
-> +#include <linux/cpufreq-dt.h>
-> +#include <linux/cpumask.h>
-> +#include <linux/slab.h>
-> +#include <linux/clk.h>
-> +#include <linux/clk-provider.h>
+ sound/soc/samsung/Kconfig          |   9 --
+ sound/soc/samsung/Makefile         |   2 -
+ sound/soc/samsung/smdk_wm8580pcm.c | 176 -------------------------------------
+ 3 files changed, 187 deletions(-)
+ delete mode 100644 sound/soc/samsung/smdk_wm8580pcm.c
 
-This driver isn't a clock provider, right? Then why are
-you including this file?
+diff --git a/sound/soc/samsung/Kconfig b/sound/soc/samsung/Kconfig
+index da6d0229cfa2..3be649098b30 100644
+--- a/sound/soc/samsung/Kconfig
++++ b/sound/soc/samsung/Kconfig
+@@ -153,15 +153,6 @@ config SND_SOC_SAMSUNG_SMDK_SPDIF
+ 	help
+ 	  Say Y if you want to add support for SoC S/PDIF audio on the SMDK.
+ 
+-config SND_SOC_SMDK_WM8580_PCM
+-	tristate "SoC PCM Audio support for WM8580 on SMDK"
+-	depends on SND_SOC_SAMSUNG && (MACH_SMDKV210 || MACH_SMDKC110)
+-	depends on REGMAP_I2C
+-	select SND_SOC_WM8580
+-	select SND_SAMSUNG_PCM
+-	help
+-	  Say Y if you want to add support for SoC audio on the SMDK.
+-
+ config SND_SOC_SMDK_WM8994_PCM
+ 	tristate "SoC PCM Audio support for WM8994 on SMDK"
+ 	depends on SND_SOC_SAMSUNG
+diff --git a/sound/soc/samsung/Makefile b/sound/soc/samsung/Makefile
+index 052fe71be518..2b32c371da55 100644
+--- a/sound/soc/samsung/Makefile
++++ b/sound/soc/samsung/Makefile
+@@ -36,7 +36,6 @@ snd-soc-snow-objs := snow.o
+ snd-soc-smdk-wm9713-objs := smdk_wm9713.o
+ snd-soc-s3c64xx-smartq-wm8987-objs := smartq_wm8987.o
+ snd-soc-smdk-spdif-objs := smdk_spdif.o
+-snd-soc-smdk-wm8580pcm-objs := smdk_wm8580pcm.o
+ snd-soc-smdk-wm8994pcm-objs := smdk_wm8994pcm.o
+ snd-soc-speyside-objs := speyside.o
+ snd-soc-tobermory-objs := tobermory.o
+@@ -62,7 +61,6 @@ obj-$(CONFIG_SND_SOC_SNOW) += snd-soc-snow.o
+ obj-$(CONFIG_SND_SOC_SAMSUNG_SMDK_WM9713) += snd-soc-smdk-wm9713.o
+ obj-$(CONFIG_SND_SOC_SMARTQ) += snd-soc-s3c64xx-smartq-wm8987.o
+ obj-$(CONFIG_SND_SOC_SAMSUNG_SMDK_SPDIF) += snd-soc-smdk-spdif.o
+-obj-$(CONFIG_SND_SOC_SMDK_WM8580_PCM) += snd-soc-smdk-wm8580pcm.o
+ obj-$(CONFIG_SND_SOC_SMDK_WM8994_PCM) += snd-soc-smdk-wm8994pcm.o
+ obj-$(CONFIG_SND_SOC_SPEYSIDE) += snd-soc-speyside.o
+ obj-$(CONFIG_SND_SOC_TOBERMORY) += snd-soc-tobermory.o
+diff --git a/sound/soc/samsung/smdk_wm8580pcm.c b/sound/soc/samsung/smdk_wm8580pcm.c
+deleted file mode 100644
+index 6deec5234c92..000000000000
+--- a/sound/soc/samsung/smdk_wm8580pcm.c
++++ /dev/null
+@@ -1,176 +0,0 @@
+-/*
+- *  sound/soc/samsung/smdk_wm8580pcm.c
+- *
+- *  Copyright (c) 2011 Samsung Electronics Co. Ltd
+- *
+- *  This program is free software; you can redistribute  it and/or  modify it
+- *  under  the terms of  the GNU General  Public License as published by the
+- *  Free Software Foundation;  either version 2 of the  License, or (at your
+- *  option) any later version.
+- */
+-#include <linux/module.h>
+-#include <sound/soc.h>
+-#include <sound/pcm_params.h>
+-#include <sound/pcm.h>
+-
+-#include <asm/mach-types.h>
+-
+-#include "../codecs/wm8580.h"
+-#include "dma.h"
+-#include "pcm.h"
+-
+-/*
+- * Board Settings:
+- *  o '1' means 'ON'
+- *  o '0' means 'OFF'
+- *  o 'X' means 'Don't care'
+- *
+- * SMDK6410 Base B/D: CFG1-0000, CFG2-1111
+- * SMDKC110, SMDKV210: CFGB11-100100, CFGB12-0000
+- */
+-
+-#define SMDK_WM8580_EXT_OSC 12000000
+-#define SMDK_WM8580_EXT_MCLK 4096000
+-#define SMDK_WM8580_EXT_VOICE 2048000
+-
+-static unsigned long mclk_freq;
+-static unsigned long xtal_freq;
+-
+-/*
+- * If MCLK clock directly gets from XTAL, we don't have to use PLL
+- * to make MCLK, but if XTAL clock source connects with other codec
+- * pin (like XTI), we should have to set codec's PLL to make MCLK.
+- * Because Samsung SoC does not support pcmcdclk output like I2S.
+- */
+-
+-static int smdk_wm8580_pcm_hw_params(struct snd_pcm_substream *substream,
+-			      struct snd_pcm_hw_params *params)
+-{
+-	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+-	struct snd_soc_dai *codec_dai = rtd->codec_dai;
+-	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
+-	int rfs, ret;
+-
+-	switch (params_rate(params)) {
+-	case 8000:
+-		break;
+-	default:
+-		printk(KERN_ERR "%s:%d Sampling Rate %u not supported!\n",
+-		__func__, __LINE__, params_rate(params));
+-		return -EINVAL;
+-	}
+-
+-	rfs = mclk_freq / params_rate(params) / 2;
+-
+-	if (mclk_freq == xtal_freq) {
+-		ret = snd_soc_dai_set_sysclk(codec_dai, WM8580_CLKSRC_MCLK,
+-						mclk_freq, SND_SOC_CLOCK_IN);
+-		if (ret < 0)
+-			return ret;
+-
+-		ret = snd_soc_dai_set_clkdiv(codec_dai, WM8580_MCLK,
+-						WM8580_CLKSRC_MCLK);
+-		if (ret < 0)
+-			return ret;
+-	} else {
+-		ret = snd_soc_dai_set_sysclk(codec_dai, WM8580_CLKSRC_PLLA,
+-						mclk_freq, SND_SOC_CLOCK_IN);
+-		if (ret < 0)
+-			return ret;
+-
+-		ret = snd_soc_dai_set_clkdiv(codec_dai, WM8580_MCLK,
+-						WM8580_CLKSRC_PLLA);
+-		if (ret < 0)
+-			return ret;
+-
+-		ret = snd_soc_dai_set_pll(codec_dai, WM8580_PLLA, 0,
+-						xtal_freq, mclk_freq);
+-		if (ret < 0)
+-			return ret;
+-	}
+-
+-	/* Set PCM source clock on CPU */
+-	ret = snd_soc_dai_set_sysclk(cpu_dai, S3C_PCM_CLKSRC_MUX,
+-					mclk_freq, SND_SOC_CLOCK_IN);
+-	if (ret < 0)
+-		return ret;
+-
+-	/* Set SCLK_DIV for making bclk */
+-	ret = snd_soc_dai_set_clkdiv(cpu_dai, S3C_PCM_SCLK_PER_FS, rfs);
+-	if (ret < 0)
+-		return ret;
+-
+-	return 0;
+-}
+-
+-static struct snd_soc_ops smdk_wm8580_pcm_ops = {
+-	.hw_params = smdk_wm8580_pcm_hw_params,
+-};
+-
+-#define SMDK_DAI_FMT (SND_SOC_DAIFMT_DSP_B | SND_SOC_DAIFMT_IB_NF | \
+-	SND_SOC_DAIFMT_CBS_CFS)
+-
+-static struct snd_soc_dai_link smdk_dai[] = {
+-	{
+-		.name = "WM8580 PAIF PCM RX",
+-		.stream_name = "Playback",
+-		.cpu_dai_name = "samsung-pcm.0",
+-		.codec_dai_name = "wm8580-hifi-playback",
+-		.platform_name = "samsung-audio",
+-		.codec_name = "wm8580.0-001b",
+-		.dai_fmt = SMDK_DAI_FMT,
+-		.ops = &smdk_wm8580_pcm_ops,
+-	}, {
+-		.name = "WM8580 PAIF PCM TX",
+-		.stream_name = "Capture",
+-		.cpu_dai_name = "samsung-pcm.0",
+-		.codec_dai_name = "wm8580-hifi-capture",
+-		.platform_name = "samsung-pcm.0",
+-		.codec_name = "wm8580.0-001b",
+-		.dai_fmt = SMDK_DAI_FMT,
+-		.ops = &smdk_wm8580_pcm_ops,
+-	},
+-};
+-
+-static struct snd_soc_card smdk_pcm = {
+-	.name = "SMDK-PCM",
+-	.owner = THIS_MODULE,
+-	.dai_link = smdk_dai,
+-	.num_links = 2,
+-};
+-
+-/*
+- * After SMDKC110 Base Board's Rev is '0.1', 12MHz External OSC(X1)
+- * is absent (or not connected), so we connect EXT_VOICE_CLK(OSC4),
+- * 2.0484Mhz, directly with MCLK both Codec and SoC.
+- */
+-static int snd_smdk_probe(struct platform_device *pdev)
+-{
+-	int ret = 0;
+-
+-	xtal_freq = SMDK_WM8580_EXT_OSC;
+-	mclk_freq = SMDK_WM8580_EXT_MCLK;
+-
+-	if (machine_is_smdkc110() || machine_is_smdkv210())
+-		xtal_freq = mclk_freq = SMDK_WM8580_EXT_VOICE;
+-
+-	smdk_pcm.dev = &pdev->dev;
+-	ret = devm_snd_soc_register_card(&pdev->dev, &smdk_pcm);
+-	if (ret)
+-		dev_err(&pdev->dev, "snd_soc_register_card failed %d\n", ret);
+-
+-	return ret;
+-}
+-
+-static struct platform_driver snd_smdk_driver = {
+-	.driver = {
+-		.name = "samsung-smdk-pcm",
+-	},
+-	.probe = snd_smdk_probe,
+-};
+-
+-module_platform_driver(snd_smdk_driver);
+-
+-MODULE_AUTHOR("Sangbeom Kim, <sbkim73@samsung.com>");
+-MODULE_DESCRIPTION("ALSA SoC SMDK WM8580 for PCM");
+-MODULE_LICENSE("GPL");
+-- 
+1.9.3
 
-> +#include <linux/regulator/consumer.h>
-> +#include <linux/cpu.h>
-> +#include <linux/pm_opp.h>
 
-keep them in alphanumeric order please.
 
-> +
-> +#define CPUCLK_MUX_ARMPLL      0x1
-> +#define CPUCLK_MUX_MAINPLL     0x2
-> +#define VOLT_SHIFT_LIMIT       150000
-> +
-> +enum {
-> +       LITTLE_CLUSTER = 0,
-> +       BIG_CLUSTER,
-> +       NR_CLUSTERS
-> +};
-> +
-> +static struct cluster_dvfs_info {
-> +       int cpu;
-> +       struct cpumask cpus;
-> +       struct device *cpu_dev;
-> +       struct regulator *proc_reg;
-> +       struct regulator *sram_reg;
-> +       int inter_volt;
-> +       u32 volt_tol;
-> +} *dvfs_info;
-> +
-> +static unsigned long mainpll_freq;
-> +static void __iomem *clk_mux_regs;
-> +static spinlock_t lock;
-> +
-> +static void cpuclk_mux_set(int cluster, u32 sel)
-> +{
-> +       u32 val;
-> +       u32 mask = 0x3;
-> +
-> +       if (cluster == BIG_CLUSTER) {
-> +               mask <<= 2;
-> +               sel <<= 2;
-> +       }
-> +
-> +       spin_lock(&lock);
-> +
-> +       val = readl(clk_mux_regs);
-> +       val = (val & ~mask) | sel;
-> +       writel(val, clk_mux_regs);
-> +
-> +       spin_unlock(&lock);
-> +}
-> +
-> +static int mt8173_cpufreq_voltage_step(struct cluster_dvfs_info *dvfs,
-> +                                      unsigned long old_vproc,
-> +                                      unsigned long new_vproc)
-> +{
-> +       int cur_vsram, cur_vproc, target_volt, tol;
-> +
-> +       if (old_vproc > new_vproc) {
-> +               while (1) {
-> +                       cur_vsram = regulator_get_voltage(dvfs->sram_reg);
-> +                       if (cur_vsram - new_vproc < VOLT_SHIFT_LIMIT &&
-> +                           cur_vsram > new_vproc) {
-> +                               tol = new_vproc * dvfs->volt_tol / 100;
-> +                               regulator_set_voltage_tol(dvfs->proc_reg,
-> +                                                         new_vproc, tol);
-> +                               break;
-> +                       }
-> +
-> +                       target_volt = cur_vsram - VOLT_SHIFT_LIMIT;
-> +                       tol = target_volt * dvfs->volt_tol / 100;
-> +                       regulator_set_voltage_tol(dvfs->proc_reg, target_volt,
-> +                                                 tol);
-> +
-> +                       cur_vproc = regulator_get_voltage(dvfs->proc_reg);
-> +                       target_volt = cur_vproc + 1;
-> +                       tol = target_volt * dvfs->volt_tol / 100;
-> +                       regulator_set_voltage_tol(dvfs->sram_reg, target_volt,
-> +                                                 tol);
-> +               }
-> +       } else if (old_vproc < new_vproc) {
-> +               while (1) {
-> +                       cur_vsram = regulator_get_voltage(dvfs->sram_reg);
-> +                       if (cur_vsram - new_vproc < VOLT_SHIFT_LIMIT &&
-> +                           cur_vsram > new_vproc) {
-> +                               tol = new_vproc * dvfs->volt_tol / 100;
-> +                               regulator_set_voltage_tol(dvfs->proc_reg,
-> +                                                         new_vproc, tol);
-> +                               break;
-> +                       }
-> +
-> +                       cur_vproc = regulator_get_voltage(dvfs->proc_reg);
-> +                       target_volt = cur_vproc + VOLT_SHIFT_LIMIT;
-> +                       tol = target_volt * dvfs->volt_tol / 100;
-> +                       regulator_set_voltage_tol(dvfs->sram_reg, target_volt,
-> +                                                 tol);
-> +
-> +                       if (new_vproc - cur_vproc > VOLT_SHIFT_LIMIT) {
-> +                               cur_vsram = regulator_get_voltage(
-> +                                                       dvfs->sram_reg);
-> +                               target_volt = cur_vsram - 1;
-> +                               tol = target_volt * dvfs->volt_tol / 100;
-> +                               regulator_set_voltage_tol(dvfs->proc_reg,
-> +                                                         target_volt, tol);
-> +                       }
-> +               }
-> +       }
-> +
-> +       return 0;
-> +}
-> +
-> +static int get_opp_voltage(struct device *dev, unsigned long freq_hz)
-> +{
-> +       struct dev_pm_opp *opp;
-> +       int volt;
-> +
-> +       rcu_read_lock();
-> +       opp = dev_pm_opp_find_freq_ceil(dev, &freq_hz);
-> +       if (IS_ERR(opp)) {
-> +               rcu_read_unlock();
-> +               pr_err("%s: failed to find OPP for %lu\n", __func__, freq_hz);
-> +               return PTR_ERR(opp);
-> +       }
-> +       volt = dev_pm_opp_get_voltage(opp);
-> +       rcu_read_unlock();
-> +
-> +       return volt;
-> +}
-> +
-> +static int mt8173_cpufreq_get_intermediate_voltage(int cluster)
-> +{
-> +       struct cluster_dvfs_info *dvfs = &dvfs_info[cluster];
-> +
-> +       if (dvfs->inter_volt == 0)
-> +               dvfs->inter_volt = get_opp_voltage(dvfs->cpu_dev,
-> +                                                  mainpll_freq);
-> +
-> +       return dvfs->inter_volt;
-> +}
-> +
-> +static void mt8173_cpufreq_set_voltage(int cluster, int old_volt, int new_volt)
-> +{
-> +       struct cluster_dvfs_info *dvfs = &dvfs_info[cluster];
-> +       int ret = 0;
-> +
-> +       if (cluster == LITTLE_CLUSTER) {
-> +               int tol;
-> +
-> +               tol = new_volt * dvfs->volt_tol / 100;
-> +               ret = regulator_set_voltage_tol(dvfs->proc_reg, new_volt, tol);
-> +       } else {
-> +               ret = mt8173_cpufreq_voltage_step(dvfs, old_volt, new_volt);
-> +       }
-> +
-> +       if (ret)
-> +               pr_err("%s: cluster%d failed to scale voltage (%dmV to %dmV)",
-> +                      __func__, cluster, old_volt, new_volt);
-> +}
-> +
-> +static int mt8173_cpufreq_notify(struct notifier_block *nb,
-> +                                unsigned long action, void *data)
-> +{
-> +       struct cpufreq_freqs *freqs = data;
-> +       struct cluster_dvfs_info *dvfs;
-> +       unsigned long old_volt, new_volt, inter_volt;
-> +       int cluster;
-> +
-> +       if (freqs->cpu == dvfs_info[BIG_CLUSTER].cpu)
 
-You should check it against cpumask. freqs->cpu can change on the event
-of hotplug of CPUs.
-
-> +               cluster = BIG_CLUSTER;
-> +       else if (freqs->cpu == dvfs_info[LITTLE_CLUSTER].cpu)
-> +               cluster = LITTLE_CLUSTER;
-> +       else
-> +               return NOTIFY_DONE;
-> +
-> +       dvfs = &dvfs_info[cluster];
-> +
-> +       old_volt = regulator_get_voltage(dvfs->proc_reg);
-> +
-> +       new_volt = get_opp_voltage(dvfs->cpu_dev, freqs->new * 1000);
-> +       inter_volt = mt8173_cpufreq_get_intermediate_voltage(cluster);
-> +
-> +       if (action == CPUFREQ_PRECHANGE) {
-> +               if (old_volt < inter_volt || old_volt < new_volt) {
-> +                       new_volt = inter_volt > new_volt ?
-> +                                  inter_volt : new_volt;
-> +                       mt8173_cpufreq_set_voltage(cluster, old_volt,
-> +                                                  new_volt);
-> +               }
-> +
-> +               cpuclk_mux_set(cluster, CPUCLK_MUX_MAINPLL);
-> +       } else if (action == CPUFREQ_POSTCHANGE) {
-> +               cpuclk_mux_set(cluster, CPUCLK_MUX_ARMPLL);
-> +
-> +               if (new_volt < old_volt)
-> +                       mt8173_cpufreq_set_voltage(cluster, old_volt,
-> +                                                  new_volt);
-> +       }
-> +
-> +       return NOTIFY_OK;
-> +}
-> +
-> +static struct notifier_block mt8173_cpufreq_nb = {
-> +       .notifier_call = mt8173_cpufreq_notify,
-> +};
-> +
-> +static struct cpufreq_dt_platform_data *pd;
-> +
-> +static int cpu_in_domain_list(struct list_head *domain_list, int cpu)
-> +{
-> +       struct list_head *node;
-> +
-> +       list_for_each(node, domain_list) {
-> +               struct cpufreq_cpu_domain *domain;
-> +
-> +               domain = container_of(node, struct cpufreq_cpu_domain, node);
-> +               if (cpumask_test_cpu(cpu, &domain->cpus))
-> +                       return 1;
-> +       }
-> +
-> +       return 0;
-> +}
-> +
-> +static void cpufreq_dt_pdata_release(void)
-> +{
-> +       if (!pd)
-> +               return;
-> +
-> +       if (!list_empty(&pd->domain_list)) {
-> +               struct list_head *node, *tmp;
-> +               struct cpufreq_cpu_domain *domain;
-> +
-> +               list_for_each_safe(node, tmp, &pd->domain_list) {
-> +                       list_del(node);
-> +                       domain = container_of(node, struct cpufreq_cpu_domain,
-> +                                             node);
-> +                       kfree(domain);
-> +               }
-> +       }
-> +
-> +       kfree(pd);
-> +}
-> +
-> +static int cpufreq_dt_pdata_init(void)
-> +{
-> +       int cpu;
-> +
-> +       pd = kmalloc(sizeof(*pd), GFP_KERNEL);
-> +       if (!pd)
-> +               return -ENOMEM;
-> +
-> +       pd->independent_clocks = 1,
-> +       INIT_LIST_HEAD(&pd->domain_list);
-> +
-> +       for_each_possible_cpu(cpu) {
-> +               struct cpufreq_cpu_domain *new_domain;
-> +
-> +               if (cpu_in_domain_list(&pd->domain_list, cpu))
-> +                       continue;
-> +
-> +               new_domain = kzalloc(sizeof(*new_domain), GFP_KERNEL);
-> +               if (!new_domain) {
-> +                       cpufreq_dt_pdata_release();
-> +                       return -ENOMEM;
-> +               }
-> +
-> +               cpumask_copy(&new_domain->cpus,
-> +                            &cpu_topology[cpu].core_sibling);
-> +               list_add(&new_domain->node, &pd->domain_list);
-> +       }
-> +
-> +       return 0;
-> +}
-> +
-> +static void mt8173_cpufreq_dvfs_info_release(void)
-> +{
-> +       int i;
-> +
-> +       if (!dvfs_info)
-> +               return;
-> +
-> +       for (i = 0; i < NR_CLUSTERS; ++i) {
-> +               struct cluster_dvfs_info *dvfs = &dvfs_info[i];
-> +
-> +               if (!IS_ERR_OR_NULL(dvfs->proc_reg))
-> +                       regulator_put(dvfs->proc_reg);
-> +
-> +               if (!IS_ERR_OR_NULL(dvfs->sram_reg))
-> +                       regulator_put(dvfs->sram_reg);
-> +       }
-> +
-> +       if (clk_mux_regs)
-> +               iounmap(clk_mux_regs);
-> +}
-> +
-> +static int mt8173_cpufreq_dvfs_info_init(void)
-> +{
-> +       struct list_head *node;
-> +       struct device_node *np;
-> +       struct clk *mainpll;
-> +       int i, ret;
-> +
-> +       dvfs_info = kzalloc(sizeof(*dvfs) * NR_CLUSTERS, GFP_KERNEL);
-> +       if (!dvfs_info)
-> +               return -ENOMEM;
-> +
-> +       list_for_each(node, &pd->domain_list) {
-> +               struct cpufreq_cpu_domain *domain = container_of(
-> +                                       node, struct cpufreq_cpu_domain, node);
-> +               int cpu = cpumask_next(0, &domain->cpus);
-
-cpumask_first() ?
-
-> +
-> +               np = of_get_cpu_node(cpu, NULL);
-
-This can fail..
-
-> +
-> +               if (of_property_match_string(np, "compatible",
-> +                                            "arm,cortex-a53") >= 0)
-> +                       cpumask_copy(&dvfs_info[LITTLE_CLUSTER].cpus,
-> +                                    &domain->cpus);
-> +               else if (of_property_match_string(np, "compatible",
-> +                                                 "arm,cortex-a57") >= 0)
-> +                       cpumask_copy(&dvfs_info[BIG_CLUSTER].cpus,
-> +                                    &domain->cpus);
-> +               else {
-> +                       of_node_put(np);
-> +                       pr_err("%s: unknown CPU core\n", __func__);
-> +                       return -EINVAL;
-> +               }
-> +
-> +               of_node_put(np);
-> +       }
-> +
-> +       for (i = 0; i < NR_CLUSTERS; i++) {
-
-You can merge this for-loop with the above for-loop..
-
-> +               struct cluster_dvfs_info *dvfs = &dvfs_info[i];
-> +               int cpu;
-> +
-> +               for_each_cpu_mask(cpu, dvfs->cpus) {
-> +                       struct device_node *np;
-> +
-> +                       dvfs->cpu_dev = get_cpu_device(cpu);
-> +                       dvfs->proc_reg = regulator_get(dvfs->cpu_dev, "proc");
-> +                       if (IS_ERR(dvfs->proc_reg))
-> +                               continue;
-> +
-> +                       dvfs->cpu = cpu;
-> +                       dvfs->sram_reg = regulator_get(dvfs->cpu_dev, "sram");
-> +
-> +                       np = of_node_get(dvfs->cpu_dev->of_node);
-> +                       of_property_read_u32(np, "voltage-tolerance",
-> +                                            &dvfs->volt_tol);
-> +                       of_node_put(np);
-> +                       break;
-> +               }
-> +
-> +               if (IS_ERR(dvfs->proc_reg)) {
-> +                       pr_err("%s: no proc regulator for cluster %d\n",
-> +                              __func__, i);
-> +                       ret = -ENODEV;
-> +                       goto dvfs_info_release;
-> +               }
-> +
-> +               if (IS_ERR(dvfs->sram_reg) && BIG_CLUSTER == i) {
-> +                       pr_err("%s: no sram regulator for cluster %d\n",
-> +                              __func__, i);
-> +                       ret = -ENODEV;
-> +                       goto dvfs_info_release;
-> +               }
-> +       }
-> +
-> +       mainpll = __clk_lookup("mainpll");
-> +       if (!mainpll) {
-> +               pr_err("failed to get mainpll clk\n");
-> +               ret = -ENOENT;
-> +               goto dvfs_info_release;
-> +       }
-> +       mainpll_freq = clk_get_rate(mainpll);
-> +
-> +       np = of_find_compatible_node(NULL, NULL, "mediatek,mt8173-infrasys");
-> +       if (!np) {
-> +               pr_err("failed to find clock mux registers\n");
-> +               ret = -ENODEV;
-> +               goto dvfs_info_release;
-> +       }
-> +
-> +       clk_mux_regs = of_iomap(np, 0);
-> +       if (!clk_mux_regs) {
-> +               pr_err("failed to map clock mux registers\n");
-> +               ret = -EFAULT;
-> +               goto dvfs_info_release;
-> +       }
-> +       of_node_put(np);
-> +
-> +       spin_lock_init(&lock);
-> +
-> +       return 0;
-> +
-> +dvfs_info_release:
-> +       mt8173_cpufreq_dvfs_info_release();
-> +       return ret;
-> +}
-> +
-> +static int mt8173_cpufreq_driver_init(void)
-> +{
-> +       int ret;
-> +
-> +       if (!of_machine_is_compatible("mediatek,mt8173"))
-> +               return -ENODEV;
-> +
-> +       ret = cpufreq_dt_pdata_init();
-> +       if (ret) {
-> +               pr_err("failed to initialize platform data: %d\n", ret);
-> +               return ret;
-> +       }
-> +
-> +       ret = mt8173_cpufreq_dvfs_info_init();
-> +       if (ret) {
-> +               pr_err("failed to initialize mt8173 dvfs info: %d\n", ret);
-> +               goto dt_pdata_release;
-> +       }
-> +
-> +       ret = cpufreq_register_notifier(&mt8173_cpufreq_nb,
-> +                                       CPUFREQ_TRANSITION_NOTIFIER);
-> +       if (ret) {
-> +               pr_err("failed to register cpufreq notifier: %d\n", ret);
-> +               goto dt_pdata_release;
-
-dvfs_info_release here ?
-
-> +       }
-> +
-> +       platform_device_register_data(NULL, "cpufreq-dt", -1,
-> +                                     pd, sizeof(*pd));
-
-can't this fail?
-
-> +
-> +       return 0;
-> +
-> +dt_pdata_release:
-> +       cpufreq_dt_pdata_release();
-> +       return ret;
-> +}
-> +
-> +module_init(mt8173_cpufreq_driver_init);
-> +
-> +MODULE_AUTHOR("Pi-Cheng Chen <pi-cheng.chen@linaro.org>");
-> +MODULE_DESCRIPTION("Mediatek MT8173 cpufreq driver");
-> +MODULE_LICENSE("GPL");
