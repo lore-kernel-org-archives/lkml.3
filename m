@@ -1,121 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751744AbbARX43 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 18:56:29 -0500
-Received: from regular1.263xmail.com ([211.150.99.139]:43653 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751678AbbARX40 (ORCPT
+	id S1751505AbbASADr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 19:03:47 -0500
+Received: from server.atrad.com.au ([150.101.241.2]:41762 "EHLO
+	server.atrad.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751185AbbASADp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 18:56:26 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-ADDR-CHECKED: 0
-X-RL-SENDER: caesar.wang@rock-chips.com
-X-SENDER-IP: 173.208.56.148
-X-LOGIN-NAME: caesar.wang@rock-chips.com
-X-UNIQUE-TAG: <ef68193a016314ee72dd24884c4eb45b>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 5
-From: Caesar Wang <wxt@rock-chips.com>
-To: Heiko Stuebner <heiko@sntech.de>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <edubezval@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Caesar Wang <wxt@rock-chips.com>, linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] thermal: rockchip: make temperature reporting much more accurate
-Date: Mon, 19 Jan 2015 07:55:49 +0800
-Message-Id: <1421625349-14101-2-git-send-email-wxt@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1421625349-14101-1-git-send-email-wxt@rock-chips.com>
-References: <1421625349-14101-1-git-send-email-wxt@rock-chips.com>
+	Sun, 18 Jan 2015 19:03:45 -0500
+Date: Mon, 19 Jan 2015 10:33:08 +1030
+From: Jonathan Woithe <jwoithe@just42.net>
+To: Darren Hart <dvhart@infradead.org>
+Cc: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] fujitsu-laptop: use FB_BLANK_* constants
+Message-ID: <20150119000307.GA20491@marvin.atrad.com.au>
+References: <0150118191421.GJ56582@vmdeb7>
+ <1421609326-3610-1-git-send-email-kernel@mkarcher.dialup.fu-berlin.de>
+ <20150118222232.GA64157@vmdeb7>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150118222232.GA64157@vmdeb7>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-MIMEDefang-action: accept
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In general, the kernel should report temperature readings exactly as
-reported by the hardware. The cpu / gpu thermal driver works in 5 degree
-increments,but we ought to do more accurate. The temperature will do
-linear interpolation between the entries in the table.
+On Sun, Jan 18, 2015 at 02:22:32PM -0800, Darren Hart wrote:
+> On Sun, Jan 18, 2015 at 08:28:46PM +0100, Michael Karcher wrote:
+> > Replace the magic numbers in fujitsu-laptop.c by the appropriate FB_BLANK
+> > constants, as indicated by the comment for backlight_properties.power in
+> > include/linux/backlight.h.
+> > 
+> > Signed-off-by: Michael Karcher <kernel@mkarcher.dialup.fu-berlin.de>
+> 
+> Thanks Michael, queued for 3.20.
 
-Test= $md5sum /dev/zero &
-$while true; do grep "" /sys/class/thermal/thermal_zone[1-2]/temp;
-sleep .5; done
-
-e.g. We can get the result as follows:
-    /sys/class/thermal/thermal_zone1/temp:39994
-    /sys/class/thermal/thermal_zone2/temp:39086
-    /sys/class/thermal/thermal_zone1/temp:39994
-    /sys/class/thermal/thermal_zone2/temp:39540
-    /sys/class/thermal/thermal_zone1/temp:39540
-    /sys/class/thermal/thermal_zone2/temp:39540
-    /sys/class/thermal/thermal_zone1/temp:39540
-    /sys/class/thermal/thermal_zone2/temp:39994
-
-Signed-off-by: Caesar Wang <wxt@rock-chips.com>
-Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-
----
-
-Changes in v2:
-Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-
- drivers/thermal/rockchip_thermal.c | 26 +++++++++++++++++---------
- 1 file changed, 17 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/thermal/rockchip_thermal.c b/drivers/thermal/rockchip_thermal.c
-index 1bcddfc..a7ae23a 100644
---- a/drivers/thermal/rockchip_thermal.c
-+++ b/drivers/thermal/rockchip_thermal.c
-@@ -193,19 +193,18 @@ static u32 rk_tsadcv2_temp_to_code(long temp)
- 
- static long rk_tsadcv2_code_to_temp(u32 code)
- {
--	int high, low, mid;
--
--	low = 0;
--	high = ARRAY_SIZE(v2_code_table) - 1;
--	mid = (high + low) / 2;
-+	unsigned int low = 0;
-+	unsigned int high = ARRAY_SIZE(v2_code_table) - 1;
-+	unsigned int mid = (low + high) / 2;
-+	unsigned int scale;
- 
- 	if (code > v2_code_table[low].code || code < v2_code_table[high].code)
- 		return 125000; /* No code available, return max temperature */
- 
- 	while (low <= high) {
--		if (code >= v2_code_table[mid].code && code <
--		    v2_code_table[mid - 1].code)
--			return v2_code_table[mid].temp;
-+		if (code >= v2_code_table[mid].code &&
-+		    code < v2_code_table[mid - 1].code)
-+			break;
- 		else if (code < v2_code_table[mid].code)
- 			low = mid + 1;
- 		else
-@@ -213,7 +212,16 @@ static long rk_tsadcv2_code_to_temp(u32 code)
- 		mid = (low + high) / 2;
- 	}
- 
--	return 125000;
-+	/*
-+	 * The 5C granularity provided by the table is too much. Let's
-+	 * assume that the relationship between sensor readings and
-+	 * temperature between 2 table entries is linear and extrapolate
-+	 * to produce less granular result.
-+	 */
-+	scale = (v2_code_table[mid].temp - v2_code_table[mid - 1].temp) /
-+		(v2_code_table[mid - 1].code - v2_code_table[mid].code);
-+	return v2_code_table[mid - 1].temp +
-+			(v2_code_table[mid - 1].code - code) * scale;
- }
- 
- /**
--- 
-1.9.1
-
-
+Acked-by: Jonathan Woithe <jwoithe@just42.net>
