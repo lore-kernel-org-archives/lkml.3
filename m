@@ -1,95 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752017AbbASCEe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 21:04:34 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:58738 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751396AbbASCEb (ORCPT
+	id S1752107AbbASCFY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 21:05:24 -0500
+Received: from mail-oi0-f54.google.com ([209.85.218.54]:50541 "EHLO
+	mail-oi0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751396AbbASCFX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 21:04:31 -0500
-Message-ID: <54BC6611.9020002@huawei.com>
-Date: Mon, 19 Jan 2015 10:04:01 +0800
-From: Yijing Wang <wangyijing@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Sun, 18 Jan 2015 21:05:23 -0500
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Bjorn Helgaas <bhelgaas@google.com>, Jiang Liu <jiang.liu@linux.intel.com>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Marc Zyngier <marc.zyngier@arm.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        Tony Luck <tony.luck@intel.com>,
-        "linux-ia64@vger.kernel.org" <linux-ia64@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>, <linux-alpha@vger.kernel.org>,
-        <linux-m68k@vger.kernel.org>, Liviu Dudau <liviu@dudau.co.uk>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "sparclinux@vger.kernel.org" <sparclinux@vger.kernel.org>
-Subject: Re: [PATCH 01/28] PCI: Rip out pci_bus_add_devices() from pci_scan_bus()
-References: <1421372666-12288-1-git-send-email-wangyijing@huawei.com>	<1421372666-12288-2-git-send-email-wangyijing@huawei.com>	<CAE9FiQUoocCzBKsHL_D4ypH1-DV7XxZMdREX7n=Tz1Kq3kHHeA@mail.gmail.com> <CAE9FiQV97PuDWBZYRxh8R0ADnUFTbo1NO3wAufj97en0yseYSQ@mail.gmail.com>
-In-Reply-To: <CAE9FiQV97PuDWBZYRxh8R0ADnUFTbo1NO3wAufj97en0yseYSQ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.177.27.212]
-X-CFilter-Loop: Reflected
+In-Reply-To: <54BB88CB.7080107@suse.cz>
+References: <1421572634-3399-1-git-send-email-teawater@gmail.com> <54BB88CB.7080107@suse.cz>
+From: Hui Zhu <teawater@gmail.com>
+Date: Mon, 19 Jan 2015 10:04:42 +0800
+Message-ID: <CANFwon2XjhErx9uoZMJD1x=C4qEbrM6+2otnhNtQ-1duCebSFA@mail.gmail.com>
+Subject: Re: [PATCH] mm/page_alloc: Fix race conditions on getting migratetype
+ in buffered_rmqueue
+To: Vlastimil Babka <vbabka@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, mgorman@suse.de,
+        hannes@cmpxchg.org, rientjes@google.com, iamjoonsoo.kim@lge.com,
+        sasha.levin@oracle.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        Hui Zhu <zhuhui@xiaomi.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2015/1/17 7:16, Yinghai Lu wrote:
-> On Fri, Jan 16, 2015 at 3:15 PM, Yinghai Lu <yinghai@kernel.org> wrote:
->> On Thu, Jan 15, 2015 at 5:43 PM, Yijing Wang <wangyijing@huawei.com> wrote:
->>> Pci_bus_add_devices() should not be placed in pci_scan_bus().
->>> Now pci device will be added to driver core once its
->>> creation. All things left in pci_bus_add_devices() are
->>> driver attachment and other trivial sysfs things.
->>> Pci_scan_bus() should be the function responsible for
->>> scanning PCI devices, not including driver attachment.
->>> Other, some callers(m68k,unicore32,alpha) of pci_scan_bus()
->>> will call pci_bus_size_bridges() and pci_bus_assign_resources()
->>> after pci_scan_bus().
->>>
->>> E.g.
->>> In m68k
->>> mcf_pci_init()
->>>         pci_scan_bus()
->>>                 ...
->>>                 pci_bus_add_devices() --- try to attach driver
->>>         pci_fixup_irqs()
->>>         pci_bus_size_bridges()
->>>         pci_bus_assign_resources()
->>>
->>> It is not correct, resources should be assigned correctly
->>> before attaching driver.
+On Sun, Jan 18, 2015 at 6:19 PM, Vlastimil Babka <vbabka@suse.cz> wrote:
+> On 18.1.2015 10:17, Hui Zhu wrote:
 >>
-> No, for booting path, at that time pci drivers are *NOT* loaded yet.
+>> From: Hui Zhu <zhuhui@xiaomi.com>
+>>
+>> To test the patch [1], I use KGTP and a script [2] to show
+>> NR_FREE_CMA_PAGES
+>> and gross of cma_nr_free.  The values are always not same.
+>> I check the code of pages alloc and free and found that race conditions
+>> on getting migratetype in buffered_rmqueue.
+>
+>
+> Can you elaborate? What does this races with, are you dynamically changing
+> the size of CMA area, or what? The migratetype here is based on which free
+> list the page was found on. Was it misplaced then? Wasn't Joonsoo's recent
+> series supposed to eliminate this?
 
-Hi Yinghai, I knew code flow here would not cause problems, sorry the log
-confused you, I will refresh it. But I think pci_scan_bus()/pci_scan_root_bus()
-which could only be used during system boot up(before module_init) make
-the pci scan logic obscure. Because most callers additionally call
-pci_bus_size_bridges() and pci_bus_assign_resources() later,
-so rip out pci_bus_add_devices() from pci_scan_bus()/pci_scan_root_bus()
-make code have better readability.
+My bad.
+I thought move_freepages has race condition with this part.  But I
+missed it will check PageBuddy before set_freepage_migratetype.
+Sorry for that.
 
-Thanks!
-Yijing.
+I will do more work around this one and [1].
 
-> 
-> Thanks
-> 
-> Yinghai
-> 
-> .
-> 
+Thanks for your review.
 
+Best,
+Hui
 
--- 
-Thanks!
-Yijing
-
+>
+>> Then I add move the code of getting migratetype inside the zone->lock
+>> protection part.
+>
+>
+> Not just that, you are also reading migratetype from pageblock bitmap
+> instead of the one embedded in the free page. Which is more expensive
+> and we already do that more often than we would like to because of CMA.
+> And it appears to be a wrong fix for a possible misplacement bug. If there's
+> such misplacement, the wrong stats are not the only problem.
+>
+>>
+>> Because this issue will affect system even if the Linux kernel does't
+>> have [1].  So I post this patch separately.
+>
+>
+> But we can't test that without [1], right? Maybe the issue is introduced by
+> [1]?
+>
+>
+>>
+>> This patchset is based on fc7f0dd381720ea5ee5818645f7d0e9dece41cb0.
+>>
+>> [1] https://lkml.org/lkml/2015/1/18/28
+>> [2] https://github.com/teawater/kgtp/blob/dev/add-ons/cma_free.py
+>>
+>> Signed-off-by: Hui Zhu <zhuhui@xiaomi.com>
+>> ---
+>>   mm/page_alloc.c | 11 +++++++----
+>>   1 file changed, 7 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+>> index 7633c50..f3d6922 100644
+>> --- a/mm/page_alloc.c
+>> +++ b/mm/page_alloc.c
+>> @@ -1694,11 +1694,12 @@ again:
+>>                 }
+>>                 spin_lock_irqsave(&zone->lock, flags);
+>>                 page = __rmqueue(zone, order, migratetype);
+>> +               if (page)
+>> +                       migratetype = get_pageblock_migratetype(page);
+>> +               else
+>> +                       goto failed_unlock;
+>>                 spin_unlock(&zone->lock);
+>> -               if (!page)
+>> -                       goto failed;
+>> -               __mod_zone_freepage_state(zone, -(1 << order),
+>> -                                         get_freepage_migratetype(page));
+>> +               __mod_zone_freepage_state(zone, -(1 << order),
+>> migratetype);
+>>         }
+>>         __mod_zone_page_state(zone, NR_ALLOC_BATCH, -(1 << order));
+>> @@ -1715,6 +1716,8 @@ again:
+>>                 goto again;
+>>         return page;
+>>   +failed_unlock:
+>> +       spin_unlock(&zone->lock);
+>>   failed:
+>>         local_irq_restore(flags);
+>>         return NULL;
+>
+>
