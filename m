@@ -1,88 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752471AbbASR0I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 12:26:08 -0500
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:56550 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751506AbbASR0G (ORCPT
-	<rfc822;Linux-Kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 12:26:06 -0500
-Message-ID: <54BD3E2A.9040401@hurleysoftware.com>
-Date: Mon, 19 Jan 2015 12:26:02 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
+	id S1752376AbbASRZO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 12:25:14 -0500
+Received: from avon.wwwdotorg.org ([70.85.31.133]:43244 "EHLO
+	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751357AbbASRZM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 12:25:12 -0500
+Message-ID: <54BD3E3E.2040801@wwwdotorg.org>
+Date: Mon, 19 Jan 2015 10:26:22 -0700
+From: Stephen Warren <swarren@wwwdotorg.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>, Howard Chu <hyc@symas.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Linux Kernel Mailing List <Linux-Kernel@vger.kernel.org>,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH] n_tty: Remove LINEMODE support
-References: <1421616632-4077-1-git-send-email-peter@hurleysoftware.com> <54BC3771.7030204@symas.com> <54BC5EC7.1090202@hurleysoftware.com> <54BCFC94.1040605@symas.com> <54BD1B53.9030901@hurleysoftware.com> <20150119163703.GA23605@thunk.org>
-In-Reply-To: <20150119163703.GA23605@thunk.org>
-Content-Type: text/plain; charset=utf-8
+To: Thierry Reding <thierry.reding@gmail.com>,
+        Dmitry Osipenko <digetx@gmail.com>
+CC: Alexandre Courbot <gnurou@gmail.com>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>,
+        linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org,
+        stable@vger.kernel.org
+Subject: Re: [PATCH] ARM: tegra20: Store CPU "resettable" status in IRAM
+References: <1421319545-23920-1-git-send-email-digetx@gmail.com> <1421319545-23920-2-git-send-email-digetx@gmail.com> <20150119141224.GF23778@ulmo.nvidia.com>
+In-Reply-To: <20150119141224.GF23778@ulmo.nvidia.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/2015 11:37 AM, Theodore Ts'o wrote:
-> On Mon, Jan 19, 2015 at 09:57:23AM -0500, Peter Hurley wrote:
+On 01/19/2015 07:12 AM, Thierry Reding wrote:
+> On Thu, Jan 15, 2015 at 01:58:57PM +0300, Dmitry Osipenko wrote:
+>> Commit 7232398abc6a ("ARM: tegra: Convert PMC to a driver") changed tegra_resume()
+>> location storing from late to early and, as a result, broke suspend on Tegra20.
+>> PMC scratch register 41 is used by tegra LP1 resume code for retrieving stored
+>> physical memory address of common resume function and in the same time used by
+>> tegra20_cpu_shutdown() (shared by Tegra20 cpuidle driver and platform SMP code),
+>> which is storing CPU1 "resettable" status. It implies strict order of scratch
+>> register usage, otherwise resume function address is lost on Tegra20 after
+>> disabling non-boot CPU's on suspend. Fix it by storing "resettable" status in
+>> IRAM instead of PMC scratch register.
 >>
->> This reader set EOL2 to DISABLED_CHAR earlier, and left EOL unchanged.
->> I have seen userspace code that expects a line to be no longer than 4096 chars.
-> 
-> Userspace code that does this is going to be very fragile.  Input from
-> the tty really should be considered completely untrustworthy.
+>> Signed-off-by: Dmitry Osipenko <digetx@gmail.com>
+>> Fixes: 7232398abc6a (ARM: tegra: Convert PMC to a driver)
+>> Cc: <stable@vger.kernel.org> # v3.17+
+>> ---
+>>   arch/arm/mach-tegra/cpuidle-tegra20.c |  5 ++---
+>>   arch/arm/mach-tegra/reset-handler.S   | 10 +++++++---
+>>   arch/arm/mach-tegra/reset.h           |  4 ++++
+>>   arch/arm/mach-tegra/sleep-tegra20.S   | 37 ++++++++++++++++++++---------------
+>>   arch/arm/mach-tegra/sleep.h           |  4 ++++
+>>   5 files changed, 38 insertions(+), 22 deletions(-)
+>
+> I'm leaning towards applying this. Stephen, Alex, Peter: any objections?
 
-Should and do are different modal verbs.
+Hopefully this works out. I suppose it's unlikely anyone will be running 
+code on the AVP upstrem, so any potential conflict with AVP's usage of 
+IRAM isn't likely to occur.
 
-> For example, what if, while the tty is in canonical (ICANON) mode, an
-> attacker sets PARMRK and clears IGNPAR, IGNBRK, and BRKINT on the tty
-> and then proceeds to send a large number of breaks or parity errors
-> down the tty?
-
-The input path limits _all_ canonical lines to 4096 chars. Input beyond that
-is discarded until a newline is received. I know this because I broke it
-and just recently fixed it.
-
-> That will certainly cause a buffer overflow of said
-> userspace process.  So if there is *any* setuid program which isn't
-> defensively checking for buffer overruns it's kind of screwed anyway.
-> 
->>>> 4. ioctl(TIOCSIG) can send _any_ signal to a different process without
->>>>     permission checks. That's not good.
->>>
->>> It can only send to the pty slave. Permissions were already checked when the pty master was opened.
->>
->> Still not ok.
-> 
-> Interestingly, TIOCSIG is supported by FreeBSD *and* OpenBSD, and
-> without any kind of checks.  That being said, I can certainly think of
-> potential security threats that could happen if a malicious program
-> were to run a setuid program (say, /bin/passwd) under a pty, and then
-> proceeded to send it a one or more of non-trappable signals -- for
-> example, either SIGKILL or SIGSTOP -- to either widen the window for a
-> race condition, or to kill a setuid program at a particularly
-> inconvenient time.
-
-I hadn't considered that possibility.
-
-> It might be interesting to see if someone could figure out an attack
-> that utilized this ioctl, and then demonstrated it on OpenBSD.  :-)
-
-I don't need that reputation :)
-
->>> What further checks do you think are needed? You think it should
->>> be limited to tty-specific signals: INT, QUIT, CONT, TSTP, TTIN,
->>> TTOU, WINCH?
-> 
-> Definitely, and we should do this sooner rather than later IMHO.
-> Preferably before someone figures out whether or not it's possible to
-> attack OpenBSD and FreeBSD using this ioctl, and requests a CVE.  :-)
-
-I'm on it.
-
-Regards,
-Peter Hurley
+__tegra20_cpu1_resettable_status_offset has a lot of _ at the start. 
+Should the symbol be named more normally? I guess at least it's 
+consistent with the existing very "underscory" 
+__tegra_cpu_reset_handler_start.
