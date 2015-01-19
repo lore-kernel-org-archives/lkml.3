@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752148AbbASJnC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 04:43:02 -0500
-Received: from ip4-83-240-67-251.cust.nbox.cz ([83.240.67.251]:39212 "EHLO
-	ip4-83-240-18-248.cust.nbox.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751914AbbASJm6 (ORCPT
+	id S1752232AbbASJpc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 04:45:32 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:65439 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751726AbbASJpa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 04:42:58 -0500
-From: Jiri Slaby <jslaby@suse.cz>
-To: tiwai@suse.de
-Cc: linux-kernel@vger.kernel.org, Jiri Slaby <jslaby@suse.cz>,
-        Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org
-Subject: [PATCH 3/3] sound: dummy, avoid races with timer
-Date: Mon, 19 Jan 2015 10:42:56 +0100
-Message-Id: <1421660576-8435-3-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 2.2.1
-In-Reply-To: <1421660576-8435-1-git-send-email-jslaby@suse.cz>
-References: <1421660576-8435-1-git-send-email-jslaby@suse.cz>
+	Mon, 19 Jan 2015 04:45:30 -0500
+Date: Mon, 19 Jan 2015 09:45:25 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Roger Tseng <rogerable@realtek.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, driverdev-devel@linuxdriverproject.org,
+        wei_wang@realsil.com.cn, micky_ching@realsil.com.cn
+Subject: Re: [PATCH 1/2] mfd: rtsx_usb: Fix runtime PM deadlock
+Message-ID: <20150119094525.GK21886@x1>
+References: <1421306085-32254-1-git-send-email-rogerable@realtek.com>
+ <1421306085-32254-2-git-send-email-rogerable@realtek.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1421306085-32254-2-git-send-email-rogerable@realtek.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a race between timer and process contexts. Process context
-does not disable irqs, so when a timer ticks inside process' critical
-section, the system can deadlock. Fix this by a traditional _irqsave
-variant of spin_lock.
+On Thu, 15 Jan 2015, Roger Tseng wrote:
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Jaroslav Kysela <perex@perex.cz>
-Cc: Takashi Iwai <tiwai@suse.de>
-Cc: alsa-devel@alsa-project.org
----
- sound/drivers/dummy.c | 13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+> sd_set_power_mode() in derived module drivers/mmc/host/rtsx_usb_sdmmc.c
+> acquires dev_mutex and then calls pm_runtime_get_sync() to make sure the
+> device is awake while initializing a newly inserted card. Once it is
+> called during suspending state and explicitly before rtsx_usb_suspend()
+> acquires the same dev_mutex, both routine deadlock and further hang the
+> driver because pm_runtime_get_sync() waits the pending PM operations.
+> 
+> Fix this by using an empty suspend method. mmc_core always turns the
+> LED off after a request is done and thus it is ok to remove the only
+> rtsx_usb_turn_off_led() here.
+> 
+> Cc: <stable@vger.kernel.org> # v3.16+
+> Fixes: 730876be2566 ("mfd: Add realtek USB card reader driver")
+> Signed-off-by: Roger Tseng <rogerable@realtek.com>
+> ---
+>  drivers/mfd/rtsx_usb.c | 9 ---------
+>  1 file changed, 9 deletions(-)
 
-diff --git a/sound/drivers/dummy.c b/sound/drivers/dummy.c
-index 6d6bf4093583..18a7cfc99078 100644
---- a/sound/drivers/dummy.c
-+++ b/sound/drivers/dummy.c
-@@ -271,10 +271,13 @@ static void dummy_systimer_update(struct dummy_systimer_pcm *dpcm)
- static int dummy_systimer_start(struct snd_pcm_substream *substream)
- {
- 	struct dummy_systimer_pcm *dpcm = substream->runtime->private_data;
--	spin_lock(&dpcm->lock);
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&dpcm->lock, flags);
- 	dpcm->base_time = jiffies;
- 	dummy_systimer_rearm(dpcm);
--	spin_unlock(&dpcm->lock);
-+	spin_unlock_irqrestore(&dpcm->lock, flags);
-+
- 	return 0;
- }
- 
-@@ -322,12 +325,14 @@ static snd_pcm_uframes_t
- dummy_systimer_pointer(struct snd_pcm_substream *substream)
- {
- 	struct dummy_systimer_pcm *dpcm = substream->runtime->private_data;
-+	unsigned long flags;
- 	snd_pcm_uframes_t pos;
- 
--	spin_lock(&dpcm->lock);
-+	spin_lock_irqsave(&dpcm->lock, flags);
- 	dummy_systimer_update(dpcm);
- 	pos = dpcm->frac_pos / HZ;
--	spin_unlock(&dpcm->lock);
-+	spin_unlock_irqrestore(&dpcm->lock, flags);
-+
- 	return pos;
- }
- 
+Applied, thanks.
+
+> diff --git a/drivers/mfd/rtsx_usb.c b/drivers/mfd/rtsx_usb.c
+> index dbdd0faeb6ce..076694126e5d 100644
+> --- a/drivers/mfd/rtsx_usb.c
+> +++ b/drivers/mfd/rtsx_usb.c
+> @@ -687,15 +687,6 @@ static int rtsx_usb_suspend(struct usb_interface *intf, pm_message_t message)
+>  	dev_dbg(&intf->dev, "%s called with pm message 0x%04x\n",
+>  			__func__, message.event);
+>  
+> -	/*
+> -	 * Call to make sure LED is off during suspend to save more power.
+> -	 * It is NOT a permanent state and could be turned on anytime later.
+> -	 * Thus no need to call turn_on when resunming.
+> -	 */
+> -	mutex_lock(&ucr->dev_mutex);
+> -	rtsx_usb_turn_off_led(ucr);
+> -	mutex_unlock(&ucr->dev_mutex);
+> -
+>  	return 0;
+>  }
+>  
+
 -- 
-2.2.1
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
