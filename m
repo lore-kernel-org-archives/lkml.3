@@ -1,78 +1,276 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752232AbbASJpc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 04:45:32 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:65439 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751726AbbASJpa (ORCPT
+	id S1752184AbbASJp7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 04:45:59 -0500
+Received: from lb2-smtp-cloud2.xs4all.net ([194.109.24.25]:51602 "EHLO
+	lb2-smtp-cloud2.xs4all.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751963AbbASJp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 04:45:30 -0500
-Date: Mon, 19 Jan 2015 09:45:25 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Roger Tseng <rogerable@realtek.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, driverdev-devel@linuxdriverproject.org,
-        wei_wang@realsil.com.cn, micky_ching@realsil.com.cn
-Subject: Re: [PATCH 1/2] mfd: rtsx_usb: Fix runtime PM deadlock
-Message-ID: <20150119094525.GK21886@x1>
-References: <1421306085-32254-1-git-send-email-rogerable@realtek.com>
- <1421306085-32254-2-git-send-email-rogerable@realtek.com>
+	Mon, 19 Jan 2015 04:45:56 -0500
+Message-ID: <54BCD238.3010904@xs4all.nl>
+Date: Mon, 19 Jan 2015 10:45:28 +0100
+From: Hans Verkuil <hverkuil@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
 MIME-Version: 1.0
+To: Hao Liang <hliang1025@gmail.com>
+CC: scott.jiang.linux@gmail.com, mchehab@osg.samsung.com,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hao.Liang@analog.com, adi-buildroot-devel@lists.sourceforge.net,
+        Steven Miao <realmz6@gmail.com>
+Subject: Re: [PATCH] BLACKFIN MEDIA DRIVER: rewrite the blackfin style of
+ read/write into common style
+References: <1421218653-16165-1-git-send-email-hliang1025@gmail.com>	<54B8F752.3050600@xs4all.nl> <CAPig_tmCBeNQXqc+8-Sn+5h-Gq_XT8VBHmhtfy48eoAgm75bCw@mail.gmail.com>
+In-Reply-To: <CAPig_tmCBeNQXqc+8-Sn+5h-Gq_XT8VBHmhtfy48eoAgm75bCw@mail.gmail.com>
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1421306085-32254-2-git-send-email-rogerable@realtek.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Jan 2015, Roger Tseng wrote:
-
-> sd_set_power_mode() in derived module drivers/mmc/host/rtsx_usb_sdmmc.c
-> acquires dev_mutex and then calls pm_runtime_get_sync() to make sure the
-> device is awake while initializing a newly inserted card. Once it is
-> called during suspending state and explicitly before rtsx_usb_suspend()
-> acquires the same dev_mutex, both routine deadlock and further hang the
-> driver because pm_runtime_get_sync() waits the pending PM operations.
+On 01/19/2015 04:13 AM, Hao Liang wrote:
+> Hi Hans,
 > 
-> Fix this by using an empty suspend method. mmc_core always turns the
-> LED off after a request is done and thus it is ok to remove the only
-> rtsx_usb_turn_off_led() here.
+> Thank you for your reply.
+> This change comes largely from a non-blackfin architecture dsp processor of ADI want to reuse this driver.
+> And i have tested common read/write function on blackfin board to ensure usability and stability.
+
+Well, looking at arch/blackfin/include/asm/def_LPBlackfin.h it seems that for certain
+blackfin variants the bfin_read/write functions insert an extra nop, so unless you
+test on one of those variants you wouldn't see any problems relating to this change
+(and possibly not even then if this is a rare race condition).
+
+You will have to check this with the blackfin architecture maintainer, Steven Miao
+(added to the CC list). Without the OK of someone who actually understands that
+architecture and the 'ANOMALY_05000198' issues I am not going to merge this.
+
+If the bfin_read/write functions are really needed for the blackfin architecture,
+then you can always make ppi_read/write functions that check the architecture and use
+bfin_read/write if it is a blackfin and readw/writew otherwise.
+
+That should be safe.
+
+Regards,
+
+	Hans
+
 > 
-> Cc: <stable@vger.kernel.org> # v3.16+
-> Fixes: 730876be2566 ("mfd: Add realtek USB card reader driver")
-> Signed-off-by: Roger Tseng <rogerable@realtek.com>
-> ---
->  drivers/mfd/rtsx_usb.c | 9 ---------
->  1 file changed, 9 deletions(-)
+> BR
+> Hao
+> 
+> 2015-01-16 19:34 GMT+08:00 Hans Verkuil <hverkuil@xs4all.nl <mailto:hverkuil@xs4all.nl>>:
+> 
+>     Hi Hao,
+> 
+>     Why would you do this? read/writew() is AFAICT not the same as bfin_read/write16
+>     (defined in arch/blackfin/include/asm/def_LPBlackfin.h). And all other blackfin
+>     sources I've seen all use bfin_read/write.
+> 
+>     So unless there is a good reason for this change I am not going to accept this.
+> 
+>     Regards,
+> 
+>             Hans
+> 
+>     On 01/14/2015 07:57 AM, Hao Liang wrote:
+>     > Signed-off-by: Hao Liang <hliang1025@gmail.com <mailto:hliang1025@gmail.com>>
+>     > ---
+>     >  drivers/media/platform/blackfin/ppi.c |   72 ++++++++++++++++-----------------
+>     >  1 file changed, 35 insertions(+), 37 deletions(-)
+>     >
+>     > diff --git a/drivers/media/platform/blackfin/ppi.c b/drivers/media/platform/blackfin/ppi.c
+>     > index cff63e5..de4b5c7 100644
+>     > --- a/drivers/media/platform/blackfin/ppi.c
+>     > +++ b/drivers/media/platform/blackfin/ppi.c
+>     > @@ -20,6 +20,7 @@
+>     >  #include <linux/module.h>
+>     >  #include <linux/slab.h>
+>     >  #include <linux/platform_device.h>
+>     > +#include <linux/io.h>
+>     >
+>     >  #include <asm/bfin_ppi.h>
+>     >  #include <asm/blackfin.h>
+>     > @@ -59,10 +60,10 @@ static irqreturn_t ppi_irq_err(int irq, void *dev_id)
+>     >               /* register on bf561 is cleared when read
+>     >                * others are W1C
+>     >                */
+>     > -             status = bfin_read16(&reg->status);
+>     > +             status = readw(&reg->status);
+>     >               if (status & 0x3000)
+>     >                       ppi->err = true;
+>     > -             bfin_write16(&reg->status, 0xff00);
+>     > +             writew(0xff00, &reg->status);
+>     >               break;
+>     >       }
+>     >       case PPI_TYPE_EPPI:
+>     > @@ -70,10 +71,10 @@ static irqreturn_t ppi_irq_err(int irq, void *dev_id)
+>     >               struct bfin_eppi_regs *reg = info->base;
+>     >               unsigned short status;
+>     >
+>     > -             status = bfin_read16(&reg->status);
+>     > +             status = readw(&reg->status);
+>     >               if (status & 0x2)
+>     >                       ppi->err = true;
+>     > -             bfin_write16(&reg->status, 0xffff);
+>     > +             writew(0xffff, &reg->status);
+>     >               break;
+>     >       }
+>     >       case PPI_TYPE_EPPI3:
+>     > @@ -81,10 +82,10 @@ static irqreturn_t ppi_irq_err(int irq, void *dev_id)
+>     >               struct bfin_eppi3_regs *reg = info->base;
+>     >               unsigned long stat;
+>     >
+>     > -             stat = bfin_read32(&reg->stat);
+>     > +             stat = readl(&reg->stat);
+>     >               if (stat & 0x2)
+>     >                       ppi->err = true;
+>     > -             bfin_write32(&reg->stat, 0xc0ff);
+>     > +             writel(0xc0ff, &reg->stat);
+>     >               break;
+>     >       }
+>     >       default:
+>     > @@ -139,26 +140,25 @@ static int ppi_start(struct ppi_if *ppi)
+>     >       case PPI_TYPE_PPI:
+>     >       {
+>     >               struct bfin_ppi_regs *reg = info->base;
+>     > -             bfin_write16(&reg->control, ppi->ppi_control);
+>     > +             writew(ppi->ppi_control, &reg->control);
+>     >               break;
+>     >       }
+>     >       case PPI_TYPE_EPPI:
+>     >       {
+>     >               struct bfin_eppi_regs *reg = info->base;
+>     > -             bfin_write32(&reg->control, ppi->ppi_control);
+>     > +             writel(ppi->ppi_control, &reg->control);
+>     >               break;
+>     >       }
+>     >       case PPI_TYPE_EPPI3:
+>     >       {
+>     >               struct bfin_eppi3_regs *reg = info->base;
+>     > -             bfin_write32(&reg->ctl, ppi->ppi_control);
+>     > +             writel(ppi->ppi_control, &reg->ctl);
+>     >               break;
+>     >       }
+>     >       default:
+>     >               return -EINVAL;
+>     >       }
+>     >
+>     > -     SSYNC();
+>     >       return 0;
+>     >  }
+>     >
+>     > @@ -172,19 +172,19 @@ static int ppi_stop(struct ppi_if *ppi)
+>     >       case PPI_TYPE_PPI:
+>     >       {
+>     >               struct bfin_ppi_regs *reg = info->base;
+>     > -             bfin_write16(&reg->control, ppi->ppi_control);
+>     > +             writew(ppi->ppi_control, &reg->control);
+>     >               break;
+>     >       }
+>     >       case PPI_TYPE_EPPI:
+>     >       {
+>     >               struct bfin_eppi_regs *reg = info->base;
+>     > -             bfin_write32(&reg->control, ppi->ppi_control);
+>     > +             writel(ppi->ppi_control, &reg->control);
+>     >               break;
+>     >       }
+>     >       case PPI_TYPE_EPPI3:
+>     >       {
+>     >               struct bfin_eppi3_regs *reg = info->base;
+>     > -             bfin_write32(&reg->ctl, ppi->ppi_control);
+>     > +             writel(ppi->ppi_control, &reg->ctl);
+>     >               break;
+>     >       }
+>     >       default:
+>     > @@ -195,7 +195,6 @@ static int ppi_stop(struct ppi_if *ppi)
+>     >       clear_dma_irqstat(info->dma_ch);
+>     >       disable_dma(info->dma_ch);
+>     >
+>     > -     SSYNC();
+>     >       return 0;
+>     >  }
+>     >
+>     > @@ -242,9 +241,9 @@ static int ppi_set_params(struct ppi_if *ppi, struct ppi_params *params)
+>     >               if (params->ppi_control & DMA32)
+>     >                       dma32 = 1;
+>     >
+>     > -             bfin_write16(&reg->control, ppi->ppi_control);
+>     > -             bfin_write16(&reg->count, samples_per_line - 1);
+>     > -             bfin_write16(&reg->frame, params->frame);
+>     > +             writew(ppi->ppi_control, &reg->control);
+>     > +             writew(samples_per_line - 1, &reg->count);
+>     > +             writew(params->frame, &reg->frame);
+>     >               break;
+>     >       }
+>     >       case PPI_TYPE_EPPI:
+>     > @@ -255,13 +254,13 @@ static int ppi_set_params(struct ppi_if *ppi, struct ppi_params *params)
+>     >                       || (params->ppi_control & 0x38000) > DLEN_16)
+>     >                       dma32 = 1;
+>     >
+>     > -             bfin_write32(&reg->control, ppi->ppi_control);
+>     > -             bfin_write16(&reg->line, samples_per_line);
+>     > -             bfin_write16(&reg->frame, params->frame);
+>     > -             bfin_write16(&reg->hdelay, hdelay);
+>     > -             bfin_write16(&reg->vdelay, params->vdelay);
+>     > -             bfin_write16(&reg->hcount, hcount);
+>     > -             bfin_write16(&reg->vcount, params->height);
+>     > +             writel(ppi->ppi_control, &reg->control);
+>     > +             writew(samples_per_line, &reg->line);
+>     > +             writew(params->frame, &reg->frame);
+>     > +             writew(hdelay, &reg->hdelay);
+>     > +             writew(params->vdelay, &reg->vdelay);
+>     > +             writew(hcount, &reg->hcount);
+>     > +             writew(params->height, &reg->vcount);
+>     >               break;
+>     >       }
+>     >       case PPI_TYPE_EPPI3:
+>     > @@ -272,15 +271,15 @@ static int ppi_set_params(struct ppi_if *ppi, struct ppi_params *params)
+>     >                       || (params->ppi_control & 0x70000) > DLEN_16)
+>     >                       dma32 = 1;
+>     >
+>     > -             bfin_write32(&reg->ctl, ppi->ppi_control);
+>     > -             bfin_write32(&reg->line, samples_per_line);
+>     > -             bfin_write32(&reg->frame, params->frame);
+>     > -             bfin_write32(&reg->hdly, hdelay);
+>     > -             bfin_write32(&reg->vdly, params->vdelay);
+>     > -             bfin_write32(&reg->hcnt, hcount);
+>     > -             bfin_write32(&reg->vcnt, params->height);
+>     > +             writel(ppi->ppi_control, &reg->ctl);
+>     > +             writel(samples_per_line, &reg->line);
+>     > +             writel(params->frame, &reg->frame);
+>     > +             writel(hdelay, &reg->hdly);
+>     > +             writel(params->vdelay, &reg->vdly);
+>     > +             writel(hcount, &reg->hcnt);
+>     > +             writel(params->height, &reg->vcnt);
+>     >               if (params->int_mask)
+>     > -                     bfin_write32(&reg->imsk, params->int_mask & 0xFF);
+>     > +                     writel(params->int_mask & 0xFF, &reg->imsk);
+>     >               if (ppi->ppi_control & PORT_DIR) {
+>     >                       u32 hsync_width, vsync_width, vsync_period;
+>     >
+>     > @@ -288,10 +287,10 @@ static int ppi_set_params(struct ppi_if *ppi, struct ppi_params *params)
+>     >                                       * params->bpp / params->dlen;
+>     >                       vsync_width = params->vsync * samples_per_line;
+>     >                       vsync_period = samples_per_line * params->frame;
+>     > -                     bfin_write32(&reg->fs1_wlhb, hsync_width);
+>     > -                     bfin_write32(&reg->fs1_paspl, samples_per_line);
+>     > -                     bfin_write32(&reg->fs2_wlvb, vsync_width);
+>     > -                     bfin_write32(&reg->fs2_palpf, vsync_period);
+>     > +                     writel(hsync_width, &reg->fs1_wlhb);
+>     > +                     writel(samples_per_line, &reg->fs1_paspl);
+>     > +                     writel(vsync_width, &reg->fs2_wlvb);
+>     > +                     writel(vsync_period, &reg->fs2_palpf);
+>     >               }
+>     >               break;
+>     >       }
+>     > @@ -313,7 +312,6 @@ static int ppi_set_params(struct ppi_if *ppi, struct ppi_params *params)
+>     >       set_dma_y_count(info->dma_ch, params->height);
+>     >       set_dma_config(info->dma_ch, dma_config);
+>     >
+>     > -     SSYNC();
+>     >       return 0;
+>     >  }
+>     >
+>     >
+> 
+> 
 
-Applied, thanks.
-
-> diff --git a/drivers/mfd/rtsx_usb.c b/drivers/mfd/rtsx_usb.c
-> index dbdd0faeb6ce..076694126e5d 100644
-> --- a/drivers/mfd/rtsx_usb.c
-> +++ b/drivers/mfd/rtsx_usb.c
-> @@ -687,15 +687,6 @@ static int rtsx_usb_suspend(struct usb_interface *intf, pm_message_t message)
->  	dev_dbg(&intf->dev, "%s called with pm message 0x%04x\n",
->  			__func__, message.event);
->  
-> -	/*
-> -	 * Call to make sure LED is off during suspend to save more power.
-> -	 * It is NOT a permanent state and could be turned on anytime later.
-> -	 * Thus no need to call turn_on when resunming.
-> -	 */
-> -	mutex_lock(&ucr->dev_mutex);
-> -	rtsx_usb_turn_off_led(ucr);
-> -	mutex_unlock(&ucr->dev_mutex);
-> -
->  	return 0;
->  }
->  
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
