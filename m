@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752262AbbASPFS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 10:05:18 -0500
-Received: from sauhun.de ([89.238.76.85]:58337 "EHLO pokefinder.org"
+	id S1751871AbbASPHt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 10:07:49 -0500
+Received: from vps0.lunn.ch ([178.209.37.122]:57899 "EHLO vps0.lunn.ch"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751518AbbASPFR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 10:05:17 -0500
-Date: Mon, 19 Jan 2015 16:05:15 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Eddie Huang <eddie.huang@mediatek.com>
-Cc: linux-i2c@vger.kernel.org, linux-mips@linux-mips.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kernel@vger.kernel.org,
-        Ludovic Desroches <ludovic.desroches@atmel.com>,
-        Yingjoe Chen <yingjoe.chen@mediatek.com>,
-        linuxppc-dev@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC 01/11] i2c: add quirk structure to describe adapter flaws
-Message-ID: <20150119150514.GB3820@katana>
-References: <1420824103-24169-1-git-send-email-wsa@the-dreams.de>
- <1420824103-24169-2-git-send-email-wsa@the-dreams.de>
- <1421387408.9323.10.camel@mtksdaap41>
+	id S1751356AbbASPHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 10:07:47 -0500
+Date: Mon, 19 Jan 2015 16:05:26 +0100
+From: Andrew Lunn <andrew@lunn.ch>
+To: Tejun Heo <tj@kernel.org>
+Cc: Hans de Goede <hdegoede@redhat.com>,
+        Gregory CLEMENT <gregory.clement@free-electrons.com>,
+        linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Antoine =?iso-8859-1?Q?T=E9nart?= 
+	<antoine.tenart@free-electrons.com>,
+        Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        Thomas Petazzoni <thomas.petazzoni@free-electrons.com>,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Maxime Ripard <maxime.ripard@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Sebastian Hesselbarth <sebastian.hesselbarth@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, Lior Amsalem <alior@marvell.com>,
+        Tawfik Bayouk <tawfik@marvell.com>, Nadav Haklai <nadavh@marvell.com>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org
+Subject: Re: [PATCH v4 0/4] ata: libahci: Allow using a regulator for each
+ port
+Message-ID: <20150119150526.GB32663@lunn.ch>
+References: <1421330978-9694-1-git-send-email-gregory.clement@free-electrons.com>
+ <54B8C49A.9070302@redhat.com>
+ <20150119145413.GJ8140@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="LpQ9ahxlCli8rRTG"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1421387408.9323.10.camel@mtksdaap41>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20150119145413.GJ8140@htj.dyndns.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jan 19, 2015 at 09:54:13AM -0500, Tejun Heo wrote:
+> On Fri, Jan 16, 2015 at 08:58:18AM +0100, Hans de Goede wrote:
+> > Hi,
+> > 
+> > On 15-01-15 15:09, Gregory CLEMENT wrote:
+> > >The current implementation of the libahci allows using one PHY per
+> > >port but we still have one single regulator for the whole
+> > >controller. This series adds the support of multiple regulators.
+> > >
+> > >This is the forth version of the series.
+> > >
+> > >The improvement of this version is the use of
+> > >ahci_platform_put_resources to put the reference to the regulators.
+> > >
+> > >Thanks,
+> > >
+> > >Grégory
+> > 
+> > Thanks, patches 1 - 3 look good and are:
+> > 
+> > Acked-by: Hans de Goede <hdegoede@redhat.com>
+> > 
+> > Tejun, can you please queue up 1 - 3 ?
+> 
+> Applied 1-3 to libata/for-3.20.
 
---LpQ9ahxlCli8rRTG
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks
 
+I will add 4/4 to mvebu/dt.
 
-> > +	struct i2c_adapter_quirks *quirks;
-> >  };
-> >  #define to_i2c_adapter(d) container_of(d, struct i2c_adapter, dev)
-> > =20
->=20
-> I suggest to add const.
-> 	const struct i2c_adapter_quirks *quirks;
->=20
-> also, in i2c-core.c, should modify:
-> 	const struct i2c_adapter_quirks *q =3D adap->quirks;
-
-Thanks, I'll think about it.
-
-
---LpQ9ahxlCli8rRTG
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUvR0qAAoJEBQN5MwUoCm2kAQQAIn4NHdQ77C3iBtOkfdr7nta
-VM8Ft7w+0genCuj5Gkse3W92uzfmv6l50ffQH5vDEG+20b0dOTJI05peBler8+hK
-hFBE7V5lkx/ujwtuWUhn4wMcnWOXGLnIyTxm7MQCo146ORIp4Z3th5/jR0ACSe40
-vTAlbm3sAkZvArbjIeLfSiQY3MNhYjYx/0wPp2u9Tyi+TxHs27bj/bS0Q8Z8xgxA
-jMjhHZzFvplwoy8x76FglCx1ZPpgWajLgQQtcz/JXOwmXqlc+jTMbVcgbunEh6w3
-F5WYGEM6eUVT5dKvTLdBvaxrcbhGU56tXiX1z54J8A6ZyXipji28CT/8QG0xJt8p
-R1I20oHhwd+Fz9ZX0Y1KJthj+2ZkvoKiBTIVcNyJt0KnCQUU+DKslUQELsBn3dO+
-vD3r7kL/DHLVFtXLSWMASyzkB6ytANOBCmt5elHoKD10ZOZx9oBbMEUXkH/6MNEK
-IPJSdGevkCMsPnDiKcEISk+COYyzFHyPYIu4Gahl5SgpytIyCkWVRTCl4HBpW+e3
-Gc0u08W59eDmuzzOqfmYga+EPU6Wr3YIrhtAnagtmrhGP4332L3htI/kHSt2uylE
-3TP8XymlY/PcAWwWfbH+R0Wv5nBfUsCTtJgNa4KHhqdr3O0tLyKKf6MfjzSCtFN9
-dOAm/x3bZqagrE8Cq8Lf
-=PK3B
------END PGP SIGNATURE-----
-
---LpQ9ahxlCli8rRTG--
+  Andrew
