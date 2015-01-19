@@ -1,115 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751999AbbASQ2A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 11:28:00 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58578 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751336AbbASQ15 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 11:27:57 -0500
-Message-ID: <54BD308A.4080905@suse.cz>
-Date: Mon, 19 Jan 2015 17:27:54 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752115AbbASQ2V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 11:28:21 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:51513 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751772AbbASQ2S convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 11:28:18 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>,
-        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-CC: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3] mm/thp: Allocate transparent hugepages on local node
-References: <1421393196-20915-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20150116160204.544e2bcf9627f5a4043ebf8d@linux-foundation.org>
-In-Reply-To: <20150116160204.544e2bcf9627f5a4043ebf8d@linux-foundation.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+To: James Liao <jamesjj.liao@mediatek.com>,
+        "Matthias Brugger" <matthias.bgg@gmail.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <1420685701.27952.44.camel@mtksdaap41>
+Cc: "Rob Herring" <robh+dt@kernel.org>,
+        "srv_heupstream" <srv_heupstream@mediatek.com>,
+        "Sascha Hauer" <kernel@pengutronix.de>,
+        "huang eddie" <eddie.huang@mediatek.com>,
+        "HenryC Chen" <henryc.chen@mediatek.com>,
+        "Pawel Moll" <pawel.moll@arm.com>,
+        "Mark Rutland" <mark.rutland@arm.com>,
+        "Ian Campbell" <ijc+devicetree@hellion.org.uk>,
+        "Kumar Gala" <galak@codeaurora.org>,
+        "Russell King" <linux@arm.linux.org.uk>,
+        "Catalin Marinas" <catalin.marinas@arm.com>,
+        "Vladimir Murzin" <vladimir.murzin@arm.com>,
+        "Ashwin Chaugule" <ashwin.chaugule@linaro.org>,
+        "Joe.C" <yingjoe.chen@mediatek.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+References: <1420601123-25859-1-git-send-email-jamesjj.liao@mediatek.com>
+ <1420601123-25859-3-git-send-email-jamesjj.liao@mediatek.com>
+ <CABuKBeLQkTBYWkBWAYXjYudMAza+1zueRSqGFPd+480p1rYNwg@mail.gmail.com>
+ <1420685701.27952.44.camel@mtksdaap41>
+Message-ID: <20150119162808.22722.33140@quantum>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH v3 2/4] clk: mediatek: Add initial common clock support for
+ Mediatek SoCs.
+Date: Mon, 19 Jan 2015 08:28:08 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/17/2015 01:02 AM, Andrew Morton wrote:
-> On Fri, 16 Jan 2015 12:56:36 +0530 "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+Quoting James Liao (2015-01-07 18:55:01)
+> Hi Matthias,
 > 
->> This make sure that we try to allocate hugepages from local node if
->> allowed by mempolicy. If we can't, we fallback to small page allocation
->> based on mempolicy. This is based on the observation that allocating pages
->> on local node is more beneficial than allocating hugepages on remote node.
+> On Wed, 2015-01-07 at 18:22 +0100, Matthias Brugger wrote:
+> > 2015-01-07 4:25 GMT+01:00 James Liao <jamesjj.liao@mediatek.com>:
+> > > +
+> > > +static void cg_set_mask(struct mtk_clk_gate *cg, u32 mask)
+> > 
+> > Please add mtk_ prefix to all functions generic for the mediatek SoCs.
 > 
-> The changelog is a bit incomplete.  It doesn't describe the current
-> behaviour, nor what is wrong with it.  What are the before-and-after
-> effects of this change?
+> OK.
 > 
-> And what might be the user-visible effects?
+> > 
+> > > +       if (cg->flags & CLK_GATE_NO_SETCLR_REG) {
+> > 
+> > Is the CLK_GATE_NO_SETCLR_REG ever used?
+> > As far as I can see, in this patch set it is not.
 > 
->> --- a/mm/mempolicy.c
->> +++ b/mm/mempolicy.c
->> @@ -2030,6 +2030,46 @@ retry_cpuset:
->>  	return page;
->>  }
->>  
->> +struct page *alloc_hugepage_vma(gfp_t gfp, struct vm_area_struct *vma,
->> +				unsigned long addr, int order)
+> No, this flag is not used in this patch. I'll remove it or add clocks
+> which use this flag in next patch.
 > 
-> alloc_pages_vma() is nicely documented.  alloc_hugepage_vma() is not
-> documented at all.  This makes it a bit had for readers to work out the
-> difference!
+> > > +
+> > > +       if (cg->flags & CLK_GATE_INVERSE)
+> > > +               cg_set_mask(cg, mask);
+> > > +       else
+> > > +               cg_clr_mask(cg, mask);
+> > > +
+> > > +       mtk_clk_unlock(flags);
+> > > +
+> > > +       return 0;
+> > > +}
+> > 
+> > Actually we should use CLK_GATE_SET_TO_DISABLE instead of inventing a
+> > new bit, right?
 > 
-> Is it possible to scrunch them both into the same function?  Probably
-> too messy?
+> CLK_GATE_SET_TO_DISABLE is used by struct clk_gate, which is different
+> from struct mtk_clk_gate. Should we use the same constant in these 2
+> different implementation? If yes, how do we avoid bit conflict between
+> clk_gate and mtk_clk_gate if we both add more flags in the future?
 
-Hm that could work, alloc_pages_vma already has an if (MPOL_INTERLEAVE) part, so
-just put the THP specialities into an "else if (huge_page)" part there?
+I think that CLK_GATE_INVERSE is fine. This clock gate implementation is
+sufficiently different from the simple drivers/clk/clk-gate.c
+implementation (e.g. separate registers for setting bits, clearing bits
+and getting status).
 
-You could probably test for GFP_TRANSHUGE the same way as __alloc_pages_slowpath
-does. There might be false positives theoretically, but is there anything else
-that would use these flags and not be a THP?
+Regards,
+Mike
 
-
-
->> +{
->> +	struct page *page;
->> +	nodemask_t *nmask;
->> +	struct mempolicy *pol;
->> +	int node = numa_node_id();
->> +	unsigned int cpuset_mems_cookie;
->> +
->> +retry_cpuset:
->> +	pol = get_vma_policy(vma, addr);
->> +	cpuset_mems_cookie = read_mems_allowed_begin();
->> +
->> +	if (pol->mode != MPOL_INTERLEAVE) {
->> +		/*
->> +		 * For interleave policy, we don't worry about
->> +		 * current node. Otherwise if current node is
->> +		 * in nodemask, try to allocate hugepage from
->> +		 * current node. Don't fall back to other nodes
->> +		 * for THP.
->> +		 */
 > 
-> This code isn't "interleave policy".  It's everything *but* interleave
-> policy.  Comment makes no sense!
 > 
->> +		nmask = policy_nodemask(gfp, pol);
->> +		if (!nmask || node_isset(node, *nmask)) {
->> +			mpol_cond_put(pol);
->> +			page = alloc_pages_exact_node(node, gfp, order);
->> +			if (unlikely(!page &&
->> +				     read_mems_allowed_retry(cpuset_mems_cookie)))
->> +				goto retry_cpuset;
->> +			return page;
->> +		}
->> +	}
->> +	mpol_cond_put(pol);
->> +	/*
->> +	 * if current node is not part of node mask, try
->> +	 * the allocation from any node, and we can do retry
->> +	 * in that case.
->> +	 */
->> +	return alloc_pages_vma(gfp, order, vma, addr, node);
->> +}
+> > > +       pr_debug("%s(): %d, %s, bit[%d]\n",
+> > > +               __func__, r, __clk_get_name(hw->clk), (int)cg->bit);
+> > 
+> > Same here. Please review all debug messages.
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> OK, I'll remove them in next patch.
 > 
-
+> 
+> > > +
+> > > +#define CLK_DEBUG              0
+> > > +#define DUMMY_REG_TEST         0
+> > 
+> > This defines are not used, delete them.
+> 
+> OK.
+> 
+> > > +
+> > > +extern spinlock_t *get_mtk_clk_lock(void);
+> > > +
+> > > +#define mtk_clk_lock(flags)    spin_lock_irqsave(get_mtk_clk_lock(), flags)
+> > > +#define mtk_clk_unlock(flags)  \
+> > > +       spin_unlock_irqrestore(get_mtk_clk_lock(), flags)
+> > 
+> > Please use the spinlock directly without this akward defines.
+> 
+> Do you mean we should export clk_ops_lock (from clk-mtk.c) directly
+> instead of get_mtk_clk_lock()? Or simply remove mtk_clk_lock/unlock()?
+> 
+> 
+> Best regards,
+> 
+> James
+> 
+> 
+> 
