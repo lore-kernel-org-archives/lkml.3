@@ -1,76 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752447AbbASXig (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 18:38:36 -0500
-Received: from mail.sig21.net ([80.244.240.74]:40958 "EHLO mail.sig21.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752371AbbASXif (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 18:38:35 -0500
-Date: Tue, 20 Jan 2015 00:38:12 +0100
-From: Johannes Stezenbach <js@sig21.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: arnd@arndb.de, ebiederm@xmission.com, gnomes@lxorguk.ukuu.org.uk,
-        teg@jklm.no, jkosina@suse.cz, luto@amacapital.net,
-        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
-        daniel@zonque.org, dh.herrmann@gmail.com, tixxdz@opendz.org
-Subject: Re: [PATCH v3 00/13] Add kdbus implementation
-Message-ID: <20150119233812.GA1874@sig21.net>
-References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>
- <20150119180642.GA27957@sig21.net>
- <20150119183806.GA8479@kroah.com>
- <20150119201906.GA337@sig21.net>
- <20150119203155.GA15441@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150119203155.GA15441@kroah.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Spam-21-Score: -2.9 (--)
-X-Spam-21-Report: No, score=-2.9 required=8.0 tests=ALL_TRUSTED=-1,BAYES_00=-1.9 autolearn=ham
+	id S964968AbbA2EOp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 28 Jan 2015 23:14:45 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:42699 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754324AbbA2EOo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 28 Jan 2015 23:14:44 -0500
+X-AuditID: cbfee61a-f79c06d000004e71-92-54c9b3ac940d
+From: Ganesh Mahendran <opensource.ganesh@gmail.com>
+To: minchan@kernel.org, ngupta@vflare.org, sergey.senozhatsky.work@gmail.com
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Ganesh Mahendran <opensource.ganesh@gmail.com>,
+        Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Subject: [PATCH v2] zram: free meta table in zram_meta_free
+Date: Tue, 20 Jan 2015 07:43:47 +0800
+Message-id: <1421711028-5553-1-git-send-email-opensource.ganesh@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmphluLIzCtJLcpLzFFi42I5/e+xgO6azSdDDH49UbeYs34Nm8XlXXPY
+	LO6t+c9qsezre3aLDS2z2C1abz1msXg0YRKTxdrPj9kdODx2zrrL7rFpVSebx6ZPk9g9Tsz4
+	zeKx89NmVo/Pm+QC2KK4bFJSczLLUov07RK4Mua3dDAX/Baq6H0Q1MB4kr+LkZNDQsBEYtal
+	FYwQtpjEhXvr2boYuTiEBBYxSvSu3ckI4bQzSfw9tIQNpIoNqOPG6VZ2EFtEwEfi9Zlr7CBF
+	zALbGCUObVvAApIQFrCWeLi4C6yBRUBV4uLEBiCbg4NXwEtixgxuEFNCQEFiziSbCYzcCxgZ
+	VjGKphYkFxQnpeca6hUn5haX5qXrJefnbmIEh80zqR2MKxssDjEKcDAq8fBy1J8MEWJNLCuu
+	zD3EKMHBrCTCe70ZKMSbklhZlVqUH19UmpNafIhRmoNFSZxXyb4tREggPbEkNTs1tSC1CCbL
+	xMEp1cBoJSWfE/v86jrTt7KaNWYSbWaXF02r/ciX/d4leMfxv1U/Db+y+JbJWF3luOj9yG3N
+	NbEA7S9fZXPkjqw+6D1fY9EJuZZ2BoFnv2arTs+peqKzUNPp1Kk3js2/Nv0oVnow6+kGjQlS
+	K1iY1S+1GyxS+aTrUN18wXOiYYHX2v8qjhmJgtnu10KVWIozEg21mIuKEwFt3QZiFwIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 04:31:55AM +0800, Greg Kroah-Hartman wrote:
-> On Mon, Jan 19, 2015 at 09:19:06PM +0100, Johannes Stezenbach wrote:
-> > These two statements somehow contradict. From my admittedly very
-> > limited experience, I never used D-Bus because it did not
-> > fit my usage scenarios: I never needed a bus, only point-to-point
-> > links like pipes or sockets.
-> 
-> Great, then you don't need this, no need to worry about it at all, why
-> are we having this conversation? :)
+zram_meta_alloc() and zram_meta_free() are a pair.
+In zram_meta_alloc(), meta table is allocated. So it it better to free
+it in zram_meta_free().
 
-Well, for one because that's what I wanted to find out...
+Signed-off-by: Ganesh Mahendran <opensource.ganesh@gmail.com>
+Cc: Nitin Gupta <ngupta@vflare.org>
+Cc: Minchan Kim <minchan@kernel.org>
+Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+---
+v2: use zram->disksize to get num of pages - Sergey
+---
+ drivers/block/zram/zram_drv.c |   33 ++++++++++++++++-----------------
+ 1 file changed, 16 insertions(+), 17 deletions(-)
 
-> > Well, it made your intentions a bit clearer, but it does
-> > not help to sell kdbus to me, sorry ;-/
-> 
-> It's not my "goal" to sell kdbus to you, if you don't want it, great,
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index 9250b3f..aa5a4c5 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -307,8 +307,21 @@ static inline int valid_io_request(struct zram *zram,
+ 	return 1;
+ }
+ 
+-static void zram_meta_free(struct zram_meta *meta)
++static void zram_meta_free(struct zram_meta *meta, u64 disksize)
+ {
++	size_t num_pages = disksize >> PAGE_SHIFT;
++	size_t index;
++
++	/* Free all pages that are still in this zram device */
++	for (index = 0; index < num_pages; index++) {
++		unsigned long handle = meta->table[index].handle;
++
++		if (!handle)
++			continue;
++
++		zs_free(meta->mem_pool, handle);
++	}
++
+ 	zs_destroy_pool(meta->mem_pool);
+ 	vfree(meta->table);
+ 	kfree(meta);
+@@ -706,9 +719,6 @@ static void zram_bio_discard(struct zram *zram, u32 index,
+ 
+ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+ {
+-	size_t index;
+-	struct zram_meta *meta;
+-
+ 	down_write(&zram->init_lock);
+ 
+ 	zram->limit_pages = 0;
+@@ -718,20 +728,9 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+ 		return;
+ 	}
+ 
+-	meta = zram->meta;
+-	/* Free all pages that are still in this zram device */
+-	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
+-		unsigned long handle = meta->table[index].handle;
+-		if (!handle)
+-			continue;
+-
+-		zs_free(meta->mem_pool, handle);
+-	}
+-
+ 	zcomp_destroy(zram->comp);
+ 	zram->max_comp_streams = 1;
+-
+-	zram_meta_free(zram->meta);
++	zram_meta_free(zram->meta, zram->disksize);
+ 	zram->meta = NULL;
+ 	/* Reset stats */
+ 	memset(&zram->stats, 0, sizeof(zram->stats));
+@@ -803,7 +802,7 @@ out_destroy_comp:
+ 	up_write(&zram->init_lock);
+ 	zcomp_destroy(comp);
+ out_free_meta:
+-	zram_meta_free(meta);
++	zram_meta_free(meta, disksize);
+ 	return err;
+ }
+ 
+-- 
+1.7.9.5
 
-I used this language because I think you're not providing
-the facts that would allow me to judge for myself whether
-kdbus is a good idea.  Those automotive applications you
-were talking about, what was the OS they were ported from
-and what was the messaging API they used?
-
-> But odds are, you are using a system with D-Bus today, if not, then you
-> are using Linux in a very specific and limited manner, which is
-> wonderful, in that case this whole thread isn't really pertinent.
-> 
-> Lots of people do use D-Bus, and for those users, that is what this
-> patchset is for.
-
-As I said before, I'm seeing about a dozen D-Bus messages per minute,
-nothing that would justify adding kdbus to the kernel for
-performance reasons.  Wrt security I'm also not aware of any
-open issues with D-Bus.  Thus I doubt normal users of D-Bus
-would see any benefit from kdbus.  I also think none of the
-applications I can install from my distribution has any performance
-issue with D-Bus.
-
-And this is the point where I ask myself if I missed something.
-
-
-Thanks,
-Johannes
