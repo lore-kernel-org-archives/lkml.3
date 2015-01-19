@@ -1,126 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752157AbbASOkp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 09:40:45 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:36114 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752104AbbASOkk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 09:40:40 -0500
+	id S1752347AbbASOmF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 09:42:05 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:58072 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751543AbbASOmC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 09:42:02 -0500
+Date: Mon, 19 Jan 2015 12:41:00 -0200
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>, Paul Mackerras <paulus@samba.org>
+Cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Steven Rostedt <srostedt@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, kvm@vger.kernel.org,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [patch -rt 1/2] KVM: use simple waitqueue for vcpu->wq
+Message-ID: <20150119144100.GA10794@amt.cnet>
+References: <20150114171251.882318257@redhat.com>
+ <20150114171459.593877145@redhat.com>
+ <20150116114846.4e7b718d@gandalf.local.home>
 MIME-Version: 1.0
-In-Reply-To: <1419110952.2843.8.camel@spandruv-hsb-test>
-References: <1418923002-901-1-git-send-email-daniel.baluta@intel.com>
-	<5494A3D6.60607@gmx.de>
-	<CAEnQRZABxH5MuWEnS=RHmQqGUN0QhFTtXxnM1uyrLxvP2a-Rmg@mail.gmail.com>
-	<1419110796.2843.6.camel@spandruv-hsb-test>
-	<1419110952.2843.8.camel@spandruv-hsb-test>
-Date: Mon, 19 Jan 2015 16:40:38 +0200
-X-Google-Sender-Auth: ZeK6LDc3Cgp4dM9CNEGpU38i73Q
-Message-ID: <CAEnQRZC_SR_p2oYq9EpDDfBi2nCAAWvYmf0tR7V7WPZRZEp79g@mail.gmail.com>
-Subject: Re: [RFC PATCH] iio: ak8975: Make sure chipset is always initialized
-From: Daniel Baluta <daniel.baluta@intel.com>
-To: "Pandruvada, Srinivas" <srinivas.pandruvada@intel.com>
-Cc: "Baluta, Daniel" <daniel.baluta@intel.com>,
-        "lars@metafoo.de" <lars@metafoo.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "knaack.h@gmx.de" <knaack.h@gmx.de>,
-        "jic23@kernel.org" <jic23@kernel.org>,
-        "Purdila, Octavian" <octavian.purdila@intel.com>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "Westerberg, Mika" <mika.westerberg@intel.com>,
-        "pmeerw@pmeerw.net" <pmeerw@pmeerw.net>,
-        "beomho.seo@samsung.com" <beomho.seo@samsung.com>,
-        "gwendal@chromium.org" <gwendal@chromium.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150116114846.4e7b718d@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Jan 16, 2015 at 11:48:46AM -0500, Steven Rostedt wrote:
+> > @@ -971,8 +971,8 @@
+> >  	kvm_mips_callbacks->queue_timer_int(vcpu);
+> >  
+> >  	vcpu->arch.wait = 0;
+> > -	if (waitqueue_active(&vcpu->wq)) {
+> > -		wake_up_interruptible(&vcpu->wq);
+> > +	if (swaitqueue_active(&vcpu->wq)) {
+> > +		swait_wake_nterruptible(&vcpu->wq);
+> 
+> Sure you compiled this patch?
 
-On Sat, Dec 20, 2014 at 11:29 PM, Pandruvada, Srinivas
-<srinivas.pandruvada@intel.com> wrote:
-> +Mika
->
-> On Sat, 2014-12-20 at 13:26 -0800, Srinivas Pandruvada wrote:
->> On Sat, 2014-12-20 at 00:25 +0200, Daniel Baluta wrote:
->> > On Sat, Dec 20, 2014 at 12:16 AM, Hartmut Knaack <knaack.h@gmx.de> wrote:
->> > > Daniel Baluta schrieb am 18.12.2014 um 18:16:
->> > >> When using ACPI, if acpi_match_device fails then chipset enum will be
->> > >> uninitialized and &ak_def_array[chipset] will point to some bad address.
->> > >>
->> I am missing something. You are enumerated over i2c device, which was
->> created from ACPI PNP resource. There is a valid handle or and the
->> device has an ACPI companion at the least. If this failing, I have to
->> check the code for acpi i2c.
->> Can you check why this check failed? We may have bug in i2c handling.
+Only x86.
 
-You are right about this. Under normal circumstances, if probe is called
-then acpi_match_device will not fail. I even tried to remove the
-device after probe
-but before acpi_match_device, anyhow acpi_match_device was still successful :)
+> > Index: linux-stable-rt/arch/powerpc/include/asm/kvm_host.h
+> > ===================================================================
+> > --- linux-stable-rt.orig/arch/powerpc/include/asm/kvm_host.h	2014-11-25 14:13:39.193899944 -0200
+> > +++ linux-stable-rt/arch/powerpc/include/asm/kvm_host.h	2014-11-25 14:14:38.621810091 -0200
+> > @@ -295,7 +295,7 @@
+> >  	u8 in_guest;
+> >  	struct list_head runnable_threads;
+> >  	spinlock_t lock;
+> > -	wait_queue_head_t wq;
+> > +	struct swait_head wq;
+> >  	u64 stolen_tb;
+> >  	u64 preempt_tb;
+> >  	struct kvm_vcpu *runner;
+> > @@ -612,7 +612,7 @@
+> >  	u8 prodded;
+> >  	u32 last_inst;
+> >  
+> > -	wait_queue_head_t *wqp;
+> > +	struct swait_head *wqp;
+> >  	struct kvmppc_vcore *vcore;
+> >  	int ret;
+> >  	int trap;
+> > Index: linux-stable-rt/arch/powerpc/kvm/book3s_hv.c
+> > ===================================================================
+> > --- linux-stable-rt.orig/arch/powerpc/kvm/book3s_hv.c	2014-11-25 14:13:39.195899942 -0200
+> > +++ linux-stable-rt/arch/powerpc/kvm/book3s_hv.c	2014-11-25 14:14:38.625810085 -0200
+> > @@ -74,11 +74,11 @@
+> >  {
+> >  	int me;
+> >  	int cpu = vcpu->cpu;
+> > -	wait_queue_head_t *wqp;
+> > +	struct swait_head *wqp;
+> >  
+> >  	wqp = kvm_arch_vcpu_wq(vcpu);
+> > -	if (waitqueue_active(wqp)) {
+> > -		wake_up_interruptible(wqp);
+> > +	if (swaitqueue_active(wqp)) {
+> > +		swait_wake_interruptible(wqp);
+> >  		++vcpu->stat.halt_wakeup;
+> >  	}
+> >  
+> > @@ -583,8 +583,8 @@
+> >  		tvcpu->arch.prodded = 1;
+> >  		smp_mb();
+> >  		if (vcpu->arch.ceded) {
+> > -			if (waitqueue_active(&vcpu->wq)) {
+> > -				wake_up_interruptible(&vcpu->wq);
+> > +			if (swaitqueue_active(&vcpu->wq)) {
+> > +				swait_wake_interruptible(&vcpu->wq);
+> >  				vcpu->stat.halt_wakeup++;
+> >  			}
+> >  		}
+> > @@ -1199,7 +1199,7 @@
+> >  		if (vcore) {
+> >  			INIT_LIST_HEAD(&vcore->runnable_threads);
+> >  			spin_lock_init(&vcore->lock);
+> > -			init_waitqueue_head(&vcore->wq);
+> > +			init_swait_head(&vcore->wq);
+> >  			vcore->preempt_tb = TB_NIL;
+> >  			vcore->lpcr = kvm->arch.lpcr;
+> >  			vcore->first_vcpuid = core * threads_per_core;
+> > @@ -1566,13 +1566,13 @@
+> >   */
+> >  static void kvmppc_vcore_blocked(struct kvmppc_vcore *vc)
+> >  {
+> > -	DEFINE_WAIT(wait);
+> > +	DEFINE_SWAITER(wait);
+> >  
+> > -	prepare_to_wait(&vc->wq, &wait, TASK_INTERRUPTIBLE);
+> > +	swait_prepare(&vc->wq, &wait, TASK_INTERRUPTIBLE);
+> >  	vc->vcore_state = VCORE_SLEEPING;
+> >  	spin_unlock(&vc->lock);
+> >  	schedule();
+> > -	finish_wait(&vc->wq, &wait);
+> > +	swait_finish(&vc->wq, &wait);
+> >  	spin_lock(&vc->lock);
+> >  	vc->vcore_state = VCORE_INACTIVE;
+> >  }
+> > @@ -1613,7 +1613,7 @@
+> >  			kvmppc_create_dtl_entry(vcpu, vc);
+> >  			kvmppc_start_thread(vcpu);
+> >  		} else if (vc->vcore_state == VCORE_SLEEPING) {
+> > -			wake_up(&vc->wq);
+> > +			swait_wake(&vc->wq);
+> 
+> I notice everywhere you have a swait_wake_interruptible() but here. Is
+> there a reason why?
+> 
+> IIRC, Peter wants to make swait wakeup usage homogenous. That is, you
+> either sleep in an interruptible state, or you don't. You can't mix and
+> match it.
 
-This is more a matter of code correctness.
+IIUC there is only one waiter on this waitqueue at any given time.
 
-In ak8975_match_acpi_device we have:
+Paul is that correct?
 
-»       const struct acpi_device_id *id;
-
-»       id = acpi_match_device(dev->driver->acpi_match_table, dev);
-»       if (!id)
-»       »       return NULL;
-»       *chipset = (int)id->driver_data;
-
-Compiler complains on the fact that chipset might be uninitialized
-if this returns NULL, and we shouldn't ignore this warning even this case
-will never happen.
-
-We could use some code injection techniques to force acpi_match_device
-to return NULL tough.
-
->> > >> This fixes the following compilation warning:
->> > >>
->> > >> drivers/iio/magnetometer/ak8975.c: In function ‘ak8975_probe’:
->> > >> drivers/iio/magnetometer/ak8975.c:788:14: warning: ‘chipset’ may be used
->> > >> uninitialized in this function [-Wmaybe-uninitialized]
->> > >>   data->def =ak_def_array[chipset];
->> > >>
->> > >> Reported-by: Octavian Purdila <octavian.purdila@intel.com>
->> > >> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
->> > >> ---
->> > >> This is a RFC because while I'm pretty sure that chipset should be initialized
->> > >> with AK_MAX_TYPE in ak8975_match_acpi_device, I am not sure if we can live with
->> > >> a NULL return value of ak8975_match_acpi_device. Current implementation ignores
->> > >> return value of ak8975_match_acpi_device.
->> > > This seems to be the actual problem: these _match_acpi_device functions return
->> > > NULL on failure, and this should be checked for.
->> >
->> > Ok, so this would acceptable?
->> >
->> > diff --git a/drivers/iio/magnetometer/ak8975.c
->> > b/drivers/iio/magnetometer/ak8975.c
->> > index 0d10a4b..68d99e9 100644
->> > --- a/drivers/iio/magnetometer/ak8975.c
->> > +++ b/drivers/iio/magnetometer/ak8975.c
->> > @@ -776,8 +776,9 @@ static int ak8975_probe(struct i2c_client *client,
->> >                 name = id->name;
->> >         } else if (ACPI_HANDLE(&client->dev))
->> >                 name = ak8975_match_acpi_device(&client->dev, &chipset);
->> > -       else
->> > -               return -ENOSYS;
->> > +
->> > +       if (!name)
->> > +               return -ENODEV;
->> >
->> >
->> > I still have some doubts about return code in case of error.
->> >
->> > For ak8975 we use -ENOSYS, but for kxcjk-1013 we use -ENODEV.
->> >
->> > I will send a patch after we clear this out.
->> >
->> > thanks,
->> > Daniel.
->>
->
