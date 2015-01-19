@@ -1,98 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751704AbbASGPu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 01:15:50 -0500
-Received: from lgeamrelo02.lge.com ([156.147.1.126]:41248 "EHLO
-	lgeamrelo02.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750733AbbASGPt (ORCPT
+	id S1751925AbbASGTJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 01:19:09 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:36564 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750733AbbASGTH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 01:15:49 -0500
-X-Original-SENDERIP: 10.177.222.153
-X-Original-MAILFROM: iamjoonsoo.kim@lge.com
-Date: Mon, 19 Jan 2015 15:16:38 +0900
-From: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Jesper Dangaard Brouer <brouer@redhat.com>, rostedt@goodmis.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH v2 2/2] mm: don't use compound_head() in
- virt_to_head_page()
-Message-ID: <20150119061637.GB11473@js1304-P5Q-DELUXE>
-References: <1421307633-24045-1-git-send-email-iamjoonsoo.kim@lge.com>
- <1421307633-24045-2-git-send-email-iamjoonsoo.kim@lge.com>
- <20150115171646.8fec31e2.akpm@linux-foundation.org>
+	Mon, 19 Jan 2015 01:19:07 -0500
+Message-ID: <54BCA187.6070601@huawei.com>
+Date: Mon, 19 Jan 2015 14:17:43 +0800
+From: "long.wanglong" <long.wanglong@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150115171646.8fec31e2.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: <hannes@cmpxchg.org>, <shijie8@gmail.com>, <torvalds@linux-foundation.org>,
+        <mhocko@suse.cz>, <azurit@pobox.sk>, <hugh.dickins@tiscali.co.uk>,
+        <rientjes@google.com>, <kosaki.motohiro@jp.fujitsu.com>,
+        <long.wanglong@huawei.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        <peifeiyue@huawei.com>
+Subject: does the semantics of MAP_LOCKED is equal to mlock() function?
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.88.174]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020204.54BCA197.012E,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: c1e34c65e234c7713651f751674d5ff4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 15, 2015 at 05:16:46PM -0800, Andrew Morton wrote:
-> On Thu, 15 Jan 2015 16:40:33 +0900 Joonsoo Kim <iamjoonsoo.kim@lge.com> wrote:
-> 
-> > compound_head() is implemented with assumption that there would be
-> > race condition when checking tail flag. This assumption is only true
-> > when we try to access arbitrary positioned struct page.
-> > 
-> > The situation that virt_to_head_page() is called is different case.
-> > We call virt_to_head_page() only in the range of allocated pages,
-> > so there is no race condition on tail flag. In this case, we don't
-> > need to handle race condition and we can reduce overhead slightly.
-> > This patch implements compound_head_fast() which is similar with
-> > compound_head() except tail flag race handling. And then,
-> > virt_to_head_page() uses this optimized function to improve performance.
-> > 
-> > I saw 1.8% win in a fast-path loop over kmem_cache_alloc/free,
-> > (14.063 ns -> 13.810 ns) if target object is on tail page.
-> >
-> > ...
-> >
-> > --- a/include/linux/mm.h
-> > +++ b/include/linux/mm.h
-> > @@ -453,6 +453,13 @@ static inline struct page *compound_head(struct page *page)
-> >  	return page;
-> >  }
-> >  
-> > +static inline struct page *compound_head_fast(struct page *page)
-> > +{
-> > +	if (unlikely(PageTail(page)))
-> > +		return page->first_page;
-> > +	return page;
-> > +}
-> 
-> Can we please have some code comments which let people know when they
-> should and shouldn't use compound_head_fast()?  I shouldn't have to say
-> this :(
+Hi all:
 
-Okay.
-> 
-> >  /*
-> >   * The atomic page->_mapcount, starts from -1: so that transitions
-> >   * both from it and to it can be tracked, using atomic_inc_and_test
-> > @@ -531,7 +538,8 @@ static inline void get_page(struct page *page)
-> >  static inline struct page *virt_to_head_page(const void *x)
-> >  {
-> >  	struct page *page = virt_to_page(x);
-> > -	return compound_head(page);
-> > +
-> > +	return compound_head_fast(page);
-> 
-> And perhaps some explanation here as to why virt_to_head_page() can
-> safely use compound_head_fast().  There's an assumption here that
-> nobody will be dismantling the compound page while virt_to_head_page()
-> is in progress, yes?  And this assumption also holds for the calling
-> code, because otherwise the virt_to_head_page() return value is kinda
-> meaningless.
-> 
-> This is tricky stuff - let's spell it out carefully.
+In the latest kernel, i set the memory limit (4096) in a test cgroup. and add the test task.
+the test code code is:
 
-Okay.
+testcase 1: mmap with MAP_LOCKED flag(memsize = 8192)
 
-I already sent v3 and it would have proper code comments.
+185                 p = mmap(NULL, memsize, PROT_WRITE | PROT_READ,
+186                          MAP_PRIVATE | MAP_ANONYMOUS | MAP_LOCKED, 0, 0);
+187                 if (p == MAP_FAILED)
+188                         err(1, "mmap(lock) failed");
+					
+expect: invoke OOM killer.
+result: not invoke OOM killer.
 
-Thanks.
+
+testcase 2: mmap without MAP_LOCKED flag and the call mlock (memsize = 8192)
+
+185                 p = mmap(NULL, memsize, PROT_WRITE | PROT_READ,
+186                          MAP_PRIVATE | MAP_ANONYMOUS, 0, 0);
+187                 if (p == MAP_FAILED)
+188                         err(1, "mmap(lock) failed");
+189
+190                 if (mlock(p, memsize) == -1)
+191                         err(1, "mlock failed")
+
+expect: invoke OOM killer.
+result: invoke OOM killer.
+
+in the Linux Programmer's Manual:
+
+MAP_LOCKED (since Linux 2.5.37)
+		Lock the pages of the mapped region into memory in the manner
+		of mlock(2).  This flag is ignored in older kernels.
+	
+and
+       mlock() locks pages in the address range starting at addr and
+       continuing for len bytes.  All pages that contain a part of the
+       specified address range are guaranteed to be resident in RAM when the
+       call returns successfully; the pages are guaranteed to stay in RAM
+       until later unlocked.
+	
+According to the description in the manual, the two testcases are equivalent.
+
+why the first testcase does not invoke OOM killer?
+does the mmap with MAP_LOCKED flag will not immediately allocate physical memory?
+
+
+Best Regards
+Wang Long
+
