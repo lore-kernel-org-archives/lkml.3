@@ -1,133 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751791AbbASTfq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 14:35:46 -0500
-Received: from e06smtp17.uk.ibm.com ([195.75.94.113]:43381 "EHLO
-	e06smtp17.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751267AbbASTfo (ORCPT
+	id S1752360AbbASTmO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 14:42:14 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:40997 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751844AbbASTmL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 14:35:44 -0500
-Message-ID: <54BD5C89.1000205@de.ibm.com>
-Date: Mon, 19 Jan 2015 20:35:37 +0100
-From: Christian Borntraeger <borntraeger@de.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Mon, 19 Jan 2015 14:42:11 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19X2LTnQJ1N2/8d2TIqH6pp
+Date: Mon, 19 Jan 2015 11:38:42 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Roger Quadros <rogerq@ti.com>
+Cc: balbi@ti.com, myungjoo.ham@samsung.com, cw00.choi@samsung.com,
+        george.cherian@ti.com, nsekhar@ti.com, devicetree@vger.kernel.org,
+        linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/5] ARM: omap2plus_defconfig: Enable PCF857X and
+ EXTCON_GPIO_USB
+Message-ID: <20150119193841.GD18552@atomide.com>
+References: <1421689942-10201-1-git-send-email-rogerq@ti.com>
+ <1421689942-10201-6-git-send-email-rogerq@ti.com>
+ <20150119184546.GA18552@atomide.com>
 MIME-Version: 1.0
-To: kbuild test robot <fengguang.wu@intel.com>
-CC: kbuild-all@01.org, Paolo Bonzini <pbonzini@redhat.com>,
-        Gleb Natapov <gleb@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [kvm:master 1/1] arch/x86/kvm/../../../virt/kvm/kvm_main.c:2062:25:
- sparse: incorrect type in assignment (different address spaces)
-References: <201501192223.rdrTzdYB%fengguang.wu@intel.com>
-In-Reply-To: <201501192223.rdrTzdYB%fengguang.wu@intel.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15011919-0029-0000-0000-000002DE6F93
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150119184546.GA18552@atomide.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 19.01.2015 um 15:33 schrieb kbuild test robot:
-> tree:   git://git.kernel.org/pub/scm/virt/kvm/kvm.git master
-> head:   cdef511985374dd042a40bb32c1c346c2662c9dc
-> commit: cdef511985374dd042a40bb32c1c346c2662c9dc [1/1] KVM: fix sparse warning in include/trace/events/kvm.h
-> reproduce:
->   # apt-get install sparse
->   git checkout cdef511985374dd042a40bb32c1c346c2662c9dc
->   make ARCH=x86_64 allmodconfig
->   make C=1 CF=-D__CHECK_ENDIAN__
+* Tony Lindgren <tony@atomide.com> [150119 10:52]:
+> * Roger Quadros <rogerq@ti.com> [150119 09:55]:
+> > Both are needed for USB cable type detection on dra7-evm.
+> > 
+> > Signed-off-by: Roger Quadros <rogerq@ti.com>
+> > ---
+> >  arch/arm/configs/omap2plus_defconfig | 2 ++
+> >  1 file changed, 2 insertions(+)
+> > 
+> > diff --git a/arch/arm/configs/omap2plus_defconfig b/arch/arm/configs/omap2plus_defconfig
+> > index c2c3a85..bc23b90 100644
+> > --- a/arch/arm/configs/omap2plus_defconfig
+> > +++ b/arch/arm/configs/omap2plus_defconfig
+> > @@ -203,6 +203,7 @@ CONFIG_SPI_OMAP24XX=y
+> >  CONFIG_PINCTRL_SINGLE=y
+> >  CONFIG_DEBUG_GPIO=y
+> >  CONFIG_GPIO_SYSFS=y
+> > +CONFIG_GPIO_PCF857X=y
+> >  CONFIG_GPIO_TWL4030=y
+> >  CONFIG_W1=y
+> >  CONFIG_BATTERY_BQ27x00=m
 > 
+> Looks like I have this too but as a loadable module :) So I'll keep
+> that one.
 > 
-> sparse warnings: (new ones prefixed by >>)
+> > @@ -326,6 +327,7 @@ CONFIG_DMADEVICES=y
+> >  CONFIG_TI_EDMA=y
+> >  CONFIG_DMA_OMAP=y
+> >  CONFIG_EXTCON=y
+> > +CONFIG_EXTCON_GPIO_USB=y
+> >  CONFIG_EXTCON_PALMAS=y
+> >  CONFIG_PWM=y
+> >  CONFIG_PWM_TIECAP=y
+> 
+> I'll apply this part into omap-for-v3.20/defconfig but make it into =m
+> instead of =y.
 
-FWIW,
+Oh but this depends on the driver being added, so not applying.
+Can you please repost a patch adding CONFIG_EXTCON_GPIO_USB=m
+once the driver is merged?
 
-looks like my previous fix re-enabled sparse for that code. It bailed out previously due to the 
-".include/trace/events/kvm.h:163:1: error: directive in argument list
-include/trace/events/kvm.h:167:1: error: directive in argument list
-include/trace/events/kvm.h:169:1: error: directive in argument list"
-errors.
+Regards,
 
-Since that was fixed with commit: cdef511985374dd042a40bb32c1c346c2662c9dc [1/1] KVM: fix sparse warning in include/trace/events/kvm.h, we now we have more sparse errors than before and still its an improvement :-)
-
-Christian
-
-> 
->>> arch/x86/kvm/../../../virt/kvm/kvm_main.c:2062:25: sparse: incorrect type in assignment (different address spaces)
->    arch/x86/kvm/../../../virt/kvm/kvm_main.c:2062:25:    expected struct pid *volatile <noident>
->    arch/x86/kvm/../../../virt/kvm/kvm_main.c:2062:25:    got struct pid [noderef] <asn:4>*<noident>
->>> arch/x86/kvm/../../../virt/kvm/kvm_main.c:741:9: sparse: incorrect type in assignment (different address spaces)
->    arch/x86/kvm/../../../virt/kvm/kvm_main.c:741:9:    expected struct kvm_memslots *volatile <noident>
->    arch/x86/kvm/../../../virt/kvm/kvm_main.c:741:9:    got struct kvm_memslots [noderef] <asn:4>*<noident>
->    include/linux/kvm_host.h:482:16: sparse: incompatible types in comparison expression (different address spaces)
->    include/linux/kvm_host.h:482:16: sparse: incompatible types in comparison expression (different address spaces)
->    include/linux/kvm_host.h:482:16: sparse: incompatible types in comparison expression (different address spaces)
->    include/linux/kvm_host.h:482:16: sparse: incompatible types in comparison expression (different address spaces)
->    arch/x86/kvm/../../../virt/kvm/kvm_main.c:1790:15: sparse: incompatible types in comparison expression (different address spaces)
->    arch/x86/kvm/../../../virt/kvm/kvm_main.c:2957:15: sparse: incompatible types in comparison expression (different address spaces)
->    arch/x86/kvm/../../../virt/kvm/kvm_main.c:2974:15: sparse: incompatible types in comparison expression (different address spaces)
->    arch/x86/kvm/../../../virt/kvm/kvm_main.c:3024:15: sparse: incompatible types in comparison expression (different address spaces)
-> --
->>> arch/x86/kvm/../../../virt/kvm/irqchip.c:125:18: sparse: incorrect type in argument 1 (different address spaces)
->    arch/x86/kvm/../../../virt/kvm/irqchip.c:125:18:    expected void const *<noident>
->    arch/x86/kvm/../../../virt/kvm/irqchip.c:125:18:    got struct kvm_irq_routing_table [noderef] <asn:4>*irq_routing
->>> arch/x86/kvm/../../../virt/kvm/irqchip.c:201:13: sparse: incorrect type in assignment (different address spaces)
->    arch/x86/kvm/../../../virt/kvm/irqchip.c:201:13:    expected struct kvm_irq_routing_table *old
->    arch/x86/kvm/../../../virt/kvm/irqchip.c:201:13:    got struct kvm_irq_routing_table [noderef] <asn:4>*irq_routing
-> --
->>> arch/x86/kvm/x86.c:495:5: sparse: symbol 'kvm_read_nested_guest_page' was not declared. Should it be static?
->>> arch/x86/kvm/x86.c:646:5: sparse: symbol '__kvm_set_xcr' was not declared. Should it be static?
->>> arch/x86/kvm/x86.c:1183:15: sparse: symbol 'max_tsc_khz' was not declared. Should it be static?
->>> arch/x86/kvm/x86.c:1237:6: sparse: symbol 'kvm_track_tsc_matching' was not declared. Should it be static?
->>> arch/x86/kvm/x86.c:1898:38: sparse: incorrect type in argument 1 (different address spaces)
->    arch/x86/kvm/x86.c:1898:38:    expected void const [noderef] <asn:1>*<noident>
->    arch/x86/kvm/x86.c:1898:38:    got unsigned char [usertype] *
->    include/linux/kvm_host.h:482:16: sparse: incompatible types in comparison expression (different address spaces)
->    include/linux/kvm_host.h:482:16: sparse: incompatible types in comparison expression (different address spaces)
->    arch/x86/kvm/x86.c:7431:15: sparse: incompatible types in comparison expression (different address spaces)
-> 
-> Please review and possibly fold the followup patch.
-> 
-> vim +2062 arch/x86/kvm/../../../virt/kvm/kvm_main.c
-> 
-> 2122ff5e virt/kvm/kvm_main.c    Avi Kivity            2010-05-13  2046  		return kvm_arch_vcpu_ioctl(filp, ioctl, arg);
-> 2122ff5e virt/kvm/kvm_main.c    Avi Kivity            2010-05-13  2047  #endif
-> 2122ff5e virt/kvm/kvm_main.c    Avi Kivity            2010-05-13  2048  
-> 2122ff5e virt/kvm/kvm_main.c    Avi Kivity            2010-05-13  2049  
-> 9fc77441 virt/kvm/kvm_main.c    Michael S. Tsirkin    2012-09-16  2050  	r = vcpu_load(vcpu);
-> 9fc77441 virt/kvm/kvm_main.c    Michael S. Tsirkin    2012-09-16  2051  	if (r)
-> 9fc77441 virt/kvm/kvm_main.c    Michael S. Tsirkin    2012-09-16  2052  		return r;
-> 6aa8b732 drivers/kvm/kvm_main.c Avi Kivity            2006-12-10  2053  	switch (ioctl) {
-> 9a2bb7f4 drivers/kvm/kvm_main.c Avi Kivity            2007-02-22  2054  	case KVM_RUN:
-> f0fe5108 drivers/kvm/kvm_main.c Avi Kivity            2007-03-07  2055  		r = -EINVAL;
-> f0fe5108 drivers/kvm/kvm_main.c Avi Kivity            2007-03-07  2056  		if (arg)
-> f0fe5108 drivers/kvm/kvm_main.c Avi Kivity            2007-03-07  2057  			goto out;
-> 7a72f7a1 virt/kvm/kvm_main.c    Christian Borntraeger 2014-08-05  2058  		if (unlikely(vcpu->pid != current->pids[PIDTYPE_PID].pid)) {
-> 7a72f7a1 virt/kvm/kvm_main.c    Christian Borntraeger 2014-08-05  2059  			/* The thread running this VCPU changed. */
-> 7a72f7a1 virt/kvm/kvm_main.c    Christian Borntraeger 2014-08-05  2060  			struct pid *oldpid = vcpu->pid;
-> 7a72f7a1 virt/kvm/kvm_main.c    Christian Borntraeger 2014-08-05  2061  			struct pid *newpid = get_task_pid(current, PIDTYPE_PID);
-> 7a72f7a1 virt/kvm/kvm_main.c    Christian Borntraeger 2014-08-05 @2062  			rcu_assign_pointer(vcpu->pid, newpid);
-> 7a72f7a1 virt/kvm/kvm_main.c    Christian Borntraeger 2014-08-05  2063  			if (oldpid)
-> 7a72f7a1 virt/kvm/kvm_main.c    Christian Borntraeger 2014-08-05  2064  				synchronize_rcu();
-> 7a72f7a1 virt/kvm/kvm_main.c    Christian Borntraeger 2014-08-05  2065  			put_pid(oldpid);
-> 7a72f7a1 virt/kvm/kvm_main.c    Christian Borntraeger 2014-08-05  2066  		}
-> b6c7a5dc drivers/kvm/kvm_main.c Hollis Blanchard      2007-11-01  2067  		r = kvm_arch_vcpu_ioctl_run(vcpu, vcpu->run);
-> 64be5007 virt/kvm/kvm_main.c    Gleb Natapov          2010-10-24  2068  		trace_kvm_userspace_exit(vcpu->run->exit_reason, r);
-> 6aa8b732 drivers/kvm/kvm_main.c Avi Kivity            2006-12-10  2069  		break;
-> 6aa8b732 drivers/kvm/kvm_main.c Avi Kivity            2006-12-10  2070  	case KVM_GET_REGS: {
-> 
-> :::::: The code at line 2062 was first introduced by commit
-> :::::: 7a72f7a140bfd3a5dae73088947010bfdbcf6a40 KVM: track pid for VCPU only on KVM_RUN ioctl
-> 
-> :::::: TO: Christian Borntraeger <borntraeger@de.ibm.com>
-> :::::: CC: Paolo Bonzini <pbonzini@redhat.com>
-> 
-> ---
-> 0-DAY kernel test infrastructure                Open Source Technology Center
-> http://lists.01.org/mailman/listinfo/kbuild                 Intel Corporation
-> 
-
-
+Tony
