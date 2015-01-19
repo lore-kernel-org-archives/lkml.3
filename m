@@ -1,101 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751527AbbASEVA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 23:21:00 -0500
-Received: from mail-ie0-f169.google.com ([209.85.223.169]:52089 "EHLO
-	mail-ie0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128AbbASEU6 convert rfc822-to-8bit (ORCPT
+	id S1751641AbbASEYN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 23:24:13 -0500
+Received: from mail-vc0-f173.google.com ([209.85.220.173]:35470 "EHLO
+	mail-vc0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751276AbbASEYL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 23:20:58 -0500
+	Sun, 18 Jan 2015 23:24:11 -0500
 MIME-Version: 1.0
-In-Reply-To: <a4610e13d0094d40b7e0574992509ec6@BN1AFFO11FD044.protection.gbl>
-References: <1421351389-11660-1-git-send-email-soren.brinkmann@xilinx.com>
- <20150116111108.GG30960@localhost> <a4610e13d0094d40b7e0574992509ec6@BN1AFFO11FD044.protection.gbl>
-From: Alexandre Courbot <gnurou@gmail.com>
-Date: Mon, 19 Jan 2015 13:20:36 +0900
-Message-ID: <CAAVeFu+K0W96mi0=QR8JGSe9BpH2nC5WV_9qbSvm6LJGA8gc7Q@mail.gmail.com>
-Subject: Re: [PATCH v4] gpio: lib-sysfs: Add 'wakeup' attribute
-To: =?UTF-8?Q?S=C3=B6ren_Brinkmann?= <soren.brinkmann@xilinx.com>
-Cc: Johan Hovold <johan@kernel.org>, Linus Walleij <linus.walleij@linaro.org>,
-        linux-api@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>
+In-Reply-To: <1421625349-14101-2-git-send-email-wxt@rock-chips.com>
+References: <1421625349-14101-1-git-send-email-wxt@rock-chips.com> <1421625349-14101-2-git-send-email-wxt@rock-chips.com>
+From: Daniel Kurtz <djkurtz@chromium.org>
+Date: Mon, 19 Jan 2015 12:23:49 +0800
+X-Google-Sender-Auth: RmK9Mqqgl7keM9AMbHtTRsdNCkw
+Message-ID: <CAGS+omDiajqKxYFqdBXTeax+eeE-TD1WJ+C5odCbZBg6FELXDA@mail.gmail.com>
+Subject: Re: [PATCH v2] thermal: rockchip: make temperature reporting much
+ more accurate
+To: Caesar Wang <wxt@rock-chips.com>
+Cc: Heiko Stuebner <heiko@sntech.de>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <edubezval@gmail.com>, linux-pm@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 17, 2015 at 1:49 AM, Sören Brinkmann
-<soren.brinkmann@xilinx.com> wrote:
-> On Fri, 2015-01-16 at 12:11PM +0100, Johan Hovold wrote:
->> On Thu, Jan 15, 2015 at 11:49:49AM -0800, Soren Brinkmann wrote:
->> > Add an attribute 'wakeup' to the GPIO sysfs interface which allows
->> > marking/unmarking a GPIO as wake IRQ.
->> > The file 'wakeup' is created in each exported GPIOs directory, if an IRQ
->> > is associated with that GPIO and the irqchip implements set_wake().
->> > Writing 'enabled' to that file will enable wake for that GPIO, while
->> > writing 'disabled' will disable wake.
->> > Reading that file will return either 'disabled' or 'enabled' depening on
->> > the currently set flag for the GPIO's IRQ.
->> >
->> > Signed-off-by: Soren Brinkmann <soren.brinkmann@xilinx.com>
->> > Reviewed-by: Alexandre Courbot <acourbot@nvidia.com>
->> > ---
->> > Hi Linus, Johan,
->> >
->> > I rebased my patch. And things look good.
->>
->> I took at closer look at this patch now and I really don't think it
->> should be merged at all.
->>
->> We have a mechanism for handling wake-up sources (documented in
->> Documentation/power/devices.txt) as well as an ABI to enable/disable
->> them using the power/wakeup device attribute from userspace.
->
-> Doesn't work for GPIOs AFAIK.
->
->>
->> Implementing proper wakeup support for unclaimed GPIOs would take some
->> work (if at all desired), but that is not a reason to be adding custom
->> implementations that violates the kernel's power policies and new ABIs
->> that would need to be maintained forever.
->
-> These are claimed, by the sysfs interface.
->
->>
->> [ And we really shouldn't be adding anything to the broken gpio sysfs
->> interface until it's been redesigned. ]
->>
->> Meanwhile you can (should) use gpio-keys if you need to wake your system
->> on gpio events.
->
-> We had that discussion and I don't think GPIO keys is the right solution
-> for every use-case.
+Hi Caesar,
 
-Sorry, it has been a while - can you remind us of why?
+Some drive-by review comments inline...
 
->>
->> > But the 'is_visible' things does not behave the way I expected it to.
->> > It seems to be only triggered on an export but not when attributes
->> > change. Hence, in my case, everything was visiible since the inital
->> > state matches that, but even when changing the direction or things
->> > like that, attributes don't disappear. Is that something still worked
->> > on? Expected
->>
->> That's expected. We generally don't want attributes to appear or
->> disappear after the device has been registered (although there is a
->> mechanism for cases were it makes sense). This is no different from
->> how your v3 patch worked either.
+On Mon, Jan 19, 2015 at 7:55 AM, Caesar Wang <wxt@rock-chips.com> wrote:
+> In general, the kernel should report temperature readings exactly as
+> reported by the hardware. The cpu / gpu thermal driver works in 5 degree
+> increments,but we ought to do more accurate. The temperature will do
+> linear interpolation between the entries in the table.
 >
-> Sure, but the is_visible thing is effectively broken for GPIO. I think a
-> GPIO is in a defined state when exported and the checks all work on that
-> state during export. But then this state can be changed through the
-> sysfs interface. So, if the initial state hides something it becomes
-> unavailable for all times and, vice versa, if the initial state makes
-> something visible, it will stay even when it is no longer a valid
-> property to change.
+> Test= $md5sum /dev/zero &
+> $while true; do grep "" /sys/class/thermal/thermal_zone[1-2]/temp;
+> sleep .5; done
+>
+> e.g. We can get the result as follows:
+>     /sys/class/thermal/thermal_zone1/temp:39994
+>     /sys/class/thermal/thermal_zone2/temp:39086
+>     /sys/class/thermal/thermal_zone1/temp:39994
+>     /sys/class/thermal/thermal_zone2/temp:39540
+>     /sys/class/thermal/thermal_zone1/temp:39540
+>     /sys/class/thermal/thermal_zone2/temp:39540
+>     /sys/class/thermal/thermal_zone1/temp:39540
+>     /sys/class/thermal/thermal_zone2/temp:39994
+>
+> Signed-off-by: Caesar Wang <wxt@rock-chips.com>
+> Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+>
+> ---
+>
+> Changes in v2:
+> Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+>
+>  drivers/thermal/rockchip_thermal.c | 26 +++++++++++++++++---------
+>  1 file changed, 17 insertions(+), 9 deletions(-)
+>
+> diff --git a/drivers/thermal/rockchip_thermal.c b/drivers/thermal/rockchip_thermal.c
+> index 1bcddfc..a7ae23a 100644
+> --- a/drivers/thermal/rockchip_thermal.c
+> +++ b/drivers/thermal/rockchip_thermal.c
+> @@ -193,19 +193,18 @@ static u32 rk_tsadcv2_temp_to_code(long temp)
+>
+>  static long rk_tsadcv2_code_to_temp(u32 code)
+>  {
+> -       int high, low, mid;
+> -
+> -       low = 0;
+> -       high = ARRAY_SIZE(v2_code_table) - 1;
+> -       mid = (high + low) / 2;
+> +       unsigned int low = 0;
+> +       unsigned int high = ARRAY_SIZE(v2_code_table) - 1;
+> +       unsigned int mid = (low + high) / 2;
+> +       unsigned int scale;
+>
+>         if (code > v2_code_table[low].code || code < v2_code_table[high].code)
+>                 return 125000; /* No code available, return max temperature */
 
-Is there anything that prevents you from patching other GPIO sysfs
-hooks to remove/reenable the wakeup property as needed?
+I think if the temp sensor reading was invalid we should return an
+error code rather than just silently returning "max temp".
+Returning an error here could then be propagated up by its only
+caller, the ->get_temp() callback.
+
+Note: 'code < v2_code_table[high].code' is always false, since code is
+unsigned, and the last entry is 0.
+
+Also, the check above doesn't reject "code == 0xfff".
+Even worse, I believe in that case the below algorithm will eventually
+set mid=0 and access v2_code_table[-1].code.
+
+>
+>         while (low <= high) {
+> -               if (code >= v2_code_table[mid].code && code <
+> -                   v2_code_table[mid - 1].code)
+> -                       return v2_code_table[mid].temp;
+> +               if (code >= v2_code_table[mid].code &&
+> +                   code < v2_code_table[mid - 1].code)
+> +                       break;
+>                 else if (code < v2_code_table[mid].code)
+>                         low = mid + 1;
+>                 else
+> @@ -213,7 +212,16 @@ static long rk_tsadcv2_code_to_temp(u32 code)
+>                 mid = (low + high) / 2;
+>         }
+>
+> -       return 125000;
+> +       /*
+> +        * The 5C granularity provided by the table is too much. Let's
+> +        * assume that the relationship between sensor readings and
+> +        * temperature between 2 table entries is linear and extrapolate
+
+I think this is "interpolate", not "extrapolate".
+
+> +        * to produce less granular result.
+> +        */
+> +       scale = (v2_code_table[mid].temp - v2_code_table[mid - 1].temp) /
+> +               (v2_code_table[mid - 1].code - v2_code_table[mid].code);
+> +       return v2_code_table[mid - 1].temp +
+> +                       (v2_code_table[mid - 1].code - code) * scale;
+
+Assuming the product fits in an unsigned long (and it will, since code
+is only 12-bits), it is more precise to multiply first and then
+divide, something like this:
+
+   num = v2_code_table[mid].temp - v2_code_table[mid - 1].temp;
+   num *= v2_code_table[mid - 1].code - code;
+   denom = v2_code_table[mid - 1].code - v2_code_table[mid].code;
+   return v2_code_table[mid - 1].temp + (num / denom);
+
+-Daniel
+
+>  }
+>
+>  /**
+> --
+> 1.9.1
+>
+>
+>
+> _______________________________________________
+> Linux-rockchip mailing list
+> Linux-rockchip@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-rockchip
