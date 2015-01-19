@@ -1,76 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752040AbbASUro (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 15:47:44 -0500
-Received: from mout.kundenserver.de ([212.227.126.187]:53597 "EHLO
-	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751341AbbASUrl (ORCPT
+	id S1751938AbbASUrd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 15:47:33 -0500
+Received: from mailrelay115.isp.belgacom.be ([195.238.20.142]:37061 "EHLO
+	mailrelay115.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751341AbbASUrc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 15:47:41 -0500
-From: Arnd Bergmann <arnd@arndb.de>
-To: Rob Herring <robherring2@gmail.com>
-Cc: David Daney <ddaney.cavm@gmail.com>, Mark Rutland <mark.rutland@arm.com>,
-        Aleksey Makarov <aleksey.makarov@auriga.com>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Daney <david.daney@cavium.com>,
-        Anton Vorontsov <avorontsov@ru.mvista.com>,
-        Vinita Gupta <vgupta@caviumnetworks.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Ralf Baechle <ralf@linux-mips.org>,
-        Tejun Heo <tj@kernel.org>, Hans de Goede <hdegoede@redhat.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH] SATA: OCTEON: support SATA on OCTEON platform
-Date: Mon, 19 Jan 2015 21:46:52 +0100
-Message-ID: <1657896.cG5R2xLFfX@wuerfel>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <CAL_JsqKq22K3kk7m09J1GZn9xXB+0tCUe75u3x+S3oWC0kyDcw@mail.gmail.com>
-References: <1421681040-3392-1-git-send-email-aleksey.makarov@auriga.com> <54BD580C.6030701@gmail.com> <CAL_JsqKq22K3kk7m09J1GZn9xXB+0tCUe75u3x+S3oWC0kyDcw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
-X-Provags-ID: V03:K0:540wG67se4TLuWNRSqikIKpRuD5km1mHJq7AiuoZIGXOELbhKak
- tZBvHs19dh+jh6nRbZe6BBKT4aBlx/CMO6oc1IfQTI30M66nQqTiHiI5N1JYJUNvxUHS0jD
- ru66g788qlVWH1VA90owcaPGUNmpaY+AVuH4j3A7jAzHmPgVpJ9tG5L/oeopcAQw0WyUicG
- p+FEjRhZh/3enC2UCZMIw==
-X-UI-Out-Filterresults: notjunk:1;
+	Mon, 19 Jan 2015 15:47:32 -0500
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.1 cv=wcGNbXEvJ1+lRvjKRe8ww5ZIB0ZoB9oB8wjQofnwvDA= c=1 sm=2
+ a=iBTyMBLzZVNNl2LLs9kA:9
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AmEPAC1svVTD7gaz/2dsb2JhbABbgwaBKrNuBQEBAQEBAQUBd5dCgSZDAQEBAQF9hDpSgVGIMAHAA44zLIYFiRBkHYQTBZdwihqIECKBRYIqboEDgUABAQE
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+From: Fabian Frederick <fabf@skynet.be>
+To: linux-kernel@vger.kernel.org
+Cc: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Fabian Frederick <fabf@skynet.be>
+Subject: [RFC 1/2] FS: mount_bdev from vfs instead of filesystem specific mount function.
+Date: Mon, 19 Jan 2015 21:47:20 +0100
+Message-Id: <1421700440-15128-1-git-send-email-fabf@skynet.be>
+X-Mailer: git-send-email 1.9.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 19 January 2015 14:30:22 Rob Herring wrote:
-> On Mon, Jan 19, 2015 at 1:16 PM, David Daney <ddaney.cavm@gmail.com> wrote:
-> > On 01/19/2015 07:43 AM, Mark Rutland wrote:
-> >>
-> >> On Mon, Jan 19, 2015 at 03:23:58PM +0000, Aleksey Makarov wrote:
-> >>>
-> >>> The OCTEON SATA controller is currently found on cn71XX devices.
-> 
-> [...]
-> 
-> >>> +
-> >>> +       /* Set a good dma_mask */
-> >>> +       pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
-> >>> +       pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
-> >>
-> >>
-> >> I thought a dma-ranges property in the DT could be used to set up the
-> >> DMA mask appropriately?
-> >
-> >
-> > The DT contains no dma-ranges property, and we know a priori, that it should
-> > be 64-bits.
-> 
-> Neither this code nor dma-ranges should be necessary. The AHCI core
-> code will set the mask to 32 or 64 bits based on the AHCI Capabilities
-> register.
+Currently, a lot of filesystem mounting functions feature in
+file_system_type only to be called from vfs mount_fs and call mount_bdev.
 
-You should however have a dma-ranges property in the parent bus of the
-device that contains the allowed range for DMA. The current dma_set_mask
-function is broken and will accept whatever a device driver asks for,
-and we need to fix this so masks larger than what is specified in dma-ranges
-are rejected.
+This patch adds fill_super function to that structure and lets vfs
+call mount_bdev when no mount function is declared.
 
-	Arnd
+Signed-off-by: Fabian Frederick <fabf@skynet.be>
+---
+ fs/super.c         | 6 +++++-
+ include/linux/fs.h | 2 ++
+ 2 files changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/fs/super.c b/fs/super.c
+index a89d625..7c37355 100644
+--- a/fs/super.c
++++ b/fs/super.c
+@@ -1112,7 +1112,11 @@ mount_fs(struct file_system_type *type, int flags, const char *name, void *data)
+ 			goto out_free_secdata;
+ 	}
+ 
+-	root = type->mount(type, flags, name, data);
++	if (type->mount)
++		root = type->mount(type, flags, name, data);
++	else
++		root = mount_bdev(type, flags, name, data, type->fill_super);
++
+ 	if (IS_ERR(root)) {
+ 		error = PTR_ERR(root);
+ 		goto out_free_secdata;
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 0bd9669..3e19349 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1846,8 +1846,10 @@ struct file_system_type {
+ #define FS_USERNS_MOUNT		8	/* Can be mounted by userns root */
+ #define FS_USERNS_DEV_MOUNT	16 /* A userns mount does not imply MNT_NODEV */
+ #define FS_RENAME_DOES_D_MOVE	32768	/* FS will handle d_move() during rename() internally. */
++	int (*fill_super)(struct super_block *, void *, int);
+ 	struct dentry *(*mount) (struct file_system_type *, int,
+ 		       const char *, void *);
++
+ 	void (*kill_sb) (struct super_block *);
+ 	struct module *owner;
+ 	struct file_system_type * next;
+-- 
+1.9.3
+
