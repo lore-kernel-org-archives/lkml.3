@@ -1,181 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751597AbbASIPM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 03:15:12 -0500
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:34962 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751244AbbASIPJ (ORCPT
+	id S1751791AbbASIQs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 03:16:48 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:48760 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751403AbbASIQq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 03:15:09 -0500
-Date: Mon, 19 Jan 2015 08:15:02 +0000
+	Mon, 19 Jan 2015 03:16:46 -0500
+Date: Mon, 19 Jan 2015 08:16:40 +0000
 From: Lee Jones <lee.jones@linaro.org>
-To: Beomho Seo <beomho.seo@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        devicetree@vger.kernel.org, sre@kernel.org, lee.jone@linaro.org,
-        broonie@kernel.org, dbaryshkov@gmail.com, robh+dt@kernel.org,
-        pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        cw00.choi@samsung.com, inki.dae@samsung.com, sw0312.kim@samsung.com
-Subject: Re: [PATCH v2 3/3] Documentation: Add documentation for rt5033
- multifunction device
-Message-ID: <20150119081502.GD21886@x1>
-References: <1420793114-20586-1-git-send-email-beomho.seo@samsung.com>
- <1420793114-20586-4-git-send-email-beomho.seo@samsung.com>
+To: Boris Brezillon <boris.brezillon@free-electrons.com>
+Cc: Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Felipe Balbi <balbi@ti.com>,
+        Jean-Jacques Hiblot <jjhiblot@traphandler.com>,
+        Arnd Bergmann <arnd@arndb.de>, linux-usb@vger.kernel.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org,
+        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 01/12] mfd: syscon: Add atmel-matrix registers definition
+Message-ID: <20150119081640.GE21886@x1>
+References: <1421252524-24452-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <1421252524-24452-2-git-send-email-alexandre.belloni@free-electrons.com>
+ <20150118125259.GW3574@x1>
+ <20150118141136.5f871014@bbrezillon>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1420793114-20586-4-git-send-email-beomho.seo@samsung.com>
+In-Reply-To: <20150118141136.5f871014@bbrezillon>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DT Ack please gents.
+On Sun, 18 Jan 2015, Boris Brezillon wrote:
 
-> This patch device tree binding documentation for rt5033 multifunction device.
+> Hi Lee,
 > 
-> Cc: Sebastian Reichel <sre@kernel.org>
-> Cc: Lee Jones <lee.jones@linaro.org>
-> Cc: Mark Brown <broonie@kernel.org>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Pawel Moll <pawel.moll@arm.com>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Ian campbell <ijc+devicetree@hellion.org.uk>
-> Cc: Kumar Gala <galak@codeaurora.org>
-> Signed-off-by: Beomho Seo <beomho.seo@samsung.com>
-> Acked-by: Chanwoo Choi <cw00.choi@samsung.com>
-> ---
-> Changes in v2
-> - Fix incorrect typo.
-> - Align -uamp and -uvolt names with regulator binding suffixes.
-> - Drop incorrect phandle.
-> - Fix incorrect example.
-> ---
->  Documentation/devicetree/bindings/mfd/rt5033.txt   |  101 ++++++++++++++++++++
->  .../devicetree/bindings/vendor-prefixes.txt        |    1 +
->  2 files changed, 102 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/mfd/rt5033.txt
+> On Sun, 18 Jan 2015 12:52:59 +0000
+> Lee Jones <lee.jones@linaro.org> wrote:
 > 
-> diff --git a/Documentation/devicetree/bindings/mfd/rt5033.txt b/Documentation/devicetree/bindings/mfd/rt5033.txt
-> new file mode 100644
-> index 0000000..64b23e8
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mfd/rt5033.txt
-> @@ -0,0 +1,101 @@
-> +Richtek RT5033 Power management Integrated Circuit
-> +
-> +RT5033 is a Multifunction device which includes battery charger, fuel gauge,
-> +flash LED current source, LDO and synchronous Buck converter for portable
-> +applications. It is interfaced to host controller using i2c interface.
-> +
-> +Required properties:
-> +- compatible : Must be "richtek,rt5033"
-> +- reg : Specifies the i2c slave address of general part.
-> +- interrupts : This i2c devices has an IRQ line connected to the main SoC.
-> +- interrupt-parent : The parent interrupt controller.
-> +
-> +Optional node:
-> +Regulators: The regulators of RT5033 have to be instantiated under sub-node
-> +named "regulators" using the following format.
-> +
-> +	regulators {
-> +		regulator-name {
-> +			regulator-name = LDO/BUCK
-> +			regulator subnodes called X, Y and Z
-> +		};
-> +	};
-> +	refer Documentation/devicetree/bindings/regulator/regulator.txt
-> +
-> +
-> +Battery charger: There battery charger of RT5033 have to be instantiated under
-> +sub-node named "charger" using the following format.
-> +
-> +Required properties:
-> +- compatible : Must be "richtek,rt5033-charger".
-> +- richtek,pre-uamp : Current of pre-charge mode. The pre-charge current levels
-> +  are 350 mA to 650 mA programmed by I2C per 100 mA.
-> +- richtek,fast-uamp : Current of fast-charge mode. The fast-charge current
-> +  levels are 700 mA to 2000 mA programmed by I2C per 100 mA.
-> +- richtek,eoc-uamp : This property is end of charge current. Its level 150 mA
-> +  to 200 mA.
-> +- richtek,pre-threshold-uvolt : Voltage of threshold pre-charge mode. Battery
-> +  voltage is below pre-charge threshold voltage, the charger is in pre-charge
-> +  mode with pre-charge current. Its levels are 2.3 V  to 3.8 V programmed
-> +  by I2C per 0.1 V.
-> +- richtek,const-uvolt :  Battery regulation voltage of constant voltage mode.
-> +  This voltage level 3.65 V to 4.4 V bye I2C per 0.025 V.
-> +
-> +	charger {
-> +		compatible = "richtek,rt5033-charger";
-> +		richtek,pre-uamp = <350000>;
-> +		richtek,fast-uamp = <2000000>;
-> +		richtek,eoc-uamp = <250000>;
-> +		richtek,pre-threshold-uvolt = <3400000>;
-> +		richtek,const-uvolt = <4350000>;
-> +
-> +	};
-> +
-> +
-> +Fuelgauge: There fuelgauge of RT5033 to be instantiated node named "fuelgauge"
-> +using the following format.
-> +
-> +Required properties:
-> +- compatible = Must be "richtek,rt5033-battery".
-> +
-> +	rt5033@35 {
-> +		compatible = "richtek,rt5033-battery";
-> +		interrupt-parent = <&gpx2>;
-> +		interrupts = <3 0>;
-> +		reg = <0x35>;
-> +	};
-> +
-> +Example:
-> +
-> +		rt5033@34 {
-> +			compatible = "richtek,rt5033";
-> +			reg = <0x34>;
-> +			interrupt-parent = <&gpx1>;
-> +			interrupts = <5 0>;
-> +
-> +			regulators {
-> +				buck_reg: BUCK {
-> +					regulator-name = "BUCK";
-> +					regulator-min-microvolt = <1200000>;
-> +					regulator-max-microvolt = <1200000>;
-> +					regulator-always-on;
-> +				};
-> +			};
-> +
-> +			charger {
-> +				compatible = "richtek,rt5033-charger";
-> +				richtek,pre-uamp = <350000>;
-> +				richtek,fast-uamp = <2000000>;
-> +				richtek,eoc-uamp = <250000>;
-> +				richtek,pre-threshold-uvolt = <3400000>;
-> +				richtek,const-uvolt = <4350000>;
-> +			};
-> +
-> +		};
-> +
-> +		rt5033@35 {
-> +				compatible = "richtek,rt5033-battery";
-> +				interrupt-parent = <&gpx2>;
-> +				interrupts = <3 0>;
-> +				reg = <0x35>;
-> +		};
-> diff --git a/Documentation/devicetree/bindings/vendor-prefixes.txt b/Documentation/devicetree/bindings/vendor-prefixes.txt
-> index 723999d..611b543 100644
-> --- a/Documentation/devicetree/bindings/vendor-prefixes.txt
-> +++ b/Documentation/devicetree/bindings/vendor-prefixes.txt
-> @@ -124,6 +124,7 @@ ralink	Mediatek/Ralink Technology Corp.
->  ramtron	Ramtron International
->  realtek Realtek Semiconductor Corp.
->  renesas	Renesas Electronics Corporation
-> +richtek	Richtek Technology Corporation
->  ricoh	Ricoh Co. Ltd.
->  rockchip	Fuzhou Rockchip Electronics Co., Ltd
->  samsung	Samsung Semiconductor
+> > On Wed, 14 Jan 2015, Alexandre Belloni wrote:
+> > 
+> > > From: Boris Brezillon <boris.brezillon@free-electrons.com>
+> > > 
+> > > AT91 SoCs have a memory range reserved for internal bus configuration.
+> > > Expose those registers so that drivers can make use of the matrix syscon
+> > > declared in at91 DTs.
+> > > 
+> > > Signed-off-by: Boris Brezillon <boris.brezillon@free-electrons.com>
+> > > Acked-by: Lee Jones <lee.jones@linaro.org>
+> > > ---
+> > >  include/linux/mfd/syscon/atmel-matrix.h | 117 ++++++++++++++++++++++++++++++++
+> > >  1 file changed, 117 insertions(+)
+> > >  create mode 100644 include/linux/mfd/syscon/atmel-matrix.h
+> > 
+> > Applied, thanks.
+> 
+> Actually Nicolas took all the patches in his tree and already sent a PR
+> to the arm-soc maintainers [1].
+> 
+> [1]https://lkml.org/lkml/2015/1/15/542
+
+Very well.  All unapplied.
 
 -- 
 Lee Jones
