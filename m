@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751614AbbASU1o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 15:27:44 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:49931 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751462AbbASU1n (ORCPT
+	id S1752126AbbASUar (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 15:30:47 -0500
+Received: from mail-we0-f181.google.com ([74.125.82.181]:39045 "EHLO
+	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752000AbbASUao (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 15:27:43 -0500
-Date: Mon, 19 Jan 2015 23:26:38 +0300
-From: Dan Carpenter <dan.carpenter@oracle.com>
-To: shirish gajera <gajerashirish@gmail.com>
-Cc: Ben Hutchings <ben@decadent.org.uk>, kirk@reisers.ca,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Greg KH <gregkh@linuxfoundation.org>,
-        DaeSeok Youn <daeseok.youn@gmail.com>,
-        Robin Schroer <sulamiification@gmail.com>, speakup@linux-speakup.org,
-        =?utf-8?Q?Ay=C5=9Fe_Melike_Yurto=C4=9Flu?= 
-	<aysemelikeyurtoglu@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Domagoj =?utf-8?B?VHLFoWFu?= <domagoj.trsan@gmail.com>,
-        Roxana Blaj <roxanagabriela10@gmail.com>, tapaswenipathak@gmail.com,
-        Samuel Thibault <samuel.thibault@ens-lyon.org>,
-        Dilek =?iso-8859-1?Q?=DCz=FClmez?= <dilekuzulmez@gmail.com>,
-        sasha.levin@oracle.com, Christopher Brannon <chris@the-brannons.com>
-Subject: Re: [PATCH] staging: speakup: Fix warning of line over 80 characters.
-Message-ID: <20150119202638.GC6507@mwanda>
-References: <20150118075753.GA2612@shirish-ThinkPad-Edge-E430>
- <1421574950.31046.97.camel@decadent.org.uk>
- <20150119122539.GC6456@mwanda>
- <CAG77vrrbEmw7OR8N7bcmKEkDwXonsfmJeE6-epYxSMLT5uQpMw@mail.gmail.com>
+	Mon, 19 Jan 2015 15:30:44 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAG77vrrbEmw7OR8N7bcmKEkDwXonsfmJeE6-epYxSMLT5uQpMw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+In-Reply-To: <54BD580C.6030701@gmail.com>
+References: <1421681040-3392-1-git-send-email-aleksey.makarov@auriga.com>
+ <20150119154357.GH21553@leverpostej> <54BD580C.6030701@gmail.com>
+From: Rob Herring <robherring2@gmail.com>
+Date: Mon, 19 Jan 2015 14:30:22 -0600
+Message-ID: <CAL_JsqKq22K3kk7m09J1GZn9xXB+0tCUe75u3x+S3oWC0kyDcw@mail.gmail.com>
+Subject: Re: [PATCH] SATA: OCTEON: support SATA on OCTEON platform
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: Mark Rutland <mark.rutland@arm.com>,
+        Aleksey Makarov <aleksey.makarov@auriga.com>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Daney <david.daney@cavium.com>,
+        Anton Vorontsov <avorontsov@ru.mvista.com>,
+        Vinita Gupta <vgupta@caviumnetworks.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Ralf Baechle <ralf@linux-mips.org>,
+        Tejun Heo <tj@kernel.org>, Hans de Goede <hdegoede@redhat.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 19, 2015 at 12:00:34PM -0800, shirish gajera wrote:
-> I am confuse whether to wait till the patch got accepted or submit new
-> patch set.
+On Mon, Jan 19, 2015 at 1:16 PM, David Daney <ddaney.cavm@gmail.com> wrote:
+> On 01/19/2015 07:43 AM, Mark Rutland wrote:
+>>
+>> On Mon, Jan 19, 2015 at 03:23:58PM +0000, Aleksey Makarov wrote:
+>>>
+>>> The OCTEON SATA controller is currently found on cn71XX devices.
 
-Just wait for Greg to get to the patch.  We pretty much always apply
-long line fixes so just assume it's going to merged.
+[...]
 
-> 
-> Also, how to identify whether the corresponding warning is real or not ?
+>>> +
+>>> +       /* Set a good dma_mask */
+>>> +       pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
+>>> +       pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
+>>
+>>
+>> I thought a dma-ranges property in the DT could be used to set up the
+>> DMA mask appropriately?
+>
+>
+> The DT contains no dma-ranges property, and we know a priori, that it should
+> be 64-bits.
 
-It's all a matter of personal taste.  The end code should look better
-than the original code.  I thought your changes looked pretty good...
+Neither this code nor dma-ranges should be necessary. The AHCI core
+code will set the mask to 32 or 64 bits based on the AHCI Capabilities
+register.
 
-regards,
-dan carpenter
-
+Rob
