@@ -1,95 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752412AbbASVcj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 16:32:39 -0500
-Received: from vps0.lunn.ch ([178.209.37.122]:58126 "EHLO vps0.lunn.ch"
+	id S1752143AbbASVa6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 16:30:58 -0500
+Received: from sauhun.de ([89.238.76.85]:59458 "EHLO pokefinder.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751293AbbASVch (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 16:32:37 -0500
-Date: Mon, 19 Jan 2015 22:30:28 +0100
-From: Andrew Lunn <andrew@lunn.ch>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: arnd@arndb.de, olof@lixom.net, linux@arm.linux.org.uk,
-        thomas.petazzoni@free-electrons.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/3] ARM: Marvell: Remove init cpus function
-Message-ID: <20150119213028.GB2938@lunn.ch>
-References: <1421686381-12397-1-git-send-email-daniel.lezcano@linaro.org>
+	id S1750953AbbASVa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 16:30:57 -0500
+Date: Mon, 19 Jan 2015 22:30:50 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linuxppc-dev@lists.ozlabs.org, linux-mips@linux-mips.org,
+        Jean Delvare <jdelvare@suse.de>, Julia Lawall <julia.lawall@lip6.fr>,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+Subject: Re: [PATCH] i2c: drop ancient protection against sysfs refcounting
+ issues
+Message-ID: <20150119213050.GA32176@katana>
+References: <1421693756-12917-1-git-send-email-wsa@the-dreams.de>
+ <20150119190142.GA9451@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="cWoXeonUoKmBZSoM"
 Content-Disposition: inline
-In-Reply-To: <1421686381-12397-1-git-send-email-daniel.lezcano@linaro.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20150119190142.GA9451@kroah.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 19, 2015 at 05:52:59PM +0100, Daniel Lezcano wrote:
-> With the next patches, the init cpus function will be changed to be factored
-> out.
-> 
-> The function 'armada_xp_smp_init_cpus' does nothing more than a sanity check
-> after the DT has been parsed. Even if this code is valid, it does not give a
-> real benefit as the DT should be correctly filled.
-> 
-> Remove this callback.
 
-Hi Daniel
+--cWoXeonUoKmBZSoM
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-What is your plan for getting these merged? Do you want me to take the
-mvebu patch? Or are you thinking of sending the complete series to the
-arm-soc maintainers?
+> > @@ -1184,8 +1183,7 @@ EXPORT_SYMBOL_GPL(i2c_new_dummy);
+> > =20
+> >  static void i2c_adapter_dev_release(struct device *dev)
+> >  {
+> > -	struct i2c_adapter *adap =3D to_i2c_adapter(dev);
+> > -	complete(&adap->dev_released);
+> > +	/* empty, but the driver core insists we need a release function */
+>=20
+> Yeah, it does, but I hate to see this in "real" code as something is
+> probably wrong with it if it happens.
+>=20
+> Please move the rest of 'i2c_del_adapter' into the release function
+> (what was after the wait_for_completion() call), and then all should be
+> fine.
 
-Thanks
-	Andrew
+I was about to do this as a follow-up patch. But Russell's and
+Lars-Peter's responses made this obsolete already.
 
-> 
-> Signed-off-by: Daniel Lezcano <daniel.lezcano@linaro.org>
-> ---
->  arch/arm/mach-mvebu/platsmp.c | 11 -----------
->  1 file changed, 11 deletions(-)
-> 
-> diff --git a/arch/arm/mach-mvebu/platsmp.c b/arch/arm/mach-mvebu/platsmp.c
-> index 58cc8c1..3e93422 100644
-> --- a/arch/arm/mach-mvebu/platsmp.c
-> +++ b/arch/arm/mach-mvebu/platsmp.c
-> @@ -30,8 +30,6 @@
->  #include "pmsu.h"
->  #include "coherency.h"
->  
-> -#define ARMADA_XP_MAX_CPUS 4
-> -
->  #define AXP_BOOTROM_BASE 0xfff00000
->  #define AXP_BOOTROM_SIZE 0x100000
->  
-> @@ -114,14 +112,6 @@ static void armada_xp_secondary_init(unsigned int cpu)
->  	mvebu_v7_pmsu_idle_exit();
->  }
->  
-> -static void __init armada_xp_smp_init_cpus(void)
-> -{
-> -	unsigned int ncores = num_possible_cpus();
-> -
-> -	if (ncores == 0 || ncores > ARMADA_XP_MAX_CPUS)
-> -		panic("Invalid number of CPUs in DT\n");
-> -}
-> -
->  static void __init armada_xp_smp_prepare_cpus(unsigned int max_cpus)
->  {
->  	struct device_node *node;
-> @@ -171,7 +161,6 @@ static int armada_xp_cpu_kill(unsigned int cpu)
->  #endif
->  
->  struct smp_operations armada_xp_smp_ops __initdata = {
-> -	.smp_init_cpus		= armada_xp_smp_init_cpus,
->  	.smp_prepare_cpus	= armada_xp_smp_prepare_cpus,
->  	.smp_boot_secondary	= armada_xp_boot_secondary,
->  	.smp_secondary_init     = armada_xp_secondary_init,
-> -- 
-> 1.9.1
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+
+--cWoXeonUoKmBZSoM
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUvXeKAAoJEBQN5MwUoCm2yU8P/jACuxrtfHb4yh+Tu47k8Iww
+UkgEMRwaHGpm+uvg8lvWKYJgQqUdP7M7nVgZDrzezsnyvggYs8SnixTwoL3lA7+2
+ovakYYGL/x1LTKjAzJvgkYrYs7BgZ4dAcHsG3M56YqW9pomSHnkqSoWM7eOIIH9X
+NHxHXEWbrf9oTrUjy4EN9Y04ey7zh7//27L7eetNjYcu8eISc9wi4qVJShlLS3RA
+qcrvLDo4kb4O+zPv1PxtSDXqv0OkrgmlmQoJ6vprm/6S+O4xSNcF3lkfJdp6Ud1Y
++z9zuCsn743dLw+WpmqAJKsa4aIYNF/1ut+JDIVy+Oc65jk96KDNYHecKhBswYwC
+bzdK705MkdQmpzZ9hKTvHPN0/6qinBCoSJzl6S/4WLXM42Fa5D3WwdC/oFXy9CCs
+/3Ti0XnK+hr3xAsU3UdeJBkLPA7D0NxYbs9RWyNojdyzTyx/DBilQFzZfyr+25qy
+gULtb6WDSyLSDt/HzddpRCd3Q7uG3Kb5a17xhmLdhPllVyIlsju12tRgPskZ/9BC
+/6desPhbEObHHo0l69hbRnkQPN/tNNiLHad/P6+uAS1zzmZJzqprhAgeVvnHkUaZ
+92+U7sQMYfvm0jw1IIHJf2Vv71scblJw8rXL5PHvMifaIv2pIgwrz8RFr818d2W7
+1kWMDN233l5vJQHrrd5o
+=ZCzZ
+-----END PGP SIGNATURE-----
+
+--cWoXeonUoKmBZSoM--
