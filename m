@@ -1,85 +1,387 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751856AbbASBPO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jan 2015 20:15:14 -0500
-Received: from mga09.intel.com ([134.134.136.24]:26590 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751617AbbASBPN convert rfc822-to-8bit (ORCPT
+	id S1751433AbbASBXb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jan 2015 20:23:31 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:57962 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751185AbbASBX3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jan 2015 20:15:13 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,422,1418112000"; 
-   d="scan'208";a="652956373"
-From: "Tang, Feng" <feng.tang@intel.com>
-To: Greg KH <gregkh@linuxfoundation.org>
-CC: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        John Stultz <john.stultz@linaro.org>, Colin Cross <ccross@android.com>,
-        Heesub Shin <heesub.shin@samsung.com>,
-        Mitchel Humpherys <mitchelh@codeaurora.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/2] staging: andriod: ion: Add ion_phys_get_by_id
- function
-Thread-Topic: [PATCH 1/2] staging: andriod: ion: Add ion_phys_get_by_id
- function
-Thread-Index: AQHQJ+5RqZncMrfR0k2l+PFlMGRqW5yxEK2AgACcvtCAEuE3AIACKxrA
-Date: Mon, 19 Jan 2015 01:14:49 +0000
-Message-ID: <A74E4C03C808B649AF1F11527F2D44140510FC7D@SHSMSX101.ccr.corp.intel.com>
-References: <1420355512-31129-1-git-send-email-feng.tang@intel.com>
- <20150105142433.1d892039@lxorguk.ukuu.org.uk>
- <A74E4C03C808B649AF1F11527F2D4414050FD0E1@SHSMSX101.ccr.corp.intel.com>
- <20150118000418.GA1791@kroah.com>
-In-Reply-To: <20150118000418.GA1791@kroah.com>
+	Sun, 18 Jan 2015 20:23:29 -0500
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID t0J1NCVp005350, This message is accepted by code: ctloc85258
+From: =?utf-8?B?5pWs6ZSQ?= <micky_ching@realsil.com.cn>
+To: Lee Jones <lee.jones@linaro.org>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "rogerable@realtek.com" <rogerable@realtek.com>,
+        =?utf-8?B?546L54Kc?= <wei_wang@realsil.com.cn>
+Subject: Re: [PATCH 01/10] mfd: rtsx: replace TAB by SPC after #define
+Thread-Topic: [PATCH 01/10] mfd: rtsx: replace TAB by SPC after #define
+Thread-Index: AQHQMxvjTUnBjt/hLUKggoULK2mL0JzGIKcA
+Date: Mon, 19 Jan 2015 01:23:12 +0000
+Message-ID: <54BC5C80.5090109@realsil.com.cn>
+References: <cover.1421320541.git.micky_ching@realsil.com.cn>
+ <48abf73da65a522c3b7123d958866984271e4bd8.1421320541.git.micky_ching@realsil.com.cn>
+ <20150118123837.GR3574@x1>
+In-Reply-To: <20150118123837.GR3574@x1>
 Accept-Language: zh-CN, en-US
-Content-Language: en-US
+Content-Language: zh-CN
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+x-originating-ip: [172.29.41.103]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <70B77D88EC78A94988423B8D8F96EADB@realsil.com.cn>
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0J1NfKG032566
 
-Hi Greg,
 
-Thanks for your review.
-
-> -----Original Message-----
-> From: Greg KH [mailto:gregkh@linuxfoundation.org]
-> Sent: Sunday, January 18, 2015 8:04 AM
-> To: Tang, Feng
-> Cc: One Thousand Gnomes; John Stultz; Colin Cross; Heesub Shin; Mitchel
-> Humpherys; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH 1/2] staging: andriod: ion: Add ion_phys_get_by_id
-> function
+On 01/18/2015 08:39 PM, Lee Jones wrote:
+> On Thu, 15 Jan 2015, micky_ching@realsil.com.cn wrote:
 >
-> > >
-> > > On Sun,  4 Jan 2015 15:11:51 +0800
-> > > Feng Tang <feng.tang@intel.com> wrote:
-> > >
-> > > > There is user case that user only knows the ion_handle idand
-> > > > needs to get the physical addr and len. So add this wrapper to
-> > > > meet this requirement.
-> > >
-> > > What is the in-tree upstream user of this new function ? I don't see one
-> > > in your patches ?
-> >
-> > That's true. We are working on enabling a new platform which heavily
-> > uses ION and some driver needs to use this API, so I guess there is some
-> > other plaforms may have the similar requirements. If you think this patch
-> > should be merged after there is an in-tree user, I'm OK with it :)
-> >
-> > I assume that driver's author will start to push his drivers in batch soon.
-> 
-> We need to see those patches first, we can't add apis for no in-tree
-> user, otherwise they will just get ripped out.
-I see. I'll repost this patch after our "user" driver get merged.
-
-How about the 2/2 patch, which improve the profiling info through
-debugfs?
-	[PATCH 2/2] staging: android: ion: Add pss info for each ion_client
-
-Thanks,
-Feng
-
+>> From: Micky Ching <micky_ching@realsil.com.cn>
+>>
+>> Re-format coding-style, using uniform SPC after "#define" keyword
+>> instead of mixing using TAB and SPC.
+> Tabs and spaces in this context usually have different meanings
+> i.e. space after #define usually denotes that the following define is
+> a register address, whereas a tab commonly describes a bit field.
+>
+> Please ensure you're not messing with these conventions.  By the looks
+> of it you are not, but I need you to confirm that you know what you're
+> doing.
+if using TAB describe a bit field, and define TAB length = 8 SPC,
+the editor will not show any difference(if not highlight TAB/SPC).
+And the mix is not to show difference between address and field.
+so all replaced by space, and show difference by next patch(02/10).
+>> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+>> ---
+>>   include/linux/mfd/rtsx_pci.h | 254 +++++++++++++++++++++----------------------
+>>   1 file changed, 127 insertions(+), 127 deletions(-)
+>>
+>> diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
+>> index 0c12628..a9c2a14 100644
+>> --- a/include/linux/mfd/rtsx_pci.h
+>> +++ b/include/linux/mfd/rtsx_pci.h
+>> @@ -175,9 +175,9 @@
+>>   /* CARD_SHARE_MODE */
+>>   #define CARD_SHARE_MASK			0x0F
+>>   #define CARD_SHARE_MULTI_LUN		0x00
+>> -#define	CARD_SHARE_NORMAL		0x00
+>> -#define	CARD_SHARE_48_SD		0x04
+>> -#define	CARD_SHARE_48_MS		0x08
+>> +#define CARD_SHARE_NORMAL		0x00
+>> +#define CARD_SHARE_48_SD		0x04
+>> +#define CARD_SHARE_48_MS		0x08
+>>   /* CARD_SHARE_MODE for barossa */
+>>   #define CARD_SHARE_BAROSSA_SD		0x01
+>>   #define CARD_SHARE_BAROSSA_MS		0x02
+>> @@ -249,76 +249,76 @@
+>>   #define CD_AUTO_DISABLE			0x40
+>>   
+>>   /* SD_STAT1 */
+>> -#define	SD_CRC7_ERR			0x80
+>> -#define	SD_CRC16_ERR			0x40
+>> -#define	SD_CRC_WRITE_ERR		0x20
+>> -#define	SD_CRC_WRITE_ERR_MASK		0x1C
+>> -#define	GET_CRC_TIME_OUT		0x02
+>> -#define	SD_TUNING_COMPARE_ERR		0x01
+>> +#define SD_CRC7_ERR			0x80
+>> +#define SD_CRC16_ERR			0x40
+>> +#define SD_CRC_WRITE_ERR		0x20
+>> +#define SD_CRC_WRITE_ERR_MASK		0x1C
+>> +#define GET_CRC_TIME_OUT		0x02
+>> +#define SD_TUNING_COMPARE_ERR		0x01
+>>   
+>>   /* SD_STAT2 */
+>> -#define	SD_RSP_80CLK_TIMEOUT		0x01
+>> +#define SD_RSP_80CLK_TIMEOUT		0x01
+>>   
+>>   /* SD_BUS_STAT */
+>> -#define	SD_CLK_TOGGLE_EN		0x80
+>> -#define	SD_CLK_FORCE_STOP	        0x40
+>> -#define	SD_DAT3_STATUS		        0x10
+>> -#define	SD_DAT2_STATUS		        0x08
+>> -#define	SD_DAT1_STATUS		        0x04
+>> -#define	SD_DAT0_STATUS		        0x02
+>> -#define	SD_CMD_STATUS			0x01
+>> +#define SD_CLK_TOGGLE_EN		0x80
+>> +#define SD_CLK_FORCE_STOP	        0x40
+>> +#define SD_DAT3_STATUS		        0x10
+>> +#define SD_DAT2_STATUS		        0x08
+>> +#define SD_DAT1_STATUS		        0x04
+>> +#define SD_DAT0_STATUS		        0x02
+>> +#define SD_CMD_STATUS			0x01
+>>   
+>>   /* SD_PAD_CTL */
+>> -#define	SD_IO_USING_1V8		        0x80
+>> -#define	SD_IO_USING_3V3		        0x7F
+>> -#define	TYPE_A_DRIVING		        0x00
+>> -#define	TYPE_B_DRIVING			0x01
+>> -#define	TYPE_C_DRIVING			0x02
+>> -#define	TYPE_D_DRIVING		        0x03
+>> +#define SD_IO_USING_1V8		        0x80
+>> +#define SD_IO_USING_3V3		        0x7F
+>> +#define TYPE_A_DRIVING		        0x00
+>> +#define TYPE_B_DRIVING			0x01
+>> +#define TYPE_C_DRIVING			0x02
+>> +#define TYPE_D_DRIVING		        0x03
+>>   
+>>   /* SD_SAMPLE_POINT_CTL */
+>> -#define	DDR_FIX_RX_DAT			0x00
+>> -#define	DDR_VAR_RX_DAT			0x80
+>> -#define	DDR_FIX_RX_DAT_EDGE		0x00
+>> -#define	DDR_FIX_RX_DAT_14_DELAY		0x40
+>> -#define	DDR_FIX_RX_CMD			0x00
+>> -#define	DDR_VAR_RX_CMD			0x20
+>> -#define	DDR_FIX_RX_CMD_POS_EDGE		0x00
+>> -#define	DDR_FIX_RX_CMD_14_DELAY		0x10
+>> -#define	SD20_RX_POS_EDGE		0x00
+>> -#define	SD20_RX_14_DELAY		0x08
+>> +#define DDR_FIX_RX_DAT			0x00
+>> +#define DDR_VAR_RX_DAT			0x80
+>> +#define DDR_FIX_RX_DAT_EDGE		0x00
+>> +#define DDR_FIX_RX_DAT_14_DELAY		0x40
+>> +#define DDR_FIX_RX_CMD			0x00
+>> +#define DDR_VAR_RX_CMD			0x20
+>> +#define DDR_FIX_RX_CMD_POS_EDGE		0x00
+>> +#define DDR_FIX_RX_CMD_14_DELAY		0x10
+>> +#define SD20_RX_POS_EDGE		0x00
+>> +#define SD20_RX_14_DELAY		0x08
+>>   #define SD20_RX_SEL_MASK		0x08
+>>   
+>>   /* SD_PUSH_POINT_CTL */
+>> -#define	DDR_FIX_TX_CMD_DAT		0x00
+>> -#define	DDR_VAR_TX_CMD_DAT		0x80
+>> -#define	DDR_FIX_TX_DAT_14_TSU		0x00
+>> -#define	DDR_FIX_TX_DAT_12_TSU		0x40
+>> -#define	DDR_FIX_TX_CMD_NEG_EDGE		0x00
+>> -#define	DDR_FIX_TX_CMD_14_AHEAD		0x20
+>> -#define	SD20_TX_NEG_EDGE		0x00
+>> -#define	SD20_TX_14_AHEAD		0x10
+>> +#define DDR_FIX_TX_CMD_DAT		0x00
+>> +#define DDR_VAR_TX_CMD_DAT		0x80
+>> +#define DDR_FIX_TX_DAT_14_TSU		0x00
+>> +#define DDR_FIX_TX_DAT_12_TSU		0x40
+>> +#define DDR_FIX_TX_CMD_NEG_EDGE		0x00
+>> +#define DDR_FIX_TX_CMD_14_AHEAD		0x20
+>> +#define SD20_TX_NEG_EDGE		0x00
+>> +#define SD20_TX_14_AHEAD		0x10
+>>   #define SD20_TX_SEL_MASK		0x10
+>> -#define	DDR_VAR_SDCLK_POL_SWAP		0x01
+>> +#define DDR_VAR_SDCLK_POL_SWAP		0x01
+>>   
+>>   /* SD_TRANSFER */
+>> -#define	SD_TRANSFER_START		0x80
+>> -#define	SD_TRANSFER_END			0x40
+>> +#define SD_TRANSFER_START		0x80
+>> +#define SD_TRANSFER_END			0x40
+>>   #define SD_STAT_IDLE			0x20
+>> -#define	SD_TRANSFER_ERR			0x10
+>> +#define SD_TRANSFER_ERR			0x10
+>>   /* SD Transfer Mode definition */
+>> -#define	SD_TM_NORMAL_WRITE		0x00
+>> -#define	SD_TM_AUTO_WRITE_3		0x01
+>> -#define	SD_TM_AUTO_WRITE_4		0x02
+>> -#define	SD_TM_AUTO_READ_3		0x05
+>> -#define	SD_TM_AUTO_READ_4		0x06
+>> -#define	SD_TM_CMD_RSP			0x08
+>> -#define	SD_TM_AUTO_WRITE_1		0x09
+>> -#define	SD_TM_AUTO_WRITE_2		0x0A
+>> -#define	SD_TM_NORMAL_READ		0x0C
+>> -#define	SD_TM_AUTO_READ_1		0x0D
+>> -#define	SD_TM_AUTO_READ_2		0x0E
+>> -#define	SD_TM_AUTO_TUNING		0x0F
+>> +#define SD_TM_NORMAL_WRITE		0x00
+>> +#define SD_TM_AUTO_WRITE_3		0x01
+>> +#define SD_TM_AUTO_WRITE_4		0x02
+>> +#define SD_TM_AUTO_READ_3		0x05
+>> +#define SD_TM_AUTO_READ_4		0x06
+>> +#define SD_TM_CMD_RSP			0x08
+>> +#define SD_TM_AUTO_WRITE_1		0x09
+>> +#define SD_TM_AUTO_WRITE_2		0x0A
+>> +#define SD_TM_NORMAL_READ		0x0C
+>> +#define SD_TM_AUTO_READ_1		0x0D
+>> +#define SD_TM_AUTO_READ_2		0x0E
+>> +#define SD_TM_AUTO_TUNING		0x0F
+>>   
+>>   /* SD_VPTX_CTL / SD_VPRX_CTL */
+>>   #define PHASE_CHANGE			0x80
+>> @@ -332,15 +332,15 @@
+>>   
+>>   /* SD Configure 1 Register */
+>>   #define SD_CLK_DIVIDE_0			0x00
+>> -#define	SD_CLK_DIVIDE_256		0xC0
+>> -#define	SD_CLK_DIVIDE_128		0x80
+>> -#define	SD_BUS_WIDTH_1BIT		0x00
+>> -#define	SD_BUS_WIDTH_4BIT		0x01
+>> -#define	SD_BUS_WIDTH_8BIT		0x02
+>> -#define	SD_ASYNC_FIFO_NOT_RST		0x10
+>> -#define	SD_20_MODE			0x00
+>> -#define	SD_DDR_MODE			0x04
+>> -#define	SD_30_MODE			0x08
+>> +#define SD_CLK_DIVIDE_256		0xC0
+>> +#define SD_CLK_DIVIDE_128		0x80
+>> +#define SD_BUS_WIDTH_1BIT		0x00
+>> +#define SD_BUS_WIDTH_4BIT		0x01
+>> +#define SD_BUS_WIDTH_8BIT		0x02
+>> +#define SD_ASYNC_FIFO_NOT_RST		0x10
+>> +#define SD_20_MODE			0x00
+>> +#define SD_DDR_MODE			0x04
+>> +#define SD_30_MODE			0x08
+>>   
+>>   #define SD_CLK_DIVIDE_MASK		0xC0
+>>   
+>> @@ -415,71 +415,71 @@
+>>   #define CLK_DIV_8			0x04
+>>   
+>>   /* MS_CFG */
+>> -#define	SAMPLE_TIME_RISING		0x00
+>> -#define	SAMPLE_TIME_FALLING		0x80
+>> -#define	PUSH_TIME_DEFAULT		0x00
+>> -#define	PUSH_TIME_ODD			0x40
+>> -#define	NO_EXTEND_TOGGLE		0x00
+>> -#define	EXTEND_TOGGLE_CHK		0x20
+>> -#define	MS_BUS_WIDTH_1			0x00
+>> -#define	MS_BUS_WIDTH_4			0x10
+>> -#define	MS_BUS_WIDTH_8			0x18
+>> -#define	MS_2K_SECTOR_MODE		0x04
+>> -#define	MS_512_SECTOR_MODE		0x00
+>> -#define	MS_TOGGLE_TIMEOUT_EN		0x00
+>> -#define	MS_TOGGLE_TIMEOUT_DISEN		0x01
+>> +#define SAMPLE_TIME_RISING		0x00
+>> +#define SAMPLE_TIME_FALLING		0x80
+>> +#define PUSH_TIME_DEFAULT		0x00
+>> +#define PUSH_TIME_ODD			0x40
+>> +#define NO_EXTEND_TOGGLE		0x00
+>> +#define EXTEND_TOGGLE_CHK		0x20
+>> +#define MS_BUS_WIDTH_1			0x00
+>> +#define MS_BUS_WIDTH_4			0x10
+>> +#define MS_BUS_WIDTH_8			0x18
+>> +#define MS_2K_SECTOR_MODE		0x04
+>> +#define MS_512_SECTOR_MODE		0x00
+>> +#define MS_TOGGLE_TIMEOUT_EN		0x00
+>> +#define MS_TOGGLE_TIMEOUT_DISEN		0x01
+>>   #define MS_NO_CHECK_INT			0x02
+>>   
+>>   /* MS_TRANS_CFG */
+>> -#define	WAIT_INT			0x80
+>> -#define	NO_WAIT_INT			0x00
+>> -#define	NO_AUTO_READ_INT_REG		0x00
+>> -#define	AUTO_READ_INT_REG		0x40
+>> -#define	MS_CRC16_ERR			0x20
+>> -#define	MS_RDY_TIMEOUT			0x10
+>> -#define	MS_INT_CMDNK			0x08
+>> -#define	MS_INT_BREQ			0x04
+>> -#define	MS_INT_ERR			0x02
+>> -#define	MS_INT_CED			0x01
+>> +#define WAIT_INT			0x80
+>> +#define NO_WAIT_INT			0x00
+>> +#define NO_AUTO_READ_INT_REG		0x00
+>> +#define AUTO_READ_INT_REG		0x40
+>> +#define MS_CRC16_ERR			0x20
+>> +#define MS_RDY_TIMEOUT			0x10
+>> +#define MS_INT_CMDNK			0x08
+>> +#define MS_INT_BREQ			0x04
+>> +#define MS_INT_ERR			0x02
+>> +#define MS_INT_CED			0x01
+>>   
+>>   /* MS_TRANSFER */
+>> -#define	MS_TRANSFER_START		0x80
+>> -#define	MS_TRANSFER_END			0x40
+>> -#define	MS_TRANSFER_ERR			0x20
+>> -#define	MS_BS_STATE			0x10
+>> -#define	MS_TM_READ_BYTES		0x00
+>> -#define	MS_TM_NORMAL_READ		0x01
+>> -#define	MS_TM_WRITE_BYTES		0x04
+>> -#define	MS_TM_NORMAL_WRITE		0x05
+>> -#define	MS_TM_AUTO_READ			0x08
+>> -#define	MS_TM_AUTO_WRITE		0x0C
+>> +#define MS_TRANSFER_START		0x80
+>> +#define MS_TRANSFER_END			0x40
+>> +#define MS_TRANSFER_ERR			0x20
+>> +#define MS_BS_STATE			0x10
+>> +#define MS_TM_READ_BYTES		0x00
+>> +#define MS_TM_NORMAL_READ		0x01
+>> +#define MS_TM_WRITE_BYTES		0x04
+>> +#define MS_TM_NORMAL_WRITE		0x05
+>> +#define MS_TM_AUTO_READ			0x08
+>> +#define MS_TM_AUTO_WRITE		0x0C
+>>   
+>>   /* SD Configure 2 Register */
+>> -#define	SD_CALCULATE_CRC7		0x00
+>> -#define	SD_NO_CALCULATE_CRC7		0x80
+>> -#define	SD_CHECK_CRC16			0x00
+>> -#define	SD_NO_CHECK_CRC16		0x40
+>> +#define SD_CALCULATE_CRC7		0x00
+>> +#define SD_NO_CALCULATE_CRC7		0x80
+>> +#define SD_CHECK_CRC16			0x00
+>> +#define SD_NO_CHECK_CRC16		0x40
+>>   #define SD_NO_CHECK_WAIT_CRC_TO		0x20
+>> -#define	SD_WAIT_BUSY_END		0x08
+>> -#define	SD_NO_WAIT_BUSY_END		0x00
+>> -#define	SD_CHECK_CRC7			0x00
+>> -#define	SD_NO_CHECK_CRC7		0x04
+>> -#define	SD_RSP_LEN_0			0x00
+>> -#define	SD_RSP_LEN_6			0x01
+>> -#define	SD_RSP_LEN_17			0x02
+>> +#define SD_WAIT_BUSY_END		0x08
+>> +#define SD_NO_WAIT_BUSY_END		0x00
+>> +#define SD_CHECK_CRC7			0x00
+>> +#define SD_NO_CHECK_CRC7		0x04
+>> +#define SD_RSP_LEN_0			0x00
+>> +#define SD_RSP_LEN_6			0x01
+>> +#define SD_RSP_LEN_17			0x02
+>>   /* SD/MMC Response Type Definition */
+>> -#define	SD_RSP_TYPE_R0			0x04
+>> -#define	SD_RSP_TYPE_R1			0x01
+>> -#define	SD_RSP_TYPE_R1b			0x09
+>> -#define	SD_RSP_TYPE_R2			0x02
+>> -#define	SD_RSP_TYPE_R3			0x05
+>> -#define	SD_RSP_TYPE_R4			0x05
+>> -#define	SD_RSP_TYPE_R5			0x01
+>> -#define	SD_RSP_TYPE_R6			0x01
+>> -#define	SD_RSP_TYPE_R7			0x01
+>> +#define SD_RSP_TYPE_R0			0x04
+>> +#define SD_RSP_TYPE_R1			0x01
+>> +#define SD_RSP_TYPE_R1b			0x09
+>> +#define SD_RSP_TYPE_R2			0x02
+>> +#define SD_RSP_TYPE_R3			0x05
+>> +#define SD_RSP_TYPE_R4			0x05
+>> +#define SD_RSP_TYPE_R5			0x01
+>> +#define SD_RSP_TYPE_R6			0x01
+>> +#define SD_RSP_TYPE_R7			0x01
+>>   
+>>   /* SD_CONFIGURE3 */
+>> -#define	SD_RSP_80CLK_TIMEOUT_EN		0x01
+>> +#define SD_RSP_80CLK_TIMEOUT_EN		0x01
+>>   
+>>   /* Card Transfer Reset Register */
+>>   #define SPI_STOP			0x01
+>> @@ -574,13 +574,13 @@
+>>   
+>>   #define SRCTL				0xFC13
+>>   
+>> -#define	DCM_DRP_CTL			0xFC23
+>> -#define	DCM_DRP_TRIG			0xFC24
+>> -#define	DCM_DRP_CFG			0xFC25
+>> -#define	DCM_DRP_WR_DATA_L		0xFC26
+>> -#define	DCM_DRP_WR_DATA_H		0xFC27
+>> -#define	DCM_DRP_RD_DATA_L		0xFC28
+>> -#define	DCM_DRP_RD_DATA_H		0xFC29
+>> +#define DCM_DRP_CTL			0xFC23
+>> +#define DCM_DRP_TRIG			0xFC24
+>> +#define DCM_DRP_CFG			0xFC25
+>> +#define DCM_DRP_WR_DATA_L		0xFC26
+>> +#define DCM_DRP_WR_DATA_H		0xFC27
+>> +#define DCM_DRP_RD_DATA_L		0xFC28
+>> +#define DCM_DRP_RD_DATA_H		0xFC29
+>>   #define SD_VPCLK0_CTL			0xFC2A
+>>   #define SD_VPCLK1_CTL			0xFC2B
+>>   #define SD_DCMPS0_CTL			0xFC2C
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
