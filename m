@@ -1,105 +1,370 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751797AbbASVZO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 16:25:14 -0500
-Received: from mail-gw1-out.broadcom.com ([216.31.210.62]:4034 "EHLO
-	mail-gw1-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751180AbbASVZM (ORCPT
+	id S1752142AbbASVZx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 16:25:53 -0500
+Received: from mail-lb0-f196.google.com ([209.85.217.196]:62796 "EHLO
+	mail-lb0-f196.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751799AbbASVZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 16:25:12 -0500
-X-IronPort-AV: E=Sophos;i="5.09,429,1418112000"; 
-   d="scan'208";a="55295630"
-Message-ID: <54BD7631.50205@broadcom.com>
-Date: Mon, 19 Jan 2015 13:25:05 -0800
-From: Ray Jui <rjui@broadcom.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
-MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: =?windows-1252?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Wolfram Sang <wsa@the-dreams.de>, Rob Herring <robh+dt@kernel.org>,
-        "Pawel Moll" <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        "Grant Likely" <grant.likely@linaro.org>,
-        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Scott Branden <sbranden@broadcom.com>, <linux-i2c@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <bcm-kernel-feedback-list@broadcom.com>, <devicetree@vger.kernel.org>
-Subject: Re: [PATCH v4 2/3] i2c: iproc: Add Broadcom iProc I2C Driver
-References: <20150115084119.GN22880@pengutronix.de> <54B98C18.4080807@broadcom.com> <20150117160113.GA22880@pengutronix.de> <54BABEE9.8070801@broadcom.com> <20150117201849.GC22880@pengutronix.de> <54BACB66.6040909@broadcom.com> <20150117211017.GD22880@pengutronix.de> <54BAD391.9080909@broadcom.com> <20150117224021.GA26493@n2100.arm.linux.org.uk> <54BAFEA9.9040900@broadcom.com> <20150119192805.GF26493@n2100.arm.linux.org.uk>
-In-Reply-To: <20150119192805.GF26493@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+	Mon, 19 Jan 2015 16:25:52 -0500
+From: Yury Norov <yury.norov@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: heukelum@mailshack.com, mita@miraclelinux.com,
+        Yury Norov <yury.norov@gmail.com>
+Subject: [PATCH] lib: find_*_bit reimplementation
+Date: Tue, 20 Jan 2015 00:25:06 +0300
+Message-Id: <1421702706-10404-1-git-send-email-yury.norov@gmail.com>
+X-Mailer: git-send-email 2.1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+New implementation takes less space, and, I hope, easier to understand.
 
+Signed-off-by: Yury Norov <yury.norov@gmail.com>
+---
+ lib/find_next_bit.c | 265 +++++++++++++++-------------------------------------
+ 1 file changed, 73 insertions(+), 192 deletions(-)
 
-On 1/19/2015 11:28 AM, Russell King - ARM Linux wrote:
-> On Sat, Jan 17, 2015 at 04:30:33PM -0800, Ray Jui wrote:
->>
->>
->> On 1/17/2015 2:40 PM, Russell King - ARM Linux wrote:
->>> On Sat, Jan 17, 2015 at 01:26:41PM -0800, Ray Jui wrote:
->>>> 	time_left = wait_for_completion_timeout(&iproc_i2c->done, time_left);
->>>>
->>>> 	/* disable all interrupts */
->>>> 	writel(0, iproc_i2c->base + IE_OFFSET);
->>>>
->>>> 	if (!time_left && !atomic_read(&iproc_i2c->transfer_is_successful)) {
->>>
->>> Why are you using atomic_read() here?
->>>
->> transfer_is_successful 1) will be reset to 0 in this function (before
->> kick start the I2C transfer), 2) will be set to 1 in the ISR (to signal
->> completion of the I2C transfer), and 3) will be checked in this function
->> here. I thought that means I should declare it volatile, because it can
->> be modified in both the process context and interrupt context (and I use
->> atomic because I remember Linux checkpatch warns against using volatile)?
-> 
-> You don't need volatile or atomic_t for that.
-> 
-> Rather than switching to atomic_t when seeing the checkpatch warning,
-> you'd do better to read Documentation/volatile-considered-harmful.txt
-> to understand why checkpatch issues the warning, and realise that you
-> don't need it for the above.
-> 
-> Note that in the above code, the compiler can't make an assumption
-> about iproc_i2c->transfer_is_successful because it can't tell whether
-> a called function (eg, wait_for_completion_timeout()) could modify it.
-> 
-Got it. Thanks.
+diff --git a/lib/find_next_bit.c b/lib/find_next_bit.c
+index 0cbfc0b..a5c915f 100644
+--- a/lib/find_next_bit.c
++++ b/lib/find_next_bit.c
+@@ -11,10 +11,39 @@
+ 
+ #include <linux/bitops.h>
+ #include <linux/export.h>
++#include <linux/kernel.h>
+ #include <asm/types.h>
+ #include <asm/byteorder.h>
+ 
+-#define BITOP_WORD(nr)		((nr) / BITS_PER_LONG)
++#define HIGH_BITS_MASK(nr)		(ULONG_MAX << (nr))
++#define MIN(a, b)			((a) < (b) ? (a) : (b))
++
++#if !defined(find_next_bit) || !defined(find_next_zero_bit)
++static unsigned long _find_next_bit(const unsigned long *addr,
++		unsigned long end, unsigned long start, unsigned long flags)
++{
++	unsigned long tmp = flags ? addr[start / BITS_PER_LONG]
++			: ~addr[start / BITS_PER_LONG];
++
++	/* Handle 1st word. */
++	if (!IS_ALIGNED(start, BITS_PER_LONG)) {
++		tmp &= HIGH_BITS_MASK(start % BITS_PER_LONG);
++		start = round_down(start, BITS_PER_LONG);
++	}
++
++	do {
++		if (tmp)
++			return MIN(start + __ffs(tmp), end);
++
++		start += BITS_PER_LONG;
++		if (start >= end)
++			return end;
++
++		tmp = flags ? addr[start / BITS_PER_LONG]
++			: ~addr[start / BITS_PER_LONG];
++	} while (1);
++}
++#endif
+ 
+ #ifndef find_next_bit
+ /*
+@@ -23,86 +52,16 @@
+ unsigned long find_next_bit(const unsigned long *addr, unsigned long size,
+ 			    unsigned long offset)
+ {
+-	const unsigned long *p = addr + BITOP_WORD(offset);
+-	unsigned long result = offset & ~(BITS_PER_LONG-1);
+-	unsigned long tmp;
+-
+-	if (offset >= size)
+-		return size;
+-	size -= result;
+-	offset %= BITS_PER_LONG;
+-	if (offset) {
+-		tmp = *(p++);
+-		tmp &= (~0UL << offset);
+-		if (size < BITS_PER_LONG)
+-			goto found_first;
+-		if (tmp)
+-			goto found_middle;
+-		size -= BITS_PER_LONG;
+-		result += BITS_PER_LONG;
+-	}
+-	while (size & ~(BITS_PER_LONG-1)) {
+-		if ((tmp = *(p++)))
+-			goto found_middle;
+-		result += BITS_PER_LONG;
+-		size -= BITS_PER_LONG;
+-	}
+-	if (!size)
+-		return result;
+-	tmp = *p;
+-
+-found_first:
+-	tmp &= (~0UL >> (BITS_PER_LONG - size));
+-	if (tmp == 0UL)		/* Are any bits set? */
+-		return result + size;	/* Nope. */
+-found_middle:
+-	return result + __ffs(tmp);
++	return _find_next_bit(addr, size, offset, 1);
+ }
+ EXPORT_SYMBOL(find_next_bit);
+ #endif
+ 
+ #ifndef find_next_zero_bit
+-/*
+- * This implementation of find_{first,next}_zero_bit was stolen from
+- * Linus' asm-alpha/bitops.h.
+- */
+ unsigned long find_next_zero_bit(const unsigned long *addr, unsigned long size,
+ 				 unsigned long offset)
+ {
+-	const unsigned long *p = addr + BITOP_WORD(offset);
+-	unsigned long result = offset & ~(BITS_PER_LONG-1);
+-	unsigned long tmp;
+-
+-	if (offset >= size)
+-		return size;
+-	size -= result;
+-	offset %= BITS_PER_LONG;
+-	if (offset) {
+-		tmp = *(p++);
+-		tmp |= ~0UL >> (BITS_PER_LONG - offset);
+-		if (size < BITS_PER_LONG)
+-			goto found_first;
+-		if (~tmp)
+-			goto found_middle;
+-		size -= BITS_PER_LONG;
+-		result += BITS_PER_LONG;
+-	}
+-	while (size & ~(BITS_PER_LONG-1)) {
+-		if (~(tmp = *(p++)))
+-			goto found_middle;
+-		result += BITS_PER_LONG;
+-		size -= BITS_PER_LONG;
+-	}
+-	if (!size)
+-		return result;
+-	tmp = *p;
+-
+-found_first:
+-	tmp |= ~0UL << size;
+-	if (tmp == ~0UL)	/* Are any bits zero? */
+-		return result + size;	/* Nope. */
+-found_middle:
+-	return result + ffz(tmp);
++	return _find_next_bit(addr, size, offset, 0);
+ }
+ EXPORT_SYMBOL(find_next_zero_bit);
+ #endif
+@@ -113,24 +72,14 @@ EXPORT_SYMBOL(find_next_zero_bit);
+  */
+ unsigned long find_first_bit(const unsigned long *addr, unsigned long size)
+ {
+-	const unsigned long *p = addr;
+-	unsigned long result = 0;
+-	unsigned long tmp;
++	unsigned int idx;
+ 
+-	while (size & ~(BITS_PER_LONG-1)) {
+-		if ((tmp = *(p++)))
+-			goto found;
+-		result += BITS_PER_LONG;
+-		size -= BITS_PER_LONG;
++	for (idx = 0; idx * BITS_PER_LONG < size; idx++) {
++		if (addr[idx])
++			return idx * BITS_PER_LONG + __ffs(addr[idx]);
+ 	}
+-	if (!size)
+-		return result;
+ 
+-	tmp = (*p) & (~0UL >> (BITS_PER_LONG - size));
+-	if (tmp == 0UL)		/* Are any bits set? */
+-		return result + size;	/* Nope. */
+-found:
+-	return result + __ffs(tmp);
++	return size;
+ }
+ EXPORT_SYMBOL(find_first_bit);
+ #endif
+@@ -141,24 +90,14 @@ EXPORT_SYMBOL(find_first_bit);
+  */
+ unsigned long find_first_zero_bit(const unsigned long *addr, unsigned long size)
+ {
+-	const unsigned long *p = addr;
+-	unsigned long result = 0;
+-	unsigned long tmp;
++	unsigned int idx;
+ 
+-	while (size & ~(BITS_PER_LONG-1)) {
+-		if (~(tmp = *(p++)))
+-			goto found;
+-		result += BITS_PER_LONG;
+-		size -= BITS_PER_LONG;
++	for (idx = 0; idx * BITS_PER_LONG < size; idx++) {
++		if (addr[idx] != ULONG_MAX)
++			return idx * BITS_PER_LONG + ffz(addr[idx]);
+ 	}
+-	if (!size)
+-		return result;
+ 
+-	tmp = (*p) | (~0UL << size);
+-	if (tmp == ~0UL)	/* Are any bits zero? */
+-		return result + size;	/* Nope. */
+-found:
+-	return result + ffz(tmp);
++	return size;
+ }
+ EXPORT_SYMBOL(find_first_zero_bit);
+ #endif
+@@ -166,18 +105,6 @@ EXPORT_SYMBOL(find_first_zero_bit);
+ #ifdef __BIG_ENDIAN
+ 
+ /* include/linux/byteorder does not support "unsigned long" type */
+-static inline unsigned long ext2_swabp(const unsigned long * x)
+-{
+-#if BITS_PER_LONG == 64
+-	return (unsigned long) __swab64p((u64 *) x);
+-#elif BITS_PER_LONG == 32
+-	return (unsigned long) __swab32p((u32 *) x);
+-#else
+-#error BITS_PER_LONG not defined
+-#endif
+-}
+-
+-/* include/linux/byteorder doesn't support "unsigned long" type */
+ static inline unsigned long ext2_swab(const unsigned long y)
+ {
+ #if BITS_PER_LONG == 64
+@@ -189,48 +116,40 @@ static inline unsigned long ext2_swab(const unsigned long y)
+ #endif
+ }
+ 
+-#ifndef find_next_zero_bit_le
+-unsigned long find_next_zero_bit_le(const void *addr, unsigned
+-		long size, unsigned long offset)
++#if !defined(find_next_bit_le) || !defined(find_next_zero_bit_le)
++static unsigned long _find_next_bit_le(const unsigned long *addr,
++		unsigned long end, unsigned long start, unsigned long flags)
+ {
+-	const unsigned long *p = addr;
+-	unsigned long result = offset & ~(BITS_PER_LONG - 1);
+-	unsigned long tmp;
+-
+-	if (offset >= size)
+-		return size;
+-	p += BITOP_WORD(offset);
+-	size -= result;
+-	offset &= (BITS_PER_LONG - 1UL);
+-	if (offset) {
+-		tmp = ext2_swabp(p++);
+-		tmp |= (~0UL >> (BITS_PER_LONG - offset));
+-		if (size < BITS_PER_LONG)
+-			goto found_first;
+-		if (~tmp)
+-			goto found_middle;
+-		size -= BITS_PER_LONG;
+-		result += BITS_PER_LONG;
++	unsigned long tmp = flags ? addr[start / BITS_PER_LONG]
++			: ~addr[start / BITS_PER_LONG];
++
++	/* Handle 1st word. */
++	if (!IS_ALIGNED(start, BITS_PER_LONG)) {
++		tmp &= ext2_swab(HIGH_BITS_MASK(start
++					% BITS_PER_LONG));
++		start = round_down(start, BITS_PER_LONG);
+ 	}
+ 
+-	while (size & ~(BITS_PER_LONG - 1)) {
+-		if (~(tmp = *(p++)))
+-			goto found_middle_swap;
+-		result += BITS_PER_LONG;
+-		size -= BITS_PER_LONG;
+-	}
+-	if (!size)
+-		return result;
+-	tmp = ext2_swabp(p);
+-found_first:
+-	tmp |= ~0UL << size;
+-	if (tmp == ~0UL)	/* Are any bits zero? */
+-		return result + size; /* Nope. Skip ffz */
+-found_middle:
+-	return result + ffz(tmp);
++	do {
++		if (tmp)
++			return MIN(start +
++				__ffs(ext2_swab(tmp)), end);
+ 
+-found_middle_swap:
+-	return result + ffz(ext2_swab(tmp));
++		start += BITS_PER_LONG;
++		if (start >= end)
++			return end;
++
++		tmp = flags ? addr[start / BITS_PER_LONG]
++			: ~addr[start / BITS_PER_LONG];
++	} while (1);
++}
++#endif
++
++#ifndef find_next_zero_bit_le
++unsigned long find_next_zero_bit_le(const void *addr, unsigned
++		long size, unsigned long offset)
++{
++	return _find_next_bit_le(addr, size, offset, o);
+ }
+ EXPORT_SYMBOL(find_next_zero_bit_le);
+ #endif
+@@ -239,45 +158,7 @@ EXPORT_SYMBOL(find_next_zero_bit_le);
+ unsigned long find_next_bit_le(const void *addr, unsigned
+ 		long size, unsigned long offset)
+ {
+-	const unsigned long *p = addr;
+-	unsigned long result = offset & ~(BITS_PER_LONG - 1);
+-	unsigned long tmp;
+-
+-	if (offset >= size)
+-		return size;
+-	p += BITOP_WORD(offset);
+-	size -= result;
+-	offset &= (BITS_PER_LONG - 1UL);
+-	if (offset) {
+-		tmp = ext2_swabp(p++);
+-		tmp &= (~0UL << offset);
+-		if (size < BITS_PER_LONG)
+-			goto found_first;
+-		if (tmp)
+-			goto found_middle;
+-		size -= BITS_PER_LONG;
+-		result += BITS_PER_LONG;
+-	}
+-
+-	while (size & ~(BITS_PER_LONG - 1)) {
+-		tmp = *(p++);
+-		if (tmp)
+-			goto found_middle_swap;
+-		result += BITS_PER_LONG;
+-		size -= BITS_PER_LONG;
+-	}
+-	if (!size)
+-		return result;
+-	tmp = ext2_swabp(p);
+-found_first:
+-	tmp &= (~0UL >> (BITS_PER_LONG - size));
+-	if (tmp == 0UL)		/* Are any bits set? */
+-		return result + size; /* Nope. */
+-found_middle:
+-	return result + __ffs(tmp);
+-
+-found_middle_swap:
+-	return result + __ffs(ext2_swab(tmp));
++	return _find_next_bit_le(addr, size, offset, 1);
+ }
+ EXPORT_SYMBOL(find_next_bit_le);
+ #endif
+-- 
+2.1.0
 
-> Another possible issue with the above code are these lines:
-> 
-> 	/* disable all interrupts */
-> 	writel(0, iproc_i2c->base + IE_OFFSET);
-> 
-> It would be nice to think that would hit the hardware immediately, but
-> that's making assumptions about hardware which are not necessary true.
-> Your interrupt handler could even be running on another CPU after you've
-> asked for that register to be written.
-> 
-> Depending on what you're trying to achieve here, you may need:
-> 
-> 	/* disable all interrupts */
-> 	writel(0, iproc_i2c->base + IE_OFFSET);
-> 	/* read it back to ensure the write has hit */
-> 	readl(iproc_i2c->base + IE_OFFSET);
-> 
-> 	/* make sure the interrupt handler isn't running */
-> 	synchronize_irq(...->irq);
-> 
-> if what you're trying to do is to ensure that the interrupt handler has
-> finished running.
-> 
-This will be the most robust way of handling this. Given that we've
-added an additional flag to check to make sure there's no interrupt
-missed after wait_for_completion_timeout times out, it makes sense to
-ensure that by the time when we check the flag there's no pending irq.
-I'll add this to the driver and make 'xfer_is_done' an 'int' instead of
-'atomic_t'. I will also add the call to readl to flush the write in the
-remove function after interrupts are disabled.
