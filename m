@@ -1,198 +1,224 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751974AbbASTJd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 14:09:33 -0500
-Received: from smtp05.smtpout.orange.fr ([80.12.242.127]:24052 "EHLO
-	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751424AbbASTJb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 14:09:31 -0500
-X-ME-Helo: beldin
-X-ME-Date: Mon, 19 Jan 2015 20:09:28 +0100
-X-ME-IP: 109.222.126.211
-From: Robert Jarzmik <robert.jarzmik@free.fr>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Daniel Mack <daniel@zonque.org>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH v3 2/3] mfd: lubbock_io: add lubbock_io board
-References: <1421406010-14851-1-git-send-email-robert.jarzmik@free.fr>
-	<1421406010-14851-2-git-send-email-robert.jarzmik@free.fr>
-	<20150119091705.GG21886@x1>
-X-URL: http://belgarath.falguerolles.org/
-Date: Mon, 19 Jan 2015 20:09:14 +0100
-In-Reply-To: <20150119091705.GG21886@x1> (Lee Jones's message of "Mon, 19 Jan
-	2015 09:17:05 +0000")
-Message-ID: <87ppaah9k5.fsf@free.fr>
-User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.92 (gnu/linux)
+	id S1752035AbbASTJz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 14:09:55 -0500
+Received: from mail-qc0-f169.google.com ([209.85.216.169]:51030 "EHLO
+	mail-qc0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751467AbbASTJx (ORCPT
+	<rfc822;Linux-Kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 14:09:53 -0500
+Message-ID: <54BD567C.8070200@hurleysoftware.com>
+Date: Mon, 19 Jan 2015 14:09:48 -0500
+From: Peter Hurley <peter@hurleysoftware.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Howard Chu <hyc@symas.com>
+CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Jiri Slaby <jslaby@suse.cz>,
+        Linux Kernel Mailing List <Linux-Kernel@vger.kernel.org>,
+        linux-serial@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>
+Subject: Re: [PATCH] n_tty: Remove LINEMODE support
+References: <1421616632-4077-1-git-send-email-peter@hurleysoftware.com> <54BC3771.7030204@symas.com> <54BC5EC7.1090202@hurleysoftware.com> <54BCFC94.1040605@symas.com> <54BD1B53.9030901@hurleysoftware.com> <54BD328F.9090208@symas.com>
+In-Reply-To: <54BD328F.9090208@symas.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lee Jones <lee.jones@linaro.org> writes:
+On 01/19/2015 11:36 AM, Howard Chu wrote:
+> Peter Hurley wrote:
+>> Thanks, Howard.
+>>
+>> [ adding Ted too ]
+>>
+>> On 01/19/2015 07:46 AM, Howard Chu wrote:
+>>> Peter Hurley wrote:
+>>>> On 01/18/2015 05:45 PM, Howard Chu wrote:
+>>>>> Peter Hurley wrote:
+>>>>>> Commit 26df6d13406d1 ("tty: Add EXTPROC support for LINEMODE") added
+>>>>>> the undocumented EXTPROC input processing mode, which ignores the ICANON
+>>>>>> setting and forces pty slave input to be processed in non-canonical
+>>>>>> mode.
+>>>>>
+>>>>> What's the motivation to remove this code, rather than improve it if it
+>>>>> needs fixing? It has been removed from the Linux kernel at least once
+>>>>> before already, and that was a mistake back then too.
+>>>>
+>>>> It is a significant maintenance burden, and I have concerns about the
+>>>> level of support it's receiving. Here's some outstanding issues:
+>>>>
+>>>> 1. No man page documentation. At a minimum, tty_ioctl(4) and termios(3)
+>>>>      need the userspace visible definitions and behavior documented. Better
+>>>>      would be a LINEMODE (7) description of how this implementation works
+>>>>      wrt supporting RFC 1116.
+>>>
+>>> That can be added easily enough.
+>>
+>> Is this you signing up?  :)
+> 
+> Sure. I suppose the obvious place to add it is near the TIOCPKT doc in tty_ioctl(4). But, about your further comment:
 
-> On Fri, 16 Jan 2015, Robert Jarzmik wrote:
->
->> As a fix, move the gpio0 chained handler setup to a place where we have
->> the guarantee that pxa_gpio_probe() was called before, so that lubbock
->> handler becomes the true IRQ chained handler of GPIO0, demuxing the
->> lubbock IO board interrupts.
->
-> How is this guaranteed?
-In the following chunk :
-	ret = devm_request_irq(&pdev->dev, cot->irq, lubbock_irq_handler,
-			       irqflags, dev_name(&pdev->dev), cot);
-	if (ret == -ENOSYS)
-		return -EPROBE_DEFER;
+Thanks.
 
-See __setup_irq(), and see what happens if the irq chip is not set (which
-happens on pxa platform when the gpio driver is not registered).
+>> Which brings up another point: only a pty master should be able to set EXTPROC
+>> mode. Right now, any tty can be set to EXTPROC and the pty slave can even
+>> accidentally unset it. This argues for a new pty ioctl() to set EXTPROC in
+>> termios. pty_set_termios() can silently merge the bit.
+> 
+> Historically EXTPROC could also be set on regular ttys, for lines that were hooked up to special terminal interfaces. E.g. X.29 PADs that did their own input processing. I'm not sure how relevant this is now, but this is the reason EXTPROC is not a pty-specific ioctl.
 
->> + * Lubbock motherboard driver, supporting lubbock (aka. pxa25x) soc board.
->
-> Please use uppercase characters i.e. Lubbock, PXA25X, SoC, etc.
-OK, your tree, your rules.
+How does the remote end find out when non-canon mode is selected?
+And who does the EXTPROC setting, because if it's the program that opened the
+tty, then it can just select raw mode instead.
 
-> Superfluous '\n'.
-Yep.
 
-> Can this be built as a module?
-Not in its current form.
+>> A description of how the pty master uses EXTPROC to implement line mode would
+>> be very helpful, especially to people working in the tty code (eg., me, although
+>> I don't need it now).
+> 
+> The original patch submission carried this description
+> http://lkml.iu.edu/hypermail/linux/kernel/1006.2/02428.html
+> 
+>>>> 3. Does the local edit guarantee canon lines <= 4096 chars? What happens
+>>>>      if pty slave reader does this?
+>>>>
+>>>>      char buffer[4096];
+>>>>      char *p = buffer;
+>>>>
+>>>>      n = read(tty, buffer, sizeof(buffer));
+>>>>      if (n <= 0)
+>>>>          goto done;
+>>>>      while (*p++ != '\n')
+>>>>          ;
+>>>
+>>> This reader is broken, since the tty driver supports EOL and EOL2 and this code doesn't account for it.
+>>
+>> This reader set EOL2 to DISABLED_CHAR earlier, and left EOL unchanged.
+>> I have seen userspace code that expects a line to be no longer than 4096 chars.
+>>
+>>> In practice your concern is misdirected - it's the job of whatever code is talking to the pty master to send valid data to the pty slave. There's no reason for the tty driver to second-guess the app here.
+>>
+>> What about a malicious client?
+> 
+> This is still a broken reader. It's as bad as using strchr() without knowing if the string is NUL-terminated, if 4096 bytes are read the thing will go off into the weeds.
 
-> If so, why isn't it a tristate?
-See above.
+There's lots of broken userspace programs that do all kinds of stupid stuff.
+Want to find out which ones they are? Just declare N_TTY_BUF_SIZE to be 8192
+and start allowing that canon line size through.
 
-Now the question is : should it be buildable as a module ? I was thinking it
-shouldn't because without this driver lubbock becomes a bit useless (most of its
-peripherals are on the motherboard).
 
->> +struct lubbock {
->> +	void __iomem	*base;
->
-> Random spacing.
-Right.
+>>>> 4. ioctl(TIOCSIG) can send _any_ signal to a different process without
+>>>>      permission checks. That's not good.
+>>>
+>>> It can only send to the pty slave. Permissions were already checked when the pty master was opened.
+>>
+>> Still not ok.
+>>
+>>> What further checks do you think are needed? You think it should be limited to tty-specific signals: INT, QUIT, CONT, TSTP, TTIN, TTOU, WINCH?
+>>
+>> My first choice is to do away with TIOCSIG ioctl completely; see ending comments.
+>> My second would be masked to only those already used: INT, QUIT, TSTP.
+> 
+> Perhaps your way is better. This patch simply duplicated the BSD functionality, to maintain compatibility.
+> 
+>>>> 5. This needs to work with readline(). Right now, I don't see how this
+>>>>      won't have worst-case behavior, constantly sending termios changes,
+>>>>      with scripted input where the reader switches back-and-forth between
+>>>>      canonical and non-canonical mode (like readline() does). Database
+>>>>      shells behave like this, but you can do a 20-line shell mockup with
+>>>>      just readline().
+>>>
+>>> readline() patched accordingly https://groups.google.com/forum/#!topic/gnu.bash.bug/o0UA55AhADs will cooperate. Sending one or two termios changes per input line is still far better than one character-at-a-time packets back and forth.
+>>
+>> Ok, I misunderstood: the only incompatibility here is that readline()
+>> simply doesn't use line mode. That's fine from the kernel perspective.
+>>
+>> Although it does seem odd that the command shell doesn't support the
+>> input mode :)
+>>
+>>>> 6. EXTPROC still does some input processing on the server. For example,
+>>>>      7-bit mode (ISTRIP), tolower mode (IUCLC) and processing while
+>>>>      closing; if input processing is being done on the local/client side,
+>>>>      why the extra work here?
+>>>
+>>> That's defensive, on the assumption that something else might break if e.g. the tty expected only 7-bit input but 8-bit characters were sent to it.
+>>
+>> Ok, is that because RFC 1116 doesn't specify ISTRIP and IUCLC handling so
+>> the server can't be sure the client did it? If so, that should be documented
+>> so that refactors don't remove that handling.
 
->> +	pending = readl(cot->base + COT_IRQ_SET_CLR) & cot->irq_mask;
->> +	for_each_set_bit(bit, &pending, LUBBOCK_NB_IRQ)
->> +		generic_handle_irq(irq_find_mapping(cot->irqdomain, bit));
->
-> I'd like to see a '\n' here.
-OK.
+Could you get back to me about this, as well?
 
-> Again, I'd prefer some separation between code and the return.
->
-> (same in all cases below).
-OK.
->
->> +	cot = devm_kzalloc(&pdev->dev, sizeof(*cot), GFP_KERNEL);
->> +	if (!cot)
->> +		return -ENOMEM;
->
-> '\n' here.
-OK.
+>> Regular ptys dump input while closing so this should too.
+>>
+>>>> 7. This needs a reference userspace implementation which for the moment
+>>>>      could double as regression testing. A library with unit tests would
+>>>>      be ideal.
+>>>
+>>> telnet/telnetd can probably used as a starting point for this.
+>>
+>> Except telnet is unmaintained except by each distro. Your patches don't apply
+>> to my distro telnet; they had been applied but are now ifdef'd out. I messed
+>> around with rebuilding it but never got telnetd to actually set EXTPROC.
+>>
+>> My point is there is no straightforward way to test this, and that's a problem.
+>>
+>> In fact, this is my main concern: no matter how useful this might be, it's
+>> pointless if the complementary userspace puzzle piece is unsupported.
+>> I know you have written patches but that's not the same as support; for example
+>> your OpenSSH fork is 4 years old, which is a non-starter because I'm sure
+>> there's known exploits which have been fixed in those 4 years.
+>>
+>> Why doesn't Ubuntu/Debian telnet even compile for line mode support? Did the
+>> package maintainer shut it off because it was causing bug reports?
+> 
+> I don't know. Looking at the package history it appears they have never enabled it. https://launchpad.net/ubuntu/+source/netkit-telnet/+changelog
+> 
+> I also don't know where the actual VCS repo is for this code.
 
->> +	res = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
->
-> platform_get_irq()?
-No. I need the flags.
+There isn't one. The base code is from downloaded tarball.
 
->> +	if (res) {
->> +		cot->irq = (unsigned int)res->start;
->> +		irqflags = res->flags;
->> +	}
->> +	if (!cot->irq)
->> +		return -ENODEV;
->> +
->> +	res = platform_get_resource(pdev, IORESOURCE_IRQ, 1);
->
-> platform_get_irq()?
-Yes, certainly.
+I don't know what distro you use (or if you even do), but for Ubuntu/Debian
+the base package information is here https://packages.debian.org/wheezy/telnetd
+including maintainer email, etc.
 
->> +	writel(cot->irq_mask, cot->base + COT_IRQ_MASK_EN);
->> +	writel(0, cot->base + COT_IRQ_SET_CLR);
->
-> '\n'
-OK.
->> +	ret = devm_request_irq(&pdev->dev, cot->irq, lubbock_irq_handler,
->> +			       irqflags, dev_name(&pdev->dev), cot);
->> +	if (ret == -ENOSYS)
->> +		return -EPROBE_DEFER;
->
-> I haven't seen anyone do this after devm_request_irq() before.
-> Why is it required here?
-Explained above.
+Typically, to get changes merged requires making a patch(es) against the package
+source and sending/uploading those.
 
->
->> +	if (ret) {
->> +		dev_err(&pdev->dev, "Couldn't request main irq : ret = %d\n",
->> +			ret);
->
-> I'm not keen on this type of formatting.  Besides the system will
-> print out the returned error on failure.
-Well, it will print -EINVAL or -ENODEV. When I'll receive an request on the
-driver with -ENODEV, how will I know it will come from this request_irq() or
-another part of the code ... Well I can remove it if you want, but I think it's
-an error.
+Another alternative is to setup your own repository from that packaging;
+sometimes I do that on Launchpad from the packaging source so that
+the maintainer can easily see the difference. Ubuntu calls these PPAs.
 
->> +	cot->irqdomain =
->> +		irq_domain_add_linear(pdev->dev.of_node, LUBBOCK_NB_IRQ,
->> +				      &lubbock_irq_domain_ops, cot);
->
-> As a personal preference, I would prefer to see:
->
-> 	cot->irqdomain = irq_domain_add_linear(pdev->dev.of_node,
-> 					       LUBBOCK_NB_IRQ,
-> 					       &lubbock_irq_domain_ops, cot);
-Your tree, your rules. OK.
+>> What more needs to be done to get line mode working 100% in bash?
+> 
+> TAB-completion was messy. Although editing and scrolling through command history can be done completely locally, TAB-completion required sending a partial line to the server and feeding the completion results back, and then possibly flushing the input buffer if the results weren't actually used.
+> 
+> With a few years of hindsight, this can probably be cleaned up better now.
 
->
->> +	if (!cot->irqdomain)
->> +		return -ENODEV;
->> +
->> +	ret = 0;
->
-> 'ret' will be zero here, or we would have returned already.
-Good catch. OK.
+Ok.
 
->> +	if (base_irq)
->> +		ret = irq_create_strict_mappings(cot->irqdomain, base_irq, 0,
->> +						 LUBBOCK_NB_IRQ);
->> +	if (ret) {
->> +		dev_err(&pdev->dev, "Couldn't create the irq mapping %d..%d\n",
->> +			base_irq, base_irq + LUBBOCK_NB_IRQ);
->> +		return ret;
->> +	}
->
-> Is this solely the check from irq_create_strict_mappings(), therefore
-> it should be inside the previous if () { ... }.
-As you wish.
+>>>> I'd like to do away with the signalling part; just turn off EXTPROC
+>>>> and send the appropriate signalling char from the pty master, like telnetd
+>>>> does now. Same for EOF.
+>>>
+>>> That introduces additional mode changes, which you were just worrying about above, re: readline. It would make the traffic stream less efficient overall.
+>>
+>> Maybe you misunderstood. If local signalling is being performed by the client,
+>> the over-the-wire traffic is the same. The pty master would turn off EXTPROC to
+>> write the signalling char but would not reflect the termios to the client (because
+>> it contains no relevant changes).
+>>
+>> And the signalling char is isolated and unique: it's not as if it's being stuffed
+>> within an existing stream of i/o, because the client should have already ceased
+>> input if it's handling signals locally.
+>>
+> Makes sense. Don't know why the original telnet patch didn't do this.
 
->> +	dev_info(&pdev->dev, "base=%p, irq=%d, base_irq=%d\n",
->> +		 cot->base, cot->irq, base_irq);
->
-> Please remove this line.
-OK.
+Ok.
+I might see if I can get telnet + a revised kernel interface to work together; I'll
+let you know if this works out.
 
->> +MODULE_DESCRIPTION("Lubbock driver");
->
-> "Lubbock MFD Driver"?
-Yes.
-
->
->> +MODULE_AUTHOR("Robert Jarzmik");
->
-> Email.
-Sure
-
-Thanks for the review.
-
--- 
-Robert
+Regards,
+Peter Hurley
