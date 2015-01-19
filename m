@@ -1,98 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752241AbbASNJk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 08:09:40 -0500
-Received: from vserver.eikelenboom.it ([84.200.39.61]:43989 "EHLO
-	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751437AbbASNJj (ORCPT
+	id S1752281AbbASNJs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 08:09:48 -0500
+Received: from mail-ob0-f177.google.com ([209.85.214.177]:33515 "EHLO
+	mail-ob0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752258AbbASNJo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 08:09:39 -0500
-Date: Mon, 19 Jan 2015 14:09:34 +0100
-From: Sander Eikelenboom <linux@eikelenboom.it>
-Organization: Eikelenboom IT services
-X-Priority: 3 (Normal)
-Message-ID: <577867575.20150119140934@eikelenboom.it>
-To: Sander Eikelenboom <linux@eikelenboom.it>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>
-CC: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: if power button pressed 1x it creates the same ACPI event twice
-In-Reply-To: <1202643605.20150113174724@eikelenboom.it>
-References: <618666178.20150113173510@eikelenboom.it> <1202643605.20150113174724@eikelenboom.it>
+	Mon, 19 Jan 2015 08:09:44 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <000e01d01a7f$47592e20$d60b8a60$%han@samsung.com>
+References: <1418812486-12394-1-git-send-email-gabriel.fernandez@linaro.org>
+	<1418812486-12394-5-git-send-email-gabriel.fernandez@linaro.org>
+	<1507589.aeTeyNn1QF@wuerfel>
+	<000e01d01a7f$47592e20$d60b8a60$%han@samsung.com>
+Date: Mon, 19 Jan 2015 14:09:43 +0100
+Message-ID: <CAG374jBpafrgvSqzmOzUYVNob4OZHT5_EuveD52y+8BRquzXkg@mail.gmail.com>
+Subject: Re: [PATCH 4/5] PCI: designware: Add setup bus-related to pcie_host_ops
+From: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+To: Jingoo Han <jg1.han@samsung.com>
+Cc: Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
+        Arnd Bergmann <arnd@arndb.de>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
+        Maxime Coquelin <maxime.coquelin@st.com>,
+        Patrice Chotard <patrice.chotard@st.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Bjorn Helgaas <bhelgaas@google.com>, Mohit Kumar <mohit.kumar@st.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Fabrice Gasnier <fabrice.gasnier@st.com>,
+        Viresh Kumar <viresh.kumar@linaro.org>,
+        Thierry Reding <treding@nvidia.com>,
+        Minghuan Lian <Minghuan.Lian@freescale.com>,
+        Magnus Damm <damm@opensource.se>, Will Deacon <will.deacon@arm.com>,
+        Tanmay Inamdar <tinamdar@apm.com>,
+        Murali Karicheri <m-karicheri2@ti.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>,
+        Pratyush Anand <pratyush.anand@st.com>,
+        Sachin Kamat <sachin.kamat@samsung.com>, Andrew Lunn <andrew@lunn.ch>,
+        Liviu Dudau <Liviu.Dudau@arm.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "kernel@stlinux.com" <kernel@stlinux.com>, linux-pci@vger.kernel.org,
+        Lee Jones <lee.jones@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Sander,
+Hi Arnd, Jingoo,
 
-Tuesday, January 13, 2015, 5:47:24 PM, you wrote:
+On 18 December 2014 at 05:58, Jingoo Han <jg1.han@samsung.com> wrote:
+> On Thursday, December 18, 2014 7:16 AM, Arnd Bergmann wrote:
+>> On Wednesday 17 December 2014 11:34:45 Gabriel FERNANDEZ wrote:
+>> > ST sti SoCs PCIe IPs are built around DesignWare IP Core.
+>> > But in these SoCs PCIe IP doesn't support IO.
+>
+> Hi Gabriel,
+>
+> I cannot understand how ST sti SoCs PCIe IP does not support I/O.
+> As far as I know, it cannot be selected by the 'parameter'.
+> Then, H/W engineers dropped out the I/O control logic?
+>
+>> >
+>> > To support this, add setup_bus() to pcie_host_ops.
+>
+>
+>> >
+>> > Signed-off-by: Fabrice Gasnier <fabrice.gasnier@st.com>
+>> > Signed-off-by: Gabriel Fernandez <gabriel.fernandez@linaro.org>
+>>
+>> The dw-pcie driver should be able to tell whether the device has
+>> an I/O space or not, and do the right thing based on that. Don't
+>> add an implementation specific callback for that.
+>
+> I agree with Arnd's opinion.
+>
+> In addition, I have one more question.
+> Then, if a device that requires I/O region is connected to
+> PCIe slot of ST sti SoCs PCIe, what will happen?
+> It just prints error messages?
+>
+> Best regards,
+> Jingoo Han
+>
+>>
+>>       Arnd
+>
 
-> Tuesday, January 13, 2015, 5:35:10 PM, you wrote:
+Arnd in other post mention to add an empty I/O space to workaround
+lack of I/O port access.
+Is it the right thing to do ?
+http://lists.infradead.org/pipermail/linux-arm-kernel/2014-November/299623.html
 
->> Hi Rafael / Len,
-
->> When i press the power-button on my intel NUC, i get twp ACPI power-events shortly 
->> after one another (within a second), instead of just one. 
-
->> It doesn't matter if i have the old /proc/acpi interface enabled or disabled in the kernel config.
-
->> I have tested a few older kernels lingering around on the box and 3.14 already 
->> has this problem. 3.2 (from the debian repo) doesn't have the problem, it only 
->> fires one event.
-
->> I did find another report:
->>     Re: lenovo ultrabay docking station: if power button pressed 1x it creates 2x the same ACPI event
->>     http://www.spinics.net/lists/linux-acpi/msg54723.html
->> But that hasn't come to a conclusion ...
-
-
->> Unfortunately 3.2 - 3.19-rc4 is a bit of a largish bisect window, so that's 
->> unfeasible :-)
-
->> I compiled in apci debug support and tried:
->>  echo "0x00080000" > /sys/module/acpi/parameters/debug_layer
->>  echo "0xffffffff" > /sys/module/acpi/parameters/debug_level
-
->> But i don't get any extra output in dmesg ?
-
->> Do you have any ideas for a debug patch or better values to figure out what is going on ?
-
->> --
->> Sander
-
-> Hmm is it normal that it registers in this way (twice) ?
-
-> [    5.817980] input: Power Button as /devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0C:00/input/input0
-> [    5.837907] ACPI: Power Button [PWRB]
-> [    5.847540] input: Power Button as /devices/LNXSYSTM:00/LNXPWRBN:00/input/input1
-> [    5.866915] ACPI: Power Button [PWRF]
-
-> --
-> Sander
-
-Hi Rafael / Len,
-
-Got some more time to test:
-
-- It's indeed giving one event for both registered power buttons (which in reality 
-  are just one hardware button) printing acpid's "%e" revealed that:
-  1421672289-161192235 | button/power PBTN 00000080 00000000
-  1421672289-279647745 | button/power LNXPWRBN:00 00000080 00000004
-
-So i tested on another box (amd instead of intel), and that also registers 2 
-power buttons:
-
-# dmesg | grep -i button
-[   13.435060] input: Power Button as /devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0C:00/input/input0
-[   13.435294] ACPI: Power Button [PWRB]
-[   13.435495] input: Power Button as /devices/LNXSYSTM:00/LNXPWRBN:00/input/input1
-[   13.435683] ACPI: Power Button [PWRF]
- 
-So the question is .. should both register and should scripts adjust to pick up just one of them ?
-Or can, as a more general solution, just one be ignored when registering ?
-
---
-Sander
-
+Best regards
