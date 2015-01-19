@@ -1,115 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751918AbbASNTx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 08:19:53 -0500
-Received: from smtp02.citrix.com ([66.165.176.63]:3152 "EHLO SMTP02.CITRIX.COM"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751617AbbASNTv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 08:19:51 -0500
-X-IronPort-AV: E=Sophos;i="5.09,427,1418083200"; 
-   d="scan'208";a="219246421"
-From: Ross Lagerwall <ross.lagerwall@citrix.com>
-To: <xen-devel@lists.xenproject.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        David Vrabel <david.vrabel@citrix.com>, <linux-kernel@vger.kernel.org>,
-        Ross Lagerwall <ross.lagerwall@citrix.com>
-Subject: [PATCH] xen/manage: Fix USB interaction issues when resuming
-Date: Mon, 19 Jan 2015 13:19:38 +0000
-Message-ID: <1421673578-12127-1-git-send-email-ross.lagerwall@citrix.com>
-X-Mailer: git-send-email 1.9.3
+	id S1752027AbbASNWA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 08:22:00 -0500
+Received: from vserver.eikelenboom.it ([84.200.39.61]:44089 "EHLO
+	smtp.eikelenboom.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751593AbbASNV7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 08:21:59 -0500
+Date: Mon, 19 Jan 2015 14:21:55 +0100
+From: Sander Eikelenboom <linux@eikelenboom.it>
+Organization: Eikelenboom IT services
+X-Priority: 3 (Normal)
+Message-ID: <13866742.20150119142155@eikelenboom.it>
+To: Sander Eikelenboom <linux@eikelenboom.it>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>
+CC: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: if power button pressed 1x it creates the same ACPI event twice
+In-Reply-To: <577867575.20150119140934@eikelenboom.it>
+References: <618666178.20150113173510@eikelenboom.it> <1202643605.20150113174724@eikelenboom.it> <577867575.20150119140934@eikelenboom.it>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DLP: MIA2
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 61a734d305e1 ("xen/manage: Always freeze/thaw processes when
-suspend/resuming") ensured that userspace processes were always frozen
-before suspending to reduce interaction issues when resuming devices.
-However, freeze_processes() does not freeze kernel threads.  Freeze
-kernel threads as well to prevent deadlocks with the khubd thread when
-resuming devices.
 
-This is what native suspend and resume does.
+Monday, January 19, 2015, 2:09:34 PM, you wrote:
 
-Example deadlock:
-[ 7279.648010]  [<ffffffff81446bde>] ? xen_poll_irq_timeout+0x3e/0x50
-[ 7279.648010]  [<ffffffff81448d60>] xen_poll_irq+0x10/0x20
-[ 7279.648010]  [<ffffffff81011723>] xen_lock_spinning+0xb3/0x120
-[ 7279.648010]  [<ffffffff810115d1>] __raw_callee_save_xen_lock_spinning+0x11/0x20
-[ 7279.648010]  [<ffffffff815620b6>] ? usb_control_msg+0xe6/0x120
-[ 7279.648010]  [<ffffffff81747e50>] ? _raw_spin_lock_irq+0x50/0x60
-[ 7279.648010]  [<ffffffff8174522c>] wait_for_completion+0xac/0x160
-[ 7279.648010]  [<ffffffff8109c520>] ? try_to_wake_up+0x2c0/0x2c0
-[ 7279.648010]  [<ffffffff814b60f2>] dpm_wait+0x32/0x40
-[ 7279.648010]  [<ffffffff814b6eb0>] device_resume+0x90/0x210
-[ 7279.648010]  [<ffffffff814b7d71>] dpm_resume+0x121/0x250
-[ 7279.648010]  [<ffffffff8144c570>] ? xenbus_dev_request_and_reply+0xc0/0xc0
-[ 7279.648010]  [<ffffffff814b80d5>] dpm_resume_end+0x15/0x30
-[ 7279.648010]  [<ffffffff81449fba>] do_suspend+0x10a/0x200
-[ 7279.648010]  [<ffffffff8144a2f0>] ? xen_pre_suspend+0x20/0x20
-[ 7279.648010]  [<ffffffff8144a1d0>] shutdown_handler+0x120/0x150
-[ 7279.648010]  [<ffffffff8144c60f>] xenwatch_thread+0x9f/0x160
-[ 7279.648010]  [<ffffffff810ac510>] ? finish_wait+0x80/0x80
-[ 7279.648010]  [<ffffffff8108d189>] kthread+0xc9/0xe0
-[ 7279.648010]  [<ffffffff8108d0c0>] ? flush_kthread_worker+0x80/0x80
-[ 7279.648010]  [<ffffffff8175087c>] ret_from_fork+0x7c/0xb0
-[ 7279.648010]  [<ffffffff8108d0c0>] ? flush_kthread_worker+0x80/0x80
+> Hello Sander,
 
-[ 7441.216287] INFO: task khubd:89 blocked for more than 120 seconds.
-[ 7441.219457]       Tainted: G            X 3.13.11-ckt12.kz #1
-[ 7441.222176] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 7441.225827] khubd           D ffff88003f433440     0    89      2 0x00000000
-[ 7441.229258]  ffff88003ceb9b98 0000000000000046 ffff88003ce83000 0000000000013440
-[ 7441.232959]  ffff88003ceb9fd8 0000000000013440 ffff88003cd13000 ffff88003ce83000
-[ 7441.236658]  0000000000000286 ffff88003d3e0000 ffff88003ceb9bd0 00000001001aa01e
-[ 7441.240415] Call Trace:
-[ 7441.241614]  [<ffffffff817442f9>] schedule+0x29/0x70
-[ 7441.243930]  [<ffffffff81743406>] schedule_timeout+0x166/0x2c0
-[ 7441.246681]  [<ffffffff81075b80>] ? call_timer_fn+0x110/0x110
-[ 7441.249339]  [<ffffffff8174357e>] schedule_timeout_uninterruptible+0x1e/0x20
-[ 7441.252644]  [<ffffffff81077710>] msleep+0x20/0x30
-[ 7441.254812]  [<ffffffff81555f00>] hub_port_reset+0xf0/0x580
-[ 7441.257400]  [<ffffffff81558465>] hub_port_init+0x75/0xb40
-[ 7441.259981]  [<ffffffff814bb3c9>] ? update_autosuspend+0x39/0x60
-[ 7441.262817]  [<ffffffff814bb4f0>] ? pm_runtime_set_autosuspend_delay+0x50/0xa0
-[ 7441.266212]  [<ffffffff8155a64a>] hub_thread+0x71a/0x1750
-[ 7441.268728]  [<ffffffff810ac510>] ? finish_wait+0x80/0x80
-[ 7441.271272]  [<ffffffff81559f30>] ? usb_port_resume+0x670/0x670
-[ 7441.274067]  [<ffffffff8108d189>] kthread+0xc9/0xe0
-[ 7441.276305]  [<ffffffff8108d0c0>] ? flush_kthread_worker+0x80/0x80
-[ 7441.279131]  [<ffffffff8175087c>] ret_from_fork+0x7c/0xb0
-[ 7441.281659]  [<ffffffff8108d0c0>] ? flush_kthread_worker+0x80/0x80
+> Tuesday, January 13, 2015, 5:47:24 PM, you wrote:
 
-Signed-off-by: Ross Lagerwall <ross.lagerwall@citrix.com>
----
- drivers/xen/manage.c | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+>> Tuesday, January 13, 2015, 5:35:10 PM, you wrote:
 
-diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
-index f8bb36f..bf19407 100644
---- a/drivers/xen/manage.c
-+++ b/drivers/xen/manage.c
-@@ -105,10 +105,16 @@ static void do_suspend(void)
- 
- 	err = freeze_processes();
- 	if (err) {
--		pr_err("%s: freeze failed %d\n", __func__, err);
-+		pr_err("%s: freeze processes failed %d\n", __func__, err);
- 		goto out;
- 	}
- 
-+	err = freeze_kernel_threads();
-+	if (err) {
-+		pr_err("%s: freeze kernel threads failed %d\n", __func__, err);
-+		goto out_thaw;
-+	}
-+
- 	err = dpm_suspend_start(PMSG_FREEZE);
- 	if (err) {
- 		pr_err("%s: dpm_suspend_start %d\n", __func__, err);
--- 
-1.9.3
+>>> Hi Rafael / Len,
+
+>>> When i press the power-button on my intel NUC, i get twp ACPI power-events shortly 
+>>> after one another (within a second), instead of just one. 
+
+>>> It doesn't matter if i have the old /proc/acpi interface enabled or disabled in the kernel config.
+
+>>> I have tested a few older kernels lingering around on the box and 3.14 already 
+>>> has this problem. 3.2 (from the debian repo) doesn't have the problem, it only 
+>>> fires one event.
+
+>>> I did find another report:
+>>>     Re: lenovo ultrabay docking station: if power button pressed 1x it creates 2x the same ACPI event
+>>>     http://www.spinics.net/lists/linux-acpi/msg54723.html
+>>> But that hasn't come to a conclusion ...
+
+
+>>> Unfortunately 3.2 - 3.19-rc4 is a bit of a largish bisect window, so that's 
+>>> unfeasible :-)
+
+>>> I compiled in apci debug support and tried:
+>>>  echo "0x00080000" > /sys/module/acpi/parameters/debug_layer
+>>>  echo "0xffffffff" > /sys/module/acpi/parameters/debug_level
+
+>>> But i don't get any extra output in dmesg ?
+
+>>> Do you have any ideas for a debug patch or better values to figure out what is going on ?
+
+>>> --
+>>> Sander
+
+>> Hmm is it normal that it registers in this way (twice) ?
+
+>> [    5.817980] input: Power Button as /devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0C:00/input/input0
+>> [    5.837907] ACPI: Power Button [PWRB]
+>> [    5.847540] input: Power Button as /devices/LNXSYSTM:00/LNXPWRBN:00/input/input1
+>> [    5.866915] ACPI: Power Button [PWRF]
+
+>> --
+>> Sander
+
+> Hi Rafael / Len,
+
+> Got some more time to test:
+
+> - It's indeed giving one event for both registered power buttons (which in reality 
+>   are just one hardware button) printing acpid's "%e" revealed that:
+>   1421672289-161192235 | button/power PBTN 00000080 00000000
+>   1421672289-279647745 | button/power LNXPWRBN:00 00000080 00000004
+
+> So i tested on another box (amd instead of intel), and that also registers 2 
+> power buttons:
+
+> # dmesg | grep -i button
+> [   13.435060] input: Power Button as /devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0C:00/input/input0
+> [   13.435294] ACPI: Power Button [PWRB]
+> [   13.435495] input: Power Button as /devices/LNXSYSTM:00/LNXPWRBN:00/input/input1
+> [   13.435683] ACPI: Power Button [PWRF]
+>  
+> So the question is .. should both register and should scripts adjust to pick up just one of them ?
+> Or can, as a more general solution, just one be ignored when registering ?
+
+> --
+> Sander
+
+Whoops sorry for the fragmentation of the report ... but just thought the output 
+under kernel 3.2.0 could be handy as well .. as that only fires one event:
+
+[    4.003753] input: Power Button as /devices/LNXSYSTM:00/LNXSYBUS:00/PNP0C0C:00/input/input1
+[    4.003838] ACPI: Power Button [PWRB]
+[    4.003977] input: Power Button as /devices/LNXSYSTM:00/LNXPWRBN:00/input/input2
+[    4.005530] ACPI: Power Button [PWRF]
+
+It registers also two ..
+But when the power button is pressed only fires this one:
+
+1421673524-817561070 | button/power PBTN 00000080 00000000
+
+--
+Sander
 
