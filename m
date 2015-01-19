@@ -1,111 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121AbbASOp5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 09:45:57 -0500
-Received: from exprod5og103.obsmtp.com ([64.18.0.145]:52067 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751864AbbASOpz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 09:45:55 -0500
+	id S1752186AbbASOr7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 09:47:59 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:36358 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751844AbbASOr4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 09:47:56 -0500
+Date: Mon, 19 Jan 2015 08:46:42 -0600
+From: Felipe Balbi <balbi@ti.com>
+To: Sneeker Yeh <sneeker.yeh@gmail.com>,
+        Paul Zimmerman <paul.zimmerman@synopsys.com>,
+        John Youn <johnyoun@synopsys.com>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Felipe Balbi <balbi@ti.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mathias Nyman <mathias.nyman@intel.com>,
+        Grant Likely <grant.likely@linaro.org>, Huang Rui <ray.huang@amd.com>,
+        Kishon Vijay Abraham I <kishon@ti.com>, <devicetree@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, Andy Green <andy.green@linaro.org>,
+        Jassi Brar <jaswinder.singh@linaro.org>,
+        Sneeker Yeh <Sneeker.Yeh@tw.fujitsu.com>
+Subject: Re: [PATCH v2 2/5] usb: dwc3: add revision number DWC3_REVISION_300A
+Message-ID: <20150119144642.GD20386@saruman>
+Reply-To: <balbi@ti.com>
+References: <1421654209-6486-1-git-send-email-Sneeker.Yeh@tw.fujitsu.com>
+ <1421654209-6486-3-git-send-email-Sneeker.Yeh@tw.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <CAFd313wyVqsqGNdxrAzmGCCYd-RAEcrX6f4y2Gngi44OOkbx-Q@mail.gmail.com>
-References: <1421671269-19441-1-git-send-email-rsahu@apm.com>
-	<1421671269-19441-3-git-send-email-rsahu@apm.com>
-	<2407238.x2YxDm0cd4@wuerfel>
-	<CAFd313wyVqsqGNdxrAzmGCCYd-RAEcrX6f4y2Gngi44OOkbx-Q@mail.gmail.com>
-Date: Mon, 19 Jan 2015 20:15:54 +0530
-Message-ID: <CAFd313zc_4fNMGvVNWqUOP+tzHoaCZDbFKVSyBsmT-OtwzHBHQ@mail.gmail.com>
-Subject: Re: [PATCH v3 2/3] arm64: dts: Add APM X-Gene DMA device and DMA
- clock DTS nodes
-From: Rameshwar Sahu <rsahu@apm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: vinod.koul@intel.com, dan.j.williams@intel.com, dmaengine@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, ddutile@redhat.com,
-        jcm@redhat.com, patches@apm.com, Loc Ho <lho@apm.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="SO98HVl1bnMOfKZd"
+Content-Disposition: inline
+In-Reply-To: <1421654209-6486-3-git-send-email-Sneeker.Yeh@tw.fujitsu.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks,
-with regards,
-Ram
+--SO98HVl1bnMOfKZd
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi,
 
-On Mon, Jan 19, 2015 at 8:11 PM, Rameshwar Sahu <rsahu@apm.com> wrote:
-> Hi Arnd,
->
->
->
->
->
->
-> Thanks,
-> with regards,
-> Ram
->
-> On Mon, Jan 19, 2015 at 7:10 PM, Arnd Bergmann <arnd@arndb.de> wrote:
->>
->> On Monday 19 January 2015 18:11:08 Rameshwar Prasad Sahu wrote:
->> > diff --git a/arch/arm64/boot/dts/apm/apm-storm.dtsi
->> > b/arch/arm64/boot/dts/apm/apm-storm.dtsi
->> > index f1ad9c2..e20da23 100644
->> > --- a/arch/arm64/boot/dts/apm/apm-storm.dtsi
->> > +++ b/arch/arm64/boot/dts/apm/apm-storm.dtsi
->> > @@ -103,6 +103,9 @@
->> >                 #size-cells = <2>;
->> >                 ranges;
->> >
->> > +               /* DDR range is 42-bit addressing */
->> > +               dma-ranges = <0x40 0x0 0x40 0x0 0x1ff 0xffffffff>;
->> > +
->> >
->>
->> The comment above is misleading, and the value is wrong. I assume you
->>
->> copied these from the AMD patch that introduced the respective property.
->
->
-> I referred this patch from AMD only.
->>
->>
->> The value should be
->>
->>         dma-ranges = <0x40 0x0 0x40 0x0 0x200 0>;
->
->
-> then it should be :
->
-> dma-ranges = <0x40 0x0 0x40 0x0 0x400 0>;
->
->
->> to say that any DMA to physical addresses from 0 to 0x3f.ffffffff
->> is disallowed and dma to physical addresses from 0x40.00000000
->> to 0x23f.ffffffff is allowed and gets translated using an
->> identity mapping.
->>
->> I also see that on Mustang, all memory is outside of this range,
->
->
-> Do you mean all other device controller node in DT here??
-> Basically these are all device controller memory, as what I understood is
-> dma-ranges tells about DDR ranges like start address of DDR
-> and length.
->
->
->>
->> which is a bit suspicious, while your PCI memory space is
->> included.
->
->
->>
->> It would be best to match the numbers up with your data sheet.
->>
->>         Arnd
->> --
->> To unsubscribe from this list: send the line "unsubscribe dmaengine" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
->
+On Mon, Jan 19, 2015 at 03:56:46PM +0800, Sneeker Yeh wrote:
+> Add the contstant for v3.00a dwc3 IP detection
+>=20
+> Signed-off-by: Sneeker Yeh <Sneeker.Yeh@tw.fujitsu.com>
+> ---
+>  drivers/usb/dwc3/core.h |    1 +
+>  1 file changed, 1 insertion(+)
+>=20
+> diff --git a/drivers/usb/dwc3/core.h b/drivers/usb/dwc3/core.h
+> index 4bb9aa6..8090249 100644
+> --- a/drivers/usb/dwc3/core.h
+> +++ b/drivers/usb/dwc3/core.h
+> @@ -776,6 +776,7 @@ struct dwc3 {
+>  #define DWC3_REVISION_260A	0x5533260a
+>  #define DWC3_REVISION_270A	0x5533270a
+>  #define DWC3_REVISION_280A	0x5533280a
+> +#define DWC3_REVISION_300A	0x5533300a
+
+looking at Synopsys Solvnet for this IP, it shows that current version
+is 2.90a. There's no 3.00a. Paul, John, is there a 3.00a version of the
+DWC USB3 IP ?
+
+--=20
+balbi
+
+--SO98HVl1bnMOfKZd
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUvRjSAAoJEIaOsuA1yqREqyIP/3XBnqW9XhXxzuZNM0P+I+cZ
+0lXliX5TJ6N31c7IxzxWxLizG7oOKCTm7t9dHJtzIWVYIyXg529kslfnl7SYO+2+
+0Nc5uMY3a8EF3Cz5CCwjkhqJIrq8OfNPh1ACBCg60CxY1G956hannwjKIo97RIsG
+PLoxPQW7ryPkK09gi6f1ZCfsj3xMNFma5ulFIogVctor40Psy3bRRT0WdlCkLUi0
+GApw/+jFcDzTgblHrf5B5USuC0rIbWMpdgjuws5XTxbRsqKiC49wpCkB4/Q9URFl
+acinYw9zUsP+FCU0W1dVVQcc8h74nBAOFbqOm/ta6Nbj994euyMKKtgDfXx4gN/F
+k/UT42+qxxP4i7AtijN1s0bEGZl5xCqZ60vVrgdcqjJkDQvBZgbNRT3v0PsobNdL
++CtFAn82N9I2x43Cw5JWlHmT7xeiNYrlVh0Lf67atf6Md0KIvEM2F+T3k7VtjPs7
+6w0ORgRkZQZFggRXP7X4EBOi5KglOGdsVasTldo5l19AeSP6NLrEgbd5WWXMxzWg
+2+3LSirwYcpr0T/Z7Z+Ll8Goh+kUaYRuFZbuwDV3KZ4dVlkPahTTInNxakcAL8Yq
+M/pN0GOG06xqhnYGJdIL2/SgqIOozbNXEbU7dgvqKaWOSMe1aEX92EdsOfyaQL0C
+tXt8D7GzV5GOSHr982z9
+=mmjK
+-----END PGP SIGNATURE-----
+
+--SO98HVl1bnMOfKZd--
