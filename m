@@ -1,53 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082AbbASOEF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 09:04:05 -0500
-Received: from 8bytes.org ([81.169.241.247]:58156 "EHLO theia.8bytes.org"
+	id S1752177AbbASOGg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 09:06:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40031 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751446AbbASOED (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 09:04:03 -0500
-Date: Mon, 19 Jan 2015 15:04:01 +0100
-From: Joerg Roedel <joro@8bytes.org>
-To: Shuah Khan <shuahkh@osg.samsung.com>
-Cc: alex.williamson@redhat.com, iommu@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iommu: fix trace_unmap() to report original iova
-Message-ID: <20150119140400.GN6343@8bytes.org>
-References: <1421452039-7646-1-git-send-email-shuahkh@osg.samsung.com>
+	id S1751404AbbASOGf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 09:06:35 -0500
+Date: Mon, 19 Jan 2015 09:06:12 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Zhang Zhen <zhenzhang.zhang@huawei.com>
+Cc: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        morgan.wang@huawei.com, josh@freedesktop.org, dipankar@in.ibm.com
+Subject: Re: RCU CPU stall console spews  leads to soft lockup disabled is
+ reasonable ?
+Message-ID: <20150119140612.GI116159@redhat.com>
+References: <54BCBB33.6060608@huawei.com>
+ <20150119084200.GE9719@linux.vnet.ibm.com>
+ <54BCC89D.9040702@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1421452039-7646-1-git-send-email-shuahkh@osg.samsung.com>
+In-Reply-To: <54BCC89D.9040702@huawei.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 16, 2015 at 04:47:19PM -0700, Shuah Khan wrote:
-> iommu_unmap() calls trace_unmap() with changed iova and original
-> size. trace_unmap() should report original iova instead. Change
-> iommu_unmap() to call trace_unmap() with original iova.
+On Mon, Jan 19, 2015 at 05:04:29PM +0800, Zhang Zhen wrote:
+> > 
+> > Did you really intend to acquire the same spinlock twice in a row,
+> > forcing a self-deadlock?  If not, I of course suggest changing the second
+> > "spin_lock()" to "spin_unlock()".
+> > 
 > 
-> Signed-off-by: Shuah Khan <shuahkh@osg.samsung.com>
-> Reported-by: Alex Williamson <alex.williamson@redhat.com>
-> ---
->  drivers/iommu/iommu.c | 3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
+> Yes, i acquire the same spinlock twice in order to reproduce the problem.
 > 
-> diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
-> index fbf8827..2eb7554 100644
-> --- a/drivers/iommu/iommu.c
-> +++ b/drivers/iommu/iommu.c
-> @@ -1094,6 +1094,7 @@ size_t iommu_unmap(struct iommu_domain *domain, unsigned long iova, size_t size)
->  {
->  	size_t unmapped_page, unmapped = 0;
->  	unsigned int min_pagesz;
-> +	unsigned long orig_iova = iova;
+> > If your .config has CONFIG_TREE_RCU=y, the above is quite likely to
+> > give you an RCU CPU stall warning.
+> > 
+> 
+> In my .config CONFIG_TREE_RCU=y.
+> 
+> If softlockup_thresh < rcu_cpu_stall_timeout, it will give soft lockup warning.
+> If softlockup_thresh > rcu_cpu_stall_timeout, it will likely to give RCU CPU stall warning
+> just like above and no give soft lockup warning.
+> 
+> It means that RCU CPU stall console spews leads to soft lockup disabled.
+> Is this reasonable ?
 
-Instead of adding another variable I think it is better to just move the
-trace_unmap call before the unmap loop. It can actually replace the
-pr_debug there.
+I believe so.  In kernel v3.10.., all activity to the console executed
+touch_nmi_watchdog() which calls touch_softlockup_watchdog, which delayed
+the softlockup for another round of 'softlockup_thresh'.
+
+Of course back then, touch_nmi_watchdog touched all cpus.  So a problem
+like this was masked.  I believe this upstream commit 62572e29bc53, solved
+the problem.
+
+You can apply that commit and see if you if you get both RCU stall
+messages _and_ softlockup messages.  I believe that is what you were
+expecting, correct?
 
 
-	Joerg
+Of course, on a non-virt guest, your test case would normally trigger a
+hardlockup warning first.  And a later kernel version for the guest may
+actually do that (not quite sure if the emulated PMU stuff is upstream or
+not yet).  Just to set your expectations correctly.
 
+Cheers,
+Don
+
+> 
+> Thanks!
+> 
+> >>         return 0;
+> >> }
+> >>
+> >> static int __init test_init(void)
+> >> {
+> >>         hello_start();
+> >>
+> >>         printk(KERN_INFO "Module init\n");
+> >>         return 0;
+> >> }
+> >>
+> >> static void __exit test_exit(void)
+> >> {
+> >>         printk(KERN_INFO "Module exit!\n");
+> >> }
+> >>
+> >> module_init(test_init)
+> >> module_exit(test_exit)
+> >> MODULE_LICENSE("GPL");
+> >> //
+> >>
+> >> My kernel version is v3.10.63, and i checked the kernel source code,
+> >>
+> >> update_process_times
+> >> 	-> run_local_timers
+> >> 		-> hrtimer_run_queues
+> >> 			-> __run_hrtimer
+> >> 				-> watchdog_timer_fn
+> >> 					-> is_softlockup
+> >> 					
+> >> 	-> rcu_check_callbacks
+> >> 		-> __rcu_pending
+> >> 			-> check_cpu_stall
+> >> 				-> print_cpu_stall
+> >>
+> >> If softlockup_thresh > rcu_cpu_stall_timeout, print_cpu_stall will print log to serial port.
+> >>
+> >> The 8250 serial driver will call serial8250_console_write => touch_nmi_watchdog() which reset
+> >> watchdog_touch_ts to 0. So the softlockup will not be triggered.
+> >>
+> >> Is this reasonable? Why?
+> > 
+> > Is exactly what reasonable?  ;-)
+> > 
+> > Yes, it is reasonable that your code triggers an RCU CPU stall warning.
+> > 
+> > No, it is not reasonable that the RCU CPU stall warning does not include
+> > a stack trace, and the fix for that bug will be going into the next merge
+> > window.
+> > 
+> > Yes, is is reasonable that varying the softlockup and RCU CPU stall
+> > timeouts might change the behavior.
+> > 
+> > No, your code is not reasonable, except perhaps as a test of the
+> > generation of softlockup and RCU CPU stall warnings.  If you are not
+> > trying to test softlockup and RCU CPU stall warnings, you should of course
+> > not try to acquire any non-recursive exclusive lock that you already hold.
+> > 
+> >> If it is not reasonable, we should adjust the printk loglevel from *KERN_ERR* to *KERN_INFO*
+> >> in print_cpu_stall.
+> > 
+> > Given that RCU CPU stall warnings are supposed to be pointing out errors
+> > elsewhere in the kernel, and in this case are pointing out errors elsewhere
+> > in the kernel, namely in your hello_start() function, it is reasonable
+> > that the RCU CPU stall warnings use the KERN_ERR loglevel.
+> > 
+> > Or am I missing something here?
+> > 
+> > 							Thanx, Paul
+> > 
+> > 
+> > .
+> > 
+> 
+> 
