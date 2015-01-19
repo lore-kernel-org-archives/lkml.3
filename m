@@ -1,91 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751734AbbASIiW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 03:38:22 -0500
-Received: from mail-lb0-f171.google.com ([209.85.217.171]:58243 "EHLO
-	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751404AbbASIiV (ORCPT
+	id S1751505AbbASInN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 03:43:13 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:55675 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751194AbbASInL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 03:38:21 -0500
-Date: Mon, 19 Jan 2015 11:38:17 +0300
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: linux-next: build failure after merge of the akpm-current tree
-Message-ID: <20150119083817.GA3203@moon>
-References: <20150119191718.365d4c98@canb.auug.org.au>
+	Mon, 19 Jan 2015 03:43:11 -0500
+Date: Mon, 19 Jan 2015 00:42:00 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Zhang Zhen <zhenzhang.zhang@huawei.com>
+Cc: linux-kernel@vger.kernel.org, morgan.wang@huawei.com, josh@freedesktop.org,
+        dzickus@redhat.com, dipankar@in.ibm.com
+Subject: Re: RCU CPU stall console spews  leads to soft lockup disabled is
+ reasonable ?
+Message-ID: <20150119084200.GE9719@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <54BCBB33.6060608@huawei.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150119191718.365d4c98@canb.auug.org.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <54BCBB33.6060608@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15011908-0029-0000-0000-0000074CAF26
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 19, 2015 at 07:17:18PM +1100, Stephen Rothwell wrote:
-> Hi Andrew,
+On Mon, Jan 19, 2015 at 04:07:15PM +0800, Zhang Zhen wrote:
+> Hi,
 > 
-> After merging the akpm tree, today's linux-next build (sparc defconfig)
-> failed like this:
+> On my x86_64 qemu virtual machine, RCU CPU stall console spews may
+> lead to soft lockup disabled.
 > 
-> In file included from arch/sparc/include/asm/bug.h:20:0,
->                  from include/linux/bug.h:4,
->                  from include/linux/thread_info.h:11,
->                  from include/asm-generic/preempt.h:4,
->                  from arch/sparc/include/generated/asm/preempt.h:1,
->                  from include/linux/preempt.h:18,
->                  from include/linux/spinlock.h:50,
->                  from include/linux/mmzone.h:7,
->                  from include/linux/gfp.h:5,
->                  from include/linux/slab.h:14,
->                  from mm/mmap.c:12:
-> mm/mmap.c: In function 'exit_mmap':
-> mm/mmap.c:2858:46: error: 'PUD_SHIFT' undeclared (first use in this function)
->     round_up(FIRST_USER_ADDRESS, PUD_SIZE) >> PUD_SHIFT);
->                                               ^
-> include/asm-generic/bug.h:86:25: note: in definition of macro 'WARN_ON'
->   int __ret_warn_on = !!(condition);    \
->                          ^
-> mm/mmap.c:2858:46: note: each undeclared identifier is reported only once for each function it appears in
->     round_up(FIRST_USER_ADDRESS, PUD_SIZE) >> PUD_SHIFT);
->                                               ^
-> include/asm-generic/bug.h:86:25: note: in definition of macro 'WARN_ON'
->   int __ret_warn_on = !!(condition);    \
->                          ^
+> If softlockup_thresh > rcu_cpu_stall_timeout (softlockup_thresh = 2 * watchdog_thresh):
 > 
-> Caused by commit b316feb3c37f ("mm: account pmd page tables to the
-> process").  32 bit sparc does not seem to define PUD_SHIFT ...
+> / #
+> / # busybox cat /sys/module/rcupdate/parameters/rcu_cpu_stall_timeout
+> 21
+> / # echo 60 > /proc/sys/kernel/watchdog_thresh
+> / # busybox insmod softlockup_test.ko
+> [   44.959044] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=21002 jiffies, g=85, c=84, q=4)
+> [   44.959044] INFO: Stall ended before state dump start
+> [  107.964045] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=84007 jiffies, g=85, c=84, q=4)
+> [  107.964045] INFO: Stall ended before state dump start
+> [  170.969060] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=147012 jiffies, g=85, c=84, q=4)
+> [  170.969060] INFO: Stall ended before state dump start
+> [  233.974057] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=210017 jiffies, g=85, c=84, q=4)
+> [  233.974057] INFO: Stall ended before state dump start
+> [  296.979059] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=273022 jiffies, g=85, c=84, q=4)
+> [  296.979059] INFO: Stall ended before state dump start
+> [  359.984058] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=336027 jiffies, g=85, c=84, q=4)
+> [  359.984058] INFO: Stall ended before state dump start
+> [  422.989059] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=399032 jiffies, g=85, c=84, q=4)
+> [  422.989059] INFO: Stall ended before state dump start
+> [  485.994056] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=462037 jiffies, g=85, c=84, q=4)
+> [  485.994056] INFO: Stall ended before state dump start
+> [  548.999059] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=525042 jiffies, g=85, c=84, q=4)
+> [  548.999059] INFO: Stall ended before state dump start
+> [  612.004061] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=588047 jiffies, g=85, c=84, q=4)
+> [  612.004061] INFO: Stall ended before state dump start
+> [  675.009058] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=651052 jiffies, g=85, c=84, q=4)
+> [  675.009058] INFO: Stall ended before state dump start
 > 
-> I am not sure what the correct fix is here, so I just did the following
-> patch for today.
+> If softlockup_thresh < rcu_cpu_stall_timeout:
 > 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Mon, 19 Jan 2015 19:10:53 +1100
-> Subject: [PATCH] mm: account pmd page tables to the process fix
+> / #
+> / # busybox cat /sys/module/rcupdate/parameters/rcu_cpu_stall_timeout
+> 21
+> / # echo 5 > /proc/sys/kernel/watchdog_thresh
+> / # busybox insmod softlockup_test.ko
+> [   38.450061] BUG: soft lockup - CPU#0 stuck for 11s! [busybox:53]
+> [   52.450061] BUG: soft lockup - CPU#0 stuck for 11s! [busybox:53]
+> [   66.450073] BUG: soft lockup - CPU#0 stuck for 11s! [busybox:53]
+> [   80.450060] BUG: soft lockup - CPU#0 stuck for 11s! [busybox:53]
+> [   94.450061] BUG: soft lockup - CPU#0 stuck for 11s! [busybox:53]
 > 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  mm/mmap.c | 2 ++
->  1 file changed, 2 insertions(+)
+> The softlockup_test.ko source code is:
+> //
+> #include <linux/kernel.h>
+> #include <linux/module.h>
+> #include <linux/spinlock.h>
+> #include <linux/slab.h>
 > 
-> diff --git a/mm/mmap.c b/mm/mmap.c
-> index 6a7d36d133fb..25271805ab39 100644
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -2854,8 +2854,10 @@ void exit_mmap(struct mm_struct *mm)
->  
->  	WARN_ON(atomic_long_read(&mm->nr_ptes) >
->  			round_up(FIRST_USER_ADDRESS, PMD_SIZE) >> PMD_SHIFT);
-> +#ifdef PUD_SHIFT
->  	WARN_ON(mm_nr_pmds(mm) >
->  			round_up(FIRST_USER_ADDRESS, PUD_SIZE) >> PUD_SHIFT);
-> +#endif
->  }
->  
->  /* Insert vm structure into process list sorted by address
+> static int hello_start(void)
+> {
+>         DEFINE_SPINLOCK(hello_lock);
+>         spin_lock_init(&hello_lock);
+>         spin_lock(&hello_lock);
+>         spin_lock(&hello_lock);
 
-Looks like it should be #ifdef CONFIG_MMU, Kirill?
+Did you really intend to acquire the same spinlock twice in a row,
+forcing a self-deadlock?  If not, I of course suggest changing the second
+"spin_lock()" to "spin_unlock()".
+
+If your .config has CONFIG_TREE_RCU=y, the above is quite likely to
+give you an RCU CPU stall warning.
+
+>         return 0;
+> }
+> 
+> static int __init test_init(void)
+> {
+>         hello_start();
+> 
+>         printk(KERN_INFO "Module init\n");
+>         return 0;
+> }
+> 
+> static void __exit test_exit(void)
+> {
+>         printk(KERN_INFO "Module exit!\n");
+> }
+> 
+> module_init(test_init)
+> module_exit(test_exit)
+> MODULE_LICENSE("GPL");
+> //
+> 
+> My kernel version is v3.10.63, and i checked the kernel source code,
+> 
+> update_process_times
+> 	-> run_local_timers
+> 		-> hrtimer_run_queues
+> 			-> __run_hrtimer
+> 				-> watchdog_timer_fn
+> 					-> is_softlockup
+> 					
+> 	-> rcu_check_callbacks
+> 		-> __rcu_pending
+> 			-> check_cpu_stall
+> 				-> print_cpu_stall
+> 
+> If softlockup_thresh > rcu_cpu_stall_timeout, print_cpu_stall will print log to serial port.
+> 
+> The 8250 serial driver will call serial8250_console_write => touch_nmi_watchdog() which reset
+> watchdog_touch_ts to 0. So the softlockup will not be triggered.
+> 
+> Is this reasonable? Why?
+
+Is exactly what reasonable?  ;-)
+
+Yes, it is reasonable that your code triggers an RCU CPU stall warning.
+
+No, it is not reasonable that the RCU CPU stall warning does not include
+a stack trace, and the fix for that bug will be going into the next merge
+window.
+
+Yes, is is reasonable that varying the softlockup and RCU CPU stall
+timeouts might change the behavior.
+
+No, your code is not reasonable, except perhaps as a test of the
+generation of softlockup and RCU CPU stall warnings.  If you are not
+trying to test softlockup and RCU CPU stall warnings, you should of course
+not try to acquire any non-recursive exclusive lock that you already hold.
+
+> If it is not reasonable, we should adjust the printk loglevel from *KERN_ERR* to *KERN_INFO*
+> in print_cpu_stall.
+
+Given that RCU CPU stall warnings are supposed to be pointing out errors
+elsewhere in the kernel, and in this case are pointing out errors elsewhere
+in the kernel, namely in your hello_start() function, it is reasonable
+that the RCU CPU stall warnings use the KERN_ERR loglevel.
+
+Or am I missing something here?
+
+							Thanx, Paul
+
