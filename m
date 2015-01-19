@@ -1,202 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751983AbbASPoX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 10:44:23 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:38130 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750880AbbASPoV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 10:44:21 -0500
-Date: Mon, 19 Jan 2015 15:43:57 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Aleksey Makarov <aleksey.makarov@auriga.com>
-Cc: "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
-        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David Daney <david.daney@cavium.com>,
-        Anton Vorontsov <avorontsov@ru.mvista.com>,
-        Vinita Gupta <vgupta@caviumnetworks.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Ralf Baechle <ralf@linux-mips.org>,
-        Tejun Heo <tj@kernel.org>, Hans de Goede <hdegoede@redhat.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Subject: Re: [PATCH] SATA: OCTEON: support SATA on OCTEON platform
-Message-ID: <20150119154357.GH21553@leverpostej>
-References: <1421681040-3392-1-git-send-email-aleksey.makarov@auriga.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421681040-3392-1-git-send-email-aleksey.makarov@auriga.com>
-Thread-Topic: [PATCH] SATA: OCTEON: support SATA on OCTEON platform
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752144AbbASPoq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 10:44:46 -0500
+Received: from pegase1.c-s.fr ([93.17.236.30]:35232 "EHLO mailhub1.si.c-s.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751596AbbASPop (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 10:44:45 -0500
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>, scottwood@freescale.com
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Subject: [PATCH v2] powerpc/8xx: reduce pressure on TLB due to context switches
+Message-Id: <20150119154442.8E9E11A5E85@localhost.localdomain>
+Date: Mon, 19 Jan 2015 16:44:42 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 19, 2015 at 03:23:58PM +0000, Aleksey Makarov wrote:
-> The OCTEON SATA controller is currently found on cn71XX devices.
-> 
-> Signed-off-by: David Daney <david.daney@cavium.com>
-> Signed-off-by: Vinita Gupta <vgupta@caviumnetworks.com>
-> [aleksey.makarov@auriga.com: preparing for submission,
-> conflict resolution, fixes for the platform code]
-> Signed-off-by: Aleksey Makarov <aleksey.makarov@auriga.com>
-> ---
->  .../devicetree/bindings/ata/ahci-platform.txt      |   1 +
->  .../devicetree/bindings/mips/cavium/sata-uctl.txt  |  31 ++++++
->  arch/mips/cavium-octeon/octeon-platform.c          |   1 +
->  drivers/ata/Kconfig                                |   9 ++
->  drivers/ata/Makefile                               |   1 +
->  drivers/ata/ahci_platform.c                        |  10 ++
->  drivers/ata/sata_octeon.c                          | 107 +++++++++++++++++++++
->  7 files changed, 160 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/mips/cavium/sata-uctl.txt
->  create mode 100644 drivers/ata/sata_octeon.c
-> 
-> diff --git a/Documentation/devicetree/bindings/ata/ahci-platform.txt b/Documentation/devicetree/bindings/ata/ahci-platform.txt
-> index 4ab09f2..1a5d3be 100644
-> --- a/Documentation/devicetree/bindings/ata/ahci-platform.txt
-> +++ b/Documentation/devicetree/bindings/ata/ahci-platform.txt
-> @@ -11,6 +11,7 @@ Required properties:
->  - compatible        : compatible string, one of:
->    - "allwinner,sun4i-a10-ahci"
->    - "hisilicon,hisi-ahci"
-> +  - "cavium,octeon-7130-ahci"
->    - "ibm,476gtr-ahci"
->    - "marvell,armada-380-ahci"
->    - "snps,dwc-ahci"
-> diff --git a/Documentation/devicetree/bindings/mips/cavium/sata-uctl.txt b/Documentation/devicetree/bindings/mips/cavium/sata-uctl.txt
-> new file mode 100644
-> index 0000000..222e66e
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/mips/cavium/sata-uctl.txt
-> @@ -0,0 +1,31 @@
-> +* UCTL SATA controller glue
+For nohash powerpc, when we run out of contexts, contexts are freed by stealing
+used contexts in-turn. When a victim has been selected, the associated TLB
+entries are freed using _tlbil_pid(). Unfortunatly, on the PPC 8xx, _tlbil_pid()
+does a tlbia, hence flushes ALL TLB entries and not only the one linked to the
+stolen context. Therefore, as implented today, at each task switch requiring a
+new context, all entries are flushed.
 
-I'm not sure I follow. What does this mean?
+This patch modifies the implementation so that when running out of contexts, all
+contexts get freed at once, hence dividing the number of calls to tlbia by 16.
 
-> +
-> +Properties:
-> +- compatible: "cavium,octeon-7130-sata-uctl"
-> +
-> +  Compatibility with the cn7130 SOC.
-> +
-> +- reg: The base address of the UCTL register bank.
-> +
-> +- #address-cells: Must be <2>.
-> +
-> +- #size-cells: Must be <2>.
-> +
-> +- ranges: Empty to signify direct mapping of the children.
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
-Why can't these be any values which are sufficient to map children?
+---
+v1->v2: removed blank line and added comment
 
-> +
-> +Example:
-> +
-> +	uctl@118006c000000 {
-> +	        compatible = "cavium,octeon-7130-sata-uctl";
-> +	        reg = <0x00011800 0x6c000000 0x00000000 0x00000100>;
-> +	        ranges;
-> +	        #address-cells = <0x00000002>;
-> +	        #size-cells = <0x00000002>;
+ arch/powerpc/mm/mmu_context_nohash.c | 43 +++++++++++++++++++++++++++++++++++-
+ 1 file changed, 42 insertions(+), 1 deletion(-)
 
-No need for all the zero-padding on these, they aren't addresses.
+diff --git a/arch/powerpc/mm/mmu_context_nohash.c b/arch/powerpc/mm/mmu_context_nohash.c
+index 928ebe7..dcbc231 100644
+--- a/arch/powerpc/mm/mmu_context_nohash.c
++++ b/arch/powerpc/mm/mmu_context_nohash.c
+@@ -52,12 +52,15 @@
+ #include <asm/mmu_context.h>
+ #include <asm/tlbflush.h>
+ 
++#include "mmu_decl.h"
++
+ static unsigned int first_context, last_context;
+ static unsigned int next_context, nr_free_contexts;
+ static unsigned long *context_map;
+ static unsigned long *stale_map[NR_CPUS];
+ static struct mm_struct **context_mm;
+ static DEFINE_RAW_SPINLOCK(context_lock);
++static bool no_selective_tlbil;
+ 
+ #define CTX_MAP_SIZE	\
+ 	(sizeof(unsigned long) * (last_context / BITS_PER_LONG + 1))
+@@ -133,6 +136,38 @@ static unsigned int steal_context_smp(unsigned int id)
+ }
+ #endif  /* CONFIG_SMP */
+ 
++static unsigned int steal_all_contexts(void)
++{
++	struct mm_struct *mm;
++	int cpu = smp_processor_id();
++	unsigned int id;
++
++	for (id = first_context; id <= last_context; id++) {
++		/* Pick up the victim mm */
++		mm = context_mm[id];
++
++		pr_hardcont(" | steal %d from 0x%p", id, mm);
++
++		/* Mark this mm as having no context anymore */
++		mm->context.id = MMU_NO_CONTEXT;
++		if (id != first_context) {
++			context_mm[id] = NULL;
++			__clear_bit(id, context_map);
++#ifdef DEBUG_MAP_CONSISTENCY
++			mm->context.active = 0;
++#endif
++		}
++		__clear_bit(id, stale_map[cpu]);
++	}
++
++	/* Flush the TLB for all contexts (not to be used on SMP) */
++	_tlbil_all();
++
++	nr_free_contexts = last_context - first_context;
++
++	return first_context;
++}
++
+ /* Note that this will also be called on SMP if all other CPUs are
+  * offlined, which means that it may be called for cpu != 0. For
+  * this to work, we somewhat assume that CPUs that are onlined
+@@ -241,7 +276,10 @@ void switch_mmu_context(struct mm_struct *prev, struct mm_struct *next)
+ 			goto stolen;
+ 		}
+ #endif /* CONFIG_SMP */
+-		id = steal_context_up(id);
++		if (no_selective_tlbil)
++			id = steal_all_contexts();
++		else
++			id = steal_context_up(id);
+ 		goto stolen;
+ 	}
+ 	nr_free_contexts--;
+@@ -407,12 +445,15 @@ void __init mmu_context_init(void)
+ 	if (mmu_has_feature(MMU_FTR_TYPE_8xx)) {
+ 		first_context = 0;
+ 		last_context = 15;
++		no_selective_tlbil = true;
+ 	} else if (mmu_has_feature(MMU_FTR_TYPE_47x)) {
+ 		first_context = 1;
+ 		last_context = 65535;
++		no_selective_tlbil = false;
+ 	} else {
+ 		first_context = 1;
+ 		last_context = 255;
++		no_selective_tlbil = false;
+ 	}
+ 
+ #ifdef DEBUG_CLAMP_LAST_CONTEXT
+-- 
+2.1.0
 
-> +	        sata@16c00 {
-> +	                compatible = "cavium,octeon-7130-ahci";
-> +	                reg = <0x00016c00 0x00000000 0x00000000 0x00000200>;
-> +	                interrupt-parent = <0x0000000d>;
-> +	                interrupts = <0x00000002 0x00000004>;
-> +	                cavium,qlm-trim-alias = "sata";
-
-What's this property for? It wasn't documented above, and doesn't exist
-in mainline.
-
-[...]
-
-> diff --git a/drivers/ata/Makefile b/drivers/ata/Makefile
-> index ae41107..4a0e5e3 100644
-> --- a/drivers/ata/Makefile
-> +++ b/drivers/ata/Makefile
-> @@ -17,6 +17,7 @@ obj-$(CONFIG_AHCI_SUNXI)	+= ahci_sunxi.o libahci.o libahci_platform.o
->  obj-$(CONFIG_AHCI_ST)		+= ahci_st.o libahci.o libahci_platform.o
->  obj-$(CONFIG_AHCI_TEGRA)	+= ahci_tegra.o libahci.o libahci_platform.o
->  obj-$(CONFIG_AHCI_XGENE)	+= ahci_xgene.o libahci.o libahci_platform.o
-> +obj-$(CONFIG_SATA_OCTEON)	+= sata_octeon.o
->  
->  # SFF w/ custom DMA
->  obj-$(CONFIG_PDC_ADMA)		+= pdc_adma.o
-> diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
-> index 18d5398..bb36396 100644
-> --- a/drivers/ata/ahci_platform.c
-> +++ b/drivers/ata/ahci_platform.c
-> @@ -22,6 +22,12 @@
->  #include <linux/ahci_platform.h>
->  #include "ahci.h"
->  
-> +#if IS_ENABLED(CONFIG_SATA_OCTEON)
-> +void ahci_octeon_config(struct platform_device *pdev);
-> +#else
-> +static inline void ahci_octeon_config(struct platform_device *pdev) {}
-> +#endif
-> +
->  static const struct ata_port_info ahci_port_info = {
->  	.flags		= AHCI_FLAG_COMMON,
->  	.pio_mask	= ATA_PIO4,
-> @@ -46,6 +52,9 @@ static int ahci_probe(struct platform_device *pdev)
->  	if (of_device_is_compatible(dev->of_node, "hisilicon,hisi-ahci"))
->  		hpriv->flags |= AHCI_HFLAG_NO_FBS | AHCI_HFLAG_NO_NCQ;
->  
-> +	if (of_device_is_compatible(dev->of_node, "cavium,octeon-7130-ahci"))
-> +		ahci_octeon_config(pdev);
-> +
-
-If we really need this kind of thing, make a new struct and associate it
-with of_device_id::data in the table below. Then we make this path free
-from any device-specific code.
-
->  	rc = ahci_platform_init_host(pdev, hpriv, &ahci_port_info);
->  	if (rc)
->  		goto disable_resources;
-> @@ -67,6 +76,7 @@ static const struct of_device_id ahci_of_match[] = {
->  	{ .compatible = "ibm,476gtr-ahci", },
->  	{ .compatible = "snps,dwc-ahci", },
->  	{ .compatible = "hisilicon,hisi-ahci", },
-> +	{ .compatible = "cavium,octeon-7130-ahci", },
->  	{},
-
-I was under the impression that the strings other than "generic-ahci"
-were only for compatibility with existing DTBs. Why do we need to add
-new platform-specific strings here?
-
-[...]
-
-> +void ahci_octeon_config(struct platform_device *pdev)
-> +{
-> +	union cvmx_sata_uctl_shim_cfg shim_cfg;
-> +
-> +	/* set-up endian mode */
-> +	shim_cfg.u64 = cvmx_read_csr(CVMX_SATA_UCTL_SHIM_CFG);
-> +#ifdef __BIG_ENDIAN
-> +	shim_cfg.s.dma_endian_mode = 1;
-> +	shim_cfg.s.csr_endian_mode = 1;
-> +#else
-> +	shim_cfg.s.dma_endian_mode = 0;
-> +	shim_cfg.s.csr_endian_mode = 0;
-> +#endif
-> +	shim_cfg.s.dma_read_cmd = 1; /* No allocate L2C */
-> +	cvmx_write_csr(CVMX_SATA_UCTL_SHIM_CFG, shim_cfg.u64);
-> +
-> +	/* Set a good dma_mask */
-> +	pdev->dev.coherent_dma_mask = DMA_BIT_MASK(64);
-> +	pdev->dev.dma_mask = &pdev->dev.coherent_dma_mask;
-
-I thought a dma-ranges property in the DT could be used to set up the
-DMA mask appropriately?
-
-Thanks,
-Mark.
