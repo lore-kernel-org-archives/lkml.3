@@ -1,82 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787AbbASSfQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 13:35:16 -0500
-Received: from mout.web.de ([212.227.17.12]:57112 "EHLO mout.web.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752656AbbASSfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 13:35:14 -0500
-Message-ID: <54BD4E52.7000308@users.sourceforge.net>
-Date: Mon, 19 Jan 2015 19:34:58 +0100
-From: SF Markus Elfring <elfring@users.sourceforge.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S1752621AbbASSiS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 13:38:18 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:49602 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752384AbbASSiQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 13:38:16 -0500
+Date: Tue, 20 Jan 2015 02:38:06 +0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Johannes Stezenbach <js@sig21.net>
+Cc: arnd@arndb.de, ebiederm@xmission.com, gnomes@lxorguk.ukuu.org.uk,
+        teg@jklm.no, jkosina@suse.cz, luto@amacapital.net,
+        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
+        daniel@zonque.org, dh.herrmann@gmail.com, tixxdz@opendz.org
+Subject: Re: [PATCH v3 00/13] Add kdbus implementation
+Message-ID: <20150119183806.GA8479@kroah.com>
+References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>
+ <20150119180642.GA27957@sig21.net>
 MIME-Version: 1.0
-To: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        Tomi Valkeinen <tomi.valkeinen@ti.com>, linux-fbdev@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>, kernel-janitors@vger.kernel.org,
-        Julia Lawall <julia.lawall@lip6.fr>
-Subject: [PATCH 4/9] video: Add check for return value of ioremap() in cirrusfb_pci_register()
-References: <5307CAA2.8060406@users.sourceforge.net> <alpine.DEB.2.02.1402212321410.2043@localhost6.localdomain6> <530A086E.8010901@users.sourceforge.net> <alpine.DEB.2.02.1402231635510.1985@localhost6.localdomain6> <530A72AA.3000601@users.sourceforge.net> <alpine.DEB.2.02.1402240658210.2090@localhost6.localdomain6> <530B5FB6.6010207@users.sourceforge.net> <alpine.DEB.2.10.1402241710370.2074@hadrien> <530C5E18.1020800@users.sourceforge.net> <alpine.DEB.2.10.1402251014170.2080@hadrien> <530CD2C4.4050903@users.sourceforge.net> <alpine.DEB.2.10.1402251840450.7035@hadrien> <530CF8FF.8080600@users.sourceforge.net> <alpine.DEB.2.02.1402252117150.2047@localhost6.localdomain6> <530DD06F.4090703@users.sourceforge.net> <alpine.DEB.2.02.1402262129250.2221@localhost6.localdomain6> <5317A59D.4@users.sourceforge.net> <54BD44F0.3040705@users.sourceforge.net>
-In-Reply-To: <54BD44F0.3040705@users.sourceforge.net>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V03:K0:WU2NbGJ2AUKJJOHMfHiJmrPIxev+77+/Nb5TCsxLLmLWy3kGYCr
- ztMfoM9QLzVO4fqQZhJBaE8JN2WDgJCwI6xjZqtPSu1YLlyc/Bq+PSGOyrYkYNouiz3KrnN
- GPlbND2jPy799kRQ3iHUBJeED5wT+Feq/eE5zRRqzyg5QJFvsJOtcStbzuAv/Fx7Z3tFl4v
- vVpBFhy+58CTM5tgt0/qQ==
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20150119180642.GA27957@sig21.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus Elfring <elfring@users.sourceforge.net>
-Date: Mon, 19 Jan 2015 13:18:50 +0100
+On Mon, Jan 19, 2015 at 07:06:42PM +0100, Johannes Stezenbach wrote:
+> Hi Greg and Daniel,
 
-The return value from a call of the ioremap() function was not checked
-by the implementation of the cirrusfb_pci_register() function.
-Let us complete the corresponding error detection and exception handling
-at this source code place.
+[Fixing Daniel's email, which I messed up originally...]
 
-Signed-off-by: Markus Elfring <elfring@users.sourceforge.net>
----
- drivers/video/fbdev/cirrusfb.c | 9 +++++++--
- 1 file changed, 7 insertions(+), 2 deletions(-)
+> On Fri, Jan 16, 2015 at 11:16:04AM -0800, Greg Kroah-Hartman wrote:
+> > kdbus is a kernel-level IPC implementation that aims for resemblance to
+> > the the protocol layer with the existing userspace D-Bus daemon while
+> > enabling some features that couldn't be implemented before in userspace.
+> > 
+> > The documentation in the first patch in this series explains the
+> > protocol and the API details.
+> 
+> How about the big picture?
+> 
+> > Reasons why this should be done in the kernel, instead of userspace as
+> > it is currently done today include the following:
+> [abbreviated]
+> > - performance
+> > - security
+> > - semantics for apps with heavy data payloads
+> 
+> 
+> First of all I wonder about the relationship with D-Bus.
+> http://dbus.freedesktop.org/doc/dbus-specification.html says:
+> 
+>    D-Bus is designed for two specific use cases:
+> 
+>        A "system bus" for notifications from the system to user
+>        sessions, and to allow the system to request input from
+>        user sessions.
+> 
+>        A "session bus" used to implement desktop environments such
+>        as GNOME and KDE. 
+> 
+>    D-Bus is not intended to be a generic IPC system for any
+>    possible application, and intentionally omits many features
+>    found in other IPC systems for this reason. 
+> 
+> Does this also apply to kdbus?  If not, what are the
+> suggested uses of kdbus beyond those where D-Bus is
+> currently used?
 
-diff --git a/drivers/video/fbdev/cirrusfb.c b/drivers/video/fbdev/cirrusfb.c
-index d8b3359..aa4050c 100644
---- a/drivers/video/fbdev/cirrusfb.c
-+++ b/drivers/video/fbdev/cirrusfb.c
-@@ -2111,6 +2111,10 @@ static int cirrusfb_pci_register(struct pci_dev *pdev,
- 	/* FIXME: this forces VGA.  alternatives? */
- 	cinfo->regbase = NULL;
- 	cinfo->laguna_mmio = ioremap(info->fix.mmio_start, 0x1000);
-+	if (!cinfo->laguna_mmio) {
-+		ret = -EIO;
-+		goto err_release_fb;
-+	}
- 
- 	dev_dbg(info->device, "Board address: 0x%lx, register address: 0x%lx\n",
- 		board_addr, info->fix.mmio_start);
-@@ -2122,7 +2126,7 @@ static int cirrusfb_pci_register(struct pci_dev *pdev,
- 	if (ret < 0) {
- 		dev_err(info->device, "cannot reserve region 0x%lx, abort\n",
- 			board_addr);
--		goto err_release_fb;
-+		goto io_unmap_laguna;
- 	}
- #if 0 /* if the system didn't claim this region, we would... */
- 	if (!request_mem_region(0xA0000, 65535, "cirrusfb")) {
-@@ -2163,8 +2167,9 @@ err_release_legacy:
- err_release_regions:
- #endif
- 	pci_release_regions(pdev);
--err_release_fb:
-+io_unmap_laguna:
- 	iounmap(cinfo->laguna_mmio);
-+err_release_fb:
- 	framebuffer_release(info);
- err_out:
- 	return ret;
--- 
-2.2.2
+I don't really know.  I have heard from lots of random people who are
+starting to look into kdbus as to if it will work for their use cases,
+which seem quite varied.  I'll leave it to them to pop up and say if it
+will work for them outside of the above specific ways.  But even then,
+the above two things are something almost all Linux boxes rely on today,
+so it's not like this is a solution searching for a problem to solve :)
 
+> Another related quote by Havoc Pennington:
+> http://lists.freedesktop.org/archives/dbus/2012-March/015024.html
+> 
+>    In general, reading this, I think in some cases there are
+>    problems that make sense to fix in dbus, and in other cases
+>    there are problems that are best solved by not using dbus.
+>    ...
+>    there are about 10000 IPC solutions already, from ICE (both of
+>    them) to ZeroMQ to AMQP to CORBA to X11 to HTTP to SOAP to
+>    WebSockets to SUN-RPC to whatever-the-heck. To me, trying to
+>    make dbus configurable so that it can substitute for any of
+>    these is a Bad Idea (tm).
+> 
+> Do you think it also applies to kdbus?
+
+Yes, I do agree, there are lots of existing ipc solutions today that
+kdbus is not designed for, nor would it be good to use it for.  The
+majority of them being IPC that crosses the network layer, as there are
+lots of good solutions today for that problem.  That being said, I do
+know one research group that has kdbus working cross-network, just "to
+try it out", but I don't know what ever came of it.
+
+> Wrt the performance improvement achieved by kdbus, my impression
+> about D-Bus is that the number of messages on my system is
+> about a dozen per minute.  Are there actually any existing
+> applications using D-Bus that have a performance issue?
+> Or is this only about future possible uses?
+
+There are a number of existing applications that have this performance
+issue today.  The majority of them have been ported from other operating
+systems that have a fast message bus, so their process model is all
+about messages.  They use a library layer on Linux to turn that message
+bus into D-Bus messages, and have suffered a huge hit in performance
+from their previous operating system.  Using kdbus has brought it back
+in line to make it reasonable to use.
+
+These applications can be usually found in the Automotive sector, which
+has been playing with light-weight dbus library implementations for a
+while now, and have done some initial kdbus testing to verify this will
+work for them.
+
+> Linked from http://kroah.com/log/blog/2014/01/15/kdbus-details/,
+> http://lwn.net/Articles/580194/ "The unveiling of kdbus" says:
+> 
+>    Unlike most other kernels, Linux has never had a well-designed
+>    IPC mechanism. Windows and Mac OS have this feature; even
+>    Android, based on Linux, has one in the form of the "binder"
+>    subsystem. Linux, instead, has only had the primitives —
+>    sockets, FIFOs, and shared memory — but those have never been
+>    knitted together into a reasonable application-level API. Kdbus
+>    is an attempt to do that knitting and create something that is
+>    at least as good as the mechanisms found on other systems.
+> 
+> These are bold words. I'm not sure what Windows and Mac OS
+> have in terms of IPC, but the above suggests that kdbus
+> is *the* new Linux IPC that everyone will use for everything,
+> rather than a special purpose facility.
+
+Everyone uses D-Bus today for everything on their system, so by
+replacing the underlying library with kdbus, they will continue to use
+it for everything without having to change any application or library
+code at all.
+
+Hope this helps,
+
+greg k-h
