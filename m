@@ -1,131 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752456AbbASJuj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 04:50:39 -0500
-Received: from devils.ext.ti.com ([198.47.26.153]:50365 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751683AbbASJuh (ORCPT
+	id S1752390AbbASJvJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 04:51:09 -0500
+Received: from mout.kundenserver.de ([212.227.126.130]:56893 "EHLO
+	mout.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751753AbbASJvE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 04:50:37 -0500
-From: Mugunthan V N <mugunthanvnm@ti.com>
-To: <bcousson@baylibre.com>, <tony@atomide.com>
-CC: <devicetree@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Mugunthan V N <mugunthanvnm@ti.com>
-Subject: [PATCH 1/1] ARM: dts: dra72-evm: Add qspi device
-Date: Mon, 19 Jan 2015 15:19:28 +0530
-Message-ID: <1421660968-16134-1-git-send-email-mugunthanvnm@ti.com>
-X-Mailer: git-send-email 2.2.1.62.g3f15098
+	Mon, 19 Jan 2015 04:51:04 -0500
+From: Arnd Bergmann <arnd@arndb.de>
+To: Yijing Wang <wangyijing@huawei.com>
+Cc: linux-arm-kernel@lists.infradead.org, Bjorn Helgaas <bhelgaas@google.com>,
+        Liviu Dudau <liviu@dudau.co.uk>, Tony Luck <tony.luck@intel.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Marc Zyngier <marc.zyngier@arm.com>, linux-pci@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>, linux-m68k@vger.kernel.org,
+        Geert Uytterhoeven <geert@linux-m68k.org>, linux-alpha@vger.kernel.org,
+        linux-ia64@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>, Yinghai Lu <yinghai@kernel.org>,
+        Jiang Liu <jiang.liu@linux.intel.com>,
+        Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Subject: Re: [PATCH 08/28] PCI: Introduce pci_host_assign_domain_nr() to assign domain
+Date: Mon, 19 Jan 2015 10:50:30 +0100
+Message-ID: <2124926.gSbG0l1jIy@wuerfel>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-10-generic; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <54BC6894.6060500@huawei.com>
+References: <1421372666-12288-1-git-send-email-wangyijing@huawei.com> <3026954.09KG7UaUTi@wuerfel> <54BC6894.6060500@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
+X-Provags-ID: V03:K0:joVrAckJ4T53AE9vCH1GKo2q9qrXEKODMsHTOY533Ymcrp6AcPa
+ SESkW8ro5EcuOKN0XTvYiOGW4WaORUBmJfLDC04K/hq/IuI4l+B/K10xi5rpxYe+iV6+Y90
+ Ns3A1u7T5XkZ/uhq6QTxaCQz4V7WaS5PftunvqcK35OT3975qb+KDCubSMdp60AI9pu+Bse
+ pYa2dHAaFkgFYNztVvLXA==
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These add device tree entry for qspi device on dra72-evm.
+On Monday 19 January 2015 10:14:44 Yijing Wang wrote:
+> >> I'm confused: the same code is already part of the PCI tree, but with
+> >> Lorenzo Pieralisi listed as the patch author. The code is good,
+> >> and I acked it in the past, but one of you is (probably by accident)
+> >> misattributing the patch.
+> >>
+> >> Assuming that the patch that is already merged in next is the right
+> >> one, I think you should rebase your series on top of
+> >>
+> >> git://git.kernel.org/pub/scm/linux/kernel/git/helgaas/pci.git#next
+> >>
+> >> to avoid conflicts like this one.
+> >>
+> > 
+> > I think I just got confused because the code duplicates most of
+> > pci_bus_assign_domain_nr(). Maybe this can be done in a better way
+> > by splitting the existing function into 
+> > 
+> > static int pci_assign_domain_nr(struct device *)
+> > {
+> >       ... /* most of pci_bus_assign_domain_nr */
+> > 
+> >       return domain;
+> > }
+> > 
+> > void pci_host_assign_domain_nr(struct pci_host_bridge *host)
+> > {
+> >       host->domain = pci_assign_domain_nr(host->dev.parent);
+> > }
+> > 
+> > void pci_bus_assign_domain_nr(struct pci_bus *bus, struct device *parent)
+> > {
+> >       bus->domain_nr = pci_assign_domain_nr(parent);
+> > }
+> > 
+> 
+> Hi Arnd,
+>    I kept the almost duplicated pci_host_assign_domain_nr() and
+> pci_bus_assign_domain_nr() here for building happy, because now
+> platform specific pci_domain_nr() still exists which may get domain
+> number from pci_bus. pci_bus_assign_domain_nr() will be removed in
+> the last patch.
+> 
 
-Signed-off-by: Mugunthan V N <mugunthanvnm@ti.com>
----
+I'm not sure I get your point: the approach I showed above seems to have
+the same effect, except it doesn't duplicate code temporarily, which
+makes it less error-prone in case your patch gets merged at the
+same time as another patch that modifies pci_bus_assign_domain_nr.
 
-This patch is tested on linux-next and the boot logs is here [1]
-
-[1] - http://pastebin.ubuntu.com/9783555/ 
-
----
- arch/arm/boot/dts/dra72-evm.dts | 77 +++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 77 insertions(+)
-
-diff --git a/arch/arm/boot/dts/dra72-evm.dts b/arch/arm/boot/dts/dra72-evm.dts
-index 89085d0..cacddd7 100644
---- a/arch/arm/boot/dts/dra72-evm.dts
-+++ b/arch/arm/boot/dts/dra72-evm.dts
-@@ -121,6 +121,18 @@
- 			0x418   (MUX_MODE15)	/* wakeup0.off */
- 		>;
- 	};
-+
-+	qspi1_pins: pinmux_qspi1_pins {
-+		pinctrl-single,pins = <
-+			0x74 (PIN_OUTPUT | MUX_MODE1)	/* gpmc_a13.qspi1_rtclk */
-+			0x78 (PIN_INPUT | MUX_MODE1)	/* gpmc_a14.qspi1_d3 */
-+			0x7c (PIN_INPUT | MUX_MODE1)	/* gpmc_a15.qspi1_d2 */
-+			0x80 (PIN_INPUT | MUX_MODE1)	/* gpmc_a16.qspi1_d1 */
-+			0x84 (PIN_INPUT | MUX_MODE1)	/* gpmc_a17.qspi1_d0 */
-+			0x88 (PIN_OUTPUT | MUX_MODE1)	/* qpmc_a18.qspi1_sclk */
-+			0xb8 (PIN_OUTPUT | MUX_MODE1)	/* gpmc_cs2.qspi1_cs0 */
-+		>;
-+	};
- };
- 
- &i2c1 {
-@@ -461,3 +473,68 @@
- 	pinctrl-0 = <&dcan1_pins_default>;
- 	pinctrl-1 = <&dcan1_pins_sleep>;
- };
-+
-+&qspi {
-+	status = "okay";
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&qspi1_pins>;
-+
-+	spi-max-frequency = <48000000>;
-+	m25p80@0 {
-+		compatible = "s25fl256s1";
-+		spi-max-frequency = <48000000>;
-+		reg = <0>;
-+		spi-tx-bus-width = <1>;
-+		spi-rx-bus-width = <4>;
-+		spi-cpol;
-+		spi-cpha;
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+
-+		/* MTD partition table.
-+		 * The ROM checks the first four physical blocks
-+		 * for a valid file to boot and the flash here is
-+		 * 64KiB block size.
-+		 */
-+		partition@0 {
-+			label = "QSPI.SPL";
-+			reg = <0x00000000 0x000010000>;
-+		};
-+		partition@1 {
-+			label = "QSPI.SPL.backup1";
-+			reg = <0x00010000 0x00010000>;
-+		};
-+		partition@2 {
-+			label = "QSPI.SPL.backup2";
-+			reg = <0x00020000 0x00010000>;
-+		};
-+		partition@3 {
-+			label = "QSPI.SPL.backup3";
-+			reg = <0x00030000 0x00010000>;
-+		};
-+		partition@4 {
-+			label = "QSPI.u-boot";
-+			reg = <0x00040000 0x00100000>;
-+		};
-+		partition@5 {
-+			label = "QSPI.u-boot-spl-os";
-+			reg = <0x00140000 0x00080000>;
-+		};
-+		partition@6 {
-+			label = "QSPI.u-boot-env";
-+			reg = <0x001c0000 0x00010000>;
-+		};
-+		partition@7 {
-+			label = "QSPI.u-boot-env.backup1";
-+			reg = <0x001d0000 0x0010000>;
-+		};
-+		partition@8 {
-+			label = "QSPI.kernel";
-+			reg = <0x001e0000 0x0800000>;
-+		};
-+		partition@9 {
-+			label = "QSPI.file-system";
-+			reg = <0x009e0000 0x01620000>;
-+		};
-+	};
-+};
--- 
-2.2.1.62.g3f15098
-
+	Arnd
