@@ -1,81 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754424AbbATLMx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 06:12:53 -0500
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:53735 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753832AbbATLMu (ORCPT
+	id S1754731AbbATLNz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 06:13:55 -0500
+Received: from www.linutronix.de ([62.245.132.108]:47963 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753492AbbATLNw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 06:12:50 -0500
-Date: Tue, 20 Jan 2015 11:12:43 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Jacek Anaszewski <j.anaszewski@samsung.com>
-Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        kyungmin.park@samsung.com, b.zolnierkie@samsung.com, pavel@ucw.cz,
-        cooloney@gmail.com, rpurdie@rpsys.net, sakari.ailus@iki.fi,
-        s.nawrocki@samsung.com, Chanwoo Choi <cw00.choi@samsung.com>
-Subject: Re: [PATCH/RFC v10 04/19] dt-binding: mfd: max77693: Add DT binding
- related macros
-Message-ID: <20150120111243.GC13701@x1>
-References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
- <1420816989-1808-5-git-send-email-j.anaszewski@samsung.com>
+	Tue, 20 Jan 2015 06:13:52 -0500
+Date: Tue, 20 Jan 2015 12:13:08 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+cc: John Stultz <john.stultz@linaro.org>,
+        Daniel Lezcano <daniel.lezcano@linaro.org>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] clocksource: don't suspend/resume when unused
+In-Reply-To: <1421427439-11699-3-git-send-email-alexandre.belloni@free-electrons.com>
+Message-ID: <alpine.DEB.2.11.1501201153140.5526@nanos>
+References: <1421427439-11699-1-git-send-email-alexandre.belloni@free-electrons.com> <1421427439-11699-3-git-send-email-alexandre.belloni@free-electrons.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1420816989-1808-5-git-send-email-j.anaszewski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 09 Jan 2015, Jacek Anaszewski wrote:
+On Fri, 16 Jan 2015, Alexandre Belloni wrote:
 
-> Add macros for max77693 led part related binding.
-> 
-> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Lee Jones <lee.jones@linaro.org>
-> Cc: Chanwoo Choi <cw00.choi@samsung.com>
+> There is no point in calling suspend/resume for unused
+> clocksources.
+
+That's true, but ....
+ 
+> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 > ---
->  include/dt-bindings/mfd/max77693.h |   21 +++++++++++++++++++++
->  1 file changed, 21 insertions(+)
->  create mode 100644 include/dt-bindings/mfd/max77693.h
+>  kernel/time/clocksource.c | 4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
 > 
-> diff --git a/include/dt-bindings/mfd/max77693.h b/include/dt-bindings/mfd/max77693.h
-> new file mode 100644
-> index 0000000..f53e197
-> --- /dev/null
-> +++ b/include/dt-bindings/mfd/max77693.h
-> @@ -0,0 +1,21 @@
-> +/*
-> + * This header provides macros for MAX77693 device binding
-> + *
-> + * Copyright (C) 2014, Samsung Electronics Co., Ltd.
-> + *
-> + * Author: Jacek Anaszewski <j.anaszewski@samsung.com>
-> + */
-> +
-> +#ifndef __DT_BINDINGS_MAX77693_H__
-> +#define __DT_BINDINGS_MAX77693_H
-> +
-> +/* External trigger type */
-> +#define MAX77693_LED_TRIG_TYPE_EDGE	0
-> +#define MAX77693_LED_TRIG_TYPE_LEVEL	1
-> +
-> +/* Boost modes */
-> +#define MAX77693_LED_BOOST_OFF		0
-> +#define MAX77693_LED_BOOST_ADAPTIVE	1
-> +#define MAX77693_LED_BOOST_FIXED	2
-> +
-> +#endif /* __DT_BINDINGS_MAX77693_H */
+> diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
+> index 03cfc5a08e3b..da65b3b73a86 100644
+> --- a/kernel/time/clocksource.c
+> +++ b/kernel/time/clocksource.c
+> @@ -493,7 +493,7 @@ void clocksource_suspend(void)
+>  	struct clocksource *cs;
+>  
+>  	list_for_each_entry_reverse(cs, &clocksource_list, list)
+> -		if (cs->suspend)
+> +		if (cs->suspend && (cs->flags & CLOCK_SOURCE_USED))
+>  			cs->suspend(cs);
+>  }
+>  
+> @@ -505,7 +505,7 @@ void clocksource_resume(void)
+>  	struct clocksource *cs;
+>  
+>  	list_for_each_entry(cs, &clocksource_list, list)
+> -		if (cs->resume)
+> +		if (cs->resume && (cs->flags & CLOCK_SOURCE_USED))
+>  			cs->resume(cs);
 
-These look fairly generic.  Do generic LED defines already exist?  If
-not, can they?
+I had a deeper look at the clocksources which have a resume
+callback. We have implementations, which rely on the resume callback
+being called unconditionally. e.g.: arch/x86/kernel/hpet.c. And there
+are a few others which have extra PM code in the suspend/resume path
+independent of the fact whether the clocksource is enabled or not.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+So we really need to make this opt-in with a per clocksource flag.
+
+Thanks,
+
+	tglx
