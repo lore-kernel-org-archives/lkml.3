@@ -1,187 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247AbbATSeS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 13:34:18 -0500
-Received: from mail-bl2on0128.outbound.protection.outlook.com ([65.55.169.128]:52430
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753145AbbATSeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 13:34:14 -0500
-From: KY Srinivasan <kys@microsoft.com>
-To: Vitaly Kuznetsov <vkuznets@redhat.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>
-CC: Haiyang Zhang <haiyangz@microsoft.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dexuan Cui <decui@microsoft.com>, Jason Wang <jasowang@redhat.com>,
-        =?utf-8?B?UmFkaW0gS3LEjW3DocWZ?= <rkrcmar@redhat.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Subject: RE: [PATCH v3 3/3] Drivers: hv: vmbus: serialize Offer and Rescind
- offer
-Thread-Topic: [PATCH v3 3/3] Drivers: hv: vmbus: serialize Offer and Rescind
- offer
-Thread-Index: AQHQNMgaLPCg6Xxhv067MvQB7Q0C3ZzJVbOw
-Date: Tue, 20 Jan 2015 18:34:10 +0000
-Message-ID: <BY2PR0301MB0711C4B649166E5F946F9284A04B0@BY2PR0301MB0711.namprd03.prod.outlook.com>
-References: <1421768706-5363-1-git-send-email-vkuznets@redhat.com>
- <1421768706-5363-4-git-send-email-vkuznets@redhat.com>
-In-Reply-To: <1421768706-5363-4-git-send-email-vkuznets@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [131.107.192.176]
-authentication-results: spf=none (sender IP is )
- smtp.mailfrom=kys@microsoft.com; 
-x-dmarcaction-test: None
-x-microsoft-antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:BY2PR0301MB0774;
-x-o365ent-eop-header: Message processed by -  O365_ENT: Allow from ranges
- (Engineering ONLY)
-x-exchange-antispam-report-test: UriScan:;
-x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0774;
-x-forefront-prvs: 0462918D61
-x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(199003)(13464003)(51704005)(377454003)(189002)(68736005)(46102003)(54356999)(64706001)(76176999)(2656002)(101416001)(2900100001)(87936001)(97736003)(102836002)(33656002)(2501002)(2950100001)(19580405001)(86612001)(19580395003)(99286002)(105586002)(86362001)(50986999)(40100003)(122556002)(77156002)(62966003)(106356001)(74316001)(92566002)(66066001)(106116001)(54606007)(76576001)(54206007);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0774;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
-X-OriginatorOrg: microsoft.onmicrosoft.com
-X-MS-Exchange-CrossTenant-originalarrivaltime: 20 Jan 2015 18:34:10.9363
- (UTC)
-X-MS-Exchange-CrossTenant-fromentityheader: Hosted
-X-MS-Exchange-CrossTenant-id: 72f988bf-86f1-41af-91ab-2d7cd011db47
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR0301MB0774
+	id S1753370AbbATSej (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 13:34:39 -0500
+Received: from senator.holtmann.net ([87.106.208.187]:46341 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752857AbbATSeh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 13:34:37 -0500
+Content-Type: text/plain; charset=us-ascii
+Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
+Subject: Re: [PATCH] bluetooth: Add hci_h4p driver
+From: Marcel Holtmann <marcel@holtmann.org>
+In-Reply-To: <20150120173604.GA712@amd>
+Date: Tue, 20 Jan 2015 10:34:30 -0800
+Cc: =?utf-8?Q?Pali_Roh=C3=A1r?= <pali.rohar@gmail.com>,
+        Sebastian Reichel <sre@debian.org>, Sebastian Reichel <sre@ring0.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        Tony Lindgren <tony@atomide.com>, khilman@kernel.org,
+        Aaro Koskinen <aaro.koskinen@iki.fi>,
+        Ivaylo Dimitrov <ivo.g.dimitrov.75@gmail.com>,
+        linux-bluetooth@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <7522CAC7-AFD9-470F-B4F8-3C39942DBC04@holtmann.org>
+References: <20141223130219.GA5731@amd> <CB643345-4B50-4ED0-8C3E-296CD225754D@holtmann.org> <20150120173604.GA712@amd>
+To: Pavel Machek <pavel@ucw.cz>
+X-Mailer: Apple Mail (2.1993)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0KIYQjJ014702
 
+Hi Pavel,
 
+>>> Add HCI driver for H4 with Nokia extensions. This device is used on
+>>> Nokia N900 cell phone.
+>>> 
+>>> Older version of this driver lived in staging, before being reverted
+>>> in a4102f90e87cfaa3fdbed6fdf469b23f0eeb4bfd .
+>>> 
+>>> Signed-off-by: Pavel Machek <pavel@ucw.cz>
+>>> Thanks-to: Sebastian Reichel <sre@debian.org>
+>>> Thanks-to: Joe Perches <joe@perches.com>
+>>> 
+>>> ---
+>>> 
+>>> Please apply,
+>>> 								Pavel
+>>> 
+>>> 
+>>> Kconfig      |   10 
+>>> Makefile     |    4 
+>>> nokia_core.c | 1149 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>>> nokia_fw.c   |   99 +++++
+>>> nokia_h4p.h  |  214 ++++++++++
+>>> nokia_uart.c |  171 ++++++++
+>>> 7 files changed, 1667 insertions(+)
+> 
+> Speaking about formatting, could you properly format your emails, that
+> is inserting newline after ~78 columns, to make them easier to reply
+> to?
 
-> -----Original Message-----
-> From: Vitaly Kuznetsov [mailto:vkuznets@redhat.com]
-> Sent: Tuesday, January 20, 2015 7:45 AM
-> To: KY Srinivasan; devel@linuxdriverproject.org
-> Cc: Haiyang Zhang; linux-kernel@vger.kernel.org; Dexuan Cui; Jason Wang;
-> Radim Krƒçm√°≈ô; Dan Carpenter
-> Subject: [PATCH v3 3/3] Drivers: hv: vmbus: serialize Offer and Rescind offer
-> 
-> Commit 4b2f9abea52a ("staging: hv: convert channel_mgmt.c to not call
-> osd_schedule_callback")' was written under an assumption that we never
-> receive Rescind offer while we're still processing the initial Offer request.
-> However, the issue we fixed in 04a258c162a8 could be caused by this
-> assumption not always being true.
-> 
-> In particular, we need to protect against the following:
-> 1) Receiving a Rescind offer after we do queue_work() for processing an
-> Offer
->    request and before we actually enter vmbus_process_offer(). work.func
-> points
->    to vmbus_process_offer() at this moment and in vmbus_onoffer_rescind()
-> we do
->    another queue_work() without a check so we'll enter
-> vmbus_process_offer()
->    twice.
-> 2) Receiving a Rescind offer after we enter vmbus_process_offer() and
->    especially after we set >state = CHANNEL_OPEN_STATE. Many things can
-> go
->    wrong in that case, e.g. we can call free_channel() while we're still using
->    it.
-> 
-> Implement the required protection by changing work->func at the very end
-> of
-> vmbus_process_offer() and checking work->func in
-> vmbus_onoffer_rescind(). In case we receive rescind offer during or before
-> vmbus_process_offer() is done we set rescind flag to true and we check it at
-> the end of vmbus_process_offer() so such offer will not get lost.
-> 
-> Suggested-by: Radim Krƒçm√°≈ô <rkrcmar@redhat.com>
-> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+or you get an email client that can handle that part.
 
-Thanks Vitaly.
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> ---
->  drivers/hv/channel_mgmt.c | 30 ++++++++++++++++++++++--------
->  1 file changed, 22 insertions(+), 8 deletions(-)
+>> so when I run this through checkpatch --strict, then I get tons of warning that we have DOS style ^M line breaks. There are also trailing whitespace that need fixing. I can use cleanpatch to do this, but so can you.
+>> 
 > 
-> diff --git a/drivers/hv/channel_mgmt.c b/drivers/hv/channel_mgmt.c index
-> c6fdd74..877a944 100644
-> --- a/drivers/hv/channel_mgmt.c
-> +++ b/drivers/hv/channel_mgmt.c
-> @@ -279,9 +279,6 @@ static void vmbus_process_offer(struct work_struct
-> *work)
->  	int ret;
->  	unsigned long flags;
-> 
-> -	/* The next possible work is rescind handling */
-> -	INIT_WORK(&newchannel->work, vmbus_process_rescind_offer);
-> -
->  	/* Make sure this is a new offer */
->  	spin_lock_irqsave(&vmbus_connection.channel_lock, flags);
-> 
-> @@ -341,7 +338,7 @@ static void vmbus_process_offer(struct work_struct
-> *work)
->  			if (channel->sc_creation_callback != NULL)
->  				channel->sc_creation_callback(newchannel);
-> 
-> -			goto out;
-> +			goto done_init_rescind;
->  		}
-> 
->  		goto err_free_chan;
-> @@ -382,7 +379,14 @@ static void vmbus_process_offer(struct work_struct
-> *work)
->  		kfree(newchannel->device_obj);
->  		goto err_free_chan;
->  	}
-> -out:
-> +done_init_rescind:
-> +	spin_lock_irqsave(&newchannel->lock, flags);
-> +	/* The next possible work is rescind handling */
-> +	INIT_WORK(&newchannel->work, vmbus_process_rescind_offer);
-> +	/* Check if rescind offer was already received */
-> +	if (newchannel->rescind)
-> +		queue_work(newchannel->controlwq, &newchannel-
-> >work);
-> +	spin_unlock_irqrestore(&newchannel->lock, flags);
->  	return;
->  err_free_chan:
->  	free_channel(newchannel);
-> @@ -520,6 +524,7 @@ static void vmbus_onoffer_rescind(struct
-> vmbus_channel_message_header *hdr)  {
->  	struct vmbus_channel_rescind_offer *rescind;
->  	struct vmbus_channel *channel;
-> +	unsigned long flags;
-> 
->  	rescind = (struct vmbus_channel_rescind_offer *)hdr;
->  	channel = relid2channel(rescind->child_relid);
-> @@ -528,11 +533,20 @@ static void vmbus_onoffer_rescind(struct
-> vmbus_channel_message_header *hdr)
->  		/* Just return here, no channel found */
->  		return;
-> 
-> +	spin_lock_irqsave(&channel->lock, flags);
->  	channel->rescind = true;
-> +	/*
-> +	 * channel->work.func != vmbus_process_rescind_offer means we
-> are still
-> +	 * processing offer request and the rescind offer processing should
-> be
-> +	 * postponed. It will be done at the very end of
-> vmbus_process_offer()
-> +	 * as rescind flag is being checked there.
-> +	 */
-> +	if (channel->work.func == vmbus_process_rescind_offer)
-> +		/* work is initialized for vmbus_process_rescind_offer() from
-> +		 * vmbus_process_offer() where the channel got created */
-> +		queue_work(channel->controlwq, &channel->work);
-> 
-> -	/* work is initialized for vmbus_process_rescind_offer() from
-> -	 * vmbus_process_offer() where the channel got created */
-> -	queue_work(channel->controlwq, &channel->work);
-> +	spin_unlock_irqrestore(&channel->lock, flags);
->  }
-> 
->  /*
-> --
-> 1.9.3
+> Strange, where do you see DOS style line breaks? Checkpatch here does
+> not warn about that, and they really should not be there.
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+If that would be the only pieces, then I would have fixed it already. That is not the big deal. The rest of checkpatch is what I am not going to fix for you.
+
+>> Even after doing that there are still obvious plain coding style violation in the patch. For example:
+>> 
+>> ERROR: space prohibited before that ',' (ctx:WxW)
+>> #610: FILE: drivers/bluetooth/nokia_core.c:517:
+>> +			__h4p_set_auto_ctsrts(info, 0 , UART_EFR_RTS);
+> 
+> Yeah, I should have catched that one.
+> 
+>> CHECK: Alignment should match open parenthesis
+>> #662: FILE: drivers/bluetooth/nokia_core.c:569:
+>> +		h4p_outb(info, UART_OMAP_SCR,
+>> +			     h4p_inb(info, UART_OMAP_SCR) |
+>> 
+>> CHECK: Blank lines aren't necessary before a close brace '}'
+>> #692: FILE: drivers/bluetooth/nokia_core.c:599:
+>> +
+>> +}
+>> 
+>> These are only few. They are more and all these need fixing before I
+>> even consider it.
+> 
+> Yeah, so first patch was too good for staging, and I "would be allowed
+> to clean it up in tree", and now you run checkpatch --strict,
+> complaining about very serious stuff such as "blank lines before }".
+
+The network subsystem requires the --strict option.
+
+Please stop complaining about staging. The patch went in, it was ignored for month and multiple kernel release and it got removed. Deal with it.
+
+> 
+> Yes, checkpatch produces a lot of junk, like warnings about
+> mdelay(). I'm not sure how you'd want #662 above, formatted.
+> 
+> pavel@amd:/data/l/linux-n900$ scripts/checkpatch.pl --strict --file
+> drivers/bluetooth/*.c | wc -l 3194
+> pavel@amd:/data/l/linux-n900$
+> 
+> ...so I really can't know which checkpatch complains you consider
+> serious and which are ok... And yes, I guess I should trim down those
+> FSF notices.
+
+The FSF notices are the ones I do not care about right now. Even the over 80 characters lines can be ignored if it just makes sense to go over.
+
+The indentations ones need to be fixed.
+
+> 
+>> Also this worries me:
+>> 
+>> WARNING: DT compatible string "brcm,uart,bcm2048" appears un-documented -- check ./Documentation/devicetree/bindings/
+>> #1222: FILE: drivers/bluetooth/nokia_core.c:1129:
+>> +	{ .compatible = "brcm,uart,bcm2048" },
+> 
+> Yes, that wories me, too. It is one of reasons I wanted this to be
+> merged to staging. Arguing about right bindings will take some time.
+
+Then that needs to be figured out. It is not that I have mentioned DT for the first time. I said that right from the beginning.
+
+> I can fix the checkpatch stuff that makes sense. That does not include
+> uglyfying code just for checkpatch.  Can you then take the patch, as
+> you promised, and let me argue the bindings, and the other stuff that
+> needs to be fixed?
+> 
+> If not, can we agree that the driver in staging should be reverted, as
+> Greg promised would be "easy", and I can clean it up there?
+
+I am refusing to allow this into staging. Get this into shape for drivers/bluetooth/ or keep the driver external.
+
+Regards
+
+Marcel
+
