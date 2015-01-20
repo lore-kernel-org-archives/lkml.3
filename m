@@ -1,46 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752382AbbATOqk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 09:46:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:53955 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751396AbbATOqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 09:46:39 -0500
-Message-ID: <54BE6A41.5030004@redhat.com>
-Date: Tue, 20 Jan 2015 09:46:25 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1752628AbbATOrY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 09:47:24 -0500
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:52179 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752450AbbATOrU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 09:47:20 -0500
+Date: Tue, 20 Jan 2015 14:47:13 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: micky_ching@realsil.com.cn
+Cc: chris@printf.net, ulf.hansson@linaro.org, sameo@linux.intel.com,
+        gregkh@linuxfoundation.org, dan.carpenter@oracle.com,
+        devel@linuxdriverproject.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, rogerable@realtek.com,
+        wei_wang@realsil.com.cn
+Subject: Re: [PATCH v5 1/6] mfd: rtsx: add func to split u32 into register
+Message-ID: <20150120144713.GV13701@x1>
+References: <cover.1419297154.git.micky_ching@realsil.com.cn>
+ <17ba65f4bdf4707bdf038e407ecf5dc012bca281.1419297154.git.micky_ching@realsil.com.cn>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Suresh Siddha <sbsiddha@gmail.com>
-CC: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        matt.fleming@intel.com, bp@suse.de, pbonzini@redhat.com,
-        tglx@linutronix.de, luto@amacapital.net
-Subject: Re: [PATCH 2/3] x86, fpu: always allow FPU in interrupt if use_eager_fpu()
-References: <1421012793-30106-1-git-send-email-riel@redhat.com> <20150115191918.GA27332@redhat.com> <20150119185109.GA16427@redhat.com> <20150119185151.GC16427@redhat.com>
-In-Reply-To: <20150119185151.GC16427@redhat.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <17ba65f4bdf4707bdf038e407ecf5dc012bca281.1419297154.git.micky_ching@realsil.com.cn>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/2015 01:51 PM, Oleg Nesterov wrote:
-> The __thread_has_fpu() check in interrupted_kernel_fpu_idle() was needed
-> to prevent the nested kernel_fpu_begin(). Now that we have in_kernel_fpu
-> and !__thread_has_fpu() case in __kernel_fpu_begin() does not depend on
-> use_eager_fpu() (except clts) we can remove it.
->
-> __thread_has_fpu() can be false even if use_eager_fpu(), but this case
-> does not differ from !use_eager_fpu() case except we should not worry
-> about X86_CR0_TS, __kernel_fpu_begin/end will not touch this bit.
->
-> Note: I think we can kill all irq_fpu_usable() checks except in_kernel_fpu,
-> just we need to record the state of X86_CR0_TS in __kernel_fpu_begin() and
-> conditionalize stts() in __kernel_fpu_end(), but this needs another patch.
->
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+On Tue, 23 Dec 2014, micky_ching@realsil.com.cn wrote:
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+> From: Micky Ching <micky_ching@realsil.com.cn>
+> 
+> Add helper function to write u32 to registers, if we want to put u32
+> value to 4 continuous register, this can help us reduce tedious work.
+> 
+> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+> Acked-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  include/linux/mfd/rtsx_pci.h | 9 +++++++++
+>  1 file changed, 9 insertions(+)
 
+Applied, thanks.
+
+> diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
+> index 74346d5..9234449 100644
+> --- a/include/linux/mfd/rtsx_pci.h
+> +++ b/include/linux/mfd/rtsx_pci.h
+> @@ -558,6 +558,7 @@
+>  #define SD_SAMPLE_POINT_CTL		0xFDA7
+>  #define SD_PUSH_POINT_CTL		0xFDA8
+>  #define SD_CMD0				0xFDA9
+> +#define   SD_CMD_START			0x40
+>  #define SD_CMD1				0xFDAA
+>  #define SD_CMD2				0xFDAB
+>  #define SD_CMD3				0xFDAC
+> @@ -967,4 +968,12 @@ static inline u8 *rtsx_pci_get_cmd_data(struct rtsx_pcr *pcr)
+>  	return (u8 *)(pcr->host_cmds_ptr);
+>  }
+>  
+> +static inline void rtsx_pci_write_be32(struct rtsx_pcr *pcr, u16 reg, u32 val)
+> +{
+> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg,     0xFF, val >> 24);
+> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 1, 0xFF, val >> 16);
+> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 2, 0xFF, val >> 8);
+> +	rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 3, 0xFF, val);
+> +}
+> +
+>  #endif
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
