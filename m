@@ -1,147 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755566AbbATQvz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 11:51:55 -0500
-Received: from mail-qg0-f46.google.com ([209.85.192.46]:33539 "EHLO
-	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754272AbbATQvx (ORCPT
+	id S1755295AbbATQw2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 11:52:28 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:60988 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751453AbbATQwZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 11:51:53 -0500
-Date: Tue, 20 Jan 2015 11:51:47 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
-        Eric Sandeen <sandeen@sandeen.net>
-Subject: [GIT PULL] workqueue fixes for v3.19-rc5
-Message-ID: <20150120165147.GB8684@htj.dyndns.org>
+	Tue, 20 Jan 2015 11:52:25 -0500
+Message-ID: <54BE87C4.4040108@collabora.co.uk>
+Date: Tue, 20 Jan 2015 17:52:20 +0100
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Lee Jones <lee.jones@linaro.org>
+CC: Olof Johansson <olof@lixom.net>, Doug Anderson <dianders@chromium.org>,
+        Bill Richardson <wfrichar@chromium.org>, Simon Glass <sjg@google.com>,
+        Gwendal Grignou <gwendal@google.com>, Jonathan Corbet <corbet@lwn.net>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND v2 3/7] mfd: cros_ec: Add cros_ec_lpc driver for
+ x86 devices
+References: <1420205572-2640-1-git-send-email-javier.martinez@collabora.co.uk> <1420205572-2640-4-git-send-email-javier.martinez@collabora.co.uk> <20150120081104.GT21886@x1> <54BE7B08.1010900@collabora.co.uk> <20150120163410.GC30656@x1>
+In-Reply-To: <20150120163410.GC30656@x1>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+Hello Lee,
 
-xfs folks have been running into weird and very rare lockups for some
-time now.  I didn't think this could have been from workqueue side
-because no one else was reporting it.  This time, Eric had a kdump
-which we looked into and it turned out this actually was a workqueue
-bug and the bug has been there since the beginning of concurrency
-managed workqueue.
+On 01/20/2015 05:34 PM, Lee Jones wrote:
+>> 
+>> So, the Embedded Controller driver (drivers/mfd/cros_ec.c) falls into that
+>> category and in fact has been in the mfd driver for a long time. Now, if
+>> an mfd device support different type of buses (e.g: i2c, spi, etc) I see
+>> that both the core driver and the driver for the transport method are
+>> in the drivers/mfd directory. As an example:
+>> 
+>> drivers/mfd/arizona-{core,i2c,spi}.c
+>> drivers/mfd/da9052-{core,i2c,spi}.c
+>> drivers/mfd/mc13xxx-{core,i2c,spi}.c
+>> drivers/mfd/tps65912-{core,i2c,spi}.c
+>> drivers/mfd/wm831x-{core,i2c,spi,otp}.c
+>> 
+>> In the cros_ec case, we already have drivers/mfd/cros_ec_{i2c,spi}.c so
+>> since the Low Pin Count is another transport method I thought that this
+>> driver belonged to the drivers/mfd directory.
+>> 
+>> Now, all those drivers may be wrong and the buses don't belong to the mfd
+>> subsystem but then I think we need to document that since it seems that is
+>> the correct way to do it just by looking at the other drivers.
+> 
+> I don't think the drivers you mentioned above do anything practical.
+> For instance, they are not SPI/IC2/etc drivers.  They should only
+> offer some abstraction layers which are used to communicate with the
+> device.  The driver you are submitting looks a lot more like a device
+> driver, which should live somewhere else.  Don't ask me where though,
+> I'm not even sure what a Low Pin Controller does.
+> 
 
-A worker pool ensures forward progress of the workqueues associated
-with it by always having at least one worker reserved from executing
-work items.  When the pool is under contention, the idle one tries to
-create more workers for the pool and if that doesn't succeed quickly
-enough, it calls the rescuers to the pool.
+The driver added by $subject doesn't really do anything practical either.
+LPC [0] is just another transport method like i2c or spi that is used on
+x86 Chromebooks to access the Embedded Controller.
 
-This logic had a subtle race condition in an early exit path.  When a
-worker invokes this manager function, the function may return %false
-indicating that the caller may proceed to executing work items either
-because another worker is already performing the role or conditions
-have changed and the pool is no longer under contention.  The latter
-part depended on the assumption that whether more workers are
-necessary or not remains stable while the pool is locked; however,
-pool->nr_running (concurrency count) may change asynchronously and it
-getting bumped from zero asynchronously could send off the last idle
-worker to execute work items.
+So the driver is really not that different than the cros_ec_{i2c,spi}.c
+drivers.
 
-The race window is fairly narrow, and, even when it gets triggered,
-the pool deadlocks iff if all work items get blocked on pending work
-items of the pool, which is highly unlikely but can be triggered by
-xfs.
+Best regards,
+Javier
 
-The patch removes the race window by removing the early exit path,
-which doesn't server any purpose anymore anyway.
-
-Thanks.
-
-The following changes since commit 97bf6af1f928216fd6c5a66e8a57bfa95a659672:
-
-  Linux 3.19-rc1 (2014-12-20 17:08:50 -0800)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.19-fixes
-
-for you to fetch changes up to 29187a9eeaf362d8422e62e17a22a6e115277a49:
-
-  workqueue: fix subtle pool management issue which can stall whole worker_pool (2015-01-16 14:21:16 -0500)
-
-----------------------------------------------------------------
-Tejun Heo (1):
-      workqueue: fix subtle pool management issue which can stall whole worker_pool
-
- kernel/workqueue.c | 25 ++++++++-----------------
- 1 file changed, 8 insertions(+), 17 deletions(-)
-
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 6202b08..beeeac9 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1841,17 +1841,11 @@ static void pool_mayday_timeout(unsigned long __pool)
-  * spin_lock_irq(pool->lock) which may be released and regrabbed
-  * multiple times.  Does GFP_KERNEL allocations.  Called only from
-  * manager.
-- *
-- * Return:
-- * %false if no action was taken and pool->lock stayed locked, %true
-- * otherwise.
-  */
--static bool maybe_create_worker(struct worker_pool *pool)
-+static void maybe_create_worker(struct worker_pool *pool)
- __releases(&pool->lock)
- __acquires(&pool->lock)
- {
--	if (!need_to_create_worker(pool))
--		return false;
- restart:
- 	spin_unlock_irq(&pool->lock);
- 
-@@ -1877,7 +1871,6 @@ restart:
- 	 */
- 	if (need_to_create_worker(pool))
- 		goto restart;
--	return true;
- }
- 
- /**
-@@ -1897,16 +1890,14 @@ restart:
-  * multiple times.  Does GFP_KERNEL allocations.
-  *
-  * Return:
-- * %false if the pool don't need management and the caller can safely start
-- * processing works, %true indicates that the function released pool->lock
-- * and reacquired it to perform some management function and that the
-- * conditions that the caller verified while holding the lock before
-- * calling the function might no longer be true.
-+ * %false if the pool doesn't need management and the caller can safely
-+ * start processing works, %true if management function was performed and
-+ * the conditions that the caller verified before calling the function may
-+ * no longer be true.
-  */
- static bool manage_workers(struct worker *worker)
- {
- 	struct worker_pool *pool = worker->pool;
--	bool ret = false;
- 
- 	/*
- 	 * Anyone who successfully grabs manager_arb wins the arbitration
-@@ -1919,12 +1910,12 @@ static bool manage_workers(struct worker *worker)
- 	 * actual management, the pool may stall indefinitely.
- 	 */
- 	if (!mutex_trylock(&pool->manager_arb))
--		return ret;
-+		return false;
- 
--	ret |= maybe_create_worker(pool);
-+	maybe_create_worker(pool);
- 
- 	mutex_unlock(&pool->manager_arb);
--	return ret;
-+	return true;
- }
- 
- /**
+[0]: http://en.wikipedia.org/wiki/Low_Pin_Count
