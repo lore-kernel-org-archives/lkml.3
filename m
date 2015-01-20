@@ -1,401 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754509AbbATMsI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 07:48:08 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:55644 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753965AbbATMsG (ORCPT
+	id S1754739AbbATMsq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 07:48:46 -0500
+Received: from mail-wi0-f177.google.com ([209.85.212.177]:57824 "EHLO
+	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753844AbbATMsn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 07:48:06 -0500
-Date: Tue, 20 Jan 2015 12:47:46 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Raymond Tan <raymond.tan@intel.com>
-Cc: Mike Turquette <mturquette@linaro.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Alvin Chen <alvin.chen@intel.com>,
-        Andriy Shevchenko <andriy.shevchenko@intel.com>
-Subject: Re: [PATCH v3 1/1] mfd: intel_quark_i2c_gpio: Add Intel Quark X1000
- I2C-GPIO MFD Driver
-Message-ID: <20150120124745.GE13701@x1>
-References: <1418290710-5871-1-git-send-email-raymond.tan@intel.com>
- <1418290710-5871-2-git-send-email-raymond.tan@intel.com>
+	Tue, 20 Jan 2015 07:48:43 -0500
+Message-ID: <54BE4EA4.6080901@gmail.com>
+Date: Tue, 20 Jan 2015 13:48:36 +0100
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1418290710-5871-2-git-send-email-raymond.tan@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Fam Zheng <famz@redhat.com>, linux-kernel@vger.kernel.org
+CC: mtk.manpages@gmail.com, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        David Drysdale <drysdale@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Vivek Goyal <vgoyal@redhat.com>, Mike Frysinger <vapier@gentoo.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        Hugh Dickins <hughd@google.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-api@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: Re: [PATCH RFC 0/6] epoll: Introduce new syscall "epoll_mod_wait"
+References: <1421747878-30744-1-git-send-email-famz@redhat.com>
+In-Reply-To: <1421747878-30744-1-git-send-email-famz@redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 11 Dec 2014, Raymond Tan wrote:
+Hello Fam Zheng,
 
-> In Quark X1000, there's a single PCI device that provides both
-> an I2C controller and a GPIO controller. This MFD driver will
-> split the 2 devices for their respective drivers.
+I know this API has been through a number of iterations, and there were 
+discussions about the design that led to it becoming more complex.
+But, let us assume that someone has not seen those discussions,
+or forgotten them, or is too lazy to go hunting list archives.
+
+Then: this patch series should somewhere have an explanation of
+why the API is what it is, ideally with links to previous relevant
+discussions. I see that you do part of that in
+
+    [PATCH RFC 5/6] epoll: Add implementation for epoll_mod_wait
+
+There are however no links to previous discussions in that mail (I guess
+http://thread.gmane.org/gmane.linux.kernel/1861430/focus=91591 is most
+relevant, nor is there any sort of change log in the commit message 
+that explains the evolution of the API. Having those would ease the 
+task of reviewers.
+
+Coming back to THIS mail, this man page should also include an
+explanation of why the API is what it is. That would include much
+of the detail from the 5/6 patch, and probably more info besides.
+
+Some specific points below.
+
+On 01/20/2015 10:57 AM, Fam Zheng wrote:
+> This adds a new system call, epoll_mod_wait. It's described as below:
 > 
-> This patch is based on Josef Ahmad's initial work for Quark enabling.
+> NAME
+>        epoll_mod_wait - modify and wait for I/O events on an epoll file
+>                         descriptor
 > 
-> Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-> Signed-off-by: Weike Chen <alvin.chen@intel.com>
-> Signed-off-by: Raymond Tan <raymond.tan@intel.com>
-> ---
->  drivers/mfd/Kconfig                |   12 ++
->  drivers/mfd/Makefile               |    1 +
->  drivers/mfd/intel_quark_i2c_gpio.c |  279 ++++++++++++++++++++++++++++++++++++
->  3 files changed, 292 insertions(+)
->  create mode 100644 drivers/mfd/intel_quark_i2c_gpio.c
+> SYNOPSIS
 > 
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> index b7c74a7..2f2f62d 100644
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@ -219,6 +219,18 @@ config HTC_I2CPLD
->  	  This device provides input and output GPIOs through an I2C
->  	  interface to one or more sub-chips.
->  
-> +config MFD_INTEL_QUARK_I2C_GPIO
-> +	tristate "Intel Quark MFD I2C GPIO"
-> +	depends on PCI
-> +	depends on X86
-> +	depends on COMMON_CLK
-> +	select MFD_CORE
-> +	help
-> +	  This MFD provides support for I2C and GPIO that exist only
-> +	  in a single PCI device. It splits the 2 IO devices to
-> +	  their respective IO driver.
-> +	  The GPIO exports a total amount of 8 interrupt-capable GPIOs.
-> +
->  config LPC_ICH
->  	tristate "Intel ICH LPC"
->  	depends on PCI
-> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-> index 8a28dc9..d42652d 100644
-> --- a/drivers/mfd/Makefile
-> +++ b/drivers/mfd/Makefile
-> @@ -133,6 +133,7 @@ obj-$(CONFIG_AB8500_CORE)	+= ab8500-core.o ab8500-sysctrl.o
->  obj-$(CONFIG_MFD_TIMBERDALE)    += timberdale.o
->  obj-$(CONFIG_PMIC_ADP5520)	+= adp5520.o
->  obj-$(CONFIG_MFD_KEMPLD)	+= kempld-core.o
-> +obj-$(CONFIG_MFD_INTEL_QUARK_I2C_GPIO)	+= intel_quark_i2c_gpio.o
->  obj-$(CONFIG_LPC_SCH)		+= lpc_sch.o
->  obj-$(CONFIG_LPC_ICH)		+= lpc_ich.o
->  obj-$(CONFIG_MFD_RDC321X)	+= rdc321x-southbridge.o
-> diff --git a/drivers/mfd/intel_quark_i2c_gpio.c b/drivers/mfd/intel_quark_i2c_gpio.c
-> new file mode 100644
-> index 0000000..a3a7043
-> --- /dev/null
-> +++ b/drivers/mfd/intel_quark_i2c_gpio.c
-> @@ -0,0 +1,279 @@
-> +/*
-> + * Intel Quark MFD PCI driver for I2C & GPIO
-> + *
-> + * Copyright(c) 2014 Intel Corporation.
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms and conditions of the GNU General Public License,
-> + * version 2, as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + *
-> + * Intel Quark PCI device for I2C and GPIO controller sharing the same
-> + * PCI function. This PCI driver will split the 2 devices into their
-> + * respective drivers.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/pci.h>
-> +#include <linux/mfd/core.h>
-> +#include <linux/clkdev.h>
-> +#include <linux/clk-provider.h>
-> +#include <linux/dmi.h>
-> +#include <linux/platform_data/gpio-dwapb.h>
-> +#include <linux/platform_data/i2c-designware.h>
-> +
-> +/* PCI BAR for register base address */
-> +#define MFD_I2C_BAR		0
-> +#define MFD_GPIO_BAR		1
-> +
-> +/* The base GPIO number under GPIOLIB framework */
-> +#define INTEL_QUARK_MFD_GPIO_BASE	8
-> +
-> +/* The default number of South-Cluster GPIO on Quark. */
-> +#define INTEL_QUARK_MFD_NGPIO		8
-> +
-> +/* The DesignWare GPIO ports on Quark. */
-> +#define INTEL_QUARK_GPIO_NPORTS	1
-> +
-> +#define INTEL_QUARK_IORES_MEM	0
-> +#define INTEL_QUARK_IORES_IRQ	1
-> +
-> +#define INTEL_QUARK_I2C_CONTROLLER_CLK "i2c_designware.0"
-> +
-> +/* The Quark I2C controller source clock */
-> +#define INTEL_QUARK_I2C_CLK_HZ	33000000
-> +
-> +#define INTEL_QUARK_I2C_NCLK	1
-> +
-> +struct intel_quark_mfd {
-> +	struct pci_dev		*pdev;
-> +	struct clk			*i2c_clk;
-> +	struct clk_lookup	*i2c_clk_lookup;
-> +};
-> +
-> +struct i2c_mode_info {
-> +	const char *name;
-> +	unsigned int i2c_scl_freq;
-> +};
-> +
-> +static const struct i2c_mode_info platform_i2c_mode_info[] = {
-> +	{
-> +		.name = "Galileo",
-> +		.i2c_scl_freq = 100000,
-> +	},
-> +	{
-> +		.name = "GalileoGen2",
-> +		.i2c_scl_freq = 400000,
-> +	},
-> +};
+>        int epoll_mod_wait(int epfd, int flags,
+>                           int ncmds, struct epoll_mod_cmd *cmds,
+>                           struct epoll_wait_spec *spec);
+> 
+> DESCRIPTION
+> 
+>        The epoll_mod_wait() system call can be seen as an enhanced combination
+>        of several epoll_ctl(2) calls, which are followed by an epoll_pwait(2)
+>        call. It is superior in two cases:
+>        
+>        1) When epoll_ctl(2) are followed by epoll_wait(2), using epoll_mod_wait
+>        will save context switches between user mode and kernel mode;
+>
+>        2) When you need higher precision than microsecond for wait timeout.
 
-We normally do not capitalise device names.
+s/microsecond/millisecond/
 
-> +static struct resource intel_quark_i2c_res[] = {
-> +	[INTEL_QUARK_IORES_MEM] = {
-> +		.flags = IORESOURCE_MEM,
-> +	},
-> +	[INTEL_QUARK_IORES_IRQ] = {
-> +		.flags = IORESOURCE_IRQ,
-> +	},
-> +};
-> +
-> +static struct resource intel_quark_gpio_res[] = {
-> +	[INTEL_QUARK_IORES_MEM] = {
-> +		.flags = IORESOURCE_MEM,
-> +	},
-> +};
-> +
-> +static struct mfd_cell intel_quark_mfd_cells[] = {
-> +	{
-> +		.id = MFD_I2C_BAR,
-> +		.name = "i2c_designware",
-> +		.num_resources = ARRAY_SIZE(intel_quark_i2c_res),
-> +		.resources = intel_quark_i2c_res,
-> +		.ignore_resource_conflicts = true,
-> +	},
-> +	{
-> +		.id = MFD_GPIO_BAR,
-> +		.name = "gpio-dwapb",
-> +		.num_resources = ARRAY_SIZE(intel_quark_gpio_res),
-> +		.resources = intel_quark_gpio_res,
-> +		.ignore_resource_conflicts = true,
-> +	},
-> +};
-> +
-> +static const struct pci_device_id intel_quark_mfd_ids[] = {
-> +	{ PCI_VDEVICE(INTEL, 0x0934), },
-> +	{ 0,}
+> 
+>        The epoll_ctl(2) operations are embedded into this call by with ncmds
+>        and cmds. The latter is an array of command structs:
+> 
+>            struct epoll_mod_cmd {
+> 
+>                   /* Reserved flags for future extension, must be 0 for now. */
+>                   int flags;
+> 
+>                   /* The same as epoll_ctl() op parameter. */
+>                   int op;
+> 
+>                   /* The same as epoll_ctl() fd parameter. */
+>                   int fd;
+> 
+>                   /* The same as the "events" field in struct epoll_event. */
+>                   uint32_t events;
+> 
+>                   /* The same as the "data" field in struct epoll_event. */
+>                   uint64_t data;
+> 
+>                   /* Output field, will be set to the return code once this
+>                    * command is executed by kernel */
+>                   int error;
+>            };
+>        
+>        There is no guartantee that all the commands are executed in order. Only
 
-No need to populate this; just { }, will do fine.
+s/guartantee/guarantee/
 
-> +};
-> +MODULE_DEVICE_TABLE(pci, intel_quark_mfd_ids);
-> +
-> +static int intel_quark_register_i2c_clk(struct intel_quark_mfd *quark_mfd)
-> +{
-> +	struct pci_dev *pdev = quark_mfd->pdev;
-> +	struct clk_lookup *i2c_clk_lookup;
-> +	struct clk *i2c_clk;
-> +	int retval;
-> +
-> +	i2c_clk_lookup = devm_kcalloc(
-> +		&pdev->dev, INTEL_QUARK_I2C_NCLK,
+I think the word "all" is not needed in this sentence.
 
-Place this line back on the one above and line subsequent lines up
-against the '('.
+Why is there no guarantee that the commands are run in order?
+The order matters if there are operations on the same fd.
 
-> +		sizeof(*i2c_clk_lookup), GFP_KERNEL);
-> +
+>        if all the commands are successfully executed (all the error fields are
+>        set to 0), events are polled.
 
-Rid this empty line.
+Does the operation execute all commands, or stop when it encounters the first 
+error? In other words, when looping over the returned 'error' fields, what
+is the termination condition for the user-space application?
 
-> +	if (!i2c_clk_lookup)
-> +		return -ENOMEM;
-> +
-> +	i2c_clk_lookup[0].dev_id = INTEL_QUARK_I2C_CONTROLLER_CLK;
-> +
-> +	i2c_clk = clk_register_fixed_rate(
-> +		&pdev->dev, INTEL_QUARK_I2C_CONTROLLER_CLK, NULL,
+(Yes, I know I can trivially inspect the patch 5/6 to answer this question, 
+but the man page should explicitly state this so that I don't have to 
+read the source, and also because it is only if you explicitly document 
+the intended behavior that I can tell whether the actual implementation 
+matches the intention.)
 
-Same here, put this back up on the line above.
+>        The last parameter "spec" is a pointer to struct epoll_wait_spec, which
+>        contains the information about how to poll the events. If it's NULL, this
+>        call will immediately return after running all the commands in cmds.
+> 
+>        The structure is defined as below:
+> 
+>            struct epoll_wait_spec {
+> 
+>                   /* The same as "maxevents" in epoll_pwait() */
+>                   int maxevents;
+> 
+>                   /* The same as "events" in epoll_pwait() */
+>                   struct epoll_event *events;
+> 
+>                   /* Which clock to use for timeout */
+>                   int clockid;
 
-> +		CLK_IS_ROOT, INTEL_QUARK_I2C_CLK_HZ);
-> +
-> +	quark_mfd->i2c_clk_lookup = i2c_clk_lookup;
-> +	quark_mfd->i2c_clk = i2c_clk;
-> +
-> +	retval = clk_register_clkdevs(i2c_clk, i2c_clk_lookup,
-> +				      INTEL_QUARK_I2C_NCLK);
-> +	if (retval)
-> +		dev_err(&pdev->dev, "Fixed clk register failed: %d\n", retval);
-> +
-> +	return retval;
-> +}
+Which clocks can be specified here?
+CLOCK_MONOTONIC?
+CLOCK_REALTIME?
+CLOCK_PROCESS_CPUTIME_ID?
+clock_getcpuclockid()?
+others?
 
-I wouldn't mind a clk Ack on this.  Did you Cc Mike already?
+>                   /* Maximum time to wait if there is no event */
+>                   struct timespec timeout;
 
-> +static void intel_quark_unregister_i2c_clk(struct pci_dev *pdev)
-> +{
-> +	struct intel_quark_mfd *quark_mfd = dev_get_drvdata(&pdev->dev);
-> +
-> +	if (!quark_mfd->i2c_clk || !quark_mfd->i2c_clk_lookup)
-> +		return;
-> +
-> +	clkdev_drop(quark_mfd->i2c_clk_lookup);
-> +	clk_unregister(quark_mfd->i2c_clk);
-> +}
-> +
-> +static int intel_quark_i2c_setup(struct pci_dev *pdev, struct mfd_cell *cell)
-> +{
-> +	const char *board_name = dmi_get_system_info(DMI_BOARD_NAME);
-> +	struct dw_i2c_platform_data *pdata;
-> +	struct resource *res = (struct resource *)cell->resources;
-> +	struct device *dev = &pdev->dev;
-> +	unsigned int i;
-> +
-> +	res[INTEL_QUARK_IORES_MEM].start =
-> +		pci_resource_start(pdev, MFD_I2C_BAR);
-> +	res[INTEL_QUARK_IORES_MEM].end =
-> +		pci_resource_end(pdev, MFD_I2C_BAR);
-> +
-> +	res[INTEL_QUARK_IORES_IRQ].start = pdev->irq;
-> +	res[INTEL_QUARK_IORES_IRQ].end = pdev->irq;
-> +
-> +	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-> +	if (!pdata)
-> +		return -ENOMEM;
-> +
-> +	/* Fast mode by default */
-> +	pdata->i2c_scl_freq = 400000;
-> +
-> +	for (i = 0; i < ARRAY_SIZE(platform_i2c_mode_info); i++)
-> +		if (!strcmp(board_name, platform_i2c_mode_info[i].name))
-> +			pdata->i2c_scl_freq
-> +				= platform_i2c_mode_info[i].i2c_scl_freq;
-> +
-> +	cell->platform_data = pdata;
-> +	cell->pdata_size = sizeof(*pdata);
-> +
-> +	return 0;
-> +}
-> +
-> +static int intel_quark_gpio_setup(struct pci_dev *pdev, struct mfd_cell *cell)
-> +{
-> +	struct dwapb_platform_data *pdata;
-> +	struct resource *res = (struct resource *)cell->resources;
-> +	struct device *dev = &pdev->dev;
-> +
-> +	res[INTEL_QUARK_IORES_MEM].start =
-> +		pci_resource_start(pdev, MFD_GPIO_BAR);
-> +	res[INTEL_QUARK_IORES_MEM].end =
-> +		pci_resource_end(pdev, MFD_GPIO_BAR);
-> +
-> +	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
-> +	if (!pdata)
-> +		return -ENOMEM;
-> +
-> +	/* For intel quark x1000, it has only one port: portA */
-> +	pdata->nports = INTEL_QUARK_GPIO_NPORTS;
-> +	pdata->properties = devm_kcalloc(dev, pdata->nports,
-> +					 sizeof(*pdata->properties),
-> +					 GFP_KERNEL);
-> +	if (!pdata->properties)
-> +		return -ENOMEM;
-> +
-> +	/* Set the properties for portA */
-> +	pdata->properties->node	= NULL;
-> +	pdata->properties->name	= "intel-quark-x1000-gpio-portA";
-> +	pdata->properties->idx	= 0;
-> +	pdata->properties->ngpio	= INTEL_QUARK_MFD_NGPIO;
-> +	pdata->properties->gpio_base	= INTEL_QUARK_MFD_GPIO_BASE;
-> +	pdata->properties->irq	= pdev->irq;
-> +	pdata->properties->irq_shared	= true;
+Is this timeout relative or absolute?
 
-Nit: This looks untidy.  Either line up all of the '=' or don't do any
-aligning at all.
+>                   /* The same as "sigmask" in epoll_pwait() */
+>                   sigset_t *sigmask;
 
-> +	cell->platform_data = pdata;
-> +	cell->pdata_size = sizeof(*pdata);
-> +
-> +	return 0;
-> +}
-> +
-> +static int intel_quark_mfd_probe(struct pci_dev *pdev,
-> +				 const struct pci_device_id *id)
-> +{
-> +	struct intel_quark_mfd *quark_mfd;
-> +	int retval;
+I just want to confirm here that 'sigmask' can be NULL, meaning
+that we degenerate to epoll_wait() functionality, right?
 
-I prefer the use of 'ret' or 'err', as it's more consistent with the
-rest of the kernel.
+>                   /* The same as "sigsetsize" in epoll_pwait() */
+>                   size_t sigsetsize;
+>            } EPOLL_PACKED;
 
-> +	retval = pcim_enable_device(pdev);
-> +	if (retval)
-> +		return retval;
-> +
-> +	quark_mfd = devm_kzalloc(&pdev->dev, sizeof(*quark_mfd), GFP_KERNEL);
-> +	if (!quark_mfd)
-> +		return -ENOMEM;
-> +	quark_mfd->pdev = pdev;
-> +
-> +	retval = intel_quark_register_i2c_clk(quark_mfd);
-> +	if (retval)
-> +		return retval;
-> +
-> +	dev_set_drvdata(&pdev->dev, quark_mfd);
-> +
-> +	retval = intel_quark_i2c_setup(pdev,
-> +				       &intel_quark_mfd_cells[MFD_I2C_BAR]);
-> +	if (retval)
-> +		return retval;
-> +
-> +	retval = intel_quark_gpio_setup(pdev,
-> +					&intel_quark_mfd_cells[MFD_GPIO_BAR]);
-> +	if (retval)
-> +		return retval;
-> +
-> +	return mfd_add_devices(&pdev->dev, 0, intel_quark_mfd_cells,
-> +		ARRAY_SIZE(intel_quark_mfd_cells), NULL, 0, NULL);
+What is the "EPOLL_PACKED" here for?
 
-Odd alignment.  Please use the '('.
+> RETURN VALUE
+> 
+>        When any error occurs, epoll_mod_wait() returns -1 and errno is set
+>        appropriately. All the "error" fields in cmds are unchanged before they
+>        are executed, and if any cmds are executed, the "error" fields are set
+>        to a return code accordingly. See also epoll_ctl for more details of the
+>        return code.
+> 
+>        When successful, epoll_mod_wait() returns the number of file
+>        descriptors ready for the requested I/O, or zero if no file descriptor
+>        became ready during the requested timeout milliseconds.
 
-> +}
-> +
-> +static void intel_quark_mfd_remove(struct pci_dev *pdev)
-> +{
-> +	intel_quark_unregister_i2c_clk(pdev);
-> +	mfd_remove_devices(&pdev->dev);
-> +}
-> +
-> +static struct pci_driver intel_quark_mfd_driver = {
-> +	.name		= "intel_quark_mfd_i2c_gpio",
-> +	.id_table	= intel_quark_mfd_ids,
-> +	.probe		= intel_quark_mfd_probe,
-> +	.remove		= intel_quark_mfd_remove,
-> +};
-> +
-> +module_pci_driver(intel_quark_mfd_driver);
-> +
-> +MODULE_AUTHOR("Raymond Tan <raymond.tan@intel.com>");
-> +MODULE_DESCRIPTION("Intel Quark MFD PCI driver for I2C & GPIO");
-> +MODULE_LICENSE("GPL v2");
+s/milliseconds//
+
+> 
+>        If spec is NULL, it returns 0 if all the commands are successful, and -1
+>        if an error occured.
+
+s/occured/occurred/
+
+> ERRORS
+> 
+>        These errors apply on either the return value of epoll_mod_wait or error
+>        status for each command, respectively.
+>
+>        EBADF  epfd or fd is not a valid file descriptor.
+> 
+>        EFAULT The memory area pointed to by events is not accessible with write
+>               permissions.
+> 
+>        EINTR  The call was interrupted by a signal handler before either any of
+>               the requested events occurred or the timeout expired; see
+>               signal(7).
+> 
+>        EINVAL epfd is not an epoll file descriptor, or maxevents is less than
+>               or equal to zero, or fd is the same as epfd, or the requested
+>               operation op is not supported by this interface.
+
+Add: Or 'flags' is nonzero. Or a 'cmds.flags' field is nonzero.
+
+>        EEXIST op was EPOLL_CTL_ADD, and the supplied file descriptor fd is
+>               already registered with this epoll instance.
+> 
+>        ENOENT op was EPOLL_CTL_MOD or EPOLL_CTL_DEL, and fd is not registered
+>               with this epoll instance.
+> 
+>        ENOMEM There was insufficient memory to handle the requested op control
+>               operation.
+> 
+>        ENOSPC The limit imposed by /proc/sys/fs/epoll/max_user_watches was
+>               encountered while trying to register (EPOLL_CTL_ADD) a new file
+>               descriptor on an epoll instance.  See epoll(7) for further
+>               details.
+> 
+>        EPERM  The target file fd does not support epoll.
+> 
+> CONFORMING TO
+> 
+>        epoll_mod_wait() is Linux-specific.
+> 
+> SEE ALSO
+> 
+>        epoll_create(2), epoll_ctl(2), epoll_wait(2), epoll_pwait(2), epoll(7)
+
+Please add sigprocmask(2).
+
+Thanks,
+
+Michael
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
