@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754551AbbATKwj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 05:52:39 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:62340 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754306AbbATKtx (ORCPT
+	id S1754341AbbATKt6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 05:49:58 -0500
+Received: from mail-wi0-f169.google.com ([209.85.212.169]:35151 "EHLO
+	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754023AbbATKtz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 05:49:53 -0500
+	Tue, 20 Jan 2015 05:49:55 -0500
 From: Thierry Reding <thierry.reding@gmail.com>
 To: dri-devel@lists.freedesktop.org
 Cc: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 33/36] drm/tegra: Remove unused ->mode_fixup() callbacks
-Date: Tue, 20 Jan 2015 11:48:52 +0100
-Message-Id: <1421750935-4023-34-git-send-email-thierry.reding@gmail.com>
+Subject: [PATCH 34/36] drm/tegra: Track active planes in CRTC state
+Date: Tue, 20 Jan 2015 11:48:53 +0100
+Message-Id: <1421750935-4023-35-git-send-email-thierry.reding@gmail.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1421750935-4023-1-git-send-email-thierry.reding@gmail.com>
 References: <1421750935-4023-1-git-send-email-thierry.reding@gmail.com>
@@ -22,268 +22,194 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Thierry Reding <treding@nvidia.com>
 
-All output drivers have now been converted to use the ->atomic_check()
-callback, so the ->mode_fixup() callbacks are no longer used.
+Wrap struct drm_crtc_state in a driver-specific structure and add the
+planes field which keeps track of which planes are updated or disabled
+during a modeset. This allows atomic updates of the the display engine
+at ->atomic_flush() time.
 
 Signed-off-by: Thierry Reding <treding@nvidia.com>
 ---
- drivers/gpu/drm/tegra/dsi.c  | 87 --------------------------------------------
- drivers/gpu/drm/tegra/hdmi.c | 27 --------------
- drivers/gpu/drm/tegra/rgb.c  | 38 -------------------
- drivers/gpu/drm/tegra/sor.c  | 27 --------------
- 4 files changed, 179 deletions(-)
+ drivers/gpu/drm/tegra/dc.c | 72 ++++++++++++++++++++++++++++------------------
+ 1 file changed, 44 insertions(+), 28 deletions(-)
 
-diff --git a/drivers/gpu/drm/tegra/dsi.c b/drivers/gpu/drm/tegra/dsi.c
-index 55a6a95bda84..39c79a65b4f3 100644
---- a/drivers/gpu/drm/tegra/dsi.c
-+++ b/drivers/gpu/drm/tegra/dsi.c
-@@ -786,92 +786,6 @@ static void tegra_dsi_encoder_dpms(struct drm_encoder *encoder, int mode)
- {
+diff --git a/drivers/gpu/drm/tegra/dc.c b/drivers/gpu/drm/tegra/dc.c
+index 52ae563cb531..835de4398c8f 100644
+--- a/drivers/gpu/drm/tegra/dc.c
++++ b/drivers/gpu/drm/tegra/dc.c
+@@ -54,6 +54,8 @@ struct tegra_dc_state {
+ 	struct clk *clk;
+ 	unsigned long pclk;
+ 	unsigned int div;
++
++	u32 planes;
+ };
+ 
+ static inline struct tegra_dc_state *to_dc_state(struct drm_crtc_state *state)
+@@ -64,20 +66,6 @@ static inline struct tegra_dc_state *to_dc_state(struct drm_crtc_state *state)
+ 	return NULL;
  }
  
--static bool tegra_dsi_encoder_mode_fixup(struct drm_encoder *encoder,
--					 const struct drm_display_mode *mode,
--					 struct drm_display_mode *adjusted)
+-static void tegra_dc_window_commit(struct tegra_dc *dc, unsigned int index)
 -{
--	struct tegra_output *output = encoder_to_output(encoder);
--	struct tegra_dc *dc = to_tegra_dc(encoder->crtc);
--	unsigned int mul, div, scdiv, vrefresh, lanes;
--	struct tegra_dsi *dsi = to_dsi(output);
--	struct mipi_dphy_timing timing;
--	unsigned long pclk, bclk, plld;
--	unsigned long period;
--	int err;
+-	u32 value = WIN_A_ACT_REQ << index;
 -
--	lanes = tegra_dsi_get_lanes(dsi);
--	pclk = mode->clock * 1000;
--
--	err = tegra_dsi_get_muldiv(dsi->format, &mul, &div);
--	if (err < 0)
--		return err;
--
--	DRM_DEBUG_KMS("mul: %u, div: %u, lanes: %u\n", mul, div, lanes);
--	vrefresh = drm_mode_vrefresh(mode);
--	DRM_DEBUG_KMS("vrefresh: %u\n", vrefresh);
--
--	/* compute byte clock */
--	bclk = (pclk * mul) / (div * lanes);
--
--	/*
--	 * Compute bit clock and round up to the next MHz.
--	 */
--	plld = DIV_ROUND_UP(bclk * 8, USEC_PER_SEC) * USEC_PER_SEC;
--	period = DIV_ROUND_CLOSEST(NSEC_PER_SEC, plld);
--
--	/*
--	 * We divide the frequency by two here, but we make up for that by
--	 * setting the shift clock divider (further below) to half of the
--	 * correct value.
--	 */
--	plld /= 2;
--
--	/*
--	 * Derive pixel clock from bit clock using the shift clock divider.
--	 * Note that this is only half of what we would expect, but we need
--	 * that to make up for the fact that we divided the bit clock by a
--	 * factor of two above.
--	 *
--	 * It's not clear exactly why this is necessary, but the display is
--	 * not working properly otherwise. Perhaps the PLLs cannot generate
--	 * frequencies sufficiently high.
--	 */
--	scdiv = ((8 * mul) / (div * lanes)) - 2;
--
--	err = tegra_dc_setup_clock(dc, dsi->clk_parent, plld, scdiv);
--	if (err < 0) {
--		dev_err(output->dev, "failed to setup DC clock: %d\n", err);
--		return false;
--	}
--
--	err = clk_set_rate(dsi->clk_parent, plld);
--	if (err < 0) {
--		dev_err(dsi->dev, "failed to set clock rate to %lu Hz\n",
--			plld);
--		return false;
--	}
--
--	tegra_dsi_set_timeout(dsi, bclk, vrefresh);
--
--	err = mipi_dphy_timing_get_default(&timing, period);
--	if (err < 0)
--		return err;
--
--	err = mipi_dphy_timing_validate(&timing, period);
--	if (err < 0) {
--		dev_err(dsi->dev, "failed to validate D-PHY timing: %d\n", err);
--		return err;
--	}
--
--	/*
--	 * The D-PHY timing fields are expressed in byte-clock cycles, so
--	 * multiply the period by 8.
--	 */
--	tegra_dsi_set_phy_timing(dsi, period * 8, &timing);
--
--	return true;
+-	tegra_dc_writel(dc, value << 8, DC_CMD_STATE_CONTROL);
+-	tegra_dc_writel(dc, value, DC_CMD_STATE_CONTROL);
 -}
 -
- static void tegra_dsi_encoder_prepare(struct drm_encoder *encoder)
- {
- }
-@@ -1053,7 +967,6 @@ tegra_dsi_encoder_atomic_check(struct drm_encoder *encoder,
- 
- static const struct drm_encoder_helper_funcs tegra_dsi_encoder_helper_funcs = {
- 	.dpms = tegra_dsi_encoder_dpms,
--	.mode_fixup = tegra_dsi_encoder_mode_fixup,
- 	.prepare = tegra_dsi_encoder_prepare,
- 	.commit = tegra_dsi_encoder_commit,
- 	.mode_set = tegra_dsi_encoder_mode_set,
-diff --git a/drivers/gpu/drm/tegra/hdmi.c b/drivers/gpu/drm/tegra/hdmi.c
-index abb1ea0385ec..07771956cc94 100644
---- a/drivers/gpu/drm/tegra/hdmi.c
-+++ b/drivers/gpu/drm/tegra/hdmi.c
-@@ -822,32 +822,6 @@ static void tegra_hdmi_encoder_dpms(struct drm_encoder *encoder, int mode)
- {
- }
- 
--static bool tegra_hdmi_encoder_mode_fixup(struct drm_encoder *encoder,
--					  const struct drm_display_mode *mode,
--					  struct drm_display_mode *adjusted)
+-static void tegra_dc_cursor_commit(struct tegra_dc *dc)
 -{
--	struct tegra_output *output = encoder_to_output(encoder);
--	struct tegra_dc *dc = to_tegra_dc(encoder->crtc);
--	struct tegra_hdmi *hdmi = to_hdmi(output);
--	unsigned long pclk = mode->clock * 1000;
--	int err;
--
--	err = tegra_dc_setup_clock(dc, hdmi->clk_parent, pclk, 0);
--	if (err < 0) {
--		dev_err(output->dev, "failed to setup DC clock: %d\n", err);
--		return false;
--	}
--
--	err = clk_set_rate(hdmi->clk_parent, pclk);
--	if (err < 0) {
--		dev_err(output->dev, "failed to set clock rate to %lu Hz\n",
--			pclk);
--		return false;
--	}
--
--	return true;
+-	tegra_dc_writel(dc, CURSOR_ACT_REQ << 8, DC_CMD_STATE_CONTROL);
+-	tegra_dc_writel(dc, CURSOR_ACT_REQ, DC_CMD_STATE_CONTROL);
 -}
 -
- static void tegra_hdmi_encoder_prepare(struct drm_encoder *encoder)
- {
- }
-@@ -1104,7 +1078,6 @@ tegra_hdmi_encoder_atomic_check(struct drm_encoder *encoder,
+ /*
+  * Reads the active copy of a register. This takes the dc->lock spinlock to
+  * prevent races with the VBLANK processing which also needs access to the
+@@ -395,8 +383,6 @@ static void tegra_dc_setup_window(struct tegra_dc *dc, unsigned int index,
+ 		break;
+ 	}
  
- static const struct drm_encoder_helper_funcs tegra_hdmi_encoder_helper_funcs = {
- 	.dpms = tegra_hdmi_encoder_dpms,
--	.mode_fixup = tegra_hdmi_encoder_mode_fixup,
- 	.prepare = tegra_hdmi_encoder_prepare,
- 	.commit = tegra_hdmi_encoder_commit,
- 	.mode_set = tegra_hdmi_encoder_mode_set,
-diff --git a/drivers/gpu/drm/tegra/rgb.c b/drivers/gpu/drm/tegra/rgb.c
-index be1b38936dbe..0c8b458b2364 100644
---- a/drivers/gpu/drm/tegra/rgb.c
-+++ b/drivers/gpu/drm/tegra/rgb.c
-@@ -129,43 +129,6 @@ static void tegra_rgb_encoder_dpms(struct drm_encoder *encoder, int mode)
+-	tegra_dc_window_commit(dc, index);
+-
+ 	spin_unlock_irqrestore(&dc->lock, flags);
+ }
+ 
+@@ -439,9 +425,28 @@ static void tegra_plane_cleanup_fb(struct drm_plane *plane,
  {
  }
  
--static bool tegra_rgb_encoder_mode_fixup(struct drm_encoder *encoder,
--					 const struct drm_display_mode *mode,
--					 struct drm_display_mode *adjusted)
--{
--	struct tegra_output *output = encoder_to_output(encoder);
--	unsigned long pclk = mode->clock * 1000;
--	struct tegra_rgb *rgb = to_rgb(output);
--	unsigned int div;
--	int err;
--
--	/*
--	 * We may not want to change the frequency of the parent clock, since
--	 * it may be a parent for other peripherals. This is due to the fact
--	 * that on Tegra20 there's only a single clock dedicated to display
--	 * (pll_d_out0), whereas later generations have a second one that can
--	 * be used to independently drive a second output (pll_d2_out0).
--	 *
--	 * As a way to support multiple outputs on Tegra20 as well, pll_p is
--	 * typically used as the parent clock for the display controllers.
--	 * But this comes at a cost: pll_p is the parent of several other
--	 * peripherals, so its frequency shouldn't change out of the blue.
--	 *
--	 * The best we can do at this point is to use the shift clock divider
--	 * and hope that the desired frequency can be matched (or at least
--	 * matched sufficiently close that the panel will still work).
--	 */
--	div = ((clk_get_rate(rgb->clk) * 2) / pclk) - 2;
--
--	err = tegra_dc_setup_clock(rgb->dc, rgb->clk_parent, pclk, div);
--	if (err < 0) {
--		dev_err(output->dev, "failed to setup DC clock: %d\n", err);
--		return false;
--	}
--
--	return true;
--}
--
- static void tegra_rgb_encoder_prepare(struct drm_encoder *encoder)
++static int tegra_plane_state_add(struct tegra_plane *plane,
++				 struct drm_plane_state *state)
++{
++	struct drm_crtc_state *crtc_state;
++	struct tegra_dc_state *tegra;
++
++	/* Propagate errors from allocation or locking failures. */
++	crtc_state = drm_atomic_plane_get_crtc_state(state);
++	if (IS_ERR(crtc_state))
++		return PTR_ERR(crtc_state);
++
++	tegra = to_dc_state(crtc_state);
++
++	tegra->planes |= WIN_A_ACT_REQ << plane->index;
++
++	return 0;
++}
++
+ static int tegra_plane_atomic_check(struct drm_plane *plane,
+ 				    struct drm_plane_state *state)
  {
- }
-@@ -278,7 +241,6 @@ tegra_rgb_encoder_atomic_check(struct drm_encoder *encoder,
++	struct tegra_plane *tegra = to_tegra_plane(plane);
+ 	struct tegra_dc *dc = to_tegra_dc(state->crtc);
+ 	struct tegra_bo_tiling tiling;
+ 	int err;
+@@ -472,6 +477,10 @@ static int tegra_plane_atomic_check(struct drm_plane *plane,
+ 		}
+ 	}
  
- static const struct drm_encoder_helper_funcs tegra_rgb_encoder_helper_funcs = {
- 	.dpms = tegra_rgb_encoder_dpms,
--	.mode_fixup = tegra_rgb_encoder_mode_fixup,
- 	.prepare = tegra_rgb_encoder_prepare,
- 	.commit = tegra_rgb_encoder_commit,
- 	.mode_set = tegra_rgb_encoder_mode_set,
-diff --git a/drivers/gpu/drm/tegra/sor.c b/drivers/gpu/drm/tegra/sor.c
-index 7463ea02a083..e813df71e30c 100644
---- a/drivers/gpu/drm/tegra/sor.c
-+++ b/drivers/gpu/drm/tegra/sor.c
-@@ -781,32 +781,6 @@ static void tegra_sor_encoder_dpms(struct drm_encoder *encoder, int mode)
- {
++	err = tegra_plane_state_add(tegra, state);
++	if (err < 0)
++		return err;
++
+ 	return 0;
  }
  
--static bool tegra_sor_encoder_mode_fixup(struct drm_encoder *encoder,
--					 const struct drm_display_mode *mode,
--					 struct drm_display_mode *adjusted)
--{
--	struct tegra_output *output = encoder_to_output(encoder);
--	struct tegra_dc *dc = to_tegra_dc(encoder->crtc);
--	unsigned long pclk = mode->clock * 1000;
--	struct tegra_sor *sor = to_sor(output);
--	int err;
--
--	err = tegra_dc_setup_clock(dc, sor->clk_parent, pclk, 0);
--	if (err < 0) {
--		dev_err(output->dev, "failed to setup DC clock: %d\n", err);
--		return false;
--	}
--
--	err = clk_set_rate(sor->clk_parent, pclk);
--	if (err < 0) {
--		dev_err(output->dev, "failed to set clock rate to %lu Hz\n",
--			pclk);
--		return false;
--	}
--
--	return true;
--}
--
- static void tegra_sor_encoder_prepare(struct drm_encoder *encoder)
- {
- }
-@@ -1343,7 +1317,6 @@ tegra_sor_encoder_atomic_check(struct drm_encoder *encoder,
+@@ -538,8 +547,6 @@ static void tegra_plane_atomic_disable(struct drm_plane *plane,
+ 	value &= ~WIN_ENABLE;
+ 	tegra_dc_writel(dc, value, DC_WIN_WIN_OPTIONS);
  
- static const struct drm_encoder_helper_funcs tegra_sor_encoder_helper_funcs = {
- 	.dpms = tegra_sor_encoder_dpms,
--	.mode_fixup = tegra_sor_encoder_mode_fixup,
- 	.prepare = tegra_sor_encoder_prepare,
- 	.commit = tegra_sor_encoder_commit,
- 	.mode_set = tegra_sor_encoder_mode_set,
+-	tegra_dc_window_commit(dc, p->index);
+-
+ 	spin_unlock_irqrestore(&dc->lock, flags);
+ }
+ 
+@@ -599,6 +606,9 @@ static const u32 tegra_cursor_plane_formats[] = {
+ static int tegra_cursor_atomic_check(struct drm_plane *plane,
+ 				     struct drm_plane_state *state)
+ {
++	struct tegra_plane *tegra = to_tegra_plane(plane);
++	int err;
++
+ 	/* no need for further checks if the plane is being disabled */
+ 	if (!state->crtc)
+ 		return 0;
+@@ -616,6 +626,10 @@ static int tegra_cursor_atomic_check(struct drm_plane *plane,
+ 	    state->crtc_w != 128 && state->crtc_w != 256)
+ 		return -EINVAL;
+ 
++	err = tegra_plane_state_add(tegra, state);
++	if (err < 0)
++		return err;
++
+ 	return 0;
+ }
+ 
+@@ -680,9 +694,6 @@ static void tegra_cursor_atomic_update(struct drm_plane *plane,
+ 	value = (state->crtc_y & 0x3fff) << 16 | (state->crtc_x & 0x3fff);
+ 	tegra_dc_writel(dc, value, DC_DISP_CURSOR_POSITION);
+ 
+-	/* apply changes */
+-	tegra_dc_cursor_commit(dc);
+-	tegra_dc_commit(dc);
+ }
+ 
+ static void tegra_cursor_atomic_disable(struct drm_plane *plane,
+@@ -700,9 +711,6 @@ static void tegra_cursor_atomic_disable(struct drm_plane *plane,
+ 	value = tegra_dc_readl(dc, DC_DISP_DISP_WIN_OPTIONS);
+ 	value &= ~CURSOR_ENABLE;
+ 	tegra_dc_writel(dc, value, DC_DISP_DISP_WIN_OPTIONS);
+-
+-	tegra_dc_cursor_commit(dc);
+-	tegra_dc_commit(dc);
+ }
+ 
+ static const struct drm_plane_funcs tegra_cursor_plane_funcs = {
+@@ -734,6 +742,13 @@ static struct drm_plane *tegra_dc_cursor_plane_create(struct drm_device *drm,
+ 	if (!plane)
+ 		return ERR_PTR(-ENOMEM);
+ 
++	/*
++	 * We'll treat the cursor as an overlay plane with index 6 here so
++	 * that the update and activation request bits in DC_CMD_STATE_CONTROL
++	 * match up.
++	 */
++	plane->index = 6;
++
+ 	num_formats = ARRAY_SIZE(tegra_cursor_plane_formats);
+ 	formats = tegra_cursor_plane_formats;
+ 
+@@ -1029,7 +1044,6 @@ static void tegra_crtc_disable(struct drm_crtc *crtc)
+ 	}
+ 
+ 	drm_crtc_vblank_off(crtc);
+-	tegra_dc_commit(dc);
+ }
+ 
+ static bool tegra_crtc_mode_fixup(struct drm_crtc *crtc,
+@@ -1207,10 +1221,7 @@ static void tegra_crtc_prepare(struct drm_crtc *crtc)
+ 
+ static void tegra_crtc_commit(struct drm_crtc *crtc)
+ {
+-	struct tegra_dc *dc = to_tegra_dc(crtc);
+-
+ 	drm_crtc_vblank_on(crtc);
+-	tegra_dc_commit(dc);
+ }
+ 
+ static int tegra_crtc_atomic_check(struct drm_crtc *crtc,
+@@ -1235,6 +1246,11 @@ static void tegra_crtc_atomic_begin(struct drm_crtc *crtc)
+ 
+ static void tegra_crtc_atomic_flush(struct drm_crtc *crtc)
+ {
++	struct tegra_dc_state *state = to_dc_state(crtc->state);
++	struct tegra_dc *dc = to_tegra_dc(crtc);
++
++	tegra_dc_writel(dc, state->planes << 8, DC_CMD_STATE_CONTROL);
++	tegra_dc_writel(dc, state->planes, DC_CMD_STATE_CONTROL);
+ }
+ 
+ static const struct drm_crtc_helper_funcs tegra_crtc_helper_funcs = {
 -- 
 2.1.3
 
