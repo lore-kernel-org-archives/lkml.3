@@ -1,84 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755025AbbATRNp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 12:13:45 -0500
-Received: from mail-qg0-f53.google.com ([209.85.192.53]:33907 "EHLO
-	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754562AbbATRNm convert rfc822-to-8bit (ORCPT
+	id S1752504AbbATRRb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 12:17:31 -0500
+Received: from mail-pd0-f173.google.com ([209.85.192.173]:38906 "EHLO
+	mail-pd0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751545AbbATRR3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 12:13:42 -0500
+	Tue, 20 Jan 2015 12:17:29 -0500
 MIME-Version: 1.0
-In-Reply-To: <yw1x8ugxe8t9.fsf@unicorn.mansr.com>
-References: <1421764441-11928-1-git-send-email-pantelis.antoniou@konsulko.com>
- <CAL_JsqLVJjq3Ov=J-5LtXiTQPLvR5Y=+tB1i16k_rN3j5dODFQ@mail.gmail.com>
- <CAMuHMdWnjawtgkKGuL8b4A17EhDS6B0L-1_uhSnvEXXk5dNjwQ@mail.gmail.com>
- <25E49021-E94D-4DFA-AC37-1D4A3AAE9F88@konsulko.com> <yw1x8ugxe8t9.fsf@unicorn.mansr.com>
-From: Rob Herring <robherring2@gmail.com>
-Date: Tue, 20 Jan 2015 11:13:12 -0600
-Message-ID: <CAL_JsqKkFDDdzHKZrzhSNkBF3+ewq-Vbb_LCOh0shwd9a=COKA@mail.gmail.com>
-Subject: Re: [PATCH] of: Custom printk format specifier for device node
-To: =?UTF-8?B?TcOlbnMgUnVsbGfDpXJk?= <mans@mansr.com>
-Cc: Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <54BC6799.2040907@linux.intel.com>
+References: <1420736772-11088-1-git-send-email-marc.zyngier@arm.com>
+	<1420736772-11088-2-git-send-email-marc.zyngier@arm.com>
+	<CALRxmdDVUoYNg3QC0LdvKmCz9x4nzE9+TDiV9K9OH=Gxk-Cd9w@mail.gmail.com>
+	<54BC6799.2040907@linux.intel.com>
+Date: Tue, 20 Jan 2015 11:17:29 -0600
+Message-ID: <CALRxmdCRGY2Sw+UyHTp5PP4R=v2301LTqpKq0bCEs08SWsh1bg@mail.gmail.com>
+Subject: Re: [PATCH v2 1/8] device core: Introduce per-device MSI domain pointer
+From: Stuart Yoder <b08248@gmail.com>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Marc Zyngier <marc.zyngier@arm.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yijing Wang <wangyijing@huawei.com>,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 10:05 AM, Måns Rullgård <mans@mansr.com> wrote:
-> Pantelis Antoniou <pantelis.antoniou@konsulko.com> writes:
+Gerry,
+
+So which direction did you take in your patch set--  a) common,
+generic msi_desc, or b)  bus-specific msi_desc like Marc showed
+(mybus_msi_desc)?
+
+Thanks,
+Stuart
+
+On Sun, Jan 18, 2015 at 8:10 PM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
 >
->> Hi Geert,
->>
->>> On Jan 20, 2015, at 17:24 , Geert Uytterhoeven <geert@linux-m68k.org> wrote:
->>>
->>> On Tue, Jan 20, 2015 at 3:47 PM, Rob Herring <robherring2@gmail.com> wrote:
->>>>> +       Examples:
->>>>> +
->>>>> +       %pO     /foo/bar@0              - Node full name
->>>>> +       %pO0    /foo/bar@0              - Same as above
->>>>> +       %pO1    /foo/bar@0[10]          - Node full name + phandle
->>>>> +       %pO2    /foo/bar@0[10:DdPB]     - Node full name + phandle + node flags
->>>>> +                                        D - dynamic
->>>>> +                                        d - detached
->>>>> +                                        P - Populated
->>>>> +                                        B - Populated bus
->>>>
->>>> We should think about what else we want to print for a node. Perhaps
->>>> 'On' for name, 'Oc' for compatible, etc.
->>>
->>> I was just going to say "The least verbose variant is name, not full_name”.
->>>
->>
->> Unfortunately in the context of device tree nodes ‘name' is usually
->> not what you want to print to identify the node in question. ‘name’ is
->> usually not unique.
 >
-> Name and address without the full path is usually a good compromise
-> between uniqueness (it is usually unique for memory-mapped things) and
-> verbosity.
-
-How much of the address is in the name depends on how the address
-translation is done. I don't think we really need to do full address
-translations here.
-
-%pOn     /foo/bar@0              - Node full name
-%pOn0   bar@0              - Node name and unit address
-%pOn1    /foo/bar@0[10]          - Node full name + phandle
-%pOn2    /foo/bar@0[10:DdPB]     - Node full name + phandle + node flags
-%pOc      vendor,foo-bar          - Most significant compatible string
-
-We could do phandle and/or node flags as separate specifiers such as
-%pOf for flags.
-
-I'm not proposing implementing all these now, but just want to make
-sure we have a structure to do so later.
-
-Rob
+> On 2015/1/16 4:35, Stuart Yoder wrote:
+>> On Thu, Jan 8, 2015 at 11:06 AM, Marc Zyngier <marc.zyngier@arm.com> wrote:
+>>> As MSI-type features are creeping into non-PCI devices, it is
+>>> starting to make sense to give our struct device some form of
+>>> support for this, by allowing a pointer to an MSI irq domain to
+>>> be set/retrieved.
+>>>
+>>> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+>>> ---
+>>>  include/linux/device.h | 20 ++++++++++++++++++++
+>>>  1 file changed, 20 insertions(+)
+>>>
+>>> diff --git a/include/linux/device.h b/include/linux/device.h
+>>> index fb50673..ec4cee5 100644
+>>> --- a/include/linux/device.h
+>>> +++ b/include/linux/device.h
+>>> @@ -690,6 +690,7 @@ struct acpi_dev_node {
+>>>   *             along with subsystem-level and driver-level callbacks.
+>>>   * @pins:      For device pin management.
+>>>   *             See Documentation/pinctrl.txt for details.
+>>> + * @msi_domain: The generic MSI domain this device is using.
+>>>   * @numa_node: NUMA node this device is close to.
+>>>   * @dma_mask:  Dma mask (if dma'ble device).
+>>>   * @coherent_dma_mask: Like dma_mask, but for alloc_coherent mapping as not all
+>>> @@ -750,6 +751,9 @@ struct device {
+>>>         struct dev_pm_info      power;
+>>>         struct dev_pm_domain    *pm_domain;
+>>>
+>>> +#ifdef CONFIG_GENERIC_MSI_IRQ_DOMAIN
+>>> +       struct irq_domain       *msi_domain; /* MSI domain device uses */
+>>> +#endif
+>>
+>> This is not a comment on this patch specifically, but a question about other
+>> MSI specific fields that might be needed in struct device.
+>>
+>> Currently the generic MSI domain handling has hardcoded assumptions
+>> that devices are PCI-- see the for_each_msi_entry() iterator in msi.h:
+>>
+>>   #define dev_to_msi_list(dev)            (&to_pci_dev((dev))->msi_list)
+>>
+>>   #define for_each_msi_entry(desc, dev)   \
+>>         list_for_each_entry((desc), dev_to_msi_list((dev)), list)
+>>
+>> One approach would be to move the msi_list out of pci_dev and put
+>> it in struct device, so all devices can have an msi_list.
+>>
+>> The other approach would be to keep msi_list in a bus specific
+>> device struct, and then dev_to_msi_list() would need to be
+>> implemented as a bus specific callback of some kind.
+>>
+>> The above hardcoded PCI assumption isn't going to work.   Wanted to
+>> see if there is any advice in which direction to go.
+> Hi Stuart,
+>         I already have some a patch set to go that direction waiting
+> send out for review:)
+> Thanks!
+> Gerry
+>
+>>
+>> Thanks,
+>> Stuart Yoder
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
