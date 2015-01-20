@@ -1,75 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754638AbbATRL7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 12:11:59 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:32774 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752055AbbATRL5 (ORCPT
+	id S1754439AbbATRNf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 12:13:35 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:41455 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751845AbbATRNd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 12:11:57 -0500
-Message-ID: <54BE8C55.5040606@collabora.co.uk>
-Date: Tue, 20 Jan 2015 18:11:49 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	Tue, 20 Jan 2015 12:13:33 -0500
+Date: Tue, 20 Jan 2015 09:13:12 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, kernel <kernel@savoirfairelinux.com>
+Subject: Re: [PATCH 2/3] sysfs: Only accept read/write permissions for file
+ attributes
+Message-ID: <20150120171312.GA24203@roeck-us.net>
+References: <54BDC087.4010906@roeck-us.net>
+ <1272429736.105015.1421768641283.JavaMail.root@mail>
 MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: Olof Johansson <olof@lixom.net>, Doug Anderson <dianders@chromium.org>,
-        Bill Richardson <wfrichar@chromium.org>, Simon Glass <sjg@google.com>,
-        Gwendal Grignou <gwendal@google.com>, Jonathan Corbet <corbet@lwn.net>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND v2 5/7] mfd: cros_ec: Instantiate ChromeOS EC character
- device
-References: <1420205572-2640-1-git-send-email-javier.martinez@collabora.co.uk> <1420205572-2640-6-git-send-email-javier.martinez@collabora.co.uk> <20150120082013.GU21886@x1> <54BE7C53.8070605@collabora.co.uk> <20150120162952.GB30656@x1> <54BE83FF.7030709@collabora.co.uk> <20150120165527.GH30656@x1>
-In-Reply-To: <20150120165527.GH30656@x1>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1272429736.105015.1421768641283.JavaMail.root@mail>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020205.54BE8CBC.0362,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 3
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Lee,
-
-On 01/20/2015 05:55 PM, Lee Jones wrote:
-> On Tue, 20 Jan 2015, Javier Martinez Canillas wrote:
+On Tue, Jan 20, 2015 at 10:44:01AM -0500, Vivien Didelot wrote:
+> Hi Guenter,
 > 
->> Hello Lee,
->> 
->> On 01/20/2015 05:29 PM, Lee Jones wrote:
->> > 
->> > It's not a blocker, but it is a ridiculous name to use inside the
->> > driver/ directory 'cos almost everything is a dev(ice) here.
->> > 
->> 
->> Right, do you think that "cros-ec-chardev" will be a more suitable
->> name? Sorry, I'm really bad at naming things...
+[ ... ]
 > 
-> But is it really a chardev?  Don't chardevs usually live in
-> drivers/char?  It probably uses a chardev node in /dev, but what does
-> it really do?  What information can/will userspace obtain from this
-> memory block?
+> > Anyway, my goal was to keep things simple. Taking some bits from the default
+> > and others from the return value of the is_visible function isn't simple,
+> > even more so since your code would require the is_visible function to mask
+> > out SYSFS_PREALLOC to avoid the warning.
 > 
+> While I'm still not sure about the consequences of flipping this SYSFS_PREALLOC
+> bit at runtime, I do agree with your goal.
+> 
+> Then to keep it simple, the scope of is_visible could be limited to any bit
+> allowed at attribute declaration (using *_ATTR* macros). The compile-time check
+> macro VERIFY_OCTAL_PERMISSIONS() allows any bit but S_IWOTH. The scope can be
+> SYSFS_PREALLOC | 0775. (or 0664 if we want to avoid executables as well.)
+> 
+> [ This will prevent some follow-up patches "avoid world-writable sysfs files".
+> In the future, we may want a runtime equivalent of VERIFY_OCTAL_PERMISSIONS. ]
+> 
+0775 and 0664 are both fine with me, with a preference for 0664. Before I
+resubmit - Greg, any preference from your side ?
 
-Right, is a driver that register a chardev but mostly to expose an ioctl
-interface to send commands to the Embedded Controller from user-space.
-
-The Application Processor communicates with Embedded Controller by sending
-commands over an interface. This can be either spi or i2c on ARM (depending
-on the Chromebook model) or LPC on x86 Chromebooks so the platform driver
-instantiated by the "cros-ec-dev" mfd cell is to allow user-space to send
-commands to the Embedded Controller (using the correct transport method).
-
-So this chardev is used by the ectool binary in ChromeOS to communicate
-with the Embedded Controller.
-
-The actual driver is located in drivers/platform/chrome/cros_ec_dev.c and
-is added by "platform/chrome: Add Chrome OS EC userspace device interface"
-[0] in this series.
-
-In the downstream ChromiumOS kernel tree it is located in drivers/mfd but
-I moved to drivers/platform/chrome/ since you asked me to find a better
-place for it.
-
-Best regards,
-Javier
-
-[0]: https://lkml.org/lkml/2015/1/2/81
+Thanks,
+Guenter
