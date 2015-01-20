@@ -1,179 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752330AbbATAFZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 19:05:25 -0500
-Received: from mail-gw3-out.broadcom.com ([216.31.210.64]:51141 "EHLO
-	mail-gw3-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751974AbbATAFX (ORCPT
+	id S1752491AbbATAHW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 19:07:22 -0500
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:50273 "EHLO
+	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751930AbbATAHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 19:05:23 -0500
-X-IronPort-AV: E=Sophos;i="5.09,430,1418112000"; 
-   d="scan'208";a="55003181"
-From: <arun.ramamurthy@broadcom.com>
-To: <stern@rowland.harvard.edu>, <linux@prisktech.co.nz>,
-        <gregkh@linuxfoundation.org>
-CC: <linux-usb@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <sbranden@broadcom.com>,
-        <rjui@broadcom.com>, Arun Ramamurthy <arunrama@broadcom.com>
-Subject: [PATCHv3 2/2] usb: ohci-platform: add support for multiple phys per controller
-Date: Mon, 19 Jan 2015 16:05:30 -0800
-Message-ID: <1421712330-11089-3-git-send-email-arun.ramamurthy@broadcom.com>
-X-Mailer: git-send-email 2.2.2
-In-Reply-To: <1421712330-11089-1-git-send-email-arun.ramamurthy@broadcom.com>
-References: <1421712330-11089-1-git-send-email-arun.ramamurthy@broadcom.com>
+	Mon, 19 Jan 2015 19:07:21 -0500
+Date: Mon, 19 Jan 2015 19:07:18 -0500 (EST)
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, kernel <kernel@savoirfairelinux.com>
+Message-ID: <643183939.413796.1421712438502.JavaMail.root@mail>
+In-Reply-To: <1421703806-29791-3-git-send-email-linux@roeck-us.net>
+Subject: Re: [PATCH 2/3] sysfs: Only accept read/write permissions for file
+ attributes
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Mailer: Zimbra 7.1.4_GA_2555 (ZimbraWebClient - FF3.0 (Linux)/7.1.4_GA_2555)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arun Ramamurthy <arunrama@broadcom.com>
+Hi Guenter,
 
-Added support for cases where one controller is connected
-to multiple phys
+> For sysfs file attributes, only read and write permisssions make sense.
 
-Signed-off-by: Arun Ramamurthy <arunrama@broadcom.com>
-Reviewed-by: Ray Jui <rjui@broadcom.com>
-Reviewed-by: Scott Branden <sbranden@broadcom.com>
-Tested-by: Scott Branden <sbranden@broadcom.com>
----
- drivers/usb/host/ohci-platform.c | 82 +++++++++++++++++++++++++++++-----------
- 1 file changed, 60 insertions(+), 22 deletions(-)
+Minor typo, there's an extra 's' to permissions.
 
-diff --git a/drivers/usb/host/ohci-platform.c b/drivers/usb/host/ohci-platform.c
-index b81d202..613d54e 100644
---- a/drivers/usb/host/ohci-platform.c
-+++ b/drivers/usb/host/ohci-platform.c
-@@ -38,7 +38,8 @@
- struct ohci_platform_priv {
- 	struct clk *clks[OHCI_MAX_CLKS];
- 	struct reset_control *rst;
--	struct phy *phy;
-+	struct phy **phys;
-+	int num_phys;
- };
- 
- static const char hcd_name[] = "ohci-platform";
-@@ -47,7 +48,7 @@ static int ohci_platform_power_on(struct platform_device *dev)
- {
- 	struct usb_hcd *hcd = platform_get_drvdata(dev);
- 	struct ohci_platform_priv *priv = hcd_to_ohci_priv(hcd);
--	int clk, ret;
-+	int clk, ret, phy_num;
- 
- 	for (clk = 0; clk < OHCI_MAX_CLKS && priv->clks[clk]; clk++) {
- 		ret = clk_prepare_enable(priv->clks[clk]);
-@@ -55,20 +56,28 @@ static int ohci_platform_power_on(struct platform_device *dev)
- 			goto err_disable_clks;
- 	}
- 
--	if (priv->phy) {
--		ret = phy_init(priv->phy);
--		if (ret)
--			goto err_disable_clks;
--
--		ret = phy_power_on(priv->phy);
--		if (ret)
--			goto err_exit_phy;
-+	for (phy_num = 0; phy_num < priv->num_phys; phy_num++) {
-+		if (priv->phys[phy_num]) {
-+			ret = phy_init(priv->phys[phy_num]);
-+			if (ret)
-+				goto err_exit_phy;
-+			ret = phy_power_on(priv->phys[phy_num]);
-+			if (ret) {
-+				phy_exit(priv->phys[phy_num]);
-+				goto err_exit_phy;
-+			}
-+		}
- 	}
- 
- 	return 0;
- 
- err_exit_phy:
--	phy_exit(priv->phy);
-+	while (--phy_num >= 0) {
-+		if (priv->phys[phy_num]) {
-+			phy_power_off(priv->phys[phy_num]);
-+			phy_exit(priv->phys[phy_num]);
-+		}
-+	}
- err_disable_clks:
- 	while (--clk >= 0)
- 		clk_disable_unprepare(priv->clks[clk]);
-@@ -80,11 +89,13 @@ static void ohci_platform_power_off(struct platform_device *dev)
- {
- 	struct usb_hcd *hcd = platform_get_drvdata(dev);
- 	struct ohci_platform_priv *priv = hcd_to_ohci_priv(hcd);
--	int clk;
-+	int clk, phy_num;
- 
--	if (priv->phy) {
--		phy_power_off(priv->phy);
--		phy_exit(priv->phy);
-+	for (phy_num = 0; phy_num < priv->num_phys; phy_num++) {
-+		if (priv->phys[phy_num]) {
-+			phy_power_off(priv->phys[phy_num]);
-+			phy_exit(priv->phys[phy_num]);
-+		}
- 	}
- 
- 	for (clk = OHCI_MAX_CLKS - 1; clk >= 0; clk--)
-@@ -112,7 +123,8 @@ static int ohci_platform_probe(struct platform_device *dev)
- 	struct usb_ohci_pdata *pdata = dev_get_platdata(&dev->dev);
- 	struct ohci_platform_priv *priv;
- 	struct ohci_hcd *ohci;
--	int err, irq, clk = 0;
-+	const char *phy_name;
-+	int err, irq, phy_num, clk = 0;
- 
- 	if (usb_disabled())
- 		return -ENODEV;
-@@ -160,12 +172,38 @@ static int ohci_platform_probe(struct platform_device *dev)
- 		of_property_read_u32(dev->dev.of_node, "num-ports",
- 				     &ohci->num_ports);
- 
--		priv->phy = devm_phy_get(&dev->dev, "usb");
--		if (IS_ERR(priv->phy)) {
--			err = PTR_ERR(priv->phy);
--			if (err == -EPROBE_DEFER)
--				goto err_put_hcd;
--			priv->phy = NULL;
-+		priv->num_phys = of_count_phandle_with_args(dev->dev.of_node,
-+				"phys", "#phy-cells");
-+		priv->num_phys = priv->num_phys > 0 ? priv->num_phys : 1;
-+
-+		priv->phys = devm_kcalloc(&dev->dev, priv->num_phys,
-+				sizeof(struct phy *), GFP_KERNEL);
-+		if (!priv->phys)
-+			return -ENOMEM;
-+
-+		for (phy_num = 0; phy_num < priv->num_phys; phy_num++) {
-+				err = of_property_read_string_index(
-+						dev->dev.of_node,
-+						"phy-names", phy_num,
-+						&phy_name);
-+
-+				if (err < 0) {
-+					if (priv->num_phys > 1) {
-+						dev_err(&dev->dev, "phy-names not provided");
-+						goto err_put_hcd;
-+					} else
-+						phy_name = "usb";
-+				}
-+
-+				priv->phys[phy_num] = devm_phy_get(&dev->dev,
-+						phy_name);
-+				if (IS_ERR(priv->phys[phy_num])) {
-+					err = PTR_ERR(priv->phys[phy_num]);
-+					if ((priv->num_phys > 1) ||
-+					    (err == -EPROBE_DEFER))
-+						goto err_put_hcd;
-+					priv->phys[phy_num] = NULL;
-+				}
- 		}
- 
- 		for (clk = 0; clk < OHCI_MAX_CLKS; clk++) {
--- 
-2.2.2
+> Mask provided attribute permissions accordingly and send a warning
+> to the console if invalid permission bits are set.
+> 
+> Cc: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+> Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+> ---
+>  fs/sysfs/group.c | 6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> diff --git a/fs/sysfs/group.c b/fs/sysfs/group.c
+> index 305eccb..0de6473 100644
+> --- a/fs/sysfs/group.c
+> +++ b/fs/sysfs/group.c
+> @@ -55,6 +55,12 @@ static int create_files(struct kernfs_node *parent, struct kobject *kobj,
+>                                  if (!mode)
+>                                          continue;
+>                          }
+> +
+> +                        WARN(mode & ~(S_IRUGO | S_IWUGO | SYSFS_PREALLOC),
+> +                             "Attribute %s: Invalid permission 0x%x\n",
+> +                             (*attr)->name, mode);
 
+To print permissions, I would suggest unsigned octal ("0%o").
+
+> +
+> +                        mode &= S_IRUGO | S_IWUGO | SYSFS_PREALLOC;
+
+As readable attributes are created with S_IRUGO and writable attributes are
+created with S_IWUSR, I would limit the scope of is_visible to only:
+S_IRUGO | S_IWUSR. Write permission for group and others feels wrong.
+
+Then, I think we may want to keep the extra bits (all mode bits > 0777) from
+the default attribute mode. Can they be used for sysfs attributes?
+
+My suggestion is something like this:
+
+        /* Limit the scope to S_IRUGO | S_IWUSR */
+        if (mode & ~(S_IRUGO | S_IWUSR))
+                pr_warn("Attribute %s: Invalid permissions 0%o\n",
+                        (*attr)->name, mode);
+
+        mode &= S_IRUGO | S_IWUSR;
+
+        /* Use only returned bits and defaults > 0777 */
+        mode |= (*attr)->mode & ~S_IRWXUGO;
+
+>                          error = sysfs_add_file_mode_ns(parent, *attr, false,
+>                                                         mode, NULL);
+>                          if (unlikely(error))
+
+The code hitting this warning actually is drivers/pci/pci-sysfs.c, which
+declares write-only attributes with S_IWUSR|S_IWGRP (0220). Is that correct to
+have write access for group for these attributes?
+
+Thanks,
+-v
