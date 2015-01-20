@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752344AbbATEWd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 23:22:33 -0500
-Received: from smtprelay0247.hostedemail.com ([216.40.44.247]:48633 "EHLO
+	id S1752694AbbATEXI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 23:23:08 -0500
+Received: from smtprelay0231.hostedemail.com ([216.40.44.231]:45688 "EHLO
 	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752007AbbATEWb (ORCPT
+	by vger.kernel.org with ESMTP id S1752579AbbATEXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 23:22:31 -0500
+	Mon, 19 Jan 2015 23:23:06 -0500
 X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
 X-Spam-Summary: 50,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::,RULES_HIT:41:355:379:541:967:969:973:988:989:1260:1277:1311:1313:1314:1345:1437:1515:1516:1518:1534:1539:1567:1593:1594:1711:1714:1730:1747:1777:1792:2393:2525:2565:2682:2685:2687:2859:2895:2933:2937:2939:2942:2945:2947:2951:2954:3022:3138:3139:3140:3141:3142:3690:3770:3865:3867:3868:3871:3873:3934:3936:3938:3941:3944:3947:3950:3953:3956:3959:4250:4321:5007:6261:6684:7266:7875:8509:8599:8985:9025:9072:9121:9388:10004:10049:10400:10848:11232:11233:11658:11914:12043:12266:12438:12517:12519:12555:12663:12679:13018:13019:13069:13311:13357:14394:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: mouth25_6d296af22a156
-X-Filterd-Recvd-Size: 1541
-Date: Mon, 19 Jan 2015 23:22:29 -0500
+X-HE-Tag: sleet68_72290ed18a405
+X-Filterd-Recvd-Size: 1542
+Date: Mon, 19 Jan 2015 23:23:03 -0500
 From: Steven Rostedt <rostedt@goodmis.org>
 To: LKML <linux-kernel@vger.kernel.org>,
         linux-rt-users <linux-rt-users@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Carsten Emde <C.Emde@osadl.org>,
         John Kacur <jkacur@redhat.com>,
         Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Subject: [ANNOUNCE] 3.10.65-rt69
-Message-ID: <20150119232229.1647f973@gandalf.local.home>
+Subject: [ANNOUNCE] 3.4.105-rt129
+Message-ID: <20150119232303.64d9ce03@gandalf.local.home>
 X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -31,10 +31,10 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Dear RT Folks,
 
-I'm pleased to announce the 3.10.65-rt69 stable release.
+I'm pleased to announce the 3.4.105-rt129 stable release.
 
 
-This release is just an update to the new stable 3.10.65 version
+This release is just an update to the new stable 3.4.105 version
 and no RT specific changes have been made.
 
 
@@ -42,17 +42,17 @@ You can get this release via the git tree at:
 
   git://git.kernel.org/pub/scm/linux/kernel/git/rt/linux-stable-rt.git
 
-  branch: v3.10-rt
-  Head SHA1: b0e12c669114091d10a3311a4b64fed59ef8734b
+  branch: v3.4-rt
+  Head SHA1: e61091b71143f0a7a9c2fbdf4c5a6cebd4268394
 
 
-Or to build 3.10.65-rt69 directly, the following patches should be applied:
+Or to build 3.4.105-rt129 directly, the following patches should be applied:
 
-  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.10.tar.xz
+  http://www.kernel.org/pub/linux/kernel/v3.x/linux-3.4.tar.xz
 
-  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.10.65.xz
+  http://www.kernel.org/pub/linux/kernel/v3.x/patch-3.4.105.xz
 
-  http://www.kernel.org/pub/linux/kernel/projects/rt/3.10/patch-3.10.65-rt69.patch.xz
+  http://www.kernel.org/pub/linux/kernel/projects/rt/3.4/patch-3.4.105-rt129.patch.xz
 
 
 
