@@ -1,171 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755470AbbATQsV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 11:48:21 -0500
-Received: from mail-lb0-f169.google.com ([209.85.217.169]:58300 "EHLO
-	mail-lb0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754103AbbATQsR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 11:48:17 -0500
-MIME-Version: 1.0
-In-Reply-To: <1421623526-20555-3-git-send-email-vivien.didelot@savoirfairelinux.com>
-References: <1421623526-20555-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-	<1421623526-20555-3-git-send-email-vivien.didelot@savoirfairelinux.com>
-Date: Tue, 20 Jan 2015 16:48:15 +0000
-Message-ID: <CAHR064jkFMd3FWxGvOrE0FfXzLHoQSb9LU8Mi_AZk-CST01Sqw@mail.gmail.com>
-Subject: Re: [PATCH v2 3/3] asus-laptop: cleanup is_visible
-From: Corentin Chary <corentin.chary@gmail.com>
-To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-Cc: "platform-driver-x86@vger.kernel.org" 
-	<platform-driver-x86@vger.kernel.org>,
-        Darren Hart <dvhart@infradead.org>,
-        acpi4asus-user <acpi4asus-user@lists.sourceforge.net>,
-        LKML <linux-kernel@vger.kernel.org>, kernel@savoirfairelinux.com
-Content-Type: text/plain; charset=UTF-8
+	id S1754108AbbATTo1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 14:44:27 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:24448 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753880AbbATToY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 14:44:24 -0500
+X-Mailbox-Line: From a67026f283019719432ef4310f9f8d75f467a4a6 Mon Sep 17 00:00:00 2001
+Message-Id: <a67026f283019719432ef4310f9f8d75f467a4a6.1421782533.git.moinejf@free.fr>
+In-Reply-To: <cover.1421782532.git.moinejf@free.fr>
+References: <cover.1421782532.git.moinejf@free.fr>
+From: Jean-Francois Moine <moinejf@free.fr>
+Date: Tue, 20 Jan 2015 17:50:25 +0100
+Subject: [PATCH v10 7/9] drm/i2c: tda998x: set cts_n according to the sample
+ width
+To: Mark Brown <broonie@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Dave Airlie <airlied@gmail.com>, Andrew Jackson <Andrew.Jackson@arm.com>,
+        Jyri Sarha <jsarha@ti.com>, alsa-devel@alsa-project.org,
+        devicetree@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 18, 2015 at 11:25 PM, Vivien Didelot
-<vivien.didelot@savoirfairelinux.com> wrote:
->
-> Use the attribute indexes and concise the if statements.
+With I2S input, the CTS_N predivider depends on the audio sample width.
 
-Why ? I really don't see that as an improvement.
+Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
+---
+ drivers/gpu/drm/i2c/tda998x_drv.c | 21 ++++++++++++++++++---
+ include/sound/tda998x.h           |  4 +++-
+ sound/soc/codecs/tda998x.c        |  5 +++--
+ 3 files changed, 24 insertions(+), 6 deletions(-)
 
-> Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-> ---
->  drivers/platform/x86/asus-laptop.c | 98 ++++++++++++++++----------------------
->  1 file changed, 40 insertions(+), 58 deletions(-)
->
-> diff --git a/drivers/platform/x86/asus-laptop.c b/drivers/platform/x86/asus-laptop.c
-> index 46b2746..b576929 100644
-> --- a/drivers/platform/x86/asus-laptop.c
-> +++ b/drivers/platform/x86/asus-laptop.c
-> @@ -1580,77 +1580,59 @@ static void asus_acpi_notify(struct acpi_device *device, u32 event)
->  }
->
->  static struct attribute *asus_attributes[] = {
-> -       &dev_attr_infos.attr,
-> -       &dev_attr_wlan.attr,
-> -       &dev_attr_bluetooth.attr,
-> -       &dev_attr_wimax.attr,
-> -       &dev_attr_wwan.attr,
-> -       &dev_attr_display.attr,
-> -       &dev_attr_ledd.attr,
-> -       &dev_attr_ls_value.attr,
-> -       &dev_attr_ls_level.attr,
-> -       &dev_attr_ls_switch.attr,
-> -       &dev_attr_gps.attr,
-> +       &dev_attr_infos.attr,           /* 0 */
-> +       &dev_attr_wlan.attr,            /* 1 */
-> +       &dev_attr_bluetooth.attr,       /* 2 */
-> +       &dev_attr_wimax.attr,           /* 3 */
-> +       &dev_attr_wwan.attr,            /* 4 */
-> +       &dev_attr_display.attr,         /* 5 */
-> +       &dev_attr_ledd.attr,            /* 6 */
-> +       &dev_attr_ls_value.attr,        /* 7 */
-> +       &dev_attr_ls_level.attr,        /* 8 */
-> +       &dev_attr_ls_switch.attr,       /* 9 */
-> +       &dev_attr_gps.attr,             /* 10 */
->         NULL
->  };
->
->  static umode_t asus_sysfs_is_visible(struct kobject *kobj,
-> -                                   struct attribute *attr,
-> -                                   int idx)
-> +                                    struct attribute *attr, int index)
->  {
->         struct device *dev = container_of(kobj, struct device, kobj);
->         struct platform_device *pdev = to_platform_device(dev);
->         struct asus_laptop *asus = platform_get_drvdata(pdev);
->         acpi_handle handle = asus->handle;
-> -       bool supported;
-> -
-> -       if (asus->is_pega_lucid) {
-> +       bool ret = true;
-> +
-> +       if (index == 1) {
-> +               ret = !acpi_check_handle(handle, METHOD_WLAN, NULL);
-> +       } else if (index == 2) {
-> +               ret = !acpi_check_handle(handle, METHOD_BLUETOOTH, NULL);
-> +       } else if (index == 3) {
-> +               ret = !acpi_check_handle(handle, METHOD_WIMAX, NULL);
-> +       } else if (index == 4) {
-> +               ret = !acpi_check_handle(handle, METHOD_WWAN, NULL);
-> +       } else if (index == 5) {
-> +               ret = !acpi_check_handle(handle, METHOD_SWITCH_DISPLAY, NULL);
-> +       } else if (index == 6) {
-> +               ret = !acpi_check_handle(handle, METHOD_LEDD, NULL);
-> +       } else if (index == 7) {
-> +               ret = asus->is_pega_lucid;
-> +       } else if (index == 8) {
->                 /* no ls_level interface on the Lucid */
-> -               if (attr == &dev_attr_ls_switch.attr)
-> -                       supported = true;
-> -               else if (attr == &dev_attr_ls_level.attr)
-> -                       supported = false;
-> -               else
-> -                       goto normal;
-> -
-> -               return supported ? attr->mode : 0;
-> -       }
-> -
-> -normal:
-> -       if (attr == &dev_attr_wlan.attr) {
-> -               supported = !acpi_check_handle(handle, METHOD_WLAN, NULL);
-> -
-> -       } else if (attr == &dev_attr_bluetooth.attr) {
-> -               supported = !acpi_check_handle(handle, METHOD_BLUETOOTH, NULL);
-> -
-> -       } else if (attr == &dev_attr_display.attr) {
-> -               supported = !acpi_check_handle(handle, METHOD_SWITCH_DISPLAY, NULL);
-> -
-> -       } else if (attr == &dev_attr_wimax.attr) {
-> -               supported =
-> -                       !acpi_check_handle(asus->handle, METHOD_WIMAX, NULL);
-> -
-> -       } else if (attr == &dev_attr_wwan.attr) {
-> -               supported = !acpi_check_handle(asus->handle, METHOD_WWAN, NULL);
-> -
-> -       } else if (attr == &dev_attr_ledd.attr) {
-> -               supported = !acpi_check_handle(handle, METHOD_LEDD, NULL);
-> -
-> -       } else if (attr == &dev_attr_ls_switch.attr ||
-> -                  attr == &dev_attr_ls_level.attr) {
-> -               supported = !acpi_check_handle(handle, METHOD_ALS_CONTROL, NULL) &&
-> +               ret = !asus->is_pega_lucid &&
-> +                       !acpi_check_handle(handle, METHOD_ALS_CONTROL, NULL) &&
->                         !acpi_check_handle(handle, METHOD_ALS_LEVEL, NULL);
-> -       } else if (attr == &dev_attr_ls_value.attr) {
-> -               supported = asus->is_pega_lucid;
-> -       } else if (attr == &dev_attr_gps.attr) {
-> -               supported = !acpi_check_handle(handle, METHOD_GPS_ON, NULL) &&
-> -                           !acpi_check_handle(handle, METHOD_GPS_OFF, NULL) &&
-> -                           !acpi_check_handle(handle, METHOD_GPS_STATUS, NULL);
-> -       } else {
-> -               supported = true;
-> +       } else if (index == 9) {
-> +               ret = asus->is_pega_lucid ||
-> +                       (!acpi_check_handle(handle, METHOD_ALS_CONTROL, NULL) &&
-> +                        !acpi_check_handle(handle, METHOD_ALS_LEVEL, NULL));
-> +       } else if (index == 10) {
-> +               ret = !acpi_check_handle(handle, METHOD_GPS_ON, NULL) &&
-> +                       !acpi_check_handle(handle, METHOD_GPS_OFF, NULL) &&
-> +                       !acpi_check_handle(handle, METHOD_GPS_STATUS, NULL);
->         }
->
-> -       return supported ? attr->mode : 0;
-> +       return ret ? attr->mode : 0;
->  }
->
->
-> --
-> 2.2.2
->
-
-
-
+diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
+index a2cfc11..adf34e0 100644
+--- a/drivers/gpu/drm/i2c/tda998x_drv.c
++++ b/drivers/gpu/drm/i2c/tda998x_drv.c
+@@ -28,6 +28,7 @@
+ #include <drm/drm_edid.h>
+ #include <drm/i2c/tda998x.h>
+ #include <sound/tda998x.h>
++#include <sound/pcm.h>
+ 
+ #define DBG(fmt, ...) DRM_DEBUG(fmt"\n", ##__VA_ARGS__)
+ 
+@@ -663,7 +664,17 @@ tda998x_configure_audio(struct tda998x_priv *priv,
+ 		reg_write(priv, REG_MUX_AP, MUX_AP_SELECT_I2S);
+ 		clksel_aip = AIP_CLKSEL_AIP_I2S;
+ 		clksel_fs = AIP_CLKSEL_FS_ACLK;
+-		cts_n = CTS_N_M(3) | CTS_N_K(3);
++
++		/* with I2S input, the CTS_N predivider depends on
++		 * the sample width */
++		switch (priv->audio.sample_format) {
++		case SNDRV_PCM_FORMAT_S16_LE:
++			cts_n = CTS_N_M(3) | CTS_N_K(1);
++			break;
++		default:
++			cts_n = CTS_N_M(3) | CTS_N_K(3);
++			break;
++		}
+ 		break;
+ 
+ 	default:
+@@ -751,7 +762,8 @@ static int tda998x_get_audio_var(struct device *dev,
+ /* switch the audio port and initialize the audio parameters for streaming */
+ static int tda998x_set_audio_input(struct device *dev,
+ 				int port_index,
+-				unsigned sample_rate)
++				unsigned sample_rate,
++				int sample_format)
+ {
+ 	struct tda998x_priv *priv = dev_get_drvdata(dev);
+ 	struct tda998x_encoder_params *p = &priv->params;
+@@ -767,7 +779,8 @@ static int tda998x_set_audio_input(struct device *dev,
+ 
+ 	/* if same audio parameters, just enable the audio port */
+ 	if (p->audio_cfg == priv->audio.ports[port_index] &&
+-	    p->audio_sample_rate == sample_rate) {
++	    p->audio_sample_rate == sample_rate &&
++	    priv->audio.sample_format == sample_format) {
+ 		reg_write(priv, REG_ENA_AP, p->audio_cfg);
+ 		return 0;
+ 	}
+@@ -776,6 +789,7 @@ static int tda998x_set_audio_input(struct device *dev,
+ 	p->audio_clk_cfg = p->audio_format == AFMT_SPDIF ? 0 : 1;
+ 	p->audio_cfg = priv->audio.ports[port_index];
+ 	p->audio_sample_rate = sample_rate;
++	priv->audio.sample_format = sample_format;
+ 	tda998x_configure_audio(priv, &priv->encoder->crtc->hwmode, p);
+ 	return 0;
+ }
+@@ -1427,6 +1441,7 @@ static int tda998x_create(struct i2c_client *client, struct tda998x_priv *priv)
+ 
+ 	priv->params.audio_frame[1] = 1;		/* channels - 1 */
+ 	priv->params.audio_sample_rate = 48000;		/* 48kHz */
++	priv->audio.sample_format = SNDRV_PCM_FORMAT_S24_LE;
+ 
+ 	priv->current_page = 0xff;
+ 	priv->hdmi = client;
+diff --git a/include/sound/tda998x.h b/include/sound/tda998x.h
+index b4b747b..a870c40 100644
+--- a/include/sound/tda998x.h
++++ b/include/sound/tda998x.h
+@@ -9,6 +9,7 @@
+ struct tda998x_audio_s {
+ 	u8 ports[2];			/* AP value */
+ 	u8 port_types[2];		/* AFMT_xxx */
++	int sample_format;
+ #if IS_ENABLED(CONFIG_SND_SOC_TDA998X)
+ 	struct cea_sad cea_sad;		/* Short Audio Descriptor */
+ 	void *codec_priv;
+@@ -20,7 +21,8 @@ struct tda998x_ops_s {
+ 			struct tda998x_audio_s **tda998x_audio);
+ 	int (*set_audio_input)(struct device *dev,
+ 			int port_index,
+-			unsigned sample_rate);
++			unsigned sample_rate,
++			int sample_format);
+ };
+ 
+ int tda9998x_codec_register(struct device *dev,
+diff --git a/sound/soc/codecs/tda998x.c b/sound/soc/codecs/tda998x.c
+index 0a186e7..fece8d2 100644
+--- a/sound/soc/codecs/tda998x.c
++++ b/sound/soc/codecs/tda998x.c
+@@ -73,13 +73,14 @@ static int tda998x_codec_hw_params(struct snd_pcm_substream *substream,
+ 				   struct snd_soc_dai *dai)
+ {
+ 	return tda998x_ops->set_audio_input(dai->dev, dai->id,
+-					params_rate(params));
++					params_rate(params),
++					params_format(params));
+ }
+ 
+ static void tda998x_codec_shutdown(struct snd_pcm_substream *substream,
+ 				   struct snd_soc_dai *dai)
+ {
+-	tda998x_ops->set_audio_input(dai->dev, PORT_NONE, 0);
++	tda998x_ops->set_audio_input(dai->dev, PORT_NONE, 0, 0);
+ }
+ 
+ static const struct snd_soc_dai_ops tda998x_codec_ops = {
 -- 
-Corentin Chary
-http://xf.iksaif.net
+2.1.4
+
