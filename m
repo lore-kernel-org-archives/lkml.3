@@ -1,115 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753290AbbATUKM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 15:10:12 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:59827 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752075AbbATUKK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 15:10:10 -0500
-Date: Tue, 20 Jan 2015 21:07:40 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Iain Paton <ipaton0@gmail.com>
-Cc: linux-sunxi@googlegroups.com, Vishnu Patekar <vishnupatekar0510@gmail.com>,
-        dmitry.torokhov@gmail.com, hdegoede@redhat.com,
-        ijc+devicetree@hellion.org.uk, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        devicetree@vger.kernel.org
-Subject: Re: [linux-sunxi] [PATCH v4 5/5] ARM: sunxi: dts: Add PS2 nodes for
- A20 lime2 board
-Message-ID: <20150120200740.GY4367@lukather>
-References: <1421417021-3247-1-git-send-email-vishnupatekar0510@gmail.com>
- <1421417021-3247-6-git-send-email-vishnupatekar0510@gmail.com>
- <54BE8A0E.30604@gmail.com>
+	id S1753411AbbATULI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 15:11:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34818 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751557AbbATULG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 15:11:06 -0500
+From: Paul Moore <pmoore@redhat.com>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: Ross Zwisler <ross.zwisler@linux.intel.com>,
+        Boaz Harrosh <openosd@gmail.com>, Jens Axboe <axboe@kernel.dk>,
+        Sabrina Dubroca <sd@queasysnail.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org, linux-audit@redhat.com,
+        viro@zeniv.linux.org.uk, Richard Guy Briggs <rgb@redhat.com>
+Subject: Re: linux-next: Tree for Jan 20 -- Kernel panic - Unable to mount root fs
+Date: Tue, 20 Jan 2015 15:10:46 -0500
+Message-ID: <6975799.ujoFD1RpCy@sifl>
+Organization: Red Hat
+User-Agent: KMail/4.14.3 (Linux/3.16.7-gentoo; KDE/4.14.3; x86_64; ; )
+In-Reply-To: <CAOMZO5DsKT2rbSs8PuM6+KYcHZ6165-9eJPDXz=LJxiLW1tb-A@mail.gmail.com>
+References: <20150120185308.53f4af4e@canb.auug.org.au> <129259164.tYuuyxyNUx@sifl> <CAOMZO5DsKT2rbSs8PuM6+KYcHZ6165-9eJPDXz=LJxiLW1tb-A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="w+MAdceOglSEzbpc"
-Content-Disposition: inline
-In-Reply-To: <54BE8A0E.30604@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tuesday, January 20, 2015 05:43:01 PM Fabio Estevam wrote:
+> On Tue, Jan 20, 2015 at 5:24 PM, Paul Moore <pmoore@redhat.com> wrote:
+> > On Tuesday, January 20, 2015 05:16:45 PM Fabio Estevam wrote:
+> >> On Tue, Jan 20, 2015 at 5:00 PM, Ross Zwisler
+> >> 
+> >> <ross.zwisler@linux.intel.com> wrote:
+> >> > These were just nuisance warnings, I believe, so my guess is that this
+> >> > isn't related to your kernel panic.   Reverting Boaz's patches to make
+> >> > these warnings go away would let you know for sure.
+> >> 
+> >> You are right. Reverting 937af5ecd0591e makes such warnings disappear.
+> > 
+> > You guys are much quicker compiling kernels than I am :)
+> > 
+> > Fabio, are you still seeing the same panic, just without the warnings?  Or
+> > has the panic resolved itself as well?
+> 
+> Just to clarify: I was not getting the same panic Sabrina originally
+> reported.
+> 
+> Reverting 937af5ecd0591e made the ram warnings go away.
+> 
+> On my case I am running linux-next 20150120 plus this fix:
+> http://www.spinics.net/lists/arm-kernel/msg393205.html
+> 
+> and things seem to boot fine here on my ARM platform.
 
---w+MAdceOglSEzbpc
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Okay, thanks for the clarification; glad you got it working.
 
-On Tue, Jan 20, 2015 at 05:02:06PM +0000, Iain Paton wrote:
-> On 16/01/15 14:03, Vishnu Patekar wrote:
-> > Signed-off-by: VishnuPatekar <vishnupatekar0510@gmail.com>
-> > ---
-> >  arch/arm/boot/dts/sun7i-a20-olinuxino-lime2.dts |   12 ++++++++++++
-> >  1 file changed, 12 insertions(+)
-> >=20
-> > diff --git a/arch/arm/boot/dts/sun7i-a20-olinuxino-lime2.dts b/arch/arm=
-/boot/dts/sun7i-a20-olinuxino-lime2.dts
-> > index ed364d5..3365f12 100644
-> > --- a/arch/arm/boot/dts/sun7i-a20-olinuxino-lime2.dts
-> > +++ b/arch/arm/boot/dts/sun7i-a20-olinuxino-lime2.dts
-> > @@ -113,6 +113,18 @@
-> >  			status =3D "okay";
-> >  		};
-> > =20
-> > +		ps20: ps2@01c2a000 {
-> > +			pinctrl-names =3D "default";
-> > +			pinctrl-0 =3D <&ps20_pins_a>;
-> > +			status =3D "okay";
-> > +		};
-> > +
-> > +		ps21: ps2@01c2a400 {
-> > +			pinctrl-names =3D "default";
-> > +			pinctrl-0 =3D <&ps21_pins_a>;
-> > +			status =3D "okay";
-> > +		};
-> > +
-> >  		i2c0: i2c@01c2ac00 {
-> >  			pinctrl-names =3D "default";
-> >  			pinctrl-0 =3D <&i2c0_pins_a>;
-> >=20
->=20
-> As the Lime2 doesn't actually have any PS2 connectors on the board,=20
-> I'd prefer that these are not enabled unconditionally. Doing so=20
-> only makes it more difficult for people who want to use these pins=20
-> for other functions.
->=20
-> Device tree overlays seem to be close to being merged, perhaps we=20
-> could leave enabling this to an overlay?
+-- 
+paul moore
+security @ redhat
 
-I already had the exact same reasoning, and this was even removed at
-some point. For some reason, it was added back, and I don't really
-know why.
-
-Maxime
-
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---w+MAdceOglSEzbpc
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUvrWMAAoJEBx+YmzsjxAgCZoQAKeSdHaeP+9pOqAe9WaoSy8L
-QU3ednltVvIBGqR3plZ+Mut2iglVtpL9STfw4SbDu/zRNPQDttWS4lnWiOMnPnP0
-72eOC2niovAffsyKDEWzXrVuTg2rnkD+RoJ1QgQweGPGRaeOiGtB3NXTFapxBOW/
-xV33EoihrlM7WnO3dMUfkXLCxUGb1Wir3bVATif1Bb07PivLe31xczgdRQPaYxOZ
-WPKbLFig37x1W0yv6B8bVGjLiz+CNf8jGwUVoSn4RQHbb48bgAhigvOYjFBx457C
-6Moph/EswWTW26gPQ6MJYYgcPoJkPe0hKFDji+t3qJOzbRUqjDYG6mNc7hgqNdWN
-ny2xYTwQgM2qg97SqQaF7zZKYOFb9rTa14ZTvHY9Gl19/mFU1fYvynpJ5ySR53dS
-WwtjrTFhf8WWqcSiZIlDKPITG1NRn9gmsykTHGK6tM6U/4NdgyhXORncUwB13zNN
-ai/kOopAymEZy2AIWWxYRdmm1cSQyO0YHx3NSPoMkG90d73papcOFO4A9AB3ILAU
-3T7qPszDE6TSrch3Z5E5P0GWZQ1gHKAPSOvfFfJTxE7ELeJnhpQ6Na4y4qUfryKG
-vLdRBEF1v7ONbXxBegpZYmos1kPcnoFrAeFx1AQOceleKnPJc3CFh33O06T5Aw5z
-Vz2NKy3h4dbxrv0j5yzS
-=xLGI
------END PGP SIGNATURE-----
-
---w+MAdceOglSEzbpc--
