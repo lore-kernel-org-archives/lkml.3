@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754579AbbATKxU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 05:53:20 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:58934 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754289AbbATKtw (ORCPT
+	id S1754551AbbATKwj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 05:52:39 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:62340 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754306AbbATKtx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 05:49:52 -0500
+	Tue, 20 Jan 2015 05:49:53 -0500
 From: Thierry Reding <thierry.reding@gmail.com>
 To: dri-devel@lists.freedesktop.org
 Cc: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 32/36] drm/tegra: Atomic conversion, phase 3, step 3
-Date: Tue, 20 Jan 2015 11:48:51 +0100
-Message-Id: <1421750935-4023-33-git-send-email-thierry.reding@gmail.com>
+Subject: [PATCH 33/36] drm/tegra: Remove unused ->mode_fixup() callbacks
+Date: Tue, 20 Jan 2015 11:48:52 +0100
+Message-Id: <1421750935-4023-34-git-send-email-thierry.reding@gmail.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1421750935-4023-1-git-send-email-thierry.reding@gmail.com>
 References: <1421750935-4023-1-git-send-email-thierry.reding@gmail.com>
@@ -22,310 +22,268 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Thierry Reding <treding@nvidia.com>
 
-Provide a custom ->atomic_commit() implementation which supports async
-commits. The generic atomic page-flip helper can use this to implement
-page-flipping.
+All output drivers have now been converted to use the ->atomic_check()
+callback, so the ->mode_fixup() callbacks are no longer used.
 
 Signed-off-by: Thierry Reding <treding@nvidia.com>
 ---
- drivers/gpu/drm/tegra/dc.c  | 129 ++++----------------------------------------
- drivers/gpu/drm/tegra/drm.c |  84 ++++++++++++++++++++++++++++-
- drivers/gpu/drm/tegra/drm.h |   6 +++
- 3 files changed, 100 insertions(+), 119 deletions(-)
+ drivers/gpu/drm/tegra/dsi.c  | 87 --------------------------------------------
+ drivers/gpu/drm/tegra/hdmi.c | 27 --------------
+ drivers/gpu/drm/tegra/rgb.c  | 38 -------------------
+ drivers/gpu/drm/tegra/sor.c  | 27 --------------
+ 4 files changed, 179 deletions(-)
 
-diff --git a/drivers/gpu/drm/tegra/dc.c b/drivers/gpu/drm/tegra/dc.c
-index 9a934a6077a6..52ae563cb531 100644
---- a/drivers/gpu/drm/tegra/dc.c
-+++ b/drivers/gpu/drm/tegra/dc.c
-@@ -827,99 +827,6 @@ static int tegra_dc_add_planes(struct drm_device *drm, struct tegra_dc *dc)
- 	return 0;
+diff --git a/drivers/gpu/drm/tegra/dsi.c b/drivers/gpu/drm/tegra/dsi.c
+index 55a6a95bda84..39c79a65b4f3 100644
+--- a/drivers/gpu/drm/tegra/dsi.c
++++ b/drivers/gpu/drm/tegra/dsi.c
+@@ -786,92 +786,6 @@ static void tegra_dsi_encoder_dpms(struct drm_encoder *encoder, int mode)
+ {
  }
  
--static int tegra_dc_set_base(struct tegra_dc *dc, int x, int y,
--			     struct drm_framebuffer *fb)
+-static bool tegra_dsi_encoder_mode_fixup(struct drm_encoder *encoder,
+-					 const struct drm_display_mode *mode,
+-					 struct drm_display_mode *adjusted)
 -{
--	struct tegra_bo *bo = tegra_fb_get_plane(fb, 0);
--	unsigned int h_offset = 0, v_offset = 0;
--	struct tegra_bo_tiling tiling;
--	unsigned long value, flags;
--	unsigned int format, swap;
+-	struct tegra_output *output = encoder_to_output(encoder);
+-	struct tegra_dc *dc = to_tegra_dc(encoder->crtc);
+-	unsigned int mul, div, scdiv, vrefresh, lanes;
+-	struct tegra_dsi *dsi = to_dsi(output);
+-	struct mipi_dphy_timing timing;
+-	unsigned long pclk, bclk, plld;
+-	unsigned long period;
 -	int err;
 -
--	err = tegra_fb_get_tiling(fb, &tiling);
+-	lanes = tegra_dsi_get_lanes(dsi);
+-	pclk = mode->clock * 1000;
+-
+-	err = tegra_dsi_get_muldiv(dsi->format, &mul, &div);
 -	if (err < 0)
 -		return err;
 -
--	spin_lock_irqsave(&dc->lock, flags);
+-	DRM_DEBUG_KMS("mul: %u, div: %u, lanes: %u\n", mul, div, lanes);
+-	vrefresh = drm_mode_vrefresh(mode);
+-	DRM_DEBUG_KMS("vrefresh: %u\n", vrefresh);
 -
--	tegra_dc_writel(dc, WINDOW_A_SELECT, DC_CMD_DISPLAY_WINDOW_HEADER);
+-	/* compute byte clock */
+-	bclk = (pclk * mul) / (div * lanes);
 -
--	value = fb->offsets[0] + y * fb->pitches[0] +
--		x * fb->bits_per_pixel / 8;
+-	/*
+-	 * Compute bit clock and round up to the next MHz.
+-	 */
+-	plld = DIV_ROUND_UP(bclk * 8, USEC_PER_SEC) * USEC_PER_SEC;
+-	period = DIV_ROUND_CLOSEST(NSEC_PER_SEC, plld);
 -
--	tegra_dc_writel(dc, bo->paddr + value, DC_WINBUF_START_ADDR);
--	tegra_dc_writel(dc, fb->pitches[0], DC_WIN_LINE_STRIDE);
+-	/*
+-	 * We divide the frequency by two here, but we make up for that by
+-	 * setting the shift clock divider (further below) to half of the
+-	 * correct value.
+-	 */
+-	plld /= 2;
 -
--	format = tegra_dc_format(fb->pixel_format, &swap);
--	tegra_dc_writel(dc, format, DC_WIN_COLOR_DEPTH);
--	tegra_dc_writel(dc, swap, DC_WIN_BYTE_SWAP);
+-	/*
+-	 * Derive pixel clock from bit clock using the shift clock divider.
+-	 * Note that this is only half of what we would expect, but we need
+-	 * that to make up for the fact that we divided the bit clock by a
+-	 * factor of two above.
+-	 *
+-	 * It's not clear exactly why this is necessary, but the display is
+-	 * not working properly otherwise. Perhaps the PLLs cannot generate
+-	 * frequencies sufficiently high.
+-	 */
+-	scdiv = ((8 * mul) / (div * lanes)) - 2;
 -
--	if (dc->soc->supports_block_linear) {
--		unsigned long height = tiling.value;
--
--		switch (tiling.mode) {
--		case TEGRA_BO_TILING_MODE_PITCH:
--			value = DC_WINBUF_SURFACE_KIND_PITCH;
--			break;
--
--		case TEGRA_BO_TILING_MODE_TILED:
--			value = DC_WINBUF_SURFACE_KIND_TILED;
--			break;
--
--		case TEGRA_BO_TILING_MODE_BLOCK:
--			value = DC_WINBUF_SURFACE_KIND_BLOCK_HEIGHT(height) |
--				DC_WINBUF_SURFACE_KIND_BLOCK;
--			break;
--		}
--
--		tegra_dc_writel(dc, value, DC_WINBUF_SURFACE_KIND);
--	} else {
--		switch (tiling.mode) {
--		case TEGRA_BO_TILING_MODE_PITCH:
--			value = DC_WIN_BUFFER_ADDR_MODE_LINEAR_UV |
--				DC_WIN_BUFFER_ADDR_MODE_LINEAR;
--			break;
--
--		case TEGRA_BO_TILING_MODE_TILED:
--			value = DC_WIN_BUFFER_ADDR_MODE_TILE_UV |
--				DC_WIN_BUFFER_ADDR_MODE_TILE;
--			break;
--
--		case TEGRA_BO_TILING_MODE_BLOCK:
--			DRM_ERROR("hardware doesn't support block linear mode\n");
--			spin_unlock_irqrestore(&dc->lock, flags);
--			return -EINVAL;
--		}
--
--		tegra_dc_writel(dc, value, DC_WIN_BUFFER_ADDR_MODE);
+-	err = tegra_dc_setup_clock(dc, dsi->clk_parent, plld, scdiv);
+-	if (err < 0) {
+-		dev_err(output->dev, "failed to setup DC clock: %d\n", err);
+-		return false;
 -	}
 -
--	/* make sure bottom-up buffers are properly displayed */
--	if (tegra_fb_is_bottom_up(fb)) {
--		value = tegra_dc_readl(dc, DC_WIN_WIN_OPTIONS);
--		value |= V_DIRECTION;
--		tegra_dc_writel(dc, value, DC_WIN_WIN_OPTIONS);
--
--		v_offset += fb->height - 1;
--	} else {
--		value = tegra_dc_readl(dc, DC_WIN_WIN_OPTIONS);
--		value &= ~V_DIRECTION;
--		tegra_dc_writel(dc, value, DC_WIN_WIN_OPTIONS);
+-	err = clk_set_rate(dsi->clk_parent, plld);
+-	if (err < 0) {
+-		dev_err(dsi->dev, "failed to set clock rate to %lu Hz\n",
+-			plld);
+-		return false;
 -	}
 -
--	tegra_dc_writel(dc, h_offset, DC_WINBUF_ADDR_H_OFFSET);
--	tegra_dc_writel(dc, v_offset, DC_WINBUF_ADDR_V_OFFSET);
+-	tegra_dsi_set_timeout(dsi, bclk, vrefresh);
 -
--	value = GENERAL_ACT_REQ | WIN_A_ACT_REQ;
--	tegra_dc_writel(dc, value << 8, DC_CMD_STATE_CONTROL);
--	tegra_dc_writel(dc, value, DC_CMD_STATE_CONTROL);
+-	err = mipi_dphy_timing_get_default(&timing, period);
+-	if (err < 0)
+-		return err;
 -
--	spin_unlock_irqrestore(&dc->lock, flags);
+-	err = mipi_dphy_timing_validate(&timing, period);
+-	if (err < 0) {
+-		dev_err(dsi->dev, "failed to validate D-PHY timing: %d\n", err);
+-		return err;
+-	}
 -
--	return 0;
+-	/*
+-	 * The D-PHY timing fields are expressed in byte-clock cycles, so
+-	 * multiply the period by 8.
+-	 */
+-	tegra_dsi_set_phy_timing(dsi, period * 8, &timing);
+-
+-	return true;
 -}
 -
- void tegra_dc_enable_vblank(struct tegra_dc *dc)
+ static void tegra_dsi_encoder_prepare(struct drm_encoder *encoder)
  {
- 	unsigned long value, flags;
-@@ -998,30 +905,6 @@ void tegra_dc_cancel_page_flip(struct drm_crtc *crtc, struct drm_file *file)
- 	spin_unlock_irqrestore(&drm->event_lock, flags);
+ }
+@@ -1053,7 +967,6 @@ tegra_dsi_encoder_atomic_check(struct drm_encoder *encoder,
+ 
+ static const struct drm_encoder_helper_funcs tegra_dsi_encoder_helper_funcs = {
+ 	.dpms = tegra_dsi_encoder_dpms,
+-	.mode_fixup = tegra_dsi_encoder_mode_fixup,
+ 	.prepare = tegra_dsi_encoder_prepare,
+ 	.commit = tegra_dsi_encoder_commit,
+ 	.mode_set = tegra_dsi_encoder_mode_set,
+diff --git a/drivers/gpu/drm/tegra/hdmi.c b/drivers/gpu/drm/tegra/hdmi.c
+index abb1ea0385ec..07771956cc94 100644
+--- a/drivers/gpu/drm/tegra/hdmi.c
++++ b/drivers/gpu/drm/tegra/hdmi.c
+@@ -822,32 +822,6 @@ static void tegra_hdmi_encoder_dpms(struct drm_encoder *encoder, int mode)
+ {
  }
  
--static int tegra_dc_page_flip(struct drm_crtc *crtc, struct drm_framebuffer *fb,
--			      struct drm_pending_vblank_event *event, uint32_t page_flip_flags)
+-static bool tegra_hdmi_encoder_mode_fixup(struct drm_encoder *encoder,
+-					  const struct drm_display_mode *mode,
+-					  struct drm_display_mode *adjusted)
 -{
--	unsigned int pipe = drm_crtc_index(crtc);
--	struct tegra_dc *dc = to_tegra_dc(crtc);
+-	struct tegra_output *output = encoder_to_output(encoder);
+-	struct tegra_dc *dc = to_tegra_dc(encoder->crtc);
+-	struct tegra_hdmi *hdmi = to_hdmi(output);
+-	unsigned long pclk = mode->clock * 1000;
+-	int err;
 -
--	if (dc->event)
--		return -EBUSY;
--
--	if (event) {
--		event->pipe = pipe;
--		dc->event = event;
--		drm_crtc_vblank_get(crtc);
+-	err = tegra_dc_setup_clock(dc, hdmi->clk_parent, pclk, 0);
+-	if (err < 0) {
+-		dev_err(output->dev, "failed to setup DC clock: %d\n", err);
+-		return false;
 -	}
 -
--	if (crtc->primary->state)
--		drm_atomic_set_fb_for_plane(crtc->primary->state, fb);
+-	err = clk_set_rate(hdmi->clk_parent, pclk);
+-	if (err < 0) {
+-		dev_err(output->dev, "failed to set clock rate to %lu Hz\n",
+-			pclk);
+-		return false;
+-	}
 -
--	tegra_dc_set_base(dc, 0, 0, fb);
--	crtc->primary->fb = fb;
--
--	return 0;
+-	return true;
 -}
 -
- static void tegra_dc_destroy(struct drm_crtc *crtc)
+ static void tegra_hdmi_encoder_prepare(struct drm_encoder *encoder)
  {
- 	drm_crtc_cleanup(crtc);
-@@ -1063,7 +946,7 @@ static void tegra_crtc_atomic_destroy_state(struct drm_crtc *crtc,
+ }
+@@ -1104,7 +1078,6 @@ tegra_hdmi_encoder_atomic_check(struct drm_encoder *encoder,
+ 
+ static const struct drm_encoder_helper_funcs tegra_hdmi_encoder_helper_funcs = {
+ 	.dpms = tegra_hdmi_encoder_dpms,
+-	.mode_fixup = tegra_hdmi_encoder_mode_fixup,
+ 	.prepare = tegra_hdmi_encoder_prepare,
+ 	.commit = tegra_hdmi_encoder_commit,
+ 	.mode_set = tegra_hdmi_encoder_mode_set,
+diff --git a/drivers/gpu/drm/tegra/rgb.c b/drivers/gpu/drm/tegra/rgb.c
+index be1b38936dbe..0c8b458b2364 100644
+--- a/drivers/gpu/drm/tegra/rgb.c
++++ b/drivers/gpu/drm/tegra/rgb.c
+@@ -129,43 +129,6 @@ static void tegra_rgb_encoder_dpms(struct drm_encoder *encoder, int mode)
+ {
  }
  
- static const struct drm_crtc_funcs tegra_crtc_funcs = {
--	.page_flip = tegra_dc_page_flip,
-+	.page_flip = drm_atomic_helper_page_flip,
- 	.set_config = drm_atomic_helper_set_config,
- 	.destroy = tegra_dc_destroy,
- 	.reset = tegra_crtc_reset,
-@@ -1338,6 +1221,16 @@ static int tegra_crtc_atomic_check(struct drm_crtc *crtc,
- 
- static void tegra_crtc_atomic_begin(struct drm_crtc *crtc)
+-static bool tegra_rgb_encoder_mode_fixup(struct drm_encoder *encoder,
+-					 const struct drm_display_mode *mode,
+-					 struct drm_display_mode *adjusted)
+-{
+-	struct tegra_output *output = encoder_to_output(encoder);
+-	unsigned long pclk = mode->clock * 1000;
+-	struct tegra_rgb *rgb = to_rgb(output);
+-	unsigned int div;
+-	int err;
+-
+-	/*
+-	 * We may not want to change the frequency of the parent clock, since
+-	 * it may be a parent for other peripherals. This is due to the fact
+-	 * that on Tegra20 there's only a single clock dedicated to display
+-	 * (pll_d_out0), whereas later generations have a second one that can
+-	 * be used to independently drive a second output (pll_d2_out0).
+-	 *
+-	 * As a way to support multiple outputs on Tegra20 as well, pll_p is
+-	 * typically used as the parent clock for the display controllers.
+-	 * But this comes at a cost: pll_p is the parent of several other
+-	 * peripherals, so its frequency shouldn't change out of the blue.
+-	 *
+-	 * The best we can do at this point is to use the shift clock divider
+-	 * and hope that the desired frequency can be matched (or at least
+-	 * matched sufficiently close that the panel will still work).
+-	 */
+-	div = ((clk_get_rate(rgb->clk) * 2) / pclk) - 2;
+-
+-	err = tegra_dc_setup_clock(rgb->dc, rgb->clk_parent, pclk, div);
+-	if (err < 0) {
+-		dev_err(output->dev, "failed to setup DC clock: %d\n", err);
+-		return false;
+-	}
+-
+-	return true;
+-}
+-
+ static void tegra_rgb_encoder_prepare(struct drm_encoder *encoder)
  {
-+	struct tegra_dc *dc = to_tegra_dc(crtc);
-+
-+	if (crtc->state->event) {
-+		crtc->state->event->pipe = drm_crtc_index(crtc);
-+
-+		WARN_ON(drm_crtc_vblank_get(crtc) != 0);
-+
-+		dc->event = crtc->state->event;
-+		crtc->state->event = NULL;
-+	}
+ }
+@@ -278,7 +241,6 @@ tegra_rgb_encoder_atomic_check(struct drm_encoder *encoder,
+ 
+ static const struct drm_encoder_helper_funcs tegra_rgb_encoder_helper_funcs = {
+ 	.dpms = tegra_rgb_encoder_dpms,
+-	.mode_fixup = tegra_rgb_encoder_mode_fixup,
+ 	.prepare = tegra_rgb_encoder_prepare,
+ 	.commit = tegra_rgb_encoder_commit,
+ 	.mode_set = tegra_rgb_encoder_mode_set,
+diff --git a/drivers/gpu/drm/tegra/sor.c b/drivers/gpu/drm/tegra/sor.c
+index 7463ea02a083..e813df71e30c 100644
+--- a/drivers/gpu/drm/tegra/sor.c
++++ b/drivers/gpu/drm/tegra/sor.c
+@@ -781,32 +781,6 @@ static void tegra_sor_encoder_dpms(struct drm_encoder *encoder, int mode)
+ {
  }
  
- static void tegra_crtc_atomic_flush(struct drm_crtc *crtc)
-diff --git a/drivers/gpu/drm/tegra/drm.c b/drivers/gpu/drm/tegra/drm.c
-index 0dd81d050ccb..5b81b44af9e4 100644
---- a/drivers/gpu/drm/tegra/drm.c
-+++ b/drivers/gpu/drm/tegra/drm.c
-@@ -10,6 +10,7 @@
- #include <linux/host1x.h>
- #include <linux/iommu.h>
+-static bool tegra_sor_encoder_mode_fixup(struct drm_encoder *encoder,
+-					 const struct drm_display_mode *mode,
+-					 struct drm_display_mode *adjusted)
+-{
+-	struct tegra_output *output = encoder_to_output(encoder);
+-	struct tegra_dc *dc = to_tegra_dc(encoder->crtc);
+-	unsigned long pclk = mode->clock * 1000;
+-	struct tegra_sor *sor = to_sor(output);
+-	int err;
+-
+-	err = tegra_dc_setup_clock(dc, sor->clk_parent, pclk, 0);
+-	if (err < 0) {
+-		dev_err(output->dev, "failed to setup DC clock: %d\n", err);
+-		return false;
+-	}
+-
+-	err = clk_set_rate(sor->clk_parent, pclk);
+-	if (err < 0) {
+-		dev_err(output->dev, "failed to set clock rate to %lu Hz\n",
+-			pclk);
+-		return false;
+-	}
+-
+-	return true;
+-}
+-
+ static void tegra_sor_encoder_prepare(struct drm_encoder *encoder)
+ {
+ }
+@@ -1343,7 +1317,6 @@ tegra_sor_encoder_atomic_check(struct drm_encoder *encoder,
  
-+#include <drm/drm_atomic.h>
- #include <drm/drm_atomic_helper.h>
- 
- #include "drm.h"
-@@ -26,13 +27,90 @@ struct tegra_drm_file {
- 	struct list_head contexts;
- };
- 
-+static void tegra_atomic_schedule(struct tegra_drm *tegra,
-+				  struct drm_atomic_state *state)
-+{
-+	tegra->commit.state = state;
-+	schedule_work(&tegra->commit.work);
-+}
-+
-+static void tegra_atomic_complete(struct tegra_drm *tegra,
-+				  struct drm_atomic_state *state)
-+{
-+	struct drm_device *drm = tegra->drm;
-+
-+	/*
-+	 * Everything below can be run asynchronously without the need to grab
-+	 * any modeset locks at all under one condition: It must be guaranteed
-+	 * that the asynchronous work has either been cancelled (if the driver
-+	 * supports it, which at least requires that the framebuffers get
-+	 * cleaned up with drm_atomic_helper_cleanup_planes()) or completed
-+	 * before the new state gets committed on the software side with
-+	 * drm_atomic_helper_swap_state().
-+	 *
-+	 * This scheme allows new atomic state updates to be prepared and
-+	 * checked in parallel to the asynchronous completion of the previous
-+	 * update. Which is important since compositors need to figure out the
-+	 * composition of the next frame right after having submitted the
-+	 * current layout.
-+	 */
-+
-+	drm_atomic_helper_commit_pre_planes(drm, state);
-+	drm_atomic_helper_commit_planes(drm, state);
-+	drm_atomic_helper_commit_post_planes(drm, state);
-+
-+	drm_atomic_helper_wait_for_vblanks(drm, state);
-+
-+	drm_atomic_helper_cleanup_planes(drm, state);
-+	drm_atomic_state_free(state);
-+}
-+
-+static void tegra_atomic_work(struct work_struct *work)
-+{
-+	struct tegra_drm *tegra = container_of(work, struct tegra_drm,
-+					       commit.work);
-+
-+	tegra_atomic_complete(tegra, tegra->commit.state);
-+}
-+
-+static int tegra_atomic_commit(struct drm_device *drm,
-+			       struct drm_atomic_state *state, bool async)
-+{
-+	struct tegra_drm *tegra = drm->dev_private;
-+	int err;
-+
-+	err = drm_atomic_helper_prepare_planes(drm, state);
-+	if (err)
-+		return err;
-+
-+	/* serialize outstanding asynchronous commits */
-+	mutex_lock(&tegra->commit.lock);
-+	flush_work(&tegra->commit.work);
-+
-+	/*
-+	 * This is the point of no return - everything below never fails except
-+	 * when the hw goes bonghits. Which means we can commit the new state on
-+	 * the software side now.
-+	 */
-+
-+	drm_atomic_helper_swap_state(drm, state);
-+
-+	if (async)
-+		tegra_atomic_schedule(tegra, state);
-+	else
-+		tegra_atomic_complete(tegra, state);
-+
-+	mutex_unlock(&tegra->commit.lock);
-+	return 0;
-+}
-+
- static const struct drm_mode_config_funcs tegra_drm_mode_funcs = {
- 	.fb_create = tegra_fb_create,
- #ifdef CONFIG_DRM_TEGRA_FBDEV
- 	.output_poll_changed = tegra_fb_output_poll_changed,
- #endif
- 	.atomic_check = drm_atomic_helper_check,
--	.atomic_commit = drm_atomic_helper_commit,
-+	.atomic_commit = tegra_atomic_commit,
- };
- 
- static int tegra_drm_load(struct drm_device *drm, unsigned long flags)
-@@ -58,6 +136,10 @@ static int tegra_drm_load(struct drm_device *drm, unsigned long flags)
- 
- 	mutex_init(&tegra->clients_lock);
- 	INIT_LIST_HEAD(&tegra->clients);
-+
-+	mutex_init(&tegra->commit.lock);
-+	INIT_WORK(&tegra->commit.work, tegra_atomic_work);
-+
- 	drm->dev_private = tegra;
- 	tegra->drm = drm;
- 
-diff --git a/drivers/gpu/drm/tegra/drm.h b/drivers/gpu/drm/tegra/drm.h
-index 3db719de312f..b1c7027b26e7 100644
---- a/drivers/gpu/drm/tegra/drm.h
-+++ b/drivers/gpu/drm/tegra/drm.h
-@@ -50,6 +50,12 @@ struct tegra_drm {
- #endif
- 
- 	unsigned int pitch_align;
-+
-+	struct {
-+		struct drm_atomic_state *state;
-+		struct work_struct work;
-+		struct mutex lock;
-+	} commit;
- };
- 
- struct tegra_drm_client;
+ static const struct drm_encoder_helper_funcs tegra_sor_encoder_helper_funcs = {
+ 	.dpms = tegra_sor_encoder_dpms,
+-	.mode_fixup = tegra_sor_encoder_mode_fixup,
+ 	.prepare = tegra_sor_encoder_prepare,
+ 	.commit = tegra_sor_encoder_commit,
+ 	.mode_set = tegra_sor_encoder_mode_set,
 -- 
 2.1.3
 
