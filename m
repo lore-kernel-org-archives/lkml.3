@@ -1,77 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728AbbATSvX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 13:51:23 -0500
-Received: from zill.ext.symas.net ([69.43.206.106]:46866 "EHLO
-	zill.ext.symas.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751596AbbATSvV (ORCPT
-	<rfc822;Linux-Kernel@Vger.Kernel.ORG>);
-	Tue, 20 Jan 2015 13:51:21 -0500
-Message-ID: <54BEA3A3.9000407@symas.com>
-Date: Tue, 20 Jan 2015 18:51:15 +0000
-From: Howard Chu <hyc@symas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:37.0) Gecko/20100101 Firefox/37.0 SeaMonkey/2.34a1
+	id S1752312AbbATS4R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 13:56:17 -0500
+Received: from mail-ob0-f180.google.com ([209.85.214.180]:57332 "EHLO
+	mail-ob0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751752AbbATS4P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 13:56:15 -0500
 MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Linux Kernel Mailing List <Linux-Kernel@vger.kernel.org>,
-        linux-serial@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>
-Subject: Re: [PATCH] n_tty: Remove LINEMODE support
-References: <1421616632-4077-1-git-send-email-peter@hurleysoftware.com> <54BC3771.7030204@symas.com> <54BC5EC7.1090202@hurleysoftware.com> <54BCFC94.1040605@symas.com> <54BD1B53.9030901@hurleysoftware.com> <54BD328F.9090208@symas.com> <54BD567C.8070200@hurleysoftware.com> <54BD5E54.3050909@symas.com> <54BE9840.8080808@hurleysoftware.com> <54BEA0E0.9080807@symas.com>
-In-Reply-To: <54BEA0E0.9080807@symas.com>
-Content-Type: multipart/mixed;
- boundary="------------020302060800040504050302"
+In-Reply-To: <CACZ9PQXw3hER11qG1ni5Qb+AcNK2hqcP6NgQDOOufjkuMs-u8g@mail.gmail.com>
+References: <1420986751-30364-1-git-send-email-r.peniaev@gmail.com>
+	<1420986751-30364-2-git-send-email-r.peniaev@gmail.com>
+	<20150112183955.GO13360@arm.com>
+	<CACZ9PQXW9G4Vw-dcPwkdVE=uoYmDYEQnJWDnnpup1LxC3s5QPg@mail.gmail.com>
+	<CAGXu5jLO-YSaF8P9o3jcXP4VZCPYVshz73krnchYuv9pPGY6Sw@mail.gmail.com>
+	<CACZ9PQVo0SF4Z-rdNk4e=yY17Xt9n5hAqm4ZRNLEw3jGYYcvtA@mail.gmail.com>
+	<CAGXu5j+O6znN=7-gc3PqwqFA5MFRPLGBUzabOmQjWn_9WTjvpg@mail.gmail.com>
+	<CACZ9PQUEprgKrpHazDULA5mf-OaoX=MAjEeWdspZTXT_+iUKWw@mail.gmail.com>
+	<20150116155923.GK12302@n2100.arm.linux.org.uk>
+	<CACZ9PQUVFtCQg6XjDbokEPy_R2fZcHiq6+EEUZnx4FVfpfZxJg@mail.gmail.com>
+	<20150116161752.GL12302@n2100.arm.linux.org.uk>
+	<CAGXu5j+XHFNyhaBndQr1Q2uthsFP9ZQGbaw5hofDmXyKXZ-H5g@mail.gmail.com>
+	<CAGXu5j+9p1T29NoHnCNywd0T=H2mzWhCou5nSRfXZktEOC7_=A@mail.gmail.com>
+	<CACZ9PQXw3hER11qG1ni5Qb+AcNK2hqcP6NgQDOOufjkuMs-u8g@mail.gmail.com>
+Date: Tue, 20 Jan 2015 10:56:14 -0800
+X-Google-Sender-Auth: wPY4OjM55XD-6cFLJKR1ItFnxec
+Message-ID: <CAGXu5jLK10xmkHBjNUy5+WBf8KeZvF1jH1t2h7+gyOz9rBHvHg@mail.gmail.com>
+Subject: Re: [PATCH 1/2] ARM: entry-common: fix forgotten set of thread_info->syscall
+From: Kees Cook <keescook@chromium.org>
+To: Roman Peniaev <r.peniaev@gmail.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Will Deacon <will.deacon@arm.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Catalin Marinas <Catalin.Marinas@arm.com>,
+        Sekhar Nori <nsekhar@ti.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "stable@vger.kernel.org" <stable@vger.kernel.org>,
+        Christoffer Dall <christoffer.dall@linaro.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------020302060800040504050302
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-
-Howard Chu wrote:
-> Peter Hurley wrote:
->> On 01/19/2015 02:43 PM, Howard Chu wrote:
->>> The fact that EXTPROC can be manually unset is by design. Quoting
->>> from the original again:
+On Sun, Jan 18, 2015 at 9:58 PM, Roman Peniaev <r.peniaev@gmail.com> wrote:
+> On Sat, Jan 17, 2015 at 8:54 AM, Kees Cook <keescook@chromium.org> wrote:
+>> On Fri, Jan 16, 2015 at 11:57 AM, Kees Cook <keescook@chromium.org> wrote:
+>>> On Fri, Jan 16, 2015 at 8:17 AM, Russell King - ARM Linux
+>>> <linux@arm.linux.org.uk> wrote:
+>>>> On Sat, Jan 17, 2015 at 01:08:11AM +0900, Roman Peniaev wrote:
+>>>>> On Sat, Jan 17, 2015 at 12:59 AM, Russell King - ARM Linux
+>>>>> <linux@arm.linux.org.uk> wrote:
+>>>>> > On Sat, Jan 17, 2015 at 12:57:02AM +0900, Roman Peniaev wrote:
+>>>>> >> On Fri, Jan 16, 2015 at 7:54 AM, Kees Cook <keescook@chromium.org> wrote:
+>>>>> >> > One interesting thing I noticed (which is unchanged by this series),
+>>>>> >> > but pulling ARM_r7 during the seccomp ptrace event shows __NR_poll,
+>>>>> >> > not __NR_restart_syscall, even though it was a __NR_restart_syscall
+>>>>> >> > trap from seccomp. Is there a better place to see the actual syscall?
+>>>>> >>
+>>>>> >> As I understand we do not push new r7 to the stack, and ptrace uses the
+>>>>> >> old value.
+>>>>> >
+>>>>> > And why should we push r7 to the stack?  ptrace should be using the
+>>>>> > recorded system call number, rather than poking about on the stack
+>>>>> > itself.
+>>>>>
+>>>>> Probably we should not, but the behaviour comparing arm to x86 is different.
+>>>>
+>>>> We definitely should not, because changing the stacked value changes the
+>>>> value in r7 after the syscall has returned.  We have guaranteed that the
+>>>> value will be preserved across syscalls for years, so we really should
+>>>> not be changing that.
 >>>
->>>> stty.diff:
->>>>      This file contains the changes needed for the stty(1) program
->>>>      to report on the current status of the TS_EXTPROC bit.  It also
->>>>      allows the user to turn on/off the TS_EXTPROC bit.  This is useful
->>>>      because it allows the user to say "stty -extproc", and the
->>>>      LINEMODE option will be automatically disabled, and saying "stty
->>>>      extproc" will re-enable the LINEMODE option.
+>>> Yeah, we can't mess with the registers. I was just asking for
+>>> clarification on how this is visible to userspace.
+>>>
+>>>>
+>>>>> Also there is no any way from userspace to figure out what syscall was
+>>>>> restarted, if you do not trace each syscall enter and exit from the
+>>>>> very beginning.
+>>>>
+>>>> Thinking about ptrace, that's been true for years.
+>>>>
+>>>> It really depends whether you consider the restart syscall a userspace
+>>>> thing or a kernelspace thing.  When you consider that the vast majority
+>>>> of syscall restarts are done internally in the kernel, and we just
+>>>> re-issue the syscall, it immediately brings up the question "why is
+>>>> the restart block method different?" and "should the restart block
+>>>> method be visible to userspace?"
+>>>>
+>>>> IMHO, it is prudent not to expose kernel internals to userspace unless
+>>>> there is a real reason to, otherwise they become part of the userspace
+>>>> API.
+>>>
+>>> I couldn't agree more, but restart_syscall is already visible to
+>>> userspace: it can be called directly, for example. And it's visible to
+>>> tracers.
+>>>
+>>> Unfortunately, the difference here is the visibility during trace
+>>> trap. On x86, it's exposed but on ARM, there's no way (that I can
+>>> find) to query the "true" syscall, even though the true syscall is
+>>> what triggers the tracer. The syscall number isn't provided by any
+>>> element of the ptrace event system, nor through siginfo, and must be
+>>> examined on a per-arch basis from registers.
+>>>
+>>> Seccomp does, however, provide a mechanism to pass arbitrary event
+>>> data on a TRACE event, so poll vs restart_syscall can be distinguished
+>>> that way.
+>>>
+>>> It seems even strace doesn't know how to find this information. For example:
+>>>
+>>> x86:
+>>> poll([{fd=3, events=POLLIN}], 1, 4294967295
+>>> ) = ? ERESTART_RESTARTBLOCK (Interrupted by signal)
+>>> --- SIGSTOP {si_signo=SIGSTOP, si_code=SI_USER, si_pid=994, si_uid=1000} ---
+>>> --- stopped by SIGSTOP ---
+>>> --- SIGCONT {si_signo=SIGCONT, si_code=SI_USER, si_pid=994, si_uid=1000} ---
+>>> restart_syscall(<... resuming interrupted call ...>
+>>>
+>>> ARM:
+>>> poll([{fd=3, events=POLLIN}], 1, -1
+>>> )    = ? ERESTART_RESTARTBLOCK (Interrupted by signal)
+>>> --- SIGSTOP {si_signo=SIGSTOP, si_code=SI_USER, si_pid=20563, si_uid=0} ---
+>>> --- stopped by SIGSTOP ---
+>>> --- SIGCONT {si_signo=SIGCONT, si_code=SI_USER, si_pid=20563, si_uid=0} ---
+>>> poll([{fd=3, events=POLLIN}], 1, -1
+>>>
+>>> Would it make sense to add REGSET_SYSTEM_CALL to ARM? (Though this
+>>> begs the question, "Is restart_syscall visible during a trace on
+>>> arm64?", which I'll have to go check...)
 >>
->> This option is not supported by gnu coreutils.
+>> So, some further testing:
+>> - native arm64 presents "poll" again even to seccomp when
+>> restart_syscall is triggered (both via regs[8] and
+>> NT_ARM_SYSTEM_CALL).
+>> - compat mode on arm64 _does_ show syscall_restart (via ARM_r7).
+>>
+>> Which of these behaviors is intentional? :)
+>>
 >
-> OK. It's in *BSD and Minix. Looks like I never wrote a patch for
-> coreutils for this last time around.
+>
+> Just want to summarize the difference.
+> (please, correct me if i am mistaken)
+>
+> Userspace has two ways to see actual syscall number:
+>    1. /proc/pid/syscall file
+>    2. ptrace
+>
+> So the following is the table showing what syscall number
+> userspace sees using proc file or doing ptrace in case of restarted poll:
+>
+>                          x86           ARM              ARM64     ARM64 compat
+> cat /proc/pid/syscall:   NR_restart    Not supported    ?????     ?????
+>                ptrace:   NR_restart    NR_poll          NR_poll   NR_restart
+>
+>
+> Not supported - should be fixed by these two patches, the behaviour should
+>                 be similar to x86, i.e. userspace will see NR_restart
+>
+>          ???? - I do not have ARM64 for testing.
+>                 Kees, could you please cat /proc/pid/syscall for those two?
+>                 I took a quick look into arm64 syscall.h/entry.S and seems it
+>                 is supported fine and the result should be equal to ptrace.
 
-Wrote it, just never submitted it.
+Yup, checking this directly agrees, /proc/$pid/syscall for me:
+
+native arm64 shows NR_poll
+arm64 compat shows NR_restart
+
+> So, yes, compatibility is important, but /proc/pid/syscall never works on ARM
+> and ptrace output is different even among ARM architectures.
+
+-Kees
 
 -- 
-   -- Howard Chu
-   CTO, Symas Corp.           http://www.symas.com
-   Director, Highland Sun     http://highlandsun.com/hyc/
-   Chief Architect, OpenLDAP  http://www.openldap.org/project/
-
---------------020302060800040504050302
-Content-Type: text/plain; charset=UTF-8;
- name="dif.txt"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="dif.txt"
-
-LS0tIHN0dHkuYwkyMDA5LTA0LTI0IDEzOjQxOjE5LjAwMDAwMDAwMCArMDEwMAorKysgLi4v
-Li4vLi4vY29yZXV0aWxzLTcuNC9zcmMvc3R0eS5jCTIwMTAtMDYtMTcgMDY6NDg6NDIuMDAw
-MDAwMDAwICswMTAwCkBAIC0zMzAsNiArMzMwLDkgQEAKICAgeyJlY2hva2UiLCBsb2NhbCwg
-U0FORV9TRVQgfCBSRVYsIEVDSE9LRSwgMH0sCiAgIHsiY3J0a2lsbCIsIGxvY2FsLCBSRVYg
-fCBPTUlULCBFQ0hPS0UsIDB9LAogI2VuZGlmCisjaWZkZWYgRVhUUFJPQworICB7ImV4dHBy
-b2MiLCBsb2NhbCwgU0FORV9VTlNFVCB8IFJFViwgRVhUUFJPQywgMH0sCisjZW5kaWYKIAog
-ICB7ImV2ZW5wIiwgY29tYmluYXRpb24sIFJFViB8IE9NSVQsIDAsIDB9LAogICB7InBhcml0
-eSIsIGNvbWJpbmF0aW9uLCBSRVYgfCBPTUlULCAwLCAwfSwK
---------------020302060800040504050302--
+Kees Cook
+Chrome OS Security
