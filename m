@@ -1,80 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726AbbATPl0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 10:41:26 -0500
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:36968 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751730AbbATPlW (ORCPT
+	id S1752954AbbATPnU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 10:43:20 -0500
+Received: from mail-ie0-f182.google.com ([209.85.223.182]:59470 "EHLO
+	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752121AbbATPnS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 10:41:22 -0500
-Date: Tue, 20 Jan 2015 15:41:15 +0000
+	Tue, 20 Jan 2015 10:43:18 -0500
+Date: Tue, 20 Jan 2015 15:43:11 +0000
 From: Lee Jones <lee.jones@linaro.org>
-To: Jacek Anaszewski <j.anaszewski@samsung.com>
-Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        kyungmin.park@samsung.com, b.zolnierkie@samsung.com, pavel@ucw.cz,
-        cooloney@gmail.com, rpurdie@rpsys.net, sakari.ailus@iki.fi,
-        s.nawrocki@samsung.com, Chanwoo Choi <cw00.choi@samsung.com>
-Subject: Re: [PATCH/RFC v10 05/19] mfd: max77693: Modify flash cell name
- identifiers
-Message-ID: <20150120154115.GD13701@x1>
-References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
- <1420816989-1808-6-git-send-email-j.anaszewski@samsung.com>
- <20150120111346.GD13701@x1>
- <54BE50AD.7080801@samsung.com>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org, Kukjin Kim <kgene@kernel.org>,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH v5 4/5] mfd/regulator: dt-bindings: max77686: Document
+ gpio properties
+Message-ID: <20150120154311.GE13701@x1>
+References: <1420458525-22576-1-git-send-email-k.kozlowski@samsung.com>
+ <1420458525-22576-5-git-send-email-k.kozlowski@samsung.com>
+ <20150120134111.GI13701@x1>
+ <1421763703.8855.10.camel@AMDC1943>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <54BE50AD.7080801@samsung.com>
+In-Reply-To: <1421763703.8855.10.camel@AMDC1943>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Jan 2015, Jacek Anaszewski wrote:
+On Tue, 20 Jan 2015, Krzysztof Kozlowski wrote:
 
-> On 01/20/2015 12:13 PM, Lee Jones wrote:
-> >On Fri, 09 Jan 2015, Jacek Anaszewski wrote:
-> >
-> >>Change flash cell identifiers from max77693-flash to max77693-led
-> >>to avoid confusion with NOR/NAND Flash.
-> >
-> >This is okay by me, but aren't these ABI yet?
+> On wto, 2015-01-20 at 13:41 +0000, Lee Jones wrote:
+> > On Mon, 05 Jan 2015, Krzysztof Kozlowski wrote:
+> > 
+> > > Document usage of maxim,ena-gpios properties which turn on external/GPIO
+> > > control over regulator.
+> > > 
+> > > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> > > ---
+> > >  Documentation/devicetree/bindings/mfd/max77686.txt | 14 ++++++++++++++
+> > >  1 file changed, 14 insertions(+)
+> > > 
+> > > diff --git a/Documentation/devicetree/bindings/mfd/max77686.txt b/Documentation/devicetree/bindings/mfd/max77686.txt
+> > > index 75fdfaf41831..e39f0bc1f55e 100644
+> > > --- a/Documentation/devicetree/bindings/mfd/max77686.txt
+> > > +++ b/Documentation/devicetree/bindings/mfd/max77686.txt
+> > > @@ -39,6 +39,12 @@ to get matched with their hardware counterparts as follow:
+> > >  	-BUCKn	:	1-4.
+> > >    Use standard regulator bindings for it ('regulator-off-in-suspend').
+> > >  
+> > > +  LDO20, LDO21, LDO22, BUCK8 and BUCK9 can be configured to GPIO enable
+> > > +  control. To turn this feature on this property must be added to the regulator
+> > > +  sub-node:
+> > > +	- maxim,ena-gpios :	one GPIO specifier enable control (the gpio
+> > > +				flags are actually ignored and always
+> > > +				ACTIVE_HIGH is used)
+> > 
+> > How does this differ to the 'enable-gpio' property which has already
+> > been defined?
 > 
-> No, the led driver using it hasn't been merged yet.
-
-Very well.
-
-For my on reference:
-
-Acked-by: Lee Jones <lee.jones@linaro.org>
-
-> >>Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
-> >>Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> >>Cc: Chanwoo Choi <cw00.choi@samsung.com>
-> >>Cc: Lee Jones <lee.jones@linaro.org>
-> >>---
-> >>  drivers/mfd/max77693.c |    4 ++--
-> >>  1 file changed, 2 insertions(+), 2 deletions(-)
-> >>
-> >>diff --git a/drivers/mfd/max77693.c b/drivers/mfd/max77693.c
-> >>index a159593..cb14afa 100644
-> >>--- a/drivers/mfd/max77693.c
-> >>+++ b/drivers/mfd/max77693.c
-> >>@@ -53,8 +53,8 @@ static const struct mfd_cell max77693_devs[] = {
-> >>  		.of_compatible = "maxim,max77693-haptic",
-> >>  	},
-> >>  	{
-> >>-		.name = "max77693-flash",
-> >>-		.of_compatible = "maxim,max77693-flash",
-> >>+		.name = "max77693-led",
-> >>+		.of_compatible = "maxim,max77693-led",
-> >>  	},
-> >>  };
-> >>
-> >
+> Strictly speaking - no difference, just a GPIO specifier.
 > 
+> However the 'enable-gpio' property exists only for gpio-regulator. The
+> regulator core does not support generic enable-gpio property and each
+> driver implements it on its own.
+> 
+> Anyway Mark Brown already applied this patch to his regulator tree.
+
+Well if he has no issue with it, then I guess I don't.
+
+> > >  Example:
+> > >  
+> > > @@ -65,4 +71,12 @@ Example:
+> > >  				regulator-always-on;
+> > >  				regulator-boot-on;
+> > >  			};
+> > > +
+> > > +			buck9_reg {
+> > > +				regulator-compatible = "BUCK9";
+> > > +				regulator-name = "CAM_ISP_CORE_1.2V";
+> > > +				regulator-min-microvolt = <1000000>;
+> > > +				regulator-max-microvolt = <1200000>;
+> > > +				maxim,ena-gpios = <&gpm0 3 GPIO_ACTIVE_HIGH>;
+> > > +			};
+> > >  	}
+> > 
 > 
 
 -- 
