@@ -1,85 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752694AbbATGnL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 01:43:11 -0500
-Received: from LGEMRELSE7Q.lge.com ([156.147.1.151]:36575 "EHLO
-	lgemrelse7q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750822AbbATGnK (ORCPT
+	id S1752075AbbATGzs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 01:55:48 -0500
+Received: from mail-qa0-f50.google.com ([209.85.216.50]:53515 "EHLO
+	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750822AbbATGzq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 01:43:10 -0500
-X-Original-SENDERIP: 10.177.220.203
-X-Original-MAILFROM: namhyung@kernel.org
-From: Namhyung Kim <namhyung@kernel.org>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>
-Cc: Ingo Molnar <mingo@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Jiri Olsa <jolsa@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] perf ui/tui: Show fatal error message only if exists
-Date: Tue, 20 Jan 2015 15:40:50 +0900
-Message-Id: <1421736050-5283-1-git-send-email-namhyung@kernel.org>
-X-Mailer: git-send-email 2.2.2
+	Tue, 20 Jan 2015 01:55:46 -0500
+MIME-Version: 1.0
+In-Reply-To: <4603622.ltPA9iTIiK@phil>
+References: <1421690889-11901-1-git-send-email-romain.perier@gmail.com>
+	<1421690889-11901-4-git-send-email-romain.perier@gmail.com>
+	<4603622.ltPA9iTIiK@phil>
+Date: Tue, 20 Jan 2015 07:55:45 +0100
+Message-ID: <CABgxDoLY3hkj5=QP1s8h4fotx7vSfOiP6xZd9L=t8ZffteO8QQ@mail.gmail.com>
+Subject: Re: [PATCH v1 3/4] net: stmmac: dwmac-rk: Use standard devicetree
+ property for phy regulator
+From: Romain Perier <romain.perier@gmail.com>
+To: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
+Cc: peppe.cavallaro@st.com, netdev <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        devicetree <devicetree@vger.kernel.org>, roger.chen@rock-chips.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When perf exits with some error it shows the error message with
-ui__error() or ui__warning() and then calls ui__exit() during
-exit_browser().
+Hi,
 
-On TUI, it then shows a window titled "Fatal Error" to inform user a
-last message which might be related with this condition.  However it
-sometimes contains no message and just annoyes users.
+Ok I will do these changes. However, the property "phy_regulator" was
+not documented in
+Documentation/devicetree/bindings/net/rockchip-dwmac.txt ... I can
+document it anyway, it has probably been forgotten.
 
-The usual case for this is running perf top as normal user.  (And
-/proc/sys/kernel/perf_event_paranoid being 1).
+Thanks !
 
-Signed-off-by: Namhyung Kim <namhyung@kernel.org>
----
- tools/perf/ui/tui/helpline.c | 3 +++
- tools/perf/ui/tui/setup.c    | 3 ++-
- 2 files changed, 5 insertions(+), 1 deletion(-)
-
-diff --git a/tools/perf/ui/tui/helpline.c b/tools/perf/ui/tui/helpline.c
-index 1c8b9afd5d6e..88f5143a5981 100644
---- a/tools/perf/ui/tui/helpline.c
-+++ b/tools/perf/ui/tui/helpline.c
-@@ -9,6 +9,7 @@
- #include "../libslang.h"
- 
- char ui_helpline__last_msg[1024];
-+bool tui_helpline__set;
- 
- static void tui_helpline__pop(void)
- {
-@@ -35,6 +36,8 @@ static int tui_helpline__show(const char *format, va_list ap)
- 			sizeof(ui_helpline__last_msg) - backlog, format, ap);
- 	backlog += ret;
- 
-+	tui_helpline__set = true;
-+
- 	if (ui_helpline__last_msg[backlog - 1] == '\n') {
- 		ui_helpline__puts(ui_helpline__last_msg);
- 		SLsmg_refresh();
-diff --git a/tools/perf/ui/tui/setup.c b/tools/perf/ui/tui/setup.c
-index 3c38f25b1695..b77e1d771363 100644
---- a/tools/perf/ui/tui/setup.c
-+++ b/tools/perf/ui/tui/setup.c
-@@ -17,6 +17,7 @@
- static volatile int ui__need_resize;
- 
- extern struct perf_error_ops perf_tui_eops;
-+extern bool tui_helpline__set;
- 
- extern void hist_browser__init_hpp(void);
- 
-@@ -159,7 +160,7 @@ int ui__init(void)
- 
- void ui__exit(bool wait_for_ok)
- {
--	if (wait_for_ok)
-+	if (wait_for_ok && tui_helpline__set)
- 		ui__question_window("Fatal Error",
- 				    ui_helpline__last_msg,
- 				    "Press any key...", 0);
--- 
-2.2.2
-
+2015-01-19 21:12 GMT+01:00 Heiko Stübner <heiko@sntech.de>:
+> Am Montag, 19. Januar 2015, 18:08:08 schrieb Romain Perier:
+>> Currently, dwmac-rk uses a custom propety "phy_regulator" to get the name of
+>> the right regulator to use to power on or power off the phy. This commit
+>> converts the driver to use phy-supply devicetree property and the
+>> corresponding API, it cleans the code a bit and make it simpler to
+>> maintain.
+>>
+>> Signed-off-by: Romain Perier <romain.perier@gmail.com>
+>
+> I don't see updated binding documentation in here.
+>
+> Secondly I think patch4 which changes the property in the evb-rk808 could be
+> in here. The change is simple enough and would keep it bisectable without
+> needing transistional patches.
+>
+> And there is the one warning down below.
+>
+>
+>> ---
+>>  drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c | 61
+>> ++++++++------------------ 1 file changed, 19 insertions(+), 42
+>> deletions(-)
+>>
+>> diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c
+>> b/drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c index 06e1637..8a8091c
+>> 100644
+>> --- a/drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c
+>> +++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c
+>> @@ -32,7 +32,7 @@
+>>  struct rk_priv_data {
+>>       struct platform_device *pdev;
+>>       int phy_iface;
+>> -     char regulator[32];
+>> +     struct regulator *regulator;
+>>
+>>       bool clk_enabled;
+>>       bool clock_input;
+>> @@ -287,46 +287,25 @@ static int gmac_clk_enable(struct rk_priv_data
+>> *bsp_priv, bool enable)
+>>
+>>  static int phy_power_on(struct rk_priv_data *bsp_priv, bool enable)
+>>  {
+>> -     struct regulator *ldo;
+>> -     char *ldostr = bsp_priv->regulator;
+>> +     struct regulator *ldo = bsp_priv->regulator;
+>>       int ret;
+>>       struct device *dev = &bsp_priv->pdev->dev;
+>>
+>> -     if (!ldostr) {
+>> -             dev_err(dev, "%s: no ldo found\n", __func__);
+>> +     if (!ldo) {
+>> +             dev_err(dev, "%s: no regulator found\n", __func__);
+>>               return -1;
+>>       }
+>>
+>> -     ldo = regulator_get(NULL, ldostr);
+>> -     if (!ldo) {
+>> -             dev_err(dev, "\n%s get ldo %s failed\n", __func__, ldostr);
+>> +     if (enable) {
+>> +             ret = regulator_enable(ldo);
+>> +             if (ret)
+>> +                     dev_err(dev, "%s: fail to enable phy-supply\n",
+>> +                             __func__);
+>>       } else {
+>> -             if (enable) {
+>> -                     if (!regulator_is_enabled(ldo)) {
+>> -                             ret = regulator_enable(ldo);
+>> -                             if (ret != 0)
+>> -                                     dev_err(dev, "%s: fail to enable %s\n",
+>> -                                             __func__, ldostr);
+>> -                             else
+>> -                                     dev_info(dev, "turn on ldo done.\n");
+>> -                     } else {
+>> -                             dev_warn(dev, "%s is enabled before enable",
+>> -                                      ldostr);
+>> -                     }
+>> -             } else {
+>> -                     if (regulator_is_enabled(ldo)) {
+>> -                             ret = regulator_disable(ldo);
+>> -                             if (ret != 0)
+>> -                                     dev_err(dev, "%s: fail to disable %s\n",
+>> -                                             __func__, ldostr);
+>> -                             else
+>> -                                     dev_info(dev, "turn off ldo done.\n");
+>> -                     } else {
+>> -                             dev_warn(dev, "%s is disabled before disable",
+>> -                                      ldostr);
+>> -                     }
+>> -             }
+>> -             regulator_put(ldo);
+>> +             ret = regulator_disable(ldo);
+>> +             if (ret)
+>> +                     dev_err(dev, "%s: fail to disable phy-supply\n",
+>> +                             __func__);
+>>       }
+>>
+>>       return 0;
+>> @@ -346,14 +325,12 @@ static void *rk_gmac_setup(struct platform_device
+>> *pdev)
+>>
+>>       bsp_priv->phy_iface = of_get_phy_mode(dev->of_node);
+>>
+>> -     ret = of_property_read_string(dev->of_node, "phy_regulator", &strings);
+>> -     if (ret) {
+>> -             dev_warn(dev, "%s: Can not read property: phy_regulator.\n",
+>> -                      __func__);
+>> -     } else {
+>> -             dev_info(dev, "%s: PHY power controlled by regulator(%s).\n",
+>> -                      __func__, strings);
+>> -             strcpy(bsp_priv->regulator, strings);
+>> +     bsp_priv->regulator = devm_regulator_get_optional(dev, "phy");
+>> +     if (IS_ERR(bsp_priv->regulator)) {
+>> +             if (PTR_ERR(bsp_priv->regulator) == -EPROBE_DEFER)
+>> +                     return -EPROBE_DEFER;
+>
+> this should be return ERR_PTR(-EPROBE_DEFER) and produces a warning in its
+> current state
+>
+>
+>> +             dev_err(dev, "no regulator found\n");
+>> +             bsp_priv->regulator = NULL;
+>>       }
+>>
+>>       ret = of_property_read_string(dev->of_node, "clock_in_out", &strings);
+>
