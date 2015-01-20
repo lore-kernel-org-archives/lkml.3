@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754425AbbATRzB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 12:55:01 -0500
-Received: from mail-la0-f41.google.com ([209.85.215.41]:32772 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754115AbbATRy7 (ORCPT
+	id S1752766AbbATSAC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 13:00:02 -0500
+Received: from smtprelay0237.hostedemail.com ([216.40.44.237]:54690 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752016AbbATR77 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 12:54:59 -0500
-MIME-Version: 1.0
-In-Reply-To: <4237741.ePaG0Gba6D@sifl>
-References: <20150120185308.53f4af4e@canb.auug.org.au>
-	<20150120165655.GA10904@kria>
-	<4237741.ePaG0Gba6D@sifl>
-Date: Tue, 20 Jan 2015 15:54:57 -0200
-Message-ID: <CAOMZO5ASd2Z20NOwZaQDneZ=35jyVUG-ggpaxo4v8VSds7yuoA@mail.gmail.com>
-Subject: Re: linux-next: Tree for Jan 20 -- Kernel panic - Unable to mount
- root fs
-From: Fabio Estevam <festevam@gmail.com>
-To: Paul Moore <pmoore@redhat.com>
-Cc: Sabrina Dubroca <sd@queasysnail.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, linux-audit@redhat.com,
-        viro@zeniv.linux.org.uk, Richard Guy Briggs <rgb@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 20 Jan 2015 12:59:59 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:3874:4321:4605:5007:6119:6261:7514:8526:9176:10004:10400:10848:11217:11232:11658:11914:12043:12296:12517:12519:12740:13019:13069:13095:13311:13357:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: star63_73cf3ec454e2e
+X-Filterd-Recvd-Size: 2275
+Message-ID: <1421776794.2724.1.camel@perches.com>
+Subject: Re: [PATCH] of: Custom printk format specifier for device node
+From: Joe Perches <joe@perches.com>
+To: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 20 Jan 2015 09:59:54 -0800
+In-Reply-To: <E7065DB3-DD6B-4110-A066-8C7268186831@konsulko.com>
+References: <1421764441-11928-1-git-send-email-pantelis.antoniou@konsulko.com>
+	 <CAL_JsqLVJjq3Ov=J-5LtXiTQPLvR5Y=+tB1i16k_rN3j5dODFQ@mail.gmail.com>
+	 <E7065DB3-DD6B-4110-A066-8C7268186831@konsulko.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 3:39 PM, Paul Moore <pmoore@redhat.com> wrote:
+On Tue, 2015-01-20 at 16:52 +0200, Pantelis Antoniou wrote:
+> Hi Rob,
+> 
+> > On Jan 20, 2015, at 16:47 , Rob Herring <robherring2@gmail.com> wrote:
+> > 
+> > On Tue, Jan 20, 2015 at 8:34 AM, Pantelis Antoniou
+> > <pantelis.antoniou@konsulko.com> wrote:
+> >> 90% of the usage of device node's full_name is printing it out
+> >> in a kernel message. Preparing for the eventual delayed allocation
+> >> introduce a custom printk format specifier that is both more
+> >> compact and more pleasant to the eye.
+[]
+> >> diff --git a/Documentation/printk-formats.txt b/Documentation/printk-formats.txt
+[]
+> >> +Device tree nodes:
+> >> +
+> >> +       %pO{,1,2}
+> > 
+> > 'O' is not very obvious, but I imagine we are somewhat limted in our
+> > choice here?
+> > 
+> 
+> All the good women are married, all the handsome men are gay, all the obvious
+> format specifiers are taken.
 
-> Thanks for testing this and reporting the problem, especially such a small
-> bisection.  Unfortunately nothing is immediately obvious to me, would you mind
-> sharing your kernel config so I can try to reproduce and debug the problem?
+Not really at all.
 
-In case it helps, I also get the similar errors on a mx6 which is
-built with arch/arm/configs/imx_v6_v7_defconfig:
+I quite dislike '0' as the format type specifier for
+a device tree node as there's no mnemonic mapping.
 
-[    1.594196] imx-ipuv3 2800000.ipu: IPUv3H probed
-[    1.601836]  ram0: unknown partition table
-[    1.607247]  ram1: unknown partition table
-[    1.612617]  ram2: unknown partition table
-[    1.618010]  ram3: unknown partition table
-[    1.623359]  ram4: unknown partition table
-[    1.628761]  ram5: unknown partition table
-[    1.634065]  ram6: unknown partition table
-[    1.639436]  ram7: unknown partition table
-[    1.644749]  ram8: unknown partition table
-[    1.650132]  ram9: unknown partition table
-[    1.655447]  ram10: unknown partition table
-[    1.660911]  ram11: unknown partition table
-[    1.666268]  ram12: unknown partition table
-[    1.671778]  ram13: unknown partition table
-[    1.677154]  ram14: unknown partition table
-[    1.682593]  ram15: unknown partition table
-[    1.687165] brd: module loaded
-[    1.705148] loop: module loaded
+
+
