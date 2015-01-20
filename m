@@ -1,49 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755011AbbATMey (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 07:34:54 -0500
-Received: from mail-we0-f169.google.com ([74.125.82.169]:42338 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753779AbbATMaS (ORCPT
+	id S1754917AbbATMeN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 07:34:13 -0500
+Received: from mail-we0-f172.google.com ([74.125.82.172]:42423 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754024AbbATMaT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 07:30:18 -0500
+	Tue, 20 Jan 2015 07:30:19 -0500
 From: Olivier Sobrie <olivier@sobrie.be>
 To: Jan Dumon <j.dumon@option.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
         netdev@vger.kernel.org, Olivier Sobrie <olivier@sobrie.be>
-Subject: [PATCH 03/11] hso: fix memory leak when device disconnects
-Date: Tue, 20 Jan 2015 13:29:30 +0100
-Message-Id: <1421756978-4093-4-git-send-email-olivier@sobrie.be>
+Subject: [PATCH 04/11] hso: fix memory leak in hso_create_rfkill()
+Date: Tue, 20 Jan 2015 13:29:31 +0100
+Message-Id: <1421756978-4093-5-git-send-email-olivier@sobrie.be>
 X-Mailer: git-send-email 2.2.0
-In-Reply-To: <1421756978-4093-3-git-send-email-olivier@sobrie.be>
+In-Reply-To: <1421756978-4093-4-git-send-email-olivier@sobrie.be>
 References: <1421756978-4093-1-git-send-email-olivier@sobrie.be>
  <1421756978-4093-2-git-send-email-olivier@sobrie.be>
  <1421756978-4093-3-git-send-email-olivier@sobrie.be>
+ <1421756978-4093-4-git-send-email-olivier@sobrie.be>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the disconnect path, tx_buffer should freed like tx_data to avoid
-a memory leak when the device disconnects.
+When the rfkill interface was created, a buffer containing the name
+of the rfkill node was allocated. This buffer was never freed when the
+device disappears.
+
+To fix the problem, we put the name given to rfkill_alloc() in
+the hso_net structure.
 
 Signed-off-by: Olivier Sobrie <olivier@sobrie.be>
 ---
- drivers/net/usb/hso.c | 1 +
- 1 file changed, 1 insertion(+)
+ drivers/net/usb/hso.c | 12 +++---------
+ 1 file changed, 3 insertions(+), 9 deletions(-)
 
 diff --git a/drivers/net/usb/hso.c b/drivers/net/usb/hso.c
-index 3a6c630..470ef9e 100644
+index 470ef9e..a49ac2e 100644
 --- a/drivers/net/usb/hso.c
 +++ b/drivers/net/usb/hso.c
-@@ -2253,6 +2253,7 @@ static void hso_serial_common_free(struct hso_serial *serial)
+@@ -153,6 +153,7 @@ struct hso_net {
+ 	struct hso_device *parent;
+ 	struct net_device *net;
+ 	struct rfkill *rfkill;
++	char name[8];
  
- 	/* unlink and free TX URB */
- 	usb_free_urb(serial->tx_urb);
-+	kfree(serial->tx_buffer);
- 	kfree(serial->tx_data);
- 	tty_port_destroy(&serial->port);
- }
+ 	struct usb_endpoint_descriptor *in_endp;
+ 	struct usb_endpoint_descriptor *out_endp;
+@@ -2467,27 +2468,20 @@ static void hso_create_rfkill(struct hso_device *hso_dev,
+ {
+ 	struct hso_net *hso_net = dev2net(hso_dev);
+ 	struct device *dev = &hso_net->net->dev;
+-	char *rfkn;
+ 
+-	rfkn = kzalloc(20, GFP_KERNEL);
+-	if (!rfkn)
+-		dev_err(dev, "%s - Out of memory\n", __func__);
+-
+-	snprintf(rfkn, 20, "hso-%d",
++	snprintf(hso_net->name, sizeof(hso_net->name), "hso-%d",
+ 		 interface->altsetting->desc.bInterfaceNumber);
+ 
+-	hso_net->rfkill = rfkill_alloc(rfkn,
++	hso_net->rfkill = rfkill_alloc(hso_net->name,
+ 				       &interface_to_usbdev(interface)->dev,
+ 				       RFKILL_TYPE_WWAN,
+ 				       &hso_rfkill_ops, hso_dev);
+ 	if (!hso_net->rfkill) {
+ 		dev_err(dev, "%s - Out of memory\n", __func__);
+-		kfree(rfkn);
+ 		return;
+ 	}
+ 	if (rfkill_register(hso_net->rfkill) < 0) {
+ 		rfkill_destroy(hso_net->rfkill);
+-		kfree(rfkn);
+ 		hso_net->rfkill = NULL;
+ 		dev_err(dev, "%s - Failed to register rfkill\n", __func__);
+ 		return;
 -- 
 2.2.0
 
