@@ -1,57 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755522AbbATQs1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 11:48:27 -0500
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:32522 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755494AbbATQsX (ORCPT
+	id S1755365AbbATQpT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 11:45:19 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:60975 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753693AbbATQpP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 11:48:23 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/Ej0UK+pBAeHp49X7aBhkJ
-Date: Tue, 20 Jan 2015 08:44:55 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: ARM: OMAP3: MACH_OMAP3517EVM?
-Message-ID: <20150120164455.GD7718@atomide.com>
-References: <1421744597.9655.92.camel@x220>
+	Tue, 20 Jan 2015 11:45:15 -0500
+Message-ID: <54BE8615.7070708@collabora.co.uk>
+Date: Tue, 20 Jan 2015 17:45:09 +0100
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421744597.9655.92.camel@x220>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Lee Jones <lee.jones@linaro.org>
+CC: Olof Johansson <olof@lixom.net>, Doug Anderson <dianders@chromium.org>,
+        Bill Richardson <wfrichar@chromium.org>, Simon Glass <sjg@google.com>,
+        Gwendal Grignou <gwendal@google.com>, Jonathan Corbet <corbet@lwn.net>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND v2 2/7] mfd: cros_ec: Add char dev and virtual
+ dev pointers
+References: <1420205572-2640-1-git-send-email-javier.martinez@collabora.co.uk> <1420205572-2640-3-git-send-email-javier.martinez@collabora.co.uk> <20150120075011.GS21886@x1> <54BE770D.6030806@collabora.co.uk> <20150120163622.GD30656@x1>
+In-Reply-To: <20150120163622.GD30656@x1>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul Bolle <pebolle@tiscali.nl> [150120 01:06]:
-> Tony,
+Hello Lee,
+
+On 01/20/2015 05:36 PM, Lee Jones wrote:
+>> > 
+>> > Is this safe?  Are you sure it's okay to provide an interface from
+>> > userspace to read (kernel?) memory?
+>> >
+>> 
+>> This interface is not to read any kernel memory but only the memory mapped
+>> I/O region for the Low Pin Count (LPC) bus. So user-space only can choose
+>> and offset and a number of bytes using the CROS_EC_DEV_IOCRDMEM ioctl cmd
+>> which uses the following structure as argument:
+>> 
+>> /*
+>>  * @offset: within EC_LPC_ADDR_MEMMAP region
+>>  * @bytes: number of bytes to read. zero means "read a string" (including '\0')
+>>  *         (at most only EC_MEMMAP_SIZE bytes can be read)
+>>  * @buffer: where to store the result
+>>  * ioctl returns the number of bytes read, negative on error
+>>  */
+>> struct cros_ec_readmem {
+>>         uint32_t offset;
+>>         uint32_t bytes;
+>>         uint8_t buffer[EC_MEMMAP_SIZE];
+>> };
+>> 
+>> The cros_ec_lpc_readmem() handler that the function pointer is set only
+>> reads bytes from EC_LPC_ADDR_MEMMAP + offset if offset < EC_MEMMAP_SIZE
+>> and the data is copied to the user-space buffer from the structure passed
+>> as argument with copy_to_user().
+>> 
+>> So in that sense is similar to the spidev or i2c-dev interfaces that are
+>> used to access these buses from user-space.
 > 
-> Your commit 4d62dbda8561 ("ARM: OMAP3: Remove legacy support for
-> am3517-evm") is included in today's linux-next (ie, next-20150120). I
-> noticed because a script I use to check linux-next spotted a problem
-> caused by it.
-
-OK thanks for spotting that.
- 
-> See, your commit removes the Kconfig symbol MACH_OMAP3517EVM. But
-> there's still a reference to that symbol in sound/soc/omap/Kconfig. This
-> means that in linux-next a symbol, SND_OMAP_SOC_AM3517EVM, cannot be set
-> anymore.
+> Very well.  The purpose of my question was to be provocative and to
+> make you think about the interface.  As long as you're sure it can't
+> be abused, then I'm happy.
 > 
-> I assume a patch that address this (either by removing
-> SND_OMAP_SOC_AM3517EVM or by updating its dependencies) is queued
-> somewhere. Is that correct?
 
-Not yet, I missed that part sorry. I'll add back the Kconfig symbol.
-I'll rather do the removal in smaller steps, and first remove the
-3517 related board-*.c file before messing with the legacy drivers.
+Ok, thanks a lot. Does it mean I've your Acked-by for this patch too?
 
-Regards,
-
-Tony
+Best regards,
+Javier
