@@ -1,78 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751932AbbATRkR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 12:40:17 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:42794 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755045AbbATRkN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 12:40:13 -0500
-Date: Tue, 20 Jan 2015 18:40:10 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Jacek Anaszewski <j.anaszewski@samsung.com>, linux-leds@vger.kernel.org,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
-        sakari.ailus@iki.fi, Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>
-Subject: Re: [PATCH/RFC v10 03/19] DT: leds: Add led-sources property
-Message-ID: <20150120174010.GA2900@amd>
-References: <CAL_Jsq+UaA41DvawdOMmOib=Fi0hC-nBdKV-+P4DFo+MoOy-bQ@mail.gmail.com>
- <54B3F1EF.4060506@samsung.com>
- <CAL_JsqKpJtUG0G6g1GOuSVpc31oe-dp3qdrKJUE0upG-xRDFhA@mail.gmail.com>
- <54B4DA81.7060900@samsung.com>
- <CAL_JsqLYxB5hzLAWXpU=uncM5DEMZU78mP673H9oSSNB-cgcYQ@mail.gmail.com>
- <54B8D4D0.3000904@samsung.com>
- <CAL_Jsq+EFWzs1HP1tVt6P=p=HZn2AtSPjp55YrmMQi_mE+kNfQ@mail.gmail.com>
- <54B933D0.1090004@samsung.com>
- <54BE7DAB.80702@samsung.com>
- <CAL_JsqKoiaUmVhbQdnNveG=AAYh4-OHGS70L+LAgLLoKChUuYQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAL_JsqKoiaUmVhbQdnNveG=AAYh4-OHGS70L+LAgLLoKChUuYQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752266AbbATS1l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 13:27:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:37688 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751145AbbATS1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 13:27:39 -0500
+Message-ID: <1421775689.1112.4.camel@linux-0dmf.site>
+Subject: Re: USB autosuspend causing trouble with bluetooth
+From: Oliver Neukum <oneukum@suse.de>
+To: Kirill Elagin <kirelagin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+In-Reply-To: <CABVT_gdCvbK8mUQMjDmiAmc_6kbBUMf4XFeAZ=zzjOYS+7oCGg@mail.gmail.com>
+References: <CABVT_gf-rx0ymvtCrCotkO5=qoDifG1yAMg8U_aTgXEN=x6gvg@mail.gmail.com>
+	 <1421751814.29486.13.camel@linux-0dmf.site>
+	 <CABVT_gcqjp1V6vnOOSewYYeR2PmngAQhuR+fud=bDU6FJ8Bnqw@mail.gmail.com>
+	 <1421762788.29486.28.camel@linux-0dmf.site>
+	 <CABVT_gdCvbK8mUQMjDmiAmc_6kbBUMf4XFeAZ=zzjOYS+7oCGg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 20 Jan 2015 18:41:29 +0100
+Mime-Version: 1.0
+X-Mailer: Evolution 3.10.4 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2015-01-20 11:29:16, Rob Herring wrote:
-> On Tue, Jan 20, 2015 at 10:09 AM, Jacek Anaszewski
-> <j.anaszewski@samsung.com> wrote:
-> > On 01/16/2015 04:52 PM, Jacek Anaszewski wrote:
+On Tue, 2015-01-20 at 18:58 +0400, Kirill Elagin wrote:
+> On Tue, Jan 20, 2015 at 5:06 PM, Oliver Neukum <oneukum@suse.de> wrote:
+> > On Tue, 2015-01-20 at 16:18 +0400, Kirill Elagin wrote:
+> >> I use a Logitech wireless keyboard (with a Unifying receiver) and it
+> >> keeps working fine even with `auto`.
 > >>
-> >> On 01/16/2015 02:48 PM, Rob Herring wrote:
-> 
-> [...]
-> 
-> >>> You may want to add something like led-output-cnt or led-driver-cnt in
-> >>> the parent so you know the max list size.
-> >>
-> >>
-> >> Why should we need this? The number of current outputs exposed by the
-> >> device is fixed and can be specified in a LED device bindings
-> >> documentation.
-> >>
+> >> That is, everything is OK if the receiver is plugged before
+> >> `power/control` is switched to `auto`.
 > >
-> > OK. The led-output-cnt property should be put in each sub-node, as the
-> > number of the current outputs each LED can be connected to is variable.
+> > Wait. There is no power/control file for the receiver before
+> > you plug it in. We are having a very big misunderstanding here.
 > 
-> Sorry, I meant this for the parent node meaning how many outputs the
-> driver IC has. I did say maybe because you may always know this. It
-> can make it easier to allocate memory for led-sources knowing the max
-> size up front.
+> Sorry for not being clear. I was referring to `power/control` of the
+> USB-device itself except for the cases when I was talking about
+> hot-plugging issues — in those cases I was referring to the
+> `power/control` of the root hub.
 
-Umm. Not sure if that kind of "help" should go to the device
-tree.
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Please check whether you are not accidentally touching the ports
+linux-0dmf:/sys/bus/usb/devices/usb1/1-0:1.0/usb1-port1
+At paths like this you find control files for ports, not the
+root hub as a device.
+
+> In this particular case I was talking about the `power/control` of the root hub.
+
+OK, so autosuspend does work if you enable it for the device but
+not the hub?
+
+> `laptop-mode-tools` by default writes `auto` to `power/control` of
+> _all_ the USB devices, root hubs included (even when on AC). Is it
+> really expected that kernel might completely power off the physical
+> USB port? Sounds weird.
+
+It can. It is a recent feature if ACPI supports that on a machine.
+
+> Here is an even more strange thing. First I set all the USB power
+> management to the defaults (that is, `auto` for all the usb devices
+> including root hubs). Again, the keyboard keeps working and as soon as
+> I unplug the receiver kernel says the device was disconnected. Now if
+> I plug the receiver back nothing happens. _But_ if I plug a flash
+> drive in the save physical port it gets detected. So, I tried a number
+> of other usb devices and it totally looks like USB2.0 ones are
+> properly hot-plugged while USB1.1 devices are not. Does this sound to
+> you like a bug in my laptop's hardware?
+
+Could be, but could also be software.
+Please double check where exactly an "on" is needed.
+
+	Regards
+		Oliver
+
+
