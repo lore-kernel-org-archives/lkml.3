@@ -1,84 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753368AbbATFxi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 00:53:38 -0500
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:55873 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750722AbbATFxe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 00:53:34 -0500
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Vlastimil Babka <vbabka@suse.cz>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3] mm/thp: Allocate transparent hugepages on local node
-In-Reply-To: <54BD308A.4080905@suse.cz>
-References: <1421393196-20915-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20150116160204.544e2bcf9627f5a4043ebf8d@linux-foundation.org> <54BD308A.4080905@suse.cz>
-User-Agent: Notmuch/0.19+2~g32855b9 (http://notmuchmail.org) Emacs/25.0.50.1 (x86_64-pc-linux-gnu)
-Date: Tue, 20 Jan 2015 11:22:58 +0530
-Message-ID: <87fvb6uhfp.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15012005-0009-0000-0000-000000D2517F
+	id S1751985AbbATGJR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 01:09:17 -0500
+Received: from ozlabs.org ([103.22.144.67]:50117 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750704AbbATGJP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 01:09:15 -0500
+In-Reply-To: <20150119102647.23035.13380.stgit@preeti.in.ibm.com>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>, tglx@linutronix.de
+From: Michael Ellerman <mpe@ellerman.id.au>
+Cc: aik@ozlabs.ru, shreyas@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        anton@samba.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: tick/broadcast: Make movement of broadcast hrtimer robust against hotplug
+Message-Id: <20150120060913.A5EF31402DE@ozlabs.org>
+Date: Tue, 20 Jan 2015 17:09:13 +1100 (AEDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vlastimil Babka <vbabka@suse.cz> writes:
+On Mon, 2015-19-01 at 10:26:48 UTC, Preeti U Murthy wrote:
+> Today if a cpu handling broadcasting of wakeups goes offline, it hands over
 
-> On 01/17/2015 01:02 AM, Andrew Morton wrote:
->> On Fri, 16 Jan 2015 12:56:36 +0530 "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
->> 
->>> This make sure that we try to allocate hugepages from local node if
->>> allowed by mempolicy. If we can't, we fallback to small page allocation
->>> based on mempolicy. This is based on the observation that allocating pages
->>> on local node is more beneficial than allocating hugepages on remote node.
->> 
->> The changelog is a bit incomplete.  It doesn't describe the current
->> behaviour, nor what is wrong with it.  What are the before-and-after
->> effects of this change?
->> 
->> And what might be the user-visible effects?
->> 
->>> --- a/mm/mempolicy.c
->>> +++ b/mm/mempolicy.c
->>> @@ -2030,6 +2030,46 @@ retry_cpuset:
->>>  	return page;
->>>  }
->>>  
->>> +struct page *alloc_hugepage_vma(gfp_t gfp, struct vm_area_struct *vma,
->>> +				unsigned long addr, int order)
->> 
->> alloc_pages_vma() is nicely documented.  alloc_hugepage_vma() is not
->> documented at all.  This makes it a bit had for readers to work out the
->> difference!
->> 
->> Is it possible to scrunch them both into the same function?  Probably
->> too messy?
->
-> Hm that could work, alloc_pages_vma already has an if (MPOL_INTERLEAVE) part, so
-> just put the THP specialities into an "else if (huge_page)" part there?
->
-> You could probably test for GFP_TRANSHUGE the same way as __alloc_pages_slowpath
-> does. There might be false positives theoretically, but is there anything else
-> that would use these flags and not be a THP?
->
+It's *the* cpu handling broadcasting of wakeups right? ie. there's only ever
+one at a time.
 
-is that check correct ? ie, 
+> the job of broadcasting to another cpu in the CPU_DEAD phase. 
 
-if ((gfp & GFP_TRANSHUGE) == GFP_TRANSHUGE)
+I think that would be clearer as "to another cpu, when the cpu going offline
+reaches the CPU_DEAD state."
 
-may not always indicate transparent hugepage if defrag = 0 . With defrag
-cleared, we remove __GFP_WAIT from GFP_TRANSHUGE.
+Otherwise it can read as "another cpu (which is) in the CPU_DEAD phase", which
+is not what you mean - I think.
 
-static inline gfp_t alloc_hugepage_gfpmask(int defrag, gfp_t extra_gfp)
-{
-	return (GFP_TRANSHUGE & ~(defrag ? 0 : __GFP_WAIT)) | extra_gfp;
-}
+> The CPU_DEAD notifiers are run only after the offline cpu sets its state as
+> CPU_DEAD. Meanwhile, the kthread doing the offline is scheduled out while
 
--aneesh
+The kthread which is running on a different cpu from either of the first two
+cpus you've mentioned.
 
+> waiting for this transition by queuing a timer. This is fatal because if the
+> cpu on which this kthread was running has no other work queued on it, it can
+> re-enter deep idle state, since it sees that a broadcast cpu still exists.
+> However the broadcast wakeup will never come since the cpu which was handling
+> it is offline, and this cpu never wakes up to see this because its in deep
+> idle state.
+
+Which cpu is "this cpu"? I think you mean the one running the kthread which is
+doing the offline, but it's not 100% clear.
+
+> Fix this by setting the broadcast timer to a max value so as to force the cpus
+> entering deep idle states henceforth to freshly nominate the broadcast cpu. More
+> importantly this has to be done in the CPU_DYING phase so that it is visible to
+> all cpus right after exiting stop_machine, which is when they can re-enter idle.
+> This ensures that handover of the broadcast duty falls in place on offline, without
+> having to do it explicitly.
+
+OK, I don't know the code well enough to say if that's the right fix.
+
+You say:
+
++	/* This allows fresh nomination of broadcast cpu */
++	bc->next_event.tv64 = KTIME_MAX;
+
+Is that all it does? I see that check in several places in the code.
+
+
+I assume we're expecting Thomas to merge this?
+
+If so it's probably worth mentioning that it fixes a bug we are seeing on
+machines in the wild. So it'd be nice if it went into 3.19 and/or gets sent to
+stable.
+
+cheers
