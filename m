@@ -1,239 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752810AbbATDdi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 22:33:38 -0500
-Received: from e32.co.us.ibm.com ([32.97.110.150]:48851 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752219AbbATDdh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 22:33:37 -0500
-Date: Mon, 19 Jan 2015 19:33:29 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Zhang Zhen <zhenzhang.zhang@huawei.com>
-Cc: linux-kernel@vger.kernel.org, morgan.wang@huawei.com, josh@freedesktop.org,
-        dzickus@redhat.com, dipankar@in.ibm.com
-Subject: Re: RCU CPU stall console spews  leads to soft lockup disabled is
- reasonable ?
-Message-ID: <20150120033329.GM9719@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <54BCBB33.6060608@huawei.com>
- <20150119084200.GE9719@linux.vnet.ibm.com>
- <54BCC89D.9040702@huawei.com>
- <20150119110935.GH9719@linux.vnet.ibm.com>
- <54BDC8AD.7040600@huawei.com>
+	id S1752891AbbATDea (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 22:34:30 -0500
+Received: from mga09.intel.com ([134.134.136.24]:64550 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752219AbbATDe2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 22:34:28 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,431,1418112000"; 
+   d="scan'208";a="514631921"
+Message-ID: <54BDCCC0.2080805@linux.intel.com>
+Date: Tue, 20 Jan 2015 11:34:24 +0800
+From: "Fu, Zhonghui" <zhonghui.fu@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54BDC8AD.7040600@huawei.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15012003-0005-0000-0000-000008298977
+To: Kalle Valo <kvalo@codeaurora.org>, Arend van Spriel <arend@broadcom.com>
+CC: brudley@broadcom.com, Franky Lin <frankyl@broadcom.com>,
+        meuleman@broadcom.com, linville@tuxdriver.com, pieterpg@broadcom.com,
+        hdegoede@redhat.com, wens@csie.org, linux-wireless@vger.kernel.org,
+        brcm80211-dev-list@broadcom.com, netdev@vger.kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] brcmfmac: avoid duplicated suspend/resume operation
+References: <54B36C88.3030609@linux.intel.com> <54B39B59.8000907@broadcom.com> <877fwotddy.fsf@kamboji.qca.qualcomm.com>
+In-Reply-To: <877fwotddy.fsf@kamboji.qca.qualcomm.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 11:17:01AM +0800, Zhang Zhen wrote:
-> On 2015/1/19 19:09, Paul E. McKenney wrote:
-> > On Mon, Jan 19, 2015 at 05:04:29PM +0800, Zhang Zhen wrote:
-> >> On 2015/1/19 16:42, Paul E. McKenney wrote:
-> >>> On Mon, Jan 19, 2015 at 04:07:15PM +0800, Zhang Zhen wrote:
-> >>>> Hi,
-> >>>>
-> >>>> On my x86_64 qemu virtual machine, RCU CPU stall console spews may
-> >>>> lead to soft lockup disabled.
-> >>>>
-> >>>> If softlockup_thresh > rcu_cpu_stall_timeout (softlockup_thresh = 2 * watchdog_thresh):
-> >>>>
-> >>>> / #
-> >>>> / # busybox cat /sys/module/rcupdate/parameters/rcu_cpu_stall_timeout
-> >>>> 21
-> >>>> / # echo 60 > /proc/sys/kernel/watchdog_thresh
-> >>>> / # busybox insmod softlockup_test.ko
-> >>>> [   44.959044] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=21002 jiffies, g=85, c=84, q=4)
-> >>>> [   44.959044] INFO: Stall ended before state dump start
-> >>>> [  107.964045] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=84007 jiffies, g=85, c=84, q=4)
-> >>>> [  107.964045] INFO: Stall ended before state dump start
-> >>>> [  170.969060] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=147012 jiffies, g=85, c=84, q=4)
-> >>>> [  170.969060] INFO: Stall ended before state dump start
-> >>>> [  233.974057] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=210017 jiffies, g=85, c=84, q=4)
-> >>>> [  233.974057] INFO: Stall ended before state dump start
-> >>>> [  296.979059] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=273022 jiffies, g=85, c=84, q=4)
-> >>>> [  296.979059] INFO: Stall ended before state dump start
-> >>>> [  359.984058] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=336027 jiffies, g=85, c=84, q=4)
-> >>>> [  359.984058] INFO: Stall ended before state dump start
-> >>>> [  422.989059] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=399032 jiffies, g=85, c=84, q=4)
-> >>>> [  422.989059] INFO: Stall ended before state dump start
-> >>>> [  485.994056] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=462037 jiffies, g=85, c=84, q=4)
-> >>>> [  485.994056] INFO: Stall ended before state dump start
-> >>>> [  548.999059] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=525042 jiffies, g=85, c=84, q=4)
-> >>>> [  548.999059] INFO: Stall ended before state dump start
-> >>>> [  612.004061] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=588047 jiffies, g=85, c=84, q=4)
-> >>>> [  612.004061] INFO: Stall ended before state dump start
-> >>>> [  675.009058] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=651052 jiffies, g=85, c=84, q=4)
-> >>>> [  675.009058] INFO: Stall ended before state dump start
-> >>>>
-> >>>> If softlockup_thresh < rcu_cpu_stall_timeout:
-> >>>>
-> >>>> / #
-> >>>> / # busybox cat /sys/module/rcupdate/parameters/rcu_cpu_stall_timeout
-> >>>> 21
-> >>>> / # echo 5 > /proc/sys/kernel/watchdog_thresh
-> >>>> / # busybox insmod softlockup_test.ko
-> >>>> [   38.450061] BUG: soft lockup - CPU#0 stuck for 11s! [busybox:53]
-> >>>> [   52.450061] BUG: soft lockup - CPU#0 stuck for 11s! [busybox:53]
-> >>>> [   66.450073] BUG: soft lockup - CPU#0 stuck for 11s! [busybox:53]
-> >>>> [   80.450060] BUG: soft lockup - CPU#0 stuck for 11s! [busybox:53]
-> >>>> [   94.450061] BUG: soft lockup - CPU#0 stuck for 11s! [busybox:53]
-> >>>>
-> >>>> The softlockup_test.ko source code is:
-> >>>> //
-> >>>> #include <linux/kernel.h>
-> >>>> #include <linux/module.h>
-> >>>> #include <linux/spinlock.h>
-> >>>> #include <linux/slab.h>
-> >>>>
-> >>>> static int hello_start(void)
-> >>>> {
-> >>>>         DEFINE_SPINLOCK(hello_lock);
-> >>>>         spin_lock_init(&hello_lock);
-> >>>>         spin_lock(&hello_lock);
-> >>>>         spin_lock(&hello_lock);
-> >>>
-> >>> Did you really intend to acquire the same spinlock twice in a row,
-> >>> forcing a self-deadlock?  If not, I of course suggest changing the second
-> >>> "spin_lock()" to "spin_unlock()".
-> >>
-> >> Yes, i acquire the same spinlock twice in order to reproduce the problem.
-> > 
-> > Good, I was wondering about that.  ;-)
-> > 
-> >>> If your .config has CONFIG_TREE_RCU=y, the above is quite likely to
-> >>> give you an RCU CPU stall warning.
-> >>
-> >> In my .config CONFIG_TREE_RCU=y.
-> > 
-> > Which is consistent.
-> > 
-> >> If softlockup_thresh < rcu_cpu_stall_timeout, it will give soft lockup warning.
-> >> If softlockup_thresh > rcu_cpu_stall_timeout, it will likely to give RCU CPU stall warning
-> >> just like above and no give soft lockup warning.
-> >>
-> >> It means that RCU CPU stall console spews leads to soft lockup disabled.
-> >> Is this reasonable ?
-> > 
-> > It depends.  You will often see both of them, but they can interfere
-> > with each other, especially if all these messages are going across a
-> > serial line.  And sometimes the activity of the one will suppress the
-> > other, though I would not expect that in your spinlock deadlock case.
-> > 
-> Ok, my expect is to get both RCU stall messages _and_ softlockup messages
-> even though all these messages are going across a serial line.
-> But in my test case the RCU stall messages suppress the other.
 
-On some kernel versions, slow serial-line consoles can cause problems.
-For example, on a 9600-baud line, only 21K characters output at one go
-can cause RCU CPU stall warning.  This happens on kernels that in some
-cases disable interrupts when doing console printks.
+On 2015/1/15 20:52, Kalle Valo wrote:
+> Arend van Spriel <arend@broadcom.com> writes:
+>
+>> On 01/12/15 07:41, Fu, Zhonghui wrote:
+>>>  From 8685c3c2746b4275fc808d9db23c364b2f54b52a Mon Sep 17 00:00:00 2001
+>>> From: Zhonghui Fu<zhonghui.fu@linux.intel.com>
+>>> Date: Mon, 12 Jan 2015 14:25:46 +0800
+>>> Subject: [PATCH] brcmfmac: avoid duplicated suspend/resume operation
+>>>
+>>> WiFi chip has 2 SDIO functions, and PM core will trigger
+>>> twice suspend/resume operations for one WiFi chip to do
+>>> the same things. This patch avoid this case.
+>>>
+>>> Acked-by: Arend van Spriel<arend@broadcom.com>
+>>> Acked-by: Sergei Shtylyov<sergei.shtylyov@cogentembedded.com>
+>>> Signed-off-by: Zhonghui Fu<zhonghui.fu@linux.intel.com>
+>> This patch needs to be rebased.
+>>
+>> Kalle,
+>>
+>> Please drop this one.
+> Ok, dropped. I'll wait for the rebase.
+I have re-based this patch and sent it in another mail with the same subject.
 
-> The simplest way is to change the RCU CPU stall warnings use the KERN_INFO
-> loglevel.
-
-That is not going to happen.  RCU CPU stall warnings are an error, not
-an informational message.
-
-> Is there any better way to get both RCU stall messages _and_ softlockup messages
-> in any case ?
-
-Perhaps continuing along the path that you and Don Zickus were discussing
-will reach a solution.
-
-							Thanx, Paul
-
-> Thanks!
-> > 							Thanx, Paul
-> > 
-> >> Thanks!
-> >>
-> >>>>         return 0;
-> >>>> }
-> >>>>
-> >>>> static int __init test_init(void)
-> >>>> {
-> >>>>         hello_start();
-> >>>>
-> >>>>         printk(KERN_INFO "Module init\n");
-> >>>>         return 0;
-> >>>> }
-> >>>>
-> >>>> static void __exit test_exit(void)
-> >>>> {
-> >>>>         printk(KERN_INFO "Module exit!\n");
-> >>>> }
-> >>>>
-> >>>> module_init(test_init)
-> >>>> module_exit(test_exit)
-> >>>> MODULE_LICENSE("GPL");
-> >>>> //
-> >>>>
-> >>>> My kernel version is v3.10.63, and i checked the kernel source code,
-> >>>>
-> >>>> update_process_times
-> >>>> 	-> run_local_timers
-> >>>> 		-> hrtimer_run_queues
-> >>>> 			-> __run_hrtimer
-> >>>> 				-> watchdog_timer_fn
-> >>>> 					-> is_softlockup
-> >>>> 					
-> >>>> 	-> rcu_check_callbacks
-> >>>> 		-> __rcu_pending
-> >>>> 			-> check_cpu_stall
-> >>>> 				-> print_cpu_stall
-> >>>>
-> >>>> If softlockup_thresh > rcu_cpu_stall_timeout, print_cpu_stall will print log to serial port.
-> >>>>
-> >>>> The 8250 serial driver will call serial8250_console_write => touch_nmi_watchdog() which reset
-> >>>> watchdog_touch_ts to 0. So the softlockup will not be triggered.
-> >>>>
-> >>>> Is this reasonable? Why?
-> >>>
-> >>> Is exactly what reasonable?  ;-)
-> >>>
-> >>> Yes, it is reasonable that your code triggers an RCU CPU stall warning.
-> >>>
-> >>> No, it is not reasonable that the RCU CPU stall warning does not include
-> >>> a stack trace, and the fix for that bug will be going into the next merge
-> >>> window.
-> >>>
-> >>> Yes, is is reasonable that varying the softlockup and RCU CPU stall
-> >>> timeouts might change the behavior.
-> >>>
-> >>> No, your code is not reasonable, except perhaps as a test of the
-> >>> generation of softlockup and RCU CPU stall warnings.  If you are not
-> >>> trying to test softlockup and RCU CPU stall warnings, you should of course
-> >>> not try to acquire any non-recursive exclusive lock that you already hold.
-> >>>
-> >>>> If it is not reasonable, we should adjust the printk loglevel from *KERN_ERR* to *KERN_INFO*
-> >>>> in print_cpu_stall.
-> >>>
-> >>> Given that RCU CPU stall warnings are supposed to be pointing out errors
-> >>> elsewhere in the kernel, and in this case are pointing out errors elsewhere
-> >>> in the kernel, namely in your hello_start() function, it is reasonable
-> >>> that the RCU CPU stall warnings use the KERN_ERR loglevel.
-> >>>
-> >>> Or am I missing something here?
-> >>>
-> >>> 							Thanx, Paul
-> >>>
-> >>>
-> >>> .
-> >>>
-> >>
-> >>
-> > 
-> > 
-> > .
-> > 
-> 
-> 
+Thanks,
+Zhonghui
+>
 
