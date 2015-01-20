@@ -1,81 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753363AbbATKar (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 05:30:47 -0500
-Received: from e06smtp11.uk.ibm.com ([195.75.94.107]:56348 "EHLO
-	e06smtp11.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751599AbbATKap (ORCPT
+	id S1753421AbbATKcW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 05:32:22 -0500
+Received: from mail-lb0-f170.google.com ([209.85.217.170]:55244 "EHLO
+	mail-lb0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752547AbbATKcU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 05:30:45 -0500
-Date: Tue, 20 Jan 2015 11:30:40 +0100
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Christophe Jaillet <christophe.jaillet@wanadoo.fr>
-Cc: schwidefsky@de.ibm.com, rhoppe@de.ibm.com, linux390@de.ibm.com,
-        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH] s390: char: Free memory on error path.
-Message-ID: <20150120103040.GA3928@osiris>
-References: <1421704920-29820-1-git-send-email-christophe.jaillet@wanadoo.fr>
+	Tue, 20 Jan 2015 05:32:20 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421704920-29820-1-git-send-email-christophe.jaillet@wanadoo.fr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15012010-0041-0000-0000-000002F50A7D
+In-Reply-To: <CACRpkdZ+FYQveP-ervZ5NWv0NYeYmsTwpB0jXYyUFNK4TotNSQ@mail.gmail.com>
+References: <1421581173-28416-1-git-send-email-ricardo.ribalda@gmail.com>
+ <1421581173-28416-9-git-send-email-ricardo.ribalda@gmail.com> <CACRpkdZ+FYQveP-ervZ5NWv0NYeYmsTwpB0jXYyUFNK4TotNSQ@mail.gmail.com>
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Date: Tue, 20 Jan 2015 11:31:58 +0100
+Message-ID: <CAPybu_0oYX-tErXqGi=nNm=Nm-=uW-0vN+4B=-Wsn_sDrycFQA@mail.gmail.com>
+Subject: Re: [PATCH 8/8] gpio/mpc8xxx: Use of_mm_gpiochip_remove
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Peter Korsgaard <jacmet@sunsite.dk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 19, 2015 at 11:02:00PM +0100, Christophe Jaillet wrote:
-> Free allocated page in case of error returned by hmcdrv_ftp_startup.
-> 
-> Signed-off-by: Christophe Jaillet <christophe.jaillet@wanadoo.fr>
+Hello Linus
 
-Thanks, I applied the version below.
+I am waiting from the confirmation of Peter if that is what he really needs.
 
->From e38409df9fdbe8b4667cc2ee0e44ff5825ed7049 Mon Sep 17 00:00:00 2001
-From: Christophe Jaillet <christophe.jaillet@wanadoo.fr>
-Date: Mon, 19 Jan 2015 23:02:00 +0100
-Subject: [PATCH] s390/hmcdrv: free memory on error path
+It seems to me that the code should continue even if there is no
+irqdomain created.
 
-Free allocated page in case of error returned by hmcdrv_ftp_startup.
+If we need to abort if there is no irqdomain I would rather create a
+new patch with this change,  since it it is a change of the current
+behaviour, so if something explodes the bisect will be easier.
 
-[heiko.carstens@de.ibm.com]: slightly changed Christophe's patch
+I will attach to this mail a patch.
 
-Signed-off-by: Christophe Jaillet <christophe.jaillet@wanadoo.fr>
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
----
- drivers/s390/char/hmcdrv_ftp.c | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+Regards
 
-diff --git a/drivers/s390/char/hmcdrv_ftp.c b/drivers/s390/char/hmcdrv_ftp.c
-index 4bd63322fc29..d4b61d9088fb 100644
---- a/drivers/s390/char/hmcdrv_ftp.c
-+++ b/drivers/s390/char/hmcdrv_ftp.c
-@@ -200,10 +200,9 @@ int hmcdrv_ftp_probe(void)
- 	rc = hmcdrv_ftp_startup();
- 
- 	if (rc)
--		return rc;
-+		goto out;
- 
- 	rc = hmcdrv_ftp_do(&ftp);
--	free_page((unsigned long) ftp.buf);
- 	hmcdrv_ftp_shutdown();
- 
- 	switch (rc) {
-@@ -216,7 +215,8 @@ int hmcdrv_ftp_probe(void)
- 			rc = 0; /* clear length (success) */
- 		break;
- 	} /* switch */
--
-+out:
-+	free_page((unsigned long) ftp.buf);
- 	return rc;
- }
- EXPORT_SYMBOL(hmcdrv_ftp_probe);
+On Tue, Jan 20, 2015 at 11:17 AM, Linus Walleij
+<linus.walleij@linaro.org> wrote:
+> On Sun, Jan 18, 2015 at 12:39 PM, Ricardo Ribalda Delgado
+> <ricardo.ribalda@gmail.com> wrote:
+>
+>> Since d621e8bae5ac9c67 (Create of_mm_gpiochip_remove), there is a
+>> counterpart for of_mm_gpiochip_add.
+>>
+>> This patch implements the remove function of the driver making use of
+>> it.
+>>
+>> Cc: Linus Walleij <linus.walleij@linaro.org>
+>> Cc: Alexandre Courbot <gnurou@gmail.com>
+>> Cc: Peter Korsgaard <jacmet@sunsite.dk>
+>> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+>
+> Waiting for a v2 addressing the issues pointed out by Peter on this
+> patch.
+>
+> Yours,
+> Linus Walleij
+
+
+
 -- 
-2.1.4
-
+Ricardo Ribalda
