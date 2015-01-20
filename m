@@ -1,86 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357AbbATVt0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 16:49:26 -0500
-Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:47896 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750727AbbATVtY (ORCPT
+	id S1753435AbbATVtz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 16:49:55 -0500
+Received: from mail-ob0-f176.google.com ([209.85.214.176]:58991 "EHLO
+	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751887AbbATVtx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 16:49:24 -0500
-Date: Tue, 20 Jan 2015 22:49:22 +0100
-From: Pavel Machek <pavel@ucw.cz>
-To: pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
-        aaro.koskinen@iki.fi, ivo.g.dimitrov.75@gmail.com,
-        linux-bluetooth@vger.kernel.org, marcel@holtmann.org
-Subject: Re: [PATCH] bluetooth: Add hci_h4p driver
-Message-ID: <20150120214922.GA21262@amd>
-References: <20141223130219.GA5731@amd>
- <20150120082850.GA27162@t440s.lan>
+	Tue, 20 Jan 2015 16:49:53 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150120082850.GA27162@t440s.lan>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <xmqqmw5n5z8i.fsf@gitster.dls.corp.google.com>
+References: <xmqqmw5n5z8i.fsf@gitster.dls.corp.google.com>
+From: =?UTF-8?B?w4Z2YXIgQXJuZmrDtnLDsCBCamFybWFzb24=?= <avarab@gmail.com>
+Date: Tue, 20 Jan 2015 22:49:32 +0100
+Message-ID: <CACBZZX5s1rZ3exktbisseJSjF8-0=8ByMpBpARy6h+=iP7wEyA@mail.gmail.com>
+Subject: Re: [ANNOUNCE] Git v2.3.0-rc0
+To: Junio C Hamano <gitster@pobox.com>
+Cc: Git Mailing List <git@vger.kernel.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>, Jeff King <peff@peff.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2015-01-20 10:28:50, Johan Hedberg wrote:
-> Hi Pavel,
-> 
-> On Tue, Dec 23, 2014, Pavel Machek wrote:
-> > +	while (1) {
-> > +		int cmd, len;
-> > +
-> > +		fw_pos += cmd_len;
-> > +
-> > +		if (fw_pos >= fw_entry->size)
-> > +			break;
-> > +
-> > +		if (fw_pos + 2 > fw_entry->size) {
-> > +			dev_err(info->dev, "Corrupted firmware image\n");
-> > +			err = -EMSGSIZE;
-> > +			break;
-> > +		}
-> > +
-> > +		cmd_len = fw_entry->data[fw_pos++];
-> > +		cmd_len += fw_entry->data[fw_pos++] << 8;
-> > +		if (cmd_len == 0)
-> > +			break;
-> > +
-> > +		if (fw_pos + cmd_len > fw_entry->size) {
-> > +			dev_err(info->dev, "Corrupted firmware image\n");
-> > +			err = -EMSGSIZE;
-> > +			break;
-> > +		}
-> > +
-> > +		/* Skip first two packets */
-> > +		if (++num <= 2)
-> > +			continue;
-> > +
-> > +		/* Note that this is timing-critical. If sending packets takes too
-> > +		 * long, initialization will fail.
-> > +		 */
-> > +		cmd = fw_entry->data[fw_pos+1];
-> > +		cmd += fw_entry->data[fw_pos+2] << 8;
-> > +		len = fw_entry->data[fw_pos+3];
-> > +
-> > +		skb = __hci_cmd_sync(info->hdev, cmd, len, fw_entry->data+fw_pos+4, 500);
-> > +		if (IS_ERR(skb)) {
-> > +			dev_err(info->dev, "...sending cmd %x len %d failed %ld\n",
-> > +				cmd, len, PTR_ERR(skb));
-> > +			err = -EIO;
-> > +			break;
-> > +		}
-> > +	}
-> 
-> Looks like the code is leaking skb when __hci_cmd_sync() succeeds.
+On Tue, Jan 13, 2015 at 12:57 AM, Junio C Hamano <gitster@pobox.com> wrote:
+> An early preview release Git v2.3.0-rc0 is now available for
+> testing at the usual places.
+[...]
+> Jeff King (38):
+[...]
+>       parse_color: refactor color storage
+[...]
 
-Fixed, thanks!
-									Pavel
+I've had this in my .gitconfig since 2010 which was broken by Jeff's
+v2.1.3-24-g695d95d:
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+    ;; Don't be so invasive about coloring ^M when I'm editing files
+that
+    ;; are supposed to have \r\n.
+    [color "diff"]
+       whitespace = 0
+
+To test this replace \n with \r\n in a file. Before this patch you could do:
+
+    git -c color.diff.whitespace=0 show
+
+And just get:
+
+    [red]-[/red]
+    [green]+[/green]
+
+As opposed to:
+
+    git -c color.diff.whitespace=1 show
+
+Which gives you:
+
+    [red]-
+    [green]+[/green][red]^M[/red]
+
+Now that just produces:
+
+    error: invalid color value: 0
+    fatal: bad config variable 'color.diff.whitespace' in file
+'/home/avar/.gitconfig' at line 16
+
+Maybe breaking this is OK (but I can't find what the replacement is),
+but the config or the the changelog doesn't mention breaking existing
+config settings.
