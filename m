@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753852AbbATT1N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 14:27:13 -0500
-Received: from arroyo.ext.ti.com ([192.94.94.40]:48496 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752144AbbATT1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 14:27:12 -0500
-From: Murali Karicheri <m-karicheri2@ti.com>
-To: <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-CC: Murali Karicheri <m-karicheri2@ti.com>
-Subject: [RESEND: PATCH net-next] net: netcp: remove unused kconfig option and code
-Date: Tue, 20 Jan 2015 14:27:09 -0500
-Message-ID: <1421782029-11201-1-git-send-email-m-karicheri2@ti.com>
-X-Mailer: git-send-email 1.7.9.5
+	id S1752543AbbATTaZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 14:30:25 -0500
+Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:13299 "EHLO
+	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751778AbbATTaX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 14:30:23 -0500
+Message-ID: <54BEACCA.4080800@fb.com>
+Date: Tue, 20 Jan 2015 12:30:18 -0700
+From: Jens Axboe <axboe@fb.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Ming Lei <ming.lei@canonical.com>, <linux-kernel@vger.kernel.org>
+CC: Sasha Levin <sasha.levin@oracle.com>
+Subject: Re: [PATCH] blk-mq: fix hctx/ctx kobject use-after-free
+References: <1421722856-6346-1-git-send-email-ming.lei@canonical.com>
+In-Reply-To: <1421722856-6346-1-git-send-email-ming.lei@canonical.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.57.29]
+X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
+ definitions=2015-01-20_06:2015-01-20,2015-01-20,1970-01-01 signatures=0
+X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
+ kscore.is_bulkscore=1.37667655053519e-14 kscore.compositescore=0
+ circleOfTrustscore=52.1011374371407 compositescore=0.986137415400633
+ urlsuspect_oldscore=0.986137415400633 suspectscore=2
+ recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
+ kscore.is_spamscore=0 recipient_to_sender_totalscore=0
+ recipient_domain_to_sender_domain_totalscore=62764
+ rbsscore=0.986137415400633 spamscore=0
+ recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
+ classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
+ definitions=main-1501200184
+X-FB-Internal: deliver
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently CPTS is built into the netcp driver even though there is no
-call out to the CPTS driver. This patch removes the dependency in Kconfig
-and remove cpts.o from the Makefile for NetCP.
+On 01/19/2015 08:00 PM, Ming Lei wrote:
+> The kobject memory shouldn't have been freed before the kobject
+> is released because driver core can access it freely before its
+> release.
+>
+> This patch frees hctx in its release callback. For ctx, they
+> share one single per-cpu variable which is associated with
+> the request queue, so free ctx in q->mq_kobj's release handler.
+>
+> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+> (fix ctx kobjects)
+> Signed-off-by: Ming Lei <ming.lei@canonical.com>
 
-Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
----
- - Resend with PATCH prefix.
- drivers/net/ethernet/ti/Kconfig  |    2 +-
- drivers/net/ethernet/ti/Makefile |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+Thanks Ming, applied.
 
-diff --git a/drivers/net/ethernet/ti/Kconfig b/drivers/net/ethernet/ti/Kconfig
-index e11bcfa..824e376 100644
---- a/drivers/net/ethernet/ti/Kconfig
-+++ b/drivers/net/ethernet/ti/Kconfig
-@@ -73,7 +73,7 @@ config TI_CPSW
- config TI_CPTS
- 	boolean "TI Common Platform Time Sync (CPTS) Support"
- 	depends on TI_CPSW
--	depends on TI_CPSW || TI_KEYSTONE_NET
-+	depends on TI_CPSW
- 	select PTP_1588_CLOCK
- 	---help---
- 	  This driver supports the Common Platform Time Sync unit of
-diff --git a/drivers/net/ethernet/ti/Makefile b/drivers/net/ethernet/ti/Makefile
-index 465d03d..0a9813b 100644
---- a/drivers/net/ethernet/ti/Makefile
-+++ b/drivers/net/ethernet/ti/Makefile
-@@ -13,4 +13,4 @@ ti_cpsw-y := cpsw_ale.o cpsw.o cpts.o
- 
- obj-$(CONFIG_TI_KEYSTONE_NETCP) += keystone_netcp.o
- keystone_netcp-y := netcp_core.o netcp_ethss.o	netcp_sgmii.o \
--			netcp_xgbepcsr.o cpsw_ale.o cpts.o
-+			netcp_xgbepcsr.o cpsw_ale.o
 -- 
-1.7.9.5
+Jens Axboe
 
