@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752158AbbATOU6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 09:20:58 -0500
-Received: from mga01.intel.com ([192.55.52.88]:8193 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750822AbbATOU5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 09:20:57 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="442727667"
-Message-ID: <1421763532.31903.71.camel@linux.intel.com>
-Subject: Re: [PATCH] dmaengine: dw: support for clockless platforms
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-Cc: Viresh Kumar <viresh.linux@gmail.com>, Vinod Koul <vinod.koul@intel.com>,
-        linux-kernel@vger.kernel.org, dmaengine@vger.kernel.org
-Date: Tue, 20 Jan 2015 16:18:52 +0200
-In-Reply-To: <1421758677-183443-1-git-send-email-heikki.krogerus@linux.intel.com>
-References: <1421758677-183443-1-git-send-email-heikki.krogerus@linux.intel.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.9-1+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752008AbbATOUG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 09:20:06 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:41438 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751453AbbATOUE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 09:20:04 -0500
+Date: Tue, 20 Jan 2015 14:19:54 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Bjorn Andersson <bjorn.andersson@sonymobile.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Mark Brown <broonie@kernel.org>,
+        Josh Cartwright <joshc@codeaurora.org>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH v8 3/3] regulator: qcom-rpm: Add missing state flag in
+ call to RPM
+Message-ID: <20150120141954.GS13701@x1>
+References: <1417038661-30209-1-git-send-email-bjorn.andersson@sonymobile.com>
+ <1417038661-30209-4-git-send-email-bjorn.andersson@sonymobile.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1417038661-30209-4-git-send-email-bjorn.andersson@sonymobile.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2015-01-20 at 14:57 +0200, Heikki Krogerus wrote:
-> When requesting clock in the platform driver, leaving
-> chip->clk value as NULL if -ENOENT is returned, and
-> continue. With other errors returning failure. It makes the
-> driver usable on platforms that do not provide the clock.
+Mark,
+
+Do you want a pull-request for this, or can I absorb it right into my
+tree?
+
+> This adds the missing state parameter to the call down to the RPM. This
+> is currently hard coded to the active state, as that's all we're
+> supporting at this moment.
 > 
-> Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-
-Acked-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-
+> Signed-off-by: Bjorn Andersson <bjorn.andersson@sonymobile.com>
 > ---
->  drivers/dma/dw/platform.c | 8 ++++++--
->  1 file changed, 6 insertions(+), 2 deletions(-)
+>  drivers/regulator/qcom_rpm-regulator.c | 1 +
+>  1 file changed, 1 insertion(+)
 > 
-> diff --git a/drivers/dma/dw/platform.c b/drivers/dma/dw/platform.c
-> index 32ea1ac..b183bc0 100644
-> --- a/drivers/dma/dw/platform.c
-> +++ b/drivers/dma/dw/platform.c
-> @@ -180,8 +180,12 @@ static int dw_probe(struct platform_device *pdev)
->  	chip->dev = dev;
+> diff --git a/drivers/regulator/qcom_rpm-regulator.c b/drivers/regulator/qcom_rpm-regulator.c
+> index b55cd5b..8f66040 100644
+> --- a/drivers/regulator/qcom_rpm-regulator.c
+> +++ b/drivers/regulator/qcom_rpm-regulator.c
+> @@ -198,6 +198,7 @@ static int rpm_reg_write(struct qcom_rpm_reg *vreg,
+>  	vreg->val[req->word] |= value << req->shift;
 >  
->  	chip->clk = devm_clk_get(chip->dev, "hclk");
-> -	if (IS_ERR(chip->clk))
-> -		return PTR_ERR(chip->clk);
-> +	if (IS_ERR(chip->clk)) {
-> +		if (PTR_ERR(chip->clk) == -ENOENT)
-> +			chip->clk = NULL;
-> +		else
-> +			return PTR_ERR(chip->clk);
-> +	}
->  	err = clk_prepare_enable(chip->clk);
->  	if (err)
->  		return err;
-
+>  	return qcom_rpm_write(vreg->rpm,
+> +			      QCOM_RPM_ACTIVE_STATE,
+>  			      vreg->resource,
+>  			      vreg->val,
+>  			      vreg->parts->request_len);
 
 -- 
-Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Intel Finland Oy
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
