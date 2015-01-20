@@ -1,90 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752651AbbATTyo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 14:54:44 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:40263 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750764AbbATTym (ORCPT
+	id S1753143AbbATTzv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 14:55:51 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:38829 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752471AbbATTzt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 14:54:42 -0500
-Date: Tue, 20 Jan 2015 19:54:32 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Sabrina Dubroca <sd@queasysnail.net>
-Cc: Paul Moore <pmoore@redhat.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-audit@redhat.com,
-        Richard Guy Briggs <rgb@redhat.com>
-Subject: Re: linux-next: Tree for Jan 20 -- Kernel panic - Unable to mount
- root fs
-Message-ID: <20150120195432.GH29656@ZenIV.linux.org.uk>
-References: <20150120185308.53f4af4e@canb.auug.org.au>
- <20150120165655.GA10904@kria>
- <4237741.ePaG0Gba6D@sifl>
- <20150120175135.GA25973@kria>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150120175135.GA25973@kria>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 20 Jan 2015 14:55:49 -0500
+X-Sasl-enc: HhlgoVxo/uk/lJ3vfqi0v3bVmccQrkSrBz1Ew8/lv9n5 1421783748
+From: Jon Bernard <jbernard@tuxion.com>
+To: gregkh@linuxfoundation.org
+Cc: oleg.drokin@intel.com, andreas.dilger@intel.com, HPDD-discuss@ml01.01.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Jon Bernard <jbernard@tuxion.com>
+Subject: [PATCH] staging: lustre: ptlrpc: fix lproc_ptlrpc static declarations
+Date: Tue, 20 Jan 2015 14:55:28 -0500
+Message-Id: <1421783728-14470-1-git-send-email-jbernard@tuxion.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 06:51:35PM +0100, Sabrina Dubroca wrote:
-> 2015-01-20, 12:39:08 -0500, Paul Moore wrote:
-> > On Tuesday, January 20, 2015 05:56:55 PM Sabrina Dubroca wrote:
-> > > Hello,
-> > > 
-> > > Today's linux-next doesn't boot on my qemu VM:
-> > 
-> > ...
-> >  
-> > > I bisected it down to:
-> > > 
-> > > 5dc5218840e1  fs: create proper filename objects using getname_kernel()
-> > > 
-> > > I reverted then reapplied each part of that patch.  It works if I
-> > > leave out the hunk for do_path_lookup:
-> > > 
-> > > diff --git a/fs/namei.c b/fs/namei.c
-> > > index eeb3b83661f8..c3d21b79090e 100644
-> > > --- a/fs/namei.c
-> > > +++ b/fs/namei.c
-> > > @@ -2001,9 +2001,15 @@ static int filename_lookup(int dfd, struct filename
-> > > *name, static int do_path_lookup(int dfd, const char *name,
-> > >  				unsigned int flags, struct nameidata *nd)
-> > >  {
-> > > -	struct filename filename = { .name = name };
-> > > +	int retval;
-> > > +	struct filename *filename;
-> > > 
-> > > -	return filename_lookup(dfd, &filename, flags, nd);
-> > > +	filename = getname_kernel(name);
-> > > +	if (unlikely(IS_ERR(filename)))
-> > > +		return PTR_ERR(filename);
-> > > +	retval = filename_lookup(dfd, filename, flags, nd);
-> > > +	putname(filename);
-> > > +	return retval;
-> > >  }
-> > > 
-> > > I don't know what other info you may need.
-> > > Full dmesg for the failed boot included below.
-> > 
-> > Thanks for testing this and reporting the problem, especially such a small 
-> > bisection.  Unfortunately nothing is immediately obvious to me, would you mind 
-> > sharing your kernel config so I can try to reproduce and debug the problem?
-> 
-> Sure.
-> 
-> I run qemu with:
-> 
-> qemu-system-x86_64 -enable-kvm -cpu host  -m 512 -kernel bzImage -append 'root=/dev/sda1' $IMG
-> 
-> and the image contains a single ext4 partition with a basic ArchLinux install.
+This patch fixes the following sparse warnings:
 
-Could you turn that return PTR_ERR(filename); into 
-{
-	printk(KERN_ERR "failed(%p -> %d)", name, PTR_ERR(filename));
-	return PTR_ERR(filename);
-}
-reproduce the panic and see what has it produced?
+drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c:51:3:warning:
+ symbol 'll_rpc_opcode_table' was not declared. Should it be static?
+drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c:142:3: warning:
+ symbol 'll_eopcode_table' was not declared. Should it be static?
+drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c:178:12: warning:
+ symbol 'll_eopcode2str' was not declared. Should it be static?
+drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c:731:1: warning:
+ symbol 'ptlrpc_lprocfs_svc_req_history_seek' was not declared. Should it be static?
+
+Signed-off-by: Jon Bernard <jbernard@tuxion.com>
+---
+ drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c b/drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c
+index 90448e9..0e2071b 100644
+--- a/drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c
++++ b/drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c
+@@ -45,7 +45,7 @@
+ #include "ptlrpc_internal.h"
+ 
+ 
+-struct ll_rpc_opcode {
++static struct ll_rpc_opcode {
+ 	__u32       opcode;
+ 	const char *opname;
+ } ll_rpc_opcode_table[LUSTRE_MAX_OPCODES] = {
+@@ -136,7 +136,7 @@ struct ll_rpc_opcode {
+ 	{ UPDATE_OBJ,	    "update_obj" },
+ };
+ 
+-struct ll_eopcode {
++static struct ll_eopcode {
+ 	__u32       opcode;
+ 	const char *opname;
+ } ll_eopcode_table[EXTRA_LAST_OPC] = {
+@@ -175,11 +175,12 @@ const char *ll_opcode2str(__u32 opcode)
+ 	return ll_rpc_opcode_table[offset].opname;
+ }
+ 
+-const char *ll_eopcode2str(__u32 opcode)
++static const char *ll_eopcode2str(__u32 opcode)
+ {
+ 	LASSERT(ll_eopcode_table[opcode].opcode == opcode);
+ 	return ll_eopcode_table[opcode].opname;
+ }
++
+ #if defined (CONFIG_PROC_FS)
+ static void ptlrpc_lprocfs_register(struct proc_dir_entry *root, char *dir,
+ 				    char *name,
+@@ -727,7 +728,7 @@ struct ptlrpc_srh_iterator {
+ 	struct ptlrpc_request	*srhi_req;
+ };
+ 
+-int
++static int
+ ptlrpc_lprocfs_svc_req_history_seek(struct ptlrpc_service_part *svcpt,
+ 				    struct ptlrpc_srh_iterator *srhi,
+ 				    __u64 seq)
+-- 
+1.9.1
+
