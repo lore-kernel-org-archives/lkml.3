@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755192AbbATNGf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 08:06:35 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:47123 "EHLO mx1.redhat.com"
+	id S1755214AbbATNGp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 08:06:45 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:48829 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754103AbbATNGd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 08:06:33 -0500
-Date: Tue, 20 Jan 2015 14:06:09 +0100
+	id S1754924AbbATNGo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 08:06:44 -0500
+Date: Tue, 20 Jan 2015 14:06:32 +0100
 From: Jiri Olsa <jolsa@redhat.com>
 To: Wang Nan <wangnan0@huawei.com>
 Cc: jeremie.galarneau@efficios.com, bigeasy@linutronix.de, lizefan@huawei.com,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] perf: convert: fix duplicate field names.
-Message-ID: <20150120130609.GC15315@krava.brq.redhat.com>
+Subject: Re: [PATCH 0/2] perf: convert: two patches for converting syscall
+ tracepoitns.
+Message-ID: <20150120130632.GD15315@krava.brq.redhat.com>
 References: <1421752029-64237-1-git-send-email-wangnan0@huawei.com>
- <1421752029-64237-2-git-send-email-wangnan0@huawei.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1421752029-64237-2-git-send-email-wangnan0@huawei.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1421752029-64237-1-git-send-email-wangnan0@huawei.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 07:07:08PM +0800, Wang Nan wrote:
+On Tue, Jan 20, 2015 at 07:07:07PM +0800, Wang Nan wrote:
+> This 2 patches are based on Jiri Olsa's perf repository:
+> 
+> https://git.kernel.org/cgit/linux/kernel/git/jolsa/perf.git/log/?h=perf/core_ctf_convert
+> 
+> Perf data convert to failes when converting perf.data recorded with
+> 
+>  # perf record -a -e syscalls:* sleep 1
+> 
+> The following 2 patches fix it.
+> 
+> Wang Nan (2):
+>   perf: convert: fix duplicate field names.
+>   perf: convert: fix signess of value.
+> 
+>  tools/perf/util/data-convert-bt.c | 101 ++++++++++++++++++++++++++++++++++++--
+>  1 file changed, 96 insertions(+), 5 deletions(-)
+> 
+> -- 
+> 1.8.4
 
-SNIP
+hi,
+also I've got following error:
 
-> +		 *
-> +		 * So instead of checking duplication, simply tries 10 times.
-> +		 */
-> +		for (dup = 0; dup < 10; dup ++) {
-> +			struct bt_ctf_field_type *f;
-> +			char *dupl_name = get_dupl_name(field->name, dup);
-> +
-> +			if (!dupl_name) {
-> +				pr_err("Failed to alloc memory for dup '%s'\n",
-> +						field->name);
-> +				return -1;
-> +			}
-> +
-> +			ret = bt_ctf_event_class_add_field(event_class, type,
-> +					dupl_name);
-> +			free(dupl_name);
-> +			if (ret)
-> +				continue;
+  BUILD:   Doing 'make -j1' parallel build
+  CC       util/data-convert-bt.o
+util/data-convert-bt.c: In function ‘adjust_signess’:
+util/data-convert-bt.c:170:6: error: unused variable ‘signbit’ [-Werror=unused-variable]
+  int signbit;
+      ^
+util/data-convert-bt.c: In function ‘add_tracepoint_fields_types’:
+util/data-convert-bt.c:668:30: error: unused variable ‘f’ [-Werror=unused-variable]
+    struct bt_ctf_field_type *f;
+                              ^
+cc1: all warnings being treated as errors
+make[1]: *** [util/data-convert-bt.o] Error 1
+make: *** [all] Error 2
 
-hum.. so we dont know if we failed because of the name, but we keep
-trying 10 times anyway.. does not seem nice to me
 
-how about using that function you mentioned in the above comment
-to get the proper name first, like:
-
-   while(bt_ctf_event_class_get_field_by_name(name))
-       change_name(name)
-
-and then add use it for bt_ctf_event_class_add_field
-
-thanks,
 jirka
