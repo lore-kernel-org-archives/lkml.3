@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755119AbbATQma (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 11:42:30 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58245 "EHLO mx1.redhat.com"
+	id S1755288AbbATQn7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 11:43:59 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52908 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755053AbbATQm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 11:42:28 -0500
+	id S1755139AbbATQmd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 11:42:33 -0500
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>,
@@ -19,17 +19,17 @@ Cc: Jiri Olsa <jolsa@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 32/36] tools lib api: Use tools build framework
-Date: Tue, 20 Jan 2015 17:39:29 +0100
-Message-Id: <1421771973-6022-33-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 33/36] tools lib api: Rename libapikfs.a to libapi.a
+Date: Tue, 20 Jan 2015 17:39:30 +0100
+Message-Id: <1421771973-6022-34-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1421771973-6022-1-git-send-email-jolsa@kernel.org>
 References: <1421771973-6022-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the libapikfs library building under tools
-build framework.
+Renaming libapikfs.a to libapi.a, because it's not
+just 'fs' specific library now.
 
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
 Cc: Alexis Berlemont <alexis.berlemont@gmail.com>
@@ -44,145 +44,101 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/lib/api/Build      |  2 ++
- tools/lib/api/Makefile   | 57 +++++++++++++++++++++---------------------------
- tools/lib/api/fd/Build   |  1 +
- tools/lib/api/fs/Build   |  2 ++
- tools/perf/Makefile.perf | 12 ++--------
- 5 files changed, 32 insertions(+), 42 deletions(-)
- create mode 100644 tools/lib/api/Build
- create mode 100644 tools/lib/api/fd/Build
- create mode 100644 tools/lib/api/fs/Build
+ tools/lib/api/Build      | 4 ++--
+ tools/lib/api/Makefile   | 8 ++++----
+ tools/lib/api/fd/Build   | 2 +-
+ tools/lib/api/fs/Build   | 4 ++--
+ tools/perf/Makefile.perf | 6 +++---
+ 5 files changed, 12 insertions(+), 12 deletions(-)
 
 diff --git a/tools/lib/api/Build b/tools/lib/api/Build
-new file mode 100644
-index 000000000000..64dd8d466d2c
---- /dev/null
+index 64dd8d466d2c..3653965cf481 100644
+--- a/tools/lib/api/Build
 +++ b/tools/lib/api/Build
-@@ -0,0 +1,2 @@
-+libapikfs-y += fd/
-+libapikfs-y += fs/
+@@ -1,2 +1,2 @@
+-libapikfs-y += fd/
+-libapikfs-y += fs/
++libapi-y += fd/
++libapi-y += fs/
 diff --git a/tools/lib/api/Makefile b/tools/lib/api/Makefile
-index 36c08b1f4afb..27cedb273cca 100644
+index 27cedb273cca..0785c380466c 100644
 --- a/tools/lib/api/Makefile
 +++ b/tools/lib/api/Makefile
-@@ -1,49 +1,42 @@
- include ../../scripts/Makefile.include
- include ../../perf/config/utilities.mak		# QUIET_CLEAN
+@@ -13,7 +13,7 @@ AR = $(CROSS_COMPILE)ar
  
-+ifeq ($(srctree),)
-+srctree := $(patsubst %/,%,$(dir $(shell pwd)))
-+srctree := $(patsubst %/,%,$(dir $(srctree)))
-+srctree := $(patsubst %/,%,$(dir $(srctree)))
-+#$(info Determined 'srctree' to be $(srctree))
-+endif
-+
- CC = $(CROSS_COMPILE)gcc
- AR = $(CROSS_COMPILE)ar
+ MAKEFLAGS += --no-print-directory
  
--# guard against environment variables
--LIB_H=
--LIB_OBJS=
--
--LIB_H += fs/debugfs.h
--LIB_H += fs/fs.h
--# See comment below about piggybacking...
--LIB_H += fd/array.h
--
--LIB_OBJS += $(OUTPUT)fs/debugfs.o
--LIB_OBJS += $(OUTPUT)fs/fs.o
--# XXX piggybacking here, need to introduce libapikfd, or rename this
--# to plain libapik.a and make it have it all api goodies
--LIB_OBJS += $(OUTPUT)fd/array.o
-+MAKEFLAGS += --no-print-directory
+-LIBFILE = $(OUTPUT)libapikfs.a
++LIBFILE = $(OUTPUT)libapi.a
  
--LIBFILE = libapikfs.a
-+LIBFILE = $(OUTPUT)libapikfs.a
- 
--CFLAGS = -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6 -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) -fPIC
--EXTLIBS = -lelf -lpthread -lrt -lm
--ALL_CFLAGS = $(CFLAGS) $(BASIC_CFLAGS) -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
--ALL_LDFLAGS = $(LDFLAGS)
-+CFLAGS += -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6 -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) -fPIC
-+CFLAGS += -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
- 
+ CFLAGS += -ggdb3 -Wall -Wextra -std=gnu99 -Werror -O6 -D_FORTIFY_SOURCE=2 $(EXTRA_WARNINGS) $(EXTRA_CFLAGS) -fPIC
+ CFLAGS += -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
+@@ -21,20 +21,20 @@ CFLAGS += -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
  RM = rm -f
  
--$(LIBFILE): $(LIB_OBJS)
--	$(QUIET_AR)$(RM) $@ && $(AR) rcs $(OUTPUT)$@ $(LIB_OBJS)
-+build  := -f $(srctree)/tools/build/Makefile.build dir=. obj
-+API_IN := $(OUTPUT)libapikfs-in.o
+ build  := -f $(srctree)/tools/build/Makefile.build dir=. obj
+-API_IN := $(OUTPUT)libapikfs-in.o
++API_IN := $(OUTPUT)libapi-in.o
  
--$(LIB_OBJS): $(LIB_H)
-+export srctree OUTPUT CC LD CFLAGS V
+ export srctree OUTPUT CC LD CFLAGS V
  
--libapi_dirs:
--	$(QUIET_MKDIR)mkdir -p $(OUTPUT)fd $(OUTPUT)fs
-+all: $(LIBFILE)
+ all: $(LIBFILE)
  
--$(OUTPUT)%.o: %.c libapi_dirs
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $<
--$(OUTPUT)%.s: %.c libapi_dirs
--	$(QUIET_CC)$(CC) -S $(ALL_CFLAGS) $<
--$(OUTPUT)%.o: %.S libapi_dirs
--	$(QUIET_CC)$(CC) -o $@ -c $(ALL_CFLAGS) $<
-+$(API_IN): FORCE
-+	@$(MAKE) $(build)=libapikfs
-+
-+$(LIBFILE): $(API_IN)
-+	$(QUIET_AR)$(RM) $@ && $(AR) rcs $@ $(API_IN)
+ $(API_IN): FORCE
+-	@$(MAKE) $(build)=libapikfs
++	@$(MAKE) $(build)=libapi
+ 
+ $(LIBFILE): $(API_IN)
+ 	$(QUIET_AR)$(RM) $@ && $(AR) rcs $@ $(API_IN)
  
  clean:
--	$(call QUIET_CLEAN, libapi) $(RM) $(LIB_OBJS) $(LIBFILE)
-+	$(call QUIET_CLEAN, libapikfs) $(RM) $(LIBFILE); \
-+	find $(if $(OUTPUT),$(OUTPUT),.) -name \*.o | xargs $(RM)
-+
-+FORCE:
+-	$(call QUIET_CLEAN, libapikfs) $(RM) $(LIBFILE); \
++	$(call QUIET_CLEAN, libapi) $(RM) $(LIBFILE); \
+ 	find $(if $(OUTPUT),$(OUTPUT),.) -name \*.o | xargs $(RM)
  
--.PHONY: clean
-+.PHONY: clean FORCE
+ FORCE:
 diff --git a/tools/lib/api/fd/Build b/tools/lib/api/fd/Build
-new file mode 100644
-index 000000000000..4ddcb0ff7f49
---- /dev/null
+index 4ddcb0ff7f49..605d99f6d71a 100644
+--- a/tools/lib/api/fd/Build
 +++ b/tools/lib/api/fd/Build
-@@ -0,0 +1 @@
-+libapikfs-y += array.o
+@@ -1 +1 @@
+-libapikfs-y += array.o
++libapi-y += array.o
 diff --git a/tools/lib/api/fs/Build b/tools/lib/api/fs/Build
-new file mode 100644
-index 000000000000..de9c015794ff
---- /dev/null
+index de9c015794ff..6090532359b7 100644
+--- a/tools/lib/api/fs/Build
 +++ b/tools/lib/api/fs/Build
-@@ -0,0 +1,2 @@
-+libapikfs-y += fs.o
-+libapikfs-y += debugfs.o
+@@ -1,2 +1,2 @@
+-libapikfs-y += fs.o
+-libapikfs-y += debugfs.o
++libapi-y += fs.o
++libapi-y += debugfs.o
 diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 97307a26fe10..0e5809b3be00 100644
+index 0e5809b3be00..0e8ff8fbc10c 100644
 --- a/tools/perf/Makefile.perf
 +++ b/tools/perf/Makefile.perf
-@@ -375,20 +375,12 @@ $(LIBTRACEEVENT)-clean:
- install-traceevent-plugins: $(LIBTRACEEVENT)
+@@ -161,7 +161,7 @@ endif
+ LIBTRACEEVENT = $(TE_PATH)libtraceevent.a
+ export LIBTRACEEVENT
+ 
+-LIBAPIKFS = $(LIB_PATH)libapikfs.a
++LIBAPIKFS = $(LIB_PATH)libapi.a
+ export LIBAPIKFS
+ 
+ # python extension build directories
+@@ -376,10 +376,10 @@ install-traceevent-plugins: $(LIBTRACEEVENT)
  	$(QUIET_SUBDIR0)$(TRACE_EVENT_DIR) $(LIBTRACEEVENT_FLAGS) install_plugins
  
--LIBAPIKFS_SOURCES = $(wildcard $(LIB_PATH)fs/*.[ch] $(LIB_PATH)fd/*.[ch])
--
--# if subdir is set, we've been called from above so target has been built
--# already
--$(LIBAPIKFS): $(LIBAPIKFS_SOURCES)
--ifeq ($(subdir),)
--	$(QUIET_SUBDIR0)$(LIB_DIR) $(QUIET_SUBDIR1) O=$(OUTPUT) libapikfs.a
--endif
-+$(LIBAPIKFS): FORCE
-+	@$(MAKE) -C $(LIB_DIR) O=$(OUTPUT) $(OUTPUT)libapikfs.a
+ $(LIBAPIKFS): FORCE
+-	@$(MAKE) -C $(LIB_DIR) O=$(OUTPUT) $(OUTPUT)libapikfs.a
++	@$(MAKE) -C $(LIB_DIR) O=$(OUTPUT) $(OUTPUT)libapi.a
  
  $(LIBAPIKFS)-clean:
--ifeq ($(subdir),)
- 	$(call QUIET_CLEAN, libapikfs)
+-	$(call QUIET_CLEAN, libapikfs)
++	$(call QUIET_CLEAN, libapi)
  	@$(MAKE) -C $(LIB_DIR) O=$(OUTPUT) clean >/dev/null
--endif
  
  help:
- 	@echo 'Perf make targets:'
 -- 
 1.9.3
 
