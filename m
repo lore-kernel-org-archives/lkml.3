@@ -1,124 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754120AbbATNAv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 08:00:51 -0500
-Received: from mail.emea.novell.com ([130.57.118.101]:50118 "EHLO
-	mail.emea.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752475AbbATNAu convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-linux-kernel@vger.kernel.org:4:1>);
-	Tue, 20 Jan 2015 08:00:50 -0500
-Message-Id: <54BE5F8E02000078000570A7@mail.emea.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 14.0.1 
-Date: Tue, 20 Jan 2015 13:00:46 +0000
-From: "Jan Beulich" <JBeulich@suse.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: "Steven Rostedt" <rostedt@goodmis.org>, <akpm@linux-foundation.org>,
-        <mingo@redhat.com>
-Subject: [PATCH v2] irqflags: fix (at least latent) code generation
- issue
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1754803AbbATNBn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 08:01:43 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:40891 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753897AbbATNBl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 08:01:41 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-e7-54be51b5791e
+Message-id: <54BE51B2.8040209@samsung.com>
+Date: Tue, 20 Jan 2015 14:01:38 +0100
+From: Jacek Anaszewski <j.anaszewski@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
+ Thunderbird/17.0.8
+MIME-version: 1.0
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        kyungmin.park@samsung.com, b.zolnierkie@samsung.com, pavel@ucw.cz,
+        cooloney@gmail.com, rpurdie@rpsys.net, sakari.ailus@iki.fi,
+        s.nawrocki@samsung.com, Chanwoo Choi <cw00.choi@samsung.com>
+Subject: Re: [PATCH/RFC v10 07/19] mfd: max77693: Adjust FLASH_EN_SHIFT and
+ TORCH_EN_SHIFT macros
+References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
+ <1420816989-1808-8-git-send-email-j.anaszewski@samsung.com>
+ <20150120111719.GF13701@x1>
+In-reply-to: <20150120111719.GF13701@x1>
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrCLMWRmVeSWpSXmKPExsVy+t/xK7pbA/eFGLw6yG2xccZ6VoujOycy
+	WVz/8pzVYv6Rc6wWZ5vesFvc/3qU0eLyrjlsFlvfrGO06NmwldXi7qmjbBa7dz1ltTj8pp3V
+	4sz+lWwOvB47Z91l9zj8dSGLx51re9g89sz/werRt2UVo8eK1d/ZPT5vkgtgj+KySUnNySxL
+	LdK3S+DKeD3hAFtBJ0/FpDX6DYyfOLsYOTgkBEwk9u6V6GLkBDLFJC7cW8/WxcjFISSwlFHi
+	5tFWJgjnI6PEr2Xb2EGqeAW0JLpufGIDsVkEVCWu7bjNCmKzCRhK/HzxmgnEFhWIkPhzeh8r
+	RL2gxI/J91hAlokIqEice2MOEmYW2MUkse+4BogtLJAscf3NFKhdixklJp/bwAyS4BTQkJg6
+	4ygLRIOZxKOWdcwQtrzE5jVvmScwCsxCsmIWkrJZSMoWMDKvYhRNLU0uKE5KzzXSK07MLS7N
+	S9dLzs/dxAiJma87GJceszrEKMDBqMTDe8J5b4gQa2JZcWXuIUYJDmYlEd6z5vtChHhTEiur
+	Uovy44tKc1KLDzEycXBKNTDOserZ6+YjsXUdZ9XTP6eZW61v2tycuDG54O/CO75PG26Jbz2f
+	sYjb/vPJnTHiiumbzIMvFf048473wNZZQUZLD5d2hffH7ChSNpF49WL9vT4GBZ+l91oDbDr7
+	/i04Wbde5ob1vUtWE9a13l+gd6dvV/r3MpmGe1esFDpmrClst9PSTtD3qcpXYinOSDTUYi4q
+	TgQATYIHxXcCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The conditional in local_irq_restore() otherwise can cause code bloat
-(the if and else blocks may get translated into separate code paths
-despite the generated code being identical, dependent on compiler
-internal heuristics). Note that this adjustment gets the code in sync
-with the comment preceding it (which was slightly wrong from at least
-from 2.6.37 onwards).
+On 01/20/2015 12:17 PM, Lee Jones wrote:
+> On Fri, 09 Jan 2015, Jacek Anaszewski wrote:
+>
+>> Modify FLASH_EN_SHIFT and TORCH_EN_SHIFT macros to work properly
+>> when passed enum max77693_fled values (0 for FLED1 and 1 for FLED2)
+>> from leds-max77693 driver.
+>
+> Off-by-one ay?  Wasn't the original code tested?
 
-The code bloat was observed in reality with an experimental x86 patch.
+The driver using these macros is a part of LED / flash API integration
+patch series, which still undergoes modifications and it hasn't
+reached its final state yet, as there are many things to discuss.
 
-Signed-off-by: Jan Beulich <jbeulich@suse.com>
----
-v2: Deal with architectures not defining raw_irqs_disabled() by
-    retaining the CONFIG_TRACE_IRQFLAGS_SUPPORT-dependent
-    implementations of irqs_disabled(). Move out of either conditional
-    the already identical definitions of local_save_flags() and
-    irqs_disabled_flags().
----
- include/linux/irqflags.h |   43 ++++++++++++++++++++++---------------------
- 1 file changed, 22 insertions(+), 21 deletions(-)
-
---- 3.19-rc5/include/linux/irqflags.h
-+++ 3.19-rc5-irqflags/include/linux/irqflags.h
-@@ -85,7 +85,7 @@
-  * The local_irq_*() APIs are equal to the raw_local_irq*()
-  * if !TRACE_IRQFLAGS.
-  */
--#ifdef CONFIG_TRACE_IRQFLAGS_SUPPORT
-+#ifdef CONFIG_TRACE_IRQFLAGS
- #define local_irq_enable() \
- 	do { trace_hardirqs_on(); raw_local_irq_enable(); } while (0)
- #define local_irq_disable() \
-@@ -107,22 +107,6 @@
- 			raw_local_irq_restore(flags);	\
- 		}					\
- 	} while (0)
--#define local_save_flags(flags)				\
--	do {						\
--		raw_local_save_flags(flags);		\
--	} while (0)
--
--#define irqs_disabled_flags(flags)			\
--	({						\
--		raw_irqs_disabled_flags(flags);		\
--	})
--
--#define irqs_disabled()					\
--	({						\
--		unsigned long _flags;			\
--		raw_local_save_flags(_flags);		\
--		raw_irqs_disabled_flags(_flags);	\
--	})
- 
- #define safe_halt()				\
- 	do {					\
-@@ -131,7 +115,7 @@
- 	} while (0)
- 
- 
--#else /* !CONFIG_TRACE_IRQFLAGS_SUPPORT */
-+#else /* !CONFIG_TRACE_IRQFLAGS */
- 
- #define local_irq_enable()	do { raw_local_irq_enable(); } while (0)
- #define local_irq_disable()	do { raw_local_irq_disable(); } while (0)
-@@ -140,11 +124,28 @@
- 		raw_local_irq_save(flags);			\
- 	} while (0)
- #define local_irq_restore(flags) do { raw_local_irq_restore(flags); } while (0)
--#define local_save_flags(flags)	do { raw_local_save_flags(flags); } while (0)
--#define irqs_disabled()		(raw_irqs_disabled())
--#define irqs_disabled_flags(flags) (raw_irqs_disabled_flags(flags))
- #define safe_halt()		do { raw_safe_halt(); } while (0)
- 
-+#endif /* CONFIG_TRACE_IRQFLAGS */
-+
-+#define local_save_flags(flags)	raw_local_save_flags(flags)
-+
-+/*
-+ * Some architectures don't define arch_irqs_disabled(), so even if either
-+ * definition would be fine we need to use different ones for the time being
-+ * to avoid build issues.
-+ */
-+#ifdef CONFIG_TRACE_IRQFLAGS_SUPPORT
-+#define irqs_disabled()					\
-+	({						\
-+		unsigned long _flags;			\
-+		raw_local_save_flags(_flags);		\
-+		raw_irqs_disabled_flags(_flags);	\
-+	})
-+#else /* !CONFIG_TRACE_IRQFLAGS_SUPPORT */
-+#define irqs_disabled()	raw_irqs_disabled()
- #endif /* CONFIG_TRACE_IRQFLAGS_SUPPORT */
- 
-+#define irqs_disabled_flags(flags) raw_irqs_disabled_flags(flags)
-+
- #endif
+>> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
+>> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+>> Cc: Chanwoo Choi <cw00.choi@samsung.com>
+>> Cc: Lee Jones <lee.jones@linaro.org>
+>> ---
+>>   include/linux/mfd/max77693-private.h |    4 ++--
+>>   1 file changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/include/linux/mfd/max77693-private.h b/include/linux/mfd/max77693-private.h
+>> index 08dae01..01799a9 100644
+>> --- a/include/linux/mfd/max77693-private.h
+>> +++ b/include/linux/mfd/max77693-private.h
+>> @@ -113,8 +113,8 @@ enum max77693_pmic_reg {
+>>   #define FLASH_EN_FLASH		0x1
+>>   #define FLASH_EN_TORCH		0x2
+>>   #define FLASH_EN_ON		0x3
+>> -#define FLASH_EN_SHIFT(x)	(6 - ((x) - 1) * 2)
+>> -#define TORCH_EN_SHIFT(x)	(2 - ((x) - 1) * 2)
+>> +#define FLASH_EN_SHIFT(x)	(6 - (x) * 2)
+>> +#define TORCH_EN_SHIFT(x)	(2 - (x) * 2)
+>>
+>>   /* MAX77693 MAX_FLASH1 register */
+>>   #define MAX_FLASH1_MAX_FL_EN	0x80
+>
 
 
-
+-- 
+Best Regards,
+Jacek Anaszewski
