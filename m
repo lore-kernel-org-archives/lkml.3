@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752264AbbATOod (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 09:44:33 -0500
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:32998 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751772AbbATOoc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 09:44:32 -0500
-Date: Tue, 20 Jan 2015 14:44:26 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Fabio Estevam <festevam@gmail.com>
-Cc: Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        anthony.olech.opensource@diasemi.com, support.opensource@diasemi.com,
-        johan@kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
-        Fabio Estevam <fabio.estevam@freescale.com>
-Subject: Re: [PATCH] mfd: da9052-core: Fix platform-device id collision
-Message-ID: <20150120144426.GU13701@x1>
-References: <1418175593-23474-1-git-send-email-festevam@gmail.com>
- <20141210094649.GA23481@x1>
- <20141210111925.GP11764@sirena.org.uk>
- <20141210121125.GC23481@x1>
- <CAOMZO5DVOojrVoM1X6fRDfoNc50b8nPtv7Bu=rFYGBpXMbkiJQ@mail.gmail.com>
+	id S1752382AbbATOqk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 09:46:40 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53955 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751396AbbATOqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 09:46:39 -0500
+Message-ID: <54BE6A41.5030004@redhat.com>
+Date: Tue, 20 Jan 2015 09:46:25 -0500
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAOMZO5DVOojrVoM1X6fRDfoNc50b8nPtv7Bu=rFYGBpXMbkiJQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Suresh Siddha <sbsiddha@gmail.com>
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        matt.fleming@intel.com, bp@suse.de, pbonzini@redhat.com,
+        tglx@linutronix.de, luto@amacapital.net
+Subject: Re: [PATCH 2/3] x86, fpu: always allow FPU in interrupt if use_eager_fpu()
+References: <1421012793-30106-1-git-send-email-riel@redhat.com> <20150115191918.GA27332@redhat.com> <20150119185109.GA16427@redhat.com> <20150119185151.GC16427@redhat.com>
+In-Reply-To: <20150119185151.GC16427@redhat.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 23 Dec 2014, Fabio Estevam wrote:
-> On Wed, Dec 10, 2014 at 10:11 AM, Lee Jones <lee.jones@linaro.org> wrote:
-> 
-> > My train of thought was that the original configuration has not
-> > changed since 2011.  I guess other regulators have been recently
-> > introduced.  Very well, applied to -fixes.
-> 
-> Still don't see this patch in linux-next.
+On 01/19/2015 01:51 PM, Oleg Nesterov wrote:
+> The __thread_has_fpu() check in interrupted_kernel_fpu_idle() was needed
+> to prevent the nested kernel_fpu_begin(). Now that we have in_kernel_fpu
+> and !__thread_has_fpu() case in __kernel_fpu_begin() does not depend on
+> use_eager_fpu() (except clts) we can remove it.
+>
+> __thread_has_fpu() can be false even if use_eager_fpu(), but this case
+> does not differ from !use_eager_fpu() case except we should not worry
+> about X86_CR0_TS, __kernel_fpu_begin/end will not touch this bit.
+>
+> Note: I think we can kill all irq_fpu_usable() checks except in_kernel_fpu,
+> just we need to record the state of X86_CR0_TS in __kernel_fpu_begin() and
+> conditionalize stts() in __kernel_fpu_end(), but this needs another patch.
+>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-Sorry for the delay, I have been on vacation.
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-I sent out my -fixes branch to Linus this morning.
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
