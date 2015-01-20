@@ -1,106 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754141AbbATNkO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 08:40:14 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:39082 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751242AbbATNkL (ORCPT
+	id S1754196AbbATNlU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 08:41:20 -0500
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:34840 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751815AbbATNlS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 08:40:11 -0500
-Date: Tue, 20 Jan 2015 13:39:47 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Jiri Olsa <jolsa@redhat.com>, Vince Weaver <vince@deater.net>,
-        Ingo Molnar <mingo@redhat.com>, Andi Kleen <ak@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Jiri Kosina <jkosina@suse.cz>, Borislav Petkov <bp@suse.de>,
-        Will Deacon <will.deacon@arm.com>
-Subject: Re: perf fuzzer crash [PATCH] perf: Get group events reference
- before moving the group
-Message-ID: <20150120133947.GD15924@leverpostej>
-References: <20150116075746.GB2658@krava.brq.redhat.com>
- <20150116104644.GW23965@worktop.programming.kicks-ass.net>
- <20150116141104.GD21958@worktop.programming.kicks-ass.net>
- <20150119144028.GF21553@leverpostej>
- <20150119174009.GI21553@leverpostej>
+	Tue, 20 Jan 2015 08:41:18 -0500
+Date: Tue, 20 Jan 2015 13:41:11 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
+        linux-kernel@vger.kernel.org, Kukjin Kim <kgene@kernel.org>,
+        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
+Subject: Re: [PATCH v5 4/5] mfd/regulator: dt-bindings: max77686: Document
+ gpio properties
+Message-ID: <20150120134111.GI13701@x1>
+References: <1420458525-22576-1-git-send-email-k.kozlowski@samsung.com>
+ <1420458525-22576-5-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20150119174009.GI21553@leverpostej>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1420458525-22576-5-git-send-email-k.kozlowski@samsung.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 19, 2015 at 05:40:09PM +0000, Mark Rutland wrote:
-> On Mon, Jan 19, 2015 at 02:40:28PM +0000, Mark Rutland wrote:
-> > On Fri, Jan 16, 2015 at 02:11:04PM +0000, Peter Zijlstra wrote:
-> > > On Fri, Jan 16, 2015 at 11:46:44AM +0100, Peter Zijlstra wrote:
-> > > > Its a bandaid at best :/ The problem is (again) that we changes
-> > > > event->ctx without any kind of serialization.
-> > > >
-> > > > The issue came up before:
-> > > >
-> > > >   https://lkml.org/lkml/2014/9/5/397
-> > 
-> > In the end neither the CCI or CCN perf drivers migrate events on
-> > hotplug, so ARM is currently safe from the perf_pmu_migrate_context
-> > case, but I see that you fix the move_group handling too.
-> > 
-> > I had a go at testing this by hacking migration back into the CCI PMU
-> > driver (atop of v3.19-rc5), but I'm seeing lockups after a few minutes
-> > with my original test case (https://lkml.org/lkml/2014/9/1/569 with
-> > PMU_TYPE and PMU_EVENT fixed up).
-> > 
-> > I unfortunately don't have a suitable x86 box spare to run that on.
-> > Would someone be able to give it a spin on something with an uncore PMU?
-> > 
-> > I'll go and dig a bit further. I may just be hitting another latent
-> > issue on my board.
-> 
-> I'm able to trigger the lockups even without both your patch and the
-> call to perf_pmu_migrate_context, so there is a latent issue.
-> 
-> On vanilla v3.19-rc5 and vanilla v3.18, I'm able to get my hotplug
-> script hung when run concurrently with the test case against the CCI PMU
-> driver (without migration). The v3.18 and v3.19-rc5 lockups are
-> identical:
-> 
-> INFO: task hpall.sh:1506 blocked for more than 120 seconds.
->       Not tainted 3.19.0-rc5 #9
-> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> hpall.sh        D 804a6ffc     0  1506   1497 0x00000000
-> [<804a6ffc>] (__schedule) from [<80022308>] (cpu_hotplug_begin+0xa0/0xac)
-> [<80022308>] (cpu_hotplug_begin) from [<8002236c>] (_cpu_up+0x24/0x180)
-> [<8002236c>] (_cpu_up) from [<8002253c>] (cpu_up+0x74/0x98)
-> [<8002253c>] (cpu_up) from [<802bce60>] (device_online+0x64/0x90)
-> [<802bce60>] (device_online) from [<802bcef4>] (online_store+0x68/0x74)
-> [<802bcef4>] (online_store) from [<8014059c>] (kernfs_fop_write+0xbc/0x1a0)
-> [<8014059c>] (kernfs_fop_write) from [<800e71b0>] (vfs_write+0xa0/0x1ac)
-> [<800e71b0>] (vfs_write) from [<800e7808>] (SyS_write+0x44/0x9c)
-> [<800e7808>] (SyS_write) from [<8000e560>] (ret_fast_syscall+0x0/0x48)
-> 7 locks held by hpall.sh/1506:
->  #0:  (sb_writers#6){.+.+.+}, at: [<800e729c>] vfs_write+0x18c/0x1ac
->  #1:  (&of->mutex){+.+.+.}, at: [<8014052c>] kernfs_fop_write+0x4c/0x1a0
->  #2:  (s_active#15){.+.+.+}, at: [<80140534>] kernfs_fop_write+0x54/0x1a0
->  #3:  (device_hotplug_lock){+.+.+.}, at: [<802bbe44>] lock_device_hotplug_sysfs+0xc/0x4c
->  #4:  (&dev->mutex){......}, at: [<802bce14>] device_online+0x18/0x90
->  #5:  (cpu_add_remove_lock){+.+.+.}, at: [<80022508>] cpu_up+0x40/0x98
->  #6:  (cpu_hotplug.lock){++++++}, at: [<80022268>] cpu_hotplug_begin+0x0/0xac
-> 
-> I guess that lockup is my fundamental issue, and with your patch the
-> perf_rwsem manages to spread a transitive dependency on one of those
-> locks all over the perf subsystem. I haven't considered that in great
-> detail, however.
+On Mon, 05 Jan 2015, Krzysztof Kozlowski wrote:
 
-I found that I couldn't trigger the issue with v3.17, and I was able to
-bisect down to commit b2c4623dcd07af4b ("rcu: More on deadlock between
-CPU hotplug and expedited grace periods").
+> Document usage of maxim,ena-gpios properties which turn on external/GPIO
+> control over regulator.
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> ---
+>  Documentation/devicetree/bindings/mfd/max77686.txt | 14 ++++++++++++++
+>  1 file changed, 14 insertions(+)
+> 
+> diff --git a/Documentation/devicetree/bindings/mfd/max77686.txt b/Documentation/devicetree/bindings/mfd/max77686.txt
+> index 75fdfaf41831..e39f0bc1f55e 100644
+> --- a/Documentation/devicetree/bindings/mfd/max77686.txt
+> +++ b/Documentation/devicetree/bindings/mfd/max77686.txt
+> @@ -39,6 +39,12 @@ to get matched with their hardware counterparts as follow:
+>  	-BUCKn	:	1-4.
+>    Use standard regulator bindings for it ('regulator-off-in-suspend').
+>  
+> +  LDO20, LDO21, LDO22, BUCK8 and BUCK9 can be configured to GPIO enable
+> +  control. To turn this feature on this property must be added to the regulator
+> +  sub-node:
+> +	- maxim,ena-gpios :	one GPIO specifier enable control (the gpio
+> +				flags are actually ignored and always
+> +				ACTIVE_HIGH is used)
 
-I'm currently stressing b2c4623dcd07af4b~1 to make sure my bisect hasn't
-mislead me.
+How does this differ to the 'enable-gpio' property which has already
+been defined?
 
-Thanks,
-Mark.
+>  Example:
+>  
+> @@ -65,4 +71,12 @@ Example:
+>  				regulator-always-on;
+>  				regulator-boot-on;
+>  			};
+> +
+> +			buck9_reg {
+> +				regulator-compatible = "BUCK9";
+> +				regulator-name = "CAM_ISP_CORE_1.2V";
+> +				regulator-min-microvolt = <1000000>;
+> +				regulator-max-microvolt = <1200000>;
+> +				maxim,ena-gpios = <&gpm0 3 GPIO_ACTIVE_HIGH>;
+> +			};
+>  	}
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
