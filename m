@@ -1,35 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754348AbbATTop (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 14:44:45 -0500
-Received: from smtp6-g21.free.fr ([212.27.42.6]:25269 "EHLO smtp6-g21.free.fr"
+	id S1754378AbbAUTdX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 14:33:23 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:51920 "EHLO smtp6-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754250AbbATTom (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 14:44:42 -0500
-X-Mailbox-Line: From ddd1b299eca187ab2fa9b119da2ec8297ead1a66 Mon Sep 17 00:00:00 2001
-Message-Id: <ddd1b299eca187ab2fa9b119da2ec8297ead1a66.1421782533.git.moinejf@free.fr>
-In-Reply-To: <cover.1421782532.git.moinejf@free.fr>
-References: <cover.1421782532.git.moinejf@free.fr>
+	id S1753185AbbAUTdB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 14:33:01 -0500
+X-Mailbox-Line: From d0c66c2e2f200119f9990fa52a503b1a4af6238f Mon Sep 17 00:00:00 2001
+Message-Id: <d0c66c2e2f200119f9990fa52a503b1a4af6238f.1421868426.git.moinejf@free.fr>
+In-Reply-To: <cover.1421868426.git.moinejf@free.fr>
+References: <cover.1421868426.git.moinejf@free.fr>
 From: Jean-Francois Moine <moinejf@free.fr>
 Date: Tue, 20 Jan 2015 20:16:25 +0100
-Subject: [PATCH v10 9/9] ASoC: add generic dt-card support
+Subject: [PATCH v2 3/3] ASoC: add generic dt-card support
 To: Mark Brown <broonie@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Dave Airlie <airlied@gmail.com>, Andrew Jackson <Andrew.Jackson@arm.com>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
         Jyri Sarha <jsarha@ti.com>, alsa-devel@alsa-project.org,
-        devicetree@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To create simple cards, the syntax of the simple-card does not follow
-the common binding of the device graphs
-(Documentation/devicetree/bindings/graph.txt).
+This patch adds a generic way to create audio cards from a graph of ports
+defined in a DT.
 
-dt-card devices are created by audio controllers with themselves as the
-root of the graph. The sound card is created according to the parameters
-found in the tree.
+The dt-card devices are created by audio controllers with themselves
+as the root of the graph and the sound cards are created according to
+the parameters found in the tree.
 
 Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
 ---
