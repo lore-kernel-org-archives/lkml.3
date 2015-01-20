@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780AbbATG0k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 01:26:40 -0500
-Received: from bear.ext.ti.com ([192.94.94.41]:46893 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752456AbbATG0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 01:26:39 -0500
-Message-ID: <54BDF469.3030907@ti.com>
-Date: Tue, 20 Jan 2015 11:53:37 +0530
-From: Keerthy <a0393675@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
+	id S1751836AbbATGYw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 01:24:52 -0500
+Received: from mail-qg0-f49.google.com ([209.85.192.49]:46106 "EHLO
+	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756AbbATGYv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 01:24:51 -0500
 MIME-Version: 1.0
-To: <tony@atomide.com>
-CC: <t-kristo@ti.com>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux@arm.linux.org.uk>
-Subject: Re: [PATCH] ARM: OMAP: DRA7: hwmod: Make gpmc software supervised
- as the smart idle is broken
-References: <1421139085-27183-1-git-send-email-j-keerthy@ti.com>
-In-Reply-To: <1421139085-27183-1-git-send-email-j-keerthy@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20150119190216.7ce58d74@neptune.home>
+References: <CA+55aFxNk9OCXz7nvKXpRBc0Z85NLXPNkRm1yJf4-KAGB4pHRA@mail.gmail.com>
+	<20150119190216.7ce58d74@neptune.home>
+Date: Tue, 20 Jan 2015 18:24:50 +1200
+X-Google-Sender-Auth: cWdBPbrNF9Et2QfJJIAVR2H3iRA
+Message-ID: <CA+55aFw7aoShsqS_ro5DASbseXFLQs_sE=dwLp_tTNAvD9Y09w@mail.gmail.com>
+Subject: Re: Linux 3.19-rc5
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: =?UTF-8?Q?Bruno_Pr=C3=A9mont?= <bonbons@linux-vserver.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
-
-On Tuesday 13 January 2015 02:21 PM, Keerthy wrote:
-> This patch fixes: 'omap_hwmod: gpmc: _wait_target_disable failed'
-> error during suspend.
+On Tue, Jan 20, 2015 at 6:02 AM, Bruno Prémont
+<bonbons@linux-vserver.org> wrote:
 >
-> This is because smart idle is broken.
-> Tested in dra7-evm D1 board.
-
-Ping on this.
-
-> Signed-off-by: Keerthy <j-keerthy@ti.com>
-> ---
->   arch/arm/mach-omap2/omap_hwmod_7xx_data.c |    3 ++-
->   1 file changed, 2 insertions(+), 1 deletion(-)
+> No idea yet which rc is the offender (nor exact patch), but on my not
+> so recent UP laptop with a pccard slot I have 2 pccardd kernel threads
+> converting my laptop into a heater.
 >
-> diff --git a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
-> index 9cdd8b8..29e55fe 100644
-> --- a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
-> +++ b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
-> @@ -826,7 +826,8 @@ static struct omap_hwmod dra7xx_gpmc_hwmod = {
->   	.name		= "gpmc",
->   	.class		= &dra7xx_gpmc_hwmod_class,
->   	.clkdm_name	= "l3main1_clkdm",
-> -	.flags		= HWMOD_INIT_NO_IDLE | HWMOD_INIT_NO_RESET,
-> +	.flags		= (HWMOD_INIT_NO_IDLE | HWMOD_INIT_NO_RESET |
-> +			   HWMOD_SWSUP_SIDLE),
->   	.main_clk	= "l3_iclk_div",
->   	.prcm = {
->   		.omap4 = {
+> lspci for affected nodes:
+> 02:06.0 CardBus bridge [0607]: O2 Micro, Inc. OZ711EC1 SmartCardBus Controller [1217:7113] (rev 20)
+> 02:06.1 CardBus bridge [0607]: O2 Micro, Inc. OZ711EC1 SmartCardBus Controller [1217:7113] (rev 20)
+>
+> Very basics I have, before I attempt any bisection:
 
-Regards,
-Keerthy
+Hmm. I'm not seeing anything recent changing anything in this area, so
+I suspect that unless somebody else steps up and says "Ahh, that
+sounds like xyz", your bisection is the best option.
+
+                   Linus
