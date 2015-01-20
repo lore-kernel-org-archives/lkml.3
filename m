@@ -1,63 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753510AbbATTus (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 14:50:48 -0500
-Received: from eddie.linux-mips.org ([148.251.95.138]:50615 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751525AbbATTur (ORCPT
+	id S1753169AbbATVBo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 16:01:44 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:47347 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751462AbbATVBm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 14:50:47 -0500
-Date: Tue, 20 Jan 2015 19:50:45 +0000 (GMT)
-From: "Maciej W. Rozycki" <macro@linux-mips.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: [PATCH 3/3] x86: drop support for 1995 era EISA based
- platforms
-In-Reply-To: <CA+55aFzN2PvWJ6g1Vbe-_oODyX7EiSeDhw5SD=wJeyENnHX41A@mail.gmail.com>
-Message-ID: <alpine.LFD.2.11.1501201922110.28301@eddie.linux-mips.org>
-References: <1421723901-32303-1-git-send-email-paul.gortmaker@windriver.com>        <1421723901-32303-4-git-send-email-paul.gortmaker@windriver.com>        <alpine.LFD.2.11.1501200350230.28301@eddie.linux-mips.org>
- <CA+55aFzN2PvWJ6g1Vbe-_oODyX7EiSeDhw5SD=wJeyENnHX41A@mail.gmail.com>
-User-Agent: Alpine 2.11 (LFD 23 2013-08-11)
+	Tue, 20 Jan 2015 16:01:42 -0500
+Date: Wed, 21 Jan 2015 03:51:57 +0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
+        linux-kernel@vger.kernel.org, kernel <kernel@savoirfairelinux.com>
+Subject: Re: [PATCH 2/3] sysfs: Only accept read/write permissions for file
+ attributes
+Message-ID: <20150120195157.GA10864@kroah.com>
+References: <54BDC087.4010906@roeck-us.net>
+ <1272429736.105015.1421768641283.JavaMail.root@mail>
+ <20150120171312.GA24203@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150120171312.GA24203@roeck-us.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Jan 2015, Linus Torvalds wrote:
+On Tue, Jan 20, 2015 at 09:13:12AM -0800, Guenter Roeck wrote:
+> On Tue, Jan 20, 2015 at 10:44:01AM -0500, Vivien Didelot wrote:
+> > Hi Guenter,
+> > 
+> [ ... ]
+> > 
+> > > Anyway, my goal was to keep things simple. Taking some bits from the default
+> > > and others from the return value of the is_visible function isn't simple,
+> > > even more so since your code would require the is_visible function to mask
+> > > out SYSFS_PREALLOC to avoid the warning.
+> > 
+> > While I'm still not sure about the consequences of flipping this SYSFS_PREALLOC
+> > bit at runtime, I do agree with your goal.
+> > 
+> > Then to keep it simple, the scope of is_visible could be limited to any bit
+> > allowed at attribute declaration (using *_ATTR* macros). The compile-time check
+> > macro VERIFY_OCTAL_PERMISSIONS() allows any bit but S_IWOTH. The scope can be
+> > SYSFS_PREALLOC | 0775. (or 0664 if we want to avoid executables as well.)
+> > 
+> > [ This will prevent some follow-up patches "avoid world-writable sysfs files".
+> > In the future, we may want a runtime equivalent of VERIFY_OCTAL_PERMISSIONS. ]
+> > 
+> 0775 and 0664 are both fine with me, with a preference for 0664. Before I
+> resubmit - Greg, any preference from your side ?
 
-> >  Well, I'd like to keep my x86 box up and alive, to support EISA FDDI
-> > equipment I maintain if nothing else -- which in particular means the
-> > current head version of Linux, not some ancient branch.
-> 
-> So if we actually have a user, and it works, then no, we're not
-> removing EISA support. It's not like it hurts us or is in some way
-> fundamentally broken, like the old i386 code was (i386 kernel page
-> fault semantics really were broken, and the lack of some instructions
-> made it more painful to maintain than needed - not like EISA at all,
-> which is just a pure add-on on the side).
+I don't have the time to look at them this week, so feel free to fix up
+what you know about and resend and I will get to them as soon as I can.
 
- Thanks.  Last version I tried was 3.18.0-rc1-next-20141023 sometime last 
-November.  It worked just fine, booted to the multiuser mode with no 
-issue.  I'll have to refresh the build sometime.
+thanks,
 
- It's a plain EISA box, no PCI.  The EISA FDDI board referred works fine 
-(it uses our DMA API for bus mastering) as does an ISA 3c509B Ethernet 
-adapter configured for the EISA mode.  The card supports it -- it looks 
-like a true EISA board to software then, there's no need to poke at random 
-port I/O locations anymore to detect it -- as does our driver.
-
- I have a small patch outstanding to reserve the BIOS area at 0xffff0000 
-(used at reset as per the x86 architecture definition) so that systems 
-that do not support the 0xe820 call do not attempt to allocate MMIO in 
-that range.  It may matter for some old PCI systems as well, I suppose.  
-I just need to verify it does not cause a conflict with systems that do 
-support that call.
-
- Other than that it seems maintenance-free to me.
-
-  Maciej
+greg k-h
