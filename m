@@ -1,76 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753854AbbATKFq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 05:05:46 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:32488 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752872AbbATKFJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 05:05:09 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-bc-54be28485e24
-From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-To: Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
-        devicetree@vger.kernel.org, linux-api@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v5 5/5] MAINTAINERS: Add entry for Maxim chargers on Samsung
- boards
-Date: Tue, 20 Jan 2015 11:00:56 +0100
-Message-id: <1421748056-25735-6-git-send-email-k.kozlowski@samsung.com>
-X-Mailer: git-send-email 1.9.1
-In-reply-to: <1421748056-25735-1-git-send-email-k.kozlowski@samsung.com>
-References: <1421748056-25735-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKLMWRmVeSWpSXmKPExsVy+t/xa7oeGvtCDOadkrXYOGM9q8WkJ++Z
-	LeYfOcdqMXHlZGaL1y8MLc42vWG3uP/1KKPF5u8dbBaXd81hs/jce4TR4nQ3q8Xp3SUOPB47
-	Z91l99i8Qstj06pONo871/awecw7GejRt2UVo8fnTXIB7FFcNimpOZllqUX6dglcGSv2OxRc
-	4qjoWL+StYFxA3sXIyeHhICJxMqZq9ggbDGJC/fWA9lcHEICSxklbsw7zw7h9DFJfL36gQWk
-	ik3AWGLz8iVgVSICe5gkPr1YwQriMAtMY5S4cOo7M0iVsECoxPdLc5lAbBYBVYlp7/eDdfMK
-	uEssnf6VBWKfnMTJY5NZQWxOAQ+JH3OPgsWFgGrW/+thmsDIu4CRYRWjaGppckFxUnquoV5x
-	Ym5xaV66XnJ+7iZGSFB+2cG4+JjVIUYBDkYlHl6NnD0hQqyJZcWVuYcYJTiYlUR4eyT2hQjx
-	piRWVqUW5ccXleakFh9iZOLglGpgNI58VLp6t9zSDwJuMhvXGUYl8Ewt36joeUv5ufqC3ak5
-	wio72msm/F6xbMpOv9wuyS9p1zY9iXwY07hl/V0r8RW2NxY0zBF5eU5e+c8WtvjgWdWfay/y
-	iNTPrfc8Hvh/jjgPh6nmlGdTitSrhdxr3r85/HKHwMt9H36qxMs+la1MFbupZRDMp8RSnJFo
-	qMVcVJwIAHSQl2QoAgAA
+	id S1753695AbbATKDE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 05:03:04 -0500
+Received: from mga14.intel.com ([192.55.52.115]:1242 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752353AbbATKCj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 05:02:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,433,1418112000"; 
+   d="scan'208";a="514755951"
+Message-ID: <54BE27BC.3070705@linux.intel.com>
+Date: Tue, 20 Jan 2015 18:02:36 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Marc Zyngier <marc.zyngier@arm.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Proposal about reorganize struct irq_data and struct irq_desc
+References: <54BD1256.1020406@linux.intel.com> <alpine.DEB.2.11.1501200950370.5526@nanos>
+In-Reply-To: <alpine.DEB.2.11.1501200950370.5526@nanos>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add myself as supporter to help in reviewing patches for Maxim 14577 and
-77693 MUIC charger drivers. These are used on Exynos-based boards
-(Trats 2, Gear 1 and Gear 2).
 
-Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Sebastian Reichel <sre@kernel.org>
-Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: David Woodhouse <dwmw2@infradead.org>
-Acked-By: Sebastian Reichel <sre@kernel.org>
----
- MAINTAINERS | 7 +++++++
- 1 file changed, 7 insertions(+)
+On 2015/1/20 17:31, Thomas Gleixner wrote:
+> On Mon, 19 Jan 2015, Jiang Liu wrote:
+> 
+>> Hi Thomas and Marc,
+>> 	During working on the generic MSI support, I have some proposal
+>> about reorganizing struct irq_data and struct irq_desc. The proposed
+>> changes are:
+>> 1) Add a pointer "struct irq_desc *" to struct irq_data, so we could
+>>    quickly get struct irq_desc from struct irq_data.
+>> 2) Move "node" from struct irq_data into struct irq_desc, NUMA info
+>>    should be per-irq instead of per-chip.
+>> 3) Move "affinity" from struct irq_data into struct irq_desc, NUMA info
+>>    should be per-irq instead of per-chip.
+>> 4) Move "msi_desc" from struct irq_data into struct irq_desc. (Not sure
+>>    whether we should do this. Theoretically we should use
+>>    irq_data->handler_data to store msi_desc.)
+> 
+> msi_desc belongs to the msi chip, while handler_data is common data.
+> 
+> I had a look at the usage sites of handler_data. Most of them use it
+> in combination with chained handlers. Some sites use it instead of
+> chip data and only a few use it for some random other stuff, where the
+> x86 sites (hpet, ht, iommu ...) will go away with the irqdomain
+> conversion.
+> 
+> So in the long run we should provide:
+> 
+>    irq_set_chained_handler_and_data(irq, handler, handler_data)
+> 
+> convert everything over and finally remove the direct accessor to
+> handler_data.
+> 
+> msi_desc in a hierarchical implementation should actually be in
+> chip_data, but we probably need to keep the msi_desc pointer for
+> backward compability reasons.
+> 
+>> With above change applied, struct irq_data only hosts per-chip data, and
+>> struct irq_desc hosts per-irq data. What's your thoughts?
+> 
+> I'm not so happy with exposing irqdesc to random code again. I went a
+> great way to hide it from abuse.
+> 
+> So I'd rather like to see something like this:
+> 
+> struct irq_common_data {
+> 	unsigned int		state_use_accessors;
+> 	unsigned int		node;
+> 	void			*handler_data;
+> 	cpumask_var_t		affinity;
+> };
+> 
+> struct irq_data {
+> 	u32			mask;
+> 	unsigned int		irq;
+> 	unsigned long		hwirq;
+> 	struct irq_chip		*chip;
+> 	struct irq_domain	*domain;
+> #ifdef	CONFIG_IRQ_DOMAIN_HIERARCHY
+> 	struct irq_data		*parent_data;
+> #endif
+> 	void			*chip_data;
+> 	struct msi_desc		*msi_desc;
+> 	struct irq_common_data	*common_data;
+> };
+> 
+> struct irq_desc {
+>        struct irq_data		irq_data;
+>        struct common_irq_data	common_data;
+>        ...
+> };
+Great, will go this step by step:)
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index dbc17b3b51d4..c6fbb8cb58de 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -6152,6 +6152,13 @@ F:	Documentation/devicetree/bindings/i2c/max6697.txt
- F:	drivers/hwmon/max6697.c
- F:	include/linux/platform_data/max6697.h
- 
-+MAXIM MUIC CHARGER DRIVERS FOR EXYNOS BASED BOARDS
-+M:	Krzysztof Kozlowski <k.kozlowski@samsung.com>
-+L:	linux-pm@vger.kernel.org
-+S:	Supported
-+F:	drivers/power/max14577_charger.c
-+F:	drivers/power/max77693_charger.c
-+
- MAXIRADIO FM RADIO RECEIVER DRIVER
- M:	Hans Verkuil <hverkuil@xs4all.nl>
- L:	linux-media@vger.kernel.org
--- 
-1.9.1
-
+> 
+> Thanks,
+> 
+> 	tglx
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
