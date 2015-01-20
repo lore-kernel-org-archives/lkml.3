@@ -1,78 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753313AbbATKiq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 05:38:46 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:38818 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752555AbbATKio (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 05:38:44 -0500
-Date: Tue, 20 Jan 2015 10:38:40 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "oleg@redhat.com" <oleg@redhat.com>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
-Subject: Re: Behaviour of smp_mb__{before,after}_spin* and acquire/release
-Message-ID: <20150120103840.GB24303@arm.com>
-References: <20150113163353.GE31784@arm.com>
- <20150120093443.GA11596@twins.programming.kicks-ass.net>
+	id S1753899AbbATKjN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 05:39:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57340 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753717AbbATKjL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 05:39:11 -0500
+Message-ID: <54BE3044.6050404@redhat.com>
+Date: Tue, 20 Jan 2015 11:39:00 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150120093443.GA11596@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Li Kaihang <li.kaihang@zte.com.cn>
+CC: gleb@kernel.org, tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        x86@kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] arch/x86/kvm/vmx.c: Fix external interrupts inject
+ directly bug with guestos RFLAGS.IF=0
+References: <OF9FB4191F.311C876C-ON48257DCE.003C223F-48257DCE.0044DE9C@zte.com.cn> <54BD22CB.902@redhat.com> <OFA79F49F0.447F9773-ON48257DD3.00086E68-48257DD3.0039B508@zte.com.cn>
+In-Reply-To: <OFA79F49F0.447F9773-ON48257DD3.00086E68-48257DD3.0039B508@zte.com.cn>
+Content-Type: text/plain; charset=gbk
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 09:34:43AM +0000, Peter Zijlstra wrote:
-> On Tue, Jan 13, 2015 at 04:33:54PM +0000, Will Deacon wrote:
-> > I started dusting off a series I've been working to implement a relaxed
-> > atomic API in Linux (i.e. things like atomic_read(v, ACQUIRE)) but I'm
-> > having trouble making sense of the ordering semantics we have in mainline
-> > today:
-> 
-> >   2. Does smp_mb__after_unlock_lock order smp_store_release against
-> >      smp_load_acquire? Again, Documentation/memory-barriers.txt puts
-> >      these operations into the RELEASE and ACQUIRE classes respectively,
-> >      but since smp_mb__after_unlock_lock is a NOP everywhere other than
-> >      PowerPC, I don't think this is enforced by the current code. 
-> 
-> Yeah, wasn't Paul going to talk to Ben about that? PPC is the only arch
-> that has the weak ACQUIRE/RELEASE for its spinlocks.
 
-Indeed, and I'd love to kill that, especially as its really confusing
-when we have other ACQUIRE/RELEASE functions (like your smp_* accessors)
-that do need explicit barriers for general RELEASE->ACQUIRE ordering.
 
-If people start using smp_mb__after_unlock_lock for *that*, then other
-architectures will need to implement it as a barrier and penalise their
-spinlocks in doing so.
+On 20/01/2015 11:34, Li Kaihang wrote:
+> Li kaihang: I think I make a mistake here that IDT-vectoring information field is not written by vectored event but is done by Event Delivery.
+>             vm exit during Event Delivery is not triggered by external interrupt delivery, only vm exit due to vectored event is done so.
+>             Both are completely different, and you are right. I'm very sorry this patch is wrong.
 
-> >      Most
-> >      architectures follow the pattern used by asm-generic/barrier.h:
-> > 
-> >        release: smp_mb(); STORE
-> >        acquire: LOAD; smp_mb();
-> > 
-> >      which doesn't provide any release -> acquire ordering afaict.
-> 
-> Only when combined on the same address, if the LOAD observes the result
-> of the STORE we can guarantee the rest of the ordering. And if you
-> build a locking primitive with them (or circular lists or whatnot) you
-> have that extra condition.
-> 
-> But yes, I see your argument that this implementation is weak like the
-> PPC.
+No problem!
 
-I'm absolutely fine with that, I'd just like to make sure that it's
-documented so that people don't use smp_mb__after_unlock_lock() to
-order smp_store_release -> smp_load_acquire.
-
-I'll have a crack at a Documentation patch if you don't beat me to it...
-
-Will
+Paolo
