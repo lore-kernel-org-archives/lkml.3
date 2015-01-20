@@ -1,95 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026AbbATOnD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 09:43:03 -0500
-Received: from mail-oi0-f50.google.com ([209.85.218.50]:43949 "EHLO
-	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751424AbbATOnA (ORCPT
+	id S1752264AbbATOod (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 09:44:33 -0500
+Received: from mail-ig0-f178.google.com ([209.85.213.178]:32998 "EHLO
+	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751772AbbATOoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 09:43:00 -0500
+	Tue, 20 Jan 2015 09:44:32 -0500
+Date: Tue, 20 Jan 2015 14:44:26 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Fabio Estevam <festevam@gmail.com>
+Cc: Mark Brown <broonie@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        anthony.olech.opensource@diasemi.com, support.opensource@diasemi.com,
+        johan@kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
+        Fabio Estevam <fabio.estevam@freescale.com>
+Subject: Re: [PATCH] mfd: da9052-core: Fix platform-device id collision
+Message-ID: <20150120144426.GU13701@x1>
+References: <1418175593-23474-1-git-send-email-festevam@gmail.com>
+ <20141210094649.GA23481@x1>
+ <20141210111925.GP11764@sirena.org.uk>
+ <20141210121125.GC23481@x1>
+ <CAOMZO5DVOojrVoM1X6fRDfoNc50b8nPtv7Bu=rFYGBpXMbkiJQ@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <CANq1E4SjfZOKqTsdkt519vKc1Poeah5McVJBb_spdHjbKv4=7g@mail.gmail.com>
-References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>
-	<1421435777-25306-2-git-send-email-gregkh@linuxfoundation.org>
-	<54BE5DC8.70706@gmail.com>
-	<CANq1E4SjfZOKqTsdkt519vKc1Poeah5McVJBb_spdHjbKv4=7g@mail.gmail.com>
-Date: Tue, 20 Jan 2015 09:42:59 -0500
-X-Google-Sender-Auth: hkvA3Rl7ZJmyo-1DAoalFjERnFM
-Message-ID: <CA+5PVA46wVa-L9K1zgHzt=Fwn6YFBYhxJUjiozSH4XBY03WMVw@mail.gmail.com>
-Subject: Re: [PATCH 01/13] kdbus: add documentation
-From: Josh Boyer <jwboyer@fedoraproject.org>
-To: David Herrmann <dh.herrmann@gmail.com>
-Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tom Gundersen <teg@jklm.no>, Jiri Kosina <jkosina@suse.cz>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Linux API <linux-api@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Djalal Harouni <tixxdz@opendz.org>, Daniel Mack <daniel@zonque.org>,
-        Johannes Stezenbach <js@sig21.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAOMZO5DVOojrVoM1X6fRDfoNc50b8nPtv7Bu=rFYGBpXMbkiJQ@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 9:31 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
-> Hi Michael
->
-> On Tue, Jan 20, 2015 at 2:53 PM, Michael Kerrisk (man-pages)
-> <mtk.manpages@gmail.com> wrote:
->> On 01/16/2015 08:16 PM, Greg Kroah-Hartman wrote:
->>> From: Daniel Mack <daniel@zonque.org>
->>>
->>> kdbus is a system for low-latency, low-overhead, easy to use
->>> interprocess communication (IPC).
->>>
->>> The interface to all functions in this driver is implemented via ioctls
->>> on files exposed through a filesystem called 'kdbusfs'. The default
->>> mount point of kdbusfs is /sys/fs/kdbus. This patch adds detailed
->>> documentation about the kernel level API design.
->>
->> I have some details feedback on the contents of this file, and some
->> bigger questions. I'll split them out into separate mails.
->>
->> So here, the bigger, general questions to start with. I've arrived late
->> to this, so sorry if they've already been discussed, but the answers to
->> some of the questions should actually be in this file, I would have
->> expected.
->>
->> This is an enormous and complex API. Why is the API ioctl() based,
->> rather than system-call-based? Have we learned nothing from the hydra
->> that the futex() multiplexing syscall became? (And kdbus is an order
->> of magnitude more complex, by the look of things.) At the very least,
->> a *good* justification of why the API is ioctl()-based should be part
->> of this documentation file.
->>
->> An observation: The documentation below is substantial, but this API is
->> enormous, so the documentation still feels rather thin. What would
->> really help would be some example code in the doc.
->>
->> And on the subject of code examples... Are there any (prototype)
->> working user-space applications that exercise the current kdbus
->> implementation? That is, can I install these kdbus patches, and
->> then find a simple example application somewhere that does
->> something to exercise kdbus?
->
-> If you run a 3.18 kernel, you can install kdbus.ko from our repository
-> and boot a full Fedora system running Gnome3 with kdbus, given that
-> you compiled systemd with --enable-kdbus (which is still
-> experimental). No legacy dbus1 daemon is running. Instead, we have a
-> bus-proxy that converts classic dbus1 to kdbus, so all
-> bus-communication runs on kdbus.
+On Tue, 23 Dec 2014, Fabio Estevam wrote:
+> On Wed, Dec 10, 2014 at 10:11 AM, Lee Jones <lee.jones@linaro.org> wrote:
+> 
+> > My train of thought was that the original configuration has not
+> > changed since 2011.  I guess other regulators have been recently
+> > introduced.  Very well, applied to -fixes.
+> 
+> Still don't see this patch in linux-next.
 
-FWIW, we've been building a "playground" repository for the kernel
-that contains this already for Fedora.  If you have a stock Fedora 21
-or rawhide install, you can use:
+Sorry for the delay, I have been on vacation.
 
-https://copr.fedoraproject.org/coprs/jwboyer/kernel-playground/
+I sent out my -fixes branch to Linus this morning.
 
-which has the kernel+kdbus and systemd built with --enable-kdbus
-already.  Easy enough to throw in a VM for testing.
-
-josh
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
