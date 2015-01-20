@@ -1,76 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752814AbbATSRI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 13:17:08 -0500
-Received: from smtprelay0021.hostedemail.com ([216.40.44.21]:56219 "EHLO
+	id S1752045AbbATSTP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 13:19:15 -0500
+Received: from smtprelay0107.hostedemail.com ([216.40.44.107]:54393 "EHLO
 	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752707AbbATSRF (ORCPT
+	by vger.kernel.org with ESMTP id S1751241AbbATSTO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 13:17:05 -0500
+	Tue, 20 Jan 2015 13:19:14 -0500
 X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:152:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3874:4321:4605:5007:6119:6261:7514:8526:8957:9036:9176:10004:10400:10848:11217:11232:11658:11914:12043:12296:12517:12519:12740:13069:13095:13161:13229:13311:13357:13894:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: wool49_7779aa04bba23
-X-Filterd-Recvd-Size: 2798
-Message-ID: <1421777819.2724.5.camel@perches.com>
-Subject: Re: [PATCH] of: Custom printk format specifier for device node
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::,RULES_HIT:41:355:379:541:599:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2559:2562:2828:3138:3139:3140:3141:3142:3352:3622:3865:3867:4321:5007:6261:10004:10400:10848:11026:11232:11473:11658:11914:12043:12296:12438:12517:12519:12740:13069:13311:13357:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: level83_8a79ed0e4774d
+X-Filterd-Recvd-Size: 2279
+Message-ID: <1421777950.2724.7.camel@perches.com>
+Subject: Re: [PATCH] staging: dgnc: warning line over 80 characters
 From: Joe Perches <joe@perches.com>
-To: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-Cc: Rob Herring <robherring2@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 20 Jan 2015 10:16:59 -0800
-In-Reply-To: <B282C7F7-D221-4D7D-AB33-533C0204C4CF@konsulko.com>
-References: <1421764441-11928-1-git-send-email-pantelis.antoniou@konsulko.com>
-	 <CAL_JsqLVJjq3Ov=J-5LtXiTQPLvR5Y=+tB1i16k_rN3j5dODFQ@mail.gmail.com>
-	 <E7065DB3-DD6B-4110-A066-8C7268186831@konsulko.com>
-	 <1421776794.2724.1.camel@perches.com>
-	 <B282C7F7-D221-4D7D-AB33-533C0204C4CF@konsulko.com>
-Content-Type: text/plain; charset="UTF-8"
+To: Mohamed Lotfy Hammad <mohamed.lotfy.hammad@gmail.com>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        lidza.louina@gmail.com, markh@compro.net, gregkh@linuxfoundation.org,
+        driverdev-devel@linuxdriverproject.org
+Date: Tue, 20 Jan 2015 10:19:10 -0800
+In-Reply-To: <20150120140827.GA8352@lotfy1893-Ubuntu>
+References: <20150120140827.GA8352@lotfy1893-Ubuntu>
+Content-Type: text/plain; charset="ISO-8859-1"
 X-Mailer: Evolution 3.12.7-0ubuntu1 
 Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2015-01-20 at 20:06 +0200, Pantelis Antoniou wrote:
-> On Jan 20, 2015, at 19:59 , Joe Perches <joe@perches.com> wrote:
-> > On Tue, 2015-01-20 at 16:52 +0200, Pantelis Antoniou wrote:
-> >>> On Jan 20, 2015, at 16:47 , Rob Herring <robherring2@gmail.com> wrote:
-> >>> On Tue, Jan 20, 2015 at 8:34 AM, Pantelis Antoniou
-> >>> <pantelis.antoniou@konsulko.com> wrote:
-> >>>> 90% of the usage of device node's full_name is printing it out
-> >>>> in a kernel message. Preparing for the eventual delayed allocation
-> >>>> introduce a custom printk format specifier that is both more
-> >>>> compact and more pleasant to the eye.
-> > []
-> >>>> diff --git a/Documentation/printk-formats.txt b/Documentation/printk-formats.txt
-> > []
-> >>>> +Device tree nodes:
-> >>>> +
-> >>>> +       %pO{,1,2}
-> >>> 
-> >>> 'O' is not very obvious, but I imagine we are somewhat limted in our
-> >>> choice here?
-> >>> 
-> >> 
-> >> All the good women are married, all the handsome men are gay, all the obvious
-> >> format specifiers are taken.
-> > 
-> > Not really at all.
-> > 
-> > I quite dislike '0' as the format type specifier for
-> > a device tree node as there's no mnemonic mapping.
-> > 
-> There’s only so many characters one can use; [DdNn] are taken. And it’s O != 0.
+On Tue, 2015-01-20 at 16:08 +0200, Mohamed Lotfy Hammad wrote:
+> This patch fixes the following checkpatch.pl warning:
+> fix line over 80 characters 
+[]
+> diff --git a/drivers/staging/dgnc/dgnc_driver.c b/drivers/staging/dgnc/dgnc_driver.c
+[]
+> @@ -54,14 +54,14 @@ MODULE_SUPPORTED_DEVICE("dgnc");
+>   * protos for this file
+>   *
+>   */
+> -static int		dgnc_start(void);
+> -static int		dgnc_finalize_board_init(struct dgnc_board *brd);
+> -static void		dgnc_init_globals(void);
+> -static int		dgnc_found_board(struct pci_dev *pdev, int id);
+> -static void		dgnc_cleanup_board(struct dgnc_board *brd);
+> -static void		dgnc_poll_handler(ulong dummy);
+> -static int		dgnc_init_one(struct pci_dev *pdev, const struct pci_device_id *ent);
+> -static void		dgnc_do_remap(struct dgnc_board *brd);
+> +static int dgnc_start(void);
+> +static int dgnc_finalize_board_init(struct dgnc_board *brd);
+> +static void dgnc_init_globals(void);
+> +static int dgnc_found_board(struct pci_dev *pdev, int id);
+> +static void dgnc_cleanup_board(struct dgnc_board *brd);
+> +static void dgnc_poll_handler(ulong dummy);
+> +static int dgnc_init_one(struct pci_dev *pdev, const struct pci_device_id *ent);
+> +static void dgnc_do_remap(struct dgnc_board *brd);
 
-The '[Dd]' entry type doesn't just have to be used for dentries.
-It could also be used for Device Tree Nodes via 'DTN[x]'
-
-'T' for tree could also be used.
+Better still would be to eventually rearrange the code
+to avoid the need for static forward declarations.
 
 
