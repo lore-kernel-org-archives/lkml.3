@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752219AbbATBBC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 20:01:02 -0500
-Received: from eusmtp01.atmel.com ([212.144.249.242]:34787 "EHLO
-	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751505AbbATBBA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 20:01:00 -0500
-Message-ID: <54BDA8A0.1050604@atmel.com>
-Date: Tue, 20 Jan 2015 09:00:16 +0800
-From: Bo Shen <voice.shen@atmel.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S1752084AbbATBrq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 20:47:46 -0500
+Received: from ozlabs.org ([103.22.144.67]:40920 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751557AbbATBrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 20:47:45 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Oleg Nesterov <oleg@redhat.com>,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Peter Zijlstra \(Intel\)" <peterz@infradead.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Prarit Bhargava <prarit@redhat.com>, Fabian Frederick <fabf@skynet.be>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC/PATCH] init/main.c: Simplify initcall_blacklisted()
+In-Reply-To: <20150119191924.GA19153@redhat.com>
+References: <1421454312-30505-1-git-send-email-linux@rasmusvillemoes.dk> <20150119191924.GA19153@redhat.com>
+User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Tue, 20 Jan 2015 11:35:39 +1030
+Message-ID: <87y4oyb6sc.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Peter Rosin <peda@lysator.liu.se>
-CC: Mark Brown <broonie@kernel.org>, <nicolas.ferre@atmel.com>,
-        <alsa-devel@alsa-project.org>, <linux-sound@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] ASoC: atmel_ssc_dai: remove clock pin comments
-References: <54BD0CA5.4070207@lysator.liu.se>
-In-Reply-To: <54BD0CA5.4070207@lysator.liu.se>
-Content-Type: text/plain; charset="utf-8"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.168.5.13]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
-
-On 01/19/2015 09:54 PM, Peter Rosin wrote:
->> As the clock can be get from TK/RK pin, so remove the comments.
+Oleg Nesterov <oleg@redhat.com> writes:
+> On 01/17, Rasmus Villemoes wrote:
 >>
->> Signed-off-by: Bo Shen <voice.shen@atmel.com>
+>> Using kasprintf to get the function name makes us look up the name
+>> twice, along with all the vsnprintf overhead of parsing the format
+>> string etc. It also means there is an allocation failure case to deal
+>> with. Since symbol_string in vsprintf.c would anyway allocate an array
+>> of size KSYM_SYMBOL_LEN on the stack, that might as well be done up
+>> here.
+>> 
+>> Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
 >> ---
->>   sound/soc/atmel/atmel_ssc_dai.c | 4 ----
->>   1 file changed, 4 deletions(-)
->> diff --git a/sound/soc/atmel/atmel_ssc_dai.c b/sound/soc/atmel/atmel_ssc_dai.c
->> index e691aab..198661b 100644
->> --- a/sound/soc/atmel/atmel_ssc_dai.c
->> +++ b/sound/soc/atmel/atmel_ssc_dai.c
->> @@ -452,10 +452,6 @@ static int atmel_ssc_hw_params(struct snd_pcm_substream *substream,
->>   	case SND_SOC_DAIFMT_I2S | SND_SOC_DAIFMT_CBM_CFM:
->>   		/*
->>   		 * I2S format, CODEC supplies BCLK and LRC clocks.
->> -		 *
->> -		 * The SSC transmit clock is obtained from the BCLK signal on
->> -		 * on the TK line, and the SSC receive clock is
->> -		 * generated from the transmit clock.
->>   		 */
->>   		rcmr =	  SSC_BF(RCMR_PERIOD, 0)
->>   			| SSC_BF(RCMR_STTDLY, START_DELAY)
->> --
->> 2.3.0.rc0
+>> 
+>> Notes:
+>>     I don't know how expensive it is to do the symbol lookup for each
+>>     initcall. It might be worthwhile adding an
+>>     
+>>       if (list_empty(&blacklisted_initcalls))
+>>         return false;
+>>     
+>>     at the very beginning of initcall_blacklisted(), since this is a debug
+>>     feature and the blacklist is indeed usually empty.
 >
-> Hi!
+> If we want to optimize this... I am wondering if we can change
+> initcall_blacklist()
 >
-> You should probably remove that comment from the case with
-> SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_CBM_CFM as well...
-
-Thanks, I will remove it in next version.
-
-> Cheers,
-> Peter
+> 	-	entry->buf = alloc_bootmem(strlen(str_entry) + 1);
+> 	+	ebtry->fn = kallsyms_lookup_name(str_entry);
 >
+> and then change initcall_blacklisted() to just compare the pointers.
 
-Best Regards,
-Bo Shen
+That would make far, far more sense.  It would fail for modules of
+course, but that might be OK.  Prarit, this was your code; does it
+matter?
+
+Cheers,
+Rusty.
