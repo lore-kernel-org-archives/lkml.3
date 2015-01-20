@@ -1,269 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899AbbATUOQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 15:14:16 -0500
-Received: from g4t3425.houston.hp.com ([15.201.208.53]:22208 "EHLO
-	g4t3425.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753527AbbATUNu (ORCPT
+	id S1753308AbbATUSU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 15:18:20 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:54683 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751664AbbATUSS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 15:13:50 -0500
-From: Waiman Long <Waiman.Long@hp.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-arch@vger.kernel.org, x86@kernel.org, linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org,
-        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
-        Paolo Bonzini <paolo.bonzini@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Rik van Riel <riel@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
-        David Vrabel <david.vrabel@citrix.com>,
-        Oleg Nesterov <oleg@redhat.com>, Scott J Norton <scott.norton@hp.com>,
-        Douglas Hatch <doug.hatch@hp.com>, Waiman Long <Waiman.Long@hp.com>
-Subject: [PATCH v14 11/11] pvqspinlock, x86: Enable PV qspinlock for XEN
-Date: Tue, 20 Jan 2015 15:12:35 -0500
-Message-Id: <1421784755-21945-12-git-send-email-Waiman.Long@hp.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1421784755-21945-1-git-send-email-Waiman.Long@hp.com>
-References: <1421784755-21945-1-git-send-email-Waiman.Long@hp.com>
+	Tue, 20 Jan 2015 15:18:18 -0500
+MIME-Version: 1.0
+In-Reply-To: <CAAfSe-tAwURc_P+-0+m22ao9r+Fud6Ae89JF8FGsWgg_49Mdhg@mail.gmail.com>
+References: <1421402411-3479-1-git-send-email-chunyan.zhang@spreadtrum.com>
+ <1421402411-3479-6-git-send-email-chunyan.zhang@spreadtrum.com>
+ <CAL_JsqJg=BtanmR_rhYthCUhKbErs8viZ7MMMXr-PmPjUV4BRQ@mail.gmail.com>
+ <CAAfSe-vqqpvbYe0bEeD-3_QsLYz4r7pxMuA1-L4cYRw9TY=NgA@mail.gmail.com>
+ <CAL_JsqLTArm1v8ka39_KLq2jMKkK2ZXQ6-an=JSWVgTK1LWmOg@mail.gmail.com> <CAAfSe-tAwURc_P+-0+m22ao9r+Fud6Ae89JF8FGsWgg_49Mdhg@mail.gmail.com>
+From: Rob Herring <robherring2@gmail.com>
+Date: Tue, 20 Jan 2015 14:17:56 -0600
+Message-ID: <CAL_JsqJz+G6WjBSf=ye9rTLBUD9bw54szhZJROD5WTKMG99NHQ@mail.gmail.com>
+Subject: Re: [PATCH v5 5/5] tty/serial: Add Spreadtrum sc9836-uart driver support
+To: Lyra Zhang <zhang.lyra@gmail.com>
+Cc: Chunyan Zhang <chunyan.zhang@spreadtrum.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Rutland <mark.rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>, Jiri Slaby <jslaby@suse.cz>,
+        Jason Cooper <jason@lakedaemon.net>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Florian Vaussard <florian.vaussard@epfl.ch>,
+        Andrew Lunn <andrew@lunn.ch>, Robert Richter <rrichter@cavium.com>,
+        Hayato Suzuki <hytszk@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Antony Pavlov <antonynpavlov@gmail.com>,
+        Joel Schopp <Joel.Schopp@amd.com>,
+        Suravee Suthikulanit <Suravee.Suthikulpanit@amd.com>,
+        Shawn Guo <shawn.guo@linaro.org>, lea.yan@linaro.org,
+        Jorge Ramirez-Ortiz <jorge.ramirez-ortiz@linaro.org>,
+        Orson Zhai <orsonzhai@gmail.com>,
+        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
+        "zhizhou.zhang" <zhizhou.zhang@spreadtrum.com>,
+        "lanqing.liu@spreadtrum.com" <lanqing.liu@spreadtrum.com>,
+        =?UTF-8?B?V2VpIFFpYW8gKOS5lOS8nyk=?= <wei.qiao@spreadtrum.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the necessary XEN specific code to allow XEN to
-support the CPU halting and kicking operations needed by the queue
-spinlock PV code.
+On Tue, Jan 20, 2015 at 1:37 AM, Lyra Zhang <zhang.lyra@gmail.com> wrote:
+> Hi, Rob
+>
+> I still have a question to be conform, specific describes below:
+>
+> On Mon, Jan 19, 2015 at 10:11 PM, Rob Herring <robherring2@gmail.com> wrote:
+>> On Mon, Jan 19, 2015 at 3:55 AM, Lyra Zhang <zhang.lyra@gmail.com> wrote:
+>>> On Sat, Jan 17, 2015 at 12:41 AM, Rob Herring <robherring2@gmail.com> wrote:
+>>>> On Fri, Jan 16, 2015 at 4:00 AM, Chunyan Zhang
+>>>> <chunyan.zhang@spreadtrum.com> wrote:
+>>>>> Add a full sc9836-uart driver for SC9836 SoC which is based on the
+>>>>> spreadtrum sharkl64 platform.
+>>>>> This driver also support earlycon.
+>>>>> This patch also replaced the spaces between the macros and their
+>>>>> values with the tabs in serial_core.h
+>>
+>> [...]
+>>
+>>>>> +static int __init sprd_serial_init(void)
+>>>>> +{
+>>>>> +       int ret = 0;
+>>>>> +
+>>>>> +       ret = uart_register_driver(&sprd_uart_driver);
+>>>>
+>>>> This can be done in probe now. Then you can use module_platform_driver().
+>>>>
+>>>
+>>> Question:
+>>> 1. there are 4 uart ports configured in dt for sprd_serial, so probe
+>>> will be called 4 times, but uart_register_driver only needs to be
+>>> called one time, so can we use uart_driver.state to check if
+>>> uart_register_driver has already been called ?
+>>
+>> Yes.
+>>
+>>> 2. if I use module_platform_driver() instead of
+>>> module_init(sprd_serial_init)  and  module_exit(sprd_serial_exit) , I
+>>> must move uart_unregister_driver() which is now processed in
+>>> sprd_serial_exit() to sprd_remove(), there is a similar problem with
+>>> probe(), sprd_remove() will also be called 4 times, and actually it
+>>> should be called only one time. How can we deal with this case?
+>>
+>> Look at pl01x or Samsung UART drivers which have done this conversion.
+>
+> Samsung UART does use module_platform_driver, but pl010/pl011 doesn't.
 
-Signed-off-by: Waiman Long <Waiman.Long@hp.com>
----
- arch/x86/xen/spinlock.c |  149 +++++++++++++++++++++++++++++++++++++++++++++--
- kernel/Kconfig.locks    |    2 +-
- 2 files changed, 145 insertions(+), 6 deletions(-)
+That is because pl011 is an amba_device rather than a platform_device
+and there is not an equivalent macro for this boilerplate (although I
+think one has been posted recently).
 
-diff --git a/arch/x86/xen/spinlock.c b/arch/x86/xen/spinlock.c
-index d332ae0..60e444c 100644
---- a/arch/x86/xen/spinlock.c
-+++ b/arch/x86/xen/spinlock.c
-@@ -17,6 +17,12 @@
- #include "xen-ops.h"
- #include "debugfs.h"
- 
-+static DEFINE_PER_CPU(int, lock_kicker_irq) = -1;
-+static DEFINE_PER_CPU(char *, irq_name);
-+static bool xen_pvspin = true;
-+
-+#ifndef CONFIG_QUEUE_SPINLOCK
-+
- enum xen_contention_stat {
- 	TAKEN_SLOW,
- 	TAKEN_SLOW_PICKUP,
-@@ -100,12 +106,9 @@ struct xen_lock_waiting {
- 	__ticket_t want;
- };
- 
--static DEFINE_PER_CPU(int, lock_kicker_irq) = -1;
--static DEFINE_PER_CPU(char *, irq_name);
- static DEFINE_PER_CPU(struct xen_lock_waiting, lock_waiting);
- static cpumask_t waiting_cpus;
- 
--static bool xen_pvspin = true;
- __visible void xen_lock_spinning(struct arch_spinlock *lock, __ticket_t want)
- {
- 	int irq = __this_cpu_read(lock_kicker_irq);
-@@ -213,6 +216,118 @@ static void xen_unlock_kick(struct arch_spinlock *lock, __ticket_t next)
- 	}
- }
- 
-+#else /* CONFIG_QUEUE_SPINLOCK */
-+
-+#ifdef CONFIG_XEN_DEBUG_FS
-+static u32 kick_nohlt_stats;		/* Kick but not halt count	*/
-+static u32 halt_qhead_stats;		/* Queue head halting count	*/
-+static u32 halt_qnode_stats;		/* Queue node halting count	*/
-+static u32 halt_abort_stats;		/* Halting abort count		*/
-+static u32 wake_kick_stats;		/* Wakeup by kicking count	*/
-+static u32 wake_spur_stats;		/* Spurious wakeup count	*/
-+static u64 time_blocked;		/* Total blocking time		*/
-+
-+void xen_lock_stats(int stat_types)
-+{
-+	if (stat_types & PV_LOCKSTAT_WAKE_KICKED)
-+		add_smp(&wake_kick_stats, 1);
-+	if (stat_types & PV_LOCKSTAT_WAKE_SPURIOUS)
-+		add_smp(&wake_spur_stats, 1);
-+	if (stat_types & PV_LOCKSTAT_KICK_NOHALT)
-+		add_smp(&kick_nohlt_stats, 1);
-+	if (stat_types & PV_LOCKSTAT_HALT_QHEAD)
-+		add_smp(&halt_qhead_stats, 1);
-+	if (stat_types & PV_LOCKSTAT_HALT_QNODE)
-+		add_smp(&halt_qnode_stats, 1);
-+	if (stat_types & PV_LOCKSTAT_HALT_ABORT)
-+		add_smp(&halt_abort_stats, 1);
-+}
-+PV_CALLEE_SAVE_REGS_THUNK(xen_lock_stats);
-+
-+static inline u64 spin_time_start(void)
-+{
-+	return sched_clock();
-+}
-+
-+static inline void spin_time_accum_blocked(u64 start)
-+{
-+	u64 delta;
-+
-+	delta = sched_clock() - start;
-+	add_smp(&time_blocked, delta);
-+}
-+#else /* CONFIG_XEN_DEBUG_FS */
-+static inline void xen_lock_stats(int stat_types)
-+{
-+}
-+
-+static inline u64 spin_time_start(void)
-+{
-+	return 0;
-+}
-+
-+static inline void spin_time_accum_blocked(u64 start)
-+{
-+}
-+#endif /* CONFIG_XEN_DEBUG_FS */
-+
-+void xen_kick_cpu(int cpu)
-+{
-+	xen_send_IPI_one(cpu, XEN_SPIN_UNLOCK_VECTOR);
-+}
-+PV_CALLEE_SAVE_REGS_THUNK(xen_kick_cpu);
-+
-+/*
-+ * Halt the current CPU & release it back to the host
-+ * Return 0 if halted, -1 otherwise.
-+ */
-+int xen_halt_cpu(u8 *byte, u8 val)
-+{
-+	int irq = __this_cpu_read(lock_kicker_irq);
-+	unsigned long flags;
-+	u64 start;
-+
-+	/* If kicker interrupts not initialized yet, just spin */
-+	if (irq == -1)
-+		return -1;
-+
-+	/*
-+	 * Make sure an interrupt handler can't upset things in a
-+	 * partially setup state.
-+	 */
-+	local_irq_save(flags);
-+	start = spin_time_start();
-+
-+	/* clear pending */
-+	xen_clear_irq_pending(irq);
-+
-+	/* Allow interrupts while blocked */
-+	local_irq_restore(flags);
-+	/*
-+	 * Don't halt if the content of the given byte address differs from
-+	 * the expected value. A read memory barrier is added to make sure that
-+	 * the latest value of the byte address is fetched.
-+	 */
-+	smp_rmb();
-+	if (*byte != val) {
-+		xen_lock_stats(PV_LOCKSTAT_HALT_ABORT);
-+		return -1;
-+	}
-+	/*
-+	 * If an interrupt happens here, it will leave the wakeup irq
-+	 * pending, which will cause xen_poll_irq() to return
-+	 * immediately.
-+	 */
-+
-+	/* Block until irq becomes pending (or perhaps a spurious wakeup) */
-+	xen_poll_irq(irq);
-+	spin_time_accum_blocked(start);
-+	return 0;
-+}
-+PV_CALLEE_SAVE_REGS_THUNK(xen_halt_cpu);
-+
-+#endif /* CONFIG_QUEUE_SPINLOCK */
-+
- static irqreturn_t dummy_handler(int irq, void *dev_id)
- {
- 	BUG();
-@@ -258,7 +373,6 @@ void xen_uninit_lock_cpu(int cpu)
- 	per_cpu(irq_name, cpu) = NULL;
- }
- 
--
- /*
-  * Our init of PV spinlocks is split in two init functions due to us
-  * using paravirt patching and jump labels patching and having to do
-@@ -275,8 +389,17 @@ void __init xen_init_spinlocks(void)
- 		return;
- 	}
- 	printk(KERN_DEBUG "xen: PV spinlocks enabled\n");
-+
-+#ifdef CONFIG_QUEUE_SPINLOCK
-+	pv_lock_ops.kick_cpu = xen_kick_cpu;
-+	pv_lock_ops.lockwait = PV_CALLEE_SAVE(xen_halt_cpu);
-+#ifdef CONFIG_XEN_DEBUG_FS
-+	pv_lock_ops.lockstat = PV_CALLEE_SAVE(xen_lock_stats);
-+#endif
-+#else
- 	pv_lock_ops.lock_spinning = PV_CALLEE_SAVE(xen_lock_spinning);
- 	pv_lock_ops.unlock_kick = xen_unlock_kick;
-+#endif
- }
- 
- /*
-@@ -321,6 +444,7 @@ static int __init xen_spinlock_debugfs(void)
- 
- 	d_spin_debug = debugfs_create_dir("spinlocks", d_xen);
- 
-+#ifndef CONFIG_QUEUE_SPINLOCK
- 	debugfs_create_u8("zero_stats", 0644, d_spin_debug, &zero_stats);
- 
- 	debugfs_create_u32("taken_slow", 0444, d_spin_debug,
-@@ -340,7 +464,22 @@ static int __init xen_spinlock_debugfs(void)
- 
- 	debugfs_create_u32_array("histo_blocked", 0444, d_spin_debug,
- 				spinlock_stats.histo_spin_blocked, HISTO_BUCKETS + 1);
--
-+#else /* CONFIG_QUEUE_SPINLOCK */
-+	debugfs_create_u32("kick_nohlt_stats",
-+			   0644, d_spin_debug, &kick_nohlt_stats);
-+	debugfs_create_u32("halt_qhead_stats",
-+			   0644, d_spin_debug, &halt_qhead_stats);
-+	debugfs_create_u32("halt_qnode_stats",
-+			   0644, d_spin_debug, &halt_qnode_stats);
-+	debugfs_create_u32("halt_abort_stats",
-+			   0644, d_spin_debug, &halt_abort_stats);
-+	debugfs_create_u32("wake_kick_stats",
-+			   0644, d_spin_debug, &wake_kick_stats);
-+	debugfs_create_u32("wake_spur_stats",
-+			   0644, d_spin_debug, &wake_spur_stats);
-+	debugfs_create_u64("time_blocked",
-+			   0644, d_spin_debug, &time_blocked);
-+#endif /* CONFIG_QUEUE_SPINLOCK */
- 	return 0;
- }
- fs_initcall(xen_spinlock_debugfs);
-diff --git a/kernel/Kconfig.locks b/kernel/Kconfig.locks
-index 57301de..1e66280 100644
---- a/kernel/Kconfig.locks
-+++ b/kernel/Kconfig.locks
-@@ -236,7 +236,7 @@ config ARCH_USE_QUEUE_SPINLOCK
- 
- config QUEUE_SPINLOCK
- 	def_bool y if ARCH_USE_QUEUE_SPINLOCK
--	depends on SMP && (!PARAVIRT_SPINLOCKS || !XEN)
-+	depends on SMP
- 
- config ARCH_USE_QUEUE_RWLOCK
- 	bool
--- 
-1.7.1
+> In the Samsung UART driver, uart_unregister_driver is processed in
+> remove(), like below:
+>
+> static int s3c24xx_serial_remove(struct platform_device *dev)
+> {
+>     struct uart_port *port = s3c24xx_dev_to_port(&dev->dev);
+>
+>     if (port) {
+>         s3c24xx_serial_cpufreq_deregister(to_ourport(port));
+>         uart_remove_one_port(&s3c24xx_uart_drv, port);
+>     }
+>
+>     uart_unregister_driver(&s3c24xx_uart_drv);
+> }
+>
+> if this serial has more than one ports, uart_unregister_driver() must
+> be called multiple times when the device need to be removed.
+> I think there may be a problem because that uart_unregister_driver()
+> will do kfree(drv->state) every time when it's called.
 
+Yes. Looks like a bug still in the Samsung driver. So follow what the
+pl01x driver does. It had the same problem, but there is a follow-up
+commit to fix it.
+
+Rob
