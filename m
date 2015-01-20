@@ -1,126 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754511AbbATTpS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 14:45:18 -0500
-Received: from syn.loicp.eu ([176.31.96.212]:51783 "EHLO mx0.loicp.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751557AbbATTpP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 14:45:15 -0500
-X-Greylist: delayed 359 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Jan 2015 14:45:14 EST
-Date: Tue, 20 Jan 2015 20:39:11 +0100
-From: Loic Pefferkorn <loic@loicp.eu>
-To: oleg.drokin@intel.com, andreas.dilger@intel.com, gdonald@gmail.com,
-        keith.mannthey@intel.com, john.hammond@intel.com,
-        devel@driverdev.osuosl.org, HPDD-discuss@ml01.01.org,
-        linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org
-Subject: [PATCH v2] staging: lustre: fix sparse warnings related to lock
- context imbalance
-Message-ID: <ba6b015f96529f26996146ed610189aba36772e2.1421782625.git.loic@loicp.eu>
+	id S1752580AbbATTnG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 14:43:06 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:57024 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751592AbbATTnD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 14:43:03 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <129259164.tYuuyxyNUx@sifl>
+References: <20150120185308.53f4af4e@canb.auug.org.au>
+	<1421780421.32504.2.camel@theros.lm.intel.com>
+	<CAOMZO5A0fjtzX+Gp8pWz=NawY1qEKK10BEgb7BMxTi_634qFYA@mail.gmail.com>
+	<129259164.tYuuyxyNUx@sifl>
+Date: Tue, 20 Jan 2015 17:43:01 -0200
+Message-ID: <CAOMZO5DsKT2rbSs8PuM6+KYcHZ6165-9eJPDXz=LJxiLW1tb-A@mail.gmail.com>
+Subject: Re: linux-next: Tree for Jan 20 -- Kernel panic - Unable to mount
+ root fs
+From: Fabio Estevam <festevam@gmail.com>
+To: Paul Moore <pmoore@redhat.com>
+Cc: Ross Zwisler <ross.zwisler@linux.intel.com>,
+        Boaz Harrosh <openosd@gmail.com>, Jens Axboe <axboe@kernel.dk>,
+        Sabrina Dubroca <sd@queasysnail.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org, linux-audit@redhat.com,
+        viro@zeniv.linux.org.uk, Richard Guy Briggs <rgb@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Applies against next-20150120.
+On Tue, Jan 20, 2015 at 5:24 PM, Paul Moore <pmoore@redhat.com> wrote:
+> On Tuesday, January 20, 2015 05:16:45 PM Fabio Estevam wrote:
+>> On Tue, Jan 20, 2015 at 5:00 PM, Ross Zwisler
+>>
+>> <ross.zwisler@linux.intel.com> wrote:
+>> > These were just nuisance warnings, I believe, so my guess is that this
+>> > isn't related to your kernel panic.   Reverting Boaz's patches to make
+>> > these warnings go away would let you know for sure.
+>>
+>> You are right. Reverting 937af5ecd0591e makes such warnings disappear.
+>
+> You guys are much quicker compiling kernels than I am :)
+>
+> Fabio, are you still seeing the same panic, just without the warnings?  Or has
+> the panic resolved itself as well?
 
-Add __acquires() and __releases() function annotations, to fix sparse warnings related to lock context imbalance.
+Just to clarify: I was not getting the same panic Sabrina originally reported.
 
-This patch fixes the following warnings:
+Reverting 937af5ecd0591e made the ram warnings go away.
 
-drivers/staging/lustre//lustre/libcfs/linux/linux-tracefile.c:153:5: warning: context imbalance in 'cfs_trace_lock_tcd' - wrong count at exit
-drivers/staging/lustre//lustre/libcfs/linux/linux-tracefile.c:171:39: warning: context imbalance in 'cfs_trace_unlock_tcd' - unexpected unlock
-drivers/staging/lustre//lustre/libcfs/hash.c:128:1: warning: context imbalance in 'cfs_hash_spin_lock' - wrong count at exit
-drivers/staging/lustre//lustre/libcfs/hash.c:134:1: warning: context imbalance in 'cfs_hash_spin_unlock' - unexpected unlock
-drivers/staging/lustre//lustre/libcfs/hash.c:142:9: warning: context imbalance in 'cfs_hash_rw_lock' - wrong count at exit
-include/linux/rwlock_api_smp.h:219:9: warning: context imbalance in 'cfs_hash_rw_unlock' - unexpected unlock
-drivers/staging/lustre//lustre/obdclass/cl_object.c:195:6: warning: context imbalance in 'cl_object_attr_lock' - wrong count at exit
-drivers/staging/lustre//lustre/obdclass/cl_object.c:204:6: warning: context imbalance in 'cl_object_attr_unlock' - unexpected unlock
+On my case I am running linux-next 20150120 plus this fix:
+http://www.spinics.net/lists/arm-kernel/msg393205.html
 
-Signed-off-by: Loic Pefferkorn <loic@loicp.eu>
----
- drivers/staging/lustre/lustre/libcfs/hash.c                  | 4 ++++
- drivers/staging/lustre/lustre/libcfs/linux/linux-tracefile.c | 2 ++
- drivers/staging/lustre/lustre/obdclass/cl_object.c           | 2 ++
- 3 files changed, 8 insertions(+)
+and things seem to boot fine here on my ARM platform.
 
-diff --git a/drivers/staging/lustre/lustre/libcfs/hash.c b/drivers/staging/lustre/lustre/libcfs/hash.c
-index 2d1e672..d89f81a 100644
---- a/drivers/staging/lustre/lustre/libcfs/hash.c
-+++ b/drivers/staging/lustre/lustre/libcfs/hash.c
-@@ -126,18 +126,21 @@ cfs_hash_nl_unlock(union cfs_hash_lock *lock, int exclusive) {}
- 
- static inline void
- cfs_hash_spin_lock(union cfs_hash_lock *lock, int exclusive)
-+	__acquires(&lock->spin)
- {
- 	spin_lock(&lock->spin);
- }
- 
- static inline void
- cfs_hash_spin_unlock(union cfs_hash_lock *lock, int exclusive)
-+	__releases(&lock->spin)
- {
- 	spin_unlock(&lock->spin);
- }
- 
- static inline void
- cfs_hash_rw_lock(union cfs_hash_lock *lock, int exclusive)
-+	__acquires(&lock->rw)
- {
- 	if (!exclusive)
- 		read_lock(&lock->rw);
-@@ -147,6 +150,7 @@ cfs_hash_rw_lock(union cfs_hash_lock *lock, int exclusive)
- 
- static inline void
- cfs_hash_rw_unlock(union cfs_hash_lock *lock, int exclusive)
-+	__releases(&lock->rw)
- {
- 	if (!exclusive)
- 		read_unlock(&lock->rw);
-diff --git a/drivers/staging/lustre/lustre/libcfs/linux/linux-tracefile.c b/drivers/staging/lustre/lustre/libcfs/linux/linux-tracefile.c
-index fdc7189..c8e2930 100644
---- a/drivers/staging/lustre/lustre/libcfs/linux/linux-tracefile.c
-+++ b/drivers/staging/lustre/lustre/libcfs/linux/linux-tracefile.c
-@@ -151,6 +151,7 @@ cfs_trace_buf_type_t cfs_trace_buf_idx_get(void)
-  * for details.
-  */
- int cfs_trace_lock_tcd(struct cfs_trace_cpu_data *tcd, int walking)
-+	__acquires(&tcd->tc_lock)
- {
- 	__LASSERT(tcd->tcd_type < CFS_TCD_TYPE_MAX);
- 	if (tcd->tcd_type == CFS_TCD_TYPE_IRQ)
-@@ -165,6 +166,7 @@ int cfs_trace_lock_tcd(struct cfs_trace_cpu_data *tcd, int walking)
- }
- 
- void cfs_trace_unlock_tcd(struct cfs_trace_cpu_data *tcd, int walking)
-+	__releases(&tcd->tcd_lock)
- {
- 	__LASSERT(tcd->tcd_type < CFS_TCD_TYPE_MAX);
- 	if (tcd->tcd_type == CFS_TCD_TYPE_IRQ)
-diff --git a/drivers/staging/lustre/lustre/obdclass/cl_object.c b/drivers/staging/lustre/lustre/obdclass/cl_object.c
-index c40bb6c..f13d1fb 100644
---- a/drivers/staging/lustre/lustre/obdclass/cl_object.c
-+++ b/drivers/staging/lustre/lustre/obdclass/cl_object.c
-@@ -193,6 +193,7 @@ static spinlock_t *cl_object_attr_guard(struct cl_object *o)
-  * cl_object_attr_get(), cl_object_attr_set().
-  */
- void cl_object_attr_lock(struct cl_object *o)
-+	__acquires(cl_object_attr_guard(o))
- {
- 	spin_lock(cl_object_attr_guard(o));
- }
-@@ -202,6 +203,7 @@ EXPORT_SYMBOL(cl_object_attr_lock);
-  * Releases data-attributes lock, acquired by cl_object_attr_lock().
-  */
- void cl_object_attr_unlock(struct cl_object *o)
-+	__releases(cl_object_attr_guard(o))
- {
- 	spin_unlock(cl_object_attr_guard(o));
- }
--- 
-2.2.1
-
+Thanks
