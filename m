@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754714AbbATQlh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 11:41:37 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46993 "EHLO mx1.redhat.com"
+	id S1754751AbbATQln (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 11:41:43 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57890 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753252AbbATQle (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 11:41:34 -0500
+	id S1753252AbbATQlk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 11:41:40 -0500
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>,
@@ -19,16 +19,16 @@ Cc: Jiri Olsa <jolsa@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 16/36] perf build: Add scripts objects building
-Date: Tue, 20 Jan 2015 17:39:13 +0100
-Message-Id: <1421771973-6022-17-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 17/36] perf build: Add perf regs objects building
+Date: Tue, 20 Jan 2015 17:39:14 +0100
+Message-Id: <1421771973-6022-18-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1421771973-6022-1-git-send-email-jolsa@kernel.org>
 References: <1421771973-6022-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the scripts objects building under build framework
+Move the regs objects building under build framework
 to be included in the libperf build object.
 
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
@@ -44,148 +44,57 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/Build                                |  1 +
- tools/perf/Makefile.perf                        | 22 ----------------------
- tools/perf/config/Makefile                      |  4 ++++
- tools/perf/scripts/Build                        |  2 ++
- tools/perf/scripts/perl/Perf-Trace-Util/Build   |  3 +++
- tools/perf/scripts/python/Perf-Trace-Util/Build |  3 +++
- tools/perf/util/Build                           |  2 ++
- tools/perf/util/scripting-engines/Build         |  6 ++++++
- 8 files changed, 21 insertions(+), 22 deletions(-)
- create mode 100644 tools/perf/scripts/Build
- create mode 100644 tools/perf/scripts/perl/Perf-Trace-Util/Build
- create mode 100644 tools/perf/scripts/python/Perf-Trace-Util/Build
- create mode 100644 tools/perf/util/scripting-engines/Build
+ tools/perf/Makefile.perf   | 7 -------
+ tools/perf/config/Makefile | 4 ++++
+ tools/perf/util/Build      | 2 ++
+ 3 files changed, 6 insertions(+), 7 deletions(-)
 
-diff --git a/tools/perf/Build b/tools/perf/Build
-index a9ff8fd0bff9..133ec649e5a2 100644
---- a/tools/perf/Build
-+++ b/tools/perf/Build
-@@ -35,5 +35,6 @@ CFLAGS_builtin-timechart.o += $(paths)
- libperf-y += util/
- libperf-y += arch/
- libperf-y += ui/
-+libperf-y += scripts/
- 
- gtk-y += ui/gtk/
 diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 472dfd6b766f..b01e677c464b 100644
+index b01e677c464b..1af8fc7f496d 100644
 --- a/tools/perf/Makefile.perf
 +++ b/tools/perf/Makefile.perf
-@@ -349,16 +349,6 @@ install-gtk: $(OUTPUT)libperf-gtk.so
+@@ -349,13 +349,6 @@ install-gtk: $(OUTPUT)libperf-gtk.so
  		$(INSTALL) $(OUTPUT)libperf-gtk.so '$(DESTDIR_SQ)$(libdir_SQ)'
  endif
  
--ifndef NO_LIBPERL
--  LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-perl.o
--  LIB_OBJS += $(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o
+-ifeq ($(NO_PERF_REGS),0)
+-  ifeq ($(ARCH),x86)
+-    LIB_H += arch/x86/include/perf_regs.h
+-  endif
+-  LIB_OBJS += $(OUTPUT)util/perf_regs.o
 -endif
 -
--ifndef NO_LIBPYTHON
--  LIB_OBJS += $(OUTPUT)util/scripting-engines/trace-event-python.o
--  LIB_OBJS += $(OUTPUT)scripts/python/Perf-Trace-Util/Context.o
--endif
--
- ifeq ($(NO_PERF_REGS),0)
-   ifeq ($(ARCH),x86)
-     LIB_H += arch/x86/include/perf_regs.h
-@@ -459,18 +449,6 @@ $(OUTPUT)%.o: %.S
- $(OUTPUT)%.s: %.S
- 	$(QUIET_CC)$(CC) -o $@ -E $(CFLAGS) $<
- 
--$(OUTPUT)util/scripting-engines/trace-event-perl.o: util/scripting-engines/trace-event-perl.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-shadow -Wno-undef -Wno-switch-default $<
--
--$(OUTPUT)scripts/perl/Perf-Trace-Util/Context.o: scripts/perl/Perf-Trace-Util/Context.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-nested-externs -Wno-undef -Wno-switch-default $<
--
--$(OUTPUT)util/scripting-engines/trace-event-python.o: util/scripting-engines/trace-event-python.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $(PYTHON_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-shadow $<
--
--$(OUTPUT)scripts/python/Perf-Trace-Util/Context.o: scripts/python/Perf-Trace-Util/Context.c $(OUTPUT)PERF-CFLAGS
--	$(QUIET_CC)$(CC) -o $@ -c $(CFLAGS) $(PYTHON_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-nested-externs $<
--
- $(OUTPUT)perf-%: %.o $(PERFLIBS)
- 	$(QUIET_LINK)$(CC) $(CFLAGS) -o $@ $(LDFLAGS) $(filter %.o,$^) $(LIBS)
- 
+ ifndef NO_ZLIB
+   LIB_OBJS += $(OUTPUT)util/zlib.o
+ endif
 diff --git a/tools/perf/config/Makefile b/tools/perf/config/Makefile
-index 05b6724fdb19..fe5d09cc75c2 100644
+index fe5d09cc75c2..ed42f41111ba 100644
 --- a/tools/perf/config/Makefile
 +++ b/tools/perf/config/Makefile
-@@ -512,6 +512,7 @@ else
-   else
-     LDFLAGS += $(PERL_EMBED_LDFLAGS)
-     EXTLIBS += $(PERL_EMBED_LIBADD)
-+    $(call detected,CONFIG_LIBPERL)
-   endif
+@@ -48,6 +48,10 @@ ifeq ($(ARCH),arm64)
+   LIBUNWIND_LIBS = -lunwind -lunwind-aarch64
  endif
  
-@@ -571,6 +572,7 @@ else
-           LDFLAGS += $(PYTHON_EMBED_LDFLAGS)
-           EXTLIBS += $(PYTHON_EMBED_LIBADD)
-           LANG_BINDINGS += $(obj-perf)python/perf.so
-+          $(call detected,CONFIG_LIBPYTHON)
-         endif
-       endif
-     endif
-@@ -841,3 +843,5 @@ $(call detected_var,prefix_SQ)
- $(call detected_var,perfexecdir_SQ)
- $(call detected_var,LIBDIR)
- $(call detected_var,GTK_CFLAGS)
-+$(call detected_var,PERL_EMBED_CCOPTS)
-+$(call detected_var,PYTHON_EMBED_CCOPTS)
-diff --git a/tools/perf/scripts/Build b/tools/perf/scripts/Build
-new file mode 100644
-index 000000000000..41efd7e368b3
---- /dev/null
-+++ b/tools/perf/scripts/Build
-@@ -0,0 +1,2 @@
-+libperf-$(CONFIG_LIBPERL)   += perl/Perf-Trace-Util/
-+libperf-$(CONFIG_LIBPYTHON) += python/Perf-Trace-Util/
-diff --git a/tools/perf/scripts/perl/Perf-Trace-Util/Build b/tools/perf/scripts/perl/Perf-Trace-Util/Build
-new file mode 100644
-index 000000000000..928e110179cb
---- /dev/null
-+++ b/tools/perf/scripts/perl/Perf-Trace-Util/Build
-@@ -0,0 +1,3 @@
-+libperf-y += Context.o
++ifeq ($(NO_PERF_REGS),0)
++  $(call detected,CONFIG_PERF_REGS)
++endif
 +
-+CFLAGS_Context.o += $(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-nested-externs -Wno-undef -Wno-switch-default
-diff --git a/tools/perf/scripts/python/Perf-Trace-Util/Build b/tools/perf/scripts/python/Perf-Trace-Util/Build
-new file mode 100644
-index 000000000000..aefc15c9444a
---- /dev/null
-+++ b/tools/perf/scripts/python/Perf-Trace-Util/Build
-@@ -0,0 +1,3 @@
-+libperf-y += Context.o
-+
-+CFLAGS_Context.o += $(PYTHON_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-nested-externs
+ # So far there's only x86 and arm libdw unwind support merged in perf.
+ # Disable it on all other architectures in case libdw unwind
+ # support is detected in system. Add supported architectures
 diff --git a/tools/perf/util/Build b/tools/perf/util/Build
-index 0401a80bab09..b0a65429da6c 100644
+index b0a65429da6c..f69843218228 100644
 --- a/tools/perf/util/Build
 +++ b/tools/perf/util/Build
-@@ -88,6 +88,8 @@ libperf-$(CONFIG_DWARF) += dwarf-aux.o
- libperf-$(CONFIG_LIBDW_DWARF_UNWIND) += unwind-libdw.o
- libperf-$(CONFIG_LIBUNWIND)          += unwind-libunwind.o
+@@ -90,6 +90,8 @@ libperf-$(CONFIG_LIBUNWIND)          += unwind-libunwind.o
  
-+libperf-y += scripting-engines/
+ libperf-y += scripting-engines/
+ 
++libperf-$(CONFIG_PERF_REGS) += perf_regs.o
 +
  CFLAGS_config.o   += -DETC_PERFCONFIG="BUILD_STR($(ETC_PERFCONFIG_SQ))"
  CFLAGS_exec_cmd.o += -DPERF_EXEC_PATH="BUILD_STR($(perfexecdir_SQ))" -DPREFIX="BUILD_STR($(prefix_SQ))"
  
-diff --git a/tools/perf/util/scripting-engines/Build b/tools/perf/util/scripting-engines/Build
-new file mode 100644
-index 000000000000..6516e220c247
---- /dev/null
-+++ b/tools/perf/util/scripting-engines/Build
-@@ -0,0 +1,6 @@
-+libperf-$(CONFIG_LIBPERL)   += trace-event-perl.o
-+libperf-$(CONFIG_LIBPYTHON) += trace-event-python.o
-+
-+CFLAGS_trace-event-perl.o += $(PERL_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-shadow -Wno-undef -Wno-switch-default
-+
-+CFLAGS_trace-event-python.o += $(PYTHON_EMBED_CCOPTS) -Wno-redundant-decls -Wno-strict-prototypes -Wno-unused-parameter -Wno-shadow
 -- 
 1.9.3
 
