@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754228AbbATTog (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 14:44:36 -0500
-Received: from smtp6-g21.free.fr ([212.27.42.6]:24853 "EHLO smtp6-g21.free.fr"
+	id S1754253AbbAUTc5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 14:32:57 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:51197 "EHLO smtp6-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753880AbbATTod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 14:44:33 -0500
-X-Mailbox-Line: From e0d835bcc282db36d7dcd2e5aab41356f194ed73 Mon Sep 17 00:00:00 2001
-Message-Id: <e0d835bcc282db36d7dcd2e5aab41356f194ed73.1421782533.git.moinejf@free.fr>
-In-Reply-To: <cover.1421782532.git.moinejf@free.fr>
-References: <cover.1421782532.git.moinejf@free.fr>
+	id S1754010AbbAUTcq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 14:32:46 -0500
+X-Mailbox-Line: From f87a92d15c95d48b6709f7a99f8fc3e79ec01d28 Mon Sep 17 00:00:00 2001
+Message-Id: <f87a92d15c95d48b6709f7a99f8fc3e79ec01d28.1421868426.git.moinejf@free.fr>
+In-Reply-To: <cover.1421868426.git.moinejf@free.fr>
+References: <cover.1421868426.git.moinejf@free.fr>
 From: Jean-Francois Moine <moinejf@free.fr>
 Date: Tue, 20 Jan 2015 19:47:34 +0100
-Subject: [PATCH v10 8/9] ASoC: core: export snd_soc_get_dai_name
+Subject: [PATCH v2 1/3] ASoC: core: export snd_soc_get_dai_name
 To: Mark Brown <broonie@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Dave Airlie <airlied@gmail.com>, Andrew Jackson <Andrew.Jackson@arm.com>,
+        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
         Jyri Sarha <jsarha@ti.com>, alsa-devel@alsa-project.org,
-        devicetree@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
