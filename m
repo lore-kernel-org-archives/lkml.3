@@ -1,44 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752754AbbATGQU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 01:16:20 -0500
-Received: from mail-qg0-f53.google.com ([209.85.192.53]:60590 "EHLO
-	mail-qg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751897AbbATGQT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 01:16:19 -0500
+	id S1752780AbbATG0k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 01:26:40 -0500
+Received: from bear.ext.ti.com ([192.94.94.41]:46893 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752456AbbATG0j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 01:26:39 -0500
+Message-ID: <54BDF469.3030907@ti.com>
+Date: Tue, 20 Jan 2015 11:53:37 +0530
+From: Keerthy <a0393675@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130623 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.11.1501200350230.28301@eddie.linux-mips.org>
-References: <1421723901-32303-1-git-send-email-paul.gortmaker@windriver.com>
-	<1421723901-32303-4-git-send-email-paul.gortmaker@windriver.com>
-	<alpine.LFD.2.11.1501200350230.28301@eddie.linux-mips.org>
-Date: Tue, 20 Jan 2015 18:16:18 +1200
-X-Google-Sender-Auth: xMQj5xOOBR1SjKlPGHDYCoQmapA
-Message-ID: <CA+55aFzN2PvWJ6g1Vbe-_oODyX7EiSeDhw5SD=wJeyENnHX41A@mail.gmail.com>
-Subject: Re: [PATCH 3/3] x86: drop support for 1995 era EISA based platforms
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Maciej W. Rozycki" <macro@linux-mips.org>
-Cc: Paul Gortmaker <paul.gortmaker@windriver.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "the arch/x86 maintainers" <x86@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: <tony@atomide.com>
+CC: <t-kristo@ti.com>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <linux@arm.linux.org.uk>
+Subject: Re: [PATCH] ARM: OMAP: DRA7: hwmod: Make gpmc software supervised
+ as the smart idle is broken
+References: <1421139085-27183-1-git-send-email-j-keerthy@ti.com>
+In-Reply-To: <1421139085-27183-1-git-send-email-j-keerthy@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 4:05 PM, Maciej W. Rozycki <macro@linux-mips.org> wrote:
+Hi Tony,
+
+On Tuesday 13 January 2015 02:21 PM, Keerthy wrote:
+> This patch fixes: 'omap_hwmod: gpmc: _wait_target_disable failed'
+> error during suspend.
 >
->  Well, I'd like to keep my x86 box up and alive, to support EISA FDDI
-> equipment I maintain if nothing else -- which in particular means the
-> current head version of Linux, not some ancient branch.
+> This is because smart idle is broken.
+> Tested in dra7-evm D1 board.
 
-So if we actually have a user, and it works, then no, we're not
-removing EISA support. It's not like it hurts us or is in some way
-fundamentally broken, like the old i386 code was (i386 kernel page
-fault semantics really were broken, and the lack of some instructions
-made it more painful to maintain than needed - not like EISA at all,
-which is just a pure add-on on the side).
+Ping on this.
 
-              Linus
+> Signed-off-by: Keerthy <j-keerthy@ti.com>
+> ---
+>   arch/arm/mach-omap2/omap_hwmod_7xx_data.c |    3 ++-
+>   1 file changed, 2 insertions(+), 1 deletion(-)
+>
+> diff --git a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+> index 9cdd8b8..29e55fe 100644
+> --- a/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+> +++ b/arch/arm/mach-omap2/omap_hwmod_7xx_data.c
+> @@ -826,7 +826,8 @@ static struct omap_hwmod dra7xx_gpmc_hwmod = {
+>   	.name		= "gpmc",
+>   	.class		= &dra7xx_gpmc_hwmod_class,
+>   	.clkdm_name	= "l3main1_clkdm",
+> -	.flags		= HWMOD_INIT_NO_IDLE | HWMOD_INIT_NO_RESET,
+> +	.flags		= (HWMOD_INIT_NO_IDLE | HWMOD_INIT_NO_RESET |
+> +			   HWMOD_SWSUP_SIDLE),
+>   	.main_clk	= "l3_iclk_div",
+>   	.prcm = {
+>   		.omap4 = {
+
+Regards,
+Keerthy
