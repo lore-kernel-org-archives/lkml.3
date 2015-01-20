@@ -1,117 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754485AbbATK5j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 05:57:39 -0500
-Received: from mail.sig21.net ([80.244.240.74]:59650 "EHLO mail.sig21.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754013AbbATK5h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 05:57:37 -0500
-Date: Tue, 20 Jan 2015 11:57:12 +0100
-From: Johannes Stezenbach <js@sig21.net>
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Cc: arnd@arndb.de, ebiederm@xmission.com, gnomes@lxorguk.ukuu.org.uk,
-        teg@jklm.no, jkosina@suse.cz, luto@amacapital.net,
-        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
-        daniel@zonque.org, dh.herrmann@gmail.com, tixxdz@opendz.org
-Subject: Re: [PATCH v3 00/13] Add kdbus implementation
-Message-ID: <20150120105712.GA6260@sig21.net>
-References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>
- <20150119180642.GA27957@sig21.net>
- <20150119183806.GA8479@kroah.com>
- <20150119201906.GA337@sig21.net>
- <20150119203155.GA15441@kroah.com>
- <20150119233812.GA1874@sig21.net>
- <20150120011359.GE865@kroah.com>
+	id S1754837AbbATLCM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 06:02:12 -0500
+Received: from mailapp01.imgtec.com ([195.59.15.196]:29009 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753965AbbATLBw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 06:01:52 -0500
+Message-ID: <54BE351D.1080300@imgtec.com>
+Date: Tue, 20 Jan 2015 07:59:41 -0300
+From: Ezequiel Garcia <ezequiel.garcia@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150120011359.GE865@kroah.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-Spam-21-Score: -2.9 (--)
-X-Spam-21-Report: No, score=-2.9 required=8.0 tests=ALL_TRUSTED=-1,BAYES_00=-1.9,URIBL_BLOCKED=0.001 autolearn=ham
+To: =?UTF-8?B?IlBldGVyIFBhbiDmvZjmoIsgKHBldGVycGFuZG9uZyki?= 
+	<peterpandong@micron.com>,
+        "robh+dt@kernel.org" <robh+dt@kernel.org>,
+        "pawel.moll@arm.com" <pawel.moll@arm.com>,
+        "mark.rutland@arm.com" <mark.rutland@arm.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "galak@codeaurora.org" <galak@codeaurora.org>,
+        "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "Brian Norris" <computersforpeace@gmail.com>
+CC: "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        =?UTF-8?B?IlFpIFdhbmcg546L6LW3IChxaXdhbmcpIg==?= 
+	<qiwang@micron.com>,
+        =?UTF-8?B?IkZyYW5rIExpdSDliJjnvqQgKGZyYW5rbGl1KSI=?= 
+	<frankliu@micron.com>,
+        =?UTF-8?B?Ik1lbGFuaWUgWmhhbmcg5byg54eVIChtZWxhbmll?=
+	 =?UTF-8?B?emhhbmcpIg==?= <melaniezhang@micron.com>
+Subject: Re: [PATCH 3/3] mtd: spi-nand: add devicetree binding
+References: <87F60714EC601C4C83DFF1D2E3D390A04AB425@NTXXIAMBX02.xacn.micron.com> <54ADF66F.7090400@imgtec.com> <87F60714EC601C4C83DFF1D2E3D390A04AB4EA@NTXXIAMBX02.xacn.micron.com> <54AE9E54.2010506@imgtec.com> <87F60714EC601C4C83DFF1D2E3D390A04AC98F@NTXXIAMBX02.xacn.micron.com>
+In-Reply-To: <87F60714EC601C4C83DFF1D2E3D390A04AC98F@NTXXIAMBX02.xacn.micron.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.100.200.58]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 09:13:59AM +0800, Greg Kroah-Hartman wrote:
-> On Tue, Jan 20, 2015 at 12:38:12AM +0100, Johannes Stezenbach wrote:
-> > Those automotive applications you
-> > were talking about, what was the OS they were ported from
-> > and what was the messaging API they used?
+
+
+On 01/11/2015 10:57 PM, Peter Pan 潘栋 (peterpandong) wrote:
+>> On 01/08/2015 02:04 AM, Peter Pan 潘栋 (peterpandong) wrote:
+>>>>> This commit adds the devicetree binding document that specifies the
+>>>>> spi nand devices support.
+>>>>>
+>>>>> Signed-off-by: Peter Pan <peterpandong@micron.com>
+>>>>> ---
+>>>>>  Documentation/devicetree/bindings/mtd/spi-nand.txt | 22
+>>>> ++++++++++++++++++++++
+>>>>>  1 file changed, 22 insertions(+)
+>>>>>  create mode 100644 Documentation/devicetree/bindings/mtd/spi-
+>>>> nand.txt
+>>>>>
+>>>>> diff --git a/Documentation/devicetree/bindings/mtd/spi-nand.txt
+>>>> b/Documentation/devicetree/bindings/mtd/spi-nand.txt
+>>>>> new file mode 100644
+>>>>> index 0000000..9dd3efd
+>>>>> --- /dev/null
+>>>>> +++ b/Documentation/devicetree/bindings/mtd/spi-nand.txt
+>>>>> @@ -0,0 +1,22 @@
+>>>>> +* NAND driver for MT29F, GD5F and similar SPI NAND flash chips
+>>>>> +
+>>>>> +Required properties:
+>>>>> +- #address-cells, #size-cells : Must be present if the device has
+>>>> sub-nodes
+>>>>> +  representing partitions.
+>>>>> +- compatible : Should be the manufacturer and the name of the chip.
+>>>> Bear in mind
+>>>>>
+>>>>
+>>>> Unless I'm mistaken, we don't need the chip ID here, as SPI NAND
+>> allows
+>>>> to autodetect the device. Any reason why we can't just use a generic
+>>>> compatible "spi-nand" here?
+>>>> --
+>>>> Ezequiel
+>>>
+>>> In fact, I don't know how to autodetect the SPI NAND device. Micron
+>> device and
+>>> Gigadevice device have different read ID functions. The Chip ID here
+>> is used to
+>>> determine which function to use.
+>>>
+>>
+>> Isn't the difference between the Read ID very minor? One of the vendor
+>> needs a 2-byte ID read, and the other one needs a 3-byte ID read.
+>>
+>> So you can just try with 2-byte, and if that fails (no vendor ID is
+>> found on the first byte), you can try with the 3-byte command.
+>>
+>> It's not the most elegant solution, but it's not super awful either.
+>> --
+>> Ezequiel
 > 
-> They were ported from QNX and I don't know the exact api, it is wrapped
-> up in a library layer for them to use.  And typically, they run about
-> 40 thousand messages in the first few seconds of startup time.  Or was
-> it 400 thousand?  Something huge and crazy to be doing on tiny ARM
-> chips, but that's the IVI industry for you :(
-
-So I did some googling and found in QNX servers create a channel
-to receive messages, and clients connect to this channel.
-Multiple clients can connect to the channel.
-But it is not a bus -- no multicast/broadcast, and no name
-service or policy rules like D-Bus has.  To me it looks
-to be similar in functionality to UNIX domain sockets.
-
-My guess is that the people porting from QNX were just confused
-and their use of D-Bus was in error.  Maybe they should've used
-plain sockets, capnproto, ZeroMQ or whatever.
-
-
-> > As I said before, I'm seeing about a dozen D-Bus messages per minute,
-> > nothing that would justify adding kdbus to the kernel for
-> > performance reasons.  Wrt security I'm also not aware of any
-> > open issues with D-Bus.  Thus I doubt normal users of D-Bus
-> > would see any benefit from kdbus.  I also think none of the
-> > applications I can install from my distribution has any performance
-> > issue with D-Bus.
+> I agree with your idea about try different ways to read ID. It is a better way
+> to detect the chip if it can work properly.
 > 
-> That's because people have not done anything really needing performance
-> on the desktop over D-Bus in the past due to how slow the current
-> implementation is.  Now that this is being resolved, that can change,
-> and there are demos out there of even streaming audio over kdbus with no
-> problems.
+> The difference between the Read ID is that some chips need to send a dummy byte
+> or address after opcode then read 2 byte, some chips needn't send any data after
+> opcode but read 3 byte.
 > 
-> But performance is not just the only reason we want this in the kernel,
-> I listed a whole long range of them.  Sure, it's great to now be faster,
-> cutting down the number of context switches and copies by a huge amount,
-> but the other things are equally important for future development
-> (namespaces, containers, security, early-boot, etc.)
+> I'm concerned maybe chip will get into unknown or vendor specified state if we
+> send the wrong sequence.
 > 
-> > And this is the point where I ask myself if I missed something.
-> 
-> Don't focus purely on performance for your existing desktop system,
-> that's not the only use case here.  There are lots of others, as I
-> document, that can benefit and want this.
-> 
-> One "fun" thing I've been talking to someone about is the ability to
-> even port binder to be on top of kdbus.  But that's just a research
-> project, and requires some API changes on the userspace binder side, but
-> it shows real promise, and would then mean that we could deprecate the
-> old binder code and a few hundred million devices could then use kdbus
-> instead.  But that's long-term goals, not really all that relevant here,
-> but it shows that having a solid bus IPC mechanism is a powerful thing
-> that we have been missing in the past from Linux.
 
-Well, IMHO you got it backwards.  Before adding a complex new IPC
-API to the kernel you should do the homework and gather some
-evidence that there will be enough users to justify the addition.
+Have you seen this happpening? Or this a potential/future problem?
 
-But maybe I misunderstood the purpose of this thread and you're
-just advertising it to find possible users instead of already
-suggesting to merge it?  If someone has some convincing story
-to share why kdbus would solve their IPC needs, I'm all ears.
-
-(I'm sorry this implies your responses so far were not convincing:
-not verifiable facts, no numbers, no testimonials etc.)
-
-FWIW, my gut feeling was that the earlier attempts to add a new
-IPC primitve like multicast UNIX domain sockets
-http://thread.gmane.org/gmane.linux.kernel/1255575/focus=1257999
-were a much saner approach.  But now I think the comments
-from this old thread have not been addressed, instead the
-new approach just made the thing more complex and
-put in ipc/ instead of net/ to bypass the guards.
-
-
-Thanks,
-Johannes
+For the latter, we can always fix it when the issue appears.
+-- 
+Ezequiel
