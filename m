@@ -1,77 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752230AbbATAZP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 19:25:15 -0500
-Received: from hofr.at ([212.69.189.236]:37738 "EHLO mail.hofr.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751930AbbATAZN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 19:25:13 -0500
-Date: Tue, 20 Jan 2015 01:25:11 +0100
-From: Nicholas Mc Guire <der.herr@hofr.at>
-To: "Deucher, Alexander" <Alexander.Deucher@amd.com>
-Cc: "Koenig, Christian" <Christian.Koenig@amd.com>,
-        David Airlie <airlied@linux.ie>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] drm/radeon: remove unreachable code
-Message-ID: <20150120002511.GA19484@opentech.at>
-References: <1421673040-12305-1-git-send-email-der.herr@hofr.at> <A3397C8B8B789E45844E7EC5DEAD89D0635F03CC@satlexdag05.amd.com>
+	id S1752499AbbATAaT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 19:30:19 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:34497 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752213AbbATAaR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 19:30:17 -0500
+Date: Mon, 19 Jan 2015 16:30:08 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Peter Hurley <peter@hurleysoftware.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Kent Overstreet <kmo@daterainc.com>,
+        Sedat Dilek <sedat.dilek@gmail.com>,
+        Dave Jones <davej@codemonkey.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Chris Mason <clm@fb.com>
+Subject: Re: Linux 3.19-rc3
+Message-ID: <20150120003008.GA14445@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20150106114215.GS29390@twins.programming.kicks-ass.net>
+ <20150106114842.GP10476@twins.programming.kicks-ass.net>
+ <20150106120121.GB26845@kmo-pixel>
+ <20150106122006.GW29390@twins.programming.kicks-ass.net>
+ <54ABDB4B.7070008@hurleysoftware.com>
+ <20150106173808.GB5280@linux.vnet.ibm.com>
+ <54AC224C.4030903@hurleysoftware.com>
+ <20150106192559.GF5280@linux.vnet.ibm.com>
+ <54AC3E31.2080202@hurleysoftware.com>
+ <20150106204753.GI5280@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <A3397C8B8B789E45844E7EC5DEAD89D0635F03CC@satlexdag05.amd.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20150106204753.GI5280@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15012000-0017-0000-0000-00000812E028
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Jan 2015, Deucher, Alexander wrote:
+On Tue, Jan 06, 2015 at 12:47:53PM -0800, Paul E. McKenney wrote:
+> On Tue, Jan 06, 2015 at 02:57:37PM -0500, Peter Hurley wrote:
 
-> > -----Original Message-----
-> > From: Nicholas Mc Guire [mailto:der.herr@hofr.at]
-> > Sent: Monday, January 19, 2015 8:11 AM
-> > To: Deucher, Alexander
-> > Cc: Koenig, Christian; David Airlie; dri-devel@lists.freedesktop.org; linux-
-> > kernel@vger.kernel.org; Nicholas Mc Guire
-> > Subject: [PATCH] drm/radeon: remove unreachable code
-> > 
-> > Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+[ . . . ]
+
+> David Miller's call, actually.
 > 
-> NACK.  I want to leave this in place for the future.  When we support dynamically adjusting the disp clock we'll need to update the sclk for ds mode.
->
+> But the rule is that if it is an atomic read-modify-write operation and it
+> returns a value, then the operation itself needs to include full memory
+> barriers before and after (as in the caller doesn't need to add them).
+> Otherwise, the operation does not need to include memory ordering.
+> Since xchg(), atomic_xchg(), and atomic_long_xchg() all return a value,
+> their implementations must include full memory barriers before and after.
+> 
+> Pretty straightforward.  ;-)
 
-get it - then could you add some comment to that end so it becomes clear 
-that this is intentional - using your comment above - something like:
+Hello again, Peter,
 
- 
->From 2be978edbc77d5928ede8fddc2d784ca6f78533e Mon Sep 17 00:00:00 2001
-From: Nicholas Mc Guire <der.herr@hofr.at>
-Date: Mon, 19 Jan 2015 19:11:57 -0500
-Subject: [PATCH] document the unreachable code sequence
+Were you going to push a patch clarifying this?
 
-Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
----
- drivers/gpu/drm/radeon/ci_dpm.c                 |    7 +++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/gpu/drm/radeon/ci_dpm.c b/drivers/gpu/drm/radeon/ci_dpm.c
-index f373a81..722dfef 100644
---- a/drivers/gpu/drm/radeon/ci_dpm.c
-+++ b/drivers/gpu/drm/radeon/ci_dpm.c
-@@ -3808,7 +3808,12 @@ static void ci_find_dpm_states_clocks_in_dpm_table(struct radeon_device *rdev,
- 	if (i >= sclk_table->count) {
- 		pi->need_update_smu7_dpm_table |= DPMTABLE_OD_UPDATE_SCLK;
- 	} else {
--		/* XXX check display min clock requirements */
-+		/*
-+		 * XXX Check display min clock requirements.
-+		 * This is a place holder for the future support of
-+		 * dynamically adjusting the disp clock where we'll
-+		 * need to update the sclk for ds mode.
-+		 */
- 		if (CISLAND_MINIMUM_ENGINE_CLOCK != CISLAND_MINIMUM_ENGINE_CLOCK)
- 			pi->need_update_smu7_dpm_table |= DPMTABLE_UPDATE_SCLK;
- 	}
--- 
-1.7.10.4
+							Thanx, Paul
 
