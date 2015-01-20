@@ -1,44 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751836AbbATGYw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 01:24:52 -0500
-Received: from mail-qg0-f49.google.com ([209.85.192.49]:46106 "EHLO
-	mail-qg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750756AbbATGYv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 01:24:51 -0500
+	id S1752314AbbATGkd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 01:40:33 -0500
+Received: from ozlabs.org ([103.22.144.67]:44923 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751177AbbATGka (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 01:40:30 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org
+Cc: virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH 0/6] virtio: graceful failure with get == NULL
+In-Reply-To: <20150113194909.GO21393@redhat.com>
+References: <1421160167-18498-1-git-send-email-mst@redhat.com> <20150113194909.GO21393@redhat.com>
+User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Tue, 20 Jan 2015 16:59:15 +1030
+Message-ID: <87oapuart0.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-In-Reply-To: <20150119190216.7ce58d74@neptune.home>
-References: <CA+55aFxNk9OCXz7nvKXpRBc0Z85NLXPNkRm1yJf4-KAGB4pHRA@mail.gmail.com>
-	<20150119190216.7ce58d74@neptune.home>
-Date: Tue, 20 Jan 2015 18:24:50 +1200
-X-Google-Sender-Auth: cWdBPbrNF9Et2QfJJIAVR2H3iRA
-Message-ID: <CA+55aFw7aoShsqS_ro5DASbseXFLQs_sE=dwLp_tTNAvD9Y09w@mail.gmail.com>
-Subject: Re: Linux 3.19-rc5
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: =?UTF-8?Q?Bruno_Pr=C3=A9mont?= <bonbons@linux-vserver.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 6:02 AM, Bruno Prémont
-<bonbons@linux-vserver.org> wrote:
+"Michael S. Tsirkin" <mst@redhat.com> writes:
+> On Tue, Jan 13, 2015 at 04:43:07PM +0200, Michael S. Tsirkin wrote:
+>> virtio 1.0 says device configuration is optional, but most drivers treat it as
+>> mandatory.  Even if presented by device, guest bios might disable the BAR
+>> holding that configuration, so we can't assume it's there, but we also don't
+>> want to fail if not in case drivers can cope with it's absence - such as caif
+>> or rng.
+>> 
+>> Add code to drivers to check presence of get callback and fail gracefully.
 >
-> No idea yet which rc is the offender (nor exact patch), but on my not
-> so recent UP laptop with a pccard slot I have 2 pccardd kernel threads
-> converting my laptop into a heater.
->
-> lspci for affected nodes:
-> 02:06.0 CardBus bridge [0607]: O2 Micro, Inc. OZ711EC1 SmartCardBus Controller [1217:7113] (rev 20)
-> 02:06.1 CardBus bridge [0607]: O2 Micro, Inc. OZ711EC1 SmartCardBus Controller [1217:7113] (rev 20)
->
-> Very basics I have, before I attempt any bisection:
+> Rusty, in case it's not clear: I'd like to hear
+> your opinion on these patches, since virtio pci modern
+> driver I'm now preparing for submission, depends on this.
 
-Hmm. I'm not seeing anything recent changing anything in this area, so
-I suspect that unless somebody else steps up and says "Ahh, that
-sounds like xyz", your bisection is the best option.
+Just to note for anyone following, that these are now in my virtio-next
+tree.
 
-                   Linus
+Cheers,
+Rusty.
