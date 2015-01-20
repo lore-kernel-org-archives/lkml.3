@@ -1,88 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907AbbATSkW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 13:40:22 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:56547 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752744AbbATSkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 13:40:21 -0500
-Message-ID: <54BEA0EE.10304@redhat.com>
-Date: Tue, 20 Jan 2015 13:39:42 -0500
-From: Prarit Bhargava <prarit@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
+	id S1754997AbbATTRm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 14:17:42 -0500
+Received: from smtp8.ore.mailhop.org ([54.148.153.48]:44016 "EHLO
+	smtp8.ore.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752364AbbATTRk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 14:17:40 -0500
+X-Greylist: delayed 2043 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Jan 2015 14:17:40 EST
+X-Mail-Handler: DuoCircle Outbound SMTP
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@duocircle.com (see https://support.duocircle.com/support/solutions/articles/5000540958-duocircle-standard-smtp-abuse-information for abuse reporting information)
+X-MHO-User: U2FsdGVkX18P9GmgEIPYCHFAxEdeIird
+Date: Tue, 20 Jan 2015 10:40:03 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Olof Johansson <olof@lixom.net>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Peter Robinson <pbrobinson@gmail.com>
+Subject: Re: linux-next: manual merge of the omap tree with the arm-soc tree
+Message-ID: <20150120184002.GM7718@atomide.com>
+References: <20150120110947.1a92a416@canb.auug.org.au>
+ <20150120171048.GF7718@atomide.com>
+ <CAOesGMjc+q5ZEFU4GugJT2RCSmhv48DAA8JzuCxf63eEO6tWVQ@mail.gmail.com>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "Peter Zijlstra (Intel)" <peterz@infradead.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        Fabian Frederick <fabf@skynet.be>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC/PATCH] init/main.c: Simplify initcall_blacklisted()
-References: <1421454312-30505-1-git-send-email-linux@rasmusvillemoes.dk> <20150119191924.GA19153@redhat.com> <87y4oyb6sc.fsf@rustcorp.com.au> <54BE32D2.90301@redhat.com> <20150120180514.GA23205@redhat.com>
-In-Reply-To: <20150120180514.GA23205@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAOesGMjc+q5ZEFU4GugJT2RCSmhv48DAA8JzuCxf63eEO6tWVQ@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 01/20/2015 01:05 PM, Oleg Nesterov wrote:
-> On 01/20, Prarit Bhargava wrote:
->>
->> On 01/19/2015 08:05 PM, Rusty Russell wrote:
->>> Oleg Nesterov <oleg@redhat.com> writes:
->>>>
->>>> If we want to optimize this... I am wondering if we can change
->>>> initcall_blacklist()
->>>>
->>>> 	-	entry->buf = alloc_bootmem(strlen(str_entry) + 1);
->>>> 	+	ebtry->fn = kallsyms_lookup_name(str_entry);
->>>>
->>>> and then change initcall_blacklisted() to just compare the pointers.
->>>
->>> That would make far, far more sense.  It would fail for modules of
->>> course, but that might be OK.  Prarit, this was your code; does it
->>> matter?
->>
->> It does actually matter to me.  I've been using it to blacklist modules at boot
->> as well ... and it works really well :)  So I'm okay with the original patch but
->> not the second suggested change.
+* Olof Johansson <olof@lixom.net> [150120 10:27]:
+> On Tue, Jan 20, 2015 at 9:10 AM, Tony Lindgren <tony@atomide.com> wrote:
+> > * Stephen Rothwell <sfr@canb.auug.org.au> [150119 16:12]:
+> >> Hi Tony,
+> >>
+> >> Today's linux-next merge of the omap tree got a conflict in
+> >> arch/arm/boot/dts/Makefile between commit cb612390e546 ("ARM: dts: Only
+> >> build dtb if associated Arch and/or SoC is enabled") from the arm-soc
+> >> tree and commit ac7452cee743 ("ARM: dts: Add minimal support for
+> >> dm8168-evm") from the omap tree.
+> >>
+> >> I fixed it up (see below) and can carry the fix as necessary (no action
+> >> is required).
+> >
+> > Uhh why is cb612390e546 doing formatting changes all over the place?
+> > That's a sure way to produce merge conflicts..
 > 
-> Yes, I didn't know/realize that initcall_blacklist paramater can be
-> also used to disable the modules, thanks for correcting me.
+> It's intentional but a but annoying, yes -- we're resolving them as we
+> merge in new DT contents so it won't be exposed outside of our tree
+> (and -next, unfortunately).
 
-I didn't have that in mind originally, but I've been using it to debug initramfs
-module loading.  It has worked quite well.
+OK. I don't have anything against cleaning up and sorting things to
+avoid merge conflicts naturally :)
 
-> 
-> But I'd say that initcall_blacklisted(mod->init) looks a bit strange,
-> I mean it would be probably better to use mod->name in this case, not
-> the "internal" name of this likely static function.
+Maybe for other similar changes you can set up an immutable branch
+abainst v3.xx-rc1 with just the clean-up that people can use as
+a base without having to bring in all the other changes?
 
-:)  I've been thinking about exactly this too.  I just haven't had any time to
-do it.
+Regards,
 
-> 
-> Perhaps even another kernel parameter makes sense for this, I dunno..
-> From Documentation/kernel-parameters.txt:
-> 
-> 	initcall_blacklist=  [KNL] Do not execute a comma-separated list of
-> 			initcall functions.  Useful for debugging built-in
-> 			modules and initcalls.
-> 
-> note that this only mentions built-in modules.
-
-I can fix that up too.
-
-P.
-
-> 
-> Nevermind, I was wrong anyway. Thanks!
-> 
-> Oleg.
-> 
+Tony
