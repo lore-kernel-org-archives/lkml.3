@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753258AbbATP0p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 10:26:45 -0500
-Received: from iolanthe.rowland.org ([192.131.102.54]:58242 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752954AbbATP0b (ORCPT
+	id S1753322AbbATP1v (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 10:27:51 -0500
+Received: from mail-we0-f173.google.com ([74.125.82.173]:47063 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752130AbbATP1s convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 10:26:31 -0500
-Date: Tue, 20 Jan 2015 10:26:30 -0500 (EST)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Olivier Sobrie <olivier@sobrie.be>
-cc: Jan Dumon <j.dumon@option.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        <linux-kernel@vger.kernel.org>, <linux-usb@vger.kernel.org>,
-        <netdev@vger.kernel.org>
-Subject: Re: [PATCH 11/11] usb: core: fix a race with usb_queue_reset_device()
-In-Reply-To: <1421756978-4093-12-git-send-email-olivier@sobrie.be>
-Message-ID: <Pine.LNX.4.44L0.1501201022360.1150-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 20 Jan 2015 10:27:48 -0500
+Subject: Re: [PATCH] of: Custom printk format specifier for device node
+Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
+Content-Type: text/plain; charset=utf-8
+From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+In-Reply-To: <CAMuHMdWnjawtgkKGuL8b4A17EhDS6B0L-1_uhSnvEXXk5dNjwQ@mail.gmail.com>
+Date: Tue, 20 Jan 2015 17:27:42 +0200
+Cc: Rob Herring <robherring2@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <25E49021-E94D-4DFA-AC37-1D4A3AAE9F88@konsulko.com>
+References: <1421764441-11928-1-git-send-email-pantelis.antoniou@konsulko.com> <CAL_JsqLVJjq3Ov=J-5LtXiTQPLvR5Y=+tB1i16k_rN3j5dODFQ@mail.gmail.com> <CAMuHMdWnjawtgkKGuL8b4A17EhDS6B0L-1_uhSnvEXXk5dNjwQ@mail.gmail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+X-Mailer: Apple Mail (2.1993)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Jan 2015, Olivier Sobrie wrote:
+Hi Geert,
 
-> When usb_queue_reset() is called it schedules a work in view of
-> resetting the usb interface. When the reset work is running, it
-> can be scheduled again (e.g. by the usb disconnect method of
-> the driver).
+> On Jan 20, 2015, at 17:24 , Geert Uytterhoeven <geert@linux-m68k.org> wrote:
 > 
-> Consider that the reset work is queued again while the reset work
-> is running and that this work leads to a forced unbinding of the
-> usb interface (e.g. because a driver is bound to the interface
-> and has no pre/post_reset methods - see usb_reset_device()).
-> In such condition, usb_unbind_interface() gets called and this
-> function calls usb_cancel_queued_reset() which does nothing
-> because the flag "reset_running" is set to 1. The second reset
-> work that has been scheduled is therefore not cancelled.
-> Later, the usb_reset_device() tries to rebind the interface.
-> If it fails, then the usb interface context which contain the
-> reset work struct is freed and it most likely crash when the
-> second reset work tries to be run.
+> On Tue, Jan 20, 2015 at 3:47 PM, Rob Herring <robherring2@gmail.com> wrote:
+>>> +       Examples:
+>>> +
+>>> +       %pO     /foo/bar@0              - Node full name
+>>> +       %pO0    /foo/bar@0              - Same as above
+>>> +       %pO1    /foo/bar@0[10]          - Node full name + phandle
+>>> +       %pO2    /foo/bar@0[10:DdPB]     - Node full name + phandle + node flags
+>>> +                                        D - dynamic
+>>> +                                        d - detached
+>>> +                                        P - Populated
+>>> +                                        B - Populated bus
+>> 
+>> We should think about what else we want to print for a node. Perhaps
+>> 'On' for name, 'Oc' for compatible, etc.
+> 
+> I was just going to say "The least verbose variant is name, not full_name”.
+> 
 
-There was an earlier patch posted for testing (no results yet)  
-affecting this same region of code:
+Unfortunately in the context of device tree nodes ‘name' is usually not what
+you want to print to identify the node in question. ‘name’ is usually not unique.
 
-	http://marc.info/?l=linux-usb&m=142064533924019&w=2
+We can add a format specifier for it though.
 
-It should fix the problem described here, because (among other things) 
-it adds usb_get/put_intf calls to the delayed-reset routines.
+> Gr{oetje,eeting}s,
+> 
+>                        Geert
+> 
+> --
+> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+> 
+> In personal conversations with technical people, I call myself a hacker. But
+> when I'm talking to journalists I just say "programmer" or something like that.
+>                                -- Linus Torvalds
 
-Alan Stern
+Regards
+
+— Pantelis
 
