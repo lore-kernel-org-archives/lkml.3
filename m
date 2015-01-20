@@ -1,42 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753234AbbATJsR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 04:48:17 -0500
-Received: from casper.infradead.org ([85.118.1.10]:59199 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751976AbbATJsJ (ORCPT
+	id S1752597AbbATJxL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 04:53:11 -0500
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:40109 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751649AbbATJxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 04:48:09 -0500
-Date: Tue, 20 Jan 2015 10:48:05 +0100
-From: Peter Zijlstra <peterz@infradead.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Andrey Tsyvarev <tsyvarev@ispras.ru>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH] kernel/module.c: Free lock-classes if parse_args failed
-Message-ID: <20150120094805.GB11596@twins.programming.kicks-ass.net>
-References: <1421216708-1975-1-git-send-email-tsyvarev@ispras.ru>
- <87iog2arfk.fsf@rustcorp.com.au>
+	Tue, 20 Jan 2015 04:53:08 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87iog2arfk.fsf@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2012-12-30)
+In-Reply-To: <54B9A8A2.6090209@broadcom.com>
+References: <rjui@broadcom.com>
+	<1418696307-19392-1-git-send-email-rjui@broadcom.com>
+	<1418696307-19392-3-git-send-email-rjui@broadcom.com>
+	<CACRpkdYGksEseGaO49=1rUi5WBdOxwAd-F1gpgZn+BFatRCdDg@mail.gmail.com>
+	<54B55068.8050500@broadcom.com>
+	<CACRpkdZef8S-EAbShjJ1eg+-3wQKn+yx4u1k_Mf8F7uFkJYdFw@mail.gmail.com>
+	<54B9A8A2.6090209@broadcom.com>
+Date: Tue, 20 Jan 2015 10:53:07 +0100
+Message-ID: <CACRpkdYydCO9Wu3fMyh0qt=e_hxT5ch2gqNhEsfQpf5WYUS-kQ@mail.gmail.com>
+Subject: Re: [PATCH v6 2/3] gpio: Cygnus: add GPIO driver
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Ray Jui <rjui@broadcom.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Christian Daudt <bcm@fixthebug.org>, Matt Porter <mporter@linaro.org>,
+        Florian Fainelli <f.fainelli@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, Joe Perches <joe@perches.com>,
+        Arnd Bergmann <arnd@arndb.de>, Scott Branden <sbranden@broadcom.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        bcm-kernel-feedback-list <bcm-kernel-feedback-list@broadcom.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 05:07:19PM +1030, Rusty Russell wrote:
-> Andrey Tsyvarev <tsyvarev@ispras.ru> writes:
-> > parse_args call module parameters' .set handlers, which may use locks defined in the module.
-> > So, these classes should be freed in case parse_args returns error(e.g. due to incorrect parameter passed).
-> 
-> Thanks, this seems right.  Applied.
-> 
-> But this makes me ask: where is lockdep_free_key_range() called on the
-> module init code?  It doesn't seem to be at all...
+On Sat, Jan 17, 2015 at 1:11 AM, Ray Jui <rjui@broadcom.com> wrote:
+> On 1/16/2015 2:14 AM, Linus Walleij wrote:
 
-Hmm, Ingo, how does this work? The lockless class lookup in
-look_up_lock_class() very much assumes the class hash is only added too,
-but here we go wipe stuff from it.
+>> Some hardware designs put the software-controlled biasing
+>> resistors in the GPIO block electronically connected to the actual
+>> pins, so that e.g. the biasing will be available if some MMC or
+>> whatever is using the same pins in another muxing. In such
+>> situations it's quite evident that they need to be a combined
+>> GPIO and pin controller.
+>>
+>> I have some regrets that bolting a second pin controller to the
+>> GPIO chip make things a bit complex but it's a price we have
+>> to pay for getting some kind of generic interface.
+>
+> Okay. In summary, I think both of us think the following approach makes
+> sense in my situation:
+> - leave pinmux in pinctrl-bcm-cygnus.c
+> - leave pinctrl + gpio in pinctrl-bcm-cygnus-gpio.c under drivers/pinctrl/*
+>
+> But by thinking about this more, I thought this would create duplicated
+> pinctrl descriptors in our system, one from the pinmux driver, and the
+> other from this pinctrl+gpio driver. That is probably undesirable?
 
->From what I can tell, every use of lockdep_free_key_range() is broken.
+No, there are several systems with multiple pin controllers and the
+framework easily handles multiple pin controllers in the same
+system just as well as we handle multiple GPIO chips.
+
+> By reviewing various drivers in the pinctrl directory, I found what
+> pinctrl-u300.c and pinctrl-coh901.c does seems to serve as a good model
+> for me to follow:
+> - pinctrl-u300.c is the pinmux driver
+> - pinctrl-coh901.c is the gpio+pinctrl driver
+
+Yeah, I don't know if the separation between them is as beautiful
+as it should be. I used it when developing the pin control
+subsystem.
+
+> The GPIO pinctrl logic is in the coh901 block, so pinctrl-coh901.c
+> exposed two public functions u300_gpio_config_get, u300_gpio_config_set
+> that pinctrl-u300.c can use. The u300 populates all pinmux/pinctrl
+> related functions into the subsystem. This way there's only one pinctrl
+> descriptor, populated through pinctrl-u300.c.
+>
+> Does that model make more sense to you?
+
+Yeah I wrote it myself so I'm maybe blind for any dumbness in
+the code. But I think it's kind of elegant. But it is not using the
+generic pinctrl device tree bindings so it's kind of oldstyle and
+bloated in that sense.
+
+Yours,
+Linus Walleij
