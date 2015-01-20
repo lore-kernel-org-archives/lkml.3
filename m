@@ -1,194 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754364AbbATKuD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 05:50:03 -0500
-Received: from mail-we0-f171.google.com ([74.125.82.171]:34739 "EHLO
-	mail-we0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754332AbbATKt7 (ORCPT
+	id S1754506AbbATKvi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 05:51:38 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:55999 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753940AbbATKuP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 05:49:59 -0500
-From: Thierry Reding <thierry.reding@gmail.com>
-To: dri-devel@lists.freedesktop.org
-Cc: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 36/36] drm/tegra: dc: Unify enabling the display controller
-Date: Tue, 20 Jan 2015 11:48:55 +0100
-Message-Id: <1421750935-4023-37-git-send-email-thierry.reding@gmail.com>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1421750935-4023-1-git-send-email-thierry.reding@gmail.com>
-References: <1421750935-4023-1-git-send-email-thierry.reding@gmail.com>
+	Tue, 20 Jan 2015 05:50:15 -0500
+Date: Tue, 20 Jan 2015 02:49:25 -0800
+From: tip-bot for Jiang Liu <tipbot@zytor.com>
+Message-ID: <tip-b568b8601f05a591a7ff09d8ee1cedb5b2e815fe@git.kernel.org>
+Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org, bhelgaas@google.com,
+        len.brown@intel.com, mingo@kernel.org, tony.luck@intel.com,
+        linux@eikelenboom.it, david.vrabel@citrix.com, pavel@ucw.cz,
+        rjw@rjwysocki.net, konrad.wilk@oracle.com, jiang.liu@linux.intel.com,
+        hpa@zytor.com
+Reply-To: david.vrabel@citrix.com, pavel@ucw.cz, rjw@rjwysocki.net,
+        konrad.wilk@oracle.com, hpa@zytor.com, jiang.liu@linux.intel.com,
+        tglx@linutronix.de, linux-kernel@vger.kernel.org, bhelgaas@google.com,
+        len.brown@intel.com, mingo@kernel.org, tony.luck@intel.com,
+        linux@eikelenboom.it
+In-Reply-To: <1421720467-7709-2-git-send-email-jiang.liu@linux.intel.com>
+References: <1421720467-7709-2-git-send-email-jiang.liu@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86/xen:
+  Treat SCI interrupt as normal GSI interrupt
+Git-Commit-ID: b568b8601f05a591a7ff09d8ee1cedb5b2e815fe
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thierry Reding <treding@nvidia.com>
+Commit-ID:  b568b8601f05a591a7ff09d8ee1cedb5b2e815fe
+Gitweb:     http://git.kernel.org/tip/b568b8601f05a591a7ff09d8ee1cedb5b2e815fe
+Author:     Jiang Liu <jiang.liu@linux.intel.com>
+AuthorDate: Tue, 20 Jan 2015 10:21:05 +0800
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Tue, 20 Jan 2015 11:44:40 +0100
 
-Previously output drivers would enable continuous display mode and power
-up the display controller at various points during the initialization.
-This is suboptimal because it accesses display controller registers in
-output drivers and duplicates a bit of code.
+x86/xen: Treat SCI interrupt as normal GSI interrupt
 
-Move this code into the display controller driver and enable the display
-controller as the final step of the ->mode_set_nofb() implementation.
+Currently Xen Domain0 has special treatment for ACPI SCI interrupt,
+that is initialize irq for ACPI SCI at early stage in a special way as:
+xen_init_IRQ()
+	->pci_xen_initial_domain()
+		->xen_setup_acpi_sci()
+			Allocate and initialize irq for ACPI SCI
 
-Signed-off-by: Thierry Reding <treding@nvidia.com>
+Function xen_setup_acpi_sci() calls acpi_gsi_to_irq() to get an irq
+number for ACPI SCI. But unfortunately acpi_gsi_to_irq() depends on
+IOAPIC irqdomains through following path
+acpi_gsi_to_irq()
+	->mp_map_gsi_to_irq()
+		->mp_map_pin_to_irq()
+			->check IOAPIC irqdomain
+
+For PV domains, it uses Xen event based interrupt manangement and
+doesn't make uses of native IOAPIC, so no irqdomains created for IOAPIC.
+This causes Xen domain0 fail to install interrupt handler for ACPI SCI
+and all ACPI events will be lost. Please refer to:
+https://lkml.org/lkml/2014/12/19/178
+
+So the fix is to get rid of special treatment for ACPI SCI, just treat
+ACPI SCI as normal GSI interrupt as:
+acpi_gsi_to_irq()
+	->acpi_register_gsi()
+		->acpi_register_gsi_xen()
+			->xen_register_gsi()
+
+With above change, there's no need for xen_setup_acpi_sci() anymore.
+The above change also works with bare metal kernel too.
+
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Tested-by: Sander Eikelenboom <linux@eikelenboom.it>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: xen-devel@lists.xenproject.org
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: David Vrabel <david.vrabel@citrix.com>
+Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Len Brown <len.brown@intel.com>
+Cc: Pavel Machek <pavel@ucw.cz>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Link: http://lkml.kernel.org/r/1421720467-7709-2-git-send-email-jiang.liu@linux.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- drivers/gpu/drm/tegra/dc.c   | 12 ++++++++++++
- drivers/gpu/drm/tegra/dsi.c  | 10 ----------
- drivers/gpu/drm/tegra/hdmi.c | 10 ----------
- drivers/gpu/drm/tegra/rgb.c  | 11 +----------
- drivers/gpu/drm/tegra/sor.c  | 25 +++----------------------
- 5 files changed, 16 insertions(+), 52 deletions(-)
+ arch/x86/kernel/acpi/boot.c | 26 ++++++++++++-------------
+ arch/x86/pci/xen.c          | 47 ---------------------------------------------
+ 2 files changed, 13 insertions(+), 60 deletions(-)
 
-diff --git a/drivers/gpu/drm/tegra/dc.c b/drivers/gpu/drm/tegra/dc.c
-index 1280b886481d..c4cbcbfbd3ab 100644
---- a/drivers/gpu/drm/tegra/dc.c
-+++ b/drivers/gpu/drm/tegra/dc.c
-@@ -1248,6 +1248,18 @@ static void tegra_crtc_mode_set_nofb(struct drm_crtc *crtc)
- 		value &= ~INTERLACE_ENABLE;
- 		tegra_dc_writel(dc, value, DC_DISP_INTERLACE_CONTROL);
+diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+index d162636..b9e30da 100644
+--- a/arch/x86/kernel/acpi/boot.c
++++ b/arch/x86/kernel/acpi/boot.c
+@@ -611,20 +611,20 @@ void __init acpi_pic_sci_set_trigger(unsigned int irq, u16 trigger)
+ 
+ int acpi_gsi_to_irq(u32 gsi, unsigned int *irqp)
+ {
+-	int irq;
+-
+-	if (acpi_irq_model == ACPI_IRQ_MODEL_PIC) {
+-		*irqp = gsi;
+-	} else {
+-		mutex_lock(&acpi_ioapic_lock);
+-		irq = mp_map_gsi_to_irq(gsi,
+-					IOAPIC_MAP_ALLOC | IOAPIC_MAP_CHECK);
+-		mutex_unlock(&acpi_ioapic_lock);
+-		if (irq < 0)
+-			return -1;
+-		*irqp = irq;
++	int rc, irq, trigger, polarity;
++
++	rc = acpi_get_override_irq(gsi, &trigger, &polarity);
++	if (rc == 0) {
++		trigger = trigger ? ACPI_LEVEL_SENSITIVE : ACPI_EDGE_SENSITIVE;
++		polarity = polarity ? ACPI_ACTIVE_LOW : ACPI_ACTIVE_HIGH;
++		irq = acpi_register_gsi(NULL, gsi, trigger, polarity);
++		if (irq >= 0) {
++			*irqp = irq;
++			return 0;
++		}
  	}
+-	return 0;
 +
-+	value = tegra_dc_readl(dc, DC_CMD_DISPLAY_COMMAND);
-+	value &= ~DISP_CTRL_MODE_MASK;
-+	value |= DISP_CTRL_MODE_C_DISPLAY;
-+	tegra_dc_writel(dc, value, DC_CMD_DISPLAY_COMMAND);
-+
-+	value = tegra_dc_readl(dc, DC_CMD_DISPLAY_POWER_CONTROL);
-+	value |= PW0_ENABLE | PW1_ENABLE | PW2_ENABLE | PW3_ENABLE |
-+		 PW4_ENABLE | PM0_ENABLE | PM1_ENABLE;
-+	tegra_dc_writel(dc, value, DC_CMD_DISPLAY_POWER_CONTROL);
-+
-+	tegra_dc_commit(dc);
++	return -1;
+ }
+ EXPORT_SYMBOL_GPL(acpi_gsi_to_irq);
+ 
+diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
+index c489ef2..6e5e89c 100644
+--- a/arch/x86/pci/xen.c
++++ b/arch/x86/pci/xen.c
+@@ -471,52 +471,6 @@ int __init pci_xen_hvm_init(void)
  }
  
- static void tegra_crtc_prepare(struct drm_crtc *crtc)
-diff --git a/drivers/gpu/drm/tegra/dsi.c b/drivers/gpu/drm/tegra/dsi.c
-index 39c79a65b4f3..82f95f7f819c 100644
---- a/drivers/gpu/drm/tegra/dsi.c
-+++ b/drivers/gpu/drm/tegra/dsi.c
-@@ -824,16 +824,6 @@ static void tegra_dsi_encoder_mode_set(struct drm_encoder *encoder,
- 	value |= DSI_ENABLE;
- 	tegra_dc_writel(dc, value, DC_DISP_DISP_WIN_OPTIONS);
- 
--	value = tegra_dc_readl(dc, DC_CMD_DISPLAY_COMMAND);
--	value &= ~DISP_CTRL_MODE_MASK;
--	value |= DISP_CTRL_MODE_C_DISPLAY;
--	tegra_dc_writel(dc, value, DC_CMD_DISPLAY_COMMAND);
+ #ifdef CONFIG_XEN_DOM0
+-static __init void xen_setup_acpi_sci(void)
+-{
+-	int rc;
+-	int trigger, polarity;
+-	int gsi = acpi_sci_override_gsi;
+-	int irq = -1;
+-	int gsi_override = -1;
 -
--	value = tegra_dc_readl(dc, DC_CMD_DISPLAY_POWER_CONTROL);
--	value |= PW0_ENABLE | PW1_ENABLE | PW2_ENABLE | PW3_ENABLE |
--		 PW4_ENABLE | PM0_ENABLE | PM1_ENABLE;
--	tegra_dc_writel(dc, value, DC_CMD_DISPLAY_POWER_CONTROL);
+-	if (!gsi)
+-		return;
 -
- 	tegra_dc_commit(dc);
- 
- 	/* enable DSI controller */
-diff --git a/drivers/gpu/drm/tegra/hdmi.c b/drivers/gpu/drm/tegra/hdmi.c
-index 07771956cc94..7e06657ae58b 100644
---- a/drivers/gpu/drm/tegra/hdmi.c
-+++ b/drivers/gpu/drm/tegra/hdmi.c
-@@ -1022,16 +1022,6 @@ static void tegra_hdmi_encoder_mode_set(struct drm_encoder *encoder,
- 	value |= HDMI_ENABLE;
- 	tegra_dc_writel(dc, value, DC_DISP_DISP_WIN_OPTIONS);
- 
--	value = tegra_dc_readl(dc, DC_CMD_DISPLAY_COMMAND);
--	value &= ~DISP_CTRL_MODE_MASK;
--	value |= DISP_CTRL_MODE_C_DISPLAY;
--	tegra_dc_writel(dc, value, DC_CMD_DISPLAY_COMMAND);
+-	rc = acpi_get_override_irq(gsi, &trigger, &polarity);
+-	if (rc) {
+-		printk(KERN_WARNING "xen: acpi_get_override_irq failed for acpi"
+-				" sci, rc=%d\n", rc);
+-		return;
+-	}
+-	trigger = trigger ? ACPI_LEVEL_SENSITIVE : ACPI_EDGE_SENSITIVE;
+-	polarity = polarity ? ACPI_ACTIVE_LOW : ACPI_ACTIVE_HIGH;
 -
--	value = tegra_dc_readl(dc, DC_CMD_DISPLAY_POWER_CONTROL);
--	value |= PW0_ENABLE | PW1_ENABLE | PW2_ENABLE | PW3_ENABLE |
--		 PW4_ENABLE | PM0_ENABLE | PM1_ENABLE;
--	tegra_dc_writel(dc, value, DC_CMD_DISPLAY_POWER_CONTROL);
+-	printk(KERN_INFO "xen: sci override: global_irq=%d trigger=%d "
+-			"polarity=%d\n", gsi, trigger, polarity);
 -
- 	tegra_dc_commit(dc);
- 
- 	/* TODO: add HDCP support */
-diff --git a/drivers/gpu/drm/tegra/rgb.c b/drivers/gpu/drm/tegra/rgb.c
-index 0c8b458b2364..7cd833f5b5b5 100644
---- a/drivers/gpu/drm/tegra/rgb.c
-+++ b/drivers/gpu/drm/tegra/rgb.c
-@@ -168,16 +168,6 @@ static void tegra_rgb_encoder_mode_set(struct drm_encoder *encoder,
- 	value = SC0_H_QUALIFIER_NONE | SC1_H_QUALIFIER_NONE;
- 	tegra_dc_writel(rgb->dc, value, DC_DISP_SHIFT_CLOCK_OPTIONS);
- 
--	value = tegra_dc_readl(rgb->dc, DC_CMD_DISPLAY_COMMAND);
--	value &= ~DISP_CTRL_MODE_MASK;
--	value |= DISP_CTRL_MODE_C_DISPLAY;
--	tegra_dc_writel(rgb->dc, value, DC_CMD_DISPLAY_COMMAND);
+-	/* Before we bind the GSI to a Linux IRQ, check whether
+-	 * we need to override it with bus_irq (IRQ) value. Usually for
+-	 * IRQs below IRQ_LEGACY_IRQ this holds IRQ == GSI, as so:
+-	 *  ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 9 low level)
+-	 * but there are oddballs where the IRQ != GSI:
+-	 *  ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 20 low level)
+-	 * which ends up being: gsi_to_irq[9] == 20
+-	 * (which is what acpi_gsi_to_irq ends up calling when starting the
+-	 * the ACPI interpreter and keels over since IRQ 9 has not been
+-	 * setup as we had setup IRQ 20 for it).
+-	 */
+-	if (acpi_gsi_to_irq(gsi, &irq) == 0) {
+-		/* Use the provided value if it's valid. */
+-		if (irq >= 0)
+-			gsi_override = irq;
+-	}
 -
--	value = tegra_dc_readl(rgb->dc, DC_CMD_DISPLAY_POWER_CONTROL);
--	value |= PW0_ENABLE | PW1_ENABLE | PW2_ENABLE | PW3_ENABLE |
--		 PW4_ENABLE | PM0_ENABLE | PM1_ENABLE;
--	tegra_dc_writel(rgb->dc, value, DC_CMD_DISPLAY_POWER_CONTROL);
+-	gsi = xen_register_gsi(gsi, gsi_override, trigger, polarity);
+-	printk(KERN_INFO "xen: acpi sci %d\n", gsi);
 -
- 	tegra_dc_commit(rgb->dc);
- 
- 	if (output->panel)
-@@ -193,6 +183,7 @@ static void tegra_rgb_encoder_disable(struct drm_encoder *encoder)
- 		drm_panel_disable(output->panel);
- 
- 	tegra_dc_write_regs(rgb->dc, rgb_disable, ARRAY_SIZE(rgb_disable));
-+	tegra_dc_commit(rgb->dc);
- 
- 	if (output->panel)
- 		drm_panel_unprepare(output->panel);
-diff --git a/drivers/gpu/drm/tegra/sor.c b/drivers/gpu/drm/tegra/sor.c
-index e813df71e30c..2afe478ded3b 100644
---- a/drivers/gpu/drm/tegra/sor.c
-+++ b/drivers/gpu/drm/tegra/sor.c
-@@ -261,17 +261,8 @@ static int tegra_sor_attach(struct tegra_sor *sor)
- 
- static int tegra_sor_wakeup(struct tegra_sor *sor)
+-	return;
+-}
+-
+ int __init pci_xen_initial_domain(void)
  {
--	struct tegra_dc *dc = to_tegra_dc(sor->output.encoder.crtc);
- 	unsigned long value, timeout;
- 
--	/* enable display controller outputs */
--	value = tegra_dc_readl(dc, DC_CMD_DISPLAY_POWER_CONTROL);
--	value |= PW0_ENABLE | PW1_ENABLE | PW2_ENABLE | PW3_ENABLE |
--		 PW4_ENABLE | PM0_ENABLE | PM1_ENABLE;
--	tegra_dc_writel(dc, value, DC_CMD_DISPLAY_POWER_CONTROL);
--
--	tegra_dc_commit(dc);
--
- 	timeout = jiffies + msecs_to_jiffies(250);
- 
- 	/* wait for head to wake up */
-@@ -1112,18 +1103,6 @@ static void tegra_sor_encoder_mode_set(struct drm_encoder *encoder,
- 		goto unlock;
- 	}
- 
--	/* start display controller in continuous mode */
--	value = tegra_dc_readl(dc, DC_CMD_STATE_ACCESS);
--	value |= WRITE_MUX;
--	tegra_dc_writel(dc, value, DC_CMD_STATE_ACCESS);
--
--	tegra_dc_writel(dc, VSYNC_H_POSITION(1), DC_DISP_DISP_TIMING_OPTIONS);
--	tegra_dc_writel(dc, DISP_CTRL_MODE_C_DISPLAY, DC_CMD_DISPLAY_COMMAND);
--
--	value = tegra_dc_readl(dc, DC_CMD_STATE_ACCESS);
--	value &= ~WRITE_MUX;
--	tegra_dc_writel(dc, value, DC_CMD_STATE_ACCESS);
--
- 	/*
- 	 * configure panel (24bpp, vsync-, hsync-, DP-A protocol, complete
- 	 * raster, associate with display controller)
-@@ -1198,11 +1177,13 @@ static void tegra_sor_encoder_mode_set(struct drm_encoder *encoder,
- 		goto unlock;
- 	}
- 
-+	tegra_sor_update(sor);
-+
- 	value = tegra_dc_readl(dc, DC_DISP_DISP_WIN_OPTIONS);
- 	value |= SOR_ENABLE;
- 	tegra_dc_writel(dc, value, DC_DISP_DISP_WIN_OPTIONS);
- 
--	tegra_sor_update(sor);
-+	tegra_dc_commit(dc);
- 
- 	err = tegra_sor_attach(sor);
- 	if (err < 0) {
--- 
-2.1.3
-
+ 	int irq;
+@@ -527,7 +481,6 @@ int __init pci_xen_initial_domain(void)
+ 	x86_msi.restore_msi_irqs = xen_initdom_restore_msi_irqs;
+ 	pci_msi_ignore_mask = 1;
+ #endif
+-	xen_setup_acpi_sci();
+ 	__acpi_register_gsi = acpi_register_gsi_xen;
+ 	/* Pre-allocate legacy irqs */
+ 	for (irq = 0; irq < nr_legacy_irqs(); irq++) {
