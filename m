@@ -1,348 +1,401 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754408AbbATMpv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 07:45:51 -0500
-Received: from forward-corp1g.mail.yandex.net ([95.108.253.251]:42423 "EHLO
-	forward-corp1g.mail.yandex.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752848AbbATMpu (ORCPT
+	id S1754509AbbATMsI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 07:48:08 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:55644 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753965AbbATMsG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 07:45:50 -0500
-Authentication-Results: smtpcorp1m.mail.yandex.net; dkim=pass header.i=@yandex-team.ru
-From: Stanislav Fomichev <stfomichev@yandex-team.ru>
-To: tglx@linutronix.de, linux-kernel@vger.kernel.org
-Cc: john.stultz@linaro.org, viresh.kumar@linaro.org, fweisbec@gmail.com,
-        mingo@kernel.org, cl@linux.com, stuart.w.hayes@gmail.com
-Subject: [PATCH v3] hrtimers: calculate expires_next after all timers are executed
-Date: Tue, 20 Jan 2015 15:45:25 +0300
-Message-Id: <1421757925-3533-1-git-send-email-stfomichev@yandex-team.ru>
-X-Mailer: git-send-email 2.1.0
+	Tue, 20 Jan 2015 07:48:06 -0500
+Date: Tue, 20 Jan 2015 12:47:46 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Raymond Tan <raymond.tan@intel.com>
+Cc: Mike Turquette <mturquette@linaro.org>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        Alvin Chen <alvin.chen@intel.com>,
+        Andriy Shevchenko <andriy.shevchenko@intel.com>
+Subject: Re: [PATCH v3 1/1] mfd: intel_quark_i2c_gpio: Add Intel Quark X1000
+ I2C-GPIO MFD Driver
+Message-ID: <20150120124745.GE13701@x1>
+References: <1418290710-5871-1-git-send-email-raymond.tan@intel.com>
+ <1418290710-5871-2-git-send-email-raymond.tan@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1418290710-5871-2-git-send-email-raymond.tan@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Thomas,
+On Thu, 11 Dec 2014, Raymond Tan wrote:
 
-There was a problem awhile ago regarding hrtimer interrupt missing tick
-reprogramming: https://lkml.org/lkml/2014/3/17/323
+> In Quark X1000, there's a single PCI device that provides both
+> an I2C controller and a GPIO controller. This MFD driver will
+> split the 2 devices for their respective drivers.
+> 
+> This patch is based on Josef Ahmad's initial work for Quark enabling.
+> 
+> Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> Signed-off-by: Weike Chen <alvin.chen@intel.com>
+> Signed-off-by: Raymond Tan <raymond.tan@intel.com>
+> ---
+>  drivers/mfd/Kconfig                |   12 ++
+>  drivers/mfd/Makefile               |    1 +
+>  drivers/mfd/intel_quark_i2c_gpio.c |  279 ++++++++++++++++++++++++++++++++++++
+>  3 files changed, 292 insertions(+)
+>  create mode 100644 drivers/mfd/intel_quark_i2c_gpio.c
+> 
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index b7c74a7..2f2f62d 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -219,6 +219,18 @@ config HTC_I2CPLD
+>  	  This device provides input and output GPIOs through an I2C
+>  	  interface to one or more sub-chips.
+>  
+> +config MFD_INTEL_QUARK_I2C_GPIO
+> +	tristate "Intel Quark MFD I2C GPIO"
+> +	depends on PCI
+> +	depends on X86
+> +	depends on COMMON_CLK
+> +	select MFD_CORE
+> +	help
+> +	  This MFD provides support for I2C and GPIO that exist only
+> +	  in a single PCI device. It splits the 2 IO devices to
+> +	  their respective IO driver.
+> +	  The GPIO exports a total amount of 8 interrupt-capable GPIOs.
+> +
+>  config LPC_ICH
+>  	tristate "Intel ICH LPC"
+>  	depends on PCI
+> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> index 8a28dc9..d42652d 100644
+> --- a/drivers/mfd/Makefile
+> +++ b/drivers/mfd/Makefile
+> @@ -133,6 +133,7 @@ obj-$(CONFIG_AB8500_CORE)	+= ab8500-core.o ab8500-sysctrl.o
+>  obj-$(CONFIG_MFD_TIMBERDALE)    += timberdale.o
+>  obj-$(CONFIG_PMIC_ADP5520)	+= adp5520.o
+>  obj-$(CONFIG_MFD_KEMPLD)	+= kempld-core.o
+> +obj-$(CONFIG_MFD_INTEL_QUARK_I2C_GPIO)	+= intel_quark_i2c_gpio.o
+>  obj-$(CONFIG_LPC_SCH)		+= lpc_sch.o
+>  obj-$(CONFIG_LPC_ICH)		+= lpc_ich.o
+>  obj-$(CONFIG_MFD_RDC321X)	+= rdc321x-southbridge.o
+> diff --git a/drivers/mfd/intel_quark_i2c_gpio.c b/drivers/mfd/intel_quark_i2c_gpio.c
+> new file mode 100644
+> index 0000000..a3a7043
+> --- /dev/null
+> +++ b/drivers/mfd/intel_quark_i2c_gpio.c
+> @@ -0,0 +1,279 @@
+> +/*
+> + * Intel Quark MFD PCI driver for I2C & GPIO
+> + *
+> + * Copyright(c) 2014 Intel Corporation.
+> + *
+> + * This program is free software; you can redistribute it and/or modify it
+> + * under the terms and conditions of the GNU General Public License,
+> + * version 2, as published by the Free Software Foundation.
+> + *
+> + * This program is distributed in the hope it will be useful, but WITHOUT
+> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+> + * more details.
+> + *
+> + * Intel Quark PCI device for I2C and GPIO controller sharing the same
+> + * PCI function. This PCI driver will split the 2 devices into their
+> + * respective drivers.
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/pci.h>
+> +#include <linux/mfd/core.h>
+> +#include <linux/clkdev.h>
+> +#include <linux/clk-provider.h>
+> +#include <linux/dmi.h>
+> +#include <linux/platform_data/gpio-dwapb.h>
+> +#include <linux/platform_data/i2c-designware.h>
+> +
+> +/* PCI BAR for register base address */
+> +#define MFD_I2C_BAR		0
+> +#define MFD_GPIO_BAR		1
+> +
+> +/* The base GPIO number under GPIOLIB framework */
+> +#define INTEL_QUARK_MFD_GPIO_BASE	8
+> +
+> +/* The default number of South-Cluster GPIO on Quark. */
+> +#define INTEL_QUARK_MFD_NGPIO		8
+> +
+> +/* The DesignWare GPIO ports on Quark. */
+> +#define INTEL_QUARK_GPIO_NPORTS	1
+> +
+> +#define INTEL_QUARK_IORES_MEM	0
+> +#define INTEL_QUARK_IORES_IRQ	1
+> +
+> +#define INTEL_QUARK_I2C_CONTROLLER_CLK "i2c_designware.0"
+> +
+> +/* The Quark I2C controller source clock */
+> +#define INTEL_QUARK_I2C_CLK_HZ	33000000
+> +
+> +#define INTEL_QUARK_I2C_NCLK	1
+> +
+> +struct intel_quark_mfd {
+> +	struct pci_dev		*pdev;
+> +	struct clk			*i2c_clk;
+> +	struct clk_lookup	*i2c_clk_lookup;
+> +};
+> +
+> +struct i2c_mode_info {
+> +	const char *name;
+> +	unsigned int i2c_scl_freq;
+> +};
+> +
+> +static const struct i2c_mode_info platform_i2c_mode_info[] = {
+> +	{
+> +		.name = "Galileo",
+> +		.i2c_scl_freq = 100000,
+> +	},
+> +	{
+> +		.name = "GalileoGen2",
+> +		.i2c_scl_freq = 400000,
+> +	},
+> +};
 
-This is the last version of the patch rebased on top of 3.19-rc5 and
-lightly tested. Could you please apply it?
+We normally do not capitalise device names.
 
----
+> +static struct resource intel_quark_i2c_res[] = {
+> +	[INTEL_QUARK_IORES_MEM] = {
+> +		.flags = IORESOURCE_MEM,
+> +	},
+> +	[INTEL_QUARK_IORES_IRQ] = {
+> +		.flags = IORESOURCE_IRQ,
+> +	},
+> +};
+> +
+> +static struct resource intel_quark_gpio_res[] = {
+> +	[INTEL_QUARK_IORES_MEM] = {
+> +		.flags = IORESOURCE_MEM,
+> +	},
+> +};
+> +
+> +static struct mfd_cell intel_quark_mfd_cells[] = {
+> +	{
+> +		.id = MFD_I2C_BAR,
+> +		.name = "i2c_designware",
+> +		.num_resources = ARRAY_SIZE(intel_quark_i2c_res),
+> +		.resources = intel_quark_i2c_res,
+> +		.ignore_resource_conflicts = true,
+> +	},
+> +	{
+> +		.id = MFD_GPIO_BAR,
+> +		.name = "gpio-dwapb",
+> +		.num_resources = ARRAY_SIZE(intel_quark_gpio_res),
+> +		.resources = intel_quark_gpio_res,
+> +		.ignore_resource_conflicts = true,
+> +	},
+> +};
+> +
+> +static const struct pci_device_id intel_quark_mfd_ids[] = {
+> +	{ PCI_VDEVICE(INTEL, 0x0934), },
+> +	{ 0,}
 
-I think I'm hitting particularly subtle issue with NOHZ_IDLE kernel.
+No need to populate this; just { }, will do fine.
 
-The sequence is as follows:
-- CPU enters idle, we disable tick
-- hrtimer interrupt fires (for hrtimer_wakeup)
-- for clock base #1 (REALTIME) we wake up SCHED_RT thread and
-  start RT period timer (from start_rt_bandwidth) for clock base #0
-(MONOTONIC)
-- because we already checked expiry time for clock base #0
-  we end up programming wrong wake up time (minutes, from
-tick_sched_timer)
-- then, we exit idle loop and restart tick;
-  but because tick_sched_timer is not leftmost (the leftmost one
-  is RT period timer) we don't program it
+> +};
+> +MODULE_DEVICE_TABLE(pci, intel_quark_mfd_ids);
+> +
+> +static int intel_quark_register_i2c_clk(struct intel_quark_mfd *quark_mfd)
+> +{
+> +	struct pci_dev *pdev = quark_mfd->pdev;
+> +	struct clk_lookup *i2c_clk_lookup;
+> +	struct clk *i2c_clk;
+> +	int retval;
+> +
+> +	i2c_clk_lookup = devm_kcalloc(
+> +		&pdev->dev, INTEL_QUARK_I2C_NCLK,
 
-So in the end, there is working CPU without tick interrupt enabled.
-This eventually leads to RCU stall on that CPU: rcu_gp_kthread
-is not woken up because there is no tick.
+Place this line back on the one above and line subsequent lines up
+against the '('.
 
-This fix runs expired timers first and only then tries to find
-next expiry time for all clocks.
+> +		sizeof(*i2c_clk_lookup), GFP_KERNEL);
+> +
 
-Signed-off-by: Stanislav Fomichev <stfomichev@yandex-team.ru>
----
- include/linux/hrtimer.h |   2 +
- kernel/time/hrtimer.c   | 162 ++++++++++++++++++++++++++----------------------
- 2 files changed, 90 insertions(+), 74 deletions(-)
+Rid this empty line.
 
-diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
-index a036d058a249..f23ee6edd2e7 100644
---- a/include/linux/hrtimer.h
-+++ b/include/linux/hrtimer.h
-@@ -141,6 +141,7 @@ struct hrtimer_sleeper {
-  * @get_time:		function to retrieve the current time of the clock
-  * @softirq_time:	the time when running the hrtimer queue in the softirq
-  * @offset:		offset of this clock to the monotonic base
-+ * @expires_next:	absolute time of the next event on this clock base
-  */
- struct hrtimer_clock_base {
- 	struct hrtimer_cpu_base	*cpu_base;
-@@ -151,6 +152,7 @@ struct hrtimer_clock_base {
- 	ktime_t			(*get_time)(void);
- 	ktime_t			softirq_time;
- 	ktime_t			offset;
-+	ktime_t			expires_next;
- };
- 
- enum  hrtimer_base_type {
-diff --git a/kernel/time/hrtimer.c b/kernel/time/hrtimer.c
-index 37e50aadd471..63247b2ac72b 100644
---- a/kernel/time/hrtimer.c
-+++ b/kernel/time/hrtimer.c
-@@ -440,6 +440,36 @@ static inline void debug_deactivate(struct hrtimer *timer)
- 	trace_hrtimer_cancel(timer);
- }
- 
-+/*
-+ * Find the next expiring timer and return the expiry in absolute
-+ * CLOCK_MONOTONIC time.
-+ */
-+static ktime_t hrtimer_get_expires_next(struct hrtimer_cpu_base *cpu_base)
-+{
-+	int i;
-+	ktime_t expires, expires_next = { .tv64 = KTIME_MAX };
-+	struct hrtimer_clock_base *base;
-+
-+	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++) {
-+		if (!(cpu_base->active_bases & (1 << i)))
-+			continue;
-+
-+		base = cpu_base->clock_base + i;
-+		/* Adjust to CLOCK_MONOTONIC */
-+		expires = ktime_sub(base->expires_next, base->offset);
-+
-+		if (expires.tv64 < expires_next.tv64)
-+			expires_next = expires;
-+	}
-+	/*
-+	 * If clock_was_set() has changed base->offset the result
-+	 * might be negative. Fix it up to prevent a false positive in
-+	 * clockevents_program_event()
-+	 */
-+	expires.tv64 = 0;
-+	return expires_next.tv64 < 0 ? expires : expires_next;
-+}
-+
- /* High resolution timer related functions */
- #ifdef CONFIG_HIGH_RES_TIMERS
- 
-@@ -488,32 +518,7 @@ static inline int hrtimer_hres_active(void)
- static void
- hrtimer_force_reprogram(struct hrtimer_cpu_base *cpu_base, int skip_equal)
- {
--	int i;
--	struct hrtimer_clock_base *base = cpu_base->clock_base;
--	ktime_t expires, expires_next;
--
--	expires_next.tv64 = KTIME_MAX;
--
--	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++, base++) {
--		struct hrtimer *timer;
--		struct timerqueue_node *next;
--
--		next = timerqueue_getnext(&base->active);
--		if (!next)
--			continue;
--		timer = container_of(next, struct hrtimer, node);
--
--		expires = ktime_sub(hrtimer_get_expires(timer), base->offset);
--		/*
--		 * clock_was_set() has changed base->offset so the
--		 * result might be negative. Fix it up to prevent a
--		 * false positive in clockevents_program_event()
--		 */
--		if (expires.tv64 < 0)
--			expires.tv64 = 0;
--		if (expires.tv64 < expires_next.tv64)
--			expires_next = expires;
--	}
-+	ktime_t expires_next = hrtimer_get_expires_next(cpu_base);
- 
- 	if (skip_equal && expires_next.tv64 == cpu_base->expires_next.tv64)
- 		return;
-@@ -830,6 +835,8 @@ EXPORT_SYMBOL_GPL(hrtimer_forward);
- static int enqueue_hrtimer(struct hrtimer *timer,
- 			   struct hrtimer_clock_base *base)
- {
-+	int leftmost;
-+
- 	debug_activate(timer);
- 
- 	timerqueue_add(&base->active, &timer->node);
-@@ -841,7 +848,13 @@ static int enqueue_hrtimer(struct hrtimer *timer,
- 	 */
- 	timer->state |= HRTIMER_STATE_ENQUEUED;
- 
--	return (&timer->node == base->active.next);
-+	leftmost = &timer->node == base->active.next;
-+	/*
-+	 * If the new timer is the leftmost, update clock_base->expires_next.
-+	 */
-+	if (leftmost)
-+		base->expires_next = hrtimer_get_expires(timer);
-+	return leftmost;
- }
- 
- /*
-@@ -858,27 +871,45 @@ static void __remove_hrtimer(struct hrtimer *timer,
- 			     struct hrtimer_clock_base *base,
- 			     unsigned long newstate, int reprogram)
- {
--	struct timerqueue_node *next_timer;
-+	struct timerqueue_node *next;
-+	struct hrtimer *next_timer;
-+	bool first;
-+
- 	if (!(timer->state & HRTIMER_STATE_ENQUEUED))
- 		goto out;
- 
--	next_timer = timerqueue_getnext(&base->active);
-+	/*
-+	 * If this is not the first timer of the clock base, we just
-+	 * remove it. No updates, no reprogramming.
-+	 */
-+	first = timerqueue_getnext(&base->active) == &timer->node;
- 	timerqueue_del(&base->active, &timer->node);
--	if (&timer->node == next_timer) {
-+	if (!first)
-+		goto out;
-+
-+	/*
-+	 * Update cpu base and clock base. This needs to be done
-+	 * before calling into hrtimer_force_reprogram() as that
-+	 * relies on active_bases and expires_next.
-+	 */
-+	next = timerqueue_getnext(&base->active);
-+	if (!next) {
-+		base->cpu_base->active_bases &= ~(1 << base->index);
-+		base->expires_next.tv64 = KTIME_MAX;
-+	} else {
-+		next_timer = container_of(next, struct hrtimer, node);
-+		base->expires_next = hrtimer_get_expires(next_timer);
-+	}
-+
- #ifdef CONFIG_HIGH_RES_TIMERS
--		/* Reprogram the clock event device. if enabled */
--		if (reprogram && hrtimer_hres_active()) {
--			ktime_t expires;
--
--			expires = ktime_sub(hrtimer_get_expires(timer),
--					    base->offset);
--			if (base->cpu_base->expires_next.tv64 == expires.tv64)
--				hrtimer_force_reprogram(base->cpu_base, 1);
--		}
--#endif
-+	if (reprogram && hrtimer_hres_active()) {
-+		ktime_t expires;
-+
-+		expires = ktime_sub(hrtimer_get_expires(timer), base->offset);
-+		if (base->cpu_base->expires_next.tv64 == expires.tv64)
-+			hrtimer_force_reprogram(base->cpu_base, 1);
- 	}
--	if (!timerqueue_getnext(&base->active))
--		base->cpu_base->active_bases &= ~(1 << base->index);
-+#endif
- out:
- 	timer->state = newstate;
- }
-@@ -1104,35 +1135,21 @@ EXPORT_SYMBOL_GPL(hrtimer_get_remaining);
- ktime_t hrtimer_get_next_event(void)
- {
- 	struct hrtimer_cpu_base *cpu_base = this_cpu_ptr(&hrtimer_bases);
--	struct hrtimer_clock_base *base = cpu_base->clock_base;
--	ktime_t delta, mindelta = { .tv64 = KTIME_MAX };
-+	ktime_t next, delta = { .tv64 = KTIME_MAX };
- 	unsigned long flags;
--	int i;
- 
- 	raw_spin_lock_irqsave(&cpu_base->lock, flags);
- 
- 	if (!hrtimer_hres_active()) {
--		for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++, base++) {
--			struct hrtimer *timer;
--			struct timerqueue_node *next;
--
--			next = timerqueue_getnext(&base->active);
--			if (!next)
--				continue;
--
--			timer = container_of(next, struct hrtimer, node);
--			delta.tv64 = hrtimer_get_expires_tv64(timer);
--			delta = ktime_sub(delta, base->get_time());
--			if (delta.tv64 < mindelta.tv64)
--				mindelta.tv64 = delta.tv64;
--		}
-+		next = hrtimer_get_expires_next(cpu_base);
-+		delta = ktime_sub(next, ktime_get());
-+		if (delta.tv64 < 0)
-+			delta.tv64 = 0;
- 	}
- 
- 	raw_spin_unlock_irqrestore(&cpu_base->lock, flags);
- 
--	if (mindelta.tv64 < 0)
--		mindelta.tv64 = 0;
--	return mindelta;
-+	return delta;
- }
- #endif
- 
-@@ -1242,6 +1259,7 @@ static void __run_hrtimer(struct hrtimer *timer, ktime_t *now)
-  */
- void hrtimer_interrupt(struct clock_event_device *dev)
- {
-+	struct hrtimer_clock_base *base;
- 	struct hrtimer_cpu_base *cpu_base = this_cpu_ptr(&hrtimer_bases);
- 	ktime_t expires_next, now, entry_time, delta;
- 	int i, retries = 0;
-@@ -1253,7 +1271,6 @@ void hrtimer_interrupt(struct clock_event_device *dev)
- 	raw_spin_lock(&cpu_base->lock);
- 	entry_time = now = hrtimer_update_base(cpu_base);
- retry:
--	expires_next.tv64 = KTIME_MAX;
- 	/*
- 	 * We set expires_next to KTIME_MAX here with cpu_base->lock
- 	 * held to prevent that a timer is enqueued in our queue via
-@@ -1264,7 +1281,6 @@ void hrtimer_interrupt(struct clock_event_device *dev)
- 	cpu_base->expires_next.tv64 = KTIME_MAX;
- 
- 	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++) {
--		struct hrtimer_clock_base *base;
- 		struct timerqueue_node *node;
- 		ktime_t basenow;
- 
-@@ -1292,23 +1308,20 @@ void hrtimer_interrupt(struct clock_event_device *dev)
- 			 * timer will have to trigger a wakeup anyway.
- 			 */
- 
--			if (basenow.tv64 < hrtimer_get_softexpires_tv64(timer)) {
--				ktime_t expires;
--
--				expires = ktime_sub(hrtimer_get_expires(timer),
--						    base->offset);
--				if (expires.tv64 < 0)
--					expires.tv64 = KTIME_MAX;
--				if (expires.tv64 < expires_next.tv64)
--					expires_next = expires;
-+			if (basenow.tv64 < hrtimer_get_softexpires_tv64(timer))
- 				break;
--			}
- 
- 			__run_hrtimer(timer, &basenow);
- 		}
- 	}
- 
- 	/*
-+	 * We might have dropped cpu_base->lock and the callbacks
-+	 * might have added timers. Find the timer which expires first.
-+	 */
-+	expires_next = hrtimer_get_expires_next(cpu_base);
-+
-+	/*
- 	 * Store the new expiry value so the migration code can verify
- 	 * against it.
- 	 */
-@@ -1628,6 +1641,7 @@ static void init_hrtimers_cpu(int cpu)
- 	for (i = 0; i < HRTIMER_MAX_CLOCK_BASES; i++) {
- 		cpu_base->clock_base[i].cpu_base = cpu_base;
- 		timerqueue_init_head(&cpu_base->clock_base[i].active);
-+		cpu_base->clock_base[i].expires_next.tv64 = KTIME_MAX;
- 	}
- 
- 	cpu_base->cpu = cpu;
+> +	if (!i2c_clk_lookup)
+> +		return -ENOMEM;
+> +
+> +	i2c_clk_lookup[0].dev_id = INTEL_QUARK_I2C_CONTROLLER_CLK;
+> +
+> +	i2c_clk = clk_register_fixed_rate(
+> +		&pdev->dev, INTEL_QUARK_I2C_CONTROLLER_CLK, NULL,
+
+Same here, put this back up on the line above.
+
+> +		CLK_IS_ROOT, INTEL_QUARK_I2C_CLK_HZ);
+> +
+> +	quark_mfd->i2c_clk_lookup = i2c_clk_lookup;
+> +	quark_mfd->i2c_clk = i2c_clk;
+> +
+> +	retval = clk_register_clkdevs(i2c_clk, i2c_clk_lookup,
+> +				      INTEL_QUARK_I2C_NCLK);
+> +	if (retval)
+> +		dev_err(&pdev->dev, "Fixed clk register failed: %d\n", retval);
+> +
+> +	return retval;
+> +}
+
+I wouldn't mind a clk Ack on this.  Did you Cc Mike already?
+
+> +static void intel_quark_unregister_i2c_clk(struct pci_dev *pdev)
+> +{
+> +	struct intel_quark_mfd *quark_mfd = dev_get_drvdata(&pdev->dev);
+> +
+> +	if (!quark_mfd->i2c_clk || !quark_mfd->i2c_clk_lookup)
+> +		return;
+> +
+> +	clkdev_drop(quark_mfd->i2c_clk_lookup);
+> +	clk_unregister(quark_mfd->i2c_clk);
+> +}
+> +
+> +static int intel_quark_i2c_setup(struct pci_dev *pdev, struct mfd_cell *cell)
+> +{
+> +	const char *board_name = dmi_get_system_info(DMI_BOARD_NAME);
+> +	struct dw_i2c_platform_data *pdata;
+> +	struct resource *res = (struct resource *)cell->resources;
+> +	struct device *dev = &pdev->dev;
+> +	unsigned int i;
+> +
+> +	res[INTEL_QUARK_IORES_MEM].start =
+> +		pci_resource_start(pdev, MFD_I2C_BAR);
+> +	res[INTEL_QUARK_IORES_MEM].end =
+> +		pci_resource_end(pdev, MFD_I2C_BAR);
+> +
+> +	res[INTEL_QUARK_IORES_IRQ].start = pdev->irq;
+> +	res[INTEL_QUARK_IORES_IRQ].end = pdev->irq;
+> +
+> +	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
+> +	if (!pdata)
+> +		return -ENOMEM;
+> +
+> +	/* Fast mode by default */
+> +	pdata->i2c_scl_freq = 400000;
+> +
+> +	for (i = 0; i < ARRAY_SIZE(platform_i2c_mode_info); i++)
+> +		if (!strcmp(board_name, platform_i2c_mode_info[i].name))
+> +			pdata->i2c_scl_freq
+> +				= platform_i2c_mode_info[i].i2c_scl_freq;
+> +
+> +	cell->platform_data = pdata;
+> +	cell->pdata_size = sizeof(*pdata);
+> +
+> +	return 0;
+> +}
+> +
+> +static int intel_quark_gpio_setup(struct pci_dev *pdev, struct mfd_cell *cell)
+> +{
+> +	struct dwapb_platform_data *pdata;
+> +	struct resource *res = (struct resource *)cell->resources;
+> +	struct device *dev = &pdev->dev;
+> +
+> +	res[INTEL_QUARK_IORES_MEM].start =
+> +		pci_resource_start(pdev, MFD_GPIO_BAR);
+> +	res[INTEL_QUARK_IORES_MEM].end =
+> +		pci_resource_end(pdev, MFD_GPIO_BAR);
+> +
+> +	pdata = devm_kzalloc(dev, sizeof(*pdata), GFP_KERNEL);
+> +	if (!pdata)
+> +		return -ENOMEM;
+> +
+> +	/* For intel quark x1000, it has only one port: portA */
+> +	pdata->nports = INTEL_QUARK_GPIO_NPORTS;
+> +	pdata->properties = devm_kcalloc(dev, pdata->nports,
+> +					 sizeof(*pdata->properties),
+> +					 GFP_KERNEL);
+> +	if (!pdata->properties)
+> +		return -ENOMEM;
+> +
+> +	/* Set the properties for portA */
+> +	pdata->properties->node	= NULL;
+> +	pdata->properties->name	= "intel-quark-x1000-gpio-portA";
+> +	pdata->properties->idx	= 0;
+> +	pdata->properties->ngpio	= INTEL_QUARK_MFD_NGPIO;
+> +	pdata->properties->gpio_base	= INTEL_QUARK_MFD_GPIO_BASE;
+> +	pdata->properties->irq	= pdev->irq;
+> +	pdata->properties->irq_shared	= true;
+
+Nit: This looks untidy.  Either line up all of the '=' or don't do any
+aligning at all.
+
+> +	cell->platform_data = pdata;
+> +	cell->pdata_size = sizeof(*pdata);
+> +
+> +	return 0;
+> +}
+> +
+> +static int intel_quark_mfd_probe(struct pci_dev *pdev,
+> +				 const struct pci_device_id *id)
+> +{
+> +	struct intel_quark_mfd *quark_mfd;
+> +	int retval;
+
+I prefer the use of 'ret' or 'err', as it's more consistent with the
+rest of the kernel.
+
+> +	retval = pcim_enable_device(pdev);
+> +	if (retval)
+> +		return retval;
+> +
+> +	quark_mfd = devm_kzalloc(&pdev->dev, sizeof(*quark_mfd), GFP_KERNEL);
+> +	if (!quark_mfd)
+> +		return -ENOMEM;
+> +	quark_mfd->pdev = pdev;
+> +
+> +	retval = intel_quark_register_i2c_clk(quark_mfd);
+> +	if (retval)
+> +		return retval;
+> +
+> +	dev_set_drvdata(&pdev->dev, quark_mfd);
+> +
+> +	retval = intel_quark_i2c_setup(pdev,
+> +				       &intel_quark_mfd_cells[MFD_I2C_BAR]);
+> +	if (retval)
+> +		return retval;
+> +
+> +	retval = intel_quark_gpio_setup(pdev,
+> +					&intel_quark_mfd_cells[MFD_GPIO_BAR]);
+> +	if (retval)
+> +		return retval;
+> +
+> +	return mfd_add_devices(&pdev->dev, 0, intel_quark_mfd_cells,
+> +		ARRAY_SIZE(intel_quark_mfd_cells), NULL, 0, NULL);
+
+Odd alignment.  Please use the '('.
+
+> +}
+> +
+> +static void intel_quark_mfd_remove(struct pci_dev *pdev)
+> +{
+> +	intel_quark_unregister_i2c_clk(pdev);
+> +	mfd_remove_devices(&pdev->dev);
+> +}
+> +
+> +static struct pci_driver intel_quark_mfd_driver = {
+> +	.name		= "intel_quark_mfd_i2c_gpio",
+> +	.id_table	= intel_quark_mfd_ids,
+> +	.probe		= intel_quark_mfd_probe,
+> +	.remove		= intel_quark_mfd_remove,
+> +};
+> +
+> +module_pci_driver(intel_quark_mfd_driver);
+> +
+> +MODULE_AUTHOR("Raymond Tan <raymond.tan@intel.com>");
+> +MODULE_DESCRIPTION("Intel Quark MFD PCI driver for I2C & GPIO");
+> +MODULE_LICENSE("GPL v2");
+
 -- 
-2.1.0
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
