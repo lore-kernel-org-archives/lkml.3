@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435AbbATVtz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 16:49:55 -0500
-Received: from mail-ob0-f176.google.com ([209.85.214.176]:58991 "EHLO
-	mail-ob0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751887AbbATVtx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 16:49:53 -0500
-MIME-Version: 1.0
-In-Reply-To: <xmqqmw5n5z8i.fsf@gitster.dls.corp.google.com>
-References: <xmqqmw5n5z8i.fsf@gitster.dls.corp.google.com>
-From: =?UTF-8?B?w4Z2YXIgQXJuZmrDtnLDsCBCamFybWFzb24=?= <avarab@gmail.com>
-Date: Tue, 20 Jan 2015 22:49:32 +0100
-Message-ID: <CACBZZX5s1rZ3exktbisseJSjF8-0=8ByMpBpARy6h+=iP7wEyA@mail.gmail.com>
-Subject: Re: [ANNOUNCE] Git v2.3.0-rc0
-To: Junio C Hamano <gitster@pobox.com>
-Cc: Git Mailing List <git@vger.kernel.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>, Jeff King <peff@peff.net>
-Content-Type: text/plain; charset=UTF-8
+	id S1753933AbbATVwG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 16:52:06 -0500
+Received: from mga14.intel.com ([192.55.52.115]:15696 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753098AbbATVuE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 16:50:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,437,1418112000"; 
+   d="scan'208";a="640071610"
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: x86@kernel.org, Aubrey Li <aubrey.li@linux.intel.com>,
+        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
+        "Kumar P, Mahesh" <mahesh.kumar.p@intel.com>,
+        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
+Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Subject: [PATCH v2 0/4] x86: pmc_atom: Add Cherrytrail support
+Date: Tue, 20 Jan 2015 23:49:59 +0200
+Message-Id: <1421790603-30097-1-git-send-email-andriy.shevchenko@linux.intel.com>
+X-Mailer: git-send-email 2.1.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 13, 2015 at 12:57 AM, Junio C Hamano <gitster@pobox.com> wrote:
-> An early preview release Git v2.3.0-rc0 is now available for
-> testing at the usual places.
-[...]
-> Jeff King (38):
-[...]
->       parse_color: refactor color storage
-[...]
+This is the reworked patch series which had been sent earlier [1] to support
+Intel CherryTrail SoC.
 
-I've had this in my .gitconfig since 2010 which was broken by Jeff's
-v2.1.3-24-g695d95d:
+The patches were tested on both BayTrail and CherryTrail SoCs.
 
-    ;; Don't be so invasive about coloring ^M when I'm editing files
-that
-    ;; are supposed to have \r\n.
-    [color "diff"]
-       whitespace = 0
+[1] https://patchwork.kernel.org/patch/5235891/
 
-To test this replace \n with \r\n in a file. Before this patch you could do:
+Changes to v1:
+ - rebased on top of recent pmc_atom changes
+ - cleaned up, reqorked and split to few smaller patches
 
-    git -c color.diff.whitespace=0 show
+Andy Shevchenko (4):
+  x86: pmc_atom: save struct device pointer in pmc
+  x86: pmc_atom: print index of device in loop
+  x86: pmc_atom: supply register mappings via pmc object
+  PMC driver: Add Cherrytrail PMC interface
 
-And just get:
+ arch/x86/include/asm/pmc_atom.h |  25 ++++
+ arch/x86/kernel/pmc_atom.c      | 270 +++++++++++++++++++++++++---------------
+ 2 files changed, 198 insertions(+), 97 deletions(-)
 
-    [red]-[/red]
-    [green]+[/green]
+-- 
+2.1.4
 
-As opposed to:
-
-    git -c color.diff.whitespace=1 show
-
-Which gives you:
-
-    [red]-
-    [green]+[/green][red]^M[/red]
-
-Now that just produces:
-
-    error: invalid color value: 0
-    fatal: bad config variable 'color.diff.whitespace' in file
-'/home/avar/.gitconfig' at line 16
-
-Maybe breaking this is OK (but I can't find what the replacement is),
-but the config or the the changelog doesn't mention breaking existing
-config settings.
