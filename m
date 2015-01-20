@@ -1,66 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753AbbATWzM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 17:55:12 -0500
-Received: from mta-out1.inet.fi ([62.71.2.227]:35883 "EHLO jenni2.inet.fi"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751645AbbATWzK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 17:55:10 -0500
-Date: Wed, 21 Jan 2015 00:54:43 +0200
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Paul Moore <pmoore@redhat.com>,
-        Mel Gorman <mgorman@suse.de>, Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Subject: Re: linux-next: Tree for Jan 20
-Message-ID: <20150120225443.GA19629@node.dhcp.inet.fi>
-References: <20150120185308.53f4af4e@canb.auug.org.au>
- <20150120202642.GA6178@roeck-us.net>
+	id S1752118AbbATXB7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 18:01:59 -0500
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:50222 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751479AbbATXB6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 18:01:58 -0500
+Date: Tue, 20 Jan 2015 15:01:50 -0800
+From: josh@joshtriplett.org
+To: Kim Phillips <kim.phillips@freescale.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan@kernel.org>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Rik van Riel <riel@redhat.com>,
+        Sasha Levin <sasha.levin@oracle.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
+        Jens Axboe <axboe@fb.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH 2/2] mm: fix undefined reference to `.kernel_map_pages'
+ on PPC builds
+Message-ID: <20150120230150.GA14475@cloud>
+References: <20150120140200.aa7ba0eb28d95e456972e178@freescale.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150120202642.GA6178@roeck-us.net>
-User-Agent: Mutt/1.5.23.1 (2014-03-12)
+In-Reply-To: <20150120140200.aa7ba0eb28d95e456972e178@freescale.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 12:26:42PM -0800, Guenter Roeck wrote:
-> ---
-> sparc:
+On Tue, Jan 20, 2015 at 02:02:00PM -0600, Kim Phillips wrote:
+> It's possible to configure DEBUG_PAGEALLOC without PAGE_POISONING on
+> ppc.  Fix building the generic kernel_map_pages() implementation in
+> this case:
 > 
-> # bad: [5d0eebbbb6f76de160f7d7f9dc0b64a98ad9b8e9] Add linux-next specific files for 20150120
-> # good: [ec6f34e5b552fb0a52e6aae1a5afbbb1605cc6cc] Linux 3.19-rc5
-> git bisect start 'HEAD' 'v3.19-rc5'
-> # good: [f933e94e8f597c709068e58daa92570d5aa13b8c] Merge remote-tracking branch 'drm/drm-next'
-> git bisect good f933e94e8f597c709068e58daa92570d5aa13b8c
-> # good: [88cf70c4dd4a3851bf5531c0a51dec298d9690b5] Merge remote-tracking branch 'usb/usb-next'
-> git bisect good 88cf70c4dd4a3851bf5531c0a51dec298d9690b5
-> # good: [3ee33b3893f72e5a504ba873ee4a308896d97645] Merge remote-tracking branch 'cgroup/for-next'
-> git bisect good 3ee33b3893f72e5a504ba873ee4a308896d97645
-> # bad: [5925961a2889ec2b3734be9f3a6375822010f7a7] fs-befs-linuxvfsc-remove-unnecessary-casting-fix
-> git bisect bad 5925961a2889ec2b3734be9f3a6375822010f7a7
-> # bad: [fff9d1d082bb48a0d0e89aaaf746718fcef3a47f] mm: memcontrol: default hierarchy interface for memory fix
-> git bisect bad fff9d1d082bb48a0d0e89aaaf746718fcef3a47f
-> # good: [ab090dcbdd276e9ddcd0ecb666389aa85c30c76f] powerpc: drop _PAGE_FILE and pte_file()-related helpers
-> git bisect good ab090dcbdd276e9ddcd0ecb666389aa85c30c76f
-> # good: [91408e6db5842ed4bb66e2a3919b67a5f06ac34a] mm/hugetlb: fix suboptimal migration/hwpoisoned entry check
-> git bisect good 91408e6db5842ed4bb66e2a3919b67a5f06ac34a
-> # bad: [8e94896c7510e69bbd2acf418ad3a8afb9978c97] fs: consolidate {nr,free}_cached_objects args in shrink_control
-> git bisect bad 8e94896c7510e69bbd2acf418ad3a8afb9978c97
-> # bad: [5995b76d501a8f4d315f811698db98ac997d706f] x86: mm: restore original pte_special check
-> git bisect bad 5995b76d501a8f4d315f811698db98ac997d706f
-> # good: [b75c721aa3e2df5c52d4b6bce3dd687018c1f40c] mm: convert p[te|md]_numa users to p[te|md]_protnone_numa
-> git bisect good b75c721aa3e2df5c52d4b6bce3dd687018c1f40c
-> # good: [ce4188d335ac91a004087fb0ea86b85091ad570b] mm: convert p[te|md]_mknonnuma and remaining page table manipulations
-> git bisect good ce4188d335ac91a004087fb0ea86b85091ad570b
-> # bad: [625fa33ba695d73baa58afa44ab063f67e5f4b64] mm: numa: do not trap faults on the huge zero page
-> git bisect bad 625fa33ba695d73baa58afa44ab063f67e5f4b64
-> # good: [c2a7c97cc4bc3d46e98908d7dee07ab3e00a5257] mm: remove remaining references to NUMA hinting bits and helpers
-> git bisect good c2a7c97cc4bc3d46e98908d7dee07ab3e00a5257
-> # first bad commit: [625fa33ba695d73baa58afa44ab063f67e5f4b64] mm: numa: do not trap faults on the huge zero page
+>   LD      init/built-in.o
+> mm/built-in.o: In function `free_pages_prepare':
+> mm/page_alloc.c:770: undefined reference to `.kernel_map_pages'
+> mm/built-in.o: In function `prep_new_page':
+> mm/page_alloc.c:933: undefined reference to `.kernel_map_pages'
+> mm/built-in.o: In function `map_pages':
+> mm/compaction.c:61: undefined reference to `.kernel_map_pages'
+> make: *** [vmlinux] Error 1
+> 
+> Signed-off-by: Kim Phillips <kim.phillips@freescale.com>
+> ---
+>  mm/Makefile | 1 +
+>  1 file changed, 1 insertion(+)
+> 
+> diff --git a/mm/Makefile b/mm/Makefile
+> index 4bf586e..2956467 100644
+> --- a/mm/Makefile
+> +++ b/mm/Makefile
+> @@ -46,6 +46,7 @@ obj-$(CONFIG_SLOB) += slob.o
+>  obj-$(CONFIG_MMU_NOTIFIER) += mmu_notifier.o
+>  obj-$(CONFIG_KSM) += ksm.o
+>  obj-$(CONFIG_PAGE_POISONING) += debug-pagealloc.o
+> +obj-$(CONFIG_DEBUG_PAGEALLOC) += debug-pagealloc.o
 
-Could you provide more info about the fail in qemu?
+Does it work correctly to list the same object file twice?  Doesn't seem
+like it would.  Shouldn't this do something like the following instead:
 
--- 
- Kirill A. Shutemov
+ifneq ($(CONFIG_DEBUG_PAGEALLOC)$(CONFIG_PAGE_POISONING),)
+obj-y += debug-pagealloc.o
+endif
+
+?
+
+>  obj-$(CONFIG_SLAB) += slab.o
+>  obj-$(CONFIG_SLUB) += slub.o
+>  obj-$(CONFIG_KMEMCHECK) += kmemcheck.o
+> -- 
+> 2.2.2
+> 
