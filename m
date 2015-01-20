@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754887AbbATLDs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 06:03:48 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46944 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754535AbbATLDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 06:03:46 -0500
-Message-ID: <1421751814.29486.13.camel@linux-0dmf.site>
-Subject: Re: USB autosuspend causing trouble with bluetooth
-From: Oliver Neukum <oneukum@suse.de>
-To: Kirill Elagin <kirelagin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, marcel@holtmann.org
-Date: Tue, 20 Jan 2015 12:03:34 +0100
-In-Reply-To: <CABVT_gf-rx0ymvtCrCotkO5=qoDifG1yAMg8U_aTgXEN=x6gvg@mail.gmail.com>
-References: <CABVT_gf-rx0ymvtCrCotkO5=qoDifG1yAMg8U_aTgXEN=x6gvg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
+	id S1754894AbbATLEK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 06:04:10 -0500
+Received: from smtp105.iad3a.emailsrvr.com ([173.203.187.105]:43960 "EHLO
+	smtp105.iad3a.emailsrvr.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753892AbbATLEH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 06:04:07 -0500
+X-Sender-Id: abbotti@mev.co.uk
+Message-ID: <54BE3624.5060302@mev.co.uk>
+Date: Tue, 20 Jan 2015 11:04:04 +0000
+From: Ian Abbott <abbotti@mev.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
+MIME-Version: 1.0
+To: Chase Southwood <chase.southwood@gmail.com>, gregkh@linuxfoundation.org
+CC: hsweeten@visionengravers.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: comedi: das1800: prefer kmalloc_array over kmalloc
+ with multiply
+References: <1421721769-28482-1-git-send-email-chase.southwood@gmail.com>
+In-Reply-To: <1421721769-28482-1-git-send-email-chase.southwood@gmail.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2015-01-18 at 17:30 +0400, Kirill Elagin wrote:
-> Hello,
-> 
-> Recently I started having issues with my Apple Magic Trackpad and I
-> realised that the problem was with autosuspend. Whenever I have `auto`
-> in `power/control` of my BT adapter, `btmon` shows no packets,
-> nothing. As soon as I `echo on`, all the missing packets arrive.
+On 20/01/15 02:42, Chase Southwood wrote:
+> Checkpatch doesn't like kmalloc with multiply very much:
+> drivers/staging/comedi/drivers/das1800.c:1377: WARNING: Prefer kmalloc_array over kmalloc with multiply
+>
+> So this patch swaps that use out for kmalloc_array instead.
+>
+> Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
+> ---
+>   drivers/staging/comedi/drivers/das1800.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/drivers/staging/comedi/drivers/das1800.c b/drivers/staging/comedi/drivers/das1800.c
+> index 381ae94..13ed31c 100644
+> --- a/drivers/staging/comedi/drivers/das1800.c
+> +++ b/drivers/staging/comedi/drivers/das1800.c
+> @@ -1374,7 +1374,7 @@ static int das1800_attach(struct comedi_device *dev,
+>   	if (dev->irq & it->options[2])
+>   		das1800_init_dma(dev, it);
+>
+> -	devpriv->fifo_buf = kmalloc(FIFO_SIZE * sizeof(uint16_t), GFP_KERNEL);
+> +	devpriv->fifo_buf = kmalloc_array(FIFO_SIZE, sizeof(uint16_t), GFP_KERNEL);
+>   	if (!devpriv->fifo_buf)
+>   		return -ENOMEM;
+>
+>
 
-You are not getting remote wakeups. There are two possibilities
+Reviewed-by: Ian Abbott <abbotti@mev.co.uk>
 
-1. the firmware of your BT adapter is faulty and the device needs to
-be added to the list of quirky devices
-
-2. a bug in the kernel breaks remote wakeup.
-
-We need to distinguish these cases. Could you connect another device
-that uses remote wakeup (HID, CDC-ACM, ... - a keyboard or a mouse is
-easiest) to a port connected to XHCI and test autosuspend on that
-device?
-
-	Regards
-		Oliver
-
-
-
-
+-- 
+-=( Ian Abbott @ MEV Ltd.    E-mail: <abbotti@mev.co.uk> )=-
+-=(                          Web: http://www.mev.co.uk/  )=-
