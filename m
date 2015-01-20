@@ -1,103 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754474AbbATMxN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 07:53:13 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:40366 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753742AbbATMxK (ORCPT
+	id S1754835AbbATMyH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 07:54:07 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:44008 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752499AbbATMyF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 07:53:10 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-ef-54be4fb3d070
-Message-id: <54BE4FB1.3030209@samsung.com>
-Date: Tue, 20 Jan 2015 13:53:05 +0100
-From: Jacek Anaszewski <j.anaszewski@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
- Thunderbird/17.0.8
-MIME-version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        kyungmin.park@samsung.com, b.zolnierkie@samsung.com, pavel@ucw.cz,
-        cooloney@gmail.com, rpurdie@rpsys.net, sakari.ailus@iki.fi,
-        s.nawrocki@samsung.com, Chanwoo Choi <cw00.choi@samsung.com>
-Subject: Re: [PATCH/RFC v10 04/19] dt-binding: mfd: max77693: Add DT binding
- related macros
-References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
- <1420816989-1808-5-git-send-email-j.anaszewski@samsung.com>
- <20150120111243.GC13701@x1>
-In-reply-to: <20150120111243.GC13701@x1>
-Content-type: text/plain; charset=UTF-8; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrKLMWRmVeSWpSXmKPExsVy+t/xy7qb/feFGLTNULTYOGM9q8XRnROZ
-	LK5/ec5qMf/IOVaLs01v2C3ufz3KaHF51xw2i61v1jFa9GzYympx99RRNovdu56yWhx+085q
-	cWb/SjYHXo+ds+6yexz+upDF4861PWwee+b/YPXo27KK0WPF6u/sHp83yQWwR3HZpKTmZJal
-	FunbJXBl3Ln7nL1gK1/F8nt7GBsYP3N3MXJySAiYSLz+uZ0ZwhaTuHBvPVsXIxeHkMBSRomG
-	KXPBEkICHxklPt+XB7F5BbQkLqyawQpiswioSpxb8IARxGYTMJT4+eI1E4gtKhAh8ef0PlaI
-	ekGJH5PvsXQxcnCICKhInHtjDhJmFtjFJLHvuAaILSwQK/H2yxpWiL2LGSUO/ZzIBpLgFNCQ
-	eHZmLxtEg5nEo5Z1zBC2vMTmNW+ZJzAKzEKyYhaSsllIyhYwMq9iFE0tTS4oTkrPNdQrTswt
-	Ls1L10vOz93ECImaLzsYFx+zOsQowMGoxMOrkbMnRIg1say4MvcQowQHs5II71nzfSFCvCmJ
-	lVWpRfnxRaU5qcWHGJk4OKUaGJXfvXW7YuPqaJSrvWif+bkJrw5bPlON0NxtcnRD+dkPx28t
-	dqg55nrCXiymOmHbTqfJnrVSje3FSq8OJt3x9In0e7lZff/aQzOZni96bK34qsLf4OCaSRaC
-	HKe9ly7g4pr08MNVzm1vbqTtL25eebPOTX6BhIZFl7X0zu/3nDPddpyzVtPh91FiKc5INNRi
-	LipOBADAq/8eeAIAAA==
+	Tue, 20 Jan 2015 07:54:05 -0500
+Message-ID: <54BE4FE8.7030604@gmail.com>
+Date: Tue, 20 Jan 2015 13:54:00 +0100
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+MIME-Version: 1.0
+To: Daniel Mack <daniel@zonque.org>, Florian Weimer <fw@deneb.enyo.de>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+CC: mtk.manpages@gmail.com, Arnd Bergmann <arnd@arndb.de>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tom Gundersen <teg@jklm.no>, Jiri Kosina <jkosina@suse.cz>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Linux API <linux-api@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Djalal Harouni <tixxdz@opendz.org>
+Subject: Re: kdbus: add documentation
+References: <1416546149-24799-1-git-send-email-gregkh@linuxfoundation.org>	<1416546149-24799-2-git-send-email-gregkh@linuxfoundation.org>	<871tolysbb.fsf@mid.deneb.enyo.de>	<CANq1E4RjwCVEVT7031CeiKrNvRFkLBZc4-X1uKdrdzpf=EwJ+A@mail.gmail.com> <87vblwtxee.fsf@mid.deneb.enyo.de> <54BE0D56.5090301@gmail.com> <54BE1116.5060204@zonque.org>
+In-Reply-To: <54BE1116.5060204@zonque.org>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2015 12:12 PM, Lee Jones wrote:
-> On Fri, 09 Jan 2015, Jacek Anaszewski wrote:
->
->> Add macros for max77693 led part related binding.
+On 01/20/2015 09:25 AM, Daniel Mack wrote:
+> Hi Michael,
+> 
+> On 01/20/2015 09:09 AM, Michael Kerrisk (man-pages) wrote:
+>> On 11/30/2014 06:23 PM, Florian Weimer wrote:
+>>> * David Herrmann:
+>>>
+>>>> On Sun, Nov 30, 2014 at 10:02 AM, Florian Weimer <fw@deneb.enyo.de> wrote:
+>>>>> * Greg Kroah-Hartman:
+>>>>>
+>>>>>> +7.4 Receiving messages
+>>>
+>>>>> What happens if this is not possible because the file descriptor limit
+>>>>> of the processes would be exceeded?  EMFILE, and the message will not
+>>>>> be received?
+>>>>
+>>>> The message is returned without installing the FDs. This is signaled
+>>>> by EMFILE, but a valid pool offset.
+>>>
+>>> Oh.  This is really surprising, so it needs documentation.  But it's
+>>> probably better than the alternative (return EMFILE and leave the
+>>> message stuck, so that you receive it immediately again—this behavior
+>>> makes non-blocking accept rather difficult to use correctly).
 >>
->> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
->> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
->> Cc: Lee Jones <lee.jones@linaro.org>
->> Cc: Chanwoo Choi <cw00.choi@samsung.com>
->> ---
->>   include/dt-bindings/mfd/max77693.h |   21 +++++++++++++++++++++
->>   1 file changed, 21 insertions(+)
->>   create mode 100644 include/dt-bindings/mfd/max77693.h
->>
->> diff --git a/include/dt-bindings/mfd/max77693.h b/include/dt-bindings/mfd/max77693.h
->> new file mode 100644
->> index 0000000..f53e197
->> --- /dev/null
->> +++ b/include/dt-bindings/mfd/max77693.h
->> @@ -0,0 +1,21 @@
->> +/*
->> + * This header provides macros for MAX77693 device binding
->> + *
->> + * Copyright (C) 2014, Samsung Electronics Co., Ltd.
->> + *
->> + * Author: Jacek Anaszewski <j.anaszewski@samsung.com>
->> + */
->> +
->> +#ifndef __DT_BINDINGS_MAX77693_H__
->> +#define __DT_BINDINGS_MAX77693_H
->> +
->> +/* External trigger type */
->> +#define MAX77693_LED_TRIG_TYPE_EDGE	0
->> +#define MAX77693_LED_TRIG_TYPE_LEVEL	1
->> +
->> +/* Boost modes */
->> +#define MAX77693_LED_BOOST_OFF		0
->> +#define MAX77693_LED_BOOST_ADAPTIVE	1
->> +#define MAX77693_LED_BOOST_FIXED	2
->> +
->> +#endif /* __DT_BINDINGS_MAX77693_H */
->
-> These look fairly generic.  Do generic LED defines already exist?  If
-> not, can they?
+>> So, was this point in the end explicitly documented? I not
+>> obvious that it is documented in the revised kdbus.txt that
+>> Greg K-H sent out 4 days ago.
+> 
+> No, we've revisited this point and changed the kernel behavior again in
+> v3. We're no longer returning -EMFILE in this case, but rather set
+> KDBUS_RECV_RETURN_INCOMPLETE_FDS in a new field in the receive ioctl
+> struct called 'return_flags'. We believe that's a nicer way of signaling
+> specific errors. The message will carry -1 for all FDs that failed to
+> get installed, so the user can actually see which one is missing.
+> 
+> That's also documented in kdbus.txt, but we missed putting it into the
+> Changelog - sorry for that.
 
-I am not entirely sure that they are generic. Different devices
-may define different trigger types for low current LEDs and flash
-LEDs. Boost modes could also have different semantics.
+Thanks for the info, Daniel.
 
-Regardless of the above we can consider renaming the file to
-include/dt-bindings/leds/max77693.h
+Cheers,
 
-Bryan - what is your opinion?
+Michael
+
 
 -- 
-Best Regards,
-Jacek Anaszewski
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
