@@ -1,99 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755826AbbATRDx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 12:03:53 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:23670 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755802AbbATRDu (ORCPT
+	id S1755357AbbATRAi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 12:00:38 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:65449 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754876AbbATRAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 12:03:50 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19QfDZJw9+TOa43DqgS1QNh
-Date: Tue, 20 Jan 2015 09:00:22 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: ARM: OMAP3: MACH_OMAP3517EVM?
-Message-ID: <20150120170022.GE7718@atomide.com>
-References: <1421744597.9655.92.camel@x220>
- <20150120164455.GD7718@atomide.com>
+	Tue, 20 Jan 2015 12:00:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150120164455.GD7718@atomide.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20150120160842.GA9474@sig21.net>
+References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>
+	<1421435777-25306-2-git-send-email-gregkh@linuxfoundation.org>
+	<54BE5DC8.70706@gmail.com>
+	<CANq1E4SjfZOKqTsdkt519vKc1Poeah5McVJBb_spdHjbKv4=7g@mail.gmail.com>
+	<CA+5PVA46wVa-L9K1zgHzt=Fwn6YFBYhxJUjiozSH4XBY03WMVw@mail.gmail.com>
+	<20150120145353.GA8124@dztty>
+	<20150120160842.GA9474@sig21.net>
+Date: Tue, 20 Jan 2015 18:00:28 +0100
+Message-ID: <CANq1E4Q9m7JRXNYFY4okh3brM-kHVoVGOdF_SWjNoNURX930HQ@mail.gmail.com>
+Subject: Re: [PATCH 01/13] kdbus: add documentation
+From: David Herrmann <dh.herrmann@gmail.com>
+To: Johannes Stezenbach <js@sig21.net>
+Cc: Djalal Harouni <tixxdz@opendz.org>, Josh Boyer <jwboyer@fedoraproject.org>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tom Gundersen <teg@jklm.no>, Jiri Kosina <jkosina@suse.cz>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Linux API <linux-api@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Daniel Mack <daniel@zonque.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tony Lindgren <tony@atomide.com> [150120 08:52]:
-> * Paul Bolle <pebolle@tiscali.nl> [150120 01:06]:
-> > Tony,
-> > 
-> > Your commit 4d62dbda8561 ("ARM: OMAP3: Remove legacy support for
-> > am3517-evm") is included in today's linux-next (ie, next-20150120). I
-> > noticed because a script I use to check linux-next spotted a problem
-> > caused by it.
-> 
-> OK thanks for spotting that.
->  
-> > See, your commit removes the Kconfig symbol MACH_OMAP3517EVM. But
-> > there's still a reference to that symbol in sound/soc/omap/Kconfig. This
-> > means that in linux-next a symbol, SND_OMAP_SOC_AM3517EVM, cannot be set
-> > anymore.
-> > 
-> > I assume a patch that address this (either by removing
-> > SND_OMAP_SOC_AM3517EVM or by updating its dependencies) is queued
-> > somewhere. Is that correct?
-> 
-> Not yet, I missed that part sorry. I'll add back the Kconfig symbol.
-> I'll rather do the removal in smaller steps, and first remove the
-> 3517 related board-*.c file before messing with the legacy drivers.
+Hi
 
-Below is a fix for this.
+On Tue, Jan 20, 2015 at 5:08 PM, Johannes Stezenbach <js@sig21.net> wrote:
+> However, let me repeat and rephrase my previous questions:
+> Is there a noticable or measurable improvement from using kdbus?
+> IOW, is the added complexity of kdbus worth the result?
+>
+> I have stated my believe that current usage of D-Bus is not
+> performance sensitive and the number of messages exchanged
+> is low.  I would love it if you would prove me wrong.
+> Or if you could show that any D-Bus related bug in Gnome3
+> is fixed by kdbus.
 
-Regards,
+DBus is not used for performance sensitive applications because DBus
+is slow. We want to make it fast so we can finally use it for
+low-latency, high-throughput applications. A simple DBus
+method-call+reply takes 200us here, with kdbus it takes 8us (with UDS
+about 2us). If I increase the packet size from 8k to 128k, kdbus even
+tops UDS thanks to single-copy transfers.
+The fact that there is no performance-critical application using DBus
+is, imho, an argument *pro* kdbus. People haven't been capable of
+making classic dbus1 fast enough for low-latency audio, thus, we
+present kdbus.
 
-Tony
+Starting up 'gdm' sends ~5k dbus messages on my machine. It takes >1s
+to transmit the messages alone. Each dbus1 message has to be copied 4
+times for each direction. With kdbus, each message is copied only once
+for each transmission (or not at all, if you use memfds, though that
+doesn't mean it's necessarily faster). No intermediate context-switch
+is needed. This makes kdbus capable to transmit low-latency audio data
+*inline*.
 
-8< ----------------
-From: Tony Lindgren <tony@atomide.com>
-Date: Tue, 20 Jan 2015 08:49:08 -0800
-Subject: [PATCH] ARM: OMAP3: Add back Kconfig option MACH_OMAP3517EVM for ASoC
+DBus marshaling is the de-facto standard in all major(!) linux desktop
+systems. It is well established and accepted by many DEs. It also
+solves many other problems, including: policy,
+authentication/authorization, well-known name registry, efficient
+broadcasts/multicasts, peer discovery, bus discovery, metadata
+transmission, and more.
+It is a shame that we cannot use this well-established protocol for
+low-latency applications. We, effectively, have to duplicate all this
+code on custom UDS and other transports just because DBus is too slow.
 
-We still have SND_OMAP_SOC_AM3517EVM depending on MACH_OMAP3517EVM,
-so let's keep MACH_OMAP3517EVM Kconfig option around for a little
-bit longer.
+kdbus tries to unify those efforts, so that we don't need multiple
+policy implementations, name registries and peer discovery mechanisms.
+Furthermore, kdbus implements comprehensive, yet optional, metadata
+transmission that allows to identify and authenticate peers in a
+race-free manner (which is *not* possible with UDS).
+Also, kdbus provides a single transport bus with sequential message
+numbering. If you use multiple channels, you cannot give any ordering
+guarantees across peers (for instance, regarding parallel
+name-registry changes).
 
-This removes the dependency between ARM SoC changes and the ASoC
-changes, and allows the following three options for the driver:
 
-1. Update the driver for device tree based booting
+Given these theoretical advantages, here're some examples:
 
-2. Initialize the driver with legacy platform data, then update
-   the driver for device tree based booting
+*) The Tizen developers have been complaining about the high latency
+of DBus for polkit'ish policy queries. That's why their authentication
+framework uses custom UDS sockets (called 'Cynara'). If a
+UI-interaction needs multiple authentication-queries, you don't want
+it to take multiple milliseconds, given that you usually want to
+render the result in the same frame.
 
-3. Just remove the driver if there are no audio users for
-   3517-evm board
+*) PulseAudio doesn't use DBus for data transmission. They had to
+implement their own marshaling code, transport layer and so on, just
+because DBus1-latency is horrible. With kdbus, we can basically drop
+this code-duplication and unify the IPC layer. Same is true for
+Wayland, btw.
 
-Reported-by: Paul Bolle <pebolle@tiscali.nl>
-Signed-off-by: Tony Lindgren <tony@atomide.com>
+*) By moving broadcast-transmission into the kernel, we can use the
+time-slices of the sender to perform heavy operations. This is also
+true for policy decisions, etc. With a userspace daemon, we cannot
+perform operations in a time-slice of the caller. This makes DoS
+attacks much harder.
 
---- a/arch/arm/mach-omap2/Kconfig
-+++ b/arch/arm/mach-omap2/Kconfig
-@@ -213,6 +213,11 @@ config MACH_OVERO
- 	default y
- 	select OMAP_PACKAGE_CBB
- 
-+config MACH_OMAP3517EVM
-+	bool "OMAP3517/ AM3517 EVM board"
-+	depends on ARCH_OMAP3
-+	default y
-+
- config MACH_OMAP3_PANDORA
- 	bool "OMAP3 Pandora"
- 	depends on ARCH_OMAP3
+*) With priority-inheritance, we can do synchronous calls into trusted
+peers and let them optionally use our time-slice to perform the
+action. This allows syscall-like/binder-like method-calls into other
+processes. Without priority-inheritance, this is not possible in a
+secure manner (see 'priority-inheritance').
+
+*) Logging-daemons often want to attach metadata to log-messages so
+debugging/filtering gets easier. If short-lived programs send
+log-messages, the destination peer might not be able to read such
+metadata from /proc, as the process might no longer be available at
+that time. Same is true for policy-decisions like polkit does. You
+cannot send off method-calls and exit. You have to wait for a reply,
+even though you might not even care for it. If you don't wait, the
+other side might not be able to verify your identity and as such
+reject the request.
+
+*) Even though the dbus traffic on idle-systems might be low, this
+doesn't mean it's not significant at boot-times or under high-load. If
+you run a dbus-monitor of your choice, you will see there is an
+significant number of messages exchanged during VT-switches, startup,
+shutdown, suspend, wakeup, hotplugging and similar situations where
+lots of control-messages are exchanged. We don't want to spend
+hundreds of ms just to transmit those messages.
+
+*) dbus-daemon is not available during early-boot or shutdown.
+
+
+These are just examples off the top of my head, but I think they're
+already pretty convincing.
+David
