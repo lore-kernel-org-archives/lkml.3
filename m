@@ -1,63 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753776AbbATPzF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 10:55:05 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:46282 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752006AbbATPzC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 10:55:02 -0500
-Date: Tue, 20 Jan 2015 15:54:53 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: "Shevchenko, Andriy" <andriy.shevchenko@intel.com>
-Cc: "mturquette@linaro.org" <mturquette@linaro.org>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Chen, Alvin" <alvin.chen@intel.com>,
-        "Tan, Raymond" <raymond.tan@intel.com>
-Subject: Re: [PATCH v3 1/1] mfd: intel_quark_i2c_gpio: Add Intel Quark X1000
- I2C-GPIO MFD Driver
-Message-ID: <20150120155453.GJ13701@x1>
-References: <1418290710-5871-1-git-send-email-raymond.tan@intel.com>
- <1418290710-5871-2-git-send-email-raymond.tan@intel.com>
- <20150120124745.GE13701@x1>
- <1421761312.31903.64.camel@intel.com>
+	id S1753856AbbATPzs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 10:55:48 -0500
+Received: from arroyo.ext.ti.com ([192.94.94.40]:40674 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751801AbbATPzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 10:55:46 -0500
+Message-ID: <54BE7A7D.8090804@ti.com>
+Date: Tue, 20 Jan 2015 10:55:41 -0500
+From: Murali Karicheri <m-karicheri2@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1421761312.31903.64.camel@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Paul Bolle <pebolle@tiscali.nl>
+CC: Wingman Kwok <w-kwok2@ti.com>,
+        Valentin Rothberg <valentinrothberg@gmail.com>, <davem@davemloft.net>,
+        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <netdev@vger.kernel.org>
+Subject: Re: [PATCH net-next v8 2/4] net: netcp: Add Keystone NetCP core ethernet
+ driver
+References: <1421367172-19793-1-git-send-email-m-karicheri2@ti.com>  <1421367172-19793-2-git-send-email-m-karicheri2@ti.com> <1421741935.9655.73.camel@x220>
+In-Reply-To: <1421741935.9655.73.camel@x220>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Jan 2015, Shevchenko, Andriy wrote:
+On 01/20/2015 03:18 AM, Paul Bolle wrote:
+> Murali, Wingman,
+>
+> On Thu, 2015-01-15 at 19:12 -0500, Murali Karicheri wrote:
+>> The network coprocessor (NetCP) is a hardware accelerator available in
+>> Keystone SoCs that processes Ethernet packets. NetCP consists of following
+>> hardware components
+>>
+>>   1 Gigabit Ethernet (GbE) subsystem with a Ethernet switch sub-module to
+>>     send and receive packets.
+>>   2 Packet Accelerator (PA) module to perform packet classification
+>>     operations such as header matching, and packet modification operations
+>>     such as checksum generation.
+>>   3 Security Accelerator(SA) capable of performing IPSec operations on
+>>     ingress/egress packets.
+>>   4 An optional 10 Gigabit Ethernet Subsystem (XGbE) which includes a
+>>     3-port Ethernet switch sub-module capable of 10Gb/s and 1Gb/s rates
+>>     per Ethernet port.
+>>   5 Packet DMA and Queue Management Subsystem (QMSS) to enqueue and dequeue
+>>     packets and DMA the packets between memory and NetCP hardware components
+>>     described above.
+>>
+>> NetCP core driver make use of the Keystone Navigator driver API to allocate
+>> DMA channel for the Ethenet device and to handle packet queue/de-queue,
+>> Please refer API's in include/linux/soc/ti/knav_dma.h and
+>> drivers/soc/ti/knav_qmss.h for details.
+>>
+>> NetCP driver consists of NetCP core driver and at a minimum Gigabit
+>> Ethernet (GBE) module (1) driver to implement the Network device function.
+>> Other modules (2,3) can be optionally added to achieve supported hardware
+>> acceleration function. The initial version of the driver include NetCP
+>> core driver and GBE driver modules.
+>>
+>> Please refer Documentation/devicetree/bindings/net/keystone-netcp.txt
+>> for design of the driver.
+>>
+>>   Cc: David Miller<davem@davemloft.net>
+>>   Cc: Rob Herring<robh+dt@kernel.org>
+>>   Cc: Grant Likely<grant.likely@linaro.org>
+>>   Cc: Santosh Shilimkar<santosh.shilimkar@kernel.org>
+>>   Cc: Pawel Moll<pawel.moll@arm.com>
+>>   Cc: Mark Rutland<mark.rutland@arm.com>
+>>   Cc: Ian Campbell<ijc+devicetree@hellion.org.uk>
+>>   Cc: Kumar Gala<galak@codeaurora.org>
+>>
+>> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
+>> Signed-off-by: Wingman Kwok<w-kwok2@ti.com>
+>
+> This patch is included as commit 84640e27f230 ("net: netcp: Add Keystone
+> NetCP core ethernet driver") in today's linux-next. I noticed because a
+> script I run on linux-next spotted a problem in it.
+>
+>> ---
+>>   MAINTAINERS                          |    7 +
+>>   drivers/net/ethernet/ti/Kconfig      |   11 +
+>>   drivers/net/ethernet/ti/Makefile     |    3 +
+>>   drivers/net/ethernet/ti/netcp.h      |  229 ++++
+>>   drivers/net/ethernet/ti/netcp_core.c | 2141 ++++++++++++++++++++++++++++++++++
+>>   5 files changed, 2391 insertions(+)
+>>   create mode 100644 drivers/net/ethernet/ti/netcp.h
+>>   create mode 100644 drivers/net/ethernet/ti/netcp_core.c
+>>
+>> [...]
+>> diff --git a/drivers/net/ethernet/ti/Kconfig b/drivers/net/ethernet/ti/Kconfig
+>> index 605dd90..e11bcfa 100644
+>> --- a/drivers/net/ethernet/ti/Kconfig
+>> +++ b/drivers/net/ethernet/ti/Kconfig
+>> @@ -73,12 +73,23 @@ config TI_CPSW
+>>   config TI_CPTS
+>>   	boolean "TI Common Platform Time Sync (CPTS) Support"
+>>   	depends on TI_CPSW
+>> +	depends on TI_CPSW || TI_KEYSTONE_NET
+>
+> You probably meant to add
+>      || TI_KEYSTONE_NETCP
+>
+> here. Ie, add CP. But as this slipped through testing it _might_ not be
+> needed at all.
+Paul,
 
-> On Tue, 2015-01-20 at 12:47 +0000, Lee Jones wrote:
-> > On Thu, 11 Dec 2014, Raymond Tan wrote:
-> 
-> []
-> 
-> > > +static const struct i2c_mode_info platform_i2c_mode_info[] = {
-> > > +	{
-> > > +		.name = "Galileo",
-> > > +		.i2c_scl_freq = 100000,
-> > > +	},
-> > > +	{
-> > > +		.name = "GalileoGen2",
-> > > +		.i2c_scl_freq = 400000,
-> > > +	},
-> > > +};
-> > 
-> > We normally do not capitalise device names.
-> 
-> This comes from DMI, so, can't be altered I suppose.
+I will get back to you on this today.
 
-I'm not sure what that means, but sounds reasonable.
+Thanks
+
+Murali
+>
+>>   	select PTP_1588_CLOCK
+>>   	---help---
+>>   	  This driver supports the Common Platform Time Sync unit of
+>>   	  the CPSW Ethernet Switch. The unit can time stamp PTP UDP/IPv4
+>>   	  and Layer 2 packets, and the driver offers a PTP Hardware Clock.
+>>
+>> +config TI_KEYSTONE_NETCP
+>> +	tristate "TI Keystone NETCP Ethernet subsystem Support"
+>> +	depends on OF
+>> +	depends on KEYSTONE_NAVIGATOR_DMA&&  KEYSTONE_NAVIGATOR_QMSS
+>> +	---help---
+>> +	  This driver supports TI's Keystone NETCP Ethernet subsystem.
+>> +
+>> +	  To compile this driver as a module, choose M here: the module
+>> +	  will be called keystone_netcp.
+>> +
+>>   config TLAN
+>>   	tristate "TI ThunderLAN support"
+>>   	depends on (PCI || EISA)
+>
+> Thanks,
+>
+>
+> Paul Bolle
+>
+
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Murali Karicheri
+Linux Kernel, Texas Instruments
