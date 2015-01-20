@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751811AbbATC63 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 21:58:29 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:65005 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751410AbbATC62 (ORCPT
+	id S1752269AbbATCwZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 21:52:25 -0500
+Received: from shards.monkeyblade.net ([149.20.54.216]:37865 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751423AbbATCwY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 21:58:28 -0500
-From: Wang Nan <wangnan0@huawei.com>
-To: <masami.hiramatsu.pt@hitachi.com>
-CC: <tixy@linaro.org>, <linux@arm.linux.org.uk>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <lizefan@huawei.com>
-Subject: [PATCH] kprobes: bugfix: makes kprobes/enabled works correctly for optimized kprobes.
-Date: Tue, 20 Jan 2015 10:51:51 +0800
-Message-ID: <1421722311-30455-1-git-send-email-wangnan0@huawei.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <54BCFC6E.1080007@hitachi.com>
-References: <54BCFC6E.1080007@hitachi.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
+	Mon, 19 Jan 2015 21:52:24 -0500
+Date: Mon, 19 Jan 2015 21:52:20 -0500 (EST)
+Message-Id: <20150119.215220.720365670558757349.davem@davemloft.net>
+To: hayeswang@realtek.com
+Cc: sfeldma@gmail.com, netdev@vger.kernel.org, nic_swsd@realtek.com,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: [PATCH net-next 1/7] r8152: adjust rx_bottom
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <0835B3720019904CB8F7AA43166CEEB2EE6E76@RTITMBSV03.realtek.com.tw>
+References: <CAE4R7bAv26f-+DW-TmjspJxAb-3Add5sf563mnMUTGCyiqG3rQ@mail.gmail.com>
+	<20150119.161333.1471925264489559119.davem@davemloft.net>
+	<0835B3720019904CB8F7AA43166CEEB2EE6E76@RTITMBSV03.realtek.com.tw>
+X-Mailer: Mew version 6.6 on Emacs 24.4 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.5.7 (shards.monkeyblade.net [149.20.54.216]); Mon, 19 Jan 2015 18:52:24 -0800 (PST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-debugfs/kprobes/enabled doesn't work correctly on optimized kprobes.
-Masami Hiramatsu has a test report on x86_64 platform:
+From: Hayes Wang <hayeswang@realtek.com>
+Date: Tue, 20 Jan 2015 02:48:50 +0000
 
-https://lkml.org/lkml/2015/1/19/274
+>> >> +                       urb->actual_length = 0;
+>> >> +                       list_add_tail(&agg->list, next);
+>> > 
+>> > Do you need a spin_lock_irqsave(&tp->rx_lock, flags) around this?
+>> 
+>> Indeed, and rtl_start_rx() seems to also access agg->list without
+>> proper locking.
+> 
+> It is unnecessary because I deal with them in a local list_head. My steps are
+>    1. Move the whole list from tp->rx_done to local rx_queue. (with spin lock)
+>    2. dequeue/enqueue the lists in rx_queue.
+>    3. Move the lists in rx_queue to tp->rx_done if it is necessary. (spin lock)
+> For step 2, it wouldn't have race, because the list_head is local and no other
+> function would change it. Therefore, I don't think it needs the spin lock.
+> 
+> The rtl_start_rx() also uses the similar way.
 
-This patch forces it to unoptimize kprobe if kprobes_all_disarmed
-is set. It also checks the flag in unregistering path for skipping
-unneeded disarming process when kprobes globally disarmed.
+agg->list is not local, you have to use a spinlock to protect
+modifications to it, some other sites which modify agg->list do take
+the lock properly.
 
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
----
- kernel/kprobes.c | 11 +++++++++--
- 1 file changed, 9 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index 9471710..fb995ef 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -869,7 +869,8 @@ static void __disarm_kprobe(struct kprobe *p, bool reopt)
- {
- 	struct kprobe *_p;
- 
--	unoptimize_kprobe(p, false);	/* Try to unoptimize */
-+	/* Try to unoptimize */
-+	unoptimize_kprobe(p, kprobes_all_disarmed);
- 
- 	if (!kprobe_queued(p)) {
- 		arch_disarm_kprobe(p);
-@@ -1571,7 +1572,13 @@ static struct kprobe *__disable_kprobe(struct kprobe *p)
- 
- 		/* Try to disarm and disable this/parent probe */
- 		if (p == orig_p || aggr_kprobe_disabled(orig_p)) {
--			disarm_kprobe(orig_p, true);
-+			/*
-+			 * If kprobes_all_disarmed is set, orig_p
-+			 * should have already been disarmed, so
-+			 * skip unneed disarming process.
-+			 */
-+			if (!kprobes_all_disarmed)
-+				disarm_kprobe(orig_p, true);
- 			orig_p->flags |= KPROBE_FLAG_DISABLED;
- 		}
- 	}
--- 
-1.8.4
+You cannot modify a list like agg->list without proper locking.
 
