@@ -1,136 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752431AbbATHgA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 02:36:00 -0500
-Received: from e33.co.us.ibm.com ([32.97.110.151]:47639 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751751AbbATHf7 (ORCPT
+	id S1751577AbbATHhn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 02:37:43 -0500
+Received: from mail-we0-f172.google.com ([74.125.82.172]:45366 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756AbbATHhk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 02:35:59 -0500
-Date: Mon, 19 Jan 2015 23:35:50 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Vladimir Davydov <vdavydov@parallels.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Vlastimil Babka <vbabka@suse.cz>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm v2] vmscan: move reclaim_state handling to shrink_slab
-Message-ID: <20150120073550.GP9719@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1421311073-28130-1-git-send-email-vdavydov@parallels.com>
- <20150115125820.GE7000@dhcp22.suse.cz>
- <20150115132516.GG11264@esperanza>
- <20150115144838.GI7000@dhcp22.suse.cz>
+	Tue, 20 Jan 2015 02:37:40 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150115144838.GI7000@dhcp22.suse.cz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15012007-0009-0000-0000-0000081DA176
+In-Reply-To: <CAL_JsqLTArm1v8ka39_KLq2jMKkK2ZXQ6-an=JSWVgTK1LWmOg@mail.gmail.com>
+References: <1421402411-3479-1-git-send-email-chunyan.zhang@spreadtrum.com>
+	<1421402411-3479-6-git-send-email-chunyan.zhang@spreadtrum.com>
+	<CAL_JsqJg=BtanmR_rhYthCUhKbErs8viZ7MMMXr-PmPjUV4BRQ@mail.gmail.com>
+	<CAAfSe-vqqpvbYe0bEeD-3_QsLYz4r7pxMuA1-L4cYRw9TY=NgA@mail.gmail.com>
+	<CAL_JsqLTArm1v8ka39_KLq2jMKkK2ZXQ6-an=JSWVgTK1LWmOg@mail.gmail.com>
+Date: Tue, 20 Jan 2015 15:37:38 +0800
+Message-ID: <CAAfSe-tAwURc_P+-0+m22ao9r+Fud6Ae89JF8FGsWgg_49Mdhg@mail.gmail.com>
+Subject: Re: [PATCH v5 5/5] tty/serial: Add Spreadtrum sc9836-uart driver support
+From: Lyra Zhang <zhang.lyra@gmail.com>
+To: Rob Herring <robherring2@gmail.com>
+Cc: Chunyan Zhang <chunyan.zhang@spreadtrum.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Mark Rutland <mark.rutland@arm.com>, Arnd Bergmann <arnd@arndb.de>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Mark Brown <broonie@kernel.org>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>, Jiri Slaby <jslaby@suse.cz>,
+        Jason Cooper <jason@lakedaemon.net>,
+        =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>,
+        Florian Vaussard <florian.vaussard@epfl.ch>,
+        Andrew Lunn <andrew@lunn.ch>, Robert Richter <rrichter@cavium.com>,
+        Hayato Suzuki <hytszk@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Antony Pavlov <antonynpavlov@gmail.com>,
+        Joel Schopp <Joel.Schopp@amd.com>,
+        Suravee Suthikulanit <Suravee.Suthikulpanit@amd.com>,
+        Shawn Guo <shawn.guo@linaro.org>, lea.yan@linaro.org,
+        Jorge Ramirez-Ortiz <jorge.ramirez-ortiz@linaro.org>,
+        Orson Zhai <orsonzhai@gmail.com>,
+        "geng.ren@spreadtrum.com" <geng.ren@spreadtrum.com>,
+        "zhizhou.zhang" <zhizhou.zhang@spreadtrum.com>,
+        "lanqing.liu@spreadtrum.com" <lanqing.liu@spreadtrum.com>,
+        =?UTF-8?B?V2VpIFFpYW8gKOS5lOS8nyk=?= <wei.qiao@spreadtrum.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-serial@vger.kernel.org" <linux-serial@vger.kernel.org>,
+        Lee Jones <lee.jones@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 15, 2015 at 03:48:38PM +0100, Michal Hocko wrote:
-> On Thu 15-01-15 16:25:16, Vladimir Davydov wrote:
-> > On Thu, Jan 15, 2015 at 01:58:20PM +0100, Michal Hocko wrote:
-> > > On Thu 15-01-15 11:37:53, Vladimir Davydov wrote:
-> > > > current->reclaim_state is only used to count the number of slab pages
-> > > > reclaimed by shrink_slab(). So instead of initializing it before we are
-> > > > 
-> > > > Note that after this patch try_to_free_mem_cgroup_pages() will count not
-> > > > only reclaimed user pages, but also slab pages, which is expected,
-> > > > because it can reclaim kmem from kmem-active sub cgroups.
-> > > 
-> > > Except that reclaim_state counts all freed slab objects that have
-> > > current->reclaim_state != NULL AFAIR. This includes also kfreed pages
-> > > from interrupt context and who knows what else and those pages might be
-> > > from a different memcgs, no?
-> > 
-> > Hmm, true, good point. Can an interrupt handler free a lot of memory
-> > though?
-> 
-> it is drivers so who knows...
-> 
-> > Does RCU free objects from irq or soft irq context?
-> 
-> and this is another part which I didn't consider at all. RCU callbacks
-> are normally processed from kthread context but rcu_init also does
-> open_softirq(RCU_SOFTIRQ, rcu_process_callbacks)
-> so something is clearly processed from softirq as well. I am not
-> familiar with RCU details enough to tell how many callbacks are
-> processed this way. Tiny RCU, on the other hand, seem to be processing
-> all callbacks via __rcu_process_callbacks and that seems to be processed
-> from softirq only.
+Hi, Rob
 
-RCU invokes all its callbacks with BH disabled, either because they
-are running in softirq context or because the rcuo kthreads disable
-BH while invoking each callback.  When running in softirq context,
-RCU will normally invoke only ten callbacks before letting the other
-softirq vectors run.  However, if there are more than 10,000 callbacks
-queued on a given CPU (which can happen!), RCU will go into panic mode
-and just invoke the callbacks as quickly as it can.
+I still have a question to be conform, specific describes below:
 
-You can of course have your callback schedule a work-queue item or
-wake up a kthread to avoid this tradeoff.
+On Mon, Jan 19, 2015 at 10:11 PM, Rob Herring <robherring2@gmail.com> wrote:
+> On Mon, Jan 19, 2015 at 3:55 AM, Lyra Zhang <zhang.lyra@gmail.com> wrote:
+>> On Sat, Jan 17, 2015 at 12:41 AM, Rob Herring <robherring2@gmail.com> wrote:
+>>> On Fri, Jan 16, 2015 at 4:00 AM, Chunyan Zhang
+>>> <chunyan.zhang@spreadtrum.com> wrote:
+>>>> Add a full sc9836-uart driver for SC9836 SoC which is based on the
+>>>> spreadtrum sharkl64 platform.
+>>>> This driver also support earlycon.
+>>>> This patch also replaced the spaces between the macros and their
+>>>> values with the tabs in serial_core.h
+>
+> [...]
+>
+>>>> +static int __init sprd_serial_init(void)
+>>>> +{
+>>>> +       int ret = 0;
+>>>> +
+>>>> +       ret = uart_register_driver(&sprd_uart_driver);
+>>>
+>>> This can be done in probe now. Then you can use module_platform_driver().
+>>>
+>>
+>> Question:
+>> 1. there are 4 uart ports configured in dt for sprd_serial, so probe
+>> will be called 4 times, but uart_register_driver only needs to be
+>> called one time, so can we use uart_driver.state to check if
+>> uart_register_driver has already been called ?
+>
+> Yes.
+>
+>> 2. if I use module_platform_driver() instead of
+>> module_init(sprd_serial_init)  and  module_exit(sprd_serial_exit) , I
+>> must move uart_unregister_driver() which is now processed in
+>> sprd_serial_exit() to sprd_remove(), there is a similar problem with
+>> probe(), sprd_remove() will also be called 4 times, and actually it
+>> should be called only one time. How can we deal with this case?
+>
+> Look at pl01x or Samsung UART drivers which have done this conversion.
 
-							Thanx, Paul
+Samsung UART does use module_platform_driver, but pl010/pl011 doesn't.
+In the Samsung UART driver, uart_unregister_driver is processed in
+remove(), like below:
 
-> > > Besides that I am not sure this makes any difference in the end. No
-> > > try_to_free_mem_cgroup_pages caller really cares about the exact
-> > > number of reclaimed pages. We care only about whether there was any
-> > > progress done - and even that not exactly (e.g. try_charge checks
-> > > mem_cgroup_margin before retry/oom so if sufficient kmem pages were
-> > > uncharged then we will notice that).
-> > 
-> > Frankly, I thought exactly the same initially, that's why I dropped
-> > reclaim_state handling from the initial memcg shrinkers patch set.
-> > However, then Hillf noticed that nr_reclaimed is checked right after
-> > calling shrink_slab() in the memcg iteration loop in shrink_zone():
-> > 
-> > 
-> > 		memcg = mem_cgroup_iter(root, NULL, &reclaim);
-> > 		do {
-> > 			[...]
-> > 			if (memcg && is_classzone)
-> > 				shrink_slab(sc->gfp_mask, zone_to_nid(zone),
-> > 					    memcg, sc->nr_scanned - scanned,
-> > 					    lru_pages);
-> > 
-> > 			/*
-> > 			 * Direct reclaim and kswapd have to scan all memory
-> > 			 * cgroups to fulfill the overall scan target for the
-> > 			 * zone.
-> > 			 *
-> > 			 * Limit reclaim, on the other hand, only cares about
-> > 			 * nr_to_reclaim pages to be reclaimed and it will
-> > 			 * retry with decreasing priority if one round over the
-> > 			 * whole hierarchy is not sufficient.
-> > 			 */
-> > 			if (!global_reclaim(sc) &&
-> > 					sc->nr_reclaimed >= sc->nr_to_reclaim) {
-> > 				mem_cgroup_iter_break(root, memcg);
-> > 				break;
-> > 			}
-> > 			memcg = mem_cgroup_iter(root, memcg, &reclaim);
-> > 		} while (memcg);
-> > 
-> > 
-> > If we can ignore reclaimed slab pages here (?), let's drop this patch.
-> 
-> I see what you are trying to achieve but can this lead to a serious
-> over-reclaim? We should be reclaiming mostly user pages and kmem should
-> be only a small portion I would expect.
-> -- 
-> Michal Hocko
-> SUSE Labs
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+static int s3c24xx_serial_remove(struct platform_device *dev)
+{
+    struct uart_port *port = s3c24xx_dev_to_port(&dev->dev);
 
+    if (port) {
+        s3c24xx_serial_cpufreq_deregister(to_ourport(port));
+        uart_remove_one_port(&s3c24xx_uart_drv, port);
+    }
+
+    uart_unregister_driver(&s3c24xx_uart_drv);
+}
+
+if this serial has more than one ports, uart_unregister_driver() must
+be called multiple times when the device need to be removed.
+I think there may be a problem because that uart_unregister_driver()
+will do kfree(drv->state) every time when it's called.
+
+Thanks,
+Chunyan
+
+>
+>> 3. for the second question, we can check the platform_device->id, if
+>> it is equal to the index of last port (e.g. 4 for this case), then
+>> uart_unregister_driver() can be called. Does it work correctly? since
+>> for this case, we must keep the order of releasing ports.
+>
+> The id will not be the line index in the DT case. I don't think you
+> can guarantee the order either.
+>
+> It would be better to make uart_{un}register_driver deal with being
+> called multiple times so drivers don't have to deal with getting this
+> correct. I'm not sure if that is feasible though.
+>
+> Rob
