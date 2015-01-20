@@ -1,79 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115AbbATCvm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 21:51:42 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:56913 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751423AbbATCvm (ORCPT
+	id S1752425AbbATCFS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 21:05:18 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:27443 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752339AbbATCFN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 21:51:42 -0500
-Date: Tue, 20 Jan 2015 09:41:59 +0800
-From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Wolfram Sang <wsa@the-dreams.de>, linux-mips@linux-mips.org,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        linux-kernel@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        Jean Delvare <jdelvare@suse.de>
-Subject: Re: [PATCH] i2c: drop ancient protection against sysfs refcounting
- issues
-Message-ID: <20150120014159.GA3349@kroah.com>
-References: <1421693756-12917-1-git-send-email-wsa@the-dreams.de>
- <20150119190142.GA9451@kroah.com>
- <20150119230427.GH26493@n2100.arm.linux.org.uk>
+	Mon, 19 Jan 2015 21:05:13 -0500
+From: Wang Nan <wangnan0@huawei.com>
+To: <namhyung@kernel.org>
+CC: <jolsa@redhat.com>, <linux-kernel@vger.kernel.org>, <lizefan@huawei.com>,
+        <acme@kernel.org>
+Subject: [PATCH v3] perf: perl: force to use stdbool.
+Date: Tue, 20 Jan 2015 09:59:13 +0800
+Message-ID: <1421719153-17608-1-git-send-email-wangnan0@huawei.com>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <20150119142656.GB4624@danjae>
+References: <20150119142656.GB4624@danjae>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150119230427.GH26493@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 19, 2015 at 11:04:27PM +0000, Russell King - ARM Linux wrote:
-> On Tue, Jan 20, 2015 at 03:01:42AM +0800, Greg Kroah-Hartman wrote:
-> > On Mon, Jan 19, 2015 at 07:55:56PM +0100, Wolfram Sang wrote:
-> > > diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-> > > index 39d25a8cb1ad..15cc5902cf89 100644
-> > > --- a/drivers/i2c/i2c-core.c
-> > > +++ b/drivers/i2c/i2c-core.c
-> > > @@ -41,7 +41,6 @@
-> > >  #include <linux/of_device.h>
-> > >  #include <linux/of_irq.h>
-> > >  #include <linux/clk/clk-conf.h>
-> > > -#include <linux/completion.h>
-> > >  #include <linux/hardirq.h>
-> > >  #include <linux/irqflags.h>
-> > >  #include <linux/rwsem.h>
-> > > @@ -1184,8 +1183,7 @@ EXPORT_SYMBOL_GPL(i2c_new_dummy);
-> > >  
-> > >  static void i2c_adapter_dev_release(struct device *dev)
-> > >  {
-> > > -	struct i2c_adapter *adap = to_i2c_adapter(dev);
-> > > -	complete(&adap->dev_released);
-> > > +	/* empty, but the driver core insists we need a release function */
-> > 
-> > Yeah, it does, but I hate to see this in "real" code as something is
-> > probably wrong with it if it happens.
-> > 
-> > Please move the rest of 'i2c_del_adapter' into the release function
-> > (what was after the wait_for_completion() call), and then all should be
-> > fine.
-> 
-> Are you sure about that?  Some drivers do this, eg,
-> 
->         i2c_del_adapter(&drv_data->adapter);
->         free_irq(drv_data->irq, drv_data);
-> 
-> where drv_data was allocated using devm_kzalloc(), and so will be
-> released when the ->remove callback (which calls the above
-> i2c_del_adapter()) returns... freeing the embedded device struct.
+When building perf for arm64 I hit a warning (and be treated as an
+error) like below:
 
-But that will fail today if the memory is freed in i2c_del_adapter(), so
-there shouldn't be any change in logic here.
+ aarch64-oe-linux-gcc -o .../scripts/perl/Perf-Trace-Util/Context.o -c -Wbad-function-cast \
+	 ... scripts/perl/Perf-Trace-Util/Context.c
 
-Or am I missing something obvious?
+ In file included from .../usr/lib64/perl/5.14.3/CORE/perl.h:2464:0,
+                  from Context.xs:23:
+ /.../usr/lib64/perl/5.14.3/CORE/handy.h:108:0: error: "bool" redefined [-Werror]
+  #  define bool char
+  ^
+ In file included from /.../usr/src/kernel/tools/include/linux/types.h:4:0,
+                  from /.../usr/src/kernel/arch/arm64/include/uapi/asm/sigcontext.h:19,
+		  from /.../usr/include/bits/sigcontext.h:27,
+		  from /.../usr/include/signal.h:340,
+		  from /.../usr/include/sys/param.h:28,
+		  from /.../usr/lib64/perl/5.14.3/CORE/perl.h:678,
+		  from Context.xs:23:
+  /.../usr/lib/aarch64-oe-linux/gcc/aarch64-oe-linux/4.9.2/include/stdbool.h:33:0: note: this is the location of the previous definition
+    #define bool _Bool
 
-thanks,
+Looks like the failure is caused by arm64 uapi/asm/sigcontext.h, which
+includes linux/types.h while other archs not.
 
-greg k-h
+Current perl consider this problem:
+
+http://perl5.git.perl.org/perl.git/commit/bd31be4baa3ee68abdb92c0db3200efe0fad903b
+
+So systems with perl later than v5.15.3 will be free of this bug.
+However, old perl still exists in many main distributions.
+
+This patch includes stdbool.h before Context.xs and define HAS_BOOL to
+prevent perl'e headers define its own 'bool'. Code is learn from perl's
+git tree.
+
+Signed-off-by: Wang Nan <wangnan0@huawei.com>
+Acked-by: Namhyung Kim <namhyung@kernel.org>
+---
+ tools/perf/scripts/perl/Perf-Trace-Util/Context.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/tools/perf/scripts/perl/Perf-Trace-Util/Context.c b/tools/perf/scripts/perl/Perf-Trace-Util/Context.c
+index 790ceba..28431d1 100644
+--- a/tools/perf/scripts/perl/Perf-Trace-Util/Context.c
++++ b/tools/perf/scripts/perl/Perf-Trace-Util/Context.c
+@@ -5,7 +5,10 @@
+  *	ANY CHANGES MADE HERE WILL BE LOST! 
+  *
+  */
+-
++#include <stdbool.h>
++#ifndef HAS_BOOL
++# define HAS_BOOL 1
++#endif
+ #line 1 "Context.xs"
+ /*
+  * Context.xs.  XS interfaces for perf script.
+-- 
+1.8.4
+
