@@ -1,92 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772AbbATCIU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 21:08:20 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:47697 "EHLO
-	rtits2.realtek.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752672AbbATCHo (ORCPT
+	id S1752206AbbATCRZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 21:17:25 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:49686 "EHLO
+	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751465AbbATCRY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 21:07:44 -0500
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID t0K27SOs027426, This message is accepted by code: ctloc85258
-From: =?utf-8?B?5pWs6ZSQ?= <micky_ching@realsil.com.cn>
-To: Lee Jones <lee.jones@linaro.org>
-CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
-        "rogerable@realtek.com" <rogerable@realtek.com>,
-        =?utf-8?B?546L54Kc?= <wei_wang@realsil.com.cn>
-Subject: Re: [PATCH 06/10] mfd: rtsx: update phy register
-Thread-Topic: [PATCH 06/10] mfd: rtsx: update phy register
-Thread-Index: AQHQMxp6FjKtWIsBHka3fJmxZldZbpzGKcgAgABiL4CAATNmAA==
-Date: Tue, 20 Jan 2015 02:07:26 +0000
-Message-ID: <54BDB860.9080704@realsil.com.cn>
-References: <cover.1421320541.git.micky_ching@realsil.com.cn>
- <38141c346f29fcf48b4dc168c1841c8732c70b4c.1421320541.git.micky_ching@realsil.com.cn>
- <20150118122947.GM3574@x1> <54BC6426.40902@realsil.com.cn>
- <20150119074715.GO3574@x1>
-In-Reply-To: <20150119074715.GO3574@x1>
-Accept-Language: zh-CN, en-US
-Content-Language: zh-CN
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.29.41.103]
-Content-Type: text/plain; charset="utf-8"
-Content-ID: <A3E57549AFCF5841BA0555B408700220@realsil.com.cn>
+	Mon, 19 Jan 2015 21:17:24 -0500
+Message-ID: <54BDBAAC.7080003@hitachi.com>
+Date: Tue, 20 Jan 2015 11:17:16 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Hitachi, Ltd., Japan
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: module: fix module_refcount() return when running in a module
+ exit routine
+References: <1421600146.2080.8.camel@HansenPartnership.com> <54BC93C3.7010808@hitachi.com> <878ugzco8c.fsf@rustcorp.com.au> <1421683701.2080.25.camel@HansenPartnership.com> <871tmqcmau.fsf@rustcorp.com.au>
+In-Reply-To: <871tmqcmau.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0K28Uog007678
+
+(2015/01/20 9:45), Rusty Russell wrote:
+> James Bottomley <James.Bottomley@HansenPartnership.com> writes:
+>> On Mon, 2015-01-19 at 16:21 +1030, Rusty Russell wrote:
+>>> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> writes:
+>>>> (2015/01/19 1:55), James Bottomley wrote:
+>>>>> From: James Bottomley <JBottomley@Parallels.com>
+>>>>>
+>>>>> After e513cc1 module: Remove stop_machine from module unloading,
+>>>>> module_refcount() is returning (unsigned long)-1 when called from within
+>>>>> a routine that runs in module_exit.  This is confusing the scsi device
+>>>>> put code which is coded to detect a module_refcount() of zero for
+>>>>> running within a module exit routine and not try to do another
+>>>>> module_put.  The fix is to restore the original behaviour of
+>>>>> module_refcount() and return zero if we're running inside an exit
+>>>>> routine.
+>>>>>
+>>>>> Fixes: e513cc1c07e2ab93a4514eec9833e031df3e30bb
+>>>>> Reported-by: Bart Van Assche <bvanassche@acm.org>
+>>>>> Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+>>>>>
+>>>>
+>>>> Yes, this should be fixed as you said, since it must return "unsigned long" value.
+>>>
+>>> But there are only three non-module callers:
+>>>
+>>> drivers/scsi/scsi.c:1012:	if (module && module_refcount(module) != 0)
+>>> drivers/staging/lustre/lustre/obdclass/lu_object.c:1359:			LINVRNT(module_refcount(key->lct_owner) > 0);
+>>> include/linux/module.h:447:unsigned long module_refcount(struct module *mod);
+>>> kernel/debug/kdb/kdb_main.c:2026:		kdb_printf("%4ld ", module_refcount(mod));
+>>> kernel/module.c:775:unsigned long module_refcount(struct module *mod)
+>>> kernel/module.c:779:EXPORT_SYMBOL(module_refcount);
+>>> kernel/module.c:859:	seq_printf(m, " %lu ", module_refcount(mod));
+>>> kernel/module.c:911:	return sprintf(buffer, "%lu\n", module_refcount(mk->mod));
+>>>
+>>> The first one I think should be eliminated, and the second one is simply
+>>> an assertion before calling module_put() (which should probably be
+>>> eliminated).  The others are just printing information.
+>>
+>> If you really want to insist on module_reference() returning -1 when the
+>> module is in it's exit phase, OK, but in that case, I think it should
+>> return a signed value, not an unsigned one.
+> 
+> Sure; I just didn't want to paper over the problem here.  And I'm not
+> sure we want to lose information, eg. in kgdb we're presumably looking
+> at it because something went wrong...
+> 
+> Thanks,
+> Rusty.
+> 
+> Subject: module: make module_refcount() a signed integer.
+> 
+> James Bottomley points out that it will be -1 during unload.  It's
+> only used for diagnostics, so let's not hide that as it could be a
+> clue as to what's gone wrong.
+
+Thanks!
+This looks good to me too :)
+
+Reviewed-by: Masami Hiramatsu <maasami.hiramatsu.pt@hitachi.com>
+
+> 
+> Cc: Jason Wessel <jason.wessel@windriver.com>
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> 
+> diff --git a/include/linux/module.h b/include/linux/module.h
+> index ebfb0e153c6a..b653d7c0a05a 100644
+> --- a/include/linux/module.h
+> +++ b/include/linux/module.h
+> @@ -444,7 +444,7 @@ extern void __module_put_and_exit(struct module *mod, long code)
+>  #define module_put_and_exit(code) __module_put_and_exit(THIS_MODULE, code)
+>  
+>  #ifdef CONFIG_MODULE_UNLOAD
+> -unsigned long module_refcount(struct module *mod);
+> +int module_refcount(struct module *mod);
+>  void __symbol_put(const char *symbol);
+>  #define symbol_put(x) __symbol_put(VMLINUX_SYMBOL_STR(x))
+>  void symbol_put_addr(void *addr);
+> diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
+> index f191bddf64b8..7b40c5f07dce 100644
+> --- a/kernel/debug/kdb/kdb_main.c
+> +++ b/kernel/debug/kdb/kdb_main.c
+> @@ -2023,7 +2023,7 @@ static int kdb_lsmod(int argc, const char **argv)
+>  		kdb_printf("%-20s%8u  0x%p ", mod->name,
+>  			   mod->core_size, (void *)mod);
+>  #ifdef CONFIG_MODULE_UNLOAD
+> -		kdb_printf("%4ld ", module_refcount(mod));
+> +		kdb_printf("%4d ", module_refcount(mod));
+>  #endif
+>  		if (mod->state == MODULE_STATE_GOING)
+>  			kdb_printf(" (Unloading)");
+> diff --git a/kernel/module.c b/kernel/module.c
+> index 3965511ae133..2387c98347c1 100644
+> --- a/kernel/module.c
+> +++ b/kernel/module.c
+> @@ -772,9 +772,9 @@ static int try_stop_module(struct module *mod, int flags, int *forced)
+>  	return 0;
+>  }
+>  
+> -unsigned long module_refcount(struct module *mod)
+> +int module_refcount(struct module *mod)
+>  {
+> -	return (unsigned long)atomic_read(&mod->refcnt) - MODULE_REF_BASE;
+> +	return atomic_read(&mod->refcnt) - MODULE_REF_BASE;
+>  }
+>  EXPORT_SYMBOL(module_refcount);
+>  
+> @@ -856,7 +856,7 @@ static inline void print_unload_info(struct seq_file *m, struct module *mod)
+>  	struct module_use *use;
+>  	int printed_something = 0;
+>  
+> -	seq_printf(m, " %lu ", module_refcount(mod));
+> +	seq_printf(m, " %i ", module_refcount(mod));
+>  
+>  	/*
+>  	 * Always include a trailing , so userspace can differentiate
+> @@ -908,7 +908,7 @@ EXPORT_SYMBOL_GPL(symbol_put_addr);
+>  static ssize_t show_refcnt(struct module_attribute *mattr,
+>  			   struct module_kobject *mk, char *buffer)
+>  {
+> -	return sprintf(buffer, "%lu\n", module_refcount(mk->mod));
+> +	return sprintf(buffer, "%i\n", module_refcount(mk->mod));
+>  }
+>  
+>  static struct module_attribute modinfo_refcnt =
+> 
 
 
-On 01/19/2015 03:47 PM, Lee Jones wrote:
-> On Mon, 19 Jan 2015, æ•¬é” wrote:
->> >On 01/18/2015 08:29 PM, Lee Jones wrote:
->>> > >On Thu, 15 Jan 2015,micky_ching@realsil.com.cn  wrote:
->>> > >
->>>> > >>From: Micky Ching<micky_ching@realsil.com.cn>
->>>> > >>
->>>> > >>update phy register value and using direct value instead of macros.
->>>> > >>It is much easier to debug using constant value than a lot of macros.
->>>> > >>We usually need compare the value directly to check the configure.
->>> > >NACK.  This is the opposite of what I would like to see.
->>> > >
->> >When we debug, we usually need to compare the value provided from hardware,
->> >of course we can compare by print them to kernel log. but I think it more
->> >convenient from source code. And we only set phy register when
->> >initialize chip,
->> >so the value will not scattered everywhere, we will not benefit from macros.
->> >
->> >if we want to know the meaning of setting, we can look at the register
->> >define.
-> This is not acceptable and is the complete opposite of what we're
-> trying to achieve.  I promote readability (by humans) as one of the
-> highest priorities when writing code.  0xFE6C is far from readable.
->
-Because the truly thing we concerned is the address and value, not
-a lot of macros. 0xFE6C is a magic number, but a lot of macros
-even hide the magic number we curious. To verify if the source
-code is right, we only need to compare the value, if too much macros
-joined together, the work is boring and easy to inject errors.
-I hate magic number too, but in this case using magic number
-is deserved for correctness.
+-- 
+Masami HIRAMATSU
+Software Platform Research Dept. Linux Technology Research Center
+Hitachi, Ltd., Yokohama Research Laboratory
+E-mail: masami.hiramatsu.pt@hitachi.com
 
-Two method can help enhance readability.
-(1). define register address and values
-If we want to know what the bit field means, we can jump to the register
-define. This is very easy by tag system.
-eg.
-rtsx_pci_write_phy_register(pcr, PHY_BPCR, 0x05C0);
-we can jump to PHY_BPCR to see bit-field define.
 
-(2). add comment for magic number.
-I don't like comment.
-
-If you still like macro list, I will update the register next patch.
-
-regards.
-micky.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
