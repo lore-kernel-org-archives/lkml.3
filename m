@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754179AbbATNbt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 08:31:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51329 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751852AbbATNbs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 08:31:48 -0500
-Message-ID: <54BE58C0.2050801@suse.cz>
-Date: Tue, 20 Jan 2015 14:31:44 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752641AbbATNdk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 08:33:40 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:63827 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751797AbbATNdj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 08:33:39 -0500
 MIME-Version: 1.0
-To: Zhang Yanfei <zhangyanfei.yes@gmail.com>, linux-mm@kvack.org
-CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH 2/5] mm, compaction: simplify handling restart position
- in free pages scanner
-References: <1421661920-4114-1-git-send-email-vbabka@suse.cz> <1421661920-4114-3-git-send-email-vbabka@suse.cz> <54BE57D7.6080501@gmail.com>
-In-Reply-To: <54BE57D7.6080501@gmail.com>
-Content-Type: text/plain; charset=gbk
-Content-Transfer-Encoding: 8bit
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <20150120132826.GA11824@rei>
+References: <20150119122310.GA27065@rei>
+	<CA+icZUV53AWik-bS4a3DwgExD26nhCWxJWb-kGN_nAOWsikuLA@mail.gmail.com>
+	<CA+icZUVSnYv3-rh6sBr8vgDsc80Qnr3yK_OZ6AezVHPrDcKXbg@mail.gmail.com>
+	<20150120115625.GB11013@rei>
+	<CA+icZUW3=TkMvEzs3DXZYt0BC5JjUtXiCsVSt3ikHwxPyzu3=A@mail.gmail.com>
+	<20150120132826.GA11824@rei>
+Date: Tue, 20 Jan 2015 14:33:37 +0100
+Message-ID: <CA+icZUV13kXzOBnf0Ck9_0UwJPSvKziOoy8_4jORQMzMvWC9LQ@mail.gmail.com>
+Subject: Re: [LTP] The Linux Test Project has been released for JANUARY 2015
+From: Sedat Dilek <sedat.dilek@gmail.com>
+To: Cyril Hrubis <chrubis@suse.cz>
+Cc: ltp-list@lists.sourceforge.net, LKML <linux-kernel@vger.kernel.org>,
+        libc-alpha@sourceware.org, lwn@lwn.net,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2015 02:27 PM, Zhang Yanfei wrote:
-> Hello,
-> 
-> ÔÚ 2015/1/19 18:05, Vlastimil Babka Ð´µÀ:
->> @@ -883,6 +883,8 @@ static void isolate_freepages(struct compact_control *cc)
->>  		nr_freepages += isolated;
->>  
->>  		/*
->> +		 * If we isolated enough freepages, or aborted due to async
->> +		 * compaction being contended, terminate the loop.
->>  		 * Remember where the free scanner should restart next time,
->>  		 * which is where isolate_freepages_block() left off.
->>  		 * But if it scanned the whole pageblock, isolate_start_pfn
->> @@ -891,28 +893,30 @@ static void isolate_freepages(struct compact_control *cc)
->>  		 * In that case we will however want to restart at the start
->>  		 * of the previous pageblock.
->>  		 */
->> -		cc->free_pfn = (isolate_start_pfn < block_end_pfn) ?
->> -				isolate_start_pfn :
->> -				block_start_pfn - pageblock_nr_pages;
->> -
->> -		/*
->> -		 * isolate_freepages_block() might have aborted due to async
->> -		 * compaction being contended
->> -		 */
->> -		if (cc->contended)
->> +		if ((nr_freepages > cc->nr_migratepages) || cc->contended) {
-> 
-> Shouldn't this be nr_freepages >= cc->nr_migratepages?
+On Tue, Jan 20, 2015 at 2:28 PM, Cyril Hrubis <chrubis@suse.cz> wrote:
+> Hi!
+>> > Most of the failures comes from EBUSY while trying to umount
+>> > filesystems. Do you have gvfsd-trash running? That thing is known to
+>> > probe newly mounted filesystems preventing them from being unmounted for
+>> > a certain amount of time.
+>> >
+>>
+>> Yupp, that popped up.
+>> How can I disable that gvfsd (here: Ubuntu/precise?
+>
+> Just kill the process, or run the testcases via ssh session.
+>
+>> And can this issue be documented?
+>
+> Hmm, maybe we can change the test cases to complain loudly if the
+> process is found running.
+>
 
-Ah, of course. Thanks for catching that!
+Good idea.
 
+- Sedat -
