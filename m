@@ -1,129 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754391AbbATM1G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 07:27:06 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:49197 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754315AbbATM1D (ORCPT
+	id S1753969AbbATMaS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 07:30:18 -0500
+Received: from mail-wi0-f181.google.com ([209.85.212.181]:44134 "EHLO
+	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752119AbbATMaP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 07:27:03 -0500
-Message-ID: <54BE4991.5040505@linaro.org>
-Date: Tue, 20 Jan 2015 13:26:57 +0100
-From: Tomasz Nowicki <tomasz.nowicki@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: Hanjun Guo <hanjun.guo@linaro.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "wangyijing@huawei.com" <wangyijing@huawei.com>,
-        Rob Herring <robh@kernel.org>, Timur Tabi <timur@codeaurora.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        "jcm@redhat.com" <jcm@redhat.com>, Mark Brown <broonie@kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Olof Johansson <olof@lixom.net>
-Subject: Re: [Linaro-acpi] [PATCH v7 06/17] ARM64 / ACPI: Make PCI optional
- for ACPI on ARM64
-References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org> <1421247905-3749-7-git-send-email-hanjun.guo@linaro.org> <20150116094913.GA13634@e104818-lin.cambridge.arm.com> <54BB51F1.8000900@linaro.org> <20150119104240.GE11835@e104818-lin.cambridge.arm.com> <54BDBFD4.7050207@linaro.org> <20150120110045.GD25575@e104818-lin.cambridge.arm.com>
-In-Reply-To: <20150120110045.GD25575@e104818-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	Tue, 20 Jan 2015 07:30:15 -0500
+From: Olivier Sobrie <olivier@sobrie.be>
+To: Jan Dumon <j.dumon@option.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org, Olivier Sobrie <olivier@sobrie.be>
+Subject: [PATCH 00/11] hso: fix some problems with reset/disconnect path
+Date: Tue, 20 Jan 2015 13:29:27 +0100
+Message-Id: <1421756978-4093-1-git-send-email-olivier@sobrie.be>
+X-Mailer: git-send-email 2.2.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20.01.2015 12:00, Catalin Marinas wrote:
-> On Tue, Jan 20, 2015 at 02:39:16AM +0000, Hanjun Guo wrote:
->> On 2015年01月19日 18:42, Catalin Marinas wrote:
->>> On Sun, Jan 18, 2015 at 06:25:53AM +0000, Hanjun Guo wrote:
->>>> On 2015年01月16日 17:49, Catalin Marinas wrote:
->>>>> On Wed, Jan 14, 2015 at 03:04:54PM +0000, Hanjun Guo wrote:
->>>>>> --- a/arch/arm64/kernel/pci.c
->>>>>> +++ b/arch/arm64/kernel/pci.c
->>>>>> @@ -10,6 +10,7 @@
->>>>>>      *
->>>>>>      */
->>>>>>
->>>>>> +#include <linux/acpi.h>
->>>>>>     #include <linux/init.h>
->>>>>>     #include <linux/io.h>
->>>>>>     #include <linux/kernel.h>
->>>>>> @@ -68,3 +69,30 @@ void pci_bus_assign_domain_nr(struct pci_bus *bus, struct device *parent)
->>>>>>     	bus->domain_nr = domain;
->>>>>>     }
->>>>>>     #endif
->>>>>> +
->>>>>> +/*
->>>>>> + * raw_pci_read/write - Platform-specific PCI config space access.
->>>>>> + *
->>>>>> + * Default empty implementation.  Replace with an architecture-specific setup
->>>>>> + * routine, if necessary.
->>>>>> + */
->>>>>> +int raw_pci_read(unsigned int domain, unsigned int bus,
->>>>>> +		  unsigned int devfn, int reg, int len, u32 *val)
->>>>>> +{
->>>>>> +	return -EINVAL;
->>>>>> +}
->>>>>> +
->>>>>> +int raw_pci_write(unsigned int domain, unsigned int bus,
->>>>>> +		unsigned int devfn, int reg, int len, u32 val)
->>>>>> +{
->>>>>> +	return -EINVAL;
->>>>>> +}
->>>>>> +
->>>>>> +#ifdef CONFIG_ACPI
->>>>>> +/* Root bridge scanning */
->>>>>> +struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
->>>>>> +{
->>>>>> +	/* TODO: Should be revisited when implementing PCI on ACPI */
->>>>>> +	return NULL;
->>>>>> +}
->>>>>> +#endif
->>> [...]
->>>>> When PCI is enabled and the above functions are compiled in, do they
->>>>> need to return any useful data or just -EINVAL. Are they ever called?
->>>>
->>>> They will be called if PCI root bridge is defined in DSDT, should I
->>>> print some warning message before it is implemented?
->>>
->>> My point: do they need to return real data when a PCI root bridge is
->>> defined in DSDT or you always expect them to always return some -E*? Can
->>> you explain why?
->>
->> Not always return -E* or NULL;
->>
->> For raw_pci_read/write(), they are needed to access the PCI config space
->> before the PCI root bus is created. so they will return 0 if access to
->> PCI config space is ok; pci_acpi_scan_root() will return root bus
->> pointer if it is successfully created.
->
-> OK. So what's the plan for implementing these functions properly. For
-> the raw_pci_read/write, the comment states "replace with an
-> architecture-specific setup routine". What does this mean?
-raw_pci_read/write will use MMCONFIG code to access PCI config space. 
-Please see my patch set:
-http://lkml.iu.edu/hypermail/linux/kernel/1411.2/02753.html
-which is going to refactor the x86 specific code so it would be usable 
-for ARM64 too.
+These patches attempt to fix some problems I observed when the hso
+device is disconnected or when a usb reset is queued by the hso driver
+Several patches of this serie are fixing crashes or memleaks in hso.
+The last patch of this serie fix a race condition occurring when multiple
+usb resets are queued on an usb interface.
+This serie of patches is based on v3.18.
 
->
-> For pci_acpi_scan_root(), at least the comment states a "TODO". Is there
-> anyone working on this or we don't expect servers with PCIe soon?
->
-We do, Cavium, AMD and APM boards have PCIe.
+Olivier Sobrie (11):
+  hso: remove useless header file timer.h
+  hso: fix crash when device disappears while serial port is open
+  hso: fix memory leak when device disconnects
+  hso: fix memory leak in hso_create_rfkill()
+  hso: fix small indentation error
+  hso: rename hso_dev into serial in hso_free_interface()
+  hso: replace reset_device work by usb_queue_reset_device()
+  hso: move tty_unregister outside hso_serial_common_free()
+  hso: update serial_table in usb disconnect method
+  hso: add missing cancel_work_sync in disconnect()
+  usb: core: fix a race with usb_queue_reset_device()
 
-Me and Mark Salter have posted initial support for ACPI PCI probe:
-http://lkml.iu.edu/hypermail/linux/kernel/1411.0/05026.html
-http://lists.linaro.org/pipermail/linaro-acpi/2014-November/002970.html
+ drivers/net/usb/hso.c      | 88 ++++++++++++++++++++--------------------------
+ drivers/usb/core/driver.c  |  4 ++-
+ drivers/usb/core/hub.c     |  4 +--
+ drivers/usb/core/message.c |  4 +--
+ include/linux/usb.h        |  2 +-
+ 5 files changed, 46 insertions(+), 56 deletions(-)
 
-Regards,
-Tomasz
+-- 
+2.2.0
 
