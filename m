@@ -1,92 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752178AbbATJJQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 04:09:16 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:44152 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751502AbbATJIT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 04:08:19 -0500
-Message-ID: <54BE1B00.3090102@suse.cz>
-Date: Tue, 20 Jan 2015 10:08:16 +0100
-From: Vlastimil Babka <vbabka@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752515AbbATJMs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 04:12:48 -0500
+Received: from mail-ie0-f172.google.com ([209.85.223.172]:64958 "EHLO
+	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751758AbbATJMo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 04:12:44 -0500
 MIME-Version: 1.0
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3] mm/thp: Allocate transparent hugepages on local node
-References: <1421393196-20915-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20150116160204.544e2bcf9627f5a4043ebf8d@linux-foundation.org> <54BD308A.4080905@suse.cz> <87fvb6uhfp.fsf@linux.vnet.ibm.com>
-In-Reply-To: <87fvb6uhfp.fsf@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=iso-8859-2
-Content-Transfer-Encoding: 7bit
+Date: Tue, 20 Jan 2015 10:12:43 +0100
+Message-ID: <CACRpkdb30CJebOnTGFTwHXUd7NTMGZcyzRWvstrLHU+ULwXi_g@mail.gmail.com>
+Subject: [GIT PULL] pin control fixes for the v3.19 series
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2015 06:52 AM, Aneesh Kumar K.V wrote:
-> Vlastimil Babka <vbabka@suse.cz> writes:
-> 
->> On 01/17/2015 01:02 AM, Andrew Morton wrote:
->>> On Fri, 16 Jan 2015 12:56:36 +0530 "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
->>> 
->>>> This make sure that we try to allocate hugepages from local node if
->>>> allowed by mempolicy. If we can't, we fallback to small page allocation
->>>> based on mempolicy. This is based on the observation that allocating pages
->>>> on local node is more beneficial than allocating hugepages on remote node.
->>> 
->>> The changelog is a bit incomplete.  It doesn't describe the current
->>> behaviour, nor what is wrong with it.  What are the before-and-after
->>> effects of this change?
->>> 
->>> And what might be the user-visible effects?
->>> 
->>>> --- a/mm/mempolicy.c
->>>> +++ b/mm/mempolicy.c
->>>> @@ -2030,6 +2030,46 @@ retry_cpuset:
->>>>  	return page;
->>>>  }
->>>>  
->>>> +struct page *alloc_hugepage_vma(gfp_t gfp, struct vm_area_struct *vma,
->>>> +				unsigned long addr, int order)
->>> 
->>> alloc_pages_vma() is nicely documented.  alloc_hugepage_vma() is not
->>> documented at all.  This makes it a bit had for readers to work out the
->>> difference!
->>> 
->>> Is it possible to scrunch them both into the same function?  Probably
->>> too messy?
->>
->> Hm that could work, alloc_pages_vma already has an if (MPOL_INTERLEAVE) part, so
->> just put the THP specialities into an "else if (huge_page)" part there?
->>
->> You could probably test for GFP_TRANSHUGE the same way as __alloc_pages_slowpath
->> does. There might be false positives theoretically, but is there anything else
->> that would use these flags and not be a THP?
->>
-> 
-> is that check correct ? ie, 
-> 
-> if ((gfp & GFP_TRANSHUGE) == GFP_TRANSHUGE)
-> 
-> may not always indicate transparent hugepage if defrag = 0 . With defrag
-> cleared, we remove __GFP_WAIT from GFP_TRANSHUGE.
+Hi Linus,
 
-Yep, that looks wrong. Sigh. I guess we can't spare an extra GFP flag to
-indicate TRANSHUGE?
+here is a (hopefully final) slew of pin control fixes for the v3.19 series.
+The deadlock fix is kind of serious and tagged for stable, the rest is
+business as usual.
 
-> static inline gfp_t alloc_hugepage_gfpmask(int defrag, gfp_t extra_gfp)
-> {
-> 	return (GFP_TRANSHUGE & ~(defrag ? 0 : __GFP_WAIT)) | extra_gfp;
-> }
-> 
-> -aneesh
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+Please pull them in!
 
+Yours,
+Linus Walleij
+
+
+The following changes since commit eaa27f34e91a14cdceed26ed6c6793ec1d186115:
+
+  linux 3.19-rc4 (2015-01-11 12:44:53 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/linusw/linux-pinctrl.git
+tags/pinctrl-v3.19-3
+
+for you to fetch changes up to dbe752a34d4bd862de154d1e1f8eb9b649601f77:
+
+  pinctrl: MAINTAINERS: add git tree reference (2015-01-19 11:27:19 +0100)
+
+----------------------------------------------------------------
+Pin control fixes for the v3.19 series:
+
+- Fix two deadlocks around the pin control mutexes,
+  a long-standing issue that manifest itself in
+  plug/unplug of pin controllers. (Tagged for stable.)
+
+- Handle an error path with zero functions in the
+  Qualcomm pin controller.
+
+- Drop a bogus second GPIO chip added in the Lantiq
+  driver.
+
+- Fix sudden IRQ loss on Rockchip pin controllers.
+
+- Register the GIT tree in MAINTAINERS.
+
+----------------------------------------------------------------
+Doug Anderson (1):
+      pinctrl: rockchip: Avoid losing interrupts when supporting both edges
+
+Jim Lin (1):
+      pinctrl: Fix two deadlocks
+
+Johan Hovold (1):
+      pinctrl: lantiq: remove bogus of_gpio_chip_add
+
+Linus Walleij (1):
+      pinctrl: MAINTAINERS: add git tree reference
+
+Stephen Boyd (1):
+      pinctrl: qcom: Don't iterate past end of function array
+
+ MAINTAINERS                        |  1 +
+ drivers/pinctrl/core.c             |  5 +++--
+ drivers/pinctrl/pinctrl-rockchip.c | 45 +++++++++++++++++---------------------
+ drivers/pinctrl/pinctrl-xway.c     |  2 --
+ drivers/pinctrl/qcom/pinctrl-msm.c |  4 ++--
+ 5 files changed, 26 insertions(+), 31 deletions(-)
