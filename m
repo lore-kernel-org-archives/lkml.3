@@ -1,47 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752574AbbATJ4h (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 04:56:37 -0500
-Received: from smtp.citrix.com ([66.165.176.89]:48184 "EHLO SMTP.CITRIX.COM"
+	id S1753104AbbATJ4s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 04:56:48 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:45189 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751596AbbATJ4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 04:56:35 -0500
-X-IronPort-AV: E=Sophos;i="5.09,433,1418083200"; 
-   d="scan'208";a="218898550"
-Message-ID: <54BE2649.8010504@citrix.com>
-Date: Tue, 20 Jan 2015 09:56:25 +0000
-From: David Vrabel <david.vrabel@citrix.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	id S1751691AbbATJ4g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 04:56:36 -0500
+Date: Tue, 20 Jan 2015 10:56:33 +0100 (CET)
+From: Miroslav Benes <mbenes@suse.cz>
+To: Josh Poimboeuf <jpoimboe@redhat.com>
+cc: Seth Jennings <sjenning@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Vojtech Pavlik <vojtech@suse.cz>, live-patching@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] livepatch: support for repatching a function
+In-Reply-To: <b211111ad4f29886a44871dddc313a542c48960b.1420834026.git.jpoimboe@redhat.com>
+Message-ID: <alpine.LNX.2.00.1501201051330.31639@pobox.suse.cz>
+References: <b211111ad4f29886a44871dddc313a542c48960b.1420834026.git.jpoimboe@redhat.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Jiang Liu <jiang.liu@linux.intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Sander Eikelenboom <linux@eikelenboom.it>,
-        "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Lv Zheng <lv.zheng@intel.com>
-CC: Tony Luck <tony.luck@intel.com>, <linux-kernel@vger.kernel.org>,
-        <linux-pci@vger.kernel.org>, <xen-devel@lists.xenproject.org>
-Subject: Re: [Bugfix 3/3] xen/irq: Override ACPI IRQ management callback __acpi_unregister_gsi
-References: <1421720467-7709-1-git-send-email-jiang.liu@linux.intel.com> <1421720467-7709-4-git-send-email-jiang.liu@linux.intel.com>
-In-Reply-To: <1421720467-7709-4-git-send-email-jiang.liu@linux.intel.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-DLP: MIA2
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20/01/15 02:21, Jiang Liu wrote:
-> Xen overrides __acpi_register_gsi and leaves __acpi_unregister_gsi as is.
-> That means, an IRQ allocated by acpi_register_gsi_xen_hvm() or
-> acpi_register_gsi_xen() will be freed by acpi_unregister_gsi_ioapic(),
-> which may cause undesired effects. So override __acpi_unregister_gsi to
-> NULL for safety.
 
-Reviewed-by: David Vrabel <david.vrabel@citrix.com>
+On Fri, 9 Jan 2015, Josh Poimboeuf wrote:
 
-Thanks.
+> Add support for patching a function multiple times.  If multiple patches
+> affect a function, the function in the most recently enabled patch
+> "wins".  This enables a cumulative patch upgrade path, where each patch
+> is a superset of previous patches.
+> 
+> This requires restructuring the data a little bit.  With the current
+> design, where each klp_func struct has its own ftrace_ops, we'd have to
+> unregister the old ops and then register the new ops, because
+> FTRACE_OPS_FL_IPMODIFY prevents us from having two ops registered for
+> the same function at the same time.  That would leave a regression
+> window where the function isn't patched at all (not good for a patch
+> upgrade path).
+> 
+> This patch replaces the per-klp_func ftrace_ops with a global klp_ops
+> list, with one ftrace_ops per original function.  A single ftrace_ops is
+> shared between all klp_funcs which have the same old_addr.  This allows
+> the switch between function versions to happen instantaneously by
+> updating the klp_ops struct's func_stack list.  The winner is the
+> klp_func at the top of the func_stack (front of the list).
+> 
+> Signed-off-by: Josh Poimboeuf <jpoimboe@redhat.com>
+> Acked-by: Seth Jennings <sjenning@redhat.com>
+> ---
+>  include/linux/livepatch.h |   4 +-
+>  kernel/livepatch/core.c   | 157 +++++++++++++++++++++++++++++++---------------
+>  2 files changed, 108 insertions(+), 53 deletions(-)
+> 
+> diff --git a/include/linux/livepatch.h b/include/linux/livepatch.h
+> index 950bc61..f14c6fb 100644
+> --- a/include/linux/livepatch.h
+> +++ b/include/linux/livepatch.h
+> @@ -40,8 +40,8 @@ enum klp_state {
+>   * @old_addr:	a hint conveying at what address the old function
+>   *		can be found (optional, vmlinux patches only)
+>   * @kobj:	kobject for sysfs resources
+> - * @fops:	ftrace operations structure
+>   * @state:	tracks function-level patch application state
+> + * @stack_node:	list node for klp_ops func_stack list
+>   */
+>  struct klp_func {
+>  	/* external */
+> @@ -59,8 +59,8 @@ struct klp_func {
+>  
+>  	/* internal */
+>  	struct kobject kobj;
+> -	struct ftrace_ops *fops;
+>  	enum klp_state state;
+> +	struct list_head stack_node;
+>  };
+>  
+>  /**
+> diff --git a/kernel/livepatch/core.c b/kernel/livepatch/core.c
+> index ce42d3b..5c10381 100644
+> --- a/kernel/livepatch/core.c
+> +++ b/kernel/livepatch/core.c
+> @@ -29,17 +29,40 @@
+>  #include <linux/kallsyms.h>
+>  #include <linux/livepatch.h>
+>  
+> +struct klp_ops {
+> +	struct list_head node;
+> +	struct list_head func_stack;
+> +	struct ftrace_ops fops;
+> +};
 
-David
+I think it would be useful to add some comments for this structure and its 
+members (similar to the last paragraph of the changelog above). Maybe it 
+is useless now but the code is going to get complicated and it costs 
+nothing...
+
+Otherwise it looks ok to me (except for thing mentioned by Jiri).
+
+Thank you
+
+--
+Miroslav Benes
+SUSE Labs
