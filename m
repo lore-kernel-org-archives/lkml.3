@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752263AbbATITF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 03:19:05 -0500
-Received: from nasmtp01.atmel.com ([192.199.1.246]:32412 "EHLO
+	id S1752336AbbATITi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 03:19:38 -0500
+Received: from nasmtp01.atmel.com ([192.199.1.246]:32589 "EHLO
 	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751633AbbATITB (ORCPT
+	with ESMTP id S1751927AbbATITh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 03:19:01 -0500
+	Tue, 20 Jan 2015 03:19:37 -0500
 From: Wenyou Yang <wenyou.yang@atmel.com>
 To: <nicolas.ferre@atmel.com>, <linux@arm.linux.org.uk>
 CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <alexandre.belloni@free-electrons.com>, <sylvain.rochet@finsecur.com>,
         <peda@axentia.se>, <wenyou.yang@atmel.com>
-Subject: [PATCH 03/12] pm: at91: pm_slowclock: remove the unused code related with SLOWDOWN_MASTER_CLOCK
-Date: Tue, 20 Jan 2015 16:16:56 +0800
-Message-ID: <1421741825-18226-4-git-send-email-wenyou.yang@atmel.com>
+Subject: [PATCH 04/12] pm: at91: move the copying the sram function to the sram initializationi phase
+Date: Tue, 20 Jan 2015 16:16:57 +0800
+Message-ID: <1421741825-18226-5-git-send-email-wenyou.yang@atmel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1421741825-18226-1-git-send-email-wenyou.yang@atmel.com>
 References: <1421741825-18226-1-git-send-email-wenyou.yang@atmel.com>
@@ -24,80 +24,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The SLOWDOWN_MASTER_CLOCK definition is not used, remove the redundant code.
+To decrease the suspend time, move the copying the sram function
+to the sram initialization phase, instead of every time go to suspend.
 
 Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
 Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
- arch/arm/mach-at91/pm_slowclock.S |   37 -------------------------------------
- 1 file changed, 37 deletions(-)
+ arch/arm/mach-at91/pm.c |    7 +++----
+ 1 file changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/mach-at91/pm_slowclock.S b/arch/arm/mach-at91/pm_slowclock.S
-index 5859f42..634d819 100644
---- a/arch/arm/mach-at91/pm_slowclock.S
-+++ b/arch/arm/mach-at91/pm_slowclock.S
-@@ -11,19 +11,10 @@
-  * published by the Free Software Foundation.
-  *
-  */
--
- #include <linux/linkage.h>
- #include <linux/clk/at91_pmc.h>
- #include <mach/at91_ramc.h>
- 
--/*
-- * When SLOWDOWN_MASTER_CLOCK is defined we will also slow down the Master
-- * clock during suspend by adjusting its prescalar and divisor.
-- * NOTE: This hasn't been shown to be stable on SAM9s; and on the RM9200 there
-- *       are errata regarding adjusting the prescalar and divisor.
-- */
--#undef SLOWDOWN_MASTER_CLOCK
--
- pmc	.req	r0
- sdramc	.req	r1
- ramc1	.req	r2
-@@ -165,18 +156,6 @@ sdr_sr_done:
- 
- 	wait_mckrdy
- 
--#ifdef SLOWDOWN_MASTER_CLOCK
--	/*
--	 * Set the Master Clock PRES and MDIV fields.
--	 *
--	 * See AT91RM9200 errata #27 and #28 for details.
--	 */
--	mov	tmp1, #0
--	str	tmp1, [pmc, #AT91_PMC_MCKR]
--
--	wait_mckrdy
+diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
+index 0990486..609a4f8 100644
+--- a/arch/arm/mach-at91/pm.c
++++ b/arch/arm/mach-at91/pm.c
+@@ -169,10 +169,6 @@ static int at91_pm_enter(suspend_state_t state)
+ 			 * turning off the main oscillator; reverse on wakeup.
+ 			 */
+ 			if (slow_clock) {
+-#ifdef CONFIG_AT91_SLOW_CLOCK
+-				/* copy slow_clock handler to SRAM, and call it */
+-				memcpy(slow_clock, at91_slow_clock, at91_slow_clock_sz);
 -#endif
--
- 	/* Save PLLA setting and disable it */
- 	ldr	tmp1, [pmc, #AT91_CKGR_PLLAR]
- 	str	tmp1, .saved_pllar
-@@ -212,22 +191,6 @@ sdr_sr_done:
- 	wait_pllalock
- 4:
+ 				slow_clock(at91_pmc_base, at91_ramc_base[0],
+ 					   at91_ramc_base[1],
+ 					   at91_pm_data.memctrl);
+@@ -280,6 +276,9 @@ static void __init at91_pm_sram_init(void)
+ 	sram_pbase = gen_pool_virt_to_phys(sram_pool, sram_base);
+ 	slow_clock = __arm_ioremap_exec(sram_pbase, at91_slow_clock_sz, false);
  
--#ifdef SLOWDOWN_MASTER_CLOCK
--	/*
--	 * First set PRES if it was not 0,
--	 * than set CSS and MDIV fields.
--	 *
--	 * See AT91RM9200 errata #27 and #28 for details.
--	 */
--	ldr	tmp1, .saved_mckr
--	tst	tmp1, #AT91_PMC_PRES
--	beq	2f
--	and	tmp1, tmp1, #AT91_PMC_PRES
--	str	tmp1, [pmc, #AT91_PMC_MCKR]
--
--	wait_mckrdy
--#endif
--
- 	/*
- 	 * Restore master clock setting
- 	 */
++	/* Copy slow_clock handler to SRAM, and call it */
++	memcpy(slow_clock, at91_slow_clock, at91_slow_clock_sz);
++
+ put_node:
+ 	of_node_put(node);
+ }
 -- 
 1.7.9.5
 
