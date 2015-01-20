@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753549AbbATDSN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 22:18:13 -0500
-Received: from mail1.windriver.com ([147.11.146.13]:60565 "EHLO
+	id S1753562AbbATDSP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 22:18:15 -0500
+Received: from mail1.windriver.com ([147.11.146.13]:60566 "EHLO
 	mail1.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753363AbbATDSI (ORCPT
+	with ESMTP id S1753201AbbATDSI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 19 Jan 2015 22:18:08 -0500
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
@@ -13,9 +13,9 @@ CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
         Thomas Gleixner <tglx@linutronix.de>, <x86@kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [PATCH 1/3] x86: rename eisa_set_level_irq to elcr_set_level_irq
-Date: Mon, 19 Jan 2015 22:18:19 -0500
-Message-ID: <1421723901-32303-2-git-send-email-paul.gortmaker@windriver.com>
+Subject: [PATCH 2/3] x86: delete EISA_VLB_PRIMING Kconfig option and code
+Date: Mon, 19 Jan 2015 22:18:20 -0500
+Message-ID: <1421723901-32303-3-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 2.2.1
 In-Reply-To: <1421723901-32303-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1421723901-32303-1-git-send-email-paul.gortmaker@windriver.com>
@@ -25,89 +25,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This routine has been around for over a decade, but with EISA
-being dead and abandoned for about twice that long, the name can
-be kind of confusing.  The function is going at the PIC Edge/Level
-Configuration Registers (ELCR), so rename it as such and mentally
-decouple it from the long since dead EISA bus.
+There was one instance of a VLB card which would emulate
+an EISA ID response ID when primed with a certain I/O
+handshake.
+
+Since (a) VLB was largely confined to 486 vintage motherboards
+from the early/mid 1990s and (b) there was only one card that
+needed this and (c) we are dropping EISA support from x86,
+everything relating to this option can be removed w/o impacting
+any other architectures that might be unwilling to drop EISA
+support just yet.
 
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/include/asm/hw_irq.h |  3 +--
- arch/x86/kernel/acpi/boot.c   |  2 +-
- arch/x86/pci/irq.c            | 13 +++++++------
- 3 files changed, 9 insertions(+), 9 deletions(-)
+ Documentation/eisa.txt      |  4 ++--
+ drivers/eisa/Kconfig        | 10 ----------
+ drivers/eisa/eisa-bus.c     | 10 ----------
+ drivers/eisa/virtual_root.c |  2 +-
+ 4 files changed, 3 insertions(+), 23 deletions(-)
 
-diff --git a/arch/x86/include/asm/hw_irq.h b/arch/x86/include/asm/hw_irq.h
-index 9662290..abeb255 100644
---- a/arch/x86/include/asm/hw_irq.h
-+++ b/arch/x86/include/asm/hw_irq.h
-@@ -163,8 +163,7 @@ static inline void unlock_vector_lock(void) {}
- extern atomic_t irq_err_count;
- extern atomic_t irq_mis_count;
+diff --git a/Documentation/eisa.txt b/Documentation/eisa.txt
+index a55e491..983fea4 100644
+--- a/Documentation/eisa.txt
++++ b/Documentation/eisa.txt
+@@ -172,8 +172,8 @@ virtual_root.force_probe :
  
--/* EISA */
--extern void eisa_set_level_irq(unsigned int irq);
-+extern void elcr_set_level_irq(unsigned int irq);
+ Force the probing code to probe EISA slots even when it cannot find an
+ EISA compliant mainboard (nothing appears on slot 0). Defaults to 0
+-(don't force), and set to 1 (force probing) when either
+-CONFIG_ALPHA_JENSEN or CONFIG_EISA_VLB_PRIMING are set.
++(don't force), and set to 1 (force probing) when CONFIG_ALPHA_JENSEN
++is set.
  
- /* SMP */
- extern __visible void smp_apic_timer_interrupt(struct pt_regs *);
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index d162636..9b3ce03 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -647,7 +647,7 @@ static int acpi_register_gsi_pic(struct device *dev, u32 gsi,
- 	 * Make sure all (legacy) PCI IRQs are set as level-triggered.
- 	 */
- 	if (trigger == ACPI_LEVEL_SENSITIVE)
--		eisa_set_level_irq(gsi);
-+		elcr_set_level_irq(gsi);
- #endif
+ ** Random notes :
  
- 	return gsi;
-diff --git a/arch/x86/pci/irq.c b/arch/x86/pci/irq.c
-index 5dc6ca5..9bd1154 100644
---- a/arch/x86/pci/irq.c
-+++ b/arch/x86/pci/irq.c
-@@ -146,19 +146,20 @@ static void __init pirq_peer_trick(void)
+diff --git a/drivers/eisa/Kconfig b/drivers/eisa/Kconfig
+index 2705284..c3df390 100644
+--- a/drivers/eisa/Kconfig
++++ b/drivers/eisa/Kconfig
+@@ -1,16 +1,6 @@
+ #
+ # EISA configuration
+ #
+-config EISA_VLB_PRIMING
+-	bool "Vesa Local Bus priming"
+-	depends on X86 && EISA
+-	default n
+-	---help---
+-	  Activate this option if your system contains a Vesa Local
+-	  Bus (VLB) card that identify itself as an EISA card (such as
+-	  the Adaptec AHA-284x).
+-
+-	  When in doubt, say N.
  
- /*
-  *  Code for querying and setting of IRQ routes on various interrupt routers.
-+ *  PIC Edge/Level Control Registers (ELCR) 0x4d0 & 0x4d1.
-  */
+ config EISA_PCI_EISA
+ 	bool "Generic PCI/EISA bridge"
+diff --git a/drivers/eisa/eisa-bus.c b/drivers/eisa/eisa-bus.c
+index 612afea..805c4dc 100644
+--- a/drivers/eisa/eisa-bus.c
++++ b/drivers/eisa/eisa-bus.c
+@@ -81,16 +81,6 @@ static char __init *decode_eisa_sig(unsigned long addr)
+ 	int i;
  
--void eisa_set_level_irq(unsigned int irq)
-+void elcr_set_level_irq(unsigned int irq)
- {
- 	unsigned char mask = 1 << (irq & 7);
- 	unsigned int port = 0x4d0 + (irq >> 3);
- 	unsigned char val;
--	static u16 eisa_irq_mask;
-+	static u16 elcr_irq_mask;
+ 	for (i = 0; i < 4; i++) {
+-#ifdef CONFIG_EISA_VLB_PRIMING
+-		/*
+-		 * This ugly stuff is used to wake up VL-bus cards
+-		 * (AHA-284x is the only known example), so we can
+-		 * read the EISA id.
+-		 *
+-		 * Thankfully, this only exists on x86...
+-		 */
+-		outb(0x80 + i, addr);
+-#endif
+ 		sig[i] = inb(addr + i);
  
--	if (irq >= 16 || (1 << irq) & eisa_irq_mask)
-+	if (irq >= 16 || (1 << irq) & elcr_irq_mask)
- 		return;
+ 		if (!i && (sig[0] & 0x80))
+diff --git a/drivers/eisa/virtual_root.c b/drivers/eisa/virtual_root.c
+index 535e4f9..432797f 100644
+--- a/drivers/eisa/virtual_root.c
++++ b/drivers/eisa/virtual_root.c
+@@ -14,7 +14,7 @@
+ #include <linux/moduleparam.h>
+ #include <linux/init.h>
  
--	eisa_irq_mask |= (1 << irq);
-+	elcr_irq_mask |= (1 << irq);
- 	printk(KERN_DEBUG "PCI: setting IRQ %u as level-triggered\n", irq);
- 	val = inb(port);
- 	if (!(val & mask)) {
-@@ -965,11 +966,11 @@ static int pcibios_lookup_irq(struct pci_dev *dev, int assign)
- 	} else if (r->get && (irq = r->get(pirq_router_dev, dev, pirq)) && \
- 	((!(pci_probe & PCI_USE_PIRQ_MASK)) || ((1 << irq) & mask))) {
- 		msg = "found";
--		eisa_set_level_irq(irq);
-+		elcr_set_level_irq(irq);
- 	} else if (newirq && r->set &&
- 		(dev->class >> 8) != PCI_CLASS_DISPLAY_VGA) {
- 		if (r->set(pirq_router_dev, dev, pirq, newirq)) {
--			eisa_set_level_irq(newirq);
-+			elcr_set_level_irq(newirq);
- 			msg = "assigned";
- 			irq = newirq;
- 		}
+-#if defined(CONFIG_ALPHA_JENSEN) || defined(CONFIG_EISA_VLB_PRIMING)
++#if defined(CONFIG_ALPHA_JENSEN)
+ #define EISA_FORCE_PROBE_DEFAULT 1
+ #else
+ #define EISA_FORCE_PROBE_DEFAULT 0
 -- 
 2.2.1
 
