@@ -1,45 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754524AbbATL5U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 06:57:20 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:49099 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754464AbbATL5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 06:57:15 -0500
-Date: Tue, 20 Jan 2015 12:56:25 +0100
-From: Cyril Hrubis <chrubis@suse.cz>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: ltp-list@lists.sourceforge.net, LKML <linux-kernel@vger.kernel.org>,
-        libc-alpha@sourceware.org, lwn@lwn.net,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [LTP] The Linux Test Project has been released for JANUARY 2015
-Message-ID: <20150120115625.GB11013@rei>
-References: <20150119122310.GA27065@rei>
- <CA+icZUV53AWik-bS4a3DwgExD26nhCWxJWb-kGN_nAOWsikuLA@mail.gmail.com>
- <CA+icZUVSnYv3-rh6sBr8vgDsc80Qnr3yK_OZ6AezVHPrDcKXbg@mail.gmail.com>
+	id S1754294AbbATL4h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 06:56:37 -0500
+Received: from mail-ie0-f179.google.com ([209.85.223.179]:48287 "EHLO
+	mail-ie0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752640AbbATL4f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 06:56:35 -0500
+Date: Tue, 20 Jan 2015 11:56:30 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/14] mfd: intel_soc_pmic: Constify struct regmap_config
+Message-ID: <20150120115630.GN13701@x1>
+References: <1420448493-9355-1-git-send-email-k.kozlowski@samsung.com>
+ <1420448493-9355-3-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <CA+icZUVSnYv3-rh6sBr8vgDsc80Qnr3yK_OZ6AezVHPrDcKXbg@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1420448493-9355-3-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-> > I will check my "iniza" setup of Linux v3.19-rc5 the "(runltp-)lite" way.
-> >
-> 
-> Attached are the runltp-lite result and my kernel-config.
-> 
-> I see a lot of "unexpected" failures, can you comment on them?
+On Mon, 05 Jan 2015, Krzysztof Kozlowski wrote:
 
-Most of the failures comes from EBUSY while trying to umount
-filesystems. Do you have gvfsd-trash running? That thing is known to
-probe newly mounted filesystems preventing them from being unmounted for
-a certain amount of time.
+> The regmap_config struct may be const because it is not modified by the
+> driver and regmap_init() accepts pointer to const.
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> ---
+>  drivers/mfd/intel_soc_pmic_core.h | 2 +-
+>  drivers/mfd/intel_soc_pmic_crc.c  | 2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+
+Applied, thanks.
+
+> diff --git a/drivers/mfd/intel_soc_pmic_core.h b/drivers/mfd/intel_soc_pmic_core.h
+> index 33aacd9baddc..9498d6719847 100644
+> --- a/drivers/mfd/intel_soc_pmic_core.h
+> +++ b/drivers/mfd/intel_soc_pmic_core.h
+> @@ -23,7 +23,7 @@ struct intel_soc_pmic_config {
+>  	unsigned long irq_flags;
+>  	struct mfd_cell *cell_dev;
+>  	int n_cell_devs;
+> -	struct regmap_config *regmap_config;
+> +	const struct regmap_config *regmap_config;
+>  	struct regmap_irq_chip *irq_chip;
+>  };
+>  
+> diff --git a/drivers/mfd/intel_soc_pmic_crc.c b/drivers/mfd/intel_soc_pmic_crc.c
+> index c85e2ecb868a..4cc1b324e971 100644
+> --- a/drivers/mfd/intel_soc_pmic_crc.c
+> +++ b/drivers/mfd/intel_soc_pmic_crc.c
+> @@ -111,7 +111,7 @@ static struct mfd_cell crystal_cove_dev[] = {
+>  	},
+>  };
+>  
+> -static struct regmap_config crystal_cove_regmap_config = {
+> +static const struct regmap_config crystal_cove_regmap_config = {
+>  	.reg_bits = 8,
+>  	.val_bits = 8,
+>  
 
 -- 
-Cyril Hrubis
-chrubis@suse.cz
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
