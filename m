@@ -1,70 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754049AbbATNju (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 08:39:50 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:57609 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753659AbbATNjs (ORCPT
+	id S1754141AbbATNkO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 08:40:14 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:39082 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751242AbbATNkL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 08:39:48 -0500
-Date: Tue, 20 Jan 2015 05:39:33 -0800
-From: "tip-bot for K. Y. Srinivasan" <tipbot@zytor.com>
-Message-ID: <tip-32c6590d126836a062b3140ed52d898507987017@git.kernel.org>
-Cc: kys@microsoft.com, linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        hpa@zytor.com, mingo@kernel.org
-Reply-To: mingo@kernel.org, hpa@zytor.com, kys@microsoft.com,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de
-In-Reply-To: <1421108762-3331-1-git-send-email-kys@microsoft.com>
-References: <1421108762-3331-1-git-send-email-kys@microsoft.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, hyperv:
-  Mark the Hyper-V clocksource as being continuous
-Git-Commit-ID: 32c6590d126836a062b3140ed52d898507987017
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 20 Jan 2015 08:40:11 -0500
+Date: Tue, 20 Jan 2015 13:39:47 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Jiri Olsa <jolsa@redhat.com>, Vince Weaver <vince@deater.net>,
+        Ingo Molnar <mingo@redhat.com>, Andi Kleen <ak@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Jiri Kosina <jkosina@suse.cz>, Borislav Petkov <bp@suse.de>,
+        Will Deacon <will.deacon@arm.com>
+Subject: Re: perf fuzzer crash [PATCH] perf: Get group events reference
+ before moving the group
+Message-ID: <20150120133947.GD15924@leverpostej>
+References: <20150116075746.GB2658@krava.brq.redhat.com>
+ <20150116104644.GW23965@worktop.programming.kicks-ass.net>
+ <20150116141104.GD21958@worktop.programming.kicks-ass.net>
+ <20150119144028.GF21553@leverpostej>
+ <20150119174009.GI21553@leverpostej>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20150119174009.GI21553@leverpostej>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  32c6590d126836a062b3140ed52d898507987017
-Gitweb:     http://git.kernel.org/tip/32c6590d126836a062b3140ed52d898507987017
-Author:     K. Y. Srinivasan <kys@microsoft.com>
-AuthorDate: Mon, 12 Jan 2015 16:26:02 -0800
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Tue, 20 Jan 2015 14:36:25 +0100
+On Mon, Jan 19, 2015 at 05:40:09PM +0000, Mark Rutland wrote:
+> On Mon, Jan 19, 2015 at 02:40:28PM +0000, Mark Rutland wrote:
+> > On Fri, Jan 16, 2015 at 02:11:04PM +0000, Peter Zijlstra wrote:
+> > > On Fri, Jan 16, 2015 at 11:46:44AM +0100, Peter Zijlstra wrote:
+> > > > Its a bandaid at best :/ The problem is (again) that we changes
+> > > > event->ctx without any kind of serialization.
+> > > >
+> > > > The issue came up before:
+> > > >
+> > > >   https://lkml.org/lkml/2014/9/5/397
+> > 
+> > In the end neither the CCI or CCN perf drivers migrate events on
+> > hotplug, so ARM is currently safe from the perf_pmu_migrate_context
+> > case, but I see that you fix the move_group handling too.
+> > 
+> > I had a go at testing this by hacking migration back into the CCI PMU
+> > driver (atop of v3.19-rc5), but I'm seeing lockups after a few minutes
+> > with my original test case (https://lkml.org/lkml/2014/9/1/569 with
+> > PMU_TYPE and PMU_EVENT fixed up).
+> > 
+> > I unfortunately don't have a suitable x86 box spare to run that on.
+> > Would someone be able to give it a spin on something with an uncore PMU?
+> > 
+> > I'll go and dig a bit further. I may just be hitting another latent
+> > issue on my board.
+> 
+> I'm able to trigger the lockups even without both your patch and the
+> call to perf_pmu_migrate_context, so there is a latent issue.
+> 
+> On vanilla v3.19-rc5 and vanilla v3.18, I'm able to get my hotplug
+> script hung when run concurrently with the test case against the CCI PMU
+> driver (without migration). The v3.18 and v3.19-rc5 lockups are
+> identical:
+> 
+> INFO: task hpall.sh:1506 blocked for more than 120 seconds.
+>       Not tainted 3.19.0-rc5 #9
+> "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> hpall.sh        D 804a6ffc     0  1506   1497 0x00000000
+> [<804a6ffc>] (__schedule) from [<80022308>] (cpu_hotplug_begin+0xa0/0xac)
+> [<80022308>] (cpu_hotplug_begin) from [<8002236c>] (_cpu_up+0x24/0x180)
+> [<8002236c>] (_cpu_up) from [<8002253c>] (cpu_up+0x74/0x98)
+> [<8002253c>] (cpu_up) from [<802bce60>] (device_online+0x64/0x90)
+> [<802bce60>] (device_online) from [<802bcef4>] (online_store+0x68/0x74)
+> [<802bcef4>] (online_store) from [<8014059c>] (kernfs_fop_write+0xbc/0x1a0)
+> [<8014059c>] (kernfs_fop_write) from [<800e71b0>] (vfs_write+0xa0/0x1ac)
+> [<800e71b0>] (vfs_write) from [<800e7808>] (SyS_write+0x44/0x9c)
+> [<800e7808>] (SyS_write) from [<8000e560>] (ret_fast_syscall+0x0/0x48)
+> 7 locks held by hpall.sh/1506:
+>  #0:  (sb_writers#6){.+.+.+}, at: [<800e729c>] vfs_write+0x18c/0x1ac
+>  #1:  (&of->mutex){+.+.+.}, at: [<8014052c>] kernfs_fop_write+0x4c/0x1a0
+>  #2:  (s_active#15){.+.+.+}, at: [<80140534>] kernfs_fop_write+0x54/0x1a0
+>  #3:  (device_hotplug_lock){+.+.+.}, at: [<802bbe44>] lock_device_hotplug_sysfs+0xc/0x4c
+>  #4:  (&dev->mutex){......}, at: [<802bce14>] device_online+0x18/0x90
+>  #5:  (cpu_add_remove_lock){+.+.+.}, at: [<80022508>] cpu_up+0x40/0x98
+>  #6:  (cpu_hotplug.lock){++++++}, at: [<80022268>] cpu_hotplug_begin+0x0/0xac
+> 
+> I guess that lockup is my fundamental issue, and with your patch the
+> perf_rwsem manages to spread a transitive dependency on one of those
+> locks all over the perf subsystem. I haven't considered that in great
+> detail, however.
 
-x86, hyperv: Mark the Hyper-V clocksource as being continuous
+I found that I couldn't trigger the issue with v3.17, and I was able to
+bisect down to commit b2c4623dcd07af4b ("rcu: More on deadlock between
+CPU hotplug and expedited grace periods").
 
-The Hyper-V clocksource is continuous; mark it accordingly.
+I'm currently stressing b2c4623dcd07af4b~1 to make sure my bisect hasn't
+mislead me.
 
-Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-Acked-by: jasowang@redhat.com
-Cc: gregkh@linuxfoundation.org
-Cc: devel@linuxdriverproject.org
-Cc: olaf@aepfle.de
-Cc: apw@canonical.com
-Cc: stable@vger.kernel.org
-Link: http://lkml.kernel.org/r/1421108762-3331-1-git-send-email-kys@microsoft.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/kernel/cpu/mshyperv.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/arch/x86/kernel/cpu/mshyperv.c b/arch/x86/kernel/cpu/mshyperv.c
-index a450373..939155f 100644
---- a/arch/x86/kernel/cpu/mshyperv.c
-+++ b/arch/x86/kernel/cpu/mshyperv.c
-@@ -107,6 +107,7 @@ static struct clocksource hyperv_cs = {
- 	.rating		= 400, /* use this when running on Hyperv*/
- 	.read		= read_hv_clock,
- 	.mask		= CLOCKSOURCE_MASK(64),
-+	.flags		= CLOCK_SOURCE_IS_CONTINUOUS,
- };
- 
- static void __init ms_hyperv_init_platform(void)
+Thanks,
+Mark.
