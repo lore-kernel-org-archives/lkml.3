@@ -1,79 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752266AbbATS1l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 13:27:41 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:37688 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751145AbbATS1j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 13:27:39 -0500
-Message-ID: <1421775689.1112.4.camel@linux-0dmf.site>
-Subject: Re: USB autosuspend causing trouble with bluetooth
-From: Oliver Neukum <oneukum@suse.de>
-To: Kirill Elagin <kirelagin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-In-Reply-To: <CABVT_gdCvbK8mUQMjDmiAmc_6kbBUMf4XFeAZ=zzjOYS+7oCGg@mail.gmail.com>
-References: <CABVT_gf-rx0ymvtCrCotkO5=qoDifG1yAMg8U_aTgXEN=x6gvg@mail.gmail.com>
-	 <1421751814.29486.13.camel@linux-0dmf.site>
-	 <CABVT_gcqjp1V6vnOOSewYYeR2PmngAQhuR+fud=bDU6FJ8Bnqw@mail.gmail.com>
-	 <1421762788.29486.28.camel@linux-0dmf.site>
-	 <CABVT_gdCvbK8mUQMjDmiAmc_6kbBUMf4XFeAZ=zzjOYS+7oCGg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 20 Jan 2015 18:41:29 +0100
-Mime-Version: 1.0
-X-Mailer: Evolution 3.10.4 
-Content-Transfer-Encoding: 8bit
+	id S1752279AbbATRrj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 12:47:39 -0500
+Received: from mail-bn1bon0087.outbound.protection.outlook.com ([157.56.111.87]:24224
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751687AbbATRri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 12:47:38 -0500
+Date: Tue, 20 Jan 2015 18:47:19 +0100
+From: Michal Simek <michal.simek@xilinx.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+MIME-Version: 1.0
+To: Petr Cvek <petr.cvek@tul.cz>, <michal.simek@xilinx.com>,
+        <linux-kernel@vger.kernel.org>, <monstr@monstr.eu>
+Subject: Re: FPGA subsystem core
+References: <54BE8239.5050907@tul.cz>
+In-Reply-To: <54BE8239.5050907@tul.cz>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+X-RCIS-Action: ALLOW
+X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21266.000
+X-TM-AS-User-Approved-Sender: Yes
+Message-ID: <19f3347e67984c2687327e0f40e7d40c@BN1AFFO11FD023.protection.gbl>
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=pass (sender IP is 62.221.5.235)
+ smtp.mailfrom=michal.simek@xilinx.com; 
+X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(199003)(377454003)(189002)(164054003)(479174004)(24454002)(51704005)(11905935001)(64706001)(47776003)(83506001)(87936001)(558084003)(6806004)(19580395003)(50986999)(74316001)(86362001)(106466001)(64126003)(76176999)(2201001)(54356999)(92566002)(50466002)(107886001)(65956001)(62966003)(108616004)(92726002)(15395725005)(77156002)(46102003)(33646002)(23746002)(2950100001)(77096005)(15975445007)(104016003)(65826006)(107986001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1AFFO11HUB019;H:xir-pvapsmtpgw01;FPR:;SPF:Pass;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;A:1;MX:1;LANG:en;
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB019;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BN1AFFO11HUB019;
+X-Forefront-PRVS: 0462918D61
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB019;
+X-OriginatorOrg: xilinx.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 20 Jan 2015 17:47:35.7690
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: 657af505-d5df-48d0-8300-c31994686c5c
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=657af505-d5df-48d0-8300-c31994686c5c;Ip=[62.221.5.235]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN1AFFO11HUB019
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2015-01-20 at 18:58 +0400, Kirill Elagin wrote:
-> On Tue, Jan 20, 2015 at 5:06 PM, Oliver Neukum <oneukum@suse.de> wrote:
-> > On Tue, 2015-01-20 at 16:18 +0400, Kirill Elagin wrote:
-> >> I use a Logitech wireless keyboard (with a Unifying receiver) and it
-> >> keeps working fine even with `auto`.
-> >>
-> >> That is, everything is OK if the receiver is plugged before
-> >> `power/control` is switched to `auto`.
-> >
-> > Wait. There is no power/control file for the receiver before
-> > you plug it in. We are having a very big misunderstanding here.
+Hi,
+
+On 01/20/2015 05:28 PM, Petr Cvek wrote:
+> Hello,
+> Are there some news about new FPGA configuration subsystem ( http://lwn.net/Articles/569193/ ) ?
 > 
-> Sorry for not being clear. I was referring to `power/control` of the
-> USB-device itself except for the cases when I was talking about
-> hot-plugging issues — in those cases I was referring to the
-> `power/control` of the root hub.
+> Petr Cvek
 
-Please check whether you are not accidentally touching the ports
-linux-0dmf:/sys/bus/usb/devices/usb1/1-0:1.0/usb1-port1
-At paths like this you find control files for ports, not the
-root hub as a device.
+discussion is still going.
 
-> In this particular case I was talking about the `power/control` of the root hub.
+https://lkml.org/lkml/2015/1/6/686
 
-OK, so autosuspend does work if you enable it for the device but
-not the hub?
-
-> `laptop-mode-tools` by default writes `auto` to `power/control` of
-> _all_ the USB devices, root hubs included (even when on AC). Is it
-> really expected that kernel might completely power off the physical
-> USB port? Sounds weird.
-
-It can. It is a recent feature if ACPI supports that on a machine.
-
-> Here is an even more strange thing. First I set all the USB power
-> management to the defaults (that is, `auto` for all the usb devices
-> including root hubs). Again, the keyboard keeps working and as soon as
-> I unplug the receiver kernel says the device was disconnected. Now if
-> I plug the receiver back nothing happens. _But_ if I plug a flash
-> drive in the save physical port it gets detected. So, I tried a number
-> of other usb devices and it totally looks like USB2.0 ones are
-> properly hot-plugged while USB1.1 devices are not. Does this sound to
-> you like a bug in my laptop's hardware?
-
-Could be, but could also be software.
-Please double check where exactly an "on" is needed.
-
-	Regards
-		Oliver
-
-
+Thanks,
+Michal
