@@ -1,81 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754016AbbATQWk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 11:22:40 -0500
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:49343 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753568AbbATQWX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 11:22:23 -0500
-From: Xunlei Pang <pang.xunlei@linaro.org>
+	id S1754280AbbATQZN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 11:25:13 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38647 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752735AbbATQZL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 11:25:11 -0500
+Date: Tue, 20 Jan 2015 18:25:05 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
-Cc: rtc-linux@googlegroups.com, Thomas Gleixner <tglx@linutronix.de>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Richard Henderson <rth@twiddle.net>,
-        Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Fabio Estevam <fabio.estevam@freescale.com>,
-        John Stultz <john.stultz@linaro.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        Xunlei Pang <pang.xunlei@linaro.org>
-Subject: [RFC PATCH v3 8/8] alpha: rtc: change to use rtc_class_ops's set_mmss64()
-Date: Tue, 20 Jan 2015 16:21:39 +0000
-Message-Id: <1421770899-4136-9-git-send-email-pang.xunlei@linaro.org>
-X-Mailer: git-send-email 2.2.1
-In-Reply-To: <1421770899-4136-1-git-send-email-pang.xunlei@linaro.org>
-References: <1421770899-4136-1-git-send-email-pang.xunlei@linaro.org>
+Cc: kraxel@redhat.com, Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH 00/05] virtio_pci modern driver fixups
+Message-ID: <1421771093-1589-1-git-send-email-mst@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-change alpha_rtc_set_mmss() and remote_set_mmss() to use
-rtc_class_ops's set_mmss64().
+These are fixup patches for virtio pci modern.
+I think it's best to simply squash them in the
+appropriate original patches - rebase -i and then apply,
+then rebase -i --autosquash to do this automatically.
 
-Signed-off-by: Xunlei Pang <pang.xunlei@linaro.org>
----
- arch/alpha/kernel/rtc.c | 8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+You can also find how your branch looks with patches applied
+but before the rebase -i --autosquash in my tree:
+	git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git virtio-next
+or after rebase -i --autosquash:
+	git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git vhost-next
 
-diff --git a/arch/alpha/kernel/rtc.c b/arch/alpha/kernel/rtc.c
-index c8d284d..f535a3f 100644
---- a/arch/alpha/kernel/rtc.c
-+++ b/arch/alpha/kernel/rtc.c
-@@ -116,7 +116,7 @@ alpha_rtc_set_time(struct device *dev, struct rtc_time *tm)
- }
- 
- static int
--alpha_rtc_set_mmss(struct device *dev, unsigned long nowtime)
-+alpha_rtc_set_mmss(struct device *dev, time64_t nowtime)
- {
- 	int retval = 0;
- 	int real_seconds, real_minutes, cmos_minutes;
-@@ -211,7 +211,7 @@ alpha_rtc_ioctl(struct device *dev, unsigned int cmd, unsigned long arg)
- static const struct rtc_class_ops alpha_rtc_ops = {
- 	.read_time = alpha_rtc_read_time,
- 	.set_time = alpha_rtc_set_time,
--	.set_mmss = alpha_rtc_set_mmss,
-+	.set_mmss64 = alpha_rtc_set_mmss,
- 	.ioctl = alpha_rtc_ioctl,
- };
- 
-@@ -276,7 +276,7 @@ do_remote_mmss(void *data)
- }
- 
- static int
--remote_set_mmss(struct device *dev, unsigned long now)
-+remote_set_mmss(struct device *dev, time64_t now)
- {
- 	union remote_data x;
- 	if (smp_processor_id() != boot_cpuid) {
-@@ -290,7 +290,7 @@ remote_set_mmss(struct device *dev, unsigned long now)
- static const struct rtc_class_ops remote_rtc_ops = {
- 	.read_time = remote_read_time,
- 	.set_time = remote_set_time,
--	.set_mmss = remote_set_mmss,
-+	.set_mmss64 = remote_set_mmss,
- 	.ioctl = alpha_rtc_ioctl,
- };
- #endif
+Last patch is a cleanup, does not have to be squashed.
+
+Or if it's all too much bother, I can repost the whole series after fixups.
+
+Michael S. Tsirkin (15):
+  fixup! virtio_pci: modern driver
+  fixup! virtio_pci: modern driver
+  fixup! virtio_pci: macros for PCI layout offsets
+  fixup! virtio_pci: add module param to force legacy mode
+  virtio_pci_modern: drop an unused function
+
 -- 
-1.9.1
+MST
 
