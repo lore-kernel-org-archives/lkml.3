@@ -1,213 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755246AbbATQmv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 11:42:51 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58402 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751868AbbATQms (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 11:42:48 -0500
-From: Jiri Olsa <jolsa@kernel.org>
-To: linux-kernel@vger.kernel.org
-Cc: Jiri Olsa <jolsa@kernel.org>,
-        Alexis Berlemont <alexis.berlemont@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: [PATCH 36/36] perf build: Display make commands on V=1
-Date: Tue, 20 Jan 2015 17:39:33 +0100
-Message-Id: <1421771973-6022-37-git-send-email-jolsa@kernel.org>
-In-Reply-To: <1421771973-6022-1-git-send-email-jolsa@kernel.org>
-References: <1421771973-6022-1-git-send-email-jolsa@kernel.org>
+	id S1755583AbbATQwp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 11:52:45 -0500
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:39280 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754400AbbATQlJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 11:41:09 -0500
+Date: Tue, 20 Jan 2015 16:41:00 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Jacek Anaszewski <j.anaszewski@samsung.com>, linux-leds@vger.kernel.org,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, kyungmin.park@samsung.com,
+        b.zolnierkie@samsung.com, cooloney@gmail.com, rpurdie@rpsys.net,
+        sakari.ailus@iki.fi, s.nawrocki@samsung.com,
+        Chanwoo Choi <cw00.choi@samsung.com>
+Subject: Re: [PATCH/RFC v10 07/19] mfd: max77693: Adjust FLASH_EN_SHIFT and
+ TORCH_EN_SHIFT macros
+Message-ID: <20150120164100.GE30656@x1>
+References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
+ <1420816989-1808-8-git-send-email-j.anaszewski@samsung.com>
+ <20150120111719.GF13701@x1>
+ <54BE51B2.8040209@samsung.com>
+ <54BE6228.5070304@samsung.com>
+ <20150120154029.GC13701@x1>
+ <20150120160056.GA32144@amd>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20150120160056.GA32144@amd>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Get more verbose output wrt displaying executed commands
-from make.
+On Tue, 20 Jan 2015, Pavel Machek wrote:
+> On Tue 2015-01-20 15:40:29, Lee Jones wrote:
+> > On Tue, 20 Jan 2015, Jacek Anaszewski wrote:
+> > 
+> > > On 01/20/2015 02:01 PM, Jacek Anaszewski wrote:
+> > > >On 01/20/2015 12:17 PM, Lee Jones wrote:
+> > > >>On Fri, 09 Jan 2015, Jacek Anaszewski wrote:
+> > > >>
+> > > >>>Modify FLASH_EN_SHIFT and TORCH_EN_SHIFT macros to work properly
+> > > >>>when passed enum max77693_fled values (0 for FLED1 and 1 for FLED2)
+> > > >>>from leds-max77693 driver.
+> > > >>
+> > > >>Off-by-one ay?  Wasn't the original code tested?
+> > > >
+> > > >The driver using these macros is a part of LED / flash API integration
+> > > >patch series, which still undergoes modifications and it hasn't
+> > > >reached its final state yet, as there are many things to discuss.
+> > > 
+> > > To be more precise: the original code had been tested and was working
+> > > properly with the header that is in the mainline. Nonetheless, because
+> > > of the modifications in the driver that was requested during code
+> > > review, it turned out that it would be more convenient to redefine the
+> > > macros.
+> > > 
+> > > I'd opt for just agreeing about the mfd related patches and merge
+> > > them no sooner than the leds-max77693 driver is merged.
+> > 
+> > The only way we can guarantee this is to have them go in during
+> > different merge-windows, unless of course they go in via the same tree.
+> 
+> Umm. Maintainers should be able to coordinate that. Delaying patch for
+> one major release seems rather cruel. Perhaps one maintainer should
+> ack the patch and the second one should merge it...
 
-Signed-off-by: Jiri Olsa <jolsa@kernel.org>
-Cc: Alexis Berlemont <alexis.berlemont@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Borislav Petkov <bp@alien8.de>
-Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@kernel.org>
-Cc: Namhyung Kim <namhyung@kernel.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
----
- tools/build/Makefile.build |  4 +++-
- tools/perf/Makefile.perf   | 48 ++++++++++++++++++++++++++--------------------
- 2 files changed, 30 insertions(+), 22 deletions(-)
+Wow, you're just everywhere today. :)
 
-diff --git a/tools/build/Makefile.build b/tools/build/Makefile.build
-index 1b44e2cd084d..d8d049cc0d38 100644
---- a/tools/build/Makefile.build
-+++ b/tools/build/Makefile.build
-@@ -8,8 +8,10 @@ __build:
- 
- ifeq ($(V),1)
-   quiet =
-+  Q =
- else
-   quiet=quiet_
-+  Q=@
- endif
- 
- build-dir := $(srctree)/tools/build
-@@ -97,7 +99,7 @@ in-target := $(prefix)$(obj)-in.o
- PHONY += $(subdir-y)
- 
- $(subdir-y):
--	@$(MAKE) -f $(build-dir)/Makefile.build dir=$(dir)/$@ obj=$(obj)
-+	$(Q)$(MAKE) -f $(build-dir)/Makefile.build dir=$(dir)/$@ obj=$(obj)
- 
- $(sort $(subdir-obj-y)): $(subdir-y) ;
- 
-diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
-index 5b083da3b934..7850ab25c178 100644
---- a/tools/perf/Makefile.perf
-+++ b/tools/perf/Makefile.perf
-@@ -89,13 +89,19 @@ VPATH += $(OUTPUT)
- export VPATH
- endif
- 
-+ifeq ($(V),1)
-+  Q =
-+else
-+  Q = @
-+endif
-+
- # Do not use make's built-in rules
- # (this increases performance and avoids hard-to-debug behaviour);
- MAKEFLAGS += -r
- 
- $(OUTPUT)PERF-VERSION-FILE: ../../.git/HEAD
--	@$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
--	@touch $(OUTPUT)PERF-VERSION-FILE
-+	$(Q)$(SHELL_PATH) util/PERF-VERSION-GEN $(OUTPUT)
-+	$(Q)touch $(OUTPUT)PERF-VERSION-FILE
- 
- CC = $(CROSS_COMPILE)gcc
- LD = $(CROSS_COMPILE)ld
-@@ -251,7 +257,7 @@ SHELL = $(SHELL_PATH)
- all: shell_compatibility_test $(ALL_PROGRAMS) $(LANG_BINDINGS) $(OTHER_PROGRAMS)
- 
- please_set_SHELL_PATH_to_a_more_modern_shell:
--	@$$(:)
-+	$(Q)$$(:)
- 
- shell_compatibility_test: please_set_SHELL_PATH_to_a_more_modern_shell
- 
-@@ -264,13 +270,13 @@ export srctree OUTPUT RM CC LD AR CFLAGS V BISON FLEX
- build := -f $(srctree)/tools/build/Makefile.build dir=. obj
- 
- $(PERF_IN): $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)common-cmds.h FORCE
--	@$(MAKE) $(build)=perf
-+	$(Q)$(MAKE) $(build)=perf
- 
- $(OUTPUT)perf: $(PERFLIBS) $(PERF_IN)
- 	$(QUIET_LINK)$(CC) $(CFLAGS) $(LDFLAGS) $(PERF_IN) $(LIBS) -o $@
- 
- $(GTK_IN): FORCE
--	@$(MAKE) $(build)=gtk
-+	$(Q)$(MAKE) $(build)=gtk
- 
- $(OUTPUT)libperf-gtk.so: $(GTK_IN) $(PERFLIBS)
- 	$(QUIET_LINK)$(CC) -o $@ -shared $(LDFLAGS) $(filter %.o,$^) $(GTK_LIBS)
-@@ -315,25 +321,25 @@ build-dir   = $(if $(__build-dir),$(__build-dir),.)
- single_dep: $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)common-cmds.h
- 
- $(OUTPUT)%.o: %.c single_dep FORCE
--	@$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
-+	$(Q)$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
- 
- $(OUTPUT)%.i: %.c single_dep FORCE
--	@$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
-+	$(Q)$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
- 
- $(OUTPUT)%.s: %.c single_dep FORCE
--	@$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
-+	$(Q)$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
- 
- $(OUTPUT)%-bison.o: %.c single_dep FORCE
--	@$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
-+	$(Q)$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
- 
- $(OUTPUT)%-flex.o: %.c single_dep FORCE
--	@$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
-+	$(Q)$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
- 
- $(OUTPUT)%.o: %.S single_dep FORCE
--	@$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
-+	$(Q)$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
- 
- $(OUTPUT)%.i: %.S single_dep FORCE
--	@$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
-+	$(Q)$(MAKE) -f $(srctree)/tools/build/Makefile.build dir=$(build-dir) $@
- 
- $(OUTPUT)perf-%: %.o $(PERFLIBS)
- 	$(QUIET_LINK)$(CC) $(CFLAGS) -o $@ $(LDFLAGS) $(filter %.o,$^) $(LIBS)
-@@ -353,7 +359,7 @@ $(patsubst perf-%,%.o,$(PROGRAMS)): $(wildcard */*.h)
- LIBPERF_IN := $(OUTPUT)libperf-in.o
- 
- $(LIBPERF_IN): FORCE
--	@$(MAKE) $(build)=libperf
-+	$(Q)$(MAKE) $(build)=libperf
- 
- $(LIB_FILE): $(LIBPERF_IN)
- 	$(QUIET_AR)$(RM) $@ && $(AR) rcs $@ $(LIBPERF_IN) $(LIB_OBJS)
-@@ -362,21 +368,21 @@ LIBTRACEEVENT_FLAGS += CFLAGS="-g -Wall $(EXTRA_CFLAGS)"
- LIBTRACEEVENT_FLAGS += plugin_dir=$(plugindir_SQ)
- 
- $(LIBTRACEEVENT): FORCE
--	@$(MAKE) -C $(TRACE_EVENT_DIR) $(LIBTRACEEVENT_FLAGS) O=$(OUTPUT) $(OUTPUT)libtraceevent.a plugins
-+	$(Q)$(MAKE) -C $(TRACE_EVENT_DIR) $(LIBTRACEEVENT_FLAGS) O=$(OUTPUT) $(OUTPUT)libtraceevent.a plugins
- 
- $(LIBTRACEEVENT)-clean:
- 	$(call QUIET_CLEAN, libtraceevent)
--	@$(MAKE) -C $(TRACE_EVENT_DIR) O=$(OUTPUT) clean >/dev/null
-+	$(Q)$(MAKE) -C $(TRACE_EVENT_DIR) O=$(OUTPUT) clean >/dev/null
- 
- install-traceevent-plugins: $(LIBTRACEEVENT)
--	@$(MAKE) -C $(TRACE_EVENT_DIR) $(LIBTRACEEVENT_FLAGS) O=$(OUTPUT) install_plugins
-+	$(Q)$(MAKE) -C $(TRACE_EVENT_DIR) $(LIBTRACEEVENT_FLAGS) O=$(OUTPUT) install_plugins
- 
- $(LIBAPIKFS): FORCE
--	@$(MAKE) -C $(LIB_DIR) O=$(OUTPUT) $(OUTPUT)libapi.a
-+	$(Q)$(MAKE) -C $(LIB_DIR) O=$(OUTPUT) $(OUTPUT)libapi.a
- 
- $(LIBAPIKFS)-clean:
- 	$(call QUIET_CLEAN, libapi)
--	@$(MAKE) -C $(LIB_DIR) O=$(OUTPUT) clean >/dev/null
-+	$(Q)$(MAKE) -C $(LIB_DIR) O=$(OUTPUT) clean >/dev/null
- 
- help:
- 	@echo 'Perf make targets:'
-@@ -514,12 +520,12 @@ $(INSTALL_DOC_TARGETS):
- #
- config-clean:
- 	$(call QUIET_CLEAN, config)
--	@$(MAKE) -C config/feature-checks clean >/dev/null
-+	$(Q)$(MAKE) -C config/feature-checks clean >/dev/null
- 
- clean: $(LIBTRACEEVENT)-clean $(LIBAPIKFS)-clean config-clean
- 	$(call QUIET_CLEAN, core-objs)  $(RM) $(LIB_FILE) $(OUTPUT)perf-archive $(OUTPUT)perf-with-kcore $(LANG_BINDINGS)
--	@find . -name '*.o' -delete -o -name '\.*.cmd' -delete -o -name '\.*.d' -delete
--	@$(RM) .config-detected
-+	$(Q)find . -name '*.o' -delete -o -name '\.*.cmd' -delete -o -name '\.*.d' -delete
-+	$(Q)$(RM) .config-detected
- 	$(call QUIET_CLEAN, core-progs) $(RM) $(ALL_PROGRAMS) perf perf-read-vdso32 perf-read-vdsox32
- 	$(call QUIET_CLEAN, core-gen)   $(RM)  *.spec *.pyc *.pyo */*.pyc */*.pyo $(OUTPUT)common-cmds.h TAGS tags cscope* $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)PERF-FEATURES $(OUTPUT)util/*-bison* $(OUTPUT)util/*-flex*
- 	$(QUIET_SUBDIR0)Documentation $(QUIET_SUBDIR1) clean
+Read the part after the comma again.
+
 -- 
-1.9.3
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
