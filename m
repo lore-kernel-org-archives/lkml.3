@@ -1,97 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752165AbbATFst (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 00:48:49 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:43997 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750704AbbATFsr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 00:48:47 -0500
-Date: Tue, 20 Jan 2015 06:48:42 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Matt Roper <matthew.d.roper@intel.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        Daniel Vetter <daniel.vetter@intel.com>,
-        Ville =?iso-8859-1?Q?Syrj=E4l=E4?= 
-	<ville.syrjala@linux.intel.com>,
-        Jeremiah Mahler <jmmahler@gmail.com>,
-        Jani Nikula <jani.nikula@linux.intel.com>,
-        David Airlie <airlied@linux.ie>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Dave Airlie <airlied@redhat.com>,
-        Ander Conselvan de Oliveira <conselvan2@gmail.com>,
-        linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [Intel-gfx] [BUG, bisect] drm/i915: mouse pointer lags and
- overshoots
-Message-ID: <20150120054842.GN26519@phenom.ffwll.local>
-Mail-Followup-To: Matt Roper <matthew.d.roper@intel.com>,
-	Chris Wilson <chris@chris-wilson.co.uk>,
-	Daniel Vetter <daniel.vetter@intel.com>,
-	Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>,
-	Jeremiah Mahler <jmmahler@gmail.com>,
-	Jani Nikula <jani.nikula@linux.intel.com>,
-	David Airlie <airlied@linux.ie>,
-	Alex Deucher <alexander.deucher@amd.com>,
-	Dave Airlie <airlied@redhat.com>,
-	Ander Conselvan de Oliveira <conselvan2@gmail.com>,
-	linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
-	dri-devel@lists.freedesktop.org
-References: <20150117100635.GA1281@hudson.localdomain>
- <20150119090847.GQ10649@intel.com>
- <54BCE1BF.5050808@intel.com>
- <20150119110404.GA26577@nuc-i3427.alporthouse.com>
- <20150119164024.GI22549@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150119164024.GI22549@intel.com>
-X-Operating-System: Linux phenom 3.16-2-amd64 
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1752267AbbATFtH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 00:49:07 -0500
+Received: from mga09.intel.com ([134.134.136.24]:20876 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750722AbbATFtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 00:49:04 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,432,1418112000"; 
+   d="scan'208";a="664446470"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Dimitri Sivanich <sivanich@sgi.com>
+Cc: Jiang Liu <jiang.liu@linux.intel.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Sander Eikelenboom <linux@eikelenboom.it>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: [Patch Part2 v4 00/33] Clean up obsoleted x86 interrupt manangement code and interfaces
+Date: Tue, 20 Jan 2015 13:51:20 +0800
+Message-Id: <1421733113-15704-1-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 19, 2015 at 08:40:24AM -0800, Matt Roper wrote:
-> On Mon, Jan 19, 2015 at 11:04:04AM +0000, Chris Wilson wrote:
-> > On Mon, Jan 19, 2015 at 11:51:43AM +0100, Daniel Vetter wrote:
-> > > There's also an issue in (most) X drivers which exaberates this
-> > > issues: When changing the cursor buffer the X cursor code does a a)
-> > > disable cursor b) update cursor image c) enable cursor cycle.
-> > 
-> > Notably not -intel on which the bug has been observed. And more
-> > importantly, the slow downs don't seem to correlate with cursor change,
-> > just cursor movement.
-> > -Chris
-> > 
-> > -- 
-> > Chris Wilson, Intel Open Source Technology Centre
-> 
-> It seems that the simple fix for this case (movement only) is to just
-> skip the prepare_fb/cleanup_fb calls (and the associated vblank wait) in
-> the transitional plane helper when newfb == oldfb.  I just posted a
-> small patch that makes that change (and solves the cursor lag for me).
-> 
-> This won't solve the case if userspace uses a different framebuffer for
-> each update (while trying to update faster than the refresh rate).  Is
-> there any existing userspace that behaves this way that we can test
-> with?
+This is a following-on patch of "[Patch Part1 v7 00/38] Convert x86 to
+hierarchy irqdomain and stacked irqchip" at
+https://lkml.org/lkml/2015/1/19/685
 
-Hm, I've thought I've merged that patch already:
+The precedent patch has convert x86 interrupt management subsystem to
+hierarchy irqdomain and stacked irqchip, so this patch set cleans up
+code and interfaces obsoleted by the precedent patch set.
 
-commit ab58e3384b9f9863bfd029b458ff337d381bf6d2
-Author: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date:   Mon Nov 24 20:42:42 2014 +0100
+Main changes since last version:
+1) rebased onto v3.19-rc5
+2) add patch 33 to avoid memory allocation/free when assigning CPU vector 
 
-    drm/atomic-helper: Skip vblank waits for unchanged fbs
+Regards,
+Gerry
 
-Or is the problem here that the transitional plane helpers aren't up to
-the task? If so please reference that in your patch.
+Jiang Liu (29):
+  x86/irq: Kill unused old IOAPIC irqdomain interfaces
+  x86/irq: Kill unused struct mp_pin_info
+  x86/irq: Kill x86_io_apic_ops.print_entries and related interfaces
+  x86/irq: Kill x86_io_apic_ops.setup_entry and related interfaces
+  x86/irq: Kill x86_io_apic_ops.set_affinity and related interfaces
+  x86/irq: Kill x86_io_apic_ops.eoi_ioapic_pin and related interfaces
+  x86/irq: Kill GENERIC_IRQ_LEGACY_ALLOC_HWIRQ
+  x86/irq: Clean up unused forward declarations in x86_init.h
+  irq_remapping: Clean up unsued code to support IOAPIC
+  irq_remapping/vt-d: Clean up unsued code
+  irq_remapping/amd: Clean up unsued code
+  irq_remapping: Clean up unused interfaces
+  x86/irq: Kill irq_cfg.irq_remapped
+  irq_remapping/vt-d: Move struct irq_2_iommu into
+    intel_irq_remapping.c
+  irq_remapping/amd: Move struct irq_2_irte into amd_iommu.c
+  x86/irq: Move irq_cfg.irq_2_pin into io_apic.c
+  x86/irq: Kill struct io_apic_irq_attr
+  x86/irq: Kill x86_io_apic_ops.write and x86_io_apic_ops.modify
+  x86/irq: Clean up io_apic.h
+  x86/irq: Use cached IOAPIC entry instead of reading from hardware
+  x86/irq: Kill unused alloc_irq_and_cfg_at()
+  x86/irq: Change functions only used in vector.c as static
+  x86/irq: Kill function apic_set_affinity()
+  x86/irq: Move check of cfg->move_in_progress into
+    send_cleanup_vector()
+  x86/irq: Move private data in struct irq_cfg into dedicated data
+    structure
+  x86/irq: Refine the way to calculate NR_IRQS
+  x86/irq, ACPI: Kill private function mp_register_gsi()/
+    mp_unregister_gsi()
+  x86/irq: Move irqdomain specific code into asm/irqdomain.h
+  x86/irq: Avoid memory allocation in __assign_irq_vector()
 
-And we still need a hack for the "changed fb cursor" issue, I'll whip
-something up.
--Daniel
+Thomas Gleixner (4):
+  x86/irq: Remove sis apic bug workaround
+  x86, ioapic: Use proper defines for the entry fields
+  x86,ioapic: Cleanup irq_trigger/polarity()
+  x86: Cleanup irq_domain ops
+
+ arch/x86/Kconfig                     |    1 -
+ arch/x86/include/asm/hw_irq.h        |   63 ---
+ arch/x86/include/asm/io_apic.h       |  108 +----
+ arch/x86/include/asm/irq_remapping.h |   38 +-
+ arch/x86/include/asm/irq_vectors.h   |   18 +-
+ arch/x86/include/asm/irqdomain.h     |   63 +++
+ arch/x86/include/asm/x86_init.h      |   16 -
+ arch/x86/kernel/acpi/boot.c          |   70 +--
+ arch/x86/kernel/apic/htirq.c         |    2 +-
+ arch/x86/kernel/apic/io_apic.c       |  868 +++++++++-------------------------
+ arch/x86/kernel/apic/msi.c           |    2 +-
+ arch/x86/kernel/apic/vector.c        |  342 ++++++--------
+ arch/x86/kernel/devicetree.c         |   12 +-
+ arch/x86/kernel/hpet.c               |    2 +-
+ arch/x86/kernel/mpparse.c            |    9 +-
+ arch/x86/kernel/x86_init.c           |    6 -
+ arch/x86/platform/sfi/sfi.c          |   10 +-
+ arch/x86/platform/uv/uv_irq.c        |    5 +-
+ drivers/iommu/amd_iommu.c            |  153 +-----
+ drivers/iommu/intel_irq_remapping.c  |  206 +-------
+ drivers/iommu/irq_remapping.c        |   80 ----
+ drivers/iommu/irq_remapping.h        |   16 -
+ drivers/pci/quirks.c                 |    7 -
+ 23 files changed, 490 insertions(+), 1607 deletions(-)
+ create mode 100644 arch/x86/include/asm/irqdomain.h
+
 -- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+1.7.10.4
+
