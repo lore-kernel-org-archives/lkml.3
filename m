@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752929AbbATPkd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 10:40:33 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:37933 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751643AbbATPkc (ORCPT
+	id S1753339AbbATPkl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 10:40:41 -0500
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:48241 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753250AbbATPkh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 10:40:32 -0500
-Message-ID: <54BE76B9.7070907@oracle.com>
-Date: Tue, 20 Jan 2015 10:39:37 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Tue, 20 Jan 2015 10:40:37 -0500
+Date: Tue, 20 Jan 2015 15:40:29 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Jacek Anaszewski <j.anaszewski@samsung.com>
+Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        kyungmin.park@samsung.com, b.zolnierkie@samsung.com, pavel@ucw.cz,
+        cooloney@gmail.com, rpurdie@rpsys.net, sakari.ailus@iki.fi,
+        s.nawrocki@samsung.com, Chanwoo Choi <cw00.choi@samsung.com>
+Subject: Re: [PATCH/RFC v10 07/19] mfd: max77693: Adjust FLASH_EN_SHIFT and
+ TORCH_EN_SHIFT macros
+Message-ID: <20150120154029.GC13701@x1>
+References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
+ <1420816989-1808-8-git-send-email-j.anaszewski@samsung.com>
+ <20150120111719.GF13701@x1>
+ <54BE51B2.8040209@samsung.com>
+ <54BE6228.5070304@samsung.com>
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
-Subject: Re: rcu, sched: WARNING: CPU: 30 PID: 23771 at kernel/rcu/tree_plugin.h:337
- rcu_read_unlock_special+0x369/0x550()
-References: <54BBC084.2030604@oracle.com> <20150118232255.GD9719@linux.vnet.ibm.com>
-In-Reply-To: <20150118232255.GD9719@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <54BE6228.5070304@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/18/2015 06:22 PM, Paul E. McKenney wrote:
-> On Sun, Jan 18, 2015 at 09:17:40AM -0500, Sasha Levin wrote:
->> > Hi Paul, Lai,
->> > 
->> > While fuzzing with trinity inside a KVM tools guest running the latest -next
->> > kernel, I've stumbled on the following spew:
->> > 
->> > [  598.188036] WARNING: CPU: 30 PID: 23771 at kernel/rcu/tree_plugin.h:337 rcu_read_unlock_special+0x369/0x550()
->> > [  598.188036] Modules linked in:
->> > [  598.188036] CPU: 30 PID: 23771 Comm: trinity-c118 Not tainted 3.19.0-rc4-next-20150116-sasha-00055-gb8e1507-dirty #1745
->> > [  598.188036]  ffffffff926e52dc ffff8801b4403c38 ffffffff91439fb2 0000000000000000
->> > [  598.188036]  0000000000000000 ffff8801b4403c78 ffffffff8e159e1a ffff8801b4403c58
->> > [  598.188036]  0000000000000000 ffff88002f093000 00000000ffffffff ffff8801b23b9290
->> > [  598.188036] Call Trace:
->> > [  598.188036] <IRQ> dump_stack (lib/dump_stack.c:52)
->> > [  598.212152] warn_slowpath_common (kernel/panic.c:447)
->> > [  598.212152] warn_slowpath_null (kernel/panic.c:481)
->> > [  598.212152] rcu_read_unlock_special (kernel/rcu/tree_plugin.h:337 (discriminator 9))
->> > [  598.212152] ? select_task_rq_fair (include/linux/rcupdate.h:889 kernel/sched/fair.c:4740)
->> > [  598.212152] __rcu_read_unlock (kernel/rcu/update.c:97)
->> > [  598.212152] select_task_rq_fair (kernel/sched/fair.c:4805)
->> > [  598.212152] ? select_task_rq_fair (include/linux/rcupdate.h:889 kernel/sched/fair.c:4740)
->> > [  598.212152] ? try_to_wake_up (kernel/sched/core.c:1701)
->> > [  598.212152] try_to_wake_up (kernel/sched/core.c:1415 kernel/sched/core.c:1729)
->> > [  598.212152] wake_up_process (kernel/sched/core.c:1797 (discriminator 3))
->> > [  598.212152] hrtimer_wakeup (kernel/time/hrtimer.c:1490)
->> > [  598.212152] __run_hrtimer (kernel/time/hrtimer.c:1218 (discriminator 3))
->> > [  598.212152] ? hrtimer_interrupt (kernel/time/hrtimer.c:622 kernel/time/hrtimer.c:1254)
->> > [  598.212152] ? hrtimer_get_res (kernel/time/hrtimer.c:1480)
->> > [  598.212152] hrtimer_interrupt (kernel/time/hrtimer.c:1307)
->> > [  598.212152] local_apic_timer_interrupt (arch/x86/kernel/apic/apic.c:921)
->> > [  598.212152] smp_apic_timer_interrupt (./arch/x86/include/asm/apic.h:660 arch/x86/kernel/apic/apic.c:945)
->> > [  598.212152] apic_timer_interrupt (arch/x86/kernel/entry_64.S:983)
->> > [  598.212152] <EOI> ? context_tracking_user_enter (./arch/x86/include/asm/paravirt.h:809 kernel/context_tracking.c:106)
->> > [  598.212152] syscall_trace_leave (arch/x86/kernel/ptrace.c:1640)
->> > [  598.212152] int_check_syscall_exit_work (arch/x86/kernel/entry_64.S:577)
-> So RCU believes that an RCU read-side critical section that ended within
-> an interrupt handler (in this case, an hrtimer) somehow got preempted.
-> Which is not supposed to happen.
+On Tue, 20 Jan 2015, Jacek Anaszewski wrote:
+
+> On 01/20/2015 02:01 PM, Jacek Anaszewski wrote:
+> >On 01/20/2015 12:17 PM, Lee Jones wrote:
+> >>On Fri, 09 Jan 2015, Jacek Anaszewski wrote:
+> >>
+> >>>Modify FLASH_EN_SHIFT and TORCH_EN_SHIFT macros to work properly
+> >>>when passed enum max77693_fled values (0 for FLED1 and 1 for FLED2)
+> >>>from leds-max77693 driver.
+> >>
+> >>Off-by-one ay?  Wasn't the original code tested?
+> >
+> >The driver using these macros is a part of LED / flash API integration
+> >patch series, which still undergoes modifications and it hasn't
+> >reached its final state yet, as there are many things to discuss.
 > 
-> Do you have CONFIG_PROVE_RCU enabled?  If not, could you please enable it
-> and retry?
+> To be more precise: the original code had been tested and was working
+> properly with the header that is in the mainline. Nonetheless, because
+> of the modifications in the driver that was requested during code
+> review, it turned out that it would be more convenient to redefine the
+> macros.
+> 
+> I'd opt for just agreeing about the mfd related patches and merge
+> them no sooner than the leds-max77693 driver is merged.
 
-I did have CONFIG_PROVE_RCU, and didn't see anything else besides what I pasted here.
+The only way we can guarantee this is to have them go in during
+different merge-windows, unless of course they go in via the same tree.
 
-
-Thanks,
-Sasha
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
