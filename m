@@ -1,59 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754362AbbATL44 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 06:56:56 -0500
-Received: from mail-ig0-f171.google.com ([209.85.213.171]:40641 "EHLO
-	mail-ig0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754317AbbATL4z (ORCPT
+	id S1754492AbbATL5P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 06:57:15 -0500
+Received: from pandora.arm.linux.org.uk ([78.32.30.218]:40962 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754444AbbATL5M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 06:56:55 -0500
-Date: Tue, 20 Jan 2015 11:56:49 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 04/14] mfd: davinci_voicecodec: Constify struct
- regmap_config
-Message-ID: <20150120115649.GO13701@x1>
-References: <1420448493-9355-1-git-send-email-k.kozlowski@samsung.com>
- <1420448493-9355-4-git-send-email-k.kozlowski@samsung.com>
+	Tue, 20 Jan 2015 06:57:12 -0500
+Date: Tue, 20 Jan 2015 11:56:58 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Robert Jarzmik <robert.jarzmik@free.fr>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Kumar Gala <galak@codeaurora.org>, Daniel Mack <daniel@zonque.org>
+Subject: Re: [PATCH v3 2/3] mfd: lubbock_io: add lubbock_io board
+Message-ID: <20150120115658.GJ26493@n2100.arm.linux.org.uk>
+References: <1421406010-14851-1-git-send-email-robert.jarzmik@free.fr>
+ <1421406010-14851-2-git-send-email-robert.jarzmik@free.fr>
+ <20150119091705.GG21886@x1>
+ <87ppaah9k5.fsf@free.fr>
+ <20150120102919.GP5767@x1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1420448493-9355-4-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20150120102919.GP5767@x1>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 05 Jan 2015, Krzysztof Kozlowski wrote:
-
-> The regmap_config struct may be const because it is not modified by the
-> driver and regmap_init() accepts pointer to const.
+On Tue, Jan 20, 2015 at 10:29:19AM +0000, Lee Jones wrote:
+> On Mon, 19 Jan 2015, Robert Jarzmik wrote:
+> > >> +	if (ret) {
+> > >> +		dev_err(&pdev->dev, "Couldn't request main irq : ret = %d\n",
+> > >> +			ret);
+> > >
+> > > I'm not keen on this type of formatting.  Besides the system will
+> > > print out the returned error on failure.
+> > Well, it will print -EINVAL or -ENODEV. When I'll receive an request on the
+> > driver with -ENODEV, how will I know it will come from this request_irq() or
+> > another part of the code ... Well I can remove it if you want, but I think it's
+> > an error.
 > 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> ---
->  drivers/mfd/davinci_voicecodec.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+> I'm not asking you to remove the entire message, just the junk at the
+> end.
 
-Applied, thanks.
+No.  Leave it.  If request_irq() returns -ENODEV or -ENXIO, you'll
+just get the "Couldn't request main irq" message but without the
+error code printed.
 
-> diff --git a/drivers/mfd/davinci_voicecodec.c b/drivers/mfd/davinci_voicecodec.c
-> index c835e85539b2..9bbc642a7b9d 100644
-> --- a/drivers/mfd/davinci_voicecodec.c
-> +++ b/drivers/mfd/davinci_voicecodec.c
-> @@ -33,7 +33,7 @@
->  
->  #include <linux/mfd/davinci_voicecodec.h>
->  
-> -static struct regmap_config davinci_vc_regmap = {
-> +static const struct regmap_config davinci_vc_regmap = {
->  	.reg_bits = 32,
->  	.val_bits = 32,
->  };
+What I'd suggest (and always have done) is:
+
+	dev_err(&pdev->dev, "couldn't request main irq%d: %d\n",
+		irq, ret);
+
+but I guess printing the IRQ number no longer makes sense with todays
+dynamic mapping of logical IRQ numbers, as it is no longer meaningful.
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
+according to speedtest.net.
