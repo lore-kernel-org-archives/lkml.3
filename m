@@ -1,99 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752954AbbATPnU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 10:43:20 -0500
-Received: from mail-ie0-f182.google.com ([209.85.223.182]:59470 "EHLO
-	mail-ie0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752121AbbATPnS (ORCPT
+	id S1753550AbbATPoG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 10:44:06 -0500
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:58958 "EHLO
+	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752239AbbATPoC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 10:43:18 -0500
-Date: Tue, 20 Jan 2015 15:43:11 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        linux-kernel@vger.kernel.org, Kukjin Kim <kgene@kernel.org>,
-        devicetree@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH v5 4/5] mfd/regulator: dt-bindings: max77686: Document
- gpio properties
-Message-ID: <20150120154311.GE13701@x1>
-References: <1420458525-22576-1-git-send-email-k.kozlowski@samsung.com>
- <1420458525-22576-5-git-send-email-k.kozlowski@samsung.com>
- <20150120134111.GI13701@x1>
- <1421763703.8855.10.camel@AMDC1943>
+	Tue, 20 Jan 2015 10:44:02 -0500
+Date: Tue, 20 Jan 2015 10:44:01 -0500 (EST)
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, kernel <kernel@savoirfairelinux.com>
+Message-ID: <1272429736.105015.1421768641283.JavaMail.root@mail>
+In-Reply-To: <54BDC087.4010906@roeck-us.net>
+Subject: Re: [PATCH 2/3] sysfs: Only accept read/write permissions for file
+ attributes
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1421763703.8855.10.camel@AMDC1943>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
+X-Mailer: Zimbra 7.1.4_GA_2555 (ZimbraWebClient - FF3.0 (Linux)/7.1.4_GA_2555)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Jan 2015, Krzysztof Kozlowski wrote:
+Hi Guenter,
 
-> On wto, 2015-01-20 at 13:41 +0000, Lee Jones wrote:
-> > On Mon, 05 Jan 2015, Krzysztof Kozlowski wrote:
-> > 
-> > > Document usage of maxim,ena-gpios properties which turn on external/GPIO
-> > > control over regulator.
-> > > 
-> > > Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> > > ---
-> > >  Documentation/devicetree/bindings/mfd/max77686.txt | 14 ++++++++++++++
-> > >  1 file changed, 14 insertions(+)
-> > > 
-> > > diff --git a/Documentation/devicetree/bindings/mfd/max77686.txt b/Documentation/devicetree/bindings/mfd/max77686.txt
-> > > index 75fdfaf41831..e39f0bc1f55e 100644
-> > > --- a/Documentation/devicetree/bindings/mfd/max77686.txt
-> > > +++ b/Documentation/devicetree/bindings/mfd/max77686.txt
-> > > @@ -39,6 +39,12 @@ to get matched with their hardware counterparts as follow:
-> > >  	-BUCKn	:	1-4.
-> > >    Use standard regulator bindings for it ('regulator-off-in-suspend').
-> > >  
-> > > +  LDO20, LDO21, LDO22, BUCK8 and BUCK9 can be configured to GPIO enable
-> > > +  control. To turn this feature on this property must be added to the regulator
-> > > +  sub-node:
-> > > +	- maxim,ena-gpios :	one GPIO specifier enable control (the gpio
-> > > +				flags are actually ignored and always
-> > > +				ACTIVE_HIGH is used)
-> > 
-> > How does this differ to the 'enable-gpio' property which has already
-> > been defined?
-> 
-> Strictly speaking - no difference, just a GPIO specifier.
-> 
-> However the 'enable-gpio' property exists only for gpio-regulator. The
-> regulator core does not support generic enable-gpio property and each
-> driver implements it on its own.
-> 
-> Anyway Mark Brown already applied this patch to his regulator tree.
+>>> @@ -55,6 +55,12 @@ static int create_files(struct kernfs_node *parent, struct kobject *kobj,
+>>>                                   if (!mode)
+>>>                                           continue;
+>>>                           }
+>>> +
+>>> +                        WARN(mode & ~(S_IRUGO | S_IWUGO | SYSFS_PREALLOC),
+>>> +                             "Attribute %s: Invalid permission 0x%x\n",
+>>> +                             (*attr)->name, mode);
+>>
+>> To print permissions, I would suggest unsigned octal ("0%o").
+>
+> Fine with me.
+>
+>>> +
+>>> +                        mode &= S_IRUGO | S_IWUGO | SYSFS_PREALLOC;
+>>
+>> As readable attributes are created with S_IRUGO and writable attributes are
+>> created with S_IWUSR, I would limit the scope of is_visible to only:
+>> S_IRUGO | S_IWUSR. Write permission for group and others feels wrong.
+>
+> That seems to be too restrictive to me. There are several attributes
+> (I count 32) which permit group writes (search for "DEVICE_ATTR.*IWGRP").
+>
+>>
+>> Then, I think we may want to keep the extra bits (all mode bits > 0777) from
+>> the default attribute mode. Can they be used for sysfs attributes?
+>>
+>
+> I have not seen it anywhere, except for execute permissions in
+> drivers/hid/hid-lg4ff.c (which should be fixed).
 
-Well if he has no issue with it, then I guess I don't.
+Fixed and merged ;)
 
-> > >  Example:
-> > >  
-> > > @@ -65,4 +71,12 @@ Example:
-> > >  				regulator-always-on;
-> > >  				regulator-boot-on;
-> > >  			};
-> > > +
-> > > +			buck9_reg {
-> > > +				regulator-compatible = "BUCK9";
-> > > +				regulator-name = "CAM_ISP_CORE_1.2V";
-> > > +				regulator-min-microvolt = <1000000>;
-> > > +				regulator-max-microvolt = <1200000>;
-> > > +				maxim,ena-gpios = <&gpm0 3 GPIO_ACTIVE_HIGH>;
-> > > +			};
-> > >  	}
-> > 
-> 
+> Of course, I may have missed some.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+>> My suggestion is something like this:
+>>
+>>          /* Limit the scope to S_IRUGO | S_IWUSR */
+>>          if (mode & ~(S_IRUGO | S_IWUSR))
+>>                  pr_warn("Attribute %s: Invalid permissions 0%o\n",
+>>                          (*attr)->name, mode);
+>>
+> The reason for WARN() was to give the implementer a strong incentive to fix it,
+> and to show the calling path. Only displaying the attribute name makes it
+> difficult to identify the culprit, at least for widely used attribute names.
+
+No objection with WARN(), I just decreased it to pr_warn() for testing.
+
+>>          mode &= S_IRUGO | S_IWUSR;
+>>
+>>          /* Use only returned bits and defaults > 0777 */
+>>          mode |= (*attr)->mode & ~S_IRWXUGO;
+>>
+>>>                           error = sysfs_add_file_mode_ns(parent, *attr, false,
+>>>                                                          mode, NULL);
+>>>                           if (unlikely(error))
+>>
+>> The code hitting this warning actually is drivers/pci/pci-sysfs.c, which
+>> declares write-only attributes with S_IWUSR|S_IWGRP (0220). Is that correct to
+>> have write access for group for these attributes?
+
+> Why not ? Not our call to make.
+
+I was concerned about attributes with group write permission, but you are
+right, this is another discussion.
+
+> Anyway, my goal was to keep things simple. Taking some bits from the default
+> and others from the return value of the is_visible function isn't simple,
+> even more so since your code would require the is_visible function to mask
+> out SYSFS_PREALLOC to avoid the warning.
+
+While I'm still not sure about the consequences of flipping this SYSFS_PREALLOC
+bit at runtime, I do agree with your goal.
+
+Then to keep it simple, the scope of is_visible could be limited to any bit
+allowed at attribute declaration (using *_ATTR* macros). The compile-time check
+macro VERIFY_OCTAL_PERMISSIONS() allows any bit but S_IWOTH. The scope can be
+SYSFS_PREALLOC | 0775. (or 0664 if we want to avoid executables as well.)
+
+[ This will prevent some follow-up patches "avoid world-writable sysfs files".
+In the future, we may want a runtime equivalent of VERIFY_OCTAL_PERMISSIONS. ]
+
+Thanks,
+-v
