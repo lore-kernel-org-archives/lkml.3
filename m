@@ -1,100 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754993AbbATRjy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 12:39:54 -0500
-Received: from smtp3.ore.mailhop.org ([54.149.88.251]:41971 "EHLO
-	smtp3.ore.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752082AbbATRjh (ORCPT
+	id S1754638AbbATRL7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 12:11:59 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:32774 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752055AbbATRL5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 12:39:37 -0500
-X-Greylist: delayed 1517 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Jan 2015 12:39:37 EST
-X-Mail-Handler: DuoCircle Outbound SMTP
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@duocircle.com (see https://support.duocircle.com/support/solutions/articles/5000540958-duocircle-standard-smtp-abuse-information for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+M5KMPkOX8SiDlRf1j9AHZ
-Date: Tue, 20 Jan 2015 09:10:49 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Peter Robinson <pbrobinson@gmail.com>
-Subject: Re: linux-next: manual merge of the omap tree with the arm-soc tree
-Message-ID: <20150120171048.GF7718@atomide.com>
-References: <20150120110947.1a92a416@canb.auug.org.au>
+	Tue, 20 Jan 2015 12:11:57 -0500
+Message-ID: <54BE8C55.5040606@collabora.co.uk>
+Date: Tue, 20 Jan 2015 18:11:49 +0100
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150120110947.1a92a416@canb.auug.org.au>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Lee Jones <lee.jones@linaro.org>
+CC: Olof Johansson <olof@lixom.net>, Doug Anderson <dianders@chromium.org>,
+        Bill Richardson <wfrichar@chromium.org>, Simon Glass <sjg@google.com>,
+        Gwendal Grignou <gwendal@google.com>, Jonathan Corbet <corbet@lwn.net>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND v2 5/7] mfd: cros_ec: Instantiate ChromeOS EC character
+ device
+References: <1420205572-2640-1-git-send-email-javier.martinez@collabora.co.uk> <1420205572-2640-6-git-send-email-javier.martinez@collabora.co.uk> <20150120082013.GU21886@x1> <54BE7C53.8070605@collabora.co.uk> <20150120162952.GB30656@x1> <54BE83FF.7030709@collabora.co.uk> <20150120165527.GH30656@x1>
+In-Reply-To: <20150120165527.GH30656@x1>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Stephen Rothwell <sfr@canb.auug.org.au> [150119 16:12]:
-> Hi Tony,
+Hello Lee,
+
+On 01/20/2015 05:55 PM, Lee Jones wrote:
+> On Tue, 20 Jan 2015, Javier Martinez Canillas wrote:
 > 
-> Today's linux-next merge of the omap tree got a conflict in
-> arch/arm/boot/dts/Makefile between commit cb612390e546 ("ARM: dts: Only
-> build dtb if associated Arch and/or SoC is enabled") from the arm-soc
-> tree and commit ac7452cee743 ("ARM: dts: Add minimal support for
-> dm8168-evm") from the omap tree.
+>> Hello Lee,
+>> 
+>> On 01/20/2015 05:29 PM, Lee Jones wrote:
+>> > 
+>> > It's not a blocker, but it is a ridiculous name to use inside the
+>> > driver/ directory 'cos almost everything is a dev(ice) here.
+>> > 
+>> 
+>> Right, do you think that "cros-ec-chardev" will be a more suitable
+>> name? Sorry, I'm really bad at naming things...
 > 
-> I fixed it up (see below) and can carry the fix as necessary (no action
-> is required).
-
-Uhh why is cb612390e546 doing formatting changes all over the place?
-That's a sure way to produce merge conflicts..
-
-Anyways the conflict resolution looks good to me thanks.
-
-Regards,
-
-Tony
- 
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
+> But is it really a chardev?  Don't chardevs usually live in
+> drivers/char?  It probably uses a chardev node in /dev, but what does
+> it really do?  What information can/will userspace obtain from this
+> memory block?
 > 
-> diff --cc arch/arm/boot/dts/Makefile
-> index a240d2d07b38,a6ace4d57ea5..000000000000
-> --- a/arch/arm/boot/dts/Makefile
-> +++ b/arch/arm/boot/dts/Makefile
-> @@@ -392,8 -348,8 +392,9 @@@ dtb-$(CONFIG_ARCH_OMAP3) += 
->   	omap3-sbc-t3730.dtb \
->   	omap3-thunder.dtb \
->   	omap3-zoom3.dtb
-> + dtb-$(CONFIG_SOC_TI81XX) += dm8168-evm.dtb
->  -dtb-$(CONFIG_SOC_AM33XX) += am335x-base0033.dtb \
->  +dtb-$(CONFIG_SOC_AM33XX) += \
->  +	am335x-base0033.dtb \
->   	am335x-bone.dtb \
->   	am335x-boneblack.dtb \
->   	am335x-evm.dtb \
-> @@@ -410,20 -365,17 +411,21 @@@ dtb-$(CONFIG_ARCH_OMAP4) += 
->   	omap4-sdp-es23plus.dtb \
->   	omap4-var-dvk-om44.dtb \
->   	omap4-var-stk-om44.dtb
->  -dtb-$(CONFIG_SOC_AM43XX) += am43x-epos-evm.dtb \
->  +dtb-$(CONFIG_SOC_AM43XX) += \
->  +	am43x-epos-evm.dtb \
->   	am437x-sk-evm.dtb \
-> + 	am437x-idk-evm.dtb \
->   	am437x-gp-evm.dtb
->  -dtb-$(CONFIG_SOC_OMAP5) += omap5-cm-t54.dtb \
->  +dtb-$(CONFIG_SOC_OMAP5) += \
->  +	omap5-cm-t54.dtb \
->   	omap5-sbc-t54.dtb \
->   	omap5-uevm.dtb
->  -dtb-$(CONFIG_SOC_DRA7XX) += dra7-evm.dtb \
->  +dtb-$(CONFIG_SOC_DRA7XX) += \
->  +	dra7-evm.dtb \
->   	am57xx-beagle-x15.dtb \
->   	dra72-evm.dtb
->  -dtb-$(CONFIG_ARCH_ORION5X) += orion5x-lacie-d2-network.dtb \
->  +dtb-$(CONFIG_ARCH_ORION5X) += \
->  +	orion5x-lacie-d2-network.dtb \
->   	orion5x-lacie-ethernet-disk-mini-v2.dtb \
->   	orion5x-maxtor-shared-storage-2.dtb \
->   	orion5x-rd88f5182-nas.dtb
 
+Right, is a driver that register a chardev but mostly to expose an ioctl
+interface to send commands to the Embedded Controller from user-space.
 
+The Application Processor communicates with Embedded Controller by sending
+commands over an interface. This can be either spi or i2c on ARM (depending
+on the Chromebook model) or LPC on x86 Chromebooks so the platform driver
+instantiated by the "cros-ec-dev" mfd cell is to allow user-space to send
+commands to the Embedded Controller (using the correct transport method).
+
+So this chardev is used by the ectool binary in ChromeOS to communicate
+with the Embedded Controller.
+
+The actual driver is located in drivers/platform/chrome/cros_ec_dev.c and
+is added by "platform/chrome: Add Chrome OS EC userspace device interface"
+[0] in this series.
+
+In the downstream ChromiumOS kernel tree it is located in drivers/mfd but
+I moved to drivers/platform/chrome/ since you asked me to find a better
+place for it.
+
+Best regards,
+Javier
+
+[0]: https://lkml.org/lkml/2015/1/2/81
