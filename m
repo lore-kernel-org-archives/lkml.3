@@ -1,97 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753525AbbATNxS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 08:53:18 -0500
-Received: from mail-we0-f180.google.com ([74.125.82.180]:49302 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751817AbbATNxQ (ORCPT
+	id S1753019AbbATOAn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 09:00:43 -0500
+Received: from mail1.bemta5.messagelabs.com ([195.245.231.147]:37369 "EHLO
+	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751575AbbATOAc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 08:53:16 -0500
-Message-ID: <54BE5DC8.70706@gmail.com>
-Date: Tue, 20 Jan 2015 14:53:12 +0100
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 20 Jan 2015 09:00:32 -0500
+X-Env-Sender: stwiss.opensource@diasemi.com
+X-Msg-Ref: server-4.tower-179.messagelabs.com!1421762429!41215156!1
+X-Originating-IP: [82.210.246.133]
+X-StarScan-Received: 
+X-StarScan-Version: 6.12.5; banners=-,-,-
+X-VirusChecked: Checked
+Message-ID: <cover.1421762065.git.stwiss.opensource@diasemi.com>
+From: Steve Twiss <stwiss.opensource@diasemi.com>
+Date: Tue, 20 Jan 2015 13:54:25 +0000
+Subject: [PATCH V3 0/2]  Add device tree support for DA9063 
+To: David Dajun Chen <david.chen@diasemi.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Lee Jones <lee.jones@linaro.org>,
+        "Mark Brown" <broonie@linaro.org>, Mark Rutland <mark.rutland@arm.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Rob Herring <robh+dt@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Steve Twiss <stwiss.opensource@diasemi.com>,
+        Support Opensource <support.opensource@diasemi.com>
+CC: DT <devicetree@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@linuxfoundation.org>, arnd@arndb.de,
-        ebiederm@xmission.com, gnomes@lxorguk.ukuu.org.uk, teg@jklm.no,
-        jkosina@suse.cz, luto@amacapital.net, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-CC: mtk.manpages@gmail.com, daniel@zonque.or, dh.herrmann@gmail.com,
-        tixxdz@opendz.org, Daniel Mack <daniel@zonque.org>,
-        Johannes Stezenbach <js@sig21.net>
-Subject: Re: [PATCH 01/13] kdbus: add documentation
-References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org> <1421435777-25306-2-git-send-email-gregkh@linuxfoundation.org>
-In-Reply-To: <1421435777-25306-2-git-send-email-gregkh@linuxfoundation.org>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/16/2015 08:16 PM, Greg Kroah-Hartman wrote:
-> From: Daniel Mack <daniel@zonque.org>
-> 
-> kdbus is a system for low-latency, low-overhead, easy to use
-> interprocess communication (IPC).
-> 
-> The interface to all functions in this driver is implemented via ioctls
-> on files exposed through a filesystem called 'kdbusfs'. The default
-> mount point of kdbusfs is /sys/fs/kdbus. This patch adds detailed
-> documentation about the kernel level API design.
+From: Steve Twiss <stwiss.opensource@diasemi.com>
 
-I have some details feedback on the contents of this file, and some 
-bigger questions. I'll split them out into separate mails.
+This patch set adds device tree support for the Dialog
+Semiconductor DA9063 PMIC. Support is provided for the
+Regulators; Real-Time Clock and Watchdog.
 
-So here, the bigger, general questions to start with. I've arrived late 
-to this, so sorry if they've already been discussed, but the answers to 
-some of the questions should actually be in this file, I would have 
-expected.
+[PATCH V2 1/2]: kernel driver device tree support
+[PATCH V2 2/2]: device tree bindings document
 
-This is an enormous and complex API. Why is the API ioctl() based,
-rather than system-call-based? Have we learned nothing from the hydra
-that the futex() multiplexing syscall became? (And kdbus is an order
-of magnitude more complex, by the look of things.) At the very least,
-a *good* justification of why the API is ioctl()-based should be part
-of this documentation file.
+Change History:
 
-An observation: The documentation below is substantial, but this API is 
-enormous, so the documentation still feels rather thin. What would 
-really help would be some example code in the doc. 
+[PATCH V3]: remove device tree information that explicitly
+            identifies different silicon variants
+[PATCH V2]: split into two patches and move the compatibility
+            strings to the end of the structures.
+[PATCH V1]: initial submission
 
-And on the subject of code examples... Are there any (prototype) 
-working user-space applications that exercise the current kdbus 
-implementation? That is, can I install these kdbus patches, and
-then find a simple example application somewhere that does
-something to exercise kdbus?
+Thank you,
+Steve Twiss, Dialog Semiconductor Ltd.
 
-And then: is there any substantial real-world application (e.g., a 
-full D-Bus port) that is being developed in tandem with this kernel
-side patch? (I don't mean a user-space library; I mean a seriously
-large application.) This is an incredibly complex API whose
-failings are only going to become evident through real-world use.
-Solidifying an API in the kernel and then discovering the API
-problems later when writing real-world applications would make for
-a sad story. A story something like that of inotify, an API which 
-is an order of magnitude less complex than kdbus. (I can't help but
-feel that many of inotify problems that I discuss at 
-https://lwn.net/Articles/605128/ might have been fixed or mitigated 
-if a few real-world applications had been implemented before the
-API  was set in stone.)
+S Twiss (2):
+  mfd: da9063: Add device tree support
+  devicetree: Add bindings for DA9063
 
-> +For a kdbus specific userspace library implementation please refer to:
-> +  http://cgit.freedesktop.org/systemd/systemd/tree/src/systemd/sd-bus.h
-
-Is this library intended just for systemd? More generally, is there an 
-intention to provide a general purpose library API for kdbus? Or is the
-intention that each application will roll a library suitable to its
-needs? I think an answer to that question would be useful in this 
-Documentation file.
-
-Cheers,
-
-Michael
+ Documentation/devicetree/bindings/mfd/da9063.txt | 93 ++++++++++++++++++++++++
+ drivers/mfd/da9063-core.c                        |  2 +
+ drivers/mfd/da9063-i2c.c                         |  9 +++
+ include/linux/mfd/da9063/core.h                  |  1 +
+ 4 files changed, 105 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/mfd/da9063.txt
 
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+end-of-patch for PATCH V3
+
