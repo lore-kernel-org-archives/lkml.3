@@ -1,229 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752717AbbATRXj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 12:23:39 -0500
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:56964 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751102AbbATRXh (ORCPT
+	id S1754652AbbATSHg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 13:07:36 -0500
+Received: from mailzm.rjcorp.in ([115.112.35.13]:44708 "EHLO
+	mailzmsm.rjcorp.in" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754377AbbATSHc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 12:23:37 -0500
-Message-ID: <1421774615.2080.88.camel@HansenPartnership.com>
-Subject: Re: module: fix module_refcount() return when running in a module
- exit routine
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Date: Tue, 20 Jan 2015 09:23:35 -0800
-In-Reply-To: <871tmqcmau.fsf@rustcorp.com.au>
-References: <1421600146.2080.8.camel@HansenPartnership.com>
-	 <54BC93C3.7010808@hitachi.com> <878ugzco8c.fsf@rustcorp.com.au>
-	 <1421683701.2080.25.camel@HansenPartnership.com>
-	 <871tmqcmau.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Jan 2015 13:07:32 -0500
+X-Greylist: delayed 2723 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Jan 2015 13:07:32 EST
+X-AuditID: 0a000396-f79b76d000004c50-3b-54be8e5c7bb1
+Date: Tue, 20 Jan 2015 22:53:56 +0530 (IST)
+From: DIAMOND SWISS LOANS COMPANY <admin.helpdesk@cryobanksindia.com>
+Reply-To: "diamondswissloans51@gmail.com" <diamondswissloans51@gmail.com>
+Message-ID: <871270258.261631.1421774636639.JavaMail.root@webmail.rjcorp.in>
+Subject: lening bieden
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Zimbra 6.0.7_GA_2473.RHEL5_64 (zclient/6.0.7_GA_2473.RHEL5_64)
+To: undisclosed-recipients:;
+X-Brightmail-Tracker: H4sIAAAAAAAAA22Te0xTZxjG+53Tc3poOOxQFL8xdFszNY7IEHW+ZG6D3VIT3MhGQrYsc0U6
+	6EYLacGJ/6yBAQE2wqwlXKQKIhOBNJb7rUgBx22IbAh4wYgKyh2LoZE5dmpB+GP/nDx5nu/3
+	vuc8+Q5DSs64eDFKdZxCo5ZHS2mxUCwgXXd/nWkJ9RurYmExK10ED3I+hRbbUxEM57RT8OSX
+	JgKSjDYSssZSKDDcnEHwV8NpGtJWkhD0ZWTTMFi+TIClt5cCc302CYbFTBr+XrYgqCnXEfDk
+	bKIQmvUWChLb8ghYbOeVscMgBP1wBgG9186RcP7Gsghye1JFMDGQRYPpTgUJ+eesJJRX3RHC
+	ZH+rCIqreglINNWTYCwoQnBRt0xB7Y2T/LnOARHMpv5BQG09QFJhGQJ7WTcJNYVGEeR09hEw
+	0ZBEwrWxXAqSRmZoSGx+RkB1phjKTU9p0Deu0IH+snr7EC2bvLIklD1ouk7IbOZtMtttEyWz
+	WktIWV5eGxEi+kp8MEIRrTym0Lz13rfiqJlTHXTsvPj4XM89pENtTDpyYTC3D5dN9Aud2hP3
+	j5rodCRmJFwFwvrsWpEz2IXv6u3IoYWcD87vqnyuae5jvGKsIx1awh3CU6UDlEOzXDAev3WX
+	dmgPfqh5dgg5fXfclXv/+TKS24n/MQ6QTu2DSwqneM3wu2R4svsbh72J88YF+feoLOSWt4HO
+	20DnbaDPIvIikqjkyugTKq3KV/P90RhNrK9SbUbOS5Ndhzp//sCKOAZJXdnAiuZQCSU/pk1Q
+	WdF+hpBuZh+nW0IlbuExEQlRcm3UEU18tEIr9WIPFP0eKvF4YWvjw1VKrVYZo7YizJDSTeyt
+	NJ5jI+QJJxSaGCdmRa8wQukW1neU38JFyuMUPygUsQrNWvoOw0gxe/pXHnTXKCIVx79TRset
+	xdKtLBIIBBLPjcnGtQTjYkV7GVd+d4ljBKuNlau0yshV/GUnLllz19Fu9CEzndqaS0iE6hi1
+	wmsLK3DwnONkVLz6xRt4ebNBbnyweUOwPmUSXUd8hx6sygG78v/m+m7srMt91VyH/It4hvuX
+	xjnVNE5pkOBK805cPJBMY33ZVRoPT86JcJNpSYQ7Fy6JsW3iEYsrh0sleLz/jCe2WZf5q1mT
+	5oXNlxa34sqTOdvwwtL517BdV7IDG1MyfHDXqQ4fXHm5xwc/fHzBD9tLR/xwy+CVfbjzoekA
+	Lkw2BGD7tJF/zMwcxHVJV9/Hoz3GQGypmwvCCzebPsJVBfc/meRbJfhWPRuaHK3GyeP+p9VV
+	d/3TvHRohAv44idj6aG6yO5Q0fbyH3c3ug7ffnuoMV1Zs3R4T751nn435E/54G9fVk/tenX2
+	pdd1YYnBz9zad4QY3MzTGu8j9vjPjKYLfalh8zJW36sbnLMKWij/8DHKzRYYEJxcGzYdtbf4
+	UcT+uKOCeOFELdXTuf2Nw5cNvq2WktrxoM+lUqE2Sr7nTVKjlf8H+jQsPjIFAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2015-01-20 at 11:15 +1030, Rusty Russell wrote:
-> James Bottomley <James.Bottomley@HansenPartnership.com> writes:
-> > On Mon, 2015-01-19 at 16:21 +1030, Rusty Russell wrote:
-> >> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> writes:
-> >> > (2015/01/19 1:55), James Bottomley wrote:
-> >> >> From: James Bottomley <JBottomley@Parallels.com>
-> >> >> 
-> >> >> After e513cc1 module: Remove stop_machine from module unloading,
-> >> >> module_refcount() is returning (unsigned long)-1 when called from within
-> >> >> a routine that runs in module_exit.  This is confusing the scsi device
-> >> >> put code which is coded to detect a module_refcount() of zero for
-> >> >> running within a module exit routine and not try to do another
-> >> >> module_put.  The fix is to restore the original behaviour of
-> >> >> module_refcount() and return zero if we're running inside an exit
-> >> >> routine.
-> >> >> 
-> >> >> Fixes: e513cc1c07e2ab93a4514eec9833e031df3e30bb
-> >> >> Reported-by: Bart Van Assche <bvanassche@acm.org>
-> >> >> Signed-off-by: James Bottomley <JBottomley@Parallels.com>
-> >> >> 
-> >> >
-> >> > Yes, this should be fixed as you said, since it must return "unsigned long" value.
-> >> 
-> >> But there are only three non-module callers:
-> >> 
-> >> drivers/scsi/scsi.c:1012:	if (module && module_refcount(module) != 0)
-> >> drivers/staging/lustre/lustre/obdclass/lu_object.c:1359:			LINVRNT(module_refcount(key->lct_owner) > 0);
-> >> include/linux/module.h:447:unsigned long module_refcount(struct module *mod);
-> >> kernel/debug/kdb/kdb_main.c:2026:		kdb_printf("%4ld ", module_refcount(mod));
-> >> kernel/module.c:775:unsigned long module_refcount(struct module *mod)
-> >> kernel/module.c:779:EXPORT_SYMBOL(module_refcount);
-> >> kernel/module.c:859:	seq_printf(m, " %lu ", module_refcount(mod));
-> >> kernel/module.c:911:	return sprintf(buffer, "%lu\n", module_refcount(mk->mod));
-> >> 
-> >> The first one I think should be eliminated, and the second one is simply
-> >> an assertion before calling module_put() (which should probably be
-> >> eliminated).  The others are just printing information.
-> >
-> > If you really want to insist on module_reference() returning -1 when the
-> > module is in it's exit phase, OK, but in that case, I think it should
-> > return a signed value, not an unsigned one.
-> 
-> Sure; I just didn't want to paper over the problem here.  And I'm not
-> sure we want to lose information, eg. in kgdb we're presumably looking
-> at it because something went wrong...
-> 
-> Thanks,
-> Rusty.
-> 
-> Subject: module: make module_refcount() a signed integer.
-> 
-> James Bottomley points out that it will be -1 during unload.  It's
-> only used for diagnostics, so let's not hide that as it could be a
-> clue as to what's gone wrong.
-> 
-> Cc: Jason Wessel <jason.wessel@windriver.com>
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-> 
-> diff --git a/include/linux/module.h b/include/linux/module.h
-> index ebfb0e153c6a..b653d7c0a05a 100644
-> --- a/include/linux/module.h
-> +++ b/include/linux/module.h
-> @@ -444,7 +444,7 @@ extern void __module_put_and_exit(struct module *mod, long code)
->  #define module_put_and_exit(code) __module_put_and_exit(THIS_MODULE, code)
->  
->  #ifdef CONFIG_MODULE_UNLOAD
-> -unsigned long module_refcount(struct module *mod);
-> +int module_refcount(struct module *mod);
->  void __symbol_put(const char *symbol);
->  #define symbol_put(x) __symbol_put(VMLINUX_SYMBOL_STR(x))
->  void symbol_put_addr(void *addr);
-> diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-> index f191bddf64b8..7b40c5f07dce 100644
-> --- a/kernel/debug/kdb/kdb_main.c
-> +++ b/kernel/debug/kdb/kdb_main.c
-> @@ -2023,7 +2023,7 @@ static int kdb_lsmod(int argc, const char **argv)
->  		kdb_printf("%-20s%8u  0x%p ", mod->name,
->  			   mod->core_size, (void *)mod);
->  #ifdef CONFIG_MODULE_UNLOAD
-> -		kdb_printf("%4ld ", module_refcount(mod));
-> +		kdb_printf("%4d ", module_refcount(mod));
->  #endif
->  		if (mod->state == MODULE_STATE_GOING)
->  			kdb_printf(" (Unloading)");
-> diff --git a/kernel/module.c b/kernel/module.c
-> index 3965511ae133..2387c98347c1 100644
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -772,9 +772,9 @@ static int try_stop_module(struct module *mod, int flags, int *forced)
->  	return 0;
->  }
->  
-> -unsigned long module_refcount(struct module *mod)
-> +int module_refcount(struct module *mod)
->  {
-> -	return (unsigned long)atomic_read(&mod->refcnt) - MODULE_REF_BASE;
-> +	return atomic_read(&mod->refcnt) - MODULE_REF_BASE;
->  }
->  EXPORT_SYMBOL(module_refcount);
->  
-> @@ -856,7 +856,7 @@ static inline void print_unload_info(struct seq_file *m, struct module *mod)
->  	struct module_use *use;
->  	int printed_something = 0;
->  
-> -	seq_printf(m, " %lu ", module_refcount(mod));
-> +	seq_printf(m, " %i ", module_refcount(mod));
->  
->  	/*
->  	 * Always include a trailing , so userspace can differentiate
-> @@ -908,7 +908,7 @@ EXPORT_SYMBOL_GPL(symbol_put_addr);
->  static ssize_t show_refcnt(struct module_attribute *mattr,
->  			   struct module_kobject *mk, char *buffer)
->  {
-> -	return sprintf(buffer, "%lu\n", module_refcount(mk->mod));
-> +	return sprintf(buffer, "%i\n", module_refcount(mk->mod));
->  }
-
-Actually, I don't think this is enough.  Some Australian once came up
-with a guide to APIs, and lectured on it at length, one of which was
-that the name should be the obvious use and it is unexpected that a
-refcount would go negative.  I think we could raise it from -6 on the
-API scale to +3 if we add some documentation like below.
-
-James
-
----
-
-diff --git a/include/linux/module.h b/include/linux/module.h
-index ebfb0e1..b653d7c 100644
---- a/include/linux/module.h
-+++ b/include/linux/module.h
-@@ -444,7 +444,7 @@ extern void __module_put_and_exit(struct module *mod, long code)
- #define module_put_and_exit(code) __module_put_and_exit(THIS_MODULE, code)
- 
- #ifdef CONFIG_MODULE_UNLOAD
--unsigned long module_refcount(struct module *mod);
-+int module_refcount(struct module *mod);
- void __symbol_put(const char *symbol);
- #define symbol_put(x) __symbol_put(VMLINUX_SYMBOL_STR(x))
- void symbol_put_addr(void *addr);
-diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-index f191bdd..7b40c5f 100644
---- a/kernel/debug/kdb/kdb_main.c
-+++ b/kernel/debug/kdb/kdb_main.c
-@@ -2023,7 +2023,7 @@ static int kdb_lsmod(int argc, const char **argv)
- 		kdb_printf("%-20s%8u  0x%p ", mod->name,
- 			   mod->core_size, (void *)mod);
- #ifdef CONFIG_MODULE_UNLOAD
--		kdb_printf("%4ld ", module_refcount(mod));
-+		kdb_printf("%4d ", module_refcount(mod));
- #endif
- 		if (mod->state == MODULE_STATE_GOING)
- 			kdb_printf(" (Unloading)");
-diff --git a/kernel/module.c b/kernel/module.c
-index 3965511..63fc779 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -772,9 +772,18 @@ static int try_stop_module(struct module *mod, int flags, int *forced)
- 	return 0;
- }
- 
--unsigned long module_refcount(struct module *mod)
-+/**
-+ * module_refcount - return the refcount or -1 if unloading
-+ *
-+ * @mod:	the module we're checking
-+ *
-+ * Returns:
-+ *	-1 if the module is in the process of unloading
-+ *	otherwise the number of references in the kernel to the module
-+ */
-+int module_refcount(struct module *mod)
- {
--	return (unsigned long)atomic_read(&mod->refcnt) - MODULE_REF_BASE;
-+	return atomic_read(&mod->refcnt) - MODULE_REF_BASE;
- }
- EXPORT_SYMBOL(module_refcount);
- 
-@@ -856,7 +865,7 @@ static inline void print_unload_info(struct seq_file *m, struct module *mod)
- 	struct module_use *use;
- 	int printed_something = 0;
- 
--	seq_printf(m, " %lu ", module_refcount(mod));
-+	seq_printf(m, " %i ", module_refcount(mod));
- 
- 	/*
- 	 * Always include a trailing , so userspace can differentiate
-@@ -908,7 +917,7 @@ EXPORT_SYMBOL_GPL(symbol_put_addr);
- static ssize_t show_refcnt(struct module_attribute *mattr,
- 			   struct module_kobject *mk, char *buffer)
- {
--	return sprintf(buffer, "%lu\n", module_refcount(mk->mod));
-+	return sprintf(buffer, "%i\n", module_refcount(mk->mod));
- }
- 
- static struct module_attribute modinfo_refcnt =
 
 
+Goede dag,
+
+
+
+  Dit is Diamond Zwitserse LENINGEN COMPANY leningen aan te bieden.
+
+
+
+    Diamond Zwitserse leningen bedrijf biedt flexibele en betaalbare leningen voor enig doel om u te helpen uw doelen te bereiken. we lening tegen lage rente van 1,5%. Hier zijn enkele belangrijke kenmerken van de persoonlijke lening aangeboden door Diamond Zwitserse LENINGEN COMPANY. Hier zijn de Loan Factoren we werken met het toonaangevende Britse makelaars die toegang hebben tot de top kredietverstrekkers hebben en zijn in staat om de beste financiële oplossing tegen een betaalbare price.Please vinden als je geïnteresseerd bent vriendelijk contact met ons op via deze e-mail: diamondswissloans@hotmail.com
+
+
+
+
+
+Na de reactie, zal u een aanvraag voor een lening fill ontvangen. Geen sociale zekerheid en geen credit check, 100% Gegarandeerd.
+
+
+
+Het zal ons een eer zijn als u ons toelaten om u van dienst zijn.
+
+
+
+
+
+INFORMATIE NODIG
+
+
+
+Uw namen:
+
+Adres: ...........
+
+Telefoon: ...........
+
+Geleende bedrag nodig is: ........
+
+Duur: ...............
+
+Beroep: ...........
+
+Maandelijks Inkomen Niveau: ........
+
+Geslacht: ...............
+
+Geboortedatum: ........
+
+Staat: ..................
+
+Land: ..........
+
+Doel: .........
+
+
+
+Voldoen aan uw financiële behoeften is onze trots.
+
+
+
+Dr. Diamond Peters
