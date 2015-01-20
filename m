@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519AbbATJ7k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 04:59:40 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:43948 "EHLO mx1.redhat.com"
+	id S1753539AbbATJ7y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 04:59:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52611 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752504AbbATJ7f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 04:59:35 -0500
+	id S1752143AbbATJ7u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 04:59:50 -0500
 From: Fam Zheng <famz@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -31,113 +31,61 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         Josh Triplett <josh@joshtriplett.org>,
         "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
         Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH RFC 2/6] epoll: Specify clockid explicitly
-Date: Tue, 20 Jan 2015 17:57:54 +0800
-Message-Id: <1421747878-30744-3-git-send-email-famz@redhat.com>
+Subject: [PATCH RFC 3/6] epoll: Add definition for epoll_mod_wait structures
+Date: Tue, 20 Jan 2015 17:57:55 +0800
+Message-Id: <1421747878-30744-4-git-send-email-famz@redhat.com>
 In-Reply-To: <1421747878-30744-1-git-send-email-famz@redhat.com>
 References: <1421747878-30744-1-git-send-email-famz@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Later we will add clockid in the interface, so let's start using explicit
-clockid internally. Now we specify CLOCK_MONOTONIC, which is the same as before.
+Two structs involved in the coming syscall is defined. Flags in epoll_mod_cmd
+are reserved, which makes better word alignment and may allow future extension.
 
 Signed-off-by: Fam Zheng <famz@redhat.com>
 ---
- fs/eventpoll.c | 27 +++++++++++++++------------
- 1 file changed, 15 insertions(+), 12 deletions(-)
+ include/uapi/linux/eventpoll.h | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
-diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-index 4cf359d..6da143f 100644
---- a/fs/eventpoll.c
-+++ b/fs/eventpoll.c
-@@ -1570,7 +1570,7 @@ static int ep_send_events(struct eventpoll *ep,
-  *          error code, in case of error.
-  */
- static int ep_poll(struct eventpoll *ep, struct epoll_event __user *events,
--		   int maxevents, const ktime_t timeout)
-+		   int maxevents, int clockid, const ktime_t timeout)
+diff --git a/include/uapi/linux/eventpoll.h b/include/uapi/linux/eventpoll.h
+index bc81fb2..e32a804 100644
+--- a/include/uapi/linux/eventpoll.h
++++ b/include/uapi/linux/eventpoll.h
+@@ -18,6 +18,8 @@
+ #include <linux/fcntl.h>
+ #include <linux/types.h>
+ 
++#include <linux/signal.h>
++
+ /* Flags for epoll_create1.  */
+ #define EPOLL_CLOEXEC O_CLOEXEC
+ 
+@@ -61,6 +63,24 @@ struct epoll_event {
+ 	__u64 data;
+ } EPOLL_PACKED;
+ 
++struct epoll_mod_cmd {
++	int flags;
++	int op;
++	int fd;
++	__u32 events;
++	__u64 data;
++	int error;
++} EPOLL_PACKED;
++
++struct epoll_wait_spec {
++	int maxevents;
++	struct epoll_event *events;
++	int clockid;
++	struct timespec timeout;
++	sigset_t *sigmask;
++	size_t sigsetsize;
++} EPOLL_PACKED;
++
+ #ifdef CONFIG_PM_SLEEP
+ static inline void ep_take_care_of_epollwakeup(struct epoll_event *epev)
  {
- 	int res = 0, eavail, timed_out = 0;
- 	unsigned long flags;
-@@ -1624,7 +1624,8 @@ fetch_events:
- 			}
- 
- 			spin_unlock_irqrestore(&ep->lock, flags);
--			if (!schedule_hrtimeout_range(to, slack, HRTIMER_MODE_ABS))
-+			if (!schedule_hrtimeout_range_clock(to, slack,
-+						HRTIMER_MODE_ABS, clockid))
- 				timed_out = 1;
- 
- 			spin_lock_irqsave(&ep->lock, flags);
-@@ -1945,7 +1946,8 @@ error_return:
- }
- 
- static inline int epoll_wait_do(int epfd, struct epoll_event __user *events,
--				int maxevents, const ktime_t timeout)
-+				int maxevents, int clockid, 
-+				const ktime_t timeout)
- {
- 	int error;
- 	struct fd f;
-@@ -1979,7 +1981,7 @@ static inline int epoll_wait_do(int epfd, struct epoll_event __user *events,
- 	ep = f.file->private_data;
- 
- 	/* Time to fish for events ... */
--	error = ep_poll(ep, events, maxevents, timeout);
-+	error = ep_poll(ep, events, maxevents, clockid, timeout);
- 
- error_fput:
- 	fdput(f);
-@@ -1994,12 +1996,13 @@ SYSCALL_DEFINE4(epoll_wait, int, epfd, struct epoll_event __user *, events,
- 		int, maxevents, int, timeout)
- {
- 	ktime_t kt = ms_to_ktime(timeout);
--	return epoll_wait_do(epfd, events, maxevents, kt);
-+	return epoll_wait_do(epfd, events, maxevents, CLOCK_MONOTONIC, kt);
- }
- 
- static inline int epoll_pwait_do(int epfd, struct epoll_event __user *events,
--				 int maxevents, ktime_t timeout,
--				 sigset_t *sigmask, size_t sigsetsize)
-+				 int maxevents,
-+				 int clockid, ktime_t timeout,
-+				 sigset_t *sigmask)
- {
- 	int error;
- 	sigset_t sigsaved;
-@@ -2013,7 +2016,7 @@ static inline int epoll_pwait_do(int epfd, struct epoll_event __user *events,
- 		set_current_blocked(sigmask);
- 	}
- 
--	error = epoll_wait_do(epfd, events, maxevents, timeout);
-+	error = epoll_wait_do(epfd, events, maxevents, clockid, timeout);
- 
- 	/*
- 	 * If we changed the signal mask, we need to restore the original one.
-@@ -2050,8 +2053,8 @@ SYSCALL_DEFINE6(epoll_pwait, int, epfd, struct epoll_event __user *, events,
- 		if (copy_from_user(&ksigmask, sigmask, sizeof(ksigmask)))
- 			return -EFAULT;
- 	}
--	return epoll_pwait_do(epfd, events, maxevents, kt,
--			      sigmask ? &ksigmask : NULL, sigsetsize);
-+	return epoll_pwait_do(epfd, events, maxevents, CLOCK_MONOTONIC, kt,
-+			      sigmask ? &ksigmask : NULL);
- }
- 
- #ifdef CONFIG_COMPAT
-@@ -2073,8 +2076,8 @@ COMPAT_SYSCALL_DEFINE6(epoll_pwait, int, epfd,
- 		sigset_from_compat(&ksigmask, &csigmask);
- 	}
- 
--	return epoll_pwait_do(epfd, events, maxevents, kt,
--			      sigmask ? &ksigmask : NULL, sigsetsize);
-+	return epoll_pwait_do(epfd, events, maxevents, CLOCK_MONOTONIC, kt,
-+			      sigmask ? &ksigmask : NULL);
- }
- #endif
- 
 -- 
 1.9.3
 
