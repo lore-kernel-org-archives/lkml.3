@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753693AbbATTnx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 14:43:53 -0500
-Received: from smtp6-g21.free.fr ([212.27.42.6]:22836 "EHLO smtp6-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753594AbbATTnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 14:43:51 -0500
-X-Mailbox-Line: From ca8037eca1cbbec18d3917e9268735a88d6ff935 Mon Sep 17 00:00:00 2001
-Message-Id: <ca8037eca1cbbec18d3917e9268735a88d6ff935.1421782533.git.moinejf@free.fr>
-In-Reply-To: <cover.1421782532.git.moinejf@free.fr>
-References: <cover.1421782532.git.moinejf@free.fr>
-From: Jean-Francois Moine <moinejf@free.fr>
-Date: Tue, 20 Jan 2015 12:16:46 +0100
-Subject: [PATCH v10 5/9] drm/i2c: tda998x: Change drvdata for audio extension
-To: Mark Brown <broonie@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Dave Airlie <airlied@gmail.com>, Andrew Jackson <Andrew.Jackson@arm.com>,
-        Jyri Sarha <jsarha@ti.com>, alsa-devel@alsa-project.org,
-        devicetree@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
+	id S1754469AbbATLRa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 06:17:30 -0500
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:59124 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754192AbbATLR0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 06:17:26 -0500
+Date: Tue, 20 Jan 2015 11:17:19 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Jacek Anaszewski <j.anaszewski@samsung.com>
+Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        kyungmin.park@samsung.com, b.zolnierkie@samsung.com, pavel@ucw.cz,
+        cooloney@gmail.com, rpurdie@rpsys.net, sakari.ailus@iki.fi,
+        s.nawrocki@samsung.com, Chanwoo Choi <cw00.choi@samsung.com>
+Subject: Re: [PATCH/RFC v10 07/19] mfd: max77693: Adjust FLASH_EN_SHIFT and
+ TORCH_EN_SHIFT macros
+Message-ID: <20150120111719.GF13701@x1>
+References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
+ <1420816989-1808-8-git-send-email-j.anaszewski@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1420816989-1808-8-git-send-email-j.anaszewski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The device drvdata is used for component bind, but points to the
-encoder/connector structure which is hidden from the slave encoder.
-For audio extension, the slave encoder private data must be accessible,
-so, this patch changes drvdata to the slave encoder private data and
-sets it in case of slave encoder use.
+On Fri, 09 Jan 2015, Jacek Anaszewski wrote:
 
-Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
----
- drivers/gpu/drm/i2c/tda998x_drv.c | 8 ++++++--
- 1 file changed, 6 insertions(+), 2 deletions(-)
+> Modify FLASH_EN_SHIFT and TORCH_EN_SHIFT macros to work properly
+> when passed enum max77693_fled values (0 for FLED1 and 1 for FLED2)
+> from leds-max77693 driver.
 
-diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
-index cf245ce..b35f35f 100644
---- a/drivers/gpu/drm/i2c/tda998x_drv.c
-+++ b/drivers/gpu/drm/i2c/tda998x_drv.c
-@@ -1465,6 +1465,8 @@ static int tda998x_encoder_init(struct i2c_client *client,
- 	encoder_slave->slave_priv = priv;
- 	encoder_slave->slave_funcs = &tda998x_encoder_slave_funcs;
- 
-+	dev_set_drvdata(&client->dev, priv);
-+
- 	return 0;
- }
- 
-@@ -1591,7 +1593,7 @@ static int tda998x_bind(struct device *dev, struct device *master, void *data)
- 	if (!priv)
- 		return -ENOMEM;
- 
--	dev_set_drvdata(dev, priv);
-+	dev_set_drvdata(dev, &priv->base);
- 
- 	priv->base.encoder = &priv->encoder;
- 	priv->connector.interlace_allowed = 1;
-@@ -1641,7 +1643,9 @@ err_encoder:
- static void tda998x_unbind(struct device *dev, struct device *master,
- 			   void *data)
- {
--	struct tda998x_priv2 *priv = dev_get_drvdata(dev);
-+	struct tda998x_priv *priv_s = dev_get_drvdata(dev);
-+	struct tda998x_priv2 *priv =
-+			container_of(priv_s, struct tda998x_priv2, base);
- 
- 	drm_connector_cleanup(&priv->connector);
- 	drm_encoder_cleanup(&priv->encoder);
+Off-by-one ay?  Wasn't the original code tested?
+
+> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Chanwoo Choi <cw00.choi@samsung.com>
+> Cc: Lee Jones <lee.jones@linaro.org>
+> ---
+>  include/linux/mfd/max77693-private.h |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/mfd/max77693-private.h b/include/linux/mfd/max77693-private.h
+> index 08dae01..01799a9 100644
+> --- a/include/linux/mfd/max77693-private.h
+> +++ b/include/linux/mfd/max77693-private.h
+> @@ -113,8 +113,8 @@ enum max77693_pmic_reg {
+>  #define FLASH_EN_FLASH		0x1
+>  #define FLASH_EN_TORCH		0x2
+>  #define FLASH_EN_ON		0x3
+> -#define FLASH_EN_SHIFT(x)	(6 - ((x) - 1) * 2)
+> -#define TORCH_EN_SHIFT(x)	(2 - ((x) - 1) * 2)
+> +#define FLASH_EN_SHIFT(x)	(6 - (x) * 2)
+> +#define TORCH_EN_SHIFT(x)	(2 - (x) * 2)
+>  
+>  /* MAX77693 MAX_FLASH1 register */
+>  #define MAX_FLASH1_MAX_FL_EN	0x80
+
 -- 
-2.1.4
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
