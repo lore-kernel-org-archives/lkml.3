@@ -1,75 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754328AbbATLoN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 06:44:13 -0500
-Received: from smtp-out4.electric.net ([192.162.216.181]:54944 "EHLO
-	smtp-out4.electric.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753748AbbATLoL (ORCPT
+	id S1752981AbbATLre (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 06:47:34 -0500
+Received: from mail-ie0-f173.google.com ([209.85.223.173]:65409 "EHLO
+	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752467AbbATLrc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 06:44:11 -0500
-From: David Laight <David.Laight@ACULAB.COM>
-To: "'leroy christophe'" <christophe.leroy@c-s.fr>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "Michael Ellerman" <mpe@ellerman.id.au>,
-        "scottwood@freescale.com" <scottwood@freescale.com>
-CC: "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH v2 07/11] powerpc/8xx: macro for handling CPU15 errata
-Thread-Topic: [PATCH v2 07/11] powerpc/8xx: macro for handling CPU15 errata
-Thread-Index: AQHQNJjRMWEAMW5jYkWhruJEX7vwspzI2I/ggAAH1oCAAAItgA==
-Date: Tue, 20 Jan 2015 11:43:16 +0000
-Message-ID: <063D6719AE5E284EB5DD2968C1650D6D1CACF0E4@AcuExch.aculab.com>
-References: <20150120095735.A55671A5E86@localhost.localdomain>
- <063D6719AE5E284EB5DD2968C1650D6D1CACEFD9@AcuExch.aculab.com>
- <54BE3CD7.4040208@c-s.fr>
-In-Reply-To: <54BE3CD7.4040208@c-s.fr>
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.202.99.200]
-Content-Type: text/plain; charset="utf-8"
+	Tue, 20 Jan 2015 06:47:32 -0500
+Date: Tue, 20 Jan 2015 11:47:25 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Todd E Brandt <todd.e.brandt@linux.intel.com>
+Cc: linux-pm@vger.kernel.org, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jacob.jun.pan@linux.intel.com,
+        sameo@linux.intel.com, sre@kernel.org, dbaryshkov@gmail.com,
+        dwmw2@infradead.org, david.woodhouse@intel.com,
+        todd.e.brandt@intel.com
+Subject: Re: [PATCH 1/3] mfd/axp20x: change battery cell name to fuel gauge
+Message-ID: <20150120114725.GI13701@x1>
+References: <20150107212450.GB3440@linux.intel.com>
 MIME-Version: 1.0
-X-Outbound-IP: 213.249.233.130
-X-Env-From: David.Laight@ACULAB.COM
-X-PolicySMART: 3396946, 3397078
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20150107212450.GB3440@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0KBiIhv011372
 
-From: leroy 
-> Le 20/01/2015 12:09, David Laight a Ã©crit :
-> >  From Christophe Leroy
-> >> Having a macro will help keep clear code.
-> > It might remove an #if but it doesn't really help.
-> > All it means is that anyone reading the code has to hunt for
-> > the definition before proceeding.
-> >
-> > Some comment about what (and why) the extra code is needed
-> > might help.
-> The main reason is because of patch 09/11 where we have to duplicate
-> this code. I prefer to just duplicate one line rather than duplicate the
-> whole code (especially because in v1 of the PATCHset, it was duplicated
-> twice):
+On Wed, 07 Jan 2015, Todd E Brandt wrote:
+
+> mfd/axp20x: change battery cell name to fuel gauge
 > 
-> -    DO_8xx_CPU15(r11, r10)
-> [...]
-> #ifdef CONFIG_MODULES
-> [...]
-> +    DO_8xx_CPU15(r10, r11)
-> [...]
-> +#else
-> +    mfspr    r10, SPRN_SRR0    /* Get effective address of fault */
-> +    DO_8xx_CPU15(r11, r10)
+> Name changes to the battery cell structure to a
+> more generic cell type: fuel gauge.
 > 
-> Is this approach wrong ?
+> Signed-off-by: Todd Brandt <todd.e.brandt@intel.com>
+> ----
+>  drivers/mfd/axp20x.c | 10 +++++-----
+>  1 file changed, 5 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/mfd/axp20x.c b/drivers/mfd/axp20x.c
+> index b1b580a..e75717e 100644
+> --- a/drivers/mfd/axp20x.c
+> +++ b/drivers/mfd/axp20x.c
+> @@ -87,7 +87,7 @@ static struct resource axp20x_pek_resources[] = {
+>  	},
+>  };
+>  
+> -static struct resource axp288_battery_resources[] = {
+> +static struct resource axp288_fuel_gauge_resources[] = {
+>  	{
+>  		.start = AXP288_IRQ_QWBTU,
+>  		.end   = AXP288_IRQ_QWBTU,
+> @@ -236,7 +236,7 @@ static const struct i2c_device_id axp20x_i2c_id[] = {
+>  };
+>  MODULE_DEVICE_TABLE(i2c, axp20x_i2c_id);
+>  
+> -static const struct acpi_device_id axp20x_acpi_match[] = {
+> +static struct acpi_device_id axp20x_acpi_match[] = {
 
-I'd call it something that infers 'invalidate adjacent pages'
-and then mention that this is needed due to a cpu errata.
+Why have you dropped the cost qualifier here?
 
-	David
+[...]
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org â”‚ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
