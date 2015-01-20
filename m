@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753045AbbATPYF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 10:24:05 -0500
-Received: from mail-la0-f49.google.com ([209.85.215.49]:56879 "EHLO
-	mail-la0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751996AbbATPYC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 10:24:02 -0500
+	id S1753144AbbATPZu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 10:25:50 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:57992 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752110AbbATPZs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 10:25:48 -0500
+Date: Tue, 20 Jan 2015 10:25:31 -0500
+From: Don Zickus <dzickus@redhat.com>
+To: Zhang Zhen <zhenzhang.zhang@huawei.com>
+Cc: paulmck@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        morgan.wang@huawei.com, josh@freedesktop.org, dipankar@in.ibm.com
+Subject: Re: RCU CPU stall console spews  leads to soft lockup disabled is
+ reasonable ?
+Message-ID: <20150120152531.GR116159@redhat.com>
+References: <54BCBB33.6060608@huawei.com>
+ <20150119084200.GE9719@linux.vnet.ibm.com>
+ <54BCC89D.9040702@huawei.com>
+ <20150119140612.GI116159@redhat.com>
+ <54BDC6DF.6000602@huawei.com>
 MIME-Version: 1.0
-In-Reply-To: <CAL_JsqLVJjq3Ov=J-5LtXiTQPLvR5Y=+tB1i16k_rN3j5dODFQ@mail.gmail.com>
-References: <1421764441-11928-1-git-send-email-pantelis.antoniou@konsulko.com>
-	<CAL_JsqLVJjq3Ov=J-5LtXiTQPLvR5Y=+tB1i16k_rN3j5dODFQ@mail.gmail.com>
-Date: Tue, 20 Jan 2015 16:24:00 +0100
-X-Google-Sender-Auth: fT2tQtjqoQi8tPHFtqP8wG-1OzQ
-Message-ID: <CAMuHMdWnjawtgkKGuL8b4A17EhDS6B0L-1_uhSnvEXXk5dNjwQ@mail.gmail.com>
-Subject: Re: [PATCH] of: Custom printk format specifier for device node
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Rob Herring <robherring2@gmail.com>
-Cc: Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Pantelis Antoniou <panto@antoniou-consulting.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54BDC6DF.6000602@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 3:47 PM, Rob Herring <robherring2@gmail.com> wrote:
->> +       Examples:
->> +
->> +       %pO     /foo/bar@0              - Node full name
->> +       %pO0    /foo/bar@0              - Same as above
->> +       %pO1    /foo/bar@0[10]          - Node full name + phandle
->> +       %pO2    /foo/bar@0[10:DdPB]     - Node full name + phandle + node flags
->> +                                        D - dynamic
->> +                                        d - detached
->> +                                        P - Populated
->> +                                        B - Populated bus
->
-> We should think about what else we want to print for a node. Perhaps
-> 'On' for name, 'Oc' for compatible, etc.
+On Tue, Jan 20, 2015 at 11:09:19AM +0800, Zhang Zhen wrote:
+> 
+> > Of course back then, touch_nmi_watchdog touched all cpus.  So a problem
+> > like this was masked.  I believe this upstream commit 62572e29bc53, solved
+> > the problem.
+> 
+> Thanks for your suggestion.
+> 
+> Commit 62572e29bc53 changed the semantics of touch_nmi_watchdog and make it
+> only touch local cpu not every one.
+> But watchdog_nmi_touch = true only guarantee no hard lockup check on this cpu.
+> 
+> Commit 62572e29bc53 didn't changed the semantics of touch_softlockup_watchdog.
 
-I was just going to say "The least verbose variant is name, not full_name".
+Ah, yes.  I reviewed the commit to quickly yesterday.  I thought
+touch_softlockup_watchdog was called on every cpu and that commit changed
+it to the local cpu.  But that was incorrect.
 
-Gr{oetje,eeting}s,
+> > 
+> > You can apply that commit and see if you if you get both RCU stall
+> > messages _and_ softlockup messages.  I believe that is what you were
+> > expecting, correct?
+> > 
+> Correct, i expect i can get  both RCU stall messages _and_ softlockup messages.
+> I applied that commit, and i only got RCU stall messages.
 
-                        Geert
+Hmm, I believe the act of printing to the console calls touch_nmi_watchdog
+which calls touch_softlockup_watchdog.  I think that is the problem there.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+This may not cause other problems but what happens if you comment out the
+'touch_softlockup_watchdog' from the touch_nmi_watchdog function like
+below (based on latest upstream cb59670870)?
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+The idea is that console printing for that cpu won't reset the softlockup
+detector.  Again other bad things might happen and this patch may not be a
+good final solution, but it can help give me a clue about what is going
+on.
+
+Cheers,
+Don
+
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index 70bf118..833c015 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -209,7 +209,7 @@ void touch_nmi_watchdog(void)
+ 	 * going off.
+ 	 */
+ 	raw_cpu_write(watchdog_nmi_touch, true);
+-	touch_softlockup_watchdog();
++	//touch_softlockup_watchdog();
+ }
+ EXPORT_SYMBOL(touch_nmi_watchdog);
+ 
