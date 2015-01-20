@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752769AbbATOxS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 09:53:18 -0500
-Received: from mail-qa0-f46.google.com ([209.85.216.46]:45790 "EHLO
-	mail-qa0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752590AbbATOxR (ORCPT
-	<rfc822;Linux-Kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 09:53:17 -0500
-Message-ID: <54BE6BD9.4050403@hurleysoftware.com>
-Date: Tue, 20 Jan 2015 09:53:13 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
+	id S1752834AbbATOyI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 09:54:08 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:60365 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751801AbbATOyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 09:54:05 -0500
+Message-ID: <54BE6BFD.80603@redhat.com>
+Date: Tue, 20 Jan 2015 09:53:49 -0500
+From: Rik van Riel <riel@redhat.com>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Howard Chu <hyc@symas.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Linux Kernel Mailing List <Linux-Kernel@vger.kernel.org>,
-        linux-serial@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>
-Subject: Re: [PATCH] n_tty: Remove LINEMODE support
-References: <1421616632-4077-1-git-send-email-peter@hurleysoftware.com> <54BC3771.7030204@symas.com> <54BC5EC7.1090202@hurleysoftware.com> <54BCFC94.1040605@symas.com> <54BD1B53.9030901@hurleysoftware.com> <54BD328F.9090208@symas.com> <54BD567C.8070200@hurleysoftware.com> <54BD69A4.4090705@symas.com>
-In-Reply-To: <54BD69A4.4090705@symas.com>
-Content-Type: text/plain; charset=utf-8
+To: Oleg Nesterov <oleg@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Suresh Siddha <sbsiddha@gmail.com>
+CC: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        matt.fleming@intel.com, bp@suse.de, pbonzini@redhat.com,
+        tglx@linutronix.de, luto@amacapital.net
+Subject: Re: [PATCH 3/3] x86, fpu: don't abuse FPU in kernel threads if use_eager_fpu()
+References: <1421012793-30106-1-git-send-email-riel@redhat.com> <20150115191918.GA27332@redhat.com> <20150119185109.GA16427@redhat.com> <20150119185212.GD16427@redhat.com>
+In-Reply-To: <20150119185212.GD16427@redhat.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/2015 03:31 PM, Howard Chu wrote:
-> Peter Hurley wrote:
->> Ok.
->> I might see if I can get telnet + a revised kernel interface to work together; I'll
->> let you know if this works out.
-> 
-> The patch here https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=585527#20 still applies cleanly to current Ubuntu netkit-telnet source and works.
+On 01/19/2015 01:52 PM, Oleg Nesterov wrote:
+> Afaics there is no reason why kernel threads should have FPU context
+> even if use_eager_fpu() == T. Now that interrupted_kernel_fpu_idle()
+> does not check __thread_has_fpu() we can remove the init_fpu() code
+> from eager_fpu_init() and change flush_thread() called by do_execve()
+> to initialize FPU.
+>
+> Note: of course, the change in flush_thread() is horrible and must be
+> cleanuped. We need the new helper, and flush_thread() should return the
+> error if init_fpu() fails.
+>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-Aw snap. I just quickly glanced at the patch and source, and assumed
-that the 4 year old patch had been applied.
+Nice. This should help prevent us from loading and saving
+the totally unused FPU state for things like idle threads
+and other kernel threads.
 
-> You'll have to use a dumb shell to see any effect.
-
-I'm testing it now.
-
-Regards,
-Peter Hurley
-
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
