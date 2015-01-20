@@ -1,87 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754666AbbATKyp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 05:54:45 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:44859 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753452AbbATKyk (ORCPT
+	id S1754672AbbATKzV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 05:55:21 -0500
+Received: from mail-la0-f43.google.com ([209.85.215.43]:55279 "EHLO
+	mail-la0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753498AbbATKzS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 05:54:40 -0500
-Date: Tue, 20 Jan 2015 11:54:33 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>,
-        Eddie Huang <eddie.huang@mediatek.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Liam Girdwood <lgirdwood@gmail.com>
-Subject: Re: [PATCH 8/8] regulator: MT6397: Add support for MT6397 regulator
-Message-ID: <20150120105433.GF18908@pengutronix.de>
-References: <1421747231-554-1-git-send-email-s.hauer@pengutronix.de>
- <1421747231-554-9-git-send-email-s.hauer@pengutronix.de>
- <1421748424.9655.107.camel@x220>
+	Tue, 20 Jan 2015 05:55:18 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421748424.9655.107.camel@x220>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 11:50:28 up 96 days, 22:04, 120 users,  load average: 0.00, 0.04,
- 0.11
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <8761c191k8.fsf@dell.be.48ers.dk>
+References: <1421581173-28416-1-git-send-email-ricardo.ribalda@gmail.com>
+ <1421581173-28416-8-git-send-email-ricardo.ribalda@gmail.com>
+ <87k30i9ykv.fsf@dell.be.48ers.dk> <CAPybu_180vMPMx4yhFAoL9H2b34+tWtqQCTHjxqkTRt9e_VA5g@mail.gmail.com>
+ <8761c191k8.fsf@dell.be.48ers.dk>
+From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+Date: Tue, 20 Jan 2015 11:54:55 +0100
+Message-ID: <CAPybu_0qdumx91RFERp5Ft2HXs6rYv5H0WTFxiiyT4oiGjmzhA@mail.gmail.com>
+Subject: Re: [PATCH 7/8] gpio/mpc8xxx: Convert to platform device interface.
+To: Peter Korsgaard <peter@korsgaard.com>
+Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Alexandre Courbot <gnurou@gmail.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Rob Herring <robh+dt@kernel.org>, Peter Korsgaard <jacmet@sunsite.dk>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 11:07:04AM +0100, Paul Bolle wrote:
-> On Tue, 2015-01-20 at 10:47 +0100, Sascha Hauer wrote:
-> > From: Flora Fu <flora.fu@mediatek.com>
-> > 
-> > This adds support for the regulators on the MediaTek MT6397
-> > Multifunction device.
-> > 
-> > Signed-off-by: Flora Fu, MediaTek
-> > Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-> > Cc: Liam Girdwood <lgirdwood@gmail.com>
-> > Cc: Mark Brown <broonie@kernel.org>
-> > ---
-> >  Documentation/devicetree/bindings/mfd/mt6397.txt   |  41 ++-
-> 
-> This looks new for linux-next ...
-> 
-> >  .../bindings/regulator/mt6397-regulator.txt        | 217 ++++++++++++++
-> 
-> but this is already in linux-next. See linux-next commit 269675757901
-> ("regulator: Add document for MT6397 regulator"). And ...
-> 
-> >  drivers/regulator/Kconfig                          |   9 +
-> >  drivers/regulator/Makefile                         |   1 +
-> >  drivers/regulator/mt6397-regulator.c               | 332 +++++++++++++++++++++
-> >  include/linux/regulator/mt6397-regulator.h         |  49 +++
-> 
-> these are too. See linux-next commit 0425e2420c0a ("egulator: mt6397:
-> Add support for MT6397 regulator"). Unless there are difference that
-> can't be spotted by looking at the diffstats of those commist, that is.
+No worries :)
 
-It seems Mark already merged the regulator part to his tree. Ok, in this
-case you can ignore the regulator patch in this series. I think I haven't
-made changes to the regulator part in this series.
-The other patches are still needed though.
+On Tue, Jan 20, 2015 at 11:41 AM, Peter Korsgaard <peter@korsgaard.com> wrote:
+>>>>>> "Ricardo" == Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com> writes:
+>
+>  > Hello Peter
+>  > I thought the logic behind the original driver was:
+>
+>  > 1) Create gpiochip so it can be used by other modules/userland
+>  > 2) if there is also a irq available for it, create a irqdomain.
+>  > otherwise continue.
+>
+> Indeed - Sorry, I must have been confused yesterday.
+>
+> --
+> Bye, Peter Korsgaard
 
-Sascha
 
 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Ricardo Ribalda
