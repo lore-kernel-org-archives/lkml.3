@@ -1,51 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754039AbbATN3R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 08:29:17 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51273 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751543AbbATN3Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 08:29:16 -0500
-Date: Tue, 20 Jan 2015 14:28:26 +0100
-From: Cyril Hrubis <chrubis@suse.cz>
-To: Sedat Dilek <sedat.dilek@gmail.com>
-Cc: ltp-list@lists.sourceforge.net, LKML <linux-kernel@vger.kernel.org>,
-        libc-alpha@sourceware.org, lwn@lwn.net,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [LTP] The Linux Test Project has been released for JANUARY 2015
-Message-ID: <20150120132826.GA11824@rei>
-References: <20150119122310.GA27065@rei>
- <CA+icZUV53AWik-bS4a3DwgExD26nhCWxJWb-kGN_nAOWsikuLA@mail.gmail.com>
- <CA+icZUVSnYv3-rh6sBr8vgDsc80Qnr3yK_OZ6AezVHPrDcKXbg@mail.gmail.com>
- <20150120115625.GB11013@rei>
- <CA+icZUW3=TkMvEzs3DXZYt0BC5JjUtXiCsVSt3ikHwxPyzu3=A@mail.gmail.com>
+	id S1754137AbbATNax (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 08:30:53 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:52101 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751356AbbATNaw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 08:30:52 -0500
+Message-ID: <54BE5885.7030506@gmail.com>
+Date: Tue, 20 Jan 2015 21:30:45 +0800
+From: Zhang Yanfei <zhangyanfei.yes@gmail.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.3; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+icZUW3=TkMvEzs3DXZYt0BC5JjUtXiCsVSt3ikHwxPyzu3=A@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: Vlastimil Babka <vbabka@suse.cz>, linux-mm@kvack.org
+CC: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan@kernel.org>, Mel Gorman <mgorman@suse.de>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
+        Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH 3/5] mm, compaction: encapsulate resetting cached scanner
+ positions
+References: <1421661920-4114-1-git-send-email-vbabka@suse.cz> <1421661920-4114-4-git-send-email-vbabka@suse.cz>
+In-Reply-To: <1421661920-4114-4-git-send-email-vbabka@suse.cz>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
-> > Most of the failures comes from EBUSY while trying to umount
-> > filesystems. Do you have gvfsd-trash running? That thing is known to
-> > probe newly mounted filesystems preventing them from being unmounted for
-> > a certain amount of time.
-> >
+在 2015/1/19 18:05, Vlastimil Babka 写道:
+> Reseting the cached compaction scanner positions is now done implicitly in
+> __reset_isolation_suitable() and compact_finished(). Encapsulate the
+> functionality in a new function reset_cached_positions() and call it
+> explicitly where needed.
 > 
-> Yupp, that popped up.
-> How can I disable that gvfsd (here: Ubuntu/precise?
+> Signed-off-by: Vlastimil Babka <vbabka@suse.cz>
 
-Just kill the process, or run the testcases via ssh session.
+Reviewed-by: Zhang Yanfei <zhangyanfei@cn.fujitsu.com>
 
-> And can this issue be documented?
+Should the new function be inline?
 
-Hmm, maybe we can change the test cases to complain loudly if the
-process is found running.
+Thanks.
 
--- 
-Cyril Hrubis
-chrubis@suse.cz
+> Cc: Minchan Kim <minchan@kernel.org>
+> Cc: Mel Gorman <mgorman@suse.de>
+> Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>
+> Cc: Michal Nazarewicz <mina86@mina86.com>
+> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: Christoph Lameter <cl@linux.com>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: David Rientjes <rientjes@google.com>
+> ---
+>  mm/compaction.c | 22 ++++++++++++++--------
+>  1 file changed, 14 insertions(+), 8 deletions(-)
+> 
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 45799a4..5626220 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -123,6 +123,13 @@ static inline bool isolation_suitable(struct compact_control *cc,
+>  	return !get_pageblock_skip(page);
+>  }
+>  
+> +static void reset_cached_positions(struct zone *zone)
+> +{
+> +	zone->compact_cached_migrate_pfn[0] = zone->zone_start_pfn;
+> +	zone->compact_cached_migrate_pfn[1] = zone->zone_start_pfn;
+> +	zone->compact_cached_free_pfn = zone_end_pfn(zone);
+> +}
+> +
+>  /*
+>   * This function is called to clear all cached information on pageblocks that
+>   * should be skipped for page isolation when the migrate and free page scanner
+> @@ -134,9 +141,6 @@ static void __reset_isolation_suitable(struct zone *zone)
+>  	unsigned long end_pfn = zone_end_pfn(zone);
+>  	unsigned long pfn;
+>  
+> -	zone->compact_cached_migrate_pfn[0] = start_pfn;
+> -	zone->compact_cached_migrate_pfn[1] = start_pfn;
+> -	zone->compact_cached_free_pfn = end_pfn;
+>  	zone->compact_blockskip_flush = false;
+>  
+>  	/* Walk the zone and mark every pageblock as suitable for isolation */
+> @@ -166,8 +170,10 @@ void reset_isolation_suitable(pg_data_t *pgdat)
+>  			continue;
+>  
+>  		/* Only flush if a full compaction finished recently */
+> -		if (zone->compact_blockskip_flush)
+> +		if (zone->compact_blockskip_flush) {
+>  			__reset_isolation_suitable(zone);
+> +			reset_cached_positions(zone);
+> +		}
+>  	}
+>  }
+>  
+> @@ -1059,9 +1065,7 @@ static int compact_finished(struct zone *zone, struct compact_control *cc,
+>  	/* Compaction run completes if the migrate and free scanner meet */
+>  	if (compact_scanners_met(cc)) {
+>  		/* Let the next compaction start anew. */
+> -		zone->compact_cached_migrate_pfn[0] = zone->zone_start_pfn;
+> -		zone->compact_cached_migrate_pfn[1] = zone->zone_start_pfn;
+> -		zone->compact_cached_free_pfn = zone_end_pfn(zone);
+> +		reset_cached_positions(zone);
+>  
+>  		/*
+>  		 * Mark that the PG_migrate_skip information should be cleared
+> @@ -1187,8 +1191,10 @@ static int compact_zone(struct zone *zone, struct compact_control *cc)
+>  	 * is about to be retried after being deferred. kswapd does not do
+>  	 * this reset as it'll reset the cached information when going to sleep.
+>  	 */
+> -	if (compaction_restarting(zone, cc->order) && !current_is_kswapd())
+> +	if (compaction_restarting(zone, cc->order) && !current_is_kswapd()) {
+>  		__reset_isolation_suitable(zone);
+> +		reset_cached_positions(zone);
+> +	}
+>  
+>  	/*
+>  	 * Setup to move all movable pages to the end of the zone. Used cached
+> 
