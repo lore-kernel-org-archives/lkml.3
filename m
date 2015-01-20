@@ -1,128 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752276AbbATObz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 09:31:55 -0500
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:45479 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537AbbATObx (ORCPT
+	id S1752154AbbATOeN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 09:34:13 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:56204 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751410AbbATOeL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 09:31:53 -0500
-MIME-Version: 1.0
-In-Reply-To: <54BE5DC8.70706@gmail.com>
-References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>
-	<1421435777-25306-2-git-send-email-gregkh@linuxfoundation.org>
-	<54BE5DC8.70706@gmail.com>
-Date: Tue, 20 Jan 2015 15:31:52 +0100
-Message-ID: <CANq1E4SjfZOKqTsdkt519vKc1Poeah5McVJBb_spdHjbKv4=7g@mail.gmail.com>
-Subject: Re: [PATCH 01/13] kdbus: add documentation
-From: David Herrmann <dh.herrmann@gmail.com>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tom Gundersen <teg@jklm.no>, Jiri Kosina <jkosina@suse.cz>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Linux API <linux-api@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Daniel Mack <daniel@zonque.or>, Djalal Harouni <tixxdz@opendz.org>,
-        Daniel Mack <daniel@zonque.org>, Johannes Stezenbach <js@sig21.net>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 20 Jan 2015 09:34:11 -0500
+From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-doc@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+Subject: [PATCH] of: Custom printk format specifier for device node
+Date: Tue, 20 Jan 2015 16:34:01 +0200
+Message-Id: <1421764441-11928-1-git-send-email-pantelis.antoniou@konsulko.com>
+X-Mailer: git-send-email 1.7.12
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michael
+90% of the usage of device node's full_name is printing it out
+in a kernel message. Preparing for the eventual delayed allocation
+introduce a custom printk format specifier that is both more
+compact and more pleasant to the eye.
 
-On Tue, Jan 20, 2015 at 2:53 PM, Michael Kerrisk (man-pages)
-<mtk.manpages@gmail.com> wrote:
-> On 01/16/2015 08:16 PM, Greg Kroah-Hartman wrote:
->> From: Daniel Mack <daniel@zonque.org>
->>
->> kdbus is a system for low-latency, low-overhead, easy to use
->> interprocess communication (IPC).
->>
->> The interface to all functions in this driver is implemented via ioctls
->> on files exposed through a filesystem called 'kdbusfs'. The default
->> mount point of kdbusfs is /sys/fs/kdbus. This patch adds detailed
->> documentation about the kernel level API design.
->
-> I have some details feedback on the contents of this file, and some
-> bigger questions. I'll split them out into separate mails.
->
-> So here, the bigger, general questions to start with. I've arrived late
-> to this, so sorry if they've already been discussed, but the answers to
-> some of the questions should actually be in this file, I would have
-> expected.
->
-> This is an enormous and complex API. Why is the API ioctl() based,
-> rather than system-call-based? Have we learned nothing from the hydra
-> that the futex() multiplexing syscall became? (And kdbus is an order
-> of magnitude more complex, by the look of things.) At the very least,
-> a *good* justification of why the API is ioctl()-based should be part
-> of this documentation file.
->
-> An observation: The documentation below is substantial, but this API is
-> enormous, so the documentation still feels rather thin. What would
-> really help would be some example code in the doc.
->
-> And on the subject of code examples... Are there any (prototype)
-> working user-space applications that exercise the current kdbus
-> implementation? That is, can I install these kdbus patches, and
-> then find a simple example application somewhere that does
-> something to exercise kdbus?
+For instance typical use is:
+	pr_info("Frobbing node %s\n", node->full_name);
 
-If you run a 3.18 kernel, you can install kdbus.ko from our repository
-and boot a full Fedora system running Gnome3 with kdbus, given that
-you compiled systemd with --enable-kdbus (which is still
-experimental). No legacy dbus1 daemon is running. Instead, we have a
-bus-proxy that converts classic dbus1 to kdbus, so all
-bus-communication runs on kdbus.
+Which can be written now as:
+	pr_info("Frobbing node %pO\n", node);
 
-> And then: is there any substantial real-world application (e.g., a
-> full D-Bus port) that is being developed in tandem with this kernel
-> side patch? (I don't mean a user-space library; I mean a seriously
-> large application.) This is an incredibly complex API whose
-> failings are only going to become evident through real-world use.
-> Solidifying an API in the kernel and then discovering the API
-> problems later when writing real-world applications would make for
-> a sad story. A story something like that of inotify, an API which
-> is an order of magnitude less complex than kdbus. (I can't help but
-> feel that many of inotify problems that I discuss at
-> https://lwn.net/Articles/605128/ might have been fixed or mitigated
-> if a few real-world applications had been implemented before the
-> API  was set in stone.)
+A verbose format specifier (1-2) can be used to print extra
+information about the node like its phandle and node flags.
 
-I think running a whole Gnome3 stack counts as "substantial real-world
-application", right? Sure, it's a dbus1-to-kdbus layer, but all the
-systemd tools use kdbus natively and it works just fine. In fact, we
-all run kdbus on our main-systems every day.
+Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+---
+ Documentation/printk-formats.txt | 18 +++++++++++
+ lib/vsprintf.c                   | 67 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 85 insertions(+)
 
-We've spent over a year fixing races and API misdesigns, we've talked
-to other toolkit developers (glib, qt, ..) and made sure we're
-backwards compatible to dbus1. I don't think the API is perfect,
-everyone makes mistakes. But with bus-proxy and systemd we have two
-huge users of kdbus that put a lot of pressure on API design.
+diff --git a/Documentation/printk-formats.txt b/Documentation/printk-formats.txt
+index 5a615c1..6ad199f 100644
+--- a/Documentation/printk-formats.txt
++++ b/Documentation/printk-formats.txt
+@@ -231,6 +231,24 @@ struct va_format:
+ 	Do not use this feature without some mechanism to verify the
+ 	correctness of the format string and va_list arguments.
+ 
++Device tree nodes:
++
++	%pO{,1,2}
++
++	For printing device tree nodes. The (optional) number is the verbosity
++	level.
++
++	Examples:
++
++	%pO	/foo/bar@0		- Node full name
++	%pO0	/foo/bar@0		- Same as above
++	%pO1	/foo/bar@0[10]		- Node full name + phandle
++	%pO2	/foo/bar@0[10:DdPB]	- Node full name + phandle + node flags
++					 D - dynamic
++					 d - detached
++					 P - Populated
++					 B - Populated bus
++
+ u64 SHOULD be printed with %llu/%llx:
+ 
+ 	printk("%llu", u64_var);
+diff --git a/lib/vsprintf.c b/lib/vsprintf.c
+index ec337f6..72896cc 100644
+--- a/lib/vsprintf.c
++++ b/lib/vsprintf.c
+@@ -29,6 +29,7 @@
+ #include <linux/dcache.h>
+ #include <linux/cred.h>
+ #include <net/addrconf.h>
++#include <linux/of.h>
+ 
+ #include <asm/page.h>		/* for PAGE_SIZE */
+ #include <asm/sections.h>	/* for dereference_function_descriptor() */
+@@ -1240,6 +1241,68 @@ char *address_val(char *buf, char *end, const void *addr,
+ 	return number(buf, end, num, spec);
+ }
+ 
++#if IS_ENABLED(CONFIG_OF)
++static noinline_for_stack
++char *device_node_string(char *buf, char *end, struct device_node *dn,
++			 struct printf_spec spec, const char *fmt)
++{
++	char tbuf[sizeof("[xxxxxxxxxx:xxxx]") + 1];
++	const char *full_name;
++	int verbosity, len, flen, i;
++
++	if ((unsigned long)dn < PAGE_SIZE)
++		return string(buf, end, "(null)", spec);
++
++	full_name = of_node_full_name(dn);
++	verbosity = 0;
++	if (fmt[1] >= '0' && fmt[1] <= '2')
++		verbosity = fmt[1] - '0';
++
++	/* fast and simple case */
++	switch (verbosity) {
++	default:
++	case 0:
++		tbuf[0] = '\0';
++		break;
++	case 1:
++		snprintf(tbuf, sizeof(tbuf), "[%u]",
++			(u32)dn->phandle);
++		break;
++	case 2:
++		snprintf(tbuf, sizeof(tbuf), "[%u:%c%c%c%c]",
++			(u32)dn->phandle,
++			of_node_check_flag(dn, OF_DYNAMIC) ? 'D' : '-',
++			of_node_check_flag(dn, OF_DETACHED) ? 'd' : '-',
++			of_node_check_flag(dn, OF_POPULATED) ? 'P' : '-',
++			of_node_check_flag(dn, OF_POPULATED_BUS) ? 'B' : '-');
++		break;
++	}
++	flen = strlen(full_name);
++	len = flen + strlen(tbuf);
++	if (spec.precision > 0 && len > spec.precision)
++		len = spec.precision;
++
++	if (!(spec.flags & LEFT)) {
++		while (len < spec.field_width--) {
++			if (buf < end)
++				*buf = ' ';
++			++buf;
++		}
++	}
++	for (i = 0; i < len; ++i) {
++		if (buf < end)
++			*buf = i < flen ? full_name[i] : tbuf[i - flen];
++		++buf;
++	}
++	while (len < spec.field_width--) {
++		if (buf < end)
++			*buf = ' ';
++		++buf;
++	}
++	return buf;
++}
++#endif
++
+ int kptr_restrict __read_mostly;
+ 
+ /*
+@@ -1459,6 +1522,10 @@ char *pointer(const char *fmt, char *buf, char *end, void *ptr,
+ 		return dentry_name(buf, end,
+ 				   ((const struct file *)ptr)->f_path.dentry,
+ 				   spec, fmt);
++#if IS_ENABLED(CONFIG_OF)
++	case 'O':
++		return device_node_string(buf, end, ptr, spec, fmt);
++#endif
+ 	}
+ 	spec.flags |= SMALL;
+ 	if (spec.field_width == -1) {
+-- 
+1.7.12
 
->> +For a kdbus specific userspace library implementation please refer to:
->> +  http://cgit.freedesktop.org/systemd/systemd/tree/src/systemd/sd-bus.h
->
-> Is this library intended just for systemd? More generally, is there an
-> intention to provide a general purpose library API for kdbus? Or is the
-> intention that each application will roll a library suitable to its
-> needs? I think an answer to that question would be useful in this
-> Documentation file.
-
-kdbus is in no way bound to systemd. There are ongoing efforts to port
-glib and qt to kdbus natively. The API is pretty simple and I don't
-see how a libkdbus would simplify things. In fact, even our tests only
-have slim wrappers around the ioctls to simplify error-handling in
-test-scenarios.
-
-Note that most of the toolkit work is on the marshaling level, which
-is independent of kdbus. kdbus just provides the transport level. DBus
-is just one, yet significant, application-layer on top of kdbus. Our
-test-cases use kdbus exclusively to transport raw byte streams.
-
-Thanks
-David
