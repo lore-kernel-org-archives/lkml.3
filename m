@@ -1,203 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754520AbbATRKK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 12:10:10 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:49434 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751453AbbATRKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 12:10:07 -0500
-Message-ID: <54BE8BEA.3000100@ti.com>
-Date: Tue, 20 Jan 2015 12:10:02 -0500
-From: Murali Karicheri <m-karicheri2@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:12.0) Gecko/20120430 Thunderbird/12.0.1
+	id S1754993AbbATRjy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 12:39:54 -0500
+Received: from smtp3.ore.mailhop.org ([54.149.88.251]:41971 "EHLO
+	smtp3.ore.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752082AbbATRjh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 12:39:37 -0500
+X-Greylist: delayed 1517 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Jan 2015 12:39:37 EST
+X-Mail-Handler: DuoCircle Outbound SMTP
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@duocircle.com (see https://support.duocircle.com/support/solutions/articles/5000540958-duocircle-standard-smtp-abuse-information for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+M5KMPkOX8SiDlRf1j9AHZ
+Date: Tue, 20 Jan 2015 09:10:49 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Peter Robinson <pbrobinson@gmail.com>
+Subject: Re: linux-next: manual merge of the omap tree with the arm-soc tree
+Message-ID: <20150120171048.GF7718@atomide.com>
+References: <20150120110947.1a92a416@canb.auug.org.au>
 MIME-Version: 1.0
-To: Paul Bolle <pebolle@tiscali.nl>
-CC: Wingman Kwok <w-kwok2@ti.com>,
-        Valentin Rothberg <valentinrothberg@gmail.com>, <davem@davemloft.net>,
-        <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <netdev@vger.kernel.org>
-Subject: Re: [PATCH net-next v8 2/4] net: netcp: Add Keystone NetCP core ethernet
- driver
-References: <1421367172-19793-1-git-send-email-m-karicheri2@ti.com>  <1421367172-19793-2-git-send-email-m-karicheri2@ti.com> <1421741935.9655.73.camel@x220>
-In-Reply-To: <1421741935.9655.73.camel@x220>
-Content-Type: multipart/mixed;
-	boundary="------------090704000805040104060407"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150120110947.1a92a416@canb.auug.org.au>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------090704000805040104060407
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+* Stephen Rothwell <sfr@canb.auug.org.au> [150119 16:12]:
+> Hi Tony,
+> 
+> Today's linux-next merge of the omap tree got a conflict in
+> arch/arm/boot/dts/Makefile between commit cb612390e546 ("ARM: dts: Only
+> build dtb if associated Arch and/or SoC is enabled") from the arm-soc
+> tree and commit ac7452cee743 ("ARM: dts: Add minimal support for
+> dm8168-evm") from the omap tree.
+> 
+> I fixed it up (see below) and can carry the fix as necessary (no action
+> is required).
 
-On 01/20/2015 03:18 AM, Paul Bolle wrote:
-> Murali, Wingman,
->
-> On Thu, 2015-01-15 at 19:12 -0500, Murali Karicheri wrote:
->> The network coprocessor (NetCP) is a hardware accelerator available in
->> Keystone SoCs that processes Ethernet packets. NetCP consists of following
->> hardware components
->>
->>   1 Gigabit Ethernet (GbE) subsystem with a Ethernet switch sub-module to
->>     send and receive packets.
->>   2 Packet Accelerator (PA) module to perform packet classification
->>     operations such as header matching, and packet modification operations
->>     such as checksum generation.
->>   3 Security Accelerator(SA) capable of performing IPSec operations on
->>     ingress/egress packets.
->>   4 An optional 10 Gigabit Ethernet Subsystem (XGbE) which includes a
->>     3-port Ethernet switch sub-module capable of 10Gb/s and 1Gb/s rates
->>     per Ethernet port.
->>   5 Packet DMA and Queue Management Subsystem (QMSS) to enqueue and dequeue
->>     packets and DMA the packets between memory and NetCP hardware components
->>     described above.
->>
->> NetCP core driver make use of the Keystone Navigator driver API to allocate
->> DMA channel for the Ethenet device and to handle packet queue/de-queue,
->> Please refer API's in include/linux/soc/ti/knav_dma.h and
->> drivers/soc/ti/knav_qmss.h for details.
->>
->> NetCP driver consists of NetCP core driver and at a minimum Gigabit
->> Ethernet (GBE) module (1) driver to implement the Network device function.
->> Other modules (2,3) can be optionally added to achieve supported hardware
->> acceleration function. The initial version of the driver include NetCP
->> core driver and GBE driver modules.
->>
->> Please refer Documentation/devicetree/bindings/net/keystone-netcp.txt
->> for design of the driver.
->>
->>   Cc: David Miller<davem@davemloft.net>
->>   Cc: Rob Herring<robh+dt@kernel.org>
->>   Cc: Grant Likely<grant.likely@linaro.org>
->>   Cc: Santosh Shilimkar<santosh.shilimkar@kernel.org>
->>   Cc: Pawel Moll<pawel.moll@arm.com>
->>   Cc: Mark Rutland<mark.rutland@arm.com>
->>   Cc: Ian Campbell<ijc+devicetree@hellion.org.uk>
->>   Cc: Kumar Gala<galak@codeaurora.org>
->>
->> Signed-off-by: Murali Karicheri<m-karicheri2@ti.com>
->> Signed-off-by: Wingman Kwok<w-kwok2@ti.com>
->
-> This patch is included as commit 84640e27f230 ("net: netcp: Add Keystone
-> NetCP core ethernet driver") in today's linux-next. I noticed because a
-> script I run on linux-next spotted a problem in it.
->
->> ---
->>   MAINTAINERS                          |    7 +
->>   drivers/net/ethernet/ti/Kconfig      |   11 +
->>   drivers/net/ethernet/ti/Makefile     |    3 +
->>   drivers/net/ethernet/ti/netcp.h      |  229 ++++
->>   drivers/net/ethernet/ti/netcp_core.c | 2141 ++++++++++++++++++++++++++++++++++
->>   5 files changed, 2391 insertions(+)
->>   create mode 100644 drivers/net/ethernet/ti/netcp.h
->>   create mode 100644 drivers/net/ethernet/ti/netcp_core.c
->>
->> [...]
->> diff --git a/drivers/net/ethernet/ti/Kconfig b/drivers/net/ethernet/ti/Kconfig
->> index 605dd90..e11bcfa 100644
->> --- a/drivers/net/ethernet/ti/Kconfig
->> +++ b/drivers/net/ethernet/ti/Kconfig
->> @@ -73,12 +73,23 @@ config TI_CPSW
->>   config TI_CPTS
->>   	boolean "TI Common Platform Time Sync (CPTS) Support"
->>   	depends on TI_CPSW
->> +	depends on TI_CPSW || TI_KEYSTONE_NET
->
-> You probably meant to add
->      || TI_KEYSTONE_NETCP
->
-> here. Ie, add CP. But as this slipped through testing it _might_ not be
-> needed at all.
-Paul,
+Uhh why is cb612390e546 doing formatting changes all over the place?
+That's a sure way to produce merge conflicts..
 
-Currently CPTS driver is not used for NetCP. So I want to remove the 
-above Kconfig dependency from Kconfig and cpts.o from the Makefile. Do 
-you expect me to send an incremental patch for this to the netdev list? 
-or can pick the attached patch that addresses this issue. Let me know.
+Anyways the conflict resolution looks good to me thanks.
 
-Thanks.
+Regards,
 
-Murali
-
->
->>   	select PTP_1588_CLOCK
->>   	---help---
->>   	  This driver supports the Common Platform Time Sync unit of
->>   	  the CPSW Ethernet Switch. The unit can time stamp PTP UDP/IPv4
->>   	  and Layer 2 packets, and the driver offers a PTP Hardware Clock.
->>
->> +config TI_KEYSTONE_NETCP
->> +	tristate "TI Keystone NETCP Ethernet subsystem Support"
->> +	depends on OF
->> +	depends on KEYSTONE_NAVIGATOR_DMA&&  KEYSTONE_NAVIGATOR_QMSS
->> +	---help---
->> +	  This driver supports TI's Keystone NETCP Ethernet subsystem.
->> +
->> +	  To compile this driver as a module, choose M here: the module
->> +	  will be called keystone_netcp.
->> +
->>   config TLAN
->>   	tristate "TI ThunderLAN support"
->>   	depends on (PCI || EISA)
->
-> Thanks,
->
->
-> Paul Bolle
->
-
-
--- 
-Murali Karicheri
-Linux Kernel, Texas Instruments
-
---------------090704000805040104060407
-Content-Type: text/x-diff;
-	name="0001-net-netcp-remove-unused-kconfig-option-and-code.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
-	filename="0001-net-netcp-remove-unused-kconfig-option-and-code.patch"
-
->From 44838a357c691c70762be2978619c6967f0dd220 Mon Sep 17 00:00:00 2001
-From: Murali Karicheri <m-karicheri2@ti.com>
-Date: Tue, 20 Jan 2015 12:08:43 -0500
-Subject: [PATCH] net: netcp: remove unused kconfig option and code
-
-Currently CPTS is built into the netcp driver even though there is no
-call out to the CPTS driver. This patch removes the dependency in Kconfig
-and remove cpts.o from the Makefile for NetCP.
-
-Signed-off-by: Murali Karicheri <m-karicheri2@ti.com>
----
- drivers/net/ethernet/ti/Kconfig  |    2 +-
- drivers/net/ethernet/ti/Makefile |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/ethernet/ti/Kconfig b/drivers/net/ethernet/ti/Kconfig
-index e11bcfa..824e376 100644
---- a/drivers/net/ethernet/ti/Kconfig
-+++ b/drivers/net/ethernet/ti/Kconfig
-@@ -73,7 +73,7 @@ config TI_CPSW
- config TI_CPTS
- 	boolean "TI Common Platform Time Sync (CPTS) Support"
- 	depends on TI_CPSW
--	depends on TI_CPSW || TI_KEYSTONE_NET
-+	depends on TI_CPSW
- 	select PTP_1588_CLOCK
- 	---help---
- 	  This driver supports the Common Platform Time Sync unit of
-diff --git a/drivers/net/ethernet/ti/Makefile b/drivers/net/ethernet/ti/Makefile
-index 465d03d..0a9813b 100644
---- a/drivers/net/ethernet/ti/Makefile
-+++ b/drivers/net/ethernet/ti/Makefile
-@@ -13,4 +13,4 @@ ti_cpsw-y := cpsw_ale.o cpsw.o cpts.o
+Tony
  
- obj-$(CONFIG_TI_KEYSTONE_NETCP) += keystone_netcp.o
- keystone_netcp-y := netcp_core.o netcp_ethss.o	netcp_sgmii.o \
--			netcp_xgbepcsr.o cpsw_ale.o cpts.o
-+			netcp_xgbepcsr.o cpsw_ale.o
--- 
-1.7.9.5
+> -- 
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+> 
+> diff --cc arch/arm/boot/dts/Makefile
+> index a240d2d07b38,a6ace4d57ea5..000000000000
+> --- a/arch/arm/boot/dts/Makefile
+> +++ b/arch/arm/boot/dts/Makefile
+> @@@ -392,8 -348,8 +392,9 @@@ dtb-$(CONFIG_ARCH_OMAP3) += 
+>   	omap3-sbc-t3730.dtb \
+>   	omap3-thunder.dtb \
+>   	omap3-zoom3.dtb
+> + dtb-$(CONFIG_SOC_TI81XX) += dm8168-evm.dtb
+>  -dtb-$(CONFIG_SOC_AM33XX) += am335x-base0033.dtb \
+>  +dtb-$(CONFIG_SOC_AM33XX) += \
+>  +	am335x-base0033.dtb \
+>   	am335x-bone.dtb \
+>   	am335x-boneblack.dtb \
+>   	am335x-evm.dtb \
+> @@@ -410,20 -365,17 +411,21 @@@ dtb-$(CONFIG_ARCH_OMAP4) += 
+>   	omap4-sdp-es23plus.dtb \
+>   	omap4-var-dvk-om44.dtb \
+>   	omap4-var-stk-om44.dtb
+>  -dtb-$(CONFIG_SOC_AM43XX) += am43x-epos-evm.dtb \
+>  +dtb-$(CONFIG_SOC_AM43XX) += \
+>  +	am43x-epos-evm.dtb \
+>   	am437x-sk-evm.dtb \
+> + 	am437x-idk-evm.dtb \
+>   	am437x-gp-evm.dtb
+>  -dtb-$(CONFIG_SOC_OMAP5) += omap5-cm-t54.dtb \
+>  +dtb-$(CONFIG_SOC_OMAP5) += \
+>  +	omap5-cm-t54.dtb \
+>   	omap5-sbc-t54.dtb \
+>   	omap5-uevm.dtb
+>  -dtb-$(CONFIG_SOC_DRA7XX) += dra7-evm.dtb \
+>  +dtb-$(CONFIG_SOC_DRA7XX) += \
+>  +	dra7-evm.dtb \
+>   	am57xx-beagle-x15.dtb \
+>   	dra72-evm.dtb
+>  -dtb-$(CONFIG_ARCH_ORION5X) += orion5x-lacie-d2-network.dtb \
+>  +dtb-$(CONFIG_ARCH_ORION5X) += \
+>  +	orion5x-lacie-d2-network.dtb \
+>   	orion5x-lacie-ethernet-disk-mini-v2.dtb \
+>   	orion5x-maxtor-shared-storage-2.dtb \
+>   	orion5x-rd88f5182-nas.dtb
 
 
---------------090704000805040104060407--
