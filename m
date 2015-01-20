@@ -1,84 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753976AbbATLy7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 06:54:59 -0500
-Received: from terminus.zytor.com ([198.137.202.10]:56594 "EHLO
-	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752120AbbATLy5 (ORCPT
+	id S1754029AbbATLzG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 06:55:06 -0500
+Received: from mail-ie0-f181.google.com ([209.85.223.181]:52030 "EHLO
+	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753757AbbATLy6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 06:54:57 -0500
-Date: Tue, 20 Jan 2015 03:54:38 -0800
-From: tip-bot for Andy Shevchenko <tipbot@zytor.com>
-Message-ID: <tip-1b43d7125f3b6f7d46e72da64f65f3187a83b66b@git.kernel.org>
-Cc: aubrey.li@linux.intel.com, mahesh.kumar.p@intel.com, tglx@linutronix.de,
-        andriy.shevchenko@linux.intel.com, rafael.j.wysocki@intel.com,
-        linux-kernel@vger.kernel.org, mingo@kernel.org, hpa@zytor.com
-Reply-To: mahesh.kumar.p@intel.com, andriy.shevchenko@linux.intel.com,
-        tglx@linutronix.de, aubrey.li@linux.intel.com,
-        linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@kernel.org,
-        rafael.j.wysocki@intel.com
-In-Reply-To: <1421253575-22509-2-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1421253575-22509-2-git-send-email-andriy.shevchenko@linux.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/platform] x86: pmc-atom:
-  Assign debugfs node as soon as possible
-Git-Commit-ID: 1b43d7125f3b6f7d46e72da64f65f3187a83b66b
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
-  to get blacklisted from these emails
+	Tue, 20 Jan 2015 06:54:58 -0500
+Date: Tue, 20 Jan 2015 11:54:53 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/14] mfd: 88pm860x-core: Constify struct regmap_config
+Message-ID: <20150120115453.GL13701@x1>
+References: <1420448493-9355-1-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1420448493-9355-1-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1b43d7125f3b6f7d46e72da64f65f3187a83b66b
-Gitweb:     http://git.kernel.org/tip/1b43d7125f3b6f7d46e72da64f65f3187a83b66b
-Author:     Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-AuthorDate: Wed, 14 Jan 2015 18:39:31 +0200
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Tue, 20 Jan 2015 12:50:14 +0100
+On Mon, 05 Jan 2015, Krzysztof Kozlowski wrote:
 
-x86: pmc-atom: Assign debugfs node as soon as possible
+> The regmap_config struct may be const because it is not modified by the
+> driver and regmap_init() accepts pointer to const.
+> 
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> ---
+>  drivers/mfd/88pm860x-core.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 
-pmc_dbgfs_unregister() will be called when pmc->dbgfs_dir is unconditionally
-NULL on error path in pmc_dbgfs_register(). To prevent this we move the
-assignment to where is should be.
+Applied, thanks.
 
-Fixes: f855911c1f48 (x86/pmc_atom: Expose PMC device state and platform sleep state)
-Reported-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: Aubrey Li <aubrey.li@linux.intel.com>
-Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
-Cc: Kumar P. Mahesh <mahesh.kumar.p@intel.com>
-Link: http://lkml.kernel.org/r/1421253575-22509-2-git-send-email-andriy.shevchenko@linux.intel.com
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- arch/x86/kernel/pmc_atom.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+> diff --git a/drivers/mfd/88pm860x-core.c b/drivers/mfd/88pm860x-core.c
+> index 3a2604580164..d2a85cde68da 100644
+> --- a/drivers/mfd/88pm860x-core.c
+> +++ b/drivers/mfd/88pm860x-core.c
+> @@ -1111,7 +1111,7 @@ static int verify_addr(struct i2c_client *i2c)
+>  	return 0;
+>  }
+>  
+> -static struct regmap_config pm860x_regmap_config = {
+> +static const struct regmap_config pm860x_regmap_config = {
+>  	.reg_bits = 8,
+>  	.val_bits = 8,
+>  };
 
-diff --git a/arch/x86/kernel/pmc_atom.c b/arch/x86/kernel/pmc_atom.c
-index 0ee5025e..8bb9a61 100644
---- a/arch/x86/kernel/pmc_atom.c
-+++ b/arch/x86/kernel/pmc_atom.c
-@@ -217,6 +217,8 @@ static int pmc_dbgfs_register(struct pmc_dev *pmc, struct pci_dev *pdev)
- 	if (!dir)
- 		return -ENOMEM;
- 
-+	pmc->dbgfs_dir = dir;
-+
- 	f = debugfs_create_file("dev_state", S_IFREG | S_IRUGO,
- 				dir, pmc, &pmc_dev_state_ops);
- 	if (!f) {
-@@ -229,7 +231,7 @@ static int pmc_dbgfs_register(struct pmc_dev *pmc, struct pci_dev *pdev)
- 		dev_err(&pdev->dev, "sleep_state register failed\n");
- 		goto err;
- 	}
--	pmc->dbgfs_dir = dir;
-+
- 	return 0;
- err:
- 	pmc_dbgfs_unregister(pmc);
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
