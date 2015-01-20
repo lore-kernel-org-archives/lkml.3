@@ -1,95 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752404AbbATErq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 23:47:46 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:50464 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752115AbbATErn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 23:47:43 -0500
-X-AuditID: cbfee68d-f79296d000004278-20-54bdddedae3e
-Message-id: <54BDDDED.7050009@samsung.com>
-Date: Tue, 20 Jan 2015 13:47:41 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
- Thunderbird/17.0.2
-MIME-version: 1.0
-To: myungjoo.ham@samsung.com
-Cc: "kgene@kernel.org" <kgene@kernel.org>,
-        =?UTF-8?B?67CV6rK966+8?= <kyungmin.park@samsung.com>,
-        "rafael.j.wysocki@intel.com" <rafael.j.wysocki@intel.com>,
-        "mark.rutland@arm.com" <mark.rutland@arm.com>,
-        ABHILASH KESAVAN <a.kesavan@samsung.com>,
-        "tomasz.figa@gmail.com" <tomasz.figa@gmail.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        "robh+dt@kernel.org" <robh+dt@kernel.org>,
-        =?UTF-8?B?64yA7J246riw?= <inki.dae@samsung.com>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-samsung-soc@vger.kernel.org" 
-	<linux-samsung-soc@vger.kernel.org>
-Subject: Re: [PATCHv8 2/9] devfreq: event: Add resource-managed function for
- devfreq-event device
-References: <900879710.1308121421729191415.JavaMail.weblogic@epmlwas04a>
-In-reply-to: <900879710.1308121421729191415.JavaMail.weblogic@epmlwas04a>
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMIsWRmVeSWpSXmKPExsWyRsSkRPft3b0hBk+/KVg8XrOYyWLjjPWs
-	FpPuT2CxeP3C0KL/8Wtmi7NNb9gtNj2+xmpxedccNovPvUcYLWac38dksfT6RSaL240r2Cwe
-	r3jLbtG69wi7xapdfxgd+D3WzFvD6LFz1l12j8V7XjJ5bFrVyeaxeUm9R9+WVYwenzfJBbBH
-	cdmkpOZklqUW6dslcGV8eP2eseAba8WWpzuZGxi/snQxcnJICJhInLi6mxnCFpO4cG89G4gt
-	JLCUUeLlMlWYmqXXPwPVcAHFpzNKPL3TyQjhvGaUeLNzBdgkXgEtid6zKxlBbBYBVYllPeuY
-	QGw2oPj+FzfApooKhEmsnH4Fql5Q4sfke2C2iICMxNWN21lAhjIL9LJJvFu/COwkYYFkiVWr
-	f7NCnOQhcfXIb3YQm1PAU2LPTYhmZgF1iUnzIOqZBeQlNq95C/XORA6JbdsrIA4SkPg2+RBQ
-	PQdQXFZi0wGoEkmJgytusExgFJuF5KRZSKbOQjJ1ASPzKkbR1ILkguKk9CJDveLE3OLSvHS9
-	5PzcTYzAuD7971nvDsbbB6wPMQpwMCrx8L5YtTdEiDWxrLgy9xCjKdAVE5mlRJPzgckjryTe
-	0NjMyMLUxNTYyNzSTEmcV1HqZ7CQQHpiSWp2ampBalF8UWlOavEhRiYOTqkGRg8lVgG5Wtld
-	f994vT/LO/V+qinr62zLBBaVfks+N7Vd0key9vr51pvO3WE1X+z19MX7Iz4aHH83R0fa+Gfy
-	v/m37U675RZtTpEP2/66MVdnn1p++f2Zxa8vZZ+6yBwXsPuZb4qUoETSKV+THUdlrlyccvoo
-	Z2Hh7Yb9d9Jzv7ibBkuo/TnmqMRSnJFoqMVcVJwIABKBILPmAgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprPKsWRmVeSWpSXmKPExsVy+t9jQd23d/eGGBy5IWHxeM1iJouNM9az
-	Wky6P4HF4vULQ4v+x6+ZLc42vWG32PT4GqvF5V1z2Cw+9x5htJhxfh+TxdLrF5ksbjeuYLN4
-	vOItu0Xr3iPsFqt2/WF04PdYM28No8fOWXfZPRbvecnksWlVJ5vH5iX1Hn1bVjF6fN4kF8Ae
-	1cBok5GamJJapJCal5yfkpmXbqvkHRzvHG9qZmCoa2hpYa6kkJeYm2qr5OIToOuWmQN0t5JC
-	WWJOKVAoILG4WEnfDtOE0BA3XQuYxghd35AguB4jAzSQsIYx48Pr94wF31grtjzdydzA+JWl
-	i5GTQ0LARGLp9c/MELaYxIV769m6GLk4hASmM0o8vdPJCOG8ZpR4s3MFWAevgJZE79mVjCA2
-	i4CqxLKedUwgNhtQfP+LG2wgtqhAmMTK6Veg6gUlfky+B2aLCMhIXN24nQVkKLNAL5vEu/WL
-	wFYLCyRLrFr9mxXEFhLwkLh65Dc7iM0p4Cmx5yZEM7OAusSkeRD1zALyEpvXvGWewCgwC8mO
-	WUjKZiEpW8DIvIpRNLUguaA4KT3XSK84Mbe4NC9dLzk/dxMjOHE8k97BuKrB4hCjAAejEg+v
-	w9q9IUKsiWXFlbmHGCU4mJVEeI9eAgrxpiRWVqUW5ccXleakFh9iNAUGwURmKdHkfGBSyyuJ
-	NzQ2MTOyNDI3tDAyNlcS51WybwsREkhPLEnNTk0tSC2C6WPi4JRqYBRc6/xX/ivDPMYnq03f
-	HDJdHbfBOrbFzUdir3NIqpgWz6f4/Sc/S67guvtrrqxt48LwmDcHc1u5bqRXPeUO+XfEO2/K
-	Mq2fTdoBd11/vebqCp3j1Okzn9P6564Zv090XrArj7J61WtftNJ3muCxKZeEq3uiS26wet1f
-	0CBR33SRv6zia3HseiWW4oxEQy3mouJEAPqjxwsyAwAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	id S1755410AbbATQ4W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 11:56:22 -0500
+Received: from mga01.intel.com ([192.55.52.88]:27662 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754206AbbATQ4U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 11:56:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,435,1418112000"; 
+   d="scan'208";a="672897824"
+From: kan.liang@intel.com
+To: a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org
+Cc: ak@linux.intel.com, Kan Liang <kan.liang@intel.com>
+Subject: [PATCH 1/1] perf/x86/intel/uncore: Move uncore_box_init out of  driver initialization
+Date: Tue, 20 Jan 2015 04:54:25 +0000
+Message-Id: <1421729665-5912-1-git-send-email-kan.liang@intel.com>
+X-Mailer: git-send-email 1.7.11.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2015 01:46 PM, MyungJoo Ham wrote:
->>   
->>  This patch add the resource-managed function for devfreq-event device as
->> following functions. The devm_devfreq_event_add_edev() manages automatically
->> the memory of devfreq-event device using resource management.
->> - devm_devfreq_event_add_edev()
->> - devm_devfreq_event_remove_edev()
->>
->> Cc: Myungjoo Ham <myungjoo.ham@samsung.com>
->> Cc: Kyungmin Park <kyungmin.park@samsung.com>
->> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.comA
-> 
-> Reviewed-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-> 
-> You may merge this patch with 1/9 as well.
-> I don't think this is a major change the requires a seperated patch.
+From: Kan Liang <kan.liang@intel.com>
 
-OK. I'll merge it. on patch1.
+There were some issues about the uncore driver tried to access
+non-existing boxes, which caused boot crashes. These issues have been
+all fixed. But we should avoid boot failures if that ever happens again.
 
-Best Regards,
-Chanwoo Choi
+This patch intends to prevent this kind of potential issues. It moves
+uncore_box_init out of driver initialization. The box will be
+initialized when it's first enabled.
+
+Signed-off-by: Kan Liang <kan.liang@intel.com>
+---
+ arch/x86/kernel/cpu/perf_event_intel_uncore.c |  9 ++-------
+ arch/x86/kernel/cpu/perf_event_intel_uncore.h | 18 ++++++++++--------
+ 2 files changed, 12 insertions(+), 15 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.c b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+index 10b8d3e..c635b8b 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.c
+@@ -840,7 +840,6 @@ static int uncore_pci_probe(struct pci_dev *pdev, const struct pci_device_id *id
+ 	box->phys_id = phys_id;
+ 	box->pci_dev = pdev;
+ 	box->pmu = pmu;
+-	uncore_box_init(box);
+ 	pci_set_drvdata(pdev, box);
+ 
+ 	raw_spin_lock(&uncore_box_lock);
+@@ -1004,10 +1003,8 @@ static int uncore_cpu_starting(int cpu)
+ 			pmu = &type->pmus[j];
+ 			box = *per_cpu_ptr(pmu->box, cpu);
+ 			/* called by uncore_cpu_init? */
+-			if (box && box->phys_id >= 0) {
+-				uncore_box_init(box);
++			if (box && box->phys_id >= 0)
+ 				continue;
+-			}
+ 
+ 			for_each_online_cpu(k) {
+ 				exist = *per_cpu_ptr(pmu->box, k);
+@@ -1023,10 +1020,8 @@ static int uncore_cpu_starting(int cpu)
+ 				}
+ 			}
+ 
+-			if (box) {
++			if (box)
+ 				box->phys_id = phys_id;
+-				uncore_box_init(box);
+-			}
+ 		}
+ 	}
+ 	return 0;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_uncore.h b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+index 863d9b0..6c8c1e7 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_uncore.h
++++ b/arch/x86/kernel/cpu/perf_event_intel_uncore.h
+@@ -257,6 +257,14 @@ static inline int uncore_num_counters(struct intel_uncore_box *box)
+ 	return box->pmu->type->num_counters;
+ }
+ 
++static inline void uncore_box_init(struct intel_uncore_box *box)
++{
++	if (!test_and_set_bit(UNCORE_BOX_FLAG_INITIATED, &box->flags)) {
++		if (box->pmu->type->ops->init_box)
++			box->pmu->type->ops->init_box(box);
++	}
++}
++
+ static inline void uncore_disable_box(struct intel_uncore_box *box)
+ {
+ 	if (box->pmu->type->ops->disable_box)
+@@ -265,6 +273,8 @@ static inline void uncore_disable_box(struct intel_uncore_box *box)
+ 
+ static inline void uncore_enable_box(struct intel_uncore_box *box)
+ {
++	uncore_box_init(box);
++
+ 	if (box->pmu->type->ops->enable_box)
+ 		box->pmu->type->ops->enable_box(box);
+ }
+@@ -287,14 +297,6 @@ static inline u64 uncore_read_counter(struct intel_uncore_box *box,
+ 	return box->pmu->type->ops->read_counter(box, event);
+ }
+ 
+-static inline void uncore_box_init(struct intel_uncore_box *box)
+-{
+-	if (!test_and_set_bit(UNCORE_BOX_FLAG_INITIATED, &box->flags)) {
+-		if (box->pmu->type->ops->init_box)
+-			box->pmu->type->ops->init_box(box);
+-	}
+-}
+-
+ static inline bool uncore_box_is_fake(struct intel_uncore_box *box)
+ {
+ 	return (box->phys_id < 0);
+-- 
+1.7.11.7
 
