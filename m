@@ -1,516 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752224AbbATSOI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 13:14:08 -0500
-Received: from mail-pa0-f53.google.com ([209.85.220.53]:44845 "EHLO
-	mail-pa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751873AbbATSOF convert rfc822-to-8bit (ORCPT
+	id S1752347AbbATSQU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 13:16:20 -0500
+Received: from smtprelay0085.hostedemail.com ([216.40.44.85]:33433 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751933AbbATSQR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 13:14:05 -0500
-Content-Type: text/plain; charset="utf-8"
+	Tue, 20 Jan 2015 13:16:17 -0500
+X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::::::::::::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4362:5007:6261:7875:10004:10400:10450:10455:10848:10967:11026:11232:11658:11914:12296:12438:12517:12519:12663:12740:13069:13311:13357:14096:14097:19904:19999:21067:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: earth47_70b1f11e2b102
+X-Filterd-Recvd-Size: 3261
+Date: Tue, 20 Jan 2015 13:16:13 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Paul Mackerras <paulus@samba.org>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-rt-users@vger.kernel.org,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Steven Rostedt <srostedt@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, kvm@vger.kernel.org,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [patch -rt 1/2] KVM: use simple waitqueue for vcpu->wq
+Message-ID: <20150120131613.009903a0@gandalf.local.home>
+In-Reply-To: <20150120054653.GA6473@iris.ozlabs.ibm.com>
+References: <20150114171251.882318257@redhat.com>
+	<20150114171459.593877145@redhat.com>
+	<20150116114846.4e7b718d@gandalf.local.home>
+	<20150119144100.GA10794@amt.cnet>
+	<20150120054653.GA6473@iris.ozlabs.ibm.com>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-To: Oleksij Rempel <linux@rempel-privat.de>, linux-kernel@vger.kernel.org
-From: Mike Turquette <mturquette@linaro.org>
-In-Reply-To: <1421745782-14321-1-git-send-email-linux@rempel-privat.de>
-Cc: "Oleksij Rempel" <linux@rempel-privat.de>
-References: <20150119172254.22722.41782@quantum>
- <1421745782-14321-1-git-send-email-linux@rempel-privat.de>
-Message-ID: <20150120181353.22722.34622@quantum>
-User-Agent: alot/0.3.5
-Subject: Re: [PATCH v2] ARM: clk: add clk-asm9260 driver
-Date: Tue, 20 Jan 2015 10:13:53 -0800
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Oleksij Rempel (2015-01-20 01:23:02)
-> Provide CLK support for Alphascale ASM9260 SoC.
-> 
-> Signed-off-by: Oleksij Rempel <linux@rempel-privat.de>
+On Tue, 20 Jan 2015 16:46:53 +1100
+Paul Mackerras <paulus@samba.org> wrote:
 
-Applied to clk-next.
-
-Regards,
-Mike
-
-> ---
->  drivers/clk/Makefile                           |   1 +
->  drivers/clk/clk-asm9260.c                      | 348 +++++++++++++++++++++++++
->  include/dt-bindings/clock/alphascale,asm9260.h |  97 +++++++
->  3 files changed, 446 insertions(+)
->  create mode 100644 drivers/clk/clk-asm9260.c
->  create mode 100644 include/dt-bindings/clock/alphascale,asm9260.h
+> On Mon, Jan 19, 2015 at 12:41:00PM -0200, Marcelo Tosatti wrote:
+> > On Fri, Jan 16, 2015 at 11:48:46AM -0500, Steven Rostedt wrote:
+> > > >  static void kvmppc_vcore_blocked(struct kvmppc_vcore *vc)
+> > > >  {
+> > > > -	DEFINE_WAIT(wait);
+> > > > +	DEFINE_SWAITER(wait);
+> > > >  
+> > > > -	prepare_to_wait(&vc->wq, &wait, TASK_INTERRUPTIBLE);
+> > > > +	swait_prepare(&vc->wq, &wait, TASK_INTERRUPTIBLE);
+> > > >  	vc->vcore_state = VCORE_SLEEPING;
+> > > >  	spin_unlock(&vc->lock);
+> > > >  	schedule();
+> > > > -	finish_wait(&vc->wq, &wait);
+> > > > +	swait_finish(&vc->wq, &wait);
+> > > >  	spin_lock(&vc->lock);
+> > > >  	vc->vcore_state = VCORE_INACTIVE;
+> > > >  }
+> > > > @@ -1613,7 +1613,7 @@
+> > > >  			kvmppc_create_dtl_entry(vcpu, vc);
+> > > >  			kvmppc_start_thread(vcpu);
+> > > >  		} else if (vc->vcore_state == VCORE_SLEEPING) {
+> > > > -			wake_up(&vc->wq);
+> > > > +			swait_wake(&vc->wq);
+> > > 
+> > > I notice everywhere you have a swait_wake_interruptible() but here. Is
+> > > there a reason why?
+> > > 
+> > > IIRC, Peter wants to make swait wakeup usage homogenous. That is, you
+> > > either sleep in an interruptible state, or you don't. You can't mix and
+> > > match it.
+> > 
+> > IIUC there is only one waiter on this waitqueue at any given time.
+> > 
+> > Paul is that correct?
 > 
-> diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-> index d5fba5b..3c41a68 100644
-> --- a/drivers/clk/Makefile
-> +++ b/drivers/clk/Makefile
-> @@ -16,6 +16,7 @@ endif
->  
->  # hardware specific clock types
->  # please keep this section sorted lexicographically by file/directory path name
-> +obj-$(CONFIG_MACH_ASM9260)             += clk-asm9260.o
->  obj-$(CONFIG_COMMON_CLK_AXI_CLKGEN)    += clk-axi-clkgen.o
->  obj-$(CONFIG_ARCH_AXXIA)               += clk-axm5516.o
->  obj-$(CONFIG_ARCH_BCM2835)             += clk-bcm2835.o
-> diff --git a/drivers/clk/clk-asm9260.c b/drivers/clk/clk-asm9260.c
-> new file mode 100644
-> index 0000000..88f4ff6
-> --- /dev/null
-> +++ b/drivers/clk/clk-asm9260.c
-> @@ -0,0 +1,348 @@
-> +/*
-> + * Copyright (c) 2014 Oleksij Rempel <linux@rempel-privat.de>.
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms and conditions of the GNU General Public License,
-> + * version 2, as published by the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + *
-> + * You should have received a copy of the GNU General Public License along with
-> + * this program.  If not, see <http://www.gnu.org/licenses/>.
-> + */
-> +
-> +#include <linux/clk.h>
-> +#include <linux/clkdev.h>
-> +#include <linux/err.h>
-> +#include <linux/io.h>
-> +#include <linux/clk-provider.h>
-> +#include <linux/spinlock.h>
-> +#include <linux/of.h>
-> +#include <linux/of_address.h>
-> +#include <dt-bindings/clock/alphascale,asm9260.h>
-> +
-> +#define HW_AHBCLKCTRL0         0x0020
-> +#define HW_AHBCLKCTRL1         0x0030
-> +#define HW_SYSPLLCTRL          0x0100
-> +#define HW_MAINCLKSEL          0x0120
-> +#define HW_MAINCLKUEN          0x0124
-> +#define HW_UARTCLKSEL          0x0128
-> +#define HW_UARTCLKUEN          0x012c
-> +#define HW_I2S0CLKSEL          0x0130
-> +#define HW_I2S0CLKUEN          0x0134
-> +#define HW_I2S1CLKSEL          0x0138
-> +#define HW_I2S1CLKUEN          0x013c
-> +#define HW_WDTCLKSEL           0x0160
-> +#define HW_WDTCLKUEN           0x0164
-> +#define HW_CLKOUTCLKSEL                0x0170
-> +#define HW_CLKOUTCLKUEN                0x0174
-> +#define HW_CPUCLKDIV           0x017c
-> +#define HW_SYSAHBCLKDIV                0x0180
-> +#define HW_I2S0MCLKDIV         0x0190
-> +#define HW_I2S0SCLKDIV         0x0194
-> +#define HW_I2S1MCLKDIV         0x0188
-> +#define HW_I2S1SCLKDIV         0x018c
-> +#define HW_UART0CLKDIV         0x0198
-> +#define HW_UART1CLKDIV         0x019c
-> +#define HW_UART2CLKDIV         0x01a0
-> +#define HW_UART3CLKDIV         0x01a4
-> +#define HW_UART4CLKDIV         0x01a8
-> +#define HW_UART5CLKDIV         0x01ac
-> +#define HW_UART6CLKDIV         0x01b0
-> +#define HW_UART7CLKDIV         0x01b4
-> +#define HW_UART8CLKDIV         0x01b8
-> +#define HW_UART9CLKDIV         0x01bc
-> +#define HW_SPI0CLKDIV          0x01c0
-> +#define HW_SPI1CLKDIV          0x01c4
-> +#define HW_QUADSPICLKDIV       0x01c8
-> +#define HW_SSP0CLKDIV          0x01d0
-> +#define HW_NANDCLKDIV          0x01d4
-> +#define HW_TRACECLKDIV         0x01e0
-> +#define HW_CAMMCLKDIV          0x01e8
-> +#define HW_WDTCLKDIV           0x01ec
-> +#define HW_CLKOUTCLKDIV                0x01f4
-> +#define HW_MACCLKDIV           0x01f8
-> +#define HW_LCDCLKDIV           0x01fc
-> +#define HW_ADCANACLKDIV                0x0200
-> +
-> +static struct clk *clks[MAX_CLKS];
-> +static struct clk_onecell_data clk_data;
-> +static DEFINE_SPINLOCK(asm9260_clk_lock);
-> +
-> +struct asm9260_div_clk {
-> +       unsigned int idx;
-> +       const char *name;
-> +       const char *parent_name;
-> +       u32 reg;
-> +};
-> +
-> +struct asm9260_gate_data {
-> +       unsigned int idx;
-> +       const char *name;
-> +       const char *parent_name;
-> +       u32 reg;
-> +       u8 bit_idx;
-> +       unsigned long flags;
-> +};
-> +
-> +struct asm9260_mux_clock {
-> +       u8                      mask;
-> +       u32                     *table;
-> +       const char              *name;
-> +       const char              **parent_names;
-> +       u8                      num_parents;
-> +       unsigned long           offset;
-> +       unsigned long           flags;
-> +};
-> +
-> +static void __iomem *base;
-> +
-> +static const struct asm9260_div_clk asm9260_div_clks[] __initconst = {
-> +       { CLKID_SYS_CPU,        "cpu_div", "main_gate", HW_CPUCLKDIV },
-> +       { CLKID_SYS_AHB,        "ahb_div", "cpu_div", HW_SYSAHBCLKDIV },
-> +
-> +       /* i2s has two deviders: one for only external mclk and internal
-> +        * devider for all clks. */
-> +       { CLKID_SYS_I2S0M,      "i2s0m_div", "i2s0_mclk",  HW_I2S0MCLKDIV },
-> +       { CLKID_SYS_I2S1M,      "i2s1m_div", "i2s1_mclk",  HW_I2S1MCLKDIV },
-> +       { CLKID_SYS_I2S0S,      "i2s0s_div", "i2s0_gate",  HW_I2S0SCLKDIV },
-> +       { CLKID_SYS_I2S1S,      "i2s1s_div", "i2s0_gate",  HW_I2S1SCLKDIV },
-> +
-> +       { CLKID_SYS_UART0,      "uart0_div", "uart_gate", HW_UART0CLKDIV },
-> +       { CLKID_SYS_UART1,      "uart1_div", "uart_gate", HW_UART1CLKDIV },
-> +       { CLKID_SYS_UART2,      "uart2_div", "uart_gate", HW_UART2CLKDIV },
-> +       { CLKID_SYS_UART3,      "uart3_div", "uart_gate", HW_UART3CLKDIV },
-> +       { CLKID_SYS_UART4,      "uart4_div", "uart_gate", HW_UART4CLKDIV },
-> +       { CLKID_SYS_UART5,      "uart5_div", "uart_gate", HW_UART5CLKDIV },
-> +       { CLKID_SYS_UART6,      "uart6_div", "uart_gate", HW_UART6CLKDIV },
-> +       { CLKID_SYS_UART7,      "uart7_div", "uart_gate", HW_UART7CLKDIV },
-> +       { CLKID_SYS_UART8,      "uart8_div", "uart_gate", HW_UART8CLKDIV },
-> +       { CLKID_SYS_UART9,      "uart9_div", "uart_gate", HW_UART9CLKDIV },
-> +
-> +       { CLKID_SYS_SPI0,       "spi0_div",     "main_gate", HW_SPI0CLKDIV },
-> +       { CLKID_SYS_SPI1,       "spi1_div",     "main_gate", HW_SPI1CLKDIV },
-> +       { CLKID_SYS_QUADSPI,    "quadspi_div",  "main_gate", HW_QUADSPICLKDIV },
-> +       { CLKID_SYS_SSP0,       "ssp0_div",     "main_gate", HW_SSP0CLKDIV },
-> +       { CLKID_SYS_NAND,       "nand_div",     "main_gate", HW_NANDCLKDIV },
-> +       { CLKID_SYS_TRACE,      "trace_div",    "main_gate", HW_TRACECLKDIV },
-> +       { CLKID_SYS_CAMM,       "camm_div",     "main_gate", HW_CAMMCLKDIV },
-> +       { CLKID_SYS_MAC,        "mac_div",      "main_gate", HW_MACCLKDIV },
-> +       { CLKID_SYS_LCD,        "lcd_div",      "main_gate", HW_LCDCLKDIV },
-> +       { CLKID_SYS_ADCANA,     "adcana_div",   "main_gate", HW_ADCANACLKDIV },
-> +
-> +       { CLKID_SYS_WDT,        "wdt_div",      "wdt_gate",    HW_WDTCLKDIV },
-> +       { CLKID_SYS_CLKOUT,     "clkout_div",   "clkout_gate", HW_CLKOUTCLKDIV },
-> +};
-> +
-> +static const struct asm9260_gate_data asm9260_mux_gates[] __initconst = {
-> +       { 0, "main_gate",       "main_mux",     HW_MAINCLKUEN,  0 },
-> +       { 0, "uart_gate",       "uart_mux",     HW_UARTCLKUEN,  0 },
-> +       { 0, "i2s0_gate",       "i2s0_mux",     HW_I2S0CLKUEN,  0 },
-> +       { 0, "i2s1_gate",       "i2s1_mux",     HW_I2S1CLKUEN,  0 },
-> +       { 0, "wdt_gate",        "wdt_mux",      HW_WDTCLKUEN,   0 },
-> +       { 0, "clkout_gate",     "clkout_mux",   HW_CLKOUTCLKUEN, 0 },
-> +};
-> +static const struct asm9260_gate_data asm9260_ahb_gates[] __initconst = {
-> +       /* ahb gates */
-> +       { CLKID_AHB_ROM,        "rom",          "ahb_div",
-> +               HW_AHBCLKCTRL0, 1, CLK_IGNORE_UNUSED},
-> +       { CLKID_AHB_RAM,        "ram",          "ahb_div",
-> +               HW_AHBCLKCTRL0, 2, CLK_IGNORE_UNUSED},
-> +       { CLKID_AHB_GPIO,       "gpio",         "ahb_div",
-> +               HW_AHBCLKCTRL0, 4 },
-> +       { CLKID_AHB_MAC,        "mac",          "ahb_div",
-> +               HW_AHBCLKCTRL0, 5 },
-> +       { CLKID_AHB_EMI,        "emi",          "ahb_div",
-> +               HW_AHBCLKCTRL0, 6, CLK_IGNORE_UNUSED},
-> +       { CLKID_AHB_USB0,       "usb0",         "ahb_div",
-> +               HW_AHBCLKCTRL0, 7 },
-> +       { CLKID_AHB_USB1,       "usb1",         "ahb_div",
-> +               HW_AHBCLKCTRL0, 8 },
-> +       { CLKID_AHB_DMA0,       "dma0",         "ahb_div",
-> +               HW_AHBCLKCTRL0, 9 },
-> +       { CLKID_AHB_DMA1,       "dma1",         "ahb_div",
-> +               HW_AHBCLKCTRL0, 10 },
-> +       { CLKID_AHB_UART0,      "uart0",        "ahb_div",
-> +               HW_AHBCLKCTRL0, 11 },
-> +       { CLKID_AHB_UART1,      "uart1",        "ahb_div",
-> +               HW_AHBCLKCTRL0, 12 },
-> +       { CLKID_AHB_UART2,      "uart2",        "ahb_div",
-> +               HW_AHBCLKCTRL0, 13 },
-> +       { CLKID_AHB_UART3,      "uart3",        "ahb_div",
-> +               HW_AHBCLKCTRL0, 14 },
-> +       { CLKID_AHB_UART4,      "uart4",        "ahb_div",
-> +               HW_AHBCLKCTRL0, 15 },
-> +       { CLKID_AHB_UART5,      "uart5",        "ahb_div",
-> +               HW_AHBCLKCTRL0, 16 },
-> +       { CLKID_AHB_UART6,      "uart6",        "ahb_div",
-> +               HW_AHBCLKCTRL0, 17 },
-> +       { CLKID_AHB_UART7,      "uart7",        "ahb_div",
-> +               HW_AHBCLKCTRL0, 18 },
-> +       { CLKID_AHB_UART8,      "uart8",        "ahb_div",
-> +               HW_AHBCLKCTRL0, 19 },
-> +       { CLKID_AHB_UART9,      "uart9",        "ahb_div",
-> +               HW_AHBCLKCTRL0, 20 },
-> +       { CLKID_AHB_I2S0,       "i2s0",         "ahb_div",
-> +               HW_AHBCLKCTRL0, 21 },
-> +       { CLKID_AHB_I2C0,       "i2c0",         "ahb_div",
-> +               HW_AHBCLKCTRL0, 22 },
-> +       { CLKID_AHB_I2C1,       "i2c1",         "ahb_div",
-> +               HW_AHBCLKCTRL0, 23 },
-> +       { CLKID_AHB_SSP0,       "ssp0",         "ahb_div",
-> +               HW_AHBCLKCTRL0, 24 },
-> +       { CLKID_AHB_IOCONFIG,   "ioconf",       "ahb_div",
-> +               HW_AHBCLKCTRL0, 25 },
-> +       { CLKID_AHB_WDT,        "wdt",          "ahb_div",
-> +               HW_AHBCLKCTRL0, 26 },
-> +       { CLKID_AHB_CAN0,       "can0",         "ahb_div",
-> +               HW_AHBCLKCTRL0, 27 },
-> +       { CLKID_AHB_CAN1,       "can1",         "ahb_div",
-> +               HW_AHBCLKCTRL0, 28 },
-> +       { CLKID_AHB_MPWM,       "mpwm",         "ahb_div",
-> +               HW_AHBCLKCTRL0, 29 },
-> +       { CLKID_AHB_SPI0,       "spi0",         "ahb_div",
-> +               HW_AHBCLKCTRL0, 30 },
-> +       { CLKID_AHB_SPI1,       "spi1",         "ahb_div",
-> +               HW_AHBCLKCTRL0, 31 },
-> +
-> +       { CLKID_AHB_QEI,        "qei",          "ahb_div",
-> +               HW_AHBCLKCTRL1, 0 },
-> +       { CLKID_AHB_QUADSPI0,   "quadspi0",     "ahb_div",
-> +               HW_AHBCLKCTRL1, 1 },
-> +       { CLKID_AHB_CAMIF,      "capmif",       "ahb_div",
-> +               HW_AHBCLKCTRL1, 2 },
-> +       { CLKID_AHB_LCDIF,      "lcdif",        "ahb_div",
-> +               HW_AHBCLKCTRL1, 3 },
-> +       { CLKID_AHB_TIMER0,     "timer0",       "ahb_div",
-> +               HW_AHBCLKCTRL1, 4 },
-> +       { CLKID_AHB_TIMER1,     "timer1",       "ahb_div",
-> +               HW_AHBCLKCTRL1, 5 },
-> +       { CLKID_AHB_TIMER2,     "timer2",       "ahb_div",
-> +               HW_AHBCLKCTRL1, 6 },
-> +       { CLKID_AHB_TIMER3,     "timer3",       "ahb_div",
-> +               HW_AHBCLKCTRL1, 7 },
-> +       { CLKID_AHB_IRQ,        "irq",          "ahb_div",
-> +               HW_AHBCLKCTRL1, 8, CLK_IGNORE_UNUSED},
-> +       { CLKID_AHB_RTC,        "rtc",          "ahb_div",
-> +               HW_AHBCLKCTRL1, 9 },
-> +       { CLKID_AHB_NAND,       "nand",         "ahb_div",
-> +               HW_AHBCLKCTRL1, 10 },
-> +       { CLKID_AHB_ADC0,       "adc0",         "ahb_div",
-> +               HW_AHBCLKCTRL1, 11 },
-> +       { CLKID_AHB_LED,        "led",          "ahb_div",
-> +               HW_AHBCLKCTRL1, 12 },
-> +       { CLKID_AHB_DAC0,       "dac0",         "ahb_div",
-> +               HW_AHBCLKCTRL1, 13 },
-> +       { CLKID_AHB_LCD,        "lcd",          "ahb_div",
-> +               HW_AHBCLKCTRL1, 14 },
-> +       { CLKID_AHB_I2S1,       "i2s1",         "ahb_div",
-> +               HW_AHBCLKCTRL1, 15 },
-> +       { CLKID_AHB_MAC1,       "mac1",         "ahb_div",
-> +               HW_AHBCLKCTRL1, 16 },
-> +};
-> +
-> +static const char __initdata *main_mux_p[] =   { NULL, NULL };
-> +static const char __initdata *i2s0_mux_p[] =   { NULL, NULL, "i2s0m_div"};
-> +static const char __initdata *i2s1_mux_p[] =   { NULL, NULL, "i2s1m_div"};
-> +static const char __initdata *clkout_mux_p[] = { NULL, NULL, "rtc"};
-> +static u32 three_mux_table[] = {0, 1, 3};
-> +
-> +static struct asm9260_mux_clock asm9260_mux_clks[] __initdata = {
-> +       { 1, three_mux_table, "main_mux",       main_mux_p,
-> +               ARRAY_SIZE(main_mux_p), HW_MAINCLKSEL, },
-> +       { 1, three_mux_table, "uart_mux",       main_mux_p,
-> +               ARRAY_SIZE(main_mux_p), HW_UARTCLKSEL, },
-> +       { 1, three_mux_table, "wdt_mux",        main_mux_p,
-> +               ARRAY_SIZE(main_mux_p), HW_WDTCLKSEL, },
-> +       { 3, three_mux_table, "i2s0_mux",       i2s0_mux_p,
-> +               ARRAY_SIZE(i2s0_mux_p), HW_I2S0CLKSEL, },
-> +       { 3, three_mux_table, "i2s1_mux",       i2s1_mux_p,
-> +               ARRAY_SIZE(i2s1_mux_p), HW_I2S1CLKSEL, },
-> +       { 3, three_mux_table, "clkout_mux",     clkout_mux_p,
-> +               ARRAY_SIZE(clkout_mux_p), HW_CLKOUTCLKSEL, },
-> +};
-> +
-> +static void __init asm9260_acc_init(struct device_node *np)
-> +{
-> +       struct clk *clk;
-> +       const char *ref_clk, *pll_clk = "pll";
-> +       u32 rate;
-> +       int n;
-> +       u32 accuracy = 0;
-> +
-> +       base = of_io_request_and_map(np, 0, np->name);
-> +       if (!base)
-> +               panic("%s: unable to map resource", np->name);
-> +
-> +       /* register pll */
-> +       rate = (ioread32(base + HW_SYSPLLCTRL) & 0xffff) * 1000000;
-> +
-> +       ref_clk = of_clk_get_parent_name(np, 0);
-> +       accuracy = clk_get_accuracy(__clk_lookup(ref_clk));
-> +       clk = clk_register_fixed_rate_with_accuracy(NULL, pll_clk,
-> +                       ref_clk, 0, rate, accuracy);
-> +
-> +       if (IS_ERR(clk))
-> +               panic("%s: can't register REFCLK. Check DT!", np->name);
-> +
-> +       for (n = 0; n < ARRAY_SIZE(asm9260_mux_clks); n++) {
-> +               const struct asm9260_mux_clock *mc = &asm9260_mux_clks[n];
-> +
-> +               mc->parent_names[0] = ref_clk;
-> +               mc->parent_names[1] = pll_clk;
-> +               clk = clk_register_mux_table(NULL, mc->name, mc->parent_names,
-> +                               mc->num_parents, mc->flags, base + mc->offset,
-> +                               0, mc->mask, 0, mc->table, &asm9260_clk_lock);
-> +       }
-> +
-> +       /* clock mux gate cells */
-> +       for (n = 0; n < ARRAY_SIZE(asm9260_mux_gates); n++) {
-> +               const struct asm9260_gate_data *gd = &asm9260_mux_gates[n];
-> +
-> +               clk = clk_register_gate(NULL, gd->name,
-> +                       gd->parent_name, gd->flags | CLK_SET_RATE_PARENT,
-> +                       base + gd->reg, gd->bit_idx, 0, &asm9260_clk_lock);
-> +       }
-> +
-> +       /* clock div cells */
-> +       for (n = 0; n < ARRAY_SIZE(asm9260_div_clks); n++) {
-> +               const struct asm9260_div_clk *dc = &asm9260_div_clks[n];
-> +
-> +               clks[dc->idx] = clk_register_divider(NULL, dc->name,
-> +                               dc->parent_name, CLK_SET_RATE_PARENT,
-> +                               base + dc->reg, 0, 8, CLK_DIVIDER_ONE_BASED,
-> +                               &asm9260_clk_lock);
-> +       }
-> +
-> +       /* clock ahb gate cells */
-> +       for (n = 0; n < ARRAY_SIZE(asm9260_ahb_gates); n++) {
-> +               const struct asm9260_gate_data *gd = &asm9260_ahb_gates[n];
-> +
-> +               clks[gd->idx] = clk_register_gate(NULL, gd->name,
-> +                               gd->parent_name, gd->flags, base + gd->reg,
-> +                               gd->bit_idx, 0, &asm9260_clk_lock);
-> +       }
-> +
-> +       /* check for errors on leaf clocks */
-> +       for (n = 0; n < MAX_CLKS; n++) {
-> +               if (!IS_ERR(clks[n]))
-> +                       continue;
-> +
-> +               pr_err("%s: Unable to register leaf clock %d\n",
-> +                               np->full_name, n);
-> +               goto fail;
-> +       }
-> +
-> +       /* register clk-provider */
-> +       clk_data.clks = clks;
-> +       clk_data.clk_num = MAX_CLKS;
-> +       of_clk_add_provider(np, of_clk_src_onecell_get, &clk_data);
-> +       return;
-> +fail:
-> +       iounmap(base);
-> +}
-> +CLK_OF_DECLARE(asm9260_acc, "alphascale,asm9260-clock-controller",
-> +               asm9260_acc_init);
-> diff --git a/include/dt-bindings/clock/alphascale,asm9260.h b/include/dt-bindings/clock/alphascale,asm9260.h
-> new file mode 100644
-> index 0000000..04e8db2
-> --- /dev/null
-> +++ b/include/dt-bindings/clock/alphascale,asm9260.h
-> @@ -0,0 +1,97 @@
-> +/*
-> + * Copyright 2014 Oleksij Rempel <linux@rempel-privat.de>
-> + *
-> + * This software is licensed under the terms of the GNU General Public
-> + * License version 2, as published by the Free Software Foundation, and
-> + * may be copied, distributed, and modified under those terms.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#ifndef _DT_BINDINGS_CLK_ASM9260_H
-> +#define _DT_BINDINGS_CLK_ASM9260_H
-> +
-> +/* ahb gate */
-> +#define CLKID_AHB_ROM          0
-> +#define CLKID_AHB_RAM          1
-> +#define CLKID_AHB_GPIO         2
-> +#define CLKID_AHB_MAC          3
-> +#define CLKID_AHB_EMI          4
-> +#define CLKID_AHB_USB0         5
-> +#define CLKID_AHB_USB1         6
-> +#define CLKID_AHB_DMA0         7
-> +#define CLKID_AHB_DMA1         8
-> +#define CLKID_AHB_UART0                9
-> +#define CLKID_AHB_UART1                10
-> +#define CLKID_AHB_UART2                11
-> +#define CLKID_AHB_UART3                12
-> +#define CLKID_AHB_UART4                13
-> +#define CLKID_AHB_UART5                14
-> +#define CLKID_AHB_UART6                15
-> +#define CLKID_AHB_UART7                16
-> +#define CLKID_AHB_UART8                17
-> +#define CLKID_AHB_UART9                18
-> +#define CLKID_AHB_I2S0         19
-> +#define CLKID_AHB_I2C0         20
-> +#define CLKID_AHB_I2C1         21
-> +#define CLKID_AHB_SSP0         22
-> +#define CLKID_AHB_IOCONFIG     23
-> +#define CLKID_AHB_WDT          24
-> +#define CLKID_AHB_CAN0         25
-> +#define CLKID_AHB_CAN1         26
-> +#define CLKID_AHB_MPWM         27
-> +#define CLKID_AHB_SPI0         28
-> +#define CLKID_AHB_SPI1         29
-> +#define CLKID_AHB_QEI          30
-> +#define CLKID_AHB_QUADSPI0     31
-> +#define CLKID_AHB_CAMIF                32
-> +#define CLKID_AHB_LCDIF                33
-> +#define CLKID_AHB_TIMER0       34
-> +#define CLKID_AHB_TIMER1       35
-> +#define CLKID_AHB_TIMER2       36
-> +#define CLKID_AHB_TIMER3       37
-> +#define CLKID_AHB_IRQ          38
-> +#define CLKID_AHB_RTC          39
-> +#define CLKID_AHB_NAND         40
-> +#define CLKID_AHB_ADC0         41
-> +#define CLKID_AHB_LED          42
-> +#define CLKID_AHB_DAC0         43
-> +#define CLKID_AHB_LCD          44
-> +#define CLKID_AHB_I2S1         45
-> +#define CLKID_AHB_MAC1         46
-> +
-> +/* devider */
-> +#define CLKID_SYS_CPU          47
-> +#define CLKID_SYS_AHB          48
-> +#define CLKID_SYS_I2S0M                49
-> +#define CLKID_SYS_I2S0S                50
-> +#define CLKID_SYS_I2S1M                51
-> +#define CLKID_SYS_I2S1S                52
-> +#define CLKID_SYS_UART0                53
-> +#define CLKID_SYS_UART1                54
-> +#define CLKID_SYS_UART2                55
-> +#define CLKID_SYS_UART3                56
-> +#define CLKID_SYS_UART4                56
-> +#define CLKID_SYS_UART5                57
-> +#define CLKID_SYS_UART6                58
-> +#define CLKID_SYS_UART7                59
-> +#define CLKID_SYS_UART8                60
-> +#define CLKID_SYS_UART9                61
-> +#define CLKID_SYS_SPI0         62
-> +#define CLKID_SYS_SPI1         63
-> +#define CLKID_SYS_QUADSPI      64
-> +#define CLKID_SYS_SSP0         65
-> +#define CLKID_SYS_NAND         66
-> +#define CLKID_SYS_TRACE                67
-> +#define CLKID_SYS_CAMM         68
-> +#define CLKID_SYS_WDT          69
-> +#define CLKID_SYS_CLKOUT       70
-> +#define CLKID_SYS_MAC          71
-> +#define CLKID_SYS_LCD          72
-> +#define CLKID_SYS_ADCANA       73
-> +
-> +#define MAX_CLKS               74
-> +#endif
-> -- 
-> 1.9.1
-> 
+> Yes, that's right.  It's only the task that has taken the
+> responsibility for running the virtual core that would be waiting on
+> that wait queue.
+
+Thanks Paul, but it still makes me nervious.
+
+I'm actually wondering if we should just nuke the _interruptible()
+version of swait. As it should only be all interruptible or all not
+interruptible, that the swait_wake() should just do the wake up
+regardless. In which case, swait_wake() is good enough. No need to have
+different versions where people may think do something special.
+
+Peter?
+
+-- Steve
