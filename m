@@ -1,94 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754649AbbATKyn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 05:54:43 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51092 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754630AbbATKyl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 05:54:41 -0500
-Date: Tue, 20 Jan 2015 18:53:38 +0800
-From: Fam Zheng <famz@redhat.com>
-To: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        David Drysdale <drysdale@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Vivek Goyal <vgoyal@redhat.com>, Mike Frysinger <vapier@gentoo.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        Hugh Dickins <hughd@google.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-api@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: [PATCH RFC 0/6] epoll: Introduce new syscall "epoll_mod_wait"
-Message-ID: <20150120105338.GA4040@ad.nay.redhat.com>
-References: <1421747878-30744-1-git-send-email-famz@redhat.com>
- <874mrl3fh9.fsf@rasmusvillemoes.dk>
+	id S1754615AbbATKyW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 05:54:22 -0500
+Received: from eusmtp01.atmel.com ([212.144.249.243]:41008 "EHLO
+	eusmtp01.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753452AbbATKyU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 05:54:20 -0500
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: <pebolle@tiscali.nl>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <plagnioj@jcrosoft.com>, Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH] ARM: at91: fix Kconfig.debug by adding DEBUG_AT91_UART option
+Date: Tue, 20 Jan 2015 11:54:28 +0100
+Message-ID: <1421751268-21401-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1421745792.9655.98.camel@x220>
+References: <1421745792.9655.98.camel@x220>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <874mrl3fh9.fsf@rasmusvillemoes.dk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 01/20 11:37, Rasmus Villemoes wrote:
-> On Tue, Jan 20 2015, Fam Zheng <famz@redhat.com> wrote:
-> 
-> > DESCRIPTION
-> >
-> >        The epoll_mod_wait() system call can be seen as an enhanced combination
-> >        of several epoll_ctl(2) calls, which are followed by an epoll_pwait(2)
-> >        call. It is superior in two cases:
-> >        
-> >        1) When epoll_ctl(2) are followed by epoll_wait(2), using epoll_mod_wait
-> >        will save context switches between user mode and kernel mode;
-> >        
-> >        2) When you need higher precision than microsecond for wait timeout.
-> 
-> You probably want to say millisecond.
+The DEBUG_AT91_UART Kconfig option was forgotten when moving the
+AT91 debug-macro.S file. Add it and use it for the at91.S compilation.
 
-Yes, you see that I just can't make this right. :)
+Reported-by: Paul Bolle <pebolle@tiscali.nl>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+Hi Alexandre,
+Please tell me if this patch makes sense to fix the lack of this
+DEBUG_AT91_UART Kconfig option.
 
-> 
-> >            struct epoll_mod_cmd {
-> [...]
-> >            };
-> 
-> 
-> >            struct epoll_wait_spec {
-> [...]
-> >            } EPOLL_PACKED;
-> 
-> Either both or none of these should mention that EPOLL_PACKED is in fact
-> part of the actual definition. The changelog for 3/6 sorta mentions
-> that it's not really needed for epoll_mod_cmd. Why is it necessary for
-> either struct?
+Paul,
+Thanks for the heads up.
 
-Yeah. it's probably not really necessary.
+Bye,
+  Nico.
 
-> 
-> > RETURN VALUE
-> >
-> >        When successful, epoll_mod_wait() returns the number of file
-> >        descriptors ready for the requested I/O, or zero if no file descriptor
-> >        became ready during the requested timeout milliseconds.
-> 
-> And here, it doesn't make sense to mention a unit, since the new timeout
-> is given using struct timespec (this was the whole point, right?).
+ arch/arm/Kconfig.debug | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
-Right!
+diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+index e34d24949c6a..b3d388e5f4ff 100644
+--- a/arch/arm/Kconfig.debug
++++ b/arch/arm/Kconfig.debug
+@@ -1164,12 +1164,15 @@ config DEBUG_STI_UART
+ 	bool
+ 	depends on ARCH_STI
+ 
++config DEBUG_AT91_UART
++	bool
++	depends on ARCH_AT91
++
+ config DEBUG_LL_INCLUDE
+ 	string
+ 	default "debug/sa1100.S" if DEBUG_SA1100
+ 	default "debug/8250.S" if DEBUG_LL_UART_8250 || DEBUG_UART_8250
+-	default "debug/at91.S" if AT91_DEBUG_LL_DBGU0 || AT91_DEBUG_LL_DBGU1 || \
+-				AT91_DEBUG_LL_DBGU2
++	default "debug/at91.S" if DEBUG_AT91_UART
+ 	default "debug/asm9260.S" if DEBUG_ASM9260_UART
+ 	default "debug/clps711x.S" if DEBUG_CLPS711X_UART1 || DEBUG_CLPS711X_UART2
+ 	default "debug/meson.S" if DEBUG_MESON_UARTAO
+-- 
+2.1.3
 
-Thanks,
-Fam
