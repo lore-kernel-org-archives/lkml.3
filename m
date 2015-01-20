@@ -1,86 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754964AbbATMec (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 07:34:32 -0500
-Received: from mail-lb0-f176.google.com ([209.85.217.176]:36421 "EHLO
-	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754926AbbATMe3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 07:34:29 -0500
+	id S1755043AbbATMfj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 07:35:39 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:38669 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754120AbbATMfc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 07:35:32 -0500
+Date: Tue, 20 Jan 2015 14:35:15 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Matt Mackall <mpm@selenic.com>, Herbert Xu <herbert@gondor.apana.org.au>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Amit Shah <amit.shah@redhat.com>, Amos Kong <akong@redhat.com>,
+        Sasha Levin <sasha.levin@oracle.com>, linux-crypto@vger.kernel.org
+Subject: [PATCH repost] virtio_rng: drop extra empty line
+Message-ID: <20150120123515.GA28318@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <CABVT_gcqjp1V6vnOOSewYYeR2PmngAQhuR+fud=bDU6FJ8Bnqw@mail.gmail.com>
-References: <CABVT_gf-rx0ymvtCrCotkO5=qoDifG1yAMg8U_aTgXEN=x6gvg@mail.gmail.com>
- <1421751814.29486.13.camel@linux-0dmf.site> <CABVT_gcqjp1V6vnOOSewYYeR2PmngAQhuR+fud=bDU6FJ8Bnqw@mail.gmail.com>
-From: Kirill Elagin <kirelagin@gmail.com>
-Date: Tue, 20 Jan 2015 16:34:07 +0400
-Message-ID: <CABVT_gd6NydG4epFyiaZOW5KCx5XEhS5LAzE3w+Pwssb+kDLfA@mail.gmail.com>
-Subject: Re: USB autosuspend causing trouble with bluetooth
-To: Oliver Neukum <oneukum@suse.de>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I just realised I had an old USB BT-dongle so I tried it, and the
-trackpad was working fine with `auto` in `power/control`, so, yes,
-sounds like the builtin BT adapter is faulty.
+makes code look a bit prettier.
 
-But here is a strange thing again: as with the keyboard I had to set
-`power/control` of the hub to `on` in order for the kernel to detect
-the dongle _and_ I also had to switch `power/control` of the dongle
-from `auto` to `on` in order for the kernel to notice that the dongle
-was plugged out. Weird.
+Cc: linux-crypto@vger.kernel.org.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+ drivers/char/hw_random/virtio-rng.c | 1 -
+ 1 file changed, 1 deletion(-)
 
-
-On Tue, Jan 20, 2015 at 3:18 PM, Kirill Elagin <kirelagin@gmail.com> wrote:
-> I use a Logitech wireless keyboard (with a Unifying receiver) and it
-> keeps working fine even with `auto`.
->
-> That is, everything is OK if the receiver is plugged before
-> `power/control` is switched to `auto`.
-> But if I first set it to `auto`, then plug the receiver in, it is not
-> detected (nothing in dmesg). Kernel
-> detects it as soon as I `echo on` to the relevant `power/control`.
->
-> This laptop is too old to have USB3.0, both the receiver and BT are
-> attached to USB1.1 ports.
-> BTW I also noticed a strange thing: USB devices appear on different
-> buses when attached,
-> depending on their speed (e.g. the keyboard receiver is on bus 6 which
-> is USB1.1, while a
-> USB stick appears on bus 2 which is USB2.0 when I plug it into that
-> same physical port).
-> I’m not sure whether this is strange or normal, as I never really
-> payed attention.
->
->
-> On Tue Jan 20 2015 at 2:03:45 PM Oliver Neukum <oneukum@suse.de> wrote:
->>
->> On Sun, 2015-01-18 at 17:30 +0400, Kirill Elagin wrote:
->> > Hello,
->> >
->> > Recently I started having issues with my Apple Magic Trackpad and I
->> > realised that the problem was with autosuspend. Whenever I have `auto`
->> > in `power/control` of my BT adapter, `btmon` shows no packets,
->> > nothing. As soon as I `echo on`, all the missing packets arrive.
->>
->> You are not getting remote wakeups. There are two possibilities
->>
->> 1. the firmware of your BT adapter is faulty and the device needs to
->> be added to the list of quirky devices
->>
->> 2. a bug in the kernel breaks remote wakeup.
->>
->> We need to distinguish these cases. Could you connect another device
->> that uses remote wakeup (HID, CDC-ACM, ... - a keyboard or a mouse is
->> easiest) to a port connected to XHCI and test autosuspend on that
->> device?
->>
->>         Regards
->>                 Oliver
->>
->>
->>
->>
+diff --git a/drivers/char/hw_random/virtio-rng.c b/drivers/char/hw_random/virtio-rng.c
+index 72295ea..3fa2f8a 100644
+--- a/drivers/char/hw_random/virtio-rng.c
++++ b/drivers/char/hw_random/virtio-rng.c
+@@ -39,7 +39,6 @@ struct virtrng_info {
+ 	bool hwrng_removed;
+ };
+ 
+-
+ static void random_recv_done(struct virtqueue *vq)
+ {
+ 	struct virtrng_info *vi = vq->vdev->priv;
+-- 
+MST
