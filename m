@@ -1,89 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752350AbbATSsd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 13:48:33 -0500
-Received: from mail-bn1on0112.outbound.protection.outlook.com ([157.56.110.112]:14527
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751596AbbATSsb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 13:48:31 -0500
-Date: Tue, 20 Jan 2015 12:43:10 -0600
-From: Kim Phillips <kim.phillips@freescale.com>
-To: Herbert Xu <herbert@gondor.apana.org.au>
-CC: Tudor Ambarus <tudor.ambarus@freescale.com>,
-        <linux-crypto@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, Marek Vasut <marex@denx.de>,
-        Cristian Stoica <cristian.stoica@freescale.com>,
-        Horia Geanta <horia.geanta@freescale.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: [PATCH] crypto: caam - don't emit ICV check failures to dmesg
-Message-ID: <20150120124310.ba1dd7a6454f65255c1ed713@freescale.com>
-In-Reply-To: <20141211193018.2465016d545334a76c0f4bab@freescale.com>
-References: <1414686811-6527-1-git-send-email-tudor.ambarus@freescale.com>
-	<1414688107-8196-1-git-send-email-tudor.ambarus@freescale.com>
-	<20141106151714.GE4544@gondor.apana.org.au>
-	<20141204182245.f352ea22dc61ea6f65d85c62@freescale.com>
-	<20141211193018.2465016d545334a76c0f4bab@freescale.com>
-Organization: Freescale Semiconductor, Inc.
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Kim.Phillips@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(199003)(189002)(87936001)(64706001)(47776003)(86362001)(97736003)(46102003)(23726002)(93886004)(2950100001)(110136001)(46406003)(92566002)(19580395003)(6806004)(19580405001)(85426001)(77156002)(229853001)(106466001)(50226001)(76176999)(50986999)(36756003)(105606002)(68736005)(62966003)(77096005)(50466002)(100306002)(33646002)(104016003);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR03MB395;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-DmarcAction-Test: None
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:BY2PR03MB395;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR03MB395;
-X-Forefront-PRVS: 0462918D61
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR03MB395;
-X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 20 Jan 2015 18:48:26.4623
- (UTC)
-X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR03MB395
+	id S1754228AbbATTog (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 14:44:36 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:24853 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753880AbbATTod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 14:44:33 -0500
+X-Mailbox-Line: From e0d835bcc282db36d7dcd2e5aab41356f194ed73 Mon Sep 17 00:00:00 2001
+Message-Id: <e0d835bcc282db36d7dcd2e5aab41356f194ed73.1421782533.git.moinejf@free.fr>
+In-Reply-To: <cover.1421782532.git.moinejf@free.fr>
+References: <cover.1421782532.git.moinejf@free.fr>
+From: Jean-Francois Moine <moinejf@free.fr>
+Date: Tue, 20 Jan 2015 19:47:34 +0100
+Subject: [PATCH v10 8/9] ASoC: core: export snd_soc_get_dai_name
+To: Mark Brown <broonie@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Dave Airlie <airlied@gmail.com>, Andrew Jackson <Andrew.Jackson@arm.com>,
+        Jyri Sarha <jsarha@ti.com>, alsa-devel@alsa-project.org,
+        devicetree@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ICV check failures are part of normal operation;
-leave user notification up to the higher levels,
-as is done in s/w algorithm implementations.
+snd_soc_get_dai_name() may be used to define a sound card with
+a different syntax from the one of the simple-card.
 
-Signed-off-by: Kim Phillips <kim.phillips@freescale.com>
+Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
 ---
- drivers/crypto/caam/error.c | 13 +++++++++----
- 1 file changed, 9 insertions(+), 4 deletions(-)
+ include/sound/soc.h  | 2 ++
+ sound/soc/soc-core.c | 5 +++--
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/crypto/caam/error.c b/drivers/crypto/caam/error.c
-index 66d73bf..33e41ea 100644
---- a/drivers/crypto/caam/error.c
-+++ b/drivers/crypto/caam/error.c
-@@ -151,10 +151,15 @@ static void report_ccb_status(struct device *jrdev, const u32 status,
- 	else
- 		snprintf(err_err_code, sizeof(err_err_code), "%02x", err_id);
+diff --git a/include/sound/soc.h b/include/sound/soc.h
+index edd4a0a..7e783d6 100644
+--- a/include/sound/soc.h
++++ b/include/sound/soc.h
+@@ -1502,6 +1502,8 @@ int snd_soc_of_get_dai_name(struct device_node *of_node,
+ int snd_soc_of_get_dai_link_codecs(struct device *dev,
+ 				   struct device_node *of_node,
+ 				   struct snd_soc_dai_link *dai_link);
++int snd_soc_get_dai_name(struct of_phandle_args *args,
++			 const char **dai_name);
  
--	dev_err(jrdev, "%08x: %s: %s %d: %s%s: %s%s\n",
--		status, error, idx_str, idx,
--		cha_str, cha_err_code,
--		err_str, err_err_code);
-+	/*
-+	 * CCB ICV check failures are part of normal operation life;
-+	 * we leave the upper layers to do what they want with them.
-+	 */
-+	if (err_id != JRSTA_CCBERR_ERRID_ICVCHK)
-+		dev_err(jrdev, "%08x: %s: %s %d: %s%s: %s%s\n",
-+			status, error, idx_str, idx,
-+			cha_str, cha_err_code,
-+			err_str, err_err_code);
+ #include <sound/soc-dai.h>
+ 
+diff --git a/sound/soc/soc-core.c b/sound/soc/soc-core.c
+index ededb97..6a782ca 100644
+--- a/sound/soc/soc-core.c
++++ b/sound/soc/soc-core.c
+@@ -3418,8 +3418,8 @@ unsigned int snd_soc_of_parse_daifmt(struct device_node *np,
  }
+ EXPORT_SYMBOL_GPL(snd_soc_of_parse_daifmt);
  
- static void report_jump_status(struct device *jrdev, const u32 status,
+-static int snd_soc_get_dai_name(struct of_phandle_args *args,
+-				const char **dai_name)
++int snd_soc_get_dai_name(struct of_phandle_args *args,
++			 const char **dai_name)
+ {
+ 	struct snd_soc_component *pos;
+ 	int ret = -EPROBE_DEFER;
+@@ -3465,6 +3465,7 @@ static int snd_soc_get_dai_name(struct of_phandle_args *args,
+ 	mutex_unlock(&client_mutex);
+ 	return ret;
+ }
++EXPORT_SYMBOL_GPL(snd_soc_get_dai_name);
+ 
+ int snd_soc_of_get_dai_name(struct device_node *of_node,
+ 			    const char **dai_name)
 -- 
-2.2.2
+2.1.4
 
