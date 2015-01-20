@@ -1,51 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752458AbbATTIi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 14:08:38 -0500
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:37883 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751694AbbATTIg (ORCPT
-	<rfc822;Linux-Kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 14:08:36 -0500
-Message-ID: <54BEA7B2.2060708@hurleysoftware.com>
-Date: Tue, 20 Jan 2015 14:08:34 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S1752463AbbATTL6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 14:11:58 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:38256 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750737AbbATTL5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 14:11:57 -0500
+Date: Tue, 20 Jan 2015 20:11:54 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Josh Poimboeuf <jpoimboe@redhat.com>
+cc: Jiri Slaby <jslaby@suse.cz>, Seth Jennings <sjenning@redhat.com>,
+        Vojtech Pavlik <vojtech@suse.cz>, live-patching@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] livepatch: support for repatching a function
+In-Reply-To: <20150120154736.GA4417@treble.redhat.com>
+Message-ID: <alpine.LNX.2.00.1501202010290.10817@pobox.suse.cz>
+References: <cover.1421767360.git.jpoimboe@redhat.com> <da0d4d3c34441efcd8e830c4c978016581d7f055.1421767360.git.jpoimboe@redhat.com> <54BE7657.2010105@suse.cz> <20150120154736.GA4417@treble.redhat.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Howard Chu <hyc@symas.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Linux Kernel Mailing List <Linux-Kernel@vger.kernel.org>,
-        linux-serial@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>
-Subject: Re: [PATCH] n_tty: Remove LINEMODE support
-References: <1421616632-4077-1-git-send-email-peter@hurleysoftware.com> <54BC3771.7030204@symas.com> <54BC5EC7.1090202@hurleysoftware.com> <54BCFC94.1040605@symas.com> <54BD1B53.9030901@hurleysoftware.com> <54BD328F.9090208@symas.com> <54BD567C.8070200@hurleysoftware.com> <54BD5E54.3050909@symas.com> <54BE9840.8080808@hurleysoftware.com> <54BEA0E0.9080807@symas.com>
-In-Reply-To: <54BEA0E0.9080807@symas.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2015 01:39 PM, Howard Chu wrote:
-> Peter Hurley wrote:
->> On 01/19/2015 02:43 PM, Howard Chu wrote:
+On Tue, 20 Jan 2015, Josh Poimboeuf wrote:
 
-[...]
-
->> So it's really back to the question of, does allowing EXTPROC for regular
->> ttys have _value_?
+> Yeah, maybe, depending on the nature of the bug.
 > 
-> Does preventing it have value?
+> > WARN_ON_RATELIMIT?
+> 
+> Since this warning should never happen unless there's a code bug, I
+> think WARN_ON_ONCE should be sufficient?
 
-Not that that is the appropriate metric for kernel behavior,
-but yes, preventing it has value: it significantly limits
-the matrix required for testing.
+Yeah. The stacktrace is likely not to point to the source of the problem 
+anyway, so spamming dmesg with it is rather pointless.
 
+I've changed WARN_ON() in ftrace handler to WARN_ON_ONCE() and applied. 
+Thanks,
 
-> I like having the option of turning linemode on and off in a session, for debugging purposes if nothing else.
-
-... which is just as achievable with a pty-specific ioctl.
-
-Regards,
-Peter Hurley
+-- 
+Jiri Kosina
+SUSE Labs
