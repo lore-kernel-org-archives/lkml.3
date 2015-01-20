@@ -1,102 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752140AbbATNsw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 08:48:52 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:51784 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751242AbbATNsu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 08:48:50 -0500
-Message-ID: <1421761717.29486.24.camel@linux-0dmf.site>
-Subject: Re: [PATCH 11/11] usb: core: fix a race with
- usb_queue_reset_device()
-From: Oliver Neukum <oneukum@suse.de>
-To: Olivier Sobrie <olivier@sobrie.be>
-Cc: Jan Dumon <j.dumon@option.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org
-Date: Tue, 20 Jan 2015 14:48:37 +0100
-In-Reply-To: <1421756978-4093-12-git-send-email-olivier@sobrie.be>
-References: <1421756978-4093-1-git-send-email-olivier@sobrie.be>
-	 <1421756978-4093-2-git-send-email-olivier@sobrie.be>
-	 <1421756978-4093-3-git-send-email-olivier@sobrie.be>
-	 <1421756978-4093-4-git-send-email-olivier@sobrie.be>
-	 <1421756978-4093-5-git-send-email-olivier@sobrie.be>
-	 <1421756978-4093-6-git-send-email-olivier@sobrie.be>
-	 <1421756978-4093-7-git-send-email-olivier@sobrie.be>
-	 <1421756978-4093-8-git-send-email-olivier@sobrie.be>
-	 <1421756978-4093-9-git-send-email-olivier@sobrie.be>
-	 <1421756978-4093-10-git-send-email-olivier@sobrie.be>
-	 <1421756978-4093-11-git-send-email-olivier@sobrie.be>
-	 <1421756978-4093-12-git-send-email-olivier@sobrie.be>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752661AbbATNtR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 08:49:17 -0500
+Received: from mail-ig0-f173.google.com ([209.85.213.173]:33038 "EHLO
+	mail-ig0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751876AbbATNtP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 08:49:15 -0500
+Date: Tue, 20 Jan 2015 13:48:57 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Subject: Re: [PATCH v1 0/4] mfd: reorganize Intel drivers
+Message-ID: <20150120134857.GK13701@x1>
+References: <1418313236-10764-1-git-send-email-andriy.shevchenko@linux.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1418313236-10764-1-git-send-email-andriy.shevchenko@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2015-01-20 at 13:29 +0100, Olivier Sobrie wrote:
-> When usb_queue_reset() is called it schedules a work in view of
-> resetting the usb interface. When the reset work is running, it
-> can be scheduled again (e.g. by the usb disconnect method of
-> the driver).
-> 
-> Consider that the reset work is queued again while the reset work
-> is running and that this work leads to a forced unbinding of the
-> usb interface (e.g. because a driver is bound to the interface
-> and has no pre/post_reset methods - see usb_reset_device()).
-> In such condition, usb_unbind_interface() gets called and this
-> function calls usb_cancel_queued_reset() which does nothing
-> because the flag "reset_running" is set to 1. The second reset
-> work that has been scheduled is therefore not cancelled.
-> Later, the usb_reset_device() tries to rebind the interface.
-> If it fails, then the usb interface context which contain the
-> reset work struct is freed and it most likely crash when the
-> second reset work tries to be run.
-> 
-> The following flow shows the problem:
-> * usb_queue_reset_device()
-> * __usb_queue_reset_device() <- If the reset work is queued after here, then
->     reset_running = 1           it will never be cancelled.
->     usb_reset_device()
->       usb_forced_unbind_intf()
->         usb_driver_release_interface()
->           usb_unbind_interface()
->             driver->disconnect()
->               usb_queue_reset_device() <- second reset
+On Thu, 11 Dec 2014, Andy Shevchenko wrote:
 
-That is the sledgehammer approach. Wouldn't it be better to guarantee
-that usb_queue_reset_device() be a nop when reset_running==1 ?
-
->             usb_cancel_queued_reset() <- does nothing because
->                                          the flag reset_running
->                                          is set
->       usb_unbind_and_rebind_marked_interfaces()
->         usb_rebind_intf()
->           device_attach()
->             driver->probe() <- fails (no more drivers hold a reference to
-> 				      the usb interface)
->     reset_running = 0
-> * hub_event()
->     usb_disconnect()
->       usb_disable_device()
->         kobject_release()
->           device_release()
->             usb_release_interface()
->               kfree(intf) <- usb interface context is released
->                              while we still have a pending reset
->                              work that should be run
+> This patchset creates a new folder under drivers/mfd and moves there Intel
+> related drivers.
 > 
-> To avoid this problem, we use a delayed work so that if the reset
-> work is currently run, we can avoid further call to
-> __usb_queue_reset_device() work by using cancel_delayed_work().
-> Unfortunately it increases the size of the usb_interface structure...
+> There is no functional change. The names of the kernel configuration variables
+> are kept the same.
 
-	Regards
-		Oliver
+Can you explain to me why you think the Intel drivers need their own
+sub-directory please?
+
+> Andy Shevchenko (4):
+>   mfd: change a layout for the Intel related drivers
+>   mfd: intel/lpc/sch: move driver to dedicated folder
+>   mfd: intel/lpc/ich: move driver to dedicated folder
+>   mfd: intel/pmic: move driver to dedicated folder
+> 
+>  .../platform/intel-mid/device_libs/platform_msic.c |  2 +-
+>  .../intel-mid/device_libs/platform_msic_audio.c    |  2 +-
+>  .../intel-mid/device_libs/platform_msic_battery.c  |  2 +-
+>  .../intel-mid/device_libs/platform_msic_gpio.c     |  2 +-
+>  .../intel-mid/device_libs/platform_msic_ocd.c      |  2 +-
+>  .../device_libs/platform_msic_power_btn.c          |  2 +-
+>  .../intel-mid/device_libs/platform_msic_thermal.c  |  2 +-
+>  drivers/acpi/pmic/intel_pmic_crc.c                 |  2 +-
+>  drivers/gpio/gpio-crystalcove.c                    |  2 +-
+>  drivers/gpio/gpio-ich.c                            |  2 +-
+>  drivers/gpio/gpio-msic.c                           |  2 +-
+>  drivers/mfd/Kconfig                                | 42 ++--------------------
+>  drivers/mfd/Makefile                               |  6 +---
+>  drivers/mfd/intel/Kconfig                          | 19 ++++++++++
+>  drivers/mfd/intel/Makefile                         |  9 +++++
+>  drivers/mfd/intel/lpc/Kconfig                      | 17 +++++++++
+>  drivers/mfd/intel/lpc/Makefile                     |  2 ++
+>  drivers/mfd/{lpc_ich.c => intel/lpc/ich.c}         | 10 ++----
+>  drivers/mfd/{lpc_sch.c => intel/lpc/sch.c}         |  2 +-
+>  drivers/mfd/intel/mid/Kconfig                      |  8 +++++
+>  drivers/mfd/intel/mid/Makefile                     |  1 +
+>  drivers/mfd/{intel_msic.c => intel/mid/msic.c}     |  2 +-
+>  .../{intel_soc_pmic_core.c => intel/pmic_core.c}   |  7 ++--
+>  .../{intel_soc_pmic_core.h => intel/pmic_core.h}   |  2 +-
+>  .../mfd/{intel_soc_pmic_crc.c => intel/pmic_crc.c} |  7 ++--
+>  drivers/platform/x86/intel_mid_powerbtn.c          |  2 +-
+>  drivers/platform/x86/intel_mid_thermal.c           |  2 +-
+>  drivers/watchdog/iTCO_wdt.c                        |  2 +-
+>  include/linux/mfd/{lpc_ich.h => intel/ich.h}       |  6 +---
+>  include/linux/mfd/{intel_msic.h => intel/msic.h}   |  2 +-
+>  .../linux/mfd/{intel_soc_pmic.h => intel/pmic.h}   |  0
+>  31 files changed, 90 insertions(+), 80 deletions(-)
+>  create mode 100644 drivers/mfd/intel/Kconfig
+>  create mode 100644 drivers/mfd/intel/Makefile
+>  create mode 100644 drivers/mfd/intel/lpc/Kconfig
+>  create mode 100644 drivers/mfd/intel/lpc/Makefile
+>  rename drivers/mfd/{lpc_ich.c => intel/lpc/ich.c} (98%)
+>  rename drivers/mfd/{lpc_sch.c => intel/lpc/sch.c} (99%)
+>  create mode 100644 drivers/mfd/intel/mid/Kconfig
+>  create mode 100644 drivers/mfd/intel/mid/Makefile
+>  rename drivers/mfd/{intel_msic.c => intel/mid/msic.c} (99%)
+>  rename drivers/mfd/{intel_soc_pmic_core.c => intel/pmic_core.c} (97%)
+>  rename drivers/mfd/{intel_soc_pmic_core.h => intel/pmic_core.h} (94%)
+>  rename drivers/mfd/{intel_soc_pmic_crc.c => intel/pmic_crc.c} (96%)
+>  rename include/linux/mfd/{lpc_ich.h => intel/ich.h} (81%)
+>  rename include/linux/mfd/{intel_msic.h => intel/msic.h} (99%)
+>  rename include/linux/mfd/{intel_soc_pmic.h => intel/pmic.h} (100%)
+> 
 
 -- 
-Oliver Neukum <oneukum@suse.de>
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
