@@ -1,163 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754985AbbATLVS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 06:21:18 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:61589 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753959AbbATLVP (ORCPT
+	id S1755029AbbATLVy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 06:21:54 -0500
+Received: from www.linutronix.de ([62.245.132.108]:48037 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755003AbbATLVv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 06:21:15 -0500
-Date: Tue, 20 Jan 2015 11:21:07 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Jacek Anaszewski <j.anaszewski@samsung.com>
-Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
-        kyungmin.park@samsung.com, b.zolnierkie@samsung.com, pavel@ucw.cz,
-        cooloney@gmail.com, rpurdie@rpsys.net, sakari.ailus@iki.fi,
-        s.nawrocki@samsung.com, Andrzej Hajda <a.hajda@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>, Rob Herring <robh+dt@kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH/RFC v10 09/19] DT: Add documentation for the mfd Maxim
- max77693
-Message-ID: <20150120112107.GG13701@x1>
-References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
- <1420816989-1808-10-git-send-email-j.anaszewski@samsung.com>
+	Tue, 20 Jan 2015 06:21:51 -0500
+Date: Tue, 20 Jan 2015 12:21:24 +0100 (CET)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+cc: peterz@infradead.org, linuxppc-dev@lists.ozlabs.org, mingo@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] idle/tick-broadcast: Exit cpu idle poll loop when cleared
+ from tick_broadcast_force_mask
+In-Reply-To: <20150119052754.20256.54721.stgit@preeti.in.ibm.com>
+Message-ID: <alpine.DEB.2.11.1501201216420.5526@nanos>
+References: <20150119052754.20256.54721.stgit@preeti.in.ibm.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1420816989-1808-10-git-send-email-j.anaszewski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 09 Jan 2015, Jacek Anaszewski wrote:
-
-> This patch adds device tree binding documentation for
-> the flash cell of the Maxim max77693 multifunctional device.
+On Mon, 19 Jan 2015, Preeti U Murthy wrote:
+> An idle cpu enters cpu_idle_poll() if it is set in the tick_broadcast_force_mask.
+> This is so that it does not incur the overhead of entering idle states when it is expected
+> to be woken up anytime then through a broadcast IPI. The condition that forces an exit out
+> of the idle polling is the check on setting of the TIF_NEED_RESCHED flag for the idle thread.
 > 
-> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
-> Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
-> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Lee Jones <lee.jones@linaro.org>
-> Cc: Chanwoo Choi <cw00.choi@samsung.com>
-> Cc: Bryan Wu <cooloney@gmail.com>
-> Cc: Richard Purdie <rpurdie@rpsys.net>
-> Cc: Rob Herring <robh+dt@kernel.org>
-> Cc: Pawel Moll <pawel.moll@arm.com>
-> Cc: Mark Rutland <mark.rutland@arm.com>
-> Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
-> Cc: Kumar Gala <galak@codeaurora.org>
+> When the broadcast IPI does arrive, it is not guarenteed that the handler sets the
+> TIF_NEED_RESCHED flag. Hence although the cpu is cleared in the tick_broadcast_force_mask,
+> it continues to loop in cpu_idle_poll unnecessarily wasting power. Hence exit the idle
+> poll loop if the tick_broadcast_force_mask gets cleared and enter idle states.
+> 
+> Of course if the cpu has entered cpu_idle_poll() on being asked to poll explicitly,
+> it continues to poll till it is asked to reschedule.
+> 
+> Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
 > ---
->  Documentation/devicetree/bindings/mfd/max77693.txt |   69 ++++++++++++++++++++
->  1 file changed, 69 insertions(+)
 > 
-> diff --git a/Documentation/devicetree/bindings/mfd/max77693.txt b/Documentation/devicetree/bindings/mfd/max77693.txt
-> index 01e9f30..ef184f0 100644
-> --- a/Documentation/devicetree/bindings/mfd/max77693.txt
-> +++ b/Documentation/devicetree/bindings/mfd/max77693.txt
-> @@ -41,7 +41,52 @@ Optional properties:
->  	 To get more informations, please refer to documentaion.
->  	[*] refer Documentation/devicetree/bindings/pwm/pwm.txt
->  
-> +- led : the LED submodule device node
-> +
-> +There are two led outputs available - fled1 and fled2. Each of them can
-> +control a separate led or they can be connected together to double
-> +the maximum current for a single connected led. One led is represented
-> +by one child node.
-> +
-> +Required properties:
-> +- compatible : Must be "maxim,max77693-led".
-> +
-> +Optional properties:
-> +- maxim,trigger-type : Flash trigger type.
-> +	Possible trigger types:
-> +		MAX77693_LED_TRIG_TYPE_EDGE - Rising edge of the signal triggers
-> +			the flash,
-> +		MAX77693_LED_TRIG_TYPE_LEVEL - Strobe pulse length controls
-> +			duration of the flash.
+>  kernel/sched/idle.c |    3 ++-
+>  1 file changed, 2 insertions(+), 1 deletion(-)
+> 
+> diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
+> index c47fce7..aaf1c1d 100644
+> --- a/kernel/sched/idle.c
+> +++ b/kernel/sched/idle.c
+> @@ -47,7 +47,8 @@ static inline int cpu_idle_poll(void)
+>  	rcu_idle_enter();
+>  	trace_cpu_idle_rcuidle(0, smp_processor_id());
+>  	local_irq_enable();
+> -	while (!tif_need_resched())
+> +	while (!tif_need_resched() &&
+> +		(cpu_idle_force_poll || tick_check_broadcast_expired()))
 
-I think you should represent the proper values here instead of the
-defines.
+You explain the tick_check_broadcast_expired() bit, but what about the
+cpu_idle_force_poll part?
 
-> +- maxim,boost-mode :
-> +	In boost mode the device can produce up to 1.2A of total current
-> +	on both outputs. The maximum current on each output is reduced
-> +	to 625mA then. If not enabled explicitly, boost setting defaults to
-> +	MAX77693_LED_BOOST_FIXED in case both current sources are used.
-> +	Possible values:
-> +		MAX77693_LED_BOOST_OFF - no boost,
-> +		MAX77693_LED_BOOST_ADAPTIVE - adaptive mode,
-> +		MAX77693_LED_BOOST_FIXED - fixed mode.
+Thanks,
 
-Same here.
-
-> +- maxim,boost-vout : Output voltage of the boost module in millivolts.
-
--mvout?
--microvout?
-
-> +- maxim,vsys-min : Low input voltage level in millivolts. Flash is not fired
-> +	if chip estimates that system voltage could drop below this level due
-> +	to flash power consumption.
-
-mvsys?
-microvsys?
-
-> +Required properties of the LED child node:
-> +- label : see Documentation/devicetree/bindings/leds/common.txt
-> +- led-sources : see Documentation/devicetree/bindings/leds/common.txt
-> +
-> +Optional properties of the LED child node:
-> +- max-microamp : see Documentation/devicetree/bindings/leds/common.txt
-> +		Range: 15625 - 250000
-> +- flash-max-microamp : see Documentation/devicetree/bindings/leds/common.txt
-> +		Range: 15625 - 1000000
-> +- flash-timeout-us : see Documentation/devicetree/bindings/leds/common.txt
-> +		Range: 62500 - 1000000
-> +
->  Example:
-> +#include <dt-bindings/mfd/max77693.h>
-> +
->  	max77693@66 {
->  		compatible = "maxim,max77693";
->  		reg = <0x66>;
-> @@ -73,4 +118,28 @@ Example:
->  			pwms = <&pwm 0 40000 0>;
->  			pwm-names = "haptic";
->  		};
-> +
-> +		led {
-> +			compatible = "maxim,max77693-led";
-> +			maxim,trigger-type = <MAX77693_LED_TRIG_TYPE_LEVEL>;
-> +			maxim,boost-mode = <MAX77693_LED_BOOST_FIXED>;
-> +			maxim,boost-vout = <5000>;
-> +			maxim,vsys-min = <2400>;
-> +
-> +			camera1_flash: led1 {
-> +				label = "max77693-flash1";
-> +				led-sources = <1 0>;
-> +				max-microamp = <250000>;
-> +				flash-max-microamp = <625000>;
-> +				flash-timeout-us = <1000000>;
-> +			};
-> +
-> +			camera2_flash: led2 {
-> +				label = "max77693-flash2";
-> +				led-sources = <0 1>;
-> +				max-microamp = <250000>;
-> +				flash-max-microamp = <625000>;
-> +				flash-timeout-us = <1000000>;
-> +			};
-> +		};
->  	};
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+	tglx
