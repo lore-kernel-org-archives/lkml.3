@@ -1,190 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752712AbbATORo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 09:17:44 -0500
-Received: from mail-ig0-f174.google.com ([209.85.213.174]:57091 "EHLO
-	mail-ig0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751651AbbATORO (ORCPT
+	id S1752656AbbATOR1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 09:17:27 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:47823 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750771AbbATORX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 09:17:14 -0500
-Date: Tue, 20 Jan 2015 14:17:08 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>
-Subject: Re: [PATCH v2] mfd: max77686/802: Remove support for board files
-Message-ID: <20150120141708.GR13701@x1>
-References: <1419844156-20907-1-git-send-email-k.kozlowski@samsung.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1419844156-20907-1-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 20 Jan 2015 09:17:23 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-49-54be63710cb3
+Message-id: <54BE6368.1080609@samsung.com>
+Date: Tue, 20 Jan 2015 15:17:12 +0100
+From: Sylwester Nawrocki <s.nawrocki@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.1.2
+MIME-version: 1.0
+To: Chanwoo Choi <cw00.choi@samsung.com>, kgene@kernel.org
+Cc: myungjoo.ham@samsung.com, kyungmin.park@samsung.com,
+        rafael.j.wysocki@intel.com, mark.rutland@arm.com,
+        a.kesavan@samsung.com, tomasz.figa@gmail.com, k.kozlowski@samsung.com,
+        b.zolnierkie@samsung.com, robh+dt@kernel.org, inki.dae@samsung.com,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org,
+        Mike Turquette <mturquette@linaro.org>
+Subject: Re: [PATCH v4 4/9] clk: samsung: exynos4: Add divider clock id for
+ memory bus frequency
+References: <1421286657-4720-1-git-send-email-cw00.choi@samsung.com>
+ <1421286657-4720-5-git-send-email-cw00.choi@samsung.com>
+In-reply-to: <1421286657-4720-5-git-send-email-cw00.choi@samsung.com>
+Content-type: text/plain; charset=windows-1252
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrOLMWRmVeSWpSXmKPExsVy+t/xq7qFyftCDHZ94LF4vGYxk8XGGetZ
+	La5/ec5qMen+BBaL1y8MLfofv2a2ONv0ht1i0+NrrBaXd81hs/jce4TRYsb5fUwWS69fZLJ4
+	OuEim8XtxhVsFo9XvGW3aN17hN1i1a4/jA6CHmvmrWH02DnrLrvH4j0vmTw2repk87hzbQ+b
+	x+Yl9R59W1YxenzeJBfAEcVlk5Kak1mWWqRvl8CVcftfM0vBW+mKc0v3sDYwThLvYuTgkBAw
+	keh/7dbFyAlkiklcuLeerYuRi0NIYCmjRM+dBjaQhJDAJ0aJqcezQGxeAS2JU0ea2UFsFgFV
+	ian3JoPVsAkYSvQe7WMEsUUFIiRO3t3DDlEvKPFj8j0WkF0iAlYSJ9akgcxnFljOLDGhdTcL
+	SI2wQJLEngWNTCA1QgL1Eve+eIGYnAKuElvP+oKYzAJ6EvcvaoEUMwvIS2xe85Z5AqPALCTz
+	ZyFUzUJStYCReRWjaGppckFxUnqukV5xYm5xaV66XnJ+7iZGSGR93cG49JjVIUYBDkYlHt4T
+	zntDhFgTy4orcw8xSnAwK4nwnjXfFyLEm5JYWZValB9fVJqTWnyIkYmDU6qB8fDD5j1hTlfW
+	X7RrUtmyKtn0+iz9P0Gza3Qi65c7/0y9uOrPltQrF7e/mVCsoGIZcKql8JWR8rOYmSF/f/et
+	+ff165Lv+Rsfutxs9Fy0SWHriaNKu3SZWuee1vJ2iko0T7L3esEbpRfveTT7bsI2VtVtZQ+3
+	JZVFXmPVLb/0XGZzVqH/1zwvTyWW4oxEQy3mouJEAIP0vUiKAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 29 Dec 2014, Krzysztof Kozlowski wrote:
+On 15/01/15 02:50, Chanwoo Choi wrote:
+> This patch adds the divider clock id for Exynos4 memory bus frequency.
+> The clock id is used fo DVFS (Dynamic Voltage/Frequency Scaling)
+> feature of exynos memory bus frequency.
+> 
+> Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+> Cc: Tomasz Figa <tomasz.figa@gmail.com>
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 
-> The driver is used only on Exynos based boards with DTS support.
-> After removal of board file support from max77686 and max77802 regulator
-> drivers, the MFD driver can be converted to DTS-only version. This
-> simplifies a little the code:
-> 1. No dead (unused) entries in platform_data structure.
-> 2. More code removed.
-> 3. Regulator driver does not depend on allocated memory
->    from MFD driver.
-> 4. It makes also easier extending the regulator driver.
-> 
-> Add to the max77686 MFD driver dependency on CONFIG_OF because without
-> DTS the regulator drivers (max77686 and max77802) won't bind.
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Reviewed-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> Acked-by: Lee Jones <lee.jones@linaro.org>
-> Acked-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> Tested-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> 
-> ---
-> 
-> This was a part of [1] patchset. Other patches from that patchset were
-> merged so re-sending this without any changes.
+I've queued this patch for the clk tree, please let me know if a topic
+branch is needed.
 
-Applied now, thanks.
+--
+Thanks,
+Sylwester
 
-> [1] https://lkml.org/lkml/2014/11/5/122
-> ---
->  drivers/mfd/Kconfig                  |  1 +
->  drivers/mfd/max77686.c               | 23 -----------------------
->  include/linux/mfd/max77686-private.h |  1 -
->  include/linux/mfd/max77686.h         | 28 ----------------------------
->  4 files changed, 1 insertion(+), 52 deletions(-)
-> 
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> index 2e6b7311fabc..4a1bb86ae27c 100644
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@ -417,6 +417,7 @@ config MFD_MAX14577
->  config MFD_MAX77686
->  	bool "Maxim Semiconductor MAX77686/802 PMIC Support"
->  	depends on I2C=y
-> +	depends on OF
->  	select MFD_CORE
->  	select REGMAP_I2C
->  	select REGMAP_IRQ
-> diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
-> index 929795eae9fc..3da237afacde 100644
-> --- a/drivers/mfd/max77686.c
-> +++ b/drivers/mfd/max77686.c
-> @@ -205,24 +205,10 @@ static const struct of_device_id max77686_pmic_dt_match[] = {
->  	{ },
+>  drivers/clk/samsung/clk-exynos4.c   | 10 +++++-----
+>  include/dt-bindings/clock/exynos4.h |  7 ++++++-
+>  2 files changed, 11 insertions(+), 6 deletions(-)
+>
+> diff --git a/drivers/clk/samsung/clk-exynos4.c
+b/drivers/clk/samsung/clk-exynos4.c
+> index 88e8c6b..51462e8 100644
+> --- a/drivers/clk/samsung/clk-exynos4.c
+> +++ b/drivers/clk/samsung/clk-exynos4.c
+> @@ -703,12 +703,12 @@ static struct samsung_mux_clock exynos4x12_mux_clks[]
+__initdata = {
+>
+>  /* list of divider clocks supported in all exynos4 soc's */
+>  static struct samsung_div_clock exynos4_div_clks[] __initdata = {
+> -	DIV(0, "div_gdl", "mout_gdl", DIV_LEFTBUS, 0, 3),
+> +	DIV(CLK_DIV_GDL, "div_gdl", "mout_gdl", DIV_LEFTBUS, 0, 3),
+>  	DIV(0, "div_gpl", "div_gdl", DIV_LEFTBUS, 4, 3),
+>  	DIV(0, "div_clkout_leftbus", "mout_clkout_leftbus",
+>  			CLKOUT_CMU_LEFTBUS, 8, 6),
+>
+> -	DIV(0, "div_gdr", "mout_gdr", DIV_RIGHTBUS, 0, 3),
+> +	DIV(CLK_DIV_GDR, "div_gdr", "mout_gdr", DIV_RIGHTBUS, 0, 3),
+>  	DIV(0, "div_gpr", "div_gdr", DIV_RIGHTBUS, 4, 3),
+>  	DIV(0, "div_clkout_rightbus", "mout_clkout_rightbus",
+>  			CLKOUT_CMU_RIGHTBUS, 8, 6),
+> @@ -781,10 +781,10 @@ static struct samsung_div_clock exynos4_div_clks[]
+__initdata = {
+>  			CLK_SET_RATE_PARENT, 0),
+>  	DIV(0, "div_clkout_top", "mout_clkout_top", CLKOUT_CMU_TOP, 8, 6),
+>
+> -	DIV(0, "div_acp", "mout_dmc_bus", DIV_DMC0, 0, 3),
+> +	DIV(CLK_DIV_ACP, "div_acp", "mout_dmc_bus", DIV_DMC0, 0, 3),
+>  	DIV(0, "div_acp_pclk", "div_acp", DIV_DMC0, 4, 3),
+>  	DIV(0, "div_dphy", "mout_dphy", DIV_DMC0, 8, 3),
+> -	DIV(0, "div_dmc", "mout_dmc_bus", DIV_DMC0, 12, 3),
+> +	DIV(CLK_DIV_DMC, "div_dmc", "mout_dmc_bus", DIV_DMC0, 12, 3),
+>  	DIV(0, "div_dmcd", "div_dmc", DIV_DMC0, 16, 3),
+>  	DIV(0, "div_dmcp", "div_dmcd", DIV_DMC0, 20, 3),
+>  	DIV(0, "div_pwi", "mout_pwi", DIV_DMC1, 8, 4),
+> @@ -829,7 +829,7 @@ static struct samsung_div_clock exynos4x12_div_clks[]
+__initdata = {
+>  	DIV_F(CLK_DIV_MCUISP1, "div_mcuisp1", "div_mcuisp0", E4X12_DIV_ISP1,
+>  						8, 3, CLK_GET_RATE_NOCACHE, 0),
+>  	DIV(CLK_SCLK_FIMG2D, "sclk_fimg2d", "mout_g2d", DIV_DMC1, 0, 4),
+> -	DIV(0, "div_c2c", "mout_c2c", DIV_DMC1, 4, 3),
+> +	DIV(CLK_DIV_C2C, "div_c2c", "mout_c2c", DIV_DMC1, 4, 3),
+>  	DIV(0, "div_c2c_aclk", "div_c2c", DIV_DMC1, 12, 3),
 >  };
->  
-> -static struct max77686_platform_data *max77686_i2c_parse_dt_pdata(struct device
-> -								  *dev)
-> -{
-> -	struct max77686_platform_data *pd;
-> -
-> -	pd = devm_kzalloc(dev, sizeof(*pd), GFP_KERNEL);
-> -	if (!pd)
-> -		return NULL;
-> -
-> -	dev->platform_data = pd;
-> -	return pd;
-> -}
-> -
->  static int max77686_i2c_probe(struct i2c_client *i2c,
->  			      const struct i2c_device_id *id)
->  {
->  	struct max77686_dev *max77686 = NULL;
-> -	struct max77686_platform_data *pdata = dev_get_platdata(&i2c->dev);
->  	const struct of_device_id *match;
->  	unsigned int data;
->  	int ret = 0;
-> @@ -233,14 +219,6 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
->  	const struct mfd_cell *cells;
->  	int n_devs;
->  
-> -	if (IS_ENABLED(CONFIG_OF) && i2c->dev.of_node && !pdata)
-> -		pdata = max77686_i2c_parse_dt_pdata(&i2c->dev);
-> -
-> -	if (!pdata) {
-> -		dev_err(&i2c->dev, "No platform data found.\n");
-> -		return -EINVAL;
-> -	}
-> -
->  	max77686 = devm_kzalloc(&i2c->dev,
->  				sizeof(struct max77686_dev), GFP_KERNEL);
->  	if (!max77686)
-> @@ -259,7 +237,6 @@ static int max77686_i2c_probe(struct i2c_client *i2c,
->  	max77686->dev = &i2c->dev;
->  	max77686->i2c = i2c;
->  
-> -	max77686->wakeup = pdata->wakeup;
->  	max77686->irq = i2c->irq;
->  
->  	if (max77686->type == TYPE_MAX77686) {
-> diff --git a/include/linux/mfd/max77686-private.h b/include/linux/mfd/max77686-private.h
-> index 960b92ad450d..f5043490d67c 100644
-> --- a/include/linux/mfd/max77686-private.h
-> +++ b/include/linux/mfd/max77686-private.h
-> @@ -447,7 +447,6 @@ struct max77686_dev {
->  	struct regmap_irq_chip_data *rtc_irq_data;
->  
->  	int irq;
-> -	bool wakeup;
->  	struct mutex irqlock;
->  	int irq_masks_cur[MAX77686_IRQ_GROUP_NR];
->  	int irq_masks_cache[MAX77686_IRQ_GROUP_NR];
-> diff --git a/include/linux/mfd/max77686.h b/include/linux/mfd/max77686.h
-> index 553f7d09258a..bb995ab9a575 100644
-> --- a/include/linux/mfd/max77686.h
-> +++ b/include/linux/mfd/max77686.h
-> @@ -119,12 +119,6 @@ enum max77802_regulators {
->  	MAX77802_REG_MAX,
->  };
->  
-> -struct max77686_regulator_data {
-> -	int id;
-> -	struct regulator_init_data *initdata;
-> -	struct device_node *of_node;
-> -};
-> -
->  enum max77686_opmode {
->  	MAX77686_OPMODE_NORMAL,
->  	MAX77686_OPMODE_LP,
-> @@ -136,26 +130,4 @@ struct max77686_opmode_data {
->  	int mode;
->  };
->  
-> -struct max77686_platform_data {
-> -	int ono;
-> -	int wakeup;
-> -
-> -	/* ---- PMIC ---- */
-> -	struct max77686_regulator_data *regulators;
-> -	int num_regulators;
-> -
-> -	struct max77686_opmode_data *opmode_data;
-> -
-> -	/*
-> -	 * GPIO-DVS feature is not enabled with the current version of
-> -	 * MAX77686 driver. Buck2/3/4_voltages[0] is used as the default
-> -	 * voltage at probe. DVS/SELB gpios are set as OUTPUT-LOW.
-> -	 */
-> -	int buck234_gpio_dvs[3]; /* GPIO of [0]DVS1, [1]DVS2, [2]DVS3 */
-> -	int buck234_gpio_selb[3]; /* [0]SELB2, [1]SELB3, [2]SELB4 */
-> -	unsigned int buck2_voltage[8]; /* buckx_voltage in uV */
-> -	unsigned int buck3_voltage[8];
-> -	unsigned int buck4_voltage[8];
-> -};
-> -
->  #endif /* __LINUX_MFD_MAX77686_H */
-
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+>
+> diff --git a/include/dt-bindings/clock/exynos4.h
+b/include/dt-bindings/clock/exynos4.h
+> index 34fe28c..c4b1676 100644
+> --- a/include/dt-bindings/clock/exynos4.h
+> +++ b/include/dt-bindings/clock/exynos4.h
+> @@ -262,8 +262,13 @@
+>  #define CLK_DIV_MCUISP1		453 /* Exynos4x12 only */
+>  #define CLK_DIV_ACLK200		454 /* Exynos4x12 only */
+>  #define CLK_DIV_ACLK400_MCUISP	455 /* Exynos4x12 only */
+> +#define CLK_DIV_ACP		456
+> +#define CLK_DIV_DMC		457
+> +#define CLK_DIV_C2C		458 /* Exynos4x12 only */
+> +#define CLK_DIV_GDL		459
+> +#define CLK_DIV_GDR		460
+>
+>  /* must be greater than maximal clock id */
+> -#define CLK_NR_CLKS		456
+> +#define CLK_NR_CLKS		461
+>
+>  #endif /* _DT_BINDINGS_CLOCK_EXYNOS_4_H */
+> -- 1.8.5.5
