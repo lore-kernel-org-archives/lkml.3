@@ -1,78 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022AbbATLZW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 06:25:22 -0500
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:56019 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753491AbbATLZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 06:25:20 -0500
-Message-ID: <54BE3B0E.2050502@linux.vnet.ibm.com>
-Date: Tue, 20 Jan 2015 16:55:02 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1754314AbbATL0W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 06:26:22 -0500
+Received: from mail.linuxfoundation.org ([140.211.169.12]:36126 "EHLO
+	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753588AbbATL0U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 06:26:20 -0500
+Date: Tue, 20 Jan 2015 19:26:09 +0800
+From: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+To: Johannes Stezenbach <js@sig21.net>
+Cc: arnd@arndb.de, ebiederm@xmission.com, gnomes@lxorguk.ukuu.org.uk,
+        teg@jklm.no, jkosina@suse.cz, luto@amacapital.net,
+        linux-api@vger.kernel.org, linux-kernel@vger.kernel.org,
+        daniel@zonque.org, dh.herrmann@gmail.com, tixxdz@opendz.org
+Subject: Re: [PATCH v3 00/13] Add kdbus implementation
+Message-ID: <20150120112609.GA17198@kroah.com>
+References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>
+ <20150119180642.GA27957@sig21.net>
+ <20150119183806.GA8479@kroah.com>
+ <20150119201906.GA337@sig21.net>
+ <20150119203155.GA15441@kroah.com>
+ <20150119233812.GA1874@sig21.net>
+ <20150120011359.GE865@kroah.com>
+ <20150120105712.GA6260@sig21.net>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: peterz@infradead.org, linuxppc-dev@lists.ozlabs.org, mingo@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] idle/tick-broadcast: Exit cpu idle poll loop when cleared
- from tick_broadcast_force_mask
-References: <20150119052754.20256.54721.stgit@preeti.in.ibm.com> <alpine.DEB.2.11.1501201216420.5526@nanos>
-In-Reply-To: <alpine.DEB.2.11.1501201216420.5526@nanos>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15012011-0033-0000-0000-0000019AD9AD
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150120105712.GA6260@sig21.net>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2015 04:51 PM, Thomas Gleixner wrote:
-> On Mon, 19 Jan 2015, Preeti U Murthy wrote:
->> An idle cpu enters cpu_idle_poll() if it is set in the tick_broadcast_force_mask.
->> This is so that it does not incur the overhead of entering idle states when it is expected
->> to be woken up anytime then through a broadcast IPI. The condition that forces an exit out
->> of the idle polling is the check on setting of the TIF_NEED_RESCHED flag for the idle thread.
->>
->> When the broadcast IPI does arrive, it is not guarenteed that the handler sets the
->> TIF_NEED_RESCHED flag. Hence although the cpu is cleared in the tick_broadcast_force_mask,
->> it continues to loop in cpu_idle_poll unnecessarily wasting power. Hence exit the idle
->> poll loop if the tick_broadcast_force_mask gets cleared and enter idle states.
->>
->> Of course if the cpu has entered cpu_idle_poll() on being asked to poll explicitly,
->> it continues to poll till it is asked to reschedule.
->>
->> Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
->> ---
->>
->>  kernel/sched/idle.c |    3 ++-
->>  1 file changed, 2 insertions(+), 1 deletion(-)
->>
->> diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
->> index c47fce7..aaf1c1d 100644
->> --- a/kernel/sched/idle.c
->> +++ b/kernel/sched/idle.c
->> @@ -47,7 +47,8 @@ static inline int cpu_idle_poll(void)
->>  	rcu_idle_enter();
->>  	trace_cpu_idle_rcuidle(0, smp_processor_id());
->>  	local_irq_enable();
->> -	while (!tif_need_resched())
->> +	while (!tif_need_resched() &&
->> +		(cpu_idle_force_poll || tick_check_broadcast_expired()))
+On Tue, Jan 20, 2015 at 11:57:12AM +0100, Johannes Stezenbach wrote:
+> On Tue, Jan 20, 2015 at 09:13:59AM +0800, Greg Kroah-Hartman wrote:
+> > On Tue, Jan 20, 2015 at 12:38:12AM +0100, Johannes Stezenbach wrote:
+> > > Those automotive applications you
+> > > were talking about, what was the OS they were ported from
+> > > and what was the messaging API they used?
+> > 
+> > They were ported from QNX and I don't know the exact api, it is wrapped
+> > up in a library layer for them to use.  And typically, they run about
+> > 40 thousand messages in the first few seconds of startup time.  Or was
+> > it 400 thousand?  Something huge and crazy to be doing on tiny ARM
+> > chips, but that's the IVI industry for you :(
 > 
-> You explain the tick_check_broadcast_expired() bit, but what about the
-> cpu_idle_force_poll part?
+> So I did some googling and found in QNX servers create a channel
+> to receive messages, and clients connect to this channel.
+> Multiple clients can connect to the channel.
 
-The last few lines which say "Of course if the cpu has entered
-cpu_idle_poll() on being asked to poll explicitly, it continues to poll
-till it is asked to reschedule" explains the cpu_idle_force_poll part.
-Perhaps I should s/poll explicitly/do cpu_idle_force_poll ?
+Hence, a bus :)
 
-Regards
-Preeti U Murthy
-> 
-> Thanks,
-> 
-> 	tglx
-> 
+> But it is not a bus -- no multicast/broadcast, and no name
+> service or policy rules like D-Bus has.  To me it looks
+> to be similar in functionality to UNIX domain sockets.
 
+It's not as complex as D-Bus, but it's still subscribing to things and
+getting messages.
+
+> My guess is that the people porting from QNX were just confused
+> and their use of D-Bus was in error.  Maybe they should've used
+> plain sockets, capnproto, ZeroMQ or whatever.
+
+I tend to trust that they knew what they were doing, they wouldn't have
+picked D-Bus for no good reason.
+
+> Well, IMHO you got it backwards.  Before adding a complex new IPC
+> API to the kernel you should do the homework and gather some
+> evidence that there will be enough users to justify the addition.
+
+systemd wants this today for early boot.  It will remove lots of code
+and enable a lot of good things to happen.  The first email in this
+thread describes this quite well, is that not sufficient?
+
+> FWIW, my gut feeling was that the earlier attempts to add a new
+> IPC primitve like multicast UNIX domain sockets
+> http://thread.gmane.org/gmane.linux.kernel/1255575/focus=1257999
+> were a much saner approach.  But now I think the comments
+> from this old thread have not been addressed, instead the
+> new approach just made the thing more complex and
+> put in ipc/ instead of net/ to bypass the guards.
+
+Not at all, the networking maintainers said that that proposal was not
+acceptable to them at all and it should not be done in the networking
+stack at all.  So this was solution was created instead, which provides
+a lot more things than the old networking patches did, which shows that
+the networking developers were right to reject it.
+
+thanks,
+
+greg k-h
