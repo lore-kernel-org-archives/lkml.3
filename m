@@ -1,81 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752135AbbATVgd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 16:36:33 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:54494 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750775AbbATVga (ORCPT
+	id S1752456AbbATVh4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 16:37:56 -0500
+Received: from mail-qg0-f54.google.com ([209.85.192.54]:63603 "EHLO
+	mail-qg0-f54.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752164AbbATVhy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 16:36:30 -0500
-Date: Tue, 20 Jan 2015 13:35:45 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Will Deacon <will.deacon@arm.com>, torvalds@linux-foundation.org,
-        oleg@redhat.com, benh@kernel.crashing.org,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Subject: Re: Behaviour of smp_mb__{before,after}_spin* and acquire/release
-Message-ID: <20150120213545.GT9719@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20150113163353.GE31784@arm.com>
- <20150120093443.GA11596@twins.programming.kicks-ass.net>
+	Tue, 20 Jan 2015 16:37:54 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150120093443.GA11596@twins.programming.kicks-ass.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15012021-8236-0000-0000-000008C796C4
+In-Reply-To: <20150120144713.GV13701@x1>
+References: <cover.1419297154.git.micky_ching@realsil.com.cn>
+	<17ba65f4bdf4707bdf038e407ecf5dc012bca281.1419297154.git.micky_ching@realsil.com.cn>
+	<20150120144713.GV13701@x1>
+Date: Tue, 20 Jan 2015 22:37:53 +0100
+Message-ID: <CAPDyKFo9BrfRay=HqY4cNJjmDJ+v_kzieoo7SrD+wxJp7BSG5Q@mail.gmail.com>
+Subject: Re: [PATCH v5 1/6] mfd: rtsx: add func to split u32 into register
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: micky <micky_ching@realsil.com.cn>, Chris Ball <chris@printf.net>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>, Roger <rogerable@realtek.com>,
+        Wei WANG <wei_wang@realsil.com.cn>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 10:34:43AM +0100, Peter Zijlstra wrote:
-> On Tue, Jan 13, 2015 at 04:33:54PM +0000, Will Deacon wrote:
-> > Hi Paul,
-> > 
-> > I started dusting off a series I've been working to implement a relaxed
-> > atomic API in Linux (i.e. things like atomic_read(v, ACQUIRE)) but I'm
-> > having trouble making sense of the ordering semantics we have in mainline
-> > today:
-> 
-> >   2. Does smp_mb__after_unlock_lock order smp_store_release against
-> >      smp_load_acquire? Again, Documentation/memory-barriers.txt puts
-> >      these operations into the RELEASE and ACQUIRE classes respectively,
-> >      but since smp_mb__after_unlock_lock is a NOP everywhere other than
-> >      PowerPC, I don't think this is enforced by the current code. 
-> 
-> Yeah, wasn't Paul going to talk to Ben about that? PPC is the only arch
-> that has the weak ACQUIRE/RELEASE for its spinlocks.
+On 20 January 2015 at 15:47, Lee Jones <lee.jones@linaro.org> wrote:
+> On Tue, 23 Dec 2014, micky_ching@realsil.com.cn wrote:
+>
+>> From: Micky Ching <micky_ching@realsil.com.cn>
+>>
+>> Add helper function to write u32 to registers, if we want to put u32
+>> value to 4 continuous register, this can help us reduce tedious work.
+>>
+>> Signed-off-by: Micky Ching <micky_ching@realsil.com.cn>
+>> Acked-by: Lee Jones <lee.jones@linaro.org>
+>> ---
+>>  include/linux/mfd/rtsx_pci.h | 9 +++++++++
+>>  1 file changed, 9 insertions(+)
+>
+> Applied, thanks.
 
-I thought that you guys were going to propose something and we would see
-what the reaction was.  ;-)
+This one has already been queued by you, for 3.19, and it's in Linus tree. :-)
 
-> >      Most
-> >      architectures follow the pattern used by asm-generic/barrier.h:
-> > 
-> >        release: smp_mb(); STORE
-> >        acquire: LOAD; smp_mb();
-> > 
-> >      which doesn't provide any release -> acquire ordering afaict.
-> 
-> Only when combined on the same address, if the LOAD observes the result
-> of the STORE we can guarantee the rest of the ordering. And if you
-> build a locking primitive with them (or circular lists or whatnot) you
-> have that extra condition.
-> 
-> But yes, I see your argument that this implementation is weak like the
-> PPC.
+For your reference, I have queued the mmc patches which depends on
+$subject patch for 3.20.
 
-A more complete example would be as follows:
+Kind regards
+Uffe
 
-       STOREs followed by release: smp_mb(); STORE A
-       acquire: LOAD A; smp_mb(); preceding LOADs
 
-If the LOAD A gets the value from the STORE A, then the LOADs following
-the acquire are guaranteed to see the STOREs preceding the release.
-
-And yes, this really truly does work fine with weaker ordering.
-
-							Thanx, Paul
-
+>
+>> diff --git a/include/linux/mfd/rtsx_pci.h b/include/linux/mfd/rtsx_pci.h
+>> index 74346d5..9234449 100644
+>> --- a/include/linux/mfd/rtsx_pci.h
+>> +++ b/include/linux/mfd/rtsx_pci.h
+>> @@ -558,6 +558,7 @@
+>>  #define SD_SAMPLE_POINT_CTL          0xFDA7
+>>  #define SD_PUSH_POINT_CTL            0xFDA8
+>>  #define SD_CMD0                              0xFDA9
+>> +#define   SD_CMD_START                       0x40
+>>  #define SD_CMD1                              0xFDAA
+>>  #define SD_CMD2                              0xFDAB
+>>  #define SD_CMD3                              0xFDAC
+>> @@ -967,4 +968,12 @@ static inline u8 *rtsx_pci_get_cmd_data(struct rtsx_pcr *pcr)
+>>       return (u8 *)(pcr->host_cmds_ptr);
+>>  }
+>>
+>> +static inline void rtsx_pci_write_be32(struct rtsx_pcr *pcr, u16 reg, u32 val)
+>> +{
+>> +     rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg,     0xFF, val >> 24);
+>> +     rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 1, 0xFF, val >> 16);
+>> +     rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 2, 0xFF, val >> 8);
+>> +     rtsx_pci_add_cmd(pcr, WRITE_REG_CMD, reg + 3, 0xFF, val);
+>> +}
+>> +
+>>  #endif
+>
+> --
+> Lee Jones
+> Linaro STMicroelectronics Landing Team Lead
+> Linaro.org │ Open source software for ARM SoCs
+> Follow Linaro: Facebook | Twitter | Blog
