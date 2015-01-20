@@ -1,81 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755583AbbATQwp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 11:52:45 -0500
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:39280 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754400AbbATQlJ (ORCPT
+	id S1754795AbbATQlr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 11:41:47 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:56734 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752380AbbATQlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 11:41:09 -0500
-Date: Tue, 20 Jan 2015 16:41:00 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Jacek Anaszewski <j.anaszewski@samsung.com>, linux-leds@vger.kernel.org,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        devicetree@vger.kernel.org, kyungmin.park@samsung.com,
-        b.zolnierkie@samsung.com, cooloney@gmail.com, rpurdie@rpsys.net,
-        sakari.ailus@iki.fi, s.nawrocki@samsung.com,
-        Chanwoo Choi <cw00.choi@samsung.com>
-Subject: Re: [PATCH/RFC v10 07/19] mfd: max77693: Adjust FLASH_EN_SHIFT and
- TORCH_EN_SHIFT macros
-Message-ID: <20150120164100.GE30656@x1>
-References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
- <1420816989-1808-8-git-send-email-j.anaszewski@samsung.com>
- <20150120111719.GF13701@x1>
- <54BE51B2.8040209@samsung.com>
- <54BE6228.5070304@samsung.com>
- <20150120154029.GC13701@x1>
- <20150120160056.GA32144@amd>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20150120160056.GA32144@amd>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 20 Jan 2015 11:41:44 -0500
+From: Xunlei Pang <pang.xunlei@linaro.org>
+To: linux-kernel@vger.kernel.org
+Cc: rtc-linux@googlegroups.com, Thomas Gleixner <tglx@linutronix.de>,
+        Alessandro Zummo <a.zummo@towertech.it>,
+        Feng Tang <feng.tang@intel.com>, John Stultz <john.stultz@linaro.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Xunlei Pang <pang.xunlei@linaro.org>
+Subject: [PATCH 1/3] time: Don't bother to run rtc_resume() for nonstop clocksource
+Date: Tue, 20 Jan 2015 16:41:28 +0000
+Message-Id: <1421772090-13113-1-git-send-email-pang.xunlei@linaro.org>
+X-Mailer: git-send-email 2.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Jan 2015, Pavel Machek wrote:
-> On Tue 2015-01-20 15:40:29, Lee Jones wrote:
-> > On Tue, 20 Jan 2015, Jacek Anaszewski wrote:
-> > 
-> > > On 01/20/2015 02:01 PM, Jacek Anaszewski wrote:
-> > > >On 01/20/2015 12:17 PM, Lee Jones wrote:
-> > > >>On Fri, 09 Jan 2015, Jacek Anaszewski wrote:
-> > > >>
-> > > >>>Modify FLASH_EN_SHIFT and TORCH_EN_SHIFT macros to work properly
-> > > >>>when passed enum max77693_fled values (0 for FLED1 and 1 for FLED2)
-> > > >>>from leds-max77693 driver.
-> > > >>
-> > > >>Off-by-one ay?  Wasn't the original code tested?
-> > > >
-> > > >The driver using these macros is a part of LED / flash API integration
-> > > >patch series, which still undergoes modifications and it hasn't
-> > > >reached its final state yet, as there are many things to discuss.
-> > > 
-> > > To be more precise: the original code had been tested and was working
-> > > properly with the header that is in the mainline. Nonetheless, because
-> > > of the modifications in the driver that was requested during code
-> > > review, it turned out that it would be more convenient to redefine the
-> > > macros.
-> > > 
-> > > I'd opt for just agreeing about the mfd related patches and merge
-> > > them no sooner than the leds-max77693 driver is merged.
-> > 
-> > The only way we can guarantee this is to have them go in during
-> > different merge-windows, unless of course they go in via the same tree.
-> 
-> Umm. Maintainers should be able to coordinate that. Delaying patch for
-> one major release seems rather cruel. Perhaps one maintainer should
-> ack the patch and the second one should merge it...
+If a system does not provide a persistent_clock(), the time will be
+updated on resume by rtc_resume(). With the addition of the non-stop
+clocksources for suspend timing, those systems set the time on resume
+in timekeeping_resume(), but may not provide a valid persistent_clock().
 
-Wow, you're just everywhere today. :)
+This results in the rtc_resume() logic thinking no one has set the time
+and it then will over-write the suspend time again, which is not necessary
+and only increases clock error.
 
-Read the part after the comma again.
+So, fix this for rtc_resume().
 
+Signed-off-by: Xunlei Pang <pang.xunlei@linaro.org>
+---
+ drivers/rtc/class.c         |  2 +-
+ include/linux/timekeeping.h | 11 +++++++++++
+ kernel/time/timekeeping.c   |  3 ++-
+ 3 files changed, 14 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/rtc/class.c b/drivers/rtc/class.c
+index 472a5ad..c8f35a5 100644
+--- a/drivers/rtc/class.c
++++ b/drivers/rtc/class.c
+@@ -102,7 +102,7 @@ static int rtc_resume(struct device *dev)
+ 	struct timespec64	sleep_time;
+ 	int err;
+ 
+-	if (has_persistent_clock())
++	if (rtc_resume_skip())
+ 		return 0;
+ 
+ 	rtc_hctosys_ret = -ENODEV;
+diff --git a/include/linux/timekeeping.h b/include/linux/timekeeping.h
+index 9b63d13..6f3283b 100644
+--- a/include/linux/timekeeping.h
++++ b/include/linux/timekeeping.h
+@@ -238,6 +238,17 @@ extern void getnstime_raw_and_real(struct timespec *ts_raw,
+  */
+ extern bool persistent_clock_exist;
+ extern int persistent_clock_is_local;
++extern bool suspendtime_found;
++
++#ifdef CONFIG_RTC_LIB
++/* Used by rtc_resume() */
++static inline bool rtc_resume_skip(void)
++{
++	return suspendtime_found;
++}
++#else
++static inline void rtc_resume_skip(void) { }
++#endif
+ 
+ static inline bool has_persistent_clock(void)
+ {
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index 6a93185..586bb5c 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -65,6 +65,7 @@ int __read_mostly timekeeping_suspended;
+ 
+ /* Flag for if there is a persistent clock on this platform */
+ bool __read_mostly persistent_clock_exist = false;
++bool suspendtime_found;
+ 
+ static inline void tk_normalize_xtime(struct timekeeper *tk)
+ {
+@@ -1178,8 +1179,8 @@ static void timekeeping_resume(void)
+ 	struct timespec64 ts_new, ts_delta;
+ 	struct timespec tmp;
+ 	cycle_t cycle_now, cycle_delta;
+-	bool suspendtime_found = false;
+ 
++	suspendtime_found = false;
+ 	read_persistent_clock(&tmp);
+ 	ts_new = timespec_to_timespec64(tmp);
+ 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.9.1
+
