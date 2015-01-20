@@ -1,83 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754835AbbATMyH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 07:54:07 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:44008 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752499AbbATMyF (ORCPT
+	id S1754849AbbATMy6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 07:54:58 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:57152 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754486AbbATMy4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 07:54:05 -0500
-Message-ID: <54BE4FE8.7030604@gmail.com>
-Date: Tue, 20 Jan 2015 13:54:00 +0100
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Tue, 20 Jan 2015 07:54:56 -0500
+Date: Tue, 20 Jan 2015 04:54:41 -0800
+From: tip-bot for Oleg Nesterov <tipbot@zytor.com>
+Message-ID: <tip-14e153ef75eecae8fd0738ffb42120f4962a00cd@git.kernel.org>
+Cc: hpa@zytor.com, oleg@redhat.com, tglx@linutronix.de,
+        torvalds@linux-foundation.org, sbsiddha@gmail.com,
+        linux-kernel@vger.kernel.org, riel@redhat.com, mingo@kernel.org
+Reply-To: tglx@linutronix.de, hpa@zytor.com, oleg@redhat.com,
+        torvalds@linux-foundation.org, sbsiddha@gmail.com, riel@redhat.com,
+        linux-kernel@vger.kernel.org, mingo@kernel.org
+In-Reply-To: <20150115191943.GB27332@redhat.com>
+References: <20150115191943.GB27332@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/fpu] x86, fpu: Introduce per-cpu in_kernel_fpu state
+Git-Commit-ID: 14e153ef75eecae8fd0738ffb42120f4962a00cd
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-To: Daniel Mack <daniel@zonque.org>, Florian Weimer <fw@deneb.enyo.de>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: mtk.manpages@gmail.com, Arnd Bergmann <arnd@arndb.de>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tom Gundersen <teg@jklm.no>, Jiri Kosina <jkosina@suse.cz>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Linux API <linux-api@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Djalal Harouni <tixxdz@opendz.org>
-Subject: Re: kdbus: add documentation
-References: <1416546149-24799-1-git-send-email-gregkh@linuxfoundation.org>	<1416546149-24799-2-git-send-email-gregkh@linuxfoundation.org>	<871tolysbb.fsf@mid.deneb.enyo.de>	<CANq1E4RjwCVEVT7031CeiKrNvRFkLBZc4-X1uKdrdzpf=EwJ+A@mail.gmail.com> <87vblwtxee.fsf@mid.deneb.enyo.de> <54BE0D56.5090301@gmail.com> <54BE1116.5060204@zonque.org>
-In-Reply-To: <54BE1116.5060204@zonque.org>
-Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2015 09:25 AM, Daniel Mack wrote:
-> Hi Michael,
-> 
-> On 01/20/2015 09:09 AM, Michael Kerrisk (man-pages) wrote:
->> On 11/30/2014 06:23 PM, Florian Weimer wrote:
->>> * David Herrmann:
->>>
->>>> On Sun, Nov 30, 2014 at 10:02 AM, Florian Weimer <fw@deneb.enyo.de> wrote:
->>>>> * Greg Kroah-Hartman:
->>>>>
->>>>>> +7.4 Receiving messages
->>>
->>>>> What happens if this is not possible because the file descriptor limit
->>>>> of the processes would be exceeded?  EMFILE, and the message will not
->>>>> be received?
->>>>
->>>> The message is returned without installing the FDs. This is signaled
->>>> by EMFILE, but a valid pool offset.
->>>
->>> Oh.  This is really surprising, so it needs documentation.  But it's
->>> probably better than the alternative (return EMFILE and leave the
->>> message stuck, so that you receive it immediately again—this behavior
->>> makes non-blocking accept rather difficult to use correctly).
->>
->> So, was this point in the end explicitly documented? I not
->> obvious that it is documented in the revised kdbus.txt that
->> Greg K-H sent out 4 days ago.
-> 
-> No, we've revisited this point and changed the kernel behavior again in
-> v3. We're no longer returning -EMFILE in this case, but rather set
-> KDBUS_RECV_RETURN_INCOMPLETE_FDS in a new field in the receive ioctl
-> struct called 'return_flags'. We believe that's a nicer way of signaling
-> specific errors. The message will carry -1 for all FDs that failed to
-> get installed, so the user can actually see which one is missing.
-> 
-> That's also documented in kdbus.txt, but we missed putting it into the
-> Changelog - sorry for that.
+Commit-ID:  14e153ef75eecae8fd0738ffb42120f4962a00cd
+Gitweb:     http://git.kernel.org/tip/14e153ef75eecae8fd0738ffb42120f4962a00cd
+Author:     Oleg Nesterov <oleg@redhat.com>
+AuthorDate: Thu, 15 Jan 2015 20:19:43 +0100
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Tue, 20 Jan 2015 13:53:07 +0100
 
-Thanks for the info, Daniel.
+x86, fpu: Introduce per-cpu in_kernel_fpu state
 
-Cheers,
+interrupted_kernel_fpu_idle() tries to detect if kernel_fpu_begin()
+is safe or not. In particular it should obviously deny the nested
+kernel_fpu_begin() and this logic looks very confusing.
 
-Michael
+If use_eager_fpu() == T we rely on a) __thread_has_fpu() check in
+interrupted_kernel_fpu_idle(), and b) on the fact that _begin() does
+__thread_clear_has_fpu().
 
+Otherwise we demand that the interrupted task has no FPU if it is in
+kernel mode, this works because __kernel_fpu_begin() does clts() and
+interrupted_kernel_fpu_idle() checks X86_CR0_TS.
 
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+Add the per-cpu "bool in_kernel_fpu" variable, and change this code
+to check/set/clear it. This allows to do more cleanups and fixes, see
+the next changes.
+
+The patch also moves WARN_ON_ONCE() under preempt_disable() just to
+make this_cpu_read() look better, this is not really needed. And in
+fact I think we should move it into __kernel_fpu_begin().
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Cc: matt.fleming@intel.com
+Cc: bp@suse.de
+Cc: pbonzini@redhat.com
+Cc: luto@amacapital.net
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Suresh Siddha <sbsiddha@gmail.com>
+Link: http://lkml.kernel.org/r/20150115191943.GB27332@redhat.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/include/asm/i387.h | 2 +-
+ arch/x86/kernel/i387.c      | 9 +++++++++
+ 2 files changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
+index ed8089d..5e275d3 100644
+--- a/arch/x86/include/asm/i387.h
++++ b/arch/x86/include/asm/i387.h
+@@ -40,8 +40,8 @@ extern void __kernel_fpu_end(void);
+ 
+ static inline void kernel_fpu_begin(void)
+ {
+-	WARN_ON_ONCE(!irq_fpu_usable());
+ 	preempt_disable();
++	WARN_ON_ONCE(!irq_fpu_usable());
+ 	__kernel_fpu_begin();
+ }
+ 
+diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
+index a9a4229..a815723 100644
+--- a/arch/x86/kernel/i387.c
++++ b/arch/x86/kernel/i387.c
+@@ -19,6 +19,8 @@
+ #include <asm/fpu-internal.h>
+ #include <asm/user.h>
+ 
++static DEFINE_PER_CPU(bool, in_kernel_fpu);
++
+ /*
+  * Were we in an interrupt that interrupted kernel mode?
+  *
+@@ -33,6 +35,9 @@
+  */
+ static inline bool interrupted_kernel_fpu_idle(void)
+ {
++	if (this_cpu_read(in_kernel_fpu))
++		return false;
++
+ 	if (use_eager_fpu())
+ 		return __thread_has_fpu(current);
+ 
+@@ -73,6 +78,8 @@ void __kernel_fpu_begin(void)
+ {
+ 	struct task_struct *me = current;
+ 
++	this_cpu_write(in_kernel_fpu, true);
++
+ 	if (__thread_has_fpu(me)) {
+ 		__thread_clear_has_fpu(me);
+ 		__save_init_fpu(me);
+@@ -99,6 +106,8 @@ void __kernel_fpu_end(void)
+ 	} else {
+ 		stts();
+ 	}
++
++	this_cpu_write(in_kernel_fpu, false);
+ }
+ EXPORT_SYMBOL(__kernel_fpu_end);
+ 
