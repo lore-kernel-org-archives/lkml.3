@@ -1,105 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753104AbbATJ4s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 04:56:48 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:45189 "EHLO mx2.suse.de"
+	id S1753427AbbATJ5m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 04:57:42 -0500
+Received: from pegase1.c-s.fr ([93.17.236.30]:40451 "EHLO mailhub1.si.c-s.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751691AbbATJ4g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 04:56:36 -0500
-Date: Tue, 20 Jan 2015 10:56:33 +0100 (CET)
-From: Miroslav Benes <mbenes@suse.cz>
-To: Josh Poimboeuf <jpoimboe@redhat.com>
-cc: Seth Jennings <sjenning@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Vojtech Pavlik <vojtech@suse.cz>, live-patching@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] livepatch: support for repatching a function
-In-Reply-To: <b211111ad4f29886a44871dddc313a542c48960b.1420834026.git.jpoimboe@redhat.com>
-Message-ID: <alpine.LNX.2.00.1501201051330.31639@pobox.suse.cz>
-References: <b211111ad4f29886a44871dddc313a542c48960b.1420834026.git.jpoimboe@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752959AbbATJ5g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 04:57:36 -0500
+From: Christophe Leroy <christophe.leroy@c-s.fr>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>, scottwood@freescale.com
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Subject: [PATCH v2 01/11] powerpc/8xx: remove remaining unnecessary code in FixupDAR
+Message-Id: <20150120095733.D4A431A5E82@localhost.localdomain>
+Date: Tue, 20 Jan 2015 10:57:33 +0100 (CET)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Since commit 33fb845a6f01 ("powerpc/8xx: Don't use MD_TWC for walk"), MD_EPN and
+MD_TWC are not writen anymore in FixupDAR so saving r3 has become useless.
 
-On Fri, 9 Jan 2015, Josh Poimboeuf wrote:
+Signed-off-by: Christophe Leroy <christophe.leroy@c-s.fr>
 
-> Add support for patching a function multiple times.  If multiple patches
-> affect a function, the function in the most recently enabled patch
-> "wins".  This enables a cumulative patch upgrade path, where each patch
-> is a superset of previous patches.
-> 
-> This requires restructuring the data a little bit.  With the current
-> design, where each klp_func struct has its own ftrace_ops, we'd have to
-> unregister the old ops and then register the new ops, because
-> FTRACE_OPS_FL_IPMODIFY prevents us from having two ops registered for
-> the same function at the same time.  That would leave a regression
-> window where the function isn't patched at all (not good for a patch
-> upgrade path).
-> 
-> This patch replaces the per-klp_func ftrace_ops with a global klp_ops
-> list, with one ftrace_ops per original function.  A single ftrace_ops is
-> shared between all klp_funcs which have the same old_addr.  This allows
-> the switch between function versions to happen instantaneously by
-> updating the klp_ops struct's func_stack list.  The winner is the
-> klp_func at the top of the func_stack (front of the list).
-> 
-> Signed-off-by: Josh Poimboeuf <jpoimboe@redhat.com>
-> Acked-by: Seth Jennings <sjenning@redhat.com>
-> ---
->  include/linux/livepatch.h |   4 +-
->  kernel/livepatch/core.c   | 157 +++++++++++++++++++++++++++++++---------------
->  2 files changed, 108 insertions(+), 53 deletions(-)
-> 
-> diff --git a/include/linux/livepatch.h b/include/linux/livepatch.h
-> index 950bc61..f14c6fb 100644
-> --- a/include/linux/livepatch.h
-> +++ b/include/linux/livepatch.h
-> @@ -40,8 +40,8 @@ enum klp_state {
->   * @old_addr:	a hint conveying at what address the old function
->   *		can be found (optional, vmlinux patches only)
->   * @kobj:	kobject for sysfs resources
-> - * @fops:	ftrace operations structure
->   * @state:	tracks function-level patch application state
-> + * @stack_node:	list node for klp_ops func_stack list
->   */
->  struct klp_func {
->  	/* external */
-> @@ -59,8 +59,8 @@ struct klp_func {
->  
->  	/* internal */
->  	struct kobject kobj;
-> -	struct ftrace_ops *fops;
->  	enum klp_state state;
-> +	struct list_head stack_node;
->  };
->  
->  /**
-> diff --git a/kernel/livepatch/core.c b/kernel/livepatch/core.c
-> index ce42d3b..5c10381 100644
-> --- a/kernel/livepatch/core.c
-> +++ b/kernel/livepatch/core.c
-> @@ -29,17 +29,40 @@
->  #include <linux/kallsyms.h>
->  #include <linux/livepatch.h>
->  
-> +struct klp_ops {
-> +	struct list_head node;
-> +	struct list_head func_stack;
-> +	struct ftrace_ops fops;
-> +};
+---
+v2: no change
 
-I think it would be useful to add some comments for this structure and its 
-members (similar to the last paragraph of the changelog above). Maybe it 
-is useless now but the code is going to get complicated and it costs 
-nothing...
+ arch/powerpc/kernel/head_8xx.S | 6 ------
+ 1 file changed, 6 deletions(-)
 
-Otherwise it looks ok to me (except for thing mentioned by Jiri).
+diff --git a/arch/powerpc/kernel/head_8xx.S b/arch/powerpc/kernel/head_8xx.S
+index 3d4b8ee..79b8a23 100644
+--- a/arch/powerpc/kernel/head_8xx.S
++++ b/arch/powerpc/kernel/head_8xx.S
+@@ -532,9 +532,6 @@ DARFixed:/* Return from dcbx instruction bug workaround */
+  /* define if you don't want to use self modifying code */
+ #define NO_SELF_MODIFYING_CODE
+ FixupDAR:/* Entry point for dcbx workaround. */
+-#ifdef CONFIG_8xx_CPU6
+-	mtspr	SPRN_DAR, r3
+-#endif
+ 	mtspr	SPRN_SPRG_SCRATCH2, r10
+ 	/* fetch instruction from memory. */
+ 	mfspr	r10, SPRN_SRR0
+@@ -551,9 +548,6 @@ FixupDAR:/* Entry point for dcbx workaround. */
+ 	/* Extract level 2 index */
+ 	rlwinm	r11, r11, 32 - (PAGE_SHIFT - 2), 32 - PAGE_SHIFT, 29
+ 	lwzx	r11, r10, r11	/* Get the pte */
+-#ifdef CONFIG_8xx_CPU6
+-	mfspr	r3, SPRN_DAR
+-#endif
+ 	/* concat physical page address(r11) and page offset(r10) */
+ 	mfspr	r10, SPRN_SRR0
+ 	rlwimi	r11, r10, 0, 32 - PAGE_SHIFT, 31
+-- 
+2.1.0
 
-Thank you
-
---
-Miroslav Benes
-SUSE Labs
