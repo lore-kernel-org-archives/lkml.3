@@ -1,85 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755554AbbATQvg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 11:51:36 -0500
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:54019 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755222AbbATQve (ORCPT
+	id S1755566AbbATQvz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 11:51:55 -0500
+Received: from mail-qg0-f46.google.com ([209.85.192.46]:33539 "EHLO
+	mail-qg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754272AbbATQvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 11:51:34 -0500
-Date: Tue, 20 Jan 2015 16:51:27 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Olof Johansson <olof@lixom.net>, Doug Anderson <dianders@chromium.org>,
-        Bill Richardson <wfrichar@chromium.org>, Simon Glass <sjg@google.com>,
-        Gwendal Grignou <gwendal@google.com>, Jonathan Corbet <corbet@lwn.net>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND v2 2/7] mfd: cros_ec: Add char dev and virtual dev
- pointers
-Message-ID: <20150120165127.GG30656@x1>
-References: <1420205572-2640-1-git-send-email-javier.martinez@collabora.co.uk>
- <1420205572-2640-3-git-send-email-javier.martinez@collabora.co.uk>
- <20150120075011.GS21886@x1>
- <54BE770D.6030806@collabora.co.uk>
- <20150120163622.GD30656@x1>
- <54BE8615.7070708@collabora.co.uk>
+	Tue, 20 Jan 2015 11:51:53 -0500
+Date: Tue, 20 Jan 2015 11:51:47 -0500
+From: Tejun Heo <tj@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Dave Chinner <david@fromorbit.com>,
+        Eric Sandeen <sandeen@sandeen.net>
+Subject: [GIT PULL] workqueue fixes for v3.19-rc5
+Message-ID: <20150120165147.GB8684@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <54BE8615.7070708@collabora.co.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Jan 2015, Javier Martinez Canillas wrote:
+Hello, Linus.
 
-> Hello Lee,
-> 
-> On 01/20/2015 05:36 PM, Lee Jones wrote:
-> >> > 
-> >> > Is this safe?  Are you sure it's okay to provide an interface from
-> >> > userspace to read (kernel?) memory?
-> >> >
-> >> 
-> >> This interface is not to read any kernel memory but only the memory mapped
-> >> I/O region for the Low Pin Count (LPC) bus. So user-space only can choose
-> >> and offset and a number of bytes using the CROS_EC_DEV_IOCRDMEM ioctl cmd
-> >> which uses the following structure as argument:
-> >> 
-> >> /*
-> >>  * @offset: within EC_LPC_ADDR_MEMMAP region
-> >>  * @bytes: number of bytes to read. zero means "read a string" (including '\0')
-> >>  *         (at most only EC_MEMMAP_SIZE bytes can be read)
-> >>  * @buffer: where to store the result
-> >>  * ioctl returns the number of bytes read, negative on error
-> >>  */
-> >> struct cros_ec_readmem {
-> >>         uint32_t offset;
-> >>         uint32_t bytes;
-> >>         uint8_t buffer[EC_MEMMAP_SIZE];
-> >> };
-> >> 
-> >> The cros_ec_lpc_readmem() handler that the function pointer is set only
-> >> reads bytes from EC_LPC_ADDR_MEMMAP + offset if offset < EC_MEMMAP_SIZE
-> >> and the data is copied to the user-space buffer from the structure passed
-> >> as argument with copy_to_user().
-> >> 
-> >> So in that sense is similar to the spidev or i2c-dev interfaces that are
-> >> used to access these buses from user-space.
-> > 
-> > Very well.  The purpose of my question was to be provocative and to
-> > make you think about the interface.  As long as you're sure it can't
-> > be abused, then I'm happy.
-> > 
-> 
-> Ok, thanks a lot. Does it mean I've your Acked-by for this patch too?
+xfs folks have been running into weird and very rare lockups for some
+time now.  I didn't think this could have been from workqueue side
+because no one else was reporting it.  This time, Eric had a kdump
+which we looked into and it turned out this actually was a workqueue
+bug and the bug has been there since the beginning of concurrency
+managed workqueue.
 
-Yes: Acked-by: Lee Jones <lee.jones@linaro.org>
+A worker pool ensures forward progress of the workqueues associated
+with it by always having at least one worker reserved from executing
+work items.  When the pool is under contention, the idle one tries to
+create more workers for the pool and if that doesn't succeed quickly
+enough, it calls the rescuers to the pool.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+This logic had a subtle race condition in an early exit path.  When a
+worker invokes this manager function, the function may return %false
+indicating that the caller may proceed to executing work items either
+because another worker is already performing the role or conditions
+have changed and the pool is no longer under contention.  The latter
+part depended on the assumption that whether more workers are
+necessary or not remains stable while the pool is locked; however,
+pool->nr_running (concurrency count) may change asynchronously and it
+getting bumped from zero asynchronously could send off the last idle
+worker to execute work items.
+
+The race window is fairly narrow, and, even when it gets triggered,
+the pool deadlocks iff if all work items get blocked on pending work
+items of the pool, which is highly unlikely but can be triggered by
+xfs.
+
+The patch removes the race window by removing the early exit path,
+which doesn't server any purpose anymore anyway.
+
+Thanks.
+
+The following changes since commit 97bf6af1f928216fd6c5a66e8a57bfa95a659672:
+
+  Linux 3.19-rc1 (2014-12-20 17:08:50 -0800)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-3.19-fixes
+
+for you to fetch changes up to 29187a9eeaf362d8422e62e17a22a6e115277a49:
+
+  workqueue: fix subtle pool management issue which can stall whole worker_pool (2015-01-16 14:21:16 -0500)
+
+----------------------------------------------------------------
+Tejun Heo (1):
+      workqueue: fix subtle pool management issue which can stall whole worker_pool
+
+ kernel/workqueue.c | 25 ++++++++-----------------
+ 1 file changed, 8 insertions(+), 17 deletions(-)
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 6202b08..beeeac9 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1841,17 +1841,11 @@ static void pool_mayday_timeout(unsigned long __pool)
+  * spin_lock_irq(pool->lock) which may be released and regrabbed
+  * multiple times.  Does GFP_KERNEL allocations.  Called only from
+  * manager.
+- *
+- * Return:
+- * %false if no action was taken and pool->lock stayed locked, %true
+- * otherwise.
+  */
+-static bool maybe_create_worker(struct worker_pool *pool)
++static void maybe_create_worker(struct worker_pool *pool)
+ __releases(&pool->lock)
+ __acquires(&pool->lock)
+ {
+-	if (!need_to_create_worker(pool))
+-		return false;
+ restart:
+ 	spin_unlock_irq(&pool->lock);
+ 
+@@ -1877,7 +1871,6 @@ restart:
+ 	 */
+ 	if (need_to_create_worker(pool))
+ 		goto restart;
+-	return true;
+ }
+ 
+ /**
+@@ -1897,16 +1890,14 @@ restart:
+  * multiple times.  Does GFP_KERNEL allocations.
+  *
+  * Return:
+- * %false if the pool don't need management and the caller can safely start
+- * processing works, %true indicates that the function released pool->lock
+- * and reacquired it to perform some management function and that the
+- * conditions that the caller verified while holding the lock before
+- * calling the function might no longer be true.
++ * %false if the pool doesn't need management and the caller can safely
++ * start processing works, %true if management function was performed and
++ * the conditions that the caller verified before calling the function may
++ * no longer be true.
+  */
+ static bool manage_workers(struct worker *worker)
+ {
+ 	struct worker_pool *pool = worker->pool;
+-	bool ret = false;
+ 
+ 	/*
+ 	 * Anyone who successfully grabs manager_arb wins the arbitration
+@@ -1919,12 +1910,12 @@ static bool manage_workers(struct worker *worker)
+ 	 * actual management, the pool may stall indefinitely.
+ 	 */
+ 	if (!mutex_trylock(&pool->manager_arb))
+-		return ret;
++		return false;
+ 
+-	ret |= maybe_create_worker(pool);
++	maybe_create_worker(pool);
+ 
+ 	mutex_unlock(&pool->manager_arb);
+-	return ret;
++	return true;
+ }
+ 
+ /**
