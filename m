@@ -1,56 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932115AbbATMdO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 07:33:14 -0500
-Received: from mga02.intel.com ([134.134.136.20]:17647 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753219AbbATMdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 07:33:11 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="442694420"
-Message-ID: <1421757193.31903.60.camel@linux.intel.com>
-Subject: Re: [PATCH v1 1/4] mfd: change a layout for the Intel related
- drivers
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: linux-kernel@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Date: Tue, 20 Jan 2015 14:33:13 +0200
-In-Reply-To: <1418313236-10764-2-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1418313236-10764-1-git-send-email-andriy.shevchenko@linux.intel.com>
-	 <1418313236-10764-2-git-send-email-andriy.shevchenko@linux.intel.com>
-Organization: Intel Finland Oy
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.9-1+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754964AbbATMec (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 07:34:32 -0500
+Received: from mail-lb0-f176.google.com ([209.85.217.176]:36421 "EHLO
+	mail-lb0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754926AbbATMe3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 07:34:29 -0500
+MIME-Version: 1.0
+In-Reply-To: <CABVT_gcqjp1V6vnOOSewYYeR2PmngAQhuR+fud=bDU6FJ8Bnqw@mail.gmail.com>
+References: <CABVT_gf-rx0ymvtCrCotkO5=qoDifG1yAMg8U_aTgXEN=x6gvg@mail.gmail.com>
+ <1421751814.29486.13.camel@linux-0dmf.site> <CABVT_gcqjp1V6vnOOSewYYeR2PmngAQhuR+fud=bDU6FJ8Bnqw@mail.gmail.com>
+From: Kirill Elagin <kirelagin@gmail.com>
+Date: Tue, 20 Jan 2015 16:34:07 +0400
+Message-ID: <CABVT_gd6NydG4epFyiaZOW5KCx5XEhS5LAzE3w+Pwssb+kDLfA@mail.gmail.com>
+Subject: Re: USB autosuspend causing trouble with bluetooth
+To: Oliver Neukum <oneukum@suse.de>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2014-12-11 at 17:53 +0200, Andy Shevchenko wrote:
-> Instead of keeping everything in one folder with long prefixes let us to reoder
-> files in the tree by moving them in the dedicated folder. Currently we have
-> drivers for Intel MID platforms, LPC, and few more are coming.
-> 
-> This patch creates a new layout and moves intel_msic driver to it.
-> 
+I just realised I had an old USB BT-dongle so I tried it, and the
+trackpad was working fine with `auto` in `power/control`, so, yes,
+sounds like the builtin BT adapter is faulty.
 
-[]
+But here is a strange thing again: as with the keyboard I had to set
+`power/control` of the hub to `on` in order for the kernel to detect
+the dongle _and_ I also had to switch `power/control` of the dongle
+from `auto` to `on` in order for the kernel to notice that the dongle
+was plugged out. Weird.
 
-> @@ -1376,4 +1367,7 @@ config MFD_VEXPRESS_SYSREG
->  	  on the ARM Ltd. Versatile Express board.
->  
->  endmenu
-> +
-> +source "drivers/mfd/intel/Kconfig"
-> +
->  endif
 
-Mika reported that this change should go inside the menu-endmenu block.
-
--- 
-Andy Shevchenko <andriy.shevchenko@intel.com>
-Intel Finland Oy
-
+On Tue, Jan 20, 2015 at 3:18 PM, Kirill Elagin <kirelagin@gmail.com> wrote:
+> I use a Logitech wireless keyboard (with a Unifying receiver) and it
+> keeps working fine even with `auto`.
+>
+> That is, everything is OK if the receiver is plugged before
+> `power/control` is switched to `auto`.
+> But if I first set it to `auto`, then plug the receiver in, it is not
+> detected (nothing in dmesg). Kernel
+> detects it as soon as I `echo on` to the relevant `power/control`.
+>
+> This laptop is too old to have USB3.0, both the receiver and BT are
+> attached to USB1.1 ports.
+> BTW I also noticed a strange thing: USB devices appear on different
+> buses when attached,
+> depending on their speed (e.g. the keyboard receiver is on bus 6 which
+> is USB1.1, while a
+> USB stick appears on bus 2 which is USB2.0 when I plug it into that
+> same physical port).
+> I’m not sure whether this is strange or normal, as I never really
+> payed attention.
+>
+>
+> On Tue Jan 20 2015 at 2:03:45 PM Oliver Neukum <oneukum@suse.de> wrote:
+>>
+>> On Sun, 2015-01-18 at 17:30 +0400, Kirill Elagin wrote:
+>> > Hello,
+>> >
+>> > Recently I started having issues with my Apple Magic Trackpad and I
+>> > realised that the problem was with autosuspend. Whenever I have `auto`
+>> > in `power/control` of my BT adapter, `btmon` shows no packets,
+>> > nothing. As soon as I `echo on`, all the missing packets arrive.
+>>
+>> You are not getting remote wakeups. There are two possibilities
+>>
+>> 1. the firmware of your BT adapter is faulty and the device needs to
+>> be added to the list of quirky devices
+>>
+>> 2. a bug in the kernel breaks remote wakeup.
+>>
+>> We need to distinguish these cases. Could you connect another device
+>> that uses remote wakeup (HID, CDC-ACM, ... - a keyboard or a mouse is
+>> easiest) to a port connected to XHCI and test autosuspend on that
+>> device?
+>>
+>>         Regards
+>>                 Oliver
+>>
+>>
+>>
+>>
