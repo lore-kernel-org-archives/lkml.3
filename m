@@ -1,108 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753AbbATCHx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 21:07:53 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:29419 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752492AbbATCHv (ORCPT
+	id S1752772AbbATCIU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 21:08:20 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:47697 "EHLO
+	rtits2.realtek.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752672AbbATCHo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 21:07:51 -0500
-Message-ID: <54BDB851.70702@huawei.com>
-Date: Tue, 20 Jan 2015 10:07:13 +0800
-From: Wang Nan <wangnan0@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
+	Mon, 19 Jan 2015 21:07:44 -0500
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID t0K27SOs027426, This message is accepted by code: ctloc85258
+From: =?utf-8?B?5pWs6ZSQ?= <micky_ching@realsil.com.cn>
+To: Lee Jones <lee.jones@linaro.org>
+CC: "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "rogerable@realtek.com" <rogerable@realtek.com>,
+        =?utf-8?B?546L54Kc?= <wei_wang@realsil.com.cn>
+Subject: Re: [PATCH 06/10] mfd: rtsx: update phy register
+Thread-Topic: [PATCH 06/10] mfd: rtsx: update phy register
+Thread-Index: AQHQMxp6FjKtWIsBHka3fJmxZldZbpzGKcgAgABiL4CAATNmAA==
+Date: Tue, 20 Jan 2015 02:07:26 +0000
+Message-ID: <54BDB860.9080704@realsil.com.cn>
+References: <cover.1421320541.git.micky_ching@realsil.com.cn>
+ <38141c346f29fcf48b4dc168c1841c8732c70b4c.1421320541.git.micky_ching@realsil.com.cn>
+ <20150118122947.GM3574@x1> <54BC6426.40902@realsil.com.cn>
+ <20150119074715.GO3574@x1>
+In-Reply-To: <20150119074715.GO3574@x1>
+Accept-Language: zh-CN, en-US
+Content-Language: zh-CN
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.29.41.103]
+Content-Type: text/plain; charset="utf-8"
+Content-ID: <A3E57549AFCF5841BA0555B408700220@realsil.com.cn>
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@kernel.org>
-CC: <jolsa@redhat.com>, <linux-kernel@vger.kernel.org>, <lizefan@huawei.com>,
-        <acme@kernel.org>
-Subject: Re: [PATCH v2] perf: perl: force to use stdbool.
-References: <20150119123808.GB12706@krava.brq.redhat.com> <1421671397-4659-1-git-send-email-wangnan0@huawei.com> <20150119142656.GB4624@danjae>
-In-Reply-To: <20150119142656.GB4624@danjae>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.69.129]
-X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-
-On 2015/1/19 22:26, Namhyung Kim wrote:
-> On Mon, Jan 19, 2015 at 08:43:17PM +0800, Wang Nan wrote:
->> When building perf for arm64 I hit a warning (and be treated as an
->> error) like below:
->>
->>  aarch64-oe-linux-gcc -o .../util/scripting-engines/trace-event-python.o -c -Wbad-function-cast \
->> 	 ... util/scripting-engines/trace-event-python.c
-> 
-> s/python/perl/g ?
-> 
-
-I forgot I was using parallel building and simply pasted the previous line of the
-error message here. The failed file should be 'scripts/perl/Perf-Trace-Util/Context.c'.
-I posted a v3 patch with improved commit message.
-
-> 
->>
->>  In file included from .../usr/lib64/perl/5.14.3/CORE/perl.h:2464:0,
->>                   from Context.xs:23:
->>  /.../usr/lib64/perl/5.14.3/CORE/handy.h:108:0: error: "bool" redefined [-Werror]
->>   #  define bool char
->>   ^
->>  In file included from /.../usr/src/kernel/tools/include/linux/types.h:4:0,
->>                   from /.../usr/src/kernel/arch/arm64/include/uapi/asm/sigcontext.h:19,
->> 		  from /.../usr/include/bits/sigcontext.h:27,
->> 		  from /.../usr/include/signal.h:340,
->> 		  from /.../usr/include/sys/param.h:28,
->> 		  from /.../usr/lib64/perl/5.14.3/CORE/perl.h:678,
->> 		  from Context.xs:23:
->>   /.../usr/lib/aarch64-oe-linux/gcc/aarch64-oe-linux/4.9.2/include/stdbool.h:33:0: note: this is the location of the previous definition
->>     #define bool _Bool
->>
->> Looks like the failure is caused by arm64 uapi/asm/sigcontext.h, which
->> includes linux/types.h while other archs not.
->>
->> Current perl consider this problem:
->>
->> http://perl5.git.perl.org/perl.git/commit/bd31be4baa3ee68abdb92c0db3200efe0fad903b
->>
->> However there are users which use old version of perl.
->>
->> This patch includes stdbool.h before Context.xs and define HAS_BOOL to
->> prevent perl'e headers define its own 'bool'. Code is learn from perl's
->> git tree.
->>
->> Signed-off-by: Wang Nan <wangnan0@huawei.com>
-> 
-> Other than that, looks good to me.
-> 
-> Acked-by: Namhyung Kim <namhyung@kernel.org>
-> 
-> Thanks,
-> Namhyung
-> 
-> 
->> ---
->>  tools/perf/scripts/perl/Perf-Trace-Util/Context.c | 5 ++++-
->>  1 file changed, 4 insertions(+), 1 deletion(-)
->>
->> diff --git a/tools/perf/scripts/perl/Perf-Trace-Util/Context.c b/tools/perf/scripts/perl/Perf-Trace-Util/Context.c
->> index 790ceba..28431d1 100644
->> --- a/tools/perf/scripts/perl/Perf-Trace-Util/Context.c
->> +++ b/tools/perf/scripts/perl/Perf-Trace-Util/Context.c
->> @@ -5,7 +5,10 @@
->>   *	ANY CHANGES MADE HERE WILL BE LOST! 
->>   *
->>   */
->> -
->> +#include <stdbool.h>
->> +#ifndef HAS_BOOL
->> +# define HAS_BOOL 1
->> +#endif
->>  #line 1 "Context.xs"
->>  /*
->>   * Context.xs.  XS interfaces for perf script.
->> -- 
->> 1.8.4
->>
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0K28Uog007678
 
 
+On 01/19/2015 03:47 PM, Lee Jones wrote:
+> On Mon, 19 Jan 2015, æ•¬é” wrote:
+>> >On 01/18/2015 08:29 PM, Lee Jones wrote:
+>>> > >On Thu, 15 Jan 2015,micky_ching@realsil.com.cn  wrote:
+>>> > >
+>>>> > >>From: Micky Ching<micky_ching@realsil.com.cn>
+>>>> > >>
+>>>> > >>update phy register value and using direct value instead of macros.
+>>>> > >>It is much easier to debug using constant value than a lot of macros.
+>>>> > >>We usually need compare the value directly to check the configure.
+>>> > >NACK.  This is the opposite of what I would like to see.
+>>> > >
+>> >When we debug, we usually need to compare the value provided from hardware,
+>> >of course we can compare by print them to kernel log. but I think it more
+>> >convenient from source code. And we only set phy register when
+>> >initialize chip,
+>> >so the value will not scattered everywhere, we will not benefit from macros.
+>> >
+>> >if we want to know the meaning of setting, we can look at the register
+>> >define.
+> This is not acceptable and is the complete opposite of what we're
+> trying to achieve.  I promote readability (by humans) as one of the
+> highest priorities when writing code.  0xFE6C is far from readable.
+>
+Because the truly thing we concerned is the address and value, not
+a lot of macros. 0xFE6C is a magic number, but a lot of macros
+even hide the magic number we curious. To verify if the source
+code is right, we only need to compare the value, if too much macros
+joined together, the work is boring and easy to inject errors.
+I hate magic number too, but in this case using magic number
+is deserved for correctness.
+
+Two method can help enhance readability.
+(1). define register address and values
+If we want to know what the bit field means, we can jump to the register
+define. This is very easy by tag system.
+eg.
+rtsx_pci_write_phy_register(pcr, PHY_BPCR, 0x05C0);
+we can jump to PHY_BPCR to see bit-field define.
+
+(2). add comment for magic number.
+I don't like comment.
+
+If you still like macro list, I will update the register next patch.
+
+regards.
+micky.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
