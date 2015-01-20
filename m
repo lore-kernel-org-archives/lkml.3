@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753868AbbATKGY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 05:06:24 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:32488 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752024AbbATKFC (ORCPT
+	id S1753926AbbATKHx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 05:07:53 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:28069 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752672AbbATKFA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 05:05:02 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-e0-54be2848fb79
+	Tue, 20 Jan 2015 05:05:00 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-b1-54be28473df7
 From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 To: Sebastian Reichel <sre@kernel.org>,
         Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
@@ -18,159 +18,838 @@ To: Sebastian Reichel <sre@kernel.org>,
 Cc: Kyungmin Park <kyungmin.park@samsung.com>,
         Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
         Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Subject: [PATCH v5 2/5] mfd: max77693: Add defines for MAX77693 charger driver
-Date: Tue, 20 Jan 2015 11:00:53 +0100
-Message-id: <1421748056-25735-3-git-send-email-k.kozlowski@samsung.com>
+Subject: [PATCH v5 3/5] power: max77693: Add charger driver for Maxim 77693
+Date: Tue, 20 Jan 2015 11:00:54 +0100
+Message-id: <1421748056-25735-4-git-send-email-k.kozlowski@samsung.com>
 X-Mailer: git-send-email 1.9.1
 In-reply-to: <1421748056-25735-1-git-send-email-k.kozlowski@samsung.com>
 References: <1421748056-25735-1-git-send-email-k.kozlowski@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKLMWRmVeSWpSXmKPExsVy+t/xa7oeGvtCDLqnqVhsnLGe1WLSk/fM
-	FvOPnGO1mLhyMrPF6xeGFmeb3rBb3P96lNFi8/cONovLu+awWXzuPcJocbqb1eL07hIHHo+d
-	s+6ye2xeoeWxaVUnm8eda3vYPOadDPTo27KK0ePzJrkA9igum5TUnMyy1CJ9uwSujMMtdxgL
-	+tQr3j7sY2pgPKTUxcjJISFgInGp7zozhC0mceHeerYuRi4OIYGljBLL9/xlA0kICfQxSWw9
-	Yg1iswkYS2xevgSsSERgD5PEpxcrWEEcZoFpjBIXTn0HGyUs4Cdx6HIrmM0ioCqx8cMMRhCb
-	V8BdonX2dlaIdXISJ49NBrM5BTwkfsw9ygKxzV1i/b8epgmMvAsYGVYxiqaWJhcUJ6XnGukV
-	J+YWl+al6yXn525ihATl1x2MS49ZHWIU4GBU4uE94bw3RIg1say4MvcQowQHs5IIb4/EvhAh
-	3pTEyqrUovz4otKc1OJDjEwcnFINjGo8VXHZRycFrvdLEYyVrl6q4yH8pHXyYQse+Q8nJV/c
-	+BRza0ZFi5OPLJtbulaLttZioScn9s/hOnhmTVWtX7e19fUJfr/4TjLFJs6+PGPy36dMxlyx
-	yr5fivVeyayxlZhb8VYvQHLvwmfZv5VW6slERG6Y6L+xotPv9p0+qY8H3VbyJwRuVGIpzkg0
-	1GIuKk4EADa9xvwoAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprGLMWRmVeSWpSXmKPExsVy+t/xa7ruGvtCDF7ulrLYOGM9q8WkJ++Z
+	LeYfOcdqMXHlZGaL1y8MLc42vWG3uP/1KKPF5u8dbBaXd81hs/jce4TR4nQ3q8Xp3SUOPB47
+	Z91l99i8Qstj06pONo871/awecw7GejRt2UVo8fnTXIB7FFcNimpOZllqUX6dglcGbfnr2Iu
+	eLqBsWLW6VPMDYz/JzJ2MXJySAiYSLSu2MUCYYtJXLi3nq2LkYtDSGApo8TLa1+ZQBJCAn1M
+	Eu3npEBsNgFjic3Ll4AViQjsYZL49GIFK4jDLDCNUeLCqe/MIFXCAt4Si9etY+9i5OBgEVCV
+	WH+bHSTMK+AucerYBXaIbXISJ49NZgWxOQU8JH7MPcoCscxdYv2/HqYJjLwLGBlWMYqmliYX
+	FCel5xrqFSfmFpfmpesl5+duYoSE5ZcdjIuPWR1iFOBgVOLh1cjZEyLEmlhWXJl7iFGCg1lJ
+	hLdHYl+IEG9KYmVValF+fFFpTmrxIUYmDk6pBsb1Omo7hMs+f044wd6ck1qj/Hf7PCbbe7Wu
+	r6a2HL3v/XfmuhcS6Ssnsa9pZFhc3Tpda81yn9DHXnsn7lZ6+2V6zJXEqYf2Rq3kattb+MJu
+	+f+mmzPNKjQOVvT+WDzZfE9Nvwxv4vy+RkfTJfN5r3GsluNv2TJ5nXLl+WWeH913tW1QVYpx
+	bvmnxFKckWioxVxUnAgA6jDkmCkCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prepare for adding support for Maxim 77693 charger by adding necessary
-new defines.
+Add new driver for Maxim 77693 switch-mode charger (part of max77693
+MFD driver) providing power supply class information to userspace.
+
+The charger has +20V tolerant input. Current input can be set from 0 to
+2.58 A. The charger can deliver up to 2.1 A to the battery or 3.5 A to
+the system (when supplying additional current from battery to system).
+
+The driver is configured through DTS (battery and system related
+settings) and sysfs entries (timers and top-off charging threshold).
 
 Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Acked-by: Lee Jones <lee.jones@linaro.org>
 ---
- include/linux/mfd/max77693-private.h | 108 +++++++++++++++++++++++++++++++++++
- 1 file changed, 108 insertions(+)
+ drivers/power/Kconfig            |   6 +
+ drivers/power/Makefile           |   1 +
+ drivers/power/max77693_charger.c | 758 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 765 insertions(+)
+ create mode 100644 drivers/power/max77693_charger.c
 
-diff --git a/include/linux/mfd/max77693-private.h b/include/linux/mfd/max77693-private.h
-index 08dae01258b9..955dd990beaf 100644
---- a/include/linux/mfd/max77693-private.h
-+++ b/include/linux/mfd/max77693-private.h
-@@ -143,10 +143,118 @@ enum max77693_pmic_reg {
- #define FLASH_INT_FLED1_SHORT	BIT(3)
- #define FLASH_INT_OVER_CURRENT	BIT(4)
+diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
+index da6981f92697..110d4bc03483 100644
+--- a/drivers/power/Kconfig
++++ b/drivers/power/Kconfig
+@@ -332,6 +332,12 @@ config CHARGER_MAX14577
+ 	  Say Y to enable support for the battery charger control sysfs and
+ 	  platform data of MAX14577/77836 MUICs.
  
-+/* Fast charge timer in in hours */
-+#define DEFAULT_FAST_CHARGE_TIMER		4
-+/* microamps */
-+#define DEFAULT_TOP_OFF_THRESHOLD_CURRENT	150000
-+/* minutes */
-+#define DEFAULT_TOP_OFF_TIMER			30
-+/* microvolts */
-+#define DEFAULT_CONSTANT_VOLT			4200000
-+/* microvolts */
-+#define DEFAULT_MIN_SYSTEM_VOLT			3600000
-+/* celsius */
-+#define DEFAULT_THERMAL_REGULATION_TEMP		100
-+/* microamps */
-+#define DEFAULT_BATTERY_OVERCURRENT		3500000
-+/* microvolts */
-+#define DEFAULT_CHARGER_INPUT_THRESHOLD_VOLT	4300000
++config CHARGER_MAX77693
++	tristate "Maxim MAX77693 battery charger driver"
++	depends on MFD_MAX77693
++	help
++	  Say Y to enable support for the Maxim MAX77693 battery charger.
 +
-+/* MAX77693_CHG_REG_CHG_INT_OK register */
-+#define CHG_INT_OK_BYP_SHIFT		0
-+#define CHG_INT_OK_BAT_SHIFT		3
-+#define CHG_INT_OK_CHG_SHIFT		4
-+#define CHG_INT_OK_CHGIN_SHIFT		6
-+#define CHG_INT_OK_DETBAT_SHIFT		7
-+#define CHG_INT_OK_BYP_MASK		BIT(CHG_INT_OK_BYP_SHIFT)
-+#define CHG_INT_OK_BAT_MASK		BIT(CHG_INT_OK_BAT_SHIFT)
-+#define CHG_INT_OK_CHG_MASK		BIT(CHG_INT_OK_CHG_SHIFT)
-+#define CHG_INT_OK_CHGIN_MASK		BIT(CHG_INT_OK_CHGIN_SHIFT)
-+#define CHG_INT_OK_DETBAT_MASK		BIT(CHG_INT_OK_DETBAT_SHIFT)
+ config CHARGER_MAX8997
+ 	tristate "Maxim MAX8997/MAX8966 PMIC battery charger driver"
+ 	depends on MFD_MAX8997 && REGULATOR_MAX8997
+diff --git a/drivers/power/Makefile b/drivers/power/Makefile
+index b83a0c749781..31216cb7e8a1 100644
+--- a/drivers/power/Makefile
++++ b/drivers/power/Makefile
+@@ -51,6 +51,7 @@ obj-$(CONFIG_CHARGER_LP8788)	+= lp8788-charger.o
+ obj-$(CONFIG_CHARGER_GPIO)	+= gpio-charger.o
+ obj-$(CONFIG_CHARGER_MANAGER)	+= charger-manager.o
+ obj-$(CONFIG_CHARGER_MAX14577)	+= max14577_charger.o
++obj-$(CONFIG_CHARGER_MAX77693)	+= max77693_charger.o
+ obj-$(CONFIG_CHARGER_MAX8997)	+= max8997_charger.o
+ obj-$(CONFIG_CHARGER_MAX8998)	+= max8998_charger.o
+ obj-$(CONFIG_CHARGER_BQ2415X)	+= bq2415x_charger.o
+diff --git a/drivers/power/max77693_charger.c b/drivers/power/max77693_charger.c
+new file mode 100644
+index 000000000000..56cf2177aad4
+--- /dev/null
++++ b/drivers/power/max77693_charger.c
+@@ -0,0 +1,758 @@
++/*
++ * max77693_charger.c - Battery charger driver for the Maxim 77693
++ *
++ * Copyright (C) 2014 Samsung Electronics
++ * Krzysztof Kozlowski <k.kozlowski@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
 +
-+/* MAX77693_CHG_REG_CHG_DETAILS_00 register */
-+#define CHG_DETAILS_00_CHGIN_SHIFT	5
-+#define CHG_DETAILS_00_CHGIN_MASK	(0x3 << CHG_DETAILS_00_CHGIN_SHIFT)
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/power_supply.h>
++#include <linux/regmap.h>
++#include <linux/mfd/max77693.h>
++#include <linux/mfd/max77693-private.h>
 +
-+/* MAX77693_CHG_REG_CHG_DETAILS_01 register */
-+#define CHG_DETAILS_01_CHG_SHIFT	0
-+#define CHG_DETAILS_01_BAT_SHIFT	4
-+#define CHG_DETAILS_01_TREG_SHIFT	7
-+#define CHG_DETAILS_01_CHG_MASK		(0xf << CHG_DETAILS_01_CHG_SHIFT)
-+#define CHG_DETAILS_01_BAT_MASK		(0x7 << CHG_DETAILS_01_BAT_SHIFT)
-+#define CHG_DETAILS_01_TREG_MASK	BIT(7)
++static const char *max77693_charger_name		= "max77693-charger";
++static const char *max77693_charger_model		= "MAX77693";
++static const char *max77693_charger_manufacturer	= "Maxim Integrated";
 +
-+/* MAX77693_CHG_REG_CHG_DETAILS_01/CHG field */
-+enum max77693_charger_charging_state {
-+	MAX77693_CHARGING_PREQUALIFICATION	= 0x0,
-+	MAX77693_CHARGING_FAST_CONST_CURRENT,
-+	MAX77693_CHARGING_FAST_CONST_VOLTAGE,
-+	MAX77693_CHARGING_TOP_OFF,
-+	MAX77693_CHARGING_DONE,
-+	MAX77693_CHARGING_HIGH_TEMP,
-+	MAX77693_CHARGING_TIMER_EXPIRED,
-+	MAX77693_CHARGING_THERMISTOR_SUSPEND,
-+	MAX77693_CHARGING_OFF,
-+	MAX77693_CHARGING_RESERVED,
-+	MAX77693_CHARGING_OVER_TEMP,
-+	MAX77693_CHARGING_WATCHDOG_EXPIRED,
++struct max77693_charger {
++	struct device		*dev;
++	struct max77693_dev	*max77693;
++	struct power_supply	charger;
++
++	u32 constant_volt;
++	u32 min_system_volt;
++	u32 thermal_regulation_temp;
++	u32 batttery_overcurrent;
++	u32 charge_input_threshold_volt;
 +};
 +
-+/* MAX77693_CHG_REG_CHG_DETAILS_01/BAT field */
-+enum max77693_charger_battery_state {
-+	MAX77693_BATTERY_NOBAT			= 0x0,
-+	/* Dead-battery or low-battery prequalification */
-+	MAX77693_BATTERY_PREQUALIFICATION,
-+	MAX77693_BATTERY_TIMER_EXPIRED,
-+	MAX77693_BATTERY_GOOD,
-+	MAX77693_BATTERY_LOWVOLTAGE,
-+	MAX77693_BATTERY_OVERVOLTAGE,
-+	MAX77693_BATTERY_OVERCURRENT,
-+	MAX77693_BATTERY_RESERVED,
++static int max77693_get_charger_state(struct regmap *regmap)
++{
++	int state;
++	unsigned int data;
++
++	if (regmap_read(regmap, MAX77693_CHG_REG_CHG_DETAILS_01, &data) < 0)
++		return POWER_SUPPLY_STATUS_UNKNOWN;
++
++	data &= CHG_DETAILS_01_CHG_MASK;
++	data >>= CHG_DETAILS_01_CHG_SHIFT;
++
++	switch (data) {
++	case MAX77693_CHARGING_PREQUALIFICATION:
++	case MAX77693_CHARGING_FAST_CONST_CURRENT:
++	case MAX77693_CHARGING_FAST_CONST_VOLTAGE:
++	case MAX77693_CHARGING_TOP_OFF:
++	/* In high temp the charging current is reduced, but still charging */
++	case MAX77693_CHARGING_HIGH_TEMP:
++		state = POWER_SUPPLY_STATUS_CHARGING;
++		break;
++	case MAX77693_CHARGING_DONE:
++		state = POWER_SUPPLY_STATUS_FULL;
++		break;
++	case MAX77693_CHARGING_TIMER_EXPIRED:
++	case MAX77693_CHARGING_THERMISTOR_SUSPEND:
++		state = POWER_SUPPLY_STATUS_NOT_CHARGING;
++		break;
++	case MAX77693_CHARGING_OFF:
++	case MAX77693_CHARGING_OVER_TEMP:
++	case MAX77693_CHARGING_WATCHDOG_EXPIRED:
++		state = POWER_SUPPLY_STATUS_DISCHARGING;
++		break;
++	case MAX77693_CHARGING_RESERVED:
++	default:
++		state = POWER_SUPPLY_STATUS_UNKNOWN;
++	}
++
++	return state;
++}
++
++static int max77693_get_charge_type(struct regmap *regmap)
++{
++	int state;
++	unsigned int data;
++
++	if (regmap_read(regmap, MAX77693_CHG_REG_CHG_DETAILS_01, &data) < 0)
++		return POWER_SUPPLY_CHARGE_TYPE_UNKNOWN;
++
++	data &= CHG_DETAILS_01_CHG_MASK;
++	data >>= CHG_DETAILS_01_CHG_SHIFT;
++
++	switch (data) {
++	case MAX77693_CHARGING_PREQUALIFICATION:
++	/*
++	 * Top-off: trickle or fast? In top-off the current varies between
++	 * 100 and 250 mA. It is higher than prequalification current.
++	 */
++	case MAX77693_CHARGING_TOP_OFF:
++		state = POWER_SUPPLY_CHARGE_TYPE_TRICKLE;
++		break;
++	case MAX77693_CHARGING_FAST_CONST_CURRENT:
++	case MAX77693_CHARGING_FAST_CONST_VOLTAGE:
++	/* In high temp the charging current is reduced, but still charging */
++	case MAX77693_CHARGING_HIGH_TEMP:
++		state = POWER_SUPPLY_CHARGE_TYPE_FAST;
++		break;
++	case MAX77693_CHARGING_DONE:
++	case MAX77693_CHARGING_TIMER_EXPIRED:
++	case MAX77693_CHARGING_THERMISTOR_SUSPEND:
++	case MAX77693_CHARGING_OFF:
++	case MAX77693_CHARGING_OVER_TEMP:
++	case MAX77693_CHARGING_WATCHDOG_EXPIRED:
++		state = POWER_SUPPLY_CHARGE_TYPE_NONE;
++		break;
++	case MAX77693_CHARGING_RESERVED:
++	default:
++		state = POWER_SUPPLY_CHARGE_TYPE_UNKNOWN;
++	}
++
++	return state;
++}
++
++/*
++ * Supported health statuses:
++ *  - POWER_SUPPLY_HEALTH_DEAD
++ *  - POWER_SUPPLY_HEALTH_GOOD
++ *  - POWER_SUPPLY_HEALTH_OVERVOLTAGE
++ *  - POWER_SUPPLY_HEALTH_SAFETY_TIMER_EXPIRE
++ *  - POWER_SUPPLY_HEALTH_UNKNOWN
++ *  - POWER_SUPPLY_HEALTH_UNSPEC_FAILURE
++ */
++static int max77693_get_battery_health(struct regmap *regmap)
++{
++	int state;
++	unsigned int data;
++
++	if (regmap_read(regmap, MAX77693_CHG_REG_CHG_DETAILS_01, &data) < 0)
++		return POWER_SUPPLY_HEALTH_UNKNOWN;
++
++	data &= CHG_DETAILS_01_BAT_MASK;
++	data >>= CHG_DETAILS_01_BAT_SHIFT;
++
++	switch (data) {
++	case MAX77693_BATTERY_NOBAT:
++		state = POWER_SUPPLY_HEALTH_DEAD;
++		break;
++	case MAX77693_BATTERY_PREQUALIFICATION:
++	case MAX77693_BATTERY_GOOD:
++	case MAX77693_BATTERY_LOWVOLTAGE:
++		state = POWER_SUPPLY_HEALTH_GOOD;
++		break;
++	case MAX77693_BATTERY_TIMER_EXPIRED:
++		/*
++		 * Took longer to charge than expected, charging suspended.
++		 * Damaged battery?
++		 */
++		state = POWER_SUPPLY_HEALTH_SAFETY_TIMER_EXPIRE;
++		break;
++	case MAX77693_BATTERY_OVERVOLTAGE:
++		state = POWER_SUPPLY_HEALTH_OVERVOLTAGE;
++		break;
++	case MAX77693_BATTERY_OVERCURRENT:
++		state = POWER_SUPPLY_HEALTH_UNSPEC_FAILURE;
++		break;
++	case MAX77693_BATTERY_RESERVED:
++	default:
++		state = POWER_SUPPLY_HEALTH_UNKNOWN;
++		break;
++	}
++
++	return state;
++}
++
++static int max77693_get_present(struct regmap *regmap)
++{
++	unsigned int data;
++
++	/*
++	 * Read CHG_INT_OK register. High DETBAT bit here should be
++	 * equal to value 0x0 in CHG_DETAILS_01/BAT field.
++	 */
++	regmap_read(regmap, MAX77693_CHG_REG_CHG_INT_OK, &data);
++	if (data & CHG_INT_OK_DETBAT_MASK)
++		return 0;
++	return 1;
++}
++
++static int max77693_get_online(struct regmap *regmap)
++{
++	unsigned int data;
++
++	regmap_read(regmap, MAX77693_CHG_REG_CHG_INT_OK, &data);
++	if (data & CHG_INT_OK_CHGIN_MASK)
++		return 1;
++	return 0;
++}
++
++static enum power_supply_property max77693_charger_props[] = {
++	POWER_SUPPLY_PROP_STATUS,
++	POWER_SUPPLY_PROP_CHARGE_TYPE,
++	POWER_SUPPLY_PROP_HEALTH,
++	POWER_SUPPLY_PROP_PRESENT,
++	POWER_SUPPLY_PROP_ONLINE,
++	POWER_SUPPLY_PROP_MODEL_NAME,
++	POWER_SUPPLY_PROP_MANUFACTURER,
 +};
 +
-+/* MAX77693_CHG_REG_CHG_DETAILS_02 register */
-+#define CHG_DETAILS_02_BYP_SHIFT	0
-+#define CHG_DETAILS_02_BYP_MASK		(0xf << CHG_DETAILS_02_BYP_SHIFT)
++static int max77693_charger_get_property(struct power_supply *psy,
++			    enum power_supply_property psp,
++			    union power_supply_propval *val)
++{
++	struct max77693_charger *chg = container_of(psy,
++						  struct max77693_charger,
++						  charger);
++	struct regmap *regmap = chg->max77693->regmap;
++	int ret = 0;
 +
- /* MAX77693 CHG_CNFG_00 register */
- #define CHG_CNFG_00_CHG_MASK		0x1
- #define CHG_CNFG_00_BUCK_MASK		0x4
- 
-+/* MAX77693_CHG_REG_CHG_CNFG_01 register */
-+#define CHG_CNFG_01_FCHGTIME_SHIFT	0
-+#define CHG_CNFG_01_CHGRSTRT_SHIFT	4
-+#define CHG_CNFG_01_PQEN_SHIFT		7
-+#define CHG_CNFG_01_FCHGTIME_MASK	(0x7 << CHG_CNFG_01_FCHGTIME_SHIFT)
-+#define CHG_CNFG_01_CHGRSTRT_MASK	(0x3 << CHG_CNFG_01_CHGRSTRT_SHIFT)
-+#define CHG_CNFG_01_PQEN_MAKS		BIT(CHG_CNFG_01_PQEN_SHIFT)
++	switch (psp) {
++	case POWER_SUPPLY_PROP_STATUS:
++		val->intval = max77693_get_charger_state(regmap);
++		break;
++	case POWER_SUPPLY_PROP_CHARGE_TYPE:
++		val->intval = max77693_get_charge_type(regmap);
++		break;
++	case POWER_SUPPLY_PROP_HEALTH:
++		val->intval = max77693_get_battery_health(regmap);
++		break;
++	case POWER_SUPPLY_PROP_PRESENT:
++		val->intval = max77693_get_present(regmap);
++		break;
++	case POWER_SUPPLY_PROP_ONLINE:
++		val->intval = max77693_get_online(regmap);
++		break;
++	case POWER_SUPPLY_PROP_MODEL_NAME:
++		val->strval = max77693_charger_model;
++		break;
++	case POWER_SUPPLY_PROP_MANUFACTURER:
++		val->strval = max77693_charger_manufacturer;
++		break;
++	default:
++		return -EINVAL;
++	}
 +
-+/* MAX77693_CHG_REG_CHG_CNFG_03 register */
-+#define CHG_CNFG_03_TOITH_SHIFT		0
-+#define CHG_CNFG_03_TOTIME_SHIFT	3
-+#define CHG_CNFG_03_TOITH_MASK		(0x7 << CHG_CNFG_03_TOITH_SHIFT)
-+#define CHG_CNFG_03_TOTIME_MASK		(0x7 << CHG_CNFG_03_TOTIME_SHIFT)
++	return ret;
++}
 +
-+/* MAX77693_CHG_REG_CHG_CNFG_04 register */
-+#define CHG_CNFG_04_CHGCVPRM_SHIFT	0
-+#define CHG_CNFG_04_MINVSYS_SHIFT	5
-+#define CHG_CNFG_04_CHGCVPRM_MASK	(0x1f << CHG_CNFG_04_CHGCVPRM_SHIFT)
-+#define CHG_CNFG_04_MINVSYS_MASK	(0x7 << CHG_CNFG_04_MINVSYS_SHIFT)
++static ssize_t device_attr_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t count,
++		int (*fn)(struct max77693_charger *, unsigned long))
++{
++	struct max77693_charger *chg = dev_get_drvdata(dev);
++	unsigned long val;
++	int ret;
 +
-+/* MAX77693_CHG_REG_CHG_CNFG_06 register */
-+#define CHG_CNFG_06_CHGPROT_SHIFT	2
-+#define CHG_CNFG_06_CHGPROT_MASK	(0x3 << CHG_CNFG_06_CHGPROT_SHIFT)
++	ret = kstrtoul(buf, 10, &val);
++	if (ret)
++		return ret;
 +
-+/* MAX77693_CHG_REG_CHG_CNFG_07 register */
-+#define CHG_CNFG_07_REGTEMP_SHIFT	5
-+#define CHG_CNFG_07_REGTEMP_MASK	(0x3 << CHG_CNFG_07_REGTEMP_SHIFT)
++	ret = fn(chg, val);
++	if (ret)
++		return ret;
 +
-+/* MAX77693_CHG_REG_CHG_CNFG_12 register */
-+#define CHG_CNFG_12_B2SOVRC_SHIFT	0
-+#define CHG_CNFG_12_VCHGINREG_SHIFT	3
-+#define CHG_CNFG_12_B2SOVRC_MASK	(0x7 << CHG_CNFG_12_B2SOVRC_SHIFT)
-+#define CHG_CNFG_12_VCHGINREG_MASK	(0x3 << CHG_CNFG_12_VCHGINREG_SHIFT)
++	return count;
++}
 +
- /* MAX77693 CHG_CNFG_09 Register */
- #define CHG_CNFG_09_CHGIN_ILIM_MASK	0x7F
- 
++static ssize_t fast_charge_timer_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct max77693_charger *chg = dev_get_drvdata(dev);
++	unsigned int data, val;
++	int ret;
++
++	ret = regmap_read(chg->max77693->regmap, MAX77693_CHG_REG_CHG_CNFG_01,
++			&data);
++	if (ret < 0)
++		return ret;
++
++	data &= CHG_CNFG_01_FCHGTIME_MASK;
++	data >>= CHG_CNFG_01_FCHGTIME_SHIFT;
++	switch (data) {
++	case 0x1 ... 0x7:
++		/* Starting from 4 hours, step by 2 hours */
++		val = 4 + (data - 1) * 2;
++		break;
++	case 0x0:
++	default:
++		val = 0;
++		break;
++	}
++
++	return scnprintf(buf, PAGE_SIZE, "%u\n", val);
++}
++
++static int max77693_set_fast_charge_timer(struct max77693_charger *chg,
++		unsigned long hours)
++{
++	unsigned int data;
++
++	/*
++	 * 0x00 - disable
++	 * 0x01 - 4h
++	 * 0x02 - 6h
++	 * ...
++	 * 0x07 - 16h
++	 * Round down odd values.
++	 */
++	switch (hours) {
++	case 4 ... 16:
++		data = (hours - 4) / 2 + 1;
++		break;
++	case 0:
++		/* Disable */
++		data = 0;
++		break;
++	default:
++		return -EINVAL;
++	}
++	data <<= CHG_CNFG_01_FCHGTIME_SHIFT;
++
++	return regmap_update_bits(chg->max77693->regmap,
++			MAX77693_CHG_REG_CHG_CNFG_01,
++			CHG_CNFG_01_FCHGTIME_MASK, data);
++}
++
++static ssize_t fast_charge_timer_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t count)
++{
++	return device_attr_store(dev, attr, buf, count,
++			max77693_set_fast_charge_timer);
++}
++
++static ssize_t top_off_threshold_current_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct max77693_charger *chg = dev_get_drvdata(dev);
++	unsigned int data, val;
++	int ret;
++
++	ret = regmap_read(chg->max77693->regmap, MAX77693_CHG_REG_CHG_CNFG_03,
++			&data);
++	if (ret < 0)
++		return ret;
++
++	data &= CHG_CNFG_03_TOITH_MASK;
++	data >>= CHG_CNFG_03_TOITH_SHIFT;
++
++	if (data <= 0x04)
++		val = 100000 + data * 25000;
++	else
++		val = data * 50000;
++
++	return scnprintf(buf, PAGE_SIZE, "%u\n", val);
++}
++
++static int max77693_set_top_off_threshold_current(struct max77693_charger *chg,
++		unsigned long uamp)
++{
++	unsigned int data;
++
++	if (uamp < 100000 || uamp > 350000)
++		return -EINVAL;
++
++	if (uamp <= 200000)
++		data = (uamp - 100000) / 25000;
++	else
++		/* (200000, 350000> */
++		data = uamp / 50000;
++
++	data <<= CHG_CNFG_03_TOITH_SHIFT;
++
++	return regmap_update_bits(chg->max77693->regmap,
++			MAX77693_CHG_REG_CHG_CNFG_03,
++			CHG_CNFG_03_TOITH_MASK, data);
++}
++
++static ssize_t top_off_threshold_current_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t count)
++{
++	return device_attr_store(dev, attr, buf, count,
++			max77693_set_top_off_threshold_current);
++}
++
++static ssize_t top_off_timer_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct max77693_charger *chg = dev_get_drvdata(dev);
++	unsigned int data, val;
++	int ret;
++
++	ret = regmap_read(chg->max77693->regmap, MAX77693_CHG_REG_CHG_CNFG_03,
++			&data);
++	if (ret < 0)
++		return ret;
++
++	data &= CHG_CNFG_03_TOTIME_MASK;
++	data >>= CHG_CNFG_03_TOTIME_SHIFT;
++
++	val = data * 10;
++
++	return scnprintf(buf, PAGE_SIZE, "%u\n", val);
++}
++
++static int max77693_set_top_off_timer(struct max77693_charger *chg,
++		unsigned long minutes)
++{
++	unsigned int data;
++
++	if (minutes > 70)
++		return -EINVAL;
++
++	data = minutes / 10;
++	data <<= CHG_CNFG_03_TOTIME_SHIFT;
++
++	return regmap_update_bits(chg->max77693->regmap,
++			MAX77693_CHG_REG_CHG_CNFG_03,
++			CHG_CNFG_03_TOTIME_MASK, data);
++}
++
++static ssize_t top_off_timer_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t count)
++{
++	return device_attr_store(dev, attr, buf, count,
++			max77693_set_top_off_timer);
++}
++
++static DEVICE_ATTR_RW(fast_charge_timer);
++static DEVICE_ATTR_RW(top_off_threshold_current);
++static DEVICE_ATTR_RW(top_off_timer);
++
++static int max77693_set_constant_volt(struct max77693_charger *chg,
++		unsigned int uvolt)
++{
++	unsigned int data;
++
++	/*
++	 * 0x00 - 3.650 V
++	 * 0x01 - 3.675 V
++	 * ...
++	 * 0x1b - 4.325 V
++	 * 0x1c - 4.340 V
++	 * 0x1d - 4.350 V
++	 * 0x1e - 4.375 V
++	 * 0x1f - 4.400 V
++	 */
++	if (uvolt >= 3650000 && uvolt < 4340000)
++		data = (uvolt - 3650000) / 25000;
++	else if (uvolt >= 4340000 && uvolt < 4350000)
++		data = 0x1c;
++	else if (uvolt >= 4350000 && uvolt <= 4400000)
++		data = 0x1d + (uvolt - 4350000) / 25000;
++	else {
++		dev_err(chg->dev, "Wrong value for charging constant voltage\n");
++		return -EINVAL;
++	}
++
++	data <<= CHG_CNFG_04_CHGCVPRM_SHIFT;
++
++	dev_dbg(chg->dev, "Charging constant voltage: %u (0x%x)\n", uvolt,
++			data);
++
++	return regmap_update_bits(chg->max77693->regmap,
++			MAX77693_CHG_REG_CHG_CNFG_04,
++			CHG_CNFG_04_CHGCVPRM_MASK, data);
++}
++
++static int max77693_set_min_system_volt(struct max77693_charger *chg,
++		unsigned int uvolt)
++{
++	unsigned int data;
++
++	if (uvolt < 3000000 || uvolt > 3700000) {
++		dev_err(chg->dev, "Wrong value for minimum system regulation voltage\n");
++		return -EINVAL;
++	}
++
++	data = (uvolt - 3000000) / 100000;
++
++	data <<= CHG_CNFG_04_MINVSYS_SHIFT;
++
++	dev_dbg(chg->dev, "Minimum system regulation voltage: %u (0x%x)\n",
++			uvolt, data);
++
++	return regmap_update_bits(chg->max77693->regmap,
++			MAX77693_CHG_REG_CHG_CNFG_04,
++			CHG_CNFG_04_MINVSYS_MASK, data);
++}
++
++static int max77693_set_thermal_regulation_temp(struct max77693_charger *chg,
++		unsigned int cels)
++{
++	unsigned int data;
++
++	switch (cels) {
++	case 70:
++	case 85:
++	case 100:
++	case 115:
++		data = (cels - 70) / 15;
++		break;
++	default:
++		dev_err(chg->dev, "Wrong value for thermal regulation loop temperature\n");
++		return -EINVAL;
++	}
++
++	data <<= CHG_CNFG_07_REGTEMP_SHIFT;
++
++	dev_dbg(chg->dev, "Thermal regulation loop temperature: %u (0x%x)\n",
++			cels, data);
++
++	return regmap_update_bits(chg->max77693->regmap,
++			MAX77693_CHG_REG_CHG_CNFG_07,
++			CHG_CNFG_07_REGTEMP_MASK, data);
++}
++
++static int max77693_set_batttery_overcurrent(struct max77693_charger *chg,
++		unsigned int uamp)
++{
++	unsigned int data;
++
++	if (uamp && (uamp < 2000000 || uamp > 3500000)) {
++		dev_err(chg->dev, "Wrong value for battery overcurrent\n");
++		return -EINVAL;
++	}
++
++	if (uamp)
++		data = ((uamp - 2000000) / 250000) + 1;
++	else
++		data = 0; /* disable */
++
++	data <<= CHG_CNFG_12_B2SOVRC_SHIFT;
++
++	dev_dbg(chg->dev, "Battery overcurrent: %u (0x%x)\n", uamp, data);
++
++	return regmap_update_bits(chg->max77693->regmap,
++			MAX77693_CHG_REG_CHG_CNFG_12,
++			CHG_CNFG_12_B2SOVRC_MASK, data);
++}
++
++static int max77693_set_charge_input_threshold_volt(struct max77693_charger *chg,
++		unsigned int uvolt)
++{
++	unsigned int data;
++
++	switch (uvolt) {
++	case 4300000:
++		data = 0x0;
++		break;
++	case 4700000:
++	case 4800000:
++	case 4900000:
++		data = (uvolt - 4700000) / 100000;
++	default:
++		dev_err(chg->dev, "Wrong value for charge input voltage regulation threshold\n");
++		return -EINVAL;
++	}
++
++	data <<= CHG_CNFG_12_VCHGINREG_SHIFT;
++
++	dev_dbg(chg->dev, "Charge input voltage regulation threshold: %u (0x%x)\n",
++			uvolt, data);
++
++	return regmap_update_bits(chg->max77693->regmap,
++			MAX77693_CHG_REG_CHG_CNFG_12,
++			CHG_CNFG_12_VCHGINREG_MASK, data);
++}
++
++/*
++ * Sets charger registers to proper and safe default values.
++ */
++static int max77693_reg_init(struct max77693_charger *chg)
++{
++	int ret;
++	unsigned int data;
++
++	/* Unlock charger register protection */
++	data = (0x3 << CHG_CNFG_06_CHGPROT_SHIFT);
++	ret = regmap_update_bits(chg->max77693->regmap,
++				MAX77693_CHG_REG_CHG_CNFG_06,
++				CHG_CNFG_06_CHGPROT_MASK, data);
++	if (ret) {
++		dev_err(chg->dev, "Error unlocking registers: %d\n", ret);
++		return ret;
++	}
++
++	ret = max77693_set_fast_charge_timer(chg, DEFAULT_FAST_CHARGE_TIMER);
++	if (ret)
++		return ret;
++
++	ret = max77693_set_top_off_threshold_current(chg,
++			DEFAULT_TOP_OFF_THRESHOLD_CURRENT);
++	if (ret)
++		return ret;
++
++	ret = max77693_set_top_off_timer(chg, DEFAULT_TOP_OFF_TIMER);
++	if (ret)
++		return ret;
++
++	ret = max77693_set_constant_volt(chg, chg->constant_volt);
++	if (ret)
++		return ret;
++
++	ret = max77693_set_min_system_volt(chg, chg->min_system_volt);
++	if (ret)
++		return ret;
++
++	ret = max77693_set_thermal_regulation_temp(chg,
++			chg->thermal_regulation_temp);
++	if (ret)
++		return ret;
++
++	ret = max77693_set_batttery_overcurrent(chg, chg->batttery_overcurrent);
++	if (ret)
++		return ret;
++
++	ret = max77693_set_charge_input_threshold_volt(chg,
++			chg->charge_input_threshold_volt);
++	if (ret)
++		return ret;
++
++	return 0;
++}
++
++#ifdef CONFIG_OF
++static int max77693_dt_init(struct device *dev, struct max77693_charger *chg)
++{
++	struct device_node *np = dev->of_node;
++
++	if (!np) {
++		dev_err(dev, "no charger OF node\n");
++		return -EINVAL;
++	}
++
++	if (of_property_read_u32(np, "maxim,constant-microvolt",
++			&chg->constant_volt))
++		chg->constant_volt = DEFAULT_CONSTANT_VOLT;
++
++	if (of_property_read_u32(np, "maxim,min-system-microvolt",
++			&chg->min_system_volt))
++		chg->min_system_volt = DEFAULT_MIN_SYSTEM_VOLT;
++
++	if (of_property_read_u32(np, "maxim,thermal-regulation-celsius",
++			&chg->thermal_regulation_temp))
++		chg->thermal_regulation_temp = DEFAULT_THERMAL_REGULATION_TEMP;
++
++	if (of_property_read_u32(np, "maxim,battery-overcurrent-microamp",
++			&chg->batttery_overcurrent))
++		chg->batttery_overcurrent = DEFAULT_BATTERY_OVERCURRENT;
++
++	if (of_property_read_u32(np, "maxim,charge-input-threshold-microvolt",
++			&chg->charge_input_threshold_volt))
++		chg->charge_input_threshold_volt =
++			DEFAULT_CHARGER_INPUT_THRESHOLD_VOLT;
++
++	return 0;
++}
++#else /* CONFIG_OF */
++static int max77693_dt_init(struct device *dev, struct max77693_charger *chg)
++{
++	return 0;
++}
++#endif /* CONFIG_OF */
++
++static int max77693_charger_probe(struct platform_device *pdev)
++{
++	struct max77693_charger *chg;
++	struct max77693_dev *max77693 = dev_get_drvdata(pdev->dev.parent);
++	int ret;
++
++	chg = devm_kzalloc(&pdev->dev, sizeof(*chg), GFP_KERNEL);
++	if (!chg)
++		return -ENOMEM;
++
++	platform_set_drvdata(pdev, chg);
++	chg->dev = &pdev->dev;
++	chg->max77693 = max77693;
++
++	ret = max77693_dt_init(&pdev->dev, chg);
++	if (ret)
++		return ret;
++
++	ret = max77693_reg_init(chg);
++	if (ret)
++		return ret;
++
++	chg->charger.name = max77693_charger_name;
++	chg->charger.type = POWER_SUPPLY_TYPE_BATTERY;
++	chg->charger.properties = max77693_charger_props;
++	chg->charger.num_properties = ARRAY_SIZE(max77693_charger_props);
++	chg->charger.get_property = max77693_charger_get_property;
++
++	ret = device_create_file(&pdev->dev, &dev_attr_fast_charge_timer);
++	if (ret) {
++		dev_err(&pdev->dev, "failed: create fast charge timer sysfs entry\n");
++		goto err;
++	}
++
++	ret = device_create_file(&pdev->dev,
++			&dev_attr_top_off_threshold_current);
++	if (ret) {
++		dev_err(&pdev->dev, "failed: create top off current sysfs entry\n");
++		goto err;
++	}
++
++	ret = device_create_file(&pdev->dev, &dev_attr_top_off_timer);
++	if (ret) {
++		dev_err(&pdev->dev, "failed: create top off timer sysfs entry\n");
++		goto err;
++	}
++
++	ret = power_supply_register(&pdev->dev, &chg->charger);
++	if (ret) {
++		dev_err(&pdev->dev, "failed: power supply register\n");
++		goto err;
++	}
++
++	return 0;
++
++err:
++	device_remove_file(&pdev->dev, &dev_attr_top_off_timer);
++	device_remove_file(&pdev->dev, &dev_attr_top_off_threshold_current);
++	device_remove_file(&pdev->dev, &dev_attr_fast_charge_timer);
++
++	return ret;
++}
++
++static int max77693_charger_remove(struct platform_device *pdev)
++{
++	struct max77693_charger *chg = platform_get_drvdata(pdev);
++
++	device_remove_file(&pdev->dev, &dev_attr_top_off_timer);
++	device_remove_file(&pdev->dev, &dev_attr_top_off_threshold_current);
++	device_remove_file(&pdev->dev, &dev_attr_fast_charge_timer);
++
++	power_supply_unregister(&chg->charger);
++
++	return 0;
++}
++
++static const struct platform_device_id max77693_charger_id[] = {
++	{ "max77693-charger", 0, },
++	{ }
++};
++MODULE_DEVICE_TABLE(platform, max77693_charger_id);
++
++static struct platform_driver max77693_charger_driver = {
++	.driver = {
++		.owner	= THIS_MODULE,
++		.name	= "max77693-charger",
++	},
++	.probe		= max77693_charger_probe,
++	.remove		= max77693_charger_remove,
++	.id_table	= max77693_charger_id,
++};
++module_platform_driver(max77693_charger_driver);
++
++MODULE_AUTHOR("Krzysztof Kozlowski <k.kozlowski@samsung.com>");
++MODULE_DESCRIPTION("Maxim 77693 charger driver");
++MODULE_LICENSE("GPL");
 -- 
 1.9.1
 
