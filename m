@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754177AbbATKt3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 05:49:29 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:61590 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754123AbbATKtW (ORCPT
+	id S1754540AbbATLAX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 06:00:23 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:37243 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752827AbbATKtY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 05:49:22 -0500
+	Tue, 20 Jan 2015 05:49:24 -0500
 From: Thierry Reding <thierry.reding@gmail.com>
 To: dri-devel@lists.freedesktop.org
 Cc: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 14/36] drm/tegra: rgb: Demidlayer
-Date: Tue, 20 Jan 2015 11:48:33 +0100
-Message-Id: <1421750935-4023-15-git-send-email-thierry.reding@gmail.com>
+Subject: [PATCH 15/36] drm/tegra: hdmi: Demidlayer
+Date: Tue, 20 Jan 2015 11:48:34 +0100
+Message-Id: <1421750935-4023-16-git-send-email-thierry.reding@gmail.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1421750935-4023-1-git-send-email-thierry.reding@gmail.com>
 References: <1421750935-4023-1-git-send-email-thierry.reding@gmail.com>
@@ -22,7 +22,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Thierry Reding <treding@nvidia.com>
 
-Implement encoder and connector within the RGB driver itself using the
+Implement encoder and connector within the HDMI driver itself using the
 Tegra output helpers rather than using the Tegra output as midlayer. By
 doing so one level of indirection is removed and output drivers become
 more flexible while keeping the majority of the advantages provided by
@@ -30,389 +30,417 @@ the common output helpers.
 
 Signed-off-by: Thierry Reding <treding@nvidia.com>
 ---
- drivers/gpu/drm/tegra/dc.c     |  24 ++++
  drivers/gpu/drm/tegra/drm.h    |   1 -
+ drivers/gpu/drm/tegra/hdmi.c   | 280 +++++++++++++++++++++--------------------
  drivers/gpu/drm/tegra/output.c |   5 -
- drivers/gpu/drm/tegra/rgb.c    | 243 +++++++++++++++++++++++------------------
- 4 files changed, 161 insertions(+), 112 deletions(-)
+ 3 files changed, 147 insertions(+), 139 deletions(-)
 
-diff --git a/drivers/gpu/drm/tegra/dc.c b/drivers/gpu/drm/tegra/dc.c
-index 39e1b3b38536..c51fc4db73db 100644
---- a/drivers/gpu/drm/tegra/dc.c
-+++ b/drivers/gpu/drm/tegra/dc.c
-@@ -1001,6 +1001,7 @@ static int tegra_dc_wait_idle(struct tegra_dc *dc, unsigned long timeout)
- static void tegra_crtc_disable(struct drm_crtc *crtc)
- {
- 	struct tegra_dc *dc = to_tegra_dc(crtc);
-+	u32 value;
- 
- 	if (!tegra_dc_idle(dc)) {
- 		tegra_dc_stop(dc);
-@@ -1012,6 +1013,29 @@ static void tegra_crtc_disable(struct drm_crtc *crtc)
- 		tegra_dc_wait_idle(dc, 100);
- 	}
- 
-+	/*
-+	 * This should really be part of the RGB encoder driver, but clearing
-+	 * these bits has the side-effect of stopping the display controller.
-+	 * When that happens no VBLANK interrupts will be raised. At the same
-+	 * time the encoder is disabled before the display controller, so the
-+	 * above code is always going to timeout waiting for the controller
-+	 * to go idle.
-+	 *
-+	 * Given the close coupling between the RGB encoder and the display
-+	 * controller doing it here is still kind of okay. None of the other
-+	 * encoder drivers require these bits to be cleared.
-+	 *
-+	 * XXX: Perhaps given that the display controller is switched off at
-+	 * this point anyway maybe clearing these bits isn't even useful for
-+	 * the RGB encoder?
-+	 */
-+	if (dc->rgb) {
-+		value = tegra_dc_readl(dc, DC_CMD_DISPLAY_POWER_CONTROL);
-+		value &= ~(PW0_ENABLE | PW1_ENABLE | PW2_ENABLE | PW3_ENABLE |
-+			   PW4_ENABLE | PM0_ENABLE | PM1_ENABLE);
-+		tegra_dc_writel(dc, value, DC_CMD_DISPLAY_POWER_CONTROL);
-+	}
-+
- 	drm_crtc_vblank_off(crtc);
- 	tegra_dc_commit(dc);
- }
 diff --git a/drivers/gpu/drm/tegra/drm.h b/drivers/gpu/drm/tegra/drm.h
-index e1374ec2b76e..dbc1f83327ea 100644
+index dbc1f83327ea..95b6aebfaf00 100644
 --- a/drivers/gpu/drm/tegra/drm.h
 +++ b/drivers/gpu/drm/tegra/drm.h
 @@ -193,7 +193,6 @@ struct tegra_output_ops {
  };
  
  enum tegra_output_type {
--	TEGRA_OUTPUT_RGB,
- 	TEGRA_OUTPUT_HDMI,
+-	TEGRA_OUTPUT_HDMI,
  	TEGRA_OUTPUT_DSI,
  	TEGRA_OUTPUT_EDP,
-diff --git a/drivers/gpu/drm/tegra/output.c b/drivers/gpu/drm/tegra/output.c
-index bc82743904c1..9dd3c34d47fe 100644
---- a/drivers/gpu/drm/tegra/output.c
-+++ b/drivers/gpu/drm/tegra/output.c
-@@ -276,11 +276,6 @@ int tegra_output_init(struct drm_device *drm, struct tegra_output *output)
- 	int connector, encoder;
- 
- 	switch (output->type) {
--	case TEGRA_OUTPUT_RGB:
--		connector = DRM_MODE_CONNECTOR_LVDS;
--		encoder = DRM_MODE_ENCODER_LVDS;
--		break;
--
- 	case TEGRA_OUTPUT_HDMI:
- 		connector = DRM_MODE_CONNECTOR_HDMIA;
- 		encoder = DRM_MODE_ENCODER_TMDS;
-diff --git a/drivers/gpu/drm/tegra/rgb.c b/drivers/gpu/drm/tegra/rgb.c
-index 39b8d5fe04b2..30d7ae02ace8 100644
---- a/drivers/gpu/drm/tegra/rgb.c
-+++ b/drivers/gpu/drm/tegra/rgb.c
-@@ -9,6 +9,8 @@
+ };
+diff --git a/drivers/gpu/drm/tegra/hdmi.c b/drivers/gpu/drm/tegra/hdmi.c
+index d4c635148cc7..056bb2c1c426 100644
+--- a/drivers/gpu/drm/tegra/hdmi.c
++++ b/drivers/gpu/drm/tegra/hdmi.c
+@@ -9,10 +9,14 @@
  
  #include <linux/clk.h>
+ #include <linux/debugfs.h>
++#include <linux/gpio.h>
+ #include <linux/hdmi.h>
+ #include <linux/regulator/consumer.h>
+ #include <linux/reset.h>
  
-+#include <drm/drm_panel.h>
++#include <drm/drm_crtc.h>
++#include <drm/drm_crtc_helper.h>
 +
+ #include "hdmi.h"
  #include "drm.h"
  #include "dc.h"
+@@ -40,7 +44,6 @@ struct tegra_hdmi {
+ 	struct host1x_client client;
+ 	struct tegra_output output;
+ 	struct device *dev;
+-	bool enabled;
  
-@@ -85,13 +87,99 @@ static void tegra_dc_write_regs(struct tegra_dc *dc,
- 		tegra_dc_writel(dc, table[i].value, table[i].offset);
+ 	struct regulator *hdmi;
+ 	struct regulator *pll;
+@@ -768,53 +771,107 @@ static bool tegra_output_is_hdmi(struct tegra_output *output)
+ 	return drm_detect_hdmi_monitor(edid);
  }
  
--static int tegra_output_rgb_enable(struct tegra_output *output)
-+static void tegra_rgb_connector_dpms(struct drm_connector *connector,
-+				     int mode)
-+{
+-static int tegra_output_hdmi_enable(struct tegra_output *output)
++static void tegra_hdmi_connector_dpms(struct drm_connector *connector,
++				      int mode)
+ {
+-	unsigned int h_sync_width, h_front_porch, h_back_porch, i, rekey;
+-	struct tegra_dc *dc = to_tegra_dc(output->encoder.crtc);
+-	struct drm_display_mode *mode = &dc->base.mode;
 +}
 +
-+static const struct drm_connector_funcs tegra_rgb_connector_funcs = {
-+	.dpms = tegra_rgb_connector_dpms,
++static const struct drm_connector_funcs tegra_hdmi_connector_funcs = {
++	.dpms = tegra_hdmi_connector_dpms,
 +	.detect = tegra_output_connector_detect,
 +	.fill_modes = drm_helper_probe_single_connector_modes,
 +	.destroy = tegra_output_connector_destroy,
 +};
 +
 +static enum drm_mode_status
-+tegra_rgb_connector_mode_valid(struct drm_connector *connector,
-+			       struct drm_display_mode *mode)
++tegra_hdmi_connector_mode_valid(struct drm_connector *connector,
++				struct drm_display_mode *mode)
 +{
-+	/*
-+	 * FIXME: For now, always assume that the mode is okay. There are
-+	 * unresolved issues with clk_round_rate(), which doesn't always
-+	 * reliably report whether a frequency can be set or not.
-+	 */
-+	return MODE_OK;
++	struct tegra_output *output = connector_to_output(connector);
+ 	struct tegra_hdmi *hdmi = to_hdmi(output);
+-	struct device_node *node = hdmi->dev->of_node;
+-	unsigned int pulse_start, div82, pclk;
+-	int retries = 1000;
+-	u32 value;
+-	int err;
++	unsigned long pclk = mode->clock * 1000;
++	enum drm_mode_status status = MODE_OK;
++	struct clk *parent;
++	long err;
+ 
+-	if (hdmi->enabled)
+-		return 0;
++	parent = clk_get_parent(hdmi->clk_parent);
+ 
+-	hdmi->dvi = !tegra_output_is_hdmi(output);
++	err = clk_round_rate(parent, pclk * 4);
++	if (err <= 0)
++		status = MODE_NOCLOCK;
+ 
+-	pclk = mode->clock * 1000;
+-	h_sync_width = mode->hsync_end - mode->hsync_start;
+-	h_back_porch = mode->htotal - mode->hsync_end;
+-	h_front_porch = mode->hsync_start - mode->hdisplay;
++	return status;
 +}
-+
-+static const struct drm_connector_helper_funcs tegra_rgb_connector_helper_funcs = {
+ 
+-	err = regulator_enable(hdmi->pll);
++static const struct drm_connector_helper_funcs
++tegra_hdmi_connector_helper_funcs = {
 +	.get_modes = tegra_output_connector_get_modes,
-+	.mode_valid = tegra_rgb_connector_mode_valid,
++	.mode_valid = tegra_hdmi_connector_mode_valid,
 +	.best_encoder = tegra_output_connector_best_encoder,
 +};
 +
-+static const struct drm_encoder_funcs tegra_rgb_encoder_funcs = {
++static const struct drm_encoder_funcs tegra_hdmi_encoder_funcs = {
 +	.destroy = tegra_output_encoder_destroy,
 +};
 +
-+static void tegra_rgb_encoder_dpms(struct drm_encoder *encoder, int mode)
++static void tegra_hdmi_encoder_dpms(struct drm_encoder *encoder, int mode)
 +{
 +}
 +
-+static bool tegra_rgb_encoder_mode_fixup(struct drm_encoder *encoder,
-+					 const struct drm_display_mode *mode,
-+					 struct drm_display_mode *adjusted)
- {
++static bool tegra_hdmi_encoder_mode_fixup(struct drm_encoder *encoder,
++					  const struct drm_display_mode *mode,
++					  struct drm_display_mode *adjusted)
++{
 +	struct tegra_output *output = encoder_to_output(encoder);
++	struct tegra_dc *dc = to_tegra_dc(encoder->crtc);
++	struct tegra_hdmi *hdmi = to_hdmi(output);
 +	unsigned long pclk = mode->clock * 1000;
- 	struct tegra_rgb *rgb = to_rgb(output);
--	unsigned long value;
-+	unsigned int div;
 +	int err;
- 
--	if (rgb->enabled)
--		return 0;
-+	/*
-+	 * We may not want to change the frequency of the parent clock, since
-+	 * it may be a parent for other peripherals. This is due to the fact
-+	 * that on Tegra20 there's only a single clock dedicated to display
-+	 * (pll_d_out0), whereas later generations have a second one that can
-+	 * be used to independently drive a second output (pll_d2_out0).
-+	 *
-+	 * As a way to support multiple outputs on Tegra20 as well, pll_p is
-+	 * typically used as the parent clock for the display controllers.
-+	 * But this comes at a cost: pll_p is the parent of several other
-+	 * peripherals, so its frequency shouldn't change out of the blue.
-+	 *
-+	 * The best we can do at this point is to use the shift clock divider
-+	 * and hope that the desired frequency can be matched (or at least
-+	 * matched sufficiently close that the panel will still work).
-+	 */
-+	div = ((clk_get_rate(rgb->clk) * 2) / pclk) - 2;
 +
-+	err = tegra_dc_setup_clock(rgb->dc, rgb->clk_parent, pclk, div);
-+	if (err < 0) {
++	err = tegra_dc_setup_clock(dc, hdmi->clk_parent, pclk, 0);
+ 	if (err < 0) {
+-		dev_err(hdmi->dev, "failed to enable PLL regulator: %d\n", err);
+-		return err;
 +		dev_err(output->dev, "failed to setup DC clock: %d\n", err);
 +		return false;
-+	}
-+
+ 	}
+ 
+-	err = regulator_enable(hdmi->vdd);
++	err = clk_set_rate(hdmi->clk_parent, pclk);
+ 	if (err < 0) {
+-		dev_err(hdmi->dev, "failed to enable VDD regulator: %d\n", err);
+-		return err;
++		dev_err(output->dev, "failed to set clock rate to %lu Hz\n",
++			pclk);
++		return false;
+ 	}
+ 
+-	err = clk_set_rate(hdmi->clk, pclk);
+-	if (err < 0)
+-		return err;
 +	return true;
 +}
-+
-+static void tegra_rgb_encoder_prepare(struct drm_encoder *encoder)
+ 
+-	err = clk_prepare_enable(hdmi->clk);
+-	if (err < 0) {
+-		dev_err(hdmi->dev, "failed to enable clock: %d\n", err);
+-		return err;
+-	}
++static void tegra_hdmi_encoder_prepare(struct drm_encoder *encoder)
++{
++}
+ 
+-	reset_control_assert(hdmi->rst);
+-	usleep_range(1000, 2000);
+-	reset_control_deassert(hdmi->rst);
++static void tegra_hdmi_encoder_commit(struct drm_encoder *encoder)
 +{
 +}
 +
-+static void tegra_rgb_encoder_commit(struct drm_encoder *encoder)
++static void tegra_hdmi_encoder_mode_set(struct drm_encoder *encoder,
++					struct drm_display_mode *mode,
++					struct drm_display_mode *adjusted)
 +{
-+}
-+
-+static void tegra_rgb_encoder_mode_set(struct drm_encoder *encoder,
-+				       struct drm_display_mode *mode,
-+				       struct drm_display_mode *adjusted)
-+{
++	unsigned int h_sync_width, h_front_porch, h_back_porch, i, rekey;
 +	struct tegra_output *output = encoder_to_output(encoder);
-+	struct tegra_rgb *rgb = to_rgb(output);
++	struct tegra_dc *dc = to_tegra_dc(encoder->crtc);
++	struct device_node *node = output->dev->of_node;
++	struct tegra_hdmi *hdmi = to_hdmi(output);
++	unsigned int pulse_start, div82, pclk;
++	int retries = 1000;
 +	u32 value;
++	int err;
 +
-+	if (output->panel)
-+		drm_panel_prepare(output->panel);
++	hdmi->dvi = !tegra_output_is_hdmi(output);
++
++	pclk = mode->clock * 1000;
++	h_sync_width = mode->hsync_end - mode->hsync_start;
++	h_back_porch = mode->htotal - mode->hsync_end;
++	h_front_porch = mode->hsync_start - mode->hdisplay;
  
- 	tegra_dc_write_regs(rgb->dc, rgb_enable, ARRAY_SIZE(rgb_enable));
+ 	/* power up sequence */
+ 	value = tegra_hdmi_readl(hdmi, HDMI_NV_PDISP_SOR_PLL0);
+@@ -1000,104 +1057,33 @@ static int tegra_output_hdmi_enable(struct tegra_output *output)
+ 	tegra_dc_commit(dc);
  
-@@ -125,88 +213,31 @@ static int tegra_output_rgb_enable(struct tegra_output *output)
- 
- 	tegra_dc_commit(rgb->dc);
- 
--	rgb->enabled = true;
+ 	/* TODO: add HDCP support */
+-
+-	hdmi->enabled = true;
 -
 -	return 0;
-+	if (output->panel)
-+		drm_panel_enable(output->panel);
  }
  
--static int tegra_output_rgb_disable(struct tegra_output *output)
-+static void tegra_rgb_encoder_disable(struct drm_encoder *encoder)
+-static int tegra_output_hdmi_disable(struct tegra_output *output)
++static void tegra_hdmi_encoder_disable(struct drm_encoder *encoder)
  {
-+	struct tegra_output *output = encoder_to_output(encoder);
- 	struct tegra_rgb *rgb = to_rgb(output);
--	unsigned long value;
+-	struct tegra_dc *dc = to_tegra_dc(output->encoder.crtc);
+-	struct tegra_hdmi *hdmi = to_hdmi(output);
++	struct tegra_dc *dc = to_tegra_dc(encoder->crtc);
+ 	u32 value;
  
--	if (!rgb->enabled)
+-	if (!hdmi->enabled)
 -		return 0;
 -
--	value = tegra_dc_readl(rgb->dc, DC_CMD_DISPLAY_POWER_CONTROL);
--	value &= ~(PW0_ENABLE | PW1_ENABLE | PW2_ENABLE | PW3_ENABLE |
--		   PW4_ENABLE | PM0_ENABLE | PM1_ENABLE);
--	tegra_dc_writel(rgb->dc, value, DC_CMD_DISPLAY_POWER_CONTROL);
-+	if (output->panel)
-+		drm_panel_disable(output->panel);
- 
- 	tegra_dc_write_regs(rgb->dc, rgb_disable, ARRAY_SIZE(rgb_disable));
- 
--	tegra_dc_commit(rgb->dc);
+ 	/*
+ 	 * The following accesses registers of the display controller, so make
+ 	 * sure it's only executed when the output is attached to one.
+ 	 */
+ 	if (dc) {
+-		/*
+-		 * XXX: We can't do this here because it causes HDMI to go
+-		 * into an erroneous state with the result that HDMI won't
+-		 * properly work once disabled. See also a similar symptom
+-		 * for the SOR output.
+-		 */
+-		/*
+-		value = tegra_dc_readl(dc, DC_CMD_DISPLAY_POWER_CONTROL);
+-		value &= ~(PW0_ENABLE | PW1_ENABLE | PW2_ENABLE | PW3_ENABLE |
+-			   PW4_ENABLE | PM0_ENABLE | PM1_ENABLE);
+-		tegra_dc_writel(dc, value, DC_CMD_DISPLAY_POWER_CONTROL);
+-		*/
 -
--	rgb->enabled = false;
+ 		value = tegra_dc_readl(dc, DC_DISP_DISP_WIN_OPTIONS);
+ 		value &= ~HDMI_ENABLE;
+ 		tegra_dc_writel(dc, value, DC_DISP_DISP_WIN_OPTIONS);
+ 
+ 		tegra_dc_commit(dc);
+ 	}
+-
+-	clk_disable_unprepare(hdmi->clk);
+-	reset_control_assert(hdmi->rst);
+-	regulator_disable(hdmi->vdd);
+-	regulator_disable(hdmi->pll);
+-
+-	hdmi->enabled = false;
 -
 -	return 0;
-+	if (output->panel)
-+		drm_panel_unprepare(output->panel);
- }
- 
--static int tegra_output_rgb_setup_clock(struct tegra_output *output,
--					struct clk *clk, unsigned long pclk,
--					unsigned int *div)
+-}
+-
+-static int tegra_output_hdmi_setup_clock(struct tegra_output *output,
+-					 struct clk *clk, unsigned long pclk,
+-					 unsigned int *div)
 -{
--	struct tegra_rgb *rgb = to_rgb(output);
+-	struct tegra_hdmi *hdmi = to_hdmi(output);
 -	int err;
 -
--	err = clk_set_parent(clk, rgb->clk_parent);
+-	err = clk_set_parent(clk, hdmi->clk_parent);
 -	if (err < 0) {
 -		dev_err(output->dev, "failed to set parent: %d\n", err);
 -		return err;
 -	}
 -
--	/*
--	 * We may not want to change the frequency of the parent clock, since
--	 * it may be a parent for other peripherals. This is due to the fact
--	 * that on Tegra20 there's only a single clock dedicated to display
--	 * (pll_d_out0), whereas later generations have a second one that can
--	 * be used to independently drive a second output (pll_d2_out0).
--	 *
--	 * As a way to support multiple outputs on Tegra20 as well, pll_p is
--	 * typically used as the parent clock for the display controllers.
--	 * But this comes at a cost: pll_p is the parent of several other
--	 * peripherals, so its frequency shouldn't change out of the blue.
--	 *
--	 * The best we can do at this point is to use the shift clock divider
--	 * and hope that the desired frequency can be matched (or at least
--	 * matched sufficiently close that the panel will still work).
--	 */
+-	err = clk_set_rate(hdmi->clk_parent, pclk);
+-	if (err < 0)
+-		dev_err(output->dev, "failed to set clock rate to %lu Hz\n",
+-			pclk);
 -
--	*div = ((clk_get_rate(clk) * 2) / pclk) - 2;
+-	*div = 0;
 -
 -	return 0;
 -}
 -
--static int tegra_output_rgb_check_mode(struct tegra_output *output,
--				       struct drm_display_mode *mode,
--				       enum drm_mode_status *status)
+-static int tegra_output_hdmi_check_mode(struct tegra_output *output,
+-					struct drm_display_mode *mode,
+-					enum drm_mode_status *status)
 -{
--	/*
--	 * FIXME: For now, always assume that the mode is okay. There are
--	 * unresolved issues with clk_round_rate(), which doesn't always
--	 * reliably report whether a frequency can be set or not.
--	 */
+-	struct tegra_hdmi *hdmi = to_hdmi(output);
+-	unsigned long pclk = mode->clock * 1000;
+-	struct clk *parent;
+-	long err;
 -
--	*status = MODE_OK;
+-	parent = clk_get_parent(hdmi->clk_parent);
+-
+-	err = clk_round_rate(parent, pclk * 4);
+-	if (err <= 0)
+-		*status = MODE_NOCLOCK;
+-	else
+-		*status = MODE_OK;
 -
 -	return 0;
--}
--
--static const struct tegra_output_ops rgb_ops = {
--	.enable = tegra_output_rgb_enable,
--	.disable = tegra_output_rgb_disable,
--	.setup_clock = tegra_output_rgb_setup_clock,
--	.check_mode = tegra_output_rgb_check_mode,
-+static const struct drm_encoder_helper_funcs tegra_rgb_encoder_helper_funcs = {
-+	.dpms = tegra_rgb_encoder_dpms,
-+	.mode_fixup = tegra_rgb_encoder_mode_fixup,
-+	.prepare = tegra_rgb_encoder_prepare,
-+	.commit = tegra_rgb_encoder_commit,
-+	.mode_set = tegra_rgb_encoder_mode_set,
-+	.disable = tegra_rgb_encoder_disable,
+ }
+ 
+-static const struct tegra_output_ops hdmi_ops = {
+-	.enable = tegra_output_hdmi_enable,
+-	.disable = tegra_output_hdmi_disable,
+-	.setup_clock = tegra_output_hdmi_setup_clock,
+-	.check_mode = tegra_output_hdmi_check_mode,
++static const struct drm_encoder_helper_funcs tegra_hdmi_encoder_helper_funcs = {
++	.dpms = tegra_hdmi_encoder_dpms,
++	.mode_fixup = tegra_hdmi_encoder_mode_fixup,
++	.prepare = tegra_hdmi_encoder_prepare,
++	.commit = tegra_hdmi_encoder_commit,
++	.mode_set = tegra_hdmi_encoder_mode_set,
++	.disable = tegra_hdmi_encoder_disable,
  };
  
- int tegra_dc_rgb_probe(struct tegra_dc *dc)
-@@ -265,55 +296,55 @@ int tegra_dc_rgb_remove(struct tegra_dc *dc)
- 	if (err < 0)
- 		return err;
- 
-+	dc->rgb = NULL;
-+
- 	return 0;
- }
- 
- int tegra_dc_rgb_init(struct drm_device *drm, struct tegra_dc *dc)
- {
--	struct tegra_rgb *rgb = to_rgb(dc->rgb);
-+	struct tegra_output *output = dc->rgb;
+ static int tegra_hdmi_show_regs(struct seq_file *s, void *data)
+@@ -1345,15 +1331,28 @@ static int tegra_hdmi_init(struct host1x_client *client)
+ 	struct tegra_hdmi *hdmi = host1x_client_to_hdmi(client);
  	int err;
  
- 	if (!dc->rgb)
- 		return -ENODEV;
+-	hdmi->output.type = TEGRA_OUTPUT_HDMI;
+ 	hdmi->output.dev = client->dev;
+-	hdmi->output.ops = &hdmi_ops;
  
--	rgb->output.type = TEGRA_OUTPUT_RGB;
--	rgb->output.ops = &rgb_ops;
--
--	err = tegra_output_init(dc->base.dev, &rgb->output);
+-	err = tegra_output_init(drm, &hdmi->output);
 -	if (err < 0) {
--		dev_err(dc->dev, "output setup failed: %d\n", err);
+-		dev_err(client->dev, "output setup failed: %d\n", err);
 -		return err;
-+	drm_connector_init(drm, &output->connector, &tegra_rgb_connector_funcs,
-+			   DRM_MODE_CONNECTOR_LVDS);
-+	drm_connector_helper_add(&output->connector,
-+				 &tegra_rgb_connector_helper_funcs);
-+	output->connector.dpms = DRM_MODE_DPMS_OFF;
+-	}
++	drm_connector_init(drm, &hdmi->output.connector,
++			   &tegra_hdmi_connector_funcs,
++			   DRM_MODE_CONNECTOR_HDMIA);
++	drm_connector_helper_add(&hdmi->output.connector,
++				 &tegra_hdmi_connector_helper_funcs);
++	hdmi->output.connector.dpms = DRM_MODE_DPMS_OFF;
 +
-+	if (output->panel) {
-+		err = drm_panel_attach(output->panel, &output->connector);
-+		if (err < 0)
-+			dev_err(output->dev, "failed to attach panel: %d\n",
-+				err);
++	drm_encoder_init(drm, &hdmi->output.encoder, &tegra_hdmi_encoder_funcs,
++			 DRM_MODE_ENCODER_TMDS);
++	drm_encoder_helper_add(&hdmi->output.encoder,
++			       &tegra_hdmi_encoder_helper_funcs);
++
++	drm_mode_connector_attach_encoder(&hdmi->output.connector,
++					  &hdmi->output.encoder);
++	drm_connector_register(&hdmi->output.connector);
++
++	hdmi->output.encoder.possible_crtcs = 0x3;
++
++	if (gpio_is_valid(hdmi->output.hpd_gpio))
++		enable_irq(hdmi->output.hpd_irq);
+ 
+ 	if (IS_ENABLED(CONFIG_DEBUG_FS)) {
+ 		err = tegra_hdmi_debugfs_init(hdmi, drm->primary);
+@@ -1368,6 +1367,26 @@ static int tegra_hdmi_init(struct host1x_client *client)
+ 		return err;
  	}
  
-+	drm_encoder_init(drm, &output->encoder, &tegra_rgb_encoder_funcs,
-+			 DRM_MODE_ENCODER_LVDS);
-+	drm_encoder_helper_add(&output->encoder,
-+			       &tegra_rgb_encoder_helper_funcs);
++	err = regulator_enable(hdmi->pll);
++	if (err < 0) {
++		dev_err(hdmi->dev, "failed to enable PLL regulator: %d\n", err);
++		return err;
++	}
 +
-+	drm_mode_connector_attach_encoder(&output->connector,
-+					  &output->encoder);
-+	drm_connector_register(&output->connector);
++	err = regulator_enable(hdmi->vdd);
++	if (err < 0) {
++		dev_err(hdmi->dev, "failed to enable VDD regulator: %d\n", err);
++		return err;
++	}
 +
- 	/*
--	 * By default, outputs can be associated with each display controller.
--	 * RGB outputs are an exception, so we make sure they can be attached
--	 * to only their parent display controller.
-+	 * Other outputs can be attached to either display controller. The RGB
-+	 * outputs are an exception and work only with their parent display
-+	 * controller.
- 	 */
--	rgb->output.encoder.possible_crtcs = drm_crtc_mask(&dc->base);
-+	output->encoder.possible_crtcs = drm_crtc_mask(&dc->base);
- 
++	err = clk_prepare_enable(hdmi->clk);
++	if (err < 0) {
++		dev_err(hdmi->dev, "failed to enable clock: %d\n", err);
++		return err;
++	}
++
++	reset_control_deassert(hdmi->rst);
++
  	return 0;
  }
  
- int tegra_dc_rgb_exit(struct tegra_dc *dc)
- {
--	if (dc->rgb) {
--		int err;
--
--		err = tegra_output_disable(dc->rgb);
--		if (err < 0) {
--			dev_err(dc->dev, "output failed to disable: %d\n", err);
--			return err;
--		}
--
--		err = tegra_output_exit(dc->rgb);
--		if (err < 0) {
--			dev_err(dc->dev, "output cleanup failed: %d\n", err);
--			return err;
--		}
--
--		dc->rgb = NULL;
--	}
-+	if (!dc->rgb)
-+		return 0;
+@@ -1376,6 +1395,13 @@ static int tegra_hdmi_exit(struct host1x_client *client)
+ 	struct tegra_hdmi *hdmi = host1x_client_to_hdmi(client);
+ 	int err;
  
--	return 0;
-+	return tegra_output_exit(dc->rgb);
++	tegra_output_exit(&hdmi->output);
++
++	clk_disable_unprepare(hdmi->clk);
++	reset_control_assert(hdmi->rst);
++
++	regulator_disable(hdmi->vdd);
++	regulator_disable(hdmi->pll);
+ 	regulator_disable(hdmi->hdmi);
+ 
+ 	if (IS_ENABLED(CONFIG_DEBUG_FS)) {
+@@ -1385,18 +1411,6 @@ static int tegra_hdmi_exit(struct host1x_client *client)
+ 				err);
+ 	}
+ 
+-	err = tegra_output_disable(&hdmi->output);
+-	if (err < 0) {
+-		dev_err(client->dev, "output failed to disable: %d\n", err);
+-		return err;
+-	}
+-
+-	err = tegra_output_exit(&hdmi->output);
+-	if (err < 0) {
+-		dev_err(client->dev, "output cleanup failed: %d\n", err);
+-		return err;
+-	}
+-
+ 	return 0;
  }
+ 
+diff --git a/drivers/gpu/drm/tegra/output.c b/drivers/gpu/drm/tegra/output.c
+index 9dd3c34d47fe..9cf851bf414b 100644
+--- a/drivers/gpu/drm/tegra/output.c
++++ b/drivers/gpu/drm/tegra/output.c
+@@ -276,11 +276,6 @@ int tegra_output_init(struct drm_device *drm, struct tegra_output *output)
+ 	int connector, encoder;
+ 
+ 	switch (output->type) {
+-	case TEGRA_OUTPUT_HDMI:
+-		connector = DRM_MODE_CONNECTOR_HDMIA;
+-		encoder = DRM_MODE_ENCODER_TMDS;
+-		break;
+-
+ 	case TEGRA_OUTPUT_DSI:
+ 		connector = DRM_MODE_CONNECTOR_DSI;
+ 		encoder = DRM_MODE_ENCODER_DSI;
 -- 
 2.1.3
 
