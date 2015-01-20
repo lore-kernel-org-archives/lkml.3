@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752521AbbATCnL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 21:43:11 -0500
-Received: from mail-ie0-f178.google.com ([209.85.223.178]:34897 "EHLO
-	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752183AbbATCnK (ORCPT
+	id S1751931AbbATCtF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 21:49:05 -0500
+Received: from rtits2.realtek.com ([60.250.210.242]:41006 "EHLO
+	rtits2.realtek.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751267AbbATCtC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 21:43:10 -0500
-From: Chase Southwood <chase.southwood@gmail.com>
-To: gregkh@linuxfoundation.org
-Cc: abbotti@mev.co.uk, hsweeten@visionengravers.com,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Chase Southwood <chase.southwood@gmail.com>
-Subject: [PATCH] staging: comedi: das1800: prefer kmalloc_array over kmalloc with multiply
-Date: Mon, 19 Jan 2015 20:42:49 -0600
-Message-Id: <1421721769-28482-1-git-send-email-chase.southwood@gmail.com>
-X-Mailer: git-send-email 2.2.2
+	Mon, 19 Jan 2015 21:49:02 -0500
+Authenticated-By: 
+X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID t0K2moaP016071, This message is accepted by code: ctloc85258
+From: Hayes Wang <hayeswang@realtek.com>
+To: David Miller <davem@davemloft.net>,
+        "sfeldma@gmail.com" <sfeldma@gmail.com>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        nic_swsd <nic_swsd@realtek.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
+Subject: RE: [PATCH net-next 1/7] r8152: adjust rx_bottom
+Thread-Topic: [PATCH net-next 1/7] r8152: adjust rx_bottom
+Thread-Index: AQHQNCzHp+COjrpcAkWYiP9rnzW4lZzIR54A
+Date: Tue, 20 Jan 2015 02:48:50 +0000
+Message-ID: <0835B3720019904CB8F7AA43166CEEB2EE6E76@RTITMBSV03.realtek.com.tw>
+References: <1394712342-15778-118-Taiwan-albertk@realtek.com>
+	<1394712342-15778-119-Taiwan-albertk@realtek.com>
+	<CAE4R7bAv26f-+DW-TmjspJxAb-3Add5sf563mnMUTGCyiqG3rQ@mail.gmail.com>
+ <20150119.161333.1471925264489559119.davem@davemloft.net>
+In-Reply-To: <20150119.161333.1471925264489559119.davem@davemloft.net>
+Accept-Language: zh-TW, en-US
+Content-Language: zh-TW
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [172.21.71.143]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Checkpatch doesn't like kmalloc with multiply very much:
-drivers/staging/comedi/drivers/das1800.c:1377: WARNING: Prefer kmalloc_array over kmalloc with multiply
+ David Miller [mailto:davem@davemloft.net] 
+> Sent: Tuesday, January 20, 2015 5:14 AM
+[...]
+> >> -               r8152_submit_rx(tp, agg, GFP_ATOMIC);
+> >> +               if (!ret) {
+> >> +                       ret = r8152_submit_rx(tp, agg, GFP_ATOMIC);
+> >> +               } else {
+> >> +                       urb->actual_length = 0;
+> >> +                       list_add_tail(&agg->list, next);
+> > 
+> > Do you need a spin_lock_irqsave(&tp->rx_lock, flags) around this?
+> 
+> Indeed, and rtl_start_rx() seems to also access agg->list without
+> proper locking.
 
-So this patch swaps that use out for kmalloc_array instead.
+It is unnecessary because I deal with them in a local list_head. My steps are
+   1. Move the whole list from tp->rx_done to local rx_queue. (with spin lock)
+   2. dequeue/enqueue the lists in rx_queue.
+   3. Move the lists in rx_queue to tp->rx_done if it is necessary. (spin lock)
+For step 2, it wouldn't have race, because the list_head is local and no other
+function would change it. Therefore, I don't think it needs the spin lock.
 
-Signed-off-by: Chase Southwood <chase.southwood@gmail.com>
----
- drivers/staging/comedi/drivers/das1800.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/drivers/staging/comedi/drivers/das1800.c b/drivers/staging/comedi/drivers/das1800.c
-index 381ae94..13ed31c 100644
---- a/drivers/staging/comedi/drivers/das1800.c
-+++ b/drivers/staging/comedi/drivers/das1800.c
-@@ -1374,7 +1374,7 @@ static int das1800_attach(struct comedi_device *dev,
- 	if (dev->irq & it->options[2])
- 		das1800_init_dma(dev, it);
+The rtl_start_rx() also uses the similar way.
  
--	devpriv->fifo_buf = kmalloc(FIFO_SIZE * sizeof(uint16_t), GFP_KERNEL);
-+	devpriv->fifo_buf = kmalloc_array(FIFO_SIZE, sizeof(uint16_t), GFP_KERNEL);
- 	if (!devpriv->fifo_buf)
- 		return -ENOMEM;
- 
--- 
-2.2.2
-
+Best Regards,
+Hayes
