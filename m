@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753489AbbATQCO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 11:02:14 -0500
-Received: from mail.kmu-office.ch ([178.209.48.109]:44966 "EHLO
+	id S1753232AbbATQCN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 11:02:13 -0500
+Received: from mail.kmu-office.ch ([178.209.48.109]:44964 "EHLO
 	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753207AbbATQCK (ORCPT
+	with ESMTP id S1753235AbbATQCK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 20 Jan 2015 11:02:10 -0500
 From: Stefan Agner <stefan@agner.ch>
@@ -12,9 +12,9 @@ To: jic23@kernel.org
 Cc: shawn.guo@linaro.org, B38611@freescale.com, maitysanchayan@gmail.com,
         linux-iio@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org, stefan@agner.ch
-Subject: [PATCH 1/3] iio: adc: vf610: use ADC clock within specification
-Date: Tue, 20 Jan 2015 17:02:01 +0100
-Message-Id: <1421769723-28677-2-git-send-email-stefan@agner.ch>
+Subject: [PATCH 2/3] iio: adc: vf610: implement configurable conversion modes
+Date: Tue, 20 Jan 2015 17:02:02 +0100
+Message-Id: <1421769723-28677-3-git-send-email-stefan@agner.ch>
 X-Mailer: git-send-email 2.2.2
 In-Reply-To: <1421769723-28677-1-git-send-email-stefan@agner.ch>
 References: <1421769723-28677-1-git-send-email-stefan@agner.ch>
@@ -22,182 +22,189 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Depending on conversion mode used, the ADC clock (ADCK) needs
-to be below a maximum frequency. According to Vybrid's data
-sheet this is 20MHz for the low power conversion mode.
+Support configureable conversion mode through sysfs. So far, the
+mode used was low-power, which is enabled by default now. Beside
+that, the modes normal and high-speed are selectable as well.
 
-The ADC clock is depending on input clock, which is the bus
-clock by default. Vybrid SoC are typically clocked at at 400MHz
-or 500MHz, which leads to 66MHz or 83MHz bus clock respectively.
-Hence, a divider of 8 is required to stay below the specified
-maximum clock of 20MHz.
-
-Due to the different bus clock speeds, the resulting sampling
-frequency is not static. Hence use the ADC clock and calculate
-the actual available sampling frequency dynamically.
-
-This fixes bogous values observed on some 500MHz clocked Vybrid
-SoC. The resulting value usually showed Bit 9 being stuck at 1,
-or 0, which lead to a value of +/-512.
+Use the new device tree property which specifies the maximum ADC
+conversion clock frequencies. Depending on the mode used, the
+available resulting conversion frequency are calcaulated
+dynamically.
 
 Signed-off-by: Stefan Agner <stefan@agner.ch>
 ---
- drivers/iio/adc/vf610_adc.c | 91 ++++++++++++++++++++++++++++++---------------
- 1 file changed, 61 insertions(+), 30 deletions(-)
+ drivers/iio/adc/vf610_adc.c | 92 ++++++++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 86 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/iio/adc/vf610_adc.c b/drivers/iio/adc/vf610_adc.c
-index 8ec353c..e63b8e7 100644
+index e63b8e7..fd41d91c 100644
 --- a/drivers/iio/adc/vf610_adc.c
 +++ b/drivers/iio/adc/vf610_adc.c
-@@ -141,9 +141,13 @@ struct vf610_adc {
+@@ -118,15 +118,21 @@ enum average_sel {
+ 	VF610_ADC_SAMPLE_32,
+ };
+ 
++enum conversion_mode_sel {
++	VF610_ADC_CONV_NORMAL,
++	VF610_ADC_CONV_HIGH_SPEED,
++	VF610_ADC_CONV_LOW_POWER,
++};
++
+ struct vf610_adc_feature {
+ 	enum clk_sel	clk_sel;
+ 	enum vol_ref	vol_ref;
++	enum conversion_mode_sel conv_mode;
+ 
+ 	int	clk_div;
+ 	int     sample_rate;
+ 	int	res_mode;
+ 
+-	bool	lpm;
+ 	bool	calibration;
+ 	bool	ovwren;
+ };
+@@ -139,6 +145,8 @@ struct vf610_adc {
+ 	u32 vref_uv;
+ 	u32 value;
  	struct regulator *vref;
++
++	u32 max_adck_rate[3];
  	struct vf610_adc_feature adc_feature;
  
-+	u32 sample_freq_avail[5];
-+
+ 	u32 sample_freq_avail[5];
+@@ -146,6 +154,8 @@ struct vf610_adc {
  	struct completion completion;
  };
  
-+static const u32 vf610_hw_avgs[] = { 1, 4, 8, 16, 32 };
-+
++static const char * const vf610_conv_modes[] = { "normal", "high-speed",
++						 "low-power" };
+ static const u32 vf610_hw_avgs[] = { 1, 4, 8, 16, 32 };
+ 
  #define VF610_ADC_CHAN(_idx, _chan_type) {			\
- 	.type = (_chan_type),					\
- 	.indexed = 1,						\
-@@ -180,35 +184,47 @@ static const struct iio_chan_spec vf610_adc_iio_channels[] = {
- 	/* sentinel */
- };
+@@ -186,8 +196,20 @@ static const struct iio_chan_spec vf610_adc_iio_channels[] = {
  
--/*
-- * ADC sample frequency, unit is ADCK cycles.
-- * ADC clk source is ipg clock, which is the same as bus clock.
-- *
-- * ADC conversion time = SFCAdder + AverageNum x (BCT + LSTAdder)
-- * SFCAdder: fixed to 6 ADCK cycles
-- * AverageNum: 1, 4, 8, 16, 32 samples for hardware average.
-- * BCT (Base Conversion Time): fixed to 25 ADCK cycles for 12 bit mode
-- * LSTAdder(Long Sample Time): fixed to 3 ADCK cycles
-- *
-- * By default, enable 12 bit resolution mode, clock source
-- * set to ipg clock, So get below frequency group:
-- */
--static const u32 vf610_sample_freq_avail[5] =
--{1941176, 559332, 286957, 145374, 73171};
-+static inline void vf610_adc_calculate_rates(struct vf610_adc *info)
-+{
-+	unsigned long adck_rate, ipg_rate = clk_get_rate(info->clk);
-+	int i;
-+
-+	/*
-+	 * Calculate ADC sample frequencies
-+	 * Sample time unit is ADCK cycles. ADCK clk source is ipg clock,
-+	 * which is the same as bus clock.
-+	 *
-+	 * ADC conversion time = SFCAdder + AverageNum x (BCT + LSTAdder)
-+	 * SFCAdder: fixed to 6 ADCK cycles
-+	 * AverageNum: 1, 4, 8, 16, 32 samples for hardware average.
-+	 * BCT (Base Conversion Time): fixed to 25 ADCK cycles for 12 bit mode
-+	 * LSTAdder(Long Sample Time): fixed to 3 ADCK cycles
-+	 */
-+	adck_rate = ipg_rate / info->adc_feature.clk_div;
-+	for (i = 0; i < ARRAY_SIZE(vf610_hw_avgs); i++)
-+		info->sample_freq_avail[i] =
-+			adck_rate / (6 + vf610_hw_avgs[i] * (25 + 3));
-+}
- 
- static inline void vf610_adc_cfg_init(struct vf610_adc *info)
+ static inline void vf610_adc_calculate_rates(struct vf610_adc *info)
  {
 +	struct vf610_adc_feature *adc_feature = &info->adc_feature;
+ 	unsigned long adck_rate, ipg_rate = clk_get_rate(info->clk);
+-	int i;
++	int divisor, i;
 +
- 	/* set default Configuration for ADC controller */
--	info->adc_feature.clk_sel = VF610_ADCIOC_BUSCLK_SET;
--	info->adc_feature.vol_ref = VF610_ADCIOC_VR_VREF_SET;
-+	adc_feature->clk_sel = VF610_ADCIOC_BUSCLK_SET;
-+	adc_feature->vol_ref = VF610_ADCIOC_VR_VREF_SET;
++	adck_rate = info->max_adck_rate[adc_feature->conv_mode];
 +
-+	adc_feature->calibration = true;
-+	adc_feature->ovwren = true;
-+
-+	adc_feature->res_mode = 12;
-+	adc_feature->sample_rate = 1;
-+	adc_feature->lpm = true;
++	if (adck_rate) {
++		/* calculate clk divider which is within specification */
++		divisor = ipg_rate / adck_rate;
++		adc_feature->clk_div = 1 << fls(divisor + 1);
++	} else {
++		/* fall-back value using a safe divisor */
++		adc_feature->clk_div = 8;
++	}
  
--	info->adc_feature.calibration = true;
--	info->adc_feature.ovwren = true;
-+	/* Use a save ADCK which is below 20MHz on all devices */
-+	adc_feature->clk_div = 8;
+ 	/*
+ 	 * Calculate ADC sample frequencies
+@@ -219,10 +241,8 @@ static inline void vf610_adc_cfg_init(struct vf610_adc *info)
  
--	info->adc_feature.clk_div = 1;
--	info->adc_feature.res_mode = 12;
--	info->adc_feature.sample_rate = 1;
--	info->adc_feature.lpm = true;
-+	vf610_adc_calculate_rates(info);
+ 	adc_feature->res_mode = 12;
+ 	adc_feature->sample_rate = 1;
+-	adc_feature->lpm = true;
+ 
+-	/* Use a save ADCK which is below 20MHz on all devices */
+-	adc_feature->clk_div = 8;
++	adc_feature->conv_mode = VF610_ADC_CONV_LOW_POWER;
+ 
+ 	vf610_adc_calculate_rates(info);
  }
- 
- static void vf610_adc_cfg_post_set(struct vf610_adc *info)
-@@ -290,12 +306,10 @@ static void vf610_adc_cfg_set(struct vf610_adc *info)
- 
+@@ -307,10 +327,12 @@ static void vf610_adc_cfg_set(struct vf610_adc *info)
  	cfg_data = readl(info->regs + VF610_REG_ADC_CFG);
  
--	/* low power configuration */
  	cfg_data &= ~VF610_ADC_ADLPC_EN;
- 	if (adc_feature->lpm)
+-	if (adc_feature->lpm)
++	if (adc_feature->conv_mode == VF610_ADC_CONV_LOW_POWER)
  		cfg_data |= VF610_ADC_ADLPC_EN;
  
--	/* disable high speed */
  	cfg_data &= ~VF610_ADC_ADHSC_EN;
++	if (adc_feature->conv_mode == VF610_ADC_CONV_HIGH_SPEED)
++		cfg_data |= VF610_ADC_ADHSC_EN;
  
  	writel(cfg_data, info->regs + VF610_REG_ADC_CFG);
-@@ -435,10 +449,27 @@ static irqreturn_t vf610_adc_isr(int irq, void *dev_id)
- 	return IRQ_HANDLED;
+ }
+@@ -466,10 +488,65 @@ static ssize_t vf610_show_samp_freq_avail(struct device *dev,
+ 	return len;
  }
  
--static IIO_CONST_ATTR_SAMP_FREQ_AVAIL("1941176, 559332, 286957, 145374, 73171");
-+static ssize_t vf610_show_samp_freq_avail(struct device *dev,
-+				struct device_attribute *attr, char *buf)
++static ssize_t vf610_read_mode(struct device *dev,
++		struct device_attribute *attr,
++		char *buf)
 +{
-+	struct vf610_adc *info = iio_priv(dev_to_iio_dev(dev));
-+	size_t len = 0;
-+	int i;
++	struct iio_dev *indio_dev = dev_to_iio_dev(dev);
++	struct vf610_adc *info = iio_priv(indio_dev);
 +
-+	for (i = 0; i < ARRAY_SIZE(info->sample_freq_avail); i++)
-+		len += scnprintf(buf + len, PAGE_SIZE - len,
-+			"%u ", info->sample_freq_avail[i]);
++	return sprintf(buf, "%s\n",
++			vf610_conv_modes[info->adc_feature.conv_mode]);
++}
 +
-+	/* replace trailing space by newline */
-+	buf[len - 1] = '\n';
++
++static ssize_t vf610_write_mode(struct device *dev,
++		struct device_attribute *attr,
++		const char *buf,
++		size_t len)
++{
++	struct iio_dev *indio_dev = dev_to_iio_dev(dev);
++	struct vf610_adc *info = iio_priv(indio_dev);
++	int i, mode = -EINVAL;
++
++	mutex_lock(&indio_dev->mlock);
++	if (iio_buffer_enabled(indio_dev)) {
++		mutex_unlock(&indio_dev->mlock);
++		return -EBUSY;
++	}
++	mutex_unlock(&indio_dev->mlock);
++
++	for (i = 0; i < ARRAY_SIZE(vf610_conv_modes); i++) {
++		if (!strcmp(vf610_conv_modes[i], buf)) {
++			mode = i;
++			break;
++		}
++	}
++
++	if (mode < 0)
++		return mode;
++
++	mutex_lock(&indio_dev->mlock);
++	info->adc_feature.conv_mode = mode;
++	vf610_adc_calculate_rates(info);
++	vf610_adc_hw_init(info);
++	mutex_unlock(&indio_dev->mlock);
 +
 +	return len;
 +}
 +
-+static IIO_DEV_ATTR_SAMP_FREQ_AVAIL(vf610_show_samp_freq_avail);
+ static IIO_DEV_ATTR_SAMP_FREQ_AVAIL(vf610_show_samp_freq_avail);
  
++static IIO_CONST_ATTR_NAMED(conversion_mode_available,
++	conversion_mode_available, "normal high-speed low-power");
++
++IIO_DEVICE_ATTR(conversion_mode, S_IWUSR | S_IRUGO, vf610_read_mode,
++	vf610_write_mode, 0);
++
  static struct attribute *vf610_attributes[] = {
--	&iio_const_attr_sampling_frequency_available.dev_attr.attr,
-+	&iio_dev_attr_sampling_frequency_available.dev_attr.attr,
+ 	&iio_dev_attr_sampling_frequency_available.dev_attr.attr,
++	&iio_const_attr_conversion_mode_available.dev_attr.attr,
++	&iio_dev_attr_conversion_mode.dev_attr.attr,
  	NULL
  };
  
-@@ -502,7 +533,7 @@ static int vf610_read_raw(struct iio_dev *indio_dev,
- 		return IIO_VAL_FRACTIONAL_LOG2;
+@@ -654,6 +731,9 @@ static int vf610_adc_probe(struct platform_device *pdev)
  
- 	case IIO_CHAN_INFO_SAMP_FREQ:
--		*val = vf610_sample_freq_avail[info->adc_feature.sample_rate];
-+		*val = info->sample_freq_avail[info->adc_feature.sample_rate];
- 		*val2 = 0;
- 		return IIO_VAL_INT;
+ 	info->vref_uv = regulator_get_voltage(info->vref);
  
-@@ -525,9 +556,9 @@ static int vf610_write_raw(struct iio_dev *indio_dev,
- 	switch (mask) {
- 		case IIO_CHAN_INFO_SAMP_FREQ:
- 			for (i = 0;
--				i < ARRAY_SIZE(vf610_sample_freq_avail);
-+				i < ARRAY_SIZE(info->sample_freq_avail);
- 				i++)
--				if (val == vf610_sample_freq_avail[i]) {
-+				if (val == info->sample_freq_avail[i]) {
- 					info->adc_feature.sample_rate = i;
- 					vf610_adc_sample_set(info);
- 					return 0;
++	of_property_read_u32_array(pdev->dev.of_node, "fsl,adck-max-frequency",
++			info->max_adck_rate, 3);
++
+ 	platform_set_drvdata(pdev, indio_dev);
+ 
+ 	init_completion(&info->completion);
 -- 
 2.2.2
 
