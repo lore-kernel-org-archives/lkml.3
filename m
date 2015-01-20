@@ -1,95 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752375AbbATJDt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 04:03:49 -0500
-Received: from sabertooth02.qualcomm.com ([65.197.215.38]:30229 "EHLO
-	sabertooth02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751614AbbATJDp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 04:03:45 -0500
-X-IronPort-AV: E=McAfee;i="5600,1067,7686"; a="82585021"
-X-IronPort-AV: E=Sophos;i="5.09,432,1418112000"; 
-   d="scan'208";a="25708901"
-From: Kalle Valo <kvalo@qca.qualcomm.com>
-To: David Miller <davem@davemloft.net>
-CC: <linux-wireless@vger.kernel.org>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: pull-request: wireless-drivers 2015-01-20
-Date: Tue, 20 Jan 2015 11:03:33 +0200
-Message-ID: <87oapt3jtm.fsf@kamboji.qca.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1752178AbbATJJQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 04:09:16 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:44152 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751502AbbATJIT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 04:08:19 -0500
+Message-ID: <54BE1B00.3090102@suse.cz>
+Date: Tue, 20 Jan 2015 10:08:16 +0100
+From: Vlastimil Babka <vbabka@suse.cz>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-X-Originating-IP: [10.80.80.8]
-X-ClientProxiedBy: NASANEXM01C.na.qualcomm.com (10.85.0.83) To
- NALASEXR01G.na.qualcomm.com (10.49.56.53)
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: "Kirill A. Shutemov" <kirill@shutemov.name>,
+        David Rientjes <rientjes@google.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3] mm/thp: Allocate transparent hugepages on local node
+References: <1421393196-20915-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20150116160204.544e2bcf9627f5a4043ebf8d@linux-foundation.org> <54BD308A.4080905@suse.cz> <87fvb6uhfp.fsf@linux.vnet.ibm.com>
+In-Reply-To: <87fvb6uhfp.fsf@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=iso-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+On 01/20/2015 06:52 AM, Aneesh Kumar K.V wrote:
+> Vlastimil Babka <vbabka@suse.cz> writes:
+> 
+>> On 01/17/2015 01:02 AM, Andrew Morton wrote:
+>>> On Fri, 16 Jan 2015 12:56:36 +0530 "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+>>> 
+>>>> This make sure that we try to allocate hugepages from local node if
+>>>> allowed by mempolicy. If we can't, we fallback to small page allocation
+>>>> based on mempolicy. This is based on the observation that allocating pages
+>>>> on local node is more beneficial than allocating hugepages on remote node.
+>>> 
+>>> The changelog is a bit incomplete.  It doesn't describe the current
+>>> behaviour, nor what is wrong with it.  What are the before-and-after
+>>> effects of this change?
+>>> 
+>>> And what might be the user-visible effects?
+>>> 
+>>>> --- a/mm/mempolicy.c
+>>>> +++ b/mm/mempolicy.c
+>>>> @@ -2030,6 +2030,46 @@ retry_cpuset:
+>>>>  	return page;
+>>>>  }
+>>>>  
+>>>> +struct page *alloc_hugepage_vma(gfp_t gfp, struct vm_area_struct *vma,
+>>>> +				unsigned long addr, int order)
+>>> 
+>>> alloc_pages_vma() is nicely documented.  alloc_hugepage_vma() is not
+>>> documented at all.  This makes it a bit had for readers to work out the
+>>> difference!
+>>> 
+>>> Is it possible to scrunch them both into the same function?  Probably
+>>> too messy?
+>>
+>> Hm that could work, alloc_pages_vma already has an if (MPOL_INTERLEAVE) part, so
+>> just put the THP specialities into an "else if (huge_page)" part there?
+>>
+>> You could probably test for GFP_TRANSHUGE the same way as __alloc_pages_slowpath
+>> does. There might be false positives theoretically, but is there anything else
+>> that would use these flags and not be a THP?
+>>
+> 
+> is that check correct ? ie, 
+> 
+> if ((gfp & GFP_TRANSHUGE) == GFP_TRANSHUGE)
+> 
+> may not always indicate transparent hugepage if defrag = 0 . With defrag
+> cleared, we remove __GFP_WAIT from GFP_TRANSHUGE.
 
-more fixes for 3.19, I hope these are still appropriate. Please let me
-know if there are any issues.
+Yep, that looks wrong. Sigh. I guess we can't spare an extra GFP flag to
+indicate TRANSHUGE?
 
-Kalle
+> static inline gfp_t alloc_hugepage_gfpmask(int defrag, gfp_t extra_gfp)
+> {
+> 	return (GFP_TRANSHUGE & ~(defrag ? 0 : __GFP_WAIT)) | extra_gfp;
+> }
+> 
+> -aneesh
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
 
-The following changes since commit 16dde0d6ac159531a5e03cd3f8bc8a401d9f3fb6:
-
-  be2net: Allow GRE to work concurrently while a VxLAN tunnel is configured (2015-01-15 01:55:05 -0500)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/kvalo/wireless-drivers.git tags/wireless-drivers-for-davem-2015-01-20
-
-for you to fetch changes up to e3f31175a3eeb492a6ab788e4fa136c19b43aab4:
-
-  ath9k: fix race condition in irq processing during hardware reset (2015-01-19 14:32:29 +0200)
-
-----------------------------------------------------------------
-ath9k:
-
-* fix an IRQ storm caused by commit 872b5d814f99
-
-iwlwifi:
-
-* A fix for scan that fixes a firmware assertion
-
-* A fix that improves roaming behavior. Same fix has been tested for
-  a while in iwldvm. This is a bit of a work around, but the real fix
-  should be in mac80211 and will come later.
-
-* A fix for BARs that avoids a WARNING.
-
-* one fix for rfkill while scheduled scan is running.
-  Linus's system hit this issue. WiFi would be unavailable
-  after this has happpened because of bad state in cfg80211.
-
-----------------------------------------------------------------
-David Spinadel (1):
-      iwlwifi: mvm: fix EBS on single scan
-
-Emmanuel Grumbach (2):
-      iwlwifi: mvm: drop non VO frames when flushing
-      iwlwifi: mvm: abort scheduled scan upon RFKILL
-
-Eyal Shapira (1):
-      iwlwifi: mvm: set the tx cmd tid for BAR frame correctly
-
-Felix Fietkau (1):
-      ath9k: fix race condition in irq processing during hardware reset
-
-Kalle Valo (2):
-      Merge tag 'iwlwifi-for-kalle-2015-01-13' of https://git.kernel.org/.../iwlwifi/iwlwifi-fixes
-      Merge tag 'iwlwifi-for-kalle-2015-01-15' of https://git.kernel.org/.../iwlwifi/iwlwifi-fixes
-
- drivers/net/wireless/ath/ath9k/main.c          |    7 ++--
- drivers/net/wireless/iwlwifi/iwl-fw-file.h     |    2 +
- drivers/net/wireless/iwlwifi/mvm/fw-api-scan.h |    7 +++-
- drivers/net/wireless/iwlwifi/mvm/mac80211.c    |   20 ++++-----
- drivers/net/wireless/iwlwifi/mvm/scan.c        |   53 ++++++++++++++++++------
- drivers/net/wireless/iwlwifi/mvm/tx.c          |   11 ++++-
- 6 files changed, 69 insertions(+), 31 deletions(-)
-
--- 
-Kalle Valo
