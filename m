@@ -1,42 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753490AbbATSGw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 13:06:52 -0500
-Received: from mail-we0-f175.google.com ([74.125.82.175]:62855 "EHLO
-	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751649AbbATSFf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 13:05:35 -0500
+	id S1754178AbbATSGx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 13:06:53 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34434 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751241AbbATSGv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 13:06:51 -0500
+Date: Tue, 20 Jan 2015 19:05:14 +0100
+From: Oleg Nesterov <oleg@redhat.com>
+To: Prarit Bhargava <prarit@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Peter Zijlstra (Intel)" <peterz@infradead.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Fabian Frederick <fabf@skynet.be>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC/PATCH] init/main.c: Simplify initcall_blacklisted()
+Message-ID: <20150120180514.GA23205@redhat.com>
+References: <1421454312-30505-1-git-send-email-linux@rasmusvillemoes.dk> <20150119191924.GA19153@redhat.com> <87y4oyb6sc.fsf@rustcorp.com.au> <54BE32D2.90301@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <20150121045258.GA19087@Arch-Thinkpad>
-References: <20150121045258.GA19087@Arch-Thinkpad>
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Date: Tue, 20 Jan 2015 18:05:03 +0000
-Message-ID: <CA+V-a8vNv1DYL+rcGTxSXwNoWvZ4wfJqdp4zWMzsFTVYF2iBsg@mail.gmail.com>
-Subject: Re: [PATCH] staging: fix davinci_vpfe: fix space prohibted before
- that ','
-To: Ahmad Hassan <ahmad.hassan612@gmail.com>
-Cc: OSUOSL Drivers <devel@driverdev.osuosl.org>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Hans Verkuil <hans.verkuil@cisco.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        linux-media <linux-media@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54BE32D2.90301@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 01/20, Prarit Bhargava wrote:
+>
+> On 01/19/2015 08:05 PM, Rusty Russell wrote:
+> > Oleg Nesterov <oleg@redhat.com> writes:
+> >>
+> >> If we want to optimize this... I am wondering if we can change
+> >> initcall_blacklist()
+> >>
+> >> 	-	entry->buf = alloc_bootmem(strlen(str_entry) + 1);
+> >> 	+	ebtry->fn = kallsyms_lookup_name(str_entry);
+> >>
+> >> and then change initcall_blacklisted() to just compare the pointers.
+> >
+> > That would make far, far more sense.  It would fail for modules of
+> > course, but that might be OK.  Prarit, this was your code; does it
+> > matter?
+>
+> It does actually matter to me.  I've been using it to blacklist modules at boot
+> as well ... and it works really well :)  So I'm okay with the original patch but
+> not the second suggested change.
 
-On Wed, Jan 21, 2015 at 4:52 AM, Ahmad Hassan <ahmad.hassan612@gmail.com> wrote:
-> This patch fixes the following checkpatch.pl error:
-> fix space prohibited before that ',' at line 904
+Yes, I didn't know/realize that initcall_blacklist paramater can be
+also used to disable the modules, thanks for correcting me.
 
-Thanks for the patch, but there already exists a patch [1] fixing this.
+But I'd say that initcall_blacklisted(mod->init) looks a bit strange,
+I mean it would be probably better to use mod->name in this case, not
+the "internal" name of this likely static function.
 
-[1] https://patchwork.linuxtv.org/patch/27912/
+Perhaps even another kernel parameter makes sense for this, I dunno..
+>From Documentation/kernel-parameters.txt:
 
-Thanks,
---Prabhakar Lad
+	initcall_blacklist=  [KNL] Do not execute a comma-separated list of
+			initcall functions.  Useful for debugging built-in
+			modules and initcalls.
+
+note that this only mentions built-in modules.
+
+Nevermind, I was wrong anyway. Thanks!
+
+Oleg.
+
