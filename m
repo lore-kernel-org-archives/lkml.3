@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754041AbbATKnA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 05:43:00 -0500
-Received: from mail-ie0-f172.google.com ([209.85.223.172]:36322 "EHLO
-	mail-ie0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753409AbbATKm6 (ORCPT
+	id S1754058AbbATKno (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 05:43:44 -0500
+Received: from mail-wg0-f44.google.com ([74.125.82.44]:65457 "EHLO
+	mail-wg0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753739AbbATKnm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 05:42:58 -0500
-Date: Tue, 20 Jan 2015 10:42:50 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Steve Twiss <stwiss.opensource@diasemi.com>
-Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
-        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
-        DT <devicetree@vger.kernel.org>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, Mark Brown <broonie@linaro.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Support Opensource <support.opensource@diasemi.com>
-Subject: Re: [PATCH V2 2/2] devicetree: Add bindings for DA9063
-Message-ID: <20150120104250.GR5767@x1>
-References: <cover.1421684991.git.stwiss.opensource@diasemi.com>
- <7cd71ad47ba0cccd2d2da45fc3f1f82df0842a8c.1421684991.git.stwiss.opensource@diasemi.com>
+	Tue, 20 Jan 2015 05:43:42 -0500
+Date: Tue, 20 Jan 2015 12:43:38 +0200
+From: Asaf Vertz <asaf.vertz@tandemg.com>
+To: gregkh@linuxfoundation.org
+Cc: jic23@kernel.org, knaack.h@gmx.de, lars@metafoo.de, pmeerw@pmeerw.net,
+        mwelling@ieee.org, daniel.baluta@intel.com, aybuke.147@gmail.com,
+        monamagarwal123@gmail.com, linux-iio@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: iio: tsl2583: fix format string warnings
+Message-ID: <20150120104338.GA17675@ubuntu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <7cd71ad47ba0cccd2d2da45fc3f1f82df0842a8c.1421684991.git.stwiss.opensource@diasemi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Jan 2015, Steve Twiss wrote:
+Fixed the following warnings (reported by cppcheck):
+[drivers/staging/iio/light/tsl2583.c:695]: (warning) %d in format string (no. 1)
+requires 'int' but the argument type is 'unsigned int'.
+[drivers/staging/iio/light/tsl2583.c:695]: (warning) %d in format string (no. 2)
+requires 'int' but the argument type is 'unsigned int'.
+[drivers/staging/iio/light/tsl2583.c:695]: (warning) %d in format string (no. 3)
+requires 'int' but the argument type is 'unsigned int'.
 
-> From: Steve Twiss <stwiss.opensource@diasemi.com>
-> 
-> Add device tree bindings for DA9063 regulators; Real-Time Clock
-> and Watchdog.
-> 
-> This patch is dependent on PATCH V2 1/2 
-> 
-> Signed-off-by: Steve Twiss <stwiss.opensource@diasemi.com>
-> 
-> ---
-> This patch applies against linux-next and v3.19-rc4 
-> 
->  Documentation/devicetree/bindings/mfd/da9063.txt | 94 ++++++++++++++++++++++++
->  1 file changed, 94 insertions(+)
->  create mode 100644 Documentation/devicetree/bindings/mfd/da9063.txt
+Signed-off-by: Asaf Vertz <asaf.vertz@tandemg.com>
+---
+ drivers/staging/iio/light/tsl2583.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Looks pretty standard.
-
-Acked-by: Lee Jones <lee.jones@linaro.org>
-
+diff --git a/drivers/staging/iio/light/tsl2583.c b/drivers/staging/iio/light/tsl2583.c
+index cc4ddcc..8afae8e 100644
+--- a/drivers/staging/iio/light/tsl2583.c
++++ b/drivers/staging/iio/light/tsl2583.c
+@@ -692,7 +692,7 @@ static ssize_t taos_luxtable_show(struct device *dev,
+ 	int offset = 0;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(taos_device_lux); i++) {
+-		offset += sprintf(buf + offset, "%d,%d,%d,",
++		offset += sprintf(buf + offset, "%u,%u,%u,",
+ 				  taos_device_lux[i].ratio,
+ 				  taos_device_lux[i].ch0,
+ 				  taos_device_lux[i].ch1);
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.0.4
+
