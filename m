@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753488AbbATJ71 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 04:59:27 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:49861 "EHLO mx1.redhat.com"
+	id S1753681AbbATKCl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 05:02:41 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52522 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753101AbbATJ7W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 04:59:22 -0500
+	id S1752734AbbATJ7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 04:59:25 -0500
 From: Fam Zheng <famz@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
@@ -31,164 +31,236 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
         Josh Triplett <josh@joshtriplett.org>,
         "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
         Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH RFC 0/6] epoll: Introduce new syscall "epoll_mod_wait"
-Date: Tue, 20 Jan 2015 17:57:52 +0800
-Message-Id: <1421747878-30744-1-git-send-email-famz@redhat.com>
+Subject: [PATCH RFC 1/6] epoll: Extract epoll_wait_do and epoll_pwait_do
+Date: Tue, 20 Jan 2015 17:57:53 +0800
+Message-Id: <1421747878-30744-2-git-send-email-famz@redhat.com>
+In-Reply-To: <1421747878-30744-1-git-send-email-famz@redhat.com>
+References: <1421747878-30744-1-git-send-email-famz@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a new system call, epoll_mod_wait. It's described as below:
+In preparation of epoll_mod_wait, this patch allows reusing the code from
+epoll_pwait implementation. The new functions uses ktime_t for more accuracy.
 
-NAME
-       epoll_mod_wait - modify and wait for I/O events on an epoll file
-                        descriptor
+Signed-off-by: Fam Zheng <famz@redhat.com>
+---
+ fs/eventpoll.c | 130 ++++++++++++++++++++++++++-------------------------------
+ 1 file changed, 59 insertions(+), 71 deletions(-)
 
-SYNOPSIS
-
-       int epoll_mod_wait(int epfd, int flags,
-                          int ncmds, struct epoll_mod_cmd *cmds,
-                          struct epoll_wait_spec *spec);
-
-DESCRIPTION
-
-       The epoll_mod_wait() system call can be seen as an enhanced combination
-       of several epoll_ctl(2) calls, which are followed by an epoll_pwait(2)
-       call. It is superior in two cases:
-       
-       1) When epoll_ctl(2) are followed by epoll_wait(2), using epoll_mod_wait
-       will save context switches between user mode and kernel mode;
-       
-       2) When you need higher precision than microsecond for wait timeout.
-
-       The epoll_ctl(2) operations are embedded into this call by with ncmds
-       and cmds. The latter is an array of command structs:
-
-           struct epoll_mod_cmd {
-
-                  /* Reserved flags for future extension, must be 0 for now. */
-                  int flags;
-
-                  /* The same as epoll_ctl() op parameter. */
-                  int op;
-
-                  /* The same as epoll_ctl() fd parameter. */
-                  int fd;
-
-                  /* The same as the "events" field in struct epoll_event. */
-                  uint32_t events;
-
-                  /* The same as the "data" field in struct epoll_event. */
-                  uint64_t data;
-
-                  /* Output field, will be set to the return code once this
-                   * command is executed by kernel */
-                  int error;
-           };
-       
-       There is no guartantee that all the commands are executed in order. Only
-       if all the commands are successfully executed (all the error fields are
-       set to 0), events are polled.
-
-       The last parameter "spec" is a pointer to struct epoll_wait_spec, which
-       contains the information about how to poll the events. If it's NULL, this
-       call will immediately return after running all the commands in cmds.
-
-       The structure is defined as below:
-
-           struct epoll_wait_spec {
-
-                  /* The same as "maxevents" in epoll_pwait() */
-                  int maxevents;
-
-                  /* The same as "events" in epoll_pwait() */
-                  struct epoll_event *events;
-
-                  /* Which clock to use for timeout */
-                  int clockid;
-
-                  /* Maximum time to wait if there is no event */
-                  struct timespec timeout;
-
-                  /* The same as "sigmask" in epoll_pwait() */
-                  sigset_t *sigmask;
-
-                  /* The same as "sigsetsize" in epoll_pwait() */
-                  size_t sigsetsize;
-           } EPOLL_PACKED;
-
-RETURN VALUE
-
-       When any error occurs, epoll_mod_wait() returns -1 and errno is set
-       appropriately. All the "error" fields in cmds are unchanged before they
-       are executed, and if any cmds are executed, the "error" fields are set
-       to a return code accordingly. See also epoll_ctl for more details of the
-       return code.
-
-       When successful, epoll_mod_wait() returns the number of file
-       descriptors ready for the requested I/O, or zero if no file descriptor
-       became ready during the requested timeout milliseconds.
-
-       If spec is NULL, it returns 0 if all the commands are successful, and -1
-       if an error occured.
-
-ERRORS
-
-       These errors apply on either the return value of epoll_mod_wait or error
-       status for each command, respectively.
-
-       EBADF  epfd or fd is not a valid file descriptor.
-
-       EFAULT The memory area pointed to by events is not accessible with write
-              permissions.
-
-       EINTR  The call was interrupted by a signal handler before either any of
-              the requested events occurred or the timeout expired; see
-              signal(7).
-
-       EINVAL epfd is not an epoll file descriptor, or maxevents is less than
-              or equal to zero, or fd is the same as epfd, or the requested
-              operation op is not supported by this interface.
-
-       EEXIST op was EPOLL_CTL_ADD, and the supplied file descriptor fd is
-              already registered with this epoll instance.
-
-       ENOENT op was EPOLL_CTL_MOD or EPOLL_CTL_DEL, and fd is not registered
-              with this epoll instance.
-
-       ENOMEM There was insufficient memory to handle the requested op control
-              operation.
-
-       ENOSPC The limit imposed by /proc/sys/fs/epoll/max_user_watches was
-              encountered while trying to register (EPOLL_CTL_ADD) a new file
-              descriptor on an epoll instance.  See epoll(7) for further
-              details.
-
-       EPERM  The target file fd does not support epoll.
-
-CONFORMING TO
-
-       epoll_mod_wait() is Linux-specific.
-
-SEE ALSO
-
-       epoll_create(2), epoll_ctl(2), epoll_wait(2), epoll_pwait(2), epoll(7)
-
-Fam Zheng (6):
-  epoll: Extract epoll_wait_do and epoll_pwait_do
-  epoll: Specify clockid explicitly
-  epoll: Add definition for epoll_mod_wait structures
-  epoll: Extract ep_ctl_do
-  epoll: Add implementation for epoll_mod_wait
-  x86: Hook up epoll_mod_wait syscall
-
- arch/x86/syscalls/syscall_32.tbl |   1 +
- arch/x86/syscalls/syscall_64.tbl |   1 +
- fs/eventpoll.c                   | 219 +++++++++++++++++++++++++--------------
- include/linux/syscalls.h         |   5 +
- include/uapi/linux/eventpoll.h   |  20 ++++
- 5 files changed, 167 insertions(+), 79 deletions(-)
-
+diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+index d77f944..4cf359d 100644
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@ -1554,17 +1554,6 @@ static int ep_send_events(struct eventpoll *ep,
+ 	return ep_scan_ready_list(ep, ep_send_events_proc, &esed, 0, false);
+ }
+ 
+-static inline struct timespec ep_set_mstimeout(long ms)
+-{
+-	struct timespec now, ts = {
+-		.tv_sec = ms / MSEC_PER_SEC,
+-		.tv_nsec = NSEC_PER_MSEC * (ms % MSEC_PER_SEC),
+-	};
+-
+-	ktime_get_ts(&now);
+-	return timespec_add_safe(now, ts);
+-}
+-
+ /**
+  * ep_poll - Retrieves ready events, and delivers them to the caller supplied
+  *           event buffer.
+@@ -1573,17 +1562,15 @@ static inline struct timespec ep_set_mstimeout(long ms)
+  * @events: Pointer to the userspace buffer where the ready events should be
+  *          stored.
+  * @maxevents: Size (in terms of number of events) of the caller event buffer.
+- * @timeout: Maximum timeout for the ready events fetch operation, in
+- *           milliseconds. If the @timeout is zero, the function will not block,
+- *           while if the @timeout is less than zero, the function will block
+- *           until at least one event has been retrieved (or an error
+- *           occurred).
++ * @timeout: Maximum timeout for the ready events fetch operation.  If 0, the
++ *           function will not block. If negative, the function will block until
++ *           at least one event has been retrieved (or an error occurred).
+  *
+  * Returns: Returns the number of ready events which have been fetched, or an
+  *          error code, in case of error.
+  */
+ static int ep_poll(struct eventpoll *ep, struct epoll_event __user *events,
+-		   int maxevents, long timeout)
++		   int maxevents, const ktime_t timeout)
+ {
+ 	int res = 0, eavail, timed_out = 0;
+ 	unsigned long flags;
+@@ -1591,13 +1578,7 @@ static int ep_poll(struct eventpoll *ep, struct epoll_event __user *events,
+ 	wait_queue_t wait;
+ 	ktime_t expires, *to = NULL;
+ 
+-	if (timeout > 0) {
+-		struct timespec end_time = ep_set_mstimeout(timeout);
+-
+-		slack = select_estimate_accuracy(&end_time);
+-		to = &expires;
+-		*to = timespec_to_ktime(end_time);
+-	} else if (timeout == 0) {
++	if (!ktime_to_ns(timeout)) {
+ 		/*
+ 		 * Avoid the unnecessary trip to the wait queue loop, if the
+ 		 * caller specified a non blocking operation.
+@@ -1605,6 +1586,15 @@ static int ep_poll(struct eventpoll *ep, struct epoll_event __user *events,
+ 		timed_out = 1;
+ 		spin_lock_irqsave(&ep->lock, flags);
+ 		goto check_events;
++	} else if (ktime_to_ns(timeout) > 0) {
++		struct timespec now, end_time;
++
++		ktime_get_ts(&now);
++		end_time = timespec_add_safe(now, ktime_to_timespec(timeout));
++
++		slack = select_estimate_accuracy(&end_time);
++		to = &expires;
++		*to = timespec_to_ktime(end_time);
+ 	}
+ 
+ fetch_events:
+@@ -1954,12 +1944,8 @@ error_return:
+ 	return error;
+ }
+ 
+-/*
+- * Implement the event wait interface for the eventpoll file. It is the kernel
+- * part of the user space epoll_wait(2).
+- */
+-SYSCALL_DEFINE4(epoll_wait, int, epfd, struct epoll_event __user *, events,
+-		int, maxevents, int, timeout)
++static inline int epoll_wait_do(int epfd, struct epoll_event __user *events,
++				int maxevents, const ktime_t timeout)
+ {
+ 	int error;
+ 	struct fd f;
+@@ -2002,29 +1988,32 @@ error_fput:
+ 
+ /*
+  * Implement the event wait interface for the eventpoll file. It is the kernel
+- * part of the user space epoll_pwait(2).
++ * part of the user space epoll_wait(2).
+  */
+-SYSCALL_DEFINE6(epoll_pwait, int, epfd, struct epoll_event __user *, events,
+-		int, maxevents, int, timeout, const sigset_t __user *, sigmask,
+-		size_t, sigsetsize)
++SYSCALL_DEFINE4(epoll_wait, int, epfd, struct epoll_event __user *, events,
++		int, maxevents, int, timeout)
++{
++	ktime_t kt = ms_to_ktime(timeout);
++	return epoll_wait_do(epfd, events, maxevents, kt);
++}
++
++static inline int epoll_pwait_do(int epfd, struct epoll_event __user *events,
++				 int maxevents, ktime_t timeout,
++				 sigset_t *sigmask, size_t sigsetsize)
+ {
+ 	int error;
+-	sigset_t ksigmask, sigsaved;
++	sigset_t sigsaved;
+ 
+ 	/*
+ 	 * If the caller wants a certain signal mask to be set during the wait,
+ 	 * we apply it here.
+ 	 */
+ 	if (sigmask) {
+-		if (sigsetsize != sizeof(sigset_t))
+-			return -EINVAL;
+-		if (copy_from_user(&ksigmask, sigmask, sizeof(ksigmask)))
+-			return -EFAULT;
+ 		sigsaved = current->blocked;
+-		set_current_blocked(&ksigmask);
++		set_current_blocked(sigmask);
+ 	}
+ 
+-	error = sys_epoll_wait(epfd, events, maxevents, timeout);
++	error = epoll_wait_do(epfd, events, maxevents, timeout);
+ 
+ 	/*
+ 	 * If we changed the signal mask, we need to restore the original one.
+@@ -2044,49 +2033,48 @@ SYSCALL_DEFINE6(epoll_pwait, int, epfd, struct epoll_event __user *, events,
+ 	return error;
+ }
+ 
++/*
++ * Implement the event wait interface for the eventpoll file. It is the kernel
++ * part of the user space epoll_pwait(2).
++ */
++SYSCALL_DEFINE6(epoll_pwait, int, epfd, struct epoll_event __user *, events,
++		int, maxevents, int, timeout, const sigset_t __user *, sigmask,
++		size_t, sigsetsize)
++{
++	ktime_t kt = ms_to_ktime(timeout);
++	sigset_t ksigmask;
++
++	if (sigmask) {
++		if (sigsetsize != sizeof(sigset_t))
++			return -EINVAL;
++		if (copy_from_user(&ksigmask, sigmask, sizeof(ksigmask)))
++			return -EFAULT;
++	}
++	return epoll_pwait_do(epfd, events, maxevents, kt,
++			      sigmask ? &ksigmask : NULL, sigsetsize);
++}
++
+ #ifdef CONFIG_COMPAT
+ COMPAT_SYSCALL_DEFINE6(epoll_pwait, int, epfd,
+-			struct epoll_event __user *, events,
+-			int, maxevents, int, timeout,
+-			const compat_sigset_t __user *, sigmask,
+-			compat_size_t, sigsetsize)
++		       struct epoll_event __user *, events,
++		       int, maxevents, int, timeout,
++		       const compat_sigset_t __user *, sigmask,
++		       compat_size_t, sigsetsize)
+ {
+-	long err;
+ 	compat_sigset_t csigmask;
+-	sigset_t ksigmask, sigsaved;
++	sigset_t ksigmask;
++	ktime_t kt = ms_to_ktime(timeout);
+ 
+-	/*
+-	 * If the caller wants a certain signal mask to be set during the wait,
+-	 * we apply it here.
+-	 */
+ 	if (sigmask) {
+ 		if (sigsetsize != sizeof(compat_sigset_t))
+ 			return -EINVAL;
+ 		if (copy_from_user(&csigmask, sigmask, sizeof(csigmask)))
+ 			return -EFAULT;
+ 		sigset_from_compat(&ksigmask, &csigmask);
+-		sigsaved = current->blocked;
+-		set_current_blocked(&ksigmask);
+-	}
+-
+-	err = sys_epoll_wait(epfd, events, maxevents, timeout);
+-
+-	/*
+-	 * If we changed the signal mask, we need to restore the original one.
+-	 * In case we've got a signal while waiting, we do not restore the
+-	 * signal mask yet, and we allow do_signal() to deliver the signal on
+-	 * the way back to userspace, before the signal mask is restored.
+-	 */
+-	if (sigmask) {
+-		if (err == -EINTR) {
+-			memcpy(&current->saved_sigmask, &sigsaved,
+-			       sizeof(sigsaved));
+-			set_restore_sigmask();
+-		} else
+-			set_current_blocked(&sigsaved);
+ 	}
+ 
+-	return err;
++	return epoll_pwait_do(epfd, events, maxevents, kt,
++			      sigmask ? &ksigmask : NULL, sigsetsize);
+ }
+ #endif
+ 
 -- 
 1.9.3
 
