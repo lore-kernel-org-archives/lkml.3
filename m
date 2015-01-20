@@ -1,73 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752027AbbATIw6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 03:52:58 -0500
-Received: from smtp-out-231.synserver.de ([212.40.185.231]:1077 "EHLO
-	smtp-out-231.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750956AbbATIw4 (ORCPT
+	id S1751871AbbATJAZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 04:00:25 -0500
+Received: from mail-we0-f173.google.com ([74.125.82.173]:42335 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751241AbbATJAY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 03:52:56 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 359
-Message-ID: <54BE175D.3070504@metafoo.de>
-Date: Tue, 20 Jan 2015 09:52:45 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
+	Tue, 20 Jan 2015 04:00:24 -0500
+Message-ID: <54BE1921.5050902@linaro.org>
+Date: Tue, 20 Jan 2015 09:00:17 +0000
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Asaf Vertz <asaf.vertz@tandemg.com>, gregkh@linuxfoundation.org
-CC: Michael.Hennerich@analog.com, jic23@kernel.org, knaack.h@gmx.de,
-        pmeerw@pmeerw.net, linux-iio@vger.kernel.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: iio: ad5933: fix format string warnings
-References: <20150120072522.GA3361@ubuntu>
-In-Reply-To: <20150120072522.GA3361@ubuntu>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Tony Lindgren <tony@atomide.com>
+CC: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Paul Bolle <pebolle@tiscali.nl>, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, spear-devel@list.st.com,
+        linux-kernel@vger.kernel.org,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>, linux-omap@vger.kernel.org,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3.19-rc2 v15 5/8] arm: omap1: Migrate debug_ll macros
+ to use 8250.S
+References: <1420461624-4410-1-git-send-email-daniel.thompson@linaro.org> <1420461624-4410-6-git-send-email-daniel.thompson@linaro.org> <20150119213845.GL18552@atomide.com>
+In-Reply-To: <20150119213845.GL18552@atomide.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2015 08:25 AM, Asaf Vertz wrote:
-> Fixed the following warnings (reported by cppcheck):
-> [drivers/staging/iio/impedance-analyzer/ad5933.c:363]: (warning) %d in format string (no. 1)
-> requires 'int' but the argument type is 'unsigned int'.
-> [drivers/staging/iio/impedance-analyzer/ad5933.c:367]: (warning) %d in format string (no. 1)
-> requires 'int' but the argument type is 'unsigned int'.
-> [drivers/staging/iio/impedance-analyzer/ad5933.c:367]: (warning) %d in format string (no. 2)
-> requires 'int' but the argument type is 'unsigned int'.
-> [drivers/staging/iio/impedance-analyzer/ad5933.c:367]: (warning) %d in format string (no. 3)
-> requires 'int' but the argument type is 'unsigned int'.
-> [drivers/staging/iio/impedance-analyzer/ad5933.c:367]: (warning) %d in format string (no. 4)
-> requires 'int' but the argument type is 'unsigned int'.
->
-> Signed-off-by: Asaf Vertz <asaf.vertz@tandemg.com>
+On 19/01/15 21:38, Tony Lindgren wrote:
+> * Daniel Thompson <daniel.thompson@linaro.org> [150105 04:49]:
+>> The omap1's debug-macro.S is similar to the generic 8250 code. Compared to
+>> the 8520 code the omap1 macro automatically determines what UART to use
+>> based on breadcrumbs left by the bootloader and automatically copes with
+>> the eccentric register layout on OMAP7XX.
+>>
+>> This patch drops both these features and relies instead on the generic
+>> 8250 macros:
+>>
+>> 1. Dropping support for the bootloader breadcrumbs is identical to the
+>>    way the migration was handled for OMAP2 (see 808b7e07464d...).
+>>
+>> 2. Support for OMAP7XX still exists but it must be configured by hand
+>>    (DEBUG_OMAP7XXUART1/2/3) rather than handled at runtime.
+>>
+>> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+>> Cc: Russell King <linux@arm.linux.org.uk>
+>> Cc: Arnd Bergmann <arnd.bergmann@linaro.org>
+>> Cc: linux-omap@vger.kernel.org
+>> Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+>> Acked-by: Tony Lindgren <tony@atomide.com>
+> 
+> Daniel, I suggest you upload this patch into Russell's patch tracking
+> system to get it merged. That at least shrinks down your patch series
+> if the other patches need more work.
 
-Acked-by: Lars-Peter Clausen <lars@metafoo.de>
+This has been in the patch tracker for a week or so:
+http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=8271/1
 
-Thanks.
+I'm very aware that this patch (and indeed the whole patch set) has been
+knocking round for longer than it should have. The changelog for this
+patchset is certainly not one to be especially proud off ;-) .
 
-> ---
->   drivers/staging/iio/impedance-analyzer/ad5933.c |    4 ++--
->   1 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/staging/iio/impedance-analyzer/ad5933.c b/drivers/staging/iio/impedance-analyzer/ad5933.c
-> index b6bd609..4230a43 100644
-> --- a/drivers/staging/iio/impedance-analyzer/ad5933.c
-> +++ b/drivers/staging/iio/impedance-analyzer/ad5933.c
-> @@ -360,11 +360,11 @@ static ssize_t ad5933_show(struct device *dev,
->   	mutex_lock(&indio_dev->mlock);
->   	switch ((u32) this_attr->address) {
->   	case AD5933_OUT_RANGE:
-> -		len = sprintf(buf, "%d\n",
-> +		len = sprintf(buf, "%u\n",
->   			      st->range_avail[(st->ctrl_hb >> 1) & 0x3]);
->   		break;
->   	case AD5933_OUT_RANGE_AVAIL:
-> -		len = sprintf(buf, "%d %d %d %d\n", st->range_avail[0],
-> +		len = sprintf(buf, "%u %u %u %u\n", st->range_avail[0],
->   			      st->range_avail[3], st->range_avail[2],
->   			      st->range_avail[1]);
->   		break;
->
+
+Daniel.
 
