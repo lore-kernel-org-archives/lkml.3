@@ -1,77 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685AbbATX1f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 18:27:35 -0500
-Received: from smtp4-g21.free.fr ([212.27.42.4]:12505 "EHLO smtp4-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751703AbbATX1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 18:27:33 -0500
-Date: Wed, 21 Jan 2015 00:27:26 +0100
-From: Sabrina Dubroca <sd@queasysnail.net>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Guenter Roeck <linux@roeck-us.net>, Paul Moore <pmoore@redhat.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-audit@redhat.com, Richard Guy Briggs <rgb@redhat.com>
-Subject: Re: linux-next: Tree for Jan 20 -- Kernel panic - Unable to mount
- root fs
-Message-ID: <20150120232726.GA16913@kria>
-References: <20150120165655.GA10904@kria>
- <4237741.ePaG0Gba6D@sifl>
- <20150120175135.GA25973@kria>
- <20150120195432.GH29656@ZenIV.linux.org.uk>
- <20150120204504.GA309@kria>
- <20150120210202.GI29656@ZenIV.linux.org.uk>
- <20150120220823.GB18129@kria>
- <20150120221309.GA18589@roeck-us.net>
- <20150120225041.GK29656@ZenIV.linux.org.uk>
- <20150120231725.GL29656@ZenIV.linux.org.uk>
+	id S1752762AbbATXc5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 18:32:57 -0500
+Received: from smtp107.biz.mail.bf1.yahoo.com ([98.139.244.55]:24789 "EHLO
+	smtp107.biz.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751853AbbATXcz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 18:32:55 -0500
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: ddQ4DU4VM1l1BsYimTsz.S4_im2oOv7GqsUB55XGnjxsH7p
+ aHLqoULrBpR.P3Ifuxo25vw0_x7bGaN1U7L0xB0MNtmv3xNWbZ_HoCw8JC6k
+ eDxQFHpfCsQq760fxqbwIZh_mPRq531XPKR8jGCdy3KZ8e25uqh2mGUU0mkg
+ b4cS_oDqQp8PmpyQG4U6IDDM4wMV94EchhKfS0mYaRDq4MmMTj3ZN3YPUZqp
+ sG1FUQXpAgXMQqqT2iMoqWC8IWd2PlZy4fr75EHc8h40E33f82WYdUuoNSDr
+ OJD0p8NLW8i6Z8zAUxHFFj29C3vLsbJbDCRGLseoAHYIuzwd182ZpSGM3sz.
+ Z6eOIY7GjetPPTL68cbxwsY9bo1jlkRPSNyNOLjH8kHeac4qL0G5s2Z_TCMx
+ XIpM.xj.Lc8C2DC6pugamivHPNtHEmVgAxjqRli9bnxrCyk54qHqT05xIfpx
+ G3F9RjoLJHJrRfIFl7c4LwkjtncoknO.Ao4y4LYraTFgUScwyaNc3p5Xz1R4
+ e_TWbfI2gAQMLETp_shDCHQ--
+X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
+Message-ID: <54BEE5A5.5050807@schaufler-ca.com>
+Date: Tue, 20 Jan 2015 15:32:53 -0800
+From: Casey Schaufler <casey@schaufler-ca.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20150120231725.GL29656@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: James Morris <jmorris@namei.org>, Ben Hutchings <ben@decadent.org.uk>
+CC: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-security-module@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, 770492@bugs.debian.org,
+        Ben Harris <bjh21@cam.ac.uk>, oss-security@lists.openwall.com,
+        John Johansen <john.johansen@canonical.com>,
+        Paul Moore <paul@paul-moore.com>, Stephen Smalley <sds@tycho.nsa.gov>,
+        Casey Schaufler <casey@schaufler-ca.com>
+Subject: Re: [RFC PATCH RESEND] vfs: Move security_inode_killpriv() after
+ permission checks
+References: <1421537206.31046.74.camel@decadent.org.uk> <alpine.LRH.2.11.1501211014580.15885@namei.org>
+In-Reply-To: <alpine.LRH.2.11.1501211014580.15885@namei.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2015-01-20, 23:17:25 +0000, Al Viro wrote:
-> On Tue, Jan 20, 2015 at 10:50:41PM +0000, Al Viro wrote:
-> > doesn't look at _anything_ other than name->name other than for audit_inode().
-> > And name->name is apparently the same.
-> > 
-> > It looks like something ends up buggering name->name in process, but then
-> > the damn thing appears to be normal after return from filename_lookup()...
-> 
-> If my reconstruction of what's going on is correct, the call chain here
-> is do_path_lookup() <- kern_path() <- lookup_bdev() <- blkdev_get_by_path()
-> <- mount_bdev() <- some_type.mount() <- mount_fs()
-> <- vfs_kern_mount() <- do_new_mount() <- do_mount() <- sys_mount()
-> <- do_mount_root() <- mount_block_root() <- mount_root().  Which is
-> obscenely long, BTW, but that's a separate story...
-> 
-> Could you slap
-> 	struct stat buf;
-> 	int n = sys_newstat(name, &buf);
-> 	printk(KERN_ERR "stat(\"%s\") -> %d\n", name, n);
-> 	n = sys_newstat("/dev", &buf);
-> 	printk(KERN_ERR "stat(\"dev\") -> %d\n", n);
-> 
-> in the beginning of mount_block_root() (init/do_mounts.c) and see what it
-> prints?
+On 1/20/2015 3:17 PM, James Morris wrote:
+> On Sat, 17 Jan 2015, Ben Hutchings wrote:
+>
+>> chown() and write() should clear all privilege attributes on
+>> a file - setuid, setgid, setcap and any other extended
+>> privilege attributes.
+>>
+>> However, any attributes beyond setuid and setgid are managed by the
+>> LSM and not directly by the filesystem, so they cannot be set along
+>> with the other attributes.
+>>
+>> Currently we call security_inode_killpriv() in notify_change(),
+>> but in case of a chown() this is too early - we have not called
+>> inode_change_ok() or made any filesystem-specific permission/sanity
+>> checks.
+>>
+>> Add a new function setattr_killpriv() which calls
+>> security_inode_killpriv() if necessary, and change the setattr()
+>> implementation to call this in each filesystem that supports xattrs.
+>> This assumes that extended privilege attributes are always stored in
+>> xattrs.
+> It'd be useful to get some input from LSM module maintainers on this.
 
-I get
+I've already chimed in.
 
-stat("/dev/root") -> -2
-stat("dev") -> -2
-with the patch applied (+panic)
+Clearing the Smack label on a file because someone writes to it
+makes no sense whatsoever. The same with chown. The Smack label is
+attached to the object, which is a container of data, not the data
+itself. Smack labels are Mandatory Access Control labels, not Information
+labels. If that doesn't mean anything to the reader, check out the
+P1003.1e/2c (withdrawn) DRAFT.
 
+The proposed implementation does not correctly handle either
+Mandatory Access Control labels or Information labels. The MAC
+label is *very different* from the setuid bit.
 
-and:
+>
+> e.g. doesn't SELinux already handle this via policy directives?
+>
+>
 
-stat("/dev/root") -> 0
-stat("dev") -> 0
-with the old version of do_path_lookup.
-
--- 
-Sabrina
