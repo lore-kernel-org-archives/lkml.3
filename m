@@ -1,122 +1,259 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751526AbbATHsF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 02:48:05 -0500
-Received: from smtp.ispras.ru ([83.149.199.79]:54358 "EHLO smtp.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751180AbbATHsE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 02:48:04 -0500
-Message-ID: <54BE082A.20207@ispras.ru>
-Date: Tue, 20 Jan 2015 10:47:54 +0300
-From: Andrey Tsyvarev <tsyvarev@ispras.ru>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	id S1751797AbbATHsN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 02:48:13 -0500
+Received: from mail-ie0-f178.google.com ([209.85.223.178]:54063 "EHLO
+	mail-ie0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751546AbbATHsK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 02:48:10 -0500
+Date: Tue, 20 Jan 2015 07:48:03 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Olof Johansson <olof@lixom.net>, Doug Anderson <dianders@chromium.org>,
+        Bill Richardson <wfrichar@chromium.org>, Simon Glass <sjg@google.com>,
+        Gwendal Grignou <gwendal@google.com>, Jonathan Corbet <corbet@lwn.net>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND v2 1/7] mfd: cros_ec: Use fixed size arrays to
+ transfer data with the EC
+Message-ID: <20150120074803.GR21886@x1>
+References: <1420205572-2640-1-git-send-email-javier.martinez@collabora.co.uk>
+ <1420205572-2640-2-git-send-email-javier.martinez@collabora.co.uk>
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH] kernel/module.c: Free lock-classes if parse_args failed
-References: <1421216708-1975-1-git-send-email-tsyvarev@ispras.ru> <87iog2arfk.fsf@rustcorp.com.au>
-In-Reply-To: <87iog2arfk.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=windows-1251; format=flowed
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <1420205572-2640-2-git-send-email-javier.martinez@collabora.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-20.01.2015 9:37, Rusty Russell пишет:
-> Andrey Tsyvarev <tsyvarev@ispras.ru> writes:
->> parse_args call module parameters' .set handlers, which may use locks defined in the module.
->> So, these classes should be freed in case parse_args returns error(e.g. due to incorrect parameter passed).
-> Thanks, this seems right.  Applied.
->
-> But this makes me ask: where is lockdep_free_key_range() called on the
-> module init code?  It doesn't seem to be at all...
-As I understand, locks are not allowed to be defined in the module init 
-section. So, no needs to call lockdep_free_key_range() for it.
-This has a sense: objects from that section are allowed to be used only 
-by module->init() function. But a single function call doesn't require 
-any synchronization wrt itself.
+On Fri, 02 Jan 2015, Javier Martinez Canillas wrote:
 
+> The struct cros_ec_command will be used as an ioctl() argument for the
+> API to control the ChromeOS EC from user-space. So the data structure
+> has to be 64-bit safe to make it compatible between 32 and 64 avoiding
+> the need for a compat ioctl interface. Since pointers are self-aligned
+> to different byte boundaries, use fixed size arrays instead of pointers
+> for transferring ingoing and outgoing data with the Embedded Controller.
+> 
+> Also, re-arrange struct members by decreasing alignment requirements to
+> reduce the needing padding size.
+> 
+> Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+> ---
+> 
+> Hello,
+> 
+> I choose EC_PROTO2_MAX_PARAM_SIZE as the maximum length for the input and
+> output buffers since I see that is what is assumed in the cros_ec driver
+> that is the maximum lengths. But the downstream kernel has also suppport
+> for the EC host command protocol v3 even though there is currently no bus
+> specific code to handle v3 packets. So I wonder if this is a good max len
+> or if a different size should be used instead.
+> 
+> Best regards,
+> Javier
+> 
+> Changes since v1: None, new patch
+> 
+>  drivers/i2c/busses/i2c-cros-ec-tunnel.c | 51 +++++++--------------------------
+>  drivers/input/keyboard/cros_ec_keyb.c   | 13 +++++----
+>  drivers/mfd/cros_ec.c                   | 15 +++++-----
+>  include/linux/mfd/cros_ec.h             |  8 +++---
+>  4 files changed, 29 insertions(+), 58 deletions(-)
 
-If it helps, I used module below for verify effect of the patch:
+Looks okay to me, but I'd be happy with some more reviews from the
+Chrome guys.  I would especially like some knowledgeable type to
+answer your EC_PROTO2_MAX_PARAM_SIZE question.  If no one does, I
+guess it can always be changed later.
 
-test.c:
----
-#include <linux/module.h>
-#include <linux/moduleparam.h>
+Acked-by: Lee Jones <lee.jones@linaro.org>
 
-MODULE_AUTHOR("Tsyvarev Andrey");
-MODULE_LICENSE("GPL");
-
-static DEFINE_MUTEX(mutex_main);
-static DEFINE_MUTEX(mutex_param);
-
-static int param_set(const char* val, const struct kernel_param* kp)
-{
-     mutex_lock(&mutex_param); //Use mutex defined in the module
-     mutex_unlock(&mutex_param);
-
-     return -EINVAL; // Setting this parameter is always invalid
-}
-
-static struct kernel_param_ops param_ops =
-{
-     .set = param_set
-};
-
-module_param_cb(param, &param_ops, NULL, S_IRUGO);
-
-static int minit(void)
-{
-     mutex_lock(&mutex_main); // Use another mutex
-     mutex_unlock(&mutex_main);
-     return 0;
-}
-
-static void mexit(void)
-{
-}
-
-module_init(minit);
-module_exit(mexit);
---
-
-insmod test.ko param=1 # Will fail
-insmod test.ko
-
-If kernel is compiled with CONFIG_LOCKDEP, then, without patch, lockdep 
-crashes on the second module insertion.
-
->
-> Confused,
-> Rusty.
->
->> Signed-off-by: Andrey Tsyvarev <tsyvarev@ispras.ru>
->> ---
->>   kernel/module.c | 3 +++
->>   1 file changed, 3 insertions(+)
->>
->> diff --git a/kernel/module.c b/kernel/module.c
->> index 3965511..2b44de4 100644
->> --- a/kernel/module.c
->> +++ b/kernel/module.c
->> @@ -3311,6 +3311,9 @@ static int load_module(struct load_info *info, const char __user *uargs,
->>   	module_bug_cleanup(mod);
->>   	mutex_unlock(&module_mutex);
->>   
->> +	/* Free lock-classes: */
->> +	lockdep_free_key_range(mod->module_core, mod->core_size);
->> +
->>   	/* we can't deallocate the module until we clear memory protection */
->>   	unset_module_init_ro_nx(mod);
->>   	unset_module_core_ro_nx(mod);
->> -- 
->> 1.8.3.1
+> diff --git a/drivers/i2c/busses/i2c-cros-ec-tunnel.c b/drivers/i2c/busses/i2c-cros-ec-tunnel.c
+> index 875c22a..fa8dedd 100644
+> --- a/drivers/i2c/busses/i2c-cros-ec-tunnel.c
+> +++ b/drivers/i2c/busses/i2c-cros-ec-tunnel.c
+> @@ -182,72 +182,41 @@ static int ec_i2c_xfer(struct i2c_adapter *adap, struct i2c_msg i2c_msgs[],
+>  	const u16 bus_num = bus->remote_bus;
+>  	int request_len;
+>  	int response_len;
+> -	u8 *request = NULL;
+> -	u8 *response = NULL;
+>  	int result;
+> -	struct cros_ec_command msg;
+> +	struct cros_ec_command msg = { };
+>  
+>  	request_len = ec_i2c_count_message(i2c_msgs, num);
+>  	if (request_len < 0) {
+>  		dev_warn(dev, "Error constructing message %d\n", request_len);
+> -		result = request_len;
+> -		goto exit;
+> +		return request_len;
+>  	}
+> +
+>  	response_len = ec_i2c_count_response(i2c_msgs, num);
+>  	if (response_len < 0) {
+>  		/* Unexpected; no errors should come when NULL response */
+>  		dev_warn(dev, "Error preparing response %d\n", response_len);
+> -		result = response_len;
+> -		goto exit;
+> -	}
+> -
+> -	if (request_len <= ARRAY_SIZE(bus->request_buf)) {
+> -		request = bus->request_buf;
+> -	} else {
+> -		request = kzalloc(request_len, GFP_KERNEL);
+> -		if (request == NULL) {
+> -			result = -ENOMEM;
+> -			goto exit;
+> -		}
+> -	}
+> -	if (response_len <= ARRAY_SIZE(bus->response_buf)) {
+> -		response = bus->response_buf;
+> -	} else {
+> -		response = kzalloc(response_len, GFP_KERNEL);
+> -		if (response == NULL) {
+> -			result = -ENOMEM;
+> -			goto exit;
+> -		}
+> +		return response_len;
+>  	}
+>  
+> -	result = ec_i2c_construct_message(request, i2c_msgs, num, bus_num);
+> +	result = ec_i2c_construct_message(msg.outdata, i2c_msgs, num, bus_num);
+>  	if (result)
+> -		goto exit;
+> +		return result;
+>  
+>  	msg.version = 0;
+>  	msg.command = EC_CMD_I2C_PASSTHRU;
+> -	msg.outdata = request;
+>  	msg.outsize = request_len;
+> -	msg.indata = response;
+>  	msg.insize = response_len;
+>  
+>  	result = cros_ec_cmd_xfer(bus->ec, &msg);
+>  	if (result < 0)
+> -		goto exit;
+> +		return result;
+>  
+> -	result = ec_i2c_parse_response(response, i2c_msgs, &num);
+> +	result = ec_i2c_parse_response(msg.indata, i2c_msgs, &num);
+>  	if (result < 0)
+> -		goto exit;
+> +		return result;
+>  
+>  	/* Indicate success by saying how many messages were sent */
+> -	result = num;
+> -exit:
+> -	if (request != bus->request_buf)
+> -		kfree(request);
+> -	if (response != bus->response_buf)
+> -		kfree(response);
+> -
+> -	return result;
+> +	return num;
+>  }
+>  
+>  static u32 ec_i2c_functionality(struct i2c_adapter *adap)
+> diff --git a/drivers/input/keyboard/cros_ec_keyb.c b/drivers/input/keyboard/cros_ec_keyb.c
+> index ffa989f..769f8f7 100644
+> --- a/drivers/input/keyboard/cros_ec_keyb.c
+> +++ b/drivers/input/keyboard/cros_ec_keyb.c
+> @@ -148,16 +148,19 @@ static void cros_ec_keyb_process(struct cros_ec_keyb *ckdev,
+>  
+>  static int cros_ec_keyb_get_state(struct cros_ec_keyb *ckdev, uint8_t *kb_state)
+>  {
+> +	int ret;
+>  	struct cros_ec_command msg = {
+> -		.version = 0,
+>  		.command = EC_CMD_MKBP_STATE,
+> -		.outdata = NULL,
+> -		.outsize = 0,
+> -		.indata = kb_state,
+>  		.insize = ckdev->cols,
+>  	};
+>  
+> -	return cros_ec_cmd_xfer(ckdev->ec, &msg);
+> +	ret = cros_ec_cmd_xfer(ckdev->ec, &msg);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	memcpy(kb_state, msg.indata, ckdev->cols);
+> +
+> +	return 0;
+>  }
+>  
+>  static irqreturn_t cros_ec_keyb_irq(int irq, void *data)
+> diff --git a/drivers/mfd/cros_ec.c b/drivers/mfd/cros_ec.c
+> index fc0c81e..c872e1b 100644
+> --- a/drivers/mfd/cros_ec.c
+> +++ b/drivers/mfd/cros_ec.c
+> @@ -74,15 +74,11 @@ int cros_ec_cmd_xfer(struct cros_ec_device *ec_dev,
+>  	ret = ec_dev->cmd_xfer(ec_dev, msg);
+>  	if (msg->result == EC_RES_IN_PROGRESS) {
+>  		int i;
+> -		struct cros_ec_command status_msg;
+> -		struct ec_response_get_comms_status status;
+> +		struct cros_ec_command status_msg = { };
+> +		struct ec_response_get_comms_status *status;
+>  
+> -		status_msg.version = 0;
+>  		status_msg.command = EC_CMD_GET_COMMS_STATUS;
+> -		status_msg.outdata = NULL;
+> -		status_msg.outsize = 0;
+> -		status_msg.indata = (uint8_t *)&status;
+> -		status_msg.insize = sizeof(status);
+> +		status_msg.insize = sizeof(*status);
+>  
+>  		/*
+>  		 * Query the EC's status until it's no longer busy or
+> @@ -98,7 +94,10 @@ int cros_ec_cmd_xfer(struct cros_ec_device *ec_dev,
+>  			msg->result = status_msg.result;
+>  			if (status_msg.result != EC_RES_SUCCESS)
+>  				break;
+> -			if (!(status.flags & EC_COMMS_STATUS_PROCESSING))
+> +
+> +			status = (struct ec_response_get_comms_status *)
+> +				 status_msg.indata;
+> +			if (!(status->flags & EC_COMMS_STATUS_PROCESSING))
+>  				break;
+>  		}
+>  	}
+> diff --git a/include/linux/mfd/cros_ec.h b/include/linux/mfd/cros_ec.h
+> index 0e166b9..71675b1 100644
+> --- a/include/linux/mfd/cros_ec.h
+> +++ b/include/linux/mfd/cros_ec.h
+> @@ -38,20 +38,20 @@ enum {
+>  /*
+>   * @version: Command version number (often 0)
+>   * @command: Command to send (EC_CMD_...)
+> - * @outdata: Outgoing data to EC
+>   * @outsize: Outgoing length in bytes
+> - * @indata: Where to put the incoming data from EC
+>   * @insize: Max number of bytes to accept from EC
+>   * @result: EC's response to the command (separate from communication failure)
+> + * @outdata: Outgoing data to EC
+> + * @indata: Where to put the incoming data from EC
+>   */
+>  struct cros_ec_command {
+>  	uint32_t version;
+>  	uint32_t command;
+> -	uint8_t *outdata;
+>  	uint32_t outsize;
+> -	uint8_t *indata;
+>  	uint32_t insize;
+>  	uint32_t result;
+> +	uint8_t outdata[EC_PROTO2_MAX_PARAM_SIZE];
+> +	uint8_t indata[EC_PROTO2_MAX_PARAM_SIZE];
+>  };
+>  
+>  /**
 
 -- 
-Best regards,
-
-Andrey Tsyvarev
-Linux Verification Center, ISPRAS
-web:http://linuxtesting.org
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org в”‚ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
