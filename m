@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754760AbbATK6G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 05:58:06 -0500
-Received: from mail-wi0-f178.google.com ([209.85.212.178]:52914 "EHLO
-	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753840AbbATKti (ORCPT
+	id S1754710AbbATK4x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 05:56:53 -0500
+Received: from mail-wg0-f50.google.com ([74.125.82.50]:55067 "EHLO
+	mail-wg0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754172AbbATKtj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 05:49:38 -0500
+	Tue, 20 Jan 2015 05:49:39 -0500
 From: Thierry Reding <thierry.reding@gmail.com>
 To: dri-devel@lists.freedesktop.org
 Cc: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 23/36] drm/tegra: Atomic conversion, phase 2
-Date: Tue, 20 Jan 2015 11:48:42 +0100
-Message-Id: <1421750935-4023-24-git-send-email-thierry.reding@gmail.com>
+Subject: [PATCH 24/36] drm/tegra: Atomic conversion, phase 3, step 1
+Date: Tue, 20 Jan 2015 11:48:43 +0100
+Message-Id: <1421750935-4023-25-git-send-email-thierry.reding@gmail.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1421750935-4023-1-git-send-email-thierry.reding@gmail.com>
 References: <1421750935-4023-1-git-send-email-thierry.reding@gmail.com>
@@ -22,155 +22,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Thierry Reding <treding@nvidia.com>
 
-Hook up the default ->reset() and ->atomic_duplicate_state() helpers.
-This ensures that state objects are properly created and framebuffer
-reference counts correctly maintained.
+Switch out the regular plane helpers for the atomic plane helpers. Also
+use the default atomic helpers to implement the ->atomic_check() and
+->atomic_commit() callbacks. The driver now exclusively uses the atomic
+interfaces.
 
 Signed-off-by: Thierry Reding <treding@nvidia.com>
 ---
- drivers/gpu/drm/tegra/dc.c   | 12 ++++++++++++
- drivers/gpu/drm/tegra/drm.c  |  2 ++
- drivers/gpu/drm/tegra/dsi.c  |  2 ++
- drivers/gpu/drm/tegra/hdmi.c |  2 ++
- drivers/gpu/drm/tegra/rgb.c  |  2 ++
- drivers/gpu/drm/tegra/sor.c  |  2 ++
- 6 files changed, 22 insertions(+)
+ drivers/gpu/drm/tegra/dc.c  | 12 ++++++------
+ drivers/gpu/drm/tegra/drm.c |  4 ++++
+ 2 files changed, 10 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/gpu/drm/tegra/dc.c b/drivers/gpu/drm/tegra/dc.c
-index e7efb6ca127c..cb2bd0088295 100644
+index cb2bd0088295..469bfa0fe096 100644
 --- a/drivers/gpu/drm/tegra/dc.c
 +++ b/drivers/gpu/drm/tegra/dc.c
-@@ -25,6 +25,7 @@
+@@ -404,8 +404,8 @@ static void tegra_primary_plane_destroy(struct drm_plane *plane)
+ }
+ 
+ static const struct drm_plane_funcs tegra_primary_plane_funcs = {
+-	.update_plane = drm_plane_helper_update,
+-	.disable_plane = drm_plane_helper_disable,
++	.update_plane = drm_atomic_helper_update_plane,
++	.disable_plane = drm_atomic_helper_disable_plane,
+ 	.destroy = tegra_primary_plane_destroy,
+ 	.reset = drm_atomic_helper_plane_reset,
+ 	.atomic_duplicate_state = drm_atomic_helper_plane_duplicate_state,
+@@ -690,8 +690,8 @@ static void tegra_cursor_atomic_disable(struct drm_plane *plane,
+ }
+ 
+ static const struct drm_plane_funcs tegra_cursor_plane_funcs = {
+-	.update_plane = drm_plane_helper_update,
+-	.disable_plane = drm_plane_helper_disable,
++	.update_plane = drm_atomic_helper_update_plane,
++	.disable_plane = drm_atomic_helper_disable_plane,
+ 	.destroy = tegra_plane_destroy,
+ 	.reset = drm_atomic_helper_plane_reset,
+ 	.atomic_duplicate_state = drm_atomic_helper_plane_duplicate_state,
+@@ -740,8 +740,8 @@ static void tegra_overlay_plane_destroy(struct drm_plane *plane)
+ }
+ 
+ static const struct drm_plane_funcs tegra_overlay_plane_funcs = {
+-	.update_plane = drm_plane_helper_update,
+-	.disable_plane = drm_plane_helper_disable,
++	.update_plane = drm_atomic_helper_update_plane,
++	.disable_plane = drm_atomic_helper_disable_plane,
+ 	.destroy = tegra_overlay_plane_destroy,
+ 	.reset = drm_atomic_helper_plane_reset,
+ 	.atomic_duplicate_state = drm_atomic_helper_plane_duplicate_state,
+diff --git a/drivers/gpu/drm/tegra/drm.c b/drivers/gpu/drm/tegra/drm.c
+index 58a4ed192e61..0dd81d050ccb 100644
+--- a/drivers/gpu/drm/tegra/drm.c
++++ b/drivers/gpu/drm/tegra/drm.c
+@@ -10,6 +10,8 @@
+ #include <linux/host1x.h>
+ #include <linux/iommu.h>
+ 
++#include <drm/drm_atomic_helper.h>
++
  #include "drm.h"
  #include "gem.h"
  
-+#include <drm/drm_atomic.h>
- #include <drm/drm_atomic_helper.h>
- #include <drm/drm_plane_helper.h>
- 
-@@ -406,6 +407,8 @@ static const struct drm_plane_funcs tegra_primary_plane_funcs = {
- 	.update_plane = drm_plane_helper_update,
- 	.disable_plane = drm_plane_helper_disable,
- 	.destroy = tegra_primary_plane_destroy,
-+	.reset = drm_atomic_helper_plane_reset,
-+	.atomic_duplicate_state = drm_atomic_helper_plane_duplicate_state,
- 	.atomic_destroy_state = drm_atomic_helper_plane_destroy_state,
+@@ -29,6 +31,8 @@ static const struct drm_mode_config_funcs tegra_drm_mode_funcs = {
+ #ifdef CONFIG_DRM_TEGRA_FBDEV
+ 	.output_poll_changed = tegra_fb_output_poll_changed,
+ #endif
++	.atomic_check = drm_atomic_helper_check,
++	.atomic_commit = drm_atomic_helper_commit,
  };
  
-@@ -690,6 +693,8 @@ static const struct drm_plane_funcs tegra_cursor_plane_funcs = {
- 	.update_plane = drm_plane_helper_update,
- 	.disable_plane = drm_plane_helper_disable,
- 	.destroy = tegra_plane_destroy,
-+	.reset = drm_atomic_helper_plane_reset,
-+	.atomic_duplicate_state = drm_atomic_helper_plane_duplicate_state,
- 	.atomic_destroy_state = drm_atomic_helper_plane_destroy_state,
- };
- 
-@@ -738,6 +743,8 @@ static const struct drm_plane_funcs tegra_overlay_plane_funcs = {
- 	.update_plane = drm_plane_helper_update,
- 	.disable_plane = drm_plane_helper_disable,
- 	.destroy = tegra_overlay_plane_destroy,
-+	.reset = drm_atomic_helper_plane_reset,
-+	.atomic_duplicate_state = drm_atomic_helper_plane_duplicate_state,
- 	.atomic_destroy_state = drm_atomic_helper_plane_destroy_state,
- };
- 
-@@ -990,6 +997,9 @@ static int tegra_dc_page_flip(struct drm_crtc *crtc, struct drm_framebuffer *fb,
- 		drm_crtc_vblank_get(crtc);
- 	}
- 
-+	if (crtc->primary->state)
-+		drm_atomic_set_fb_for_plane(crtc->primary->state, fb);
-+
- 	tegra_dc_set_base(dc, 0, 0, fb);
- 	crtc->primary->fb = fb;
- 
-@@ -1005,6 +1015,8 @@ static const struct drm_crtc_funcs tegra_crtc_funcs = {
- 	.page_flip = tegra_dc_page_flip,
- 	.set_config = drm_crtc_helper_set_config,
- 	.destroy = tegra_dc_destroy,
-+	.reset = drm_atomic_helper_crtc_reset,
-+	.atomic_duplicate_state = drm_atomic_helper_crtc_duplicate_state,
- 	.atomic_destroy_state = drm_atomic_helper_crtc_destroy_state,
- };
- 
-diff --git a/drivers/gpu/drm/tegra/drm.c b/drivers/gpu/drm/tegra/drm.c
-index 3326df252c52..58a4ed192e61 100644
---- a/drivers/gpu/drm/tegra/drm.c
-+++ b/drivers/gpu/drm/tegra/drm.c
-@@ -77,6 +77,8 @@ static int tegra_drm_load(struct drm_device *drm, unsigned long flags)
- 	if (err < 0)
- 		goto fbdev;
- 
-+	drm_mode_config_reset(drm);
-+
- 	/*
- 	 * We don't use the drm_irq_install() helpers provided by the DRM
- 	 * core, so we need to set this manually in order to allow the
-diff --git a/drivers/gpu/drm/tegra/dsi.c b/drivers/gpu/drm/tegra/dsi.c
-index 4bb06c119a18..9799f3edc3f8 100644
---- a/drivers/gpu/drm/tegra/dsi.c
-+++ b/drivers/gpu/drm/tegra/dsi.c
-@@ -734,9 +734,11 @@ static void tegra_dsi_connector_dpms(struct drm_connector *connector, int mode)
- 
- static const struct drm_connector_funcs tegra_dsi_connector_funcs = {
- 	.dpms = tegra_dsi_connector_dpms,
-+	.reset = drm_atomic_helper_connector_reset,
- 	.detect = tegra_output_connector_detect,
- 	.fill_modes = drm_helper_probe_single_connector_modes,
- 	.destroy = tegra_output_connector_destroy,
-+	.atomic_duplicate_state = drm_atomic_helper_connector_duplicate_state,
- 	.atomic_destroy_state = drm_atomic_helper_connector_destroy_state,
- };
- 
-diff --git a/drivers/gpu/drm/tegra/hdmi.c b/drivers/gpu/drm/tegra/hdmi.c
-index bf868d54ef7e..728681a3f8c9 100644
---- a/drivers/gpu/drm/tegra/hdmi.c
-+++ b/drivers/gpu/drm/tegra/hdmi.c
-@@ -779,9 +779,11 @@ static void tegra_hdmi_connector_dpms(struct drm_connector *connector,
- 
- static const struct drm_connector_funcs tegra_hdmi_connector_funcs = {
- 	.dpms = tegra_hdmi_connector_dpms,
-+	.reset = drm_atomic_helper_connector_reset,
- 	.detect = tegra_output_connector_detect,
- 	.fill_modes = drm_helper_probe_single_connector_modes,
- 	.destroy = tegra_output_connector_destroy,
-+	.atomic_duplicate_state = drm_atomic_helper_connector_duplicate_state,
- 	.atomic_destroy_state = drm_atomic_helper_connector_destroy_state,
- };
- 
-diff --git a/drivers/gpu/drm/tegra/rgb.c b/drivers/gpu/drm/tegra/rgb.c
-index 23ba40370eb2..78e3cb1529d0 100644
---- a/drivers/gpu/drm/tegra/rgb.c
-+++ b/drivers/gpu/drm/tegra/rgb.c
-@@ -95,9 +95,11 @@ static void tegra_rgb_connector_dpms(struct drm_connector *connector,
- 
- static const struct drm_connector_funcs tegra_rgb_connector_funcs = {
- 	.dpms = tegra_rgb_connector_dpms,
-+	.reset = drm_atomic_helper_connector_reset,
- 	.detect = tegra_output_connector_detect,
- 	.fill_modes = drm_helper_probe_single_connector_modes,
- 	.destroy = tegra_output_connector_destroy,
-+	.atomic_duplicate_state = drm_atomic_helper_connector_duplicate_state,
- 	.atomic_destroy_state = drm_atomic_helper_connector_destroy_state,
- };
- 
-diff --git a/drivers/gpu/drm/tegra/sor.c b/drivers/gpu/drm/tegra/sor.c
-index e2f399363f09..2793e75c6573 100644
---- a/drivers/gpu/drm/tegra/sor.c
-+++ b/drivers/gpu/drm/tegra/sor.c
-@@ -735,9 +735,11 @@ tegra_sor_connector_detect(struct drm_connector *connector, bool force)
- 
- static const struct drm_connector_funcs tegra_sor_connector_funcs = {
- 	.dpms = tegra_sor_connector_dpms,
-+	.reset = drm_atomic_helper_connector_reset,
- 	.detect = tegra_sor_connector_detect,
- 	.fill_modes = drm_helper_probe_single_connector_modes,
- 	.destroy = tegra_output_connector_destroy,
-+	.atomic_duplicate_state = drm_atomic_helper_connector_duplicate_state,
- 	.atomic_destroy_state = drm_atomic_helper_connector_destroy_state,
- };
- 
+ static int tegra_drm_load(struct drm_device *drm, unsigned long flags)
 -- 
 2.1.3
 
