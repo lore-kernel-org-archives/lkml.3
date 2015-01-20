@@ -1,148 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108AbbATTo1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 14:44:27 -0500
-Received: from smtp6-g21.free.fr ([212.27.42.6]:24448 "EHLO smtp6-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753880AbbATToY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 14:44:24 -0500
-X-Mailbox-Line: From a67026f283019719432ef4310f9f8d75f467a4a6 Mon Sep 17 00:00:00 2001
-Message-Id: <a67026f283019719432ef4310f9f8d75f467a4a6.1421782533.git.moinejf@free.fr>
-In-Reply-To: <cover.1421782532.git.moinejf@free.fr>
-References: <cover.1421782532.git.moinejf@free.fr>
-From: Jean-Francois Moine <moinejf@free.fr>
-Date: Tue, 20 Jan 2015 17:50:25 +0100
-Subject: [PATCH v10 7/9] drm/i2c: tda998x: set cts_n according to the sample
- width
-To: Mark Brown <broonie@kernel.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Dave Airlie <airlied@gmail.com>, Andrew Jackson <Andrew.Jackson@arm.com>,
-        Jyri Sarha <jsarha@ti.com>, alsa-devel@alsa-project.org,
-        devicetree@vger.kernel.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
+	id S1755554AbbATQvg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 11:51:36 -0500
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:54019 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755222AbbATQve (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 11:51:34 -0500
+Date: Tue, 20 Jan 2015 16:51:27 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+Cc: Olof Johansson <olof@lixom.net>, Doug Anderson <dianders@chromium.org>,
+        Bill Richardson <wfrichar@chromium.org>, Simon Glass <sjg@google.com>,
+        Gwendal Grignou <gwendal@google.com>, Jonathan Corbet <corbet@lwn.net>,
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RESEND v2 2/7] mfd: cros_ec: Add char dev and virtual dev
+ pointers
+Message-ID: <20150120165127.GG30656@x1>
+References: <1420205572-2640-1-git-send-email-javier.martinez@collabora.co.uk>
+ <1420205572-2640-3-git-send-email-javier.martinez@collabora.co.uk>
+ <20150120075011.GS21886@x1>
+ <54BE770D.6030806@collabora.co.uk>
+ <20150120163622.GD30656@x1>
+ <54BE8615.7070708@collabora.co.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <54BE8615.7070708@collabora.co.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With I2S input, the CTS_N predivider depends on the audio sample width.
+On Tue, 20 Jan 2015, Javier Martinez Canillas wrote:
 
-Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
----
- drivers/gpu/drm/i2c/tda998x_drv.c | 21 ++++++++++++++++++---
- include/sound/tda998x.h           |  4 +++-
- sound/soc/codecs/tda998x.c        |  5 +++--
- 3 files changed, 24 insertions(+), 6 deletions(-)
+> Hello Lee,
+> 
+> On 01/20/2015 05:36 PM, Lee Jones wrote:
+> >> > 
+> >> > Is this safe?  Are you sure it's okay to provide an interface from
+> >> > userspace to read (kernel?) memory?
+> >> >
+> >> 
+> >> This interface is not to read any kernel memory but only the memory mapped
+> >> I/O region for the Low Pin Count (LPC) bus. So user-space only can choose
+> >> and offset and a number of bytes using the CROS_EC_DEV_IOCRDMEM ioctl cmd
+> >> which uses the following structure as argument:
+> >> 
+> >> /*
+> >>  * @offset: within EC_LPC_ADDR_MEMMAP region
+> >>  * @bytes: number of bytes to read. zero means "read a string" (including '\0')
+> >>  *         (at most only EC_MEMMAP_SIZE bytes can be read)
+> >>  * @buffer: where to store the result
+> >>  * ioctl returns the number of bytes read, negative on error
+> >>  */
+> >> struct cros_ec_readmem {
+> >>         uint32_t offset;
+> >>         uint32_t bytes;
+> >>         uint8_t buffer[EC_MEMMAP_SIZE];
+> >> };
+> >> 
+> >> The cros_ec_lpc_readmem() handler that the function pointer is set only
+> >> reads bytes from EC_LPC_ADDR_MEMMAP + offset if offset < EC_MEMMAP_SIZE
+> >> and the data is copied to the user-space buffer from the structure passed
+> >> as argument with copy_to_user().
+> >> 
+> >> So in that sense is similar to the spidev or i2c-dev interfaces that are
+> >> used to access these buses from user-space.
+> > 
+> > Very well.  The purpose of my question was to be provocative and to
+> > make you think about the interface.  As long as you're sure it can't
+> > be abused, then I'm happy.
+> > 
+> 
+> Ok, thanks a lot. Does it mean I've your Acked-by for this patch too?
 
-diff --git a/drivers/gpu/drm/i2c/tda998x_drv.c b/drivers/gpu/drm/i2c/tda998x_drv.c
-index a2cfc11..adf34e0 100644
---- a/drivers/gpu/drm/i2c/tda998x_drv.c
-+++ b/drivers/gpu/drm/i2c/tda998x_drv.c
-@@ -28,6 +28,7 @@
- #include <drm/drm_edid.h>
- #include <drm/i2c/tda998x.h>
- #include <sound/tda998x.h>
-+#include <sound/pcm.h>
- 
- #define DBG(fmt, ...) DRM_DEBUG(fmt"\n", ##__VA_ARGS__)
- 
-@@ -663,7 +664,17 @@ tda998x_configure_audio(struct tda998x_priv *priv,
- 		reg_write(priv, REG_MUX_AP, MUX_AP_SELECT_I2S);
- 		clksel_aip = AIP_CLKSEL_AIP_I2S;
- 		clksel_fs = AIP_CLKSEL_FS_ACLK;
--		cts_n = CTS_N_M(3) | CTS_N_K(3);
-+
-+		/* with I2S input, the CTS_N predivider depends on
-+		 * the sample width */
-+		switch (priv->audio.sample_format) {
-+		case SNDRV_PCM_FORMAT_S16_LE:
-+			cts_n = CTS_N_M(3) | CTS_N_K(1);
-+			break;
-+		default:
-+			cts_n = CTS_N_M(3) | CTS_N_K(3);
-+			break;
-+		}
- 		break;
- 
- 	default:
-@@ -751,7 +762,8 @@ static int tda998x_get_audio_var(struct device *dev,
- /* switch the audio port and initialize the audio parameters for streaming */
- static int tda998x_set_audio_input(struct device *dev,
- 				int port_index,
--				unsigned sample_rate)
-+				unsigned sample_rate,
-+				int sample_format)
- {
- 	struct tda998x_priv *priv = dev_get_drvdata(dev);
- 	struct tda998x_encoder_params *p = &priv->params;
-@@ -767,7 +779,8 @@ static int tda998x_set_audio_input(struct device *dev,
- 
- 	/* if same audio parameters, just enable the audio port */
- 	if (p->audio_cfg == priv->audio.ports[port_index] &&
--	    p->audio_sample_rate == sample_rate) {
-+	    p->audio_sample_rate == sample_rate &&
-+	    priv->audio.sample_format == sample_format) {
- 		reg_write(priv, REG_ENA_AP, p->audio_cfg);
- 		return 0;
- 	}
-@@ -776,6 +789,7 @@ static int tda998x_set_audio_input(struct device *dev,
- 	p->audio_clk_cfg = p->audio_format == AFMT_SPDIF ? 0 : 1;
- 	p->audio_cfg = priv->audio.ports[port_index];
- 	p->audio_sample_rate = sample_rate;
-+	priv->audio.sample_format = sample_format;
- 	tda998x_configure_audio(priv, &priv->encoder->crtc->hwmode, p);
- 	return 0;
- }
-@@ -1427,6 +1441,7 @@ static int tda998x_create(struct i2c_client *client, struct tda998x_priv *priv)
- 
- 	priv->params.audio_frame[1] = 1;		/* channels - 1 */
- 	priv->params.audio_sample_rate = 48000;		/* 48kHz */
-+	priv->audio.sample_format = SNDRV_PCM_FORMAT_S24_LE;
- 
- 	priv->current_page = 0xff;
- 	priv->hdmi = client;
-diff --git a/include/sound/tda998x.h b/include/sound/tda998x.h
-index b4b747b..a870c40 100644
---- a/include/sound/tda998x.h
-+++ b/include/sound/tda998x.h
-@@ -9,6 +9,7 @@
- struct tda998x_audio_s {
- 	u8 ports[2];			/* AP value */
- 	u8 port_types[2];		/* AFMT_xxx */
-+	int sample_format;
- #if IS_ENABLED(CONFIG_SND_SOC_TDA998X)
- 	struct cea_sad cea_sad;		/* Short Audio Descriptor */
- 	void *codec_priv;
-@@ -20,7 +21,8 @@ struct tda998x_ops_s {
- 			struct tda998x_audio_s **tda998x_audio);
- 	int (*set_audio_input)(struct device *dev,
- 			int port_index,
--			unsigned sample_rate);
-+			unsigned sample_rate,
-+			int sample_format);
- };
- 
- int tda9998x_codec_register(struct device *dev,
-diff --git a/sound/soc/codecs/tda998x.c b/sound/soc/codecs/tda998x.c
-index 0a186e7..fece8d2 100644
---- a/sound/soc/codecs/tda998x.c
-+++ b/sound/soc/codecs/tda998x.c
-@@ -73,13 +73,14 @@ static int tda998x_codec_hw_params(struct snd_pcm_substream *substream,
- 				   struct snd_soc_dai *dai)
- {
- 	return tda998x_ops->set_audio_input(dai->dev, dai->id,
--					params_rate(params));
-+					params_rate(params),
-+					params_format(params));
- }
- 
- static void tda998x_codec_shutdown(struct snd_pcm_substream *substream,
- 				   struct snd_soc_dai *dai)
- {
--	tda998x_ops->set_audio_input(dai->dev, PORT_NONE, 0);
-+	tda998x_ops->set_audio_input(dai->dev, PORT_NONE, 0, 0);
- }
- 
- static const struct snd_soc_dai_ops tda998x_codec_ops = {
+Yes: Acked-by: Lee Jones <lee.jones@linaro.org>
+
 -- 
-2.1.4
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
