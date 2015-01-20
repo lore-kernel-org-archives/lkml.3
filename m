@@ -1,58 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752543AbbATTaZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 14:30:25 -0500
-Received: from mx0b-00082601.pphosted.com ([67.231.153.30]:13299 "EHLO
-	mx0a-00082601.pphosted.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751778AbbATTaX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 14:30:23 -0500
-Message-ID: <54BEACCA.4080800@fb.com>
-Date: Tue, 20 Jan 2015 12:30:18 -0700
-From: Jens Axboe <axboe@fb.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
-MIME-Version: 1.0
-To: Ming Lei <ming.lei@canonical.com>, <linux-kernel@vger.kernel.org>
-CC: Sasha Levin <sasha.levin@oracle.com>
-Subject: Re: [PATCH] blk-mq: fix hctx/ctx kobject use-after-free
-References: <1421722856-6346-1-git-send-email-ming.lei@canonical.com>
-In-Reply-To: <1421722856-6346-1-git-send-email-ming.lei@canonical.com>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.57.29]
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.13.68,1.0.33,0.0.0000
- definitions=2015-01-20_06:2015-01-20,2015-01-20,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=fb_default_notspam policy=fb_default score=0
- kscore.is_bulkscore=1.37667655053519e-14 kscore.compositescore=0
- circleOfTrustscore=52.1011374371407 compositescore=0.986137415400633
- urlsuspect_oldscore=0.986137415400633 suspectscore=2
- recipient_domain_to_sender_totalscore=0 phishscore=0 bulkscore=0
- kscore.is_spamscore=0 recipient_to_sender_totalscore=0
- recipient_domain_to_sender_domain_totalscore=62764
- rbsscore=0.986137415400633 spamscore=0
- recipient_to_sender_domain_totalscore=0 urlsuspectscore=0.9 adultscore=0
- classifier=spam adjust=0 reason=mlx scancount=1 engine=7.0.1-1402240000
- definitions=main-1501200184
-X-FB-Internal: deliver
+	id S1752897AbbATTnO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 14:43:14 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:20636 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751592AbbATTnJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 14:43:09 -0500
+X-Mailbox-Line: From ddd1b299eca187ab2fa9b119da2ec8297ead1a66 Mon Sep 17 00:00:00 2001
+Message-Id: <cover.1421782532.git.moinejf@free.fr>
+From: Jean-Francois Moine <moinejf@free.fr>
+Date: Tue, 20 Jan 2015 20:35:32 +0100
+Subject: [PATCH v10 0/9] ASoC: tda998x: add a codec to the HDMI transmitter
+To: Mark Brown <broonie@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Dave Airlie <airlied@gmail.com>, Andrew Jackson <Andrew.Jackson@arm.com>,
+        Jyri Sarha <jsarha@ti.com>, alsa-devel@alsa-project.org,
+        devicetree@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/2015 08:00 PM, Ming Lei wrote:
-> The kobject memory shouldn't have been freed before the kobject
-> is released because driver core can access it freely before its
-> release.
->
-> This patch frees hctx in its release callback. For ctx, they
-> share one single per-cpu variable which is associated with
-> the request queue, so free ctx in q->mq_kobj's release handler.
->
-> Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
-> (fix ctx kobjects)
-> Signed-off-by: Ming Lei <ming.lei@canonical.com>
+Based on broonie/ASoC
 
-Thanks Ming, applied.
+v10:
+	- add the generic dt-card
+	- define the audio ports from a DT graph of ports (Russell King)
+	- reuse HDMI constants (Andrew Jackson - Jyri Sarha)
+	- alloc rate_constraints in codec (Jyri Sarha)
+	- fix bad number of channels (Jyri Sarha)
+	- correct codec generation from config (Russell King - Jyri Sarha)
+	- no module init/exit (Russell King)
+v9:
+	- back to a TDA998x specific CODEC
+	- more comments
+	- change magic values to constants
+v8:
+	- change some comments about the patches
+v7:
+	- remove the change of the K predivider (Jyri Sarha)
+	- add S24_3LE and S32_LE as possible audio formats (Jyri Sarha)
+	- don't move the struct priv2 definition and use the
+	  slave encoder private data as the device private data
+	  (Russell King)
+	- remove the useless request_module (Russell King/Mark Brown)
+	- don't lock the HDMI module (Russell King)
+	- use platform_device_unregister to remove the codec
+	  (Russell King)
+v6:
+	- extend the HDMI CODEC instead of using a specific CODEC
+v5:
+	- use the TDA998x private data instead of a specific area
+	  for the CODEC interface
+	- the CODEC is TDA998x specific (Mark Brown)
+v4:
+	- remove all the TDA998x specific stuff from the CODEC
+	- move the EDID scan from the CODEC to the TDA998x
+	- move the CODEC to sound/soc (Mark Brown)
+	- update the audio_sample_rate from the EDID (Andrew Jackson)
+v3: fix bad rate (Andrew Jackson)
+v2: check double stream start (Mark Brown)
+
+Jean-Francois Moine (9):
+  ASoC: kirkwood: dynamically build the DAI array
+  ASoC: kirkwood: check the DAI type from the DAI name
+  ASoC: kirkwood: accept the DAI definitions from a graph of ports
+  drm/i2c: tda998x: Add support of a DT graph of ports
+  drm/i2c: tda998x: Change drvdata for audio extension
+  ASoC: tda998x: add a codec to the HDMI transmitter
+  drm/i2c: tda998x: set cts_n according to the sample width
+  ASoC: core: export snd_soc_get_dai_name
+  ASoC: add generic dt-card support
+
+ .../devicetree/bindings/drm/i2c/tda998x.txt        |  51 ++++
+ .../devicetree/bindings/sound/mvebu-audio.txt      |  30 +++
+ drivers/gpu/drm/i2c/tda998x_drv.c                  | 237 +++++++++++++++++-
+ include/sound/soc.h                                |   2 +
+ include/sound/tda998x.h                            |  32 +++
+ sound/soc/codecs/Kconfig                           |   5 +
+ sound/soc/codecs/Makefile                          |   2 +
+ sound/soc/codecs/tda998x.c                         | 175 +++++++++++++
+ sound/soc/generic/Kconfig                          |   2 +
+ sound/soc/generic/Makefile                         |   2 +
+ sound/soc/generic/dt-card.c                        | 275 +++++++++++++++++++++
+ sound/soc/kirkwood/kirkwood-i2s.c                  | 141 ++++++-----
+ sound/soc/kirkwood/kirkwood.h                      |   4 +-
+ sound/soc/soc-core.c                               |   5 +-
+ 14 files changed, 877 insertions(+), 86 deletions(-)
+ create mode 100644 include/sound/tda998x.h
+ create mode 100644 sound/soc/codecs/tda998x.c
+ create mode 100644 sound/soc/generic/dt-card.c
 
 -- 
-Jens Axboe
+2.1.4
 
