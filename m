@@ -1,180 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754858AbbATLDK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 06:03:10 -0500
-Received: from TYO202.gate.nec.co.jp ([210.143.35.52]:37637 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753703AbbATLDB convert rfc822-to-8bit (ORCPT
+	id S1754516AbbATKvz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 05:51:55 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:43138 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752897AbbATKvx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 06:03:01 -0500
-From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-To: Alexander Duyck <alexander.duyck@gmail.com>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Choi, Sy Jong" <sy.jong.choi@intel.com>,
-        Hayato Momma <h-momma@ce.jp.nec.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/2] if_link: Add VF multicast promiscuous mode control
-Thread-Topic: [PATCH 1/2] if_link: Add VF multicast promiscuous mode control
-Thread-Index: AdA0nq7m4ZN6pjp2SXOX/KhlHe6HPA==
-Date: Tue, 20 Jan 2015 10:50:23 +0000
-Message-ID: <7F861DC0615E0C47A872E6F3C5FCDDBD05E0734E@BPXM14GP.gisp.nec.co.jp>
-Accept-Language: ja-JP, en-US
-Content-Language: ja-JP
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.205.5.123]
-Content-Type: text/plain; charset="iso-2022-jp"
-Content-Transfer-Encoding: 8BIT
+	Tue, 20 Jan 2015 05:51:53 -0500
+Date: Tue, 20 Jan 2015 13:51:41 +0300
+From: Dan Carpenter <dan.carpenter@oracle.com>
+To: Vitaly Kuznetsov <vkuznets@redhat.com>
+Cc: Radim =?utf-8?B?S3LEjW3DocWZ?= <rkrcmar@redhat.com>,
+        Jason Wang <jasowang@redhat.com>, linux-kernel@vger.kernel.org,
+        devel@linuxdriverproject.org, Haiyang Zhang <haiyangz@microsoft.com>
+Subject: Re: [PATCH v2 1/3] Drivers: hv: check vmbus_device_create() return
+ value in vmbus_process_offer()
+Message-ID: <20150120105141.GH6456@mwanda>
+References: <1421686573-12771-1-git-send-email-vkuznets@redhat.com>
+ <1421686573-12771-2-git-send-email-vkuznets@redhat.com>
+ <20150119175857.GE6456@mwanda>
+ <87bnltkcso.fsf@vitty.brq.redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87bnltkcso.fsf@vitty.brq.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: ucsinet21.oracle.com [156.151.31.93]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+Fine.  Fine.  I saw the 3/3 patch after I wrote the email.  Anyway I
+hope that my ranting has planted a seed of doubt and from now you will
+begin to view "out" labels with suspicion which will eventually flourish
+into the flower of hatred.
 
-Add netlink directives and ndo entry to control VF multicast promiscuous mode.
-
-Intel ixgbe and ixgbevf driver can handle only 30 multicast MAC addresses
-per VF. It means that we cannot assign over 30 IPv6 addresses to a single
-VF interface on VM. We want thousands IPv6 addresses in VM.
-
-There is capability of multicast promiscuous mode in Intel 82599 chip.
-It enables all multicast packets are delivered to the target VF.
-
-This patch prepares to control that VF multicast promiscuous functionality.
-
-Signed-off-by: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-Reviewed-by: Hayato Momma <h-momma@ce.jp.nec.com>
-CC: Choi, Sy Jong <sy.jong.choi@intel.com>
----
- include/linux/if_link.h      |  1 +
- include/linux/netdevice.h    |  3 +++
- include/uapi/linux/if_link.h |  6 ++++++
- net/core/rtnetlink.c         | 18 ++++++++++++++++--
- 4 files changed, 26 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/if_link.h b/include/linux/if_link.h
-index 119130e..bc29ddf 100644
---- a/include/linux/if_link.h
-+++ b/include/linux/if_link.h
-@@ -14,5 +14,6 @@ struct ifla_vf_info {
- 	__u32 linkstate;
- 	__u32 min_tx_rate;
- 	__u32 max_tx_rate;
-+	__u32 mc_promisc;
- };
- #endif /* _LINUX_IF_LINK_H */
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 52fd8e8..12e88a7 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -868,6 +868,7 @@ typedef u16 (*select_queue_fallback_t)(struct net_device *dev,
-  * int (*ndo_set_vf_rate)(struct net_device *dev, int vf, int min_tx_rate,
-  *			  int max_tx_rate);
-  * int (*ndo_set_vf_spoofchk)(struct net_device *dev, int vf, bool setting);
-+ * int (*ndo_set_vf_mc_promisc)(struct net_device *dev, int vf, bool setting);
-  * int (*ndo_get_vf_config)(struct net_device *dev,
-  *			    int vf, struct ifla_vf_info *ivf);
-  * int (*ndo_set_vf_link_state)(struct net_device *dev, int vf, int link_state);
-@@ -1084,6 +1085,8 @@ struct net_device_ops {
- 						   int max_tx_rate);
- 	int			(*ndo_set_vf_spoofchk)(struct net_device *dev,
- 						       int vf, bool setting);
-+	int			(*ndo_set_vf_mc_promisc)(struct net_device *dev,
-+							 int vf, bool setting);
- 	int			(*ndo_get_vf_config)(struct net_device *dev,
- 						     int vf,
- 						     struct ifla_vf_info *ivf);
-diff --git a/include/uapi/linux/if_link.h b/include/uapi/linux/if_link.h
-index f7d0d2d..32b4b9e 100644
---- a/include/uapi/linux/if_link.h
-+++ b/include/uapi/linux/if_link.h
-@@ -454,6 +454,7 @@ enum {
- 	IFLA_VF_SPOOFCHK,	/* Spoof Checking on/off switch */
- 	IFLA_VF_LINK_STATE,	/* link state enable/disable/auto switch */
- 	IFLA_VF_RATE,		/* Min and Max TX Bandwidth Allocation */
-+	IFLA_VF_MC_PROMISC,	/* Multicast Promiscuous on/off switch */
- 	__IFLA_VF_MAX,
- };
- 
-@@ -498,6 +499,11 @@ struct ifla_vf_link_state {
- 	__u32 link_state;
- };
- 
-+struct ifla_vf_mc_promisc {
-+	__u32 vf;
-+	__u32 setting;
-+};
-+
- /* VF ports management section
-  *
-  *	Nested layout of set/get msg is:
-diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
-index 9cf6fe9..5992245 100644
---- a/net/core/rtnetlink.c
-+++ b/net/core/rtnetlink.c
-@@ -807,7 +807,8 @@ static inline int rtnl_vfinfo_size(const struct net_device *dev,
- 			 nla_total_size(sizeof(struct ifla_vf_vlan)) +
- 			 nla_total_size(sizeof(struct ifla_vf_spoofchk)) +
- 			 nla_total_size(sizeof(struct ifla_vf_rate)) +
--			 nla_total_size(sizeof(struct ifla_vf_link_state)));
-+			 nla_total_size(sizeof(struct ifla_vf_link_state)) +
-+			 nla_total_size(sizeof(struct ifla_vf_mc_promisc)));
- 		return size;
- 	} else
- 		return 0;
-@@ -1099,6 +1100,7 @@ static int rtnl_fill_ifinfo(struct sk_buff *skb, struct net_device *dev,
- 			struct ifla_vf_tx_rate vf_tx_rate;
- 			struct ifla_vf_spoofchk vf_spoofchk;
- 			struct ifla_vf_link_state vf_linkstate;
-+			struct ifla_vf_mc_promisc vf_mc_promisc;
- 
- 			/*
- 			 * Not all SR-IOV capable drivers support the
-@@ -1107,6 +1109,7 @@ static int rtnl_fill_ifinfo(struct sk_buff *skb, struct net_device *dev,
- 			 * report anything.
- 			 */
- 			ivi.spoofchk = -1;
-+			ivi.mc_promisc = -1;
- 			memset(ivi.mac, 0, sizeof(ivi.mac));
- 			/* The default value for VF link state is "auto"
- 			 * IFLA_VF_LINK_STATE_AUTO which equals zero
-@@ -1119,7 +1122,8 @@ static int rtnl_fill_ifinfo(struct sk_buff *skb, struct net_device *dev,
- 				vf_rate.vf =
- 				vf_tx_rate.vf =
- 				vf_spoofchk.vf =
--				vf_linkstate.vf = ivi.vf;
-+				vf_linkstate.vf =
-+				vf_mc_promisc.vf = ivi.vf;
- 
- 			memcpy(vf_mac.mac, ivi.mac, sizeof(ivi.mac));
- 			vf_vlan.vlan = ivi.vlan;
-@@ -1128,6 +1132,7 @@ static int rtnl_fill_ifinfo(struct sk_buff *skb, struct net_device *dev,
- 			vf_rate.min_tx_rate = ivi.min_tx_rate;
- 			vf_rate.max_tx_rate = ivi.max_tx_rate;
- 			vf_spoofchk.setting = ivi.spoofchk;
-+			vf_mc_promisc.setting = ivi.mc_promisc;
- 			vf_linkstate.link_state = ivi.linkstate;
- 			vf = nla_nest_start(skb, IFLA_VF_INFO);
- 			if (!vf) {
-@@ -1461,6 +1466,15 @@ static int do_setvfinfo(struct net_device *dev, struct nlattr *attr)
- 								 ivl->link_state);
- 			break;
- 		}
-+		case IFLA_VF_MC_PROMISC: {
-+			struct ifla_vf_mc_promisc *ivm;
-+			ivm = nla_data(vf);
-+			err = -EOPNOTSUPP;
-+			if (ops->ndo_set_vf_mc_promisc)
-+				err = ops->ndo_set_vf_mc_promisc(dev, ivm->vf,
-+								 ivm->setting);
-+			break;
-+		}
- 		default:
- 			err = -EINVAL;
- 			break;
--- 
-1.9.0
+regards,
+dan carpenter
 
