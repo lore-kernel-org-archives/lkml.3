@@ -1,208 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754437AbbATKuh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 05:50:37 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:38611 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754417AbbATKua (ORCPT
+	id S1754858AbbATLDK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 06:03:10 -0500
+Received: from TYO202.gate.nec.co.jp ([210.143.35.52]:37637 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753703AbbATLDB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 05:50:30 -0500
-Date: Tue, 20 Jan 2015 10:50:22 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: "Opensource [Adam Thomson]" <Adam.Thomson.Opensource@diasemi.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, Jonathan Cameron <jic23@kernel.org>,
-        Hartmut Knaack <knaack.h@gmx.de>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Support Opensource <Support.Opensource@diasemi.com>
-Subject: Re: [PATCH v5 1/7] mfd: Add support for DA9150 combined charger &
- fuel-gauge device
-Message-ID: <20150120105022.GA13701@x1>
-References: <cover.1419264383.git.Adam.Thomson.Opensource@diasemi.com>
- <8768cf84babd1bc3e16dadc25bdbb50cebfb44b6.1419264383.git.Adam.Thomson.Opensource@diasemi.com>
- <20150119113332.GP21886@x1>
- <2E89032DDAA8B9408CB92943514A0337AB52874E@SW-EX-MBX01.diasemi.com>
+	Tue, 20 Jan 2015 06:03:01 -0500
+From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+To: Alexander Duyck <alexander.duyck@gmail.com>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "Choi, Sy Jong" <sy.jong.choi@intel.com>,
+        Hayato Momma <h-momma@ce.jp.nec.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/2] if_link: Add VF multicast promiscuous mode control
+Thread-Topic: [PATCH 1/2] if_link: Add VF multicast promiscuous mode control
+Thread-Index: AdA0nq7m4ZN6pjp2SXOX/KhlHe6HPA==
+Date: Tue, 20 Jan 2015 10:50:23 +0000
+Message-ID: <7F861DC0615E0C47A872E6F3C5FCDDBD05E0734E@BPXM14GP.gisp.nec.co.jp>
+Accept-Language: ja-JP, en-US
+Content-Language: ja-JP
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.205.5.123]
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <2E89032DDAA8B9408CB92943514A0337AB52874E@SW-EX-MBX01.diasemi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Jan 2015, Opensource [Adam Thomson] wrote:
+From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
 
-> On January 19, 2015 11:34, Lee Jones wrote:
-> 
-> > On Mon, 22 Dec 2014, Adam Thomson wrote:
-> > 
-> > > DA9150 is a combined Charger and Fuel-Gauge IC, with additional
-> > > GPIO and GPADC functionality.
-> > >
-> > > Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
-> > > ---
-> > >  drivers/mfd/Kconfig                  |   12 +
-> > >  drivers/mfd/Makefile                 |    2 +-
-> > >  drivers/mfd/da9150-core.c            |  413 ++++++++++++
-> > >  include/linux/mfd/da9150/core.h      |   68 ++
-> > >  include/linux/mfd/da9150/registers.h | 1155
-> > ++++++++++++++++++++++++++++++++++
-> > >  5 files changed, 1649 insertions(+), 1 deletion(-)
-> > >  create mode 100644 drivers/mfd/da9150-core.c
-> > >  create mode 100644 include/linux/mfd/da9150/core.h
-> > >  create mode 100644 include/linux/mfd/da9150/registers.h
-> > >
-> > > diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> > > index 2e6b731..56e80d2 100644
-> > > --- a/drivers/mfd/Kconfig
-> > > +++ b/drivers/mfd/Kconfig
-> > > @@ -195,6 +195,18 @@ config MFD_DA9063
-> > >  	  Additional drivers must be enabled in order to use the functionality
-> > >  	  of the device.
-> > >
-> > > +config MFD_DA9150
-> > > +	tristate "Dialog Semiconductor DA9150 Charger Fuel-Gauge chip"
-> > > +	depends on I2C=y
-> > > +	select MFD_CORE
-> > > +	select REGMAP_I2C
-> > > +	select REGMAP_IRQ
-> > > +	help
-> > > +	  This adds support for the DA9150 integrated charger and fuel-gauge
-> > > +	  chip. This driver provides common support for accessing the device.
-> > > +	  Additional drivers must be enabled in order to use the specific
-> > > +	  features of the device.
-> > > +
-> > >  config MFD_DLN2
-> > >  	tristate "Diolan DLN2 support"
-> > >  	select MFD_CORE
-> > > diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-> > > index 53467e2..f06f4c6 100644
-> > > --- a/drivers/mfd/Makefile
-> > > +++ b/drivers/mfd/Makefile
-> > > @@ -113,7 +113,7 @@ obj-$(CONFIG_MFD_DA9055)	+= da9055.o
-> > >
-> > >  da9063-objs			:= da9063-core.o da9063-irq.o da9063-i2c.o
-> > >  obj-$(CONFIG_MFD_DA9063)	+= da9063.o
-> > > -
-> > > +obj-$(CONFIG_MFD_DA9150)	+= da9150-core.o
-> > >  obj-$(CONFIG_MFD_MAX14577)	+= max14577.o
-> > >  obj-$(CONFIG_MFD_MAX77686)	+= max77686.o
-> > >  obj-$(CONFIG_MFD_MAX77693)	+= max77693.o
-> > > diff --git a/drivers/mfd/da9150-core.c b/drivers/mfd/da9150-core.c
-> > > new file mode 100644
-> > > index 0000000..4d757b9
-> > > --- /dev/null
-> > > +++ b/drivers/mfd/da9150-core.c
-> > > @@ -0,0 +1,413 @@
-> > > +/*
-> > > + * DA9150 Core MFD Driver
-> > > + *
-> > > + * Copyright (c) 2014 Dialog Semiconductor
-> > > + *
-> > > + * Author: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
-> > > + *
-> > > + * This program is free software; you can redistribute  it and/or modify it
-> > > + * under  the terms of  the GNU General  Public License as published by the
-> > > + * Free Software Foundation;  either version 2 of the  License, or (at your
-> > > + * option) any later version.
-> > > + */
-> > 
-> > [...]
-> > 
-> > > +u8 da9150_reg_read(struct da9150 *da9150, u16 reg)
-> > > +{
-> > > +	int val, ret;
-> > > +
-> > > +	ret = regmap_read(da9150->regmap, reg, &val);
-> > > +	if (ret)
-> > > +		dev_err(da9150->dev, "Failed to read from reg 0x%x: %d\n",
-> > > +			reg, ret);
-> > > +
-> > > +	return (u8) val;
-> > > +}
-> > > +EXPORT_SYMBOL_GPL(da9150_reg_read);
-> > > +
-> > > +void da9150_reg_write(struct da9150 *da9150, u16 reg, u8 val)
-> > > +{
-> > > +	int ret;
-> > > +
-> > > +	ret = regmap_write(da9150->regmap, reg, val);
-> > > +	if (ret)
-> > > +		dev_err(da9150->dev, "Failed to write to reg 0x%x: %d\n",
-> > > +			reg, ret);
-> > > +}
-> > > +EXPORT_SYMBOL_GPL(da9150_reg_write);
-> > > +
-> > > +void da9150_set_bits(struct da9150 *da9150, u16 reg, u8 mask, u8 val)
-> > > +{
-> > > +	int ret;
-> > > +
-> > > +	ret = regmap_update_bits(da9150->regmap, reg, mask, val);
-> > > +	if (ret)
-> > > +		dev_err(da9150->dev, "Failed to set bits in reg 0x%x: %d\n",
-> > > +			reg, ret);
-> > > +}
-> > > +EXPORT_SYMBOL_GPL(da9150_set_bits);
-> > > +
-> > > +void da9150_bulk_read(struct da9150 *da9150, u16 reg, int count, u8 *buf)
-> > > +{
-> > > +	int ret;
-> > > +
-> > > +	ret = regmap_bulk_read(da9150->regmap, reg, buf, count);
-> > > +	if (ret)
-> > > +		dev_err(da9150->dev, "Failed to bulk read from reg 0x%x: %d\n",
-> > > +			reg, ret);
-> > > +}
-> > > +EXPORT_SYMBOL_GPL(da9150_bulk_read);
-> > > +
-> > > +void da9150_bulk_write(struct da9150 *da9150, u16 reg, int count, const u8
-> > *buf)
-> > > +{
-> > > +	int ret;
-> > > +
-> > > +	ret = regmap_raw_write(da9150->regmap, reg, buf, count);
-> > > +	if (ret)
-> > > +		dev_err(da9150->dev, "Failed to bulk write to reg 0x%x %d\n",
-> > > +			reg, ret);
-> > > +}
-> > > +EXPORT_SYMBOL_GPL(da9150_bulk_write);
-> > 
-> > I've never been a fan of this type of aggregation.  Can you explain to
-> > me what the point of them is?
-> 
-> I refer you back to our previous discussion some time back:
-> 
-> https://lkml.org/lkml/2014/9/9/284
-> 
-> 'The reason for these is because future patches to add additional functionality
-> will introduce I2C access functions which do not use regmap and access the
-> device via a separate I2C address for this purpose. I will need to provide
-> access functions for that, and so having a common style of I2C access makes
-> sense for this driver. Means any access just needs to provide the MFD private
-> data, and the relevant functions take care of the rest. I think this is cleaner
-> in this instance.'
+Add netlink directives and ndo entry to control VF multicast promiscuous mode.
 
-Well at least I'm consistent.
+Intel ixgbe and ixgbevf driver can handle only 30 multicast MAC addresses
+per VF. It means that we cannot assign over 30 IPv6 addresses to a single
+VF interface on VM. We want thousands IPv6 addresses in VM.
 
-For my own reference:
-  Acked-by: Lee Jones <lee.jones@linaro.org>
+There is capability of multicast promiscuous mode in Intel 82599 chip.
+It enables all multicast packets are delivered to the target VF.
 
+This patch prepares to control that VF multicast promiscuous functionality.
+
+Signed-off-by: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+Reviewed-by: Hayato Momma <h-momma@ce.jp.nec.com>
+CC: Choi, Sy Jong <sy.jong.choi@intel.com>
+---
+ include/linux/if_link.h      |  1 +
+ include/linux/netdevice.h    |  3 +++
+ include/uapi/linux/if_link.h |  6 ++++++
+ net/core/rtnetlink.c         | 18 ++++++++++++++++--
+ 4 files changed, 26 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/if_link.h b/include/linux/if_link.h
+index 119130e..bc29ddf 100644
+--- a/include/linux/if_link.h
++++ b/include/linux/if_link.h
+@@ -14,5 +14,6 @@ struct ifla_vf_info {
+ 	__u32 linkstate;
+ 	__u32 min_tx_rate;
+ 	__u32 max_tx_rate;
++	__u32 mc_promisc;
+ };
+ #endif /* _LINUX_IF_LINK_H */
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index 52fd8e8..12e88a7 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -868,6 +868,7 @@ typedef u16 (*select_queue_fallback_t)(struct net_device *dev,
+  * int (*ndo_set_vf_rate)(struct net_device *dev, int vf, int min_tx_rate,
+  *			  int max_tx_rate);
+  * int (*ndo_set_vf_spoofchk)(struct net_device *dev, int vf, bool setting);
++ * int (*ndo_set_vf_mc_promisc)(struct net_device *dev, int vf, bool setting);
+  * int (*ndo_get_vf_config)(struct net_device *dev,
+  *			    int vf, struct ifla_vf_info *ivf);
+  * int (*ndo_set_vf_link_state)(struct net_device *dev, int vf, int link_state);
+@@ -1084,6 +1085,8 @@ struct net_device_ops {
+ 						   int max_tx_rate);
+ 	int			(*ndo_set_vf_spoofchk)(struct net_device *dev,
+ 						       int vf, bool setting);
++	int			(*ndo_set_vf_mc_promisc)(struct net_device *dev,
++							 int vf, bool setting);
+ 	int			(*ndo_get_vf_config)(struct net_device *dev,
+ 						     int vf,
+ 						     struct ifla_vf_info *ivf);
+diff --git a/include/uapi/linux/if_link.h b/include/uapi/linux/if_link.h
+index f7d0d2d..32b4b9e 100644
+--- a/include/uapi/linux/if_link.h
++++ b/include/uapi/linux/if_link.h
+@@ -454,6 +454,7 @@ enum {
+ 	IFLA_VF_SPOOFCHK,	/* Spoof Checking on/off switch */
+ 	IFLA_VF_LINK_STATE,	/* link state enable/disable/auto switch */
+ 	IFLA_VF_RATE,		/* Min and Max TX Bandwidth Allocation */
++	IFLA_VF_MC_PROMISC,	/* Multicast Promiscuous on/off switch */
+ 	__IFLA_VF_MAX,
+ };
+ 
+@@ -498,6 +499,11 @@ struct ifla_vf_link_state {
+ 	__u32 link_state;
+ };
+ 
++struct ifla_vf_mc_promisc {
++	__u32 vf;
++	__u32 setting;
++};
++
+ /* VF ports management section
+  *
+  *	Nested layout of set/get msg is:
+diff --git a/net/core/rtnetlink.c b/net/core/rtnetlink.c
+index 9cf6fe9..5992245 100644
+--- a/net/core/rtnetlink.c
++++ b/net/core/rtnetlink.c
+@@ -807,7 +807,8 @@ static inline int rtnl_vfinfo_size(const struct net_device *dev,
+ 			 nla_total_size(sizeof(struct ifla_vf_vlan)) +
+ 			 nla_total_size(sizeof(struct ifla_vf_spoofchk)) +
+ 			 nla_total_size(sizeof(struct ifla_vf_rate)) +
+-			 nla_total_size(sizeof(struct ifla_vf_link_state)));
++			 nla_total_size(sizeof(struct ifla_vf_link_state)) +
++			 nla_total_size(sizeof(struct ifla_vf_mc_promisc)));
+ 		return size;
+ 	} else
+ 		return 0;
+@@ -1099,6 +1100,7 @@ static int rtnl_fill_ifinfo(struct sk_buff *skb, struct net_device *dev,
+ 			struct ifla_vf_tx_rate vf_tx_rate;
+ 			struct ifla_vf_spoofchk vf_spoofchk;
+ 			struct ifla_vf_link_state vf_linkstate;
++			struct ifla_vf_mc_promisc vf_mc_promisc;
+ 
+ 			/*
+ 			 * Not all SR-IOV capable drivers support the
+@@ -1107,6 +1109,7 @@ static int rtnl_fill_ifinfo(struct sk_buff *skb, struct net_device *dev,
+ 			 * report anything.
+ 			 */
+ 			ivi.spoofchk = -1;
++			ivi.mc_promisc = -1;
+ 			memset(ivi.mac, 0, sizeof(ivi.mac));
+ 			/* The default value for VF link state is "auto"
+ 			 * IFLA_VF_LINK_STATE_AUTO which equals zero
+@@ -1119,7 +1122,8 @@ static int rtnl_fill_ifinfo(struct sk_buff *skb, struct net_device *dev,
+ 				vf_rate.vf =
+ 				vf_tx_rate.vf =
+ 				vf_spoofchk.vf =
+-				vf_linkstate.vf = ivi.vf;
++				vf_linkstate.vf =
++				vf_mc_promisc.vf = ivi.vf;
+ 
+ 			memcpy(vf_mac.mac, ivi.mac, sizeof(ivi.mac));
+ 			vf_vlan.vlan = ivi.vlan;
+@@ -1128,6 +1132,7 @@ static int rtnl_fill_ifinfo(struct sk_buff *skb, struct net_device *dev,
+ 			vf_rate.min_tx_rate = ivi.min_tx_rate;
+ 			vf_rate.max_tx_rate = ivi.max_tx_rate;
+ 			vf_spoofchk.setting = ivi.spoofchk;
++			vf_mc_promisc.setting = ivi.mc_promisc;
+ 			vf_linkstate.link_state = ivi.linkstate;
+ 			vf = nla_nest_start(skb, IFLA_VF_INFO);
+ 			if (!vf) {
+@@ -1461,6 +1466,15 @@ static int do_setvfinfo(struct net_device *dev, struct nlattr *attr)
+ 								 ivl->link_state);
+ 			break;
+ 		}
++		case IFLA_VF_MC_PROMISC: {
++			struct ifla_vf_mc_promisc *ivm;
++			ivm = nla_data(vf);
++			err = -EOPNOTSUPP;
++			if (ops->ndo_set_vf_mc_promisc)
++				err = ops->ndo_set_vf_mc_promisc(dev, ivm->vf,
++								 ivm->setting);
++			break;
++		}
+ 		default:
+ 			err = -EINVAL;
+ 			break;
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.9.0
+
