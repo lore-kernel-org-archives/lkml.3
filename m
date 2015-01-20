@@ -1,119 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172AbbATLfT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 06:35:19 -0500
-Received: from sauhun.de ([89.238.76.85]:33465 "EHLO pokefinder.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751823AbbATLfR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 06:35:17 -0500
-Date: Tue, 20 Jan 2015 12:35:08 +0100
-From: Wolfram Sang <wsa@the-dreams.de>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Lars-Peter Clausen <lars@metafoo.de>, linux-mips@linux-mips.org,
-        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
-        linux-kernel@vger.kernel.org, Julia Lawall <julia.lawall@lip6.fr>,
-        linux-arm-kernel@lists.infradead.org, linuxppc-dev@lists.ozlabs.org,
-        Jean Delvare <jdelvare@suse.de>
-Subject: Re: [PATCH] i2c: drop ancient protection against sysfs refcounting
- issues
-Message-ID: <20150120113508.GA1067@katana>
-References: <1421693756-12917-1-git-send-email-wsa@the-dreams.de>
- <20150119190142.GA9451@kroah.com>
- <20150119230427.GH26493@n2100.arm.linux.org.uk>
- <20150120014159.GA3349@kroah.com>
- <54BDFE30.5090303@metafoo.de>
- <20150120071256.GA18983@kroah.com>
- <20150120101752.GI26493@n2100.arm.linux.org.uk>
+	id S1754220AbbATLf7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 06:35:59 -0500
+Received: from mail-la0-f48.google.com ([209.85.215.48]:42643 "EHLO
+	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753773AbbATLf6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 06:35:58 -0500
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="fdj2RfSjLxBAspz7"
-Content-Disposition: inline
-In-Reply-To: <20150120101752.GI26493@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <219291421414310@webcorp01h.yandex-team.ru>
+References: <20150115155731.31307.4414.stgit@buzz>
+	<20150115171551.a2e6acb5.akpm@linux-foundation.org>
+	<219291421414310@webcorp01h.yandex-team.ru>
+Date: Tue, 20 Jan 2015 15:35:56 +0400
+Message-ID: <CALYGNiNNRwp7TfEh4tkP+9B=J9oN2n1cET0WP7u_wkCge5Y5bQ@mail.gmail.com>
+Subject: Re: [PATCH RFC] page_writeback: cleanup mess around cancel_dirty_page()
+From: Konstantin Khlebnikov <koct9i@gmail.com>
+To: =?UTF-8?B?0JrQvtC90YHRgtCw0L3RgtC40L0g0KXQu9C10LHQvdC40LrQvtCy?= 
+	<khlebnikov@yandex-team.ru>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jan 16, 2015 at 4:18 PM, Константин Хлебников
+<khlebnikov@yandex-team.ru> wrote:
+> 16.01.2015, 04:16, "Andrew Morton" <akpm@linux-foundation.org>:
+>> On Thu, 15 Jan 2015 18:57:31 +0300 Konstantin Khebnikov <khlebnikov@yandex-team.ru> wrote:
+>>>  This patch replaces cancel_dirty_page() with helper account_page_cleared()
+>>>  which only updates counters. It's called from delete_from_page_cache()
+>>>  and from try_to_free_buffers() (hack for ext3). Page is locked in both cases.
+>>>
+>>>  Hugetlbfs has no dirty pages accounting, ClearPageDirty() is enough here.
+>>>
+>>>  cancel_dirty_page() in nfs_wb_page_cancel() is redundant. This is helper
+>>>  for nfs_invalidate_page() and it's called only in case complete invalidation.
+>>>
+>>>  Open-coded kludge at the end of __delete_from_page_cache() is redundant too.
+>>>
+>>>  This mess was started in v2.6.20, after commit 3e67c09 ("truncate: clear page
+>>>  dirtiness before running try_to_free_buffers()") reverted back in v2.6.25
+>>>  by commit a2b3456 ("Fix dirty page accounting leak with ext3 data=journal").
+>>>  Custom fixes were introduced between them. NFS in in v2.6.23 in commit
+>>>  1b3b4a1 ("NFS: Fix a write request leak in nfs_invalidate_page()").
+>>>  Kludge __delete_from_page_cache() in v2.6.24, commit 3a692790 ("Do dirty
+>>>  page accounting when removing a page from the page cache").
+>>>
+>>>  It seems safe to leave dirty flag set on truncated page, free_pages_check()
+>>>  will clear it before returning page into buddy allocator.
+>>
+>> account_page_cleared() is not a good name - "clearing a page" means
+>> filling it with zeroes.  account_page_cleaned(), perhaps?
+>
+> Ok. account_page_cleaned is better.
+>
+>>
+>> I don't think your email cc'ed all the correct people?  lustre, nfs,
+>> ext3?
+>
+> oops
+>
+>>>  ...
+>>>
+>>>  --- a/fs/buffer.c
+>>>  +++ b/fs/buffer.c
+>>>  @@ -3243,8 +3243,8 @@ int try_to_free_buffers(struct page *page)
+>>>            * to synchronise against __set_page_dirty_buffers and prevent the
+>>>            * dirty bit from being lost.
+>>>            */
+>>>  - if (ret)
+>>>  - cancel_dirty_page(page, PAGE_CACHE_SIZE);
+>>>  + if (ret && TestClearPageDirty(page))
+>>>  + account_page_cleared(page, mapping);
+>>
+>> OK.
+>>>           spin_unlock(&mapping->private_lock);
+>>>   out:
+>>>           if (buffers_to_free) {
+>>>
+>>>  ...
+>>>
+>>>  --- a/fs/nfs/write.c
+>>>  +++ b/fs/nfs/write.c
+>>>  @@ -1811,11 +1811,6 @@ int nfs_wb_page_cancel(struct inode *inode, struct page *page)
+>>>                    * request from the inode / page_private pointer and
+>>>                    * release it */
+>>>                   nfs_inode_remove_request(req);
+>>>  - /*
+>>>  - * In case nfs_inode_remove_request has marked the
+>>>  - * page as being dirty
+>>>  - */
+>>>  - cancel_dirty_page(page, PAGE_CACHE_SIZE);
+>>
+>> hm, if you say so..
+>
+> That is main reason of this patch.
+> I dont like these obsoleted pieces of duct tape here and there.
+>
+>>>                   nfs_unlock_and_release_request(req);
+>>>           }
+>>>
+>>>  ...
+>>>
+>>>  --- a/mm/filemap.c
+>>>  +++ b/mm/filemap.c
+>>>  @@ -201,18 +201,6 @@ void __delete_from_page_cache(struct page *page, void *shadow)
+>>>           if (PageSwapBacked(page))
+>>>                   __dec_zone_page_state(page, NR_SHMEM);
+>>>           BUG_ON(page_mapped(page));
+>>>  -
+>>>  - /*
+>>>  - * Some filesystems seem to re-dirty the page even after
+>>>  - * the VM has canceled the dirty bit (eg ext3 journaling).
+>>>  - *
+>>>  - * Fix it up by doing a final dirty accounting check after
+>>>  - * having removed the page entirely.
+>>>  - */
+>>>  - if (PageDirty(page) && mapping_cap_account_dirty(mapping)) {
+>>>  - dec_zone_page_state(page, NR_FILE_DIRTY);
+>>>  - dec_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
+>>>  - }
+>>>   }
+>>>
+>>>   /**
+>>>  @@ -230,6 +218,9 @@ void delete_from_page_cache(struct page *page)
+>>>
+>>>           BUG_ON(!PageLocked(page));
+>>>
+>>>  + if (PageDirty(page))
+>>>  + account_page_cleared(page, mapping);
+>>>  +
+>>
+>> OK, but we lost the important comment - transplant that?
+>>
+>> It's strange that we left the dirty bit set after accounting for its
+>> clearing.  How does this work?  Presumably the offending fs dirtied the
+>> page without accounting for it?  I have a bad feeling I wrote that code :(
+>
+> account_page_dirtyed() must be always called after dirtying non-truncated pages.
+> Here page is truncating from mapping, dirty accounting never will see it again.
+>
+> This is the only place where dirty page might be truncated. All other places:
+> replace_page_cache_page, invalidate_complete_page2, __remove_mapping
+> (in memory reclaimer) forbid removing dirty pages.
+>
+> As I see PageDirty means nothing for truncated pages, it's never be written anywhere.
+> We could clear dirty bit here, but probably it might appear again: set_page_dirty()
+> for some reason has branch for pages without page->mapping.
 
---fdj2RfSjLxBAspz7
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Another puzzle here: how mark_buffer_dirty() is synchronized with truncate?
 
+do_invalidatepage() called from truncate_complete_page() clears dirty
+buffers and
+tries to release them all but exit code is ignored. So theoretically
+there still might
+be pinned buffer heads and somebody might call mark_buffer_dirty() for them.
 
-> > Right, and I'm not saying it should be, just move the existing logic
-> > into the release callback, and the code flow should be the same and we
-> > don't end up with an "empty" release callback.
+Funny but mark_buffer_dirty() gets mapping using page_mapping()!
+(Is bh might be attached to anon/slab page?)
+And it seems there is no protection against truncate
+(but it calls __set_page_dirty which checks page->mapping for NULL).
 
-But as Russell says, even if we don't have the empty callback, we still
-create the problem shown by DEBUG_KOBJECT_RELEASE which wasn't there
-before?
+So, if this race is possible the final account_page_cleaned() must be
+placed after
+clearing page->mapping. But I think we can put in outside of mapping->tree_lock
+because mapping cannot run off under us: if truncated page is dirty
+that might be
+only call from truncate where caller holds reference to the inode.
 
-> IMHO there are two possibilities here:
->=20
-> 1. leave it as-is, where we ensure that the remainder of i2c_del_adapter
->    does not complete until the release callback has been called.
->=20
-> 2. fix it properly by taking (eg) the netdev approach to i2c_adapter,
->    or an alternative solution which results in decoupling the lifetime
->    of the struct device from the i2c_adapter.
->=20
-> Either of these would be much better than removing the completion and
-> then moving a chunk of code to make it "look" safer than it actually is
-> and thereby introducing potential use-after-free bugs.
-
-I agree. As much as I'd love option 2) I don't see that on the horizon.
-So, let's keep things as they are. What probably makes sense is to
-update the comment with something like this? I took the liberty and used
-some wording from Russell:
-
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index e227dff62a85..1c89a08fae2a 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -1778,11 +1778,14 @@ void i2c_del_adapter(struct i2c_adapter *adap)
- 	/* device name is gone after device_unregister */
- 	dev_dbg(&adap->dev, "adapter [%s] unregistered\n", adap->name);
-=20
--	/* clean up the sysfs representation */
-+	/* wait until all references to the device are gone
-+	 *
-+	 * FIXME: This is old code and should ideally be replaced by an
-+	 * alternative which results in decoupling the lifetime of the struct
-+	 * device from the i2c_adapter, like spi or netdev do.
-+	 */
- 	init_completion(&adap->dev_released);
- 	device_unregister(&adap->dev);
--
--	/* wait for sysfs to drop all references */
- 	wait_for_completion(&adap->dev_released);
-=20
- 	/* free bus id */
-
-
-Thanks for all the input, it is very much appreciated!
-
---fdj2RfSjLxBAspz7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUvj1sAAoJEBQN5MwUoCm21voP/RGyoF9auSnOpttw4wFjoBJw
-n9t+N6mAo6eO5zpgZ748HRmP99HXZKCEnz7danIfgYddMRl4GAQe0JQdGh9lYbzM
-vbQ+tzJaWjFgyHrMpeVIRpEVs9C705Vwh1hnYA1omxTfJnhkQ4DpzePFvTsEC8R/
-CLrDCdoRLemD3Dq1Zey9lfYNuHyysbzRN+Z5ztYIrlIPQ9Jj1crPFBPR2euipsLH
-v986DrvPPCJ0vU3FjeR7DVAiWi+3ap885zNs30xiRSMYuekUeFQJUMlPAj3WvXQF
-7tIeGsvL7Cv7gckS8yq61Yf2ZyjC2zjga0/HeTKRp/bvTacF/hvKeLUyPlazJxxm
-oGWLIZYGSGau+/auJz+Af2cld3eiKjAq6nMHbQOu5cbuB5soyK/FlK1GfeFCP0AX
-84EV5UmrFdo/LkaCvvTUIJy15kIRxUjU2r/Fdlr2WLeTnAECIqFuVBlAuc4UwAi2
-B7Waf/pX7phVyuJdALXvzMiDtziMKchSyg3A1iuWnCFqicMBSJaXLVj9TONoPfYA
-MOiy4Y7a2fnvkapxu9YH8xV3Sj4TN2XCsoB9EYfYIK7kf9SA/r4/xAPGSKB1nQ41
-ZJKvC4M3dnAAsZ3VwqesFKC8oKTy/gicr+dTFSbpFPlp2314dC86Fcqxnq+AIqco
-GaRpIu/Gy9u1+9zEPxPN
-=z8hT
------END PGP SIGNATURE-----
-
---fdj2RfSjLxBAspz7--
+>
+>>>           freepage = mapping->a_ops->freepage;
+>>>           spin_lock_irq(&mapping->tree_lock);
+>>>           __delete_from_page_cache(page, NULL);
+>>>  diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+>>>  index 4da3cd5..f371522 100644
+>>>  --- a/mm/page-writeback.c
+>>>  +++ b/mm/page-writeback.c
+>>>  @@ -2106,6 +2106,25 @@ void account_page_dirtied(struct page *page, struct address_space *mapping)
+>>>   EXPORT_SYMBOL(account_page_dirtied);
+>>>
+>>>   /*
+>>>  + * Helper function for deaccounting dirty page without doing writeback.
+>>>  + * Doing this should *normally* only ever be done when a page
+>>>  + * is truncated, and is not actually mapped anywhere at all. However,
+>>>  + * fs/buffer.c does this when it notices that somebody has cleaned
+>>>  + * out all the buffers on a page without actually doing it through
+>>>  + * the VM. Can you say "ext3 is horribly ugly"? Tought you could.
+>>
+>> "Thought".
+>
+> Ah, ok. That is copy-paste from cancel_dirty_page().
+>
+>>>  + */
+>>>  +void account_page_cleared(struct page *page, struct address_space *mapping)
+>>>  +{
+>>>  + if (mapping_cap_account_dirty(mapping)) {
+>>>  + dec_zone_page_state(page, NR_FILE_DIRTY);
+>>>  + dec_bdi_stat(mapping->backing_dev_info,
+>>>  + BDI_RECLAIMABLE);
+>>>  + task_io_account_cancelled_write(PAGE_CACHE_SIZE);
+>>>  + }
+>>>  +}
+>>>  +EXPORT_SYMBOL(account_page_cleared);
+>>>
+>>>  ...
