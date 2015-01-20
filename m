@@ -1,97 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755169AbbATR3k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 12:29:40 -0500
-Received: from mail-qg0-f45.google.com ([209.85.192.45]:45019 "EHLO
-	mail-qg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751985AbbATR3h (ORCPT
+	id S1755267AbbATRaQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 12:30:16 -0500
+Received: from mail-pd0-f169.google.com ([209.85.192.169]:51380 "EHLO
+	mail-pd0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753124AbbATRaO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 12:29:37 -0500
+	Tue, 20 Jan 2015 12:30:14 -0500
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <54BE7DAB.80702@samsung.com>
-References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
- <1420816989-1808-4-git-send-email-j.anaszewski@samsung.com>
- <CAL_JsqJKEp6TWaRhJimg3AWBh+MCCr2Bk9+1o7orLLdp5E+n-g@mail.gmail.com>
- <54B38682.5080605@samsung.com> <CAL_Jsq+UaA41DvawdOMmOib=Fi0hC-nBdKV-+P4DFo+MoOy-bQ@mail.gmail.com>
- <54B3F1EF.4060506@samsung.com> <CAL_JsqKpJtUG0G6g1GOuSVpc31oe-dp3qdrKJUE0upG-xRDFhA@mail.gmail.com>
- <54B4DA81.7060900@samsung.com> <CAL_JsqLYxB5hzLAWXpU=uncM5DEMZU78mP673H9oSSNB-cgcYQ@mail.gmail.com>
- <54B8D4D0.3000904@samsung.com> <CAL_Jsq+EFWzs1HP1tVt6P=p=HZn2AtSPjp55YrmMQi_mE+kNfQ@mail.gmail.com>
- <54B933D0.1090004@samsung.com> <54BE7DAB.80702@samsung.com>
-From: Rob Herring <robherring2@gmail.com>
-Date: Tue, 20 Jan 2015 11:29:16 -0600
-Message-ID: <CAL_JsqKoiaUmVhbQdnNveG=AAYh4-OHGS70L+LAgLLoKChUuYQ@mail.gmail.com>
-Subject: Re: [PATCH/RFC v10 03/19] DT: leds: Add led-sources property
-To: Jacek Anaszewski <j.anaszewski@samsung.com>
-Cc: linux-leds@vger.kernel.org,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
-        Pavel Machek <pavel@ucw.cz>, Bryan Wu <cooloney@gmail.com>,
-        Richard Purdie <rpurdie@rpsys.net>, sakari.ailus@iki.fi,
-        Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Liam Girdwood <lgirdwood@gmail.com>,
-        Mark Brown <broonie@kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+To: "Tan, Raymond" <raymond.tan@intel.com>, "Lee Jones" <lee.jones@linaro.org>,
+        "Samuel Ortiz" <sameo@linux.intel.com>
+From: Mike Turquette <mturquette@linaro.org>
+In-Reply-To: <F0CA9E243F4F424B836EAC30E41BF4CF5C7BCDCA@PGSMSX104.gar.corp.intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chen, Alvin" <alvin.chen@intel.com>,
+        "Shevchenko, Andriy" <andriy.shevchenko@intel.com>,
+        "Tan, Raymond" <raymond.tan@intel.com>
+References: <1418290710-5871-1-git-send-email-raymond.tan@intel.com>
+ <1418290710-5871-2-git-send-email-raymond.tan@intel.com>
+ <20141211222627.20398.48669@quantum>
+ <F0CA9E243F4F424B836EAC30E41BF4CF5C7BCDCA@PGSMSX104.gar.corp.intel.com>
+Message-ID: <20150120173002.22722.46885@quantum>
+User-Agent: alot/0.3.5
+Subject: RE: [PATCH v3 1/1] mfd: intel_quark_i2c_gpio: Add Intel Quark X1000 I2C-GPIO
+ MFD Driver
+Date: Tue, 20 Jan 2015 09:30:02 -0800
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 10:09 AM, Jacek Anaszewski
-<j.anaszewski@samsung.com> wrote:
-> On 01/16/2015 04:52 PM, Jacek Anaszewski wrote:
->>
->> On 01/16/2015 02:48 PM, Rob Herring wrote:
+Quoting Tan, Raymond (2014-12-21 18:33:42)
+> Hi Mike,
+> 
+> Thanks for your reply. I've answered the questions as below.
+> 
+> Warm Regards, 
+> 
+> Raymond Tan
+> 
+> > -----Original Message-----
+> > From: Mike Turquette [mailto:mturquette@linaro.org]
+> > Sent: Friday, December 12, 2014 6:26 AM
+> > To: Tan, Raymond; Lee Jones; Samuel Ortiz
+> > Cc: linux-kernel@vger.kernel.org; Chen, Alvin; Shevchenko, Andriy; Tan,
+> > Raymond
+> > Subject: Re: [PATCH v3 1/1] mfd: intel_quark_i2c_gpio: Add Intel Quark
+> > X1000 I2C-GPIO MFD Driver
+> > 
+> > Quoting Raymond Tan (2014-12-11 01:38:30)
+> > > In Quark X1000, there's a single PCI device that provides both an I2C
+> > > controller and a GPIO controller. This MFD driver will split the 2
+> > > devices for their respective drivers.
+> > >
+> > > This patch is based on Josef Ahmad's initial work for Quark enabling.
+> > >
+> > > Reviewed-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+> > > Signed-off-by: Weike Chen <alvin.chen@intel.com>
+> > > Signed-off-by: Raymond Tan <raymond.tan@intel.com>
+> > > ---
+> > >  drivers/mfd/Kconfig                |   12 ++
+> > >  drivers/mfd/Makefile               |    1 +
+> > >  drivers/mfd/intel_quark_i2c_gpio.c |  279
+> > > ++++++++++++++++++++++++++++++++++++
+> > >  3 files changed, 292 insertions(+)
+> > >  create mode 100644 drivers/mfd/intel_quark_i2c_gpio.c
+> > 
+> > <snip>
+> > 
+> > > +static int intel_quark_register_i2c_clk(struct intel_quark_mfd
+> > > +*quark_mfd) {
+> > > +       struct pci_dev *pdev = quark_mfd->pdev;
+> > > +       struct clk_lookup *i2c_clk_lookup;
+> > > +       struct clk *i2c_clk;
+> > > +       int retval;
+> > > +
+> > > +       i2c_clk_lookup = devm_kcalloc(
+> > > +               &pdev->dev, INTEL_QUARK_I2C_NCLK,
+> > > +               sizeof(*i2c_clk_lookup), GFP_KERNEL);
+> > > +
+> > > +       if (!i2c_clk_lookup)
+> > > +               return -ENOMEM;
+> > > +
+> > > +       i2c_clk_lookup[0].dev_id = INTEL_QUARK_I2C_CONTROLLER_CLK;
+> > > +
+> > > +       i2c_clk = clk_register_fixed_rate(
+> > > +               &pdev->dev, INTEL_QUARK_I2C_CONTROLLER_CLK, NULL,
+> > > +               CLK_IS_ROOT, INTEL_QUARK_I2C_CLK_HZ);
+> > > +
+> > > +       quark_mfd->i2c_clk_lookup = i2c_clk_lookup;
+> > > +       quark_mfd->i2c_clk = i2c_clk;
+> > > +
+> > > +       retval = clk_register_clkdevs(i2c_clk, i2c_clk_lookup,
+> > > +                                     INTEL_QUARK_I2C_NCLK);
+> > 
+> > Lee asked about this in V2, so I'll follow up here in V3. It is OK for a driver to
+> > use the clock provider api to register clocks with the clk framework if that
+> > device truly is the provider of that clock signal. A good example can be found
+> > here:
+> > 
+> > drivers/media/platform/omap3isp/isp.c
+> > 
+> > The OMAP3 ISP receives a clock signal as a input. Within the image signal
+> > processor IP block it also has some basic clock controls of it's own which it
+> > feeds to downstream IP blocks. As such it is both a clock consumer and a
+> > provider and this is a common pattern amongst SoC designs.
+> 
+> Thanks for the reference, however the mfd driver is purely a clk provider in this case.
+> 
+> > 
+> > So my question for this driver is if i2c_clk is provided by whatever the hell this
+> > mfd device is supposed to be, or if it's just a convenient place to call the code?
+> 
+> As you've noticed, this is a fixed clock which only consumed by the I2C controller. 
+> Following the structure of the designware i2c controller device driver, a clk is needed for it, 
+> and on this platform, it is a fixed clk. 
+> I'm putting the clk functions in this mfd driver is due to the fact that, this mfd driver
+> is splitting the function of the PCI device to 2 controllers downstream. 
+> 
+> > 
+> > Another concern is that fact that this is a fixed clock. For architectures that
+> > use device tree to desribe board topology (ARM, MIPS,
+> > PPC) it is common to simply put the fixed-rate clocks there and not directly
+> > into the drive code. This prevents having to hack a lot of conditionals into
+> > your driver when rev 2.0 of your hardware comes out with a faster fixed rate
+> > clock, but you still need to support 1.0 hardware users at the slower rate. I
+> > don't know if x86 has a similar way of describing board topology but it might
+> > something to look into.
+> 
+> I checked the kernel source for x86 arch, sadly there's no similar implementation of
+> fixed clk being developed/written on the architectures code. 
+> That being said, for this platform, we do have a separate platform board file for those 
+> onboard peripherals, do you think that it's better I put the clk function under the
+> board file instead? My reasoning behind is if I were to introduce clk in general to x86
+> in this way, it's effect will be on x86 unless I introduce further checking during
+> compilation / runtime. 
 
-[...]
+Thanks for the explanation. One final question, who consumes this clock?
 
->>> You may want to add something like led-output-cnt or led-driver-cnt in
->>> the parent so you know the max list size.
->>
->>
->> Why should we need this? The number of current outputs exposed by the
->> device is fixed and can be specified in a LED device bindings
->> documentation.
->>
->
-> OK. The led-output-cnt property should be put in each sub-node, as the
-> number of the current outputs each LED can be connected to is variable.
+The clk bits of the driver look good to me so please add my:
 
-Sorry, I meant this for the parent node meaning how many outputs the
-driver IC has. I did say maybe because you may always know this. It
-can make it easier to allocate memory for led-sources knowing the max
-size up front.
+Acked-by: Michael Turquette <mturquette@linaro.org>
 
-Rob
+Thanks,
+Mike
 
->
-> New version:
->
->  Optional properties for child nodes:
-> +led-sources-cnt : Number of device current outputs the LED is connected to.
-> +- led-sources : List of device current outputs the LED is connected to. The
-> +               outputs are identified by the numbers that must be defined
-> +               in the LED device binding documentation.
->  - label : The label for this LED.  If omitted, the label is
->    taken from the node name (excluding the unit address).
->
-> @@ -33,7 +47,9 @@ system-status {
->
->  camera-flash {
->         label = "Flash";
-> +       led-sources-cnt = <2>;
-> +       led-sources = <0>, <1>;
->         max-microamp = <50000>;
->         flash-max-microamp = <320000>;
->         flash-timeout-us = <500000>;
-> -}
-> +};
->
->
-> --
-> Best Regards,
-> Jacek Anaszewski
+> 
+> > 
+> > Regards,
+> > Mike
