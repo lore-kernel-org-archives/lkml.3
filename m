@@ -1,82 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752398AbbATSji (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 13:39:38 -0500
-Received: from zill.ext.symas.net ([69.43.206.106]:46709 "EHLO
-	zill.ext.symas.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751248AbbATSjg (ORCPT
-	<rfc822;Linux-Kernel@Vger.Kernel.ORG>);
-	Tue, 20 Jan 2015 13:39:36 -0500
-Message-ID: <54BEA0E0.9080807@symas.com>
-Date: Tue, 20 Jan 2015 18:39:28 +0000
-From: Howard Chu <hyc@symas.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:37.0) Gecko/20100101 Firefox/37.0 SeaMonkey/2.34a1
+	id S1752907AbbATSkW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 13:40:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56547 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752744AbbATSkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 13:40:21 -0500
+Message-ID: <54BEA0EE.10304@redhat.com>
+Date: Tue, 20 Jan 2015 13:39:42 -0500
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20131028 Thunderbird/17.0.10
 MIME-Version: 1.0
-To: Peter Hurley <peter@hurleysoftware.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Linux Kernel Mailing List <Linux-Kernel@vger.kernel.org>,
-        linux-serial@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>
-Subject: Re: [PATCH] n_tty: Remove LINEMODE support
-References: <1421616632-4077-1-git-send-email-peter@hurleysoftware.com> <54BC3771.7030204@symas.com> <54BC5EC7.1090202@hurleysoftware.com> <54BCFC94.1040605@symas.com> <54BD1B53.9030901@hurleysoftware.com> <54BD328F.9090208@symas.com> <54BD567C.8070200@hurleysoftware.com> <54BD5E54.3050909@symas.com> <54BE9840.8080808@hurleysoftware.com>
-In-Reply-To: <54BE9840.8080808@hurleysoftware.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Peter Zijlstra (Intel)" <peterz@infradead.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Fabian Frederick <fabf@skynet.be>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC/PATCH] init/main.c: Simplify initcall_blacklisted()
+References: <1421454312-30505-1-git-send-email-linux@rasmusvillemoes.dk> <20150119191924.GA19153@redhat.com> <87y4oyb6sc.fsf@rustcorp.com.au> <54BE32D2.90301@redhat.com> <20150120180514.GA23205@redhat.com>
+In-Reply-To: <20150120180514.GA23205@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Hurley wrote:
-> On 01/19/2015 02:43 PM, Howard Chu wrote:
->> The fact that EXTPROC can be manually unset is by design. Quoting from the original again:
+
+
+On 01/20/2015 01:05 PM, Oleg Nesterov wrote:
+> On 01/20, Prarit Bhargava wrote:
 >>
->>> stty.diff:
->>>      This file contains the changes needed for the stty(1) program
->>>      to report on the current status of the TS_EXTPROC bit.  It also
->>>      allows the user to turn on/off the TS_EXTPROC bit.  This is useful
->>>      because it allows the user to say "stty -extproc", and the
->>>      LINEMODE option will be automatically disabled, and saying "stty
->>>      extproc" will re-enable the LINEMODE option.
->
-> This option is not supported by gnu coreutils.
-
-OK. It's in *BSD and Minix. Looks like I never wrote a patch for 
-coreutils for this last time around.
->
-> So it's really back to the question of, does allowing EXTPROC for regular
-> ttys have _value_?
-
-Does preventing it have value? I like having the option of turning 
-linemode on and off in a session, for debugging purposes if nothing else.
->
->
->>>>>>> 6. EXTPROC still does some input processing on the server. For example,
->>>>>>>        7-bit mode (ISTRIP), tolower mode (IUCLC) and processing while
->>>>>>>        closing; if input processing is being done on the local/client side,
->>>>>>>        why the extra work here?
->>>>>>
->>>>>> That's defensive, on the assumption that something else might break if e.g. the tty expected only 7-bit input but 8-bit characters were sent to it.
->>>>>
->>>>> Ok, is that because RFC 1116 doesn't specify ISTRIP and IUCLC handling so
->>>>> the server can't be sure the client did it? If so, that should be documented
->>>>> so that refactors don't remove that handling.
+>> On 01/19/2015 08:05 PM, Rusty Russell wrote:
+>>> Oleg Nesterov <oleg@redhat.com> writes:
+>>>>
+>>>> If we want to optimize this... I am wondering if we can change
+>>>> initcall_blacklist()
+>>>>
+>>>> 	-	entry->buf = alloc_bootmem(strlen(str_entry) + 1);
+>>>> 	+	ebtry->fn = kallsyms_lookup_name(str_entry);
+>>>>
+>>>> and then change initcall_blacklisted() to just compare the pointers.
 >>>
->>> Could you get back to me about this, as well?
+>>> That would make far, far more sense.  It would fail for modules of
+>>> course, but that might be OK.  Prarit, this was your code; does it
+>>> matter?
 >>
->> The telnet protocol (RFC854) defines a Network Virtual Terminal (NVT) as using 7-bit USASCII in an 8-bit field. As such, it expects the client to be able to generate both upper and lower case itself, so there's no analogue to IUCLC, and there would be no reason to use ISTRIP.
->>
->> RFC5198 updates the protocols to use UTF8. So again, it assumes full octets are being transmitted.
->>
->> Perhaps we can drop these special cases from the driver.
->
-> I don't mind leaving it in, but without comments it looks like a
-> refactoring error.
+>> It does actually matter to me.  I've been using it to blacklist modules at boot
+>> as well ... and it works really well :)  So I'm okay with the original patch but
+>> not the second suggested change.
+> 
+> Yes, I didn't know/realize that initcall_blacklist paramater can be
+> also used to disable the modules, thanks for correcting me.
 
-I'm working up revisions for the patch.
+I didn't have that in mind originally, but I've been using it to debug initramfs
+module loading.  It has worked quite well.
 
--- 
-   -- Howard Chu
-   CTO, Symas Corp.           http://www.symas.com
-   Director, Highland Sun     http://highlandsun.com/hyc/
-   Chief Architect, OpenLDAP  http://www.openldap.org/project/
+> 
+> But I'd say that initcall_blacklisted(mod->init) looks a bit strange,
+> I mean it would be probably better to use mod->name in this case, not
+> the "internal" name of this likely static function.
+
+:)  I've been thinking about exactly this too.  I just haven't had any time to
+do it.
+
+> 
+> Perhaps even another kernel parameter makes sense for this, I dunno..
+> From Documentation/kernel-parameters.txt:
+> 
+> 	initcall_blacklist=  [KNL] Do not execute a comma-separated list of
+> 			initcall functions.  Useful for debugging built-in
+> 			modules and initcalls.
+> 
+> note that this only mentions built-in modules.
+
+I can fix that up too.
+
+P.
+
+> 
+> Nevermind, I was wrong anyway. Thanks!
+> 
+> Oleg.
+> 
