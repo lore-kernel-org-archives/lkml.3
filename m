@@ -1,156 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752206AbbATCRZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 21:17:25 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:49686 "EHLO
+	id S1752448AbbATCRs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 21:17:48 -0500
+Received: from mail7.hitachi.co.jp ([133.145.228.42]:49793 "EHLO
 	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751465AbbATCRY (ORCPT
+	with ESMTP id S1752356AbbATCRr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 21:17:24 -0500
-Message-ID: <54BDBAAC.7080003@hitachi.com>
-Date: Tue, 20 Jan 2015 11:17:16 +0900
+	Mon, 19 Jan 2015 21:17:47 -0500
+Message-ID: <54BDBAC4.5040003@hitachi.com>
+Date: Tue, 20 Jan 2015 11:17:40 +0900
 From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 Organization: Hitachi, Ltd., Japan
 User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: module: fix module_refcount() return when running in a module
- exit routine
-References: <1421600146.2080.8.camel@HansenPartnership.com> <54BC93C3.7010808@hitachi.com> <878ugzco8c.fsf@rustcorp.com.au> <1421683701.2080.25.camel@HansenPartnership.com> <871tmqcmau.fsf@rustcorp.com.au>
-In-Reply-To: <871tmqcmau.fsf@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: "Jon Medhurst (Tixy)" <tixy@linaro.org>
+Cc: Wang Nan <wangnan0@huawei.com>, linux@arm.linux.org.uk, lizefan@huawei.com,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: Re: [PATCH v19 00/11] ARM: kprobes: OPTPROBES and other improvements.
+References: <1420457284-76923-1-git-send-email-wangnan0@huawei.com> <1420638014.4044.52.camel@linaro.org>
+In-Reply-To: <1420638014.4044.52.camel@linaro.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2015/01/20 9:45), Rusty Russell wrote:
-> James Bottomley <James.Bottomley@HansenPartnership.com> writes:
->> On Mon, 2015-01-19 at 16:21 +1030, Rusty Russell wrote:
->>> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> writes:
->>>> (2015/01/19 1:55), James Bottomley wrote:
->>>>> From: James Bottomley <JBottomley@Parallels.com>
->>>>>
->>>>> After e513cc1 module: Remove stop_machine from module unloading,
->>>>> module_refcount() is returning (unsigned long)-1 when called from within
->>>>> a routine that runs in module_exit.  This is confusing the scsi device
->>>>> put code which is coded to detect a module_refcount() of zero for
->>>>> running within a module exit routine and not try to do another
->>>>> module_put.  The fix is to restore the original behaviour of
->>>>> module_refcount() and return zero if we're running inside an exit
->>>>> routine.
->>>>>
->>>>> Fixes: e513cc1c07e2ab93a4514eec9833e031df3e30bb
->>>>> Reported-by: Bart Van Assche <bvanassche@acm.org>
->>>>> Signed-off-by: James Bottomley <JBottomley@Parallels.com>
->>>>>
->>>>
->>>> Yes, this should be fixed as you said, since it must return "unsigned long" value.
->>>
->>> But there are only three non-module callers:
->>>
->>> drivers/scsi/scsi.c:1012:	if (module && module_refcount(module) != 0)
->>> drivers/staging/lustre/lustre/obdclass/lu_object.c:1359:			LINVRNT(module_refcount(key->lct_owner) > 0);
->>> include/linux/module.h:447:unsigned long module_refcount(struct module *mod);
->>> kernel/debug/kdb/kdb_main.c:2026:		kdb_printf("%4ld ", module_refcount(mod));
->>> kernel/module.c:775:unsigned long module_refcount(struct module *mod)
->>> kernel/module.c:779:EXPORT_SYMBOL(module_refcount);
->>> kernel/module.c:859:	seq_printf(m, " %lu ", module_refcount(mod));
->>> kernel/module.c:911:	return sprintf(buffer, "%lu\n", module_refcount(mk->mod));
->>>
->>> The first one I think should be eliminated, and the second one is simply
->>> an assertion before calling module_put() (which should probably be
->>> eliminated).  The others are just printing information.
->>
->> If you really want to insist on module_reference() returning -1 when the
->> module is in it's exit phase, OK, but in that case, I think it should
->> return a signed value, not an unsigned one.
+(2015/01/07 22:40), Jon Medhurst (Tixy) wrote:
+> I think that the patches up to 09/11 inclusive have been though more
+> that enough review and revisions to think about getting them merged,
+> there doesn't seem much point in continuously resending them whilst new
+> features are built on top of them.
 > 
-> Sure; I just didn't want to paper over the problem here.  And I'm not
-> sure we want to lose information, eg. in kgdb we're presumably looking
-> at it because something went wrong...
-> 
-> Thanks,
-> Rusty.
-> 
-> Subject: module: make module_refcount() a signed integer.
-> 
-> James Bottomley points out that it will be -1 during unload.  It's
-> only used for diagnostics, so let's not hide that as it could be a
-> clue as to what's gone wrong.
+> Masami Hiramatsu, are you happy for your patch to generic+X86 kprobes
+> code [1] to go through the ARM maintainers tree, assuming Russell is
+> also happy with that. Or should that go via a different route?
 
-Thanks!
-This looks good to me too :)
+Yes, I'm OK to go it through the ARM maintainers tree :)
 
-Reviewed-by: Masami Hiramatsu <maasami.hiramatsu.pt@hitachi.com>
+Thank you,
 
 > 
-> Cc: Jason Wessel <jason.wessel@windriver.com>
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> [1] http://lists.infradead.org/pipermail/linux-arm-kernel/2015-January/313218.html
 > 
-> diff --git a/include/linux/module.h b/include/linux/module.h
-> index ebfb0e153c6a..b653d7c0a05a 100644
-> --- a/include/linux/module.h
-> +++ b/include/linux/module.h
-> @@ -444,7 +444,7 @@ extern void __module_put_and_exit(struct module *mod, long code)
->  #define module_put_and_exit(code) __module_put_and_exit(THIS_MODULE, code)
->  
->  #ifdef CONFIG_MODULE_UNLOAD
-> -unsigned long module_refcount(struct module *mod);
-> +int module_refcount(struct module *mod);
->  void __symbol_put(const char *symbol);
->  #define symbol_put(x) __symbol_put(VMLINUX_SYMBOL_STR(x))
->  void symbol_put_addr(void *addr);
-> diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-> index f191bddf64b8..7b40c5f07dce 100644
-> --- a/kernel/debug/kdb/kdb_main.c
-> +++ b/kernel/debug/kdb/kdb_main.c
-> @@ -2023,7 +2023,7 @@ static int kdb_lsmod(int argc, const char **argv)
->  		kdb_printf("%-20s%8u  0x%p ", mod->name,
->  			   mod->core_size, (void *)mod);
->  #ifdef CONFIG_MODULE_UNLOAD
-> -		kdb_printf("%4ld ", module_refcount(mod));
-> +		kdb_printf("%4d ", module_refcount(mod));
->  #endif
->  		if (mod->state == MODULE_STATE_GOING)
->  			kdb_printf(" (Unloading)");
-> diff --git a/kernel/module.c b/kernel/module.c
-> index 3965511ae133..2387c98347c1 100644
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -772,9 +772,9 @@ static int try_stop_module(struct module *mod, int flags, int *forced)
->  	return 0;
->  }
->  
-> -unsigned long module_refcount(struct module *mod)
-> +int module_refcount(struct module *mod)
->  {
-> -	return (unsigned long)atomic_read(&mod->refcnt) - MODULE_REF_BASE;
-> +	return atomic_read(&mod->refcnt) - MODULE_REF_BASE;
->  }
->  EXPORT_SYMBOL(module_refcount);
->  
-> @@ -856,7 +856,7 @@ static inline void print_unload_info(struct seq_file *m, struct module *mod)
->  	struct module_use *use;
->  	int printed_something = 0;
->  
-> -	seq_printf(m, " %lu ", module_refcount(mod));
-> +	seq_printf(m, " %i ", module_refcount(mod));
->  
->  	/*
->  	 * Always include a trailing , so userspace can differentiate
-> @@ -908,7 +908,7 @@ EXPORT_SYMBOL_GPL(symbol_put_addr);
->  static ssize_t show_refcnt(struct module_attribute *mattr,
->  			   struct module_kobject *mk, char *buffer)
->  {
-> -	return sprintf(buffer, "%lu\n", module_refcount(mk->mod));
-> +	return sprintf(buffer, "%i\n", module_refcount(mk->mod));
->  }
->  
->  static struct module_attribute modinfo_refcnt =
+> Wang Nan, assuming everyone is happy, can you put together a branch in a
+> git repository for those patches, or I'm more than happy to do that if
+> you like. Then I can give the series a final test and we can send a pull
+> request to Russell King.
+> 
+> Thanks all
 > 
 
 
