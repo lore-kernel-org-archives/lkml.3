@@ -1,83 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751995AbbATWVH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 17:21:07 -0500
-Received: from mail-bl2on0130.outbound.protection.outlook.com ([65.55.169.130]:60889
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751037AbbATWVF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 17:21:05 -0500
-From: Tom Huynh <tom.huynh@freescale.com>
-To: <benh@kernel.crashing.org>, <paulus@samba.org>, <mpe@ellerman.id.au>,
-        <cl@linux.com>, <tj@kernel.org>
-CC: <kim.phillips@freescale.com>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>, Tom Huynh <tom.huynh@freescale.com>
-Subject: [PATCH] powerpc/perf: fix fsl_emb_pmu_start to write correct pmc value
-Date: Tue, 20 Jan 2015 16:19:50 -0600
-Message-ID: <1421792390-2400-1-git-send-email-tom.huynh@freescale.com>
-X-Mailer: git-send-email 1.9.1
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=tom.huynh@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(199003)(189002)(50226001)(47776003)(2201001)(64706001)(86362001)(46102003)(48376002)(6806004)(19580405001)(50986999)(50466002)(97736003)(19580395003)(77156002)(87936001)(77096005)(68736005)(229853001)(57986006)(36756003)(105606002)(104016003)(106466001)(76506005)(62966003)(92566002)(85426001)(33646002);DIR:OUT;SFP:1102;SCL:1;SRVR:CY1PR0301MB0748;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+	id S1752134AbbATWWk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 17:22:40 -0500
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:14027 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751543AbbATWWi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 17:22:38 -0500
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArQJAGfUvlR5LLLk/2dsb2JhbABbgwaBKoI2sTMBAQEDBpgyBAICgShEAQEBAQF9hAwBAQEDAScTHCMFCwgDDgoJJQ8FJQMhE4gkB9EqAQEBAQEFAQEBAR4YhW2JdAeDFoETBZdvkisihAIqMYJDAQEB
+Date: Wed, 21 Jan 2015 09:22:22 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Namjae Jeon <namjae.jeon@samsung.com>, "'Theodore Ts'o'" <tytso@mit.edu>,
+        "'Alexander Viro'" <viro@zeniv.linux.org.uk>,
+        "'Brian Foster'" <bfoster@redhat.com>,
+        "'Dmitry Monakhov'" <dmonakhov@openvz.org>,
+        "=?utf-8?B?J0x1a8OhxaE=?= Czerner'" <lczerner@redhat.com>,
+        linux-fsdevel@vger.kernel.org,
+        "'Ashish Sangwan'" <a.sangwan@samsung.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] fs: file freeze support
+Message-ID: <20150120222222.GF16552@dastard>
+References: <005c01d030b7$90ab2cb0$b2018610$@samsung.com>
+ <20150118233334.GB16552@dastard>
+ <005601d033e8$d0b338a0$7219a9e0$@samsung.com>
+ <20150120112137.GC15756@quack.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-DmarcAction-Test: None
-X-Microsoft-Antispam: UriScan:;UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:CY1PR0301MB0748;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:CY1PR0301MB0748;
-X-Forefront-PRVS: 0462918D61
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0748;
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 20 Jan 2015 22:21:00.4895
- (UTC)
-X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: CY1PR0301MB0748
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:CY1PR0301MB0713;
-X-OriginatorOrg: freescale.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150120112137.GC15756@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PMCs on PowerPC increases towards 0x80000000 and triggers an overflow
-interrupt when the msb is set to collect a sample. Therefore, to setup
-for the next sample collection, pmu_start should set the pmc value to
-0x80000000 - left instead of left which incorrectly delays the next
-overflow interrupt. Same as commit 9a45a9407c69 ("powerpc/perf:
-power_pmu_start restores incorrect values, breaking frequency events")
-for book3s.
+On Tue, Jan 20, 2015 at 12:21:37PM +0100, Jan Kara wrote:
+> On Mon 19-01-15 22:07:01, Namjae Jeon wrote:
+> > > > When this state is set, any process which tries to modify the file's address
+> > > > space, either by pagefault mmap writes or using write(2), will block until
+> > > > the this state is cleared. I_WRITE_FREEZED is set by calling FS_IOC_FWFREEZE
+> > > > ioctl and clear by FS_IOC_FWTHAW ioctl.
+....
+> > I checked the routines where checks for I_FROZEN would be required.
+> > Most of them are Ok but do_unlinkat() confuses me a little.
+> > vfs_unlink is called under parent inode's i_mutex, so we cannot sleep
+> > keeping parent's i_mutex held.
+> > i.e while freezing file, all file in directory are blocked by parent
+> > i_mutex. Is it ok to release parnets->mutex before checking for I_FROZEN
+> > or there is some idea?
+>   So I believe Dave thought that you'd just reuse places we currently use
+> to call sb_start_write() / mnt_want_write(). You'd probably have to come up
+> with a function like path_want_write() (takes struct path as an argument)
+> and which will call mnt_want_write(), sb_start_write(), and do appropriate
+> inode freeze handling. Then you replace all calls to mnt_want_write() with
+> calls to path_want_write()... Possibly you can also provide a trivial
+> wrapper for path_want_write() which takes struct file instead.
 
-Signed-off-by: Tom Huynh <tom.huynh@freescale.com>
----
- arch/powerpc/perf/core-fsl-emb.c | 6 +++++-
- 1 file changed, 5 insertions(+), 1 deletion(-)
+Yes, that's pretty much what I as thinking - a single function
+that does all the freeze checking/blocking for a given operation,
+regardless of the type of freeze we block on. That way all the
+nesting semantics are located in one set of code, and it's easy to
+verify correct.
 
-diff --git a/arch/powerpc/perf/core-fsl-emb.c b/arch/powerpc/perf/core-fsl-emb.c
-index 4acaea0..e9fe904 100644
---- a/arch/powerpc/perf/core-fsl-emb.c
-+++ b/arch/powerpc/perf/core-fsl-emb.c
-@@ -389,6 +389,7 @@ static void fsl_emb_pmu_del(struct perf_event *event, int flags)
- static void fsl_emb_pmu_start(struct perf_event *event, int ef_flags)
- {
- 	unsigned long flags;
-+	unsigned long val;
- 	s64 left;
- 
- 	if (event->hw.idx < 0 || !event->hw.sample_period)
-@@ -405,7 +406,10 @@ static void fsl_emb_pmu_start(struct perf_event *event, int ef_flags)
- 
- 	event->hw.state = 0;
- 	left = local64_read(&event->hw.period_left);
--	write_pmc(event->hw.idx, left);
-+	val = 0;
-+	if (left < 0x80000000L)
-+		val = 0x80000000L - left;
-+	write_pmc(event->hw.idx, val);
- 
- 	perf_event_update_userpage(event);
- 	perf_pmu_enable(event->pmu);
+> This should also deal with the locking problems you describe above as
+> mnt_want_write() is always called before taking i_mutex.
+
+*nod*
+
+Cheers,
+
+Dave.
 -- 
-1.9.1
-
+Dave Chinner
+david@fromorbit.com
