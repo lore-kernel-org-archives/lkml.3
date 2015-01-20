@@ -1,67 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755029AbbATLVy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 06:21:54 -0500
-Received: from www.linutronix.de ([62.245.132.108]:48037 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755003AbbATLVv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 06:21:51 -0500
-Date: Tue, 20 Jan 2015 12:21:24 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-cc: peterz@infradead.org, linuxppc-dev@lists.ozlabs.org, mingo@kernel.org,
+	id S1755001AbbATLVl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 06:21:41 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:47215 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753157AbbATLVk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 06:21:40 -0500
+Date: Tue, 20 Jan 2015 12:21:37 +0100
+From: Jan Kara <jack@suse.cz>
+To: Namjae Jeon <namjae.jeon@samsung.com>
+Cc: "'Dave Chinner'" <david@fromorbit.com>, "'Theodore Ts'o'" <tytso@mit.edu>,
+        "'Alexander Viro'" <viro@zeniv.linux.org.uk>,
+        "'Brian Foster'" <bfoster@redhat.com>,
+        "'Dmitry Monakhov'" <dmonakhov@openvz.org>,
+        "=?utf-8?B?J0x1a8OhxaE=?= Czerner'" <lczerner@redhat.com>,
+        linux-fsdevel@vger.kernel.org,
+        "'Ashish Sangwan'" <a.sangwan@samsung.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] idle/tick-broadcast: Exit cpu idle poll loop when cleared
- from tick_broadcast_force_mask
-In-Reply-To: <20150119052754.20256.54721.stgit@preeti.in.ibm.com>
-Message-ID: <alpine.DEB.2.11.1501201216420.5526@nanos>
-References: <20150119052754.20256.54721.stgit@preeti.in.ibm.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+Subject: Re: [RFC PATCH] fs: file freeze support
+Message-ID: <20150120112137.GC15756@quack.suse.cz>
+References: <005c01d030b7$90ab2cb0$b2018610$@samsung.com>
+ <20150118233334.GB16552@dastard>
+ <005601d033e8$d0b338a0$7219a9e0$@samsung.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <005601d033e8$d0b338a0$7219a9e0$@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Jan 2015, Preeti U Murthy wrote:
-> An idle cpu enters cpu_idle_poll() if it is set in the tick_broadcast_force_mask.
-> This is so that it does not incur the overhead of entering idle states when it is expected
-> to be woken up anytime then through a broadcast IPI. The condition that forces an exit out
-> of the idle polling is the check on setting of the TIF_NEED_RESCHED flag for the idle thread.
+On Mon 19-01-15 22:07:01, Namjae Jeon wrote:
+> > > When this state is set, any process which tries to modify the file's address
+> > > space, either by pagefault mmap writes or using write(2), will block until
+> > > the this state is cleared. I_WRITE_FREEZED is set by calling FS_IOC_FWFREEZE
+> > > ioctl and clear by FS_IOC_FWTHAW ioctl.
+> > >
+> > > File write freeze functionality, when used in conjunction with
+> > > inode's immutable flag can be used for creating truly stable file snapshots
+> > > wherein write freeze will prevent any modification to the file from already
+> > > open file descriptors and immutable flag will prevent any new modification
+> > > to the file. One of the intended uses for stable file snapshots would be in
+> > > the defragmentation applications which defrags single file.
+> > 
+> > I don't quite understand why the full filesystem freeze is
+> > necessary? The thaw occurs immediately after I_WRITE_FREEZED is set,
+> We started by looking at fs freeze for file freeze implementation,
+> So got biased for using fs freeze or similar approach.
+> Thanks for suggesting a better way.
 > 
-> When the broadcast IPI does arrive, it is not guarenteed that the handler sets the
-> TIF_NEED_RESCHED flag. Hence although the cpu is cleared in the tick_broadcast_force_mask,
-> it continues to loop in cpu_idle_poll unnecessarily wasting power. Hence exit the idle
-> poll loop if the tick_broadcast_force_mask gets cleared and enter idle states.
+> > which means there's nothing that prevent the file from being
+> > truncated or otherwise modified by fallocate, etc while it is
+> > frozen....
+> Right, So, After that, we had also thought of setting immutable
+> flag of inode. Immutable flag + I_WRITE_FROZEN => truly frozen file.
 > 
-> Of course if the cpu has entered cpu_idle_poll() on being asked to poll explicitly,
-> it continues to poll till it is asked to reschedule.
+> > 
+> > AFAICT, fsync will bring the file down to a consistent state and
+> > we've already got freeze hooks for all inode modification
+> > operations. We also have IO barriers for truncate operations so that
+> > we can wait for all outstanding IO to complete, so I would have
+> > thought this covers all bases for an inode freeze. i.e.:
+> Right.
 > 
-> Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-> ---
-> 
->  kernel/sched/idle.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
-> index c47fce7..aaf1c1d 100644
-> --- a/kernel/sched/idle.c
-> +++ b/kernel/sched/idle.c
-> @@ -47,7 +47,8 @@ static inline int cpu_idle_poll(void)
->  	rcu_idle_enter();
->  	trace_cpu_idle_rcuidle(0, smp_processor_id());
->  	local_irq_enable();
-> -	while (!tif_need_resched())
-> +	while (!tif_need_resched() &&
-> +		(cpu_idle_force_poll || tick_check_broadcast_expired()))
+> > 
+> > i_mutex -> I_FROZEN -> fsync -> inode_dio_wait
+> > 
+> > Should give us a clean inode where there are not ongoing operations
+> > by the time that inode_dio_wait() completes. All new modification
+> > operations need to check I_FROZEN in addition to the superblock
+> > freeze checks...
+> I checked the routines where checks for I_FROZEN would be required.
+> Most of them are Ok but do_unlinkat() confuses me a little.
+> vfs_unlink is called under parent inode's i_mutex, so we cannot sleep
+> keeping parent's i_mutex held.
+> i.e while freezing file, all file in directory are blocked by parent
+> i_mutex. Is it ok to release parnets->mutex before checking for I_FROZEN
+> or there is some idea?
+  So I believe Dave thought that you'd just reuse places we currently use
+to call sb_start_write() / mnt_want_write(). You'd probably have to come up
+with a function like path_want_write() (takes struct path as an argument)
+and which will call mnt_want_write(), sb_start_write(), and do appropriate
+inode freeze handling. Then you replace all calls to mnt_want_write() with
+calls to path_want_write()... Possibly you can also provide a trivial
+wrapper for path_want_write() which takes struct file instead.
 
-You explain the tick_check_broadcast_expired() bit, but what about the
-cpu_idle_force_poll part?
+This should also deal with the locking problems you describe above as
+mnt_want_write() is always called before taking i_mutex.
 
-Thanks,
-
-	tglx
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
