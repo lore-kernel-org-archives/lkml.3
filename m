@@ -1,90 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754525AbbATQeT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 11:34:19 -0500
-Received: from mail-ig0-f177.google.com ([209.85.213.177]:46774 "EHLO
-	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754448AbbATQeQ (ORCPT
+	id S1755450AbbATQrD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 11:47:03 -0500
+Received: from mail1.bemta14.messagelabs.com ([193.109.254.119]:22058 "EHLO
+	mail1.bemta14.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754970AbbATQmJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 11:34:16 -0500
-Date: Tue, 20 Jan 2015 16:34:10 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Cc: Olof Johansson <olof@lixom.net>, Doug Anderson <dianders@chromium.org>,
-        Bill Richardson <wfrichar@chromium.org>, Simon Glass <sjg@google.com>,
-        Gwendal Grignou <gwendal@google.com>, Jonathan Corbet <corbet@lwn.net>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND v2 3/7] mfd: cros_ec: Add cros_ec_lpc driver for
- x86 devices
-Message-ID: <20150120163410.GC30656@x1>
-References: <1420205572-2640-1-git-send-email-javier.martinez@collabora.co.uk>
- <1420205572-2640-4-git-send-email-javier.martinez@collabora.co.uk>
- <20150120081104.GT21886@x1>
- <54BE7B08.1010900@collabora.co.uk>
+	Tue, 20 Jan 2015 11:42:09 -0500
+X-Greylist: delayed 396 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Jan 2015 11:42:08 EST
+X-Env-Sender: stwiss.opensource@diasemi.com
+X-Msg-Ref: server-10.tower-193.messagelabs.com!1421771728!23374845!1
+X-Originating-IP: [94.185.165.51]
+X-StarScan-Received: 
+X-StarScan-Version: 6.12.5; banners=-,-,-
+X-VirusChecked: Checked
+From: "Opensource [Steve Twiss]" <stwiss.opensource@diasemi.com>
+To: Lee Jones <lee.jones@linaro.org>
+CC: Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
+        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>,
+        DT <devicetree@vger.kernel.org>,
+        David Dajun Chen <david.chen@diasemi.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        LKML <linux-kernel@vger.kernel.org>, Mark Brown <broonie@linaro.org>,
+        Philipp Zabel <p.zabel@pengutronix.de>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Support Opensource <Support.Opensource@diasemi.com>
+Subject: RE: [PATCH V3 2/2] devicetree: Add bindings for DA9063
+Thread-Topic: [PATCH V3 2/2] devicetree: Add bindings for DA9063
+Thread-Index: AQHQNLl14LxvOA77vEqNWosHE6/EUJzJKSkAgAAJtmA=
+Date: Tue, 20 Jan 2015 16:35:27 +0000
+Message-ID: <6ED8E3B22081A4459DAC7699F3695FB7D0B52E11@SW-EX-MBX02.diasemi.com>
+References: <cover.1421762065.git.stwiss.opensource@diasemi.com>
+ <99c7b7fb380070e5a2f7f4e9f333e8a2b12b591a.1421762065.git.stwiss.opensource@diasemi.com>
+ <20150120155400.GI13701@x1>
+In-Reply-To: <20150120155400.GI13701@x1>
+Accept-Language: en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.20.26.77]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <54BE7B08.1010900@collabora.co.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0KGlB42013876
 
-On Tue, 20 Jan 2015, Javier Martinez Canillas wrote:
+On 20 January 2015 15:54 Lee Jones wrote:
 
-> Hello Lee,
-> 
-> On 01/20/2015 09:11 AM, Lee Jones wrote:
-> > On Fri, 02 Jan 2015, Javier Martinez Canillas wrote:
-> > 
-> >> From: Bill Richardson <wfrichar@chromium.org>
-> >> 
-> >> This adds the LPC interface to the Chrome OS EC. Like the
-> >> I2C and SPI drivers, this allows userspace access to the EC.
-> > 
-> > I'm fairly certain that this is _not_ an MFD device.  Please locate it
-> > to the proper subsystem (input?).
-> > 
-> 
-> Sorry, it wasn't my intention to use the mfd subsystem as a place to dump
-> random drivers. Is that I still find hard to understand what is the line
-> between what falls under mfd and what doesn't.
-> 
-> For example, I see that mfd drivers are for devices which have multiple
-> functions and the mfd driver is the one that spawns the platform devices
-> and provide an interface to access the I/O registers used by the different
-> platform drivers of the sub-devices.
-> 
-> So, the Embedded Controller driver (drivers/mfd/cros_ec.c) falls into that
-> category and in fact has been in the mfd driver for a long time. Now, if
-> an mfd device support different type of buses (e.g: i2c, spi, etc) I see
-> that both the core driver and the driver for the transport method are
-> in the drivers/mfd directory. As an example:
-> 
-> drivers/mfd/arizona-{core,i2c,spi}.c
-> drivers/mfd/da9052-{core,i2c,spi}.c
-> drivers/mfd/mc13xxx-{core,i2c,spi}.c
-> drivers/mfd/tps65912-{core,i2c,spi}.c
-> drivers/mfd/wm831x-{core,i2c,spi,otp}.c
-> 
-> In the cros_ec case, we already have drivers/mfd/cros_ec_{i2c,spi}.c so
-> since the Low Pin Count is another transport method I thought that this
-> driver belonged to the drivers/mfd directory.
-> 
-> Now, all those drivers may be wrong and the buses don't belong to the mfd
-> subsystem but then I think we need to document that since it seems that is
-> the correct way to do it just by looking at the other drivers.
+[...]
 
-I don't think the drivers you mentioned above do anything practical.
-For instance, they are not SPI/IC2/etc drivers.  They should only
-offer some abstraction layers which are used to communicate with the
-device.  The driver you are submitting looks a lot more like a device
-driver, which should live somewhere else.  Don't ask me where though,
-I'm not even sure what a Low Pin Controller does.
+> >  Documentation/devicetree/bindings/mfd/da9063.txt | 93
+> ++++++++++++++++++++++++
+> >  1 file changed, 93 insertions(+)
+> >  create mode 100644 Documentation/devicetree/bindings/mfd/da9063.txt
+> 
+> I already Acked this?  Any reason that wasn't carried forward to this
+> submission?  Has anything changed?
+> 
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org â”‚ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Yes, I had to alter this bindings document because of the compatible change ...
+See below:
+
+> > new file mode 100644
+> > index 0000000..42c6fa6
+> > --- /dev/null
+> > +++ b/Documentation/devicetree/bindings/mfd/da9063.txt
+> > @@ -0,0 +1,93 @@
+> > +* Dialog DA9063 Power Management Integrated Circuit (PMIC)
+> > +
+> > +DA9093 consists of a large and varied group of sub-devices (I2C Only):
+> > +
+> > +Device                   Supply Names    Description
+> > +------                   ------------    -----------
+> > +da9063-regulator        :               : LDOs & BUCKs
+> > +da9063-rtc              :               : Real-Time Clock
+> > +da9063-watchdog         :               : Watchdog
+> > +
+> > +======
+> > +
+> > +Required properties:
+> > +
+> > +- compatible : Should be "dlg,da9063"
+
+The line above used to say "dlg,da9063-ad", "dlg,da9063-bb", etc.
+Now it just says "dlg,da9063"
+
+[...]
+
+> > +
+> > +Example:
+> > +
+> > +	pmic0: da9063@58 {
+> > +		compatible = "dlg,da9063"
+
+And I also change a  line in the example for the same reason.
+Sorry for the confusion.
+
+Regards,
+Steve
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
