@@ -1,87 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753143AbbATTzv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 14:55:51 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:38829 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752471AbbATTzt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 14:55:49 -0500
-X-Sasl-enc: HhlgoVxo/uk/lJ3vfqi0v3bVmccQrkSrBz1Ew8/lv9n5 1421783748
-From: Jon Bernard <jbernard@tuxion.com>
-To: gregkh@linuxfoundation.org
-Cc: oleg.drokin@intel.com, andreas.dilger@intel.com, HPDD-discuss@ml01.01.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Jon Bernard <jbernard@tuxion.com>
-Subject: [PATCH] staging: lustre: ptlrpc: fix lproc_ptlrpc static declarations
-Date: Tue, 20 Jan 2015 14:55:28 -0500
-Message-Id: <1421783728-14470-1-git-send-email-jbernard@tuxion.com>
-X-Mailer: git-send-email 1.9.1
+	id S1753317AbbATUVV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 15:21:21 -0500
+Received: from mail-bn1bon0147.outbound.protection.outlook.com ([157.56.111.147]:19520
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751152AbbATUVT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 15:21:19 -0500
+X-Greylist: delayed 838 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Jan 2015 15:21:19 EST
+Date: Tue, 20 Jan 2015 14:01:42 -0600
+From: Kim Phillips <kim.phillips@freescale.com>
+To: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
+        <kernel-janitors@vger.kernel.org>
+Subject: [PATCH 1/2] mm/slub: fix typo
+Message-ID: <20150120140142.cd2e32d83d66459562bd1717@freescale.com>
+Organization: Freescale Semiconductor, Inc.
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Kim.Phillips@freescale.com; 
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(199003)(189002)(106466001)(46102003)(105606002)(97736003)(229853001)(36756003)(50986999)(46406003)(19580405001)(62966003)(50226001)(33646002)(19580395003)(6806004)(23726002)(50466002)(104016003)(100306002)(47776003)(85426001)(87936001)(92566002)(86362001)(64706001)(77096005)(77156002)(68736005);DIR:OUT;SFP:1102;SCL:1;SRVR:BL2PR03MB322;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-DmarcAction-Test: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:BL2PR03MB322;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BL2PR03MB322;
+X-Forefront-PRVS: 0462918D61
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BL2PR03MB322;
+X-OriginatorOrg: freescale.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 20 Jan 2015 20:07:07.9015
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BL2PR03MB322
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the following sparse warnings:
 
-drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c:51:3:warning:
- symbol 'll_rpc_opcode_table' was not declared. Should it be static?
-drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c:142:3: warning:
- symbol 'll_eopcode_table' was not declared. Should it be static?
-drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c:178:12: warning:
- symbol 'll_eopcode2str' was not declared. Should it be static?
-drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c:731:1: warning:
- symbol 'ptlrpc_lprocfs_svc_req_history_seek' was not declared. Should it be static?
-
-Signed-off-by: Jon Bernard <jbernard@tuxion.com>
+Signed-off-by: Kim Phillips <kim.phillips@freescale.com>
 ---
- drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c | 9 +++++----
- 1 file changed, 5 insertions(+), 4 deletions(-)
+ mm/slub.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c b/drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c
-index 90448e9..0e2071b 100644
---- a/drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c
-+++ b/drivers/staging/lustre/lustre/ptlrpc/lproc_ptlrpc.c
-@@ -45,7 +45,7 @@
- #include "ptlrpc_internal.h"
+diff --git a/mm/slub.c b/mm/slub.c
+index fe376fe..a64cc1b 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -2512,7 +2512,7 @@ EXPORT_SYMBOL(kmem_cache_alloc_node_trace);
+ #endif
  
- 
--struct ll_rpc_opcode {
-+static struct ll_rpc_opcode {
- 	__u32       opcode;
- 	const char *opname;
- } ll_rpc_opcode_table[LUSTRE_MAX_OPCODES] = {
-@@ -136,7 +136,7 @@ struct ll_rpc_opcode {
- 	{ UPDATE_OBJ,	    "update_obj" },
- };
- 
--struct ll_eopcode {
-+static struct ll_eopcode {
- 	__u32       opcode;
- 	const char *opname;
- } ll_eopcode_table[EXTRA_LAST_OPC] = {
-@@ -175,11 +175,12 @@ const char *ll_opcode2str(__u32 opcode)
- 	return ll_rpc_opcode_table[offset].opname;
- }
- 
--const char *ll_eopcode2str(__u32 opcode)
-+static const char *ll_eopcode2str(__u32 opcode)
- {
- 	LASSERT(ll_eopcode_table[opcode].opcode == opcode);
- 	return ll_eopcode_table[opcode].opname;
- }
-+
- #if defined (CONFIG_PROC_FS)
- static void ptlrpc_lprocfs_register(struct proc_dir_entry *root, char *dir,
- 				    char *name,
-@@ -727,7 +728,7 @@ struct ptlrpc_srh_iterator {
- 	struct ptlrpc_request	*srhi_req;
- };
- 
--int
-+static int
- ptlrpc_lprocfs_svc_req_history_seek(struct ptlrpc_service_part *svcpt,
- 				    struct ptlrpc_srh_iterator *srhi,
- 				    __u64 seq)
+ /*
+- * Slow patch handling. This may still be called frequently since objects
++ * Slow path handling. This may still be called frequently since objects
+  * have a longer lifetime than the cpu slabs in most processing loads.
+  *
+  * So we still attempt to reduce cache line usage. Just take the slab
 -- 
-1.9.1
+2.2.2
 
