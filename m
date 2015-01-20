@@ -1,76 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754286AbbATLKP (ORCPT <rfc822;w@1wt.eu>);
+	id S1754386AbbATLKV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 06:10:21 -0500
+Received: from mail-wi0-f175.google.com ([209.85.212.175]:59762 "EHLO
+	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754252AbbATLKP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 20 Jan 2015 06:10:15 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:44335 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754172AbbATLKM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 06:10:12 -0500
-Date: Tue, 20 Jan 2015 13:09:55 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Amit Shah <amit.shah@redhat.com>
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        Rusty Russell <rusty@rustcorp.com.au>, cornelia.huck@de.ibm.com,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-Subject: Re: [PATCH v3 04/16] virtio/console: verify device has config space
-Message-ID: <20150120110955.GF26442@redhat.com>
-References: <1421256142-11512-1-git-send-email-mst@redhat.com>
- <1421256142-11512-5-git-send-email-mst@redhat.com>
- <20150120104040.GJ31174@grmbl.mre>
+Date: Tue, 20 Jan 2015 12:10:11 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Thierry Reding <thierry.reding@gmail.com>
+Cc: dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/36] drm/atomic: Add drm_atomic_plane_get_crtc_state()
+Message-ID: <20150120111011.GX10113@phenom.ffwll.local>
+Mail-Followup-To: Thierry Reding <thierry.reding@gmail.com>,
+	dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1421750935-4023-1-git-send-email-thierry.reding@gmail.com>
+ <1421750935-4023-6-git-send-email-thierry.reding@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150120104040.GJ31174@grmbl.mre>
+In-Reply-To: <1421750935-4023-6-git-send-email-thierry.reding@gmail.com>
+X-Operating-System: Linux phenom 3.16-2-amd64 
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 04:10:40PM +0530, Amit Shah wrote:
-> On (Wed) 14 Jan 2015 [19:27:35], Michael S. Tsirkin wrote:
-> > Some devices might not implement config space access
-> > (e.g. remoteproc used not to - before 3.9).
-> > virtio/console needs config space access so make it
-> > fail gracefully if not there.
+On Tue, Jan 20, 2015 at 11:48:24AM +0100, Thierry Reding wrote:
+> From: Thierry Reding <treding@nvidia.com>
 > 
-> Do we know any such devices?  Wondering what prompted this patch.  If
-> it's just theoretical, I'd rather let it be like this, and pull this
-> in when there's a device that doesn't have config space.
-
-Yes, with virtio 1.0 config space can be in a separate BAR now.  If
-that's not enabled by BIOS (e.g. out of space), we won't have config
-space.
-
-> Also, just the console functionality (i.e. F_MULTIPORT is unset) is
-> available w/o config space access.
-
-Supporting this by gracefully disabling F_MULTIPORT
-would require getting this info from driver before
-features are finalized.
-Alternatively, check F_MULTIPORT and only fail if set?
-Let me know, I'll cook up a patch.
-
-> In fact, getting this patch in
-> would mean remoteproc wouldn't even run in its pre-config days...
-
-It seems to have get callback unconditionally now - or did I miss
-something?
-
-
-> > diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-> > index de03df9..26afb56 100644
-> > --- a/drivers/char/virtio_console.c
-> > +++ b/drivers/char/virtio_console.c
-> > @@ -1986,6 +1986,12 @@ static int virtcons_probe(struct virtio_device *vdev)
-> >  	bool multiport;
-> >  	bool early = early_put_chars != NULL;
-> >  
-> > +	if (!vdev->config->get) {
-> > +		dev_err(&vdev->dev, "%s failure: config access disabled\n",
-> > +			__func__);
-> > +		return -EINVAL;
-> > +	}
-> > +
+> This function is useful to obtain the state of the CRTC that a plane is
+> being attached to.
 > 
+> Signed-off-by: Thierry Reding <treding@nvidia.com>
+> ---
+>  include/drm/drm_atomic.h | 21 +++++++++++++++++++++
+>  1 file changed, 21 insertions(+)
 > 
-> 		Amit
+> diff --git a/include/drm/drm_atomic.h b/include/drm/drm_atomic.h
+> index 51168a8b723a..ddca107e5cce 100644
+> --- a/include/drm/drm_atomic.h
+> +++ b/include/drm/drm_atomic.h
+> @@ -75,4 +75,25 @@ int __must_check drm_atomic_check_only(struct drm_atomic_state *state);
+>  int __must_check drm_atomic_commit(struct drm_atomic_state *state);
+>  int __must_check drm_atomic_async_commit(struct drm_atomic_state *state);
+>  
+> +/**
+> + * drm_atomic_plane_get_crtc_state - obtain atomic state of the CRTC that a
+> + *     plane is being attached to
+> + * @state: atomic state of plane
+> + *
+> + * Getting the atomic state of the CRTC that a given plane being attached to
+> + * is non-trivial. We need to look at the global atomic state that the plane
+> + * state is part of and extract the CRTC state using the CRTC's index. Using
+> + * the drm_atomic_get_crtc_state() helper we make sure to acquire the proper
+> + * locks, too.
+> + *
+> + * RETURNS:
+> + * The atomic state of the CRTC that the plane is being attached to, or an
+> + * ERR_PTR()-encoded negative error code on failure.
+> + */
+> +static inline struct drm_crtc_state *
+> +drm_atomic_plane_get_crtc_state(struct drm_plane_state *state)
+> +{
+> +	return drm_atomic_get_crtc_state(state->state, state->crtc);
+
+Hm, imo open-coding this is totally ok. Actually better since state->crtc
+might be NULL, and hiding that isn't a good idea.
+
+If you have a atomic_plane_disable hook then ->crtc is guaranteed to be
+non-NULL in atomic_plane_update, but being explicit here is imo a feature.
+So nacked from my side.
+-Daniel
+
+> +}
+> +
+>  #endif /* DRM_ATOMIC_H_ */
+> -- 
+> 2.1.3
+> 
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
