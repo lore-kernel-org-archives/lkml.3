@@ -1,60 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580AbbATTnG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 14:43:06 -0500
-Received: from mail-la0-f50.google.com ([209.85.215.50]:57024 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751592AbbATTnD (ORCPT
+	id S1753594AbbATT4u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 14:56:50 -0500
+Received: from mail-wi0-f182.google.com ([209.85.212.182]:47407 "EHLO
+	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752692AbbATT4t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 14:43:03 -0500
-MIME-Version: 1.0
-In-Reply-To: <129259164.tYuuyxyNUx@sifl>
-References: <20150120185308.53f4af4e@canb.auug.org.au>
-	<1421780421.32504.2.camel@theros.lm.intel.com>
-	<CAOMZO5A0fjtzX+Gp8pWz=NawY1qEKK10BEgb7BMxTi_634qFYA@mail.gmail.com>
-	<129259164.tYuuyxyNUx@sifl>
-Date: Tue, 20 Jan 2015 17:43:01 -0200
-Message-ID: <CAOMZO5DsKT2rbSs8PuM6+KYcHZ6165-9eJPDXz=LJxiLW1tb-A@mail.gmail.com>
-Subject: Re: linux-next: Tree for Jan 20 -- Kernel panic - Unable to mount
- root fs
-From: Fabio Estevam <festevam@gmail.com>
-To: Paul Moore <pmoore@redhat.com>
-Cc: Ross Zwisler <ross.zwisler@linux.intel.com>,
-        Boaz Harrosh <openosd@gmail.com>, Jens Axboe <axboe@kernel.dk>,
-        Sabrina Dubroca <sd@queasysnail.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, linux-audit@redhat.com,
-        viro@zeniv.linux.org.uk, Richard Guy Briggs <rgb@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	Tue, 20 Jan 2015 14:56:49 -0500
+Message-ID: <1421783425.1601.21.camel@googlemail.com>
+Subject: Re: [PATCH 2/2] UBI: rename_volumes: Use UBI_METAONLY
+From: Christoph Fritz <chf.fritz@googlemail.com>
+Reply-To: chf.fritz@googlemail.com
+To: Guido =?ISO-8859-1?Q?Mart=EDnez?= <guido@vanguardiasur.com.ar>,
+        Richard Weinberger <richard@nod.at>
+Cc: dedekind1@gmail.com, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        Ezequiel Garcia <ezequiel.garcia@free-electrons.com>,
+        Andrew Murray <amurray@embedded-bits.co.uk>,
+        Artem Bityutskiy <dedekind1@gmail.com>
+Date: Tue, 20 Jan 2015 20:50:25 +0100
+In-Reply-To: <20141217174930.GA3400@fox>
+References: <1416864610-5751-1-git-send-email-richard@nod.at>
+	 <1416864610-5751-2-git-send-email-richard@nod.at>
+	 <20141217174930.GA3400@fox>
+Content-Type: text/plain; charset="ISO-8859-1"
+X-Mailer: Evolution 3.12.9-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 5:24 PM, Paul Moore <pmoore@redhat.com> wrote:
-> On Tuesday, January 20, 2015 05:16:45 PM Fabio Estevam wrote:
->> On Tue, Jan 20, 2015 at 5:00 PM, Ross Zwisler
->>
->> <ross.zwisler@linux.intel.com> wrote:
->> > These were just nuisance warnings, I believe, so my guess is that this
->> > isn't related to your kernel panic.   Reverting Boaz's patches to make
->> > these warnings go away would let you know for sure.
->>
->> You are right. Reverting 937af5ecd0591e makes such warnings disappear.
->
-> You guys are much quicker compiling kernels than I am :)
->
-> Fabio, are you still seeing the same panic, just without the warnings?  Or has
-> the panic resolved itself as well?
+On Wed, 2014-12-17 at 14:49 -0300, Guido Martínez wrote:
+> 
+> (for both patches)
+> Tested-by: Guido Martínez <guido@vanguardiasur.com.ar>
 
-Just to clarify: I was not getting the same panic Sabrina originally reported.
+here too,
+Tested-by: Christoph Fritz <chf.fritz@googlemail.com>
 
-Reverting 937af5ecd0591e made the ram warnings go away.
+By the way, when will this patch get merged?
 
-On my case I am running linux-next 20150120 plus this fix:
-http://www.spinics.net/lists/arm-kernel/msg393205.html
-
-and things seem to boot fine here on my ARM platform.
-
-Thanks
