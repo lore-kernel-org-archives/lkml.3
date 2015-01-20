@@ -1,104 +1,345 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753453AbbATTN2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 14:13:28 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:53242 "EHLO e8.ny.us.ibm.com"
+	id S1754348AbbATTop (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 14:44:45 -0500
+Received: from smtp6-g21.free.fr ([212.27.42.6]:25269 "EHLO smtp6-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753294AbbATTNS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 14:13:18 -0500
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: initramfs <initramfs@vger.kernel.org>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        linux-ima-devel@lists.sourceforge.net,
-        linux-security-module <linux-security-module@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH v1 11/11] ima: include rootfs (tmpfs) in ima_appraise_tcb policy
-Date: Tue, 20 Jan 2015 14:13:00 -0500
-Message-Id: <1421781180-24425-12-git-send-email-zohar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.8.1.4
-In-Reply-To: <1421781180-24425-1-git-send-email-zohar@linux.vnet.ibm.com>
-References: <1421781180-24425-1-git-send-email-zohar@linux.vnet.ibm.com>
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15012019-0029-0000-0000-000001BC85C5
+	id S1754250AbbATTom (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 14:44:42 -0500
+X-Mailbox-Line: From ddd1b299eca187ab2fa9b119da2ec8297ead1a66 Mon Sep 17 00:00:00 2001
+Message-Id: <ddd1b299eca187ab2fa9b119da2ec8297ead1a66.1421782533.git.moinejf@free.fr>
+In-Reply-To: <cover.1421782532.git.moinejf@free.fr>
+References: <cover.1421782532.git.moinejf@free.fr>
+From: Jean-Francois Moine <moinejf@free.fr>
+Date: Tue, 20 Jan 2015 20:16:25 +0100
+Subject: [PATCH v10 9/9] ASoC: add generic dt-card support
+To: Mark Brown <broonie@kernel.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Dave Airlie <airlied@gmail.com>, Andrew Jackson <Andrew.Jackson@arm.com>,
+        Jyri Sarha <jsarha@ti.com>, alsa-devel@alsa-project.org,
+        devicetree@vger.kernel.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When rootfs supports extended attributes and CONFIG_IMA_APPRAISE_ROOTFS
-is enabled, appraise the xattrs.
+To create simple cards, the syntax of the simple-card does not follow
+the common binding of the device graphs
+(Documentation/devicetree/bindings/graph.txt).
 
-Changelog v1:
-- limit appraising tmpfs to rootfs
-- define new IMA_APPRAISE_ROOTFS Kconfig option (based on Josh Boyer's
-comment).
+dt-card devices are created by audio controllers with themselves as the
+root of the graph. The sound card is created according to the parameters
+found in the tree.
 
-Signed-off-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
 ---
- security/integrity/ima/Kconfig      | 12 ++++++++++++
- security/integrity/ima/ima_policy.c |  8 ++++++++
- 2 files changed, 20 insertions(+)
+ sound/soc/generic/Kconfig   |   2 +
+ sound/soc/generic/Makefile  |   2 +
+ sound/soc/generic/dt-card.c | 275 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 279 insertions(+)
+ create mode 100644 sound/soc/generic/dt-card.c
 
-diff --git a/security/integrity/ima/Kconfig b/security/integrity/ima/Kconfig
-index 57515bc..fe2fd5f 100644
---- a/security/integrity/ima/Kconfig
-+++ b/security/integrity/ima/Kconfig
-@@ -156,3 +156,15 @@ config IMA_APPRAISE_SIGNED_INIT
- 	default n
+diff --git a/sound/soc/generic/Kconfig b/sound/soc/generic/Kconfig
+index 610f612..9c5e1e2 100644
+--- a/sound/soc/generic/Kconfig
++++ b/sound/soc/generic/Kconfig
+@@ -2,3 +2,5 @@ config SND_SIMPLE_CARD
+ 	tristate "ASoC Simple sound card support"
  	help
- 	   This option requires user-space init to be signed.
-+
-+config IMA_APPRAISE_ROOTFS
-+	bool "Require labeled rootfs"
-+	depends on IMA_LOAD_X509
-+	default n
-+	help
-+	   This option is dependent on the initramfs including
-+	   extended attributes(xattrs) in the CPIO file and the
-+	   rootfs file system for supporting them.
-+
-+	   The new CPIO format (070703) includes xattrs in the
-+	   initramfs.  Use tmpfs as the rootfs.
-diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
-index d1eefb9..7748332 100644
---- a/security/integrity/ima/ima_policy.c
-+++ b/security/integrity/ima/ima_policy.c
-@@ -27,6 +27,7 @@
- #define IMA_UID		0x0008
- #define IMA_FOWNER	0x0010
- #define IMA_FSUUID	0x0020
-+#define IMA_SBID	0x0040
+ 	  This option enables generic simple sound card support
++config SND_DT_CARD
++	tristate
+diff --git a/sound/soc/generic/Makefile b/sound/soc/generic/Makefile
+index 9c3b246..56834a9 100644
+--- a/sound/soc/generic/Makefile
++++ b/sound/soc/generic/Makefile
+@@ -1,3 +1,5 @@
+ snd-soc-simple-card-objs	:= simple-card.o
++snd-soc-dt-card-objs		:= dt-card.o
  
- #define UNKNOWN		0
- #define MEASURE		0x0001	/* same as IMA_MEASURE */
-@@ -49,6 +50,7 @@ struct ima_rule_entry {
- 	enum ima_hooks func;
- 	int mask;
- 	unsigned long fsmagic;
-+	char sbid[32];
- 	u8 fsuuid[16];
- 	kuid_t uid;
- 	kuid_t fowner;
-@@ -93,6 +95,10 @@ static struct ima_rule_entry default_appraise_rules[] = {
- 	{.action = DONT_APPRAISE, .fsmagic = PROC_SUPER_MAGIC, .flags = IMA_FSMAGIC},
- 	{.action = DONT_APPRAISE, .fsmagic = SYSFS_MAGIC, .flags = IMA_FSMAGIC},
- 	{.action = DONT_APPRAISE, .fsmagic = DEBUGFS_MAGIC, .flags = IMA_FSMAGIC},
-+#ifdef CONFIG_IMA_APPRAISE_ROOTFS
-+	{.action = APPRAISE, .fsmagic = TMPFS_MAGIC, .sbid="rootfs", 
-+	 .flags = IMA_FSMAGIC | IMA_SBID},
-+#endif
- 	{.action = DONT_APPRAISE, .fsmagic = TMPFS_MAGIC, .flags = IMA_FSMAGIC},
- 	{.action = DONT_APPRAISE, .fsmagic = RAMFS_MAGIC, .flags = IMA_FSMAGIC},
- 	{.action = DONT_APPRAISE, .fsmagic = DEVPTS_SUPER_MAGIC, .flags = IMA_FSMAGIC},
-@@ -188,6 +194,8 @@ static bool ima_match_rules(struct ima_rule_entry *rule,
- 	if ((rule->flags & IMA_FSUUID) &&
- 	    memcmp(rule->fsuuid, inode->i_sb->s_uuid, sizeof(rule->fsuuid)))
- 		return false;
-+	if ((rule->flags & IMA_SBID) && strcmp(rule->sbid, inode->i_sb->s_id))
-+		return false;
- 	if ((rule->flags & IMA_UID) && !uid_eq(rule->uid, cred->uid))
- 		return false;
- 	if ((rule->flags & IMA_FOWNER) && !uid_eq(rule->fowner, inode->i_uid))
+ obj-$(CONFIG_SND_SIMPLE_CARD)	+= snd-soc-simple-card.o
++obj-$(CONFIG_SND_DT_CARD)	+= snd-soc-dt-card.o
+diff --git a/sound/soc/generic/dt-card.c b/sound/soc/generic/dt-card.c
+new file mode 100644
+index 0000000..6a5de2f
+--- /dev/null
++++ b/sound/soc/generic/dt-card.c
+@@ -0,0 +1,275 @@
++/*
++ * ALSA SoC DT based sound card support
++ *
++ * Copyright (C) 2015 Jean-Francois Moine
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#include <linux/module.h>
++#include <sound/soc.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
++
++/* check if a node is an audio port */
++static int asoc_dt_card_is_audio_port(struct device_node *of_port)
++{
++	const char *name;
++	int ret;
++
++	if (!of_port->name ||
++	    of_node_cmp(of_port->name, "port") != 0)
++		return 0;
++	ret = of_property_read_string(of_port,
++					"port-type",
++					&name);
++	if (!ret &&
++	    (strcmp(name, "i2s") == 0 ||
++	     strcmp(name, "spdif") == 0))
++		return 1;
++	return 0;
++}
++
++/*
++ * Get the DAI number from the DT by counting the audio ports
++ * of the remote device node (codec).
++ */
++static int asoc_dt_card_get_dai_number(struct device_node *of_codec,
++				struct device_node *of_remote_endpoint)
++{
++	struct device_node *of_port, *of_endpoint;
++	int ndai;
++
++	ndai = 0;
++	for_each_child_of_node(of_codec, of_port) {
++		if (!asoc_dt_card_is_audio_port(of_port))
++			continue;
++		for_each_child_of_node(of_port, of_endpoint) {
++			if (!of_endpoint->name ||
++			    of_node_cmp(of_endpoint->name, "endpoint") != 0)
++				continue;
++			if (of_endpoint == of_remote_endpoint) {
++				of_node_put(of_port);
++				of_node_put(of_endpoint);
++				return ndai;
++			}
++		}
++		ndai++;
++	}
++	return 0;		/* should never be reached */
++}
++
++/*
++ * Parse a graph of audio ports
++ * @dev: Card device
++ * @of_cpu: Device node of the audio controller
++ * @card: Card definition
++ *
++ * Builds the DAI links of the card from the DT graph of audio ports
++ * starting from the audio controller.
++ * It does not handle the port groups.
++ * The CODEC device nodes in the DAI links must be dereferenced by the caller.
++ *
++ * Returns the number of DAI links or (< 0) on error
++ */
++static int asoc_dt_card_of_parse_graph(struct device *dev,
++				struct device_node *of_cpu,
++				struct snd_soc_card *card)
++{
++	struct device_node *of_codec, *of_port, *of_endpoint,
++				*of_remote_endpoint;
++	struct snd_soc_dai_link *link;
++	struct snd_soc_dai_link_component *component;
++	struct of_phandle_args args, args2;
++	int ret, ilink, icodec, nlinks, ncodecs;
++
++	/* count the number of DAI links */
++	nlinks = 0;
++	for_each_child_of_node(of_cpu, of_port) {
++		if (asoc_dt_card_is_audio_port(of_port))
++			nlinks++;
++	}
++
++	/* allocate the DAI link array */
++	link = devm_kzalloc(dev, sizeof(*link) * nlinks, GFP_KERNEL);
++	if (!link)
++		return -ENOMEM;
++	card->dai_link = link;
++
++	/* build the DAI links */
++	ilink = 0;
++	args.np = of_cpu;
++	args.args_count = 1;
++	for_each_child_of_node(of_cpu, of_port) {
++		if (!asoc_dt_card_is_audio_port(of_port))
++			continue;
++
++		link->platform_of_node =
++			link->cpu_of_node = of_cpu;
++		args.args[0] = ilink;
++		ret = snd_soc_get_dai_name(&args, &link->cpu_dai_name);
++		if (ret) {
++			dev_err(dev, "no CPU DAI name for link %d!\n",
++				ilink);
++			continue;
++		}
++
++		/* count the number of codecs of this DAI link */
++		ncodecs = 0;
++		for_each_child_of_node(of_port, of_endpoint) {
++			if (of_parse_phandle(of_endpoint,
++					"remote-endpoint", 0))
++				ncodecs++;
++		}
++		if (ncodecs == 0)
++			continue;
++		component = devm_kzalloc(dev,
++					 sizeof(*component) * ncodecs,
++					 GFP_KERNEL);
++		if (!component)
++			return -ENOMEM;
++		link->codecs = component;
++
++		icodec = 0;
++		args2.args_count = 1;
++		for_each_child_of_node(of_port, of_endpoint) {
++			of_remote_endpoint = of_parse_phandle(of_endpoint,
++						"remote-endpoint", 0);
++			if (!of_remote_endpoint)
++				continue;
++			component->of_node = of_codec =
++					of_remote_endpoint->parent->parent;
++			args2.np = of_codec;
++			args2.args[0] = asoc_dt_card_get_dai_number(of_codec,
++							of_remote_endpoint);
++			ret = snd_soc_get_dai_name(&args2,
++						   &component->dai_name);
++			if (ret) {
++				if (ret == -EPROBE_DEFER) {
++					card->num_links = ilink + 1;
++					link->num_codecs = icodec;
++					return ret;
++				}
++				dev_err(dev,
++					"no CODEC DAI name for link %d\n",
++					ilink);
++				continue;
++			}
++			of_node_get(of_codec);
++
++			icodec++;
++			if (icodec >= ncodecs)
++				break;
++			component++;
++		}
++		if (icodec == 0)
++			continue;
++		link->num_codecs = icodec;
++
++		ilink++;
++		if (ilink >= nlinks)
++			break;
++		link++;
++	}
++	card->num_links = ilink;
++
++	return ilink;
++}
++
++static void asoc_dt_card_unref(struct platform_device *pdev)
++{
++	struct snd_soc_card *card = platform_get_drvdata(pdev);
++	struct snd_soc_dai_link *link;
++	int nlinks, ncodecs;
++
++	if (card) {
++		for (nlinks = 0, link = card->dai_link;
++		     nlinks < card->num_links;
++		     nlinks++, link++) {
++			for (ncodecs = 0;
++			     ncodecs < link->num_codecs;
++			     ncodecs++)
++				of_node_put(card->dai_link->codecs[ncodecs].of_node);
++		}
++	}
++}
++
++/*
++ * The platform data contains the pointer to the device node
++ * which starts the description of the graph of the audio ports,
++ * This device node is usually the audio controller.
++ */
++static int asoc_dt_card_probe(struct platform_device *pdev)
++{
++	struct device_node **p_np = pdev->dev.platform_data;
++	struct device_node *of_cpu = *p_np;
++	struct snd_soc_card *card;
++	struct snd_soc_dai_link *link;
++	char *name;
++	int ret, i;
++
++	card = devm_kzalloc(&pdev->dev, sizeof(*card), GFP_KERNEL);
++	if (!card)
++		return -ENOMEM;
++	ret = asoc_dt_card_of_parse_graph(&pdev->dev, of_cpu, card);
++	if (ret < 0)
++		goto err;
++
++	/* fill the remaining values of the card */
++	card->owner = THIS_MODULE;
++	card->dev = &pdev->dev;
++	card->name = "DT-card";
++	for (i = 0, link = card->dai_link;
++	     i < card->num_links;
++	     i++, link++) {
++		name = devm_kzalloc(&pdev->dev,
++				strlen(link->cpu_dai_name) +
++					strlen(link->codecs[0].dai_name) +
++					2,
++				GFP_KERNEL);
++		if (!name) {
++			ret = -ENOMEM;
++			goto err;
++		}
++		sprintf(name, "%s-%s", link->cpu_dai_name,
++					link->codecs[0].dai_name);
++		link->name = link->stream_name = name;
++	}
++
++	card->dai_link->dai_fmt =
++		snd_soc_of_parse_daifmt(of_cpu, "dt-audio-card,",
++					NULL, NULL) &
++			~SND_SOC_DAIFMT_MASTER_MASK;
++
++	ret = devm_snd_soc_register_card(&pdev->dev, card);
++	if (ret >= 0)
++		return ret;
++
++err:
++	asoc_dt_card_unref(pdev);
++	return ret;
++}
++
++static int asoc_dt_card_remove(struct platform_device *pdev)
++{
++	asoc_dt_card_unref(pdev);
++	snd_soc_unregister_card(platform_get_drvdata(pdev));
++	return 0;
++}
++
++static struct platform_driver asoc_dt_card = {
++	.driver = {
++		.name = "asoc-dt-card",
++	},
++	.probe = asoc_dt_card_probe,
++	.remove = asoc_dt_card_remove,
++};
++
++module_platform_driver(asoc_dt_card);
++
++MODULE_ALIAS("platform:asoc-dt-card");
++MODULE_DESCRIPTION("ASoC DT Sound Card");
++MODULE_AUTHOR("Jean-Francois Moine <moinejf@free.fr>");
++MODULE_LICENSE("GPL");
 -- 
-1.8.1.4
+2.1.4
 
