@@ -1,144 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754059AbbATQEr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 11:04:47 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:60048 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751517AbbATQEp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 11:04:45 -0500
-Date: Tue, 20 Jan 2015 17:04:43 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Greg Thelen <gthelen@google.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 1/2] mm: page_counter: pull "-1" handling out of
- page_counter_memparse()
-Message-ID: <20150120160443.GN25342@dhcp22.suse.cz>
-References: <1421767915-14232-1-git-send-email-hannes@cmpxchg.org>
- <1421767915-14232-2-git-send-email-hannes@cmpxchg.org>
+	id S1753536AbbATQI1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 11:08:27 -0500
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:47545 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751853AbbATQI0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 11:08:26 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX19rvZPDcQ4MSsBm3k6syvbv
+Date: Tue, 20 Jan 2015 08:04:48 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Paul Bolle <pebolle@tiscali.nl>, linaro-kernel@lists.linaro.org,
+        patches@linaro.org, spear-devel@list.st.com,
+        linux-kernel@vger.kernel.org,
+        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>, linux-omap@vger.kernel.org,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3.19-rc2 v15 5/8] arm: omap1: Migrate debug_ll macros to
+ use 8250.S
+Message-ID: <20150120160448.GC7718@atomide.com>
+References: <1420461624-4410-1-git-send-email-daniel.thompson@linaro.org>
+ <1420461624-4410-6-git-send-email-daniel.thompson@linaro.org>
+ <20150119213845.GL18552@atomide.com>
+ <54BE1921.5050902@linaro.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1421767915-14232-2-git-send-email-hannes@cmpxchg.org>
+In-Reply-To: <54BE1921.5050902@linaro.org>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 20-01-15 10:31:54, Johannes Weiner wrote:
-> The unified hierarchy interface for memory cgroups will no longer use
-> "-1" to mean maximum possible resource value.  In preparation for
-> this, make the string an argument and let the caller supply it.
+* Daniel Thompson <daniel.thompson@linaro.org> [150120 01:03]:
+> On 19/01/15 21:38, Tony Lindgren wrote:
+> > * Daniel Thompson <daniel.thompson@linaro.org> [150105 04:49]:
+> >> The omap1's debug-macro.S is similar to the generic 8250 code. Compared to
+> >> the 8520 code the omap1 macro automatically determines what UART to use
+> >> based on breadcrumbs left by the bootloader and automatically copes with
+> >> the eccentric register layout on OMAP7XX.
+> >>
+> >> This patch drops both these features and relies instead on the generic
+> >> 8250 macros:
+> >>
+> >> 1. Dropping support for the bootloader breadcrumbs is identical to the
+> >>    way the migration was handled for OMAP2 (see 808b7e07464d...).
+> >>
+> >> 2. Support for OMAP7XX still exists but it must be configured by hand
+> >>    (DEBUG_OMAP7XXUART1/2/3) rather than handled at runtime.
+> >>
+> >> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
+> >> Cc: Russell King <linux@arm.linux.org.uk>
+> >> Cc: Arnd Bergmann <arnd.bergmann@linaro.org>
+> >> Cc: linux-omap@vger.kernel.org
+> >> Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
+> >> Acked-by: Tony Lindgren <tony@atomide.com>
+> > 
+> > Daniel, I suggest you upload this patch into Russell's patch tracking
+> > system to get it merged. That at least shrinks down your patch series
+> > if the other patches need more work.
 > 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> This has been in the patch tracker for a week or so:
+> http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=8271/1
 
-Acked-by: Michal Hocko <mhocko@suse.cz>
+OK good to hear thanks.
+ 
+> I'm very aware that this patch (and indeed the whole patch set) has been
+> knocking round for longer than it should have. The changelog for this
+> patchset is certainly not one to be especially proud off ;-) .
 
-Thanks!
+Yeah, it's been floating around for a while :)
 
-> ---
->  include/linux/page_counter.h | 3 ++-
->  mm/hugetlb_cgroup.c          | 2 +-
->  mm/memcontrol.c              | 4 ++--
->  mm/page_counter.c            | 7 ++++---
->  net/ipv4/tcp_memcontrol.c    | 2 +-
->  5 files changed, 10 insertions(+), 8 deletions(-)
-> 
-> diff --git a/include/linux/page_counter.h b/include/linux/page_counter.h
-> index 955421575d16..17fa4f8de3a6 100644
-> --- a/include/linux/page_counter.h
-> +++ b/include/linux/page_counter.h
-> @@ -41,7 +41,8 @@ int page_counter_try_charge(struct page_counter *counter,
->  			    struct page_counter **fail);
->  void page_counter_uncharge(struct page_counter *counter, unsigned long nr_pages);
->  int page_counter_limit(struct page_counter *counter, unsigned long limit);
-> -int page_counter_memparse(const char *buf, unsigned long *nr_pages);
-> +int page_counter_memparse(const char *buf, const char *max,
-> +			  unsigned long *nr_pages);
->  
->  static inline void page_counter_reset_watermark(struct page_counter *counter)
->  {
-> diff --git a/mm/hugetlb_cgroup.c b/mm/hugetlb_cgroup.c
-> index 037e1c00a5b7..6e0057439a46 100644
-> --- a/mm/hugetlb_cgroup.c
-> +++ b/mm/hugetlb_cgroup.c
-> @@ -279,7 +279,7 @@ static ssize_t hugetlb_cgroup_write(struct kernfs_open_file *of,
->  		return -EINVAL;
->  
->  	buf = strstrip(buf);
-> -	ret = page_counter_memparse(buf, &nr_pages);
-> +	ret = page_counter_memparse(buf, "-1", &nr_pages);
->  	if (ret)
->  		return ret;
->  
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 05ad91cda22c..a3592a756ad9 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -3442,7 +3442,7 @@ static ssize_t mem_cgroup_write(struct kernfs_open_file *of,
->  	int ret;
->  
->  	buf = strstrip(buf);
-> -	ret = page_counter_memparse(buf, &nr_pages);
-> +	ret = page_counter_memparse(buf, "-1", &nr_pages);
->  	if (ret)
->  		return ret;
->  
-> @@ -3814,7 +3814,7 @@ static int __mem_cgroup_usage_register_event(struct mem_cgroup *memcg,
->  	unsigned long usage;
->  	int i, size, ret;
->  
-> -	ret = page_counter_memparse(args, &threshold);
-> +	ret = page_counter_memparse(args, "-1", &threshold);
->  	if (ret)
->  		return ret;
->  
-> diff --git a/mm/page_counter.c b/mm/page_counter.c
-> index a009574fbba9..11b4beda14ba 100644
-> --- a/mm/page_counter.c
-> +++ b/mm/page_counter.c
-> @@ -166,18 +166,19 @@ int page_counter_limit(struct page_counter *counter, unsigned long limit)
->  /**
->   * page_counter_memparse - memparse() for page counter limits
->   * @buf: string to parse
-> + * @max: string meaning maximum possible value
->   * @nr_pages: returns the result in number of pages
->   *
->   * Returns -EINVAL, or 0 and @nr_pages on success.  @nr_pages will be
->   * limited to %PAGE_COUNTER_MAX.
->   */
-> -int page_counter_memparse(const char *buf, unsigned long *nr_pages)
-> +int page_counter_memparse(const char *buf, const char *max,
-> +			  unsigned long *nr_pages)
->  {
-> -	char unlimited[] = "-1";
->  	char *end;
->  	u64 bytes;
->  
-> -	if (!strncmp(buf, unlimited, sizeof(unlimited))) {
-> +	if (!strcmp(buf, max)) {
->  		*nr_pages = PAGE_COUNTER_MAX;
->  		return 0;
->  	}
-> diff --git a/net/ipv4/tcp_memcontrol.c b/net/ipv4/tcp_memcontrol.c
-> index 272327134a1b..c2a75c6957a1 100644
-> --- a/net/ipv4/tcp_memcontrol.c
-> +++ b/net/ipv4/tcp_memcontrol.c
-> @@ -120,7 +120,7 @@ static ssize_t tcp_cgroup_write(struct kernfs_open_file *of,
->  	switch (of_cft(of)->private) {
->  	case RES_LIMIT:
->  		/* see memcontrol.c */
-> -		ret = page_counter_memparse(buf, &nr_pages);
-> +		ret = page_counter_memparse(buf, "-1", &nr_pages);
->  		if (ret)
->  			break;
->  		mutex_lock(&tcp_limit_mutex);
-> -- 
-> 2.2.0
-> 
+Here it may have been doable to first add the Kconfig entries, then
+flip them on and remove the related .S file in a follow up patch. Not
+sure if that would have helped to remove the dependencies for the
+rest of the series though.
 
--- 
-Michal Hocko
-SUSE Labs
+Regards,
+
+Tony
