@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755265AbbATQm6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 11:42:58 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:12090 "EHLO mx1.redhat.com"
+	id S1754646AbbATQlb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 11:41:31 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:50650 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751868AbbATQmz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 11:42:55 -0500
+	id S1752899AbbATQl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 11:41:27 -0500
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>,
@@ -19,16 +19,16 @@ Cc: Jiri Olsa <jolsa@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 25/36] perf build: Add arch sh objects building
-Date: Tue, 20 Jan 2015 17:39:22 +0100
-Message-Id: <1421771973-6022-26-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 26/36] perf build: Add arch sparc objects building
+Date: Tue, 20 Jan 2015 17:39:23 +0100
+Message-Id: <1421771973-6022-27-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1421771973-6022-1-git-send-email-jolsa@kernel.org>
 References: <1421771973-6022-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the sh arch objects building under build framework
+Move the sparc arch objects building under build framework
 to be included in the libperf build object.
 
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
@@ -44,32 +44,32 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/arch/sh/Build      | 1 +
- tools/perf/arch/sh/Makefile   | 1 -
- tools/perf/arch/sh/util/Build | 1 +
+ tools/perf/arch/sparc/Build      | 1 +
+ tools/perf/arch/sparc/Makefile   | 1 -
+ tools/perf/arch/sparc/util/Build | 1 +
  3 files changed, 2 insertions(+), 1 deletion(-)
- create mode 100644 tools/perf/arch/sh/util/Build
+ create mode 100644 tools/perf/arch/sparc/util/Build
 
-diff --git a/tools/perf/arch/sh/Build b/tools/perf/arch/sh/Build
+diff --git a/tools/perf/arch/sparc/Build b/tools/perf/arch/sparc/Build
 index e69de29bb2d1..54afe4a467e7 100644
---- a/tools/perf/arch/sh/Build
-+++ b/tools/perf/arch/sh/Build
+--- a/tools/perf/arch/sparc/Build
++++ b/tools/perf/arch/sparc/Build
 @@ -0,0 +1 @@
 +libperf-y += util/
-diff --git a/tools/perf/arch/sh/Makefile b/tools/perf/arch/sh/Makefile
+diff --git a/tools/perf/arch/sparc/Makefile b/tools/perf/arch/sparc/Makefile
 index 15130b50dfe3..7fbca175099e 100644
---- a/tools/perf/arch/sh/Makefile
-+++ b/tools/perf/arch/sh/Makefile
+--- a/tools/perf/arch/sparc/Makefile
++++ b/tools/perf/arch/sparc/Makefile
 @@ -1,4 +1,3 @@
  ifndef NO_DWARF
  PERF_HAVE_DWARF_REGS := 1
 -LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
  endif
-diff --git a/tools/perf/arch/sh/util/Build b/tools/perf/arch/sh/util/Build
+diff --git a/tools/perf/arch/sparc/util/Build b/tools/perf/arch/sparc/util/Build
 new file mode 100644
 index 000000000000..954e287bbb89
 --- /dev/null
-+++ b/tools/perf/arch/sh/util/Build
++++ b/tools/perf/arch/sparc/util/Build
 @@ -0,0 +1 @@
 +libperf-$(CONFIG_DWARF) += dwarf-regs.o
 -- 
