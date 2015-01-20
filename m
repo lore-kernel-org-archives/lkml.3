@@ -1,88 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753536AbbATQI1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 11:08:27 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:47545 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751853AbbATQI0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 11:08:26 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19rvZPDcQ4MSsBm3k6syvbv
-Date: Tue, 20 Jan 2015 08:04:48 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
-        Paul Bolle <pebolle@tiscali.nl>, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, spear-devel@list.st.com,
-        linux-kernel@vger.kernel.org,
-        Srinivas Kandagatla <srinivas.kandagatla@linaro.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>, linux-omap@vger.kernel.org,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 3.19-rc2 v15 5/8] arm: omap1: Migrate debug_ll macros to
- use 8250.S
-Message-ID: <20150120160448.GC7718@atomide.com>
-References: <1420461624-4410-1-git-send-email-daniel.thompson@linaro.org>
- <1420461624-4410-6-git-send-email-daniel.thompson@linaro.org>
- <20150119213845.GL18552@atomide.com>
- <54BE1921.5050902@linaro.org>
+	id S1753547AbbATQGA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 11:06:00 -0500
+Received: from unicorn.mansr.com ([81.2.72.234]:41471 "EHLO unicorn.mansr.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751535AbbATQF6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 11:05:58 -0500
+From: =?iso-8859-1?Q?M=E5ns_Rullg=E5rd?= <mans@mansr.com>
+To: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Rob Herring <robherring2@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "linux-doc\@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree\@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] of: Custom printk format specifier for device node
+References: <1421764441-11928-1-git-send-email-pantelis.antoniou@konsulko.com>
+	<CAL_JsqLVJjq3Ov=J-5LtXiTQPLvR5Y=+tB1i16k_rN3j5dODFQ@mail.gmail.com>
+	<CAMuHMdWnjawtgkKGuL8b4A17EhDS6B0L-1_uhSnvEXXk5dNjwQ@mail.gmail.com>
+	<25E49021-E94D-4DFA-AC37-1D4A3AAE9F88@konsulko.com>
+Date: Tue, 20 Jan 2015 16:05:54 +0000
+In-Reply-To: <25E49021-E94D-4DFA-AC37-1D4A3AAE9F88@konsulko.com> (Pantelis
+	Antoniou's message of "Tue, 20 Jan 2015 17:27:42 +0200")
+Message-ID: <yw1x8ugxe8t9.fsf@unicorn.mansr.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.4 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54BE1921.5050902@linaro.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Daniel Thompson <daniel.thompson@linaro.org> [150120 01:03]:
-> On 19/01/15 21:38, Tony Lindgren wrote:
-> > * Daniel Thompson <daniel.thompson@linaro.org> [150105 04:49]:
-> >> The omap1's debug-macro.S is similar to the generic 8250 code. Compared to
-> >> the 8520 code the omap1 macro automatically determines what UART to use
-> >> based on breadcrumbs left by the bootloader and automatically copes with
-> >> the eccentric register layout on OMAP7XX.
-> >>
-> >> This patch drops both these features and relies instead on the generic
-> >> 8250 macros:
-> >>
-> >> 1. Dropping support for the bootloader breadcrumbs is identical to the
-> >>    way the migration was handled for OMAP2 (see 808b7e07464d...).
-> >>
-> >> 2. Support for OMAP7XX still exists but it must be configured by hand
-> >>    (DEBUG_OMAP7XXUART1/2/3) rather than handled at runtime.
-> >>
-> >> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
-> >> Cc: Russell King <linux@arm.linux.org.uk>
-> >> Cc: Arnd Bergmann <arnd.bergmann@linaro.org>
-> >> Cc: linux-omap@vger.kernel.org
-> >> Tested-by: Aaro Koskinen <aaro.koskinen@iki.fi>
-> >> Acked-by: Tony Lindgren <tony@atomide.com>
-> > 
-> > Daniel, I suggest you upload this patch into Russell's patch tracking
-> > system to get it merged. That at least shrinks down your patch series
-> > if the other patches need more work.
-> 
-> This has been in the patch tracker for a week or so:
-> http://www.arm.linux.org.uk/developer/patches/viewpatch.php?id=8271/1
+Pantelis Antoniou <pantelis.antoniou@konsulko.com> writes:
 
-OK good to hear thanks.
- 
-> I'm very aware that this patch (and indeed the whole patch set) has been
-> knocking round for longer than it should have. The changelog for this
-> patchset is certainly not one to be especially proud off ;-) .
+> Hi Geert,
+>
+>> On Jan 20, 2015, at 17:24 , Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>> 
+>> On Tue, Jan 20, 2015 at 3:47 PM, Rob Herring <robherring2@gmail.com> wrote:
+>>>> +       Examples:
+>>>> +
+>>>> +       %pO     /foo/bar@0              - Node full name
+>>>> +       %pO0    /foo/bar@0              - Same as above
+>>>> +       %pO1    /foo/bar@0[10]          - Node full name + phandle
+>>>> +       %pO2    /foo/bar@0[10:DdPB]     - Node full name + phandle + node flags
+>>>> +                                        D - dynamic
+>>>> +                                        d - detached
+>>>> +                                        P - Populated
+>>>> +                                        B - Populated bus
+>>> 
+>>> We should think about what else we want to print for a node. Perhaps
+>>> 'On' for name, 'Oc' for compatible, etc.
+>> 
+>> I was just going to say "The least verbose variant is name, not full_name”.
+>> 
+>
+> Unfortunately in the context of device tree nodes ‘name' is usually
+> not what you want to print to identify the node in question. ‘name’ is
+> usually not unique.
 
-Yeah, it's been floating around for a while :)
+Name and address without the full path is usually a good compromise
+between uniqueness (it is usually unique for memory-mapped things) and
+verbosity.
 
-Here it may have been doable to first add the Kconfig entries, then
-flip them on and remove the related .S file in a follow up patch. Not
-sure if that would have helped to remove the dependencies for the
-rest of the series though.
-
-Regards,
-
-Tony
+-- 
+Måns Rullgård
+mans@mansr.com
