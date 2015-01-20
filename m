@@ -1,167 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752075AbbATGzs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 01:55:48 -0500
-Received: from mail-qa0-f50.google.com ([209.85.216.50]:53515 "EHLO
-	mail-qa0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750822AbbATGzq convert rfc822-to-8bit (ORCPT
+	id S1752728AbbATG6z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 01:58:55 -0500
+Received: from e39.co.us.ibm.com ([32.97.110.160]:54739 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752552AbbATG6x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 01:55:46 -0500
+	Tue, 20 Jan 2015 01:58:53 -0500
+Message-ID: <54BDFC9C.3020308@linux.vnet.ibm.com>
+Date: Tue, 20 Jan 2015 12:28:36 +0530
+From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
 MIME-Version: 1.0
-In-Reply-To: <4603622.ltPA9iTIiK@phil>
-References: <1421690889-11901-1-git-send-email-romain.perier@gmail.com>
-	<1421690889-11901-4-git-send-email-romain.perier@gmail.com>
-	<4603622.ltPA9iTIiK@phil>
-Date: Tue, 20 Jan 2015 07:55:45 +0100
-Message-ID: <CABgxDoLY3hkj5=QP1s8h4fotx7vSfOiP6xZd9L=t8ZffteO8QQ@mail.gmail.com>
-Subject: Re: [PATCH v1 3/4] net: stmmac: dwmac-rk: Use standard devicetree
- property for phy regulator
-From: Romain Perier <romain.perier@gmail.com>
-To: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
-Cc: peppe.cavallaro@st.com, netdev <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        devicetree <devicetree@vger.kernel.org>, roger.chen@rock-chips.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Michael Ellerman <mpe@ellerman.id.au>, tglx@linutronix.de
+CC: aik@ozlabs.ru, shreyas@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        anton@samba.org, linuxppc-dev@lists.ozlabs.org
+Subject: Re: tick/broadcast: Make movement of broadcast hrtimer robust against
+ hotplug
+References: <20150120060913.A5EF31402DE@ozlabs.org>
+In-Reply-To: <20150120060913.A5EF31402DE@ozlabs.org>
+Content-Type: text/plain; charset=ISO-8859-6
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15012006-0033-0000-0000-00000362D8C8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 01/20/2015 11:39 AM, Michael Ellerman wrote:
+> On Mon, 2015-19-01 at 10:26:48 UTC, Preeti U Murthy wrote:
+>> Today if a cpu handling broadcasting of wakeups goes offline, it hands over
+> 
+> It's *the* cpu handling broadcasting of wakeups right? ie. there's only ever
+> one at a time.
 
-Ok I will do these changes. However, the property "phy_regulator" was
-not documented in
-Documentation/devicetree/bindings/net/rockchip-dwmac.txt ... I can
-document it anyway, it has probably been forgotten.
+Right, thanks for pointing this.
 
-Thanks !
+> 
+>> the job of broadcasting to another cpu in the CPU_DEAD phase. 
+> 
+> I think that would be clearer as "to another cpu, when the cpu going offline
+> reaches the CPU_DEAD state."
+> 
+> Otherwise it can read as "another cpu (which is) in the CPU_DEAD phase", which
+> is not what you mean - I think.
 
-2015-01-19 21:12 GMT+01:00 Heiko Stübner <heiko@sntech.de>:
-> Am Montag, 19. Januar 2015, 18:08:08 schrieb Romain Perier:
->> Currently, dwmac-rk uses a custom propety "phy_regulator" to get the name of
->> the right regulator to use to power on or power off the phy. This commit
->> converts the driver to use phy-supply devicetree property and the
->> corresponding API, it cleans the code a bit and make it simpler to
->> maintain.
->>
->> Signed-off-by: Romain Perier <romain.perier@gmail.com>
->
-> I don't see updated binding documentation in here.
->
-> Secondly I think patch4 which changes the property in the evb-rk808 could be
-> in here. The change is simple enough and would keep it bisectable without
-> needing transistional patches.
->
-> And there is the one warning down below.
->
->
->> ---
->>  drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c | 61
->> ++++++++------------------ 1 file changed, 19 insertions(+), 42
->> deletions(-)
->>
->> diff --git a/drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c
->> b/drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c index 06e1637..8a8091c
->> 100644
->> --- a/drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c
->> +++ b/drivers/net/ethernet/stmicro/stmmac/dwmac-rk.c
->> @@ -32,7 +32,7 @@
->>  struct rk_priv_data {
->>       struct platform_device *pdev;
->>       int phy_iface;
->> -     char regulator[32];
->> +     struct regulator *regulator;
->>
->>       bool clk_enabled;
->>       bool clock_input;
->> @@ -287,46 +287,25 @@ static int gmac_clk_enable(struct rk_priv_data
->> *bsp_priv, bool enable)
->>
->>  static int phy_power_on(struct rk_priv_data *bsp_priv, bool enable)
->>  {
->> -     struct regulator *ldo;
->> -     char *ldostr = bsp_priv->regulator;
->> +     struct regulator *ldo = bsp_priv->regulator;
->>       int ret;
->>       struct device *dev = &bsp_priv->pdev->dev;
->>
->> -     if (!ldostr) {
->> -             dev_err(dev, "%s: no ldo found\n", __func__);
->> +     if (!ldo) {
->> +             dev_err(dev, "%s: no regulator found\n", __func__);
->>               return -1;
->>       }
->>
->> -     ldo = regulator_get(NULL, ldostr);
->> -     if (!ldo) {
->> -             dev_err(dev, "\n%s get ldo %s failed\n", __func__, ldostr);
->> +     if (enable) {
->> +             ret = regulator_enable(ldo);
->> +             if (ret)
->> +                     dev_err(dev, "%s: fail to enable phy-supply\n",
->> +                             __func__);
->>       } else {
->> -             if (enable) {
->> -                     if (!regulator_is_enabled(ldo)) {
->> -                             ret = regulator_enable(ldo);
->> -                             if (ret != 0)
->> -                                     dev_err(dev, "%s: fail to enable %s\n",
->> -                                             __func__, ldostr);
->> -                             else
->> -                                     dev_info(dev, "turn on ldo done.\n");
->> -                     } else {
->> -                             dev_warn(dev, "%s is enabled before enable",
->> -                                      ldostr);
->> -                     }
->> -             } else {
->> -                     if (regulator_is_enabled(ldo)) {
->> -                             ret = regulator_disable(ldo);
->> -                             if (ret != 0)
->> -                                     dev_err(dev, "%s: fail to disable %s\n",
->> -                                             __func__, ldostr);
->> -                             else
->> -                                     dev_info(dev, "turn off ldo done.\n");
->> -                     } else {
->> -                             dev_warn(dev, "%s is disabled before disable",
->> -                                      ldostr);
->> -                     }
->> -             }
->> -             regulator_put(ldo);
->> +             ret = regulator_disable(ldo);
->> +             if (ret)
->> +                     dev_err(dev, "%s: fail to disable phy-supply\n",
->> +                             __func__);
->>       }
->>
->>       return 0;
->> @@ -346,14 +325,12 @@ static void *rk_gmac_setup(struct platform_device
->> *pdev)
->>
->>       bsp_priv->phy_iface = of_get_phy_mode(dev->of_node);
->>
->> -     ret = of_property_read_string(dev->of_node, "phy_regulator", &strings);
->> -     if (ret) {
->> -             dev_warn(dev, "%s: Can not read property: phy_regulator.\n",
->> -                      __func__);
->> -     } else {
->> -             dev_info(dev, "%s: PHY power controlled by regulator(%s).\n",
->> -                      __func__, strings);
->> -             strcpy(bsp_priv->regulator, strings);
->> +     bsp_priv->regulator = devm_regulator_get_optional(dev, "phy");
->> +     if (IS_ERR(bsp_priv->regulator)) {
->> +             if (PTR_ERR(bsp_priv->regulator) == -EPROBE_DEFER)
->> +                     return -EPROBE_DEFER;
->
-> this should be return ERR_PTR(-EPROBE_DEFER) and produces a warning in its
-> current state
->
->
->> +             dev_err(dev, "no regulator found\n");
->> +             bsp_priv->regulator = NULL;
->>       }
->>
->>       ret = of_property_read_string(dev->of_node, "clock_in_out", &strings);
->
+Yes I will word this better.
+> 
+>> The CPU_DEAD notifiers are run only after the offline cpu sets its state as
+>> CPU_DEAD. Meanwhile, the kthread doing the offline is scheduled out while
+> 
+> The kthread which is running on a different cpu from either of the first two
+> cpus you've mentioned.
+
+It could be running on any cpu other than the offline one. The next line
+clarifies this - "This is fatal if the cpu on which this kthread was
+running". I also say "Meanwhile, the kthread doing the offline" above so
+as to clarify that the offline cpu has nothing to do with this kthread.
+
+> 
+>> waiting for this transition by queuing a timer. This is fatal because if the
+>> cpu on which this kthread was running has no other work queued on it, it can
+>> re-enter deep idle state, since it sees that a broadcast cpu still exists.
+>> However the broadcast wakeup will never come since the cpu which was handling
+>> it is offline, and this cpu never wakes up to see this because its in deep
+>> idle state.
+> 
+> Which cpu is "this cpu"? I think you mean the one running the kthread which is
+> doing the offline, but it's not 100% clear.
+
+Right, I will make this correction as well, its ambiguous.
+
+> 
+>> Fix this by setting the broadcast timer to a max value so as to force the cpus
+>> entering deep idle states henceforth to freshly nominate the broadcast cpu. More
+>> importantly this has to be done in the CPU_DYING phase so that it is visible to
+>> all cpus right after exiting stop_machine, which is when they can re-enter idle.
+>> This ensures that handover of the broadcast duty falls in place on offline, without
+>> having to do it explicitly.
+> 
+> OK, I don't know the code well enough to say if that's the right fix.
+> 
+> You say:
+> 
+> +	/* This allows fresh nomination of broadcast cpu */
+> +	bc->next_event.tv64 = KTIME_MAX;
+> 
+> Is that all it does? I see that check in several places in the code.
+
+This change does not affect those parts of the tick broadcast code,
+which do not depend on the hrtimer broadcast framework. And for those
+parts that do depend on this framework, this plays a critical role in
+handing over the broadcast duty.
+
+> 
+> 
+> I assume we're expecting Thomas to merge this?
+
+Yes, Thomas can you please take this into the next 3.19 rc release ? I
+will send out a new patch with the modified changelog. If you find this
+acceptable I will port it to the relevant stable kernels.
+> 
+> If so it's probably worth mentioning that it fixes a bug we are seeing on
+
+I will mention this in the changelog by pointing to the bug report.
+
+Regards
+Preeti U Murthy
+> machines in the wild. So it'd be nice if it went into 3.19 and/or gets sent to
+> stable.
+> 
+> cheers
+> 
+
