@@ -1,61 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752894AbbATPL6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 10:11:58 -0500
-Received: from mail-ob0-f172.google.com ([209.85.214.172]:57385 "EHLO
-	mail-ob0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751665AbbATPL4 (ORCPT
+	id S1752982AbbATPMN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 10:12:13 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:57560 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752925AbbATPML (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 10:11:56 -0500
+	Tue, 20 Jan 2015 10:12:11 -0500
+Date: Tue, 20 Jan 2015 16:12:08 +0100
+From: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Boris Brezillon <boris.brezillon@free-electrons.com>,
+        Bo Shen <voice.shen@atmel.com>, Wenyou Yang <Wenyou.Yang@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 08/17] ARM: at91: stop using HAVE_AT91_DBGUx
+Message-ID: <20150120151208.GI5014@piout.net>
+References: <1421359100-8930-1-git-send-email-alexandre.belloni@free-electrons.com>
+ <1421359100-8930-9-git-send-email-alexandre.belloni@free-electrons.com>
+ <54BE2F4D.2080800@atmel.com>
 MIME-Version: 1.0
-In-Reply-To: <1421689454.9655.58.camel@x220>
-References: <1421689454.9655.58.camel@x220>
-Date: Tue, 20 Jan 2015 08:11:56 -0700
-Message-ID: <CANLsYkzgiX_ZkQVEU-o4VE=LQB=daw1a3WCOkm45bdBHWg72tg@mail.gmail.com>
-Subject: Re: [PATCH] coresight-etm: remove check for unknown Kconfig macro
-From: Mathieu Poirier <mathieu.poirier@linaro.org>
-To: Paul Bolle <pebolle@tiscali.nl>
-Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <54BE2F4D.2080800@atmel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19 January 2015 at 10:44, Paul Bolle <pebolle@tiscali.nl> wrote:
-> The CoreSight ETM/PTM driver contains a check for a
-> CONFIG_CORESIGHT_SOURCE_ETM_DEFAULT_ENABLE macro. But there's no related
-> Kconfig symbol CORESIGHT_SOURCE_ETM_DEFAULT_ENABLE. Remove that check
-> and the single line of code it hides.
->
-> Signed-off-by: Paul Bolle <pebolle@tiscali.nl>
-> ---
-> Cross-compile tested only (on top of next-20150119).
->
->  drivers/coresight/coresight-etm3x.c | 4 ----
->  1 file changed, 4 deletions(-)
->
-> diff --git a/drivers/coresight/coresight-etm3x.c b/drivers/coresight/coresight-etm3x.c
-> index 73c36696f1b6..f312dc4dd95c 100644
-> --- a/drivers/coresight/coresight-etm3x.c
-> +++ b/drivers/coresight/coresight-etm3x.c
-> @@ -34,11 +34,7 @@
->
->  #include "coresight-etm.h"
->
-> -#ifdef CONFIG_CORESIGHT_SOURCE_ETM_DEFAULT_ENABLE
-> -static int boot_enable = 1;
-> -#else
->  static int boot_enable;
-> -#endif
->  module_param_named(
->         boot_enable, boot_enable, int, S_IRUGO
->  );
-> --
-> 1.9.3
->
+On 20/01/2015 at 11:34:53 +0100, Nicolas Ferre wrote :
+> Le 15/01/2015 22:58, Alexandre Belloni a écrit :
+> > In order to remove SOC_SAM9xxx options, stop using HAVE_AT91_DBGUx.
+> > 
+> > Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
+> > ---
+> >  arch/arm/Kconfig.debug     |  6 +++---
+> >  arch/arm/mach-at91/Kconfig | 19 -------------------
+> >  2 files changed, 3 insertions(+), 22 deletions(-)
+> > 
+> > diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
+> > index e34d24949c6a..42a38731da99 100644
+> > --- a/arch/arm/Kconfig.debug
+> > +++ b/arch/arm/Kconfig.debug
+> > @@ -117,17 +117,17 @@ choice
+> >  	config AT91_DEBUG_LL_DBGU0
+> >  		bool "Kernel low-level debugging on rm9200, 9260/9g20, 9261/9g10, 9rl, 9x5, 9n12"
+> >  		select DEBUG_AT91_UART
+> > -		depends on HAVE_AT91_DBGU0
+> > +		depends on SOC_AT91RM9200 || SOC_AT91SAM9
+> >  
+> >  	config AT91_DEBUG_LL_DBGU1
+> >  		bool "Kernel low-level debugging on 9263, 9g45 and sama5d3"
+> >  		select DEBUG_AT91_UART
+> > -		depends on HAVE_AT91_DBGU1
+> > +		depends on SOC_AT91SAM9 || SOC_SAMA5
+> >  
+> >  	config AT91_DEBUG_LL_DBGU2
+> >  		bool "Kernel low-level debugging on sama5d4"
+> >  		select DEBUG_AT91_UART
+> > -		depends on HAVE_AT91_DBGU2
+> 
+> These values are used below in the file: in:
+> "
+> default "debug/at91.S" if AT91_DEBUG_LL_DBGU0 || AT91_DEBUG_LL_DBGU1 || \
+>                        AT91_DEBUG_LL_DBGU2
+> 
+> "
+> 
+> So I guess there is a little patch missing: I answer to the
+> message "[PATCH 5/7] ARM: at91: move debug-macro.S into the common space" by fixing this.
+> Please tell me if it's okay.
+> 
 
-Applied - with a slight modification to keep the "module_param_named"
-macro on the same line.
+Your correction was right. The patch correcting that was not part of the
+last rebase.
+
+-- 
+Alexandre Belloni, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
