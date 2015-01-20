@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752910AbbATXsd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 18:48:33 -0500
-Received: from pandora.arm.linux.org.uk ([78.32.30.218]:42301 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751645AbbATXsc (ORCPT
+	id S1753147AbbATXve (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 18:51:34 -0500
+Received: from mail.linux-iscsi.org ([67.23.28.174]:34540 "EHLO
+	linux-iscsi.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751602AbbATXvc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 18:48:32 -0500
-Date: Tue, 20 Jan 2015 23:48:21 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stefan Agner <stefan@agner.ch>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Mark Salter <msalter@redhat.com>, Kees Cook <keescook@chromium.org>,
-        Laura Abbott <lauraa@codeaurora.org>, Arnd Bergmann <arnd@arndb.de>,
-        Rob Herring <robh@kernel.org>
-Subject: Re: [PATCH v2] ARM: early fixmap support for earlycon
-Message-ID: <20150120234821.GN26493@n2100.arm.linux.org.uk>
-References: <1421797064-2989-1-git-send-email-stefan@agner.ch>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421797064-2989-1-git-send-email-stefan@agner.ch>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Tue, 20 Jan 2015 18:51:32 -0500
+Message-ID: <1421797890.9970.14.camel@haakon3.risingtidesystems.com>
+Subject: Re: [PATCH] ib_srpt: wait_for_completion_timeout does not return
+ negativ status
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Nicholas Mc Guire <der.herr@hofr.at>
+Cc: Roland Dreier <roland@kernel.org>, Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        Bart Van Assche <bvanassche@acm.org>, Jingoo Han <jg1.han@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Mike Marciniszyn <mike.marciniszyn@intel.com>,
+        Ira Weiny <ira.weiny@intel.com>, Christoph Hellwig <hch@infradead.org>,
+        linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 20 Jan 2015 15:51:30 -0800
+In-Reply-To: <1421407217-9105-1-git-send-email-der.herr@hofr.at>
+References: <1421407217-9105-1-git-send-email-der.herr@hofr.at>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.4.4-1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 12:37:44AM +0100, Stefan Agner wrote:
-> Add early fixmap support, initially to support permanent, fixed
-> mapping support for early console. A temporary, early pte is
-> created which is migrated to a permanent mapping in paging_init.
-> This is also needed since the attributs may change as the memory
-> types are initialized. The 3MiB range of fixmap spans two pte
-> tables, but currently only one pte is created for early fixmap
-> support.
+Hi Nicholas,
 
-I think this needs to be done more carefully - I think the entry(ies)
-should be removed, the TLBs flushed, and the new entry established.
-So:
+On Fri, 2015-01-16 at 12:20 +0100, Nicholas Mc Guire wrote:
+> Signed-off-by: Nicholas Mc Guire <der.herr@hofr.at>
+> ---
+> 
+> Patch is against 3.19.0-rc3 -next-20150109
+> 
+> Patch was compiletested only with x86_64_defconfig +
+> CONFIG_TARGET_CORE=m, CONFIG_INFINIBAND=m, CONFIG_INFINIBAND_SRPT=m
+> 
+>  drivers/infiniband/ulp/srpt/ib_srpt.c |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/drivers/infiniband/ulp/srpt/ib_srpt.c b/drivers/infiniband/ulp/srpt/ib_srpt.c
+> index eb694dd..4e58c76 100644
+> --- a/drivers/infiniband/ulp/srpt/ib_srpt.c
+> +++ b/drivers/infiniband/ulp/srpt/ib_srpt.c
+> @@ -3533,7 +3533,7 @@ static void srpt_close_session(struct se_session *se_sess)
+>  	spin_unlock_irq(&sdev->spinlock);
+>  
+>  	res = wait_for_completion_timeout(&release_done, 60 * HZ);
+> -	WARN_ON(res <= 0);
+> +	WARN_ON(res == 0);
+>  }
+>  
+>  /**
 
-> +static void __init early_fixmap_shutdown(void)
-> +{
-> +	int i;
-> +
-> +	pte_offset_fixmap = &pte_offset_late_fixmap;
-> +	pmd_clear(fixmap_pmd(fix_to_virt(__end_of_permanent_fixed_addresses - 1)));
+Notice that 'res' here is still incorrectly defined as an 'int', instead
+of 'unsigned long'.
 
-I think you should flush tlbs here.
+I've updated your patch to use the proper type for res, and added a
+short commit log to describe what it's doing.
 
--- 
-FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
-according to speedtest.net.
+Merged into target-pending/for-next.
+
+Thanks!
+
+--nab
+
