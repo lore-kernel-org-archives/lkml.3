@@ -1,66 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978AbbATPqx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 10:46:53 -0500
-Received: from mail-ig0-f175.google.com ([209.85.213.175]:50838 "EHLO
-	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753138AbbATPqu (ORCPT
+	id S1754024AbbATPrC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 10:47:02 -0500
+Received: from mail-la0-f51.google.com ([209.85.215.51]:54371 "EHLO
+	mail-la0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753985AbbATPq5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 10:46:50 -0500
-Date: Tue, 20 Jan 2015 15:46:44 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mika Westerberg <mika.westerberg@linux.intel.com>
-Subject: Re: [PATCH v1 0/4] mfd: reorganize Intel drivers
-Message-ID: <20150120154644.GF13701@x1>
-References: <1418313236-10764-1-git-send-email-andriy.shevchenko@linux.intel.com>
- <20150120134857.GK13701@x1>
- <1421763412.31903.70.camel@linux.intel.com>
+	Tue, 20 Jan 2015 10:46:57 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1421763412.31903.70.camel@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1418772873-19747-3-git-send-email-hongzhou.yang@mediatek.com>
+References: <1418772873-19747-1-git-send-email-hongzhou.yang@mediatek.com>
+	<1418772873-19747-3-git-send-email-hongzhou.yang@mediatek.com>
+Date: Tue, 20 Jan 2015 16:46:54 +0100
+Message-ID: <CABuKBe+9wG_Pa0S7A+JGT8mRo9embdYXhse1GFJXm8Rj3OTZQQ@mail.gmail.com>
+Subject: Re: [PATCH v4 2/5] dt-bindings: Add pinctrl bindings for mt65xx/mt81xx.
+From: Matthias Brugger <matthias.bgg@gmail.com>
+To: Hongzhou Yang <hongzhou.yang@mediatek.com>
+Cc: Rob Herring <robh+dt@kernel.org>, Linus Walleij <linus.walleij@linaro.org>,
+        srv_heupstream <srv_heupstream@mediatek.com>,
+        Sascha Hauer <kernel@pengutronix.de>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Grant Likely <grant.likely@linaro.org>,
+        "Joe.C" <yingjoe.chen@mediatek.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Vladimir Murzin <vladimir.murzin@arm.com>,
+        Ashwin Chaugule <ashwin.chaugule@linaro.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        dandan.he@mediatek.com, alan.cheng@mediatek.com, toby.liu@mediatek.com,
+        maoguang.meng@mediatek.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Jan 2015, Andy Shevchenko wrote:
+2014-12-17 0:34 GMT+01:00 Hongzhou Yang <hongzhou.yang@mediatek.com>:
+> From: Hongzhou Yang <hongzhou.yang@mediatek.com>
+>
+> Add devicetree bindings for Mediatek SoC pinctrl driver.
+>
+> Signed-off-by: Hongzhou Yang <hongzhou.yang@mediatek.com>
+> ---
+>  .../devicetree/bindings/pinctrl/pinctrl-mt65xx.txt | 142 +++++++++++++++++++++
+>  1 file changed, 142 insertions(+)
+>  create mode 100644 Documentation/devicetree/bindings/pinctrl/pinctrl-mt65xx.txt
+>
+> diff --git a/Documentation/devicetree/bindings/pinctrl/pinctrl-mt65xx.txt b/Documentation/devicetree/bindings/pinctrl/pinctrl-mt65xx.txt
+> new file mode 100644
+> index 0000000..3bf34f9
+> --- /dev/null
+> +++ b/Documentation/devicetree/bindings/pinctrl/pinctrl-mt65xx.txt
+> @@ -0,0 +1,142 @@
+> +* Mediatek MT65XX Pin Controller
+> +
+> +The Mediatek's Pin controller is used to control SoC pins.
+> +
+> +Required properties:
+> +- compatible: value should be either of the following.
+> +    (a) "mediatek,mt8135-pinctrl", compatible with mt8135 pinctrl.
+> +- mediatek,pctl-regmap: Should be a phandle of the syscfg node.
+> +- gpio-controller : Marks the device node as a gpio controller.
+> +- #gpio-cells: number of cells in GPIO specifier. Since the generic GPIO
+> +  binding is used, the amount of cells must be specified as 2. See the below
+> +  mentioned gpio binding representation for description of particular cells.
+> +
+> +       Eg: <&pio 6 0>
+> +       <[phandle of the gpio controller node]
+> +       [pin number within the gpio controller]
+> +       [flags]>
+> +
+> +       Values for gpio specifier:
+> +       - Pin number: is a value between 0 to 202.
+> +       - Flags:  bit field of flags, as defined in <dt-bindings/gpio/gpio.h>.
+> +            Only the following flags are supported:
+> +            0 - GPIO_ACTIVE_HIGH
+> +            1 - GPIO_ACTIVE_LOW
+> +- reg: physicall address base for EINT registers
+> +- interrupt-controller: Marks the device node as an interrupt controller
+> +- #interrupt-cells: Should be two.
+> +- interrupts : The interrupt outputs from the controller.
+> +
+> +Please refer to pinctrl-bindings.txt in this directory for details of the
+> +common pinctrl bindings used by client devices.
+> +
+> +A pinctrl node should contain at least one subnodes representing the
+> +pinctrl groups available on the machine. Each subnode will list the
+> +pins it needs, and how they should be configured, with regard to muxer
+> +configuration, pullups, drive strngth, input enable/disable and input schmitt.
 
-> On Tue, 2015-01-20 at 13:48 +0000, Lee Jones wrote:
-> > On Thu, 11 Dec 2014, Andy Shevchenko wrote:
-> > 
-> > > This patchset creates a new folder under drivers/mfd and moves there Intel
-> > > related drivers.
-> > > 
-> > > There is no functional change. The names of the kernel configuration variables
-> > > are kept the same.
-> > 
-> > Can you explain to me why you think the Intel drivers need their own
-> > sub-directory please?
-> 
-> For me it seems logical. We have many drivers related to Intel specific
-> SoCs (in comparison the other mfd drivers that usually named in
-> according to some standard chip codename) and they meanwhile have long
-> awkward prefixes. Moreover they could share common dependencies like
-> X86.
+drive strength
 
-I'm not comfortable with it and am yet to see the need.  What I would
-suggest is to prefix 'intel-' or similar to the related files.  From
-there we can see how overbearing the files are becoming and make a
-decision based on that.
+> +
+> +Required subnode-properties:
+> +
+> +- pins: 2 integers array, represents gpio pinmux number and config
+> +  setting. The format as following
+> +
+> +    node {
+> +     pins = <PIN_NUMBER_PINMUX>;
+> +                     GENERIC_PINCONFIG;
+> +    };
+> +
+> +    The PIN_NUMBER_PINMUX is combination of GPIO number and pinmux, it can
+> +    use macros which already defind in boot/dts/mt8135-pinfunc.h directly.
+> +    The GENERIC_PINCONFIG is the generic pinconfig options to use, bias-disable,
+> +    bias-pull-down, bias-pull-up, input-enable, input-disable, output-low, output-high,
+> +    input-schmitt-enable, input-schmitt-disable and drive-strength are valid.
+> +
+> +    Some special pins have extra pull up strength, there are R0 and R1 pull-up
+> +    resistors available, but for user, it's only need to set R1R0 as 00, 01, 10 or 11.
+> +    So when config bias-pull-up, it support arguments for those special pins.
+> +    Some macros have been defined for this usage, such as MTK_PUPD_SET_R1R0_00.
+> +    See dt-bindings/pinctrl/mt65xx.h.
+> +
+> +    When config drive-strength, it can support some arguments, such as
+> +    MTK_DRIVE_4mA, MTK_DRIVE_6mA, etc. See dt-bindings/pinctrl/mt65xx.h.
+> +
+> +Examples:
+> +
+> +#include "mt8135-pinfunc.h"
+> +
+> +...
+> +{
+> +       syscfg_pctl_a: syscfg_pctl_a@10005000 {
+> +               compatible = "mediatek,mt8135-pctl-a-syscfg", "syscon";
+> +               reg = <0 0x10005000 0 0x1000>;
+> +       };
+> +
+> +       syscfg_pctl_b: syscfg_pctl_b@1020C020 {
+> +               compatible = "mediatek,mt8135-pctl-b-syscfg", "syscon";
+> +               reg = <0 0x1020C020 0 0x1000>;
+> +       };
+> +
+> +       pinctrl@01c20800 {
+> +               compatible = "mediatek,mt8135-pinctrl";
+> +               reg = <0 0x1000B000 0 0x1000>;
+> +               mediatek,pctl-regmap = <&syscfg_pctl_a &syscfg_pctl_b>;
+> +               gpio-controller;
+> +               #gpio-cells = <2>;
+> +               interrupt-controller;
+> +               #interrupt-cells = <2>;
+> +               interrupts = <GIC_SPI 116 IRQ_TYPE_LEVEL_HIGH>,
+> +                               <GIC_SPI 117 IRQ_TYPE_LEVEL_HIGH>,
+> +                               <GIC_SPI 118 IRQ_TYPE_LEVEL_HIGH>;
+> +
+> +               i2c0_pins_a: i2c0@0 {
+> +                       pins1 {
+> +                               pins = <MT8135_PIN_100_SDA0__FUNC_SDA0>,
+> +                                               <MT8135_PIN_101_SCL0__FUNC_SCL0>;
+> +                               bias-disable;
+> +                       };
+> +               };
+> +
+> +               i2c1_pins_a: i2c1@0 {
+> +                       pins {
+> +                               pins = <MT8135_PIN_195_SDA1__FUNC_SDA1>,
+> +                                               <MT8135_PIN_196_SCL1__FUNC_SCL1>;
+> +                               bias-pull-up = <55>;
+> +                       };
+> +               };
+> +
+> +               i2c2_pins_a: i2c2@0 {
+> +                       pins1 {
+> +                               pins = <MT8135_PIN_193_SDA2__FUNC_SDA2>;
+> +                               bias-pull-down;
+> +                       };
+> +
+> +                       pins2 {
+> +                               pins = <MT8135_PIN_49_WATCHDOG__FUNC_GPIO49>;
+> +                               bias-pull-up;
+> +                       };
+> +               };
+> +
+> +               i2c3_pins_a: i2c3@0 {
+> +                       pins1 {
+> +                               pins = <MT8135_PIN_40_DAC_CLK__FUNC_GPIO40>,
+> +                                               <MT8135_PIN_41_DAC_WS__FUNC_GPIO41>;
+> +                               bias-pull-up = <55>;
+> +                       };
+> +
+> +                       pins2 {
+> +                               pins = <MT8135_PIN_35_SCL3__FUNC_SCL3>,
+> +                                               <MT8135_PIN_36_SDA3__FUNC_SDA3>;
+> +                               output-low;
+> +                               bias-pull-up = <55>;
+> +                       };
+> +
+> +                       pins3 {
+> +                               pins = <MT8135_PIN_57_JTCK__FUNC_GPIO57>,
+> +                                               <MT8135_PIN_60_JTDI__FUNC_JTDI>;
+> +                               drive-strength = <32>;
+> +                       };
+> +               };
+> +
+> +               ...
+> +       }
+> +};
+> --
+> 1.8.1.1.dirty
+>
 
-If there are too many Intel related files, my first question(s) will
-be a) why are there so many files b) are so many files required and c)
-should they really live in MFD.
 
-But as yet, this patch-set is the only indication that something needs
-to be done at all.
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+motzblog.wordpress.com
