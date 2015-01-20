@@ -1,188 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752157AbbATApN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 19:45:13 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:41424 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751552AbbATApL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 19:45:11 -0500
-Date: Mon, 19 Jan 2015 16:45:02 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: mingo@kernel.org
-Cc: xiexiuqi@huawei.com, dave@stgolabs.net, agordeev@redhat.com,
-        bobby.prani@gmail.com, linux-kernel@vger.kernel.org,
-        laijs@cn.fujitsu.com, ying.xue@windriver.com, dahi@linux.vnet.ibm.com,
-        calvinowens@fb.com, mbenes@suse.cz
-Subject: [GIT PULL rcu/next] RCU commits for 3.20
-Message-ID: <20150120004502.GA14517@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
+	id S1752260AbbATBr7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 20:47:59 -0500
+Received: from ozlabs.org ([103.22.144.67]:51000 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751396AbbATBrp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 20:47:45 -0500
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: module: fix module_refcount() return when running in a module exit routine
+In-Reply-To: <1421683701.2080.25.camel@HansenPartnership.com>
+References: <1421600146.2080.8.camel@HansenPartnership.com> <54BC93C3.7010808@hitachi.com> <878ugzco8c.fsf@rustcorp.com.au> <1421683701.2080.25.camel@HansenPartnership.com>
+User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
+Date: Tue, 20 Jan 2015 11:15:13 +1030
+Message-ID: <871tmqcmau.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15012000-0021-0000-0000-000007E79836
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Ingo,
+James Bottomley <James.Bottomley@HansenPartnership.com> writes:
+> On Mon, 2015-01-19 at 16:21 +1030, Rusty Russell wrote:
+>> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> writes:
+>> > (2015/01/19 1:55), James Bottomley wrote:
+>> >> From: James Bottomley <JBottomley@Parallels.com>
+>> >> 
+>> >> After e513cc1 module: Remove stop_machine from module unloading,
+>> >> module_refcount() is returning (unsigned long)-1 when called from within
+>> >> a routine that runs in module_exit.  This is confusing the scsi device
+>> >> put code which is coded to detect a module_refcount() of zero for
+>> >> running within a module exit routine and not try to do another
+>> >> module_put.  The fix is to restore the original behaviour of
+>> >> module_refcount() and return zero if we're running inside an exit
+>> >> routine.
+>> >> 
+>> >> Fixes: e513cc1c07e2ab93a4514eec9833e031df3e30bb
+>> >> Reported-by: Bart Van Assche <bvanassche@acm.org>
+>> >> Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+>> >> 
+>> >
+>> > Yes, this should be fixed as you said, since it must return "unsigned long" value.
+>> 
+>> But there are only three non-module callers:
+>> 
+>> drivers/scsi/scsi.c:1012:	if (module && module_refcount(module) != 0)
+>> drivers/staging/lustre/lustre/obdclass/lu_object.c:1359:			LINVRNT(module_refcount(key->lct_owner) > 0);
+>> include/linux/module.h:447:unsigned long module_refcount(struct module *mod);
+>> kernel/debug/kdb/kdb_main.c:2026:		kdb_printf("%4ld ", module_refcount(mod));
+>> kernel/module.c:775:unsigned long module_refcount(struct module *mod)
+>> kernel/module.c:779:EXPORT_SYMBOL(module_refcount);
+>> kernel/module.c:859:	seq_printf(m, " %lu ", module_refcount(mod));
+>> kernel/module.c:911:	return sprintf(buffer, "%lu\n", module_refcount(mk->mod));
+>> 
+>> The first one I think should be eliminated, and the second one is simply
+>> an assertion before calling module_put() (which should probably be
+>> eliminated).  The others are just printing information.
+>
+> If you really want to insist on module_reference() returning -1 when the
+> module is in it's exit phase, OK, but in that case, I think it should
+> return a signed value, not an unsigned one.
 
-The changes in this series include:
+Sure; I just didn't want to paper over the problem here.  And I'm not
+sure we want to lose information, eg. in kgdb we're presumably looking
+at it because something went wrong...
 
-1.	Documentation updates.  These were posted to LKML at
-	https://lkml.org/lkml/2015/1/7/496.
+Thanks,
+Rusty.
 
-2.	Miscellaneous fixes.  These were posted to LKML at
-	https://lkml.org/lkml/2015/1/7/507.
+Subject: module: make module_refcount() a signed integer.
 
-3.	Preemptible-RCU fixes, including fixing an old bug in the
-	interaction of RCU priority boosting and CPU hotplug.  These were
-	posted to LKML at https://lkml.org/lkml/2015/1/7/535.
+James Bottomley points out that it will be -1 during unload.  It's
+only used for diagnostics, so let's not hide that as it could be a
+clue as to what's gone wrong.
 
-4.	SRCU updates.  These were posted to LKML at
-	https://lkml.org/lkml/2015/1/7/555.
+Cc: Jason Wessel <jason.wessel@windriver.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 
-5.	RCU CPU stall-warning updates.  These were posted to LKML at
-	https://lkml.org/lkml/2015/1/7/565.
-
-6.	RCU torture-test updates.  These were posted to LKML at
-	https://lkml.org/lkml/2015/1/7/591.
-
-These changes are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git for-mingo
-
-for you to fetch changes up to 78e691f4ae2d5edea0199ca802bb505b9cdced88:
-
-  Merge branches 'doc.2015.01.07a', 'fixes.2015.01.15a', 'preempt.2015.01.06a', 'srcu.2015.01.06a', 'stall.2015.01.16a' and 'torture.2015.01.11a' into HEAD (2015-01-15 23:34:34 -0800)
-
-----------------------------------------------------------------
-
-Alexander Gordeev (1):
-      rcu: Remove redundant rcu_is_cpu_rrupt_from_idle() from tiny RCU
-
-Calvin Owens (1):
-      ksoftirqd: Enable IRQs and call cond_resched() before poking RCU
-
-David Hildenbrand (1):
-      hotplugcpu: Avoid deadlocks by waking active_writer
-
-Davidlohr Bueso (1):
-      documentation: Fix smp typo in memory-barriers.txt
-
-Lai Jiangshan (3):
-      tiny_rcu: Directly force QS when call_rcu_[bh|sched]() on idle_task
-      rcu: Remove "select IRQ_WORK" from config TREE_RCU
-      rcu: Revert "Allow post-unlock reference for rt_mutex" to avoid priority-inversion
-
-Miroslav Benes (1):
-      rcu: Fix RCU CPU stall detection in tiny implementation
-
-Paul E. McKenney (43):
-      rcu: Make rcu_nmi_enter() handle nesting
-      rcu: Fix invoke_rcu_callbacks() comment
-      compiler: Allow 1- and 2-byte smp_load_acquire() and smp_store_release()
-      rcu: Fix rcu_barrier() race that could result in too-short wait
-      rcu: Protect rcu_boost() lockless accesses with ACCESS_ONCE()
-      rcu: Rename "empty" to "empty_norm" in preparation for boost rework
-      rcu: Abstract rcu_cleanup_dead_rnp() from rcu_cleanup_dead_cpu()
-      rcu: Make rcu_read_unlock_special() propagate ->qsmaskinit bit clearing
-      rcu: Don't migrate blocked tasks even if all corresponding CPUs offline
-      rcu: Shorten irq-disable region in rcu_cleanup_dead_cpu()
-      rcu: Make use of rcu_preempt_has_tasks()
-      rcu: Don't spawn rcub kthreads on root rcu_node structure
-      rcu: Don't initiate RCU priority boosting on root rcu_node
-      rcu: Don't bother affinitying rcub kthreads away from offline CPUs
-      rcu: Note quiescent state when CPU goes offline
-      rcu: Don't scan root rcu_node structure for stalled tasks
-      rcu: Remove redundant callback-list initialization
-      rcu: Expand SRCU ->completed to 64 bits
-      rcu: Combine DEFINE_SRCU() and DEFINE_STATIC_SRCU()
-      rcu: Set default to RCU_CPU_STALL_INFO=y
-      rcutorture: Add checks for stall ending before dump start
-      rcu: Make RCU_CPU_STALL_INFO include number of fqs attempts
-      rcu: Improve diagnostics for spurious RCU CPU stall warnings
-      rcu: Handle gpnum/completed wrap while dyntick idle
-      documentation: Record limitations of bitfields and small variables
-      rcutorture: Issue warnings on close calls due to Reader Batch blows
-      rcu: Make _batches_completed() functions return unsigned long
-      rcutorture: Make build-output parsing correctly flag RCU's warnings
-      rcutorture: Use unsigned for Reader Batch computations
-      rcu: Provide rcu_batches_completed_sched() for TINY_RCU
-      rcutorture: Drop rcu_torture_completed() and friends
-      rcu: Remove redundant rcu_batches_completed() declaration
-      rcutorture: Check from beginning to end of grace period
-      rcutorture: Handle different mpstat versions
-      torture: Add "-enable-kvm -soundhw pcspk" to qemu command line
-      torture: Flag console.log file to prevent holdovers from earlier runs
-      rcutorture: Add more diagnostics in rcu_barrier() test failure case
-      ksoftirqd: Use new cond_resched_rcu_qs() function
-      rcu: Optionally run grace-period kthreads at real-time priority
-      rcu: Make cond_resched_rcu_qs() apply to normal RCU flavors
-      rcu: Add GP-kthread-starvation checks to CPU stall warnings
-      rcu: Initialize tiny RCU stall-warning timeouts at boot
-      Merge branches 'doc.2015.01.07a', 'fixes.2015.01.15a', 'preempt.2015.01.06a', 'srcu.2015.01.06a', 'stall.2015.01.16a' and 'torture.2015.01.11a' into HEAD
-
-Pranith Kumar (2):
-      rcupdate: Replace smp_read_barrier_depends() with lockless_dereference()
-      rcu: Make SRCU optional by using CONFIG_SRCU
-
-Xie XiuQi (1):
-      documentation: Update sysfs path for rcu_cpu_stall_timeout
-
-Ying Xue (1):
-      rculist: Fix sparse warning
-
- Documentation/RCU/stallwarn.txt                    |  16 +-
- Documentation/RCU/trace.txt                        |  32 +-
- Documentation/memory-barriers.txt                  |  46 ++-
- arch/arm/kvm/Kconfig                               |   1 +
- arch/arm64/kvm/Kconfig                             |   1 +
- arch/mips/kvm/Kconfig                              |   1 +
- arch/powerpc/kvm/Kconfig                           |   1 +
- arch/s390/kvm/Kconfig                              |   1 +
- arch/tile/kvm/Kconfig                              |   1 +
- arch/x86/Kconfig                                   |   1 +
- arch/x86/kvm/Kconfig                               |   1 +
- drivers/clk/Kconfig                                |   1 +
- drivers/cpufreq/Kconfig                            |   1 +
- drivers/devfreq/Kconfig                            |   1 +
- drivers/md/Kconfig                                 |   1 +
- drivers/net/Kconfig                                |   1 +
- fs/btrfs/Kconfig                                   |   1 +
- fs/notify/Kconfig                                  |   1 +
- fs/quota/Kconfig                                   |   1 +
- include/linux/compiler.h                           |   2 +-
- include/linux/rculist.h                            |  16 +-
- include/linux/rcupdate.h                           |  13 +-
- include/linux/rcutiny.h                            |  45 ++-
- include/linux/rcutree.h                            |  11 +-
- include/linux/srcu.h                               |  14 +-
- init/Kconfig                                       |  18 +-
- kernel/cpu.c                                       |  56 ++--
- kernel/notifier.c                                  |   3 +
- kernel/power/Kconfig                               |   1 +
- kernel/rcu/Makefile                                |   3 +-
- kernel/rcu/rcu.h                                   |   6 +
- kernel/rcu/rcutorture.c                            |  66 ++--
- kernel/rcu/srcu.c                                  |   2 +-
- kernel/rcu/tiny.c                                  | 113 +------
- kernel/rcu/tiny_plugin.h                           |   9 +-
- kernel/rcu/tree.c                                  | 355 +++++++++++++++------
- kernel/rcu/tree.h                                  |  62 +---
- kernel/rcu/tree_plugin.h                           | 271 +++++-----------
- kernel/rcu/tree_trace.c                            |   8 +-
- kernel/softirq.c                                   |   3 +-
- lib/Kconfig.debug                                  |   3 +-
- mm/Kconfig                                         |   1 +
- security/tomoyo/Kconfig                            |   1 +
- tools/testing/selftests/rcutorture/bin/cpus2use.sh |   2 +-
- .../selftests/rcutorture/bin/kvm-recheck-rcu.sh    |  18 ++
- .../selftests/rcutorture/bin/kvm-test-1-run.sh     |   9 +-
- .../selftests/rcutorture/bin/parse-build.sh        |  20 +-
- .../selftests/rcutorture/bin/parse-console.sh      |   2 +-
- 48 files changed, 657 insertions(+), 586 deletions(-)
-
+diff --git a/include/linux/module.h b/include/linux/module.h
+index ebfb0e153c6a..b653d7c0a05a 100644
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -444,7 +444,7 @@ extern void __module_put_and_exit(struct module *mod, long code)
+ #define module_put_and_exit(code) __module_put_and_exit(THIS_MODULE, code)
+ 
+ #ifdef CONFIG_MODULE_UNLOAD
+-unsigned long module_refcount(struct module *mod);
++int module_refcount(struct module *mod);
+ void __symbol_put(const char *symbol);
+ #define symbol_put(x) __symbol_put(VMLINUX_SYMBOL_STR(x))
+ void symbol_put_addr(void *addr);
+diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
+index f191bddf64b8..7b40c5f07dce 100644
+--- a/kernel/debug/kdb/kdb_main.c
++++ b/kernel/debug/kdb/kdb_main.c
+@@ -2023,7 +2023,7 @@ static int kdb_lsmod(int argc, const char **argv)
+ 		kdb_printf("%-20s%8u  0x%p ", mod->name,
+ 			   mod->core_size, (void *)mod);
+ #ifdef CONFIG_MODULE_UNLOAD
+-		kdb_printf("%4ld ", module_refcount(mod));
++		kdb_printf("%4d ", module_refcount(mod));
+ #endif
+ 		if (mod->state == MODULE_STATE_GOING)
+ 			kdb_printf(" (Unloading)");
+diff --git a/kernel/module.c b/kernel/module.c
+index 3965511ae133..2387c98347c1 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -772,9 +772,9 @@ static int try_stop_module(struct module *mod, int flags, int *forced)
+ 	return 0;
+ }
+ 
+-unsigned long module_refcount(struct module *mod)
++int module_refcount(struct module *mod)
+ {
+-	return (unsigned long)atomic_read(&mod->refcnt) - MODULE_REF_BASE;
++	return atomic_read(&mod->refcnt) - MODULE_REF_BASE;
+ }
+ EXPORT_SYMBOL(module_refcount);
+ 
+@@ -856,7 +856,7 @@ static inline void print_unload_info(struct seq_file *m, struct module *mod)
+ 	struct module_use *use;
+ 	int printed_something = 0;
+ 
+-	seq_printf(m, " %lu ", module_refcount(mod));
++	seq_printf(m, " %i ", module_refcount(mod));
+ 
+ 	/*
+ 	 * Always include a trailing , so userspace can differentiate
+@@ -908,7 +908,7 @@ EXPORT_SYMBOL_GPL(symbol_put_addr);
+ static ssize_t show_refcnt(struct module_attribute *mattr,
+ 			   struct module_kobject *mk, char *buffer)
+ {
+-	return sprintf(buffer, "%lu\n", module_refcount(mk->mod));
++	return sprintf(buffer, "%i\n", module_refcount(mk->mod));
+ }
+ 
+ static struct module_attribute modinfo_refcnt =
