@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753629AbbATKAi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 05:00:38 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40216 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753604AbbATKA3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 05:00:29 -0500
-From: Fam Zheng <famz@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        David Drysdale <drysdale@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Vivek Goyal <vgoyal@redhat.com>, Mike Frysinger <vapier@gentoo.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        Hugh Dickins <hughd@google.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Fam Zheng <famz@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        linux-fsdevel@vger.kernel.org, linux-api@vger.kernel.org,
-        Josh Triplett <josh@joshtriplett.org>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: [PATCH RFC 6/6] x86: Hook up epoll_mod_wait syscall
-Date: Tue, 20 Jan 2015 17:57:58 +0800
-Message-Id: <1421747878-30744-7-git-send-email-famz@redhat.com>
-In-Reply-To: <1421747878-30744-1-git-send-email-famz@redhat.com>
-References: <1421747878-30744-1-git-send-email-famz@redhat.com>
+	id S1753456AbbATJ7Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 04:59:16 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:47101 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752734AbbATJ7J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 04:59:09 -0500
+MIME-Version: 1.0
+In-Reply-To: <1421518516-26976-2-git-send-email-b.galvani@gmail.com>
+References: <1421518516-26976-1-git-send-email-b.galvani@gmail.com>
+	<1421518516-26976-2-git-send-email-b.galvani@gmail.com>
+Date: Tue, 20 Jan 2015 10:59:08 +0100
+Message-ID: <CACRpkdZ6CX1XePa0sOY-0B9He9jYPNLqUtkk3LEGeT6eSQW9ew@mail.gmail.com>
+Subject: Re: [PATCH v4 1/3] pinctrl: add driver for Amlogic Meson SoCs
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Beniamino Galvani <b.galvani@gmail.com>
+Cc: Carlo Caione <carlo@caione.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Arnd Bergmann <arnd@arndb.de>, Russell King <linux@arm.linux.org.uk>,
+        Soren Brinkmann <soren.brinkmann@xilinx.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Jerry Cao <jerry.cao@amlogic.com>,
+        Victor Wan <victor.wan@amlogic.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Fam Zheng <famz@redhat.com>
----
- arch/x86/syscalls/syscall_32.tbl | 1 +
- arch/x86/syscalls/syscall_64.tbl | 1 +
- 2 files changed, 2 insertions(+)
+On Sat, Jan 17, 2015 at 7:15 PM, Beniamino Galvani <b.galvani@gmail.com> wrote:
 
-diff --git a/arch/x86/syscalls/syscall_32.tbl b/arch/x86/syscalls/syscall_32.tbl
-index b3560ec..52aead3 100644
---- a/arch/x86/syscalls/syscall_32.tbl
-+++ b/arch/x86/syscalls/syscall_32.tbl
-@@ -365,3 +365,4 @@
- 356	i386	memfd_create		sys_memfd_create
- 357	i386	bpf			sys_bpf
- 358	i386	execveat		sys_execveat			stub32_execveat
-+359	i386	epoll_mod_wait		sys_epoll_mod_wait
-diff --git a/arch/x86/syscalls/syscall_64.tbl b/arch/x86/syscalls/syscall_64.tbl
-index 8d656fb..c3c203a 100644
---- a/arch/x86/syscalls/syscall_64.tbl
-+++ b/arch/x86/syscalls/syscall_64.tbl
-@@ -329,6 +329,7 @@
- 320	common	kexec_file_load		sys_kexec_file_load
- 321	common	bpf			sys_bpf
- 322	64	execveat		stub_execveat
-+323	64	epoll_mod_wait		sys_epoll_mod_wait
- 
- #
- # x32-specific system call numbers start at 512 to avoid cache impact
--- 
-1.9.3
+> This is a driver for the pinmux and GPIO controller available in
+> Amlogic Meson SoCs. It currently supports only Meson8, however the
+> common code should be generic enough to work also for other SoCs after
+> having defined the proper set of functions and groups.
+>
+> GPIO interrupts are not supported at the moment due to lack of
+> documentation.
+>
+> Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
 
+Patch applied. Great work Beniamino!
+
+Yours,
+Linus Walleij
