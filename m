@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755530AbbATQtt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 11:49:49 -0500
-Received: from mail-ie0-f175.google.com ([209.85.223.175]:60605 "EHLO
-	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753252AbbATQlq (ORCPT
+	id S1755303AbbATQoW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 11:44:22 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48347 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751152AbbATQoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 11:41:46 -0500
-From: Xunlei Pang <pang.xunlei@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: rtc-linux@googlegroups.com, Thomas Gleixner <tglx@linutronix.de>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        Feng Tang <feng.tang@intel.com>, John Stultz <john.stultz@linaro.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        Xunlei Pang <pang.xunlei@linaro.org>
-Subject: [PATCH 3/3] time: clocksource: Add a comment to CLOCK_SOURCE_SUSPEND_NONSTOP
-Date: Tue, 20 Jan 2015 16:41:30 +0000
-Message-Id: <1421772090-13113-3-git-send-email-pang.xunlei@linaro.org>
-X-Mailer: git-send-email 2.2.1
-In-Reply-To: <1421772090-13113-1-git-send-email-pang.xunlei@linaro.org>
-References: <1421772090-13113-1-git-send-email-pang.xunlei@linaro.org>
+	Tue, 20 Jan 2015 11:44:20 -0500
+Date: Tue, 20 Jan 2015 16:44:18 +0000
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Mark Brown <broonie@kernel.org>, Inha Song <ideal.song@samsung.com>,
+        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        sameo@linux.intel.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: Re: [alsa-devel] [PATCH v2 RESEND 2/2] mfd: arizona: Update DT
+	binding to support OUTn_MONO init_data
+Message-ID: <20150120164418.GC14516@opensource.wolfsonmicro.com>
+References: <1420185829-24886-1-git-send-email-ideal.song@samsung.com> <1420185829-24886-3-git-send-email-ideal.song@samsung.com> <20150120122005.GA13701@x1> <20150120132001.GA21293@sirena.org.uk> <20150120160248.GK13701@x1>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150120160248.GK13701@x1>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When doing timekeeping_resume(), if the nonstop clocksource wraps
-back, "cycle_delta" will miss the wrap time.
+On Tue, Jan 20, 2015 at 04:02:48PM +0000, Lee Jones wrote:
+> On Tue, 20 Jan 2015, Mark Brown wrote:
+> 
+> > On Tue, Jan 20, 2015 at 12:20:05PM +0000, Lee Jones wrote:
+> > > On Fri, 02 Jan 2015, Inha Song wrote:
+> > 
+> > > > This patch update DT binding to support OUTn_MONO init_data. Each
+> > > > output signal can be configurated as a mono differential output.
+> > > > The mono differential configuration is selected using the OUTn_MONO
+> > > > registers.
+> > 
+> > > This requires a DT Ack and an entry in the example.
+> > 
+> > The DT maintainers have said they're OK with maintainers just merging
+> > things if they're comfortable with it (see the bindings specific
+> > submitting-patches.txt) and given their workload and general resulting
+> > responsiveness it's going to make it difficult go get anything done.
+> 
+> I only tend to poke the DT guys when I am unsure of something in the
+> binding.  In this case it was a doubt whether we should be encoding
+> register values inside a property like this.
+> 
+> I would also be happy to take it with your Ack if you're happy with
+> it?
 
-So add a comment to indicate that if have this flag set, you are
-aware that this nonstop clocksource won't wrap during suspension.
+In this case really it is a boolean indicating if the
+corresponding output is mono or not. It is handled thusly in the
+code:
 
-Signed-off-by: Xunlei Pang <pang.xunlei@linaro.org>
----
- include/linux/clocksource.h | 5 +++++
- 1 file changed, 5 insertions(+)
+		if (arizona->pdata.out_mono[i])
+			val = ARIZONA_OUT1_MONO;
+		else
+			val = 0;
 
-diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
-index abcafaa..20bca76 100644
---- a/include/linux/clocksource.h
-+++ b/include/linux/clocksource.h
-@@ -207,6 +207,11 @@ struct clocksource {
- #define CLOCK_SOURCE_WATCHDOG			0x10
- #define CLOCK_SOURCE_VALID_FOR_HRES		0x20
- #define CLOCK_SOURCE_UNSTABLE			0x40
-+
-+/*
-+ * Setting this flag, also means it doesn't wrap back during
-+ * system suspend/resume. See timekeeping_resume().
-+ */
- #define CLOCK_SOURCE_SUSPEND_NONSTOP		0x80
- #define CLOCK_SOURCE_RESELECT			0x100
- 
--- 
-1.9.1
+Perhaps some further wording tweaks on the Documentation patch
+would be appropriate, but certainly I am happy enough with the
+binding.
 
+Thanks,
+Charles
