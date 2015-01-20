@@ -1,84 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753595AbbATUWM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 15:22:12 -0500
-Received: from mail-bn1bon0133.outbound.protection.outlook.com ([157.56.111.133]:47809
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751557AbbATUWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 15:22:10 -0500
-Date: Tue, 20 Jan 2015 14:02:00 -0600
-From: Kim Phillips <kim.phillips@freescale.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, Minchan Kim <minchan@kernel.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>, Rik van Riel <riel@redhat.com>,
-        Josh Triplett <josh@joshtriplett.org>,
-        Sasha Levin <sasha.levin@oracle.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Konstantin Khlebnikov <k.khlebnikov@samsung.com>,
-        Jens Axboe <axboe@fb.com>
-CC: <linux-mm@kvack.org>, <linux-kernel@vger.kernel.org>,
-        <linuxppc-dev@lists.ozlabs.org>
-Subject: [PATCH 2/2] mm: fix undefined reference to `.kernel_map_pages' on
- PPC builds
-Message-ID: <20150120140200.aa7ba0eb28d95e456972e178@freescale.com>
-Organization: Freescale Semiconductor, Inc.
-X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
+	id S1752474AbbATUFO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 15:05:14 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:59766 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751557AbbATUFL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 15:05:11 -0500
+Date: Tue, 20 Jan 2015 21:02:16 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Vishnu Patekar <vishnupatekar0510@gmail.com>
+Cc: dmitry.torokhov@gmail.com, hdegoede@redhat.com,
+        ijc+devicetree@hellion.org.uk, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
+        linux-input@vger.kernel.org, devicetree@vger.kernel.org
+Subject: Re: [PATCH v4 3/5] ARM: sunxi: dts: Add PS2 nodes to dtsi for A10
+ and A20
+Message-ID: <20150120200216.GV4367@lukather>
+References: <1421417021-3247-1-git-send-email-vishnupatekar0510@gmail.com>
+ <1421417021-3247-4-git-send-email-vishnupatekar0510@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=Kim.Phillips@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(199003)(189002)(62966003)(77156002)(229853001)(106466001)(77096005)(68736005)(33646002)(104016003)(46102003)(50986999)(100306002)(92566002)(97736003)(23726002)(36756003)(87936001)(85426001)(6806004)(86362001)(50466002)(46406003)(47776003)(50226001)(64706001)(105606002)(19580395003)(19580405001)(921003)(1121003);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR03MB335;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
-X-DmarcAction-Test: None
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:DM2PR03MB335;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:DM2PR03MB335;
-X-Forefront-PRVS: 0462918D61
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB335;
-X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 20 Jan 2015 20:07:17.3932
- (UTC)
-X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: DM2PR03MB335
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="6qFdnjy6dKaiDX/E"
+Content-Disposition: inline
+In-Reply-To: <1421417021-3247-4-git-send-email-vishnupatekar0510@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's possible to configure DEBUG_PAGEALLOC without PAGE_POISONING on
-ppc.  Fix building the generic kernel_map_pages() implementation in
-this case:
 
-  LD      init/built-in.o
-mm/built-in.o: In function `free_pages_prepare':
-mm/page_alloc.c:770: undefined reference to `.kernel_map_pages'
-mm/built-in.o: In function `prep_new_page':
-mm/page_alloc.c:933: undefined reference to `.kernel_map_pages'
-mm/built-in.o: In function `map_pages':
-mm/compaction.c:61: undefined reference to `.kernel_map_pages'
-make: *** [vmlinux] Error 1
+--6qFdnjy6dKaiDX/E
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Kim Phillips <kim.phillips@freescale.com>
----
- mm/Makefile | 1 +
- 1 file changed, 1 insertion(+)
+Hi Vishnu,
 
-diff --git a/mm/Makefile b/mm/Makefile
-index 4bf586e..2956467 100644
---- a/mm/Makefile
-+++ b/mm/Makefile
-@@ -46,6 +46,7 @@ obj-$(CONFIG_SLOB) += slob.o
- obj-$(CONFIG_MMU_NOTIFIER) += mmu_notifier.o
- obj-$(CONFIG_KSM) += ksm.o
- obj-$(CONFIG_PAGE_POISONING) += debug-pagealloc.o
-+obj-$(CONFIG_DEBUG_PAGEALLOC) += debug-pagealloc.o
- obj-$(CONFIG_SLAB) += slab.o
- obj-$(CONFIG_SLUB) += slub.o
- obj-$(CONFIG_KMEMCHECK) += kmemcheck.o
--- 
-2.2.2
+On Fri, Jan 16, 2015 at 07:33:39PM +0530, Vishnu Patekar wrote:
+> Signed-off-by: VishnuPatekar <vishnupatekar0510@gmail.com>
+> Signed-off-by: Hans de Goede <hdegoede@redhat.com>
 
+Why is there Hans Signed-off here?
+
+> ---
+>  arch/arm/boot/dts/sun4i-a10.dtsi |   16 ++++++++++++++++
+>  arch/arm/boot/dts/sun7i-a20.dtsi |   16 ++++++++++++++++
+>  2 files changed, 32 insertions(+)
+>=20
+> diff --git a/arch/arm/boot/dts/sun4i-a10.dtsi b/arch/arm/boot/dts/sun4i-a=
+10.dtsi
+> index 7b4099f..2c31242 100644
+> --- a/arch/arm/boot/dts/sun4i-a10.dtsi
+> +++ b/arch/arm/boot/dts/sun4i-a10.dtsi
+> @@ -795,5 +795,21 @@
+>  			#address-cells =3D <1>;
+>  			#size-cells =3D <0>;
+>  		};
+> +
+> +		ps20: ps2@01c2a000 {
+> +			compatible =3D "allwinner,sun4i-a10-ps2";
+> +			reg =3D <0x01c2a000 0x400>;
+> +			interrupts =3D <62>;
+> +			clocks =3D <&apb1_gates 6>;
+> +			status =3D "disabled";
+> +		};
+> +
+> +		ps21: ps2@01c2a400 {
+> +			compatible =3D "allwinner,sun4i-a10-ps2";
+> +			reg =3D <0x01c2a400 0x400>;
+> +			interrupts =3D <63>;
+> +			clocks =3D <&apb1_gates 7>;
+> +			status =3D "disabled";
+> +		};
+>  	};
+>  };
+> diff --git a/arch/arm/boot/dts/sun7i-a20.dtsi b/arch/arm/boot/dts/sun7i-a=
+20.dtsi
+> index e21ce59..f35c691 100644
+> --- a/arch/arm/boot/dts/sun7i-a20.dtsi
+> +++ b/arch/arm/boot/dts/sun7i-a20.dtsi
+> @@ -1093,5 +1093,21 @@
+>  			#interrupt-cells =3D <3>;
+>  			interrupts =3D <1 9 0xf04>;
+>  		};
+> +
+> +		ps20: ps2@01c2a000 {
+> +			compatible =3D "allwinner,sun4i-a10-ps2";
+> +			reg =3D <0x01c2a000 0x400>;
+> +			interrupts =3D <0 62 4>;
+> +			clocks =3D <&apb1_gates 6>;
+> +			status =3D "disabled";
+> +		};
+> +
+> +		ps21: ps2@01c2a400 {
+> +			compatible =3D "allwinner,sun4i-a10-ps2";
+> +			reg =3D <0x01c2a400 0x400>;
+> +			interrupts =3D <0 63 4>;
+
+We recently switched to using includes and defines for these hardcoded
+values.
+
+Could you switch to it as well?
+
+Thanks,
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--6qFdnjy6dKaiDX/E
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUvrRHAAoJEBx+YmzsjxAgd+MQAIeWkPb+Y0OxAQTHfVDXzZZD
+90nOSCgFYdZhRAfHs/lD79f5VIM3A7Sj3Apcoicm79Dcft15l/Kt1QJuvUVsZd8Z
+3ZWV/ffLPvksDFJB15cmsrBgXN3hrdJAqS7B9kGgdNTQp9/5mJQ7N3unqrUqEV7l
+oOdlfw5eGw4LYMmsf54r3wsa6alzBLzo5rlU9YR9/II5KMbAQqjh9D01dJz7YGel
+iJdY7HkOn8b4eB24N7jeoVHa2jpEzzfM/+d9FWTQ0MDkwuKtJ72XNO6NbqJ/q/UQ
+UrJpxZZmKdjxFiBDEOzNATZWHLHY0IYmBtqwJelhsyDkV3a4IZV82evPmVVM65Tv
+rSV8vZDIzYlMz2UF/ttoBaQOtfVqbeHPGZ7O+VDAz0F1x9xQh/EEpXXTb16sDi42
+fLZFqW6dW9JId9wmNutUC/Q4zp+mCahkGkLtdQRZuOAQ+T3wlvoqbeWf38NOUCSo
+U6Ir2pDtgj+l66eON6ofauuT3SXBy7TR7e+GIoT7WLncB8IXWGyJ/SL2oPayf02P
+wUfTIimgB2mpl/ggytx4nw1a3vi2UttltEmCidfqffB0wVif0CmqmyVadWifvjN2
+4x2IllNWC7lioE7oNaDoP0QOtfmC8oVeVJFvIJ9gdr3cVvqeijg9SflcDG9WYh57
+IoZgpuSxr6BQdZoP8TWE
+=0AWI
+-----END PGP SIGNATURE-----
+
+--6qFdnjy6dKaiDX/E--
