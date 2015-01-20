@@ -1,46 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752584AbbATSQd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 13:16:33 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:56166 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752458AbbATSQb (ORCPT
-	<rfc822;Linux-Kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 13:16:31 -0500
-Message-ID: <54BE9B7C.7020709@hurleysoftware.com>
-Date: Tue, 20 Jan 2015 13:16:28 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
-MIME-Version: 1.0
-To: Howard Chu <hyc@symas.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Linux Kernel Mailing List <Linux-Kernel@vger.kernel.org>,
-        linux-serial@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>
-Subject: Re: [PATCH] n_tty: Remove LINEMODE support
-References: <1421616632-4077-1-git-send-email-peter@hurleysoftware.com> <54BC3771.7030204@symas.com> <54BC5EC7.1090202@hurleysoftware.com> <54BCFC94.1040605@symas.com> <54BD1B53.9030901@hurleysoftware.com> <54BD328F.9090208@symas.com> <54BD567C.8070200@hurleysoftware.com> <54BD5E54.3050909@symas.com>
-In-Reply-To: <54BD5E54.3050909@symas.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	id S1752814AbbATSRI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 13:17:08 -0500
+Received: from smtprelay0021.hostedemail.com ([216.40.44.21]:56219 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752707AbbATSRF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 13:17:05 -0500
+X-Session-Marker: 6A6F6540706572636865732E636F6D
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::,RULES_HIT:41:152:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:3138:3139:3140:3141:3142:3353:3622:3865:3866:3867:3868:3870:3871:3872:3874:4321:4605:5007:6119:6261:7514:8526:8957:9036:9176:10004:10400:10848:11217:11232:11658:11914:12043:12296:12517:12519:12740:13069:13095:13161:13229:13311:13357:13894:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: wool49_7779aa04bba23
+X-Filterd-Recvd-Size: 2798
+Message-ID: <1421777819.2724.5.camel@perches.com>
+Subject: Re: [PATCH] of: Custom printk format specifier for device node
+From: Joe Perches <joe@perches.com>
+To: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+Cc: Rob Herring <robherring2@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 20 Jan 2015 10:16:59 -0800
+In-Reply-To: <B282C7F7-D221-4D7D-AB33-533C0204C4CF@konsulko.com>
+References: <1421764441-11928-1-git-send-email-pantelis.antoniou@konsulko.com>
+	 <CAL_JsqLVJjq3Ov=J-5LtXiTQPLvR5Y=+tB1i16k_rN3j5dODFQ@mail.gmail.com>
+	 <E7065DB3-DD6B-4110-A066-8C7268186831@konsulko.com>
+	 <1421776794.2724.1.camel@perches.com>
+	 <B282C7F7-D221-4D7D-AB33-533C0204C4CF@konsulko.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/2015 02:43 PM, Howard Chu wrote:
-> Peter Hurley wrote:
->> On 01/19/2015 11:36 AM, Howard Chu wrote:
->>> Peter Hurley wrote:
+On Tue, 2015-01-20 at 20:06 +0200, Pantelis Antoniou wrote:
+> On Jan 20, 2015, at 19:59 , Joe Perches <joe@perches.com> wrote:
+> > On Tue, 2015-01-20 at 16:52 +0200, Pantelis Antoniou wrote:
+> >>> On Jan 20, 2015, at 16:47 , Rob Herring <robherring2@gmail.com> wrote:
+> >>> On Tue, Jan 20, 2015 at 8:34 AM, Pantelis Antoniou
+> >>> <pantelis.antoniou@konsulko.com> wrote:
+> >>>> 90% of the usage of device node's full_name is printing it out
+> >>>> in a kernel message. Preparing for the eventual delayed allocation
+> >>>> introduce a custom printk format specifier that is both more
+> >>>> compact and more pleasant to the eye.
+> > []
+> >>>> diff --git a/Documentation/printk-formats.txt b/Documentation/printk-formats.txt
+> > []
+> >>>> +Device tree nodes:
+> >>>> +
+> >>>> +       %pO{,1,2}
+> >>> 
+> >>> 'O' is not very obvious, but I imagine we are somewhat limted in our
+> >>> choice here?
+> >>> 
+> >> 
+> >> All the good women are married, all the handsome men are gay, all the obvious
+> >> format specifiers are taken.
+> > 
+> > Not really at all.
+> > 
+> > I quite dislike '0' as the format type specifier for
+> > a device tree node as there's no mnemonic mapping.
+> > 
+> There’s only so many characters one can use; [DdNn] are taken. And it’s O != 0.
 
-[...]
+The '[Dd]' entry type doesn't just have to be used for dentries.
+It could also be used for Device Tree Nodes via 'DTN[x]'
 
->>>> Which brings up another point: only a pty master should be able to set EXTPROC
->>>> mode. Right now, any tty can be set to EXTPROC and the pty slave can even
->>>> accidentally unset it. This argues for a new pty ioctl() to set EXTPROC in
->>>> termios. pty_set_termios() can silently merge the bit.
-
-Another major problem with supporting EXTPROC through termios directly is
-that Linux does not mask off unsupported termios bits, so the process can't
-find out directly if the the kernel has this support or doesn't.
+'T' for tree could also be used.
 
 
