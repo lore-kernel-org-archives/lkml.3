@@ -1,185 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956AbbATLvL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 06:51:11 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:36466 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752299AbbATLvJ (ORCPT
+	id S1753442AbbATLxj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 06:53:39 -0500
+Received: from mail-ig0-f170.google.com ([209.85.213.170]:34039 "EHLO
+	mail-ig0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752396AbbATLxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 06:51:09 -0500
-Date: Tue, 20 Jan 2015 12:51:05 +0100
-From: Markus Pargmann <mpa@pengutronix.de>
-To: Paul Clements <Paul.Clements@steeleye.com>
-Cc: nbd-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        kernel@pengutronix.de
-Subject: Re: [RFC 4/4] nbd: Add support for nbd as root device
-Message-ID: <20150120115105.GA26529@pengutronix.de>
-References: <1421156665-27318-1-git-send-email-mpa@pengutronix.de>
- <1421156665-27318-5-git-send-email-mpa@pengutronix.de>
+	Tue, 20 Jan 2015 06:53:35 -0500
+Date: Tue, 20 Jan 2015 11:53:25 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Vignesh R <vigneshr@ti.com>
+Cc: Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Benoit Cousson <bcousson@baylibre.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Peter Meerwald <pmeerw@pmeerw.net>,
+        Samuel Ortiz <sameo@linux.intel.com>, Brad Griffis <bgriffis@ti.com>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>,
+        Sanjeev Sharma <sanjeev_sharma@mentor.com>,
+        Jan Kardell <jan.kardell@telliq.com>, Felipe Balbi <balbi@ti.com>,
+        Wolfram Sang <wsa@the-dreams.de>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-iio@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: Re: [PATCH v6 3/6] mfd: ti_am335x_tscadc: Remove unwanted
+ reg_se_cache save
+Message-ID: <20150120115325.GK13701@x1>
+References: <1420609779-11156-1-git-send-email-vigneshr@ti.com>
+ <1420609779-11156-4-git-send-email-vigneshr@ti.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="xHFwDpU9dbj6ez1V"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1421156665-27318-5-git-send-email-mpa@pengutronix.de>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 12:41:51 up 4 days, 13 min, 90 users,  load average: 1.78, 1.27,
- 1.35
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::7
-X-SA-Exim-Mail-From: mpa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1420609779-11156-4-git-send-email-vigneshr@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 07 Jan 2015, Vignesh R wrote:
 
---xHFwDpU9dbj6ez1V
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Tue, Jan 13, 2015 at 02:44:25PM +0100, Markus Pargmann wrote:
-> Adding support to nbd to use it as a root device. This code essentially
-> provides a minimal nbd-client implementation within the kernel. It opens
-> a socket and makes the negotiation with the server. Afterwards it passes
-> the socket to the normal nbd-code to handle the connection.
->=20
-> The arguments for the server are passed via module parameter. The
-> module parameter has the format
-> '[<SERVER_IP>:]<SERVER_PORT>/<EXPORT_NAME>'.
-> SERVER_IP is optional. If it is not available it will use the
-> root_server_addr transmitted through DHCP.
->=20
-> Based on those arguments, the connection to the server is established
-> and is connected to the nbd0 device. The rootdevice therefore is
-> root=3D/dev/nbd0.
->=20
-> Signed-off-by: Markus Pargmann <mpa@pengutronix.de>
+> In one shot mode, sequencer automatically disables all enabled steps at
+> the end of each cycle. (both ADC steps and TSC steps) Hence these steps
+> need not be saved in reg_se_cache for clearing these steps at a later
+> stage.
+> Also, when ADC wakes up Sequencer should not be busy executing any of the
+> config steps except for the charge step. Previously charge step was 1 ADC
+> clock cycle and hence it was ignored.
+> TSC steps are always disabled at the end of each conversion cycle, hence
+> there is no need to explicitly disable TSC steps by writing 0 to REG_SE.
+> 
+> Signed-off-by: Vignesh R <vigneshr@ti.com>
 > ---
->  drivers/block/nbd.c | 306 ++++++++++++++++++++++++++++++++++++++++++++++=
-++++++
->  1 file changed, 306 insertions(+)
->=20
-> diff --git a/drivers/block/nbd.c b/drivers/block/nbd.c
-> index 11f7644be111..ac881ae3c15a 100644
-> --- a/drivers/block/nbd.c
-> +++ b/drivers/block/nbd.c
-> @@ -32,12 +32,17 @@
->  #include <net/sock.h>
->  #include <linux/net.h>
->  #include <linux/kthread.h>
-> +#include <net/ipconfig.h>
-> +#include <linux/in.h>
-> +#include <linux/tcp.h>
-> =20
->  #include <asm/uaccess.h>
->  #include <asm/types.h>
-> =20
->  #include <linux/nbd.h>
-> =20
-> +#define ADDR_NONE cpu_to_be32(INADDR_NONE)
-> +
->  #define NBD_MAGIC 0x68797548
-> =20
->  #ifdef NDEBUG
-> @@ -71,6 +76,20 @@ static int max_part;
->   */
->  static DEFINE_SPINLOCK(nbd_lock);
-> =20
-> +static const char nbd_magic[] =3D "NBDMAGIC";
-> +static const u64 nbd_opts_magic =3D 0x49484156454F5054LL;
-> +
-> +/* Options used for the kernel driver */
-> +#define NBD_OPT_EXPORT_NAME 1
-> +
-> +#define NBD_DEFAULT_BLOCKSIZE 1024
-> +
-> +extern __be32 root_nfs_parse_addr(char *name);
-> +
-> +static __be32 nbd_server_addr =3D ADDR_NONE;
-> +static __be32 nbd_server_port;
-> +static char nbd_server_export[128] =3D "";
-> +
->  #ifndef NDEBUG
->  static const char *ioctl_cmd_to_ascii(int cmd)
+> 
+> v5:
+>  - Remove unnecessary clearing of REG_SE
+> 
+>  drivers/mfd/ti_am335x_tscadc.c       | 13 +++++--------
+>  include/linux/mfd/ti_am335x_tscadc.h |  1 +
+>  2 files changed, 6 insertions(+), 8 deletions(-)
+
+Looks fine.
+
+For my own reference:
+  Acked-by: Lee Jones <lee.jones@linaro.org>
+
+Can this patch be applied on its own?
+
+> diff --git a/drivers/mfd/ti_am335x_tscadc.c b/drivers/mfd/ti_am335x_tscadc.c
+> index 467c80e1c4ae..e4e4b22eebc9 100644
+> --- a/drivers/mfd/ti_am335x_tscadc.c
+> +++ b/drivers/mfd/ti_am335x_tscadc.c
+> @@ -68,12 +68,6 @@ static void am335x_tscadc_need_adc(struct ti_tscadc_dev *tsadc)
+>  	DEFINE_WAIT(wait);
+>  	u32 reg;
+>  
+> -	/*
+> -	 * disable TSC steps so it does not run while the ADC is using it. If
+> -	 * write 0 while it is running (it just started or was already running)
+> -	 * then it completes all steps that were enabled and stops then.
+> -	 */
+> -	tscadc_writel(tsadc, REG_SE, 0);
+>  	reg = tscadc_readl(tsadc, REG_ADCFSM);
+>  	if (reg & SEQ_STATUS) {
+>  		tsadc->adc_waiting = true;
+> @@ -86,8 +80,12 @@ static void am335x_tscadc_need_adc(struct ti_tscadc_dev *tsadc)
+>  		spin_lock_irq(&tsadc->reg_lock);
+>  		finish_wait(&tsadc->reg_se_wait, &wait);
+>  
+> +		/*
+> +		 * Sequencer should either be idle or
+> +		 * busy applying the charge step.
+> +		 */
+>  		reg = tscadc_readl(tsadc, REG_ADCFSM);
+> -		WARN_ON(reg & SEQ_STATUS);
+> +		WARN_ON((reg & SEQ_STATUS) && !(reg & CHARGE_STEP));
+>  		tsadc->adc_waiting = false;
+>  	}
+>  	tsadc->adc_in_use = true;
+> @@ -96,7 +94,6 @@ static void am335x_tscadc_need_adc(struct ti_tscadc_dev *tsadc)
+>  void am335x_tsc_se_set_once(struct ti_tscadc_dev *tsadc, u32 val)
 >  {
-> @@ -105,6 +124,52 @@ static const char *nbdcmd_to_ascii(int cmd)
->  }
->  #endif /* NDEBUG */
-> =20
-> +/*
-> + * Parse format "[<SERVER_IP>:]<SERVER_PORT>/<EXPORT_NAME>"
-> + */
-> +static int nbd_server_addr_set(const char *val, const struct kernel_para=
-m *kp)
-> +{
-> +	char *export;
-> +	u16 port;
-> +	int ret;
-> +	char buf[128];
-> +
-> +	strncpy(buf, val, 128);
-> +
-> +	nbd_server_addr =3D root_nfs_parse_addr(buf);
-> +
-> +	if (*buf =3D=3D '\0') {
-> +		ret =3D -EINVAL;
-> +		goto free_buf;
-> +	}
-> +	export =3D strchr(buf, '/');
-> +	if (!export || *(export + 1) =3D=3D '\0') {
-> +		ret =3D -EINVAL;
-> +		goto free_buf;
-> +	}
-> +	*export =3D '\0';
-> +	++export;
-> +
-> +	ret =3D kstrtou16(buf, 10, &port);
-> +	if (ret)
-> +		goto free_buf;
-> +
-> +	memmove(buf, export, strlen(export) + 1);
+>  	spin_lock_irq(&tsadc->reg_lock);
+> -	tsadc->reg_se_cache |= val;
+>  	am335x_tscadc_need_adc(tsadc);
+>  
+>  	tscadc_writel(tsadc, REG_SE, val);
+> diff --git a/include/linux/mfd/ti_am335x_tscadc.h b/include/linux/mfd/ti_am335x_tscadc.h
+> index 3f4e994ace2b..1fd50dcfe47c 100644
+> --- a/include/linux/mfd/ti_am335x_tscadc.h
+> +++ b/include/linux/mfd/ti_am335x_tscadc.h
+> @@ -128,6 +128,7 @@
+>  
+>  /* Sequencer Status */
+>  #define SEQ_STATUS BIT(5)
+> +#define CHARGE_STEP		0x11
+>  
+>  #define ADC_CLK			3000000
+>  #define TOTAL_STEPS		16
 
-This memmove() is a leftover from a previous version, it is removed for
-the next series version. I also added some documentation patches that
-describe this feature in Documentation/blockdev/nbd.txt. I will send it
-at the end of this week.
-
-Best regards,
-
-Markus
-
---=20
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
-
---xHFwDpU9dbj6ez1V
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUvkEpAAoJEEpcgKtcEGQQg1EP/3VLo2SFmPDvaHZ3h773jYpz
-geHNZW2hPTF8/lFInS8umZgKu8bu18cy6t2xVzdENpydZKGPvDpk4XQvzrd89o0A
-iY94fvqw98Ibep3lInYXDZ1uT9T8RyoPqyl/ED9f2eGy+GpNjH3lfGCoYI2QamYk
-v8K2b7OyZipZMq+JnLTK5d5Ds/pNExIaDTLvfSGlPY/5Y7OHbV/ilqefYybiXHSQ
-DDfFstJtdfkCmsZFSRS4SPF4qXzOnYl+B0M3WiqyT0yHVnCi8Rv3LA6MHOQvXyBj
-R8x1/t9hSbgMzSPyE11CNE0/o+aIIyEIeGXQ0ZUPb4+GdmEo+A50ko25RW4bAKLg
-N3KFcRwYG7jjZSdW5DCQtvpPqIndZB2ZLxnU9bpjkie74GHKjnnWG1wonag/tdI/
-EUWwUqhwsynq/7zsfAR40mW93pC3Ks3tNQHJuLTVDX164Mk92PbV0XipP4+koMFK
-yWT5xralPFNT3Gl++fil9BU8dpIbU9KSosH/S9mGynDEXZBwiC5aEW6achydFLzI
-Vetv5dTI4iFoQaAn7zU6tFP8yI6MzfoHnNCsfmtSMSrMeHmFYmAz4BqhfPBc8cxI
-ammD0BX4Pte7EL/RFTsf73dFckHbo/mw9lMQklH255vWvCxV71QH5NTIKpgT6Fos
-sPc5s78haN+Pt2m4pjjq
-=cxzD
------END PGP SIGNATURE-----
-
---xHFwDpU9dbj6ez1V--
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
