@@ -1,59 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752279AbbATRrj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 12:47:39 -0500
-Received: from mail-bn1bon0087.outbound.protection.outlook.com ([157.56.111.87]:24224
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751687AbbATRri (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 12:47:38 -0500
-Date: Tue, 20 Jan 2015 18:47:19 +0100
-From: Michal Simek <michal.simek@xilinx.com>
+	id S1752559AbbATRuz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 12:50:55 -0500
+Received: from svenfoo.org ([82.94.215.22]:45901 "EHLO mail.zonque.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751484AbbATRux (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 12:50:53 -0500
+Message-ID: <54BE957A.60305@zonque.org>
+Date: Tue, 20 Jan 2015 18:50:50 +0100
+From: Daniel Mack <daniel@zonque.org>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-To: Petr Cvek <petr.cvek@tul.cz>, <michal.simek@xilinx.com>,
-        <linux-kernel@vger.kernel.org>, <monstr@monstr.eu>
-Subject: Re: FPGA subsystem core
-References: <54BE8239.5050907@tul.cz>
-In-Reply-To: <54BE8239.5050907@tul.cz>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-RCIS-Action: ALLOW
-X-TM-AS-Product-Ver: IMSS-7.1.0.1224-7.5.0.1018-21266.000
-X-TM-AS-User-Approved-Sender: Yes
-Message-ID: <19f3347e67984c2687327e0f40e7d40c@BN1AFFO11FD023.protection.gbl>
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=pass (sender IP is 62.221.5.235)
- smtp.mailfrom=michal.simek@xilinx.com; 
-X-Forefront-Antispam-Report: CIP:62.221.5.235;CTRY:GB;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(199003)(377454003)(189002)(164054003)(479174004)(24454002)(51704005)(11905935001)(64706001)(47776003)(83506001)(87936001)(558084003)(6806004)(19580395003)(50986999)(74316001)(86362001)(106466001)(64126003)(76176999)(2201001)(54356999)(92566002)(50466002)(107886001)(65956001)(62966003)(108616004)(92726002)(15395725005)(77156002)(46102003)(33646002)(23746002)(2950100001)(77096005)(15975445007)(104016003)(65826006)(107986001)(24736002);DIR:OUT;SFP:1101;SCL:1;SRVR:BN1AFFO11HUB019;H:xir-pvapsmtpgw01;FPR:;SPF:Pass;MLV:sfv;PTR:unknown-62-221-5-235.ipspace.xilinx.com;A:1;MX:1;LANG:en;
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB019;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BN1AFFO11HUB019;
-X-Forefront-PRVS: 0462918D61
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1AFFO11HUB019;
-X-OriginatorOrg: xilinx.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 20 Jan 2015 17:47:35.7690
- (UTC)
-X-MS-Exchange-CrossTenant-Id: 657af505-d5df-48d0-8300-c31994686c5c
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=657af505-d5df-48d0-8300-c31994686c5c;Ip=[62.221.5.235]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN1AFFO11HUB019
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, arnd@arndb.de,
+        ebiederm@xmission.com, gnomes@lxorguk.ukuu.org.uk, teg@jklm.no,
+        jkosina@suse.cz, luto@amacapital.net, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+CC: daniel@zonque.or, dh.herrmann@gmail.com, tixxdz@opendz.org
+Subject: Re: [PATCH 01/13] kdbus: add documentation
+References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org> <1421435777-25306-2-git-send-email-gregkh@linuxfoundation.org> <54BE5F1F.8070703@gmail.com>
+In-Reply-To: <54BE5F1F.8070703@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Michael,
 
-On 01/20/2015 05:28 PM, Petr Cvek wrote:
-> Hello,
-> Are there some news about new FPGA configuration subsystem ( http://lwn.net/Articles/569193/ ) ?
+Thanks a lot for for intense review of the documentation. Much appreciated.
+
+I've addressed all but the below issues, following your suggestions.
+
+
+On 01/20/2015 02:58 PM, Michael Kerrisk (man-pages) wrote:
+>> +    and KDBUS_CMD_ENDPOINT_MAKE (see above).
+>> +
+>> +    Following items are expected for KDBUS_CMD_BUS_MAKE:
+>> +    KDBUS_ITEM_MAKE_NAME
+>> +      Contains a string to identify the bus name.
 > 
-> Petr Cvek
+> So, up to here, I've seen no definition of 'kdbus_item', which leaves me 
+> asking questions like: what subfield is KDBUS_ITEM_MAKE_NAME stored in?
+> which subfield holds the pointer to the string?
+> 
+> Somewhere earlier,  kdbus_item needs to be exaplained in more detail, 
+> I think.
 
-discussion is still going.
+Hmm, you're quoting text from section 5, and section 4 actually
+describes the concept of items quite well I believe?
 
-https://lkml.org/lkml/2015/1/6/686
+>> +  __s64 priority;
+>> +    With KDBUS_RECV_USE_PRIORITY set in flags, receive the next message in
+>> +    the queue with at least the given priority. If no such message is waiting
+>> +    in the queue, -ENOMSG is returned.
+> 
+> ###
+> How do I simply select the highest priority message, without knowing what 
+> its priority is?
 
-Thanks,
-Michal
+The wording is indeed unclear here. KDBUS_RECV_USE_PRIORITY causes the
+messages to be dequeued by their priority. The 'priority' field is
+simply a filter that request a minimum priority. By setting this field
+to the highest possible value, you effectively bypass the filter. I've
+added a better description now.
+
+>> +  -ENOMEM	The kernel memory is exhausted
+>> +  -ENOTTY	Illegal ioctl command issued for the file descriptor
+> 
+> Why ENOTTY here, rather than EINVAL? The latter is, I beleive, the usual 
+> ioctl() error for invalid commands, I believe (If you keep ENOTTY, add an
+> explanation in this document.)
+
+Hmm, no. -ENOTTY is commonly used as return code when calling ioctls
+that can't be handled by the FDs they're called on. 'man errno(3)' even
+states: "ENOTTY   Inappropriate I/O control operation (POSIX.1)".
+
+>> +  -EINVAL	Unsupported item attached to command
+>> +
+>> +For all ioctls that carry a struct as payload:
+>> +
+>> +  -EFAULT	The supplied data pointer was not 64-bit aligned, or was
+>> +		inaccessible from the kernel side.
+>> +  -EINVAL	The size inside the supplied struct was smaller than expected
+>> +  -EMSGSIZE	The size inside the supplied struct was bigger than expected
+> 
+> Why two different errors for smaller and larger than expected? (If you keep things this
+> way, pelase explain the reason in this document.)
+
+Providing a struct that is smaller than the minimum doesn't give the
+ioctl a valid set of information to process the request. Hence, I think
+-EINVAL is appropriate. However, -EMSGSIZE is something that users might
+hit when they make message payloads too big, and I think it's good to
+have a change to distinguish the two cases in error handling. I added
+something in the document now.
+
+
+Again, thanks a lot for reading the documentation so accurately!
+
+Daniel
