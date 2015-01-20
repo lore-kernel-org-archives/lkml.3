@@ -1,204 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753872AbbATKSN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 05:18:13 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:58255 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753552AbbATKSJ (ORCPT
+	id S1753858AbbATKTF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 05:19:05 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:36315 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752144AbbATKTD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 05:18:09 -0500
-Message-ID: <54BE2B62.6010203@linaro.org>
-Date: Tue, 20 Jan 2015 10:18:10 +0000
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Joshua Clayton <joshua.clayton@uniwest.com>,
+	Tue, 20 Jan 2015 05:19:03 -0500
+Date: Tue, 20 Jan 2015 10:18:56 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Robert Jarzmik <robert.jarzmik@free.fr>
+Cc: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Daniel Mack <daniel@zonque.org>,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org
-CC: Thomas Gleixner <tglx@linutronix.de>, Jason Cooper <jason@lakedaemon.net>,
-        Russell King <linux@arm.linux.org.uk>, linaro-kernel@lists.linaro.org,
-        patches@linaro.org, Stephen Boyd <sboyd@codeaurora.org>,
-        linux-kernel@vger.kernel.org, Daniel Drake <drake@endlessm.com>,
-        Dmitry Pervushin <dpervushin@gmail.com>,
-        Dirk Behme <dirk.behme@de.bosch.com>,
-        John Stultz <john.stultz@linaro.org>, Tim Sander <tim@krieglstein.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>
-Subject: Re: [RFC PATCH 5/5] arm: perf: Use FIQ to handle PMU events.
-References: <1421166931-14134-1-git-send-email-daniel.thompson@linaro.org> <1421166931-14134-6-git-send-email-daniel.thompson@linaro.org> <2406925.7Z4R9iEkTD@jclayton-pc>
-In-Reply-To: <2406925.7Z4R9iEkTD@jclayton-pc>
-Content-Type: text/plain; charset=windows-1252
+Subject: Re: [PATCH v3 1/3] dt-bindings: mfd: add lubbock-io binding
+Message-ID: <20150120101856.GO5767@x1>
+References: <1421406010-14851-1-git-send-email-robert.jarzmik@free.fr>
+ <20150119083533.GF21886@x1>
+ <87lhkyh8m3.fsf@free.fr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <87lhkyh8m3.fsf@free.fr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/01/15 16:35, Joshua Clayton wrote:
-> On Tuesday, January 13, 2015 04:35:31 PM Daniel Thompson wrote:
->> Using FIQ (if it is available) gives perf a better insight into the
->> system by allowing code run with interrupts disabled to be profiled.
->>
->> Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
->> ---
->>  arch/arm/include/asm/pmu.h       |  4 ++++
->>  arch/arm/kernel/perf_event.c     |  2 +-
->>  arch/arm/kernel/perf_event_cpu.c | 35 ++++++++++++++++++++++++++++++++---
->>  arch/arm/kernel/traps.c          |  3 ++-
->>  4 files changed, 39 insertions(+), 5 deletions(-)
->>
->> diff --git a/arch/arm/include/asm/pmu.h b/arch/arm/include/asm/pmu.h
->> index b1596bd59129..2a7ea97a4a14 100644
->> --- a/arch/arm/include/asm/pmu.h
->> +++ b/arch/arm/include/asm/pmu.h
->> @@ -123,6 +123,8 @@ struct arm_pmu {
->>
->>  extern const struct dev_pm_ops armpmu_dev_pm_ops;
->>
->> +irqreturn_t armpmu_dispatch_irq(int irq, void *dev);
->> +
->>  int armpmu_register(struct arm_pmu *armpmu, int type);
->>
->>  u64 armpmu_event_update(struct perf_event *event);
->> @@ -136,6 +138,8 @@ int armpmu_map_event(struct perf_event *event,
->>  						[PERF_COUNT_HW_CACHE_RESULT_MAX],
->>  		     u32 raw_event_mask);
->>
->> +void cpu_pmu_handle_fiq(int irq);
->> +
->>  struct pmu_probe_info {
->>  	unsigned int cpuid;
->>  	unsigned int mask;
->> diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
->> index f7c65adaa428..5ae9adf7f18e 100644
->> --- a/arch/arm/kernel/perf_event.c
->> +++ b/arch/arm/kernel/perf_event.c
->> @@ -296,7 +296,7 @@ validate_group(struct perf_event *event)
->>  	return 0;
->>  }
->>
->> -static irqreturn_t armpmu_dispatch_irq(int irq, void *dev)
->> +irqreturn_t armpmu_dispatch_irq(int irq, void *dev)
->>  {
->>  	struct arm_pmu *armpmu;
->>  	struct platform_device *plat_device;
->> diff --git a/arch/arm/kernel/perf_event_cpu.c
->> b/arch/arm/kernel/perf_event_cpu.c index a80309087a7b..5c4e9ce23389 100644
->> --- a/arch/arm/kernel/perf_event_cpu.c
->> +++ b/arch/arm/kernel/perf_event_cpu.c
->> @@ -36,6 +36,9 @@
->>  /* Set at runtime when we know what CPU type we are. */
->>  static struct arm_pmu *cpu_pmu;
->>
->> +/* Allows us to find out if an IRQ is for us (mostly used from NMI context)
->> */ +static DEFINE_PER_CPU(int, cpu_pmu_irqs);
->> +
->>  /*
->>   * Despite the names, these two functions are CPU-specific and are used
->>   * by the OProfile/perf code.
->> @@ -127,6 +130,24 @@ static void cpu_pmu_free_irq(struct arm_pmu *cpu_pmu)
->>  	}
->>  }
->>
->> +/*
->> + * This handler is called *unconditionally* from the default NMI/FIQ
->> + * handler. The irq may not be anything to do with us so the main
->> + * job of this function is to figure out if the irq passed in is ours
->> + * or not.
->> + */
-> 
-> This comment is an indicator that all the code in cpu_pmu_handle_fiq is
-> in the wrong place.
-> It (or something like it) belongs at the level of the default 
-> FIQ handler, and not in perf_event_cpu.c
+On Mon, 19 Jan 2015, Robert Jarzmik wrote:
+> Lee Jones <lee.jones@linaro.org> writes:
+> > On Fri, 16 Jan 2015, Robert Jarzmik wrote:
+> >
+> >> Add a binding for lubbock motherboard IO board.
+> >> 
+> >> Signed-off-by: Robert Jarzmik <robert.jarzmik@free.fr>
+> >> ---
+> >>  .../devicetree/bindings/mfd/lubbock-io.txt         | 26 ++++++++++++++++++++++
+> >>  1 file changed, 26 insertions(+)
+> >>  create mode 100644 Documentation/devicetree/bindings/mfd/lubbock-io.txt
+> >> 
+> >> diff --git a/Documentation/devicetree/bindings/mfd/lubbock-io.txt b/Documentation/devicetree/bindings/mfd/lubbock-io.txt
+> >> new file mode 100644
+> >> index 0000000..33c9e21
+> >> --- /dev/null
+> >> +++ b/Documentation/devicetree/bindings/mfd/lubbock-io.txt
+> >> @@ -0,0 +1,26 @@
 
-I'm not sure about that.
+[...]
 
-If we moved this code into the default FIQ handler that means the PMU
-driver would have to explicitly share its irq value with the default FIQ
-handler (which doesn't really care about that).
+> >> +This is the motherboard, or IO board, of the pxa25x development system,
+> >> +supporting a lubbock pxa25x SoC board.
+> >
+> > Again, this sounds weird.
+> Would it sound better with :
+>   This regroups all the CPLDs on the Lubbock motherboard, providing interrupt
+>   muxing, leds handling, ...
 
-I'm inclined to view this code as the effect of avoiding indirection in
-the default FIQ handler.
+Sounds a lot better, yes.
 
-Regular irq code has nothing like this because &armpmu_dispatch_irq, irq
-and get_cpu_ptr(&cpu_pmu->hw_events->percpu_pmu) would all be looked up
-from the irqaction and any unwanted events are naturally filtered by the
-irq dispatch.
+[...]
 
-After your review I'm very tempted to put together a patch that
-dispatches NMIs indirectly from the default FIQ handler. However I still
-don't have much of an answer to Russell's concerns about code review.
+> >> +  - interrupts : The first interrupt is the line the /IRQ signal the IO board
+> >> +                 multiplex is connected to. The only known case is GPIO0 on the
+> >> +                 pxa25x SoC.
+> >
+> > Can you get someone to help you re-word this into a more fluid
+> > sentence?
+> Aouch, how about this :
 
+:)
 
->> +void cpu_pmu_handle_fiq(int irq)
->> +{
->> +	int cpu = smp_processor_id();
->> +
->> +	if (irq != get_cpu_var(cpu_pmu_irqs))
->> +		return;
->> +
->> +	(void)armpmu_dispatch_irq(irq,
->> +				  get_cpu_ptr(&cpu_pmu->hw_events->percpu_pmu));
->> +}
->> +
->> +
->>  static int cpu_pmu_request_irq(struct arm_pmu *cpu_pmu, irq_handler_t
->> handler) {
->>  	int i, err, irq, irqs;
->> @@ -170,9 +191,16 @@ static int cpu_pmu_request_irq(struct arm_pmu *cpu_pmu,
->> irq_handler_t handler) continue;
->>  			}
->>
->> -			err = request_irq(irq, handler,
->> -					  IRQF_NOBALANCING | IRQF_NO_THREAD, "arm-pmu",
->> -					  per_cpu_ptr(&hw_events->percpu_pmu, i));
->> +			err = request_nmi_irq(
->> +			    irq, IRQF_NOBALANCING, "arm-pmu",
->> +			    per_cpu_ptr(&hw_events->percpu_pmu, i));
->> +			if (err) {
->> +				err = request_irq(
->> +				    irq, handler,
->> +				    IRQF_NOBALANCING | IRQF_NO_THREAD,
->> +				    "arm-pmu",
->> +				    per_cpu_ptr(&hw_events->percpu_pmu, i));
->> +			}
->>  			if (err) {
->>  				pr_err("unable to request IRQ%d for ARM PMU counters\n",
->>  					irq);
->> @@ -180,6 +208,7 @@ static int cpu_pmu_request_irq(struct arm_pmu *cpu_pmu,
->> irq_handler_t handler) }
->>
->>  			cpumask_set_cpu(i, &cpu_pmu->active_irqs);
->> +			per_cpu(cpu_pmu_irqs, i) = irq;
->>  		}
->>  	}
->>
->> diff --git a/arch/arm/kernel/traps.c b/arch/arm/kernel/traps.c
->> index 74c752b9db68..c581e07517ff 100644
->> --- a/arch/arm/kernel/traps.c
->> +++ b/arch/arm/kernel/traps.c
->> @@ -38,6 +38,7 @@
->>  #include <asm/tls.h>
->>  #include <asm/system_misc.h>
->>  #include <asm/opcodes.h>
->> +#include <asm/pmu.h>
->>
->>
->>  static const char *handler[]= {
->> @@ -485,7 +486,7 @@ asmlinkage void __exception_irq_entry
->> handle_fiq_as_nmi(struct pt_regs *regs) irq = gic_ack_fiq();
->>
->>  	if (irq) {
->> -		/* empty - no SPI handlers (yet) */
->> +		cpu_pmu_handle_fiq(irq);
->>  	} else {
->>  #ifdef CONFIG_SMP
->>  		ipi_cpu_backtrace(regs);
->> --
->> 1.9.3
->>
->>
->> _______________________________________________
->> linux-arm-kernel mailing list
->> linux-arm-kernel@lists.infradead.org
->> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
+> interrupts : The first interrupt is the SoC input interrupt connected to the
+>              lubbock IO board interrupt multiplexer output. The only known
+>              working configuration is GPIO0 on the pxa25x SoC.
 
+Perfect.
+
+[...]
+
+> > I'm guessing mb means motherboard?  I think it's unusual for a
+> > motherboard to have it's own driver.  Usually we provide drivers for
+> > the individual components/peripherals situated on the board.
+> Yes, mb for motherboard. Well, this driver is actually for the CPLDs on the
+> motherboard.  Would "lubbock-cplds" be a better choice ?
+
+That would fit better with my current understanding of what requires a
+driver and what does not.
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
