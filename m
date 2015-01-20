@@ -1,101 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752958AbbATKgB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 05:36:01 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:60499 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753480AbbATKf7 (ORCPT
+	id S1753874AbbATKhs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 05:37:48 -0500
+Received: from mailapp01.imgtec.com ([195.59.15.196]:52068 "EHLO
+	mailapp01.imgtec.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752479AbbATKhq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 05:35:59 -0500
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-To: Kukjin Kim <kgene@kernel.org>
-Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>,
-        Tomasz Figa <tomasz.figa@gmail.com>,
-        Mike Turquette <mturquette@linaro.org>,
-        Rahul Sharma <rahul.sharma@samsung.com>,
-        Arun Kumar K <arun.kk@samsung.com>,
-        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Tobias Jakobi <liquid.acid@gmx.net>,
-        Andrzej Hajda <a.hajda@samsung.com>,
-        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
-        Kevin Hilman <khilman@linaro.org>,
-        Joonyoung Shim <jy0922.shim@samsung.com>,
-        linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-Subject: [PATCH 2/2] ARM: dts: Add DISP1 power domain for exynos5420
-Date: Tue, 20 Jan 2015 11:35:27 +0100
-Message-Id: <1421750127-22536-3-git-send-email-javier.martinez@collabora.co.uk>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1421750127-22536-1-git-send-email-javier.martinez@collabora.co.uk>
-References: <1421750127-22536-1-git-send-email-javier.martinez@collabora.co.uk>
+	Tue, 20 Jan 2015 05:37:46 -0500
+Message-ID: <54BE2F7B.60003@imgtec.com>
+Date: Tue, 20 Jan 2015 07:35:39 -0300
+From: Ezequiel Garcia <ezequiel.garcia@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: =?UTF-8?B?IlFpIFdhbmcg546L6LW3IChxaXdhbmcpIg==?= 
+	<qiwang@micron.com>,
+        Brian Norris <computersforpeace@gmail.com>
+CC: "dwmw2@infradead.org" <dwmw2@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>,
+        =?UTF-8?B?IkZyYW5rIExpdSDliJjnvqQgKGZyYW5rbGl1KSI=?= 
+	<frankliu@micron.com>,
+        =?UTF-8?B?Ik1lbGFuaWUgWmhhbmcg5byg54eVIChtZWxhbmll?=
+	 =?UTF-8?B?emhhbmcpIg==?= <melaniezhang@micron.com>,
+        =?UTF-8?B?IlBldGVyIFA=?=
+	 =?UTF-8?B?YW4g5r2Y5qCLIChwZXRlcnBhbmRvbmcpIg==?= 
+	<peterpandong@micron.com>
+Subject: Re: [PATCH 0/3] An alternative to SPI NAND
+References: <87F60714EC601C4C83DFF1D2E3D390A04AB3F3@NTXXIAMBX02.xacn.micron.com> <20150108010257.GP9759@ld-irv-0074> <71CF8D7F32C5C24C9CD1D0E02D52498A7714DD2A@NTXXIAMBX02.xacn.micron.com> <54ADF90B.1070800@imgtec.com> <71CF8D7F32C5C24C9CD1D0E02D52498A7714F043@NTXXIAMBX02.xacn.micron.com>
+In-Reply-To: <71CF8D7F32C5C24C9CD1D0E02D52498A7714F043@NTXXIAMBX02.xacn.micron.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [10.100.200.58]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The DISP1 power domain on Exynos5420 SoC includes the FIMD1, MIXER
-and HDMI modules. Add a device node for this power domain and mark
-these modules as consumer of the DISP1 power domain.
 
-When a power domain is powered on and off, the input clocks of the
-devices attached to it are reparented. So a reference to the input
-and parent clocks of the devices are needed to manage that.
 
-Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
----
- arch/arm/boot/dts/exynos5420.dtsi | 17 +++++++++++++++++
- 1 file changed, 17 insertions(+)
+On 01/12/2015 12:10 PM, Qi Wang 王起 (qiwang) wrote:
+> Hi Ezequiel,
+> 
+> On 01/08/2015 11:27 AM, Ezequiel Garcia wrote:
+>>
+>> Hi Qi Wang,
+>>
+>> On 01/07/2015 11:45 PM, Qi Wang 王起 (qiwang) wrote:
+>>> Hi Brian,
+>>>
+>>> On Thu, Jan 08, 2015 at 9:03:24AM +0000, Brian Norris wrote:
+>>>>
+>>>> On Thu, Jan 08, 2015 at 12:47:24AM +0000, Peter Pan 潘栋 (peterpandong)
+>>>> wrote:
+>>>>> Documentation/devicetree/bindings/mtd/spi-nand.txt |   22 +
+>>>>> drivers/mtd/Kconfig                                |    2 +
+>>>>> drivers/mtd/Makefile                               |    1 +
+>>>>> drivers/mtd/spi-nand/Kconfig                       |    7 +
+>>>>> drivers/mtd/spi-nand/Makefile                      |    3 +
+>>>>> drivers/mtd/spi-nand/spi-nand-base.c               | 2034
+>>>> ++++++++++++++++++++
+>>>>> drivers/mtd/spi-nand/spi-nand-bbt.c                | 1279 ++++++++++++
+>>>>
+>>>> I can already tell by the diffstat that I don't like this. We probably
+>>>> don't need 3000 new lines of code for this, but we especially don't want
+>>>> to duplicate nand_bbt.c. It won't take a lot of work to augment
+>>>> nand_bbt.c to make it shareable. (I can whip that patch up if needed.)
+>>>
+>>> Yes, I agree with you, Nand_bbt.c do can be shared by Parallel NAND and
+>>> SPI NAND. Actually, we are working at this now. Will send patches to you
+>>> Once we finished it.
+>>>
+>>
+>> Thanks for the quick submission!
+>>
+>> However, Brian is right, this code duplication is a no go.
+>>
+>> Perhaps a more valid approach would be to first identify the code that
+>> needs to be shared in nand_bbt.c and nand_base.c, and export those
+>> symbols (or maybe do the required refactor).
+> 
+> Yes, I agree Brian's suggestion in another mail. 
+> 
+> " The BBT code is something we definitely want to share, but it's actually
+> not very closely tied to nand_base.c, and it looks pretty easy to adapt
+> to any MTD that implements mtd_read_oob()/mtd_write_oob(). We'd just
+> need to parameterize a few relevant device details into a new nand_bbt
+> struct, rather than using struct nand_chip directly."
+> 
+> To abstract a new nand_bbt struct instead of nand_chip to make SPI NAND 
+> and parallel NAND can share nand_bbt.c file, I already begin to work on 
+> this.
+> 
+> For code shared in nand_base.c, I agree it would be better if we can find
+> a good method to share nand_base.c code between spi nand and parallel nand.
+> But frankly speaking, I'm not satisfied for the remap command method. This
+> method make code difficult to maintain when SPI NAND and Parallel NAND 
+> evolve much differently in the future.
+> 
+> Take some example, 
+> If one new command (cache operation, multiple plane operation) implemented 
+> in parallel NAND code, and is used in nand_read or nand_write, that will 
+> cause maintainer to modify SPI NAND code to remap this new command, though 
+> this modification probably could be slight. That means modification on 
+> Parallel NAND flash need to consider SPI NAND as well. 
+> 
+> How do you think about this?
+> 
+> For Peter Pan's patchset, if we do some modification to make nand_bbt.c to
+> make it shareable for Parallel and SPI NAND. The code line should be 2000.
+> I believe I can review this spi-nand-base.c to remove some redundant code
+> that may hundreds line. Is 1700 or 1800 code line is more acceptable?
+> 
+> Let me know your opinions.
+> 
 
-diff --git a/arch/arm/boot/dts/exynos5420.dtsi b/arch/arm/boot/dts/exynos5420.dtsi
-index e5cb74d2b9f5..9dc2e9773b30 100644
---- a/arch/arm/boot/dts/exynos5420.dtsi
-+++ b/arch/arm/boot/dts/exynos5420.dtsi
-@@ -274,6 +274,20 @@
- 		#power-domain-cells = <0>;
- 	};
- 
-+	disp_pd: power-domain@100440C0 {
-+		compatible = "samsung,exynos4210-pd";
-+		reg = <0x100440C0 0x20>;
-+		#power-domain-cells = <0>;
-+		clocks = <&clock CLK_FIN_PLL>, <&clock CLK_MOUT_SW_ACLK200>,
-+			 <&clock CLK_MOUT_USER_ACLK200_DISP1>,
-+			 <&clock CLK_MOUT_SW_ACLK300>,
-+			 <&clock CLK_MOUT_USER_ACLK300_DISP1>,
-+			 <&clock CLK_MOUT_SW_ACLK400>,
-+			 <&clock CLK_MOUT_USER_ACLK400_DISP1>;
-+		clock-names = "oscclk", "pclk0", "clk0",
-+			      "pclk1", "clk1", "pclk2", "clk2";
-+	};
-+
- 	pinctrl_0: pinctrl@13400000 {
- 		compatible = "samsung,exynos5420-pinctrl";
- 		reg = <0x13400000 0x1000>;
-@@ -541,6 +555,7 @@
- 	fimd: fimd@14400000 {
- 		clocks = <&clock CLK_SCLK_FIMD1>, <&clock CLK_FIMD1>;
- 		clock-names = "sclk_fimd", "fimd";
-+		power-domains = <&disp_pd>;
- 	};
- 
- 	adc: adc@12D10000 {
-@@ -714,6 +729,7 @@
- 		phy = <&hdmiphy>;
- 		samsung,syscon-phandle = <&pmu_system_controller>;
- 		status = "disabled";
-+		power-domains = <&disp_pd>;
- 	};
- 
- 	hdmiphy: hdmiphy@145D0000 {
-@@ -726,6 +742,7 @@
- 		interrupts = <0 94 0>;
- 		clocks = <&clock CLK_MIXER>, <&clock CLK_SCLK_HDMI>;
- 		clock-names = "mixer", "sclk_hdmi";
-+		power-domains = <&disp_pd>;
- 	};
- 
- 	gsc_0: video-scaler@13e00000 {
+Sounds good.
+
+Do you still plan to maintain the spi-nand-base.c and spi-nand-device.c
+separation?
 -- 
-2.1.3
-
+Ezequiel
