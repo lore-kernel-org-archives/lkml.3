@@ -1,99 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754982AbbATSJT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 13:09:19 -0500
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:46362 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752547AbbATSJR (ORCPT
+	id S1753113AbbATSGu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 13:06:50 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:42840 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751241AbbATSGZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 13:09:17 -0500
-X-Mail-Handler: Dyn Standard SMTP by Dyn
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19nc26qWN5XiOj6kONbNhG/
-Date: Tue, 20 Jan 2015 10:05:48 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: Mark Rutland <mark.rutland@arm.com>, Rob Herring <robherring2@gmail.com>,
-        Suman Anna <s-anna@ti.com>, Kumar Gala <galak@codeaurora.org>,
-        Bjorn Andersson <bjorn@kryo.se>,
-        Josh Cartwright <joshc@codeaurora.org>,
+	Tue, 20 Jan 2015 13:06:25 -0500
+Subject: Re: [PATCH] of: Custom printk format specifier for device node
+Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
+Content-Type: text/plain; charset=windows-1252
+From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+In-Reply-To: <1421776794.2724.1.camel@perches.com>
+Date: Tue, 20 Jan 2015 20:06:15 +0200
+Cc: Rob Herring <robherring2@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        "linux-doc@vger.kernel.org" <linux-doc@vger.kernel.org>,
         "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Rob Herring <robh+dt@kernel.org>
-Subject: Re: [PATCH v7 1/4] Documentation: dt: add common bindings for
- hwspinlock
-Message-ID: <20150120180548.GK7718@atomide.com>
-References: <1421269101-51105-1-git-send-email-s-anna@ti.com>
- <1421269101-51105-2-git-send-email-s-anna@ti.com>
- <20150115135201.GG16217@leverpostej>
- <20150115135556.GH16217@leverpostej>
- <CAL_JsqL2LZAooMk-V8+xeF2g6acZE21M+-OBRw8aEVa-5wVHuQ@mail.gmail.com>
- <CAK=WgbYQ=BbinqJ5fsw2Y+FKdy=nasLsw9mX8pw6S_o3owy9-g@mail.gmail.com>
- <20150116101746.GA21809@leverpostej>
- <CAK=WgbYBqPoUm9byx0du_g5ZmHdYaUVLpSPZYHoCVzNoatNKpw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAK=WgbYBqPoUm9byx0du_g5ZmHdYaUVLpSPZYHoCVzNoatNKpw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <B282C7F7-D221-4D7D-AB33-533C0204C4CF@konsulko.com>
+References: <1421764441-11928-1-git-send-email-pantelis.antoniou@konsulko.com> <CAL_JsqLVJjq3Ov=J-5LtXiTQPLvR5Y=+tB1i16k_rN3j5dODFQ@mail.gmail.com> <E7065DB3-DD6B-4110-A066-8C7268186831@konsulko.com> <1421776794.2724.1.camel@perches.com>
+To: Joe Perches <joe@perches.com>
+X-Mailer: Apple Mail (2.1993)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Ohad Ben-Cohen <ohad@wizery.com> [150116 16:50]:
-> Mark,
-> 
-> On Fri, Jan 16, 2015 at 12:17 PM, Mark Rutland <mark.rutland@arm.com> wrote:
-> >> The hwlock is a basic hardware primitive that allow synchronization
-> >> between different processors in the system, which may be running Linux
-> >> as well as other operating systems, and may have no other means of
-> >> communication.
-> >>
-> >> The hwlock id numbers are predefined, global and static across the
-> >> entire system: Linux may boot well after other operating systems are
-> >> already running and using these hwlocks to communicate, and therefore,
-> >> in order to use these hardware devices, it must not enumerate them
-> >> differently than the rest of the system.
-> >
-> > That's not true.
-> >
-> > In order to communicate it must agree with the other users as to the
-> > meaning of each instance, and the protocol for use. That doesn't
-> > necessarily mean that Linux needs to know the numerical ID from a
-> > datasheet, and regardless that ID is separate from the logical ID Linux
-> > uses internally.
-> 
-> Let me describe hwspinlocks a bit more so we all get to know it better
-> and can then agree on a proper solution.
-> 
-> - What makes handling of hwspinlock ID numbers convenient is the fact
-> that it's not based on random datasheet numbers. In fact, hwspinlocks
-> is just special memory: usually datasheets just define the base
-> address and the size of the hwspinlock area. So any numerical ID we
-> use to call the locks themselves are already logical and sane, similar
-> to the way we handle memory (i.e. if we have 32 locks we'll always use
-> 0..31). So hwlocks ids are very much like memory addressing, and not
-> irq numbers.
-> 
-> - Sometimes Linux will have to dynamically allocate a hwlock, and send
-> the ID of the allocated lock to a remote processor (which may not be
-> running Linux).
-> - Sometimes a remote processor, which may not be running Linux, will
-> have to dynamically allocate a hwlock, and send the ID of the
-> allocated lock to us (another processor running Linux)
-> 
-> We cannot tell in advance what kind of IPC is going to be used for
-> sending and receiving this hwlock ID. Some are handled by Linux
-> (kernel) and some by the user space. So we must be able to expose an
-> ID the system will understand as well as receive one.
+Hi Joe,
 
-How about default to Linux id space and allow overriding that with
-a module param option if needed?
+> On Jan 20, 2015, at 19:59 , Joe Perches <joe@perches.com> wrote:
+> 
+> On Tue, 2015-01-20 at 16:52 +0200, Pantelis Antoniou wrote:
+>> Hi Rob,
+>> 
+>>> On Jan 20, 2015, at 16:47 , Rob Herring <robherring2@gmail.com> wrote:
+>>> 
+>>> On Tue, Jan 20, 2015 at 8:34 AM, Pantelis Antoniou
+>>> <pantelis.antoniou@konsulko.com> wrote:
+>>>> 90% of the usage of device node's full_name is printing it out
+>>>> in a kernel message. Preparing for the eventual delayed allocation
+>>>> introduce a custom printk format specifier that is both more
+>>>> compact and more pleasant to the eye.
+> []
+>>>> diff --git a/Documentation/printk-formats.txt b/Documentation/printk-formats.txt
+> []
+>>>> +Device tree nodes:
+>>>> +
+>>>> +       %pO{,1,2}
+>>> 
+>>> 'O' is not very obvious, but I imagine we are somewhat limted in our
+>>> choice here?
+>>> 
+>> 
+>> All the good women are married, all the handsome men are gay, all the obvious
+>> format specifiers are taken.
+> 
+> Not really at all.
+> 
+> I quite dislike '0' as the format type specifier for
+> a device tree node as there's no mnemonic mapping.
+> 
 
-Regards,
+There’s only so many characters one can use; [DdNn] are taken. And it’s O != 0.
 
-Tony
+I am open to suggestions.
+
+Regards
+
+— Pantelis
+
