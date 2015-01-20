@@ -1,87 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753577AbbATQCP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 11:02:15 -0500
-Received: from mail.kmu-office.ch ([178.209.48.109]:44965 "EHLO
-	mail.kmu-office.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753248AbbATQCK (ORCPT
+	id S1753734AbbATQC7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 11:02:59 -0500
+Received: from mail-ig0-f177.google.com ([209.85.213.177]:34128 "EHLO
+	mail-ig0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753631AbbATQC5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 11:02:10 -0500
-From: Stefan Agner <stefan@agner.ch>
-To: jic23@kernel.org
-Cc: shawn.guo@linaro.org, B38611@freescale.com, maitysanchayan@gmail.com,
-        linux-iio@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, stefan@agner.ch
-Subject: [PATCH 3/3] ARM: dts: add property for maximum ADC clock frequencies
-Date: Tue, 20 Jan 2015 17:02:03 +0100
-Message-Id: <1421769723-28677-4-git-send-email-stefan@agner.ch>
-X-Mailer: git-send-email 2.2.2
-In-Reply-To: <1421769723-28677-1-git-send-email-stefan@agner.ch>
-References: <1421769723-28677-1-git-send-email-stefan@agner.ch>
+	Tue, 20 Jan 2015 11:02:57 -0500
+Date: Tue, 20 Jan 2015 16:02:48 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Mark Brown <broonie@kernel.org>
+Cc: Inha Song <ideal.song@samsung.com>, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, sameo@linux.intel.com,
+        ckeepax@opensource.wolfsonmicro.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: Re: [alsa-devel] [PATCH v2 RESEND 2/2] mfd: arizona: Update DT
+ binding to support OUTn_MONO init_data
+Message-ID: <20150120160248.GK13701@x1>
+References: <1420185829-24886-1-git-send-email-ideal.song@samsung.com>
+ <1420185829-24886-3-git-send-email-ideal.song@samsung.com>
+ <20150120122005.GA13701@x1>
+ <20150120132001.GA21293@sirena.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20150120132001.GA21293@sirena.org.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ADC clock frequency is limited depending on modes used. Add
-device tree property which allow to set the mode used and the
-maximum frequency ratings for the instance. These allows to
-set the ADC clock to a frequency which is within specification
-according to the actual mode used.
+On Tue, 20 Jan 2015, Mark Brown wrote:
 
-Signed-off-by: Stefan Agner <stefan@agner.ch>
----
- Documentation/devicetree/bindings/iio/adc/vf610-adc.txt | 9 +++++++++
- arch/arm/boot/dts/vfxxx.dtsi                            | 4 ++++
- 2 files changed, 13 insertions(+)
+> On Tue, Jan 20, 2015 at 12:20:05PM +0000, Lee Jones wrote:
+> > On Fri, 02 Jan 2015, Inha Song wrote:
+> 
+> > > This patch update DT binding to support OUTn_MONO init_data. Each
+> > > output signal can be configurated as a mono differential output.
+> > > The mono differential configuration is selected using the OUTn_MONO
+> > > registers.
+> 
+> > This requires a DT Ack and an entry in the example.
+> 
+> The DT maintainers have said they're OK with maintainers just merging
+> things if they're comfortable with it (see the bindings specific
+> submitting-patches.txt) and given their workload and general resulting
+> responsiveness it's going to make it difficult go get anything done.
 
-diff --git a/Documentation/devicetree/bindings/iio/adc/vf610-adc.txt b/Documentation/devicetree/bindings/iio/adc/vf610-adc.txt
-index 1a4a43d..3eb40e2 100644
---- a/Documentation/devicetree/bindings/iio/adc/vf610-adc.txt
-+++ b/Documentation/devicetree/bindings/iio/adc/vf610-adc.txt
-@@ -11,6 +11,13 @@ Required properties:
- - clock-names: Must contain "adc", matching entry in the clocks property.
- - vref-supply: The regulator supply ADC reference voltage.
- 
-+Recommended properties:
-+- fsl,adck-max-frequency: Maximum frequencies according to datasheets operating
-+  requirements. Three values are required, depending on conversion mode:
-+  - Frequency in normal mode (ADLPC=0, ADHSC=0)
-+  - Frequency in high-speed mode (ADLPC=0, ADHSC=1)
-+  - Frequency in low-power mode (ADLPC=1, ADHSC=0)
-+
- Example:
- adc0: adc@4003b000 {
- 	compatible = "fsl,vf610-adc";
-@@ -18,5 +25,7 @@ adc0: adc@4003b000 {
- 	interrupts = <0 53 0x04>;
- 	clocks = <&clks VF610_CLK_ADC0>;
- 	clock-names = "adc";
-+	fsl,adck-max-frequency = <30000000>, <40000000>,
-+				<20000000>;
- 	vref-supply = <&reg_vcc_3v3_mcu>;
- };
-diff --git a/arch/arm/boot/dts/vfxxx.dtsi b/arch/arm/boot/dts/vfxxx.dtsi
-index 505969a..7584e0a 100644
---- a/arch/arm/boot/dts/vfxxx.dtsi
-+++ b/arch/arm/boot/dts/vfxxx.dtsi
-@@ -182,6 +182,8 @@
- 				clocks = <&clks VF610_CLK_ADC0>;
- 				clock-names = "adc";
- 				status = "disabled";
-+				fsl,adck-max-frequency = <30000000>, <40000000>,
-+							<20000000>;
- 			};
- 
- 			wdog@4003e000 {
-@@ -361,6 +363,8 @@
- 				clocks = <&clks VF610_CLK_ADC1>;
- 				clock-names = "adc";
- 				status = "disabled";
-+				fsl,adck-max-frequency = <30000000>, <40000000>,
-+							<20000000>;
- 			};
- 
- 			esdhc1: esdhc@400b2000 {
+I only tend to poke the DT guys when I am unsure of something in the
+binding.  In this case it was a doubt whether we should be encoding
+register values inside a property like this.
+
+I would also be happy to take it with your Ack if you're happy with
+it?
+
 -- 
-2.2.2
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
