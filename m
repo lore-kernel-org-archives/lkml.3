@@ -1,38 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752573AbbATOgs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 09:36:48 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52729 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751501AbbATOgq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 09:36:46 -0500
-Date: Tue, 20 Jan 2015 15:36:44 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Vladimir Davydov <vdavydov@parallels.com>,
-        Greg Thelen <gthelen@google.com>, linux-mm@kvack.org,
-        cgroups@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] mm: memcontrol: default hierarchy interface for memory
- fix - "none"
-Message-ID: <20150120143644.GL25342@dhcp22.suse.cz>
-References: <1421508107-29377-1-git-send-email-hannes@cmpxchg.org>
- <20150120133711.GI25342@dhcp22.suse.cz>
- <20150120143002.GB11181@phnom.home.cmpxchg.org>
+	id S1752026AbbATOnD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 09:43:03 -0500
+Received: from mail-oi0-f50.google.com ([209.85.218.50]:43949 "EHLO
+	mail-oi0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751424AbbATOnA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 09:43:00 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150120143002.GB11181@phnom.home.cmpxchg.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <CANq1E4SjfZOKqTsdkt519vKc1Poeah5McVJBb_spdHjbKv4=7g@mail.gmail.com>
+References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>
+	<1421435777-25306-2-git-send-email-gregkh@linuxfoundation.org>
+	<54BE5DC8.70706@gmail.com>
+	<CANq1E4SjfZOKqTsdkt519vKc1Poeah5McVJBb_spdHjbKv4=7g@mail.gmail.com>
+Date: Tue, 20 Jan 2015 09:42:59 -0500
+X-Google-Sender-Auth: hkvA3Rl7ZJmyo-1DAoalFjERnFM
+Message-ID: <CA+5PVA46wVa-L9K1zgHzt=Fwn6YFBYhxJUjiozSH4XBY03WMVw@mail.gmail.com>
+Subject: Re: [PATCH 01/13] kdbus: add documentation
+From: Josh Boyer <jwboyer@fedoraproject.org>
+To: David Herrmann <dh.herrmann@gmail.com>
+Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tom Gundersen <teg@jklm.no>, Jiri Kosina <jkosina@suse.cz>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Linux API <linux-api@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Djalal Harouni <tixxdz@opendz.org>, Daniel Mack <daniel@zonque.org>,
+        Johannes Stezenbach <js@sig21.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 20-01-15 09:30:02, Johannes Weiner wrote:
-[...]
-> Another possibility would be "infinity",
+On Tue, Jan 20, 2015 at 9:31 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> Hi Michael
+>
+> On Tue, Jan 20, 2015 at 2:53 PM, Michael Kerrisk (man-pages)
+> <mtk.manpages@gmail.com> wrote:
+>> On 01/16/2015 08:16 PM, Greg Kroah-Hartman wrote:
+>>> From: Daniel Mack <daniel@zonque.org>
+>>>
+>>> kdbus is a system for low-latency, low-overhead, easy to use
+>>> interprocess communication (IPC).
+>>>
+>>> The interface to all functions in this driver is implemented via ioctls
+>>> on files exposed through a filesystem called 'kdbusfs'. The default
+>>> mount point of kdbusfs is /sys/fs/kdbus. This patch adds detailed
+>>> documentation about the kernel level API design.
+>>
+>> I have some details feedback on the contents of this file, and some
+>> bigger questions. I'll split them out into separate mails.
+>>
+>> So here, the bigger, general questions to start with. I've arrived late
+>> to this, so sorry if they've already been discussed, but the answers to
+>> some of the questions should actually be in this file, I would have
+>> expected.
+>>
+>> This is an enormous and complex API. Why is the API ioctl() based,
+>> rather than system-call-based? Have we learned nothing from the hydra
+>> that the futex() multiplexing syscall became? (And kdbus is an order
+>> of magnitude more complex, by the look of things.) At the very least,
+>> a *good* justification of why the API is ioctl()-based should be part
+>> of this documentation file.
+>>
+>> An observation: The documentation below is substantial, but this API is
+>> enormous, so the documentation still feels rather thin. What would
+>> really help would be some example code in the doc.
+>>
+>> And on the subject of code examples... Are there any (prototype)
+>> working user-space applications that exercise the current kdbus
+>> implementation? That is, can I install these kdbus patches, and
+>> then find a simple example application somewhere that does
+>> something to exercise kdbus?
+>
+> If you run a 3.18 kernel, you can install kdbus.ko from our repository
+> and boot a full Fedora system running Gnome3 with kdbus, given that
+> you compiled systemd with --enable-kdbus (which is still
+> experimental). No legacy dbus1 daemon is running. Instead, we have a
+> bus-proxy that converts classic dbus1 to kdbus, so all
+> bus-communication runs on kdbus.
 
-yes infinity definitely sounds much better to me.
--- 
-Michal Hocko
-SUSE Labs
+FWIW, we've been building a "playground" repository for the kernel
+that contains this already for Fedora.  If you have a stock Fedora 21
+or rawhide install, you can use:
+
+https://copr.fedoraproject.org/coprs/jwboyer/kernel-playground/
+
+which has the kernel+kdbus and systemd built with --enable-kdbus
+already.  Easy enough to throw in a VM for testing.
+
+josh
