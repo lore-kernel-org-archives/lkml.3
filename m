@@ -1,91 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074AbbATPro (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 10:47:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58456 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752897AbbATPrm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 10:47:42 -0500
-Date: Tue, 20 Jan 2015 09:47:36 -0600
-From: Josh Poimboeuf <jpoimboe@redhat.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: Seth Jennings <sjenning@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
-        Vojtech Pavlik <vojtech@suse.cz>, live-patching@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] livepatch: support for repatching a function
-Message-ID: <20150120154736.GA4417@treble.redhat.com>
-References: <cover.1421767360.git.jpoimboe@redhat.com>
- <da0d4d3c34441efcd8e830c4c978016581d7f055.1421767360.git.jpoimboe@redhat.com>
- <54BE7657.2010105@suse.cz>
+	id S1753265AbbATPtZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 10:49:25 -0500
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48188 "EHLO
+	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751517AbbATPtX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 10:49:23 -0500
+Date: Tue, 20 Jan 2015 15:49:22 +0000
+From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
+To: Inha Song <ideal.song@samsung.com>
+Cc: broonie@kernel.org, lee.jones@linaro.org, robh+dt@kernel.org,
+        pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        sameo@linux.intel.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Subject: Re: [alsa-devel] [PATCH v2 RESEND 2/2] mfd: arizona: Update DT
+	binding to support OUTn_MONO init_data
+Message-ID: <20150120154922.GB14516@opensource.wolfsonmicro.com>
+References: <1420185829-24886-1-git-send-email-ideal.song@samsung.com> <1420185829-24886-3-git-send-email-ideal.song@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54BE7657.2010105@suse.cz>
-User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
+In-Reply-To: <1420185829-24886-3-git-send-email-ideal.song@samsung.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 04:37:59PM +0100, Jiri Slaby wrote:
-> On 01/20/2015, 04:26 PM, Josh Poimboeuf wrote:
-> > Add support for patching a function multiple times.  If multiple patches
-> > affect a function, the function in the most recently enabled patch
-> > "wins".  This enables a cumulative patch upgrade path, where each patch
-> > is a superset of previous patches.
-> > 
-> > This requires restructuring the data a little bit.  With the current
-> > design, where each klp_func struct has its own ftrace_ops, we'd have to
-> > unregister the old ops and then register the new ops, because
-> > FTRACE_OPS_FL_IPMODIFY prevents us from having two ops registered for
-> > the same function at the same time.  That would leave a regression
-> > window where the function isn't patched at all (not good for a patch
-> > upgrade path).
-> > 
-> > This patch replaces the per-klp_func ftrace_ops with a global klp_ops
-> > list, with one ftrace_ops per original function.  A single ftrace_ops is
-> > shared between all klp_funcs which have the same old_addr.  This allows
-> > the switch between function versions to happen instantaneously by
-> > updating the klp_ops struct's func_stack list.  The winner is the
-> > klp_func at the top of the func_stack (front of the list).
-> > 
-> > Signed-off-by: Josh Poimboeuf <jpoimboe@redhat.com>
+On Fri, Jan 02, 2015 at 05:03:49PM +0900, Inha Song wrote:
+> This patch update DT binding to support OUTn_MONO init_data. Each
+> output signal can be configurated as a mono differential output.
+> The mono differential configuration is selected using the OUTn_MONO
+> registers.
 > 
-> Reviewed-by: Jiri Slaby <jslaby@suse.cz>
+> Signed-off-by: Inha Song <ideal.song@samsung.com>
+> ---
 
-Thanks for the review!
+Agree with Lee an example probably would be nice. But otherwise
+this looks fine.
 
-> But...
-> 
-> > @@ -267,16 +303,28 @@ static int klp_write_object_relocations(struct module *pmod,
-> >  
-> >  static void notrace klp_ftrace_handler(unsigned long ip,
-> >  				       unsigned long parent_ip,
-> > -				       struct ftrace_ops *ops,
-> > +				       struct ftrace_ops *fops,
-> >  				       struct pt_regs *regs)
-> >  {
-> > -	struct klp_func *func = ops->private;
-> > +	struct klp_ops *ops;
-> > +	struct klp_func *func;
-> > +
-> > +	ops = container_of(fops, struct klp_ops, fops);
-> > +
-> > +	rcu_read_lock();
-> > +	func = list_first_or_null_rcu(&ops->func_stack, struct klp_func,
-> > +				      stack_node);
-> > +	rcu_read_unlock();
-> > +
-> > +	if (WARN_ON(!func))
-> > +		return;
-> 
-> If it ever happens, the warn will drown the machine in the output splash.
-
-Yeah, maybe, depending on the nature of the bug.
-
-> WARN_ON_RATELIMIT?
-
-Since this warning should never happen unless there's a code bug, I
-think WARN_ON_ONCE should be sufficient?
-
--- 
-Josh
+Thanks,
+Charles
