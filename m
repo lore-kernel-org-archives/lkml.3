@@ -1,67 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753207AbbATXVg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 18:21:36 -0500
-Received: from nacho.alt.net ([208.90.169.18]:53102 "EHLO nacho.alt.net"
+	id S1752685AbbATX1f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 18:27:35 -0500
+Received: from smtp4-g21.free.fr ([212.27.42.4]:12505 "EHLO smtp4-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752935AbbATXVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 18:21:31 -0500
-Comment: DKIM? See http://www.dkim.org
-Comment: DomainKeys? See http://antispam.yahoo.com/domainkeys
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-	s=default; d=alt.net;
-	h=Received:Received:Received:Date:To:cc:Subject:In-Reply-To:Message-ID:References:MIME-Version:Content-Type:X-Delivery-Agent:From:Reply-To;
-	b=BPQP+foBnpIZLaTG5TH6uPuJpgmUItYAZBw0x2VCZP8AN/e5/0y5IlYMpQeAL3
-	wTTAclWNZVkOeo9pyF5h/jD85Lcafo/0dQGMRNJH6XZrWIZQ82LrpLAXQV8jMZhV
-	KfrP5OkVElQ5Tr9909FxZy8RXllnwsKkuLp+SAMFltrko=;
-Date: Tue, 20 Jan 2015 23:21:30 +0000 (UTC)
-To: Julian Anastasov <ja@ssi.bg>
-cc: Wensong Zhang <wensong@linux-vs.org>, Simon Horman <horms@verge.net.au>,
-        lvs-devel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] IPVS: add wlib & wlip schedulers
-In-Reply-To: <alpine.LFD.2.11.1501192342190.2687@ja.home.ssi.bg>
-Message-ID: <Pine.LNX.4.64.1501202320340.8217@nacho.alt.net>
-References: <Pine.LNX.4.44.0501260832210.17893-100000@nacho.alt.net>
-	<Pine.LNX.4.61.0502010007060.1148@penguin.linux-vs.org>
-	<Pine.LNX.4.64.1501172217420.8217@nacho.alt.net>
-	<alpine.LFD.2.11.1501192342190.2687@ja.home.ssi.bg>
+	id S1751703AbbATX1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 18:27:33 -0500
+Date: Wed, 21 Jan 2015 00:27:26 +0100
+From: Sabrina Dubroca <sd@queasysnail.net>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Guenter Roeck <linux@roeck-us.net>, Paul Moore <pmoore@redhat.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-audit@redhat.com, Richard Guy Briggs <rgb@redhat.com>
+Subject: Re: linux-next: Tree for Jan 20 -- Kernel panic - Unable to mount
+ root fs
+Message-ID: <20150120232726.GA16913@kria>
+References: <20150120165655.GA10904@kria>
+ <4237741.ePaG0Gba6D@sifl>
+ <20150120175135.GA25973@kria>
+ <20150120195432.GH29656@ZenIV.linux.org.uk>
+ <20150120204504.GA309@kria>
+ <20150120210202.GI29656@ZenIV.linux.org.uk>
+ <20150120220823.GB18129@kria>
+ <20150120221309.GA18589@roeck-us.net>
+ <20150120225041.GK29656@ZenIV.linux.org.uk>
+ <20150120231725.GL29656@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Delivery-Agent: TMDA/1.1.12 (Macallan)
-From: Chris Caputo <ccaputo@alt.net>
-Reply-To: Chris Caputo <ccaputo-dated-1432164091.579f17@alt.net>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20150120231725.GL29656@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chris Caputo <ccaputo@alt.net> 
+2015-01-20, 23:17:25 +0000, Al Viro wrote:
+> On Tue, Jan 20, 2015 at 10:50:41PM +0000, Al Viro wrote:
+> > doesn't look at _anything_ other than name->name other than for audit_inode().
+> > And name->name is apparently the same.
+> > 
+> > It looks like something ends up buggering name->name in process, but then
+> > the damn thing appears to be normal after return from filename_lookup()...
+> 
+> If my reconstruction of what's going on is correct, the call chain here
+> is do_path_lookup() <- kern_path() <- lookup_bdev() <- blkdev_get_by_path()
+> <- mount_bdev() <- some_type.mount() <- mount_fs()
+> <- vfs_kern_mount() <- do_new_mount() <- do_mount() <- sys_mount()
+> <- do_mount_root() <- mount_block_root() <- mount_root().  Which is
+> obscenely long, BTW, but that's a separate story...
+> 
+> Could you slap
+> 	struct stat buf;
+> 	int n = sys_newstat(name, &buf);
+> 	printk(KERN_ERR "stat(\"%s\") -> %d\n", name, n);
+> 	n = sys_newstat("/dev", &buf);
+> 	printk(KERN_ERR "stat(\"dev\") -> %d\n", n);
+> 
+> in the beginning of mount_block_root() (init/do_mounts.c) and see what it
+> prints?
 
-IPVS wlib (Weighted Least Incoming Byterate) and wlip (Weighted Least Incoming 
-Packetrate) scheduler docs for ipvsadm-1.27.
+I get
 
-Signed-off-by: Chris Caputo <ccaputo@alt.net>
----
-diff -upr ipvsadm-1.27-stock/SCHEDULERS ipvsadm-1.27/SCHEDULERS
---- ipvsadm-1.27-stock/SCHEDULERS	2013-09-06 08:37:27.000000000 +0000
-+++ ipvsadm-1.27/SCHEDULERS	2015-01-17 22:14:32.812597191 +0000
-@@ -1 +1 @@
--rr|wrr|lc|wlc|lblc|lblcr|dh|sh|sed|nq
-+rr|wrr|lc|wlc|lblc|lblcr|dh|sh|sed|nq|wlib|wlip
-diff -upr ipvsadm-1.27-stock/ipvsadm.8 ipvsadm-1.27/ipvsadm.8
---- ipvsadm-1.27-stock/ipvsadm.8	2013-09-06 08:37:27.000000000 +0000
-+++ ipvsadm-1.27/ipvsadm.8	2015-01-17 22:14:32.812597191 +0000
-@@ -261,6 +261,14 @@ fixed service rate (weight) of the ith s
- \fBnq\fR - Never Queue: assigns an incoming job to an idle server if
- there is, instead of waiting for a fast one; if all the servers are
- busy, it adopts the Shortest Expected Delay policy to assign the job.
-+.sp
-+\fBwlib\fR - Weighted Least Incoming Byterate: directs network
-+connections to the real server with the least incoming byterate
-+normalized by the server weight.
-+.sp
-+\fBwlip\fR - Weighted Least Incoming Packetrate: directs network
-+connections to the real server with the least incoming packetrate
-+normalized by the server weight.
- .TP
- .B -p, --persistent [\fItimeout\fP]
- Specify that a virtual service is persistent. If this option is
+stat("/dev/root") -> -2
+stat("dev") -> -2
+with the patch applied (+panic)
+
+
+and:
+
+stat("/dev/root") -> 0
+stat("dev") -> 0
+with the old version of do_path_lookup.
+
+-- 
+Sabrina
