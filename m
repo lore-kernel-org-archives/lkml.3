@@ -1,83 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242AbbATPnz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 10:43:55 -0500
-Received: from mail-we0-f170.google.com ([74.125.82.170]:41754 "EHLO
-	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752239AbbATPny (ORCPT
+	id S1752940AbbATPiZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 10:38:25 -0500
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:57764 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752130AbbATPiX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 10:43:54 -0500
-Message-ID: <54BE7657.2010105@suse.cz>
-Date: Tue, 20 Jan 2015 16:37:59 +0100
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Tue, 20 Jan 2015 10:38:23 -0500
+Date: Tue, 20 Jan 2015 15:38:15 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Jacek Anaszewski <j.anaszewski@samsung.com>
+Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        kyungmin.park@samsung.com, b.zolnierkie@samsung.com, pavel@ucw.cz,
+        cooloney@gmail.com, rpurdie@rpsys.net, sakari.ailus@iki.fi,
+        s.nawrocki@samsung.com, Andrzej Hajda <a.hajda@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>, Rob Herring <robh+dt@kernel.org>,
+        Pawel Moll <pawel.moll@arm.com>, Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH/RFC v10 09/19] DT: Add documentation for the mfd Maxim
+ max77693
+Message-ID: <20150120153815.GB13701@x1>
+References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
+ <1420816989-1808-10-git-send-email-j.anaszewski@samsung.com>
+ <20150120112107.GG13701@x1>
+ <54BE67EA.2070507@samsung.com>
 MIME-Version: 1.0
-To: Josh Poimboeuf <jpoimboe@redhat.com>, Seth Jennings <sjenning@redhat.com>,
-        Jiri Kosina <jkosina@suse.cz>, Vojtech Pavlik <vojtech@suse.cz>
-CC: live-patching@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] livepatch: support for repatching a function
-References: <cover.1421767360.git.jpoimboe@redhat.com> <da0d4d3c34441efcd8e830c4c978016581d7f055.1421767360.git.jpoimboe@redhat.com>
-In-Reply-To: <da0d4d3c34441efcd8e830c4c978016581d7f055.1421767360.git.jpoimboe@redhat.com>
-Content-Type: text/plain; charset=iso-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <54BE67EA.2070507@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2015, 04:26 PM, Josh Poimboeuf wrote:
-> Add support for patching a function multiple times.  If multiple patches
-> affect a function, the function in the most recently enabled patch
-> "wins".  This enables a cumulative patch upgrade path, where each patch
-> is a superset of previous patches.
+On Tue, 20 Jan 2015, Jacek Anaszewski wrote:
+
+> On 01/20/2015 12:21 PM, Lee Jones wrote:
+> >On Fri, 09 Jan 2015, Jacek Anaszewski wrote:
+> >
+> >>This patch adds device tree binding documentation for
+> >>the flash cell of the Maxim max77693 multifunctional device.
+> >>
+> >>Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
+> >>Signed-off-by: Andrzej Hajda <a.hajda@samsung.com>
+> >>Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> >>Cc: Lee Jones <lee.jones@linaro.org>
+> >>Cc: Chanwoo Choi <cw00.choi@samsung.com>
+> >>Cc: Bryan Wu <cooloney@gmail.com>
+> >>Cc: Richard Purdie <rpurdie@rpsys.net>
+> >>Cc: Rob Herring <robh+dt@kernel.org>
+> >>Cc: Pawel Moll <pawel.moll@arm.com>
+> >>Cc: Mark Rutland <mark.rutland@arm.com>
+> >>Cc: Ian Campbell <ijc+devicetree@hellion.org.uk>
+> >>Cc: Kumar Gala <galak@codeaurora.org>
+> >>---
+> >>  Documentation/devicetree/bindings/mfd/max77693.txt |   69 ++++++++++++++++++++
+> >>  1 file changed, 69 insertions(+)
+> >>
+> >>diff --git a/Documentation/devicetree/bindings/mfd/max77693.txt b/Documentation/devicetree/bindings/mfd/max77693.txt
+> >>index 01e9f30..ef184f0 100644
+> >>--- a/Documentation/devicetree/bindings/mfd/max77693.txt
+> >>+++ b/Documentation/devicetree/bindings/mfd/max77693.txt
+> >>@@ -41,7 +41,52 @@ Optional properties:
+> >>  	 To get more informations, please refer to documentaion.
+> >>  	[*] refer Documentation/devicetree/bindings/pwm/pwm.txt
+> >>
+> >>+- led : the LED submodule device node
+> >>+
+> >>+There are two led outputs available - fled1 and fled2. Each of them can
+> >>+control a separate led or they can be connected together to double
+> >>+the maximum current for a single connected led. One led is represented
+> >>+by one child node.
+> >>+
+> >>+Required properties:
+> >>+- compatible : Must be "maxim,max77693-led".
+> >>+
+> >>+Optional properties:
+> >>+- maxim,trigger-type : Flash trigger type.
+> >>+	Possible trigger types:
+> >>+		MAX77693_LED_TRIG_TYPE_EDGE - Rising edge of the signal triggers
+> >>+			the flash,
+> >>+		MAX77693_LED_TRIG_TYPE_LEVEL - Strobe pulse length controls
+> >>+			duration of the flash.
+> >
+> >I think you should represent the proper values here instead of the
+> >defines.
 > 
-> This requires restructuring the data a little bit.  With the current
-> design, where each klp_func struct has its own ftrace_ops, we'd have to
-> unregister the old ops and then register the new ops, because
-> FTRACE_OPS_FL_IPMODIFY prevents us from having two ops registered for
-> the same function at the same time.  That would leave a regression
-> window where the function isn't patched at all (not good for a patch
-> upgrade path).
+> I see both versions in the existing bindings and also a combination of
+> them, e.g.: MAX77693_LED_TRIG_TYPE_EDGE (0). I think that it is
+> reasonable to mention the macros, especially if they are to appear
+> in the DT binding example at the end of the documentation file.
 > 
-> This patch replaces the per-klp_func ftrace_ops with a global klp_ops
-> list, with one ftrace_ops per original function.  A single ftrace_ops is
-> shared between all klp_funcs which have the same old_addr.  This allows
-> the switch between function versions to happen instantaneously by
-> updating the klp_ops struct's func_stack list.  The winner is the
-> klp_func at the top of the func_stack (front of the list).
+> >>+- maxim,boost-mode :
+> >>+	In boost mode the device can produce up to 1.2A of total current
+> >>+	on both outputs. The maximum current on each output is reduced
+> >>+	to 625mA then. If not enabled explicitly, boost setting defaults to
+> >>+	MAX77693_LED_BOOST_FIXED in case both current sources are used.
+> >>+	Possible values:
+> >>+		MAX77693_LED_BOOST_OFF - no boost,
+> >>+		MAX77693_LED_BOOST_ADAPTIVE - adaptive mode,
+> >>+		MAX77693_LED_BOOST_FIXED - fixed mode.
+> >
+> >Same here.
 > 
-> Signed-off-by: Josh Poimboeuf <jpoimboe@redhat.com>
+> MAX77693_LED_BOOST_OFF (0) - no boost,
+> MAX77693_LED_BOOST_ADAPTIVE (1) - adaptive mode,
+> MAX77693_LED_BOOST_FIXED (2) - fixed mode.
 
-Reviewed-by: Jiri Slaby <jslaby@suse.cz>
+This is fine too.
 
-But...
+> >>+- maxim,boost-vout : Output voltage of the boost module in millivolts.
+> >
+> >-mvout?
+> >-microvout?
+> 
+> maxim,boost-mvout ?
 
-> @@ -267,16 +303,28 @@ static int klp_write_object_relocations(struct module *pmod,
->  
->  static void notrace klp_ftrace_handler(unsigned long ip,
->  				       unsigned long parent_ip,
-> -				       struct ftrace_ops *ops,
-> +				       struct ftrace_ops *fops,
->  				       struct pt_regs *regs)
->  {
-> -	struct klp_func *func = ops->private;
-> +	struct klp_ops *ops;
-> +	struct klp_func *func;
-> +
-> +	ops = container_of(fops, struct klp_ops, fops);
-> +
-> +	rcu_read_lock();
-> +	func = list_first_or_null_rcu(&ops->func_stack, struct klp_func,
-> +				      stack_node);
-> +	rcu_read_unlock();
-> +
-> +	if (WARN_ON(!func))
-> +		return;
+Right.
 
-If it ever happens, the warn will drown the machine in the output splash.
+> >>+- maxim,vsys-min : Low input voltage level in millivolts. Flash is not fired
+> >>+	if chip estimates that system voltage could drop below this level due
+> >>+	to flash power consumption.
+> >
+> >mvsys?
+> >microvsys?
+> 
+> maxim,mvsys-min ?
 
-WARN_ON_RATELIMIT?
+Looks okay to me.
 
-thanks,
 -- 
-js
-suse labs
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
