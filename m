@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808AbbATLAp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 06:00:45 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:53532 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754132AbbATKtR (ORCPT
+	id S1754218AbbATKtg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 05:49:36 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:38644 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754172AbbATKt3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 05:49:17 -0500
+	Tue, 20 Jan 2015 05:49:29 -0500
 From: Thierry Reding <thierry.reding@gmail.com>
 To: dri-devel@lists.freedesktop.org
 Cc: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 11/36] drm/tegra: Convert output midlayer to helpers
-Date: Tue, 20 Jan 2015 11:48:30 +0100
-Message-Id: <1421750935-4023-12-git-send-email-thierry.reding@gmail.com>
+Subject: [PATCH 12/36] drm/tegra: output: Make ->setup_clock() optional
+Date: Tue, 20 Jan 2015 11:48:31 +0100
+Message-Id: <1421750935-4023-13-git-send-email-thierry.reding@gmail.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1421750935-4023-1-git-send-email-thierry.reding@gmail.com>
 References: <1421750935-4023-1-git-send-email-thierry.reding@gmail.com>
@@ -22,117 +22,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Thierry Reding <treding@nvidia.com>
 
-The output layer was initially designed to help reduce the amount of
-code duplicated in output drivers. An unfortunate side-effect of that
-was that it turned into a midlayer and it became difficult to make the
-output drivers work without bending over backwards to fit into the
-midlayer.
-
-This commit starts to convert the midlayer into a helper library by
-exporting most of the common functions so that they can be used by the
-output drivers directly. Doing so will allow output drivers to reuse
-common code paths but more easily override them where necessary.
+In order to transition output drivers to using the struct tegra_output
+as a helper rather than midlayer, make this callback optional. Instead
+drivers should implement the equivalent as part of ->mode_fixup(). For
+the conversion to atomic modesetting a new callback ->atomic_check()
+should be implemented that updates the display controller's state with
+the corresponding parent clock, rate and shift clock divider.
 
 Signed-off-by: Thierry Reding <treding@nvidia.com>
 ---
- drivers/gpu/drm/tegra/drm.h    |  9 +++++++++
- drivers/gpu/drm/tegra/output.c | 24 ++++++++++++------------
- 2 files changed, 21 insertions(+), 12 deletions(-)
+ drivers/gpu/drm/tegra/dc.c  | 10 +++++++++-
+ drivers/gpu/drm/tegra/drm.h | 10 ----------
+ 2 files changed, 9 insertions(+), 11 deletions(-)
 
+diff --git a/drivers/gpu/drm/tegra/dc.c b/drivers/gpu/drm/tegra/dc.c
+index 9cee6465b753..46fde25863a2 100644
+--- a/drivers/gpu/drm/tegra/dc.c
++++ b/drivers/gpu/drm/tegra/dc.c
+@@ -1074,10 +1074,18 @@ static int tegra_crtc_setup_clk(struct drm_crtc *crtc,
+ 		return -ENODEV;
+ 
+ 	/*
++	 * The ->setup_clock() callback is optional, but if encoders don't
++	 * implement it they most likely need to do the equivalent within the
++	 * ->mode_fixup() callback.
++	 */
++	if (!output->ops || !output->ops->setup_clock)
++		return 0;
++
++	/*
+ 	 * This assumes that the parent clock is pll_d_out0 or pll_d2_out
+ 	 * respectively, each of which divides the base pll_d by 2.
+ 	 */
+-	err = tegra_output_setup_clock(output, dc->clk, pclk, &div);
++	err = output->ops->setup_clock(output, dc->clk, pclk, &div);
+ 	if (err < 0) {
+ 		dev_err(dc->dev, "failed to setup clock: %ld\n", err);
+ 		return err;
 diff --git a/drivers/gpu/drm/tegra/drm.h b/drivers/gpu/drm/tegra/drm.h
-index 286a970a4432..bf749ac4a344 100644
+index bf749ac4a344..d7433976a40b 100644
 --- a/drivers/gpu/drm/tegra/drm.h
 +++ b/drivers/gpu/drm/tegra/drm.h
-@@ -272,6 +272,15 @@ int tegra_output_remove(struct tegra_output *output);
- int tegra_output_init(struct drm_device *drm, struct tegra_output *output);
- int tegra_output_exit(struct tegra_output *output);
- 
-+int tegra_output_connector_get_modes(struct drm_connector *connector);
-+struct drm_encoder *
-+tegra_output_connector_best_encoder(struct drm_connector *connector);
-+enum drm_connector_status
-+tegra_output_connector_detect(struct drm_connector *connector, bool force);
-+void tegra_output_connector_destroy(struct drm_connector *connector);
-+
-+void tegra_output_encoder_destroy(struct drm_encoder *encoder);
-+
- /* from dpaux.c */
- struct tegra_dpaux;
- struct drm_dp_link;
-diff --git a/drivers/gpu/drm/tegra/output.c b/drivers/gpu/drm/tegra/output.c
-index c40b38e4a859..bc82743904c1 100644
---- a/drivers/gpu/drm/tegra/output.c
-+++ b/drivers/gpu/drm/tegra/output.c
-@@ -12,7 +12,7 @@
- #include <drm/drm_panel.h>
- #include "drm.h"
- 
--static int tegra_connector_get_modes(struct drm_connector *connector)
-+int tegra_output_connector_get_modes(struct drm_connector *connector)
- {
- 	struct tegra_output *output = connector_to_output(connector);
- 	struct edid *edid = NULL;
-@@ -57,8 +57,8 @@ static int tegra_connector_mode_valid(struct drm_connector *connector,
- 	return status;
+@@ -240,16 +240,6 @@ static inline int tegra_output_disable(struct tegra_output *output)
+ 	return output ? -ENOSYS : -EINVAL;
  }
  
--static struct drm_encoder *
--tegra_connector_best_encoder(struct drm_connector *connector)
-+struct drm_encoder *
-+tegra_output_connector_best_encoder(struct drm_connector *connector)
- {
- 	struct tegra_output *output = connector_to_output(connector);
- 
-@@ -66,13 +66,13 @@ tegra_connector_best_encoder(struct drm_connector *connector)
- }
- 
- static const struct drm_connector_helper_funcs connector_helper_funcs = {
--	.get_modes = tegra_connector_get_modes,
-+	.get_modes = tegra_output_connector_get_modes,
- 	.mode_valid = tegra_connector_mode_valid,
--	.best_encoder = tegra_connector_best_encoder,
-+	.best_encoder = tegra_output_connector_best_encoder,
- };
- 
--static enum drm_connector_status
--tegra_connector_detect(struct drm_connector *connector, bool force)
-+enum drm_connector_status
-+tegra_output_connector_detect(struct drm_connector *connector, bool force)
- {
- 	struct tegra_output *output = connector_to_output(connector);
- 	enum drm_connector_status status = connector_status_unknown;
-@@ -98,7 +98,7 @@ tegra_connector_detect(struct drm_connector *connector, bool force)
- 	return status;
- }
- 
--static void tegra_connector_destroy(struct drm_connector *connector)
-+void tegra_output_connector_destroy(struct drm_connector *connector)
- {
- 	drm_connector_unregister(connector);
- 	drm_connector_cleanup(connector);
-@@ -106,18 +106,18 @@ static void tegra_connector_destroy(struct drm_connector *connector)
- 
- static const struct drm_connector_funcs connector_funcs = {
- 	.dpms = drm_helper_connector_dpms,
--	.detect = tegra_connector_detect,
-+	.detect = tegra_output_connector_detect,
- 	.fill_modes = drm_helper_probe_single_connector_modes,
--	.destroy = tegra_connector_destroy,
-+	.destroy = tegra_output_connector_destroy,
- };
- 
--static void tegra_encoder_destroy(struct drm_encoder *encoder)
-+void tegra_output_encoder_destroy(struct drm_encoder *encoder)
- {
- 	drm_encoder_cleanup(encoder);
- }
- 
- static const struct drm_encoder_funcs encoder_funcs = {
--	.destroy = tegra_encoder_destroy,
-+	.destroy = tegra_output_encoder_destroy,
- };
- 
- static void tegra_encoder_dpms(struct drm_encoder *encoder, int mode)
+-static inline int tegra_output_setup_clock(struct tegra_output *output,
+-					   struct clk *clk, unsigned long pclk,
+-					   unsigned int *div)
+-{
+-	if (output && output->ops && output->ops->setup_clock)
+-		return output->ops->setup_clock(output, clk, pclk, div);
+-
+-	return output ? -ENOSYS : -EINVAL;
+-}
+-
+ static inline int tegra_output_check_mode(struct tegra_output *output,
+ 					  struct drm_display_mode *mode,
+ 					  enum drm_mode_status *status)
 -- 
 2.1.3
 
