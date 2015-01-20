@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755180AbbATQme (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 11:42:34 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:58232 "EHLO mx1.redhat.com"
+	id S1754905AbbATQmA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 11:42:00 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52650 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755053AbbATQmc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 11:42:32 -0500
+	id S1752045AbbATQl6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 11:41:58 -0500
 From: Jiri Olsa <jolsa@kernel.org>
 To: linux-kernel@vger.kernel.org
 Cc: Jiri Olsa <jolsa@kernel.org>,
@@ -19,16 +19,16 @@ Cc: Jiri Olsa <jolsa@kernel.org>,
         Paul Mackerras <paulus@samba.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 20/36] perf build: Add arch x86 objects building
-Date: Tue, 20 Jan 2015 17:39:17 +0100
-Message-Id: <1421771973-6022-21-git-send-email-jolsa@kernel.org>
+Subject: [PATCH 21/36] perf build: Add arch arm objects building
+Date: Tue, 20 Jan 2015 17:39:18 +0100
+Message-Id: <1421771973-6022-22-git-send-email-jolsa@kernel.org>
 In-Reply-To: <1421771973-6022-1-git-send-email-jolsa@kernel.org>
 References: <1421771973-6022-1-git-send-email-jolsa@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move the x86 arch objects building under build framework
+Move the arm arch objects building under build framework
 to be included in the libperf build object.
 
 Signed-off-by: Jiri Olsa <jolsa@kernel.org>
@@ -44,70 +44,30 @@ Cc: Paul Mackerras <paulus@samba.org>
 Cc: Peter Zijlstra <peterz@infradead.org>
 Cc: Stephane Eranian <eranian@google.com>
 ---
- tools/perf/arch/Build           |  1 +
- tools/perf/arch/arm/Build       |  0
- tools/perf/arch/arm64/Build     |  0
- tools/perf/arch/powerpc/Build   |  0
- tools/perf/arch/s390/Build      |  0
- tools/perf/arch/sh/Build        |  0
- tools/perf/arch/sparc/Build     |  0
- tools/perf/arch/x86/Build       |  2 ++
- tools/perf/arch/x86/Makefile    | 15 ---------------
- tools/perf/arch/x86/tests/Build |  2 ++
- tools/perf/arch/x86/util/Build  |  8 ++++++++
- 11 files changed, 13 insertions(+), 15 deletions(-)
- create mode 100644 tools/perf/arch/arm/Build
- create mode 100644 tools/perf/arch/arm64/Build
- create mode 100644 tools/perf/arch/powerpc/Build
- create mode 100644 tools/perf/arch/s390/Build
- create mode 100644 tools/perf/arch/sh/Build
- create mode 100644 tools/perf/arch/sparc/Build
- create mode 100644 tools/perf/arch/x86/Build
- create mode 100644 tools/perf/arch/x86/tests/Build
- create mode 100644 tools/perf/arch/x86/util/Build
+ tools/perf/arch/arm/Build       |  2 ++
+ tools/perf/arch/arm/Makefile    | 11 -----------
+ tools/perf/arch/arm/tests/Build |  2 ++
+ tools/perf/arch/arm/util/Build  |  4 ++++
+ 4 files changed, 8 insertions(+), 11 deletions(-)
+ create mode 100644 tools/perf/arch/arm/tests/Build
+ create mode 100644 tools/perf/arch/arm/util/Build
 
-diff --git a/tools/perf/arch/Build b/tools/perf/arch/Build
-index 304f5e76c613..109eb75cf7de 100644
---- a/tools/perf/arch/Build
-+++ b/tools/perf/arch/Build
-@@ -1 +1,2 @@
- libperf-y += common.o
-+libperf-y += $(ARCH)/
 diff --git a/tools/perf/arch/arm/Build b/tools/perf/arch/arm/Build
-new file mode 100644
-index 000000000000..e69de29bb2d1
-diff --git a/tools/perf/arch/arm64/Build b/tools/perf/arch/arm64/Build
-new file mode 100644
-index 000000000000..e69de29bb2d1
-diff --git a/tools/perf/arch/powerpc/Build b/tools/perf/arch/powerpc/Build
-new file mode 100644
-index 000000000000..e69de29bb2d1
-diff --git a/tools/perf/arch/s390/Build b/tools/perf/arch/s390/Build
-new file mode 100644
-index 000000000000..e69de29bb2d1
-diff --git a/tools/perf/arch/sh/Build b/tools/perf/arch/sh/Build
-new file mode 100644
-index 000000000000..e69de29bb2d1
-diff --git a/tools/perf/arch/sparc/Build b/tools/perf/arch/sparc/Build
-new file mode 100644
-index 000000000000..e69de29bb2d1
-diff --git a/tools/perf/arch/x86/Build b/tools/perf/arch/x86/Build
-new file mode 100644
-index 000000000000..41bf61da476a
---- /dev/null
-+++ b/tools/perf/arch/x86/Build
+index e69de29bb2d1..41bf61da476a 100644
+--- a/tools/perf/arch/arm/Build
++++ b/tools/perf/arch/arm/Build
 @@ -0,0 +1,2 @@
 +libperf-y += util/
 +libperf-$(CONFIG_DWARF_UNWIND) += tests/
-diff --git a/tools/perf/arch/x86/Makefile b/tools/perf/arch/x86/Makefile
-index 9b21881db52f..21322e0385b8 100644
---- a/tools/perf/arch/x86/Makefile
-+++ b/tools/perf/arch/x86/Makefile
-@@ -1,19 +1,4 @@
+diff --git a/tools/perf/arch/arm/Makefile b/tools/perf/arch/arm/Makefile
+index 09d62153d384..7fbca175099e 100644
+--- a/tools/perf/arch/arm/Makefile
++++ b/tools/perf/arch/arm/Makefile
+@@ -1,14 +1,3 @@
  ifndef NO_DWARF
  PERF_HAVE_DWARF_REGS := 1
 -LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
- endif
+-endif
 -ifndef NO_LIBUNWIND
 -LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/unwind-libunwind.o
 -endif
@@ -117,30 +77,21 @@ index 9b21881db52f..21322e0385b8 100644
 -ifndef NO_DWARF_UNWIND
 -LIB_OBJS += $(OUTPUT)arch/$(ARCH)/tests/regs_load.o
 -LIB_OBJS += $(OUTPUT)arch/$(ARCH)/tests/dwarf-unwind.o
--endif
--LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/header.o
--LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/tsc.o
--LIB_H += arch/$(ARCH)/util/tsc.h
- HAVE_KVM_STAT_SUPPORT := 1
--LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/kvm-stat.o
-diff --git a/tools/perf/arch/x86/tests/Build b/tools/perf/arch/x86/tests/Build
+ endif
+diff --git a/tools/perf/arch/arm/tests/Build b/tools/perf/arch/arm/tests/Build
 new file mode 100644
 index 000000000000..b30eff9bcc83
 --- /dev/null
-+++ b/tools/perf/arch/x86/tests/Build
++++ b/tools/perf/arch/arm/tests/Build
 @@ -0,0 +1,2 @@
 +libperf-y += regs_load.o
 +libperf-y += dwarf-unwind.o
-diff --git a/tools/perf/arch/x86/util/Build b/tools/perf/arch/x86/util/Build
+diff --git a/tools/perf/arch/arm/util/Build b/tools/perf/arch/arm/util/Build
 new file mode 100644
-index 000000000000..cfbccc4e3187
+index 000000000000..d22e3d07de3d
 --- /dev/null
-+++ b/tools/perf/arch/x86/util/Build
-@@ -0,0 +1,8 @@
-+libperf-y += header.o
-+libperf-y += tsc.o
-+libperf-y += kvm-stat.o
-+
++++ b/tools/perf/arch/arm/util/Build
+@@ -0,0 +1,4 @@
 +libperf-$(CONFIG_DWARF) += dwarf-regs.o
 +
 +libperf-$(CONFIG_LIBUNWIND)          += unwind-libunwind.o
