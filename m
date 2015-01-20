@@ -1,116 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728AbbATG6z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 01:58:55 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:54739 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752552AbbATG6x (ORCPT
+	id S1752431AbbATG6p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 01:58:45 -0500
+Received: from mail-qa0-f53.google.com ([209.85.216.53]:60623 "EHLO
+	mail-qa0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751152AbbATG6o convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 01:58:53 -0500
-Message-ID: <54BDFC9C.3020308@linux.vnet.ibm.com>
-Date: Tue, 20 Jan 2015 12:28:36 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	Tue, 20 Jan 2015 01:58:44 -0500
 MIME-Version: 1.0
-To: Michael Ellerman <mpe@ellerman.id.au>, tglx@linutronix.de
-CC: aik@ozlabs.ru, shreyas@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        anton@samba.org, linuxppc-dev@lists.ozlabs.org
-Subject: Re: tick/broadcast: Make movement of broadcast hrtimer robust against
- hotplug
-References: <20150120060913.A5EF31402DE@ozlabs.org>
-In-Reply-To: <20150120060913.A5EF31402DE@ozlabs.org>
-Content-Type: text/plain; charset=ISO-8859-6
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15012006-0033-0000-0000-00000362D8C8
+In-Reply-To: <1446006.BXnWRvK5p3@phil>
+References: <1421690889-11901-1-git-send-email-romain.perier@gmail.com>
+	<1446006.BXnWRvK5p3@phil>
+Date: Tue, 20 Jan 2015 07:58:43 +0100
+Message-ID: <CABgxDoLXBvrqt5SnGybWa_EbT_wGjwHj80bLvhAE3og-m-7t6A@mail.gmail.com>
+Subject: Re: [PATCH v1 0/4] net: stmmac: dwmac-rk: Fix phy regulator issues
+From: Romain Perier <romain.perier@gmail.com>
+To: =?UTF-8?Q?Heiko_St=C3=BCbner?= <heiko@sntech.de>
+Cc: David Miller <davem@davemloft.net>, peppe.cavallaro@st.com,
+        netdev <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        devicetree <devicetree@vger.kernel.org>, roger.chen@rock-chips.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2015 11:39 AM, Michael Ellerman wrote:
-> On Mon, 2015-19-01 at 10:26:48 UTC, Preeti U Murthy wrote:
->> Today if a cpu handling broadcasting of wakeups goes offline, it hands over
-> 
-> It's *the* cpu handling broadcasting of wakeups right? ie. there's only ever
-> one at a time.
+Hi all,
 
-Right, thanks for pointing this.
+2015-01-19 21:19 GMT+01:00 Heiko Stübner <heiko@sntech.de>:
+> Hi Romain
+>
+> Am Montag, 19. Januar 2015, 18:08:05 schrieb Romain Perier:
+>> This series fixes few issues in dwmac-rk:
+>>
+>> 1. Voltage settings was hardcoded into the driver for the phy regulator.
+>>    The driver now uses the default voltage settings found in the devicetree,
+>> which are applied throught the regulator framework.
+>> 2. The regulator name used to power on or power off the phy was put in the
+>> devicetree variable "phy_regulator", which is not standard and added a lot
+>> of code for nothing. The driver now uses the devicetree property
+>> "phy-supply" and the corresponding functions to manipulate this regulator.
+>>
+>> The corresponding devicetree files are also updated. As, dwmac-rk was
+>> recently pushed in the development tree, I don't care about devicetree
+>> backward compatibility issues.
+>
+> This last sentence is slightly misleading :-) .
+>
 
-> 
->> the job of broadcasting to another cpu in the CPU_DEAD phase. 
-> 
-> I think that would be clearer as "to another cpu, when the cpu going offline
-> reaches the CPU_DEAD state."
-> 
-> Otherwise it can read as "another cpu (which is) in the CPU_DEAD phase", which
-> is not what you mean - I think.
+Yes, I meant that I don't need to care about it, as you explain it well below.
+Sorry for my misleading sentence ;) . I will fix it in my second serie.
 
-Yes I will word this better.
-> 
->> The CPU_DEAD notifiers are run only after the offline cpu sets its state as
->> CPU_DEAD. Meanwhile, the kthread doing the offline is scheduled out while
-> 
-> The kthread which is running on a different cpu from either of the first two
-> cpus you've mentioned.
+> The actual fact is, that these new bindings for the rk3288 gmac have not been
+> released with any official kernel release yet ... i.e. the will be released with
+> 3.20 in whatever form, so we don't _need_ to care about keeping compatibility
+> still for the next 2.5 weeks or so.
+>
+> @Dave: it would be good if this series (when fixed) could still go into the
+> 3.20 material so we don't get stuck with the non-standard regulator property.
+>
+>
+> As we'll probably need a v2 due to at the issue in patch3, could you also
+> switch places of patch1 and 2, which would keep bisecatbility (i.e. regulator
+> property before removing the voltage setting from the driver).
 
-It could be running on any cpu other than the offline one. The next line
-clarifies this - "This is fatal if the cpu on which this kthread was
-running". I also say "Meanwhile, the kthread doing the offline" above so
-as to clarify that the offline cpu has nothing to do with this kthread.
+This sentence about re-ordering patches is for Dave or for me ?
 
-> 
->> waiting for this transition by queuing a timer. This is fatal because if the
->> cpu on which this kthread was running has no other work queued on it, it can
->> re-enter deep idle state, since it sees that a broadcast cpu still exists.
->> However the broadcast wakeup will never come since the cpu which was handling
->> it is offline, and this cpu never wakes up to see this because its in deep
->> idle state.
-> 
-> Which cpu is "this cpu"? I think you mean the one running the kthread which is
-> doing the offline, but it's not 100% clear.
-
-Right, I will make this correction as well, its ambiguous.
-
-> 
->> Fix this by setting the broadcast timer to a max value so as to force the cpus
->> entering deep idle states henceforth to freshly nominate the broadcast cpu. More
->> importantly this has to be done in the CPU_DYING phase so that it is visible to
->> all cpus right after exiting stop_machine, which is when they can re-enter idle.
->> This ensures that handover of the broadcast duty falls in place on offline, without
->> having to do it explicitly.
-> 
-> OK, I don't know the code well enough to say if that's the right fix.
-> 
-> You say:
-> 
-> +	/* This allows fresh nomination of broadcast cpu */
-> +	bc->next_event.tv64 = KTIME_MAX;
-> 
-> Is that all it does? I see that check in several places in the code.
-
-This change does not affect those parts of the tick broadcast code,
-which do not depend on the hrtimer broadcast framework. And for those
-parts that do depend on this framework, this plays a critical role in
-handing over the broadcast duty.
-
-> 
-> 
-> I assume we're expecting Thomas to merge this?
-
-Yes, Thomas can you please take this into the next 3.19 rc release ? I
-will send out a new patch with the modified changelog. If you find this
-acceptable I will port it to the relevant stable kernels.
-> 
-> If so it's probably worth mentioning that it fixes a bug we are seeing on
-
-I will mention this in the changelog by pointing to the bug report.
-
-Regards
-Preeti U Murthy
-> machines in the wild. So it'd be nice if it went into 3.19 and/or gets sent to
-> stable.
-> 
-> cheers
-> 
-
+Thanks,
+Romain
