@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755303AbbATQoW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 11:44:22 -0500
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48347 "EHLO
-	opensource.wolfsonmicro.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751152AbbATQoU (ORCPT
+	id S1755522AbbATQs1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 11:48:27 -0500
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:32522 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755494AbbATQsX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 11:44:20 -0500
-Date: Tue, 20 Jan 2015 16:44:18 +0000
-From: Charles Keepax <ckeepax@opensource.wolfsonmicro.com>
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Mark Brown <broonie@kernel.org>, Inha Song <ideal.song@samsung.com>,
-        robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
-        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
-        sameo@linux.intel.com, devicetree@vger.kernel.org,
-        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
-Subject: Re: [alsa-devel] [PATCH v2 RESEND 2/2] mfd: arizona: Update DT
-	binding to support OUTn_MONO init_data
-Message-ID: <20150120164418.GC14516@opensource.wolfsonmicro.com>
-References: <1420185829-24886-1-git-send-email-ideal.song@samsung.com> <1420185829-24886-3-git-send-email-ideal.song@samsung.com> <20150120122005.GA13701@x1> <20150120132001.GA21293@sirena.org.uk> <20150120160248.GK13701@x1>
+	Tue, 20 Jan 2015 11:48:23 -0500
+X-Mail-Handler: Dyn Standard SMTP by Dyn
+X-Originating-IP: 104.193.169.186
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/sendlabs/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/Ej0UK+pBAeHp49X7aBhkJ
+Date: Tue, 20 Jan 2015 08:44:55 -0800
+From: Tony Lindgren <tony@atomide.com>
+To: Paul Bolle <pebolle@tiscali.nl>
+Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: ARM: OMAP3: MACH_OMAP3517EVM?
+Message-ID: <20150120164455.GD7718@atomide.com>
+References: <1421744597.9655.92.camel@x220>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150120160248.GK13701@x1>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <1421744597.9655.92.camel@x220>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 04:02:48PM +0000, Lee Jones wrote:
-> On Tue, 20 Jan 2015, Mark Brown wrote:
+* Paul Bolle <pebolle@tiscali.nl> [150120 01:06]:
+> Tony,
 > 
-> > On Tue, Jan 20, 2015 at 12:20:05PM +0000, Lee Jones wrote:
-> > > On Fri, 02 Jan 2015, Inha Song wrote:
-> > 
-> > > > This patch update DT binding to support OUTn_MONO init_data. Each
-> > > > output signal can be configurated as a mono differential output.
-> > > > The mono differential configuration is selected using the OUTn_MONO
-> > > > registers.
-> > 
-> > > This requires a DT Ack and an entry in the example.
-> > 
-> > The DT maintainers have said they're OK with maintainers just merging
-> > things if they're comfortable with it (see the bindings specific
-> > submitting-patches.txt) and given their workload and general resulting
-> > responsiveness it's going to make it difficult go get anything done.
+> Your commit 4d62dbda8561 ("ARM: OMAP3: Remove legacy support for
+> am3517-evm") is included in today's linux-next (ie, next-20150120). I
+> noticed because a script I use to check linux-next spotted a problem
+> caused by it.
+
+OK thanks for spotting that.
+ 
+> See, your commit removes the Kconfig symbol MACH_OMAP3517EVM. But
+> there's still a reference to that symbol in sound/soc/omap/Kconfig. This
+> means that in linux-next a symbol, SND_OMAP_SOC_AM3517EVM, cannot be set
+> anymore.
 > 
-> I only tend to poke the DT guys when I am unsure of something in the
-> binding.  In this case it was a doubt whether we should be encoding
-> register values inside a property like this.
-> 
-> I would also be happy to take it with your Ack if you're happy with
-> it?
+> I assume a patch that address this (either by removing
+> SND_OMAP_SOC_AM3517EVM or by updating its dependencies) is queued
+> somewhere. Is that correct?
 
-In this case really it is a boolean indicating if the
-corresponding output is mono or not. It is handled thusly in the
-code:
+Not yet, I missed that part sorry. I'll add back the Kconfig symbol.
+I'll rather do the removal in smaller steps, and first remove the
+3517 related board-*.c file before messing with the legacy drivers.
 
-		if (arizona->pdata.out_mono[i])
-			val = ARIZONA_OUT1_MONO;
-		else
-			val = 0;
+Regards,
 
-Perhaps some further wording tweaks on the Documentation patch
-would be appropriate, but certainly I am happy enough with the
-binding.
-
-Thanks,
-Charles
+Tony
