@@ -1,98 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752331AbbATDA2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 22:00:28 -0500
-Received: from helcar.apana.org.au ([209.40.204.226]:44925 "EHLO
-	helcar.apana.org.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751966AbbATDAZ (ORCPT
+	id S1752451AbbATDBH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 22:01:07 -0500
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:47264 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751772AbbATDBG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 22:00:25 -0500
-Date: Tue, 20 Jan 2015 14:00:17 +1100
-From: Herbert Xu <herbert@gondor.apana.org.au>
-To: Stephan Mueller <smueller@chronox.de>
-Cc: "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
-        Daniel Borkmann <dborkman@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-api@vger.kernel.org, linux-crypto@vger.kernel.org
-Subject: Re: [PATCH v8 1/2] crypto: AF_ALG: add AEAD support
-Message-ID: <20150120030017.GA10475@gondor.apana.org.au>
-References: <33040723.pAXIT3fl8h@tachyon.chronox.de>
- <6260799.4x68Msg3Li@tachyon.chronox.de>
- <20150108110931.GA8568@gondor.apana.org.au>
- <1639027.yRSjDuRfFC@tachyon.chronox.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1639027.yRSjDuRfFC@tachyon.chronox.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 19 Jan 2015 22:01:06 -0500
+From: Ming Lei <ming.lei@canonical.com>
+To: Jens Axboe <axboe@fb.com>, linux-kernel@vger.kernel.org
+Cc: Ming Lei <ming.lei@canonical.com>, Sasha Levin <sasha.levin@oracle.com>
+Subject: [PATCH] blk-mq: fix hctx/ctx kobject use-after-free
+Date: Tue, 20 Jan 2015 11:00:56 +0800
+Message-Id: <1421722856-6346-1-git-send-email-ming.lei@canonical.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 09, 2015 at 04:30:45AM +0100, Stephan Mueller wrote:
-> Am Donnerstag, 8. Januar 2015, 22:09:31 schrieb Herbert Xu:
-> 
-> Hi Herbert,
-> 
-> > On Wed, Jan 07, 2015 at 04:51:38PM +0100, Stephan Mueller wrote:
-> > > +		if (!aead_writable(sk)) {
-> > > +			/*
-> > > +			 * If there is more data to be expected, but we cannot
-> > > +			 * write more data, forcefully define that we do not
-> > > +			 * expect more data to invoke the AEAD operation. This
-> > > +			 * prevents a deadlock in user space.
-> > > +			 */
-> > > +			ctx->more = 0;
-> > 
-> > We should return EMSGSIZE here.  Also we should clear out the
-> > existing data so that the socket may be reused again.
-> 
-> Is this really wise considering that we want to support a threaded caller? For 
-> example, one thread sends data and another reads data. For some reason, the 
-> reading thread is throttled or slower than the sender. Now, with the current 
-> solution, the sender is put on hold (i.e. throttled) until the reader can 
-> catch up. I.e. we have an automated synchronization between sender/receiver.
-> 
-> Thus, when we remove the wait here and return an error, the sender will be 
-> shut down and there is no synchronization of the reader/writer any more.
-> 
-> Note, the same applies to the very similar code in aead_sendpage too.
+The kobject memory shouldn't have been freed before the kobject
+is released because driver core can access it freely before its
+release.
 
-No, if we're in this case then something seriously wrong has
-happened.  IOW the application writer has screwed up.  We're
-not able to carry out the wish of user-space because of resource
-limits on the socket.  Attempting to continue at this point will
-only cause confusion.
+This patch frees hctx in its release callback. For ctx, they
+share one single per-cpu variable which is associated with
+the request queue, so free ctx in q->mq_kobj's release handler.
 
-So we should loudly declare that there was an error.
+Signed-off-by: Sasha Levin <sasha.levin@oracle.com>
+(fix ctx kobjects)
+Signed-off-by: Ming Lei <ming.lei@canonical.com>
+---
+ block/blk-mq-sysfs.c |   25 +++++++++++++++++++++++--
+ block/blk-mq.c       |    6 +-----
+ 2 files changed, 24 insertions(+), 7 deletions(-)
 
-> > > +	ctx->more = msg->msg_flags & MSG_MORE;
-> > > +	if (!ctx->more && !aead_sufficient_data(ctx))
-> > > +		err = -EINVAL;
-> > 
-> > Ditto, we should discard the data that's queued up.  Also perhaps
-> > use EBADMSG instead of EINVAL.
-> 
-> Agreed that we should clear out the buffer. I will provide that in the next 
-> release for both, the sendmsg and sendpage implementations.
-> 
-> However, I am not sure whether using EBADMSG is a good idea. The error of 
-> EBADMSG in the kernel crypto API is only used for integrity errors of AEAD 
-> ciphers. But our error case here has nothing to do with the integrity error.
-> 
-> I would be fine with any other error number -- EMSGSIZE as you suggested 
-> above?
-
-Sure.
-
-> Do you think whether such approach makes sense? If yes, which limit to the 
-> number of rsgl should we apply -- is ALG_MAX_PAGES good?
-
-Yes I think your solution in v10 is fine.  The current kernel
-AEAD interface isn't the best but we're stuck with it for the
-time being so this is the best we can do.
-
-Cheers,
+diff --git a/block/blk-mq-sysfs.c b/block/blk-mq-sysfs.c
+index 1630a20..6774a0e 100644
+--- a/block/blk-mq-sysfs.c
++++ b/block/blk-mq-sysfs.c
+@@ -15,6 +15,26 @@
+ 
+ static void blk_mq_sysfs_release(struct kobject *kobj)
+ {
++	struct request_queue *q;
++
++	q = container_of(kobj, struct request_queue, mq_kobj);
++	free_percpu(q->queue_ctx);
++}
++
++static void blk_mq_ctx_release(struct kobject *kobj)
++{
++	struct blk_mq_ctx *ctx;
++
++	ctx = container_of(kobj, struct blk_mq_ctx, kobj);
++	kobject_put(&ctx->queue->mq_kobj);
++}
++
++static void blk_mq_hctx_release(struct kobject *kobj)
++{
++	struct blk_mq_hw_ctx *hctx;
++
++	hctx = container_of(kobj, struct blk_mq_hw_ctx, kobj);
++	kfree(hctx);
+ }
+ 
+ struct blk_mq_ctx_sysfs_entry {
+@@ -318,13 +338,13 @@ static struct kobj_type blk_mq_ktype = {
+ static struct kobj_type blk_mq_ctx_ktype = {
+ 	.sysfs_ops	= &blk_mq_sysfs_ops,
+ 	.default_attrs	= default_ctx_attrs,
+-	.release	= blk_mq_sysfs_release,
++	.release	= blk_mq_ctx_release,
+ };
+ 
+ static struct kobj_type blk_mq_hw_ktype = {
+ 	.sysfs_ops	= &blk_mq_hw_sysfs_ops,
+ 	.default_attrs	= default_hw_ctx_attrs,
+-	.release	= blk_mq_sysfs_release,
++	.release	= blk_mq_hctx_release,
+ };
+ 
+ static void blk_mq_unregister_hctx(struct blk_mq_hw_ctx *hctx)
+@@ -355,6 +375,7 @@ static int blk_mq_register_hctx(struct blk_mq_hw_ctx *hctx)
+ 		return ret;
+ 
+ 	hctx_for_each_ctx(hctx, ctx, i) {
++		kobject_get(&q->mq_kobj);
+ 		ret = kobject_add(&ctx->kobj, &hctx->kobj, "cpu%u", ctx->cpu);
+ 		if (ret)
+ 			break;
+diff --git a/block/blk-mq.c b/block/blk-mq.c
+index 04caf9f..a39cc8d 100644
+--- a/block/blk-mq.c
++++ b/block/blk-mq.c
+@@ -1593,10 +1593,8 @@ static void blk_mq_free_hw_queues(struct request_queue *q,
+ 	struct blk_mq_hw_ctx *hctx;
+ 	unsigned int i;
+ 
+-	queue_for_each_hw_ctx(q, hctx, i) {
++	queue_for_each_hw_ctx(q, hctx, i)
+ 		free_cpumask_var(hctx->cpumask);
+-		kfree(hctx);
+-	}
+ }
+ 
+ static int blk_mq_init_hctx(struct request_queue *q,
+@@ -1955,11 +1953,9 @@ void blk_mq_free_queue(struct request_queue *q)
+ 
+ 	percpu_ref_exit(&q->mq_usage_counter);
+ 
+-	free_percpu(q->queue_ctx);
+ 	kfree(q->queue_hw_ctx);
+ 	kfree(q->mq_map);
+ 
+-	q->queue_ctx = NULL;
+ 	q->queue_hw_ctx = NULL;
+ 	q->mq_map = NULL;
+ 
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+1.7.9.5
+
