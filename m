@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752336AbbATITi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 03:19:38 -0500
-Received: from nasmtp01.atmel.com ([192.199.1.246]:32589 "EHLO
+	id S1752381AbbATIUS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 03:20:18 -0500
+Received: from nasmtp01.atmel.com ([192.199.1.246]:32778 "EHLO
 	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751927AbbATITh (ORCPT
+	with ESMTP id S1751293AbbATIUQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 03:19:37 -0500
+	Tue, 20 Jan 2015 03:20:16 -0500
 From: Wenyou Yang <wenyou.yang@atmel.com>
 To: <nicolas.ferre@atmel.com>, <linux@arm.linux.org.uk>
 CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <alexandre.belloni@free-electrons.com>, <sylvain.rochet@finsecur.com>,
         <peda@axentia.se>, <wenyou.yang@atmel.com>
-Subject: [PATCH 04/12] pm: at91: move the copying the sram function to the sram initializationi phase
-Date: Tue, 20 Jan 2015 16:16:57 +0800
-Message-ID: <1421741825-18226-5-git-send-email-wenyou.yang@atmel.com>
+Subject: [PATCH 05/12] ARM: at91: move select SRAM to ARCH_AT91
+Date: Tue, 20 Jan 2015 16:16:58 +0800
+Message-ID: <1421741825-18226-6-git-send-email-wenyou.yang@atmel.com>
 X-Mailer: git-send-email 1.7.9.5
 In-Reply-To: <1421741825-18226-1-git-send-email-wenyou.yang@atmel.com>
 References: <1421741825-18226-1-git-send-email-wenyou.yang@atmel.com>
@@ -24,40 +24,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To decrease the suspend time, move the copying the sram function
-to the sram initialization phase, instead of every time go to suspend.
+Because the CONFIG_AT91_SLOW_CLOCK will be removed
+to simply the PM config, so move select SRAM.
 
 Signed-off-by: Wenyou Yang <wenyou.yang@atmel.com>
-Acked-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
 ---
- arch/arm/mach-at91/pm.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
+ arch/arm/mach-at91/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/arch/arm/mach-at91/pm.c b/arch/arm/mach-at91/pm.c
-index 0990486..609a4f8 100644
---- a/arch/arm/mach-at91/pm.c
-+++ b/arch/arm/mach-at91/pm.c
-@@ -169,10 +169,6 @@ static int at91_pm_enter(suspend_state_t state)
- 			 * turning off the main oscillator; reverse on wakeup.
- 			 */
- 			if (slow_clock) {
--#ifdef CONFIG_AT91_SLOW_CLOCK
--				/* copy slow_clock handler to SRAM, and call it */
--				memcpy(slow_clock, at91_slow_clock, at91_slow_clock_sz);
--#endif
- 				slow_clock(at91_pmc_base, at91_ramc_base[0],
- 					   at91_ramc_base[1],
- 					   at91_pm_data.memctrl);
-@@ -280,6 +276,9 @@ static void __init at91_pm_sram_init(void)
- 	sram_pbase = gen_pool_virt_to_phys(sram_pool, sram_base);
- 	slow_clock = __arm_ioremap_exec(sram_pbase, at91_slow_clock_sz, false);
+diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
+index 56dcede..7d5e201 100644
+--- a/arch/arm/mach-at91/Kconfig
++++ b/arch/arm/mach-at91/Kconfig
+@@ -6,6 +6,7 @@ config ARCH_AT91
+ 	select PINCTRL
+ 	select PINCTRL_AT91
+ 	select USE_OF
++	select SRAM if PM
+ 	bool
  
-+	/* Copy slow_clock handler to SRAM, and call it */
-+	memcpy(slow_clock, at91_slow_clock, at91_slow_clock_sz);
-+
- put_node:
- 	of_node_put(node);
- }
+ menuconfig SOC_SAM_V7
+@@ -128,7 +129,6 @@ comment "AT91 Feature Selections"
+ 
+ config AT91_SLOW_CLOCK
+ 	bool "Suspend-to-RAM disables main oscillator"
+-	select SRAM
+ 	depends on SUSPEND
+ 	help
+ 	  Select this if you want Suspend-to-RAM to save the most power
 -- 
 1.7.9.5
 
