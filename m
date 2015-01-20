@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753418AbbATHM4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 02:12:56 -0500
+	id S1753259AbbATHK0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 02:10:26 -0500
 Received: from mailout2.samsung.com ([203.254.224.25]:25907 "EHLO
 	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752547AbbATHKU (ORCPT
+	with ESMTP id S1752140AbbATHKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 02:10:20 -0500
-X-AuditID: cbfee691-f79b86d000004a5a-e2-54bdff569e80
+	Tue, 20 Jan 2015 02:10:18 -0500
+X-AuditID: cbfee68f-f791c6d000004834-72-54bdff56e591
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: myungjoo.ham@samsung.com, kgene@kernel.org
 Cc: kyungmin.park@samsung.com, rafael.j.wysocki@intel.com,
@@ -16,40 +16,38 @@ Cc: kyungmin.park@samsung.com, rafael.j.wysocki@intel.com,
         cw00.choi@samsung.com, inki.dae@samsung.com, linux-pm@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-samsung-soc@vger.kernel.org
-Subject: [PATCH v9 1/7] devfreq: event: Add new devfreq_event class to provide
- basic data for devfreq governor
-Date: Tue, 20 Jan 2015 16:10:03 +0900
-Message-id: <1421737809-4010-2-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCH v9 2/7] devfreq: event: Add exynos-ppmu devfreq-event driver
+Date: Tue, 20 Jan 2015 16:10:04 +0900
+Message-id: <1421737809-4010-3-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.5.5
 In-reply-to: <1421737809-4010-1-git-send-email-cw00.choi@samsung.com>
 References: <1421737809-4010-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprEIsWRmVeSWpSXmKPExsWyRsSkSDfs/94Qg/l3RC0er1nMZLFxxnpW
-	i+tfnrNaTLo/gcXi9QtDi/7Hr5ktzja9YbfY9Pgaq8XlXXPYLD73HmG0mHF+H5PF0usXmSxu
-	N65gs3i84i27ReveI+wWq3b9YXQQ8Fgzbw2jx85Zd9k9Fu95yeSxaVUnm8fmJfUefVtWMXp8
-	3iQXwB7FZZOSmpNZllqkb5fAlTFjWgtrQfNRxopTL+axNTBuXMzYxcjJISFgItH59zUrhC0m
-	ceHeerYuRi4OIYGljBLr769khil6v+cwK0RiEaPE3El7oZwmJomeH2/BRrEJaEnsf3GDDcQW
-	EdCT6Dy2hx3EZhb4wyTRtIkFxBYWKJDYfu4WkM3BwSKgKrHhE1g5r4CLxPqr59khlilILFs+
-	E+wiTgFXie1bLoONFwKqaf78nglkr4TAW3aJv+9OgjWzCAhIfJt8CGymhICsxKYDUEdLShxc
-	cYNlAqPwAkaGVYyiqQXJBcVJ6UWmesWJucWleel6yfm5mxiBUXX637OJOxjvH7A+xCjAwajE
-	w/ti1d4QIdbEsuLK3EOMpkAbJjJLiSbnA2M3ryTe0NjMyMLUxNTYyNzSTEmcV0f6Z7CQQHpi
-	SWp2ampBalF8UWlOavEhRiYOTqkGxlqdzOunfvIoyRgZxV+qUw+U9G2/LmBeFdUVqXHp6pkv
-	gkwihd+O6TK2uspwRXGeX93fwrfzamnbnqkvFfTlAneEnIo5OjVTL0B0xWd3Jeuaq2y8mWd9
-	MuriQl/orQ5fxSuXrr1j49JZaVs9knRePFl1MtK14/7dRQuPCMU57zM8/LakcIKoEktxRqKh
-	FnNRcSIArqRZxqUCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrDIsWRmVeSWpSXmKPExsVy+t9jAd2w/3tDDN5MYbd4vGYxk8XGGetZ
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFupjkeLIzCtJLcpLzFFi42JZI2JSoBv2f2+IwbN1EhaP1yxmstg4Yz2r
+	xfUvz1ktJt2fwGLx+oWhRf/j18wWZ5vesFtsenyN1eLyrjlsFp97jzBazDi/j8li6fWLTBa3
+	G1ewWTxe8ZbdonXvEXaLVbv+MDoIeKyZt4bRY+esu+wei/e8ZPLYtKqTzWPzknqPvi2rGD0+
+	b5ILYI/isklJzcksSy3St0vgyli5Sbtga0HFjW/LGRsYV8d0MXJySAiYSMy6tI4VwhaTuHBv
+	PVsXIxeHkMBSRomne1awwRS9utrMDpFYxCjx9lonC4TTxCRxYOY9sCo2AS2J/S9ugNkiAnoS
+	ncf2sIPYzAJ/mCSaNgE1cHAIC/hI7O1SBzFZBFQlNsyVAqngFXCR6Lm+AGqXgsSy5TPBDuIU
+	cJXYvuUyI4gtBFTT/Pk9E8haCYFH7BL9B+6DjWcREJD4NvkQ2HgJAVmJTQeYIeZIShxccYNl
+	AqPwAkaGVYyiqQXJBcVJ6UXGesWJucWleel6yfm5mxiB0XT637P+HYx3D1gfYhTgYFTi4X2x
+	am+IEGtiWXFl7iFGU6ANE5mlRJPzgTGbVxJvaGxmZGFqYmpsZG5ppiTOu1DqZ7CQQHpiSWp2
+	ampBalF8UWlOavEhRiYOTqkGxmSfCP+PNxw8opeLcth8s3hxzEgzrKZv2b7DB/3+c8fkHYhM
+	XGWQoSOZFfrliP2x7K1N8f0fNQVluf+8UvPfPff+/p8fD4jN/HdkitaFYvHiecplLn4lDKlT
+	v1x9++LYb9nLZr/E7CfM9Zry2XXK/K/qc37c0w496NCS36swV2zm3PPiiSGrM5RYijMSDbWY
+	i4oTAePC5KWhAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrBIsWRmVeSWpSXmKPExsVy+t9jAd2w/3tDDM5v4LN4vGYxk8XGGetZ
 	La5/ec5qMen+BBaL1y8MLfofv2a2ONv0ht1i0+NrrBaXd81hs/jce4TRYsb5fUwWS69fZLK4
 	3biCzeLxirfsFq17j7BbrNr1h9FBwGPNvDWMHjtn3WX3WLznJZPHplWdbB6bl9R79G1Zxejx
 	eZNcAHtUA6NNRmpiSmqRQmpecn5KZl66rZJ3cLxzvKmZgaGuoaWFuZJCXmJuqq2Si0+Arltm
-	DtDxSgpliTmlQKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCGsaMGdNaWAuajzJWnHox
-	j62BceNixi5GTg4JAROJ93sOs0LYYhIX7q1n62Lk4hASWMQoMXfSXlYIp4lJoufHW7AONgEt
-	if0vbrCB2CICehKdx/awg9jMAn+YJJo2sYDYwgIFEtvP3QKyOThYBFQlNnwCK+cVcJFYf/U8
-	O8QyBYlly2eCLeYUcJXYvuUy2HghoJrmz++ZJjDyLmBkWMUomlqQXFCclJ5rqFecmFtcmpeu
-	l5yfu4kRHLPPpHYwrmywOMQowMGoxMPrsHZviBBrYllxZe4hRgkOZiUR3glPgUK8KYmVValF
-	+fFFpTmpxYcYTYGOmsgsJZqcD0wneSXxhsYmZkaWRuaGFkbG5krivEr2bSFCAumJJanZqakF
-	qUUwfUwcnFINjAd/VErYvb/d67w9mOXsnboHeycXO6VFb9/18avxcslfL23yu9Rv3W4u+3kx
-	ffabZRbJXzP89dpP3pHcfObF21uSqmtP7m/hSZXoypd1M3i3+sXUKg01xdo+nhe3DnhcbOWV
-	MOP80B/i0x2yf19y5DvmuH23Jz07UrV8Srfv1G3d7v+ZTy6PNVFiKc5INNRiLipOBAA28JTr
-	7wIAAA==
+	DtDxSgpliTmlQKGAxOJiJX07TBNCQ9x0LWAaI3R9Q4LgeowM0EDCGsaMlZu0C7YWVNz4tpyx
+	gXF1TBcjJ4eEgInEq6vN7BC2mMSFe+vZuhi5OIQEFjFKvL3WyQLhNDFJHJh5jw2kik1AS2L/
+	ixtgtoiAnkTnsT1g3cwCf5gkmjYBNXBwCAv4SOztUgcxWQRUJTbMlQKp4BVwkei5voANYpeC
+	xLLlM1lBbE4BV4ntWy4zgthCQDXNn98zTWDkXcDIsIpRNLUguaA4KT3XUK84Mbe4NC9dLzk/
+	dxMjOFafSe1gXNlgcYhRgINRiYfXYe3eECHWxLLiytxDjBIczEoivBOeAoV4UxIrq1KL8uOL
+	SnNSiw8xmgIdNZFZSjQ5H5hG8kriDY1NzIwsjcwNLYyMzZXEeZXs20KEBNITS1KzU1MLUotg
+	+pg4OKUaGC+a3d3hbrI4xyVkv6D2+7eKJ7PzPZ5brTd1WX15e33gNfYLMmseKzmrTptUHMX/
+	+uM++37TF3oXgwznn5gbPXffD3EF+xnRmR0SssVvvgg1Mu96WxarqigaWSygl/Ei5UBI5g7t
+	2NlPUhVua7sz/T+wWNtihrnjvdd9aY3c77SNGW95p/qUK7EUZyQaajEXFScCAO6W60TrAgAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -57,819 +55,531 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add new devfreq_event class for devfreq_event device which provide
-raw data (e.g., memory bus utilization/GPU utilization). This raw data from
-devfreq_event data would be used for the governor of devfreq subsystem.
-- devfreq_event device : Provide raw data for governor of existing devfreq device
-- devfreq device       : Monitor device state and change frequency/voltage of device
-                         using the raw data from devfreq_event device
+This patch adds exynos-ppmu devfreq-event driver to get performance data
+of each IP for Samsung Exynos SoC. These event from Exynos PPMU provide
+useful information about the behavior of the SoC that you can use when
+analyzing system performance, and made visible and can be counted using
+logic in each IP.
 
-The devfreq subsystem support generic DVFS(Dynamic Voltage/Frequency Scaling)
-for Non-CPU Devices. The devfreq device would dertermine current device state
-using various governor (e.g., ondemand, performance, powersave). After completed
-determination of system state, devfreq device would change the frequency/voltage
-of devfreq device according to the result of governor.
-
-But, devfreq governor must need basic data which indicates current device state.
-Existing devfreq subsystem only consider devfreq device which check current system
-state and determine proper system state using basic data. There is no subsystem
-for device providing basic data to devfreq device.
-
-The devfreq subsystem must need devfreq_event device(data-provider device) for
-existing devfreq device. So, this patch add new devfreq_event class for
-devfreq_event device which read various basic data(e.g, memory bus utilization,
-GPU utilization) and provide measured data to existing devfreq device through
-standard APIs of devfreq_event class.
-
-The following description explains the feature of two kind of devfreq class:
-- devfreq class (existing)
- : devfreq consumer device use raw data from devfreq_event device for
-   determining proper current system state and change voltage/frequency
-   dynamically using various governors.
-
-- devfreq_event class (new)
- : Provide measured raw data to devfreq device for governor
+This patch is based on existing drivers/devfreq/exynos/exynos-ppmu.c
 
 Cc: MyungJoo Ham <myungjoo.ham@samsung.com>
 Cc: Kyungmin Park <kyungmin.park@samsung.com>
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 ---
- drivers/devfreq/Kconfig         |   2 +
- drivers/devfreq/Makefile        |   6 +-
- drivers/devfreq/devfreq-event.c | 498 ++++++++++++++++++++++++++++++++++++++++
- drivers/devfreq/event/Kconfig   |  16 ++
- drivers/devfreq/event/Makefile  |   1 +
- include/linux/devfreq-event.h   | 196 ++++++++++++++++
- 6 files changed, 718 insertions(+), 1 deletion(-)
- create mode 100644 drivers/devfreq/devfreq-event.c
- create mode 100644 drivers/devfreq/event/Kconfig
- create mode 100644 drivers/devfreq/event/Makefile
- create mode 100644 include/linux/devfreq-event.h
+ drivers/devfreq/event/Kconfig       |   9 +
+ drivers/devfreq/event/Makefile      |   1 +
+ drivers/devfreq/event/exynos-ppmu.c | 374 ++++++++++++++++++++++++++++++++++++
+ drivers/devfreq/event/exynos-ppmu.h |  93 +++++++++
+ 4 files changed, 477 insertions(+)
+ create mode 100644 drivers/devfreq/event/exynos-ppmu.c
+ create mode 100644 drivers/devfreq/event/exynos-ppmu.h
 
-diff --git a/drivers/devfreq/Kconfig b/drivers/devfreq/Kconfig
-index faf4e70..21f8f17 100644
---- a/drivers/devfreq/Kconfig
-+++ b/drivers/devfreq/Kconfig
-@@ -87,4 +87,6 @@ config ARM_EXYNOS5_BUS_DEVFREQ
- 	  It reads PPMU counters of memory controllers and adjusts the
- 	  operating frequencies and voltages with OPP support.
- 
-+source "drivers/devfreq/event/Kconfig"
-+
- endif # PM_DEVFREQ
-diff --git a/drivers/devfreq/Makefile b/drivers/devfreq/Makefile
-index 16138c9..c449336 100644
---- a/drivers/devfreq/Makefile
-+++ b/drivers/devfreq/Makefile
-@@ -1,4 +1,5 @@
--obj-$(CONFIG_PM_DEVFREQ)	+= devfreq.o
-+obj-$(CONFIG_PM_DEVFREQ)		+= devfreq.o
-+obj-$(CONFIG_PM_DEVFREQ_EVENT)		+= devfreq-event.o
- obj-$(CONFIG_DEVFREQ_GOV_SIMPLE_ONDEMAND)	+= governor_simpleondemand.o
- obj-$(CONFIG_DEVFREQ_GOV_PERFORMANCE)	+= governor_performance.o
- obj-$(CONFIG_DEVFREQ_GOV_POWERSAVE)	+= governor_powersave.o
-@@ -7,3 +8,6 @@ obj-$(CONFIG_DEVFREQ_GOV_USERSPACE)	+= governor_userspace.o
- # DEVFREQ Drivers
- obj-$(CONFIG_ARM_EXYNOS4_BUS_DEVFREQ)	+= exynos/
- obj-$(CONFIG_ARM_EXYNOS5_BUS_DEVFREQ)	+= exynos/
-+
-+# DEVFREQ Event Drivers
-+obj-$(CONFIG_PM_DEVFREQ_EVENT)		+= event/
-diff --git a/drivers/devfreq/devfreq-event.c b/drivers/devfreq/devfreq-event.c
-new file mode 100644
-index 0000000..1a480c0
---- /dev/null
-+++ b/drivers/devfreq/devfreq-event.c
-@@ -0,0 +1,498 @@
-+/*
-+ * devfreq-event: a framework to provide raw data and events of devfreq devices
-+ *
-+ * Copyright (C) 2015 Samsung Electronics
-+ * Author: Chanwoo Choi <cw00.choi@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * This driver is based on drivers/devfreq/devfreq.c.
-+ */
-+
-+#include <linux/devfreq-event.h>
-+#include <linux/kernel.h>
-+#include <linux/err.h>
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/slab.h>
-+#include <linux/list.h>
-+#include <linux/of.h>
-+
-+static struct class *devfreq_event_class;
-+
-+/* The list of all devfreq event list */
-+static LIST_HEAD(devfreq_event_list);
-+static DEFINE_MUTEX(devfreq_event_list_lock);
-+
-+#define to_devfreq_event(DEV) container_of(DEV, struct devfreq_event_dev, dev)
-+
-+/**
-+ * devfreq_event_enable_edev() - Enable the devfreq-event dev and increase
-+ *				 the enable_count of devfreq-event dev.
-+ * @edev	: the devfreq-event device
-+ *
-+ * Note that this function increase the enable_count and enable the
-+ * devfreq-event device. The devfreq-event device should be enabled before
-+ * using it by devfreq device.
-+ */
-+int devfreq_event_enable_edev(struct devfreq_event_dev *edev)
-+{
-+	int ret = 0;
-+
-+	if (!edev || !edev->desc)
-+		return -EINVAL;
-+
-+	mutex_lock(&edev->lock);
-+	if (edev->enable_count) {
-+		dev_warn(&edev->dev,
-+			"%s is already enabled\n", edev->desc->name);
-+		goto err;
-+	}
-+
-+	if (edev->desc->ops && edev->desc->ops->enable) {
-+		ret = edev->desc->ops->enable(edev);
-+		if (ret < 0)
-+			goto err;
-+	}
-+	edev->enable_count++;
-+err:
-+	mutex_unlock(&edev->lock);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(devfreq_event_enable_edev);
-+
-+/**
-+ * devfreq_event_disable_edev() - Disable the devfreq-event dev and decrease
-+ *				  the enable_count of the devfreq-event dev.
-+ * @edev	: the devfreq-event device
-+ *
-+ * Note that this function decrease the enable_count and disable the
-+ * devfreq-event device. After the devfreq-event device is disabled,
-+ * devfreq device can't use the devfreq-event device for get/set/reset
-+ * operations.
-+ */
-+int devfreq_event_disable_edev(struct devfreq_event_dev *edev)
-+{
-+	int ret = 0;
-+
-+	if (!edev || !edev->desc)
-+		return -EINVAL;
-+
-+	mutex_lock(&edev->lock);
-+	if (!edev->enable_count) {
-+		dev_warn(&edev->dev,
-+			"%s is already disabled\n", edev->desc->name);
-+		goto err;
-+	}
-+
-+	if (edev->desc->ops && edev->desc->ops->disable) {
-+		ret = edev->desc->ops->disable(edev);
-+		if (ret < 0)
-+			goto err;
-+	}
-+	edev->enable_count--;
-+err:
-+	mutex_unlock(&edev->lock);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(devfreq_event_disable_edev);
-+
-+/**
-+ * devfreq_event_is_enabled() - Check whether devfreq-event dev is enabled or
-+ *				not.
-+ * @edev	: the devfreq-event device
-+ *
-+ * Note that this function check whether devfreq-event dev is enabled or not.
-+ * If return true, the devfreq-event dev is enabeld. If return false, the
-+ * devfreq-event dev is disabled.
-+ */
-+bool devfreq_event_is_enabled(struct devfreq_event_dev *edev)
-+{
-+	bool enabled = false;
-+
-+	if (!edev || !edev->desc)
-+		return enabled;
-+
-+	mutex_lock(&edev->lock);
-+
-+	if (edev->enable_count > 0)
-+		enabled = true;
-+
-+	mutex_unlock(&edev->lock);
-+
-+	return enabled;
-+}
-+EXPORT_SYMBOL_GPL(devfreq_event_is_enabled);
-+
-+/**
-+ * devfreq_event_set_event() - Set event to devfreq-event dev to start.
-+ * @edev	: the devfreq-event device
-+ *
-+ * Note that this function set the event to the devfreq-event device to start
-+ * for getting the event data which could be various event type.
-+ */
-+int devfreq_event_set_event(struct devfreq_event_dev *edev)
-+{
-+	int ret;
-+
-+	if (!edev || !edev->desc)
-+		return -EINVAL;
-+
-+	if (!edev->desc->ops || !edev->desc->ops->set_event)
-+		return -EINVAL;
-+
-+	if (!devfreq_event_is_enabled(edev))
-+		return -EPERM;
-+
-+	mutex_lock(&edev->lock);
-+	ret = edev->desc->ops->set_event(edev);
-+	mutex_unlock(&edev->lock);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(devfreq_event_set_event);
-+
-+/**
-+ * devfreq_event_get_event() - Get {load|total}_count from devfreq-event dev.
-+ * @edev	: the devfreq-event device
-+ * @edata	: the calculated data of devfreq-event device
-+ *
-+ * Note that this function get the calculated event data from devfreq-event dev
-+ * after stoping the progress of whole sequence of devfreq-event dev.
-+ */
-+int devfreq_event_get_event(struct devfreq_event_dev *edev,
-+			    struct devfreq_event_data *edata)
-+{
-+	int ret;
-+
-+	if (!edev || !edev->desc)
-+		return -EINVAL;
-+
-+	if (!edev->desc->ops || !edev->desc->ops->get_event)
-+		return -EINVAL;
-+
-+	if (!devfreq_event_is_enabled(edev))
-+		return -EINVAL;
-+
-+	edata->total_count = edata->load_count = 0;
-+
-+	mutex_lock(&edev->lock);
-+	ret = edev->desc->ops->get_event(edev, edata);
-+	if (ret < 0)
-+		edata->total_count = edata->load_count = 0;
-+	mutex_unlock(&edev->lock);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(devfreq_event_get_event);
-+
-+/**
-+ * devfreq_event_reset_event() - Reset all opeations of devfreq-event dev.
-+ * @edev	: the devfreq-event device
-+ *
-+ * Note that this function stop all operations of devfreq-event dev and reset
-+ * the current event data to make the devfreq-event device into initial state.
-+ */
-+int devfreq_event_reset_event(struct devfreq_event_dev *edev)
-+{
-+	int ret = 0;
-+
-+	if (!edev || !edev->desc)
-+		return -EINVAL;
-+
-+	if (!devfreq_event_is_enabled(edev))
-+		return -EPERM;
-+
-+	mutex_lock(&edev->lock);
-+	if (edev->desc->ops && edev->desc->ops->reset)
-+		ret = edev->desc->ops->reset(edev);
-+	mutex_unlock(&edev->lock);
-+
-+	return ret;
-+}
-+EXPORT_SYMBOL_GPL(devfreq_event_reset_event);
-+
-+/**
-+ * devfreq_event_get_edev_by_phandle() - Get the devfreq-event dev from
-+ *					 devicetree.
-+ * @dev		: the pointer to the given device
-+ * @index	: the index into list of devfreq-event device
-+ *
-+ * Note that this function return the pointer of devfreq-event device.
-+ */
-+struct devfreq_event_dev *devfreq_event_get_edev_by_phandle(struct device *dev,
-+						      int index)
-+{
-+	struct device_node *node;
-+	struct devfreq_event_dev *edev;
-+
-+	if (!dev->of_node) {
-+		dev_err(dev, "device does not have a device node entry\n");
-+		return ERR_PTR(-EINVAL);
-+	}
-+
-+	node = of_parse_phandle(dev->of_node, "devfreq-events", index);
-+	if (!node) {
-+		dev_err(dev, "failed to get phandle in %s node\n",
-+			dev->of_node->full_name);
-+		return ERR_PTR(-ENODEV);
-+	}
-+
-+	mutex_lock(&devfreq_event_list_lock);
-+	list_for_each_entry(edev, &devfreq_event_list, node) {
-+		if (!strcmp(edev->desc->name, node->name))
-+			goto out;
-+	}
-+	edev = NULL;
-+out:
-+	mutex_unlock(&devfreq_event_list_lock);
-+
-+	if (!edev) {
-+		dev_err(dev, "unable to get devfreq-event device : %s\n",
-+			node->name);
-+		of_node_put(node);
-+		return ERR_PTR(-ENODEV);
-+	}
-+
-+	of_node_put(node);
-+
-+	return edev;
-+}
-+EXPORT_SYMBOL_GPL(devfreq_event_get_edev_by_phandle);
-+
-+/**
-+ * devfreq_event_get_edev_count() - Get the count of devfreq-event dev
-+ * @dev		: the pointer to the given device
-+ *
-+ * Note that this function return the count of devfreq-event devices.
-+ */
-+int devfreq_event_get_edev_count(struct device *dev)
-+{
-+	int count;
-+
-+	if (!dev->of_node) {
-+		dev_err(dev, "device does not have a device node entry\n");
-+		return -EINVAL;
-+	}
-+
-+	count = of_property_count_elems_of_size(dev->of_node, "devfreq-events",
-+						sizeof(u32));
-+	if (count < 0 ) {
-+		dev_err(dev,
-+			"failed to get the count of devfreq-event in %s node\n",
-+			dev->of_node->full_name);
-+		return count;
-+	}
-+
-+	return count;
-+}
-+EXPORT_SYMBOL_GPL(devfreq_event_get_edev_count);
-+
-+static void devfreq_event_release_edev(struct device *dev)
-+{
-+	struct devfreq_event_dev *edev = to_devfreq_event(dev);
-+
-+	kfree(edev);
-+}
-+
-+/**
-+ * devfreq_event_add_edev() - Add new devfreq-event device.
-+ * @dev		: the device owning the devfreq-event device being created
-+ * @desc	: the devfreq-event device's decriptor which include essential
-+ *		  data for devfreq-event device.
-+ *
-+ * Note that this function add new devfreq-event device to devfreq-event class
-+ * list and register the device of the devfreq-event device.
-+ */
-+struct devfreq_event_dev *devfreq_event_add_edev(struct device *dev,
-+						struct devfreq_event_desc *desc)
-+{
-+	struct devfreq_event_dev *edev;
-+	static atomic_t event_no = ATOMIC_INIT(0);
-+	int ret;
-+
-+	if (!dev || !desc)
-+		return ERR_PTR(-EINVAL);
-+
-+	if (!desc->name || !desc->ops)
-+		return ERR_PTR(-EINVAL);
-+
-+	if (!desc->ops->set_event || !desc->ops->get_event)
-+		return ERR_PTR(-EINVAL);
-+
-+	edev = kzalloc(sizeof(struct devfreq_event_dev), GFP_KERNEL);
-+	if (!edev)
-+		return ERR_PTR(-ENOMEM);
-+
-+	mutex_init(&edev->lock);
-+	edev->desc = desc;
-+	edev->enable_count = 0;
-+	edev->dev.parent = dev;
-+	edev->dev.class = devfreq_event_class;
-+	edev->dev.release = devfreq_event_release_edev;
-+
-+	dev_set_name(&edev->dev, "event.%d", atomic_inc_return(&event_no) - 1);
-+	ret = device_register(&edev->dev);
-+	if (ret < 0) {
-+		put_device(&edev->dev);
-+		return ERR_PTR(ret);
-+	}
-+	dev_set_drvdata(&edev->dev, edev);
-+
-+	INIT_LIST_HEAD(&edev->node);
-+
-+	mutex_lock(&devfreq_event_list_lock);
-+	list_add(&edev->node, &devfreq_event_list);
-+	mutex_unlock(&devfreq_event_list_lock);
-+
-+	return edev;
-+}
-+EXPORT_SYMBOL_GPL(devfreq_event_add_edev);
-+
-+/**
-+ * devfreq_event_remove_edev() - Remove the devfreq-event device registered.
-+ * @dev		: the devfreq-event device
-+ *
-+ * Note that this function remove the registered devfreq-event device.
-+ */
-+int devfreq_event_remove_edev(struct devfreq_event_dev *edev)
-+{
-+	if (!edev)
-+		return -EINVAL;
-+
-+	WARN_ON(edev->enable_count);
-+
-+	mutex_lock(&devfreq_event_list_lock);
-+	list_del(&edev->node);
-+	mutex_unlock(&devfreq_event_list_lock);
-+
-+	device_unregister(&edev->dev);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(devfreq_event_remove_edev);
-+
-+static int devm_devfreq_event_match(struct device *dev, void *res, void *data)
-+{
-+	struct devfreq_event_dev **r = res;
-+
-+	if (WARN_ON(!r || !*r))
-+		return 0;
-+
-+	return *r == data;
-+}
-+
-+static void devm_devfreq_event_release(struct device *dev, void *res)
-+{
-+	devfreq_event_remove_edev(*(struct devfreq_event_dev **)res);
-+}
-+
-+/**
-+ * devm_devfreq_event_add_edev() - Resource-managed devfreq_event_add_edev()
-+ * @dev		: the device owning the devfreq-event device being created
-+ * @desc	: the devfreq-event device's decriptor which include essential
-+ *		  data for devfreq-event device.
-+ *
-+ * Note that this function manages automatically the memory of devfreq-event
-+ * device using device resource management and simplify the free operation
-+ * for memory of devfreq-event device.
-+ */
-+struct devfreq_event_dev *devm_devfreq_event_add_edev(struct device *dev,
-+						struct devfreq_event_desc *desc)
-+{
-+	struct devfreq_event_dev **ptr, *edev;
-+
-+	ptr = devres_alloc(devm_devfreq_event_release, sizeof(*ptr), GFP_KERNEL);
-+	if (!ptr)
-+		return ERR_PTR(-ENOMEM);
-+
-+	edev = devfreq_event_add_edev(dev, desc);
-+	if (IS_ERR(edev)) {
-+		devres_free(ptr);
-+		return ERR_PTR(-ENOMEM);
-+	}
-+
-+	*ptr = edev;
-+	devres_add(dev, ptr);
-+
-+	return edev;
-+}
-+EXPORT_SYMBOL_GPL(devm_devfreq_event_add_edev);
-+
-+/**
-+ * devm_devfreq_event_remove_edev()- Resource-managed devfreq_event_remove_edev()
-+ * @dev		: the device owning the devfreq-event device being created
-+ * @edev	: the devfreq-event device
-+ *
-+ * Note that this function manages automatically the memory of devfreq-event
-+ * device using device resource management.
-+ */
-+void devm_devfreq_event_remove_edev(struct device *dev,
-+				struct devfreq_event_dev *edev)
-+{
-+	WARN_ON(devres_release(dev, devm_devfreq_event_release,
-+			       devm_devfreq_event_match, edev));
-+}
-+EXPORT_SYMBOL_GPL(devm_devfreq_event_remove_edev);
-+
-+/*
-+ * Device attributes for devfreq-event class.
-+ */
-+static ssize_t name_show(struct device *dev, struct device_attribute *attr,
-+			 char *buf)
-+{
-+	struct devfreq_event_dev *edev = to_devfreq_event(dev);
-+
-+	if (!edev || !edev->desc)
-+		return -EINVAL;
-+
-+	return sprintf(buf, "%s\n", edev->desc->name);
-+}
-+static DEVICE_ATTR_RO(name);
-+
-+static ssize_t enable_count_show(struct device *dev,
-+				  struct device_attribute *attr, char *buf)
-+{
-+	struct devfreq_event_dev *edev = to_devfreq_event(dev);
-+
-+	if (!edev || !edev->desc)
-+		return -EINVAL;
-+
-+	return sprintf(buf, "%d\n", edev->enable_count);
-+}
-+static DEVICE_ATTR_RO(enable_count);
-+
-+static struct attribute *devfreq_event_attrs[] = {
-+	&dev_attr_name.attr,
-+	&dev_attr_enable_count.attr,
-+	NULL,
-+};
-+ATTRIBUTE_GROUPS(devfreq_event);
-+
-+static int __init devfreq_event_init(void)
-+{
-+	devfreq_event_class = class_create(THIS_MODULE, "devfreq-event");
-+	if (IS_ERR(devfreq_event_class)) {
-+		pr_err("%s: couldn't create class\n", __FILE__);
-+		return PTR_ERR(devfreq_event_class);
-+	}
-+
-+	devfreq_event_class->dev_groups = devfreq_event_groups;
-+
-+	return 0;
-+}
-+subsys_initcall(devfreq_event_init);
-+
-+static void __exit devfreq_event_exit(void)
-+{
-+	class_destroy(devfreq_event_class);
-+}
-+module_exit(devfreq_event_exit);
-+
-+MODULE_AUTHOR("Chanwoo Choi <cw00.choi@samsung.com>");
-+MODULE_DESCRIPTION("DEVFREQ-Event class support");
-+MODULE_LICENSE("GPL");
 diff --git a/drivers/devfreq/event/Kconfig b/drivers/devfreq/event/Kconfig
-new file mode 100644
-index 0000000..1ced42c
---- /dev/null
+index 1ced42c..a11720a 100644
+--- a/drivers/devfreq/event/Kconfig
 +++ b/drivers/devfreq/event/Kconfig
-@@ -0,0 +1,16 @@
-+menuconfig PM_DEVFREQ_EVENT
-+	bool "DEVFREQ-Event device Support"
+@@ -13,4 +13,13 @@ menuconfig PM_DEVFREQ_EVENT
+ 
+ if PM_DEVFREQ_EVENT
+ 
++config DEVFREQ_EVENT_EXYNOS_PPMU
++	bool "EXYNOS PPMU (Platform Performance Monitoring Unit) DEVFREQ event Driver"
++	depends on ARCH_EXYNOS
++	select PM_OPP
 +	help
-+	  The devfreq-event device provide the raw data and events which
-+	  indicate the current state of devfreq-event device. The provided
-+	  data from devfreq-event device is used to monitor the state of
-+	  device and determine the suitable size of resource to reduce the
-+	  wasted resource.
++	  This add the devfreq-event driver for Exynos SoC. It provides PPMU
++	  (Platform Performance Monitoring Unit) counters to estimate the
++	  utilization of each module.
 +
-+	  The devfreq-event device can support the various type of events
-+	  (e.g., raw data, utilization, latency, bandwidth). The events
-+	  may be used by devfreq governor and other subsystem.
-+
-+if PM_DEVFREQ_EVENT
-+
-+endif # PM_DEVFREQ_EVENT
+ endif # PM_DEVFREQ_EVENT
 diff --git a/drivers/devfreq/event/Makefile b/drivers/devfreq/event/Makefile
-new file mode 100644
-index 0000000..dc56005
---- /dev/null
+index dc56005..be146ea 100644
+--- a/drivers/devfreq/event/Makefile
 +++ b/drivers/devfreq/event/Makefile
-@@ -0,0 +1 @@
-+# Exynos DEVFREQ Event Drivers
-diff --git a/include/linux/devfreq-event.h b/include/linux/devfreq-event.h
+@@ -1 +1,2 @@
+ # Exynos DEVFREQ Event Drivers
++obj-$(CONFIG_DEVFREQ_EVENT_EXYNOS_PPMU) += exynos-ppmu.o
+diff --git a/drivers/devfreq/event/exynos-ppmu.c b/drivers/devfreq/event/exynos-ppmu.c
 new file mode 100644
-index 0000000..602fbbf
+index 0000000..135be0a
 --- /dev/null
-+++ b/include/linux/devfreq-event.h
-@@ -0,0 +1,196 @@
++++ b/drivers/devfreq/event/exynos-ppmu.c
+@@ -0,0 +1,374 @@
 +/*
-+ * devfreq-event: a framework to provide raw data and events of devfreq devices
++ * exynos_ppmu.c - EXYNOS PPMU (Platform Performance Monitoring Unit) support
 + *
-+ * Copyright (C) 2014 Samsung Electronics
-+ * Author: Chanwoo Choi <cw00.choi@samsung.com>
++ * Copyright (c) 2014 Samsung Electronics Co., Ltd.
++ * Author : Chanwoo Choi <cw00.choi@samsung.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This driver is based on drivers/devfreq/exynos/exynos_ppmu.c
++ */
++
++#include <linux/clk.h>
++#include <linux/io.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/mutex.h>
++#include <linux/of_address.h>
++#include <linux/platform_device.h>
++#include <linux/suspend.h>
++#include <linux/devfreq-event.h>
++
++#include "exynos-ppmu.h"
++
++struct exynos_ppmu_data {
++	void __iomem *base;
++	struct clk *clk;
++};
++
++struct exynos_ppmu {
++	struct devfreq_event_dev **edev;
++	struct devfreq_event_desc *desc;
++	unsigned int num_events;
++
++	struct device *dev;
++	struct mutex lock;
++
++	struct exynos_ppmu_data ppmu;
++};
++
++#define PPMU_EVENT(name)			\
++	{ "ppmu-event0-"#name, PPMU_PMNCNT0 },	\
++	{ "ppmu-event1-"#name, PPMU_PMNCNT1 },	\
++	{ "ppmu-event2-"#name, PPMU_PMNCNT2 },	\
++	{ "ppmu-event3-"#name, PPMU_PMNCNT3 }
++
++struct __exynos_ppmu_events {
++	char *name;
++	int id;
++} ppmu_events[] = {
++	/* For Exynos3250, Exynos4 and Exynos5260 */
++	PPMU_EVENT(g3d),
++	PPMU_EVENT(fsys),
++
++	/* For Exynos4 SoCs and Exynos3250 */
++	PPMU_EVENT(dmc0),
++	PPMU_EVENT(dmc1),
++	PPMU_EVENT(cpu),
++	PPMU_EVENT(rightbus),
++	PPMU_EVENT(leftbus),
++	PPMU_EVENT(lcd0),
++	PPMU_EVENT(camif),
++
++	/* Only for Exynos3250 and Exynos5260 */
++	PPMU_EVENT(mfc),
++
++	/* Only for Exynos4 SoCs */
++	PPMU_EVENT(mfc-left),
++	PPMU_EVENT(mfc-right),
++
++	/* Only for Exynos5260 SoCs */
++	PPMU_EVENT(drex0-s0),
++	PPMU_EVENT(drex0-s1),
++	PPMU_EVENT(drex1-s0),
++	PPMU_EVENT(drex1-s1),
++	PPMU_EVENT(eagle),
++	PPMU_EVENT(kfc),
++	PPMU_EVENT(isp),
++	PPMU_EVENT(fimc),
++	PPMU_EVENT(gscl),
++	PPMU_EVENT(mscl),
++	PPMU_EVENT(fimd0x),
++	PPMU_EVENT(fimd1x),
++	{ /* sentinel */ },
++};
++
++static int exynos_ppmu_find_ppmu_id(struct devfreq_event_dev *edev)
++{
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(ppmu_events); i++)
++		if (!strcmp(edev->desc->name, ppmu_events[i].name))
++			return ppmu_events[i].id;
++
++	return -EINVAL;
++}
++
++static int exynos_ppmu_disable(struct devfreq_event_dev *edev)
++{
++	struct exynos_ppmu *info = devfreq_event_get_drvdata(edev);
++	u32 pmnc;
++
++	/* Disable all counters */
++	__raw_writel(PPMU_CCNT_MASK |
++		     PPMU_PMCNT0_MASK |
++		     PPMU_PMCNT1_MASK |
++		     PPMU_PMCNT2_MASK |
++		     PPMU_PMCNT3_MASK,
++		     info->ppmu.base + PPMU_CNTENC);
++
++	/* Disable PPMU */
++	pmnc = __raw_readl(info->ppmu.base + PPMU_PMNC);
++	pmnc &= ~PPMU_PMNC_ENABLE_MASK;
++	__raw_writel(pmnc, info->ppmu.base + PPMU_PMNC);
++
++	return 0;
++}
++
++static int exynos_ppmu_set_event(struct devfreq_event_dev *edev)
++{
++	struct exynos_ppmu *info = devfreq_event_get_drvdata(edev);
++	int id = exynos_ppmu_find_ppmu_id(edev);
++	u32 pmnc, cntens;
++
++	if (id < 0)
++		return id;
++
++	/* Enable specific counter */
++	cntens = __raw_readl(info->ppmu.base + PPMU_CNTENS);
++	cntens |= (PPMU_CCNT_MASK | (PPMU_ENABLE << id));
++	__raw_writel(cntens, info->ppmu.base + PPMU_CNTENS);
++
++	/* Set the event of Read/Write data count  */
++	__raw_writel(PPMU_RO_DATA_CNT | PPMU_WO_DATA_CNT,
++			info->ppmu.base + PPMU_BEVTxSEL(id));
++
++	/* Reset cycle counter/performance counter and enable PPMU */
++	pmnc = __raw_readl(info->ppmu.base + PPMU_PMNC);
++	pmnc &= ~(PPMU_PMNC_ENABLE_MASK
++			| PPMU_PMNC_COUNTER_RESET_MASK
++			| PPMU_PMNC_CC_RESET_MASK);
++	pmnc |= (PPMU_ENABLE << PPMU_PMNC_ENABLE_SHIFT);
++	pmnc |= (PPMU_ENABLE << PPMU_PMNC_COUNTER_RESET_SHIFT);
++	pmnc |= (PPMU_ENABLE << PPMU_PMNC_CC_RESET_SHIFT);
++	__raw_writel(pmnc, info->ppmu.base + PPMU_PMNC);
++
++	return 0;
++}
++
++static int exynos_ppmu_get_event(struct devfreq_event_dev *edev,
++				struct devfreq_event_data *edata)
++{
++	struct exynos_ppmu *info = devfreq_event_get_drvdata(edev);
++	int id = exynos_ppmu_find_ppmu_id(edev);
++	u32 pmnc, cntenc;
++
++	if (id < 0)
++		return -EINVAL;
++
++	/* Disable PPMU */
++	pmnc = __raw_readl(info->ppmu.base + PPMU_PMNC);
++	pmnc &= ~PPMU_PMNC_ENABLE_MASK;
++	__raw_writel(pmnc, info->ppmu.base + PPMU_PMNC);
++
++	/* Read cycle count */
++	edata->total_count = __raw_readl(info->ppmu.base + PPMU_CCNT);
++
++	/* Read performance count */
++	switch (id) {
++	case PPMU_PMNCNT0:
++	case PPMU_PMNCNT1:
++	case PPMU_PMNCNT2:
++		edata->load_count
++			= __raw_readl(info->ppmu.base + PPMU_PMNCT(id));
++		break;
++	case PPMU_PMNCNT3:
++		edata->load_count =
++			((__raw_readl(info->ppmu.base + PPMU_PMCNT3_HIGH) << 8)
++			| __raw_readl(info->ppmu.base + PPMU_PMCNT3_LOW));
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	/* Disable specific counter */
++	cntenc = __raw_readl(info->ppmu.base + PPMU_CNTENC);
++	cntenc |= (PPMU_CCNT_MASK | (PPMU_ENABLE << id));
++	__raw_writel(cntenc, info->ppmu.base + PPMU_CNTENC);
++
++	dev_dbg(&edev->dev, "%s (event: %ld/%ld)\n", edev->desc->name,
++					edata->load_count, edata->total_count);
++
++	return 0;
++}
++
++static struct devfreq_event_ops exynos_ppmu_ops = {
++	.disable = exynos_ppmu_disable,
++	.set_event = exynos_ppmu_set_event,
++	.get_event = exynos_ppmu_get_event,
++};
++
++static int of_get_devfreq_events(struct device_node *np,
++				 struct exynos_ppmu *info)
++{
++	struct devfreq_event_desc *desc;
++	struct device *dev = info->dev;
++	struct device_node *events_np, *node;
++	int i, j, count;
++
++	events_np = of_get_child_by_name(np, "events");
++	if (!events_np) {
++		dev_err(dev,
++			"failed to get child node of devfreq-event devices\n");
++		return -EINVAL;
++	}
++
++	count = of_get_child_count(events_np);
++	desc = devm_kzalloc(dev, sizeof(*desc) * count, GFP_KERNEL);
++	if (!desc)
++		return -ENOMEM;
++	info->num_events = count;
++
++	j = 0;
++	for_each_child_of_node(events_np, node) {
++		for (i = 0; i < ARRAY_SIZE(ppmu_events); i++) {
++			if (!ppmu_events[i].name)
++				continue;
++
++			if (!of_node_cmp(node->name, ppmu_events[i].name))
++				break;
++		}
++
++		if (i == ARRAY_SIZE(ppmu_events)) {
++			dev_warn(dev,
++				"don't know how to configure events : %s\n",
++				node->name);
++			continue;
++		}
++
++		desc[j].ops = &exynos_ppmu_ops;
++		desc[j].driver_data = info;
++
++		of_property_read_string(node, "event-name", &desc[j].name);
++
++		j++;
++
++		of_node_put(node);
++	}
++	info->desc = desc;
++
++	of_node_put(events_np);
++
++	return 0;
++}
++
++static int exynos_ppmu_parse_dt(struct exynos_ppmu *info)
++{
++	struct device *dev = info->dev;
++	struct device_node *np = dev->of_node;
++	int ret = 0;
++
++	if (!np) {
++		dev_err(dev, "failed to find devicetree node\n");
++		return -EINVAL;
++	}
++
++	/* Maps the memory mapped IO to control PPMU register */
++	info->ppmu.base = of_iomap(np, 0);
++	if (IS_ERR_OR_NULL(info->ppmu.base)) {
++		dev_err(dev, "failed to map memory region\n");
++		return -ENOMEM;
++	}
++
++	info->ppmu.clk = devm_clk_get(dev, "ppmu");
++	if (IS_ERR(info->ppmu.clk)) {
++		info->ppmu.clk = NULL;
++		dev_warn(dev, "cannot get PPMU clock\n");
++	}
++
++	ret = of_get_devfreq_events(np, info);
++	if (ret < 0) {
++		dev_err(dev, "failed to parse exynos ppmu dt node\n");
++		goto err;
++	}
++
++	return 0;
++
++err:
++	iounmap(info->ppmu.base);
++
++	return ret;
++}
++
++static int exynos_ppmu_probe(struct platform_device *pdev)
++{
++	struct exynos_ppmu *info;
++	struct devfreq_event_dev **edev;
++	struct devfreq_event_desc *desc;
++	int i, ret = 0, size;
++
++	info = devm_kzalloc(&pdev->dev, sizeof(*info), GFP_KERNEL);
++	if (!info)
++		return -ENOMEM;
++
++	mutex_init(&info->lock);
++	info->dev = &pdev->dev;
++
++	/* Parse dt data to get resource */
++	ret = exynos_ppmu_parse_dt(info);
++	if (ret < 0) {
++		dev_err(&pdev->dev,
++			"failed to parse devicetree for resource\n");
++		return ret;
++	}
++	desc = info->desc;
++
++	size = sizeof(struct devfreq_event_dev *) * info->num_events;
++	info->edev = devm_kzalloc(&pdev->dev, size, GFP_KERNEL);
++	if (!info->edev) {
++		dev_err(&pdev->dev,
++			"failed to allocate memory devfreq-event devices\n");
++		return -ENOMEM;
++	}
++	edev = info->edev;
++	platform_set_drvdata(pdev, info);
++
++	for (i = 0; i < info->num_events; i++) {
++		edev[i] = devm_devfreq_event_add_edev(&pdev->dev, &desc[i]);
++		if (IS_ERR(edev)) {
++			ret = PTR_ERR(edev);
++			dev_err(&pdev->dev,
++				"failed to add devfreq-event device\n");
++			goto err;
++		}
++	}
++
++	clk_prepare_enable(info->ppmu.clk);
++
++	return 0;
++err:
++	iounmap(info->ppmu.base);
++
++	return ret;
++}
++
++static int exynos_ppmu_remove(struct platform_device *pdev)
++{
++	struct exynos_ppmu *info = platform_get_drvdata(pdev);
++
++	clk_disable_unprepare(info->ppmu.clk);
++	iounmap(info->ppmu.base);
++
++	return 0;
++}
++
++static struct of_device_id exynos_ppmu_id_match[] = {
++	{ .compatible = "samsung,exynos-ppmu", },
++	{ /* sentinel */ },
++};
++
++static struct platform_driver exynos_ppmu_driver = {
++	.probe	= exynos_ppmu_probe,
++	.remove	= exynos_ppmu_remove,
++	.driver = {
++		.name	= "exynos-ppmu",
++		.of_match_table = exynos_ppmu_id_match,
++	},
++};
++module_platform_driver(exynos_ppmu_driver);
++
++MODULE_DESCRIPTION("Exynos PPMU(Platform Performance Monitoring Unit) driver");
++MODULE_AUTHOR("Chanwoo Choi <cw00.choi@samsung.com>");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/devfreq/event/exynos-ppmu.h b/drivers/devfreq/event/exynos-ppmu.h
+new file mode 100644
+index 0000000..4e831d4
+--- /dev/null
++++ b/drivers/devfreq/event/exynos-ppmu.h
+@@ -0,0 +1,93 @@
++/*
++ * exynos_ppmu.h - EXYNOS PPMU header file
++ *
++ * Copyright (c) 2015 Samsung Electronics Co., Ltd.
++ * Author : Chanwoo Choi <cw00.choi@samsung.com>
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License version 2 as
 + * published by the Free Software Foundation.
 + */
 +
-+#ifndef __LINUX_DEVFREQ_EVENT_H__
-+#define __LINUX_DEVFREQ_EVENT_H__
++#ifndef __EXYNOS_PPMU_H__
++#define __EXYNOS_PPMU_H__
 +
-+#include <linux/device.h>
-+
-+/**
-+ * struct devfreq_event_dev - the devfreq-event device
-+ *
-+ * @node	: Contain the devfreq-event device that have been registered.
-+ * @dev		: the device registered by devfreq-event class. dev.parent is
-+ *		  the device using devfreq-event.
-+ * @lock	: a mutex to protect accessing devfreq-event.
-+ * @enable_count: the number of enable function have been called.
-+ * @desc	: the description for devfreq-event device.
-+ *
-+ * This structure contains devfreq-event device information.
-+ */
-+struct devfreq_event_dev {
-+	struct list_head node;
-+
-+	struct device dev;
-+	struct mutex lock;
-+	u32 enable_count;
-+
-+	const struct devfreq_event_desc *desc;
++enum ppmu_state {
++	PPMU_DISABLE = 0,
++	PPMU_ENABLE,
 +};
 +
-+/**
-+ * struct devfreq_event_data - the devfreq-event data
-+ *
-+ * @load_count	: load count of devfreq-event device for the given period.
-+ * @total_count	: total count of devfreq-event device for the given period.
-+ *		  each count may represent a clock cycle, a time unit
-+ *		  (ns/us/...), or anything the device driver wants.
-+ *		  Generally, utilization is load_count / total_count.
-+ *
-+ * This structure contains the data of devfreq-event device for polling period.
-+ */
-+struct devfreq_event_data {
-+	unsigned long load_count;
-+	unsigned long total_count;
++enum ppmu_counter {
++	PPMU_PMNCNT0 = 0,
++	PPMU_PMNCNT1,
++	PPMU_PMNCNT2,
++	PPMU_PMNCNT3,
++
++	PPMU_PMNCNT_MAX,
 +};
 +
-+/**
-+ * struct devfreq_event_ops - the operations of devfreq-event device
-+ *
-+ * @enable	: Enable the devfreq-event device.
-+ * @disable	: Disable the devfreq-event device.
-+ * @reset	: Reset all setting of the devfreq-event device.
-+ * @set_event	: Set the specific event type for the devfreq-event device.
-+ * @get_event	: Get the result of the devfreq-event devie with specific
-+ *		  event type.
-+ *
-+ * This structure contains devfreq-event device operations which can be
-+ * implemented by devfreq-event device drivers.
-+ */
-+struct devfreq_event_ops {
-+	/* Optional functions */
-+	int (*enable)(struct devfreq_event_dev *edev);
-+	int (*disable)(struct devfreq_event_dev *edev);
-+	int (*reset)(struct devfreq_event_dev *edev);
-+
-+	/* Mandatory functions */
-+	int (*set_event)(struct devfreq_event_dev *edev);
-+	int (*get_event)(struct devfreq_event_dev *edev,
-+			 struct devfreq_event_data *edata);
++enum ppmu_event_type {
++	PPMU_RO_BUSY_CYCLE_CNT	= 0x0,
++	PPMU_WO_BUSY_CYCLE_CNT	= 0x1,
++	PPMU_RW_BUSY_CYCLE_CNT	= 0x2,
++	PPMU_RO_REQUEST_CNT	= 0x3,
++	PPMU_WO_REQUEST_CNT	= 0x4,
++	PPMU_RO_DATA_CNT	= 0x5,
++	PPMU_WO_DATA_CNT	= 0x6,
++	PPMU_RO_LATENCY		= 0x12,
++	PPMU_WO_LATENCY		= 0x16,
 +};
 +
-+/**
-+ * struct devfreq_event_desc - the descriptor of devfreq-event device
-+ *
-+ * @name	: the name of devfreq-event device.
-+ * @driver_data	: the private data for devfreq-event driver.
-+ * @ops		: the operation to control devfreq-event device.
-+ *
-+ * Each devfreq-event device is described with a this structure.
-+ * This structure contains the various data for devfreq-event device.
-+ */
-+struct devfreq_event_desc {
-+	const char *name;
-+	void *driver_data;
++enum ppmu_reg {
++	/* PPC control register */
++	PPMU_PMNC		= 0x00,
++	PPMU_CNTENS		= 0x10,
++	PPMU_CNTENC		= 0x20,
++	PPMU_INTENS		= 0x30,
++	PPMU_INTENC		= 0x40,
++	PPMU_FLAG		= 0x50,
 +
-+	struct devfreq_event_ops *ops;
++	/* Cycle Counter and Performance Event Counter Register */
++	PPMU_CCNT		= 0x100,
++	PPMU_PMCNT0		= 0x110,
++	PPMU_PMCNT1		= 0x120,
++	PPMU_PMCNT2		= 0x130,
++	PPMU_PMCNT3_HIGH	= 0x140,
++	PPMU_PMCNT3_LOW		= 0x150,
++
++	/* Bus Event Generator */
++	PPMU_BEVT0SEL		= 0x1000,
++	PPMU_BEVT1SEL		= 0x1100,
++	PPMU_BEVT2SEL		= 0x1200,
++	PPMU_BEVT3SEL		= 0x1300,
++	PPMU_COUNTER_RESET	= 0x1810,
++	PPMU_READ_OVERFLOW_CNT	= 0x1810,
++	PPMU_READ_UNDERFLOW_CNT	= 0x1814,
++	PPMU_WRITE_OVERFLOW_CNT	= 0x1850,
++	PPMU_WRITE_UNDERFLOW_CNT = 0x1854,
++	PPMU_READ_PENDING_CNT	= 0x1880,
++	PPMU_WRITE_PENDING_CNT	= 0x1884
 +};
 +
-+#if defined(CONFIG_PM_DEVFREQ_EVENT)
-+extern int devfreq_event_enable_edev(struct devfreq_event_dev *edev);
-+extern int devfreq_event_disable_edev(struct devfreq_event_dev *edev);
-+extern bool devfreq_event_is_enabled(struct devfreq_event_dev *edev);
-+extern int devfreq_event_set_event(struct devfreq_event_dev *edev);
-+extern int devfreq_event_get_event(struct devfreq_event_dev *edev,
-+				struct devfreq_event_data *edata);
-+extern int devfreq_event_reset_event(struct devfreq_event_dev *edev);
-+extern struct devfreq_event_dev *devfreq_event_get_edev_by_phandle(
-+				struct device *dev, int index);
-+extern int devfreq_event_get_edev_count(struct device *dev);
-+extern struct devfreq_event_dev *devfreq_event_add_edev(struct device *dev,
-+				struct devfreq_event_desc *desc);
-+extern int devfreq_event_remove_edev(struct devfreq_event_dev *edev);
-+extern struct devfreq_event_dev *devm_devfreq_event_add_edev(struct device *dev,
-+				struct devfreq_event_desc *desc);
-+extern void devm_devfreq_event_remove_edev(struct device *dev,
-+				struct devfreq_event_dev *edev);
-+static inline void *devfreq_event_get_drvdata(struct devfreq_event_dev *edev)
-+{
-+	return edev->desc->driver_data;
-+}
-+#else
-+static inline int devfreq_event_enable_edev(struct devfreq_event_dev *edev)
-+{
-+	return -EINVAL;
-+}
++/* PMNC register */
++#define PPMU_PMNC_CC_RESET_SHIFT	2
++#define PPMU_PMNC_COUNTER_RESET_SHIFT	1
++#define PPMU_PMNC_ENABLE_SHIFT		0
++#define PPMU_PMNC_START_MODE_MASK	BIT(16)
++#define PPMU_PMNC_CC_DIVIDER_MASK	BIT(3)
++#define PPMU_PMNC_CC_RESET_MASK		BIT(2)
++#define PPMU_PMNC_COUNTER_RESET_MASK	BIT(1)
++#define PPMU_PMNC_ENABLE_MASK		BIT(0)
 +
-+static inline int devfreq_event_disable_edev(struct devfreq_event_dev *edev)
-+{
-+	return -EINVAL;
-+}
++/* CNTENS/CNTENC/INTENS/INTENC/FLAG register */
++#define PPMU_CCNT_MASK			BIT(31)
++#define PPMU_PMCNT3_MASK		BIT(3)
++#define PPMU_PMCNT2_MASK		BIT(2)
++#define PPMU_PMCNT1_MASK		BIT(1)
++#define PPMU_PMCNT0_MASK		BIT(0)
 +
-+static inline bool devfreq_event_is_enabled(struct devfreq_event_dev *edev)
-+{
-+	return false;
-+}
++/* PPMU_PMNCTx/PPMU_BETxSEL registers */
++#define PPMU_PMNCT(x)			(PPMU_PMCNT0 + (0x10 * x))
++#define PPMU_BEVTxSEL(x)		(PPMU_BEVT0SEL + (0x100 * x))
 +
-+static inline int devfreq_event_set_event(struct devfreq_event_dev *edev)
-+{
-+	return -EINVAL;
-+}
-+
-+static inline int devfreq_event_get_event(struct devfreq_event_dev *edev,
-+					struct devfreq_event_data *edata)
-+{
-+	return -EINVAL;
-+}
-+
-+static inline int devfreq_event_reset_event(struct devfreq_event_dev *edev)
-+{
-+	return -EINVAL;
-+}
-+
-+static inline void *devfreq_event_get_drvdata(struct devfreq_event_dev *edev)
-+{
-+	return ERR_PTR(-EINVAL);
-+}
-+
-+static inline struct devfreq_event_dev *devfreq_event_get_edev_by_phandle(
-+					struct device *dev, int index)
-+{
-+	return ERR_PTR(-EINVAL);
-+}
-+
-+static inline int devfreq_event_get_edev_count(struct device *dev)
-+{
-+	return -EINVAL;
-+}
-+
-+static inline struct devfreq_event_dev *devfreq_event_add_edev(struct device *dev,
-+					struct devfreq_event_desc *desc)
-+{
-+	return ERR_PTR(-EINVAL);
-+}
-+
-+static inline int devfreq_event_remove_edev(struct devfreq_event_dev *edev)
-+{
-+	return -EINVAL;
-+}
-+
-+static inline struct devfreq_event_dev *devm_devfreq_event_add_edev(
-+					struct device *dev,
-+					struct devfreq_event_desc *desc)
-+{
-+	return ERR_PTR(-EINVAL);
-+}
-+
-+static inline void devm_devfreq_event_remove_edev(struct device *dev,
-+					struct devfreq_event_dev *edev)
-+{
-+}
-+
-+static inline void *devfreq_event_get_drvdata(struct devfreq_event_dev *edev)
-+{
-+	return NULL;
-+}
-+#endif /* CONFIG_PM_DEVFREQ_EVENT */
-+
-+#endif /* __LINUX_DEVFREQ_EVENT_H__ */
++#endif /* __EXYNOS_PPMU_H__ */
 -- 
 1.8.5.5
 
