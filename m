@@ -1,84 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754917AbbATMeN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 07:34:13 -0500
-Received: from mail-we0-f172.google.com ([74.125.82.172]:42423 "EHLO
-	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754024AbbATMaT (ORCPT
+	id S932083AbbATMab (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 07:30:31 -0500
+Received: from mail-we0-f170.google.com ([74.125.82.170]:48329 "EHLO
+	mail-we0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754624AbbATMaZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 07:30:19 -0500
+	Tue, 20 Jan 2015 07:30:25 -0500
 From: Olivier Sobrie <olivier@sobrie.be>
 To: Jan Dumon <j.dumon@option.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
         netdev@vger.kernel.org, Olivier Sobrie <olivier@sobrie.be>
-Subject: [PATCH 04/11] hso: fix memory leak in hso_create_rfkill()
-Date: Tue, 20 Jan 2015 13:29:31 +0100
-Message-Id: <1421756978-4093-5-git-send-email-olivier@sobrie.be>
+Subject: [PATCH 05/11] hso: fix small indentation error
+Date: Tue, 20 Jan 2015 13:29:32 +0100
+Message-Id: <1421756978-4093-6-git-send-email-olivier@sobrie.be>
 X-Mailer: git-send-email 2.2.0
-In-Reply-To: <1421756978-4093-4-git-send-email-olivier@sobrie.be>
+In-Reply-To: <1421756978-4093-5-git-send-email-olivier@sobrie.be>
 References: <1421756978-4093-1-git-send-email-olivier@sobrie.be>
  <1421756978-4093-2-git-send-email-olivier@sobrie.be>
  <1421756978-4093-3-git-send-email-olivier@sobrie.be>
  <1421756978-4093-4-git-send-email-olivier@sobrie.be>
+ <1421756978-4093-5-git-send-email-olivier@sobrie.be>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the rfkill interface was created, a buffer containing the name
-of the rfkill node was allocated. This buffer was never freed when the
-device disappears.
-
-To fix the problem, we put the name given to rfkill_alloc() in
-the hso_net structure.
+Simply remove the useless extra tab.
 
 Signed-off-by: Olivier Sobrie <olivier@sobrie.be>
 ---
- drivers/net/usb/hso.c | 12 +++---------
- 1 file changed, 3 insertions(+), 9 deletions(-)
+ drivers/net/usb/hso.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/net/usb/hso.c b/drivers/net/usb/hso.c
-index 470ef9e..a49ac2e 100644
+index a49ac2e..2f2343d 100644
 --- a/drivers/net/usb/hso.c
 +++ b/drivers/net/usb/hso.c
-@@ -153,6 +153,7 @@ struct hso_net {
- 	struct hso_device *parent;
- 	struct net_device *net;
- 	struct rfkill *rfkill;
-+	char name[8];
+@@ -2206,8 +2206,8 @@ static int hso_stop_serial_device(struct hso_device *hso_dev)
  
- 	struct usb_endpoint_descriptor *in_endp;
- 	struct usb_endpoint_descriptor *out_endp;
-@@ -2467,27 +2468,20 @@ static void hso_create_rfkill(struct hso_device *hso_dev,
- {
- 	struct hso_net *hso_net = dev2net(hso_dev);
- 	struct device *dev = &hso_net->net->dev;
--	char *rfkn;
- 
--	rfkn = kzalloc(20, GFP_KERNEL);
--	if (!rfkn)
--		dev_err(dev, "%s - Out of memory\n", __func__);
--
--	snprintf(rfkn, 20, "hso-%d",
-+	snprintf(hso_net->name, sizeof(hso_net->name), "hso-%d",
- 		 interface->altsetting->desc.bInterfaceNumber);
- 
--	hso_net->rfkill = rfkill_alloc(rfkn,
-+	hso_net->rfkill = rfkill_alloc(hso_net->name,
- 				       &interface_to_usbdev(interface)->dev,
- 				       RFKILL_TYPE_WWAN,
- 				       &hso_rfkill_ops, hso_dev);
- 	if (!hso_net->rfkill) {
- 		dev_err(dev, "%s - Out of memory\n", __func__);
--		kfree(rfkn);
- 		return;
+ 	for (i = 0; i < serial->num_rx_urbs; i++) {
+ 		if (serial->rx_urb[i]) {
+-				usb_kill_urb(serial->rx_urb[i]);
+-				serial->rx_urb_filled[i] = 0;
++			usb_kill_urb(serial->rx_urb[i]);
++			serial->rx_urb_filled[i] = 0;
+ 		}
  	}
- 	if (rfkill_register(hso_net->rfkill) < 0) {
- 		rfkill_destroy(hso_net->rfkill);
--		kfree(rfkn);
- 		hso_net->rfkill = NULL;
- 		dev_err(dev, "%s - Failed to register rfkill\n", __func__);
- 		return;
+ 	serial->curr_rx_urb_idx = 0;
 -- 
 2.2.0
 
