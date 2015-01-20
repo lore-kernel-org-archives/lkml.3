@@ -1,114 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798AbbATOyD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 09:54:03 -0500
-Received: from mail-wi0-f171.google.com ([209.85.212.171]:39079 "EHLO
-	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751801AbbATOyA (ORCPT
+	id S1752494AbbATO6h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 09:58:37 -0500
+Received: from mail-lb0-f175.google.com ([209.85.217.175]:52569 "EHLO
+	mail-lb0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751966AbbATO6f convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 09:54:00 -0500
-Date: Tue, 20 Jan 2015 15:53:53 +0100
-From: Djalal Harouni <tixxdz@opendz.org>
-To: Josh Boyer <jwboyer@fedoraproject.org>
-Cc: David Herrmann <dh.herrmann@gmail.com>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tom Gundersen <teg@jklm.no>, Jiri Kosina <jkosina@suse.cz>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Linux API <linux-api@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Daniel Mack <daniel@zonque.org>, Johannes Stezenbach <js@sig21.net>
-Subject: Re: [PATCH 01/13] kdbus: add documentation
-Message-ID: <20150120145353.GA8124@dztty>
-References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>
- <1421435777-25306-2-git-send-email-gregkh@linuxfoundation.org>
- <54BE5DC8.70706@gmail.com>
- <CANq1E4SjfZOKqTsdkt519vKc1Poeah5McVJBb_spdHjbKv4=7g@mail.gmail.com>
- <CA+5PVA46wVa-L9K1zgHzt=Fwn6YFBYhxJUjiozSH4XBY03WMVw@mail.gmail.com>
+	Tue, 20 Jan 2015 09:58:35 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+5PVA46wVa-L9K1zgHzt=Fwn6YFBYhxJUjiozSH4XBY03WMVw@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1421762788.29486.28.camel@linux-0dmf.site>
+References: <CABVT_gf-rx0ymvtCrCotkO5=qoDifG1yAMg8U_aTgXEN=x6gvg@mail.gmail.com>
+ <1421751814.29486.13.camel@linux-0dmf.site> <CABVT_gcqjp1V6vnOOSewYYeR2PmngAQhuR+fud=bDU6FJ8Bnqw@mail.gmail.com>
+ <1421762788.29486.28.camel@linux-0dmf.site>
+From: Kirill Elagin <kirelagin@gmail.com>
+Date: Tue, 20 Jan 2015 18:58:13 +0400
+Message-ID: <CABVT_gdCvbK8mUQMjDmiAmc_6kbBUMf4XFeAZ=zzjOYS+7oCGg@mail.gmail.com>
+Subject: Re: USB autosuspend causing trouble with bluetooth
+To: Oliver Neukum <oneukum@suse.de>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Jan 20, 2015 at 5:06 PM, Oliver Neukum <oneukum@suse.de> wrote:
+> On Tue, 2015-01-20 at 16:18 +0400, Kirill Elagin wrote:
+>> I use a Logitech wireless keyboard (with a Unifying receiver) and it
+>> keeps working fine even with `auto`.
+>>
+>> That is, everything is OK if the receiver is plugged before
+>> `power/control` is switched to `auto`.
+>
+> Wait. There is no power/control file for the receiver before
+> you plug it in. We are having a very big misunderstanding here.
 
-On Tue, Jan 20, 2015 at 09:42:59AM -0500, Josh Boyer wrote:
-> On Tue, Jan 20, 2015 at 9:31 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
-> > Hi Michael
-> >
-> > On Tue, Jan 20, 2015 at 2:53 PM, Michael Kerrisk (man-pages)
-> > <mtk.manpages@gmail.com> wrote:
-> >> On 01/16/2015 08:16 PM, Greg Kroah-Hartman wrote:
-> >>> From: Daniel Mack <daniel@zonque.org>
-> >>>
-> >>> kdbus is a system for low-latency, low-overhead, easy to use
-> >>> interprocess communication (IPC).
-> >>>
-> >>> The interface to all functions in this driver is implemented via ioctls
-> >>> on files exposed through a filesystem called 'kdbusfs'. The default
-> >>> mount point of kdbusfs is /sys/fs/kdbus. This patch adds detailed
-> >>> documentation about the kernel level API design.
-> >>
-> >> I have some details feedback on the contents of this file, and some
-> >> bigger questions. I'll split them out into separate mails.
-> >>
-> >> So here, the bigger, general questions to start with. I've arrived late
-> >> to this, so sorry if they've already been discussed, but the answers to
-> >> some of the questions should actually be in this file, I would have
-> >> expected.
-> >>
-> >> This is an enormous and complex API. Why is the API ioctl() based,
-> >> rather than system-call-based? Have we learned nothing from the hydra
-> >> that the futex() multiplexing syscall became? (And kdbus is an order
-> >> of magnitude more complex, by the look of things.) At the very least,
-> >> a *good* justification of why the API is ioctl()-based should be part
-> >> of this documentation file.
-> >>
-> >> An observation: The documentation below is substantial, but this API is
-> >> enormous, so the documentation still feels rather thin. What would
-> >> really help would be some example code in the doc.
-> >>
-> >> And on the subject of code examples... Are there any (prototype)
-> >> working user-space applications that exercise the current kdbus
-> >> implementation? That is, can I install these kdbus patches, and
-> >> then find a simple example application somewhere that does
-> >> something to exercise kdbus?
-> >
-> > If you run a 3.18 kernel, you can install kdbus.ko from our repository
-> > and boot a full Fedora system running Gnome3 with kdbus, given that
-> > you compiled systemd with --enable-kdbus (which is still
-> > experimental). No legacy dbus1 daemon is running. Instead, we have a
-> > bus-proxy that converts classic dbus1 to kdbus, so all
-> > bus-communication runs on kdbus.
-> 
-> FWIW, we've been building a "playground" repository for the kernel
-> that contains this already for Fedora.  If you have a stock Fedora 21
-> or rawhide install, you can use:
-> 
-> https://copr.fedoraproject.org/coprs/jwboyer/kernel-playground/
-> 
-> which has the kernel+kdbus and systemd built with --enable-kdbus
-> already.  Easy enough to throw in a VM for testing.
-> 
-> josh
-Yes thanks josh!
+Sorry for not being clear. I was referring to `power/control` of the
+USB-device itself except for the cases when I was talking about
+hot-plugging issues — in those cases I was referring to the
+`power/control` of the root hub.
 
-Another addition, if kdbus is installed and loaded, you could also use
-systemd-nspawn to boot a full system (systemd compiled with
---enable-kdbus) in a container [1], kdbusfs will be mounted in the
-container.
+I might be using terminology in a wrong way. By `power/control` of a
+root hub I mean `/sys/bus/usb/devices/usb<bus_number>/power/control`
+and by `power/control` of a device I mean
+`/sys/bus/usb/devices/<bus_number>-<port_number>/power/control`.
 
-There is also the busctl tool to query kdbus...
+>> But if I first set it to `auto`, then plug the receiver in, it is not
+>> detected (nothing in dmesg). Kernel
+>> detects it as soon as I `echo on` to the relevant `power/control`.
+>
+> Are you on power/control for the device or the port?
+> If you are using the port's control file you might be switching
+> on Port Power Off. Then of course the port will not process
+> hotplugs. Please clarify!
 
-http://www.freedesktop.org/wiki/Software/systemd/VirtualizedTesting/
+In this particular case I was talking about the `power/control` of the root hub.
 
--- 
-Djalal Harouni
-http://opendz.org
+`laptop-mode-tools` by default writes `auto` to `power/control` of
+_all_ the USB devices, root hubs included (even when on AC). Is it
+really expected that kernel might completely power off the physical
+USB port? Sounds weird.
+
+Here is an even more strange thing. First I set all the USB power
+management to the defaults (that is, `auto` for all the usb devices
+including root hubs). Again, the keyboard keeps working and as soon as
+I unplug the receiver kernel says the device was disconnected. Now if
+I plug the receiver back nothing happens. _But_ if I plug a flash
+drive in the save physical port it gets detected. So, I tried a number
+of other usb devices and it totally looks like USB2.0 ones are
+properly hot-plugged while USB1.1 devices are not. Does this sound to
+you like a bug in my laptop's hardware?
