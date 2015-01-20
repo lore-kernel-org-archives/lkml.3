@@ -1,70 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637AbbATMaY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 07:30:24 -0500
-Received: from mail-we0-f173.google.com ([74.125.82.173]:53874 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752298AbbATMaV (ORCPT
+	id S1754891AbbATMdk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 07:33:40 -0500
+Received: from mail-wi0-f179.google.com ([209.85.212.179]:56150 "EHLO
+	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754577AbbATMaX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 07:30:21 -0500
+	Tue, 20 Jan 2015 07:30:23 -0500
 From: Olivier Sobrie <olivier@sobrie.be>
 To: Jan Dumon <j.dumon@option.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
         netdev@vger.kernel.org, Olivier Sobrie <olivier@sobrie.be>
-Subject: [PATCH 06/11] hso: rename hso_dev into serial in hso_free_interface()
-Date: Tue, 20 Jan 2015 13:29:33 +0100
-Message-Id: <1421756978-4093-7-git-send-email-olivier@sobrie.be>
+Subject: [PATCH 07/11] hso: replace reset_device work by usb_queue_reset_device()
+Date: Tue, 20 Jan 2015 13:29:34 +0100
+Message-Id: <1421756978-4093-8-git-send-email-olivier@sobrie.be>
 X-Mailer: git-send-email 2.2.0
-In-Reply-To: <1421756978-4093-6-git-send-email-olivier@sobrie.be>
+In-Reply-To: <1421756978-4093-7-git-send-email-olivier@sobrie.be>
 References: <1421756978-4093-1-git-send-email-olivier@sobrie.be>
  <1421756978-4093-2-git-send-email-olivier@sobrie.be>
  <1421756978-4093-3-git-send-email-olivier@sobrie.be>
  <1421756978-4093-4-git-send-email-olivier@sobrie.be>
  <1421756978-4093-5-git-send-email-olivier@sobrie.be>
  <1421756978-4093-6-git-send-email-olivier@sobrie.be>
+ <1421756978-4093-7-git-send-email-olivier@sobrie.be>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In other functions of the driver, variables of type "struct hso_serial"
-are denoted by "serial" and variables of type "struct hso_device" are
-denoted by "hso_dev". This patch makes the hso_free_interface()
-consistent with these notations.
+There is no need for a dedicated reset work in the hso driver since
+there is already a reset work foreseen in usb_interface that does
+the same.
 
 Signed-off-by: Olivier Sobrie <olivier@sobrie.be>
 ---
- drivers/net/usb/hso.c | 12 ++++++------
- 1 file changed, 6 insertions(+), 6 deletions(-)
+ drivers/net/usb/hso.c | 25 +------------------------
+ 1 file changed, 1 insertion(+), 24 deletions(-)
 
 diff --git a/drivers/net/usb/hso.c b/drivers/net/usb/hso.c
-index 2f2343d..484e423 100644
+index 484e423..55074da 100644
 --- a/drivers/net/usb/hso.c
 +++ b/drivers/net/usb/hso.c
-@@ -3115,17 +3115,17 @@ static void hso_serial_ref_free(struct kref *ref)
+@@ -274,7 +274,6 @@ struct hso_device {
+ 	u8 usb_gone;
+ 	struct work_struct async_get_intf;
+ 	struct work_struct async_put_intf;
+-	struct work_struct reset_device;
  
- static void hso_free_interface(struct usb_interface *interface)
+ 	struct usb_device *usb;
+ 	struct usb_interface *interface;
+@@ -340,7 +339,6 @@ static void async_put_intf(struct work_struct *data);
+ static int hso_put_activity(struct hso_device *hso_dev);
+ static int hso_get_activity(struct hso_device *hso_dev);
+ static void tiocmget_intr_callback(struct urb *urb);
+-static void reset_device(struct work_struct *data);
+ /*****************************************************************************/
+ /* Helping functions                                                         */
+ /*****************************************************************************/
+@@ -696,7 +694,7 @@ static void handle_usb_error(int status, const char *function,
+ 	case -ETIMEDOUT:
+ 		explanation = "protocol error";
+ 		if (hso_dev)
+-			schedule_work(&hso_dev->reset_device);
++			usb_queue_reset_device(hso_dev->interface);
+ 		break;
+ 	default:
+ 		explanation = "unknown status";
+@@ -2347,7 +2345,6 @@ static struct hso_device *hso_create_device(struct usb_interface *intf,
+ 
+ 	INIT_WORK(&hso_dev->async_get_intf, async_get_intf);
+ 	INIT_WORK(&hso_dev->async_put_intf, async_put_intf);
+-	INIT_WORK(&hso_dev->reset_device, reset_device);
+ 
+ 	return hso_dev;
+ }
+@@ -3086,26 +3083,6 @@ out:
+ 	return result;
+ }
+ 
+-static void reset_device(struct work_struct *data)
+-{
+-	struct hso_device *hso_dev =
+-	    container_of(data, struct hso_device, reset_device);
+-	struct usb_device *usb = hso_dev->usb;
+-	int result;
+-
+-	if (hso_dev->usb_gone) {
+-		D1("No reset during disconnect\n");
+-	} else {
+-		result = usb_lock_device_for_reset(usb, hso_dev->interface);
+-		if (result < 0)
+-			D1("unable to lock device for reset: %d\n", result);
+-		else {
+-			usb_reset_device(usb);
+-			usb_unlock_device(usb);
+-		}
+-	}
+-}
+-
+ static void hso_serial_ref_free(struct kref *ref)
  {
--	struct hso_serial *hso_dev;
-+	struct hso_serial *serial;
- 	int i;
- 
- 	for (i = 0; i < HSO_SERIAL_TTY_MINORS; i++) {
- 		if (serial_table[i] &&
- 		    (serial_table[i]->interface == interface)) {
--			hso_dev = dev2ser(serial_table[i]);
--			tty_port_tty_hangup(&hso_dev->port, false);
--			mutex_lock(&hso_dev->parent->mutex);
--			hso_dev->parent->usb_gone = 1;
--			mutex_unlock(&hso_dev->parent->mutex);
-+			serial = dev2ser(serial_table[i]);
-+			tty_port_tty_hangup(&serial->port, false);
-+			mutex_lock(&serial->parent->mutex);
-+			serial->parent->usb_gone = 1;
-+			mutex_unlock(&serial->parent->mutex);
- 			kref_put(&serial_table[i]->ref, hso_serial_ref_free);
- 		}
- 	}
+ 	struct hso_device *hso_dev = container_of(ref, struct hso_device, ref);
 -- 
 2.2.0
 
