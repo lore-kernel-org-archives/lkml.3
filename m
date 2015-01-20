@@ -1,81 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752635AbbATCSl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 21:18:41 -0500
-Received: from mga03.intel.com ([134.134.136.65]:50004 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752608AbbATCSh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 21:18:37 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,431,1418112000"; 
-   d="scan'208";a="514609245"
-From: Jiang Liu <jiang.liu@linux.intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Sander Eikelenboom <linux@eikelenboom.it>,
-        David Vrabel <david.vrabel@citrix.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Bjorn Helgaas <bhelgaas@google.com>,
-        Graeme Gregory <graeme.gregory@linaro.org>,
-        Lv Zheng <lv.zheng@intel.com>
-Cc: Jiang Liu <jiang.liu@linux.intel.com>, Tony Luck <tony.luck@intel.com>,
-        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        xen-devel@lists.xenproject.org
-Subject: [Bugfix 3/3] xen/irq: Override ACPI IRQ management callback __acpi_unregister_gsi
-Date: Tue, 20 Jan 2015 10:21:07 +0800
-Message-Id: <1421720467-7709-4-git-send-email-jiang.liu@linux.intel.com>
-X-Mailer: git-send-email 1.7.10.4
-In-Reply-To: <1421720467-7709-1-git-send-email-jiang.liu@linux.intel.com>
-References: <1421720467-7709-1-git-send-email-jiang.liu@linux.intel.com>
+	id S1752180AbbATCjo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 21:39:44 -0500
+Received: from mail-pd0-f181.google.com ([209.85.192.181]:43481 "EHLO
+	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751505AbbATCjl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 21:39:41 -0500
+Message-ID: <54BDBFD4.7050207@linaro.org>
+Date: Tue, 20 Jan 2015 10:39:16 +0800
+From: Hanjun Guo <hanjun.guo@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Olof Johansson <olof@lixom.net>,
+        Arnd Bergmann <arnd@arndb.de>, Mark Rutland <Mark.Rutland@arm.com>,
+        "grant.likely@linaro.org" <grant.likely@linaro.org>,
+        Will Deacon <Will.Deacon@arm.com>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
+        Sudeep Holla <Sudeep.Holla@arm.com>, "jcm@redhat.com" <jcm@redhat.com>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Marc Zyngier <Marc.Zyngier@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, Mark Brown <broonie@kernel.org>,
+        Rob Herring <robh@kernel.org>, Robert Richter <rric@kernel.org>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
+        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
+        Timur Tabi <timur@codeaurora.org>,
+        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
+        "wangyijing@huawei.com" <wangyijing@huawei.com>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>
+Subject: Re: [PATCH v7 06/17] ARM64 / ACPI: Make PCI optional for ACPI on
+ ARM64
+References: <1421247905-3749-1-git-send-email-hanjun.guo@linaro.org> <1421247905-3749-7-git-send-email-hanjun.guo@linaro.org> <20150116094913.GA13634@e104818-lin.cambridge.arm.com> <54BB51F1.8000900@linaro.org> <20150119104240.GE11835@e104818-lin.cambridge.arm.com>
+In-Reply-To: <20150119104240.GE11835@e104818-lin.cambridge.arm.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Xen overrides __acpi_register_gsi and leaves __acpi_unregister_gsi as is.
-That means, an IRQ allocated by acpi_register_gsi_xen_hvm() or
-acpi_register_gsi_xen() will be freed by acpi_unregister_gsi_ioapic(),
-which may cause undesired effects. So override __acpi_unregister_gsi to
-NULL for safety.
+On 2015年01月19日 18:42, Catalin Marinas wrote:
+> On Sun, Jan 18, 2015 at 06:25:53AM +0000, Hanjun Guo wrote:
+>> On 2015年01月16日 17:49, Catalin Marinas wrote:
+>>> On Wed, Jan 14, 2015 at 03:04:54PM +0000, Hanjun Guo wrote:
+>>>> --- a/arch/arm64/kernel/pci.c
+>>>> +++ b/arch/arm64/kernel/pci.c
+>>>> @@ -10,6 +10,7 @@
+>>>>     *
+>>>>     */
+>>>>
+>>>> +#include <linux/acpi.h>
+>>>>    #include <linux/init.h>
+>>>>    #include <linux/io.h>
+>>>>    #include <linux/kernel.h>
+>>>> @@ -68,3 +69,30 @@ void pci_bus_assign_domain_nr(struct pci_bus *bus, struct device *parent)
+>>>>    	bus->domain_nr = domain;
+>>>>    }
+>>>>    #endif
+>>>> +
+>>>> +/*
+>>>> + * raw_pci_read/write - Platform-specific PCI config space access.
+>>>> + *
+>>>> + * Default empty implementation.  Replace with an architecture-specific setup
+>>>> + * routine, if necessary.
+>>>> + */
+>>>> +int raw_pci_read(unsigned int domain, unsigned int bus,
+>>>> +		  unsigned int devfn, int reg, int len, u32 *val)
+>>>> +{
+>>>> +	return -EINVAL;
+>>>> +}
+>>>> +
+>>>> +int raw_pci_write(unsigned int domain, unsigned int bus,
+>>>> +		unsigned int devfn, int reg, int len, u32 val)
+>>>> +{
+>>>> +	return -EINVAL;
+>>>> +}
+>>>> +
+>>>> +#ifdef CONFIG_ACPI
+>>>> +/* Root bridge scanning */
+>>>> +struct pci_bus *pci_acpi_scan_root(struct acpi_pci_root *root)
+>>>> +{
+>>>> +	/* TODO: Should be revisited when implementing PCI on ACPI */
+>>>> +	return NULL;
+>>>> +}
+>>>> +#endif
+> [...]
+>>> When PCI is enabled and the above functions are compiled in, do they
+>>> need to return any useful data or just -EINVAL. Are they ever called?
+>>
+>> They will be called if PCI root bridge is defined in DSDT, should I
+>> print some warning message before it is implemented?
+>
+> My point: do they need to return real data when a PCI root bridge is
+> defined in DSDT or you always expect them to always return some -E*? Can
+> you explain why?
 
-Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
-Tested-by: Sander Eikelenboom <linux@eikelenboom.it>
----
- arch/x86/include/asm/acpi.h |    1 +
- arch/x86/pci/xen.c          |    2 ++
- 2 files changed, 3 insertions(+)
+Not always return -E* or NULL;
 
-diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
-index 0ab4f9fd2687..3a45668f6dc3 100644
---- a/arch/x86/include/asm/acpi.h
-+++ b/arch/x86/include/asm/acpi.h
-@@ -50,6 +50,7 @@ void acpi_pic_sci_set_trigger(unsigned int, u16);
- 
- extern int (*__acpi_register_gsi)(struct device *dev, u32 gsi,
- 				  int trigger, int polarity);
-+extern void (*__acpi_unregister_gsi)(u32 gsi);
- 
- static inline void disable_acpi(void)
- {
-diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
-index 6e5e89c3c644..9098d880c476 100644
---- a/arch/x86/pci/xen.c
-+++ b/arch/x86/pci/xen.c
-@@ -458,6 +458,7 @@ int __init pci_xen_hvm_init(void)
- 	 * just how GSIs get registered.
- 	 */
- 	__acpi_register_gsi = acpi_register_gsi_xen_hvm;
-+	__acpi_unregister_gsi = NULL;
- #endif
- 
- #ifdef CONFIG_PCI_MSI
-@@ -482,6 +483,7 @@ int __init pci_xen_initial_domain(void)
- 	pci_msi_ignore_mask = 1;
- #endif
- 	__acpi_register_gsi = acpi_register_gsi_xen;
-+	__acpi_unregister_gsi = NULL;
- 	/* Pre-allocate legacy irqs */
- 	for (irq = 0; irq < nr_legacy_irqs(); irq++) {
- 		int trigger, polarity;
--- 
-1.7.10.4
+For raw_pci_read/write(), they are needed to access the PCI config space
+before the PCI root bus is created. so they will return 0 if access to
+PCI config space is ok; pci_acpi_scan_root() will return root bus
+pointer if it is successfully created.
 
+Thanks
+Hanjun
