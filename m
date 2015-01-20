@@ -1,96 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752839AbbATDIP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 22:08:15 -0500
-Received: from ozlabs.org ([103.22.144.67]:58063 "EHLO ozlabs.org"
+	id S1752707AbbATDHT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 22:07:19 -0500
+Received: from mga01.intel.com ([192.55.52.88]:33476 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752805AbbATDIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 22:08:11 -0500
-Message-ID: <1421723288.10632.1.camel@ellerman.id.au>
-Subject: Re: [PATCH 1/6] selftests: Introduce minimal shared logic for
- running tests
-From: Michael Ellerman <mpe@ellerman.id.au>
-To: Shuah Khan <shuahkh@osg.samsung.com>
-Cc: linux-kernel@vger.kernel.org, mmarek@suse.cz, gregkh@linuxfoundation.org,
-        akpm@linux-foundation.org, rostedt@goodmis.org, mingo@redhat.com,
-        davem@davemloft.net, keescook@chromium.org, tranmanphong@gmail.com,
-        cov@codeaurora.org, dh.herrmann@gmail.com, hughd@google.com,
-        bobby.prani@gmail.com, serge.hallyn@ubuntu.com, ebiederm@xmission.com,
-        tim.bird@sonymobile.com, josh@joshtriplett.org, koct9i@gmail.com,
-        linux-kbuild@vger.kernel.org, linux-api@vger.kernel.org,
-        netdev@vger.kernel.org
-Date: Tue, 20 Jan 2015 14:08:08 +1100
-In-Reply-To: <54BD332D.6010907@osg.samsung.com>
-References: <1420794375-31881-1-git-send-email-mpe@ellerman.id.au>
-	 <54B95006.3080502@osg.samsung.com> <1421627742.3787.6.camel@ellerman.id.au>
-	 <54BD332D.6010907@osg.samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751691AbbATDHQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 22:07:16 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="442528482"
+From: Jiang Liu <jiang.liu@linux.intel.com>
+To: Bjorn Helgaas <bhelgaas@google.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
+        Borislav Petkov <bp@alien8.de>, Dimitri Sivanich <sivanich@sgi.com>,
+        x86@kernel.org, Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        David Cohen <david.a.cohen@linux.intel.com>,
+        Sander Eikelenboom <linux@eikelenboom.it>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        linux-acpi@vger.kernel.org
+Subject: [Patch Part1 v7 06/38] x86/htirq: Use new irqdomain interfaces to allocate/free IRQ
+Date: Tue, 20 Jan 2015 11:08:09 +0800
+Message-Id: <1421723321-8386-7-git-send-email-jiang.liu@linux.intel.com>
+X-Mailer: git-send-email 1.7.10.4
+In-Reply-To: <1421723321-8386-1-git-send-email-jiang.liu@linux.intel.com>
+References: <1421723321-8386-1-git-send-email-jiang.liu@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2015-01-19 at 09:39 -0700, Shuah Khan wrote:
-> On 01/18/2015 05:35 PM, Michael Ellerman wrote:
-> > On Fri, 2015-01-16 at 10:53 -0700, Shuah Khan wrote:
-> >> On 01/09/2015 02:06 AM, Michael Ellerman wrote:
-> >>> This adds a Make include file which most selftests can then include to
-> >>> get the run_tests logic.
-> >>>
-> >>> On its own this has the advantage of some reduction in repetition, and
-> >>> also means the pass/fail message is defined in fewer places.
-> >>>
-> >>> However the key advantage is it will allow us to implement install very
-> >>> simply in a subsequent patch.
-> >>>
-> >>> The default implementation just executes each program in $(TEST_PROGS).
-> >>>
-> >>> We use a variable to hold the default implementation of $(RUN_TESTS)
-> >>> because that gives us a clean way to override it if necessary, ie. using
-> >>> override. The mount, memory-hotplug and mqueue tests use that to provide
-> >>> a different implementation.
-> >>>
-> >>> Tests are not run via /bin/bash, so if they are scripts they must be
-> >>> executable, we add u+x to several.
-> >>>
-> >>> Signed-off-by: Michael Ellerman <mpe@ellerman.id.au>
-> >>
-> >> I like the shared logic approach in general provided it leaves the
-> >> flexibility to not use the shared logic if a test have the need to
-> >> do so.
-> > 
-> > Yes of course it does, it's entirely optional to include lib.mk.
-> > 
-> >> This series requires some patch planning. shared logic patch
-> >> followed by individual test patches as opposed a single patch.
-> > 
-> > It could be a single patch too, but there's no reason to do it that way. The
-> > series works fine as I sent it.
-> > 
-> >> I would like to see the shared logic work done on top of my patch v4
-> >> series.
-> > 
-> > That's a waste of time. This series replaces your v4. Doing this "on top" of
-> > your v4 would just mean reverting your v4 series and then applying this.
-> 
-> No necessarily if the work is done as evolutionary step. In any case,
-> I want the first step install target support going into the upcoming
-> release and then make improvements to it. Please send separate patch
-> for the shared logic and individual test patches that use the shared
-> logic if you would like to make the improvements.
+Use new irqdomain interfaces to allocate/free IRQ for HTIRQ, so we could
+kill GENERIC_IRQ_LEGACY_ALLOC_HWIRQ later.
 
-No that's pointless.
+This patch changes the interfaces between arch independent PCI driver
+and arch specific code. Currently HT_IRQ is only enabled on x86, so it
+shouldn't break other architectures.
 
-My series does everything yours does, and more, and is less code.
+Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Bjorn Helgaas <bhelgaas@google.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Borislav Petkov <bp@alien8.de>
+Link: http://lkml.kernel.org/r/1416894816-23245-7-git-send-email-jiang.liu@linux.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/kernel/apic/htirq.c |   26 +++++++++++++-------------
+ drivers/pci/htirq.c          |    7 +++----
+ include/linux/htirq.h        |    2 ++
+ 3 files changed, 18 insertions(+), 17 deletions(-)
 
-It is ready to merge in the next release, you just need to remove your series
-and merge it.
-
-I'm happy to change the default install path or change other minor details, but
-it's pointless to merge your series and then remove it all to merge mine.
-
-cheers
-
+diff --git a/arch/x86/kernel/apic/htirq.c b/arch/x86/kernel/apic/htirq.c
+index 816f36e979ad..b307ee7a7148 100644
+--- a/arch/x86/kernel/apic/htirq.c
++++ b/arch/x86/kernel/apic/htirq.c
+@@ -14,6 +14,7 @@
+ #include <linux/device.h>
+ #include <linux/pci.h>
+ #include <linux/htirq.h>
++#include <linux/irqdomain.h>
+ #include <asm/hw_irq.h>
+ #include <asm/apic.h>
+ #include <asm/hypertransport.h>
+@@ -61,31 +62,30 @@ static struct irq_chip ht_irq_chip = {
+ 	.flags			= IRQCHIP_SKIP_SET_WAKE,
+ };
+ 
++int arch_alloc_ht_irq(struct pci_dev *dev)
++{
++	return irq_domain_alloc_irqs(NULL, 1, dev_to_node(&dev->dev), NULL);
++}
++
++void arch_free_ht_irq(int irq)
++{
++	irq_domain_free_irqs(irq, 1);
++}
++
+ int arch_setup_ht_irq(unsigned int irq, struct pci_dev *dev)
+ {
+ 	struct irq_cfg *cfg;
+ 	struct ht_irq_msg msg;
+-	unsigned dest;
+-	int err;
+ 
+ 	if (disable_apic)
+ 		return -ENXIO;
+ 
+ 	cfg = irq_cfg(irq);
+-	err = assign_irq_vector(irq, cfg, apic->target_cpus());
+-	if (err)
+-		return err;
+-
+-	err = apic->cpu_mask_to_apicid_and(cfg->domain,
+-					   apic->target_cpus(), &dest);
+-	if (err)
+-		return err;
+-
+-	msg.address_hi = HT_IRQ_HIGH_DEST_ID(dest);
++	msg.address_hi = HT_IRQ_HIGH_DEST_ID(cfg->dest_apicid);
+ 
+ 	msg.address_lo =
+ 		HT_IRQ_LOW_BASE |
+-		HT_IRQ_LOW_DEST_ID(dest) |
++		HT_IRQ_LOW_DEST_ID(cfg->dest_apicid) |
+ 		HT_IRQ_LOW_VECTOR(cfg->vector) |
+ 		((apic->irq_dest_mode == 0) ?
+ 			HT_IRQ_LOW_DM_PHYSICAL :
+diff --git a/drivers/pci/htirq.c b/drivers/pci/htirq.c
+index a94dd2c4183a..ceb0ebeb7b5f 100644
+--- a/drivers/pci/htirq.c
++++ b/drivers/pci/htirq.c
+@@ -117,8 +117,8 @@ int __ht_create_irq(struct pci_dev *dev, int idx, ht_irq_update_t *update)
+ 	cfg->msg.address_lo = 0xffffffff;
+ 	cfg->msg.address_hi = 0xffffffff;
+ 
+-	irq = irq_alloc_hwirq(dev_to_node(&dev->dev));
+-	if (!irq) {
++	irq = arch_alloc_ht_irq(dev);
++	if (irq <= 0) {
+ 		kfree(cfg);
+ 		return -EBUSY;
+ 	}
+@@ -163,8 +163,7 @@ void ht_destroy_irq(unsigned int irq)
+ 	cfg = irq_get_handler_data(irq);
+ 	irq_set_chip(irq, NULL);
+ 	irq_set_handler_data(irq, NULL);
+-	irq_free_hwirq(irq);
+-
++	arch_free_ht_irq(irq);
+ 	kfree(cfg);
+ }
+ EXPORT_SYMBOL(ht_destroy_irq);
+diff --git a/include/linux/htirq.h b/include/linux/htirq.h
+index 70a1dbbf2093..5caa51b7b95c 100644
+--- a/include/linux/htirq.h
++++ b/include/linux/htirq.h
+@@ -15,6 +15,8 @@ void unmask_ht_irq(struct irq_data *data);
+ 
+ /* The arch hook for getting things started */
+ int arch_setup_ht_irq(unsigned int irq, struct pci_dev *dev);
++int arch_alloc_ht_irq(struct pci_dev *dev);
++void arch_free_ht_irq(int irq);
+ 
+ /* For drivers of buggy hardware */
+ typedef void (ht_irq_update_t)(struct pci_dev *dev, int irq,
+-- 
+1.7.10.4
 
