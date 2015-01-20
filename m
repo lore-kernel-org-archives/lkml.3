@@ -1,58 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752663AbbATW0Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 17:26:24 -0500
-Received: from mailrelay7.public.one.com ([91.198.169.215]:15344 "EHLO
-	mailrelay7.public.one.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751816AbbATW0W (ORCPT
+	id S1752748AbbATW2b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 17:28:31 -0500
+Received: from mail-lb0-f172.google.com ([209.85.217.172]:47138 "EHLO
+	mail-lb0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751453AbbATW23 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 17:26:22 -0500
-X-HalOne-Cookie: 490d9868ad4ddcd21904e4134697c56af475cebf
-X-HalOne-ID: 5a8cb327-a0f3-11e4-bf9a-b82a72cffc46
-Message-ID: <54BED60C.3030303@bitmath.org>
-Date: Tue, 20 Jan 2015 23:26:20 +0100
-From: Henrik Rydberg <rydberg@bitmath.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Tue, 20 Jan 2015 17:28:29 -0500
 MIME-Version: 1.0
-To: Benjamin Tissoires <benjamin.tissoires@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Joe Perches <joe@perches.com>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] MAINTAINERS: Update rydberg's addresses
-References: <1418979967-2134-1-git-send-email-rydberg@bitmath.org> <CAN+gG=Gmgk+wKSnHkSAERoWt+1PqAojNSZt6jo=qmzPOqJs+3Q@mail.gmail.com>
-In-Reply-To: <CAN+gG=Gmgk+wKSnHkSAERoWt+1PqAojNSZt6jo=qmzPOqJs+3Q@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.DEB.2.11.1501201450220.5526@nanos>
+References: <cover.1421183147.git.luto@amacapital.net> <44852495d71796ecf690208e2e908a1b25008a73.1421183147.git.luto@amacapital.net>
+ <alpine.DEB.2.11.1501201450220.5526@nanos>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 20 Jan 2015 14:28:07 -0800
+Message-ID: <CALCETrX0jY6XkK5824hVLtgBeN49P0a=id+YxR9L=c-R=43_BA@mail.gmail.com>
+Subject: Re: [PATCH 3.19 v4 1/2] x86, mpx: Short-circuit the instruction
+ decoder for unexpected opcodes
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Dave Hansen <dave.hansen@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        X86 ML <x86@kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Benjamin,
+On Jan 20, 2015 5:59 AM, "Thomas Gleixner" <tglx@linutronix.de> wrote:
+>
+> On Tue, 13 Jan 2015, Andy Lutomirski wrote:
+>
+> > This reduces the degree to which we're exposing the instruction decoder
+> > to malicious user code at very little complexity cost.
+> >
+> > Signed-off-by: Andy Lutomirski <luto@amacapital.net>
+> > ---
+> >  arch/x86/mm/mpx.c | 25 ++++++++++++++++---------
+> >  1 file changed, 16 insertions(+), 9 deletions(-)
+> >
+> > diff --git a/arch/x86/mm/mpx.c b/arch/x86/mm/mpx.c
+> > index 67ebf5751222..a73004330732 100644
+> > --- a/arch/x86/mm/mpx.c
+> > +++ b/arch/x86/mm/mpx.c
+> > @@ -230,6 +230,22 @@ static int mpx_insn_decode(struct insn *insn,
+> >        */
+> >       if (!nr_copied)
+> >               return -EFAULT;
+> > +
+> > +     /*
+> > +      * We only _really_ need to decode bndcl/bndcn/bndcu
+> > +      * Error out on anything else.  Check this before decoding the
+> > +      * instruction to reduce our exposure to intentionally bad code
+> > +      * to some extent.  Note that this shortcut can incorrectly return
+> > +      * -EINVAL instead of -EFAULT under some circumstances.  This
+> > +      * discrepancy has no effect.
+> > +      */
+> > +     if (nr_copied < 2)
+> > +             goto bad_opcode;
+> > +     if (buf[0] != 0x0f)
+> > +             goto bad_opcode;
+> > +     if (buf[1] != 0x1a && buf[1] != 0x1b)
+> > +             goto bad_opcode;
+>
+> These opcodes can never have a prefix? If so, then we want to add this
+> to the comment.
 
-> Henrik, I just used the get_maintainer to add you on CC to an input-mt
-> patch series, and it ended up using the @euromail.se instead of your
-> still valid one. I can resend to you the patch series if you want.
+No, I think I just misunderstood the original code.  Please disregard
+this patch.
 
-Thanks, that won't be necessary.
+--Andy
 
-I looked through the the patchset, and it strikes me as mostly renames without
-deeper explanations, which all in all puts them in the not-needed category, I am
-afraid. An in-depth explanation could be added as a text block somewhere without
-touching the current code.
-
-The only patch that does something is the last one, and what it does could
-easily be performed in userland, by further processing of the contacts there. I
-therefore see no use for any of those patches in the kernel.
-
-Is there a good reason for the first reaction to be to add special tweaks such
-as this one in the kernel, rather than in a dedicated userland input system? I
-am genuinely curious.
-
-Thanks,
-Henrik
-
+>
+> Thanks,
+>
+>         tglx
