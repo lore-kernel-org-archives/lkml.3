@@ -1,82 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752095AbbATVmu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 16:42:50 -0500
-Received: from mail-pa0-f42.google.com ([209.85.220.42]:42577 "EHLO
-	mail-pa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750953AbbATVms (ORCPT
+	id S1753471AbbATVm6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 16:42:58 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:61392 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751533AbbATVmy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 16:42:48 -0500
+	Tue, 20 Jan 2015 16:42:54 -0500
 From: John Stultz <john.stultz@linaro.org>
 To: lkml <linux-kernel@vger.kernel.org>
-Cc: John Stultz <john.stultz@linaro.org>, Greg Hackmann <ghackmann@google.com>,
-        Elliott Hughes <enh@google.com>, Todd Poynor <toddpoynor@google.com>,
+Cc: John Stultz <john.stultz@linaro.org>, Rom Lemarchand <romlem@google.com>,
+        Mark Salyzyn <salyzyn@google.com>, Kees Cook <keescook@chromium.org>,
         Android Kernel Team <kernel-team@android.com>,
         Greg KH <gregkh@linuxfoundation.org>
-Subject: [PATCH 1/2][RFC] staging: Remove the Android alarm-dev driver
-Date: Tue, 20 Jan 2015 13:42:34 -0800
-Message-Id: <1421790155-3309-1-git-send-email-john.stultz@linaro.org>
+Subject: [PATCH 2/2][RFC] staging: Remove the Android logger driver
+Date: Tue, 20 Jan 2015 13:42:35 -0800
+Message-Id: <1421790155-3309-2-git-send-email-john.stultz@linaro.org>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1421790155-3309-1-git-send-email-john.stultz@linaro.org>
+References: <1421790155-3309-1-git-send-email-john.stultz@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The functionality provided by the Android alarm-dev driver
-should now be present in the timerfd interface (thanks to
-Greg Hackmann and Todd Poynor).
+With the relase of Lollipop, Android no longer
+requires the logger driver.
 
-As of Lollipop, AOSP can make use of the timerfd if
-alarm-dev is not present (though a fixup for setting the
-rtc time if rtc0 isn't the backing for _ALARM clockids has
-been applied post-Lollipop).
+There are three patches which the android dev's
+still need before they drop logger on all their
+devices:
 
-Thus, we should be able to remove alarm-dev from staging.
+[PATCH v3 1/3] pstore: use scnprintf
+[PATCH 2/3] pstore: remove superfluous memory size check
+[PATCH v2 3/3] pstore: add pmsg
 
-Cc: Greg Hackmann <ghackmann@google.com>
-Cc: Elliott Hughes <enh@google.com>
-Cc: Todd Poynor <toddpoynor@google.com>
+But these seem to have been acked and are hopefully
+queued for upstream.
+
+So this patch removes the logger driver from staging.
+
+Cc: Rom Lemarchand <romlem@google.com>,
+Cc: Mark Salyzyn <salyzyn@google.com>
+Cc: Kees Cook <keescook@chromium.org>
 Cc: Android Kernel Team <kernel-team@android.com>
 Cc: Greg KH <gregkh@linuxfoundation.org>
 Signed-off-by: John Stultz <john.stultz@linaro.org>
 ---
- drivers/staging/android/Kconfig              |   9 -
- drivers/staging/android/alarm-dev.c          | 446 ---------------------------
- drivers/staging/android/android_alarm.h      |  41 ---
- drivers/staging/android/uapi/android_alarm.h |  62 ----
- 4 files changed, 558 deletions(-)
- delete mode 100644 drivers/staging/android/alarm-dev.c
- delete mode 100644 drivers/staging/android/android_alarm.h
- delete mode 100644 drivers/staging/android/uapi/android_alarm.h
+ drivers/staging/android/Kconfig  |  17 -
+ drivers/staging/android/logger.c | 808 ---------------------------------------
+ drivers/staging/android/logger.h |  89 -----
+ 3 files changed, 914 deletions(-)
+ delete mode 100644 drivers/staging/android/logger.c
+ delete mode 100644 drivers/staging/android/logger.h
 
 diff --git a/drivers/staging/android/Kconfig b/drivers/staging/android/Kconfig
-index 7e012f3..2ac0b61 100644
+index 2ac0b61..8feb904 100644
 --- a/drivers/staging/android/Kconfig
 +++ b/drivers/staging/android/Kconfig
-@@ -45,15 +45,6 @@ config ANDROID_LOW_MEMORY_KILLER
- 	---help---
- 	  Registers processes to be killed when memory is low
+@@ -14,23 +14,6 @@ config ASHMEM
+ 	  It is, in theory, a good memory allocator for low-memory devices,
+ 	  because it can discard shared memory units when under memory pressure.
  
--config ANDROID_INTF_ALARM_DEV
--	tristate "Android alarm driver"
--	depends on RTC_CLASS
+-config ANDROID_LOGGER
+-	tristate "Android log driver"
 -	default n
 -	---help---
--	  Provides non-wakeup and rtc backed wakeup alarms based on rtc or
--	  elapsed realtime, and a non-wakeup alarm on the monotonic clock.
--	  Also exports the alarm interface to user-space.
+-	  This adds support for system-wide logging using four log buffers.
 -
- config SYNC
- 	bool "Synchronization framework"
- 	default n
-diff --git a/drivers/staging/android/alarm-dev.c b/drivers/staging/android/alarm-dev.c
+-	  These are:
+-
+-	      1: main
+-	      2: events
+-	      3: radio
+-	      4: system
+-
+-	  Log reading and writing is performed via normal Linux reads and
+-	  optimized writes. This optimization avoids logging having too
+-	  much overhead in the system.
+-
+ config ANDROID_TIMED_OUTPUT
+ 	bool "Timed output class driver"
+ 	default y
+diff --git a/drivers/staging/android/logger.c b/drivers/staging/android/logger.c
 deleted file mode 100644
-index ff4b3e8..0000000
---- a/drivers/staging/android/alarm-dev.c
+index a673ffa..0000000
+--- a/drivers/staging/android/logger.c
 +++ /dev/null
-@@ -1,446 +0,0 @@
--/* drivers/rtc/alarm-dev.c
+@@ -1,808 +0,0 @@
+-/*
+- * drivers/misc/logger.c
 - *
-- * Copyright (C) 2007-2009 Google, Inc.
+- * A Logging Subsystem
+- *
+- * Copyright (C) 2007-2008 Google, Inc.
+- *
+- * Robert Love <rlove@google.com>
 - *
 - * This software is licensed under the terms of the GNU General Public
 - * License version 2, as published by the Free Software Foundation, and
@@ -86,449 +104,807 @@ index ff4b3e8..0000000
 - * but WITHOUT ANY WARRANTY; without even the implied warranty of
 - * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 - * GNU General Public License for more details.
-- *
 - */
 -
--#include <linux/time.h>
--#include <linux/module.h>
--#include <linux/device.h>
--#include <linux/miscdevice.h>
--#include <linux/fs.h>
--#include <linux/platform_device.h>
+-#define pr_fmt(fmt) "logger: " fmt
+-
 -#include <linux/sched.h>
--#include <linux/spinlock.h>
+-#include <linux/module.h>
+-#include <linux/fs.h>
+-#include <linux/miscdevice.h>
 -#include <linux/uaccess.h>
--#include <linux/alarmtimer.h>
--#include "android_alarm.h"
+-#include <linux/poll.h>
+-#include <linux/slab.h>
+-#include <linux/time.h>
+-#include <linux/vmalloc.h>
+-#include <linux/aio.h>
+-#include "logger.h"
 -
--#define ANDROID_ALARM_PRINT_INFO (1U << 0)
--#define ANDROID_ALARM_PRINT_IO (1U << 1)
--#define ANDROID_ALARM_PRINT_INT (1U << 2)
--
--static int debug_mask = ANDROID_ALARM_PRINT_INFO;
--module_param_named(debug_mask, debug_mask, int, S_IRUGO | S_IWUSR | S_IWGRP);
--
--#define alarm_dbg(debug_level_mask, fmt, ...)				\
--do {									\
--	if (debug_mask & ANDROID_ALARM_PRINT_##debug_level_mask)	\
--		pr_info(fmt, ##__VA_ARGS__);				\
--} while (0)
--
--#define ANDROID_ALARM_WAKEUP_MASK ( \
--	ANDROID_ALARM_RTC_WAKEUP_MASK | \
--	ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP_MASK)
--
--static int alarm_opened;
--static DEFINE_SPINLOCK(alarm_slock);
--static struct wakeup_source alarm_wake_lock;
--static DECLARE_WAIT_QUEUE_HEAD(alarm_wait_queue);
--static uint32_t alarm_pending;
--static uint32_t alarm_enabled;
--static uint32_t wait_pending;
--
--struct devalarm {
--	union {
--		struct hrtimer hrt;
--		struct alarm alrm;
--	} u;
--	enum android_alarm_type type;
--};
--
--static struct devalarm alarms[ANDROID_ALARM_TYPE_COUNT];
+-#include <asm/ioctls.h>
 -
 -/**
-- * is_wakeup() - Checks to see if this alarm can wake the device
-- * @type:	 The type of alarm being checked
+- * struct logger_log - represents a specific log, such as 'main' or 'radio'
+- * @buffer:	The actual ring buffer
+- * @misc:	The "misc" device representing the log
+- * @wq:		The wait queue for @readers
+- * @readers:	This log's readers
+- * @mutex:	The mutex that protects the @buffer
+- * @w_off:	The current write head offset
+- * @head:	The head, or location that readers start reading at.
+- * @size:	The size of the log
+- * @logs:	The list of log channels
 - *
-- * Return: 1 if this is a wakeup alarm, otherwise 0
+- * This structure lives from module insertion until module removal, so it does
+- * not need additional reference counting. The structure is protected by the
+- * mutex 'mutex'.
 - */
--static int is_wakeup(enum android_alarm_type type)
+-struct logger_log {
+-	unsigned char		*buffer;
+-	struct miscdevice	misc;
+-	wait_queue_head_t	wq;
+-	struct list_head	readers;
+-	struct mutex		mutex;
+-	size_t			w_off;
+-	size_t			head;
+-	size_t			size;
+-	struct list_head	logs;
+-};
+-
+-static LIST_HEAD(log_list);
+-
+-
+-/**
+- * struct logger_reader - a logging device open for reading
+- * @log:	The associated log
+- * @list:	The associated entry in @logger_log's list
+- * @r_off:	The current read head offset.
+- * @r_all:	Reader can read all entries
+- * @r_ver:	Reader ABI version
+- *
+- * This object lives from open to release, so we don't need additional
+- * reference counting. The structure is protected by log->mutex.
+- */
+-struct logger_reader {
+-	struct logger_log	*log;
+-	struct list_head	list;
+-	size_t			r_off;
+-	bool			r_all;
+-	int			r_ver;
+-};
+-
+-/* logger_offset - returns index 'n' into the log via (optimized) modulus */
+-static size_t logger_offset(struct logger_log *log, size_t n)
 -{
--	return type == ANDROID_ALARM_RTC_WAKEUP ||
--		type == ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP;
+-	return n & (log->size - 1);
 -}
 -
--static void devalarm_start(struct devalarm *alrm, ktime_t exp)
--{
--	if (is_wakeup(alrm->type))
--		alarm_start(&alrm->u.alrm, exp);
--	else
--		hrtimer_start(&alrm->u.hrt, exp, HRTIMER_MODE_ABS);
--}
 -
--static int devalarm_try_to_cancel(struct devalarm *alrm)
+-/*
+- * file_get_log - Given a file structure, return the associated log
+- *
+- * This isn't aesthetic. We have several goals:
+- *
+- *	1) Need to quickly obtain the associated log during an I/O operation
+- *	2) Readers need to maintain state (logger_reader)
+- *	3) Writers need to be very fast (open() should be a near no-op)
+- *
+- * In the reader case, we can trivially go file->logger_reader->logger_log.
+- * For a writer, we don't want to maintain a logger_reader, so we just go
+- * file->logger_log. Thus what file->private_data points at depends on whether
+- * or not the file was opened for reading. This function hides that dirtiness.
+- */
+-static inline struct logger_log *file_get_log(struct file *file)
 -{
--	if (is_wakeup(alrm->type))
--		return alarm_try_to_cancel(&alrm->u.alrm);
--	return hrtimer_try_to_cancel(&alrm->u.hrt);
--}
+-	if (file->f_mode & FMODE_READ) {
+-		struct logger_reader *reader = file->private_data;
 -
--static void devalarm_cancel(struct devalarm *alrm)
--{
--	if (is_wakeup(alrm->type))
--		alarm_cancel(&alrm->u.alrm);
--	else
--		hrtimer_cancel(&alrm->u.hrt);
--}
--
--static void alarm_clear(enum android_alarm_type alarm_type)
--{
--	uint32_t alarm_type_mask = 1U << alarm_type;
--	unsigned long flags;
--
--	spin_lock_irqsave(&alarm_slock, flags);
--	alarm_dbg(IO, "alarm %d clear\n", alarm_type);
--	devalarm_try_to_cancel(&alarms[alarm_type]);
--	if (alarm_pending) {
--		alarm_pending &= ~alarm_type_mask;
--		if (!alarm_pending && !wait_pending)
--			__pm_relax(&alarm_wake_lock);
+-		return reader->log;
 -	}
--	alarm_enabled &= ~alarm_type_mask;
--	spin_unlock_irqrestore(&alarm_slock, flags);
+-	return file->private_data;
 -}
 -
--static void alarm_set(enum android_alarm_type alarm_type,
--							struct timespec *ts)
+-/*
+- * get_entry_header - returns a pointer to the logger_entry header within
+- * 'log' starting at offset 'off'. A temporary logger_entry 'scratch' must
+- * be provided. Typically the return value will be a pointer within
+- * 'logger->buf'.  However, a pointer to 'scratch' may be returned if
+- * the log entry spans the end and beginning of the circular buffer.
+- */
+-static struct logger_entry *get_entry_header(struct logger_log *log,
+-		size_t off, struct logger_entry *scratch)
 -{
--	uint32_t alarm_type_mask = 1U << alarm_type;
--	unsigned long flags;
+-	size_t len = min(sizeof(struct logger_entry), log->size - off);
 -
--	spin_lock_irqsave(&alarm_slock, flags);
--	alarm_dbg(IO, "alarm %d set %ld.%09ld\n",
--			alarm_type, ts->tv_sec, ts->tv_nsec);
--	alarm_enabled |= alarm_type_mask;
--	devalarm_start(&alarms[alarm_type], timespec_to_ktime(*ts));
--	spin_unlock_irqrestore(&alarm_slock, flags);
--}
--
--static int alarm_wait(void)
--{
--	unsigned long flags;
--	int rv = 0;
--
--	spin_lock_irqsave(&alarm_slock, flags);
--	alarm_dbg(IO, "alarm wait\n");
--	if (!alarm_pending && wait_pending) {
--		__pm_relax(&alarm_wake_lock);
--		wait_pending = 0;
+-	if (len != sizeof(struct logger_entry)) {
+-		memcpy(((void *) scratch), log->buffer + off, len);
+-		memcpy(((void *) scratch) + len, log->buffer,
+-			sizeof(struct logger_entry) - len);
+-		return scratch;
 -	}
--	spin_unlock_irqrestore(&alarm_slock, flags);
 -
--	rv = wait_event_interruptible(alarm_wait_queue, alarm_pending);
--	if (rv)
--		return rv;
--
--	spin_lock_irqsave(&alarm_slock, flags);
--	rv = alarm_pending;
--	wait_pending = 1;
--	alarm_pending = 0;
--	spin_unlock_irqrestore(&alarm_slock, flags);
--
--	return rv;
+-	return (struct logger_entry *) (log->buffer + off);
 -}
 -
--static int alarm_set_rtc(struct timespec *ts)
+-/*
+- * get_entry_msg_len - Grabs the length of the message of the entry
+- * starting from from 'off'.
+- *
+- * An entry length is 2 bytes (16 bits) in host endian order.
+- * In the log, the length does not include the size of the log entry structure.
+- * This function returns the size including the log entry structure.
+- *
+- * Caller needs to hold log->mutex.
+- */
+-static __u32 get_entry_msg_len(struct logger_log *log, size_t off)
 -{
--	struct rtc_time new_rtc_tm;
--	struct rtc_device *rtc_dev;
--	unsigned long flags;
--	int rv = 0;
+-	struct logger_entry scratch;
+-	struct logger_entry *entry;
 -
--	rtc_time_to_tm(ts->tv_sec, &new_rtc_tm);
--	rtc_dev = alarmtimer_get_rtcdev();
--	rv = do_settimeofday(ts);
--	if (rv < 0)
--		return rv;
--	if (rtc_dev)
--		rv = rtc_set_time(rtc_dev, &new_rtc_tm);
--
--	spin_lock_irqsave(&alarm_slock, flags);
--	alarm_pending |= ANDROID_ALARM_TIME_CHANGE_MASK;
--	wake_up(&alarm_wait_queue);
--	spin_unlock_irqrestore(&alarm_slock, flags);
--
--	return rv;
+-	entry = get_entry_header(log, off, &scratch);
+-	return entry->len;
 -}
 -
--static int alarm_get_time(enum android_alarm_type alarm_type,
--							struct timespec *ts)
+-static size_t get_user_hdr_len(int ver)
 -{
--	int rv = 0;
+-	if (ver < 2)
+-		return sizeof(struct user_logger_entry_compat);
+-	return sizeof(struct logger_entry);
+-}
 -
--	switch (alarm_type) {
--	case ANDROID_ALARM_RTC_WAKEUP:
--	case ANDROID_ALARM_RTC:
--		getnstimeofday(ts);
--		break;
--	case ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP:
--	case ANDROID_ALARM_ELAPSED_REALTIME:
--		get_monotonic_boottime(ts);
--		break;
--	case ANDROID_ALARM_SYSTEMTIME:
--		ktime_get_ts(ts);
--		break;
--	default:
--		rv = -EINVAL;
+-static ssize_t copy_header_to_user(int ver, struct logger_entry *entry,
+-					 char __user *buf)
+-{
+-	void *hdr;
+-	size_t hdr_len;
+-	struct user_logger_entry_compat v1;
+-
+-	if (ver < 2) {
+-		v1.len      = entry->len;
+-		v1.__pad    = 0;
+-		v1.pid      = entry->pid;
+-		v1.tid      = entry->tid;
+-		v1.sec      = entry->sec;
+-		v1.nsec     = entry->nsec;
+-		hdr         = &v1;
+-		hdr_len     = sizeof(struct user_logger_entry_compat);
+-	} else {
+-		hdr         = entry;
+-		hdr_len     = sizeof(struct logger_entry);
 -	}
--	return rv;
+-
+-	return copy_to_user(buf, hdr, hdr_len);
 -}
 -
--static long alarm_do_ioctl(struct file *file, unsigned int cmd,
--							struct timespec *ts)
+-/*
+- * do_read_log_to_user - reads exactly 'count' bytes from 'log' into the
+- * user-space buffer 'buf'. Returns 'count' on success.
+- *
+- * Caller must hold log->mutex.
+- */
+-static ssize_t do_read_log_to_user(struct logger_log *log,
+-				   struct logger_reader *reader,
+-				   char __user *buf,
+-				   size_t count)
 -{
--	int rv = 0;
--	unsigned long flags;
--	enum android_alarm_type alarm_type = ANDROID_ALARM_IOCTL_TO_TYPE(cmd);
+-	struct logger_entry scratch;
+-	struct logger_entry *entry;
+-	size_t len;
+-	size_t msg_start;
 -
--	if (alarm_type >= ANDROID_ALARM_TYPE_COUNT)
+-	/*
+-	 * First, copy the header to userspace, using the version of
+-	 * the header requested
+-	 */
+-	entry = get_entry_header(log, reader->r_off, &scratch);
+-	if (copy_header_to_user(reader->r_ver, entry, buf))
+-		return -EFAULT;
+-
+-	count -= get_user_hdr_len(reader->r_ver);
+-	buf += get_user_hdr_len(reader->r_ver);
+-	msg_start = logger_offset(log,
+-		reader->r_off + sizeof(struct logger_entry));
+-
+-	/*
+-	 * We read from the msg in two disjoint operations. First, we read from
+-	 * the current msg head offset up to 'count' bytes or to the end of
+-	 * the log, whichever comes first.
+-	 */
+-	len = min(count, log->size - msg_start);
+-	if (copy_to_user(buf, log->buffer + msg_start, len))
+-		return -EFAULT;
+-
+-	/*
+-	 * Second, we read any remaining bytes, starting back at the head of
+-	 * the log.
+-	 */
+-	if (count != len)
+-		if (copy_to_user(buf + len, log->buffer, count - len))
+-			return -EFAULT;
+-
+-	reader->r_off = logger_offset(log, reader->r_off +
+-		sizeof(struct logger_entry) + count);
+-
+-	return count + get_user_hdr_len(reader->r_ver);
+-}
+-
+-/*
+- * get_next_entry_by_uid - Starting at 'off', returns an offset into
+- * 'log->buffer' which contains the first entry readable by 'euid'
+- */
+-static size_t get_next_entry_by_uid(struct logger_log *log,
+-		size_t off, kuid_t euid)
+-{
+-	while (off != log->w_off) {
+-		struct logger_entry *entry;
+-		struct logger_entry scratch;
+-		size_t next_len;
+-
+-		entry = get_entry_header(log, off, &scratch);
+-
+-		if (uid_eq(entry->euid, euid))
+-			return off;
+-
+-		next_len = sizeof(struct logger_entry) + entry->len;
+-		off = logger_offset(log, off + next_len);
+-	}
+-
+-	return off;
+-}
+-
+-/*
+- * logger_read - our log's read() method
+- *
+- * Behavior:
+- *
+- *	- O_NONBLOCK works
+- *	- If there are no log entries to read, blocks until log is written to
+- *	- Atomically reads exactly one log entry
+- *
+- * Will set errno to EINVAL if read
+- * buffer is insufficient to hold next entry.
+- */
+-static ssize_t logger_read(struct file *file, char __user *buf,
+-			   size_t count, loff_t *pos)
+-{
+-	struct logger_reader *reader = file->private_data;
+-	struct logger_log *log = reader->log;
+-	ssize_t ret;
+-	DEFINE_WAIT(wait);
+-
+-start:
+-	while (1) {
+-		mutex_lock(&log->mutex);
+-
+-		prepare_to_wait(&log->wq, &wait, TASK_INTERRUPTIBLE);
+-
+-		ret = (log->w_off == reader->r_off);
+-		mutex_unlock(&log->mutex);
+-		if (!ret)
+-			break;
+-
+-		if (file->f_flags & O_NONBLOCK) {
+-			ret = -EAGAIN;
+-			break;
+-		}
+-
+-		if (signal_pending(current)) {
+-			ret = -EINTR;
+-			break;
+-		}
+-
+-		schedule();
+-	}
+-
+-	finish_wait(&log->wq, &wait);
+-	if (ret)
+-		return ret;
+-
+-	mutex_lock(&log->mutex);
+-
+-	if (!reader->r_all)
+-		reader->r_off = get_next_entry_by_uid(log,
+-			reader->r_off, current_euid());
+-
+-	/* is there still something to read or did we race? */
+-	if (unlikely(log->w_off == reader->r_off)) {
+-		mutex_unlock(&log->mutex);
+-		goto start;
+-	}
+-
+-	/* get the size of the next entry */
+-	ret = get_user_hdr_len(reader->r_ver) +
+-		get_entry_msg_len(log, reader->r_off);
+-	if (count < ret) {
+-		ret = -EINVAL;
+-		goto out;
+-	}
+-
+-	/* get exactly one entry from the log */
+-	ret = do_read_log_to_user(log, reader, buf, ret);
+-
+-out:
+-	mutex_unlock(&log->mutex);
+-
+-	return ret;
+-}
+-
+-/*
+- * get_next_entry - return the offset of the first valid entry at least 'len'
+- * bytes after 'off'.
+- *
+- * Caller must hold log->mutex.
+- */
+-static size_t get_next_entry(struct logger_log *log, size_t off, size_t len)
+-{
+-	size_t count = 0;
+-
+-	do {
+-		size_t nr = sizeof(struct logger_entry) +
+-			get_entry_msg_len(log, off);
+-		off = logger_offset(log, off + nr);
+-		count += nr;
+-	} while (count < len);
+-
+-	return off;
+-}
+-
+-/*
+- * is_between - is a < c < b, accounting for wrapping of a, b, and c
+- *    positions in the buffer
+- *
+- * That is, if a<b, check for c between a and b
+- * and if a>b, check for c outside (not between) a and b
+- *
+- * |------- a xxxxxxxx b --------|
+- *               c^
+- *
+- * |xxxxx b --------- a xxxxxxxxx|
+- *    c^
+- *  or                    c^
+- */
+-static inline int is_between(size_t a, size_t b, size_t c)
+-{
+-	if (a < b) {
+-		/* is c between a and b? */
+-		if (a < c && c <= b)
+-			return 1;
+-	} else {
+-		/* is c outside of b through a? */
+-		if (c <= b || a < c)
+-			return 1;
+-	}
+-
+-	return 0;
+-}
+-
+-/*
+- * fix_up_readers - walk the list of all readers and "fix up" any who were
+- * lapped by the writer; also do the same for the default "start head".
+- * We do this by "pulling forward" the readers and start head to the first
+- * entry after the new write head.
+- *
+- * The caller needs to hold log->mutex.
+- */
+-static void fix_up_readers(struct logger_log *log, size_t len)
+-{
+-	size_t old = log->w_off;
+-	size_t new = logger_offset(log, old + len);
+-	struct logger_reader *reader;
+-
+-	if (is_between(old, new, log->head))
+-		log->head = get_next_entry(log, log->head, len);
+-
+-	list_for_each_entry(reader, &log->readers, list)
+-		if (is_between(old, new, reader->r_off))
+-			reader->r_off = get_next_entry(log, reader->r_off, len);
+-}
+-
+-/*
+- * logger_write_iter - our write method, implementing support for write(),
+- * writev(), and aio_write(). Writes are our fast path, and we try to optimize
+- * them above all else.
+- */
+-static ssize_t logger_write_iter(struct kiocb *iocb, struct iov_iter *from)
+-{
+-	struct logger_log *log = file_get_log(iocb->ki_filp);
+-	struct logger_entry header;
+-	struct timespec now;
+-	size_t len, count, w_off;
+-
+-	count = min_t(size_t, iocb->ki_nbytes, LOGGER_ENTRY_MAX_PAYLOAD);
+-
+-	now = current_kernel_time();
+-
+-	header.pid = current->tgid;
+-	header.tid = current->pid;
+-	header.sec = now.tv_sec;
+-	header.nsec = now.tv_nsec;
+-	header.euid = current_euid();
+-	header.len = count;
+-	header.hdr_size = sizeof(struct logger_entry);
+-
+-	/* null writes succeed, return zero */
+-	if (unlikely(!header.len))
+-		return 0;
+-
+-	mutex_lock(&log->mutex);
+-
+-	/*
+-	 * Fix up any readers, pulling them forward to the first readable
+-	 * entry after (what will be) the new write offset. We do this now
+-	 * because if we partially fail, we can end up with clobbered log
+-	 * entries that encroach on readable buffer.
+-	 */
+-	fix_up_readers(log, sizeof(struct logger_entry) + header.len);
+-
+-	len = min(sizeof(header), log->size - log->w_off);
+-	memcpy(log->buffer + log->w_off, &header, len);
+-	memcpy(log->buffer, (char *)&header + len, sizeof(header) - len);
+-
+-	/* Work with a copy until we are ready to commit the whole entry */
+-	w_off =  logger_offset(log, log->w_off + sizeof(struct logger_entry));
+-
+-	len = min(count, log->size - w_off);
+-
+-	if (copy_from_iter(log->buffer + w_off, len, from) != len) {
+-		/*
+-		 * Note that by not updating log->w_off, this abandons the
+-		 * portion of the new entry that *was* successfully
+-		 * copied, just above.  This is intentional to avoid
+-		 * message corruption from missing fragments.
+-		 */
+-		mutex_unlock(&log->mutex);
+-		return -EFAULT;
+-	}
+-
+-	if (copy_from_iter(log->buffer, count - len, from) != count - len) {
+-		mutex_unlock(&log->mutex);
+-		return -EFAULT;
+-	}
+-
+-	log->w_off = logger_offset(log, w_off + count);
+-	mutex_unlock(&log->mutex);
+-
+-	/* wake up any blocked readers */
+-	wake_up_interruptible(&log->wq);
+-
+-	return len;
+-}
+-
+-static struct logger_log *get_log_from_minor(int minor)
+-{
+-	struct logger_log *log;
+-
+-	list_for_each_entry(log, &log_list, logs)
+-		if (log->misc.minor == minor)
+-			return log;
+-	return NULL;
+-}
+-
+-/*
+- * logger_open - the log's open() file operation
+- *
+- * Note how near a no-op this is in the write-only case. Keep it that way!
+- */
+-static int logger_open(struct inode *inode, struct file *file)
+-{
+-	struct logger_log *log;
+-	int ret;
+-
+-	ret = nonseekable_open(inode, file);
+-	if (ret)
+-		return ret;
+-
+-	log = get_log_from_minor(MINOR(inode->i_rdev));
+-	if (!log)
+-		return -ENODEV;
+-
+-	if (file->f_mode & FMODE_READ) {
+-		struct logger_reader *reader;
+-
+-		reader = kmalloc(sizeof(struct logger_reader), GFP_KERNEL);
+-		if (!reader)
+-			return -ENOMEM;
+-
+-		reader->log = log;
+-		reader->r_ver = 1;
+-		reader->r_all = in_egroup_p(inode->i_gid) ||
+-			capable(CAP_SYSLOG);
+-
+-		INIT_LIST_HEAD(&reader->list);
+-
+-		mutex_lock(&log->mutex);
+-		reader->r_off = log->head;
+-		list_add_tail(&reader->list, &log->readers);
+-		mutex_unlock(&log->mutex);
+-
+-		file->private_data = reader;
+-	} else
+-		file->private_data = log;
+-
+-	return 0;
+-}
+-
+-/*
+- * logger_release - the log's release file operation
+- *
+- * Note this is a total no-op in the write-only case. Keep it that way!
+- */
+-static int logger_release(struct inode *ignored, struct file *file)
+-{
+-	if (file->f_mode & FMODE_READ) {
+-		struct logger_reader *reader = file->private_data;
+-		struct logger_log *log = reader->log;
+-
+-		mutex_lock(&log->mutex);
+-		list_del(&reader->list);
+-		mutex_unlock(&log->mutex);
+-
+-		kfree(reader);
+-	}
+-
+-	return 0;
+-}
+-
+-/*
+- * logger_poll - the log's poll file operation, for poll/select/epoll
+- *
+- * Note we always return POLLOUT, because you can always write() to the log.
+- * Note also that, strictly speaking, a return value of POLLIN does not
+- * guarantee that the log is readable without blocking, as there is a small
+- * chance that the writer can lap the reader in the interim between poll()
+- * returning and the read() request.
+- */
+-static unsigned int logger_poll(struct file *file, poll_table *wait)
+-{
+-	struct logger_reader *reader;
+-	struct logger_log *log;
+-	unsigned int ret = POLLOUT | POLLWRNORM;
+-
+-	if (!(file->f_mode & FMODE_READ))
+-		return ret;
+-
+-	reader = file->private_data;
+-	log = reader->log;
+-
+-	poll_wait(file, &log->wq, wait);
+-
+-	mutex_lock(&log->mutex);
+-	if (!reader->r_all)
+-		reader->r_off = get_next_entry_by_uid(log,
+-			reader->r_off, current_euid());
+-
+-	if (log->w_off != reader->r_off)
+-		ret |= POLLIN | POLLRDNORM;
+-	mutex_unlock(&log->mutex);
+-
+-	return ret;
+-}
+-
+-static long logger_set_version(struct logger_reader *reader, void __user *arg)
+-{
+-	int version;
+-
+-	if (copy_from_user(&version, arg, sizeof(int)))
+-		return -EFAULT;
+-
+-	if ((version < 1) || (version > 2))
 -		return -EINVAL;
 -
--	if (ANDROID_ALARM_BASE_CMD(cmd) != ANDROID_ALARM_GET_TIME(0)) {
--		if ((file->f_flags & O_ACCMODE) == O_RDONLY)
--			return -EPERM;
--		if (file->private_data == NULL &&
--		    cmd != ANDROID_ALARM_SET_RTC) {
--			spin_lock_irqsave(&alarm_slock, flags);
--			if (alarm_opened) {
--				spin_unlock_irqrestore(&alarm_slock, flags);
--				return -EBUSY;
--			}
--			alarm_opened = 1;
--			file->private_data = (void *)1;
--			spin_unlock_irqrestore(&alarm_slock, flags);
+-	reader->r_ver = version;
+-	return 0;
+-}
+-
+-static long logger_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+-{
+-	struct logger_log *log = file_get_log(file);
+-	struct logger_reader *reader;
+-	long ret = -EINVAL;
+-	void __user *argp = (void __user *) arg;
+-
+-	mutex_lock(&log->mutex);
+-
+-	switch (cmd) {
+-	case LOGGER_GET_LOG_BUF_SIZE:
+-		ret = log->size;
+-		break;
+-	case LOGGER_GET_LOG_LEN:
+-		if (!(file->f_mode & FMODE_READ)) {
+-			ret = -EBADF;
+-			break;
 -		}
--	}
--
--	switch (ANDROID_ALARM_BASE_CMD(cmd)) {
--	case ANDROID_ALARM_CLEAR(0):
--		alarm_clear(alarm_type);
+-		reader = file->private_data;
+-		if (log->w_off >= reader->r_off)
+-			ret = log->w_off - reader->r_off;
+-		else
+-			ret = (log->size - reader->r_off) + log->w_off;
 -		break;
--	case ANDROID_ALARM_SET(0):
--		alarm_set(alarm_type, ts);
--		break;
--	case ANDROID_ALARM_SET_AND_WAIT(0):
--		alarm_set(alarm_type, ts);
--		/* fall though */
--	case ANDROID_ALARM_WAIT:
--		rv = alarm_wait();
--		break;
--	case ANDROID_ALARM_SET_RTC:
--		rv = alarm_set_rtc(ts);
--		break;
--	case ANDROID_ALARM_GET_TIME(0):
--		rv = alarm_get_time(alarm_type, ts);
--		break;
--
--	default:
--		rv = -EINVAL;
--	}
--	return rv;
--}
--
--static long alarm_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
--{
--
--	struct timespec ts;
--	int rv;
--
--	switch (ANDROID_ALARM_BASE_CMD(cmd)) {
--	case ANDROID_ALARM_SET_AND_WAIT(0):
--	case ANDROID_ALARM_SET(0):
--	case ANDROID_ALARM_SET_RTC:
--		if (copy_from_user(&ts, (void __user *)arg, sizeof(ts)))
--			return -EFAULT;
--		break;
--	}
--
--	rv = alarm_do_ioctl(file, cmd, &ts);
--	if (rv)
--		return rv;
--
--	switch (ANDROID_ALARM_BASE_CMD(cmd)) {
--	case ANDROID_ALARM_GET_TIME(0):
--		if (copy_to_user((void __user *)arg, &ts, sizeof(ts)))
--			return -EFAULT;
--		break;
--	}
--
--	return 0;
--}
--
--#ifdef CONFIG_COMPAT
--static long alarm_compat_ioctl(struct file *file, unsigned int cmd,
--							unsigned long arg)
--{
--
--	struct timespec ts;
--	int rv;
--
--	switch (ANDROID_ALARM_BASE_CMD(cmd)) {
--	case ANDROID_ALARM_SET_AND_WAIT_COMPAT(0):
--	case ANDROID_ALARM_SET_COMPAT(0):
--	case ANDROID_ALARM_SET_RTC_COMPAT:
--		if (compat_get_timespec(&ts, (void __user *)arg))
--			return -EFAULT;
--		/* fall through */
--	case ANDROID_ALARM_GET_TIME_COMPAT(0):
--		cmd = ANDROID_ALARM_COMPAT_TO_NORM(cmd);
--		break;
--	}
--
--	rv = alarm_do_ioctl(file, cmd, &ts);
--	if (rv)
--		return rv;
--
--	switch (ANDROID_ALARM_BASE_CMD(cmd)) {
--	case ANDROID_ALARM_GET_TIME(0): /* NOTE: we modified cmd above */
--		if (compat_put_timespec(&ts, (void __user *)arg))
--			return -EFAULT;
--		break;
--	}
--
--	return 0;
--}
--#endif
--
--static int alarm_open(struct inode *inode, struct file *file)
--{
--	file->private_data = NULL;
--	return 0;
--}
--
--static int alarm_release(struct inode *inode, struct file *file)
--{
--	int i;
--	unsigned long flags;
--
--	spin_lock_irqsave(&alarm_slock, flags);
--	if (file->private_data) {
--		for (i = 0; i < ANDROID_ALARM_TYPE_COUNT; i++) {
--			uint32_t alarm_type_mask = 1U << i;
--
--			if (alarm_enabled & alarm_type_mask) {
--				alarm_dbg(INFO,
--					  "%s: clear alarm, pending %d\n",
--					  __func__,
--					  !!(alarm_pending & alarm_type_mask));
--				alarm_enabled &= ~alarm_type_mask;
--			}
--			spin_unlock_irqrestore(&alarm_slock, flags);
--			devalarm_cancel(&alarms[i]);
--			spin_lock_irqsave(&alarm_slock, flags);
+-	case LOGGER_GET_NEXT_ENTRY_LEN:
+-		if (!(file->f_mode & FMODE_READ)) {
+-			ret = -EBADF;
+-			break;
 -		}
--		if (alarm_pending | wait_pending) {
--			if (alarm_pending)
--				alarm_dbg(INFO, "%s: clear pending alarms %x\n",
--					  __func__, alarm_pending);
--			__pm_relax(&alarm_wake_lock);
--			wait_pending = 0;
--			alarm_pending = 0;
+-		reader = file->private_data;
+-
+-		if (!reader->r_all)
+-			reader->r_off = get_next_entry_by_uid(log,
+-				reader->r_off, current_euid());
+-
+-		if (log->w_off != reader->r_off)
+-			ret = get_user_hdr_len(reader->r_ver) +
+-				get_entry_msg_len(log, reader->r_off);
+-		else
+-			ret = 0;
+-		break;
+-	case LOGGER_FLUSH_LOG:
+-		if (!(file->f_mode & FMODE_WRITE)) {
+-			ret = -EBADF;
+-			break;
 -		}
--		alarm_opened = 0;
+-		if (!(in_egroup_p(file_inode(file)->i_gid) ||
+-				capable(CAP_SYSLOG))) {
+-			ret = -EPERM;
+-			break;
+-		}
+-		list_for_each_entry(reader, &log->readers, list)
+-			reader->r_off = log->w_off;
+-		log->head = log->w_off;
+-		ret = 0;
+-		break;
+-	case LOGGER_GET_VERSION:
+-		if (!(file->f_mode & FMODE_READ)) {
+-			ret = -EBADF;
+-			break;
+-		}
+-		reader = file->private_data;
+-		ret = reader->r_ver;
+-		break;
+-	case LOGGER_SET_VERSION:
+-		if (!(file->f_mode & FMODE_READ)) {
+-			ret = -EBADF;
+-			break;
+-		}
+-		reader = file->private_data;
+-		ret = logger_set_version(reader, argp);
+-		break;
 -	}
--	spin_unlock_irqrestore(&alarm_slock, flags);
--	return 0;
+-
+-	mutex_unlock(&log->mutex);
+-
+-	return ret;
 -}
 -
--static void devalarm_triggered(struct devalarm *alarm)
--{
--	unsigned long flags;
--	uint32_t alarm_type_mask = 1U << alarm->type;
--
--	alarm_dbg(INT, "%s: type %d\n", __func__, alarm->type);
--	spin_lock_irqsave(&alarm_slock, flags);
--	if (alarm_enabled & alarm_type_mask) {
--		__pm_wakeup_event(&alarm_wake_lock, 5000); /* 5secs */
--		alarm_enabled &= ~alarm_type_mask;
--		alarm_pending |= alarm_type_mask;
--		wake_up(&alarm_wait_queue);
--	}
--	spin_unlock_irqrestore(&alarm_slock, flags);
--}
--
--static enum hrtimer_restart devalarm_hrthandler(struct hrtimer *hrt)
--{
--	struct devalarm *devalrm = container_of(hrt, struct devalarm, u.hrt);
--
--	devalarm_triggered(devalrm);
--	return HRTIMER_NORESTART;
--}
--
--static enum alarmtimer_restart devalarm_alarmhandler(struct alarm *alrm,
--							ktime_t now)
--{
--	struct devalarm *devalrm = container_of(alrm, struct devalarm, u.alrm);
--
--	devalarm_triggered(devalrm);
--	return ALARMTIMER_NORESTART;
--}
--
--
--static const struct file_operations alarm_fops = {
+-static const struct file_operations logger_fops = {
 -	.owner = THIS_MODULE,
--	.unlocked_ioctl = alarm_ioctl,
--	.open = alarm_open,
--	.release = alarm_release,
--#ifdef CONFIG_COMPAT
--	.compat_ioctl = alarm_compat_ioctl,
--#endif
+-	.read = logger_read,
+-	.write_iter = logger_write_iter,
+-	.poll = logger_poll,
+-	.unlocked_ioctl = logger_ioctl,
+-	.compat_ioctl = logger_ioctl,
+-	.open = logger_open,
+-	.release = logger_release,
 -};
 -
--static struct miscdevice alarm_device = {
--	.minor = MISC_DYNAMIC_MINOR,
--	.name = "alarm",
--	.fops = &alarm_fops,
--};
--
--static int __init alarm_dev_init(void)
+-/*
+- * Log size must must be a power of two, and greater than
+- * (LOGGER_ENTRY_MAX_PAYLOAD + sizeof(struct logger_entry)).
+- */
+-static int __init create_log(char *log_name, int size)
 -{
--	int err;
--	int i;
+-	int ret = 0;
+-	struct logger_log *log;
+-	unsigned char *buffer;
 -
--	err = misc_register(&alarm_device);
--	if (err)
--		return err;
+-	buffer = vmalloc(size);
+-	if (buffer == NULL)
+-		return -ENOMEM;
 -
--	alarm_init(&alarms[ANDROID_ALARM_RTC_WAKEUP].u.alrm,
--			ALARM_REALTIME, devalarm_alarmhandler);
--	hrtimer_init(&alarms[ANDROID_ALARM_RTC].u.hrt,
--			CLOCK_REALTIME, HRTIMER_MODE_ABS);
--	alarm_init(&alarms[ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP].u.alrm,
--			ALARM_BOOTTIME, devalarm_alarmhandler);
--	hrtimer_init(&alarms[ANDROID_ALARM_ELAPSED_REALTIME].u.hrt,
--			CLOCK_BOOTTIME, HRTIMER_MODE_ABS);
--	hrtimer_init(&alarms[ANDROID_ALARM_SYSTEMTIME].u.hrt,
--			CLOCK_MONOTONIC, HRTIMER_MODE_ABS);
+-	log = kzalloc(sizeof(struct logger_log), GFP_KERNEL);
+-	if (log == NULL) {
+-		ret = -ENOMEM;
+-		goto out_free_buffer;
+-	}
+-	log->buffer = buffer;
 -
--	for (i = 0; i < ANDROID_ALARM_TYPE_COUNT; i++) {
--		alarms[i].type = i;
--		if (!is_wakeup(i))
--			alarms[i].u.hrt.function = devalarm_hrthandler;
+-	log->misc.minor = MISC_DYNAMIC_MINOR;
+-	log->misc.name = kstrdup(log_name, GFP_KERNEL);
+-	if (log->misc.name == NULL) {
+-		ret = -ENOMEM;
+-		goto out_free_log;
 -	}
 -
--	wakeup_source_init(&alarm_wake_lock, "alarm");
+-	log->misc.fops = &logger_fops;
+-	log->misc.parent = NULL;
+-
+-	init_waitqueue_head(&log->wq);
+-	INIT_LIST_HEAD(&log->readers);
+-	mutex_init(&log->mutex);
+-	log->w_off = 0;
+-	log->head = 0;
+-	log->size = size;
+-
+-	INIT_LIST_HEAD(&log->logs);
+-	list_add_tail(&log->logs, &log_list);
+-
+-	/* finally, initialize the misc device for this log */
+-	ret = misc_register(&log->misc);
+-	if (unlikely(ret)) {
+-		pr_err("failed to register misc device for log '%s'!\n",
+-				log->misc.name);
+-		goto out_free_misc_name;
+-	}
+-
+-	pr_info("created %luK log '%s'\n",
+-		(unsigned long) log->size >> 10, log->misc.name);
+-
 -	return 0;
+-
+-out_free_misc_name:
+-	kfree(log->misc.name);
+-
+-out_free_log:
+-	kfree(log);
+-
+-out_free_buffer:
+-	vfree(buffer);
+-	return ret;
 -}
 -
--static void  __exit alarm_dev_exit(void)
+-static int __init logger_init(void)
 -{
--	misc_deregister(&alarm_device);
--	wakeup_source_trash(&alarm_wake_lock);
+-	int ret;
+-
+-	ret = create_log(LOGGER_LOG_MAIN, 256*1024);
+-	if (unlikely(ret))
+-		goto out;
+-
+-	ret = create_log(LOGGER_LOG_EVENTS, 256*1024);
+-	if (unlikely(ret))
+-		goto out;
+-
+-	ret = create_log(LOGGER_LOG_RADIO, 256*1024);
+-	if (unlikely(ret))
+-		goto out;
+-
+-	ret = create_log(LOGGER_LOG_SYSTEM, 256*1024);
+-	if (unlikely(ret))
+-		goto out;
+-
+-out:
+-	return ret;
 -}
 -
--module_init(alarm_dev_init);
--module_exit(alarm_dev_exit);
+-static void __exit logger_exit(void)
+-{
+-	struct logger_log *current_log, *next_log;
+-
+-	list_for_each_entry_safe(current_log, next_log, &log_list, logs) {
+-		/* we have to delete all the entry inside log_list */
+-		misc_deregister(&current_log->misc);
+-		vfree(current_log->buffer);
+-		kfree(current_log->misc.name);
+-		list_del(&current_log->logs);
+-		kfree(current_log);
+-	}
+-}
+-
+-
+-device_initcall(logger_init);
+-module_exit(logger_exit);
+-
 -MODULE_LICENSE("GPL");
-diff --git a/drivers/staging/android/android_alarm.h b/drivers/staging/android/android_alarm.h
+-MODULE_AUTHOR("Robert Love, <rlove@google.com>");
+-MODULE_DESCRIPTION("Android Logger");
+diff --git a/drivers/staging/android/logger.h b/drivers/staging/android/logger.h
 deleted file mode 100644
-index 495b20c..0000000
---- a/drivers/staging/android/android_alarm.h
+index 70af7d8..0000000
+--- a/drivers/staging/android/logger.h
 +++ /dev/null
-@@ -1,41 +0,0 @@
--/* include/linux/android_alarm.h
+@@ -1,89 +0,0 @@
+-/* include/linux/logger.h
 - *
-- * Copyright (C) 2006-2007 Google, Inc.
+- * Copyright (C) 2007-2008 Google, Inc.
+- * Author: Robert Love <rlove@android.com>
 - *
 - * This software is licensed under the terms of the GNU General Public
 - * License version 2, as published by the Free Software Foundation, and
@@ -541,100 +917,79 @@ index 495b20c..0000000
 - *
 - */
 -
--#ifndef _LINUX_ANDROID_ALARM_H
--#define _LINUX_ANDROID_ALARM_H
+-#ifndef _LINUX_LOGGER_H
+-#define _LINUX_LOGGER_H
 -
--#include <linux/compat.h>
+-#include <linux/types.h>
 -#include <linux/ioctl.h>
 -
--#include "uapi/android_alarm.h"
--
--#ifdef CONFIG_COMPAT
--#define ANDROID_ALARM_SET_COMPAT(type)		ALARM_IOW(2, type, \
--							struct compat_timespec)
--#define ANDROID_ALARM_SET_AND_WAIT_COMPAT(type)	ALARM_IOW(3, type, \
--							struct compat_timespec)
--#define ANDROID_ALARM_GET_TIME_COMPAT(type)	ALARM_IOW(4, type, \
--							struct compat_timespec)
--#define ANDROID_ALARM_SET_RTC_COMPAT		_IOW('a', 5, \
--							struct compat_timespec)
--#define ANDROID_ALARM_IOCTL_NR(cmd)		(_IOC_NR(cmd) & ((1<<4)-1))
--#define ANDROID_ALARM_COMPAT_TO_NORM(cmd)  \
--				ALARM_IOW(ANDROID_ALARM_IOCTL_NR(cmd), \
--					ANDROID_ALARM_IOCTL_TO_TYPE(cmd), \
--					struct timespec)
--
--#endif
--
--#endif
-diff --git a/drivers/staging/android/uapi/android_alarm.h b/drivers/staging/android/uapi/android_alarm.h
-deleted file mode 100644
-index aa013f6..0000000
---- a/drivers/staging/android/uapi/android_alarm.h
-+++ /dev/null
-@@ -1,62 +0,0 @@
--/* drivers/staging/android/uapi/android_alarm.h
+-/**
+- * struct user_logger_entry_compat - defines a single entry that is given to a logger
+- * @len:	The length of the payload
+- * @__pad:	Two bytes of padding that appear to be required
+- * @pid:	The generating process' process ID
+- * @tid:	The generating process' thread ID
+- * @sec:	The number of seconds that have elapsed since the Epoch
+- * @nsec:	The number of nanoseconds that have elapsed since @sec
+- * @msg:	The message that is to be logged
 - *
-- * Copyright (C) 2006-2007 Google, Inc.
-- *
-- * This software is licensed under the terms of the GNU General Public
-- * License version 2, as published by the Free Software Foundation, and
-- * may be copied, distributed, and modified under those terms.
-- *
-- * This program is distributed in the hope that it will be useful,
-- * but WITHOUT ANY WARRANTY; without even the implied warranty of
-- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-- * GNU General Public License for more details.
-- *
+- * The userspace structure for version 1 of the logger_entry ABI.
+- * This structure is returned to userspace unless the caller requests
+- * an upgrade to a newer ABI version.
 - */
--
--#ifndef _UAPI_LINUX_ANDROID_ALARM_H
--#define _UAPI_LINUX_ANDROID_ALARM_H
--
--#include <linux/ioctl.h>
--#include <linux/time.h>
--
--enum android_alarm_type {
--	/* return code bit numbers or set alarm arg */
--	ANDROID_ALARM_RTC_WAKEUP,
--	ANDROID_ALARM_RTC,
--	ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP,
--	ANDROID_ALARM_ELAPSED_REALTIME,
--	ANDROID_ALARM_SYSTEMTIME,
--
--	ANDROID_ALARM_TYPE_COUNT,
--
--	/* return code bit numbers */
--	/* ANDROID_ALARM_TIME_CHANGE = 16 */
+-struct user_logger_entry_compat {
+-	__u16		len;
+-	__u16		__pad;
+-	__s32		pid;
+-	__s32		tid;
+-	__s32		sec;
+-	__s32		nsec;
+-	char		msg[0];
 -};
 -
--enum android_alarm_return_flags {
--	ANDROID_ALARM_RTC_WAKEUP_MASK = 1U << ANDROID_ALARM_RTC_WAKEUP,
--	ANDROID_ALARM_RTC_MASK = 1U << ANDROID_ALARM_RTC,
--	ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP_MASK =
--				1U << ANDROID_ALARM_ELAPSED_REALTIME_WAKEUP,
--	ANDROID_ALARM_ELAPSED_REALTIME_MASK =
--				1U << ANDROID_ALARM_ELAPSED_REALTIME,
--	ANDROID_ALARM_SYSTEMTIME_MASK = 1U << ANDROID_ALARM_SYSTEMTIME,
--	ANDROID_ALARM_TIME_CHANGE_MASK = 1U << 16
+-/**
+- * struct logger_entry - defines a single entry that is given to a logger
+- * @len:	The length of the payload
+- * @hdr_size:	sizeof(struct logger_entry_v2)
+- * @pid:	The generating process' process ID
+- * @tid:	The generating process' thread ID
+- * @sec:	The number of seconds that have elapsed since the Epoch
+- * @nsec:	The number of nanoseconds that have elapsed since @sec
+- * @euid:	Effective UID of logger
+- * @msg:	The message that is to be logged
+- *
+- * The structure for version 2 of the logger_entry ABI.
+- * This structure is returned to userspace if ioctl(LOGGER_SET_VERSION)
+- * is called with version >= 2
+- */
+-struct logger_entry {
+-	__u16		len;
+-	__u16		hdr_size;
+-	__s32		pid;
+-	__s32		tid;
+-	__s32		sec;
+-	__s32		nsec;
+-	kuid_t		euid;
+-	char		msg[0];
 -};
 -
--/* Disable alarm */
--#define ANDROID_ALARM_CLEAR(type)           _IO('a', 0 | ((type) << 4))
+-#define LOGGER_LOG_RADIO	"log_radio"	/* radio-related messages */
+-#define LOGGER_LOG_EVENTS	"log_events"	/* system/hardware events */
+-#define LOGGER_LOG_SYSTEM	"log_system"	/* system/framework messages */
+-#define LOGGER_LOG_MAIN		"log_main"	/* everything else */
 -
--/* Ack last alarm and wait for next */
--#define ANDROID_ALARM_WAIT                  _IO('a', 1)
+-#define LOGGER_ENTRY_MAX_PAYLOAD	4076
 -
--#define ALARM_IOW(c, type, size)            _IOW('a', (c) | ((type) << 4), size)
--/* Set alarm */
--#define ANDROID_ALARM_SET(type)             ALARM_IOW(2, type, struct timespec)
--#define ANDROID_ALARM_SET_AND_WAIT(type)    ALARM_IOW(3, type, struct timespec)
--#define ANDROID_ALARM_GET_TIME(type)        ALARM_IOW(4, type, struct timespec)
--#define ANDROID_ALARM_SET_RTC               _IOW('a', 5, struct timespec)
--#define ANDROID_ALARM_BASE_CMD(cmd)         (cmd & ~(_IOC(0, 0, 0xf0, 0)))
--#define ANDROID_ALARM_IOCTL_TO_TYPE(cmd)    (_IOC_NR(cmd) >> 4)
+-#define __LOGGERIO	0xAE
 -
--#endif
+-#define LOGGER_GET_LOG_BUF_SIZE		_IO(__LOGGERIO, 1) /* size of log */
+-#define LOGGER_GET_LOG_LEN		_IO(__LOGGERIO, 2) /* used log len */
+-#define LOGGER_GET_NEXT_ENTRY_LEN	_IO(__LOGGERIO, 3) /* next entry len */
+-#define LOGGER_FLUSH_LOG		_IO(__LOGGERIO, 4) /* flush log */
+-#define LOGGER_GET_VERSION		_IO(__LOGGERIO, 5) /* abi version */
+-#define LOGGER_SET_VERSION		_IO(__LOGGERIO, 6) /* abi version */
+-
+-#endif /* _LINUX_LOGGER_H */
 -- 
 1.9.1
 
