@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800AbbATK7r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 05:59:47 -0500
-Received: from mail-we0-f178.google.com ([74.125.82.178]:55044 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754152AbbATKt0 (ORCPT
+	id S1754781AbbATK7W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 05:59:22 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:56343 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753956AbbATKt2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 05:49:26 -0500
+	Tue, 20 Jan 2015 05:49:28 -0500
 From: Thierry Reding <thierry.reding@gmail.com>
 To: dri-devel@lists.freedesktop.org
 Cc: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 16/36] drm/tegra: dsi: Demidlayer
-Date: Tue, 20 Jan 2015 11:48:35 +0100
-Message-Id: <1421750935-4023-17-git-send-email-thierry.reding@gmail.com>
+Subject: [PATCH 17/36] drm/tegra: sor: Demidlayer
+Date: Tue, 20 Jan 2015 11:48:36 +0100
+Message-Id: <1421750935-4023-18-git-send-email-thierry.reding@gmail.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1421750935-4023-1-git-send-email-thierry.reding@gmail.com>
 References: <1421750935-4023-1-git-send-email-thierry.reding@gmail.com>
@@ -22,7 +22,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Thierry Reding <treding@nvidia.com>
 
-Implement encoder and connector within the DSI driver itself using the
+Implement encoder and connector within the eDP driver itself using the
 Tegra output helpers rather than using the Tegra output as midlayer. By
 doing so one level of indirection is removed and output drivers become
 more flexible while keeping the majority of the advantages provided by
@@ -30,508 +30,1008 @@ the common output helpers.
 
 Signed-off-by: Thierry Reding <treding@nvidia.com>
 ---
- drivers/gpu/drm/tegra/drm.h    |   1 -
- drivers/gpu/drm/tegra/dsi.c    | 358 ++++++++++++++++++++++-------------------
- drivers/gpu/drm/tegra/output.c |   5 -
- 3 files changed, 195 insertions(+), 169 deletions(-)
+ drivers/gpu/drm/tegra/drm.h    |   5 -
+ drivers/gpu/drm/tegra/output.c |  15 +-
+ drivers/gpu/drm/tegra/sor.c    | 810 ++++++++++++++++++++++-------------------
+ 3 files changed, 436 insertions(+), 394 deletions(-)
 
 diff --git a/drivers/gpu/drm/tegra/drm.h b/drivers/gpu/drm/tegra/drm.h
-index 95b6aebfaf00..ae3daa436ee6 100644
+index ae3daa436ee6..c74d5db47537 100644
 --- a/drivers/gpu/drm/tegra/drm.h
 +++ b/drivers/gpu/drm/tegra/drm.h
-@@ -193,7 +193,6 @@ struct tegra_output_ops {
+@@ -192,16 +192,11 @@ struct tegra_output_ops {
+ 	enum drm_connector_status (*detect)(struct tegra_output *output);
  };
  
- enum tegra_output_type {
--	TEGRA_OUTPUT_DSI,
- 	TEGRA_OUTPUT_EDP,
- };
+-enum tegra_output_type {
+-	TEGRA_OUTPUT_EDP,
+-};
+-
+ struct tegra_output {
+ 	struct device_node *of_node;
+ 	struct device *dev;
  
-diff --git a/drivers/gpu/drm/tegra/dsi.c b/drivers/gpu/drm/tegra/dsi.c
-index a8c208dab698..817114ce42fb 100644
---- a/drivers/gpu/drm/tegra/dsi.c
-+++ b/drivers/gpu/drm/tegra/dsi.c
-@@ -51,7 +51,6 @@ struct tegra_dsi {
- 	struct mipi_dsi_host host;
+ 	const struct tegra_output_ops *ops;
+-	enum tegra_output_type type;
  
- 	struct regulator *vdd;
--	bool enabled;
+ 	struct drm_panel *panel;
+ 	struct i2c_adapter *ddc;
+diff --git a/drivers/gpu/drm/tegra/output.c b/drivers/gpu/drm/tegra/output.c
+index bc5393fd03c7..042b421416a8 100644
+--- a/drivers/gpu/drm/tegra/output.c
++++ b/drivers/gpu/drm/tegra/output.c
+@@ -273,19 +273,8 @@ int tegra_output_remove(struct tegra_output *output)
  
- 	unsigned int video_fifo_depth;
- 	unsigned int host_fifo_depth;
-@@ -628,46 +627,6 @@ static int tegra_dsi_configure(struct tegra_dsi *dsi, unsigned int pipe,
+ int tegra_output_init(struct drm_device *drm, struct tegra_output *output)
+ {
+-	int connector, encoder;
+-
+-	switch (output->type) {
+-	case TEGRA_OUTPUT_EDP:
+-		connector = DRM_MODE_CONNECTOR_eDP;
+-		encoder = DRM_MODE_ENCODER_TMDS;
+-		break;
+-
+-	default:
+-		connector = DRM_MODE_CONNECTOR_Unknown;
+-		encoder = DRM_MODE_ENCODER_NONE;
+-		break;
+-	}
++	int connector = DRM_MODE_CONNECTOR_Unknown;
++	int encoder = DRM_MODE_ENCODER_NONE;
+ 
+ 	drm_connector_init(drm, &output->connector, &connector_funcs,
+ 			   connector);
+diff --git a/drivers/gpu/drm/tegra/sor.c b/drivers/gpu/drm/tegra/sor.c
+index 1fe801ee8eb0..be1ad42c69be 100644
+--- a/drivers/gpu/drm/tegra/sor.c
++++ b/drivers/gpu/drm/tegra/sor.c
+@@ -8,6 +8,7 @@
+ 
+ #include <linux/clk.h>
+ #include <linux/debugfs.h>
++#include <linux/gpio.h>
+ #include <linux/io.h>
+ #include <linux/platform_device.h>
+ #include <linux/reset.h>
+@@ -15,6 +16,7 @@
+ #include <soc/tegra/pmc.h>
+ 
+ #include <drm/drm_dp_helper.h>
++#include <drm/drm_panel.h>
+ 
+ #include "dc.h"
+ #include "drm.h"
+@@ -481,10 +483,342 @@ static int tegra_sor_calc_config(struct tegra_sor *sor,
  	return 0;
  }
  
--static int tegra_output_dsi_enable(struct tegra_output *output)
--{
--	struct tegra_dc *dc = to_tegra_dc(output->encoder.crtc);
--	const struct drm_display_mode *mode = &dc->base.mode;
--	struct tegra_dsi *dsi = to_dsi(output);
--	u32 value;
--	int err;
--
--	if (dsi->enabled)
--		return 0;
--
--	err = tegra_dsi_configure(dsi, dc->pipe, mode);
--	if (err < 0)
--		return err;
--
--	/* enable display controller */
--	value = tegra_dc_readl(dc, DC_DISP_DISP_WIN_OPTIONS);
--	value |= DSI_ENABLE;
--	tegra_dc_writel(dc, value, DC_DISP_DISP_WIN_OPTIONS);
--
--	value = tegra_dc_readl(dc, DC_CMD_DISPLAY_COMMAND);
--	value &= ~DISP_CTRL_MODE_MASK;
--	value |= DISP_CTRL_MODE_C_DISPLAY;
--	tegra_dc_writel(dc, value, DC_CMD_DISPLAY_COMMAND);
--
--	value = tegra_dc_readl(dc, DC_CMD_DISPLAY_POWER_CONTROL);
--	value |= PW0_ENABLE | PW1_ENABLE | PW2_ENABLE | PW3_ENABLE |
--		 PW4_ENABLE | PM0_ENABLE | PM1_ENABLE;
--	tegra_dc_writel(dc, value, DC_CMD_DISPLAY_POWER_CONTROL);
--
--	tegra_dc_commit(dc);
--
--	/* enable DSI controller */
--	tegra_dsi_enable(dsi);
--
--	dsi->enabled = true;
--
--	return 0;
--}
--
- static int tegra_dsi_wait_idle(struct tegra_dsi *dsi, unsigned long timeout)
- {
- 	u32 value;
-@@ -704,6 +663,29 @@ static void tegra_dsi_ganged_disable(struct tegra_dsi *dsi)
- 	tegra_dsi_writel(dsi, 0, DSI_GANGED_MODE_CONTROL);
- }
- 
-+static void tegra_dsi_set_timeout(struct tegra_dsi *dsi, unsigned long bclk,
-+				  unsigned int vrefresh)
+-static int tegra_output_sor_enable(struct tegra_output *output)
++static int tegra_sor_detach(struct tegra_sor *sor)
 +{
-+	unsigned int timeout;
-+	u32 value;
++	unsigned long value, timeout;
 +
-+	/* one frame high-speed transmission timeout */
-+	timeout = (bclk / vrefresh) / 512;
-+	value = DSI_TIMEOUT_LRX(0x2000) | DSI_TIMEOUT_HTX(timeout);
-+	tegra_dsi_writel(dsi, value, DSI_TIMEOUT_0);
++	/* switch to safe mode */
++	value = tegra_sor_readl(sor, SOR_SUPER_STATE_1);
++	value &= ~SOR_SUPER_STATE_MODE_NORMAL;
++	tegra_sor_writel(sor, value, SOR_SUPER_STATE_1);
++	tegra_sor_super_update(sor);
 +
-+	/* 2 ms peripheral timeout for panel */
-+	timeout = 2 * bclk / 512 * 1000;
-+	value = DSI_TIMEOUT_PR(timeout) | DSI_TIMEOUT_TA(0x2000);
-+	tegra_dsi_writel(dsi, value, DSI_TIMEOUT_1);
++	timeout = jiffies + msecs_to_jiffies(250);
 +
-+	value = DSI_TALLY_TA(0) | DSI_TALLY_LRX(0) | DSI_TALLY_HTX(0);
-+	tegra_dsi_writel(dsi, value, DSI_TO_TALLY);
++	while (time_before(jiffies, timeout)) {
++		value = tegra_sor_readl(sor, SOR_PWR);
++		if (value & SOR_PWR_MODE_SAFE)
++			break;
++	}
 +
-+	if (dsi->slave)
-+		tegra_dsi_set_timeout(dsi->slave, bclk, vrefresh);
++	if ((value & SOR_PWR_MODE_SAFE) == 0)
++		return -ETIMEDOUT;
++
++	/* go to sleep */
++	value = tegra_sor_readl(sor, SOR_SUPER_STATE_1);
++	value &= ~SOR_SUPER_STATE_HEAD_MODE_MASK;
++	tegra_sor_writel(sor, value, SOR_SUPER_STATE_1);
++	tegra_sor_super_update(sor);
++
++	/* detach */
++	value = tegra_sor_readl(sor, SOR_SUPER_STATE_1);
++	value &= ~SOR_SUPER_STATE_ATTACHED;
++	tegra_sor_writel(sor, value, SOR_SUPER_STATE_1);
++	tegra_sor_super_update(sor);
++
++	timeout = jiffies + msecs_to_jiffies(250);
++
++	while (time_before(jiffies, timeout)) {
++		value = tegra_sor_readl(sor, SOR_TEST);
++		if ((value & SOR_TEST_ATTACHED) == 0)
++			break;
++
++		usleep_range(25, 100);
++	}
++
++	if ((value & SOR_TEST_ATTACHED) != 0)
++		return -ETIMEDOUT;
++
++	return 0;
 +}
 +
- static void tegra_dsi_disable(struct tegra_dsi *dsi)
- {
- 	u32 value;
-@@ -747,82 +729,51 @@ static void tegra_dsi_soft_reset(struct tegra_dsi *dsi)
- 		tegra_dsi_soft_reset(dsi->slave);
- }
- 
--static int tegra_output_dsi_disable(struct tegra_output *output)
-+static void tegra_dsi_connector_dpms(struct drm_connector *connector, int mode)
++static int tegra_sor_power_down(struct tegra_sor *sor)
++{
++	unsigned long value, timeout;
++	int err;
++
++	value = tegra_sor_readl(sor, SOR_PWR);
++	value &= ~SOR_PWR_NORMAL_STATE_PU;
++	value |= SOR_PWR_TRIGGER;
++	tegra_sor_writel(sor, value, SOR_PWR);
++
++	timeout = jiffies + msecs_to_jiffies(250);
++
++	while (time_before(jiffies, timeout)) {
++		value = tegra_sor_readl(sor, SOR_PWR);
++		if ((value & SOR_PWR_TRIGGER) == 0)
++			return 0;
++
++		usleep_range(25, 100);
++	}
++
++	if ((value & SOR_PWR_TRIGGER) != 0)
++		return -ETIMEDOUT;
++
++	err = clk_set_parent(sor->clk, sor->clk_safe);
++	if (err < 0)
++		dev_err(sor->dev, "failed to set safe parent clock: %d\n", err);
++
++	value = tegra_sor_readl(sor, SOR_DP_PADCTL_0);
++	value &= ~(SOR_DP_PADCTL_PD_TXD_3 | SOR_DP_PADCTL_PD_TXD_0 |
++		   SOR_DP_PADCTL_PD_TXD_1 | SOR_DP_PADCTL_PD_TXD_2);
++	tegra_sor_writel(sor, value, SOR_DP_PADCTL_0);
++
++	/* stop lane sequencer */
++	value = SOR_LANE_SEQ_CTL_TRIGGER | SOR_LANE_SEQ_CTL_SEQUENCE_UP |
++		SOR_LANE_SEQ_CTL_POWER_STATE_DOWN;
++	tegra_sor_writel(sor, value, SOR_LANE_SEQ_CTL);
++
++	timeout = jiffies + msecs_to_jiffies(250);
++
++	while (time_before(jiffies, timeout)) {
++		value = tegra_sor_readl(sor, SOR_LANE_SEQ_CTL);
++		if ((value & SOR_LANE_SEQ_CTL_TRIGGER) == 0)
++			break;
++
++		usleep_range(25, 100);
++	}
++
++	if ((value & SOR_LANE_SEQ_CTL_TRIGGER) != 0)
++		return -ETIMEDOUT;
++
++	value = tegra_sor_readl(sor, SOR_PLL_2);
++	value |= SOR_PLL_2_PORT_POWERDOWN;
++	tegra_sor_writel(sor, value, SOR_PLL_2);
++
++	usleep_range(20, 100);
++
++	value = tegra_sor_readl(sor, SOR_PLL_0);
++	value |= SOR_PLL_0_POWER_OFF;
++	value |= SOR_PLL_0_VCOPD;
++	tegra_sor_writel(sor, value, SOR_PLL_0);
++
++	value = tegra_sor_readl(sor, SOR_PLL_2);
++	value |= SOR_PLL_2_SEQ_PLLCAPPD;
++	value |= SOR_PLL_2_SEQ_PLLCAPPD_ENFORCE;
++	tegra_sor_writel(sor, value, SOR_PLL_2);
++
++	usleep_range(20, 100);
++
++	return 0;
++}
++
++static int tegra_sor_crc_open(struct inode *inode, struct file *file)
++{
++	file->private_data = inode->i_private;
++
++	return 0;
++}
++
++static int tegra_sor_crc_release(struct inode *inode, struct file *file)
++{
++	return 0;
++}
++
++static int tegra_sor_crc_wait(struct tegra_sor *sor, unsigned long timeout)
++{
++	u32 value;
++
++	timeout = jiffies + msecs_to_jiffies(timeout);
++
++	while (time_before(jiffies, timeout)) {
++		value = tegra_sor_readl(sor, SOR_CRC_A);
++		if (value & SOR_CRC_A_VALID)
++			return 0;
++
++		usleep_range(100, 200);
++	}
++
++	return -ETIMEDOUT;
++}
++
++static ssize_t tegra_sor_crc_read(struct file *file, char __user *buffer,
++				  size_t size, loff_t *ppos)
++{
++	struct tegra_sor *sor = file->private_data;
++	ssize_t num, err;
++	char buf[10];
++	u32 value;
++
++	mutex_lock(&sor->lock);
++
++	if (!sor->enabled) {
++		err = -EAGAIN;
++		goto unlock;
++	}
++
++	value = tegra_sor_readl(sor, SOR_STATE_1);
++	value &= ~SOR_STATE_ASY_CRC_MODE_MASK;
++	tegra_sor_writel(sor, value, SOR_STATE_1);
++
++	value = tegra_sor_readl(sor, SOR_CRC_CNTRL);
++	value |= SOR_CRC_CNTRL_ENABLE;
++	tegra_sor_writel(sor, value, SOR_CRC_CNTRL);
++
++	value = tegra_sor_readl(sor, SOR_TEST);
++	value &= ~SOR_TEST_CRC_POST_SERIALIZE;
++	tegra_sor_writel(sor, value, SOR_TEST);
++
++	err = tegra_sor_crc_wait(sor, 100);
++	if (err < 0)
++		goto unlock;
++
++	tegra_sor_writel(sor, SOR_CRC_A_RESET, SOR_CRC_A);
++	value = tegra_sor_readl(sor, SOR_CRC_B);
++
++	num = scnprintf(buf, sizeof(buf), "%08x\n", value);
++
++	err = simple_read_from_buffer(buffer, size, ppos, buf, num);
++
++unlock:
++	mutex_unlock(&sor->lock);
++	return err;
++}
++
++static const struct file_operations tegra_sor_crc_fops = {
++	.owner = THIS_MODULE,
++	.open = tegra_sor_crc_open,
++	.read = tegra_sor_crc_read,
++	.release = tegra_sor_crc_release,
++};
++
++static int tegra_sor_debugfs_init(struct tegra_sor *sor,
++				  struct drm_minor *minor)
  {
 -	struct tegra_dc *dc = to_tegra_dc(output->encoder.crtc);
--	struct tegra_dsi *dsi = to_dsi(output);
--	u32 value;
--	int err;
--
--	if (!dsi->enabled)
--		return 0;
--
--	tegra_dsi_video_disable(dsi);
--
--	/*
--	 * The following accesses registers of the display controller, so make
--	 * sure it's only executed when the output is attached to one.
--	 */
--	if (dc) {
--		value = tegra_dc_readl(dc, DC_CMD_DISPLAY_POWER_CONTROL);
--		value &= ~(PW0_ENABLE | PW1_ENABLE | PW2_ENABLE | PW3_ENABLE |
--			   PW4_ENABLE | PM0_ENABLE | PM1_ENABLE);
--		tegra_dc_writel(dc, value, DC_CMD_DISPLAY_POWER_CONTROL);
--
--		value = tegra_dc_readl(dc, DC_DISP_DISP_WIN_OPTIONS);
--		value &= ~DSI_ENABLE;
--		tegra_dc_writel(dc, value, DC_DISP_DISP_WIN_OPTIONS);
--
--		tegra_dc_commit(dc);
--	}
--
--	err = tegra_dsi_wait_idle(dsi, 100);
--	if (err < 0)
--		dev_dbg(dsi->dev, "failed to idle DSI: %d\n", err);
--
--	tegra_dsi_soft_reset(dsi);
--	tegra_dsi_disable(dsi);
--
--	dsi->enabled = false;
--
--	return 0;
- }
- 
--static void tegra_dsi_set_timeout(struct tegra_dsi *dsi, unsigned long bclk,
--				  unsigned int vrefresh)
--{
--	unsigned int timeout;
--	u32 value;
-+static const struct drm_connector_funcs tegra_dsi_connector_funcs = {
-+	.dpms = tegra_dsi_connector_dpms,
-+	.detect = tegra_output_connector_detect,
+-	struct drm_display_mode *mode = &dc->base.mode;
++	struct dentry *entry;
++	int err = 0;
++
++	sor->debugfs = debugfs_create_dir("sor", minor->debugfs_root);
++	if (!sor->debugfs)
++		return -ENOMEM;
++
++	entry = debugfs_create_file("crc", 0644, sor->debugfs, sor,
++				    &tegra_sor_crc_fops);
++	if (!entry) {
++		dev_err(sor->dev,
++			"cannot create /sys/kernel/debug/dri/%s/sor/crc\n",
++			minor->debugfs_root->d_name.name);
++		err = -ENOMEM;
++		goto remove;
++	}
++
++	return err;
++
++remove:
++	debugfs_remove(sor->debugfs);
++	sor->debugfs = NULL;
++	return err;
++}
++
++static int tegra_sor_debugfs_exit(struct tegra_sor *sor)
++{
++	debugfs_remove_recursive(sor->debugfs);
++	sor->debugfs = NULL;
++
++	return 0;
++}
++
++static void tegra_sor_connector_dpms(struct drm_connector *connector, int mode)
++{
++}
++
++static enum drm_connector_status
++tegra_sor_connector_detect(struct drm_connector *connector, bool force)
++{
++	struct tegra_output *output = connector_to_output(connector);
++	struct tegra_sor *sor = to_sor(output);
++
++	if (sor->dpaux)
++		return tegra_dpaux_detect(sor->dpaux);
++
++	return connector_status_unknown;
++}
++
++static const struct drm_connector_funcs tegra_sor_connector_funcs = {
++	.dpms = tegra_sor_connector_dpms,
++	.detect = tegra_sor_connector_detect,
 +	.fill_modes = drm_helper_probe_single_connector_modes,
 +	.destroy = tegra_output_connector_destroy,
 +};
- 
--	/* one frame high-speed transmission timeout */
--	timeout = (bclk / vrefresh) / 512;
--	value = DSI_TIMEOUT_LRX(0x2000) | DSI_TIMEOUT_HTX(timeout);
--	tegra_dsi_writel(dsi, value, DSI_TIMEOUT_0);
++
++static int tegra_sor_connector_get_modes(struct drm_connector *connector)
++{
++	struct tegra_output *output = connector_to_output(connector);
++	struct tegra_sor *sor = to_sor(output);
++	int err;
++
++	if (sor->dpaux)
++		tegra_dpaux_enable(sor->dpaux);
++
++	err = tegra_output_connector_get_modes(connector);
++
++	if (sor->dpaux)
++		tegra_dpaux_disable(sor->dpaux);
++
++	return err;
++}
++
 +static enum drm_mode_status
-+tegra_dsi_connector_mode_valid(struct drm_connector *connector,
++tegra_sor_connector_mode_valid(struct drm_connector *connector,
 +			       struct drm_display_mode *mode)
 +{
 +	return MODE_OK;
 +}
- 
--	/* 2 ms peripheral timeout for panel */
--	timeout = 2 * bclk / 512 * 1000;
--	value = DSI_TIMEOUT_PR(timeout) | DSI_TIMEOUT_TA(0x2000);
--	tegra_dsi_writel(dsi, value, DSI_TIMEOUT_1);
-+static const struct drm_connector_helper_funcs tegra_dsi_connector_helper_funcs = {
-+	.get_modes = tegra_output_connector_get_modes,
-+	.mode_valid = tegra_dsi_connector_mode_valid,
++
++static const struct drm_connector_helper_funcs tegra_sor_connector_helper_funcs = {
++	.get_modes = tegra_sor_connector_get_modes,
++	.mode_valid = tegra_sor_connector_mode_valid,
 +	.best_encoder = tegra_output_connector_best_encoder,
 +};
- 
--	value = DSI_TALLY_TA(0) | DSI_TALLY_LRX(0) | DSI_TALLY_HTX(0);
--	tegra_dsi_writel(dsi, value, DSI_TO_TALLY);
-+static const struct drm_encoder_funcs tegra_dsi_encoder_funcs = {
++
++static const struct drm_encoder_funcs tegra_sor_encoder_funcs = {
 +	.destroy = tegra_output_encoder_destroy,
 +};
- 
--	if (dsi->slave)
--		tegra_dsi_set_timeout(dsi->slave, bclk, vrefresh);
-+static void tegra_dsi_encoder_dpms(struct drm_encoder *encoder, int mode)
++
++static void tegra_sor_encoder_dpms(struct drm_encoder *encoder, int mode)
 +{
- }
- 
--static int tegra_output_dsi_setup_clock(struct tegra_output *output,
--					struct clk *clk, unsigned long pclk,
--					unsigned int *divp)
-+static bool tegra_dsi_encoder_mode_fixup(struct drm_encoder *encoder,
++}
++
++static bool tegra_sor_encoder_mode_fixup(struct drm_encoder *encoder,
 +					 const struct drm_display_mode *mode,
 +					 struct drm_display_mode *adjusted)
- {
--	struct tegra_dc *dc = to_tegra_dc(output->encoder.crtc);
--	struct drm_display_mode *mode = &dc->base.mode;
++{
 +	struct tegra_output *output = encoder_to_output(encoder);
 +	struct tegra_dc *dc = to_tegra_dc(encoder->crtc);
-+	unsigned int mul, div, scdiv, vrefresh, lanes;
- 	struct tegra_dsi *dsi = to_dsi(output);
--	unsigned int mul, div, vrefresh, lanes;
--	unsigned long bclk, plld;
-+	unsigned long pclk, bclk, plld;
- 	int err;
- 
- 	lanes = tegra_dsi_get_lanes(dsi);
-+	pclk = mode->clock * 1000;
- 
- 	err = tegra_dsi_get_muldiv(dsi->format, &mul, &div);
- 	if (err < 0)
-@@ -847,19 +798,6 @@ static int tegra_output_dsi_setup_clock(struct tegra_output *output,
- 	 */
- 	plld /= 2;
- 
--	err = clk_set_parent(clk, dsi->clk_parent);
--	if (err < 0) {
--		dev_err(dsi->dev, "failed to set parent clock: %d\n", err);
--		return err;
--	}
--
--	err = clk_set_rate(dsi->clk_parent, plld);
--	if (err < 0) {
--		dev_err(dsi->dev, "failed to set base clock rate to %lu Hz\n",
--			plld);
--		return err;
--	}
--
- 	/*
- 	 * Derive pixel clock from bit clock using the shift clock divider.
- 	 * Note that this is only half of what we would expect, but we need
-@@ -870,39 +808,132 @@ static int tegra_output_dsi_setup_clock(struct tegra_output *output,
- 	 * not working properly otherwise. Perhaps the PLLs cannot generate
- 	 * frequencies sufficiently high.
- 	 */
--	*divp = ((8 * mul) / (div * lanes)) - 2;
-+	scdiv = ((8 * mul) / (div * lanes)) - 2;
++	unsigned long pclk = mode->clock * 1000;
++	struct tegra_sor *sor = to_sor(output);
++	int err;
 +
-+	err = tegra_dc_setup_clock(dc, dsi->clk_parent, plld, scdiv);
++	err = tegra_dc_setup_clock(dc, sor->clk_parent, pclk, 0);
 +	if (err < 0) {
 +		dev_err(output->dev, "failed to setup DC clock: %d\n", err);
 +		return false;
 +	}
 +
-+	err = clk_set_rate(dsi->clk_parent, plld);
++	err = clk_set_rate(sor->clk_parent, pclk);
 +	if (err < 0) {
-+		dev_err(dsi->dev, "failed to set clock rate to %lu Hz\n",
-+			plld);
++		dev_err(output->dev, "failed to set clock rate to %lu Hz\n",
++			pclk);
 +		return false;
 +	}
- 
--	/*
--	 * XXX: Move the below somewhere else so that we don't need to have
--	 * access to the vrefresh in this function?
--	 */
- 	tegra_dsi_set_timeout(dsi, bclk, vrefresh);
- 
- 	err = tegra_dsi_set_phy_timing(dsi);
--	if (err < 0)
--		return err;
-+	if (err < 0) {
-+		dev_err(dsi->dev, "failed to setup D-PHY timing: %d\n", err);
-+		return false;
-+	}
- 
--	return 0;
++
 +	return true;
 +}
 +
-+static void tegra_dsi_encoder_prepare(struct drm_encoder *encoder)
++static void tegra_sor_encoder_prepare(struct drm_encoder *encoder)
 +{
 +}
 +
-+static void tegra_dsi_encoder_commit(struct drm_encoder *encoder)
++static void tegra_sor_encoder_commit(struct drm_encoder *encoder)
 +{
- }
- 
--static int tegra_output_dsi_check_mode(struct tegra_output *output,
-+static void tegra_dsi_encoder_mode_set(struct drm_encoder *encoder,
- 				       struct drm_display_mode *mode,
--				       enum drm_mode_status *status)
++}
++
++static void tegra_sor_encoder_mode_set(struct drm_encoder *encoder,
++				       struct drm_display_mode *mode,
 +				       struct drm_display_mode *adjusted)
 +{
 +	struct tegra_output *output = encoder_to_output(encoder);
 +	struct tegra_dc *dc = to_tegra_dc(encoder->crtc);
-+	struct tegra_dsi *dsi = to_dsi(output);
-+	u32 value;
-+	int err;
-+
-+
-+	err = tegra_dsi_configure(dsi, dc->pipe, mode);
-+	if (err < 0) {
-+		dev_err(dsi->dev, "failed to configure DSI: %d\n", err);
-+		return;
-+	}
-+
+ 	unsigned int vbe, vse, hbe, hse, vbs, hbs, i;
+ 	struct tegra_sor *sor = to_sor(output);
+ 	struct tegra_sor_config config;
+@@ -504,6 +838,9 @@ static int tegra_output_sor_enable(struct tegra_output *output)
+ 
+ 	reset_control_deassert(sor->rst);
+ 
 +	if (output->panel)
 +		drm_panel_prepare(output->panel);
 +
-+	/* enable display controller */
+ 	/* FIXME: properly convert to struct drm_dp_aux */
+ 	aux = (struct drm_dp_aux *)sor->dpaux;
+ 
+@@ -873,175 +1210,61 @@ static int tegra_output_sor_enable(struct tegra_output *output)
+ 	value = ((vbs & 0x7fff) << 16) | (hbs & 0x7fff);
+ 	tegra_sor_writel(sor, value, SOR_HEAD_STATE_4(0));
+ 
+-	/* CSTM (LVDS, link A/B, upper) */
+-	value = SOR_CSTM_LVDS | SOR_CSTM_LINK_ACT_A | SOR_CSTM_LINK_ACT_B |
+-		SOR_CSTM_UPPER;
+-	tegra_sor_writel(sor, value, SOR_CSTM);
+-
+-	/* PWM setup */
+-	err = tegra_sor_setup_pwm(sor, 250);
+-	if (err < 0) {
+-		dev_err(sor->dev, "failed to setup PWM: %d\n", err);
+-		goto unlock;
+-	}
+-
+-	value = tegra_dc_readl(dc, DC_DISP_DISP_WIN_OPTIONS);
+-	value |= SOR_ENABLE;
+-	tegra_dc_writel(dc, value, DC_DISP_DISP_WIN_OPTIONS);
+-
+-	tegra_sor_update(sor);
+-
+-	err = tegra_sor_attach(sor);
+-	if (err < 0) {
+-		dev_err(sor->dev, "failed to attach SOR: %d\n", err);
+-		goto unlock;
+-	}
+-
+-	err = tegra_sor_wakeup(sor);
+-	if (err < 0) {
+-		dev_err(sor->dev, "failed to enable DC: %d\n", err);
+-		goto unlock;
+-	}
+-
+-	sor->enabled = true;
+-
+-unlock:
+-	mutex_unlock(&sor->lock);
+-	return err;
+-}
+-
+-static int tegra_sor_detach(struct tegra_sor *sor)
+-{
+-	unsigned long value, timeout;
+-
+-	/* switch to safe mode */
+-	value = tegra_sor_readl(sor, SOR_SUPER_STATE_1);
+-	value &= ~SOR_SUPER_STATE_MODE_NORMAL;
+-	tegra_sor_writel(sor, value, SOR_SUPER_STATE_1);
+-	tegra_sor_super_update(sor);
+-
+-	timeout = jiffies + msecs_to_jiffies(250);
+-
+-	while (time_before(jiffies, timeout)) {
+-		value = tegra_sor_readl(sor, SOR_PWR);
+-		if (value & SOR_PWR_MODE_SAFE)
+-			break;
+-	}
+-
+-	if ((value & SOR_PWR_MODE_SAFE) == 0)
+-		return -ETIMEDOUT;
+-
+-	/* go to sleep */
+-	value = tegra_sor_readl(sor, SOR_SUPER_STATE_1);
+-	value &= ~SOR_SUPER_STATE_HEAD_MODE_MASK;
+-	tegra_sor_writel(sor, value, SOR_SUPER_STATE_1);
+-	tegra_sor_super_update(sor);
+-
+-	/* detach */
+-	value = tegra_sor_readl(sor, SOR_SUPER_STATE_1);
+-	value &= ~SOR_SUPER_STATE_ATTACHED;
+-	tegra_sor_writel(sor, value, SOR_SUPER_STATE_1);
+-	tegra_sor_super_update(sor);
+-
+-	timeout = jiffies + msecs_to_jiffies(250);
+-
+-	while (time_before(jiffies, timeout)) {
+-		value = tegra_sor_readl(sor, SOR_TEST);
+-		if ((value & SOR_TEST_ATTACHED) == 0)
+-			break;
+-
+-		usleep_range(25, 100);
+-	}
+-
+-	if ((value & SOR_TEST_ATTACHED) != 0)
+-		return -ETIMEDOUT;
+-
+-	return 0;
+-}
+-
+-static int tegra_sor_power_down(struct tegra_sor *sor)
+-{
+-	unsigned long value, timeout;
+-	int err;
+-
+-	value = tegra_sor_readl(sor, SOR_PWR);
+-	value &= ~SOR_PWR_NORMAL_STATE_PU;
+-	value |= SOR_PWR_TRIGGER;
+-	tegra_sor_writel(sor, value, SOR_PWR);
+-
+-	timeout = jiffies + msecs_to_jiffies(250);
+-
+-	while (time_before(jiffies, timeout)) {
+-		value = tegra_sor_readl(sor, SOR_PWR);
+-		if ((value & SOR_PWR_TRIGGER) == 0)
+-			return 0;
+-
+-		usleep_range(25, 100);
+-	}
+-
+-	if ((value & SOR_PWR_TRIGGER) != 0)
+-		return -ETIMEDOUT;
+-
+-	err = clk_set_parent(sor->clk, sor->clk_safe);
+-	if (err < 0)
+-		dev_err(sor->dev, "failed to set safe parent clock: %d\n", err);
+-
+-	value = tegra_sor_readl(sor, SOR_DP_PADCTL_0);
+-	value &= ~(SOR_DP_PADCTL_PD_TXD_3 | SOR_DP_PADCTL_PD_TXD_0 |
+-		   SOR_DP_PADCTL_PD_TXD_1 | SOR_DP_PADCTL_PD_TXD_2);
+-	tegra_sor_writel(sor, value, SOR_DP_PADCTL_0);
+-
+-	/* stop lane sequencer */
+-	value = SOR_LANE_SEQ_CTL_TRIGGER | SOR_LANE_SEQ_CTL_SEQUENCE_UP |
+-		SOR_LANE_SEQ_CTL_POWER_STATE_DOWN;
+-	tegra_sor_writel(sor, value, SOR_LANE_SEQ_CTL);
+-
+-	timeout = jiffies + msecs_to_jiffies(250);
+-
+-	while (time_before(jiffies, timeout)) {
+-		value = tegra_sor_readl(sor, SOR_LANE_SEQ_CTL);
+-		if ((value & SOR_LANE_SEQ_CTL_TRIGGER) == 0)
+-			break;
+-
+-		usleep_range(25, 100);
++	/* CSTM (LVDS, link A/B, upper) */
++	value = SOR_CSTM_LVDS | SOR_CSTM_LINK_ACT_A | SOR_CSTM_LINK_ACT_B |
++		SOR_CSTM_UPPER;
++	tegra_sor_writel(sor, value, SOR_CSTM);
++
++	/* PWM setup */
++	err = tegra_sor_setup_pwm(sor, 250);
++	if (err < 0) {
++		dev_err(sor->dev, "failed to setup PWM: %d\n", err);
++		goto unlock;
+ 	}
+ 
+-	if ((value & SOR_LANE_SEQ_CTL_TRIGGER) != 0)
+-		return -ETIMEDOUT;
 +	value = tegra_dc_readl(dc, DC_DISP_DISP_WIN_OPTIONS);
-+	value |= DSI_ENABLE;
++	value |= SOR_ENABLE;
 +	tegra_dc_writel(dc, value, DC_DISP_DISP_WIN_OPTIONS);
-+
-+	value = tegra_dc_readl(dc, DC_CMD_DISPLAY_COMMAND);
-+	value &= ~DISP_CTRL_MODE_MASK;
-+	value |= DISP_CTRL_MODE_C_DISPLAY;
-+	tegra_dc_writel(dc, value, DC_CMD_DISPLAY_COMMAND);
-+
-+	value = tegra_dc_readl(dc, DC_CMD_DISPLAY_POWER_CONTROL);
-+	value |= PW0_ENABLE | PW1_ENABLE | PW2_ENABLE | PW3_ENABLE |
-+		 PW4_ENABLE | PM0_ENABLE | PM1_ENABLE;
-+	tegra_dc_writel(dc, value, DC_CMD_DISPLAY_POWER_CONTROL);
-+
-+	tegra_dc_commit(dc);
-+
-+	/* enable DSI controller */
-+	tegra_dsi_enable(dsi);
-+
+ 
+-	value = tegra_sor_readl(sor, SOR_PLL_2);
+-	value |= SOR_PLL_2_PORT_POWERDOWN;
+-	tegra_sor_writel(sor, value, SOR_PLL_2);
++	tegra_sor_update(sor);
+ 
+-	usleep_range(20, 100);
++	err = tegra_sor_attach(sor);
++	if (err < 0) {
++		dev_err(sor->dev, "failed to attach SOR: %d\n", err);
++		goto unlock;
++	}
+ 
+-	value = tegra_sor_readl(sor, SOR_PLL_0);
+-	value |= SOR_PLL_0_POWER_OFF;
+-	value |= SOR_PLL_0_VCOPD;
+-	tegra_sor_writel(sor, value, SOR_PLL_0);
++	err = tegra_sor_wakeup(sor);
++	if (err < 0) {
++		dev_err(sor->dev, "failed to enable DC: %d\n", err);
++		goto unlock;
++	}
+ 
+-	value = tegra_sor_readl(sor, SOR_PLL_2);
+-	value |= SOR_PLL_2_SEQ_PLLCAPPD;
+-	value |= SOR_PLL_2_SEQ_PLLCAPPD_ENFORCE;
+-	tegra_sor_writel(sor, value, SOR_PLL_2);
 +	if (output->panel)
 +		drm_panel_enable(output->panel);
-+
-+	return;
-+}
-+
-+static void tegra_dsi_encoder_disable(struct drm_encoder *encoder)
+ 
+-	usleep_range(20, 100);
++	sor->enabled = true;
+ 
+-	return 0;
++unlock:
++	mutex_unlock(&sor->lock);
+ }
+ 
+-static int tegra_output_sor_disable(struct tegra_output *output)
++static void tegra_sor_encoder_disable(struct drm_encoder *encoder)
  {
+-	struct tegra_dc *dc = to_tegra_dc(output->encoder.crtc);
 +	struct tegra_output *output = encoder_to_output(encoder);
 +	struct tegra_dc *dc = to_tegra_dc(encoder->crtc);
-+	struct tegra_dsi *dsi = to_dsi(output);
+ 	struct tegra_sor *sor = to_sor(output);
+-	unsigned long value;
+-	int err = 0;
 +	u32 value;
 +	int err;
-+
+ 
+ 	mutex_lock(&sor->lock);
+ 
+ 	if (!sor->enabled)
+ 		goto unlock;
+ 
 +	if (output->panel)
 +		drm_panel_disable(output->panel);
 +
-+	tegra_dsi_video_disable(dsi);
-+
- 	/*
--	 * FIXME: For now, always assume that the mode is okay.
-+	 * The following accesses registers of the display controller, so make
-+	 * sure it's only executed when the output is attached to one.
+ 	err = tegra_sor_detach(sor);
+ 	if (err < 0) {
+ 		dev_err(sor->dev, "failed to detach SOR: %d\n", err);
+@@ -1056,21 +1279,6 @@ static int tegra_output_sor_disable(struct tegra_output *output)
+ 	 * sure it's only executed when the output is attached to one.
  	 */
-+	if (dc) {
-+		value = tegra_dc_readl(dc, DC_DISP_DISP_WIN_OPTIONS);
-+		value &= ~DSI_ENABLE;
-+		tegra_dc_writel(dc, value, DC_DISP_DISP_WIN_OPTIONS);
+ 	if (dc) {
+-		/*
+-		 * XXX: We can't do this here because it causes the SOR to go
+-		 * into an erroneous state and the output will look scrambled
+-		 * the next time it is enabled. Presumably this is because we
+-		 * should be doing this only on the next VBLANK. A possible
+-		 * solution would be to queue a "power-off" event to trigger
+-		 * this code to be run during the next VBLANK.
+-		 */
+-		/*
+-		value = tegra_dc_readl(dc, DC_CMD_DISPLAY_POWER_CONTROL);
+-		value &= ~(PW0_ENABLE | PW1_ENABLE | PW2_ENABLE | PW3_ENABLE |
+-			   PW4_ENABLE | PM0_ENABLE | PM1_ENABLE);
+-		tegra_dc_writel(dc, value, DC_CMD_DISPLAY_POWER_CONTROL);
+-		*/
+-
+ 		value = tegra_dc_readl(dc, DC_DISP_DISP_WIN_OPTIONS);
+ 		value &= ~SOR_ENABLE;
+ 		tegra_dc_writel(dc, value, DC_DISP_DISP_WIN_OPTIONS);
+@@ -1098,187 +1306,27 @@ static int tegra_output_sor_disable(struct tegra_output *output)
+ 		goto unlock;
+ 	}
  
--	*status = MODE_OK;
-+		tegra_dc_commit(dc);
-+	}
- 
--	return 0;
-+	err = tegra_dsi_wait_idle(dsi, 100);
-+	if (err < 0)
-+		dev_dbg(dsi->dev, "failed to idle DSI: %d\n", err);
-+
-+	tegra_dsi_soft_reset(dsi);
-+
+-	reset_control_assert(sor->rst);
 +	if (output->panel)
 +		drm_panel_unprepare(output->panel);
 +
-+	tegra_dsi_disable(dsi);
-+
-+	return;
- }
+ 	clk_disable_unprepare(sor->clk);
++	reset_control_assert(sor->rst);
  
--static const struct tegra_output_ops dsi_ops = {
--	.enable = tegra_output_dsi_enable,
--	.disable = tegra_output_dsi_disable,
--	.setup_clock = tegra_output_dsi_setup_clock,
--	.check_mode = tegra_output_dsi_check_mode,
-+static const struct drm_encoder_helper_funcs tegra_dsi_encoder_helper_funcs = {
-+	.dpms = tegra_dsi_encoder_dpms,
-+	.mode_fixup = tegra_dsi_encoder_mode_fixup,
-+	.prepare = tegra_dsi_encoder_prepare,
-+	.commit = tegra_dsi_encoder_commit,
-+	.mode_set = tegra_dsi_encoder_mode_set,
-+	.disable = tegra_dsi_encoder_disable,
- };
+ 	sor->enabled = false;
  
- static int tegra_dsi_pad_enable(struct tegra_dsi *dsi)
-@@ -952,15 +983,30 @@ static int tegra_dsi_init(struct host1x_client *client)
- 
- 	/* Gangsters must not register their own outputs. */
- 	if (!dsi->master) {
--		dsi->output.type = TEGRA_OUTPUT_DSI;
- 		dsi->output.dev = client->dev;
--		dsi->output.ops = &dsi_ops;
- 
--		err = tegra_output_init(drm, &dsi->output);
--		if (err < 0) {
--			dev_err(client->dev, "output setup failed: %d\n", err);
--			return err;
--		}
-+		drm_connector_init(drm, &dsi->output.connector,
-+				   &tegra_dsi_connector_funcs,
-+				   DRM_MODE_CONNECTOR_DSI);
-+		drm_connector_helper_add(&dsi->output.connector,
-+					 &tegra_dsi_connector_helper_funcs);
-+		dsi->output.connector.dpms = DRM_MODE_DPMS_OFF;
-+
-+		if (dsi->output.panel)
-+			drm_panel_attach(dsi->output.panel,
-+					 &dsi->output.connector);
-+
-+		drm_encoder_init(drm, &dsi->output.encoder,
-+				 &tegra_dsi_encoder_funcs,
-+				 DRM_MODE_ENCODER_DSI);
-+		drm_encoder_helper_add(&dsi->output.encoder,
-+				       &tegra_dsi_encoder_helper_funcs);
-+
-+		drm_mode_connector_attach_encoder(&dsi->output.connector,
-+						  &dsi->output.encoder);
-+		drm_connector_register(&dsi->output.connector);
-+
-+		dsi->output.encoder.possible_crtcs = 0x3;
- 	}
- 
- 	if (IS_ENABLED(CONFIG_DEBUG_FS)) {
-@@ -981,28 +1027,14 @@ static int tegra_dsi_exit(struct host1x_client *client)
- 	struct tegra_dsi *dsi = host1x_client_to_dsi(client);
- 	int err;
- 
-+	tegra_output_exit(&dsi->output);
-+
- 	if (IS_ENABLED(CONFIG_DEBUG_FS)) {
- 		err = tegra_dsi_debugfs_exit(dsi);
- 		if (err < 0)
- 			dev_err(dsi->dev, "debugfs cleanup failed: %d\n", err);
- 	}
- 
--	if (!dsi->master) {
--		err = tegra_output_disable(&dsi->output);
--		if (err < 0) {
--			dev_err(client->dev, "output failed to disable: %d\n",
--				err);
--			return err;
--		}
+ unlock:
+ 	mutex_unlock(&sor->lock);
+-	return err;
+-}
 -
--		err = tegra_output_exit(&dsi->output);
--		if (err < 0) {
--			dev_err(client->dev, "output cleanup failed: %d\n",
--				err);
--			return err;
--		}
+-static int tegra_output_sor_setup_clock(struct tegra_output *output,
+-					struct clk *clk, unsigned long pclk,
+-					unsigned int *div)
+-{
+-	struct tegra_sor *sor = to_sor(output);
+-	int err;
+-
+-	err = clk_set_parent(clk, sor->clk_parent);
+-	if (err < 0) {
+-		dev_err(sor->dev, "failed to set parent clock: %d\n", err);
+-		return err;
 -	}
 -
- 	reset_control_assert(dsi->rst);
+-	err = clk_set_rate(sor->clk_parent, pclk);
+-	if (err < 0) {
+-		dev_err(sor->dev, "failed to set clock rate to %lu Hz\n", pclk);
+-		return err;
+-	}
+-
+-	*div = 0;
+-
+-	return 0;
+-}
+-
+-static int tegra_output_sor_check_mode(struct tegra_output *output,
+-				       struct drm_display_mode *mode,
+-				       enum drm_mode_status *status)
+-{
+-	/*
+-	 * FIXME: For now, always assume that the mode is okay.
+-	 */
+-
+-	*status = MODE_OK;
+-
+-	return 0;
+-}
+-
+-static enum drm_connector_status
+-tegra_output_sor_detect(struct tegra_output *output)
+-{
+-	struct tegra_sor *sor = to_sor(output);
+-
+-	if (sor->dpaux)
+-		return tegra_dpaux_detect(sor->dpaux);
+-
+-	return connector_status_unknown;
+-}
+-
+-static const struct tegra_output_ops sor_ops = {
+-	.enable = tegra_output_sor_enable,
+-	.disable = tegra_output_sor_disable,
+-	.setup_clock = tegra_output_sor_setup_clock,
+-	.check_mode = tegra_output_sor_check_mode,
+-	.detect = tegra_output_sor_detect,
+-};
+-
+-static int tegra_sor_crc_open(struct inode *inode, struct file *file)
+-{
+-	file->private_data = inode->i_private;
+-
+-	return 0;
+-}
+-
+-static int tegra_sor_crc_release(struct inode *inode, struct file *file)
+-{
+-	return 0;
+-}
+-
+-static int tegra_sor_crc_wait(struct tegra_sor *sor, unsigned long timeout)
+-{
+-	u32 value;
+-
+-	timeout = jiffies + msecs_to_jiffies(timeout);
+-
+-	while (time_before(jiffies, timeout)) {
+-		value = tegra_sor_readl(sor, SOR_CRC_A);
+-		if (value & SOR_CRC_A_VALID)
+-			return 0;
+-
+-		usleep_range(100, 200);
+-	}
+-
+-	return -ETIMEDOUT;
+-}
+-
+-static ssize_t tegra_sor_crc_read(struct file *file, char __user *buffer,
+-				  size_t size, loff_t *ppos)
+-{
+-	struct tegra_sor *sor = file->private_data;
+-	ssize_t num, err;
+-	char buf[10];
+-	u32 value;
+-
+-	mutex_lock(&sor->lock);
+-
+-	if (!sor->enabled) {
+-		err = -EAGAIN;
+-		goto unlock;
+-	}
+-
+-	value = tegra_sor_readl(sor, SOR_STATE_1);
+-	value &= ~SOR_STATE_ASY_CRC_MODE_MASK;
+-	tegra_sor_writel(sor, value, SOR_STATE_1);
+-
+-	value = tegra_sor_readl(sor, SOR_CRC_CNTRL);
+-	value |= SOR_CRC_CNTRL_ENABLE;
+-	tegra_sor_writel(sor, value, SOR_CRC_CNTRL);
+-
+-	value = tegra_sor_readl(sor, SOR_TEST);
+-	value &= ~SOR_TEST_CRC_POST_SERIALIZE;
+-	tegra_sor_writel(sor, value, SOR_TEST);
+-
+-	err = tegra_sor_crc_wait(sor, 100);
+-	if (err < 0)
+-		goto unlock;
+-
+-	tegra_sor_writel(sor, SOR_CRC_A_RESET, SOR_CRC_A);
+-	value = tegra_sor_readl(sor, SOR_CRC_B);
+-
+-	num = scnprintf(buf, sizeof(buf), "%08x\n", value);
+-
+-	err = simple_read_from_buffer(buffer, size, ppos, buf, num);
+-
+-unlock:
+-	mutex_unlock(&sor->lock);
+-	return err;
+ }
  
- 	return 0;
-@@ -1548,6 +1580,12 @@ static int tegra_dsi_remove(struct platform_device *pdev)
- 		return err;
+-static const struct file_operations tegra_sor_crc_fops = {
+-	.owner = THIS_MODULE,
+-	.open = tegra_sor_crc_open,
+-	.read = tegra_sor_crc_read,
+-	.release = tegra_sor_crc_release,
++static const struct drm_encoder_helper_funcs tegra_sor_encoder_helper_funcs = {
++	.dpms = tegra_sor_encoder_dpms,
++	.mode_fixup = tegra_sor_encoder_mode_fixup,
++	.prepare = tegra_sor_encoder_prepare,
++	.commit = tegra_sor_encoder_commit,
++	.mode_set = tegra_sor_encoder_mode_set,
++	.disable = tegra_sor_encoder_disable,
+ };
+ 
+-static int tegra_sor_debugfs_init(struct tegra_sor *sor,
+-				  struct drm_minor *minor)
+-{
+-	struct dentry *entry;
+-	int err = 0;
+-
+-	sor->debugfs = debugfs_create_dir("sor", minor->debugfs_root);
+-	if (!sor->debugfs)
+-		return -ENOMEM;
+-
+-	entry = debugfs_create_file("crc", 0644, sor->debugfs, sor,
+-				    &tegra_sor_crc_fops);
+-	if (!entry) {
+-		dev_err(sor->dev,
+-			"cannot create /sys/kernel/debug/dri/%s/sor/crc\n",
+-			minor->debugfs_root->d_name.name);
+-		err = -ENOMEM;
+-		goto remove;
+-	}
+-
+-	return err;
+-
+-remove:
+-	debugfs_remove(sor->debugfs);
+-	sor->debugfs = NULL;
+-	return err;
+-}
+-
+-static int tegra_sor_debugfs_exit(struct tegra_sor *sor)
+-{
+-	debugfs_remove_recursive(sor->debugfs);
+-	sor->debugfs = NULL;
+-
+-	return 0;
+-}
+-
+ static int tegra_sor_init(struct host1x_client *client)
+ {
+ 	struct drm_device *drm = dev_get_drvdata(client->parent);
+@@ -1288,16 +1336,31 @@ static int tegra_sor_init(struct host1x_client *client)
+ 	if (!sor->dpaux)
+ 		return -ENODEV;
+ 
+-	sor->output.type = TEGRA_OUTPUT_EDP;
+-
+ 	sor->output.dev = sor->dev;
+-	sor->output.ops = &sor_ops;
+ 
+-	err = tegra_output_init(drm, &sor->output);
+-	if (err < 0) {
+-		dev_err(sor->dev, "output setup failed: %d\n", err);
+-		return err;
+-	}
++	drm_connector_init(drm, &sor->output.connector,
++			   &tegra_sor_connector_funcs,
++			   DRM_MODE_CONNECTOR_eDP);
++	drm_connector_helper_add(&sor->output.connector,
++				 &tegra_sor_connector_helper_funcs);
++	sor->output.connector.dpms = DRM_MODE_DPMS_OFF;
++
++	if (sor->output.panel)
++		drm_panel_attach(sor->output.panel, &sor->output.connector);
++
++	drm_encoder_init(drm, &sor->output.encoder, &tegra_sor_encoder_funcs,
++			 DRM_MODE_ENCODER_TMDS);
++	drm_encoder_helper_add(&sor->output.encoder,
++			       &tegra_sor_encoder_helper_funcs);
++
++	drm_mode_connector_attach_encoder(&sor->output.connector,
++					  &sor->output.encoder);
++	drm_connector_register(&sor->output.connector);
++
++	sor->output.encoder.possible_crtcs = 0x3;
++
++	if (gpio_is_valid(sor->output.hpd_gpio))
++		enable_irq(sor->output.hpd_irq);
+ 
+ 	if (IS_ENABLED(CONFIG_DEBUG_FS)) {
+ 		err = tegra_sor_debugfs_init(sor, drm->primary);
+@@ -1313,6 +1376,20 @@ static int tegra_sor_init(struct host1x_client *client)
+ 		}
  	}
  
-+	err = tegra_output_remove(&dsi->output);
++	err = clk_prepare_enable(sor->clk);
 +	if (err < 0) {
-+		dev_err(&pdev->dev, "failed to remove output: %d\n", err);
++		dev_err(sor->dev, "failed to enable clock: %d\n", err);
 +		return err;
 +	}
 +
- 	mipi_dsi_host_unregister(&dsi->host);
- 	tegra_mipi_free(dsi->mipi);
++	err = clk_prepare_enable(sor->clk_safe);
++	if (err < 0)
++		return err;
++
++	err = clk_prepare_enable(sor->clk_dp);
++	if (err < 0)
++		return err;
++
+ 	return 0;
+ }
  
-@@ -1556,12 +1594,6 @@ static int tegra_dsi_remove(struct platform_device *pdev)
- 	clk_disable_unprepare(dsi->clk);
- 	reset_control_assert(dsi->rst);
+@@ -1321,12 +1398,6 @@ static int tegra_sor_exit(struct host1x_client *client)
+ 	struct tegra_sor *sor = host1x_client_to_sor(client);
+ 	int err;
  
--	err = tegra_output_remove(&dsi->output);
+-	err = tegra_output_disable(&sor->output);
 -	if (err < 0) {
--		dev_err(&pdev->dev, "failed to remove output: %d\n", err);
+-		dev_err(sor->dev, "output failed to disable: %d\n", err);
+-		return err;
+-	}
+-
+ 	if (sor->dpaux) {
+ 		err = tegra_dpaux_detach(sor->dpaux);
+ 		if (err < 0) {
+@@ -1335,18 +1406,16 @@ static int tegra_sor_exit(struct host1x_client *client)
+ 		}
+ 	}
+ 
++	clk_disable_unprepare(sor->clk_safe);
++	clk_disable_unprepare(sor->clk_dp);
++	clk_disable_unprepare(sor->clk);
++
+ 	if (IS_ENABLED(CONFIG_DEBUG_FS)) {
+ 		err = tegra_sor_debugfs_exit(sor);
+ 		if (err < 0)
+ 			dev_err(sor->dev, "debugfs cleanup failed: %d\n", err);
+ 	}
+ 
+-	err = tegra_output_exit(&sor->output);
+-	if (err < 0) {
+-		dev_err(sor->dev, "output cleanup failed: %d\n", err);
 -		return err;
 -	}
 -
  	return 0;
  }
  
-diff --git a/drivers/gpu/drm/tegra/output.c b/drivers/gpu/drm/tegra/output.c
-index 9cf851bf414b..bc5393fd03c7 100644
---- a/drivers/gpu/drm/tegra/output.c
-+++ b/drivers/gpu/drm/tegra/output.c
-@@ -276,11 +276,6 @@ int tegra_output_init(struct drm_device *drm, struct tegra_output *output)
- 	int connector, encoder;
+@@ -1398,26 +1467,14 @@ static int tegra_sor_probe(struct platform_device *pdev)
+ 	if (IS_ERR(sor->clk_parent))
+ 		return PTR_ERR(sor->clk_parent);
  
- 	switch (output->type) {
--	case TEGRA_OUTPUT_DSI:
--		connector = DRM_MODE_CONNECTOR_DSI;
--		encoder = DRM_MODE_ENCODER_DSI;
--		break;
+-	err = clk_prepare_enable(sor->clk_parent);
+-	if (err < 0)
+-		return err;
 -
- 	case TEGRA_OUTPUT_EDP:
- 		connector = DRM_MODE_CONNECTOR_eDP;
- 		encoder = DRM_MODE_ENCODER_TMDS;
+ 	sor->clk_safe = devm_clk_get(&pdev->dev, "safe");
+ 	if (IS_ERR(sor->clk_safe))
+ 		return PTR_ERR(sor->clk_safe);
+ 
+-	err = clk_prepare_enable(sor->clk_safe);
+-	if (err < 0)
+-		return err;
+-
+ 	sor->clk_dp = devm_clk_get(&pdev->dev, "dp");
+ 	if (IS_ERR(sor->clk_dp))
+ 		return PTR_ERR(sor->clk_dp);
+ 
+-	err = clk_prepare_enable(sor->clk_dp);
+-	if (err < 0)
+-		return err;
+-
+ 	INIT_LIST_HEAD(&sor->client.list);
+ 	sor->client.ops = &sor_client_ops;
+ 	sor->client.dev = &pdev->dev;
+@@ -1448,10 +1505,11 @@ static int tegra_sor_remove(struct platform_device *pdev)
+ 		return err;
+ 	}
+ 
+-	clk_disable_unprepare(sor->clk_parent);
+-	clk_disable_unprepare(sor->clk_safe);
+-	clk_disable_unprepare(sor->clk_dp);
+-	clk_disable_unprepare(sor->clk);
++	err = tegra_output_remove(&sor->output);
++	if (err < 0) {
++		dev_err(&pdev->dev, "failed to remove output: %d\n", err);
++		return err;
++	}
+ 
+ 	return 0;
+ }
 -- 
 2.1.3
 
