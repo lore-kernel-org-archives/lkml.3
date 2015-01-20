@@ -1,121 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143AbbATVGy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 16:06:54 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:45338 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751649AbbATVGw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 16:06:52 -0500
-Message-ID: <1421787995.18334.24.camel@localhost>
-Subject: Re: [PATCH] Selinux/hooks.c: Fix a NULL pointer dereference caused
- by semop()
-From: Eric Paris <eparis@redhat.com>
-To: Stephen Smalley <sds@tycho.nsa.gov>
-Cc: Manfred Spraul <manfred@colorfullife.com>,
-        Ethan Zhao <ethan.zhao@oracle.com>, james.l.morris@oracle.com,
-        serge@hallyn.com, paul@paul-moore.com, ethan.kernel@gmail.conm,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        selinux@tycho.nsa.gov
-Date: Tue, 20 Jan 2015 16:06:35 -0500
-In-Reply-To: <54BEC23F.8020004@tycho.nsa.gov>
-References: <1421745518-18790-1-git-send-email-ethan.zhao@oracle.com>
-	 <54BE61F0.202@tycho.nsa.gov> <54BEA337.9060704@colorfullife.com>
-	 <54BEC23F.8020004@tycho.nsa.gov>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753943AbbATVIx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 16:08:53 -0500
+Received: from mail-bn1bbn0101.outbound.protection.outlook.com ([157.56.111.101]:48000
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752289AbbATVIv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 16:08:51 -0500
+From: KY Srinivasan <kys@microsoft.com>
+To: Jake Oshins <jakeo@microsoft.com>,
+        "gregkh@linuxfoundation.org" <gregkh@linuxfoundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "olaf@aepfle.de" <olaf@aepfle.de>,
+        "apw@canonical.com" <apw@canonical.com>,
+        "vkuznets@redhat.com" <vkuznets@redhat.com>
+CC: Jake Oshins <jakeo@microsoft.com>
+Subject: RE: [PATCH 1/1] drivers:hv:vmbus Allow for more than one MMIO range
+ for children.
+Thread-Topic: [PATCH 1/1] drivers:hv:vmbus Allow for more than one MMIO range
+ for children.
+Thread-Index: AQHQNPJGpSAYl2A1tEq4jEWvsC2sjJzJfiXw
+Date: Tue, 20 Jan 2015 21:08:46 +0000
+Message-ID: <BY2PR0301MB071168CE194C74BFE98366A7A04B0@BY2PR0301MB0711.namprd03.prod.outlook.com>
+References: <y> <1421791180-18810-1-git-send-email-jakeo@microsoft.com>
+In-Reply-To: <1421791180-18810-1-git-send-email-jakeo@microsoft.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [131.107.192.176]
+authentication-results: spf=none (sender IP is )
+ smtp.mailfrom=kys@microsoft.com; 
+x-dmarcaction-test: None
+x-microsoft-antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:BN3PR0301MB1219;UriScan:;
+x-o365ent-eop-header: Message processed by -  O365_ENT: Allow from ranges
+ (Engineering ONLY)
+x-exchange-antispam-report-test: UriScan:;
+x-exchange-antispam-report-cfa-test: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB1219;
+x-forefront-prvs: 0462918D61
+x-forefront-antispam-report: SFV:NSPM;SFS:(10019020)(6009001)(199003)(51704005)(13464003)(377454003)(189002)(97736003)(2950100001)(2900100001)(76176999)(50986999)(68736005)(54356999)(102836002)(46102003)(54206007)(1511001)(74316001)(2656002)(87936001)(2501002)(66066001)(2561002)(122556002)(54606007)(2201001)(76576001)(106356001)(33656002)(2421001)(105586002)(106116001)(64706001)(19580405001)(19580395003)(92566002)(40100003)(99286002)(86362001)(62966003)(77156002)(101416001)(86612001);DIR:OUT;SFP:1102;SCL:1;SRVR:BN3PR0301MB1219;H:BY2PR0301MB0711.namprd03.prod.outlook.com;FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;A:1;MX:1;LANG:en;
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
+X-MS-Exchange-CrossTenant-originalarrivaltime: 20 Jan 2015 21:08:46.7098
+ (UTC)
+X-MS-Exchange-CrossTenant-fromentityheader: Hosted
+X-MS-Exchange-CrossTenant-id: 72f988bf-86f1-41af-91ab-2d7cd011db47
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN3PR0301MB1219
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:;SRVR:BN3PR0301MB0852;
+X-OriginatorOrg: microsoft.onmicrosoft.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-What kernel version was this?  Didn't we have this problem and solve it
-upstream some time ago? IPC could be allocated with a valid security
-context, the ipc would be freed.  the isec was free'd syncronously, but
-then the ipc could stick around until some rcu period or some usage flag
-got to 0, then it got freed...
 
-this seems so familiar, but it was a while ago
 
-On Tue, 2015-01-20 at 16:01 -0500, Stephen Smalley wrote:
-> On 01/20/2015 01:49 PM, Manfred Spraul wrote:
-> > Hi,
-> > 
-> > On 01/20/2015 03:10 PM, Stephen Smalley wrote:
-> >> On 01/20/2015 04:18 AM, Ethan Zhao wrote:
-> >>> A NULL pointer dereference was observed as following panic:
-> >>>
-> >>> BUG: unable to handle kernel NULL pointer dereference at (null)
-> >>> IP: [<ffffffff812735eb>] ipc_has_perm+0x4b/0x60
-> >>> ...
-> >>> Process opcmon (pid: 30712, threadinfo ffff880237f2a000,
-> >>> task ffff88022ac70e40)
-> >>> Stack:
-> >>> ffff880237f2bc04 ffffffff01020953 ffff880237f2bce8
-> >>> ffffffff8125818e
-> >>> 0000000000000001 0000000037f78004 ffff880237f2bcd8
-> >>> ffffffff81273619
-> >>> ffff880237f2bce8 ffffffff8126e3e6 ffff880237f2bf68
-> >>> ffffffff8125c206
-> >>> Call Trace:
-> >>> [<ffffffff8125818e>] ? ipcperms+0xae/0x110
-> >>> [<ffffffff81273619>] selinux_sem_semop+0x19/0x20
-> >>> [<ffffffff8126e3e6>] security_sem_semop+0x16/0x20
-> >>> [<ffffffff8125c206>] sys_semtimedop+0x346/0x750
-> >>> [<ffffffff81188c0c>] ? handle_pte_fault+0x1dc/0x200
-> >>> [<ffffffff8161d830>] ? __do_page_fault+0x280/0x500
-> >>> [<ffffffff810d97d0>] ? __lock_release+0x90/0x1b0
-> >>> [<ffffffff8161d830>] ? __do_page_fault+0x280/0x500
-> >>> [<ffffffff8109a763>] ? up_read+0x23/0x40
-> >>> [<ffffffff8161d830>] ? __do_page_fault+0x280/0x500
-> >>> [<ffffffff81182f1c>] ? might_fault+0x5c/0xb0
-> >>> [<ffffffff81081f96>] ? sys_newuname+0x66/0xf0
-> >>> [<ffffffff810d97d0>] ? __lock_release+0x90/0x1b0
-> >>> [<ffffffff81081f96>] ? sys_newuname+0x66/0xf0
-> >>> [<ffffffff81622f45>] ? sysret_check+0x22/0x5d
-> >>> [<ffffffff8125c620>] sys_semop+0x10/0x20
-> >>> [<ffffffff81622f19>] system_call_fastpath+0x16/0x1b
-> >>> Code: b8 00 00 48 8b 80 48 06 00 00 41 8b 54 24 40 4c 8d
-> >>> 45 d0 89 d9 45 31 c9 48 8b 40 70 8b 78 04 49 8b 44 24 60 c6 45 d0 04
-> >>> 89 55 d8
-> >>> <0f> b7 10 8b 70 04 e8 0a dc ff ff 48 83 c4 20 5b 41 5c c9 c3 90
-> >>> RIP  [<ffffffff812735eb>] ipc_has_perm+0x4b/0x60
-> >>> RSP <ffff880237f2bc98>
-> >>> CR2: 0000000000000000
-> >>>
-> >>> The root cause is semtimedop() was called after semget() without
-> >>> checking its
-> >>> return value in process opcmon. and semget() failed to check
-> >>> permission in
-> >>> function avc_has_perm() then sem_perm->security was freed shown as
-> >>> following:
-> >>>
-> >>>       sys_semget()
-> >>>       ->newary()
-> >>>        ->security_sem_alloc()
-> >>>          ->sem_alloc_security()
-> >>>            selinux_sem_alloc_security()
-> >>>            ->ipc_alloc_security() {
-> >>>              ->rc = avc_has_perm()
-> >>>                 if (rc) {
-> >>>                     ipc_free_security(&sma->sem_perm);
-> >>>                     return rc;
-> >> We free the security structure here to avoid a memory leak on a
-> >> failed/denied semaphore set creation.  In this situation, we return an
-> >> error to the caller (ultimately to newary), it does an
-> >> ipc_rcu_putref(sma, ipc_rcu_free), and it returns an error to the
-> >> caller.  Thus, it never calls ipc_addid() and the semaphore set is not
-> >> created.  So how then can you call semtimedop() on it?
-> > My only idea would be a race of semtimedop() with IPC_RMID:
-> > If a rcu grace period happens between sem_obtain_object_check() and the
-> > ipc_has_perm() call, the the observed NULL pointer assignment would happen.
+> -----Original Message-----
+> From: Jake Oshins [mailto:jakeo@microsoft.com]
+> Sent: Tuesday, January 20, 2015 2:00 PM
+> To: gregkh@linuxfoundation.org; KY Srinivasan; linux-
+> kernel@vger.kernel.org; devel@linuxdriverproject.org; olaf@aepfle.de;
+> apw@canonical.com; vkuznets@redhat.com
+> Cc: Jake Oshins
+> Subject: [PATCH 1/1] drivers:hv:vmbus Allow for more than one MMIO range
+> for children.
+
+Include a descriptive commit log for this patch.
 > 
-> We only free and clear the ipc_perms->security field on a failure during
-> newary() -> security_sem_alloc(), in which case we fail with an error
-> before the ipc_addid() call has occurred, or during sem_rcu_free() ->
-> security_sem_free() just prior to calling ipc_rcu_free().   So I don't
-> see how ipc_perms->security can be NULL in ipc_has_perm().  We could rcu
-> free the ipc_perms->security field but I don't see why that would be
-> correct/necessary.
+> Signed-off-by: Jake Oshins <jakeo@microsoft.com>
+> ---
+>  drivers/hv/vmbus_drv.c          | 85
+> +++++++++++++++++++++++++++++++++--------
+>  drivers/video/fbdev/hyperv_fb.c |  2 +-
+>  include/linux/hyperv.h          |  2 +-
+>  3 files changed, 72 insertions(+), 17 deletions(-)
 > 
+> diff --git a/drivers/hv/vmbus_drv.c b/drivers/hv/vmbus_drv.c index
+> 4d6b269..ba5b7a1 100644
+> --- a/drivers/hv/vmbus_drv.c
+> +++ b/drivers/hv/vmbus_drv.c
+> @@ -43,10 +43,7 @@ static struct tasklet_struct msg_dpc;  static struct
+> completion probe_event;  static int irq;
+> 
+> -struct resource hyperv_mmio = {
+> -	.name  = "hyperv mmio",
+> -	.flags = IORESOURCE_MEM,
+> -};
+> +struct resource *hyperv_mmio;
+>  EXPORT_SYMBOL_GPL(hyperv_mmio);
+> 
+>  static int vmbus_exists(void)
+> @@ -849,23 +846,74 @@ void vmbus_device_unregister(struct hv_device
+> *device_obj)
+> 
+> 
+>  /*
+> - * VMBUS is an acpi enumerated device. Get the the information we
+> - * need from DSDT.
+> + * VMBUS is an acpi enumerated device. Get the
+> + * information we need from DSDT.
+>   */
+> 
+>  static acpi_status vmbus_walk_resources(struct acpi_resource *res, void
+> *ctx)  {
+> +	resource_size_t start = 0;
+> +	resource_size_t end = 0;
+> +	struct resource *new_res;
+> +	struct resource **old_res = &hyperv_mmio;
+> +
+>  	switch (res->type) {
+>  	case ACPI_RESOURCE_TYPE_IRQ:
+>  		irq = res->data.irq.interrupts[0];
+> +		return AE_OK;
+> +
+> +	/*
+> +	 * "Address" descriptors are for bus windows. Ignore
+> +	 * "memory" descriptors, which are for registers on
+> +	 * devices.
+> +	 */
+> +	case ACPI_RESOURCE_TYPE_ADDRESS32:
+> +		start = res->data.address32.minimum;
+> +		end = res->data.address32.maximum;
+>  		break;
+> 
+>  	case ACPI_RESOURCE_TYPE_ADDRESS64:
+> -		hyperv_mmio.start = res->data.address64.minimum;
+> -		hyperv_mmio.end = res->data.address64.maximum;
+> +		start = res->data.address64.minimum;
+> +		end = res->data.address64.maximum;
+>  		break;
+> +
+> +	default:
+> +		/* Unused resource type */
+> +		return AE_OK;
+>  	}
+> 
+> +	/*
+> +	 * Ignore ranges that are below 1MB, as they're not
+> +	 * necessary or useful here.
+> +	 */
+> +	if (end < 0x100000)
+> +		return AE_OK;
+> +
+> +	new_res = kzalloc(sizeof(*new_res), GFP_ATOMIC);
+> +	if (!new_res)
+> +		return AE_NO_MEMORY;
+> +
+> +	new_res->name = "hyperv mmio";
+> +	new_res->flags = IORESOURCE_MEM;
+> +	new_res->start = start;
+> +	new_res->end = end;
+> +
+> +	do {
+> +		if (!*old_res) {
+> +			*old_res = new_res;
+> +			break;
+> +		}
+> +
+> +		if ((*old_res)->start > new_res->end) {
+> +			new_res->sibling = *old_res;
+> +			*old_res = new_res;
+> +			break;
+> +		}
+> +
+> +		old_res = &(*old_res)->sibling;
+> +
+> +	} while (1);
+> +
+>  	return AE_OK;
+>  }
+> 
+> @@ -873,6 +921,7 @@ static int vmbus_acpi_add(struct acpi_device *device)
+> {
+>  	acpi_status result;
+>  	int ret_val = -ENODEV;
+> +	struct acpi_device *ancestor;
+> 
+>  	hv_acpi_dev = device;
+> 
+> @@ -882,18 +931,22 @@ static int vmbus_acpi_add(struct acpi_device
+> *device)
+>  	if (ACPI_FAILURE(result))
+>  		goto acpi_walk_err;
+>  	/*
+> -	 * The parent of the vmbus acpi device (Gen2 firmware) is the VMOD
+> that
+> -	 * has the mmio ranges. Get that.
+> +	 * Some ancestor of the vmbus acpi device (Gen1 or Gen2
+> +	 * firmware) is the VMOD that has the mmio ranges. Get that.
+>  	 */
+> -	if (device->parent) {
+> -		result = acpi_walk_resources(device->parent->handle,
+> +	for (ancestor = device->parent;
+> +		ancestor;
+> +		ancestor = ancestor->parent) {
+> +		result = acpi_walk_resources(ancestor->handle,
+>  					METHOD_NAME__CRS,
+>  					vmbus_walk_resources, NULL);
+> 
+>  		if (ACPI_FAILURE(result))
+> -			goto acpi_walk_err;
+> -		if (hyperv_mmio.start && hyperv_mmio.end)
+> -			request_resource(&iomem_resource,
+> &hyperv_mmio);
+> +			continue;
+> +		if (hyperv_mmio) {
+> +			request_resource(&iomem_resource,
+> hyperv_mmio);
+> +			break;
+> +		}
+>  	}
+>  	ret_val = 0;
+> 
+If we have a failure in walking the ACPI resources, you are not rolling back the
+State with regards to the memory you allocated for the resource structure and the
+resource you have requested.
+ 
+> @@ -962,6 +1015,8 @@ static void __exit vmbus_exit(void)
+>  	hv_remove_vmbus_irq();
+>  	vmbus_free_channels();
+>  	bus_unregister(&hv_bus);
+> +	if (hyperv_mmio)
+> +		release_resource(hyperv_mmio);
 
+You are leaking memory here; you have not freed up the resource structures
+that you allocated earlier.
+
+ 
+>  	hv_cleanup();
+>  	acpi_bus_unregister_driver(&vmbus_acpi_driver);
+>  }
+> diff --git a/drivers/video/fbdev/hyperv_fb.c
+> b/drivers/video/fbdev/hyperv_fb.c index 4254336..003c8f0 100644
+> --- a/drivers/video/fbdev/hyperv_fb.c
+> +++ b/drivers/video/fbdev/hyperv_fb.c
+> @@ -686,7 +686,7 @@ static int hvfb_getmem(struct fb_info *info)
+>  	par->mem.name = KBUILD_MODNAME;
+>  	par->mem.flags = IORESOURCE_MEM | IORESOURCE_BUSY;
+>  	if (gen2vm) {
+> -		ret = allocate_resource(&hyperv_mmio, &par->mem,
+> +		ret = allocate_resource(hyperv_mmio, &par->mem,
+>  					screen_fb_size,
+>  					0, -1,
+>  					screen_fb_size,
+> diff --git a/include/linux/hyperv.h b/include/linux/hyperv.h index
+> 476c685..8903689 100644
+> --- a/include/linux/hyperv.h
+> +++ b/include/linux/hyperv.h
+> @@ -1178,7 +1178,7 @@ int hv_vss_init(struct hv_util_service *);  void
+> hv_vss_deinit(void);  void hv_vss_onchannelcallback(void *);
+> 
+> -extern struct resource hyperv_mmio;
+> +extern struct resource *hyperv_mmio;
+> 
+>  /*
+>   * Negotiated version with the Host.
+> --
+> 1.9.1
 
