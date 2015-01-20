@@ -1,45 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752943AbbATLPk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 06:15:40 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:47133 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752455AbbATLPj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 06:15:39 -0500
-Message-ID: <1421752526.29486.18.camel@linux-0dmf.site>
-Subject: Re: [PATCH v2 0/4] toshiba_acpi: Add support for USB Sleep functions
-From: Oliver Neukum <oneukum@suse.de>
-To: Azael Avalos <coproscefalo@gmail.com>
-Cc: Darren Hart <dvhart@infradead.org>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Date: Tue, 20 Jan 2015 12:15:26 +0100
-In-Reply-To: <1421631025-27895-1-git-send-email-coproscefalo@gmail.com>
-References: <1421631025-27895-1-git-send-email-coproscefalo@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1753843AbbATLQF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 06:16:05 -0500
+Received: from mail-ie0-f176.google.com ([209.85.223.176]:45397 "EHLO
+	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752120AbbATLQD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 06:16:03 -0500
+Date: Tue, 20 Jan 2015 11:15:55 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Jacek Anaszewski <j.anaszewski@samsung.com>
+Cc: linux-leds@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree@vger.kernel.org,
+        kyungmin.park@samsung.com, b.zolnierkie@samsung.com, pavel@ucw.cz,
+        cooloney@gmail.com, rpurdie@rpsys.net, sakari.ailus@iki.fi,
+        s.nawrocki@samsung.com, Chanwoo Choi <cw00.choi@samsung.com>
+Subject: Re: [PATCH/RFC v10 06/19] mfd: max77693: modifications around
+ max77693_led_platform_data
+Message-ID: <20150120111555.GE13701@x1>
+References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
+ <1420816989-1808-7-git-send-email-j.anaszewski@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1420816989-1808-7-git-send-email-j.anaszewski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2015-01-18 at 18:30 -0700, Azael Avalos wrote:
-> The following patches add support to several USB Sleep functions
-> found on newer Toshiba laptops, allowing to use the USB ports while
-> the laptop is asleep or turned off.
+On Fri, 09 Jan 2015, Jacek Anaszewski wrote:
 
-Hi,
+> 1. Rename max77693_led_platform_data to max77693_led_config_data to
+>    avoid making impression that the led driver expects a board file -
+>    it relies on Device Tree data.
+> 2. Remove fleds array, as the DT binding design has changed
+> 3. Add "label" array for Device Tree strings with the name of a LED device
+> 4. Make flash_timeout a two element array, for caching the sub-led
+>    related flash timeout.
+> 5. Remove trigger array as the related data will not be provided
+>    in the DT binding
 
-this is most interesting. But the interface is terrible. If
-possible we would like to have a generic interface for this,
-which should not depend on the specific platform in use and would
-have to be per bus or even per port (for example the ports on a
-Thunderbolt dock would not work with your module).
-Do you think we could provide a hook from generic code into
-platform code to detect the capability for power control?
+Code looks fine, and I'm sure you've tested this thoroughly.
 
-	Regards
-		Oliver
+I'm slightly concerned about current users though.  Are there any?  Is
+this patch-set fully bisectable?
 
+> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
+> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Cc: Chanwoo Choi <cw00.choi@samsung.com>
+> Cc: Lee Jones <lee.jones@linaro.org>
+> ---
+>  include/linux/mfd/max77693.h |    9 ++++-----
+>  1 file changed, 4 insertions(+), 5 deletions(-)
+> 
+> diff --git a/include/linux/mfd/max77693.h b/include/linux/mfd/max77693.h
+> index f0b6585..c1ccb13 100644
+> --- a/include/linux/mfd/max77693.h
+> +++ b/include/linux/mfd/max77693.h
+> @@ -87,17 +87,16 @@ enum max77693_led_boost_mode {
+>  	MAX77693_LED_BOOST_FIXED,
+>  };
+>  
+> -struct max77693_led_platform_data {
+> -	u32 fleds[2];
+> +struct max77693_led_config_data {
+> +	const char *label[2];
+>  	u32 iout_torch[2];
+>  	u32 iout_flash[2];
+> -	u32 trigger[2];
+> -	u32 trigger_type[2];
+> +	u32 flash_timeout[2];
+>  	u32 num_leds;
+>  	u32 boost_mode;
+> -	u32 flash_timeout;
+>  	u32 boost_vout;
+>  	u32 low_vsys;
+> +	u32 trigger_type;
+>  };
+>  
+>  /* MAX77693 */
 
-
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
