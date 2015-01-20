@@ -1,47 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752834AbbATOyI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 09:54:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60365 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751801AbbATOyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 09:54:05 -0500
-Message-ID: <54BE6BFD.80603@redhat.com>
-Date: Tue, 20 Jan 2015 09:53:49 -0500
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1752798AbbATOyD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 09:54:03 -0500
+Received: from mail-wi0-f171.google.com ([209.85.212.171]:39079 "EHLO
+	mail-wi0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751801AbbATOyA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 09:54:00 -0500
+Date: Tue, 20 Jan 2015 15:53:53 +0100
+From: Djalal Harouni <tixxdz@opendz.org>
+To: Josh Boyer <jwboyer@fedoraproject.org>
+Cc: David Herrmann <dh.herrmann@gmail.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tom Gundersen <teg@jklm.no>, Jiri Kosina <jkosina@suse.cz>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Linux API <linux-api@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Daniel Mack <daniel@zonque.org>, Johannes Stezenbach <js@sig21.net>
+Subject: Re: [PATCH 01/13] kdbus: add documentation
+Message-ID: <20150120145353.GA8124@dztty>
+References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>
+ <1421435777-25306-2-git-send-email-gregkh@linuxfoundation.org>
+ <54BE5DC8.70706@gmail.com>
+ <CANq1E4SjfZOKqTsdkt519vKc1Poeah5McVJBb_spdHjbKv4=7g@mail.gmail.com>
+ <CA+5PVA46wVa-L9K1zgHzt=Fwn6YFBYhxJUjiozSH4XBY03WMVw@mail.gmail.com>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Suresh Siddha <sbsiddha@gmail.com>
-CC: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        matt.fleming@intel.com, bp@suse.de, pbonzini@redhat.com,
-        tglx@linutronix.de, luto@amacapital.net
-Subject: Re: [PATCH 3/3] x86, fpu: don't abuse FPU in kernel threads if use_eager_fpu()
-References: <1421012793-30106-1-git-send-email-riel@redhat.com> <20150115191918.GA27332@redhat.com> <20150119185109.GA16427@redhat.com> <20150119185212.GD16427@redhat.com>
-In-Reply-To: <20150119185212.GD16427@redhat.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CA+5PVA46wVa-L9K1zgHzt=Fwn6YFBYhxJUjiozSH4XBY03WMVw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/2015 01:52 PM, Oleg Nesterov wrote:
-> Afaics there is no reason why kernel threads should have FPU context
-> even if use_eager_fpu() == T. Now that interrupted_kernel_fpu_idle()
-> does not check __thread_has_fpu() we can remove the init_fpu() code
-> from eager_fpu_init() and change flush_thread() called by do_execve()
-> to initialize FPU.
->
-> Note: of course, the change in flush_thread() is horrible and must be
-> cleanuped. We need the new helper, and flush_thread() should return the
-> error if init_fpu() fails.
->
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Hi,
 
-Nice. This should help prevent us from loading and saving
-the totally unused FPU state for things like idle threads
-and other kernel threads.
+On Tue, Jan 20, 2015 at 09:42:59AM -0500, Josh Boyer wrote:
+> On Tue, Jan 20, 2015 at 9:31 AM, David Herrmann <dh.herrmann@gmail.com> wrote:
+> > Hi Michael
+> >
+> > On Tue, Jan 20, 2015 at 2:53 PM, Michael Kerrisk (man-pages)
+> > <mtk.manpages@gmail.com> wrote:
+> >> On 01/16/2015 08:16 PM, Greg Kroah-Hartman wrote:
+> >>> From: Daniel Mack <daniel@zonque.org>
+> >>>
+> >>> kdbus is a system for low-latency, low-overhead, easy to use
+> >>> interprocess communication (IPC).
+> >>>
+> >>> The interface to all functions in this driver is implemented via ioctls
+> >>> on files exposed through a filesystem called 'kdbusfs'. The default
+> >>> mount point of kdbusfs is /sys/fs/kdbus. This patch adds detailed
+> >>> documentation about the kernel level API design.
+> >>
+> >> I have some details feedback on the contents of this file, and some
+> >> bigger questions. I'll split them out into separate mails.
+> >>
+> >> So here, the bigger, general questions to start with. I've arrived late
+> >> to this, so sorry if they've already been discussed, but the answers to
+> >> some of the questions should actually be in this file, I would have
+> >> expected.
+> >>
+> >> This is an enormous and complex API. Why is the API ioctl() based,
+> >> rather than system-call-based? Have we learned nothing from the hydra
+> >> that the futex() multiplexing syscall became? (And kdbus is an order
+> >> of magnitude more complex, by the look of things.) At the very least,
+> >> a *good* justification of why the API is ioctl()-based should be part
+> >> of this documentation file.
+> >>
+> >> An observation: The documentation below is substantial, but this API is
+> >> enormous, so the documentation still feels rather thin. What would
+> >> really help would be some example code in the doc.
+> >>
+> >> And on the subject of code examples... Are there any (prototype)
+> >> working user-space applications that exercise the current kdbus
+> >> implementation? That is, can I install these kdbus patches, and
+> >> then find a simple example application somewhere that does
+> >> something to exercise kdbus?
+> >
+> > If you run a 3.18 kernel, you can install kdbus.ko from our repository
+> > and boot a full Fedora system running Gnome3 with kdbus, given that
+> > you compiled systemd with --enable-kdbus (which is still
+> > experimental). No legacy dbus1 daemon is running. Instead, we have a
+> > bus-proxy that converts classic dbus1 to kdbus, so all
+> > bus-communication runs on kdbus.
+> 
+> FWIW, we've been building a "playground" repository for the kernel
+> that contains this already for Fedora.  If you have a stock Fedora 21
+> or rawhide install, you can use:
+> 
+> https://copr.fedoraproject.org/coprs/jwboyer/kernel-playground/
+> 
+> which has the kernel+kdbus and systemd built with --enable-kdbus
+> already.  Easy enough to throw in a VM for testing.
+> 
+> josh
+Yes thanks josh!
 
-Reviewed-by: Rik van Riel <riel@redhat.com>
+Another addition, if kdbus is installed and loaded, you could also use
+systemd-nspawn to boot a full system (systemd compiled with
+--enable-kdbus) in a container [1], kdbusfs will be mounted in the
+container.
 
+There is also the busctl tool to query kdbus...
+
+http://www.freedesktop.org/wiki/Software/systemd/VirtualizedTesting/
+
+-- 
+Djalal Harouni
+http://opendz.org
