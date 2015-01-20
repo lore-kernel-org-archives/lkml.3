@@ -1,213 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220AbbATLf7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 06:35:59 -0500
-Received: from mail-la0-f48.google.com ([209.85.215.48]:42643 "EHLO
-	mail-la0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753773AbbATLf6 convert rfc822-to-8bit (ORCPT
+	id S1754234AbbATLh6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 06:37:58 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:42910 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752467AbbATLhz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 06:35:58 -0500
-MIME-Version: 1.0
-In-Reply-To: <219291421414310@webcorp01h.yandex-team.ru>
-References: <20150115155731.31307.4414.stgit@buzz>
-	<20150115171551.a2e6acb5.akpm@linux-foundation.org>
-	<219291421414310@webcorp01h.yandex-team.ru>
-Date: Tue, 20 Jan 2015 15:35:56 +0400
-Message-ID: <CALYGNiNNRwp7TfEh4tkP+9B=J9oN2n1cET0WP7u_wkCge5Y5bQ@mail.gmail.com>
-Subject: Re: [PATCH RFC] page_writeback: cleanup mess around cancel_dirty_page()
-From: Konstantin Khlebnikov <koct9i@gmail.com>
-To: =?UTF-8?B?0JrQvtC90YHRgtCw0L3RgtC40L0g0KXQu9C10LHQvdC40LrQvtCy?= 
-	<khlebnikov@yandex-team.ru>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+	Tue, 20 Jan 2015 06:37:55 -0500
+X-AuditID: cbfee68d-f79296d000004278-ea-54be3e11f871
+Message-id: <54BE3E10.2080906@samsung.com>
+Date: Tue, 20 Jan 2015 20:37:52 +0900
+From: Chanwoo Choi <cw00.choi@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20130106
+ Thunderbird/17.0.2
+MIME-version: 1.0
+To: Viresh Kumar <viresh.kumar@linaro.org>
+Cc: Rob Herring <robherring2@gmail.com>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>, Kukjin Kim <kgene@kernel.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        "Wysocki, Rafael J" <rafael.j.wysocki@intel.com>,
+        Mark Rutland <mark.rutland@arm.com>, a.kesavan@samsung.com,
+        Tomasz Figa <tomasz.figa@gmail.com>,
+        =?UTF-8?B?S3J6eXN6dG9mIEtvesWCb3dza2k=?= <k.kozlowski@samsung.com>,
+        Bartlomiej Zolnierkiewicz <b.zolnierkie@samsung.com>,
+        Rob Herring <robh+dt@kernel.org>, InKi Dae <inki.dae@samsung.com>,
+        "linux-pm@vger.kernel.org" <linux-pm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-samsung-soc@vger.kernel.org" 
+	<linux-samsung-soc@vger.kernel.org>
+Subject: Re: [PATCHv3 2/8] devfreq: exynos: Add documentation for generic
+ exynos memory bus frequency driver
+References: <1420681257-3078-1-git-send-email-cw00.choi@samsung.com>
+ <1420681257-3078-3-git-send-email-cw00.choi@samsung.com>
+ <CAL_Jsq+5sdsm_-VW-ta+qV-NBao-XTHvsYWcbMdZmbP0Nw43Cw@mail.gmail.com>
+ <CAKohpomqosqxeDANC=NLBVmOUHyUoqd7Zhph7r6f7+ufYN48EQ@mail.gmail.com>
+ <54BE108F.8090506@samsung.com>
+ <CAKohpokSuVhH3hHFF+mLtJXvjt=bmJy1oZRBOttCNXORBS1Y0A@mail.gmail.com>
+In-reply-to: <CAKohpokSuVhH3hHFF+mLtJXvjt=bmJy1oZRBOttCNXORBS1Y0A@mail.gmail.com>
+Content-type: text/plain; charset=UTF-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMIsWRmVeSWpSXmKPExsWyRsSkRFfQbl+Iwc9J/BaP1yxmstg4Yz2r
+	xaT7E1gsXr8wtOh//JrZ4mzTG3aLTY+vsVpc3jWHzeJz7xFGixnn9zFZLL1+kcniduMKNovH
+	K96yW7TuPcJu8f3bNzaLVbv+MFps/OrhIOixZt4aRo+ds+6yeyze85LJY9OqTjaPO9f2sHls
+	XlLv0bdlFaPH501yARxRXDYpqTmZZalF+nYJXBkdf7tZC5YpVfzY84W9gfGvRBcjJ4eEgInE
+	6mNv2SBsMYkL99YD2VwcQgJLGSVmL3jMBFP0ef1zVojEdEaJKXMeMEE4rxklPp+fwApSxSug
+	JTFt/kWwUSwCqhLvFt0H62YDiu9/cQMsLioQJrFy+hUWiHpBiR+T7wHZHBwiQDUvb6aCzGQW
+	mMAm0fDjDVi9sECexKlHN5ghln1lkni/bT8jSIJTIFji5sNtYIuZBdQlJs1bxAxhy0tsXvMW
+	rEFCYCWHxJJNkxghLhKQ+Db5ENg2CQFZiU0HmCFek5Q4uOIGywRGsVlIbpqFZOwsJGMXMDKv
+	YhRNLUguKE5KLzLUK07MLS7NS9dLzs/dxAiM+9P/nvXuYLx9wPoQowAHoxIP74tVe0OEWBPL
+	iitzDzGaAl0xkVlKNDkfmFzySuINjc2MLExNTI2NzC3NlMR5FaV+BgsJpCeWpGanphakFsUX
+	leakFh9iZOLglGpgZOfWN1mhu3Ha2gUurm1JLjNd459fW7qS+/Im074Zyw8bBU3nauDa1NTu
+	Pek8H+/etsbQ2Ys1Xiq7XjISENku4SG/rXreuVtXWJsYl0h+nf7m3MyEPs4Agd9httxXF1xh
+	C3fel7l9yVruqTuXXju+is2wLNdx/ue3Mk+FRI0/efx8le64/WzNHiWW4oxEQy3mouJEAMdW
+	h1/2AgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLKsWRmVeSWpSXmKPExsVy+t9jQV1Bu30hBrPOslo8XrOYyWLjjPWs
+	FpPuT2CxeP3C0KL/8Wtmi7NNb9gtNj2+xmpxedccNovPvUcYLWac38dksfT6RSaL240r2Cwe
+	r3jLbtG69wi7xfdv39gsVu36w2ix8auHg6DHmnlrGD12zrrL7rF4z0smj02rOtk87lzbw+ax
+	eUm9R9+WVYwenzfJBXBENTDaZKQmpqQWKaTmJeenZOal2yp5B8c7x5uaGRjqGlpamCsp5CXm
+	ptoqufgE6Lpl5gB9oaRQlphTChQKSCwuVtK3wzQhNMRN1wKmMULXNyQIrsfIAA0krGHM6Pjb
+	zVqwTKnix54v7A2MfyW6GDk5JARMJD6vf84KYYtJXLi3nq2LkYtDSGA6o8SUOQ+YIJzXjBKf
+	z08Aq+IV0JKYNv8iG4jNIqAq8W7RfSYQmw0ovv/FDbC4qECYxMrpV1gg6gUlfky+B2RzcIgA
+	1by8mQoyk1lgAptEw483YPXCAnkSpx7dYIZY9pVJ4v22/YwgCU6BYImbD7eBLWYWUJeYNG8R
+	M4QtL7F5zVvmCYwCs5DsmIWkbBaSsgWMzKsYRVMLkguKk9JzjfSKE3OLS/PS9ZLzczcxgpPK
+	M+kdjKsaLA4xCnAwKvHwOqzdGyLEmlhWXJl7iFGCg1lJhPes+b4QId6UxMqq1KL8+KLSnNTi
+	Q4ymwCCYyCwlmpwPTHh5JfGGxiZmRpZG5oYWRsbmSuK8SvZtIUIC6YklqdmpqQWpRTB9TByc
+	Ug2MQXLCESfWZ/d4PEsS0TztU37FYmtjyexCpWKzPwUGacn7Ts51lHh7L/Io6+GSaStv9DR/
+	cLqwsW4Ohx1/3+UJhhOcX5n8WGTbVNg2qeD86u+/jr1YvdSnV0ykvVJDw3Cd+PX//dZ2u/Nj
+	brxQyXhwrHtKz7ddpyJfVwSu0bpqny54tb7n7pc6JZbijERDLeai4kQALy7ViUADAAA=
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jan 16, 2015 at 4:18 PM, Константин Хлебников
-<khlebnikov@yandex-team.ru> wrote:
-> 16.01.2015, 04:16, "Andrew Morton" <akpm@linux-foundation.org>:
->> On Thu, 15 Jan 2015 18:57:31 +0300 Konstantin Khebnikov <khlebnikov@yandex-team.ru> wrote:
->>>  This patch replaces cancel_dirty_page() with helper account_page_cleared()
->>>  which only updates counters. It's called from delete_from_page_cache()
->>>  and from try_to_free_buffers() (hack for ext3). Page is locked in both cases.
->>>
->>>  Hugetlbfs has no dirty pages accounting, ClearPageDirty() is enough here.
->>>
->>>  cancel_dirty_page() in nfs_wb_page_cancel() is redundant. This is helper
->>>  for nfs_invalidate_page() and it's called only in case complete invalidation.
->>>
->>>  Open-coded kludge at the end of __delete_from_page_cache() is redundant too.
->>>
->>>  This mess was started in v2.6.20, after commit 3e67c09 ("truncate: clear page
->>>  dirtiness before running try_to_free_buffers()") reverted back in v2.6.25
->>>  by commit a2b3456 ("Fix dirty page accounting leak with ext3 data=journal").
->>>  Custom fixes were introduced between them. NFS in in v2.6.23 in commit
->>>  1b3b4a1 ("NFS: Fix a write request leak in nfs_invalidate_page()").
->>>  Kludge __delete_from_page_cache() in v2.6.24, commit 3a692790 ("Do dirty
->>>  page accounting when removing a page from the page cache").
->>>
->>>  It seems safe to leave dirty flag set on truncated page, free_pages_check()
->>>  will clear it before returning page into buddy allocator.
+On 01/20/2015 08:22 PM, Viresh Kumar wrote:
+> On 20 January 2015 at 13:53, Chanwoo Choi <cw00.choi@samsung.com> wrote:
+>> But, the frequency of OPPs is only used for devfreq ondemand governor.
+>> After deciding the proper frequency of memory bus on ondemand governor,
+>> exynos-bus.c (exynos memory bus frequency driver) use the frequency table
+>> of memory bus blocks on below to change the clock rate of memory bus block.
+> 
+>> Firs of all,
+>> I explain the hierarchy of Exynos memory buses.
 >>
->> account_page_cleared() is not a good name - "clearing a page" means
->> filling it with zeroes.  account_page_cleaned(), perhaps?
->
-> Ok. account_page_cleaned is better.
->
+>> For example of Exynos3250 memory bus,
+>> This patch divide the memory bus group according to power rail (regulator).
+>> - MIF (Memory Interface ) memory bus group uses the VDD_MIF regulator.
+>> - INT (Internal) memory bus group uses the VDD_INT regulator.
 >>
->> I don't think your email cc'ed all the correct people?  lustre, nfs,
->> ext3?
->
-> oops
->
->>>  ...
->>>
->>>  --- a/fs/buffer.c
->>>  +++ b/fs/buffer.c
->>>  @@ -3243,8 +3243,8 @@ int try_to_free_buffers(struct page *page)
->>>            * to synchronise against __set_page_dirty_buffers and prevent the
->>>            * dirty bit from being lost.
->>>            */
->>>  - if (ret)
->>>  - cancel_dirty_page(page, PAGE_CACHE_SIZE);
->>>  + if (ret && TestClearPageDirty(page))
->>>  + account_page_cleared(page, mapping);
+>> Each memory bus group contains only one power rail(regulator) and one more memory bus blocks as follwing:
 >>
->> OK.
->>>           spin_unlock(&mapping->private_lock);
->>>   out:
->>>           if (buffers_to_free) {
->>>
->>>  ...
->>>
->>>  --- a/fs/nfs/write.c
->>>  +++ b/fs/nfs/write.c
->>>  @@ -1811,11 +1811,6 @@ int nfs_wb_page_cancel(struct inode *inode, struct page *page)
->>>                    * request from the inode / page_private pointer and
->>>                    * release it */
->>>                   nfs_inode_remove_request(req);
->>>  - /*
->>>  - * In case nfs_inode_remove_request has marked the
->>>  - * page as being dirty
->>>  - */
->>>  - cancel_dirty_page(page, PAGE_CACHE_SIZE);
+>> - MIF memory bus group
+>> power rail(VDD_MIF)-->|--- memory bus for DMC (Dynamic Memory Controller) block (dmc clock)
 >>
->> hm, if you say so..
->
-> That is main reason of this patch.
-> I dont like these obsoleted pieces of duct tape here and there.
->
->>>                   nfs_unlock_and_release_request(req);
->>>           }
->>>
->>>  ...
->>>
->>>  --- a/mm/filemap.c
->>>  +++ b/mm/filemap.c
->>>  @@ -201,18 +201,6 @@ void __delete_from_page_cache(struct page *page, void *shadow)
->>>           if (PageSwapBacked(page))
->>>                   __dec_zone_page_state(page, NR_SHMEM);
->>>           BUG_ON(page_mapped(page));
->>>  -
->>>  - /*
->>>  - * Some filesystems seem to re-dirty the page even after
->>>  - * the VM has canceled the dirty bit (eg ext3 journaling).
->>>  - *
->>>  - * Fix it up by doing a final dirty accounting check after
->>>  - * having removed the page entirely.
->>>  - */
->>>  - if (PageDirty(page) && mapping_cap_account_dirty(mapping)) {
->>>  - dec_zone_page_state(page, NR_FILE_DIRTY);
->>>  - dec_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
->>>  - }
->>>   }
->>>
->>>   /**
->>>  @@ -230,6 +218,9 @@ void delete_from_page_cache(struct page *page)
->>>
->>>           BUG_ON(!PageLocked(page));
->>>
->>>  + if (PageDirty(page))
->>>  + account_page_cleared(page, mapping);
->>>  +
+>> - INT memory bus group
+>>                       |--- memory bus for PERI block (aclk_100 clock)
+>>                       |
+>>                       |--- memory bus for DISPLAY block (aclk_160 clock)
+>>                       |
+>>                       |--- memory bus for ISP block (aclk_200 clock)
+>>                       |
+>>                       |--- memory bus for GPS block (aclk_266 clock)
+>> power rail(VDD_INT)-->|
+>>                       |--- memory bus for MCUISP block (aclk_400_mcuisp clock)
+>>                       |
+>>                       |--- memory bus for Leftbus block (gdl clock)
+>>                       |
+>>                       |--- memory bus for Rightbus block (gdr clock)
+>>                       |
+>>                       |--- memory bus for MFC block (mfc clock)
 >>
->> OK, but we lost the important comment - transplant that?
 >>
->> It's strange that we left the dirty bit set after accounting for its
->> clearing.  How does this work?  Presumably the offending fs dirtied the
->> page without accounting for it?  I have a bad feeling I wrote that code :(
->
-> account_page_dirtyed() must be always called after dirtying non-truncated pages.
-> Here page is truncating from mapping, dirty accounting never will see it again.
->
-> This is the only place where dirty page might be truncated. All other places:
-> replace_page_cache_page, invalidate_complete_page2, __remove_mapping
-> (in memory reclaimer) forbid removing dirty pages.
->
-> As I see PageDirty means nothing for truncated pages, it's never be written anywhere.
-> We could clear dirty bit here, but probably it might appear again: set_page_dirty()
-> for some reason has branch for pages without page->mapping.
+>> Exynos3250 has following table for INT memory bus group:
+>> All clocks of INT memory bus group have to contain the same entry count
+>> againt the number of 'virtual freqw'. So, each memory bus clock could have duplicate clocks.
+>>
+>> ------------------------------------------------------------------------
+>> Level|virtual freq|PERI's clk|Display's clk|ISP's clk|GPS's clk| voltage|
+>> ------------------------------------------------------------------------
+>> L6   |400000      |100000    |200000       |200000   |300000   | 95000  |
+>> L5   |200000      |100000    |160000       |200000   |200000   | 95000  |
+>> L4   |133000      |100000    |100000       |100000   |133000   | 92500  |
+>> L3   |100000      |100000    |80000        |80000    |100000   | 85000  |
+>> L2   |80000       |50000     |80000        |50000    |50000    | 85000  |
+>> L1   |50000       |50000     |50000        |50000    |50000    | 85000  |
+>> -------------------------------------------------------------------------
+>> (Except for mcuisp, leftbus, rightbus, mfc block)
+>>
+>> This table is used for devfreq ondemand governor as following:
+>> 1. ondemand governor in devfreq use the 'virtual freq' to devcide the proper
+>>    frequency for memory bus.
+>> 2. ondemand governor executes the *_target() function to set clock rate and voltage.
+>> 3. *_target() function in exynos-bus.c changes the clock rate of {PERIS|Display|ISP|GPS} clk
+>>    according to decided 'Level' by devfreq ondemand governor.
+> 
+> I see..
+> 
+> Please confirm if my understanding is correct.
+> - mem-bus-group: all blocks sharing a regulator
+> - mem-bus-block: individual blocks managing their clock rate
 
-Another puzzle here: how mark_buffer_dirty() is synchronized with truncate?
+Right and mem-bus-blcoks are included in a mem-bus-group.
 
-do_invalidatepage() called from truncate_complete_page() clears dirty
-buffers and
-tries to release them all but exit code is ignored. So theoretically
-there still might
-be pinned buffer heads and somebody might call mark_buffer_dirty() for them.
+> 
+> What you do in kernel is register group as a device (with virtual OPPs)
+> and then manage blocks within the driver. And so you need to do this
+> dummy mapping of virtual to physical frequencies.
 
-Funny but mark_buffer_dirty() gets mapping using page_mapping()!
-(Is bh might be attached to anon/slab page?)
-And it seems there is no protection against truncate
-(but it calls __set_page_dirty which checks page->mapping for NULL).
+Right.
 
-So, if this race is possible the final account_page_cleaned() must be
-placed after
-clearing page->mapping. But I think we can put in outside of mapping->tree_lock
-because mapping cannot run off under us: if truncated page is dirty
-that might be
-only call from truncate where caller holds reference to the inode.
+> 
+> It *may* not have done it this way, if I was to design this driver.
+> 
+> Each bus-block is a separately controllable device and so must be registered
+> separately. In that case all bus-blocks will have separate OPP tables and
+> all this dummy-v2p mapping will go away.
 
->
->>>           freepage = mapping->a_ops->freepage;
->>>           spin_lock_irq(&mapping->tree_lock);
->>>           __delete_from_page_cache(page, NULL);
->>>  diff --git a/mm/page-writeback.c b/mm/page-writeback.c
->>>  index 4da3cd5..f371522 100644
->>>  --- a/mm/page-writeback.c
->>>  +++ b/mm/page-writeback.c
->>>  @@ -2106,6 +2106,25 @@ void account_page_dirtied(struct page *page, struct address_space *mapping)
->>>   EXPORT_SYMBOL(account_page_dirtied);
->>>
->>>   /*
->>>  + * Helper function for deaccounting dirty page without doing writeback.
->>>  + * Doing this should *normally* only ever be done when a page
->>>  + * is truncated, and is not actually mapped anywhere at all. However,
->>>  + * fs/buffer.c does this when it notices that somebody has cleaned
->>>  + * out all the buffers on a page without actually doing it through
->>>  + * the VM. Can you say "ext3 is horribly ugly"? Tought you could.
->>
->> "Thought".
->
-> Ah, ok. That is copy-paste from cancel_dirty_page().
->
->>>  + */
->>>  +void account_page_cleared(struct page *page, struct address_space *mapping)
->>>  +{
->>>  + if (mapping_cap_account_dirty(mapping)) {
->>>  + dec_zone_page_state(page, NR_FILE_DIRTY);
->>>  + dec_bdi_stat(mapping->backing_dev_info,
->>>  + BDI_RECLAIMABLE);
->>>  + task_io_account_cancelled_write(PAGE_CACHE_SIZE);
->>>  + }
->>>  +}
->>>  +EXPORT_SYMBOL(account_page_cleared);
->>>
->>>  ...
+If each bus-block has separate regulator independently, each bus-block can be registered
+separately. But, exynos bus-blocks in mem-bus-group share the same regulator.
+
+> 
+> I believe that you are over complicating stuff without any need..
+> 
+> --
+> viresh
+> 
+
+Best Regards,
+Chanwoo Choi
