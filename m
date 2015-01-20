@@ -1,57 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029AbbATLzG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 06:55:06 -0500
-Received: from mail-ie0-f181.google.com ([209.85.223.181]:52030 "EHLO
-	mail-ie0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753757AbbATLy6 (ORCPT
+	id S1754085AbbATLzR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 06:55:17 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:56614 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753757AbbATLzO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 06:54:58 -0500
-Date: Tue, 20 Jan 2015 11:54:53 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 01/14] mfd: 88pm860x-core: Constify struct regmap_config
-Message-ID: <20150120115453.GL13701@x1>
-References: <1420448493-9355-1-git-send-email-k.kozlowski@samsung.com>
+	Tue, 20 Jan 2015 06:55:14 -0500
+Date: Tue, 20 Jan 2015 03:55:03 -0800
+From: tip-bot for Andy Shevchenko <tipbot@zytor.com>
+Message-ID: <tip-d5df8fe34bec4539e259525feabd16efccf16750@git.kernel.org>
+Cc: hpa@zytor.com, andriy.shevchenko@linux.intel.com,
+        linux-kernel@vger.kernel.org, rafael.j.wysocki@intel.com,
+        tglx@linutronix.de, mingo@kernel.org, aubrey.li@linux.intel.com,
+        mahesh.kumar.p@intel.com
+Reply-To: hpa@zytor.com, rafael.j.wysocki@intel.com, tglx@linutronix.de,
+        mingo@kernel.org, linux-kernel@vger.kernel.org,
+        andriy.shevchenko@linux.intel.com, aubrey.li@linux.intel.com,
+        mahesh.kumar.p@intel.com
+In-Reply-To: <1421253575-22509-3-git-send-email-andriy.shevchenko@linux.intel.com>
+References: <1421253575-22509-3-git-send-email-andriy.shevchenko@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/platform] x86: pmc_atom: don%27t check for NULL twice
+Git-Commit-ID: d5df8fe34bec4539e259525feabd16efccf16750
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1420448493-9355-1-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 05 Jan 2015, Krzysztof Kozlowski wrote:
+Commit-ID:  d5df8fe34bec4539e259525feabd16efccf16750
+Gitweb:     http://git.kernel.org/tip/d5df8fe34bec4539e259525feabd16efccf16750
+Author:     Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+AuthorDate: Wed, 14 Jan 2015 18:39:32 +0200
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Tue, 20 Jan 2015 12:50:14 +0100
 
-> The regmap_config struct may be const because it is not modified by the
-> driver and regmap_init() accepts pointer to const.
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> ---
->  drivers/mfd/88pm860x-core.c | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
+x86: pmc_atom: don%27t check for NULL twice
 
-Applied, thanks.
+debugfs_remove_recursive() is NULL-aware, thus, we may safely remove the check
+here. There is no need to assing NULL to variable since it will be not used
+anywhere.
 
-> diff --git a/drivers/mfd/88pm860x-core.c b/drivers/mfd/88pm860x-core.c
-> index 3a2604580164..d2a85cde68da 100644
-> --- a/drivers/mfd/88pm860x-core.c
-> +++ b/drivers/mfd/88pm860x-core.c
-> @@ -1111,7 +1111,7 @@ static int verify_addr(struct i2c_client *i2c)
->  	return 0;
->  }
->  
-> -static struct regmap_config pm860x_regmap_config = {
-> +static const struct regmap_config pm860x_regmap_config = {
->  	.reg_bits = 8,
->  	.val_bits = 8,
->  };
+Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+Acked-by: Aubrey Li <aubrey.li@linux.intel.com>
+Cc: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Cc: Kumar P. Mahesh <mahesh.kumar.p@intel.com>
+Link: http://lkml.kernel.org/r/1421253575-22509-3-git-send-email-andriy.shevchenko@linux.intel.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/kernel/pmc_atom.c | 4 ----
+ 1 file changed, 4 deletions(-)
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+diff --git a/arch/x86/kernel/pmc_atom.c b/arch/x86/kernel/pmc_atom.c
+index 8bb9a61..1dd6c62 100644
+--- a/arch/x86/kernel/pmc_atom.c
++++ b/arch/x86/kernel/pmc_atom.c
+@@ -202,11 +202,7 @@ static const struct file_operations pmc_sleep_tmr_ops = {
+ 
+ static void pmc_dbgfs_unregister(struct pmc_dev *pmc)
+ {
+-	if (!pmc->dbgfs_dir)
+-		return;
+-
+ 	debugfs_remove_recursive(pmc->dbgfs_dir);
+-	pmc->dbgfs_dir = NULL;
+ }
+ 
+ static int pmc_dbgfs_register(struct pmc_dev *pmc, struct pci_dev *pdev)
