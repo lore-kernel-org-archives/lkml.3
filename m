@@ -1,94 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752582AbbATWpk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 17:45:40 -0500
-Received: from pandora.arm.linux.org.uk ([78.32.30.218]:42200 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752239AbbATWpj (ORCPT
+	id S1752733AbbATWqv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 17:46:51 -0500
+Received: from mail-lb0-f171.google.com ([209.85.217.171]:49447 "EHLO
+	mail-lb0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751841AbbATWqt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 17:45:39 -0500
-Date: Tue, 20 Jan 2015 22:45:19 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Kees Cook <keescook@chromium.org>
-Cc: Will Deacon <will.deacon@arm.com>, Roman Peniaev <r.peniaev@gmail.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Marc Zyngier <Marc.Zyngier@arm.com>,
-        Catalin Marinas <Catalin.Marinas@arm.com>,
-        Sekhar Nori <nsekhar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@vger.kernel.org" <stable@vger.kernel.org>,
-        Christoffer Dall <christoffer.dall@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 1/2] ARM: entry-common: fix forgotten set of
- thread_info->syscall
-Message-ID: <20150120224518.GL26493@n2100.arm.linux.org.uk>
-References: <CACZ9PQVo0SF4Z-rdNk4e=yY17Xt9n5hAqm4ZRNLEw3jGYYcvtA@mail.gmail.com>
- <CAGXu5j+O6znN=7-gc3PqwqFA5MFRPLGBUzabOmQjWn_9WTjvpg@mail.gmail.com>
- <CACZ9PQUEprgKrpHazDULA5mf-OaoX=MAjEeWdspZTXT_+iUKWw@mail.gmail.com>
- <20150116155923.GK12302@n2100.arm.linux.org.uk>
- <CACZ9PQUVFtCQg6XjDbokEPy_R2fZcHiq6+EEUZnx4FVfpfZxJg@mail.gmail.com>
- <20150116161752.GL12302@n2100.arm.linux.org.uk>
- <CAGXu5j+XHFNyhaBndQr1Q2uthsFP9ZQGbaw5hofDmXyKXZ-H5g@mail.gmail.com>
- <CAGXu5j+9p1T29NoHnCNywd0T=H2mzWhCou5nSRfXZktEOC7_=A@mail.gmail.com>
- <20150119092002.GA32131@arm.com>
- <CAGXu5jJ8vphdjbqy7OojE=V70vLPs2impJ6i561JafrLYXxvbw@mail.gmail.com>
+	Tue, 20 Jan 2015 17:46:49 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAGXu5jJ8vphdjbqy7OojE=V70vLPs2impJ6i561JafrLYXxvbw@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <20150119185151.GC16427@redhat.com>
+References: <1421012793-30106-1-git-send-email-riel@redhat.com>
+ <20150115191918.GA27332@redhat.com> <20150119185109.GA16427@redhat.com> <20150119185151.GC16427@redhat.com>
+From: Andy Lutomirski <luto@amacapital.net>
+Date: Tue, 20 Jan 2015 14:46:28 -0800
+Message-ID: <CALCETrXnm9nHA5SUETp9QtTXgLO4ECFc-YrkOcHXQT=W94m+Zw@mail.gmail.com>
+Subject: Re: [PATCH 2/3] x86, fpu: always allow FPU in interrupt if use_eager_fpu()
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Suresh Siddha <sbsiddha@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Matt Fleming <matt.fleming@intel.com>, Borislav Petkov <bp@suse.de>,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 10:31:57AM -0800, Kees Cook wrote:
-> On Mon, Jan 19, 2015 at 1:20 AM, Will Deacon <will.deacon@arm.com> wrote:
-> > I'm fine either way for the native case, but we should stick with whetever
-> > we end up with. Being compatible with ARM is probably a good idea. Do you
-> > have a preference?
-> 
-> I actually prefer seccomp matching ptrace register visibility, so I'd
-> like to see restart_syscall everywhere. (It is a real entry point
-> after all.)
-> 
-> >> - compat mode on arm64 _does_ show syscall_restart (via ARM_r7).
-> >
-> > That sounds like a bug, then. Any chance you could look into a patch?
-> 
-> Well, actually, I think this is the _correct_ behavior, and native
-> arm64 and native arm are the broken pieces. If no one objects to
-> fixing this, I can work on sorting it out for ptrace, since it looks
-> like Roman has procfs handled.
-> 
-> Russell, given the rest of this thread, would you be okay exposing
-> "true" syscall to ARM? Perhaps we could implement NT_ARM_SYSTEM_CALL
-> on arm32?
+On Mon, Jan 19, 2015 at 10:51 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> The __thread_has_fpu() check in interrupted_kernel_fpu_idle() was needed
+> to prevent the nested kernel_fpu_begin(). Now that we have in_kernel_fpu
+> and !__thread_has_fpu() case in __kernel_fpu_begin() does not depend on
+> use_eager_fpu() (except clts) we can remove it.
+>
+> __thread_has_fpu() can be false even if use_eager_fpu(), but this case
+> does not differ from !use_eager_fpu() case except we should not worry
+> about X86_CR0_TS, __kernel_fpu_begin/end will not touch this bit.
+>
+> Note: I think we can kill all irq_fpu_usable() checks except in_kernel_fpu,
+> just we need to record the state of X86_CR0_TS in __kernel_fpu_begin() and
+> conditionalize stts() in __kernel_fpu_end(), but this needs another patch.
+>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  arch/x86/kernel/i387.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
+> index 26f0e80..4734865 100644
+> --- a/arch/x86/kernel/i387.c
+> +++ b/arch/x86/kernel/i387.c
+> @@ -41,8 +41,8 @@ void kernel_fpu_enable(void)
+>   * be set (so that the clts/stts pair does nothing that is
+>   * visible in the interrupted kernel thread).
+>   *
+> - * Except for the eagerfpu case when we return 1 unless we've already
+> - * been eager and saved the state in kernel_fpu_begin().
+> + * Except for the eagerfpu case when we return true; in the likely case
+> + * the thread has FPU but we are not going to set/clear TS.
+>   */
+>  static inline bool interrupted_kernel_fpu_idle(void)
+>  {
+> @@ -50,7 +50,7 @@ static inline bool interrupted_kernel_fpu_idle(void)
+>                 return false;
+>
+>         if (use_eager_fpu())
+> -               return __thread_has_fpu(current);
+> +               return true;
+>
+>         return !__thread_has_fpu(current) &&
+>                 (read_cr0() & X86_CR0_TS);
+> --
+> 1.5.5.1
+>
+>
 
-Well, the whole question is this: is restarting a system call like
-usleep() really a separate system call, or is it a kernel implementation
-detail?
+Looks good to me.
 
-If you wanted seccomp to see this, what would be the use case?  Why
-would seccomp want to block this syscall?  Does it make sense for
-seccomp to block this syscall when it doesn't block something like
-usleep() and then have usleep() fail just because the thread received
-a signal?
-
-I personally regard the whole restart system call thing as a purely
-kernel internal thing which should not be exposed to userland.  If
-we decide that it should be exposed to userland, then it becomes part
-of the user ABI, and it /could/ become difficult if we needed to
-change it in future - and I'd rather not get into the "oh shit, we
-can't change it because that would break app X" crap.
-
-Before we had the restart syscall, we used to just re-issue the
-original syscall, so actually on ARM we preserved the older Linux
-behaviour.
-
-Can you put forward a strong argument justifying why the restart
-system call should be exposed, other than "other architectures do" ?
-
--- 
-FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
-according to speedtest.net.
+--Andy
