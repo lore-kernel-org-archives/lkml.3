@@ -1,113 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753211AbbATJXS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 04:23:18 -0500
-Received: from cpsmtpb-ews03.kpnxchange.com ([213.75.39.6]:65298 "EHLO
-	cpsmtpb-ews03.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752017AbbATJXP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 04:23:15 -0500
-Message-ID: <1421745792.9655.98.camel@x220>
-Subject: Re: [PATCH 5/7] ARM: at91: move debug-macro.S into the common space
-From: Paul Bolle <pebolle@tiscali.nl>
-To: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-Cc: Valentin Rothberg <valentinrothberg@gmail.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Date: Tue, 20 Jan 2015 10:23:12 +0100
-In-Reply-To: <1421088136-10172-6-git-send-email-alexandre.belloni@free-electrons.com>
-References: <1421088136-10172-1-git-send-email-alexandre.belloni@free-electrons.com>
-	 <1421088136-10172-6-git-send-email-alexandre.belloni@free-electrons.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
+	id S1752577AbbATJ0o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 04:26:44 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:58860 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751596AbbATJ0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 04:26:42 -0500
+Message-ID: <54BE1F4A.109@ti.com>
+Date: Tue, 20 Jan 2015 11:26:34 +0200
+From: Roger Quadros <rogerq@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+MIME-Version: 1.0
+To: Tony Lindgren <tony@atomide.com>
+CC: <balbi@ti.com>, <myungjoo.ham@samsung.com>, <cw00.choi@samsung.com>,
+        <george.cherian@ti.com>, <nsekhar@ti.com>,
+        <devicetree@vger.kernel.org>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/5] ARM: omap2plus_defconfig: Enable PCF857X and EXTCON_GPIO_USB
+References: <1421689942-10201-1-git-send-email-rogerq@ti.com> <1421689942-10201-6-git-send-email-rogerq@ti.com> <20150119184546.GA18552@atomide.com> <20150119193841.GD18552@atomide.com>
+In-Reply-To: <20150119193841.GD18552@atomide.com>
+Content-Type: text/plain; charset="windows-1252"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 20 Jan 2015 09:23:13.0364 (UTC) FILETIME=[B6FCE140:01D03492]
-X-RcptDomain: vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexandre,
-
-On Mon, 2015-01-12 at 19:42 +0100, Alexandre Belloni wrote:
-> Move debug-macro.S from include/mach/ to include/debug where all other common
-> debug macros are.
+On 19/01/15 21:38, Tony Lindgren wrote:
+> * Tony Lindgren <tony@atomide.com> [150119 10:52]:
+>> * Roger Quadros <rogerq@ti.com> [150119 09:55]:
+>>> Both are needed for USB cable type detection on dra7-evm.
+>>>
+>>> Signed-off-by: Roger Quadros <rogerq@ti.com>
+>>> ---
+>>>  arch/arm/configs/omap2plus_defconfig | 2 ++
+>>>  1 file changed, 2 insertions(+)
+>>>
+>>> diff --git a/arch/arm/configs/omap2plus_defconfig b/arch/arm/configs/omap2plus_defconfig
+>>> index c2c3a85..bc23b90 100644
+>>> --- a/arch/arm/configs/omap2plus_defconfig
+>>> +++ b/arch/arm/configs/omap2plus_defconfig
+>>> @@ -203,6 +203,7 @@ CONFIG_SPI_OMAP24XX=y
+>>>  CONFIG_PINCTRL_SINGLE=y
+>>>  CONFIG_DEBUG_GPIO=y
+>>>  CONFIG_GPIO_SYSFS=y
+>>> +CONFIG_GPIO_PCF857X=y
+>>>  CONFIG_GPIO_TWL4030=y
+>>>  CONFIG_W1=y
+>>>  CONFIG_BATTERY_BQ27x00=m
+>>
+>> Looks like I have this too but as a loadable module :) So I'll keep
+>> that one.
+>>
+>>> @@ -326,6 +327,7 @@ CONFIG_DMADEVICES=y
+>>>  CONFIG_TI_EDMA=y
+>>>  CONFIG_DMA_OMAP=y
+>>>  CONFIG_EXTCON=y
+>>> +CONFIG_EXTCON_GPIO_USB=y
+>>>  CONFIG_EXTCON_PALMAS=y
+>>>  CONFIG_PWM=y
+>>>  CONFIG_PWM_TIECAP=y
+>>
+>> I'll apply this part into omap-for-v3.20/defconfig but make it into =m
+>> instead of =y.
 > 
-> Signed-off-by: Alexandre Belloni <alexandre.belloni@free-electrons.com>
-
-This patch became commit 5f58c97099f2 ("ARM: at91: move debug-macro.S
-into the common space") in today's linux-next (ie, next-20150120). I
-noticed because a script I use to check linux-next spotted a problem in
-it.
-
->  MAINTAINERS                                           |  1 +
->  arch/arm/Kconfig.debug                                |  9 +++++++--
->  .../mach/debug-macro.S => include/debug/at91.S}       | 19 +++++++++++--------
->  3 files changed, 19 insertions(+), 10 deletions(-)
->  rename arch/arm/{mach-at91/include/mach/debug-macro.S => include/debug/at91.S} (68%)
+> Oh but this depends on the driver being added, so not applying.
+> Can you please repost a patch adding CONFIG_EXTCON_GPIO_USB=m
+> once the driver is merged?
 > 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 3589d67437f8..8c25979a3c43 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -877,6 +877,7 @@ F:	arch/arm/boot/dts/at91*.dts
->  F:	arch/arm/boot/dts/at91*.dtsi
->  F:	arch/arm/boot/dts/sama*.dts
->  F:	arch/arm/boot/dts/sama*.dtsi
-> +F:	arch/arm/include/debug/at91.S
->  
->  ARM/ATMEL AT91 Clock Support
->  M:	Boris Brezillon <boris.brezillon@free-electrons.com>
-> diff --git a/arch/arm/Kconfig.debug b/arch/arm/Kconfig.debug
-> index 5ddd4906f7a7..e34d24949c6a 100644
-> --- a/arch/arm/Kconfig.debug
-> +++ b/arch/arm/Kconfig.debug
-> @@ -115,15 +115,18 @@ choice
->  		    0x80024000      | 0xf0024000     | UART9
->  
->  	config AT91_DEBUG_LL_DBGU0
-> -		bool "Kernel low-level debugging on rm9200, 9260/9g20, 9261/9g10 and 9rl"
-> +		bool "Kernel low-level debugging on rm9200, 9260/9g20, 9261/9g10, 9rl, 9x5, 9n12"
-> +		select DEBUG_AT91_UART
+Yes, I'll do that.
 
-There's no Kconfig symbol DEBUG_AT91_UART in linux-next. So this select
-is currently a nop. Why was it added?
-
->  		depends on HAVE_AT91_DBGU0
->  
->  	config AT91_DEBUG_LL_DBGU1
-> -		bool "Kernel low-level debugging on 9263 and 9g45"
-> +		bool "Kernel low-level debugging on 9263, 9g45 and sama5d3"
-> +		select DEBUG_AT91_UART
-
-Ditto.
-
->  		depends on HAVE_AT91_DBGU1
->  
->  	config AT91_DEBUG_LL_DBGU2
->  		bool "Kernel low-level debugging on sama5d4"
-> +		select DEBUG_AT91_UART
-
-Ditto.
-
->  		depends on HAVE_AT91_DBGU2
->  
->  	config DEBUG_BCM2835
-> @@ -1165,6 +1168,8 @@ config DEBUG_LL_INCLUDE
->  	string
->  	default "debug/sa1100.S" if DEBUG_SA1100
->  	default "debug/8250.S" if DEBUG_LL_UART_8250 || DEBUG_UART_8250
-> +	default "debug/at91.S" if AT91_DEBUG_LL_DBGU0 || AT91_DEBUG_LL_DBGU1 || \
-> +				AT91_DEBUG_LL_DBGU2
->  	default "debug/asm9260.S" if DEBUG_ASM9260_UART
->  	default "debug/clps711x.S" if DEBUG_CLPS711X_UART1 || DEBUG_CLPS711X_UART2
->  	default "debug/meson.S" if DEBUG_MESON_UARTAO
-
-Thanks,
-
-
-Paul Bolle
-
+cheers,
+-roger
