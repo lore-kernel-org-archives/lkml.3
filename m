@@ -1,147 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753920AbbATUd1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 15:33:27 -0500
-Received: from mail-qg0-f48.google.com ([209.85.192.48]:63673 "EHLO
-	mail-qg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753169AbbATUdZ (ORCPT
+	id S1753062AbbATUnf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 15:43:35 -0500
+Received: from saturn.retrosnub.co.uk ([178.18.118.26]:36965 "EHLO
+	saturn.retrosnub.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750777AbbATUnd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 15:33:25 -0500
+	Tue, 20 Jan 2015 15:43:33 -0500
+Message-ID: <54BEBDF1.8090909@kernel.org>
+Date: Tue, 20 Jan 2015 20:43:29 +0000
+From: Jonathan Cameron <jic23@kernel.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-From: Alexei Starovoitov <ast@plumgrid.com>
-Date: Tue, 20 Jan 2015 12:33:03 -0800
-Message-ID: <CAMEtUuxGxCHc0ifdEeKXr=aq-znwGZ2g22+RdJ9SzWmYeSEnuA@mail.gmail.com>
-Subject: Re: Re: Re: [PATCH tip 0/9] tracing: attach eBPF programs to tracepoints/syscalls/kprobe
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Brendan Gregg <brendan.d.gregg@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>,
-        Jovi Zhangwei <jovi.zhangwei@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Asaf Vertz <asaf.vertz@tandemg.com>, gregkh@linuxfoundation.org
+CC: knaack.h@gmx.de, lars@metafoo.de, pmeerw@pmeerw.net, mwelling@ieee.org,
+        daniel.baluta@intel.com, aybuke.147@gmail.com,
+        monamagarwal123@gmail.com, linux-iio@vger.kernel.org,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: iio: tsl2583: fix format string warnings
+References: <20150120104338.GA17675@ubuntu>
+In-Reply-To: <20150120104338.GA17675@ubuntu>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 3:57 AM, Masami Hiramatsu
-<masami.hiramatsu.pt@hitachi.com> wrote:
->
-> Ok, BTW, would you think is it possible to use a reusable small scratchpad
-> memory for passing arguments? (just a thought)
+On 20/01/15 10:43, Asaf Vertz wrote:
+> Fixed the following warnings (reported by cppcheck):
+> [drivers/staging/iio/light/tsl2583.c:695]: (warning) %d in format string (no. 1)
+> requires 'int' but the argument type is 'unsigned int'.
+> [drivers/staging/iio/light/tsl2583.c:695]: (warning) %d in format string (no. 2)
+> requires 'int' but the argument type is 'unsigned int'.
+> [drivers/staging/iio/light/tsl2583.c:695]: (warning) %d in format string (no. 3)
+> requires 'int' but the argument type is 'unsigned int'.
+> 
+> Signed-off-by: Asaf Vertz <asaf.vertz@tandemg.com>
+Applied to the togreg branch of iio.git - initially pushed out
+as testing.  Note this branch will almost certainly get rebased
+before going upstream.
 
-sure. doable, but what's the use case?
+Jonathan
+> ---
+>  drivers/staging/iio/light/tsl2583.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/staging/iio/light/tsl2583.c b/drivers/staging/iio/light/tsl2583.c
+> index cc4ddcc..8afae8e 100644
+> --- a/drivers/staging/iio/light/tsl2583.c
+> +++ b/drivers/staging/iio/light/tsl2583.c
+> @@ -692,7 +692,7 @@ static ssize_t taos_luxtable_show(struct device *dev,
+>  	int offset = 0;
+>  
+>  	for (i = 0; i < ARRAY_SIZE(taos_device_lux); i++) {
+> -		offset += sprintf(buf + offset, "%d,%d,%d,",
+> +		offset += sprintf(buf + offset, "%u,%u,%u,",
+>  				  taos_device_lux[i].ratio,
+>  				  taos_device_lux[i].ch0,
+>  				  taos_device_lux[i].ch1);
+> 
 
->> It's not usable for high frequency events which
->> need this in-kernel aggregation.
->> If events are rare, then just dumping everything
->> into trace buffer is just fine. No in-kernel program is needed.
->
-> Hmm, let me ensure your point, the performance number is the reason why
-> we need to do it in the kernel, right? Not mainly for the flexibility but speed.
-
-if user space can do X at the same speed as kernel,
-then user space is a better choice and more flexible.
-In case of bpf programs two things user space cannot do:
-- fast aggregation without adding penalty to things being traced
-- access to in-kernel data structures
-And often both used together.
-Say, we want to monitor amount of network traffic per user.
-So we'd use trace_net_dev_xmit() tracepoint and do
-map[current_uid()] += skb_len
-as part of the program.
-Overhead will be tiny and users won't notice any slowdown.
-Trying to do the same in user space by enabling
-this tracepoint has two problems:
-high overhead and events are hard to aggregate
-per user, since trace has 'pid', but short lived
-processes will have dead pids in trace output.
-
-> - perf probe and kprobe-event gives us a complete understandable
->  interface for what will be recorded at where.
->  (we can see the event definitions via kprobe_events interface,
->   without any tools)
-> - kprobe-event gives a completely same interface as other tracepoint
->   events.
-> - it also doesn't require any build-binary parts :) nor special tools.
->   We can play with ftrace on just a small busybox.
-
-yeah, when debugging in busybox is the goal
-and 'cat' and 'echo' are your only tools, then
-debugfs interface is the only choice :)
-
-> However, this does NOT interfere your patch upstreaming. I just said current
-> ftrace method is also meaningful for some reasons :)
-
-of course :)
-To emphasize the point I was trying to make with tracex1:
-The program is a filter/aggregator. The bpf maps
-are not suitable for streaming the events. That's the job
-of ring buffer/trace_pipe. The program may choose
-to aggregate some events and discard them (by
-returning 0 from the program), and the rest of
-the events will be streamed to user space via
-ring buffer in the format statically defined by tracepoint
-or by kprobe arguments.
-The tracex1 example loads the program and then
-reads /sys/kernel/debugfs/tracing/trace_pipe...
-
-That part I was trying to improve with bpf_trace_printk:
-to give ability to programs to stream data in a format
-different from the one statically defined by tracepoints.
-But trace_printk has its disadvantages, so probably
-something cleaner is needed.
-Like in my earlier example of trace_net_dev_xmit,
-if the program could add printing of uid to arguments
-already printed, it would have helped user space.
-
-> By the way, I concern about that bpf compiler can become another systemtap,
-> especially if you build it on llvm.
-> Would you plan to develop it on kernel
-> tree? or apart from the kernel-side development?
-
-I'm not sure I completely understand the concern.
-perf is using a bunch of out-of-tree libraries.
-mcjit of llvm or libgccjit are another libraries.
-Or may be eventually eBPF can be generated
-by something like libpcap.
-
-Ideally I would like to see 'perf run script.txt'
-where script.txt is a program in a language suited
-for tracing. The tracing language not necessary
-will fit networking use cases. Currently I'm
-using C for both and it's the most convenient,
-but some folks complained that 'restricted'
-nature of this C is hard to grasp, so I can only
-encourage Jovi to do ktap language to bpf
-translator. If it generates bpf directly that's great,
-if it uses gcc or llvm backend that's fine too.
-
-> I think it is hard to sync the development if you do it out-of-tree.
-
-I think some pieces would have to be out of tree.
-I've kept standalone llvm backend across 3.2, 3.3 and 3.4
-but it gets polluted with ifdefs and not really a long term
-solution, so now I'm working on upstreaming it
-and feedback/codereviews I got, definitely improved
-the quality of the bpf backend.
-In case of backends the only bit to sync is instruction
-set itself, which is stable. New instructions may be
-added, but that's not a concern.
-llvm backend doesn't care what language is
-used in front-end or how programs are attached
-to tracepoints or what set of bpf helper
-functions is available.
-All such bits and the main interface for
-dynamic tracer, imo, should be in perf binary.
-What it does underneath and how
-many times it calls into llvm/gcc lib, won't be visible.
-In case of systemtap compile time, for whatever
-reason, is slow to the point of being annoying,
-but here it should be instant.
