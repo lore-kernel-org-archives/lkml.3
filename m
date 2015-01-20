@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752988AbbATJrt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 04:47:49 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:55130 "EHLO
+	id S1752838AbbATJrb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 04:47:31 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:55102 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752913AbbATJro (ORCPT
+	with ESMTP id S1752386AbbATJr2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 04:47:44 -0500
+	Tue, 20 Jan 2015 04:47:28 -0500
 From: Sascha Hauer <s.hauer@pengutronix.de>
 To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -15,9 +15,9 @@ Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         Matthias Brugger <matthias.bgg@gmail.com>,
         Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
         Mark Brown <broonie@kernel.org>, Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [PATCH 2/8] soc: Add MediaTek pericfg controller support
-Date: Tue, 20 Jan 2015 10:47:05 +0100
-Message-Id: <1421747231-554-3-git-send-email-s.hauer@pengutronix.de>
+Subject: [PATCH 3/8] dt: bindings: Add MediaTek MT8135/MT8173 reset controller defines
+Date: Tue, 20 Jan 2015 10:47:06 +0100
+Message-Id: <1421747231-554-4-git-send-email-s.hauer@pengutronix.de>
 X-Mailer: git-send-email 2.1.4
 In-Reply-To: <1421747231-554-1-git-send-email-s.hauer@pengutronix.de>
 References: <1421747231-554-1-git-send-email-s.hauer@pengutronix.de>
@@ -29,81 +29,157 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds support for the MediaTek pericfg controller found
-on the MT8135/MT8173 SoCs. The pericfg controller contains
-miscellaneous registers for controlling peripheral resets and
-clocks.
+This adds the reset defines for the MT8135/MT8173 pericfg and infracfg
+controllers. Needed for device trees to specify the reset numbers in
+pericfg / infracfg reset consumers
 
 Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
 ---
- .../devicetree/bindings/soc/mediatek/pericfg.txt      | 19 +++++++++++++++++++
- drivers/soc/mediatek/Kconfig                          | 10 ++++++++++
- drivers/soc/mediatek/Makefile                         |  1 +
- drivers/soc/mediatek/mtk-pericfg.c                    |  1 -
- 4 files changed, 30 insertions(+), 1 deletion(-)
- create mode 100644 Documentation/devicetree/bindings/soc/mediatek/pericfg.txt
+ .../dt-bindings/reset-controller/mt8135-resets.h   | 64 ++++++++++++++++++++++
+ .../dt-bindings/reset-controller/mt8173-resets.h   | 63 +++++++++++++++++++++
+ 2 files changed, 127 insertions(+)
+ create mode 100644 include/dt-bindings/reset-controller/mt8135-resets.h
+ create mode 100644 include/dt-bindings/reset-controller/mt8173-resets.h
 
-diff --git a/Documentation/devicetree/bindings/soc/mediatek/pericfg.txt b/Documentation/devicetree/bindings/soc/mediatek/pericfg.txt
+diff --git a/include/dt-bindings/reset-controller/mt8135-resets.h b/include/dt-bindings/reset-controller/mt8135-resets.h
 new file mode 100644
-index 0000000..81d1aee
+index 0000000..b9add04
 --- /dev/null
-+++ b/Documentation/devicetree/bindings/soc/mediatek/pericfg.txt
-@@ -0,0 +1,19 @@
-+MediaTek pericfg Controller
++++ b/include/dt-bindings/reset-controller/mt8135-resets.h
+@@ -0,0 +1,64 @@
++/*
++ * Copyright (c) 2014 MediaTek Inc.
++ * Author: Flora Fu
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
 +
-+The pericfg controller contains miscellaneous registers for controlling
-+clocks, resets and bus settings.
++#ifndef _DT_BINDINGS_RESET_CONTROLLER_MT8135
++#define _DT_BINDINGS_RESET_CONTROLLER_MT8135
 +
-+Required properties:
-+- compatible: must be one of:
-+	mediatek,mt8135-pericfg
-+	mediatek,mt8173-pericfg
-+- reg: Address range for the pericfg controller
++/* INFRACFG resets */
++#define MT8135_INFRA_EMI_REG_RST        0
++#define MT8135_INFRA_DRAMC0_A0_RST      1
++#define MT8135_INFRA_CCIF0_RST          2
++#define MT8135_INFRA_APCIRQ_EINT_RST    3
++#define MT8135_INFRA_APXGPT_RST         4
++#define MT8135_INFRA_SCPSYS_RST         5
++#define MT8135_INFRA_CCIF1_RST          6
++#define MT8135_INFRA_PMIC_WRAP_RST      7
++#define MT8135_INFRA_KP_RST             8
++#define MT8135_INFRA_EMI_RST            32
++#define MT8135_INFRA_DRAMC0_RST         34
++#define MT8135_INFRA_SMI_RST            35
++#define MT8135_INFRA_M4U_RST            36
 +
-+Example:
++/*  PERICFG resets */
++#define MT8135_PERI_UART0_SW_RST        0
++#define MT8135_PERI_UART1_SW_RST        1
++#define MT8135_PERI_UART2_SW_RST        2
++#define MT8135_PERI_UART3_SW_RST        3
++#define MT8135_PERI_IRDA_SW_RST         4
++#define MT8135_PERI_PTP_SW_RST          5
++#define MT8135_PERI_AP_HIF_SW_RST       6
++#define MT8135_PERI_GPCU_SW_RST         7
++#define MT8135_PERI_MD_HIF_SW_RST       8
++#define MT8135_PERI_NLI_SW_RST          9
++#define MT8135_PERI_AUXADC_SW_RST       10
++#define MT8135_PERI_DMA_SW_RST          11
++#define MT8135_PERI_NFI_SW_RST          14
++#define MT8135_PERI_PWM_SW_RST          15
++#define MT8135_PERI_THERM_SW_RST        16
++#define MT8135_PERI_MSDC0_SW_RST        17
++#define MT8135_PERI_MSDC1_SW_RST        18
++#define MT8135_PERI_MSDC2_SW_RST        19
++#define MT8135_PERI_MSDC3_SW_RST        20
++#define MT8135_PERI_I2C0_SW_RST         22
++#define MT8135_PERI_I2C1_SW_RST         23
++#define MT8135_PERI_I2C2_SW_RST         24
++#define MT8135_PERI_I2C3_SW_RST         25
++#define MT8135_PERI_I2C4_SW_RST         26
++#define MT8135_PERI_I2C5_SW_RST         27
++#define MT8135_PERI_I2C6_SW_RST         28
++#define MT8135_PERI_USB_SW_RST          29
++#define MT8135_PERI_SPI1_SW_RST         33
++#define MT8135_PERI_PWRAP_BRIDGE_SW_RST 34
 +
-+	pericfg: pericfg@10003000 {
-+		#reset-cells = <1>;
-+		#clock-cells = <1>;
-+		compatible = "mediatek,mt8135-pericfg";
-+		reg = <0 0x10003000 0 0x1000>;
-+	};
-diff --git a/drivers/soc/mediatek/Kconfig b/drivers/soc/mediatek/Kconfig
-index 3ad39fe..9bdb88f 100644
---- a/drivers/soc/mediatek/Kconfig
-+++ b/drivers/soc/mediatek/Kconfig
-@@ -10,3 +10,13 @@ config MTK_INFRACFG
- 	  contains several miscellaneous registers for clock, reset and bus
- 	  settings. Say yes here if you want to run your kernel on one of these
- 	  SoCs.
++#endif  /* _DT_BINDINGS_RESET_CONTROLLER_MT8135 */
+diff --git a/include/dt-bindings/reset-controller/mt8173-resets.h b/include/dt-bindings/reset-controller/mt8173-resets.h
+new file mode 100644
+index 0000000..7648ed5
+--- /dev/null
++++ b/include/dt-bindings/reset-controller/mt8173-resets.h
+@@ -0,0 +1,63 @@
++/*
++ * Copyright (c) 2014 MediaTek Inc.
++ * Author: Flora Fu
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ */
 +
-+config MTK_PERICFG
-+	tristate "MediaTek pericfg controller support"
-+	depends on ARCH_MEDIATEK || COMPILE_TEST
-+	select REGMAP
-+	help
-+	  The MediaTek pericfg controller found on MT8135 and MT8173 SoCs
-+	  contains several miscellaneous registers for clock, reset and bus
-+	  settings. Say yes here if you want to run your kernel on one of these
-+	  SoCs.
-diff --git a/drivers/soc/mediatek/Makefile b/drivers/soc/mediatek/Makefile
-index dbeb627..e67be7c 100644
---- a/drivers/soc/mediatek/Makefile
-+++ b/drivers/soc/mediatek/Makefile
-@@ -1 +1,2 @@
- obj-$(CONFIG_MTK_INFRACFG) += mtk-infracfg.o
-+obj-$(CONFIG_MTK_PERICFG) += mtk-pericfg.o
-diff --git a/drivers/soc/mediatek/mtk-pericfg.c b/drivers/soc/mediatek/mtk-pericfg.c
-index b7ee902..aa9a7eb 100644
---- a/drivers/soc/mediatek/mtk-pericfg.c
-+++ b/drivers/soc/mediatek/mtk-pericfg.c
-@@ -1,6 +1,5 @@
- /*
-  * Copyright (c) 2014 MediaTek Inc.
-- * Author: Flora Fu <flora.fu@mediatek.com>
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
++#ifndef _DT_BINDINGS_RESET_CONTROLLER_MT8173
++#define _DT_BINDINGS_RESET_CONTROLLER_MT8173
++
++/* INFRACFG resets */
++#define MT8173_INFRA_EMI_REG_RST        0
++#define MT8173_INFRA_DRAMC0_A0_RST      1
++#define MT8173_INFRA_APCIRQ_EINT_RST    3
++#define MT8173_INFRA_APXGPT_RST         4
++#define MT8173_INFRA_SCPSYS_RST         5
++#define MT8173_INFRA_KP_RST             6
++#define MT8173_INFRA_PMIC_WRAP_RST      7
++#define MT8173_INFRA_MPIP_RST           8
++#define MT8173_INFRA_CEC_RST            9
++#define MT8173_INFRA_EMI_RST            32
++#define MT8173_INFRA_DRAMC0_RST         34
++#define MT8173_INFRA_APMIXEDSYS_RST     35
++#define MT8173_INFRA_MIPI_DSI_RST       36
++#define MT8173_INFRA_TRNG_RST           37
++#define MT8173_INFRA_SYSIRQ_RST         38
++#define MT8173_INFRA_MIPI_CSI_RST       39
++#define MT8173_INFRA_GCE_FAXI_RST       40
++#define MT8173_INFRA_MMIOMMURST         47
++
++
++/*  PERICFG resets */
++#define MT8173_PERI_UART0_SW_RST        0
++#define MT8173_PERI_UART1_SW_RST        1
++#define MT8173_PERI_UART2_SW_RST        2
++#define MT8173_PERI_UART3_SW_RST        3
++#define MT8173_PERI_IRRX_SW_RST         4
++#define MT8173_PERI_PWM_SW_RST          8
++#define MT8173_PERI_AUXADC_SW_RST       10
++#define MT8173_PERI_DMA_SW_RST          11
++#define MT8173_PERI_I2C6_SW_RST         13
++#define MT8173_PERI_NFI_SW_RST          14
++#define MT8173_PERI_THERM_SW_RST        16
++#define MT8173_PERI_MSDC2_SW_RST        17
++#define MT8173_PERI_MSDC3_SW_RST        18
++#define MT8173_PERI_MSDC0_SW_RST        19
++#define MT8173_PERI_MSDC1_SW_RST        20
++#define MT8173_PERI_I2C0_SW_RST         22
++#define MT8173_PERI_I2C1_SW_RST         23
++#define MT8173_PERI_I2C2_SW_RST         24
++#define MT8173_PERI_I2C3_SW_RST         25
++#define MT8173_PERI_I2C4_SW_RST         26
++#define MT8173_PERI_HDMI_SW_RST         29
++#define MT8173_PERI_SPI0_SW_RST         33
++
++#endif  /* _DT_BINDINGS_RESET_CONTROLLER_MT8173 */
 -- 
 2.1.4
 
