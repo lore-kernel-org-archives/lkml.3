@@ -1,125 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754843AbbATNUY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 08:20:24 -0500
-Received: from mga09.intel.com ([134.134.136.24]:2801 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753388AbbATNUX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 08:20:23 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,434,1418112000"; 
-   d="scan'208";a="664619212"
-From: Alexander Shishkin <alexander.shishkin@linux.intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        Robert Richter <rric@kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>, Andi Kleen <ak@linux.intel.com>,
-        kan.liang@intel.com, adrian.hunter@intel.com,
-        markus.t.metzger@intel.com, mathieu.poirier@linaro.org,
-        Kaixu Xia <kaixu.xia@linaro.org>, acme@infradead.org
-Subject: Re: [PATCH v9 12/14] x86: perf: intel_pt: Intel PT PMU driver
-In-Reply-To: <87egqwmdhe.fsf@ashishki-desk.ger.corp.intel.com>
-References: <1421237903-181015-1-git-send-email-alexander.shishkin@linux.intel.com> <1421237903-181015-13-git-send-email-alexander.shishkin@linux.intel.com> <20150115090659.GQ23965@worktop.programming.kicks-ass.net> <87egqwmdhe.fsf@ashishki-desk.ger.corp.intel.com>
-User-Agent: Notmuch/0.17+49~gaa57e9d (http://notmuchmail.org) Emacs/24.4.1 (x86_64-pc-linux-gnu)
-Date: Tue, 20 Jan 2015 15:20:00 +0200
-Message-ID: <87twzllhbz.fsf@ashishki-desk.ger.corp.intel.com>
+	id S1755067AbbATNUc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 08:20:32 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:54260 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755007AbbATNU2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 08:20:28 -0500
+Date: Tue, 20 Jan 2015 13:20:01 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Inha Song <ideal.song@samsung.com>, robh+dt@kernel.org, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, sameo@linux.intel.com,
+        ckeepax@opensource.wolfsonmicro.com, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com
+Message-ID: <20150120132001.GA21293@sirena.org.uk>
+References: <1420185829-24886-1-git-send-email-ideal.song@samsung.com>
+ <1420185829-24886-3-git-send-email-ideal.song@samsung.com>
+ <20150120122005.GA13701@x1>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="gKMricLos+KVdGMg"
+Content-Disposition: inline
+In-Reply-To: <20150120122005.GA13701@x1>
+X-Cookie: My LESLIE GORE record is BROKEN ...
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [alsa-devel] [PATCH v2 RESEND 2/2] mfd: arizona: Update DT
+ binding to support OUTn_MONO init_data
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexander Shishkin <alexander.shishkin@linux.intel.com> writes:
 
-> Peter Zijlstra <peterz@infradead.org> writes:
->
->> On Wed, Jan 14, 2015 at 02:18:21PM +0200, Alexander Shishkin wrote:
->>> +static __init int pt_init(void)
->>> +{
->>
->>> +	pt_pmu.pmu.attr_groups	= pt_attr_groups;
->>> +	pt_pmu.pmu.task_ctx_nr	= perf_hw_context;
->>
->> I just noticed this one, how can this ever work? We want the PT thing to
->> always get programmed, right? -- because we disallow creating more than
->> 1?
->>
->> Which reminds me; does that exclusive thing you did not allow you to
->> create one cpu wide and one per task (they're separate contexts) events?
->> At which point we're not schedulable at all.
->>
->> By sticking it on the HW context list it can end up not being programed
->> because its stuck after a bunch of hardware events that don't all fit on
->> the PMU.
->>
->> Would not the SW list be more appropriate; the SW list is a list of
->> events that's guaranteed to be schedulable.
->
-> You're right, of course.
->
-> As for the exclusive events, how about something like the code below (on
-> top of the previous exclusive event patch)? The only remaining issue
-> that I see is creating cpu-wide events in the presence of per-thread
-> (event->cpu==-1) events. Both would still work, but only one of them
-> will actually get scheduled at a time. I'm thinking about adding a
-> counter for per-thread events to struct pmu for this purpose, so that if
-> any are present, we can disallow creating cpu-wide events. Or, we can
-> leave it as it is.
->
-> What do you think?
->
-> ---
->  kernel/events/core.c | 52 +++++++++++++++++++++++++++++++++++++++++++++++-----
->  1 file changed, 47 insertions(+), 5 deletions(-)
->
-> diff --git a/kernel/events/core.c b/kernel/events/core.c
-> index cf0bf99f53..e8c86530e2 100644
-> --- a/kernel/events/core.c
-> +++ b/kernel/events/core.c
-> @@ -7688,14 +7688,11 @@ static bool exclusive_event_match(struct perf_event *e1, struct perf_event *e2)
->  	return false;
->  }
->  
-> -static bool exclusive_event_ok(struct perf_event *event,
-> -			      struct perf_event_context *ctx)
-> +static bool __exclusive_event_ok(struct perf_event *event,
-> +				 struct perf_event_context *ctx)
->  {
->  	struct perf_event *iter_event;
->  
-> -	if (!(event->pmu->capabilities & PERF_PMU_CAP_EXCLUSIVE))
-> -		return true;
-> -
->  	list_for_each_entry(iter_event, &ctx->event_list, event_entry) {
->  		if (exclusive_event_match(iter_event, event))
->  			return false;
-> @@ -7704,6 +7701,51 @@ static bool exclusive_event_ok(struct perf_event *event,
->  	return true;
->  }
->  
-> +static bool __exclusive_event_ok_on_cpu(struct perf_event *event, int cpu)
-> +{
-> +	struct perf_event_context *cpuctx;
-> +	bool ret;
-> +
-> +	cpuctx = find_get_context(event->pmu, NULL, cpu);
-> +	mutex_lock(&cpuctx->mutex);
-> +	ret = __exclusive_event_ok(event, cpuctx);
-> +	perf_unpin_context(cpuctx);
-> +	put_ctx(cpuctx);
-> +	mutex_unlock(&cpuctx->mutex);
+--gKMricLos+KVdGMg
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Actually, find_get_context() is not needed here, the following should be
-sufficient:
+On Tue, Jan 20, 2015 at 12:20:05PM +0000, Lee Jones wrote:
+> On Fri, 02 Jan 2015, Inha Song wrote:
 
-	cpuctx = &per_cpu_ptr(event->pmu->pmu_cpu_context, cpu)->ctx;
+> > This patch update DT binding to support OUTn_MONO init_data. Each
+> > output signal can be configurated as a mono differential output.
+> > The mono differential configuration is selected using the OUTn_MONO
+> > registers.
 
-	mutex_lock(&cpuctx->mutex);
-	ret = __exclusive_event_ok(event, cpuctx);
-	mutex_unlock(&cpuctx->mutex);
+> This requires a DT Ack and an entry in the example.
 
-Regards,
---
-Alex
+The DT maintainers have said they're OK with maintainers just merging
+things if they're comfortable with it (see the bindings specific
+submitting-patches.txt) and given their workload and general resulting
+responsiveness it's going to make it difficult go get anything done.
+
+--gKMricLos+KVdGMg
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBCAAGBQJUvlYAAAoJECTWi3JdVIfQePsH/A2qysGVcmVKORiKU0eiv9it
+Z5lW/OBk0Q/7JUcDijm+B8b4+h6ZRI4z/hh8NOTdj5KYyzO/Xt2m54BC6MRbfqvB
+GgA3cU5TERnbmRDZ6w+XcBFnGTZ9GVCKCAPTDuqhBsFdHL4i51YMLJCOd7kx/wV5
+a5UNVDyk6th03/upBEGGCxV1jR2k9+dfeawgfpZWfZB1kuzpj9tTBfZeOOdhwJW+
+PP3QUgkK5UeTURCKdBgWfXK8km32ja94b3TP1cAKvrHB9m7N7SBcEBpUM4I1a0ej
+zYHZQD6oI5AP+uz5CK69U1XWYYEPGcKhRYUCbgw1ptvdm2JhRwt6D487fC0pVcg=
+=8xvF
+-----END PGP SIGNATURE-----
+
+--gKMricLos+KVdGMg--
