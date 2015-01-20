@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753219AbbATPcy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 10:32:54 -0500
-Received: from mail-we0-f169.google.com ([74.125.82.169]:37302 "EHLO
-	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752547AbbATPcv (ORCPT
+	id S1753506AbbATPlN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 10:41:13 -0500
+Received: from mail-we0-f179.google.com ([74.125.82.179]:41309 "EHLO
+	mail-we0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752726AbbATPlJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 10:32:51 -0500
+	Tue, 20 Jan 2015 10:41:09 -0500
 From: Peter Griffin <peter.griffin@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
         srinivas.kandagatla@gmail.com, maxime.coquelin@st.com,
@@ -15,71 +15,81 @@ To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
 Cc: peter.griffin@linaro.org, lee.jones@linaro.org, peppe.cavallaro@st.com,
         olivier.bideau@st.com, gabriel.fernandez@st.com,
         linux-mmc@vger.kernel.org, devicetree@vger.kernel.org
-Subject: [PATCH 0/4] Add sd/emmc support for stih407 family silicon
-Date: Tue, 20 Jan 2015 15:32:40 +0000
-Message-Id: <1421767964-8798-1-git-send-email-peter.griffin@linaro.org>
+Subject: [PATCH 1/4] clk: st: STiH410: Fix pdiv and fdiv divisor when setting rate
+Date: Tue, 20 Jan 2015 15:32:41 +0000
+Message-Id: <1421767964-8798-2-git-send-email-peter.griffin@linaro.org>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1421767964-8798-1-git-send-email-peter.griffin@linaro.org>
+References: <1421767964-8798-1-git-send-email-peter.griffin@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Debugging eMMC on upstream kernels it has been noticed that when the
+targetpack configures MMC0 clock to 200Mhz (required to switch to
+HS200) then everything works OK. However if the kernel sets the
+clock rate using clk_set_rate, then the eMMC card initialisation
+fails with timeouts. Lower clock speeds (the default being 50Mhz)
+work ok, but they we fail to get good eMMC transfer rates.
 
-This series adds sd/emmc support to the sdhci-st.c driver for stih407
-family silicon. The changes mainly involve congiguring some extra glue
-registers which configure the controller.
+Looking through the vendor kernel clock driver reveals Giuseppe
+had already fixed this issue, but the patch hasn't made its way
+upstream.
 
-This series also adds support for UHS modes for eMMC. To allow
-UHS HS200/SD104 modes to function correctly, due to the
-tight timing constriants and data tuning requirement, support
-for PVT independent delay management is also added. Two types
-of delay management are supported, static delay management and
-dynamic delay management (dynamic delay loop), this delay
-management is only available on eMMC pads on stih410 and later
-silicon.
+The issue is fixed by changing the logic to manage the pdiv and
+fdiv divisors used for setting the rate inside the flexgen driver code.
 
-This has been tested with stih410-b2120 on eMMC and sd, at various
-clock speeds. As part of this testing a bug was also found in the
-upstream flexgen clock set_rate implementation.
+Pdiv is mainly targeted for low freq results, while fdiv should be
+used for divs =< 64. The other way can lead to 'duty cycle'
+issues.
 
-    max-frequency = 200Mhz
-    /dev/mmcblk0p1:
-     Timing buffered disk reads: 270 MB in  3.02 seconds =  89.54 MB/sec
-    
-    max-frequency = 100Mhz
-    root@debian-armhf:~# hdparm -t /dev/mmcblk0p1
-    /dev/mmcblk0p1:
-     Timing buffered disk reads: 210 MB in  3.00 seconds =  70.00 MB/sec
-    
-    max-frequency = 50Mhz
-    root@debian-armhf:~# hdparm -t /dev/mmcblk0p1
-    /dev/mmcblk0p1:
-     Timing buffered disk reads: 118 MB in  3.00 seconds =  39.28 MB/sec
+I have changed the original patch to keep the original behaviour
+in cases where the div is >64 which matches the original comment
+and patch description more closely. Although no clocks appear to hit
+this case currently when booting an upstream kernel.
 
-It has also been tested on stih416-b2020 to ensure we have caused no
-regressions. Finally the dt documentation has been updated to reflect
-the changes in the driver code. Intrestingly it seems we are the first
-upstream platform to be using some of the uhs bindings such as
-sd-uhs-sdr104.
+Signed-off-by: Peter Griffin <peter.griffin@linaro.org>
+Signed-off-by: Giuseppe Cavallaro <peppe.cavallaro@st.com>
+---
+ drivers/clk/st/clk-flexgen.c | 19 +++++++++++++++----
+ 1 file changed, 15 insertions(+), 4 deletions(-)
 
-regards,
-
-Peter.
-
-Peter Griffin (4):
-  clk: st: STiH410: Fix pdiv and fdiv divisor when setting rate
-  sdhci-st: Add support for stih407 family silicon.
-  mmc: sdhci-st: Update ST SDHCI binding documentation.
-  ARM: STi: DT: STiH407: Add dt nodes for sdhci and emmc.
-
- Documentation/devicetree/bindings/mmc/sdhci-st.txt | 100 +++++-
- arch/arm/boot/dts/stih407-family.dtsi              |  30 ++
- arch/arm/boot/dts/stih410-b2120.dts                |  10 +
- arch/arm/boot/dts/stihxxx-b2120.dtsi               |   8 +
- drivers/clk/st/clk-flexgen.c                       |  19 +-
- drivers/mmc/host/sdhci-st.c                        | 351 ++++++++++++++++++++-
- 6 files changed, 496 insertions(+), 22 deletions(-)
-
+diff --git a/drivers/clk/st/clk-flexgen.c b/drivers/clk/st/clk-flexgen.c
+index 2282cef..3a484b3 100644
+--- a/drivers/clk/st/clk-flexgen.c
++++ b/drivers/clk/st/clk-flexgen.c
+@@ -138,16 +138,27 @@ static int flexgen_set_rate(struct clk_hw *hw, unsigned long rate,
+ 	struct flexgen *flexgen = to_flexgen(hw);
+ 	struct clk_hw *pdiv_hw = &flexgen->pdiv.hw;
+ 	struct clk_hw *fdiv_hw = &flexgen->fdiv.hw;
+-	unsigned long primary_div = 0;
++	unsigned long div = 0;
+ 	int ret = 0;
+ 
+ 	pdiv_hw->clk = hw->clk;
+ 	fdiv_hw->clk = hw->clk;
+ 
+-	primary_div = clk_best_div(parent_rate, rate);
++	div = clk_best_div(parent_rate, rate);
+ 
+-	clk_divider_ops.set_rate(fdiv_hw, parent_rate, parent_rate);
+-	ret = clk_divider_ops.set_rate(pdiv_hw, rate, rate * primary_div);
++	/*
++	* pdiv is mainly targeted for low freq results, while fdiv
++	* should be used for div <= 64. The other way round can
++	* lead to 'duty cycle' issues.
++	*/
++
++	if (div <= 64) {
++		clk_divider_ops.set_rate(pdiv_hw, parent_rate, parent_rate);
++		ret = clk_divider_ops.set_rate(fdiv_hw, rate, rate * div);
++	} else {
++		clk_divider_ops.set_rate(fdiv_hw, parent_rate, parent_rate);
++		ret = clk_divider_ops.set_rate(pdiv_hw, rate, rate * div);
++	}
+ 
+ 	return ret;
+ }
 -- 
 1.9.1
 
