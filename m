@@ -1,252 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755058AbbATM50 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 07:57:26 -0500
-Received: from mail-wi0-f181.google.com ([209.85.212.181]:43165 "EHLO
-	mail-wi0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752298AbbATM5V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 07:57:21 -0500
-Message-ID: <54BE4F1D.7090807@gmail.com>
-Date: Tue, 20 Jan 2015 13:50:37 +0100
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1754726AbbATMwU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 07:52:20 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40156 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753961AbbATMwT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 07:52:19 -0500
+Date: Tue, 20 Jan 2015 06:52:15 -0600
+From: Josh Poimboeuf <jpoimboe@redhat.com>
+To: Miroslav Benes <mbenes@suse.cz>
+Cc: Seth Jennings <sjenning@redhat.com>, Jiri Kosina <jkosina@suse.cz>,
+        Vojtech Pavlik <vojtech@suse.cz>, live-patching@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] livepatch: support for repatching a function
+Message-ID: <20150120125215.GC15916@treble.redhat.com>
+References: <b211111ad4f29886a44871dddc313a542c48960b.1420834026.git.jpoimboe@redhat.com>
+ <alpine.LNX.2.00.1501201051330.31639@pobox.suse.cz>
 MIME-Version: 1.0
-To: Fam Zheng <famz@redhat.com>, linux-kernel@vger.kernel.org
-CC: mtk.manpages@gmail.com, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        David Drysdale <drysdale@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Vivek Goyal <vgoyal@redhat.com>, Mike Frysinger <vapier@gentoo.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        Hugh Dickins <hughd@google.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-api@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: [PATCH RFC 5/6] epoll: Add implementation for epoll_mod_wait
-References: <1421747878-30744-1-git-send-email-famz@redhat.com> <1421747878-30744-6-git-send-email-famz@redhat.com>
-In-Reply-To: <1421747878-30744-6-git-send-email-famz@redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1501201051330.31639@pobox.suse.cz>
+User-Agent: Mutt/1.5.23.1-rc1 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Fam Zheng,
-
-On 01/20/2015 10:57 AM, Fam Zheng wrote:
-> This syscall is a sequence of
+On Tue, Jan 20, 2015 at 10:56:33AM +0100, Miroslav Benes wrote:
+> On Fri, 9 Jan 2015, Josh Poimboeuf wrote:
+> > +struct klp_ops {
+> > +	struct list_head node;
+> > +	struct list_head func_stack;
+> > +	struct ftrace_ops fops;
+> > +};
 > 
-> 1) a number of epoll_ctl calls
-> 2) a epoll_pwait, with timeout enhancement.
+> I think it would be useful to add some comments for this structure and its 
+> members (similar to the last paragraph of the changelog above). Maybe it 
+> is useless now but the code is going to get complicated and it costs 
+> nothing...
+
+Ok, thanks.
+
+> Otherwise it looks ok to me (except for thing mentioned by Jiri).
 > 
-> The epoll_ctl operations are embeded so that application doesn't have to use
-> separate syscalls to insert/delete/update the fds before poll. It is more
-> efficient if the set of fds varies from one poll to another, which is the
-> common pattern for certain applications. 
-
-Which applications? Could we have some specific examples? This is a 
-complex API, and it needs good justification.
-
-> For example, depending on the input
-> buffer status, a data reading program may decide to temporarily not polling an
-> fd.
+> Thank you
 > 
-> Because the enablement of batching in this interface, even that regular
-> epoll_ctl call sequence, which manipulates several fds, can be optimized to one
-> single epoll_ctl_wait (while specifying spec=NULL to skip the poll part).
-         ^^^^^^^^^^^^^^ should be epoll_mod_wait
-
-I think you mean to say:
-
-    The ability to batch multiple "epoll_ctl" operations into a single call
-    means that even when no wait events are requested (i.e., spec == NULL),
-    poll_mod_wait() provides a performance optimization over using multiple
-    epoll_ctl() calls.
-
-Right? If yes, please amend the commit message, and this text should
-also make its way into the revised man page under a heading "NOTES".
-
-> The only complexity is returning the result of each operation.  For each
-> epoll_mod_cmd in cmds, the field "error" is an output field that will be stored
-> the return code *iff* the command is executed (0 for success and -errno of the
-> equivalent epoll_ctl call), and will be left unchanged if the command is not
-> executed because some earlier error, for example due to failure of
-> copy_from_user to copy the array.
-> 
-> Applications can utilize this fact to do error handling: they could initialize
-> all the epoll_mod_wait.error to a positive value, which is by definition not a
-> possible output value from epoll_mod_wait. Then when the syscall returned, they
-> know whether or not the command is executed by comparing each error with the
-> init value, if they're different, they have the result of the command.
-> More roughly, they can put any non-zero and not distinguish "not run" from
-> failure.
-
-The "cmds' are not executed in a specified order plus the need to
-initialize the 'errors' fields to a positive value feels a bit ugly.
-And indeed the whole "command list was only partially run" case
-is not pretty. Am I correct to understand that if an error is found
-during execution of one of the "epoll_ctl" commands in 'cmds' then
-the system call will return -1 with errno set, indicating an error,
-even though the epoll interest list may have changed because some
-of the earlier 'cmds' executed successfully? This all seems a bit of
-a headache for user space.
-
-I have a couple of questions:
-
-Q1. I can see that batching "epoll_ctl" commands might be useful,
-since it results in fewer systems calls. But, does it really
-need to be bound together with the "epoll_pwait" functionality?
-(Perhaps this point was covered in previous discussions, but
-neither the message accompanying this patch nor the 0/6 man page
-provide a compelling rationale for the need to bind these two
-operations together.)
-
-Yes, I realize you might save a system call, but it makes for a
-cumbersome API that has the above headache, and also forces the 
-need for double pointer indirection in the 'spec' argument (i.e., 
-spec is a pointer to an array of structures where each element
-in turn includes an 'events' pointer that points to another array).
-
-Why not a simpler API with two syscalls such as:
-
-epoll_ctl_batch(int epfd, int flags,
-                int ncmds, struct epoll_mod_cmd *cmds);
-
-epoll_pwait1(int epfd, struct epoll_event *events, int maxevents, 
-             struct timespec *timeout, int clock_id, 
-             const sigset_t *sigmask, size_t sigsetsize);
-
-This gives us much of the benefit of reducing system calls, but 
-with greater simplicity. And epoll_ctl_batch() could simply return
-the number of 'cmds' that were successfully executed.)
-
-Q2. In the man page in 0/6 you said that the 'cmds' were not 
-guaranteed to be executed in order. Why not? If you did provide
-such a guarantee, then, when using your current epoll_mod_wait(),
-user space could do the following:
-
-1. Initialize the cmd.errors fields to zero.
-2. Call epoll_ctl_mod()
-3. Iterate through cmd.errors looking for the first nonzero 
-   field.
-
-> Also, timeout parameter is enhanced: timespec is used, compared to the old ms
-> scalar. This provides higher precision. 
-
-Yes, that change seemed inevitable. It slightly puzzled me at the time when
-Davide Libenzi added epoll_wait() that the timeout was milliseconds, even
-though pselect() already had demonstrated the need for higher precision.
-I should have called it out way back then :-{.
-
-> The parameter field in struct
-> epoll_wait_spec, "clockid", also makes it possible for users to use a different
-> clock than the default when it makes more sense.
-> 
-> Signed-off-by: Fam Zheng <famz@redhat.com>
-> ---
->  fs/eventpoll.c           | 60 ++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/syscalls.h |  5 ++++
->  2 files changed, 65 insertions(+)
-> 
-> diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-> index e7a116d..2cc22c9 100644
-> --- a/fs/eventpoll.c
-> +++ b/fs/eventpoll.c
-> @@ -2067,6 +2067,66 @@ SYSCALL_DEFINE6(epoll_pwait, int, epfd, struct epoll_event __user *, events,
->  			      sigmask ? &ksigmask : NULL);
->  }
->  
-> +SYSCALL_DEFINE5(epoll_mod_wait, int, epfd, int, flags,
-> +		int, ncmds, struct epoll_mod_cmd __user *, cmds,
-> +		struct epoll_wait_spec __user *, spec)
-> +{
-> +	struct epoll_mod_cmd *kcmds = NULL;
-> +	int i, ret = 0;
-> +	int cmd_size = sizeof(struct epoll_mod_cmd) * ncmds;
-> +
-> +	if (flags)
-> +		return -EINVAL;
-> +	if (ncmds) {
-> +		if (!cmds)
-> +			return -EINVAL;
-> +		kcmds = kmalloc(cmd_size, GFP_KERNEL);
-> +		if (!kcmds)
-> +			return -ENOMEM;
-> +		if (copy_from_user(kcmds, cmds, cmd_size)) {
-> +			ret = -EFAULT;
-> +			goto out;
-> +		}
-> +	}
-> +	for (i = 0; i < ncmds; i++) {
-> +		struct epoll_event ev = (struct epoll_event) {
-> +			.events = kcmds[i].events,
-> +			.data = kcmds[i].data,
-> +		};
-> +		if (kcmds[i].flags) {
-> +			kcmds[i].error = ret = -EINVAL;
-
-To make the 'ret' change a little more obvious, maybe it's better to write
-
-			ret = kcmds[i].error = -EINVAL;
-
-> +			goto out;
-> +		}
-> +		kcmds[i].error = ret = ep_ctl_do(epfd, kcmds[i].op, kcmds[i].fd, ev);
-
-Likewise:
-		ret = kcmds[i].error = ep_ctl_do(epfd, kcmds[i].op, kcmds[i].fd, ev);
-
-> +		if (ret)
-> +			goto out;
-> +	}
-> +	if (spec) {
-> +		sigset_t ksigmask;
-> +		struct epoll_wait_spec kspec;
-> +		ktime_t timeout;
-> +
-> +		if(copy_from_user(&kspec, spec, sizeof(struct epoll_wait_spec)))
-
-Cosmetic point: s/if(/if (/
-
-> +			return -EFAULT;
-> +		if (kspec.sigmask) {
-> +			if (kspec.sigsetsize != sizeof(sigset_t))
-> +				return -EINVAL;
-> +			if (copy_from_user(&ksigmask, kspec.sigmask, sizeof(ksigmask)))
-> +				return -EFAULT;
-> +		}
-> +		timeout = timespec_to_ktime(kspec.timeout);
-> +		ret = epoll_pwait_do(epfd, kspec.events, kspec.maxevents,
-> +				     kspec.clockid, timeout,
-> +				     kspec.sigmask ? &ksigmask : NULL);
-
-If I understand correctly, the implementation means that the
-'size_t sigsetsize' field will probably need to be exposed to 
-applications. In the existing epoll_pwait() call (as in  ppoll()
-and pselect()) the 'size_t sigsetsize' argument is hidden by glibc.
-However, unless we expect glibc to do some structure copying to/from
-a structure that hides this field, then we're going end up exposing
-'size_t sigsetsize' to applications. (This could be avoided, if we
-split the API as I suggest above. glibc would do the same thing 
-in epoll_pwait1() that it currently does in epoll_pwait().)
-
-Thanks,
-
-Michael
+> --
+> Miroslav Benes
+> SUSE Labs
 
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+Josh
