@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753055AbbATDJl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 22:09:41 -0500
-Received: from mga11.intel.com ([192.55.52.93]:1589 "EHLO mga11.intel.com"
+	id S1753185AbbATDKt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 22:10:49 -0500
+Received: from mga02.intel.com ([134.134.136.20]:60473 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753027AbbATDJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 22:09:39 -0500
+	id S1752200AbbATDKn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jan 2015 22:10:43 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="442529135"
+   d="scan'208";a="442529206"
 From: Jiang Liu <jiang.liu@linux.intel.com>
 To: Bjorn Helgaas <bhelgaas@google.com>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
@@ -17,20 +17,22 @@ To: Bjorn Helgaas <bhelgaas@google.com>,
         "Rafael J. Wysocki" <rjw@rjwysocki.net>,
         Randy Dunlap <rdunlap@infradead.org>, Yinghai Lu <yinghai@kernel.org>,
         Borislav Petkov <bp@alien8.de>, Dimitri Sivanich <sivanich@sgi.com>,
-        x86@kernel.org, Jiang Liu <jiang.liu@linux.intel.com>,
-        Yijing Wang <wangyijing@huawei.com>
+        Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+        x86@kernel.org, Joerg Roedel <joro@8bytes.org>,
+        Vinod Koul <vinod.koul@intel.com>,
+        Jiang Liu <jiang.liu@linux.intel.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
         David Cohen <david.a.cohen@linux.intel.com>,
         Sander Eikelenboom <linux@eikelenboom.it>,
         David Vrabel <david.vrabel@citrix.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Tony Luck <tony.luck@intel.com>, Joerg Roedel <joro@8bytes.org>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
         linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        linux-acpi@vger.kernel.org
-Subject: [Patch Part1 v7 18/38] x86/MSI: Clean up unused MSI related code and interfaces
-Date: Tue, 20 Jan 2015 11:08:21 +0800
-Message-Id: <1421723321-8386-19-git-send-email-jiang.liu@linux.intel.com>
+        linux-acpi@vger.kernel.org, iommu@lists.linux-foundation.org,
+        linux-ia64@vger.kernel.org, dmaengine@vger.kernel.org
+Subject: [Patch Part1 v7 19/38] iommu/vt-d: Refine the interfaces to create IRQ for DMAR unit
+Date: Tue, 20 Jan 2015 11:08:22 +0800
+Message-Id: <1421723321-8386-20-git-send-email-jiang.liu@linux.intel.com>
 X-Mailer: git-send-email 1.7.10.4
 In-Reply-To: <1421723321-8386-1-git-send-email-jiang.liu@linux.intel.com>
 References: <1421723321-8386-1-git-send-email-jiang.liu@linux.intel.com>
@@ -38,165 +40,212 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now MSI interrupt has been converted to new hierarchy irqdomain
-interfaces, so kill legacy MSI related code and interfaces.
+Refine the interfaces to create IRQ for DMAR unit. It's a preparation
+for converting DMAR IRQ to hierarchy irqdomain on x86.
+
+It also moves dmar_alloc_hwirq()/dmar_free_hwirq() from irq_remapping.h
+to dmar.h. They are not irq_remapping specific.
 
 Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Tony Luck <tony.luck@intel.com>
-Cc: Joerg Roedel <joro@8bytes.org>
 Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: iommu@lists.linux-foundation.org
 Cc: Bjorn Helgaas <bhelgaas@google.com>
 Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Rafael J. Wysocki <rjw@rjwysocki.net>
 Cc: Randy Dunlap <rdunlap@infradead.org>
 Cc: Yinghai Lu <yinghai@kernel.org>
 Cc: Borislav Petkov <bp@alien8.de>
-Cc: Yijing Wang <wangyijing@huawei.com>
-Link: http://lkml.kernel.org/r/1416894816-23245-19-git-send-email-jiang.liu@linux.intel.com
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: Joerg Roedel <joro@8bytes.org>
+Cc: Vinod Koul <vinod.koul@intel.com>
+Link: http://lkml.kernel.org/r/1416894816-23245-20-git-send-email-jiang.liu@linux.intel.com
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/include/asm/hpet.h     |    9 -------
- arch/x86/include/asm/x86_init.h |    4 ---
- arch/x86/kernel/apic/msi.c      |   55 +++------------------------------------
- 3 files changed, 4 insertions(+), 64 deletions(-)
+ arch/ia64/include/asm/irq_remapping.h |    2 --
+ arch/ia64/kernel/msi_ia64.c           |   30 +++++++++++++++++++-----------
+ arch/x86/include/asm/irq_remapping.h  |    4 ----
+ arch/x86/kernel/apic/msi.c            |   24 +++++++++++++-----------
+ drivers/iommu/dmar.c                  |   19 +++++--------------
+ include/linux/dmar.h                  |    3 ++-
+ 6 files changed, 39 insertions(+), 43 deletions(-)
 
-diff --git a/arch/x86/include/asm/hpet.h b/arch/x86/include/asm/hpet.h
-index e87e9faf87a9..5fa9fb0f8809 100644
---- a/arch/x86/include/asm/hpet.h
-+++ b/arch/x86/include/asm/hpet.h
-@@ -85,15 +85,6 @@ extern struct irq_domain *hpet_create_irq_domain(int hpet_id);
- extern int hpet_assign_irq(struct irq_domain *domain,
- 			   struct hpet_dev *dev, int dev_num);
- 
--#ifdef CONFIG_PCI_MSI
--extern int default_setup_hpet_msi(unsigned int irq, unsigned int id);
--#else
--static inline int default_setup_hpet_msi(unsigned int irq, unsigned int id)
--{
--	return -EINVAL;
--}
--#endif
--
- #ifdef CONFIG_HPET_EMULATE_RTC
- 
- #include <linux/interrupt.h>
-diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-index f58a9c7a3c86..1649bb9ca27c 100644
---- a/arch/x86/include/asm/x86_init.h
-+++ b/arch/x86/include/asm/x86_init.h
-@@ -175,13 +175,9 @@ struct msi_msg;
- 
- struct x86_msi_ops {
- 	int (*setup_msi_irqs)(struct pci_dev *dev, int nvec, int type);
--	void (*compose_msi_msg)(struct pci_dev *dev, unsigned int irq,
--				unsigned int dest, struct msi_msg *msg,
--			       u8 hpet_id);
- 	void (*teardown_msi_irq)(unsigned int irq);
- 	void (*teardown_msi_irqs)(struct pci_dev *dev);
- 	void (*restore_msi_irqs)(struct pci_dev *dev);
--	int  (*setup_hpet_msi)(unsigned int irq, unsigned int id);
+diff --git a/arch/ia64/include/asm/irq_remapping.h b/arch/ia64/include/asm/irq_remapping.h
+index e3b3556e2e1b..a8687b1d8906 100644
+--- a/arch/ia64/include/asm/irq_remapping.h
++++ b/arch/ia64/include/asm/irq_remapping.h
+@@ -1,6 +1,4 @@
+ #ifndef __IA64_INTR_REMAPPING_H
+ #define __IA64_INTR_REMAPPING_H
+ #define irq_remapping_enabled 0
+-#define dmar_alloc_hwirq	create_irq
+-#define dmar_free_hwirq		destroy_irq
+ #endif
+diff --git a/arch/ia64/kernel/msi_ia64.c b/arch/ia64/kernel/msi_ia64.c
+index 8ae36ea177d3..3f6b76135645 100644
+--- a/arch/ia64/kernel/msi_ia64.c
++++ b/arch/ia64/kernel/msi_ia64.c
+@@ -166,7 +166,7 @@ static struct irq_chip dmar_msi_type = {
+ 	.irq_retrigger = ia64_msi_retrigger_irq,
  };
  
- struct IO_APIC_route_entry;
-diff --git a/arch/x86/kernel/apic/msi.c b/arch/x86/kernel/apic/msi.c
-index fa2dd6ebcaea..afaaa1166a7d 100644
---- a/arch/x86/kernel/apic/msi.c
-+++ b/arch/x86/kernel/apic/msi.c
-@@ -25,16 +25,12 @@
- 
- static struct irq_domain *msi_default_domain;
- 
--void native_compose_msi_msg(struct pci_dev *pdev,
--			    unsigned int irq, unsigned int dest,
--			    struct msi_msg *msg, u8 hpet_id)
-+static void native_compose_msi_msg(struct irq_cfg *cfg, struct msi_msg *msg)
+-static int
++static void
+ msi_compose_msg(struct pci_dev *pdev, unsigned int irq, struct msi_msg *msg)
  {
--	struct irq_cfg *cfg = irq_cfg(irq);
--
- 	msg->address_hi = MSI_ADDR_BASE_HI;
- 
- 	if (x2apic_enabled())
--		msg->address_hi |= MSI_ADDR_EXT_DEST_ID(dest);
-+		msg->address_hi |= MSI_ADDR_EXT_DEST_ID(cfg->dest_apicid);
- 
- 	msg->address_lo =
- 		MSI_ADDR_BASE_LO |
-@@ -44,7 +40,7 @@ void native_compose_msi_msg(struct pci_dev *pdev,
- 		((apic->irq_delivery_mode != dest_LowestPrio) ?
- 			MSI_ADDR_REDIRECTION_CPU :
- 			MSI_ADDR_REDIRECTION_LOWPRI) |
--		MSI_ADDR_DEST_ID(dest);
-+		MSI_ADDR_DEST_ID(cfg->dest_apicid);
- 
- 	msg->data =
- 		MSI_DATA_TRIGGER_EDGE |
-@@ -93,31 +89,6 @@ static void msi_update_msg(struct msi_msg *msg, struct irq_data *irq_data)
- 	msg->address_lo |= MSI_ADDR_DEST_ID(cfg->dest_apicid);
+ 	struct irq_cfg *cfg = irq_cfg + irq;
+@@ -188,21 +188,29 @@ msi_compose_msg(struct pci_dev *pdev, unsigned int irq, struct msi_msg *msg)
+ 		MSI_DATA_LEVEL_ASSERT |
+ 		MSI_DATA_DELIVERY_FIXED |
+ 		MSI_DATA_VECTOR(cfg->vector);
+-	return 0;
  }
  
--static int msi_compose_msg(struct pci_dev *pdev, unsigned int irq,
--			   struct msi_msg *msg, u8 hpet_id)
--{
--	struct irq_cfg *cfg;
--	int err;
--	unsigned dest;
--
--	if (disable_apic)
--		return -ENXIO;
--
--	cfg = irq_cfg(irq);
--	err = assign_irq_vector(irq, cfg, apic->target_cpus());
--	if (err)
--		return err;
--
--	err = apic->cpu_mask_to_apicid_and(cfg->domain,
--					   apic->target_cpus(), &dest);
--	if (err)
--		return err;
--
--	x86_msi.compose_msi_msg(pdev, irq, dest, msg, hpet_id);
--
--	return 0;
--}
--
- /*
-  * IRQ Chip for MSI PCI/PCI-X/PCI-Express Devices,
-  * which implement the MSI or MSI-X Capability Structure.
-@@ -262,7 +233,7 @@ int arch_setup_dmar_msi(unsigned int irq)
- 	struct msi_msg msg;
- 	struct irq_cfg *cfg = irq_cfg(irq);
- 
--	native_compose_msi_msg(NULL, irq, cfg->dest_apicid, &msg, -1);
-+	native_compose_msi_msg(cfg, &msg);
- 	dmar_msi_write(irq, &msg);
- 	irq_set_chip_and_handler_name(irq, &dmar_msi_type, handle_edge_irq,
- 				      "edge");
-@@ -318,24 +289,6 @@ static struct irq_chip hpet_msi_controller = {
- 	.flags = IRQCHIP_SKIP_SET_WAKE,
- };
- 
--int default_setup_hpet_msi(unsigned int irq, unsigned int id)
--{
--	struct irq_chip *chip = &hpet_msi_controller;
--	struct msi_msg msg;
+-int arch_setup_dmar_msi(unsigned int irq)
++int dmar_alloc_hwirq(int id, int node, void *arg)
+ {
 -	int ret;
--
--	ret = msi_compose_msg(NULL, irq, &msg, id);
++	int irq;
+ 	struct msi_msg msg;
+ 
+-	ret = msi_compose_msg(NULL, irq, &msg);
 -	if (ret < 0)
 -		return ret;
+-	dmar_msi_write(irq, &msg);
+-	irq_set_chip_and_handler_name(irq, &dmar_msi_type, handle_edge_irq,
+-				      "edge");
+-	return 0;
++	irq = create_irq();
++	if (irq > 0) {
++		irq_set_handler_data(irq, arg);
++		irq_set_chip_and_handler_name(irq, &dmar_msi_type,
++					      handle_edge_irq, "edge");
++		msi_compose_msg(NULL, irq, &msg);
++		dmar_msi_write(irq, &msg);
++	}
++
++	return irq;
++}
++
++void dmar_free_hwirq(int irq)
++{
++	irq_set_handler_data(irq, NULL);
++	destroy_irq(irq);
+ }
+ #endif /* CONFIG_INTEL_IOMMU */
+ 
+diff --git a/arch/x86/include/asm/irq_remapping.h b/arch/x86/include/asm/irq_remapping.h
+index a6d0cca0d08f..79f1a84e6a85 100644
+--- a/arch/x86/include/asm/irq_remapping.h
++++ b/arch/x86/include/asm/irq_remapping.h
+@@ -117,8 +117,4 @@ irq_remapping_get_irq_domain(struct irq_alloc_info *info)
+ 
+ #define	irq_remapping_print_chip	NULL
+ #endif /* CONFIG_IRQ_REMAP */
 -
--	hpet_msi_write(irq_get_handler_data(irq), &msg);
--	irq_set_status_flags(irq, IRQ_MOVE_PCNTXT);
--	setup_remapped_irq(irq, irq_cfg(irq), chip);
+-extern int dmar_alloc_hwirq(void);
+-extern void dmar_free_hwirq(int irq);
 -
--	irq_set_chip_and_handler_name(irq, chip, handle_edge_irq, "edge");
+ #endif /* __X86_IRQ_REMAPPING_H */
+diff --git a/arch/x86/kernel/apic/msi.c b/arch/x86/kernel/apic/msi.c
+index afaaa1166a7d..695c82bbd682 100644
+--- a/arch/x86/kernel/apic/msi.c
++++ b/arch/x86/kernel/apic/msi.c
+@@ -228,25 +228,27 @@ static struct irq_chip dmar_msi_type = {
+ 	.flags			= IRQCHIP_SKIP_SET_WAKE,
+ };
+ 
+-int arch_setup_dmar_msi(unsigned int irq)
++int dmar_alloc_hwirq(int id, int node, void *arg)
+ {
++	int irq;
+ 	struct msi_msg msg;
+-	struct irq_cfg *cfg = irq_cfg(irq);
+ 
+-	native_compose_msi_msg(cfg, &msg);
+-	dmar_msi_write(irq, &msg);
+-	irq_set_chip_and_handler_name(irq, &dmar_msi_type, handle_edge_irq,
+-				      "edge");
 -	return 0;
 -}
--
- static int hpet_domain_alloc(struct irq_domain *domain, unsigned int virq,
- 			     unsigned int nr_irqs, void *arg)
++	irq = irq_domain_alloc_irqs(NULL, 1, node, NULL);
++	if (irq > 0) {
++		irq_set_handler_data(irq, arg);
++		irq_set_chip_and_handler_name(irq, &dmar_msi_type,
++					      handle_edge_irq, "edge");
++		native_compose_msi_msg(irq_cfg(irq), &msg);
++		dmar_msi_write(irq, &msg);
++	}
+ 
+-int dmar_alloc_hwirq(void)
+-{
+-	return irq_domain_alloc_irqs(NULL, 1, NUMA_NO_NODE, NULL);
++	return irq;
+ }
+ 
+ void dmar_free_hwirq(int irq)
  {
++	irq_set_handler_data(irq, NULL);
++	irq_set_handler(irq, NULL);
+ 	irq_domain_free_irqs(irq, 1);
+ }
+ #endif
+diff --git a/drivers/iommu/dmar.c b/drivers/iommu/dmar.c
+index 9847613085e1..536f2d8ea41a 100644
+--- a/drivers/iommu/dmar.c
++++ b/drivers/iommu/dmar.c
+@@ -1087,8 +1087,8 @@ static void free_iommu(struct intel_iommu *iommu)
+ 
+ 	if (iommu->irq) {
+ 		free_irq(iommu->irq, iommu);
+-		irq_set_handler_data(iommu->irq, NULL);
+ 		dmar_free_hwirq(iommu->irq);
++		iommu->irq = 0;
+ 	}
+ 
+ 	if (iommu->qi) {
+@@ -1642,23 +1642,14 @@ int dmar_set_interrupt(struct intel_iommu *iommu)
+ 	if (iommu->irq)
+ 		return 0;
+ 
+-	irq = dmar_alloc_hwirq();
+-	if (irq <= 0) {
++	irq = dmar_alloc_hwirq(iommu->seq_id, iommu->node, iommu);
++	if (irq > 0) {
++		iommu->irq = irq;
++	} else {
+ 		pr_err("IOMMU: no free vectors\n");
+ 		return -EINVAL;
+ 	}
+ 
+-	irq_set_handler_data(irq, iommu);
+-	iommu->irq = irq;
+-
+-	ret = arch_setup_dmar_msi(irq);
+-	if (ret) {
+-		irq_set_handler_data(irq, NULL);
+-		iommu->irq = 0;
+-		dmar_free_hwirq(irq);
+-		return ret;
+-	}
+-
+ 	ret = request_irq(irq, dmar_fault, IRQF_NO_THREAD, iommu->name, iommu);
+ 	if (ret)
+ 		pr_err("IOMMU: can't request irq\n");
+diff --git a/include/linux/dmar.h b/include/linux/dmar.h
+index 30624954dec5..84737565c1fd 100644
+--- a/include/linux/dmar.h
++++ b/include/linux/dmar.h
+@@ -227,6 +227,7 @@ extern void dmar_msi_read(int irq, struct msi_msg *msg);
+ extern void dmar_msi_write(int irq, struct msi_msg *msg);
+ extern int dmar_set_interrupt(struct intel_iommu *iommu);
+ extern irqreturn_t dmar_fault(int irq, void *dev_id);
+-extern int arch_setup_dmar_msi(unsigned int irq);
++extern int dmar_alloc_hwirq(int id, int node, void *arg);
++extern void dmar_free_hwirq(int irq);
+ 
+ #endif /* __DMAR_H__ */
 -- 
 1.7.10.4
 
