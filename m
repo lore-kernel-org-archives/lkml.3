@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751931AbbATCtF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jan 2015 21:49:05 -0500
-Received: from rtits2.realtek.com ([60.250.210.242]:41006 "EHLO
-	rtits2.realtek.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751267AbbATCtC convert rfc822-to-8bit (ORCPT
+	id S1751811AbbATC63 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jan 2015 21:58:29 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:65005 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751410AbbATC62 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jan 2015 21:49:02 -0500
-Authenticated-By: 
-X-SpamFilter-By: BOX Solutions SpamTrap 5.52 with qID t0K2moaP016071, This message is accepted by code: ctloc85258
-From: Hayes Wang <hayeswang@realtek.com>
-To: David Miller <davem@davemloft.net>,
-        "sfeldma@gmail.com" <sfeldma@gmail.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        nic_swsd <nic_swsd@realtek.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>
-Subject: RE: [PATCH net-next 1/7] r8152: adjust rx_bottom
-Thread-Topic: [PATCH net-next 1/7] r8152: adjust rx_bottom
-Thread-Index: AQHQNCzHp+COjrpcAkWYiP9rnzW4lZzIR54A
-Date: Tue, 20 Jan 2015 02:48:50 +0000
-Message-ID: <0835B3720019904CB8F7AA43166CEEB2EE6E76@RTITMBSV03.realtek.com.tw>
-References: <1394712342-15778-118-Taiwan-albertk@realtek.com>
-	<1394712342-15778-119-Taiwan-albertk@realtek.com>
-	<CAE4R7bAv26f-+DW-TmjspJxAb-3Add5sf563mnMUTGCyiqG3rQ@mail.gmail.com>
- <20150119.161333.1471925264489559119.davem@davemloft.net>
-In-Reply-To: <20150119.161333.1471925264489559119.davem@davemloft.net>
-Accept-Language: zh-TW, en-US
-Content-Language: zh-TW
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [172.21.71.143]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 19 Jan 2015 21:58:28 -0500
+From: Wang Nan <wangnan0@huawei.com>
+To: <masami.hiramatsu.pt@hitachi.com>
+CC: <tixy@linaro.org>, <linux@arm.linux.org.uk>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <lizefan@huawei.com>
+Subject: [PATCH] kprobes: bugfix: makes kprobes/enabled works correctly for optimized kprobes.
+Date: Tue, 20 Jan 2015 10:51:51 +0800
+Message-ID: <1421722311-30455-1-git-send-email-wangnan0@huawei.com>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <54BCFC6E.1080007@hitachi.com>
+References: <54BCFC6E.1080007@hitachi.com>
 MIME-Version: 1.0
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- David Miller [mailto:davem@davemloft.net] 
-> Sent: Tuesday, January 20, 2015 5:14 AM
-[...]
-> >> -               r8152_submit_rx(tp, agg, GFP_ATOMIC);
-> >> +               if (!ret) {
-> >> +                       ret = r8152_submit_rx(tp, agg, GFP_ATOMIC);
-> >> +               } else {
-> >> +                       urb->actual_length = 0;
-> >> +                       list_add_tail(&agg->list, next);
-> > 
-> > Do you need a spin_lock_irqsave(&tp->rx_lock, flags) around this?
-> 
-> Indeed, and rtl_start_rx() seems to also access agg->list without
-> proper locking.
+debugfs/kprobes/enabled doesn't work correctly on optimized kprobes.
+Masami Hiramatsu has a test report on x86_64 platform:
 
-It is unnecessary because I deal with them in a local list_head. My steps are
-   1. Move the whole list from tp->rx_done to local rx_queue. (with spin lock)
-   2. dequeue/enqueue the lists in rx_queue.
-   3. Move the lists in rx_queue to tp->rx_done if it is necessary. (spin lock)
-For step 2, it wouldn't have race, because the list_head is local and no other
-function would change it. Therefore, I don't think it needs the spin lock.
+https://lkml.org/lkml/2015/1/19/274
 
-The rtl_start_rx() also uses the similar way.
+This patch forces it to unoptimize kprobe if kprobes_all_disarmed
+is set. It also checks the flag in unregistering path for skipping
+unneeded disarming process when kprobes globally disarmed.
+
+Signed-off-by: Wang Nan <wangnan0@huawei.com>
+---
+ kernel/kprobes.c | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 9471710..fb995ef 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -869,7 +869,8 @@ static void __disarm_kprobe(struct kprobe *p, bool reopt)
+ {
+ 	struct kprobe *_p;
  
-Best Regards,
-Hayes
+-	unoptimize_kprobe(p, false);	/* Try to unoptimize */
++	/* Try to unoptimize */
++	unoptimize_kprobe(p, kprobes_all_disarmed);
+ 
+ 	if (!kprobe_queued(p)) {
+ 		arch_disarm_kprobe(p);
+@@ -1571,7 +1572,13 @@ static struct kprobe *__disable_kprobe(struct kprobe *p)
+ 
+ 		/* Try to disarm and disable this/parent probe */
+ 		if (p == orig_p || aggr_kprobe_disabled(orig_p)) {
+-			disarm_kprobe(orig_p, true);
++			/*
++			 * If kprobes_all_disarmed is set, orig_p
++			 * should have already been disarmed, so
++			 * skip unneed disarming process.
++			 */
++			if (!kprobes_all_disarmed)
++				disarm_kprobe(orig_p, true);
+ 			orig_p->flags |= KPROBE_FLAG_DISABLED;
+ 		}
+ 	}
+-- 
+1.8.4
+
