@@ -1,52 +1,229 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753461AbbATRUx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 12:20:53 -0500
-Received: from mail-qc0-f172.google.com ([209.85.216.172]:38114 "EHLO
-	mail-qc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751462AbbATRUw (ORCPT
-	<rfc822;Linux-Kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 12:20:52 -0500
-Message-ID: <54BE8E71.3080101@hurleysoftware.com>
-Date: Tue, 20 Jan 2015 12:20:49 -0500
-From: Peter Hurley <peter@hurleysoftware.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
-MIME-Version: 1.0
-To: Howard Chu <hyc@symas.com>
-CC: Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Jiri Slaby <jslaby@suse.cz>,
-        Linux Kernel Mailing List <Linux-Kernel@vger.kernel.org>,
-        linux-serial@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>
-Subject: Re: [PATCH] n_tty: Remove LINEMODE support
-References: <1421616632-4077-1-git-send-email-peter@hurleysoftware.com> <54BC3771.7030204@symas.com> <54BC5EC7.1090202@hurleysoftware.com> <54BCFC94.1040605@symas.com> <54BD1B53.9030901@hurleysoftware.com> <54BD328F.9090208@symas.com> <54BD567C.8070200@hurleysoftware.com> <54BD69A4.4090705@symas.com> <54BE6BD9.4050403@hurleysoftware.com>
-In-Reply-To: <54BE6BD9.4050403@hurleysoftware.com>
-Content-Type: text/plain; charset=utf-8
+	id S1752717AbbATRXj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 12:23:39 -0500
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:56964 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751102AbbATRXh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 12:23:37 -0500
+Message-ID: <1421774615.2080.88.camel@HansenPartnership.com>
+Subject: Re: module: fix module_refcount() return when running in a module
+ exit routine
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>
+Date: Tue, 20 Jan 2015 09:23:35 -0800
+In-Reply-To: <871tmqcmau.fsf@rustcorp.com.au>
+References: <1421600146.2080.8.camel@HansenPartnership.com>
+	 <54BC93C3.7010808@hitachi.com> <878ugzco8c.fsf@rustcorp.com.au>
+	 <1421683701.2080.25.camel@HansenPartnership.com>
+	 <871tmqcmau.fsf@rustcorp.com.au>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2015 09:53 AM, Peter Hurley wrote:
-> On 01/19/2015 03:31 PM, Howard Chu wrote:
->> Peter Hurley wrote:
->>> Ok.
->>> I might see if I can get telnet + a revised kernel interface to work together; I'll
->>> let you know if this works out.
->>
->> The patch here https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=585527#20 still applies cleanly to current Ubuntu netkit-telnet source and works.
+On Tue, 2015-01-20 at 11:15 +1030, Rusty Russell wrote:
+> James Bottomley <James.Bottomley@HansenPartnership.com> writes:
+> > On Mon, 2015-01-19 at 16:21 +1030, Rusty Russell wrote:
+> >> Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> writes:
+> >> > (2015/01/19 1:55), James Bottomley wrote:
+> >> >> From: James Bottomley <JBottomley@Parallels.com>
+> >> >> 
+> >> >> After e513cc1 module: Remove stop_machine from module unloading,
+> >> >> module_refcount() is returning (unsigned long)-1 when called from within
+> >> >> a routine that runs in module_exit.  This is confusing the scsi device
+> >> >> put code which is coded to detect a module_refcount() of zero for
+> >> >> running within a module exit routine and not try to do another
+> >> >> module_put.  The fix is to restore the original behaviour of
+> >> >> module_refcount() and return zero if we're running inside an exit
+> >> >> routine.
+> >> >> 
+> >> >> Fixes: e513cc1c07e2ab93a4514eec9833e031df3e30bb
+> >> >> Reported-by: Bart Van Assche <bvanassche@acm.org>
+> >> >> Signed-off-by: James Bottomley <JBottomley@Parallels.com>
+> >> >> 
+> >> >
+> >> > Yes, this should be fixed as you said, since it must return "unsigned long" value.
+> >> 
+> >> But there are only three non-module callers:
+> >> 
+> >> drivers/scsi/scsi.c:1012:	if (module && module_refcount(module) != 0)
+> >> drivers/staging/lustre/lustre/obdclass/lu_object.c:1359:			LINVRNT(module_refcount(key->lct_owner) > 0);
+> >> include/linux/module.h:447:unsigned long module_refcount(struct module *mod);
+> >> kernel/debug/kdb/kdb_main.c:2026:		kdb_printf("%4ld ", module_refcount(mod));
+> >> kernel/module.c:775:unsigned long module_refcount(struct module *mod)
+> >> kernel/module.c:779:EXPORT_SYMBOL(module_refcount);
+> >> kernel/module.c:859:	seq_printf(m, " %lu ", module_refcount(mod));
+> >> kernel/module.c:911:	return sprintf(buffer, "%lu\n", module_refcount(mk->mod));
+> >> 
+> >> The first one I think should be eliminated, and the second one is simply
+> >> an assertion before calling module_put() (which should probably be
+> >> eliminated).  The others are just printing information.
+> >
+> > If you really want to insist on module_reference() returning -1 when the
+> > module is in it's exit phase, OK, but in that case, I think it should
+> > return a signed value, not an unsigned one.
 > 
-> Aw snap. I just quickly glanced at the patch and source, and assumed
-> that the 4 year old patch had been applied.
+> Sure; I just didn't want to paper over the problem here.  And I'm not
+> sure we want to lose information, eg. in kgdb we're presumably looking
+> at it because something went wrong...
 > 
->> You'll have to use a dumb shell to see any effect.
+> Thanks,
+> Rusty.
 > 
-> I'm testing it now.
+> Subject: module: make module_refcount() a signed integer.
+> 
+> James Bottomley points out that it will be -1 during unload.  It's
+> only used for diagnostics, so let's not hide that as it could be a
+> clue as to what's gone wrong.
+> 
+> Cc: Jason Wessel <jason.wessel@windriver.com>
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> 
+> diff --git a/include/linux/module.h b/include/linux/module.h
+> index ebfb0e153c6a..b653d7c0a05a 100644
+> --- a/include/linux/module.h
+> +++ b/include/linux/module.h
+> @@ -444,7 +444,7 @@ extern void __module_put_and_exit(struct module *mod, long code)
+>  #define module_put_and_exit(code) __module_put_and_exit(THIS_MODULE, code)
+>  
+>  #ifdef CONFIG_MODULE_UNLOAD
+> -unsigned long module_refcount(struct module *mod);
+> +int module_refcount(struct module *mod);
+>  void __symbol_put(const char *symbol);
+>  #define symbol_put(x) __symbol_put(VMLINUX_SYMBOL_STR(x))
+>  void symbol_put_addr(void *addr);
+> diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
+> index f191bddf64b8..7b40c5f07dce 100644
+> --- a/kernel/debug/kdb/kdb_main.c
+> +++ b/kernel/debug/kdb/kdb_main.c
+> @@ -2023,7 +2023,7 @@ static int kdb_lsmod(int argc, const char **argv)
+>  		kdb_printf("%-20s%8u  0x%p ", mod->name,
+>  			   mod->core_size, (void *)mod);
+>  #ifdef CONFIG_MODULE_UNLOAD
+> -		kdb_printf("%4ld ", module_refcount(mod));
+> +		kdb_printf("%4d ", module_refcount(mod));
+>  #endif
+>  		if (mod->state == MODULE_STATE_GOING)
+>  			kdb_printf(" (Unloading)");
+> diff --git a/kernel/module.c b/kernel/module.c
+> index 3965511ae133..2387c98347c1 100644
+> --- a/kernel/module.c
+> +++ b/kernel/module.c
+> @@ -772,9 +772,9 @@ static int try_stop_module(struct module *mod, int flags, int *forced)
+>  	return 0;
+>  }
+>  
+> -unsigned long module_refcount(struct module *mod)
+> +int module_refcount(struct module *mod)
+>  {
+> -	return (unsigned long)atomic_read(&mod->refcnt) - MODULE_REF_BASE;
+> +	return atomic_read(&mod->refcnt) - MODULE_REF_BASE;
+>  }
+>  EXPORT_SYMBOL(module_refcount);
+>  
+> @@ -856,7 +856,7 @@ static inline void print_unload_info(struct seq_file *m, struct module *mod)
+>  	struct module_use *use;
+>  	int printed_something = 0;
+>  
+> -	seq_printf(m, " %lu ", module_refcount(mod));
+> +	seq_printf(m, " %i ", module_refcount(mod));
+>  
+>  	/*
+>  	 * Always include a trailing , so userspace can differentiate
+> @@ -908,7 +908,7 @@ EXPORT_SYMBOL_GPL(symbol_put_addr);
+>  static ssize_t show_refcnt(struct module_attribute *mattr,
+>  			   struct module_kobject *mk, char *buffer)
+>  {
+> -	return sprintf(buffer, "%lu\n", module_refcount(mk->mod));
+> +	return sprintf(buffer, "%i\n", module_refcount(mk->mod));
+>  }
 
-Yeah, canonical read() does not behave as it should if EXTPROC
-is enabled; it's returning both multiple lines and unterminated lines.
+Actually, I don't think this is enough.  Some Australian once came up
+with a guide to APIs, and lectured on it at length, one of which was
+that the name should be the obvious use and it is unexpected that a
+refcount would go negative.  I think we could raise it from -6 on the
+API scale to +3 if we add some documentation like below.
 
-Regards,
-Peter Hurley
+James
+
+---
+
+diff --git a/include/linux/module.h b/include/linux/module.h
+index ebfb0e1..b653d7c 100644
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -444,7 +444,7 @@ extern void __module_put_and_exit(struct module *mod, long code)
+ #define module_put_and_exit(code) __module_put_and_exit(THIS_MODULE, code)
+ 
+ #ifdef CONFIG_MODULE_UNLOAD
+-unsigned long module_refcount(struct module *mod);
++int module_refcount(struct module *mod);
+ void __symbol_put(const char *symbol);
+ #define symbol_put(x) __symbol_put(VMLINUX_SYMBOL_STR(x))
+ void symbol_put_addr(void *addr);
+diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
+index f191bdd..7b40c5f 100644
+--- a/kernel/debug/kdb/kdb_main.c
++++ b/kernel/debug/kdb/kdb_main.c
+@@ -2023,7 +2023,7 @@ static int kdb_lsmod(int argc, const char **argv)
+ 		kdb_printf("%-20s%8u  0x%p ", mod->name,
+ 			   mod->core_size, (void *)mod);
+ #ifdef CONFIG_MODULE_UNLOAD
+-		kdb_printf("%4ld ", module_refcount(mod));
++		kdb_printf("%4d ", module_refcount(mod));
+ #endif
+ 		if (mod->state == MODULE_STATE_GOING)
+ 			kdb_printf(" (Unloading)");
+diff --git a/kernel/module.c b/kernel/module.c
+index 3965511..63fc779 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -772,9 +772,18 @@ static int try_stop_module(struct module *mod, int flags, int *forced)
+ 	return 0;
+ }
+ 
+-unsigned long module_refcount(struct module *mod)
++/**
++ * module_refcount - return the refcount or -1 if unloading
++ *
++ * @mod:	the module we're checking
++ *
++ * Returns:
++ *	-1 if the module is in the process of unloading
++ *	otherwise the number of references in the kernel to the module
++ */
++int module_refcount(struct module *mod)
+ {
+-	return (unsigned long)atomic_read(&mod->refcnt) - MODULE_REF_BASE;
++	return atomic_read(&mod->refcnt) - MODULE_REF_BASE;
+ }
+ EXPORT_SYMBOL(module_refcount);
+ 
+@@ -856,7 +865,7 @@ static inline void print_unload_info(struct seq_file *m, struct module *mod)
+ 	struct module_use *use;
+ 	int printed_something = 0;
+ 
+-	seq_printf(m, " %lu ", module_refcount(mod));
++	seq_printf(m, " %i ", module_refcount(mod));
+ 
+ 	/*
+ 	 * Always include a trailing , so userspace can differentiate
+@@ -908,7 +917,7 @@ EXPORT_SYMBOL_GPL(symbol_put_addr);
+ static ssize_t show_refcnt(struct module_attribute *mattr,
+ 			   struct module_kobject *mk, char *buffer)
+ {
+-	return sprintf(buffer, "%lu\n", module_refcount(mk->mod));
++	return sprintf(buffer, "%i\n", module_refcount(mk->mod));
+ }
+ 
+ static struct module_attribute modinfo_refcnt =
 
 
