@@ -1,296 +1,1096 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753905AbbATVuj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 16:50:39 -0500
-Received: from mga01.intel.com ([192.55.52.88]:42064 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753839AbbATVue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753867AbbATVue (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 20 Jan 2015 16:50:34 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,437,1418112000"; 
-   d="scan'208";a="664869727"
-From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-To: x86@kernel.org, Aubrey Li <aubrey.li@linux.intel.com>,
-        "Rafael J . Wysocki" <rafael.j.wysocki@intel.com>,
-        "Kumar P, Mahesh" <mahesh.kumar.p@intel.com>,
-        linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org
-Cc: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
-Subject: [PATCH v2 4/4] PMC driver: Add Cherrytrail PMC interface
-Date: Tue, 20 Jan 2015 23:50:03 +0200
-Message-Id: <1421790603-30097-5-git-send-email-andriy.shevchenko@linux.intel.com>
-X-Mailer: git-send-email 2.1.4
-In-Reply-To: <1421790603-30097-1-git-send-email-andriy.shevchenko@linux.intel.com>
-References: <1421790603-30097-1-git-send-email-andriy.shevchenko@linux.intel.com>
+Received: from mail-we0-f172.google.com ([74.125.82.172]:44466 "EHLO
+	mail-we0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753727AbbATVu3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 16:50:29 -0500
+Date: Tue, 20 Jan 2015 16:50:24 -0500
+From: "Ahmed S. Darwish" <darwish.07@gmail.com>
+To: Olivier Sobrie <olivier@sobrie.be>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+Cc: Andri Yngvason <andri.yngvason@marel.com>,
+        Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v5 5/5] can: kvaser_usb: Add support for the USBcan-II family
+Message-ID: <20150120215024.GE16828@linux>
+References: <20141223154654.GB6460@vivalin-002>
+ <20150120214409.GA16828@linux>
+ <20150120214537.GB16828@linux>
+ <20150120214709.GC16828@linux>
+ <20150120214834.GD16828@linux>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150120214834.GD16828@linux>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch adds CHT PMC interface. This exposes all the South IP device power
-states and S0ix states for CHT. The bit map of FUNC_DIS and D3_STS_0 registers
-for SoCs are consistent. The D3_STS_1 and FUNC_DIS_2 registers, however, are
-not aligned. This is fixed by splitting a common mapping on per register basis.
+From: Ahmed S. Darwish <ahmed.darwish@valeo.com>
 
-Signed-off-by: Kumar P Mahesh <mahesh.kumar.p@intel.com>
-Signed-off-by: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+CAN to USB interfaces sold by the Swedish manufacturer Kvaser are
+divided into two major families: 'Leaf', and 'USBcanII'.  From an
+Operating System perspective, the firmware of both families behave
+in a not too drastically different fashion.
+
+This patch adds support for the USBcanII family of devices to the
+current Kvaser Leaf-only driver.
+
+CAN frames sending, receiving, and error handling paths has been
+tested using the dual-channel "Kvaser USBcan II HS/LS" dongle. It
+should also work nicely with other products in the same category.
+
+List of new devices supported by this driver update:
+
+         - Kvaser USBcan II HS/HS
+         - Kvaser USBcan II HS/LS
+         - Kvaser USBcan Rugged ("USBcan Rev B")
+         - Kvaser Memorator HS/HS
+         - Kvaser Memorator HS/LS
+         - Scania VCI2 (if you have the Kvaser logo on top)
+
+Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
 ---
- arch/x86/include/asm/pmc_atom.h |  25 +++++++++
- arch/x86/kernel/pmc_atom.c      | 118 ++++++++++++++++++++++++++++++----------
- 2 files changed, 114 insertions(+), 29 deletions(-)
+ drivers/net/can/usb/Kconfig      |   8 +-
+ drivers/net/can/usb/kvaser_usb.c | 598 ++++++++++++++++++++++++++++++---------
+ 2 files changed, 478 insertions(+), 128 deletions(-)
 
-diff --git a/arch/x86/include/asm/pmc_atom.h b/arch/x86/include/asm/pmc_atom.h
-index bc0fc08..000a223 100644
---- a/arch/x86/include/asm/pmc_atom.h
-+++ b/arch/x86/include/asm/pmc_atom.h
-@@ -18,6 +18,8 @@
+** V5 Changelog:
+- Rebase on the new CAN error state changes added for the Leaf driver
+- Add minor changes (remove unused commands, constify poniters, etc.)
+
+** V4 Changelog:
+- Use type-safe C methods instead of cpp macros
+- Remove defensive checks against non-existing families
+- Re-order methods to remove forward declarations
+- Smaller stuff spotted by earlier review (function prefexes, etc.)
+
+** V3 Changelog:
+- Fix padding for the usbcan_msg_tx_acknowledge command
+- Remove kvaser_usb->max_channels and the MAX_NET_DEVICES macro
+- Rename commands to CMD_LEAF_xxx and CMD_USBCAN_xxx
+- Apply checkpatch.pl suggestions ('net/' comments, multi-line strings, etc.)
+
+** V2 Changelog:
+- Update Kconfig entries
+- Use actual number of CAN channels (instead of max) where appropriate
+- Rebase over a new set of UsbcanII-independent driver fixes
+
+diff --git a/drivers/net/can/usb/Kconfig b/drivers/net/can/usb/Kconfig
+index a77db919..f6f5500 100644
+--- a/drivers/net/can/usb/Kconfig
++++ b/drivers/net/can/usb/Kconfig
+@@ -25,7 +25,7 @@ config CAN_KVASER_USB
+ 	tristate "Kvaser CAN/USB interface"
+ 	---help---
+ 	  This driver adds support for Kvaser CAN/USB devices like Kvaser
+-	  Leaf Light.
++	  Leaf Light and Kvaser USBcan II.
  
- /* ValleyView Power Control Unit PCI Device ID */
- #define	PCI_DEVICE_ID_VLV_PMC	0x0F1C
-+/* CherryTrail Power Control Unit PCI Device ID */
-+#define	PCI_DEVICE_ID_CHT_PMC	0x229C
+ 	  The driver provides support for the following devices:
+ 	    - Kvaser Leaf Light
+@@ -46,6 +46,12 @@ config CAN_KVASER_USB
+ 	    - Kvaser USBcan R
+ 	    - Kvaser Leaf Light v2
+ 	    - Kvaser Mini PCI Express HS
++	    - Kvaser USBcan II HS/HS
++	    - Kvaser USBcan II HS/LS
++	    - Kvaser USBcan Rugged ("USBcan Rev B")
++	    - Kvaser Memorator HS/HS
++	    - Kvaser Memorator HS/LS
++	    - Scania VCI2 (if you have the Kvaser logo on top)
  
- /* PMC Memory mapped IO registers */
- #define	PMC_BASE_ADDR_OFFSET	0x44
-@@ -29,6 +31,10 @@
- #define	PMC_FUNC_DIS		0x34
- #define	PMC_FUNC_DIS_2		0x38
+ 	  If unsure, say N.
  
-+/* CHT specific bits in FUNC_DIS2 register */
-+#define	BIT_FD_GMM		BIT(3)
-+#define	BIT_FD_ISH		BIT(4)
+diff --git a/drivers/net/can/usb/kvaser_usb.c b/drivers/net/can/usb/kvaser_usb.c
+index 068e76c..3e1eb5d 100644
+--- a/drivers/net/can/usb/kvaser_usb.c
++++ b/drivers/net/can/usb/kvaser_usb.c
+@@ -6,10 +6,12 @@
+  * Parts of this driver are based on the following:
+  *  - Kvaser linux leaf driver (version 4.78)
+  *  - CAN driver for esd CAN-USB/2
++ *  - Kvaser linux usbcanII driver (version 5.3)
+  *
+  * Copyright (C) 2002-2006 KVASER AB, Sweden. All rights reserved.
+  * Copyright (C) 2010 Matthias Fuchs <matthias.fuchs@esd.eu>, esd gmbh
+  * Copyright (C) 2012 Olivier Sobrie <olivier@sobrie.be>
++ * Copyright (C) 2015 Valeo A.S.
+  */
+ 
+ #include <linux/completion.h>
+@@ -30,8 +32,9 @@
+ #define RX_BUFFER_SIZE			3072
+ #define CAN_USB_CLOCK			8000000
+ #define MAX_NET_DEVICES			3
++#define MAX_USBCAN_NET_DEVICES		2
+ 
+-/* Kvaser USB devices */
++/* Kvaser Leaf USB devices */
+ #define KVASER_VENDOR_ID		0x0bfd
+ #define USB_LEAF_DEVEL_PRODUCT_ID	10
+ #define USB_LEAF_LITE_PRODUCT_ID	11
+@@ -56,6 +59,24 @@
+ #define USB_LEAF_LITE_V2_PRODUCT_ID	288
+ #define USB_MINI_PCIE_HS_PRODUCT_ID	289
+ 
++static inline bool kvaser_is_leaf(const struct usb_device_id *id)
++{
++	return id->idProduct >= USB_LEAF_DEVEL_PRODUCT_ID &&
++	       id->idProduct <= USB_MINI_PCIE_HS_PRODUCT_ID;
++}
 +
- /* S0ix wake event control */
- #define	PMC_S0IX_WAKE_EN	0x3C
- 
-@@ -75,6 +81,21 @@
- #define PMC_PSS_BIT_USB			BIT(16)
- #define PMC_PSS_BIT_USB_SUS		BIT(17)
- 
-+/* CHT specific bits in PSS register */
-+#define	PMC_PSS_BIT_CHT_UFS		BIT(7)
-+#define	PMC_PSS_BIT_CHT_UXD		BIT(11)
-+#define	PMC_PSS_BIT_CHT_UXD_FD		BIT(12)
-+#define	PMC_PSS_BIT_CHT_UX_ENG		BIT(15)
-+#define	PMC_PSS_BIT_CHT_USB_SUS		BIT(16)
-+#define	PMC_PSS_BIT_CHT_GMM		BIT(17)
-+#define	PMC_PSS_BIT_CHT_ISH		BIT(18)
-+#define	PMC_PSS_BIT_CHT_DFX_MASTER	BIT(26)
-+#define	PMC_PSS_BIT_CHT_DFX_CLUSTER1	BIT(27)
-+#define	PMC_PSS_BIT_CHT_DFX_CLUSTER2	BIT(28)
-+#define	PMC_PSS_BIT_CHT_DFX_CLUSTER3	BIT(29)
-+#define	PMC_PSS_BIT_CHT_DFX_CLUSTER4	BIT(30)
-+#define	PMC_PSS_BIT_CHT_DFX_CLUSTER5	BIT(31)
++/* Kvaser USBCan-II devices */
++#define USB_USBCAN_REVB_PRODUCT_ID	2
++#define USB_VCI2_PRODUCT_ID		3
++#define USB_USBCAN2_PRODUCT_ID		4
++#define USB_MEMORATOR_PRODUCT_ID	5
 +
- /* These registers reflect D3 status of functions */
- #define	PMC_D3_STS_0		0xA0
- 
-@@ -117,6 +138,10 @@
- #define	BIT_USH_SS_PHY		BIT(2)
- #define	BIT_DFX			BIT(3)
- 
-+/* CHT specific bits in PMC_D3_STS_1 register */
-+#define	BIT_STS_GMM		BIT(1)
-+#define	BIT_STS_ISH		BIT(2)
++static inline bool kvaser_is_usbcan(const struct usb_device_id *id)
++{
++	return id->idProduct >= USB_USBCAN_REVB_PRODUCT_ID &&
++	       id->idProduct <= USB_MEMORATOR_PRODUCT_ID;
++}
 +
- /* PMC I/O Registers */
- #define	ACPI_BASE_ADDR_OFFSET	0x40
- #define	ACPI_BASE_ADDR_MASK	0xFFFFFE00
-diff --git a/arch/x86/kernel/pmc_atom.c b/arch/x86/kernel/pmc_atom.c
-index 0f24ef7..41f4a33 100644
---- a/arch/x86/kernel/pmc_atom.c
-+++ b/arch/x86/kernel/pmc_atom.c
-@@ -31,7 +31,10 @@ struct pmc_bit_map {
- };
+ /* USB devices features */
+ #define KVASER_HAS_SILENT_MODE		BIT(0)
+ #define KVASER_HAS_TXRX_ERRORS		BIT(1)
+@@ -73,7 +94,7 @@
+ #define MSG_FLAG_TX_ACK			BIT(6)
+ #define MSG_FLAG_TX_REQUEST		BIT(7)
  
- struct pmc_reg_map {
--	const struct pmc_bit_map *dev;
-+	const struct pmc_bit_map *d3_sts_0;
-+	const struct pmc_bit_map *d3_sts_1;
-+	const struct pmc_bit_map *func_dis;
-+	const struct pmc_bit_map *func_dis_2;
- 	const struct pmc_bit_map *pss;
- };
+-/* Can states */
++/* Can states (M16C CxSTRH register) */
+ #define M16C_STATE_BUS_RESET		BIT(0)
+ #define M16C_STATE_BUS_ERROR		BIT(4)
+ #define M16C_STATE_BUS_PASSIVE		BIT(5)
+@@ -98,7 +119,11 @@
+ #define CMD_START_CHIP_REPLY		27
+ #define CMD_STOP_CHIP			28
+ #define CMD_STOP_CHIP_REPLY		29
+-#define CMD_GET_CARD_INFO2		32
++
++#define CMD_LEAF_GET_CARD_INFO2		32
++#define CMD_USBCAN_RESET_CLOCK		32
++#define CMD_USBCAN_CLOCK_OVERFLOW_EVENT	33
++
+ #define CMD_GET_CARD_INFO		34
+ #define CMD_GET_CARD_INFO_REPLY		35
+ #define CMD_GET_SOFTWARE_INFO		38
+@@ -108,8 +133,9 @@
+ #define CMD_RESET_ERROR_COUNTER		49
+ #define CMD_TX_ACKNOWLEDGE		50
+ #define CMD_CAN_ERROR_EVENT		51
+-#define CMD_USB_THROTTLE		77
+-#define CMD_LOG_MESSAGE			106
++
++#define CMD_LEAF_USB_THROTTLE		77
++#define CMD_LEAF_LOG_MESSAGE		106
  
-@@ -48,7 +51,7 @@ struct pmc_dev {
- static struct pmc_dev pmc_device;
- static u32 acpi_base_addr;
+ /* error factors */
+ #define M16C_EF_ACKE			BIT(0)
+@@ -121,6 +147,14 @@
+ #define M16C_EF_RCVE			BIT(6)
+ #define M16C_EF_TRE			BIT(7)
  
--static const struct pmc_bit_map dev_map[] = {
-+static const struct pmc_bit_map d3_sts_0_map[] = {
- 	{"LPSS1_F0_DMA",	BIT_LPSS1_F0_DMA},
- 	{"LPSS1_F1_PWM1",	BIT_LPSS1_F1_PWM1},
- 	{"LPSS1_F2_PWM2",	BIT_LPSS1_F2_PWM2},
-@@ -81,6 +84,10 @@ static const struct pmc_bit_map dev_map[] = {
- 	{"LPSS2_F5_I2C5",	BIT_LPSS2_F5_I2C5},
- 	{"LPSS2_F6_I2C6",	BIT_LPSS2_F6_I2C6},
- 	{"LPSS2_F7_I2C7",	BIT_LPSS2_F7_I2C7},
-+	{},
++/* Only Leaf-based devices can report M16C error factors,
++ * thus define our own error status flags for USBCANII
++ */
++#define USBCAN_ERROR_STATE_NONE		0
++#define USBCAN_ERROR_STATE_TX_ERROR	BIT(0)
++#define USBCAN_ERROR_STATE_RX_ERROR	BIT(1)
++#define USBCAN_ERROR_STATE_BUSERROR	BIT(2)
++
+ /* bittiming parameters */
+ #define KVASER_USB_TSEG1_MIN		1
+ #define KVASER_USB_TSEG1_MAX		16
+@@ -137,9 +171,18 @@
+ #define KVASER_CTRL_MODE_SELFRECEPTION	3
+ #define KVASER_CTRL_MODE_OFF		4
+ 
+-/* log message */
++/* Extended CAN identifier flag */
+ #define KVASER_EXTENDED_FRAME		BIT(31)
+ 
++/* Kvaser USB CAN dongles are divided into two major families:
++ * - Leaf: Based on Renesas M32C, running firmware labeled as 'filo'
++ * - UsbcanII: Based on Renesas M16C, running firmware labeled as 'helios'
++ */
++enum kvaser_usb_family {
++	KVASER_LEAF,
++	KVASER_USBCAN,
 +};
 +
-+static struct pmc_bit_map byt_d3_sts_1_map[] = {
- 	{"SMB",			BIT_SMB},
- 	{"OTG_SS_PHY",		BIT_OTG_SS_PHY},
- 	{"USH_SS_PHY",		BIT_USH_SS_PHY},
-@@ -88,7 +95,21 @@ static const struct pmc_bit_map dev_map[] = {
- 	{},
+ struct kvaser_msg_simple {
+ 	u8 tid;
+ 	u8 channel;
+@@ -148,30 +191,55 @@ struct kvaser_msg_simple {
+ struct kvaser_msg_cardinfo {
+ 	u8 tid;
+ 	u8 nchannels;
+-	__le32 serial_number;
+-	__le32 padding;
++	union {
++		struct {
++			__le32 serial_number;
++			__le32 padding;
++		} __packed leaf0;
++		struct {
++			__le32 serial_number_low;
++			__le32 serial_number_high;
++		} __packed usbcan0;
++	} __packed;
+ 	__le32 clock_resolution;
+ 	__le32 mfgdate;
+ 	u8 ean[8];
+ 	u8 hw_revision;
+-	u8 usb_hs_mode;
+-	__le16 padding2;
++	union {
++		struct {
++			u8 usb_hs_mode;
++		} __packed leaf1;
++		struct {
++			u8 padding;
++		} __packed usbcan1;
++	} __packed;
++	__le16 padding;
+ } __packed;
+ 
+ struct kvaser_msg_cardinfo2 {
+ 	u8 tid;
+-	u8 channel;
++	u8 reserved;
+ 	u8 pcb_id[24];
+ 	__le32 oem_unlock_code;
+ } __packed;
+ 
+-struct kvaser_msg_softinfo {
++struct leaf_msg_softinfo {
+ 	u8 tid;
+-	u8 channel;
++	u8 padding0;
+ 	__le32 sw_options;
+ 	__le32 fw_version;
+ 	__le16 max_outstanding_tx;
+-	__le16 padding[9];
++	__le16 padding1[9];
++} __packed;
++
++struct usbcan_msg_softinfo {
++	u8 tid;
++	u8 fw_name[5];
++	__le16 max_outstanding_tx;
++	u8 padding[6];
++	__le32 fw_version;
++	__le16 checksum;
++	__le16 sw_options;
+ } __packed;
+ 
+ struct kvaser_msg_busparams {
+@@ -188,36 +256,86 @@ struct kvaser_msg_tx_can {
+ 	u8 channel;
+ 	u8 tid;
+ 	u8 msg[14];
+-	u8 padding;
+-	u8 flags;
++	union {
++		struct {
++			u8 padding;
++			u8 flags;
++		} __packed leaf;
++		struct {
++			u8 flags;
++			u8 padding;
++		} __packed usbcan;
++	} __packed;
++} __packed;
++
++struct kvaser_msg_rx_can_header {
++	u8 channel;
++	u8 flag;
+ } __packed;
+ 
+-struct kvaser_msg_rx_can {
++struct leaf_msg_rx_can {
+ 	u8 channel;
+ 	u8 flag;
++
+ 	__le16 time[3];
+ 	u8 msg[14];
+ } __packed;
+ 
+-struct kvaser_msg_chip_state_event {
++struct usbcan_msg_rx_can {
++	u8 channel;
++	u8 flag;
++
++	u8 msg[14];
++	__le16 time;
++} __packed;
++
++struct leaf_msg_chip_state_event {
+ 	u8 tid;
+ 	u8 channel;
++
+ 	__le16 time[3];
+ 	u8 tx_errors_count;
+ 	u8 rx_errors_count;
++
++	u8 status;
++	u8 padding[3];
++} __packed;
++
++struct usbcan_msg_chip_state_event {
++	u8 tid;
++	u8 channel;
++
++	u8 tx_errors_count;
++	u8 rx_errors_count;
++	__le16 time;
++
+ 	u8 status;
+ 	u8 padding[3];
+ } __packed;
+ 
+-struct kvaser_msg_tx_acknowledge {
++struct kvaser_msg_tx_acknowledge_header {
+ 	u8 channel;
+ 	u8 tid;
++} __packed;
++
++struct leaf_msg_tx_acknowledge {
++	u8 channel;
++	u8 tid;
++
+ 	__le16 time[3];
+ 	u8 flags;
+ 	u8 time_offset;
+ } __packed;
+ 
+-struct kvaser_msg_error_event {
++struct usbcan_msg_tx_acknowledge {
++	u8 channel;
++	u8 tid;
++
++	__le16 time;
++	__le16 padding;
++} __packed;
++
++struct leaf_msg_error_event {
+ 	u8 tid;
+ 	u8 flags;
+ 	__le16 time[3];
+@@ -229,6 +347,18 @@ struct kvaser_msg_error_event {
+ 	u8 error_factor;
+ } __packed;
+ 
++struct usbcan_msg_error_event {
++	u8 tid;
++	u8 padding;
++	u8 tx_errors_count_ch0;
++	u8 rx_errors_count_ch0;
++	u8 tx_errors_count_ch1;
++	u8 rx_errors_count_ch1;
++	u8 status_ch0;
++	u8 status_ch1;
++	__le16 time;
++} __packed;
++
+ struct kvaser_msg_ctrl_mode {
+ 	u8 tid;
+ 	u8 channel;
+@@ -243,7 +373,7 @@ struct kvaser_msg_flush_queue {
+ 	u8 padding[3];
+ } __packed;
+ 
+-struct kvaser_msg_log_message {
++struct leaf_msg_log_message {
+ 	u8 channel;
+ 	u8 flags;
+ 	__le16 time[3];
+@@ -260,21 +390,55 @@ struct kvaser_msg {
+ 		struct kvaser_msg_simple simple;
+ 		struct kvaser_msg_cardinfo cardinfo;
+ 		struct kvaser_msg_cardinfo2 cardinfo2;
+-		struct kvaser_msg_softinfo softinfo;
+ 		struct kvaser_msg_busparams busparams;
++
++		struct kvaser_msg_rx_can_header rx_can_header;
++		struct kvaser_msg_tx_acknowledge_header tx_acknowledge_header;
++
++		union {
++			struct leaf_msg_softinfo softinfo;
++			struct leaf_msg_rx_can rx_can;
++			struct leaf_msg_chip_state_event chip_state_event;
++			struct leaf_msg_tx_acknowledge tx_acknowledge;
++			struct leaf_msg_error_event error_event;
++			struct leaf_msg_log_message log_message;
++		} __packed leaf;
++
++		union {
++			struct usbcan_msg_softinfo softinfo;
++			struct usbcan_msg_rx_can rx_can;
++			struct usbcan_msg_chip_state_event chip_state_event;
++			struct usbcan_msg_tx_acknowledge tx_acknowledge;
++			struct usbcan_msg_error_event error_event;
++		} __packed usbcan;
++
+ 		struct kvaser_msg_tx_can tx_can;
+-		struct kvaser_msg_rx_can rx_can;
+-		struct kvaser_msg_chip_state_event chip_state_event;
+-		struct kvaser_msg_tx_acknowledge tx_acknowledge;
+-		struct kvaser_msg_error_event error_event;
+ 		struct kvaser_msg_ctrl_mode ctrl_mode;
+ 		struct kvaser_msg_flush_queue flush_queue;
+-		struct kvaser_msg_log_message log_message;
+ 	} u;
+ } __packed;
+ 
++/* Summary of a kvaser error event, for a unified Leaf/Usbcan error
++ * handling. Some discrepancies between the two families exist:
++ *
++ * - USBCAN firmware does not report M16C "error factors"
++ * - USBCAN controllers has difficulties reporting if the raised error
++ *   event is for ch0 or ch1. They leave such arbitration to the OS
++ *   driver by letting it compare error counters with previous values
++ *   and decide the error event's channel. Thus for USBCAN, the channel
++ *   field is only advisory.
++ */
+ struct kvaser_usb_error_summary {
+-	u8 channel, status, txerr, rxerr, error_factor;
++	u8 channel, status, txerr, rxerr;
++	union {
++		struct {
++			u8 error_factor;
++		} leaf;
++		struct {
++			u8 other_ch_status;
++			u8 error_state;
++		} usbcan;
++	};
  };
  
--static const struct pmc_bit_map pss_map[] = {
-+static struct pmc_bit_map cht_d3_sts_1_map[] = {
-+	{"SMB",			BIT_SMB},
-+	{"GMM",			BIT_STS_GMM},
-+	{"ISH",			BIT_STS_ISH},
-+	{},
-+};
-+
-+static struct pmc_bit_map cht_func_dis_2_map[] = {
-+	{"SMB",			BIT_SMB},
-+	{"GMM",			BIT_FD_GMM},
-+	{"ISH",			BIT_FD_ISH},
-+	{},
-+};
-+
-+static const struct pmc_bit_map byt_pss_map[] = {
- 	{"GBE",			PMC_PSS_BIT_GBE},
- 	{"SATA",		PMC_PSS_BIT_SATA},
- 	{"HDA",			PMC_PSS_BIT_HDA},
-@@ -110,9 +131,43 @@ static const struct pmc_bit_map pss_map[] = {
- 	{},
+ struct kvaser_usb_tx_urb_context {
+@@ -292,6 +456,7 @@ struct kvaser_usb {
+ 
+ 	u32 fw_version;
+ 	unsigned int nchannels;
++	enum kvaser_usb_family family;
+ 
+ 	bool rxinitdone;
+ 	void *rxbuf[MAX_RX_URBS];
+@@ -315,6 +480,7 @@ struct kvaser_usb_net_priv {
  };
  
--static const struct pmc_reg_map reg_map = {
--	.dev		= dev_map,
--	.pss		= pss_map,
-+static const struct pmc_bit_map cht_pss_map[] = {
-+	{"SATA",		PMC_PSS_BIT_SATA},
-+	{"HDA",			PMC_PSS_BIT_HDA},
-+	{"SEC",			PMC_PSS_BIT_SEC},
-+	{"PCIE",		PMC_PSS_BIT_PCIE},
-+	{"LPSS",		PMC_PSS_BIT_LPSS},
-+	{"LPE",			PMC_PSS_BIT_LPE},
-+	{"UFS",			PMC_PSS_BIT_CHT_UFS},
-+	{"UXD",			PMC_PSS_BIT_CHT_UXD},
-+	{"UXD_FD",		PMC_PSS_BIT_CHT_UXD_FD},
-+	{"UX_ENG",		PMC_PSS_BIT_CHT_UX_ENG},
-+	{"USB_SUS",		PMC_PSS_BIT_CHT_USB_SUS},
-+	{"GMM",			PMC_PSS_BIT_CHT_GMM},
-+	{"ISH",			PMC_PSS_BIT_CHT_ISH},
-+	{"DFX_MASTER",		PMC_PSS_BIT_CHT_DFX_MASTER},
-+	{"DFX_CLUSTER1",	PMC_PSS_BIT_CHT_DFX_CLUSTER1},
-+	{"DFX_CLUSTER2",	PMC_PSS_BIT_CHT_DFX_CLUSTER2},
-+	{"DFX_CLUSTER3",	PMC_PSS_BIT_CHT_DFX_CLUSTER3},
-+	{"DFX_CLUSTER4",	PMC_PSS_BIT_CHT_DFX_CLUSTER4},
-+	{"DFX_CLUSTER5",	PMC_PSS_BIT_CHT_DFX_CLUSTER5},
-+	{},
-+};
+ static const struct usb_device_id kvaser_usb_table[] = {
++	/* Leaf family IDs */
+ 	{ USB_DEVICE(KVASER_VENDOR_ID, USB_LEAF_DEVEL_PRODUCT_ID) },
+ 	{ USB_DEVICE(KVASER_VENDOR_ID, USB_LEAF_LITE_PRODUCT_ID) },
+ 	{ USB_DEVICE(KVASER_VENDOR_ID, USB_LEAF_PRO_PRODUCT_ID),
+@@ -364,6 +530,17 @@ static const struct usb_device_id kvaser_usb_table[] = {
+ 		.driver_info = KVASER_HAS_TXRX_ERRORS },
+ 	{ USB_DEVICE(KVASER_VENDOR_ID, USB_LEAF_LITE_V2_PRODUCT_ID) },
+ 	{ USB_DEVICE(KVASER_VENDOR_ID, USB_MINI_PCIE_HS_PRODUCT_ID) },
 +
-+static const struct pmc_reg_map byt_reg_map = {
-+	.d3_sts_0	= d3_sts_0_map,
-+	.d3_sts_1	= byt_d3_sts_1_map,
-+	.func_dis	= d3_sts_0_map,
-+	.func_dis_2	= byt_d3_sts_1_map,
-+	.pss		= byt_pss_map,
-+};
++	/* USBCANII family IDs */
++	{ USB_DEVICE(KVASER_VENDOR_ID, USB_USBCAN2_PRODUCT_ID),
++		.driver_info = KVASER_HAS_TXRX_ERRORS },
++	{ USB_DEVICE(KVASER_VENDOR_ID, USB_USBCAN_REVB_PRODUCT_ID),
++		.driver_info = KVASER_HAS_TXRX_ERRORS },
++	{ USB_DEVICE(KVASER_VENDOR_ID, USB_MEMORATOR_PRODUCT_ID),
++		.driver_info = KVASER_HAS_TXRX_ERRORS },
++	{ USB_DEVICE(KVASER_VENDOR_ID, USB_VCI2_PRODUCT_ID),
++		.driver_info = KVASER_HAS_TXRX_ERRORS },
 +
-+static const struct pmc_reg_map cht_reg_map = {
-+	.d3_sts_0	= d3_sts_0_map,
-+	.d3_sts_1	= cht_d3_sts_1_map,
-+	.func_dis	= d3_sts_0_map,
-+	.func_dis_2	= cht_func_dis_2_map,
-+	.pss		= cht_pss_map,
+ 	{ }
  };
+ MODULE_DEVICE_TABLE(usb, kvaser_usb_table);
+@@ -467,7 +644,14 @@ static int kvaser_usb_get_software_info(struct kvaser_usb *dev)
+ 	if (err)
+ 		return err;
  
- static inline u32 pmc_reg_read(struct pmc_dev *pmc, int reg_offset)
-@@ -156,36 +211,39 @@ static void pmc_hw_reg_setup(struct pmc_dev *pmc)
+-	dev->fw_version = le32_to_cpu(msg.u.softinfo.fw_version);
++	switch (dev->family) {
++	case KVASER_LEAF:
++		dev->fw_version = le32_to_cpu(msg.u.leaf.softinfo.fw_version);
++		break;
++	case KVASER_USBCAN:
++		dev->fw_version = le32_to_cpu(msg.u.usbcan.softinfo.fw_version);
++		break;
++	}
+ 
+ 	return 0;
+ }
+@@ -486,7 +670,9 @@ static int kvaser_usb_get_card_info(struct kvaser_usb *dev)
+ 		return err;
+ 
+ 	dev->nchannels = msg.u.cardinfo.nchannels;
+-	if (dev->nchannels > MAX_NET_DEVICES)
++	if ((dev->nchannels > MAX_NET_DEVICES) ||
++	    (dev->family == KVASER_USBCAN &&
++	     dev->nchannels > MAX_USBCAN_NET_DEVICES))
+ 		return -EINVAL;
+ 
+ 	return 0;
+@@ -500,8 +686,10 @@ static void kvaser_usb_tx_acknowledge(const struct kvaser_usb *dev,
+ 	struct kvaser_usb_net_priv *priv;
+ 	struct sk_buff *skb;
+ 	struct can_frame *cf;
+-	u8 channel = msg->u.tx_acknowledge.channel;
+-	u8 tid = msg->u.tx_acknowledge.tid;
++	u8 channel, tid;
++
++	channel = msg->u.tx_acknowledge_header.channel;
++	tid = msg->u.tx_acknowledge_header.tid;
+ 
+ 	if (channel >= dev->nchannels) {
+ 		dev_err(dev->udev->dev.parent,
+@@ -623,12 +811,12 @@ static void kvaser_usb_rx_error_update_can_state(struct kvaser_usb_net_priv *pri
+ 						 const struct kvaser_usb_error_summary *es,
+ 						 struct can_frame *cf)
+ {
+-	struct net_device_stats *stats;
++	struct kvaser_usb *dev = priv->dev;
++	struct net_device_stats *stats = &priv->netdev->stats;
+ 	enum can_state cur_state, new_state, tx_state, rx_state;
+ 
+ 	netdev_dbg(priv->netdev, "Error status: 0x%02x\n", es->status);
+ 
+-	stats = &priv->netdev->stats;
+ 	new_state = cur_state = priv->can.state;
+ 
+ 	if (es->status & M16C_STATE_BUS_OFF)
+@@ -663,9 +851,22 @@ static void kvaser_usb_rx_error_update_can_state(struct kvaser_usb_net_priv *pri
+ 		priv->can.can_stats.restarts++;
+ 	}
+ 
+-	if (es->error_factor) {
+-		priv->can.can_stats.bus_error++;
+-		stats->rx_errors++;
++	switch (dev->family) {
++	case KVASER_LEAF:
++		if (es->leaf.error_factor) {
++			priv->can.can_stats.bus_error++;
++			stats->rx_errors++;
++		}
++		break;
++	case KVASER_USBCAN:
++		if (es->usbcan.error_state & USBCAN_ERROR_STATE_TX_ERROR)
++			stats->tx_errors++;
++		if (es->usbcan.error_state & USBCAN_ERROR_STATE_RX_ERROR)
++			stats->rx_errors++;
++		if (es->usbcan.error_state & USBCAN_ERROR_STATE_BUSERROR) {
++			priv->can.can_stats.bus_error++;
++		}
++		break;
+ 	}
+ 
+ 	priv->bec.txerr = es->txerr;
+@@ -673,53 +874,24 @@ static void kvaser_usb_rx_error_update_can_state(struct kvaser_usb_net_priv *pri
  }
  
- #ifdef CONFIG_DEBUG_FS
-+static void pmc_dev_state_print(struct seq_file *s, int reg_index,
-+				u32 sts, const struct pmc_bit_map *sts_map,
-+				u32 fd, const struct pmc_bit_map *fd_map)
-+{
-+	int offset = PMC_REG_BIT_WIDTH * reg_index;
-+	int index;
+ static void kvaser_usb_rx_error(const struct kvaser_usb *dev,
+-				const struct kvaser_msg *msg)
++				const struct kvaser_usb_error_summary *es)
+ {
+ 	struct can_frame *cf, tmp_cf = { .can_id = CAN_ERR_FLAG, .can_dlc = CAN_ERR_DLC };
+ 	struct sk_buff *skb;
+ 	struct net_device_stats *stats;
+ 	struct kvaser_usb_net_priv *priv;
+-	struct kvaser_usb_error_summary es = { };
+ 	enum can_state old_state, new_state;
+ 
+-	switch (msg->id) {
+-	case CMD_CAN_ERROR_EVENT:
+-		es.channel = msg->u.error_event.channel;
+-		es.status =  msg->u.error_event.status;
+-		es.txerr = msg->u.error_event.tx_errors_count;
+-		es.rxerr = msg->u.error_event.rx_errors_count;
+-		es.error_factor = msg->u.error_event.error_factor;
+-		break;
+-	case CMD_LOG_MESSAGE:
+-		es.channel = msg->u.log_message.channel;
+-		es.status = msg->u.log_message.data[0];
+-		es.txerr = msg->u.log_message.data[2];
+-		es.rxerr = msg->u.log_message.data[3];
+-		es.error_factor = msg->u.log_message.data[1];
+-		break;
+-	case CMD_CHIP_STATE_EVENT:
+-		es.channel = msg->u.chip_state_event.channel;
+-		es.status =  msg->u.chip_state_event.status;
+-		es.txerr = msg->u.chip_state_event.tx_errors_count;
+-		es.rxerr = msg->u.chip_state_event.rx_errors_count;
+-		es.error_factor = 0;
+-		break;
+-	default:
+-		dev_err(dev->udev->dev.parent, "Invalid msg id (%d)\n",
+-			msg->id);
+-		return;
+-	}
+-
+-	if (es.channel >= dev->nchannels) {
++	if (es->channel >= dev->nchannels) {
+ 		dev_err(dev->udev->dev.parent,
+-			"Invalid channel number (%d)\n", es.channel);
++			"Invalid channel number (%d)\n", es->channel);
+ 		return;
+ 	}
+ 
+-	priv = dev->nets[es.channel];
++	priv = dev->nets[es->channel];
+ 	stats = &priv->netdev->stats;
+ 
+-	if (es.status & M16C_STATE_BUS_RESET) {
++	if (es->status & M16C_STATE_BUS_RESET) {
+ 		kvaser_usb_unlink_tx_urbs(priv);
+ 		return;
+ 	}
+@@ -735,7 +907,7 @@ static void kvaser_usb_rx_error(const struct kvaser_usb *dev,
+ 	 * frame ID and data to userspace. Remove stack allocation afterwards.
+ 	 */
+ 	old_state = priv->can.state;
+-	kvaser_usb_rx_error_update_can_state(priv, &es, &tmp_cf);
++	kvaser_usb_rx_error_update_can_state(priv, es, &tmp_cf);
+ 	new_state = priv->can.state;
+ 
+ 	skb = alloc_can_err_skb(priv->netdev, &cf);
+@@ -746,19 +918,19 @@ static void kvaser_usb_rx_error(const struct kvaser_usb *dev,
+ 	memcpy(cf, &tmp_cf, sizeof(*cf));
+ 
+ 	if (new_state != old_state) {
+-		if (es.status & M16C_STATE_BUS_OFF) {
++		if (es->status & M16C_STATE_BUS_OFF) {
+ 			if (!priv->can.restart_ms)
+ 				kvaser_usb_simple_msg_async(priv, CMD_STOP_CHIP);
+ 			netif_carrier_off(priv->netdev);
+-		} else if (es.status & M16C_STATE_BUS_ERROR) {
+-			if ((es.txerr < 96 && es.rxerr < 96) &&
++		} else if (es->status & M16C_STATE_BUS_ERROR) {
++			if ((es->txerr < 96 && es->rxerr < 96) &&
+ 			    (old_state > CAN_STATE_ERROR_ACTIVE)) {
+ 				cf->can_id |= CAN_ERR_PROT;
+ 				cf->data[2] = CAN_ERR_PROT_ACTIVE;
+ 			}
+ 		}
+ 
+-		if (!es.status) {
++		if (!es->status) {
+ 			cf->can_id |= CAN_ERR_PROT;
+ 			cf->data[2] = CAN_ERR_PROT_ACTIVE;
+ 		}
+@@ -771,34 +943,161 @@ static void kvaser_usb_rx_error(const struct kvaser_usb *dev,
+ 		}
+ 	}
+ 
+-	if (es.error_factor) {
+-		cf->can_id |= CAN_ERR_BUSERROR | CAN_ERR_PROT;
+-
+-		if (es.error_factor & M16C_EF_ACKE)
+-			cf->data[3] |= (CAN_ERR_PROT_LOC_ACK);
+-		if (es.error_factor & M16C_EF_CRCE)
+-			cf->data[3] |= (CAN_ERR_PROT_LOC_CRC_SEQ |
+-					CAN_ERR_PROT_LOC_CRC_DEL);
+-		if (es.error_factor & M16C_EF_FORME)
+-			cf->data[2] |= CAN_ERR_PROT_FORM;
+-		if (es.error_factor & M16C_EF_STFE)
+-			cf->data[2] |= CAN_ERR_PROT_STUFF;
+-		if (es.error_factor & M16C_EF_BITE0)
+-			cf->data[2] |= CAN_ERR_PROT_BIT0;
+-		if (es.error_factor & M16C_EF_BITE1)
+-			cf->data[2] |= CAN_ERR_PROT_BIT1;
+-		if (es.error_factor & M16C_EF_TRE)
+-			cf->data[2] |= CAN_ERR_PROT_TX;
++	switch (dev->family) {
++	case KVASER_LEAF:
++		if (es->leaf.error_factor) {
++			cf->can_id |= CAN_ERR_BUSERROR | CAN_ERR_PROT;
 +
-+	for (index = 0; sts_map[index].name; index++) {
-+		seq_printf(s, "Dev: %-2d - %-32s\tState: %s [%s]\n",
-+			offset + index, sts_map[index].name,
-+			fd_map[index].bit_mask & fd ?  "Disabled" : "Enabled ",
-+			sts_map[index].bit_mask & sts ?  "D3" : "D0");
++			if (es->leaf.error_factor & M16C_EF_ACKE)
++				cf->data[3] |= (CAN_ERR_PROT_LOC_ACK);
++			if (es->leaf.error_factor & M16C_EF_CRCE)
++				cf->data[3] |= (CAN_ERR_PROT_LOC_CRC_SEQ |
++						CAN_ERR_PROT_LOC_CRC_DEL);
++			if (es->leaf.error_factor & M16C_EF_FORME)
++				cf->data[2] |= CAN_ERR_PROT_FORM;
++			if (es->leaf.error_factor & M16C_EF_STFE)
++				cf->data[2] |= CAN_ERR_PROT_STUFF;
++			if (es->leaf.error_factor & M16C_EF_BITE0)
++				cf->data[2] |= CAN_ERR_PROT_BIT0;
++			if (es->leaf.error_factor & M16C_EF_BITE1)
++				cf->data[2] |= CAN_ERR_PROT_BIT1;
++			if (es->leaf.error_factor & M16C_EF_TRE)
++				cf->data[2] |= CAN_ERR_PROT_TX;
++		}
++		break;
++	case KVASER_USBCAN:
++		if (es->usbcan.error_state & USBCAN_ERROR_STATE_BUSERROR) {
++			cf->can_id |= CAN_ERR_BUSERROR;
++		}
++		break;
+ 	}
+ 
+-	cf->data[6] = es.txerr;
+-	cf->data[7] = es.rxerr;
++	cf->data[6] = es->txerr;
++	cf->data[7] = es->rxerr;
+ 
+ 	stats->rx_packets++;
+ 	stats->rx_bytes += cf->can_dlc;
+ 	netif_rx(skb);
+ }
+ 
++/* For USBCAN, report error to userspace iff the channels's errors counter
++ * has increased, or we're the only channel seeing a bus error state.
++ */
++static void kvaser_usbcan_conditionally_rx_error(const struct kvaser_usb *dev,
++						 struct kvaser_usb_error_summary *es)
++{
++	struct kvaser_usb_net_priv *priv;
++	int channel;
++	bool report_error;
++
++	channel = es->channel;
++	if (channel >= dev->nchannels) {
++		dev_err(dev->udev->dev.parent,
++			"Invalid channel number (%d)\n", channel);
++		return;
++	}
++
++	priv = dev->nets[channel];
++	report_error = false;
++
++	if (es->txerr > priv->bec.txerr) {
++		es->usbcan.error_state |= USBCAN_ERROR_STATE_TX_ERROR;
++		report_error = true;
++	}
++	if (es->rxerr > priv->bec.rxerr) {
++		es->usbcan.error_state |= USBCAN_ERROR_STATE_RX_ERROR;
++		report_error = true;
++	}
++	if ((es->status & M16C_STATE_BUS_ERROR) &&
++	    !(es->usbcan.other_ch_status & M16C_STATE_BUS_ERROR)) {
++		es->usbcan.error_state |= USBCAN_ERROR_STATE_BUSERROR;
++		report_error = true;
++	}
++
++	if (report_error)
++		kvaser_usb_rx_error(dev, es);
++}
++
++static void kvaser_usbcan_rx_error(const struct kvaser_usb *dev,
++				   const struct kvaser_msg *msg)
++{
++	struct kvaser_usb_error_summary es = { };
++
++	switch (msg->id) {
++	/* Sometimes errors are sent as unsolicited chip state events */
++	case CMD_CHIP_STATE_EVENT:
++		es.channel = msg->u.usbcan.chip_state_event.channel;
++		es.status =  msg->u.usbcan.chip_state_event.status;
++		es.txerr = msg->u.usbcan.chip_state_event.tx_errors_count;
++		es.rxerr = msg->u.usbcan.chip_state_event.rx_errors_count;
++		kvaser_usbcan_conditionally_rx_error(dev, &es);
++		break;
++
++	case CMD_CAN_ERROR_EVENT:
++		es.channel = 0;
++		es.status = msg->u.usbcan.error_event.status_ch0;
++		es.txerr = msg->u.usbcan.error_event.tx_errors_count_ch0;
++		es.rxerr = msg->u.usbcan.error_event.rx_errors_count_ch0;
++		es.usbcan.other_ch_status =
++			msg->u.usbcan.error_event.status_ch1;
++		kvaser_usbcan_conditionally_rx_error(dev, &es);
++
++		/* The USBCAN firmware supports up to 2 channels.
++		 * Now that ch0 was checked, check if ch1 has any errors.
++		 */
++		if (dev->nchannels == MAX_USBCAN_NET_DEVICES) {
++			es.channel = 1;
++			es.status = msg->u.usbcan.error_event.status_ch1;
++			es.txerr = msg->u.usbcan.error_event.tx_errors_count_ch1;
++			es.rxerr = msg->u.usbcan.error_event.rx_errors_count_ch1;
++			es.usbcan.other_ch_status =
++				msg->u.usbcan.error_event.status_ch0;
++			kvaser_usbcan_conditionally_rx_error(dev, &es);
++		}
++		break;
++
++	default:
++		dev_err(dev->udev->dev.parent, "Invalid msg id (%d)\n",
++			msg->id);
 +	}
 +}
 +
- static int pmc_dev_state_show(struct seq_file *s, void *unused)
- {
- 	struct pmc_dev *pmc = s->private;
--	const struct pmc_bit_map *map = pmc->map->dev;
--	u32 func_dis, func_dis_2, func_dis_index;
--	u32 d3_sts_0, d3_sts_1, d3_sts_index;
--	int index, reg_index;
-+	const struct pmc_reg_map *m = pmc->map;
-+	u32 func_dis, func_dis_2;
-+	u32 d3_sts_0, d3_sts_1;
- 
- 	func_dis = pmc_reg_read(pmc, PMC_FUNC_DIS);
- 	func_dis_2 = pmc_reg_read(pmc, PMC_FUNC_DIS_2);
- 	d3_sts_0 = pmc_reg_read(pmc, PMC_D3_STS_0);
- 	d3_sts_1 = pmc_reg_read(pmc, PMC_D3_STS_1);
- 
--	for (index = 0; map[index].name; index++) {
--		reg_index = index / PMC_REG_BIT_WIDTH;
--		if (reg_index) {
--			func_dis_index = func_dis_2;
--			d3_sts_index = d3_sts_1;
--		} else {
--			func_dis_index = func_dis;
--			d3_sts_index = d3_sts_0;
--		}
-+	/* Low part */
-+	pmc_dev_state_print(s, 0, d3_sts_0, m->d3_sts_0, func_dis, m->func_dis);
++static void kvaser_leaf_rx_error(const struct kvaser_usb *dev,
++				 const struct kvaser_msg *msg)
++{
++	struct kvaser_usb_error_summary es = { };
 +
-+	/* High part */
-+	pmc_dev_state_print(s, 1, d3_sts_1, m->d3_sts_1, func_dis_2, m->func_dis_2);
- 
--		seq_printf(s, "Dev: %-2d - %-32s\tState: %s [%s]\n",
--			index, map[index].name,
--			map[index].bit_mask & func_dis_index ?
--			"Disabled" : "Enabled ",
--			map[index].bit_mask & d3_sts_index ?
--			"D3" : "D0");
--	}
- 	return 0;
- }
- 
-@@ -307,9 +365,10 @@ static int pmc_dbgfs_register(struct pmc_dev *pmc)
- }
- #endif /* CONFIG_DEBUG_FS */
- 
--static int pmc_setup_dev(struct pci_dev *pdev, const struct pmc_reg_map *map)
-+static int pmc_setup_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
++	switch (msg->id) {
++	case CMD_CAN_ERROR_EVENT:
++		es.channel = msg->u.leaf.error_event.channel;
++		es.status =  msg->u.leaf.error_event.status;
++		es.txerr = msg->u.leaf.error_event.tx_errors_count;
++		es.rxerr = msg->u.leaf.error_event.rx_errors_count;
++		es.leaf.error_factor = msg->u.leaf.error_event.error_factor;
++		break;
++	case CMD_LEAF_LOG_MESSAGE:
++		es.channel = msg->u.leaf.log_message.channel;
++		es.status = msg->u.leaf.log_message.data[0];
++		es.txerr = msg->u.leaf.log_message.data[2];
++		es.rxerr = msg->u.leaf.log_message.data[3];
++		es.leaf.error_factor = msg->u.leaf.log_message.data[1];
++		break;
++	case CMD_CHIP_STATE_EVENT:
++		es.channel = msg->u.leaf.chip_state_event.channel;
++		es.status =  msg->u.leaf.chip_state_event.status;
++		es.txerr = msg->u.leaf.chip_state_event.tx_errors_count;
++		es.rxerr = msg->u.leaf.chip_state_event.rx_errors_count;
++		es.leaf.error_factor = 0;
++		break;
++	default:
++		dev_err(dev->udev->dev.parent, "Invalid msg id (%d)\n",
++			msg->id);
++		return;
++	}
++
++	kvaser_usb_rx_error(dev, &es);
++}
++
+ static void kvaser_usb_rx_can_err(const struct kvaser_usb_net_priv *priv,
+ 				  const struct kvaser_msg *msg)
  {
- 	struct pmc_dev *pmc = &pmc_device;
-+	const struct pmc_reg_map *map = (struct pmc_reg_map *)ent->driver_data;
- 	int ret;
+@@ -806,16 +1105,16 @@ static void kvaser_usb_rx_can_err(const struct kvaser_usb_net_priv *priv,
+ 	struct sk_buff *skb;
+ 	struct net_device_stats *stats = &priv->netdev->stats;
  
- 	/* Obtain ACPI base address */
-@@ -351,7 +410,8 @@ static int pmc_setup_dev(struct pci_dev *pdev, const struct pmc_reg_map *map)
-  * a driver on the same PCI id.
-  */
- static const struct pci_device_id pmc_pci_ids[] = {
--	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_VLV_PMC) },
-+	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_VLV_PMC), (kernel_ulong_t)&byt_reg_map },
-+	{ PCI_VDEVICE(INTEL, PCI_DEVICE_ID_CHT_PMC), (kernel_ulong_t)&cht_reg_map },
- 	{ 0, },
- };
+-	if (msg->u.rx_can.flag & (MSG_FLAG_ERROR_FRAME |
++	if (msg->u.rx_can_header.flag & (MSG_FLAG_ERROR_FRAME |
+ 					 MSG_FLAG_NERR)) {
+ 		netdev_err(priv->netdev, "Unknow error (flags: 0x%02x)\n",
+-			   msg->u.rx_can.flag);
++			   msg->u.rx_can_header.flag);
  
-@@ -373,7 +433,7 @@ static int __init pmc_atom_init(void)
- 	for_each_pci_dev(pdev) {
- 		ent = pci_match_id(pmc_pci_ids, pdev);
- 		if (ent)
--			return pmc_setup_dev(pdev, &reg_map);
-+			return pmc_setup_dev(pdev, ent);
+ 		stats->rx_errors++;
+ 		return;
  	}
- 	/* Device not found. */
- 	return -ENODEV;
+ 
+-	if (msg->u.rx_can.flag & MSG_FLAG_OVERRUN) {
++	if (msg->u.rx_can_header.flag & MSG_FLAG_OVERRUN) {
+ 		stats->rx_over_errors++;
+ 		stats->rx_errors++;
+ 
+@@ -841,7 +1140,8 @@ static void kvaser_usb_rx_can_msg(const struct kvaser_usb *dev,
+ 	struct can_frame *cf;
+ 	struct sk_buff *skb;
+ 	struct net_device_stats *stats;
+-	u8 channel = msg->u.rx_can.channel;
++	u8 channel = msg->u.rx_can_header.channel;
++	const u8 *rx_msg = NULL;	/* GCC */
+ 
+ 	if (channel >= dev->nchannels) {
+ 		dev_err(dev->udev->dev.parent,
+@@ -852,60 +1152,68 @@ static void kvaser_usb_rx_can_msg(const struct kvaser_usb *dev,
+ 	priv = dev->nets[channel];
+ 	stats = &priv->netdev->stats;
+ 
+-	if ((msg->u.rx_can.flag & MSG_FLAG_ERROR_FRAME) &&
+-	    (msg->id == CMD_LOG_MESSAGE)) {
+-		kvaser_usb_rx_error(dev, msg);
++	if ((msg->u.rx_can_header.flag & MSG_FLAG_ERROR_FRAME) &&
++	    (dev->family == KVASER_LEAF && msg->id == CMD_LEAF_LOG_MESSAGE)) {
++		kvaser_leaf_rx_error(dev, msg);
+ 		return;
+-	} else if (msg->u.rx_can.flag & (MSG_FLAG_ERROR_FRAME |
+-					 MSG_FLAG_NERR |
+-					 MSG_FLAG_OVERRUN)) {
++	} else if (msg->u.rx_can_header.flag & (MSG_FLAG_ERROR_FRAME |
++						MSG_FLAG_NERR |
++						MSG_FLAG_OVERRUN)) {
+ 		kvaser_usb_rx_can_err(priv, msg);
+ 		return;
+-	} else if (msg->u.rx_can.flag & ~MSG_FLAG_REMOTE_FRAME) {
++	} else if (msg->u.rx_can_header.flag & ~MSG_FLAG_REMOTE_FRAME) {
+ 		netdev_warn(priv->netdev,
+ 			    "Unhandled frame (flags: 0x%02x)",
+-			    msg->u.rx_can.flag);
++			    msg->u.rx_can_header.flag);
+ 		return;
+ 	}
+ 
++	switch (dev->family) {
++	case KVASER_LEAF:
++		rx_msg = msg->u.leaf.rx_can.msg;
++		break;
++	case KVASER_USBCAN:
++		rx_msg = msg->u.usbcan.rx_can.msg;
++		break;
++	}
++
+ 	skb = alloc_can_skb(priv->netdev, &cf);
+ 	if (!skb) {
+ 		stats->tx_dropped++;
+ 		return;
+ 	}
+ 
+-	if (msg->id == CMD_LOG_MESSAGE) {
+-		cf->can_id = le32_to_cpu(msg->u.log_message.id);
++	if (dev->family == KVASER_LEAF && msg->id == CMD_LEAF_LOG_MESSAGE) {
++		cf->can_id = le32_to_cpu(msg->u.leaf.log_message.id);
+ 		if (cf->can_id & KVASER_EXTENDED_FRAME)
+ 			cf->can_id &= CAN_EFF_MASK | CAN_EFF_FLAG;
+ 		else
+ 			cf->can_id &= CAN_SFF_MASK;
+ 
+-		cf->can_dlc = get_can_dlc(msg->u.log_message.dlc);
++		cf->can_dlc = get_can_dlc(msg->u.leaf.log_message.dlc);
+ 
+-		if (msg->u.log_message.flags & MSG_FLAG_REMOTE_FRAME)
++		if (msg->u.leaf.log_message.flags & MSG_FLAG_REMOTE_FRAME)
+ 			cf->can_id |= CAN_RTR_FLAG;
+ 		else
+-			memcpy(cf->data, &msg->u.log_message.data,
++			memcpy(cf->data, &msg->u.leaf.log_message.data,
+ 			       cf->can_dlc);
+ 	} else {
+-		cf->can_id = ((msg->u.rx_can.msg[0] & 0x1f) << 6) |
+-			     (msg->u.rx_can.msg[1] & 0x3f);
++		cf->can_id = ((rx_msg[0] & 0x1f) << 6) | (rx_msg[1] & 0x3f);
+ 
+ 		if (msg->id == CMD_RX_EXT_MESSAGE) {
+ 			cf->can_id <<= 18;
+-			cf->can_id |= ((msg->u.rx_can.msg[2] & 0x0f) << 14) |
+-				      ((msg->u.rx_can.msg[3] & 0xff) << 6) |
+-				      (msg->u.rx_can.msg[4] & 0x3f);
++			cf->can_id |= ((rx_msg[2] & 0x0f) << 14) |
++				      ((rx_msg[3] & 0xff) << 6) |
++				      (rx_msg[4] & 0x3f);
+ 			cf->can_id |= CAN_EFF_FLAG;
+ 		}
+ 
+-		cf->can_dlc = get_can_dlc(msg->u.rx_can.msg[5]);
++		cf->can_dlc = get_can_dlc(rx_msg[5]);
+ 
+-		if (msg->u.rx_can.flag & MSG_FLAG_REMOTE_FRAME)
++		if (msg->u.rx_can_header.flag & MSG_FLAG_REMOTE_FRAME)
+ 			cf->can_id |= CAN_RTR_FLAG;
+ 		else
+-			memcpy(cf->data, &msg->u.rx_can.msg[6],
++			memcpy(cf->data, &rx_msg[6],
+ 			       cf->can_dlc);
+ 	}
+ 
+@@ -968,21 +1276,35 @@ static void kvaser_usb_handle_message(const struct kvaser_usb *dev,
+ 
+ 	case CMD_RX_STD_MESSAGE:
+ 	case CMD_RX_EXT_MESSAGE:
+-	case CMD_LOG_MESSAGE:
++		kvaser_usb_rx_can_msg(dev, msg);
++		break;
++
++	case CMD_LEAF_LOG_MESSAGE:
++		if (dev->family != KVASER_LEAF)
++			goto warn;
+ 		kvaser_usb_rx_can_msg(dev, msg);
+ 		break;
+ 
+ 	case CMD_CHIP_STATE_EVENT:
+ 	case CMD_CAN_ERROR_EVENT:
+-		kvaser_usb_rx_error(dev, msg);
++		if (dev->family == KVASER_LEAF)
++			kvaser_leaf_rx_error(dev, msg);
++		else
++			kvaser_usbcan_rx_error(dev, msg);
+ 		break;
+ 
+ 	case CMD_TX_ACKNOWLEDGE:
+ 		kvaser_usb_tx_acknowledge(dev, msg);
+ 		break;
+ 
++	/* Ignored messages */
++	case CMD_USBCAN_CLOCK_OVERFLOW_EVENT:
++		if (dev->family != KVASER_USBCAN)
++			goto warn;
++		break;
++
+ 	default:
+-		dev_warn(dev->udev->dev.parent,
++warn:		dev_warn(dev->udev->dev.parent,
+ 			 "Unhandled message (%d)\n", msg->id);
+ 		break;
+ 	}
+@@ -1202,7 +1524,7 @@ static void kvaser_usb_unlink_all_urbs(struct kvaser_usb *dev)
+ 				  dev->rxbuf[i],
+ 				  dev->rxbuf_dma[i]);
+ 
+-	for (i = 0; i < MAX_NET_DEVICES; i++) {
++	for (i = 0; i < dev->nchannels; i++) {
+ 		struct kvaser_usb_net_priv *priv = dev->nets[i];
+ 
+ 		if (priv)
+@@ -1310,6 +1632,7 @@ static netdev_tx_t kvaser_usb_start_xmit(struct sk_buff *skb,
+ 	struct kvaser_msg *msg;
+ 	int i, err;
+ 	int ret = NETDEV_TX_OK;
++	u8 *msg_tx_can_flags = NULL;		/* GCC */
+ 
+ 	if (can_dropped_invalid_skb(netdev, skb))
+ 		return NETDEV_TX_OK;
+@@ -1331,9 +1654,19 @@ static netdev_tx_t kvaser_usb_start_xmit(struct sk_buff *skb,
+ 
+ 	msg = buf;
+ 	msg->len = MSG_HEADER_LEN + sizeof(struct kvaser_msg_tx_can);
+-	msg->u.tx_can.flags = 0;
+ 	msg->u.tx_can.channel = priv->channel;
+ 
++	switch (dev->family) {
++	case KVASER_LEAF:
++		msg_tx_can_flags = &msg->u.tx_can.leaf.flags;
++		break;
++	case KVASER_USBCAN:
++		msg_tx_can_flags = &msg->u.tx_can.usbcan.flags;
++		break;
++	}
++
++	*msg_tx_can_flags = 0;
++
+ 	if (cf->can_id & CAN_EFF_FLAG) {
+ 		msg->id = CMD_TX_EXT_MESSAGE;
+ 		msg->u.tx_can.msg[0] = (cf->can_id >> 24) & 0x1f;
+@@ -1351,7 +1684,7 @@ static netdev_tx_t kvaser_usb_start_xmit(struct sk_buff *skb,
+ 	memcpy(&msg->u.tx_can.msg[6], cf->data, cf->can_dlc);
+ 
+ 	if (cf->can_id & CAN_RTR_FLAG)
+-		msg->u.tx_can.flags |= MSG_FLAG_REMOTE_FRAME;
++		*msg_tx_can_flags |= MSG_FLAG_REMOTE_FRAME;
+ 
+ 	for (i = 0; i < ARRAY_SIZE(priv->tx_contexts); i++) {
+ 		if (priv->tx_contexts[i].echo_index == MAX_TX_URBS) {
+@@ -1620,6 +1953,17 @@ static int kvaser_usb_probe(struct usb_interface *intf,
+ 	if (!dev)
+ 		return -ENOMEM;
+ 
++	if (kvaser_is_leaf(id)) {
++		dev->family = KVASER_LEAF;
++	} else if (kvaser_is_usbcan(id)) {
++		dev->family = KVASER_USBCAN;
++	} else {
++		dev_err(&intf->dev,
++			"Product ID (%d) does not belong to any known Kvaser USB family",
++			id->idProduct);
++		return -ENODEV;
++	}
++
+ 	err = kvaser_usb_get_endpoints(intf, &dev->bulk_in, &dev->bulk_out);
+ 	if (err) {
+ 		dev_err(&intf->dev, "Cannot get usb endpoint(s)");
 -- 
-2.1.4
+1.9.1
 
