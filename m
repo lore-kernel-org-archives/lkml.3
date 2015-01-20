@@ -1,95 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751938AbbATINE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 03:13:04 -0500
-Received: from e39.co.us.ibm.com ([32.97.110.160]:46050 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751336AbbATINC (ORCPT
+	id S1751649AbbATIR3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 03:17:29 -0500
+Received: from nasmtp01.atmel.com ([192.199.1.246]:31857 "EHLO
+	DVREDG02.corp.atmel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750722AbbATIR2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 03:13:02 -0500
-Subject: [PATCH V2] tick/broadcast: Make movement of broadcast hrtimer
- robust against hotplug
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-To: mpe@ellerman.id.au, tglx@linutronix.de
-Cc: aik@ozlabs.ru, shreyas@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        anton@samba.org, svaidy@linux.vnet.ibm.com,
-        linuxppc-dev@lists.ozlabs.org
-Date: Tue, 20 Jan 2015 13:42:45 +0530
-Message-ID: <20150120081121.26984.46720.stgit@preeti.in.ibm.com>
-User-Agent: StGit/0.17-dirty
+	Tue, 20 Jan 2015 03:17:28 -0500
+From: Wenyou Yang <wenyou.yang@atmel.com>
+To: <nicolas.ferre@atmel.com>, <linux@arm.linux.org.uk>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <alexandre.belloni@free-electrons.com>, <sylvain.rochet@finsecur.com>,
+        <peda@axentia.se>, <wenyou.yang@atmel.com>
+Subject: [PATCH 00/12] AT91 pm cleanup for 3.20
+Date: Tue, 20 Jan 2015 16:16:53 +0800
+Message-ID: <1421741825-18226-1-git-send-email-wenyou.yang@atmel.com>
+X-Mailer: git-send-email 1.7.9.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15012008-0033-0000-0000-00000362F1B9
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Today if the cpu handling broadcasting of wakeups goes offline, the job of
-broadcasting is handed over to another cpu in the CPU_DEAD phase. The CPU_DEAD
-notifiers are run only after the offline cpu sets its state as CPU_DEAD.
-Meanwhile, the kthread doing the offline is scheduled out while waiting for
-this transition by queuing a timer. This is fatal because if the cpu on which
-this kthread was running has no other work queued on it, it can re-enter deep
-idle state, since it sees that a broadcast cpu still exists. However the broadcast
-wakeup will never come since the cpu which was handling it is offline, and the cpu
-on which the kthread doing the hotplug operation was running never wakes up to see
-this because its in deep idle state.
+Hi Nicolas,
 
-Fix this by setting the broadcast timer to a max value so as to force the cpus
-entering deep idle states henceforth to freshly nominate the broadcast cpu. More
-importantly this has to be done in the CPU_DYING phase so that it is visible to
-all cpus right after exiting stop_machine, which is when they can re-enter idle.
-This ensures that handover of the broadcast duty falls in place on offline of the
-broadcast cpu, without having to do it explicitly.
+This patch set is based on Alexandre's patch set of AT91 cleanup for 3.20 #2.
+It also includes the patches from Peter Rosin and Sylvain Rochet.
 
-It fixes the bug reported here:
-http://linuxppc.10917.n7.nabble.com/offlining-cpus-breakage-td88619.html
+Removes CONFIG_AT91_SLOW_CLOCK config item to simply the PM config,
+The suspend to standby mode uses the same sram function as the suspend to memory mode.
+Remove some unused code.
 
-Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
----
-Changes from V1: https://lkml.org/lkml/2015/1/19/168
-1. Modified the Changelog
+Thank Alexandre for many advices.
 
- kernel/time/clockevents.c    |    2 +-
- kernel/time/tick-broadcast.c |    4 ++--
- 2 files changed, 3 insertions(+), 3 deletions(-)
+Best Regards,
+Wenyou Yang
 
-diff --git a/kernel/time/clockevents.c b/kernel/time/clockevents.c
-index 5544990..f3907c9 100644
---- a/kernel/time/clockevents.c
-+++ b/kernel/time/clockevents.c
-@@ -568,6 +568,7 @@ int clockevents_notify(unsigned long reason, void *arg)
- 
- 	case CLOCK_EVT_NOTIFY_CPU_DYING:
- 		tick_handover_do_timer(arg);
-+		tick_shutdown_broadcast_oneshot(arg);
- 		break;
- 
- 	case CLOCK_EVT_NOTIFY_SUSPEND:
-@@ -580,7 +581,6 @@ int clockevents_notify(unsigned long reason, void *arg)
- 		break;
- 
- 	case CLOCK_EVT_NOTIFY_CPU_DEAD:
--		tick_shutdown_broadcast_oneshot(arg);
- 		tick_shutdown_broadcast(arg);
- 		tick_shutdown(arg);
- 		/*
-diff --git a/kernel/time/tick-broadcast.c b/kernel/time/tick-broadcast.c
-index 066f0ec..e9c1d9b 100644
---- a/kernel/time/tick-broadcast.c
-+++ b/kernel/time/tick-broadcast.c
-@@ -675,8 +675,8 @@ static void broadcast_move_bc(int deadcpu)
- 
- 	if (!bc || !broadcast_needs_cpu(bc, deadcpu))
- 		return;
--	/* This moves the broadcast assignment to this cpu */
--	clockevents_program_event(bc, bc->next_event, 1);
-+	/* This allows fresh nomination of broadcast cpu */
-+	bc->next_event.tv64 = KTIME_MAX;
- }
- 
- /*
+Peter Rosin (1):
+  pm: at91: Workaround DDRSDRC self-refresh bug with LPDDR1 memories.
+
+Sylvain Rochet (1):
+  pm: at91: pm_slowclock: improve reliability of suspend/resume
+
+Wenyou Yang (10):
+  pm: at91: pm_slowclock: remove the unused code related with
+    SLOWDOWN_MASTER_CLOCK
+  pm: at91: move the copying the sram function to the sram
+    initializationi phase
+  ARM: at91: move select SRAM to ARCH_AT91
+  pm: at91: remove the config item CONFIG_AT91_SLOW_CLOCK
+  pm: at91: the standby mode uses the same sram function as the suspend
+    to memory mode
+  pm: at91: rename file name: pm_slowclock.S -->pm_suspend.S
+  pm: at91: rename function name:
+    at91_slow_clock()-->at91_pm_suspend_sram_fn
+  pm: at91: remove the at91_xxx_standby() function definitions in the
+    pm.h
+  pm: at91: remove the struct ramc_ids .data at91_xxx_standby members
+  pm: at91: amend the pm_suspend entry for at91_cpuidle_device
+
+ arch/arm/mach-at91/Kconfig         |   15 +-
+ arch/arm/mach-at91/Makefile        |    2 +-
+ arch/arm/mach-at91/pm.c            |  156 ++++++++---------
+ arch/arm/mach-at91/pm.h            |  112 +------------
+ arch/arm/mach-at91/pm_slowclock.S  |  322 ------------------------------------
+ arch/arm/mach-at91/pm_suspend.S    |  278 +++++++++++++++++++++++++++++++
+ include/soc/at91/at91sam9_ddrsdr.h |    2 +-
+ 7 files changed, 356 insertions(+), 531 deletions(-)
+ delete mode 100644 arch/arm/mach-at91/pm_slowclock.S
+ create mode 100644 arch/arm/mach-at91/pm_suspend.S
+
+-- 
+1.7.9.5
 
