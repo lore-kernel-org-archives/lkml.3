@@ -1,73 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752114AbbATFrB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 00:47:01 -0500
-Received: from ozlabs.org ([103.22.144.67]:40685 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752008AbbATFq7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 00:46:59 -0500
-Date: Tue, 20 Jan 2015 16:46:53 +1100
-From: Paul Mackerras <paulus@samba.org>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        linux-rt-users@vger.kernel.org,
-        Luiz Capitulino <lcapitulino@redhat.com>,
-        Rik van Riel <riel@redhat.com>, Steven Rostedt <srostedt@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, kvm@vger.kernel.org,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [patch -rt 1/2] KVM: use simple waitqueue for vcpu->wq
-Message-ID: <20150120054653.GA6473@iris.ozlabs.ibm.com>
-References: <20150114171251.882318257@redhat.com>
- <20150114171459.593877145@redhat.com>
- <20150116114846.4e7b718d@gandalf.local.home>
- <20150119144100.GA10794@amt.cnet>
+	id S1752165AbbATFst (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 00:48:49 -0500
+Received: from mail-wi0-f178.google.com ([209.85.212.178]:43997 "EHLO
+	mail-wi0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750704AbbATFsr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 00:48:47 -0500
+Date: Tue, 20 Jan 2015 06:48:42 +0100
+From: Daniel Vetter <daniel@ffwll.ch>
+To: Matt Roper <matthew.d.roper@intel.com>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>,
+        Daniel Vetter <daniel.vetter@intel.com>,
+        Ville =?iso-8859-1?Q?Syrj=E4l=E4?= 
+	<ville.syrjala@linux.intel.com>,
+        Jeremiah Mahler <jmmahler@gmail.com>,
+        Jani Nikula <jani.nikula@linux.intel.com>,
+        David Airlie <airlied@linux.ie>,
+        Alex Deucher <alexander.deucher@amd.com>,
+        Dave Airlie <airlied@redhat.com>,
+        Ander Conselvan de Oliveira <conselvan2@gmail.com>,
+        linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
+        dri-devel@lists.freedesktop.org
+Subject: Re: [Intel-gfx] [BUG, bisect] drm/i915: mouse pointer lags and
+ overshoots
+Message-ID: <20150120054842.GN26519@phenom.ffwll.local>
+Mail-Followup-To: Matt Roper <matthew.d.roper@intel.com>,
+	Chris Wilson <chris@chris-wilson.co.uk>,
+	Daniel Vetter <daniel.vetter@intel.com>,
+	Ville =?iso-8859-1?Q?Syrj=E4l=E4?= <ville.syrjala@linux.intel.com>,
+	Jeremiah Mahler <jmmahler@gmail.com>,
+	Jani Nikula <jani.nikula@linux.intel.com>,
+	David Airlie <airlied@linux.ie>,
+	Alex Deucher <alexander.deucher@amd.com>,
+	Dave Airlie <airlied@redhat.com>,
+	Ander Conselvan de Oliveira <conselvan2@gmail.com>,
+	linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org,
+	dri-devel@lists.freedesktop.org
+References: <20150117100635.GA1281@hudson.localdomain>
+ <20150119090847.GQ10649@intel.com>
+ <54BCE1BF.5050808@intel.com>
+ <20150119110404.GA26577@nuc-i3427.alporthouse.com>
+ <20150119164024.GI22549@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150119144100.GA10794@amt.cnet>
+In-Reply-To: <20150119164024.GI22549@intel.com>
+X-Operating-System: Linux phenom 3.16-2-amd64 
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 19, 2015 at 12:41:00PM -0200, Marcelo Tosatti wrote:
-> On Fri, Jan 16, 2015 at 11:48:46AM -0500, Steven Rostedt wrote:
-> > >  static void kvmppc_vcore_blocked(struct kvmppc_vcore *vc)
-> > >  {
-> > > -	DEFINE_WAIT(wait);
-> > > +	DEFINE_SWAITER(wait);
-> > >  
-> > > -	prepare_to_wait(&vc->wq, &wait, TASK_INTERRUPTIBLE);
-> > > +	swait_prepare(&vc->wq, &wait, TASK_INTERRUPTIBLE);
-> > >  	vc->vcore_state = VCORE_SLEEPING;
-> > >  	spin_unlock(&vc->lock);
-> > >  	schedule();
-> > > -	finish_wait(&vc->wq, &wait);
-> > > +	swait_finish(&vc->wq, &wait);
-> > >  	spin_lock(&vc->lock);
-> > >  	vc->vcore_state = VCORE_INACTIVE;
-> > >  }
-> > > @@ -1613,7 +1613,7 @@
-> > >  			kvmppc_create_dtl_entry(vcpu, vc);
-> > >  			kvmppc_start_thread(vcpu);
-> > >  		} else if (vc->vcore_state == VCORE_SLEEPING) {
-> > > -			wake_up(&vc->wq);
-> > > +			swait_wake(&vc->wq);
+On Mon, Jan 19, 2015 at 08:40:24AM -0800, Matt Roper wrote:
+> On Mon, Jan 19, 2015 at 11:04:04AM +0000, Chris Wilson wrote:
+> > On Mon, Jan 19, 2015 at 11:51:43AM +0100, Daniel Vetter wrote:
+> > > There's also an issue in (most) X drivers which exaberates this
+> > > issues: When changing the cursor buffer the X cursor code does a a)
+> > > disable cursor b) update cursor image c) enable cursor cycle.
 > > 
-> > I notice everywhere you have a swait_wake_interruptible() but here. Is
-> > there a reason why?
+> > Notably not -intel on which the bug has been observed. And more
+> > importantly, the slow downs don't seem to correlate with cursor change,
+> > just cursor movement.
+> > -Chris
 > > 
-> > IIRC, Peter wants to make swait wakeup usage homogenous. That is, you
-> > either sleep in an interruptible state, or you don't. You can't mix and
-> > match it.
+> > -- 
+> > Chris Wilson, Intel Open Source Technology Centre
 > 
-> IIUC there is only one waiter on this waitqueue at any given time.
+> It seems that the simple fix for this case (movement only) is to just
+> skip the prepare_fb/cleanup_fb calls (and the associated vblank wait) in
+> the transitional plane helper when newfb == oldfb.  I just posted a
+> small patch that makes that change (and solves the cursor lag for me).
 > 
-> Paul is that correct?
+> This won't solve the case if userspace uses a different framebuffer for
+> each update (while trying to update faster than the refresh rate).  Is
+> there any existing userspace that behaves this way that we can test
+> with?
 
-Yes, that's right.  It's only the task that has taken the
-responsibility for running the virtual core that would be waiting on
-that wait queue.
+Hm, I've thought I've merged that patch already:
 
-Paul.
+commit ab58e3384b9f9863bfd029b458ff337d381bf6d2
+Author: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date:   Mon Nov 24 20:42:42 2014 +0100
+
+    drm/atomic-helper: Skip vblank waits for unchanged fbs
+
+Or is the problem here that the transitional plane helpers aren't up to
+the task? If so please reference that in your patch.
+
+And we still need a hack for the "changed fb cursor" issue, I'll whip
+something up.
+-Daniel
+-- 
+Daniel Vetter
+Software Engineer, Intel Corporation
++41 (0) 79 365 57 48 - http://blog.ffwll.ch
