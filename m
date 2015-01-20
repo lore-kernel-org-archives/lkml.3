@@ -1,148 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754568AbbATL5b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 06:57:31 -0500
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:48718 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753498AbbATL50 (ORCPT
+	id S1754603AbbATL5g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 06:57:36 -0500
+Received: from mail-ie0-f170.google.com ([209.85.223.170]:60501 "EHLO
+	mail-ie0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754562AbbATL5b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 06:57:26 -0500
-Message-ID: <54BE429E.9020108@hitachi.com>
-Date: Tue, 20 Jan 2015 20:57:18 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120614 Thunderbird/13.0.1
+	Tue, 20 Jan 2015 06:57:31 -0500
+Date: Tue, 20 Jan 2015 11:57:26 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 06/14] mfd: max77686: Constify struct regmap_config
+Message-ID: <20150120115726.GQ13701@x1>
+References: <1420448493-9355-1-git-send-email-k.kozlowski@samsung.com>
+ <1420448493-9355-6-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-To: Alexei Starovoitov <ast@plumgrid.com>
-Cc: Ingo Molnar <mingo@kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Namhyung Kim <namhyung@kernel.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Jiri Olsa <jolsa@redhat.com>, "David S. Miller" <davem@davemloft.net>,
-        Daniel Borkmann <dborkman@redhat.com>,
-        Hannes Frederic Sowa <hannes@stressinduktion.org>,
-        Brendan Gregg <brendan.d.gregg@gmail.com>,
-        Linux API <linux-api@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "zhangwei(Jovi)" <jovi.zhangwei@huawei.com>,
-        "yrl.pp-manager.tt@hitachi.com" <yrl.pp-manager.tt@hitachi.com>
-Subject: Re: Re: Re: [PATCH tip 0/9] tracing: attach eBPF programs to tracepoints/syscalls/kprobe
-References: <CAMEtUuwrpqRG4a=Hqnj3JBKuLbC4yV+trVAZhevKLbCsm_6U4Q@mail.gmail.com>
-In-Reply-To: <CAMEtUuwrpqRG4a=Hqnj3JBKuLbC4yV+trVAZhevKLbCsm_6U4Q@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1420448493-9355-6-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2015/01/20 12:55), Alexei Starovoitov wrote:
-> On Mon, Jan 19, 2015 at 6:58 PM, Masami Hiramatsu
-> <masami.hiramatsu.pt@hitachi.com> wrote:
->>>
->>> it's done already... one can do the same skb->dev->name logic
->>> in kprobe attached program... so from bpf program point of view,
->>> tracepoints and kprobes feature-wise are exactly the same.
->>> Only input is different.
->>
->> No, I meant that the input should also be same, at least for the first step.
->> I guess it is easy to hook the ring buffer committing and fetch arguments
->> from the event entry.
+On Mon, 05 Jan 2015, Krzysztof Kozlowski wrote:
+
+> The regmap_config struct may be const because it is not modified by the
+> driver and regmap_init() accepts pointer to const.
 > 
-> No. That would be very slow. See my comment to Steven
-> and more detailed numbers below.
+> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> ---
+>  drivers/mfd/max77686.c | 6 +++---
+>  1 file changed, 3 insertions(+), 3 deletions(-)
 
-Thank you for measuring the performance differences.
-Indeed, the ring buffer looks slow.
+Applied, thanks.
 
-> Allocating ring buffer takes too much time.
-> 
->> And what I expected scenario was
->>
->> 1. setup kprobe traceevent with fd, buf, count by using perf-probe.
->> 2. load bpf module
->> 3. the module processes given event arguments.
-> 
-> from ring buffer? that's too slow.
-
-Ok, BTW, would you think is it possible to use a reusable small scratchpad
-memory for passing arguments? (just a thought)
-
-> It's not usable for high frequency events which
-> need this in-kernel aggregation.
-> If events are rare, then just dumping everything
-> into trace buffer is just fine. No in-kernel program is needed.
-
-Hmm, let me ensure your point, the performance number is the reason why
-we need to do it in the kernel, right? Not mainly for the flexibility but speed.
-
->> Hmm, it sounds making another systemtap on top of tracepoint and kprobes.
->> Why don't you just reuse the existing facilities (perftools and ftrace)
->> instead of co-exist?
-> 
-> hmm. I don't think we're on the same page yet...
-> ring buffer and tracing interface is fully reused.
-> programs are run as soon as event triggers.
-> They can return non-zero and kernel will allocate ring
-> buffer which user space will consume.
-> Please take a look at tracex1
-
-I see, this code itself is not a destructive change.
-
->>> Just look how ktap scripts look alike for kprobes and tracepoints.
->>
->> Ktap is a good example, it provides only a language parser and a runtime engine.
->> Actually, currently it lacks a feature to execute "perf-probe" helper from
->> script, but it is easy to add such feature.
-> ...
->> For this usecase, I've made --output option for perf probe
->> https://lkml.org/lkml/2014/10/31/210
-> 
-> you're proposing to call perf binary from ktap binary?
-
-Yes, that's right :)
-
-> I think packaging headaches and error conditions
-> will make such approach very hard to use.
-
-No, I don't think so. perf can be a "buffer" from the kernel API
-and command-line API. If you need to get clearer error, you also
-can join the upstream development.
-
-> it would be much cleaner to have ktap as part of perf
-> generating bpf on the fly and feeding into kernel.
-> 'perf probe' parsing and functions don't belong in kernel
-> when userspace can generate them in more efficient way.
-
-No, perf probe still be needed to users who don't choose "injecting
-binary blob" tracing. Efficiency is NOT only one index.
-
-- perf probe and kprobe-event gives us a complete understandable
- interface for what will be recorded at where.
- (we can see the event definitions via kprobe_events interface,
-  without any tools)
-- kprobe-event gives a completely same interface as other tracepoint
-  events.
-- it also doesn't require any build-binary parts :) nor special tools.
-  We can play with ftrace on just a small busybox.
-
-However, this does NOT interfere your patch upstreaming. I just said current
-ftrace method is also meaningful for some reasons :)
-
-
-By the way, I concern about that bpf compiler can become another systemtap,
-especially if you build it on llvm. Would you plan to develop it on kernel
-tree? or apart from the kernel-side development?
-I think it is hard to sync the development if you do it out-of-tree.
-
-
-Thank you,
-
-
+> diff --git a/drivers/mfd/max77686.c b/drivers/mfd/max77686.c
+> index 929795eae9fc..2b2f2ccda523 100644
+> --- a/drivers/mfd/max77686.c
+> +++ b/drivers/mfd/max77686.c
+> @@ -111,17 +111,17 @@ static bool max77802_is_volatile_reg(struct device *dev, unsigned int reg)
+>  		max77802_rtc_is_volatile_reg(dev, reg));
+>  }
+>  
+> -static struct regmap_config max77686_regmap_config = {
+> +static const struct regmap_config max77686_regmap_config = {
+>  	.reg_bits = 8,
+>  	.val_bits = 8,
+>  };
+>  
+> -static struct regmap_config max77686_rtc_regmap_config = {
+> +static const struct regmap_config max77686_rtc_regmap_config = {
+>  	.reg_bits = 8,
+>  	.val_bits = 8,
+>  };
+>  
+> -static struct regmap_config max77802_regmap_config = {
+> +static const struct regmap_config max77802_regmap_config = {
+>  	.reg_bits = 8,
+>  	.val_bits = 8,
+>  	.writeable_reg = max77802_is_accessible_reg,
 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Research Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
-
-
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
