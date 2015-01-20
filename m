@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754320AbbATKty (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 05:49:54 -0500
-Received: from mail-we0-f181.google.com ([74.125.82.181]:44580 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754275AbbATKtr (ORCPT
+	id S1754302AbbATKtw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 05:49:52 -0500
+Received: from mail-we0-f173.google.com ([74.125.82.173]:58943 "EHLO
+	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754281AbbATKtt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 05:49:47 -0500
+	Tue, 20 Jan 2015 05:49:49 -0500
 From: Thierry Reding <thierry.reding@gmail.com>
 To: dri-devel@lists.freedesktop.org
 Cc: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 29/36] drm/tegra: sor: Implement ->atomic_check()
-Date: Tue, 20 Jan 2015 11:48:48 +0100
-Message-Id: <1421750935-4023-30-git-send-email-thierry.reding@gmail.com>
+Subject: [PATCH 30/36] drm/tegra: dc: Use atomic clock state in modeset
+Date: Tue, 20 Jan 2015 11:48:49 +0100
+Message-Id: <1421750935-4023-31-git-send-email-thierry.reding@gmail.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1421750935-4023-1-git-send-email-thierry.reding@gmail.com>
 References: <1421750935-4023-1-git-send-email-thierry.reding@gmail.com>
@@ -22,57 +22,70 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Thierry Reding <treding@nvidia.com>
 
-The implementation of the ->atomic_check() callback precomputes all
-parameters to check if the given configuration can be applied. If so the
-precomputed values are stored in the atomic state object for the encoder
-and applied during modeset. In that way the modeset no longer needs to
-perform any checking but simply program values into registers.
+All clock state is now stored in the display controller's atomic state,
+so the output drivers no longer need to call back into the display
+controller driver to set up the clock. This is also required to make
+sure no hardware changes are made before validating a configuration.
 
 Signed-off-by: Thierry Reding <treding@nvidia.com>
 ---
- drivers/gpu/drm/tegra/sor.c | 22 ++++++++++++++++++++++
- 1 file changed, 22 insertions(+)
+ drivers/gpu/drm/tegra/dc.c | 37 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 37 insertions(+)
 
-diff --git a/drivers/gpu/drm/tegra/sor.c b/drivers/gpu/drm/tegra/sor.c
-index 2793e75c6573..7463ea02a083 100644
---- a/drivers/gpu/drm/tegra/sor.c
-+++ b/drivers/gpu/drm/tegra/sor.c
-@@ -1320,6 +1320,27 @@ unlock:
- 	mutex_unlock(&sor->lock);
+diff --git a/drivers/gpu/drm/tegra/dc.c b/drivers/gpu/drm/tegra/dc.c
+index 1d8052a8d4c3..b4a2a17caf05 100644
+--- a/drivers/gpu/drm/tegra/dc.c
++++ b/drivers/gpu/drm/tegra/dc.c
+@@ -1225,12 +1225,49 @@ int tegra_dc_state_setup_clock(struct tegra_dc *dc,
+ 	return 0;
  }
  
-+static int
-+tegra_sor_encoder_atomic_check(struct drm_encoder *encoder,
-+			       struct drm_crtc_state *crtc_state,
-+			       struct drm_connector_state *conn_state)
++static void tegra_dc_commit_state(struct tegra_dc *dc,
++				  struct tegra_dc_state *state)
 +{
-+	struct tegra_output *output = encoder_to_output(encoder);
-+	struct tegra_dc *dc = to_tegra_dc(conn_state->crtc);
-+	unsigned long pclk = crtc_state->mode.clock * 1000;
-+	struct tegra_sor *sor = to_sor(output);
++	u32 value;
 +	int err;
 +
-+	err = tegra_dc_state_setup_clock(dc, crtc_state, sor->clk_parent,
-+					 pclk, 0);
-+	if (err < 0) {
-+		dev_err(output->dev, "failed to setup CRTC state: %d\n", err);
-+		return err;
++	err = clk_set_parent(dc->clk, state->clk);
++	if (err < 0)
++		dev_err(dc->dev, "failed to set parent clock: %d\n", err);
++
++	/*
++	 * Outputs may not want to change the parent clock rate. This is only
++	 * relevant to Tegra20 where only a single display PLL is available.
++	 * Since that PLL would typically be used for HDMI, an internal LVDS
++	 * panel would need to be driven by some other clock such as PLL_P
++	 * which is shared with other peripherals. Changing the clock rate
++	 * should therefore be avoided.
++	 */
++	if (state->pclk > 0) {
++		err = clk_set_rate(state->clk, state->pclk);
++		if (err < 0)
++			dev_err(dc->dev,
++				"failed to set clock rate to %lu Hz\n",
++				state->pclk);
 +	}
 +
-+	return 0;
++	DRM_DEBUG_KMS("rate: %lu, div: %u\n", clk_get_rate(dc->clk),
++		      state->div);
++	DRM_DEBUG_KMS("pclk: %lu\n", state->pclk);
++
++	value = SHIFT_CLK_DIVIDER(state->div) | PIXEL_CLK_DIVIDER_PCD1;
++	tegra_dc_writel(dc, value, DC_DISP_DISP_CLOCK_CONTROL);
 +}
 +
- static const struct drm_encoder_helper_funcs tegra_sor_encoder_helper_funcs = {
- 	.dpms = tegra_sor_encoder_dpms,
- 	.mode_fixup = tegra_sor_encoder_mode_fixup,
-@@ -1327,6 +1348,7 @@ static const struct drm_encoder_helper_funcs tegra_sor_encoder_helper_funcs = {
- 	.commit = tegra_sor_encoder_commit,
- 	.mode_set = tegra_sor_encoder_mode_set,
- 	.disable = tegra_sor_encoder_disable,
-+	.atomic_check = tegra_sor_encoder_atomic_check,
- };
+ static void tegra_crtc_mode_set_nofb(struct drm_crtc *crtc)
+ {
+ 	struct drm_display_mode *mode = &crtc->state->adjusted_mode;
++	struct tegra_dc_state *state = to_dc_state(crtc->state);
+ 	struct tegra_dc *dc = to_tegra_dc(crtc);
+ 	u32 value;
  
- static int tegra_sor_init(struct host1x_client *client)
++	tegra_dc_commit_state(dc, state);
++
+ 	/* program display mode */
+ 	tegra_dc_set_timings(dc, mode);
+ 
 -- 
 2.1.3
 
