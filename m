@@ -1,115 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754988AbbATNEd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 08:04:33 -0500
-Received: from mail-qc0-f179.google.com ([209.85.216.179]:50227 "EHLO
-	mail-qc0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754618AbbATNEb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 08:04:31 -0500
+	id S1755233AbbATNGy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 08:06:54 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:47212 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754449AbbATNGw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 08:06:52 -0500
+Date: Tue, 20 Jan 2015 21:04:57 +0800
+From: Baoquan He <bhe@redhat.com>
+To: Kees Cook <keescook@chromium.org>
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Vivek Goyal <vgoyal@redhat.com>,
+        Jan Beulich <JBeulich@suse.com>, Junjie Mao <eternal.n08@gmail.com>,
+        Andi Kleen <ak@linux.intel.com>, "Thomas D." <whissi@whissi.de>
+Subject: Re: [PATCH] x86, boot: skip relocs when load address unchanged
+Message-ID: <20150120130457.GG2461@dhcp-16-105.nay.redhat.com>
+References: <20150116005146.GA4212@www.outflux.net>
 MIME-Version: 1.0
-In-Reply-To: <20150120000019.GD27202@codeaurora.org>
-References: <1421688067-24426-1-git-send-email-tomeu.vizoso@collabora.com>
- <1421688067-24426-4-git-send-email-tomeu.vizoso@collabora.com> <20150120000019.GD27202@codeaurora.org>
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Date: Tue, 20 Jan 2015 14:04:10 +0100
-X-Google-Sender-Auth: qOCXAelK545Awh-k2b-BO4dTmiI
-Message-ID: <CAAObsKAUc9wrQ+uj-tmQA+HrnRjUD1qXRmytGV9WT0ySZ6VJpA@mail.gmail.com>
-Subject: Re: [PATCH v9 3/3] clk: Add floor and ceiling constraints to clock rates
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mike Turquette <mturquette@linaro.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Jonathan Corbet <corbet@lwn.net>, Tony Lindgren <tony@atomide.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Boris Brezillon <boris.brezillon@free-electrons.com>,
-        =?UTF-8?Q?Emilio_L=C3=B3pez?= <emilio@elopez.com.ar>,
-        Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Tero Kristo <t-kristo@ti.com>, Manuel Lauss <manuel.lauss@gmail.com>,
-        Alex Elder <elder@linaro.org>, Matt Porter <mporter@linaro.org>,
-        Zhangfei Gao <zhangfei.gao@linaro.org>,
-        Haojian Zhuang <haojian.zhuang@linaro.org>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Bintian Wang <bintian.wang@huawei.com>,
-        Chao Xie <chao.xie@marvell.com>, linux-doc@vger.kernel.org,
-        linux-omap@vger.kernel.org,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        linux-mips@linux-mips.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150116005146.GA4212@www.outflux.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20 January 2015 at 01:00, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> On 01/19, Tomeu Vizoso wrote:
->> Adds a way for clock consumers to set maximum and minimum rates. This can be
->> used for thermal drivers to set ceiling rates, or by misc. drivers to set
->> floor rates to assure a minimum performance level.
->>
->> Changes the signature of the determine_rate callback by adding the
->> parameters floor_rate and ceiling_rate.
->
-> Commit text needs the s/floor/min and s/ceiling/max treatment
-> too.
->
->>
->> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
->> index f2a1ff3..55b3124 100644
->> --- a/drivers/clk/clk.c
->> +++ b/drivers/clk/clk.c
->> @@ -1026,6 +1051,28 @@ static unsigned long clk_core_round_rate_nolock(struct clk_core *clk,
->>       else
->>               return clk->rate;
->>  }
->> +unsigned long __clk_determine_rate(struct clk_hw *hw,
->> +                                unsigned long rate,
->> +                                unsigned long min_rate,
->> +                                unsigned long max_rate)
->> +{
->> +     unsigned long parent_rate = 0;
->> +     struct clk_core *core = hw->core;
->> +     struct clk_hw *parent_hw;
->> +
->> +     if (!core->ops->determine_rate)
->> +             return 0;
->> +
->> +     if (core->parent) {
->> +             parent_rate = core->parent->rate;
->> +             parent_hw = core->parent->hw;
->> +     }
->> +
->> +     return core->ops->determine_rate(core->hw, rate,
->> +                                     min_rate, max_rate,
->> +                                     &parent_rate, &parent_hw);
->> +}
->> +EXPORT_SYMBOL_GPL(__clk_determine_rate);
->
-> Maybe I misled you with the API name. I was thinking more along
-> the lines of clk_round_rate() and this new function ending up
-> calling clk_core_round_rate(), but clk_round_rate() would call it
-> with whatever range the clock is constrained to while this new
-> function would allow driver authors to specify the range. It
-> should be easy enough to add min/max to clk_core_round_rate()
-> given that it's a private API in this file.
+On 01/15/15 at 04:51pm, Kees Cook wrote:
+> On 64-bit, relocation is not required unless the load address gets
+> changed. Without this, relocations do unexpected things when the kernel
+> is above 4G.
 
-Yeah, I wasn't sure whether it made sense for __clk_determine_rate to
-have the fallbacks because any caller would need to have checked that
-the clock implementation supports determine_rate and is aware of the
-rate constraints.
+This patch works for me. And good to see it's being merged. About the
+patch log, I would say relocations do unexpected things when the kernel
+is above 1G since randomization is done from 16M to 1G, namely
+CONFIG_RANDOMIZE_BASE_MAX_OFFSET. So above 1G kernel text mapping will
+step into kernel module mapping region.
 
-As long as people don't get confused, I'm fine with any of the possibilities.
+BTW, I am working on separate randomization of kernel physical and virtual
+address , will post it. But it won't conflict with this because I don't
+think it can be accepted in a short time. Before that this patch truly
+fix the kexec/kdump bug when kaslr is compiled in.
 
-Regards,
+Thanks
+Baoquan
 
-Tomeu
-
-> --
-> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
-> a Linux Foundation Collaborative Project
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+> Reported-by: Baoquan He <bhe@redhat.com>
+> Signed-off-by: Kees Cook <keescook@chromium.org>
+> Cc: stable@vger.kernel.org
+> ---
+> This is a reimplementation of Baoquan's "kaslr: check if kernel location is
+> changed", which performs the check without needing to change the function
+> declaration. This should have exactly the same effect, but I dropped Vivek's
+> Ack and Thomas's Test, since it's technically a different patch.
+> ---
+>  arch/x86/boot/compressed/misc.c | 9 ++++++++-
+>  1 file changed, 8 insertions(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+> index dcc1c536cc21..a950864a64da 100644
+> --- a/arch/x86/boot/compressed/misc.c
+> +++ b/arch/x86/boot/compressed/misc.c
+> @@ -373,6 +373,8 @@ asmlinkage __visible void *decompress_kernel(void *rmode, memptr heap,
+>  				  unsigned long output_len,
+>  				  unsigned long run_size)
+>  {
+> +	unsigned char *output_orig = output;
+> +
+>  	real_mode = rmode;
+>  
+>  	sanitize_boot_params(real_mode);
+> @@ -421,7 +423,12 @@ asmlinkage __visible void *decompress_kernel(void *rmode, memptr heap,
+>  	debug_putstr("\nDecompressing Linux... ");
+>  	decompress(input_data, input_len, NULL, NULL, output, NULL, error);
+>  	parse_elf(output);
+> -	handle_relocations(output, output_len);
+> +	/*
+> +	 * 32-bit always performs relocations. 64-bit relocations are only
+> +	 * needed if kASLR has chosen a different load address.
+> +	 */
+> +	if (!IS_ENABLED(CONFIG_X86_64) || output != output_orig)
+> +		handle_relocations(output, output_len);
+>  	debug_putstr("done.\nBooting the kernel.\n");
+>  	return output;
+>  }
+> -- 
+> 1.9.1
+> 
+> 
+> -- 
+> Kees Cook
+> Chrome OS Security
