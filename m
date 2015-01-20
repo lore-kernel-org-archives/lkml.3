@@ -1,77 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752835AbbATNgo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 08:36:44 -0500
-Received: from mail-ie0-f176.google.com ([209.85.223.176]:63622 "EHLO
-	mail-ie0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752227AbbATNgl (ORCPT
+	id S1752999AbbATNhD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 08:37:03 -0500
+Received: from terminus.zytor.com ([198.137.202.10]:57586 "EHLO
+	terminus.zytor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751935AbbATNhA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 08:36:41 -0500
-Date: Tue, 20 Jan 2015 13:36:34 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>,
-        Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, Pavel Machek <pavel@ucw.cz>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
-Subject: Re: [RFC PATCHv2 18/19] mfd: ab8500: Decrement the power supply's
- device reference counter
-Message-ID: <20150120133634.GH13701@x1>
-References: <1420472882-10463-1-git-send-email-k.kozlowski@samsung.com>
- <1420472882-10463-19-git-send-email-k.kozlowski@samsung.com>
+	Tue, 20 Jan 2015 08:37:00 -0500
+Date: Tue, 20 Jan 2015 05:36:36 -0800
+From: tip-bot for Juergen Gross <tipbot@zytor.com>
+Message-ID: <tip-9d34cfdf47963905d792ae9c000efa522739abe4@git.kernel.org>
+Cc: tglx@linutronix.de, hpa@zytor.com, mingo@kernel.org,
+        linux-kernel@vger.kernel.org, akataria@vmware.com,
+        jongman.heo@samsung.com, jgross@suse.com
+Reply-To: linux-kernel@vger.kernel.org, akataria@vmware.com,
+        jongman.heo@samsung.com, jgross@suse.com, mingo@kernel.org,
+        tglx@linutronix.de, hpa@zytor.com
+In-Reply-To: <1421039745-14335-1-git-send-email-jgross@suse.com>
+References: <1421039745-14335-1-git-send-email-jgross@suse.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86: Don'
+ t rely on VMWare emulating PAT MSR correctly
+Git-Commit-ID: 9d34cfdf47963905d792ae9c000efa522739abe4
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org>
+  to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1420472882-10463-19-git-send-email-k.kozlowski@samsung.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 05 Jan 2015, Krzysztof Kozlowski wrote:
+Commit-ID:  9d34cfdf47963905d792ae9c000efa522739abe4
+Gitweb:     http://git.kernel.org/tip/9d34cfdf47963905d792ae9c000efa522739abe4
+Author:     Juergen Gross <jgross@suse.com>
+AuthorDate: Mon, 12 Jan 2015 06:15:45 +0100
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Tue, 20 Jan 2015 14:33:45 +0100
 
-> Use power_supply_put() to decrement the power supply's device reference
-> counter.
-> 
-> Signed-off-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
-> Acked-by: Pavel Machek <pavel@ucw.cz>
-> Acked-by: Linus Walleij <linus.walleij@linaro.org>
-> Acked-by: Lee Jones <lee.jones@linaro.org>
+x86: Don't rely on VMWare emulating PAT MSR correctly
 
-You've sent this to me already Acked.  I don't see 00/00, so I have no
-idea what's going on.  Do you want me to take this patch?  Can it be
-taking on its own?
+VMWare seems not to emulate the PAT MSR correctly: reaeding
+MSR_IA32_CR_PAT returns 0 even after writing another value to it.
 
-> ---
->  drivers/mfd/ab8500-sysctrl.c | 2 ++
->  1 file changed, 2 insertions(+)
-> 
-> diff --git a/drivers/mfd/ab8500-sysctrl.c b/drivers/mfd/ab8500-sysctrl.c
-> index d4a4b24be7c6..0d1825696153 100644
-> --- a/drivers/mfd/ab8500-sysctrl.c
-> +++ b/drivers/mfd/ab8500-sysctrl.c
-> @@ -51,6 +51,7 @@ static void ab8500_power_off(void)
->  
->  		ret = power_supply_get_property(psy, POWER_SUPPLY_PROP_ONLINE,
->  				&val);
-> +		power_supply_put(psy);
->  
->  		if (!ret && val.intval) {
->  			charger_present = true;
-> @@ -73,6 +74,7 @@ static void ab8500_power_off(void)
->  			       pss[i]);
->  			machine_restart("charging");
->  		}
-> +		power_supply_put(psy);
->  	}
->  
->  shutdown:
+Commit bd809af16e3ab triggers this VMWare bug when the kernel is
+booted as a VMWare guest.
 
--- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+Detect this bug and don't use the read value if it is 0.
+
+Fixes: bd809af16e3ab "x86: Enable PAT to use cache mode translation tables"
+Reported-and-tested-by: Jongman Heo <jongman.heo@samsung.com>
+Acked-by: Alok N Kataria <akataria@vmware.com>
+Signed-off-by: Juergen Gross <jgross@suse.com>
+Link: http://lkml.kernel.org/r/1421039745-14335-1-git-send-email-jgross@suse.com
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ arch/x86/mm/pat.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
+index edf299c..7ac6869 100644
+--- a/arch/x86/mm/pat.c
++++ b/arch/x86/mm/pat.c
+@@ -234,8 +234,13 @@ void pat_init(void)
+ 	      PAT(4, WB) | PAT(5, WC) | PAT(6, UC_MINUS) | PAT(7, UC);
+ 
+ 	/* Boot CPU check */
+-	if (!boot_pat_state)
++	if (!boot_pat_state) {
+ 		rdmsrl(MSR_IA32_CR_PAT, boot_pat_state);
++		if (!boot_pat_state) {
++			pat_disable("PAT read returns always zero, disabled.");
++			return;
++		}
++	}
+ 
+ 	wrmsrl(MSR_IA32_CR_PAT, pat);
+ 
