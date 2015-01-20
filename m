@@ -1,207 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752718AbbATJSj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 04:18:39 -0500
-Received: from mga11.intel.com ([192.55.52.93]:54671 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752039AbbATJSg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 04:18:36 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="442631561"
-From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-To: Kishon Vijay Abraham I <kishon@ti.com>
-Cc: Baolu Lu <baolu.lu@linux.intel.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] phy: ulpi: add driver for TI TUSB1210
-Date: Tue, 20 Jan 2015 11:18:22 +0200
-Message-Id: <1421745502-169447-4-git-send-email-heikki.krogerus@linux.intel.com>
-X-Mailer: git-send-email 2.1.4
-In-Reply-To: <1421745502-169447-1-git-send-email-heikki.krogerus@linux.intel.com>
-References: <1421745502-169447-1-git-send-email-heikki.krogerus@linux.intel.com>
+	id S1752283AbbATJR3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 04:17:29 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:23843 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751242AbbATJR0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 04:17:26 -0500
+From: Ethan Zhao <ethan.zhao@oracle.com>
+To: james.l.morris@oracle.com, serge@hallyn.com, eparis@parisplace.org,
+        sds@tycho.nsa.gov, paul@paul-moore.com
+Cc: selinux@tycho.nsa.gov, linux-security-module@vger.kernel.org,
+        linux-kernel@vger.kernel.org, ethan.kernel@gmail.conm,
+        Ethan Zhao <ethan.zhao@oracle.com>
+Subject: [PATCH] Selinux/hooks.c: Fix a NULL pointer dereference caused by semop()
+Date: Tue, 20 Jan 2015 18:18:38 +0900
+Message-Id: <1421745518-18790-1-git-send-email-ethan.zhao@oracle.com>
+X-Mailer: git-send-email 1.8.3.1
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-TUSB1210 ULPI PHY has vendor specific register for eye
-diagram tuning. On some platforms the system firmware has
-set optimized value to it. In order to not loose the
-optimized value, the driver stores it during probe and
-restores it every time the PHY is powered back on.
+A NULL pointer dereference was observed as following panic:
 
-Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+BUG: unable to handle kernel NULL pointer dereference at (null)
+IP: [<ffffffff812735eb>] ipc_has_perm+0x4b/0x60
+...
+Process opcmon (pid: 30712, threadinfo ffff880237f2a000,
+task ffff88022ac70e40)
+Stack:
+ffff880237f2bc04 ffffffff01020953 ffff880237f2bce8
+ffffffff8125818e
+0000000000000001 0000000037f78004 ffff880237f2bcd8
+ffffffff81273619
+ffff880237f2bce8 ffffffff8126e3e6 ffff880237f2bf68
+ffffffff8125c206
+Call Trace:
+[<ffffffff8125818e>] ? ipcperms+0xae/0x110
+[<ffffffff81273619>] selinux_sem_semop+0x19/0x20
+[<ffffffff8126e3e6>] security_sem_semop+0x16/0x20
+[<ffffffff8125c206>] sys_semtimedop+0x346/0x750
+[<ffffffff81188c0c>] ? handle_pte_fault+0x1dc/0x200
+[<ffffffff8161d830>] ? __do_page_fault+0x280/0x500
+[<ffffffff810d97d0>] ? __lock_release+0x90/0x1b0
+[<ffffffff8161d830>] ? __do_page_fault+0x280/0x500
+[<ffffffff8109a763>] ? up_read+0x23/0x40
+[<ffffffff8161d830>] ? __do_page_fault+0x280/0x500
+[<ffffffff81182f1c>] ? might_fault+0x5c/0xb0
+[<ffffffff81081f96>] ? sys_newuname+0x66/0xf0
+[<ffffffff810d97d0>] ? __lock_release+0x90/0x1b0
+[<ffffffff81081f96>] ? sys_newuname+0x66/0xf0
+[<ffffffff81622f45>] ? sysret_check+0x22/0x5d
+[<ffffffff8125c620>] sys_semop+0x10/0x20
+[<ffffffff81622f19>] system_call_fastpath+0x16/0x1b
+Code: b8 00 00 48 8b 80 48 06 00 00 41 8b 54 24 40 4c 8d
+45 d0 89 d9 45 31 c9 48 8b 40 70 8b 78 04 49 8b 44 24 60 c6 45 d0 04 89 55 d8
+<0f> b7 10 8b 70 04 e8 0a dc ff ff 48 83 c4 20 5b 41 5c c9 c3 90
+RIP  [<ffffffff812735eb>] ipc_has_perm+0x4b/0x60
+RSP <ffff880237f2bc98>
+CR2: 0000000000000000
+
+The root cause is semtimedop() was called after semget() without checking its
+return value in process opcmon. and semget() failed to check permission in
+function avc_has_perm() then sem_perm->security was freed shown as following:
+
+     sys_semget()
+     ->newary()
+	   ->security_sem_alloc()
+	     ->sem_alloc_security()
+		   selinux_sem_alloc_security()
+		   ->ipc_alloc_security() {
+		     ->rc = avc_has_perm()
+				if (rc) {
+					ipc_free_security(&sma->sem_perm);
+					return rc;
+
+     So ipc_perms->security was NULL, then semtimedop() was called as
+     following:
+
+	  sys_semtimedop() / semop()
+	  ->selinux_sem_semop()
+	   ->ipc_has_perm()
+	     ->avc_has_perm(sid, isec->sid, isec->sclass, perms, &ad);
+  	                                    ^- NULL pointer dereference happens
+
+The test kernel was running on VMware.
+This patch use to fix this serious security issue could be triggered by user space.
+This patch was tested with v3.19-rc5.
+
+Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
 ---
- drivers/phy/ulpi/Kconfig    |  11 ++++
- drivers/phy/ulpi/Makefile   |   2 +
- drivers/phy/ulpi/tusb1210.c | 131 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 144 insertions(+)
- create mode 100644 drivers/phy/ulpi/tusb1210.c
+ security/selinux/hooks.c | 2 ++
+ 1 file changed, 2 insertions(+)
 
-diff --git a/drivers/phy/ulpi/Kconfig b/drivers/phy/ulpi/Kconfig
-index 8007df2..7cd6f82 100644
---- a/drivers/phy/ulpi/Kconfig
-+++ b/drivers/phy/ulpi/Kconfig
-@@ -7,3 +7,14 @@ config ULPI_PHY
- 	  Say yes if you have ULPI PHY attached to your USB controller.
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index 6da7532..bbe76f5 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -5129,6 +5129,8 @@ static int ipc_has_perm(struct kern_ipc_perm *ipc_perms,
+ 	u32 sid = current_sid();
  
- 	  If unsure, say N.
-+
-+if ULPI_PHY
-+
-+config ULPI_TUSB1210
-+	tristate "TI TUSB1210 USB PHY module"
-+	depends on POWER_SUPPLY
-+	select USB_PHY
-+	help
-+	  Support for TI TUSB1210 USB ULPI PHY.
-+
-+endif
-diff --git a/drivers/phy/ulpi/Makefile b/drivers/phy/ulpi/Makefile
-index 59e61cb..7ee6679 100644
---- a/drivers/phy/ulpi/Makefile
-+++ b/drivers/phy/ulpi/Makefile
-@@ -1,2 +1,4 @@
- ulpiphy-y			:= ulpi.o
- obj-$(CONFIG_ULPI_PHY)		+= ulpiphy.o
-+
-+obj-$(CONFIG_ULPI_TUSB1210)	+= tusb1210.o
-diff --git a/drivers/phy/ulpi/tusb1210.c b/drivers/phy/ulpi/tusb1210.c
-new file mode 100644
-index 0000000..ac77f98
---- /dev/null
-+++ b/drivers/phy/ulpi/tusb1210.c
-@@ -0,0 +1,131 @@
-+/**
-+ * tusb1210.c - TUSB1210 USB ULPI PHY driver
-+ *
-+ * Copyright (C) 2015 Intel Corporation
-+ *
-+ * Author: Heikki Krogerus <heikki.krogerus@linux.intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#include <linux/module.h>
-+#include <linux/phy/ulpi/driver.h>
-+#include <linux/phy/ulpi/regs.h>
-+#include <linux/gpio/consumer.h>
-+
-+#include "ulpi_phy.h"
-+
-+struct tusb1210 {
-+	struct ulpi *ulpi;
-+	struct phy *phy;
-+	struct gpio_desc *gpio_reset;
-+	struct gpio_desc *gpio_cs;
-+	u8 ctx[1];
-+};
-+
-+static int tusb1210_power_on(struct phy *phy)
-+{
-+	struct tusb1210 *tusb = phy_get_drvdata(phy);
-+
-+	gpiod_set_value_cansleep(tusb->gpio_reset, 1);
-+	gpiod_set_value_cansleep(tusb->gpio_cs, 1);
-+
-+	/* Restore eye optimisation value */
-+	ulpi_write(tusb->ulpi, ULPI_EXT_VENDOR_SPECIFIC, tusb->ctx[0]);
-+
-+	return 0;
-+}
-+
-+static int tusb1210_power_off(struct phy *phy)
-+{
-+	struct tusb1210 *tusb = phy_get_drvdata(phy);
-+
-+	gpiod_set_value_cansleep(tusb->gpio_reset, 0);
-+	gpiod_set_value_cansleep(tusb->gpio_cs, 0);
-+
-+	return 0;
-+}
-+
-+static struct phy_ops phy_ops = {
-+	.power_on = tusb1210_power_on,
-+	.power_off = tusb1210_power_off,
-+	.init = tusb1210_power_on,
-+	.exit = tusb1210_power_off,
-+	.owner = THIS_MODULE,
-+};
-+
-+static int tusb1210_probe(struct ulpi *ulpi)
-+{
-+	struct gpio_desc *gpio;
-+	struct tusb1210 *tusb;
-+	int ret;
-+
-+	tusb = devm_kzalloc(&ulpi->dev, sizeof(*tusb), GFP_KERNEL);
-+	if (!tusb)
-+		return -ENOMEM;
-+
-+	gpio = devm_gpiod_get(&ulpi->dev, "reset");
-+	if (!IS_ERR(gpio)) {
-+		ret = gpiod_direction_output(gpio, 0);
-+		if (ret)
-+			return ret;
-+		tusb->gpio_reset = gpio;
-+	}
-+
-+	gpio = devm_gpiod_get(&ulpi->dev, "cs");
-+	if (!IS_ERR(gpio)) {
-+		ret = gpiod_direction_output(gpio, 0);
-+		if (ret)
-+			return ret;
-+		tusb->gpio_cs = gpio;
-+	}
-+
-+	/* Store initial eye diagram optimisation value */
-+	ret = ulpi_read(ulpi, ULPI_EXT_VENDOR_SPECIFIC);
-+	if (ret < 0)
-+		return ret;
-+
-+	tusb->ctx[0] = ret;
-+
-+	tusb->phy = ulpi_phy_create(ulpi, &phy_ops);
-+	if (IS_ERR(tusb->phy))
-+		return PTR_ERR(tusb->phy);
-+
-+	tusb->ulpi = ulpi;
-+
-+	phy_set_drvdata(tusb->phy, tusb);
-+	dev_set_drvdata(&ulpi->dev, tusb);
-+	return 0;
-+}
-+
-+static void tusb1210_remove(struct ulpi *ulpi)
-+{
-+	struct tusb1210 *tusb = dev_get_drvdata(&ulpi->dev);
-+
-+	ulpi_phy_destroy(ulpi, tusb->phy);
-+}
-+
-+#define TI_VENDOR_ID 0x0451
-+
-+static struct ulpi_device_id tusb1210_ulpi_id[] = {
-+	{ TI_VENDOR_ID, 0x1508, },
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(ulpi, tusb1210_ulpi_id);
-+
-+static struct ulpi_driver tusb1210_driver = {
-+	.id_table = tusb1210_ulpi_id,
-+	.probe = tusb1210_probe,
-+	.remove = tusb1210_remove,
-+	.driver = {
-+		.name = "tusb1210",
-+		.owner = THIS_MODULE,
-+	},
-+};
-+
-+module_ulpi_driver(tusb1210_driver);
-+
-+MODULE_AUTHOR("Intel Corporation");
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("TUSB1210 ULPI PHY driver");
+ 	isec = ipc_perms->security;
++	if (!isec)
++		return -EACCES;
+ 
+ 	ad.type = LSM_AUDIT_DATA_IPC;
+ 	ad.u.ipc_id = ipc_perms->key;
 -- 
-2.1.4
+1.8.3.1
 
