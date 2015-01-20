@@ -1,128 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753685AbbATQQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 11:16:26 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:39300 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752174AbbATQQZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 11:16:25 -0500
-Date: Tue, 20 Jan 2015 16:15:55 +0000
-From: Mark Rutland <mark.rutland@arm.com>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Eddie Huang <eddie.huang@mediatek.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/8] soc: Add MediaTek pericfg controller support
-Message-ID: <20150120161555.GH15924@leverpostej>
-References: <1421747231-554-1-git-send-email-s.hauer@pengutronix.de>
- <1421747231-554-3-git-send-email-s.hauer@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421747231-554-3-git-send-email-s.hauer@pengutronix.de>
-Thread-Topic: [PATCH 2/8] soc: Add MediaTek pericfg controller support
-Accept-Language: en-GB, en-US
-Content-Language: en-US
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754055AbbATQal (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 11:30:41 -0500
+Received: from mga01.intel.com ([192.55.52.88]:39588 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752375AbbATQaj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 11:30:39 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="442771097"
+Message-ID: <1421770556.31903.98.camel@linux.intel.com>
+Subject: Re: [PATCH v1 0/4] mfd: reorganize Intel drivers
+From: Andy Shevchenko <andriy.shevchenko@linux.intel.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-kernel@vger.kernel.org,
+        Mika Westerberg <mika.westerberg@linux.intel.com>
+Date: Tue, 20 Jan 2015 18:15:56 +0200
+In-Reply-To: <20150120154644.GF13701@x1>
+References: <1418313236-10764-1-git-send-email-andriy.shevchenko@linux.intel.com>
+	 <20150120134857.GK13701@x1> <1421763412.31903.70.camel@linux.intel.com>
+	 <20150120154644.GF13701@x1>
+Organization: Intel Finland Oy
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.9-1+b1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 09:47:05AM +0000, Sascha Hauer wrote:
-> This adds support for the MediaTek pericfg controller found
-> on the MT8135/MT8173 SoCs. The pericfg controller contains
-> miscellaneous registers for controlling peripheral resets and
-> clocks.
+On Tue, 2015-01-20 at 15:46 +0000, Lee Jones wrote:
+> On Tue, 20 Jan 2015, Andy Shevchenko wrote:
 > 
-> Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-> ---
->  .../devicetree/bindings/soc/mediatek/pericfg.txt      | 19 +++++++++++++++++++
->  drivers/soc/mediatek/Kconfig                          | 10 ++++++++++
->  drivers/soc/mediatek/Makefile                         |  1 +
->  drivers/soc/mediatek/mtk-pericfg.c                    |  1 -
->  4 files changed, 30 insertions(+), 1 deletion(-)
->  create mode 100644 Documentation/devicetree/bindings/soc/mediatek/pericfg.txt
+> > On Tue, 2015-01-20 at 13:48 +0000, Lee Jones wrote:
+> > > On Thu, 11 Dec 2014, Andy Shevchenko wrote:
+> > > 
+> > > > This patchset creates a new folder under drivers/mfd and moves there Intel
+> > > > related drivers.
+> > > > 
+> > > > There is no functional change. The names of the kernel configuration variables
+> > > > are kept the same.
+> > > 
+> > > Can you explain to me why you think the Intel drivers need their own
+> > > sub-directory please?
+> > 
+> > For me it seems logical. We have many drivers related to Intel specific
+> > SoCs (in comparison the other mfd drivers that usually named in
+> > according to some standard chip codename) and they meanwhile have long
+> > awkward prefixes. Moreover they could share common dependencies like
+> > X86.
 > 
-> diff --git a/Documentation/devicetree/bindings/soc/mediatek/pericfg.txt b/Documentation/devicetree/bindings/soc/mediatek/pericfg.txt
-> new file mode 100644
-> index 0000000..81d1aee
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/soc/mediatek/pericfg.txt
-> @@ -0,0 +1,19 @@
-> +MediaTek pericfg Controller
-> +
-> +The pericfg controller contains miscellaneous registers for controlling
-> +clocks, resets and bus settings.
-> +
-> +Required properties:
-> +- compatible: must be one of:
-> +	mediatek,mt8135-pericfg
-> +	mediatek,mt8173-pericfg
-> +- reg: Address range for the pericfg controller
-> +
-> +Example:
-> +
-> +	pericfg: pericfg@10003000 {
-> +		#reset-cells = <1>;
-> +		#clock-cells = <1>;
-> +		compatible = "mediatek,mt8135-pericfg";
-> +		reg = <0 0x10003000 0 0x1000>;
-> +	};
+> I'm not comfortable with it and am yet to see the need.  What I would
+> suggest is to prefix 'intel-' or similar to the related files.  From
+> there we can see how overbearing the files are becoming and make a
+> decision based on that.
+> 
+> If there are too many Intel related files, my first question(s) will
+> be a) why are there so many files b) are so many files required and c)
+> should they really live in MFD.
+> 
+> But as yet, this patch-set is the only indication that something needs
+> to be done at all.
+> 
 
-This looks identical to the infracfg (same address too). Is that
-deliberate?
+Agreed. We will continue to use prefixes (intel_ for *.c, *.h files, and
+module names, and intel- for resulting *.ko files) and simultaneously
+think how we can arrange the files better.
 
-Mark.
+-- 
+Andy Shevchenko <andriy.shevchenko@intel.com>
+Intel Finland Oy
 
-> diff --git a/drivers/soc/mediatek/Kconfig b/drivers/soc/mediatek/Kconfig
-> index 3ad39fe..9bdb88f 100644
-> --- a/drivers/soc/mediatek/Kconfig
-> +++ b/drivers/soc/mediatek/Kconfig
-> @@ -10,3 +10,13 @@ config MTK_INFRACFG
->  	  contains several miscellaneous registers for clock, reset and bus
->  	  settings. Say yes here if you want to run your kernel on one of these
->  	  SoCs.
-> +
-> +config MTK_PERICFG
-> +	tristate "MediaTek pericfg controller support"
-> +	depends on ARCH_MEDIATEK || COMPILE_TEST
-> +	select REGMAP
-> +	help
-> +	  The MediaTek pericfg controller found on MT8135 and MT8173 SoCs
-> +	  contains several miscellaneous registers for clock, reset and bus
-> +	  settings. Say yes here if you want to run your kernel on one of these
-> +	  SoCs.
-> diff --git a/drivers/soc/mediatek/Makefile b/drivers/soc/mediatek/Makefile
-> index dbeb627..e67be7c 100644
-> --- a/drivers/soc/mediatek/Makefile
-> +++ b/drivers/soc/mediatek/Makefile
-> @@ -1 +1,2 @@
->  obj-$(CONFIG_MTK_INFRACFG) += mtk-infracfg.o
-> +obj-$(CONFIG_MTK_PERICFG) += mtk-pericfg.o
-> diff --git a/drivers/soc/mediatek/mtk-pericfg.c b/drivers/soc/mediatek/mtk-pericfg.c
-> index b7ee902..aa9a7eb 100644
-> --- a/drivers/soc/mediatek/mtk-pericfg.c
-> +++ b/drivers/soc/mediatek/mtk-pericfg.c
-> @@ -1,6 +1,5 @@
->  /*
->   * Copyright (c) 2014 MediaTek Inc.
-> - * Author: Flora Fu <flora.fu@mediatek.com>
->   *
->   * This program is free software; you can redistribute it and/or modify
->   * it under the terms of the GNU General Public License version 2 as
-> -- 
-> 2.1.4
-> 
-> 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-> 
