@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754095AbbATKtI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 05:49:08 -0500
-Received: from mail-we0-f174.google.com ([74.125.82.174]:38257 "EHLO
-	mail-we0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753885AbbATKtF (ORCPT
+	id S1754523AbbATLDD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 06:03:03 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:48097 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753350AbbATKtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 05:49:05 -0500
+	Tue, 20 Jan 2015 05:49:07 -0500
 From: Thierry Reding <thierry.reding@gmail.com>
 To: dri-devel@lists.freedesktop.org
 Cc: linux-tegra@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 04/36] drm/atomic: Add ->atomic_check() to encoder helpers
-Date: Tue, 20 Jan 2015 11:48:23 +0100
-Message-Id: <1421750935-4023-5-git-send-email-thierry.reding@gmail.com>
+Subject: [PATCH 05/36] drm/atomic: Add drm_atomic_plane_get_crtc_state()
+Date: Tue, 20 Jan 2015 11:48:24 +0100
+Message-Id: <1421750935-4023-6-git-send-email-thierry.reding@gmail.com>
 X-Mailer: git-send-email 2.1.3
 In-Reply-To: <1421750935-4023-1-git-send-email-thierry.reding@gmail.com>
 References: <1421750935-4023-1-git-send-email-thierry.reding@gmail.com>
@@ -22,75 +22,44 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Thierry Reding <treding@nvidia.com>
 
-This callback can be used instead of the legacy ->mode_fixup() and is
-passed the CRTC and connector states. It can thus use these states to
-validate the modeset and cache values in the state to be used during
-the actual modeset.
+This function is useful to obtain the state of the CRTC that a plane is
+being attached to.
 
 Signed-off-by: Thierry Reding <treding@nvidia.com>
 ---
- drivers/gpu/drm/drm_atomic_helper.c | 23 ++++++++++++++++-------
- include/drm/drm_crtc_helper.h       |  6 ++++++
- 2 files changed, 22 insertions(+), 7 deletions(-)
+ include/drm/drm_atomic.h | 21 +++++++++++++++++++++
+ 1 file changed, 21 insertions(+)
 
-diff --git a/drivers/gpu/drm/drm_atomic_helper.c b/drivers/gpu/drm/drm_atomic_helper.c
-index 1cb04402cd73..b837d148d880 100644
---- a/drivers/gpu/drm/drm_atomic_helper.c
-+++ b/drivers/gpu/drm/drm_atomic_helper.c
-@@ -297,13 +297,22 @@ mode_fixup(struct drm_atomic_state *state)
- 			}
- 		}
+diff --git a/include/drm/drm_atomic.h b/include/drm/drm_atomic.h
+index 51168a8b723a..ddca107e5cce 100644
+--- a/include/drm/drm_atomic.h
++++ b/include/drm/drm_atomic.h
+@@ -75,4 +75,25 @@ int __must_check drm_atomic_check_only(struct drm_atomic_state *state);
+ int __must_check drm_atomic_commit(struct drm_atomic_state *state);
+ int __must_check drm_atomic_async_commit(struct drm_atomic_state *state);
  
--
--		ret = funcs->mode_fixup(encoder, &crtc_state->mode,
--					&crtc_state->adjusted_mode);
--		if (!ret) {
--			DRM_DEBUG_KMS("[ENCODER:%d:%s] fixup failed\n",
--				      encoder->base.id, encoder->name);
--			return -EINVAL;
-+		if (funcs->atomic_check) {
-+			ret = funcs->atomic_check(encoder, crtc_state,
-+						  conn_state);
-+			if (ret) {
-+				DRM_DEBUG_KMS("[ENCODER:%d:%s] check failed\n",
-+					      encoder->base.id, encoder->name);
-+				return ret;
-+			}
-+		} else {
-+			ret = funcs->mode_fixup(encoder, &crtc_state->mode,
-+						&crtc_state->adjusted_mode);
-+			if (!ret) {
-+				DRM_DEBUG_KMS("[ENCODER:%d:%s] fixup failed\n",
-+					      encoder->base.id, encoder->name);
-+				return -EINVAL;
-+			}
- 		}
- 	}
- 
-diff --git a/include/drm/drm_crtc_helper.h b/include/drm/drm_crtc_helper.h
-index e76828d81a8b..5810c027acdc 100644
---- a/include/drm/drm_crtc_helper.h
-+++ b/include/drm/drm_crtc_helper.h
-@@ -115,6 +115,7 @@ struct drm_crtc_helper_funcs {
-  * @get_crtc: return CRTC that the encoder is currently attached to
-  * @detect: connection status detection
-  * @disable: disable encoder when not in use (overrides DPMS off)
-+ * @atomic_check: check for validity of an atomic update
-  *
-  * The helper operations are called by the mid-layer CRTC helper.
-  */
-@@ -137,6 +138,11 @@ struct drm_encoder_helper_funcs {
- 					    struct drm_connector *connector);
- 	/* disable encoder when not in use - more explicit than dpms off */
- 	void (*disable)(struct drm_encoder *encoder);
++/**
++ * drm_atomic_plane_get_crtc_state - obtain atomic state of the CRTC that a
++ *     plane is being attached to
++ * @state: atomic state of plane
++ *
++ * Getting the atomic state of the CRTC that a given plane being attached to
++ * is non-trivial. We need to look at the global atomic state that the plane
++ * state is part of and extract the CRTC state using the CRTC's index. Using
++ * the drm_atomic_get_crtc_state() helper we make sure to acquire the proper
++ * locks, too.
++ *
++ * RETURNS:
++ * The atomic state of the CRTC that the plane is being attached to, or an
++ * ERR_PTR()-encoded negative error code on failure.
++ */
++static inline struct drm_crtc_state *
++drm_atomic_plane_get_crtc_state(struct drm_plane_state *state)
++{
++	return drm_atomic_get_crtc_state(state->state, state->crtc);
++}
 +
-+	/* atomic helpers */
-+	int (*atomic_check)(struct drm_encoder *encoder,
-+			    struct drm_crtc_state *crtc_state,
-+			    struct drm_connector_state *conn_state);
- };
- 
- /**
+ #endif /* DRM_ATOMIC_H_ */
 -- 
 2.1.3
 
