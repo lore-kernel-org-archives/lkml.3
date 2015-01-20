@@ -1,34 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753763AbbATOAj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 09:00:39 -0500
-Received: from mail1.bemta5.messagelabs.com ([195.245.231.147]:28104 "EHLO
-	mail1.bemta5.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752174AbbATOAe (ORCPT
+	id S1753264AbbATOAh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 09:00:37 -0500
+Received: from mail1.bemta3.messagelabs.com ([195.245.230.171]:46605 "EHLO
+	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752206AbbATOAe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 20 Jan 2015 09:00:34 -0500
 X-Env-Sender: stwiss.opensource@diasemi.com
-X-Msg-Ref: server-12.tower-179.messagelabs.com!1421762431!38105887!1
+X-Msg-Ref: server-14.tower-39.messagelabs.com!1421762430!20320960!1
 X-Originating-IP: [82.210.246.133]
 X-StarScan-Received: 
 X-StarScan-Version: 6.12.5; banners=-,-,-
 X-VirusChecked: Checked
-Message-ID: <99c7b7fb380070e5a2f7f4e9f333e8a2b12b591a.1421762065.git.stwiss.opensource@diasemi.com>
+Message-ID: <2ab606365e855b081819174235105ba6674c8143.1421762065.git.stwiss.opensource@diasemi.com>
 In-Reply-To: <cover.1421762065.git.stwiss.opensource@diasemi.com>
 References: <cover.1421762065.git.stwiss.opensource@diasemi.com>
 From: Steve Twiss <stwiss.opensource@diasemi.com>
 Date: Tue, 20 Jan 2015 13:54:25 +0000
-Subject: [PATCH V3 2/2] devicetree: Add bindings for DA9063
-To: Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Mark Rutland <mark.rutland@arm.com>,
-        Pawel Moll <pawel.moll@arm.com>, Rob Herring <robh+dt@kernel.org>
-CC: DT <devicetree@vger.kernel.org>, David Dajun Chen <david.chen@diasemi.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        LKML <linux-kernel@vger.kernel.org>, Lee Jones <lee.jones@linaro.org>,
+Subject: [PATCH V3 1/2] mfd: da9063: Add device tree support
+To: Grant Likely <grant.likely@linaro.org>, Lee Jones <lee.jones@linaro.org>,
         Mark Brown <broonie@linaro.org>,
         Philipp Zabel <p.zabel@pengutronix.de>,
-        Rob Herring <robh+dt@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        "Support Opensource" <support.opensource@diasemi.com>
+        "Rob Herring" <robh+dt@kernel.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+CC: DT <devicetree@vger.kernel.org>, David Dajun Chen <david.chen@diasemi.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "Kumar Gala" <galak@codeaurora.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Mark Rutland" <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
+        "Philipp Zabel" <p.zabel@pengutronix.de>,
+        Support Opensource <support.opensource@diasemi.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
@@ -37,119 +39,87 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steve Twiss <stwiss.opensource@diasemi.com>
 
-Add device tree bindings for DA9063 regulators; Real-Time Clock
+Add device tree support for DA9063 regulators; Real-Time Clock
 and Watchdog.
 
-This patch is dependent on PATCH V2 1/2 
+This patch is dependent on PATCH V2 2/2 
 
 Signed-off-by: Steve Twiss <stwiss.opensource@diasemi.com>
 
 ---
 This patch applies against linux-next and v3.19-rc4 
 
- Documentation/devicetree/bindings/mfd/da9063.txt | 93 ++++++++++++++++++++++++
- 1 file changed, 93 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/mfd/da9063.txt
+ drivers/mfd/da9063-core.c       | 2 ++
+ drivers/mfd/da9063-i2c.c        | 9 +++++++++
+ include/linux/mfd/da9063/core.h | 1 +
+ 3 files changed, 12 insertions(+)
 
-diff --git a/Documentation/devicetree/bindings/mfd/da9063.txt b/Documentation/devicetree/bindings/mfd/da9063.txt
-new file mode 100644
-index 0000000..42c6fa6
---- /dev/null
-+++ b/Documentation/devicetree/bindings/mfd/da9063.txt
-@@ -0,0 +1,93 @@
-+* Dialog DA9063 Power Management Integrated Circuit (PMIC)
+diff --git a/drivers/mfd/da9063-core.c b/drivers/mfd/da9063-core.c
+index f38bc98..facd361 100644
+--- a/drivers/mfd/da9063-core.c
++++ b/drivers/mfd/da9063-core.c
+@@ -86,6 +86,7 @@ static const struct mfd_cell da9063_devs[] = {
+ 	},
+ 	{
+ 		.name		= DA9063_DRVNAME_WATCHDOG,
++		.of_compatible	= "dlg,da9063-watchdog",
+ 	},
+ 	{
+ 		.name		= DA9063_DRVNAME_HWMON,
+@@ -101,6 +102,7 @@ static const struct mfd_cell da9063_devs[] = {
+ 		.name		= DA9063_DRVNAME_RTC,
+ 		.num_resources	= ARRAY_SIZE(da9063_rtc_resources),
+ 		.resources	= da9063_rtc_resources,
++		.of_compatible	= "dlg,da9063-rtc",
+ 	},
+ 	{
+ 		.name		= DA9063_DRVNAME_VIBRATION,
+diff --git a/drivers/mfd/da9063-i2c.c b/drivers/mfd/da9063-i2c.c
+index 21fd8d9..6f3a7c0 100644
+--- a/drivers/mfd/da9063-i2c.c
++++ b/drivers/mfd/da9063-i2c.c
+@@ -25,6 +25,9 @@
+ #include <linux/mfd/da9063/pdata.h>
+ #include <linux/mfd/da9063/registers.h>
+ 
++#include <linux/of.h>
++#include <linux/regulator/of_regulator.h>
 +
-+DA9093 consists of a large and varied group of sub-devices (I2C Only):
-+
-+Device                   Supply Names    Description
-+------                   ------------    -----------
-+da9063-regulator        :               : LDOs & BUCKs
-+da9063-rtc              :               : Real-Time Clock
-+da9063-watchdog         :               : Watchdog
-+
-+======
-+
-+Required properties:
-+
-+- compatible : Should be "dlg,da9063"
-+- reg : Specifies the I2C slave address (this defaults to 0x58 but it can be
-+  modified to match the chip's OTP settings).
-+- interrupt-parent : Specifies the reference to the interrupt controller for
-+  the DA9063.
-+- interrupts : IRQ line information.
-+- interrupt-controller
-+
-+Sub-nodes:
-+
-+- regulators : This node defines the settings for the LDOs and BUCKs. The
-+  DA9063 regulators are bound using their names listed below:
-+
-+    bcore1    : BUCK CORE1
-+    bcore2    : BUCK CORE2
-+    bpro      : BUCK PRO
-+    bmem      : BUCK MEM
-+    bio       : BUCK IO
-+    bperi     : BUCK PERI
-+    ldo1      : LDO_1
-+    ldo2      : LDO_2
-+    ldo3      : LDO_3
-+    ldo4      : LDO_4
-+    ldo5      : LDO_5
-+    ldo6      : LDO_6
-+    ldo7      : LDO_7
-+    ldo8      : LDO_8
-+    ldo9      : LDO_9
-+    ldo10     : LDO_10
-+    ldo11     : LDO_11
-+
-+  The component follows the standard regulator framework and the bindings
-+  details of individual regulator device can be found in:
-+  Documentation/devicetree/bindings/regulator/regulator.txt
-+
-+- rtc : This node defines settings for the Real-Time Clock associated with
-+  the DA9063. There are currently no entries in this binding, however
-+  compatible = "dlg,da9063-rtc" should be added if a node is created.
-+
-+- watchdog : This node defines settings for the Watchdog timer associated
-+  with the DA9063. There are currently no entries in this binding, however
-+  compatible = "dlg,da9063-watchdog" should be added if a node is created.
-+
-+
-+Example:
-+
-+	pmic0: da9063@58 {
-+		compatible = "dlg,da9063"
-+		reg = <0x58>;
-+		interrupt-parent = <&gpio6>;
-+		interrupts = <11 IRQ_TYPE_LEVEL_LOW>;
-+		interrupt-controller;
-+
-+		rtc {
-+			compatible = "dlg,da9063-rtc";
-+		};
-+
-+		wdt {
-+			compatible = "dlg,da9063-watchdog";
-+		};
-+
-+		regulators {
-+			DA9063_BCORE1: bcore1 {
-+				regulator-name = "BCORE1";
-+				regulator-min-microvolt = <300000>;
-+				regulator-max-microvolt = <1570000>;
-+				regulator-min-microamp = <500000>;
-+				regulator-max-microamp = <2000000>;
-+				regulator-boot-on;
-+			};
-+			DA9063_LDO11: ldo11 {
-+				regulator-name = "LDO_11";
-+				regulator-min-microvolt = <900000>;
-+				regulator-max-microvolt = <3600000>;
-+				regulator-boot-on;
-+			};
-+		};
-+	};
-+
+ static const struct regmap_range da9063_ad_readable_ranges[] = {
+ 	{
+ 		.range_min = DA9063_REG_PAGE_CON,
+@@ -203,6 +206,11 @@ static struct regmap_config da9063_regmap_config = {
+ 	.cache_type = REGCACHE_RBTREE,
+ };
+ 
++static const struct of_device_id da9063_dt_ids[] = {
++	{ .compatible = "dlg,da9063", },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, da9063_dt_ids);
+ static int da9063_i2c_probe(struct i2c_client *i2c,
+ 	const struct i2c_device_id *id)
+ {
+@@ -257,6 +265,7 @@ static struct i2c_driver da9063_i2c_driver = {
+ 	.driver = {
+ 		.name = "da9063",
+ 		.owner = THIS_MODULE,
++		.of_match_table = of_match_ptr(da9063_dt_ids),
+ 	},
+ 	.probe    = da9063_i2c_probe,
+ 	.remove   = da9063_i2c_remove,
+diff --git a/include/linux/mfd/da9063/core.h b/include/linux/mfd/da9063/core.h
+index b92a326..79f4d82 100644
+--- a/include/linux/mfd/da9063/core.h
++++ b/include/linux/mfd/da9063/core.h
+@@ -36,6 +36,7 @@ enum da9063_models {
+ enum da9063_variant_codes {
+ 	PMIC_DA9063_AD = 0x3,
+ 	PMIC_DA9063_BB = 0x5,
++	PMIC_DA9063_CA = 0x6,
+ };
+ 
+ /* Interrupts */
 -- 
 end-of-patch for PATCH V3
 
