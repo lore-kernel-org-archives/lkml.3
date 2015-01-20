@@ -1,97 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751815AbbATFph (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 00:45:37 -0500
-Received: from mail-we0-f173.google.com ([74.125.82.173]:37184 "EHLO
-	mail-we0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751517AbbATFpP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 00:45:15 -0500
-Date: Tue, 20 Jan 2015 06:45:09 +0100
-From: Daniel Vetter <daniel@ffwll.ch>
-To: Rob Clark <robdclark@gmail.com>
-Cc: Daniel Vetter <daniel@ffwll.ch>, Stephane Viau <sviau@codeaurora.org>,
-        linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-        Beeresh Gopal <gbeeresh@codeaurora.org>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] drm/msm/mdp5: Add hardware cursor support
-Message-ID: <20150120054509.GM26519@phenom.ffwll.local>
-Mail-Followup-To: Rob Clark <robdclark@gmail.com>,
-	Stephane Viau <sviau@codeaurora.org>,
-	linux-arm-msm <linux-arm-msm@vger.kernel.org>,
-	Beeresh Gopal <gbeeresh@codeaurora.org>,
-	dri-devel <dri-devel@lists.freedesktop.org>,
-	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <1421187484-13875-1-git-send-email-sviau@codeaurora.org>
- <1421187484-13875-3-git-send-email-sviau@codeaurora.org>
- <CAKMK7uH0GUjkksG5RJ03qtf=bqdPvAK1PpayQ6Wz9dq2KMe9Tw@mail.gmail.com>
- <CAF6AEGvCf=7bQWJMxXgzn6DKWPR6TKXJ3+06aRrCg9nV62J7cA@mail.gmail.com>
- <CAKMK7uFCO5ytkckRVtT66pqpwEa9jK=J2CJqjWRS7BuXoJkjig@mail.gmail.com>
- <CAF6AEGvmGbmUQarTHeY2ZSSpTcPJTqpt8eax9Wg=gS=jpnTY_w@mail.gmail.com>
+	id S1752114AbbATFrB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 00:47:01 -0500
+Received: from ozlabs.org ([103.22.144.67]:40685 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752008AbbATFq7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 00:46:59 -0500
+Date: Tue, 20 Jan 2015 16:46:53 +1100
+From: Paul Mackerras <paulus@samba.org>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+        linux-rt-users@vger.kernel.org,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Steven Rostedt <srostedt@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, kvm@vger.kernel.org,
+        Paolo Bonzini <pbonzini@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [patch -rt 1/2] KVM: use simple waitqueue for vcpu->wq
+Message-ID: <20150120054653.GA6473@iris.ozlabs.ibm.com>
+References: <20150114171251.882318257@redhat.com>
+ <20150114171459.593877145@redhat.com>
+ <20150116114846.4e7b718d@gandalf.local.home>
+ <20150119144100.GA10794@amt.cnet>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAF6AEGvmGbmUQarTHeY2ZSSpTcPJTqpt8eax9Wg=gS=jpnTY_w@mail.gmail.com>
-X-Operating-System: Linux phenom 3.16-2-amd64 
+In-Reply-To: <20150119144100.GA10794@amt.cnet>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jan 17, 2015 at 08:46:05AM -0500, Rob Clark wrote:
-> On Fri, Jan 16, 2015 at 11:06 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
-> > On Thu, Jan 15, 2015 at 08:46:46AM -0500, Rob Clark wrote:
-> >> On Wed, Jan 14, 2015 at 7:55 PM, Daniel Vetter <daniel@ffwll.ch> wrote:
-> >> > On Tue, Jan 13, 2015 at 05:18:04PM -0500, Stephane Viau wrote:
-> >> >> From: Beeresh Gopal <gbeeresh@codeaurora.org>
-> >> >>
-> >> >> This patch implements the hardware accelarated cursor
-> >> >> support for MDP5 platforms.
-> >> >>
-> >> >> Signed-off-by: Beeresh Gopal <gbeeresh@codeaurora.org>
-> >> >> Signed-off-by: Wentao Xu <wentaox@codeaurora.org>
-> >> >> Signed-off-by: Stephane Viau <sviau@codeaurora.org>
-> >> >
-> >> > Imo implementing legacy cursor support instead of with universal planes
-> >> > makes no sense. Especially since msm is converted to atomic already, and
-> >> > you can't move the cursor with atomic when it's legacy only. See the
-> >> > cursor argument for the drm_crtc_init_with_planes function and how it's
-> >> > used in e.g. i915.
-> >> >
-> >>
-> >> well, I'm still not 100% convinced about going through the whole
-> >> atomic mechanism for cursors..  in particular stuff that tries to
-> >> enable/disable the cursor at 1000fps, goes *really* badly when things
-> >> start waiting for vsync.
-> >>
-> >> I'll probably try some experiments with it at some point, but at this
-> >> point something that works with x11 is a lot more interesting for me
-> >> (since every time I switch from mdp4 device to mdp5 device I forget to
-> >> disable hw cursor the first time I start x)
-> >
-> > Well for one this uses the legacy cursor callbacks directly, at least a
-> > cursor plane is imo in order.
-> >
-> > Otoh we just need to fix up the cursor atomic implementation to allow
-> > drivers to do fully async updates which get merged down to one update.
-> > Which Ville's original atomic stuff already had. So all recoverable by
-> > adding a flag somewhere and setting that in the plane_update-on-atomic
-> > function.
+On Mon, Jan 19, 2015 at 12:41:00PM -0200, Marcelo Tosatti wrote:
+> On Fri, Jan 16, 2015 at 11:48:46AM -0500, Steven Rostedt wrote:
+> > >  static void kvmppc_vcore_blocked(struct kvmppc_vcore *vc)
+> > >  {
+> > > -	DEFINE_WAIT(wait);
+> > > +	DEFINE_SWAITER(wait);
+> > >  
+> > > -	prepare_to_wait(&vc->wq, &wait, TASK_INTERRUPTIBLE);
+> > > +	swait_prepare(&vc->wq, &wait, TASK_INTERRUPTIBLE);
+> > >  	vc->vcore_state = VCORE_SLEEPING;
+> > >  	spin_unlock(&vc->lock);
+> > >  	schedule();
+> > > -	finish_wait(&vc->wq, &wait);
+> > > +	swait_finish(&vc->wq, &wait);
+> > >  	spin_lock(&vc->lock);
+> > >  	vc->vcore_state = VCORE_INACTIVE;
+> > >  }
+> > > @@ -1613,7 +1613,7 @@
+> > >  			kvmppc_create_dtl_entry(vcpu, vc);
+> > >  			kvmppc_start_thread(vcpu);
+> > >  		} else if (vc->vcore_state == VCORE_SLEEPING) {
+> > > -			wake_up(&vc->wq);
+> > > +			swait_wake(&vc->wq);
+> > 
+> > I notice everywhere you have a swait_wake_interruptible() but here. Is
+> > there a reason why?
+> > 
+> > IIRC, Peter wants to make swait wakeup usage homogenous. That is, you
+> > either sleep in an interruptible state, or you don't. You can't mix and
+> > match it.
 > 
-> something that could merge multiple intra-vsync updates would, I
-> think, make cursor planes usable
+> IIUC there is only one waiter on this waitqueue at any given time.
 > 
-> > Merging legacy code just because the new stuff isn't 100% perfect yet imo
-> > just doesn't make that much sense.
-> 
-> but merging legacy because new stuff isn't usable yet does ;-)
+> Paul is that correct?
 
-I've thought up a quick&tiny hack which should give us perfect (as in
-"matches old i915 semantics") legacy cursor ioctls on top of universal
-planes + atomic helpers. I need it for i915 too ;-)
--Daniel
--- 
-Daniel Vetter
-Software Engineer, Intel Corporation
-+41 (0) 79 365 57 48 - http://blog.ffwll.ch
+Yes, that's right.  It's only the task that has taken the
+responsibility for running the virtual core that would be waiting on
+that wait queue.
+
+Paul.
