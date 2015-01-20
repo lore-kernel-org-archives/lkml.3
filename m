@@ -1,129 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752920AbbATUFS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 15:05:18 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:59773 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751678AbbATUFM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 15:05:12 -0500
-Date: Tue, 20 Jan 2015 21:03:07 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Vishnu Patekar <vishnupatekar0510@gmail.com>
-Cc: dmitry.torokhov@gmail.com, hdegoede@redhat.com,
-        ijc+devicetree@hellion.org.uk, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-sunxi@googlegroups.com,
-        linux-input@vger.kernel.org, devicetree@vger.kernel.org
-Subject: Re: [PATCH v4 4/5] ARM: sunxi: dts: Add A10/A20 PS2 pin muxing
- options
-Message-ID: <20150120200307.GW4367@lukather>
-References: <1421417021-3247-1-git-send-email-vishnupatekar0510@gmail.com>
- <1421417021-3247-5-git-send-email-vishnupatekar0510@gmail.com>
+	id S1753641AbbATUXw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 15:23:52 -0500
+Received: from mail-bn1on0119.outbound.protection.outlook.com ([157.56.110.119]:21408
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752053AbbATUXu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 15:23:50 -0500
+Date: Tue, 20 Jan 2015 14:03:49 -0600
+From: Kim Phillips <kim.phillips@freescale.com>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Michael Ellerman <mpe@ellerman.id.au>,
+        Scott Wood <scottwood@freescale.com>,
+        Wang Dongsheng <dongsheng.wang@freescale.com>,
+        Anton Blanchard <anton@samba.org>,
+        Himangi Saraogi <himangi774@gmail.com>,
+        Aaron Sierra <asierra@xes-inc.com>
+CC: <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>
+Subject: [PATCH] powerpc/fsl_pci: Fix pci stack build bug with FRAME_WARN
+Message-ID: <20150120140349.a7a9885065c241b555b91717@freescale.com>
+Organization: Freescale Semiconductor, Inc.
+X-Mailer: Sylpheed 3.2.0 (GTK+ 2.24.13; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="qndya+I13rh6QJ0p"
-Content-Disposition: inline
-In-Reply-To: <1421417021-3247-5-git-send-email-vishnupatekar0510@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=fail (sender IP is 192.88.168.50)
+ smtp.mailfrom=Kim.Phillips@freescale.com; 
+X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(199003)(189002)(92566002)(50226001)(100306002)(62966003)(64706001)(97736003)(47776003)(33646002)(85426001)(104016003)(86362001)(68736005)(50986999)(77096005)(95246002)(105606002)(6806004)(46406003)(19580395003)(19580405001)(46102003)(229853001)(50466002)(87936001)(106466001)(77156002)(36756003)(23726002)(95446003);DIR:OUT;SFP:1102;SCL:1;SRVR:BN1PR03MB188;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;A:1;MX:1;LANG:en;
+X-DmarcAction-Test: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:BN1PR03MB188;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BN1PR03MB188;
+X-Forefront-PRVS: 0462918D61
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BN1PR03MB188;
+X-OriginatorOrg: freescale.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 20 Jan 2015 20:09:06.1017
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BN1PR03MB188
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fix this:
 
---qndya+I13rh6QJ0p
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+  CC      arch/powerpc/sysdev/fsl_pci.o
+arch/powerpc/sysdev/fsl_pci.c: In function 'fsl_pcie_check_link':
+arch/powerpc/sysdev/fsl_pci.c:91:1: error: the frame size of 1360 bytes is larger than 1024 bytes [-Werror=frame-larger-than=]
 
-On Fri, Jan 16, 2015 at 07:33:40PM +0530, Vishnu Patekar wrote:
-> Signed-off-by: VishnuPatekar <vishnupatekar0510@gmail.com>
-> ---
->  arch/arm/boot/dts/sun4i-a10.dtsi |   14 ++++++++++++++
->  arch/arm/boot/dts/sun7i-a20.dtsi |   14 ++++++++++++++
->  2 files changed, 28 insertions(+)
->=20
-> diff --git a/arch/arm/boot/dts/sun4i-a10.dtsi b/arch/arm/boot/dts/sun4i-a=
-10.dtsi
-> index 2c31242..8fade3e 100644
-> --- a/arch/arm/boot/dts/sun4i-a10.dtsi
-> +++ b/arch/arm/boot/dts/sun4i-a10.dtsi
-> @@ -629,6 +629,20 @@
->  				allwinner,drive =3D <0>;
->  				allwinner,pull =3D <0>;
->  			};
-> +
-> +			ps20_pins_a: ps20@0 {
-> +				allwinner,pins =3D "PI20", "PI21";
-> +				allwinner,function =3D "ps2";
-> +				allwinner,drive =3D <0>;
-> +				allwinner,pull =3D <0>;
-> +			};
-> +
-> +			ps21_pins_a: ps21@0 {
-> +				allwinner,pins =3D "PH12", "PH13";
-> +				allwinner,function =3D "ps2";
-> +				allwinner,drive =3D <0>;
-> +				allwinner,pull =3D <0>;
-> +			};
->  		};
-> =20
->  		timer@01c20c00 {
-> diff --git a/arch/arm/boot/dts/sun7i-a20.dtsi b/arch/arm/boot/dts/sun7i-a=
-20.dtsi
-> index f35c691..f9dd274 100644
-> --- a/arch/arm/boot/dts/sun7i-a20.dtsi
-> +++ b/arch/arm/boot/dts/sun7i-a20.dtsi
-> @@ -866,6 +866,20 @@
->  				    allwinner,drive =3D <0>;
->  				    allwinner,pull =3D <0>;
->  			};
-> +
-> +			ps20_pins_a: ps20@0 {
-> +				allwinner,pins =3D "PI20", "PI21";
-> +				allwinner,function =3D "ps2";
-> +				allwinner,drive =3D <0>;
-> +				allwinner,pull =3D <0>;
-> +			};
-> +
-> +			ps21_pins_a: ps21@0 {
-> +				allwinner,pins =3D "PH12", "PH13";
-> +				allwinner,function =3D "ps2";
-> +				allwinner,drive =3D <0>;
-> +				allwinner,pull =3D <0>;
-> +			};
->  		};
+when configuring FRAME_WARN, by converting the allocation from the
+stack to the heap.  We use GFP_ATOMIC since this function can be
+called with interrupts disabled.
 
-Same thing here, we're using defines now for the values in ,drive and
-,pull, please use them.
+Signed-off-by: Kim Phillips <kim.phillips@freescale.com>
+---
+ arch/powerpc/sysdev/fsl_pci.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
-Thanks,
-Maxime
+diff --git a/arch/powerpc/sysdev/fsl_pci.c b/arch/powerpc/sysdev/fsl_pci.c
+index 6455c1e..635d743 100644
+--- a/arch/powerpc/sysdev/fsl_pci.c
++++ b/arch/powerpc/sysdev/fsl_pci.c
+@@ -69,11 +69,13 @@ static int fsl_pcie_check_link(struct pci_controller *hose)
+ 
+ 	if (hose->indirect_type & PPC_INDIRECT_TYPE_FSL_CFG_REG_LINK) {
+ 		if (hose->ops->read == fsl_indirect_read_config) {
+-			struct pci_bus bus;
+-			bus.number = hose->first_busno;
+-			bus.sysdata = hose;
+-			bus.ops = hose->ops;
+-			indirect_read_config(&bus, 0, PCIE_LTSSM, 4, &val);
++			struct pci_bus *bus;
++			bus = kmalloc(sizeof(*bus), GFP_ATOMIC);
++			bus->number = hose->first_busno;
++			bus->sysdata = hose;
++			bus->ops = hose->ops;
++			indirect_read_config(bus, 0, PCIE_LTSSM, 4, &val);
++			kfree(bus);
+ 		} else
+ 			early_read_config_dword(hose, 0, 0, PCIE_LTSSM, &val);
+ 		if (val < PCIE_LTSSM_L0)
+-- 
+2.2.2
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---qndya+I13rh6QJ0p
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUvrR7AAoJEBx+YmzsjxAgPDcP+QHX4946KR2maCOdzyzno7Ug
-SbSprBQDlaZZgBVM1eJWu6kNObNH/v42Iu5x1UgeGRSlO2R6oEUTtI0nWldxxHvu
-3gYjiS9TaFKnVzbxhv7OVSv7rrxTyVVf7BCJpG3Yc2URpDswzLkCsFJmoP5pBKWT
-wrWUNn0tL6waeo4J61TE/G0MYk3x32gqaRNM8WNmbgw8oJ0Z6FEblgqocmZbTT5b
-LcARttwBVrUWFi7taqETdw5cPBu7VAcWqA/AOrB0xPikHUphUeQYuf3on4ky2EU/
-gEoNedSrUtJS54zJdmRlv/LO0uvN/0KwdfSX8Qx3yLn47NiIqaLxhJYfgsebe+p9
-lrBp0GMzSKHWKmWOG2Py9+WII24k29kCCUsdVEOCoJqdS9ZH9Mny5rge+p9zu8mA
-Pk5FNt5yU3eqXoMXq0jEO/wgewdLJw4mNowZFYhNzRC9Rzrri+Cw+LznieJzphM+
-hN5A9rEX7p/RBdQEpZeCa62Qnj2C3xSYZ8ov+2M0F2XCHITGz3ZTLTOJaeCYSJt3
-XRfEpv6nlrzsOGRr7mN53pdzjXNoOPAO+PRA5d2qEyThbyObScHKHs55ck7Ab7Ln
-ec4QEMExaX0G5VvoLU0dpNkuNl6Rg5OtI6sEwk/1RQrNfGU0gpstam/h3RBxwLJQ
-FCDlRxf2a5ZE2D8t3LSh
-=qYrF
------END PGP SIGNATURE-----
-
---qndya+I13rh6QJ0p--
