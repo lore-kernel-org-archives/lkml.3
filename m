@@ -1,103 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376AbbATKpw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 05:45:52 -0500
-Received: from mail-ig0-f169.google.com ([209.85.213.169]:64295 "EHLO
-	mail-ig0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751817AbbATKpu (ORCPT
+	id S1753649AbbATKry (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 05:47:54 -0500
+Received: from mail-ig0-f181.google.com ([209.85.213.181]:37258 "EHLO
+	mail-ig0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753238AbbATKrw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 05:45:50 -0500
-Date: Tue, 20 Jan 2015 10:45:44 +0000
+	Tue, 20 Jan 2015 05:47:52 -0500
+Date: Tue, 20 Jan 2015 10:47:47 +0000
 From: Lee Jones <lee.jones@linaro.org>
-To: Steve Twiss <stwiss.opensource@diasemi.com>
-Cc: Grant Likely <grant.likely@linaro.org>, Mark Brown <broonie@linaro.org>,
-        Philipp Zabel <p.zabel@pengutronix.de>,
-        Rob Herring <robh+dt@kernel.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        DT <devicetree@vger.kernel.org>,
-        David Dajun Chen <david.chen@diasemi.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, LKML <linux-kernel@vger.kernel.org>,
-        Mark Rutland <mark.rutland@arm.com>, Pawel Moll <pawel.moll@arm.com>,
-        Support Opensource <support.opensource@diasemi.com>
-Subject: Re: [PATCH V2 1/2] mfd: da9063: Add device tree support
-Message-ID: <20150120104544.GS5767@x1>
-References: <cover.1421684991.git.stwiss.opensource@diasemi.com>
- <d765ef11de06a4ac5721ecf3283ba1333a6d0c8c.1421684991.git.stwiss.opensource@diasemi.com>
+To: Octavian Purdila <octavian.purdila@intel.com>
+Cc: johan@kernel.org, linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 1/2] mfd: dln2: add start/stop RX URBs helpers
+Message-ID: <20150120104747.GT5767@x1>
+References: <1421668296-28470-1-git-send-email-octavian.purdila@intel.com>
+ <1421668296-28470-2-git-send-email-octavian.purdila@intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <d765ef11de06a4ac5721ecf3283ba1333a6d0c8c.1421684991.git.stwiss.opensource@diasemi.com>
+In-Reply-To: <1421668296-28470-2-git-send-email-octavian.purdila@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Jan 2015, Steve Twiss wrote:
+On Mon, 19 Jan 2015, Octavian Purdila wrote:
 
-> From: Steve Twiss <stwiss.opensource@diasemi.com>
+> This is in preparation for adding suspend / resume support.
 > 
-> Add device tree support for DA9063 regulators; Real-Time Clock
-> and Watchdog.
-> 
-> This patch is dependent on PATCH V2 2/2 
-> 
-> Signed-off-by: Steve Twiss <stwiss.opensource@diasemi.com>
-> 
+> Signed-off-by: Octavian Purdila <octavian.purdila@intel.com>
+> Reviewed-by: Johan Hovold <johan@kernel.org>
 > ---
-> This patch applies against linux-next and v3.19-rc4 
-> 
->  drivers/mfd/da9063-core.c       |  2 ++
->  drivers/mfd/da9063-i2c.c        | 11 +++++++++++
->  include/linux/mfd/da9063/core.h |  1 +
->  3 files changed, 14 insertions(+)
-> 
-> diff --git a/drivers/mfd/da9063-core.c b/drivers/mfd/da9063-core.c
-> index f38bc98..facd361 100644
-> --- a/drivers/mfd/da9063-core.c
-> +++ b/drivers/mfd/da9063-core.c
-> @@ -86,6 +86,7 @@ static const struct mfd_cell da9063_devs[] = {
->  	},
->  	{
->  		.name		= DA9063_DRVNAME_WATCHDOG,
-> +		.of_compatible	= "dlg,da9063-watchdog",
->  	},
->  	{
->  		.name		= DA9063_DRVNAME_HWMON,
-> @@ -101,6 +102,7 @@ static const struct mfd_cell da9063_devs[] = {
->  		.name		= DA9063_DRVNAME_RTC,
->  		.num_resources	= ARRAY_SIZE(da9063_rtc_resources),
->  		.resources	= da9063_rtc_resources,
-> +		.of_compatible	= "dlg,da9063-rtc",
->  	},
->  	{
->  		.name		= DA9063_DRVNAME_VIBRATION,
-> diff --git a/drivers/mfd/da9063-i2c.c b/drivers/mfd/da9063-i2c.c
-> index 21fd8d9..0e94b20 100644
-> --- a/drivers/mfd/da9063-i2c.c
-> +++ b/drivers/mfd/da9063-i2c.c
-> @@ -25,6 +25,9 @@
->  #include <linux/mfd/da9063/pdata.h>
->  #include <linux/mfd/da9063/registers.h>
+>  drivers/mfd/dln2.c | 51 +++++++++++++++++++++++++++++++++++++++++----------
+>  1 file changed, 41 insertions(+), 10 deletions(-)
+
+With Johan's Ack, I'm fairly sure I can just apply this without an in
+depth review from me.
+
+After a quick glance; applied, thanks.
+
+> diff --git a/drivers/mfd/dln2.c b/drivers/mfd/dln2.c
+> index 6d49685..8311820 100644
+> --- a/drivers/mfd/dln2.c
+> +++ b/drivers/mfd/dln2.c
+> @@ -587,12 +587,19 @@ static void dln2_free_rx_urbs(struct dln2_dev *dln2)
+>  	int i;
 >  
-> +#include <linux/of.h>
-> +#include <linux/regulator/of_regulator.h>
+>  	for (i = 0; i < DLN2_MAX_URBS; i++) {
+> -		usb_kill_urb(dln2->rx_urb[i]);
+>  		usb_free_urb(dln2->rx_urb[i]);
+>  		kfree(dln2->rx_buf[i]);
+>  	}
+>  }
+>  
+> +static void dln2_stop_rx_urbs(struct dln2_dev *dln2)
+> +{
+> +	int i;
 > +
->  static const struct regmap_range da9063_ad_readable_ranges[] = {
->  	{
->  		.range_min = DA9063_REG_PAGE_CON,
-> @@ -203,6 +206,13 @@ static struct regmap_config da9063_regmap_config = {
->  	.cache_type = REGCACHE_RBTREE,
+> +	for (i = 0; i < DLN2_MAX_URBS; i++)
+> +		usb_kill_urb(dln2->rx_urb[i]);
+> +}
+> +
+>  static void dln2_free(struct dln2_dev *dln2)
+>  {
+>  	dln2_free_rx_urbs(dln2);
+> @@ -604,9 +611,7 @@ static int dln2_setup_rx_urbs(struct dln2_dev *dln2,
+>  			      struct usb_host_interface *hostif)
+>  {
+>  	int i;
+> -	int ret;
+>  	const int rx_max_size = DLN2_RX_BUF_SIZE;
+> -	struct device *dev = &dln2->interface->dev;
+>  
+>  	for (i = 0; i < DLN2_MAX_URBS; i++) {
+>  		dln2->rx_buf[i] = kmalloc(rx_max_size, GFP_KERNEL);
+> @@ -620,8 +625,19 @@ static int dln2_setup_rx_urbs(struct dln2_dev *dln2,
+>  		usb_fill_bulk_urb(dln2->rx_urb[i], dln2->usb_dev,
+>  				  usb_rcvbulkpipe(dln2->usb_dev, dln2->ep_in),
+>  				  dln2->rx_buf[i], rx_max_size, dln2_rx, dln2);
+> +	}
+> +
+> +	return 0;
+> +}
+>  
+> -		ret = usb_submit_urb(dln2->rx_urb[i], GFP_KERNEL);
+> +static int dln2_start_rx_urbs(struct dln2_dev *dln2, gfp_t gfp)
+> +{
+> +	struct device *dev = &dln2->interface->dev;
+> +	int ret;
+> +	int i;
+> +
+> +	for (i = 0; i < DLN2_MAX_URBS; i++) {
+> +		ret = usb_submit_urb(dln2->rx_urb[i], gfp);
+>  		if (ret < 0) {
+>  			dev_err(dev, "failed to submit RX URB: %d\n", ret);
+>  			return ret;
+> @@ -665,9 +681,8 @@ static const struct mfd_cell dln2_devs[] = {
+>  	},
 >  };
 >  
-> +static const struct of_device_id da9063_dt_ids[] = {
-> +	{ .compatible = "dlg,da9063-ad", },
-> +	{ .compatible = "dlg,da9063-bb", },
-> +	{ .compatible = "dlg,da9063-ca", },
-
-I'm still a bit bemused as to why these require their own compatible
-strings?  They are never matched (of_match_device()) on and it appears
-they can be dynamically told apart by poking.
+> -static void dln2_disconnect(struct usb_interface *interface)
+> +static void dln2_stop(struct dln2_dev *dln2)
+>  {
+> -	struct dln2_dev *dln2 = usb_get_intfdata(interface);
+>  	int i, j;
+>  
+>  	/* don't allow starting new transfers */
+> @@ -696,6 +711,15 @@ static void dln2_disconnect(struct usb_interface *interface)
+>  	/* wait for transfers to end */
+>  	wait_event(dln2->disconnect_wq, !dln2->active_transfers);
+>  
+> +	dln2_stop_rx_urbs(dln2);
+> +}
+> +
+> +static void dln2_disconnect(struct usb_interface *interface)
+> +{
+> +	struct dln2_dev *dln2 = usb_get_intfdata(interface);
+> +
+> +	dln2_stop(dln2);
+> +
+>  	mfd_remove_devices(&interface->dev);
+>  
+>  	dln2_free(dln2);
+> @@ -738,23 +762,30 @@ static int dln2_probe(struct usb_interface *interface,
+>  
+>  	ret = dln2_setup_rx_urbs(dln2, hostif);
+>  	if (ret)
+> -		goto out_cleanup;
+> +		goto out_free;
+> +
+> +	ret = dln2_start_rx_urbs(dln2, GFP_KERNEL);
+> +	if (ret)
+> +		goto out_stop_rx;
+>  
+>  	ret = dln2_hw_init(dln2);
+>  	if (ret < 0) {
+>  		dev_err(dev, "failed to initialize hardware\n");
+> -		goto out_cleanup;
+> +		goto out_stop_rx;
+>  	}
+>  
+>  	ret = mfd_add_hotplug_devices(dev, dln2_devs, ARRAY_SIZE(dln2_devs));
+>  	if (ret != 0) {
+>  		dev_err(dev, "failed to add mfd devices to core\n");
+> -		goto out_cleanup;
+> +		goto out_stop_rx;
+>  	}
+>  
+>  	return 0;
+>  
+> -out_cleanup:
+> +out_stop_rx:
+> +	dln2_stop_rx_urbs(dln2);
+> +
+> +out_free:
+>  	dln2_free(dln2);
+>  
+>  	return ret;
 
 -- 
 Lee Jones
