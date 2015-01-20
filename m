@@ -1,110 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755174AbbATMhF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 07:37:05 -0500
-Received: from mail-we0-f176.google.com ([74.125.82.176]:48055 "EHLO
-	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752431AbbATMaR (ORCPT
+	id S1755011AbbATMey (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 07:34:54 -0500
+Received: from mail-we0-f169.google.com ([74.125.82.169]:42338 "EHLO
+	mail-we0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753779AbbATMaS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 07:30:17 -0500
+	Tue, 20 Jan 2015 07:30:18 -0500
 From: Olivier Sobrie <olivier@sobrie.be>
 To: Jan Dumon <j.dumon@option.com>,
         Greg Kroah-Hartman <gregkh@linuxfoundation.org>
 Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
         netdev@vger.kernel.org, Olivier Sobrie <olivier@sobrie.be>
-Subject: [PATCH 02/11] hso: fix crash when device disappears while serial port is open
-Date: Tue, 20 Jan 2015 13:29:29 +0100
-Message-Id: <1421756978-4093-3-git-send-email-olivier@sobrie.be>
+Subject: [PATCH 03/11] hso: fix memory leak when device disconnects
+Date: Tue, 20 Jan 2015 13:29:30 +0100
+Message-Id: <1421756978-4093-4-git-send-email-olivier@sobrie.be>
 X-Mailer: git-send-email 2.2.0
-In-Reply-To: <1421756978-4093-2-git-send-email-olivier@sobrie.be>
+In-Reply-To: <1421756978-4093-3-git-send-email-olivier@sobrie.be>
 References: <1421756978-4093-1-git-send-email-olivier@sobrie.be>
  <1421756978-4093-2-git-send-email-olivier@sobrie.be>
+ <1421756978-4093-3-git-send-email-olivier@sobrie.be>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When the device disappear, the function hso_disconnect() is called to
-perform cleanup. In the cleanup function, hso_free_interface() calls
-tty_port_tty_hangup() in view of scheduling a work to hang up the tty if
-needed. If the port was not open then hso_serial_ref_free() is called
-directly to cleanup everything. Otherwise, hso_serial_ref_free() is called
-when the last fd associated to the port is closed.
-
-For each open port, tty_release() will call the close method,
-hso_serial_close(), which drops the last kref and call
-hso_serial_ref_free() which unregisters, destroys the tty port
-and finally frees the structure in which the tty_port structure
-is included. Later, in tty_release(), more precisely when release_tty()
-is called, the tty_port previously freed is accessed to cancel
-the tty buf workqueue and it leads to a crash.
-
-In view of avoiding this crash, we add a cleanup method that is called
-at the end of the hangup process and we drop the last kref in this
-function when all the ports have been closed, when tty_port is no
-more needed and when it is safe to free the structure containing the
-tty_port structure.
+In the disconnect path, tx_buffer should freed like tx_data to avoid
+a memory leak when the device disconnects.
 
 Signed-off-by: Olivier Sobrie <olivier@sobrie.be>
 ---
- drivers/net/usb/hso.c | 17 +++++++++++++----
- 1 file changed, 13 insertions(+), 4 deletions(-)
+ drivers/net/usb/hso.c | 1 +
+ 1 file changed, 1 insertion(+)
 
 diff --git a/drivers/net/usb/hso.c b/drivers/net/usb/hso.c
-index cb0bcc1..3a6c630 100644
+index 3a6c630..470ef9e 100644
 --- a/drivers/net/usb/hso.c
 +++ b/drivers/net/usb/hso.c
-@@ -1270,7 +1270,6 @@ static int hso_serial_open(struct tty_struct *tty, struct file *filp)
- 		goto err_out;
+@@ -2253,6 +2253,7 @@ static void hso_serial_common_free(struct hso_serial *serial)
  
- 	D1("Opening %d", serial->minor);
--	kref_get(&serial->parent->ref);
- 
- 	/* setup */
- 	tty->driver_data = serial;
-@@ -1289,7 +1288,8 @@ static int hso_serial_open(struct tty_struct *tty, struct file *filp)
- 		if (result) {
- 			hso_stop_serial_device(serial->parent);
- 			serial->port.count--;
--			kref_put(&serial->parent->ref, hso_serial_ref_free);
-+		} else {
-+			kref_get(&serial->parent->ref);
- 		}
- 	} else {
- 		D1("Port was already open");
-@@ -1339,8 +1339,6 @@ static void hso_serial_close(struct tty_struct *tty, struct file *filp)
- 		usb_autopm_put_interface(serial->parent->interface);
- 
- 	mutex_unlock(&serial->parent->mutex);
--
--	kref_put(&serial->parent->ref, hso_serial_ref_free);
+ 	/* unlink and free TX URB */
+ 	usb_free_urb(serial->tx_urb);
++	kfree(serial->tx_buffer);
+ 	kfree(serial->tx_data);
+ 	tty_port_destroy(&serial->port);
  }
- 
- /* close the requested serial port */
-@@ -1391,6 +1389,16 @@ static int hso_serial_write_room(struct tty_struct *tty)
- 	return room;
- }
- 
-+static void hso_serial_cleanup(struct tty_struct *tty)
-+{
-+	struct hso_serial *serial = tty->driver_data;
-+
-+	if (!serial)
-+		return;
-+
-+	kref_put(&serial->parent->ref, hso_serial_ref_free);
-+}
-+
- /* setup the term */
- static void hso_serial_set_termios(struct tty_struct *tty, struct ktermios *old)
- {
-@@ -3215,6 +3223,7 @@ static const struct tty_operations hso_serial_ops = {
- 	.close = hso_serial_close,
- 	.write = hso_serial_write,
- 	.write_room = hso_serial_write_room,
-+	.cleanup = hso_serial_cleanup,
- 	.ioctl = hso_serial_ioctl,
- 	.set_termios = hso_serial_set_termios,
- 	.chars_in_buffer = hso_serial_chars_in_buffer,
 -- 
 2.2.0
 
