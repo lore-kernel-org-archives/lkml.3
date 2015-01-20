@@ -1,68 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754997AbbATTRm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 14:17:42 -0500
-Received: from smtp8.ore.mailhop.org ([54.148.153.48]:44016 "EHLO
-	smtp8.ore.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752364AbbATTRk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 14:17:40 -0500
-X-Greylist: delayed 2043 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Jan 2015 14:17:40 EST
-X-Mail-Handler: DuoCircle Outbound SMTP
-X-Originating-IP: 104.193.169.186
-X-Report-Abuse-To: abuse@duocircle.com (see https://support.duocircle.com/support/solutions/articles/5000540958-duocircle-standard-smtp-abuse-information for abuse reporting information)
-X-MHO-User: U2FsdGVkX18P9GmgEIPYCHFAxEdeIird
-Date: Tue, 20 Jan 2015 10:40:03 -0800
-From: Tony Lindgren <tony@atomide.com>
-To: Olof Johansson <olof@lixom.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Peter Robinson <pbrobinson@gmail.com>
-Subject: Re: linux-next: manual merge of the omap tree with the arm-soc tree
-Message-ID: <20150120184002.GM7718@atomide.com>
-References: <20150120110947.1a92a416@canb.auug.org.au>
- <20150120171048.GF7718@atomide.com>
- <CAOesGMjc+q5ZEFU4GugJT2RCSmhv48DAA8JzuCxf63eEO6tWVQ@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CAOesGMjc+q5ZEFU4GugJT2RCSmhv48DAA8JzuCxf63eEO6tWVQ@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	id S1753005AbbATSlo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 13:41:44 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56093 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751594AbbATSlm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 13:41:42 -0500
+Message-ID: <1421779293.681.16.camel@dcbw.local>
+Subject: Re: [PATCH 04/11] hso: fix memory leak in hso_create_rfkill()
+From: Dan Williams <dcbw@redhat.com>
+To: Oliver Neukum <oneukum@suse.de>
+Cc: Olivier Sobrie <olivier@sobrie.be>, Jan Dumon <j.dumon@option.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+        netdev@vger.kernel.org
+Date: Tue, 20 Jan 2015 12:41:33 -0600
+In-Reply-To: <1421759597.29486.22.camel@linux-0dmf.site>
+References: <1421756978-4093-1-git-send-email-olivier@sobrie.be>
+	 <1421756978-4093-2-git-send-email-olivier@sobrie.be>
+	 <1421756978-4093-3-git-send-email-olivier@sobrie.be>
+	 <1421756978-4093-4-git-send-email-olivier@sobrie.be>
+	 <1421756978-4093-5-git-send-email-olivier@sobrie.be>
+	 <1421759597.29486.22.camel@linux-0dmf.site>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Olof Johansson <olof@lixom.net> [150120 10:27]:
-> On Tue, Jan 20, 2015 at 9:10 AM, Tony Lindgren <tony@atomide.com> wrote:
-> > * Stephen Rothwell <sfr@canb.auug.org.au> [150119 16:12]:
-> >> Hi Tony,
-> >>
-> >> Today's linux-next merge of the omap tree got a conflict in
-> >> arch/arm/boot/dts/Makefile between commit cb612390e546 ("ARM: dts: Only
-> >> build dtb if associated Arch and/or SoC is enabled") from the arm-soc
-> >> tree and commit ac7452cee743 ("ARM: dts: Add minimal support for
-> >> dm8168-evm") from the omap tree.
-> >>
-> >> I fixed it up (see below) and can carry the fix as necessary (no action
-> >> is required).
-> >
-> > Uhh why is cb612390e546 doing formatting changes all over the place?
-> > That's a sure way to produce merge conflicts..
+On Tue, 2015-01-20 at 14:13 +0100, Oliver Neukum wrote:
+> On Tue, 2015-01-20 at 13:29 +0100, Olivier Sobrie wrote:
+> > When the rfkill interface was created, a buffer containing the name
+> > of the rfkill node was allocated. This buffer was never freed when the
+> > device disappears.
+> > 
+> > To fix the problem, we put the name given to rfkill_alloc() in
+> > the hso_net structure.
+> > 
+> > Signed-off-by: Olivier Sobrie <olivier@sobrie.be>
+> > ---
+> >  drivers/net/usb/hso.c | 12 +++---------
+> >  1 file changed, 3 insertions(+), 9 deletions(-)
+> > 
+> > diff --git a/drivers/net/usb/hso.c b/drivers/net/usb/hso.c
+> > index 470ef9e..a49ac2e 100644
+> > --- a/drivers/net/usb/hso.c
+> > +++ b/drivers/net/usb/hso.c
+> > @@ -153,6 +153,7 @@ struct hso_net {
+> >  	struct hso_device *parent;
+> >  	struct net_device *net;
+> >  	struct rfkill *rfkill;
+> > +	char name[8];
+> >  
+> >  	struct usb_endpoint_descriptor *in_endp;
+> >  	struct usb_endpoint_descriptor *out_endp;
+> > @@ -2467,27 +2468,20 @@ static void hso_create_rfkill(struct hso_device *hso_dev,
+> >  {
+> >  	struct hso_net *hso_net = dev2net(hso_dev);
+> >  	struct device *dev = &hso_net->net->dev;
+> > -	char *rfkn;
+> >  
+> > -	rfkn = kzalloc(20, GFP_KERNEL);
+> > -	if (!rfkn)
+> > -		dev_err(dev, "%s - Out of memory\n", __func__);
+> > -
+> > -	snprintf(rfkn, 20, "hso-%d",
+> > +	snprintf(hso_net->name, sizeof(hso_net->name), "hso-%d",
+> >  		 interface->altsetting->desc.bInterfaceNumber);
 > 
-> It's intentional but a but annoying, yes -- we're resolving them as we
-> merge in new DT contents so it won't be exposed outside of our tree
-> (and -next, unfortunately).
+> That number is not unique. Indeed it will be identical for all devices.
 
-OK. I don't have anything against cleaning up and sorting things to
-avoid merge conflicts naturally :)
+I would say just do "static u32 rfkill_counter = 0" and 
 
-Maybe for other similar changes you can set up an immutable branch
-abainst v3.xx-rc1 with just the clean-up that people can use as
-a base without having to bring in all the other changes?
++	snprintf(hso_net->name, sizeof(hso_net->name), "hso-%d",
++  		 rfkill_counter++);
 
-Regards,
+We can't just use the netdev's name because that may have conflicts.
+eg, the netdev will get hso0 when plugged in (and thus rfkill would get
+hso-0) but then udev will rename that to something like wwp0s26f7u2i8.
+Then the second HSO you plug in will get the name 'hso0', and so the
+second rfkill would get 'hso-0', but that's already taken by the first
+rfkill...  Which is why I just suggest a counter.
 
-Tony
+Dan
+
