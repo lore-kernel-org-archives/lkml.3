@@ -1,79 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751478AbbAUI0l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 03:26:41 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33163 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750754AbbAUI02 (ORCPT
+	id S1751782AbbAUI2I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 03:28:08 -0500
+Received: from smtp05.smtpout.orange.fr ([80.12.242.127]:38836 "EHLO
+	smtp.smtpout.orange.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750804AbbAUI15 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 03:26:28 -0500
-Date: Wed, 21 Jan 2015 09:26:22 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>,
-        Eddie Huang <eddie.huang@mediatek.com>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Lee Jones <lee.jones@linaro.org>,
-        Mark Brown <broonie@kernel.org>, Flora Fu <flora.fu@mediatek.com>,
-        Liam Girdwood <lgirdwood@gmail.com>
-Subject: Re: [PATCH 8/8] regulator: MT6397: Add support for MT6397 regulator
-Message-ID: <20150121082622.GG18908@pengutronix.de>
-References: <1421747231-554-1-git-send-email-s.hauer@pengutronix.de>
- <1421747231-554-9-git-send-email-s.hauer@pengutronix.de>
+	Wed, 21 Jan 2015 03:27:57 -0500
+X-ME-Helo: beldin
+X-ME-Date: Wed, 21 Jan 2015 09:27:56 +0100
+X-ME-IP: 109.222.126.211
+From: Robert Jarzmik <robert.jarzmik@free.fr>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Kumar Gala <galak@codeaurora.org>, Daniel Mack <daniel@zonque.org>
+Subject: Re: [PATCH v3 2/3] mfd: lubbock_io: add lubbock_io board
+References: <1421406010-14851-1-git-send-email-robert.jarzmik@free.fr>
+	<1421406010-14851-2-git-send-email-robert.jarzmik@free.fr>
+	<20150119091705.GG21886@x1> <87ppaah9k5.fsf@free.fr>
+	<20150120102919.GP5767@x1>
+	<20150120115658.GJ26493@n2100.arm.linux.org.uk>
+	<873874fuei.fsf@free.fr> <20150121081645.GC9258@x1>
+X-URL: http://belgarath.falguerolles.org/
+Date: Wed, 21 Jan 2015 09:27:54 +0100
+In-Reply-To: <20150121081645.GC9258@x1> (Lee Jones's message of "Wed, 21 Jan
+	2015 08:16:45 +0000")
+Message-ID: <87y4owedx1.fsf@free.fr>
+User-Agent: Gnus/5.130008 (Ma Gnus v0.8) Emacs/24.3.92 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421747231-554-9-git-send-email-s.hauer@pengutronix.de>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 09:24:05 up 97 days, 19:37, 117 users,  load average: 0.19, 0.10,
- 0.06
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 10:47:11AM +0100, Sascha Hauer wrote:
-> From: Flora Fu <flora.fu@mediatek.com>
-> 
-> This adds support for the regulators on the MediaTek MT6397
-> Multifunction device.
-> 
-> Signed-off-by: Flora Fu, MediaTek
-> Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-> Cc: Liam Girdwood <lgirdwood@gmail.com>
-> Cc: Mark Brown <broonie@kernel.org>
-> ---
->  Documentation/devicetree/bindings/mfd/mt6397.txt   |  41 ++-
->  .../bindings/regulator/mt6397-regulator.txt        | 217 ++++++++++++++
->  drivers/regulator/Kconfig                          |   9 +
->  drivers/regulator/Makefile                         |   1 +
->  drivers/regulator/mt6397-regulator.c               | 332 +++++++++++++++++++++
->  include/linux/regulator/mt6397-regulator.h         |  49 +++
->  6 files changed, 626 insertions(+), 23 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/regulator/mt6397-regulator.txt
->  create mode 100644 drivers/regulator/mt6397-regulator.c
->  create mode 100644 include/linux/regulator/mt6397-regulator.h
-> 
-> diff --git a/Documentation/devicetree/bindings/mfd/mt6397.txt b/Documentation/devicetree/bindings/mfd/mt6397.txt
+Lee Jones <lee.jones@linaro.org> writes:
 
-I'll move this documentation update to the patch adding the MFD driver
-where it belongs to. I'll drop the reset of this patch since it's already
-in Linux-next.
+> On Wed, 21 Jan 2015, Robert Jarzmik wrote:
+>> > > > platform_get_irq()?
+>> > > No. I need the flags.
+>> > Where are they used?
+>> A couple of lines below, using local "irqflags" variable :
+>>        ret = devm_request_irq(&pdev->dev, cot->irq, lubbock_irq_handler,
+>>                               irqflags, dev_name(&pdev->dev), cot);
+>
+> No, I mean where are they _used_?
+I don't get your point.
 
-Sascha
+For you, isn't it "using" irqflags by passing them as an argument to devm_request_irq()
+??? And if you think ahead, then there are used all around in
+kernel/irq/manage.c, as you probably know.
 
+Cheers.
 
 -- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Robert
