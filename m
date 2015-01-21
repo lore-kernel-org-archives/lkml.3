@@ -1,299 +1,198 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750823AbbAUFAQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 00:00:16 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:40221 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750778AbbAUFAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 00:00:12 -0500
-Date: Wed, 21 Jan 2015 12:59:03 +0800
-From: Fam Zheng <famz@redhat.com>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        David Drysdale <drysdale@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Vivek Goyal <vgoyal@redhat.com>, Mike Frysinger <vapier@gentoo.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        Hugh Dickins <hughd@google.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-api@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: [PATCH RFC 5/6] epoll: Add implementation for epoll_mod_wait
-Message-ID: <20150121045903.GA2858@fam-t430.nay.redhat.com>
-References: <1421747878-30744-1-git-send-email-famz@redhat.com>
- <1421747878-30744-6-git-send-email-famz@redhat.com>
- <54BE4F1D.7090807@gmail.com>
+	id S1750840AbbAUFJL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 00:09:11 -0500
+Received: from relay4-d.mail.gandi.net ([217.70.183.196]:48896 "EHLO
+	relay4-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750791AbbAUFJJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 00:09:09 -0500
+X-Originating-IP: 50.43.58.154
+Date: Tue, 20 Jan 2015 21:08:58 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: Iulia Manda <iulia.manda21@gmail.com>, serge.hallyn@canonical.com,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+        peterz@infradead.org, mhocko@suse.cz
+Subject: Re: [PATCH] kernel: Conditionally support non-root users, groups and
+ capabilities
+Message-ID: <20150121050857.GA1752@thin>
+References: <20150120233308.GA6256@winterfell>
+ <54BEED2C.2000000@schaufler-ca.com>
+ <20150121005006.GA1217@thin>
+ <54BEFF7A.1000709@schaufler-ca.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54BE4F1D.7090807@gmail.com>
+In-Reply-To: <54BEFF7A.1000709@schaufler-ca.com>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 01/20 13:50, Michael Kerrisk (man-pages) wrote:
-> Hello Fam Zheng,
+On Tue, Jan 20, 2015 at 05:23:06PM -0800, Casey Schaufler wrote:
+> On 1/20/2015 4:50 PM, Josh Triplett wrote:
+> > On Tue, Jan 20, 2015 at 04:05:00PM -0800, Casey Schaufler wrote:
+> >> On 1/20/2015 3:33 PM, Iulia Manda wrote:
+> >>> There are a lot of embedded systems that run most or all of their functionality
+> >>> in init, running as root:root. For these systems, supporting multiple users is
+> >>> not necessary.
+> >>>
+> >>> This patch adds a new symbol, CONFIG_NON_ROOT, that makes support for non-root
+> >>> users, non-root groups, and capabilities optional.
+> >>>
+> >>> When this symbol is not defined, UID and GID are zero in any possible case
+> >>> and processes always have all capabilities.
+> >>>
+> >>> Also, the following syscalls are compiled out: setuid, setregid, setgid,
+> >>> setreuid, setresuid, getresuid, setresgid, getresgid, setgroups, getgroups,
+> >>> setfsuid, setfsgid, capget, capset.
+> >>>
+> >>> This change saves about 25 KB on a defconfig build.
+> >>>
+> >>> Bloat-o-meter output:
+> >>> add/remove: 7/66 grow/shrink: 21/421 up/down: 1701/-27172 (-25471)
+> >>>
+> >>> Signed-off-by: Iulia Manda <iulia.manda21@gmail.com>
+> >>> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+> >> Authoritative LSM hooks were loudly rejected in or about 1999.
+> >> One of the primary reasons they were rejected was because you could
+> >> use them do exactly what this patch does, which is to remove the basic
+> >> Linux security policy. If attitudes have changed sufficiently that
+> >> removing the "classic" security behavior is now deemed acceptable,
+> >> I propose that we reintroduce the option of authoritative LSM hooks
+> >> instead. That would give you all this saving, and probably more.
+> > Wouldn't authoritative LSM hooks require *adding* the necessary hook
+> > logic, along with a hook module implementing such a policy?  Unless
+> > you're suggesting that compiling in LSM hooks without any providers
+> > would result in this behavior by default, which seems rather
+> > questionable.
 > 
-> On 01/20/2015 10:57 AM, Fam Zheng wrote:
-> > This syscall is a sequence of
-> > 
-> > 1) a number of epoll_ctl calls
-> > 2) a epoll_pwait, with timeout enhancement.
-> > 
-> > The epoll_ctl operations are embeded so that application doesn't have to use
-> > separate syscalls to insert/delete/update the fds before poll. It is more
-> > efficient if the set of fds varies from one poll to another, which is the
-> > common pattern for certain applications. 
+> The proposed default configuration would have included hooks implementing the
+> traditional UNIX/Linux discretionary access controls and Super User. Proposed
+> alternative configurations allowed the addition of POSIX capabilities, B&L MAC
+> and that new kid on the block, FLASK.
 > 
-> Which applications? Could we have some specific examples? This is a 
-> complex API, and it needs good justification.
+> Your configuration would have required trivial "return success" policy functions,
+> much like what you find in security/capability.c today.
 
-OK, I'll explain more in v2.
+It's entirely possible that kernel developers are willing to
+accept a CONFIG_NON_ROOT=n policy but are still opposed to authoritative
+LSM hooks.  Not every mechanism needs to be expanded and abstracted to
+cover the most general possible form.  On the contrary, simple solutions
+tend to go over better unless there's a strong push for a whole family
+of use cases that require a more complex solution.  And I haven't seen
+any kind of push for authoritative LSM hooks for years.
 
-> 
-> > For example, depending on the input
-> > buffer status, a data reading program may decide to temporarily not polling an
-> > fd.
-> > 
-> > Because the enablement of batching in this interface, even that regular
-> > epoll_ctl call sequence, which manipulates several fds, can be optimized to one
-> > single epoll_ctl_wait (while specifying spec=NULL to skip the poll part).
->          ^^^^^^^^^^^^^^ should be epoll_mod_wait
-> 
-> I think you mean to say:
-> 
->     The ability to batch multiple "epoll_ctl" operations into a single call
->     means that even when no wait events are requested (i.e., spec == NULL),
->     poll_mod_wait() provides a performance optimization over using multiple
->     epoll_ctl() calls.
-> 
-> Right? If yes, please amend the commit message, and this text should
-> also make its way into the revised man page under a heading "NOTES".
+I appreciate that you'd be interested in an opportunity to revive
+authoritative LSM hooks, and you're welcome to write the much larger
+patch doing so.  That's not by itself an argument against a much simpler
+solution with existing code that solves the use case at hand.
 
-OK.
+On top of that, unless that mechanism supported selecting a single such
+(lack of) policy at compile time and turning it into static inlines,
+even trivial policy functions would not actually get compiled away into
+nothing along with all the hundreds of conditionals calling them.
 
+> > Also note that this is compiling out the entire family of UID/GID system
+> > calls, which LSM hooks could not do.
 > 
-> > The only complexity is returning the result of each operation.  For each
-> > epoll_mod_cmd in cmds, the field "error" is an output field that will be stored
-> > the return code *iff* the command is executed (0 for success and -errno of the
-> > equivalent epoll_ctl call), and will be left unchanged if the command is not
-> > executed because some earlier error, for example due to failure of
-> > copy_from_user to copy the array.
-> > 
-> > Applications can utilize this fact to do error handling: they could initialize
-> > all the epoll_mod_wait.error to a positive value, which is by definition not a
-> > possible output value from epoll_mod_wait. Then when the syscall returned, they
-> > know whether or not the command is executed by comparing each error with the
-> > init value, if they're different, they have the result of the command.
-> > More roughly, they can put any non-zero and not distinguish "not run" from
-> > failure.
-> 
-> The "cmds' are not executed in a specified order plus the need to
-> initialize the 'errors' fields to a positive value feels a bit ugly.
-> And indeed the whole "command list was only partially run" case
-> is not pretty. Am I correct to understand that if an error is found
-> during execution of one of the "epoll_ctl" commands in 'cmds' then
-> the system call will return -1 with errno set, indicating an error,
-> even though the epoll interest list may have changed because some
-> of the earlier 'cmds' executed successfully? This all seems a bit of
-> a headache for user space.
+> Which breaks backward compatibility.
 
-This is the trade-off for batching. The best we can do is probably make this
-transactional: none or all of the commands succeeds. It will require a much
-more complex implementation, though. But even with that, the error reporting on
-which command failed is a complication.
+Like half of the other options under CONFIG_EXPERT, as well as some that
+aren't.  If you turn off Kconfig options designed to disable syscalls,
+you'll get a kernel that returns -ENOSYS for those syscalls, as
+requested.  That doesn't break backward compatibility; leave the option
+enabled if you need those syscalls.
 
+> > In any case, I see two major problems with authoritative LSM hooks that
+> > this patch avoids:
+> >
+> > First, simplicity: I doubt authoritative LSM hooks could match this
+> > diffstat:
+> >
+> >>>  include/linux/capability.h |   12 ++++++++++++
+> >>>  include/linux/uidgid.h     |   12 ++++++++++++
+> >>>  init/Kconfig               |   19 ++++++++++++++++++-
+> >>>  kernel/capability.c        |    6 ++++++
+> >>>  kernel/groups.c            |    4 ++++
+> >>>  kernel/sys.c               |    2 ++
+> >>>  kernel/sys_ni.c            |   14 ++++++++++++++
+> >>>  7 files changed, 68 insertions(+), 1 deletion(-)
 > 
-> I have a couple of questions:
-> 
-> Q1. I can see that batching "epoll_ctl" commands might be useful,
-> since it results in fewer systems calls. But, does it really
-> need to be bound together with the "epoll_pwait" functionality?
-> (Perhaps this point was covered in previous discussions, but
-> neither the message accompanying this patch nor the 0/6 man page
-> provide a compelling rationale for the need to bind these two
-> operations together.)
-> 
-> Yes, I realize you might save a system call, but it makes for a
-> cumbersome API that has the above headache, and also forces the 
-> need for double pointer indirection in the 'spec' argument (i.e., 
-> spec is a pointer to an array of structures where each element
-> in turn includes an 'events' pointer that points to another array).
-> 
-> Why not a simpler API with two syscalls such as:
-> 
-> epoll_ctl_batch(int epfd, int flags,
->                 int ncmds, struct epoll_mod_cmd *cmds);
-> 
-> epoll_pwait1(int epfd, struct epoll_event *events, int maxevents, 
->              struct timespec *timeout, int clock_id, 
->              const sigset_t *sigmask, size_t sigsetsize);
+> The size of the diffstat is no indication of the value of a change.
+> You're using a trivial amount of ifdefing to implement a very significant change.
 
-The problem is that there is no room for flags field in epoll_pwait1, which is
-asked for, in previous discussion thread [1].
+(Please note that I'm not the author of the change, just a proponent and
+reviewer.  I don't wish to take credit for someone else's work here,
+though I'm happy to shoulder blame/flame for the idea.)
 
-I don't see epoll_mod_wait as a *significantly more* complicated interface
-compared to epoll_ctl_batch and epoll_pwait1 above. In epoll_mod_wait, if you
-leave out ncmds and cmds, it is effectively a poll without batch; and if
-leaving out spec, it is effectively a batch without poll.
+And yes, indeed, this is a significant change with a mercifully small
+diffstat.  The ones with much larger diffstats tend to get rather poor
+responses, and suggestions that the compiler should be made to do more
+of the work by providing appropriate inline stubs.  This is the first
+time I've seen a complaint that a change is too *small*.
 
-The most important change here is the timeout. IMO I wouldn't mind leaving out
-batching. Integrating it is requested by Andy:
+> > Second, code size reduction: In addition to the concern above about
+> > adding hooks rather than removing code, this patch allows
+> > constant-folding away huge amounts of code, which any kind of "hook"
+> > mechanism would have a hard time doing.  This patch lets the compiler do
+> > almost all of the work.  Notice the "66 shrink" and "421 down" in the
+> > bloat-o-meter summary.
+> 
+> Yes, we all know (or should) that you can reduce the size of a change using
 
-[1]: http://thread.gmane.org/gmane.linux.kernel/1861430/focus=91591
+I'm not talking about reducing the size of the *change* here.  I'm
+talking about reducing the size of the compiled code.  The full
+bloat-o-meter output shows hundreds of functions each becoming smaller,
+generally because blocks like "if (!capable(...)) { ... }" went away
+entirely.
 
-which also made sense to me; I do have a patch in QEMU to call epoll_ctl for a
-number of times right before epoll_wait.
+> > The intent here is not to open the door to arbitrary replacement
+> > security policies.  The intent is to simply add a compile-time option to
+> > compile *out* security policies entirely, for systems that will not only
+> > never call setuid but in many cases never even call fork.
+> 
+> You are opening the door to creating a "Linux" kernel that does not
+> behave like Linux. This has been seriously considered and flat out rejected
+> in the past.
 
-[Sorry for not putting anything into cover letter changelog, but it is also
-interesting to see people's reaction on the patch itself without bias of
-others' opinions. This indeed brings in more points. :]
+Reiterating my explanation from the last time this came up:
 
-> 
-> This gives us much of the benefit of reducing system calls, but 
-> with greater simplicity. And epoll_ctl_batch() could simply return
-> the number of 'cmds' that were successfully executed.)
-> 
-> Q2. In the man page in 0/6 you said that the 'cmds' were not 
-> guaranteed to be executed in order. Why not? If you did provide
-> such a guarantee, then, when using your current epoll_mod_wait(),
-> user space could do the following:
+"""it's been our standard practice for ages.  We started down that road
+long, long ago, when we first introduced Kconfig and optional/modular
+features.  /dev/* are user-facing interfaces, yet you can compile them
+out or make them modular.  /sys/* and/proc/* are user-facing interfaces,
+yet you can compile part or all of them out.  Filesystem names passed to
+mount are user-facing interfaces, yet you can compile them out.  (Not
+just things like ext4; think FUSE or overlayfs, which some applications
+will build upon and require.)  Some prctls are optional, new syscalls
+like BPF or inotify or process_vm_{read,write}v are optional, hardware
+interfaces are optional, control groups are optional, containers and
+namespaces are optional, checkpoint/restart is optional, KVM is
+optional, kprobes are optional, kmsg is optional, /dev/port is optional,
+ACL support is optional, USB support (as used by libusb) is optional,
+sound interfaces are optional, GPU interfaces are optional, even futexes
+are optional."""
 
-I guess we can make a guarentee on that.
+A fair bit of POSIX and other standard interfaces can already be
+compiled out.
 
-> 
-> 1. Initialize the cmd.errors fields to zero.
-> 2. Call epoll_ctl_mod()
-> 3. Iterate through cmd.errors looking for the first nonzero 
->    field.
+So what's this about "not behaving like Linux"?  Linux is whatever lives
+in linux.git; it's a lot more capable these days, and that doesn't just
+mean *adding* features.  The alternative to a tinier Linux isn't a
+larger Linux, it's non-Linux embedded OSes that behave *nothing* like
+Linux because they're *not Linux*.
 
-It's close, but zero is not good enough, if copy_from_user of cmds failed in
-the first place. Impossible value, or error value, will be safer.
+> Again, attitudes may have changed since the turn of the century.  If
+> they have, we should do a real job of allowing the existing policy to
+> be changed
 
-> 
-> > Also, timeout parameter is enhanced: timespec is used, compared to the old ms
-> > scalar. This provides higher precision. 
-> 
-> Yes, that change seemed inevitable. It slightly puzzled me at the time when
-> Davide Libenzi added epoll_wait() that the timeout was milliseconds, even
-> though pselect() already had demonstrated the need for higher precision.
-> I should have called it out way back then :-{.
-> 
-> > The parameter field in struct
-> > epoll_wait_spec, "clockid", also makes it possible for users to use a different
-> > clock than the default when it makes more sense.
-> > 
-> > Signed-off-by: Fam Zheng <famz@redhat.com>
-> > ---
-> >  fs/eventpoll.c           | 60 ++++++++++++++++++++++++++++++++++++++++++++++++
-> >  include/linux/syscalls.h |  5 ++++
-> >  2 files changed, 65 insertions(+)
-> > 
-> > diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-> > index e7a116d..2cc22c9 100644
-> > --- a/fs/eventpoll.c
-> > +++ b/fs/eventpoll.c
-> > @@ -2067,6 +2067,66 @@ SYSCALL_DEFINE6(epoll_pwait, int, epfd, struct epoll_event __user *, events,
-> >  			      sigmask ? &ksigmask : NULL);
-> >  }
-> >  
-> > +SYSCALL_DEFINE5(epoll_mod_wait, int, epfd, int, flags,
-> > +		int, ncmds, struct epoll_mod_cmd __user *, cmds,
-> > +		struct epoll_wait_spec __user *, spec)
-> > +{
-> > +	struct epoll_mod_cmd *kcmds = NULL;
-> > +	int i, ret = 0;
-> > +	int cmd_size = sizeof(struct epoll_mod_cmd) * ncmds;
-> > +
-> > +	if (flags)
-> > +		return -EINVAL;
-> > +	if (ncmds) {
-> > +		if (!cmds)
-> > +			return -EINVAL;
-> > +		kcmds = kmalloc(cmd_size, GFP_KERNEL);
-> > +		if (!kcmds)
-> > +			return -ENOMEM;
-> > +		if (copy_from_user(kcmds, cmds, cmd_size)) {
-> > +			ret = -EFAULT;
-> > +			goto out;
-> > +		}
-> > +	}
-> > +	for (i = 0; i < ncmds; i++) {
-> > +		struct epoll_event ev = (struct epoll_event) {
-> > +			.events = kcmds[i].events,
-> > +			.data = kcmds[i].data,
-> > +		};
-> > +		if (kcmds[i].flags) {
-> > +			kcmds[i].error = ret = -EINVAL;
-> 
-> To make the 'ret' change a little more obvious, maybe it's better to write
-> 
-> 			ret = kcmds[i].error = -EINVAL;
-> 
-> > +			goto out;
-> > +		}
-> > +		kcmds[i].error = ret = ep_ctl_do(epfd, kcmds[i].op, kcmds[i].fd, ev);
-> 
-> Likewise:
-> 		ret = kcmds[i].error = ep_ctl_do(epfd, kcmds[i].op, kcmds[i].fd, ev);
-> 
-> > +		if (ret)
-> > +			goto out;
-> > +	}
-> > +	if (spec) {
-> > +		sigset_t ksigmask;
-> > +		struct epoll_wait_spec kspec;
-> > +		ktime_t timeout;
-> > +
-> > +		if(copy_from_user(&kspec, spec, sizeof(struct epoll_wait_spec)))
-> 
-> Cosmetic point: s/if(/if (/
-> 
-> > +			return -EFAULT;
-> > +		if (kspec.sigmask) {
-> > +			if (kspec.sigsetsize != sizeof(sigset_t))
-> > +				return -EINVAL;
-> > +			if (copy_from_user(&ksigmask, kspec.sigmask, sizeof(ksigmask)))
-> > +				return -EFAULT;
-> > +		}
-> > +		timeout = timespec_to_ktime(kspec.timeout);
-> > +		ret = epoll_pwait_do(epfd, kspec.events, kspec.maxevents,
-> > +				     kspec.clockid, timeout,
-> > +				     kspec.sigmask ? &ksigmask : NULL);
-> 
-> If I understand correctly, the implementation means that the
-> 'size_t sigsetsize' field will probably need to be exposed to 
-> applications. In the existing epoll_pwait() call (as in  ppoll()
-> and pselect()) the 'size_t sigsetsize' argument is hidden by glibc.
-> However, unless we expect glibc to do some structure copying to/from
-> a structure that hides this field, then we're going end up exposing
-> 'size_t sigsetsize' to applications. (This could be avoided, if we
-> split the API as I suggest above. glibc would do the same thing 
-> in epoll_pwait1() that it currently does in epoll_pwait().)
-> 
-> Thanks,
-> 
-> Michael
-> 
-> -- 
-> Michael Kerrisk
-> Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-> Linux/UNIX System Programming Training: http://man7.org/training/
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+To the extent there was ever a policy about not compiling out code, that
+policy was changed long ago.  If you're looking to change policies about
+authoritative LSM hooks and what security frameworks can do:
+
+return -ETOOMANYWINDMILLS;
+
+- Josh Triplett
