@@ -1,278 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752940AbbAUMnw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 07:43:52 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:52263 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751552AbbAUMn1 (ORCPT
+	id S1751645AbbAUMo4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 07:44:56 -0500
+Received: from mail-wi0-f180.google.com ([209.85.212.180]:65046 "EHLO
+	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751841AbbAUMor (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 07:43:27 -0500
-From: "Suzuki K. Poulose" <suzuki.poulose@arm.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: leo.yan@linaro.org, yexl@marvell.com, Will.Deacon@arm.com,
-        Catalin.Marinas@arm.com, Mark.Rutland@arm.com,
-        linux-kernel@vger.kernel.org,
-        "Suzuki K. Poulose" <suzuki.poulose@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        Punit Agrawal <punit.agrawal@arm.com>
-Subject: [PATCH 3/3] arm64:  Emulate SETEND for AArch32 tasks
-Date: Wed, 21 Jan 2015 12:43:11 +0000
-Message-Id: <1421844191-9263-4-git-send-email-suzuki.poulose@arm.com>
-X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1421844191-9263-3-git-send-email-suzuki.poulose@arm.com>
-References: <1421844191-9263-1-git-send-email-suzuki.poulose@arm.com>
- <1421844191-9263-2-git-send-email-suzuki.poulose@arm.com>
- <1421844191-9263-3-git-send-email-suzuki.poulose@arm.com>
-X-OriginalArrivalTime: 21 Jan 2015 12:43:25.0721 (UTC) FILETIME=[D952D890:01D03577]
-X-MC-Unique: 115012112432606601
-Content-Type: text/plain; charset=WINDOWS-1252
+	Wed, 21 Jan 2015 07:44:47 -0500
+Date: Wed, 21 Jan 2015 14:44:43 +0200
+From: Asaf Vertz <asaf.vertz@tandemg.com>
+To: linuxraid@lsi.com
+Cc: JBottomley@parallels.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] scsi: 3w-9xxx: fix format string warnings
+Message-ID: <20150121124443.GA18019@ubuntu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id t0LChukt019672
 
-From: "Suzuki K. Poulose" <suzuki.poulose@arm.com>
+Fixed the following warnings (reported by cppcheck):
+[drivers/scsi/3w-9xxx.c:166]: (warning) %d in format string (no. 2)
+requires 'int' but the argument type is 'unsigned int'.
+[drivers/scsi/3w-9xxx.c:166]: (warning) %d in format string (no. 3)
+requires 'int' but the argument type is 'unsigned int'.
+[drivers/scsi/3w-9xxx.c:166]: (warning) %d in format string (no. 4)
+requires 'int' but the argument type is 'unsigned int'.
+[drivers/scsi/3w-9xxx.c:166]: (warning) %d in format string (no. 5)
+requires 'int' but the argument type is 'unsigned int'.
+[drivers/scsi/3w-9xxx.c:166]: (warning) %d in format string (no. 6)
+requires 'int' but the argument type is 'unsigned int'.
+[drivers/scsi/3w-9xxx.c:166]: (warning) %d in format string (no. 7)
+requires 'int' but the argument type is 'unsigned int'.
+[drivers/scsi/3w-9xxx.c:166]: (warning) %d in format string (no. 8)
+requires 'int' but the argument type is 'unsigned int'.
+[drivers/scsi/3w-9xxx.c:166]: (warning) %d in format string (no. 9)
+requires 'int' but the argument type is 'unsigned int'.
+[drivers/scsi/3w-9xxx.c:166]: (warning) %d in format string (no. 10)
+requires 'int' but the argument type is 'unsigned int'.
+[drivers/scsi/3w-9xxx.c:166]: (warning) %d in format string (no. 11)
+requires 'int' but the argument type is 'unsigned int'.
 
-Emulate deprecated 'setend' instruction for AArch32 bit tasks.
-
-	setend [le/be] - Sets the endianness of EL0
-
-On systems with CPUs which support mixed endian at EL0, the hardware
-support for the instruction can be enabled by setting the SCTLR_EL1.SED
-bit. Like the other emulated instructions it is controlled by an entry in
-/proc/sys/abi/. For more information see :
-	Documentation/arm64/legacy_instructions.txt
-
-The instruction is emulated by setting/clearing the SPSR_EL1.E bit, which
-will be reflected in the PSTATE.E in AArch32 context.
-
-This patch also restores the native endianness for the execution of signal
-handlers, since the process could have changed the endianness.
-
-Note: All CPUs on the system must have mixed endian support at EL0. Once the
-handler is registered, hotplugging a CPU which doesn't support mixed endian,
-could lead to unexpected results/behavior in applications.
-
-Signed-off-by: Suzuki K. Poulose <suzuki.poulose@arm.com>
-Cc: Will Deacon <will.deacon@arm.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Punit Agrawal <punit.agrawal@arm.com>
+Signed-off-by: Asaf Vertz <asaf.vertz@tandemg.com>
 ---
- Documentation/arm64/legacy_instructions.txt |   12 ++++
- arch/arm64/Kconfig                          |   15 +++++
- arch/arm64/include/asm/cputype.h            |    1 +
- arch/arm64/include/asm/ptrace.h             |    7 +++
- arch/arm64/kernel/armv8_deprecated.c        |   80 +++++++++++++++++++++++++++
- arch/arm64/kernel/signal32.c                |    5 +-
- 6 files changed, 119 insertions(+), 1 deletion(-)
+ drivers/scsi/3w-9xxx.c |   20 ++++++++++----------
+ 1 files changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/Documentation/arm64/legacy_instructions.txt b/Documentation/arm64/legacy_instructions.txt
-index a3b3da2..01bf3d9 100644
---- a/Documentation/arm64/legacy_instructions.txt
-+++ b/Documentation/arm64/legacy_instructions.txt
-@@ -32,6 +32,9 @@ The default mode depends on the status of the instruction in the
- architecture. Deprecated instructions should default to emulation
- while obsolete instructions must be undefined by default.
+diff --git a/drivers/scsi/3w-9xxx.c b/drivers/scsi/3w-9xxx.c
+index 7600639..123eba5 100644
+--- a/drivers/scsi/3w-9xxx.c
++++ b/drivers/scsi/3w-9xxx.c
+@@ -164,16 +164,16 @@ static ssize_t twa_show_stats(struct device *dev,
  
-+Note: Instruction emulation may not be possible in all cases. See
-+individual instruction notes for further information.
-+
- Supported legacy instructions
- -----------------------------
- * SWP{B}
-@@ -43,3 +46,12 @@ Default: Undef (0)
- Node: /proc/sys/abi/cp15_barrier
- Status: Deprecated
- Default: Emulate (1)
-+
-+* SETEND
-+Node: /proc/sys/abi/setend
-+Status: Deprecated
-+Default: Emulate (1)*
-+Note: All the cpus on the system must have mixed endian support at EL0
-+for this feature to be enabled. If a new CPU - which doesn't support mixed
-+endian - is hotplugged in after this feature has been enabled, there could
-+be unexpected results in the application.
-diff --git a/arch/arm64/Kconfig b/arch/arm64/Kconfig
-index b1f9a20..21a59bf 100644
---- a/arch/arm64/Kconfig
-+++ b/arch/arm64/Kconfig
-@@ -540,6 +540,21 @@ config CP15_BARRIER_EMULATION
- 
- 	  If unsure, say Y
- 
-+config SETEND_EMULATION
-+	bool "Emulate SETEND instruction"
-+	help
-+	  The SETEND instruction alters the data-endianness of the
-+	  AArch32 EL0, and is deprecated in ARMv8.
-+
-+	  Say Y here to enable software emulation of the instruction
-+	  for AArch32 userspace code.
-+
-+	  Note: All the cpus on the system must have mixed endian support at EL0
-+	  for this feature to be enabled. If a new CPU - which doesn't support mixed
-+	  endian - is hotplugged in after this feature has been enabled, there could
-+	  be unexpected results in the applications.
-+
-+	  If unsure, say Y
- endif
- 
- endmenu
-diff --git a/arch/arm64/include/asm/cputype.h b/arch/arm64/include/asm/cputype.h
-index 2c4c852..241dd2f 100644
---- a/arch/arm64/include/asm/cputype.h
-+++ b/arch/arm64/include/asm/cputype.h
-@@ -83,6 +83,7 @@
- 	(((mmfr0) & ID_AA64MMFR0_BIGEND_MASK) >> ID_AA64MMFR0_BIGEND_SHIFT)
- 
- #define SCTLR_EL1_CP15BEN	(0x1 << 5)
-+#define SCTLR_EL1_SED		(0x1 << 8)
- 
- #ifndef __ASSEMBLY__
- 
-diff --git a/arch/arm64/include/asm/ptrace.h b/arch/arm64/include/asm/ptrace.h
-index 41ed9e1..d6dd9fd 100644
---- a/arch/arm64/include/asm/ptrace.h
-+++ b/arch/arm64/include/asm/ptrace.h
-@@ -58,6 +58,13 @@
- #define COMPAT_PSR_Z_BIT	0x40000000
- #define COMPAT_PSR_N_BIT	0x80000000
- #define COMPAT_PSR_IT_MASK	0x0600fc00	/* If-Then execution state mask */
-+
-+#ifdef CONFIG_CPU_BIG_ENDIAN
-+#define COMPAT_PSR_ENDSTATE	COMPAT_PSR_E_BIT
-+#else
-+#define COMPAT_PSR_ENDSTATE	0
-+#endif
-+
- /*
-  * These are 'magic' values for PTRACE_PEEKUSR that return info about where a
-  * process is located in memory.
-diff --git a/arch/arm64/kernel/armv8_deprecated.c b/arch/arm64/kernel/armv8_deprecated.c
-index 2c991f1..dea6f59 100644
---- a/arch/arm64/kernel/armv8_deprecated.c
-+++ b/arch/arm64/kernel/armv8_deprecated.c
-@@ -548,6 +548,79 @@ static struct insn_emulation_ops cp15_barrier_ops = {
- 	.set_hw_mode = cp15_barrier_set_hw_mode,
- };
- 
-+static int setend_set_hw_mode(bool enable)
-+{
-+	if (!cpu_supports_mixed_endian_el0())
-+		return -EINVAL;
-+
-+	if (enable)
-+		config_sctlr_el1(SCTLR_EL1_SED, 0);
-+	else
-+		config_sctlr_el1(0, SCTLR_EL1_SED);
-+	return 0;
-+}
-+
-+static int compat_setend_handler(struct pt_regs *regs, u32 big_endian)
-+{
-+	char *insn;
-+
-+	perf_sw_event(PERF_COUNT_SW_EMULATION_FAULTS, 1, regs, regs->pc);
-+
-+	if (big_endian) {
-+		insn = "setend be";
-+		regs->pstate |= COMPAT_PSR_E_BIT;
-+	} else {
-+		insn = "setend le";
-+		regs->pstate &= ~COMPAT_PSR_E_BIT;
-+	}
-+
-+	trace_instruction_emulation(insn, regs->pc);
-+	pr_warn_ratelimited("\"%s\" (%ld) uses deprecated setend instruction at 0x%llx\n",
-+			current->comm, (unsigned long)current->pid, regs->pc);
-+
-+	return 0;
-+}
-+
-+static int a32_setend_handler(struct pt_regs *regs, u32 instr)
-+{
-+	int rc = compat_setend_handler(regs, (instr >> 9) & 1);
-+	regs->pc += 4;
-+	return rc;
-+}
-+
-+static int t16_setend_handler(struct pt_regs *regs, u32 instr)
-+{
-+	int rc = compat_setend_handler(regs, (instr >> 3) & 1);
-+	regs->pc += 2;
-+	return rc;
-+}
-+
-+static struct undef_hook setend_hooks[] = {
-+	{
-+		.instr_mask	= 0xfffffdff,
-+		.instr_val	= 0xf1010000,
-+		.pstate_mask	= COMPAT_PSR_MODE_MASK,
-+		.pstate_val	= COMPAT_PSR_MODE_USR,
-+		.fn		= a32_setend_handler,
-+	},
-+	{
-+		/* Thumb mode */
-+		.instr_mask	= 0x0000fff7,
-+		.instr_val	= 0x0000b650,
-+		.pstate_mask	= (COMPAT_PSR_T_BIT | COMPAT_PSR_MODE_MASK),
-+		.pstate_val	= (COMPAT_PSR_T_BIT | COMPAT_PSR_MODE_USR),
-+		.fn		= t16_setend_handler,
-+	},
-+	{}
-+};
-+
-+static struct insn_emulation_ops setend_ops = {
-+	.name = "setend",
-+	.status = INSN_DEPRECATED,
-+	.hooks = setend_hooks,
-+	.set_hw_mode = setend_set_hw_mode,
-+};
-+
- static int insn_cpu_hotplug_notify(struct notifier_block *b,
- 			      unsigned long action, void *hcpu)
- {
-@@ -573,6 +646,13 @@ static int __init armv8_deprecated_init(void)
- 	if (IS_ENABLED(CONFIG_CP15_BARRIER_EMULATION))
- 		register_insn_emulation(&cp15_barrier_ops);
- 
-+	if (IS_ENABLED(CONFIG_SETEND_EMULATION)) {
-+		if(system_supports_mixed_endian_el0())
-+			register_insn_emulation(&setend_ops);
-+		else
-+			pr_info("setend instruction emulation is not supported on the system");
-+	}
-+
- 	register_cpu_notifier(&insn_cpu_hotplug_notifier);
- 	register_insn_emulation_sysctl(ctl_abi);
- 
-diff --git a/arch/arm64/kernel/signal32.c b/arch/arm64/kernel/signal32.c
-index 5a1ba6e..aa763a5 100644
---- a/arch/arm64/kernel/signal32.c
-+++ b/arch/arm64/kernel/signal32.c
-@@ -440,7 +440,7 @@ static void compat_setup_return(struct pt_regs *regs, struct k_sigaction *ka,
- {
- 	compat_ulong_t handler = ptr_to_compat(ka->sa.sa_handler);
- 	compat_ulong_t retcode;
--	compat_ulong_t spsr = regs->pstate & ~PSR_f;
-+	compat_ulong_t spsr = regs->pstate & ~(PSR_f | COMPAT_PSR_E_BIT);
- 	int thumb;
- 
- 	/* Check if the handler is written for ARM or Thumb */
-@@ -454,6 +454,9 @@ static void compat_setup_return(struct pt_regs *regs, struct k_sigaction *ka,
- 	/* The IT state must be cleared for both ARM and Thumb-2 */
- 	spsr &= ~COMPAT_PSR_IT_MASK;
- 
-+	/* Restore the original endianness */
-+	spsr |= COMPAT_PSR_ENDSTATE;
-+
- 	if (ka->sa.sa_flags & SA_RESTORER) {
- 		retcode = ptr_to_compat(ka->sa.sa_restorer);
- 	} else {
+ 	spin_lock_irqsave(tw_dev->host->host_lock, flags);
+ 	len = snprintf(buf, PAGE_SIZE, "3w-9xxx Driver version: %s\n"
+-		       "Current commands posted:   %4d\n"
+-		       "Max commands posted:       %4d\n"
+-		       "Current pending commands:  %4d\n"
+-		       "Max pending commands:      %4d\n"
+-		       "Last sgl length:           %4d\n"
+-		       "Max sgl length:            %4d\n"
+-		       "Last sector count:         %4d\n"
+-		       "Max sector count:          %4d\n"
+-		       "SCSI Host Resets:          %4d\n"
+-		       "AEN's:                     %4d\n", 
++		       "Current commands posted:   %4u\n"
++		       "Max commands posted:       %4u\n"
++		       "Current pending commands:  %4u\n"
++		       "Max pending commands:      %4u\n"
++		       "Last sgl length:           %4u\n"
++		       "Max sgl length:            %4u\n"
++		       "Last sector count:         %4u\n"
++		       "Max sector count:          %4u\n"
++		       "SCSI Host Resets:          %4u\n"
++		       "AEN's:                     %4u\n",
+ 		       TW_DRIVER_VERSION,
+ 		       tw_dev->posted_request_count,
+ 		       tw_dev->max_posted_request_count,
 -- 
-1.7.9.5
-
+1.7.0.4
 
