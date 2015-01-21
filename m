@@ -1,137 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753552AbbAUTCj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 14:02:39 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42153 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753205AbbAUTCV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 14:02:21 -0500
-From: Vitaly Kuznetsov <vkuznets@redhat.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>, devel@linuxdriverproject.org
-Cc: Haiyang Zhang <haiyangz@microsoft.com>, linux-kernel@vger.kernel.org,
-        Dexuan Cui <decui@microsoft.com>
-Subject: [PATCH 3/3] Drivers: hv: vmbus: teardown hv_vmbus_con workqueue and vmbus_connection pages on shutdown
-Date: Wed, 21 Jan 2015 20:02:09 +0100
-Message-Id: <1421866929-20167-4-git-send-email-vkuznets@redhat.com>
-In-Reply-To: <1421866929-20167-1-git-send-email-vkuznets@redhat.com>
-References: <1421866929-20167-1-git-send-email-vkuznets@redhat.com>
+	id S1753689AbbAUTGw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 14:06:52 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:59186 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917AbbAUTGl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 14:06:41 -0500
+Message-ID: <54BFF8B3.6060802@roeck-us.net>
+Date: Wed, 21 Jan 2015 11:06:27 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+MIME-Version: 1.0
+To: Al Viro <viro@ZenIV.linux.org.uk>
+CC: Sabrina Dubroca <sd@queasysnail.net>, Paul Moore <pmoore@redhat.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-audit@redhat.com, Richard Guy Briggs <rgb@redhat.com>
+Subject: Re: linux-next: Tree for Jan 20 -- Kernel panic - Unable to mount
+ root fs
+References: <20150120232726.GA16913@kria> <1517211.UYLV49hvpg@sifl> <1528536.jyty2pu4Mz@sifl> <20150121004117.GM29656@ZenIV.linux.org.uk> <54BF1292.2080902@roeck-us.net> <20150121033600.GN29656@ZenIV.linux.org.uk> <54BF2496.4000807@roeck-us.net> <20150121043637.GO29656@ZenIV.linux.org.uk> <20150121110539.GA8924@kria> <54BFAA5D.4040108@roeck-us.net> <20150121182905.GQ29656@ZenIV.linux.org.uk>
+In-Reply-To: <20150121182905.GQ29656@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020204.54BFF8C0.00AD,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 4
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to destroy hv_vmbus_con on module shutdown, otherwise the following
-crash is sometimes observed:
+On 01/21/2015 10:29 AM, Al Viro wrote:
+> On Wed, Jan 21, 2015 at 05:32:13AM -0800, Guenter Roeck wrote:
+>> Another data point (though I have no idea if it is useful or what it means):
+>>
+>> In the working case, path_init sets nd->flags to 0x50 or 0x51.
+>> In the non-working case (ie for all files with a '/' in the name),
+>> it sets nd->flags to 0x10 or 0x11, even though it is always called
+>> with the LOOKUP_RCU bit set in flags.
+>
+> Umm...  Are those path_init() succeeding or failing?  Note that path_init()
+> includes "walk everything except for the last component", so your non-working
+> case is "have it walk anything at all".  What's failing there?  path_init()
+> or handling the remaining component?
+>
+path_init() returns -2. Guess that explains the unexpected flags ;-).
+The failuere is from
+	link_path_walk()
+		walk_component()
 
-[   76.569845] hv_vmbus: Hyper-V Host Build:9600-6.3-17-0.17039; Vmbus version:3.0
-[   82.598859] BUG: unable to handle kernel paging request at ffffffffa0003480
-[   82.599287] IP: [<ffffffffa0003480>] 0xffffffffa0003480
-[   82.599287] PGD 1f34067 PUD 1f35063 PMD 3f72d067 PTE 0
-[   82.599287] Oops: 0010 [#1] SMP
-[   82.599287] Modules linked in: [last unloaded: hv_vmbus]
-[   82.599287] CPU: 0 PID: 26 Comm: kworker/0:1 Not tainted 3.19.0-rc5_bug923184+ #488
-[   82.599287] Hardware name: Microsoft Corporation Virtual Machine/Virtual Machine, BIOS Hyper-V UEFI Release v1.0 11/26/2012
-[   82.599287] Workqueue: hv_vmbus_con 0xffffffffa0003480
-[   82.599287] task: ffff88007b6ddfa0 ti: ffff88007f8f8000 task.ti: ffff88007f8f8000
-[   82.599287] RIP: 0010:[<ffffffffa0003480>]  [<ffffffffa0003480>] 0xffffffffa0003480
-[   82.599287] RSP: 0018:ffff88007f8fbe00  EFLAGS: 00010202
-...
-
-To avoid memory leaks we need to free monitor_pages and int_page for
-vmbus_connection. Implement vmbus_disconnect() function by separating cleanup
-path from vmbus_connect().
-
-As we use hv_vmbus_con to release channels (see free_channel() in channel_mgmt.c)
-we need to make sure the work was done before we remove the queue, do that with
-drain_workqueue(). We also need to avoid handling messages  which can (potentially)
-create new channels, so set vmbus_connection.conn_state = DISCONNECTED at the very
-beginning of vmbus_exit() and check for that in vmbus_onmessage_work().
-
-Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
----
- drivers/hv/connection.c   | 17 ++++++++++++-----
- drivers/hv/hyperv_vmbus.h |  1 +
- drivers/hv/vmbus_drv.c    |  6 ++++++
- 3 files changed, 19 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/hv/connection.c b/drivers/hv/connection.c
-index e206619..2fce0c7 100644
---- a/drivers/hv/connection.c
-+++ b/drivers/hv/connection.c
-@@ -214,10 +214,21 @@ int vmbus_connect(void)
- 
- cleanup:
- 	pr_err("Unable to connect to host\n");
-+
- 	vmbus_connection.conn_state = DISCONNECTED;
-+	vmbus_disconnect();
-+
-+	kfree(msginfo);
-+
-+	return ret;
-+}
- 
--	if (vmbus_connection.work_queue)
-+void vmbus_disconnect(void)
-+{
-+	if (vmbus_connection.work_queue) {
-+		drain_workqueue(vmbus_connection.work_queue);
- 		destroy_workqueue(vmbus_connection.work_queue);
-+	}
- 
- 	if (vmbus_connection.int_page) {
- 		free_pages((unsigned long)vmbus_connection.int_page, 0);
-@@ -228,10 +239,6 @@ cleanup:
- 	free_pages((unsigned long)vmbus_connection.monitor_pages[1], 0);
- 	vmbus_connection.monitor_pages[0] = NULL;
- 	vmbus_connection.monitor_pages[1] = NULL;
--
--	kfree(msginfo);
--
--	return ret;
- }
- 
- /*
-diff --git a/drivers/hv/hyperv_vmbus.h b/drivers/hv/hyperv_vmbus.h
-index c386d8d..e01c13e 100644
---- a/drivers/hv/hyperv_vmbus.h
-+++ b/drivers/hv/hyperv_vmbus.h
-@@ -671,6 +671,7 @@ void vmbus_free_channels(void);
- /* Connection interface */
- 
- int vmbus_connect(void);
-+void vmbus_disconnect(void);
- 
- int vmbus_post_msg(void *buffer, size_t buflen);
- 
-diff --git a/drivers/hv/vmbus_drv.c b/drivers/hv/vmbus_drv.c
-index b06cb87..e647505 100644
---- a/drivers/hv/vmbus_drv.c
-+++ b/drivers/hv/vmbus_drv.c
-@@ -572,6 +572,10 @@ static void vmbus_onmessage_work(struct work_struct *work)
- {
- 	struct onmessage_work_context *ctx;
- 
-+	/* Do not process messages if we're in DISCONNECTED state */
-+	if (vmbus_connection.conn_state == DISCONNECTED)
-+		return;
-+
- 	ctx = container_of(work, struct onmessage_work_context,
- 			   work);
- 	vmbus_onmessage(&ctx->msg);
-@@ -969,11 +973,13 @@ cleanup:
- 
- static void __exit vmbus_exit(void)
- {
-+	vmbus_connection.conn_state = DISCONNECTED;
- 	hv_remove_vmbus_irq();
- 	vmbus_free_channels();
- 	bus_unregister(&hv_bus);
- 	hv_cleanup();
- 	acpi_bus_unregister_driver(&vmbus_acpi_driver);
-+	vmbus_disconnect();
- }
- 
- 
--- 
-1.9.3
+Guenter
 
