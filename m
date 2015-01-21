@@ -1,84 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753656AbbAUPLI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 10:11:08 -0500
-Received: from mail-ie0-f180.google.com ([209.85.223.180]:63354 "EHLO
-	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751777AbbAUPLA (ORCPT
+	id S1753868AbbAUPNK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 10:13:10 -0500
+Received: from mail-pa0-f41.google.com ([209.85.220.41]:44925 "EHLO
+	mail-pa0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750868AbbAUPNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 10:11:00 -0500
-Date: Wed, 21 Jan 2015 15:10:52 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: robert.jarzmik@free.fr
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Kumar Gala <galak@codeaurora.org>, Daniel Mack <daniel@zonque.org>
-Subject: Re: [PATCH v3 2/3] mfd: lubbock_io: add lubbock_io board
-Message-ID: <20150121151052.GD22024@x1>
-References: <20150121123551.GD9258@x1>
- <332399927.402665086.1421847419490.JavaMail.root@zimbra1-e1.priv.proxad.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <332399927.402665086.1421847419490.JavaMail.root@zimbra1-e1.priv.proxad.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 21 Jan 2015 10:13:05 -0500
+From: Namjae Jeon <linkinjeon@gmail.com>
+To: david@fromorbit.com, tytso@mit.edu
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, xfs@oss.sgi.com, a.sangwan@samsung.com,
+        bfoster@redhat.com, Namjae Jeon <linkinjeon@gmail.com>,
+        Namjae Jeon <namjae.jeon@samsung.com>
+Subject: [PATCH v9 0/11] fs: Introduce FALLOC_FL_INSERT_RANGE for fallocate
+Date: Thu, 22 Jan 2015 00:11:55 +0900
+Message-Id: <1421853126-4505-1-git-send-email-linkinjeon@gmail.com>
+X-Mailer: git-send-email 1.7.9.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Jan 2015, robert.jarzmik@free.fr wrote:
+From: Namjae Jeon <namjae.jeon@samsung.com>
 
-> > ----- Mail original -----
-> > De: "Lee Jones" <lee.jones@linaro.org>
-> First of all, this is my web mail interface, so please be kind with
-> my mail formatting ...
+In continuation of the work of making the process of non linear editing of
+media files faster, we introduce here the new flag FALLOC_FL_INSERT_RANGE
+for fallocate.
 
-I have no idea what you want me to change or do differently?
+This flag will work opposite to the FALLOC_FL_COLLAPSE_RANGE flag.
+As such, specifying FALLOC_FL_INSERT_RANGE flag will create new space inside file
+by inserting a hole within the range specified by offset and len. 
+User can write new data in this space. e.g. ads.
+Like collapse range, currently we have the limitation that offset and len should
+be block size aligned for both XFS and Ext4.
 
-Perhaps it might be more prudent for you to switch to a quality
-mailer?
+The semantics of the flag are :
+1) It creates space within file by inserting a hole of  len bytes starting
+   at offset byte without overwriting any existing data. All the data blocks
+   from offset to EOF are shifted towards right to make hole space.
+2) It should be used exclusively. No other fallocate flag in combination.
+3) Offset and length supplied to fallocate should be fs block size aligned
+   in case of xfs and ext4.
+4) Insert range does not work for the case when offset is overlapping/beyond
+   i_size. If the user wants to insert space at the end of file they are
+   advised to use either ftruncate(2) or fallocate(2) with mode 0.
+5) It increses the size of file by len bytes.
 
-> > Looking at one of the other patches in the series it appears the flag
-> > you're trying to capture is IORESOURCE_IRQ_LOWEDGE.  When I grep for
-> > where this is being _used_ (think 'consumed, rather than passed.  I
-> > only see a single entry in drivers/pnp/interface.c.
-> Look at this call chain :
-> request_irq()
->   setup_irq()
->     __setup_irq()
->       __irq_set_trigger()
->         pxa_gpio_irq_type() (aka. chip->irq_set_type)
->           => hardware register manipulation
-> 
-> Moreover, you should be aware of the bijection existing between :
->  - IORESOURCE_IRQ_LOWEDGE and IRQF_TRIGGER_RISING
->  - it's HIGHEDGE twin
->  - it is noted in : include/linux/interrupt.h
-> 
-> > That's what got me thinking... are you sure you're a) making use of
-> this flag
-> Yes, I'm quite sure.
-> 
-> > b) assuming the answer to 'a' is "no"
-> I won't :)
-> 
-> > I think to set an edge trigger on an IRQ, you should instead do so via
-> > irq_set_irq_type(), or have a missed a line or two?
-> __setup_irq(), that's the entry point.
 
-Very well, Russell and yourself have convinced me.  If you fixup the
-remainder of comments, I'm happy.
-
+Namjae Jeon (11):
+ fs: Add support FALLOC_FL_INSERT_RANGE for fallocate
+ xfs: Add support FALLOC_FL_INSERT_RANGE for fallocate
+ ext4: Add support FALLOC_FL_INSERT_RANGE for fallocate
+ xfsprogs: xfs_io: add finsert command for insert range via fallocate
+ xfstests: generic/039: Standard insert range tests
+ xfstests: generic/040: Delayed allocation insert range
+ xfstests: generic/041: Multi insert range tests
+ xfstests: generic/042: Delayed allocation multi insert
+ xfstests: generic/043: Test multiple fallocate insert/collapse range calls
+ xfstests: fsstress: Add fallocate insert range operation
+ xfstests: fsx: Add fallocate insert range operation
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+1.7.9.5
+
