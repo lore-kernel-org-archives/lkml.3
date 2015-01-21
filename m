@@ -1,153 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755123AbbAUCgV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 21:36:21 -0500
-Received: from mail1.bemta3.messagelabs.com ([195.245.230.163]:44500 "EHLO
-	mail1.bemta3.messagelabs.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755062AbbAUCgR (ORCPT
+	id S1755084AbbAUCna (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 21:43:30 -0500
+Received: from mail-vc0-f172.google.com ([209.85.220.172]:43889 "EHLO
+	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753157AbbAUCn2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 21:36:17 -0500
-X-Env-Sender: James.Ban.opensource@diasemi.com
-X-Msg-Ref: server-3.tower-38.messagelabs.com!1421807771!21742479!1
-X-Originating-IP: [82.210.246.133]
-X-StarScan-Received: 
-X-StarScan-Version: 6.12.5; banners=-,-,-
-X-VirusChecked: Checked
-Message-ID: <201501210235.t0L2ZnI7037875@krsrvapps-01.diasemi.com>
-From: James Ban <james.ban.opensource@diasemi.com>
-Date: Wed, 21 Jan 2015 11:34:07 +0900
-Subject: [PATCH V3] regulator: da9211: Add gpio control for enable/disable of
- buck
-To: Liam Girdwood <lgirdwood@gmail.com>, Mark Brown <broonie@kernel.org>,
-        Support Opensource <support.opensource@diasemi.com>,
-        LKML <linux-kernel@vger.kernel.org>
-CC: David Dajun Chen <david.chen@diasemi.com>
+	Tue, 20 Jan 2015 21:43:28 -0500
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <CAGS+omALWyadW50tmU+FbfFGj9RgjQHeYqdEh5ZdWpJnMdnCyg@mail.gmail.com>
+References: <1420622830-8608-1-git-send-email-djkurtz@chromium.org> <CAGS+omALWyadW50tmU+FbfFGj9RgjQHeYqdEh5ZdWpJnMdnCyg@mail.gmail.com>
+From: Daniel Kurtz <djkurtz@chromium.org>
+Date: Wed, 21 Jan 2015 10:43:07 +0800
+X-Google-Sender-Auth: JWeBgpKSvZLv1Cvs2vOB55Bv1_Y
+Message-ID: <CAGS+omDxiO_Og4gVwDHb51H4C6w4aeb1ZQpqTJvM-3GgFcMAdw@mail.gmail.com>
+Subject: Re: [PATCH] drm/rockchip: fix dma_alloc_attrs() error check
+To: Mark Yao <mark.yao@rock-chips.com>, David Airlie <airlied@linux.ie>
+Cc: Pawel Osciak <posciak@chromium.org>,
+        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
+        Daniel Kurtz <djkurtz@chromium.org>, Daniel Vetter <daniel@ffwll.ch>,
+        Rob Clark <robdclark@gmail.com>,
+        "open list:DRM DRIVERS" <dri-devel@lists.freedesktop.org>,
+        open list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a patch for adding gpio control about enable/disable of buck.
+Mark: did you get a chance to fixup the "Reported-by" line?  It's not
+a bit deal if you didn't.
 
-Signed-off-by: James Ban <james.ban.opensource@diasemi.com>
----
+Dave: did you pick up this pull request?  Did Mark request properly?
 
-This patch is relative to linux-next repository tag next-20150120.
-
-Changes in V3:
-- align with next-20150120.
-- remove warn message.
-
-Changes in V2:
-- gpio name from gpio to gpios.
-- add ena_gpio_initialized.
-
-
- .../devicetree/bindings/regulator/da9211.txt       |    7 ++++++-
- drivers/regulator/da9211-regulator.c               |   12 ++++++++++++
- include/linux/regulator/da9211.h                   |    1 +
- 3 files changed, 19 insertions(+), 1 deletion(-)
-
-diff --git a/Documentation/devicetree/bindings/regulator/da9211.txt b/Documentation/devicetree/bindings/regulator/da9211.txt
-index 240019a..a3b58e8 100644
---- a/Documentation/devicetree/bindings/regulator/da9211.txt
-+++ b/Documentation/devicetree/bindings/regulator/da9211.txt
-@@ -11,6 +11,7 @@ Required properties:
-   BUCKA and BUCKB.
- 
- Optional properties:
-+- buck-enable-platform-gpios: platform gpio for control of BUCKA/BUCKB.
- - Any optional property defined in regulator.txt
- 
- Example 1) DA9211
-@@ -27,6 +28,7 @@ Example 1) DA9211
- 				regulator-max-microvolt = <1570000>;
- 				regulator-min-microamp 	= <2000000>;
- 				regulator-max-microamp 	= <5000000>;
-+				buck-enable-platform-gpios = <&gpio 27 0>;
- 			};
- 			BUCKB {
- 				regulator-name = "VBUCKB";
-@@ -34,11 +36,12 @@ Example 1) DA9211
- 				regulator-max-microvolt = <1570000>;
- 				regulator-min-microamp 	= <2000000>;
- 				regulator-max-microamp 	= <5000000>;
-+				buck-enable-platform-gpios = <&gpio 17 0>;
- 			};
- 		};
- 	};
- 
--Example 2) DA92113
-+Example 2) DA9213
- 	pmic: da9213@68 {
- 		compatible = "dlg,da9213";
- 		reg = <0x68>;
-@@ -51,6 +54,7 @@ Example 2) DA92113
- 				regulator-max-microvolt = <1570000>;
- 				regulator-min-microamp 	= <3000000>;
- 				regulator-max-microamp 	= <6000000>;
-+				buck-enable-platform-gpios = <&gpio 27 0>;
- 			};
- 			BUCKB {
- 				regulator-name = "VBUCKB";
-@@ -58,6 +62,7 @@ Example 2) DA92113
- 				regulator-max-microvolt = <1570000>;
- 				regulator-min-microamp 	= <3000000>;
- 				regulator-max-microamp 	= <6000000>;
-+				buck-enable-platform-gpios = <&gpio 17 0>;
- 			};
- 		};
- 	};
-diff --git a/drivers/regulator/da9211-regulator.c b/drivers/regulator/da9211-regulator.c
-index 8e6957c..08fb47f 100644
---- a/drivers/regulator/da9211-regulator.c
-+++ b/drivers/regulator/da9211-regulator.c
-@@ -24,6 +24,7 @@
- #include <linux/regmap.h>
- #include <linux/irq.h>
- #include <linux/interrupt.h>
-+#include <linux/of_gpio.h>
- #include <linux/regulator/of_regulator.h>
- #include <linux/regulator/da9211.h>
- #include "da9211-regulator.h"
-@@ -277,6 +278,9 @@ static struct da9211_pdata *da9211_parse_regulators_dt(
- 
- 		pdata->init_data[n] = da9211_matches[i].init_data;
- 		pdata->reg_node[n] = da9211_matches[i].of_node;
-+		pdata->gpio_ren[n] =
-+			of_get_named_gpio(da9211_matches[i].of_node,
-+				"buck-enable-platform-gpios", 0);
- 		n++;
- 	}
- 
-@@ -366,6 +370,14 @@ static int da9211_regulator_init(struct da9211 *chip)
- 		config.regmap = chip->regmap;
- 		config.of_node = chip->pdata->reg_node[i];
- 
-+		if (gpio_is_valid(chip->pdata->gpio_ren[i])) {
-+			config.ena_gpio = chip->pdata->gpio_ren[i];
-+			config.ena_gpio_initialized = true;
-+		} else {
-+			config.ena_gpio = -EINVAL;
-+			config.ena_gpio_initialized = false;
-+		}
-+
- 		chip->rdev[i] = devm_regulator_register(chip->dev,
- 			&da9211_regulators[i], &config);
- 		if (IS_ERR(chip->rdev[i])) {
-diff --git a/include/linux/regulator/da9211.h b/include/linux/regulator/da9211.h
-index d1d9d38..5dd65ac 100644
---- a/include/linux/regulator/da9211.h
-+++ b/include/linux/regulator/da9211.h
-@@ -32,6 +32,7 @@ struct da9211_pdata {
- 	 * 2 : 2 phase 2 buck
- 	 */
- 	int num_buck;
-+	int gpio_ren[DA9211_MAX_REGULATORS];
- 	struct device_node *reg_node[DA9211_MAX_REGULATORS];
- 	struct regulator_init_data *init_data[DA9211_MAX_REGULATORS];
- };
--- 
-end-of-patch for regulator: da9211: Add gpio control for enable/disable of buck V3
-
+On Fri, Jan 9, 2015 at 12:01 PM, Daniel Kurtz <djkurtz@chromium.org> wrote:
+> On Wed, Jan 7, 2015 at 5:27 PM, Daniel Kurtz <djkurtz@chromium.org> wrote:
+>> dma_alloc_attrs() returns NULL if it cannot allocate a dma buffer (or
+>> mapping), not a negative error code.
+>>
+>> Rerported-by: Pawel Osciak <posciak@chromium.org>
+>
+> Oops!  I just noticed that this is spelled wrong.  Should be "Reported-by".
+>
+> Mark, could you fix up on your tree, or is it too late?
+>
+>> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+>> ---
+>>  drivers/gpu/drm/rockchip/rockchip_drm_gem.c | 9 +++------
+>>  1 file changed, 3 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/drivers/gpu/drm/rockchip/rockchip_drm_gem.c b/drivers/gpu/drm/rockchip/rockchip_drm_gem.c
+>> index bc98a22..7ca8799e 100644
+>> --- a/drivers/gpu/drm/rockchip/rockchip_drm_gem.c
+>> +++ b/drivers/gpu/drm/rockchip/rockchip_drm_gem.c
+>> @@ -34,12 +34,9 @@ static int rockchip_gem_alloc_buf(struct rockchip_gem_object *rk_obj)
+>>         rk_obj->kvaddr = dma_alloc_attrs(drm->dev, obj->size,
+>>                                          &rk_obj->dma_addr, GFP_KERNEL,
+>>                                          &rk_obj->dma_attrs);
+>> -       if (IS_ERR(rk_obj->kvaddr)) {
+>> -               int ret = PTR_ERR(rk_obj->kvaddr);
+>> -
+>> -               DRM_ERROR("failed to allocate %#x byte dma buffer, %d",
+>> -                         obj->size, ret);
+>> -               return ret;
+>> +       if (!rk_obj->kvaddr) {
+>> +               DRM_ERROR("failed to allocate %#x byte dma buffer", obj->size);
+>> +               return -ENOMEM;
+>>         }
+>>
+>>         return 0;
+>> --
+>> 2.2.0.rc0.207.ga3a616c
+>>
