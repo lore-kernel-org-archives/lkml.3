@@ -1,132 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753960AbbAURaL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 12:30:11 -0500
-Received: from regular1.263xmail.com ([211.150.99.135]:46432 "EHLO
-	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753678AbbAURaF (ORCPT
+	id S1754183AbbAURbj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 12:31:39 -0500
+Received: from mout.gmx.net ([212.227.15.19]:61370 "EHLO mout.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752183AbbAURbb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 12:30:05 -0500
-X-263anti-spam: KSV:0;
-X-MAIL-GRAY: 0
-X-MAIL-DELIVERY: 1
-X-KSVirus-check: 0
-X-ABS-CHECKED: 4
-X-ADDR-CHECKED: 0
-X-RL-SENDER: caesar.wang@rock-chips.com
-X-SENDER-IP: 192.255.70.32
-X-LOGIN-NAME: caesar.wang@rock-chips.com
-X-UNIQUE-TAG: <b6577ce938e108cc28bddf0560429069>
-X-ATTACHMENT-NUM: 0
-X-DNS-TYPE: 0
-From: Caesar Wang <wxt@rock-chips.com>
-To: Heiko Stuebner <heiko@sntech.de>, Zhang Rui <rui.zhang@intel.com>,
-        Eduardo Valentin <edubezval@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Daniel Kurtz <djkurtz@chromium.org>, Caesar Wang <wxt@rock-chips.com>,
-        linux-arm-kernel@lists.infradead.org,
-        linux-rockchip@lists.infradead.org, linux-pm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3] thermal: rockchip: make temperature reporting much more accurate
-Date: Thu, 22 Jan 2015 01:29:30 +0800
-Message-Id: <1421861370-19422-2-git-send-email-wxt@rock-chips.com>
-X-Mailer: git-send-email 1.9.1
-In-Reply-To: <1421861370-19422-1-git-send-email-wxt@rock-chips.com>
-References: <1421861370-19422-1-git-send-email-wxt@rock-chips.com>
+	Wed, 21 Jan 2015 12:31:31 -0500
+MIME-Version: 1.0
+Message-ID: <trinity-e585b2ff-5707-41eb-be40-241e3d5a2e16-1421861470660@3capp-gmx-bs36>
+From: "Peter Huewe" <PeterHuewe@gmx.de>
+To: "Jim Davis" <jim.epost@gmail.com>
+Cc: "Stephen Rothwell" <sfr@canb.auug.org.au>,
+        linux-next <linux-next@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, tpmdd@selhorst.net,
+        tpmdd-devel@lists.sourceforge.net,
+        "Jarkko Sakkinen" <jarkko.sakkinen@linux.intel.com>
+Subject: Aw: randconfig build error with next-20150121, in
+ drivers/char/tpm/tpm_tis.c
+Content-Type: text/plain; charset=UTF-8
+Date: Wed, 21 Jan 2015 18:31:10 +0100
+Importance: normal
+Sensitivity: Normal
+In-Reply-To: <CA+r1ZhiCiLc5yDABJPYR7-Jz=M+XE5RvGzTKc=zvb1M9qRjosw@mail.gmail.com>
+References: <CA+r1ZhiCiLc5yDABJPYR7-Jz=M+XE5RvGzTKc=zvb1M9qRjosw@mail.gmail.com>
+Content-Transfer-Encoding: 8BIT
+X-UI-Message-Type: mail
+X-Priority: 3
+X-Provags-ID: V03:K0:bmV5DK5kaMiWucXo0CyrklPK//eGWGbz98/MPlCixOc
+ jJSM88XdlcLRBlPeFp4V3ZD/owszZkscV5WoB1dP0nS0heWIhr
+ GP83H4yQHZ1Ge4G+EHq5EXcfYePWStLOyQFZP0ZtIA3G7pveEV
+ O4RxpEzLI+OExm6DSHOg/sDhtf5bbZiwh2HtQG2sSeKjFYmtva
+ Ef96JktNApBfU8lZudvzSGIi2JOY2AQb4ID/7ukFT4y2Vfepfe
+ B9aKWjkdh3SKWPcSefUprGrYjGCsW+5eXTOKeBii+gn7MWUFIV 6zo7iU=
+X-UI-Out-Filterresults: notjunk:1;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In general, the kernel should report temperature readings exactly as
-reported by the hardware. The cpu / gpu thermal driver works in 5 degree
-increments,but we ought to do more accurate. The temperature will do
-linear interpolation between the entries in the table.
-
-Test= $md5sum /dev/zero &
-$while true; do grep "" /sys/class/thermal/thermal_zone[1-2]/temp;
-sleep .5; done
-
-e.g. We can get the result as follows:
-    /sys/class/thermal/thermal_zone1/temp:39994
-    /sys/class/thermal/thermal_zone2/temp:39086
-    /sys/class/thermal/thermal_zone1/temp:39994
-    /sys/class/thermal/thermal_zone2/temp:39540
-    /sys/class/thermal/thermal_zone1/temp:39540
-    /sys/class/thermal/thermal_zone2/temp:39540
-    /sys/class/thermal/thermal_zone1/temp:39540
-    /sys/class/thermal/thermal_zone2/temp:39994
-
-Signed-off-by: Caesar Wang <wxt@rock-chips.com>
-Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-
----
-
-Changes in v3:
-Suggested-by Daniel Kurtz,
-the check doesn't reject "code == 0xfff"
-Fixed in rk_tsadcv2_code_to_temp(u32 code)
-
-Changes in v2:
-Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-
- drivers/thermal/rockchip_thermal.c | 32 ++++++++++++++++++++++----------
- 1 file changed, 22 insertions(+), 10 deletions(-)
-
-diff --git a/drivers/thermal/rockchip_thermal.c b/drivers/thermal/rockchip_thermal.c
-index 1bcddfc..ce18007 100644
---- a/drivers/thermal/rockchip_thermal.c
-+++ b/drivers/thermal/rockchip_thermal.c
-@@ -193,19 +193,22 @@ static u32 rk_tsadcv2_temp_to_code(long temp)
- 
- static long rk_tsadcv2_code_to_temp(u32 code)
- {
--	int high, low, mid;
--
--	low = 0;
--	high = ARRAY_SIZE(v2_code_table) - 1;
--	mid = (high + low) / 2;
-+	unsigned int low = 0;
-+	unsigned int high = ARRAY_SIZE(v2_code_table) - 1;
-+	unsigned int mid = (low + high) / 2;
-+	unsigned int num;
-+	unsigned long denom;
- 
-+	/* No code available, return callback */
- 	if (code > v2_code_table[low].code || code < v2_code_table[high].code)
--		return 125000; /* No code available, return max temperature */
-+		return rk_tsadcv2_code_to_temp(code);
- 
- 	while (low <= high) {
--		if (code >= v2_code_table[mid].code && code <
--		    v2_code_table[mid - 1].code)
--			return v2_code_table[mid].temp;
-+		if (code >= v2_code_table[mid].code &&
-+		    code < v2_code_table[mid - 1].code)
-+			break;
-+		else if (code == TSADCV2_DATA_MASK)
-+			break;
- 		else if (code < v2_code_table[mid].code)
- 			low = mid + 1;
- 		else
-@@ -213,7 +216,16 @@ static long rk_tsadcv2_code_to_temp(u32 code)
- 		mid = (low + high) / 2;
- 	}
- 
--	return 125000;
-+	/*
-+	 * The 5C granularity provided by the table is too much. Let's
-+	 * assume that the relationship between sensor readings and
-+	 * temperature between 2 table entries is linear and interpolate
-+	 * to produce less granular result.
-+	 */
-+	num = v2_code_table[mid].temp - v2_code_table[mid - 1].temp;
-+	num *= v2_code_table[mid - 1].code - code;
-+	denom = v2_code_table[mid - 1].code - v2_code_table[mid].code;
-+	return v2_code_table[mid - 1].temp + (num / denom);
- }
- 
- /**
--- 
-1.9.1
 
 
+Thanks for reporting.
+ 
+
+>drivers/char/tpm/tpm_tis.c: In function ‘tpm_tis_pnp_init’:
+>drivers/char/tpm/tpm_tis.c:912:45: error: invalid type argument of
+>‘->’ (have ‘int’)
+>acpi_dev_handle = pnp_acpi_device(pnp_dev)->handle;
+>^
+>make[3]: *** [drivers/char/tpm/tpm_tis.o] Error 1
+I'll look into it.
+
+
+sorry sorry.
+
+Peter
