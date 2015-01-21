@@ -1,138 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102AbbAURND (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 12:13:03 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:40322 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751594AbbAURMz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 12:12:55 -0500
-Message-ID: <1421860365.14076.91.camel@arm.com>
-Subject: Re: [PATCH v4 3/3] perf: Sample additional clock value
-From: Pawel Moll <pawel.moll@arm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Richard Cochran <richardcochran@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        John Stultz <john.stultz@linaro.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tomeu Vizoso <tomeu@tomeuvizoso.net>,
+	id S1754047AbbAUTvR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 14:51:17 -0500
+Received: from mail-bn1on0071.outbound.protection.outlook.com ([157.56.110.71]:53248
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752806AbbAUTvK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 14:51:10 -0500
+X-Greylist: delayed 8274 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Jan 2015 14:51:09 EST
+Message-ID: <54BFDF2B.80708@caviumnetworks.com>
+Date: Wed, 21 Jan 2015 09:17:31 -0800
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
+MIME-Version: 1.0
+To: Mark Rutland <mark.rutland@arm.com>
+CC: David Daney <ddaney.cavm@gmail.com>,
+        Aleksey Makarov <aleksey.makarov@auriga.com>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
-Date: Wed, 21 Jan 2015 17:12:45 +0000
-In-Reply-To: <20150105134514.GS30905@twins.programming.kicks-ass.net>
-References: <1415292718-19785-1-git-send-email-pawel.moll@arm.com>
-	 <1415292718-19785-4-git-send-email-pawel.moll@arm.com>
-	 <20150105134514.GS30905@twins.programming.kicks-ass.net>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.10-0ubuntu1~14.10.1 
-Mime-Version: 1.0
+        David Daney <david.daney@cavium.com>,
+        "Anton Vorontsov" <avorontsov@ru.mvista.com>,
+        Vinita Gupta <vgupta@caviumnetworks.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        "Kumar Gala" <galak@codeaurora.org>,
+        Ralf Baechle <ralf@linux-mips.org>, Tejun Heo <tj@kernel.org>,
+        Hans de Goede <hdegoede@redhat.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH] SATA: OCTEON: support SATA on OCTEON platform
+References: <1421681040-3392-1-git-send-email-aleksey.makarov@auriga.com> <20150119154357.GH21553@leverpostej> <54BD580C.6030701@gmail.com> <20150121165427.GA8722@leverpostej>
+In-Reply-To: <20150121165427.GA8722@leverpostej>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [64.2.3.194]
+X-ClientProxiedBy: BLUPR07CA095.namprd07.prod.outlook.com (25.160.24.50) To
+ BY1PR0701MB1110.namprd07.prod.outlook.com (25.160.104.20)
+Authentication-Results: spf=none (sender IP is )
+ smtp.mailfrom=David.Daney@caviumnetworks.com; 
+X-DmarcAction-Test: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:BY1PR0701MB1110;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY1PR0701MB1110;
+X-Forefront-PRVS: 04631F8F77
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10009020)(979002)(6009001)(24454002)(189002)(199003)(51704005)(57704003)(164054003)(479174004)(377454003)(110136001)(2950100001)(36756003)(64126003)(87976001)(23756003)(105586002)(106356001)(50986999)(62966003)(77156002)(76176999)(69596002)(65816999)(81156004)(33656002)(54356999)(68736005)(65806001)(65956001)(66066001)(47776003)(122386002)(64706001)(40100003)(42186005)(92566002)(83506001)(97736003)(93886004)(101416001)(53416004)(50466002)(46102003)(969003)(989001)(999001)(1009001)(1019001);DIR:OUT;SFP:1101;SCL:1;SRVR:BY1PR0701MB1110;H:dl.caveonetworks.com;FPR:;SPF:None;MLV:ovrnspm;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY1PR0701MB1110;
+X-OriginatorOrg: caviumnetworks.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 21 Jan 2015 17:17:36.1242 (UTC)
+X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY1PR0701MB1110
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2015-01-05 at 13:45 +0000, Peter Zijlstra wrote:
-> On Thu, Nov 06, 2014 at 04:51:58PM +0000, Pawel Moll wrote:
-> > Currently three clocks are implemented: CLOCK_REALITME = 0,
-> > CLOCK_MONOTONIC = 1 and CLOCK_MONOTONIC_RAW = 2. The clock field is
-> > 5 bits wide to allow for future extension to custom, non-POSIX clock
-> > sources(MAX_CLOCK for those is 16, see include/uapi/linux/time.h) like
-> > ARM CoreSight (hardware trace) timestamp generator.
-> 
-> > @@ -304,7 +305,16 @@ struct perf_event_attr {
-> >  				mmap2          :  1, /* include mmap with inode data     */
-> >  				comm_exec      :  1, /* flag comm events that are due to an exec */
-> >  				uevents        :  1, /* allow uevents into the buffer */
-> > -				__reserved_1   : 38;
-> > +
-> > +				/*
-> > +				 * clock: one of the POSIX clock IDs:
-> > +				 *
-> > +				 * 0 - CLOCK_REALTIME
-> > +				 * 1 - CLOCK_MONOTONIC
-> > +				 * 4 - CLOCK_MONOTONIC_RAW
-> > +				 */
-> > +				clock          :  5, /* clock type */
-> > +				__reserved_1   : 33;
-> >  
-> >  	union {
-> >  		__u32		wakeup_events;	  /* wakeup every n events */
-> 
-> This would put a constraint on actually changing MAX_CLOCKS, are the
-> time people OK with that? Thomas, John?
+On 01/21/2015 08:54 AM, Mark Rutland wrote:
+> On Mon, Jan 19, 2015 at 07:16:28PM +0000, David Daney wrote:
+[...]
+>>>> @@ -67,6 +76,7 @@ static const struct of_device_id ahci_of_match[] = {
+>>>>    	{ .compatible = "ibm,476gtr-ahci", },
+>>>>    	{ .compatible = "snps,dwc-ahci", },
+>>>>    	{ .compatible = "hisilicon,hisi-ahci", },
+>>>> +	{ .compatible = "cavium,octeon-7130-ahci", },
+>>>>    	{},
+>>>
+>>> I was under the impression that the strings other than "generic-ahci"
+>>> were only for compatibility with existing DTBs. Why do we need to add
+>>> new platform-specific strings here?
+>>
+>> Because it is an "existing DTB", The device tree doesn't contain the
+>> compatible property of "generic-ahci", only "cavium,octeon-7130-ahci".
+>
+> While the DTB may already exist, the string "cavium,octeon-7130-ahci"
+> isn't in mainline, and as far as I can see has never been supported.
 
-I admit I have some doubts about it myself. But I don't think we can
-afford full int for the clock id, can we?
+There seems to be a disconnect here.  The DTB comes from the hardware 
+boot environment.  The hardware is in some cases already deployed.  It 
+is for all practical purposes, impossible to change the DTB.
 
-> I'm also not quite sure of using the >MAX_CLOCKS space for 'special'
-> clocks, preferably those would register themselves with the POSIX clock
-> interface.
+The idea that the kernel source code controls the content of the device 
+tree doesn't apply here.
 
-That may be a hard sell - John never was particularly keen on extending
-the hard-coded clocks with random sources. And the hardware trace clock
-I had on mind would be probably one of them - its meaning depends a lot
-on the . Of course I'm looking forward to being surprised :-)
+> We
+> _maintain_ support for existing DTBs, we don't just copy what some
+> forked kernel happens to do.
+>
+> Trying to push that under the "don't break existing DTBs" rule is
+> bending the definition.
 
-> > @@ -4631,6 +4637,24 @@ static void __perf_event_header__init_id(struct perf_event_header *header,
-> >  		data->cpu_entry.cpu	 = raw_smp_processor_id();
-> >  		data->cpu_entry.reserved = 0;
-> >  	}
-> > +
-> > +	if (sample_type & PERF_SAMPLE_CLOCK) {
-> > +		switch (event->attr.clock) {
-> > +		case CLOCK_REALTIME:
-> > +			data->clock = ktime_get_real_ns();
-> > +			break;
-> > +		case CLOCK_MONOTONIC:
-> > +			data->clock = ktime_get_mono_fast_ns();
-> > +			break;
-> > +		case CLOCK_MONOTONIC_RAW:
-> > +			data->clock = ktime_get_raw_ns();
-> > +			break;
-> > +		default:
-> > +			data->clock = 0;
-> > +			break;
-> > +		}
-> > +	}
-> > +
-> >  }
-> 
-> This is broken. There is nothing stopping this from being called from
-> NMI context and only the MONO one is NMI safe.
+The purpose of the kernel is to provide services on top of actual 
+hardware.  In general, for a kernel driver to support any given device, 
+it may have to add device specific identifiers, that correspond to the 
+device, in the probing code.
 
-Uh, right. 
+David Daney
 
-> Also, one would expect something like:
-> 
-> 	default: {
-> 		struct k_clock *kc = clockid_to_kclock(event->attr.clock);
-> 		struct timespec ts;
-> 		if (kc) {
-> 			kc->clock_get(event->attr.clock, &ts);
-> 			data->clock = ktime_to_ns(timespec_to_ktime(ts));
-> 		} else {
-> 			data->clock = 0;
-> 		}
-> 	}
-> 
-> Albeit preferably slightly less horrible -- of course, one would first
-> need to deal with the NMI issue.
-
-Ok, generally this patch clearly needs more work. I'll have to revisit
-what Thomas did with the monotonic clock to understand the potential
-solutions.
-
-Maybe, in this case, giving such a wide choice of clocks to be sampled
-is not the right thing after all? Maybe, when we face the issue of a
-trace clock for real, simple "PERF_SAMPLE_TRACE_CLOCK" will suffice?
-With the monotonic clock as a normal time base merged (hopefully
-soon :-) the correlation between kernel and user space (which was the
-original reason for having this change) won't be an issue any more.
-
-Pawel
+>
+> Thanks,
+> Mark.
+>
+>
 
