@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752747AbbAUKBc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 05:01:32 -0500
-Received: from mail-wg0-f49.google.com ([74.125.82.49]:42882 "EHLO
-	mail-wg0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752231AbbAUKBP (ORCPT
+	id S1752817AbbAUKBt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 05:01:49 -0500
+Received: from mail-yk0-f179.google.com ([209.85.160.179]:38179 "EHLO
+	mail-yk0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751974AbbAUKBo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 05:01:15 -0500
-Date: Wed, 21 Jan 2015 12:01:10 +0200
-From: MariamMohamedFawzy <maryammohamed61@gmail.com>
-To: devel@driverdev.osuosl.org
-Cc: forest@alittletooquiet.net, gregkh@linuxfoundation.org, tvboxspy@gmail.com,
-        gclement@baobob.org, guido@vanguardiasur.com.ar,
-        veronicca114@gmail.com, linux-kernel@vger.kernel.org
-Subject: [PATCH] staging: vt6655: fix that open brace { should be on the
- previous line
-Message-ID: <20150121100110.GA2652@mariam-VirtualBox>
+	Wed, 21 Jan 2015 05:01:44 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1419072462-3168-6-git-send-email-prabhakar.csengg@gmail.com>
+References: <1419072462-3168-1-git-send-email-prabhakar.csengg@gmail.com>
+	<1419072462-3168-6-git-send-email-prabhakar.csengg@gmail.com>
+Date: Wed, 21 Jan 2015 18:01:43 +0800
+Message-ID: <CAHG8p1D4HAbM-JVDa_P81EA1TeSYZ_Wi5=uYH5VvnmLiR+dHeA@mail.gmail.com>
+Subject: Re: [PATCH 05/15] media: blackfin: bfin_capture: improve
+ queue_setup() callback
+From: Scott Jiang <scott.jiang.linux@gmail.com>
+To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+        adi-buildroot-devel@lists.sourceforge.net,
+        Mauro Carvalho Chehab <m.chehab@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the following checkpatch.pl error:
-fix that open brace { should be on the previous line
+2014-12-20 18:47 GMT+08:00 Lad, Prabhakar <prabhakar.csengg@gmail.com>:
+> this patch improves the queue_setup() callback.
+>
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> ---
+>  drivers/media/platform/blackfin/bfin_capture.c | 10 ++++++----
+>  1 file changed, 6 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/media/platform/blackfin/bfin_capture.c b/drivers/media/platform/blackfin/bfin_capture.c
+> index 8bd94a1..76d42bb 100644
+> --- a/drivers/media/platform/blackfin/bfin_capture.c
+> +++ b/drivers/media/platform/blackfin/bfin_capture.c
+> @@ -44,7 +44,6 @@
+>  #include <media/blackfin/ppi.h>
+>
+>  #define CAPTURE_DRV_NAME        "bfin_capture"
+> -#define BCAP_MIN_NUM_BUF        2
+>
+>  struct bcap_format {
+>         char *desc;
+> @@ -292,11 +291,14 @@ static int bcap_queue_setup(struct vb2_queue *vq,
+>  {
+>         struct bcap_device *bcap_dev = vb2_get_drv_priv(vq);
+>
+> -       if (*nbuffers < BCAP_MIN_NUM_BUF)
+> -               *nbuffers = BCAP_MIN_NUM_BUF;
+> +       if (fmt && fmt->fmt.pix.sizeimage < bcap_dev->fmt.sizeimage)
+> +               return -EINVAL;
+> +
+> +       if (vq->num_buffers + *nbuffers < 3)
+> +               *nbuffers = 3 - vq->num_buffers;
 
-Signed-off-by: MariamMohamedFawzy <maryammohamed61@gmail.com>
----
- drivers/staging/vt6655/card.c | 4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+It seems it changes the minimum buffers from 2 to 3?
 
-diff --git a/drivers/staging/vt6655/card.c b/drivers/staging/vt6655/card.c
-index 47801ca..1cdcf49 100644
---- a/drivers/staging/vt6655/card.c
-+++ b/drivers/staging/vt6655/card.c
-@@ -68,8 +68,8 @@
- 
- /*---------------------  Static Variables  --------------------------*/
- 
--static const unsigned short cwRXBCNTSFOff[MAX_RATE] =
--{17, 17, 17, 17, 34, 23, 17, 11, 8, 5, 4, 3};
-+static const unsigned short cwRXBCNTSFOff[MAX_RATE] = {
-+	17, 17, 17, 17, 34, 23, 17, 11, 8, 5, 4, 3};
- 
- /*---------------------  Static Functions  --------------------------*/
- 
--- 
-1.9.1
-
+>
+>         *nplanes = 1;
+> -       sizes[0] = bcap_dev->fmt.sizeimage;
+> +       sizes[0] = fmt ? fmt->fmt.pix.sizeimage : bcap_dev->fmt.sizeimage;
+>         alloc_ctxs[0] = bcap_dev->alloc_ctx;
+>
