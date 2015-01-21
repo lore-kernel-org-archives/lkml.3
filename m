@@ -1,115 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932131AbbAUGaZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 01:30:25 -0500
-Received: from mailgw02.mediatek.com ([210.61.82.184]:40728 "EHLO
-	mailgw02.mediatek.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754592AbbAUGaU (ORCPT
+	id S1754522AbbAUGdj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 01:33:39 -0500
+Received: from TYO202.gate.nec.co.jp ([210.143.35.52]:34115 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751997AbbAUGdi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 01:30:20 -0500
-X-Listener-Flag: 11101
-Subject: Re: [PATCH v4 2/2] I2C: mediatek: Add driver for MediaTek I2C
- controller
-From: Yingjoe Chen <yingjoe.chen@mediatek.com>
-To: Eddie Huang <eddie.huang@mediatek.com>, <u.kleine-koenig@pengutronix.de>
-CC: Mark Rutland <mark.rutland@arm.com>, Wolfram Sang <wsa@the-dreams.de>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        <linux-kernel@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>, Jean Delvare <jdelvare@suse.de>,
-        Xudong Chen <xudong.chen@mediatek.com>,
-        Boris BREZILLON <boris.brezillon@free-electrons.com>,
-        Arnd Bergmann <arnd@arndb.de>, <yh.chen@mediatek.com>,
-        Wei Yan <sledge.yanwei@huawei.com>,
-        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
-        Grant Likely <grant.likely@linaro.org>, <devicetree@vger.kernel.org>,
-        Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Beniamino Galvani <b.galvani@gmail.com>,
-        Neelesh Gupta <neelegup@linux.vnet.ibm.com>,
-        Rob Herring <robh+dt@kernel.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        <linux-arm-kernel@lists.infradead.org>, <srv_heupstream@mediatek.com>,
-        Anders Berg <anders.berg@avagotech.com>,
-        Jim Cromie <jim.cromie@gmail.com>, Simon Glass <sjg@chromium.org>,
-        Max Schwarz <max.schwarz@online.de>,
-        Doug Anderson <dianders@chromium.org>,
-        Sascha Hauer <kernel@pengutronix.de>,
-        Kumar Gala <galak@codeaurora.org>
-In-Reply-To: <1421810004.15468.825.camel@mtksdaap41>
-References: <1421404418-50718-1-git-send-email-eddie.huang@mediatek.com>
-	 <1421404418-50718-3-git-send-email-eddie.huang@mediatek.com>
-	 <20150118101816.GF22880@pengutronix.de>
-	 <1421810004.15468.825.camel@mtksdaap41>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 21 Jan 2015 14:30:09 +0800
-Message-ID: <1421821809.11671.117.camel@mtksdaap41>
+	Wed, 21 Jan 2015 01:33:38 -0500
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Shiraz Hashim <shashim@codeaurora.org>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "oleg@redhat.com" <oleg@redhat.com>,
+        "gorcunov@openvz.org" <gorcunov@openvz.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] mm: pagewalk: call pte_hole() for VM_PFNMAP during
+ walk_page_range
+Thread-Topic: [PATCH] mm: pagewalk: call pte_hole() for VM_PFNMAP during
+ walk_page_range
+Thread-Index: AQHQNUFsW7TkTQVVQUquc8HKtAxWvZzJhi2A
+Date: Wed, 21 Jan 2015 06:30:53 +0000
+Message-ID: <20150121063043.GA18835@hori1.linux.bs1.fc.nec.co.jp>
+References: <1421820793-28883-1-git-send-email-shashim@codeaurora.org>
+In-Reply-To: <1421820793-28883-1-git-send-email-shashim@codeaurora.org>
+Accept-Language: ja-JP, en-US
+Content-Language: ja-JP
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.128.101.10]
+Content-Type: text/plain; charset="iso-2022-jp"
+Content-ID: <66994E9CC2CE2C44A2D781CCB81E89BF@gisp.nec.co.jp>
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-MTK: N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jan 21, 2015 at 11:43:13AM +0530, Shiraz Hashim wrote:
+> walk_page_range silently skips vma having VM_PFNMAP set,
+> which leads to undesirable behaviour at client end (who
+> called walk_page_range). For example for pagemap_read,
+> when no callbacks are called against VM_PFNMAP vma,
+> pagemap_read may prepare pagemap data for next virtual
+> address range at wrong index.
+> 
+> Signed-off-by: Shiraz Hashim <shashim@codeaurora.org>
 
-Hi Uwe,
+Thank you!
 
-Thanks for your review,
+Acked-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-On Wed, 2015-01-21 at 11:13 +0800, Eddie Huang wrote:
-<...>
-> > > +		ret = -EINVAL;
-> > > +		goto err_exit;
-> > > +	}
-> > > +
-> > > +	if (msgs->buf == NULL) {
-> > > +		dev_dbg(i2c->dev, " data buffer is NULL.\n");
-> > > +		ret = -EINVAL;
-> > > +		goto err_exit;
-> > > +	}
-> > > +
-> > > +	i2c->addr = msgs->addr;
-> > > +	i2c->msg_len = msgs->len;
-> > > +	i2c->msg_buf = msgs->buf;
-> > > +
-> > > +	if (msgs->flags & I2C_M_RD)
-> > > +		i2c->op = I2C_MASTER_RD;
-> > > +	else
-> > > +		i2c->op = I2C_MASTER_WR;
-> > > +
-> > > +	/* combined two messages into one transaction */
-> > > +	if (num > 1) {
-> > > +		i2c->msg_aux_len = (msgs + 1)->len;
-> > > +		i2c->op = I2C_MASTER_WRRD;
-> > > +	}
-> > This means "write then read", right? You should check here that the
-> > first message is really a write and the 2nd a read then.
-> > Can this happen at all with the quirks defined below (.max_num_msgs =
-> > 1)?
-> Yes, mean write then read. Indeed, add check is better.
-> If msg number is 1, means normal write or read, not "write then read".
-
-The quirks will increase the message count and check 'write then read'
-for us. We don't have to add check here.
-
-
-<...>
-> > > +static int mtk_i2c_remove(struct platform_device *pdev)
-> > > +{
-> > > +	struct mtk_i2c *i2c = platform_get_drvdata(pdev);
-> > > +
-> > > +	i2c_del_adapter(&i2c->adap);
-> > > +	free_i2c_dma_bufs(i2c);
-> > > +	platform_set_drvdata(pdev, NULL);
-> > > +
-> > Here you need to make sure that no irq is running when i2c_del_adapter
-> > is called.
-> OK, add check here
-
-I thought after i2c_del_adapter() is complete, all i2c_transfer for this
-adapter is completed. If this is true, then i2c clock is already off and
-we won't have any on-going transfer/pending irq.
-
-Joe.C
-
-
+> ---
+> The fix is revised, based upon the suggestion here at
+> http://www.spinics.net/lists/linux-mm/msg83058.html
+> 
+>  mm/pagewalk.c | 5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/mm/pagewalk.c b/mm/pagewalk.c
+> index ad83195..b264bda 100644
+> --- a/mm/pagewalk.c
+> +++ b/mm/pagewalk.c
+> @@ -199,7 +199,10 @@ int walk_page_range(unsigned long addr, unsigned long end,
+>  			 */
+>  			if ((vma->vm_start <= addr) &&
+>  			    (vma->vm_flags & VM_PFNMAP)) {
+> -				next = vma->vm_end;
+> +				if (walk->pte_hole)
+> +					err = walk->pte_hole(addr, next, walk);
+> +				if (err)
+> +					break;
+>  				pgd = pgd_offset(walk->mm, next);
+>  				continue;
+>  			}
+> -- 
+> Shiraz Hashim
+> 
+> QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a
+> member of the Code Aurora Forum, hosted by The Linux Foundation
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
