@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754013AbbAURzB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 12:55:01 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:40389 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752440AbbAURyx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 12:54:53 -0500
-Message-ID: <1421862883.14076.99.camel@arm.com>
-Subject: Re: [PATCH v4 3/3] perf: Sample additional clock value
-From: Pawel Moll <pawel.moll@arm.com>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        Richard Cochran <richardcochran@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Christopher Covington <cov@codeaurora.org>,
-        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Tomeu Vizoso <tomeu@tomeuvizoso.net>,
+	id S1753971AbbAUR5V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 12:57:21 -0500
+Received: from comal.ext.ti.com ([198.47.26.152]:35453 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751235AbbAUR5L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 12:57:11 -0500
+Message-ID: <54BFE855.3090200@ti.com>
+Date: Wed, 21 Jan 2015 11:56:37 -0600
+From: Suman Anna <s-anna@ti.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+MIME-Version: 1.0
+To: Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>
+CC: Mark Rutland <mark.rutland@arm.com>, Rob Herring <robherring2@gmail.com>,
+        Kumar Gala <galak@codeaurora.org>, Bjorn Andersson <bjorn@kryo.se>,
+        Josh Cartwright <joshc@codeaurora.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
-Date: Wed, 21 Jan 2015 17:54:43 +0000
-In-Reply-To: <CALAqxLV6ggCO81ntWuYuDjrqNeMePkZBpq92G9-iwMHm7ONuFg@mail.gmail.com>
-References: <1415292718-19785-1-git-send-email-pawel.moll@arm.com>
-	 <1415292718-19785-4-git-send-email-pawel.moll@arm.com>
-	 <20150105134514.GS30905@twins.programming.kicks-ass.net>
-	 <1421860365.14076.91.camel@arm.com>
-	 <CALAqxLV6ggCO81ntWuYuDjrqNeMePkZBpq92G9-iwMHm7ONuFg@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.10-0ubuntu1~14.10.1 
-Mime-Version: 1.0
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Rob Herring <robh+dt@kernel.org>
+Subject: Re: [PATCH v7 1/4] Documentation: dt: add common bindings for hwspinlock
+References: <1421269101-51105-1-git-send-email-s-anna@ti.com> <1421269101-51105-2-git-send-email-s-anna@ti.com> <20150115135201.GG16217@leverpostej> <20150115135556.GH16217@leverpostej> <CAL_JsqL2LZAooMk-V8+xeF2g6acZE21M+-OBRw8aEVa-5wVHuQ@mail.gmail.com> <CAK=WgbYQ=BbinqJ5fsw2Y+FKdy=nasLsw9mX8pw6S_o3owy9-g@mail.gmail.com> <20150116101746.GA21809@leverpostej> <CAK=WgbYBqPoUm9byx0du_g5ZmHdYaUVLpSPZYHoCVzNoatNKpw@mail.gmail.com> <20150120180548.GK7718@atomide.com> <CAK=WgbZGGtwmQwzWumjpYOsYHTt8vPQpTraABwJBsv5VXOmJ_Q@mail.gmail.com>
+In-Reply-To: <CAK=WgbZGGtwmQwzWumjpYOsYHTt8vPQpTraABwJBsv5VXOmJ_Q@mail.gmail.com>
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2015-01-21 at 17:44 +0000, John Stultz wrote:
-> That said, there is the dynamic posix clockids. I'm not sure if it
-> would make sense, but even if we don't bump MAX_CLOCKS, might there
-> be some case where someone wants to use a dynamic posix clock for the
-> perf reference?
+On 01/21/2015 06:41 AM, Ohad Ben-Cohen wrote:
+> On Tue, Jan 20, 2015 at 8:05 PM, Tony Lindgren <tony@atomide.com> wrote:
+>> How about default to Linux id space and allow overriding that with
+>> a module param option if needed?
+> 
+> I'm not sure I'm following.
+> 
+> If the main point of contention is the base_id field, I'm also fine
+> with removing it entirely, as I'm not aware of any actual user for it
+> (Suman please confirm?).
 
-If I remember correctly, last time I tried to use dynamic posix clocks
-in the perf context, one needed to open a ptp character device in order
-to get a file descriptor, than translated into a clockid_t value -
-correct me if I'm wrong. But here you get the fd from the
-sys_perf_open() and clock_*() doesn't know anything about such
-descriptor.
+Yeah, well the current implementations that I am aware of only have a
+single bank, so all of them would be using a value of 0. I am yet to see
+a platform with multiple instances where the property really makes a
+difference. v7 has the property mandatory, so all the implementations
+would need to define this value even if it is 0.
 
-I was looking into a way of associating a random clock with a random fd,
-so that perf could "attach" itself to the clock API at will, but it
-turned out not to be trivial (I'd have to dig through old threads to
-remember all the nasty details).
+regards
+Suman
 
-The good thing is that it looks like the immediate need for this was no
-more, with perf using monotonic clock as the clock source. It will come
-back when we get into hardware trace correlation, but one step at a
-time...
-
-Pawel
+> 
+> Mark? Rob? Will you accept Suman's patches if the base_id field is removed?
+> 
+> Thanks,
+> Ohad.
+> 
 
