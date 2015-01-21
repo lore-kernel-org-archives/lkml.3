@@ -1,130 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754393AbbAUTjU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 14:39:20 -0500
-Received: from mail-wi0-f175.google.com ([209.85.212.175]:35545 "EHLO
-	mail-wi0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754014AbbAUTjM (ORCPT
+	id S1752849AbbAUTsU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 14:48:20 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:40489 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752638AbbAUTsO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 14:39:12 -0500
-Date: Wed, 21 Jan 2015 20:39:09 +0100
-From: Levente Kurusa <levex@linux.com>
-To: Anshul Garg <aksgarg1989@gmail.com>
-Cc: akpm@linux-foundation.org, felipe.contreras@gmail.com,
-        linux-kernel@vger.kernel.org, anshul.g@samsung.com
-Subject: Re: [PATCH] lib/kstrtox.c break if overflow is detected
-Message-ID: <20150121193909.GA15481@linux.com>
-References: <aksgarg1989@gmail.com>
- <1421868386-77010-1-git-send-email-aksgarg1989@gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="jRHKVT23PllUwdXP"
-Content-Disposition: inline
-In-Reply-To: <1421868386-77010-1-git-send-email-aksgarg1989@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 21 Jan 2015 14:48:14 -0500
+Message-ID: <1421869684.14076.105.camel@arm.com>
+Subject: Re: [PATCH v4 1/3] perf: Use monotonic clock as a source for
+ timestamps
+From: Pawel Moll <pawel.moll@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Richard Cochran <richardcochran@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tomeu Vizoso <tomeu@tomeuvizoso.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
+Date: Wed, 21 Jan 2015 19:48:04 +0000
+In-Reply-To: <1421855543.14076.68.camel@arm.com>
+References: <1415292718-19785-1-git-send-email-pawel.moll@arm.com>
+	 <1415292718-19785-2-git-send-email-pawel.moll@arm.com>
+	 <20150105130035.GP30905@twins.programming.kicks-ass.net>
+	 <1421855543.14076.68.camel@arm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.10-0ubuntu1~14.10.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2015-01-21 at 15:52 +0000, Pawel Moll wrote:
+> On Mon, 2015-01-05 at 13:00 +0000, Peter Zijlstra wrote:
+> > On Thu, Nov 06, 2014 at 04:51:56PM +0000, Pawel Moll wrote:
+> > >  Documentation/kernel-parameters.txt |  9 +++++++++
+> > >  kernel/events/core.c                | 37 +++++++++++++++++++++++++++++++++++++
+> > >  2 files changed, 46 insertions(+)
+> > 
+> > > diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> > > index 4c81a86..8ead8d8 100644
+> > > --- a/Documentation/kernel-parameters.txt
+> > > +++ b/Documentation/kernel-parameters.txt
+> > 
+> > > @@ -2763,6 +2764,14 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+> > >  			allocator.  This parameter is primarily	for debugging
+> > >  			and performance comparison.
+> > >  
+> > > +	perf_use_local_clock
+> > > +			[PERF]
+> > > +			Use local_clock() as a source for perf timestamps
+> > > +			generation. This was be the default behaviour and
+> > > +			this parameter can be used to maintain backward
+> > > +			compatibility or on older hardware with expensive
+> > > +			monotonic clock source.
+> > > +
+> > >  	pf.		[PARIDE]
+> > >  			See Documentation/blockdev/paride.txt.
+> > 
+> > So I'm always terminally confused on the naming of kernel parameters,
+> > sometimes things are modules (even when they're not actually =m capable)
+> > and get a module::foo naming or so and sometimes they're not.
+> 
+> I guess you mean module.foo?
+> 
+> > So we want to use the module naming thing or not?
+> 
+> Honestly, I don't mind either way. For one thing ftrace doesn't bother
+> and just uses __setup() as well.
 
---jRHKVT23PllUwdXP
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+There's one more thing to this - as far as I remember, the module name
+is actually derived from the compilation unit name (at some level of
+Kbuild). I may be wrong (will have to double check), but a module
+parameter defined in kernel/events/core.c may be called something like
+"core.parameter" ;-).
 
-Hi,
+Pawel
 
-On Wed, Jan 21, 2015 at 11:26:26AM -0800, Anshul Garg wrote:
-> From: Anshul Garg <aksgarg1989@gmail.com>
->=20
-> 1. While converting string representation to integer
-> break the loop if overflow is detected.
-> 2. Clean kstrtoll function
->=20
-> Signed-off-by: Anshul Garg <aksgarg1989@gmail.com>
-> ---
->  lib/kstrtox.c |   28 +++++++++++++---------------
->  1 file changed, 13 insertions(+), 15 deletions(-)
->=20
-> diff --git a/lib/kstrtox.c b/lib/kstrtox.c
-> index ec8da78..8cbe5ca 100644
-> --- a/lib/kstrtox.c
-> +++ b/lib/kstrtox.c
-> @@ -70,8 +70,10 @@ unsigned int _parse_integer(const char *s, unsigned in=
-t base, unsigned long long
->  		 * it in the max base we support (16)
->  		 */
->  		if (unlikely(res & (~0ull << 60))) {
-> -			if (res > div_u64(ULLONG_MAX - val, base))
-> +			if (res > div_u64(ULLONG_MAX - val, base)) {
->  				overflow =3D 1;
-> +				break;
-> +			}
->  		}
->  		res =3D res * base + val;
->  		rv++;
-> @@ -146,23 +148,19 @@ EXPORT_SYMBOL(kstrtoull);
->  int kstrtoll(const char *s, unsigned int base, long long *res)
->  {
->  	unsigned long long tmp;
-> -	int rv;
-> +	int rv, sign =3D 1;
-> =20
->  	if (s[0] =3D=3D '-') {
-> -		rv =3D _kstrtoull(s + 1, base, &tmp);
-> -		if (rv < 0)
-> -			return rv;
-> -		if ((long long)(-tmp) >=3D 0)
-> -			return -ERANGE;
-> -		*res =3D -tmp;
-> -	} else {
-> -		rv =3D kstrtoull(s, base, &tmp);
-> -		if (rv < 0)
-> -			return rv;
-> -		if ((long long)tmp < 0)
-> -			return -ERANGE;
-> -		*res =3D tmp;
-> +		sign =3D -1;
-> +		s++;
->  	}
-> +
-> +	rv =3D kstrtoull(s, base, &tmp);
-> +	if (rv < 0)
-> +		return rv;
-> +	if ((long long)tmp < 0)
-> +		return -ERANGE;
-> +	*res =3D sign * tmp;
->  	return 0;
->  }
->  EXPORT_SYMBOL(kstrtoll);
-
-Looks correct to me, so:
-
-Reviewed-by: Levente Kurusa <levex@linux.com>
-
-But I believe the two hunks are completely unrelated to
-eachother and hence should split into a patch series.
-
-Could you please do that and resend? Or if Andrew is OK
-with picking it up as is, then it's fine.
-
-Thanks,
-    Levente.
-
---jRHKVT23PllUwdXP
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJUwABcAAoJELBqK2lO9dZB1jcH/A9xU/AJRq1Doc+yfALgJcVH
-QlCOXp1Eth/vwOLHyjcRABOVxmyX+VgkTX1d+ZyqAdJmZbw4fue1x/C5i0dmWG0y
-bPN5a2vsQOQ573MFco47ZG1Rz0yy8IorJaUZjZn74CSNdco6azC4hITEpurx/4BR
-8w0JtrVyIK66oC5tUkXs/XmcJKZR0918WU1CfOybHNuhXr3abqv77I7rKk5eF5Cn
-yuB2cbgekT1yF/XaEsXi9c04XmqIIqHw6y0JJYqUlEaWuPkQuRBiPhpunHNhidUn
-TxT9cgJ0vDLxiIxOXt84kiWdqfK2IRLKaGZRCmrLsYBpyuWDnkyBY+hWCu638HA=
-=fxCw
------END PGP SIGNATURE-----
-
---jRHKVT23PllUwdXP--
