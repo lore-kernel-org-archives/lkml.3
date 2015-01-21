@@ -1,73 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754009AbbAUPdf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 10:33:35 -0500
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:48049 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752964AbbAUPd1 (ORCPT
+	id S1754186AbbAUPhC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 10:37:02 -0500
+Received: from mail-wg0-f46.google.com ([74.125.82.46]:62392 "EHLO
+	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753666AbbAUPgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 10:33:27 -0500
-Date: Wed, 21 Jan 2015 21:03:03 +0530
-From: "Naveen N. Rao" <naveen.n.rao@linux.vnet.ibm.com>
-To: Arnaldo Carvalho de Melo <acme@kernel.org>, mpe@ellerman.id.au
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        ananth@in.ibm.com
-Subject: Re: [RFC PATCH 0/8] Fix perf probe issues on powerpc
-Message-ID: <20150121153303.GM2245@naverao1-tp.ibm.com>
-References: <cover.1418146300.git.naveen.n.rao@linux.vnet.ibm.com>
- <20150121125142.GC3420@kernel.org>
+	Wed, 21 Jan 2015 10:36:52 -0500
+Date: Wed, 21 Jan 2015 10:36:47 -0500
+From: "Ahmed S. Darwish" <darwish.07@gmail.com>
+To: Andri Yngvason <andri.yngvason@marel.com>
+Cc: Wolfgang Grandegger <wg@grandegger.com>,
+        Olivier Sobrie <olivier@sobrie.be>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 2/5] can: kvaser_usb: Consolidate and unify state
+ change handling
+Message-ID: <20150121153647.GB17070@linux>
+References: <20141223154654.GB6460@vivalin-002>
+ <20150120214409.GA16828@linux>
+ <20150120214537.GB16828@linux>
+ <20150121103319.14511.57709@shannon>
+ <e5439ed067931dc01bda70592eb6ed52@grandegger.com>
+ <20150121144323.GA17070@linux>
+ <20150121150015.31351.6605@shannon>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20150121125142.GC3420@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15012115-1618-0000-0000-0000017C1994
+In-Reply-To: <20150121150015.31351.6605@shannon>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2015/01/21 09:51AM, Arnaldo Carvalho de Melo wrote:
-> Em Tue, Dec 09, 2014 at 11:03:58PM +0530, Naveen N. Rao escreveu:
-> > This patchset fixes various issues with perf probe on powerpc
-> > across ABIv1 and ABIv2:
-> > - in the presence of DWARF debug-info,
-> > - in the absence of DWARF, but with the symbol table, and
-> > - in the absence of debug-info, but with kallsyms.
+On Wed, Jan 21, 2015 at 03:00:15PM +0000, Andri Yngvason wrote:
+> Quoting Ahmed S. Darwish (2015-01-21 14:43:23)
+> > Hi!
+
+...
+
+> > <-- Unplug the cable -->
 > > 
-> > Applies cleanly on v3.18 and on -tip with minor changes to patch 6.
-> > Tested on ppc64 BE and LE.
+> >  (000.009106)  can0  20000080   [8]  00 00 00 00 00 00 08 00   ERRORFRAME
+> >         bus-error
+> >         error-counter-tx-rx{{8}{0}}
+> >  (000.001872)  can0  20000080   [8]  00 00 00 00 00 00 10 00   ERRORFRAME
+> >         bus-error
+> >         error-counter-tx-rx{{16}{0}}
+> [...]
+> >         error-counter-tx-rx{{80}{0}}
+> >  (000.001910)  can0  20000080   [8]  00 00 00 00 00 00 58 00   ERRORFRAME
+> >         bus-error
+> >         error-counter-tx-rx{{88}{0}}
+> >  (000.001753)  can0  20000084   [8]  00 08 00 00 00 00 60 00   ERRORFRAME
+> >         controller-problem{tx-error-warning}
+> Good.
+> >         bus-error
+> >         error-counter-tx-rx{{96}{0}}
+
+Nice.
+
+> >  (000.001720)  can0  20000080   [8]  00 00 00 00 00 00 68 00   ERRORFRAME
+> >         bus-error
+> >         error-counter-tx-rx{{104}{0}}
+> >  (000.001876)  can0  20000080   [8]  00 00 00 00 00 00 70 00   ERRORFRAME
+> >         bus-error
+> >         error-counter-tx-rx{{112}{0}}
+> >  (000.001749)  can0  20000080   [8]  00 00 00 00 00 00 78 00   ERRORFRAME
+> >         bus-error
+> >         error-counter-tx-rx{{120}{0}}
+> >  (000.001771)  can0  20000084   [8]  00 20 00 00 00 00 80 00   ERRORFRAME
+> >         controller-problem{tx-error-passive}
+> Also good.
+> >         bus-error
+> >         error-counter-tx-rx{{128}{0}}
+
+Also nice :-)
+
+> >  (000.001868)  can0  20000080   [8]  00 00 00 00 00 00 80 00   ERRORFRAME
+> >         bus-error
+> >         error-counter-tx-rx{{128}{0}}
+> >  (000.001982)  can0  20000080   [8]  00 00 00 00 00 00 80 00   ERRORFRAME
+> >         bus-error
+> >         error-counter-tx-rx{{128}{0}}
 > > 
-> > - Naveen
+> > (( Then a continous flood, exactly similar to the above packet, appears.
+> >    Unfortunately this flooding is a firmware problem. ))
 > > 
-> > Naveen N. Rao (8):
-> >   kprobes: Fix kallsyms lookup across powerpc ABIv1 and ABIv2
-> >   perf probe powerpc: Fix symbol fixup issues due to ELF type
-> >   perf probe: Improve detection of file/function name in the probe
-> >     pattern
-> >   perf probe powerpc: Handle powerpc dot symbols
-> >   perf probe powerpc: Allow matching against dot symbols
-> >   perf tools powerpc: Fix PPC64 ELF ABIv2 symbol decoding
-> >   perf probe powerpc: Use DWARF info only if necessary
-> >   perf probe powerpc: Fixup function entry if using kallsyms lookup
+> > <-- Replug the cable, after a good amount of time -->
+> >
+> Where are the reverse state transitions?
+> > 
+
+Hmmm...
+
+[ ... ]
 > 
-> Naveen,
+> Reverse state transitions are missing from the logs. See comments above.
 > 
-> 	I saw several comments by Michael, have you tried to address
-> those comments and have you resubmitted this patchset?
 
-Hi Arnaldo,
-Yes. Please find v2 of this patchset here:
-http://thread.gmane.org/gmane.linux.kernel/1851128
+When the device is on the _receiving_ end, and I unplug the CAN cable after
+introducing some noise to the level of reaching WARNING or PASSIVE, I
+receive a BUS_ERROR event with the rxerr count reset back to 0 or 1. In
+that case, the driver correctly transitions back the state to ERROR_ACTIVE
+and candump produces something similar to:
 
-I request you to kindly take another look and let me know if you have 
-further questions.
+    (000.000362)  can0  2000008C   [8]  00 40 40 00 00 00 00 01   ERRORFRAME
+    controller-problem{}
+    protocol-violation{{back-to-error-active}{}}
+    bus-error
+    error-counter-tx-rx{{0}{1}}
 
-Michael,
-Looking forward to your feedback.
+which is, AFAIK, the correct behaviour from the driver side.
 
+Meanwhile, when the device is on the _sending_ end and I re-plug the CAN
+cable again. Sometimes I receive events with txerr reset to 0 or 1, and
+the driver correctly reverts back to ERROR_ACTIVE in that case. But on
+another times like the quoted case above, I don't receive any events
+resetting txerr back -- only data packets on the bus.
 
-Thanks!
-- Naveen
+So, What can the driver do given the above?
+
+Thanks,
+Darwish
+
+P.S. just in case, I'll also re-check now if the driver unintentionally
+drops any important events resetting the txerr count back after a CAN
+cable replug -- preventing the code from returning to ERROR_ACTIVE in
+the process.
 
