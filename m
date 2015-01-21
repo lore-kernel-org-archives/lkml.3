@@ -1,57 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754252AbbAUPxb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 10:53:31 -0500
-Received: from mail-lb0-f178.google.com ([209.85.217.178]:48987 "EHLO
-	mail-lb0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754065AbbAUPxT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 10:53:19 -0500
-From: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-To: Mark Brown <broonie@kernel.org>, Michal Simek <michal.simek@xilinx.com>,
-        =?UTF-8?q?S=C3=B6ren=20Brinkmann?= <soren.brinkmann@xilinx.com>,
-        linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Cc: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Subject: [PATCH 3/3] spi/xilinx: Support for spi mode LOOP
-Date: Wed, 21 Jan 2015 16:53:10 +0100
-Message-Id: <1421855590-9210-4-git-send-email-ricardo.ribalda@gmail.com>
-X-Mailer: git-send-email 2.1.4
-In-Reply-To: <1421855590-9210-1-git-send-email-ricardo.ribalda@gmail.com>
-References: <1421855590-9210-1-git-send-email-ricardo.ribalda@gmail.com>
+	id S1754726AbbAUPy0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 10:54:26 -0500
+Received: from smtp4-g21.free.fr ([212.27.42.4]:31367 "EHLO smtp4-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753404AbbAUPyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 10:54:14 -0500
+Date: Wed, 21 Jan 2015 16:54:07 +0100
+From: Sabrina Dubroca <sd@queasysnail.net>
+To: Paul Moore <pmoore@redhat.com>
+Cc: Thierry Reding <thierry.reding@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, Guenter Roeck <linux@roeck-us.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-audit@redhat.com, Richard Guy Briggs <rgb@redhat.com>
+Subject: Re: linux-next: Tree for Jan 20 -- Kernel panic - Unable to mount
+ root fs
+Message-ID: <20150121155407.GA18701@kria>
+References: <20150120165655.GA10904@kria>
+ <20150121110539.GA8924@kria>
+ <20150121144214.GA22884@ulmo.nvidia.com>
+ <9422577.FVVyjQBZjy@sifl>
+ <20150121153910.GD22884@ulmo.nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20150121153910.GD22884@ulmo.nvidia.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hardware supports LOOP mode. Support it also in the driver.
+2015-01-21, 16:39:12 +0100, Thierry Reding wrote:
+> On Wed, Jan 21, 2015 at 10:24:11AM -0500, Paul Moore wrote:
+> > On Wednesday, January 21, 2015 03:42:16 PM Thierry Reding wrote:
+> > > On Wed, Jan 21, 2015 at 12:05:39PM +0100, Sabrina Dubroca wrote:
+> > > > 2015-01-21, 04:36:38 +0000, Al Viro wrote:
+> > > > > On Tue, Jan 20, 2015 at 08:01:26PM -0800, Guenter Roeck wrote:
+> > > > > > With this patch:
+> > > > > > 
+> > > > > > sys_mkdir .:40775 returned -17
+> > > > > > sys_mkdir usr:40775 returned 0
+> > > > > > sys_mkdir usr/lib:40775 returned 0
+> > > > > > sys_mkdir usr/share:40755 returned 0
+> > > > > > sys_mkdir usr/share/udhcpc:40755 returned 0
+> > > > > > sys_mkdir usr/bin:40775 returned 0
+> > > > > > sys_mkdir usr/sbin:40775 returned 0
+> > > > > > sys_mkdir mnt:40775 returned 0
+> > > > > > sys_mkdir proc:40775 returned 0
+> > > > > > sys_mkdir root:40775 returned 0
+> > > > > > sys_mkdir lib:40775 returned 0
+> > > > > > sys_mkdir lib/modules:40775 returned 0
+> > > > > > ...
+> > > > > > 
+> > > > > > and the problem is fixed.
+> > > > 
+> > > > This patch also works for me.
+> > > > 
+> > > > > ... except that it simply confirms that something's fishy with
+> > > > > getname_kernel() of ->name of struct filename returned by getname(). 
+> > > > > IOW, I still do not understand the mechanism of breakage there.
+> > > > 
+> > > > I'm not so sure about that.  I tried to copy name to a new string in
+> > > > do_path_lookup and that didn't help.
+> > > > 
+> > > > Now, I've removed the
+> > > > 
+> > > >         putname(filename);
+> > > > 
+> > > > line from do_path_lookup and I don't get the panic.
+> > > 
+> > > That would indicate that somehow the refcount got unbalanced. Looking
+> > > more closely it seems like the various audit_*() function do take a
+> > > reference, but maybe that's not enough.
+> > 
+> > I'm thinking the same thing and I think the problem may be that 
+> > __audit_reusename() is not bumping the filename->refcnt.  Can someone who is 
+> > seeing this problem bump the refcnt in __audit_reusename()?
+> > 
+> >   struct filename *
+> >   __audit_reusename(const __user char *uptr)
+> >   {
+> >         struct audit_context *context = current->audit_context;
+> >         struct audit_names *n;
+> > 
+> >         list_for_each_entry(n, &context->names_list, list) {
+> >                 if (!n->name)
+> >                         continue;
+> >                 if (n->name->uptr == uptr) {
+> > +                       n->name->refcnt++;
+> >                         return n->name;
+> >                 }
+> >         }
+> >         return NULL;
+> >   }
+> 
+> That doesn't seem to help, at least in my case.
 
-Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
----
- drivers/spi/spi-xilinx.c | 4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+Same here.
 
-diff --git a/drivers/spi/spi-xilinx.c b/drivers/spi/spi-xilinx.c
-index b8ce58d..f6ceb60 100644
---- a/drivers/spi/spi-xilinx.c
-+++ b/drivers/spi/spi-xilinx.c
-@@ -35,7 +35,7 @@
- #define XSPI_CR_CPOL		0x08
- #define XSPI_CR_CPHA		0x10
- #define XSPI_CR_MODE_MASK	(XSPI_CR_CPHA | XSPI_CR_CPOL | \
--				 XSPI_CR_LSB_FIRST)
-+				 XSPI_CR_LSB_FIRST | XSPI_CR_LOOP)
- #define XSPI_CR_TXFIFO_RESET	0x20
- #define XSPI_CR_RXFIFO_RESET	0x40
- #define XSPI_CR_MANUAL_SSELECT	0x80
-@@ -197,6 +197,8 @@ static void xilinx_spi_chipselect(struct spi_device *spi, int is_on)
- 			cr |= XSPI_CR_CPOL;
- 		if (spi->mode & SPI_LSB_FIRST)
- 			cr |= XSPI_CR_LSB_FIRST;
-+		if (spi->mode & SPI_LOOP)
-+			cr |= XSPI_CR_LOOP;
- 		xspi->write_fn(cr, xspi->regs + XSPI_CR_OFFSET);
- 
- 		/* We do not check spi->max_speed_hz here as the SPI clock
+Well, it's probably not an audit issue.  I tried audit=0 on the
+commandline, and I just rebuilt a kernel with CONFIG_AUDIT=n, and it's
+still panicing.  This should have fixed any audit-related issue,
+right?
+
 -- 
-2.1.4
-
+Sabrina
