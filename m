@@ -1,82 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754721AbbAUQFd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 11:05:33 -0500
-Received: from smtprelay0205.hostedemail.com ([216.40.44.205]:33672 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754158AbbAUQFa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 11:05:30 -0500
-X-Session-Marker: 6A6F6540706572636865732E636F6D
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,joe@perches.com,:::::::::::::::::::::::::::::::::,RULES_HIT:41:355:379:541:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1373:1437:1461:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2828:2892:2910:3138:3139:3140:3141:3142:3353:3865:3866:3867:3868:3871:3872:3873:3874:4321:5007:6119:6261:6742:7875:7903:10004:10400:10450:10455:10462:10464:10848:11232:11658:11914:12050:12051:12517:12519:12740:13019:13069:13255:13311:13357:14096:14097:19904:19999:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: ducks27_2f1aeabd32d53
-X-Filterd-Recvd-Size: 3217
-Message-ID: <1421856321.10574.13.camel@perches.com>
-Subject: unclear ipv6 redirect message (was Re: [PATCH v3 2/3] mfd:
- lubbock_io: add lubbock_io board)
-From: Joe Perches <joe@perches.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        netdev <netdev@vger.kernel.org>
-Cc: Robert Jarzmik <robert.jarzmik@free.fr>, Lee Jones <lee.jones@linaro.org>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Kumar Gala <galak@codeaurora.org>, Daniel Mack <daniel@zonque.org>
-Date: Wed, 21 Jan 2015 08:05:21 -0800
-In-Reply-To: <20150121094453.GO26493@n2100.arm.linux.org.uk>
-References: <1421406010-14851-1-git-send-email-robert.jarzmik@free.fr>
-	 <1421406010-14851-2-git-send-email-robert.jarzmik@free.fr>
-	 <20150119091705.GG21886@x1> <87ppaah9k5.fsf@free.fr>
-	 <20150120102919.GP5767@x1> <20150120115658.GJ26493@n2100.arm.linux.org.uk>
-	 <873874fuei.fsf@free.fr> <20150121094453.GO26493@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754808AbbAUQFu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 11:05:50 -0500
+Received: from mail.kernel.org ([198.145.29.136]:49200 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753539AbbAUQFn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 11:05:43 -0500
+Date: Wed, 21 Jan 2015 17:05:33 +0100
+From: Sebastian Reichel <sre@kernel.org>
+To: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
+Cc: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] power: bq24190_charger: suppress build warning
+Message-ID: <20150121160533.GF13715@earth.universe>
+References: <1417704964-23155-1-git-send-email-prabhakar.csengg@gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="vKFfOv5t3oGVpiF+"
+Content-Disposition: inline
+In-Reply-To: <1417704964-23155-1-git-send-email-prabhakar.csengg@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(adding netdev)
 
-On Wed, 2015-01-21 at 09:44 +0000, Russell King - ARM Linux wrote:
-> On Wed, Jan 21, 2015 at 08:46:29AM +0100, Robert Jarzmik wrote:
-> > Russell King - ARM Linux <linux@arm.linux.org.uk> writes:
-> > 
-> > > What I'd suggest (and always have done) is:
-> > >
-> > > 	dev_err(&pdev->dev, "couldn't request main irq%d: %d\n",
-> > > 		irq, ret);
-> > I like it, it's even more compact, I'll use it for next patch version.
-> 
-> BTW, this is an example why I have the policy of always ensuring that
-> the kernel messages print sufficient diagnostics.  Right now, I have
-> a problem - since I rebooted my firewall a few nights ago, I now get
-> on one of my machines:
-> 
->   rt6_redirect: source isn't a valid nexthop for redirect target
-> 
-> and it spews that for a few minutes every 26 hours or so.  No further
-> information, and it leaves you wondering "well, what was the invalid
-> next hop?  What was the source?"
-> 
-> Pretty much the only way to try and find out is to leave a tcpdump or
-> wireshark running for 24 hours to try and get a dump - which is not
-> that easy if you don't have lots of disk space.  So, right now, I have
-> no way to diagnose the above.
-> 
-> If it printed that information, then I'd be able to see what the
-> addresses were, and I'd probably be able to come up with a tcpdump
-> filter which didn't involve logging all IPv6 traffic.
-> 
-> Kernel messages need to be smart.  If not, they might as well just be
-> "The kernel encountered a problem. Abort, Retry or Fail?"
-> 
+--vKFfOv5t3oGVpiF+
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi,
 
+On Thu, Dec 04, 2014 at 02:56:04PM +0000, Lad, Prabhakar wrote:
+> This patch fixes following build warning:
+>=20
+> In file included from include/linux/printk.h:261:0,
+>                  from include/linux/kernel.h:13,
+>                  from include/linux/list.h:8,
+>                  from include/linux/module.h:9,
+>                  from drivers/power/bq24190_charger.c:11:
+> drivers/power/bq24190_charger.c: In function =E2=80=98bq24190_irq_handler=
+_thread=E2=80=99:
+> include/linux/dynamic_debug.h:86:20: warning: =E2=80=98ss_reg=E2=80=99 ma=
+y be used uninitialized in this function [-Wmaybe-uninitialized]
+>    __dynamic_dev_dbg(&descriptor, dev, fmt, \
+>                     ^
+> drivers/power/bq24190_charger.c:1211:5: note: =E2=80=98ss_reg=E2=80=99 wa=
+s declared here
+>   u8 ss_reg, f_reg;
+>      ^
+> In file included from include/linux/printk.h:261:0,
+>                  from include/linux/kernel.h:13,
+>                  from include/linux/list.h:8,
+>                  from include/linux/module.h:9,
+>                  from drivers/power/bq24190_charger.c:11:
+> include/linux/dynamic_debug.h:86:20: warning: =E2=80=98f_reg=E2=80=99 may=
+ be used uninitialized in this function [-Wmaybe-uninitialized]
+>    __dynamic_dev_dbg(&descriptor, dev, fmt, \
+>                     ^
+> drivers/power/bq24190_charger.c:1211:13: note: =E2=80=98f_reg=E2=80=99 wa=
+s declared here
+>   u8 ss_reg, f_reg;
+>=20
+> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
+> ---
+>  drivers/power/bq24190_charger.c | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+>=20
+> diff --git a/drivers/power/bq24190_charger.c b/drivers/power/bq24190_char=
+ger.c
+> index ad3ff8f..72e552d 100644
+> --- a/drivers/power/bq24190_charger.c
+> +++ b/drivers/power/bq24190_charger.c
+> @@ -1208,7 +1208,7 @@ static irqreturn_t bq24190_irq_handler_thread(int i=
+rq, void *data)
+>  {
+>  	struct bq24190_dev_info *bdi =3D data;
+>  	bool alert_userspace =3D false;
+> -	u8 ss_reg, f_reg;
+> +	u8 ss_reg =3D 0, f_reg =3D 0;
+>  	int ret;
+> =20
+>  	pm_runtime_get_sync(bdi->dev);
 
+Thanks, applied.
+
+-- Sebastian
+
+--vKFfOv5t3oGVpiF+
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJUv85MAAoJENju1/PIO/qaUKgP/2q1N/MUWcK2XYRr6PYfJ55I
+uj3M89QPVjv+SSimIw1HSF4Byifv5ikSN2P7OuUxippDaT0hpJqirX7ouY3fm462
+LEWl6E4h+Lz2fu9Ug+MY03sJoIuPuXG4004AjMC3R2wjKhH9X9WOabf2+mwbotTB
+on1MA9Zmb2fAE7a7Xu4raMIOaZljCjRw5jc6HPlKZu/FHrlH0WePz0CrfcFYA7lB
+MvURRcmPVQpQGQZQS28dkjtHCvnYWRcLjISczYLxdFUlTtgc0gVK36yCjAmLSN1w
+WRCKh8hNQZD7FSOh/hsDPBV+LTrJLGabMS4BJl2MoZmcFSrjBXfXWFOfpLurjWGt
+GxEqQjBCuw+ZRDisnZWLyC/AN2b/eUE1Ik038zMM8f8yAzcU85eMbm3SOYu5QRbQ
+v12Wm2ndrSa016a7BBieX7TI09KWBpqYRdWSe1LOBK4WkoFz3THulHsFSrEIiSCl
+XxEz7HiHMG+jHFbuzuJ2yA7h3dsvs4AFcH/WnlhstZeopTyPBINVSBS0wJ1eDX5t
+Yuf77Bjqz0D7VwBN+JXl34jiWAOYF6bgsufHEw8p3nsMjmm1hx6aaUDVOswHkjDG
+boF7JzpK70sxu9EaObWmW7+FqfGCHUBamNZUk28a3PI3JU3QMYQ+UjPQ8EKT2cCt
+VJ4F5XlILQS/0qoW2hpw
+=rBKJ
+-----END PGP SIGNATURE-----
+
+--vKFfOv5t3oGVpiF+--
