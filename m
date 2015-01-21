@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753482AbbAUPEh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 10:04:37 -0500
-Received: from mail.kernel.org ([198.145.29.136]:43370 "EHLO mail.kernel.org"
+	id S1754006AbbAUPCR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 10:02:17 -0500
+Received: from mail.kernel.org ([198.145.29.136]:43390 "EHLO mail.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753852AbbAUPB1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 10:01:27 -0500
+	id S1753872AbbAUPBa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 10:01:30 -0500
 From: Arnaldo Carvalho de Melo <acme@kernel.org>
 To: Ingo Molnar <mingo@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Wang Nan <wangnan0@huawei.com>,
-        Li Zefan <lizefan@huawei.com>,
+Cc: linux-kernel@vger.kernel.org, Rabin Vincent <rabin@rab.in>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 2/9] perf scripting perl: Force to use stdbool
-Date: Wed, 21 Jan 2015 12:01:03 -0300
-Message-Id: <1421852470-20153-3-git-send-email-acme@kernel.org>
+Subject: [PATCH 3/9] perf annotate: Handle ins parsing failures
+Date: Wed, 21 Jan 2015 12:01:04 -0300
+Message-Id: <1421852470-20153-4-git-send-email-acme@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1421852470-20153-1-git-send-email-acme@kernel.org>
 References: <1421852470-20153-1-git-send-email-acme@kernel.org>
@@ -21,68 +22,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Wang Nan <wangnan0@huawei.com>
+From: Rabin Vincent <rabin@rab.in>
 
-When building perf for arm64 I hit a warning (and be treated as an
-error) like below:
+Don't use the ins's ->sncprintf() if the parsing failed.
 
- aarch64-oe-linux-gcc -o .../scripts/perl/Perf-Trace-Util/Context.o -c -Wbad-function-cast \
-         ... scripts/perl/Perf-Trace-Util/Context.c
+For example, this fixes the display of "imul %edx".  Without this patch:
 
- In file included from .../usr/lib64/perl/5.14.3/CORE/perl.h:2464:0,
-                  from Context.xs:23:
- /.../usr/lib64/perl/5.14.3/CORE/handy.h:108:0: error: "bool" redefined [-Werror]
-  #  define bool char
-  ^
- In file included from /.../usr/src/kernel/tools/include/linux/types.h:4:0,
-                  from /.../usr/src/kernel/arch/arm64/include/uapi/asm/sigcontext.h:19,
-		  from /.../usr/include/bits/sigcontext.h:27,
-		  from /.../usr/include/signal.h:340,
-		  from /.../usr/include/sys/param.h:28,
-		  from /.../usr/lib64/perl/5.14.3/CORE/perl.h:678,
-		  from Context.xs:23:
-  /.../usr/lib/aarch64-oe-linux/gcc/aarch64-oe-linux/4.9.2/include/stdbool.h:33:0: note: this is the location of the previous definition
-    #define bool _Bool
+       |      imul   (null),(null)
 
-Looks like the failure is caused by arm64 uapi/asm/sigcontext.h, which
-includes linux/types.h while other archs not.
+After this patch:
 
-Current perl consider this problem:
+       |      imul   %edx
 
-http://perl5.git.perl.org/perl.git/commit/bd31be4baa3ee68abdb92c0db3200efe0fad903b
-
-However there are users which use old version of perl.
-
-This patch includes stdbool.h before Context.xs and define HAS_BOOL to
-prevent perl'e headers define its own 'bool'. Code is learn from perl's
-git tree.
-
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
-Acked-by: Jiri Olsa <jolsa@redhat.com>
-Acked-by: Namhyung Kim <namhyung@kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>
-Link: http://lkml.kernel.org/r/1421671397-4659-1-git-send-email-wangnan0@huawei.com
+Signed-off-by: Rabin Vincent <rabin@rab.in>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Link: http://lkml.kernel.org/r/1421607621-15005-1-git-send-email-rabin@rab.in
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/scripts/perl/Perf-Trace-Util/Context.c | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ tools/perf/util/annotate.c | 9 +++++----
+ 1 file changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/tools/perf/scripts/perl/Perf-Trace-Util/Context.c b/tools/perf/scripts/perl/Perf-Trace-Util/Context.c
-index 790ceba6ad3f..28431d1bbcf5 100644
---- a/tools/perf/scripts/perl/Perf-Trace-Util/Context.c
-+++ b/tools/perf/scripts/perl/Perf-Trace-Util/Context.c
-@@ -5,7 +5,10 @@
-  *	ANY CHANGES MADE HERE WILL BE LOST! 
-  *
-  */
--
-+#include <stdbool.h>
-+#ifndef HAS_BOOL
-+# define HAS_BOOL 1
-+#endif
- #line 1 "Context.xs"
- /*
-  * Context.xs.  XS interfaces for perf script.
+diff --git a/tools/perf/util/annotate.c b/tools/perf/util/annotate.c
+index 79999ceaf2be..d5da1b85541b 100644
+--- a/tools/perf/util/annotate.c
++++ b/tools/perf/util/annotate.c
+@@ -183,8 +183,9 @@ static int lock__parse(struct ins_operands *ops)
+ 	if (!ops->locked.ins->ops)
+ 		return 0;
+ 
+-	if (ops->locked.ins->ops->parse)
+-		ops->locked.ins->ops->parse(ops->locked.ops);
++	if (ops->locked.ins->ops->parse &&
++	    ops->locked.ins->ops->parse(ops->locked.ops) < 0)
++		goto out_free_ops;
+ 
+ 	return 0;
+ 
+@@ -531,8 +532,8 @@ static void disasm_line__init_ins(struct disasm_line *dl)
+ 	if (!dl->ins->ops)
+ 		return;
+ 
+-	if (dl->ins->ops->parse)
+-		dl->ins->ops->parse(&dl->ops);
++	if (dl->ins->ops->parse && dl->ins->ops->parse(&dl->ops) < 0)
++		dl->ins = NULL;
+ }
+ 
+ static int disasm_line__parse(char *line, char **namep, char **rawp)
 -- 
 1.9.3
 
