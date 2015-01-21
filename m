@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754665AbbAUGQ1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 01:16:27 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:42621 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754169AbbAUGQY (ORCPT
+	id S1754705AbbAUGQv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 01:16:51 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:46574 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754675AbbAUGQt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 01:16:24 -0500
-Message-ID: <1421820981.16275.1.camel@marge.simpson.net>
-Subject: [patch] cpuset: fix crash when adding CPUs to an empty set
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Li Zefan <lizefan@huawei.com>
-Date: Wed, 21 Jan 2015 07:16:21 +0100
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	Wed, 21 Jan 2015 01:16:49 -0500
+Date: Wed, 21 Jan 2015 07:16:42 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Borislav Petkov <bp@alien8.de>, Tony Luck <tony.luck@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: Fwd: linux-next: manual merge of the luto-misc tree with the tip
+ tree
+Message-ID: <20150121061642.GD15963@gmail.com>
+References: <20150119170839.2c6b4b78@canb.auug.org.au>
+ <20150119093501.GA4644@pd.tnic>
+ <CALCETrW05f9nty5Sk8XA2DTsocqqOxp62aT9QXwta74Km+ZOng@mail.gmail.com>
+ <20150121053410.GA15291@gmail.com>
+ <CALCETrXCenu4UexZfV6HTq898JbXmZGU5KaCWCXrz7oikrA34g@mail.gmail.com>
+ <20150121055532.GA15518@gmail.com>
+ <CALCETrVKEZz+NFiqxrgQhqhDZ6dPLSr32RiBoZZmFk5ZydEL1w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrVKEZz+NFiqxrgQhqhDZ6dPLSr32RiBoZZmFk5ZydEL1w@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-While creating a set of shielded CPUs, we passed cpuset_cpumask_can_shrink()
-an empty cpumask (cur), and dl_bw_of(cpumask_any(cur)) made boom with it.
+* Andy Lutomirski <luto@amacapital.net> wrote:
 
-[  514.513841] CPU: 0 PID: 6942 Comm: shield.sh Not tainted 3.19.0-master #19
-[  514.513841] Hardware name: MEDIONPC MS-7502/MS-7502, BIOS 6.00 PG 12/26/2007
-[  514.513841] task: ffff880224552450 ti: ffff8800caab8000 task.ti: ffff8800caab8000
-[  514.513841] RIP: 0010:[<ffffffff81073846>]  [<ffffffff81073846>] cpuset_cpumask_can_shrink+0x56/0xb0
-[  514.513841] RSP: 0018:ffff8800caabbda8  EFLAGS: 00010202
-[  514.513841] RAX: 0000ffff00000000 RBX: ffff880037ae2ab8 RCX: 0000000000000000
-[  514.513841] RDX: 0000000000012900 RSI: 0000000000000000 RDI: 000000000000000c
-[  514.513841] RBP: ffff8800caabbdc8 R08: ffff880037ae2ab8 R09: 0000000000000034
-[  514.513841] R10: 00000077e6fd3d1a R11: ffff88022e9b301c R12: ffff880223c98ab8
-[  514.513841] R13: ffff880037ae2a00 R14: 0000000000000004 R15: ffff8802254b3c60
-[  514.513841] FS:  00007fdbab533700(0000) GS:ffff88022fc00000(0000) knlGS:0000000000000000
-[  514.513841] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-[  514.513841] CR2: 00007ffff8ab8000 CR3: 00000000bef11000 CR4: 00000000000007f0
-[  514.513841] Stack:
-[  514.513841]  ffff880223c98ab8 ffffffff81a46c20 ffff880223c98a00 ffff880037ae2a00
-[  514.513841]  ffff8800caabbdf8 ffffffff810cb82a ffff8800caabbdf8 ffff880037ae2a00
-[  514.513841]  ffff8800ca9e5240 0000000000000000 ffff8800caabbe48 ffffffff810cc877
-[  514.513841] Call Trace:
-[  514.513841]  [<ffffffff810cb82a>] validate_change+0x18a/0x200
-[  514.513841]  [<ffffffff810cc877>] cpuset_write_resmask+0x3b7/0x720
-[  514.513841]  [<ffffffff810c4d58>] cgroup_file_write+0x38/0x100
-[  514.513841]  [<ffffffff811d953a>] kernfs_fop_write+0x12a/0x180
-[  514.513841]  [<ffffffff8116e1a3>] vfs_write+0xb3/0x1d0
-[  514.513841]  [<ffffffff8116ed06>] SyS_write+0x46/0xb0
-[  514.513841]  [<ffffffff8159ced6>] system_call_fastpath+0x16/0x1b
+> On Tue, Jan 20, 2015 at 9:55 PM, Ingo Molnar <mingo@kernel.org> wrote:
+> >
+> > * Andy Lutomirski <luto@amacapital.net> wrote:
+> >
+> >> On Tue, Jan 20, 2015 at 9:34 PM, Ingo Molnar <mingo@kernel.org> wrote:
+> >> >
+> >> > * Andy Lutomirski <luto@amacapital.net> wrote:
+> >> >
+> >> >> Hi Ingo and Thomas-
+> >> >>
+> >> >> There's a trivial conflict in the pull request I sent last week.
+> >> >
+> >> > This is your x86 entry code rework pull request, right? The -tip
+> >> > tree now has the RCU commit it depends on, so could you please
+> >> > rebase it on top of tip:core/rcu so I can pull it? I'll resolve
+> >> > any remaining conflicts with the rest of -tip.
+> >> >
+> >>
+> >> Sure, I can do that in the morning.  The pull request merges cleanly
+> >> with tip:core/rcu, though, so is the rebase needed?
+> >
+> > Yes, because your changes rely on the RCU change (semantically),
+> > so if anyone bisects into your commits it might result in a
+> > subtly broken kernel, right?
+> 
+> Almost.  The parent of my original pull request is the RCU 
+> change that my entry changes semantically depend on, so 
+> bisection should be fine.
 
-Signed-off-by: Mike Galbraith <umgwanakikbuti@gmail.com>
+Okay, that's good - so now I can pull your bits, because the RCU 
+commit is final, no need to rebase. (Because you already based 
+your bits on the RCU change that later on ended up in -tip.)
 
----
- kernel/cpuset.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+Thanks,
 
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -511,7 +511,7 @@ static int validate_change(struct cpuset
- 	 * tasks.
- 	 */
- 	ret = -EBUSY;
--	if (is_cpu_exclusive(cur) &&
-+	if (is_cpu_exclusive(cur) && !cpumask_empty(cur->cpus_allowed) &&
- 	    !cpuset_cpumask_can_shrink(cur->cpus_allowed,
- 				       trial->cpus_allowed))
- 		goto out;
-
-
+	Ingo
