@@ -1,99 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752862AbbAUVhN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 16:37:13 -0500
-Received: from hygieia.santi-shop.eu ([78.46.175.2]:47815 "EHLO
-	hygieia.santi-shop.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752249AbbAUVhG convert rfc822-to-8bit (ORCPT
+	id S1753133AbbAUVjv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 16:39:51 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:52217 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751751AbbAUVjm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 16:37:06 -0500
-Date: Wed, 21 Jan 2015 22:37:01 +0100
-From: Bruno =?UTF-8?B?UHLDqW1vbnQ=?= <bonbons@linux-vserver.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        tglx@linutronix.de, ilya.dryomov@inktank.com, umgwanakikbuti@gmail.com,
-        oleg@redhat.com
-Subject: Re: Linux 3.19-rc5
-Message-ID: <20150121223701.0c580f7b@neptune.home>
-In-Reply-To: <20150121213733.7522f087@neptune.home>
-References: <CA+55aFxNk9OCXz7nvKXpRBc0Z85NLXPNkRm1yJf4-KAGB4pHRA@mail.gmail.com>
-	<20150119190216.7ce58d74@neptune.home>
-	<CA+55aFw7aoShsqS_ro5DASbseXFLQs_sE=dwLp_tTNAvD9Y09w@mail.gmail.com>
-	<20150121213733.7522f087@neptune.home>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i686-pc-linux-gnu)
+	Wed, 21 Jan 2015 16:39:42 -0500
+Date: Wed, 21 Jan 2015 13:38:59 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Sabrina Dubroca <sd@queasysnail.net>, Paul Moore <pmoore@redhat.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-audit@redhat.com, Richard Guy Briggs <rgb@redhat.com>
+Subject: Re: linux-next: Tree for Jan 20 -- Kernel panic - Unable to mount
+ root fs
+Message-ID: <20150121213859.GA22520@roeck-us.net>
+References: <20150121033600.GN29656@ZenIV.linux.org.uk>
+ <54BF2496.4000807@roeck-us.net>
+ <20150121043637.GO29656@ZenIV.linux.org.uk>
+ <20150121110539.GA8924@kria>
+ <54BFAA5D.4040108@roeck-us.net>
+ <20150121182905.GQ29656@ZenIV.linux.org.uk>
+ <54BFF8B3.6060802@roeck-us.net>
+ <20150121200626.GR29656@ZenIV.linux.org.uk>
+ <54C01418.5060204@roeck-us.net>
+ <20150121212833.GS29656@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150121212833.GS29656@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Authenticated_sender: guenter@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020201.54C01C9D.01C8,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 6
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 January 2015 Bruno Prémont wrote:
-> On Tue, 20 January 2015 Linus Torvalds wrote:
-> > On Tue, Jan 20, 2015 at 6:02 AM, Bruno Prémont wrote:
-> > >
-> > > No idea yet which rc is the offender (nor exact patch), but on my not
-> > > so recent UP laptop with a pccard slot I have 2 pccardd kernel threads
-> > > converting my laptop into a heater.
-> > >
-> > > lspci for affected nodes:
-> > > 02:06.0 CardBus bridge [0607]: O2 Micro, Inc. OZ711EC1 SmartCardBus Controller [1217:7113] (rev 20)
-> > > 02:06.1 CardBus bridge [0607]: O2 Micro, Inc. OZ711EC1 SmartCardBus Controller [1217:7113] (rev 20)
-> > >
-> > > Very basics I have, before I attempt any bisection:
+On Wed, Jan 21, 2015 at 09:28:33PM +0000, Al Viro wrote:
+> On Wed, Jan 21, 2015 at 01:03:20PM -0800, Guenter Roeck wrote:
 > > 
-> > Hmm. I'm not seeing anything recent changing anything in this area, so
-> > I suspect that unless somebody else steps up and says "Ahh, that
-> > sounds like xyz", your bisection is the best option.
+> > failing case:
+> > 
+> > path_lookupat: calling path_init 'usr' flags=40
+> > path_init: link_path_walk() returned 0
+> > path_lookupat: path_init 'usr' flags=40[50] returned 0
+> > walk_component: lookup_fast() returned 1
+> > walk_component: lookup_slow() returned 0
+> > walk_component: inode=  (null), negative=1
+> > do_path_lookup(usr, 0x10)
+> > path_lookupat: calling path_init 'usr' flags=50
+> > path_init: link_path_walk() returned 0
+> > path_lookupat: path_init 'usr' flags=50[50] returned 0
+> > mkdir[c74012a0,/kkk] => 0						<==== SIC!
+> 
+> Cute. 'k' being 0x6b, aka POISON_FREE...  OK, the next question is what's
+> been freed under us - I don't believe that it's dentry itself...
+> Oh, fuck.  OK, I see what happens.  Look at kern_path_create(); it does
+> LOOKUP_PARENT walk, leaving nd->last pointing to the last component of
+> the *COPY* of the name it's just created, walked and freed.
+> 
+Cool.
 
-Bisecting to the end did point me at (the warning traces produced in great
-quantities might not be the very same issue as the abusive CPU usage, but
-certainly look very related):
-  [CCing people on CC for the patch]
+> OK...  Fortunately, struct nameidata is completely opaque outside of fs/namei.c,
+> so we only need to care about a couple of codepaths.
+> 
+> Folks, could you check if the following on top of linux-next fixes the problem?
+> 
+> diff --git a/fs/namei.c b/fs/namei.c
+> index 323957f..cda89c3 100644
 
-commit 8eb23b9f35aae413140d3fda766a98092c21e9b0
-Author: Peter Zijlstra <peterz@infradead.org>
-Date:   Wed Sep 24 10:18:55 2014 +0200
+Yes, this patch fixes the problem for me.
 
-    sched: Debug nested sleeps
-    
-    Validate we call might_sleep() with TASK_RUNNING, which catches places
-    where we nest blocking primitives, eg. mutex usage in a wait loop.
-    
-    Since all blocking is arranged through task_struct::state, nesting
-    this will cause the inner primitive to set TASK_RUNNING and the outer
-    will thus not block.
-    
-    Another observed problem is calling a blocking function from
-    schedule()->sched_submit_work()->blk_schedule_flush_plug() which will
-    then destroy the task state for the actual __schedule() call that
-    comes after it.
-    
-    Signed-off-by: Peter Zijlstra (Intel) <peterz@infradead.org>
-    Cc: tglx@linutronix.de
-    Cc: ilya.dryomov@inktank.com
-    Cc: umgwanakikbuti@gmail.com
-    Cc: oleg@redhat.com
-    Cc: Linus Torvalds <torvalds@linux-foundation.org>
-    Link: http://lkml.kernel.org/r/20140924082242.591637616@infradead.org
-    Signed-off-by: Ingo Molnar <mingo@kernel.org>
-
-Which does produce the following trace (hand-copied most important parts of it):
-  Warning: CPU 0 PID: 68 at kernel/sched/core.c:7311 __might_sleep+0x143/0x170
-  do not call blocking ops when !TASK_RUNNING; state=1 set at [<c1436390>] pccardd+0xa0/0x3e0
-  ...
-  Call trace:
-    ...
-    __might_sleep+0x143/0x170
-    ? pccardd+0xa0/0x3e0
-    ? pccardd+0xa0/0x3e0
-    mutex_lock+0x17/0x2a
-    pccardd+0xe9/0x3e0
-    ? pcmcia_socket_uevent+0x30/0x30
-
-pccardd() is located in drivers/pcmcia/cs.c and seems to be of the structure
-Peter's patch wants to warn about.
-
-
-Bruno
+Guenter
