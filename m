@@ -1,110 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260AbbAUJUO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 04:20:14 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:34856 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751177AbbAUJUE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 04:20:04 -0500
-Date: Wed, 21 Jan 2015 10:17:36 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Daniel Lezcano <daniel.lezcano@linaro.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/5] clocksource: sun5i: Switch to request_irq
-Message-ID: <20150121091736.GE4367@lukather>
-References: <1420976410-7826-1-git-send-email-maxime.ripard@free-electrons.com>
- <1420976410-7826-2-git-send-email-maxime.ripard@free-electrons.com>
- <54BBFE38.5000204@linaro.org>
+	id S1751997AbbAUJSZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 04:18:25 -0500
+Received: from mga02.intel.com ([134.134.136.20]:12849 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750813AbbAUJSS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 04:18:18 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="443098920"
+Date: Wed, 21 Jan 2015 11:17:49 +0200
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        Baolu Lu <baolu.lu@linux.intel.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] phy: ulpi: add driver for TI TUSB1210
+Message-ID: <20150121091749.GB22716@kuha.fi.intel.com>
+References: <1421745502-169447-1-git-send-email-heikki.krogerus@linux.intel.com>
+ <1421745502-169447-4-git-send-email-heikki.krogerus@linux.intel.com>
+ <20150120154539.GB8988@saruman>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BtLpl2nkGUzqmEOn"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54BBFE38.5000204@linaro.org>
+In-Reply-To: <20150120154539.GB8988@saruman>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jan 20, 2015 at 09:45:39AM -0600, Felipe Balbi wrote:
+> Hi,
+> 
+> On Tue, Jan 20, 2015 at 11:18:22AM +0200, Heikki Krogerus wrote:
+> > TUSB1210 ULPI PHY has vendor specific register for eye
+> > diagram tuning. On some platforms the system firmware has
+> > set optimized value to it. In order to not loose the
+> > optimized value, the driver stores it during probe and
+> > restores it every time the PHY is powered back on.
+> > 
+> > Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> > ---
+> >  drivers/phy/ulpi/Kconfig    |  11 ++++
+> >  drivers/phy/ulpi/Makefile   |   2 +
+> >  drivers/phy/ulpi/tusb1210.c | 131 ++++++++++++++++++++++++++++++++++++++++++++
+> >  3 files changed, 144 insertions(+)
+> >  create mode 100644 drivers/phy/ulpi/tusb1210.c
+> > 
+> > diff --git a/drivers/phy/ulpi/Kconfig b/drivers/phy/ulpi/Kconfig
+> > index 8007df2..7cd6f82 100644
+> > --- a/drivers/phy/ulpi/Kconfig
+> > +++ b/drivers/phy/ulpi/Kconfig
+> > @@ -7,3 +7,14 @@ config ULPI_PHY
+> >  	  Say yes if you have ULPI PHY attached to your USB controller.
+> >  
+> >  	  If unsure, say N.
+> > +
+> > +if ULPI_PHY
+> > +
+> > +config ULPI_TUSB1210
+> > +	tristate "TI TUSB1210 USB PHY module"
+> > +	depends on POWER_SUPPLY
+> > +	select USB_PHY
+> > +	help
+> > +	  Support for TI TUSB1210 USB ULPI PHY.
+> > +
+> > +endif
+> > diff --git a/drivers/phy/ulpi/Makefile b/drivers/phy/ulpi/Makefile
+> > index 59e61cb..7ee6679 100644
+> > --- a/drivers/phy/ulpi/Makefile
+> > +++ b/drivers/phy/ulpi/Makefile
+> > @@ -1,2 +1,4 @@
+> >  ulpiphy-y			:= ulpi.o
+> >  obj-$(CONFIG_ULPI_PHY)		+= ulpiphy.o
+> > +
+> > +obj-$(CONFIG_ULPI_TUSB1210)	+= tusb1210.o
+> > diff --git a/drivers/phy/ulpi/tusb1210.c b/drivers/phy/ulpi/tusb1210.c
+> > new file mode 100644
+> > index 0000000..ac77f98
+> > --- /dev/null
+> > +++ b/drivers/phy/ulpi/tusb1210.c
+> 
+> do you really need this extra ulpi directory ?
+> 
+> I wonder if phy-tusb1210.c as a name would be enough.
 
---BtLpl2nkGUzqmEOn
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+IMO grouping the ULPI PHY drivers and other ULPI bus code into
+separate folder from the start is the right thing to do.
 
-On Sun, Jan 18, 2015 at 07:40:56PM +0100, Daniel Lezcano wrote:
-> On 01/11/2015 12:40 PM, Maxime Ripard wrote:
-> >The current code uses setup_irq, while it could perfectly use the much s=
-impler
-> >request_irq. Switch to that.
-> >
-> >Signed-off-by: Maxime Ripard <maxime.ripard@free-electrons.com>
-> >---
-> >  drivers/clocksource/timer-sun5i.c | 10 ++--------
-> >  1 file changed, 2 insertions(+), 8 deletions(-)
-> >
-> >diff --git a/drivers/clocksource/timer-sun5i.c b/drivers/clocksource/tim=
-er-sun5i.c
-> >index 02268448dc85..738853873a3b 100644
-> >--- a/drivers/clocksource/timer-sun5i.c
-> >+++ b/drivers/clocksource/timer-sun5i.c
-> >@@ -130,13 +130,6 @@ static irqreturn_t sun5i_timer_interrupt(int irq, v=
-oid *dev_id)
-> >  	return IRQ_HANDLED;
-> >  }
-> >
-> >-static struct irqaction sun5i_timer_irq =3D {
-> >-	.name =3D "sun5i_timer0",
-> >-	.flags =3D IRQF_TIMER | IRQF_IRQPOLL,
-> >-	.handler =3D sun5i_timer_interrupt,
-> >-	.dev_id =3D &sun5i_clockevent,
-> >-};
-> >-
-> >  static u64 sun5i_timer_sched_read(void)
-> >  {
-> >  	return ~readl(timer_base + TIMER_CNTVAL_LO_REG(1));
-> >@@ -178,7 +171,8 @@ static void __init sun5i_timer_init(struct device_no=
-de *node)
-> >
-> >  	ticks_per_jiffy =3D DIV_ROUND_UP(rate, HZ);
-> >
-> >-	ret =3D setup_irq(irq, &sun5i_timer_irq);
-> >+	ret =3D request_irq(irq, sun5i_timer_interrupt, IRQF_TIMER | IRQF_IRQP=
-OLL,
-> >+			  "sun5i_timer", &sun5i_clockevent);
->=20
-> Is the timer name change done in purpose ?
+> > @@ -0,0 +1,131 @@
+> > +/**
+> > + * tusb1210.c - TUSB1210 USB ULPI PHY driver
+> > + *
+> > + * Copyright (C) 2015 Intel Corporation
+> > + *
+> > + * Author: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify
+> > + * it under the terms of the GNU General Public License version 2 as
+> > + * published by the Free Software Foundation.
+> > + */
+> > +#include <linux/module.h>
+> > +#include <linux/phy/ulpi/driver.h>
+> > +#include <linux/phy/ulpi/regs.h>
+> > +#include <linux/gpio/consumer.h>
+> > +
+> > +#include "ulpi_phy.h"
+> > +
+> > +struct tusb1210 {
+> > +	struct ulpi *ulpi;
+> > +	struct phy *phy;
+> > +	struct gpio_desc *gpio_reset;
+> > +	struct gpio_desc *gpio_cs;
+> > +	u8 ctx[1];
+> > +};
+> > +
+> > +static int tusb1210_power_on(struct phy *phy)
+> > +{
+> > +	struct tusb1210 *tusb = phy_get_drvdata(phy);
+> > +
+> > +	gpiod_set_value_cansleep(tusb->gpio_reset, 1);
+> > +	gpiod_set_value_cansleep(tusb->gpio_cs, 1);
+> > +
+> > +	/* Restore eye optimisation value */
+> > +	ulpi_write(tusb->ulpi, ULPI_EXT_VENDOR_SPECIFIC, tusb->ctx[0]);
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static int tusb1210_power_off(struct phy *phy)
+> > +{
+> > +	struct tusb1210 *tusb = phy_get_drvdata(phy);
+> > +
+> > +	gpiod_set_value_cansleep(tusb->gpio_reset, 0);
+> > +	gpiod_set_value_cansleep(tusb->gpio_cs, 0);
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static struct phy_ops phy_ops = {
+> > +	.power_on = tusb1210_power_on,
+> > +	.power_off = tusb1210_power_off,
+> > +	.init = tusb1210_power_on,
+> > +	.exit = tusb1210_power_off,
+> > +	.owner = THIS_MODULE,
+> > +};
+> > +
+> > +static int tusb1210_probe(struct ulpi *ulpi)
+> > +{
+> > +	struct gpio_desc *gpio;
+> > +	struct tusb1210 *tusb;
+> > +	int ret;
+> > +
+> > +	tusb = devm_kzalloc(&ulpi->dev, sizeof(*tusb), GFP_KERNEL);
+> > +	if (!tusb)
+> > +		return -ENOMEM;
+> > +
+> > +	gpio = devm_gpiod_get(&ulpi->dev, "reset");
+> > +	if (!IS_ERR(gpio)) {
+> > +		ret = gpiod_direction_output(gpio, 0);
+> > +		if (ret)
+> > +			return ret;
+> > +		tusb->gpio_reset = gpio;
+> > +	}
+> > +
+> > +	gpio = devm_gpiod_get(&ulpi->dev, "cs");
+> > +	if (!IS_ERR(gpio)) {
+> > +		ret = gpiod_direction_output(gpio, 0);
+> > +		if (ret)
+> > +			return ret;
+> > +		tusb->gpio_cs = gpio;
+> > +	}
+> > +
+> > +	/* Store initial eye diagram optimisation value */
+> > +	ret = ulpi_read(ulpi, ULPI_EXT_VENDOR_SPECIFIC);
+> 
+> do they *all* use this register for eye diagram optimization or is this
+> something that Intel decided to do ?
+> 
+> (sorry, don't know much about tusb1210 other than it sucks like hell :-)
 
-Hmm, no, it's a mistake. I'll resend a v2.
+All I know that somebody needs to save the value. The ones using this
+PHY who don't need to save it can most likely live without the driver.
 
-Maxime
+> > +	if (ret < 0)
+> > +		return ret;
+> > +
+> > +	tusb->ctx[0] = ret;
+> > +
+> > +	tusb->phy = ulpi_phy_create(ulpi, &phy_ops);
+> > +	if (IS_ERR(tusb->phy))
+> > +		return PTR_ERR(tusb->phy);
+> > +
+> > +	tusb->ulpi = ulpi;
+> > +
+> > +	phy_set_drvdata(tusb->phy, tusb);
+> > +	dev_set_drvdata(&ulpi->dev, tusb);
+> > +	return 0;
+> > +}
+> > +
+> > +static void tusb1210_remove(struct ulpi *ulpi)
+> > +{
+> > +	struct tusb1210 *tusb = dev_get_drvdata(&ulpi->dev);
+> 
+> completely unrelated to $subject, but we might want to have a
+> ulpi_{set,get}_drvdata() at some point.
 
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
+Makes sense.
 
---BtLpl2nkGUzqmEOn
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+> In fact, we might decide to add an entire ULPI bus, eventually, though
+> I'm still considering if there's any benefit to that.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
+I don't think I understand this comment? ULPI bus is what I'm
+introducing in this set (the first patch in it)?
 
-iQIcBAEBAgAGBQJUv26wAAoJEBx+YmzsjxAguMQQAICXF1yQAYPTj0wyZKv7giAi
-SZ1bXBUHeTfMFFZCsozEYMOen2WhQCcGteVvFwDuUsJOB/LyB5ftuu/K309N3/1E
-FVAVfjR7+icG8PbOUt4X5TZkhbg39YBnyQa7xvMo3CF4qeBPgo8XOn+Qg8HXuPJs
-Bh1lgrEo8gWlSd4OTuDB/l3/iWOo1a+ND/H6BI4v20WBx4W43B6k9gXXINwWDcIX
-VivnKn26blaIvOF9grAjE6y832iZfTuc7pxRSllD/IB2w9Zqo0KBfq22tD+K9WM6
-rsK8mPJwKXae8NkZBtI7zqdX6nqQhuw9q74s08THmpwTFU1epVIAdAyK1EDSDAyQ
-AeEOaKvSSMzIgaULpFdLhIITOUsVVK5Zwrmu2xfGEBd6CwaB1G0PWoTDijQGgsyU
-7x501gmrux+gtbaln4OdP60ft0pPyj1Etx9XbsQVo3vxlGqwedSShYyVQ79Ubvvg
-2PX6fUpH4c3Sz5aWbe1eMTPu0/Glxkn9VazhXJVhZdMS3pk0toe+E4GekgHOREXe
-kXBhpk7xTKwzn2C4JOVnngAoVHubnO/Oa+YpbQS6Doit5oTTb4e/3AGHg2HQH7iY
-z0Z+zEPjp0FCSWzSE2twzqajiRo9l5wzMx+RcHbWmRIM7R/NVPRT2WjAsYLf9V7f
-kjCmNKqnbeW9d7dTvVje
-=Idul
------END PGP SIGNATURE-----
+> > +
+> > +	ulpi_phy_destroy(ulpi, tusb->phy);
+> > +}
+> > +
+> > +#define TI_VENDOR_ID 0x0451
+> > +
+> > +static struct ulpi_device_id tusb1210_ulpi_id[] = {
+> > +	{ TI_VENDOR_ID, 0x1508, },
+> > +	{ },
+> > +};
+> > +MODULE_DEVICE_TABLE(ulpi, tusb1210_ulpi_id);
+> > +
+> > +static struct ulpi_driver tusb1210_driver = {
+> > +	.id_table = tusb1210_ulpi_id,
+> > +	.probe = tusb1210_probe,
+> > +	.remove = tusb1210_remove,
+> > +	.driver = {
+> > +		.name = "tusb1210",
+> > +		.owner = THIS_MODULE,
+> > +	},
+> > +};
+> > +
+> > +module_ulpi_driver(tusb1210_driver);
+> > +
+> > +MODULE_AUTHOR("Intel Corporation");
+> > +MODULE_LICENSE("GPL");
+> 
+> comment says GPL 2 only, this says GPL 2+
 
---BtLpl2nkGUzqmEOn--
+True. I'll fix it.
+
+
+Thanks!
+
+-- 
+heikki
