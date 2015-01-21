@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752782AbbAUWc5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 17:32:57 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:39346 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751526AbbAUWcr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 17:32:47 -0500
-From: Gabriele Mazzotta <gabriele.mzt@gmail.com>
-To: Darren Hart <dvhart@infradead.org>
-Cc: mjg59@srcf.ucam.org, pali.rohar@gmail.com, linux-kernel@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org, A.Sloman@cs.bham.ac.uk,
-        computersforpeace@gmail.com
-Subject: Re: [PATCH] dell-laptop: use dedicated sysfs file for ALS
-Date: Wed, 21 Jan 2015 23:32:44 +0100
-Message-ID: <3002254.JbysBTROfI@xps13>
-In-Reply-To: <20150121183823.GE7386@vmdeb7>
-References: <1421244357-31103-1-git-send-email-gabriele.mzt@gmail.com> <1663320.Wk1Y30OHLH@xps13> <20150121183823.GE7386@vmdeb7>
+	id S1752615AbbAUWjN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 17:39:13 -0500
+Received: from mail.kernel.org ([198.145.29.136]:39638 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751801AbbAUWjF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 17:39:05 -0500
+Date: Wed, 21 Jan 2015 23:38:48 +0100
+From: Sebastian Reichel <sre@kernel.org>
+To: Jonghwa Lee <jonghwa3.lee@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-pm@vger.kernel.org,
+        dbaryshkov@gmail.com, dwmw2@infradead.org, anton@enomsg.org,
+        pavel@ucw.cz, myungjoo.ham@samsung.com, cw00.choi@samsung.com
+Subject: Re: [PATCH V3 02/11] power: charger-manager: Use thermal subsystem
+ interface only to get temperature.
+Message-ID: <20150121223848.GI13715@earth.universe>
+References: <1418979323-7188-1-git-send-email-jonghwa3.lee@samsung.com>
+ <1418979323-7188-3-git-send-email-jonghwa3.lee@samsung.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="7IgncvKP0CVPV/ZZ"
+Content-Disposition: inline
+In-Reply-To: <1418979323-7188-3-git-send-email-jonghwa3.lee@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 21 January 2015 10:38:23 Darren Hart wrote:
-> On Sun, Jan 18, 2015 at 07:34:17PM +0100, Gabriele Mazzotta wrote:
-> > On Sunday 18 January 2015 10:08:21 Darren Hart wrote:
-> > > On Wed, Jan 14, 2015 at 03:07:21PM +0100, Gabriele Mazzotta wrote:
-> > > > Hi,
-> > > > 
-> > > > I decided to remove "als" from input_triggers and created a dedicated
-> > > > sysfs file for it. Having it there was wrong and misleading.
-> > > > I also updated the documentation to reflect this change and fixed the
-> > > > wrong description of als_setting, now used for als_enabled.
-> > > 
-> > > Given this is a significant functional change, as opposed to a bug fix, I'm
-> > > leaning toward reverting the original and adding back the corrected version to
-> > > 3.20. I'm going to look at the total impact first - let me know if you have a
-> > > strong argument one way or the other.
-> > 
-> > I'm not against this decision.
-> > If you do, please remember to also revert the commit that added the
-> > documentation.
-> 
-> Then for my pull request to Linus this week, I'll be reverting:
-> 
-> 02b2aaa platform: x86: dell-laptop: Add support for keyboard backlight
-> 3161293 Documentation: Add entry for dell-laptop sysfs interface
-> 
-> Am I missing anything?
 
-No, that's all.
+--7IgncvKP0CVPV/ZZ
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-Thanks,
-Gabriele
+Hi Jonghwa,
+
+On Fri, Dec 19, 2014 at 05:55:14PM +0900, Jonghwa Lee wrote:
+> It drops the way of using power_supply interface to reference battery's
+> temperature. Then it tries to use thermal subsystem's only. This makes driver
+> more simple and also can remove ifdeferies.
+
+this breaks allmodconfig, since CONFIG_THERMAL can be built as
+module and charger-manager will be builtin:
+
+drivers/built-in.o: In function `cm_get_battery_temperature.isra.4':
+binder.c:(.text+0x2f4008): undefined reference to `thermal_zone_get_temp'
+drivers/built-in.o: In function `charger_manager_probe':
+binder.c:(.text+0x2f62c4): undefined reference to `thermal_zone_get_zone_by_name'
+Makefile:917: recipe for target 'vmlinux' failed
+
+-- Sebastian
+
+--7IgncvKP0CVPV/ZZ
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJUwCp1AAoJENju1/PIO/qaszMP/inSp4NXj4AusZcAjI6aIk4i
+7DxA5TcIUSWn/qKcXwVjythTlHRd3I9UhyTJdN3++QPLQFNcpJ7tQ4MNMzMVI1s9
+6P9oN2iHeGPM4U4TXxrbcZDvyZYhEkvTN7djqHBQvV3cszUNFiO33pR99ohw8+l2
+2j8BpIWXtwnjZSMvjdSXjTfhd60BgoUcQ1c0exbA0xaTZygv3OE6OdUQSdDbIGG6
+YJrfaXkAtPOvwIqv7UG5CPL8wUCqbBgb3Q4kqg8QoBrWqIJ21gsXtJTNi9pNLpyp
+R6QVKg5+ByXaD5I6iJJdIMs1m1wpqdwqe+bpsKtJPPMSa5a9eFXSnMAeSypPCp6d
+BBu5xkZ6cnU8X7iowNZulMx7tD+JYX72hudwJT0BxSAbq+PWZh6G8ST9tWSl/n1L
+H3fmDmbvWOv3pdfD661dzFbHQyqLb5oG7eocxAnyAT41bAXlbVYOKqxuA3fb4eIw
+KG66Mx2clZ4cwmXs0K4hgENpZc/dbU84j5GwuIZ9zxBlfMyH0Du0+ydFdDd/yFWi
+3aZMsWugbJhRjhDUZM3bGiTL2bpaxTgDsqQK9HDML4A0HEsK4qvYSeJkscO4V34t
+oH70XgUwl3lvQdS4NdsUQeIvHbp/9vpEcTh9R1ZXpKrYTiuFcRBpnUkWKiCs5SeD
+N30u8ZNvLkSWnT1UG8Ve
+=x//c
+-----END PGP SIGNATURE-----
+
+--7IgncvKP0CVPV/ZZ--
