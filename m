@@ -1,57 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754310AbbAUDjp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 22:39:45 -0500
-Received: from ozlabs.org ([103.22.144.67]:40997 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751853AbbAUDjo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 22:39:44 -0500
-Date: Wed, 21 Jan 2015 14:39:42 +1100
-From: Anton Blanchard <anton@samba.org>
-To: Andrew Jones <drjones@redhat.com>
-Cc: uobergfe@redhat.com, dzickus@redhat.com, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, Michael Ellerman <mpe@ellerman.id.au>
-Subject: Re: Confusing behaviour with /proc/sys/kernel/nmi_watchdog
-Message-ID: <20150121143942.1549e9c9@kryten>
-In-Reply-To: <20141105102645.GA3046@hawk.usersys.redhat.com>
-References: <20141105093420.1c7500d8@kryten>
-	<20141105102645.GA3046@hawk.usersys.redhat.com>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754369AbbAUDkp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 22:40:45 -0500
+Received: from mail-wi0-f172.google.com ([209.85.212.172]:55478 "EHLO
+	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751991AbbAUDkn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 22:40:43 -0500
+Message-ID: <1421811639.5285.25.camel@marge.simpson.net>
+Subject: Re: [PATCH] ksoftirqd: Enable IRQs and call cond_resched() before
+ poking RCU
+From: Mike Galbraith <umgwanakikbuti@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Thomas Gleixner <tglx@linutronix.de>, Calvin Owens <calvinowens@fb.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org, kernel-team@fb.com
+Date: Wed, 21 Jan 2015 04:40:39 +0100
+In-Reply-To: <20150120203022.GR9719@linux.vnet.ibm.com>
+References: <20150107014906.GA27996@mail.thefacebook.com>
+	 <20150107021926.GT5280@linux.vnet.ibm.com>
+	 <20150107165223.GA21555@linux.vnet.ibm.com>
+	 <20150108043329.GB27996@mail.thefacebook.com>
+	 <20150108045306.GJ5280@linux.vnet.ibm.com>
+	 <20150108214644.GC27996@mail.thefacebook.com>
+	 <alpine.DEB.2.11.1501131215380.5526@nanos>
+	 <20150113184301.GO9719@linux.vnet.ibm.com>
+	 <20150113211618.GA21498@mail.thefacebook.com>
+	 <alpine.DEB.2.11.1501201419550.5526@nanos>
+	 <20150120203022.GR9719@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.2.3 
 Content-Transfer-Encoding: 7bit
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew,
+On Tue, 2015-01-20 at 12:30 -0800, Paul E. McKenney wrote: 
+> On Tue, Jan 20, 2015 at 02:21:51PM +0100, Thomas Gleixner wrote:
 
-> On Wed, Nov 05, 2014 at 09:34:20AM +1100, Anton Blanchard wrote:
-> > commit 9919e39a1738 ("kvm: ensure hard lockup detection is disabled
-> > by default") provided a way for the kernel to disable the hard
-> > lockup detector at runtime.
+> > > diff --git a/kernel/softirq.c b/kernel/softirq.c
+> > > index 501baa9..9e787d8 100644
+> > > --- a/kernel/softirq.c
+> > > +++ b/kernel/softirq.c
+> > > @@ -656,9 +656,13 @@ static void run_ksoftirqd(unsigned int cpu)
+> > >  		 * in the task stack here.
+> > >  		 */
+> > >  		__do_softirq();
+> > > -		rcu_note_context_switch(cpu);
+> > >  		local_irq_enable();
+> > >  		cond_resched();
+> > > +
+> > > +		preempt_disable();
+> > > +		rcu_note_context_switch(cpu);
+> > > +		preempt_enable();
+> > > +
 > > 
-> > I'm using it on ppc64 but notice some weird behaviour with the
-> > nmi_watchdog procfs variable. At boot, that the hard lockup
-> > detector appears to be enabled even when we disable it via
-> > watchdog_enable_hardlockup_detector(false):
+> > The whole rcu_note_context_switch() in run_ksoftirqd() is silly.
 > > 
-> > # cat /proc/sys/kernel/nmi_watchdog 
-> > 1
+> >     cond_resched()
+> > 	__preempt_count_add(PREEMPT_ACTIVE);
 > > 
-> > I have to echo 0 to it then echo 1 again to enable it.
+> > 	__schedule();
+> > 	     preempt_disable();
+> > 	     rcu_note_context_switch();
+> > 	     ....
 > > 
-> > Anton
+> > 	__preempt_count_sub(PREEMPT_ACTIVE);
 > 
-> Hi Anton,
-> 
-> Yes, the nmi watchdog proc variables are currently a bit
-> confusing. Uli has posted a series to clear all that up
-> though. Please see
-> 
-> https://lkml.org/lkml/2014/10/17/340
+> I agree that if should_resched() returns true as assumed above, then there
+> is no point to invoking rcu_note_context_switch().  However, the case that
+> this code applies to is when should_resched() returns false, but RCU is
+> waiting for a quiescent state from the current CPU.  In that case,
+> cond_resched() won't do anything for RCU, and we do need the
+> rcu_note_context_switch().
 
-Any progress on this? I'm rebasing our hardware NMI patch for ppc64 and
-notice the strange behaviour is still in mainline.
+I've been curious about this for ages, so now is a great time to bite
+the bullet and ask TheMan.  A context switch is not far away, why do we
+need that quiescent state badly enough to tell what looks like a little
+white lie to get it immediately?
 
-Anton
+(I commented it out in an -rt kernel I was testing yesterday, beat it
+enthusiastically for a while, and box didn't _seem_ to notice that it
+was missing anything)
+
+-Mike
+
