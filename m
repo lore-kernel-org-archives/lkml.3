@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753419AbbAUR3R (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 12:29:17 -0500
-Received: from mail-qg0-f51.google.com ([209.85.192.51]:56601 "EHLO
-	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751757AbbAUR3K (ORCPT
+	id S1753093AbbAURaF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 12:30:05 -0500
+Received: from regular1.263xmail.com ([211.150.99.138]:46745 "EHLO
+	regular1.263xmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752235AbbAUR36 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 12:29:10 -0500
-MIME-Version: 1.0
-In-Reply-To: <1421859236-19782-1-git-send-email-daniel.thompson@linaro.org>
-References: <1421859236-19782-1-git-send-email-daniel.thompson@linaro.org>
-Date: Wed, 21 Jan 2015 09:29:09 -0800
-Message-ID: <CALAqxLUmf_TNvTG2-=uavXjXk3040-MQ73V5z7S1UiGa+7c29Q@mail.gmail.com>
-Subject: Re: [RFC PATCH] sched_clock: Avoid tearing during read from NMI
-From: John Stultz <john.stultz@linaro.org>
-To: Daniel Thompson <daniel.thompson@linaro.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, Patch Tracking <patches@linaro.org>,
-        Linaro Kernel Mailman List <linaro-kernel@lists.linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 21 Jan 2015 12:29:58 -0500
+X-263anti-spam: KSV:0;
+X-MAIL-GRAY: 0
+X-MAIL-DELIVERY: 1
+X-KSVirus-check: 0
+X-ABS-CHECKED: 4
+X-ADDR-CHECKED: 0
+X-RL-SENDER: caesar.wang@rock-chips.com
+X-FST-TO: heiko@sntech.de
+X-SENDER-IP: 192.255.70.32
+X-LOGIN-NAME: caesar.wang@rock-chips.com
+X-UNIQUE-TAG: <53808205e32b9ab26142eec69fd817d8>
+X-ATTACHMENT-NUM: 0
+X-DNS-TYPE: 0
+From: Caesar Wang <wxt@rock-chips.com>
+To: Heiko Stuebner <heiko@sntech.de>, Zhang Rui <rui.zhang@intel.com>,
+        Eduardo Valentin <edubezval@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Daniel Kurtz <djkurtz@chromium.org>, Caesar Wang <wxt@rock-chips.com>,
+        linux-pm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-rockchip@lists.infradead.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: [PATCH v3 0/1] thermal: rockchip: make temperature reporting much more accurate
+Date: Thu, 22 Jan 2015 01:29:29 +0800
+Message-Id: <1421861370-19422-1-git-send-email-wxt@rock-chips.com>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 8:53 AM, Daniel Thompson
-<daniel.thompson@linaro.org> wrote:
-> Currently it is possible for an NMI (or FIQ on ARM) to come in and
-> read sched_clock() whilst update_sched_clock() has half updated the
-> state. This results in a bad time value being observed.
->
-> This patch fixes that problem in a similar manner to Thomas Gleixner's
-> 4396e058c52e("timekeeping: Provide fast and NMI safe access to
-> CLOCK_MONOTONIC").
->
-> Note that ripping out the seqcount lock from sched_clock_register() and
-> replacing it with a large comment is not nearly as bad as it looks! The
-> locking here is actually pretty useless since most of the variables
-> modified within the write lock are not covered by the read lock. As a
-> result a big comment and the sequence bump implicit in the call
-> to update_epoch() should work pretty much the same.
 
-It still looks pretty bad, even with the current explanation.
+This patch is merged on chromiumos/third_party/kernel.
+https://chromium-review.googlesource.com/#/c/239190/
+
+Tested on veyron boards.
 
 
-> -       raw_write_seqcount_begin(&cd.seq);
-> +       /*
-> +        * sched_clock will report a bad value if it executes
-> +        * concurrently with the following code. No locking exists to
-> +        * prevent this; we rely mostly on this function being called
-> +        * early during kernel boot up before we have lots of other
-> +        * stuff going on.
-> +        */
->         read_sched_clock = read;
->         sched_clock_mask = new_mask;
->         cd.rate = rate;
->         cd.wrap_kt = new_wrap_kt;
->         cd.mult = new_mult;
->         cd.shift = new_shift;
-> -       cd.epoch_cyc = new_epoch;
-> -       cd.epoch_ns = ns;
-> -       raw_write_seqcount_end(&cd.seq);
-> +       update_epoch(new_epoch, ns);
+Changes in v3:
+Suggested-by Daniel Kurtz,
+the check doesn't reject "code == 0xfff"
+Fixed in rk_tsadcv2_code_to_temp(u32 code)
+
+Changes in v2:
+Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+
+Caesar Wang (1):
+  thermal: rockchip: make temperature reporting much more accurate
+
+ drivers/thermal/rockchip_thermal.c | 32 ++++++++++++++++++++++----------
+ 1 file changed, 22 insertions(+), 10 deletions(-)
+
+-- 
+1.9.1
 
 
-So looking at this, the sched_clock_register() function may not be
-called super early, so I was looking to see what prevented bad reads
-prior to registration. And from quick inspection, its nothing. I
-suspect the undocumented trick that makes this work is that the mult
-value is initialzied to zero, so sched_clock returns 0 until things
-have been registered.
-
-So it does seem like it would be worth while to do the initialization
-under the lock, or possibly use the suspend flag to make the first
-initialization safe.
-
-thanks
--john
