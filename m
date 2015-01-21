@@ -1,94 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932083AbbAURGB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 12:06:01 -0500
-Received: from bhuna.collabora.co.uk ([93.93.135.160]:34109 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754560AbbAURFw (ORCPT
+	id S932105AbbAURGN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 12:06:13 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:63086 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932084AbbAURGD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 12:05:52 -0500
-Message-ID: <54BFDC6B.30106@collabora.co.uk>
-Date: Wed, 21 Jan 2015 18:05:47 +0100
-From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
-MIME-Version: 1.0
-To: Lee Jones <lee.jones@linaro.org>
-CC: Olof Johansson <olof@lixom.net>, Doug Anderson <dianders@chromium.org>,
-        Bill Richardson <wfrichar@chromium.org>, Simon Glass <sjg@google.com>,
-        Gwendal Grignou <gwendal@google.com>, Jonathan Corbet <corbet@lwn.net>,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RESEND v2 3/7] mfd: cros_ec: Add cros_ec_lpc driver for
- x86 devices
-References: <1420205572-2640-1-git-send-email-javier.martinez@collabora.co.uk> <1420205572-2640-4-git-send-email-javier.martinez@collabora.co.uk> <20150120081104.GT21886@x1> <54BE7B08.1010900@collabora.co.uk> <20150120163410.GC30656@x1> <54BE87C4.4040108@collabora.co.uk>
-In-Reply-To: <54BE87C4.4040108@collabora.co.uk>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Jan 2015 12:06:03 -0500
+From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        Rob Herring <robherring2@gmail.com>, devicetree@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Pantelis Antoniou <pantelis.antoniou@konsulko.com>,
+        Pantelis Antoniou <panto@antoniou-consulting.com>
+Subject: [PATCH] of: Empty node & property flag accessors when !OF
+Date: Wed, 21 Jan 2015 19:05:57 +0200
+Message-Id: <1421859957-24457-1-git-send-email-pantelis.antoniou@konsulko.com>
+X-Mailer: git-send-email 1.7.12
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Lee,
+Introduce empty node and property flag accessors when CONFIG_OF is not
+defined.
+This allows us to use them without ifdef'ing them in places where it
+makes sense to do so.
 
-On 01/20/2015 05:52 PM, Javier Martinez Canillas wrote:
->>> 
->>> Now, all those drivers may be wrong and the buses don't belong to the mfd
->>> subsystem but then I think we need to document that since it seems that is
->>> the correct way to do it just by looking at the other drivers.
->> 
->> I don't think the drivers you mentioned above do anything practical.
->> For instance, they are not SPI/IC2/etc drivers.  They should only
->> offer some abstraction layers which are used to communicate with the
->> device.  The driver you are submitting looks a lot more like a device
->> driver, which should live somewhere else.  Don't ask me where though,
->> I'm not even sure what a Low Pin Controller does.
->> 
-> 
-> The driver added by $subject doesn't really do anything practical either.
-> LPC [0] is just another transport method like i2c or spi that is used on
-> x86 Chromebooks to access the Embedded Controller.
-> 
-> So the driver is really not that different than the cros_ec_{i2c,spi}.c
-> drivers.
-> 
-> Best regards,
-> Javier
-> 
-> [0]: http://en.wikipedia.org/wiki/Low_Pin_Count
-> 
+Signed-off-by: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+---
+ include/linux/of.h | 32 ++++++++++++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
 
-Maybe the problem is that the commit message didn't explain this clearly?
-I took the patch from the ChromiumOS tree verbatim but I can reword the
-commit message to add something like this instead:
+diff --git a/include/linux/of.h b/include/linux/of.h
+index dfde07e..7ede449 100644
+--- a/include/linux/of.h
++++ b/include/linux/of.h
+@@ -616,6 +616,38 @@ static inline const char *of_prop_next_string(struct property *prop,
+ 	return NULL;
+ }
+ 
++static inline int of_node_check_flag(struct device_node *n, unsigned long flag)
++{
++	return 0;
++}
++
++static inline int of_node_test_and_set_flag(struct device_node *n,
++					    unsigned long flag)
++{
++	return 0;
++}
++
++static inline void of_node_set_flag(struct device_node *n, unsigned long flag)
++{
++}
++
++static inline void of_node_clear_flag(struct device_node *n, unsigned long flag)
++{
++}
++
++static inline int of_property_check_flag(struct property *p, unsigned long flag)
++{
++	return 0;
++}
++
++static inline void of_property_set_flag(struct property *p, unsigned long flag)
++{
++}
++
++static inline void of_property_clear_flag(struct property *p, unsigned long flag)
++{
++}
++
+ #define of_match_ptr(_ptr)	NULL
+ #define of_match_node(_matches, _node)	NULL
+ #endif /* CONFIG_OF */
+-- 
+1.7.12
 
-Author: Bill Richardson <wfrichar@chromium.org>
-Date:   Tue Dec 23 15:13:23 2014 +0100
-
-    mfd: cros_ec: Add cros_ec_lpc driver for x86 devices
-    
-    Chromebooks have an Embedded Controller (EC) that is used to
-    implement various functions such as keyboard, power and battery.
-    
-    The AP can communicate with the EC through different bus types
-    such as I2C, SPI or LPC.
-    
-    The cros_ec mfd driver is then composed of a core driver that
-    register the sub-devices as mfd cells and provide a high level
-    communication interface that is used by the rest of the kernel
-    and bus specific interfaces modules.
-    
-    Each connection method then has its own driver, which register
-    with the EC driver interface-agnostic interface.
-    
-    Currently, there are drivers to communicate with the EC over
-    I2C and SPI and this driver adds support for LPC.
-    
-    Signed-off-by: Bill Richardson <wfrichar@chromium.org>
-    Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-
-
-If you agree with this commit message then I can change it on the next revision
-but really $subject doesn't do anything special besides providing a transport
-method to access the mfd device using a LPC bus.
-
-Best regards,
-Javier
