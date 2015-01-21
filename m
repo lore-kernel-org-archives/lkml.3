@@ -1,85 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752852AbbAUPVm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 10:21:42 -0500
-Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:24330
-	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751938AbbAUPVe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 10:21:34 -0500
-X-IronPort-AV: E=Sophos;i="5.09,442,1418079600"; 
-   d="scan'208";a="97218249"
-Date: Wed, 21 Jan 2015 16:21:12 +0100
-From: Samuel Thibault <samuel.thibault@ens-lyon.org>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Herrmann <dh.herrmann@gmail.com>, jslaby@suse.cz,
-        Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
-        linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Peter Korsgaard <jacmet@sunsite.dk>,
-        Sascha Hauer <s.hauer@pengutronix.de>, Rob Clark <robdclark@gmail.com>,
-        Niels de Vos <devos@fedoraproject.org>,
-        linux-arm-kernel@lists.infradead.org, blogic@openwrt.org,
-        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-Subject: Re: [PATCHv5 0/2] INPUT: Route keyboard LEDs through the generic
- LEDs layer
-Message-ID: <20150121152112.GA24789@type.bordeaux.inria.fr>
-Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
-	Pavel Machek <pavel@ucw.cz>,
-	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	David Herrmann <dh.herrmann@gmail.com>, jslaby@suse.cz,
-	Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
-	linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
-	Arnaud Patard <arnaud.patard@rtp-net.org>,
-	Peter Korsgaard <jacmet@sunsite.dk>,
-	Sascha Hauer <s.hauer@pengutronix.de>,
-	Rob Clark <robdclark@gmail.com>,
-	Niels de Vos <devos@fedoraproject.org>,
-	linux-arm-kernel@lists.infradead.org, blogic@openwrt.org,
-	Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
-References: <20141226232116.GA5069@type>
- <20150102195350.GB27538@amd>
+	id S1753572AbbAUPWi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 10:22:38 -0500
+Received: from mail.kernel.org ([198.145.29.136]:45169 "EHLO mail.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752226AbbAUPW1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 10:22:27 -0500
+Date: Wed, 21 Jan 2015 16:22:17 +0100
+From: Sebastian Reichel <sre@kernel.org>
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, Pavel Machek <pavel@ucw.cz>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
+Subject: Re: [RFC PATCHv2 00/19] power_supply: Allow safe usage of power
+ supply
+Message-ID: <20150121152216.GD13715@earth.universe>
+References: <1420472882-10463-1-git-send-email-k.kozlowski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="8nsIa27JVQLqB7/C"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20150102195350.GB27538@amd>
-User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
+In-Reply-To: <1420472882-10463-1-git-send-email-k.kozlowski@samsung.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-Pavel Machek, le Fri 02 Jan 2015 20:53:51 +0100, a écrit :
-> > Here is v5 coming, with separate patches for the kbd and the input
-> > parts.
-> 
-> After booting with this, capslock led does not seem to work on text
-> console.
-> 
-> input4::capsl/trigger was none by default, that can't be right, right?
-> 
-> I tried putting kbd-capslock and input4-capsl there, but that did not
-> seem to help.
-> 
-> It works with heartbeat trigger, but not with input4-numl
-> trigger. (But numlock led works ok with that trigger, weird).
-> 
-> vt::capsl/brightness controls capslock led, even when
-> input4-capsl/trigger is set to input4-numl.
+--8nsIa27JVQLqB7/C
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I have just tried what you described on a thinkpad lenovo T500, without
-any problem, except that the thinkpad BIOS does a couple of funky
-things:
+Hi Krzysztof,
 
-- depending on the numlock bios setting, the numlock led will be
-  driven by the OS (synchronized mode) or handled internally in the BIOS
-  (independent mode).
-- in synchronized mode, whenever the internal numlock led is lit, the
-  right part of the internal keyboard acts as the keypad keys.
+On Mon, Jan 05, 2015 at 04:47:43PM +0100, Krzysztof Kozlowski wrote:
+> This is RFC, please don't apply yet but let me know if this approach
+> is OK.
 
-Samuel
+I just reviewed the patchset. It looks fine to me.
+
+> TLDR
+> =3D=3D=3D=3D
+> Patchset tries to fix following race scenario:
+>=20
+> Thread 1: charger manager, CONSUMER
+> Thread 2: power supply driver, PROVIDER
+>=20
+> THREAD 1 (charger manager)         THREAD 2 (power supply driver)
+> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D         =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
+> psy =3D power_supply_get_by_name()
+>                                    Driver unbind, .remove
+>                                      power_supply_unregister()
+>                                      Device fully removed
+> psy->get_property()
+>=20
+> To properly fix the race the patchset:
+> 1. Adds power_supply_get_property()-like API for safe access by consumer.
+> 2. Moves ownership of power_supply structure from driver (provider) to
+>    power supply core.
+> 3. Adds power_supply_put() which will reclaim memory.
+
+Looks fine to me, thanks for doing this :)
+
+> Description
+> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=20
+> This is a little different than my previous approaches [1][2] for fixing
+> usage of power supply by some consumer, if driver implementing it is
+> unbound.
+>=20
+> The patchset is quite big and touches power supply API so a lot of
+> changes in drivers are needed. These changes *are not finished yet*.
+> I've done them only for:
+>  - bq24190_charger.c
+>  - charger-manager.c
+>  - max14577_charger.c
+>  - max17040_battery.c
+>  - max17042_battery.c
+>  - sbs-battery.c
+>  - tps65090-charger.c
+> So allyesconfig won't build.
+>
+> If this approach is OK, I'll prepare full patchset changing all the
+> drivers.
+
+Please do :)
+
+> My previous approach [1][2] limited the race but did not close it.
+> Still the consumer of power supply by calling power_supply_get_propert(ps=
+y...)
+> may reference invalid memory because the producer freed it.
+>=20
+> Actually, because struct power_supply is exposed to consumers, the
+> core should be the owner of it. This is accomplished in patch 11/19
+> ("power_supply: Change ownership from driver to core").
+>=20
+> What the patchset does in steps
+> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
+=3D=3D=3D=3D=3D=3D=3D
+> 1. Some preparation steps are necessary - patch 1 and 2. The driver
+>    implementing power supply won't be able to fill structure before
+>    calling power_supply_register(). So 'power_supply_config'
+>    is introduced in patch 2 ("power_supply: Move run-time configuration
+>    to separate structure"). Unfortunately this touches all drivers.
+
+$ grep -l power_supply_register **/*.c | grep -v mod.c | grep -v drivers/po=
+wer
+drivers/acpi/ac.c
+drivers/acpi/battery.c
+drivers/acpi/sbs.c
+drivers/hid/hid-input.c
+drivers/hid/hid-sony.c
+drivers/hid/hid-wiimote-modules.c
+drivers/hid/wacom_sys.c
+drivers/platform/x86/compal-laptop.c
+drivers/staging/nvec/nvec_power.c
+
+Please make sure to CC the respective maintainers for the patchset
+(e.g. current patch 14 and 15 should have CC'd x86 maintainers), so
+that they can Acknowledge the patchset.
+
+> 2. Safe API wrappers (and usage counter) are added (power_supply_*()).
+> 3. Patch 11: ownership of 'struct power_supply' is moved from driver
+>    to the core.
+> 4. power_supply_put() is added which reclaims resources.
+
+Looks fine to me.
+
+> The patchset is rebased on next-20141226. It should be pulled at once.
+> Bisectability is preserved.
+
+Fine with me, but I need acks from all involved maintainers. So for the
+patchset:
+
+Reviewed-By: Sebastian Reichel <sre@kernel.org>
+
+-- Sebastian
+
+--8nsIa27JVQLqB7/C
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBCgAGBQJUv8QlAAoJENju1/PIO/qa7/cQAKL4AwZTQPD1sNk+v+xDrjK4
+giJzRnjte1Bsa7AdXWLpXG71JlnE0LQ60RYl7avSUPNku46mMc4DdngQ1w8vcIiE
+2/JhPhgv82nqt9nwQdgUC0lcpS7tJMbjoJg8JlwL2Z1pZJ8HEKDoTwVGH3YLNdS/
+iRv3m9eEEwwzle47tY9gFIZ5QWkHk7q4oNnqS2AVzSi5WrVDZny0voV9ZyQSBtg8
+Vs93aSeQFV05gmZ+f2ngmiACbGYI/zqKhLFKf5QnaHvoW4me77Wl4Esbont0v1CL
+MBqhQyigb4g+c/ITiHkpeDk48w1roKcFy72c57Cr6BDV+WtMKpcQQgBaFdLOMYtI
+VgjMkkfEgYI6rSUuwp8XBXyWctw5oPz5qQai1wrUCGhQI2cCMM7N1KJyUVX2IkgM
+7UhAYqG3B2ZoGso9n9UPKmNX4CICY7PsstYfnK2NPDgX+fnT4xZR5K7TZcYQQ0++
+EYgndueCOgkauTxGFn5zUG3y3eENeTW9KA74a92AXqb/LY4pQ4VaD2KtbxT8Q8sl
+J7j1Y9t+DvDSGX4Jd/T5OT6oqic6/XiIjKdjDa/l3RZ5yDCZR1+71Id5hkRmnmgZ
+FCau1Ribghyn01e+VqondCc1dFGKFdRwGkwGfC2THDCiETL/ZaEJISbF0kBHHuTa
+1dYIesxaekwazsjW5OSQ
+=VBKQ
+-----END PGP SIGNATURE-----
+
+--8nsIa27JVQLqB7/C--
