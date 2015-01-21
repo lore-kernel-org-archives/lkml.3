@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306AbbAUGOj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 01:14:39 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:38602 "EHLO
+	id S1754212AbbAUGOi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 01:14:38 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:38613 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751199AbbAUGOf (ORCPT
+	with ESMTP id S1750816AbbAUGOf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 21 Jan 2015 01:14:35 -0500
 X-Original-SENDERIP: 10.177.222.143
@@ -19,68 +19,55 @@ Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Jerome Marchand <jmarchan@redhat.com>,
         Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
         Minchan Kim <minchan@kernel.org>
-Subject: [PATCH v1 00/10] zsmalloc compaction support
-Date: Wed, 21 Jan 2015 15:14:16 +0900
-Message-Id: <1421820866-26521-1-git-send-email-minchan@kernel.org>
+Subject: [PATCH v1 01/10] zram: avoid calling of zram_meta_free under init_lock
+Date: Wed, 21 Jan 2015 15:14:17 +0900
+Message-Id: <1421820866-26521-2-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 1.9.3
+In-Reply-To: <1421820866-26521-1-git-send-email-minchan@kernel.org>
+References: <1421820866-26521-1-git-send-email-minchan@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Recently, there was issue about zsmalloc fragmentation and
-I got a report from Juneho that new fork failed although there
-are plenty of free pages in the system.
-His investigation revealed zram is one of the culprit to make
-heavy fragmentation so there was no more contiguous 16K page
-for pgd to fork in the ARM.
+We don't need to call zram_meta_free under init_lock.
+What we need to prevent race is setting NULL into zram->meta
+(ie, init_done). This patch does it.
 
-This patchset implement *basic* zsmalloc compaction support
-and zram utilizes it so admin can do
+Signed-off-by: Minchan Kim <minchan@kernel.org>
+---
+ drivers/block/zram/zram_drv.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
 
-        "echo 1 > /sys/block/zram0/compact"
-
-In my experiment(high compress ratio data with heavy swap in/out
-on zram 8G swap), data is as follows,
-
-Before =
-zram allocated object :      60212066 bytes
-zram total used:     140103680 bytes
-ratio:         42.98 percent
-MemFree:          840192 kB
-
-Compaction
-
-After =
-frag ratio after compaction
-zram allocated object :      60212066 bytes
-zram total used:      76185600 bytes
-ratio:         79.03 percent
-MemFree:          901932 kB
-
-This patchset adds more logics in zsmalloc but when I tested
-heavy swapin/out program, the regression is marginal because
-most of overheads were caused by compress/decompress and
-other MM reclaim stuff.
-
-Minchan Kim (10):
-  zram: avoid calling of zram_meta_free under init_lock
-  zsmalloc: decouple handle and object
-  zsmalloc: implement reverse mapping
-  zsmalloc: factor out obj_[malloc|free]
-  zsmalloc: add status bit
-  zsmalloc: support compaction
-  zsmalloc: adjust ZS_ALMOST_FULL
-  zram: support compaction
-  zsmalloc: add fullness into stat
-  zsmalloc: record handle in page->private for huge object
-
- Documentation/ABI/testing/sysfs-block-zram |    8 +
- drivers/block/zram/zram_drv.c              |   30 +-
- drivers/block/zram/zram_drv.h              |    1 +
- include/linux/zsmalloc.h                   |    1 +
- mm/zsmalloc.c                              | 1008 +++++++++++++++++++++-------
- 5 files changed, 786 insertions(+), 262 deletions(-)
-
+diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
+index 9250b3f..7e03d86 100644
+--- a/drivers/block/zram/zram_drv.c
++++ b/drivers/block/zram/zram_drv.c
+@@ -719,6 +719,8 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+ 	}
+ 
+ 	meta = zram->meta;
++	zram->meta = NULL;
++
+ 	/* Free all pages that are still in this zram device */
+ 	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
+ 		unsigned long handle = meta->table[index].handle;
+@@ -731,8 +733,6 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+ 	zcomp_destroy(zram->comp);
+ 	zram->max_comp_streams = 1;
+ 
+-	zram_meta_free(zram->meta);
+-	zram->meta = NULL;
+ 	/* Reset stats */
+ 	memset(&zram->stats, 0, sizeof(zram->stats));
+ 
+@@ -741,6 +741,7 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+ 		set_capacity(zram->disk, 0);
+ 
+ 	up_write(&zram->init_lock);
++	zram_meta_free(meta);
+ 
+ 	/*
+ 	 * Revalidate disk out of the init_lock to avoid lockdep splat.
 -- 
 1.9.3
 
