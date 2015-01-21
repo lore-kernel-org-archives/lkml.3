@@ -1,196 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435AbbAUOPH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 09:15:07 -0500
-Received: from mail-pd0-f181.google.com ([209.85.192.181]:62870 "EHLO
-	mail-pd0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752015AbbAUOOz (ORCPT
+	id S1750930AbbAUFPU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 00:15:20 -0500
+Received: from mail-we0-f175.google.com ([74.125.82.175]:38608 "EHLO
+	mail-we0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750735AbbAUFPT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 09:14:55 -0500
-Date: Wed, 21 Jan 2015 01:15:01 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Daniel Kurtz <djkurtz@chromium.org>
-Cc: Caesar Wang <wxt@rock-chips.com>, Heiko Stuebner <heiko@sntech.de>,
-        Zhang Rui <rui.zhang@intel.com>, linux-pm@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH v2] thermal: rockchip: make temperature reporting much
- more accurate
-Message-ID: <20150121051459.GA13468@developer.hsd1.ca.comcast.net>
-References: <1421625349-14101-1-git-send-email-wxt@rock-chips.com>
- <1421625349-14101-2-git-send-email-wxt@rock-chips.com>
- <CAGS+omDiajqKxYFqdBXTeax+eeE-TD1WJ+C5odCbZBg6FELXDA@mail.gmail.com>
+	Wed, 21 Jan 2015 00:15:19 -0500
+Date: Wed, 21 Jan 2015 06:15:14 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: xiexiuqi@huawei.com, dave@stgolabs.net, agordeev@redhat.com,
+        bobby.prani@gmail.com, linux-kernel@vger.kernel.org,
+        laijs@cn.fujitsu.com, ying.xue@windriver.com, dahi@linux.vnet.ibm.com,
+        calvinowens@fb.com, mbenes@suse.cz
+Subject: Re: [GIT PULL rcu/next] RCU commits for 3.20
+Message-ID: <20150121051514.GA12032@gmail.com>
+References: <20150120004502.GA14517@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="PNTmBPCT7hxwcZjr"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAGS+omDiajqKxYFqdBXTeax+eeE-TD1WJ+C5odCbZBg6FELXDA@mail.gmail.com>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+In-Reply-To: <20150120004502.GA14517@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---PNTmBPCT7hxwcZjr
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 
-On Mon, Jan 19, 2015 at 12:23:49PM +0800, Daniel Kurtz wrote:
-> Hi Caesar,
->=20
-> Some drive-by review comments inline...
->=20
-> On Mon, Jan 19, 2015 at 7:55 AM, Caesar Wang <wxt@rock-chips.com> wrote:
-> > In general, the kernel should report temperature readings exactly as
-> > reported by the hardware. The cpu / gpu thermal driver works in 5 degree
-> > increments,but we ought to do more accurate. The temperature will do
-> > linear interpolation between the entries in the table.
-> >
-> > Test=3D $md5sum /dev/zero &
-> > $while true; do grep "" /sys/class/thermal/thermal_zone[1-2]/temp;
-> > sleep .5; done
-> >
-> > e.g. We can get the result as follows:
-> >     /sys/class/thermal/thermal_zone1/temp:39994
-> >     /sys/class/thermal/thermal_zone2/temp:39086
-> >     /sys/class/thermal/thermal_zone1/temp:39994
-> >     /sys/class/thermal/thermal_zone2/temp:39540
-> >     /sys/class/thermal/thermal_zone1/temp:39540
-> >     /sys/class/thermal/thermal_zone2/temp:39540
-> >     /sys/class/thermal/thermal_zone1/temp:39540
-> >     /sys/class/thermal/thermal_zone2/temp:39994
-> >
-> > Signed-off-by: Caesar Wang <wxt@rock-chips.com>
-> > Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> >
-> > ---
-> >
-> > Changes in v2:
-> > Reviewed-by: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-> >
-> >  drivers/thermal/rockchip_thermal.c | 26 +++++++++++++++++---------
-> >  1 file changed, 17 insertions(+), 9 deletions(-)
-> >
-> > diff --git a/drivers/thermal/rockchip_thermal.c b/drivers/thermal/rockc=
-hip_thermal.c
-> > index 1bcddfc..a7ae23a 100644
-> > --- a/drivers/thermal/rockchip_thermal.c
-> > +++ b/drivers/thermal/rockchip_thermal.c
-> > @@ -193,19 +193,18 @@ static u32 rk_tsadcv2_temp_to_code(long temp)
-> >
-> >  static long rk_tsadcv2_code_to_temp(u32 code)
-> >  {
-> > -       int high, low, mid;
-> > -
-> > -       low =3D 0;
-> > -       high =3D ARRAY_SIZE(v2_code_table) - 1;
-> > -       mid =3D (high + low) / 2;
-> > +       unsigned int low =3D 0;
-> > +       unsigned int high =3D ARRAY_SIZE(v2_code_table) - 1;
-> > +       unsigned int mid =3D (low + high) / 2;
-> > +       unsigned int scale;
-> >
-> >         if (code > v2_code_table[low].code || code < v2_code_table[high=
-].code)
-> >                 return 125000; /* No code available, return max tempera=
-ture */
->=20
-> I think if the temp sensor reading was invalid we should return an
-> error code rather than just silently returning "max temp".
-> Returning an error here could then be propagated up by its only
-> caller, the ->get_temp() callback.
->=20
+> Hello, Ingo,
+> 
+> The changes in this series include:
+> 
+> 1.	Documentation updates.  These were posted to LKML at
+> 	https://lkml.org/lkml/2015/1/7/496.
+> 
+> 2.	Miscellaneous fixes.  These were posted to LKML at
+> 	https://lkml.org/lkml/2015/1/7/507.
+> 
+> 3.	Preemptible-RCU fixes, including fixing an old bug in the
+> 	interaction of RCU priority boosting and CPU hotplug.  These were
+> 	posted to LKML at https://lkml.org/lkml/2015/1/7/535.
+> 
+> 4.	SRCU updates.  These were posted to LKML at
+> 	https://lkml.org/lkml/2015/1/7/555.
+> 
+> 5.	RCU CPU stall-warning updates.  These were posted to LKML at
+> 	https://lkml.org/lkml/2015/1/7/565.
+> 
+> 6.	RCU torture-test updates.  These were posted to LKML at
+> 	https://lkml.org/lkml/2015/1/7/591.
+> 
+> These changes are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git for-mingo
+> 
+> for you to fetch changes up to 78e691f4ae2d5edea0199ca802bb505b9cdced88:
+> 
+>   Merge branches 'doc.2015.01.07a', 'fixes.2015.01.15a', 'preempt.2015.01.06a', 'srcu.2015.01.06a', 'stall.2015.01.16a' and 'torture.2015.01.11a' into HEAD (2015-01-15 23:34:34 -0800)
+> 
+> ----------------------------------------------------------------
+> 
+> Alexander Gordeev (1):
+>       rcu: Remove redundant rcu_is_cpu_rrupt_from_idle() from tiny RCU
+> 
+> Calvin Owens (1):
+>       ksoftirqd: Enable IRQs and call cond_resched() before poking RCU
+> 
+> David Hildenbrand (1):
+>       hotplugcpu: Avoid deadlocks by waking active_writer
+> 
+> Davidlohr Bueso (1):
+>       documentation: Fix smp typo in memory-barriers.txt
+> 
+> Lai Jiangshan (3):
+>       tiny_rcu: Directly force QS when call_rcu_[bh|sched]() on idle_task
+>       rcu: Remove "select IRQ_WORK" from config TREE_RCU
+>       rcu: Revert "Allow post-unlock reference for rt_mutex" to avoid priority-inversion
+> 
+> Miroslav Benes (1):
+>       rcu: Fix RCU CPU stall detection in tiny implementation
+> 
+> Paul E. McKenney (43):
+>       rcu: Make rcu_nmi_enter() handle nesting
+>       rcu: Fix invoke_rcu_callbacks() comment
+>       compiler: Allow 1- and 2-byte smp_load_acquire() and smp_store_release()
+>       rcu: Fix rcu_barrier() race that could result in too-short wait
+>       rcu: Protect rcu_boost() lockless accesses with ACCESS_ONCE()
+>       rcu: Rename "empty" to "empty_norm" in preparation for boost rework
+>       rcu: Abstract rcu_cleanup_dead_rnp() from rcu_cleanup_dead_cpu()
+>       rcu: Make rcu_read_unlock_special() propagate ->qsmaskinit bit clearing
+>       rcu: Don't migrate blocked tasks even if all corresponding CPUs offline
+>       rcu: Shorten irq-disable region in rcu_cleanup_dead_cpu()
+>       rcu: Make use of rcu_preempt_has_tasks()
+>       rcu: Don't spawn rcub kthreads on root rcu_node structure
+>       rcu: Don't initiate RCU priority boosting on root rcu_node
+>       rcu: Don't bother affinitying rcub kthreads away from offline CPUs
+>       rcu: Note quiescent state when CPU goes offline
+>       rcu: Don't scan root rcu_node structure for stalled tasks
+>       rcu: Remove redundant callback-list initialization
+>       rcu: Expand SRCU ->completed to 64 bits
+>       rcu: Combine DEFINE_SRCU() and DEFINE_STATIC_SRCU()
+>       rcu: Set default to RCU_CPU_STALL_INFO=y
+>       rcutorture: Add checks for stall ending before dump start
+>       rcu: Make RCU_CPU_STALL_INFO include number of fqs attempts
+>       rcu: Improve diagnostics for spurious RCU CPU stall warnings
+>       rcu: Handle gpnum/completed wrap while dyntick idle
+>       documentation: Record limitations of bitfields and small variables
+>       rcutorture: Issue warnings on close calls due to Reader Batch blows
+>       rcu: Make _batches_completed() functions return unsigned long
+>       rcutorture: Make build-output parsing correctly flag RCU's warnings
+>       rcutorture: Use unsigned for Reader Batch computations
+>       rcu: Provide rcu_batches_completed_sched() for TINY_RCU
+>       rcutorture: Drop rcu_torture_completed() and friends
+>       rcu: Remove redundant rcu_batches_completed() declaration
+>       rcutorture: Check from beginning to end of grace period
+>       rcutorture: Handle different mpstat versions
+>       torture: Add "-enable-kvm -soundhw pcspk" to qemu command line
+>       torture: Flag console.log file to prevent holdovers from earlier runs
+>       rcutorture: Add more diagnostics in rcu_barrier() test failure case
+>       ksoftirqd: Use new cond_resched_rcu_qs() function
+>       rcu: Optionally run grace-period kthreads at real-time priority
+>       rcu: Make cond_resched_rcu_qs() apply to normal RCU flavors
+>       rcu: Add GP-kthread-starvation checks to CPU stall warnings
+>       rcu: Initialize tiny RCU stall-warning timeouts at boot
+>       Merge branches 'doc.2015.01.07a', 'fixes.2015.01.15a', 'preempt.2015.01.06a', 'srcu.2015.01.06a', 'stall.2015.01.16a' and 'torture.2015.01.11a' into HEAD
+> 
+> Pranith Kumar (2):
+>       rcupdate: Replace smp_read_barrier_depends() with lockless_dereference()
+>       rcu: Make SRCU optional by using CONFIG_SRCU
+> 
+> Xie XiuQi (1):
+>       documentation: Update sysfs path for rcu_cpu_stall_timeout
+> 
+> Ying Xue (1):
+>       rculist: Fix sparse warning
+> 
+>  Documentation/RCU/stallwarn.txt                    |  16 +-
+>  Documentation/RCU/trace.txt                        |  32 +-
+>  Documentation/memory-barriers.txt                  |  46 ++-
+>  arch/arm/kvm/Kconfig                               |   1 +
+>  arch/arm64/kvm/Kconfig                             |   1 +
+>  arch/mips/kvm/Kconfig                              |   1 +
+>  arch/powerpc/kvm/Kconfig                           |   1 +
+>  arch/s390/kvm/Kconfig                              |   1 +
+>  arch/tile/kvm/Kconfig                              |   1 +
+>  arch/x86/Kconfig                                   |   1 +
+>  arch/x86/kvm/Kconfig                               |   1 +
+>  drivers/clk/Kconfig                                |   1 +
+>  drivers/cpufreq/Kconfig                            |   1 +
+>  drivers/devfreq/Kconfig                            |   1 +
+>  drivers/md/Kconfig                                 |   1 +
+>  drivers/net/Kconfig                                |   1 +
+>  fs/btrfs/Kconfig                                   |   1 +
+>  fs/notify/Kconfig                                  |   1 +
+>  fs/quota/Kconfig                                   |   1 +
+>  include/linux/compiler.h                           |   2 +-
+>  include/linux/rculist.h                            |  16 +-
+>  include/linux/rcupdate.h                           |  13 +-
+>  include/linux/rcutiny.h                            |  45 ++-
+>  include/linux/rcutree.h                            |  11 +-
+>  include/linux/srcu.h                               |  14 +-
+>  init/Kconfig                                       |  18 +-
+>  kernel/cpu.c                                       |  56 ++--
+>  kernel/notifier.c                                  |   3 +
+>  kernel/power/Kconfig                               |   1 +
+>  kernel/rcu/Makefile                                |   3 +-
+>  kernel/rcu/rcu.h                                   |   6 +
+>  kernel/rcu/rcutorture.c                            |  66 ++--
+>  kernel/rcu/srcu.c                                  |   2 +-
+>  kernel/rcu/tiny.c                                  | 113 +------
+>  kernel/rcu/tiny_plugin.h                           |   9 +-
+>  kernel/rcu/tree.c                                  | 355 +++++++++++++++------
+>  kernel/rcu/tree.h                                  |  62 +---
+>  kernel/rcu/tree_plugin.h                           | 271 +++++-----------
+>  kernel/rcu/tree_trace.c                            |   8 +-
+>  kernel/softirq.c                                   |   3 +-
+>  lib/Kconfig.debug                                  |   3 +-
+>  mm/Kconfig                                         |   1 +
+>  security/tomoyo/Kconfig                            |   1 +
+>  tools/testing/selftests/rcutorture/bin/cpus2use.sh |   2 +-
+>  .../selftests/rcutorture/bin/kvm-recheck-rcu.sh    |  18 ++
+>  .../selftests/rcutorture/bin/kvm-test-1-run.sh     |   9 +-
+>  .../selftests/rcutorture/bin/parse-build.sh        |  20 +-
+>  .../selftests/rcutorture/bin/parse-console.sh      |   2 +-
+>  48 files changed, 657 insertions(+), 586 deletions(-)
 
-Agreed here.
+Pulled, thanks a lot Paul!
 
-> Note: 'code < v2_code_table[high].code' is always false, since code is
-> unsigned, and the last entry is 0.
->=20
-> Also, the check above doesn't reject "code =3D=3D 0xfff".
-> Even worse, I believe in that case the below algorithm will eventually
-> set mid=3D0 and access v2_code_table[-1].code.
->=20
-
-yeah, if that can happen, then it must be fixed.
-
-
-> >
-> >         while (low <=3D high) {
-> > -               if (code >=3D v2_code_table[mid].code && code <
-> > -                   v2_code_table[mid - 1].code)
-> > -                       return v2_code_table[mid].temp;
-> > +               if (code >=3D v2_code_table[mid].code &&
-> > +                   code < v2_code_table[mid - 1].code)
-> > +                       break;
-> >                 else if (code < v2_code_table[mid].code)
-> >                         low =3D mid + 1;
-> >                 else
-> > @@ -213,7 +212,16 @@ static long rk_tsadcv2_code_to_temp(u32 code)
-> >                 mid =3D (low + high) / 2;
-> >         }
-> >
-> > -       return 125000;
-> > +       /*
-> > +        * The 5C granularity provided by the table is too much. Let's
-> > +        * assume that the relationship between sensor readings and
-> > +        * temperature between 2 table entries is linear and extrapolate
->=20
-> I think this is "interpolate", not "extrapolate".
-
-
-in this case yes, agreed too.
-
->=20
-> > +        * to produce less granular result.
-> > +        */
-> > +       scale =3D (v2_code_table[mid].temp - v2_code_table[mid - 1].tem=
-p) /
-> > +               (v2_code_table[mid - 1].code - v2_code_table[mid].code);
-> > +       return v2_code_table[mid - 1].temp +
-> > +                       (v2_code_table[mid - 1].code - code) * scale;
->=20
-> Assuming the product fits in an unsigned long (and it will, since code
-> is only 12-bits), it is more precise to multiply first and then
-> divide, something like this:
->=20
->    num =3D v2_code_table[mid].temp - v2_code_table[mid - 1].temp;
->    num *=3D v2_code_table[mid - 1].code - code;
->    denom =3D v2_code_table[mid - 1].code - v2_code_table[mid].code;
->    return v2_code_table[mid - 1].temp + (num / denom);
->=20
-> -Daniel
->=20
-> >  }
-> >
-> >  /**
-> > --
-> > 1.9.1
-> >
-> >
-> >
-> > _______________________________________________
-> > Linux-rockchip mailing list
-> > Linux-rockchip@lists.infradead.org
-> > http://lists.infradead.org/mailman/listinfo/linux-rockchip
-
---PNTmBPCT7hxwcZjr
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUvzXKAAoJEMLUO4d9pOJWepgH/1X356E4Xcz1mSQnPOlz3WI6
-8UQOV9drl0cSMk4QiKLFDup+q6ZLW3CqAsDuaJvPI99dV5YtY8c7vFYDsPmhR8hg
-LL/3F3CMXiU6eMFmwtns9eTPSyR233olJmLLGK31/JwvyDihcUCVB9UTVEpt4rFX
-G+KjeKfix0DaGDwC+b2ub+93lyC7ZGrJ1v7aJiYFXfO/RhCQwZ/8ObCwrJjtoQ3T
-1ht3IWFoh7WM6ZuuBvvEvjkwjggZXHPZuN6PG0kTwW8bRQ9X9B8MKnhlzS6F0oN5
-vwXZPknc89h8n4T2kT2IgwrN1cWAs3LhxeptU2+BZ7kZZ+dXoISg+FSYgOku0nM=
-=uRVB
------END PGP SIGNATURE-----
-
---PNTmBPCT7hxwcZjr--
+	Ingo
