@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755004AbbAUCf6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 21:35:58 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:3006 "EHLO
+	id S1754557AbbAUCdE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 21:33:04 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:3346 "EHLO
 	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754208AbbAUCct (ORCPT
+	with ESMTP id S1754361AbbAUCc4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 21:32:49 -0500
+	Tue, 20 Jan 2015 21:32:56 -0500
 From: Yijing Wang <wangyijing@huawei.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
 CC: Jiang Liu <jiang.liu@linux.intel.com>, <linux-pci@vger.kernel.org>,
@@ -23,11 +23,10 @@ CC: Jiang Liu <jiang.liu@linux.intel.com>, <linux-pci@vger.kernel.org>,
         "Arnd Bergmann" <arnd@arndb.de>,
         Geert Uytterhoeven <geert@linux-m68k.org>,
         "Yijing Wang" <wangyijing@huawei.com>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        <linux-tegra@vger.kernel.org>
-Subject: [PATCH v2 24/30] PCI/tegra: Remove redundant tegra_pcie_scan_bus()
-Date: Wed, 21 Jan 2015 08:30:19 +0800
-Message-ID: <1421800225-26230-25-git-send-email-wangyijing@huawei.com>
+        Mohit Kumar <mohit.kumar@st.com>, Jingoo Han <jg1.han@samsung.com>
+Subject: [PATCH v2 25/30] PCI/designware: Use pci_scan_root_bus() for simplicity
+Date: Wed, 21 Jan 2015 08:30:20 +0800
+Message-ID: <1421800225-26230-26-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1421800225-26230-1-git-send-email-wangyijing@huawei.com>
 References: <1421800225-26230-1-git-send-email-wangyijing@huawei.com>
@@ -39,53 +38,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now pci_scan_root_bus() is almost simliar to
-pci_create_root_bus() + pci_scan_child_bus().
-So we could use common pci_scan_root_bus() in
-pci_common_init_dev() to scan pci busses.
-tegra_pcie_scan_bus() is redundant, remove it.
+Use pci_scan_root_bus() instead of pci_create_root_bus() +
+pci_scan_child_bus() for simplicity.
 
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-CC: Thierry Reding <thierry.reding@gmail.com>
-CC: linux-tegra@vger.kernel.org
+CC: Mohit Kumar <mohit.kumar@st.com>
+CC: Jingoo Han <jg1.han@samsung.com>
 ---
- drivers/pci/host/pci-tegra.c |   16 ----------------
- 1 files changed, 0 insertions(+), 16 deletions(-)
+ drivers/pci/host/pcie-designware.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/pci/host/pci-tegra.c b/drivers/pci/host/pci-tegra.c
-index 6f9c29f..baed0c5 100644
---- a/drivers/pci/host/pci-tegra.c
-+++ b/drivers/pci/host/pci-tegra.c
-@@ -679,21 +679,6 @@ static int tegra_pcie_map_irq(const struct pci_dev *pdev, u8 slot, u8 pin)
- 	return irq;
- }
+diff --git a/drivers/pci/host/pcie-designware.c b/drivers/pci/host/pcie-designware.c
+index eef3111..d37fe27 100644
+--- a/drivers/pci/host/pcie-designware.c
++++ b/drivers/pci/host/pcie-designware.c
+@@ -725,13 +725,11 @@ static struct pci_bus *dw_pcie_scan_bus(int nr, struct pci_sys_data *sys)
+ 	struct pcie_port *pp = sys_to_pcie(sys);
  
--static struct pci_bus *tegra_pcie_scan_bus(int nr, struct pci_sys_data *sys)
--{
--	struct tegra_pcie *pcie = sys_to_pcie(sys);
--	struct pci_bus *bus;
--
--	bus = pci_create_root_bus(pcie->dev, sys->busnr, &tegra_pcie_ops, sys,
--				  &sys->resources);
--	if (!bus)
--		return NULL;
--
+ 	pp->root_bus_nr = sys->busnr;
+-	bus = pci_create_root_bus(pp->dev, sys->busnr,
++	bus = pci_scan_root_bus(pp->dev, sys->busnr,
+ 				  &dw_pcie_ops, sys, &sys->resources);
+ 	if (!bus)
+ 		return NULL;
+ 
 -	pci_scan_child_bus(bus);
 -
--	return bus;
--}
--
- static irqreturn_t tegra_pcie_isr(int irq, void *arg)
- {
- 	const char *err_msg[] = {
-@@ -1880,7 +1865,6 @@ static int tegra_pcie_enable(struct tegra_pcie *pcie)
- 	hw.private_data = (void **)&pcie;
- 	hw.setup = tegra_pcie_setup;
- 	hw.map_irq = tegra_pcie_map_irq;
--	hw.scan = tegra_pcie_scan_bus;
- 	hw.ops = &tegra_pcie_ops;
+ 	if (bus && pp->ops->scan_bus)
+ 		pp->ops->scan_bus(pp);
  
- 	pci_common_init_dev(pcie->dev, &hw);
 -- 
 1.7.1
 
