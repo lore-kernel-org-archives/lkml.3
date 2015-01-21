@@ -1,93 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753482AbbAUVkf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 16:40:35 -0500
-Received: from smtp4-g21.free.fr ([212.27.42.4]:6000 "EHLO smtp4-g21.free.fr"
+	id S1753137AbbAUVpG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 16:45:06 -0500
+Received: from 7of9.schinagl.nl ([88.159.158.68]:39584 "EHLO 7of9.schinagl.nl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752249AbbAUVk2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 16:40:28 -0500
-Date: Wed, 21 Jan 2015 22:40:24 +0100
-From: Sabrina Dubroca <sd@queasysnail.net>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Guenter Roeck <linux@roeck-us.net>, Paul Moore <pmoore@redhat.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-audit@redhat.com, Richard Guy Briggs <rgb@redhat.com>
-Subject: Re: linux-next: Tree for Jan 20 -- Kernel panic - Unable to mount
- root fs
-Message-ID: <20150121214024.GA28012@kria>
-References: <20150121033600.GN29656@ZenIV.linux.org.uk>
- <54BF2496.4000807@roeck-us.net>
- <20150121043637.GO29656@ZenIV.linux.org.uk>
- <20150121110539.GA8924@kria>
- <54BFAA5D.4040108@roeck-us.net>
- <20150121182905.GQ29656@ZenIV.linux.org.uk>
- <54BFF8B3.6060802@roeck-us.net>
- <20150121200626.GR29656@ZenIV.linux.org.uk>
- <54C01418.5060204@roeck-us.net>
- <20150121212833.GS29656@ZenIV.linux.org.uk>
+	id S1751702AbbAUVox (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 16:44:53 -0500
+Message-ID: <54C01DD1.8040704@schinagl.nl>
+Date: Wed, 21 Jan 2015 22:44:49 +0100
+From: Olliver Schinagl <oliver@schinagl.nl>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20150121212833.GS29656@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Alexandre Courbot <gnurou@gmail.com>,
+        Olliver Schinagl <oliver+list@schinagl.nl>
+CC: Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Bryan Wu <cooloney@gmail.com>, Richard Purdie <rpurdie@rpsys.net>,
+        Robin Gong <b38343@freescale.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Aaron Lu <aaron.lu@intel.com>,
+        Mika Westerberg <mika.westerberg@linux.intel.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Wolfram Sang <wsa@the-dreams.de>, Alexander Shiyan <shc_work@mail.ru>,
+        Jingoo Han <jg1.han@samsung.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
+        Linux Input <linux-input@vger.kernel.org>,
+        "linux-leds@vger.kernel.org" <linux-leds@vger.kernel.org>
+Subject: Re: [PATCH v1 2/4] gpio: add parameter to allow the use named gpios
+References: <1420621722-7428-1-git-send-email-oliver+list@schinagl.nl> <1420621722-7428-3-git-send-email-oliver+list@schinagl.nl> <CAAVeFuLwTsX8HByCVyEucYJ_DhhCOP=tEDprmi9pBwx+a7zzJg@mail.gmail.com>
+In-Reply-To: <CAAVeFuLwTsX8HByCVyEucYJ_DhhCOP=tEDprmi9pBwx+a7zzJg@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2015-01-21, 21:28:33 +0000, Al Viro wrote:
-> On Wed, Jan 21, 2015 at 01:03:20PM -0800, Guenter Roeck wrote:
-> > ok case (putname commented out):
-> > 
-> > user_path_at_empty lookup usr flags 0x0
-> > path_lookupat: calling path_init 'usr' flags=40
-> > path_init: link_path_walk() returned 0
-> > path_lookupat: path_init 'usr' flags=40[50] returned 0
-> > walk_component: lookup_fast() returned 1
-> > walk_component: lookup_slow() returned 0
-> > walk_component: inode=  (null), negative=1
-> > do_path_lookup(usr, 0x10)
-> > path_lookupat: calling path_init 'usr' flags=50
-> > path_init: link_path_walk() returned 0
-> > path_lookupat: path_init 'usr' flags=50[50] returned 0
-> > mkdir[c74012a0,/usr] => 0
-> > user_path_at_empty lookup usr flags 0x1
-> > path_lookupat: calling path_init 'usr' flags=41
-> > path_init: link_path_walk() returned 0
-> > path_lookupat: path_init 'usr' flags=41[51] returned 0
-> > walk_component: inode=c74004a0, negative=0
-> > user_path_at_empty lookup usr flags 0x1
-> > path_lookupat: calling path_init 'usr' flags=41
-> > path_init: link_path_walk() returned 0
-> > path_lookupat: path_init 'usr' flags=41[51] returned 0
-> > 
-> > failing case:
-> > 
-> > path_lookupat: calling path_init 'usr' flags=40
-> > path_init: link_path_walk() returned 0
-> > path_lookupat: path_init 'usr' flags=40[50] returned 0
-> > walk_component: lookup_fast() returned 1
-> > walk_component: lookup_slow() returned 0
-> > walk_component: inode=  (null), negative=1
-> > do_path_lookup(usr, 0x10)
-> > path_lookupat: calling path_init 'usr' flags=50
-> > path_init: link_path_walk() returned 0
-> > path_lookupat: path_init 'usr' flags=50[50] returned 0
-> > mkdir[c74012a0,/kkk] => 0						<==== SIC!
-> 
-> Cute. 'k' being 0x6b, aka POISON_FREE...  OK, the next question is what's
-> been freed under us - I don't believe that it's dentry itself...
-> Oh, fuck.  OK, I see what happens.  Look at kern_path_create(); it does
-> LOOKUP_PARENT walk, leaving nd->last pointing to the last component of
-> the *COPY* of the name it's just created, walked and freed.
-> 
-> OK...  Fortunately, struct nameidata is completely opaque outside of fs/namei.c,
-> so we only need to care about a couple of codepaths.
-> 
-> Folks, could you check if the following on top of linux-next fixes the problem?
+Hey Alexandre,
 
-Yes, it works.
+On 01/19/2015 05:04 AM, Alexandre Courbot wrote:
+> On Wed, Jan 7, 2015 at 6:08 PM, Olliver Schinagl
+> <oliver+list@schinagl.nl> wrote:
+>> From: Olliver Schinagl <oliver@schinagl.nl>
+>>
+>> The gpio binding document says that new code should always use named
+>> gpios. Patch 40b73183 added support to parse a list of gpios from child
+>> nodes, but does not make it possible to use named gpios. This patch adds
+>> the con_id property and implements it is done in gpiolib.c, where the
+>> old-style of using unnamed gpios still works.
+> This is absolutely correct - thanks for spotting this.
+>
+> <snip>
+> ... since it looks like this part has been mostly copy/pasted from
+> of_find_gpio(), can you add another patch that fixes it there as well?
+Yeah, since it has the same functionality, i copy pasted it. Wasn't sure 
+if it was worth to macro it or anything. I've sent a v2 with that patch 
+added to the mix :)
+>
+> Also in the case of ACPI this will prove to be an incomplete lookup
+> since acpi_find_gpio() has an additional fallback if the named lookup
+> fails.
+I'm not very familiar (or at all) how ACPI falls into all of this, I'm 
+just starting to get a hang of the DT, but since this is how the dts is 
+being parsed, where is the relation here? Or did I misunderstand?
+>
+> In that respect, I wonder if it would not be better for
+> devm_get_gpiod_from_child() to call of_find_gpio() and
+> acpi_find_gpio() (after making them non-static) followed by
+> gpiod_request() instead of calling fwnode_get_named_gpiod(). But in
+> that case it will have to do the OF/ACPI handling by itself.
+>
+> I'm not really sure about which way is better. I'd appreciate if you
+> could give a thought to a possible refactoring that would improve the
+> situation ; otherwise feel free to ignore what I have written above
+> and to duplicate the property name building code.
+I'm afraid I'm a little too inexperienced to follow exactly what you say ;)
 
+Olliver
 
--- 
-Sabrina
