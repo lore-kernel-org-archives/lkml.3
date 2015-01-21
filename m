@@ -1,77 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753391AbbAUNzd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 08:55:33 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:47345 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752114AbbAUNzZ (ORCPT
+	id S1753404AbbAUN5X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 08:57:23 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:40008 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751972AbbAUN5Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 08:55:25 -0500
-Date: Wed, 21 Jan 2015 14:55:12 +0100
-From: Olivier Sobrie <olivier@sobrie.be>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Jan Dumon <j.dumon@option.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH 11/11] usb: core: fix a race with usb_queue_reset_device()
-Message-ID: <20150121135512.GA9889@hposo>
-Reply-To: Olivier Sobrie <olivier@sobrie.be>
-References: <1421756978-4093-12-git-send-email-olivier@sobrie.be>
- <Pine.LNX.4.44L0.1501201022360.1150-100000@iolanthe.rowland.org>
+	Wed, 21 Jan 2015 08:57:16 -0500
+Date: Wed, 21 Jan 2015 13:56:59 +0000
+From: Will Deacon <will.deacon@arm.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "oleg@redhat.com" <oleg@redhat.com>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Subject: Re: Behaviour of smp_mb__{before,after}_spin* and acquire/release
+Message-ID: <20150121135659.GG4549@arm.com>
+References: <20150113163353.GE31784@arm.com>
+ <20150120093443.GA11596@twins.programming.kicks-ass.net>
+ <20150120213545.GT9719@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1501201022360.1150-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20150120213545.GT9719@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Alan,
-
-On Tue, Jan 20, 2015 at 10:26:30AM -0500, Alan Stern wrote:
-> On Tue, 20 Jan 2015, Olivier Sobrie wrote:
-> 
-> > When usb_queue_reset() is called it schedules a work in view of
-> > resetting the usb interface. When the reset work is running, it
-> > can be scheduled again (e.g. by the usb disconnect method of
-> > the driver).
+On Tue, Jan 20, 2015 at 09:35:45PM +0000, Paul E. McKenney wrote:
+> On Tue, Jan 20, 2015 at 10:34:43AM +0100, Peter Zijlstra wrote:
+> > On Tue, Jan 13, 2015 at 04:33:54PM +0000, Will Deacon wrote:
+> > > Hi Paul,
+> > > 
+> > > I started dusting off a series I've been working to implement a relaxed
+> > > atomic API in Linux (i.e. things like atomic_read(v, ACQUIRE)) but I'm
+> > > having trouble making sense of the ordering semantics we have in mainline
+> > > today:
 > > 
-> > Consider that the reset work is queued again while the reset work
-> > is running and that this work leads to a forced unbinding of the
-> > usb interface (e.g. because a driver is bound to the interface
-> > and has no pre/post_reset methods - see usb_reset_device()).
-> > In such condition, usb_unbind_interface() gets called and this
-> > function calls usb_cancel_queued_reset() which does nothing
-> > because the flag "reset_running" is set to 1. The second reset
-> > work that has been scheduled is therefore not cancelled.
-> > Later, the usb_reset_device() tries to rebind the interface.
-> > If it fails, then the usb interface context which contain the
-> > reset work struct is freed and it most likely crash when the
-> > second reset work tries to be run.
+> > >   2. Does smp_mb__after_unlock_lock order smp_store_release against
+> > >      smp_load_acquire? Again, Documentation/memory-barriers.txt puts
+> > >      these operations into the RELEASE and ACQUIRE classes respectively,
+> > >      but since smp_mb__after_unlock_lock is a NOP everywhere other than
+> > >      PowerPC, I don't think this is enforced by the current code. 
+> > 
+> > Yeah, wasn't Paul going to talk to Ben about that? PPC is the only arch
+> > that has the weak ACQUIRE/RELEASE for its spinlocks.
 > 
-> There was an earlier patch posted for testing (no results yet)  
-> affecting this same region of code:
+> I thought that you guys were going to propose something and we would see
+> what the reaction was.  ;-)
 > 
-> 	http://marc.info/?l=linux-usb&m=142064533924019&w=2
+> > >      Most
+> > >      architectures follow the pattern used by asm-generic/barrier.h:
+> > > 
+> > >        release: smp_mb(); STORE
+> > >        acquire: LOAD; smp_mb();
+> > > 
+> > >      which doesn't provide any release -> acquire ordering afaict.
+> > 
+> > Only when combined on the same address, if the LOAD observes the result
+> > of the STORE we can guarantee the rest of the ordering. And if you
+> > build a locking primitive with them (or circular lists or whatnot) you
+> > have that extra condition.
+> > 
+> > But yes, I see your argument that this implementation is weak like the
+> > PPC.
 > 
-> It should fix the problem described here, because (among other things) 
-> it adds usb_get/put_intf calls to the delayed-reset routines.
+> A more complete example would be as follows:
+> 
+>        STOREs followed by release: smp_mb(); STORE A
+>        acquire: LOAD A; smp_mb(); preceding LOADs
+> 
+> If the LOAD A gets the value from the STORE A, then the LOADs following
+> the acquire are guaranteed to see the STOREs preceding the release.
+> 
+> And yes, this really truly does work fine with weaker ordering.
 
-I tested your patch. It also fixes the problem I observed.
-You can drop mine.
+I agree, but if we consider the case where the acquire and the release are
+operating on *different* addresses, then the current Documentation would
+tell us to use smp_mb__after_unlock_lock to ensure ordering, which won't
+work on anything other than Power.
 
-For your info:
-
-My test consists in powering down a usb hso modem while one of its
-serial port is opened. It leads to two URB failures, each urb callback
-queues a reset.
-Without your fix (or without the one I sent), a crash happens after
-less than ~20 power up/down sequences. With your fix, after more than
-1000 power up/down I don't see any crash.
-
-Thanks,
-
--- 
-Olivier
+Will
