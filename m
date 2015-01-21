@@ -1,100 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753429AbbAUM6i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 07:58:38 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:52615 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752978AbbAUM62 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 07:58:28 -0500
-Date: Wed, 21 Jan 2015 13:58:20 +0100
-From: Petr Mladek <pmladek@suse.cz>
-To: Pranith Kumar <bobby.prani@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>,
-        Joe Perches <joe@perches.com>, John Stultz <john.stultz@linaro.org>,
-        Dan Streetman <ddstreet@ieee.org>,
-        Simon =?iso-8859-1?Q?K=E5gstr=F6m?= 
-	<simon.kagstrom@netinsight.net>,
-        Borislav Petkov <bp@suse.de>,
-        Andy Shevchenko <andriy.shevchenko@linux.intel.com>,
-        open list <linux-kernel@vger.kernel.org>,
-        Michael Ellerman <mpe@ellerman.id.au>
-Subject: Re: [PATCH 1/2] printk: Add dummy routine for when CONFIG_PRINTK=n
-Message-ID: <20150121125820.GA8244@dhcp128.suse.cz>
-References: <1421797911-23650-1-git-send-email-bobby.prani@gmail.com>
+	id S1753621AbbAUM75 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 07:59:57 -0500
+Received: from mail-qc0-f177.google.com ([209.85.216.177]:38847 "EHLO
+	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752609AbbAUM7r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 07:59:47 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421797911-23650-1-git-send-email-bobby.prani@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <cover.1421204431.git.micky_ching@realsil.com.cn>
+References: <cover.1421204431.git.micky_ching@realsil.com.cn>
+Date: Wed, 21 Jan 2015 13:59:46 +0100
+Message-ID: <CAPDyKFqH3HLccQhiLC9PSZLf1ZfbBnmtSUt-W2J7QO=Fw4JiRw@mail.gmail.com>
+Subject: Re: [PATCH 0/2] mmc: rtsx: add check before sending request
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: micky <micky_ching@realsil.com.cn>
+Cc: Chris Ball <chris@printf.net>, Samuel Ortiz <sameo@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Dan Carpenter <dan.carpenter@oracle.com>,
+        "driverdev-devel@linuxdriverproject.org" 
+	<devel@linuxdriverproject.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>, Roger <rogerable@realtek.com>,
+        Wei WANG <wei_wang@realsil.com.cn>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2015-01-20 18:51:49, Pranith Kumar wrote:
-> There are missing dummy routines for log_buf_addr_get() and log_buf_len_get()
-> for when CONFIG_PRINTK is not set causing build failures.
-> 
-> This patch adds these dummy routines at the appropriate location.
-> 
-> Signed-off-by: Pranith Kumar <bobby.prani@gmail.com>
-> CC: Michael Ellerman <mpe@ellerman.id.au>
-> ---
->  include/linux/printk.h | 15 ++++++++++++---
->  1 file changed, 12 insertions(+), 3 deletions(-)
-> 
-> diff --git a/include/linux/printk.h b/include/linux/printk.h
-> index aeb9d7f..f52f02b 100644
-> --- a/include/linux/printk.h
-> +++ b/include/linux/printk.h
-> @@ -10,9 +10,6 @@
->  extern const char linux_banner[];
->  extern const char linux_proc_banner[];
->  
-> -extern char *log_buf_addr_get(void);
-> -extern u32 log_buf_len_get(void);
-> -
->  static inline int printk_get_level(const char *buffer)
->  {
->  	if (buffer[0] == KERN_SOH_ASCII && buffer[1]) {
-> @@ -168,6 +165,8 @@ void __init setup_log_buf(int early);
->  void dump_stack_set_arch_desc(const char *fmt, ...);
->  void dump_stack_print_info(const char *log_lvl);
->  void show_regs_print_info(const char *log_lvl);
-> +char *log_buf_addr_get(void);
-> +u32 log_buf_len_get(void);
->  #else
->  static inline __printf(1, 0)
->  int vprintk(const char *s, va_list args)
-> @@ -217,6 +216,16 @@ static inline void dump_stack_print_info(const char *log_lvl)
->  static inline void show_regs_print_info(const char *log_lvl)
->  {
->  }
-> +
-> +static inline char *log_buf_addr_get(void)
-> +{
-> +	return NULL;
-> +}
-> +
-> +static linline u32 log_buf_len_get(void)
-          ^
-	  typo: linline -> inline
-
-Otherwise, it looks fine to me.
-
-Well, If you send v2, I would move this above log_buf_kexec_setup() in
-both #ifdef branches. So that all four log_buf()-related functions
-declared/defined together.
-
-Best Regards,
-Petr
-
-> +{
-> +	return 0;
-> +}
->  #endif
->  
->  extern asmlinkage void dump_stack(void) __cold;
-> -- 
+On 14 January 2015 at 04:09,  <micky_ching@realsil.com.cn> wrote:
+> From: Micky Ching <micky_ching@realsil.com.cn>
+>
+> Add check before sending request can make request return faster.
+> - finish request if no card exist
+>   This can make request finish faster, especial for some sdio card,
+>   when card removed, there still a lot of command pending,
+>   if we check card exist and stop request, the card will disappear
+>   faster in user space.
+>
+> - check sg_count before long data xfer
+>   modify sg_count type unsigned -> int, because dma_map_sg() return
+>   int, and this value can be negative to indicate some error occurs.
+>
+> Micky Ching (2):
+>   mmc: rtsx: finish request if no card exist
+>   mmc: rtsx: check sg_count before long data xfer
+>
+>  drivers/mmc/host/rtsx_pci_sdmmc.c | 20 ++++++++++++++++----
+>  1 file changed, 16 insertions(+), 4 deletions(-)
+>
+> --
 > 1.9.1
-> 
+>
+
+Thanks! Applied for next.
+
+Kind regards
+Uffe
