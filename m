@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754829AbbAUQz5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 11:55:57 -0500
+	id S1754645AbbAUQyx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 11:54:53 -0500
 Received: from mailout4.w1.samsung.com ([210.118.77.14]:37326 "EHLO
 	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754200AbbAUQwg (ORCPT
+	with ESMTP id S1754231AbbAUQwl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 11:52:36 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-b6-54bfd8bc8a56
+	Wed, 21 Jan 2015 11:52:41 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-bc-54bfd8be9100
 From: Andrey Ryabinin <a.ryabinin@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
@@ -21,66 +21,60 @@ Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
         Joonsoo Kim <iamjoonsoo.kim@lge.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        x86@kernel.org, linux-mm@kvack.org, Arnd Bergmann <arnd@arndb.de>,
-        linux-arch@vger.kernel.org (open list:GENERIC INCLUDE/A...)
-Subject: [PATCH v9 15/17] kernel: add support for .init_array.* constructors
-Date: Wed, 21 Jan 2015 19:51:43 +0300
-Message-id: <1421859105-25253-16-git-send-email-a.ryabinin@samsung.com>
+        x86@kernel.org, linux-mm@kvack.org,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: [PATCH v9 16/17] module: fix types of device tables aliases
+Date: Wed, 21 Jan 2015 19:51:44 +0300
+Message-id: <1421859105-25253-17-git-send-email-a.ryabinin@samsung.com>
 X-Mailer: git-send-email 2.2.1
 In-reply-to: <1421859105-25253-1-git-send-email-a.ryabinin@samsung.com>
 References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
  <1421859105-25253-1-git-send-email-a.ryabinin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrGLMWRmVeSWpSXmKPExsVy+t/xq7p7buwPMWh9KWax7dcjNovfe2ey
-	WsxZv4bN4si17+wWfycdY7e4/u0No8Wnlw8YLZ4/fMhuMeFhG7vFyu5mNovtz94yWazsfMBq
-	0bHrK4vF5V1z2CzurfnParH4yG1mi3fPJjNb/NjwmNVByOP3r0mMHvN3fmT02DnrLrvHgk2l
-	Hov3vGTy2LSqk81j06dJ7B5db68weZyY8ZvF48mV6UweH5/eYvHo27KK0ePzJrkA3igum5TU
-	nMyy1CJ9uwSujI1d7SwFa7gqtreeY2lgPMLRxcjJISFgIvF4dQ8ThC0mceHeerYuRi4OIYGl
-	jBJXH76CcvqYJC6+WsYGUsUmoCfxb9Z2MFtEQEFic+8zVpAiZoE2Vokrr26ygySEBXwk2tpW
-	s4LYLAKqErv2bWEBsXkF3CWebbvCBrFOTmLjnRVgNZxA8ZnnJzJBbGtilPh8ZDvbBEbeBYwM
-	qxhFU0uTC4qT0nON9IoTc4tL89L1kvNzNzFC4uLrDsalx6wOMQpwMCrx8Er47A8RYk0sK67M
-	PcQowcGsJMI7/zpQiDclsbIqtSg/vqg0J7X4ECMTB6dUA+MNUT4PPoX17fGr/h/wWs7GMa/e
-	cZcck8XReRv3ff2xN+/nlL7Kt63T69WmXmmwDmlaEqiYUvQp5ubNGZuD1u30utVz4YOSbtab
-	+YtOTWjtz5Ion5SlGjplua/eh32/U4WNZ2ypn3W8M+bz1NNrYo803StV5FMuT5vHdOZZDuPM
-	pDCF+70NDJeVWIozEg21mIuKEwHjLCB1aQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrILMWRmVeSWpSXmKPExsVy+t/xq7r7buwPMXi8l8Vi269HbBa/985k
+	tZizfg2bxZFr39ktrn97w2jx6eUDRovnDx+yW0x42MZusbK7mc1i+7O3TBYrOx+wWlzeNYfN
+	4t6a/6wWN6ddYLFYfOQ2s8W7Z5OZLX5seMzqIOgxf+dHRo+ds+6yeyzYVOqxeM9LJo9NqzrZ
+	PDZ9msTu0fX2CpPHiRm/WTyeXJnO5PHx6S0WjxUbTjB79G1ZxejxeZNcAG8Ul01Kak5mWWqR
+	vl0CV8apJbeZCh5zVuy4doK1gXEeRxcjJ4eEgIlE96QD7BC2mMSFe+vZuhi5OIQEljJKXN7x
+	nhnC6WOSeNn2ihmkik1AT+LfrO1sILaIgILE5t5nrCBFzALnWSSeHzoOlhAWcJFYu2UzC4jN
+	IqAqcebCN1YQm1fAXWLtuaNQ6+QkNt5ZARbnBIrPPD+RCWJbE6PE5yPb2SYw8i5gZFjFKJpa
+	mlxQnJSea6RXnJhbXJqXrpecn7uJERINX3cwLj1mdYhRgINRiYdXwmd/iBBrYllxZe4hRgkO
+	ZiUR3vnXgUK8KYmVValF+fFFpTmpxYcYmTg4pRoYD904/ay3pkOXe/kWic3+cSqO5XH+S+49
+	uj7Bac6qvn/nD6pt2jux/UtA2Ov67g0bzA4UeuuxstZwmSl6hFveffiBdbqXuTsz21eTd2L/
+	GuS23FE94RG4Mt5Jp2hzgvttQ3kWqcJlgj172xkUT1/i/nyOc4ud/E75BKvMurdq7efaxRpF
+	FxspsRRnJBpqMRcVJwIAFYPCWmQCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KASan uses constructors for initializing redzones for global
-variables. Actually KASan doesn't need priorities for constructors,
-so they were removed from GCC 5.0, but GCC 4.9.2 still generates
-constructors with priorities.
+MODULE_DEVICE_TABLE() macro used to create aliases to device tables.
+Normally alias should have the same type as aliased symbol.
+
+Device tables are arrays, so they have 'struct type##_device_id[x]'
+types. Alias created by MODULE_DEVICE_TABLE() will have non-array type -
+	'struct type##_device_id'.
+
+This inconsistency confuses compiler, it could make a wrong
+assumption about variable's size which leads KASan to
+produce a false positive report about out of bounds access.
 
 Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
 ---
- include/asm-generic/vmlinux.lds.h | 1 +
- scripts/module-common.lds         | 3 +++
- 2 files changed, 4 insertions(+)
+ include/linux/module.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index bee5d68..ac78910 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -478,6 +478,7 @@
- #define KERNEL_CTORS()	. = ALIGN(8);			   \
- 			VMLINUX_SYMBOL(__ctors_start) = .; \
- 			*(.ctors)			   \
-+			*(SORT(.init_array.*))		   \
- 			*(.init_array)			   \
- 			VMLINUX_SYMBOL(__ctors_end) = .;
- #else
-diff --git a/scripts/module-common.lds b/scripts/module-common.lds
-index 0865b3e..01c5849 100644
---- a/scripts/module-common.lds
-+++ b/scripts/module-common.lds
-@@ -16,4 +16,7 @@ SECTIONS {
- 	__kcrctab_unused	: { *(SORT(___kcrctab_unused+*)) }
- 	__kcrctab_unused_gpl	: { *(SORT(___kcrctab_unused_gpl+*)) }
- 	__kcrctab_gpl_future	: { *(SORT(___kcrctab_gpl_future+*)) }
-+
-+	. = ALIGN(8);
-+	.init_array		: { *(SORT(.init_array.*)) *(.init_array) }
- }
+diff --git a/include/linux/module.h b/include/linux/module.h
+index ebfb0e1..54e75a7 100644
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -135,7 +135,7 @@ void trim_init_extable(struct module *m);
+ #ifdef MODULE
+ /* Creates an alias so file2alias.c can find device table. */
+ #define MODULE_DEVICE_TABLE(type, name)					\
+-  extern const struct type##_device_id __mod_##type##__##name##_device_table \
++extern typeof(name) __mod_##type##__##name##_device_table \
+   __attribute__ ((unused, alias(__stringify(name))))
+ #else  /* !MODULE */
+ #define MODULE_DEVICE_TABLE(type, name)
 -- 
 2.2.1
 
