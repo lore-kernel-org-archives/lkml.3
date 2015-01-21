@@ -1,97 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753138AbbAULFS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 06:05:18 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:58169 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751038AbbAULFJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 06:05:09 -0500
+	id S1753207AbbAULFw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 06:05:52 -0500
+Received: from smtp4-g21.free.fr ([212.27.42.4]:25481 "EHLO smtp4-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750917AbbAULFo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 06:05:44 -0500
+Date: Wed, 21 Jan 2015 12:05:39 +0100
+From: Sabrina Dubroca <sd@queasysnail.net>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Guenter Roeck <linux@roeck-us.net>, Paul Moore <pmoore@redhat.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-audit@redhat.com, Richard Guy Briggs <rgb@redhat.com>
+Subject: Re: linux-next: Tree for Jan 20 -- Kernel panic - Unable to mount
+ root fs
+Message-ID: <20150121110539.GA8924@kria>
+References: <20150120165655.GA10904@kria>
+ <20150120232726.GA16913@kria>
+ <1517211.UYLV49hvpg@sifl>
+ <1528536.jyty2pu4Mz@sifl>
+ <20150121004117.GM29656@ZenIV.linux.org.uk>
+ <54BF1292.2080902@roeck-us.net>
+ <20150121033600.GN29656@ZenIV.linux.org.uk>
+ <54BF2496.4000807@roeck-us.net>
+ <20150121043637.GO29656@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20150120200740.GY4367@lukather>
-References: <1421417021-3247-1-git-send-email-vishnupatekar0510@gmail.com>
- <1421417021-3247-6-git-send-email-vishnupatekar0510@gmail.com>
- <54BE8A0E.30604@gmail.com> <20150120200740.GY4367@lukather>
-From: Vishnu Patekar <vishnupatekar0510@gmail.com>
-Date: Wed, 21 Jan 2015 16:34:45 +0530
-Message-ID: <CAEzqOZsWYQ+Aep6HBZXVtKGEJgKYAKJU2b0=nGvP0jPKECxn7g@mail.gmail.com>
-Subject: Re: [linux-sunxi] [PATCH v4 5/5] ARM: sunxi: dts: Add PS2 nodes for
- A20 lime2 board
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: Iain Paton <ipaton0@gmail.com>,
-        "linux-sunxi@googlegroups.com" <linux-sunxi@googlegroups.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Hans de Goede <hdegoede@redhat.com>,
-        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20150121043637.GO29656@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+2015-01-21, 04:36:38 +0000, Al Viro wrote:
+> On Tue, Jan 20, 2015 at 08:01:26PM -0800, Guenter Roeck wrote:
+> > With this patch:
+> > 
+> > sys_mkdir .:40775 returned -17
+> > sys_mkdir usr:40775 returned 0
+> > sys_mkdir usr/lib:40775 returned 0
+> > sys_mkdir usr/share:40755 returned 0
+> > sys_mkdir usr/share/udhcpc:40755 returned 0
+> > sys_mkdir usr/bin:40775 returned 0
+> > sys_mkdir usr/sbin:40775 returned 0
+> > sys_mkdir mnt:40775 returned 0
+> > sys_mkdir proc:40775 returned 0
+> > sys_mkdir root:40775 returned 0
+> > sys_mkdir lib:40775 returned 0
+> > sys_mkdir lib/modules:40775 returned 0
+> > ...
+> > 
+> > and the problem is fixed.
 
-On Wed, Jan 21, 2015 at 1:37 AM, Maxime Ripard
-<maxime.ripard@free-electrons.com> wrote:
->
-> On Tue, Jan 20, 2015 at 05:02:06PM +0000, Iain Paton wrote:
-> > On 16/01/15 14:03, Vishnu Patekar wrote:
-> > > Signed-off-by: VishnuPatekar <vishnupatekar0510@gmail.com>
-> > > ---
-> > >  arch/arm/boot/dts/sun7i-a20-olinuxino-lime2.dts |   12 ++++++++++++
-> > >  1 file changed, 12 insertions(+)
-> > >
-> > > diff --git a/arch/arm/boot/dts/sun7i-a20-olinuxino-lime2.dts b/arch/arm/boot/dts/sun7i-a20-olinuxino-lime2.dts
-> > > index ed364d5..3365f12 100644
-> > > --- a/arch/arm/boot/dts/sun7i-a20-olinuxino-lime2.dts
-> > > +++ b/arch/arm/boot/dts/sun7i-a20-olinuxino-lime2.dts
-> > > @@ -113,6 +113,18 @@
-> > >                     status = "okay";
-> > >             };
-> > >
-> > > +           ps20: ps2@01c2a000 {
-> > > +                   pinctrl-names = "default";
-> > > +                   pinctrl-0 = <&ps20_pins_a>;
-> > > +                   status = "okay";
-> > > +           };
-> > > +
-> > > +           ps21: ps2@01c2a400 {
-> > > +                   pinctrl-names = "default";
-> > > +                   pinctrl-0 = <&ps21_pins_a>;
-> > > +                   status = "okay";
-> > > +           };
-> > > +
-> > >             i2c0: i2c@01c2ac00 {
-> > >                     pinctrl-names = "default";
-> > >                     pinctrl-0 = <&i2c0_pins_a>;
-> > >
-> >
-> > As the Lime2 doesn't actually have any PS2 connectors on the board,
-> > I'd prefer that these are not enabled unconditionally. Doing so
-> > only makes it more difficult for people who want to use these pins
-> > for other functions.
-> >
-> > Device tree overlays seem to be close to being merged, perhaps we
-> > could leave enabling this to an overlay?
->
-> I already had the exact same reasoning, and this was even removed at
-> some point. For some reason, it was added back, and I don't really
-> know why.
-This was removed in consideration that these pins conflict with HDMI,
-however, these is not conflict.
+This patch also works for me.
 
-It was kept there as an example. But, as there is no ps2 connector on
-board, I've no problem to remove these nodes from Lime2 dts file.
 
->
-> Maxime
->
->
-> --
-> Maxime Ripard, Free Electrons
-> Embedded Linux, Kernel and Android engineering
-> http://free-electrons.com
+> ... except that it simply confirms that something's fishy with getname_kernel()
+> of ->name of struct filename returned by getname().  IOW, I still do not
+> understand the mechanism of breakage there.
+
+I'm not so sure about that.  I tried to copy name to a new string in
+do_path_lookup and that didn't help.
+
+Now, I've removed the
+
+        putname(filename);
+
+line from do_path_lookup and I don't get the panic.
+
+
+And BTW, I added Guenter's debugging to init/initramfs.c and got:
+sys_mkdir dev:40755 returned 0
+sys_mkdir root:40700 returned 0
+
+even if it ends up panic'ing.
+
+-- 
+Sabrina
