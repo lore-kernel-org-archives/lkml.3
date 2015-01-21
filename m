@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754864AbbAUQ4P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 11:56:15 -0500
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:41010 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754043AbbAUQwZ (ORCPT
+	id S1754543AbbAUQxg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 11:53:36 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:43526 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754173AbbAUQwc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 11:52:25 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-96-54bfd8b08b95
+	Wed, 21 Jan 2015 11:52:32 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-9e-54bfd8b2f5a0
 From: Andrey Ryabinin <a.ryabinin@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
@@ -22,73 +22,74 @@ Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
         x86@kernel.org, linux-mm@kvack.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org (open list:FILESYSTEMS (VFS...))
-Subject: [PATCH v9 08/17] fs: dcache: manually unpoison dname after allocation
- to shut up kasan's reports
-Date: Wed, 21 Jan 2015 19:51:36 +0300
-Message-id: <1421859105-25253-9-git-send-email-a.ryabinin@samsung.com>
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: [PATCH v9 09/17] kmemleak: disable kasan instrumentation for kmemleak
+Date: Wed, 21 Jan 2015 19:51:37 +0300
+Message-id: <1421859105-25253-10-git-send-email-a.ryabinin@samsung.com>
 X-Mailer: git-send-email 2.2.1
 In-reply-to: <1421859105-25253-1-git-send-email-a.ryabinin@samsung.com>
 References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
  <1421859105-25253-1-git-send-email-a.ryabinin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrKLMWRmVeSWpSXmKPExsVy+t/xq7obbuwPMbh73tJi269HbBa/985k
-	tZizfg2bxZFr39ktrn97w2jx6eUDRovnDx+yW0x42MZusbK7mc1i+7O3TBYrOx+wWuzZe5LF
-	4vKuOWwW99b8Z7VYfOQ2s8W7Z5OZLc7/Pc5q8WPDY1YHIY/5Oz8yeuycdZfdY8GmUo/Fe14y
-	eWxa1cnmsenTJHaPrrdXmDxOzPjN4vHkynQmj49Pb7F49G1ZxejxeZOcx6Ynb5kCeKO4bFJS
-	czLLUov07RK4MnbNuMFUcICrYvq3TtYGxnMcXYycHBICJhL3/+1jhrDFJC7cW88GYgsJLGWU
-	ePcnuYuRC8juY5LYe3IfO0iCTUBP4t+s7WBFIgIKEpt7n7GCFDELTGGVOL20E2ySsEC2xP6V
-	7WA2i4CqxP/d15hAbF4BN4mVj9+wQ2yTk9h4ZwUriM0p4C4x8/xEJohtTYwSn49sZ5vAyLuA
-	kWEVo2hqaXJBcVJ6rpFecWJucWleul5yfu4mRkhUfN3BuPSY1SFGAQ5GJR5eCZ/9IUKsiWXF
-	lbmHGCU4mJVEeOdfBwrxpiRWVqUW5ccXleakFh9iZOLglGpg5E+YKvF89+Qts568kV2+Iydq
-	yYld1wye2e64XHCi2+nh93WcL5ZXGRmE/GLZ0Mi8s8c3+7XLylD78IXlJ0WT+XMOPbrbNNUm
-	Qevo9BOHNi/w4FH52SuydP+ZfIHsd9FTmPpeLuZ/7DOr/l6e8pTut+4WLcKyVbs+XJt2UuXi
-	r/2Hfrspz75yok2JpTgj0VCLuag4EQAXr/8LaAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrILMWRmVeSWpSXmKPExsVy+t/xq7qbbuwPMVj0Vsxi269HbBa/985k
+	tZizfg2bxZFr39kt3i/rYbS4/u0No8Wnlw8YLZ4/fMhuMeFhG7vFyu5mNovtz94yWazsfMBq
+	cXnXHDaLe2v+s1osPnKb2eLds8nMFj82PGZ1EPRYM28No8f8nR8ZPXbOusvusWBTqcfiPS+Z
+	PDat6mTz2PRpErtH19srTB4nZvxm8XhyZTqTx8ent1g8+rasYvT4vEkugDeKyyYlNSezLLVI
+	3y6BK2Pr3x6WgotcFd/PLGVvYHzA0cXIySEhYCLx4NxBdghbTOLCvfVsXYxcHEICSxklHnSv
+	Y4Fw+pgk1p9eD1bFJqAn8W/WdjYQW0RAQWJz7zNWkCJmgcssEmu+fAMrEhbwk1jZ94wRxGYR
+	UJXYMvUOmM0r4C7x9M8mRoh1chIb76xgBbE5geIzz09kgtjWxCjx+ch2tgmMvAsYGVYxiqaW
+	JhcUJ6XnGuoVJ+YWl+al6yXn525ihETDlx2Mi49ZHWIU4GBU4uGtCN0fIsSaWFZcmXuIUYKD
+	WUmEd/51oBBvSmJlVWpRfnxRaU5q8SFGJg5OqQbG8BlrPnL52zi3Xn6W/zqvzfj8x2rJ516x
+	cevOSB4/l/Hi8/lNS/J3NOe9tlDbdU29obeCddvVWB0//6r3qRUVDNMNbYu38h8uzP19cvOe
+	eV3LjB9+i5PuaLPcd1l/r9CZhs52kbBbDBfrnp+qmenvxMcfY/fwbm+GGvdE38/3DX2j7No2
+	3SlUYinOSDTUYi4qTgQAfWHnc2QCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to manually unpoison rounded up allocation size for dname
-to avoid kasan's reports in dentry_string_cmp().
-When CONFIG_DCACHE_WORD_ACCESS=y dentry_string_cmp may access
-few bytes beyound requested in kmalloc() size.
+kmalloc internally round up allocation size, and kmemleak
+uses rounded up size as object's size. This makes kasan
+to complain while kmemleak scans memory or calculates of object's
+checksum. The simplest solution here is to disable kasan.
 
-dentry_string_cmp() relates on that fact that dentry allocated
-using kmalloc and kmalloc internally round up allocation size.
-So this is not a bug, but this makes kasan to complain about
-such accesses.
-To avoid such reports we mark rounded up allocation size in
-shadow as accessible.
-
-Reported-by: Dmitry Vyukov <dvyukov@google.com>
 Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 ---
- fs/dcache.c | 5 +++++
- 1 file changed, 5 insertions(+)
+ mm/kmemleak.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
-diff --git a/fs/dcache.c b/fs/dcache.c
-index e368d4f..3c097f9 100644
---- a/fs/dcache.c
-+++ b/fs/dcache.c
-@@ -38,6 +38,8 @@
- #include <linux/prefetch.h>
- #include <linux/ratelimit.h>
- #include <linux/list_lru.h>
-+#include <linux/kasan.h>
-+
- #include "internal.h"
- #include "mount.h"
+diff --git a/mm/kmemleak.c b/mm/kmemleak.c
+index 3cda50c..9bda1b3 100644
+--- a/mm/kmemleak.c
++++ b/mm/kmemleak.c
+@@ -98,6 +98,7 @@
+ #include <asm/processor.h>
+ #include <linux/atomic.h>
  
-@@ -1430,6 +1432,9 @@ struct dentry *__d_alloc(struct super_block *sb, const struct qstr *name)
- 		}
- 		atomic_set(&p->u.count, 1);
- 		dname = p->name;
-+		if (IS_ENABLED(CONFIG_DCACHE_WORD_ACCESS))
-+			kasan_unpoison_shadow(dname,
-+				round_up(name->len + 1,	sizeof(unsigned long)));
- 	} else  {
- 		dname = dentry->d_iname;
- 	}	
++#include <linux/kasan.h>
+ #include <linux/kmemcheck.h>
+ #include <linux/kmemleak.h>
+ #include <linux/memory_hotplug.h>
+@@ -1113,7 +1114,10 @@ static bool update_checksum(struct kmemleak_object *object)
+ 	if (!kmemcheck_is_obj_initialized(object->pointer, object->size))
+ 		return false;
+ 
++	kasan_disable_local();
+ 	object->checksum = crc32(0, (void *)object->pointer, object->size);
++	kasan_enable_local();
++
+ 	return object->checksum != old_csum;
+ }
+ 
+@@ -1164,7 +1168,9 @@ static void scan_block(void *_start, void *_end,
+ 						  BYTES_PER_POINTER))
+ 			continue;
+ 
++		kasan_disable_local();
+ 		pointer = *ptr;
++		kasan_enable_local();
+ 
+ 		object = find_and_get_object(pointer, 1);
+ 		if (!object)
 -- 
 2.2.1
 
