@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752415AbbAULwI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 06:52:08 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:39214 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750812AbbAULv5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 06:51:57 -0500
-Message-ID: <54BF9294.3070902@redhat.com>
-Date: Wed, 21 Jan 2015 12:50:44 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Fam Zheng <famz@redhat.com>
-CC: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        David Drysdale <drysdale@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Vivek Goyal <vgoyal@redhat.com>, Mike Frysinger <vapier@gentoo.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
+	id S1752902AbbAULwg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 06:52:36 -0500
+Received: from mail-la0-f41.google.com ([209.85.215.41]:48180 "EHLO
+	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752506AbbAULw2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 06:52:28 -0500
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Simon Kelley <simon@thekelleys.org.uk>, Kalle Valo <kvalo@codeaurora.org>
+Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
         Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        Hugh Dickins <hughd@google.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-api@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>
-Subject: Re: [PATCH RFC 5/6] epoll: Add implementation for epoll_mod_wait
-References: <1421747878-30744-1-git-send-email-famz@redhat.com> <1421747878-30744-6-git-send-email-famz@redhat.com> <54BE4F1D.7090807@gmail.com> <20150121045903.GA2858@fam-t430.nay.redhat.com> <54BF5ACE.6030206@gmail.com> <20150121085827.GB23024@ad.nay.redhat.com> <54BF814F.7090703@redhat.com> <20150121111404.GA3804@ad.nay.redhat.com>
-In-Reply-To: <20150121111404.GA3804@ad.nay.redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v2] net: wireless: atmel: Remove open-coded and wrong strcasecmp
+Date: Wed, 21 Jan 2015 12:52:07 +0100
+Message-Id: <1421841127-8209-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 2.1.3
+In-Reply-To: <1421414907-26764-1-git-send-email-linux@rasmusvillemoes.dk>
+References: <1421414907-26764-1-git-send-email-linux@rasmusvillemoes.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The kernel's string library does in fact have strcasecmp, at least
+since ded220bd8f08 ("[STRING]: Move strcasecmp/strncasecmp to
+lib/string.c"). Moreover, this open-coded version is in fact wrong: If
+the strings only differ in their last character, a and b have already
+been incremented to point to the terminating NUL bytes, so they would
+wrongly be treated as equal.
 
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+---
+v2: Address Sergei's comments to the commit message.
 
-On 21/01/2015 12:14, Fam Zheng wrote:
-> > My take for simplicity will be leaving epoll_ctl as-is, and my take for
-> > performance will be epoll_pwait1. And I don't really like putting my time on
-> > epoll_ctl_batch, thinking it as a ambivalent compromise in between.
-> 
-> > I agree with Michael actually.  The big change is going from O(n)
-> > epoll_ctl calls to O(1), and epoll_ctl_batch achieves that just fine.
-> > Changing 2 syscalls to 1 is the icing on the cake, but we're talking of
-> > a fraction of a microsecond.
-> 
-> Maybe I'm missing something, but in common cases, the set of fds for epoll_wait
-> doesn't change that radically from one iteration to another, does it?
+ drivers/net/wireless/atmel.c | 12 +-----------
+ 1 file changed, 1 insertion(+), 11 deletions(-)
 
-That depends on the application.
+diff --git a/drivers/net/wireless/atmel.c b/drivers/net/wireless/atmel.c
+index 9183f1cf89a7..55db9f03eb2a 100644
+--- a/drivers/net/wireless/atmel.c
++++ b/drivers/net/wireless/atmel.c
+@@ -45,7 +45,6 @@
+ #include <linux/ptrace.h>
+ #include <linux/slab.h>
+ #include <linux/string.h>
+-#include <linux/ctype.h>
+ #include <linux/timer.h>
+ #include <asm/byteorder.h>
+ #include <asm/io.h>
+@@ -2699,16 +2698,7 @@ static int atmel_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
+ 		domain[REGDOMAINSZ] = 0;
+ 		rc = -EINVAL;
+ 		for (i = 0; i < ARRAY_SIZE(channel_table); i++) {
+-			/* strcasecmp doesn't exist in the library */
+-			char *a = channel_table[i].name;
+-			char *b = domain;
+-			while (*a) {
+-				char c1 = *a++;
+-				char c2 = *b++;
+-				if (tolower(c1) != tolower(c2))
+-					break;
+-			}
+-			if (!*a && !*b) {
++			if (!strcasecmp(channel_table[i].name, domain)) {
+ 				priv->config_reg_domain = channel_table[i].reg_domain;
+ 				rc = 0;
+ 			}
+-- 
+2.1.3
 
-Paolo
