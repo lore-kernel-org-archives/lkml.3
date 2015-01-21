@@ -1,36 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753123AbbAUXeb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 18:34:31 -0500
-Received: from ozlabs.org ([103.22.144.67]:47293 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751924AbbAUXeL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 18:34:11 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>
-Subject: Re: module: fix module_refcount() return when running in a module exit routine
-In-Reply-To: <1421774615.2080.88.camel@HansenPartnership.com>
-References: <1421600146.2080.8.camel@HansenPartnership.com> <54BC93C3.7010808@hitachi.com> <878ugzco8c.fsf@rustcorp.com.au> <1421683701.2080.25.camel@HansenPartnership.com> <871tmqcmau.fsf@rustcorp.com.au> <1421774615.2080.88.camel@HansenPartnership.com>
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Wed, 21 Jan 2015 16:00:29 +1030
-Message-ID: <877fwgbszu.fsf@rustcorp.com.au>
+	id S1750878AbbAUFeQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 00:34:16 -0500
+Received: from mail-wg0-f51.google.com ([74.125.82.51]:37533 "EHLO
+	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750735AbbAUFeP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 00:34:15 -0500
+Date: Wed, 21 Jan 2015 06:34:10 +0100
+From: Ingo Molnar <mingo@kernel.org>
+To: Andy Lutomirski <luto@amacapital.net>
+Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Borislav Petkov <bp@alien8.de>, Tony Luck <tony.luck@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: Fwd: linux-next: manual merge of the luto-misc tree with the tip
+ tree
+Message-ID: <20150121053410.GA15291@gmail.com>
+References: <20150119170839.2c6b4b78@canb.auug.org.au>
+ <20150119093501.GA4644@pd.tnic>
+ <CALCETrW05f9nty5Sk8XA2DTsocqqOxp62aT9QXwta74Km+ZOng@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALCETrW05f9nty5Sk8XA2DTsocqqOxp62aT9QXwta74Km+ZOng@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-James Bottomley <James.Bottomley@HansenPartnership.com> writes:
-> Actually, I don't think this is enough.  Some Australian once came up
-> with a guide to APIs, and lectured on it at length, one of which was
-> that the name should be the obvious use and it is unexpected that a
-> refcount would go negative.  I think we could raise it from -6 on the
-> API scale to +3 if we add some documentation like below.
 
-Thanks, applied!
+* Andy Lutomirski <luto@amacapital.net> wrote:
 
-Cheers,
-Rusty.
+> Hi Ingo and Thomas-
+> 
+> There's a trivial conflict in the pull request I sent last week.
+
+This is your x86 entry code rework pull request, right? The -tip 
+tree now has the RCU commit it depends on, so could you please 
+rebase it on top of tip:core/rcu so I can pull it? I'll resolve 
+any remaining conflicts with the rest of -tip.
+
+Thanks,
+
+	Ingo
