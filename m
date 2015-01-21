@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753366AbbAUNhJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 08:37:09 -0500
-Received: from smtp3-g21.free.fr ([212.27.42.3]:57066 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752269AbbAUNhF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 08:37:05 -0500
-Date: Wed, 21 Jan 2015 14:36:59 +0100 (CET)
-From: robert.jarzmik@free.fr
-To: Lee Jones <lee.jones@linaro.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>, Pawel Moll <pawel.moll@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org,
-        Kumar Gala <galak@codeaurora.org>, Daniel Mack <daniel@zonque.org>
-Message-ID: <332399927.402665086.1421847419490.JavaMail.root@zimbra1-e1.priv.proxad.net>
-In-Reply-To: <20150121123551.GD9258@x1>
-Subject: Re: [PATCH v3 2/3] mfd: lubbock_io: add lubbock_io board
+	id S1753463AbbAUNhh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 08:37:37 -0500
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:56002 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752225AbbAUNhc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 08:37:32 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.198.151.44]
-X-Mailer: Zimbra 7.2.0-GA2598 (ZimbraWebClient - GC31 (Linux)/7.2.0-GA2598)
-X-Authenticated-User: robert.jarzmik@free.fr
+In-Reply-To: <CACRpkdYww-6HbmM9uViyB6ZRp2MQnkTYz-7ZxAVN_GsRTNqaoA@mail.gmail.com>
+References: <1421316574-10022-1-git-send-email-dbaryshkov@gmail.com>
+	<CACRpkdYww-6HbmM9uViyB6ZRp2MQnkTYz-7ZxAVN_GsRTNqaoA@mail.gmail.com>
+Date: Wed, 21 Jan 2015 17:37:31 +0400
+Message-ID: <CALT56yOuSV9X3m5fkjv16=7PXd8SrkKoy_TyH6DkMpQv68YaEA@mail.gmail.com>
+Subject: Re: [PATCH 1/5] ARM: sa1100: add platform functions to handle PWER settings
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Andrea Adami <andrea.adami@gmail.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> ----- Mail original -----
-> De: "Lee Jones" <lee.jones@linaro.org>
-First of all, this is my web mail interface, so please be kind with
-my mail formatting ...
+Hello,
 
-> Looking at one of the other patches in the series it appears the flag
-> you're trying to capture is IORESOURCE_IRQ_LOWEDGE.  When I grep for
-> where this is being _used_ (think 'consumed, rather than passed.  I
-> only see a single entry in drivers/pnp/interface.c.
-Look at this call chain :
-request_irq()
-  setup_irq()
-    __setup_irq()
-      __irq_set_trigger()
-        pxa_gpio_irq_type() (aka. chip->irq_set_type)
-          => hardware register manipulation
+2015-01-21 13:05 GMT+03:00 Linus Walleij <linus.walleij@linaro.org>:
+>
+> On Thu, Jan 15, 2015 at 11:09 AM, Dmitry Eremin-Solenikov
+> <dbaryshkov@gmail.com> wrote:
+>
+> > PWER settings logically belongs neither to GPIO nor to system IRQ code.
+> > Add special functions to handle PWER (for GPIO and for system IRQs)
+> > from platform code.
+> >
+> > Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+>
+> > diff --git a/arch/arm/mach-sa1100/generic.c b/arch/arm/mach-sa1100/generic.c
+> (...)
+> > +int sa11x0_gpio_set_wake(unsigned int gpio, unsigned int on)
+> (...)
+> > +int sa11x0_sc_set_wake(unsigned int irq, unsigned int on)
+>
+> Why are these two functions not added to any .h file?
+>
+> Did you miss to commit something or are there compile
+> warnings about this?
 
-Moreover, you should be aware of the bijection existing between :
- - IORESOURCE_IRQ_LOWEDGE and IRQF_TRIGGER_RISING
- - it's HIGHEDGE twin
- - it is noted in : include/linux/interrupt.h
+I thought quite a while about adding them to any header. In the end I ended
+adding them to the irqchip header file. PWER handling is (a bit) related to IRQ
+handling. The only other user of those functions would be a gpio (or pinctrl
+if it ends that way) driver.
 
-> That's what got me thinking... are you sure you're a) making use of
-this flag
-Yes, I'm quite sure.
-
-> b) assuming the answer to 'a' is "no"
-I won't :)
-
-> I think to set an edge trigger on an IRQ, you should instead do so via
-> irq_set_irq_type(), or have a missed a line or two?
-__setup_irq(), that's the entry point.
-
-Cheers.
-
---
-Robert
+-- 
+With best wishes
+Dmitry
