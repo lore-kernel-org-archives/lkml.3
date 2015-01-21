@@ -1,178 +1,408 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752015AbbAUBuI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 20:50:08 -0500
-Received: from mga14.intel.com ([192.55.52.115]:60533 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751293AbbAUBuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 20:50:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,438,1418112000"; 
-   d="scan'208";a="673173138"
-Message-ID: <54BF05CA.9070506@linux.intel.com>
-Date: Wed, 21 Jan 2015 09:50:02 +0800
-From: Jiang Liu <jiang.liu@linux.intel.com>
-Organization: Intel
-User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1752059AbbAUCHB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 21:07:01 -0500
+Received: from pb-smtp1.int.icgroup.com ([208.72.237.35]:60264 "EHLO
+	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751293AbbAUCG6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 21:06:58 -0500
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=from:to:cc
+	:subject:date:message-id:mime-version:content-type; q=dns; s=
+	sasl; b=xZZZmJZd2yG0c3dFU/GShYxNsF1G/2VuVfg34r356BA+awTSI3BQYtD7
+	ytpINKxFHjkyOYvmGB8GbLHOgIixTNRaC059KtWI2cFy8ysTDaueKnqVXZxQnsVI
+	IxlSpv+RHmkPuFE+BTNdNdlcptWWvyPVCCsUmXnj4hq/Q+MTlpY=
+From: Junio C Hamano <gitster@pobox.com>
+To: git@vger.kernel.org
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [ANNOUNCE] Git v2.3.0-rc1
+Date: Tue, 20 Jan 2015 18:06:54 -0800
+Message-ID: <xmqq61c0zy2p.fsf@gitster.dls.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.3 (gnu/linux)
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, Joerg Roedel <joro@8bytes.org>,
-        x86@kernel.org, Tony Luck <tony.luck@intel.com>,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [patch 00/23] x86: Cleanup apic/ioapic/x2apic setup code
-References: <20150115210458.625399149@linutronix.de> <54B8DBC1.6080205@linux.intel.com> <alpine.DEB.2.11.1501161120560.5526@nanos> <alpine.DEB.2.11.1501161203340.5526@nanos>
-In-Reply-To: <alpine.DEB.2.11.1501161203340.5526@nanos>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-2022-jp
+X-Pobox-Relay-ID: 2D446E4A-A112-11E4-9FF1-42529F42C9D4-77302942!pb-smtp1.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2015/1/16 19:05, Thomas Gleixner wrote:
-> On Fri, 16 Jan 2015, Thomas Gleixner wrote:
->> On Fri, 16 Jan 2015, Jiang Liu wrote:
->>> 5) x86_32, UP, IO_APIC disabled
->>> 5.1) boot: panic with following call stack:
->>> do_ono_initcall()->APIC_init_uniprocessor()->setup_local_APIC().
->>> I can't capture the full log message due to lack of serial console.
->>> It seems we have trouble with:
->>> early_initcall(APIC_init_uniprocessor);
->>
->> Hmm, worked here. Lemme find some other machine.
-> 
-> Found the issue, won't work. But I still want to remove that x86
-> nonsense from init. So we need to do it different.
-> 
-> Subject: init: Get rid of x86isms
-> From: Thomas Gleixner <tglx@linutronix.de>
-> Date: Wed, 14 Jan 2015 14:59:48 +0100
-> 
-> Provide a config option and make the UP smp_init() implementation
-> depend on it and confine this to x86.
-> 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  arch/x86/Kconfig            |    4 ++++
->  arch/x86/kernel/apic/apic.c |    7 +++++++
->  include/linux/smp.h         |    6 ++++++
->  init/main.c                 |   13 -------------
->  4 files changed, 17 insertions(+), 13 deletions(-)
-> 
-> Index: tip/arch/x86/Kconfig
-> ===================================================================
-> --- tip.orig/arch/x86/Kconfig
-> +++ tip/arch/x86/Kconfig
-> @@ -855,6 +855,10 @@ config SCHED_MC
->  
->  source "kernel/Kconfig.preempt"
->  
-> +config UP_SMP_INIT
-> +       def_bool y
-> +       depends on X86_UP_APIC
-> +
->  config X86_UP_APIC
->  	bool "Local APIC support on uniprocessors"
->  	depends on X86_32 && !SMP && !X86_32_NON_STANDARD && !PCI_MSI
-> Index: tip/arch/x86/kernel/apic/apic.c
-> ===================================================================
-> --- tip.orig/arch/x86/kernel/apic/apic.c
-> +++ tip/arch/x86/kernel/apic/apic.c
-> @@ -2265,6 +2265,13 @@ int __init APIC_init_uniprocessor(void)
->  	return 0;
->  }
->  
-> +#ifdef CONFIG_UP_SMP_INIT
-> +void smp_init(void)
-> +{
-> +	APIC_init_uniprocessor();
-> +}
-> +#endif
-> +
->  /*
->   * Power management
->   */
-> Index: tip/include/linux/smp.h
-> ===================================================================
-> --- tip.orig/include/linux/smp.h
-> +++ tip/include/linux/smp.h
-> @@ -151,6 +151,12 @@ smp_call_function_any(const struct cpuma
->  static inline void kick_all_cpus_sync(void) {  }
->  static inline void wake_up_all_idle_cpus(void) {  }
->  
-> +#ifdef CONFIG_UP_SMP_INIT
-> +extern void __init smp_init(void);
-> +#else
-> +static inline void smp_init(void) { }
-> +#endif
-> +
->  #endif /* !SMP */
->  
->  /*
-> Index: tip/init/main.c
-> ===================================================================
-> --- tip.orig/init/main.c
-> +++ tip/init/main.c
-> @@ -87,10 +87,6 @@
->  #include <asm/sections.h>
->  #include <asm/cacheflush.h>
->  
-> -#ifdef CONFIG_X86_LOCAL_APIC
-> -#include <asm/smp.h>
-> -#endif
-> -
->  static int kernel_init(void *);
->  
->  extern void init_IRQ(void);
-> @@ -351,15 +347,6 @@ __setup("rdinit=", rdinit_setup);
->  
->  #ifndef CONFIG_SMP
->  static const unsigned int setup_max_cpus = NR_CPUS;
-> -#ifdef CONFIG_X86_LOCAL_APIC
-> -static void __init smp_init(void)
-> -{
-> -	APIC_init_uniprocessor();
-> -}
-> -#else
-> -#define smp_init()	do { } while (0)
-> -#endif
-> -
->  static inline void setup_nr_cpu_ids(void) { }
->  static inline void smp_prepare_cpus(unsigned int maxcpus) { }
->  #endif
-Hi Thomas,
-	With above patch applied, it just gives a blank screen
-instead of a panic when booting on my problematic laptop.
-Now I have found the root cause of the failure on my laptop.
-	On i386, it triggers  BUG_ON(!apic->apic_id_registered())
-in function setup_local_APIC() because apic_bsp_up_setup() is called
-too late. So we need a simple patch as below. With following patch
-applied, it boots successfully with your original patch.
-Regards,
-Gerry
---------------------------------------------------------------------
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index 6f3067807376..791148864a48 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -2245,10 +2245,9 @@ int __init apic_bsp_setup(bool upmode)
-        int id;
+A release candidate Git v2.3.0-rc1 is now available for testing
+at the usual places.
 
-        connect_bsp_APIC();
--       setup_local_APIC();
--
-        if (upmode)
-                apic_bsp_up_setup();
-+       setup_local_APIC();
+The tarballs are found at:
 
-        if (x2apic_mode)
-                id = apic_read(APIC_LDR);
----------------------------------------------------------------------
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+    https://www.kernel.org/pub/software/scm/git/testing/
+
+The following public repositories all have a copy of the 'v2.3.0-rc1'
+tag and the 'master' branch that the tag points at:
+
+  url = https://kernel.googlesource.com/pub/scm/git/git
+  url = git://repo.or.cz/alt-git.git
+  url = https://code.google.com/p/git-core/
+  url = git://git.sourceforge.jp/gitroot/git-core/git.git
+  url = git://git-core.git.sourceforge.net/gitroot/git-core/git-core
+  url = https://github.com/gitster/git
+
+Git v2.3 Release Notes (draft)
+==============================
+
+Updates since v2.2
+------------------
+
+Ports
+
+ * Recent gcc toolchain on Cygwin started throwing compilation warning,
+   which has been squelched.
+
+ * A few updates to build on platforms that lack tv_nsec,
+   clock_gettime, CLOCK_MONOTONIC and HMAC_CTX_cleanup (e.g. older
+   RHEL) have been added.
+
+
+UI, Workflows & Features
+
+ * It was cumbersome to use "GIT_SSH" mechanism when the user wanted
+   to pass an extra set of arguments to the underlying ssh.  A new
+   environment variable GIT_SSH_COMMAND can be used for this.
+
+ * A request to store an empty note via "git notes" meant to remove
+   note from the object but with --allow-empty we will store a
+   (surprise!)  note that is empty.
+
+ * "git interpret-trailers" learned to properly handle the
+   "Conflicts:" block at the end.
+
+ * "git am" learned "--message-id" option to copy the message ID of
+   the incoming e-mail to the log message of resulting commit.
+
+ * "git clone --reference=<over there>" learned the "--dissociate"
+   option to go with it; it borrows objects from the reference object
+   store while cloning only to reduce network traffic and then
+   dissociates the resulting clone from the reference by performing
+   local copies of borrowed objects.
+
+ * "git send-email" learned "--transfer-encoding" option to force a
+   non-fault Content-Transfer-Encoding header (e.g. base64).
+
+ * "git send-email" normally identifies itself via X-Mailer: header in
+   the message it sends out.  A new command line flag --no-xmailer
+   allows the user to squelch the header.
+
+ * "git push" into a repository with a working tree normally refuses
+   to modify the branch that is checked out.  The command learned to
+   optionally do an equivalent of "git reset --hard" only when there
+   is no change to the working tree and the index instead, which would
+   be useful to "deploy" by pushing into a repository.
+
+ * "git new-workdir" (in contrib/) can be used to populate an empty
+   and existing directory now.
+
+ * Credential helpers are asked in turn until one of them give
+   positive response, which is cumbersome to turn off when you need to
+   run Git in an automated setting.  The credential helper interface
+   learned to allow a helper to say "stop, don't ask other helpers."
+   Also GIT_TERMINAL_PROMPT environment can be set to false to disable
+   our built-in prompt mechanism for passwords.
+
+ * "git branch -d" (delete) and "git branch -m" (move) learned to
+   honor "-f" (force) flag; unlike many other subcommands, the way to
+   force these have been with separate "-D/-M" options, which was
+   inconsistent.
+
+ * "diff-highlight" filter (in contrib/) allows its color output to be
+   customized via configuration variables.
+
+ * "git imap-send" learned to take "-v" (verbose) and "-q" (quiet)
+   command line options.
+
+ * "git remote add $name $URL" is now allowed when "url.$URL.insteadOf"
+   is already defined.
+
+ * "git imap-send" now can be built to use cURL library to talk to
+   IMAP servers (if the library is recent enough, of course).
+   This allows you to use authenticate method other than CRAM-MD5,
+   among other things.
+
+ * "git imap-send" now allows GIT_CURL_VERBOSE environment variable to
+   control the verbosity when talking via the cURL library.
+
+ * The prompt script (in contrib/) learned to optionally hide prompt
+   when in an ignored directory by setting GIT_PS1_HIDE_IF_PWD_IGNORED
+   shell variable.
+
+
+Performance, Internal Implementation, Development Support etc.
+
+ * Earlier we made "rev-list --object-edge" more aggressively list the
+   objects at the edge commits, in order to reduce number of objects　
+   fetched into a shallow repository, but the change affected cases
+   other than "fetching into a shallow repository" and made it
+   unusably slow (e.g. fetching into a normal repository should not
+   have to suffer the overhead from extra processing).  Limit it to a
+   more specific case by introducing --objects-edge-aggressive, a new
+   option to rev-list.
+
+ * Squelched useless compiler warnings on Mac OS X regarding the
+   crypto API.
+
+ * The procedure to generate unicode table has been simplified.
+
+ * Some filesystems assign filemodes in a strange way, fooling then
+   automatic "filemode trustability" check done during a new
+   repository creation.  The initialization codepath has been hardened
+   against this issue.
+
+ * The codepath in "git remote update --prune" to drop many refs has
+   been optimized.
+
+ * The API into get_merge_bases*() family of functions was easy to
+   misuse, which has been corrected to make it harder to do so.
+
+ * Long overdue departure from the assumption that S_IFMT is shared by
+   everybody made in 2005, which was necessary to port to z/OS.
+
+ * "git push" and "git fetch" did not communicate an overlong refname
+   correctly.  Now it uses 64kB sideband to accommodate longer ones.
+
+ * Recent GPG changes the keyring format and drops support for RFC1991
+   formatted signatures, breaking our existing tests.
+
+ * "git-prompt" (in contrib/) used a variable from the global scope,
+   possibly contaminating end-user's namespace.
+
+
+Also contains various documentation updates and code clean-ups.
+
+
+Fixes since v2.2
+----------------
+
+Unless otherwise noted, all the fixes since v2.2 in the maintenance
+track are contained in this release (see the maintenance releases'
+notes for details).
+
+ * "git http-push" over WebDAV (aka dumb http-push) was broken in
+   v2.2.2 when parsing a symbolic ref, resulting in a bogus request
+   that gets rejected by recent versions of cURL library.
+   (merge f6786c8 jk/http-push-symref-fix later to maint).
+
+ * The logic in "git bisect bad HEAD" etc. to avoid forcing the test
+   of the common ancestor of bad and good commits was broken.
+   (merge 07913d5 cc/bisect-rev-parsing later to maint).
+
+ * "git checkout-index --temp=$target $path" did not work correctly
+   for paths outside the current subdirectory in the project.
+   (merge 74c4de5 es/checkout-index-temp later to maint).
+
+ * The report from "git checkout" on a branch that builds on another
+   local branch by setting its branch.*.merge to branch name (not a
+   full refname) incorrectly said that the upstream is gone.
+   (merge 05e7368 jc/checkout-local-track-report later to maint).
+
+ * With The git-prompt support (in contrib/), using the exit status of
+   the last command in the prompt, e.g.  PS1='$(__git_ps1) $? ', did
+   not work well, because the helper function stomped on the exit
+   status.
+   (merge 6babe76 tf/prompt-preserve-exit-status later to maint).
+
+ * Recent update to "git commit" broke amending an existing commit
+   with bogus author/committer lines without a valid e-mail address.
+   (merge c83a509 jk/commit-date-approxidate later to maint).
+
+ * The lockfile API used to get confused which file to clean up when
+   the process moved the $cwd after creating a lockfile.
+   (merge fa137f6 nd/lockfile-absolute later to maint).
+
+ * Traditionally we tried to avoid interpreting date strings given by
+   the user as future dates, e.g. GIT_COMMITTER_DATE=2014-12-10 when
+   used early November 2014 was taken as "October 12, 2014" because it
+   is likely that a date in the future, December 10, is a mistake.
+   This heuristics has been loosened to allow people to express future
+   dates (most notably, --until=<date> may want to be far in the
+   future) and we no longer tiebreak by future-ness of the date when
+
+    (1) ISO-like format is used, and
+    (2) the string can make sense interpreted as both y-m-d and y-d-m.
+
+   Git may still have to use the heuristics to tiebreak between dd/mm/yy
+   and mm/dd/yy, though.
+   (merge d372395 jk/approxidate-avoid-y-d-m-over-future-dates later to maint).
+
+ * Git did not correctly read an overlong refname from a packed refs
+   file.
+   (merge ea41783 jk/read-packed-refs-without-path-max later to maint).
+
+ * "git apply" was described in the documentation to take --ignore-date
+   option, which it does not.
+   (merge 0cef4e7 rw/apply-does-not-take-ignore-date later to maint).
+
+ * "git add -i" did not notice when the interactive command input
+   stream went away and kept asking the same question.
+   (merge a8bec7a jk/add-i-read-error later to maint).
+
+ * "git send-email" did not handle RFC 2047 encoded headers quite
+   right.
+   (merge ab47e2a rd/send-email-2047-fix later to maint).
+
+ * New tag object format validation added in 2.2 showed garbage after
+   a tagname it reported in its error message.
+   (merge a1e920a js/fsck-tag-validation later to maint).
+
+ * The code that reads the reflog from the newer to the older entries
+   did not handle an entry that crosses a boundary of block it uses to
+   read them correctly.
+   (merge 69216bf jk/for-each-reflog-ent-reverse later to maint).
+
+ * "git diff -B -M" after making a new copy B out of an existing file
+   A and then editing A extensively ought to report that B was created
+   by copying A and A was modified, which is what "git diff -C"
+   reports, but it instead said A was renamed to B and A was edited
+   heavily in place.  This was not just incoherent but also failed to
+   apply with "git apply".  The report has been corrected to match what
+   "git diff -C" produces for this case.
+   (merge 6936b58 jc/diff-b-m later to maint).
+
+ * In files we pre-populate for the user to edit with commented hints,
+   a line of hint that is indented with a tab used to show as '#' (or
+   any comment char), ' ' (space), and then the hint text that began
+   with the tab, which some editors flag as an indentation error (tab
+   following space).  We now omit the space after the comment char in
+   such a case.
+   (merge d55aeb7 jc/strbuf-add-lines-avoid-sp-ht-sequence later to maint).
+
+ * "git ls-tree" does not support path selection based on negative
+   pathspecs, but did not error out when negative pathspecs are given.
+   (merge f1f6224 nd/ls-tree-pathspec later to maint).
+
+ * The function sometimes returned a non-freeable memory and some
+   other times returned a piece of memory that must be freed, leading
+   to inevitable leaks.
+   (merge 59362e5 jc/exec-cmd-system-path-leak-fix later to maint).
+
+ * The code to abbreviate an object name to its short unique prefix
+   has been optimized when no abbreviation was requested.
+   (merge 61e704e mh/find-uniq-abbrev later to maint).
+
+ * "git add --ignore-errors ..." did not ignore an error to
+   give a file that did not exist.
+   (merge 1d31e5a mg/add-ignore-errors later to maint).
+
+ * "git checkout $treeish $path", when $path in the index and the
+   working tree already matched what is in $treeish at the $path,
+   still overwrote the $path unnecessarily.
+   (merge c5326bd jk/checkout-from-tree later to maint).
+
+ * "git config --get-color" did not parse its command line arguments
+   carefully.
+   (merge cb35722 jk/colors-fix later to maint).
+
+ * open() emulated on Windows platforms did not give EISDIR upon
+   an attempt to open a directory for writing.
+   (merge ba6fad0 js/windows-open-eisdir-error later to maint).
+
+ * A few code paths used abs() when they should have used labs() on
+   long integers.
+   (merge 83915ba rs/maint-config-use-labs later to maint).
+   (merge 31a8aa1 rs/receive-pack-use-labs later to maint).
+
+ * "gitweb" used to depend on a behaviour recent CGI.pm deprecated.
+   (merge 13dbf46 jk/gitweb-with-newer-cgi-multi-param later to maint).
+
+ * "git init" (hence "git clone") initialized the per-repository
+   configuration file .git/config with x-bit by mistake.
+   (merge 1f32ecf mh/config-flip-xbit-back-after-checking later to maint).
+
+ * Recent update in Git 2.2 started creating objects/info/packs and
+   info/refs files with permission bits tighter than user's umask.
+   (merge d91175b jk/prune-packed-server-info later to maint).
+
+ * Git 2.0 was supposed to make the "simple" mode for the default of
+   "git push", but it didn't.
+   (merge 00a6fa0 jk/push-simple later to maint).
+
+ * "Everyday" document had a broken link.
+   (merge 366c8d4 po/everyday-doc later to maint).
+
+ * A few test fixes.
+   (merge 880ef58 jk/no-perl-tests later to maint).
+
+ * The build procedure did not bother fixing perl and python scripts
+   when NO_PERL and NO_PYTHON build-time configuration changed.
+   (merge ca2051d jk/rebuild-perl-scripts-with-no-perl-seting-change later to maint).
+
+ * The usage string of "git log" command was marked incorrectly for
+   l10n.
+   (merge e66dc0c km/log-usage-string-i18n later to maint).
+
+ * "git for-each-ref" mishandled --format="%(upstream:track)" when a
+   branch is marked to have forked from a non-existing branch.
+   (merge b6160d9 rc/for-each-ref-tracking later to maint).
+
+----------------------------------------------------------------
+
+Changes since v2.3.0-rc0 are as follows:
+
+Adam Williamson (1):
+      correct smtp-ssl-cert-path description
+
+Alexander Kuleshov (4):
+      show-branch: line-wrap show-branch usage
+      git.c: remove unnecessary #includes
+      cat-file: remove unused includes
+      Documentation: list long options for -v and -n
+
+Jeff King (4):
+      t1301: set umask in reflog sharedrepository=group test
+      update-server-info: create info/* with mode 0666
+      http-push: trim trailing newline from remote symref
+      parse_color: fix return value for numeric color values 0-8
+
+Jess Austin (1):
+      git-prompt.sh: allow to hide prompt for ignored pwd
+
+Johannes Schindelin (2):
+      git remote: allow adding remotes agreeing with url.<...>.insteadOf
+      Add a regression test for 'git remote add <existing> <same-url>'
+
+Junio C Hamano (2):
+      Fifth batch for 2.3 cycle
+      Git 2.3.0-rc1
+
+Kyle J. McKay (3):
+      log.c: fix translation markings
+      imap-send.c: support GIT_CURL_VERBOSE
+      imap-send.c: set CURLOPT_USE_SSL to CURLUSESSL_TRY
+
+Matthieu Moy (1):
+      git-completion: add --autostash for 'git rebase'
+
+Philip Oakley (2):
+      doc: core.ignoreStat clarify the --assume-unchanged effect
+      doc: core.ignoreStat update, and clarify the --assume-unchanged effect
+
+Ralf Thielow (1):
+      show-branch: fix indentation of usage string
+
+Ramkumar Ramachandra (2):
+      Git::SVN: handle missing ref_id case correctly
+      git-svn: make it play nicely with submodules
+
+Raphael Kubo da Costa (1):
+      for-each-ref: always check stat_tracking_info()'s return value
+
+Reuben Hawkins (3):
+      configure.ac: check 'tv_nsec' field in 'struct stat'
+      configure.ac: check for clock_gettime and CLOCK_MONOTONIC
+      configure.ac: check for HMAC_CTX_cleanup
+
+Richard Hansen (3):
+      git-prompt.sh: if pc mode, immediately set PS1 to a plain prompt
+      test-lib: use 'test ...' instead of '[ ... ]'
+      test-lib.sh: do tests for color support after changing HOME
+
+Steffen Prohaska (1):
+      subtree: fix AsciiDoc list item continuation
+
+Tony Finch (1):
+      git-prompt: preserve value of $? in all cases
+
