@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754478AbbAUQHK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 11:07:10 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:60501 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752086AbbAUQHD (ORCPT
+	id S1754810AbbAUQHv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 11:07:51 -0500
+Received: from mail-lb0-f179.google.com ([209.85.217.179]:65112 "EHLO
+	mail-lb0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752086AbbAUQHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 11:07:03 -0500
-Message-ID: <54BFCE97.4050007@gmail.com>
-Date: Wed, 21 Jan 2015 21:36:47 +0530
-From: Varka Bhadram <varkabhadram@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
-MIME-Version: 1.0
-To: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>,
-        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
-        Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
-        linux-iio@vger.kernel.org, Sebastian Reichel <sre@kernel.org>,
-        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-pm@vger.kernel.org,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>
-CC: linux-kernel@vger.kernel.org, support.opensource@diasemi.com
-Subject: Re: [PATCH v6 3/7] iio: Add support for DA9150 GPADC
-References: <cover.1421854282.git.Adam.Thomson.Opensource@diasemi.com> <ae9b56cc8cd15bd72ea1b721ae02b1dde8632dbf.1421854282.git.Adam.Thomson.Opensource@diasemi.com>
-In-Reply-To: <ae9b56cc8cd15bd72ea1b721ae02b1dde8632dbf.1421854282.git.Adam.Thomson.Opensource@diasemi.com>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Jan 2015 11:07:43 -0500
+From: Dmitry Osipenko <digetx@gmail.com>
+To: digetx@gmail.com, Russell King <linux@arm.linux.org.uk>,
+        Tomasz Figa <t.figa@samsung.com>, Kukjin Kim <kgene@kernel.org>,
+        Shawn Guo <shawn.guo@linaro.org>, Sascha Hauer <kernel@pengutronix.de>,
+        Joseph Lo <josephl@nvidia.com>, Stephen Warren <swarren@wwwdotorg.org>,
+        Peter De Schrijver <pdeschrijver@nvidia.com>
+Cc: Ben Dooks <ben.dooks@codethink.co.uk>,
+        Bob Mottram <bob.mottram@codethink.co.uk>, linux-tegra@vger.kernel.org,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH V2] ARM: l2c: Maintain CPU endianness for early resume function
+Date: Wed, 21 Jan 2015 19:07:19 +0300
+Message-Id: <1421856440-28097-1-git-send-email-digetx@gmail.com>
+X-Mailer: git-send-email 2.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In big endian CPU mode l2x0_saved_regs structure stores registers values in BE
+format. In order to maintain BE CPU mode, these values and immediate constants
+must be converted back to LE format before writing them to cache controller.
 
-On Wednesday 21 January 2015 09:16 PM, Adam Thomson wrote:
-> This patch adds support for DA9150 Charger & Fuel-Gauge IC GPADC.
->
-> Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
-> Reviewed-by: Hartmut Knaack <knaack.h@gmx.de>
-> Acked-by: Jonathan Cameron <jic23@kernel.org>
+Signed-off-by: Dmitry Osipenko <digetx@gmail.com>
+---
+V2: no code change, fixed patch numbering, extended mail recipients list
 
-(...)
+ arch/arm/mm/l2c-l2x0-resume.S | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
 
-> +
-> +static int da9150_gpadc_probe(struct platform_device *pdev)
-> +{
-> +	struct device *dev = &pdev->dev;
-> +	struct da9150 *da9150 = dev_get_drvdata(dev->parent);
-> +	struct da9150_gpadc *gpadc;
-> +	struct iio_dev *indio_dev;
-> +	int irq, ret;
-> +
-> +	indio_dev = devm_iio_device_alloc(&pdev->dev, sizeof(*gpadc));
-
-  You can directly use *dev* instead of *&pdev->dev*
-
-
+diff --git a/arch/arm/mm/l2c-l2x0-resume.S b/arch/arm/mm/l2c-l2x0-resume.S
+index fda415e..9f99c7e 100644
+--- a/arch/arm/mm/l2c-l2x0-resume.S
++++ b/arch/arm/mm/l2c-l2x0-resume.S
+@@ -30,6 +30,15 @@ ENTRY(l2c310_early_resume)
+ 	teq	r1, #0
+ 	reteq	lr
+ 
++	@ Reverse for big endian kernel
++ARM_BE8(rev	r2, r2)
++ARM_BE8(rev	r3, r3)
++ARM_BE8(rev	r4, r4)
++ARM_BE8(rev	r5, r5)
++ARM_BE8(rev	r6, r6)
++ARM_BE8(rev	r7, r7)
++ARM_BE8(rev	r8, r8)
++
+ 	@ The prefetch and power control registers are revision dependent
+ 	@ and can be written whether or not the L2 cache is enabled
+ 	ldr	r0, [r1, #L2X0_CACHE_ID]
+@@ -51,6 +60,7 @@ ENTRY(l2c310_early_resume)
+ 
+ 	str	r2, [r1, #L2X0_AUX_CTRL]
+ 	mov	r9, #L2X0_CTRL_EN
++ARM_BE8(rev	r9, r9)
+ 	str	r9, [r1, #L2X0_CTRL]
+ 	ret	lr
+ ENDPROC(l2c310_early_resume)
 -- 
-Thanks and Regards,
-Varka Bhadram.
+2.2.1
 
