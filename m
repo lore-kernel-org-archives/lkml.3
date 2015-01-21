@@ -1,114 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753426AbbAUAse (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 19:48:34 -0500
-Received: from mail.linuxfoundation.org ([140.211.169.12]:48813 "EHLO
-	mail.linuxfoundation.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751602AbbAUAsd (ORCPT
+	id S1753480AbbAUAuR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 19:50:17 -0500
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:40897 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750717AbbAUAuO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 19:48:33 -0500
-Date: Tue, 20 Jan 2015 16:48:32 -0800
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
-        David Rientjes <rientjes@google.com>, Vlastimil Babka <vbabka@suse.cz>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V4] mm/thp: Allocate transparent hugepages on local node
-Message-Id: <20150120164832.abe2e47b760e1a8d7bb6055b@linux-foundation.org>
-In-Reply-To: <1421753671-16793-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1421753671-16793-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: Sylpheed 3.4.1 (GTK+ 2.24.23; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Jan 2015 19:50:14 -0500
+X-Originating-IP: 50.43.58.154
+Date: Tue, 20 Jan 2015 16:50:06 -0800
+From: Josh Triplett <josh@joshtriplett.org>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: Iulia Manda <iulia.manda21@gmail.com>, serge.hallyn@canonical.com,
+        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com,
+        peterz@infradead.org, mhocko@suse.cz
+Subject: Re: [PATCH] kernel: Conditionally support non-root users, groups and
+ capabilities
+Message-ID: <20150121005006.GA1217@thin>
+References: <20150120233308.GA6256@winterfell>
+ <54BEED2C.2000000@schaufler-ca.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54BEED2C.2000000@schaufler-ca.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Jan 2015 17:04:31 +0530 "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
-
-> This make sure that we try to allocate hugepages from local node if
-> allowed by mempolicy. If we can't, we fallback to small page allocation
-> based on mempolicy. This is based on the observation that allocating pages
-> on local node is more beneficial than allocating hugepages on remote
-> node.
+On Tue, Jan 20, 2015 at 04:05:00PM -0800, Casey Schaufler wrote:
+> On 1/20/2015 3:33 PM, Iulia Manda wrote:
+> > There are a lot of embedded systems that run most or all of their functionality
+> > in init, running as root:root. For these systems, supporting multiple users is
+> > not necessary.
+> >
+> > This patch adds a new symbol, CONFIG_NON_ROOT, that makes support for non-root
+> > users, non-root groups, and capabilities optional.
+> >
+> > When this symbol is not defined, UID and GID are zero in any possible case
+> > and processes always have all capabilities.
+> >
+> > Also, the following syscalls are compiled out: setuid, setregid, setgid,
+> > setreuid, setresuid, getresuid, setresgid, getresgid, setgroups, getgroups,
+> > setfsuid, setfsgid, capget, capset.
+> >
+> > This change saves about 25 KB on a defconfig build.
+> >
+> > Bloat-o-meter output:
+> > add/remove: 7/66 grow/shrink: 21/421 up/down: 1701/-27172 (-25471)
+> >
+> > Signed-off-by: Iulia Manda <iulia.manda21@gmail.com>
+> > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 > 
-> With this patch applied we may find transparent huge page allocation
-> failures if the current node doesn't have enough freee hugepages.
-> Before this patch such failures result in us retrying the allocation on
-> other nodes in the numa node mask.
-> 
->  
->  /**
-> + * alloc_hugepage_vma: Allocate a hugepage for a VMA
-> + * @gfp:
-> + *   %GFP_USER	  user allocation.
-> + *   %GFP_KERNEL  kernel allocations,
-> + *   %GFP_HIGHMEM highmem/user allocations,
-> + *   %GFP_FS	  allocation should not call back into a file system.
-> + *   %GFP_ATOMIC  don't sleep.
-> + *
-> + * @vma:   Pointer to VMA or NULL if not available.
-> + * @addr:  Virtual Address of the allocation. Must be inside the VMA.
-> + * @order: Order of the hugepage for gfp allocation.
-> + *
-> + * This functions allocate a huge page from the kernel page pool and applies
-> + * a NUMA policy associated with the VMA or the current process.
-> + * For policy other than %MPOL_INTERLEAVE, we make sure we allocate hugepage
-> + * only from the current node if the current node is part of the node mask.
-> + * If we can't allocate a hugepage we fail the allocation and don' try to fallback
-> + * to other nodes in the node mask. If the current node is not part of node mask
-> + * or if the NUMA policy is MPOL_INTERLEAVE we use the allocator that can
-> + * fallback to nodes in the policy node mask.
-> + *
-> + * When VMA is not NULL caller must hold down_read on the mmap_sem of the
-> + * mm_struct of the VMA to prevent it from going away. Should be used for
-> + * all allocations for pages that will be mapped into
-> + * user space. Returns NULL when no page can be allocated.
-> + *
-> + * Should be called with the mm_sem of the vma hold.
+> Authoritative LSM hooks were loudly rejected in or about 1999.
+> One of the primary reasons they were rejected was because you could
+> use them do exactly what this patch does, which is to remove the basic
+> Linux security policy. If attitudes have changed sufficiently that
+> removing the "classic" security behavior is now deemed acceptable,
+> I propose that we reintroduce the option of authoritative LSM hooks
+> instead. That would give you all this saving, and probably more.
 
-That's a pretty cruddy sentence, isn't it?  Copied from
-alloc_pages_vma().  "vma->vm_mm->mmap_sem" would be better.
+Wouldn't authoritative LSM hooks require *adding* the necessary hook
+logic, along with a hook module implementing such a policy?  Unless
+you're suggesting that compiling in LSM hooks without any providers
+would result in this behavior by default, which seems rather
+questionable.
 
-And it should tell us whether mmap_sem required a down_read or a
-down_write.  What purpose is it serving?
+Also note that this is compiling out the entire family of UID/GID system
+calls, which LSM hooks could not do.
 
-> + *
-> + */
-> +struct page *alloc_hugepage_vma(gfp_t gfp, struct vm_area_struct *vma,
-> +				unsigned long addr, int order)
+In any case, I see two major problems with authoritative LSM hooks that
+this patch avoids:
 
-This pointlessly bloats the kernel if CONFIG_TRANSPARENT_HUGEPAGE=n?
+First, simplicity: I doubt authoritative LSM hooks could match this
+diffstat:
 
+> >  include/linux/capability.h |   12 ++++++++++++
+> >  include/linux/uidgid.h     |   12 ++++++++++++
+> >  init/Kconfig               |   19 ++++++++++++++++++-
+> >  kernel/capability.c        |    6 ++++++
+> >  kernel/groups.c            |    4 ++++
+> >  kernel/sys.c               |    2 ++
+> >  kernel/sys_ni.c            |   14 ++++++++++++++
+> >  7 files changed, 68 insertions(+), 1 deletion(-)
 
+Second, code size reduction: In addition to the concern above about
+adding hooks rather than removing code, this patch allows
+constant-folding away huge amounts of code, which any kind of "hook"
+mechanism would have a hard time doing.  This patch lets the compiler do
+almost all of the work.  Notice the "66 shrink" and "421 down" in the
+bloat-o-meter summary.
 
---- a/mm/mempolicy.c~mm-thp-allocate-transparent-hugepages-on-local-node-fix
-+++ a/mm/mempolicy.c
-@@ -2030,6 +2030,7 @@ retry_cpuset:
- 	return page;
- }
- 
-+#ifdef CONFIG_TRANSPARENT_HUGEPAGE
- /**
-  * alloc_hugepage_vma: Allocate a hugepage for a VMA
-  * @gfp:
-@@ -2057,7 +2058,7 @@ retry_cpuset:
-  * all allocations for pages that will be mapped into
-  * user space. Returns NULL when no page can be allocated.
-  *
-- * Should be called with the mm_sem of the vma hold.
-+ * Should be called with vma->vm_mm->mmap_sem held.
-  *
-  */
- struct page *alloc_hugepage_vma(gfp_t gfp, struct vm_area_struct *vma,
-@@ -2099,6 +2100,7 @@ alloc_with_fallback:
- 	 */
- 	return alloc_pages_vma(gfp, order, vma, addr, node);
- }
-+#endif
- 
- /**
-  * 	alloc_pages_current - Allocate pages.
-_
+The intent here is not to open the door to arbitrary replacement
+security policies.  The intent is to simply add a compile-time option to
+compile *out* security policies entirely, for systems that will not only
+never call setuid but in many cases never even call fork.
 
+- Josh Triplett
