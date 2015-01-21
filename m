@@ -1,56 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821AbbAUSrR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 13:47:17 -0500
-Received: from pandora.arm.linux.org.uk ([78.32.30.218]:44326 "EHLO
-	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752624AbbAUSrJ (ORCPT
+	id S1753851AbbAUSsw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 13:48:52 -0500
+Received: from out3-smtp.messagingengine.com ([66.111.4.27]:48550 "EHLO
+	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751484AbbAUSsp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 13:47:09 -0500
-Date: Wed, 21 Jan 2015 18:46:58 +0000
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Liviu Dudau <Liviu.Dudau@arm.com>
-Cc: Andrew Jackson <Andrew.Jackson@arm.com>,
-        "airlied@linux.ie" <airlied@linux.ie>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "moinejf@free.fr" <moinejf@free.fr>
-Subject: Re: [PATCH v2] drm/i2c: tda998x: Set the CEC I2C address based on
- the slave I2C address.
-Message-ID: <20150121184658.GX26493@n2100.arm.linux.org.uk>
-References: <545C835D.1050008@arm.com>
- <20150121184405.GI10762@e106497-lin.cambridge.arm.com>
+	Wed, 21 Jan 2015 13:48:45 -0500
+Message-Id: <1421866125.216465.217011617.2AC1A809@webmail.messagingengine.com>
+X-Sasl-Enc: 4B8UzbVa+R9mO/9e1KODmIszZXt0r2yqFrOkdoLhxz0U 1421866125
+From: Alexander van Heukelum <heukelum@fastmail.fm>
+To: Borislav Petkov <bp@suse.de>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>,
+        Andy Lutomirski <luto@amacapital.net>, X86 ML <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Oleg Nesterov <oleg@redhat.com>, Rik van Riel <riel@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150121184405.GI10762@e106497-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Mailer: MessagingEngine.com Webmail Interface - ajax-46f3f2c7
+In-Reply-To: <20150121180429.GB31527@pd.tnic>
+References: <1421581520-2816-1-git-send-email-heukelum@fastmail.fm>
+ <1421581520-2816-2-git-send-email-heukelum@fastmail.fm>
+ <CAK1hOcMqp8pHVLRPfH9ui1UFvnU1M2bUpdkecdGW-cmSHth9_Q@mail.gmail.com>
+ <1421857209.171127.216796445.0DC88E13@webmail.messagingengine.com>
+ <20150121180429.GB31527@pd.tnic>
+Subject: Re: [PATCHv2 1/4] x86_64: cleanup THREAD_INFO(reg,offset) macro
+Date: Wed, 21 Jan 2015 19:48:45 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 06:44:05PM +0000, Liviu Dudau wrote:
-> On Fri, Nov 07, 2014 at 08:31:25AM +0000, Andrew Jackson wrote:
-> > The I2C address for the TDA9989 and TDA19989 is fixed at 0x34
-> > but the two LSBs of the TDA19988's address are set by two configuration
-> > pins on the chip.  Irrespective of the chip, the associated CEC
-> > peripheral's I2C address is based upon the main I2C address.
+On Wed, Jan 21, 2015, at 19:04, Borislav Petkov wrote:
+> On Wed, Jan 21, 2015 at 05:20:09PM +0100, Alexander van Heukelum wrote:
+> > On Wed, Jan 21, 2015, at 14:40, Denys Vlasenko wrote:
+> > > On Sun, Jan 18, 2015 at 12:45 PM, Alexander van Heukelum
+> > > <heukelum@fastmail.fm> wrote:
+> > > > The macro THREAD_INFO(reg,offset) is used in assembly to compute the
+> > > > offset between the user ptregs and the thread_info struct. Change
+> > > > the macro and all its uses so that offset is given as the current
+> > > > top of stack in the pt_regs frame. The generated code is identical.
+> > > 
+> > > What is the purpose of doing this?
+> > > 
+> > > I don't mean to say that it's pointless, but it is also not obvious
+> > > why it's better than the code before patch.
 > > 
-> > This patch avoids any special handling required to support
-> > systems that contain multiple TDA19988 devices on the same
-> > I2C bus.
+> > Just because I had a hard time understanding what the offset
+> > parameter means. Turns out Borislav did another variant in his
+> > patchset. Quoting him from the commit message which made
+> > that the change:
+> > > Semi-mysterious expressions THREAD_INFO(%rsp,RIP) - "why RIP??"
+> > > are now replaced by more logical THREAD_INFO(%rsp,SIZEOF_PTREGS) -
+> > > "rsp is SIZEOF_PTREGS bytes below the top, calculate
+> > > thread_info's address using that information"
 > > 
-> > Signed-off-by: Andrew Jackson <Andrew.Jackson@arm.com>
-> > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
+> > Borislav expresses "offset" as an offset from the stack's page
+> > boundary,while I chose the offset from the start of struct
+> > pt_regs on the stack.
 > 
-> Hi Andrew,
+> I've never done any such thing :-)
 > 
-> What is the status of this patch? Is it going to be pulled by anyone?
+> s/Borislav/Denys/g.
 
-It's been sent to David.
+twice ... and stop using third person too... Oops.
 
--- 
-FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
-according to speedtest.net.
+Err. sorry :-/.
+ 
+> -- 
+> Regards/Gruss,
+>     Boris.
+> 
+> ECO tip #101: Trim your mails when you reply.
+> --
