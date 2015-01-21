@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754139AbbAUQpt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 11:45:49 -0500
-Received: from mail-ie0-f177.google.com ([209.85.223.177]:55222 "EHLO
-	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752235AbbAUQpl (ORCPT
+	id S1754182AbbAUQq7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 11:46:59 -0500
+Received: from pandora.arm.linux.org.uk ([78.32.30.218]:44093 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753339AbbAUQqv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 11:45:41 -0500
+	Wed, 21 Jan 2015 11:46:51 -0500
+Date: Wed, 21 Jan 2015 16:46:41 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Joe Perches <joe@perches.com>
+Cc: netdev <netdev@vger.kernel.org>, Robert Jarzmik <robert.jarzmik@free.fr>,
+        Lee Jones <lee.jones@linaro.org>, Mark Rutland <mark.rutland@arm.com>,
+        devicetree@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Kumar Gala <galak@codeaurora.org>, Daniel Mack <daniel@zonque.org>
+Subject: Re: unclear ipv6 redirect message (was Re: [PATCH v3 2/3] mfd:
+ lubbock_io: add lubbock_io board)
+Message-ID: <20150121164641.GU26493@n2100.arm.linux.org.uk>
+References: <1421406010-14851-2-git-send-email-robert.jarzmik@free.fr>
+ <20150119091705.GG21886@x1>
+ <87ppaah9k5.fsf@free.fr>
+ <20150120102919.GP5767@x1>
+ <20150120115658.GJ26493@n2100.arm.linux.org.uk>
+ <873874fuei.fsf@free.fr>
+ <20150121094453.GO26493@n2100.arm.linux.org.uk>
+ <1421856321.10574.13.camel@perches.com>
+ <20150121161059.GT26493@n2100.arm.linux.org.uk>
+ <1421858444.10574.14.camel@perches.com>
 MIME-Version: 1.0
-In-Reply-To: <1421581173-28416-9-git-send-email-ricardo.ribalda@gmail.com>
-References: <1421581173-28416-1-git-send-email-ricardo.ribalda@gmail.com>
-	<1421581173-28416-9-git-send-email-ricardo.ribalda@gmail.com>
-Date: Wed, 21 Jan 2015 17:45:40 +0100
-Message-ID: <CACRpkdbd8xK3PQ34EBc8=2ekMb+RggfY2Oh3Jg-K4gvnLfDZRA@mail.gmail.com>
-Subject: Re: [PATCH 8/8] gpio/mpc8xxx: Use of_mm_gpiochip_remove
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
-Cc: "linux-gpio@vger.kernel.org" <linux-gpio@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexandre Courbot <gnurou@gmail.com>,
-        Peter Korsgaard <jacmet@sunsite.dk>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421858444.10574.14.camel@perches.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 18, 2015 at 12:39 PM, Ricardo Ribalda Delgado
-<ricardo.ribalda@gmail.com> wrote:
+On Wed, Jan 21, 2015 at 08:40:44AM -0800, Joe Perches wrote:
+> On Wed, 2015-01-21 at 16:11 +0000, Russell King - ARM Linux wrote:
+> > On Wed, Jan 21, 2015 at 08:05:21AM -0800, Joe Perches wrote:
+> > > (adding netdev)
+> > 
+> > I wasn't actually reporting that as an issue; I was using it as an
+> > example.  It's from a very old kernel (2.6.27.21) which I run on one
+> > of my old x86 machines.
+> 
+> It's still the same code.
+> If the message can be improved, why not do it?
 
-> Since d621e8bae5ac9c67 (Create of_mm_gpiochip_remove), there is a
-> counterpart for of_mm_gpiochip_add.
->
-> This patch implements the remove function of the driver making use of
-> it.
->
-> Cc: Linus Walleij <linus.walleij@linaro.org>
-> Cc: Alexandre Courbot <gnurou@gmail.com>
-> Cc: Peter Korsgaard <jacmet@sunsite.dk>
-> Signed-off-by: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>
+I assume you're taking the responsibility to test anything that comes
+out of this then?
 
-Patch applied.
+I'm not; I tried updating the kernel on the machine to 2.6.32 many
+years ago and that was a no-go because of userspace (udev)
+incompatibilities.
 
-Yours,
-Linus Walleij
+-- 
+FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
+according to speedtest.net.
