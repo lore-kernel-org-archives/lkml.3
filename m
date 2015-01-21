@@ -1,92 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753277AbbAUOzp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 09:55:45 -0500
-Received: from mail-qc0-f178.google.com ([209.85.216.178]:45175 "EHLO
-	mail-qc0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753147AbbAUOzk (ORCPT
+	id S1753087AbbAUOza (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 09:55:30 -0500
+Received: from mail-la0-f50.google.com ([209.85.215.50]:57331 "EHLO
+	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752868AbbAUOzV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 09:55:40 -0500
+	Wed, 21 Jan 2015 09:55:21 -0500
 MIME-Version: 1.0
-In-Reply-To: <CAPDyKFoYj3xBoYsn87mxjoqDDnCtopAugX5JbzYritxWn-7XaA@mail.gmail.com>
-References: <1421338359-27467-1-git-send-email-tomeu.vizoso@collabora.com>
- <1421338359-27467-9-git-send-email-tomeu.vizoso@collabora.com>
- <54B7F9FB.7030100@wwwdotorg.org> <CAPDyKFoO6evBoAbEE30XiZg51KsM-sD4viFMvqaDwGoHeVL-6w@mail.gmail.com>
- <54BFAF7E.1030703@collabora.com> <CAPDyKFoYj3xBoYsn87mxjoqDDnCtopAugX5JbzYritxWn-7XaA@mail.gmail.com>
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Date: Wed, 21 Jan 2015 15:55:18 +0100
-X-Google-Sender-Auth: CLxuAiFREeTfyIF_CF8p4CD-shk
-Message-ID: <CAAObsKBiMMNXMUPpOjNxLkrJ6NxdDgrVCVdCM4EPRtuysi1yOg@mail.gmail.com>
-Subject: Re: [PATCH v2 08/11] mmc: pwrseq_simple: Add support for a delay
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Stephen Warren <swarren@wwwdotorg.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Dylan Reid <dgreid@chromium.org>, Simon Glass <sjg@chromium.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Chris Ball <chris@printf.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>
+In-Reply-To: <E1Xwo5O-00GRl4-Cc@intern.SerNet.DE>
+References: <cover.1415636409.git.milosz@adfin.com>
+	<20141125150101.9596a09e.akpm@linux-foundation.org>
+	<CANP1eJEALZTwMv0Z1udmPWKhfGmpe+idtdRASp62Jm_V0N2HcQ@mail.gmail.com>
+	<20141202144200.a4ca81a46a43563a8874fd8e@linux-foundation.org>
+	<CANP1eJGVyBOt1rQ8jA4tMrNGX5X61-UWbVy6kKj_ByeTqAEOBQ@mail.gmail.com>
+	<20141204151102.2d7e11dca39f130c2dff2294@linux-foundation.org>
+	<E1Xwo5O-00GRl4-Cc@intern.SerNet.DE>
+Date: Wed, 21 Jan 2015 09:55:20 -0500
+Message-ID: <CANP1eJEwYFKvCcPpzeRnXqeLTRf1qFs194ubMcQcsksCuEbpMQ@mail.gmail.com>
+Subject: Re: [PATCH v6 0/7] vfs: Non-blockling buffered fs read (page cache only)
+From: Milosz Tanski <milosz@adfin.com>
+To: Volker Lendecke <Volker.Lendecke@sernet.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-aio@kvack.org" <linux-aio@kvack.org>,
+        Mel Gorman <mgorman@suse.de>, Tejun Heo <tj@kernel.org>,
+        Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Linux API <linux-api@vger.kernel.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>, linux-arch@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21 January 2015 at 15:15, Ulf Hansson <ulf.hansson@linaro.org> wrote:
-> On 21 January 2015 at 14:54, Tomeu Vizoso <tomeu.vizoso@collabora.com> wrote:
->> On 01/21/2015 11:44 AM, Ulf Hansson wrote:
->>> On 15 January 2015 at 18:33, Stephen Warren <swarren@wwwdotorg.org> wrote:
->>>> On 01/15/2015 09:12 AM, Tomeu Vizoso wrote:
->>>>>
->>>>> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
->>>>
->>>>
->>>> Ah, having read the explanation in the next patch, I think ...
->>>>
->>>>> diff --git a/Documentation/devicetree/bindings/mmc/mmc,pwrseq-simple.txt
->>>>> b/Documentation/devicetree/bindings/mmc/mmc,pwrseq-simple.txt
->>>>
->>>>
->>>>> +- delay : delay to wait after driving the reset gpio active [ms].
->>>>
->>>>
->>>> ... delay is the wrong name. reset-pulse-width or reset-pulse-length would
->>>> be better. delay sounds like a delay after resetting the device before it
->>>> can be accessed.
->>>
->>> I agree with Stephen's proposal.
->>
->> Cool.
->>
->>> This patch needs to be rebased and retested on latest version the
->>> mmc-pwrseq patches.
->>
->> Sure.
->>
->>> Moreover, if you think the patchset which $subject
->>> patch is a part of is material for 3.20, I will need to share an
->>> immutable branch with the mmc-pwrseq patches for ARM SOC to pull in,
->>> tell me if you need that.
->>
->> I don't think this will make 3.20 as I have other series with higher
->> priority and there's quite some work left to do on this one.
+On Fri, Dec 5, 2014 at 3:17 AM, Volker Lendecke
+<Volker.Lendecke@sernet.de> wrote:
 >
-> If that's the case, I might as well consider this patch separately and
-> take it through my mmc tree. Of course, that means you anyway need to
-> rebase/test it.
+> On Thu, Dec 04, 2014 at 03:11:02PM -0800, Andrew Morton wrote:
+> > I can see all that, but it's handwaving.  Yes, preadv2() will perform
+> > better in some circumstances than fincore+pread.  But how much better?
+> > Enough to justify this approach, or not?
+> >
+> > Alas, the only way to really settle that is to implement fincore() and
+> > to subject it to a decent amount of realistic quantitative testing.
+> >
+> > Ho hum.
+> >
+> > Could you please hunt down some libuv developers, see if we can solicit
+> > some quality input from them?  As I said, we really don't want to merge
+> > this then find that people don't use it for some reason, or that it
+> > needs changes.
+>
+> All I can say from a Samba perspective is that none of the ARM based
+> Storage boxes I have seen so far do AIO because of the base footprint
+> for every read. For sequential reads kernel-level readahead could kick
+> in properly and we should be able to give them the best of both worlds:
+> No context switches in the default case but also good parallel behaviour
+> for other workloads.  The most important benchmark for those guys is to
+> read a DVD image, whether it makes sense or not.
 
-Sounds good, I expect to send a v3 tomorrow.
 
-Regards,
+I just made wanted to share some progress on this. And I apologize for
+for all these different threads (this, LSF/FS and then Jermey and
+Volker).
 
-Tomeu
+I recently implemented cifs support (via libsmbcli) for FIO so I can
+have some hard numbers on the benchmarks. So all you guys will be
+seeing more data soon enough. It's going to take a bit of time to put
+it together because it takes a lot of time to benchmark to make sure
+we have correct and non-noisy numbers.
 
-> Kind regards
-> Uffe
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-tegra" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+In the meantime I have some numbers from my first run here:
+http://i.imgur.com/05SMu8d.jpg
+
+Sorry for the link to the image, it was easier. The test case is a
+single FIO client doing 4K random reads, on localhost smbd server, on
+a fully cached file for 10 minutes with a 1 minute warm up.
+
+Threadpool + preadv2 for fast read does much better in terms of
+bandwidth and a bit better in terms of latency. Sync is still the
+fastest, but the gap is narrowed. Not a bad improvement for (Volker's)
+9 line change to samba code.
+
+Also, I look into why the gap between sync and threadpool + preadv2 is
+not even smaller. From my preliminary investigation it looks like the
+async threadpool code path does a lot more work then the sync call...
+even in the case we do the fast read. According to perf the hotest
+code userspace (smbd+ library) is malloc + free. So I imagine the
+optimizing the fast read case to avoid a bunch of extra request
+allocations will bring us even closer to sync.
+
+Again, I'll have and more complex test cases soon just wanted to share
+progress. I imagine that they'll the gap between threadpool + preadv2
+and just threadpool is going to get wider as add more blocking calls
+into the queue. I'll have number on that as soon as week can.
+
+
+diff --git a/source3/modules/vfs_default.c b/source3/modules/vfs_default.c
+index 5634cc0..90348d8 100644
+--- a/source3/modules/vfs_default.c
++++ b/source3/modules/vfs_default.c
+@@ -718,6 +741,7 @@ static struct tevent_req
+*vfswrap_pread_send(struct vfs_handle_struct *handle,
+        struct tevent_req *req;
+        struct vfswrap_asys_state *state;
+        int ret;
++       ssize_t nread;
+
+        req = tevent_req_create(mem_ctx, &state, struct vfswrap_asys_state);
+        if (req == NULL) {
+@@ -730,6 +754,14 @@ static struct tevent_req
+*vfswrap_pread_send(struct vfs_handle_struct *handle,
+        state->asys_ctx = handle->conn->sconn->asys_ctx;
+        state->req = req;
+
++       nread = pread2(fsp->fh->fd, data, n, offset, RWF_NONBLOCK);
++       // TODO: partial reads
++       if (nread == n) {
++               state->ret = nread;
++               tevent_req_done(req);
++               return tevent_req_post(req, ev);
++       }
++
+        SMBPROFILE_BYTES_ASYNC_START(syscall_asys_pread, profile_p,
+                                     state->profile_bytes, n);
+        ret = asys_pread(state->asys_ctx, fsp->fh->fd, data, n, offset, req);
+
+
+-- 
+Milosz Tanski
+CTO
+16 East 34th Street, 15th floor
+New York, NY 10016
+
+p: 646-253-9055
+e: milosz@adfin.com
