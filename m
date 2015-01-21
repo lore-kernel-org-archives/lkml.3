@@ -1,72 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752902AbbAULwg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 06:52:36 -0500
-Received: from mail-la0-f41.google.com ([209.85.215.41]:48180 "EHLO
-	mail-la0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752506AbbAULw2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 06:52:28 -0500
-From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
-To: Simon Kelley <simon@thekelleys.org.uk>, Kalle Valo <kvalo@codeaurora.org>
-Cc: Sergei Shtylyov <sergei.shtylyov@cogentembedded.com>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] net: wireless: atmel: Remove open-coded and wrong strcasecmp
-Date: Wed, 21 Jan 2015 12:52:07 +0100
-Message-Id: <1421841127-8209-1-git-send-email-linux@rasmusvillemoes.dk>
-X-Mailer: git-send-email 2.1.3
-In-Reply-To: <1421414907-26764-1-git-send-email-linux@rasmusvillemoes.dk>
-References: <1421414907-26764-1-git-send-email-linux@rasmusvillemoes.dk>
+	id S1752801AbbAUMDJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 07:03:09 -0500
+Received: from pluto.manitu.net ([217.11.48.9]:45589 "EHLO pluto.manitu.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751645AbbAUMC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 07:02:59 -0500
+X-Greylist: delayed 539 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Jan 2015 07:02:58 EST
+To: Andri Yngvason <andri.yngvason@marel.com>
+Subject: Re: [PATCH v5 2/5] can: =?UTF-8?Q?kvaser=5Fusb=3A=20Consolidate?=  =?UTF-8?Q?=20and=20unify=20state=20change=20handling?=
+X-PHP-Originating-Script: 1000:func.inc
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 7bit
+Date: Wed, 21 Jan 2015 12:53:58 +0100
+From: Wolfgang Grandegger <wg@grandegger.com>
+Cc: "Ahmed S. Darwish" <darwish.07@gmail.com>,
+        Olivier Sobrie <olivier@sobrie.be>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20150121103319.14511.57709@shannon>
+References: <20141223154654.GB6460@vivalin-002>
+ <20150120214409.GA16828@linux> <20150120214537.GB16828@linux>
+ <20150121103319.14511.57709@shannon>
+Message-ID: <e5439ed067931dc01bda70592eb6ed52@grandegger.com>
+User-Agent: RoundCube Webmail/0.2-beta
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The kernel's string library does in fact have strcasecmp, at least
-since ded220bd8f08 ("[STRING]: Move strcasecmp/strncasecmp to
-lib/string.c"). Moreover, this open-coded version is in fact wrong: If
-the strings only differ in their last character, a and b have already
-been incremented to point to the terminating NUL bytes, so they would
-wrongly be treated as equal.
+On Wed, 21 Jan 2015 10:33:19 +0000, Andri Yngvason
+<andri.yngvason@marel.com> wrote:
+> Quoting Ahmed S. Darwish (2015-01-20 21:45:37)
+>> From: Ahmed S. Darwish <ahmed.darwish@valeo.com>
+>> 
+>> Replace most of the can interface's state and error counters
+>> handling with the new can-dev can_change_state() mechanism.
+>> 
+>> Suggested-by: Andri Yngvason <andri.yngvason@marel.com>
+>> Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
+>> ---
+>>  drivers/net/can/usb/kvaser_usb.c | 114
+>>  +++++++++++++++++++--------------------
+>>  1 file changed, 55 insertions(+), 59 deletions(-)
+>> 
+>> diff --git a/drivers/net/can/usb/kvaser_usb.c
+>> b/drivers/net/can/usb/kvaser_usb.c
+>> index 971c5f9..0386d3f 100644
+>> --- a/drivers/net/can/usb/kvaser_usb.c
+>> +++ b/drivers/net/can/usb/kvaser_usb.c
 
-Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
----
-v2: Address Sergei's comments to the commit message.
+...
+> 
+> Looks good.
 
- drivers/net/wireless/atmel.c | 12 +-----------
- 1 file changed, 1 insertion(+), 11 deletions(-)
+Would be nice to see some "candump" traces as well. Ahmed, could you
+please generate such traces doing:
 
-diff --git a/drivers/net/wireless/atmel.c b/drivers/net/wireless/atmel.c
-index 9183f1cf89a7..55db9f03eb2a 100644
---- a/drivers/net/wireless/atmel.c
-+++ b/drivers/net/wireless/atmel.c
-@@ -45,7 +45,6 @@
- #include <linux/ptrace.h>
- #include <linux/slab.h>
- #include <linux/string.h>
--#include <linux/ctype.h>
- #include <linux/timer.h>
- #include <asm/byteorder.h>
- #include <asm/io.h>
-@@ -2699,16 +2698,7 @@ static int atmel_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
- 		domain[REGDOMAINSZ] = 0;
- 		rc = -EINVAL;
- 		for (i = 0; i < ARRAY_SIZE(channel_table); i++) {
--			/* strcasecmp doesn't exist in the library */
--			char *a = channel_table[i].name;
--			char *b = domain;
--			while (*a) {
--				char c1 = *a++;
--				char c2 = *b++;
--				if (tolower(c1) != tolower(c2))
--					break;
--			}
--			if (!*a && !*b) {
-+			if (!strcasecmp(channel_table[i].name, domain)) {
- 				priv->config_reg_domain = channel_table[i].reg_domain;
- 				rc = 0;
- 			}
--- 
-2.1.3
+1. Execute in a session:
+   # candump -t d -e any,0:0,#FFFFFFFF
 
+2. Execute in another session:
+   # cangen -g 10 -D i can0
+
+3. Disconnect the CAN cable
+
+4. After a while reconnect the CAN cable
+
+5. Stop candump and save the trace.
+
+and to test bus-off:
+
+1. Execute in a session:
+   # candump -t d -e any,0:0,#FFFFFFFF
+
+2. Execute in another session:
+   # cangen -g 10 -D i can0
+
+3. Short-circuit the CAN low and high wires of the CAN cable
+
+4. After a while remove the short-circuit.
+
+5. Stop candump and save the trace.
+
+Thanks,
+
+Wolfgang.
