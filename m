@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754227AbbAUG1g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 01:27:36 -0500
-Received: from mailout2.samsung.com ([203.254.224.25]:42797 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750948AbbAUG1H (ORCPT
+	id S1754457AbbAUG1p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 01:27:45 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:62694 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751996AbbAUG1K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 01:27:07 -0500
-X-AuditID: cbfee68e-f79b46d000002b74-f1-54bf46b49a8e
+	Wed, 21 Jan 2015 01:27:10 -0500
+X-AuditID: cbfee691-f79b86d000004a5a-e6-54bf46b472b5
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: s.nawrocki@samsung.com, tomasz.figa@gmail.com
 Cc: mturquette@linaro.org, kgene@kernel.org, pankaj.dubey@samsung.com,
         inki.dae@samsung.com, chanho61.park@samsung.com,
         sw0312.kim@samsung.com, cw00.choi@samsung.com,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 08/12] clk: samsung: exynos5433: Add clocks for CMU_AUD
- domain
-Date: Wed, 21 Jan 2015 15:26:57 +0900
-Message-id: <1421821618-8627-9-git-send-email-cw00.choi@samsung.com>
+        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH v3 09/12] clk: samsung: exynos5433: Add clocks for
+ CMU_BUS{0|1|2} domains
+Date: Wed, 21 Jan 2015 15:26:58 +0900
+Message-id: <1421821618-8627-10-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.5.5
 In-reply-to: <1421821618-8627-1-git-send-email-cw00.choi@samsung.com>
 References: <1421821618-8627-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLLMWRmVeSWpSXmKPExsWyRsSkRHeL2/4Qg6Z/khaX92tbXP/ynNVi
-	0v0JLBb9j18zW1zeNYfNYsb5fUwWTydcZLNYtPULu8XhN+2sFjMmv2SzWLXrD6MDt8fOWXfZ
-	PTat6mTzuHNtD5tH35ZVjB6fN8kFsEZx2aSk5mSWpRbp2yVwZex+38JaMD2o4vLreSwNjAtc
-	uxg5OSQETCTWbuhmh7DFJC7cW8/WxcjFISSwlFHiQftiJpii77sXMkEkFjFKrLz7iRnCaWKS
-	aDnbxgJSxSagJbH/xQ2gdg4OEQFDiZuHlEBqmAXeMEp0v//NClIjLBAssfjvQzCbRUBVYnLf
-	CjCbV8BF4uX9U1DbFCSWLZ/JCjKHU8BVov02E4gpBFRybksJyEgJgW3sEk+WnmWCGCMg8W3y
-	IRaQGgkBWYlNB5ghpkhKHFxxg2UCo/ACRoZVjKKpBckFxUnpRUZ6xYm5xaV56XrJ+bmbGIGx
-	cPrfs74djDcPWB9iFOBgVOLhfaG4P0SINbGsuDL3EKMp0IaJzFKiyfnAiMsriTc0NjOyMDUx
-	NTYytzRTEudNkPoZLCSQnliSmp2aWpBaFF9UmpNafIiRiYNTqoFx7YmGFpvg4n9aFiz81Szs
-	ooVi6z4E21y6MWOFtvz7gPPH/2wpCg/2m72H4U3ENF33vR1sgr8mbg24ydicM8Pw64ebbxxP
-	PSyffkbqnHfq3n1Xnc4V1nxe5O3jmsPMEyvinT6rvCncRHPB6x2xPy6e2+BpsSRYdWXp4zvm
-	qopeF52rzLYeffhDiaU4I9FQi7moOBEA1bdM/oACAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOIsWRmVeSWpSXmKPExsVy+t9jAd0tbvtDDD728Vtc3q9tcf3Lc1aL
-	SfcnsFj0P37NbHF51xw2ixnn9zFZPJ1wkc1i0dYv7BaH37SzWsyY/JLNYtWuP4wO3B47Z91l
-	99i0qpPN4861PWwefVtWMXp83iQXwBrVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhr
-	aGlhrqSQl5ibaqvk4hOg65aZA3SakkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMD
-	NJCwhjFj9/sW1oLpQRWXX89jaWBc4NrFyMkhIWAi8X33QiYIW0ziwr31bF2MXBxCAosYJVbe
-	/cQM4TQxSbScbWMBqWIT0JLY/+IGUBUHh4iAocTNQ0ogNcwCbxglut//ZgWpERYIllj89yGY
-	zSKgKjG5bwWYzSvgIvHy/imobQoSy5bPZAWZwyngKtF+mwnEFAIqObelZAIj7wJGhlWMoqkF
-	yQXFSem5hnrFibnFpXnpesn5uZsYwZH2TGoH48oGi0OMAhyMSjy8LxT3hwixJpYVV+YeYpTg
-	YFYS4VWUAArxpiRWVqUW5ccXleakFh9iNAW6aSKzlGhyPjAJ5JXEGxqbmBlZGpkbWhgZmyuJ
-	8yrZt4UICaQnlqRmp6YWpBbB9DFxcEo1MPKmzT2zjI833nLhP/fs6SxxZ/rcNO/kOv7gfndz
-	6YdvHOukfkxwMj0QerbOeY1ngMbC8KPNL+WbRL/N+Pjlt4XV7Ce6fW+9rnA+OXwsUdTXQcCH
-	75mA2o9gXtmbMh13/jxKV7BknPq0J6Z+8oavYhvqzi3nP8vzrsv9wOGTh5O7fkzVO18XukiJ
-	pTgj0VCLuag4EQCfZDZvygIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFvrKLMWRmVeSWpSXmKPExsWyRsSkRHeL2/4QgwNX5Cz+TjrGbnF5v7bF
+	9S/PWS0m3Z/AYtH/+DWzxeVdc9gsZpzfx2TxdMJFNotFW7+wWxx+085qMWPySzaLVbv+MDrw
+	ePz+NYnRY+esu+wem1Z1snncubaHzaNvyypGj8+b5ALYorhsUlJzMstSi/TtErgyJp2ayV7w
+	Ibri4+2cBsbzvl2MnBwSAiYSvWv2sEHYYhIX7q0Hsrk4hASWMkpM3biTGabo6uJZLBCJRYwS
+	b2Y/ZIJwmpgkWs62sYBUsQloSex/cQOonYNDRMBQ4uYhJZAaZoFuJok/C76CrRAWiJY4smIW
+	2FQWAVWJGWuvsoPYvAKuEj9vLoI6Q0Fi2fKZrCBzOIHi7beZQEwhAReJc1tKICqOsUssWWsA
+	MUVA4tvkQywgJRICshKbDkCdLClxcMUNlgmMwgsYGVYxiqYWJBcUJ6UXmeoVJ+YWl+al6yXn
+	525iBMbG6X/PJu5gvH/A+hCjAAejEg/vC8X9IUKsiWXFlbmHGE2BNkxklhJNzgdGYF5JvKGx
+	mZGFqYmpsZG5pZmSOK+O9M9gIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYzz76h0q9SxZlW3
+	JBZMrHJOCTL9/EM2znaey6yG3l3y09bnb4jfsWm1Y/F/3Qt3IzyCQx+fuvHAc9qzfAVxbYt1
+	a9jOP7DS2SzYNiNJ9uWexXu//z31+X266rzWK64P+vkm/Lv3dd7xfquNi69wNVnHa6zSyVyv
+	tERB+UCV9q69rUV9tTOnnD+sxFKckWioxVxUnAgASOvp1ogCAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrAIsWRmVeSWpSXmKPExsVy+t9jAd0tbvtDDBr7RCz+TjrGbnF5v7bF
+	9S/PWS0m3Z/AYtH/+DWzxeVdc9gsZpzfx2TxdMJFNotFW7+wWxx+085qMWPySzaLVbv+MDrw
+	ePz+NYnRY+esu+wem1Z1snncubaHzaNvyypGj8+b5ALYohoYbTJSE1NSixRS85LzUzLz0m2V
+	vIPjneNNzQwMdQ0tLcyVFPISc1NtlVx8AnTdMnOAjlRSKEvMKQUKBSQWFyvp22GaEBripmsB
+	0xih6xsSBNdjZIAGEtYwZkw6NZO94EN0xcfbOQ2M5327GDk5JARMJK4unsUCYYtJXLi3nq2L
+	kYtDSGARo8Sb2Q+ZIJwmJomWs21gVWwCWhL7X9wAquLgEBEwlLh5SAmkhlmgm0niz4KvbCA1
+	wgLREkdWzGIGsVkEVCVmrL3KDmLzCrhK/Ly5iA1im4LEsuUzWUHmcALF228zgZhCAi4S57aU
+	TGDkXcDIsIpRNLUguaA4KT3XUK84Mbe4NC9dLzk/dxMjOPaeSe1gXNlgcYhRgINRiYf3heL+
+	ECHWxLLiytxDjBIczEoivIoSQCHelMTKqtSi/Pii0pzU4kOMpkA3TWSWEk3OB6aFvJJ4Q2MT
+	MyNLI3NDCyNjcyVxXiX7thAhgfTEktTs1NSC1CKYPiYOTqkGxqAEGdHYr7E1z6MEDNbdZp7C
+	ejOg40rWb9Etjhv0Uh6ZznjJF+eu15hSeHdGZPoqZm45q6pJZ/qX5s06Ivd09/Gvn1ZHzzwt
+	siXyZG3mXG3z1y8Xhk6Yfln26GrlTNMpETqP3nQ1bHW+f4bldO72CWuFbvdXHLOfxaISYLRh
+	9u0TAu2LFz7jXqfEUpyRaKjFXFScCADOslTE0wIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -53,284 +54,321 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the mux/divider/gate clocks for CMU_AUD domain which
-includes the clocks of Cortex-A5/Bus/Audio clocks.
+This patch adds the mux/divider/gate clocks for CMU_BUS{0|1|2} domains
+which contain global data buses clocked at up the 400MHz. These blocks
+transfer data between DRAM and various sub-blocks. These clock domains
+also contain global peripheral buses clocked at 67/111/200/222/266/333/400
+MHz and used for register accesses.
 
 Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
 Cc: Tomasz Figa <tomasz.figa@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 Acked-by: Inki Dae <inki.dae@samsung.com>
+Reviewed-by: Pankaj Dubey <pankaj.dubey@samsung.com>
 ---
- .../devicetree/bindings/clock/exynos5433-clock.txt |   7 +
- drivers/clk/samsung/clk-exynos5433.c               | 172 +++++++++++++++++++++
- include/dt-bindings/clock/exynos5433.h             |  53 +++++++
- 3 files changed, 232 insertions(+)
+ .../devicetree/bindings/clock/exynos5433-clock.txt |  21 +++
+ drivers/clk/samsung/clk-exynos5433.c               | 187 +++++++++++++++++++++
+ include/dt-bindings/clock/exynos5433.h             |  27 ++-
+ 3 files changed, 234 insertions(+), 1 deletion(-)
 
 diff --git a/Documentation/devicetree/bindings/clock/exynos5433-clock.txt b/Documentation/devicetree/bindings/clock/exynos5433-clock.txt
-index 8d3dad4..9a6ae75 100644
+index 9a6ae75..03ae40a 100644
 --- a/Documentation/devicetree/bindings/clock/exynos5433-clock.txt
 +++ b/Documentation/devicetree/bindings/clock/exynos5433-clock.txt
-@@ -23,6 +23,8 @@ Required Properties:
-     which generates clocks for G2D/MDMA IPs.
-   - "samsung,exynos5433-cmu-disp"  - clock controller compatible for CMU_DISP
+@@ -25,6 +25,9 @@ Required Properties:
      which generates clocks for Display (DECON/HDMI/DSIM/MIXER) IPs.
-+  - "samsung,exynos5433-cmu-aud"   - clock controller compatible for CMU_AUD
-+    which generates clocks for Cortex-A5/BUS/AUDIO clocks.
+   - "samsung,exynos5433-cmu-aud"   - clock controller compatible for CMU_AUD
+     which generates clocks for Cortex-A5/BUS/AUDIO clocks.
++  - "samsung,exynos5433-cmu-bus0", "samsung,exynos5433-cmu-bus1"
++    and "samsung,exynos5433-cmu-bus2" - clock controller compatible for CMU_BUS
++    which generates global data buses clock and global peripheral buses clock.
  
  - reg: physical base address of the controller and length of memory mapped
    region.
-@@ -86,6 +88,11 @@ Example 1: Examples of clock controller nodes are listed below.
+@@ -94,6 +97,24 @@ Example 1: Examples of clock controller nodes are listed below.
  		#clock-cells = <1>;
  	};
  
-+	cmu_aud: clock-controller@0x114c0000 {
-+		compatible = "samsung,exynos5433-cmu-aud";
-+		reg = <0x114c0000 0x0b04>;
++	cmu_bus0: clock-controller@0x13600000 {
++		compatible = "samsung,exynos5433-cmu-bus0";
++		reg = <0x13600000 0x0b04>;
 +		#clock-cells = <1>;
 +	};
- 
++
++	cmu_bus1: clock-controller@0x14800000 {
++		compatible = "samsung,exynos5433-cmu-bus1";
++		reg = <0x14800000 0x0b04>;
++		#clock-cells = <1>;
++	};
++
++	cmu_bus2: clock-controller@0x13400000 {
++		compatible = "samsung,exynos5433-cmu-bus2";
++		reg = <0x13400000 0x0b04>;
++		#clock-cells = <1>;
++	};
++
  Example 2: UART controller node that consumes the clock generated by the clock
  	   controller.
+ 
 diff --git a/drivers/clk/samsung/clk-exynos5433.c b/drivers/clk/samsung/clk-exynos5433.c
-index 3a3e64b..a33ef2e 100644
+index a33ef2e..e79edd7 100644
 --- a/drivers/clk/samsung/clk-exynos5433.c
 +++ b/drivers/clk/samsung/clk-exynos5433.c
-@@ -2459,3 +2459,175 @@ static void __init exynos5433_cmu_disp_init(struct device_node *np)
+@@ -438,6 +438,14 @@ static struct samsung_div_clock top_div_clks[] __initdata = {
+ 	DIV(CLK_DIV_ACLK_PERIS_66_A, "div_aclk_peris_66_a",
+ 			"mout_bus_pll_user", DIV_TOP3, 0, 3),
  
- CLK_OF_DECLARE(exynos5433_cmu_disp, "samsung,exynos5433-cmu-disp",
- 		exynos5433_cmu_disp_init);
++	/* DIV_TOP4 */
++	DIV(CLK_DIV_ACLK_G3D_400, "div_aclk_g3d_400", "mout_bus_pll_user",
++			DIV_TOP4, 8, 3),
++	DIV(CLK_DIV_ACLK_BUS0_400, "div_aclk_bus0_400", "mout_aclk_bus0_400",
++			DIV_TOP4, 4, 3),
++	DIV(CLK_DIV_ACLK_BUS1_400, "div_aclk_bus1_400", "mout_bus_pll_user",
++			DIV_TOP4, 0, 3),
++
+ 	/* DIV_TOP_FSYS0 */
+ 	DIV(CLK_DIV_SCLK_MMC1_B, "div_sclk_mmc1_b", "div_sclk_mmc1_a",
+ 			DIV_TOP_FSYS0, 16, 8),
+@@ -501,6 +509,23 @@ static struct samsung_div_clock top_div_clks[] __initdata = {
+ 
+ static struct samsung_gate_clock top_gate_clks[] __initdata = {
+ 	/* ENABLE_ACLK_TOP */
++	GATE(CLK_ACLK_G3D_400, "aclk_g3d_400", "div_aclk_g3d_400",
++			ENABLE_ACLK_TOP, 30, 0, 0),
++	GATE(CLK_ACLK_IMEM_SSX_266, "aclk_imem_ssx_266",
++			"div_aclk_imem_sssx_266", ENABLE_ACLK_TOP,
++			29, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_BUS0_400, "aclk_bus0_400", "div_aclk_bus0_400",
++			ENABLE_ACLK_TOP, 26,
++			CLK_IGNORE_UNUSED | CLK_SET_RATE_PARENT, 0),
++	GATE(CLK_ACLK_BUS1_400, "aclk_bus1_400", "div_aclk_bus1_400",
++			ENABLE_ACLK_TOP, 25,
++			CLK_IGNORE_UNUSED | CLK_SET_RATE_PARENT, 0),
++	GATE(CLK_ACLK_IMEM_200, "aclk_imem_200", "div_aclk_imem_266",
++			ENABLE_ACLK_TOP, 24,
++			CLK_IGNORE_UNUSED | CLK_SET_RATE_PARENT, 0),
++	GATE(CLK_ACLK_IMEM_266, "aclk_imem_266", "div_aclk_imem_200",
++			ENABLE_ACLK_TOP, 23,
++			CLK_IGNORE_UNUSED | CLK_SET_RATE_PARENT, 0),
+ 	GATE(CLK_ACLK_PERIC_66, "aclk_peric_66", "div_aclk_peric_66_b",
+ 			ENABLE_ACLK_TOP, 22,
+ 			CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED, 0),
+@@ -2631,3 +2656,165 @@ static void __init exynos5433_cmu_aud_init(struct device_node *np)
+ }
+ CLK_OF_DECLARE(exynos5433_cmu_aud, "samsung,exynos5433-cmu-aud",
+ 		exynos5433_cmu_aud_init);
++
 +
 +/*
-+ * Register offset definitions for CMU_AUD
++ * Register offset definitions for CMU_BUS{0|1|2}
 + */
-+#define MUX_SEL_AUD0			0x0200
-+#define MUX_SEL_AUD1			0x0204
-+#define MUX_ENABLE_AUD0			0x0300
-+#define MUX_ENABLE_AUD1			0x0304
-+#define MUX_STAT_AUD0			0x0400
-+#define DIV_AUD0			0x0600
-+#define DIV_AUD1			0x0604
-+#define DIV_STAT_AUD0			0x0700
-+#define DIV_STAT_AUD1			0x0704
-+#define ENABLE_ACLK_AUD			0x0800
-+#define ENABLE_PCLK_AUD			0x0900
-+#define ENABLE_SCLK_AUD0		0x0a00
-+#define ENABLE_SCLK_AUD1		0x0a04
-+#define ENABLE_IP_AUD0			0x0b00
-+#define ENABLE_IP_AUD1			0x0b04
++#define DIV_BUS				0x0600
++#define DIV_STAT_BUS			0x0700
++#define ENABLE_ACLK_BUS			0x0800
++#define ENABLE_PCLK_BUS			0x0900
++#define ENABLE_IP_BUS0			0x0b00
++#define ENABLE_IP_BUS1			0x0b04
 +
-+static unsigned long aud_clk_regs[] __initdata = {
-+	MUX_SEL_AUD0,
-+	MUX_SEL_AUD1,
-+	MUX_ENABLE_AUD0,
-+	MUX_ENABLE_AUD1,
-+	MUX_STAT_AUD0,
-+	DIV_AUD0,
-+	DIV_AUD1,
-+	DIV_STAT_AUD0,
-+	DIV_STAT_AUD1,
-+	ENABLE_ACLK_AUD,
-+	ENABLE_PCLK_AUD,
-+	ENABLE_SCLK_AUD0,
-+	ENABLE_SCLK_AUD1,
-+	ENABLE_IP_AUD0,
-+	ENABLE_IP_AUD1,
-+};
++#define MUX_SEL_BUS2			0x0200	/* Only for CMU_BUS2 */
++#define MUX_ENABLE_BUS2			0x0300	/* Only for CMU_BUS2 */
++#define MUX_STAT_BUS2			0x0400	/* Only for CMU_BUS2 */
 +
 +/* list of all parent clock list */
-+PNAME(mout_aud_pll_user_aud_p)	= { "fin_pll", "fout_aud_pll", };
-+PNAME(mout_sclk_aud_pcm_p)	= { "mout_aud_pll_user", "ioclk_audiocdclk0",};
++PNAME(mout_aclk_bus2_400_p)	= { "fin_pll", "aclk_bus2_400", };
 +
-+static struct samsung_fixed_rate_clock aud_fixed_clks[] __initdata = {
-+	FRATE(0, "ioclk_jtag_tclk", NULL, CLK_IS_ROOT, 33000000),
-+	FRATE(0, "ioclk_slimbus_clk", NULL, CLK_IS_ROOT, 25000000),
-+	FRATE(0, "ioclk_i2s_bclk", NULL, CLK_IS_ROOT, 50000000),
++#define CMU_BUS_COMMON_CLK_REGS	\
++	DIV_BUS,		\
++	DIV_STAT_BUS,		\
++	ENABLE_ACLK_BUS,	\
++	ENABLE_PCLK_BUS,	\
++	ENABLE_IP_BUS0,		\
++	ENABLE_IP_BUS1
++
++static unsigned long bus01_clk_regs[] __initdata = {
++	CMU_BUS_COMMON_CLK_REGS,
 +};
 +
-+static struct samsung_mux_clock aud_mux_clks[] __initdata = {
-+	/* MUX_SEL_AUD0 */
-+	MUX(CLK_MOUT_AUD_PLL_USER, "mout_aud_pll_user",
-+			mout_aud_pll_user_aud_p, MUX_SEL_AUD0, 0, 1),
-+
-+	/* MUX_SEL_AUD1 */
-+	MUX(CLK_MOUT_SCLK_AUD_PCM, "mout_sclk_aud_pcm", mout_sclk_aud_pcm_p,
-+			MUX_SEL_AUD1, 8, 1),
-+	MUX(CLK_MOUT_SCLK_AUD_I2S, "mout_sclk_aud_i2s", mout_sclk_aud_pcm_p,
-+			MUX_SEL_AUD1, 0, 1),
++static unsigned long bus2_clk_regs[] __initdata = {
++	MUX_SEL_BUS2,
++	MUX_ENABLE_BUS2,
++	MUX_STAT_BUS2,
++	CMU_BUS_COMMON_CLK_REGS,
 +};
 +
-+static struct samsung_div_clock aud_div_clks[] __initdata = {
-+	/* DIV_AUD0 */
-+	DIV(CLK_DIV_ATCLK_AUD, "div_atclk_aud", "div_aud_ca5", DIV_AUD0,
-+			12, 4),
-+	DIV(CLK_DIV_PCLK_DBG_AUD, "div_pclk_dbg_aud", "div_aud_ca5", DIV_AUD0,
-+			8, 4),
-+	DIV(CLK_DIV_ACLK_AUD, "div_aclk_aud", "div_aud_ca5", DIV_AUD0,
-+			4, 4),
-+	DIV(CLK_DIV_AUD_CA5, "div_aud_ca5", "mout_aud_pll_user", DIV_AUD0,
-+			0, 4),
-+
-+	/* DIV_AUD1 */
-+	DIV(CLK_DIV_SCLK_AUD_SLIMBUS, "div_sclk_aud_slimbus",
-+			"mout_aud_pll_user", DIV_AUD1, 16, 5),
-+	DIV(CLK_DIV_SCLK_AUD_UART, "div_sclk_aud_uart", "mout_aud_pll_user",
-+			DIV_AUD1, 12, 4),
-+	DIV(CLK_DIV_SCLK_AUD_PCM, "div_sclk_aud_pcm", "mout_sclk_aud_pcm",
-+			DIV_AUD1, 4, 8),
-+	DIV(CLK_DIV_SCLK_AUD_I2S, "div_sclk_aud_i2s",  "mout_sclk_aud_i2s",
-+			DIV_AUD1, 0, 4),
++static struct samsung_div_clock bus0_div_clks[] __initdata = {
++	/* DIV_BUS0 */
++	DIV(CLK_DIV_PCLK_BUS_133, "div_pclk_bus0_133", "aclk_bus0_400",
++			DIV_BUS, 0, 3),
 +};
 +
-+static struct samsung_gate_clock aud_gate_clks[] __initdata = {
-+	/* ENABLE_ACLK_AUD */
-+	GATE(CLK_ACLK_INTR_CTRL, "aclk_intr_ctrl", "div_aclk_aud",
-+			ENABLE_ACLK_AUD, 12, 0, 0),
-+	GATE(CLK_ACLK_SMMU_LPASSX, "aclk_smmu_lpassx", "div_aclk_aud",
-+			ENABLE_ACLK_AUD, 7, 0, 0),
-+	GATE(CLK_ACLK_XIU_LPASSX, "aclk_xiu_lpassx", "div_aclk_aud",
-+			ENABLE_ACLK_AUD, 0, 4, 0),
-+	GATE(CLK_ACLK_AUDNP_133, "aclk_audnp_133", "div_aclk_aud",
-+			ENABLE_ACLK_AUD, 0, 3, 0),
-+	GATE(CLK_ACLK_AUDND_133, "aclk_audnd_133", "div_aclk_aud",
-+			ENABLE_ACLK_AUD, 0, 2, 0),
-+	GATE(CLK_ACLK_SRAMC, "aclk_sramc", "div_aclk_aud", ENABLE_ACLK_AUD,
-+			0, 1, 0),
-+	GATE(CLK_ACLK_DMAC, "aclk_dmac",  "div_aclk_aud", ENABLE_ACLK_AUD,
++/* CMU_BUS0 clocks */
++static struct samsung_gate_clock bus0_gate_clks[] __initdata = {
++	/* ENABLE_ACLK_BUS0 */
++	GATE(CLK_ACLK_AHB2APB_BUSP, "aclk_ahb2apb_bus0p", "div_pclk_bus0_133",
++			ENABLE_ACLK_BUS, 4, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_BUSNP_133, "aclk_bus0np_133", "div_pclk_bus0_133",
++			ENABLE_ACLK_BUS, 2, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_BUSND_400, "aclk_bus0nd_400", "aclk_bus0_400",
++			ENABLE_ACLK_BUS, 0, CLK_IGNORE_UNUSED, 0),
++
++	/* ENABLE_PCLK_BUS0 */
++	GATE(CLK_PCLK_BUSSRVND_133, "pclk_bus0srvnd_133", "div_pclk_bus0_133",
++			ENABLE_PCLK_BUS, 2, 0, 0),
++	GATE(CLK_PCLK_PMU_BUS, "pclk_pmu_bus0", "div_pclk_bus0_133",
++			ENABLE_PCLK_BUS, 1, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_PCLK_SYSREG_BUS, "pclk_sysreg_bus0", "div_pclk_bus0_133",
++			ENABLE_PCLK_BUS, 0, CLK_IGNORE_UNUSED, 0),
++};
++
++/* CMU_BUS1 clocks */
++static struct samsung_div_clock bus1_div_clks[] __initdata = {
++	/* DIV_BUS1 */
++	DIV(CLK_DIV_PCLK_BUS_133, "div_pclk_bus1_133", "aclk_bus1_400",
++			DIV_BUS, 0, 3),
++};
++
++static struct samsung_gate_clock bus1_gate_clks[] __initdata = {
++	/* ENABLE_ACLK_BUS1 */
++	GATE(CLK_ACLK_AHB2APB_BUSP, "aclk_ahb2apb_bus1p", "div_pclk_bus1_133",
++			ENABLE_ACLK_BUS, 4, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_BUSNP_133, "aclk_bus1np_133", "div_pclk_bus1_133",
++			ENABLE_ACLK_BUS, 2, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_BUSND_400, "aclk_bus1nd_400", "aclk_bus1_400",
++			ENABLE_ACLK_BUS, 0, CLK_IGNORE_UNUSED, 0),
++
++	/* ENABLE_PCLK_BUS1 */
++	GATE(CLK_PCLK_BUSSRVND_133, "pclk_bus1srvnd_133", "div_pclk_bus1_133",
++			ENABLE_PCLK_BUS, 2, 0, 0),
++	GATE(CLK_PCLK_PMU_BUS, "pclk_pmu_bus1", "div_pclk_bus1_133",
++			ENABLE_PCLK_BUS, 1, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_PCLK_SYSREG_BUS, "pclk_sysreg_bus1", "div_pclk_bus1_133",
++			ENABLE_PCLK_BUS, 0, CLK_IGNORE_UNUSED, 0),
++};
++
++/* CMU_BUS2 clocks */
++static struct samsung_mux_clock bus2_mux_clks[] __initdata = {
++	/* MUX_SEL_BUS2 */
++	MUX(CLK_MOUT_ACLK_BUS2_400_USER, "mout_aclk_bus2_400_user",
++			mout_aclk_bus2_400_p, MUX_SEL_BUS2, 0, 1),
++};
++
++static struct samsung_div_clock bus2_div_clks[] __initdata = {
++	/* DIV_BUS2 */
++	DIV(CLK_DIV_PCLK_BUS_133, "div_pclk_bus2_133",
++			"mout_aclk_bus2_400_user", DIV_BUS, 0, 3),
++};
++
++static struct samsung_gate_clock bus2_gate_clks[] __initdata = {
++	/* ENABLE_ACLK_BUS2 */
++	GATE(CLK_ACLK_AHB2APB_BUSP, "aclk_ahb2apb_bus2p", "div_pclk_bus2_133",
++			ENABLE_ACLK_BUS, 3, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_BUSNP_133, "aclk_bus2np_133", "div_pclk_bus2_133",
++			ENABLE_ACLK_BUS, 2, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_BUS2BEND_400, "aclk_bus2bend_400",
++			"mout_aclk_bus2_400_user", ENABLE_ACLK_BUS,
++			1, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_BUS2RTND_400, "aclk_bus2rtnd_400",
++			"mout_aclk_bus2_400_user", ENABLE_ACLK_BUS,
 +			0, CLK_IGNORE_UNUSED, 0),
 +
-+	/* ENABLE_PCLK_AUD */
-+	GATE(CLK_PCLK_WDT1, "pclk_wdt1", "div_aclk_aud", ENABLE_PCLK_AUD,
-+			13, 0, 0),
-+	GATE(CLK_PCLK_WDT0, "pclk_wdt0", "div_aclk_aud", ENABLE_PCLK_AUD,
-+			12, 0, 0),
-+	GATE(CLK_PCLK_SFR1, "pclk_sfr1", "div_aclk_aud", ENABLE_PCLK_AUD,
-+			11, 0, 0),
-+	GATE(CLK_PCLK_SMMU_LPASSX, "pclk_smmu_lpassx", "div_aclk_aud",
-+			ENABLE_PCLK_AUD, 10, 0, 0),
-+	GATE(CLK_PCLK_GPIO_AUD, "pclk_gpio_aud", "div_aclk_aud",
-+			ENABLE_PCLK_AUD, 9, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_PCLK_PMU_AUD, "pclk_pmu_aud", "div_aclk_aud",
-+			ENABLE_PCLK_AUD, 8, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_PCLK_SYSREG_AUD, "pclk_sysreg_aud", "div_aclk_aud",
-+			ENABLE_PCLK_AUD, 7, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_PCLK_AUD_SLIMBUS, "pclk_aud_slimbus", "div_aclk_aud",
-+			ENABLE_PCLK_AUD, 6, 0, 0),
-+	GATE(CLK_PCLK_AUD_UART, "pclk_aud_uart", "div_aclk_aud",
-+			ENABLE_PCLK_AUD, 5, 0, 0),
-+	GATE(CLK_PCLK_AUD_PCM, "pclk_aud_pcm", "div_aclk_aud",
-+			ENABLE_PCLK_AUD, 4, 0, 0),
-+	GATE(CLK_PCLK_AUD_I2S, "pclk_aud_i2s", "div_aclk_aud",
-+			ENABLE_PCLK_AUD, 3, 0, 0),
-+	GATE(CLK_PCLK_TIMER, "pclk_timer", "div_aclk_aud", ENABLE_PCLK_AUD,
-+			2, 0, 0),
-+	GATE(CLK_PCLK_SFR0_CTRL, "pclk_sfr0_ctrl", "div_aclk_aud",
-+			ENABLE_PCLK_AUD, 0, 0, 0),
-+
-+	/* ENABLE_SCLK_AUD0 */
-+	GATE(CLK_ATCLK_AUD, "atclk_aud", "div_atclk_aud", ENABLE_SCLK_AUD0,
-+			2, 0, 0),
-+	GATE(CLK_PCLK_DBG_AUD, "pclk_dbg_aud", "div_pclk_dbg_aud",
-+			ENABLE_SCLK_AUD0, 1, 0, 0),
-+	GATE(CLK_SCLK_AUD_CA5, "sclk_aud_ca5", "div_aud_ca5", ENABLE_SCLK_AUD0,
-+			0, 0, 0),
-+
-+	/* ENABLE_SCLK_AUD1 */
-+	GATE(CLK_SCLK_JTAG_TCK, "sclk_jtag_tck", "ioclk_jtag_tclk",
-+			ENABLE_SCLK_AUD1, 6, 0, 0),
-+	GATE(CLK_SCLK_SLIMBUS_CLKIN, "sclk_slimbus_clkin", "ioclk_slimbus_clk",
-+			ENABLE_SCLK_AUD1, 5, 0, 0),
-+	GATE(CLK_SCLK_AUD_SLIMBUS, "sclk_aud_slimbus", "div_sclk_aud_slimbus",
-+			ENABLE_SCLK_AUD1, 4, 0, 0),
-+	GATE(CLK_SCLK_AUD_UART, "sclk_aud_uart", "div_sclk_aud_uart",
-+			ENABLE_SCLK_AUD1, 3, 0, 0),
-+	GATE(CLK_SCLK_AUD_PCM, "sclk_aud_pcm", "div_sclk_aud_pcm",
-+			ENABLE_SCLK_AUD1, 2, 0, 0),
-+	GATE(CLK_SCLK_I2S_BCLK, "sclk_i2s_bclk", "ioclk_i2s_bclk",
-+			ENABLE_SCLK_AUD1, 1, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_SCLK_AUD_I2S, "sclk_aud_i2s", "div_sclk_aud_i2s",
-+			ENABLE_SCLK_AUD1, 0, CLK_IGNORE_UNUSED, 0),
++	/* ENABLE_PCLK_BUS2 */
++	GATE(CLK_PCLK_BUSSRVND_133, "pclk_bus2srvnd_133", "div_pclk_bus2_133",
++			ENABLE_PCLK_BUS, 2, 0, 0),
++	GATE(CLK_PCLK_PMU_BUS, "pclk_pmu_bus2", "div_pclk_bus2_133",
++			ENABLE_PCLK_BUS, 1, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_PCLK_SYSREG_BUS, "pclk_sysreg_bus2", "div_pclk_bus2_133",
++			ENABLE_PCLK_BUS, 0, CLK_IGNORE_UNUSED, 0),
 +};
 +
-+static struct samsung_cmu_info aud_cmu_info __initdata = {
-+	.mux_clks		= aud_mux_clks,
-+	.nr_mux_clks		= ARRAY_SIZE(aud_mux_clks),
-+	.div_clks		= aud_div_clks,
-+	.nr_div_clks		= ARRAY_SIZE(aud_div_clks),
-+	.gate_clks		= aud_gate_clks,
-+	.nr_gate_clks		= ARRAY_SIZE(aud_gate_clks),
-+	.fixed_clks		= aud_fixed_clks,
-+	.nr_fixed_clks		= ARRAY_SIZE(aud_fixed_clks),
-+	.nr_clk_ids		= AUD_NR_CLK,
-+	.clk_regs		= aud_clk_regs,
-+	.nr_clk_regs		= ARRAY_SIZE(aud_clk_regs),
++#define CMU_BUS_INFO_CLKS(id)						\
++	.div_clks		= bus##id##_div_clks,			\
++	.nr_div_clks		= ARRAY_SIZE(bus##id##_div_clks),	\
++	.gate_clks		= bus##id##_gate_clks,			\
++	.nr_gate_clks		= ARRAY_SIZE(bus##id##_gate_clks),	\
++	.nr_clk_ids		= BUSx_NR_CLK
++
++static struct samsung_cmu_info bus0_cmu_info __initdata = {
++	CMU_BUS_INFO_CLKS(0),
++	.clk_regs		= bus01_clk_regs,
++	.nr_clk_regs		= ARRAY_SIZE(bus01_clk_regs),
 +};
 +
-+static void __init exynos5433_cmu_aud_init(struct device_node *np)
-+{
-+	samsung_cmu_register_one(np, &aud_cmu_info);
-+}
-+CLK_OF_DECLARE(exynos5433_cmu_aud, "samsung,exynos5433-cmu-aud",
-+		exynos5433_cmu_aud_init);
++static struct samsung_cmu_info bus1_cmu_info __initdata = {
++	CMU_BUS_INFO_CLKS(1),
++	.clk_regs		= bus01_clk_regs,
++	.nr_clk_regs		= ARRAY_SIZE(bus01_clk_regs),
++};
++
++static struct samsung_cmu_info bus2_cmu_info __initdata = {
++	CMU_BUS_INFO_CLKS(2),
++	.mux_clks		= bus2_mux_clks,
++	.nr_mux_clks		= ARRAY_SIZE(bus2_mux_clks),
++	.clk_regs		= bus2_clk_regs,
++	.nr_clk_regs		= ARRAY_SIZE(bus2_clk_regs),
++};
++
++#define exynos5433_cmu_bus_init(id)					\
++static void __init exynos5433_cmu_bus##id##_init(struct device_node *np)\
++{									\
++	samsung_cmu_register_one(np, &bus##id##_cmu_info);		\
++}									\
++CLK_OF_DECLARE(exynos5433_cmu_bus##id,					\
++		"samsung,exynos5433-cmu-bus"#id,			\
++		exynos5433_cmu_bus##id##_init)
++
++exynos5433_cmu_bus_init(0);
++exynos5433_cmu_bus_init(1);
++exynos5433_cmu_bus_init(2);
 diff --git a/include/dt-bindings/clock/exynos5433.h b/include/dt-bindings/clock/exynos5433.h
-index 3783f4a..4828e02 100644
+index 4828e02..6bc7f51 100644
 --- a/include/dt-bindings/clock/exynos5433.h
 +++ b/include/dt-bindings/clock/exynos5433.h
-@@ -626,4 +626,57 @@
+@@ -107,6 +107,9 @@
+ #define CLK_DIV_ACLK_MFC_400		134
+ #define CLK_DIV_ACLK_G2D_266		135
+ #define CLK_DIV_ACLK_G2D_400		136
++#define CLK_DIV_ACLK_G3D_400		137
++#define CLK_DIV_ACLK_BUS0_400		138
++#define CLK_DIV_ACLK_BUS1_400		139
  
- #define DISP_NR_CLK					111
+ #define CLK_ACLK_PERIC_66		200
+ #define CLK_ACLK_PERIS_66		201
+@@ -130,8 +133,14 @@
+ #define CLK_SCLK_AUDIO0			219
+ #define CLK_ACLK_G2D_266		220
+ #define CLK_ACLK_G2D_400		221
++#define CLK_ACLK_G3D_400		222
++#define CLK_ACLK_IMEM_SSX_266		223
++#define CLK_ACLK_BUS0_400		224
++#define CLK_ACLK_BUS1_400		225
++#define CLK_ACLK_IMEM_200		226
++#define CLK_ACLK_IMEM_266		227
  
-+/* CMU_AUD */
-+#define CLK_MOUT_AUD_PLL_USER				1
-+#define CLK_MOUT_SCLK_AUD_PCM				2
-+#define CLK_MOUT_SCLK_AUD_I2S				3
+-#define TOP_NR_CLK			222
++#define TOP_NR_CLK			228
+ 
+ /* CMU_CPIF */
+ #define CLK_FOUT_MPHY_PLL		1
+@@ -679,4 +688,20 @@
+ 
+ #define AUD_NR_CLK					48
+ 
++/* CMU_BUS{0|1|2} */
++#define CLK_DIV_PCLK_BUS_133				1
 +
-+#define CLK_DIV_ATCLK_AUD				4
-+#define CLK_DIV_PCLK_DBG_AUD				5
-+#define CLK_DIV_ACLK_AUD				6
-+#define CLK_DIV_AUD_CA5					7
-+#define CLK_DIV_SCLK_AUD_SLIMBUS			8
-+#define CLK_DIV_SCLK_AUD_UART				9
-+#define CLK_DIV_SCLK_AUD_PCM				10
-+#define CLK_DIV_SCLK_AUD_I2S				11
++#define CLK_ACLK_AHB2APB_BUSP				2
++#define CLK_ACLK_BUSNP_133				3
++#define CLK_ACLK_BUSND_400				4
++#define CLK_PCLK_BUSSRVND_133				5
++#define CLK_PCLK_PMU_BUS				6
++#define CLK_PCLK_SYSREG_BUS				7
 +
-+#define CLK_ACLK_INTR_CTRL				12
-+#define CLK_ACLK_AXIDS2_LPASSP				13
-+#define CLK_ACLK_AXIDS1_LPASSP				14
-+#define CLK_ACLK_AXI2APB1_LPASSP			15
-+#define CLK_ACLK_AXI2APH_LPASSP				16
-+#define CLK_ACLK_SMMU_LPASSX				17
-+#define CLK_ACLK_AXIDS0_LPASSP				18
-+#define CLK_ACLK_AXI2APB0_LPASSP			19
-+#define CLK_ACLK_XIU_LPASSX				20
-+#define CLK_ACLK_AUDNP_133				21
-+#define CLK_ACLK_AUDND_133				22
-+#define CLK_ACLK_SRAMC					23
-+#define CLK_ACLK_DMAC					24
-+#define CLK_PCLK_WDT1					25
-+#define CLK_PCLK_WDT0					26
-+#define CLK_PCLK_SFR1					27
-+#define CLK_PCLK_SMMU_LPASSX				28
-+#define CLK_PCLK_GPIO_AUD				29
-+#define CLK_PCLK_PMU_AUD				30
-+#define CLK_PCLK_SYSREG_AUD				31
-+#define CLK_PCLK_AUD_SLIMBUS				32
-+#define CLK_PCLK_AUD_UART				33
-+#define CLK_PCLK_AUD_PCM				34
-+#define CLK_PCLK_AUD_I2S				35
-+#define CLK_PCLK_TIMER					36
-+#define CLK_PCLK_SFR0_CTRL				37
-+#define CLK_ATCLK_AUD					38
-+#define CLK_PCLK_DBG_AUD				39
-+#define CLK_SCLK_AUD_CA5				40
-+#define CLK_SCLK_JTAG_TCK				41
-+#define CLK_SCLK_SLIMBUS_CLKIN				42
-+#define CLK_SCLK_AUD_SLIMBUS				43
-+#define CLK_SCLK_AUD_UART				44
-+#define CLK_SCLK_AUD_PCM				45
-+#define CLK_SCLK_I2S_BCLK				46
-+#define CLK_SCLK_AUD_I2S				47
++#define CLK_MOUT_ACLK_BUS2_400_USER			8  /* Only CMU_BUS2 */
++#define CLK_ACLK_BUS2BEND_400				9  /* Only CMU_BUS2 */
++#define CLK_ACLK_BUS2RTND_400				10 /* Only CMU_BUS2 */
 +
-+#define AUD_NR_CLK					48
++#define BUSx_NR_CLK					11
 +
  #endif /* _DT_BINDINGS_CLOCK_EXYNOS5433_H */
 -- 
