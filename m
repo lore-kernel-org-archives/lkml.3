@@ -1,404 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286AbbAUNb5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 08:31:57 -0500
-Received: from mail-wi0-f180.google.com ([209.85.212.180]:46520 "EHLO
-	mail-wi0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753185AbbAUNbm (ORCPT
+	id S1753419AbbAUNco (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 08:32:44 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:38743 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753333AbbAUNcd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 08:31:42 -0500
-From: Tomeu Vizoso <tomeu.vizoso@collabora.com>
-To: linux-kernel@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
-        Stephen Boyd <sboyd@codeaurora.org>
-Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Subject: [PATCH v11 4/4] clk: Add module for unit tests
-Date: Wed, 21 Jan 2015 14:30:32 +0100
-Message-Id: <1421847039-29544-5-git-send-email-tomeu.vizoso@collabora.com>
-X-Mailer: git-send-email 1.9.3
-In-Reply-To: <1421847039-29544-1-git-send-email-tomeu.vizoso@collabora.com>
-References: <1421847039-29544-1-git-send-email-tomeu.vizoso@collabora.com>
+	Wed, 21 Jan 2015 08:32:33 -0500
+Message-ID: <54BFAA5D.4040108@roeck-us.net>
+Date: Wed, 21 Jan 2015 05:32:13 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+MIME-Version: 1.0
+To: Sabrina Dubroca <sd@queasysnail.net>, Al Viro <viro@ZenIV.linux.org.uk>
+CC: Paul Moore <pmoore@redhat.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-audit@redhat.com,
+        Richard Guy Briggs <rgb@redhat.com>
+Subject: Re: linux-next: Tree for Jan 20 -- Kernel panic - Unable to mount
+ root fs
+References: <20150120165655.GA10904@kria> <20150120232726.GA16913@kria> <1517211.UYLV49hvpg@sifl> <1528536.jyty2pu4Mz@sifl> <20150121004117.GM29656@ZenIV.linux.org.uk> <54BF1292.2080902@roeck-us.net> <20150121033600.GN29656@ZenIV.linux.org.uk> <54BF2496.4000807@roeck-us.net> <20150121043637.GO29656@ZenIV.linux.org.uk> <20150121110539.GA8924@kria>
+In-Reply-To: <20150121110539.GA8924@kria>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020204.54BFAA70.0282,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 4
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This module registers a clock hierarchy and performs several operations
-against them checking that the result is expected.
+On 01/21/2015 03:05 AM, Sabrina Dubroca wrote:
+> 2015-01-21, 04:36:38 +0000, Al Viro wrote:
+>> On Tue, Jan 20, 2015 at 08:01:26PM -0800, Guenter Roeck wrote:
+>>> With this patch:
+>>>
+>>> sys_mkdir .:40775 returned -17
+>>> sys_mkdir usr:40775 returned 0
+>>> sys_mkdir usr/lib:40775 returned 0
+>>> sys_mkdir usr/share:40755 returned 0
+>>> sys_mkdir usr/share/udhcpc:40755 returned 0
+>>> sys_mkdir usr/bin:40775 returned 0
+>>> sys_mkdir usr/sbin:40775 returned 0
+>>> sys_mkdir mnt:40775 returned 0
+>>> sys_mkdir proc:40775 returned 0
+>>> sys_mkdir root:40775 returned 0
+>>> sys_mkdir lib:40775 returned 0
+>>> sys_mkdir lib/modules:40775 returned 0
+>>> ...
+>>>
+>>> and the problem is fixed.
+>
+> This patch also works for me.
+>
+>
+>> ... except that it simply confirms that something's fishy with getname_kernel()
+>> of ->name of struct filename returned by getname().  IOW, I still do not
+>> understand the mechanism of breakage there.
+>
+> I'm not so sure about that.  I tried to copy name to a new string in
+> do_path_lookup and that didn't help.
+>
+> Now, I've removed the
+>
+>          putname(filename);
+>
+> line from do_path_lookup and I don't get the panic.
+>
+>
+> And BTW, I added Guenter's debugging to init/initramfs.c and got:
+> sys_mkdir dev:40755 returned 0
+> sys_mkdir root:40700 returned 0
+>
+> even if it ends up panic'ing.
+>
+Another data point (though I have no idea if it is useful or what it means):
 
-Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
----
- drivers/clk/Kconfig       |   1 +
- drivers/clk/Kconfig.debug |   6 +
- drivers/clk/Makefile      |   1 +
- drivers/clk/clk-test.c    | 325 ++++++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 333 insertions(+)
- create mode 100644 drivers/clk/Kconfig.debug
- create mode 100644 drivers/clk/clk-test.c
+In the working case, path_init sets nd->flags to 0x50 or 0x51.
+In the non-working case (ie for all files with a '/' in the name),
+it sets nd->flags to 0x10 or 0x11, even though it is always called
+with the LOOKUP_RCU bit set in flags.
 
-diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-index 3f44f29..03c500f 100644
---- a/drivers/clk/Kconfig
-+++ b/drivers/clk/Kconfig
-@@ -135,6 +135,7 @@ config COMMON_CLK_PXA
- 	  Sypport for the Marvell PXA SoC.
- 
- source "drivers/clk/qcom/Kconfig"
-+source "drivers/clk/Kconfig.debug"
- 
- endmenu
- 
-diff --git a/drivers/clk/Kconfig.debug b/drivers/clk/Kconfig.debug
-new file mode 100644
-index 0000000..840b790
---- /dev/null
-+++ b/drivers/clk/Kconfig.debug
-@@ -0,0 +1,6 @@
-+config COMMON_CLK_TEST
-+	tristate "Unit tests for the Common Clock Framework"
-+	default n
-+	---help---
-+	  This driver runs several tests on the Common Clock Framework.
-+
-diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index d5fba5b..4ee1475 100644
---- a/drivers/clk/Makefile
-+++ b/drivers/clk/Makefile
-@@ -68,3 +68,4 @@ obj-$(CONFIG_ARCH_U8500)		+= ux500/
- obj-$(CONFIG_COMMON_CLK_VERSATILE)	+= versatile/
- obj-$(CONFIG_X86)			+= x86/
- obj-$(CONFIG_ARCH_ZYNQ)			+= zynq/
-+obj-$(CONFIG_COMMON_CLK_TEST)		+= clk-test.o
-diff --git a/drivers/clk/clk-test.c b/drivers/clk/clk-test.c
-new file mode 100644
-index 0000000..4eb7eb4
---- /dev/null
-+++ b/drivers/clk/clk-test.c
-@@ -0,0 +1,325 @@
-+/*
-+ * Copyright (C) 2015 Google, Inc
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ * Unit tests for the Common Clock Framework
-+ */
-+
-+#include <linux/clk-provider.h>
-+#include <linux/clkdev.h>
-+#include <linux/delay.h>
-+#include <linux/init.h>
-+#include <linux/printk.h>
-+#include <linux/slab.h>
-+
-+/* Assumed to be sorted */
-+static const unsigned long allowed_rates[] = { 0, 100, 200, 300, 400, 500 };
-+
-+struct test_clk {
-+	struct clk_hw hw;
-+	unsigned long rate;
-+};
-+
-+static inline struct test_clk *to_test_clk(struct clk_hw *hw)
-+{
-+	return container_of(hw, struct test_clk, hw);
-+}
-+
-+static long test_clk_determine_rate(struct clk_hw *hw,
-+				    unsigned long rate,
-+				    unsigned long min_rate,
-+				    unsigned long max_rate,
-+				    unsigned long *best_parent_rate,
-+				    struct clk_hw **best_parent)
-+{
-+	struct clk *parent;
-+	unsigned long target_rate = 0;
-+	unsigned int i;
-+
-+	for (i = 0; i < ARRAY_SIZE(allowed_rates); i++) {
-+
-+		if (allowed_rates[i] > max_rate) {
-+			if (i > 0)
-+				target_rate = allowed_rates[i - 1];
-+			else
-+				target_rate = 0;
-+			break;
-+		}
-+
-+		if (allowed_rates[i] < min_rate)
-+			continue;
-+
-+		if (allowed_rates[i] >= rate) {
-+			target_rate = allowed_rates[i];
-+			break;
-+		}
-+	}
-+
-+	parent = clk_get_parent(hw->clk);
-+	if (parent) {
-+		*best_parent = __clk_get_hw(parent);
-+		*best_parent_rate = __clk_determine_rate(__clk_get_hw(parent),
-+							 target_rate / 2,
-+							 min_rate,
-+							 max_rate);
-+	}
-+
-+	return target_rate;
-+}
-+
-+static unsigned long test_clk_recalc_rate(struct clk_hw *hw,
-+					  unsigned long parent_rate)
-+{
-+	struct test_clk *test_clk = to_test_clk(hw);
-+
-+	return test_clk->rate;
-+}
-+
-+static int test_clk_set_rate(struct clk_hw *hw, unsigned long rate,
-+			     unsigned long parent_rate)
-+{
-+	struct test_clk *test_clk = to_test_clk(hw);
-+
-+	test_clk->rate = rate;
-+
-+	return 0;
-+}
-+
-+static const struct clk_ops test_clk_ops = {
-+	.determine_rate = test_clk_determine_rate,
-+	.recalc_rate = test_clk_recalc_rate,
-+	.set_rate = test_clk_set_rate,
-+};
-+
-+static struct clk *init_test_clk(const char *name, const char *parent_name)
-+{
-+	struct test_clk *test_clk;
-+	struct clk *clk;
-+	struct clk_init_data init;
-+	int err;
-+
-+	test_clk = kzalloc(sizeof(*test_clk), GFP_KERNEL);
-+	if (!test_clk)
-+		return ERR_PTR(-ENOMEM);
-+
-+	test_clk->rate = 0;
-+
-+	init.name = name;
-+	init.ops = &test_clk_ops;
-+
-+	if (parent_name) {
-+		init.parent_names = &parent_name;
-+		init.num_parents = 1;
-+		init.flags = CLK_SET_RATE_PARENT;
-+	} else {
-+		init.parent_names = NULL;
-+		init.num_parents = 0;
-+		init.flags = CLK_IS_ROOT;
-+	}
-+
-+	test_clk->hw.init = &init;
-+
-+	clk = clk_register(NULL, &test_clk->hw);
-+	if (IS_ERR(clk)) {
-+		printk("%s: error registering clk: %ld\n", __func__,
-+		       PTR_ERR(clk));
-+		return clk;
-+	}
-+
-+	err = clk_register_clkdev(clk, name, NULL);
-+	if (err)
-+		printk("%s: error registering alias: %d\n", __func__, err);
-+
-+	return clk;
-+}
-+
-+static void test_ceiling(struct clk *clk)
-+{
-+	unsigned long rate;
-+	int ret;
-+
-+	ret = clk_set_max_rate(clk, 399);
-+	if (ret)
-+		printk("%s: error setting ceiling: %d\n", __func__, ret);
-+
-+	rate = clk_round_rate(clk, 400);
-+	if (rate != 300)
-+		printk("%s: unexpected rounded rate: %lu != 300\n", __func__, rate);
-+
-+	ret = clk_set_rate(clk, 400);
-+	if (ret)
-+		printk("%s: error setting rate: %d\n", __func__, ret);
-+
-+	rate = clk_get_rate(clk);
-+	if (rate != 300)
-+		printk("%s: unexpected rate: %lu != 300\n", __func__, rate);
-+
-+	ret = clk_set_max_rate(clk, ULONG_MAX);
-+	if (ret)
-+		printk("%s: error setting ceiling: %d\n", __func__, ret);
-+}
-+
-+static void test_floor(struct clk *clk)
-+{
-+	unsigned long rate;
-+	int ret;
-+
-+	ret = clk_set_min_rate(clk, 199);
-+	if (ret)
-+		printk("%s: error setting floor: %d\n", __func__, ret);
-+
-+	rate = clk_round_rate(clk, 90);
-+	if (rate != 200)
-+		printk("%s: unexpected rounded rate: %lu != 200\n", __func__, rate);
-+
-+	ret = clk_set_rate(clk, 90);
-+	if (ret)
-+		printk("%s: error setting rate: %d\n", __func__, ret);
-+
-+	rate = clk_get_rate(clk);
-+	if (rate != 200)
-+		printk("%s: unexpected rate: %lu != 200\n", __func__, rate);
-+
-+	ret = clk_set_min_rate(clk, 0);
-+	if (ret)
-+		printk("%s: error setting floor: %d\n", __func__, ret);
-+}
-+
-+static void test_unsatisfiable(struct clk *clk)
-+{
-+	struct clk *clk2 = clk_get_sys(NULL, "clk");
-+	unsigned long rate;
-+	int ret;
-+
-+	if (IS_ERR(clk2))
-+		printk("%s: error getting clk: %ld\n", __func__,
-+		       PTR_ERR(clk2));
-+
-+	ret = clk_set_min_rate(clk, 99);
-+	if (ret)
-+		printk("%s: error setting floor: %d\n", __func__, ret);
-+
-+	ret = clk_set_max_rate(clk, 199);
-+	if (ret)
-+		printk("%s: error setting ceiling: %d\n", __func__, ret);
-+
-+	ret = clk_set_min_rate(clk2, 399);
-+	if (ret)
-+		printk("%s: error setting floor: %d\n", __func__, ret);
-+
-+	ret = clk_set_max_rate(clk2, 499);
-+	if (ret)
-+		printk("%s: error setting ceiling: %d\n", __func__, ret);
-+
-+	ret = clk_set_rate(clk, 90);
-+	if (ret)
-+		printk("%s: error setting rate: %d\n", __func__, ret);
-+
-+	/*
-+	 * It's expected that the rate is the highest rate that is still
-+	 * below the smallest ceiling
-+	 */
-+	rate = clk_get_rate(clk);
-+	if (rate != 100)
-+		printk("%s: unexpected rate: %lu != 100\n", __func__, rate);
-+
-+	clk_put(clk2);
-+
-+	ret = clk_set_min_rate(clk, 0);
-+	if (ret)
-+		printk("%s: error setting floor: %d\n", __func__, ret);
-+
-+	ret = clk_set_max_rate(clk, ULONG_MAX);
-+	if (ret)
-+		printk("%s: error setting ceiling: %d\n", __func__, ret);
-+}
-+
-+static void test_constrained_parent(struct clk *clk, struct clk *parent)
-+{
-+	unsigned long rate;
-+	int ret;
-+
-+	ret = clk_set_max_rate(parent, 199);
-+	if (ret)
-+		printk("%s: error setting ceiling: %d\n", __func__, ret);
-+
-+	ret = clk_set_rate(clk, 200);
-+	if (ret)
-+		printk("%s: error setting rate: %d\n", __func__, ret);
-+
-+	rate = clk_get_rate(clk);
-+	if (rate != 200)
-+		printk("%s: unexpected rate: %lu != 200\n", __func__, rate);
-+
-+	rate = clk_get_rate(parent);
-+	if (rate != 100)
-+		printk("%s: unexpected parent rate: %lu != 100\n", __func__, rate);
-+
-+	ret = clk_set_max_rate(parent, ULONG_MAX);
-+	if (ret)
-+		printk("%s: error setting ceiling: %d\n", __func__, ret);
-+}
-+
-+static void test_constraint_with_parent(struct clk *clk, struct clk *parent)
-+{
-+	unsigned long rate;
-+	int ret;
-+
-+	ret = clk_set_min_rate(clk, 201);
-+	if (ret)
-+		printk("%s: error setting ceiling: %d\n", __func__, ret);
-+
-+	ret = clk_set_rate(clk, 300);
-+	if (ret)
-+		printk("%s: error setting rate: %d\n", __func__, ret);
-+
-+	rate = clk_get_rate(clk);
-+	if (rate != 300)
-+		printk("%s: unexpected rate: %lu != 300\n", __func__, rate);
-+
-+	rate = clk_get_rate(parent);
-+	if (rate != 300)
-+		printk("%s: unexpected parent rate: %lu != 300\n", __func__, rate);
-+
-+	ret = clk_set_max_rate(parent, ULONG_MAX);
-+	if (ret)
-+		printk("%s: error setting ceiling: %d\n", __func__, ret);
-+}
-+
-+static int __init clk_test_init(void)
-+{
-+	struct clk *parent, *clk;
-+
-+	printk("---------- Common Clock Framework test results ----------\n");
-+
-+	parent = init_test_clk("parent", NULL);
-+	if (IS_ERR(parent)) {
-+		printk("%s: error registering parent: %ld\n", __func__,
-+		       PTR_ERR(parent));
-+		return PTR_ERR(parent);
-+	}
-+
-+	clk = init_test_clk("clk", "parent");
-+	if (IS_ERR(clk)) {
-+		printk("%s: error registering clk: %ld\n", __func__,
-+		       PTR_ERR(clk));
-+		return PTR_ERR(clk);
-+	}
-+
-+	test_ceiling(clk);
-+	test_floor(clk);
-+	test_unsatisfiable(clk);
-+	test_constrained_parent(clk, parent);
-+	test_constraint_with_parent(clk, parent);
-+
-+	printk("---------------------------------------------------------\n");
-+
-+	return 0;
-+}
-+
-+module_init(clk_test_init);
-+
-+MODULE_LICENSE("GPL");
--- 
-1.9.3
+Guenter
 
