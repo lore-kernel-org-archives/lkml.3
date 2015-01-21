@@ -1,129 +1,352 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752961AbbAUUA6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 15:00:58 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:58938 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751484AbbAUUAt (ORCPT
+	id S1753247AbbAUUEp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 15:04:45 -0500
+Received: from e36.co.us.ibm.com ([32.97.110.154]:39446 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752328AbbAUUEh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 15:00:49 -0500
-Message-ID: <1421870361.3430.12.camel@pengutronix.de>
-Subject: Re: [PATCH 3/5] PCI: st: Provide support for the sti PCIe controller
-From: Lucas Stach <l.stach@pengutronix.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Gabriel Fernandez <gabriel.fernandez@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Gabriel FERNANDEZ <gabriel.fernandez@st.com>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Srinivas Kandagatla <srinivas.kandagatla@gmail.com>,
-        Maxime Coquelin <maxime.coquelin@st.com>,
-        Patrice Chotard <patrice.chotard@st.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Bjorn Helgaas <bhelgaas@google.com>, Mohit Kumar <mohit.kumar@st.com>,
-        Jingoo Han <jg1.han@samsung.com>,
-        Grant Likely <grant.likely@linaro.org>,
-        Fabrice Gasnier <fabrice.gasnier@st.com>,
-        Viresh Kumar <viresh.kumar@linaro.org>,
-        Thierry Reding <treding@nvidia.com>,
-        Minghuan Lian <Minghuan.Lian@freescale.com>,
-        Magnus Damm <damm@opensource.se>, Will Deacon <will.deacon@arm.com>,
-        Tanmay Inamdar <tinamdar@apm.com>,
-        Murali Karicheri <m-karicheri2@ti.com>,
-        Kishon Vijay Abraham I <kishon@ti.com>,
-        Pratyush Anand <pratyush.anand@st.com>,
-        Sachin Kamat <sachin.kamat@samsung.com>, Andrew Lunn <andrew@lunn.ch>,
-        Liviu Dudau <Liviu.Dudau@arm.com>,
-        Srikanth Thokala <sthokal@xilinx.com>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "kernel@stlinux.com" <kernel@stlinux.com>, linux-pci@vger.kernel.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Lee Jones <lee.jones@linaro.org>
-Date: Wed, 21 Jan 2015 20:59:21 +0100
-In-Reply-To: <6574269.bTBzFhcnBx@wuerfel>
-References: <1418812486-12394-1-git-send-email-gabriel.fernandez@linaro.org>
-	 <1682713.ac5OoTJoOr@wuerfel>
-	 <CAG374jCRByNZuuYxi5+-mKvV7p5-tCf2G+8mTYfzU4rRV4yfYQ@mail.gmail.com>
-	 <6574269.bTBzFhcnBx@wuerfel>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.9-1+b1 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 2001:67c:670:100:fa0f:41ff:fe58:4010
-X-SA-Exim-Mail-From: l.stach@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 21 Jan 2015 15:04:37 -0500
+Date: Wed, 21 Jan 2015 12:04:28 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Zhang Zhen <zhenzhang.zhang@huawei.com>
+Cc: Don Zickus <dzickus@redhat.com>, linux-kernel@vger.kernel.org,
+        morgan.wang@huawei.com, josh@freedesktop.org, dipankar@in.ibm.com
+Subject: Re: RCU CPU stall console spews  leads to soft lockup disabled is
+ reasonable ?
+Message-ID: <20150121200428.GG9719@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20150119140612.GI116159@redhat.com>
+ <54BDC6DF.6000602@huawei.com>
+ <20150120152531.GR116159@redhat.com>
+ <54BF0E53.5040409@huawei.com>
+ <54BF1957.6080606@huawei.com>
+ <54BF4D0D.3090500@huawei.com>
+ <20150121070246.GB9719@linux.vnet.ibm.com>
+ <54BF6BEE.2050505@huawei.com>
+ <20150121101613.GE9719@linux.vnet.ibm.com>
+ <54BF8977.6030901@huawei.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54BF8977.6030901@huawei.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15012120-0021-0000-0000-000007F4AC80
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, den 21.01.2015, 20:35 +0100 schrieb Arnd Bergmann:
-> On Wednesday 21 January 2015 16:47:36 Gabriel Fernandez wrote:
-> > On 19 January 2015 at 14:49, Arnd Bergmann <arnd@arndb.de> wrote:
-> > > On Monday 19 January 2015 13:37:33 Gabriel Fernandez wrote:
-> > >> On 17 December 2014 at 23:14, Arnd Bergmann <arnd@arndb.de> wrote:
-> > >> > On Wednesday 17 December 2014 11:34:44 Gabriel FERNANDEZ wrote:
-> > >> > > +/*
-> > >> > > + * On ARM platforms, we actually get a bus error returned when the PCIe
-> > >> > IP
-> > >> > > + * returns a UR or CRS instead of an OK.
-> > >> > > + */
-> > >> > > +static int st_pcie_abort_
-> > >> >
-> > >> > handler(unsigned long addr, unsigned int fsr,
-> > >> > > +                              struct pt_regs *regs)
-> > >> > > +{
-> > >> > > +     return 0;
-> > >> > > +}
-> > >> >
-> > >> > You should check that it's actually PCI that caused the abort. Don't
-> > >> > just ignore a hard error condition.
-> > >> >
-> > >> > Usually there are registers in the PCI core that let you identify what
-> > >> > happened.
-> > >> >
-> > >>
-> > >>
-> > >> We return 0 because abort handler is not activated during boot.
-> > >>
-> > >
-> > > Can you just remove the handler then? We should never have exception
-> > > handlers that unconditionally return 0.
-> > >
+On Wed, Jan 21, 2015 at 07:11:51PM +0800, Zhang Zhen wrote:
+> On 2015/1/21 18:16, Paul E. McKenney wrote:
+> > On Wed, Jan 21, 2015 at 05:05:50PM +0800, Zhang Zhen wrote:
+> >> On 2015/1/21 15:02, Paul E. McKenney wrote:
+> >>> On Wed, Jan 21, 2015 at 02:54:05PM +0800, Zhang Zhen wrote:
+> >>>> On 2015/1/21 11:13, Zhang Zhen wrote:
+> >>>>> On 2015/1/21 10:26, Zhang Zhen wrote:
+> >>>>>> On 2015/1/20 23:25, Don Zickus wrote:
+> >>>
+> >>> [ . . . ]
+> >>>
+> >>>>> Sorry, i made a mistake, the log above is based on v3.10.63.
+> >>>>> I have tested the latest upstream kernel (based on ec6f34e5b552),
+> >>>>> but my test case can't triggered RCU stall warning.
+> >>>>>
+> >>>>
+> >>>> I used git bisect to find the bad commit, but found a irrelevant
+> >>>> commit(db5d711e2db776 zram: avoid null access when fail to alloc meta).
+> >>>> Before this commit, my test case can easily trigger RCU stall warning,
+> >>>> but after this commit, my test case can't trigger RCU stall warning.
+> >>>
+> >>> I have lost track of exactly what kernel you are using.  If you are
+> >>> using a recent kernel (v3.18 or thereabouts), one thing to try is to
+> >>> apply my stack of RCU CPU stall-warning changes that are on their way
+> >>> in, please see v3.19-rc1..630181c4a915 in -rcu, which is at:
+> >>>
+> >>> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
+> >>>
+> >>> These handle the problems that Dave Jones and a few others located this
+> >>> past December.  Could you please give them a spin?
+> >>>
+> >>
+> >> Yeah, my test case can easily trigger RCU stall-warning based on commit 630181c4a915
+> >> in your linux-rcu git tree.
+> >>
+> >> In my .config, CONFIG_RCU_CPU_STALL_TIMEOUT=21.
+> >> Before commented out touch_softlockup_watchdog() in touch_nmi_watchdog:
+> >>
+> >> / #
+> >> / # echo 60 > /proc/sys/kernel/watchdog_thresh
+> >> [   21.885200] NMI watchdog: disabled (cpu0): hardware events not enabled
+> >> / #  busybox insmod softlockup_test.ko
+> >> [   47.900117] INFO: rcu_sched detected stalls on CPUs/tasks:
+> >> [   47.900117] 	(detected by 0, t=5252 jiffies, g=-202, c=-203, q=7)
+> >> [   47.900117] All QSes seen, last rcu_sched kthread activity 5252 (4294904271-4294899019), jiffies_till_next_fqs=1
 > > 
-> > Ah sorry, we need the handler because we can received aborts from
-> > user-land after the boot.
+> > Looks like you are starving RCU's grace-period kthreads.  What happens if
+> > you boot with rcutree.kthread_prio=1 in order to run them at real-time
+> > priority?
 > > 
-> > I have 2 solutions, the first to simplify we can only return 0.
-> > The second is to manage handler during boot. Then i need for that a
-> > new patch from Fabrice
-> > https://lkml.org/lkml/2014/2/7/631
+> >> [   47.900117] busybox         R  running task        0    42     41 0x00000008
+> >> [   47.900117]  ffffffff81afaf40 ffff88007fa03d98 ffffffff810781c0 ffffffff81a5e5f8
+> >> [   47.900117]  ffffffff81a45d80 ffff88007fa03dd8 ffffffff810af723 0000000000000083
+> >> [   47.900117]  ffff88007fa13580 ffffffff81a45d80 ffffffff81a45d80 ffffffff810c43e0
+> >> [   47.900117] Call Trace:
+> >> [   47.900117]  <IRQ>  [<ffffffff810781c0>] sched_show_task+0xb0/0x110
+> >> [   47.900117]  [<ffffffff810af723>] print_other_cpu_stall+0x2d3/0x2f0
+> >> [   47.900117]  [<ffffffff810c43e0>] ? tick_nohz_handler+0xc0/0xc0
+> >> [   47.900117]  [<ffffffff810af8b8>] __rcu_pending+0x178/0x220
+> >> [   47.900117]  [<ffffffff810b02a5>] rcu_check_callbacks+0x105/0x190
+> >> [   47.900117]  [<ffffffff810c43e0>] ? tick_nohz_handler+0xc0/0xc0
+> >> [   47.900117]  [<ffffffff810b3582>] update_process_times+0x32/0x60
+> >> [   47.900117]  [<ffffffff810c41e2>] tick_sched_handle+0x32/0x80
+> >> [   47.900117]  [<ffffffff810c442d>] tick_sched_timer+0x4d/0x90
+> >> [   47.900117]  [<ffffffff810b5b57>] __run_hrtimer+0xc7/0x1c0
+> >> [   47.900117]  [<ffffffff810b5e37>] hrtimer_interrupt+0xe7/0x220
+> >> [   47.900117]  [<ffffffffa0005000>] ? 0xffffffffa0005000
+> >> [   47.900117]  [<ffffffff81035654>] local_apic_timer_interrupt+0x34/0x60
+> >> [   47.900117]  [<ffffffff81035d8c>] smp_apic_timer_interrupt+0x3c/0x60
+> >> [   47.900117]  [<ffffffff814ff02a>] apic_timer_interrupt+0x6a/0x70
+> >> [   47.900117]  <EOI>  [<ffffffff814fdaa0>] ? _raw_spin_lock+0x20/0x30
+> >> [   47.900117]  [<ffffffffa000505d>] test_init+0x5d/0x1000 [softlockup_test]
+> >> [   47.900117]  [<ffffffffa0005000>] ? 0xffffffffa0005000
+> >> [   47.900117]  [<ffffffff81000288>] do_one_initcall+0xb8/0x1d0
+> >> [   47.900117]  [<ffffffff81168794>] ? __vunmap+0x94/0xf0
+> >> [   47.900117]  [<ffffffff810ce36b>] do_init_module+0x2b/0x1b0
+> >> [   47.900117]  [<ffffffff810d09b5>] load_module+0x585/0x5f0
+> >> [   47.900117]  [<ffffffff810cdd40>] ? mod_sysfs_teardown+0x150/0x150
+> >> [   47.900117]  [<ffffffff810d0bbb>] SyS_init_module+0x9b/0xc0
+> >> [   47.900117]  [<ffffffff814fe252>] system_call_fastpath+0x12/0x17
+> >> [   47.900117] rcu_sched kthread starved for 5252 jiffies!
+> >>
+> >> After commented out touch_softlockup_watchdog() in touch_nmi_watchdog:
+> >>
+> >> / #
+> >> / # echo 60 > /proc/sys/kernel/watchdog_thresh
+> >> [  123.011980] NMI watchdog: disabled (cpu0): hardware events not enabled
+> >> / # busybox insmod softlockup_test.ko
+> >> [  150.912055] INFO: rcu_sched detected stalls on CPUs/tasks:
+> >> [  150.912055] 	(detected by 0, t=5252 jiffies, g=-198, c=-199, q=6)
+> >> [  150.912055] All QSes seen, last rcu_sched kthread activity 5252 (4294930024-4294924772), jiffies_till_next_fqs=1
+> > 
+> > Same here, looks like RCU's grace-period kthreads haven't gotten a chance
+> > to run for more than 5,000 jiffies.
+> > 
+> >> [  150.912055] busybox         R  running task        0    42     41 0x00000008
+> >> [  150.912055]  ffffffff81afaf40 ffff88007fa03d98 ffffffff810781c0 ffffffff81a5e5f8
+> >> [  150.912055]  ffffffff81a45d80 ffff88007fa03dd8 ffffffff810af723 0000000000000083
+> >> [  150.912055]  ffff88007fa13580 ffffffff81a45d80 ffffffff81a45d80 ffffffff810c43e0
+> >> [  150.912055] Call Trace:
+> >> [  150.912055]  <IRQ>  [<ffffffff810781c0>] sched_show_task+0xb0/0x110
+> >> [  150.912055]  [<ffffffff810af723>] print_other_cpu_stall+0x2d3/0x2f0
+> >> [  150.912055]  [<ffffffff810c43e0>] ? tick_nohz_handler+0xc0/0xc0
+> >> [  150.912055]  [<ffffffff810af8b8>] __rcu_pending+0x178/0x220
+> >> [  150.912055]  [<ffffffff810b02a5>] rcu_check_callbacks+0x105/0x190
+> >> [  150.912055]  [<ffffffff810c43e0>] ? tick_nohz_handler+0xc0/0xc0
+> >> [  150.912055]  [<ffffffff810b3582>] update_process_times+0x32/0x60
+> >> [  150.912055]  [<ffffffff810c41e2>] tick_sched_handle+0x32/0x80
+> >> [  150.912055]  [<ffffffff810c442d>] tick_sched_timer+0x4d/0x90
+> >> [  150.912055]  [<ffffffff810b5b57>] __run_hrtimer+0xc7/0x1c0
+> >> [  150.912055]  [<ffffffff810b5e37>] hrtimer_interrupt+0xe7/0x220
+> >> [  150.912055]  [<ffffffffa0005000>] ? 0xffffffffa0005000
+> >> [  150.912055]  [<ffffffff81035654>] local_apic_timer_interrupt+0x34/0x60
+> >> [  150.912055]  [<ffffffff81035d8c>] smp_apic_timer_interrupt+0x3c/0x60
+> >> [  150.912055]  [<ffffffff814ff02a>] apic_timer_interrupt+0x6a/0x70
+> >> [  150.912055]  <EOI>  [<ffffffff814fda90>] ? _raw_spin_lock+0x20/0x30
+> >> [  150.912055]  [<ffffffffa000505d>] test_init+0x5d/0x1000 [softlockup_test]
+> >> [  150.912055]  [<ffffffffa0005000>] ? 0xffffffffa0005000
+> >> [  150.912055]  [<ffffffff81000288>] do_one_initcall+0xb8/0x1d0
+> >> [  150.912055]  [<ffffffff81168784>] ? __vunmap+0x94/0xf0
+> >> [  150.912055]  [<ffffffff810ce36b>] do_init_module+0x2b/0x1b0
+> >> [  150.912055]  [<ffffffff810d09b5>] load_module+0x585/0x5f0
+> >> [  150.912055]  [<ffffffff810cdd40>] ? mod_sysfs_teardown+0x150/0x150
+> >> [  150.912055]  [<ffffffff810d0bbb>] SyS_init_module+0x9b/0xc0
+> >> [  150.912055]  [<ffffffff814fe252>] system_call_fastpath+0x12/0x17
+> >> [  150.912055] rcu_sched kthread starved for 5252 jiffies!
+> >> ...
+> >> ...
+> >> [  291.009857] NMI watchdog: BUG: soft lockup - CPU#0 stuck for 135s! [busybox:42]
+> >> [  291.010286] Modules linked in: softlockup_test(O+)
+> >> [  291.010944] CPU: 0 PID: 42 Comm: busybox Tainted: G           O   3.19.0-rc1-0.27-default+ #3
+> >> [  291.011356] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
+> >> [  291.011674] task: ffff88007d3e61d0 ti: ffff88007d3fc000 task.ti: ffff88007d3fc000
+> >> [  291.012066] RIP: 0010:[<ffffffff814fda90>]  [<ffffffff814fda90>] _raw_spin_lock+0x20/0x30
+> >> [  291.012205] RSP: 0018:ffff88007d3ffdd8  EFLAGS: 00000202
+> >> [  291.012205] RAX: 0000000000000000 RBX: ffff88007cc1e250 RCX: 0000000000012a40
+> >> [  291.012205] RDX: 0000000000000001 RSI: 0000000000000246 RDI: ffff88007d3ffde8
+> >> [  291.012205] RBP: ffff88007d3ffdd8 R08: ffff88007fa12a40 R09: 000000000000b806
+> >> [  291.012205] R10: 0000000000000000 R11: ffff88007d3ffcd8 R12: ffffffff8107b1a4
+> >> [  291.012205] R13: ffff88007d3ffd68 R14: 0000000000000000 R15: 0000000000000000
+> >> [  291.012205] FS:  00000000007fd880(0063) GS:ffff88007fa00000(0000) knlGS:0000000000000000
+> >> [  291.012205] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> >> [  291.012205] CR2: 000000000081c87f CR3: 000000007d3f1000 CR4: 00000000000006f0
+> >> [  291.012205] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> >> [  291.012205] DR3: 0000000000000000 DR6: 0000000000000000 DR7: 0000000000000000
+> >> [  291.012205] Stack:
+> >> [  291.012205]  ffff88007d3ffe08 ffffffffa000505d ffff880000020000 0000000000000000
+> >> [  291.012205]  ffffffffa0005000 ffffffff81a19250 ffff88007d3ffe78 ffffffff81000288
+> >> [  291.012205]  ffff88007d317540 0000000000000020 ffff88007d317540 0000000000000001
+> >> [  291.012205] Call Trace:
+> >> [  291.012205]  [<ffffffffa000505d>] test_init+0x5d/0x1000 [softlockup_test]
+> >> [  291.012205]  [<ffffffffa0005000>] ? 0xffffffffa0005000
+> >> [  291.012205]  [<ffffffff81000288>] do_one_initcall+0xb8/0x1d0
+> >> [  291.012205]  [<ffffffff81168784>] ? __vunmap+0x94/0xf0
+> >> [  291.012205]  [<ffffffff810ce36b>] do_init_module+0x2b/0x1b0
+> >> [  291.012205]  [<ffffffff810d09b5>] load_module+0x585/0x5f0
+> >> [  291.012205]  [<ffffffff810cdd40>] ? mod_sysfs_teardown+0x150/0x150
+> >> [  291.012205]  [<ffffffff810d0bbb>] SyS_init_module+0x9b/0xc0
+> >> [  291.012205]  [<ffffffff814fe252>] system_call_fastpath+0x12/0x17
+> >> [  291.012205] Code: 89 d0 c9 c3 0f 1f 80 00 00 00 00 55 48 89 e5 b8 00 00 01 00 3e 0f c1 07 89 c2 c1 ea 10 66 39 d0 75 0b eb 11 0f 1f 80 00 00 00 00 <f3> 90 0f b7 07 66 39 c2 75 f6 c9 c3 0f 1f 40 00 55 48 89 e5 9c
+> >>
+> >>>                                                         Thanx, Paul
+> >>>
+> >>>> I'm totally confused.
+> >>>>
+> >>>> My test case:
+> >>>>
+> >>>> //
+> >>>> #include <linux/kernel.h>
+> >>>> #include <linux/module.h>
+> >>>> #include <linux/spinlock.h>
+> >>>> #include <linux/slab.h>
+> >>>> #include <linux/kthread.h>
+> >>>>
+> >>>> struct foo {
+> >>>>         int a;
+> >>>>         char b;
+> >>>>         long c;
+> >>>> };
+> >>>>
+> >>>> struct foo gbl_foo = {1, 'a', 2};
+> >>>> struct foo *pgbl_foo = &gbl_foo;
+> >>>>
+> >>>> static int my_kthread(void *data)
+> >>>> {
+> >>>>         DEFINE_SPINLOCK(foo_mutex);
+> > 
+> > This defines a spinlock on the stack, which means that each of your
+> > kthreads have their own lock, which means that acquiring the lock has
+> > no effect.  Given that you spawn only one kthread, no problem now,
+> > but big problems when you spawn multiple kthreads.
+> > 
+> >>>>         struct foo *new_fp;
+> >>>>         struct foo *old_fp;
+> >>>>
+> >>>>         new_fp = kmalloc(sizeof(*new_fp), GFP_KERNEL);
+> >>>>         spin_lock(&foo_mutex);
+> >>>>         old_fp = pgbl_foo;
+> >>>>         *new_fp = *old_fp;
+> >>>>         new_fp->a = 2;
+> >>>>         rcu_assign_pointer(pgbl_foo, new_fp);
+> > 
+> > You are planning to add RCU readers some time later?
 > 
-> I still don't get it. What is causing the abort? Is that something
-> user space does, or is it just a condition that gets stuck the pcie
-> device after probing that gets delivered once as soon as the aborts
-> are enabled?
+> I did this test is try to reproduce this problem and give Don a clue about what is going
+> on.
+> This will help him to solve this problem.
 > 
-The abort is caused by the kernel trying to access a non-existent device
-while probing the bus. It isn't delivered to the ARM core, as it is an
-imprecise external abort which are masked during boot.
-Once pid1 is started and we do the first schedule imprecise aborts get
-unmasked and pid1 will be hit by the stale abort.
+> > 
+> >>>>         spin_unlock(&foo_mutex);
+> >>>>         synchronize_rcu();
+> >>>>         kfree(old_fp);
+> >>>>
+> >>>>         return 0;
+> >>>> }
+> >>>>
+> >>>> static int hello_start(void)
+> >>>> {
+> >>>>         struct task_struct *my_task = NULL;
+> >>>>         DEFINE_SPINLOCK(hello_lock);
+> >>>>
+> >>>>         my_task = kthread_run(my_kthread, NULL, "my_thread%d", 1);
+> >>>>
+> >>>>         spin_lock_init(&hello_lock);
+> >>>>         spin_lock(&hello_lock);
+> >>>>         spin_lock(&hello_lock);
+> > 
+> > And this is the cause of the RCU CPU stall warnings.
+> > 
+> > If you only have one CPU and have built with CONFIG_PREEMPT=n, what
+> > you have above is expected behavior.
+> > 
+> You are right, this qemu virtual machine has one CPU and built with CONFIG_PREEMPT=n.
 
-The above patch does the right thing by unmasking imprecise abort early
-during boot, so they can get handled once they are hit.
+So what is probably happening is that your my_kthread() started
+running immediately after being spawned, and then ran through to the
+synchronize_rcu().  Either of the two context switches (to my_kthread()
+and back from it) would serve as the quiescent state, waking up the
+grace-period kthread, which, if allowed to run, would have cleaned up
+after the grace period and possibly started a new one.  However, your
+hello_start() kthread got to run instead, and it never let go of the CPU.
+So the grace period remained stuck, having gotten all the quiescent
+states it needed, but with out the needed cleanup processing.
 
-The abort handling for the DW PCIe core right now is a complete
-disaster. Hooking the fault code means we possibly overwrite any other
-handler for the same abort. Also as the configuration space is mapped as
-device memory the abort actually happens on the *next* instruction after
-the read that caused it. Improving this is something I had on my to-do
-list for quite some time now. 
+							Thanx, Paul
 
-Regards,
-Lucas
-
+> Thanks!
+> > 							Thanx, Paul
+> > 
+> >>>>         return 0;
+> >>>> }
+> >>>>
+> >>>> static int __init test_init(void)
+> >>>> {
+> >>>>         hello_start();
+> >>>>
+> >>>>         printk(KERN_INFO "Module init\n");
+> >>>>         return 0;
+> >>>> }
+> >>>>
+> >>>> static void __exit test_exit(void)
+> >>>> {
+> >>>>         printk(KERN_INFO "Module exit!\n");
+> >>>> }
+> >>>>
+> >>>> module_init(test_init)
+> >>>> module_exit(test_exit)
+> >>>> MODULE_LICENSE("GPL");
+> >>>> //
+> >>>>>>>
+> >>>>>>> Cheers,
+> >>>>>>> Don
+> >>>>>>>
+> >>>>>>> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+> >>>>>>> index 70bf118..833c015 100644
+> >>>>>>> --- a/kernel/watchdog.c
+> >>>>>>> +++ b/kernel/watchdog.c
+> >>>>>>> @@ -209,7 +209,7 @@ void touch_nmi_watchdog(void)
+> >>>>>>>  	 * going off.
+> >>>>>>>  	 */
+> >>>>>>>  	raw_cpu_write(watchdog_nmi_touch, true);
+> >>>>>>> -	touch_softlockup_watchdog();
+> >>>>>>> +	//touch_softlockup_watchdog();
+> >>>>>>>  }
+> >>>>>>>  EXPORT_SYMBOL(touch_nmi_watchdog);
+> >>>>>>>  
+> >>>>>>>
+> >>>>>>> .
+> >>>>>>>
+> >>>>>>
+> >>>>>
+> >>>>
+> >>>>
+> >>>
+> >>>
+> >>> .
+> >>>
+> >>
+> >>
+> > 
+> > 
+> > .
+> > 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
