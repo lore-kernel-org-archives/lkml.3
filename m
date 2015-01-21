@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751998AbbAUGF2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 01:05:28 -0500
-Received: from mail-qg0-f42.google.com ([209.85.192.42]:62150 "EHLO
-	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750735AbbAUGF0 (ORCPT
+	id S1752112AbbAUGHM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 01:07:12 -0500
+Received: from mail-pd0-f176.google.com ([209.85.192.176]:40749 "EHLO
+	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750805AbbAUGHK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 01:05:26 -0500
-From: Vince Weaver <vincent.weaver@maine.edu>
-X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
-Date: Wed, 21 Jan 2015 01:06:30 -0500 (EST)
-To: Jiri Olsa <jolsa@redhat.com>
-cc: Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
-        Jiri Olsa <jolsa@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>
-Subject: Re: perf: behavior of poll() changed in 3.18
-In-Reply-To: <20150120181316.GA12860@krava.brq.redhat.com>
-Message-ID: <alpine.DEB.2.11.1501210058090.21805@vincent-weaver-1.umelst.maine.edu>
-References: <alpine.DEB.2.11.1501201155380.18043@vincent-weaver-1.umelst.maine.edu> <20150120181316.GA12860@krava.brq.redhat.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Wed, 21 Jan 2015 01:07:10 -0500
+Date: Tue, 20 Jan 2015 22:07:03 -0800
+From: Nicolin Chen <nicoleotsuka@gmail.com>
+To: Zidan Wang <zidan.wang@freescale.com>
+Cc: timur@tabi.org, Xiubo.Lee@gmail.com, lgirdwood@gmail.com,
+        broonie@kernel.org, perex@perex.cz, tiwai@suse.de,
+        alsa-devel@alsa-project.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [alsa-devel][PATCH 1/3] SoC: fsl_sai: add sai master mode support
+Message-ID: <20150121060702.GB3275@Alpha>
+References: <1421756480-7055-1-git-send-email-zidan.wang@freescale.com>
+ <1421756480-7055-2-git-send-email-zidan.wang@freescale.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421756480-7055-2-git-send-email-zidan.wang@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Jan 2015, Jiri Olsa wrote:
+On Tue, Jan 20, 2015 at 08:21:18PM +0800, Zidan Wang wrote:
+> +static int fsl_sai_set_bclk(struct snd_soc_dai *dai, bool tx, u32 freq)
 
-> I made this change to get notification that monitored
-> process exited.  We use it in 'perf record' to find out
-> that we have nothing more to monitor and quit.
-> 
-> The logic is to return POLLHUP (via poll syscall) when
-> the monitored process exits for the event.
-> 
-> Could you please share your test code?
+> +	if ((tx && sai->synchronous[TX]) || (!tx && !sai->synchronous[RX])) {
+> +		regmap_update_bits(sai->regmap, FSL_SAI_RCR2,
+> +			FSL_SAI_CR2_MSEL_MASK, FSL_SAI_CR2_MSEL(sai->mclk_id));
+> +		regmap_update_bits(sai->regmap, FSL_SAI_RCR2,
+> +			FSL_SAI_CR2_DIV_MASK, savediv - 1);
 
-My code does something like this to count the number of overflows
-happening in a child:
+Hmm...the case should be a bit more complicated here IMO.
 
-	/* fds contains one fd, which is a harware event */
-	/* attached to a child */
+"tx && sai->synchronous[TX]" means the playback in synchronous
+mode (TX following RX). What if the recording has been already
+activated with an MSEL setting at this point? Then the playback
+stream, as a secondary stream, will overwrite MSEL of the first
+stream -- Record. Same would happen to the DIV configuration.
 
-	while(1) {
-                result=poll(fds,1,100);
-                if (result==0) {
-                        waitpid(child,&status,WNOHANG);
-                        if (WIFEXITED(status)) break;
-                        if (WIFSIGNALED(status)) {
-                                printf("Signalled %d!\n",WTERMSIG(status));
-                                break;
-                        }
-                }
+> @@ -297,6 +368,24 @@ static int fsl_sai_hw_params(struct snd_pcm_substream *substream,
+>  	unsigned int channels = params_channels(params);
+>  	u32 word_width = snd_pcm_format_width(params_format(params));
+>  	u32 val_cr4 = 0, val_cr5 = 0;
+> +	int ret;
+> +
+> +	if (!sai->is_slave_mode) {
+> +		ret = fsl_sai_set_bclk(cpu_dai, tx,
+> +			2 * word_width * params_rate(params));
+> +		if (ret)
+> +			return ret;
+> +
+> +		/* Do not enable the clock if it is already enabled */
 
-                if (fds[0].revents&POLLIN) count.in++;
-                if (fds[0].revents&POLLHUP) count.hup++;
-                if (fds[0].revents&POLLERR) break;
-	}
+It actually doesn't matter to enable the clock again since it
+purely increaes its count. But we do need a protection for MSEL
+overwritten issue resulted from the fsl_sai_set_bclk() call.
 
-With the change you made this code hangs forever because poll no longer
-returns "0" when the child exits, but instead returns "1" with
-POLLHUP set.
+> @@ -133,10 +135,13 @@ struct fsl_sai {
+>  	struct clk *mclk_clk[FSL_SAI_MCLK_MAX];
+>  
+>  	bool is_lsb_first;
+> +	bool is_slave_mode;
+>  	bool is_dsp_mode;
+>  	bool sai_on_imx;
+>  	bool synchronous[2];
+>  
+> +	unsigned int mclk_id;
+> +	unsigned int mclk_streams;
 
-I admit my code isn't the best out there, but it worked reliably up
-until 3.18 when the change was made.
+Besides, I doubt that only one property of mclk_id can content
+Asynchronous Mode -- TX and RX can fetch their clocks from
+different MCLK sources.
 
-Part of why my code doesn't just exit on POLLHUP is because you can
-get that result for reasons other than a process exit (for example,
-if you are using ioctl(PERF_EVENT_IOC_REFRESH)
-
-Vince
+Nicolin
