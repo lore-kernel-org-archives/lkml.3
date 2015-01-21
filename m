@@ -1,55 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751966AbbAUITJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 03:19:09 -0500
-Received: from mga09.intel.com ([134.134.136.24]:50311 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750805AbbAUITG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 03:19:06 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="443080050"
-From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
-To: Wincy Van <fanwenyi0529@gmail.com>, Paolo Bonzini <pbonzini@redhat.com>,
-        "gleb@kernel.org" <gleb@kernel.org>
-CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Jan Kiszka <jan.kiszka@web.de>
-Subject: RE: [PATCH 1/5] KVM: nVMX: Make nested control MSRs per-cpu.
-Thread-Topic: [PATCH 1/5] KVM: nVMX: Make nested control MSRs per-cpu.
-Thread-Index: AQHQMVBrZc6TnJUyfk+80Qu1n+PyapzKQVSg
-Date: Wed, 21 Jan 2015 08:18:57 +0000
-Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0AC262EB@SHSMSX104.ccr.corp.intel.com>
-References: <CACzj_yVKUUvbke3XG7cHCQD7hr8fPsRbH1k_3V8L25M3-Y6sNQ@mail.gmail.com>
-In-Reply-To: <CACzj_yVKUUvbke3XG7cHCQD7hr8fPsRbH1k_3V8L25M3-Y6sNQ@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.239.127.40]
-Content-Type: text/plain; charset="utf-8"
+	id S1752004AbbAUIUy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 03:20:54 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:49597 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754AbbAUIUs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 03:20:48 -0500
+Date: Wed, 21 Jan 2015 09:20:22 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Eddie Huang <eddie.huang@mediatek.com>
+Cc: Wolfram Sang <wsa@the-dreams.de>,
+        Matthias Brugger <matthias.bgg@gmail.com>, srv_heupstream@mediatek.com,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>,
+        Jean Delvare <jdelvare@suse.de>, Arnd Bergmann <arnd@arndb.de>,
+        Doug Anderson <dianders@chromium.org>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        Max Schwarz <max.schwarz@online.de>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Anders Berg <anders.berg@avagotech.com>,
+        Neelesh Gupta <neelegup@linux.vnet.ibm.com>,
+        Wei Yan <sledge.yanwei@huawei.com>, Lee Jones <lee.jones@linaro.org>,
+        Simon Glass <sjg@chromium.org>, Jim Cromie <jim.cromie@gmail.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Beniamino Galvani <b.galvani@gmail.com>,
+        Xudong Chen <xudong.chen@mediatek.com>, linux-i2c@vger.kernel.org,
+        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, yingjoe.chen@mediatek.com,
+        yh.chen@mediatek.com, Sascha Hauer <kernel@pengutronix.de>
+Subject: Re: [PATCH v4 2/2] I2C: mediatek: Add driver for MediaTek I2C
+ controller
+Message-ID: <20150121082022.GT22880@pengutronix.de>
+References: <1421404418-50718-1-git-send-email-eddie.huang@mediatek.com>
+ <1421404418-50718-3-git-send-email-eddie.huang@mediatek.com>
+ <20150118101816.GF22880@pengutronix.de>
+ <1421810004.15468.825.camel@mtksdaap41>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1421810004.15468.825.camel@mtksdaap41>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0L8JDoC018192
 
-Wincy Van wrote on 2015-01-16:
-> To enable nested apicv support, we need per-cpu vmx control MSRs:
->   1. If in-kernel irqchip is enabled, we can enable nested
->      posted interrupt, we should set posted intr bit in the
->      nested_vmx_pinbased_ctls_high. 2. If in-kernel irqchip is disabled,
->      we can not enable nested posted interrupt, the posted intr bit in
->      the nested_vmx_pinbased_ctls_high will be cleared.
-> Since there would be different settings about in-kernel irqchip
-> between VMs, different nested control MSRs are needed.
+Hello,
 
-I'd suggest you to check irqchip_in_kernel() instead moving the whole ctrl msr to per vcpu.
+On Wed, Jan 21, 2015 at 11:13:24AM +0800, Eddie Huang wrote:
+> > > +	/* set when doing the transfer */
+> > > +	u16 irq_stat;			/* interrupt status */
+> > > +	unsigned int speed_hz;		/* The speed in transfer */
+> > > +	bool trans_stop;		/* i2c transfer stop */
+> > > +	enum mtk_trans_op op;
+> > > +	u16 msg_len;
+> > > +	u8 *msg_buf;			/* pointer to msg data */
+> > > +	u16 msg_aux_len;		/* WRRD mode to set AUX_LEN register*/
+> > > +	u16 addr;	/* 7bit slave address, without read/write bit */
+> > Wouldn't it be easier to maintain a pointer to the message to be
+> > transferred?
+> I think use mtk_i2c pointer is more flexible than maintain a pointer to
+> message.
+Not sure you understood what I intended to suggest. My idea was to drop
 
-Best regards,
-Yang
+	u16 msg_len;
+	u8 *msg_buf;
+	u16 msg_aux_len; // maybe
+	u16 addr;
 
+from struct mtk_i2c and add a struct i2c_msg *msg instead. Up to you to
+decide.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Best regards
+Uwe
+
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
