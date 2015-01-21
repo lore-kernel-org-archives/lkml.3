@@ -1,98 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689AbbAUKpN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 05:45:13 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:60222 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752530AbbAUKpH (ORCPT
+	id S1752539AbbAUKrU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 05:47:20 -0500
+Received: from mail-wg0-f48.google.com ([74.125.82.48]:47717 "EHLO
+	mail-wg0-f48.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751462AbbAUKrK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 05:45:07 -0500
-Message-ID: <54BF8326.3080406@pengutronix.de>
-Date: Wed, 21 Jan 2015 11:44:54 +0100
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.4.0
+	Wed, 21 Jan 2015 05:47:10 -0500
+Date: Wed, 21 Jan 2015 12:46:59 +0200
+From: menna_tarek <mennatallah.dawood@gmail.com>
+To: devel@driverdev.osuosl.org
+Cc: lidza.louina@gmail.com, markh@compro.net, gregkh@linuxfoundation.org,
+        driverdev-devel@linuxdriverproject.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: dgnc: Fixing a warning of line over 80 characters
+Message-ID: <20150121104659.GA7490@Menna-HP>
 MIME-Version: 1.0
-To: Andri Yngvason <andri.yngvason@marel.com>,
-        "Ahmed S. Darwish" <darwish.07@gmail.com>,
-        Olivier Sobrie <olivier@sobrie.be>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Wolfgang Grandegger <wg@grandegger.com>
-CC: Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 2/5] can: kvaser_usb: Consolidate and unify state change
- handling
-References: <20141223154654.GB6460@vivalin-002> <20150120214409.GA16828@linux> <20150120214537.GB16828@linux> <20150121103319.14511.57709@shannon>
-In-Reply-To: <20150121103319.14511.57709@shannon>
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="Saaec6vgQSg9TUi22lNmbclxo2ldABKTO"
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
---Saaec6vgQSg9TUi22lNmbclxo2ldABKTO
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+This patch fixes the following checkpatch.pl warning:
+WARNING: line over 80 characters
 
-On 01/21/2015 11:33 AM, Andri Yngvason wrote:
-> Quoting Ahmed S. Darwish (2015-01-20 21:45:37)
->> From: Ahmed S. Darwish <ahmed.darwish@valeo.com>
->>
->> Replace most of the can interface's state and error counters
->> handling with the new can-dev can_change_state() mechanism.
->>
->> Suggested-by: Andri Yngvason <andri.yngvason@marel.com>
->> Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
->> ---
->>  drivers/net/can/usb/kvaser_usb.c | 114 +++++++++++++++++++-----------=
----------
->>  1 file changed, 55 insertions(+), 59 deletions(-)
->>
->> diff --git a/drivers/net/can/usb/kvaser_usb.c b/drivers/net/can/usb/kv=
-aser_usb.c
->> index 971c5f9..0386d3f 100644
->> --- a/drivers/net/can/usb/kvaser_usb.c
->> +++ b/drivers/net/can/usb/kvaser_usb.c
+Signed-off-by: menna_tarek <mennatallah.dawood@gmail.com>
+---
+ drivers/staging/dgnc/dgnc_tty.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-> Looks good.
+diff --git a/drivers/staging/dgnc/dgnc_tty.c b/drivers/staging/dgnc/dgnc_tty.c
+index f81a375..f43a11b 100644
+--- a/drivers/staging/dgnc/dgnc_tty.c
++++ b/drivers/staging/dgnc/dgnc_tty.c
+@@ -1331,7 +1331,7 @@ static int dgnc_block_til_ready(struct tty_struct *tty, struct file *file, struc
+ 		spin_unlock_irqrestore(&ch->ch_lock, flags);
+ 
+ 		/*
+-		 * Wait for something in the flags to change from the current value.
++		 * Wait for the flags to change from the current value.
+ 		 */
+ 		if (sleep_on_un_flags)
+ 			retval = wait_event_interruptible(un->un_flags_wait,
+-- 
+1.9.1
 
-Is this an Acked-by?
-
-Marc
-
---=20
-Pengutronix e.K.                  | Marc Kleine-Budde           |
-Industrial Linux Solutions        | Phone: +49-231-2826-924     |
-Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
-Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
-
-
---Saaec6vgQSg9TUi22lNmbclxo2ldABKTO
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCgAGBQJUv4MpAAoJECte4hHFiupUxucP+wegvaIrWMypNeoTQ9/UV+ia
-v/Rh4T8HLQgKIjIJwTRtcrbtt1DOCYzRAYpWyMWAm48A8zKwaIpasbiRd17nW21g
-G83ICAg5J9y9ueLvAf4dSDw8sTcOcNF8/TSMZxmpgFz4YMYKuUChjFLJHS4TWgps
-B7J4rG3krC31PvW1Le2KYz43wtgjeO/3PVIGSiBrvF+mvd5OUfbbzHZWZ2yEUf1G
-l4F+5FxGH/slfWlC4g36wur16grTFc+ewKwEKQBgZrDXVGBqbGgzyael8q3oPwun
-TRP2bjSgVviRxilSGO/AyzuSCTplQH+lkGsngnMy5yCeerMV+2Zf1TNmnKBPyYYy
-CzGyFLS2QMMpkGfgt7C2NbBhww7PjMp4GRvX4ktLKedYgu7x1ypUzzoecx2/FWp5
-Ul3tVw6djkSNCONHf4hBbbankALErGOKP2InZWUTjihFGGGfV3JhXzCWzt4P5v0C
-Tk+XcxeOrvdalAPEENuesJg8qpCurIPt+gzw0BHh0GmiiKZX+ycKsGZ8mcZNcn5T
-m5sK6V6vayfOIaW3jFG37VU7UHi7MT/Ikax62q5xewTwn0K2sLzqJ5ssxyFP5SjH
-o/7yrF5q2VCtTpD+bhyL9WF030cbrgZm9v2Os19uCvQ/9UISzN3wk6vm8S94GWRS
-tqwmWmWQjZ+XhHTckjQn
-=C+4n
------END PGP SIGNATURE-----
-
---Saaec6vgQSg9TUi22lNmbclxo2ldABKTO--
