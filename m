@@ -1,69 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753371AbbAUOFM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 09:05:12 -0500
-Received: from emvm-gh1-uea08.nsa.gov ([63.239.67.9]:49299 "EHLO
-	emvm-gh1-uea08.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751972AbbAUOFI (ORCPT
+	id S1753454AbbAUOGL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 09:06:11 -0500
+Received: from mail-vc0-f180.google.com ([209.85.220.180]:36644 "EHLO
+	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751597AbbAUOGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 09:05:08 -0500
-X-TM-IMSS-Message-ID: <1347740b0001dac8@nsa.gov>
-Message-ID: <54BFB1B7.4020402@tycho.nsa.gov>
-Date: Wed, 21 Jan 2015 09:03:35 -0500
-From: Stephen Smalley <sds@tycho.nsa.gov>
-Organization: National Security Agency
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Wed, 21 Jan 2015 09:06:05 -0500
 MIME-Version: 1.0
-To: James Morris <jmorris@namei.org>, Ben Hutchings <ben@decadent.org.uk>
-CC: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-security-module@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, 770492@bugs.debian.org,
-        Ben Harris <bjh21@cam.ac.uk>, oss-security@lists.openwall.com,
-        John Johansen <john.johansen@canonical.com>,
-        Paul Moore <paul@paul-moore.com>,
-        Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [RFC PATCH RESEND] vfs: Move security_inode_killpriv() after
- permission checks
-References: <1421537206.31046.74.camel@decadent.org.uk> <alpine.LRH.2.11.1501211014580.15885@namei.org>
-In-Reply-To: <alpine.LRH.2.11.1501211014580.15885@namei.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20150121132308.GB23700@dhcp22.suse.cz>
+References: <20150121132308.GB23700@dhcp22.suse.cz>
+Date: Wed, 21 Jan 2015 15:06:03 +0100
+Message-ID: <CAJKOXPdgSsd8cr7ctKOGCwFTRMxcq71k7Pb5mQgYy--tGW8+_w@mail.gmail.com>
+Subject: Re: mmotm: mm-slub-optimize-alloc-free-fastpath-by-removing-preemption-on-off.patch
+ is causing preemptible splats
+From: =?UTF-8?Q?Krzysztof_Koz=C5=82owski?= <k.kozlowski.k@gmail.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Christoph Lameter <cl@linux.com>,
+        Jesper Dangaard Brouer <brouer@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2015 06:17 PM, James Morris wrote:
-> On Sat, 17 Jan 2015, Ben Hutchings wrote:
-> 
->> chown() and write() should clear all privilege attributes on
->> a file - setuid, setgid, setcap and any other extended
->> privilege attributes.
->>
->> However, any attributes beyond setuid and setgid are managed by the
->> LSM and not directly by the filesystem, so they cannot be set along
->> with the other attributes.
->>
->> Currently we call security_inode_killpriv() in notify_change(),
->> but in case of a chown() this is too early - we have not called
->> inode_change_ok() or made any filesystem-specific permission/sanity
->> checks.
->>
->> Add a new function setattr_killpriv() which calls
->> security_inode_killpriv() if necessary, and change the setattr()
->> implementation to call this in each filesystem that supports xattrs.
->> This assumes that extended privilege attributes are always stored in
->> xattrs.
-> 
-> It'd be useful to get some input from LSM module maintainers on this. 
-> 
-> e.g. doesn't SELinux already handle this via policy directives?
+2015-01-21 14:23 GMT+01:00 Michal Hocko <mhocko@suse.cz>:
+> Hi,
+> I am getting tons of splats like this:
+> [ 187.593291] BUG: using smp_processor_id() in preemptible [00000000] code: kworker/u4:1/24
+> [ 187.593293] caller is debug_smp_processor_id+0x17/0x19
+> [ 187.599127] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.7.5-20140531_083030-gandalf 04/01/2014
+> [  187.601997]  ffffffff8181786e ffff8800068a3d78 ffffffff8151a4b8 ffffffff81078e0e
+> [  187.604373]  0000000000000000 ffff8800068a3da8 ffffffff81280ac0 ffff8800068acac8
+> [  187.606619]  00000000000029b2 ffff880007401500 00000000000000d0 ffff8800068a3db8
+> [  187.608869] Call Trace:
+> [  187.609602]  [<ffffffff8151a4b8>] dump_stack+0x4f/0x7c
+> [  187.615881]  [<ffffffff81078e0e>] ? down_trylock+0x2d/0x37
+> [  187.617468]  [<ffffffff81280ac0>] check_preemption_disabled+0xe7/0xf9
+> [  187.619295]  [<ffffffff81280ae9>] debug_smp_processor_id+0x17/0x19
+> [  187.621055]  [<ffffffff8113b2f6>] kmem_cache_alloc_trace+0x78/0x22e
+> [  187.622854]  [<ffffffff81088d36>] ? do_syslog+0xb2/0x452
+> [  187.624376]  [<ffffffff81088d36>] do_syslog+0xb2/0x452
+> [  187.626030]  [<ffffffff811675b4>] ? __fdget_pos+0x3d/0x43
+> [  187.627557]  [<ffffffff810745ac>] ? wait_woken+0x5d/0x5d
+> [  187.629073]  [<ffffffff811675b4>] ? __fdget_pos+0x3d/0x43
+> [  187.630611]  [<ffffffff811a787b>] kmsg_read+0x2d/0x54
+> [  187.632069]  [<ffffffff8119c4ff>] proc_reg_read+0x4a/0x6c
+> [  187.633775]  [<ffffffff8114e4d8>] vfs_read+0xa5/0x141
+> [  187.635242]  [<ffffffff8114ee35>] SyS_read+0x51/0x8f
+> [  187.636666]  [<ffffffff81522892>] system_call_fastpath+0x12/0x17
 
-There have been a couple postings of a similar patch set [1] by Jan
-Kara, although I don't believe that series addressed chown().
+Same here :) [1] . So actually only ARM seems affected (both armv7 and
+armv8) because it is the only one which uses smp_processor_id() in
+my_cpu_offset.
 
-If I am reading the patches correctly, they (correctly) don't affect
-SELinux or Smack labels; they are just calling the existing
-security_inode_killpriv() hook, which is only implemented for the
-capability module to remove the security.capability xattr.
+[1] https://lkml.org/lkml/2015/1/20/162
 
-[1] http://marc.info/?l=linux-security-module&m=141890696325054&w=2
+Best regards,
+Krzysztof
+
+>
+> $ grep "BUG: using smp_processor_id" mmap.qcow_serial.log | wc -l
+> 660
+> after few minutes of runtime when running the current mmotm tree
+> (https://git.kernel.org/cgit/linux/kernel/git/mhocko/mm.git/log/?h=since-3.18).
+>
+> The warning seems to come from this_cpu_ptr which is using my_cpu_offset
+> which is
+> #define my_cpu_offset per_cpu_offset(smp_processor_id())
+> if CONFIG_DEBUG_PREEMPT
+>
+> So it matches the following code in slab_alloc_node resp. slab_free:
+>         do {
+>                 tid = this_cpu_read(s->cpu_slab->tid);
+>                 c = this_cpu_ptr(s->cpu_slab); <<< HERE
+>         } while (IS_ENABLED(CONFIG_PREEMPT) && unlikely(tid != c->tid));
+>
+> This is with:
+> CONFIG_PREEMPT=y
+> CONFIG_PREEMPT_COUNT=y
+> CONFIG_DEBUG_PREEMPT=y
+>
+> I am not sure how to fix this but it sounds like this_cpu_ptr should
+> offer the same preempt expectations as other this_cpu_* functions.
