@@ -1,123 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753663AbbAUECL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 23:02:11 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:49401 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752455AbbAUECG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 23:02:06 -0500
-Message-ID: <54BF2496.4000807@roeck-us.net>
-Date: Tue, 20 Jan 2015 20:01:26 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1753678AbbAUEKV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 23:10:21 -0500
+Received: from ozlabs.org ([103.22.144.67]:56347 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751691AbbAUEKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 23:10:18 -0500
+Date: Wed, 21 Jan 2015 15:10:09 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: <linux-next@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: tidy up of trees
+Message-ID: <20150121151009.0cb88a21@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
 MIME-Version: 1.0
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: Paul Moore <pmoore@redhat.com>, Sabrina Dubroca <sd@queasysnail.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-audit@redhat.com, Richard Guy Briggs <rgb@redhat.com>
-Subject: Re: linux-next: Tree for Jan 20 -- Kernel panic - Unable to mount
- root fs
-References: <20150120165655.GA10904@kria> <20150120232726.GA16913@kria> <1517211.UYLV49hvpg@sifl> <1528536.jyty2pu4Mz@sifl> <20150121004117.GM29656@ZenIV.linux.org.uk> <54BF1292.2080902@roeck-us.net> <20150121033600.GN29656@ZenIV.linux.org.uk>
-In-Reply-To: <20150121033600.GN29656@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020203.54BF24BD.0058,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 4
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/049JUzqsR+tEC6nh5fa6big"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2015 07:36 PM, Al Viro wrote:
-> On Tue, Jan 20, 2015 at 06:44:34PM -0800, Guenter Roeck wrote:
->>> The shit hits the fan earlier - when we end up missing /dev.  There are
->>> two places where it could've been created (depending on CONFIG_BLK_DEV_INITRD);
->>> 	sys_mkdir(collected, mode);
->>> in init/initramfs.c (line 353 in linux-next) and
->>>          err = sys_mkdir((const char __user __force *) "/dev", 0755);
->>> in init/noinitramfs.c (line 32).  The latter would've screamed on failure;
->>> could you printk of collected (%s), mode (%o) and return value (%d) in the
->>> former and see what happens?
->>>
->>
->> sys_mkdir .:40775 returned -17
->> sys_mkdir usr:40775 returned 0
->> sys_mkdir usr/lib:40775 returned -2
->> sys_mkdir usr/share:40755 returned -2
->> sys_mkdir usr/share/udhcpc:40755 returned -2
->> sys_mkdir usr/bin:40775 returned -2
->> sys_mkdir usr/sbin:40775 returned -2
->> sys_mkdir mnt:40775 returned 0
->> sys_mkdir proc:40775 returned 0
->> sys_mkdir root:40775 returned 0
->> sys_mkdir lib:40775 returned 0
->> sys_mkdir lib/modules:40775 returned -2
->> sys_mkdir lib/modules/3.9.2:40775 returned -2
->> sys_mkdir lib/modules/3.9.2/kernel:40775 returned -2
->>
->> with
->> 	int err = sys_mkdir(collected, mode);
->> 	pr_info("sys_mkdir %s:%o returned %d\n", collected, mode, err);
->> added in init/initramfs.c.
->
-> Just what is lib/modules/3.9.2 doing there?  In any case, I think I have at
+--Sig_/049JUzqsR+tEC6nh5fa6big
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Artifact from when I created the root file system (which apparently was with
-3.9.2). It is irrelevant for my testing, at least so far, so I never
-bothered fixing it.
+Hi all,
 
-> least a plausible direction for digging.  Look:
->
+[affected tree contacts are bcc'd on this email]
 
-> diff --git a/fs/namei.c b/fs/namei.c
-> index 323957f..c7d107c 100644
-> --- a/fs/namei.c
-> +++ b/fs/namei.c
+I have decided to do a bit of a tidy up of the trees in linux-next and
+my first pass is to remove any tree that has not been updated on over a
+year (since next-20140120).  The following 29 trees have been removed
+today (of these, 13 have not been updated for more than 2 years).  If
+you want a tree restored, just drop me a line - it is easy to do.
 
-With this patch:
+Most if the trees are empty, but for the others I have included a
+diffstat.
 
-sys_mkdir .:40775 returned -17
-sys_mkdir usr:40775 returned 0
-sys_mkdir usr/lib:40775 returned 0
-sys_mkdir usr/share:40755 returned 0
-sys_mkdir usr/share/udhcpc:40755 returned 0
-sys_mkdir usr/bin:40775 returned 0
-sys_mkdir usr/sbin:40775 returned 0
-sys_mkdir mnt:40775 returned 0
-sys_mkdir proc:40775 returned 0
-sys_mkdir root:40775 returned 0
-sys_mkdir lib:40775 returned 0
-sys_mkdir lib/modules:40775 returned 0
-...
+configfs
+Git URL: git://git.kernel.org/pub/scm/linux/kernel/git/jlbec/configfs.git#l=
+inux-next
 
-and the problem is fixed.
+cpupowerutils
+Git URL: git://git.kernel.org/pub/scm/linux/kernel/git/brodo/cpupowerutils.=
+git#master
 
-Guenter
+dwmw2
+Git URL: git://git.infradead.org/users/dwmw2/random-2.6.git#master
 
+embedded
+Git URL: git://git.infradead.org/embedded-2.6.git#master
+
+ep93xx
+Git URL: git://github.com/RyanMallon/linux-ep93xx.git#ep93xx-for-next
+ arch/arm/mach-ep93xx/Kconfig                 |   1 +
+ arch/arm/mach-ep93xx/core.c                  | 110 +++++++++++++++++++++++=
++++-
+ arch/arm/mach-ep93xx/include/mach/platform.h |   3 +-
+ 3 files changed, 111 insertions(+), 3 deletions(-)
+
+fbdev
+Git URL: git://git.kernel.org/pub/scm/linux/kernel/git/plagnioj/linux-fbdev=
+.git#for-next
+
+firmware
+Git URL: git://git.infradead.org/users/dwmw2/firmware-2.6.git#master
+
+fsnotify
+Git URL: git://git.infradead.org/users/eparis/notify.git#for-next
+
+fw-nohz
+Git URL: git://git.kernel.org/pub/scm/linux/kernel/git/frederic/linux-dynti=
+cks.git#nohz/next
+
+hwspinlock
+Git URL: git://github.com/ohadbc/hwspinlock-next.git#linux-next
+
+input-mt
+Git URL: git://github.com/rydberg/linux.git#for-next
+
+ixp4xx
+Git URL: git://git.kernel.org/pub/scm/linux/kernel/git/chris/linux.git#next
+
+kconfig
+Git URL: git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-kconfi=
+g.git#for-next
+
+logfs
+Git URL: git://github.com/prasad-joshi/logfs_upstream.git#master
+ fs/logfs/dev_mtd.c | 2 +-
+ fs/logfs/super.c   | 6 +++---
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+lzo-update
+Git URL: git://github.com/markus-oberhumer/linux.git#lzo-update
+ lib/lzo/lzo1x_decompress_safe.c | 4 ++++
+ lib/lzo/lzodefs.h               | 6 ++++++
+ 2 files changed, 10 insertions(+)
+
+md-current
+Git URL: git://neil.brown.name/md#for-linus
+
+msm
+Git URL: git://git.kernel.org/pub/scm/linux/kernel/git/davidb/linux-msm.git=
+#for-next
+
+omfs
+Git URL: git://github.com/bcopeland/omfs.git#for-next
+
+openrisc
+Git URL: git://openrisc.net/jonas/linux#for-upstream
+
+oprofile
+Git URL: git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git#fo=
+r-next
+
+parisc
+Git URL: git://git.kernel.org/pub/scm/linux/kernel/git/jejb/parisc-2.6.git#=
+for-next
+
+pcmcia
+Git URL: git://git.kernel.org/pub/scm/linux/kernel/git/brodo/pcmcia.git#mas=
+ter
+
+signal
+Git URL: git://git.kernel.org/pub/scm/linux/kernel/git/viro/signal.git#for-=
+next
+
+sysctl
+Git URL: git://git.kernel.org/pub/scm/linux/kernel/git/ebiederm/sysctl.git#=
+master
+
+uclinux
+Git URL: git://git.kernel.org/pub/scm/linux/kernel/git/gerg/uclinux.git#for=
+-next
+
+uml
+Git URL: git://git.kernel.org/pub/scm/linux/kernel/git/rw/uml.git#next
+ arch/um/include/asm/Kbuild                  |   1 +
+ arch/um/include/asm/processor-generic.h     |   3 -
+ arch/um/include/shared/os.h                 |   2 -
+ arch/um/include/shared/skas/proc_mm.h       |  44 ------
+ arch/um/include/shared/skas/skas.h          |   3 -
+ arch/um/include/shared/skas_ptrace.h        |  14 --
+ arch/um/kernel/ptrace.c                     |  32 ----
+ arch/um/kernel/reboot.c                     |  35 ++---
+ arch/um/kernel/skas/mmu.c                   |  68 +++------
+ arch/um/kernel/skas/process.c               |  27 ----
+ arch/um/kernel/trap.c                       |   2 +-
+ arch/um/kernel/um_arch.c                    |  10 --
+ arch/um/os-Linux/process.c                  |  16 --
+ arch/um/os-Linux/skas/mem.c                 | 100 ++----------
+ arch/um/os-Linux/skas/process.c             | 200 ++++++------------------
+ arch/um/os-Linux/start_up.c                 | 154 -------------------
+ arch/um/sys-ia64/sysdep/skas_ptrace.h       |  22 ---
+ arch/um/sys-ppc/shared/sysdep/skas_ptrace.h |  22 ---
+ arch/x86/um/ldt.c                           | 227 ++++++------------------=
+----
+ arch/x86/um/shared/sysdep/faultinfo_32.h    |   3 -
+ arch/x86/um/shared/sysdep/faultinfo_64.h    |   3 -
+ arch/x86/um/shared/sysdep/skas_ptrace.h     |  22 ---
+ 22 files changed, 149 insertions(+), 861 deletions(-)
+
+uprobes
+Git URL: git://github.com/srikard/linux.git#for-next
+
+viafb
+Git URL: git://github.com/schandinat/linux-2.6.git#viafb-next
+
+writeback
+Git URL: git://git.kernel.org/pub/scm/linux/kernel/git/wfg/linux.git#writeb=
+ack-for-next
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/049JUzqsR+tEC6nh5fa6big
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUvyanAAoJEMDTa8Ir7ZwV+SsP/2i0QOH0OPg3WVJlWwOx/XO7
+MxdXxyKkNoMSaSrY0RcAaPwbYM8pem8utLds7sBTc6wQIvshZ+qXH6i0QaxC97h6
+NkZT+/PF5i1PcI5P/DFV1tO7lWDDK3JSjpnFicftEjZFXPsBH1mDIZJVjn27B620
+FtJBJPNR5wpXUXJSy/Qz7vIvSO2PDMk7DQN4OwVDw2nBig6Uzlubw228/cxxKR4k
+tDCxD1h+PfQKhfI0AepsHoDmx5cru3vIG5kOfZ6QklkoXXry98RGAalrKN9OBh9W
+i5JOFSSCEvHF9UwrO4j6u05h3QIQi+EeTO7T95Np++y+kkgQ43prdqXXl3JLse3/
+uEbsnZ7K7Qx7gNIp155WHzo0C5h5ZKTX5FoLXA3ruSdO9W9JbTH6bQnwZw2Gczmv
+2kyCLN3zs6DO+zzjxwlVDktum0umiEqM1oZBIOPbrTip0cZ0w3Dxwn708KP5/AXM
+gWND1Me9jfucnHqu2bEwHDOJIcsFTilM13tkqa9icC1g5McTeWA9S+MKcozgnk2h
+Nw68hi3mewzG5UynFNHwLUKZfphzSZlpmuHWcR09aLduKb/Yhu4GyTFSfA7MMpRM
+R0G1IewnqtODXFbvlKis8ZL2c3D9TwhFmcTEOPIwUv1MWJ4fqqrNxgJBJfC3nKMU
+4M0WPDEL4MLHNoFh52sc
+=Z2Vy
+-----END PGP SIGNATURE-----
+
+--Sig_/049JUzqsR+tEC6nh5fa6big--
