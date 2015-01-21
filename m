@@ -1,359 +1,315 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752461AbbAUI7p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 03:59:45 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37926 "EHLO mx1.redhat.com"
+	id S1752519AbbAUJA7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 04:00:59 -0500
+Received: from mga09.intel.com ([134.134.136.24]:42623 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750813AbbAUI7d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 03:59:33 -0500
-Date: Wed, 21 Jan 2015 16:58:27 +0800
-From: Fam Zheng <famz@redhat.com>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Andy Lutomirski <luto@amacapital.net>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        David Drysdale <drysdale@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Vivek Goyal <vgoyal@redhat.com>, Mike Frysinger <vapier@gentoo.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        Hugh Dickins <hughd@google.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-api@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: [PATCH RFC 5/6] epoll: Add implementation for epoll_mod_wait
-Message-ID: <20150121085827.GB23024@ad.nay.redhat.com>
-References: <1421747878-30744-1-git-send-email-famz@redhat.com>
- <1421747878-30744-6-git-send-email-famz@redhat.com>
- <54BE4F1D.7090807@gmail.com>
- <20150121045903.GA2858@fam-t430.nay.redhat.com>
- <54BF5ACE.6030206@gmail.com>
+	id S1750950AbbAUJAv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 04:00:51 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,440,1418112000"; 
+   d="scan'208";a="665110585"
+Date: Wed, 21 Jan 2015 10:58:39 +0200
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        Baolu Lu <baolu.lu@linux.intel.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] usb: dwc3: add ULPI interface support
+Message-ID: <20150121085839.GA22716@kuha.fi.intel.com>
+References: <1421745502-169447-1-git-send-email-heikki.krogerus@linux.intel.com>
+ <1421745502-169447-3-git-send-email-heikki.krogerus@linux.intel.com>
+ <20150120152337.GA8988@saruman>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <54BF5ACE.6030206@gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20150120152337.GA8988@saruman>
 User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 01/21 08:52, Michael Kerrisk (man-pages) wrote:
-> Hello Fam Zheng,
+On Tue, Jan 20, 2015 at 09:23:37AM -0600, Felipe Balbi wrote:
+> Hi,
 > 
-> On 01/21/2015 05:59 AM, Fam Zheng wrote:
-> > On Tue, 01/20 13:50, Michael Kerrisk (man-pages) wrote:
-> >> Hello Fam Zheng,
-> >>
-> >> On 01/20/2015 10:57 AM, Fam Zheng wrote:
-> >>> This syscall is a sequence of
-> >>>
-> >>> 1) a number of epoll_ctl calls
-> >>> 2) a epoll_pwait, with timeout enhancement.
-> >>>
-> >>> The epoll_ctl operations are embeded so that application doesn't have to use
-> >>> separate syscalls to insert/delete/update the fds before poll. It is more
-> >>> efficient if the set of fds varies from one poll to another, which is the
-> >>> common pattern for certain applications. 
-> >>
-> >> Which applications? Could we have some specific examples? This is a 
-> >> complex API, and it needs good justification.
+> On Tue, Jan 20, 2015 at 11:18:21AM +0200, Heikki Krogerus wrote:
+> > Registers ULPI interface with the ULPI bus if HSPHY type is
+> > ULPI.
 > > 
-> > OK, I'll explain more in v2.
+> > Signed-off-by: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> > Cc: Felipe Balbi <balbi@ti.com>
 > 
-> Okay.
+> you're doing quite a bit in a single patch...
 > 
-> [...]
-> 
-> >>> The only complexity is returning the result of each operation.  For each
-> >>> epoll_mod_cmd in cmds, the field "error" is an output field that will be stored
-> >>> the return code *iff* the command is executed (0 for success and -errno of the
-> >>> equivalent epoll_ctl call), and will be left unchanged if the command is not
-> >>> executed because some earlier error, for example due to failure of
-> >>> copy_from_user to copy the array.
-> >>>
-> >>> Applications can utilize this fact to do error handling: they could initialize
-> >>> all the epoll_mod_wait.error to a positive value, which is by definition not a
-> >>> possible output value from epoll_mod_wait. Then when the syscall returned, they
-> >>> know whether or not the command is executed by comparing each error with the
-> >>> init value, if they're different, they have the result of the command.
-> >>> More roughly, they can put any non-zero and not distinguish "not run" from
-> >>> failure.
-> >>
-> >> The "cmds' are not executed in a specified order plus the need to
-> >> initialize the 'errors' fields to a positive value feels a bit ugly.
-> >> And indeed the whole "command list was only partially run" case
-> >> is not pretty. Am I correct to understand that if an error is found
-> >> during execution of one of the "epoll_ctl" commands in 'cmds' then
-> >> the system call will return -1 with errno set, indicating an error,
-> >> even though the epoll interest list may have changed because some
-> >> of the earlier 'cmds' executed successfully? This all seems a bit of
-> >> a headache for user space.
+> > ---
+> >  drivers/usb/dwc3/Kconfig  |   7 ++++
+> >  drivers/usb/dwc3/Makefile |   4 ++
+> >  drivers/usb/dwc3/core.c   |   9 +++-
+> >  drivers/usb/dwc3/core.h   |  22 ++++++++++
+> >  drivers/usb/dwc3/ulpi.c   | 102 ++++++++++++++++++++++++++++++++++++++++++++++
+> >  5 files changed, 143 insertions(+), 1 deletion(-)
+> >  create mode 100644 drivers/usb/dwc3/ulpi.c
 > > 
-> > This is the trade-off for batching. The best we can do is probably make this
-> > transactional: none or all of the commands succeeds. It will require a much
-> > more complex implementation, though. 
+> > diff --git a/drivers/usb/dwc3/Kconfig b/drivers/usb/dwc3/Kconfig
+> > index 58b5b2c..6d0c5e6 100644
+> > --- a/drivers/usb/dwc3/Kconfig
+> > +++ b/drivers/usb/dwc3/Kconfig
+> > @@ -11,6 +11,13 @@ config USB_DWC3
+> >  
+> >  if USB_DWC3
+> >  
+> > +config USB_DWC3_ULPI
+> > +	bool "Provide ULPI PHY Interface"
+> > +	depends on ULPI_PHY=y || ULPI_PHY=USB_DWC3
+> > +	help
+> > +	  Select this if you have ULPI type PHY attached to your DWC3
+> > +	  controller.
+> > +
+> >  choice
+> >  	bool "DWC3 Mode Selection"
+> >  	default USB_DWC3_DUAL_ROLE if (USB && USB_GADGET)
+> > diff --git a/drivers/usb/dwc3/Makefile b/drivers/usb/dwc3/Makefile
+> > index bb34fbc..2fc44e0 100644
+> > --- a/drivers/usb/dwc3/Makefile
+> > +++ b/drivers/usb/dwc3/Makefile
+> > @@ -16,6 +16,10 @@ ifneq ($(filter y,$(CONFIG_USB_DWC3_GADGET) $(CONFIG_USB_DWC3_DUAL_ROLE)),)
+> >  	dwc3-y				+= gadget.o ep0.o
+> >  endif
+> >  
+> > +ifneq ($(CONFIG_USB_DWC3_ULPI),)
+> > +	dwc3-y				+= ulpi.o
+> > +endif
+> > +
+> >  ifneq ($(CONFIG_DEBUG_FS),)
+> >  	dwc3-y				+= debugfs.o
+> >  endif
+> > diff --git a/drivers/usb/dwc3/core.c b/drivers/usb/dwc3/core.c
+> > index 25ddc39..5219bc7 100644
+> > --- a/drivers/usb/dwc3/core.c
+> > +++ b/drivers/usb/dwc3/core.c
+> > @@ -876,12 +876,17 @@ static int dwc3_probe(struct platform_device *pdev)
+> >  	dwc->hird_threshold = hird_threshold
+> >  		| (dwc->is_utmi_l1_suspend << 4);
+> >  
+> > +	platform_set_drvdata(pdev, dwc);
+> > +
+> > +	ret = dwc3_ulpi_init(dwc);
+> > +	if (ret)
+> > +		return ret;
+> > +
+> >  	ret = dwc3_core_get_phy(dwc);
+> >  	if (ret)
+> >  		return ret;
+> >  
+> >  	spin_lock_init(&dwc->lock);
+> > -	platform_set_drvdata(pdev, dwc);
 > 
-> Transactional would be more comfortable for user-space, and while I 
-> can see that it would be complex to implement, perhaps the greater
-> point might be that the implementation is CPU expensive.
+> why do you need to move this ? Looks like this should be a cleanup and
+> split into a single patch.
 
-Good point.
+OK.
 
-> 
-> > But even with that, the error reporting on
-> > which command failed is a complication.
-> 
-> My suggestions below could make the error reporting much simpler...
-> 
-> >> I have a couple of questions:
-> >>
-> >> Q1. I can see that batching "epoll_ctl" commands might be useful,
-> >> since it results in fewer systems calls. But, does it really
-> >> need to be bound together with the "epoll_pwait" functionality?
-> >> (Perhaps this point was covered in previous discussions, but
-> >> neither the message accompanying this patch nor the 0/6 man page
-> >> provide a compelling rationale for the need to bind these two
-> >> operations together.)
-> >>
-> >> Yes, I realize you might save a system call, but it makes for a
-> >> cumbersome API that has the above headache, and also forces the 
-> >> need for double pointer indirection in the 'spec' argument (i.e., 
-> >> spec is a pointer to an array of structures where each element
-> >> in turn includes an 'events' pointer that points to another array).
-> >>
-> >> Why not a simpler API with two syscalls such as:
-> >>
-> >> epoll_ctl_batch(int epfd, int flags,
-> >>                 int ncmds, struct epoll_mod_cmd *cmds);
-> >>
-> >> epoll_pwait1(int epfd, struct epoll_event *events, int maxevents, 
-> >>              struct timespec *timeout, int clock_id, 
-> >>              const sigset_t *sigmask, size_t sigsetsize);
-> > 
-> > The problem is that there is no room for flags field in epoll_pwait1, which is
-> > asked for, in previous discussion thread [1].
-> 
-> Ahh yes, I certainly should not have forgotten that. But that's easily solved.
-> Do as for pselect6():
-> 
-> strcut sigargs {
->     const sigset_t *ss;
->     size_t          ss_len; /* Size (in bytes) of object pointed
->                                to by 'ss' */
-> }
-> 
-> epoll_pwait1(int epfd, struct epoll_event *events, int maxevents, 
->              struct timespec *timeout, int clock_id, int flags,
->              int timeout,
->              const struct sigargs *sargs);
-> 
-> > I don't see epoll_mod_wait as a *significantly more* complicated interface
-> > compared to epoll_ctl_batch and epoll_pwait1 above. 
-> 
-> My biggest problem with epoll_ctl_wait() is the complexity of error 
-> handling. epoll_ctl_batch and epoll_pwait1 would simplify that, as I 
-> note below.
-> 
-> Aside from that, I do think that epoll_ctl_wait() passes a certain
-> threshold of complexity that warrants good justification, which
-> I haven't really seen yet.
+> it also appears that you need another patch moving dwc3_cache_hwparams()
+> before all of these other calls, so you can use it from
+> dwc3_ulpi_init().
 
-OK, see below.
+OK.
 
+> > @@ -965,6 +970,7 @@ err1:
+> >  
+> >  err0:
+> >  	dwc3_free_event_buffers(dwc);
+> > +	dwc3_ulpi_exit(dwc);
+> >  
+> >  	return ret;
+> >  }
+> > @@ -984,6 +990,7 @@ static int dwc3_remove(struct platform_device *pdev)
+> >  	phy_power_off(dwc->usb3_generic_phy);
+> >  
+> >  	dwc3_core_exit(dwc);
+> > +	dwc3_ulpi_exit(dwc);
+> >  
+> >  	pm_runtime_put_sync(&pdev->dev);
+> >  	pm_runtime_disable(&pdev->dev);
+> > diff --git a/drivers/usb/dwc3/core.h b/drivers/usb/dwc3/core.h
+> > index 0842aa8..f6881a6 100644
+> > --- a/drivers/usb/dwc3/core.h
+> > +++ b/drivers/usb/dwc3/core.h
+> > @@ -32,6 +32,7 @@
+> >  #include <linux/usb/otg.h>
+> >  
+> >  #include <linux/phy/phy.h>
+> > +#include <linux/phy/ulpi/interface.h>
+> >  
+> >  #define DWC3_MSG_MAX	500
+> >  
+> > @@ -174,6 +175,14 @@
+> >  #define DWC3_GUSB2PHYCFG_PHYSOFTRST	(1 << 31)
+> >  #define DWC3_GUSB2PHYCFG_SUSPHY		(1 << 6)
+> >  
+> > +/* Global USB2 PHY Vendor Control Register */
+> > +#define DWC3_GUSB2PHYACC_NEWREGREQ	(1 << 25)
+> > +#define DWC3_GUSB2PHYACC_BUSY		(1 << 23)
+> > +#define DWC3_GUSB2PHYACC_WRITE		(1 << 22)
+> > +#define DWC3_GUSB2PHYACC_ADDR(n)	(n << 16)
+> > +#define DWC3_GUSB2PHYACC_EXTEND_ADDR(n)	(n << 8)
+> > +#define DWC3_GUSB2PHYACC_DATA(n)	(n & 0xff)
 > 
-> > In epoll_mod_wait, if you
-> > leave out ncmds and cmds, it is effectively a poll without batch; and if
-> > leaving out spec, it is effectively a batch without poll.
-> > 
-> > The most important change here is the timeout. IMO I wouldn't mind leaving out
-> > batching. Integrating it is requested by Andy:
-> > 
-> > [1]: http://thread.gmane.org/gmane.linux.kernel/1861430/focus=91591
-> > 
-> > which also made sense to me; I do have a patch in QEMU to call epoll_ctl for a
-> > number of times right before epoll_wait.
-> > 
-> > [Sorry for not putting anything into cover letter changelog, but it is also
-> > interesting to see people's reaction on the patch itself without bias of
-> > others' opinions. This indeed brings in more points. :]
+> separate patch
+
+OK.
+
+> > @@ -590,6 +599,7 @@ struct dwc3_hwparams {
+> >  #define DWC3_NUM_INT(n)		(((n) & (0x3f << 15)) >> 15)
+> >  
+> >  /* HWPARAMS3 */
+> > +#define DWC3_ULPI_HSPHY		(1 << 3)
 > 
-> But it also has the downside that the same discussions
-> may be repeated.
-
-Yes, that's why I definitely do it for any version that is > v1.
-
+> you also need a patch which defines this bit of HWPARAMS3. This is also
+> the wrong definition. Which core revision do you have ? I can see that
+> bit 3 is part of a 2 bit field called:
 > 
-> >> This gives us much of the benefit of reducing system calls, but 
-> >> with greater simplicity. And epoll_ctl_batch() could simply return
-> >> the number of 'cmds' that were successfully executed.)
-> >>
-> >> Q2. In the man page in 0/6 you said that the 'cmds' were not 
-> >> guaranteed to be executed in order. Why not? If you did provide
-> >> such a guarantee, then, when using your current epoll_mod_wait(),
-> >> user space could do the following:
-> > 
-> > I guess we can make a guarentee on that.
+> DWC_USB3_HSPHY_INTERFACE
+
+I have the same in my databook. I agree, it's not good like that.
+
+> moreover, there are systems which have both ULPI and UTMI enabled and
+> you can't really know which one the PHY is using.
 > 
-> I'm puzzled by that response. Surely you *must* guarantee it.
-> If there's no defined order, then if the batch includes multiple 
-> commands that operate on the same FD, the result is undefined 
-> unless you provide that guarantee. (Unless, of course, you want to
-> explicitly specify that using the same FD multiple times in the
-> batch gives undefined behavior.)
+> This needs a bit more thought.
 
-OK. Then let's guarentee it.
+Sure, I'll think of something better for this.
 
+> >  #define DWC3_NUM_IN_EPS_MASK	(0x1f << 18)
+> >  #define DWC3_NUM_EPS_MASK	(0x3f << 12)
+> >  #define DWC3_NUM_EPS(p)		(((p)->hwparams3 &		\
+> > @@ -739,6 +749,8 @@ struct dwc3 {
+> >  	struct phy		*usb2_generic_phy;
+> >  	struct phy		*usb3_generic_phy;
+> >  
+> > +	struct ulpi		*ulpi;
+> > +
+> >  	void __iomem		*regs;
+> >  	size_t			regs_size;
+> >  
+> > @@ -1035,4 +1047,14 @@ static inline int dwc3_gadget_resume(struct dwc3 *dwc)
+> >  }
+> >  #endif /* !IS_ENABLED(CONFIG_USB_DWC3_HOST) */
+> >  
+> > +#if IS_ENABLED(CONFIG_USB_DWC3_ULPI)
+> > +int dwc3_ulpi_init(struct dwc3 *dwc);
+> > +void dwc3_ulpi_exit(struct dwc3 *dwc);
+> > +#else
+> > +static inline int dwc3_ulpi_init(struct dwc3 *dwc)
+> > +{ return 0; }
+> > +static inline void dwc3_ulpi_exit(struct dwc3 *dwc)
+> > +{ }
+> > +#endif
+> > +
+> >  #endif /* __DRIVERS_USB_DWC3_CORE_H */
+> > diff --git a/drivers/usb/dwc3/ulpi.c b/drivers/usb/dwc3/ulpi.c
+> > new file mode 100644
+> > index 0000000..ee3ebbe
+> > --- /dev/null
+> > +++ b/drivers/usb/dwc3/ulpi.c
+> > @@ -0,0 +1,102 @@
+> > +/**
+> > + * ulpi.c - DesignWare USB3 Controller's ULPI PHY interface
+> > + *
+> > + * Copyright (C) 2015 Intel Corporation
+> > + *
+> > + * Author: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify
+> > + * it under the terms of the GNU General Public License version 2 as
+> > + * published by the Free Software Foundation.
+> > + */
+> > +
+> > +#include <linux/phy/ulpi/regs.h>
+> > +
+> > +#include "core.h"
+> > +#include "io.h"
+> > +
+> > +#define DWC3_ULPI_ADDR(a) \
+> > +		((a >= ULPI_EXT_VENDOR_SPECIFIC) ? \
+> > +		DWC3_GUSB2PHYACC_ADDR(ULPI_ACCESS_EXTENDED) | \
+> > +		DWC3_GUSB2PHYACC_EXTEND_ADDR(a) : DWC3_GUSB2PHYACC_ADDR(a))
+> > +
+> > +static int dwc3_ulpi_busyloop(struct dwc3 *dwc)
+> > +{
+> > +	unsigned count = 1000;
+> > +	u32 reg;
+> > +
+> > +	while (count--) {
+> > +		reg = dwc3_readl(dwc->regs, DWC3_GUSB2PHYACC(0));
+> > +		if (!(reg & DWC3_GUSB2PHYACC_BUSY))
+> > +			return 0;
 > 
-> >> 1. Initialize the cmd.errors fields to zero.
-> >> 2. Call epoll_ctl_mod()
-> >> 3. Iterate through cmd.errors looking for the first nonzero 
-> >>    field.
-> > 
-> > It's close, but zero is not good enough, if copy_from_user of cmds failed in
-> > the first place. Impossible value, or error value, will be safer.
+> this could use a cpu_relax();
+
+Agreed.
+
+> > +	}
+> > +
+> > +	return -ETIMEDOUT;
+> > +}
+> > +
+> > +static int dwc3_ulpi_read(struct ulpi_ops *ops, u8 addr)
+> > +{
+> > +	struct dwc3 *dwc = dev_get_drvdata(ops->dev);
+> > +	u32 reg;
+> > +	int ret;
+> > +
+> > +	reg = DWC3_GUSB2PHYACC_NEWREGREQ | DWC3_ULPI_ADDR(addr);
+> > +	dwc3_writel(dwc->regs, DWC3_GUSB2PHYACC(0), reg);
+> > +
+> > +	ret = dwc3_ulpi_busyloop(dwc);
+> > +	if (ret)
+> > +		return ret;
+> > +
+> > +	reg = dwc3_readl(dwc->regs, DWC3_GUSB2PHYACC(0));
+> > +
+> > +	return DWC3_GUSB2PHYACC_DATA(reg);
+> > +}
+> > +
+> > +static int dwc3_ulpi_write(struct ulpi_ops *ops, u8 addr, u8 val)
+> > +{
+> > +	struct dwc3 *dwc = dev_get_drvdata(ops->dev);
+> > +	u32 reg;
+> > +	int ret;
+> > +
+> > +	reg = DWC3_GUSB2PHYACC_NEWREGREQ | DWC3_ULPI_ADDR(addr);
+> > +	reg |= DWC3_GUSB2PHYACC_WRITE | val;
+> > +	dwc3_writel(dwc->regs, DWC3_GUSB2PHYACC(0), reg);
+> > +
+> > +	ret = dwc3_ulpi_busyloop(dwc);
+> > +	if (ret)
+> > +		return ret;
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static struct ulpi_ops dwc3_ulpi = {
+> > +	.read = dwc3_ulpi_read,
+> > +	.write = dwc3_ulpi_write,
+> > +};
+> > +
+> > +int dwc3_ulpi_init(struct dwc3 *dwc)
+> > +{
+> > +	int ret;
+> > +
+> > +	/* First check if there is ULPI PHY */
+> > +	ret = dwc3_readl(dwc->regs, DWC3_GHWPARAMS3);
+> > +	if (!(ret & DWC3_ULPI_HSPHY))
+> > +		return 0;
 > 
-> See my comment in the earlier mail. If you split this into two 
-> APIs, and epoll_ctl_batch() is guaranteed to execute 'cmds' in order, 
-> then the return value of epoll_ctl_batch() could be used to tell
-> user space how many commands succeeded. Much simpler!
+> should use the cached structure.
 
-Yes it is much simpler. However the reason to add batching in the first place is
-to make epoll faster, by reducing syscalls. Splitting makes the result
-sub-optimal: we still need at least 2 calls instead of 1.  Each one of the three
-proposed new call *is* a step forward, but I don't think we will have everything
-solved even by implementing them all. Compromise needed between performance or
-complexity.
+Sure.
 
-My take for simplicity will be leaving epoll_ctl as-is, and my take for
-performance will be epoll_pwait1. And I don't really like putting my time on
-epoll_ctl_batch, thinking it as a ambivalent compromise in between.
-
-Andy, will you be OK with the above epoll_pwait1? Or do you have more
-justifications for epoll_mod_and_wait?
-
-> 
-> >>> Also, timeout parameter is enhanced: timespec is used, compared to the old ms
-> >>> scalar. This provides higher precision. 
-> >>
-> >> Yes, that change seemed inevitable. It slightly puzzled me at the time when
-> >> Davide Libenzi added epoll_wait() that the timeout was milliseconds, even
-> >> though pselect() already had demonstrated the need for higher precision.
-> >> I should have called it out way back then :-{.
-> >>
-> >>> The parameter field in struct
-> >>> epoll_wait_spec, "clockid", also makes it possible for users to use a different
-> >>> clock than the default when it makes more sense.
-> >>>
-> >>> Signed-off-by: Fam Zheng <famz@redhat.com>
-> >>> ---
-> >>>  fs/eventpoll.c           | 60 ++++++++++++++++++++++++++++++++++++++++++++++++
-> >>>  include/linux/syscalls.h |  5 ++++
-> >>>  2 files changed, 65 insertions(+)
-> >>>
-> >>> diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-> >>> index e7a116d..2cc22c9 100644
-> >>> --- a/fs/eventpoll.c
-> >>> +++ b/fs/eventpoll.c
-> >>> @@ -2067,6 +2067,66 @@ SYSCALL_DEFINE6(epoll_pwait, int, epfd, struct epoll_event __user *, events,
-> >>>  			      sigmask ? &ksigmask : NULL);
-> >>>  }
-> >>>  
-> >>> +SYSCALL_DEFINE5(epoll_mod_wait, int, epfd, int, flags,
-> >>> +		int, ncmds, struct epoll_mod_cmd __user *, cmds,
-> >>> +		struct epoll_wait_spec __user *, spec)
-> >>> +{
-> >>> +	struct epoll_mod_cmd *kcmds = NULL;
-> >>> +	int i, ret = 0;
-> >>> +	int cmd_size = sizeof(struct epoll_mod_cmd) * ncmds;
-> >>> +
-> >>> +	if (flags)
-> >>> +		return -EINVAL;
-> >>> +	if (ncmds) {
-> >>> +		if (!cmds)
-> >>> +			return -EINVAL;
-> >>> +		kcmds = kmalloc(cmd_size, GFP_KERNEL);
-> >>> +		if (!kcmds)
-> >>> +			return -ENOMEM;
-> >>> +		if (copy_from_user(kcmds, cmds, cmd_size)) {
-> >>> +			ret = -EFAULT;
-> >>> +			goto out;
-> >>> +		}
-> >>> +	}
-> >>> +	for (i = 0; i < ncmds; i++) {
-> >>> +		struct epoll_event ev = (struct epoll_event) {
-> >>> +			.events = kcmds[i].events,
-> >>> +			.data = kcmds[i].data,
-> >>> +		};
-> >>> +		if (kcmds[i].flags) {
-> >>> +			kcmds[i].error = ret = -EINVAL;
-> >>
-> >> To make the 'ret' change a little more obvious, maybe it's better to write
-> >>
-> >> 			ret = kcmds[i].error = -EINVAL;
-> >>
-> >>> +			goto out;
-> >>> +		}
-> >>> +		kcmds[i].error = ret = ep_ctl_do(epfd, kcmds[i].op, kcmds[i].fd, ev);
-> >>
-> >> Likewise:
-> >> 		ret = kcmds[i].error = ep_ctl_do(epfd, kcmds[i].op, kcmds[i].fd, ev);
-> >>
-> >>> +		if (ret)
-> >>> +			goto out;
-> >>> +	}
-> >>> +	if (spec) {
-> >>> +		sigset_t ksigmask;
-> >>> +		struct epoll_wait_spec kspec;
-> >>> +		ktime_t timeout;
-> >>> +
-> >>> +		if(copy_from_user(&kspec, spec, sizeof(struct epoll_wait_spec)))
-> >>
-> >> Cosmetic point: s/if(/if (/
-> >>
-> >>> +			return -EFAULT;
-> >>> +		if (kspec.sigmask) {
-> >>> +			if (kspec.sigsetsize != sizeof(sigset_t))
-> >>> +				return -EINVAL;
-> >>> +			if (copy_from_user(&ksigmask, kspec.sigmask, sizeof(ksigmask)))
-> >>> +				return -EFAULT;
-> >>> +		}
-> >>> +		timeout = timespec_to_ktime(kspec.timeout);
-> >>> +		ret = epoll_pwait_do(epfd, kspec.events, kspec.maxevents,
-> >>> +				     kspec.clockid, timeout,
-> >>> +				     kspec.sigmask ? &ksigmask : NULL);
-> >>
-> >> If I understand correctly, the implementation means that the
-> >> 'size_t sigsetsize' field will probably need to be exposed to 
-> >> applications. In the existing epoll_pwait() call (as in  ppoll()
-> >> and pselect()) the 'size_t sigsetsize' argument is hidden by glibc.
-> >> However, unless we expect glibc to do some structure copying to/from
-> >> a structure that hides this field, then we're going end up exposing
-> >> 'size_t sigsetsize' to applications. (This could be avoided, if we
-> >> split the API as I suggest above. glibc would do the same thing 
-> >> in epoll_pwait1() that it currently does in epoll_pwait().)
-> 
-> You missed responding to this point; I think it matters.
-> (There were also some other points to consider in my reply 
-> to your 0/6 mail.)
-> 
-
-My bad, something I typed when replying went into /dev/null for unknown reasons,
-what I had was:
-
-This should be easy to solve: glibc can be responsible for building spec, and
-applications will do something like:
-
-	epoll_mod_wait(epfd, ncmds, cmds, maxevents, events, clockid,
-		       timeout, sigmask);
 
 Thanks,
-Fam
+
+-- 
+heikki
