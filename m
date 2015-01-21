@@ -1,78 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892AbbAUTPo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 14:15:44 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:57706 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751782AbbAUTPg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 14:15:36 -0500
-Date: Wed, 21 Jan 2015 19:15:31 +0000
-From: Liviu Dudau <Liviu.Dudau@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Andrew Jackson <Andrew.Jackson@arm.com>,
-        "airlied@linux.ie" <airlied@linux.ie>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "moinejf@free.fr" <moinejf@free.fr>
-Subject: Re: [PATCH v2] drm/i2c: tda998x: Set the CEC I2C address based on
- the slave I2C address.
-Message-ID: <20150121191531.GJ10762@e106497-lin.cambridge.arm.com>
-References: <545C835D.1050008@arm.com>
- <20150121184405.GI10762@e106497-lin.cambridge.arm.com>
- <20150121184658.GX26493@n2100.arm.linux.org.uk>
+	id S1753949AbbAUTRU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 14:17:20 -0500
+Received: from mga02.intel.com ([134.134.136.20]:30062 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753297AbbAUTRL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 14:17:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,443,1418112000"; 
+   d="scan'208";a="673628423"
+Date: Wed, 21 Jan 2015 11:16:29 -0800
+From: Todd E Brandt <todd.e.brandt@linux.intel.com>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: linux-pm@vger.kernel.org, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jacob.jun.pan@linux.intel.com,
+        sameo@linux.intel.com, sre@kernel.org, dbaryshkov@gmail.com,
+        dwmw2@infradead.org, david.woodhouse@intel.com,
+        todd.e.brandt@intel.com
+Subject: Re: [PATCH 1/3] mfd/axp20x: change battery cell name to fuel gauge
+Message-ID: <20150121191629.GA15525@linux.intel.com>
+Reply-To: todd.e.brandt@linux.intel.com
+References: <20150107212450.GB3440@linux.intel.com>
+ <20150120114725.GI13701@x1>
 MIME-Version: 1.0
-In-Reply-To: <20150121184658.GX26493@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.22 (2013-10-16)
-X-OriginalArrivalTime: 21 Jan 2015 19:15:32.0430 (UTC) FILETIME=[A055BEE0:01D035AE]
-X-MC-Unique: 115012119153401401
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20150120114725.GI13701@x1>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 06:46:58PM +0000, Russell King - ARM Linux wrote:
-> On Wed, Jan 21, 2015 at 06:44:05PM +0000, Liviu Dudau wrote:
-> > On Fri, Nov 07, 2014 at 08:31:25AM +0000, Andrew Jackson wrote:
-> > > The I2C address for the TDA9989 and TDA19989 is fixed at 0x34
-> > > but the two LSBs of the TDA19988's address are set by two configuration
-> > > pins on the chip.  Irrespective of the chip, the associated CEC
-> > > peripheral's I2C address is based upon the main I2C address.
-> > > 
-> > > This patch avoids any special handling required to support
-> > > systems that contain multiple TDA19988 devices on the same
-> > > I2C bus.
-> > > 
-> > > Signed-off-by: Andrew Jackson <Andrew.Jackson@arm.com>
-> > > Signed-off-by: Liviu Dudau <Liviu.Dudau@arm.com>
-> > 
-> > Hi Andrew,
-> > 
-> > What is the status of this patch? Is it going to be pulled by anyone?
+On Tue, Jan 20, 2015 at 11:47:25AM +0000, Lee Jones wrote:
+> On Wed, 07 Jan 2015, Todd E Brandt wrote:
 > 
-> It's been sent to David.
+> > mfd/axp20x: change battery cell name to fuel gauge
+> > 
+> > Name changes to the battery cell structure to a
+> > more generic cell type: fuel gauge.
+> > 
+> > Signed-off-by: Todd Brandt <todd.e.brandt@intel.com>
+> > ----
+> >  drivers/mfd/axp20x.c | 10 +++++-----
+> >  1 file changed, 5 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/drivers/mfd/axp20x.c b/drivers/mfd/axp20x.c
+> > index b1b580a..e75717e 100644
+> > --- a/drivers/mfd/axp20x.c
+> > +++ b/drivers/mfd/axp20x.c
+> > @@ -87,7 +87,7 @@ static struct resource axp20x_pek_resources[] = {
+> >  	},
+> >  };
+> >  
+> > -static struct resource axp288_battery_resources[] = {
+> > +static struct resource axp288_fuel_gauge_resources[] = {
+> >  	{
+> >  		.start = AXP288_IRQ_QWBTU,
+> >  		.end   = AXP288_IRQ_QWBTU,
+> > @@ -236,7 +236,7 @@ static const struct i2c_device_id axp20x_i2c_id[] = {
+> >  };
+> >  MODULE_DEVICE_TABLE(i2c, axp20x_i2c_id);
+> >  
+> > -static const struct acpi_device_id axp20x_acpi_match[] = {
+> > +static struct acpi_device_id axp20x_acpi_match[] = {
+> 
+> Why have you dropped the cost qualifier here?
 
-Thanks, Russell!
+That's a bug, I shouldn't have removed the const qualifier, I'll submit a
+v2 patch with this change removed. Thanks for the catch.
 
-Liviu
-
+> 
+> [...]
 > 
 > -- 
-> FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
-> according to speedtest.net.
-> 
-
--- 
-====================
-| I would like to |
-| fix the world,  |
-| but they're not |
-| giving me the   |
- \ source code!  /
-  ---------------
-    ¯\_(ツ)_/¯
-
+> Lee Jones
+> Linaro STMicroelectronics Landing Team Lead
+> Linaro.org │ Open source software for ARM SoCs
+> Follow Linaro: Facebook | Twitter | Blog
