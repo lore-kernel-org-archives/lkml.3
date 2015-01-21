@@ -1,155 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753547AbbAUQN4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 11:13:56 -0500
-Received: from pluto.manitu.net ([217.11.48.9]:44015 "EHLO pluto.manitu.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751742AbbAUQNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 11:13:48 -0500
-To: "Ahmed S. Darwish" <darwish.07@gmail.com>
-Subject: Re: [PATCH v5 2/5] can: =?UTF-8?Q?kvaser=5Fusb=3A=20Consolidate?=  =?UTF-8?Q?=20and=20unify=20state=20change=20handling?=
-X-PHP-Originating-Script: 1000:func.inc
+	id S1753629AbbAUQPC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 11:15:02 -0500
+Received: from mail-pd0-f170.google.com ([209.85.192.170]:63968 "EHLO
+	mail-pd0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752449AbbAUQOv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 11:14:51 -0500
+Message-ID: <54BFD072.8000707@gmail.com>
+Date: Wed, 21 Jan 2015 21:44:42 +0530
+From: Varka Bhadram <varkabhadram@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
+To: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>,
+        Lee Jones <lee.jones@linaro.org>, Samuel Ortiz <sameo@linux.intel.com>,
+        Jonathan Cameron <jic23@kernel.org>, Hartmut Knaack <knaack.h@gmx.de>,
+        linux-iio@vger.kernel.org, Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-pm@vger.kernel.org,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Joe Perches <joe@perches.com>
+CC: linux-kernel@vger.kernel.org, support.opensource@diasemi.com
+Subject: Re: [PATCH v6 5/7] power: Add support for DA9150 Charger
+References: <cover.1421854282.git.Adam.Thomson.Opensource@diasemi.com> <d9c5c61443e266880cab3cbe7502142439fe9886.1421854282.git.Adam.Thomson.Opensource@diasemi.com>
+In-Reply-To: <d9c5c61443e266880cab3cbe7502142439fe9886.1421854282.git.Adam.Thomson.Opensource@diasemi.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
-Date: Wed, 21 Jan 2015 17:13:45 +0100
-From: Wolfgang Grandegger <wg@grandegger.com>
-Cc: Andri Yngvason <andri.yngvason@marel.com>,
-        Olivier Sobrie <olivier@sobrie.be>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20150121153647.GB17070@linux>
-References: <20141223154654.GB6460@vivalin-002>
- <20150120214409.GA16828@linux> <20150120214537.GB16828@linux>
- <20150121103319.14511.57709@shannon>
- <e5439ed067931dc01bda70592eb6ed52@grandegger.com>
- <20150121144323.GA17070@linux> <20150121150015.31351.6605@shannon>
- <20150121153647.GB17070@linux>
-Message-ID: <49707d45a389a1acb9ccec4295d05762@grandegger.com>
-User-Agent: RoundCube Webmail/0.2-beta
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Jan 2015 10:36:47 -0500, "Ahmed S. Darwish"
-<darwish.07@gmail.com> wrote:
-> On Wed, Jan 21, 2015 at 03:00:15PM +0000, Andri Yngvason wrote:
->> Quoting Ahmed S. Darwish (2015-01-21 14:43:23)
->> > Hi!
-> 
-> ...
-> 
->> > <-- Unplug the cable -->
->> > 
->> >  (000.009106)  can0  20000080   [8]  00 00 00 00 00 00 08 00  
->> >  ERRORFRAME
->> >         bus-error
->> >         error-counter-tx-rx{{8}{0}}
->> >  (000.001872)  can0  20000080   [8]  00 00 00 00 00 00 10 00  
 
-For a bus-errors I would also expcect some more information in the
-data[2..3] fields. But these are always zero.
+On Wednesday 21 January 2015 09:16 PM, Adam Thomson wrote:
+> This patch adds support for DA9150 Charger & Fuel-Gauge IC Charger.
+>
+> Signed-off-by: Adam Thomson <Adam.Thomson.Opensource@diasemi.com>
+> ---
 
->> >  ERRORFRAME
->> >         bus-error
->> >         error-counter-tx-rx{{16}{0}}
->> [...]
->> >         error-counter-tx-rx{{80}{0}}
->> >  (000.001910)  can0  20000080   [8]  00 00 00 00 00 00 58 00  
->> >  ERRORFRAME
->> >         bus-error
->> >         error-counter-tx-rx{{88}{0}}
->> >  (000.001753)  can0  20000084   [8]  00 08 00 00 00 00 60 00  
->> >  ERRORFRAME
->> >         controller-problem{tx-error-warning}
->> Good.
->> >         bus-error
->> >         error-counter-tx-rx{{96}{0}}
-> 
-> Nice.
-> 
->> >  (000.001720)  can0  20000080   [8]  00 00 00 00 00 00 68 00  
->> >  ERRORFRAME
->> >         bus-error
->> >         error-counter-tx-rx{{104}{0}}
->> >  (000.001876)  can0  20000080   [8]  00 00 00 00 00 00 70 00  
->> >  ERRORFRAME
->> >         bus-error
->> >         error-counter-tx-rx{{112}{0}}
->> >  (000.001749)  can0  20000080   [8]  00 00 00 00 00 00 78 00  
->> >  ERRORFRAME
->> >         bus-error
->> >         error-counter-tx-rx{{120}{0}}
->> >  (000.001771)  can0  20000084   [8]  00 20 00 00 00 00 80 00  
->> >  ERRORFRAME
->> >         controller-problem{tx-error-passive}
->> Also good.
->> >         bus-error
->> >         error-counter-tx-rx{{128}{0}}
-> 
-> Also nice :-)
-> 
->> >  (000.001868)  can0  20000080   [8]  00 00 00 00 00 00 80 00  
->> >  ERRORFRAME
->> >         bus-error
->> >         error-counter-tx-rx{{128}{0}}
->> >  (000.001982)  can0  20000080   [8]  00 00 00 00 00 00 80 00  
->> >  ERRORFRAME
->> >         bus-error
->> >         error-counter-tx-rx{{128}{0}}
->> > 
->> > (( Then a continous flood, exactly similar to the above packet,
->> > appears.
->> >    Unfortunately this flooding is a firmware problem. ))
->> > 
->> > <-- Replug the cable, after a good amount of time -->
->> >
->> Where are the reverse state transitions?
->> > 
-> 
-> Hmmm...
-> 
-> [ ... ]
->> 
->> Reverse state transitions are missing from the logs. See comments
-above.
->> 
-> 
-> When the device is on the _receiving_ end, and I unplug the CAN cable
-after
-> introducing some noise to the level of reaching WARNING or PASSIVE, I
-> receive a BUS_ERROR event with the rxerr count reset back to 0 or 1. In
-> that case, the driver correctly transitions back the state to
-ERROR_ACTIVE
-> and candump produces something similar to:
-> 
->     (000.000362)  can0  2000008C   [8]  00 40 40 00 00 00 00 01  
->     ERRORFRAME
->     controller-problem{}
->     protocol-violation{{back-to-error-active}{}}
->     bus-error
->     error-counter-tx-rx{{0}{1}}
-> 
-> which is, AFAIK, the correct behaviour from the driver side.
-> 
-> Meanwhile, when the device is on the _sending_ end and I re-plug the CAN
-> cable again. Sometimes I receive events with txerr reset to 0 or 1, and
-> the driver correctly reverts back to ERROR_ACTIVE in that case. But on
-> another times like the quoted case above, I don't receive any events
-> resetting txerr back -- only data packets on the bus.
+(...)
 
-Well, the firmware seems to report *only* bus-errors via
-CMD_CAN_ERROR_EVENT
-messages, also carrying the new state, but no CMD_CHIP_STATE_EVENT just
-for
-the state changes.
+> +static int da9150_charger_register_irq(struct platform_device *pdev,
+> +				       irq_handler_t handler,
+> +				       const char *irq_name)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	struct da9150_charger *charger = platform_get_drvdata(pdev);
+> +	int irq, ret;
+> +
+> +	irq = platform_get_irq_byname(pdev, irq_name);
+> +	if (irq < 0) {
+> +		dev_err(dev, "Failed to get IRQ CHG_STATUS: %d\n", irq);
+> +		return irq;
+> +	}
+> +
+> +	ret = request_threaded_irq(irq, NULL, handler, IRQF_ONESHOT, irq_name,
+> +				   charger);
 
-> So, What can the driver do given the above?
+Why don you use devm_* API..?
 
-Little if the notification does not come.
+> +	if (ret)
+> +		dev_err(dev, "Failed to request IRQ %d: %d\n", irq, ret);
+> +
+> +	return ret;
+> +}
+> +
+> +static void da9150_charger_unregister_irq(struct platform_device *pdev,
+> +					  const char *irq_name)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	struct da9150_charger *charger = platform_get_drvdata(pdev);
+> +	int irq;
+> +
+> +	irq = platform_get_irq_byname(pdev, irq_name);
+> +	if (irq < 0) {
+> +		dev_err(dev, "Failed to get IRQ CHG_STATUS: %d\n", irq);
+> +		return;
+> +	}
+> +
+> +	free_irq(irq, charger);
+> +}
+> +
+> +static int da9150_charger_probe(struct platform_device *pdev)
+> +{
+> +	struct device *dev = &pdev->dev;
+> +	struct da9150 *da9150 = dev_get_drvdata(dev->parent);
+> +	struct da9150_charger *charger;
+> +	struct power_supply *usb, *battery;
+> +	u8 reg;
+> +	int ret;
+> +
+> +	charger = devm_kzalloc(dev, sizeof(struct da9150_charger), GFP_KERNEL);
+> +	if (charger == NULL)
+> +		return -ENOMEM;
 
-Wolfgang.
+sizeof(struct da9150_charger) can be replaced with sizeof(*charger)...
+
+*!* operator can be used in comparison with NULL...
+
+(...)
+
+-- 
+Thanks and Regards,
+Varka Bhadram.
 
