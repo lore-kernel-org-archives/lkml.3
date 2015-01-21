@@ -1,69 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752539AbbAUJMv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 04:12:51 -0500
-Received: from mail-bl2on0121.outbound.protection.outlook.com ([65.55.169.121]:52304
-	"EHLO na01-bl2-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751974AbbAUJMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 04:12:45 -0500
-X-Greylist: delayed 906 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Jan 2015 04:12:45 EST
-Message-ID: <54BF69FC.9040607@freescale.com>
-Date: Wed, 21 Jan 2015 10:57:32 +0200
-From: Cristian Stoica <cristian.stoica@freescale.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1752384AbbAUI6U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 03:58:20 -0500
+Received: from mail-wi0-f173.google.com ([209.85.212.173]:52719 "EHLO
+	mail-wi0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751777AbbAUI6E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 03:58:04 -0500
+Message-ID: <54BF6A13.2090008@gmail.com>
+Date: Wed, 21 Jan 2015 09:57:55 +0100
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-To: Kim Phillips <kim.phillips@freescale.com>,
-        Herbert Xu <herbert@gondor.apana.org.au>
-CC: Tudor Ambarus <tudor.ambarus@freescale.com>,
-        <linux-crypto@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>, Marek Vasut <marex@denx.de>,
-        Horia Geanta <horia.geanta@freescale.com>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] crypto: caam - don't emit ICV check failures to dmesg
-References: <1414686811-6527-1-git-send-email-tudor.ambarus@freescale.com>
-	<1414688107-8196-1-git-send-email-tudor.ambarus@freescale.com>
-	<20141106151714.GE4544@gondor.apana.org.au>
-	<20141204182245.f352ea22dc61ea6f65d85c62@freescale.com>
-	<20141211193018.2465016d545334a76c0f4bab@freescale.com>
- <20150120124310.ba1dd7a6454f65255c1ed713@freescale.com>
-In-Reply-To: <20150120124310.ba1dd7a6454f65255c1ed713@freescale.com>
-Content-Type: text/plain; charset="windows-1252"
+To: Daniel Mack <daniel@zonque.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, arnd@arndb.de,
+        ebiederm@xmission.com, gnomes@lxorguk.ukuu.org.uk, teg@jklm.no,
+        jkosina@suse.cz, luto@amacapital.net, linux-api@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+CC: mtk.manpages@gmail.com, daniel@zonque.or, dh.herrmann@gmail.com,
+        tixxdz@opendz.org
+Subject: Re: [PATCH 01/13] kdbus: add documentation
+References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org> <1421435777-25306-2-git-send-email-gregkh@linuxfoundation.org> <54BE5F1F.8070703@gmail.com> <54BE957A.60305@zonque.org>
+In-Reply-To: <54BE957A.60305@zonque.org>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-EOPAttributedMessage: 0
-Authentication-Results: spf=fail (sender IP is 192.88.168.50)
- smtp.mailfrom=B18196@freescale.com; 
-X-Forefront-Antispam-Report: CIP:192.88.168.50;CTRY:US;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10019020)(6009001)(339900001)(24454002)(479174004)(189002)(377454003)(199003)(164054003)(85426001)(77156002)(68736005)(62966003)(77096005)(46102003)(87936001)(97736003)(64126003)(36756003)(59896002)(558084003)(106466001)(104016003)(19580405001)(80316001)(19580395003)(93886004)(105606002)(64706001)(47776003)(33656002)(65956001)(65806001)(6806004)(83506001)(54356999)(87266999)(65816999)(50986999)(76176999)(92566002)(2950100001)(50466002)(23746002);DIR:OUT;SFP:1102;SCL:1;SRVR:DM2PR03MB400;H:tx30smr01.am.freescale.net;FPR:;SPF:Fail;MLV:sfv;PTR:InfoDomainNonexistent;MX:1;A:1;LANG:en;
-X-DmarcAction-Test: None
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:DM2PR03MB400;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:DM2PR03MB400;
-X-Forefront-PRVS: 04631F8F77
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DM2PR03MB400;
-X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 21 Jan 2015 08:57:36.7134
- (UTC)
-X-MS-Exchange-CrossTenant-Id: 710a03f5-10f6-4d38-9ff4-a80b81da590d
-X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=710a03f5-10f6-4d38-9ff4-a80b81da590d;Ip=[192.88.168.50]
-X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: DM2PR03MB400
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kim,
+Hi Daniel,
 
-On 01/20/2015 08:43 PM, Kim Phillips wrote:
-> ICV check failures are part of normal operation;
-> leave user notification up to the higher levels,
-> as is done in s/w algorithm implementations.
+On 01/20/2015 06:50 PM, Daniel Mack wrote:
+> Hi Michael,
 > 
+> Thanks a lot for for intense review of the documentation. Much appreciated.
+> 
+> I've addressed all but the below issues, following your suggestions.
 
-Tested on P4080DS.
+Are your changes already visible somewhere?
 
-Tested-by: Cristian Stoica <cristian.stoica@freescale.com>
+> On 01/20/2015 02:58 PM, Michael Kerrisk (man-pages) wrote:
+>>> +    and KDBUS_CMD_ENDPOINT_MAKE (see above).
+>>> +
+>>> +    Following items are expected for KDBUS_CMD_BUS_MAKE:
+>>> +    KDBUS_ITEM_MAKE_NAME
+>>> +      Contains a string to identify the bus name.
+>>
+>> So, up to here, I've seen no definition of 'kdbus_item', which leaves me 
+>> asking questions like: what subfield is KDBUS_ITEM_MAKE_NAME stored in?
+>> which subfield holds the pointer to the string?
+>>
+>> Somewhere earlier,  kdbus_item needs to be exaplained in more detail, 
+>> I think.
+> 
+> Hmm, you're quoting text from section 5, and section 4 actually
+> describes the concept of items quite well I believe?
+
+Well, Section 4 is pretty short. My point is that most of the various 
+blob formats (e.g., kdbus_pids, kdbus_caps, kdbus_memfd) are not
+documented in kdbus.txt. They all should be, IMO.
+
+>>> +  __s64 priority;
+>>> +    With KDBUS_RECV_USE_PRIORITY set in flags, receive the next message in
+>>> +    the queue with at least the given priority. If no such message is waiting
+>>> +    in the queue, -ENOMSG is returned.
+>>
+>> ###
+>> How do I simply select the highest priority message, without knowing what 
+>> its priority is?
+> 
+> The wording is indeed unclear here. KDBUS_RECV_USE_PRIORITY causes the
+> messages to be dequeued by their priority. The 'priority' field is
+> simply a filter that request a minimum priority. By setting this field
+> to the highest possible value, you effectively bypass the filter. I've
+> added a better description now.
+
+Thanks for the clarification.
+
+>>> +  -ENOMEM	The kernel memory is exhausted
+>>> +  -ENOTTY	Illegal ioctl command issued for the file descriptor
+>>
+>> Why ENOTTY here, rather than EINVAL? The latter is, I beleive, the usual 
+>> ioctl() error for invalid commands, I believe (If you keep ENOTTY, add an
+>> explanation in this document.)
+> 
+> Hmm, no. -ENOTTY is commonly used as return code when calling ioctls
+> that can't be handled by the FDs they're called on. 'man errno(3)' even
+> states: "ENOTTY   Inappropriate I/O control operation (POSIX.1)".
+
+Okay.
+
+>>> +  -EINVAL	Unsupported item attached to command
+>>> +
+>>> +For all ioctls that carry a struct as payload:
+>>> +
+>>> +  -EFAULT	The supplied data pointer was not 64-bit aligned, or was
+>>> +		inaccessible from the kernel side.
+>>> +  -EINVAL	The size inside the supplied struct was smaller than expected
+>>> +  -EMSGSIZE	The size inside the supplied struct was bigger than expected
+>>
+>> Why two different errors for smaller and larger than expected? (If you keep things this
+>> way, pelase explain the reason in this document.)
+> 
+> Providing a struct that is smaller than the minimum doesn't give the
+> ioctl a valid set of information to process the request. Hence, I think
+> -EINVAL is appropriate. However, -EMSGSIZE is something that users might
+> hit when they make message payloads too big, and I think it's good to
+> have a change to distinguish the two cases in error handling. I added
+> something in the document now.
+
+Thanks.
+
+> Again, thanks a lot for reading the documentation so accurately!
+
+You're welcome.
+
+Cheers,
+
+Michael
 
 
-Thanks,
-Cristian S.
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
