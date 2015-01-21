@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887AbbAUTss (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 14:48:48 -0500
-Received: from smtp.codeaurora.org ([198.145.11.231]:51981 "EHLO
+	id S1754046AbbAUTtA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 14:49:00 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:51984 "EHLO
 	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752226AbbAUTsU (ORCPT
+	with ESMTP id S1752962AbbAUTsU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 21 Jan 2015 14:48:20 -0500
 From: Stephen Boyd <sboyd@codeaurora.org>
@@ -12,9 +12,9 @@ To: Russell King <linux@arm.linux.org.uk>
 Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         linux-arm-kernel@lists.infradead.org,
         Kumar Gala <galak@codeaurora.org>
-Subject: [PATCH 1/2] ARM: Add a secondary_startup that assumes ARM mode
-Date: Wed, 21 Jan 2015 11:48:17 -0800
-Message-Id: <1421869698-27341-2-git-send-email-sboyd@codeaurora.org>
+Subject: [PATCH 2/2] ARM: qcom: Use secondary_startup_arm()
+Date: Wed, 21 Jan 2015 11:48:18 -0800
+Message-Id: <1421869698-27341-3-git-send-email-sboyd@codeaurora.org>
 X-Mailer: git-send-email 2.3.0.rc0.46.gbe498cc
 In-Reply-To: <1421869698-27341-1-git-send-email-sboyd@codeaurora.org>
 References: <1421869698-27341-1-git-send-email-sboyd@codeaurora.org>
@@ -22,40 +22,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some platforms always enter the kernel in ARM mode even if the
-kernel is compiled for THUMB2. Add a small wrapper on top of
-secondary_startup() that switches into THUMB2 mode.
+On qcom platforms we always enter the kernel in ARM mode,
+regardless of the kernel being compiled for THUMB mode. Use
+secondary_startup_arm() to properly switch the mode to what the
+kernel expects if required.
 
 Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 ---
- arch/arm/kernel/head.S | 7 +++++++
- 1 file changed, 7 insertions(+)
+ arch/arm/mach-qcom/platsmp.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/kernel/head.S b/arch/arm/kernel/head.S
-index 664eee8c4a26..22bb6d54e90d 100644
---- a/arch/arm/kernel/head.S
-+++ b/arch/arm/kernel/head.S
-@@ -346,6 +346,12 @@ __turn_mmu_on_loc:
+diff --git a/arch/arm/mach-qcom/platsmp.c b/arch/arm/mach-qcom/platsmp.c
+index a692bcb7e7f5..0f8b5147a78f 100644
+--- a/arch/arm/mach-qcom/platsmp.c
++++ b/arch/arm/mach-qcom/platsmp.c
+@@ -44,7 +44,7 @@
+ #define APCS_SAW2_VCTL		0x14
+ #define APCS_SAW2_2_VCTL	0x1c
  
- #if defined(CONFIG_SMP)
- 	.text
-+ENTRY(secondary_startup_arm)
-+	.arm
-+ THUMB(	adr	r9, BSYM(1f)	)	@ Kernel is entered in ARM.
-+ THUMB(	bx	r9		)	@ If this is a Thumb-2 kernel,
-+ THUMB(	.thumb			)	@ switch to Thumb now.
-+ THUMB(1:			)
- ENTRY(secondary_startup)
- 	/*
- 	 * Common entry point for secondary CPUs.
-@@ -385,6 +391,7 @@ ENTRY(secondary_startup)
-  THUMB(	add	r12, r10, #PROCINFO_INITFUNC	)
-  THUMB(	ret	r12				)
- ENDPROC(secondary_startup)
-+ENDPROC(secondary_startup_arm)
+-extern void secondary_startup(void);
++extern void secondary_startup_arm(void);
  
- 	/*
- 	 * r6  = &secondary_data
+ static DEFINE_SPINLOCK(boot_lock);
+ 
+@@ -337,7 +337,7 @@ static void __init qcom_smp_prepare_cpus(unsigned int max_cpus)
+ 		flags |= cold_boot_flags[map];
+ 	}
+ 
+-	if (scm_set_boot_addr(virt_to_phys(secondary_startup), flags)) {
++	if (scm_set_boot_addr(virt_to_phys(secondary_startup_arm), flags)) {
+ 		for_each_present_cpu(cpu) {
+ 			if (cpu == smp_processor_id())
+ 				continue;
 -- 
 The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum,
 a Linux Foundation Collaborative Project
