@@ -1,286 +1,247 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751958AbbAUJGi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 04:06:38 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:42842 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750809AbbAUJG1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 04:06:27 -0500
-Message-ID: <54BF6BEE.2050505@huawei.com>
-Date: Wed, 21 Jan 2015 17:05:50 +0800
-From: Zhang Zhen <zhenzhang.zhang@huawei.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+	id S1752479AbbAUJH0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 04:07:26 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:56678 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752059AbbAUJGs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 04:06:48 -0500
+Date: Wed, 21 Jan 2015 17:05:53 +0800
+From: Fam Zheng <famz@redhat.com>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        David Drysdale <drysdale@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Vivek Goyal <vgoyal@redhat.com>, Mike Frysinger <vapier@gentoo.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        Hugh Dickins <hughd@google.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-api@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: Re: [PATCH RFC 0/6] epoll: Introduce new syscall "epoll_mod_wait"
+Message-ID: <20150121090553.GC23024@ad.nay.redhat.com>
+References: <1421747878-30744-1-git-send-email-famz@redhat.com>
+ <54BE4EA4.6080901@gmail.com>
 MIME-Version: 1.0
-To: <paulmck@linux.vnet.ibm.com>
-CC: Don Zickus <dzickus@redhat.com>, <linux-kernel@vger.kernel.org>,
-        <morgan.wang@huawei.com>, <josh@freedesktop.org>,
-        <dipankar@in.ibm.com>
-Subject: Re: RCU CPU stall console spews  leads to soft lockup disabled is
- reasonable ?
-References: <54BCBB33.6060608@huawei.com> <20150119084200.GE9719@linux.vnet.ibm.com> <54BCC89D.9040702@huawei.com> <20150119140612.GI116159@redhat.com> <54BDC6DF.6000602@huawei.com> <20150120152531.GR116159@redhat.com> <54BF0E53.5040409@huawei.com> <54BF1957.6080606@huawei.com> <54BF4D0D.3090500@huawei.com> <20150121070246.GB9719@linux.vnet.ibm.com>
-In-Reply-To: <20150121070246.GB9719@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [10.111.68.57]
-X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020204.54BF6BFD.00A9,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 7361b06e8afe42c1ac4b936e9833438f
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54BE4EA4.6080901@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2015/1/21 15:02, Paul E. McKenney wrote:
-> On Wed, Jan 21, 2015 at 02:54:05PM +0800, Zhang Zhen wrote:
->> On 2015/1/21 11:13, Zhang Zhen wrote:
->>> On 2015/1/21 10:26, Zhang Zhen wrote:
->>>> On 2015/1/20 23:25, Don Zickus wrote:
+On Tue, 01/20 13:48, Michael Kerrisk (man-pages) wrote:
+> Hello Fam Zheng,
 > 
-> [ . . . ]
+> I know this API has been through a number of iterations, and there were 
+> discussions about the design that led to it becoming more complex.
+> But, let us assume that someone has not seen those discussions,
+> or forgotten them, or is too lazy to go hunting list archives.
 > 
->>> Sorry, i made a mistake, the log above is based on v3.10.63.
->>> I have tested the latest upstream kernel (based on ec6f34e5b552),
->>> but my test case can't triggered RCU stall warning.
->>>
->>
->> I used git bisect to find the bad commit, but found a irrelevant
->> commit(db5d711e2db776 zram: avoid null access when fail to alloc meta).
->> Before this commit, my test case can easily trigger RCU stall warning,
->> but after this commit, my test case can't trigger RCU stall warning.
+> Then: this patch series should somewhere have an explanation of
+> why the API is what it is, ideally with links to previous relevant
+> discussions. I see that you do part of that in
 > 
-> I have lost track of exactly what kernel you are using.  If you are
-> using a recent kernel (v3.18 or thereabouts), one thing to try is to
-> apply my stack of RCU CPU stall-warning changes that are on their way
-> in, please see v3.19-rc1..630181c4a915 in -rcu, which is at:
+>     [PATCH RFC 5/6] epoll: Add implementation for epoll_mod_wait
 > 
-> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
+> There are however no links to previous discussions in that mail (I guess
+> http://thread.gmane.org/gmane.linux.kernel/1861430/focus=91591 is most
+> relevant, nor is there any sort of change log in the commit message 
+> that explains the evolution of the API. Having those would ease the 
+> task of reviewers.
 > 
-> These handle the problems that Dave Jones and a few others located this
-> past December.  Could you please give them a spin?
+> Coming back to THIS mail, this man page should also include an
+> explanation of why the API is what it is. That would include much
+> of the detail from the 5/6 patch, and probably more info besides.
 > 
+> Some specific points below.
+> 
+> On 01/20/2015 10:57 AM, Fam Zheng wrote:
+> > This adds a new system call, epoll_mod_wait. It's described as below:
+> > 
+> > NAME
+> >        epoll_mod_wait - modify and wait for I/O events on an epoll file
+> >                         descriptor
+> > 
+> > SYNOPSIS
+> > 
+> >        int epoll_mod_wait(int epfd, int flags,
+> >                           int ncmds, struct epoll_mod_cmd *cmds,
+> >                           struct epoll_wait_spec *spec);
+> > 
+> > DESCRIPTION
+> > 
+> >        The epoll_mod_wait() system call can be seen as an enhanced combination
+> >        of several epoll_ctl(2) calls, which are followed by an epoll_pwait(2)
+> >        call. It is superior in two cases:
+> >        
+> >        1) When epoll_ctl(2) are followed by epoll_wait(2), using epoll_mod_wait
+> >        will save context switches between user mode and kernel mode;
+> >
+> >        2) When you need higher precision than microsecond for wait timeout.
+> 
+> s/microsecond/millisecond/
 
-Yeah, my test case can easily trigger RCU stall-warning based on commit 630181c4a915
-in your linux-rcu git tree.
+Yes, thanks for pointing out.
 
-In my .config, CONFIG_RCU_CPU_STALL_TIMEOUT=21.
-Before commented out touch_softlockup_watchdog() in touch_nmi_watchdog:
-
-/ #
-/ # echo 60 > /proc/sys/kernel/watchdog_thresh
-[   21.885200] NMI watchdog: disabled (cpu0): hardware events not enabled
-/ #  busybox insmod softlockup_test.ko
-[   47.900117] INFO: rcu_sched detected stalls on CPUs/tasks:
-[   47.900117] 	(detected by 0, t=5252 jiffies, g=-202, c=-203, q=7)
-[   47.900117] All QSes seen, last rcu_sched kthread activity 5252 (4294904271-4294899019), jiffies_till_next_fqs=1
-[   47.900117] busybox         R  running task        0    42     41 0x00000008
-[   47.900117]  ffffffff81afaf40 ffff88007fa03d98 ffffffff810781c0 ffffffff81a5e5f8
-[   47.900117]  ffffffff81a45d80 ffff88007fa03dd8 ffffffff810af723 0000000000000083
-[   47.900117]  ffff88007fa13580 ffffffff81a45d80 ffffffff81a45d80 ffffffff810c43e0
-[   47.900117] Call Trace:
-[   47.900117]  <IRQ>  [<ffffffff810781c0>] sched_show_task+0xb0/0x110
-[   47.900117]  [<ffffffff810af723>] print_other_cpu_stall+0x2d3/0x2f0
-[   47.900117]  [<ffffffff810c43e0>] ? tick_nohz_handler+0xc0/0xc0
-[   47.900117]  [<ffffffff810af8b8>] __rcu_pending+0x178/0x220
-[   47.900117]  [<ffffffff810b02a5>] rcu_check_callbacks+0x105/0x190
-[   47.900117]  [<ffffffff810c43e0>] ? tick_nohz_handler+0xc0/0xc0
-[   47.900117]  [<ffffffff810b3582>] update_process_times+0x32/0x60
-[   47.900117]  [<ffffffff810c41e2>] tick_sched_handle+0x32/0x80
-[   47.900117]  [<ffffffff810c442d>] tick_sched_timer+0x4d/0x90
-[   47.900117]  [<ffffffff810b5b57>] __run_hrtimer+0xc7/0x1c0
-[   47.900117]  [<ffffffff810b5e37>] hrtimer_interrupt+0xe7/0x220
-[   47.900117]  [<ffffffffa0005000>] ? 0xffffffffa0005000
-[   47.900117]  [<ffffffff81035654>] local_apic_timer_interrupt+0x34/0x60
-[   47.900117]  [<ffffffff81035d8c>] smp_apic_timer_interrupt+0x3c/0x60
-[   47.900117]  [<ffffffff814ff02a>] apic_timer_interrupt+0x6a/0x70
-[   47.900117]  <EOI>  [<ffffffff814fdaa0>] ? _raw_spin_lock+0x20/0x30
-[   47.900117]  [<ffffffffa000505d>] test_init+0x5d/0x1000 [softlockup_test]
-[   47.900117]  [<ffffffffa0005000>] ? 0xffffffffa0005000
-[   47.900117]  [<ffffffff81000288>] do_one_initcall+0xb8/0x1d0
-[   47.900117]  [<ffffffff81168794>] ? __vunmap+0x94/0xf0
-[   47.900117]  [<ffffffff810ce36b>] do_init_module+0x2b/0x1b0
-[   47.900117]  [<ffffffff810d09b5>] load_module+0x585/0x5f0
-[   47.900117]  [<ffffffff810cdd40>] ? mod_sysfs_teardown+0x150/0x150
-[   47.900117]  [<ffffffff810d0bbb>] SyS_init_module+0x9b/0xc0
-[   47.900117]  [<ffffffff814fe252>] system_call_fastpath+0x12/0x17
-[   47.900117] rcu_sched kthread starved for 5252 jiffies!
-
-After commented out touch_softlockup_watchdog() in touch_nmi_watchdog:
-
-/ #
-/ # echo 60 > /proc/sys/kernel/watchdog_thresh
-[  123.011980] NMI watchdog: disabled (cpu0): hardware events not enabled
-/ # busybox insmod softlockup_test.ko
-[  150.912055] INFO: rcu_sched detected stalls on CPUs/tasks:
-[  150.912055] 	(detected by 0, t=5252 jiffies, g=-198, c=-199, q=6)
-[  150.912055] All QSes seen, last rcu_sched kthread activity 5252 (4294930024-4294924772), jiffies_till_next_fqs=1
-[  150.912055] busybox         R  running task        0    42     41 0x00000008
-[  150.912055]  ffffffff81afaf40 ffff88007fa03d98 ffffffff810781c0 ffffffff81a5e5f8
-[  150.912055]  ffffffff81a45d80 ffff88007fa03dd8 ffffffff810af723 0000000000000083
-[  150.912055]  ffff88007fa13580 ffffffff81a45d80 ffffffff81a45d80 ffffffff810c43e0
-[  150.912055] Call Trace:
-[  150.912055]  <IRQ>  [<ffffffff810781c0>] sched_show_task+0xb0/0x110
-[  150.912055]  [<ffffffff810af723>] print_other_cpu_stall+0x2d3/0x2f0
-[  150.912055]  [<ffffffff810c43e0>] ? tick_nohz_handler+0xc0/0xc0
-[  150.912055]  [<ffffffff810af8b8>] __rcu_pending+0x178/0x220
-[  150.912055]  [<ffffffff810b02a5>] rcu_check_callbacks+0x105/0x190
-[  150.912055]  [<ffffffff810c43e0>] ? tick_nohz_handler+0xc0/0xc0
-[  150.912055]  [<ffffffff810b3582>] update_process_times+0x32/0x60
-[  150.912055]  [<ffffffff810c41e2>] tick_sched_handle+0x32/0x80
-[  150.912055]  [<ffffffff810c442d>] tick_sched_timer+0x4d/0x90
-[  150.912055]  [<ffffffff810b5b57>] __run_hrtimer+0xc7/0x1c0
-[  150.912055]  [<ffffffff810b5e37>] hrtimer_interrupt+0xe7/0x220
-[  150.912055]  [<ffffffffa0005000>] ? 0xffffffffa0005000
-[  150.912055]  [<ffffffff81035654>] local_apic_timer_interrupt+0x34/0x60
-[  150.912055]  [<ffffffff81035d8c>] smp_apic_timer_interrupt+0x3c/0x60
-[  150.912055]  [<ffffffff814ff02a>] apic_timer_interrupt+0x6a/0x70
-[  150.912055]  <EOI>  [<ffffffff814fda90>] ? _raw_spin_lock+0x20/0x30
-[  150.912055]  [<ffffffffa000505d>] test_init+0x5d/0x1000 [softlockup_test]
-[  150.912055]  [<ffffffffa0005000>] ? 0xffffffffa0005000
-[  150.912055]  [<ffffffff81000288>] do_one_initcall+0xb8/0x1d0
-[  150.912055]  [<ffffffff81168784>] ? __vunmap+0x94/0xf0
-[  150.912055]  [<ffffffff810ce36b>] do_init_module+0x2b/0x1b0
-[  150.912055]  [<ffffffff810d09b5>] load_module+0x585/0x5f0
-[  150.912055]  [<ffffffff810cdd40>] ? mod_sysfs_teardown+0x150/0x150
-[  150.912055]  [<ffffffff810d0bbb>] SyS_init_module+0x9b/0xc0
-[  150.912055]  [<ffffffff814fe252>] system_call_fastpath+0x12/0x17
-[  150.912055] rcu_sched kthread starved for 5252 jiffies!
-...
-...
-[  291.009857] NMI watchdog: BUG: soft lockup - CPU#0 stuck for 135s! [busybox:42]
-[  291.010286] Modules linked in: softlockup_test(O+)
-[  291.010944] CPU: 0 PID: 42 Comm: busybox Tainted: G           O   3.19.0-rc1-0.27-default+ #3
-[  291.011356] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
-[  291.011674] task: ffff88007d3e61d0 ti: ffff88007d3fc000 task.ti: ffff88007d3fc000
-[  291.012066] RIP: 0010:[<ffffffff814fda90>]  [<ffffffff814fda90>] _raw_spin_lock+0x20/0x30
-[  291.012205] RSP: 0018:ffff88007d3ffdd8  EFLAGS: 00000202
-[  291.012205] RAX: 0000000000000000 RBX: ffff88007cc1e250 RCX: 0000000000012a40
-[  291.012205] RDX: 0000000000000001 RSI: 0000000000000246 RDI: ffff88007d3ffde8
-[  291.012205] RBP: ffff88007d3ffdd8 R08: ffff88007fa12a40 R09: 000000000000b806
-[  291.012205] R10: 0000000000000000 R11: ffff88007d3ffcd8 R12: ffffffff8107b1a4
-[  291.012205] R13: ffff88007d3ffd68 R14: 0000000000000000 R15: 0000000000000000
-[  291.012205] FS:  00000000007fd880(0063) GS:ffff88007fa00000(0000) knlGS:0000000000000000
-[  291.012205] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  291.012205] CR2: 000000000081c87f CR3: 000000007d3f1000 CR4: 00000000000006f0
-[  291.012205] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[  291.012205] DR3: 0000000000000000 DR6: 0000000000000000 DR7: 0000000000000000
-[  291.012205] Stack:
-[  291.012205]  ffff88007d3ffe08 ffffffffa000505d ffff880000020000 0000000000000000
-[  291.012205]  ffffffffa0005000 ffffffff81a19250 ffff88007d3ffe78 ffffffff81000288
-[  291.012205]  ffff88007d317540 0000000000000020 ffff88007d317540 0000000000000001
-[  291.012205] Call Trace:
-[  291.012205]  [<ffffffffa000505d>] test_init+0x5d/0x1000 [softlockup_test]
-[  291.012205]  [<ffffffffa0005000>] ? 0xffffffffa0005000
-[  291.012205]  [<ffffffff81000288>] do_one_initcall+0xb8/0x1d0
-[  291.012205]  [<ffffffff81168784>] ? __vunmap+0x94/0xf0
-[  291.012205]  [<ffffffff810ce36b>] do_init_module+0x2b/0x1b0
-[  291.012205]  [<ffffffff810d09b5>] load_module+0x585/0x5f0
-[  291.012205]  [<ffffffff810cdd40>] ? mod_sysfs_teardown+0x150/0x150
-[  291.012205]  [<ffffffff810d0bbb>] SyS_init_module+0x9b/0xc0
-[  291.012205]  [<ffffffff814fe252>] system_call_fastpath+0x12/0x17
-[  291.012205] Code: 89 d0 c9 c3 0f 1f 80 00 00 00 00 55 48 89 e5 b8 00 00 01 00 3e 0f c1 07 89 c2 c1 ea 10 66 39 d0 75 0b eb 11 0f 1f 80 00 00 00 00 <f3> 90 0f b7 07 66 39 c2 75 f6 c9 c3 0f 1f 40 00 55 48 89 e5 9c
-
->                                                         Thanx, Paul
+> >        if all the commands are successfully executed (all the error fields are
+> >        set to 0), events are polled.
 > 
->> I'm totally confused.
->>
->> My test case:
->>
->> //
->> #include <linux/kernel.h>
->> #include <linux/module.h>
->> #include <linux/spinlock.h>
->> #include <linux/slab.h>
->> #include <linux/kthread.h>
->>
->> struct foo {
->>         int a;
->>         char b;
->>         long c;
->> };
->>
->> struct foo gbl_foo = {1, 'a', 2};
->> struct foo *pgbl_foo = &gbl_foo;
->>
->> static int my_kthread(void *data)
->> {
->>         DEFINE_SPINLOCK(foo_mutex);
->>         struct foo *new_fp;
->>         struct foo *old_fp;
->>
->>         new_fp = kmalloc(sizeof(*new_fp), GFP_KERNEL);
->>         spin_lock(&foo_mutex);
->>         old_fp = pgbl_foo;
->>         *new_fp = *old_fp;
->>         new_fp->a = 2;
->>         rcu_assign_pointer(pgbl_foo, new_fp);
->>         spin_unlock(&foo_mutex);
->>         synchronize_rcu();
->>         kfree(old_fp);
->>
->>         return 0;
->> }
->>
->> static int hello_start(void)
->> {
->>         struct task_struct *my_task = NULL;
->>         DEFINE_SPINLOCK(hello_lock);
->>
->>         my_task = kthread_run(my_kthread, NULL, "my_thread%d", 1);
->>
->>         spin_lock_init(&hello_lock);
->>         spin_lock(&hello_lock);
->>         spin_lock(&hello_lock);
->>         return 0;
->> }
->>
->> static int __init test_init(void)
->> {
->>         hello_start();
->>
->>         printk(KERN_INFO "Module init\n");
->>         return 0;
->> }
->>
->> static void __exit test_exit(void)
->> {
->>         printk(KERN_INFO "Module exit!\n");
->> }
->>
->> module_init(test_init)
->> module_exit(test_exit)
->> MODULE_LICENSE("GPL");
->> //
->>>>>
->>>>> Cheers,
->>>>> Don
->>>>>
->>>>> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
->>>>> index 70bf118..833c015 100644
->>>>> --- a/kernel/watchdog.c
->>>>> +++ b/kernel/watchdog.c
->>>>> @@ -209,7 +209,7 @@ void touch_nmi_watchdog(void)
->>>>>  	 * going off.
->>>>>  	 */
->>>>>  	raw_cpu_write(watchdog_nmi_touch, true);
->>>>> -	touch_softlockup_watchdog();
->>>>> +	//touch_softlockup_watchdog();
->>>>>  }
->>>>>  EXPORT_SYMBOL(touch_nmi_watchdog);
->>>>>  
->>>>>
->>>>> .
->>>>>
->>>>
->>>
->>
->>
+> Does the operation execute all commands, or stop when it encounters the first 
+> error? In other words, when looping over the returned 'error' fields, what
+> is the termination condition for the user-space application?
 > 
-> 
-> .
-> 
+> (Yes, I know I can trivially inspect the patch 5/6 to answer this question, 
+> but the man page should explicitly state this so that I don't have to 
+> read the source, and also because it is only if you explicitly document 
+> the intended behavior that I can tell whether the actual implementation 
+> matches the intention.)
 
 
+> 
+> >        The last parameter "spec" is a pointer to struct epoll_wait_spec, which
+> >        contains the information about how to poll the events. If it's NULL, this
+> >        call will immediately return after running all the commands in cmds.
+> > 
+> >        The structure is defined as below:
+> > 
+> >            struct epoll_wait_spec {
+> > 
+> >                   /* The same as "maxevents" in epoll_pwait() */
+> >                   int maxevents;
+> > 
+> >                   /* The same as "events" in epoll_pwait() */
+> >                   struct epoll_event *events;
+> > 
+> >                   /* Which clock to use for timeout */
+> >                   int clockid;
+> 
+> Which clocks can be specified here?
+> CLOCK_MONOTONIC?
+> CLOCK_REALTIME?
+> CLOCK_PROCESS_CPUTIME_ID?
+> clock_getcpuclockid()?
+> others?
+
+At the moment we can limit it to CLOCK_MONOTONIC and CLOCK_REALTIME, I'm not
+sure any application care about others. It's not checked in this series, but
+should be done in v2.
+
+> 
+> >                   /* Maximum time to wait if there is no event */
+> >                   struct timespec timeout;
+> 
+> Is this timeout relative or absolute?
+
+Relative. I'll document it. Absolute timeout can be added later with new flags.
+
+> 
+> >                   /* The same as "sigmask" in epoll_pwait() */
+> >                   sigset_t *sigmask;
+> 
+> I just want to confirm here that 'sigmask' can be NULL, meaning
+> that we degenerate to epoll_wait() functionality, right?
+
+Yes. Will document explicitly.
+
+> 
+> >                   /* The same as "sigsetsize" in epoll_pwait() */
+> >                   size_t sigsetsize;
+> >            } EPOLL_PACKED;
+> 
+> What is the "EPOLL_PACKED" here for?
+
+Copy paste error. :)
+
+> 
+> > RETURN VALUE
+> > 
+> >        When any error occurs, epoll_mod_wait() returns -1 and errno is set
+> >        appropriately. All the "error" fields in cmds are unchanged before they
+> >        are executed, and if any cmds are executed, the "error" fields are set
+> >        to a return code accordingly. See also epoll_ctl for more details of the
+> >        return code.
+> > 
+> >        When successful, epoll_mod_wait() returns the number of file
+> >        descriptors ready for the requested I/O, or zero if no file descriptor
+> >        became ready during the requested timeout milliseconds.
+> 
+> s/milliseconds//
+
+OK.
+
+> 
+> > 
+> >        If spec is NULL, it returns 0 if all the commands are successful, and -1
+> >        if an error occured.
+> 
+> s/occured/occurred/
+
+OK, thanks.
+
+> 
+> > ERRORS
+> > 
+> >        These errors apply on either the return value of epoll_mod_wait or error
+> >        status for each command, respectively.
+> >
+> >        EBADF  epfd or fd is not a valid file descriptor.
+> > 
+> >        EFAULT The memory area pointed to by events is not accessible with write
+> >               permissions.
+> > 
+> >        EINTR  The call was interrupted by a signal handler before either any of
+> >               the requested events occurred or the timeout expired; see
+> >               signal(7).
+> > 
+> >        EINVAL epfd is not an epoll file descriptor, or maxevents is less than
+> >               or equal to zero, or fd is the same as epfd, or the requested
+> >               operation op is not supported by this interface.
+> 
+> Add: Or 'flags' is nonzero. Or a 'cmds.flags' field is nonzero.
+
+Yes.
+
+> 
+> >        EEXIST op was EPOLL_CTL_ADD, and the supplied file descriptor fd is
+> >               already registered with this epoll instance.
+> > 
+> >        ENOENT op was EPOLL_CTL_MOD or EPOLL_CTL_DEL, and fd is not registered
+> >               with this epoll instance.
+> > 
+> >        ENOMEM There was insufficient memory to handle the requested op control
+> >               operation.
+> > 
+> >        ENOSPC The limit imposed by /proc/sys/fs/epoll/max_user_watches was
+> >               encountered while trying to register (EPOLL_CTL_ADD) a new file
+> >               descriptor on an epoll instance.  See epoll(7) for further
+> >               details.
+> > 
+> >        EPERM  The target file fd does not support epoll.
+> > 
+> > CONFORMING TO
+> > 
+> >        epoll_mod_wait() is Linux-specific.
+> > 
+> > SEE ALSO
+> > 
+> >        epoll_create(2), epoll_ctl(2), epoll_wait(2), epoll_pwait(2), epoll(7)
+> 
+> Please add sigprocmask(2).
+
+OK! Thanks for reviewing this.
+
+Fam
