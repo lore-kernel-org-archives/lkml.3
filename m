@@ -1,129 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753828AbbAUBbM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 20:31:12 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:25237 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753261AbbAUBbJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 20:31:09 -0500
-Message-ID: <54BF014C.3050002@oracle.com>
-Date: Wed, 21 Jan 2015 09:30:52 +0800
-From: ethan zhao <ethan.zhao@oracle.com>
-Organization: Oracle Corporation
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:17.0) Gecko/20130107 Thunderbird/17.0.2
+	id S1753869AbbAUBef (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 20:34:35 -0500
+Received: from mga11.intel.com ([192.55.52.93]:64155 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751880AbbAUBed (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 20:34:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,438,1418112000"; 
+   d="scan'208";a="640161830"
+Message-ID: <54BF0223.90905@linux.intel.com>
+Date: Wed, 21 Jan 2015 09:34:27 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Manfred Spraul <manfred@colorfullife.com>
-CC: Stephen Smalley <sds@tycho.nsa.gov>, james.l.morris@oracle.com,
-        serge@hallyn.com, eparis@parisplace.org, paul@paul-moore.com,
-        selinux@tycho.nsa.gov, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, ethan.kernel@gmail.conm
-Subject: Re: [PATCH] Selinux/hooks.c: Fix a NULL pointer dereference caused
- by semop()
-References: <1421745518-18790-1-git-send-email-ethan.zhao@oracle.com> <54BE61F0.202@tycho.nsa.gov> <54BEA337.9060704@colorfullife.com>
-In-Reply-To: <54BEA337.9060704@colorfullife.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
+To: Stuart Yoder <b08248@gmail.com>
+CC: Marc Zyngier <marc.zyngier@arm.com>, Bjorn Helgaas <bhelgaas@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yijing Wang <wangyijing@huawei.com>,
+        Suravee Suthikulpanit <Suravee.Suthikulpanit@amd.com>
+Subject: Re: [PATCH v2 1/8] device core: Introduce per-device MSI domain pointer
+References: <1420736772-11088-1-git-send-email-marc.zyngier@arm.com>	<1420736772-11088-2-git-send-email-marc.zyngier@arm.com>	<CALRxmdDVUoYNg3QC0LdvKmCz9x4nzE9+TDiV9K9OH=Gxk-Cd9w@mail.gmail.com>	<54BC6799.2040907@linux.intel.com> <CALRxmdCRGY2Sw+UyHTp5PP4R=v2301LTqpKq0bCEs08SWsh1bg@mail.gmail.com>
+In-Reply-To: <CALRxmdCRGY2Sw+UyHTp5PP4R=v2301LTqpKq0bCEs08SWsh1bg@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen,
 
-On 2015/1/21 2:49, Manfred Spraul wrote:
-> Hi,
->
-> On 01/20/2015 03:10 PM, Stephen Smalley wrote:
->> On 01/20/2015 04:18 AM, Ethan Zhao wrote:
->>> A NULL pointer dereference was observed as following panic:
->>>
->>> BUG: unable to handle kernel NULL pointer dereference at (null)
->>> IP: [<ffffffff812735eb>] ipc_has_perm+0x4b/0x60
->>> ...
->>> Process opcmon (pid: 30712, threadinfo ffff880237f2a000,
->>> task ffff88022ac70e40)
->>> Stack:
->>> ffff880237f2bc04 ffffffff01020953 ffff880237f2bce8
->>> ffffffff8125818e
->>> 0000000000000001 0000000037f78004 ffff880237f2bcd8
->>> ffffffff81273619
->>> ffff880237f2bce8 ffffffff8126e3e6 ffff880237f2bf68
->>> ffffffff8125c206
->>> Call Trace:
->>> [<ffffffff8125818e>] ? ipcperms+0xae/0x110
->>> [<ffffffff81273619>] selinux_sem_semop+0x19/0x20
->>> [<ffffffff8126e3e6>] security_sem_semop+0x16/0x20
->>> [<ffffffff8125c206>] sys_semtimedop+0x346/0x750
->>> [<ffffffff81188c0c>] ? handle_pte_fault+0x1dc/0x200
->>> [<ffffffff8161d830>] ? __do_page_fault+0x280/0x500
->>> [<ffffffff810d97d0>] ? __lock_release+0x90/0x1b0
->>> [<ffffffff8161d830>] ? __do_page_fault+0x280/0x500
->>> [<ffffffff8109a763>] ? up_read+0x23/0x40
->>> [<ffffffff8161d830>] ? __do_page_fault+0x280/0x500
->>> [<ffffffff81182f1c>] ? might_fault+0x5c/0xb0
->>> [<ffffffff81081f96>] ? sys_newuname+0x66/0xf0
->>> [<ffffffff810d97d0>] ? __lock_release+0x90/0x1b0
->>> [<ffffffff81081f96>] ? sys_newuname+0x66/0xf0
->>> [<ffffffff81622f45>] ? sysret_check+0x22/0x5d
->>> [<ffffffff8125c620>] sys_semop+0x10/0x20
->>> [<ffffffff81622f19>] system_call_fastpath+0x16/0x1b
->>> Code: b8 00 00 48 8b 80 48 06 00 00 41 8b 54 24 40 4c 8d
->>> 45 d0 89 d9 45 31 c9 48 8b 40 70 8b 78 04 49 8b 44 24 60 c6 45 d0 04 
->>> 89 55 d8
->>> <0f> b7 10 8b 70 04 e8 0a dc ff ff 48 83 c4 20 5b 41 5c c9 c3 90
->>> RIP  [<ffffffff812735eb>] ipc_has_perm+0x4b/0x60
->>> RSP <ffff880237f2bc98>
->>> CR2: 0000000000000000
->>>
->>> The root cause is semtimedop() was called after semget() without 
->>> checking its
->>> return value in process opcmon. and semget() failed to check 
->>> permission in
->>> function avc_has_perm() then sem_perm->security was freed shown as 
->>> following:
->>>
->>>       sys_semget()
->>>       ->newary()
->>>        ->security_sem_alloc()
->>>          ->sem_alloc_security()
->>>            selinux_sem_alloc_security()
->>>            ->ipc_alloc_security() {
->>>              ->rc = avc_has_perm()
->>>                 if (rc) {
->>>                     ipc_free_security(&sma->sem_perm);
->>>                     return rc;
->> We free the security structure here to avoid a memory leak on a
->> failed/denied semaphore set creation.  In this situation, we return an
->> error to the caller (ultimately to newary), it does an
->> ipc_rcu_putref(sma, ipc_rcu_free), and it returns an error to the
->> caller.  Thus, it never calls ipc_addid() and the semaphore set is not
->> created.  So how then can you call semtimedop() on it?
-> My only idea would be a race of semtimedop() with IPC_RMID:
-> If a rcu grace period happens between sem_obtain_object_check() and 
-> the ipc_has_perm() call, the the observed NULL pointer assignment 
-> would happen.
->
->>>       So ipc_perms->security was NULL, then semtimedop() was called as
->>>       following:
->>>
->>>       sys_semtimedop() / semop()
->>>       ->selinux_sem_semop()
->>>        ->ipc_has_perm()
->>>          ->avc_has_perm(sid, isec->sid, isec->sclass, perms, &ad);
->>>                                            ^- NULL pointer 
->>> dereference happens
->>>
->>> The test kernel was running on VMware.
-> Can you give some more details?
-> - which RCU type?
-> - PREEMPT?
-   Let me figure out more detail about it and share with you.
+On 2015/1/21 1:17, Stuart Yoder wrote:
+> Gerry,
+> 
+> So which direction did you take in your patch set--  a) common,
+> generic msi_desc, or b)  bus-specific msi_desc like Marc showed
+> (mybus_msi_desc)?
+Hi Stuart,
+	Currently I'm trying to go the former way as below.
+Regards,
+Gerry
+-----------------------------------------------------------------------
+struct msi_desc {
+        struct list_head                list;
+        unsigned int                    irq;
+        unsigned int                    nvec_used;      /* number of
+messages */
+        struct device *                 dev;
+        struct msi_msg                  msg;            /* Last set MSI
+message */
 
-  Thanks,
-  Ethan
+#ifdef CONFIG_PCI_MSI
+        union {
+                struct {                                /* For PCI
+MSI/MSI-X */
+                        u32 masked;                     /* mask bits */
+                        struct {
+                                __u8    is_msix : 1;
+                                __u8    multiple: 3;    /* log2 num of
+messages allocated */
+                                __u8    multi_cap : 3;  /* log2 num of
+messages supported */
+                                __u8    maskbit : 1;    /* mask-pending
+bit supported ? */
+                                __u8    is_64   : 1;    /* Address size:
+0=32bit 1=64bit */
+                                __u16   entry_nr;       /* specific
+enabled entry */
+                                unsigned default_irq;   /* default
+pre-assigned irq */
+                        } msi_attrib;
+                        union {
+                                u8      mask_pos;
+                                void __iomem *mask_base;
+                        };
+                };
+        };
+#endif /* CONFIG_PCI_MSI */
+};
 
->
-> -- 
->     Manfred
-
+> 
+> Thanks,
+> Stuart
+> 
+> On Sun, Jan 18, 2015 at 8:10 PM, Jiang Liu <jiang.liu@linux.intel.com> wrote:
+>>
+>>
+>> On 2015/1/16 4:35, Stuart Yoder wrote:
+>>> On Thu, Jan 8, 2015 at 11:06 AM, Marc Zyngier <marc.zyngier@arm.com> wrote:
+>>>> As MSI-type features are creeping into non-PCI devices, it is
+>>>> starting to make sense to give our struct device some form of
+>>>> support for this, by allowing a pointer to an MSI irq domain to
+>>>> be set/retrieved.
+>>>>
+>>>> Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
+>>>> ---
+>>>>  include/linux/device.h | 20 ++++++++++++++++++++
+>>>>  1 file changed, 20 insertions(+)
+>>>>
+>>>> diff --git a/include/linux/device.h b/include/linux/device.h
+>>>> index fb50673..ec4cee5 100644
+>>>> --- a/include/linux/device.h
+>>>> +++ b/include/linux/device.h
+>>>> @@ -690,6 +690,7 @@ struct acpi_dev_node {
+>>>>   *             along with subsystem-level and driver-level callbacks.
+>>>>   * @pins:      For device pin management.
+>>>>   *             See Documentation/pinctrl.txt for details.
+>>>> + * @msi_domain: The generic MSI domain this device is using.
+>>>>   * @numa_node: NUMA node this device is close to.
+>>>>   * @dma_mask:  Dma mask (if dma'ble device).
+>>>>   * @coherent_dma_mask: Like dma_mask, but for alloc_coherent mapping as not all
+>>>> @@ -750,6 +751,9 @@ struct device {
+>>>>         struct dev_pm_info      power;
+>>>>         struct dev_pm_domain    *pm_domain;
+>>>>
+>>>> +#ifdef CONFIG_GENERIC_MSI_IRQ_DOMAIN
+>>>> +       struct irq_domain       *msi_domain; /* MSI domain device uses */
+>>>> +#endif
+>>>
+>>> This is not a comment on this patch specifically, but a question about other
+>>> MSI specific fields that might be needed in struct device.
+>>>
+>>> Currently the generic MSI domain handling has hardcoded assumptions
+>>> that devices are PCI-- see the for_each_msi_entry() iterator in msi.h:
+>>>
+>>>   #define dev_to_msi_list(dev)            (&to_pci_dev((dev))->msi_list)
+>>>
+>>>   #define for_each_msi_entry(desc, dev)   \
+>>>         list_for_each_entry((desc), dev_to_msi_list((dev)), list)
+>>>
+>>> One approach would be to move the msi_list out of pci_dev and put
+>>> it in struct device, so all devices can have an msi_list.
+>>>
+>>> The other approach would be to keep msi_list in a bus specific
+>>> device struct, and then dev_to_msi_list() would need to be
+>>> implemented as a bus specific callback of some kind.
+>>>
+>>> The above hardcoded PCI assumption isn't going to work.   Wanted to
+>>> see if there is any advice in which direction to go.
+>> Hi Stuart,
+>>         I already have some a patch set to go that direction waiting
+>> send out for review:)
+>> Thanks!
+>> Gerry
+>>
+>>>
+>>> Thanks,
+>>> Stuart Yoder
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>> Please read the FAQ at  http://www.tux.org/lkml/
+>>>
