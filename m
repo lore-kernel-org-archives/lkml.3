@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750960AbbAUFg1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 00:36:27 -0500
-Received: from mga03.intel.com ([134.134.136.65]:41110 "EHLO mga03.intel.com"
+	id S1752496AbbAUFhq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 00:37:46 -0500
+Received: from mga11.intel.com ([192.55.52.93]:17021 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750736AbbAUFgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 00:36:25 -0500
+	id S1750796AbbAUFho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 00:37:44 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
-   d="scan'208";a="443035007"
-Message-ID: <54BF3AD5.4070600@linux.intel.com>
-Date: Wed, 21 Jan 2015 13:36:21 +0800
+   d="scan'208";a="443035773"
+Message-ID: <54BF3B24.10209@linux.intel.com>
+Date: Wed, 21 Jan 2015 13:37:40 +0800
 From: Jiang Liu <jiang.liu@linux.intel.com>
 Organization: Intel
 User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
@@ -21,65 +21,103 @@ CC: Thomas Gleixner <tglx@linutronix.de>, Bjorn Helgaas <bhelgaas@google.com>,
         Len Brown <lenb@kernel.org>, Tony Luck <tony.luck@intel.com>,
         x86@kernel.org, linux-kernel@vger.kernel.org,
         linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org
-Subject: Re: [RFC Patch 14/19] ACPI: Translate resource into master side address
- for bridge window resources
-References: <1420684386-5975-1-git-send-email-jiang.liu@linux.intel.com> <1420684386-5975-15-git-send-email-jiang.liu@linux.intel.com> <2697984.BuF6Nq9EvE@vostro.rjw.lan>
-In-Reply-To: <2697984.BuF6Nq9EvE@vostro.rjw.lan>
+Subject: Re: [RFC Patch 15/19] ACPI: Add field offset to struct resource_list_entry
+References: <1420684386-5975-1-git-send-email-jiang.liu@linux.intel.com> <1420684386-5975-16-git-send-email-jiang.liu@linux.intel.com> <1524434.hGg7sZaCUr@vostro.rjw.lan>
+In-Reply-To: <1524434.hGg7sZaCUr@vostro.rjw.lan>
 Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2015/1/21 8:50, Rafael J. Wysocki wrote:
-> On Thursday, January 08, 2015 10:33:01 AM Jiang Liu wrote:
->> Add translation_offset into the result address for bridge window
->> resources to form the master side address.
->>
->> Currently acpi_dev_resource_{ext_}address_space() are only used for
->> devices instead of bridges, so it won't break current users. Later
->> it will be used to support PCI host bridge drivers.
+On 2015/1/21 8:53, Rafael J. Wysocki wrote:
+> On Thursday, January 08, 2015 10:33:02 AM Jiang Liu wrote:
+>> Add field offset to struct resource_list_entry to host address space
+>> translation offset so it could be used to represent bridge resources.
 >>
 >> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
 >> ---
->>  drivers/acpi/resource.c |   14 ++++++++++++++
->>  1 file changed, 14 insertions(+)
+>>  drivers/acpi/resource.c |   13 ++++++++-----
+>>  include/linux/acpi.h    |    1 +
+>>  2 files changed, 9 insertions(+), 5 deletions(-)
 >>
 >> diff --git a/drivers/acpi/resource.c b/drivers/acpi/resource.c
->> index d3aa56674bd4..16d334a1ee25 100644
+>> index 16d334a1ee25..54204ac94f8e 100644
 >> --- a/drivers/acpi/resource.c
 >> +++ b/drivers/acpi/resource.c
->> @@ -203,6 +203,20 @@ static bool acpi_decode_space(struct resource *res, resource_size_t *offset,
->>  	res->start = addr->minimum;
->>  	res->end = addr->maximum;
+>> @@ -462,7 +462,8 @@ struct res_proc_context {
+>>  };
 >>  
->> +	/*
->> +	 * For bridges that translate addresses across the bridge,
->> +	 * translation_offset is the offset that must be added to the
->> +	 * address on the secondary side to obtain the address on the
->> +	 * primary side. Non-bridge devices must list 0 for all Address
->> +	 * Translation offset bits.
->> +	 */
->> +	if (base->producer_consumer == ACPI_PRODUCER) {
+>>  static acpi_status acpi_dev_new_resource_entry(struct resource *r,
+>> -					       struct res_proc_context *c)
+>> +					       struct res_proc_context *c,
+>> +					       resource_size_t offset)
+>>  {
+>>  	struct resource_list_entry *rentry;
+>>  
+>> @@ -472,6 +473,7 @@ static acpi_status acpi_dev_new_resource_entry(struct resource *r,
+>>  		return AE_NO_MEMORY;
+>>  	}
+>>  	rentry->res = *r;
+>> +	rentry->offset = offset;
+>>  	list_add_tail(&rentry->node, c->list);
+>>  	c->count++;
+>>  	return AE_OK;
+>> @@ -480,6 +482,7 @@ static acpi_status acpi_dev_new_resource_entry(struct resource *r,
+>>  static acpi_status acpi_dev_process_resource(struct acpi_resource *ares,
+>>  					     void *context)
+>>  {
+>> +	resource_size_t offset = 0;
+>>  	struct res_proc_context *c = context;
+>>  	struct resource r;
+>>  	int i;
+>> @@ -500,14 +503,14 @@ static acpi_status acpi_dev_process_resource(struct acpi_resource *ares,
+>>  
+>>  	if (acpi_dev_resource_memory(ares, &r)
+>>  	    || acpi_dev_resource_io(ares, &r)
+>> -	    || acpi_dev_resource_address_space(ares, &r, NULL)
+>> -	    || acpi_dev_resource_ext_address_space(ares, &r, NULL))
+>> -		return acpi_dev_new_resource_entry(&r, c);
+>> +	    || acpi_dev_resource_address_space(ares, &r, &offset)
+>> +	    || acpi_dev_resource_ext_address_space(ares, &r, &offset))
+>> +		return acpi_dev_new_resource_entry(&r, c, offset);
+>>  
+>>  	for (i = 0; acpi_dev_resource_interrupt(ares, i, &r); i++) {
+>>  		acpi_status status;
+>>  
+>> -		status = acpi_dev_new_resource_entry(&r, c);
+>> +		status = acpi_dev_new_resource_entry(&r, c, 0);
+>>  		if (ACPI_FAILURE(status))
+>>  			return status;
+>>  	}
+>> diff --git a/include/linux/acpi.h b/include/linux/acpi.h
+>> index bde8119f5897..fea78e772450 100644
+>> --- a/include/linux/acpi.h
+>> +++ b/include/linux/acpi.h
+>> @@ -300,6 +300,7 @@ bool acpi_dev_resource_interrupt(struct acpi_resource *ares, int index,
+>>  struct resource_list_entry {
+>>  	struct list_head node;
+>>  	struct resource res;
+>> +	resource_size_t offset;
 > 
-> OK, so the assumption is that this check is never true in the current code, right?
-Yes.
+> Well, so instead of adding the offset thing here and there, wouldn't it be
+> cleaner to introduce something like
 > 
->> +		res->start += addr->translation_offset;
->> +		res->end += addr->translation_offset;
->> +	} else if (addr->translation_offset) {
+> 	struct ext_resource {
+> 		sturct resource res;
+> 		resource_size_t offset;
+> 	};
 > 
-> And won't this break anything even if so?
-I'm trying to follow the spec, how about giving a warning here
-instead of failure?
+> and use struct ext_resource instead of struct resource where an offset is needed?
+> 
+> Just a thought ...
+Hi Rafael,
+	Following patches will achieve this by sharing struct resource_list_entry.
 Regards!
 Gerry
 > 
->> +		return false;
->> +	}
->> +
->>  	switch(base->resource_type) {
->>  	case ACPI_MEMORY_RANGE:
->>  		acpi_dev_memresource_flags(res, len, wp);
+>>  };
+>>  
+>>  void acpi_dev_free_resource_list(struct list_head *list);
 >>
 > 
