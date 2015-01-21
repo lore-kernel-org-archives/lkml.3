@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753970AbbAUDWy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 22:22:54 -0500
-Received: from ozlabs.org ([103.22.144.67]:58989 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751853AbbAUDWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 22:22:40 -0500
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Sebastian Ott <sebott@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-        Cornelia Huck <cornelia.huck@de.ibm.com>,
-        Bjorn Helgaas <bhelgaas@google.com>, linux-pci@vger.kernel.org,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-        Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-        linux-s390@vger.kernel.org
-Subject: Re: [PATCH v3 10/16] s390: add pci_iomap_range
-In-Reply-To: <alpine.LFD.2.11.1501161051380.1742@denkbrett>
-References: <1421256142-11512-1-git-send-email-mst@redhat.com> <1421256142-11512-11-git-send-email-mst@redhat.com> <alpine.LFD.2.11.1501161051380.1742@denkbrett>
-User-Agent: Notmuch/0.17 (http://notmuchmail.org) Emacs/24.3.1 (x86_64-pc-linux-gnu)
-Date: Wed, 21 Jan 2015 11:13:14 +1030
-Message-ID: <87fvb5arq5.fsf@rustcorp.com.au>
+	id S1753106AbbAUAXQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 19:23:16 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:49974 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751037AbbAUAXP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 19:23:15 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Bjorn Helgaas <bhelgaas@google.com>,
+        Yinghai Lu <yinghai@kernel.org>, Borislav Petkov <bp@alien8.de>,
+        Len Brown <lenb@kernel.org>, Tony Luck <tony.luck@intel.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [RFC Patch 12/19] ACPI: Enforce stricter checks for address space descriptors
+Date: Wed, 21 Jan 2015 01:45:50 +0100
+Message-ID: <12267175.FvlCJYWCa5@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1420684386-5975-13-git-send-email-jiang.liu@linux.intel.com>
+References: <1420684386-5975-1-git-send-email-jiang.liu@linux.intel.com> <1420684386-5975-13-git-send-email-jiang.liu@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sebastian Ott <sebott@linux.vnet.ibm.com> writes:
-> On Wed, 14 Jan 2015, Michael S. Tsirkin wrote:
->>  }
->> -EXPORT_SYMBOL_GPL(pci_iomap);
->> +EXPORT_SYMBOL_GPL(pci_iomap_range);
->> +
->> +void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long maxlen)
->> +{
->> +	return pci_iomap_range(dev, bar, 0, maxlen);
->> +}
->> +EXPORT_SYMBOL(pci_iomap);
->
-> As discussed earlier, could you please leave that as EXPORT_SYMBOL_GPL.
-> If there's a reason to have these interfaces as EXPORT_SYMBOL, we could
-> change all of them in an extra patch.
->
-> With this change integrated you can add
-> Acked-by: Sebastian Ott <sebott@linux.vnet.ibm.com>
+On Thursday, January 08, 2015 10:32:59 AM Jiang Liu wrote:
+> Enforce stricter checks for address space descriptors according to
+> ACPI spec.
 
-OK, I've gone back and rebased virtio-next to fix this (I don't really
-want to think too hard about the legal consequences of having a version
-which isn't EXPORT_SYMBOL_GPL).
+So is the spec the only reason for doing this?  If so, I'd say don't.
 
-Thanks,
-Rusty.
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> ---
+>  drivers/acpi/resource.c |    8 ++++++++
+>  1 file changed, 8 insertions(+)
+> 
+> diff --git a/drivers/acpi/resource.c b/drivers/acpi/resource.c
+> index 26b47f1da523..e82149e44347 100644
+> --- a/drivers/acpi/resource.c
+> +++ b/drivers/acpi/resource.c
+> @@ -192,6 +192,14 @@ static bool acpi_decode_space(struct resource *res,
+>  	bool wp = base->info.mem.write_protect;
+>  	u64 len = addr->address_length;
+>  
+> +	/*
+> +	 * Filter out invalid descriptor according to ACPI Spec 5.0, section
+> +	 * 6.4.3.5 Address Space Resource Descriptors.
+> +	 */
+> +	if ((base->min_address_fixed != base->max_address_fixed && len) ||
+> +	    (base->min_address_fixed && base->max_address_fixed && !len))
+> +		return false;
+> +
+>  	res->start = addr->minimum;
+>  	res->end = addr->maximum;
+>  
+> 
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
