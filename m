@@ -1,77 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754011AbbAUDtL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 22:49:11 -0500
-Received: from userp1040.oracle.com ([156.151.31.81]:28223 "EHLO
-	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751880AbbAUDtI (ORCPT
+	id S1754057AbbAUDvN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 22:51:13 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:47438 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751856AbbAUDvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 22:49:08 -0500
-Message-ID: <54BF21AA.5010601@oracle.com>
-Date: Tue, 20 Jan 2015 22:48:58 -0500
-From: Sasha Levin <sasha.levin@oracle.com>
+	Tue, 20 Jan 2015 22:51:12 -0500
+Message-ID: <54BF221E.8000409@roeck-us.net>
+Date: Tue, 20 Jan 2015 19:50:54 -0800
+From: Guenter Roeck <linux@roeck-us.net>
 User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-To: Paul Moore <pmoore@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-audit@redhat.com
-CC: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] fs: create proper filename objects using getname_kernel()
-References: <20150119200408.29706.24386.stgit@localhost> <20150119200808.29706.73419.stgit@localhost>
-In-Reply-To: <20150119200808.29706.73419.stgit@localhost>
-Content-Type: text/plain; charset=utf-8
+To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
+        netdev@vger.kernel.org
+CC: "David S . Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        kernel@savoirfairelinux.com
+Subject: Re: [PATCH] net: dsa: set parent of hwmon device
+References: <1421799212-2028-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+In-Reply-To: <1421799212-2028-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Suspect
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 512
+X-CTCH-RefID: str=0001.0A020206.54BF222F.00CF,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=512,sb=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 2
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 2
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/19/2015 03:08 PM, Paul Moore wrote:
-> There are several areas in the kernel that create temporary filename
-> objects using the following pattern:
-> 
-> 	int func(const char *name)
-> 	{
-> 		struct filename *file = { .name = name };
-> 		...
-> 		return 0;
-> 	}
-> 
-> ... which for the most part works okay, but it causes havoc within the
-> audit subsystem as the filename object does not persist beyond the
-> lifetime of the function.  This patch converts all of these temporary
-> filename objects into proper filename objects using getname_kernel()
-> and putname() which ensure that the filename object persists until the
-> audit subsystem is finished with it.
+On 01/20/2015 04:13 PM, Vivien Didelot wrote:
+> Set the dsa device as the parent of the hwmon device, in order to link
+> the hwmon subsystem under the corresponding /sys/devices/platform/dsa.X/
+> sysfs directory.
+>
+> Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+> ---
+>   net/dsa/dsa.c | 2 +-
+>   1 file changed, 1 insertion(+), 1 deletion(-)
+>
+> diff --git a/net/dsa/dsa.c b/net/dsa/dsa.c
+> index 3731714..363102a 100644
+> --- a/net/dsa/dsa.c
+> +++ b/net/dsa/dsa.c
+> @@ -347,7 +347,7 @@ dsa_switch_setup(struct dsa_switch_tree *dst, int index,
+>   		hname[j] = '\0';
+>   		scnprintf(ds->hwmon_name, sizeof(ds->hwmon_name), "%s_dsa%d",
+>   			  hname, index);
+> -		ds->hwmon_dev = hwmon_device_register_with_groups(NULL,
+> +		ds->hwmon_dev = hwmon_device_register_with_groups(parent,
+>   					ds->hwmon_name, ds, dsa_hwmon_groups);
+>   		if (IS_ERR(ds->hwmon_dev))
+>   			ds->hwmon_dev = NULL;
+>
 
-Hi Paul,
+Looking into my old e-mail, turns out we did not add the parent device because
+it affected the output of the "sensors" command, and we wanted the device
+to be handled as 'virtual device' (which implies no parent). That was an explicit
+part of the patch set (v2 of 'net: dsa: Add support for reporting switch chip
+temperatures'), compared to v1, which did set the parent device.
 
-With this patch (bisected) my vm fails to boot with a virtio-9p rootfs:
-
-[   27.313687] fa00         2097152 vda  driver: virtio_blk
-[   27.314218] 103:00000       8192 sda  driver: sd
-[   27.314714] DEBUG_BLOCK_EXT_DEVT is enabled, you need to specify explicit textual name for "root=" boot option.
-[   27.315963] Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(0,0)
-[   27.316885] CPU: 29 PID: 1 Comm: swapper/0 Not tainted 3.19.0-rc5-next-20150120-sasha-00053-gb2e3c55-dirty #1772
-[   27.316885]  ffffffffffffffff ffff88005cb8bd28 ffffffffb14522b5 000000000000004e
-[   27.316885]  ffffffffb26d4950 ffff88005cb8bda8 ffffffffb144c298 ffff88005cb8bd48
-[   27.316885]  ffffffff00000010 ffff88005cb8bdb8 ffff88005cb8bd58 fffffffffffffffe
-[   27.316885] Call Trace:
-[   27.316885]  [<ffffffffb14522b5>] dump_stack+0x4f/0x7b
-[   27.316885]  [<ffffffffb144c298>] panic+0xd2/0x216
-[   27.316885]  [<ffffffffb431558b>] mount_block_root+0x18b/0x244
-[   27.316885]  [<ffffffffb43158ae>] mount_root+0x128/0x133
-[   27.316885]  [<ffffffffb4315a1b>] prepare_namespace+0x162/0x19b
-[   27.316885]  [<ffffffffb4315223>] kernel_init_freeable+0x285/0x29a
-[   27.316885]  [<ffffffffb14472b0>] ? rest_init+0xd0/0xd0
-[   27.316885]  [<ffffffffb14472be>] kernel_init+0xe/0xf0
-[   27.316885]  [<ffffffffb148007c>] ret_from_fork+0x7c/0xb0
-[   27.316885]  [<ffffffffb14472b0>] ? rest_init+0xd0/0xd0
-[   27.316885] Dumping ftrace buffer:
-[   27.316885]    (ftrace buffer empty)
-[   27.316885] Kernel Offset: 0x2d000000 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffffbfffffff)
-[   27.316885] Rebooting in 1 seconds..
-
-virtio-9p is not even listed as an option now.
+I would suggest to keep the code as is.
 
 Thanks,
-Sasha
+Guenter
+
