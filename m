@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531AbbAUHt6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 02:49:58 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:46659 "EHLO mx2.suse.de"
+	id S1752594AbbAUHuH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 02:50:07 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:46664 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750929AbbAUHtk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 02:49:40 -0500
+	id S1751266AbbAUHtl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 02:49:41 -0500
 From: Juergen Gross <jgross@suse.com>
 To: linux-kernel@vger.kernel.org, x86@kernel.org,
         xen-devel@lists.xensource.com, konrad.wilk@oracle.com,
@@ -13,9 +13,9 @@ To: linux-kernel@vger.kernel.org, x86@kernel.org,
         tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, mmarek@suse.cz,
         linux-kbuild@vger.kernel.org
 Cc: Juergen Gross <jgross@suse.com>
-Subject: [RESEND Patch V2 1/4] xen: build infrastructure for generating hypercall depending symbols
-Date: Wed, 21 Jan 2015 08:49:22 +0100
-Message-Id: <1421826565-10826-2-git-send-email-jgross@suse.com>
+Subject: [RESEND Patch V2 2/4] xen: synchronize include/xen/interface/xen.h with xen
+Date: Wed, 21 Jan 2015 08:49:23 +0100
+Message-Id: <1421826565-10826-3-git-send-email-jgross@suse.com>
 X-Mailer: git-send-email 2.1.2
 In-Reply-To: <1421826565-10826-1-git-send-email-jgross@suse.com>
 References: <1421826565-10826-1-git-send-email-jgross@suse.com>
@@ -23,68 +23,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Today there are several places in the kernel which build tables
-containing one entry for each possible Xen hypercall. Create an
-infrastructure to be able to generate these tables at build time.
+The header include/xen/interface/xen.h doesn't contain all definitions
+from Xen's version of that header. Update it accordingly.
 
-Based-on-patch-by: Jan Beulich <jbeulich@suse.com>
 Signed-off-by: Juergen Gross <jgross@suse.com>
 Reviewed-by: David Vrabel <david.vrabel@citrix.com>
 ---
- arch/x86/syscalls/Makefile |  9 +++++++++
- scripts/xen-hypercalls.sh  | 12 ++++++++++++
- 2 files changed, 21 insertions(+)
- create mode 100644 scripts/xen-hypercalls.sh
+ arch/x86/xen/trace.c        | 2 +-
+ include/xen/interface/xen.h | 6 +++++-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/syscalls/Makefile b/arch/x86/syscalls/Makefile
-index 3323c27..a55abb9 100644
---- a/arch/x86/syscalls/Makefile
-+++ b/arch/x86/syscalls/Makefile
-@@ -19,6 +19,9 @@ quiet_cmd_syshdr = SYSHDR  $@
- quiet_cmd_systbl = SYSTBL  $@
-       cmd_systbl = $(CONFIG_SHELL) '$(systbl)' $< $@
+diff --git a/arch/x86/xen/trace.c b/arch/x86/xen/trace.c
+index 520022d..8296cdf 100644
+--- a/arch/x86/xen/trace.c
++++ b/arch/x86/xen/trace.c
+@@ -29,7 +29,7 @@ static const char *xen_hypercall_names[] = {
+ 	N(vcpu_op),
+ 	N(set_segment_base),
+ 	N(mmuext_op),
+-	N(acm_op),
++	N(xsm_op),
+ 	N(nmi_op),
+ 	N(sched_op),
+ 	N(callback_op),
+diff --git a/include/xen/interface/xen.h b/include/xen/interface/xen.h
+index f68719f..a483789 100644
+--- a/include/xen/interface/xen.h
++++ b/include/xen/interface/xen.h
+@@ -67,7 +67,7 @@
+ #define __HYPERVISOR_vcpu_op              24
+ #define __HYPERVISOR_set_segment_base     25 /* x86/64 only */
+ #define __HYPERVISOR_mmuext_op            26
+-#define __HYPERVISOR_acm_op               27
++#define __HYPERVISOR_xsm_op               27
+ #define __HYPERVISOR_nmi_op               28
+ #define __HYPERVISOR_sched_op             29
+ #define __HYPERVISOR_callback_op          30
+@@ -75,7 +75,11 @@
+ #define __HYPERVISOR_event_channel_op     32
+ #define __HYPERVISOR_physdev_op           33
+ #define __HYPERVISOR_hvm_op               34
++#define __HYPERVISOR_sysctl               35
++#define __HYPERVISOR_domctl               36
++#define __HYPERVISOR_kexec_op             37
+ #define __HYPERVISOR_tmem_op              38
++#define __HYPERVISOR_xc_reserved_op       39 /* reserved for XenClient */
  
-+quiet_cmd_hypercalls = HYPERCALLS $@
-+      cmd_hypercalls = $(CONFIG_SHELL) '$<' $@ $(filter-out $<,$^)
-+
- syshdr_abi_unistd_32 := i386
- $(uapi)/unistd_32.h: $(syscall32) $(syshdr)
- 	$(call if_changed,syshdr)
-@@ -47,10 +50,16 @@ $(out)/syscalls_32.h: $(syscall32) $(systbl)
- $(out)/syscalls_64.h: $(syscall64) $(systbl)
- 	$(call if_changed,systbl)
- 
-+$(out)/xen-hypercalls.h: $(srctree)/scripts/xen-hypercalls.sh
-+	$(call if_changed,hypercalls)
-+
-+$(out)/xen-hypercalls.h: $(srctree)/include/xen/interface/xen*.h
-+
- uapisyshdr-y			+= unistd_32.h unistd_64.h unistd_x32.h
- syshdr-y			+= syscalls_32.h
- syshdr-$(CONFIG_X86_64)		+= unistd_32_ia32.h unistd_64_x32.h
- syshdr-$(CONFIG_X86_64)		+= syscalls_64.h
-+syshdr-$(CONFIG_XEN)		+= xen-hypercalls.h
- 
- targets	+= $(uapisyshdr-y) $(syshdr-y)
- 
-diff --git a/scripts/xen-hypercalls.sh b/scripts/xen-hypercalls.sh
-new file mode 100644
-index 0000000..676d922
---- /dev/null
-+++ b/scripts/xen-hypercalls.sh
-@@ -0,0 +1,12 @@
-+#!/bin/sh
-+out="$1"
-+shift
-+in="$@"
-+
-+for i in $in; do
-+	eval $CPP $LINUXINCLUDE -dD -imacros "$i" -x c /dev/null
-+done | \
-+awk '$1 == "#define" && $2 ~ /__HYPERVISOR_[a-z][a-z_0-9]*/ { v[$3] = $2 }
-+	END {   print "/* auto-generated by scripts/xen-hypercall.sh */"
-+		for (i in v) if (!(v[i] in v))
-+			print "HYPERCALL("substr(v[i], 14)")"}' | sort -u >$out
+ /* Architecture-specific hypercall definitions. */
+ #define __HYPERVISOR_arch_0               48
 -- 
 2.1.2
 
