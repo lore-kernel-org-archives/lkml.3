@@ -1,56 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752367AbbAUJoh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 04:44:37 -0500
-Received: from www.linutronix.de ([62.245.132.108]:53306 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601AbbAUJoe (ORCPT
+	id S1752602AbbAUJpP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 04:45:15 -0500
+Received: from pandora.arm.linux.org.uk ([78.32.30.218]:43217 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751552AbbAUJpJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 04:44:34 -0500
-Date: Wed, 21 Jan 2015 10:43:56 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        Bjorn Helgaas <bhelgaas@google.com>, Yinghai Lu <yinghai@kernel.org>,
-        Borislav Petkov <bp@alien8.de>, Len Brown <lenb@kernel.org>,
-        Dan Williams <dan.j.williams@intel.com>,
-        Vinod Koul <vinod.koul@intel.com>, Vivek Goyal <vgoyal@redhat.com>,
-        Thierry Reding <treding@nvidia.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Mike Travis <travis@sgi.com>, Tony Luck <tony.luck@intel.com>,
-        x86@kernel.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org,
-        dmaengine@vger.kernel.org
-Subject: Re: [RFC Patch 17/19] resources: Move struct resource_list_entry
- from ACPI into resource core
-In-Reply-To: <54BF4911.7030906@linux.intel.com>
-Message-ID: <alpine.DEB.2.11.1501211043170.5526@nanos>
-References: <1420684386-5975-1-git-send-email-jiang.liu@linux.intel.com> <1420684386-5975-18-git-send-email-jiang.liu@linux.intel.com> <3428063.tN1BxOoXSN@vostro.rjw.lan> <54BF4911.7030906@linux.intel.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Wed, 21 Jan 2015 04:45:09 -0500
+Date: Wed, 21 Jan 2015 09:44:53 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Robert Jarzmik <robert.jarzmik@free.fr>
+Cc: Lee Jones <lee.jones@linaro.org>, Mark Rutland <mark.rutland@arm.com>,
+        devicetree@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Kumar Gala <galak@codeaurora.org>, Daniel Mack <daniel@zonque.org>
+Subject: Re: [PATCH v3 2/3] mfd: lubbock_io: add lubbock_io board
+Message-ID: <20150121094453.GO26493@n2100.arm.linux.org.uk>
+References: <1421406010-14851-1-git-send-email-robert.jarzmik@free.fr>
+ <1421406010-14851-2-git-send-email-robert.jarzmik@free.fr>
+ <20150119091705.GG21886@x1>
+ <87ppaah9k5.fsf@free.fr>
+ <20150120102919.GP5767@x1>
+ <20150120115658.GJ26493@n2100.arm.linux.org.uk>
+ <873874fuei.fsf@free.fr>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <873874fuei.fsf@free.fr>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Jan 2015, Jiang Liu wrote:
-> On 2015/1/21 9:10, Rafael J. Wysocki wrote:
-> >> +
-> >> +void resource_list_insert(struct list_head *head,
-> >> +			  struct resource_list_entry *entry, bool tail)
-> > 
-> > I would call this resource_list_add() if anything.
-> > 
-> > Also it may be better to have two helpers, one for "add" and one for "add_tail"
-> > (and perhaps define them as static inline?).
-> We can't use inline functions here because that needs pulling list.h
-> into ioport.h, then causing building issues to header inclusion order.
+On Wed, Jan 21, 2015 at 08:46:29AM +0100, Robert Jarzmik wrote:
+> Russell King - ARM Linux <linux@arm.linux.org.uk> writes:
+> 
+> > What I'd suggest (and always have done) is:
+> >
+> > 	dev_err(&pdev->dev, "couldn't request main irq%d: %d\n",
+> > 		irq, ret);
+> I like it, it's even more compact, I'll use it for next patch version.
 
-Create a new header file to avoid the circular dependencies then.
+BTW, this is an example why I have the policy of always ensuring that
+the kernel messages print sufficient diagnostics.  Right now, I have
+a problem - since I rebooted my firewall a few nights ago, I now get
+on one of my machines:
 
-Thanks,
+  rt6_redirect: source isn't a valid nexthop for redirect target
 
-	tglx
+and it spews that for a few minutes every 26 hours or so.  No further
+information, and it leaves you wondering "well, what was the invalid
+next hop?  What was the source?"
+
+Pretty much the only way to try and find out is to leave a tcpdump or
+wireshark running for 24 hours to try and get a dump - which is not
+that easy if you don't have lots of disk space.  So, right now, I have
+no way to diagnose the above.
+
+If it printed that information, then I'd be able to see what the
+addresses were, and I'd probably be able to come up with a tcpdump
+filter which didn't involve logging all IPv6 traffic.
+
+Kernel messages need to be smart.  If not, they might as well just be
+"The kernel encountered a problem. Abort, Retry or Fail?"
+
+-- 
+FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
+according to speedtest.net.
