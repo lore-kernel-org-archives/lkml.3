@@ -1,123 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753333AbbAUODJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 09:03:09 -0500
-Received: from mail-wg0-f51.google.com ([74.125.82.51]:45906 "EHLO
-	mail-wg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753247AbbAUOCy (ORCPT
+	id S1752666AbbAUOCe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 09:02:34 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:56124 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889AbbAUOC3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 09:02:54 -0500
-Date: Wed, 21 Jan 2015 14:02:50 +0000
-From: Matt Fleming <matt@codeblueprint.co.uk>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-efi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ricardo Neri <ricardo.neri-calderon@linux.intel.com>
-Subject: [GIT PULL] EFI changes for v3.20
-Message-ID: <20150121140250.GE12079@codeblueprint.co.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 21 Jan 2015 09:02:29 -0500
+From: Luis Henriques <luis.henriques@canonical.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+Cc: Wei Liu <wei.liu2@citrix.com>, Ian Campbell <Ian.Campbell@citrix.com>,
+        Paul Durrant <paul.durrant@citrix.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Luis Henriques <luis.henriques@canonical.com>,
+        kernel-team@lists.ubuntu.com
+Subject: [3.16.y-ckt stable] Patch "xen-netfront: Fix handling packets on compound pages with skb_linearize" has been added to staging queue
+Date: Wed, 21 Jan 2015 14:02:51 +0000
+Message-Id: <1421848971-29274-1-git-send-email-luis.henriques@canonical.com>
+X-Mailer: git-send-email 2.1.4
+X-Extended-Stable: 3.16
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Folks, please consider pulling the following changes for v3.20. There's
-nothing super scary, mainly cleanups, and a merge from Ricardo who
-kindly picked up some patches from the linux-efi mailing list while I
-was out on annual leave in December.
+This is a note to let you know that I have just added a patch titled
 
-Perhaps the biggest risk is the get_memory_map() change from Ard, which
-changes the way that both the arm64 and x86 EFI boot stub build the
-early memory map. It would be good to have it bake in linux-next for a
-while.
+    xen-netfront: Fix handling packets on compound pages with skb_linearize
 
-One other thing to note is that I've picked up an rtc-efi patch from Ard
-because the rtc maintainer hasn't been responsive for a while now.
+to the linux-3.16.y-queue branch of the 3.16.y-ckt extended stable tree 
+which can be found at:
 
-The following changes since commit 8266e31ed0fedb7ee16ebc86e80468f7cc1bbb4e:
+ http://kernel.ubuntu.com/git?p=ubuntu/linux.git;a=shortlog;h=refs/heads/linux-3.16.y-queue
 
-  x86, ptdump: Add section for EFI runtime services (2014-11-11 22:28:57 +0000)
+This patch is scheduled to be released in version 3.16.7-ckt5.
 
-are available in the git repository at:
+If you, or anyone else, feels it should not be added to this tree, please 
+reply to this email.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/efi.git tags/efi-next
+For more information about the 3.16.y-ckt tree, see
+https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
 
-for you to fetch changes up to 11629305043c513454c4ccb4fc384a1bfe610647:
+Thanks.
+-Luis
 
-  efi: Don't look for chosen@0 node on DT platforms (2015-01-20 22:41:56 +0000)
+------
 
-----------------------------------------------------------------
- * Move efivarfs from the misc filesystem section to pseudo filesystem,
-   since that's a more logical and accurate place - Leif Lindholm
+>From de2d635708a0a0a8e3b38e25e1cbf81a06f6fc27 Mon Sep 17 00:00:00 2001
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+Date: Mon, 11 Aug 2014 18:32:23 +0100
+Subject: xen-netfront: Fix handling packets on compound pages with
+ skb_linearize
 
- * Update efibootmgr URL in Kconfig help - Peter Jones
+commit 97a6d1bb2b658ac85ed88205ccd1ab809899884d upstream.
 
- * Improve accuracy of EFI guid function names - Borislav Petkov
+There is a long known problem with the netfront/netback interface: if the guest
+tries to send a packet which constitues more than MAX_SKB_FRAGS + 1 ring slots,
+it gets dropped. The reason is that netback maps these slots to a frag in the
+frags array, which is limited by size. Having so many slots can occur since
+compound pages were introduced, as the ring protocol slice them up into
+individual (non-compound) page aligned slots. The theoretical worst case
+scenario looks like this (note, skbs are limited to 64 Kb here):
+linear buffer: at most PAGE_SIZE - 17 * 2 bytes, overlapping page boundary,
+using 2 slots
+first 15 frags: 1 + PAGE_SIZE + 1 bytes long, first and last bytes are at the
+end and the beginning of a page, therefore they use 3 * 15 = 45 slots
+last 2 frags: 1 + 1 bytes, overlapping page boundary, 2 * 2 = 4 slots
+Although I don't think this 51 slots skb can really happen, we need a solution
+which can deal with every scenario. In real life there is only a few slots
+overdue, but usually it causes the TCP stream to be blocked, as the retry will
+most likely have the same buffer layout.
+This patch solves this problem by linearizing the packet. This is not the
+fastest way, and it can fail much easier as it tries to allocate a big linear
+area for the whole packet, but probably easier by an order of magnitude than
+anything else. Probably this code path is not touched very frequently anyway.
 
- * Expose firmware platform size in sysfs for the benefit of EFI boot
-   loader installers and other utilities - Steve McIntyre
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+Cc: Wei Liu <wei.liu2@citrix.com>
+Cc: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: Paul Durrant <paul.durrant@citrix.com>
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: xen-devel@lists.xenproject.org
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Cc: Stefan Bader <stefan.bader@canonical.com>
+Signed-off-by: Luis Henriques <luis.henriques@canonical.com>
+---
+ drivers/net/xen-netfront.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
- * Cleanup __init annotations for arm64/efi code - Ard Biesheuvel
+diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
+index 7a4cd11e6a07..3e0019503440 100644
+--- a/drivers/net/xen-netfront.c
++++ b/drivers/net/xen-netfront.c
+@@ -623,9 +623,10 @@ static int xennet_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 	slots = DIV_ROUND_UP(offset + len, PAGE_SIZE) +
+ 		xennet_count_skb_frag_slots(skb);
+ 	if (unlikely(slots > MAX_SKB_FRAGS + 1)) {
+-		net_alert_ratelimited(
+-			"xennet: skb rides the rocket: %d slots\n", slots);
+-		goto drop;
++		net_dbg_ratelimited("xennet: skb rides the rocket: %d slots, %d bytes\n",
++				    slots, skb->len);
++		if (skb_linearize(skb))
++			goto drop;
+ 	}
 
- * Mark the UIE as unsupported for rtc-efi - Ard Biesheuvel
+ 	spin_lock_irqsave(&queue->tx_lock, flags);
+--
+2.1.4
 
- * Fix memory leak in error code path of runtime map code - Dan Carpenter
-
- * Improve robustness of get_memory_map() by removing assumptions on the
-   size of efi_memory_desc_t (which could change in future spec
-   versions) and querying the firmware instead of guessing about the
-   memmap size - Ard Biesheuvel
-
- * Remove superfluous guid unparse calls - Ivan Khoronzhuk
-
- * Delete unnecessary chosen@0 DT node FDT code since was duplicated
-   from code in drivers/of and is entirely unnecessary - Leif Lindholm
-
-----------------------------------------------------------------
-Ard Biesheuvel (3):
-      arm64/efi: efistub: Apply __init annotation
-      efi: rtc-efi: Mark UIE as unsupported
-      efi/libstub: Call get_memory_map() to obtain map and desc sizes
-
-Borislav Petkov (1):
-      efi: Rename efi_guid_unparse to efi_guid_to_str
-
-Dan Carpenter (1):
-      efi: Small leak on error in runtime map code
-
-Ivan Khoronzhuk (1):
-      firmware: efi: Remove unneeded guid unparse
-
-Leif Lindholm (2):
-      fs: Make efivarfs a pseudo filesystem, built by default with EFI
-      efi: Don't look for chosen@0 node on DT platforms
-
-Matt Fleming (1):
-      Merge tag 'rneri-efi-next' of https://github.com/ricardon/efi into next
-
-Peter Jones (1):
-      efi: Update the URLs for efibootmgr
-
-Steve McIntyre (1):
-      efi: Expose underlying UEFI firmware platform size to userland
-
- arch/arm64/kernel/efi-stub.c                   | 14 +++++++-------
- block/partitions/efi.c                         |  2 +-
- drivers/firmware/efi/Kconfig                   |  4 ++--
- drivers/firmware/efi/efi.c                     | 17 ++++++++++-------
- drivers/firmware/efi/efivars.c                 |  6 +++---
- drivers/firmware/efi/libstub/Makefile          | 14 ++++++++++++++
- drivers/firmware/efi/libstub/arm-stub.c        |  8 ++++----
- drivers/firmware/efi/libstub/efi-stub-helper.c | 18 +++++++++++-------
- drivers/firmware/efi/runtime-map.c             |  2 +-
- drivers/rtc/rtc-efi.c                          |  1 +
- fs/Kconfig                                     |  2 +-
- fs/efivarfs/Kconfig                            |  1 +
- fs/efivarfs/super.c                            |  2 +-
- include/linux/efi.h                            |  2 +-
- 14 files changed, 58 insertions(+), 35 deletions(-)
-
--- 
-Matt Fleming, Intel Open Source Technology Center
