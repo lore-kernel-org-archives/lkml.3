@@ -1,79 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751939AbbAUHFo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 02:05:44 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:37998 "EHLO mx1.redhat.com"
+	id S1751577AbbAUHOd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 02:14:33 -0500
+Received: from ozlabs.org ([103.22.144.67]:46902 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750812AbbAUHFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 02:05:42 -0500
-Message-ID: <1421823925.2789.3.camel@pluto.fritz.box>
-Subject: Re: [RFC PATCH 0/5] Second attempt at contained helper execution
-From: Ian Kent <ikent@redhat.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>,
-        Oleg Nesterov <onestero@redhat.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Benjamin Coddington <bcodding@redhat.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Jeff Layton <jeff.layton@primarydata.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Date: Wed, 21 Jan 2015 15:05:25 +0800
-In-Reply-To: <20150116152527.GD17315@fieldses.org>
-References: <20150114092704.30252.60446.stgit@pluto.fritz.box>
-	 <20150114215525.GB7071@fieldses.org> <20150114221011.GC7071@fieldses.org>
-	 <1421281572.2688.4.camel@pluto.fritz.box>
-	 <20150115162741.GA14902@fieldses.org>
-	 <1421370073.2630.4.camel@pluto.fritz.box>
-	 <20150116152527.GD17315@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1750811AbbAUHOc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 02:14:32 -0500
+Date: Wed, 21 Jan 2015 18:14:25 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>,
+        "Kirill A. Shutemov" <kirill.shutemov@linux.intel.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christoph Hellwig <hch@lst.de>
+Subject: linux-next: manual merge of the akpm-current tree with the  tree
+Message-ID: <20150121181425.18399e35@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/DAAQF6MRW91gbeEGfRLQ4ci"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2015-01-16 at 10:25 -0500, J. Bruce Fields wrote:
-> On Fri, Jan 16, 2015 at 09:01:13AM +0800, Ian Kent wrote:
-> > On Thu, 2015-01-15 at 11:27 -0500, J. Bruce Fields wrote:
-> > > On Thu, Jan 15, 2015 at 08:26:12AM +0800, Ian Kent wrote:
-> > > > On Wed, 2015-01-14 at 17:10 -0500, J. Bruce Fields wrote:
-> > > > > > On Wed, Jan 14, 2015 at 05:32:22PM +0800, Ian Kent wrote:
-> > > > > > > There are other difficulties to tackle as well, such as how to decide
-> > > > > > > if contained helper execution is needed. For example, if a mount has
-> > > > > > > been propagated to a container or bound into the container tree (such
-> > > > > > > as with the --volume option of "docker run") the root init namespace
-> > > > > > > may need to be used and not the container namespace.
-> > > > > 
-> > > > > I think you have to go through each of the existing upcall examples and
-> > > > > decide what's needed for each.
-> > > > > 
-> > > > > At least for the nfsv4 idmapper I would've thought the namespace the
-> > > > > mount was done in would be the right choice, hence my previous question.
-> > > > 
-> > > > Probably but you don't necessarily know what namespace the mount was
-> > > > done in. It may have been propagated from another namespace or (although
-> > > > I don't think it works yet) bound from another container using the
-> > > > volumes-from docker option.
-> > > 
-> > > Name-id mappings should be associated with the superblock, I guess--so
-> > > don't you store a pointer to the right thing there?
-> > 
-> > Quite possibly but my original point was, without an acceptable
-> > mechanism to execute the helper we can't know what might need to be done
-> > to use it.
-> 
-> At least for me it would be easier to review if it came with at least
-> one example user.
+--Sig_/DAAQF6MRW91gbeEGfRLQ4ci
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Haven't seen any negative responses but perhaps people are still away
-over Xmas.
+Hi Andrew,
 
-In the mean time it's probably a good idea to add some use cases to the
-series in case the approach is OK.
+Today's linux-next merge of the akpm-current tree got a conflict in
+mm/swap.c between commit 97b713ba3eba ("fs: kill BDI_CAP_SWAP_BACKED")
+from the block tree and commit f69ec11fad9f ("rmap: drop support of
+non-linear mappings") from the akpm-current tree.
 
-I'll have a look at the nfsd code and see if I can spot the places.
+I fixed it up (see below) and can carry the fix as necessary (no action
+is required).
 
-Ian
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc mm/swap.c
+index 4e0109a2f37b,5b3087228b99..000000000000
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@@ -1138,10 -1138,10 +1138,8 @@@ void __init swap_setup(void
+  #ifdef CONFIG_SWAP
+  	int i;
+ =20
+- 	for (i =3D 0; i < MAX_SWAPFILES; i++) {
+ -	if (bdi_init(swapper_spaces[0].backing_dev_info))
+ -		panic("Failed to init swap bdi");
++ 	for (i =3D 0; i < MAX_SWAPFILES; i++)
+  		spin_lock_init(&swapper_spaces[i].tree_lock);
+- 		INIT_LIST_HEAD(&swapper_spaces[i].i_mmap_nonlinear);
+- 	}
+  #endif
+ =20
+  	/* Use a smaller cluster for small-memory machines */
 
+--Sig_/DAAQF6MRW91gbeEGfRLQ4ci
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUv1HWAAoJEMDTa8Ir7ZwVLaYP/0+LIFMnk0d7I272b8IC06I4
+mXHocyYOK1tl+29AfDPsnqMS7gD6nO6qEdjAYPcER+D0ovZyFFEJ0b5M8yJ2GsGh
+Ga4MRNNM9gFemw4s5xulNy+YE1eFJFbvWdJTIJ9VSFVwoQuHh7E+5f4F23x3Ohvk
+dZbgFLwAX/IuPeAwz6wkAAJEYm0Ok3jQEn+wZgiXguBdxUC0+lxcQfHF/r/2pUve
+Lv8Rsj5BZtY5TMqKgPqYeHkm/bmDBLYEv2++cbGj6GL0BPPsKIQgRWh483l2qzz5
+DhHjpctzl2UEyiSTlhVJkVoveKJSGLz914vG+w/iKjTfriRyAJxCTx2h5vjlFWVU
+ID1DUvmMIYFMzOBZ6ukK8nxKZ0vU0P3IFOU3Ll22woPpx4lnVIHGZKTkTKaKk/Ii
+/jqu2sMeKnTqIViz0VC8pmjdRi1+UkLaePJIxMhiZZJVrxNyDHjWUC4EoXxG7O98
+LvMGW0rGgNXW2wVDHvR3PJimZ1EvlWse37kf0mbWfLw+GuPaxNW21qPTIwhWV5KA
+aim89mWLGCEm97V7JIzqBvNDdRiDK3+T8CINs7vRt2YSAbg+RbJmxPhN4mWrV/+m
+dzMKnKg8Wk17W7im9ndZfRBr/HXjG/1gynoRIMyWEe7Tt98VA3HGqRVQhbCgEWed
+H9bXz6FajvLqIV9DMTmV
+=ijYO
+-----END PGP SIGNATURE-----
+
+--Sig_/DAAQF6MRW91gbeEGfRLQ4ci--
