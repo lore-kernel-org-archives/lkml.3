@@ -1,141 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753120AbbAUKdX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 05:33:23 -0500
-Received: from mail-wi0-f182.google.com ([209.85.212.182]:46930 "EHLO
-	mail-wi0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753036AbbAUKdE (ORCPT
+	id S1752838AbbAUKso (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 05:48:44 -0500
+Received: from mail-db3on0075.outbound.protection.outlook.com ([157.55.234.75]:34960
+	"EHLO emea01-db3-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750803AbbAUKsf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 05:33:04 -0500
-Message-ID: <54BF805B.4000609@gmail.com>
-Date: Wed, 21 Jan 2015 11:32:59 +0100
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 21 Jan 2015 05:48:35 -0500
+X-Greylist: delayed 908 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Jan 2015 05:48:34 EST
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-To: Daniel Mack <daniel@zonque.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, arnd@arndb.de,
-        ebiederm@xmission.com, gnomes@lxorguk.ukuu.org.uk, teg@jklm.no,
-        jkosina@suse.cz, luto@amacapital.net, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-CC: mtk.manpages@gmail.com, dh.herrmann@gmail.com, tixxdz@opendz.org,
-        Johannes Stezenbach <js@sig21.net>
-Subject: Re: [PATCH 01/13] kdbus: add documentation
-References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org> <1421435777-25306-2-git-send-email-gregkh@linuxfoundation.org> <54BE5DC8.70706@gmail.com> <54BE9D08.7010804@zonque.org>
-In-Reply-To: <54BE9D08.7010804@zonque.org>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+To: "Ahmed S. Darwish" <darwish.07@gmail.com>,
+        Olivier Sobrie <olivier@sobrie.be>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        "Wolfgang Grandegger" <wg@grandegger.com>,
+        Marc Kleine-Budde <mkl@pengutronix.de>
+From: Andri Yngvason <andri.yngvason@marel.com>
+In-Reply-To: <20150120214537.GB16828@linux>
+CC: Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+References: <20141223154654.GB6460@vivalin-002> <20150120214409.GA16828@linux>
+ <20150120214537.GB16828@linux>
+Message-ID: <20150121103319.14511.57709@shannon>
+User-Agent: alot/0.3.5
+Subject: Re: [PATCH v5 2/5] can: kvaser_usb: Consolidate and unify state change
+ handling
+Date: Wed, 21 Jan 2015 10:33:19 +0000
+X-Originating-IP: [10.100.11.118]
+X-EOPAttributedMessage: 0
+Authentication-Results: spf=pass (sender IP is 212.30.206.5)
+ smtp.mailfrom=Andri.Yngvason@marel.com; 
+X-Forefront-Antispam-Report: CIP:212.30.206.5;CTRY:IS;IPV:NLI;EFV:NLI;SFV:NSPM;SFS:(10009020)(6009001)(438002)(51704005)(377424004)(189002)(199003)(19580405001)(6806004)(88526003)(2950100001)(19580395003)(106466001)(77096005)(87936001)(23676002)(54356999)(76176999)(50466002)(86362001)(92566002)(83506001)(71226002)(46102003)(76506005)(57986006)(64706001)(47776003)(16796002)(33716001)(50986999)(77156002)(62966003)(69266003);DIR:OUT;SFP:1101;SCL:1;SRVR:DBXPR05MB254;H:smtp.marel.com;FPR:;SPF:Pass;MLV:sfv;PTR:smtp.marel.com;MX:1;A:1;LANG:en;
+X-DmarcAction-Test: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:DBXPR05MB254;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:DBXPR05MB254;
+X-Forefront-PRVS: 04631F8F77
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:DBXPR05MB254;
+X-OriginatorOrg: marel.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 21 Jan 2015 10:33:23.3353
+ (UTC)
+X-MS-Exchange-CrossTenant-Id: e5f498be-7303-45fd-a594-9e3fd22a77d7
+X-MS-Exchange-CrossTenant-OriginalAttributedTenantConnectingIp: TenantId=e5f498be-7303-45fd-a594-9e3fd22a77d7;Ip=[212.30.206.5]
+X-MS-Exchange-CrossTenant-FromEntityHeader: HybridOnPrem
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: DBXPR05MB254
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Daniel,
-
-On 01/20/2015 07:23 PM, Daniel Mack wrote:
-> On 01/20/2015 02:53 PM, Michael Kerrisk (man-pages) wrote:
->> This is an enormous and complex API. Why is the API ioctl() based,
->> rather than system-call-based? Have we learned nothing from the hydra
->> that the futex() multiplexing syscall became? (And kdbus is an order
->> of magnitude more complex, by the look of things.) At the very least,
->> a *good* justification of why the API is ioctl()-based should be part
->> of this documentation file.
+Quoting Ahmed S. Darwish (2015-01-20 21:45:37)
+> From: Ahmed S. Darwish <ahmed.darwish@valeo.com>
 > 
-> I think the simplest reason is because we want to be able to build kdbus
-> as a module. 
+> Replace most of the can interface's state and error counters
+> handling with the new can-dev can_change_state() mechanism.
+> 
+> Suggested-by: Andri Yngvason <andri.yngvason@marel.com>
+> Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
+> ---
+>  drivers/net/can/usb/kvaser_usb.c | 114 +++++++++++++++++++--------------------
+>  1 file changed, 55 insertions(+), 59 deletions(-)
+> 
+> diff --git a/drivers/net/can/usb/kvaser_usb.c b/drivers/net/can/usb/kvaser_usb.c
+> index 971c5f9..0386d3f 100644
+> --- a/drivers/net/can/usb/kvaser_usb.c
+> +++ b/drivers/net/can/usb/kvaser_usb.c
+> @@ -620,40 +620,43 @@ static void kvaser_usb_unlink_tx_urbs(struct kvaser_usb_net_priv *priv)
+>  }
+>  
+>  static void kvaser_usb_rx_error_update_can_state(struct kvaser_usb_net_priv *priv,
+> -                                                const struct kvaser_usb_error_summary *es)
+> +                                                const struct kvaser_usb_error_summary *es,
+> +                                                struct can_frame *cf)
+>  {
+>         struct net_device_stats *stats;
+> -       enum can_state new_state;
+> -
+> -       stats = &priv->netdev->stats;
+> -       new_state = priv->can.state;
+> +       enum can_state cur_state, new_state, tx_state, rx_state;
+>  
+>         netdev_dbg(priv->netdev, "Error status: 0x%02x\n", es->status);
+>  
+> -       if (es->status & M16C_STATE_BUS_OFF) {
+> -               priv->can.can_stats.bus_off++;
+> +       stats = &priv->netdev->stats;
+> +       new_state = cur_state = priv->can.state;
+> +
+> +       if (es->status & M16C_STATE_BUS_OFF)
+>                 new_state = CAN_STATE_BUS_OFF;
+> -       } else if (es->status & M16C_STATE_BUS_PASSIVE) {
+> -               if (priv->can.state != CAN_STATE_ERROR_PASSIVE)
+> -                       priv->can.can_stats.error_passive++;
+> +       else if (es->status & M16C_STATE_BUS_PASSIVE)
+>                 new_state = CAN_STATE_ERROR_PASSIVE;
+> -       }
+>  
+>         if (es->status == M16C_STATE_BUS_ERROR) {
+> -               if ((priv->can.state < CAN_STATE_ERROR_WARNING) &&
+> -                   ((es->txerr >= 96) || (es->rxerr >= 96))) {
+> -                       priv->can.can_stats.error_warning++;
+> +               if ((cur_state < CAN_STATE_ERROR_WARNING) &&
+> +                   ((es->txerr >= 96) || (es->rxerr >= 96)))
+>                         new_state = CAN_STATE_ERROR_WARNING;
+> -               } else if (priv->can.state > CAN_STATE_ERROR_ACTIVE) {
+> +               else if (cur_state > CAN_STATE_ERROR_ACTIVE)
+>                         new_state = CAN_STATE_ERROR_ACTIVE;
+> -               }
+>         }
+>  
+>         if (!es->status)
+>                 new_state = CAN_STATE_ERROR_ACTIVE;
+>  
+> +       if (new_state != cur_state) {
+> +               tx_state = (es->txerr >= es->rxerr) ? new_state : 0;
+> +               rx_state = (es->txerr <= es->rxerr) ? new_state : 0;
+> +
+> +               can_change_state(priv->netdev, cf, tx_state, rx_state);
+> +               new_state = priv->can.state;
+> +       }
+> +
+>         if (priv->can.restart_ms &&
+> -           (priv->can.state >= CAN_STATE_BUS_OFF) &&
+> +           (cur_state >= CAN_STATE_BUS_OFF) &&
+>             (new_state < CAN_STATE_BUS_OFF)) {
+>                 priv->can.can_stats.restarts++;
+>         }
+> @@ -665,18 +668,17 @@ static void kvaser_usb_rx_error_update_can_state(struct kvaser_usb_net_priv *pri
+>  
+>         priv->bec.txerr = es->txerr;
+>         priv->bec.rxerr = es->rxerr;
+> -       priv->can.state = new_state;
+>  }
+>  
+>  static void kvaser_usb_rx_error(const struct kvaser_usb *dev,
+>                                 const struct kvaser_msg *msg)
+>  {
+> -       struct can_frame *cf;
+> +       struct can_frame *cf, tmp_cf = { .can_id = CAN_ERR_FLAG, .can_dlc = CAN_ERR_DLC };
+>         struct sk_buff *skb;
+>         struct net_device_stats *stats;
+>         struct kvaser_usb_net_priv *priv;
+>         struct kvaser_usb_error_summary es = { };
+> -       enum can_state old_state;
+> +       enum can_state old_state, new_state;
+>  
+>         switch (msg->id) {
+>         case CMD_CAN_ERROR_EVENT:
+> @@ -721,60 +723,54 @@ static void kvaser_usb_rx_error(const struct kvaser_usb *dev,
+>         }
+>  
+>         /* Update all of the can interface's state and error counters before
+> -        * trying any skb allocation that can actually fail with -ENOMEM.
+> +        * trying any memory allocation that can actually fail with -ENOMEM.
+> +        *
+> +        * We send a temporary stack-allocated error can frame to
+> +        * can_change_state() for the very same reason.
+> +        *
+> +        * TODO: Split can_change_state() responsibility between updating the
+> +        * can interface's state and counters, and the setting up of can error
+> +        * frame ID and data to userspace. Remove stack allocation afterwards.
+>          */
+>         old_state = priv->can.state;
+> -       kvaser_usb_rx_error_update_can_state(priv, &es);
+> +       kvaser_usb_rx_error_update_can_state(priv, &es, &tmp_cf);
+> +       new_state = priv->can.state;
+>  
+>         skb = alloc_can_err_skb(priv->netdev, &cf);
+>         if (!skb) {
+>                 stats->rx_dropped++;
+>                 return;
+>         }
+> +       memcpy(cf, &tmp_cf, sizeof(*cf));
+>  
+> -       if (es.status & M16C_STATE_BUS_OFF) {
+> -               cf->can_id |= CAN_ERR_BUSOFF;
+> -
+> -               if (!priv->can.restart_ms)
+> -                       kvaser_usb_simple_msg_async(priv, CMD_STOP_CHIP);
+> -               netif_carrier_off(priv->netdev);
+> -       } else if (es.status & M16C_STATE_BUS_PASSIVE) {
+> -               if (old_state != CAN_STATE_ERROR_PASSIVE) {
+> -                       cf->can_id |= CAN_ERR_CRTL;
+> -
+> -                       if (es.txerr || es.rxerr)
+> -                               cf->data[1] = (es.txerr > es.rxerr)
+> -                                               ? CAN_ERR_CRTL_TX_PASSIVE
+> -                                               : CAN_ERR_CRTL_RX_PASSIVE;
+> -                       else
+> -                               cf->data[1] = CAN_ERR_CRTL_TX_PASSIVE |
+> -                                             CAN_ERR_CRTL_RX_PASSIVE;
+> +       if (new_state != old_state) {
+> +               if (es.status & M16C_STATE_BUS_OFF) {
+> +                       if (!priv->can.restart_ms)
+> +                               kvaser_usb_simple_msg_async(priv, CMD_STOP_CHIP);
+> +                       netif_carrier_off(priv->netdev);
+> +               }
+> +
+> +               if (es.status == M16C_STATE_BUS_ERROR) {
+> +                       if ((old_state >= CAN_STATE_ERROR_WARNING) ||
+> +                           (es.txerr < 96 && es.rxerr < 96)) {
+> +                               if (old_state > CAN_STATE_ERROR_ACTIVE) {
+> +                                       cf->can_id |= CAN_ERR_PROT;
+> +                                       cf->data[2] = CAN_ERR_PROT_ACTIVE;
+> +                               }
+> +                       }
+>                 }
+> -       }
+>  
+> -       if (es.status == M16C_STATE_BUS_ERROR) {
+> -               if ((old_state < CAN_STATE_ERROR_WARNING) &&
+> -                   ((es.txerr >= 96) || (es.rxerr >= 96))) {
+> -                       cf->can_id |= CAN_ERR_CRTL;
+> -                       cf->data[1] = (es.txerr > es.rxerr)
+> -                                       ? CAN_ERR_CRTL_TX_WARNING
+> -                                       : CAN_ERR_CRTL_RX_WARNING;
+> -               } else if (old_state > CAN_STATE_ERROR_ACTIVE) {
+> +               if (!es.status) {
+>                         cf->can_id |= CAN_ERR_PROT;
+>                         cf->data[2] = CAN_ERR_PROT_ACTIVE;
+>                 }
+> -       }
+>  
+> -       if (!es.status) {
+> -               cf->can_id |= CAN_ERR_PROT;
+> -               cf->data[2] = CAN_ERR_PROT_ACTIVE;
+> -       }
+> -
+> -       if (priv->can.restart_ms &&
+> -           (old_state >= CAN_STATE_BUS_OFF) &&
+> -           (priv->can.state < CAN_STATE_BUS_OFF)) {
+> -               cf->can_id |= CAN_ERR_RESTARTED;
+> -               netif_carrier_on(priv->netdev);
+> +               if (priv->can.restart_ms &&
+> +                   (old_state >= CAN_STATE_BUS_OFF) &&
+> +                   (new_state < CAN_STATE_BUS_OFF)) {
+> +                       cf->can_id |= CAN_ERR_RESTARTED;
+> +                       netif_carrier_on(priv->netdev);
+> +               }
+>         }
+>  
+>         if (es.error_factor) {
+> -- 
+> 1.9.1
 
-This isn't any _good_ justification...
+Looks good.
 
-> It's rather an optional driver than a core kernel feature.
-
-Given the various things that I've seen said about kdbus, the
-preceding sentence makes little sense to me:
-
-* kdbus will be the framework supporting user-space D-Bus in the
-  future, and also used by systemd, and so on pretty much every 
-  desktop system.
-* kdbus solves much of the bandwidth problem of D-Bus1. That,
-  along with a host of other features mean that there will be
-  a lot of user-space developers interested in using this API.
-* Various parties in user space are already expressing strong 
-  interest in kdbus.
-
-My guess from the above? This will NOT be an "optional driver". 
-It *will be* a core kernel feature.
-
-> IMO, kernel primitives should be syscalls, but kdbus is not a primitive
-> but an elaborate subsystem.
-
-Agreed. It's an elaborate subsystem. But that fact doesn't in itself
-dictate any particular API design choice.
-
-> Also, the context the kdbus commands operate on originate from a
-> mountable special-purpose file system.
-
-It's not clear to me how this point implies any particular API design
-choice.
-
-> Hence, we decided not to use a
-> global kernel interface but specific ioctls on the nodes exposed by kdbusfs.
-
-I don't follow the reasoning here at all. Here's what we have, if I
-have grasped it roughly correctly:
-
-* 16 ioctls exposed to user space.
-* some 20 different structures exchanged between kernel and user space
-* about 14k lines of kernel code implement the above
-* some rather thin documentation of the whole lot
-
-Sorry if that last point seems rather harsh. I know that you personally 
-have done a lot of work on the kdbus.txt file. David Herrmann asserts
-that this is a simple API. It is not. He also suggests that there is
-no need for a libkdbus. I don't know whether that's right or not, but the
-point is then that there's an expectation that the raw kernel API is what
-user space will need to work with. 
-
-Notwithstanding the fact that there's a lot of (good) information in
-kdbus.txt, there's not nearly enough for someone to create useful, 
-robust applications that use that API (and not enough that I as a
-reviewer feel comfortable about reviewing the API). As things stand,
-user-space developers will be forced to decipher large amounts of kernel
-code and existing applications in order to actually build things. And
-when they do, they'll be using one of the worst APIs known to man: ioctl(),
-an API that provides no type safety at all.
-
-ioctl() is a get-out-of-jail free card when it comes to API design. Rather
-than thinking carefully and long about a set of coherent, stable APIs that 
-provide some degree of type-safety to user-space, one just adds/changes/removes
-an ioctl. And that process seems to be frequent and ongoing even now. (And 
-it's to your great credit that the API/ABI breaks are clearly and honestly 
-marked in the kdbus.h changelog.) All of this lightens the burden of API
-design for kernel developers, but I'm concerned that the long-term pain
-for user-space developers who use an API which (in my estimation) may
-come to be widely used will be enormous.
-
-Concretely, I'd like to see the following in kdbus.txt:
-* A lot more detail, adding the various pieces that are currently missing.
-  I've mentioned already the absence of detail on the item blob structures, 
-  but there's probably several other pieces as well. My problem is that the
-  API is so big and hard to grok that it's hard to even begin to work out
-  what's missing from the documentation.
-* Fleshing out the API summaries with code snippets that illustrate the
-  use of the APIs.
-* At least one simple working example application, complete with a walk
-  through of how it's built and run.
-
-Yes, all of this is a big demand. But this is a big API that is being added 
-to the kernel, and one that may become widely used and for a long time.
-It's imperative that the API is well documented, and as well designed as
-possible. Furthermore, with such improved documentation I feel we'd be in 
-a better position to evaluate the merits of an ioctl()-based API versus
-some other approach.
-
-Thanks,
-
-Michael
-
-
-
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
+--
+Andri
