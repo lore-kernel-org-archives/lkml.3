@@ -1,58 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598AbbAUPwM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 10:52:12 -0500
-Received: from out3-smtp.messagingengine.com ([66.111.4.27]:47069 "EHLO
-	out3-smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750883AbbAUPwA (ORCPT
+	id S1754057AbbAUPwl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 10:52:41 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:40171 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751927AbbAUPwd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 10:52:00 -0500
-Message-Id: <1421855519.163242.216784957.65B8D9AF@webmail.messagingengine.com>
-X-Sasl-Enc: OWhLFiybmU3tQrUK3wHi2rPT+FijTmzAmxAxxEDda4tq 1421855519
-From: Alexander van Heukelum <heukelum@fastmail.fm>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Borislav Petkov <bp@suse.de>, Andy Lutomirski <luto@amacapital.net>,
-        X86 ML <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>, Rik van Riel <riel@redhat.com>,
-        Denys Vlasenko <dvlasenk@redhat.com>
-MIME-Version: 1.0
+	Wed, 21 Jan 2015 10:52:33 -0500
+Message-ID: <1421855543.14076.68.camel@arm.com>
+Subject: Re: [PATCH v4 1/3] perf: Use monotonic clock as a source for
+ timestamps
+From: Pawel Moll <pawel.moll@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Richard Cochran <richardcochran@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tomeu Vizoso <tomeu@tomeuvizoso.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
+Date: Wed, 21 Jan 2015 15:52:23 +0000
+In-Reply-To: <20150105130035.GP30905@twins.programming.kicks-ass.net>
+References: <1415292718-19785-1-git-send-email-pawel.moll@arm.com>
+	 <1415292718-19785-2-git-send-email-pawel.moll@arm.com>
+	 <20150105130035.GP30905@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.10-0ubuntu1~14.10.1 
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain
-X-Mailer: MessagingEngine.com Webmail Interface - ajax-46f3f2c7
-Subject: Re: [PATCHv2 0/4] x86, entry: some cleanup and simplification...
-Date: Wed, 21 Jan 2015 16:51:59 +0100
-In-Reply-To: <CAK1hOcNG8AfAa=m_KTPSV7fZWcymiXAeZrcwmtThowM-eafc7g@mail.gmail.com>
-References: <1421581520-2816-1-git-send-email-heukelum@fastmail.fm>
- <20150118120503.GA3424@pd.tnic>
- <1421596051.2712080.215378161.2B6E3912@webmail.messagingengine.com>
- <CAK1hOcNG8AfAa=m_KTPSV7fZWcymiXAeZrcwmtThowM-eafc7g@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015, at 14:26, Denys Vlasenko wrote:
-> On Sun, Jan 18, 2015 at 4:47 PM, Alexander van Heukelum
-> <heukelum@fastmail.fm> wrote:
-> > On Sun, Jan 18, 2015, at 13:05, Borislav Petkov wrote:
-> >> Hi,
-> >>
-> >> btw, you might wanna sync with Denys who's doing cleanups in that area too:
-> >>
-> >> https://lkml.kernel.org/r/1421272101-16847-1-git-send-email-dvlasenk@redhat.com
-> >>
-> >> and touching some of the stuff you're changing too.
-> >
-> > Thanks. FWIW, the change touches the same area in code, but is orthogonal in concept.
+On Mon, 2015-01-05 at 13:00 +0000, Peter Zijlstra wrote:
+> On Thu, Nov 06, 2014 at 04:51:56PM +0000, Pawel Moll wrote:
+> >  Documentation/kernel-parameters.txt |  9 +++++++++
+> >  kernel/events/core.c                | 37 +++++++++++++++++++++++++++++++++++++
+> >  2 files changed, 46 insertions(+)
 > 
-> My patches eventually eliminate both ARGOFFSET and KERNEL_STACK_OFFSET.
-> For example, eventually TI_flags tests look like this after all my patches:
+> > diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> > index 4c81a86..8ead8d8 100644
+> > --- a/Documentation/kernel-parameters.txt
+> > +++ b/Documentation/kernel-parameters.txt
 > 
-> testl $const, TI_flags+THREAD_INFO(%rsp,SIZEOF_PTREGS)
+> > @@ -2763,6 +2764,14 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+> >  			allocator.  This parameter is primarily	for debugging
+> >  			and performance comparison.
+> >  
+> > +	perf_use_local_clock
+> > +			[PERF]
+> > +			Use local_clock() as a source for perf timestamps
+> > +			generation. This was be the default behaviour and
+> > +			this parameter can be used to maintain backward
+> > +			compatibility or on older hardware with expensive
+> > +			monotonic clock source.
+> > +
+> >  	pf.		[PARIDE]
+> >  			See Documentation/blockdev/paride.txt.
 > 
-> Your patches massage the same defines in a different way than mine do.
-> We clearly have a conflict here.
+> So I'm always terminally confused on the naming of kernel parameters,
+> sometimes things are modules (even when they're not actually =m capable)
+> and get a module::foo naming or so and sometimes they're not.
 
-Indeed. I missed that, because Borislav's link only pointed to a single
-change and I failed to notice the "[01/11]" in the title.
+I guess you mean module.foo?
+
+> So we want to use the module naming thing or not?
+
+Honestly, I don't mind either way. For one thing ftrace doesn't bother
+and just uses __setup() as well.
+
+> > diff --git a/kernel/events/core.c b/kernel/events/core.c
+> > index 2b02c9f..5d0aa03 100644
+> > --- a/kernel/events/core.c
+> > +++ b/kernel/events/core.c
+> 
+> > @@ -322,8 +323,41 @@ extern __weak const char *perf_pmu_name(void)
+> >  	return "pmu";
+> >  }
+> >  
+> > +static bool perf_use_local_clock;
+> > +static int __init perf_use_local_clock_setup(char *__unused)
+> > +{
+> > +	perf_use_local_clock = true;
+> > +	return 1;
+> > +}
+> > +__setup("perf_use_local_clock", perf_use_local_clock_setup);
+> 
+> >  static inline u64 perf_clock(void)
+> >  {
+> > +	if (likely(!perf_use_local_clock))
+> > +		return ktime_get_mono_fast_ns();
+> > +
+> >  	return local_clock();
+> >  }
+> 
+> Since this all is boot time, should we not use things like static_key
+> and avoid the 'pointless' conditional at runtime?
+
+Right. it's good to learn new stuff - I didn't know there was
+architecture-agnostic support for jump labels. Definitely worth the
+effort, will give it a try and spin the patch.
+
+Pawel
+
+
