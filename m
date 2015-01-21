@@ -1,142 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754304AbbAUTdF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 14:33:05 -0500
-Received: from smtp6-g21.free.fr ([212.27.42.6]:51517 "EHLO smtp6-g21.free.fr"
+	id S1753564AbbAUTNX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 14:13:23 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:37951 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754202AbbAUTcx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 14:32:53 -0500
-X-Mailbox-Line: From 963571538ba210b4f2099949e03943ae1e9a8541 Mon Sep 17 00:00:00 2001
-Message-Id: <963571538ba210b4f2099949e03943ae1e9a8541.1421868426.git.moinejf@free.fr>
-In-Reply-To: <cover.1421868426.git.moinejf@free.fr>
-References: <cover.1421868426.git.moinejf@free.fr>
-From: Jean-Francois Moine <moinejf@free.fr>
-Date: Wed, 21 Jan 2015 20:10:17 +0100
-Subject: [PATCH v2 2/3] Documentation: of: Document audio graph bindings
-To: Mark Brown <broonie@kernel.org>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Jyri Sarha <jsarha@ti.com>, alsa-devel@alsa-project.org,
-        devicetree@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1753330AbbAUTNP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 14:13:15 -0500
+Date: Wed, 21 Jan 2015 20:12:23 +0100
+From: Jiri Olsa <jolsa@redhat.com>
+To: David Ahern <dsahern@gmail.com>
+Cc: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org,
+        Alexis Berlemont <alexis.berlemont@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 08/36] perf build: Add builtin objects building
+Message-ID: <20150121191223.GF6835@krava.brq.redhat.com>
+References: <1421771973-6022-1-git-send-email-jolsa@kernel.org>
+ <1421771973-6022-9-git-send-email-jolsa@kernel.org>
+ <54BFF557.1070809@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54BFF557.1070809@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a document describing common OF bindings for audio devices.
+On Wed, Jan 21, 2015 at 11:52:07AM -0700, David Ahern wrote:
+> On 1/20/15 9:39 AM, Jiri Olsa wrote:
+> >Move the rest of builtin objects (bench and test are
+> >already in) building under build framework.
+> >
+> >Signed-off-by: Jiri Olsa <jolsa@kernel.org>
+> >Cc: Alexis Berlemont <alexis.berlemont@gmail.com>
+> >Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> >Cc: Borislav Petkov <bp@alien8.de>
+> >Cc: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+> >Cc: David Ahern <dsahern@gmail.com>
+> >Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> >Cc: Ingo Molnar <mingo@kernel.org>
+> >Cc: Namhyung Kim <namhyung@kernel.org>
+> >Cc: Paul Mackerras <paulus@samba.org>
+> >Cc: Peter Zijlstra <peterz@infradead.org>
+> >Cc: Stephane Eranian <eranian@google.com>
+> >---
+> >  tools/perf/Build           | 29 +++++++++++++++++++++++++++++
+> >  tools/perf/Makefile.perf   | 35 -----------------------------------
+> >  tools/perf/config/Makefile |  4 ++++
+> >  3 files changed, 33 insertions(+), 35 deletions(-)
+> 
+> This one fails to build:
+> 
+> $ git --no-pager log --oneline -1
+> cd2a9b144028 perf build: Add builtin objects building
+> 
+> $ make O=/tmp/junk
+> ...
+> builtin-help.c:10:25: fatal error: common-cmds.h: No such file or directory
+> compilation terminated.
+>   CC       /tmp/junk/fs/fs.o
+>   CC       /tmp/junk/builtin-script.o
+>   CC       /tmp/junk/builtin-kmem.o
+>   CC       /tmp/junk/perf-read-vdso32
+>   CC       /tmp/junk/ui/gtk/browser.o
+>   CC       /tmp/junk/fd/array.o
+>   CC       /tmp/junk/ui/gtk/hists.o
+>   CC       /tmp/junk/builtin-lock.o
+> make[2]: *** [/tmp/junk/builtin-help.o] Error 1
+> make[2]: *** Waiting for unfinished jobs....
 
-Signed-off-by: Jean-Francois Moine <moinejf@free.fr>
+hum I can't reproduce, but I can see why
+
+on the commit you mentioned there're foolowing dependencies:
+
+	$(PERF_IN): FORCE
+		@$(MAKE) $(build)=perf
+
+	$(OUTPUT)perf.o: perf.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFLAGS
+		$(QUIET_CC)$(CC) -include $(OUTPUT)PERF-VERSION-FILE \
+			'-DPERF_HTML_PATH="$(htmldir_SQ)"' \
+			$(CFLAGS) -c $(filter %.c,$^) -o $@
+
+	$(OUTPUT)perf: $(OUTPUT)perf.o $(BUILTIN_OBJS) $(PERFLIBS) $(PERF_IN)
+		$(QUIET_LINK)$(CC) $(CFLAGS) $(LDFLAGS) $(OUTPUT)perf.o \
+		       $(BUILTIN_OBJS) $(PERF_IN) $(LIBS) -o $@
+
+
+so $(OUTPUT)common-cmds.h gets build only for perf.o, while
+it's needed before we dive in to $(PERF_IN) target..
+
+this get's fixed later on within commit:
+  a07488a79e78 perf build: Add perf.o object building
+
+where we have:
+	$(PERF_IN): $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)common-cmds.h FORCE
+		$(Q)$(MAKE) $(build)=perf
+
+
+I'll propagate the $(OUTPUT)common-cmds.h dependency to commit
+  cd2a9b144028 perf build: Add builtin objects building
+
+like attached change
+
+thanks for testing,
+jirka
+
+
 ---
- .../devicetree/bindings/sound/audio-interfaces.txt | 101 +++++++++++++++++++++
- 1 file changed, 101 insertions(+)
- create mode 100644 Documentation/devicetree/bindings/sound/audio-interfaces.txt
-
-diff --git a/Documentation/devicetree/bindings/sound/audio-interfaces.txt b/Documentation/devicetree/bindings/sound/audio-interfaces.txt
-new file mode 100644
-index 0000000..4eddb3f
---- /dev/null
-+++ b/Documentation/devicetree/bindings/sound/audio-interfaces.txt
-@@ -0,0 +1,101 @@
-+Common bindings for audio device graphs
-+
-+The graph of the audio ports follows the common binding for device graphs
-+defined in Documentation/devicetree/bindings/graph.txt.
-+
-+Here are described only the audio specific properties.
-+
-+Port required properties:
-+
-+- port-type: "i2s" or "spdif"
-+
-+Port optional property:
-+
-+- reg: numeric value which defines how the port is wired to the device.
-+	This value depends on the device. Usually, it is the content
-+	of the device register which controls the audio pins.
-+
-+Port required nodes:
-+
-+- at least one 'endpoint' node must be specified.
-+
-+
-+Example:
-+
-+The board contains an audio controller with two outputs:
-+- the S/PDIF output is connected to two devices:
-+	- a S/PDIF optical output
-+	- a HDMI transmitter.
-+- the I2S output is connected to an other audio input of the HDMI transmitter.
-+
-+	/* audio controller */
-+	&audio1 {
-+		status = "okay";
-+		...
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		/* S/PDIF output */
-+		port@0 {
-+			port-type = "spdif";
-+			audio1_spdif0: endpoint@0 {
-+				remote-endpoint = <&spdif_out>;
-+			};
-+			audio1_spdif1: endpoint@1 {
-+				remote-endpoint = <&tda998x_spdif>;
-+			};
-+		};
-+
-+		/* I2S output */
-+		port@1 {
-+			port-type = "i2s";
-+			audio1_i2s: endpoint {
-+				remote-endpoint = <&tda998x_i2s>;
-+			};
-+		};
-+	};
-+
-+	/* optical output */
-+	spdif_codec: spdif-codec {
-+		...
-+		port {
-+			port-type = "spdif";
-+			spdif_out: endpoint {
-+				remote-endpoint = <&audio1_spdif0>;
-+			};
-+		};
-+	};
-+
-+	/* HDMI transmitter */
-+	hdmi: hdmi-encoder {
-+		...
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		/* video input */
-+		port@230145 {
-+			port-type = "rgb";
-+			reg = <0x230145>;
-+			hdmi_0: endpoint {
-+				remote-endpoint = <&lcd0_0>;
-+			};
-+		};
-+
-+		/* audio input I2S on AP1 */
-+		port@3 {
-+			port-type = "i2s";
-+			reg = <0x03>;
-+			tda998x_i2s: endpoint {
-+				remote-endpoint = <&audio1_i2s>;
-+			};
-+		};
-+
-+		/* audio input S/PDIF on AP2 */
-+		port@4 {
-+			port-type = "spdif";
-+			reg = <0x04>;
-+			tda998x_spdif: endpoint {
-+				remote-endpoint = <&audio1_spdif1>;
-+			};
-+		};
-+	};
--- 
-2.1.4
-
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index b0df3ec91104..061289d25fa8 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -550,7 +550,7 @@ PERF_IN := $(OUTPUT)perf-in.o
+ export srctree OUTPUT RM CC LD AR CFLAGS V
+ build := -f $(srctree)/tools/build/Makefile.build dir=. obj
+ 
+-$(PERF_IN): FORCE
++$(PERF_IN): FORCE $(OUTPUT)common-cmds.h
+ 	@$(MAKE) $(build)=perf
+ 
+ $(OUTPUT)perf.o: perf.c $(OUTPUT)common-cmds.h $(OUTPUT)PERF-CFLAGS
