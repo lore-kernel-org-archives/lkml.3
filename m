@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754580AbbAUCdG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 21:33:06 -0500
-Received: from szxga02-in.huawei.com ([119.145.14.65]:3345 "EHLO
-	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754327AbbAUCc6 (ORCPT
+	id S1754729AbbAUCe0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 21:34:26 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:56091 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754402AbbAUCc7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 21:32:58 -0500
+	Tue, 20 Jan 2015 21:32:59 -0500
 From: Yijing Wang <wangyijing@huawei.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
 CC: Jiang Liu <jiang.liu@linux.intel.com>, <linux-pci@vger.kernel.org>,
@@ -23,9 +23,9 @@ CC: Jiang Liu <jiang.liu@linux.intel.com>, <linux-pci@vger.kernel.org>,
         "Arnd Bergmann" <arnd@arndb.de>,
         Geert Uytterhoeven <geert@linux-m68k.org>,
         "Yijing Wang" <wangyijing@huawei.com>
-Subject: [PATCH v2 27/30] PCI: Rename __pci_create_root_bus() to pci_create_root_bus()
-Date: Wed, 21 Jan 2015 08:30:22 +0800
-Message-ID: <1421800225-26230-28-git-send-email-wangyijing@huawei.com>
+Subject: [PATCH v2 28/30] PCI: Export find_pci_host_bridge()
+Date: Wed, 21 Jan 2015 08:30:23 +0800
+Message-ID: <1421800225-26230-29-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1421800225-26230-1-git-send-email-wangyijing@huawei.com>
 References: <1421800225-26230-1-git-send-email-wangyijing@huawei.com>
@@ -37,95 +37,39 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now no one use pci_create_root_bus(), we could remove it
-and rename __pci_create_root_bus() to pci_create_root_bus().
+Export find_pci_host_bridge().
 
-Signed-off-by: wangyijing@huawei.com
+Signed-off-by: Yijing Wang <wangyijing@huawei.com>
 ---
- drivers/pci/probe.c |   27 ++++++++-------------------
- include/linux/pci.h |    3 ---
- 2 files changed, 8 insertions(+), 22 deletions(-)
+ drivers/pci/host-bridge.c |    2 +-
+ include/linux/pci.h       |    1 +
+ 2 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/pci/probe.c b/drivers/pci/probe.c
-index 79b5aca..70e28d9 100644
---- a/drivers/pci/probe.c
-+++ b/drivers/pci/probe.c
-@@ -1852,7 +1852,7 @@ void __weak pcibios_remove_bus(struct pci_bus *bus)
- {
+diff --git a/drivers/pci/host-bridge.c b/drivers/pci/host-bridge.c
+index 26cefce..288ac69 100644
+--- a/drivers/pci/host-bridge.c
++++ b/drivers/pci/host-bridge.c
+@@ -104,7 +104,7 @@ static struct pci_bus *find_pci_root_bus(struct pci_bus *bus)
+ 	return bus;
  }
  
--static struct pci_bus *__pci_create_root_bus(
-+static struct pci_bus *pci_create_root_bus(
- 		struct pci_host_bridge *bridge, struct pci_ops *ops)
+-static struct pci_host_bridge *find_pci_host_bridge(struct pci_bus *bus)
++struct pci_host_bridge *find_pci_host_bridge(struct pci_bus *bus)
  {
- 	int error;
-@@ -1935,18 +1935,6 @@ err_out:
- 	return NULL;
- }
- 
--struct pci_bus *pci_create_root_bus(struct device *parent, u32 db,
--		struct pci_ops *ops, void *sysdata, struct list_head *resources)
--{
--	struct pci_host_bridge *host;
--
--	host = pci_create_host_bridge(parent, db, resources, sysdata, NULL);
--	if (!host)
--		return NULL;
--	
--	return __pci_create_root_bus(host, ops);
--}
--
- int pci_bus_insert_busn_res(struct pci_bus *b, int bus, int bus_max)
- {
- 	struct resource *res = &b->busn_res;
-@@ -2025,7 +2013,7 @@ static struct pci_bus *__pci_scan_root_bus(
- 			break;
- 		}
- 
--	b = __pci_create_root_bus(host, ops);
-+	b = pci_create_root_bus(host, ops);
- 	if (!b) {
- 		pci_free_host_bridge(host);
- 		return NULL;
-@@ -2087,18 +2075,19 @@ struct pci_bus *pci_scan_bus_legacy(u32 db, struct pci_ops *ops,
- 					void *sysdata)
- {
- 	LIST_HEAD(resources);
--	struct pci_bus *b;
-+	struct pci_host_bridge *host;
- 
- 	pci_add_resource(&resources, &ioport_resource);
- 	pci_add_resource(&resources, &iomem_resource);
- 	pci_add_resource(&resources, &busn_resource);
--	b = pci_create_root_bus(NULL, db, ops, sysdata, &resources);
--	if (b) {
--		pci_scan_child_bus(b);
-+	host = pci_create_host_bridge(NULL, db, sysdata, &resources, NULL);
-+	if (host) {
-+		__pci_scan_root_bus(host, ops);
-+		return host->bus;
- 	} else {
- 		pci_free_resource_list(&resources);
- 	}
--	return b;
-+	return NULL;
- }
- EXPORT_SYMBOL(pci_scan_bus_legacy);
+ 	struct pci_bus *root_bus = find_pci_root_bus(bus);
  
 diff --git a/include/linux/pci.h b/include/linux/pci.h
-index 4c4c9e4..4d9d471 100644
+index 4d9d471..2f6b199 100644
 --- a/include/linux/pci.h
 +++ b/include/linux/pci.h
-@@ -781,9 +781,6 @@ void pcibios_scan_specific_bus(int busn);
- struct pci_bus *pci_find_bus(int domain, int busnr);
- void pci_bus_add_devices(const struct pci_bus *bus);
- struct pci_bus *pci_scan_bus_legacy(u32 dombus, struct pci_ops *ops, void *sysdata);
--struct pci_bus *pci_create_root_bus(struct device *parent, u32 dombus,
--				    struct pci_ops *ops, void *sysdata,
--				    struct list_head *resources);
- void pci_free_host_bridge(struct pci_host_bridge *host);
- int pci_bus_insert_busn_res(struct pci_bus *b, int bus, int busmax);
- int pci_bus_update_busn_res_end(struct pci_bus *b, int busmax);
+@@ -427,6 +427,7 @@ void pci_set_host_bridge_release(struct pci_host_bridge *bridge,
+ struct pci_host_bridge *pci_create_host_bridge(
+ 		struct device *parent, u32 dombus, struct list_head *resources, 
+ 		void *sysdata, struct pci_host_bridge_ops *ops);
++struct pci_host_bridge *find_pci_host_bridge(struct pci_bus* bus);
+ /*
+  * The first PCI_BRIDGE_RESOURCE_NUM PCI bus resources (those that correspond
+  * to P2P or CardBus bridge windows) go in a table.  Additional ones (for
 -- 
 1.7.1
 
