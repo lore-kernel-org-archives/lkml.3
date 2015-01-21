@@ -1,161 +1,299 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751777AbbAUFaH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 00:30:07 -0500
-Received: from mailxx.hitachi.co.jp ([133.145.228.50]:37322 "EHLO
-	mailxx.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736AbbAUFaF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 00:30:05 -0500
-X-Greylist: delayed 2041 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Jan 2015 00:30:04 EST
-X-AuditID: 85900ec0-be8f3b9000002d32-f9-54bf31344780
-Message-ID: <54BF315F.5090709@hitachi.com>
-Date: Wed, 21 Jan 2015 13:55:59 +0900
-From: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:13.0) Gecko/20120604 Thunderbird/13.0
+	id S1750823AbbAUFAQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 00:00:16 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:40221 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750778AbbAUFAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 00:00:12 -0500
+Date: Wed, 21 Jan 2015 12:59:03 +0800
+From: Fam Zheng <famz@redhat.com>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        Andy Lutomirski <luto@amacapital.net>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        David Drysdale <drysdale@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Vivek Goyal <vgoyal@redhat.com>, Mike Frysinger <vapier@gentoo.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        Hugh Dickins <hughd@google.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-api@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: Re: [PATCH RFC 5/6] epoll: Add implementation for epoll_mod_wait
+Message-ID: <20150121045903.GA2858@fam-t430.nay.redhat.com>
+References: <1421747878-30744-1-git-send-email-famz@redhat.com>
+ <1421747878-30744-6-git-send-email-famz@redhat.com>
+ <54BE4F1D.7090807@gmail.com>
 MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: axboe@kernel.dk, linux-kernel@vger.kernel.org
-Subject: Re: [patch] cfq-iosched: fix incorrect filing of rt async cfqq
-References: <x494mrvu4wi.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x494mrvu4wi.fsf@segfault.boston.devel.redhat.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54BE4F1D.7090807@gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 01/20 13:50, Michael Kerrisk (man-pages) wrote:
+> Hello Fam Zheng,
+> 
+> On 01/20/2015 10:57 AM, Fam Zheng wrote:
+> > This syscall is a sequence of
+> > 
+> > 1) a number of epoll_ctl calls
+> > 2) a epoll_pwait, with timeout enhancement.
+> > 
+> > The epoll_ctl operations are embeded so that application doesn't have to use
+> > separate syscalls to insert/delete/update the fds before poll. It is more
+> > efficient if the set of fds varies from one poll to another, which is the
+> > common pattern for certain applications. 
+> 
+> Which applications? Could we have some specific examples? This is a 
+> complex API, and it needs good justification.
 
-Thank you for the patch, Jeff!
+OK, I'll explain more in v2.
 
-(2015/01/13 5:21), Jeff Moyer wrote:
-> Hi,
->
-> If you can manage to submit an async write as the first async I/O from
-> the context of a process with realtime scheduling priority, then a
-> cfq_queue is allocated, but filed into the wrong async_cfqq bucket.  It
-> ends up in the best effort array, but actually has realtime I/O
-> scheduling priority set in cfqq->ioprio.
+> 
+> > For example, depending on the input
+> > buffer status, a data reading program may decide to temporarily not polling an
+> > fd.
+> > 
+> > Because the enablement of batching in this interface, even that regular
+> > epoll_ctl call sequence, which manipulates several fds, can be optimized to one
+> > single epoll_ctl_wait (while specifying spec=NULL to skip the poll part).
+>          ^^^^^^^^^^^^^^ should be epoll_mod_wait
+> 
+> I think you mean to say:
+> 
+>     The ability to batch multiple "epoll_ctl" operations into a single call
+>     means that even when no wait events are requested (i.e., spec == NULL),
+>     poll_mod_wait() provides a performance optimization over using multiple
+>     epoll_ctl() calls.
+> 
+> Right? If yes, please amend the commit message, and this text should
+> also make its way into the revised man page under a heading "NOTES".
 
-Actually, this bug causes a severe I/O starvation in the following scenario
-(we've experienced):
+OK.
 
-1. RT demon issues an O_SYNC write to an ext2 filesystem early in the
-   boot sequence (this is an example which causes the first async write
-   to a device in an RT process context)
+> 
+> > The only complexity is returning the result of each operation.  For each
+> > epoll_mod_cmd in cmds, the field "error" is an output field that will be stored
+> > the return code *iff* the command is executed (0 for success and -errno of the
+> > equivalent epoll_ctl call), and will be left unchanged if the command is not
+> > executed because some earlier error, for example due to failure of
+> > copy_from_user to copy the array.
+> > 
+> > Applications can utilize this fact to do error handling: they could initialize
+> > all the epoll_mod_wait.error to a positive value, which is by definition not a
+> > possible output value from epoll_mod_wait. Then when the syscall returned, they
+> > know whether or not the command is executed by comparing each error with the
+> > init value, if they're different, they have the result of the command.
+> > More roughly, they can put any non-zero and not distinguish "not run" from
+> > failure.
+> 
+> The "cmds' are not executed in a specified order plus the need to
+> initialize the 'errors' fields to a positive value feels a bit ugly.
+> And indeed the whole "command list was only partially run" case
+> is not pretty. Am I correct to understand that if an error is found
+> during execution of one of the "epoll_ctl" commands in 'cmds' then
+> the system call will return -1 with errno set, indicating an error,
+> even though the epoll interest list may have changed because some
+> of the earlier 'cmds' executed successfully? This all seems a bit of
+> a headache for user space.
 
-2. Do heavy buffered writes to the device (these writes will be
-   treated as RT class)
+This is the trade-off for batching. The best we can do is probably make this
+transactional: none or all of the commands succeeds. It will require a much
+more complex implementation, though. But even with that, the error reporting on
+which command failed is a complication.
 
-3. Issue a sync I/O to the device, and it will take over tens seconds
-   to be prevented by many RT class I/Os
+> 
+> I have a couple of questions:
+> 
+> Q1. I can see that batching "epoll_ctl" commands might be useful,
+> since it results in fewer systems calls. But, does it really
+> need to be bound together with the "epoll_pwait" functionality?
+> (Perhaps this point was covered in previous discussions, but
+> neither the message accompanying this patch nor the 0/6 man page
+> provide a compelling rationale for the need to bind these two
+> operations together.)
+> 
+> Yes, I realize you might save a system call, but it makes for a
+> cumbersome API that has the above headache, and also forces the 
+> need for double pointer indirection in the 'spec' argument (i.e., 
+> spec is a pointer to an array of structures where each element
+> in turn includes an 'events' pointer that points to another array).
+> 
+> Why not a simpler API with two syscalls such as:
+> 
+> epoll_ctl_batch(int epfd, int flags,
+>                 int ncmds, struct epoll_mod_cmd *cmds);
+> 
+> epoll_pwait1(int epfd, struct epoll_event *events, int maxevents, 
+>              struct timespec *timeout, int clock_id, 
+>              const sigset_t *sigmask, size_t sigsetsize);
 
-I confirmed Jeff's patch solves the above problem.
+The problem is that there is no room for flags field in epoll_pwait1, which is
+asked for, in previous discussion thread [1].
 
-Tested-by: Hidehiro Kawai <hidehiro.kawai.ez@hitachi.com>
+I don't see epoll_mod_wait as a *significantly more* complicated interface
+compared to epoll_ctl_batch and epoll_pwait1 above. In epoll_mod_wait, if you
+leave out ncmds and cmds, it is effectively a poll without batch; and if
+leaving out spec, it is effectively a batch without poll.
 
->
-> The reason is that cfq_get_queue assumes the default scheduling class and
-> priority when there is no information present (i.e. when the async cfqq
-> is created):
->
-> static struct cfq_queue *
-> cfq_get_queue(struct cfq_data *cfqd, bool is_sync, struct cfq_io_cq *cic,
-> 	      struct bio *bio, gfp_t gfp_mask)
-> {
-> 	const int ioprio_class = IOPRIO_PRIO_CLASS(cic->ioprio);
-> 	const int ioprio = IOPRIO_PRIO_DATA(cic->ioprio);
->
-> cic->ioprio starts out as 0, which is "invalid".  So, class of 0
-> (IOPRIO_CLASS_NONE) is passed to cfq_async_queue_prio like so:
->
-> 		async_cfqq = cfq_async_queue_prio(cfqd, ioprio_class, ioprio);
->
-> static struct cfq_queue **
-> cfq_async_queue_prio(struct cfq_data *cfqd, int ioprio_class, int ioprio)
-> {
->         switch (ioprio_class) {
->         case IOPRIO_CLASS_RT:
->                 return &cfqd->async_cfqq[0][ioprio];
->         case IOPRIO_CLASS_NONE:
->                 ioprio = IOPRIO_NORM;
->                 /* fall through */
->         case IOPRIO_CLASS_BE:
->                 return &cfqd->async_cfqq[1][ioprio];
->         case IOPRIO_CLASS_IDLE:
->                 return &cfqd->async_idle_cfqq;
->         default:
->                 BUG();
->         }
-> }
->
-> Here, instead of returning a class mapped from the process' scheduling
-> priority, we get back the bucket associated with IOPRIO_CLASS_BE.
->
-> Now, there is no queue allocated there yet, so we create it:
->
-> 		cfqq = cfq_find_alloc_queue(cfqd, is_sync, cic, bio, gfp_mask);
->
-> That function ends up doing this:
->
-> 			cfq_init_cfqq(cfqd, cfqq, current->pid, is_sync);
-> 			cfq_init_prio_data(cfqq, cic);
->
-> cfq_init_cfqq marks the priority as having changed.  Then, cfq_init_prio
-> data does this:
->
-> 	ioprio_class = IOPRIO_PRIO_CLASS(cic->ioprio);
-> 	switch (ioprio_class) {
-> 	default:
-> 		printk(KERN_ERR "cfq: bad prio %x\n", ioprio_class);
-> 	case IOPRIO_CLASS_NONE:
-> 		/*
-> 		 * no prio set, inherit CPU scheduling settings
-> 		 */
-> 		cfqq->ioprio = task_nice_ioprio(tsk);
-> 		cfqq->ioprio_class = task_nice_ioclass(tsk);
-> 		break;
->
-> So we basically have two code paths that treat IOPRIO_CLASS_NONE
-> differently, which results in an RT async cfqq filed into a best effort
-> bucket.
->
-> Attached is a patch which fixes the problem.  I'm not sure how to make
-> it cleaner.  Suggestions would be welcome.
->
-> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
->
-> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> index 6f2751d..b9abdca 100644
-> --- a/block/cfq-iosched.c
-> +++ b/block/cfq-iosched.c
-> @@ -3656,12 +3656,17 @@ static struct cfq_queue *
->  cfq_get_queue(struct cfq_data *cfqd, bool is_sync, struct cfq_io_cq *cic,
->  	      struct bio *bio, gfp_t gfp_mask)
->  {
-> -	const int ioprio_class = IOPRIO_PRIO_CLASS(cic->ioprio);
-> -	const int ioprio = IOPRIO_PRIO_DATA(cic->ioprio);
-> +	int ioprio_class = IOPRIO_PRIO_CLASS(cic->ioprio);
-> +	int ioprio = IOPRIO_PRIO_DATA(cic->ioprio);
->  	struct cfq_queue **async_cfqq = NULL;
->  	struct cfq_queue *cfqq = NULL;
->  
->  	if (!is_sync) {
-> +		if (!ioprio_valid(cic->ioprio)) {
-> +			struct task_struct *tsk = current;
-> +			ioprio = task_nice_ioprio(tsk);
-> +			ioprio_class = task_nice_ioclass(tsk);
-> +		}
->  		async_cfqq = cfq_async_queue_prio(cfqd, ioprio_class, ioprio);
->  		cfqq = *async_cfqq;
->  	}
->
->
+The most important change here is the timeout. IMO I wouldn't mind leaving out
+batching. Integrating it is requested by Andy:
 
+[1]: http://thread.gmane.org/gmane.linux.kernel/1861430/focus=91591
 
---
-Hidehiro Kawai
-Hitachi, Yokohama Research Laboratory
+which also made sense to me; I do have a patch in QEMU to call epoll_ctl for a
+number of times right before epoll_wait.
 
+[Sorry for not putting anything into cover letter changelog, but it is also
+interesting to see people's reaction on the patch itself without bias of
+others' opinions. This indeed brings in more points. :]
+
+> 
+> This gives us much of the benefit of reducing system calls, but 
+> with greater simplicity. And epoll_ctl_batch() could simply return
+> the number of 'cmds' that were successfully executed.)
+> 
+> Q2. In the man page in 0/6 you said that the 'cmds' were not 
+> guaranteed to be executed in order. Why not? If you did provide
+> such a guarantee, then, when using your current epoll_mod_wait(),
+> user space could do the following:
+
+I guess we can make a guarentee on that.
+
+> 
+> 1. Initialize the cmd.errors fields to zero.
+> 2. Call epoll_ctl_mod()
+> 3. Iterate through cmd.errors looking for the first nonzero 
+>    field.
+
+It's close, but zero is not good enough, if copy_from_user of cmds failed in
+the first place. Impossible value, or error value, will be safer.
+
+> 
+> > Also, timeout parameter is enhanced: timespec is used, compared to the old ms
+> > scalar. This provides higher precision. 
+> 
+> Yes, that change seemed inevitable. It slightly puzzled me at the time when
+> Davide Libenzi added epoll_wait() that the timeout was milliseconds, even
+> though pselect() already had demonstrated the need for higher precision.
+> I should have called it out way back then :-{.
+> 
+> > The parameter field in struct
+> > epoll_wait_spec, "clockid", also makes it possible for users to use a different
+> > clock than the default when it makes more sense.
+> > 
+> > Signed-off-by: Fam Zheng <famz@redhat.com>
+> > ---
+> >  fs/eventpoll.c           | 60 ++++++++++++++++++++++++++++++++++++++++++++++++
+> >  include/linux/syscalls.h |  5 ++++
+> >  2 files changed, 65 insertions(+)
+> > 
+> > diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+> > index e7a116d..2cc22c9 100644
+> > --- a/fs/eventpoll.c
+> > +++ b/fs/eventpoll.c
+> > @@ -2067,6 +2067,66 @@ SYSCALL_DEFINE6(epoll_pwait, int, epfd, struct epoll_event __user *, events,
+> >  			      sigmask ? &ksigmask : NULL);
+> >  }
+> >  
+> > +SYSCALL_DEFINE5(epoll_mod_wait, int, epfd, int, flags,
+> > +		int, ncmds, struct epoll_mod_cmd __user *, cmds,
+> > +		struct epoll_wait_spec __user *, spec)
+> > +{
+> > +	struct epoll_mod_cmd *kcmds = NULL;
+> > +	int i, ret = 0;
+> > +	int cmd_size = sizeof(struct epoll_mod_cmd) * ncmds;
+> > +
+> > +	if (flags)
+> > +		return -EINVAL;
+> > +	if (ncmds) {
+> > +		if (!cmds)
+> > +			return -EINVAL;
+> > +		kcmds = kmalloc(cmd_size, GFP_KERNEL);
+> > +		if (!kcmds)
+> > +			return -ENOMEM;
+> > +		if (copy_from_user(kcmds, cmds, cmd_size)) {
+> > +			ret = -EFAULT;
+> > +			goto out;
+> > +		}
+> > +	}
+> > +	for (i = 0; i < ncmds; i++) {
+> > +		struct epoll_event ev = (struct epoll_event) {
+> > +			.events = kcmds[i].events,
+> > +			.data = kcmds[i].data,
+> > +		};
+> > +		if (kcmds[i].flags) {
+> > +			kcmds[i].error = ret = -EINVAL;
+> 
+> To make the 'ret' change a little more obvious, maybe it's better to write
+> 
+> 			ret = kcmds[i].error = -EINVAL;
+> 
+> > +			goto out;
+> > +		}
+> > +		kcmds[i].error = ret = ep_ctl_do(epfd, kcmds[i].op, kcmds[i].fd, ev);
+> 
+> Likewise:
+> 		ret = kcmds[i].error = ep_ctl_do(epfd, kcmds[i].op, kcmds[i].fd, ev);
+> 
+> > +		if (ret)
+> > +			goto out;
+> > +	}
+> > +	if (spec) {
+> > +		sigset_t ksigmask;
+> > +		struct epoll_wait_spec kspec;
+> > +		ktime_t timeout;
+> > +
+> > +		if(copy_from_user(&kspec, spec, sizeof(struct epoll_wait_spec)))
+> 
+> Cosmetic point: s/if(/if (/
+> 
+> > +			return -EFAULT;
+> > +		if (kspec.sigmask) {
+> > +			if (kspec.sigsetsize != sizeof(sigset_t))
+> > +				return -EINVAL;
+> > +			if (copy_from_user(&ksigmask, kspec.sigmask, sizeof(ksigmask)))
+> > +				return -EFAULT;
+> > +		}
+> > +		timeout = timespec_to_ktime(kspec.timeout);
+> > +		ret = epoll_pwait_do(epfd, kspec.events, kspec.maxevents,
+> > +				     kspec.clockid, timeout,
+> > +				     kspec.sigmask ? &ksigmask : NULL);
+> 
+> If I understand correctly, the implementation means that the
+> 'size_t sigsetsize' field will probably need to be exposed to 
+> applications. In the existing epoll_pwait() call (as in  ppoll()
+> and pselect()) the 'size_t sigsetsize' argument is hidden by glibc.
+> However, unless we expect glibc to do some structure copying to/from
+> a structure that hides this field, then we're going end up exposing
+> 'size_t sigsetsize' to applications. (This could be avoided, if we
+> split the API as I suggest above. glibc would do the same thing 
+> in epoll_pwait1() that it currently does in epoll_pwait().)
+> 
+> Thanks,
+> 
+> Michael
+> 
+> -- 
+> Michael Kerrisk
+> Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+> Linux/UNIX System Programming Training: http://man7.org/training/
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
