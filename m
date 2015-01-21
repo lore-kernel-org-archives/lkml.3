@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754212AbbAUGOi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 01:14:38 -0500
-Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:38613 "EHLO
+	id S1754860AbbAUGSX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 01:18:23 -0500
+Received: from LGEMRELSE6Q.lge.com ([156.147.1.121]:38653 "EHLO
 	lgemrelse6q.lge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750816AbbAUGOf (ORCPT
+	with ESMTP id S1754128AbbAUGOf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 21 Jan 2015 01:14:35 -0500
 X-Original-SENDERIP: 10.177.222.143
@@ -19,9 +19,9 @@ Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Jerome Marchand <jmarchan@redhat.com>,
         Sergey Senozhatsky <sergey.senozhatsky@gmail.com>,
         Minchan Kim <minchan@kernel.org>
-Subject: [PATCH v1 01/10] zram: avoid calling of zram_meta_free under init_lock
-Date: Wed, 21 Jan 2015 15:14:17 +0900
-Message-Id: <1421820866-26521-2-git-send-email-minchan@kernel.org>
+Subject: [PATCH v1 02/10] zsmalloc: decouple handle and object
+Date: Wed, 21 Jan 2015 15:14:18 +0900
+Message-Id: <1421820866-26521-3-git-send-email-minchan@kernel.org>
 X-Mailer: git-send-email 1.9.3
 In-Reply-To: <1421820866-26521-1-git-send-email-minchan@kernel.org>
 References: <1421820866-26521-1-git-send-email-minchan@kernel.org>
@@ -29,45 +29,245 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't need to call zram_meta_free under init_lock.
-What we need to prevent race is setting NULL into zram->meta
-(ie, init_done). This patch does it.
+Currently, zram's handle encodes object's location directly so
+it makes hard to support migration/compaction.
+
+This patch decouples handle and object via adding indirect layer.
+For it, it allocates handle dynamically and returns it to user.
+The handle is the address allocated by slab allocation so it's
+unique and the memory allocated keeps object's position so that
+we can get object's position from derefercing handle.
 
 Signed-off-by: Minchan Kim <minchan@kernel.org>
 ---
- drivers/block/zram/zram_drv.c | 5 +++--
- 1 file changed, 3 insertions(+), 2 deletions(-)
+ mm/zsmalloc.c | 90 ++++++++++++++++++++++++++++++++++++++++++++---------------
+ 1 file changed, 68 insertions(+), 22 deletions(-)
 
-diff --git a/drivers/block/zram/zram_drv.c b/drivers/block/zram/zram_drv.c
-index 9250b3f..7e03d86 100644
---- a/drivers/block/zram/zram_drv.c
-+++ b/drivers/block/zram/zram_drv.c
-@@ -719,6 +719,8 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
+diff --git a/mm/zsmalloc.c b/mm/zsmalloc.c
+index 0dec1fa..9436ee8 100644
+--- a/mm/zsmalloc.c
++++ b/mm/zsmalloc.c
+@@ -110,6 +110,8 @@
+ #define ZS_MAX_ZSPAGE_ORDER 2
+ #define ZS_MAX_PAGES_PER_ZSPAGE (_AC(1, UL) << ZS_MAX_ZSPAGE_ORDER)
+ 
++#define ZS_HANDLE_SIZE (sizeof(unsigned long))
++
+ /*
+  * Object location (<PFN>, <obj_idx>) is encoded as
+  * as single (unsigned long) handle value.
+@@ -241,6 +243,7 @@ struct zs_pool {
+ 	char *name;
+ 
+ 	struct size_class **size_class;
++	struct kmem_cache *handle_cachep;
+ 
+ 	gfp_t flags;	/* allocation flags used when growing pool */
+ 	atomic_long_t pages_allocated;
+@@ -269,6 +272,34 @@ struct mapping_area {
+ 	enum zs_mapmode vm_mm; /* mapping mode */
+ };
+ 
++static int create_handle_cache(struct zs_pool *pool)
++{
++	pool->handle_cachep = kmem_cache_create("zs_handle", ZS_HANDLE_SIZE,
++					0, 0, NULL);
++	return pool->handle_cachep ? 0 : 1;
++}
++
++static void destroy_handle_cache(struct zs_pool *pool)
++{
++	kmem_cache_destroy(pool->handle_cachep);
++}
++
++static unsigned long alloc_handle(struct zs_pool *pool)
++{
++	return (unsigned long)kmem_cache_alloc(pool->handle_cachep,
++		pool->flags & ~__GFP_HIGHMEM);
++}
++
++static void free_handle(struct zs_pool *pool, unsigned long handle)
++{
++	kmem_cache_free(pool->handle_cachep, (void *)handle);
++}
++
++static void record_obj(unsigned long handle, unsigned long obj)
++{
++	*(unsigned long *)handle = obj;
++}
++
+ /* zpool driver */
+ 
+ #ifdef CONFIG_ZPOOL
+@@ -595,13 +626,18 @@ static void *obj_location_to_handle(struct page *page, unsigned long obj_idx)
+  * decoded obj_idx back to its original value since it was adjusted in
+  * obj_location_to_handle().
+  */
+-static void obj_handle_to_location(unsigned long handle, struct page **page,
++static void obj_to_location(unsigned long handle, struct page **page,
+ 				unsigned long *obj_idx)
+ {
+ 	*page = pfn_to_page(handle >> OBJ_INDEX_BITS);
+ 	*obj_idx = (handle & OBJ_INDEX_MASK) - 1;
+ }
+ 
++static unsigned long handle_to_obj(unsigned long handle)
++{
++	return *(unsigned long *)handle;
++}
++
+ static unsigned long obj_idx_to_offset(struct page *page,
+ 				unsigned long obj_idx, int class_size)
+ {
+@@ -1153,7 +1189,7 @@ void *zs_map_object(struct zs_pool *pool, unsigned long handle,
+ 			enum zs_mapmode mm)
+ {
+ 	struct page *page;
+-	unsigned long obj_idx, off;
++	unsigned long obj, obj_idx, off;
+ 
+ 	unsigned int class_idx;
+ 	enum fullness_group fg;
+@@ -1170,7 +1206,8 @@ void *zs_map_object(struct zs_pool *pool, unsigned long handle,
+ 	 */
+ 	BUG_ON(in_interrupt());
+ 
+-	obj_handle_to_location(handle, &page, &obj_idx);
++	obj = handle_to_obj(handle);
++	obj_to_location(obj, &page, &obj_idx);
+ 	get_zspage_mapping(get_first_page(page), &class_idx, &fg);
+ 	class = pool->size_class[class_idx];
+ 	off = obj_idx_to_offset(page, obj_idx, class->size);
+@@ -1195,7 +1232,7 @@ EXPORT_SYMBOL_GPL(zs_map_object);
+ void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
+ {
+ 	struct page *page;
+-	unsigned long obj_idx, off;
++	unsigned long obj, obj_idx, off;
+ 
+ 	unsigned int class_idx;
+ 	enum fullness_group fg;
+@@ -1204,7 +1241,8 @@ void zs_unmap_object(struct zs_pool *pool, unsigned long handle)
+ 
+ 	BUG_ON(!handle);
+ 
+-	obj_handle_to_location(handle, &page, &obj_idx);
++	obj = handle_to_obj(handle);
++	obj_to_location(obj, &page, &obj_idx);
+ 	get_zspage_mapping(get_first_page(page), &class_idx, &fg);
+ 	class = pool->size_class[class_idx];
+ 	off = obj_idx_to_offset(page, obj_idx, class->size);
+@@ -1236,7 +1274,7 @@ EXPORT_SYMBOL_GPL(zs_unmap_object);
+  */
+ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
+ {
+-	unsigned long obj;
++	unsigned long handle, obj;
+ 	struct link_free *link;
+ 	struct size_class *class;
+ 	void *vaddr;
+@@ -1247,6 +1285,10 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
+ 	if (unlikely(!size || size > ZS_MAX_ALLOC_SIZE))
+ 		return 0;
+ 
++	handle = alloc_handle(pool);
++	if (!handle)
++		return 0;
++
+ 	class = pool->size_class[get_size_class_index(size)];
+ 
+ 	spin_lock(&class->lock);
+@@ -1255,8 +1297,10 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
+ 	if (!first_page) {
+ 		spin_unlock(&class->lock);
+ 		first_page = alloc_zspage(class, pool->flags);
+-		if (unlikely(!first_page))
++		if (unlikely(!first_page)) {
++			free_handle(pool, handle);
+ 			return 0;
++		}
+ 
+ 		set_zspage_mapping(first_page, class->index, ZS_EMPTY);
+ 		atomic_long_add(class->pages_per_zspage,
+@@ -1268,7 +1312,7 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
  	}
  
- 	meta = zram->meta;
-+	zram->meta = NULL;
+ 	obj = (unsigned long)first_page->freelist;
+-	obj_handle_to_location(obj, &m_page, &m_objidx);
++	obj_to_location(obj, &m_page, &m_objidx);
+ 	m_offset = obj_idx_to_offset(m_page, m_objidx, class->size);
+ 
+ 	vaddr = kmap_atomic(m_page);
+@@ -1281,27 +1325,30 @@ unsigned long zs_malloc(struct zs_pool *pool, size_t size)
+ 	zs_stat_inc(class, OBJ_USED, 1);
+ 	/* Now move the zspage to another fullness group, if required */
+ 	fix_fullness_group(pool, first_page);
++	record_obj(handle, obj);
+ 	spin_unlock(&class->lock);
+ 
+-	return obj;
++	return handle;
+ }
+ EXPORT_SYMBOL_GPL(zs_malloc);
+ 
+-void zs_free(struct zs_pool *pool, unsigned long obj)
++void zs_free(struct zs_pool *pool, unsigned long handle)
+ {
+ 	struct link_free *link;
+ 	struct page *first_page, *f_page;
+-	unsigned long f_objidx, f_offset;
++	unsigned long obj, f_objidx, f_offset;
+ 	void *vaddr;
+ 
+ 	int class_idx;
+ 	struct size_class *class;
+ 	enum fullness_group fullness;
+ 
+-	if (unlikely(!obj))
++	if (unlikely(!handle))
+ 		return;
+ 
+-	obj_handle_to_location(obj, &f_page, &f_objidx);
++	obj = handle_to_obj(handle);
++	free_handle(pool, handle);
++	obj_to_location(obj, &f_page, &f_objidx);
+ 	first_page = get_first_page(f_page);
+ 
+ 	get_zspage_mapping(first_page, &class_idx, &fullness);
+@@ -1356,18 +1403,16 @@ struct zs_pool *zs_create_pool(char *name, gfp_t flags)
+ 		return NULL;
+ 
+ 	pool->name = kstrdup(name, GFP_KERNEL);
+-	if (!pool->name) {
+-		kfree(pool);
+-		return NULL;
+-	}
++	if (!pool->name)
++		goto err;
 +
- 	/* Free all pages that are still in this zram device */
- 	for (index = 0; index < zram->disksize >> PAGE_SHIFT; index++) {
- 		unsigned long handle = meta->table[index].handle;
-@@ -731,8 +733,6 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
- 	zcomp_destroy(zram->comp);
- 	zram->max_comp_streams = 1;
++	if (create_handle_cache(pool))
++		goto err;
  
--	zram_meta_free(zram->meta);
--	zram->meta = NULL;
- 	/* Reset stats */
- 	memset(&zram->stats, 0, sizeof(zram->stats));
- 
-@@ -741,6 +741,7 @@ static void zram_reset_device(struct zram *zram, bool reset_capacity)
- 		set_capacity(zram->disk, 0);
- 
- 	up_write(&zram->init_lock);
-+	zram_meta_free(meta);
+ 	pool->size_class = kcalloc(zs_size_classes, sizeof(struct size_class *),
+ 			GFP_KERNEL);
+-	if (!pool->size_class) {
+-		kfree(pool->name);
+-		kfree(pool);
+-		return NULL;
+-	}
++	if (!pool->size_class)
++		goto err;
  
  	/*
- 	 * Revalidate disk out of the init_lock to avoid lockdep splat.
+ 	 * Iterate reversly, because, size of size_class that we want to use
+@@ -1450,6 +1495,7 @@ void zs_destroy_pool(struct zs_pool *pool)
+ 		kfree(class);
+ 	}
+ 
++	destroy_handle_cache(pool);
+ 	kfree(pool->size_class);
+ 	kfree(pool->name);
+ 	kfree(pool);
 -- 
 1.9.3
 
