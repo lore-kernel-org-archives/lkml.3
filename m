@@ -1,64 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511AbbAUKon (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 05:44:43 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:33841 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752015AbbAUKog (ORCPT
+	id S1752689AbbAUKpN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 05:45:13 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:60222 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752530AbbAUKpH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 05:44:36 -0500
+	Wed, 21 Jan 2015 05:45:07 -0500
+Message-ID: <54BF8326.3080406@pengutronix.de>
+Date: Wed, 21 Jan 2015 11:44:54 +0100
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.4.0
 MIME-Version: 1.0
-In-Reply-To: <54B7F9FB.7030100@wwwdotorg.org>
-References: <1421338359-27467-1-git-send-email-tomeu.vizoso@collabora.com>
-	<1421338359-27467-9-git-send-email-tomeu.vizoso@collabora.com>
-	<54B7F9FB.7030100@wwwdotorg.org>
-Date: Wed, 21 Jan 2015 11:44:35 +0100
-Message-ID: <CAPDyKFoO6evBoAbEE30XiZg51KsM-sD4viFMvqaDwGoHeVL-6w@mail.gmail.com>
-Subject: Re: [PATCH v2 08/11] mmc: pwrseq_simple: Add support for a delay
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: Stephen Warren <swarren@wwwdotorg.org>,
-        Tomeu Vizoso <tomeu.vizoso@collabora.com>
-Cc: "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Dylan Reid <dgreid@chromium.org>, Simon Glass <sjg@chromium.org>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>, Chris Ball <chris@printf.net>,
-        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Andri Yngvason <andri.yngvason@marel.com>,
+        "Ahmed S. Darwish" <darwish.07@gmail.com>,
+        Olivier Sobrie <olivier@sobrie.be>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Wolfgang Grandegger <wg@grandegger.com>
+CC: Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v5 2/5] can: kvaser_usb: Consolidate and unify state change
+ handling
+References: <20141223154654.GB6460@vivalin-002> <20150120214409.GA16828@linux> <20150120214537.GB16828@linux> <20150121103319.14511.57709@shannon>
+In-Reply-To: <20150121103319.14511.57709@shannon>
+Content-Type: multipart/signed; micalg=pgp-sha512;
+ protocol="application/pgp-signature";
+ boundary="Saaec6vgQSg9TUi22lNmbclxo2ldABKTO"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15 January 2015 at 18:33, Stephen Warren <swarren@wwwdotorg.org> wrote:
-> On 01/15/2015 09:12 AM, Tomeu Vizoso wrote:
+This is an OpenPGP/MIME signed message (RFC 4880 and 3156)
+--Saaec6vgQSg9TUi22lNmbclxo2ldABKTO
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: quoted-printable
+
+On 01/21/2015 11:33 AM, Andri Yngvason wrote:
+> Quoting Ahmed S. Darwish (2015-01-20 21:45:37)
+>> From: Ahmed S. Darwish <ahmed.darwish@valeo.com>
 >>
->> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
->
->
-> Ah, having read the explanation in the next patch, I think ...
->
->> diff --git a/Documentation/devicetree/bindings/mmc/mmc,pwrseq-simple.txt
->> b/Documentation/devicetree/bindings/mmc/mmc,pwrseq-simple.txt
->
->
->> +- delay : delay to wait after driving the reset gpio active [ms].
->
->
-> ... delay is the wrong name. reset-pulse-width or reset-pulse-length would
-> be better. delay sounds like a delay after resetting the device before it
-> can be accessed.
+>> Replace most of the can interface's state and error counters
+>> handling with the new can-dev can_change_state() mechanism.
+>>
+>> Suggested-by: Andri Yngvason <andri.yngvason@marel.com>
+>> Signed-off-by: Ahmed S. Darwish <ahmed.darwish@valeo.com>
+>> ---
+>>  drivers/net/can/usb/kvaser_usb.c | 114 +++++++++++++++++++-----------=
+---------
+>>  1 file changed, 55 insertions(+), 59 deletions(-)
+>>
+>> diff --git a/drivers/net/can/usb/kvaser_usb.c b/drivers/net/can/usb/kv=
+aser_usb.c
+>> index 971c5f9..0386d3f 100644
+>> --- a/drivers/net/can/usb/kvaser_usb.c
+>> +++ b/drivers/net/can/usb/kvaser_usb.c
 
-I agree with Stephen's proposal.
+> Looks good.
 
-This patch needs to be rebased and retested on latest version the
-mmc-pwrseq patches. Moreover, if you think the patchset which $subject
-patch is a part of is material for 3.20, I will need to share an
-immutable branch with the mmc-pwrseq patches for ARM SOC to pull in,
-tell me if you need that.
+Is this an Acked-by?
 
-Kind regards
-Uffe
+Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--Saaec6vgQSg9TUi22lNmbclxo2ldABKTO
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCgAGBQJUv4MpAAoJECte4hHFiupUxucP+wegvaIrWMypNeoTQ9/UV+ia
+v/Rh4T8HLQgKIjIJwTRtcrbtt1DOCYzRAYpWyMWAm48A8zKwaIpasbiRd17nW21g
+G83ICAg5J9y9ueLvAf4dSDw8sTcOcNF8/TSMZxmpgFz4YMYKuUChjFLJHS4TWgps
+B7J4rG3krC31PvW1Le2KYz43wtgjeO/3PVIGSiBrvF+mvd5OUfbbzHZWZ2yEUf1G
+l4F+5FxGH/slfWlC4g36wur16grTFc+ewKwEKQBgZrDXVGBqbGgzyael8q3oPwun
+TRP2bjSgVviRxilSGO/AyzuSCTplQH+lkGsngnMy5yCeerMV+2Zf1TNmnKBPyYYy
+CzGyFLS2QMMpkGfgt7C2NbBhww7PjMp4GRvX4ktLKedYgu7x1ypUzzoecx2/FWp5
+Ul3tVw6djkSNCONHf4hBbbankALErGOKP2InZWUTjihFGGGfV3JhXzCWzt4P5v0C
+Tk+XcxeOrvdalAPEENuesJg8qpCurIPt+gzw0BHh0GmiiKZX+ycKsGZ8mcZNcn5T
+m5sK6V6vayfOIaW3jFG37VU7UHi7MT/Ikax62q5xewTwn0K2sLzqJ5ssxyFP5SjH
+o/7yrF5q2VCtTpD+bhyL9WF030cbrgZm9v2Os19uCvQ/9UISzN3wk6vm8S94GWRS
+tqwmWmWQjZ+XhHTckjQn
+=C+4n
+-----END PGP SIGNATURE-----
+
+--Saaec6vgQSg9TUi22lNmbclxo2ldABKTO--
