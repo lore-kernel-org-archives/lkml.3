@@ -1,39 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753394AbbAUNoi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 08:44:38 -0500
-Received: from mail-qa0-f51.google.com ([209.85.216.51]:62945 "EHLO
-	mail-qa0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751777AbbAUNob (ORCPT
+	id S1752768AbbAUNsz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 08:48:55 -0500
+Received: from mail-we0-f178.google.com ([74.125.82.178]:50016 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889AbbAUNsr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 08:44:31 -0500
+	Wed, 21 Jan 2015 08:48:47 -0500
+Message-ID: <54BFAE3F.7000300@linaro.org>
+Date: Wed, 21 Jan 2015 13:48:47 +0000
+From: Daniel Thompson <daniel.thompson@linaro.org>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <1421581520-2816-3-git-send-email-heukelum@fastmail.fm>
-References: <1421581520-2816-1-git-send-email-heukelum@fastmail.fm> <1421581520-2816-3-git-send-email-heukelum@fastmail.fm>
-From: Denys Vlasenko <vda.linux@googlemail.com>
-Date: Wed, 21 Jan 2015 14:44:10 +0100
-Message-ID: <CAK1hOcMgrpw5+Uz+5U25Xq_1fJNTGc4PUtw+YzGGYBZ-YKaJew@mail.gmail.com>
-Subject: Re: [PATCHv2 2/4] x86_64: embrace KERNEL_STACK_OFFSET
-To: Alexander van Heukelum <heukelum@fastmail.fm>
-Cc: Andy Lutomirski <luto@amacapital.net>, X86 ML <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>, Borislav Petkov <bp@suse.de>,
-        Rik van Riel <riel@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Stephen Boyd <sboyd@codeaurora.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Jason Cooper <jason@lakedaemon.net>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
+        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Dirk Behme <dirk.behme@de.bosch.com>,
+        Daniel Drake <drake@endlessm.com>,
+        Dmitry Pervushin <dpervushin@gmail.com>,
+        Tim Sander <tim@krieglstein.org>
+Subject: Re: [PATCH 3.19-rc2 v14 0/7] arm: Implement arch_trigger_all_cpu_backtrace
+References: <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org>	<1421144818-14036-1-git-send-email-daniel.thompson@linaro.org>	<54BE2D15.9080606@linaro.org>	<54BEC04D.1050402@codeaurora.org>	<54BF83C9.5060300@linaro.org> <20150121080612.6569ab81@gandalf.local.home>
+In-Reply-To: <20150121080612.6569ab81@gandalf.local.home>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jan 18, 2015 at 12:45 PM, Alexander van Heukelum
-<heukelum@fastmail.fm> wrote:
-> KERNEL_STACK_OFFSET is the offset from the top of the kernel stack
-> page to the value of the kernel_stack percpu variable. This patch
-> changes KERNEL_STACK_OFFSET to configure a reserved space of 16
-> bytes above the user ptregs frame. KERNEL_STACK_OFFSET must be
-> set to a multiple of 16 bytes due to the automatic stack alignment
-> of interrupts, traps, and exceptions on x86_64.
+On 21/01/15 13:06, Steven Rostedt wrote:
+> On Wed, 21 Jan 2015 10:47:37 +0000
+> Daniel Thompson <daniel.thompson@linaro.org> wrote:
+> 
+> 
+>>> With this patchset, is it possible to call sched_clock() from within NMI
+>>> context? I ask because the generic sched_clock() code is not NMI safe
+> 
+> That's not good. Better not run function tracing, as that could trace
+> functions in NMI context (I depend on that it does), and it uses
+> sched_clock() as the default clock.
 
-I propose to set kernel_stack percpu variable to point
-to the top of kernel stack (obvious, isn't it?)
-and eliminate KERNEL_STACK_OFFSET altogether.
+I think sched_clock is unsafe as in "may sometimes give the wrong value"
+rather than "can lock up arbitrarily".  Thus the impact is unlikely to
+be harmful enough to want to avoid tracing altogether.
+
+It would require special care be taken when interpreting the timestamps
+however. Also since update_sched_clock() is a notrace function its very
+hard to figure out when timestamps are at risk.
+
+Anyhow, the fix doesn't seem that hard. I can take a look.
+
+
+Daniel.
+
