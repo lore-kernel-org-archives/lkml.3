@@ -1,73 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755084AbbAUCna (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 21:43:30 -0500
-Received: from mail-vc0-f172.google.com ([209.85.220.172]:43889 "EHLO
-	mail-vc0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753157AbbAUCn2 (ORCPT
+	id S1754413AbbAUCor (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 21:44:47 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:37615 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752075AbbAUCoo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 21:43:28 -0500
+	Tue, 20 Jan 2015 21:44:44 -0500
+Message-ID: <54BF1292.2080902@roeck-us.net>
+Date: Tue, 20 Jan 2015 18:44:34 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <CAGS+omALWyadW50tmU+FbfFGj9RgjQHeYqdEh5ZdWpJnMdnCyg@mail.gmail.com>
-References: <1420622830-8608-1-git-send-email-djkurtz@chromium.org> <CAGS+omALWyadW50tmU+FbfFGj9RgjQHeYqdEh5ZdWpJnMdnCyg@mail.gmail.com>
-From: Daniel Kurtz <djkurtz@chromium.org>
-Date: Wed, 21 Jan 2015 10:43:07 +0800
-X-Google-Sender-Auth: JWeBgpKSvZLv1Cvs2vOB55Bv1_Y
-Message-ID: <CAGS+omDxiO_Og4gVwDHb51H4C6w4aeb1ZQpqTJvM-3GgFcMAdw@mail.gmail.com>
-Subject: Re: [PATCH] drm/rockchip: fix dma_alloc_attrs() error check
-To: Mark Yao <mark.yao@rock-chips.com>, David Airlie <airlied@linux.ie>
-Cc: Pawel Osciak <posciak@chromium.org>,
-        "open list:ARM/Rockchip SoC..." <linux-rockchip@lists.infradead.org>,
-        Daniel Kurtz <djkurtz@chromium.org>, Daniel Vetter <daniel@ffwll.ch>,
-        Rob Clark <robdclark@gmail.com>,
-        "open list:DRM DRIVERS" <dri-devel@lists.freedesktop.org>,
-        open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: Al Viro <viro@ZenIV.linux.org.uk>, Paul Moore <pmoore@redhat.com>
+CC: Sabrina Dubroca <sd@queasysnail.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-audit@redhat.com, Richard Guy Briggs <rgb@redhat.com>
+Subject: Re: linux-next: Tree for Jan 20 -- Kernel panic - Unable to mount
+ root fs
+References: <20150120165655.GA10904@kria> <20150120232726.GA16913@kria> <1517211.UYLV49hvpg@sifl> <1528536.jyty2pu4Mz@sifl> <20150121004117.GM29656@ZenIV.linux.org.uk>
+In-Reply-To: <20150121004117.GM29656@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020204.54BF129B.0155,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 4
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark: did you get a chance to fixup the "Reported-by" line?  It's not
-a bit deal if you didn't.
+On 01/20/2015 04:41 PM, Al Viro wrote:
 
-Dave: did you pick up this pull request?  Did Mark request properly?
+> The shit hits the fan earlier - when we end up missing /dev.  There are
+> two places where it could've been created (depending on CONFIG_BLK_DEV_INITRD);
+> 	sys_mkdir(collected, mode);
+> in init/initramfs.c (line 353 in linux-next) and
+>          err = sys_mkdir((const char __user __force *) "/dev", 0755);
+> in init/noinitramfs.c (line 32).  The latter would've screamed on failure;
+> could you printk of collected (%s), mode (%o) and return value (%d) in the
+> former and see what happens?
+>
 
-On Fri, Jan 9, 2015 at 12:01 PM, Daniel Kurtz <djkurtz@chromium.org> wrote:
-> On Wed, Jan 7, 2015 at 5:27 PM, Daniel Kurtz <djkurtz@chromium.org> wrote:
->> dma_alloc_attrs() returns NULL if it cannot allocate a dma buffer (or
->> mapping), not a negative error code.
->>
->> Rerported-by: Pawel Osciak <posciak@chromium.org>
->
-> Oops!  I just noticed that this is spelled wrong.  Should be "Reported-by".
->
-> Mark, could you fix up on your tree, or is it too late?
->
->> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
->> ---
->>  drivers/gpu/drm/rockchip/rockchip_drm_gem.c | 9 +++------
->>  1 file changed, 3 insertions(+), 6 deletions(-)
->>
->> diff --git a/drivers/gpu/drm/rockchip/rockchip_drm_gem.c b/drivers/gpu/drm/rockchip/rockchip_drm_gem.c
->> index bc98a22..7ca8799e 100644
->> --- a/drivers/gpu/drm/rockchip/rockchip_drm_gem.c
->> +++ b/drivers/gpu/drm/rockchip/rockchip_drm_gem.c
->> @@ -34,12 +34,9 @@ static int rockchip_gem_alloc_buf(struct rockchip_gem_object *rk_obj)
->>         rk_obj->kvaddr = dma_alloc_attrs(drm->dev, obj->size,
->>                                          &rk_obj->dma_addr, GFP_KERNEL,
->>                                          &rk_obj->dma_attrs);
->> -       if (IS_ERR(rk_obj->kvaddr)) {
->> -               int ret = PTR_ERR(rk_obj->kvaddr);
->> -
->> -               DRM_ERROR("failed to allocate %#x byte dma buffer, %d",
->> -                         obj->size, ret);
->> -               return ret;
->> +       if (!rk_obj->kvaddr) {
->> +               DRM_ERROR("failed to allocate %#x byte dma buffer", obj->size);
->> +               return -ENOMEM;
->>         }
->>
->>         return 0;
->> --
->> 2.2.0.rc0.207.ga3a616c
->>
+sys_mkdir .:40775 returned -17
+sys_mkdir usr:40775 returned 0
+sys_mkdir usr/lib:40775 returned -2
+sys_mkdir usr/share:40755 returned -2
+sys_mkdir usr/share/udhcpc:40755 returned -2
+sys_mkdir usr/bin:40775 returned -2
+sys_mkdir usr/sbin:40775 returned -2
+sys_mkdir mnt:40775 returned 0
+sys_mkdir proc:40775 returned 0
+sys_mkdir root:40775 returned 0
+sys_mkdir lib:40775 returned 0
+sys_mkdir lib/modules:40775 returned -2
+sys_mkdir lib/modules/3.9.2:40775 returned -2
+sys_mkdir lib/modules/3.9.2/kernel:40775 returned -2
+
+with
+	int err = sys_mkdir(collected, mode);
+	pr_info("sys_mkdir %s:%o returned %d\n", collected, mode, err);
+added in init/initramfs.c.
+
+Guenter
+
