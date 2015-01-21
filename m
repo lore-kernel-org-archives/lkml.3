@@ -1,162 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753552AbbAUD0g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 22:26:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41391 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751823AbbAUD0g convert rfc822-to-8bit (ORCPT
+	id S1753516AbbAUDgK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 22:36:10 -0500
+Received: from zeniv.linux.org.uk ([195.92.253.2]:41416 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751691AbbAUDgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 22:26:36 -0500
-Date: Wed, 21 Jan 2015 03:33:27 +0008
-From: Jason Wang <jasowang@redhat.com>
-Subject: Re: [PATCH v3 3/3] Drivers: hv: vmbus: serialize Offer and Rescind
- offer
-To: Vitaly Kuznetsov <vkuznets@redhat.com>
-Cc: "K. Y. Srinivasan" <kys@microsoft.com>, devel@linuxdriverproject.org,
-        Haiyang Zhang <haiyangz@microsoft.com>, linux-kernel@vger.kernel.org,
-        Dexuan Cui <decui@microsoft.com>,
-        Radim =?iso-8859-2?b?S3LobeH4?= <rkrcmar@redhat.com>,
-        Dan Carpenter <dan.carpenter@oracle.com>
-Message-Id: <1421810727.8384.2@smtp.corp.redhat.com>
-In-Reply-To: <1421768706-5363-4-git-send-email-vkuznets@redhat.com>
-References: <1421768706-5363-1-git-send-email-vkuznets@redhat.com>
-	<1421768706-5363-4-git-send-email-vkuznets@redhat.com>
+	Tue, 20 Jan 2015 22:36:08 -0500
+Date: Wed, 21 Jan 2015 03:36:00 +0000
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Paul Moore <pmoore@redhat.com>, Sabrina Dubroca <sd@queasysnail.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-audit@redhat.com, Richard Guy Briggs <rgb@redhat.com>
+Subject: Re: linux-next: Tree for Jan 20 -- Kernel panic - Unable to mount
+ root fs
+Message-ID: <20150121033600.GN29656@ZenIV.linux.org.uk>
+References: <20150120165655.GA10904@kria>
+ <20150120232726.GA16913@kria>
+ <1517211.UYLV49hvpg@sifl>
+ <1528536.jyty2pu4Mz@sifl>
+ <20150121004117.GM29656@ZenIV.linux.org.uk>
+ <54BF1292.2080902@roeck-us.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54BF1292.2080902@roeck-us.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jan 20, 2015 at 06:44:34PM -0800, Guenter Roeck wrote:
+> >The shit hits the fan earlier - when we end up missing /dev.  There are
+> >two places where it could've been created (depending on CONFIG_BLK_DEV_INITRD);
+> >	sys_mkdir(collected, mode);
+> >in init/initramfs.c (line 353 in linux-next) and
+> >         err = sys_mkdir((const char __user __force *) "/dev", 0755);
+> >in init/noinitramfs.c (line 32).  The latter would've screamed on failure;
+> >could you printk of collected (%s), mode (%o) and return value (%d) in the
+> >former and see what happens?
+> >
+> 
+> sys_mkdir .:40775 returned -17
+> sys_mkdir usr:40775 returned 0
+> sys_mkdir usr/lib:40775 returned -2
+> sys_mkdir usr/share:40755 returned -2
+> sys_mkdir usr/share/udhcpc:40755 returned -2
+> sys_mkdir usr/bin:40775 returned -2
+> sys_mkdir usr/sbin:40775 returned -2
+> sys_mkdir mnt:40775 returned 0
+> sys_mkdir proc:40775 returned 0
+> sys_mkdir root:40775 returned 0
+> sys_mkdir lib:40775 returned 0
+> sys_mkdir lib/modules:40775 returned -2
+> sys_mkdir lib/modules/3.9.2:40775 returned -2
+> sys_mkdir lib/modules/3.9.2/kernel:40775 returned -2
+> 
+> with
+> 	int err = sys_mkdir(collected, mode);
+> 	pr_info("sys_mkdir %s:%o returned %d\n", collected, mode, err);
+> added in init/initramfs.c.
 
+Just what is lib/modules/3.9.2 doing there?  In any case, I think I have at
+least a plausible direction for digging.  Look:
 
-On Tue, Jan 20, 2015 at 11:45 PM, Vitaly Kuznetsov 
-<vkuznets@redhat.com> wrote:
-> Commit 4b2f9abea52a ("staging: hv: convert channel_mgmt.c to not call
-> osd_schedule_callback")' was written under an assumption that we 
-> never receive
-> Rescind offer while we're still processing the initial Offer request. 
-> However,
-> the issue we fixed in 04a258c162a8 could be caused by this assumption 
-> not
-> always being true.
-> 
-> In particular, we need to protect against the following:
-> 1) Receiving a Rescind offer after we do queue_work() for processing 
-> an Offer
->    request and before we actually enter vmbus_process_offer(). 
-> work.func points
->    to vmbus_process_offer() at this moment and in 
-> vmbus_onoffer_rescind() we do
->    another queue_work() without a check so we'll enter 
-> vmbus_process_offer()
->    twice.
-> 2) Receiving a Rescind offer after we enter vmbus_process_offer() and
->    especially after we set >state = CHANNEL_OPEN_STATE. Many things 
-> can go
->    wrong in that case, e.g. we can call free_channel() while we're 
-> still using
->    it.
-> 
-> Implement the required protection by changing work->func at the very 
-> end of
-> vmbus_process_offer() and checking work->func in 
-> vmbus_onoffer_rescind(). In
-> case we receive rescind offer during or before vmbus_process_offer() 
-> is done
-> we set rescind flag to true and we check it at the end of 
-> vmbus_process_offer()
-> so such offer will not get lost.
-> 
-> Suggested-by: Radim Krčmář <rkrcmar@redhat.com>
-> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
-> ---
+struct dentry *user_path_create(int dfd, const char __user *pathname,
+                                struct path *path, unsigned int lookup_flags)
+{
+        struct filename *tmp = getname(pathname);
+        struct dentry *res;
+        if (IS_ERR(tmp))
+                return ERR_CAST(tmp);
+        res = kern_path_create(dfd, tmp->name, path, lookup_flags);
 
-Acked-by: Jason Wang <jasowang@redhat.com>
-> 
->  drivers/hv/channel_mgmt.c | 30 ++++++++++++++++++++++--------
->  1 file changed, 22 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/hv/channel_mgmt.c b/drivers/hv/channel_mgmt.c
-> index c6fdd74..877a944 100644
-> --- a/drivers/hv/channel_mgmt.c
-> +++ b/drivers/hv/channel_mgmt.c
-> @@ -279,9 +279,6 @@ static void vmbus_process_offer(struct 
-> work_struct *work)
->  	int ret;
->  	unsigned long flags;
->  
-> -	/* The next possible work is rescind handling */
-> -	INIT_WORK(&newchannel->work, vmbus_process_rescind_offer);
-> -
->  	/* Make sure this is a new offer */
->  	spin_lock_irqsave(&vmbus_connection.channel_lock, flags);
->  
-> @@ -341,7 +338,7 @@ static void vmbus_process_offer(struct 
-> work_struct *work)
->  			if (channel->sc_creation_callback != NULL)
->  				channel->sc_creation_callback(newchannel);
->  
-> -			goto out;
-> +			goto done_init_rescind;
->  		}
->  
->  		goto err_free_chan;
-> @@ -382,7 +379,14 @@ static void vmbus_process_offer(struct 
-> work_struct *work)
->  		kfree(newchannel->device_obj);
->  		goto err_free_chan;
->  	}
-> -out:
-> +done_init_rescind:
-> +	spin_lock_irqsave(&newchannel->lock, flags);
-> +	/* The next possible work is rescind handling */
-> +	INIT_WORK(&newchannel->work, vmbus_process_rescind_offer);
-> +	/* Check if rescind offer was already received */
-> +	if (newchannel->rescind)
-> +		queue_work(newchannel->controlwq, &newchannel->work);
-> +	spin_unlock_irqrestore(&newchannel->lock, flags);
->  	return;
->  err_free_chan:
->  	free_channel(newchannel);
-> @@ -520,6 +524,7 @@ static void vmbus_onoffer_rescind(struct 
-> vmbus_channel_message_header *hdr)
->  {
->  	struct vmbus_channel_rescind_offer *rescind;
->  	struct vmbus_channel *channel;
-> +	unsigned long flags;
->  
->  	rescind = (struct vmbus_channel_rescind_offer *)hdr;
->  	channel = relid2channel(rescind->child_relid);
-> @@ -528,11 +533,20 @@ static void vmbus_onoffer_rescind(struct 
-> vmbus_channel_message_header *hdr)
->  		/* Just return here, no channel found */
->  		return;
->  
-> +	spin_lock_irqsave(&channel->lock, flags);
->  	channel->rescind = true;
-> +	/*
-> +	 * channel->work.func != vmbus_process_rescind_offer means we are 
-> still
-> +	 * processing offer request and the rescind offer processing should 
-> be
-> +	 * postponed. It will be done at the very end of 
-> vmbus_process_offer()
-> +	 * as rescind flag is being checked there.
-> +	 */
-> +	if (channel->work.func == vmbus_process_rescind_offer)
-> +		/* work is initialized for vmbus_process_rescind_offer() from
-> +		 * vmbus_process_offer() where the channel got created */
-> +		queue_work(channel->controlwq, &channel->work);
->  
-> -	/* work is initialized for vmbus_process_rescind_offer() from
-> -	 * vmbus_process_offer() where the channel got created */
-> -	queue_work(channel->controlwq, &channel->work);
-> +	spin_unlock_irqrestore(&channel->lock, flags);
->  }
->  
->  /*
-> -- 
-> 1.9.3
-> 
+struct dentry *kern_path_create(int dfd, const char *pathname,
+                                struct path *path, unsigned int lookup_flags)
+{
+        struct dentry *dentry = ERR_PTR(-EEXIST);
+        struct nameidata nd;
+        int err2;
+        int error;
+        bool is_dir = (lookup_flags & LOOKUP_DIRECTORY);
 
+        /*
+         * Note that only LOOKUP_REVAL and LOOKUP_DIRECTORY matter here. Any
+         * other flags passed in are ignored!
+         */
+        lookup_flags &= LOOKUP_REVAL;
+
+        error = do_path_lookup(dfd, pathname, LOOKUP_PARENT|lookup_flags, &nd);
+
+static int do_path_lookup(int dfd, const char *name,
+                                unsigned int flags, struct nameidata *nd)
+{
+        int retval;
+        struct filename *filename;
+
+        filename = getname_kernel(name);
+        if (unlikely(IS_ERR(filename)))
+                return PTR_ERR(filename);
+        retval = filename_lookup(dfd, filename, flags, nd);
+
+and we have done getname_kernel() on the name->name of result of getname().
+At the very least, it's pointless - we already *have* struct filename for
+that sucker.  Now, it shouldn't have screwed the things up - it would better
+not, anyway, since we might legitimately have two identical pathname
+among the syscall arguments.  However, let's see if this (on top of
+linux-next, in addition to the same printks) changes behaviour:
+
+diff --git a/fs/namei.c b/fs/namei.c
+index 323957f..c7d107c 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -3314,7 +3314,7 @@ struct file *do_file_open_root(struct dentry *dentry, struct vfsmount *mnt,
+ 	return file;
+ }
+ 
+-struct dentry *kern_path_create(int dfd, const char *pathname,
++static struct dentry *__kern_path_create(int dfd, struct filename *name,
+ 				struct path *path, unsigned int lookup_flags)
+ {
+ 	struct dentry *dentry = ERR_PTR(-EEXIST);
+@@ -3329,7 +3329,7 @@ struct dentry *kern_path_create(int dfd, const char *pathname,
+ 	 */
+ 	lookup_flags &= LOOKUP_REVAL;
+ 
+-	error = do_path_lookup(dfd, pathname, LOOKUP_PARENT|lookup_flags, &nd);
++	error = filename_lookup(dfd, name, LOOKUP_PARENT|lookup_flags, &nd);
+ 	if (error)
+ 		return ERR_PTR(error);
+ 
+@@ -3383,6 +3383,19 @@ out:
+ 	path_put(&nd.path);
+ 	return dentry;
+ }
++
++struct dentry *kern_path_create(int dfd, const char *pathname,
++				struct path *path, unsigned int lookup_flags)
++{
++	struct filename *filename = getname_kernel(pathname);
++	struct dentry *res = ERR_CAST(filename);
++
++	if (!IS_ERR(filename)) {
++		res = __kern_path_create(dfd, filename, path, lookup_flags);
++		putname(filename);
++	}
++	return res;
++}
+ EXPORT_SYMBOL(kern_path_create);
+ 
+ void done_path_create(struct path *path, struct dentry *dentry)
+@@ -3401,7 +3414,7 @@ struct dentry *user_path_create(int dfd, const char __user *pathname,
+ 	struct dentry *res;
+ 	if (IS_ERR(tmp))
+ 		return ERR_CAST(tmp);
+-	res = kern_path_create(dfd, tmp->name, path, lookup_flags);
++	res = __kern_path_create(dfd, tmp, path, lookup_flags);
+ 	putname(tmp);
+ 	return res;
+ }
