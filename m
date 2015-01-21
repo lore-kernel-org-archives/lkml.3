@@ -1,77 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666AbbAUMT3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 07:19:29 -0500
-Received: from TYO201.gate.nec.co.jp ([210.143.35.51]:45799 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750754AbbAUMTT (ORCPT
+	id S1752479AbbAUMZP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 07:25:15 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:36223 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752266AbbAUMZE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 07:19:19 -0500
-From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-To: David Laight <David.Laight@ACULAB.COM>,
-        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
-        =?utf-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>
-CC: "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Choi, Sy Jong" <sy.jong.choi@intel.com>,
+	Wed, 21 Jan 2015 07:25:04 -0500
+Date: Wed, 21 Jan 2015 13:23:29 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Vishnu Patekar <vishnupatekar0510@gmail.com>
+Cc: Iain Paton <ipaton0@gmail.com>,
+        "linux-sunxi@googlegroups.com" <linux-sunxi@googlegroups.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Hans de Goede <hdegoede@redhat.com>,
+        "ijc+devicetree@hellion.org.uk" <ijc+devicetree@hellion.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hayato Momma <h-momma@ce.jp.nec.com>
-Subject: RE: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast promiscuous
-	mode control
-Thread-Topic: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast
- promiscuous	mode control
-Thread-Index: AQHQNRDn9S7pwXLQtk+h+o1qNyzJQpzJuLsg//955YCAATlDQIAAC34ggAADy1A=
-Date: Wed, 21 Jan 2015 12:18:23 +0000
-Message-ID: <7F861DC0615E0C47A872E6F3C5FCDDBD05E090FE@BPXM14GP.gisp.nec.co.jp>
-References: <7F861DC0615E0C47A872E6F3C5FCDDBD05E0734E@BPXM14GP.gisp.nec.co.jp>
-	<874mrlu18e.fsf@nemi.mork.no>
- <7F861DC0615E0C47A872E6F3C5FCDDBD05E07B7C@BPXM14GP.gisp.nec.co.jp>
- <F6FB0E698C9B3143BDF729DF222866469129B7F5@ORSMSX110.amr.corp.intel.com>
- <7F861DC0615E0C47A872E6F3C5FCDDBD05E07F09@BPXM14GP.gisp.nec.co.jp>
- <F6FB0E698C9B3143BDF729DF222866469129B844@ORSMSX110.amr.corp.intel.com>
- <7F861DC0615E0C47A872E6F3C5FCDDBD05E08FF6@BPXM14GP.gisp.nec.co.jp>
- <063D6719AE5E284EB5DD2968C1650D6D1CAD01D6@AcuExch.aculab.com>
-In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1CAD01D6@AcuExch.aculab.com>
-Accept-Language: ja-JP, en-US
-Content-Language: ja-JP
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.205.5.123]
-Content-Type: text/plain; charset="utf-8"
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [linux-sunxi] [PATCH v4 5/5] ARM: sunxi: dts: Add PS2 nodes for
+ A20 lime2 board
+Message-ID: <20150121122329.GG4367@lukather>
+References: <1421417021-3247-1-git-send-email-vishnupatekar0510@gmail.com>
+ <1421417021-3247-6-git-send-email-vishnupatekar0510@gmail.com>
+ <54BE8A0E.30604@gmail.com>
+ <20150120200740.GY4367@lukather>
+ <CAEzqOZsWYQ+Aep6HBZXVtKGEJgKYAKJU2b0=nGvP0jPKECxn7g@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="0EIE/3F9PxFGTcfe"
+Content-Disposition: inline
+In-Reply-To: <CAEzqOZsWYQ+Aep6HBZXVtKGEJgKYAKJU2b0=nGvP0jPKECxn7g@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0LCJWEe019554
 
-> Subject: RE: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast promiscuous mode control
-> 
-> From: Hiroshi Shimamoto
-> > My concern is what is the real issue that VF multicast promiscuous mode can cause.
-> > I think there is the 4k entries to filter multicast address, and the current ixgbe/ixgbevf
-> > can turn all bits on from VM. That is almost same as enabling multicast promiscuous mode.
-> > I mean that we can receive all multicast addresses by an onerous operation in untrusted VM.
-> > I think we should clarify what is real security issue in this context.
-> 
-> If you are worried about passing un-enabled multicasts to users then
-> what about doing a software hash of received multicasts and checking
-> against an actual list of multicasts enabled for that hash entry.
-> Under normal conditions there is likely to be only a single address to check.
-> 
-> It may (or may not) be best to use the same hash as any hashing hardware
-> filter uses.
 
-thanks for the comment. But I don't think that is the point.
+--0EIE/3F9PxFGTcfe
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I guess, introducing VF multicast promiscuous mode seems to add new privilege
-to peek every multicast packet in VM and that doesn't look good.
-On the other hand, I think that there has been the same privilege in the current
-ixgbe/ixgbevf implementation already. Or I'm reading the code wrongly.
-I'd like to clarify what is the issue of allowing to receive all multicast packets.
+On Wed, Jan 21, 2015 at 04:34:45PM +0530, Vishnu Patekar wrote:
+> Hello,
+>=20
+> On Wed, Jan 21, 2015 at 1:37 AM, Maxime Ripard
+> <maxime.ripard@free-electrons.com> wrote:
+> >
+> > On Tue, Jan 20, 2015 at 05:02:06PM +0000, Iain Paton wrote:
+> > > On 16/01/15 14:03, Vishnu Patekar wrote:
+> > > > Signed-off-by: VishnuPatekar <vishnupatekar0510@gmail.com>
+> > > > ---
+> > > >  arch/arm/boot/dts/sun7i-a20-olinuxino-lime2.dts |   12 ++++++++++++
+> > > >  1 file changed, 12 insertions(+)
+> > > >
+> > > > diff --git a/arch/arm/boot/dts/sun7i-a20-olinuxino-lime2.dts b/arch=
+/arm/boot/dts/sun7i-a20-olinuxino-lime2.dts
+> > > > index ed364d5..3365f12 100644
+> > > > --- a/arch/arm/boot/dts/sun7i-a20-olinuxino-lime2.dts
+> > > > +++ b/arch/arm/boot/dts/sun7i-a20-olinuxino-lime2.dts
+> > > > @@ -113,6 +113,18 @@
+> > > >                     status =3D "okay";
+> > > >             };
+> > > >
+> > > > +           ps20: ps2@01c2a000 {
+> > > > +                   pinctrl-names =3D "default";
+> > > > +                   pinctrl-0 =3D <&ps20_pins_a>;
+> > > > +                   status =3D "okay";
+> > > > +           };
+> > > > +
+> > > > +           ps21: ps2@01c2a400 {
+> > > > +                   pinctrl-names =3D "default";
+> > > > +                   pinctrl-0 =3D <&ps21_pins_a>;
+> > > > +                   status =3D "okay";
+> > > > +           };
+> > > > +
+> > > >             i2c0: i2c@01c2ac00 {
+> > > >                     pinctrl-names =3D "default";
+> > > >                     pinctrl-0 =3D <&i2c0_pins_a>;
+> > > >
+> > >
+> > > As the Lime2 doesn't actually have any PS2 connectors on the board,
+> > > I'd prefer that these are not enabled unconditionally. Doing so
+> > > only makes it more difficult for people who want to use these pins
+> > > for other functions.
+> > >
+> > > Device tree overlays seem to be close to being merged, perhaps we
+> > > could leave enabling this to an overlay?
+> >
+> > I already had the exact same reasoning, and this was even removed at
+> > some point. For some reason, it was added back, and I don't really
+> > know why.
+> This was removed in consideration that these pins conflict with HDMI,
+> however, these is not conflict.
+>=20
+> It was kept there as an example. But, as there is no ps2 connector on
+> board, I've no problem to remove these nodes from Lime2 dts file.
 
-thanks,
-Hiroshi
+Yet, probing a driver for a device connected to floating lines sounds
+like a pretty bad idea.
 
-ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--0EIE/3F9PxFGTcfe
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUv5pBAAoJEBx+YmzsjxAgc48P/j+pPis8VZcc25MTZOC3WDDl
+DNoAl9oFxrvEqvgzXKWrSF+Gulc+stTqimzSK/TCfB20TECLVuwcbmoQzGhFNCCZ
+pA9lT2STK/1btARRjf00loADuxu/Hi+RzQRUgGNW5aUxqE0jUIWxs+KCUuG/Doss
+9y/CjMPgHp0THuqM5YNvFi7f9hI+tDrNE4kzHGiRY3zOjIJ59/qlNkX0gXeJVjrY
+QwLvWfCR5xJT0AOoKtjpzEjCRUJs50wDU1IRvki4ufthPA7uuRv0fi9taCoiHw+m
+r+5fVKVli22FUTOdBISUH/Yu3EtWYN8m3Uagw0EJ0QLvpcnDJbWG1xxYXBdyUdNj
++b6297CUplbLOeZxCgsDNa/T0mIwfyArmQwW30kDVYZnxCtgNlxBD4cUFNJ3/+Oq
+mZbGwmOo6oGAcGUeIntTk0q3zfr23K4hFoktB16tdyX7GglUgnFN8aoj5LlJRVMk
+eHuAiuMIiv8xkU0ST0xQ914mRmWJH1ZcNf0Zzh/zNFixBy0MJKzF1cR6cR4jw2Xa
+6FQPAibqZRv6Nreb9fPkOUuFQSYyOscnkhK+f4McKTwUtZsm6vgJcDNUtaLfhdxb
++a4DtuM5b92kIl50AZc7qDEUMNCoPbQewLyR/pJt+L3rDPgxnGli9J2xrVGuRmTk
+IkehO7r9WW8GQPH52hdD
+=HMWJ
+-----END PGP SIGNATURE-----
+
+--0EIE/3F9PxFGTcfe--
