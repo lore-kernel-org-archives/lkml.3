@@ -1,55 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699AbbAUMd3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 07:33:29 -0500
-Received: from mga14.intel.com ([192.55.52.115]:25627 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750889AbbAUMdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 07:33:05 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,441,1418112000"; 
-   d="scan'208";a="640374260"
-Date: Wed, 21 Jan 2015 20:32:11 +0800
-From: kbuild test robot <fengguang.wu@intel.com>
-To: Ben Goz <ben.goz@amd.com>
-Cc: kbuild-all@01.org, Oded Gabbay <oded.gabbay@amd.com>,
-        Alex Deucher <alexander.deucher@amd.com>,
-        Christian =?iso-8859-1?Q?K=F6nig?= <christian.koenig@amd.com>,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH drm-intel] drm/radeon: cik_sdma_ctx_switch_enable() can be
- static
-Message-ID: <20150121123211.GA62066@lkp-sb04>
-References: <201501212004.wXNTOWyN%fengguang.wu@intel.com>
+	id S1752398AbbAUMgM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 07:36:12 -0500
+Received: from mail-ie0-f177.google.com ([209.85.223.177]:62363 "EHLO
+	mail-ie0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750832AbbAUMf7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 07:35:59 -0500
+Date: Wed, 21 Jan 2015 12:35:51 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Robert Jarzmik <robert.jarzmik@free.fr>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Kumar Gala <galak@codeaurora.org>, Daniel Mack <daniel@zonque.org>
+Subject: Re: [PATCH v3 2/3] mfd: lubbock_io: add lubbock_io board
+Message-ID: <20150121123551.GD9258@x1>
+References: <1421406010-14851-1-git-send-email-robert.jarzmik@free.fr>
+ <1421406010-14851-2-git-send-email-robert.jarzmik@free.fr>
+ <20150119091705.GG21886@x1>
+ <87ppaah9k5.fsf@free.fr>
+ <20150120102919.GP5767@x1>
+ <20150120115658.GJ26493@n2100.arm.linux.org.uk>
+ <873874fuei.fsf@free.fr>
+ <20150121081645.GC9258@x1>
+ <87y4owedx1.fsf@free.fr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <201501212004.wXNTOWyN%fengguang.wu@intel.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: fengguang.wu@intel.com
-X-SA-Exim-Scanned: No (on bee); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <87y4owedx1.fsf@free.fr>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/gpu/drm/radeon/cik_sdma.c:293:6: sparse: symbol 'cik_sdma_ctx_switch_enable' was not declared. Should it be static?
+On Wed, 21 Jan 2015, Robert Jarzmik wrote:
 
-Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
----
- cik_sdma.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+> Lee Jones <lee.jones@linaro.org> writes:
+> 
+> > On Wed, 21 Jan 2015, Robert Jarzmik wrote:
+> >> > > > platform_get_irq()?
+> >> > > No. I need the flags.
+> >> > Where are they used?
+> >> A couple of lines below, using local "irqflags" variable :
+> >>        ret = devm_request_irq(&pdev->dev, cot->irq, lubbock_irq_handler,
+> >>                               irqflags, dev_name(&pdev->dev), cot);
+> >
+> > No, I mean where are they _used_?
+> I don't get your point.
+> 
+> For you, isn't it "using" irqflags by passing them as an argument to devm_request_irq()
 
-diff --git a/drivers/gpu/drm/radeon/cik_sdma.c b/drivers/gpu/drm/radeon/cik_sdma.c
-index 1f4ded1..de137d1 100644
---- a/drivers/gpu/drm/radeon/cik_sdma.c
-+++ b/drivers/gpu/drm/radeon/cik_sdma.c
-@@ -290,7 +290,7 @@ static void cik_sdma_rlc_stop(struct radeon_device *rdev)
-  *
-  * Halt or unhalt the async dma engines (CIK).
-  */
--void cik_sdma_ctx_switch_enable(struct radeon_device *rdev, bool enable)
-+static void cik_sdma_ctx_switch_enable(struct radeon_device *rdev, bool enable)
- {
- 	uint32_t reg_offset, value;
- 	int i;
+No, this is where the argument is being _passed_.
+
+> ??? And if you think ahead, then there are used all around in
+> kernel/irq/manage.c, as you probably know.
+
+Perhaps some context would help.
+
+Looking at one of the other patches in the series it appears the flag
+you're trying to capture is IORESOURCE_IRQ_LOWEDGE.  When I grep for
+where this is being _used_ (think 'consumed, rather than passed.  I
+only see a single entry in drivers/pnp/interface.c.
+
+That's what got me thinking... are you sure you're a) making use of
+this flag and b) assuming the answer to 'a' is "no" and if everyting's
+working correctly in the code's current state, are you sure you need
+them at all? 
+
+I think to set an edge trigger on an IRQ, you should instead do so via
+irq_set_irq_type(), or have a missed a line or two?
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
