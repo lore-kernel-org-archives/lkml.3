@@ -1,123 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753656AbbAUS5N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 13:57:13 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:54125 "EHLO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917AbbAUS5G convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 13:57:06 -0500
-Message-ID: <54BFF679.6010705@arm.com>
-Date: Wed, 21 Jan 2015 18:56:57 +0000
-From: Robin Murphy <robin.murphy@arm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
-MIME-Version: 1.0
-To: Sumit Semwal <sumit.semwal@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        "linaro-mm-sig@lists.linaro.org" <linaro-mm-sig@lists.linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-CC: "t.stanislaws@samsung.com" <t.stanislaws@samsung.com>,
-        "linaro-kernel@lists.linaro.org" <linaro-kernel@lists.linaro.org>,
-        "robdclark@gmail.com" <robdclark@gmail.com>,
-        "daniel@ffwll.ch" <daniel@ffwll.ch>,
-        "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>
-Subject: Re: [RFCv2 1/2] device: add dma_params->max_segment_count
-References: <1421813807-9178-1-git-send-email-sumit.semwal@linaro.org> <1421813807-9178-2-git-send-email-sumit.semwal@linaro.org>
-In-Reply-To: <1421813807-9178-2-git-send-email-sumit.semwal@linaro.org>
-X-OriginalArrivalTime: 21 Jan 2015 18:57:01.0617 (UTC) FILETIME=[0A3D2210:01D035AC]
-X-MC-Unique: 115012118570400201
-Content-Type: text/plain; charset=WINDOWS-1252; format=flowed
-Content-Transfer-Encoding: 8BIT
+	id S1753463AbbAUTCZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 14:02:25 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:33135 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752144AbbAUTCS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 14:02:18 -0500
+From: Vitaly Kuznetsov <vkuznets@redhat.com>
+To: "K. Y. Srinivasan" <kys@microsoft.com>, devel@linuxdriverproject.org
+Cc: Haiyang Zhang <haiyangz@microsoft.com>, linux-kernel@vger.kernel.org,
+        Dexuan Cui <decui@microsoft.com>
+Subject: [PATCH 0/3] Drivers: hv: vmbus: fix crashes on hv_vmbus load/unload path
+Date: Wed, 21 Jan 2015 20:02:06 +0100
+Message-Id: <1421866929-20167-1-git-send-email-vkuznets@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sumit,
+It is possible (since 93e5bd06a953: "Drivers: hv: Make the vmbus driver
+unloadable") to unload hv_vmbus driver if no other devices are connected.
+1aec169673d7: "x86: Hyperv: Cleanup the irq mess" fixed doulble interrupt
+gate setup. However, if we try to unload hv_vmbus and then load it back
+crashes in different places of vmbus driver occur on both unload and second
+load paths. Address those I saw in my testing.
 
-On 21/01/15 04:16, Sumit Semwal wrote:
-> From: Rob Clark <robdclark@gmail.com>
->
-> For devices which have constraints about maximum number of segments in
-> an sglist.  For example, a device which could only deal with contiguous
-> buffers would set max_segment_count to 1.
->
-> The initial motivation is for devices sharing buffers via dma-buf,
-> to allow the buffer exporter to know the constraints of other
-> devices which have attached to the buffer.  The dma_mask and fields
-> in 'struct device_dma_parameters' tell the exporter everything else
-> that is needed, except whether the importer has constraints about
-> maximum number of segments.
->
-> Signed-off-by: Rob Clark <robdclark@gmail.com>
->   [sumits: Minor updates wrt comments on the first version]
-> Signed-off-by: Sumit Semwal <sumit.semwal@linaro.org>
-> ---
->   include/linux/device.h      |  1 +
->   include/linux/dma-mapping.h | 19 +++++++++++++++++++
->   2 files changed, 20 insertions(+)
->
-> diff --git a/include/linux/device.h b/include/linux/device.h
-> index fb50673..a32f9b6 100644
-> --- a/include/linux/device.h
-> +++ b/include/linux/device.h
-> @@ -647,6 +647,7 @@ struct device_dma_parameters {
->   	 * sg limitations.
->   	 */
->   	unsigned int max_segment_size;
-> +	unsigned int max_segment_count;    /* INT_MAX for unlimited */
->   	unsigned long segment_boundary_mask;
->   };
->
-> diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
-> index c3007cb..38e2835 100644
-> --- a/include/linux/dma-mapping.h
-> +++ b/include/linux/dma-mapping.h
-> @@ -154,6 +154,25 @@ static inline unsigned int dma_set_max_seg_size(struct device *dev,
->   		return -EIO;
->   }
->
-> +#define DMA_SEGMENTS_MAX_SEG_COUNT ((unsigned int) INT_MAX)
-> +
-> +static inline unsigned int dma_get_max_seg_count(struct device *dev)
-> +{
-> +	return dev->dma_parms ?
-> +			dev->dma_parms->max_segment_count :
-> +			DMA_SEGMENTS_MAX_SEG_COUNT;
-> +}
+Not everything is fixed though. MCE was hit once on Generation2 instance and
+I neither understand what caused it nor do I know the way to reproduce it.
+Anyway, here is the log:
 
-I know this copies the style of the existing code, but unfortunately it 
-also copies the subtle brokenness. Plenty of drivers seem to set up a 
-dma_parms struct just for max_segment_size, thus chances are you'll come 
-across a max_segment_count of 0 sooner or later. How badly is that going 
-to break things? I posted a fix recently[1] having hit this problem with 
-segment_boundary_mask in IOMMU code.
+[  204.846255] mce: [Hardware Error]: CPU 0: Machine Check Exception: 4 Bank 0: b2000000c0020001
+[  204.846675] mce: [Hardware Error]: TSC 6b5cd64bc8 
+[  204.846675] mce: [Hardware Error]: PROCESSOR 0:306e4 TIME 1421944123 SOCKET 0 APIC 0 microcode ffffffff
+[  204.846675] mce: [Hardware Error]: Run the above through 'mcelog --ascii'
+[  204.846675] mce: [Hardware Error]: Machine check: Processor context corrupt
+[  204.846675] Kernel panic - not syncing: Fatal Machine check
+[  204.846675] Kernel Offset: 0x0 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffff9fffffff)
+[  204.846675] Rebooting in 30 seconds..
+[  204.846675] ACPI MEMORY or I/O RESET_REG.
 
-> +
-> +static inline int dma_set_max_seg_count(struct device *dev,
-> +						unsigned int count)
-> +{
-> +	if (dev->dma_parms) {
-> +		dev->dma_parms->max_segment_count = count;
-> +		return 0;
-> +	} else
+Vitaly Kuznetsov (3):
+  Drivers: hv: vmbus: avoid double kfree for device_obj
+  Drivers: hv: vmbus: introduce vmbus_acpi_remove
+  Drivers: hv: vmbus: teardown hv_vmbus_con workqueue and
+    vmbus_connection pages on shutdown
 
-This "else" is just as unnecessary as the other two I've taken out ;)
+ drivers/hv/channel_mgmt.c |  1 -
+ drivers/hv/connection.c   | 17 ++++++++++++-----
+ drivers/hv/hyperv_vmbus.h |  1 +
+ drivers/hv/vmbus_drv.c    | 16 ++++++++++++++++
+ 4 files changed, 29 insertions(+), 6 deletions(-)
 
-
-Robin.
-
-[1]:http://article.gmane.org/gmane.linux.kernel.iommu/8175/
-
-> +		return -EIO;
-> +}
-> +
->   static inline unsigned long dma_get_seg_boundary(struct device *dev)
->   {
->   	return dev->dma_parms ?
->
-
+-- 
+1.9.3
 
