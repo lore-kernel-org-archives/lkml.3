@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752768AbbAUNsz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 08:48:55 -0500
-Received: from mail-we0-f178.google.com ([74.125.82.178]:50016 "EHLO
-	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750889AbbAUNsr (ORCPT
+	id S1752943AbbAUNvg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 08:51:36 -0500
+Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55877 "EHLO
+	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751546AbbAUNv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 08:48:47 -0500
-Message-ID: <54BFAE3F.7000300@linaro.org>
-Date: Wed, 21 Jan 2015 13:48:47 +0000
-From: Daniel Thompson <daniel.thompson@linaro.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Wed, 21 Jan 2015 08:51:27 -0500
+Date: Wed, 21 Jan 2015 13:50:53 +0000
+From: Mark Brown <broonie@kernel.org>
+To: Jean-Francois Moine <moinejf@free.fr>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Dave Airlie <airlied@gmail.com>,
+        Andrew Jackson <Andrew.Jackson@arm.com>, Jyri Sarha <jsarha@ti.com>,
+        alsa-devel@alsa-project.org, devicetree@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Message-ID: <20150121135053.GI21293@sirena.org.uk>
+References: <cover.1421782532.git.moinejf@free.fr>
+ <ddd1b299eca187ab2fa9b119da2ec8297ead1a66.1421782533.git.moinejf@free.fr>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Stephen Boyd <sboyd@codeaurora.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, patches@linaro.org,
-        linaro-kernel@lists.linaro.org, John Stultz <john.stultz@linaro.org>,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Dirk Behme <dirk.behme@de.bosch.com>,
-        Daniel Drake <drake@endlessm.com>,
-        Dmitry Pervushin <dpervushin@gmail.com>,
-        Tim Sander <tim@krieglstein.org>
-Subject: Re: [PATCH 3.19-rc2 v14 0/7] arm: Implement arch_trigger_all_cpu_backtrace
-References: <1415968543-29469-1-git-send-email-daniel.thompson@linaro.org>	<1421144818-14036-1-git-send-email-daniel.thompson@linaro.org>	<54BE2D15.9080606@linaro.org>	<54BEC04D.1050402@codeaurora.org>	<54BF83C9.5060300@linaro.org> <20150121080612.6569ab81@gandalf.local.home>
-In-Reply-To: <20150121080612.6569ab81@gandalf.local.home>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: multipart/signed; micalg=pgp-sha256;
+	protocol="application/pgp-signature"; boundary="GlnCQLZWzqLRJED8"
+Content-Disposition: inline
+In-Reply-To: <ddd1b299eca187ab2fa9b119da2ec8297ead1a66.1421782533.git.moinejf@free.fr>
+X-Cookie: My LESLIE GORE record is BROKEN ...
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: 94.175.94.161
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+Subject: Re: [PATCH v10 9/9] ASoC: add generic dt-card support
+X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
+X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21/01/15 13:06, Steven Rostedt wrote:
-> On Wed, 21 Jan 2015 10:47:37 +0000
-> Daniel Thompson <daniel.thompson@linaro.org> wrote:
-> 
-> 
->>> With this patchset, is it possible to call sched_clock() from within NMI
->>> context? I ask because the generic sched_clock() code is not NMI safe
-> 
-> That's not good. Better not run function tracing, as that could trace
-> functions in NMI context (I depend on that it does), and it uses
-> sched_clock() as the default clock.
 
-I think sched_clock is unsafe as in "may sometimes give the wrong value"
-rather than "can lock up arbitrarily".  Thus the impact is unlikely to
-be harmful enough to want to avoid tracing altogether.
+--GlnCQLZWzqLRJED8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
-It would require special care be taken when interpreting the timestamps
-however. Also since update_sched_clock() is a notrace function its very
-hard to figure out when timestamps are at risk.
+On Tue, Jan 20, 2015 at 08:16:25PM +0100, Jean-Francois Moine wrote:
+> To create simple cards, the syntax of the simple-card does not follow
+> the common binding of the device graphs
+> (Documentation/devicetree/bindings/graph.txt).
 
-Anyhow, the fix doesn't seem that hard. I can take a look.
+Please be more specific, I really can't tell what this is supposed to be
+doing from the above - in what way is the binding not common and why
+would anyone care?  Please also address why this is done as a completely
+separate implementation rather than a new revision of simple-card and CC
+Morimoto-san so he can review (given that he did simple-card initially).
 
+>  sound/soc/generic/Kconfig   |   2 +
+>  sound/soc/generic/Makefile  |   2 +
+>  sound/soc/generic/dt-card.c | 275 ++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 279 insertions(+)
+>  create mode 100644 sound/soc/generic/dt-card.c
 
-Daniel.
+As you know all device tree bindings require binding documents; you must
+supply a binding document.  I'm not going to look at any DT patches that
+don't include binding documentation.
 
+In general please pay attention to changelogs and documentation when
+submitting patches, the harder it is to understand what a patch is
+supposed to do or why the harder it is to review.  I keep saying this,
+it's really important.
+
+--GlnCQLZWzqLRJED8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQEcBAEBCAAGBQJUv668AAoJECTWi3JdVIfQTCQH/3LeWH0MvFi6Qqax4tZWuAvl
+uPsAYOvWkxKu9b28WmnFC+xco356sr9wcslrN/zmlh7LwuGPQUvnEbCrXOQIosjj
+zb2UuJUJdjlKZDRvoFti8OiEKqcz1L7uO2EDrc8LBMlE40U6rdu+ajrZ+hwtSqhS
+U9i7/ELtVZBCsI6PHSSP7Ajv8XgpWUqqrC7oSrnsW5I3ol9APZIlX0c2MO5fQQrT
+ZZzP99L7kopiJ5LtwkK1/0VxxOoPBAGLWd/JFtByDyESq6APEEuX2EcxqniKvA/W
+Ynv6SoCdm8GjFt9lg0dWc6vmsa1Yf1thdQrGAJ/mYqvorlLN/TO827KNVY+VYTg=
+=0ztJ
+-----END PGP SIGNATURE-----
+
+--GlnCQLZWzqLRJED8--
