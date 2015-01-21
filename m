@@ -1,88 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752321AbbAUF6o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 00:58:44 -0500
-Received: from mail-oi0-f53.google.com ([209.85.218.53]:52308 "EHLO
-	mail-oi0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750736AbbAUF6n (ORCPT
+	id S1750875AbbAUF64 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 00:58:56 -0500
+Received: from mailout4.samsung.com ([203.254.224.34]:38027 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752417AbbAUF6w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 00:58:43 -0500
-MIME-Version: 1.0
-In-Reply-To: <54BF221E.8000409@roeck-us.net>
-References: <1421799212-2028-1-git-send-email-vivien.didelot@savoirfairelinux.com>
- <54BF221E.8000409@roeck-us.net>
-From: Florian Fainelli <f.fainelli@gmail.com>
-Date: Tue, 20 Jan 2015 21:58:02 -0800
-Message-ID: <CAGVrzcawAF1=RPAJ+0O3B+PA7sDkstTjVjDQL_8C8a8kHL7CoA@mail.gmail.com>
-Subject: Re: [PATCH] net: dsa: set parent of hwmon device
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
-        netdev <netdev@vger.kernel.org>,
-        "David S . Miller" <davem@davemloft.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        kernel@savoirfairelinux.com
-Content-Type: text/plain; charset=UTF-8
+	Wed, 21 Jan 2015 00:58:52 -0500
+X-AuditID: cbfee691-f79b86d000004a5a-f1-54bf401acc24
+From: Inha Song <ideal.song@samsung.com>
+To: kgene@kernel.org, linux-samsung-soc@vger.kernel.org
+Cc: robh+dt@kernel.org, pawel.moll@arm.com, mark.rutland@arm.com,
+        ijc+devicetree@hellion.org.uk, galak@codeaurora.org,
+        linux@arm.linux.org.uk, devicetree@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Inha Song <ideal.song@samsung.com>
+Subject: [PATCH] ARM: dts: exynos5422-odroidxu3: add sound nodes
+Date: Wed, 21 Jan 2015 14:58:43 +0900
+Message-id: <1421819923-27575-1-git-send-email-ideal.song@samsung.com>
+X-Mailer: git-send-email 2.0.0.390.gcb682f8
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrJLMWRmVeSWpSXmKPExsWyRsSkUFfKYX+IweFtUhbzj5xjteh/s5DV
+	Ytff+4wW516tZLTof/ya2WLT42usFpd3zWGzmHF+H5PF7cu8FkuvX2SymDB9LYtF694j7A48
+	HmvmrWH0aGnuYfO43NfL5LFy+Rc2j02rOtk8Ni+p9+jbsorR4/MmuQCOKC6blNSczLLUIn27
+	BK6MYzub2AvOc1f0/rnG2MC4l7OLkZNDQsBE4smRs+wQtpjEhXvr2UBsIYGljBLTV8fD1Gz7
+	8oWpi5ELKD6dUeLH+ReMEM4cJoneKQuZQarYBDQkvn/eDGaLCJhLdDXNZQYpYhaYziTR3/Ec
+	LCEs4CAx4fARJhCbRUBV4ujab0DrODh4BdwkFj1JhNimLbGvYSYbSK+EwDZ2iZUnb7BA1AtI
+	fJt8iAWkXkJAVmLTAWaIekmJgytusExgFFzAyLCKUTS1ILmgOCm9yFSvODG3uDQvXS85P3cT
+	IzAGTv97NnEH4/0D1ocYBTgYlXh4XyjuDxFiTSwrrsw9xGgKtGEis5Rocj4w0vJK4g2NzYws
+	TE1MjY3MLc2UxHl1pH8GCwmkJ5akZqemFqQWxReV5qQWH2Jk4uCUamCcc+yS0JdDxjkZgTNF
+	Jtaz6gUV8K56cXcVb4lH0d5ZOScdVrw9XPnZVcF7077asEs/H02qyAs5tLo42IF9X7HQSQWz
+	w1z8FVluH9Z/mjFLxCrg62qebifrVT1vA+zZ+1byq5fNfbzGufvTRoUre+c9Y/C2+VXN0akZ
+	GOsewvju12wG6ar1rvOVWIozEg21mIuKEwFztKT6fAIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrCIsWRmVeSWpSXmKPExsVy+t9jQV0ph/0hBg96RSzmHznHatH/ZiGr
+	xa6/9xktzr1ayWjR//g1s8Wmx9dYLS7vmsNmMeP8PiaL25d5LZZev8hkMWH6WhaL1r1H2B14
+	PNbMW8Po0dLcw+Zxua+XyWPl8i9sHptWdbJ5bF5S79G3ZRWjx+dNcgEcUQ2MNhmpiSmpRQqp
+	ecn5KZl56bZK3sHxzvGmZgaGuoaWFuZKCnmJuam2Si4+AbpumTlA1yoplCXmlAKFAhKLi5X0
+	7TBNCA1x07WAaYzQ9Q0JgusxMkADCWsYM47tbGIvOM9d0fvnGmMD417OLkZODgkBE4ltX74w
+	QdhiEhfurWfrYuTiEBKYzijx4/wLRghnDpNE75SFzCBVbAIaEt8/bwazRQTMJbqa5jKDFDEL
+	TGeS6O94DpYQFnCQmHD4CNhYFgFViaNrvwGN5eDgFXCTWPQkEWKbtsS+hplsExi5FzAyrGIU
+	TS1ILihOSs810itOzC0uzUvXS87P3cQIjrFn0jsYVzVYHGIU4GBU4uF9obg/RIg1say4MvcQ
+	owQHs5IIr6IEUIg3JbGyKrUoP76oNCe1+BCjKdDyicxSosn5wPjPK4k3NDYxM7I0Mje0MDI2
+	VxLnVbJvCxESSE8sSc1OTS1ILYLpY+LglGpgXMafnHxZ9M3RhZLKDz85BK/y5Hob8PrGXCPe
+	4EoGjk2qruzn1n68+/66eF9otZ6Y1zQH3qVTXzYq/DI/fUPq1Tr2vdJv3z5J+BZt5/glI2Bj
+	/qXF89U7Vz0xTF517vIV5mXbdyuZOTxrl+p4Vnb6gb6Q1O1z039GtFSWTBOfZ9npr1Fae/zR
+	ZyWW4oxEQy3mouJEAFAD5w3HAgAA
+DLP-Filter: Pass
+X-MTR: 20000000000000000@CPGS
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2015-01-20 19:50 GMT-08:00 Guenter Roeck <linux@roeck-us.net>:
-> On 01/20/2015 04:13 PM, Vivien Didelot wrote:
->>
->> Set the dsa device as the parent of the hwmon device, in order to link
->> the hwmon subsystem under the corresponding /sys/devices/platform/dsa.X/
->> sysfs directory.
->>
->> Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
->> ---
->>   net/dsa/dsa.c | 2 +-
->>   1 file changed, 1 insertion(+), 1 deletion(-)
->>
->> diff --git a/net/dsa/dsa.c b/net/dsa/dsa.c
->> index 3731714..363102a 100644
->> --- a/net/dsa/dsa.c
->> +++ b/net/dsa/dsa.c
->> @@ -347,7 +347,7 @@ dsa_switch_setup(struct dsa_switch_tree *dst, int
->> index,
->>                 hname[j] = '\0';
->>                 scnprintf(ds->hwmon_name, sizeof(ds->hwmon_name),
->> "%s_dsa%d",
->>                           hname, index);
->> -               ds->hwmon_dev = hwmon_device_register_with_groups(NULL,
->> +               ds->hwmon_dev = hwmon_device_register_with_groups(parent,
->>                                         ds->hwmon_name, ds,
->> dsa_hwmon_groups);
->>                 if (IS_ERR(ds->hwmon_dev))
->>                         ds->hwmon_dev = NULL;
->>
->
-> Looking into my old e-mail, turns out we did not add the parent device
-> because
-> it affected the output of the "sensors" command, and we wanted the device
-> to be handled as 'virtual device' (which implies no parent). That was an
-> explicit
-> part of the patch set (v2 of 'net: dsa: Add support for reporting switch
-> chip
-> temperatures'), compared to v1, which did set the parent device.
->
-> I would suggest to keep the code as is.
+Add MAX98090 audio codec, I2S interface and the sound nodes to support
+audio on Odroid-XU3 board.
 
-Maybe follow-up with a comment adding that above the call to
-hwmon_device_register_with_groups()? I suspect the intent is clear if
-you are deep into hwmon devices, but not necessarily for the reader ;)
+Signed-off-by: Inha Song <ideal.song@samsung.com>
+---
+ arch/arm/boot/dts/exynos5422-odroidxu3.dts | 34 ++++++++++++++++++++++++++++++
+ 1 file changed, 34 insertions(+)
 
->
-> Thanks,
-> Guenter
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
-
+diff --git a/arch/arm/boot/dts/exynos5422-odroidxu3.dts b/arch/arm/boot/dts/exynos5422-odroidxu3.dts
+index 7874da2..79493d1 100644
+--- a/arch/arm/boot/dts/exynos5422-odroidxu3.dts
++++ b/arch/arm/boot/dts/exynos5422-odroidxu3.dts
+@@ -310,6 +310,40 @@
+ 	rtc@101E0000 {
+ 		status = "okay";
+ 	};
++
++	sound: sound {
++		compatible = "samsung,odroidu3-audio";
++		samsung,model = "Odroid-XU3";
++		samsung,i2s-controller = <&i2s0>;
++		samsung,audio-codec = <&max98090>;
++		assigned-clocks = <&clock_audss EXYNOS_MOUT_AUDSS>,
++				  <&clock_audss EXYNOS_MOUT_I2S>;
++		assigned-clock-parents = <&clock CLK_FIN_PLL>,
++				<&clock_audss EXYNOS_MOUT_AUDSS>;
++		samsung,audio-routing =
++			"Headphone Jack", "HPL",
++			"Headphone Jack", "HPR",
++			"Headphone Jack", "MICBIAS",
++			"IN1", "Headphone Jack",
++			"Speakers", "SPKL",
++			"Speakers", "SPKR";
++	};
++};
++
++&hsi2c_5 {
++	status = "okay";
++	max98090: max98090@10 {
++		compatible = "maxim,max98090";
++		reg = <0x10>;
++		interrupt-parent = <&gpx3>;
++		interrupts = <2 0>;
++		clocks = <&clock_audss EXYNOS_DOUT_AUD_BUS>;
++		clock-names = "mclk";
++	};
++};
++
++&i2s0 {
++	status = "okay";
+ };
+ 
+ &hdmi {
 -- 
-Florian
+2.0.0.390.gcb682f8
+
