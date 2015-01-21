@@ -1,198 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753735AbbAUAzJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 19:55:09 -0500
-Received: from v094114.home.net.pl ([79.96.170.134]:51531 "HELO
-	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752375AbbAUAzG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 19:55:06 -0500
-From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: Linux PCI <linux-pci@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux PM list <linux-pm@vger.kernel.org>,
-        Alan Stern <stern@rowland.harvard.edu>, Aaron Lu <aaron.lu@intel.com>,
-        Mika Westerberg <mika.westerberg@linux.intel.com>,
-        ACPI Devel Maling List <linux-acpi@vger.kernel.org>
-Subject: [PATCH][v3] PCI / PM: Avoid resuming PCI devices during system suspend
-Date: Wed, 21 Jan 2015 02:17:42 +0100
-Message-ID: <20035664.sy5Q5n4bIK@vostro.rjw.lan>
-User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
-In-Reply-To: <1520491.dCOodSBFV9@vostro.rjw.lan>
-References: <1460212.bInrzeZle0@vostro.rjw.lan> <1520491.dCOodSBFV9@vostro.rjw.lan>
+	id S1753609AbbAUBUW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 20:20:22 -0500
+Received: from mail.eperm.de ([89.247.134.16]:59582 "EHLO mail.eperm.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752842AbbAUBUU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 20:20:20 -0500
+X-AuthUser: sm@eperm.de
+From: Stephan Mueller <smueller@chronox.de>
+To: "'Herbert Xu'" <herbert@gondor.apana.org.au>
+Cc: Daniel Borkmann <dborkman@redhat.com>,
+        "'Quentin Gouchet'" <quentin.gouchet@gmail.com>,
+        "'LKML'" <linux-kernel@vger.kernel.org>, linux-crypto@vger.kernel.org,
+        linux-api@vger.kernel.org, Neil Horman <nhorman@tuxdriver.com>
+Subject: [PATCH v11 0/2] crypto: AF_ALG: add AEAD and RNG support
+Date: Wed, 21 Jan 2015 02:18:44 +0100
+Message-ID: <1923793.K38mGRD6eo@tachyon.chronox.de>
+User-Agent: KMail/4.14.3 (Linux/3.17.8-300.fc21.x86_64; KDE/4.14.3; x86_64; ; )
 MIME-Version: 1.0
 Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain; charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
+Hi,
 
-Commit f25c0ae2b4c4 (ACPI / PM: Avoid resuming devices in ACPI PM
-domain during system suspend) modified the ACPI PM domain's system
-suspend callbacks to allow devices attached to it to be left in the
-runtime-suspended state during system suspend so as to optimize
-the suspend process.
+This patch set adds AEAD and RNG support to the AF_ALG interface
+exported by the kernel crypto API. By extending AF_ALG with AEAD and RNG
+support, all cipher types the kernel crypto API allows access to are
+now accessible from userspace.
 
-This was based on the general mechanism introduced by commit
-aae4518b3124 (PM / sleep: Mechanism to avoid resuming runtime-suspended
-devices unnecessarily).
+Both, AEAD and RNG implementations are stand-alone and do not depend
+other AF_ALG interfaces (like hash or skcipher).
 
-Extend that approach to PCI devices by modifying the PCI bus type's
-->prepare callback to return 1 for devices that are runtime-suspended
-when it is being executed and that are in a suitable power state and
-need not be resumed going forward.
+The AEAD implementation uses the same approach as provided with
+skcipher by offering the following interfaces:
 
-Signed-off-by: Rafael J. Wysocki <rafael.j.wysocki@intel.com>
----
+	* sendmsg and recvmsg interfaces allowing multiple
+	  invocations supporting a threaded user space. To support
+	  multi-threaded user space, kernel-side buffering
+	  is implemented similarly to skcipher.
 
-This version actually builds and need not be an RFC any more I suppose.
+	* splice / vmsplice interfaces allowing a zero-copy
+	  invocation
 
----
- drivers/pci/pci-acpi.c   |   17 +++++++++++++++++
- drivers/pci/pci-driver.c |   11 ++++++-----
- drivers/pci/pci.c        |   26 ++++++++++++++++++++++++++
- drivers/pci/pci.h        |    6 ++++++
- 4 files changed, 55 insertions(+), 5 deletions(-)
+The RNG interface only implements the recvmsg interface as
+zero-copy is not applicable.
 
-Index: linux-pm/drivers/pci/pci.c
-===================================================================
---- linux-pm.orig/drivers/pci/pci.c
-+++ linux-pm/drivers/pci/pci.c
-@@ -521,6 +521,11 @@ static inline int platform_pci_run_wake(
- 			pci_platform_pm->run_wake(dev, enable) : -ENODEV;
- }
- 
-+static inline bool platform_pci_need_resume(struct pci_dev *dev)
-+{
-+	return pci_platform_pm ? pci_platform_pm->need_resume(dev) : false;
-+}
-+
- /**
-  * pci_raw_set_power_state - Use PCI PM registers to set the power state of
-  *                           given PCI device
-@@ -1999,6 +2004,27 @@ bool pci_dev_run_wake(struct pci_dev *de
- }
- EXPORT_SYMBOL_GPL(pci_dev_run_wake);
- 
-+/**
-+ * pci_dev_keep_suspended - Check if the device can stay in the suspended state.
-+ * @pci_dev: Device to check.
-+ *
-+ * Return 'true' if the device is runtime-suspended, it doesn't have to be
-+ * reconfigured due to wakeup settings difference between system and runtime
-+ * suspend and the current power state of it is suitable for the upcoming
-+ * (system) transition.
-+ */
-+bool pci_dev_keep_suspended(struct pci_dev *pci_dev)
-+{
-+	struct device *dev = &pci_dev->dev;
-+
-+	if (!pm_runtime_suspended(dev)
-+	    || (device_can_wakeup(dev) && !device_may_wakeup(dev))
-+	    || platform_pci_need_resume(pci_dev))
-+		return false;
-+
-+	return pci_target_state(pci_dev) == pci_dev->current_state;
-+}
-+
- void pci_config_pm_runtime_get(struct pci_dev *pdev)
- {
- 	struct device *dev = &pdev->dev;
-Index: linux-pm/drivers/pci/pci.h
-===================================================================
---- linux-pm.orig/drivers/pci/pci.h
-+++ linux-pm/drivers/pci/pci.h
-@@ -50,6 +50,10 @@ int pci_probe_reset_function(struct pci_
-  *		for given device (the device's wake-up capability has to be
-  *		enabled by @sleep_wake for this feature to work)
-  *
-+ * @need_resume: returns 'true' if the given device (which is currently
-+ *		suspended) needs to be resumed to be configured for system
-+ *		wakeup.
-+ *
-  * If given platform is generally capable of power managing PCI devices, all of
-  * these callbacks are mandatory.
-  */
-@@ -59,6 +63,7 @@ struct pci_platform_pm_ops {
- 	pci_power_t (*choose_state)(struct pci_dev *dev);
- 	int (*sleep_wake)(struct pci_dev *dev, bool enable);
- 	int (*run_wake)(struct pci_dev *dev, bool enable);
-+	bool (*need_resume)(struct pci_dev *dev);
- };
- 
- int pci_set_platform_pm(struct pci_platform_pm_ops *ops);
-@@ -67,6 +72,7 @@ void pci_power_up(struct pci_dev *dev);
- void pci_disable_enabled_device(struct pci_dev *dev);
- int pci_finish_runtime_suspend(struct pci_dev *dev);
- int __pci_pme_wakeup(struct pci_dev *dev, void *ign);
-+bool pci_dev_keep_suspended(struct pci_dev *dev);
- void pci_config_pm_runtime_get(struct pci_dev *dev);
- void pci_config_pm_runtime_put(struct pci_dev *dev);
- void pci_pm_init(struct pci_dev *dev);
-Index: linux-pm/drivers/pci/pci-acpi.c
-===================================================================
---- linux-pm.orig/drivers/pci/pci-acpi.c
-+++ linux-pm/drivers/pci/pci-acpi.c
-@@ -501,12 +501,29 @@ static int acpi_pci_run_wake(struct pci_
- 	return 0;
- }
- 
-+static bool acpi_pci_need_resume(struct pci_dev *dev)
-+{
-+	struct acpi_device *adev = ACPI_COMPANION(&dev->dev);
-+
-+	if (!adev || !acpi_device_power_manageable(adev))
-+		return false;
-+
-+	if (device_may_wakeup(&dev->dev) != !!adev->wakeup.prepare_count)
-+		return true;
-+
-+	if (acpi_target_system_state() == ACPI_STATE_S0)
-+		return false;
-+
-+	return !!adev->power.flags.dsw_present;
-+}
-+
- static struct pci_platform_pm_ops acpi_pci_platform_pm = {
- 	.is_manageable = acpi_pci_power_manageable,
- 	.set_state = acpi_pci_set_power_state,
- 	.choose_state = acpi_pci_choose_state,
- 	.sleep_wake = acpi_pci_sleep_wake,
- 	.run_wake = acpi_pci_run_wake,
-+	.need_resume = acpi_pci_need_resume,
- };
- 
- void acpi_pci_add_bus(struct pci_bus *bus)
-Index: linux-pm/drivers/pci/pci-driver.c
-===================================================================
---- linux-pm.orig/drivers/pci/pci-driver.c
-+++ linux-pm/drivers/pci/pci-driver.c
-@@ -653,7 +653,6 @@ static bool pci_has_legacy_pm_support(st
- static int pci_pm_prepare(struct device *dev)
- {
- 	struct device_driver *drv = dev->driver;
--	int error = 0;
- 
- 	/*
- 	 * Devices having power.ignore_children set may still be necessary for
-@@ -662,10 +661,12 @@ static int pci_pm_prepare(struct device
- 	if (dev->power.ignore_children)
- 		pm_runtime_resume(dev);
- 
--	if (drv && drv->pm && drv->pm->prepare)
--		error = drv->pm->prepare(dev);
--
--	return error;
-+	if (drv && drv->pm && drv->pm->prepare) {
-+		int error = drv->pm->prepare(dev);
-+		if (error)
-+			return error;
-+	}
-+	return pci_dev_keep_suspended(to_pci_dev(dev));
- }
- 
- 
+The new AEAD and RNG interfaces are fully tested with the test application
+provided at [1]. That test application exercises all newly added user space
+interfaces. The testing covers:
+
+	* use of the sendmsg/recvmsg interface
+
+	* use of the splice / vmsplice interface
+
+	* invocation of all AF_ALG types (aead, rng, skcipher, hash)
+
+	* using all types of operation (encryption, decryption, keyed MD,
+	  MD, random numbers, AEAD decryption with positive and negative
+	  authentication verification)
+
+	* stress testing by running all tests for 30 minutes in an
+	  endless loop
+
+	* test execution on 64 bit and 32 bit
+
+[1] http://www.chronox.de/libkcapi.html
+
+Changes v2:
+* rebase to current cryptodev-2.6 tree
+* use memzero_explicit to zeroize AEAD associated data
+* use sizeof for determining length of AEAD associated data
+* update algif_rng.c covering all suggestions from Daniel Borkmann
+  <dborkman@redhat.com>
+* addition of patch 9: add digestsize interface for hashes
+* addition of patch to update documentation covering the userspace interface
+* change numbers of getsockopt options: separate them from sendmsg interface
+  definitions
+
+Changes v3:
+* remove getsockopt interface
+* AEAD: associated data is set prepended to the plain/ciphertext
+* AEAD: allowing arbitrary associated data lengths
+* remove setkey patch as protection was already in the existing code
+
+Changes v4:
+* stand-alone implementation of AEAD
+* testing of all interfaces offered by AEAD
+* stress testing of AEAD and RNG
+
+Changes v5:
+* AEAD: add outer while(size) loop in aead_sendmsg to ensure all data is
+  copied into the kernel (reporter Herbert Xu)
+* AEAD: aead_sendmsg bug fix: change size -= len; to size -= plen;
+* AF_ALG / AEAD: add aead_setauthsize and associated extension to
+  struct af_alg_type as well as alg_setsockopt (reporter Herbert Xu)
+* RNG: rng_recvmsg: use 128 byte stack variable for output of RNG instead
+  of ctx->result (reporter Herbert Xu)
+* RNG / AF_ALG: allow user space to seed RNG via setsockopt
+* RNG: rng_recvmsg bug fix: use genlen as result variable for
+  crypto_rng_get_bytes as previously no negative errors were obtained
+* AF_ALG: alg_setop: zeroize buffer before free
+
+Changes v6:
+* AEAD/RNG: port to 3.19-rc1 with the iov_iter handling
+* RNG: use the setkey interface to obtain the seed and drop the patch adding
+  a separate reseeding interface
+* extract the zeroization patch for alg_setkey into a stand-alone patch
+  submission
+* fix bug in aead_sufficient_data (reporter Herbert Xu)
+* testing of all interfaces with test application provided with libkcapi version
+  0.6.2
+
+Changes v7:
+* AEAD: aead_recvmsg: change error code from ENOMEM to EINVAL
+* AEAD: drop aead_readable/aead_sufficient_data and only use ctx->more to decide
+  whether the read side shall become active. This change requires that the
+  patch for crypto_aead_decrypt ensuring that the ciphertext contains the
+  authentication tag was added -- see https://lkml.org/lkml/2014/12/30/200.
+  Otherwise, user space can trigger a kernel crash.
+* RNG: patch dropped as it was applied
+* AEAD: port Kconfig/Makefile patch forward to current code base
+
+Changes v8:
+* Removed check for aead_assoclen in aead_sendmsg
+* Fix endless loop bug in aead_sendmsg (check for sgl->cur > ALG_MAX_PAGES in
+  while condition removed -- this condition is checked within the loop already)
+* Resurrect aead_sufficient_data and call it in aead_sendmsg, aead_sendpage to
+  notify caller about wrong invocation
+* Re-add aead_sufficient_data to aead_recvmsg to verify user input data before
+  using them to ensure the kernel protects against malicious parameters
+* Allow arbitrary size of AD (i.e. up to the maximum buffer size of
+  ALG_MAX_PAGES)
+* When aead_recvmsg receives an error from decryption, release all pages if the
+  error is EBADMSG -- this error implies that a proper decryption was performed
+  but the integrity of the message is lost. This error is considered to be a
+  valid decryption result.
+* Add test cases for sendmsg and splice interface to test large AD sizes (in
+  case of sendmsg, use 65504 bytes AD and 32 bytes plaintext; in case of splice
+  use 15 pages AD and 32 bytes in the 16th page for plaintext). See [1] for
+  updated test case.
+
+Changes v9:
+* if socket is not writable during sendmsg/sendpage due to insufficient memory
+  and a recvmsg operation is forced, inform userspace about truncated operation
+  via MSG_TRUNC
+* use -EMSGSIZE in case insufficient data was provided in sendmsg/sendpage
+* release all buffers in case insufficient data was provided in sendmsg/sendpage
+* bug fix in sendmsg: when a new page is allocated, reset sg->offset to 0 --
+  the error is visible with the new tests in [1] when using the -d flag
+  with the test application
+
+Changes v10:
+* initialize ctx->trunc in aead_accept_parent to zero
+* fix one line with code formatting problems
+
+Changes v11:
+* return an error if user space sends too much data instead of waiting until
+  reader side catches up with operation (suggested by Herbert Xu)
+* remove now unneeded aead_wait_for_wmem service function
+* remove now unneeded ctx->trunc and MSG_TRUNC error return
+
+Stephan Mueller (2):
+  crypto: AF_ALG: add AEAD support
+  crypto: AF_ALG: enable AEAD interface compilation
+
+ crypto/Kconfig      |   9 +
+ crypto/Makefile     |   1 +
+ crypto/algif_aead.c | 638 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 648 insertions(+)
+ create mode 100644 crypto/algif_aead.c
+
+-- 
+2.1.0
+
 
