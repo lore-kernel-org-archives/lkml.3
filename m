@@ -1,66 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753303AbbAUMKD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 07:10:03 -0500
-Received: from mail-we0-f181.google.com ([74.125.82.181]:46019 "EHLO
-	mail-we0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752922AbbAUMJy (ORCPT
+	id S1752367AbbAUMPL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 07:15:11 -0500
+Received: from down.free-electrons.com ([37.187.137.238]:36194 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750889AbbAUMPF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 07:09:54 -0500
+	Wed, 21 Jan 2015 07:15:05 -0500
+Date: Wed, 21 Jan 2015 13:12:02 +0100
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+To: Ulf Hansson <ulf.hansson@linaro.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David =?iso-8859-1?Q?Lanzend=F6rfer?= 
+	<david.lanzendoerfer@o2s.ch>
+Subject: Re: linux-next: manual merge of the mmc-uh tree with the sunxi tree
+Message-ID: <20150121121202.GF4367@lukather>
+References: <20150120141750.3dcade27@canb.auug.org.au>
+ <CAPDyKFq4TyiadznYCM-dGmeu799vWevBt1XVZ4DALhv-3bP=AA@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1419072462-3168-1-git-send-email-prabhakar.csengg@gmail.com>
-References: <1419072462-3168-1-git-send-email-prabhakar.csengg@gmail.com>
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Date: Wed, 21 Jan 2015 12:09:21 +0000
-Message-ID: <CA+V-a8ur2KV_s5zM9qbQZ+MLvocO9AE0KduWb3R-rUhA9912cw@mail.gmail.com>
-Subject: Re: [PATCH 00/15] media: blackfin: bfin_capture enhancements
-To: LMML <linux-media@vger.kernel.org>,
-        Scott Jiang <scott.jiang.linux@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        adi-buildroot-devel@lists.sourceforge.net,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>,
-        "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="Y18yPE/eBgOv3N1p"
+Content-Disposition: inline
+In-Reply-To: <CAPDyKFq4TyiadznYCM-dGmeu799vWevBt1XVZ4DALhv-3bP=AA@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Scott,
 
-On Sat, Dec 20, 2014 at 10:47 AM, Lad, Prabhakar
-<prabhakar.csengg@gmail.com> wrote:
-> Hi Scott,
->
-> Although I was on holiday but couldn't resist myself from working,
-> since I was away from my hardware I had to choose a different one,
-> blackfin driver was lucky one. Since I don't have the blackfin
-> board I haven't tested them on the actual board, but just compile
-> tested, Can you please test it & ACK.
->
-> Lad, Prabhakar (15):
->   media: blackfin: bfin_capture: drop buf_init() callback
->   media: blackfin: bfin_capture: release buffers in case
->     start_streaming() call back fails
->   media: blackfin: bfin_capture: set min_buffers_needed
->   media: blackfin: bfin_capture: improve buf_prepare() callback
->   media: blackfin: bfin_capture: improve queue_setup() callback
->   media: blackfin: bfin_capture: use vb2_fop_mmap/poll
->   media: blackfin: bfin_capture: use v4l2_fh_open and vb2_fop_release
->   media: blackfin: bfin_capture: use vb2_ioctl_* helpers
->   media: blackfin: bfin_capture: make sure all buffers are returned on
->     stop_streaming() callback
->   media: blackfin: bfin_capture: return -ENODATA for *std calls
->   media: blackfin: bfin_capture: return -ENODATA for *dv_timings calls
->   media: blackfin: bfin_capture: add support for vidioc_create_bufs
->   media: blackfin: bfin_capture: add support for VB2_DMABUF
->   media: blackfin: bfin_capture: add support for VIDIOC_EXPBUF
->   media: blackfin: bfin_capture: set v4l2 buffer sequence
->
->  drivers/media/platform/blackfin/bfin_capture.c | 310 ++++++++-----------------
->  1 file changed, 98 insertions(+), 212 deletions(-)
->
-If you are done with the review of all the patches,should I go ahead
-and post a v2 fixing the two issues which you pointed out ?
+--Y18yPE/eBgOv3N1p
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
---Prabhakar Lad
+Hi,
+
+On Wed, Jan 21, 2015 at 12:27:09PM +0100, Ulf Hansson wrote:
+> On 20 January 2015 at 04:17, Stephen Rothwell <sfr@canb.auug.org.au> wrot=
+e:
+> > Hi Ulf,
+> >
+> > Today's linux-next merge of the mmc-uh tree got a conflict in
+> > drivers/mmc/host/sunxi-mmc.c between commit 6c09bb851e57 ("mmc: sunxi:
+> > Convert MMC driver to the standard clock phase API") from the sunxi
+> > tree and commit 776e24c502da ("mmc: sunxi: Removing unused code") from
+> > the mmc-uh tree.
+> >
+> > I fixed it up (the former includes the latter change) and can carry the
+> > fix as necessary (no action is required).
+>=20
+> Maxime,
+>=20
+> I can't find the sunxi tree, is it listed in MAINTAINERS?
+
+No, it's not, I should probably add it :)
+
+It is here: https://git.kernel.org/cgit/linux/kernel/git/mripard/linux.git/
+
+> I know I have acked below patch, but that was quite a I while ago. Is
+> there any reason to why I can't take it through my mmc tree at this
+> point?
+> "mmc: sunxi: Convert MMC driver to the standard clock phase API".
+
+It still is needed to preserve bisectability, which is why you acked
+it in the first place. Otherwise, you would end up with a build
+breakage in the clock tree, because the mmc driver would still use the
+removed custom phase functions, and a failing MMC driver in your tree
+because the MMC clocks would not have the phase callbacks implemented.
+
+It's a pretty wide window of failure, and especially for the build
+breakage, I don't think it would be wise to split these patches.
+
+Maxime
+
+--=20
+Maxime Ripard, Free Electrons
+Embedded Linux, Kernel and Android engineering
+http://free-electrons.com
+
+--Y18yPE/eBgOv3N1p
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
+
+iQIcBAEBAgAGBQJUv5eSAAoJEBx+YmzsjxAgEccQAIjze+3pVxO+fjTrLHi5QihR
+RV8KDOf0K9zSkOromZgy/C2c8CHP6ogdpim+ApHdvuJgCDbuwUj0wLfsXG6kCXpj
+oKbEr5Uh7096zmpNhSvSy6425DXxKUCsb10Hl5j7UH5LCOAEXyJMEiOwzb0vqDJK
+F8dS2x0U2zlQ1EZ9Cmrhj+enGApGEf1mSrnLfU906hnQ7tgfd2zIiELI6PSu4aEs
+lx48gPwvH80JGywx247ihgNajU9SOJ5E1zzPnvhSghuIyOsOXrqGQyHrDeaBO0m1
+ChT52ROvTedzDU479U1IWsjFxTX+zOxZf4WsCpl/wtBLHHgU8uONd5Xu7xeRiNDR
+lLtSsw5Co6Uacg33Q/x4chYrWxajcsFzrlm9qaFbsZoVbfpB3H9j5UFY78ZBEgX+
+7voj8VasrAWt+JaGU8bfSPIHagLxc+kcvz2cn+Ju8pR4C7/4fjY5zbdl3bxeORet
+kmYdONgNHOnNIOFgQX7JV/BnuBBnGXtpVeBUg4BDX0nf711OXvo00mAhiOkbOl7+
+NHnb0ZN3Cz6P1VFLO4tJrHK3LB/06qeWE6H5358qEvjknhvr1ypnhhPI9F9YbCC3
+h1xu3uCWZLk3Kip02Ie+zw+KmMMnq5ONvfzDaZ8nof/RZk8HsEqJv3Uzy23LvypE
+JAgXFKiJ5Cjm6ZPj8Vex
+=Uw3O
+-----END PGP SIGNATURE-----
+
+--Y18yPE/eBgOv3N1p--
