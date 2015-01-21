@@ -1,113 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096AbbAUUsM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 15:48:12 -0500
-Received: from youngberry.canonical.com ([91.189.89.112]:58035 "EHLO
-	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753778AbbAUUsC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 15:48:02 -0500
-From: Kamal Mostafa <kamal@canonical.com>
-To: Zoltan Kiss <zoltan.kiss@citrix.com>
-Cc: Wei Liu <wei.liu2@citrix.com>, Ian Campbell <Ian.Campbell@citrix.com>,
-        Paul Durrant <paul.durrant@citrix.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        Kamal Mostafa <kamal@canonical.com>, kernel-team@lists.ubuntu.com
-Subject: [3.13.y-ckt stable] Patch "xen-netfront: Fix handling packets on compound pages with skb_linearize" has been added to staging queue
-Date: Wed, 21 Jan 2015 12:47:56 -0800
-Message-Id: <1421873276-9609-1-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.9.1
-X-Extended-Stable: 3.13
+	id S1753389AbbAUUwn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 15:52:43 -0500
+Received: from mga01.intel.com ([192.55.52.88]:32062 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750914AbbAUUwd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 15:52:33 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,444,1418112000"; 
+   d="scan'208";a="673671285"
+Date: Wed, 21 Jan 2015 12:52:53 -0800
+From: Todd E Brandt <todd.e.brandt@linux.intel.com>
+To: Sebastian Reichel <sre@kernel.org>
+Cc: linux-pm@vger.kernel.org, linux-iio@vger.kernel.org,
+        linux-kernel@vger.kernel.org, jacob.jun.pan@linux.intel.com,
+        sameo@linux.intel.com, lee.jones@linaro.org, dbaryshkov@gmail.com,
+        dwmw2@infradead.org, david.woodhouse@intel.com,
+        todd.e.brandt@intel.com
+Subject: Re: [PATCH 3/3] power/axp288_fuel_gauge: axp288 fuel gauge driver
+Message-ID: <20150121205253.GB15525@linux.intel.com>
+Reply-To: todd.e.brandt@linux.intel.com
+References: <20150107212655.GD3440@linux.intel.com>
+ <20150118104923.GA11147@earth.universe>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150118104923.GA11147@earth.universe>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a note to let you know that I have just added a patch titled
+On Sun, Jan 18, 2015 at 11:49:27AM +0100, Sebastian Reichel wrote:
+> Hi,
+> 
+> On Wed, Jan 07, 2015 at 01:26:55PM -0800, Todd E Brandt wrote:
+> > X-Power AXP288 PMIC Fuel Gauge Driver
+> > 
+> >  new power_supply driver at driver/power
+> >  interfaces with the axp20x mfd driver as a cell
+> >  provides battery info and monitors for changes
+> >  generates alerts on temperature and capacity issues
+> > 
+> > [...]
+> >
+> > +static int fuel_gauge_battery_health(struct axp288_fg_info *info)
+> > +{
+> > +	int temp, vocv;
+> > +	int ret, health = POWER_SUPPLY_HEALTH_UNKNOWN;
+> > +
+> > +	ret = fuel_gauge_get_btemp(info, &temp);
+> > +	if (ret < 0)
+> > +		goto health_read_fail;
+> > +
+> > +	ret = fuel_gauge_get_vocv(info, &vocv);
+> > +	if (ret < 0)
+> > +		goto health_read_fail;
+> > +
+> > +	if (vocv > info->pdata->max_volt)
+> > +		health = POWER_SUPPLY_HEALTH_OVERVOLTAGE;
+> > +	else if (temp > info->pdata->max_temp ||
+> > +			temp < info->pdata->min_temp)
+> > +		health = POWER_SUPPLY_HEALTH_OVERHEAT;
+> 
+> if (temp < info->pdata->min_temp)
+>     health = POWER_SUPPLY_HEALTH_COLD;
 
-    xen-netfront: Fix handling packets on compound pages with skb_linearize
+Will add in v2, thanks.
 
-to the linux-3.13.y-queue branch of the 3.13.y-ckt extended stable tree 
-which can be found at:
+> 
+> > +	else if (vocv < info->pdata->min_volt)
+> > +		health = POWER_SUPPLY_HEALTH_DEAD;
+> > +	else
+> > +		health = POWER_SUPPLY_HEALTH_GOOD;
+> > +
+> > +health_read_fail:
+> > +	return health;
+> > +}
+> >
+> > [...]
+> >
+> > +static int axp288_fuel_gauge_remove(struct platform_device *pdev)
+> > +{
+> > +	return 0;
+> > +}
+> 
+> You can drop this function if nothing needs to be cleaned, but
+> that's not the case, so where is the cleanup code?
 
- http://kernel.ubuntu.com/git?p=ubuntu/linux.git;a=shortlog;h=refs/heads/linux-3.13.y-queue
+You're right, I believe it needs:
 
-This patch is scheduled to be released in version 3.13.11-ckt15.
+cancel_delayed_work_sync(&info->status_monitor);
+power_supply_unregister(&info->bat);
 
-If you, or anyone else, feels it should not be added to this tree, please 
-reply to this email.
+will add in v2, thanks
 
-For more information about the 3.13.y-ckt tree, see
-https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
+> 
+> > [...]
+> 
+> -- Sebastian
 
-Thanks.
--Kamal
-
-------
-
->From 7d113a745b53b4ff8fe7eac931bbab376d66993e Mon Sep 17 00:00:00 2001
-From: Zoltan Kiss <zoltan.kiss@citrix.com>
-Date: Mon, 11 Aug 2014 18:32:23 +0100
-Subject: xen-netfront: Fix handling packets on compound pages with
- skb_linearize
-
-commit 97a6d1bb2b658ac85ed88205ccd1ab809899884d upstream.
-
-There is a long known problem with the netfront/netback interface: if the guest
-tries to send a packet which constitues more than MAX_SKB_FRAGS + 1 ring slots,
-it gets dropped. The reason is that netback maps these slots to a frag in the
-frags array, which is limited by size. Having so many slots can occur since
-compound pages were introduced, as the ring protocol slice them up into
-individual (non-compound) page aligned slots. The theoretical worst case
-scenario looks like this (note, skbs are limited to 64 Kb here):
-linear buffer: at most PAGE_SIZE - 17 * 2 bytes, overlapping page boundary,
-using 2 slots
-first 15 frags: 1 + PAGE_SIZE + 1 bytes long, first and last bytes are at the
-end and the beginning of a page, therefore they use 3 * 15 = 45 slots
-last 2 frags: 1 + 1 bytes, overlapping page boundary, 2 * 2 = 4 slots
-Although I don't think this 51 slots skb can really happen, we need a solution
-which can deal with every scenario. In real life there is only a few slots
-overdue, but usually it causes the TCP stream to be blocked, as the retry will
-most likely have the same buffer layout.
-This patch solves this problem by linearizing the packet. This is not the
-fastest way, and it can fail much easier as it tries to allocate a big linear
-area for the whole packet, but probably easier by an order of magnitude than
-anything else. Probably this code path is not touched very frequently anyway.
-
-Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
-Cc: Wei Liu <wei.liu2@citrix.com>
-Cc: Ian Campbell <Ian.Campbell@citrix.com>
-Cc: Paul Durrant <paul.durrant@citrix.com>
-Cc: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xenproject.org
-Signed-off-by: David S. Miller <davem@davemloft.net>
-BugLink: http://bugs.launchpad.net/bugs/1317811
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
----
- drivers/net/xen-netfront.c | 7 ++++---
- 1 file changed, 4 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
-index d58830b..a3ed8de 100644
---- a/drivers/net/xen-netfront.c
-+++ b/drivers/net/xen-netfront.c
-@@ -568,9 +568,10 @@ static int xennet_start_xmit(struct sk_buff *skb, struct net_device *dev)
- 	slots = DIV_ROUND_UP(offset + len, PAGE_SIZE) +
- 		xennet_count_skb_frag_slots(skb);
- 	if (unlikely(slots > MAX_SKB_FRAGS + 1)) {
--		net_alert_ratelimited(
--			"xennet: skb rides the rocket: %d slots\n", slots);
--		goto drop;
-+		net_dbg_ratelimited("xennet: skb rides the rocket: %d slots, %d bytes\n",
-+				    slots, skb->len);
-+		if (skb_linearize(skb))
-+			goto drop;
- 	}
-
- 	spin_lock_irqsave(&np->tx_lock, flags);
---
-1.9.1
 
