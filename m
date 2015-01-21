@@ -1,131 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246AbbAUPj0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 10:39:26 -0500
-Received: from mail-pa0-f44.google.com ([209.85.220.44]:61125 "EHLO
-	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752055AbbAUPjR (ORCPT
+	id S1753754AbbAUPm4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 10:42:56 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:40561 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752638AbbAUPmr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 10:39:17 -0500
-Date: Wed, 21 Jan 2015 16:39:12 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Paul Moore <pmoore@redhat.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Sabrina Dubroca <sd@queasysnail.net>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-audit@redhat.com, Richard Guy Briggs <rgb@redhat.com>
-Subject: Re: linux-next: Tree for Jan 20 -- Kernel panic - Unable to mount
- root fs
-Message-ID: <20150121153910.GD22884@ulmo.nvidia.com>
-References: <20150120165655.GA10904@kria>
- <20150121110539.GA8924@kria>
- <20150121144214.GA22884@ulmo.nvidia.com>
- <9422577.FVVyjQBZjy@sifl>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="uxuisgdDHaNETlh8"
-Content-Disposition: inline
-In-Reply-To: <9422577.FVVyjQBZjy@sifl>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 21 Jan 2015 10:42:47 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f4-b7f126d000001e9a-c4-54bfc863307e
+Content-transfer-encoding: 8BIT
+Message-id: <1421854963.12894.1.camel@AMDC1943>
+Subject: Re: [RFC PATCHv2 00/19] power_supply: Allow safe usage of power supply
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: Sebastian Reichel <sre@kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@rjwysocki.net>, Len Brown <lenb@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, Pavel Machek <pavel@ucw.cz>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-acpi@vger.kernel.org, linux-pm@vger.kernel.org
+Date: Wed, 21 Jan 2015 16:42:43 +0100
+In-reply-to: <20150121152216.GD13715@earth.universe>
+References: <1420472882-10463-1-git-send-email-k.kozlowski@samsung.com>
+ <20150121152216.GD13715@earth.universe>
+X-Mailer: Evolution 3.10.4-0ubuntu2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrALMWRmVeSWpSXmKPExsVy+t/xK7rJJ/aHGPx4a2Ex6cl7ZouJKycz
+	W+x8+JbNYvm+fkaLTY+vsVpc3jWHzeJz7xFGi7unjrJZnDl9idXi9O4SBy6PnbPusntsXqHl
+	sWlVJ5vH5iX1HluutrN4rFj9nd3j8ya5APYoLpuU1JzMstQifbsEroxlSxQLZipUzP9xga2B
+	8alEFyMnh4SAicSUlUeZIWwxiQv31rN1MXJxCAksZZTYcKKNESTBKyAo8WPyPZYuRg4OZgF5
+	iSOXskHCzALqEpPmLWKGqP/MKHFyzU1WiHp9iTdflrOB2MIC/hK3X09nArHZBIwlNi9fAhYX
+	EVCTeH/pKQtIM7PAPiaJ1Xu3s4MsYBFQlVg/C2wBJ9Bxt/v62EFsIYFCibMzdzGBlEgIKEs0
+	9rtNYBSYheS6WQjXzUJy3QJG5lWMoqmlyQXFSem5hnrFibnFpXnpesn5uZsYIbHwZQfj4mNW
+	hxgFOBiVeHgrQveHCLEmlhVX5h5ilOBgVhLh9TsIFOJNSaysSi3Kjy8qzUktPsTIxMEp1cA4
+	73z43+c9TRvVlnp7XrxaZ1F3wMh9BYN3dv+tHM948QjjJTvzd/lu+ZuXNuWW5rKMiDnz2MM9
+	v2ZH752akxCyTuroutdnxZtWP73RYvxrn4u17pYd3xZ+yJywca6B1foNqpxzX72NefeyMM3M
+	OS05+LHHliVl7H4zrF8+0ObzYtdkOMmaIPhYiaU4I9FQi7moOBEAuNBf02MCAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On śro, 2015-01-21 at 16:22 +0100, Sebastian Reichel wrote:
+> Hi Krzysztof,
+> 
+> On Mon, Jan 05, 2015 at 04:47:43PM +0100, Krzysztof Kozlowski wrote:
+> > This is RFC, please don't apply yet but let me know if this approach
+> > is OK.
+> 
+> I just reviewed the patchset. It looks fine to me.
 
---uxuisgdDHaNETlh8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Great! Thanks for looking at patchset. I'll start working on next
+version adjusting all drivers.
 
-On Wed, Jan 21, 2015 at 10:24:11AM -0500, Paul Moore wrote:
-> On Wednesday, January 21, 2015 03:42:16 PM Thierry Reding wrote:
-> > On Wed, Jan 21, 2015 at 12:05:39PM +0100, Sabrina Dubroca wrote:
-> > > 2015-01-21, 04:36:38 +0000, Al Viro wrote:
-> > > > On Tue, Jan 20, 2015 at 08:01:26PM -0800, Guenter Roeck wrote:
-> > > > > With this patch:
-> > > > >=20
-> > > > > sys_mkdir .:40775 returned -17
-> > > > > sys_mkdir usr:40775 returned 0
-> > > > > sys_mkdir usr/lib:40775 returned 0
-> > > > > sys_mkdir usr/share:40755 returned 0
-> > > > > sys_mkdir usr/share/udhcpc:40755 returned 0
-> > > > > sys_mkdir usr/bin:40775 returned 0
-> > > > > sys_mkdir usr/sbin:40775 returned 0
-> > > > > sys_mkdir mnt:40775 returned 0
-> > > > > sys_mkdir proc:40775 returned 0
-> > > > > sys_mkdir root:40775 returned 0
-> > > > > sys_mkdir lib:40775 returned 0
-> > > > > sys_mkdir lib/modules:40775 returned 0
-> > > > > ...
-> > > > >=20
-> > > > > and the problem is fixed.
-> > >=20
-> > > This patch also works for me.
-> > >=20
-> > > > ... except that it simply confirms that something's fishy with
-> > > > getname_kernel() of ->name of struct filename returned by getname()=
-=2E=20
-> > > > IOW, I still do not understand the mechanism of breakage there.
-> > >=20
-> > > I'm not so sure about that.  I tried to copy name to a new string in
-> > > do_path_lookup and that didn't help.
-> > >=20
-> > > Now, I've removed the
-> > >=20
-> > >         putname(filename);
-> > >=20
-> > > line from do_path_lookup and I don't get the panic.
-> >=20
-> > That would indicate that somehow the refcount got unbalanced. Looking
-> > more closely it seems like the various audit_*() function do take a
-> > reference, but maybe that's not enough.
->=20
-> I'm thinking the same thing and I think the problem may be that=20
-> __audit_reusename() is not bumping the filename->refcnt.  Can someone who=
- is=20
-> seeing this problem bump the refcnt in __audit_reusename()?
->=20
->   struct filename *
->   __audit_reusename(const __user char *uptr)
->   {
->         struct audit_context *context =3D current->audit_context;
->         struct audit_names *n;
->=20
->         list_for_each_entry(n, &context->names_list, list) {
->                 if (!n->name)
->                         continue;
->                 if (n->name->uptr =3D=3D uptr) {
-> +                       n->name->refcnt++;
->                         return n->name;
->                 }
->         }
->         return NULL;
->   }
+> 
+> > TLDR
+> > ====
+> > Patchset tries to fix following race scenario:
+> > 
+> > Thread 1: charger manager, CONSUMER
+> > Thread 2: power supply driver, PROVIDER
+> > 
+> > THREAD 1 (charger manager)         THREAD 2 (power supply driver)
+> > ==========================         ==============================
+> > psy = power_supply_get_by_name()
+> >                                    Driver unbind, .remove
+> >                                      power_supply_unregister()
+> >                                      Device fully removed
+> > psy->get_property()
+> > 
+> > To properly fix the race the patchset:
+> > 1. Adds power_supply_get_property()-like API for safe access by consumer.
+> > 2. Moves ownership of power_supply structure from driver (provider) to
+> >    power supply core.
+> > 3. Adds power_supply_put() which will reclaim memory.
+> 
+> Looks fine to me, thanks for doing this :)
+> 
+> > Description
+> > =========== 
+> > This is a little different than my previous approaches [1][2] for fixing
+> > usage of power supply by some consumer, if driver implementing it is
+> > unbound.
+> > 
+> > The patchset is quite big and touches power supply API so a lot of
+> > changes in drivers are needed. These changes *are not finished yet*.
+> > I've done them only for:
+> >  - bq24190_charger.c
+> >  - charger-manager.c
+> >  - max14577_charger.c
+> >  - max17040_battery.c
+> >  - max17042_battery.c
+> >  - sbs-battery.c
+> >  - tps65090-charger.c
+> > So allyesconfig won't build.
+> >
+> > If this approach is OK, I'll prepare full patchset changing all the
+> > drivers.
+> 
+> Please do :)
+> 
+> > My previous approach [1][2] limited the race but did not close it.
+> > Still the consumer of power supply by calling power_supply_get_propert(psy...)
+> > may reference invalid memory because the producer freed it.
+> > 
+> > Actually, because struct power_supply is exposed to consumers, the
+> > core should be the owner of it. This is accomplished in patch 11/19
+> > ("power_supply: Change ownership from driver to core").
+> > 
+> > What the patchset does in steps
+> > ===============================
+> > 1. Some preparation steps are necessary - patch 1 and 2. The driver
+> >    implementing power supply won't be able to fill structure before
+> >    calling power_supply_register(). So 'power_supply_config'
+> >    is introduced in patch 2 ("power_supply: Move run-time configuration
+> >    to separate structure"). Unfortunately this touches all drivers.
+> 
+> $ grep -l power_supply_register **/*.c | grep -v mod.c | grep -v drivers/power
+> drivers/acpi/ac.c
+> drivers/acpi/battery.c
+> drivers/acpi/sbs.c
+> drivers/hid/hid-input.c
+> drivers/hid/hid-sony.c
+> drivers/hid/hid-wiimote-modules.c
+> drivers/hid/wacom_sys.c
+> drivers/platform/x86/compal-laptop.c
+> drivers/staging/nvec/nvec_power.c
+> 
+> Please make sure to CC the respective maintainers for the patchset
+> (e.g. current patch 14 and 15 should have CC'd x86 maintainers), so
+> that they can Acknowledge the patchset.
 
-That doesn't seem to help, at least in my case.
+Right. Probably maintainers should receive full patchset anyway. The
+address list will be quite big.
 
-Thierry
+> 
+> > 2. Safe API wrappers (and usage counter) are added (power_supply_*()).
+> > 3. Patch 11: ownership of 'struct power_supply' is moved from driver
+> >    to the core.
+> > 4. power_supply_put() is added which reclaims resources.
+> 
+> Looks fine to me.
+> 
+> > The patchset is rebased on next-20141226. It should be pulled at once.
+> > Bisectability is preserved.
+> 
+> Fine with me, but I need acks from all involved maintainers. So for the
+> patchset:
+> 
+> Reviewed-By: Sebastian Reichel <sre@kernel.org>
 
---uxuisgdDHaNETlh8
-Content-Type: application/pgp-signature
+Thanks!
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+Best regards,
+Krzysztof
 
-iQIcBAEBAgAGBQJUv8geAAoJEN0jrNd/PrOh244P/RqSLeB7+EtQ7SIjB+oq4ps/
-bPklOiNKjmgUWv5ZxJQIy6kR5geEvPb/1oRN+48+0+Tb+oUd/kZhCJbKya1lJ6FY
-v0E2s9KWxJsSzzHl0nYnc8OAgy8dmFa3GiZ4+t+Pnaj3Ydso4ZnPmtvqGjEHgRgh
-Sq73ZVN3fcvAL54EKAkQOIo23zxlUBcC4sBuFjJJwot6DMADvdFgmdeQB6dkzyIF
-fKbKPwtiGzrxqme4j9AbDqPFbbbnQOi6+yaZsL2ocQPsPeAiqozqp4dZWXbu+Spg
-XMQ1ml0CUWtCL/TG9C5SOFV9plWQ3cPCQVNid/yhZ1bVhGWFrx1mvNrBmf4oXFh/
-/2Dp+cNF6DqlI9fkEg5RXuPPHCnWUb3odDq7Lm0zlXXyyW9Wi39UU0m22+mqu2Gc
-ZBjHBp6ogwzZX/pXdpg5aXVu4igCyk8+Hg0naIlytwtaca2p7PpJk7XRgJMy8yl7
-M9rNzcQTyukJ1r3L9J7WOqn0OaJC3UfYkfnFA8ZPTbOR/A0QxTVm0wxr044rbxcC
-mO9tObrqlpRhrWuRlrhd5KSBHixyt3Q05gICNbr0QioG1ABTFOJxURdPI7UqwGu2
-2sek+IZVXJAp8YtYmyVquSnrom73EUgSpShc1kbvLobquZkG42c/MM2BUFJWbG6U
-jFWSkFoWJgOG+cZBLJob
-=4Hgz
------END PGP SIGNATURE-----
 
---uxuisgdDHaNETlh8--
+
