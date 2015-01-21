@@ -1,60 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751017AbbAUGCF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 01:02:05 -0500
-Received: from mail-lb0-f174.google.com ([209.85.217.174]:33120 "EHLO
-	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750735AbbAUGCD (ORCPT
+	id S1751998AbbAUGF2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 01:05:28 -0500
+Received: from mail-qg0-f42.google.com ([209.85.192.42]:62150 "EHLO
+	mail-qg0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750735AbbAUGF0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 01:02:03 -0500
+	Wed, 21 Jan 2015 01:05:26 -0500
+From: Vince Weaver <vincent.weaver@maine.edu>
+X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
+Date: Wed, 21 Jan 2015 01:06:30 -0500 (EST)
+To: Jiri Olsa <jolsa@redhat.com>
+cc: Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
+        Jiri Olsa <jolsa@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>
+Subject: Re: perf: behavior of poll() changed in 3.18
+In-Reply-To: <20150120181316.GA12860@krava.brq.redhat.com>
+Message-ID: <alpine.DEB.2.11.1501210058090.21805@vincent-weaver-1.umelst.maine.edu>
+References: <alpine.DEB.2.11.1501201155380.18043@vincent-weaver-1.umelst.maine.edu> <20150120181316.GA12860@krava.brq.redhat.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-In-Reply-To: <20150121055532.GA15518@gmail.com>
-References: <20150119170839.2c6b4b78@canb.auug.org.au> <20150119093501.GA4644@pd.tnic>
- <CALCETrW05f9nty5Sk8XA2DTsocqqOxp62aT9QXwta74Km+ZOng@mail.gmail.com>
- <20150121053410.GA15291@gmail.com> <CALCETrXCenu4UexZfV6HTq898JbXmZGU5KaCWCXrz7oikrA34g@mail.gmail.com>
- <20150121055532.GA15518@gmail.com>
-From: Andy Lutomirski <luto@amacapital.net>
-Date: Tue, 20 Jan 2015 22:01:41 -0800
-Message-ID: <CALCETrVKEZz+NFiqxrgQhqhDZ6dPLSr32RiBoZZmFk5ZydEL1w@mail.gmail.com>
-Subject: Re: Fwd: linux-next: manual merge of the luto-misc tree with the tip tree
-To: Ingo Molnar <mingo@kernel.org>
-Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Borislav Petkov <bp@alien8.de>, Tony Luck <tony.luck@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 9:55 PM, Ingo Molnar <mingo@kernel.org> wrote:
->
-> * Andy Lutomirski <luto@amacapital.net> wrote:
->
->> On Tue, Jan 20, 2015 at 9:34 PM, Ingo Molnar <mingo@kernel.org> wrote:
->> >
->> > * Andy Lutomirski <luto@amacapital.net> wrote:
->> >
->> >> Hi Ingo and Thomas-
->> >>
->> >> There's a trivial conflict in the pull request I sent last week.
->> >
->> > This is your x86 entry code rework pull request, right? The -tip
->> > tree now has the RCU commit it depends on, so could you please
->> > rebase it on top of tip:core/rcu so I can pull it? I'll resolve
->> > any remaining conflicts with the rest of -tip.
->> >
->>
->> Sure, I can do that in the morning.  The pull request merges cleanly
->> with tip:core/rcu, though, so is the rebase needed?
->
-> Yes, because your changes rely on the RCU change (semantically),
-> so if anyone bisects into your commits it might result in a
-> subtly broken kernel, right?
->
+On Tue, 20 Jan 2015, Jiri Olsa wrote:
 
-Almost.  The parent of my original pull request is the RCU change that
-my entry changes semantically depend on, so bisection should be fine.
+> I made this change to get notification that monitored
+> process exited.  We use it in 'perf record' to find out
+> that we have nothing more to monitor and quit.
+> 
+> The logic is to return POLLHUP (via poll syscall) when
+> the monitored process exits for the event.
+> 
+> Could you please share your test code?
 
---Andy
+My code does something like this to count the number of overflows
+happening in a child:
+
+	/* fds contains one fd, which is a harware event */
+	/* attached to a child */
+
+	while(1) {
+                result=poll(fds,1,100);
+                if (result==0) {
+                        waitpid(child,&status,WNOHANG);
+                        if (WIFEXITED(status)) break;
+                        if (WIFSIGNALED(status)) {
+                                printf("Signalled %d!\n",WTERMSIG(status));
+                                break;
+                        }
+                }
+
+                if (fds[0].revents&POLLIN) count.in++;
+                if (fds[0].revents&POLLHUP) count.hup++;
+                if (fds[0].revents&POLLERR) break;
+	}
+
+With the change you made this code hangs forever because poll no longer
+returns "0" when the child exits, but instead returns "1" with
+POLLHUP set.
+
+I admit my code isn't the best out there, but it worked reliably up
+until 3.18 when the change was made.
+
+Part of why my code doesn't just exit on POLLHUP is because you can
+get that result for reasons other than a process exit (for example,
+if you are using ioctl(PERF_EVENT_IOC_REFRESH)
+
+Vince
