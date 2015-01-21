@@ -1,168 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753656AbbAUCyc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 21:54:32 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:18449 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751691AbbAUCy3 (ORCPT
+	id S1753748AbbAUC6C (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 21:58:02 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:41314 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751557AbbAUC6A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 21:54:29 -0500
-X-AuditID: cbfee68e-f79b46d000002b74-0d-54bf14e2f1cc
-Message-id: <54BF14FB.8050300@samsung.com>
-Date: Wed, 21 Jan 2015 11:54:51 +0900
-From: Joonyoung Shim <jy0922.shim@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101
- Thunderbird/31.3.0
-MIME-version: 1.0
-To: Kevin Hilman <khilman@kernel.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        linux-samsung-soc@vger.kernel.org
-Cc: linaro-kernel@lists.linaro.org,
-        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
-        Sjoerd Simons <sjoerd.simons@collabora.co.uk>,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>, Kukjin Kim <kgene@kernel.org>,
-        "open list:OPEN FIRMWARE AND..." <devicetree@vger.kernel.org>,
-        "moderated list:ARM PORT" <linux-arm-kernel@lists.infradead.org>,
-        open list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] ARM: dts: exynos5422-odroidxu3: add on-board INA231
- sensors
-References: <1421284089-421-1-git-send-email-khilman@kernel.org>
-In-reply-to: <1421284089-421-1-git-send-email-khilman@kernel.org>
-Content-type: text/plain; charset=windows-1252
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMIsWRmVeSWpSXmKPExsWyRsSkQPeRyP4Qg0X91hbzj5xjteh/s5DV
-	4tyrlYwWR38XWPQuuMpm0f/4NbPF082PmSzeH3rGbLHp8TVWi8u75rBZzDi/j8ni9mVei6XX
-	LzJZTJi+lsWide8Rdovpx9+yOgh4rJm3htGjpbmHzeNyXy+Tx9/n11k8Vi7/wuaxaVUnm8fm
-	JfUet/89Zvbo27KK0ePzJrkArigum5TUnMyy1CJ9uwSujMd3+1gKdgtX3HgyhaWB8TZfFyMn
-	h4SAicT1lbvYIGwxiQv31oPZQgJLGSVutHvA1Mw/vQEozgUUn84o0XvkEztE0WtGieUPHUFs
-	XgEtid7t/8GaWQRUJVa+OcYMYrMJ6Enc2XacCcQWFQiTmHjzMStEvaDEj8n3WLoYOThEBPIk
-	pk9mAZnPLHCaReL8t99gvcICoRLz//WxQOxykNh+ZCOYzSngKPFy2WZ2kF5moPn3L2qBhJkF
-	5CU2r3nLDDJHQmAHh8TmQz9ZIO4RkPg2+RDYLgkBWYlNB5gh/pKUOLjiBssERrFZSC6ahTB1
-	FpKpCxiZVzGKphYkFxQnpRcZ6RUn5haX5qXrJefnbmIExv3pf8/6djDePGB9iFGAg1GJh/fl
-	qr0hQqyJZcWVuYcYTYGOmMgsJZqcD0wueSXxhsZmRhamJqbGRuaWZkrivAlSP4OFBNITS1Kz
-	U1MLUovii0pzUosPMTJxcEo1MM7IrhWpuOhjIvE/cD77ossqvnNDGPyrZj9W8jzr/z46SmZ/
-	0Ls5OZ68pr9EGZZqvzwv837yV07HlP3unCVWYqW3e5ky3K5u2TOp5V3Od8vKvXN7X2V9nPdG
-	5N/3fnnOiBMuGnwKNXMWbeAXLp00a4tDe8bjVU8dwnlk2fZ1WZQt/yzgIf9qihJLcUaioRZz
-	UXEiAM5obAD2AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrHKsWRmVeSWpSXmKPExsVy+t9jQd1HIvtDDDqvGlrMP3KO1aL/zUJW
-	i3OvVjJaHP1dYNG74CqbRf/j18wWTzc/ZrJ4f+gZs8Wmx9dYLS7vmsNmMeP8PiaL25d5LZZe
-	v8hkMWH6WhaL1r1H2C2mH3/L6iDgsWbeGkaPluYeNo/Lfb1MHn+fX2fxWLn8C5vHplWdbB6b
-	l9R73P73mNmjb8sqRo/Pm+QCuKIaGG0yUhNTUosUUvOS81My89JtlbyD453jTc0MDHUNLS3M
-	lRTyEnNTbZVcfAJ03TJzgF5RUihLzCkFCgUkFhcr6dthmhAa4qZrAdMYoesbEgTXY2SABhLW
-	MGY8vtvHUrBbuOLGkyksDYy3+boYOTkkBEwk5p/ewAZhi0lcuLceyObiEBKYzijRe+QTO0hC
-	SOA1o8Tyh44gNq+AlkTv9v9gDSwCqhIr3xxjBrHZBPQk7mw7zgRiiwqESUy8+ZgVol5Q4sfk
-	eyxdjBwcIgJ5EtMns4DMZxY4zSJx/ttvsF5hgVCJ+f/6WCB2OUhsP7IRzOYUcJR4uWwzO0gv
-	M9D8+xe1QMLMAvISm9e8ZZ7AKDALyYZZCFWzkFQtYGRexSiaWpBcUJyUnmuoV5yYW1yal66X
-	nJ+7iRGcVp5J7WBc2WBxiFGAg1GJh9dh7d4QIdbEsuLK3EOMEhzMSiK8fR/2hQjxpiRWVqUW
-	5ccXleakFh9iNAX6fyKzlGhyPjDl5ZXEGxqbmBlZGpkbWhgZmyuJ8yrZt4UICaQnlqRmp6YW
-	pBbB9DFxcEo1MHooPYnk7138bcUjVhO+XXUPomeXBz94MktG2JT9+asHHVJ7VKJ6rkZ/uCzo
-	sU9X8vLU/hThtSI/eHY/5d0bxxxtLjz7uUVXWblA/qsT3bdPH0wX6P7/U3rC7A/y+gs9r5zq
-	PZEwbcc2/yLWu06yvze+fb6CY/X8qZvuuYlzPveuuvOihX37IhklluKMREMt5qLiRACTXv24
-	QQMAAA==
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Tue, 20 Jan 2015 21:58:00 -0500
+Date: Tue, 20 Jan 2015 18:57:54 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Sasha Levin <sasha.levin@oracle.com>
+Cc: Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dave Jones <davej@redhat.com>
+Subject: Re: rcu, sched: WARNING: CPU: 30 PID: 23771 at
+ kernel/rcu/tree_plugin.h:337 rcu_read_unlock_special+0x369/0x550()
+Message-ID: <20150121025754.GV9719@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <54BBC084.2030604@oracle.com>
+ <20150118232255.GD9719@linux.vnet.ibm.com>
+ <54BE76B9.7070907@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54BE76B9.7070907@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15012102-0029-0000-0000-000007581183
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kevin,
+On Tue, Jan 20, 2015 at 10:39:37AM -0500, Sasha Levin wrote:
+> On 01/18/2015 06:22 PM, Paul E. McKenney wrote:
+> > On Sun, Jan 18, 2015 at 09:17:40AM -0500, Sasha Levin wrote:
+> >> > Hi Paul, Lai,
+> >> > 
+> >> > While fuzzing with trinity inside a KVM tools guest running the latest -next
+> >> > kernel, I've stumbled on the following spew:
+> >> > 
+> >> > [  598.188036] WARNING: CPU: 30 PID: 23771 at kernel/rcu/tree_plugin.h:337 rcu_read_unlock_special+0x369/0x550()
+> >> > [  598.188036] Modules linked in:
+> >> > [  598.188036] CPU: 30 PID: 23771 Comm: trinity-c118 Not tainted 3.19.0-rc4-next-20150116-sasha-00055-gb8e1507-dirty #1745
+> >> > [  598.188036]  ffffffff926e52dc ffff8801b4403c38 ffffffff91439fb2 0000000000000000
+> >> > [  598.188036]  0000000000000000 ffff8801b4403c78 ffffffff8e159e1a ffff8801b4403c58
+> >> > [  598.188036]  0000000000000000 ffff88002f093000 00000000ffffffff ffff8801b23b9290
+> >> > [  598.188036] Call Trace:
+> >> > [  598.188036] <IRQ> dump_stack (lib/dump_stack.c:52)
+> >> > [  598.212152] warn_slowpath_common (kernel/panic.c:447)
+> >> > [  598.212152] warn_slowpath_null (kernel/panic.c:481)
+> >> > [  598.212152] rcu_read_unlock_special (kernel/rcu/tree_plugin.h:337 (discriminator 9))
+> >> > [  598.212152] ? select_task_rq_fair (include/linux/rcupdate.h:889 kernel/sched/fair.c:4740)
+> >> > [  598.212152] __rcu_read_unlock (kernel/rcu/update.c:97)
+> >> > [  598.212152] select_task_rq_fair (kernel/sched/fair.c:4805)
+> >> > [  598.212152] ? select_task_rq_fair (include/linux/rcupdate.h:889 kernel/sched/fair.c:4740)
+> >> > [  598.212152] ? try_to_wake_up (kernel/sched/core.c:1701)
+> >> > [  598.212152] try_to_wake_up (kernel/sched/core.c:1415 kernel/sched/core.c:1729)
+> >> > [  598.212152] wake_up_process (kernel/sched/core.c:1797 (discriminator 3))
+> >> > [  598.212152] hrtimer_wakeup (kernel/time/hrtimer.c:1490)
+> >> > [  598.212152] __run_hrtimer (kernel/time/hrtimer.c:1218 (discriminator 3))
+> >> > [  598.212152] ? hrtimer_interrupt (kernel/time/hrtimer.c:622 kernel/time/hrtimer.c:1254)
+> >> > [  598.212152] ? hrtimer_get_res (kernel/time/hrtimer.c:1480)
+> >> > [  598.212152] hrtimer_interrupt (kernel/time/hrtimer.c:1307)
+> >> > [  598.212152] local_apic_timer_interrupt (arch/x86/kernel/apic/apic.c:921)
+> >> > [  598.212152] smp_apic_timer_interrupt (./arch/x86/include/asm/apic.h:660 arch/x86/kernel/apic/apic.c:945)
+> >> > [  598.212152] apic_timer_interrupt (arch/x86/kernel/entry_64.S:983)
+> >> > [  598.212152] <EOI> ? context_tracking_user_enter (./arch/x86/include/asm/paravirt.h:809 kernel/context_tracking.c:106)
+> >> > [  598.212152] syscall_trace_leave (arch/x86/kernel/ptrace.c:1640)
+> >> > [  598.212152] int_check_syscall_exit_work (arch/x86/kernel/entry_64.S:577)
+> > So RCU believes that an RCU read-side critical section that ended within
+> > an interrupt handler (in this case, an hrtimer) somehow got preempted.
+> > Which is not supposed to happen.
+> > 
+> > Do you have CONFIG_PROVE_RCU enabled?  If not, could you please enable it
+> > and retry?
+> 
+> I did have CONFIG_PROVE_RCU, and didn't see anything else besides what I pasted here.
 
-On 01/15/2015 10:08 AM, Kevin Hilman wrote:
-> From: Kevin Hilman <khilman@linaro.org>
-> 
-> The odroid-xu3 has 4 INA231 current sensors on board which can be
-> accessed from the Linux via the hwmon interface.
-> 
-> There is one sensor for each of these power rails:
-> 
-> - A15 cluster: VDD_ARM
-> - A7 cluster: VDD_KFC
-> - GPU: VDD_G3D
-> - memory: VDD_MEM
-> 
-> In addition to adding the sensors, LDO26 from the PMIC needs to be
-> enabled because it's powering these sensor.
-> 
-> Cc: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
-> Cc: Sjoerd Simons <sjoerd.simons@collabora.co.uk>
-> Signed-off-by: Kevin Hilman <khilman@linaro.org>
-> ---
-> v2: use "ti,ina231" as compatible string.
-> 
-> Applies on top of "ARM: dts: Add dts file for odroid XU3 board" from Sjoerd Simons.
-> 
->  arch/arm/boot/dts/exynos5422-odroidxu3.dts | 39 ++++++++++++++++++++++++++++++
->  1 file changed, 39 insertions(+)
-> 
-> diff --git a/arch/arm/boot/dts/exynos5422-odroidxu3.dts b/arch/arm/boot/dts/exynos5422-odroidxu3.dts
-> index c29123c0734d..50353d023225 100644
-> --- a/arch/arm/boot/dts/exynos5422-odroidxu3.dts
-> +++ b/arch/arm/boot/dts/exynos5422-odroidxu3.dts
-> @@ -174,6 +174,13 @@
->  					regulator-always-on;
->  				};
->  
-> +				ldo26_reg: LDO26 {
-> +					regulator-name = "vdd_ldo26";
-> +					regulator-min-microvolt = <3000000>;
-> +					regulator-max-microvolt = <3000000>;
-> +					regulator-always-on;
-> +				};
-> +
->  				buck1_reg: BUCK1 {
->  					regulator-name = "vdd_mif";
->  					regulator-min-microvolt = <800000>;
-> @@ -257,6 +264,38 @@
->  		};
->  	};
->  
-> +	i2c_0: i2c@12C60000 {
+OK, fair enough.  I do have a stack of RCU CPU stall-warning changes on
+their way in, please see v3.19-rc1..630181c4a915 in -rcu, which is at:
 
-It's ok but IMHO it can split using label reference, e.g. 
+git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
 
-&i2c_0 {
-	...
-};
+These handle the problems that Dave Jones, yourself, and a few others
+located this past December.  Could you please give them a spin?
 
-Thanks.
-
-> +		status = "okay";
-> +
-> +		/* A15 cluster: VDD_ARM */
-> +		ina231@40 {
-> +			compatible = "ti,ina231";
-> +			reg = <0x40>;
-> +			shunt-resistor = <10000>;
-> +		};
-> +
-> +		/* memory: VDD_MEM */
-> +		ina231@41 {
-> +			compatible = "ti,ina231";
-> +			reg = <0x41>;
-> +			shunt-resistor = <10000>;
-> +		};
-> +
-> +		/* GPU: VDD_G3D */
-> +		ina231@44 {
-> +			compatible = "ti,ina231";
-> +			reg = <0x44>;
-> +			shunt-resistor = <10000>;
-> +		};
-> +
-> +		/* A7 cluster: VDD_KFC */
-> +		ina231@45 {
-> +			compatible = "ti,ina231";
-> +			reg = <0x45>;
-> +			shunt-resistor = <10000>;
-> +		};
-> +	};
-> +
->  	i2c_2: i2c@12C80000 {
->  		samsung,i2c-sda-delay = <100>;
->  		samsung,i2c-max-bus-freq = <66000>;
-> 
+							Thanx, Paul
 
