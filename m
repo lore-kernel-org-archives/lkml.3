@@ -1,74 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752985AbbAUXSA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 18:18:00 -0500
-Received: from mail-ig0-f178.google.com ([209.85.213.178]:42183 "EHLO
-	mail-ig0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752126AbbAUXRj (ORCPT
+	id S1753369AbbAUXTi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 18:19:38 -0500
+Received: from mail-pd0-f182.google.com ([209.85.192.182]:34699 "EHLO
+	mail-pd0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751665AbbAUXTb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 18:17:39 -0500
-From: Doug Anderson <dianders@chromium.org>
-To: Wim Van Sebroeck <wim@iguana.be>
-Cc: Heiko Stuebner <heiko@sntech.de>, Lunxue Dai <lunxue.dai@rock-chips.com>,
-        Jisheng Zhang <jszhang@marvell.com>, Dinh Nguyen <dinguyen@altera.com>,
-        Doug Anderson <dianders@chromium.org>, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] watchdog: dw_wdt: Try to get a 30 second watchdog by default
-Date: Wed, 21 Jan 2015 15:17:23 -0800
-Message-Id: <1421882243-3631-2-git-send-email-dianders@chromium.org>
-X-Mailer: git-send-email 2.2.0.rc0.207.ga3a616c
-In-Reply-To: <1421882243-3631-1-git-send-email-dianders@chromium.org>
-References: <1421882243-3631-1-git-send-email-dianders@chromium.org>
+	Wed, 21 Jan 2015 18:19:31 -0500
+Date: Wed, 21 Jan 2015 15:19:31 -0800
+From: Olof Johansson <olof@lixom.net>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, arm@kernel.org,
+        Linux Kernel list <linux-kernel@vger.kernel.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
+        Ludovic Desroches <ludovic.desroches@atmel.com>
+Subject: Re: [GIT PULL] at91: cleanup for 3.20 #2
+Message-ID: <20150121231931.GA29014@quad.lixom.net>
+References: <1421429141-5405-1-git-send-email-nicolas.ferre@atmel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421429141-5405-1-git-send-email-nicolas.ferre@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dw_wdt_set_top() function takes in a value in seconds.  In
-dw_wdt_open() we were calling it with a value that's supposed to
-represent the maximum value programmed into the "top" register with a
-comment saying that we were trying to set the watchdog to its maximum
-value.  Instead we ended up setting the watchdog to ~15 seconds.
+On Fri, Jan 16, 2015 at 06:25:41PM +0100, Nicolas Ferre wrote:
+> Arnd, Olof, Kevin,
+> 
+> This is another cleanup pull-request for AT91. This one depends on the Device
+> Tree material that I posted yesterday, so I merged the at91-dt tag just before
+> stacking up Alexandre's patches. This dependency is needed to make sure that
+> SRAM gets initialized before using it.
+> More cleanup will come soon to reach multi-platform.
+> 
+> Thanks, best regards,
+> 
+> The following changes since commit eca6f17253f33313eeb3020d0634a60d10f650c4:
+> 
+>   Merge tag 'at91-dt' into at91-3.20-cleanup (2015-01-16 17:18:34 +0100)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/nferre/linux-at91.git tags/at91-cleanup2
+> 
+> for you to fetch changes up to 29ee506d0d56f6d39cc237de2512f9cb5629cbf7:
+> 
+>   ARM: at91: move at91rm9200_idle() to clk/at91/pmc.c (2015-01-16 18:08:42 +0100)
+> 
+> ----------------------------------------------------------------
+> Second batch of cleanup for 3.20:
+> - By reworking the PM code, we can remove the AT91 more specific initialization
+> - We are using DT for SRAM initialization now, so we can remove its explicit
+>   mapping
+> - The PMC clock driver now hosts IDLE function for at91rm9200 with other
+>   SoCs ones.
 
-Let's fix this.  However, setting things to the "max" gives me an 86
-second watchdog in the system I'm looking at.  86 seconds feels a
-little too long.  We'll explicitly choose 30 seconds as a more
-reasonable value.
+This adds a really annoying circular dependency for us. Cleanups are supposed
+to be the base for other branches, not the other way around.
 
-NOTE: Ideally this driver should be transitioned to be a real watchdog
-driver.  Then we could use "watchdog_init_timeout" and let the timeout
-be specified in a number of ways (device tree, module parameter, etc).
-This patch should be considered a bit of a stopgap solution.
+To break the cycle, I've merged this into next/soc instead of into cleanup. We
+now have a dependency on soc coming after dt, which is also not what we usually
+do, but it least it's better than putting the dt branch in front of cleanup.
 
-Signed-off-by: Doug Anderson <dianders@chromium.org>
----
- drivers/watchdog/dw_wdt.c | 6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/watchdog/dw_wdt.c b/drivers/watchdog/dw_wdt.c
-index fc92bea..cc2805d 100644
---- a/drivers/watchdog/dw_wdt.c
-+++ b/drivers/watchdog/dw_wdt.c
-@@ -51,6 +51,8 @@
- /* The maximum TOP (timeout period) value that can be set in the watchdog. */
- #define DW_WDT_MAX_TOP		15
- 
-+#define DW_WDT_DEFAULT_SECONDS	30
-+
- static bool nowayout = WATCHDOG_NOWAYOUT;
- module_param(nowayout, bool, 0);
- MODULE_PARM_DESC(nowayout, "Watchdog cannot be stopped once started "
-@@ -167,9 +169,9 @@ static int dw_wdt_open(struct inode *inode, struct file *filp)
- 	if (!dw_wdt_is_enabled()) {
- 		/*
- 		 * The watchdog is not currently enabled. Set the timeout to
--		 * the maximum and then start it.
-+		 * something reasonable and then start it.
- 		 */
--		dw_wdt_set_top(DW_WDT_MAX_TOP);
-+		dw_wdt_set_top(DW_WDT_DEFAULT_SECONDS);
- 		dw_wdt_keepalive();
- 		writel(WDOG_CONTROL_REG_WDT_EN_MASK,
- 		       dw_wdt.regs + WDOG_CONTROL_REG_OFFSET);
--- 
-2.2.0.rc0.207.ga3a616c
-
+-Olof
