@@ -1,150 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753266AbbAUD3r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 22:29:47 -0500
-Received: from szxga01-in.huawei.com ([119.145.14.64]:32909 "EHLO
-	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751683AbbAUD3q (ORCPT
+	id S1753552AbbAUD0g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 22:26:36 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:41391 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751823AbbAUD0g convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 22:29:46 -0500
-From: Wang Nan <wangnan0@huawei.com>
-To: <jolsa@redhat.com>
-CC: <jeremie.galarneau@efficios.com>, <bigeasy@linutronix.de>,
-        <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/2] perf: convert: fix duplicate field names and avoid reserved keywords.
-Date: Wed, 21 Jan 2015 11:23:54 +0800
-Message-ID: <1421810634-1373-1-git-send-email-wangnan0@huawei.com>
-X-Mailer: git-send-email 1.8.4
-In-Reply-To: <20150120130609.GC15315@krava.brq.redhat.com>
-References: <20150120130609.GC15315@krava.brq.redhat.com>
+	Tue, 20 Jan 2015 22:26:36 -0500
+Date: Wed, 21 Jan 2015 03:33:27 +0008
+From: Jason Wang <jasowang@redhat.com>
+Subject: Re: [PATCH v3 3/3] Drivers: hv: vmbus: serialize Offer and Rescind
+ offer
+To: Vitaly Kuznetsov <vkuznets@redhat.com>
+Cc: "K. Y. Srinivasan" <kys@microsoft.com>, devel@linuxdriverproject.org,
+        Haiyang Zhang <haiyangz@microsoft.com>, linux-kernel@vger.kernel.org,
+        Dexuan Cui <decui@microsoft.com>,
+        Radim =?iso-8859-2?b?S3LobeH4?= <rkrcmar@redhat.com>,
+        Dan Carpenter <dan.carpenter@oracle.com>
+Message-Id: <1421810727.8384.2@smtp.corp.redhat.com>
+In-Reply-To: <1421768706-5363-4-git-send-email-vkuznets@redhat.com>
+References: <1421768706-5363-1-git-send-email-vkuznets@redhat.com>
+	<1421768706-5363-4-git-send-email-vkuznets@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Originating-IP: [10.107.197.247]
-X-CFilter-Loop: Reflected
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some parameters of syscall tracepoints named as 'nr', 'event', etc.
-When dealing with them, perf convert to ctf meets some problem:
 
- 1. If a parameter with name 'nr', it will duplicate syscall's
-    common field 'nr'. One such syscall is io_submit().
 
- 2. If a parameter with name 'event', it is denied to be inserted
-    because 'event' is a babeltrace keywork. One such syscall is
-    epoll_ctl.
+On Tue, Jan 20, 2015 at 11:45 PM, Vitaly Kuznetsov 
+<vkuznets@redhat.com> wrote:
+> Commit 4b2f9abea52a ("staging: hv: convert channel_mgmt.c to not call
+> osd_schedule_callback")' was written under an assumption that we 
+> never receive
+> Rescind offer while we're still processing the initial Offer request. 
+> However,
+> the issue we fixed in 04a258c162a8 could be caused by this assumption 
+> not
+> always being true.
+> 
+> In particular, we need to protect against the following:
+> 1) Receiving a Rescind offer after we do queue_work() for processing 
+> an Offer
+>    request and before we actually enter vmbus_process_offer(). 
+> work.func points
+>    to vmbus_process_offer() at this moment and in 
+> vmbus_onoffer_rescind() we do
+>    another queue_work() without a check so we'll enter 
+> vmbus_process_offer()
+>    twice.
+> 2) Receiving a Rescind offer after we enter vmbus_process_offer() and
+>    especially after we set >state = CHANNEL_OPEN_STATE. Many things 
+> can go
+>    wrong in that case, e.g. we can call free_channel() while we're 
+> still using
+>    it.
+> 
+> Implement the required protection by changing work->func at the very 
+> end of
+> vmbus_process_offer() and checking work->func in 
+> vmbus_onoffer_rescind(). In
+> case we receive rescind offer during or before vmbus_process_offer() 
+> is done
+> we set rescind flag to true and we check it at the end of 
+> vmbus_process_offer()
+> so such offer will not get lost.
+> 
+> Suggested-by: Radim Krčmář <rkrcmar@redhat.com>
+> Signed-off-by: Vitaly Kuznetsov <vkuznets@redhat.com>
+> ---
 
-This patch appends '_dupl_X' suffix to avoid problem 1, prepend a '_'
-prefix to avoid problem 2.
-
-Signed-off-by: Wang Nan <wangnan0@huawei.com>
----
- tools/perf/util/data-convert-bt.c | 65 ++++++++++++++++++++++++++++++++++++---
- 1 file changed, 61 insertions(+), 4 deletions(-)
-
-diff --git a/tools/perf/util/data-convert-bt.c b/tools/perf/util/data-convert-bt.c
-index ddecce8..b0a042d 100644
---- a/tools/perf/util/data-convert-bt.c
-+++ b/tools/perf/util/data-convert-bt.c
-@@ -567,6 +567,38 @@ static int process_sample_event(struct perf_tool *tool,
- 	return cs ? 0 : -1;
- }
- 
-+/* If dup < 0, add a prefix. Else, add _dupl_X suffix. */
-+static char *change_name(char *name, char *orig_name, int dup)
-+{
-+	char *new_name = NULL;
-+	size_t len;
-+
-+	if (!name)
-+		name = orig_name;
-+
-+	if (dup >= 10)
-+		goto out;
-+
-+	if (dup < 0)
-+		len = strlen(name) + sizeof("_");
-+	else
-+		len = strlen(orig_name) + sizeof("_dupl_X");
-+
-+	new_name = malloc(len);
-+	if (!new_name)
-+		goto out;
-+
-+	if (dup < 0)
-+		snprintf(new_name, len, "_%s", name);
-+	else
-+		snprintf(new_name, len, "%s_dupl_%d", orig_name, dup);
-+
-+out:
-+	if (name != orig_name)
-+		free(name);
-+	return new_name;
-+}
-+
- static int add_tracepoint_fields_types(struct ctf_writer *cw,
- 				       struct format_field *fields,
- 				       struct bt_ctf_event_class *event_class)
-@@ -577,6 +609,9 @@ static int add_tracepoint_fields_types(struct ctf_writer *cw,
- 	for (field = fields; field; field = field->next) {
- 		struct bt_ctf_field_type *type;
- 		unsigned long flags = field->flags;
-+		struct bt_ctf_field_type *f = NULL;
-+		char *name;
-+		int dup = 1;
- 
- 		pr2("  field '%s'\n", field->name);
- 
-@@ -595,14 +630,36 @@ static int add_tracepoint_fields_types(struct ctf_writer *cw,
- 		if (flags & FIELD_IS_ARRAY)
- 			type = bt_ctf_field_type_array_create(type, field->arraylen);
- 
--		ret = bt_ctf_event_class_add_field(event_class, type,
--				field->name);
-+		/* Check name duplication */
-+		name = field->name;
-+		while (f = bt_ctf_event_class_get_field_by_name(event_class, name)) {
-+			bt_ctf_field_type_put(f);
-+			name = change_name(name, field->name, dup++);
-+			if (!name) {
-+				pr_err("Failed to create dup name for '%s'\n", field->name);
-+				return -1;
-+			}
-+		}
-+
-+		ret = bt_ctf_event_class_add_field(event_class, type, name);
-+		/* if failed, we may hit a keywork. try again with a '_' prefix */
-+		if (ret) {
-+			name = change_name(name, field->name, -1);
-+			if (!name) {
-+				pr_err("Failed to alloc name for '_%s'\n", field->name);
-+				return -1;
-+			}
-+			ret = bt_ctf_event_class_add_field(event_class, type, name);
-+		}
-+		if (name != field->name)
-+			free(name);
- 
- 		if (flags & FIELD_IS_ARRAY)
- 			bt_ctf_field_type_put(type);
- 
- 		if (ret) {
--			pr_err("Failed to add field '%s\n", field->name);
-+			pr_err("Failed to add field '%s': %d\n",
-+					field->name, ret);
- 			return -1;
- 		}
- 	}
-@@ -646,7 +703,7 @@ static int add_generic_types(struct ctf_writer *cw, struct perf_evsel *evsel,
- 	do {								\
- 		pr2("  field '%s'\n", n);				\
- 		if (bt_ctf_event_class_add_field(cl, t, n)) {		\
--			pr_err("Failed to add field '%s;\n", n);	\
-+			pr_err("Failed to add field '%s';\n", n);	\
- 			return -1;					\
- 		}							\
- 	} while (0)
--- 
-1.8.4
+Acked-by: Jason Wang <jasowang@redhat.com>
+> 
+>  drivers/hv/channel_mgmt.c | 30 ++++++++++++++++++++++--------
+>  1 file changed, 22 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/hv/channel_mgmt.c b/drivers/hv/channel_mgmt.c
+> index c6fdd74..877a944 100644
+> --- a/drivers/hv/channel_mgmt.c
+> +++ b/drivers/hv/channel_mgmt.c
+> @@ -279,9 +279,6 @@ static void vmbus_process_offer(struct 
+> work_struct *work)
+>  	int ret;
+>  	unsigned long flags;
+>  
+> -	/* The next possible work is rescind handling */
+> -	INIT_WORK(&newchannel->work, vmbus_process_rescind_offer);
+> -
+>  	/* Make sure this is a new offer */
+>  	spin_lock_irqsave(&vmbus_connection.channel_lock, flags);
+>  
+> @@ -341,7 +338,7 @@ static void vmbus_process_offer(struct 
+> work_struct *work)
+>  			if (channel->sc_creation_callback != NULL)
+>  				channel->sc_creation_callback(newchannel);
+>  
+> -			goto out;
+> +			goto done_init_rescind;
+>  		}
+>  
+>  		goto err_free_chan;
+> @@ -382,7 +379,14 @@ static void vmbus_process_offer(struct 
+> work_struct *work)
+>  		kfree(newchannel->device_obj);
+>  		goto err_free_chan;
+>  	}
+> -out:
+> +done_init_rescind:
+> +	spin_lock_irqsave(&newchannel->lock, flags);
+> +	/* The next possible work is rescind handling */
+> +	INIT_WORK(&newchannel->work, vmbus_process_rescind_offer);
+> +	/* Check if rescind offer was already received */
+> +	if (newchannel->rescind)
+> +		queue_work(newchannel->controlwq, &newchannel->work);
+> +	spin_unlock_irqrestore(&newchannel->lock, flags);
+>  	return;
+>  err_free_chan:
+>  	free_channel(newchannel);
+> @@ -520,6 +524,7 @@ static void vmbus_onoffer_rescind(struct 
+> vmbus_channel_message_header *hdr)
+>  {
+>  	struct vmbus_channel_rescind_offer *rescind;
+>  	struct vmbus_channel *channel;
+> +	unsigned long flags;
+>  
+>  	rescind = (struct vmbus_channel_rescind_offer *)hdr;
+>  	channel = relid2channel(rescind->child_relid);
+> @@ -528,11 +533,20 @@ static void vmbus_onoffer_rescind(struct 
+> vmbus_channel_message_header *hdr)
+>  		/* Just return here, no channel found */
+>  		return;
+>  
+> +	spin_lock_irqsave(&channel->lock, flags);
+>  	channel->rescind = true;
+> +	/*
+> +	 * channel->work.func != vmbus_process_rescind_offer means we are 
+> still
+> +	 * processing offer request and the rescind offer processing should 
+> be
+> +	 * postponed. It will be done at the very end of 
+> vmbus_process_offer()
+> +	 * as rescind flag is being checked there.
+> +	 */
+> +	if (channel->work.func == vmbus_process_rescind_offer)
+> +		/* work is initialized for vmbus_process_rescind_offer() from
+> +		 * vmbus_process_offer() where the channel got created */
+> +		queue_work(channel->controlwq, &channel->work);
+>  
+> -	/* work is initialized for vmbus_process_rescind_offer() from
+> -	 * vmbus_process_offer() where the channel got created */
+> -	queue_work(channel->controlwq, &channel->work);
+> +	spin_unlock_irqrestore(&channel->lock, flags);
+>  }
+>  
+>  /*
+> -- 
+> 1.9.3
+> 
 
