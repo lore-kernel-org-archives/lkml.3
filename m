@@ -1,46 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752677AbbAUJdt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 04:33:49 -0500
-Received: from www.linutronix.de ([62.245.132.108]:53209 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750926AbbAUJdk (ORCPT
+	id S1752354AbbAUJfE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 04:35:04 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:36662 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750813AbbAUJe5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 04:33:40 -0500
-Date: Wed, 21 Jan 2015 10:33:19 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jiang Liu <jiang.liu@linux.intel.com>
-cc: LKML <linux-kernel@vger.kernel.org>, Joerg Roedel <joro@8bytes.org>,
-        x86@kernel.org, Tony Luck <tony.luck@intel.com>,
-        Borislav Petkov <bp@alien8.de>
-Subject: Re: [patch 00/23] x86: Cleanup apic/ioapic/x2apic setup code
-In-Reply-To: <54BF05CA.9070506@linux.intel.com>
-Message-ID: <alpine.DEB.2.11.1501211031570.5526@nanos>
-References: <20150115210458.625399149@linutronix.de> <54B8DBC1.6080205@linux.intel.com> <alpine.DEB.2.11.1501161120560.5526@nanos> <alpine.DEB.2.11.1501161203340.5526@nanos> <54BF05CA.9070506@linux.intel.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 21 Jan 2015 04:34:57 -0500
+From: Vinayak Menon <vinmenon@codeaurora.org>
+To: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, mgorman@suse.de, minchan@kernel.org,
+        vbabka@suse.cz, rientjes@google.com, iamjoonsoo.kim@lge.com,
+        Vinayak Menon <vinmenon@codeaurora.org>
+Subject: [PATCH] mm: compaction: fix the page state calculation in too_many_isolated
+Date: Wed, 21 Jan 2015 15:04:24 +0530
+Message-Id: <1421832864-30643-1-git-send-email-vinmenon@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Jan 2015, Jiang Liu wrote:
-> On 2015/1/16 19:05, Thomas Gleixner wrote:
-> Hi Thomas,
-> 	With above patch applied, it just gives a blank screen
-> instead of a panic when booting on my problematic laptop.
-> Now I have found the root cause of the failure on my laptop.
-> 	On i386, it triggers  BUG_ON(!apic->apic_id_registered())
-> in function setup_local_APIC() because apic_bsp_up_setup() is called
-> too late. So we need a simple patch as below. With following patch
-> applied, it boots successfully with your original patch.
+Commit "3611badc1baa" (mm: vmscan: fix the page state calculation in
+too_many_isolated) fixed an issue where a number of tasks were
+blocked in reclaim path for seconds, because of vmstat_diff not being
+synced in time. A similar problem can happen in isolate_migratepages_block,
+similar calculation is performed. This patch fixes that.
 
-Duh. Right you are. I wonder why this boots on any other
-machine. Seems there is some more magic in this setup maze.
+Signed-off-by: Vinayak Menon <vinmenon@codeaurora.org>
+---
+ mm/compaction.c | 32 +++++++++++++++++++++++++++-----
+ 1 file changed, 27 insertions(+), 5 deletions(-)
 
-Thanks,
+diff --git a/mm/compaction.c b/mm/compaction.c
+index 546e571..2d9730d 100644
+--- a/mm/compaction.c
++++ b/mm/compaction.c
+@@ -537,21 +537,43 @@ static void acct_isolated(struct zone *zone, struct compact_control *cc)
+ 	mod_zone_page_state(zone, NR_ISOLATED_FILE, count[1]);
+ }
+ 
+-/* Similar to reclaim, but different enough that they don't share logic */
+-static bool too_many_isolated(struct zone *zone)
++static bool __too_many_isolated(struct zone *zone, int safe)
+ {
+ 	unsigned long active, inactive, isolated;
+ 
+-	inactive = zone_page_state(zone, NR_INACTIVE_FILE) +
++	if (safe) {
++		inactive = zone_page_state_snapshot(zone, NR_INACTIVE_FILE) +
++			zone_page_state_snapshot(zone, NR_INACTIVE_ANON);
++		active = zone_page_state_snapshot(zone, NR_ACTIVE_FILE) +
++			zone_page_state_snapshot(zone, NR_ACTIVE_ANON);
++		isolated = zone_page_state_snapshot(zone, NR_ISOLATED_FILE) +
++			zone_page_state_snapshot(zone, NR_ISOLATED_ANON);
++	} else {
++		inactive = zone_page_state(zone, NR_INACTIVE_FILE) +
+ 					zone_page_state(zone, NR_INACTIVE_ANON);
+-	active = zone_page_state(zone, NR_ACTIVE_FILE) +
++		active = zone_page_state(zone, NR_ACTIVE_FILE) +
+ 					zone_page_state(zone, NR_ACTIVE_ANON);
+-	isolated = zone_page_state(zone, NR_ISOLATED_FILE) +
++		isolated = zone_page_state(zone, NR_ISOLATED_FILE) +
+ 					zone_page_state(zone, NR_ISOLATED_ANON);
++	}
+ 
+ 	return isolated > (inactive + active) / 2;
+ }
+ 
++/* Similar to reclaim, but different enough that they don't share logic */
++static bool too_many_isolated(struct zone *zone)
++{
++	/*
++	 * __too_many_isolated(safe=0) is fast but inaccurate, because it
++	 * doesn't account for the vm_stat_diff[] counters.  So if it looks
++	 * like too_many_isolated() is about to return true, fall back to the
++	 * slower, more accurate zone_page_state_snapshot().
++	 */
++	if (unlikely(__too_many_isolated(zone, 0)))
++		return __too_many_isolated(zone, 1);
++	return 0;
++}
++
+ /**
+  * isolate_migratepages_block() - isolate all migrate-able pages within
+  *				  a single pageblock
+-- 
+QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a
+member of the Code Aurora Forum, hosted by The Linux Foundation
 
-	tglx
