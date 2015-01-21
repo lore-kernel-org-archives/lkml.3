@@ -1,85 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733AbbAUOi3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 09:38:29 -0500
-Received: from fieldses.org ([174.143.236.118]:40134 "EHLO fieldses.org"
+	id S1753360AbbAUOjb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 09:39:31 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54763 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752911AbbAUOiV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 09:38:21 -0500
-Date: Wed, 21 Jan 2015 09:38:19 -0500
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: Ian Kent <ikent@redhat.com>
-Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>,
-        Oleg Nesterov <onestero@redhat.com>,
-        Trond Myklebust <trond.myklebust@primarydata.com>,
-        Benjamin Coddington <bcodding@redhat.com>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        Jeff Layton <jeff.layton@primarydata.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [RFC PATCH 0/5] Second attempt at contained helper execution
-Message-ID: <20150121143819.GA28392@fieldses.org>
-References: <20150114092704.30252.60446.stgit@pluto.fritz.box>
- <20150114215525.GB7071@fieldses.org>
- <20150114221011.GC7071@fieldses.org>
- <1421281572.2688.4.camel@pluto.fritz.box>
- <20150115162741.GA14902@fieldses.org>
- <1421370073.2630.4.camel@pluto.fritz.box>
- <20150116152527.GD17315@fieldses.org>
- <1421823925.2789.3.camel@pluto.fritz.box>
+	id S1752100AbbAUOjX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 09:39:23 -0500
+Date: Wed, 21 Jan 2015 15:39:20 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Vinayak Menon <vinmenon@codeaurora.org>
+Cc: Christoph Lameter <cl@linux.com>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        hannes@cmpxchg.org, vdavydov@parallels.com, mgorman@suse.de,
+        minchan@kernel.org
+Subject: Re: [PATCH v2] mm: vmscan: fix the page state calculation in
+ too_many_isolated
+Message-ID: <20150121143920.GD23700@dhcp22.suse.cz>
+References: <1421235419-30736-1-git-send-email-vinmenon@codeaurora.org>
+ <20150114165036.GI4706@dhcp22.suse.cz>
+ <54B7F7C4.2070105@codeaurora.org>
+ <20150116154922.GB4650@dhcp22.suse.cz>
+ <54BA7D3A.40100@codeaurora.org>
+ <alpine.DEB.2.11.1501171347290.25464@gentwo.org>
+ <54BC879C.90505@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1421823925.2789.3.camel@pluto.fritz.box>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <54BC879C.90505@codeaurora.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 03:05:25PM +0800, Ian Kent wrote:
-> On Fri, 2015-01-16 at 10:25 -0500, J. Bruce Fields wrote:
-> > On Fri, Jan 16, 2015 at 09:01:13AM +0800, Ian Kent wrote:
-> > > On Thu, 2015-01-15 at 11:27 -0500, J. Bruce Fields wrote:
-> > > > On Thu, Jan 15, 2015 at 08:26:12AM +0800, Ian Kent wrote:
-> > > > > On Wed, 2015-01-14 at 17:10 -0500, J. Bruce Fields wrote:
-> > > > > > > On Wed, Jan 14, 2015 at 05:32:22PM +0800, Ian Kent wrote:
-> > > > > > > > There are other difficulties to tackle as well, such as how to decide
-> > > > > > > > if contained helper execution is needed. For example, if a mount has
-> > > > > > > > been propagated to a container or bound into the container tree (such
-> > > > > > > > as with the --volume option of "docker run") the root init namespace
-> > > > > > > > may need to be used and not the container namespace.
-> > > > > > 
-> > > > > > I think you have to go through each of the existing upcall examples and
-> > > > > > decide what's needed for each.
-> > > > > > 
-> > > > > > At least for the nfsv4 idmapper I would've thought the namespace the
-> > > > > > mount was done in would be the right choice, hence my previous question.
-> > > > > 
-> > > > > Probably but you don't necessarily know what namespace the mount was
-> > > > > done in. It may have been propagated from another namespace or (although
-> > > > > I don't think it works yet) bound from another container using the
-> > > > > volumes-from docker option.
-> > > > 
-> > > > Name-id mappings should be associated with the superblock, I guess--so
-> > > > don't you store a pointer to the right thing there?
-> > > 
-> > > Quite possibly but my original point was, without an acceptable
-> > > mechanism to execute the helper we can't know what might need to be done
-> > > to use it.
-> > 
-> > At least for me it would be easier to review if it came with at least
-> > one example user.
+On Mon 19-01-15 09:57:08, Vinayak Menon wrote:
+> On 01/18/2015 01:18 AM, Christoph Lameter wrote:
+> >On Sat, 17 Jan 2015, Vinayak Menon wrote:
+> >
+> >>which had not updated the vmstat_diff. This CPU was in idle for around 30
+> >>secs. When I looked at the tvec base for this CPU, the timer associated with
+> >>vmstat_update had its expiry time less than current jiffies. This timer had
+> >>its deferrable flag set, and was tied to the next non-deferrable timer in the
+> >
+> >We can remove the deferrrable flag now since the vmstat threads are only
+> >activated as necessary with the recent changes. Looks like this could fix
+> >your issue?
+> >
 > 
-> Haven't seen any negative responses but perhaps people are still away
-> over Xmas.
-> 
-> In the mean time it's probably a good idea to add some use cases to the
-> series in case the approach is OK.
-> 
-> I'll have a look at the nfsd code and see if I can spot the places.
+> Yes, this should fix my issue.
 
-On the nfsd side it's just the one call_usermodehelper in
-fs/nfsd/nfs4recover.c.  The tricky part is figuring out where the
-namespace information should come from.
+Does it? Because I would prefer not getting into un-synced state much
+more than playing around one specific place which shows the problems
+right now.
 
---b.
+> But I think we may need the fix in too_many_isolated, since there can still
+> be a delay of few seconds (HZ by default and even more because of reasons
+> pointed out by Michal) which will result in reclaimers unnecessarily
+> entering congestion_wait. No ?
+
+I think we can solve this as well. We can stick vmstat_shepherd into a
+kernel thread with a loop with the configured timeout and then create a
+mask of CPUs which need the update and run vmstat_update from
+IPI context (smp_call_function_many).
+We would have to drop cond_resched from refresh_cpu_vm_stats of
+course. The nr_zones x NR_VM_ZONE_STAT_ITEMS in the IPI context
+shouldn't be excessive but I haven't measured that so I might be easily
+wrong.
+
+Anyway, that should work more reliably than the current scheme and
+should help to reduce pointless wakeups which the original patchset was
+addressing.  Or am I missing something?
+
+-- 
+Michal Hocko
+SUSE Labs
