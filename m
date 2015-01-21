@@ -1,80 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542AbbAUUrs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 15:47:48 -0500
-Received: from smtprelay0201.hostedemail.com ([216.40.44.201]:47700 "EHLO
-	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750914AbbAUUrj (ORCPT
+	id S1754096AbbAUUsM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 15:48:12 -0500
+Received: from youngberry.canonical.com ([91.189.89.112]:58035 "EHLO
+	youngberry.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753778AbbAUUsC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 15:47:39 -0500
-X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
-X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::,RULES_HIT:41:355:379:541:599:800:960:968:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:1801:2194:2199:2393:2553:2559:2562:2693:3138:3139:3140:3141:3142:3354:3622:3865:3866:3867:3868:3871:3872:3874:4605:5007:6261:7576:7875:7903:9121:10004:10400:10848:10967:11026:11232:11233:11658:11914:12043:12517:12519:12740:13069:13311:13357:13618:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
-X-HE-Tag: trees94_2582e5bddd402
-X-Filterd-Recvd-Size: 2914
-Date: Wed, 21 Jan 2015 15:47:36 -0500
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Al Viro <viro@ZenIV.linux.org.uk>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Ingo Molnar <mingo@kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC][PATCH 4/5] tracing: Have mkdir and rmdir be part of
- tracefs
-Message-ID: <20150121154736.4d32e2a0@gandalf.local.home>
-In-Reply-To: <20150121172101.953700301@goodmis.org>
-References: <20150121171953.823177070@goodmis.org>
-	<20150121172101.953700301@goodmis.org>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Jan 2015 15:48:02 -0500
+From: Kamal Mostafa <kamal@canonical.com>
+To: Zoltan Kiss <zoltan.kiss@citrix.com>
+Cc: Wei Liu <wei.liu2@citrix.com>, Ian Campbell <Ian.Campbell@citrix.com>,
+        Paul Durrant <paul.durrant@citrix.com>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xenproject.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        Kamal Mostafa <kamal@canonical.com>, kernel-team@lists.ubuntu.com
+Subject: [3.13.y-ckt stable] Patch "xen-netfront: Fix handling packets on compound pages with skb_linearize" has been added to staging queue
+Date: Wed, 21 Jan 2015 12:47:56 -0800
+Message-Id: <1421873276-9609-1-git-send-email-kamal@canonical.com>
+X-Mailer: git-send-email 1.9.1
+X-Extended-Stable: 3.13
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Jan 2015 12:19:57 -0500
-Steven Rostedt <rostedt@goodmis.org> wrote:
+This is a note to let you know that I have just added a patch titled
 
-> From: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
-> 
-> The tracing "instances" directory can create sub tracing buffers
-> with mkdir, and remove them with rmdir. As a mkdir will also create
-> all the files and directories that control the sub buffer the locks
-> needed to be released before doing so to avoid deadlock. This method
-> was not very robust, and could potentially have a race somewhere due
-> to the lock releasing within the removing of the directory. But this
-> was needed because debugfs did not provide a mkdir or rmdir method
-> from syscalls.
-> 
-> Now that tracing has been converted over to tracefs, the tracefs file
-> system can be modified to accommodate this feature. Instead of needing
-> to release the locks, keep them locked but add a way to flag that they
-> are locked and do not need to be locked again.
-> 
-> A struct trace_dir_ops is created that holds the methods to be called
-> for both mkdir and rmdir, as well as a pointer to let the tracefs subsystem
-> know that the current inode's lock is already held by the calling process.
-> 
-> The pointer holds the current owner of the lock, and this is checked when
-> creating new files or removing old ones, and if the pointer matches current,
-> then the lock is not taken to avoid the deadlock.
+    xen-netfront: Fix handling packets on compound pages with skb_linearize
 
-Grumble, my tests triggered this bug with lockdep on:
+to the linux-3.13.y-queue branch of the 3.13.y-ckt extended stable tree 
+which can be found at:
 
- Possible unsafe locking scenario:
+ http://kernel.ubuntu.com/git?p=ubuntu/linux.git;a=shortlog;h=refs/heads/linux-3.13.y-queue
 
-       CPU0                    CPU1
-       ----                    ----
-  lock(&sb->s_type->i_mutex_key#6);
-                               lock(trace_types_lock);
-                               lock(&sb->s_type->i_mutex_key#6);
-  lock(trace_types_lock);
+This patch is scheduled to be released in version 3.13.11-ckt15.
 
- *** DEADLOCK ***
+If you, or anyone else, feels it should not be added to this tree, please 
+reply to this email.
 
+For more information about the 3.13.y-ckt tree, see
+https://wiki.ubuntu.com/Kernel/Dev/ExtendedStable
 
-I need to take that trace_types_lock here, but it's true that that lock
-is held when these mutexes are taken. I'll have to spend a bit more
-time figuring out how to solve this :-/
+Thanks.
+-Kamal
 
--- Steve
+------
+
+>From 7d113a745b53b4ff8fe7eac931bbab376d66993e Mon Sep 17 00:00:00 2001
+From: Zoltan Kiss <zoltan.kiss@citrix.com>
+Date: Mon, 11 Aug 2014 18:32:23 +0100
+Subject: xen-netfront: Fix handling packets on compound pages with
+ skb_linearize
+
+commit 97a6d1bb2b658ac85ed88205ccd1ab809899884d upstream.
+
+There is a long known problem with the netfront/netback interface: if the guest
+tries to send a packet which constitues more than MAX_SKB_FRAGS + 1 ring slots,
+it gets dropped. The reason is that netback maps these slots to a frag in the
+frags array, which is limited by size. Having so many slots can occur since
+compound pages were introduced, as the ring protocol slice them up into
+individual (non-compound) page aligned slots. The theoretical worst case
+scenario looks like this (note, skbs are limited to 64 Kb here):
+linear buffer: at most PAGE_SIZE - 17 * 2 bytes, overlapping page boundary,
+using 2 slots
+first 15 frags: 1 + PAGE_SIZE + 1 bytes long, first and last bytes are at the
+end and the beginning of a page, therefore they use 3 * 15 = 45 slots
+last 2 frags: 1 + 1 bytes, overlapping page boundary, 2 * 2 = 4 slots
+Although I don't think this 51 slots skb can really happen, we need a solution
+which can deal with every scenario. In real life there is only a few slots
+overdue, but usually it causes the TCP stream to be blocked, as the retry will
+most likely have the same buffer layout.
+This patch solves this problem by linearizing the packet. This is not the
+fastest way, and it can fail much easier as it tries to allocate a big linear
+area for the whole packet, but probably easier by an order of magnitude than
+anything else. Probably this code path is not touched very frequently anyway.
+
+Signed-off-by: Zoltan Kiss <zoltan.kiss@citrix.com>
+Cc: Wei Liu <wei.liu2@citrix.com>
+Cc: Ian Campbell <Ian.Campbell@citrix.com>
+Cc: Paul Durrant <paul.durrant@citrix.com>
+Cc: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: xen-devel@lists.xenproject.org
+Signed-off-by: David S. Miller <davem@davemloft.net>
+BugLink: http://bugs.launchpad.net/bugs/1317811
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+---
+ drivers/net/xen-netfront.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/xen-netfront.c b/drivers/net/xen-netfront.c
+index d58830b..a3ed8de 100644
+--- a/drivers/net/xen-netfront.c
++++ b/drivers/net/xen-netfront.c
+@@ -568,9 +568,10 @@ static int xennet_start_xmit(struct sk_buff *skb, struct net_device *dev)
+ 	slots = DIV_ROUND_UP(offset + len, PAGE_SIZE) +
+ 		xennet_count_skb_frag_slots(skb);
+ 	if (unlikely(slots > MAX_SKB_FRAGS + 1)) {
+-		net_alert_ratelimited(
+-			"xennet: skb rides the rocket: %d slots\n", slots);
+-		goto drop;
++		net_dbg_ratelimited("xennet: skb rides the rocket: %d slots, %d bytes\n",
++				    slots, skb->len);
++		if (skb_linearize(skb))
++			goto drop;
+ 	}
+
+ 	spin_lock_irqsave(&np->tx_lock, flags);
+--
+1.9.1
+
