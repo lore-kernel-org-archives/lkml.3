@@ -1,158 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752699AbbAUK20 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 05:28:26 -0500
-Received: from mail-wg0-f45.google.com ([74.125.82.45]:40890 "EHLO
-	mail-wg0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750813AbbAUK2R (ORCPT
+	id S1752917AbbAUKab (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 05:30:31 -0500
+Received: from smtp02.citrix.com ([66.165.176.63]:42992 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752747AbbAUKaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 05:28:17 -0500
-Message-ID: <54BF7F38.9000106@gmail.com>
-Date: Wed, 21 Jan 2015 11:28:08 +0100
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 21 Jan 2015 05:30:17 -0500
+X-IronPort-AV: E=Sophos;i="5.09,440,1418083200"; 
+   d="scan'208";a="220140379"
+Message-ID: <54BF7F95.70507@citrix.com>
+Date: Wed, 21 Jan 2015 10:29:41 +0000
+From: David Vrabel <david.vrabel@citrix.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-To: David Herrmann <dh.herrmann@gmail.com>
-CC: mtk.manpages@gmail.com, Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
-        Tom Gundersen <teg@jklm.no>, Jiri Kosina <jkosina@suse.cz>,
-        Andy Lutomirski <luto@amacapital.net>,
-        Linux API <linux-api@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Daniel Mack <daniel@zonque.or>, Djalal Harouni <tixxdz@opendz.org>,
-        Daniel Mack <daniel@zonque.org>, Johannes Stezenbach <js@sig21.net>
-Subject: Re: [PATCH 01/13] kdbus: add documentation
-References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>	<1421435777-25306-2-git-send-email-gregkh@linuxfoundation.org>	<54BE5DC8.70706@gmail.com> <CANq1E4SjfZOKqTsdkt519vKc1Poeah5McVJBb_spdHjbKv4=7g@mail.gmail.com>
-In-Reply-To: <CANq1E4SjfZOKqTsdkt519vKc1Poeah5McVJBb_spdHjbKv4=7g@mail.gmail.com>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
+To: Waiman Long <Waiman.Long@hp.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+CC: <linux-arch@vger.kernel.org>,
+        Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>,
+        <kvm@vger.kernel.org>, Scott J Norton <scott.norton@hp.com>,
+        <x86@kernel.org>, Paolo Bonzini <paolo.bonzini@gmail.com>,
+        <linux-kernel@vger.kernel.org>,
+        <virtualization@lists.linux-foundation.org>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, <xen-devel@lists.xenproject.org>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Douglas Hatch <doug.hatch@hp.com>
+Subject: Re: [Xen-devel] [PATCH v14 11/11] pvqspinlock, x86: Enable PV qspinlock
+ for XEN
+References: <1421784755-21945-1-git-send-email-Waiman.Long@hp.com> <1421784755-21945-12-git-send-email-Waiman.Long@hp.com>
+In-Reply-To: <1421784755-21945-12-git-send-email-Waiman.Long@hp.com>
+Content-Type: text/plain; charset="windows-1252"
+Content-Transfer-Encoding: 8bit
+X-DLP: MIA1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+On 20/01/15 20:12, Waiman Long wrote:
+> This patch adds the necessary XEN specific code to allow XEN to
+> support the CPU halting and kicking operations needed by the queue
+> spinlock PV code.
 
-On 01/20/2015 03:31 PM, David Herrmann wrote:
-> Hi Michael
-> 
-> On Tue, Jan 20, 2015 at 2:53 PM, Michael Kerrisk (man-pages)
-> <mtk.manpages@gmail.com> wrote:
->> On 01/16/2015 08:16 PM, Greg Kroah-Hartman wrote:
->>> From: Daniel Mack <daniel@zonque.org>
->>>
->>> kdbus is a system for low-latency, low-overhead, easy to use
->>> interprocess communication (IPC).
->>>
->>> The interface to all functions in this driver is implemented via ioctls
->>> on files exposed through a filesystem called 'kdbusfs'. The default
->>> mount point of kdbusfs is /sys/fs/kdbus. This patch adds detailed
->>> documentation about the kernel level API design.
->>
->> I have some details feedback on the contents of this file, and some
->> bigger questions. I'll split them out into separate mails.
->>
->> So here, the bigger, general questions to start with. I've arrived late
->> to this, so sorry if they've already been discussed, but the answers to
->> some of the questions should actually be in this file, I would have
->> expected.
->>
->> This is an enormous and complex API. Why is the API ioctl() based,
->> rather than system-call-based? Have we learned nothing from the hydra
->> that the futex() multiplexing syscall became? (And kdbus is an order
->> of magnitude more complex, by the look of things.) At the very least,
->> a *good* justification of why the API is ioctl()-based should be part
->> of this documentation file.
->>
->> An observation: The documentation below is substantial, but this API is
->> enormous, so the documentation still feels rather thin. What would
->> really help would be some example code in the doc.
->>
->> And on the subject of code examples... Are there any (prototype)
->> working user-space applications that exercise the current kdbus
->> implementation? That is, can I install these kdbus patches, and
->> then find a simple example application somewhere that does
->> something to exercise kdbus?
-> 
-> If you run a 3.18 kernel, you can install kdbus.ko from our repository
-> and boot a full Fedora system running Gnome3 with kdbus, given that
-> you compiled systemd with --enable-kdbus (which is still
-> experimental). No legacy dbus1 daemon is running. Instead, we have a
-> bus-proxy that converts classic dbus1 to kdbus, so all
-> bus-communication runs on kdbus.
+Xen is a word, please don't capitalize it.
 
-Good to hear.  I think that some info like this should go out in 
-the "00/" covering mails for future patch revisions, so that people
-can get some sense of the testing that has been done.
+> +void xen_lock_stats(int stat_types)
+> +{
+> +	if (stat_types & PV_LOCKSTAT_WAKE_KICKED)
+> +		add_smp(&wake_kick_stats, 1);
+> +	if (stat_types & PV_LOCKSTAT_WAKE_SPURIOUS)
+> +		add_smp(&wake_spur_stats, 1);
+> +	if (stat_types & PV_LOCKSTAT_KICK_NOHALT)
+> +		add_smp(&kick_nohlt_stats, 1);
+> +	if (stat_types & PV_LOCKSTAT_HALT_QHEAD)
+> +		add_smp(&halt_qhead_stats, 1);
+> +	if (stat_types & PV_LOCKSTAT_HALT_QNODE)
+> +		add_smp(&halt_qnode_stats, 1);
+> +	if (stat_types & PV_LOCKSTAT_HALT_ABORT)
+> +		add_smp(&halt_abort_stats, 1);
+> +}
+> +PV_CALLEE_SAVE_REGS_THUNK(xen_lock_stats);
 
->> And then: is there any substantial real-world application (e.g., a
->> full D-Bus port) that is being developed in tandem with this kernel
->> side patch? (I don't mean a user-space library; I mean a seriously
->> large application.) This is an incredibly complex API whose
->> failings are only going to become evident through real-world use.
->> Solidifying an API in the kernel and then discovering the API
->> problems later when writing real-world applications would make for
->> a sad story. A story something like that of inotify, an API which
->> is an order of magnitude less complex than kdbus. (I can't help but
->> feel that many of inotify problems that I discuss at
->> https://lwn.net/Articles/605128/ might have been fixed or mitigated
->> if a few real-world applications had been implemented before the
->> API  was set in stone.)
-> 
-> I think running a whole Gnome3 stack counts as "substantial real-world
-> application", right? 
+This is not inlined and the 6 test-and-branch cannot be optimized away.
 
-Yes, I'll give you that ;-).
+> +/*
+> + * Halt the current CPU & release it back to the host
+> + * Return 0 if halted, -1 otherwise.
+> + */
+> +int xen_halt_cpu(u8 *byte, u8 val)
+> +{
+> +	int irq = __this_cpu_read(lock_kicker_irq);
+> +	unsigned long flags;
+> +	u64 start;
+> +
+> +	/* If kicker interrupts not initialized yet, just spin */
+> +	if (irq == -1)
+> +		return -1;
+> +
+> +	/*
+> +	 * Make sure an interrupt handler can't upset things in a
+> +	 * partially setup state.
+> +	 */
+> +	local_irq_save(flags);
+> +	start = spin_time_start();
+> +
+> +	/* clear pending */
+> +	xen_clear_irq_pending(irq);
+> +
+> +	/* Allow interrupts while blocked */
+> +	local_irq_restore(flags);
 
->  Sure, it's a dbus1-to-kdbus layer, but all the
-> systemd tools use kdbus natively and it works just fine. In fact, we
-> all run kdbus on our main-systems every day.
-> 
-> We've spent over a year fixing races and API misdesigns, we've talked
-> to other toolkit developers (glib, qt, ..) and made sure we're
-> backwards compatible to dbus1. I don't think the API is perfect,
-> everyone makes mistakes. But with bus-proxy and systemd we have two
-> huge users of kdbus that put a lot of pressure on API design.
+It's not clear what "partially setup state" is being protected here.
+xen_clear_irq_pending() is an atomic bit clear.
 
-I'll say more about that in another mail in a moment. I'm not enthusiastic
-about the API.
+I think you can drop the irq save/restore here.
 
->>> +For a kdbus specific userspace library implementation please refer to:
->>> +  http://cgit.freedesktop.org/systemd/systemd/tree/src/systemd/sd-bus.h
->>
->> Is this library intended just for systemd? More generally, is there an
->> intention to provide a general purpose library API for kdbus? Or is the
->> intention that each application will roll a library suitable to its
->> needs? I think an answer to that question would be useful in this
->> Documentation file.
-> 
-> kdbus is in no way bound to systemd. There are ongoing efforts to port
-> glib and qt to kdbus natively. The API is pretty simple 
-                                 ^^^^^^^^^^^^^^^^^^^^^^^^
-I think you and I must have quite different definitions of "simple"...
-(For more on this point, see my reply to Daniel in a moment.)
+> +	/*
+> +	 * Don't halt if the content of the given byte address differs from
+> +	 * the expected value. A read memory barrier is added to make sure that
+> +	 * the latest value of the byte address is fetched.
+> +	 */
+> +	smp_rmb();
 
-> and I don't
-> see how a libkdbus would simplify things. In fact, even our tests only
-> have slim wrappers around the ioctls to simplify error-handling in
-> test-scenarios.
+The atomic bit clear in xen_clear_irq_pending() acts as a full memory
+barrier.  I don't think you need an additional memory barrier here, only
+a compiler one.  I suggest using READ_ONCE().
 
-Again, the above info would be useful in the Documentation file.
+> +	if (*byte != val) {
+> +		xen_lock_stats(PV_LOCKSTAT_HALT_ABORT);
+> +		return -1;
+> +	}
+> +	/*
+> +	 * If an interrupt happens here, it will leave the wakeup irq
+> +	 * pending, which will cause xen_poll_irq() to return
+> +	 * immediately.
+> +	 */
+> +
+> +	/* Block until irq becomes pending (or perhaps a spurious wakeup) */
+> +	xen_poll_irq(irq);
+> +	spin_time_accum_blocked(start);
+> +	return 0;
+> +}
+> +PV_CALLEE_SAVE_REGS_THUNK(xen_halt_cpu);
+> +
+> +#endif /* CONFIG_QUEUE_SPINLOCK */
+> +
+>  static irqreturn_t dummy_handler(int irq, void *dev_id)
+>  {
+>  	BUG();
 
-> Note that most of the toolkit work is on the marshaling level, which
-> is independent of kdbus. kdbus just provides the transport level. DBus
-> is just one, yet significant, application-layer on top of kdbus. Our
-> test-cases use kdbus exclusively to transport raw byte streams.
+David
 
-Okay. Thanks for the info.
-
-Cheers,
-
-Michael
-
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
