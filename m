@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751895AbbAUIR6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 03:17:58 -0500
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:39592 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750805AbbAUIRw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 03:17:52 -0500
-Date: Wed, 21 Jan 2015 09:17:48 +0100
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
-        Samuel Ortiz <sameo@linux.intel.com>, Mark Brown <broonie@kernel.org>,
+	id S1751966AbbAUITJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 03:19:09 -0500
+Received: from mga09.intel.com ([134.134.136.24]:50311 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750805AbbAUITG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 03:19:06 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="443080050"
+From: "Zhang, Yang Z" <yang.z.zhang@intel.com>
+To: Wincy Van <fanwenyi0529@gmail.com>, Paolo Bonzini <pbonzini@redhat.com>,
+        "gleb@kernel.org" <gleb@kernel.org>
+CC: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Rob Herring <robh+dt@kernel.org>,
-        Matthias Brugger <matthias.bgg@gmail.com>,
-        Eddie Huang <eddie.huang@mediatek.com>,
-        Lee Jones <lee.jones@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 2/8] soc: Add MediaTek pericfg controller support
-Message-ID: <20150121081748.GC12209@pengutronix.de>
-References: <1421747231-554-1-git-send-email-s.hauer@pengutronix.de>
- <1421747231-554-3-git-send-email-s.hauer@pengutronix.de>
- <20150120161555.GH15924@leverpostej>
+        Wanpeng Li <wanpeng.li@linux.intel.com>,
+        Jan Kiszka <jan.kiszka@web.de>
+Subject: RE: [PATCH 1/5] KVM: nVMX: Make nested control MSRs per-cpu.
+Thread-Topic: [PATCH 1/5] KVM: nVMX: Make nested control MSRs per-cpu.
+Thread-Index: AQHQMVBrZc6TnJUyfk+80Qu1n+PyapzKQVSg
+Date: Wed, 21 Jan 2015 08:18:57 +0000
+Message-ID: <A9667DDFB95DB7438FA9D7D576C3D87E0AC262EB@SHSMSX104.ccr.corp.intel.com>
+References: <CACzj_yVKUUvbke3XG7cHCQD7hr8fPsRbH1k_3V8L25M3-Y6sNQ@mail.gmail.com>
+In-Reply-To: <CACzj_yVKUUvbke3XG7cHCQD7hr8fPsRbH1k_3V8L25M3-Y6sNQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.239.127.40]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150120161555.GH15924@leverpostej>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 09:15:06 up 97 days, 19:28, 116 users,  load average: 0.17, 0.06,
- 0.06
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0L8JDoC018192
 
-On Tue, Jan 20, 2015 at 04:15:55PM +0000, Mark Rutland wrote:
-> > +
-> > +	pericfg: pericfg@10003000 {
-> > +		#reset-cells = <1>;
-> > +		#clock-cells = <1>;
-> > +		compatible = "mediatek,mt8135-pericfg";
-> > +		reg = <0 0x10003000 0 0x1000>;
-> > +	};
-> 
-> This looks identical to the infracfg (same address too). Is that
-> deliberate?
+Wincy Van wrote on 2015-01-16:
+> To enable nested apicv support, we need per-cpu vmx control MSRs:
+>   1. If in-kernel irqchip is enabled, we can enable nested
+>      posted interrupt, we should set posted intr bit in the
+>      nested_vmx_pinbased_ctls_high. 2. If in-kernel irqchip is disabled,
+>      we can not enable nested posted interrupt, the posted intr bit in
+>      the nested_vmx_pinbased_ctls_high will be cleared.
+> Since there would be different settings about in-kernel irqchip
+> between VMs, different nested control MSRs are needed.
 
-Both controllers indeed control clocks and resets, but with a different
-register layout, so the nodes really look identical. I'll change the
-address to the real address of the MT8135 pericfg though to make the
-example more realistic.
+I'd suggest you to check irqchip_in_kernel() instead moving the whole ctrl msr to per vcpu.
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Best regards,
+Yang
+
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
