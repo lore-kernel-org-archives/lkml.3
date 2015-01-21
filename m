@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022AbbAUXpB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 18:45:01 -0500
+	id S1754475AbbAUXqd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 18:46:33 -0500
 Received: from mailout4.samsung.com ([203.254.224.34]:38442 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753277AbbAUXom (ORCPT
+	with ESMTP id S1753593AbbAUXoo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 18:44:42 -0500
-X-AuditID: cbfee690-f79ab6d0000046f7-21-54c039e8e130
+	Wed, 21 Jan 2015 18:44:44 -0500
+X-AuditID: cbfee690-f79ab6d0000046f7-22-54c039e8ff8f
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: s.nawrocki@samsung.com, tomasz.figa@gmail.com, mturquette@linaro.org
 Cc: kgene@kernel.org, pankaj.dubey@samsung.com, inki.dae@samsung.com,
         chanho61.park@samsung.com, sw0312.kim@samsung.com,
         cw00.choi@samsung.com, linux-samsung-soc@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 3/9] clk: samsung: exynos5433: Add clocks for CMU_MSCL domain
-Date: Thu, 22 Jan 2015 08:44:32 +0900
-Message-id: <1421883878-4980-4-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCH 4/9] clk: samsung: exynos5433: Add clocks for CMU_MFC domain
+Date: Thu, 22 Jan 2015 08:44:33 +0900
+Message-id: <1421883878-4980-5-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.5.5
 In-reply-to: <1421883878-4980-1-git-send-email-cw00.choi@samsung.com>
 References: <1421883878-4980-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDLMWRmVeSWpSXmKPExsWyRsSkRPeF5YEQgx9NwhaX92tbXP/ynNVi
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsWyRsSkUPeF5YEQg4Yb4haX92tbXP/ynNVi
 	0v0JLBb9j18zW1zeNYfNYsb5fUwWTydcZLNYtPULu8XhN+2sFjMmv2SzWLXrD6MDt8fOWXfZ
-	PTat6mTzuHNtD5tH35ZVjB6fN8kFsEZx2aSk5mSWpRbp2yVwZVz98oW1oC2p4mjfEcYGxvXB
-	XYwcHBICJhJLlkV0MXICmWISF+6tZwOxhQSWMko8XOMEETeReHn6DlMXIxdQfDqjxO9Da5gh
-	ipqYJI5cMQOx2QS0JPa/uAHWLCLgIXH62U0WkAZmgcuMEqs7T4E1CAv4Svy/v5EVZDGLgKrE
-	7PuhIGFeAReJng2r2CCWKUgsWz6TFcTmFHCVaO6cyAKxy0Vi4frjYEdICOxjl3j7/hfYTBYB
-	AYlvkw+xQDwjK7HpADPEHEmJgytusExgFF7AyLCKUTS1ILmgOCm9yESvODG3uDQvXS85P3cT
-	IzASTv97NmEH470D1ocYBTgYlXh4XyjuDxFiTSwrrsw9xGgKtGEis5Rocj4w3vJK4g2NzYws
-	TE1MjY3MLc2UxHlfS/0MFhJITyxJzU5NLUgtii8qzUktPsTIxMEp1cAYaP5zu5LZ7Qsrw4Kv
-	TClqPPhJUeOO6f2Va2PXG/RO1M86sfWgpr/Xly0LP7I1SDl5V65rmiqy0fX31vQTn+b0laW4
-	ml1x3BYhdOyvUdTF7S/n9Ha844ldph3FziiSKbdWavWGjeKy6j+DW0y+nUvIPqx0RYa9RCAh
-	Y4fbNzYnXRfWT6mLjgYpsRRnJBpqMRcVJwIAcL4NcH8CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBIsWRmVeSWpSXmKPExsVy+t9jQd0XlgdCDLrfsFtc3q9tcf3Lc1aL
-	SfcnsFj0P37NbHF51xw2ixnn9zFZPJ1wkc1i0dYv7BaH37SzWsyY/JLNYtWuP4wO3B47Z91l
-	99i0qpPN4861PWwefVtWMXp83iQXwBrVwGiTkZqYklqkkJqXnJ+SmZduq+QdHO8cb2pmYKhr
-	aGlhrqSQl5ibaqvk4hOg65aZA3SakkJZYk4pUCggsbhYSd8O04TQEDddC5jGCF3fkCC4HiMD
-	NJCwhjHj6pcvrAVtSRVH+44wNjCuD+5i5OSQEDCReHn6DhOELSZx4d56ti5GLg4hgemMEr8P
-	rWEGSQgJNDFJHLliBmKzCWhJ7H9xgw3EFhHwkDj97CYLSAOzwGVGidWdp8AahAV8Jf7f38ja
-	xcjBwSKgKjH7fihImFfARaJnwyo2iGUKEsuWz2QFsTkFXCWaOyeyQOxykVi4/jjTBEbeBYwM
-	qxhFUwuSC4qT0nMN9YoTc4tL89L1kvNzNzGCY+2Z1A7GlQ0WhxgFOBiVeHhfKO4PEWJNLCuu
-	zD3EKMHBrCTC66FxIESINyWxsiq1KD++qDQntfgQoynQUROZpUST84FpIK8k3tDYxMzI0sjc
-	0MLI2FxJnFfJvi1ESCA9sSQ1OzW1ILUIpo+Jg1OqgbGAv198hnXChubzi9KKHuqeEdnAtNa7
-	YLOB3c+4yydN7twIZby78XqNjv38pfWPF3bmzz319O+a4Pmnl32/NknS0fbYQsn9k5MbSphv
-	vD019cwSDf4V37+bTTzRMFVZmn/LntAiD/nNC8I23+haIfY7WTJ8g3k+s/Ek82fckW7Lvl1h
-	/5LBtHiaEktxRqKhFnNRcSIAFe3d58sCAAA=
+	PTat6mTzuHNtD5tH35ZVjB6fN8kFsEZx2aSk5mSWpRbp2yVwZWy89o29YJFtxebnm1kbGB8a
+	dzFyckgImEg86z3PAmGLSVy4t56ti5GLQ0hgKaNE8/u/7DBFty98YIVITGeUeDKjgw0kISTQ
+	xCRx5IoZiM0moCWx/8UNsLiIgIfE6Wc3WUAamAUuM0qs7jzFDJIQFvCReHT7G9g6FgFViW3v
+	joI18Aq4SLz88xPqDAWJZctnsoLYnAKuEs2dE1kglrlILFx/nAlkqITALnaJLzu7mSEGCUh8
+	m3wIqIgDKCErsekAM8QcSYmDK26wTGAUXsDIsIpRNLUguaA4Kb3IRK84Mbe4NC9dLzk/dxMj
+	MB5O/3s2YQfjvQPWhxgFOBiVeHhfKO4PEWJNLCuuzD3EaAq0YSKzlGhyPjDq8kriDY3NjCxM
+	TUyNjcwtzZTEeV9L/QwWEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwOhi86SctdumWmDKsksP
+	92+NSNxx8PgWFjmGz8YtpgdkPP+x3is57LXOnaPKOdHukR7Ly4TNVwyXnLN8cZNHyUPv7iLj
+	XPPKdN7SpoakyvuzpIv+M8V0BtWX2vgKGd4+G/qCL8xx4447CUsCw5NaYn5kq/i8iytacsbs
+	e7XpNb7k/L8B6wLClFiKMxINtZiLihMB9XpCLIICAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJIsWRmVeSWpSXmKPExsVy+t9jQd0XlgdCDJ4s5bO4vF/b4vqX56wW
+	k+5PYLHof/ya2eLyrjlsFjPO72OyeDrhIpvFoq1f2C0Ov2lntZgx+SWbxapdfxgduD12zrrL
+	7rFpVSebx51re9g8+rasYvT4vEkugDWqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX
+	0NLCXEkhLzE31VbJxSdA1y0zB+g0JYWyxJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+IUFwPUYG
+	aCBhDWPGxmvf2AsW2VZsfr6ZtYHxoXEXIyeHhICJxO0LH1ghbDGJC/fWs3UxcnEICUxnlHgy
+	o4MNJCEk0MQkceSKGYjNJqAlsf/FDbC4iICHxOlnN1lAGpgFLjNKrO48xQySEBbwkXh0+xsL
+	iM0ioCqx7d1RsAZeAReJl39+skBsU5BYtnwm2GZOAVeJ5s6JLBDLXCQWrj/ONIGRdwEjwypG
+	0dSC5ILipPRcI73ixNzi0rx0veT83E2M4Gh7Jr2DcVWDxSFGAQ5GJR7eF4r7Q4RYE8uKK3MP
+	MUpwMCuJ8HpoHAgR4k1JrKxKLcqPLyrNSS0+xGgKdNVEZinR5HxgIsgriTc0NjEzsjQyN7Qw
+	MjZXEudVsm8LERJITyxJzU5NLUgtgulj4uCUamAUPK3TsMu3csWE3Sv+9izSlT5ZKlBs0Sax
+	lmnWXAXvcJlpobMf5IgzhR6+bxR69ZH8NS1FhWbXj0rbF173njt9huI9Z47D/+bG3dmT8fBH
+	vP2RjHU+RXwSD9V2ab778Ggfh4duMLeF/bR3e26zvo/M9FpY+SyB5X/HuUXb9cumrvexnnls
+	5dd1SizFGYmGWsxFxYkAw6NkP8wCAAA=
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -52,330 +52,214 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the mux/divider/gate clocks for CMU_MSCL domain which
-generates the clocks for M2M (Memory to Memory) scaler, JPEG IPs.
+This patch adds the mux/divider/gate clocks for CMU_MFC domain which
+generates the clocks for MFC(Multi-Format Codec) IP.
 
 Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
 Cc: Tomasz Figa <tomasz.figa@gmail.com>
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 Acked-by: Inki Dae <inki.dae@samsung.com>
 ---
- .../devicetree/bindings/clock/exynos5433-clock.txt |   9 +
- drivers/clk/samsung/clk-exynos5433.c               | 185 +++++++++++++++++++++
- include/dt-bindings/clock/exynos5433.h             |  41 ++++-
- 3 files changed, 234 insertions(+), 1 deletion(-)
+ .../devicetree/bindings/clock/exynos5433-clock.txt |   7 ++
+ drivers/clk/samsung/clk-exynos5433.c               | 113 +++++++++++++++++++++
+ include/dt-bindings/clock/exynos5433.h             |  27 ++++-
+ 3 files changed, 146 insertions(+), 1 deletion(-)
 
 diff --git a/Documentation/devicetree/bindings/clock/exynos5433-clock.txt b/Documentation/devicetree/bindings/clock/exynos5433-clock.txt
-index 414e32c..790d93b 100644
+index 790d93b..d3deaaf 100644
 --- a/Documentation/devicetree/bindings/clock/exynos5433-clock.txt
 +++ b/Documentation/devicetree/bindings/clock/exynos5433-clock.txt
-@@ -37,6 +37,8 @@ Required Properties:
-   - "samsung,exynos5433-cmu-atlas" - clock controller compatible for CMU_ATLAS
-     which generates clocks for Cortex-A57 Quad-core processor, CoreSight and
+@@ -39,6 +39,8 @@ Required Properties:
      L2 cache controller.
-+  - "samsung,exynos5433-cmu-mscl" - clock controller compatible for CMU_MSCL
-+    which generates clocks for M2M (Memory to Memory) scaler and JPEG IPs.
+   - "samsung,exynos5433-cmu-mscl" - clock controller compatible for CMU_MSCL
+     which generates clocks for M2M (Memory to Memory) scaler and JPEG IPs.
++  - "samsung,exynos5433-cmu-mfc"  - clock controller compatible for CMU_MFC
++    which generates clocks for MFC(Multi-Format Codec) IP.
  
  - reg: physical base address of the controller and length of memory mapped
    region.
-@@ -148,6 +150,13 @@ Example 1: Examples of clock controller nodes are listed below.
+@@ -156,6 +158,11 @@ Example 1: Examples of clock controller nodes are listed below.
  		#clock-cells = <1>;
  	};
  
-+	cmu_mscl: clock-controller@105d0000 {
-+		compatible = "samsung,exynos5433-cmu-mscl";
-+		reg = <0x105d0000 0x0b10>;
++	cmu_mfc: clock-controller@15280000 {
++		compatible = "samsung,exynos5433-cmu-mfc";
++		reg = <0x15280000 0x0b08>;
 +		#clock-cells = <1>;
 +	};
-+
-+
+ 
  Example 2: UART controller node that consumes the clock generated by the clock
  	   controller.
- 
 diff --git a/drivers/clk/samsung/clk-exynos5433.c b/drivers/clk/samsung/clk-exynos5433.c
-index 089c98f..60ac4c7 100644
+index 60ac4c7..b64f703 100644
 --- a/drivers/clk/samsung/clk-exynos5433.c
 +++ b/drivers/clk/samsung/clk-exynos5433.c
-@@ -419,6 +419,8 @@ static struct samsung_div_clock top_div_clks[] __initdata = {
- 			DIV_TOP1, 0, 3),
- 
- 	/* DIV_TOP2 */
-+	DIV(CLK_DIV_ACLK_MSCL_400, "div_aclk_mscl_400", "mout_aclk_mscl_400_b",
-+			DIV_TOP2, 4, 3),
- 	DIV(CLK_DIV_ACLK_FSYS_200, "div_aclk_fsys_200", "mout_bus_pll_user",
- 			DIV_TOP2, 0, 3),
- 
-@@ -446,6 +448,10 @@ static struct samsung_div_clock top_div_clks[] __initdata = {
- 	DIV(CLK_DIV_ACLK_BUS1_400, "div_aclk_bus1_400", "mout_bus_pll_user",
- 			DIV_TOP4, 0, 3),
- 
-+	/* DIV_TOP_MSCL */
-+	DIV(CLK_DIV_SCLK_JPEG, "div_sclk_jpeg", "mout_sclk_jpeg_c",
-+			DIV_TOP_MSCL, 0, 4),
-+
- 	/* DIV_TOP_FSYS0 */
- 	DIV(CLK_DIV_SCLK_MMC1_B, "div_sclk_mmc1_b", "div_sclk_mmc1_a",
- 			DIV_TOP_FSYS0, 16, 8),
-@@ -542,6 +548,9 @@ static struct samsung_gate_clock top_gate_clks[] __initdata = {
- 	GATE(CLK_ACLK_PERIS_66, "aclk_peris_66", "div_aclk_peris_66_b",
- 			ENABLE_ACLK_TOP, 21,
+@@ -560,6 +560,9 @@ static struct samsung_gate_clock top_gate_clks[] __initdata = {
+ 	GATE(CLK_ACLK_GSCL_333, "aclk_gscl_333", "div_aclk_gscl_333",
+ 			ENABLE_ACLK_TOP, 14,
  			CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_MSCL_400, "aclk_mscl_400", "div_aclk_mscl_400",
-+			ENABLE_ACLK_TOP, 19,
++	GATE(CLK_ACLK_MFC_400, "aclk_mfc_400", "div_aclk_mfc_400",
++			ENABLE_ACLK_TOP, 3,
 +			CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED, 0),
- 	GATE(CLK_ACLK_FSYS_200, "aclk_fsys_200", "div_aclk_fsys_200",
- 			ENABLE_ACLK_TOP, 18,
+ 	GATE(CLK_ACLK_G2D_266, "aclk_g2d_266", "div_aclk_g2d_266",
+ 			ENABLE_ACLK_TOP, 2,
  			CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED, 0),
-@@ -558,6 +567,10 @@ static struct samsung_gate_clock top_gate_clks[] __initdata = {
- 			ENABLE_ACLK_TOP, 0,
- 			CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED, 0),
- 
-+	/* ENABLE_SCLK_TOP_MSCL */
-+	GATE(CLK_SCLK_JPEG_MSCL, "sclk_jpeg_mscl", "div_sclk_jpeg",
-+			ENABLE_SCLK_TOP_MSCL, 0, 0, 0),
-+
- 	/* ENABLE_SCLK_TOP_FSYS */
- 	GATE(CLK_SCLK_PCIE_100_FSYS, "sclk_pcie_100_fsys", "div_sclk_pcie_100",
- 			ENABLE_SCLK_TOP_FSYS, 7, 0, 0),
-@@ -3805,3 +3818,175 @@ static void __init exynos5433_cmu_atlas_init(struct device_node *np)
+@@ -3990,3 +3993,113 @@ static void __init exynos5433_cmu_mscl_init(struct device_node *np)
  }
- CLK_OF_DECLARE(exynos5433_cmu_atlas, "samsung,exynos5433-cmu-atlas",
- 		exynos5433_cmu_atlas_init);
+ CLK_OF_DECLARE(exynos5433_cmu_mscl, "samsung,exynos5433-cmu-mscl",
+ 		exynos5433_cmu_mscl_init);
 +
 +/*
-+ * Register offset definitions for CMU_MSCL
++ * Register offset definitions for CMU_MFC
 + */
-+#define MUX_SEL_MSCL0					0x0200
-+#define MUX_SEL_MSCL1					0x0204
-+#define MUX_ENABLE_MSCL0				0x0300
-+#define MUX_ENABLE_MSCL1				0x0304
-+#define MUX_STAT_MSCL0					0x0400
-+#define MUX_STAT_MSCL1					0x0404
-+#define DIV_MSCL					0x0600
-+#define DIV_STAT_MSCL					0x0700
-+#define ENABLE_ACLK_MSCL				0x0800
-+#define ENABLE_ACLK_MSCL_SECURE_SMMU_M2MSCALER0		0x0804
-+#define ENABLE_ACLK_MSCL_SECURE_SMMU_M2MSCALER1		0x0808
-+#define ENABLE_ACLK_MSCL_SECURE_SMMU_JPEG		0x080c
-+#define ENABLE_PCLK_MSCL				0x0900
-+#define ENABLE_PCLK_MSCL_SECURE_SMMU_M2MSCALER0		0x0904
-+#define ENABLE_PCLK_MSCL_SECURE_SMMU_M2MSCALER1		0x0908
-+#define ENABLE_PCLK_MSCL_SECURE_SMMU_JPEG		0x000c
-+#define ENABLE_SCLK_MSCL				0x0a00
-+#define ENABLE_IP_MSCL0					0x0b00
-+#define ENABLE_IP_MSCL1					0x0b04
-+#define ENABLE_IP_MSCL_SECURE_SMMU_M2MSCALER0		0x0b08
-+#define ENABLE_IP_MSCL_SECURE_SMMU_M2MSCALER1		0x0b0c
-+#define ENABLE_IP_MSCL_SECURE_SMMU_JPEG			0x0b10
++#define MUX_SEL_MFC				0x0200
++#define MUX_ENABLE_MFC				0x0300
++#define MUX_STAT_MFC				0x0400
++#define DIV_MFC					0x0600
++#define DIV_STAT_MFC				0x0700
++#define ENABLE_ACLK_MFC				0x0800
++#define ENABLE_ACLK_MFC_SECURE_SMMU_MFC		0x0804
++#define ENABLE_PCLK_MFC				0x0900
++#define ENABLE_PCLK_MFC_SECURE_SMMU_MFC		0x0904
++#define ENABLE_IP_MFC0				0x0b00
++#define ENABLE_IP_MFC1				0x0b04
++#define ENABLE_IP_MFC_SECURE_SMMU_MFC		0x0b08
 +
-+static unsigned long mscl_clk_regs[] __initdata = {
-+	MUX_SEL_MSCL0,
-+	MUX_SEL_MSCL1,
-+	MUX_ENABLE_MSCL0,
-+	MUX_ENABLE_MSCL1,
-+	MUX_STAT_MSCL0,
-+	MUX_STAT_MSCL1,
-+	DIV_MSCL,
-+	DIV_STAT_MSCL,
-+	ENABLE_ACLK_MSCL,
-+	ENABLE_ACLK_MSCL_SECURE_SMMU_M2MSCALER0,
-+	ENABLE_ACLK_MSCL_SECURE_SMMU_M2MSCALER1,
-+	ENABLE_ACLK_MSCL_SECURE_SMMU_JPEG,
-+	ENABLE_PCLK_MSCL,
-+	ENABLE_PCLK_MSCL_SECURE_SMMU_M2MSCALER0,
-+	ENABLE_PCLK_MSCL_SECURE_SMMU_M2MSCALER1,
-+	ENABLE_PCLK_MSCL_SECURE_SMMU_JPEG,
-+	ENABLE_SCLK_MSCL,
-+	ENABLE_IP_MSCL0,
-+	ENABLE_IP_MSCL1,
-+	ENABLE_IP_MSCL_SECURE_SMMU_M2MSCALER0,
-+	ENABLE_IP_MSCL_SECURE_SMMU_M2MSCALER1,
-+	ENABLE_IP_MSCL_SECURE_SMMU_JPEG,
++static unsigned long mfc_clk_regs[] __initdata = {
++	MUX_SEL_MFC,
++	MUX_ENABLE_MFC,
++	MUX_STAT_MFC,
++	DIV_MFC,
++	DIV_STAT_MFC,
++	ENABLE_ACLK_MFC,
++	ENABLE_ACLK_MFC_SECURE_SMMU_MFC,
++	ENABLE_PCLK_MFC,
++	ENABLE_PCLK_MFC_SECURE_SMMU_MFC,
++	ENABLE_IP_MFC0,
++	ENABLE_IP_MFC1,
++	ENABLE_IP_MFC_SECURE_SMMU_MFC,
 +};
 +
-+/* list of all parent clock list */
-+PNAME(mout_sclk_jpeg_user_p)		= { "fin_pll", "sclk_jpeg_mscl", };
-+PNAME(mout_aclk_mscl_400_user_p)	= { "fin_pll", "aclk_mscl_400", };
-+PNAME(mout_sclk_jpeg_p)			= { "mout_sclk_jpeg_user",
-+					"mout_aclk_mscl_400_user", };
++PNAME(mout_aclk_mfc_400_user_p)		= { "fin_pll", "aclk_mfc_400", };
 +
-+static struct samsung_mux_clock mscl_mux_clks[] __initdata = {
-+	/* MUX_SEL_MSCL0 */
-+	MUX(CLK_MOUT_SCLK_JPEG_USER, "mout_sclk_jpeg_user",
-+			mout_sclk_jpeg_user_p, MUX_SEL_MSCL0, 4, 1),
-+	MUX(CLK_MOUT_ACLK_MSCL_400_USER, "mout_aclk_mscl_400_user",
-+			mout_aclk_mscl_400_user_p, MUX_SEL_MSCL0, 0, 1),
-+
-+	/* MUX_SEL_MSCL1 */
-+	MUX(CLK_MOUT_SCLK_JPEG, "mout_sclk_jpeg", mout_sclk_jpeg_p,
-+			MUX_SEL_MSCL1, 0, 1),
++static struct samsung_mux_clock mfc_mux_clks[] __initdata = {
++	/* MUX_SEL_MFC */
++	MUX(CLK_MOUT_ACLK_MFC_400_USER, "mout_aclk_mfc_400_user",
++			mout_aclk_mfc_400_user_p, MUX_SEL_MFC, 0, 0),
 +};
 +
-+static struct samsung_div_clock mscl_div_clks[] __initdata = {
-+	/* DIV_MSCL */
-+	DIV(CLK_DIV_PCLK_MSCL, "div_pclk_mscl", "mout_aclk_mscl_400_user",
-+			DIV_MSCL, 0, 3),
++static struct samsung_div_clock mfc_div_clks[] __initdata = {
++	/* DIV_MFC */
++	DIV(CLK_DIV_PCLK_MFC, "div_pclk_mfc", "mout_aclk_mfc_400_user",
++			DIV_MFC, 0, 2),
 +};
 +
-+static struct samsung_gate_clock mscl_gate_clks[] __initdata = {
-+	/* ENABLE_ACLK_MSCL */
-+	GATE(CLK_ACLK_BTS_JPEG, "aclk_bts_jpeg", "mout_aclk_mscl_400_user",
-+			ENABLE_ACLK_MSCL, 9, 0, 0),
-+	GATE(CLK_ACLK_BTS_M2MSCALER1, "aclk_bts_m2mscaler1",
-+			"mout_aclk_mscl_400_user", ENABLE_ACLK_MSCL, 8, 0, 0),
-+	GATE(CLK_ACLK_BTS_M2MSCALER0, "aclk_bts_m2mscaler0",
-+			"mout_aclk_mscl_400_user", ENABLE_ACLK_MSCL, 7, 0, 0),
-+	GATE(CLK_ACLK_AHB2APB_MSCL0P, "aclk_abh2apb_mscl0p", "div_pclk_mscl",
-+			ENABLE_ACLK_MSCL, 6, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_XIU_MSCLX, "aclk_xiu_msclx", "mout_aclk_mscl_400_user",
-+			ENABLE_ACLK_MSCL, 5, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_MSCLNP_100, "aclk_msclnp_100", "div_pclk_mscl",
-+			ENABLE_ACLK_MSCL, 4, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_MSCLND_400, "aclk_msclnd_400", "mout_aclk_mscl_400_user",
-+			ENABLE_ACLK_MSCL, 3, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_JPEG, "aclk_jpeg", "mout_aclk_mscl_400_user",
-+			ENABLE_ACLK_MSCL, 2, 0, 0),
-+	GATE(CLK_ACLK_M2MSCALER1, "aclk_m2mscaler1", "mout_aclk_mscl_400_user",
-+			ENABLE_ACLK_MSCL, 1, 0, 0),
-+	GATE(CLK_ACLK_M2MSCALER0, "aclk_m2mscaler0", "mout_aclk_mscl_400_user",
-+			ENABLE_ACLK_MSCL, 0, 0, 0),
++static struct samsung_gate_clock mfc_gate_clks[] __initdata = {
++	/* ENABLE_ACLK_MFC */
++	GATE(CLK_ACLK_BTS_MFC_1, "aclk_bts_mfc_1", "mout_aclk_mfc_400_user",
++			ENABLE_ACLK_MFC, 6, 0, 0),
++	GATE(CLK_ACLK_BTS_MFC_0, "aclk_bts_mfc_0", "mout_aclk_mfc_400_user",
++			ENABLE_ACLK_MFC, 5, 0, 0),
++	GATE(CLK_ACLK_AHB2APB_MFCP, "aclk_ahb2apb_mfcp", "div_pclk_mfc",
++			ENABLE_ACLK_MFC, 4, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_XIU_MFCX, "aclk_xiu_mfcx", "mout_aclk_mfc_400_user",
++			ENABLE_ACLK_MFC, 3, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_MFCNP_100, "aclk_mfcnp_100", "div_pclk_mfc",
++			ENABLE_ACLK_MFC, 2, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_MFCND_400, "aclk_mfcnd_400", "mout_aclk_mfc_400_user",
++			ENABLE_ACLK_MFC, 1, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_MFC, "aclk_mfc", "mout_aclk_mfc_400_user",
++			ENABLE_ACLK_MFC, 0, 0, 0),
 +
-+	/* ENABLE_ACLK_MSCL_SECURE_SMMU_M2MSCALER0 */
-+	GATE(CLK_ACLK_SMMU_M2MSCALER0, "aclk_smmu_m2mscaler0",
-+			"mout_aclk_mscl_400_user",
-+			ENABLE_ACLK_MSCL_SECURE_SMMU_M2MSCALER0,
++	/* ENABLE_ACLK_MFC_SECURE_SMMU_MFC */
++	GATE(CLK_ACLK_SMMU_MFC_1, "aclk_smmu_mfc_1", "mout_aclk_mfc_400_user",
++			ENABLE_ACLK_MFC_SECURE_SMMU_MFC,
++			1, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_SMMU_MFC_0, "aclk_smmu_mfc_0", "mout_aclk_mfc_400_user",
++			ENABLE_ACLK_MFC_SECURE_SMMU_MFC,
 +			0, CLK_IGNORE_UNUSED, 0),
 +
-+	/* ENABLE_ACLK_MSCL_SECURE_SMMU_M2MSCALER1 */
-+	GATE(CLK_ACLK_SMMU_M2MSCALER1, "aclk_smmu_m2mscaler1",
-+			"mout_aclk_mscl_400_user",
-+			ENABLE_ACLK_MSCL_SECURE_SMMU_M2MSCALER1,
++	/* ENABLE_PCLK_MFC */
++	GATE(CLK_PCLK_BTS_MFC_1, "pclk_bts_mfc_1", "div_pclk_mfc",
++			ENABLE_PCLK_MFC, 4, 0, 0),
++	GATE(CLK_PCLK_BTS_MFC_0, "pclk_bts_mfc_0", "div_pclk_mfc",
++			ENABLE_PCLK_MFC, 3, 0, 0),
++	GATE(CLK_PCLK_PMU_MFC, "pclk_pmu_mfc", "div_pclk_mfc",
++			ENABLE_PCLK_MFC, 2, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_PCLK_SYSREG_MFC, "pclk_sysreg_mfc", "div_pclk_mfc",
++			ENABLE_PCLK_MFC, 1, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_PCLK_MFC, "pclk_mfc", "div_pclk_mfc",
++			ENABLE_PCLK_MFC, 4, CLK_IGNORE_UNUSED, 0),
++
++	/* ENABLE_PCLK_MFC_SECURE_SMMU_MFC */
++	GATE(CLK_PCLK_SMMU_MFC_1, "pclk_smmu_mfc_1", "div_pclk_mfc",
++			ENABLE_PCLK_MFC_SECURE_SMMU_MFC,
++			1, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_PCLK_SMMU_MFC_0, "pclk_smmu_mfc_0", "div_pclk_mfc",
++			ENABLE_PCLK_MFC_SECURE_SMMU_MFC,
 +			0, CLK_IGNORE_UNUSED, 0),
-+
-+	/* ENABLE_ACLK_MSCL_SECURE_SMMU_JPEG */
-+	GATE(CLK_ACLK_SMMU_JPEG, "aclk_smmu_jpeg", "mout_aclk_mscl_400_user",
-+			ENABLE_ACLK_MSCL_SECURE_SMMU_JPEG,
-+			0, CLK_IGNORE_UNUSED, 0),
-+
-+	/* ENABLE_PCLK_MSCL */
-+	GATE(CLK_PCLK_BTS_JPEG, "pclk_bts_jpeg", "div_pclk_mscl",
-+			ENABLE_PCLK_MSCL, 7, 0, 0),
-+	GATE(CLK_PCLK_BTS_M2MSCALER1, "pclk_bts_m2mscaler1", "div_pclk_mscl",
-+			ENABLE_PCLK_MSCL, 6, 0, 0),
-+	GATE(CLK_PCLK_BTS_M2MSCALER0, "pclk_bts_m2mscaler0", "div_pclk_mscl",
-+			ENABLE_PCLK_MSCL, 5, 0, 0),
-+	GATE(CLK_PCLK_PMU_MSCL, "pclk_pmu_mscl", "div_pclk_mscl",
-+			ENABLE_PCLK_MSCL, 4, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_PCLK_SYSREG_MSCL, "pclk_sysreg_mscl", "div_pclk_mscl",
-+			ENABLE_PCLK_MSCL, 3, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_PCLK_JPEG, "pclk_jpeg", "div_pclk_mscl",
-+			ENABLE_PCLK_MSCL, 2, 0, 0),
-+	GATE(CLK_PCLK_M2MSCALER1, "pclk_m2mscaler1", "div_pclk_mscl",
-+			ENABLE_PCLK_MSCL, 1, 0, 0),
-+	GATE(CLK_PCLK_M2MSCALER0, "pclk_m2mscaler0", "div_pclk_mscl",
-+			ENABLE_PCLK_MSCL, 0, 0, 0),
-+
-+	/* ENABLE_PCLK_MSCL_SECURE_SMMU_M2MSCALER0 */
-+	GATE(CLK_PCLK_SMMU_M2MSCALER0, "pclk_smmu_m2mscaler0", "div_pclk_mscl",
-+			ENABLE_PCLK_MSCL_SECURE_SMMU_M2MSCALER0,
-+			0, CLK_IGNORE_UNUSED, 0),
-+
-+	/* ENABLE_PCLK_MSCL_SECURE_SMMU_M2MSCALER1 */
-+	GATE(CLK_PCLK_SMMU_M2MSCALER1, "pclk_smmu_m2mscaler1", "div_pclk_mscl",
-+			ENABLE_PCLK_MSCL_SECURE_SMMU_M2MSCALER1,
-+			0, CLK_IGNORE_UNUSED, 0),
-+
-+	/* ENABLE_PCLK_MSCL_SECURE_SMMU_JPEG */
-+	GATE(CLK_PCLK_SMMU_JPEG, "pclk_smmu_jpeg", "div_pclk_mscl",
-+			ENABLE_PCLK_MSCL_SECURE_SMMU_JPEG,
-+			0, CLK_IGNORE_UNUSED, 0),
-+
-+	/* ENABLE_SCLK_MSCL */
-+	GATE(CLK_SCLK_JPEG, "sclk_jpeg", "mout_sclk_jpeg", ENABLE_SCLK_MSCL, 0,
-+			CLK_IGNORE_UNUSED | CLK_SET_RATE_PARENT, 0),
 +};
 +
-+static struct samsung_cmu_info mscl_cmu_info __initdata = {
-+	.mux_clks		= mscl_mux_clks,
-+	.nr_mux_clks		= ARRAY_SIZE(mscl_mux_clks),
-+	.div_clks		= mscl_div_clks,
-+	.nr_div_clks		= ARRAY_SIZE(mscl_div_clks),
-+	.gate_clks		= mscl_gate_clks,
-+	.nr_gate_clks		= ARRAY_SIZE(mscl_gate_clks),
-+	.nr_clk_ids		= MSCL_NR_CLK,
-+	.clk_regs		= mscl_clk_regs,
-+	.nr_clk_regs		= ARRAY_SIZE(mscl_clk_regs),
++static struct samsung_cmu_info mfc_cmu_info __initdata = {
++	.mux_clks		= mfc_mux_clks,
++	.nr_mux_clks		= ARRAY_SIZE(mfc_mux_clks),
++	.div_clks		= mfc_div_clks,
++	.nr_div_clks		= ARRAY_SIZE(mfc_div_clks),
++	.gate_clks		= mfc_gate_clks,
++	.nr_gate_clks		= ARRAY_SIZE(mfc_gate_clks),
++	.nr_clk_ids		= MFC_NR_CLK,
++	.clk_regs		= mfc_clk_regs,
++	.nr_clk_regs		= ARRAY_SIZE(mfc_clk_regs),
 +};
 +
-+static void __init exynos5433_cmu_mscl_init(struct device_node *np)
++static void __init exynos5433_cmu_mfc_init(struct device_node *np)
 +{
-+	samsung_cmu_register_one(np, &mscl_cmu_info);
++	samsung_cmu_register_one(np, &mfc_cmu_info);
 +}
-+CLK_OF_DECLARE(exynos5433_cmu_mscl, "samsung,exynos5433-cmu-mscl",
-+		exynos5433_cmu_mscl_init);
++CLK_OF_DECLARE(exynos5433_cmu_mfc, "samsung,exynos5433-cmu-mfc",
++		exynos5433_cmu_mfc_init);
 diff --git a/include/dt-bindings/clock/exynos5433.h b/include/dt-bindings/clock/exynos5433.h
-index 22b02e7..757c419 100644
+index 757c419..dfeb9d6 100644
 --- a/include/dt-bindings/clock/exynos5433.h
 +++ b/include/dt-bindings/clock/exynos5433.h
-@@ -114,6 +114,8 @@
- #define CLK_DIV_SCLK_USBHOST30		141
- #define CLK_DIV_SCLK_UFSUNIPRO		142
- #define CLK_DIV_SCLK_USBDRD30		143
-+#define CLK_DIV_SCLK_JPEG		144
-+#define CLK_DIV_ACLK_MSCL_400		145
- 
- #define CLK_ACLK_PERIC_66		200
- #define CLK_ACLK_PERIS_66		201
-@@ -149,8 +151,10 @@
- #define CLK_SCLK_USBDRD30_FSYS		231
- #define CLK_ACLK_GSCL_111		232
+@@ -153,8 +153,9 @@
  #define CLK_ACLK_GSCL_333		233
-+#define CLK_SCLK_JPEG_MSCL		234
-+#define CLK_ACLK_MSCL_400		235
+ #define CLK_SCLK_JPEG_MSCL		234
+ #define CLK_ACLK_MSCL_400		235
++#define CLK_ACLK_MFC_400		236
  
--#define TOP_NR_CLK			234
-+#define TOP_NR_CLK			236
+-#define TOP_NR_CLK			236
++#define TOP_NR_CLK			237
  
  /* CMU_CPIF */
  #define CLK_FOUT_MPHY_PLL		1
-@@ -937,4 +941,39 @@
+@@ -976,4 +977,28 @@
  
- #define ATLAS_NR_CLK					40
+ #define MSCL_NR_CLK					30
  
-+/* CMU_MSCL */
-+#define CLK_MOUT_SCLK_JPEG_USER				1
-+#define CLK_MOUT_ACLK_MSCL_400_USER			2
-+#define CLK_MOUT_SCLK_JPEG				3
++/* CMU_MFC */
++#define CLK_MOUT_ACLK_MFC_400_USER			1
 +
-+#define CLK_DIV_PCLK_MSCL				4
++#define CLK_DIV_PCLK_MFC				2
 +
-+#define CLK_ACLK_BTS_JPEG				5
-+#define CLK_ACLK_BTS_M2MSCALER1				6
-+#define CLK_ACLK_BTS_M2MSCALER0				7
-+#define CLK_ACLK_AHB2APB_MSCL0P				8
-+#define CLK_ACLK_XIU_MSCLX				9
-+#define CLK_ACLK_MSCLNP_100				10
-+#define CLK_ACLK_MSCLND_400				11
-+#define CLK_ACLK_JPEG					12
-+#define CLK_ACLK_M2MSCALER1				13
-+#define CLK_ACLK_M2MSCALER0				14
-+#define CLK_ACLK_SMMU_M2MSCALER0			15
-+#define CLK_ACLK_SMMU_M2MSCALER1			16
-+#define CLK_ACLK_SMMU_JPEG				17
-+#define CLK_PCLK_BTS_JPEG				18
-+#define CLK_PCLK_BTS_M2MSCALER1				19
-+#define CLK_PCLK_BTS_M2MSCALER0				20
-+#define CLK_PCLK_PMU_MSCL				21
-+#define CLK_PCLK_SYSREG_MSCL				22
-+#define CLK_PCLK_JPEG					23
-+#define CLK_PCLK_M2MSCALER1				24
-+#define CLK_PCLK_M2MSCALER0				25
-+#define CLK_PCLK_SMMU_M2MSCALER0			26
-+#define CLK_PCLK_SMMU_M2MSCALER1			27
-+#define CLK_PCLK_SMMU_JPEG				28
-+#define CLK_SCLK_JPEG					29
++#define CLK_ACLK_BTS_MFC_1				3
++#define CLK_ACLK_BTS_MFC_0				4
++#define CLK_ACLK_AHB2APB_MFCP				5
++#define CLK_ACLK_XIU_MFCX				6
++#define CLK_ACLK_MFCNP_100				7
++#define CLK_ACLK_MFCND_400				8
++#define CLK_ACLK_MFC					9
++#define CLK_ACLK_SMMU_MFC_1				10
++#define CLK_ACLK_SMMU_MFC_0				11
++#define CLK_PCLK_BTS_MFC_1				12
++#define CLK_PCLK_BTS_MFC_0				13
++#define CLK_PCLK_PMU_MFC				14
++#define CLK_PCLK_SYSREG_MFC				15
++#define CLK_PCLK_MFC					16
++#define CLK_PCLK_SMMU_MFC_1				17
++#define CLK_PCLK_SMMU_MFC_0				18
 +
-+#define MSCL_NR_CLK					30
++#define MFC_NR_CLK					19
 +
  #endif /* _DT_BINDINGS_CLOCK_EXYNOS5433_H */
 -- 
