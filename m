@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753026AbbAUKc6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 05:32:58 -0500
+	id S1753067AbbAUKdG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 05:33:06 -0500
 Received: from mga02.intel.com ([134.134.136.20]:45244 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752234AbbAUKcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 05:32:50 -0500
+	id S1752461AbbAUKcy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 05:32:54 -0500
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="5.09,440,1418112000"; 
-   d="scan'208";a="654193798"
+   d="scan'208";a="654193831"
 From: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
 To: Linus Walleij <linus.walleij@linaro.org>,
         Alexandre Courbot <gnurou@gmail.com>,
@@ -16,101 +16,174 @@ To: Linus Walleij <linus.walleij@linaro.org>,
 Cc: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>,
         GPIO Subsystem Mailing List <linux-gpio@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH 0/1] Consolidate similar algorithms in gpio-sch
-Date: Wed, 21 Jan 2015 18:32:20 +0800
-Message-Id: <1421836341-2036-1-git-send-email-rebecca.swee.fun.chang@intel.com>
+Subject: [PATCH 1/1] gpio: sch: Consolidate similar algorithms
+Date: Wed, 21 Jan 2015 18:32:21 +0800
+Message-Id: <1421836341-2036-2-git-send-email-rebecca.swee.fun.chang@intel.com>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1421836341-2036-1-git-send-email-rebecca.swee.fun.chang@intel.com>
+References: <1421836341-2036-1-git-send-email-rebecca.swee.fun.chang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Consolidating similar algorithms into common functions to make
+GPIO SCH simpler and manageable.
 
-Some background about this patch:
-This patch come from the previous threads on enabling Quark X1000 support in
-gpio-sch. The patches were found to break the build on devel branch.
-Refer to: https://lists.01.org/pipermail/kbuild-all/2015-January/008513.html
-
-One of the patch (mentioned below) was already applied in devel branch.
-(Patch 2/2) 9202149 gpio: sch: Add support for Intel Quark X1000 SoC.
-Meanwhile the patch that breaks the build was removed from devel branch.
-
-So, in this email, I've attached a patch that contains the algorithms
-consolidation together with the fix for build warnings on wrong arguments
-passing in sch_gpio_reg_set().
-
-The patch was built with the configurations provided in the mail by
-Wu, Fengguang:
-https://lists.01.org/pipermail/kbuild-all/2015-January/008511.html
-
-Procedures for build test on devel branch:
-$ cp ATT23421.config .config
-$ make ARCH=x86_64 oldconfig
-$ make ARCH=x86_64
-Same procedures applied for ARCH=x86 and no build warnings was found on
-gpio-sch.
-
-Driver test procedures on Galileo board using Yocto Project as reference OS:
-
-Check driver availability:
-$ ls /sys/bus/platform/drivers/
-Result: Driver sch_gpio available
-
-Check device availability:
-$ ls /sys/bus/platform/devices/
-Result: Device sch_gpio.2398 available
-
-Check the driver binded with the device successfully through sysfs:
-$ ls -al /sys/class/gpio/gpiochip0/device
-Result: gpiochip0/device/ -> ../../../sch_gpio.2398
-
-Check using sysfs debug:
-$ cat /sys/kernel/debug/gpio
-GPIOs 0-7, platform/sch_gpio.2398, sch_gpio.2398:
-Result: Both driver and device are available
-
-The driver should allow user to export GPIO pin.
-$ echo 3 > export
-Result: gpio3 create with no error message
-
-The driver should allow user to configure GPIO pin direction and pin value.
-Since gpio3 (on sysfs for Galileo) is connected to an LED, we will use this as
-our test equipment.
-$ echo out > gpio3/direction
-$ cat gpio3/direction
-out
-Result: Pin direction was set without error prompts.
-
-$ echo 1 > gpio3/value
-$ cat gpio3/value
-1
-Result: LED will turn on
-
-$ echo 0 > gpio3/value
-$ cat gpio3/value
-0
-Result: LED will turn off
-
-$ echo in > gpio3/direction
-$ cat gpio3/direction
-in
-Result: Pin direction was set without error prompts.
-
-The driver should allow user to do unexport for unused pin.
-$ echo 3 > unexport
-Result: gpio3 directory was wiped out without error logs.
-
-Please review the patch and provide feedback if any. Thanks.
-
-Regards,
-Rebecca
-
-Chang Rebecca Swee Fun (1):
-  gpio: sch: Consolidate similar algorithms
-
+Signed-off-by: Chang Rebecca Swee Fun <rebecca.swee.fun.chang@intel.com>
+---
  drivers/gpio/gpio-sch.c | 83 +++++++++++++++++--------------------------------
  1 file changed, 29 insertions(+), 54 deletions(-)
 
+diff --git a/drivers/gpio/gpio-sch.c b/drivers/gpio/gpio-sch.c
+index 0271022..b72906f 100644
+--- a/drivers/gpio/gpio-sch.c
++++ b/drivers/gpio/gpio-sch.c
+@@ -41,7 +41,7 @@ struct sch_gpio {
+ 	unsigned short resume_base;
+ };
+ 
+-#define to_sch_gpio(c)	container_of(c, struct sch_gpio, chip)
++#define to_sch_gpio(gc)	container_of(gc, struct sch_gpio, chip)
+ 
+ static unsigned sch_gpio_offset(struct sch_gpio *sch, unsigned gpio,
+ 				unsigned reg)
+@@ -63,75 +63,59 @@ static unsigned sch_gpio_bit(struct sch_gpio *sch, unsigned gpio)
+ 	return gpio % 8;
+ }
+ 
+-static void sch_gpio_enable(struct sch_gpio *sch, unsigned gpio)
++static int sch_gpio_reg_get(struct gpio_chip *gc, unsigned gpio, unsigned reg)
+ {
++	struct sch_gpio *sch = to_sch_gpio(gc);
+ 	unsigned short offset, bit;
+-	u8 enable;
+-
+-	spin_lock(&sch->lock);
++	u8 reg_val;
+ 
+-	offset = sch_gpio_offset(sch, gpio, GEN);
++	offset = sch_gpio_offset(sch, gpio, reg);
+ 	bit = sch_gpio_bit(sch, gpio);
+ 
+-	enable = inb(sch->iobase + offset);
+-	if (!(enable & (1 << bit)))
+-		outb(enable | (1 << bit), sch->iobase + offset);
++	reg_val = !!(inb(sch->iobase + offset) & BIT(bit));
+ 
+-	spin_unlock(&sch->lock);
++	return reg_val;
+ }
+ 
+-static int sch_gpio_direction_in(struct gpio_chip *gc, unsigned  gpio_num)
++static void sch_gpio_reg_set(struct gpio_chip *gc, unsigned gpio, unsigned reg,
++			     int val)
+ {
+ 	struct sch_gpio *sch = to_sch_gpio(gc);
+-	u8 curr_dirs;
+ 	unsigned short offset, bit;
++	u8 reg_val;
+ 
+-	spin_lock(&sch->lock);
++	offset = sch_gpio_offset(sch, gpio, reg);
++	bit = sch_gpio_bit(sch, gpio);
+ 
+-	offset = sch_gpio_offset(sch, gpio_num, GIO);
+-	bit = sch_gpio_bit(sch, gpio_num);
++	reg_val = inb(sch->iobase + offset);
+ 
+-	curr_dirs = inb(sch->iobase + offset);
++	if (val)
++		outb(reg_val | BIT(bit), sch->iobase + offset);
++	else
++		outb((reg_val & ~BIT(bit)), sch->iobase + offset);
++}
+ 
+-	if (!(curr_dirs & (1 << bit)))
+-		outb(curr_dirs | (1 << bit), sch->iobase + offset);
++static int sch_gpio_direction_in(struct gpio_chip *gc, unsigned gpio_num)
++{
++	struct sch_gpio *sch = to_sch_gpio(gc);
+ 
++	spin_lock(&sch->lock);
++	sch_gpio_reg_set(gc, gpio_num, GIO, 1);
+ 	spin_unlock(&sch->lock);
+ 	return 0;
+ }
+ 
+ static int sch_gpio_get(struct gpio_chip *gc, unsigned gpio_num)
+ {
+-	struct sch_gpio *sch = to_sch_gpio(gc);
+-	int res;
+-	unsigned short offset, bit;
+-
+-	offset = sch_gpio_offset(sch, gpio_num, GLV);
+-	bit = sch_gpio_bit(sch, gpio_num);
+-
+-	res = !!(inb(sch->iobase + offset) & (1 << bit));
+-
+-	return res;
++	return sch_gpio_reg_get(gc, gpio_num, GLV);
+ }
+ 
+ static void sch_gpio_set(struct gpio_chip *gc, unsigned gpio_num, int val)
+ {
+ 	struct sch_gpio *sch = to_sch_gpio(gc);
+-	u8 curr_vals;
+-	unsigned short offset, bit;
+ 
+ 	spin_lock(&sch->lock);
+-
+-	offset = sch_gpio_offset(sch, gpio_num, GLV);
+-	bit = sch_gpio_bit(sch, gpio_num);
+-
+-	curr_vals = inb(sch->iobase + offset);
+-
+-	if (val)
+-		outb(curr_vals | (1 << bit), sch->iobase + offset);
+-	else
+-		outb((curr_vals & ~(1 << bit)), sch->iobase + offset);
+-
++	sch_gpio_reg_set(gc, gpio_num, GLV, val);
+ 	spin_unlock(&sch->lock);
+ }
+ 
+@@ -139,18 +123,9 @@ static int sch_gpio_direction_out(struct gpio_chip *gc, unsigned gpio_num,
+ 				  int val)
+ {
+ 	struct sch_gpio *sch = to_sch_gpio(gc);
+-	u8 curr_dirs;
+-	unsigned short offset, bit;
+ 
+ 	spin_lock(&sch->lock);
+-
+-	offset = sch_gpio_offset(sch, gpio_num, GIO);
+-	bit = sch_gpio_bit(sch, gpio_num);
+-
+-	curr_dirs = inb(sch->iobase + offset);
+-	if (curr_dirs & (1 << bit))
+-		outb(curr_dirs & ~(1 << bit), sch->iobase + offset);
+-
++	sch_gpio_reg_set(gc, gpio_num, GIO, 0);
+ 	spin_unlock(&sch->lock);
+ 
+ 	/*
+@@ -209,13 +184,13 @@ static int sch_gpio_probe(struct platform_device *pdev)
+ 		 * GPIO7 is configured by the CMC as SLPIOVR
+ 		 * Enable GPIO[9:8] core powered gpios explicitly
+ 		 */
+-		sch_gpio_enable(sch, 8);
+-		sch_gpio_enable(sch, 9);
++		sch_gpio_reg_set(&sch->chip, 8, GEN, 1);
++		sch_gpio_reg_set(&sch->chip, 9, GEN, 1);
+ 		/*
+ 		 * SUS_GPIO[2:0] enabled by default
+ 		 * Enable SUS_GPIO3 resume powered gpio explicitly
+ 		 */
+-		sch_gpio_enable(sch, 13);
++		sch_gpio_reg_set(&sch->chip, 13, GEN, 1);
+ 		break;
+ 
+ 	case PCI_DEVICE_ID_INTEL_ITC_LPC:
 -- 
 1.9.1
 
