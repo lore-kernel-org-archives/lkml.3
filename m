@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755394AbbAUCl3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 21:41:29 -0500
-Received: from szxga03-in.huawei.com ([119.145.14.66]:12958 "EHLO
-	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751691AbbAUCcg (ORCPT
+	id S1754411AbbAUCc4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 21:32:56 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:3012 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754146AbbAUCcw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 21:32:36 -0500
+	Tue, 20 Jan 2015 21:32:52 -0500
 From: Yijing Wang <wangyijing@huawei.com>
 To: Bjorn Helgaas <bhelgaas@google.com>
 CC: Jiang Liu <jiang.liu@linux.intel.com>, <linux-pci@vger.kernel.org>,
@@ -22,11 +22,10 @@ CC: Jiang Liu <jiang.liu@linux.intel.com>, <linux-pci@vger.kernel.org>,
         <linux-m68k@vger.kernel.org>, Liviu Dudau <liviu@dudau.co.uk>,
         "Arnd Bergmann" <arnd@arndb.de>,
         Geert Uytterhoeven <geert@linux-m68k.org>,
-        "Yijing Wang" <wangyijing@huawei.com>,
-        Fenghua Yu <fenghua.yu@intel.com>
-Subject: [PATCH v2 16/30] PCI/IA64: Fix the build warning about pci_domain_nr()
-Date: Wed, 21 Jan 2015 08:30:11 +0800
-Message-ID: <1421800225-26230-17-git-send-email-wangyijing@huawei.com>
+        "Yijing Wang" <wangyijing@huawei.com>, <linuxppc-dev@lists.ozlabs.org>
+Subject: [PATCH v2 17/30] PCI/powerpc: Rename pcibios_root_bridge_prepare()
+Date: Wed, 21 Jan 2015 08:30:12 +0800
+Message-ID: <1421800225-26230-18-git-send-email-wangyijing@huawei.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1421800225-26230-1-git-send-email-wangyijing@huawei.com>
 References: <1421800225-26230-1-git-send-email-wangyijing@huawei.com>
@@ -34,68 +33,94 @@ MIME-Version: 1.0
 Content-Type: text/plain
 X-Originating-IP: [10.175.100.166]
 X-CFilter-Loop: Reflected
-X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
-	refid=str=0001.0A020206.54BF0FBF.0086,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
-	ip=0.0.0.0,
-	so=2013-05-26 15:14:31,
-	dmn=2013-03-21 17:37:32
-X-Mirapoint-Loop-Id: 757facdf28b1dfff6b16eff797b4506b
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Should pass pci_bus * instead of pci_dev * to pci_domain_nr().
+Pcibios_root_bridge_prepare() in powerpc is used
+to set root bus speed. Rename it to
+pcibios_set_root_bus_speed() for better readability.
 
 Signed-off-by: Yijing Wang <wangyijing@huawei.com>
-CC: Tony Luck <tony.luck@intel.com>
-CC: Fenghua Yu <fenghua.yu@intel.com>
-CC: linux-ia64@vger.kernel.org
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: linuxppc-dev@lists.ozlabs.org
 ---
- arch/ia64/sn/kernel/io_acpi_init.c |    6 +++---
- arch/ia64/sn/kernel/io_init.c      |    2 +-
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ arch/powerpc/include/asm/machdep.h       |    2 +-
+ arch/powerpc/kernel/pci-common.c         |    6 +++---
+ arch/powerpc/platforms/pseries/pci.c     |    2 +-
+ arch/powerpc/platforms/pseries/pseries.h |    2 +-
+ arch/powerpc/platforms/pseries/setup.c   |    2 +-
+ 5 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/arch/ia64/sn/kernel/io_acpi_init.c b/arch/ia64/sn/kernel/io_acpi_init.c
-index 0640739..2fd7414 100644
---- a/arch/ia64/sn/kernel/io_acpi_init.c
-+++ b/arch/ia64/sn/kernel/io_acpi_init.c
-@@ -364,12 +364,12 @@ sn_acpi_get_pcidev_info(struct pci_dev *dev, struct pcidev_info **pcidev_info,
-         status = acpi_evaluate_integer(rootbus_handle, METHOD_NAME__SEG, NULL,
-                                        &segment);
-         if (ACPI_SUCCESS(status)) {
--		if (segment != pci_domain_nr(dev)) {
-+		if (segment != pci_domain_nr(dev->bus)) {
- 			acpi_get_name(rootbus_handle, ACPI_FULL_PATHNAME,
- 				&name_buffer);
- 			printk(KERN_ERR
- 			       "%s: Segment number mismatch, 0x%llx vs 0x%x for: %s\n",
--			       __func__, segment, pci_domain_nr(dev),
-+			       __func__, segment, pci_domain_nr(dev->bus),
- 			       (char *)name_buffer.pointer);
- 			kfree(name_buffer.pointer);
- 			return 1;
-@@ -407,7 +407,7 @@ sn_acpi_get_pcidev_info(struct pci_dev *dev, struct pcidev_info **pcidev_info,
- 	/* Build up the pcidev_info.pdi_slot_host_handle */
- 	host_devfn = get_host_devfn(pcidev_match.handle, rootbus_handle);
- 	(*pcidev_info)->pdi_slot_host_handle =
--			((unsigned long) pci_domain_nr(dev) << 40) |
-+			((unsigned long) pci_domain_nr(dev->bus) << 40) |
- 					/* bus == 0 */
- 					host_devfn;
- 	return 0;
-diff --git a/arch/ia64/sn/kernel/io_init.c b/arch/ia64/sn/kernel/io_init.c
-index bcdc5b8..a97fad4 100644
---- a/arch/ia64/sn/kernel/io_init.c
-+++ b/arch/ia64/sn/kernel/io_init.c
-@@ -164,7 +164,7 @@ sn_io_slot_fixup(struct pci_dev *dev)
- 		panic("%s: Unable to alloc memory for sn_irq_info", __func__);
+diff --git a/arch/powerpc/include/asm/machdep.h b/arch/powerpc/include/asm/machdep.h
+index c8175a3..8e7f2a8 100644
+--- a/arch/powerpc/include/asm/machdep.h
++++ b/arch/powerpc/include/asm/machdep.h
+@@ -129,7 +129,7 @@ struct machdep_calls {
+ 	void		(*pcibios_fixup)(void);
+ 	int		(*pci_probe_mode)(struct pci_bus *);
+ 	void		(*pci_irq_fixup)(struct pci_dev *dev);
+-	int		(*pcibios_root_bridge_prepare)(struct pci_host_bridge
++	int		(*pcibios_set_root_bus_speed)(struct pci_host_bridge
+ 				*bridge);
  
- 	/* Call to retrieve pci device information needed by kernel. */
--	status = sal_get_pcidev_info((u64) pci_domain_nr(dev),
-+	status = sal_get_pcidev_info((u64) pci_domain_nr(dev->bus),
- 		(u64) dev->bus->number,
- 		dev->devfn,
- 		(u64) __pa(pcidev_info),
+ 	/* To setup PHBs when using automatic OF platform driver for PCI */
+diff --git a/arch/powerpc/kernel/pci-common.c b/arch/powerpc/kernel/pci-common.c
+index 927c3dd..c11bfed 100644
+--- a/arch/powerpc/kernel/pci-common.c
++++ b/arch/powerpc/kernel/pci-common.c
+@@ -769,9 +769,9 @@ int pci_proc_domain(struct pci_bus *bus)
+ 
+ int pcibios_root_bridge_prepare(struct pci_host_bridge *bridge)
+ {
+-	if (ppc_md.pcibios_root_bridge_prepare)
+-		return ppc_md.pcibios_root_bridge_prepare(bridge);
+-
++	if (ppc_md.pcibios_set_root_bus_speed)
++		return ppc_md.pcibios_set_root_bus_speed(bridge);
++
+ 	return 0;
+ }
+ 
+diff --git a/arch/powerpc/platforms/pseries/pci.c b/arch/powerpc/platforms/pseries/pci.c
+index fe16a50..af685d6 100644
+--- a/arch/powerpc/platforms/pseries/pci.c
++++ b/arch/powerpc/platforms/pseries/pci.c
+@@ -110,7 +110,7 @@ static void fixup_winbond_82c105(struct pci_dev* dev)
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_WINBOND, PCI_DEVICE_ID_WINBOND_82C105,
+ 			 fixup_winbond_82c105);
+ 
+-int pseries_root_bridge_prepare(struct pci_host_bridge *bridge)
++int pseries_set_root_bus_speed(struct pci_host_bridge *bridge)
+ {
+ 	struct device_node *dn, *pdn;
+ 	struct pci_bus *bus;
+diff --git a/arch/powerpc/platforms/pseries/pseries.h b/arch/powerpc/platforms/pseries/pseries.h
+index 1796c54..5d0be3a 100644
+--- a/arch/powerpc/platforms/pseries/pseries.h
++++ b/arch/powerpc/platforms/pseries/pseries.h
+@@ -63,7 +63,7 @@ extern int dlpar_detach_node(struct device_node *);
+ 
+ /* PCI root bridge prepare function override for pseries */
+ struct pci_host_bridge;
+-int pseries_root_bridge_prepare(struct pci_host_bridge *bridge);
++int pseries_set_root_bus_speed(struct pci_host_bridge *bridge);
+ 
+ unsigned long pseries_memory_block_size(void);
+ 
+diff --git a/arch/powerpc/platforms/pseries/setup.c b/arch/powerpc/platforms/pseries/setup.c
+index e445b67..b196c0d 100644
+--- a/arch/powerpc/platforms/pseries/setup.c
++++ b/arch/powerpc/platforms/pseries/setup.c
+@@ -496,7 +496,7 @@ static void __init pSeries_setup_arch(void)
+ 		ppc_md.enable_pmcs = power4_enable_pmcs;
+ 	}
+ 
+-	ppc_md.pcibios_root_bridge_prepare = pseries_root_bridge_prepare;
++	ppc_md.pcibios_set_root_bus_speed = pseries_set_root_bus_speed;
+ 
+ 	if (firmware_has_feature(FW_FEATURE_SET_MODE)) {
+ 		long rc;
 -- 
 1.7.1
 
