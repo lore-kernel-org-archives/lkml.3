@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166AbbAUMH7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 07:07:59 -0500
-Received: from mail-la0-f44.google.com ([209.85.215.44]:35777 "EHLO
-	mail-la0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601AbbAUMHt (ORCPT
+	id S1753307AbbAUMKb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 07:10:31 -0500
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:48570 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751552AbbAUMKY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 07:07:49 -0500
+	Wed, 21 Jan 2015 07:10:24 -0500
+Message-ID: <54BF96A6.1060702@linux.vnet.ibm.com>
+Date: Wed, 21 Jan 2015 17:38:06 +0530
+From: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
+Organization: IBM
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130625 Thunderbird/17.0.7
 MIME-Version: 1.0
-In-Reply-To: <CAPDyKFq4TyiadznYCM-dGmeu799vWevBt1XVZ4DALhv-3bP=AA@mail.gmail.com>
-References: <20150120141750.3dcade27@canb.auug.org.au>
-	<CAPDyKFq4TyiadznYCM-dGmeu799vWevBt1XVZ4DALhv-3bP=AA@mail.gmail.com>
-Date: Wed, 21 Jan 2015 13:07:48 +0100
-X-Google-Sender-Auth: iG-s0LwGkUG3Awn0awe4Gx1YuUk
-Message-ID: <CAMuHMdU_qf6wiN4PJkyED7Hf3N4GvJB7jf6seOTWRoRi4KNyPA@mail.gmail.com>
-Subject: Re: linux-next: manual merge of the mmc-uh tree with the sunxi tree
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Maxime Ripard <maxime.ripard@free-electrons.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        =?UTF-8?Q?David_Lanzend=C3=B6rfer?= <david.lanzendoerfer@o2s.ch>
-Content-Type: text/plain; charset=UTF-8
+To: Waiman Long <Waiman.Long@hp.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-arch@vger.kernel.org,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        virtualization@lists.linux-foundation.org,
+        xen-devel@lists.xenproject.org, kvm@vger.kernel.org,
+        Paolo Bonzini <paolo.bonzini@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Boris Ostrovsky <boris.ostrovsky@oracle.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Rik van Riel <riel@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Vrabel <david.vrabel@citrix.com>,
+        Oleg Nesterov <oleg@redhat.com>, Scott J Norton <scott.norton@hp.com>,
+        Douglas Hatch <doug.hatch@hp.com>
+Subject: Re: [PATCH v14 08/11] qspinlock, x86: Rename paravirt_ticketlocks_enabled
+References: <1421784755-21945-1-git-send-email-Waiman.Long@hp.com> <1421784755-21945-9-git-send-email-Waiman.Long@hp.com>
+In-Reply-To: <1421784755-21945-9-git-send-email-Waiman.Long@hp.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15012112-0009-0000-0000-000000D402E3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 12:27 PM, Ulf Hansson <ulf.hansson@linaro.org> wrote:
-> I can't find the sunxi tree, is it listed in MAINTAINERS?
+On 01/21/2015 01:42 AM, Waiman Long wrote:
+> This patch renames the paravirt_ticketlocks_enabled static key to a
+> more generic paravirt_spinlocks_enabled name.
+>
+> Signed-off-by: Waiman Long <Waiman.Long@hp.com>
+> Signed-off-by: Peter Zijlstra <peterz@infradead.org>
+> ---
+Reviewed-by: Raghavendra K T <raghavendra.kt@linux.vnet.ibm.com>
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mripard/linux.git#sunxi/for-next
-from
-https://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tree/Next/Trees#n51
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
