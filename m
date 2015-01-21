@@ -1,103 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753867AbbAUQVg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 11:21:36 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:41662 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752183AbbAUQV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 11:21:28 -0500
-Date: Wed, 21 Jan 2015 17:21:08 +0100
-From: Jiri Olsa <jolsa@redhat.com>
-To: Vince Weaver <vincent.weaver@maine.edu>
-Cc: linux-kernel@vger.kernel.org, Jiri Olsa <jolsa@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>
-Subject: Re: perf: behavior of poll() changed in 3.18
-Message-ID: <20150121162108.GD6835@krava.brq.redhat.com>
-References: <alpine.DEB.2.11.1501201155380.18043@vincent-weaver-1.umelst.maine.edu>
- <20150120181316.GA12860@krava.brq.redhat.com>
- <alpine.DEB.2.11.1501210058090.21805@vincent-weaver-1.umelst.maine.edu>
+	id S1754063AbbAUQVz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 11:21:55 -0500
+Received: from bh-25.webhostbox.net ([208.91.199.152]:34732 "EHLO
+	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753855AbbAUQVp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 11:21:45 -0500
+Message-ID: <54BFD209.1080507@roeck-us.net>
+Date: Wed, 21 Jan 2015 08:21:29 -0800
+From: Guenter Roeck <linux@roeck-us.net>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.11.1501210058090.21805@vincent-weaver-1.umelst.maine.edu>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Sabrina Dubroca <sd@queasysnail.net>, Paul Moore <pmoore@redhat.com>
+CC: Thierry Reding <thierry.reding@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-audit@redhat.com, Richard Guy Briggs <rgb@redhat.com>
+Subject: Re: linux-next: Tree for Jan 20 -- Kernel panic - Unable to mount
+ root fs
+References: <20150120165655.GA10904@kria> <20150121110539.GA8924@kria> <20150121144214.GA22884@ulmo.nvidia.com> <9422577.FVVyjQBZjy@sifl> <20150121153910.GD22884@ulmo.nvidia.com> <20150121155407.GA18701@kria>
+In-Reply-To: <20150121155407.GA18701@kria>
+Content-Type: text/plain; charset=utf-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Authenticated_sender: linux@roeck-us.net
+X-OutGoing-Spam-Status: No, score=-1.0
+X-CTCH-PVer: 0000001
+X-CTCH-Spam: Unknown
+X-CTCH-VOD: Unknown
+X-CTCH-Flags: 0
+X-CTCH-RefID: str=0001.0A020205.54BFD217.03DD,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
+X-CTCH-Score: 0.001
+X-CTCH-ScoreCust: 0.000
+X-CTCH-Rules: C_4847,
+X-CTCH-SenderID: linux@roeck-us.net
+X-CTCH-SenderID-Flags: 0
+X-CTCH-SenderID-TotalMessages: 4
+X-CTCH-SenderID-TotalSpam: 0
+X-CTCH-SenderID-TotalSuspected: 0
+X-CTCH-SenderID-TotalConfirmed: 0
+X-CTCH-SenderID-TotalBulk: 0
+X-CTCH-SenderID-TotalVirus: 0
+X-CTCH-SenderID-TotalRecipients: 0
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - roeck-us.net
+X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 01:06:30AM -0500, Vince Weaver wrote:
-> On Tue, 20 Jan 2015, Jiri Olsa wrote:
-> 
-> > I made this change to get notification that monitored
-> > process exited.  We use it in 'perf record' to find out
-> > that we have nothing more to monitor and quit.
-> > 
-> > The logic is to return POLLHUP (via poll syscall) when
-> > the monitored process exits for the event.
-> > 
-> > Could you please share your test code?
-> 
-> My code does something like this to count the number of overflows
-> happening in a child:
-> 
-> 	/* fds contains one fd, which is a harware event */
-> 	/* attached to a child */
-> 
-> 	while(1) {
->                 result=poll(fds,1,100);
->                 if (result==0) {
->                         waitpid(child,&status,WNOHANG);
+On 01/21/2015 07:54 AM, Sabrina Dubroca wrote:
+> 2015-01-21, 16:39:12 +0100, Thierry Reding wrote:
+>> On Wed, Jan 21, 2015 at 10:24:11AM -0500, Paul Moore wrote:
+>>> On Wednesday, January 21, 2015 03:42:16 PM Thierry Reding wrote:
+>>>> On Wed, Jan 21, 2015 at 12:05:39PM +0100, Sabrina Dubroca wrote:
+>>>>> 2015-01-21, 04:36:38 +0000, Al Viro wrote:
+>>>>>> On Tue, Jan 20, 2015 at 08:01:26PM -0800, Guenter Roeck wrote:
+>>>>>>> With this patch:
+>>>>>>>
+>>>>>>> sys_mkdir .:40775 returned -17
+>>>>>>> sys_mkdir usr:40775 returned 0
+>>>>>>> sys_mkdir usr/lib:40775 returned 0
+>>>>>>> sys_mkdir usr/share:40755 returned 0
+>>>>>>> sys_mkdir usr/share/udhcpc:40755 returned 0
+>>>>>>> sys_mkdir usr/bin:40775 returned 0
+>>>>>>> sys_mkdir usr/sbin:40775 returned 0
+>>>>>>> sys_mkdir mnt:40775 returned 0
+>>>>>>> sys_mkdir proc:40775 returned 0
+>>>>>>> sys_mkdir root:40775 returned 0
+>>>>>>> sys_mkdir lib:40775 returned 0
+>>>>>>> sys_mkdir lib/modules:40775 returned 0
+>>>>>>> ...
+>>>>>>>
+>>>>>>> and the problem is fixed.
+>>>>>
+>>>>> This patch also works for me.
+>>>>>
+>>>>>> ... except that it simply confirms that something's fishy with
+>>>>>> getname_kernel() of ->name of struct filename returned by getname().
+>>>>>> IOW, I still do not understand the mechanism of breakage there.
+>>>>>
+>>>>> I'm not so sure about that.  I tried to copy name to a new string in
+>>>>> do_path_lookup and that didn't help.
+>>>>>
+>>>>> Now, I've removed the
+>>>>>
+>>>>>          putname(filename);
+>>>>>
+>>>>> line from do_path_lookup and I don't get the panic.
+>>>>
+>>>> That would indicate that somehow the refcount got unbalanced. Looking
+>>>> more closely it seems like the various audit_*() function do take a
+>>>> reference, but maybe that's not enough.
+>>>
+>>> I'm thinking the same thing and I think the problem may be that
+>>> __audit_reusename() is not bumping the filename->refcnt.  Can someone who is
+>>> seeing this problem bump the refcnt in __audit_reusename()?
+>>>
+>>>    struct filename *
+>>>    __audit_reusename(const __user char *uptr)
+>>>    {
+>>>          struct audit_context *context = current->audit_context;
+>>>          struct audit_names *n;
+>>>
+>>>          list_for_each_entry(n, &context->names_list, list) {
+>>>                  if (!n->name)
+>>>                          continue;
+>>>                  if (n->name->uptr == uptr) {
+>>> +                       n->name->refcnt++;
+>>>                          return n->name;
+>>>                  }
+>>>          }
+>>>          return NULL;
+>>>    }
+>>
+>> That doesn't seem to help, at least in my case.
+>
+> Same here.
+>
+> Well, it's probably not an audit issue.  I tried audit=0 on the
+> commandline, and I just rebuilt a kernel with CONFIG_AUDIT=n, and it's
+> still panicing.  This should have fixed any audit-related issue,
+> right?
+>
+I don't have audit enabled, so I don't think that is the problem either
+(the refcount increase didn't help, and a WARN(1) added to the code
+at the same location did not trigger).
 
-		unrelated, but I noticed, that this seems broken.. you shouldn't check
-		WIFEXITED(status) without waitpid(... WNOHANG) returning > 0
+Wonder if we have a use-after-free case and just have been lucky all along.
 
->                         if (WIFEXITED(status)) break;
->                         if (WIFSIGNALED(status)) {
->                                 printf("Signalled %d!\n",WTERMSIG(status));
->                                 break;
->                         }
->                 }
-> 
->                 if (fds[0].revents&POLLIN) count.in++;
->                 if (fds[0].revents&POLLHUP) count.hup++;
->                 if (fds[0].revents&POLLERR) break;
-> 	}
-> 
-> With the change you made this code hangs forever because poll no longer
-> returns "0" when the child exits, but instead returns "1" with
-> POLLHUP set.
+Guenter
 
-right, once event is HUPed the poll will return POLLHUP in revents
-
-> 
-> I admit my code isn't the best out there, but it worked reliably up
-> until 3.18 when the change was made.
-
-I think that poll returning POLLHUP for an event which cease to work
-due to its process died is correct.
-
-On the other side we broke your code, which is against the policy.
-
-However if we revert this code, we'll loose nice (and standard) way
-to check if the event is still valid.. not sure how to handle this.
-
-thoughts?
-
-> 
-> Part of why my code doesn't just exit on POLLHUP is because you can
-> get that result for reasons other than a process exit (for example,
-> if you are using ioctl(PERF_EVENT_IOC_REFRESH)
-
-Nope, this is related to POOL_HUP (notice the '_') which you'll get
-accompanied with SIGIO if you setup this.
-
-Before you could get POLLHUP (through poll) only if you'd called
-poll on unmapped event.
-
-Now (after commit 179033b3e064) you'll get it also if the process
-that the event monitored has died.
-
-
-jirka
