@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753621AbbAUM75 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 07:59:57 -0500
-Received: from mail-qc0-f177.google.com ([209.85.216.177]:38847 "EHLO
-	mail-qc0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752609AbbAUM7r (ORCPT
+	id S1752779AbbAUNCT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 08:02:19 -0500
+Received: from mail-ig0-f176.google.com ([209.85.213.176]:45211 "EHLO
+	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751478AbbAUNCL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 07:59:47 -0500
+	Wed, 21 Jan 2015 08:02:11 -0500
+Date: Wed, 21 Jan 2015 13:02:04 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Brian Norris <computersforpeace@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mtd@lists.infradead.org, kernel@stlinux.com,
+        Angus Clark <angus.clark@st.com>,
+        Carmelo Amoroso <carmelo.amoroso@st.com>
+Subject: Re: [PATCH v3 08/13] mtd: st_spi_fsm: Update the JEDEC probe to
+ handle extended READIDs
+Message-ID: <20150121130204.GC22024@x1>
+References: <1418644760-18773-1-git-send-email-lee.jones@linaro.org>
+ <1418644760-18773-9-git-send-email-lee.jones@linaro.org>
+ <20150113050715.GQ9759@ld-irv-0074>
 MIME-Version: 1.0
-In-Reply-To: <cover.1421204431.git.micky_ching@realsil.com.cn>
-References: <cover.1421204431.git.micky_ching@realsil.com.cn>
-Date: Wed, 21 Jan 2015 13:59:46 +0100
-Message-ID: <CAPDyKFqH3HLccQhiLC9PSZLf1ZfbBnmtSUt-W2J7QO=Fw4JiRw@mail.gmail.com>
-Subject: Re: [PATCH 0/2] mmc: rtsx: add check before sending request
-From: Ulf Hansson <ulf.hansson@linaro.org>
-To: micky <micky_ching@realsil.com.cn>
-Cc: Chris Ball <chris@printf.net>, Samuel Ortiz <sameo@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Dan Carpenter <dan.carpenter@oracle.com>,
-        "driverdev-devel@linuxdriverproject.org" 
-	<devel@linuxdriverproject.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-mmc <linux-mmc@vger.kernel.org>, Roger <rogerable@realtek.com>,
-        Wei WANG <wei_wang@realsil.com.cn>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20150113050715.GQ9759@ld-irv-0074>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 January 2015 at 04:09,  <micky_ching@realsil.com.cn> wrote:
-> From: Micky Ching <micky_ching@realsil.com.cn>
->
-> Add check before sending request can make request return faster.
-> - finish request if no card exist
->   This can make request finish faster, especial for some sdio card,
->   when card removed, there still a lot of command pending,
->   if we check card exist and stop request, the card will disappear
->   faster in user space.
->
-> - check sg_count before long data xfer
->   modify sg_count type unsigned -> int, because dma_map_sg() return
->   int, and this value can be negative to indicate some error occurs.
->
-> Micky Ching (2):
->   mmc: rtsx: finish request if no card exist
->   mmc: rtsx: check sg_count before long data xfer
->
->  drivers/mmc/host/rtsx_pci_sdmmc.c | 20 ++++++++++++++++----
->  1 file changed, 16 insertions(+), 4 deletions(-)
->
-> --
-> 1.9.1
->
+On Mon, 12 Jan 2015, Brian Norris wrote:
 
-Thanks! Applied for next.
+> On Mon, Dec 15, 2014 at 11:59:15AM +0000, Lee Jones wrote:
+> > The previous code was based on 3-byte JEDEC IDs, with a possible 2-byte
+> > extension.  However, devices are now emerging that return 6 or more bytes of
+> > READID data and the additional bytes are required to differentiate between
+> > variants or generations of similar devices.
+> > 
+> > This patch refactors the device table and JEDEC probe code to handle arbitrary
+> > length READIDs, with the standard JEDEC definition now becoming a special case.
+> > Functionally, there should be no change in behaviour.  A subsequent patch will
+> > update the table with extended READIDs where applicable.
+> 
+> BTW, how's that promise going, where you work on adapting this driver to
+> the spi-nor framework? We've already done some of this same work there.
 
-Kind regards
-Uffe
+I have pushed this point within ST and someone has agreed to do the
+work.  Last I heard it relied on these patches, but I'll ask again.
+
+> > +#define RDID(...) __VA_ARGS__  /* Dummy macro to protect array argument. */
+> 
+> What? What needs "protected"?
+
+You're asking me questions I can't answer I'm afraid and Angus has now
+left the building.  I guess he thinks __VA_ARGS__ will prevent some
+kind of overflow?
+
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
