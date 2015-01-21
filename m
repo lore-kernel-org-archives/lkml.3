@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753034AbbAUMoF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 07:44:05 -0500
-Received: from service87.mimecast.com ([91.220.42.44]:52229 "EHLO
+	id S1752510AbbAUMng (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 07:43:36 -0500
+Received: from service87.mimecast.com ([91.220.42.44]:52238 "EHLO
 	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751502AbbAUMn1 (ORCPT
+	with ESMTP id S1750917AbbAUMn1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 21 Jan 2015 07:43:27 -0500
 From: "Suzuki K. Poulose" <suzuki.poulose@arm.com>
@@ -13,131 +13,255 @@ Cc: leo.yan@linaro.org, yexl@marvell.com, Will.Deacon@arm.com,
         Catalin.Marinas@arm.com, Mark.Rutland@arm.com,
         linux-kernel@vger.kernel.org,
         "Suzuki K. Poulose" <suzuki.poulose@arm.com>,
-        Will Deacon <will.deacon@arm.com>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [PATCH 1/3] arm64: Track system support for mixed endian EL0
-Date: Wed, 21 Jan 2015 12:43:09 +0000
-Message-Id: <1421844191-9263-2-git-send-email-suzuki.poulose@arm.com>
+        Mark Rutland <mark.rutland@arm.com>, Will Deacon <will.deacon@arm.com>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Punit Agrawal <punit.agrawal@arm.com>
+Subject: [PATCH 2/3] arm64: Consolidate hotplug notifier for instruction emulation
+Date: Wed, 21 Jan 2015 12:43:10 +0000
+Message-Id: <1421844191-9263-3-git-send-email-suzuki.poulose@arm.com>
 X-Mailer: git-send-email 1.7.9.5
-In-Reply-To: <1421844191-9263-1-git-send-email-suzuki.poulose@arm.com>
+In-Reply-To: <1421844191-9263-2-git-send-email-suzuki.poulose@arm.com>
 References: <1421844191-9263-1-git-send-email-suzuki.poulose@arm.com>
-X-OriginalArrivalTime: 21 Jan 2015 12:43:24.0487 (UTC) FILETIME=[D8968D70:01D03577]
-X-MC-Unique: 115012112432507401
+ <1421844191-9263-2-git-send-email-suzuki.poulose@arm.com>
+X-OriginalArrivalTime: 21 Jan 2015 12:43:25.0128 (UTC) FILETIME=[D8F85C80:01D03577]
+X-MC-Unique: 115012112432513901
 Content-Type: text/plain; charset=WINDOWS-1252
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id t0LCi9a6019676
+X-MIME-Autoconverted: from quoted-printable to 8bit by nfs id t0LChfo6019664
 
 From: "Suzuki K. Poulose" <suzuki.poulose@arm.com>
 
-This patch keeps track of the mixed endian EL0 support across
-the system and provides helper functions to export it. The status
-is a boolean indicating whether all the CPUs on the system supports
-mixed endian at EL0.
+As of now each insn_emulation has a cpu hotplug notifier that
+enables/disables the CPU feature bit for the functionality. This
+patch re-arranges the code, such that there is only one notifier
+that runs through the list of registered emulation hooks and runs
+their corresponding set_hw_mode.
 
+We do nothing when a CPU is dying as we will set the appropriate bits
+as it comes back online based on the state of the hooks.
+
+Signed-off-by: Mark Rutland <mark.rutland@arm.com>
 Signed-off-by: Suzuki K. Poulose <suzuki.poulose@arm.com>
 Cc: Will Deacon <will.deacon@arm.com>
 Cc: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Punit Agrawal <punit.agrawal@arm.com>
 ---
- arch/arm64/include/asm/cpufeature.h |    2 ++
- arch/arm64/include/asm/cputype.h    |   14 ++++++++++++++
- arch/arm64/kernel/cpuinfo.c         |   22 ++++++++++++++++++++++
- 3 files changed, 38 insertions(+)
+ arch/arm64/include/asm/cputype.h     |    2 +
+ arch/arm64/kernel/armv8_deprecated.c |  125 +++++++++++++++++++++-------------
+ 2 files changed, 79 insertions(+), 48 deletions(-)
 
-diff --git a/arch/arm64/include/asm/cpufeature.h b/arch/arm64/include/asm/cpufeature.h
-index 07547cc..b6c16d5 100644
---- a/arch/arm64/include/asm/cpufeature.h
-+++ b/arch/arm64/include/asm/cpufeature.h
-@@ -52,6 +52,8 @@ static inline void cpus_set_cap(unsigned int num)
- }
- 
- void check_local_cpu_errata(void);
-+bool cpu_supports_mixed_endian_el0(void);
-+bool system_supports_mixed_endian_el0(void);
- 
- #endif /* __ASSEMBLY__ */
- 
 diff --git a/arch/arm64/include/asm/cputype.h b/arch/arm64/include/asm/cputype.h
-index 53d59b0..44e578d 100644
+index 44e578d..2c4c852 100644
 --- a/arch/arm64/include/asm/cputype.h
 +++ b/arch/arm64/include/asm/cputype.h
-@@ -73,6 +73,15 @@
+@@ -82,6 +82,8 @@
+ #define ID_AA64MMFR0_BIGEND(mmfr0)	\
+ 	(((mmfr0) & ID_AA64MMFR0_BIGEND_MASK) >> ID_AA64MMFR0_BIGEND_SHIFT)
  
- #define APM_CPU_PART_POTENZA	0x000
- 
-+#define ID_AA64MMFR0_BIGENDEL0_SHIFT	16
-+#define ID_AA64MMFR0_BIGENDEL0_MASK	(0xf << ID_AA64MMFR0_BIGENDEL0_SHIFT)
-+#define ID_AA64MMFR0_BIGENDEL0(mmfr0)	\
-+	(((mmfr0) & ID_AA64MMFR0_BIGENDEL0_MASK) >> ID_AA64MMFR0_BIGENDEL0_SHIFT)
-+#define ID_AA64MMFR0_BIGEND_SHIFT	8
-+#define ID_AA64MMFR0_BIGEND_MASK	(0xf << ID_AA64MMFR0_BIGEND_SHIFT)
-+#define ID_AA64MMFR0_BIGEND(mmfr0)	\
-+	(((mmfr0) & ID_AA64MMFR0_BIGEND_MASK) >> ID_AA64MMFR0_BIGEND_SHIFT)
++#define SCTLR_EL1_CP15BEN	(0x1 << 5)
 +
  #ifndef __ASSEMBLY__
  
  /*
-@@ -105,6 +114,11 @@ static inline u32 __attribute_const__ read_cpuid_cachetype(void)
- 	return read_cpuid(CTR_EL0);
+diff --git a/arch/arm64/kernel/armv8_deprecated.c b/arch/arm64/kernel/armv8_deprecated.c
+index c363671..2c991f1 100644
+--- a/arch/arm64/kernel/armv8_deprecated.c
++++ b/arch/arm64/kernel/armv8_deprecated.c
+@@ -19,6 +19,7 @@
+ #include <asm/system_misc.h>
+ #include <asm/traps.h>
+ #include <asm/uaccess.h>
++#include <asm/cpufeature.h>
+ 
+ #define CREATE_TRACE_POINTS
+ #include "trace-events-emulation.h"
+@@ -85,6 +86,57 @@ static void remove_emulation_hooks(struct insn_emulation_ops *ops)
+ 	pr_notice("Removed %s emulation handler\n", ops->name);
  }
  
-+static inline bool id_aa64mmfr0_mixed_endian_el0(u64 mmfr0)
++static void enable_insn_hw_mode(void *data)
 +{
-+	return (ID_AA64MMFR0_BIGEND(mmfr0) == 0x1) ||
-+		(ID_AA64MMFR0_BIGENDEL0(mmfr0) == 0x1);
-+}
- #endif /* __ASSEMBLY__ */
- 
- #endif
-diff --git a/arch/arm64/kernel/cpuinfo.c b/arch/arm64/kernel/cpuinfo.c
-index 07d435c..b6d1135 100644
---- a/arch/arm64/kernel/cpuinfo.c
-+++ b/arch/arm64/kernel/cpuinfo.c
-@@ -35,6 +35,7 @@
-  */
- DEFINE_PER_CPU(struct cpuinfo_arm64, cpu_data);
- static struct cpuinfo_arm64 boot_cpu_data;
-+static bool mixed_endian_el0 = true;
- 
- static char *icache_policy_str[] = {
- 	[ICACHE_POLICY_RESERVED] = "RESERVED/UNKNOWN",
-@@ -68,6 +69,26 @@ static void cpuinfo_detect_icache_policy(struct cpuinfo_arm64 *info)
- 	pr_info("Detected %s I-cache on CPU%d\n", icache_policy_str[l1ip], cpu);
- }
- 
-+bool cpu_supports_mixed_endian_el0(void)
-+{
-+	return id_aa64mmfr0_mixed_endian_el0(read_cpuid(ID_AA64MMFR0_EL1));
++	struct insn_emulation *insn = (struct insn_emulation *)data;
++	if (insn && insn->ops->set_hw_mode)
++		insn->ops->set_hw_mode(true);
 +}
 +
-+bool system_supports_mixed_endian_el0(void)
++static void disable_insn_hw_mode(void *data)
 +{
-+	return mixed_endian_el0;
++	struct insn_emulation *insn = (struct insn_emulation *)data;
++	if (insn && insn->ops->set_hw_mode)
++		insn->ops->set_hw_mode(false);
 +}
 +
-+static void update_mixed_endian_el0_support(struct cpuinfo_arm64 *info)
++/* Run set_hw_mode(mode) on all active CPUs */
++static int run_all_cpu_set_hw_mode(struct insn_emulation *insn, bool enable)
 +{
-+	mixed_endian_el0 &= id_aa64mmfr0_mixed_endian_el0(info->reg_id_aa64mmfr0);
++	if (!insn->ops->set_hw_mode)
++		return -EINVAL;
++	if (enable)
++		on_each_cpu(enable_insn_hw_mode, (void *)insn, true);
++	else
++		on_each_cpu(disable_insn_hw_mode, (void *)insn, true);
++	return 0;
 +}
 +
-+static void update_cpu_features(struct cpuinfo_arm64 *info)
++/*
++ * Run set_hw_mode for all insns on a starting CPU.
++ * Returns:
++ *  0 		- If all the hooks ran successfully.
++ * -EINVAL	- At least one hook is not supported by the CPU.
++ */
++static int run_all_insn_set_hw_mode(unsigned long cpu)
 +{
-+	update_mixed_endian_el0_support(info);
++	int rc = 0;
++	unsigned long flags;
++	struct insn_emulation *insn;
++
++	raw_spin_lock_irqsave(&insn_emulation_lock, flags);
++	list_for_each_entry(insn, &insn_emulation, node) {
++		bool enable = (insn->current_mode == INSN_HW);
++		if (insn->ops->set_hw_mode && insn->ops->set_hw_mode(enable)) {
++			pr_warn(enable, "CPU[%ld] cannot support the emulation of %s",
++							cpu, insn->ops->name);
++			rc = -EINVAL;
++		}
++	}
++	raw_spin_unlock_irqrestore(&insn_emulation_lock, flags);
++	return rc;
 +}
 +
- static int check_reg_mask(char *name, u64 mask, u64 boot, u64 cur, int cpu)
+ static int update_insn_emulation_mode(struct insn_emulation *insn,
+ 				       enum insn_emulation_mode prev)
  {
- 	if ((boot & mask) == (cur & mask))
-@@ -215,6 +236,7 @@ static void __cpuinfo_store_cpu(struct cpuinfo_arm64 *info)
- 	cpuinfo_detect_icache_policy(info);
+@@ -97,10 +149,8 @@ static int update_insn_emulation_mode(struct insn_emulation *insn,
+ 		remove_emulation_hooks(insn->ops);
+ 		break;
+ 	case INSN_HW:
+-		if (insn->ops->set_hw_mode) {
+-			insn->ops->set_hw_mode(false);
++		if (!run_all_cpu_set_hw_mode(insn, false))
+ 			pr_notice("Disabled %s support\n", insn->ops->name);
+-		}
+ 		break;
+ 	}
  
- 	check_local_cpu_errata();
-+	update_cpu_features(info);
+@@ -111,10 +161,9 @@ static int update_insn_emulation_mode(struct insn_emulation *insn,
+ 		register_emulation_hooks(insn->ops);
+ 		break;
+ 	case INSN_HW:
+-		if (insn->ops->set_hw_mode && insn->ops->set_hw_mode(true))
++		ret = run_all_cpu_set_hw_mode(insn, true);
++		if (!ret)
+ 			pr_notice("Enabled %s support\n", insn->ops->name);
+-		else
+-			ret = -EINVAL;
+ 		break;
+ 	}
+ 
+@@ -133,6 +182,8 @@ static void register_insn_emulation(struct insn_emulation_ops *ops)
+ 	switch (ops->status) {
+ 	case INSN_DEPRECATED:
+ 		insn->current_mode = INSN_EMULATE;
++		/* Disable the HW mode if it was turned on at early boot time */
++		run_all_cpu_set_hw_mode(insn, false);
+ 		insn->max = INSN_HW;
+ 		break;
+ 	case INSN_OBSOLETE:
+@@ -453,8 +504,6 @@ ret:
+ 	return 0;
  }
  
- void cpuinfo_store_cpu(void)
+-#define SCTLR_EL1_CP15BEN (1 << 5)
+-
+ static inline void config_sctlr_el1(u32 clear, u32 set)
+ {
+ 	u32 val;
+@@ -465,48 +514,13 @@ static inline void config_sctlr_el1(u32 clear, u32 set)
+ 	asm volatile("msr sctlr_el1, %0" : : "r" (val));
+ }
+ 
+-static void enable_cp15_ben(void *info)
+-{
+-	config_sctlr_el1(0, SCTLR_EL1_CP15BEN);
+-}
+-
+-static void disable_cp15_ben(void *info)
+-{
+-	config_sctlr_el1(SCTLR_EL1_CP15BEN, 0);
+-}
+-
+-static int cpu_hotplug_notify(struct notifier_block *b,
+-			      unsigned long action, void *hcpu)
+-{
+-	switch (action) {
+-	case CPU_STARTING:
+-	case CPU_STARTING_FROZEN:
+-		enable_cp15_ben(NULL);
+-		return NOTIFY_DONE;
+-	case CPU_DYING:
+-	case CPU_DYING_FROZEN:
+-		disable_cp15_ben(NULL);
+-		return NOTIFY_DONE;
+-	}
+-
+-	return NOTIFY_OK;
+-}
+-
+-static struct notifier_block cpu_hotplug_notifier = {
+-	.notifier_call = cpu_hotplug_notify,
+-};
+-
+ static int cp15_barrier_set_hw_mode(bool enable)
+ {
+-	if (enable) {
+-		register_cpu_notifier(&cpu_hotplug_notifier);
+-		on_each_cpu(enable_cp15_ben, NULL, true);
+-	} else {
+-		unregister_cpu_notifier(&cpu_hotplug_notifier);
+-		on_each_cpu(disable_cp15_ben, NULL, true);
+-	}
+-
+-	return true;
++	if (enable)
++		config_sctlr_el1(0, SCTLR_EL1_CP15BEN);
++	else
++		config_sctlr_el1(SCTLR_EL1_CP15BEN, 0);
++	return 0;
+ }
+ 
+ static struct undef_hook cp15_barrier_hooks[] = {
+@@ -534,6 +548,20 @@ static struct insn_emulation_ops cp15_barrier_ops = {
+ 	.set_hw_mode = cp15_barrier_set_hw_mode,
+ };
+ 
++static int insn_cpu_hotplug_notify(struct notifier_block *b,
++			      unsigned long action, void *hcpu)
++{
++	int rc = 0;
++	if ((action & ~CPU_TASKS_FROZEN) == CPU_STARTING)
++		rc = run_all_insn_set_hw_mode((unsigned long)hcpu);
++
++	return notifier_from_errno(rc);
++}
++
++static struct notifier_block insn_cpu_hotplug_notifier = {
++	.notifier_call = insn_cpu_hotplug_notify,
++};
++
+ /*
+  * Invoked as late_initcall, since not needed before init spawned.
+  */
+@@ -545,6 +573,7 @@ static int __init armv8_deprecated_init(void)
+ 	if (IS_ENABLED(CONFIG_CP15_BARRIER_EMULATION))
+ 		register_insn_emulation(&cp15_barrier_ops);
+ 
++	register_cpu_notifier(&insn_cpu_hotplug_notifier);
+ 	register_insn_emulation_sysctl(ctl_abi);
+ 
+ 	return 0;
 -- 
 1.7.9.5
 
