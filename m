@@ -1,107 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752991AbbAUKiv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 05:38:51 -0500
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:43603 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752008AbbAUKip (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 05:38:45 -0500
-Message-ID: <54BF81A0.8030705@linux.vnet.ibm.com>
-Date: Wed, 21 Jan 2015 16:08:24 +0530
-From: Preeti U Murthy <preeti@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:24.0) Gecko/20100101 Thunderbird/24.6.0
+	id S1752945AbbAUKjQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 05:39:16 -0500
+Received: from bhuna.collabora.co.uk ([93.93.135.160]:33531 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751727AbbAUKjE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 05:39:04 -0500
+Message-ID: <54BF81C2.3020000@collabora.co.uk>
+Date: Wed, 21 Jan 2015 11:38:58 +0100
+From: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.2.0
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: peterz@infradead.org, linuxppc-dev@lists.ozlabs.org, mingo@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] idle/tick-broadcast: Exit cpu idle poll loop when cleared
- from tick_broadcast_force_mask
-References: <20150119052754.20256.54721.stgit@preeti.in.ibm.com> <alpine.DEB.2.11.1501201216420.5526@nanos> <54BE3B0E.2050502@linux.vnet.ibm.com> <alpine.DEB.2.11.1501211045480.5526@nanos>
-In-Reply-To: <alpine.DEB.2.11.1501211045480.5526@nanos>
-Content-Type: text/plain; charset=UTF-8
+To: Mike Turquette <mturquette@linaro.org>,
+        Sylwester Nawrocki <s.nawrocki@samsung.com>,
+        Kukjin Kim <kgene@kernel.org>
+CC: Tomasz Figa <tomasz.figa@gmail.com>,
+        Rahul Sharma <rahul.sharma@samsung.com>,
+        Arun Kumar K <arun.kk@samsung.com>,
+        Doug Anderson <dianders@chromium.org>, Olof Johansson <olof@lixom.net>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Tobias Jakobi <liquid.acid@gmx.net>,
+        Andrzej Hajda <a.hajda@samsung.com>,
+        Krzysztof Kozlowski <k.kozlowski@samsung.com>,
+        Kevin Hilman <khilman@linaro.org>,
+        Joonyoung Shim <jy0922.shim@samsung.com>,
+        linux-samsung-soc@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] clk: exynos5420: Add IDs for clocks used in DISP1
+ power domain
+References: <1421750127-22536-1-git-send-email-javier.martinez@collabora.co.uk> <1421750127-22536-2-git-send-email-javier.martinez@collabora.co.uk> <54BE6050.1090205@samsung.com> <20150120175402.22722.84342@quantum>
+In-Reply-To: <20150120175402.22722.84342@quantum>
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15012110-0029-0000-0000-000001BF95E0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2015 03:26 PM, Thomas Gleixner wrote:
-> On Tue, 20 Jan 2015, Preeti U Murthy wrote:
->> On 01/20/2015 04:51 PM, Thomas Gleixner wrote:
->>> On Mon, 19 Jan 2015, Preeti U Murthy wrote:
->>>> An idle cpu enters cpu_idle_poll() if it is set in the tick_broadcast_force_mask.
->>>> This is so that it does not incur the overhead of entering idle states when it is expected
->>>> to be woken up anytime then through a broadcast IPI. The condition that forces an exit out
->>>> of the idle polling is the check on setting of the TIF_NEED_RESCHED flag for the idle thread.
->>>>
->>>> When the broadcast IPI does arrive, it is not guarenteed that the handler sets the
->>>> TIF_NEED_RESCHED flag. Hence although the cpu is cleared in the tick_broadcast_force_mask,
->>>> it continues to loop in cpu_idle_poll unnecessarily wasting power. Hence exit the idle
->>>> poll loop if the tick_broadcast_force_mask gets cleared and enter idle states.
->>>>
->>>> Of course if the cpu has entered cpu_idle_poll() on being asked to poll explicitly,
->>>> it continues to poll till it is asked to reschedule.
->>>>
->>>> Signed-off-by: Preeti U Murthy <preeti@linux.vnet.ibm.com>
->>>> ---
->>>>
->>>>  kernel/sched/idle.c |    3 ++-
->>>>  1 file changed, 2 insertions(+), 1 deletion(-)
->>>>
->>>> diff --git a/kernel/sched/idle.c b/kernel/sched/idle.c
->>>> index c47fce7..aaf1c1d 100644
->>>> --- a/kernel/sched/idle.c
->>>> +++ b/kernel/sched/idle.c
->>>> @@ -47,7 +47,8 @@ static inline int cpu_idle_poll(void)
->>>>  	rcu_idle_enter();
->>>>  	trace_cpu_idle_rcuidle(0, smp_processor_id());
->>>>  	local_irq_enable();
->>>> -	while (!tif_need_resched())
->>>> +	while (!tif_need_resched() &&
->>>> +		(cpu_idle_force_poll || tick_check_broadcast_expired()))
->>>
->>> You explain the tick_check_broadcast_expired() bit, but what about the
->>> cpu_idle_force_poll part?
->>
->> The last few lines which say "Of course if the cpu has entered
->> cpu_idle_poll() on being asked to poll explicitly, it continues to poll
->> till it is asked to reschedule" explains the cpu_idle_force_poll part.
-> 
-> Well, I read it more than once and did not figure it out.
-> 
-> The paragraph describes some behaviour. Now I know it's the behaviour
-> before the patch. So maybe something like this:
-> 
->   cpu_idle_poll() is entered when cpu_idle_force_poll is set or
->   tick_check_broadcast_expired() returns true. The exit condition from
->   cpu_idle_poll() is tif_need_resched().
-> 
->   But this does not take into account that cpu_idle_force_poll and
->   tick_check_broadcast_expired() can change without setting the
->   resched flag. So a cpu can be caught in cpu_idle_poll() needlessly
->   and thereby wasting power.
-> 
->   Add an explicit check for cpu_idle_force_poll and
->   tick_check_broadcast_expired() to the exit condition of
->   cpu_idle_poll() to avoid this.
-> 
-> This explains the technical issue without confusing people with IPIs
-> and other completely irrelevant information. Hmm?
+Hello,
 
-Yep, much simpler, thanks! I will send out the next version with this
-changelog.
-
-Regards
-Preeti U Murthy
+On 01/20/2015 06:54 PM, Mike Turquette wrote:
+> Quoting Sylwester Nawrocki (2015-01-20 06:04:00)
+>> Hi,
+>> 
+>> On 20/01/15 11:35, Javier Martinez Canillas wrote:
+>> > When a power domain is powered off on Exynos5420 SoC, the input clocks of
+>> > the devices attached to this power domain are re-parented to oscclk and
+>> > restored to the original parent after powering on the power domain.
+>> > 
+>> > So a reference to the input and parent clocks for the devices attached to
+>> > a power domain are needed to be able to do the re-parenting. The DISP1 pd
+>> > includes modules which uses the following clocks:
+>> > 
+>> > ACLK_200_DISP1 (MIXER and HDMILINK)
+>> > ACLK_300_DISP1 (FIMD1)
+>> > ACLK_400_DISP1 (Internal Buses)
+>> > 
+>> > Each of these clocks are generated as the output of a clock mux so add an
+>> > ID for all of these clock muxes and their parents to be referenced in the
+>> > DISP1 power domain device node.
+>> > 
+>> > Signed-off-by: Javier Martinez Canillas <javier.martinez@collabora.co.uk>
+>> 
+>> The patch looks OK to me, I'm fine with it being merged via Kukjin's tree
+>> due to the dts dependencies (including other pending dts patches touching
+>> the arch/arm/boot/dts/exynos5420.dtsi file).
+>> I think we need also Mike ACK for that, I could also queue the patch for
+>> the clk tree and create a topic branch, but merging both patches via
+>> arm-soc seems a more sane option in this case.
+>> 
+>> Acked-by: Sylwester Nawrocki <s.nawrocki@samsung.com>
 > 
-> Thanks,
-> 
-> 	tglx
-> _______________________________________________
-> Linuxppc-dev mailing list
-> Linuxppc-dev@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/linuxppc-dev
+> Acked-by: Michael Turquette <mturquette@linaro.org>
 > 
 
+Thanks a lot Sylwester and Mike for your acks.
+
+Kukjin, could you please pick $subject and "Patch 2/2 ARM: dts: Add DISP1
+power domain for exynos5420" through your tree?
+
+Best regards,
+Javier
