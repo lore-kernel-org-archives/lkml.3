@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754393AbbAUPGN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 10:06:13 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:50491 "EHLO mx1.redhat.com"
+	id S1754371AbbAUPGH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 10:06:07 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:52069 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754269AbbAUPFg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 10:05:36 -0500
-Date: Wed, 21 Jan 2015 17:05:29 +0200
+	id S1754275AbbAUPFj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 10:05:39 -0500
+Date: Wed, 21 Jan 2015 17:05:32 +0200
 From: "Michael S. Tsirkin" <mst@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: Rusty Russell <rusty@rustcorp.com.au>,
         virtualization@lists.linux-foundation.org,
         Gerd Hoffmann <kraxel@redhat.com>
-Subject: [PATCH post-squash 7/9] virtio_pci: add an option to disable legacy
- driver
-Message-ID: <1421852670-23742-8-git-send-email-mst@redhat.com>
+Subject: [PATCH post-squash 8/9] virtio_pci: add module param to force legacy
+ mode
+Message-ID: <1421852670-23742-9-git-send-email-mst@redhat.com>
 References: <1421852670-23742-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -25,84 +25,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Useful for testing device virtio 1 compatibility.
-Based on patch by Rusty - couldn't resist putting
-that flying car joke in there!
+If set, try legacy interface first, modern one if that fails.  Useful to
+work around device/driver bugs, and for compatibility testing.
 
 Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Tested-by: Gerd Hoffmann <kraxel@redhat.com>
 ---
- drivers/virtio/virtio_pci_common.h | 10 ++++++++++
- drivers/virtio/Kconfig             | 19 +++++++++++++++++++
- drivers/virtio/Makefile            |  3 ++-
- 3 files changed, 31 insertions(+), 1 deletion(-)
+ drivers/virtio/virtio_pci_common.c | 25 +++++++++++++++++++++----
+ 1 file changed, 21 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/virtio/virtio_pci_common.h b/drivers/virtio/virtio_pci_common.h
-index d391805..28ee4e5 100644
---- a/drivers/virtio/virtio_pci_common.h
-+++ b/drivers/virtio/virtio_pci_common.h
-@@ -147,8 +147,18 @@ const char *vp_bus_name(struct virtio_device *vdev);
-  */
- int vp_set_vq_affinity(struct virtqueue *vq, int cpu);
+diff --git a/drivers/virtio/virtio_pci_common.c b/drivers/virtio/virtio_pci_common.c
+index 8ae34a3..e894eb2 100644
+--- a/drivers/virtio/virtio_pci_common.c
++++ b/drivers/virtio/virtio_pci_common.c
+@@ -19,6 +19,14 @@
  
+ #include "virtio_pci_common.h"
+ 
++static bool force_legacy = false;
++
 +#if IS_ENABLED(CONFIG_VIRTIO_PCI_LEGACY)
- int virtio_pci_legacy_probe(struct virtio_pci_device *);
- void virtio_pci_legacy_remove(struct virtio_pci_device *);
-+#else
-+static inline int virtio_pci_legacy_probe(struct virtio_pci_device *vp_dev)
-+{
-+	return -ENODEV;
-+}
-+static inline void virtio_pci_legacy_remove(struct virtio_pci_device *vp_dev)
-+{
-+}
++module_param(force_legacy, bool, 0444);
++MODULE_PARM_DESC(force_legacy,
++		 "Force legacy mode for transitional virtio 1 devices");
 +#endif
- int virtio_pci_modern_probe(struct virtio_pci_device *);
- void virtio_pci_modern_remove(struct virtio_pci_device *);
++
+ /* wait for pending irq handlers */
+ void vp_synchronize_vectors(struct virtio_device *vdev)
+ {
+@@ -505,11 +513,20 @@ static int virtio_pci_probe(struct pci_dev *pci_dev,
+ 	if (rc)
+ 		goto err_request_regions;
  
-diff --git a/drivers/virtio/Kconfig b/drivers/virtio/Kconfig
-index 083fb45..b546da5 100644
---- a/drivers/virtio/Kconfig
-+++ b/drivers/virtio/Kconfig
-@@ -19,6 +19,25 @@ config VIRTIO_PCI
+-	rc = virtio_pci_modern_probe(vp_dev);
+-	if (rc == -ENODEV)
++	if (force_legacy) {
+ 		rc = virtio_pci_legacy_probe(vp_dev);
+-	if (rc)
+-		goto err_probe;
++		/* Also try modern mode if we can't map BAR0 (no IO space). */
++		if (rc == -ENODEV || rc == -ENOMEM)
++			rc = virtio_pci_modern_probe(vp_dev);
++		if (rc)
++			goto err_probe;
++	} else {
++		rc = virtio_pci_modern_probe(vp_dev);
++		if (rc == -ENODEV)
++			rc = virtio_pci_legacy_probe(vp_dev);
++		if (rc)
++			goto err_probe;
++	}
  
- 	  If unsure, say M.
+ 	pci_set_master(pci_dev);
  
-+config VIRTIO_PCI_LEGACY
-+	bool "Support for legacy virtio draft 0.9.X and older devices"
-+	default y
-+	depends on VIRTIO_PCI
-+	---help---
-+          Virtio PCI Card 0.9.X Draft (circa 2014) and older device support.
-+
-+	  This option enables building a transitional driver, supporting
-+	  both devices conforming to Virtio 1 specification, and legacy devices.
-+	  If disabled, you get a slightly smaller, non-transitional driver,
-+	  with no legacy compatibility.
-+
-+          So look out into your driveway.  Do you have a flying car?  If
-+          so, you can happily disable this option and virtio will not
-+          break.  Otherwise, leave it set.  Unless you're testing what
-+          life will be like in The Future.
-+
-+	  If unsure, say Y.
-+
- config VIRTIO_BALLOON
- 	tristate "Virtio balloon driver"
- 	depends on VIRTIO
-diff --git a/drivers/virtio/Makefile b/drivers/virtio/Makefile
-index bd230d1..d85565b 100644
---- a/drivers/virtio/Makefile
-+++ b/drivers/virtio/Makefile
-@@ -1,5 +1,6 @@
- obj-$(CONFIG_VIRTIO) += virtio.o virtio_ring.o
- obj-$(CONFIG_VIRTIO_MMIO) += virtio_mmio.o
- obj-$(CONFIG_VIRTIO_PCI) += virtio_pci.o
--virtio_pci-y := virtio_pci_modern.o virtio_pci_legacy.o virtio_pci_common.o
-+virtio_pci-y := virtio_pci_modern.o virtio_pci_common.o
-+virtio_pci-$(CONFIG_VIRTIO_PCI_LEGACY) += virtio_pci_legacy.o
- obj-$(CONFIG_VIRTIO_BALLOON) += virtio_balloon.o
 -- 
 MST
 
