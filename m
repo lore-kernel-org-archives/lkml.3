@@ -1,105 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752367AbbAUMPL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 07:15:11 -0500
-Received: from down.free-electrons.com ([37.187.137.238]:36194 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750889AbbAUMPF (ORCPT
+	id S1752666AbbAUMT3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 07:19:29 -0500
+Received: from TYO201.gate.nec.co.jp ([210.143.35.51]:45799 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750754AbbAUMTT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 07:15:05 -0500
-Date: Wed, 21 Jan 2015 13:12:02 +0100
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-To: Ulf Hansson <ulf.hansson@linaro.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+	Wed, 21 Jan 2015 07:19:19 -0500
+From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+To: David Laight <David.Laight@ACULAB.COM>,
+        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
+        =?utf-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>
+CC: "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "Choi, Sy Jong" <sy.jong.choi@intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        David =?iso-8859-1?Q?Lanzend=F6rfer?= 
-	<david.lanzendoerfer@o2s.ch>
-Subject: Re: linux-next: manual merge of the mmc-uh tree with the sunxi tree
-Message-ID: <20150121121202.GF4367@lukather>
-References: <20150120141750.3dcade27@canb.auug.org.au>
- <CAPDyKFq4TyiadznYCM-dGmeu799vWevBt1XVZ4DALhv-3bP=AA@mail.gmail.com>
+        Hayato Momma <h-momma@ce.jp.nec.com>
+Subject: RE: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast promiscuous
+	mode control
+Thread-Topic: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast
+ promiscuous	mode control
+Thread-Index: AQHQNRDn9S7pwXLQtk+h+o1qNyzJQpzJuLsg//955YCAATlDQIAAC34ggAADy1A=
+Date: Wed, 21 Jan 2015 12:18:23 +0000
+Message-ID: <7F861DC0615E0C47A872E6F3C5FCDDBD05E090FE@BPXM14GP.gisp.nec.co.jp>
+References: <7F861DC0615E0C47A872E6F3C5FCDDBD05E0734E@BPXM14GP.gisp.nec.co.jp>
+	<874mrlu18e.fsf@nemi.mork.no>
+ <7F861DC0615E0C47A872E6F3C5FCDDBD05E07B7C@BPXM14GP.gisp.nec.co.jp>
+ <F6FB0E698C9B3143BDF729DF222866469129B7F5@ORSMSX110.amr.corp.intel.com>
+ <7F861DC0615E0C47A872E6F3C5FCDDBD05E07F09@BPXM14GP.gisp.nec.co.jp>
+ <F6FB0E698C9B3143BDF729DF222866469129B844@ORSMSX110.amr.corp.intel.com>
+ <7F861DC0615E0C47A872E6F3C5FCDDBD05E08FF6@BPXM14GP.gisp.nec.co.jp>
+ <063D6719AE5E284EB5DD2968C1650D6D1CAD01D6@AcuExch.aculab.com>
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1CAD01D6@AcuExch.aculab.com>
+Accept-Language: ja-JP, en-US
+Content-Language: ja-JP
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.205.5.123]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="Y18yPE/eBgOv3N1p"
-Content-Disposition: inline
-In-Reply-To: <CAPDyKFq4TyiadznYCM-dGmeu799vWevBt1XVZ4DALhv-3bP=AA@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0LCJWEe019554
 
+> Subject: RE: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast promiscuous mode control
+> 
+> From: Hiroshi Shimamoto
+> > My concern is what is the real issue that VF multicast promiscuous mode can cause.
+> > I think there is the 4k entries to filter multicast address, and the current ixgbe/ixgbevf
+> > can turn all bits on from VM. That is almost same as enabling multicast promiscuous mode.
+> > I mean that we can receive all multicast addresses by an onerous operation in untrusted VM.
+> > I think we should clarify what is real security issue in this context.
+> 
+> If you are worried about passing un-enabled multicasts to users then
+> what about doing a software hash of received multicasts and checking
+> against an actual list of multicasts enabled for that hash entry.
+> Under normal conditions there is likely to be only a single address to check.
+> 
+> It may (or may not) be best to use the same hash as any hashing hardware
+> filter uses.
 
---Y18yPE/eBgOv3N1p
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+thanks for the comment. But I don't think that is the point.
 
-Hi,
+I guess, introducing VF multicast promiscuous mode seems to add new privilege
+to peek every multicast packet in VM and that doesn't look good.
+On the other hand, I think that there has been the same privilege in the current
+ixgbe/ixgbevf implementation already. Or I'm reading the code wrongly.
+I'd like to clarify what is the issue of allowing to receive all multicast packets.
 
-On Wed, Jan 21, 2015 at 12:27:09PM +0100, Ulf Hansson wrote:
-> On 20 January 2015 at 04:17, Stephen Rothwell <sfr@canb.auug.org.au> wrot=
-e:
-> > Hi Ulf,
-> >
-> > Today's linux-next merge of the mmc-uh tree got a conflict in
-> > drivers/mmc/host/sunxi-mmc.c between commit 6c09bb851e57 ("mmc: sunxi:
-> > Convert MMC driver to the standard clock phase API") from the sunxi
-> > tree and commit 776e24c502da ("mmc: sunxi: Removing unused code") from
-> > the mmc-uh tree.
-> >
-> > I fixed it up (the former includes the latter change) and can carry the
-> > fix as necessary (no action is required).
->=20
-> Maxime,
->=20
-> I can't find the sunxi tree, is it listed in MAINTAINERS?
+thanks,
+Hiroshi
 
-No, it's not, I should probably add it :)
-
-It is here: https://git.kernel.org/cgit/linux/kernel/git/mripard/linux.git/
-
-> I know I have acked below patch, but that was quite a I while ago. Is
-> there any reason to why I can't take it through my mmc tree at this
-> point?
-> "mmc: sunxi: Convert MMC driver to the standard clock phase API".
-
-It still is needed to preserve bisectability, which is why you acked
-it in the first place. Otherwise, you would end up with a build
-breakage in the clock tree, because the mmc driver would still use the
-removed custom phase functions, and a failing MMC driver in your tree
-because the MMC clocks would not have the phase callbacks implemented.
-
-It's a pretty wide window of failure, and especially for the build
-breakage, I don't think it would be wise to split these patches.
-
-Maxime
-
---=20
-Maxime Ripard, Free Electrons
-Embedded Linux, Kernel and Android engineering
-http://free-electrons.com
-
---Y18yPE/eBgOv3N1p
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1
-
-iQIcBAEBAgAGBQJUv5eSAAoJEBx+YmzsjxAgEccQAIjze+3pVxO+fjTrLHi5QihR
-RV8KDOf0K9zSkOromZgy/C2c8CHP6ogdpim+ApHdvuJgCDbuwUj0wLfsXG6kCXpj
-oKbEr5Uh7096zmpNhSvSy6425DXxKUCsb10Hl5j7UH5LCOAEXyJMEiOwzb0vqDJK
-F8dS2x0U2zlQ1EZ9Cmrhj+enGApGEf1mSrnLfU906hnQ7tgfd2zIiELI6PSu4aEs
-lx48gPwvH80JGywx247ihgNajU9SOJ5E1zzPnvhSghuIyOsOXrqGQyHrDeaBO0m1
-ChT52ROvTedzDU479U1IWsjFxTX+zOxZf4WsCpl/wtBLHHgU8uONd5Xu7xeRiNDR
-lLtSsw5Co6Uacg33Q/x4chYrWxajcsFzrlm9qaFbsZoVbfpB3H9j5UFY78ZBEgX+
-7voj8VasrAWt+JaGU8bfSPIHagLxc+kcvz2cn+Ju8pR4C7/4fjY5zbdl3bxeORet
-kmYdONgNHOnNIOFgQX7JV/BnuBBnGXtpVeBUg4BDX0nf711OXvo00mAhiOkbOl7+
-NHnb0ZN3Cz6P1VFLO4tJrHK3LB/06qeWE6H5358qEvjknhvr1ypnhhPI9F9YbCC3
-h1xu3uCWZLk3Kip02Ie+zw+KmMMnq5ONvfzDaZ8nof/RZk8HsEqJv3Uzy23LvypE
-JAgXFKiJ5Cjm6ZPj8Vex
-=Uw3O
------END PGP SIGNATURE-----
-
---Y18yPE/eBgOv3N1p--
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
