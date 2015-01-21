@@ -1,100 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753480AbbAUAuR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 19:50:17 -0500
-Received: from relay3-d.mail.gandi.net ([217.70.183.195]:40897 "EHLO
-	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750717AbbAUAuO (ORCPT
+	id S1753582AbbAUA1z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 19:27:55 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:56881 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752053AbbAUA1y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 19:50:14 -0500
-X-Originating-IP: 50.43.58.154
-Date: Tue, 20 Jan 2015 16:50:06 -0800
-From: Josh Triplett <josh@joshtriplett.org>
-To: Casey Schaufler <casey@schaufler-ca.com>
-Cc: Iulia Manda <iulia.manda21@gmail.com>, serge.hallyn@canonical.com,
-        linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, paulmck@linux.vnet.ibm.com,
-        peterz@infradead.org, mhocko@suse.cz
-Subject: Re: [PATCH] kernel: Conditionally support non-root users, groups and
- capabilities
-Message-ID: <20150121005006.GA1217@thin>
-References: <20150120233308.GA6256@winterfell>
- <54BEED2C.2000000@schaufler-ca.com>
+	Tue, 20 Jan 2015 19:27:54 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Bjorn Helgaas <bhelgaas@google.com>,
+        Yinghai Lu <yinghai@kernel.org>, Borislav Petkov <bp@alien8.de>,
+        Len Brown <lenb@kernel.org>, Tony Luck <tony.luck@intel.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [RFC Patch 14/19] ACPI: Translate resource into master side address for bridge window resources
+Date: Wed, 21 Jan 2015 01:50:30 +0100
+Message-ID: <2697984.BuF6Nq9EvE@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1420684386-5975-15-git-send-email-jiang.liu@linux.intel.com>
+References: <1420684386-5975-1-git-send-email-jiang.liu@linux.intel.com> <1420684386-5975-15-git-send-email-jiang.liu@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54BEED2C.2000000@schaufler-ca.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 04:05:00PM -0800, Casey Schaufler wrote:
-> On 1/20/2015 3:33 PM, Iulia Manda wrote:
-> > There are a lot of embedded systems that run most or all of their functionality
-> > in init, running as root:root. For these systems, supporting multiple users is
-> > not necessary.
-> >
-> > This patch adds a new symbol, CONFIG_NON_ROOT, that makes support for non-root
-> > users, non-root groups, and capabilities optional.
-> >
-> > When this symbol is not defined, UID and GID are zero in any possible case
-> > and processes always have all capabilities.
-> >
-> > Also, the following syscalls are compiled out: setuid, setregid, setgid,
-> > setreuid, setresuid, getresuid, setresgid, getresgid, setgroups, getgroups,
-> > setfsuid, setfsgid, capget, capset.
-> >
-> > This change saves about 25 KB on a defconfig build.
-> >
-> > Bloat-o-meter output:
-> > add/remove: 7/66 grow/shrink: 21/421 up/down: 1701/-27172 (-25471)
-> >
-> > Signed-off-by: Iulia Manda <iulia.manda21@gmail.com>
-> > Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+On Thursday, January 08, 2015 10:33:01 AM Jiang Liu wrote:
+> Add translation_offset into the result address for bridge window
+> resources to form the master side address.
 > 
-> Authoritative LSM hooks were loudly rejected in or about 1999.
-> One of the primary reasons they were rejected was because you could
-> use them do exactly what this patch does, which is to remove the basic
-> Linux security policy. If attitudes have changed sufficiently that
-> removing the "classic" security behavior is now deemed acceptable,
-> I propose that we reintroduce the option of authoritative LSM hooks
-> instead. That would give you all this saving, and probably more.
+> Currently acpi_dev_resource_{ext_}address_space() are only used for
+> devices instead of bridges, so it won't break current users. Later
+> it will be used to support PCI host bridge drivers.
+> 
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> ---
+>  drivers/acpi/resource.c |   14 ++++++++++++++
+>  1 file changed, 14 insertions(+)
+> 
+> diff --git a/drivers/acpi/resource.c b/drivers/acpi/resource.c
+> index d3aa56674bd4..16d334a1ee25 100644
+> --- a/drivers/acpi/resource.c
+> +++ b/drivers/acpi/resource.c
+> @@ -203,6 +203,20 @@ static bool acpi_decode_space(struct resource *res, resource_size_t *offset,
+>  	res->start = addr->minimum;
+>  	res->end = addr->maximum;
+>  
+> +	/*
+> +	 * For bridges that translate addresses across the bridge,
+> +	 * translation_offset is the offset that must be added to the
+> +	 * address on the secondary side to obtain the address on the
+> +	 * primary side. Non-bridge devices must list 0 for all Address
+> +	 * Translation offset bits.
+> +	 */
+> +	if (base->producer_consumer == ACPI_PRODUCER) {
 
-Wouldn't authoritative LSM hooks require *adding* the necessary hook
-logic, along with a hook module implementing such a policy?  Unless
-you're suggesting that compiling in LSM hooks without any providers
-would result in this behavior by default, which seems rather
-questionable.
+OK, so the assumption is that this check is never true in the current code, right?
 
-Also note that this is compiling out the entire family of UID/GID system
-calls, which LSM hooks could not do.
+> +		res->start += addr->translation_offset;
+> +		res->end += addr->translation_offset;
+> +	} else if (addr->translation_offset) {
 
-In any case, I see two major problems with authoritative LSM hooks that
-this patch avoids:
+And won't this break anything even if so?
 
-First, simplicity: I doubt authoritative LSM hooks could match this
-diffstat:
+> +		return false;
+> +	}
+> +
+>  	switch(base->resource_type) {
+>  	case ACPI_MEMORY_RANGE:
+>  		acpi_dev_memresource_flags(res, len, wp);
+> 
 
-> >  include/linux/capability.h |   12 ++++++++++++
-> >  include/linux/uidgid.h     |   12 ++++++++++++
-> >  init/Kconfig               |   19 ++++++++++++++++++-
-> >  kernel/capability.c        |    6 ++++++
-> >  kernel/groups.c            |    4 ++++
-> >  kernel/sys.c               |    2 ++
-> >  kernel/sys_ni.c            |   14 ++++++++++++++
-> >  7 files changed, 68 insertions(+), 1 deletion(-)
-
-Second, code size reduction: In addition to the concern above about
-adding hooks rather than removing code, this patch allows
-constant-folding away huge amounts of code, which any kind of "hook"
-mechanism would have a hard time doing.  This patch lets the compiler do
-almost all of the work.  Notice the "66 shrink" and "421 down" in the
-bloat-o-meter summary.
-
-The intent here is not to open the door to arbitrary replacement
-security policies.  The intent is to simply add a compile-time option to
-compile *out* security policies entirely, for systems that will not only
-never call setuid but in many cases never even call fork.
-
-- Josh Triplett
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
