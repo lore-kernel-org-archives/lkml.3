@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752949AbbAUO7f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 09:59:35 -0500
-Received: from mail-wg0-f53.google.com ([74.125.82.53]:39290 "EHLO
-	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750868AbbAUO71 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 09:59:27 -0500
-Message-ID: <54BFBECB.1030306@redhat.com>
-Date: Wed, 21 Jan 2015 15:59:23 +0100
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	id S1753267AbbAUPAR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 10:00:17 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:53169 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751777AbbAUPAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 10:00:12 -0500
+Date: Wed, 21 Jan 2015 17:00:03 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org,
+        Gerd Hoffmann <kraxel@redhat.com>
+Subject: [PATCH pre-squash 00/14] virtio 1.0: virtio-pci fixup
+Message-ID: <1421852375-22604-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, KVM <kvm@vger.kernel.org>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kvm: Fix CR3_PCID_INVD type on 32-bit
-References: <1421311496-18028-1-git-send-email-bp@alien8.de>
-In-Reply-To: <1421311496-18028-1-git-send-email-bp@alien8.de>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is just the full patchset reposted with fixups in correct order,
+before squashing them.
+I also tweaked commit log for patch
+	"virtio_pci: modern driver"
+I also included Gerd's tag:
+Tested-by: Gerd Hoffmann <kraxel@redhat.com>
 
+You can find it all before the rebase -i --autosquash in my tree:
+        git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git virtio-next
+or same thing after rebase -i --autosquash:
+        git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git vhost-next
 
-On 15/01/2015 09:44, Borislav Petkov wrote:
-> From: Borislav Petkov <bp@suse.de>
-> 
-> arch/x86/kvm/emulate.c: In function ‘check_cr_write’:
-> arch/x86/kvm/emulate.c:3552:4: warning: left shift count >= width of type
->     rsvd = CR3_L_MODE_RESERVED_BITS & ~CR3_PCID_INVD;
-> 
-> happens because sizeof(UL) on 32-bit is 4 bytes but we shift it 63 bits
-> to the left.
-> 
-> Signed-off-by: Borislav Petkov <bp@suse.de>
-> ---
->  arch/x86/include/asm/kvm_host.h | 2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> index d89c6b828c96..a8d07a060136 100644
-> --- a/arch/x86/include/asm/kvm_host.h
-> +++ b/arch/x86/include/asm/kvm_host.h
-> @@ -51,7 +51,7 @@
->  			  | X86_CR0_NW | X86_CR0_CD | X86_CR0_PG))
->  
->  #define CR3_L_MODE_RESERVED_BITS 0xFFFFFF0000000000ULL
-> -#define CR3_PCID_INVD		 (1UL << 63)
-> +#define CR3_PCID_INVD		 BIT_64(63)
->  #define CR4_RESERVED_BITS                                               \
->  	(~(unsigned long)(X86_CR4_VME | X86_CR4_PVI | X86_CR4_TSD | X86_CR4_DE\
->  			  | X86_CR4_PSE | X86_CR4_PAE | X86_CR4_MCE     \
-> 
+Hope it helps!
 
-Applied, thanks.
+Michael S. Tsirkin (12):
+  virtio_pci: move probe/remove code to common
+  fixup! virtio-pci: define layout for virtio 1.0
+  virtio_pci: modern driver
+  fixup! virtio_pci: modern driver
+  fixup! virtio_pci: modern driver
+  fixup! virtio_pci: macros for PCI layout offsets
+  virtio_pci_modern: reduce number of mappings
+  virtio_pci_modern: support devices with no config
+  virtio_pci: add an option to disable legacy driver
+  virtio_pci: add module param to force legacy mode
+  fixup! virtio_pci: add module param to force legacy mode
+  virtio_pci_modern: drop an unused function
 
-Paolo
+Rusty Russell (2):
+  virtio-pci: define layout for virtio 1.0
+  virtio_pci: macros for PCI layout offsets
+
+ drivers/virtio/virtio_pci_common.h |  43 ++-
+ include/uapi/linux/virtio_pci.h    |  89 +++++
+ drivers/virtio/virtio_pci_common.c |  94 ++++-
+ drivers/virtio/virtio_pci_legacy.c |  75 +---
+ drivers/virtio/virtio_pci_modern.c | 695 +++++++++++++++++++++++++++++++++++++
+ drivers/virtio/Kconfig             |  19 +
+ drivers/virtio/Makefile            |   3 +-
+ 7 files changed, 942 insertions(+), 76 deletions(-)
+ create mode 100644 drivers/virtio/virtio_pci_modern.c
+
+-- 
+MST
+
