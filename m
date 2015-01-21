@@ -1,64 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752779AbbAUNCT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 08:02:19 -0500
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:45211 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751478AbbAUNCL (ORCPT
+	id S1753318AbbAUNCy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 08:02:54 -0500
+Received: from pandora.arm.linux.org.uk ([78.32.30.218]:43604 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752925AbbAUNCo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 08:02:11 -0500
-Date: Wed, 21 Jan 2015 13:02:04 +0000
-From: Lee Jones <lee.jones@linaro.org>
-To: Brian Norris <computersforpeace@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mtd@lists.infradead.org, kernel@stlinux.com,
-        Angus Clark <angus.clark@st.com>,
-        Carmelo Amoroso <carmelo.amoroso@st.com>
-Subject: Re: [PATCH v3 08/13] mtd: st_spi_fsm: Update the JEDEC probe to
- handle extended READIDs
-Message-ID: <20150121130204.GC22024@x1>
-References: <1418644760-18773-1-git-send-email-lee.jones@linaro.org>
- <1418644760-18773-9-git-send-email-lee.jones@linaro.org>
- <20150113050715.GQ9759@ld-irv-0074>
+	Wed, 21 Jan 2015 08:02:44 -0500
+Date: Wed, 21 Jan 2015 13:02:31 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Lee Jones <lee.jones@linaro.org>
+Cc: Robert Jarzmik <robert.jarzmik@free.fr>,
+        Mark Rutland <mark.rutland@arm.com>, devicetree@vger.kernel.org,
+        Samuel Ortiz <sameo@linux.intel.com>, Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Rob Herring <robh+dt@kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-kernel@lists.infradead.org,
+        Kumar Gala <galak@codeaurora.org>, Daniel Mack <daniel@zonque.org>
+Subject: Re: [PATCH v3 2/3] mfd: lubbock_io: add lubbock_io board
+Message-ID: <20150121130231.GQ26493@n2100.arm.linux.org.uk>
+References: <1421406010-14851-1-git-send-email-robert.jarzmik@free.fr>
+ <1421406010-14851-2-git-send-email-robert.jarzmik@free.fr>
+ <20150119091705.GG21886@x1>
+ <87ppaah9k5.fsf@free.fr>
+ <20150120102919.GP5767@x1>
+ <20150120115658.GJ26493@n2100.arm.linux.org.uk>
+ <873874fuei.fsf@free.fr>
+ <20150121081645.GC9258@x1>
+ <87y4owedx1.fsf@free.fr>
+ <20150121123551.GD9258@x1>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20150113050715.GQ9759@ld-irv-0074>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20150121123551.GD9258@x1>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Jan 2015, Brian Norris wrote:
+On Wed, Jan 21, 2015 at 12:35:51PM +0000, Lee Jones wrote:
+> I think to set an edge trigger on an IRQ, you should instead do so via
+> irq_set_irq_type(), or have a missed a line or two?
 
-> On Mon, Dec 15, 2014 at 11:59:15AM +0000, Lee Jones wrote:
-> > The previous code was based on 3-byte JEDEC IDs, with a possible 2-byte
-> > extension.  However, devices are now emerging that return 6 or more bytes of
-> > READID data and the additional bytes are required to differentiate between
-> > variants or generations of similar devices.
-> > 
-> > This patch refactors the device table and JEDEC probe code to handle arbitrary
-> > length READIDs, with the standard JEDEC definition now becoming a special case.
-> > Functionally, there should be no change in behaviour.  A subsequent patch will
-> > update the table with extended READIDs where applicable.
-> 
-> BTW, how's that promise going, where you work on adapting this driver to
-> the spi-nor framework? We've already done some of this same work there.
+Setting the IRQ type in request_irq() is perfectly acceptable.
 
-I have pushed this point within ST and someone has agreed to do the
-work.  Last I heard it relied on these patches, but I'll ask again.
+include/linux/interrupt.h:
+/*
+ * These correspond to the IORESOURCE_IRQ_* defines in
+ * linux/ioport.h to select the interrupt line behaviour.  When
+ * requesting an interrupt without specifying a IRQF_TRIGGER, the
+ * setting should be assumed to be "as already configured", which
+ * may be as per machine or firmware initialisation.
+ */
+#define IRQF_TRIGGER_NONE       0x00000000
+#define IRQF_TRIGGER_RISING     0x00000001
+#define IRQF_TRIGGER_FALLING    0x00000002
+#define IRQF_TRIGGER_HIGH       0x00000004
+#define IRQF_TRIGGER_LOW        0x00000008
 
-> > +#define RDID(...) __VA_ARGS__  /* Dummy macro to protect array argument. */
-> 
-> What? What needs "protected"?
-
-You're asking me questions I can't answer I'm afraid and Angus has now
-left the building.  I guess he thinks __VA_ARGS__ will prevent some
-kind of overflow?
 
 -- 
-Lee Jones
-Linaro STMicroelectronics Landing Team Lead
-Linaro.org │ Open source software for ARM SoCs
-Follow Linaro: Facebook | Twitter | Blog
+FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
+according to speedtest.net.
