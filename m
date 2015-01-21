@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753810AbbAUQZp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 11:25:45 -0500
-Received: from mail-qa0-f43.google.com ([209.85.216.43]:50904 "EHLO
-	mail-qa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752638AbbAUQZf (ORCPT
+	id S1753870AbbAUQ1G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 11:27:06 -0500
+Received: from mail.savoirfairelinux.com ([209.172.62.77]:61184 "EHLO
+	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752267AbbAUQ1B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 11:25:35 -0500
-Date: Wed, 21 Jan 2015 11:25:23 -0500
-From: Tejun Heo <tj@kernel.org>
-To: Thierry Reding <treding@nvidia.com>
-Cc: Paul Walmsley <paul@pwsan.com>, gregory.clement@free-electrons.com,
-        hdegoede@redhat.com, pwalmsley@nvidia.com, linux-tegra@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-next@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: Re: next-20150120 broken on Tegra by "ata: libahci: Allow using
- multiple regulators"
-Message-ID: <20150121162523.GE8684@htj.dyndns.org>
-References: <alpine.DEB.2.02.1501210003010.5450@utopia.booyaka.com>
- <20150121105001.GA9921@ulmo.nvidia.com>
- <20150121123134.GD8684@htj.dyndns.org>
- <20150121155519.GA25166@ulmo.nvidia.com>
+	Wed, 21 Jan 2015 11:27:01 -0500
+Date: Wed, 21 Jan 2015 11:26:59 -0500 (EST)
+From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
+To: Guenter Roeck <linux@roeck-us.net>
+Cc: Florian Fainelli <f.fainelli@gmail.com>, netdev <netdev@vger.kernel.org>,
+        "David S . Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        kernel@savoirfairelinux.com
+Message-ID: <1206541390.69577.1421857619949.JavaMail.root@mail>
+In-Reply-To: <CAGVrzcawAF1=RPAJ+0O3B+PA7sDkstTjVjDQL_8C8a8kHL7CoA@mail.gmail.com>
+Subject: Re: [PATCH] net: dsa: set parent of hwmon device
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150121155519.GA25166@ulmo.nvidia.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Mailer: Zimbra 7.1.4_GA_2555 (ZimbraWebClient - FF3.0 (Linux)/7.1.4_GA_2555)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 04:55:21PM +0100, Thierry Reding wrote:
-> From a4f78e3ec05f1b2ad86aa44d6bd5394d75a23a06 Mon Sep 17 00:00:00 2001
-> From: Thierry Reding <treding@nvidia.com>
-> Date: Wed, 21 Jan 2015 11:50:52 +0100
-> Subject: [PATCH] ata: libahci: Fix devres cleanup on failure
-> 
-> Commit c7d7ddee7e24 ("ata: libahci: Allow using multiple regulators")
-> releases regulators during ahci_platform_put_resources(). That doesn't
-> work because the function is run as part of the devres machinery. Such
-> resources are torn down in reverse order. Since the array that holds
-> pointers to the regulators is allocated using devres after the device
-> context to which ahci_platform_put_resources() is attached, the memory
-> will be freed before calling ahci_platform_put_resources() and thereby
-> causing a use-after-free error.
-> 
-> This commit fixes this by using regular allocations for the array. The
-> memory can then be freed after the regulators have been released. This
-> conserves the advantages of using the managed API.
-> 
-> Reported-by: Paul Walmsley <paul@pwsan.com>
-> Signed-off-by: Thierry Reding <treding@nvidia.com>
+Hi Guenter, Florian,
 
-Applied to libata/for-3.20.
+>>> -               ds->hwmon_dev = hwmon_device_register_with_groups(NULL,
+>>> +               ds->hwmon_dev = hwmon_device_register_with_groups(parent,
+>>>                                         ds->hwmon_name, ds, dsa_hwmon_groups);
+>>>                 if (IS_ERR(ds->hwmon_dev))
+>>>                         ds->hwmon_dev = NULL;
+>>
+>> Looking into my old e-mail, turns out we did not add the parent
+>> device because it affected the output of the "sensors" command, and
+>> we wanted the device to be handled as 'virtual device' (which implies
+>> no parent). That was an explicit part of the patch set (v2 of 'net:
+>> dsa: Add support for reporting switch chip temperatures'), compared
+>> to v1, which did set the parent device.
 
-Thanks.
+I don't know about the "sensors" output, but I found that convenient
+from the sysfs side to have a hierarchy of sub-devices logically exposed
+at the same place, i.e.:
 
--- 
-tejun
+	# ls /sys/devices/platform/dsa.0
+	driver    hwmon    net    ...
+
+>> I would suggest to keep the code as is.
+
+> Maybe follow-up with a comment adding that above the call to
+> hwmon_device_register_with_groups()? I suspect the intent is clear if
+> you are deep into hwmon devices, but not necessarily for the reader ;)
+
+Thanks,
+-v
