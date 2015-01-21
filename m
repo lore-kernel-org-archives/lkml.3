@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754518AbbAUG1r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 01:27:47 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:44395 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750812AbbAUG1C (ORCPT
+	id S1754350AbbAUG1j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 01:27:39 -0500
+Received: from mailout2.samsung.com ([203.254.224.25]:42797 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751765AbbAUG1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 01:27:02 -0500
-X-AuditID: cbfee68d-f79296d000004278-5d-54bf46b4196f
+	Wed, 21 Jan 2015 01:27:08 -0500
+X-AuditID: cbfee690-f79ab6d0000046f7-9d-54bf46b422ff
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: s.nawrocki@samsung.com, tomasz.figa@gmail.com
 Cc: mturquette@linaro.org, kgene@kernel.org, pankaj.dubey@samsung.com,
         inki.dae@samsung.com, chanho61.park@samsung.com,
         sw0312.kim@samsung.com, cw00.choi@samsung.com,
         linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3 06/12] clk: samsung: exynos5433: Add clocks for CMU_MIF
+Subject: [PATCH v3 07/12] clk: samsung: exynos5433: Add clocks for CMU_DISP
  domain
-Date: Wed, 21 Jan 2015 15:26:55 +0900
-Message-id: <1421821618-8627-7-git-send-email-cw00.choi@samsung.com>
+Date: Wed, 21 Jan 2015 15:26:56 +0900
+Message-id: <1421821618-8627-8-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.5.5
 In-reply-to: <1421821618-8627-1-git-send-email-cw00.choi@samsung.com>
 References: <1421821618-8627-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHLMWRmVeSWpSXmKPExsWyRsSkWHeL2/4QgxvXJSwu79e2uP7lOavF
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrLLMWRmVeSWpSXmKPExsWyRsSkQHeL2/4Qg9+/pCwu79e2uP7lOavF
 	pPsTWCz6H79mtri8aw6bxYzz+5gsnk64yGaxaOsXdovDb9pZLWZMfslmsWrXH0YHbo+ds+6y
-	e2xa1cnmcefaHjaPvi2rGD0+b5ILYI3isklJzcksSy3St0vgyuh9/4mpYMtEporbDbOYGxjP
-	vmXsYuTkkBAwkZjW84AFwhaTuHBvPVsXIxeHkMBSRonOL2eZYYrO/v8FlVjEKHH42GYWCKeJ
-	SaLlbBtYO5uAlsT+FzeAqjg4RAQMJW4eUgKpYRZ4wyjR/f43K0hcWCBY4vmyEJByFgFVibbd
-	DawgNq+Ai8TGBYuZIJYpSCxbPhOsnFPAVaL9NhOIKQRUcm5LCchECYFt7BLzph5jghgjIPFt
-	8iEWkBoJAVmJTQegTpaUOLjiBssERuEFjAyrGEVTC5ILipPSiwz1ihNzi0vz0vWS83M3MQKj
-	4fS/Z707GG8fsD7EKMDBqMTD+0Jxf4gQa2JZcWXuIUZToA0TmaVEk/OBMZdXEm9obGZkYWpi
-	amxkbmmmJM6rKPUzWEggPbEkNTs1tSC1KL6oNCe1+BAjEwenVAPj4vCIFG/l5QWH3k38LpBa
-	nDajhvlB7TlTx4PSlz79uVbELJogN/ldxuqVVbbXTJdtvKWbo/jjhtPdIuctD9/NPbro0JKk
-	Y0fjSy5sjEyN/yQ+LcnldFjlH8sCaZlrsxL4jrjnSavn3/sY+fa+bi/jtWQP3gMyOYZmO+qN
-	n5r6TZX7mC6e79GtxFKckWioxVxUnAgAdMoVtIECAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBIsWRmVeSWpSXmKPExsVy+t9jAd0tbvtDDH7P4LC4vF/b4vqX56wW
+	e2xa1cnmcefaHjaPvi2rGD0+b5ILYI3isklJzcksSy3St0vgyri6Krhg8WXGip9PjrM1MG7c
+	ytjFyMkhIWAisenETHYIW0ziwr31bF2MXBxCAksZJXZPv8IOU3T1wxZWiMQiRonmBf+gqpqY
+	JFrOtrGAVLEJaEnsf3EDKMHBISJgKHHzkBJIDbPAG0aJ7ve/WUFqhAVCJJqOTmQGqWERUJU4
+	8lIJJMwr4CLR2HmEFWKZgsSy5TNZQUo4BVwl2m8zgZhCQCXntpSATJQQ2MYuMXPjfCaQchYB
+	AYlvkw+xgNRICMhKbDrADDFFUuLgihssExiFFzAyrGIUTS1ILihOSi8y0StOzC0uzUvXS87P
+	3cQIjIXT/55N2MF474D1IUYBDkYlHt4XivtDhFgTy4orcw8xmgJtmMgsJZqcD4y4vJJ4Q2Mz
+	IwtTE1NjI3NLMyVx3tdSP4OFBNITS1KzU1MLUovii0pzUosPMTJxcEo1MDLGXBGYoM7Cr9uh
+	9+L3Oaa3Hal/mj9I9Thc9dYwnXruzI5vW8T+6JWw6mtOOb1RfMm5Vn7Js3uPLY/5G8lXJRyZ
+	nntN9oBNp11ow2PvYwf+h9p1Xd2XdUa+bP1S7ao/bo2Z4ZtXOQjq9Xhs2RazNeveR9v4VZN6
+	F0ulRpwuDd4QKHI4/En5TSWW4oxEQy3mouJEABLOgL2AAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrOIsWRmVeSWpSXmKPExsVy+t9jAd0tbvtDDA484bG4vF/b4vqX56wW
 	k+5PYLHof/ya2eLyrjlsFjPO72OyeDrhIpvFoq1f2C0Ov2lntZgx+SWbxapdfxgduD12zrrL
 	7rFpVSebx51re9g8+rasYvT4vEkugDWqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX
 	0NLCXEkhLzE31VbJxSdA1y0zB+g0JYWyxJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+IUFwPUYG
-	aCBhDWNG7/tPTAVbJjJV3G6YxdzAePYtYxcjJ4eEgInE2f+/2CBsMYkL99YD2VwcQgKLGCUO
-	H9vMAuE0MUm0nG1jAaliE9CS2P/iBlAVB4eIgKHEzUNKIDXMAm8YJbrf/2YFiQsLBEs8XxYC
-	Us4ioCrRtruBFcTmFXCR2LhgMRPEMgWJZctngpVzCrhKtN9mAjGFgErObSmZwMi7gJFhFaNo
-	akFyQXFSeq6hXnFibnFpXrpecn7uJkZwrD2T2sG4ssHiEKMAB6MSD+8Lxf0hQqyJZcWVuYcY
-	JTiYlUR4FSWAQrwpiZVVqUX58UWlOanFhxhNgW6ayCwlmpwPTAN5JfGGxiZmRpZG5oYWRsbm
-	SuK8SvZtIUIC6YklqdmpqQWpRTB9TBycUg2MJ5JvfeZ2iHyXmtPAO+vpPb2e6mjtDWbS8+7t
-	adt3YaFK1MT/dREzgmeVLxbLq+e+3lj15Yhp5KmdcgsYON/63v8rI1oaq6sz/4tXtHxN0M6q
-	tBWHIwISRcUCtja7d3x5HjXVMu//hrxJF9/NtN15QqRP774Mn9jtWzsdpoq//v33xoMdvcL7
-	lViKMxINtZiLihMB5Tr9ncsCAAA=
+	aCBhDWPG1VXBBYsvM1b8fHKcrYFx41bGLkZODgkBE4mrH7awQthiEhfurWfrYuTiEBJYxCjR
+	vOAflNPEJNFyto0FpIpNQEti/4sbQAkODhEBQ4mbh5RAapgF3jBKdL//DTZJWCBEounoRGaQ
+	GhYBVYkjL5VAwrwCLhKNnUeglilILFs+kxWkhFPAVaL9NhOIKQRUcm5LyQRG3gWMDKsYRVML
+	kguKk9JzDfWKE3OLS/PS9ZLzczcxgiPtmdQOxpUNFocYBTgYlXh4XyjuDxFiTSwrrsw9xCjB
+	wawkwqsoARTiTUmsrEotyo8vKs1JLT7EaAp00kRmKdHkfGASyCuJNzQ2MTOyNDI3tDAyNlcS
+	51WybwsREkhPLEnNTk0tSC2C6WPi4JRqYIyIecm95mn9r9D7j2ccl7h85+fhZxmy2xwj5FwT
+	VituivTpXvMuf8vGrwE30tiXrNPJj1EWfrrxxLQn4lPqP9zqFXpuqWmtJ7wmuCfM6I2EPHdG
+	vo/cnlINbYfZ3//lySlsOSnQuj6efVnCdMfVOcV/cnpLVwkJb5+08u72nbzXHqzN93CWe6bE
+	UpyRaKjFXFScCAB9SMeSygIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -53,848 +53,655 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the mux/divider/gate clocks of CMU_MIF domain which includes
-the clocks for DMC(DRAM memory controller) and CCI(Cache Coherent Interconnect).
-The CMU_MIF domain provides the source clocks for CMU_DISP/CMU_BUS2.
+This patch adds the the mux/divider/gate clocks for CMU_DISP domain which
+includes the clocks of Display IPs (DECON/HDMI/DSIM/MIXER). The CMU_DISP clocks
+is used to need the source clock of CMU_MIF domain so, the CMU_MIF's clocks
+related to CMU_DISP should be always on state.
+
+Also, CMU_DISP must need the source clock of 'sclk_hdmi_spdif_disp'
+from CMU_TOP domain. This patch adds the clocks of CMU_TOP related to HDMI.
 
 Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
 Cc: Tomasz Figa <tomasz.figa@gmail.com>
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 Acked-by: Inki Dae <inki.dae@samsung.com>
 ---
- drivers/clk/samsung/clk-exynos5433.c   | 599 +++++++++++++++++++++++++++++++++
- include/dt-bindings/clock/exynos5433.h | 190 ++++++++++-
- 2 files changed, 788 insertions(+), 1 deletion(-)
+ .../devicetree/bindings/clock/exynos5433-clock.txt |   9 +
+ drivers/clk/samsung/clk-exynos5433.c               | 437 +++++++++++++++++++++
+ include/dt-bindings/clock/exynos5433.h             | 114 +++++-
+ 3 files changed, 559 insertions(+), 1 deletion(-)
 
+diff --git a/Documentation/devicetree/bindings/clock/exynos5433-clock.txt b/Documentation/devicetree/bindings/clock/exynos5433-clock.txt
+index 27dd77b..8d3dad4 100644
+--- a/Documentation/devicetree/bindings/clock/exynos5433-clock.txt
++++ b/Documentation/devicetree/bindings/clock/exynos5433-clock.txt
+@@ -21,6 +21,8 @@ Required Properties:
+     which generates clocks for USB/UFS/SDMMC/TSI/PDMA IPs.
+   - "samsung,exynos5433-cmu-g2d"   - clock controller compatible for CMU_G2D
+     which generates clocks for G2D/MDMA IPs.
++  - "samsung,exynos5433-cmu-disp"  - clock controller compatible for CMU_DISP
++    which generates clocks for Display (DECON/HDMI/DSIM/MIXER) IPs.
+ 
+ - reg: physical base address of the controller and length of memory mapped
+   region.
+@@ -78,6 +80,13 @@ Example 1: Examples of clock controller nodes are listed below.
+ 		#clock-cells = <1>;
+ 	};
+ 
++	cmu_disp: clock-controller@0x13b90000 {
++		compatible = "samsung,exynos5433-cmu-disp";
++		reg = <0x13b90000 0x0c04>;
++		#clock-cells = <1>;
++	};
++
++
+ Example 2: UART controller node that consumes the clock generated by the clock
+ 	   controller.
+ 
 diff --git a/drivers/clk/samsung/clk-exynos5433.c b/drivers/clk/samsung/clk-exynos5433.c
-index 9754c3d..7e33c68 100644
+index 7e33c68..3a3e64b 100644
 --- a/drivers/clk/samsung/clk-exynos5433.c
 +++ b/drivers/clk/samsung/clk-exynos5433.c
-@@ -740,6 +740,66 @@ CLK_OF_DECLARE(exynos5433_cmu_cpif, "samsung,exynos5433-cmu-cpif",
- #define MFC_PLL_CON0			0x0130
- #define MFC_PLL_CON1			0x0134
- #define MFC_PLL_FREQ_DET		0x013c
-+#define MUX_SEL_MIF0			0x0200
-+#define MUX_SEL_MIF1			0x0204
-+#define MUX_SEL_MIF2			0x0208
-+#define MUX_SEL_MIF3			0x020c
-+#define MUX_SEL_MIF4			0x0210
-+#define MUX_SEL_MIF5			0x0214
-+#define MUX_SEL_MIF6			0x0218
-+#define MUX_SEL_MIF7			0x021c
-+#define MUX_ENABLE_MIF0			0x0300
-+#define MUX_ENABLE_MIF1			0x0304
-+#define MUX_ENABLE_MIF2			0x0308
-+#define MUX_ENABLE_MIF3			0x030c
-+#define MUX_ENABLE_MIF4			0x0310
-+#define MUX_ENABLE_MIF5			0x0314
-+#define MUX_ENABLE_MIF6			0x0318
-+#define MUX_ENABLE_MIF7			0x031c
-+#define MUX_STAT_MIF0			0x0400
-+#define MUX_STAT_MIF1			0x0404
-+#define MUX_STAT_MIF2			0x0408
-+#define MUX_STAT_MIF3			0x040c
-+#define MUX_STAT_MIF4			0x0410
-+#define MUX_STAT_MIF5			0x0414
-+#define MUX_STAT_MIF6			0x0418
-+#define MUX_STAT_MIF7			0x041c
-+#define DIV_MIF1			0x0604
-+#define DIV_MIF2			0x0608
-+#define DIV_MIF3			0x060c
-+#define DIV_MIF4			0x0610
-+#define DIV_MIF5			0x0614
-+#define DIV_MIF_PLL_FREQ_DET		0x0618
-+#define DIV_STAT_MIF1			0x0704
-+#define DIV_STAT_MIF2			0x0708
-+#define DIV_STAT_MIF3			0x070c
-+#define DIV_STAT_MIF4			0x0710
-+#define DIV_STAT_MIF5			0x0714
-+#define DIV_STAT_MIF_PLL_FREQ_DET	0x0718
-+#define ENABLE_ACLK_MIF0		0x0800
-+#define ENABLE_ACLK_MIF1		0x0804
-+#define ENABLE_ACLK_MIF2		0x0808
-+#define ENABLE_ACLK_MIF3		0x080c
-+#define ENABLE_PCLK_MIF			0x0900
-+#define ENABLE_PCLK_MIF_SECURE_DREX0_TZ	0x0904
-+#define ENABLE_PCLK_MIF_SECURE_DREX1_TZ	0x0908
-+#define ENABLE_PCLK_MIF_SECURE_MONOTONIC_CNT	0x090c
-+#define ENABLE_PCLK_MIF_SECURE_RTC	0x0910
-+#define ENABLE_SCLK_MIF			0x0a00
-+#define ENABLE_IP_MIF0			0x0b00
-+#define ENABLE_IP_MIF1			0x0b04
-+#define ENABLE_IP_MIF2			0x0b08
-+#define ENABLE_IP_MIF3			0x0b0c
-+#define ENABLE_IP_MIF_SECURE_DREX0_TZ	0x0b10
-+#define ENABLE_IP_MIF_SECURE_DREX1_TZ	0x0b14
-+#define ENABLE_IP_MIF_SECURE_MONOTONIC_CNT	0x0b18
-+#define ENABLE_IP_MIF_SECURE_RTC	0x0b1c
-+#define CLKOUT_CMU_MIF			0x0c00
-+#define CLKOUT_CMU_MIF_DIV_STAT		0x0c04
-+#define DREX_FREQ_CTRL0			0x1000
-+#define DREX_FREQ_CTRL1			0x1004
-+#define PAUSE				0x1008
-+#define DDRPHY_LOCK_CTRL		0x100c
+@@ -245,6 +245,8 @@ PNAME(mout_sclk_audio1_p)	= { "ioclk_audiocdclk1", "fin_pll",
+ PNAME(mout_sclk_audio0_p)	= { "ioclk_audiocdclk0", "fin_pll",
+ 				    "mout_aud_pll_user_t",};
  
- static unsigned long mif_clk_regs[] __initdata = {
- 	MEM0_PLL_LOCK,
-@@ -758,6 +818,66 @@ static unsigned long mif_clk_regs[] __initdata = {
- 	MFC_PLL_CON0,
- 	MFC_PLL_CON1,
- 	MFC_PLL_FREQ_DET,
-+	MUX_SEL_MIF0,
-+	MUX_SEL_MIF1,
-+	MUX_SEL_MIF2,
-+	MUX_SEL_MIF3,
-+	MUX_SEL_MIF4,
-+	MUX_SEL_MIF5,
-+	MUX_SEL_MIF6,
-+	MUX_SEL_MIF7,
-+	MUX_ENABLE_MIF0,
-+	MUX_ENABLE_MIF1,
-+	MUX_ENABLE_MIF2,
-+	MUX_ENABLE_MIF3,
-+	MUX_ENABLE_MIF4,
-+	MUX_ENABLE_MIF5,
-+	MUX_ENABLE_MIF6,
-+	MUX_ENABLE_MIF7,
-+	MUX_STAT_MIF0,
-+	MUX_STAT_MIF1,
-+	MUX_STAT_MIF2,
-+	MUX_STAT_MIF3,
-+	MUX_STAT_MIF4,
-+	MUX_STAT_MIF5,
-+	MUX_STAT_MIF6,
-+	MUX_STAT_MIF7,
-+	DIV_MIF1,
-+	DIV_MIF2,
-+	DIV_MIF3,
-+	DIV_MIF4,
-+	DIV_MIF5,
-+	DIV_MIF_PLL_FREQ_DET,
-+	DIV_STAT_MIF1,
-+	DIV_STAT_MIF2,
-+	DIV_STAT_MIF3,
-+	DIV_STAT_MIF4,
-+	DIV_STAT_MIF5,
-+	DIV_STAT_MIF_PLL_FREQ_DET,
-+	ENABLE_ACLK_MIF0,
-+	ENABLE_ACLK_MIF1,
-+	ENABLE_ACLK_MIF2,
-+	ENABLE_ACLK_MIF3,
-+	ENABLE_PCLK_MIF,
-+	ENABLE_PCLK_MIF_SECURE_DREX0_TZ,
-+	ENABLE_PCLK_MIF_SECURE_DREX1_TZ,
-+	ENABLE_PCLK_MIF_SECURE_MONOTONIC_CNT,
-+	ENABLE_PCLK_MIF_SECURE_RTC,
-+	ENABLE_SCLK_MIF,
-+	ENABLE_IP_MIF0,
-+	ENABLE_IP_MIF1,
-+	ENABLE_IP_MIF2,
-+	ENABLE_IP_MIF3,
-+	ENABLE_IP_MIF_SECURE_DREX0_TZ,
-+	ENABLE_IP_MIF_SECURE_DREX1_TZ,
-+	ENABLE_IP_MIF_SECURE_MONOTONIC_CNT,
-+	ENABLE_IP_MIF_SECURE_RTC,
-+	CLKOUT_CMU_MIF,
-+	CLKOUT_CMU_MIF_DIV_STAT,
-+	DREX_FREQ_CTRL0,
-+	DREX_FREQ_CTRL1,
-+	PAUSE,
-+	DDRPHY_LOCK_CTRL,
++PNAME(mout_sclk_hdmi_spdif_p)	= { "sclk_audio1", "ioclk_spdif_extclk", };
++
+ static struct samsung_fixed_factor_clock top_fixed_factor_clks[] __initdata = {
+ 	FFACTOR(0, "oscclk_efuse_common", "fin_pll", 1, 1, 0),
+ };
+@@ -395,6 +397,10 @@ static struct samsung_mux_clock top_mux_clks[] __initdata = {
+ 			MUX_SEL_TOP_PERIC1, 4, 2),
+ 	MUX(CLK_MOUT_SCLK_AUDIO0, "mout_sclk_audio0", mout_sclk_audio0_p,
+ 			MUX_SEL_TOP_PERIC1, 0, 2),
++
++	/* MUX_SEL_TOP_DISP */
++	MUX(CLK_MOUT_SCLK_HDMI_SPDIF, "mout_sclk_hdmi_spdif",
++			mout_sclk_hdmi_spdif_p, MUX_SEL_TOP_DISP, 0, 1),
  };
  
- static struct samsung_pll_clock mif_pll_clks[] __initdata = {
-@@ -771,9 +891,488 @@ static struct samsung_pll_clock mif_pll_clks[] __initdata = {
- 		MFC_PLL_LOCK, MFC_PLL_CON0, exynos5443_pll_rates),
+ static struct samsung_div_clock top_div_clks[] __initdata = {
+@@ -1360,6 +1366,11 @@ static struct samsung_gate_clock mif_gate_clks[] __initdata = {
+ 			ENABLE_SCLK_MIF, 1, CLK_IGNORE_UNUSED, 0),
+ 	GATE(CLK_SCLK_BUS_PLL_ATLAS, "sclk_bus_pll_atlas", "sclk_bus_pll",
+ 			ENABLE_SCLK_MIF, 0, CLK_IGNORE_UNUSED, 0),
++
++	/* ENABLE_SCLK_TOP_DISP */
++	GATE(CLK_SCLK_HDMI_SPDIF_DISP, "sclk_hdmi_spdif_disp",
++			"mout_sclk_hdmi_spdif", ENABLE_SCLK_TOP_DISP, 0,
++			CLK_IGNORE_UNUSED, 0),
  };
  
-+/* list of all parent clock list */
-+PNAME(mout_mfc_pll_div2_p)	= { "mout_mfc_pll", "dout_mfc_pll", };
-+PNAME(mout_bus_pll_div2_p)	= { "mout_bus_pll", "dout_bus_pll", };
-+PNAME(mout_mem1_pll_div2_p)	= { "mout_mem1_pll", "dout_mem1_pll", };
-+PNAME(mout_mem0_pll_div2_p)	= { "mout_mem0_pll", "dout_mem0_pll", };
-+PNAME(mout_mfc_pll_p)		= { "fin_pll", "fout_mfc_pll", };
-+PNAME(mout_bus_pll_p)		= { "fin_pll", "fout_bus_pll", };
-+PNAME(mout_mem1_pll_p)		= { "fin_pll", "fout_mem1_pll", };
-+PNAME(mout_mem0_pll_p)		= { "fin_pll", "fout_mem0_pll", };
+ static struct samsung_cmu_info mif_cmu_info __initdata = {
+@@ -2022,3 +2033,429 @@ static void __init exynos5433_cmu_g2d_init(struct device_node *np)
+ 
+ CLK_OF_DECLARE(exynos5433_cmu_g2d, "samsung,exynos5433-cmu-g2d",
+ 		exynos5433_cmu_g2d_init);
 +
-+PNAME(mout_clk2x_phy_c_p)	= { "mout_mem0_pll_div2", "mout_clkm_phy_b", };
-+PNAME(mout_clk2x_phy_b_p)	= { "mout_bus_pll_div2", "mout_clkm_phy_a", };
-+PNAME(mout_clk2x_phy_a_p)	= { "mout_bus_pll_div2", "mout_mfc_pll_div2", };
-+PNAME(mout_clkm_phy_b_p)	= { "mout_mem1_pll_div2", "mout_clkm_phy_a", };
++/*
++ * Register offset definitions for CMU_DISP
++ */
++#define DISP_PLL_LOCK			0x0000
++#define DISP_PLL_CON0			0x0100
++#define DISP_PLL_CON1			0x0104
++#define DISP_PLL_FREQ_DET		0x0108
++#define MUX_SEL_DISP0			0x0200
++#define MUX_SEL_DISP1			0x0204
++#define MUX_SEL_DISP2			0x0208
++#define MUX_SEL_DISP3			0x020c
++#define MUX_SEL_DISP4			0x0210
++#define MUX_ENABLE_DISP0		0x0300
++#define MUX_ENABLE_DISP1		0x0304
++#define MUX_ENABLE_DISP2		0x0308
++#define MUX_ENABLE_DISP3		0x030c
++#define MUX_ENABLE_DISP4		0x0310
++#define MUX_STAT_DISP0			0x0400
++#define MUX_STAT_DISP1			0x0404
++#define MUX_STAT_DISP2			0x0408
++#define MUX_STAT_DISP3			0x040c
++#define MUX_STAT_DISP4			0x0410
++#define MUX_IGNORE_DISP2		0x0508
++#define DIV_DISP			0x0600
++#define DIV_DISP_PLL_FREQ_DET		0x0604
++#define DIV_STAT_DISP			0x0700
++#define DIV_STAT_DISP_PLL_FREQ_DET	0x0704
++#define ENABLE_ACLK_DISP0		0x0800
++#define ENABLE_ACLK_DISP1		0x0804
++#define ENABLE_PCLK_DISP		0x0900
++#define ENABLE_SCLK_DISP		0x0a00
++#define ENABLE_IP_DISP0			0x0b00
++#define ENABLE_IP_DISP1			0x0b04
++#define CLKOUT_CMU_DISP			0x0c00
++#define CLKOUT_CMU_DISP_DIV_STAT	0x0c04
 +
-+PNAME(mout_aclk_mifnm_200_p)	= { "mout_mem0_pll_div2", "div_mif_pre", };
-+PNAME(mout_aclk_mifnm_400_p)	= { "mout_mem1_pll_div2", "mout_bus_pll_div2",};
-+
-+PNAME(mout_aclk_disp_333_b_p)	= { "mout_aclk_disp_333_a",
-+				    "mout_bus_pll_div2", };
-+PNAME(mout_aclk_disp_333_a_p)	= { "mout_mfc_pll_div2", "sclk_mphy_pll", };
-+
-+PNAME(mout_sclk_decon_vclk_c_p)	= { "mout_sclk_decon_vclk_b",
-+				    "sclk_mphy_pll", };
-+PNAME(mout_sclk_decon_vclk_b_p)	= { "mout_sclk_decon_vclk_a",
-+				    "mout_mfc_pll_div2", };
-+PNAME(mout_sclk_decon_p)	= { "fin_pll", "mout_bus_pll_div2", };
-+PNAME(mout_sclk_decon_eclk_c_p)	= { "mout_sclk_decon_eclk_b",
-+				    "sclk_mphy_pll", };
-+PNAME(mout_sclk_decon_eclk_b_p)	= { "mout_sclk_decon_eclk_a",
-+				    "mout_mfc_pll_div2", };
-+
-+PNAME(mout_sclk_decon_tv_eclk_c_p) = { "mout_sclk_decon_tv_eclk_b",
-+				       "sclk_mphy_pll", };
-+PNAME(mout_sclk_decon_tv_eclk_b_p) = { "mout_sclk_decon_tv_eclk_a",
-+				       "mout_mfc_pll_div2", };
-+PNAME(mout_sclk_dsd_c_p)	= { "mout_sclk_dsd_b", "mout_bus_pll_div2", };
-+PNAME(mout_sclk_dsd_b_p)	= { "mout_sclk_dsd_a", "sclk_mphy_pll", };
-+PNAME(mout_sclk_dsd_a_p)	= { "fin_pll", "mout_mfc_pll_div2", };
-+
-+PNAME(mout_sclk_dsim0_c_p)	= { "mout_sclk_dsim0_b", "sclk_mphy_pll", };
-+PNAME(mout_sclk_dsim0_b_p)	= { "mout_sclk_dsim0_a", "mout_mfc_pll_div2" };
-+
-+PNAME(mout_sclk_decon_tv_vclk_c_p) = { "mout_sclk_decon_tv_vclk_b",
-+				       "sclk_mphy_pll", };
-+PNAME(mout_sclk_decon_tv_vclk_b_p) = { "mout_sclk_decon_tv_vclk_a",
-+				       "mout_mfc_pll_div2", };
-+PNAME(mout_sclk_dsim1_c_p)	= { "mout_sclk_dsim1_b", "sclk_mphy_pll", };
-+PNAME(mout_sclk_dsim1_b_p)	= { "mout_sclk_dsim1_a", "mout_mfc_pll_div2",};
-+
-+static struct samsung_fixed_factor_clock mif_fixed_factor_clks[] __initdata = {
-+	/* dout_{mfc|bus|mem1|mem0}_pll is half fixed rate from parent mux */
-+	FFACTOR(CLK_DOUT_MFC_PLL, "dout_mfc_pll", "mout_mfc_pll", 1, 1, 0),
-+	FFACTOR(CLK_DOUT_BUS_PLL, "dout_bus_pll", "mout_bus_pll", 1, 1, 0),
-+	FFACTOR(CLK_DOUT_MEM1_PLL, "dout_mem1_pll", "mout_mem1_pll", 1, 1, 0),
-+	FFACTOR(CLK_DOUT_MEM0_PLL, "dout_mem0_pll", "mout_mem0_pll", 1, 1, 0),
++static unsigned long disp_clk_regs[] __initdata = {
++	DISP_PLL_LOCK,
++	DISP_PLL_CON0,
++	DISP_PLL_CON1,
++	DISP_PLL_FREQ_DET,
++	MUX_SEL_DISP0,
++	MUX_SEL_DISP1,
++	MUX_SEL_DISP2,
++	MUX_SEL_DISP3,
++	MUX_SEL_DISP4,
++	MUX_ENABLE_DISP0,
++	MUX_ENABLE_DISP1,
++	MUX_ENABLE_DISP2,
++	MUX_ENABLE_DISP3,
++	MUX_ENABLE_DISP4,
++	MUX_STAT_DISP0,
++	MUX_STAT_DISP1,
++	MUX_STAT_DISP2,
++	MUX_STAT_DISP3,
++	MUX_STAT_DISP4,
++	MUX_IGNORE_DISP2,
++	DIV_DISP,
++	DIV_DISP_PLL_FREQ_DET,
++	DIV_STAT_DISP,
++	DIV_STAT_DISP_PLL_FREQ_DET,
++	ENABLE_ACLK_DISP0,
++	ENABLE_ACLK_DISP1,
++	ENABLE_PCLK_DISP,
++	ENABLE_SCLK_DISP,
++	ENABLE_IP_DISP0,
++	ENABLE_IP_DISP1,
++	CLKOUT_CMU_DISP,
++	CLKOUT_CMU_DISP_DIV_STAT,
 +};
 +
-+static struct samsung_mux_clock mif_mux_clks[] __initdata = {
-+	/* MUX_SEL_MIF0 */
-+	MUX(CLK_MOUT_MFC_PLL_DIV2, "mout_mfc_pll_div2", mout_mfc_pll_div2_p,
-+			MUX_SEL_MIF0, 28, 1),
-+	MUX(CLK_MOUT_BUS_PLL_DIV2, "mout_bus_pll_div2", mout_bus_pll_div2_p,
-+			MUX_SEL_MIF0, 24, 1),
-+	MUX(CLK_MOUT_MEM1_PLL_DIV2, "mout_mem1_pll_div2", mout_mem1_pll_div2_p,
-+			MUX_SEL_MIF0, 20, 1),
-+	MUX(CLK_MOUT_MEM0_PLL_DIV2, "mout_mem0_pll_div2", mout_mem0_pll_div2_p,
-+			MUX_SEL_MIF0, 16, 1),
-+	MUX(CLK_MOUT_MFC_PLL, "mout_mfc_pll", mout_mfc_pll_p, MUX_SEL_MIF0,
-+			12, 1),
-+	MUX(CLK_MOUT_BUS_PLL, "mout_bus_pll", mout_bus_pll_p, MUX_SEL_MIF0,
-+			8, 1),
-+	MUX(CLK_MOUT_MEM1_PLL, "mout_mem1_pll", mout_mem1_pll_p, MUX_SEL_MIF0,
-+			4, 1),
-+	MUX(CLK_MOUT_MEM0_PLL, "mout_mem0_pll", mout_mem0_pll_p, MUX_SEL_MIF0,
++/* list of all parent clock list */
++PNAME(mout_disp_pll_p)			= { "fin_pll", "fout_disp_pll", };
++PNAME(mout_sclk_dsim1_user_p)		= { "fin_pll", "sclk_dsim1_disp", };
++PNAME(mout_sclk_dsim0_user_p)		= { "fin_pll", "sclk_dsim0_disp", };
++PNAME(mout_sclk_dsd_user_p)		= { "fin_pll", "sclk_dsd_disp", };
++PNAME(mout_sclk_decon_tv_eclk_user_p)	= { "fin_pll",
++					    "sclk_decon_tv_eclk_disp", };
++PNAME(mout_sclk_decon_vclk_user_p)	= { "fin_pll",
++					    "sclk_decon_vclk_disp", };
++PNAME(mout_sclk_decon_eclk_user_p)	= { "fin_pll",
++					    "sclk_decon_eclk_disp", };
++PNAME(mout_sclk_decon_tv_vlkc_user_p)	= { "fin_pll",
++					    "sclk_decon_tv_vclk_disp", };
++PNAME(mout_aclk_disp_333_user_p)	= { "fin_pll", "aclk_disp_333", };
++
++PNAME(mout_phyclk_mipidphy1_bitclkdiv8_user_p)	= { "fin_pll",
++					"phyclk_mipidphy1_bitclkdiv8_phy", };
++PNAME(mout_phyclk_mipidphy1_rxclkesc0_user_p)	= { "fin_pll",
++					"phyclk_mipidphy1_rxclkesc0_phy", };
++PNAME(mout_phyclk_mipidphy0_bitclkdiv8_user_p)	= { "fin_pll",
++					"phyclk_mipidphy0_bitclkdiv8_phy", };
++PNAME(mout_phyclk_mipidphy0_rxclkesc0_user_p)	= { "fin_pll",
++					"phyclk_mipidphy0_rxclkesc0_phy", };
++PNAME(mout_phyclk_hdmiphy_tmds_clko_user_p)	= { "fin_pll",
++					"phyclk_hdmiphy_tmds_clko_phy", };
++PNAME(mout_phyclk_hdmiphy_pixel_clko_user_p)	= { "fin_pll",
++					"phyclk_hdmiphy_pixel_clko_phy", };
++
++PNAME(mout_sclk_dsim0_p)		= { "mout_disp_pll",
++					    "mout_sclk_dsim0_user", };
++PNAME(mout_sclk_decon_tv_eclk_p)	= { "mout_disp_pll",
++					    "mout_sclk_decon_tv_eclk_user", };
++PNAME(mout_sclk_decon_vclk_p)		= { "mout_disp_pll",
++					    "mout_sclk_decon_vclk_user", };
++PNAME(mout_sclk_decon_eclk_p)		= { "mout_disp_pll",
++					    "mout_sclk_decon_eclk_user", };
++
++PNAME(mout_sclk_dsim1_b_disp_p)		= { "mout_sclk_dsim1_a_disp",
++					    "mout_sclk_dsim1_user", };
++PNAME(mout_sclk_decon_tv_vclk_c_disp_p)	= {
++				"mout_phyclk_hdmiphy_pixel_clko_user",
++				"mout_sclk_decon_tv_vclk_b_disp", };
++PNAME(mout_sclk_decon_tv_vclk_b_disp_p)	= { "mout_sclk_decon_tv_vclk_a_disp",
++					    "mout_sclk_decon_tv_vclk_user", };
++
++static struct samsung_pll_clock disp_pll_clks[] __initdata = {
++	PLL(pll_35xx, CLK_FOUT_DISP_PLL, "fout_disp_pll", "fin_pll",
++		DISP_PLL_LOCK, DISP_PLL_CON0, exynos5443_pll_rates),
++};
++
++static struct samsung_fixed_factor_clock disp_fixed_factor_clks[] __initdata = {
++	/*
++	 * sclk_rgb_{vclk|tv_vclk} is half clock of sclk_decon_{vclk|tv_vclk}.
++	 * The divider has fixed value (2) between sclk_rgb_{vclk|tv_vclk}
++	 * and sclk_decon_{vclk|tv_vclk}.
++	 */
++	FFACTOR(CLK_SCLK_RGB_VCLK, "sclk_rgb_vclk", "sclk_decon_vclk",
++			1, 2, 0),
++	FFACTOR(CLK_SCLK_RGB_TV_VCLK, "sclk_rgb_tv_vclk", "sclk_decon_tv_vclk",
++			1, 2, 0),
++};
++
++static struct samsung_fixed_rate_clock disp_fixed_clks[] __initdata = {
++	/* PHY clocks from MIPI_DPHY1 */
++	FRATE(0, "phyclk_mipidphy1_bitclkdiv8_phy", NULL, CLK_IS_ROOT,
++			188000000),
++	FRATE(0, "phyclk_mipidphy1_rxclkesc0_phy", NULL, CLK_IS_ROOT,
++			100000000),
++	/* PHY clocks from MIPI_DPHY0 */
++	FRATE(0, "phyclk_mipidphy0_bitclkdiv8_phy", NULL, CLK_IS_ROOT,
++			188000000),
++	FRATE(0, "phyclk_mipidphy0_rxclkesc0_phy", NULL, CLK_IS_ROOT,
++			100000000),
++	/* PHY clocks from HDMI_PHY */
++	FRATE(0, "phyclk_hdmiphy_tmds_clko_phy", NULL, CLK_IS_ROOT, 300000000),
++	FRATE(0, "phyclk_hdmiphy_pixel_clko_phy", NULL, CLK_IS_ROOT, 166000000),
++};
++
++static struct samsung_mux_clock disp_mux_clks[] __initdata = {
++	/* MUX_SEL_DISP0 */
++	MUX(CLK_MOUT_DISP_PLL, "mout_disp_pll", mout_disp_pll_p, MUX_SEL_DISP0,
 +			0, 1),
 +
-+	/* MUX_SEL_MIF1 */
-+	MUX(CLK_MOUT_CLK2X_PHY_C, "mout_clk2x_phy_c", mout_clk2x_phy_c_p,
-+			MUX_SEL_MIF1, 24, 1),
-+	MUX(CLK_MOUT_CLK2X_PHY_B, "mout_clk2x_phy_b", mout_clk2x_phy_b_p,
-+			MUX_SEL_MIF1, 20, 1),
-+	MUX(CLK_MOUT_CLK2X_PHY_A, "mout_clk2x_phy_a", mout_clk2x_phy_a_p,
-+			MUX_SEL_MIF1, 16, 1),
-+	MUX(CLK_MOUT_CLKM_PHY_C, "mout_clkm_phy_c", mout_clk2x_phy_c_p,
-+			MUX_SEL_MIF1, 12, 1),
-+	MUX(CLK_MOUT_CLKM_PHY_B, "mout_clkm_phy_b", mout_clkm_phy_b_p,
-+			MUX_SEL_MIF1, 8, 1),
-+	MUX(CLK_MOUT_CLKM_PHY_A, "mout_clkm_phy_a", mout_clk2x_phy_a_p,
-+			MUX_SEL_MIF1, 4, 1),
++	/* MUX_SEL_DISP1 */
++	MUX(CLK_MOUT_SCLK_DSIM1_USER, "mout_sclk_dsim1_user",
++			mout_sclk_dsim1_user_p, MUX_SEL_DISP1, 28, 1),
++	MUX(CLK_MOUT_SCLK_DSIM0_USER, "mout_sclk_dsim0_user",
++			mout_sclk_dsim0_user_p, MUX_SEL_DISP1, 24, 1),
++	MUX(CLK_MOUT_SCLK_DSD_USER, "mout_sclk_dsd_user", mout_sclk_dsd_user_p,
++			MUX_SEL_DISP1, 20, 1),
++	MUX(CLK_MOUT_SCLK_DECON_TV_ECLK_USER, "mout_sclk_decon_tv_eclk_user",
++			mout_sclk_decon_tv_eclk_user_p, MUX_SEL_DISP1, 16, 1),
++	MUX(CLK_MOUT_SCLK_DECON_VCLK_USER, "mout_sclk_decon_vclk_user",
++			mout_sclk_decon_vclk_user_p, MUX_SEL_DISP1, 12, 1),
++	MUX(CLK_MOUT_SCLK_DECON_ECLK_USER, "mout_sclk_decon_eclk_user",
++			mout_sclk_decon_eclk_user_p, MUX_SEL_DISP1, 8, 1),
++	MUX(CLK_MOUT_SCLK_DECON_TV_VCLK_USER, "mout_sclk_decon_tv_vclk_user",
++			mout_sclk_decon_tv_vlkc_user_p, MUX_SEL_DISP1, 4, 1),
++	MUX(CLK_MOUT_ACLK_DISP_333_USER, "mout_aclk_disp_333_user",
++			mout_aclk_disp_333_user_p, MUX_SEL_DISP1, 0, 1),
 +
-+	/* MUX_SEL_MIF2 */
-+	MUX(CLK_MOUT_ACLK_MIFNM_200, "mout_aclk_mifnm_200",
-+			mout_aclk_mifnm_200_p, MUX_SEL_MIF2, 8, 1),
-+	MUX(CLK_MOUT_ACLK_MIFNM_400, "mout_aclk_mifnm_400",
-+			mout_aclk_mifnm_400_p, MUX_SEL_MIF2, 0, 1),
++	/* MUX_SEL_DISP2 */
++	MUX(CLK_MOUT_PHYCLK_MIPIDPHY1_BITCLKDIV8_USER,
++			"mout_phyclk_mipidphy1_bitclkdiv8_user",
++			mout_phyclk_mipidphy1_bitclkdiv8_user_p, MUX_SEL_DISP2,
++			20, 1),
++	MUX(CLK_MOUT_PHYCLK_MIPIDPHY1_RXCLKESC0_USER,
++			"mout_phyclk_mipidphy1_rxclkesc0_user",
++			mout_phyclk_mipidphy1_rxclkesc0_user_p, MUX_SEL_DISP2,
++			16, 1),
++	MUX(CLK_MOUT_PHYCLK_MIPIDPHY0_BITCLKDIV8_USER,
++			"mout_phyclk_mipidphy0_bitclkdiv8_user",
++			mout_phyclk_mipidphy0_bitclkdiv8_user_p, MUX_SEL_DISP2,
++			12, 1),
++	MUX(CLK_MOUT_PHYCLK_MIPIDPHY0_RXCLKESC0_USER,
++			"mout_phyclk_mipidphy0_rxclkesc0_user",
++			mout_phyclk_mipidphy0_rxclkesc0_user_p, MUX_SEL_DISP2,
++			8, 1),
++	MUX(CLK_MOUT_PHYCLK_HDMIPHY_TMDS_CLKO_USER,
++			"mout_phyclk_hdmiphy_tmds_clko_user",
++			mout_phyclk_hdmiphy_tmds_clko_user_p, MUX_SEL_DISP2,
++			4, 1),
++	MUX(CLK_MOUT_PHYCLK_HDMIPHY_PIXEL_CLKO_USER,
++			"mout_phyclk_hdmiphy_pixel_clko_user",
++			mout_phyclk_hdmiphy_pixel_clko_user_p, MUX_SEL_DISP2,
++			0, 1),
 +
-+	/* MUX_SEL_MIF3 */
-+	MUX(CLK_MOUT_ACLK_DISP_333_B, "mout_aclk_disp_333_b",
-+			mout_aclk_disp_333_b_p, MUX_SEL_MIF3, 4, 1),
-+	MUX(CLK_MOUT_ACLK_DISP_333_A, "mout_aclk_disp_333_a",
-+			mout_aclk_disp_333_a_p, MUX_SEL_MIF3, 0, 1),
++	/* MUX_SEL_DISP3 */
++	MUX(CLK_MOUT_SCLK_DSIM0, "mout_sclk_dsim0", mout_sclk_dsim0_p,
++			MUX_SEL_DISP3, 12, 1),
++	MUX(CLK_MOUT_SCLK_DECON_TV_ECLK, "mout_sclk_decon_tv_eclk",
++			mout_sclk_decon_tv_eclk_p, MUX_SEL_DISP3, 8, 1),
++	MUX(CLK_MOUT_SCLK_DECON_VCLK, "mout_sclk_decon_vclk",
++			mout_sclk_decon_vclk_p, MUX_SEL_DISP3, 4, 1),
++	MUX(CLK_MOUT_SCLK_DECON_ECLK, "mout_sclk_decon_eclk",
++			mout_sclk_decon_eclk_p, MUX_SEL_DISP3, 0, 1),
 +
-+	/* MUX_SEL_MIF4 */
-+	MUX(CLK_MOUT_SCLK_DECON_VCLK_C, "mout_sclk_decon_vclk_c",
-+			mout_sclk_decon_vclk_c_p, MUX_SEL_MIF4, 24, 1),
-+	MUX(CLK_MOUT_SCLK_DECON_VCLK_B, "mout_sclk_decon_vclk_b",
-+			mout_sclk_decon_vclk_b_p, MUX_SEL_MIF4, 20, 1),
-+	MUX(CLK_MOUT_SCLK_DECON_VCLK_A, "mout_sclk_decon_vclk_a",
-+			mout_sclk_decon_p, MUX_SEL_MIF4, 16, 1),
-+	MUX(CLK_MOUT_SCLK_DECON_ECLK_C, "mout_sclk_decon_eclk_c",
-+			mout_sclk_decon_eclk_c_p, MUX_SEL_MIF4, 8, 1),
-+	MUX(CLK_MOUT_SCLK_DECON_ECLK_B, "mout_sclk_decon_eclk_b",
-+			mout_sclk_decon_eclk_b_p, MUX_SEL_MIF4, 4, 1),
-+	MUX(CLK_MOUT_SCLK_DECON_ECLK_A, "mout_sclk_decon_eclk_a",
-+			mout_sclk_decon_p, MUX_SEL_MIF4, 0, 1),
-+
-+	/* MUX_SEL_MIF5 */
-+	MUX(CLK_MOUT_SCLK_DECON_TV_ECLK_C, "mout_sclk_decon_tv_eclk_c",
-+			mout_sclk_decon_tv_eclk_c_p, MUX_SEL_MIF5, 24, 1),
-+	MUX(CLK_MOUT_SCLK_DECON_TV_ECLK_B, "mout_sclk_decon_tv_eclk_b",
-+			mout_sclk_decon_tv_eclk_b_p, MUX_SEL_MIF5, 20, 1),
-+	MUX(CLK_MOUT_SCLK_DECON_TV_ECLK_A, "mout_sclk_decon_tv_eclk_a",
-+			mout_sclk_decon_p, MUX_SEL_MIF5, 16, 1),
-+	MUX(CLK_MOUT_SCLK_DSD_C, "mout_sclk_dsd_c", mout_sclk_dsd_c_p,
-+			MUX_SEL_MIF5, 8, 1),
-+	MUX(CLK_MOUT_SCLK_DSD_B, "mout_sclk_dsd_b", mout_sclk_dsd_b_p,
-+			MUX_SEL_MIF5, 4, 1),
-+	MUX(CLK_MOUT_SCLK_DSD_A, "mout_sclk_dsd_a", mout_sclk_dsd_a_p,
-+			MUX_SEL_MIF5, 0, 1),
-+
-+	/* MUX_SEL_MIF6 */
-+	MUX(CLK_MOUT_SCLK_DSIM0_C, "mout_sclk_dsim0_c", mout_sclk_dsim0_c_p,
-+			MUX_SEL_MIF6, 8, 1),
-+	MUX(CLK_MOUT_SCLK_DSIM0_B, "mout_sclk_dsim0_b", mout_sclk_dsim0_b_p,
-+			MUX_SEL_MIF6, 4, 1),
-+	MUX(CLK_MOUT_SCLK_DSIM0_A, "mout_sclk_dsim0_a", mout_sclk_decon_p,
-+			MUX_SEL_MIF6, 0, 1),
-+
-+	/* MUX_SEL_MIF7 */
-+	MUX(CLK_MOUT_SCLK_DECON_TV_VCLK_C, "mout_sclk_decon_tv_vclk_c",
-+			mout_sclk_decon_tv_vclk_c_p, MUX_SEL_MIF7, 24, 1),
-+	MUX(CLK_MOUT_SCLK_DECON_TV_VCLK_B, "mout_sclk_decon_tv_vclk_b",
-+			mout_sclk_decon_tv_vclk_b_p, MUX_SEL_MIF7, 20, 1),
-+	MUX(CLK_MOUT_SCLK_DECON_TV_VCLK_A, "mout_sclk_decon_tv_vclk_a",
-+			mout_sclk_decon_p, MUX_SEL_MIF7, 16, 1),
-+	MUX(CLK_MOUT_SCLK_DSIM1_C, "mout_sclk_dsim1_c", mout_sclk_dsim1_c_p,
-+			MUX_SEL_MIF7, 8, 1),
-+	MUX(CLK_MOUT_SCLK_DSIM1_B, "mout_sclk_dsim1_b", mout_sclk_dsim1_b_p,
-+			MUX_SEL_MIF7, 4, 1),
-+	MUX(CLK_MOUT_SCLK_DSIM1_A, "mout_sclk_dsim1_a", mout_sclk_decon_p,
-+			MUX_SEL_MIF7, 0, 1),
++	/* MUX_SEL_DISP4 */
++	MUX(CLK_MOUT_SCLK_DSIM1_B_DISP, "mout_sclk_dsim1_b_disp",
++			mout_sclk_dsim1_b_disp_p, MUX_SEL_DISP4, 16, 1),
++	MUX(CLK_MOUT_SCLK_DSIM1_A_DISP, "mout_sclk_dsim1_a_disp",
++			mout_sclk_dsim0_p, MUX_SEL_DISP4, 12, 1),
++	MUX(CLK_MOUT_SCLK_DECON_TV_VCLK_C_DISP,
++			"mout_sclk_decon_tv_vclk_c_disp",
++			mout_sclk_decon_tv_vclk_c_disp_p, MUX_SEL_DISP4, 8, 1),
++	MUX(CLK_MOUT_SCLK_DECON_TV_VCLK_B_DISP,
++			"mout_sclk_decon_tv_vclk_b_disp",
++			mout_sclk_decon_tv_vclk_b_disp_p, MUX_SEL_DISP4, 4, 1),
++	MUX(CLK_MOUT_SCLK_DECON_TV_VCLK_A_DISP,
++			"mout_sclk_decon_tv_vclk_a_disp",
++			mout_sclk_decon_vclk_p, MUX_SEL_DISP4, 0, 1),
 +};
 +
-+static struct samsung_div_clock mif_div_clks[] __initdata = {
-+	/* DIV_MIF1 */
-+	DIV(CLK_DIV_SCLK_HPM_MIF, "div_sclk_hpm_mif", "div_clk2x_phy",
-+			DIV_MIF1, 16, 2),
-+	DIV(CLK_DIV_ACLK_DREX1, "div_aclk_drex1", "div_clk2x_phy", DIV_MIF1,
-+			12, 2),
-+	DIV(CLK_DIV_ACLK_DREX0, "div_aclk_drex0", "div_clk2x_phy", DIV_MIF1,
-+			8, 2),
-+	DIV(CLK_DIV_CLK2XPHY, "div_clk2x_phy", "mout_clk2x_phy_c", DIV_MIF1,
-+			4, 4),
-+
-+	/* DIV_MIF2 */
-+	DIV(CLK_DIV_ACLK_MIF_266, "div_aclk_mif_266", "mout_bus_pll_div2",
-+			DIV_MIF2, 20, 3),
-+	DIV(CLK_DIV_ACLK_MIFND_133, "div_aclk_mifnd_133", "div_mif_pre",
-+			DIV_MIF2, 16, 4),
-+	DIV(CLK_DIV_ACLK_MIF_133, "div_aclk_mif_133", "div_mif_pre",
-+			DIV_MIF2, 12, 4),
-+	DIV(CLK_DIV_ACLK_MIFNM_200, "div_aclk_mifnm_200",
-+			"mout_aclk_mifnm_200", DIV_MIF2, 8, 3),
-+	DIV(CLK_DIV_ACLK_MIF_200, "div_aclk_mif_200", "div_aclk_mif_400",
-+			DIV_MIF2, 4, 2),
-+	DIV(CLK_DIV_ACLK_MIF_400, "div_aclk_mif_400", "mout_aclk_mifnm_400",
-+			DIV_MIF2, 0, 3),
-+
-+	/* DIV_MIF3 */
-+	DIV(CLK_DIV_ACLK_BUS2_400, "div_aclk_bus2_400", "div_mif_pre",
-+			DIV_MIF3, 16, 4),
-+	DIV(CLK_DIV_ACLK_DISP_333, "div_aclk_disp_333", "mout_aclk_disp_333_b",
-+			DIV_MIF3, 4, 3),
-+	DIV(CLK_DIV_ACLK_CPIF_200, "div_aclk_cpif_200", "mout_aclk_mifnm_200",
-+			DIV_MIF3, 0, 3),
-+
-+	/* DIV_MIF4 */
-+	DIV(CLK_DIV_SCLK_DSIM1, "div_sclk_dsim1", "mout_sclk_dsim1_c",
-+			DIV_MIF4, 24, 4),
-+	DIV(CLK_DIV_SCLK_DECON_TV_VCLK, "div_sclk_decon_tv_vclk",
-+			"mout_sclk_decon_tv_vclk_c", DIV_MIF4, 20, 4),
-+	DIV(CLK_DIV_SCLK_DSIM0, "div_sclk_dsim0", "mout_sclk_dsim0_c",
-+			DIV_MIF4, 16, 4),
-+	DIV(CLK_DIV_SCLK_DSD, "div_sclk_dsd", "mout_sclk_dsd_c",
-+			DIV_MIF4, 12, 4),
-+	DIV(CLK_DIV_SCLK_DECON_TV_ECLK, "div_sclk_decon_tv_eclk",
-+			"mout_sclk_decon_tv_eclk_c", DIV_MIF4, 8, 4),
-+	DIV(CLK_DIV_SCLK_DECON_VCLK, "div_sclk_decon_vclk",
-+			"mout_sclk_decon_vclk_c", DIV_MIF4, 4, 4),
-+	DIV(CLK_DIV_SCLK_DECON_ECLK, "div_sclk_decon_eclk",
-+			"mout_sclk_decon_eclk_c", DIV_MIF4, 0, 4),
-+
-+	/* DIV_MIF5 */
-+	DIV(CLK_DIV_MIF_PRE, "div_mif_pre", "mout_bus_pll_div2", DIV_MIF5,
-+			0, 3),
++static struct samsung_div_clock disp_div_clks[] __initdata = {
++	/* DIV_DISP */
++	DIV(CLK_DIV_SCLK_DSIM1_DISP, "div_sclk_dsim1_disp",
++			"mout_sclk_dsim1_b_disp", DIV_DISP, 24, 3),
++	DIV(CLK_DIV_SCLK_DECON_TV_VCLK_DISP, "div_sclk_decon_tv_vclk_disp",
++			"mout_sclk_decon_tv_vclk_c_disp", DIV_DISP, 20, 3),
++	DIV(CLK_DIV_SCLK_DSIM0_DISP, "div_sclk_dsim0_disp", "mout_sclk_dsim0",
++			DIV_DISP, 16, 3),
++	DIV(CLK_DIV_SCLK_DECON_TV_ECLK_DISP, "div_sclk_decon_tv_eclk_disp",
++			"mout_sclk_decon_tv_eclk", DIV_DISP, 12, 3),
++	DIV(CLK_DIV_SCLK_DECON_VCLK_DISP, "div_sclk_decon_vclk_disp",
++			"mout_sclk_decon_vclk", DIV_DISP, 8, 3),
++	DIV(CLK_DIV_SCLK_DECON_ECLK_DISP, "div_sclk_decon_eclk_disp",
++			"mout_sclk_decon_eclk", DIV_DISP, 4, 3),
++	DIV(CLK_DIV_PCLK_DISP, "div_pclk_disp", "mout_aclk_disp_333_user",
++			DIV_DISP, 0, 2),
 +};
 +
-+static struct samsung_gate_clock mif_gate_clks[] __initdata = {
-+	/* ENABLE_ACLK_MIF0 */
-+	GATE(CLK_CLK2X_PHY1, "clk2k_phy1", "div_clk2x_phy", ENABLE_ACLK_MIF0,
-+			19, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_CLK2X_PHY0, "clk2x_phy0", "div_clk2x_phy", ENABLE_ACLK_MIF0,
-+			18, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_CLKM_PHY1, "clkm_phy1", "mout_clkm_phy_c", ENABLE_ACLK_MIF0,
-+			17, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_CLKM_PHY0, "clkm_phy0", "mout_clkm_phy_c", ENABLE_ACLK_MIF0,
-+			16, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_RCLK_DREX1, "rclk_drex1", "fin_pll", ENABLE_ACLK_MIF0,
-+			15, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_RCLK_DREX0, "rclk_drex0", "fin_pll", ENABLE_ACLK_MIF0,
-+			14, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_DREX1_TZ, "aclk_drex1_tz", "div_aclk_drex1",
-+			ENABLE_ACLK_MIF0, 13, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_DREX0_TZ, "aclk_drex0_tz", "div_aclk_drex0",
-+			ENABLE_ACLK_MIF0, 12, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_DREX1_PEREV, "aclk_drex1_perev", "div_aclk_drex1",
-+			ENABLE_ACLK_MIF0, 11, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_DREX0_PEREV, "aclk_drex0_perev", "div_aclk_drex0",
-+			ENABLE_ACLK_MIF0, 10, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_DREX1_MEMIF, "aclk_drex1_memif", "div_aclk_drex1",
-+			ENABLE_ACLK_MIF0, 9, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_DREX0_MEMIF, "aclk_drex0_memif", "div_aclk_drex0",
-+			ENABLE_ACLK_MIF0, 8, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_DREX1_SCH, "aclk_drex1_sch", "div_aclk_drex1",
-+			ENABLE_ACLK_MIF0, 7, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_DREX0_SCH, "aclk_drex0_sch", "div_aclk_drex0",
-+			ENABLE_ACLK_MIF0, 6, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_DREX1_BUSIF, "aclk_drex1_busif", "div_aclk_drex1",
-+			ENABLE_ACLK_MIF0, 5, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_DREX0_BUSIF, "aclk_drex0_busif", "div_aclk_drex0",
-+			ENABLE_ACLK_MIF0, 4, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_DREX1_BUSIF_RD, "aclk_drex1_busif_rd", "div_aclk_drex1",
-+			ENABLE_ACLK_MIF0, 3, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_DREX0_BUSIF_RD, "aclk_drex0_busif_rd", "div_aclk_drex0",
-+			ENABLE_ACLK_MIF0, 2, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_DREX1, "aclk_drex1", "div_aclk_drex1",
-+			ENABLE_ACLK_MIF0, 2, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_DREX0, "aclk_drex0", "div_aclk_drex0",
-+			ENABLE_ACLK_MIF0, 1, CLK_IGNORE_UNUSED, 0),
++static struct samsung_gate_clock disp_gate_clks[] __initdata = {
++	/* ENABLE_ACLK_DISP0 */
++	GATE(CLK_ACLK_DECON_TV, "aclk_decon_tv", "mout_aclk_disp_333_user",
++			ENABLE_ACLK_DISP0, 2, 0, 0),
++	GATE(CLK_ACLK_DECON, "aclk_decon", "mout_aclk_disp_333_user",
++			ENABLE_ACLK_DISP0, 0, 0, 0),
 +
-+	/* ENABLE_ACLK_MIF1 */
-+	GATE(CLK_ACLK_ASYNCAXIS_MIF_IMEM, "aclk_asyncaxis_mif_imem",
-+			"div_aclk_mif_200", ENABLE_ACLK_MIF1, 28,
-+			CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_ASYNCAXIS_NOC_P_CCI, "aclk_asyncaxis_noc_p_cci",
-+			"div_aclk_mif_200", ENABLE_ACLK_MIF1,
-+			27, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_ASYNCAXIM_NOC_P_CCI, "aclk_asyncaxim_noc_p_cci",
-+			"div_aclk_mif_133", ENABLE_ACLK_MIF1,
-+			26, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_ASYNCAXIS_CP1, "aclk_asyncaxis_cp1",
-+			"div_aclk_mifnm_200", ENABLE_ACLK_MIF1,
-+			25, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_ASYNCAXIM_CP1, "aclk_asyncaxim_cp1",
-+			"div_aclk_drex1", ENABLE_ACLK_MIF1,
-+			24, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_ASYNCAXIS_CP0, "aclk_asyncaxis_cp0",
-+			"div_aclk_mifnm_200", ENABLE_ACLK_MIF1,
-+			23, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_ASYNCAXIM_CP0, "aclk_asyncaxim_cp0",
-+			"div_aclk_drex0", ENABLE_ACLK_MIF1,
-+			22, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_ASYNCAXIS_DREX1_3, "aclk_asyncaxis_drex1_3",
-+			"div_aclk_mif_133", ENABLE_ACLK_MIF1,
-+			21, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_ASYNCAXIM_DREX1_3, "aclk_asyncaxim_drex1_3",
-+			"div_aclk_drex1", ENABLE_ACLK_MIF1,
-+			20, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_ASYNCAXIS_DREX1_1, "aclk_asyncaxis_drex1_1",
-+			"div_aclk_mif_133", ENABLE_ACLK_MIF1,
-+			19, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_ASYNCAXIM_DREX1_1, "aclk_asyncaxim_drex1_1",
-+			"div_aclk_drex1", ENABLE_ACLK_MIF1,
-+			18, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_ASYNCAXIS_DREX1_0, "aclk_asyncaxis_drex1_0",
-+			"div_aclk_mif_133", ENABLE_ACLK_MIF1,
-+			17, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_ASYNCAXIM_DREX1_0, "aclk_asyncaxim_drex1_0",
-+			"div_aclk_drex1", ENABLE_ACLK_MIF1,
-+			16, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_ASYNCAXIS_DREX0_3, "aclk_asyncaxis_drex0_3",
-+			"div_aclk_mif_133", ENABLE_ACLK_MIF1,
-+			15, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_ASYNCAXIM_DREX0_3, "aclk_asyncaxim_drex0_3",
-+			"div_aclk_drex0", ENABLE_ACLK_MIF1,
-+			14, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_ASYNCAXIS_DREX0_1, "aclk_asyncaxis_drex0_1",
-+			"div_aclk_mif_133", ENABLE_ACLK_MIF1,
-+			13, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_ASYNCAXIM_DREX0_1, "aclk_asyncaxim_drex0_1",
-+			"div_aclk_drex0", ENABLE_ACLK_MIF1,
++	/* ENABLE_ACLK_DISP1 */
++	GATE(CLK_ACLK_SMMU_TV1X, "aclk_smmu_tv1x", "mout_aclk_disp_333_user",
++			ENABLE_ACLK_DISP1, 25, 0, 0),
++	GATE(CLK_ACLK_SMMU_TV0X, "aclk_smmu_tv0x", "mout_aclk_disp_333_user",
++			ENABLE_ACLK_DISP1, 24, 0, 0),
++	GATE(CLK_ACLK_SMMU_DECON1X, "aclk_smmu_decon1x",
++			"mout_aclk_disp_333_user", ENABLE_ACLK_DISP1, 23, 0, 0),
++	GATE(CLK_ACLK_SMMU_DECON0X, "aclk_smmu_decon0x",
++			"mout_aclk_disp_333_user", ENABLE_ACLK_DISP1, 22, 0, 0),
++	GATE(CLK_ACLK_BTS_DECON_TV_M3, "aclk_bts_decon_tv_m3",
++			"mout_aclk_disp_333_user", ENABLE_ACLK_DISP1, 21, 0, 0),
++	GATE(CLK_ACLK_BTS_DECON_TV_M2, "aclk_bts_decon_tv_m2",
++			"mout_aclk_disp_333_user", ENABLE_ACLK_DISP1, 20, 0, 0),
++	GATE(CLK_ACLK_BTS_DECON_TV_M1, "aclk_bts_decon_tv_m1",
++			"mout_aclk_disp_333_user", ENABLE_ACLK_DISP1, 19, 0, 0),
++	GATE(CLK_ACLK_BTS_DECON_TV_M0, "aclk-bts_decon_tv_m0",
++			"mout_aclk_disp_333_user", ENABLE_ACLK_DISP1, 18, 0, 0),
++	GATE(CLK_ACLK_BTS_DECON_NM4, "aclk_bts_decon_nm4",
++			"mout_aclk_disp_333_user", ENABLE_ACLK_DISP1, 17, 0, 0),
++	GATE(CLK_ACLK_BTS_DECON_NM3, "aclk_bts_decon_nm3",
++			"mout_aclk_disp_333_user", ENABLE_ACLK_DISP1, 16, 0, 0),
++	GATE(CLK_ACLK_BTS_DECON_NM2, "aclk_bts_decon_nm2",
++			"mout_aclk_disp_333_user", ENABLE_ACLK_DISP1, 15, 0, 0),
++	GATE(CLK_ACLK_BTS_DECON_NM1, "aclk_bts_decon_nm1",
++			"mout_aclk_disp_333_user", ENABLE_ACLK_DISP1, 14, 0, 0),
++	GATE(CLK_ACLK_BTS_DECON_NM0, "aclk_bts_decon_nm0",
++			"mout_aclk_disp_333_user", ENABLE_ACLK_DISP1, 13, 0, 0),
++	GATE(CLK_ACLK_AHB2APB_DISPSFR2P, "aclk_ahb2apb_dispsfr2p",
++			"div_pclk_disp", ENABLE_ACLK_DISP1,
 +			12, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_ASYNCAXIS_DREX0_0, "aclk_asyncaxis_drex0_0",
-+			"div_aclk_mif_133", ENABLE_ACLK_MIF1,
++	GATE(CLK_ACLK_AHB2APB_DISPSFR1P, "aclk_ahb2apb_dispsfr1p",
++			"div_pclk_disp", ENABLE_ACLK_DISP1,
 +			11, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_ASYNCAXIM_DREX0_0, "aclk_asyncaxim_drex0_0",
-+			"div_aclk_drex0", ENABLE_ACLK_MIF1,
++	GATE(CLK_ACLK_AHB2APB_DISPSFR0P, "aclk_ahb2apb_dispsfr0p",
++			"div_pclk_disp", ENABLE_ACLK_DISP1,
 +			10, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_AHB2APB_MIF2P, "aclk_ahb2apb_mif2p", "div_aclk_mif_133",
-+			ENABLE_ACLK_MIF1, 9, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_AHB2APB_MIF1P, "aclk_ahb2apb_mif1p", "div_aclk_mif_133",
-+			ENABLE_ACLK_MIF1, 8, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_AHB2APB_MIF0P, "aclk_ahb2apb_mif0p", "div_aclk_mif_133",
-+			ENABLE_ACLK_MIF1, 7, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_IXIU_CCI, "aclk_ixiu_cci", "div_aclk_mif_400",
-+			ENABLE_ACLK_MIF1, 6, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_XIU_MIFSFRX, "aclk_xiu_mifsfrx", "div_aclk_mif_200",
-+			ENABLE_ACLK_MIF1, 5, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_MIFNP_133, "aclk_mifnp_133", "div_aclk_mif_133",
-+			ENABLE_ACLK_MIF1, 4, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_MIFNM_200, "aclk_mifnm_200", "div_aclk_mifnm_200",
-+			ENABLE_ACLK_MIF1, 3, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_MIFND_133, "aclk_mifnd_133", "div_aclk_mifnd_133",
-+			ENABLE_ACLK_MIF1, 2, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_MIFND_400, "aclk_mifnd_400", "div_aclk_mif_400",
-+			ENABLE_ACLK_MIF1, 1, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_CCI, "aclk_cci", "div_aclk_mif_400", ENABLE_ACLK_MIF1,
++	GATE(CLK_ACLK_AHB_DISPH, "aclk_ahb_disph", "div_pclk_disp",
++			ENABLE_ACLK_DISP1, 8, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_XIU_TV1X, "aclk_xiu_tv1x", "mout_aclk_disp_333_user",
++			ENABLE_ACLK_DISP1, 7, 0, 0),
++	GATE(CLK_ACLK_XIU_TV0X, "aclk_xiu_tv0x", "mout_aclk_disp_333_user",
++			ENABLE_ACLK_DISP1, 6, 0, 0),
++	GATE(CLK_ACLK_XIU_DECON1X, "aclk_xiu_decon1x",
++			"mout_aclk_disp_333_user", ENABLE_ACLK_DISP1, 5, 0, 0),
++	GATE(CLK_ACLK_XIU_DECON0X, "aclk_xiu_decon0x",
++			"mout_aclk_disp_333_user", ENABLE_ACLK_DISP1, 4, 0, 0),
++	GATE(CLK_ACLK_XIU_DISP1X, "aclk_xiu_disp1x", "mout_aclk_disp_333_user",
++			ENABLE_ACLK_DISP1, 3, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_XIU_DISPNP_100, "aclk_xiu_dispnp_100", "div_pclk_disp",
++			ENABLE_ACLK_DISP1, 2, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_DISP1ND_333, "aclk_disp1nd_333",
++			"mout_aclk_disp_333_user", ENABLE_ACLK_DISP1, 1,
++			CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_DISP0ND_333, "aclk_disp0nd_333",
++			"mout_aclk_disp_333_user", ENABLE_ACLK_DISP1,
 +			0, CLK_IGNORE_UNUSED, 0),
 +
-+	/* ENABLE_ACLK_MIF2 */
-+	GATE(CLK_ACLK_MIFND_266, "aclk_mifnd_266", "div_aclk_mif_266",
-+			ENABLE_ACLK_MIF2, 20, 0, 0),
-+	GATE(CLK_ACLK_PPMU_DREX1S3, "aclk_ppmu_drex1s3", "div_aclk_drex1",
-+			ENABLE_ACLK_MIF2, 17, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_PPMU_DREX1S1, "aclk_ppmu_drex1s1", "div_aclk_drex1",
-+			ENABLE_ACLK_MIF2, 16, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_PPMU_DREX1S0, "aclk_ppmu_drex1s0", "div_aclk_drex1",
-+			ENABLE_ACLK_MIF2, 15, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_PPMU_DREX0S3, "aclk_ppmu_drex0s3", "div_aclk_drex0",
-+			ENABLE_ACLK_MIF2, 14, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_PPMU_DREX0S1, "aclk_ppmu_drex0s1", "div_aclk_drex0",
-+			ENABLE_ACLK_MIF2, 13, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_PPMU_DREX0S0, "aclk_ppmu_drex0s0", "div_aclk_drex0",
-+			ENABLE_ACLK_MIF2, 12, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_AXIDS_CCI_MIFSFRX, "aclk_axids_cci_mifsfrx",
-+			"div_aclk_mif_200", ENABLE_ACLK_MIF2, 7,
-+			CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_AXISYNCDNS_CCI, "aclk_axisyncdns_cci",
-+			"div_aclk_mif_400", ENABLE_ACLK_MIF2,
-+			5, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_AXISYNCDN_CCI, "aclk_axisyncdn_cci", "div_aclk_mif_400",
-+			ENABLE_ACLK_MIF2, 4, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_AXISYNCDN_NOC_D, "aclk_axisyncdn_noc_d",
-+			"div_aclk_mif_200", ENABLE_ACLK_MIF2,
-+			3, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_ASYNCAPBS_MIF_CSSYS, "aclk_asyncapbs_mif_cssys",
-+			"div_aclk_mifnd_133", ENABLE_ACLK_MIF2, 0, 0, 0),
++	/* ENABLE_PCLK_DISP */
++	GATE(CLK_PCLK_SMMU_TV1X, "pclk_smmu_tv1x", "div_pclk_disp",
++			ENABLE_PCLK_DISP, 23, 0, 0),
++	GATE(CLK_PCLK_SMMU_TV0X, "pclk_smmu_tv0x", "div_pclk_disp",
++			ENABLE_PCLK_DISP, 22, 0, 0),
++	GATE(CLK_PCLK_SMMU_DECON1X, "pclk_smmu_decon1x", "div_pclk_disp",
++			ENABLE_PCLK_DISP, 21, 0, 0),
++	GATE(CLK_PCLK_SMMU_DECON0X, "pclk_smmu_decon0x", "div_pclk_disp",
++			ENABLE_PCLK_DISP, 20, 0, 0),
++	GATE(CLK_PCLK_BTS_DECON_TV_M3, "pclk_bts_decon_tv_m3", "div_pclk_disp",
++			ENABLE_PCLK_DISP, 19, 0, 0),
++	GATE(CLK_PCLK_BTS_DECON_TV_M2, "pclk_bts_decon_tv_m2", "div_pclk_disp",
++			ENABLE_PCLK_DISP, 18, 0, 0),
++	GATE(CLK_PCLK_BTS_DECON_TV_M1, "pclk_bts_decon_tv_m1", "div_pclk_disp",
++			ENABLE_PCLK_DISP, 17, 0, 0),
++	GATE(CLK_PCLK_BTS_DECON_TV_M0, "pclk_bts_decon_tv_m0", "div_pclk_disp",
++			ENABLE_PCLK_DISP, 16, 0, 0),
++	GATE(CLK_PCLK_BTS_DECONM4, "pclk_bts_deconm4", "div_pclk_disp",
++			ENABLE_PCLK_DISP, 15, 0, 0),
++	GATE(CLK_PCLK_BTS_DECONM3, "pclk_bts_deconm3", "div_pclk_disp",
++			ENABLE_PCLK_DISP, 14, 0, 0),
++	GATE(CLK_PCLK_BTS_DECONM2, "pclk_bts_deconm2", "div_pclk_disp",
++			ENABLE_PCLK_DISP, 13, 0, 0),
++	GATE(CLK_PCLK_BTS_DECONM1, "pclk_bts_deconm1", "div_pclk_disp",
++			ENABLE_PCLK_DISP, 12, 0, 0),
++	GATE(CLK_PCLK_BTS_DECONM0, "pclk_bts_deconm0", "div_pclk_disp",
++			ENABLE_PCLK_DISP, 11, 0, 0),
++	GATE(CLK_PCLK_MIC1, "pclk_mic1", "div_pclk_disp",
++			ENABLE_PCLK_DISP, 10, 0, 0),
++	GATE(CLK_PCLK_PMU_DISP, "pclk_pmu_disp", "div_pclk_disp",
++			ENABLE_PCLK_DISP, 9, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_PCLK_SYSREG_DISP, "pclk_sysreg_disp", "div_pclk_disp",
++			ENABLE_PCLK_DISP, 8, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_PCLK_HDMIPHY, "pclk_hdmiphy", "div_pclk_disp",
++			ENABLE_PCLK_DISP, 7, 0, 0),
++	GATE(CLK_PCLK_HDMI, "pclk_hdmi", "div_pclk_disp",
++			ENABLE_PCLK_DISP, 6, 0, 0),
++	GATE(CLK_PCLK_MIC0, "pclk_mic0", "div_pclk_disp",
++			ENABLE_PCLK_DISP, 5, 0, 0),
++	GATE(CLK_PCLK_DSIM1, "pclk_dsim1", "div_pclk_disp",
++			ENABLE_PCLK_DISP, 3, 0, 0),
++	GATE(CLK_PCLK_DSIM0, "pclk_dsim0", "div_pclk_disp",
++			ENABLE_PCLK_DISP, 2, 0, 0),
++	GATE(CLK_PCLK_DECON_TV, "pclk_decon_tv", "div_pclk_disp",
++			ENABLE_PCLK_DISP, 1, 0, 0),
 +
-+	/* ENABLE_ACLK_MIF3 */
-+	GATE(CLK_ACLK_BUS2_400, "aclk_bus2_400", "div_aclk_bus2_400",
-+			ENABLE_ACLK_MIF3, 4,
-+			CLK_IGNORE_UNUSED | CLK_SET_RATE_PARENT, 0),
-+	GATE(CLK_ACLK_DISP_333, "aclk_disp_333", "div_aclk_disp_333",
-+			ENABLE_ACLK_MIF3, 1,
-+			CLK_IGNORE_UNUSED | CLK_SET_RATE_PARENT, 0),
-+	GATE(CLK_ACLK_CPIF_200, "aclk_cpif_200", "div_aclk_cpif_200",
-+			ENABLE_ACLK_MIF3, 0,
-+			CLK_IGNORE_UNUSED | CLK_SET_RATE_PARENT, 0),
-+
-+	/* ENABLE_PCLK_MIF */
-+	GATE(CLK_PCLK_PPMU_DREX1S3, "pclk_ppmu_drex1s3", "div_aclk_drex1",
-+			ENABLE_PCLK_MIF, 29, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_PCLK_PPMU_DREX1S1, "pclk_ppmu_drex1s1", "div_aclk_drex1",
-+			ENABLE_PCLK_MIF, 28, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_PCLK_PPMU_DREX1S0, "pclk_ppmu_drex1s0", "div_aclk_drex1",
-+			ENABLE_PCLK_MIF, 27, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_PCLK_PPMU_DREX0S3, "pclk_ppmu_drex0s3", "div_aclk_drex0",
-+			ENABLE_PCLK_MIF, 26, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_PCLK_PPMU_DREX0S1, "pclk_ppmu_drex0s1", "div_aclk_drex0",
-+			ENABLE_PCLK_MIF, 25, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_PCLK_PPMU_DREX0S0, "pclk_ppmu_drex0s0", "div_aclk_drex0",
-+			ENABLE_PCLK_MIF, 24, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_PCLK_ASYNCAXI_NOC_P_CCI, "pclk_asyncaxi_noc_p_cci",
-+			"div_aclk_mif_133", ENABLE_PCLK_MIF, 21,
-+			CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_PCLK_ASYNCAXI_CP1, "pclk_asyncaxi_cp1", "div_aclk_mif_133",
-+			ENABLE_PCLK_MIF, 19, 0, 0),
-+	GATE(CLK_PCLK_ASYNCAXI_CP0, "pclk_asyncaxi_cp0", "div_aclk_mif_133",
-+			ENABLE_PCLK_MIF, 18, 0, 0),
-+	GATE(CLK_PCLK_ASYNCAXI_DREX1_3, "pclk_asyncaxi_drex1_3",
-+			"div_aclk_mif_133", ENABLE_PCLK_MIF, 17, 0, 0),
-+	GATE(CLK_PCLK_ASYNCAXI_DREX1_1, "pclk_asyncaxi_drex1_1",
-+			"div_aclk_mif_133", ENABLE_PCLK_MIF, 16, 0, 0),
-+	GATE(CLK_PCLK_ASYNCAXI_DREX1_0, "pclk_asyncaxi_drex1_0",
-+			"div_aclk_mif_133", ENABLE_PCLK_MIF, 15, 0, 0),
-+	GATE(CLK_PCLK_ASYNCAXI_DREX0_3, "pclk_asyncaxi_drex0_3",
-+			"div_aclk_mif_133", ENABLE_PCLK_MIF, 14, 0, 0),
-+	GATE(CLK_PCLK_ASYNCAXI_DREX0_1, "pclk_asyncaxi_drex0_1",
-+			"div_aclk_mif_133", ENABLE_PCLK_MIF, 13, 0, 0),
-+	GATE(CLK_PCLK_ASYNCAXI_DREX0_0, "pclk_asyncaxi_drex0_0",
-+			"div_aclk_mif_133", ENABLE_PCLK_MIF, 12, 0, 0),
-+	GATE(CLK_PCLK_MIFSRVND_133, "pclk_mifsrvnd_133", "div_aclk_mif_133",
-+			ENABLE_PCLK_MIF, 11, 0, 0),
-+	GATE(CLK_PCLK_PMU_MIF, "pclk_pmu_mif", "div_aclk_mif_133",
-+			ENABLE_PCLK_MIF, 10, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_PCLK_SYSREG_MIF, "pclk_sysreg_mif", "div_aclk_mif_133",
-+			ENABLE_PCLK_MIF, 9, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_PCLK_GPIO_ALIVE, "pclk_gpio_alive", "div_aclk_mif_133",
-+			ENABLE_PCLK_MIF, 8, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_PCLK_ABB, "pclk_abb", "div_aclk_mif_133",
-+			ENABLE_PCLK_MIF, 7, 0, 0),
-+	GATE(CLK_PCLK_PMU_APBIF, "pclk_pmu_apbif", "div_aclk_mif_133",
-+			ENABLE_PCLK_MIF, 6, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_PCLK_DDR_PHY1, "pclk_ddr_phy1", "div_aclk_mif_133",
-+			ENABLE_PCLK_MIF, 5, 0, 0),
-+	GATE(CLK_PCLK_DREX1, "pclk_drex1", "div_aclk_mif_133",
-+			ENABLE_PCLK_MIF, 3, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_PCLK_DDR_PHY0, "pclk_ddr_phy0", "div_aclk_mif_133",
-+			ENABLE_PCLK_MIF, 2, 0, 0),
-+	GATE(CLK_PCLK_DREX0, "pclk_drex0", "div_aclk_mif_133",
-+			ENABLE_PCLK_MIF, 0, CLK_IGNORE_UNUSED, 0),
-+
-+	/* ENABLE_PCLK_MIF_SECURE_DREX0_TZ */
-+	GATE(CLK_PCLK_DREX0_TZ, "pclk_drex0_tz", "div_aclk_mif_133",
-+			ENABLE_PCLK_MIF_SECURE_DREX0_TZ, 0, 0, 0),
-+
-+	/* ENABLE_PCLK_MIF_SECURE_DREX1_TZ */
-+	GATE(CLK_PCLK_DREX1_TZ, "pclk_drex1_tz", "div_aclk_mif_133",
-+			ENABLE_PCLK_MIF_SECURE_DREX1_TZ, 0, 0, 0),
-+
-+	/* ENABLE_PCLK_MIF_SECURE_MONOTONIC_CNT */
-+	GATE(CLK_PCLK_MONOTONIC_CNT, "pclk_monotonic_cnt", "div_aclk_mif_133",
-+			ENABLE_PCLK_MIF_SECURE_RTC, 0, 0, 0),
-+
-+	/* ENABLE_PCLK_MIF_SECURE_RTC */
-+	GATE(CLK_PCLK_RTC, "pclk_rtc", "div_aclk_mif_133",
-+			ENABLE_PCLK_MIF_SECURE_RTC, 0, 0, 0),
-+
-+	/* ENABLE_SCLK_MIF */
-+	GATE(CLK_SCLK_DSIM1_DISP, "sclk_dsim1_disp", "div_sclk_dsim1",
-+			ENABLE_SCLK_MIF, 15, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_SCLK_DECON_TV_VCLK_DISP, "sclk_decon_tv_vclk_disp",
-+			"div_sclk_decon_tv_vclk", ENABLE_SCLK_MIF,
-+			14, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_SCLK_DSIM0_DISP, "sclk_dsim0_disp", "div_sclk_dsim0",
-+			ENABLE_SCLK_MIF, 9, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_SCLK_DSD_DISP, "sclk_dsd_disp", "div_sclk_dsd",
-+			ENABLE_SCLK_MIF, 8, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_SCLK_DECON_TV_ECLK_DISP, "sclk_decon_tv_eclk_disp",
-+			"div_sclk_decon_tv_eclk", ENABLE_SCLK_MIF,
-+			7, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_SCLK_DECON_VCLK_DISP, "sclk_decon_vclk_disp",
-+			"div_sclk_decon_vclk", ENABLE_SCLK_MIF,
-+			6, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_SCLK_DECON_ECLK_DISP, "sclk_decon_eclk_disp",
-+			"div_sclk_decon_eclk", ENABLE_SCLK_MIF,
-+			5, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_SCLK_HPM_MIF, "sclk_hpm_mif", "div_sclk_hpm_mif",
-+			ENABLE_SCLK_MIF, 4,
-+			CLK_IGNORE_UNUSED | CLK_SET_RATE_PARENT, 0),
-+	GATE(CLK_SCLK_MFC_PLL, "sclk_mfc_pll", "mout_mfc_pll_div2",
-+			ENABLE_SCLK_MIF, 3, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_SCLK_BUS_PLL, "sclk_bus_pll", "mout_bus_pll_div2",
-+			ENABLE_SCLK_MIF, 2, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_SCLK_BUS_PLL_APOLLO, "sclk_bus_pll_apollo", "sclk_bus_pll",
-+			ENABLE_SCLK_MIF, 1, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_SCLK_BUS_PLL_ATLAS, "sclk_bus_pll_atlas", "sclk_bus_pll",
-+			ENABLE_SCLK_MIF, 0, CLK_IGNORE_UNUSED, 0),
++	/* ENABLE_SCLK_DISP */
++	GATE(CLK_PHYCLK_MIPIDPHY1_BITCLKDIV8, "phyclk_mipidphy1_bitclkdiv8",
++			"mout_phyclk_mipidphy1_bitclkdiv8_user",
++			ENABLE_SCLK_DISP, 26, 0, 0),
++	GATE(CLK_PHYCLK_MIPIDPHY1_RXCLKESC0, "phyclk_mipidphy1_rxclkesc0",
++			"mout_phyclk_mipidphy1_rxclkesc0_user",
++			ENABLE_SCLK_DISP, 25, 0, 0),
++	GATE(CLK_SCLK_RGB_TV_VCLK_TO_DSIM1, "sclk_rgb_tv_vclk_to_dsim1",
++			"sclk_rgb_tv_vclk", ENABLE_SCLK_DISP, 24, 0, 0),
++	GATE(CLK_SCLK_RGB_TV_VCLK_TO_MIC1, "sclk_rgb_tv_vclk_to_mic1",
++			"sclk_rgb_tv_vclk", ENABLE_SCLK_DISP, 23, 0, 0),
++	GATE(CLK_SCLK_DSIM1, "sclk_dsim1", "div_sclk_dsim1_disp",
++			ENABLE_SCLK_DISP, 22, 0, 0),
++	GATE(CLK_SCLK_DECON_TV_VCLK, "sclk_decon_tv_vclk",
++			"div_sclk_decon_tv_vclk_disp",
++			ENABLE_SCLK_DISP, 21, 0, 0),
++	GATE(CLK_PHYCLK_MIPIDPHY0_BITCLKDIV8, "phyclk_mipidphy0_bitclkdiv8",
++			"mout_phyclk_mipidphy0_bitclkdiv8_user",
++			ENABLE_SCLK_DISP, 15, 0, 0),
++	GATE(CLK_PHYCLK_MIPIDPHY0_RXCLKESC0, "phyclk_mipidphy0_rxclkesc0",
++			"mout_phyclk_mipidphy0_rxclkesc0_user",
++			ENABLE_SCLK_DISP, 14, 0, 0),
++	GATE(CLK_PHYCLK_HDMIPHY_TMDS_CLKO, "phyclk_hdmiphy_tmds_clko",
++			"mout_phyclk_hdmiphy_tmds_clko_user",
++			ENABLE_SCLK_DISP, 13, 0, 0),
++	GATE(CLK_PHYCLK_HDMI_PIXEL, "phyclk_hdmi_pixel",
++			"sclk_rgb_tv_vclk", ENABLE_SCLK_DISP, 12, 0, 0),
++	GATE(CLK_SCLK_RGB_VCLK_TO_SMIES, "sclk_rgb_vclk_to_smies",
++			"sclk_rgb_vclk", ENABLE_SCLK_DISP, 11, 0, 0),
++	GATE(CLK_SCLK_RGB_VCLK_TO_DSIM0, "sclk_rgb_vclk_to_dsim0",
++			"sclk_rgb_vclk", ENABLE_SCLK_DISP, 9, 0, 0),
++	GATE(CLK_SCLK_RGB_VCLK_TO_MIC0, "sclk_rgb_vclk_to_mic0",
++			"sclk_rgb_vclk", ENABLE_SCLK_DISP, 8, 0, 0),
++	GATE(CLK_SCLK_DSD, "sclk_dsd", "mout_sclk_dsd_user",
++			ENABLE_SCLK_DISP, 7, 0, 0),
++	GATE(CLK_SCLK_HDMI_SPDIF, "sclk_hdmi_spdif", "sclk_hdmi_spdif_disp",
++			ENABLE_SCLK_DISP, 6, 0, 0),
++	GATE(CLK_SCLK_DSIM0, "sclk_dsim0", "div_sclk_dsim0_disp",
++			ENABLE_SCLK_DISP, 5, 0, 0),
++	GATE(CLK_SCLK_DECON_TV_ECLK, "sclk_decon_tv_eclk",
++			"div_sclk_decon_tv_eclk_disp",
++			ENABLE_SCLK_DISP, 4, 0, 0),
++	GATE(CLK_SCLK_DECON_VCLK, "sclk_decon_vclk",
++			"div_sclk_decon_vclk_disp", ENABLE_SCLK_DISP, 3, 0, 0),
++	GATE(CLK_SCLK_DECON_ECLK, "sclk_decon_eclk",
++			"div_sclk_decon_eclk_disp", ENABLE_SCLK_DISP, 2, 0, 0),
 +};
 +
- static struct samsung_cmu_info mif_cmu_info __initdata = {
- 	.pll_clks		= mif_pll_clks,
- 	.nr_pll_clks		= ARRAY_SIZE(mif_pll_clks),
-+	.mux_clks		= mif_mux_clks,
-+	.nr_mux_clks		= ARRAY_SIZE(mif_mux_clks),
-+	.div_clks		= mif_div_clks,
-+	.nr_div_clks		= ARRAY_SIZE(mif_div_clks),
-+	.gate_clks		= mif_gate_clks,
-+	.nr_gate_clks		= ARRAY_SIZE(mif_gate_clks),
-+	.fixed_factor_clks	= mif_fixed_factor_clks,
-+	.nr_fixed_factor_clks	= ARRAY_SIZE(mif_fixed_factor_clks),
- 	.nr_clk_ids		= MIF_NR_CLK,
- 	.clk_regs		= mif_clk_regs,
- 	.nr_clk_regs		= ARRAY_SIZE(mif_clk_regs),
++static struct samsung_cmu_info disp_cmu_info __initdata = {
++	.pll_clks		= disp_pll_clks,
++	.nr_pll_clks		= ARRAY_SIZE(disp_pll_clks),
++	.mux_clks		= disp_mux_clks,
++	.nr_mux_clks		= ARRAY_SIZE(disp_mux_clks),
++	.div_clks		= disp_div_clks,
++	.nr_div_clks		= ARRAY_SIZE(disp_div_clks),
++	.gate_clks		= disp_gate_clks,
++	.nr_gate_clks		= ARRAY_SIZE(disp_gate_clks),
++	.fixed_clks		= disp_fixed_clks,
++	.nr_fixed_clks		= ARRAY_SIZE(disp_fixed_clks),
++	.fixed_factor_clks	= disp_fixed_factor_clks,
++	.nr_fixed_factor_clks	= ARRAY_SIZE(disp_fixed_factor_clks),
++	.nr_clk_ids		= DISP_NR_CLK,
++	.clk_regs		= disp_clk_regs,
++	.nr_clk_regs		= ARRAY_SIZE(disp_clk_regs),
++};
++
++static void __init exynos5433_cmu_disp_init(struct device_node *np)
++{
++	samsung_cmu_register_one(np, &disp_cmu_info);
++}
++
++CLK_OF_DECLARE(exynos5433_cmu_disp, "samsung,exynos5433-cmu-disp",
++		exynos5433_cmu_disp_init);
 diff --git a/include/dt-bindings/clock/exynos5433.h b/include/dt-bindings/clock/exynos5433.h
-index 8e423a6..cb0e84e 100644
+index cb0e84e..3783f4a 100644
 --- a/include/dt-bindings/clock/exynos5433.h
 +++ b/include/dt-bindings/clock/exynos5433.h
-@@ -149,8 +149,196 @@
- #define CLK_FOUT_MEM1_PLL		2
- #define CLK_FOUT_BUS_PLL		3
- #define CLK_FOUT_MFC_PLL		4
-+#define CLK_DOUT_MFC_PLL		5
-+#define CLK_DOUT_BUS_PLL		6
-+#define CLK_DOUT_MEM1_PLL		7
-+#define CLK_DOUT_MEM0_PLL		8
+@@ -68,6 +68,7 @@
+ #define CLK_MOUT_SCLK_SPDIF		61
+ #define CLK_MOUT_SCLK_AUDIO1		62
+ #define CLK_MOUT_SCLK_AUDIO0		63
++#define CLK_MOUT_SCLK_HDMI_SPDIF	64
  
--#define MIF_NR_CLK			5
-+#define CLK_MOUT_MFC_PLL_DIV2		10
-+#define CLK_MOUT_BUS_PLL_DIV2		11
-+#define CLK_MOUT_MEM1_PLL_DIV2		12
-+#define CLK_MOUT_MEM0_PLL_DIV2		13
-+#define CLK_MOUT_MFC_PLL		14
-+#define CLK_MOUT_BUS_PLL		15
-+#define CLK_MOUT_MEM1_PLL		16
-+#define CLK_MOUT_MEM0_PLL		17
-+#define CLK_MOUT_CLK2X_PHY_C		18
-+#define CLK_MOUT_CLK2X_PHY_B		19
-+#define CLK_MOUT_CLK2X_PHY_A		20
-+#define CLK_MOUT_CLKM_PHY_C		21
-+#define CLK_MOUT_CLKM_PHY_B		22
-+#define CLK_MOUT_CLKM_PHY_A		23
-+#define CLK_MOUT_ACLK_MIFNM_200		24
-+#define CLK_MOUT_ACLK_MIFNM_400		25
-+#define CLK_MOUT_ACLK_DISP_333_B	26
-+#define CLK_MOUT_ACLK_DISP_333_A	27
-+#define CLK_MOUT_SCLK_DECON_VCLK_C	28
-+#define CLK_MOUT_SCLK_DECON_VCLK_B	29
-+#define CLK_MOUT_SCLK_DECON_VCLK_A	30
-+#define CLK_MOUT_SCLK_DECON_ECLK_C	31
-+#define CLK_MOUT_SCLK_DECON_ECLK_B	32
-+#define CLK_MOUT_SCLK_DECON_ECLK_A	33
-+#define CLK_MOUT_SCLK_DECON_TV_ECLK_C	34
-+#define CLK_MOUT_SCLK_DECON_TV_ECLK_B	35
-+#define CLK_MOUT_SCLK_DECON_TV_ECLK_A	36
-+#define CLK_MOUT_SCLK_DSD_C		37
-+#define CLK_MOUT_SCLK_DSD_B		38
-+#define CLK_MOUT_SCLK_DSD_A		39
-+#define CLK_MOUT_SCLK_DSIM0_C		40
-+#define CLK_MOUT_SCLK_DSIM0_B		41
-+#define CLK_MOUT_SCLK_DSIM0_A		42
-+#define CLK_MOUT_SCLK_DECON_TV_VCLK_C	46
-+#define CLK_MOUT_SCLK_DECON_TV_VCLK_B	47
-+#define CLK_MOUT_SCLK_DECON_TV_VCLK_A	48
-+#define CLK_MOUT_SCLK_DSIM1_C		49
-+#define CLK_MOUT_SCLK_DSIM1_B		50
-+#define CLK_MOUT_SCLK_DSIM1_A		51
-+
-+#define CLK_DIV_SCLK_HPM_MIF		55
-+#define CLK_DIV_ACLK_DREX1		56
-+#define CLK_DIV_ACLK_DREX0		57
-+#define CLK_DIV_CLK2XPHY		58
-+#define CLK_DIV_ACLK_MIF_266		59
-+#define CLK_DIV_ACLK_MIFND_133		60
-+#define CLK_DIV_ACLK_MIF_133		61
-+#define CLK_DIV_ACLK_MIFNM_200		62
-+#define CLK_DIV_ACLK_MIF_200		63
-+#define CLK_DIV_ACLK_MIF_400		64
-+#define CLK_DIV_ACLK_BUS2_400		65
-+#define CLK_DIV_ACLK_DISP_333		66
-+#define CLK_DIV_ACLK_CPIF_200		67
-+#define CLK_DIV_SCLK_DSIM1		68
-+#define CLK_DIV_SCLK_DECON_TV_VCLK	69
-+#define CLK_DIV_SCLK_DSIM0		70
-+#define CLK_DIV_SCLK_DSD		71
-+#define CLK_DIV_SCLK_DECON_TV_ECLK	72
-+#define CLK_DIV_SCLK_DECON_VCLK		73
-+#define CLK_DIV_SCLK_DECON_ECLK		74
-+#define CLK_DIV_MIF_PRE			75
-+
-+#define CLK_CLK2X_PHY1			80
-+#define CLK_CLK2X_PHY0			81
-+#define CLK_CLKM_PHY1			82
-+#define CLK_CLKM_PHY0			83
-+#define CLK_RCLK_DREX1			84
-+#define CLK_RCLK_DREX0			85
-+#define CLK_ACLK_DREX1_TZ		86
-+#define CLK_ACLK_DREX0_TZ		87
-+#define CLK_ACLK_DREX1_PEREV		88
-+#define CLK_ACLK_DREX0_PEREV		89
-+#define CLK_ACLK_DREX1_MEMIF		90
-+#define CLK_ACLK_DREX0_MEMIF		91
-+#define CLK_ACLK_DREX1_SCH		92
-+#define CLK_ACLK_DREX0_SCH		93
-+#define CLK_ACLK_DREX1_BUSIF		94
-+#define CLK_ACLK_DREX0_BUSIF		95
-+#define CLK_ACLK_DREX1_BUSIF_RD		96
-+#define CLK_ACLK_DREX0_BUSIF_RD		97
-+#define CLK_ACLK_DREX1			98
-+#define CLK_ACLK_DREX0			99
-+#define CLK_ACLK_ASYNCAXIM_ATLAS_CCIX	100
-+#define CLK_ACLK_ASYNCAXIS_ATLAS_MIF	101
-+#define CLK_ACLK_ASYNCAXIM_ATLAS_MIF	102
-+#define CLK_ACLK_ASYNCAXIS_MIF_IMEM	103
-+#define CLK_ACLK_ASYNCAXIS_NOC_P_CCI	104
-+#define CLK_ACLK_ASYNCAXIM_NOC_P_CCI	105
-+#define CLK_ACLK_ASYNCAXIS_CP1		106
-+#define CLK_ACLK_ASYNCAXIM_CP1		107
-+#define CLK_ACLK_ASYNCAXIS_CP0		108
-+#define CLK_ACLK_ASYNCAXIM_CP0		109
-+#define CLK_ACLK_ASYNCAXIS_DREX1_3	110
-+#define CLK_ACLK_ASYNCAXIM_DREX1_3	111
-+#define CLK_ACLK_ASYNCAXIS_DREX1_1	112
-+#define CLK_ACLK_ASYNCAXIM_DREX1_1	113
-+#define CLK_ACLK_ASYNCAXIS_DREX1_0	114
-+#define CLK_ACLK_ASYNCAXIM_DREX1_0	115
-+#define CLK_ACLK_ASYNCAXIS_DREX0_3	116
-+#define CLK_ACLK_ASYNCAXIM_DREX0_3	117
-+#define CLK_ACLK_ASYNCAXIS_DREX0_1	118
-+#define CLK_ACLK_ASYNCAXIM_DREX0_1	119
-+#define CLK_ACLK_ASYNCAXIS_DREX0_0	120
-+#define CLK_ACLK_ASYNCAXIM_DREX0_0	121
-+#define CLK_ACLK_AHB2APB_MIF2P		122
-+#define CLK_ACLK_AHB2APB_MIF1P		123
-+#define CLK_ACLK_AHB2APB_MIF0P		124
-+#define CLK_ACLK_IXIU_CCI		125
-+#define CLK_ACLK_XIU_MIFSFRX		126
-+#define CLK_ACLK_MIFNP_133		127
-+#define CLK_ACLK_MIFNM_200		128
-+#define CLK_ACLK_MIFND_133		129
-+#define CLK_ACLK_MIFND_400		130
-+#define CLK_ACLK_CCI			131
-+#define CLK_ACLK_MIFND_266		132
-+#define CLK_ACLK_PPMU_DREX1S3		133
-+#define CLK_ACLK_PPMU_DREX1S1		134
-+#define CLK_ACLK_PPMU_DREX1S0		135
-+#define CLK_ACLK_PPMU_DREX0S3		136
-+#define CLK_ACLK_PPMU_DREX0S1		137
-+#define CLK_ACLK_PPMU_DREX0S0		138
-+#define CLK_ACLK_BTS_APOLLO		139
-+#define CLK_ACLK_BTS_ATLAS		140
-+#define CLK_ACLK_ACE_SEL_APOLL		141
-+#define CLK_ACLK_ACE_SEL_ATLAS		142
-+#define CLK_ACLK_AXIDS_CCI_MIFSFRX	143
-+#define CLK_ACLK_AXIUS_ATLAS_CCI	144
-+#define CLK_ACLK_AXISYNCDNS_CCI		145
-+#define CLK_ACLK_AXISYNCDN_CCI		146
-+#define CLK_ACLK_AXISYNCDN_NOC_D	147
-+#define CLK_ACLK_ASYNCACEM_APOLLO_CCI	148
-+#define CLK_ACLK_ASYNCACEM_ATLAS_CCI	149
-+#define CLK_ACLK_ASYNCAPBS_MIF_CSSYS	150
-+#define CLK_ACLK_BUS2_400		151
-+#define CLK_ACLK_DISP_333		152
-+#define CLK_ACLK_CPIF_200		153
-+#define CLK_PCLK_PPMU_DREX1S3		154
-+#define CLK_PCLK_PPMU_DREX1S1		155
-+#define CLK_PCLK_PPMU_DREX1S0		156
-+#define CLK_PCLK_PPMU_DREX0S3		157
-+#define CLK_PCLK_PPMU_DREX0S1		158
-+#define CLK_PCLK_PPMU_DREX0S0		159
-+#define CLK_PCLK_BTS_APOLLO		160
-+#define CLK_PCLK_BTS_ATLAS		161
-+#define CLK_PCLK_ASYNCAXI_NOC_P_CCI	162
-+#define CLK_PCLK_ASYNCAXI_CP1		163
-+#define CLK_PCLK_ASYNCAXI_CP0		164
-+#define CLK_PCLK_ASYNCAXI_DREX1_3	165
-+#define CLK_PCLK_ASYNCAXI_DREX1_1	166
-+#define CLK_PCLK_ASYNCAXI_DREX1_0	167
-+#define CLK_PCLK_ASYNCAXI_DREX0_3	168
-+#define CLK_PCLK_ASYNCAXI_DREX0_1	169
-+#define CLK_PCLK_ASYNCAXI_DREX0_0	170
-+#define CLK_PCLK_MIFSRVND_133		171
-+#define CLK_PCLK_PMU_MIF		172
-+#define CLK_PCLK_SYSREG_MIF		173
-+#define CLK_PCLK_GPIO_ALIVE		174
-+#define CLK_PCLK_ABB			175
-+#define CLK_PCLK_PMU_APBIF		176
-+#define CLK_PCLK_DDR_PHY1		177
-+#define CLK_PCLK_DREX1			178
-+#define CLK_PCLK_DDR_PHY0		179
-+#define CLK_PCLK_DREX0			180
-+#define CLK_PCLK_DREX0_TZ		181
-+#define CLK_PCLK_DREX1_TZ		182
-+#define CLK_PCLK_MONOTONIC_CNT		183
-+#define CLK_PCLK_RTC			184
-+#define CLK_SCLK_DSIM1_DISP		185
-+#define CLK_SCLK_DECON_TV_VCLK_DISP	186
-+#define CLK_SCLK_FREQ_DET_BUS_PLL	187
-+#define CLK_SCLK_FREQ_DET_MFC_PLL	188
-+#define CLK_SCLK_FREQ_DET_MEM0_PLL	189
-+#define CLK_SCLK_FREQ_DET_MEM1_PLL	190
-+#define CLK_SCLK_DSIM0_DISP		191
-+#define CLK_SCLK_DSD_DISP		192
-+#define CLK_SCLK_DECON_TV_ECLK_DISP	193
-+#define CLK_SCLK_DECON_VCLK_DISP	194
-+#define CLK_SCLK_DECON_ECLK_DISP	195
-+#define CLK_SCLK_HPM_MIF		196
-+#define CLK_SCLK_MFC_PLL		197
-+#define CLK_SCLK_BUS_PLL		198
-+#define CLK_SCLK_BUS_PLL_APOLLO		199
-+#define CLK_SCLK_BUS_PLL_ATLAS		200
-+
-+#define MIF_NR_CLK			201
+ #define CLK_DIV_ACLK_FSYS_200		100
+ #define CLK_DIV_ACLK_IMEM_SSSX_266	101
+@@ -337,8 +338,9 @@
+ #define CLK_SCLK_BUS_PLL		198
+ #define CLK_SCLK_BUS_PLL_APOLLO		199
+ #define CLK_SCLK_BUS_PLL_ATLAS		200
++#define CLK_SCLK_HDMI_SPDIF_DISP	201
+ 
+-#define MIF_NR_CLK			201
++#define MIF_NR_CLK			202
  
  /* CMU_PERIC */
  #define CLK_PCLK_SPI2			1
+@@ -514,4 +516,114 @@
+ 
+ #define G2D_NR_CLK			27
+ 
++/* CMU_DISP */
++#define CLK_FOUT_DISP_PLL				1
++
++#define CLK_MOUT_DISP_PLL				2
++#define CLK_MOUT_SCLK_DSIM1_USER			3
++#define CLK_MOUT_SCLK_DSIM0_USER			4
++#define CLK_MOUT_SCLK_DSD_USER				5
++#define CLK_MOUT_SCLK_DECON_TV_ECLK_USER		6
++#define CLK_MOUT_SCLK_DECON_VCLK_USER			7
++#define CLK_MOUT_SCLK_DECON_ECLK_USER			8
++#define CLK_MOUT_SCLK_DECON_TV_VCLK_USER		9
++#define CLK_MOUT_ACLK_DISP_333_USER			10
++#define CLK_MOUT_PHYCLK_MIPIDPHY1_BITCLKDIV8_USER	11
++#define CLK_MOUT_PHYCLK_MIPIDPHY1_RXCLKESC0_USER	12
++#define CLK_MOUT_PHYCLK_MIPIDPHY0_BITCLKDIV8_USER	13
++#define CLK_MOUT_PHYCLK_MIPIDPHY0_RXCLKESC0_USER	14
++#define CLK_MOUT_PHYCLK_HDMIPHY_TMDS_CLKO_USER		15
++#define CLK_MOUT_PHYCLK_HDMIPHY_PIXEL_CLKO_USER		16
++#define CLK_MOUT_SCLK_DSIM0				17
++#define CLK_MOUT_SCLK_DECON_TV_ECLK			18
++#define CLK_MOUT_SCLK_DECON_VCLK			19
++#define CLK_MOUT_SCLK_DECON_ECLK			20
++#define CLK_MOUT_SCLK_DSIM1_B_DISP			21
++#define CLK_MOUT_SCLK_DSIM1_A_DISP			22
++#define CLK_MOUT_SCLK_DECON_TV_VCLK_C_DISP		23
++#define CLK_MOUT_SCLK_DECON_TV_VCLK_B_DISP		24
++#define CLK_MOUT_SCLK_DECON_TV_VCLK_A_DISP		25
++
++#define CLK_DIV_SCLK_DSIM1_DISP				30
++#define CLK_DIV_SCLK_DECON_TV_VCLK_DISP			31
++#define CLK_DIV_SCLK_DSIM0_DISP				32
++#define CLK_DIV_SCLK_DECON_TV_ECLK_DISP			33
++#define CLK_DIV_SCLK_DECON_VCLK_DISP			34
++#define CLK_DIV_SCLK_DECON_ECLK_DISP			35
++#define CLK_DIV_PCLK_DISP				36
++
++#define CLK_ACLK_DECON_TV				40
++#define CLK_ACLK_DECON					41
++#define CLK_ACLK_SMMU_TV1X				42
++#define CLK_ACLK_SMMU_TV0X				43
++#define CLK_ACLK_SMMU_DECON1X				44
++#define CLK_ACLK_SMMU_DECON0X				45
++#define CLK_ACLK_BTS_DECON_TV_M3			46
++#define CLK_ACLK_BTS_DECON_TV_M2			47
++#define CLK_ACLK_BTS_DECON_TV_M1			48
++#define CLK_ACLK_BTS_DECON_TV_M0			49
++#define CLK_ACLK_BTS_DECON_NM4				50
++#define CLK_ACLK_BTS_DECON_NM3				51
++#define CLK_ACLK_BTS_DECON_NM2				52
++#define CLK_ACLK_BTS_DECON_NM1				53
++#define CLK_ACLK_BTS_DECON_NM0				54
++#define CLK_ACLK_AHB2APB_DISPSFR2P			55
++#define CLK_ACLK_AHB2APB_DISPSFR1P			56
++#define CLK_ACLK_AHB2APB_DISPSFR0P			57
++#define CLK_ACLK_AHB_DISPH				58
++#define CLK_ACLK_XIU_TV1X				59
++#define CLK_ACLK_XIU_TV0X				60
++#define CLK_ACLK_XIU_DECON1X				61
++#define CLK_ACLK_XIU_DECON0X				62
++#define CLK_ACLK_XIU_DISP1X				63
++#define CLK_ACLK_XIU_DISPNP_100				64
++#define CLK_ACLK_DISP1ND_333				65
++#define CLK_ACLK_DISP0ND_333				66
++#define CLK_PCLK_SMMU_TV1X				67
++#define CLK_PCLK_SMMU_TV0X				68
++#define CLK_PCLK_SMMU_DECON1X				69
++#define CLK_PCLK_SMMU_DECON0X				70
++#define CLK_PCLK_BTS_DECON_TV_M3			71
++#define CLK_PCLK_BTS_DECON_TV_M2			72
++#define CLK_PCLK_BTS_DECON_TV_M1			73
++#define CLK_PCLK_BTS_DECON_TV_M0			74
++#define CLK_PCLK_BTS_DECONM4				75
++#define CLK_PCLK_BTS_DECONM3				76
++#define CLK_PCLK_BTS_DECONM2				77
++#define CLK_PCLK_BTS_DECONM1				78
++#define CLK_PCLK_BTS_DECONM0				79
++#define CLK_PCLK_MIC1					80
++#define CLK_PCLK_PMU_DISP				81
++#define CLK_PCLK_SYSREG_DISP				82
++#define CLK_PCLK_HDMIPHY				83
++#define CLK_PCLK_HDMI					84
++#define CLK_PCLK_MIC0					85
++#define CLK_PCLK_DSIM1					86
++#define CLK_PCLK_DSIM0					87
++#define CLK_PCLK_DECON_TV				88
++#define CLK_PHYCLK_MIPIDPHY1_BITCLKDIV8			89
++#define CLK_PHYCLK_MIPIDPHY1_RXCLKESC0			90
++#define CLK_SCLK_RGB_TV_VCLK_TO_DSIM1			91
++#define CLK_SCLK_RGB_TV_VCLK_TO_MIC1			92
++#define CLK_SCLK_DSIM1					93
++#define CLK_SCLK_DECON_TV_VCLK				94
++#define CLK_PHYCLK_MIPIDPHY0_BITCLKDIV8			95
++#define CLK_PHYCLK_MIPIDPHY0_RXCLKESC0			96
++#define CLK_PHYCLK_HDMIPHY_TMDS_CLKO			97
++#define CLK_PHYCLK_HDMI_PIXEL				98
++#define CLK_SCLK_RGB_VCLK_TO_SMIES			99
++#define CLK_SCLK_FREQ_DET_DISP_PLL			100
++#define CLK_SCLK_RGB_VCLK_TO_DSIM0			101
++#define CLK_SCLK_RGB_VCLK_TO_MIC0			102
++#define CLK_SCLK_DSD					103
++#define CLK_SCLK_HDMI_SPDIF				104
++#define CLK_SCLK_DSIM0					105
++#define CLK_SCLK_DECON_TV_ECLK				106
++#define CLK_SCLK_DECON_VCLK				107
++#define CLK_SCLK_DECON_ECLK				108
++#define CLK_SCLK_RGB_VCLK				109
++#define CLK_SCLK_RGB_TV_VCLK				110
++
++#define DISP_NR_CLK					111
++
+ #endif /* _DT_BINDINGS_CLOCK_EXYNOS5433_H */
 -- 
 1.8.5.5
 
