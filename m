@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753552AbbAUOLT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 09:11:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54145 "EHLO mx2.suse.de"
+	id S1753695AbbAUOLt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 09:11:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54157 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751845AbbAUOLJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 09:11:09 -0500
-Date: Wed, 21 Jan 2015 15:11:07 +0100 (CET)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Steven Miao <realmz6@gmail.com>
-cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
-        Sonic Zhang <sonic.zhang@analog.com>,
-        Randy Dunlap <rdunlap@infradead.org>, Christoph Lameter <cl@linux.com>,
-        Masanari Iida <standby24x7@gmail.com>,
-        bfin <adi-buildroot-devel@lists.sourceforge.net>,
-        "open list:CAN NETWORK DRIVERS <linux-can@vger.kernel.org>, open
-	list:NETWORKING DRIVERS <netdev@vger.kernel.org>, open list" 
-	<linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] blackfin: mach-common: ints-priority: Remove unused
- function
-In-Reply-To: <CAMk6uBk8gPAsKKqZPC=9dxRkiXm7893SwK1fd6J4Bc+iVkG+uA@mail.gmail.com>
-Message-ID: <alpine.LNX.2.00.1501211510220.10817@pobox.suse.cz>
-References: <1420304509-13072-1-git-send-email-rickard_strandqvist@spectrumdigital.se> <alpine.LNX.2.00.1501201407050.10817@pobox.suse.cz> <CAMk6uBk8gPAsKKqZPC=9dxRkiXm7893SwK1fd6J4Bc+iVkG+uA@mail.gmail.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1753641AbbAUOLk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 09:11:40 -0500
+Date: Wed, 21 Jan 2015 15:11:38 +0100
+From: Michal Hocko <mhocko@suse.cz>
+To: Krzysztof =?utf-8?Q?Koz=C5=82owski?= <k.kozlowski.k@gmail.com>
+Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Christoph Lameter <cl@linux.com>,
+        Jesper Dangaard Brouer <brouer@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: mmotm:
+ mm-slub-optimize-alloc-free-fastpath-by-removing-preemption-on-off.patch is
+ causing preemptible splats
+Message-ID: <20150121141138.GC23700@dhcp22.suse.cz>
+References: <20150121132308.GB23700@dhcp22.suse.cz>
+ <CAJKOXPdgSsd8cr7ctKOGCwFTRMxcq71k7Pb5mQgYy--tGW8+_w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CAJKOXPdgSsd8cr7ctKOGCwFTRMxcq71k7Pb5mQgYy--tGW8+_w@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Jan 2015, Steven Miao wrote:
+On Wed 21-01-15 15:06:03, Krzysztof Kozłowski wrote:
+[...]
+> Same here :) [1] . So actually only ARM seems affected (both armv7 and
+> armv8) because it is the only one which uses smp_processor_id() in
+> my_cpu_offset.
 
-> > This doesn't seem to be present in linux-next as of today, so I am picking
-> > it up.
-> It seems it's still in today's linux-next?
-> http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/tree/arch/blackfin/mach-common/ints-priority.c#n432
+This was on x86_64 with CONFIG_DEBUG_PREEMPT so it is not only ARM
+specific.
+ 
+> [1] https://lkml.org/lkml/2015/1/20/162
 
-Your "today" probably differs from mine :) The commit that removes it has 
-appeared in linux-next ~6 hours ago.
-
-http://git.kernel.org/cgit/linux/kernel/git/next/linux-next.git/commit/?id=4d2ffaa99c7a685dabab5c8c56b58286fd679bd5
-
+Sorry, have missed this post.
 -- 
-Jiri Kosina
+Michal Hocko
 SUSE Labs
