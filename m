@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753143AbbAULaH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 06:30:07 -0500
-Received: from mail-wi0-f170.google.com ([209.85.212.170]:34379 "EHLO
-	mail-wi0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752119AbbAULaB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 06:30:01 -0500
-MIME-Version: 1.0
-In-Reply-To: <CAHG8p1D4HAbM-JVDa_P81EA1TeSYZ_Wi5=uYH5VvnmLiR+dHeA@mail.gmail.com>
-References: <1419072462-3168-1-git-send-email-prabhakar.csengg@gmail.com>
- <1419072462-3168-6-git-send-email-prabhakar.csengg@gmail.com> <CAHG8p1D4HAbM-JVDa_P81EA1TeSYZ_Wi5=uYH5VvnmLiR+dHeA@mail.gmail.com>
-From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Date: Wed, 21 Jan 2015 11:29:29 +0000
-Message-ID: <CA+V-a8sAFPabRRUUwfZUG4zW-YYKKj5SfoLJ0ptVn=x4qNrGxw@mail.gmail.com>
-Subject: Re: [PATCH 05/15] media: blackfin: bfin_capture: improve
- queue_setup() callback
-To: Scott Jiang <scott.jiang.linux@gmail.com>
-Cc: LMML <linux-media@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-        adi-buildroot-devel@lists.sourceforge.net,
-        Mauro Carvalho Chehab <m.chehab@samsung.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1751157AbbAULbW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 06:31:22 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:34077 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750862AbbAULbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 06:31:13 -0500
+Message-ID: <1421839868.11160.28.camel@nilsson.home.kraxel.org>
+Subject: Re: [PATCH v3 00/16] virtio-pci: towards virtio 1.0 guest support
+From: Gerd Hoffmann <kraxel@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org
+Date: Wed, 21 Jan 2015 12:31:08 +0100
+In-Reply-To: <20150120163256.GA1785@redhat.com>
+References: <1421256142-11512-1-git-send-email-mst@redhat.com>
+	 <1421356698.3933.18.camel@nilsson.home.kraxel.org>
+	 <20150115213256.GA4813@redhat.com>
+	 <1421397146.21318.16.camel@nilsson.home.kraxel.org>
+	 <1421665620.3610.13.camel@nilsson.home.kraxel.org>
+	 <20150120163256.GA1785@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 10:01 AM, Scott Jiang
-<scott.jiang.linux@gmail.com> wrote:
-> 2014-12-20 18:47 GMT+08:00 Lad, Prabhakar <prabhakar.csengg@gmail.com>:
->> this patch improves the queue_setup() callback.
->>
->> Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
->> ---
->>  drivers/media/platform/blackfin/bfin_capture.c | 10 ++++++----
->>  1 file changed, 6 insertions(+), 4 deletions(-)
->>
->> diff --git a/drivers/media/platform/blackfin/bfin_capture.c b/drivers/media/platform/blackfin/bfin_capture.c
->> index 8bd94a1..76d42bb 100644
->> --- a/drivers/media/platform/blackfin/bfin_capture.c
->> +++ b/drivers/media/platform/blackfin/bfin_capture.c
->> @@ -44,7 +44,6 @@
->>  #include <media/blackfin/ppi.h>
->>
->>  #define CAPTURE_DRV_NAME        "bfin_capture"
->> -#define BCAP_MIN_NUM_BUF        2
->>
->>  struct bcap_format {
->>         char *desc;
->> @@ -292,11 +291,14 @@ static int bcap_queue_setup(struct vb2_queue *vq,
->>  {
->>         struct bcap_device *bcap_dev = vb2_get_drv_priv(vq);
->>
->> -       if (*nbuffers < BCAP_MIN_NUM_BUF)
->> -               *nbuffers = BCAP_MIN_NUM_BUF;
->> +       if (fmt && fmt->fmt.pix.sizeimage < bcap_dev->fmt.sizeimage)
->> +               return -EINVAL;
->> +
->> +       if (vq->num_buffers + *nbuffers < 3)
->> +               *nbuffers = 3 - vq->num_buffers;
->
-> It seems it changes the minimum buffers from 2 to 3?
->
-will replace it with,
+  Hi,
 
-if (vq->num_buffers + *nbuffers < 2)
-       *nbuffers = 2;
+> > While hacking it up I've noticed spec doesn't match reality.  The
+> > "Virtio Structure PCI Capabilities" section here ...
+> > 
+> > http://docs.oasis-open.org/virtio/virtio/v1.0/cs01/virtio-v1.0-cs01.html#x1-690004
+> > 
+> > ... doesn't match what qemu is doing.  Huh?
+> 
+> Thanks a lot for the report, and the tool!
 
-Thanks,
---Prabhakar Lad
+pciutils patch needs an update too (because I've made it decode the
+broken qemu capabilities).  Will come as separate mail with proper
+commit message in a moment.
+
+> I sent patches to fix this all up.
+> You can try my qemu and linux virtio-net branches now,
+> they should be spec compliant.
+
+Yep, much better.  caps match spec, the system boots fine from
+virtio-scsi, and the nfs-mounts (using virtio-net) are there too.
+
+cheers,
+  Gerd
+
+
