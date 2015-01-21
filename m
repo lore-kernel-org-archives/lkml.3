@@ -1,76 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753034AbbAUVwQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 16:52:16 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:54326 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751791AbbAUVwG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 16:52:06 -0500
-From: Guenter Roeck <linux@roeck-us.net>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Sabrina Dubroca <sd@queasysnail.net>, Paul Moore <pmoore@redhat.com>,
-        inux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH] fs: namei: Use memcpy instead of strlcpy
-Date: Wed, 21 Jan 2015 13:51:32 -0800
-Message-Id: <1421877092-25435-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 2.1.0
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020206.54C01F86.010E,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 5
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	id S1753541AbbAUVy3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 16:54:29 -0500
+Received: from mga03.intel.com ([134.134.136.65]:4020 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751751AbbAUVyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 16:54:22 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,444,1418112000"; 
+   d="scan'208";a="654495817"
+Date: Thu, 22 Jan 2015 05:53:24 +0800
+From: kbuild test robot <fengguang.wu@intel.com>
+To: "Steven Rostedt (Red Hat)" <rostedt@goodmis.org>
+Cc: kbuild-all@01.org, linux-kernel@vger.kernel.org
+Subject: [PATCH trace] tracing: tracefs_dir_inode_operations can be static
+Message-ID: <20150121215324.GA20240@snb>
+References: <201501220506.6s7TnZmb%fengguang.wu@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201501220506.6s7TnZmb%fengguang.wu@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: fengguang.wu@intel.com
+X-SA-Exim-Scanned: No (on bee); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the string length is known, there is no need to use strlcpy.
-Use memcpy instead.
+fs/tracefs/inode.c:95:31: sparse: symbol 'tracefs_dir_inode_operations' was not declared. Should it be static?
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
 ---
-Nitpick, but still a bit faster. Applies on top of -next.
-
- fs/namei.c | 2 +-
+ inode.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 323957f..2e09219 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -233,7 +233,7 @@ getname_kernel(const char * filename)
- 		__putname(result);
- 		return ERR_PTR(-ENAMETOOLONG);
- 	}
--	strlcpy((char *)result->name, filename, len);
-+	memcpy((char *)result->name, filename, len);
- 	result->uptr = NULL;
- 	result->aname = NULL;
- 	result->refcnt = 1;
--- 
-2.1.0
-
+diff --git a/fs/tracefs/inode.c b/fs/tracefs/inode.c
+index 29632ce..3462360 100644
+--- a/fs/tracefs/inode.c
++++ b/fs/tracefs/inode.c
+@@ -92,7 +92,7 @@ static int tracefs_syscall_rmdir(struct inode *inode, struct dentry *dentry)
+ 	return ret;
+ }
+ 
+-const struct inode_operations tracefs_dir_inode_operations = {
++static const struct inode_operations tracefs_dir_inode_operations = {
+ 	.lookup		= simple_lookup,
+ 	.mkdir		= tracefs_syscall_mkdir,
+ 	.rmdir		= tracefs_syscall_rmdir,
