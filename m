@@ -1,112 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752814AbbAUJuC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 04:50:02 -0500
-Received: from mail-bn1on0113.outbound.protection.outlook.com ([157.56.110.113]:22174
-	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751017AbbAUJtz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 04:49:55 -0500
-Message-ID: <1421833786.4961.222.camel@freescale.com>
-Subject: Re: [PATCH] powerpc/mpic: Add DT option to skip readback after EOI
-From: Scott Wood <scottwood@freescale.com>
-To: Purcareata Bogdan <b43198@freescale.com>
-CC: <benh@kernel.crashing.org>, <linuxppc-dev@lists.ozlabs.org>,
-        <linux-kernel@vger.kernel.org>
-Date: Wed, 21 Jan 2015 03:49:46 -0600
-In-Reply-To: <54BF72D1.3000302@freescale.com>
-References: <1421236622-29366-1-git-send-email-bogdan.purcareata@freescale.com>
-	 <1421258312.4961.133.camel@freescale.com> <54BF72D1.3000302@freescale.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.12.7-0ubuntu1 
+	id S1752438AbbAUJxD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 04:53:03 -0500
+Received: from ns.mm-sol.com ([37.157.136.199]:49099 "EHLO extserv.mm-sol.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751531AbbAUJw5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 04:52:57 -0500
+Message-ID: <54BF76F2.4030604@mm-sol.com>
+Date: Wed, 21 Jan 2015 11:52:50 +0200
+From: Stanimir Varbanov <svarbanov@mm-sol.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130330 Thunderbird/17.0.5
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-X-Originating-IP: [2601:2:5800:3f7:12bf:48ff:fe84:c9a0]
-X-ClientProxiedBy: DM2PR11CA0005.namprd11.prod.outlook.com (25.160.91.15) To
- BY2PR0301MB0728.namprd03.prod.outlook.com (25.160.63.18)
-Authentication-Results: spf=none (sender IP is )
- smtp.mailfrom=scottwood@freescale.com; 
-X-DmarcAction-Test: None
-X-Microsoft-Antispam: UriScan:;
-X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:BY2PR0301MB0728;
-X-Exchange-Antispam-Report-Test: UriScan:;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR0301MB0728;
-X-Forefront-PRVS: 04631F8F77
-X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(377424004)(51704005)(189002)(54094003)(24454002)(199003)(62966003)(77156002)(40100003)(68736005)(36756003)(50466002)(87976001)(2950100001)(97736003)(122386002)(23676002)(50226001)(110136001)(103116003)(46102003)(33646002)(42186005)(86362001)(106356001)(105586002)(92566002)(101416001)(47776003)(76176999)(50986999)(64706001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0728;H:[IPv6:2601:2:5800:3f7:12bf:48ff:fe84:c9a0];FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
-X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0728;
-X-OriginatorOrg: freescale.com
-X-MS-Exchange-CrossTenant-OriginalArrivalTime: 21 Jan 2015 09:49:52.7037
- (UTC)
-X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
-X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR0301MB0728
+To: Kishon Vijay Abraham I <kishon@ti.com>
+CC: Rob Herring <robh+dt@kernel.org>, Kumar Gala <galak@codeaurora.org>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Bjorn Helgaas <bhelgaas@google.com>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, devicetree@vger.kernel.org,
+        linux-pci@vger.kernel.org
+Subject: Re: [PATCH 2/5] phy: qcom: Add Qualcomm PCIe PHY
+References: <1418404441-5518-1-git-send-email-svarbanov@mm-sol.com> <1418404441-5518-3-git-send-email-svarbanov@mm-sol.com> <54BF6D5B.1010700@ti.com>
+In-Reply-To: <54BF6D5B.1010700@ti.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2015-01-21 at 11:35 +0200, Purcareata Bogdan wrote:
-> On 14.01.2015 19:58, Scott Wood wrote:
-> > On Wed, 2015-01-14 at 11:57 +0000, Bogdan Purcareata wrote:
-> >> The readback is necessary in order to handle PCI posted
-> >> writes,
-> >
-> > That is unclear.
+Hi Kishon,
+
+Thanks for the comments!
+
+On 01/21/2015 11:11 AM, Kishon Vijay Abraham I wrote:
+> Hi,
 > 
-> I'm going to try an venture a different explanation here.
+> On Friday 12 December 2014 10:43 PM, Stanimir Varbanov wrote:
+>> Add a PCIe PHY driver used by PCIe host controller driver
+>> on Qualcomm SoCs like Snapdragon 805.
+>>
+>> Signed-off-by: Stanimir Varbanov <svarbanov@mm-sol.com>
+>> ---
+>>  drivers/phy/Kconfig         |    7 +
+>>  drivers/phy/Makefile        |    1 +
+>>  drivers/phy/phy-qcom-pcie.c |  311 +++++++++++++++++++++++++++++++++++++++++++
+>>  3 files changed, 319 insertions(+), 0 deletions(-)
+>>  create mode 100644 drivers/phy/phy-qcom-pcie.c
+>>
+>> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
+>> index 2a436e6..135bdcc 100644
+>> --- a/drivers/phy/Kconfig
+>> +++ b/drivers/phy/Kconfig
+>> @@ -218,6 +218,13 @@ config PHY_QCOM_IPQ806X_SATA
+>>  	depends on OF
+>>  	select GENERIC_PHY
+>>  
+>> +config PHY_QCOM_PCIE
+>> +	tristate "Qualcomm PCIe SerDes/PHY driver"
+>> +	depends on ARCH_QCOM
+>> +	depends on HAS_IOMEM
+>> +	depends on OF
+>> +	select GENERIC_PHY
 > 
-> I found a good explanation in Writing PCI Drivers [1] as to why it's 
-> necessary that a read is performed before returning from an EOI write:
+> Please add a small description about the driver here.
+
+Sure I will.
+
+<snip>
+
+>> +static const struct phy_regs pcie_phy_regs[] = {
+>> +	{ PCIE_PHY_POWER_DOWN_CONTROL,			0x03 },
+>> +	{ QSERDES_COM_SYSCLK_EN_SEL,			0x08 },
+>> +	{ QSERDES_COM_DEC_START1,			0x82 },
+>> +	{ QSERDES_COM_DEC_START2,			0x03 },
+>> +	{ QSERDES_COM_DIV_FRAC_START1,			0xd5 },
+>> +	{ QSERDES_COM_DIV_FRAC_START2,			0xaa },
+>> +	{ QSERDES_COM_DIV_FRAC_START3,			0x13 },
+>> +	{ QSERDES_COM_PLLLOCK_CMP_EN,			0x01 },
+>> +	{ QSERDES_COM_PLLLOCK_CMP1,			0x2b },
+>> +	{ QSERDES_COM_PLLLOCK_CMP2,			0x68 },
+>> +	{ QSERDES_COM_PLL_CRCTRL,			0xff },
+>> +	{ QSERDES_COM_PLL_CP_SETI,			0x3f },
+>> +	{ QSERDES_COM_PLL_IP_SETP,			0x07 },
+>> +	{ QSERDES_COM_PLL_CP_SETP,			0x03 },
+>> +	{ QSERDES_RX_CDR_CONTROL,			0xf3 },
+>> +	{ QSERDES_RX_CDR_CONTROL2,			0x6b },
+>> +	{ QSERDES_COM_RESETSM_CNTRL,			0x10 },
+>> +	{ QSERDES_RX_RX_TERM_HIGHZ_CM_AC_COUPLE,	0x87 },
+>> +	{ QSERDES_RX_RX_EQ_GAIN12,			0x54 },
+>> +	{ PCIE_PHY_POWER_STATE_CONFIG1,			0xa3 },
+>> +	{ PCIE_PHY_POWER_STATE_CONFIG2,			0xcb },
+>> +	{ QSERDES_COM_PLL_RXTXEPCLK_EN,			0x10 },
+>> +	{ PCIE_PHY_ENDPOINT_REFCLK_DRIVE,		0x10 },
+>> +	{ PCIE_PHY_SW_RESET,				0x00 },
+>> +	{ PCIE_PHY_START,				0x03 },
 > 
-> "A good example of such a case is when a driver’s Interrupt Service 
-> Routine (ISR) is dealing with the Interrupt Request Register (IRR) on a 
-> card. Clearing a bit in the register indicates that the interrupt has 
-> been serviced. This is done by posting a write to the register. If the 
-> driver posts this write and exits its ISR, it could get interrupted 
-> again immediately because the write hadn’t yet reached the bit in the 
-> IRR to tell it to stop trying to interrupt. One solution to this 
-> potential problem is to make sure to read back the value in the IRR 
-> before exiting from the ISR. Most drivers do this anyway so they can 
-> handle multiple interrupts in the same ISR visit."
+> No magic values for register writes.
 
-That's an issue of ordering the device write versus the EOI -- it
-doesn't explain why we'd need to order the EOI versus rfi, except maybe
-that the extra delay just happens to be enough to give the device the
-time it needs to deassert the second interrupt before it gets to the
-point of interrupting the CPU.
+Unfortunately these register values are taken as they are in CAF
+downstream kernel and there are no bit/fields description for them.
 
-FWIW, I'm skeptical of the "most drivers do this anyway" claim.
-
-> >>   or when the MPIC is handling interrupts in a loop
-> >> (ppc_md.get_irq).
-> >
-> > I'm questioning this one as well -- if reading WHOAMI is sufficient to
-> > sync with the EOI, why wouldn't reading INTACK work as well?
+>> +};
+>> +
+>> +static void qcom_pcie_phy_init(struct qcom_pcie_phy *pcie)
+>> +{
+>> +	const struct phy_regs *regs = pcie_phy_regs;
+>> +	int i;
+>> +
+>> +	for (i = 0; i < ARRAY_SIZE(pcie_phy_regs); i++)
+>> +		writel(regs[i].val, pcie->base + regs[i].reg_offset);
+>> +}
+>> +
+>> +static bool qcom_pcie_phy_is_ready(struct qcom_pcie_phy *pcie)
+>> +{
+>> +	u32 val = readl(pcie->base + PCIE_PHY_PCS_STATUS);
+>> +
+>> +	return val & BIT(6) ? false : true;
+>> +}
+>> +
+>> +static int qcom_pcie_phy_power_on(struct phy *phy)
+>> +{
+>> +	struct qcom_pcie_phy *pcie = phy_get_drvdata(phy);
+>> +	struct device *dev = pcie->dev;
+>> +	int ret, retries;
+>> +
+>> +	ret = regulator_enable(pcie->vdda_pll);
+>> +	if (ret) {
+>> +		dev_err(dev, "cannot enable vdda_pll regulator\n");
+>> +		return ret;
+>> +	}
+>> +
+>> +	ret = regulator_enable(pcie->vdda);
+>> +	if (ret) {
+>> +		dev_err(dev, "cannot enable vdda regulator\n");
+>> +		goto fail_vdda_pll;
+>> +	}
+>> +
+>> +	ret = reset_control_deassert(pcie->res_phy);
+>> +	if (ret) {
+>> +		dev_err(dev, "cannot deassert phy reset\n");
+>> +		goto fail_vdda;
+>> +	}
+>> +
+>> +	qcom_pcie_phy_init(pcie);
+>> +
+>> +	usleep_range(PHY_DELAY_MIN_US, PHY_DELAY_MAX_US);
 > 
-> I think I'm going to drop this part of the description. However, I don't 
-> think reading INTACK is good, since it has some additional side effects 
-> - interrupt pending register is cleared for edge-sensitive interrupts, 
-> the in-service register is updated, and the int output signal from the 
-> MPIC is negated. This is available for Freescale SoCs. This also 
-> signifies entering the processing cycle of a new interrupt.
+> add a comment on why this delay is required.
 
-I wasn't suggesting that we start reading INTACK there.  I'm asking why,
-back when we did read INTACK in a loop, that wasn't ordered relative to
-the EOI write (but reading WHOAMI was).
+Actually this delay is not required anymore and I will remove it in next
+version. The delay which is important here is the delay between
+clk_set_rate and clk_prepare_enable.
 
-> Normally, the readback should be done on the EOI register - this is 
-> stated in the OpenPIC specification and actually was the initial 
-> implementation of the driver. However, this can't be done since, at 
-> least for Freescale SoCs, the EOI register is write only.
+>> +
+>> +	ret = clk_set_rate(pcie->clk, ~0);
 > 
-> However, in the light of the above explanation related to PCI posted 
-> writes, I don't see how performing a readback on the WHOAMI register, 
-> which is specific to the MPIC, would have any effect in synchronizing 
-> with the PCI device registers. I guess it's related to the bus 
-> interconnect on the SoC.
+> What is the actual clock rate?
 
-I wonder if anyone has checked whether the spurious interrupts that
-reading EOI got rid of have come back on those systems, now that we read
-WHOAMI instead.
+According to clk freq table in clock driver it could be 125Mhz or 250Mhz.
 
--Scott
+>> +	if (ret) {
+>> +		dev_err(dev, "cannot set pipe clk rate\n");
+>> +		goto fail_res;
+>> +	}
+>> +
+>> +	/*
+>> +	 * setting pipe rate takes time, try arbitrary delay before enabling
+>> +	 * the clock
+>> +	 */
+>> +	retries = PIPE_CLK_RETRIES_COUNT;
+>> +	do {
+>> +		usleep_range(PIPE_CLK_DELAY_MIN_US, PIPE_CLK_DELAY_MAX_US);
+>> +
+>> +		ret = clk_prepare_enable(pcie->clk);
+>> +		if (!ret)
+>> +			break;
+>> +	} while (retries--);
+>> +
+>> +	if (retries < 0) {
+>> +		dev_err(dev, "cannot enable phy clock\n");
+>> +		goto fail_res;
+>> +	}
+>> +
+>> +	retries = PHY_RETRIES_COUNT;
+>> +	do {
+>> +		ret = qcom_pcie_phy_is_ready(pcie);
+>> +		if (ret)
+>> +			break;
+>> +		usleep_range(PHY_DELAY_MIN_US, PHY_DELAY_MAX_US);
+>> +	} while (retries--);
+>> +
+>> +	if (retries < 0) {
+>> +		dev_err(dev, "phy failed to come up\n");
+>> +		ret = -ETIMEDOUT;
+>> +		goto fail;
+>> +	}
+>> +
+>> +	return 0;
+>> +
+>> +fail:
+>> +	clk_disable_unprepare(pcie->clk);
+>> +fail_res:
+>> +	reset_control_assert(pcie->res_phy);
+>> +fail_vdda:
+>> +	regulator_disable(pcie->vdda);
+>> +fail_vdda_pll:
+>> +	regulator_disable(pcie->vdda_pll);
+>> +
+>> +	return ret;
+>> +}
+>> +
 
+<snip>
 
+>> +
+>> +	phy = devm_phy_create(dev, NULL, &qcom_pcie_phy_ops, NULL);
+> 
+> Please rebase it to the latest kernel.
+
+Already done.
+
+-- 
+regards,
+Stan
