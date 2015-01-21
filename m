@@ -1,140 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753087AbbAUOza (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 09:55:30 -0500
-Received: from mail-la0-f50.google.com ([209.85.215.50]:57331 "EHLO
-	mail-la0-f50.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752868AbbAUOzV (ORCPT
+	id S1752949AbbAUO7f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 09:59:35 -0500
+Received: from mail-wg0-f53.google.com ([74.125.82.53]:39290 "EHLO
+	mail-wg0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750868AbbAUO71 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 09:55:21 -0500
+	Wed, 21 Jan 2015 09:59:27 -0500
+Message-ID: <54BFBECB.1030306@redhat.com>
+Date: Wed, 21 Jan 2015 15:59:23 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <E1Xwo5O-00GRl4-Cc@intern.SerNet.DE>
-References: <cover.1415636409.git.milosz@adfin.com>
-	<20141125150101.9596a09e.akpm@linux-foundation.org>
-	<CANP1eJEALZTwMv0Z1udmPWKhfGmpe+idtdRASp62Jm_V0N2HcQ@mail.gmail.com>
-	<20141202144200.a4ca81a46a43563a8874fd8e@linux-foundation.org>
-	<CANP1eJGVyBOt1rQ8jA4tMrNGX5X61-UWbVy6kKj_ByeTqAEOBQ@mail.gmail.com>
-	<20141204151102.2d7e11dca39f130c2dff2294@linux-foundation.org>
-	<E1Xwo5O-00GRl4-Cc@intern.SerNet.DE>
-Date: Wed, 21 Jan 2015 09:55:20 -0500
-Message-ID: <CANP1eJEwYFKvCcPpzeRnXqeLTRf1qFs194ubMcQcsksCuEbpMQ@mail.gmail.com>
-Subject: Re: [PATCH v6 0/7] vfs: Non-blockling buffered fs read (page cache only)
-From: Milosz Tanski <milosz@adfin.com>
-To: Volker Lendecke <Volker.Lendecke@sernet.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-aio@kvack.org" <linux-aio@kvack.org>,
-        Mel Gorman <mgorman@suse.de>, Tejun Heo <tj@kernel.org>,
-        Jeff Moyer <jmoyer@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Linux API <linux-api@vger.kernel.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>, linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: Borislav Petkov <bp@alien8.de>, KVM <kvm@vger.kernel.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] kvm: Fix CR3_PCID_INVD type on 32-bit
+References: <1421311496-18028-1-git-send-email-bp@alien8.de>
+In-Reply-To: <1421311496-18028-1-git-send-email-bp@alien8.de>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Dec 5, 2014 at 3:17 AM, Volker Lendecke
-<Volker.Lendecke@sernet.de> wrote:
->
-> On Thu, Dec 04, 2014 at 03:11:02PM -0800, Andrew Morton wrote:
-> > I can see all that, but it's handwaving.  Yes, preadv2() will perform
-> > better in some circumstances than fincore+pread.  But how much better?
-> > Enough to justify this approach, or not?
-> >
-> > Alas, the only way to really settle that is to implement fincore() and
-> > to subject it to a decent amount of realistic quantitative testing.
-> >
-> > Ho hum.
-> >
-> > Could you please hunt down some libuv developers, see if we can solicit
-> > some quality input from them?  As I said, we really don't want to merge
-> > this then find that people don't use it for some reason, or that it
-> > needs changes.
->
-> All I can say from a Samba perspective is that none of the ARM based
-> Storage boxes I have seen so far do AIO because of the base footprint
-> for every read. For sequential reads kernel-level readahead could kick
-> in properly and we should be able to give them the best of both worlds:
-> No context switches in the default case but also good parallel behaviour
-> for other workloads.  The most important benchmark for those guys is to
-> read a DVD image, whether it makes sense or not.
 
 
-I just made wanted to share some progress on this. And I apologize for
-for all these different threads (this, LSF/FS and then Jermey and
-Volker).
+On 15/01/2015 09:44, Borislav Petkov wrote:
+> From: Borislav Petkov <bp@suse.de>
+> 
+> arch/x86/kvm/emulate.c: In function ‘check_cr_write’:
+> arch/x86/kvm/emulate.c:3552:4: warning: left shift count >= width of type
+>     rsvd = CR3_L_MODE_RESERVED_BITS & ~CR3_PCID_INVD;
+> 
+> happens because sizeof(UL) on 32-bit is 4 bytes but we shift it 63 bits
+> to the left.
+> 
+> Signed-off-by: Borislav Petkov <bp@suse.de>
+> ---
+>  arch/x86/include/asm/kvm_host.h | 2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> index d89c6b828c96..a8d07a060136 100644
+> --- a/arch/x86/include/asm/kvm_host.h
+> +++ b/arch/x86/include/asm/kvm_host.h
+> @@ -51,7 +51,7 @@
+>  			  | X86_CR0_NW | X86_CR0_CD | X86_CR0_PG))
+>  
+>  #define CR3_L_MODE_RESERVED_BITS 0xFFFFFF0000000000ULL
+> -#define CR3_PCID_INVD		 (1UL << 63)
+> +#define CR3_PCID_INVD		 BIT_64(63)
+>  #define CR4_RESERVED_BITS                                               \
+>  	(~(unsigned long)(X86_CR4_VME | X86_CR4_PVI | X86_CR4_TSD | X86_CR4_DE\
+>  			  | X86_CR4_PSE | X86_CR4_PAE | X86_CR4_MCE     \
+> 
 
-I recently implemented cifs support (via libsmbcli) for FIO so I can
-have some hard numbers on the benchmarks. So all you guys will be
-seeing more data soon enough. It's going to take a bit of time to put
-it together because it takes a lot of time to benchmark to make sure
-we have correct and non-noisy numbers.
+Applied, thanks.
 
-In the meantime I have some numbers from my first run here:
-http://i.imgur.com/05SMu8d.jpg
-
-Sorry for the link to the image, it was easier. The test case is a
-single FIO client doing 4K random reads, on localhost smbd server, on
-a fully cached file for 10 minutes with a 1 minute warm up.
-
-Threadpool + preadv2 for fast read does much better in terms of
-bandwidth and a bit better in terms of latency. Sync is still the
-fastest, but the gap is narrowed. Not a bad improvement for (Volker's)
-9 line change to samba code.
-
-Also, I look into why the gap between sync and threadpool + preadv2 is
-not even smaller. From my preliminary investigation it looks like the
-async threadpool code path does a lot more work then the sync call...
-even in the case we do the fast read. According to perf the hotest
-code userspace (smbd+ library) is malloc + free. So I imagine the
-optimizing the fast read case to avoid a bunch of extra request
-allocations will bring us even closer to sync.
-
-Again, I'll have and more complex test cases soon just wanted to share
-progress. I imagine that they'll the gap between threadpool + preadv2
-and just threadpool is going to get wider as add more blocking calls
-into the queue. I'll have number on that as soon as week can.
-
-
-diff --git a/source3/modules/vfs_default.c b/source3/modules/vfs_default.c
-index 5634cc0..90348d8 100644
---- a/source3/modules/vfs_default.c
-+++ b/source3/modules/vfs_default.c
-@@ -718,6 +741,7 @@ static struct tevent_req
-*vfswrap_pread_send(struct vfs_handle_struct *handle,
-        struct tevent_req *req;
-        struct vfswrap_asys_state *state;
-        int ret;
-+       ssize_t nread;
-
-        req = tevent_req_create(mem_ctx, &state, struct vfswrap_asys_state);
-        if (req == NULL) {
-@@ -730,6 +754,14 @@ static struct tevent_req
-*vfswrap_pread_send(struct vfs_handle_struct *handle,
-        state->asys_ctx = handle->conn->sconn->asys_ctx;
-        state->req = req;
-
-+       nread = pread2(fsp->fh->fd, data, n, offset, RWF_NONBLOCK);
-+       // TODO: partial reads
-+       if (nread == n) {
-+               state->ret = nread;
-+               tevent_req_done(req);
-+               return tevent_req_post(req, ev);
-+       }
-+
-        SMBPROFILE_BYTES_ASYNC_START(syscall_asys_pread, profile_p,
-                                     state->profile_bytes, n);
-        ret = asys_pread(state->asys_ctx, fsp->fh->fd, data, n, offset, req);
-
-
--- 
-Milosz Tanski
-CTO
-16 East 34th Street, 15th floor
-New York, NY 10016
-
-p: 646-253-9055
-e: milosz@adfin.com
+Paolo
