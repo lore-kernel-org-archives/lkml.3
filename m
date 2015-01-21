@@ -1,81 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174AbbAUR0F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 12:26:05 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:40357 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752510AbbAURZ4 (ORCPT
+	id S1753419AbbAUR3R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 12:29:17 -0500
+Received: from mail-qg0-f51.google.com ([209.85.192.51]:56601 "EHLO
+	mail-qg0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751757AbbAUR3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 12:25:56 -0500
-Date: Wed, 21 Jan 2015 17:25:45 +0000
-From: Will Deacon <will.deacon@arm.com>
-To: Jiri Olsa <jolsa@kernel.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Adrian Hunter <adrian.hunter@intel.com>,
-        Alexis Berlemont <alexis.berlemont@gmail.com>,
-        Andi Kleen <ak@linux.intel.com>, Anton Blanchard <anton@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Borislav Petkov <bp@alien8.de>, Borislav Petkov <bp@suse.de>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Florian Fainelli <florian@openwrt.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@kernel.org>, Jan Heylen <heyleke@gmail.com>,
-        "msalter@redhat.com" <msalter@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "S. Lockwood-Childs" <sjl@vctlabs.com>,
-        Sam Ravnborg <sam@ravnborg.org>, Sasha Levin <sasha.levin@oracle.com>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Subject: Re: [PATCHv3 00/36] perf tools: New build framework
-Message-ID: <20150121172544.GP4549@arm.com>
-References: <1421771973-6022-1-git-send-email-jolsa@kernel.org>
+	Wed, 21 Jan 2015 12:29:10 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421771973-6022-1-git-send-email-jolsa@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1421859236-19782-1-git-send-email-daniel.thompson@linaro.org>
+References: <1421859236-19782-1-git-send-email-daniel.thompson@linaro.org>
+Date: Wed, 21 Jan 2015 09:29:09 -0800
+Message-ID: <CALAqxLUmf_TNvTG2-=uavXjXk3040-MQ73V5z7S1UiGa+7c29Q@mail.gmail.com>
+Subject: Re: [RFC PATCH] sched_clock: Avoid tearing during read from NMI
+From: John Stultz <john.stultz@linaro.org>
+To: Daniel Thompson <daniel.thompson@linaro.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, Patch Tracking <patches@linaro.org>,
+        Linaro Kernel Mailman List <linaro-kernel@lists.linaro.org>,
+        Sumit Semwal <sumit.semwal@linaro.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Stephen Boyd <sboyd@codeaurora.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 04:38:57PM +0000, Jiri Olsa wrote:
-> hi,
-> I'm following up on latest post from Alexis:
->   http://marc.info/?l=linux-kernel&m=141427580405357&w=2
-> 
-> v3 changes:
->   - disabling only builtin rules, keeping builtin variables in place
->     because some projects we depends on using them (traceevent) [David]
->   - fixed empy source list issue that happened on arm [Will, Mark]
->   - updated to the current Arnaldo's perf/core branch
->   - added automated tests into: tools/build/tests/
->   - tested on arm64,ppc64,s390,x86_64,i386
-> 
-> v2 changes:
->   - build Makefiles librarized and moved to 'tools/build' [Ingo]
->   - several minor fixies [Namhyung]
->   - tested on other archs now - x86_64, i386, powerpc
->   - moved tools/lib/* under new build framework to show
->     that it's possible ;-)
->     included traceevent/lockdep maintainers to get the feedback
->   - omitted last 2 patches
-> 
-> The patchset is also available in:
->   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
->   perf/build
-> 
-> All tests/make tests passed.
-> 
-> Any feedback from ARM guys would be great ;-)
+On Wed, Jan 21, 2015 at 8:53 AM, Daniel Thompson
+<daniel.thompson@linaro.org> wrote:
+> Currently it is possible for an NMI (or FIQ on ARM) to come in and
+> read sched_clock() whilst update_sched_clock() has half updated the
+> state. This results in a bad time value being observed.
+>
+> This patch fixes that problem in a similar manner to Thomas Gleixner's
+> 4396e058c52e("timekeeping: Provide fast and NMI safe access to
+> CLOCK_MONOTONIC").
+>
+> Note that ripping out the seqcount lock from sched_clock_register() and
+> replacing it with a large comment is not nearly as bad as it looks! The
+> locking here is actually pretty useless since most of the variables
+> modified within the write lock are not covered by the read lock. As a
+> result a big comment and the sequence bump implicit in the call
+> to update_epoch() should work pretty much the same.
 
-Works fine native on arm64:
+It still looks pretty bad, even with the current explanation.
 
-  Tested-by: Will Deacon <will.deacon@arm.com>
 
-Cheers,
+> -       raw_write_seqcount_begin(&cd.seq);
+> +       /*
+> +        * sched_clock will report a bad value if it executes
+> +        * concurrently with the following code. No locking exists to
+> +        * prevent this; we rely mostly on this function being called
+> +        * early during kernel boot up before we have lots of other
+> +        * stuff going on.
+> +        */
+>         read_sched_clock = read;
+>         sched_clock_mask = new_mask;
+>         cd.rate = rate;
+>         cd.wrap_kt = new_wrap_kt;
+>         cd.mult = new_mult;
+>         cd.shift = new_shift;
+> -       cd.epoch_cyc = new_epoch;
+> -       cd.epoch_ns = ns;
+> -       raw_write_seqcount_end(&cd.seq);
+> +       update_epoch(new_epoch, ns);
 
-Will
+
+So looking at this, the sched_clock_register() function may not be
+called super early, so I was looking to see what prevented bad reads
+prior to registration. And from quick inspection, its nothing. I
+suspect the undocumented trick that makes this work is that the mult
+value is initialzied to zero, so sched_clock returns 0 until things
+have been registered.
+
+So it does seem like it would be worth while to do the initialization
+under the lock, or possibly use the suspend flag to make the first
+initialization safe.
+
+thanks
+-john
