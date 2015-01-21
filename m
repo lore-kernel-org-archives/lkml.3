@@ -1,84 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752943AbbAUNvg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 08:51:36 -0500
-Received: from mezzanine.sirena.org.uk ([106.187.55.193]:55877 "EHLO
-	mezzanine.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751546AbbAUNv1 (ORCPT
+	id S1753222AbbAUNws (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 08:52:48 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:34162 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751546AbbAUNwk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 08:51:27 -0500
-Date: Wed, 21 Jan 2015 13:50:53 +0000
-From: Mark Brown <broonie@kernel.org>
-To: Jean-Francois Moine <moinejf@free.fr>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Dave Airlie <airlied@gmail.com>,
-        Andrew Jackson <Andrew.Jackson@arm.com>, Jyri Sarha <jsarha@ti.com>,
-        alsa-devel@alsa-project.org, devicetree@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Message-ID: <20150121135053.GI21293@sirena.org.uk>
-References: <cover.1421782532.git.moinejf@free.fr>
- <ddd1b299eca187ab2fa9b119da2ec8297ead1a66.1421782533.git.moinejf@free.fr>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
-	protocol="application/pgp-signature"; boundary="GlnCQLZWzqLRJED8"
-Content-Disposition: inline
-In-Reply-To: <ddd1b299eca187ab2fa9b119da2ec8297ead1a66.1421782533.git.moinejf@free.fr>
-X-Cookie: My LESLIE GORE record is BROKEN ...
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: 94.175.94.161
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-Subject: Re: [PATCH v10 9/9] ASoC: add generic dt-card support
-X-SA-Exim-Version: 4.2.1 (built Mon, 26 Dec 2011 16:24:06 +0000)
-X-SA-Exim-Scanned: Yes (on mezzanine.sirena.org.uk)
+	Wed, 21 Jan 2015 08:52:40 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8
+X-AuditID: cbfec7f4-b7f126d000001e9a-93-54bfaf26fb97
+Content-transfer-encoding: 8BIT
+Message-id: <54BFAF24.5020202@partner.samsung.com>
+Date: Wed, 21 Jan 2015 16:52:36 +0300
+From: Stefan Strogin <s.strogin@partner.samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.4.0
+To: Minchan Kim <minchan@kernel.org>, Laura Abbott <lauraa@codeaurora.org>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Michal Nazarewicz <mina86@mina86.com>, aneesh.kumar@linux.vnet.ibm.com,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Dmitry Safonov <d.safonov@partner.samsung.com>,
+        Pintu Kumar <pintu.k@samsung.com>,
+        Weijie Yang <weijie.yang@samsung.com>,
+        SeongJae Park <sj38.park@gmail.com>, Hui Zhu <zhuhui@xiaomi.com>,
+        Dyasly Sergey <s.dyasly@samsung.com>,
+        Vyacheslav Tyrtov <v.tyrtov@samsung.com>, rostedt@goodmis.org,
+        namhyung@kernel.org, s.strogin@partner.samsung.com,
+        stefan.strogin@gmail.com
+Subject: Re: [PATCH 0/3] mm: cma: /proc/cmainfo
+References: <cover.1419602920.git.s.strogin@partner.samsung.com>
+ <20141229023639.GC27095@bbox> <54A1B11A.6020307@codeaurora.org>
+ <20141230044726.GA22342@bbox> <54A3207B.3000601@codeaurora.org>
+ <20141231002502.GB22342@bbox>
+In-reply-to: <20141231002502.GB22342@bbox>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrLIsWRmVeSWpSXmKPExsVy+t/xy7pq6/eHGBw+wGQxZ/0aNovHr+ex
+	WHxa+ZTNYmV3M5vF9s4Z7BadE5ewW1zeNYfN4t6a/6wWa4/cZbdYcLyF1WLZ1/fsFk3LtrJY
+	9H0/zG6xr+MBk8Xk2VIW307OYba4tqOfyeLym//sFlNn/GC3OLnhLKvFhmYuB1GPy329TB47
+	Z91l92jZd4vdY3bHTFaPTas62Tw2fZrE7tH19gqTx4kZv1k8HhzazOKx7s8rJo+D7/YwefRt
+	WcXo8XmTnEfXxl+sAXxRXDYpqTmZZalF+nYJXBmfj79iLzjmXnH+7iPWBsb7ll2MnBwSAiYS
+	Ow/eZIKwxSQu3FvP1sXIxSEksJRRor99MViCV0BQ4sfkeyxdjBwczALyEkcuZUOY6hJTpuRC
+	lH9klGhb/5oNotxIYuuaq2CtLAKqEtvXfWYHsdmAdh27MJ0RxBYViJCYf+w1M4gtIuAl8aJn
+	ExPIIGaBrawSF1c/YQVJCAvoS/xe3AR10BNGib7VV8ASnAJaEo+XdLBPYBSYheS+WQj3zUK4
+	bwEj8ypG0dTS5ILipPRcQ73ixNzi0rx0veT83E2MkCj+soNx8TGrQ4wCHIxKPLwVoftDhFgT
+	y4orcw8xSnAwK4nwmk4ACvGmJFZWpRblxxeV5qQWH2Jk4uCUamBcZXaovW2J9Ud/lVvfZoi0
+	8pzM7RStKGv5sHuD8j/Bt990Xi7csfmXgLxiaMbmuJN6189zz+BYc/Ej79FzdnftBPjT0x7/
+	OrdwTnJZus5PJbFdX94xmHZ3XLIMNmRXuLbR7VvAs11LJs4Uu33dtUslwOvF3qS6ry7h7z/q
+	6weHL9hwsFfuzaNsJZbijERDLeai4kQANQx63cACAAA=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Sorry for such a long delay. Now I'll try to answer all the questions
+and make a second version.
 
---GlnCQLZWzqLRJED8
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+The original reason of why we need a new debugging tool for CMA is
+written by Minchan (http://www.spinics.net/lists/linux-mm/msg81519.html):
+> 3. CMA allocation latency -> Broken
+> 4. CMA allocation success guarantee -> Broken.
 
-On Tue, Jan 20, 2015 at 08:16:25PM +0100, Jean-Francois Moine wrote:
-> To create simple cards, the syntax of the simple-card does not follow
-> the common binding of the device graphs
-> (Documentation/devicetree/bindings/graph.txt).
+We have no acceptable solution for these problems yet. We use CMA in our
+devices. But currently for lack of allocation guarantee there are some
+memory buffers that are always allocated at boot time even if they're
+not used. However we'd like to allocate contiguous buffers in runtime as
+much as it's possible.
 
-Please be more specific, I really can't tell what this is supposed to be
-doing from the above - in what way is the binding not common and why
-would anyone care?  Please also address why this is done as a completely
-separate implementation rather than a new revision of simple-card and CC
-Morimoto-san so he can review (given that he did simple-card initially).
+First we want an interface like /proc/vmallocinfo to see that all needed
+contiguous buffers are allocated correctly, used/free memory in CMA
+regions (like in /proc/meminfo) and also CMA region's fragmentation.
+Stacktrace is used to see who and whence allocated each buffer. Since
+vmallocinfo and meminfo are located in /proc I thought that cmainfo
+should be in /proc too. Maybe latency is really unnecessary here (see
+hereinafter).
 
->  sound/soc/generic/Kconfig   |   2 +
->  sound/soc/generic/Makefile  |   2 +
->  sound/soc/generic/dt-card.c | 275 ++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 279 insertions(+)
->  create mode 100644 sound/soc/generic/dt-card.c
 
-As you know all device tree bindings require binding documents; you must
-supply a binding document.  I'm not going to look at any DT patches that
-don't include binding documentation.
+Second (not implemented yet) we want to debug 3) and 4) (especially in
+case of allocating in runtime). One of the main reasons of failed and
+slow allocations is pinning «movable» pages for a long time, so they
+can't be moved (SeongJae Park described it:
+http://lwn.net/Articles/619865/).
+To debug such cases we want to know for each allocation (for failed ones
+as well) its latency and some information about page migration, e.g. the
+number of pages that couldn't be migrated, why and page_owner's
+information for pages that failed to be migrated.
 
-In general please pay attention to changelogs and documentation when
-submitting patches, the harder it is to understand what a patch is
-supposed to do or why the harder it is to review.  I keep saying this,
-it's really important.
+To my mind this might help us to identify subsystems that pin pages for
+too long in order to make such subsystems allocate only unmovable pages
+or fix the long-time page pinning.
 
---GlnCQLZWzqLRJED8
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+The last thing should be done in debugfs of course. Maybe something like
+this, I'm not sure:
+# cd /sys/kernel/debug/cma/<N>/
+# ls
+allocated failed migration_stat released (...)
+# cat failed
+0x32400000 - 0x32406000 (24 kB), allocated by pid 63 (systemd-udevd),
+time spent 9000 us
+pages migrations required: 4
+succeeded [by the last try in __alloc_contig_migrate_range()]: 2
+failed/given up [on the last try in __alloc_contig_migrate_range()]: 2,
+page_owner's information for pages that couldn't be migrated.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
+# cat migration_stat
+Total pages migration requests: 1000
+Pages migrated successfully: 900
+Pages migration give-ups: 80
+Pages migration failures: 20
+Average tries per successful migration: 1.89
+(some other useful information)
 
-iQEcBAEBCAAGBQJUv668AAoJECTWi3JdVIfQTCQH/3LeWH0MvFi6Qqax4tZWuAvl
-uPsAYOvWkxKu9b28WmnFC+xco356sr9wcslrN/zmlh7LwuGPQUvnEbCrXOQIosjj
-zb2UuJUJdjlKZDRvoFti8OiEKqcz1L7uO2EDrc8LBMlE40U6rdu+ajrZ+hwtSqhS
-U9i7/ELtVZBCsI6PHSSP7Ajv8XgpWUqqrC7oSrnsW5I3ol9APZIlX0c2MO5fQQrT
-ZZzP99L7kopiJ5LtwkK1/0VxxOoPBAGLWd/JFtByDyESq6APEEuX2EcxqniKvA/W
-Ynv6SoCdm8GjFt9lg0dWc6vmsa1Yf1thdQrGAJ/mYqvorlLN/TO827KNVY+VYTg=
-=0ztJ
------END PGP SIGNATURE-----
 
---GlnCQLZWzqLRJED8--
+On 12/31/2014 03:25 AM, Minchan Kim wrote:
+> On Tue, Dec 30, 2014 at 02:00:27PM -0800, Laura Abbott wrote:
+>> On 12/29/2014 8:47 PM, Minchan Kim wrote:
+>>>> I've been meaning to write something like this for a while so I'm
+>>>> happy to see an attempt made to fix this. I can't speak for the
+>>>> author's reasons for wanting this information but there are
+>>>> several reasons why I was thinking of something similar.
+>>>>
+>>>> The most common bug reports seen internally on CMA are 1) CMA is
+>>>> too slow and 2) CMA failed to allocate memory. For #1, not all
+>>>> allocations may be slow so it's useful to be able to keep track
+>>>> of which allocations are taking too long. For #2, migration
+>>> Then, I don't think we could keep all of allocations. What we need
+>>> is only slow allocations. I hope we can do that with ftrace.
+>>>
+>>> ex)
+>>>
+>>> # cd /sys/kernel/debug/tracing
+>>> # echo 1 > options/stacktrace
+>>> # echo cam_alloc > set_ftrace_filter
+>>> # echo your_threshold > tracing_thresh
+>>>
+>>> I know it doesn't work now but I think it's more flexible
+>>> and general way to handle such issues(ie, latency of some functions).
+>>> So, I hope we could enhance ftrace rather than new wheel.
+>>> Ccing ftrace people.
+>>>
+>>> Futhermore, if we really need to have such information, we need more data
+>>> (ex, how many of pages were migrated out, how many pages were dropped
+>>> without migrated, how many pages were written back, how many pages were
+>>> retried with the page lock and so on).
+>>> In this case, event trace would be better.
+>>>
+>>>
+>> I agree ftrace is significantly more flexible in many respects but
+>> for the type of information we're actually trying to collect here
+>> ftrace may not be the right tool. Often times it won't be obvious there
+>> will be a problem when starting a test so all debugging information
+>> needs to be enabled. If the debugging information needs to be on
+>> almost all the time anyway it seems silly to allow it be configurable
+>> via ftrace.
+> There is a trade off. Instead, ftrace will collect the information
+> with small overhead in runtime, even alomost zero-overhead when
+> we turns off so we could investigate the problem in live machine
+> without rebooting/rebuiling.
+>
+> If the problem you are trying to solve is latency, I think ftrace
+> with more data(ie, # of migrated page, # of stall by dirty or
+> locking and so on) would be better. As current interface, something
+> did cma_alloc which was really slow but it just cma_release right before
+> we looked at the /proc/cmainfo. In that case, we will miss the
+> information. It means someone should poll cmainfo continuously to
+> avoid the missing so we should make reading part of cmainfo fast
+> or make notification mechanism or keep only top 10 entries.
+>
+> Let's think as different view. If we know via cmainfo some function
+> was slow, it's always true? Slowness of cma_alloc depends migration
+> latency as well as cma region fragmentation so the function which
+> was really slow would be fast in future if we are luck while
+> fast function in old could be slower in future if there are lots of
+> dirty pages or small small contiguous space in CMA region.
+> I mean some funcion itself is slow or fast is not a important parameter
+> to pinpoint cma's problem if we should take care of CMA's slowness or
+> failing.
+>
+> Anyway, I'm not saying I don't want to add any debug facility
+> to CMA. My point is this patchset doesn't say why author need it
+> so it's hard to review the code. Depending on the problem author
+> is looking, we should review what kinds of data, what kinds of
+> interface, what kinds of implementation need.
+> So please say more specific rather than just having better.
+>
+>>>> failure is fairly common but it's still important to rule out
+>>>> a memory leak from a dma client. Seeing all the allocations is
+>>>> also very useful for memory tuning (e.g. how big does the CMA
+>>>> region need to be, which clients are actually allocating memory).
+>>> Memory leak is really general problem and could we handle it with
+>>> page_owner?
+>>>
+>> True, but it gets difficult to narrow down which are CMA pages allocated
+>> via the contiguous code path. page owner also can't differentiate between
+> I don't get it. The page_owner provides backtrace so why is it hard
+> to parse contiguous code path?
+>
+>> different CMA regions, this needs to be done separately. This may
+> Page owner just report PFN and we know which pfn range is any CMA regions
+> so can't we do postprocessing?
+>
+>> be a sign page owner needs some extensions independent of any CMA
+>> work.
+>>>> ftrace is certainly usable for tracing CMA allocation callers and
+>>>> latency. ftrace is still only a fixed size buffer though so it's
+>>>> possible for information to be lost if other logging is enabled.
+>>> Sorry, I don't get with only above reasons why we need this. :(
+>>>
+>> I guess from my perspective the problem that is being solved here
+>> is a fairly fixed static problem. We know the information we always
+>> want to collect and have available so the ability to turn it off
+>> and on via ftrace doesn't seem necessary. The ftrace maintainers
+>> will probably disagree here but doing 'cat foo' on a file is
+>> easier than finding the particular events, setting thresholds,
+>> collecting the trace and possibly post processing. It seems like
+>> this is conflating tracing which ftrace does very well with getting
+>> a snapshot of the system at a fixed point in time which is what
+>> debugfs files are designed for. We really just want a snapshot of
+>> allocation history with some information about those allocations.
+>> There should be more ftrace events in the CMA path but I think those
+>> should be in supplement to the debugfs interface and not a replacement.
+> Again say, please more specific what kinds of problem you want to solve.
+> If it includes several problems(you said latency, leak), please
+> divide the patchset to solve each problem. Without it, there is no worth
+> to dive into code.
+>
+>> Thanks,
+>> Laura
+>>
+>> -- 
+>> Qualcomm Innovation Center, Inc.
+>> Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+>> a Linux Foundation Collaborative Project
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
