@@ -1,208 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753138AbbAUH5G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 02:57:06 -0500
-Received: from mail-pa0-f43.google.com ([209.85.220.43]:49742 "EHLO
-	mail-pa0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752861AbbAUH4b (ORCPT
+	id S1752492AbbAUH7L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 02:59:11 -0500
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:9688 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751860AbbAUH7D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 02:56:31 -0500
-Date: Tue, 20 Jan 2015 23:56:17 -0800
-From: Omar Sandoval <osandov@osandov.com>
-To: Fam Zheng <famz@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        David Drysdale <drysdale@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Vivek Goyal <vgoyal@redhat.com>, Mike Frysinger <vapier@gentoo.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        Hugh Dickins <hughd@google.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-api@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>,
-        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: [PATCH RFC 5/6] epoll: Add implementation for epoll_mod_wait
-Message-ID: <20150121075617.GA21266@mew>
-References: <1421747878-30744-1-git-send-email-famz@redhat.com>
- <1421747878-30744-6-git-send-email-famz@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421747878-30744-6-git-send-email-famz@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 21 Jan 2015 02:59:03 -0500
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8
+X-AuditID: cbfec7f4-b7f126d000001e9a-22-54bf5c442424
+Content-transfer-encoding: 8BIT
+Message-id: <1421827138.4420.3.camel@AMDC1943>
+Subject: Re: [PATCH] power: max77693: fix platform_no_drv_owner.cocci warnings
+From: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+To: kbuild test robot <fengguang.wu@intel.com>
+Cc: kbuild-all@01.org, Sebastian Reichel <sre@kernel.org>,
+        Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>,
+        David Woodhouse <dwmw2@infradead.org>, linux-pm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 21 Jan 2015 08:58:58 +0100
+In-reply-to: <20150121041134.GA205330@athens>
+References: <201501211232.F4NwbEWo%fengguang.wu@intel.com>
+ <20150121041134.GA205330@athens>
+X-Mailer: Evolution 3.10.4-0ubuntu2
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrLLMWRmVeSWpSXmKPExsVy+t/xK7ouMftDDN5857KY9OQ9s8XElZOZ
+	Ld4/X89scez6RGaLy7vmsFl87j3CaHF6d4kDu8f9veweO2fdZffYvELLY/Gel0wem1Z1snl8
+	3iQXwBbFZZOSmpNZllqkb5fAlTFj7R/Ggg72ipl9bg2M91m7GDk5JARMJL7Mv8YIYYtJXLi3
+	nq2LkYtDSGApo8TXbb/ZQBK8AoISPybfY+li5OBgFpCXOHIpGyTMLKAuMWneImaI+s+MEssv
+	dbBA1OtJnOh/CTZUWMBPYsaPbUwgNpuAscTm5UvAZooA1axY2MYI0swscI5RYsemF+wgCRYB
+	VYlLM9+ANXAK6Eo86nsDFhcSiJV40rGACeQICQFlicZ+twmMArOQnDcL4bxZSM5bwMi8ilE0
+	tTS5oDgpPddQrzgxt7g0L10vOT93EyMkyL/sYFx8zOoQowAHoxIPb0Xo/hAh1sSy4srcQ4wS
+	HMxKIryKEkAh3pTEyqrUovz4otKc1OJDjEwcnFINjI5dUTEnv048vN77Y/6q41V7erLyg6uz
+	nrvO+cN95XvfRrUfNkEyOZm6ce+3XeB/u6Z22gmXHdef/fvBXt1UnmW38sPOGfua5iXk75M/
+	4/ZtukDBTdcjfS86z0ve7HSJFrL6wskiq/vwXF6C0h4n2XO55eG65y/Ia/b1l1ad6PSfvaTw
+	oWfiKyWW4oxEQy3mouJEAN9BvFFQAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 05:57:57PM +0800, Fam Zheng wrote:
-> This syscall is a sequence of
+On śro, 2015-01-21 at 12:11 +0800, kbuild test robot wrote:
+> drivers/power/max77693_charger.c:747:3-8: No need to set .owner here. The core will do it.
 > 
-> 1) a number of epoll_ctl calls
-> 2) a epoll_pwait, with timeout enhancement.
+>  Remove .owner field if calls are used which set it automatically
 > 
-> The epoll_ctl operations are embeded so that application doesn't have to use
-> separate syscalls to insert/delete/update the fds before poll. It is more
-> efficient if the set of fds varies from one poll to another, which is the
-> common pattern for certain applications. For example, depending on the input
-> buffer status, a data reading program may decide to temporarily not polling an
-> fd.
+> Generated by: scripts/coccinelle/api/platform_no_drv_owner.cocci
 > 
-> Because the enablement of batching in this interface, even that regular
-> epoll_ctl call sequence, which manipulates several fds, can be optimized to one
-> single epoll_ctl_wait (while specifying spec=NULL to skip the poll part).
-> 
-> The only complexity is returning the result of each operation.  For each
-> epoll_mod_cmd in cmds, the field "error" is an output field that will be stored
-> the return code *iff* the command is executed (0 for success and -errno of the
-> equivalent epoll_ctl call), and will be left unchanged if the command is not
-> executed because some earlier error, for example due to failure of
-> copy_from_user to copy the array.
-> 
-> Applications can utilize this fact to do error handling: they could initialize
-> all the epoll_mod_wait.error to a positive value, which is by definition not a
-> possible output value from epoll_mod_wait. Then when the syscall returned, they
-> know whether or not the command is executed by comparing each error with the
-> init value, if they're different, they have the result of the command.
-> More roughly, they can put any non-zero and not distinguish "not run" from
-> failure.
-> 
-> Also, timeout parameter is enhanced: timespec is used, compared to the old ms
-> scalar. This provides higher precision. The parameter field in struct
-> epoll_wait_spec, "clockid", also makes it possible for users to use a different
-> clock than the default when it makes more sense.
-> 
-> Signed-off-by: Fam Zheng <famz@redhat.com>
+> CC: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
 > ---
->  fs/eventpoll.c           | 60 ++++++++++++++++++++++++++++++++++++++++++++++++
->  include/linux/syscalls.h |  5 ++++
->  2 files changed, 65 insertions(+)
 > 
-> diff --git a/fs/eventpoll.c b/fs/eventpoll.c
-> index e7a116d..2cc22c9 100644
-> --- a/fs/eventpoll.c
-> +++ b/fs/eventpoll.c
-> @@ -2067,6 +2067,66 @@ SYSCALL_DEFINE6(epoll_pwait, int, epfd, struct epoll_event __user *, events,
->  			      sigmask ? &ksigmask : NULL);
->  }
->  
-> +SYSCALL_DEFINE5(epoll_mod_wait, int, epfd, int, flags,
-> +		int, ncmds, struct epoll_mod_cmd __user *, cmds,
-> +		struct epoll_wait_spec __user *, spec)
-> +{
-> +	struct epoll_mod_cmd *kcmds = NULL;
-> +	int i, ret = 0;
-> +	int cmd_size = sizeof(struct epoll_mod_cmd) * ncmds;
-> +
-> +	if (flags)
-> +		return -EINVAL;
-> +	if (ncmds) {
-> +		if (!cmds)
-> +			return -EINVAL;
-> +		kcmds = kmalloc(cmd_size, GFP_KERNEL);
-> +		if (!kcmds)
-> +			return -ENOMEM;
-> +		if (copy_from_user(kcmds, cmds, cmd_size)) {
-> +			ret = -EFAULT;
-> +			goto out;
-> +		}
-> +	}
-> +	for (i = 0; i < ncmds; i++) {
-> +		struct epoll_event ev = (struct epoll_event) {
-> +			.events = kcmds[i].events,
-> +			.data = kcmds[i].data,
-> +		};
-> +		if (kcmds[i].flags) {
-> +			kcmds[i].error = ret = -EINVAL;
-> +			goto out;
-> +		}
-> +		kcmds[i].error = ret = ep_ctl_do(epfd, kcmds[i].op, kcmds[i].fd, ev);
-> +		if (ret)
-> +			goto out;
-> +	}
-> +	if (spec) {
-> +		sigset_t ksigmask;
-> +		struct epoll_wait_spec kspec;
-> +		ktime_t timeout;
-> +
-> +		if(copy_from_user(&kspec, spec, sizeof(struct epoll_wait_spec)))
-> +			return -EFAULT;
-This should probably be goto out, or you'll leak kcmds.
+>  max77693_charger.c |    1 -
+>  1 file changed, 1 deletion(-)
 
-> +		if (kspec.sigmask) {
-> +			if (kspec.sigsetsize != sizeof(sigset_t))
-> +				return -EINVAL;
-Same here...
+Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
 
-> +			if (copy_from_user(&ksigmask, kspec.sigmask, sizeof(ksigmask)))
-> +				return -EFAULT;
-and here.
 
-> +		}
-> +		timeout = timespec_to_ktime(kspec.timeout);
-> +		ret = epoll_pwait_do(epfd, kspec.events, kspec.maxevents,
-> +				     kspec.clockid, timeout,
-> +				     kspec.sigmask ? &ksigmask : NULL);
-> +	}
-> +
-> +out:
-> +	if (ncmds && copy_to_user(cmds, kcmds, cmd_size))
-> +		return -EFAULT;
-This will also leak kcmds, it should be ret = -EFAULT. This case, however, seems
-to lead to a weird corner case: if cmds is read-only, we'll end up executing
-every command but fail to copy out the return values, so when userspace gets the
-EFAULT, it won't know whether anything was executed. But, getting an EFAULT here
-means you're probably doing something wrong anyways, so maybe not the biggest
-concern.
-
-> +	kfree(kcmds);
-> +	return ret;
-> +}
-> +
->  #ifdef CONFIG_COMPAT
->  COMPAT_SYSCALL_DEFINE6(epoll_pwait, int, epfd,
->  		       struct epoll_event __user *, events,
-> diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-> index 85893d7..7156c80 100644
-> --- a/include/linux/syscalls.h
-> +++ b/include/linux/syscalls.h
-> @@ -12,6 +12,8 @@
->  #define _LINUX_SYSCALLS_H
->  
->  struct epoll_event;
-> +struct epoll_mod_cmd;
-> +struct epoll_wait_spec;
->  struct iattr;
->  struct inode;
->  struct iocb;
-> @@ -630,6 +632,9 @@ asmlinkage long sys_epoll_pwait(int epfd, struct epoll_event __user *events,
->  				int maxevents, int timeout,
->  				const sigset_t __user *sigmask,
->  				size_t sigsetsize);
-> +asmlinkage long sys_epoll_mod_wait(int epfd, int flags,
-> +				   int ncmds, struct epoll_mod_cmd __user * cmds,
-> +				   struct epoll_wait_spec __user * spec);
->  asmlinkage long sys_gethostname(char __user *name, int len);
->  asmlinkage long sys_sethostname(char __user *name, int len);
->  asmlinkage long sys_setdomainname(char __user *name, int len);
-> -- 
-> 1.9.3
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> --- a/drivers/power/max77693_charger.c
+> +++ b/drivers/power/max77693_charger.c
+> @@ -744,7 +744,6 @@ MODULE_DEVICE_TABLE(platform, max77693_c
+>  
+>  static struct platform_driver max77693_charger_driver = {
+>  	.driver = {
+> -		.owner	= THIS_MODULE,
+>  		.name	= "max77693-charger",
+>  	},
+>  	.probe		= max77693_charger_probe,
 
--- 
-Omar
