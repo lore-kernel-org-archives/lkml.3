@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753401AbbAUShU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 13:37:20 -0500
-Received: from mail-ie0-f173.google.com ([209.85.223.173]:56707 "EHLO
-	mail-ie0-f173.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750917AbbAUShQ (ORCPT
+	id S1753482AbbAUSig (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 13:38:36 -0500
+Received: from bombadil.infradead.org ([198.137.202.9]:48811 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752144AbbAUSi2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 13:37:16 -0500
-Message-ID: <1421865423.4832.28.camel@edumazet-glaptop2.roam.corp.google.com>
-Subject: Re: [PATCH v2] net: stmmac: add BQL support
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Beniamino Galvani <b.galvani@gmail.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Dave Taht <dave.taht@gmail.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 21 Jan 2015 10:37:03 -0800
-In-Reply-To: <1421863647-20048-1-git-send-email-b.galvani@gmail.com>
-References: <1421863647-20048-1-git-send-email-b.galvani@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4-0ubuntu2 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Jan 2015 13:38:28 -0500
+Date: Wed, 21 Jan 2015 10:38:23 -0800
+From: Darren Hart <dvhart@infradead.org>
+To: Gabriele Mazzotta <gabriele.mzt@gmail.com>
+Cc: mjg59@srcf.ucam.org, pali.rohar@gmail.com, linux-kernel@vger.kernel.org,
+        platform-driver-x86@vger.kernel.org, A.Sloman@cs.bham.ac.uk,
+        computersforpeace@gmail.com
+Subject: Re: [PATCH] dell-laptop: use dedicated sysfs file for ALS
+Message-ID: <20150121183823.GE7386@vmdeb7>
+References: <1421244357-31103-1-git-send-email-gabriele.mzt@gmail.com>
+ <9352624.oIKUSW0aDp@xps13>
+ <20150118180821.GB56582@vmdeb7>
+ <1663320.Wk1Y30OHLH@xps13>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1663320.Wk1Y30OHLH@xps13>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2015-01-21 at 19:07 +0100, Beniamino Galvani wrote:
-> Add support for Byte Queue Limits to the STMicro MAC driver.
+On Sun, Jan 18, 2015 at 07:34:17PM +0100, Gabriele Mazzotta wrote:
+> On Sunday 18 January 2015 10:08:21 Darren Hart wrote:
+> > On Wed, Jan 14, 2015 at 03:07:21PM +0100, Gabriele Mazzotta wrote:
+> > > Hi,
+> > > 
+> > > I decided to remove "als" from input_triggers and created a dedicated
+> > > sysfs file for it. Having it there was wrong and misleading.
+> > > I also updated the documentation to reflect this change and fixed the
+> > > wrong description of als_setting, now used for als_enabled.
+> > 
+> > Given this is a significant functional change, as opposed to a bug fix, I'm
+> > leaning toward reverting the original and adding back the corrected version to
+> > 3.20. I'm going to look at the total impact first - let me know if you have a
+> > strong argument one way or the other.
 > 
-> Tested on a Amlogic S802 quad Cortex-A9 board, where the use of BQL
-> decreases the latency of a high priority ping from ~12ms to ~1ms when
-> the 100Mbit link is saturated by 20 TCP streams.
-> 
-> Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
-> ---
-> Changes since v1:
->  - don't access skb->len after the start of DMA transmission in
->    stmmac_xmit(), to avoid potential use after free in case tx_lock is
->    removed in the future
-> 
->  drivers/net/ethernet/stmicro/stmmac/stmmac_main.c | 9 +++++++++
->  1 file changed, 9 insertions(+)
+> I'm not against this decision.
+> If you do, please remember to also revert the commit that added the
+> documentation.
 
-Reviewed-by: Eric Dumazet <edumazet@google.com>
+Then for my pull request to Linus this week, I'll be reverting:
 
-Thanks !
+02b2aaa platform: x86: dell-laptop: Add support for keyboard backlight
+3161293 Documentation: Add entry for dell-laptop sysfs interface
 
+Am I missing anything?
 
+-- 
+Darren Hart
+Intel Open Source Technology Center
