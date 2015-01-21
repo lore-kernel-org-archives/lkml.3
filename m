@@ -1,157 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754642AbbAUPJO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 10:09:14 -0500
-Received: from mail-pd0-f176.google.com ([209.85.192.176]:54161 "EHLO
-	mail-pd0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754196AbbAUPFR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 10:05:17 -0500
-Date: Wed, 21 Jan 2015 16:05:12 +0100
-From: Thierry Reding <thierry.reding@gmail.com>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: dri-devel@lists.freedesktop.org, linux-tegra@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        Mike Turquette <mturquette@linaro.org>
-Subject: Re: [PATCH 01/36] clk: Introduce clk_try_parent()
-Message-ID: <20150121150511.GB22884@ulmo.nvidia.com>
-References: <1421750935-4023-1-git-send-email-thierry.reding@gmail.com>
- <1421750935-4023-2-git-send-email-thierry.reding@gmail.com>
- <54BEAAB4.9030803@codeaurora.org>
+	id S1753953AbbAUPIq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 10:08:46 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:36231 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754209AbbAUPFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 10:05:23 -0500
+Date: Wed, 21 Jan 2015 17:05:14 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org,
+        Gerd Hoffmann <kraxel@redhat.com>, linux-api@vger.kernel.org
+Subject: [PATCH post-squash 2/9] virtio-pci: define layout for virtio 1.0
+Message-ID: <1421852670-23742-3-git-send-email-mst@redhat.com>
+References: <1421852670-23742-1-git-send-email-mst@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="XOIedfhf+7KOe/yw"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54BEAAB4.9030803@codeaurora.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1421852670-23742-1-git-send-email-mst@redhat.com>
+X-Mutt-Fcc: =sent
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Rusty Russell <rusty@rustcorp.com.au>
 
---XOIedfhf+7KOe/yw
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Based on patches by Michael S. Tsirkin <mst@redhat.com>, but I found it
+hard to follow so changed to use structures which are more
+self-documenting.
 
-On Tue, Jan 20, 2015 at 11:21:24AM -0800, Stephen Boyd wrote:
-> On 01/20/2015 02:48 AM, Thierry Reding wrote:
-> > =20
-> >  /**
-> > + * clk_try_parent - check if a clock can be the parent clock source of=
- another
-> > + * @clk: clock source
-> > + * @parent: parent clock source
-> > + *
-> > + * This is like clk_set_parent(), except that it only checks that pare=
-nt can
-> > + * be the parent clock source for clock.
-> > + *
-> > + * Returns success (0) or negative errno.
-> > + */
-> > +int clk_try_parent(struct clk *clk, struct clk *parent)
-> > +{
-> > +	int err =3D 0;
-> > +
-> > +	if (!clk || !parent)
-> > +		return -EINVAL;
->=20
-> NULL clock should be a nop, so return success in either case.
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Tested-by: Gerd Hoffmann <kraxel@redhat.com>
+---
+ include/uapi/linux/virtio_pci.h | 63 +++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 63 insertions(+)
 
-Okay.
+diff --git a/include/uapi/linux/virtio_pci.h b/include/uapi/linux/virtio_pci.h
+index 509d630..a2b2e13 100644
+--- a/include/uapi/linux/virtio_pci.h
++++ b/include/uapi/linux/virtio_pci.h
+@@ -99,4 +99,67 @@
+ /* Vector value used to disable MSI for queue */
+ #define VIRTIO_MSI_NO_VECTOR            0xffff
+ 
++#ifndef VIRTIO_PCI_NO_MODERN
++
++/* IDs for different capabilities.  Must all exist. */
++
++/* Common configuration */
++#define VIRTIO_PCI_CAP_COMMON_CFG	1
++/* Notifications */
++#define VIRTIO_PCI_CAP_NOTIFY_CFG	2
++/* ISR access */
++#define VIRTIO_PCI_CAP_ISR_CFG		3
++/* Device specific confiuration */
++#define VIRTIO_PCI_CAP_DEVICE_CFG	4
++
++/* This is the PCI capability header: */
++struct virtio_pci_cap {
++	__u8 cap_vndr;		/* Generic PCI field: PCI_CAP_ID_VNDR */
++	__u8 cap_next;		/* Generic PCI field: next ptr. */
++	__u8 cap_len;		/* Generic PCI field: capability length */
++	__u8 cfg_type;		/* Identifies the structure. */
++	__u8 bar;		/* Where to find it. */
++	__u8 padding[3];	/* Pad to full dword. */
++	__le32 offset;		/* Offset within bar. */
++	__le32 length;		/* Length of the structure, in bytes. */
++};
++
++#define VIRTIO_PCI_CAP_BAR_SHIFT	5
++#define VIRTIO_PCI_CAP_BAR_MASK		0x7
++#define VIRTIO_PCI_CAP_TYPE_SHIFT	0
++#define VIRTIO_PCI_CAP_TYPE_MASK	0x7
++
++struct virtio_pci_notify_cap {
++	struct virtio_pci_cap cap;
++	__le32 notify_off_multiplier;	/* Multiplier for queue_notify_off. */
++};
++
++/* Fields in VIRTIO_PCI_CAP_COMMON_CFG: */
++struct virtio_pci_common_cfg {
++	/* About the whole device. */
++	__le32 device_feature_select;	/* read-write */
++	__le32 device_feature;		/* read-only */
++	__le32 guest_feature_select;	/* read-write */
++	__le32 guest_feature;		/* read-write */
++	__le16 msix_config;		/* read-write */
++	__le16 num_queues;		/* read-only */
++	__u8 device_status;		/* read-write */
++	__u8 config_generation;		/* read-only */
++
++	/* About a specific virtqueue. */
++	__le16 queue_select;		/* read-write */
++	__le16 queue_size;		/* read-write, power of 2. */
++	__le16 queue_msix_vector;	/* read-write */
++	__le16 queue_enable;		/* read-write */
++	__le16 queue_notify_off;	/* read-only */
++	__le32 queue_desc_lo;		/* read-write */
++	__le32 queue_desc_hi;		/* read-write */
++	__le32 queue_avail_lo;		/* read-write */
++	__le32 queue_avail_hi;		/* read-write */
++	__le32 queue_used_lo;		/* read-write */
++	__le32 queue_used_hi;		/* read-write */
++};
++
++#endif /* VIRTIO_PCI_NO_MODERN */
++
+ #endif
+-- 
+MST
 
-> > +
-> > +	if ((clk->num_parents > 1) && !clk->ops->set_parent)
-> > +		return -ENOSYS;
->=20
-> This suffers from the same problem as discussed in another thread where
-> the mux is read-only and the parent is the current parent. That case
-> shouldn't fail.
-
-Okay, if I do a lookup on the parent names array as you suggested below
-I don't need to consider this anyway.
-
-> > +
-> > +	clk_prepare_lock();
-> > +
-> > +	if (clk->parent =3D=3D parent)
-> > +		goto unlock;
-> > +
-> > +	err =3D clk_fetch_parent_index(clk, parent);
-> > +	if (err > 0)
-> > +		err =3D 0;
-> > +
->=20
-> Given that we just throw away the index, perhaps we should just loop
-> over the parent_names array searching for a name match on the parent's
-> name. If we did that this entire function would be lockless too.
-
-Done.
-
-> > +unlock:
-> > +	clk_prepare_unlock();
-> > +
-> > +	return err;
-> > +}
-> > +EXPORT_SYMBOL_GPL(clk_try_parent);
-> > +
-> > +/**
-> >   * clk_set_parent - switch the parent of a mux clk
-> >   * @clk: the mux clk whose input we are switching
-> >   * @parent: the new input to clk
-> > diff --git a/include/linux/clk.h b/include/linux/clk.h
-> > index fb1ac65f127c..94da8c68a515 100644
-> > --- a/include/linux/clk.h
-> > +++ b/include/linux/clk.h
-> > @@ -328,6 +328,15 @@ long clk_round_rate(struct clk *clk, unsigned long=
- rate);
-> >  int clk_set_rate(struct clk *clk, unsigned long rate);
-> > =20
-> >  /**
-> > + * clk_try_parent - check if a clock can be the parent clock source of=
- another
-> > + * @clk: clock source
-> > + * @parent: parent clock source
-> > + *
-> > + * Returns success (0) or negative errno.
->=20
-> Why not a bool? Do we really care why we can't set the parent in the
-> error case?
-
-A bool should do fine. I guess a negative error code would've been
-easier to propagate, but we can probably just return an -EINVAL if
-clk_has_parent() fails.
-
-> > + */
-> > +int clk_try_parent(struct clk *clk, struct clk *parent);
->=20
-> The name makes me think of mutex_trylock(), so I immediately think this
-> tries to set the parent. Perhaps a better name would be
-> clk_can_have_parent() or clk_has_parent()?
-
-clk_has_parent() sounds good to me.
-
-Thierry
-
---XOIedfhf+7KOe/yw
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBAgAGBQJUv8AnAAoJEN0jrNd/PrOhB5sQAJnhGRMYSv6JJb4OkVU1V1sw
-rpxMQyuN1JL2Mqr02+Mc6Xo8YXeyhXn3qQabG8WBcnrA221oFHO5EtMGojr1Vfys
-eRNgvWWR+ETChW2b5N52IDYDWhtVz82whgi4//2jg7bMx93c3AzaSN65Hw4izcwi
-DtzXG3qGEu9QvXyCBwAQjbHsuD6XiWTKrPYq3pcCHoF4z62Z5zax2j4C+G1GU0pK
-FrWim7/jLfnQQHr5FfQNwlIsLqXvAabxQr46DmVnwXmJ1sDrCXDIjZjuHwenZN9X
-aj9BgCqrF8YY71QeZHYpvSt7GUl8XaFelD+a+BjOo0UxOxMSP4L4JZVlZR/slyqG
-EY2s/tz6u3cRWyXqwVvv7OWADaj7eQeV/11yqQFbXHqPgvVsfEV5QgJuTh34ESJr
-/crk42D5piFeepWTlUzCURufB/QhKN42DuSYYCOoSim7nkncvbwx3YLRdSTxFtXW
-AK6+6Fwu/tYGFoYLvAK9DUXRkRVRWT5yTvtd60czM4K8/KaALfiqdjJ+z4HJX7Nj
-S3b1IZeXr7r1Shv75OHC6MjOidc4ft836enxiEE/5uC2Ymdsw05DxetkhhxUTd+Z
-haXSEGLBQcf5DNCviAcRmOGh6yqefnxVC7h8hqoYJez5eyGvMi6KhepCnSJkioeC
-GkrWj89mk9RjWuMs/Bvb
-=XWy/
------END PGP SIGNATURE-----
-
---XOIedfhf+7KOe/yw--
