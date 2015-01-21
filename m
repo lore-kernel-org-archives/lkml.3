@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754341AbbAUQCu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 11:02:50 -0500
-Received: from smtp-out-054.synserver.de ([212.40.185.54]:1044 "EHLO
-	smtp-out-053.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754163AbbAUQCn (ORCPT
+	id S1754614AbbAUQEv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 11:04:51 -0500
+Received: from mail-lb0-f174.google.com ([209.85.217.174]:40699 "EHLO
+	mail-lb0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754596AbbAUQEl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 11:02:43 -0500
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@metafoo.de
-X-SynServer-PPID: 20431
-Message-ID: <54BFCDA1.4060205@metafoo.de>
-Date: Wed, 21 Jan 2015 17:02:41 +0100
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Icedove/31.3.0
+	Wed, 21 Jan 2015 11:04:41 -0500
+Date: Wed, 21 Jan 2015 17:04:40 +0100
+From: Christoffer Dall <christoffer.dall@linaro.org>
+To: Hanjun Guo <hanjun.guo@linaro.org>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
+        Olof Johansson <olof@lixom.net>, Arnd Bergmann <arnd@arndb.de>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Grant Likely <grant.likely@linaro.org>,
+        Will Deacon <will.deacon@arm.com>, Rob Herring <robh@kernel.org>,
+        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
+        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
+        Graeme Gregory <graeme.gregory@linaro.org>,
+        linaro-acpi@lists.linaro.org, Marc Zyngier <marc.zyngier@arm.com>,
+        Jon Masters <jcm@redhat.com>, Timur Tabi <timur@codeaurora.org>,
+        Randy Dunlap <rdunlap@infradead.org>, linux-kernel@vger.kernel.org,
+        Al Stone <al.stone@linaro.org>, linux-acpi@vger.kernel.org,
+        Mark Brown <broonie@kernel.org>, suravee.suthikulpanit@amd.com,
+        Sudeep Holla <Sudeep.Holla@arm.com>,
+        Bjorn Helgaas <bhelgaas@google.com>, phoenix.liyi@huawei.com,
+        linux-arm-kernel@lists.infradead.org, Charles.Garcia-Tobin@arm.com,
+        Parth Dixit <parth.dixit@linaro.org>,
+        Ian Campbell <ian.campbell@citrix.com>,
+        Julien Grall <julien.grall@linaro.org>,
+        Stefano Stabellini <stefano.stabellini@citrix.com>
+Subject: Re: [PATCH v6 17/17] Documentation: ACPI for ARM64
+Message-ID: <20150121160440.GC15076@cbox>
+References: <1420368918-5086-1-git-send-email-hanjun.guo@linaro.org>
+ <1420368918-5086-18-git-send-email-hanjun.guo@linaro.org>
+ <20150119203328.GB3766@cbox>
+ <54BF9D6C.7020807@linaro.org>
 MIME-Version: 1.0
-To: Ricardo Ribalda Delgado <ricardo.ribalda@gmail.com>,
-        Mark Brown <broonie@kernel.org>,
-        Michal Simek <michal.simek@xilinx.com>,
-        =?windows-1252?Q?S=F6ren_Brink?= =?windows-1252?Q?mann?= 
-	<soren.brinkmann@xilinx.com>,
-        linux-spi@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] spi/xilinx: Use automatic bus number on device tree
-References: <1421855590-9210-1-git-send-email-ricardo.ribalda@gmail.com> <1421855590-9210-2-git-send-email-ricardo.ribalda@gmail.com>
-In-Reply-To: <1421855590-9210-2-git-send-email-ricardo.ribalda@gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54BF9D6C.7020807@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2015 04:53 PM, Ricardo Ribalda Delgado wrote:
-> If there is more than one spi device on a device tree, the second one
-> will fail to probe due to a duplicated bus_num.
- > [...]
+On Wed, Jan 21, 2015 at 08:37:00PM +0800, Hanjun Guo wrote:
+> Hi Christoffer,
+> 
+> Sorry for the late reply, I got no answer yet but
+> with one question below.
 
-This should already be fixed. See commit 4b153a2137c5 ("spi: xilinx: Use 
-pdev->id instead of pdev->dev.id for the SPI bus number")[1]. If the device 
-was registered using devicetree pdev->id is -1, so dynamic numbers will be used.
+no worries, I think the discussion has moved to Stefano's e-mail:
+http://lists.infradead.org/pipermail/linux-arm-kernel/2015-January/318335.html
 
-- Lars
-
-[1] 
-http://git.kernel.org/cgit/linux/kernel/git/torvalds/linux.git/commit/drivers/spi/spi-xilinx.c?id=4b153a2137c5d2914794c8944d78c731c1b0ae9d
-
+-Christoffer
