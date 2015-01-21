@@ -1,133 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754186AbbAUPhC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 10:37:02 -0500
-Received: from mail-wg0-f46.google.com ([74.125.82.46]:62392 "EHLO
-	mail-wg0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753666AbbAUPgw (ORCPT
+	id S1754246AbbAUPj0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 10:39:26 -0500
+Received: from mail-pa0-f44.google.com ([209.85.220.44]:61125 "EHLO
+	mail-pa0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752055AbbAUPjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 10:36:52 -0500
-Date: Wed, 21 Jan 2015 10:36:47 -0500
-From: "Ahmed S. Darwish" <darwish.07@gmail.com>
-To: Andri Yngvason <andri.yngvason@marel.com>
-Cc: Wolfgang Grandegger <wg@grandegger.com>,
-        Olivier Sobrie <olivier@sobrie.be>,
-        Oliver Hartkopp <socketcan@hartkopp.net>,
-        Marc Kleine-Budde <mkl@pengutronix.de>,
-        Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v5 2/5] can: kvaser_usb: Consolidate and unify state
- change handling
-Message-ID: <20150121153647.GB17070@linux>
-References: <20141223154654.GB6460@vivalin-002>
- <20150120214409.GA16828@linux>
- <20150120214537.GB16828@linux>
- <20150121103319.14511.57709@shannon>
- <e5439ed067931dc01bda70592eb6ed52@grandegger.com>
- <20150121144323.GA17070@linux>
- <20150121150015.31351.6605@shannon>
+	Wed, 21 Jan 2015 10:39:17 -0500
+Date: Wed, 21 Jan 2015 16:39:12 +0100
+From: Thierry Reding <thierry.reding@gmail.com>
+To: Paul Moore <pmoore@redhat.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Sabrina Dubroca <sd@queasysnail.net>,
+        Guenter Roeck <linux@roeck-us.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-audit@redhat.com, Richard Guy Briggs <rgb@redhat.com>
+Subject: Re: linux-next: Tree for Jan 20 -- Kernel panic - Unable to mount
+ root fs
+Message-ID: <20150121153910.GD22884@ulmo.nvidia.com>
+References: <20150120165655.GA10904@kria>
+ <20150121110539.GA8924@kria>
+ <20150121144214.GA22884@ulmo.nvidia.com>
+ <9422577.FVVyjQBZjy@sifl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="uxuisgdDHaNETlh8"
 Content-Disposition: inline
-In-Reply-To: <20150121150015.31351.6605@shannon>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <9422577.FVVyjQBZjy@sifl>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 03:00:15PM +0000, Andri Yngvason wrote:
-> Quoting Ahmed S. Darwish (2015-01-21 14:43:23)
-> > Hi!
 
-...
+--uxuisgdDHaNETlh8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > <-- Unplug the cable -->
-> > 
-> >  (000.009106)  can0  20000080   [8]  00 00 00 00 00 00 08 00   ERRORFRAME
-> >         bus-error
-> >         error-counter-tx-rx{{8}{0}}
-> >  (000.001872)  can0  20000080   [8]  00 00 00 00 00 00 10 00   ERRORFRAME
-> >         bus-error
-> >         error-counter-tx-rx{{16}{0}}
-> [...]
-> >         error-counter-tx-rx{{80}{0}}
-> >  (000.001910)  can0  20000080   [8]  00 00 00 00 00 00 58 00   ERRORFRAME
-> >         bus-error
-> >         error-counter-tx-rx{{88}{0}}
-> >  (000.001753)  can0  20000084   [8]  00 08 00 00 00 00 60 00   ERRORFRAME
-> >         controller-problem{tx-error-warning}
-> Good.
-> >         bus-error
-> >         error-counter-tx-rx{{96}{0}}
+On Wed, Jan 21, 2015 at 10:24:11AM -0500, Paul Moore wrote:
+> On Wednesday, January 21, 2015 03:42:16 PM Thierry Reding wrote:
+> > On Wed, Jan 21, 2015 at 12:05:39PM +0100, Sabrina Dubroca wrote:
+> > > 2015-01-21, 04:36:38 +0000, Al Viro wrote:
+> > > > On Tue, Jan 20, 2015 at 08:01:26PM -0800, Guenter Roeck wrote:
+> > > > > With this patch:
+> > > > >=20
+> > > > > sys_mkdir .:40775 returned -17
+> > > > > sys_mkdir usr:40775 returned 0
+> > > > > sys_mkdir usr/lib:40775 returned 0
+> > > > > sys_mkdir usr/share:40755 returned 0
+> > > > > sys_mkdir usr/share/udhcpc:40755 returned 0
+> > > > > sys_mkdir usr/bin:40775 returned 0
+> > > > > sys_mkdir usr/sbin:40775 returned 0
+> > > > > sys_mkdir mnt:40775 returned 0
+> > > > > sys_mkdir proc:40775 returned 0
+> > > > > sys_mkdir root:40775 returned 0
+> > > > > sys_mkdir lib:40775 returned 0
+> > > > > sys_mkdir lib/modules:40775 returned 0
+> > > > > ...
+> > > > >=20
+> > > > > and the problem is fixed.
+> > >=20
+> > > This patch also works for me.
+> > >=20
+> > > > ... except that it simply confirms that something's fishy with
+> > > > getname_kernel() of ->name of struct filename returned by getname()=
+=2E=20
+> > > > IOW, I still do not understand the mechanism of breakage there.
+> > >=20
+> > > I'm not so sure about that.  I tried to copy name to a new string in
+> > > do_path_lookup and that didn't help.
+> > >=20
+> > > Now, I've removed the
+> > >=20
+> > >         putname(filename);
+> > >=20
+> > > line from do_path_lookup and I don't get the panic.
+> >=20
+> > That would indicate that somehow the refcount got unbalanced. Looking
+> > more closely it seems like the various audit_*() function do take a
+> > reference, but maybe that's not enough.
+>=20
+> I'm thinking the same thing and I think the problem may be that=20
+> __audit_reusename() is not bumping the filename->refcnt.  Can someone who=
+ is=20
+> seeing this problem bump the refcnt in __audit_reusename()?
+>=20
+>   struct filename *
+>   __audit_reusename(const __user char *uptr)
+>   {
+>         struct audit_context *context =3D current->audit_context;
+>         struct audit_names *n;
+>=20
+>         list_for_each_entry(n, &context->names_list, list) {
+>                 if (!n->name)
+>                         continue;
+>                 if (n->name->uptr =3D=3D uptr) {
+> +                       n->name->refcnt++;
+>                         return n->name;
+>                 }
+>         }
+>         return NULL;
+>   }
 
-Nice.
+That doesn't seem to help, at least in my case.
 
-> >  (000.001720)  can0  20000080   [8]  00 00 00 00 00 00 68 00   ERRORFRAME
-> >         bus-error
-> >         error-counter-tx-rx{{104}{0}}
-> >  (000.001876)  can0  20000080   [8]  00 00 00 00 00 00 70 00   ERRORFRAME
-> >         bus-error
-> >         error-counter-tx-rx{{112}{0}}
-> >  (000.001749)  can0  20000080   [8]  00 00 00 00 00 00 78 00   ERRORFRAME
-> >         bus-error
-> >         error-counter-tx-rx{{120}{0}}
-> >  (000.001771)  can0  20000084   [8]  00 20 00 00 00 00 80 00   ERRORFRAME
-> >         controller-problem{tx-error-passive}
-> Also good.
-> >         bus-error
-> >         error-counter-tx-rx{{128}{0}}
+Thierry
 
-Also nice :-)
+--uxuisgdDHaNETlh8
+Content-Type: application/pgp-signature
 
-> >  (000.001868)  can0  20000080   [8]  00 00 00 00 00 00 80 00   ERRORFRAME
-> >         bus-error
-> >         error-counter-tx-rx{{128}{0}}
-> >  (000.001982)  can0  20000080   [8]  00 00 00 00 00 00 80 00   ERRORFRAME
-> >         bus-error
-> >         error-counter-tx-rx{{128}{0}}
-> > 
-> > (( Then a continous flood, exactly similar to the above packet, appears.
-> >    Unfortunately this flooding is a firmware problem. ))
-> > 
-> > <-- Replug the cable, after a good amount of time -->
-> >
-> Where are the reverse state transitions?
-> > 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
-Hmmm...
+iQIcBAEBAgAGBQJUv8geAAoJEN0jrNd/PrOh244P/RqSLeB7+EtQ7SIjB+oq4ps/
+bPklOiNKjmgUWv5ZxJQIy6kR5geEvPb/1oRN+48+0+Tb+oUd/kZhCJbKya1lJ6FY
+v0E2s9KWxJsSzzHl0nYnc8OAgy8dmFa3GiZ4+t+Pnaj3Ydso4ZnPmtvqGjEHgRgh
+Sq73ZVN3fcvAL54EKAkQOIo23zxlUBcC4sBuFjJJwot6DMADvdFgmdeQB6dkzyIF
+fKbKPwtiGzrxqme4j9AbDqPFbbbnQOi6+yaZsL2ocQPsPeAiqozqp4dZWXbu+Spg
+XMQ1ml0CUWtCL/TG9C5SOFV9plWQ3cPCQVNid/yhZ1bVhGWFrx1mvNrBmf4oXFh/
+/2Dp+cNF6DqlI9fkEg5RXuPPHCnWUb3odDq7Lm0zlXXyyW9Wi39UU0m22+mqu2Gc
+ZBjHBp6ogwzZX/pXdpg5aXVu4igCyk8+Hg0naIlytwtaca2p7PpJk7XRgJMy8yl7
+M9rNzcQTyukJ1r3L9J7WOqn0OaJC3UfYkfnFA8ZPTbOR/A0QxTVm0wxr044rbxcC
+mO9tObrqlpRhrWuRlrhd5KSBHixyt3Q05gICNbr0QioG1ABTFOJxURdPI7UqwGu2
+2sek+IZVXJAp8YtYmyVquSnrom73EUgSpShc1kbvLobquZkG42c/MM2BUFJWbG6U
+jFWSkFoWJgOG+cZBLJob
+=4Hgz
+-----END PGP SIGNATURE-----
 
-[ ... ]
-> 
-> Reverse state transitions are missing from the logs. See comments above.
-> 
-
-When the device is on the _receiving_ end, and I unplug the CAN cable after
-introducing some noise to the level of reaching WARNING or PASSIVE, I
-receive a BUS_ERROR event with the rxerr count reset back to 0 or 1. In
-that case, the driver correctly transitions back the state to ERROR_ACTIVE
-and candump produces something similar to:
-
-    (000.000362)  can0  2000008C   [8]  00 40 40 00 00 00 00 01   ERRORFRAME
-    controller-problem{}
-    protocol-violation{{back-to-error-active}{}}
-    bus-error
-    error-counter-tx-rx{{0}{1}}
-
-which is, AFAIK, the correct behaviour from the driver side.
-
-Meanwhile, when the device is on the _sending_ end and I re-plug the CAN
-cable again. Sometimes I receive events with txerr reset to 0 or 1, and
-the driver correctly reverts back to ERROR_ACTIVE in that case. But on
-another times like the quoted case above, I don't receive any events
-resetting txerr back -- only data packets on the bus.
-
-So, What can the driver do given the above?
-
-Thanks,
-Darwish
-
-P.S. just in case, I'll also re-check now if the driver unintentionally
-drops any important events resetting the txerr count back after a CAN
-cable replug -- preventing the code from returning to ERROR_ACTIVE in
-the process.
-
+--uxuisgdDHaNETlh8--
