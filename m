@@ -1,95 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754149AbbAUP2H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 10:28:07 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:60830 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752904AbbAUP2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 10:28:00 -0500
-From: Paul Moore <pmoore@redhat.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Sabrina Dubroca <sd@queasysnail.net>,
-        Guenter Roeck <linux@roeck-us.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-audit@redhat.com, Richard Guy Briggs <rgb@redhat.com>
-Subject: Re: linux-next: Tree for Jan 20 -- Kernel panic - Unable to mount root fs
-Date: Wed, 21 Jan 2015 10:24:11 -0500
-Message-ID: <9422577.FVVyjQBZjy@sifl>
-Organization: Red Hat
-User-Agent: KMail/4.14.3 (Linux/3.16.7-gentoo; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <20150121144214.GA22884@ulmo.nvidia.com>
-References: <20150120165655.GA10904@kria> <20150121110539.GA8924@kria> <20150121144214.GA22884@ulmo.nvidia.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1750917AbbAUPYs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 10:24:48 -0500
+Received: from mail-ie0-f171.google.com ([209.85.223.171]:47596 "EHLO
+	mail-ie0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753188AbbAUPYk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 10:24:40 -0500
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: lee.jones@linaro.org, kernel@stlinux.com, linux-mtd@lists.infradead.org,
+        computersforpeace@gmail.com
+Subject: [PATCH v4 00/10] mtd: st_spi_fsm: Align with ST's internal development
+Date: Wed, 21 Jan 2015 15:24:18 +0000
+Message-Id: <1421853868-8262-1-git-send-email-lee.jones@linaro.org>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, January 21, 2015 03:42:16 PM Thierry Reding wrote:
-> On Wed, Jan 21, 2015 at 12:05:39PM +0100, Sabrina Dubroca wrote:
-> > 2015-01-21, 04:36:38 +0000, Al Viro wrote:
-> > > On Tue, Jan 20, 2015 at 08:01:26PM -0800, Guenter Roeck wrote:
-> > > > With this patch:
-> > > > 
-> > > > sys_mkdir .:40775 returned -17
-> > > > sys_mkdir usr:40775 returned 0
-> > > > sys_mkdir usr/lib:40775 returned 0
-> > > > sys_mkdir usr/share:40755 returned 0
-> > > > sys_mkdir usr/share/udhcpc:40755 returned 0
-> > > > sys_mkdir usr/bin:40775 returned 0
-> > > > sys_mkdir usr/sbin:40775 returned 0
-> > > > sys_mkdir mnt:40775 returned 0
-> > > > sys_mkdir proc:40775 returned 0
-> > > > sys_mkdir root:40775 returned 0
-> > > > sys_mkdir lib:40775 returned 0
-> > > > sys_mkdir lib/modules:40775 returned 0
-> > > > ...
-> > > > 
-> > > > and the problem is fixed.
-> > 
-> > This patch also works for me.
-> > 
-> > > ... except that it simply confirms that something's fishy with
-> > > getname_kernel() of ->name of struct filename returned by getname(). 
-> > > IOW, I still do not understand the mechanism of breakage there.
-> > 
-> > I'm not so sure about that.  I tried to copy name to a new string in
-> > do_path_lookup and that didn't help.
-> > 
-> > Now, I've removed the
-> > 
-> >         putname(filename);
-> > 
-> > line from do_path_lookup and I don't get the panic.
-> 
-> That would indicate that somehow the refcount got unbalanced. Looking
-> more closely it seems like the various audit_*() function do take a
-> reference, but maybe that's not enough.
+Hi Brian, all,
+  
+ [x] Bulid test
+ [x] Bisectable
+ [x] Smatch
+ [x] Sparse
 
-I'm thinking the same thing and I think the problem may be that 
-__audit_reusename() is not bumping the filename->refcnt.  Can someone who is 
-seeing this problem bump the refcnt in __audit_reusename()?
+v4:
+  Fully deprecated/removed the old all encompassing compatible string.
+  Perfectly reasonable considering this driver is not in use by anyone
+  and therefore the binding is not yet considered ABI.  There are also
+  some checkpatch warning fixes in the "tidy-up" patch.  All patches
+  have been rebased onto l2-mtd.git, as requested.
+  
+v3:
+  Further aligned with upstream changes as suggested by Peter Griffin.
+  The clk_ignore_unused kernel command line parameter is due to be turned
+  off on STiH4* platforms, so we no longer give the driver the chance to
+  opt-out of fetching the EMI clock.  We also now provide syscfg offsets
+  inside the driver, as it's simpler and reduces the cost of having lots
+  of extra DT properties.
+  
+v2:
+  These are the last remaining patches in the set, all rebased and
+  with the DT documentation requested after the last submission.
+  
+v1:
+  This patch-set updates ST's FSM SPI-NOR driver with all the internal
+  goodness which has happened since the initial (now upstreamed) snapshot
+  was taken. It covers just over 6 months worth of internal development
+  and bug-fixes. A final whitespace clean-up is also appended to the set
+  - to make it look pretty and stuff. :)
 
-  struct filename *
-  __audit_reusename(const __user char *uptr)
-  {
-        struct audit_context *context = current->audit_context;
-        struct audit_names *n;
+Angus Clark (3):
+  mtd: st_spi_fsm: Add support for N25Q512 and N25Q00A devices
+  mtd: st_spi_fsm: Update Spansion device entries
+  mtd: st_spi_fsm: Improve busy wait handling
 
-        list_for_each_entry(n, &context->names_list, list) {
-                if (!n->name)
-                        continue;
-                if (n->name->uptr == uptr) {
-+                       n->name->refcnt++;
-                        return n->name;
-                }
-        }
-        return NULL;
-  }
+Lee Jones (6):
+  mtd: st_spi_fsm: dt-bindings: Deprecate generic compatible string
+  mtd: st_spi_fsm: Fetch boot device locations from DT match tables
+  mtd: st_spi_fsm: Update the JEDEC probe to handle extended READIDs
+  mtd: st_spi_fsm: General tidy-up
+  ARM: STi: stih416: Use new platform specific compatible string
+  ARM: STi: stih416: Supply EMI clock reference to FSM SPI NOR
+
+Nunzio Raciti (1):
+  mtd: st_spi_fsm: Add support for Micron N25Q512A
+
+ Documentation/devicetree/bindings/mtd/st-fsm.txt |  19 +-
+ arch/arm/boot/dts/stih416.dtsi                   |   6 +-
+ drivers/mtd/devices/st_spi_fsm.c                 | 627 ++++++++++++++---------
+ include/dt-bindings/clock/stih416-clks.h         |   1 +
+ 4 files changed, 408 insertions(+), 245 deletions(-)
 
 -- 
-paul moore
-security @ redhat
+1.9.1
 
