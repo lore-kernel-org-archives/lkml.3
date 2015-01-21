@@ -1,78 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753110AbbAUVRL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 16:17:11 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:51061 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751546AbbAUVRD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 16:17:03 -0500
-Date: Wed, 21 Jan 2015 22:16:23 +0100
-From: Radim =?utf-8?B?S3I/bcOhPw==?= <rkrcmar@redhat.com>
-To: Nadav Amit <nadav.amit@gmail.com>
-Cc: "Wu, Feng" <feng.wu@intel.com>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "eric.auger@linaro.org" <eric.auger@linaro.org>,
-        "gleb@kernel.org" <gleb@kernel.org>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        Paolo Bonzini <pbonzini@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "jiang.liu@linux.intel.com" <jiang.liu@linux.intel.com>
-Subject: Re: [v3 13/26] KVM: Define a new interface kvm_find_dest_vcpu() for
- VT-d PI
-Message-ID: <20150121211620.GA27504@potion.brq.redhat.com>
-References: <1418397300-10870-1-git-send-email-feng.wu@intel.com>
- <1418397300-10870-14-git-send-email-feng.wu@intel.com>
- <20150109145435.GA22469@potion.brq.redhat.com>
- <54AFEC00.80507@redhat.com>
- <E959C4978C3B6342920538CF579893F002341102@SHSMSX104.ccr.corp.intel.com>
- <20150113161716.GA12941@potion.brq.redhat.com>
- <E959C4978C3B6342920538CF579893F00234E4CD@SHSMSX104.ccr.corp.intel.com>
- <20150114165909.GA1283@potion.brq.redhat.com>
- <6A3B67DA-EDAA-4DE5-BE59-96B693D7BB86@gmail.com>
+	id S1753529AbbAUVRV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 16:17:21 -0500
+Received: from mail-pd0-f171.google.com ([209.85.192.171]:43421 "EHLO
+	mail-pd0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752948AbbAUVRJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 16:17:09 -0500
+Message-ID: <54C0177C.3060703@gmail.com>
+Date: Wed, 21 Jan 2015 14:17:48 -0700
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <6A3B67DA-EDAA-4DE5-BE59-96B693D7BB86@gmail.com>
+To: Jiri Olsa <jolsa@kernel.org>, linux-kernel@vger.kernel.org
+CC: Alexis Berlemont <alexis.berlemont@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@kernel.org>, Namhyung Kim <namhyung@kernel.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 20/36] perf build: Add arch x86 objects building
+References: <1421771973-6022-1-git-send-email-jolsa@kernel.org> <1421771973-6022-21-git-send-email-jolsa@kernel.org>
+In-Reply-To: <1421771973-6022-21-git-send-email-jolsa@kernel.org>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2015-01-20 23:04+0200, Nadav Amit:
-> Radim Kr?má? <rkrcmar@redhat.com> wrote:
-> > 2015-01-14 01:27+0000, Wu, Feng:
-> >>> the new
-> >>>> hardware even doesn't consider the TPR for lowest priority interrupts
-> >>> delivery.
-> >>> 
-> >>> A bold move ... what hardware was the first to do so?
-> >> 
-> >> I think it was starting with Nehalem.
-> > 
-> > Thanks,  (Could be that QPI can't inform about TPR changes anymore ...)
-> > 
-> > I played with Linux's TPR on Haswell and found that is has no effect.
-> 
-> Sorry for jumping into the discussion, but doesn’t it depend on
-> IA32_MISC_ENABLE[23]? This bit disables xTPR messages. On my machine it is
-> set (probably by the BIOS), but since there is no IA32_MISC_ENABLE is not
-> locked for changes, the OS can control it.
+On 1/20/15 9:39 AM, Jiri Olsa wrote:
+> ---
+>   tools/perf/arch/Build           |  1 +
+>   tools/perf/arch/arm/Build       |  0
+>   tools/perf/arch/arm64/Build     |  0
+>   tools/perf/arch/powerpc/Build   |  0
+>   tools/perf/arch/s390/Build      |  0
+>   tools/perf/arch/sh/Build        |  0
+>   tools/perf/arch/sparc/Build     |  0
+>   tools/perf/arch/x86/Build       |  2 ++
+>   tools/perf/arch/x86/Makefile    | 15 ---------------
+>   tools/perf/arch/x86/tests/Build |  2 ++
+>   tools/perf/arch/x86/util/Build  |  8 ++++++++
+>   11 files changed, 13 insertions(+), 15 deletions(-)
+>   create mode 100644 tools/perf/arch/arm/Build
+>   create mode 100644 tools/perf/arch/arm64/Build
+>   create mode 100644 tools/perf/arch/powerpc/Build
+>   create mode 100644 tools/perf/arch/s390/Build
+>   create mode 100644 tools/perf/arch/sh/Build
+>   create mode 100644 tools/perf/arch/sparc/Build
+>   create mode 100644 tools/perf/arch/x86/Build
+>   create mode 100644 tools/perf/arch/x86/tests/Build
+>   create mode 100644 tools/perf/arch/x86/util/Build
 
-Thanks, I didn't know about it.
-On Ivy Bridge EP (the only modern machine at hand), the bit was set by
-default.  After clearing it, TPR still had no effect.
+Since this is an x86 patch only the x86 Build files should be added here 
+with the others added in respective arch patches.
 
-The most relevant mention of xTPR I found is related to FSB [1].
-[2] isn't enlightening, so there might be more from QPI-era ...
+David
 
-
----
-1: Intel® E7320 Memory Controller Hub (MCH) Datasheet
-   http://www.intel.com/content/dam/doc/datasheet/e7320-memory-controller-hub-datasheet.pdf
-   5.2.2 System Bus Interrupts
-2: Intel® Xeon® Processor E5 v2 Family: Datasheet, Vol. 2
-   http://www.intel.com/content/dam/www/public/us/en/documents/datasheets/xeon-e5-v2-datasheet-vol-2.pdf
-   6.1.2 IntControl
