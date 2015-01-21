@@ -1,13 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752915AbbAUKIO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 05:08:14 -0500
-Received: from e31.co.us.ibm.com ([32.97.110.149]:39063 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752130AbbAUKII (ORCPT
+	id S1753019AbbAUKIl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 05:08:41 -0500
+Received: from e35.co.us.ibm.com ([32.97.110.153]:48899 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752456AbbAUKI2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 05:08:08 -0500
-Date: Wed, 21 Jan 2015 02:07:50 -0800
+	Wed, 21 Jan 2015 05:08:28 -0500
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -15,53 +14,71 @@ Cc: mingo@kernel.org, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, tglx@linutronix.de, peterz@infradead.org,
         rostedt@goodmis.org, dhowells@redhat.com, edumazet@google.com,
         dvhart@linux.intel.com, fweisbec@gmail.com, oleg@redhat.com,
-        bobby.prani@gmail.com
-Subject: [PATCH tip/core/rcu 0/7] Post RCU callbacks at early boot
-Message-ID: <20150121100750.GA22883@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        bobby.prani@gmail.com, "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC tip/core/rcu 1/7] rcu: Abstract default callback-list initialization from init_callback_list()
+Date: Wed, 21 Jan 2015 02:08:14 -0800
+Message-Id: <1421834900-23987-1-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.8.1.5
+In-Reply-To: <20150121100750.GA22883@linux.vnet.ibm.com>
+References: <20150121100750.GA22883@linux.vnet.ibm.com>
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15012110-8236-0000-0000-000008CAAD83
+x-cbid: 15012110-0013-0000-0000-00000816BFB6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!  
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 
-This series, probably for v3.21, contains changes that allow RCU callbacks
-to be posted at very early boot, as in before rcu_init() is called.
-This was requested by the tracing folks.  This series applies against
-tip/core/rcu, and probably not against current mainline.
+In preparation for early-boot posting of callbacks, this commit abstracts
+initialization of the default (non-no-CB) callbacks list from the
+init_callback_list() function into a new init_default_callback_list()
+function.
 
-The patches in this series are as follows:
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ kernel/rcu/tree.c | 18 ++++++++++++++----
+ 1 file changed, 14 insertions(+), 4 deletions(-)
 
-1.	Abstract initialization of callback lists.
-
-2.	Wire up the rcu_state structures' ->rda pointers at compile time.
-
-3.	Prevent early boot callbacks from splatting.
-
-4.	Refine diagnostics for lacking an rcuo kthread for no-CBs
-	CPUs that have callbacks posted.
-
-5.	Avoid clobbering lists of early boot callbacks.
-
-6.	Move early boot callbacks as needed by no-CBs CPUs.
-
-7.	Move early boot callbacks tests to beginning of rcu_init().
-
-This passes modest rcutorture testing, but is probably missing a corner
-case or two.
-
-							Thanx, Paul
-
-------------------------------------------------------------------------
-
- b/kernel/rcu/tree.c        |   52 ++++++++++++++++++++++++++++++++-------------
- b/kernel/rcu/tree_plugin.h |   27 ++++++++++++-----------
- 2 files changed, 51 insertions(+), 28 deletions(-)
+diff --git a/kernel/rcu/tree.c b/kernel/rcu/tree.c
+index 254ac97d64ef..9b5ed5333c9a 100644
+--- a/kernel/rcu/tree.c
++++ b/kernel/rcu/tree.c
+@@ -1328,20 +1328,30 @@ void rcu_cpu_stall_reset(void)
+ }
+ 
+ /*
+- * Initialize the specified rcu_data structure's callback list to empty.
++ * Initialize the specified rcu_data structure's default callback list
++ * to empty.  The default callback list is the one that is not used by
++ * no-callbacks CPUs.
+  */
+-static void init_callback_list(struct rcu_data *rdp)
++static void init_default_callback_list(struct rcu_data *rdp)
+ {
+ 	int i;
+ 
+-	if (init_nocb_callback_list(rdp))
+-		return;
+ 	rdp->nxtlist = NULL;
+ 	for (i = 0; i < RCU_NEXT_SIZE; i++)
+ 		rdp->nxttail[i] = &rdp->nxtlist;
+ }
+ 
+ /*
++ * Initialize the specified rcu_data structure's callback list to empty.
++ */
++static void init_callback_list(struct rcu_data *rdp)
++{
++	if (init_nocb_callback_list(rdp))
++		return;
++	init_default_callback_list(rdp);
++}
++
++/*
+  * Determine the value that ->completed will have at the end of the
+  * next subsequent grace period.  This is used to tag callbacks so that
+  * a CPU can invoke callbacks in a timely fashion even if that CPU has
+-- 
+1.8.1.5
 
