@@ -1,110 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754656AbbAUQFQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 11:05:16 -0500
-Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:53942 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754075AbbAUQFI convert rfc822-to-8bit (ORCPT
+	id S1753897AbbAUQCK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 11:02:10 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:40196 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752449AbbAUQCB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 11:05:08 -0500
-Date: Wed, 21 Jan 2015 16:01:51 +0000
-From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
-To: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
-Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        atull <atull@opensource.altera.com>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Pavel Machek <pavel@denx.de>, hpa@zytor.com,
-        Michal Simek <monstr@monstr.eu>,
-        Michal Simek <michal.simek@xilinx.com>, rdunlap@infradead.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        devicetree@vger.kernel.org, robh+dt@kernel.org,
-        Grant Likely <grant.likely@linaro.org>, iws@ovro.caltech.edu,
-        linux-doc@vger.kernel.org, Mark Brown <broonie@kernel.org>,
-        philip@balister.org, rubini@gnudd.com,
-        Steffen Trumtrar <s.trumtrar@pengutronix.de>, jason@lakedaemon.net,
-        kyle.teske@ni.com, nico@linaro.org, Felipe Balbi <balbi@ti.com>,
-        m.chehab@samsung.com, davidb@codeaurora.org,
-        Rob Landley <rob@landley.net>, davem@davemloft.net, cesarb@cesarb.net,
-        sameo@linux.intel.com, akpm@linux-foundation.org,
-        Linus Walleij <linus.walleij@linaro.org>, pawel.moll@arm.com,
-        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
-        galak@codeaurora.org, devel@driverdev.osuosl.org,
-        Alan Tull <delicious.quinoa@gmail.com>, dinguyen@opensource.altera.com,
-        yvanderv@opensource.altera.com
-Subject: Re: [PATCH v8 2/4] fpga manager: add sysfs interface document
-Message-ID: <20150121160151.453ba403@lxorguk.ukuu.org.uk>
-In-Reply-To: <A3B5BC9B-EB88-4C0E-B235-E9C86D23DC34@konsulko.com>
-References: <20150107084819.GA1887@amd>
-	<alpine.DEB.2.02.1501091302370.30067@linuxheads99>
-	<20150109205643.GA5761@amd>
-	<20150112210134.687176ed@lxorguk.ukuu.org.uk>
-	<20150112214314.GA18610@obsidianresearch.com>
-	<20150113162847.2778b5a5@lxorguk.ukuu.org.uk>
-	<20150113200032.GA16205@obsidianresearch.com>
-	<alpine.DEB.2.02.1501131455130.30192@linuxheads99>
-	<20150113222450.GA17475@obsidianresearch.com>
-	<alpine.DEB.2.02.1501150936390.16760@linuxheads99>
-	<20150115184726.GA23247@obsidianresearch.com>
-	<20150115204502.591bca1d@lxorguk.ukuu.org.uk>
-	<A3B5BC9B-EB88-4C0E-B235-E9C86D23DC34@konsulko.com>
-Organization: Intel Corporation
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 21 Jan 2015 11:02:01 -0500
+Message-ID: <1421856112.14076.78.camel@arm.com>
+Subject: Re: [PATCH v4 2/3] perf: Userspace event
+From: Pawel Moll <pawel.moll@arm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Richard Cochran <richardcochran@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        John Stultz <john.stultz@linaro.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tomeu Vizoso <tomeu@tomeuvizoso.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
+Date: Wed, 21 Jan 2015 16:01:52 +0000
+In-Reply-To: <20150105131237.GR30905@twins.programming.kicks-ass.net>
+References: <1415292718-19785-1-git-send-email-pawel.moll@arm.com>
+	 <1415292718-19785-3-git-send-email-pawel.moll@arm.com>
+	 <20150105131237.GR30905@twins.programming.kicks-ass.net>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.10-0ubuntu1~14.10.1 
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Jan 2015 22:54:46 +0200
-Pantelis Antoniou <pantelis.antoniou@konsulko.com> wrote:
-
-> Hi Alan,
+On Mon, 2015-01-05 at 13:12 +0000, Peter Zijlstra wrote:
+> On Thu, Nov 06, 2014 at 04:51:57PM +0000, Pawel Moll wrote:
+> > This patch adds a PR_TASK_PERF_UEVENT prctl call which can be used by
+> > any process to inject custom data into perf data stream as a new
+> > PERF_RECORD_UEVENT record, if such process is being observed or if it
+> > is running on a CPU being observed by the perf framework.
+> > 
+> > The prctl call takes the following arguments:
+> > 
+> >         prctl(PR_TASK_PERF_UEVENT, type, size, data, flags);
+> > 
+> > - type: a number meaning to describe content of the following data.
+> >   Kernel does not pay attention to it and merely passes it further in
+> >   the perf data, therefore its use must be agreed between the events
+> >   producer (the process being observed) and the consumer (performance
+> >   analysis tool). The perf userspace tool will contain a repository of
+> >   "well known" types and reference implementation of their decoders.
+> > - size: Length in bytes of the data.
+> > - data: Pointer to the data.
+> > - flags: Reserved for future use. Always pass zero.
+> > 
+> > Perf context that are supposed to receive events generated with the
+> > prctl above must be opened with perf_event_attr.uevent set to 1. The
+> > PERF_RECORD_UEVENT records consist of a standard perf event header,
+> > 32-bit type value, 32-bit data size and the data itself, followed by
+> > padding to align the overall record size to 8 bytes and optional,
+> > standard sample_id field.
+> > 
+> > Example use cases:
+> > 
+> > - "perf_printf" like mechanism to add logging messages to perf data;
+> >   in the simplest case it can be just
+> > 
+> >         prctl(PR_TASK_PERF_UEVENT, 0, 8, "Message", 0);
+> > 
+> > - synchronisation of performance data generated in user space with the
+> >   perf stream coming from the kernel. For example, the marker can be
+> >   inserted by a JIT engine after it generated portion of the code, but
+> >   before the code is executed for the first time, allowing the
+> >   post-processor to pick the correct debugging information.
 > 
-> > On Jan 15, 2015, at 22:45 , One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk> wrote:
-> > 
-> > On Thu, 15 Jan 2015 11:47:26 -0700
-> > Jason Gunthorpe <jgunthorpe@obsidianresearch.com> wrote:
-> >> It is a novel idea, my concern would be that embedding the FPGA in the
-> >> DT makes it permanent unswappable kernel memory.
-> >> Not having the kernel hold the FPGA is best for many uses.
-> > 
-> > If you have a filesysytem before the FPGA is set up then it belongs in
-> > the file system. As you presumably loaded the kernel from somewhere there
-> > ought to be a file system (even an initrd).
-> > 
-> 
-> Request firmware does not imply keeping it around. You can always re-request
-> when reloading (although there’s a nasty big of caching that needs to be
-> resolved with the firmware loader).
+> The think I remember being raised was a unified means of these msgs
+> across perf/ftrace/lttng. I am not seeing that mentioned.
 
-Which comes down to the same thing. Unless you can prove that there is a
-path to recover the firmware file that does not have any dependancies
-upon the firmware executing (and those can be subtle and horrid at times)
-you need to keep it around for suspend/resume at least and potentially
-any unexpected error/reset.
+Right. I was considering the "well known types repository" an attempt in
+this direction. Having said that - ftrace also takes a random blob as
+the trace marker, so the unification has to happen in userspace anyway.
+I'll have a look what LTTng has to say in this respect.
 
-> One of the ideas rolling about is to put the device tree overlay blob in
-> an EEPROM and then load it from there (not from the filesystem).
+> Also, I would like a stronger rationale for the @type argument, if it
+> has no actual meaning why is it separate from the binary msg data?
 
-That's a fine example of one you can probably always get to and avoid
-caching. However if its in eeprom you don't need request_firmware anyway !
+Valid point. Without type 0 defined as a string, it doesn't bring
+anything into the equation. I just have a gut feeling that sooner than
+later we will want to split the messages somehow. Maybe we should make
+it a "reserved for future use, use 0 now" field?
 
-> Can we please not use ioctls if possible. Configfs seems to work just fine
-> for configuration and for any other higher speed API we should use read/write/mmap.
+        * struct {
+        *      struct perf_event_header        header;
+        *      u32                             __reserved; /* always 0 */
+        *      u32                             size;
+        *      char                            data[size];
+        *      char                            __padding[-size & 7];
+        *      struct sample_id                sample_id;
+        * };
 
-You don't have the needed state in configfs as far as I can see.
+or, probably even better, make it a version value at a known offset
+(currently always 1, with just size and random sized data following).
 
-> Ioctls are a pain for scripting and interpreted languages usually.
+        * struct {
+        *      struct perf_event_header        header;
+        *      u32                             version; /* use 1 */
+        *      u32                             size;
+        *      char                            data[size];
+        *      char                            __padding[-size & 7];
+        *      struct sample_id                sample_id;
+        * };
 
-You can do ioctls in perl just fine if you are mad (and if you are
-using perl you are ;-) ) while python has a complete explicit fcntl.ioctl
-model.
+So that we can mutate the user events format without too much of the
+pain - the parsers will simply complain about unknown format if such
+occurs and with the size of the record in the header, it is possible to
+skip it.
 
-> Making the API handle partial reconfiguration from day one might be pushing tricky.
-> I don’t remember any case where I came across a need for it.
+Pawel
 
-Agreed - I don't see the point in adding it until someone needs it and can
-describe what is needed accurately.
 
-Alan
