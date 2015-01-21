@@ -1,59 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752226AbbAUNN3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 08:13:29 -0500
-Received: from relay1.mentorg.com ([192.94.38.131]:45941 "EHLO
-	relay1.mentorg.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750754AbbAUNNU (ORCPT
+	id S1752344AbbAUNVb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 08:21:31 -0500
+Received: from mail-qa0-f42.google.com ([209.85.216.42]:58534 "EHLO
+	mail-qa0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889AbbAUNVW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 08:13:20 -0500
-Message-ID: <54BFA5E1.9070201@mentor.com>
-Date: Wed, 21 Jan 2015 15:13:05 +0200
-From: Vladimir Zapolskiy <vladimir_zapolskiy@mentor.com>
-User-Agent: Mozilla/5.0 (X11; Linux i686; rv:31.0) Gecko/20100101 Icedove/31.2.0
+	Wed, 21 Jan 2015 08:21:22 -0500
 MIME-Version: 1.0
-To: Ezequiel Garcia <ezequiel.garcia@imgtec.com>,
-        Andrew Bresticker <abrestic@chromium.org>,
-        Thierry Reding <thierry.reding@gmail.com>,
-        James Hartley <james.hartley@imgtec.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
-CC: <devicetree@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <linux-pwm@vger.kernel.org>, <vladimir_zapolskiy@mentor.com>,
-        Naidu Tellapati <naidu.tellapati@gmail.com>,
-        Naidu Tellapati <Naidu.Tellapati@imgtec.com>,
-        Sai Masarapu <Sai.Masarapu@imgtec.com>
-Subject: Re: [PATCH v8 1/2] pwm: Imagination Technologies PWM DAC driver
-References: <1420826088-13113-1-git-send-email-ezequiel.garcia@imgtec.com> <1420826088-13113-2-git-send-email-ezequiel.garcia@imgtec.com>
-In-Reply-To: <1420826088-13113-2-git-send-email-ezequiel.garcia@imgtec.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [137.202.0.76]
+In-Reply-To: <1420444759-3812-1-git-send-email-jszhang@marvell.com>
+References: <1420444759-3812-1-git-send-email-jszhang@marvell.com>
+Date: Wed, 21 Jan 2015 14:21:21 +0100
+Message-ID: <CAPDyKFo=PDt4zsJ+odVkmCyws7HttAcUW4p6NbSqoR3S-c6iRA@mail.gmail.com>
+Subject: Re: [PATCH next] mmc: sdhci-pxav3: Remove checks for optional core
+ clock in error/remove path
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Jisheng Zhang <jszhang@marvell.com>
+Cc: Chris Ball <chris@printf.net>, Peter Griffin <peter.griffin@linaro.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ezequiel,
+On 5 January 2015 at 08:59, Jisheng Zhang <jszhang@marvell.com> wrote:
+> Commit 63589e92c2d9 ("clk: Ignore error and NULL pointers passed to
+> clk_{unprepare, disable}()") allows NULL or error pointer to be passed
+> unconditionally.
+>
+> This patch is to simplify probe error and remove code paths.
+>
+> However, we reserve the core clock checks in runtime suspend/resume code
+> because we want a little smaller latency.
+>
+> This patch can be applied after the sdhci-pxav3 unbalanced pm/clock issues
+> patches being merged.
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2015-January/313103.html
 
-On 09.01.2015 19:54, Ezequiel Garcia wrote:
-> From: Naidu Tellapati <naidu.tellapati@gmail.com>
-> 
-> The Pistachio SOC from Imagination Technologies includes a Pulse Width
-> Modulation DAC which produces 1 to 4 digital bit-outputs which represent
-> digital waveforms. These PWM outputs are primarily in charge of controlling
-> backlight LED devices.
-> 
-> Reviewed-by: Andrew Bresticker <abrestic@chromium.org>
-> Signed-off-by: Naidu Tellapati <Naidu.Tellapati@imgtec.com>
-> Signed-off-by: Sai Masarapu <Sai.Masarapu@imgtec.com>
-> Signed-off-by: Ezequiel Garcia <ezequiel.garcia@imgtec.com>
+I remove these three lines from the commit msg.
+
+>
+> Signed-off-by: Jisheng Zhang <jszhang@marvell.com>
+
+Thanks! Applied for next.
+
+Kind regards
+Uffe
+
 > ---
->  drivers/pwm/Kconfig   |  13 +++
->  drivers/pwm/Makefile  |   1 +
->  drivers/pwm/pwm-img.c | 250 ++++++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 264 insertions(+)
->  create mode 100644 drivers/pwm/pwm-img.c
-> 
-
-Reviewed-by: Vladimir Zapolskiy <vladimir_zapolskiy@mentor.com>
-
+>  drivers/mmc/host/sdhci-pxav3.c | 6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/mmc/host/sdhci-pxav3.c b/drivers/mmc/host/sdhci-pxav3.c
+> index 4de39fb..63967b8 100644
+> --- a/drivers/mmc/host/sdhci-pxav3.c
+> +++ b/drivers/mmc/host/sdhci-pxav3.c
+> @@ -398,8 +398,7 @@ err_of_parse:
+>  err_cd_req:
+>  err_mbus_win:
+>         clk_disable_unprepare(pxa->clk_io);
+> -       if (!IS_ERR(pxa->clk_core))
+> -               clk_disable_unprepare(pxa->clk_core);
+> +       clk_disable_unprepare(pxa->clk_core);
+>  err_clk_get:
+>         sdhci_pltfm_free(pdev);
+>         return ret;
+> @@ -418,8 +417,7 @@ static int sdhci_pxav3_remove(struct platform_device *pdev)
+>         sdhci_remove_host(host, 1);
+>
+>         clk_disable_unprepare(pxa->clk_io);
+> -       if (!IS_ERR(pxa->clk_core))
+> -               clk_disable_unprepare(pxa->clk_core);
+> +       clk_disable_unprepare(pxa->clk_core);
+>
+>         sdhci_pltfm_free(pdev);
+>
+> --
+> 2.1.4
+>
