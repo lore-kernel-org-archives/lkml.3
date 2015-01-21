@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754183AbbAURbj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 12:31:39 -0500
-Received: from mout.gmx.net ([212.227.15.19]:61370 "EHLO mout.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752183AbbAURbb convert rfc822-to-8bit (ORCPT
+	id S1754253AbbAURbw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 12:31:52 -0500
+Received: from pandora.arm.linux.org.uk ([78.32.30.218]:44192 "EHLO
+	pandora.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754199AbbAURbk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 12:31:31 -0500
+	Wed, 21 Jan 2015 12:31:40 -0500
+Date: Wed, 21 Jan 2015 17:31:28 +0000
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Sumit Semwal <sumit.semwal@linaro.org>
+Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
+        linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
+        t.stanislaws@samsung.com, linaro-kernel@lists.linaro.org,
+        robdclark@gmail.com, daniel@ffwll.ch, m.szyprowski@samsung.com
+Subject: Re: [RFCv2 2/2] dma-buf: add helpers for sharing attacher
+ constraints with dma-parms
+Message-ID: <20150121173128.GV26493@n2100.arm.linux.org.uk>
+References: <1421813807-9178-1-git-send-email-sumit.semwal@linaro.org>
+ <1421813807-9178-3-git-send-email-sumit.semwal@linaro.org>
 MIME-Version: 1.0
-Message-ID: <trinity-e585b2ff-5707-41eb-be40-241e3d5a2e16-1421861470660@3capp-gmx-bs36>
-From: "Peter Huewe" <PeterHuewe@gmx.de>
-To: "Jim Davis" <jim.epost@gmail.com>
-Cc: "Stephen Rothwell" <sfr@canb.auug.org.au>,
-        linux-next <linux-next@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, tpmdd@selhorst.net,
-        tpmdd-devel@lists.sourceforge.net,
-        "Jarkko Sakkinen" <jarkko.sakkinen@linux.intel.com>
-Subject: Aw: randconfig build error with next-20150121, in
- drivers/char/tpm/tpm_tis.c
-Content-Type: text/plain; charset=UTF-8
-Date: Wed, 21 Jan 2015 18:31:10 +0100
-Importance: normal
-Sensitivity: Normal
-In-Reply-To: <CA+r1ZhiCiLc5yDABJPYR7-Jz=M+XE5RvGzTKc=zvb1M9qRjosw@mail.gmail.com>
-References: <CA+r1ZhiCiLc5yDABJPYR7-Jz=M+XE5RvGzTKc=zvb1M9qRjosw@mail.gmail.com>
-Content-Transfer-Encoding: 8BIT
-X-UI-Message-Type: mail
-X-Priority: 3
-X-Provags-ID: V03:K0:bmV5DK5kaMiWucXo0CyrklPK//eGWGbz98/MPlCixOc
- jJSM88XdlcLRBlPeFp4V3ZD/owszZkscV5WoB1dP0nS0heWIhr
- GP83H4yQHZ1Ge4G+EHq5EXcfYePWStLOyQFZP0ZtIA3G7pveEV
- O4RxpEzLI+OExm6DSHOg/sDhtf5bbZiwh2HtQG2sSeKjFYmtva
- Ef96JktNApBfU8lZudvzSGIi2JOY2AQb4ID/7ukFT4y2Vfepfe
- B9aKWjkdh3SKWPcSefUprGrYjGCsW+5eXTOKeBii+gn7MWUFIV 6zo7iU=
-X-UI-Out-Filterresults: notjunk:1;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421813807-9178-3-git-send-email-sumit.semwal@linaro.org>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jan 21, 2015 at 09:46:47AM +0530, Sumit Semwal wrote:
+> +static int calc_constraints(struct device *dev,
+> +			    struct dma_buf_constraints *calc_cons)
+> +{
+> +	struct dma_buf_constraints cons = *calc_cons;
+> +
+> +	cons.dma_mask &= dma_get_mask(dev);
 
+I don't think this makes much sense when you consider that the DMA
+infrastructure supports buses with offsets.  The DMA mask is th
+upper limit of the _bus_ specific address, it is not a mask per-se.
 
-Thanks for reporting.
- 
+What this means is that &= is not the right operation.  Moreover,
+simply comparing masks which could be from devices on unrelated
+buses doesn't make sense either.
 
->drivers/char/tpm/tpm_tis.c: In function ‘tpm_tis_pnp_init’:
->drivers/char/tpm/tpm_tis.c:912:45: error: invalid type argument of
->‘->’ (have ‘int’)
->acpi_dev_handle = pnp_acpi_device(pnp_dev)->handle;
->^
->make[3]: *** [drivers/char/tpm/tpm_tis.o] Error 1
-I'll look into it.
+However, that said, I don't have an answer for what you want to
+achieve here.
 
-
-sorry sorry.
-
-Peter
+-- 
+FTTC broadband for 0.8mile line: currently at 10.5Mbps down 400kbps up
+according to speedtest.net.
