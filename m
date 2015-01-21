@@ -1,39 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753872AbbAUXB3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 18:01:29 -0500
-Received: from mail-ig0-f180.google.com ([209.85.213.180]:54442 "EHLO
-	mail-ig0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753503AbbAUXBV (ORCPT
+	id S1752759AbbAUXGm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 18:06:42 -0500
+Received: from mail-we0-f178.google.com ([74.125.82.178]:56034 "EHLO
+	mail-we0-f178.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751830AbbAUXGc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 18:01:21 -0500
-Date: Wed, 21 Jan 2015 15:01:18 -0800 (PST)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Kim Phillips <kim.phillips@freescale.com>
-cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@kernel.org>,
-        Joonsoo Kim <iamjoonsoo.kim@lge.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 1/2] mm/slub: fix typo
-In-Reply-To: <20150120140142.cd2e32d83d66459562bd1717@freescale.com>
-Message-ID: <alpine.DEB.2.10.1501211459370.2716@chino.kir.corp.google.com>
-References: <20150120140142.cd2e32d83d66459562bd1717@freescale.com>
-User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 21 Jan 2015 18:06:32 -0500
+From: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+To: Linus Walleij <linus.walleij@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Lee Jones <lee.jones@linaro.org>
+Cc: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] ARM: ux500: Move struct
+Date: Thu, 22 Jan 2015 00:09:41 +0100
+Message-Id: <1421881782-23716-1-git-send-email-rickard_strandqvist@spectrumdigital.se>
+X-Mailer: git-send-email 1.7.10.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Jan 2015, Kim Phillips wrote:
+Move struct ab8500_ext_regulator_cfg to  the only file that is now used in.
 
-> 
-> Signed-off-by: Kim Phillips <kim.phillips@freescale.com>
+Signed-off-by: Rickard Strandqvist <rickard_strandqvist@spectrumdigital.se>
+---
+ drivers/regulator/ab8500-ext.c   |    6 ++++++
+ include/linux/regulator/ab8500.h |    5 -----
+ 2 files changed, 6 insertions(+), 5 deletions(-)
 
-Acked-by: David Rientjes <rientjes@google.com>
+diff --git a/drivers/regulator/ab8500-ext.c b/drivers/regulator/ab8500-ext.c
+index 84c1ee3..a40c701 100644
+--- a/drivers/regulator/ab8500-ext.c
++++ b/drivers/regulator/ab8500-ext.c
+@@ -25,6 +25,12 @@
+ #include <linux/mfd/abx500/ab8500.h>
+ #include <linux/regulator/ab8500.h>
+ 
++
++/* AB8500 external regulators */
++struct ab8500_ext_regulator_cfg {
++	bool hwreq; /* requires hw mode or high power mode */
++};
++
+ /**
+  * struct ab8500_ext_regulator_info - ab8500 regulator information
+  * @dev: device pointer
+diff --git a/include/linux/regulator/ab8500.h b/include/linux/regulator/ab8500.h
+index d8ecefa..802529b 100644
+--- a/include/linux/regulator/ab8500.h
++++ b/include/linux/regulator/ab8500.h
+@@ -300,11 +300,6 @@ enum ab8540_regulator_reg {
+ 	AB8540_NUM_REGULATOR_REGISTERS,
+ };
+ 
+-/* AB8500 external regulators */
+-struct ab8500_ext_regulator_cfg {
+-	bool hwreq; /* requires hw mode or high power mode */
+-};
+-
+ enum ab8500_ext_regulator_id {
+ 	AB8500_EXT_SUPPLY1,
+ 	AB8500_EXT_SUPPLY2,
+-- 
+1.7.10.4
 
-Although the patch description or title should probably say this is a typo 
-in the comment of __slab_free().  It's good to differentiate typos in code 
-vs comments for commit message readers who have to decide if they have to 
-backport something.
