@@ -1,99 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754010AbbAUU2m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 15:28:42 -0500
-Received: from mga01.intel.com ([192.55.52.88]:56765 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752430AbbAUU2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 15:28:18 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,444,1418112000"; 
-   d="scan'208";a="640601850"
-From: "Skidmore, Donald C" <donald.c.skidmore@intel.com>
-To: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>,
-        David Laight <David.Laight@ACULAB.COM>,
-        =?utf-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>
-CC: "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Choi, Sy Jong" <sy.jong.choi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hayato Momma <h-momma@ce.jp.nec.com>
-Subject: RE: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast promiscuous
-	mode control
-Thread-Topic: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast
- promiscuous	mode control
-Thread-Index: AQHQNQsmhwpg0uFhykOk7liG8gdn8pzJslcQgACW3ID//3rhgIABNXsAgAAFKICAAAYCgP//+z4Q
-Date: Wed, 21 Jan 2015 20:27:49 +0000
-Message-ID: <F6FB0E698C9B3143BDF729DF222866469129BC03@ORSMSX110.amr.corp.intel.com>
-References: <7F861DC0615E0C47A872E6F3C5FCDDBD05E0734E@BPXM14GP.gisp.nec.co.jp>
-	<874mrlu18e.fsf@nemi.mork.no>
- <7F861DC0615E0C47A872E6F3C5FCDDBD05E07B7C@BPXM14GP.gisp.nec.co.jp>
- <F6FB0E698C9B3143BDF729DF222866469129B7F5@ORSMSX110.amr.corp.intel.com>
- <7F861DC0615E0C47A872E6F3C5FCDDBD05E07F09@BPXM14GP.gisp.nec.co.jp>
- <F6FB0E698C9B3143BDF729DF222866469129B844@ORSMSX110.amr.corp.intel.com>
- <7F861DC0615E0C47A872E6F3C5FCDDBD05E08FF6@BPXM14GP.gisp.nec.co.jp>
- <063D6719AE5E284EB5DD2968C1650D6D1CAD01D6@AcuExch.aculab.com>
- <7F861DC0615E0C47A872E6F3C5FCDDBD05E090FE@BPXM14GP.gisp.nec.co.jp>
-In-Reply-To: <7F861DC0615E0C47A872E6F3C5FCDDBD05E090FE@BPXM14GP.gisp.nec.co.jp>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.22.254.138]
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1753556AbbAUUcj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 15:32:39 -0500
+Received: from mail-wg0-f52.google.com ([74.125.82.52]:48033 "EHLO
+	mail-wg0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751938AbbAUUcc convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 15:32:32 -0500
+Subject: Re: [PATCH v8 2/4] fpga manager: add sysfs interface document
+Mime-Version: 1.0 (Mac OS X Mail 8.1 \(1993\))
+Content-Type: text/plain; charset=utf-8
+From: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+In-Reply-To: <20150121202700.GB4942@obsidianresearch.com>
+Date: Wed, 21 Jan 2015 22:32:23 +0200
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        atull <atull@opensource.altera.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Pavel Machek <pavel@denx.de>, hpa@zytor.com,
+        Michal Simek <monstr@monstr.eu>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        devicetree@vger.kernel.org, robh+dt@kernel.org,
+        Grant Likely <grant.likely@linaro.org>, iws@ovro.caltech.edu,
+        linux-doc@vger.kernel.org, Mark Brown <broonie@kernel.org>,
+        philip@balister.org, rubini@gnudd.com,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>, jason@lakedaemon.net,
+        kyle.teske@ni.com, nico@linaro.org, Felipe Balbi <balbi@ti.com>,
+        m.chehab@samsung.com, davidb@codeaurora.org,
+        Rob Landley <rob@landley.net>, davem@davemloft.net, cesarb@cesarb.net,
+        sameo@linux.intel.com, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, devel@driverdev.osuosl.org,
+        Alan Tull <delicious.quinoa@gmail.com>, dinguyen@opensource.altera.com,
+        yvanderv@opensource.altera.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <7E60D554-8660-4CDB-BF68-D39DD29039BE@konsulko.com>
+References: <20150113162847.2778b5a5@lxorguk.ukuu.org.uk> <20150113200032.GA16205@obsidianresearch.com> <alpine.DEB.2.02.1501131455130.30192@linuxheads99> <20150113222450.GA17475@obsidianresearch.com> <alpine.DEB.2.02.1501150936390.16760@linuxheads99> <20150115184726.GA23247@obsidianresearch.com> <20150115204502.591bca1d@lxorguk.ukuu.org.uk> <A3B5BC9B-EB88-4C0E-B235-E9C86D23DC34@konsulko.com> <20150121160151.453ba403@lxorguk.ukuu.org.uk> <D466D9FF-25DA-4765-9469-128733BEBC4D@konsulko.com> <20150121202700.GB4942@obsidianresearch.com>
+To: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+X-Mailer: Apple Mail (2.1993)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0LKSkj0022508
 
+Hi Jason,
 
-
-> -----Original Message-----
-> From: Hiroshi Shimamoto [mailto:h-shimamoto@ct.jp.nec.com]
-> Sent: Wednesday, January 21, 2015 4:18 AM
-> To: David Laight; Skidmore, Donald C; BjÃ¸rn Mork
-> Cc: e1000-devel@lists.sourceforge.net; netdev@vger.kernel.org; Choi, Sy
-> Jong; linux-kernel@vger.kernel.org; Hayato Momma
-> Subject: RE: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast promiscuous
-> mode control
+> On Jan 21, 2015, at 22:27 , Jason Gunthorpe <jgunthorpe@obsidianresearch.com> wrote:
 > 
-> > Subject: RE: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast
-> > promiscuous mode control
-> >
-> > From: Hiroshi Shimamoto
-> > > My concern is what is the real issue that VF multicast promiscuous mode
-> can cause.
-> > > I think there is the 4k entries to filter multicast address, and the
-> > > current ixgbe/ixgbevf can turn all bits on from VM. That is almost same as
-> enabling multicast promiscuous mode.
-> > > I mean that we can receive all multicast addresses by an onerous
-> operation in untrusted VM.
-> > > I think we should clarify what is real security issue in this context.
-> >
-> > If you are worried about passing un-enabled multicasts to users then
-> > what about doing a software hash of received multicasts and checking
-> > against an actual list of multicasts enabled for that hash entry.
-> > Under normal conditions there is likely to be only a single address to check.
-> >
-> > It may (or may not) be best to use the same hash as any hashing
-> > hardware filter uses.
+> On Wed, Jan 21, 2015 at 06:33:12PM +0200, Pantelis Antoniou wrote:
+>> Hi Alan,
+>> 
+>>> On Jan 21, 2015, at 18:01 , One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk> wrote:
+>>> 
+>>> On Thu, 15 Jan 2015 22:54:46 +0200
+>>> Pantelis Antoniou <pantelis.antoniou@konsulko.com> wrote:
+>>> 
+>>>> Hi Alan,
+>>>> 
+>>>>> On Jan 15, 2015, at 22:45 , One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk> wrote:
+>>>>> 
+>>>>> On Thu, 15 Jan 2015 11:47:26 -0700
+>>>>> Jason Gunthorpe <jgunthorpe@obsidianresearch.com> wrote:
+>>>>>> It is a novel idea, my concern would be that embedding the FPGA in the
+>>>>>> DT makes it permanent unswappable kernel memory.
+>>>>>> Not having the kernel hold the FPGA is best for many uses.
+>>>>> 
+>>>>> If you have a filesysytem before the FPGA is set up then it belongs in
+>>>>> the file system. As you presumably loaded the kernel from somewhere there
+>>>>> ought to be a file system (even an initrd).
+>>>>> 
+>>>> 
+>>>> Request firmware does not imply keeping it around. You can always re-request
+>>>> when reloading (although thereâ€™s a nasty big of caching that needs to be
+>>>> resolved with the firmware loader).
+>>> 
+>>> Which comes down to the same thing. Unless you can prove that there is a
+>>> path to recover the firmware file that does not have any dependancies
+>>> upon the firmware executing (and those can be subtle and horrid at times)
+>>> you need to keep it around for suspend/resume at least and potentially
+>>> any unexpected error/reset.
+>>> 
+>> 
+>> In that case the only safe place to put it is in the kernel image itself, which
+>> is something the firmware loader already supports.
 > 
-> thanks for the comment. But I don't think that is the point.
+> My point is that the current firmware layer is overly cautious and
+> FPGAs are very big. My current project on small Xilinx device has a
+> 10MB programming file. The biggest Xilinx device today has a max
+> bitfile size around 122MB.
 > 
-> I guess, introducing VF multicast promiscuous mode seems to add new
-> privilege to peek every multicast packet in VM and that doesn't look good.
-> On the other hand, I think that there has been the same privilege in the
-> current ixgbe/ixgbevf implementation already. Or I'm reading the code
-> wrongly.
-> I'd like to clarify what is the issue of allowing to receive all multicast packets.
-
-Allowing a VM to give itself the privilege of seeing every multicast packet could be seen as a hole in VM isolation.  Now if the host system allows this policy I don't see this as an issue as someone specifically allowed this to happen and then must not be concerned.  We could even log that it has occurred, which I believe your patch did do.  The issue is also further muddied, as you mentioned above, since some of these multicast packets are leaking anyway (the HW currently uses a 12 bit mask).  It's just that this change would greatly enlarge that hole from a fraction to all multicast packets.    
-
+> So keeping that much memory pinned in the kernel when I can prove it
+> is uncessary for my system (either because there is no suspend/resume
+> possibility, or because I know the CPU can always access the
+> filesytem) is very undesirable.
 > 
-> thanks,
-> Hiroshi
+> Other systems might have to take the ram hit.
+> 
+> Since it seems like the kernel has no way to know, we probably have
+> have a way to tell it not to cache the bitfile.
+> 
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+The firmware loader was not originally meant to handle these cases, but
+Iâ€™m sure itâ€™s not an insurmountable obstacle.
+
+> Jason
+
+Regards
+
+â€” Pantelis
+
