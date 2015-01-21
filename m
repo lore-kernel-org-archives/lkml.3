@@ -1,105 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366AbbAUPzf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 10:55:35 -0500
-Received: from www.xora.org.uk ([80.68.91.202]:38588 "EHLO
-	xora.vm.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750868AbbAUPz0 (ORCPT
+	id S1754656AbbAUQFQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 11:05:16 -0500
+Received: from 251.110.2.81.in-addr.arpa ([81.2.110.251]:53942 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754075AbbAUQFI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 10:55:26 -0500
-Date: Wed, 21 Jan 2015 15:56:41 +0000
-From: Graeme Gregory <gg@slimlogic.co.uk>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Jon Masters <jcm@redhat.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "wangyijing@huawei.com" <wangyijing@huawei.com>,
-        Rob Herring <robh@kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Al Stone <al.stone@linaro.org>, Timur Tabi <timur@codeaurora.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>,
-        "christoffer.dall@linaro.org" <christoffer.dall@linaro.org>,
-        "parth.dixit@linaro.org" <parth.dixit@linaro.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>
-Subject: Re: [PATCH v7 04/17] ARM64 / ACPI: Introduce early_param for "acpi"
- and pass acpi=force to enable ACPI
-Message-ID: <20150121155641.GE6858@xora-yoga-13.xora.org.uk>
-References: <20150119135144.GI11835@e104818-lin.cambridge.arm.com>
- <20150119151350.21B65C40948@trevor.secretlab.ca>
- <54BD3803.6020307@redhat.com>
- <20150119175233.GK11835@e104818-lin.cambridge.arm.com>
- <20150119180122.GJ21553@leverpostej>
- <54BE1FEA.5040109@linaro.org>
- <alpine.DEB.2.02.1501201901190.12653@kaball.uk.xensource.com>
- <20150121152326.GD6358@e104818-lin.cambridge.arm.com>
- <54BFC5F0.3020500@redhat.com>
- <20150121154243.GE6358@e104818-lin.cambridge.arm.com>
+	Wed, 21 Jan 2015 11:05:08 -0500
+Date: Wed, 21 Jan 2015 16:01:51 +0000
+From: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>
+To: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+Cc: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        atull <atull@opensource.altera.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Pavel Machek <pavel@denx.de>, hpa@zytor.com,
+        Michal Simek <monstr@monstr.eu>,
+        Michal Simek <michal.simek@xilinx.com>, rdunlap@infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        devicetree@vger.kernel.org, robh+dt@kernel.org,
+        Grant Likely <grant.likely@linaro.org>, iws@ovro.caltech.edu,
+        linux-doc@vger.kernel.org, Mark Brown <broonie@kernel.org>,
+        philip@balister.org, rubini@gnudd.com,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>, jason@lakedaemon.net,
+        kyle.teske@ni.com, nico@linaro.org, Felipe Balbi <balbi@ti.com>,
+        m.chehab@samsung.com, davidb@codeaurora.org,
+        Rob Landley <rob@landley.net>, davem@davemloft.net, cesarb@cesarb.net,
+        sameo@linux.intel.com, akpm@linux-foundation.org,
+        Linus Walleij <linus.walleij@linaro.org>, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, devel@driverdev.osuosl.org,
+        Alan Tull <delicious.quinoa@gmail.com>, dinguyen@opensource.altera.com,
+        yvanderv@opensource.altera.com
+Subject: Re: [PATCH v8 2/4] fpga manager: add sysfs interface document
+Message-ID: <20150121160151.453ba403@lxorguk.ukuu.org.uk>
+In-Reply-To: <A3B5BC9B-EB88-4C0E-B235-E9C86D23DC34@konsulko.com>
+References: <20150107084819.GA1887@amd>
+	<alpine.DEB.2.02.1501091302370.30067@linuxheads99>
+	<20150109205643.GA5761@amd>
+	<20150112210134.687176ed@lxorguk.ukuu.org.uk>
+	<20150112214314.GA18610@obsidianresearch.com>
+	<20150113162847.2778b5a5@lxorguk.ukuu.org.uk>
+	<20150113200032.GA16205@obsidianresearch.com>
+	<alpine.DEB.2.02.1501131455130.30192@linuxheads99>
+	<20150113222450.GA17475@obsidianresearch.com>
+	<alpine.DEB.2.02.1501150936390.16760@linuxheads99>
+	<20150115184726.GA23247@obsidianresearch.com>
+	<20150115204502.591bca1d@lxorguk.ukuu.org.uk>
+	<A3B5BC9B-EB88-4C0E-B235-E9C86D23DC34@konsulko.com>
+Organization: Intel Corporation
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-redhat-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150121154243.GE6358@e104818-lin.cambridge.arm.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 03:42:43PM +0000, Catalin Marinas wrote:
-> On Wed, Jan 21, 2015 at 03:29:52PM +0000, Jon Masters wrote:
-> > On 01/21/2015 10:23 AM, Catalin Marinas wrote:
-> > > I have some questions for the ACPI and EFI folk:
-> > > 
-> > > 1. When booting with ACPI, are the EFI run-time services required for
-> > >    anything? If yes, Xen may have a bigger problem
+On Thu, 15 Jan 2015 22:54:46 +0200
+Pantelis Antoniou <pantelis.antoniou@konsulko.com> wrote:
+
+> Hi Alan,
+> 
+> > On Jan 15, 2015, at 22:45 , One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk> wrote:
 > > 
-> > Yes. At least for some things. For example, installing an Operating
-> > System would require that you make runtime services calls to set the
-> > BootOrder/BootNext variables, and so on. Further, we use the GetTime
-> > service and EFI based reboot to avoid having special drivers. I had
-> > those added to SBBR as requirements for that reason.
-> 
-> So what would a kexec'ed kernel do here? Or we usually expect it to be
-> short lived and doesn't need reboot, nor GetTime.
-> 
-> Xen is slightly more problematic but I wonder whether it could run a
-> (paravirtualised) UEFI.
-> 
-> > > 2. Could a boot loader (either kernel doing kexec or Xen) emulate the
-> > >    EFI system/config tables and still make them useful to the kernel but
-> > >    without EFI_BOOT or EFI_RUNTIME_SERVICES?
+> > On Thu, 15 Jan 2015 11:47:26 -0700
+> > Jason Gunthorpe <jgunthorpe@obsidianresearch.com> wrote:
+> >> It is a novel idea, my concern would be that embedding the FPGA in the
+> >> DT makes it permanent unswappable kernel memory.
+> >> Not having the kernel hold the FPGA is best for many uses.
 > > 
-> > Yes. But again, without the other required pieces (including the
-> > services function pointers in the systab which are required) you'd crash
-> > soon after boot trying to make those calls.
+> > If you have a filesysytem before the FPGA is set up then it belongs in
+> > the file system. As you presumably loaded the kernel from somewhere there
+> > ought to be a file system (even an initrd).
+> > 
 > 
-> My point was whether you can still pass information like RSDP address
-> via EFI tables but explicitly disable runtime services so that the
-> kernel won't try to make such calls (and crash).
-> 
-There is no specific dependency from ACPI->EFI its just the only current
-method defind to get the RSDP pointer. It would work just as well
-getting the pointer from /chosen/ if we just pick a node and document it
-for Xen/kexec/other usage.
+> Request firmware does not imply keeping it around. You can always re-request
+> when reloading (although there’s a nasty big of caching that needs to be
+> resolved with the firmware loader).
 
-We were running ACPI on machine from u-boot doing exactly this for
-a long time.
+Which comes down to the same thing. Unless you can prove that there is a
+path to recover the firmware file that does not have any dependancies
+upon the firmware executing (and those can be subtle and horrid at times)
+you need to keep it around for suspend/resume at least and potentially
+any unexpected error/reset.
 
-Graeme
+> One of the ideas rolling about is to put the device tree overlay blob in
+> an EEPROM and then load it from there (not from the filesystem).
 
+That's a fine example of one you can probably always get to and avoid
+caching. However if its in eeprom you don't need request_firmware anyway !
+
+> Can we please not use ioctls if possible. Configfs seems to work just fine
+> for configuration and for any other higher speed API we should use read/write/mmap.
+
+You don't have the needed state in configfs as far as I can see.
+
+> Ioctls are a pain for scripting and interpreted languages usually.
+
+You can do ioctls in perl just fine if you are mad (and if you are
+using perl you are ;-) ) while python has a complete explicit fcntl.ioctl
+model.
+
+> Making the API handle partial reconfiguration from day one might be pushing tricky.
+> I don’t remember any case where I came across a need for it.
+
+Agreed - I don't see the point in adding it until someone needs it and can
+describe what is needed accurately.
+
+Alan
