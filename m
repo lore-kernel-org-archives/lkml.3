@@ -1,106 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753404AbbAUAXq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 19:23:46 -0500
-Received: from mail-lb0-f180.google.com ([209.85.217.180]:37270 "EHLO
-	mail-lb0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751665AbbAUAXp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 19:23:45 -0500
-MIME-Version: 1.0
-In-Reply-To: <20150116150940.GC7775@ulmo.nvidia.com>
-References: <20150109160342.715d3592@bbrezillon>
-	<20150116150940.GC7775@ulmo.nvidia.com>
-Date: Wed, 21 Jan 2015 10:23:43 +1000
-Message-ID: <CAPM=9twEBETA2_w+5B43Kx_KpYyVvMqRC_6fJNUn=gnFyt5Cpg@mail.gmail.com>
-Subject: Re: [GIT PULL] drm: Add Atmel HLCDC driver
-From: Dave Airlie <airlied@gmail.com>
-To: Thierry Reding <thierry.reding@gmail.com>
-Cc: Boris Brezillon <boris.brezillon@free-electrons.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
+	id S1752859AbbAUA0W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 19:26:22 -0500
+Received: from mga03.intel.com ([134.134.136.65]:42251 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750717AbbAUA0U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 19:26:20 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,438,1418112000"; 
+   d="scan'208";a="515136257"
+From: "Skidmore, Donald C" <donald.c.skidmore@intel.com>
+To: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>,
+        =?utf-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>
+CC: "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "Choi, Sy Jong" <sy.jong.choi@intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "dri-devel@lists.freedesktop.org" <dri-devel@lists.freedesktop.org>,
-        Alexandre Belloni <alexandre.belloni@free-electrons.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Jean-Christophe Plagniol-Villard <plagnioj@jcrosoft.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+        Hayato Momma <h-momma@ce.jp.nec.com>
+Subject: RE: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast promiscuous
+	mode control
+Thread-Topic: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast
+ promiscuous	mode control
+Thread-Index: AQHQNQsmhwpg0uFhykOk7liG8gdn8pzJslcQ
+Date: Wed, 21 Jan 2015 00:26:17 +0000
+Message-ID: <F6FB0E698C9B3143BDF729DF222866469129B7F5@ORSMSX110.amr.corp.intel.com>
+References: <7F861DC0615E0C47A872E6F3C5FCDDBD05E0734E@BPXM14GP.gisp.nec.co.jp>
+	<874mrlu18e.fsf@nemi.mork.no>
+ <7F861DC0615E0C47A872E6F3C5FCDDBD05E07B7C@BPXM14GP.gisp.nec.co.jp>
+In-Reply-To: <7F861DC0615E0C47A872E6F3C5FCDDBD05E07B7C@BPXM14GP.gisp.nec.co.jp>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.138]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0L0QSmt016208
 
-Hi Boris,
 
-can you update with Thierry's acks and send again, I'll pull it then.
 
-Dave.
+> -----Original Message-----
+> From: Hiroshi Shimamoto [mailto:h-shimamoto@ct.jp.nec.com]
+> Sent: Tuesday, January 20, 2015 3:40 PM
+> To: BjÃ¸rn Mork
+> Cc: e1000-devel@lists.sourceforge.net; netdev@vger.kernel.org; Choi, Sy
+> Jong; linux-kernel@vger.kernel.org; Hayato Momma
+> Subject: Re: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast promiscuous
+> mode control
+> 
+> > Subject: Re: [PATCH 1/2] if_link: Add VF multicast promiscuous mode
+> > control
+> >
+> > Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com> writes:
+> >
+> > > From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+> > >
+> > > Add netlink directives and ndo entry to control VF multicast promiscuous
+> mode.
+> > >
+> > > Intel ixgbe and ixgbevf driver can handle only 30 multicast MAC
+> > > addresses per VF. It means that we cannot assign over 30 IPv6
+> > > addresses to a single VF interface on VM. We want thousands IPv6
+> addresses in VM.
+> > >
+> > > There is capability of multicast promiscuous mode in Intel 82599 chip.
+> > > It enables all multicast packets are delivered to the target VF.
+> > >
+> > > This patch prepares to control that VF multicast promiscuous
+> functionality.
+> >
+> > Adding a new hook for this seems over-complicated to me.  And it still
+> > doesn't solve the real problems that
+> >  a) the user has to know about this limit, and
+> >  b) manually configure the feature
+> >
+> > Most of us, lacking the ability to imagine such arbitrary hardware
+> > limitations, will go through a few hours of frustrating debugging
+> > before we figure this one out...
+> >
+> > Why can't the ixgbevf driver just automatically signal the ixgbe
+> > driver to enable multicast promiscuous mode whenever the list grows
+> > past the limit?
+> 
+> I had submitted a patch to change ixgbe and ixgbevf driver for this issue.
+> https://lkml.org/lkml/2014/11/27/269
+> 
+> The previous patch introduces API between ixgbe and ixgbevf driver to
+> enable multicast promiscuous mode, and ixgbevf enables it automatically if
+> the number of addresses is over than 30.
 
-On 17 January 2015 at 01:09, Thierry Reding <thierry.reding@gmail.com> wrote:
-> On Fri, Jan 09, 2015 at 04:03:42PM +0100, Boris Brezillon wrote:
->> Dave, Thierry,
->>
->> Here is the pull request for the Atmel HLCDC driver and its
->> dependencies (some modifications to drm/core and drm/panel to define
->> output bus format).
->>
->> I'm sending a pull request for this driver for several reasons:
->>
->>  * The patch series has been around for 6 months (initial version here
->>    [3]), and has seen 9 iterations, taking into account comments made
->>    by reviewers.
->>
->>  * It has received several Tested-by by various users/developers.
->>
->>  * It has been Reviewed-by Rob Clark.
->>
->>  * There has been no comment whatsoever since more than a month (see
->>    [1] and [2] for the last modified version of these series).
->>
->> I'll be happy to take comments into account if any. But if there are no
->> more comments, please merge for 3.20.
->>
->> Best Regards,
->>
->> Boris
->>
->> [1]https://lkml.org/lkml/2014/12/1/717
->> [2]http://thread.gmane.org/gmane.comp.video.dri.devel/118700
->> [3]https://lkml.org/lkml/2014/6/9/487
->>
->> The following changes since commit c93546a5e32bd788c22aefa072385f3784551c13:
->>
->>   Merge tag 'topic/atomic-core-2015-01-05' of git://anongit.freedesktop.org/drm-intel into drm-next (2015-01-09 09:22:40 +1000)
->>
->> are available in the git repository at:
->>
->>
->>   https://github.com/bbrezillon/linux-at91.git tags/atmel-hlcdc-drm-3.20
->>
->> for you to fetch changes up to e7f6614add3dc7776abd803be7cbe96b6254b3f5:
->>
->>   drm: add DT bindings documentation for atmel-hlcdc-dc driver (2015-01-09 14:55:08 +0100)
->>
->> ----------------------------------------------------------------
->> Boris Brezillon (5):
->>       drm: add bus_formats and num_bus_formats fields to drm_display_info
->>       drm: panel: simple-panel: add support for bus_format retrieval
->>       drm: panel: simple-panel: add bus format information for foxlink panel
->>       drm: add Atmel HLCDC Display Controller support
->>       drm: add DT bindings documentation for atmel-hlcdc-dc driver
->
-> For patches 1 to 3:
->
->         Acked-by: Thierry Reding <treding@nvidia.com>
->
-> For patches 4 and 5, I don't have the time to properly review them, but
-> from a very quick glance I couldn't spot anything completely out of the
-> ordinary, so I think it'd be okay to merge these for v3.20.
->
-> Thierry
->
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
->
+I believe the issue is with allowing a VF to automatically enter Promiscuous Multicast without the PF's ok is concern over VM isolation.   Of course that isolation, when it comes to multicast, is rather limited anyway given that our multicast filter uses only 12-bit of the address for a match.  Still this (or doing it by default) would only open that up considerably more (all multicasts).  I assume for your application you're not concerned, but are there other use cases that would worry about such things?
+
+Thanks,
+-Don Skidmore <donald.c.skidmore@intel.com>
+
+> 
+> I got some comment and I would like to clarify the point, but there was no
+> answer.
+> That's the reason I submitted this patch.
+> 
+> Do you think a patch for the ixgbe/ixgbevf driver is preferred?
+> 
+> 
+> thanks,
+> Hiroshi
+> 
+> >
+> > I'd also like to note that this comment in
+> > drivers/net/ethernet/intel/ixgbevf/vf.c
+> > indicates that the author had some ideas about how more than 30
+> > addresses could/should be handled:
+> >
+> > static s32 ixgbevf_update_mc_addr_list_vf(struct ixgbe_hw *hw,
+> > 					  struct net_device *netdev)
+> > {
+> > 	struct netdev_hw_addr *ha;
+> > 	u32 msgbuf[IXGBE_VFMAILBOX_SIZE];
+> > 	u16 *vector_list = (u16 *)&msgbuf[1];
+> > 	u32 cnt, i;
+> >
+> > 	/* Each entry in the list uses 1 16 bit word.  We have 30
+> > 	 * 16 bit words available in our HW msg buffer (minus 1 for the
+> > 	 * msg type).  That's 30 hash values if we pack 'em right.  If
+> > 	 * there are more than 30 MC addresses to add then punt the
+> > 	 * extras for now and then add code to handle more than 30 later.
+> > 	 * It would be unusual for a server to request that many multi-cast
+> > 	 * addresses except for in large enterprise network environments.
+> > 	 */
+> >
+> >
+> >
+> > The last 2 lines of that comment are of course totally bogus and
+> > pointless and should be deleted in any case...  It's obvious that 30
+> > multicast addresses is ridiculously low for lots of normal use cases.
+> >
+> >
+> > BjÃ¸rn
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
