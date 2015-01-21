@@ -1,140 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754063AbbAUQVz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 11:21:55 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:34732 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753855AbbAUQVp (ORCPT
+	id S1754029AbbAUQXA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 11:23:00 -0500
+Received: from mail-ig0-f172.google.com ([209.85.213.172]:41357 "EHLO
+	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752391AbbAUQWu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 11:21:45 -0500
-Message-ID: <54BFD209.1080507@roeck-us.net>
-Date: Wed, 21 Jan 2015 08:21:29 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Wed, 21 Jan 2015 11:22:50 -0500
+Date: Wed, 21 Jan 2015 16:22:43 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        maxime.coquelin@st.com
+Cc: kernel@stlinux.com, broonie@kernel.org, linux-spi@vger.kernel.org,
+        devicetree@vger.kernel.org
+Subject: Re: [PATCH v2 3/4] ARM: sti: Provide DT nodes for SSC[0..4]
+Message-ID: <20150121162243.GG22024@x1>
+References: <1417534844-25080-1-git-send-email-lee.jones@linaro.org>
+ <1417534844-25080-4-git-send-email-lee.jones@linaro.org>
 MIME-Version: 1.0
-To: Sabrina Dubroca <sd@queasysnail.net>, Paul Moore <pmoore@redhat.com>
-CC: Thierry Reding <thierry.reding@gmail.com>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-audit@redhat.com, Richard Guy Briggs <rgb@redhat.com>
-Subject: Re: linux-next: Tree for Jan 20 -- Kernel panic - Unable to mount
- root fs
-References: <20150120165655.GA10904@kria> <20150121110539.GA8924@kria> <20150121144214.GA22884@ulmo.nvidia.com> <9422577.FVVyjQBZjy@sifl> <20150121153910.GD22884@ulmo.nvidia.com> <20150121155407.GA18701@kria>
-In-Reply-To: <20150121155407.GA18701@kria>
-Content-Type: text/plain; charset=utf-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020205.54BFD217.03DD,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 4
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1417534844-25080-4-git-send-email-lee.jones@linaro.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2015 07:54 AM, Sabrina Dubroca wrote:
-> 2015-01-21, 16:39:12 +0100, Thierry Reding wrote:
->> On Wed, Jan 21, 2015 at 10:24:11AM -0500, Paul Moore wrote:
->>> On Wednesday, January 21, 2015 03:42:16 PM Thierry Reding wrote:
->>>> On Wed, Jan 21, 2015 at 12:05:39PM +0100, Sabrina Dubroca wrote:
->>>>> 2015-01-21, 04:36:38 +0000, Al Viro wrote:
->>>>>> On Tue, Jan 20, 2015 at 08:01:26PM -0800, Guenter Roeck wrote:
->>>>>>> With this patch:
->>>>>>>
->>>>>>> sys_mkdir .:40775 returned -17
->>>>>>> sys_mkdir usr:40775 returned 0
->>>>>>> sys_mkdir usr/lib:40775 returned 0
->>>>>>> sys_mkdir usr/share:40755 returned 0
->>>>>>> sys_mkdir usr/share/udhcpc:40755 returned 0
->>>>>>> sys_mkdir usr/bin:40775 returned 0
->>>>>>> sys_mkdir usr/sbin:40775 returned 0
->>>>>>> sys_mkdir mnt:40775 returned 0
->>>>>>> sys_mkdir proc:40775 returned 0
->>>>>>> sys_mkdir root:40775 returned 0
->>>>>>> sys_mkdir lib:40775 returned 0
->>>>>>> sys_mkdir lib/modules:40775 returned 0
->>>>>>> ...
->>>>>>>
->>>>>>> and the problem is fixed.
->>>>>
->>>>> This patch also works for me.
->>>>>
->>>>>> ... except that it simply confirms that something's fishy with
->>>>>> getname_kernel() of ->name of struct filename returned by getname().
->>>>>> IOW, I still do not understand the mechanism of breakage there.
->>>>>
->>>>> I'm not so sure about that.  I tried to copy name to a new string in
->>>>> do_path_lookup and that didn't help.
->>>>>
->>>>> Now, I've removed the
->>>>>
->>>>>          putname(filename);
->>>>>
->>>>> line from do_path_lookup and I don't get the panic.
->>>>
->>>> That would indicate that somehow the refcount got unbalanced. Looking
->>>> more closely it seems like the various audit_*() function do take a
->>>> reference, but maybe that's not enough.
->>>
->>> I'm thinking the same thing and I think the problem may be that
->>> __audit_reusename() is not bumping the filename->refcnt.  Can someone who is
->>> seeing this problem bump the refcnt in __audit_reusename()?
->>>
->>>    struct filename *
->>>    __audit_reusename(const __user char *uptr)
->>>    {
->>>          struct audit_context *context = current->audit_context;
->>>          struct audit_names *n;
->>>
->>>          list_for_each_entry(n, &context->names_list, list) {
->>>                  if (!n->name)
->>>                          continue;
->>>                  if (n->name->uptr == uptr) {
->>> +                       n->name->refcnt++;
->>>                          return n->name;
->>>                  }
->>>          }
->>>          return NULL;
->>>    }
->>
->> That doesn't seem to help, at least in my case.
->
-> Same here.
->
-> Well, it's probably not an audit issue.  I tried audit=0 on the
-> commandline, and I just rebuilt a kernel with CONFIG_AUDIT=n, and it's
-> still panicing.  This should have fixed any audit-related issue,
-> right?
->
-I don't have audit enabled, so I don't think that is the problem either
-(the refcount increase didn't help, and a WARN(1) added to the code
-at the same location did not trigger).
+Maxime,
 
-Wonder if we have a use-after-free case and just have been lucky all along.
+Can you ping these up please?
 
-Guenter
+> The Synchronous Serial Controller is used to provide SPI.
+> 
+> Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> ---
+>  arch/arm/boot/dts/stih407.dtsi | 54 ++++++++++++++++++++++++++++++++++++++++++
+>  1 file changed, 54 insertions(+)
+> 
+> diff --git a/arch/arm/boot/dts/stih407.dtsi b/arch/arm/boot/dts/stih407.dtsi
+> index 50637f5..90bc090 100644
+> --- a/arch/arm/boot/dts/stih407.dtsi
+> +++ b/arch/arm/boot/dts/stih407.dtsi
+> @@ -275,5 +275,59 @@
+>  
+>  			status = "disabled";
+>  		};
+> +
+> +		spi@9840000 {
+> +			compatible = "st,comms-ssc4-spi";
+> +			reg = <0x9840000 0x110>;
+> +			interrupts = <GIC_SPI 112 IRQ_TYPE_LEVEL_HIGH>;
+> +			clocks = <&clk_s_c0_flexgen CLK_EXT2F_A9>;
+> +			clock-names = "ssc";
+> +			pinctrl-0 = <&pinctrl_spi0_default>;
+> +			pinctrl-names = "default";
+> +			#address-cells = <1>;
+> +			#size-cells = <0>;
+> +
+> +			status = "disabled";
+> +		};
+> +
+> +		spi@9841000 {
+> +			compatible = "st,comms-ssc4-spi";
+> +			reg = <0x9841000 0x110>;
+> +			interrupts = <GIC_SPI 113 IRQ_TYPE_LEVEL_HIGH>;
+> +			clocks = <&clk_s_c0_flexgen CLK_EXT2F_A9>;
+> +			clock-names = "ssc";
+> +
+> +			status = "disabled";
+> +		};
+> +
+> +		spi@9842000 {
+> +			compatible = "st,comms-ssc4-spi";
+> +			reg = <0x9842000 0x110>;
+> +			interrupts = <GIC_SPI 114 IRQ_TYPE_LEVEL_HIGH>;
+> +			clocks = <&clk_s_c0_flexgen CLK_EXT2F_A9>;
+> +			clock-names = "ssc";
+> +
+> +			status = "disabled";
+> +		};
+> +
+> +		spi@9843000 {
+> +			compatible = "st,comms-ssc4-spi";
+> +			reg = <0x9843000 0x110>;
+> +			interrupts = <GIC_SPI 115 IRQ_TYPE_LEVEL_HIGH>;
+> +			clocks = <&clk_s_c0_flexgen CLK_EXT2F_A9>;
+> +			clock-names = "ssc";
+> +
+> +			status = "disabled";
+> +		};
+> +
+> +		spi@9844000 {
+> +			compatible = "st,comms-ssc4-spi";
+> +			reg = <0x9844000 0x110>;
+> +			interrupts = <GIC_SPI 116 IRQ_TYPE_LEVEL_HIGH>;
+> +			clocks = <&clk_s_c0_flexgen CLK_EXT2F_A9>;
+> +			clock-names = "ssc";
+> +
+> +			status = "disabled";
+> +		};
+>  	};
+>  };
 
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
