@@ -1,247 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752752AbbAUJti (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 04:49:38 -0500
-Received: from comal.ext.ti.com ([198.47.26.152]:42533 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752506AbbAUJt3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 04:49:29 -0500
-Message-ID: <54BF75FF.6020207@ti.com>
-Date: Wed, 21 Jan 2015 15:18:47 +0530
-From: Kishon Vijay Abraham I <kishon@ti.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.0
+	id S1752814AbbAUJuC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 04:50:02 -0500
+Received: from mail-bn1on0113.outbound.protection.outlook.com ([157.56.110.113]:22174
+	"EHLO na01-bn1-obe.outbound.protection.outlook.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751017AbbAUJtz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 04:49:55 -0500
+Message-ID: <1421833786.4961.222.camel@freescale.com>
+Subject: Re: [PATCH] powerpc/mpic: Add DT option to skip readback after EOI
+From: Scott Wood <scottwood@freescale.com>
+To: Purcareata Bogdan <b43198@freescale.com>
+CC: <benh@kernel.crashing.org>, <linuxppc-dev@lists.ozlabs.org>,
+        <linux-kernel@vger.kernel.org>
+Date: Wed, 21 Jan 2015 03:49:46 -0600
+In-Reply-To: <54BF72D1.3000302@freescale.com>
+References: <1421236622-29366-1-git-send-email-bogdan.purcareata@freescale.com>
+	 <1421258312.4961.133.camel@freescale.com> <54BF72D1.3000302@freescale.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.12.7-0ubuntu1 
 MIME-Version: 1.0
-To: Yunzhi Li <lyz@rock-chips.com>, <heiko@sntech.de>,
-        <grant.likely@linaro.org>, <robh+dt@kernel.org>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-rockchip@lists.infradead.org>, <devicetree@vger.kernel.org>,
-        <linux-usb@vger.kernel.org>, <jwerner@chromium.org>,
-        <dianders@chromium.org>, <olof@lixom.net>, <huangtao@rock-chips.com>,
-        <zyw@rock-chips.com>, <cf@rock-chips.com>
-Subject: Re: [PATCH v7 2/5] phy: add a driver for the Rockchip SoC internal
- USB2.0 PHY
-References: <1418396413-27937-1-git-send-email-lyz@rock-chips.com> <1418396866-32625-1-git-send-email-lyz@rock-chips.com>
-In-Reply-To: <1418396866-32625-1-git-send-email-lyz@rock-chips.com>
-Content-Type: text/plain; charset="windows-1252"
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+X-Originating-IP: [2601:2:5800:3f7:12bf:48ff:fe84:c9a0]
+X-ClientProxiedBy: DM2PR11CA0005.namprd11.prod.outlook.com (25.160.91.15) To
+ BY2PR0301MB0728.namprd03.prod.outlook.com (25.160.63.18)
+Authentication-Results: spf=none (sender IP is )
+ smtp.mailfrom=scottwood@freescale.com; 
+X-DmarcAction-Test: None
+X-Microsoft-Antispam: UriScan:;
+X-Microsoft-Antispam: BCL:0;PCL:0;RULEID:(3005004);SRVR:BY2PR0301MB0728;
+X-Exchange-Antispam-Report-Test: UriScan:;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:(601004);SRVR:BY2PR0301MB0728;
+X-Forefront-PRVS: 04631F8F77
+X-Forefront-Antispam-Report: SFV:NSPM;SFS:(10019020)(6009001)(377424004)(51704005)(189002)(54094003)(24454002)(199003)(62966003)(77156002)(40100003)(68736005)(36756003)(50466002)(87976001)(2950100001)(97736003)(122386002)(23676002)(50226001)(110136001)(103116003)(46102003)(33646002)(42186005)(86362001)(106356001)(105586002)(92566002)(101416001)(47776003)(76176999)(50986999)(64706001);DIR:OUT;SFP:1102;SCL:1;SRVR:BY2PR0301MB0728;H:[IPv6:2601:2:5800:3f7:12bf:48ff:fe84:c9a0];FPR:;SPF:None;MLV:sfv;PTR:InfoNoRecords;MX:1;A:1;LANG:en;
+X-Exchange-Antispam-Report-CFA-Test: BCL:0;PCL:0;RULEID:;SRVR:BY2PR0301MB0728;
+X-OriginatorOrg: freescale.com
+X-MS-Exchange-CrossTenant-OriginalArrivalTime: 21 Jan 2015 09:49:52.7037
+ (UTC)
+X-MS-Exchange-CrossTenant-FromEntityHeader: Hosted
+X-MS-Exchange-Transport-CrossTenantHeadersStamped: BY2PR0301MB0728
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 2015-01-21 at 11:35 +0200, Purcareata Bogdan wrote:
+> On 14.01.2015 19:58, Scott Wood wrote:
+> > On Wed, 2015-01-14 at 11:57 +0000, Bogdan Purcareata wrote:
+> >> The readback is necessary in order to handle PCI posted
+> >> writes,
+> >
+> > That is unclear.
+> 
+> I'm going to try an venture a different explanation here.
+> 
+> I found a good explanation in Writing PCI Drivers [1] as to why it's 
+> necessary that a read is performed before returning from an EOI write:
+> 
+> "A good example of such a case is when a driver’s Interrupt Service 
+> Routine (ISR) is dealing with the Interrupt Request Register (IRR) on a 
+> card. Clearing a bit in the register indicates that the interrupt has 
+> been serviced. This is done by posting a write to the register. If the 
+> driver posts this write and exits its ISR, it could get interrupted 
+> again immediately because the write hadn’t yet reached the bit in the 
+> IRR to tell it to stop trying to interrupt. One solution to this 
+> potential problem is to make sure to read back the value in the IRR 
+> before exiting from the ISR. Most drivers do this anyway so they can 
+> handle multiple interrupts in the same ISR visit."
 
-On Friday 12 December 2014 08:37 PM, Yunzhi Li wrote:
-> This patch to add a generic PHY driver for ROCKCHIP usb PHYs,
-> currently this driver can support RK3288. The RK3288 SoC have
-> three independent USB PHY IPs which are all configured through a
-> set of registers located in the GRF (general register files)
-> module.
-> 
-> Signed-off-by: Yunzhi Li <lyz@rock-chips.com>
-> 
-> ---
-> 
-> Changes in v7:
-> - Accept Kishon's comments to use phandle args to find a phy
->   struct directly and get rid of using a custom of_xlate
->   function.
-> 
-> Changes in v6:
-> - Rename SIDDQ_MSK to SIDDQ_WRITE_ENA.
-> 
-> Changes in v5: None
-> Changes in v4:
-> - Get number of PHYs from device tree.
-> - Model each PHY as subnode of the phy provider node.
-> 
-> Changes in v3:
-> - Use BIT macro instead of bit shift ops.
-> - Rename the config entry to PHY_ROCKCHIP_USB.
-> 
->  drivers/phy/Kconfig            |   7 ++
->  drivers/phy/Makefile           |   1 +
->  drivers/phy/phy-rockchip-usb.c | 158 +++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 166 insertions(+)
->  create mode 100644 drivers/phy/phy-rockchip-usb.c
-> 
-> diff --git a/drivers/phy/Kconfig b/drivers/phy/Kconfig
-> index ccad880..b24500a 100644
-> --- a/drivers/phy/Kconfig
-> +++ b/drivers/phy/Kconfig
-> @@ -239,6 +239,13 @@ config PHY_QCOM_IPQ806X_SATA
->  	depends on OF
->  	select GENERIC_PHY
->  
-> +config PHY_ROCKCHIP_USB
-> +	tristate "Rockchip USB2 PHY Driver"
-> +	depends on ARCH_ROCKCHIP && OF
-> +	select GENERIC_PHY
-> +	help
-> +	  Enable this to support the Rockchip USB 2.0 PHY.
-> +
->  config PHY_ST_SPEAR1310_MIPHY
->  	tristate "ST SPEAR1310-MIPHY driver"
->  	select GENERIC_PHY
-> diff --git a/drivers/phy/Makefile b/drivers/phy/Makefile
-> index aa74f96..48bf5a1 100644
-> --- a/drivers/phy/Makefile
-> +++ b/drivers/phy/Makefile
-> @@ -28,6 +28,7 @@ phy-exynos-usb2-$(CONFIG_PHY_EXYNOS5250_USB2)	+= phy-exynos5250-usb2.o
->  phy-exynos-usb2-$(CONFIG_PHY_S5PV210_USB2)	+= phy-s5pv210-usb2.o
->  obj-$(CONFIG_PHY_EXYNOS5_USBDRD)	+= phy-exynos5-usbdrd.o
->  obj-$(CONFIG_PHY_QCOM_APQ8064_SATA)	+= phy-qcom-apq8064-sata.o
-> +obj-$(CONFIG_PHY_ROCKCHIP_USB) += phy-rockchip-usb.o
->  obj-$(CONFIG_PHY_QCOM_IPQ806X_SATA)	+= phy-qcom-ipq806x-sata.o
->  obj-$(CONFIG_PHY_ST_SPEAR1310_MIPHY)	+= phy-spear1310-miphy.o
->  obj-$(CONFIG_PHY_ST_SPEAR1340_MIPHY)	+= phy-spear1340-miphy.o
-> diff --git a/drivers/phy/phy-rockchip-usb.c b/drivers/phy/phy-rockchip-usb.c
-> new file mode 100644
-> index 0000000..22011c3
-> --- /dev/null
-> +++ b/drivers/phy/phy-rockchip-usb.c
-> @@ -0,0 +1,158 @@
-> +/*
-> + * Rockchip usb PHY driver
-> + *
-> + * Copyright (C) 2014 Yunzhi Li <lyz@rock-chips.com>
-> + * Copyright (C) 2014 ROCKCHIP, Inc.
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + */
-> +
-> +#include <linux/clk.h>
-> +#include <linux/io.h>
-> +#include <linux/kernel.h>
-> +#include <linux/module.h>
-> +#include <linux/mutex.h>
-> +#include <linux/of.h>
-> +#include <linux/of_address.h>
-> +#include <linux/phy/phy.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/regulator/consumer.h>
-> +#include <linux/reset.h>
-> +#include <linux/regmap.h>
-> +#include <linux/mfd/syscon.h>
-> +
-> +/*
-> + * The higher 16-bit of this register is used for write protection
-> + * only if BIT(13 + 16) set to 1 the BIT(13) can be written.
-> + */
-> +#define SIDDQ_WRITE_ENA	BIT(29)
-> +#define SIDDQ_ON		BIT(13)
-> +#define SIDDQ_OFF		(0 << 13)
-> +
-> +struct rockchip_usb_phy {
-> +	unsigned int	reg_offset;
-> +	struct regmap	*reg_base;
-> +	struct clk	*clk;
-> +	struct phy	*phy;
-> +};
-> +
-> +static int rockchip_usb_phy_power(struct rockchip_usb_phy *phy,
-> +					   bool siddq)
-> +{
-> +	return regmap_write(phy->reg_base, phy->reg_offset,
-> +			    SIDDQ_WRITE_ENA | (siddq ? SIDDQ_ON : SIDDQ_OFF));
-> +}
-> +
-> +static int rockchip_usb_phy_power_off(struct phy *_phy)
-> +{
-> +	struct rockchip_usb_phy *phy = phy_get_drvdata(_phy);
-> +	int ret = 0;
-> +
-> +	/* Power down usb phy analog blocks by set siddq 1 */
-> +	ret = rockchip_usb_phy_power(phy, 1);
-> +	if (ret)
-> +		return ret;
-> +
-> +	clk_disable_unprepare(phy->clk);
-> +	if (ret)
-> +		return ret;
-> +
-> +	return 0;
-> +}
-> +
-> +static int rockchip_usb_phy_power_on(struct phy *_phy)
-> +{
-> +	struct rockchip_usb_phy *phy = phy_get_drvdata(_phy);
-> +	int ret = 0;
-> +
-> +	ret = clk_prepare_enable(phy->clk);
-> +	if (ret)
-> +		return ret;
-> +
-> +	/* Power up usb phy analog blocks by set siddq 0 */
-> +	ret = rockchip_usb_phy_power(phy, 0);
-> +	if (ret)
-> +		return ret;
-> +
-> +	return 0;
-> +}
-> +
-> +static struct phy_ops ops = {
-> +	.power_on	= rockchip_usb_phy_power_on,
-> +	.power_off	= rockchip_usb_phy_power_off,
-> +	.owner		= THIS_MODULE,
-> +};
-> +
-> +static int rockchip_usb_phy_probe(struct platform_device *pdev)
-> +{
-> +	struct device *dev = &pdev->dev;
-> +	struct rockchip_usb_phy *rk_phy;
-> +	struct phy_provider *phy_provider;
-> +	struct device_node *child;
-> +	struct regmap *grf;
-> +	unsigned int reg_offset;
-> +
-> +	grf = syscon_regmap_lookup_by_phandle(dev->of_node, "rockchip,grf");
-> +	if (IS_ERR(grf)) {
-> +		dev_err(&pdev->dev, "Missing rockchip,grf property\n");
-> +		return PTR_ERR(grf);
-> +	}
-> +
-> +	for_each_available_child_of_node(dev->of_node, child) {
-> +		rk_phy = devm_kzalloc(dev, sizeof(*rk_phy), GFP_KERNEL);
-> +		if (!rk_phy)
-> +			return -ENOMEM;
-> +
-> +		if (of_property_read_u32(child, "reg", &reg_offset)) {
-> +			dev_err(dev, "missing reg property in node %s\n",
-> +				child->name);
-> +			return -EINVAL;
-> +		}
-> +
-> +		rk_phy->reg_offset = reg_offset;
-> +		rk_phy->reg_base = grf;
-> +
-> +		rk_phy->clk = of_clk_get_by_name(child, "phyclk");
-> +		if (IS_ERR(rk_phy->clk))
-> +			rk_phy->clk = NULL;
-> +
-> +		rk_phy->phy = devm_phy_create(dev, child, &ops);
-> +		if (IS_ERR(rk_phy->phy)) {
-> +			dev_err(dev, "failed to create PHY\n");
-> +			return PTR_ERR(rk_phy->phy);
-> +		}
-> +		phy_set_drvdata(rk_phy->phy, rk_phy);
-> +	}
-> +
-> +	phy_provider = devm_of_phy_provider_register(dev, of_phy_simple_xlate);
-> +	return PTR_ERR_OR_ZERO(phy_provider);
-> +}
-> +
-> +static const struct of_device_id rockchip_usb_phy_dt_ids[] = {
-> +	{ .compatible = "rockchip,rk3288-usb-phy" },
+That's an issue of ordering the device write versus the EOI -- it
+doesn't explain why we'd need to order the EOI versus rfi, except maybe
+that the extra delay just happens to be enough to give the device the
+time it needs to deassert the second interrupt before it gets to the
+point of interrupting the CPU.
 
-have you added devicetree binding documentation where I can find this
-compatible string?
+FWIW, I'm skeptical of the "most drivers do this anyway" claim.
 
-Thanks
-Kishon
+> >>   or when the MPIC is handling interrupts in a loop
+> >> (ppc_md.get_irq).
+> >
+> > I'm questioning this one as well -- if reading WHOAMI is sufficient to
+> > sync with the EOI, why wouldn't reading INTACK work as well?
+> 
+> I think I'm going to drop this part of the description. However, I don't 
+> think reading INTACK is good, since it has some additional side effects 
+> - interrupt pending register is cleared for edge-sensitive interrupts, 
+> the in-service register is updated, and the int output signal from the 
+> MPIC is negated. This is available for Freescale SoCs. This also 
+> signifies entering the processing cycle of a new interrupt.
+
+I wasn't suggesting that we start reading INTACK there.  I'm asking why,
+back when we did read INTACK in a loop, that wasn't ordered relative to
+the EOI write (but reading WHOAMI was).
+
+> Normally, the readback should be done on the EOI register - this is 
+> stated in the OpenPIC specification and actually was the initial 
+> implementation of the driver. However, this can't be done since, at 
+> least for Freescale SoCs, the EOI register is write only.
+> 
+> However, in the light of the above explanation related to PCI posted 
+> writes, I don't see how performing a readback on the WHOAMI register, 
+> which is specific to the MPIC, would have any effect in synchronizing 
+> with the PCI device registers. I guess it's related to the bus 
+> interconnect on the SoC.
+
+I wonder if anyone has checked whether the spurious interrupts that
+reading EOI got rid of have come back on those systems, now that we read
+WHOAMI instead.
+
+-Scott
+
+
