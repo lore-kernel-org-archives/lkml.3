@@ -1,61 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152AbbAUGCr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 01:02:47 -0500
-Received: from mail-wi0-f179.google.com ([209.85.212.179]:60744 "EHLO
-	mail-wi0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750947AbbAUGCp (ORCPT
+	id S1751034AbbAUF4J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 00:56:09 -0500
+Received: from mail-we0-f182.google.com ([74.125.82.182]:41030 "EHLO
+	mail-we0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750915AbbAUF4G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 01:02:45 -0500
-Date: Wed, 21 Jan 2015 06:55:32 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Andy Lutomirski <luto@amacapital.net>
-Cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Borislav Petkov <bp@alien8.de>, Tony Luck <tony.luck@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: Fwd: linux-next: manual merge of the luto-misc tree with the tip
- tree
-Message-ID: <20150121055532.GA15518@gmail.com>
-References: <20150119170839.2c6b4b78@canb.auug.org.au>
- <20150119093501.GA4644@pd.tnic>
- <CALCETrW05f9nty5Sk8XA2DTsocqqOxp62aT9QXwta74Km+ZOng@mail.gmail.com>
- <20150121053410.GA15291@gmail.com>
- <CALCETrXCenu4UexZfV6HTq898JbXmZGU5KaCWCXrz7oikrA34g@mail.gmail.com>
+	Wed, 21 Jan 2015 00:56:06 -0500
+X-Greylist: delayed 61522 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Jan 2015 00:56:06 EST
+Message-ID: <54BF3F69.702@gmail.com>
+Date: Wed, 21 Jan 2015 06:55:53 +0100
+From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALCETrXCenu4UexZfV6HTq898JbXmZGU5KaCWCXrz7oikrA34g@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Andy Lutomirski <luto@amacapital.net>, Fam Zheng <famz@redhat.com>
+CC: mtk.manpages@gmail.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, X86 ML <x86@kernel.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        David Drysdale <drysdale@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Vivek Goyal <vgoyal@redhat.com>, Mike Frysinger <vapier@gentoo.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        Hugh Dickins <hughd@google.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Linux API <linux-api@vger.kernel.org>,
+        Josh Triplett <josh@joshtriplett.org>,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: Re: [PATCH RFC 0/6] epoll: Introduce new syscall "epoll_mod_wait"
+References: <1421747878-30744-1-git-send-email-famz@redhat.com> <CALCETrU4TeG1ShVLkQgqQ6usFm8pg_t0D8K=Mi_UJGSfxUwXtA@mail.gmail.com>
+In-Reply-To: <CALCETrU4TeG1ShVLkQgqQ6usFm8pg_t0D8K=Mi_UJGSfxUwXtA@mail.gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 01/20/2015 11:40 PM, Andy Lutomirski wrote:
+> On Tue, Jan 20, 2015 at 1:57 AM, Fam Zheng <famz@redhat.com> wrote:
+>> This adds a new system call, epoll_mod_wait. It's described as below:
 
-* Andy Lutomirski <luto@amacapital.net> wrote:
+[...]
 
-> On Tue, Jan 20, 2015 at 9:34 PM, Ingo Molnar <mingo@kernel.org> wrote:
-> >
-> > * Andy Lutomirski <luto@amacapital.net> wrote:
-> >
-> >> Hi Ingo and Thomas-
-> >>
-> >> There's a trivial conflict in the pull request I sent last week.
-> >
-> > This is your x86 entry code rework pull request, right? The -tip
-> > tree now has the RCU commit it depends on, so could you please
-> > rebase it on top of tip:core/rcu so I can pull it? I'll resolve
-> > any remaining conflicts with the rest of -tip.
-> >
+>>        There is no guartantee that all the commands are executed in order. Only
+>>        if all the commands are successfully executed (all the error fields are
+>>        set to 0), events are polled.
 > 
-> Sure, I can do that in the morning.  The pull request merges cleanly
-> with tip:core/rcu, though, so is the rebase needed?
+> If this doesn't happen, what error is returned?
 
-Yes, because your changes rely on the RCU change (semantically), 
-so if anyone bisects into your commits it might result in a 
-subtly broken kernel, right?
+If I read the code correctly: the error of the first epoll_ctl op that fails.
+
+[...]
+
+>> RETURN VALUE
+>>
+>>        When any error occurs, epoll_mod_wait() returns -1 and errno is set
+>>        appropriately. All the "error" fields in cmds are unchanged before they
+>>        are executed, and if any cmds are executed, the "error" fields are set
+>>        to a return code accordingly. See also epoll_ctl for more details of the
+>>        return code.
+> 
+> Does this mean that callers should initialize the error fields to an
+> impossible value first so they can tell which commands were executed?
+
+Yes. (Ugly!)
+
+[...]
+
+>> ERRORS
+>>
+>>        These errors apply on either the return value of epoll_mod_wait or error
+>>        status for each command, respectively.
+> 
+> Please clarify which errors are returned overall and which are per-command.
+
+Yes, I think this would be valuable as well.
 
 Thanks,
 
-	Ingo
+Michael
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Linux/UNIX System Programming Training: http://man7.org/training/
