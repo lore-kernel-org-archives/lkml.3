@@ -1,89 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752421AbbAUGNO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 01:13:14 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:55494 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750974AbbAUGNK (ORCPT
+	id S1753893AbbAUGNn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 01:13:43 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:54322 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750916AbbAUGNl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 01:13:10 -0500
-Date: Wed, 21 Jan 2015 07:13:04 +0100
-From: Ingo Molnar <mingo@kernel.org>
-To: Jiri Olsa <jolsa@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Adrian Hunter <adrian.hunter@intel.com>,
-        Alexis Berlemont <alexis.berlemont@gmail.com>,
-        Andi Kleen <ak@linux.intel.com>, Anton Blanchard <anton@samba.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Borislav Petkov <bp@alien8.de>, Borislav Petkov <bp@suse.de>,
-        Cody P Schafer <cody@linux.vnet.ibm.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        David Ahern <dsahern@gmail.com>,
-        Florian Fainelli <florian@openwrt.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jan Heylen <heyleke@gmail.com>, Mark Salter <msalter@redhat.com>,
-        Namhyung Kim <namhyung@kernel.org>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "S. Lockwood-Childs" <sjl@vctlabs.com>,
-        Sam Ravnborg <sam@ravnborg.org>, Sasha Levin <sasha.levin@oracle.com>,
-        Stephane Eranian <eranian@google.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Will Deacon <will.deacon@arm.com>
-Subject: Re: [PATCHv3 00/36] perf tools: New build framework
-Message-ID: <20150121061304.GB15963@gmail.com>
-References: <1421771973-6022-1-git-send-email-jolsa@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1421771973-6022-1-git-send-email-jolsa@kernel.org>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+	Wed, 21 Jan 2015 01:13:41 -0500
+From: Shiraz Hashim <shashim@codeaurora.org>
+To: linux-mm@kvack.org
+Cc: akpm@linux-foundation.org, oleg@redhat.com, gorcunov@openvz.org,
+        linux-kernel@vger.kernel.org, n-horiguchi@ah.jp.nec.com,
+        Shiraz Hashim <shashim@codeaurora.org>
+Subject: [PATCH] mm: pagewalk: call pte_hole() for VM_PFNMAP during walk_page_range
+Date: Wed, 21 Jan 2015 11:43:13 +0530
+Message-Id: <1421820793-28883-1-git-send-email-shashim@codeaurora.org>
+X-Mailer: git-send-email 1.8.2.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+walk_page_range silently skips vma having VM_PFNMAP set,
+which leads to undesirable behaviour at client end (who
+called walk_page_range). For example for pagemap_read,
+when no callbacks are called against VM_PFNMAP vma,
+pagemap_read may prepare pagemap data for next virtual
+address range at wrong index.
 
-* Jiri Olsa <jolsa@kernel.org> wrote:
+Signed-off-by: Shiraz Hashim <shashim@codeaurora.org>
+---
+The fix is revised, based upon the suggestion here at
+http://www.spinics.net/lists/linux-mm/msg83058.html
 
-> hi,
-> I'm following up on latest post from Alexis:
->   http://marc.info/?l=linux-kernel&m=141427580405357&w=2
-> 
-> v3 changes:
->   - disabling only builtin rules, keeping builtin variables in place
->     because some projects we depends on using them (traceevent) [David]
->   - fixed empy source list issue that happened on arm [Will, Mark]
->   - updated to the current Arnaldo's perf/core branch
->   - added automated tests into: tools/build/tests/
->   - tested on arm64,ppc64,s390,x86_64,i386
-> 
-> v2 changes:
->   - build Makefiles librarized and moved to 'tools/build' [Ingo]
->   - several minor fixies [Namhyung]
->   - tested on other archs now - x86_64, i386, powerpc
->   - moved tools/lib/* under new build framework to show
->     that it's possible ;-)
->     included traceevent/lockdep maintainers to get the feedback
->   - omitted last 2 patches
-> 
-> The patchset is also available in:
->   git://git.kernel.org/pub/scm/linux/kernel/git/jolsa/perf.git
->   perf/build
-> 
-> All tests/make tests passed.
+ mm/pagewalk.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
-Very nice! I gave it a quick test and saw no problems, behavior, 
-speed and functionality of the build appears to be identical to 
-the old system.
+diff --git a/mm/pagewalk.c b/mm/pagewalk.c
+index ad83195..b264bda 100644
+--- a/mm/pagewalk.c
++++ b/mm/pagewalk.c
+@@ -199,7 +199,10 @@ int walk_page_range(unsigned long addr, unsigned long end,
+ 			 */
+ 			if ((vma->vm_start <= addr) &&
+ 			    (vma->vm_flags & VM_PFNMAP)) {
+-				next = vma->vm_end;
++				if (walk->pte_hole)
++					err = walk->pte_hole(addr, next, walk);
++				if (err)
++					break;
+ 				pgd = pgd_offset(walk->mm, next);
+ 				continue;
+ 			}
+-- 
+Shiraz Hashim
 
-> Also now we have the full dependency check ((gcc -Wp,-MD,... 
-> stuff) and build command line is stored/checked automatically 
-> by the build system.
+QUALCOMM INDIA, on behalf of Qualcomm Innovation Center, Inc. is a
+member of the Code Aurora Forum, hosted by The Linux Foundation
 
-Btw., another thing that might be nice to extract into 
-tools/build/ [or tools/config/] is the build/OS features 
-detection framework - it goes hand in hand with the build
-system.
-
-Thanks,
-
-	Ingo
