@@ -1,97 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754054AbbAUSIe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 13:08:34 -0500
-Received: from mail-wi0-f177.google.com ([209.85.212.177]:37915 "EHLO
-	mail-wi0-f177.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752024AbbAUSIY (ORCPT
+	id S1753526AbbAUSIT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 13:08:19 -0500
+Received: from mail-pd0-f180.google.com ([209.85.192.180]:61282 "EHLO
+	mail-pd0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752024AbbAUSIK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 13:08:24 -0500
-From: Beniamino Galvani <b.galvani@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Giuseppe Cavallaro <peppe.cavallaro@st.com>,
-        Florian Fainelli <f.fainelli@gmail.com>,
-        Dave Taht <dave.taht@gmail.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Beniamino Galvani <b.galvani@gmail.com>
-Subject: [PATCH v2] net: stmmac: add BQL support
-Date: Wed, 21 Jan 2015 19:07:27 +0100
-Message-Id: <1421863647-20048-1-git-send-email-b.galvani@gmail.com>
-X-Mailer: git-send-email 2.1.4
+	Wed, 21 Jan 2015 13:08:10 -0500
+Date: Wed, 21 Jan 2015 10:08:03 -0800
+From: Nicolin Chen <nicoleotsuka@gmail.com>
+To: Zidan Wang <zidan.wang@freescale.com>
+Cc: timur@tabi.org, Xiubo.Lee@gmail.com, lgirdwood@gmail.com,
+        broonie@kernel.org, perex@perex.cz, tiwai@suse.de,
+        alsa-devel@alsa-project.org, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [alsa-devel][PATCH 2/3] ASoC: fsl_sai: Add support for tdm slots
+ operation
+Message-ID: <20150121180801.GA3361@Alpha>
+References: <1421756480-7055-1-git-send-email-zidan.wang@freescale.com>
+ <1421756480-7055-3-git-send-email-zidan.wang@freescale.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421756480-7055-3-git-send-email-zidan.wang@freescale.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for Byte Queue Limits to the STMicro MAC driver.
+On Tue, Jan 20, 2015 at 08:21:19PM +0800, Zidan Wang wrote:
+> @@ -369,10 +380,25 @@ static int fsl_sai_hw_params(struct snd_pcm_substream *substream,
+>  	u32 word_width = snd_pcm_format_width(params_format(params));
+>  	u32 val_cr4 = 0, val_cr5 = 0;
+>  	int ret;
+> +	u32 bclk;
+> +
+> +	if (channels == 1)
+> +		channels = 2;
+> +
+> +	if (!sai->slots || sai->slots % channels)
+> +		sai->slots = channels;
+> +
+> +	sai->slots = sai->slots / channels;
+> +
+> +	if (sai->slot_width < word_width || sai->is_dsp_mode)
+> +		sai->slot_width = word_width;
 
-Tested on a Amlogic S802 quad Cortex-A9 board, where the use of BQL
-decreases the latency of a high priority ping from ~12ms to ~1ms when
-the 100Mbit link is saturated by 20 TCP streams.
+Could you pls explain a bit what's this overriding for?
+Or it might be better to put into a comment.
 
-Signed-off-by: Beniamino Galvani <b.galvani@gmail.com>
----
-Changes since v1:
- - don't access skb->len after the start of DMA transmission in
-   stmmac_xmit(), to avoid potential use after free in case tx_lock is
-   removed in the future
-
- drivers/net/ethernet/stmicro/stmmac/stmmac_main.c | 9 +++++++++
- 1 file changed, 9 insertions(+)
-
-diff --git a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-index 118a427..1d74313 100644
---- a/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-+++ b/drivers/net/ethernet/stmicro/stmmac/stmmac_main.c
-@@ -1097,6 +1097,7 @@ static int init_dma_desc_rings(struct net_device *dev, gfp_t flags)
- 
- 	priv->dirty_tx = 0;
- 	priv->cur_tx = 0;
-+	netdev_reset_queue(priv->dev);
- 
- 	stmmac_clear_descriptors(priv);
- 
-@@ -1300,6 +1301,7 @@ static void stmmac_dma_operation_mode(struct stmmac_priv *priv)
- static void stmmac_tx_clean(struct stmmac_priv *priv)
- {
- 	unsigned int txsize = priv->dma_tx_size;
-+	unsigned int bytes_compl = 0, pkts_compl = 0;
- 
- 	spin_lock(&priv->tx_lock);
- 
-@@ -1356,6 +1358,8 @@ static void stmmac_tx_clean(struct stmmac_priv *priv)
- 		priv->hw->mode->clean_desc3(priv, p);
- 
- 		if (likely(skb != NULL)) {
-+			pkts_compl++;
-+			bytes_compl += skb->len;
- 			dev_consume_skb_any(skb);
- 			priv->tx_skbuff[entry] = NULL;
- 		}
-@@ -1364,6 +1368,9 @@ static void stmmac_tx_clean(struct stmmac_priv *priv)
- 
- 		priv->dirty_tx++;
- 	}
-+
-+	netdev_completed_queue(priv->dev, pkts_compl, bytes_compl);
-+
- 	if (unlikely(netif_queue_stopped(priv->dev) &&
- 		     stmmac_tx_avail(priv) > STMMAC_TX_THRESH(priv))) {
- 		netif_tx_lock(priv->dev);
-@@ -1418,6 +1425,7 @@ static void stmmac_tx_err(struct stmmac_priv *priv)
- 						     (i == txsize - 1));
- 	priv->dirty_tx = 0;
- 	priv->cur_tx = 0;
-+	netdev_reset_queue(priv->dev);
- 	priv->hw->dma->start_tx(priv->ioaddr);
- 
- 	priv->dev->stats.tx_errors++;
-@@ -2048,6 +2056,7 @@ static netdev_tx_t stmmac_xmit(struct sk_buff *skb, struct net_device *dev)
- 	if (!priv->hwts_tx_en)
- 		skb_tx_timestamp(skb);
- 
-+	netdev_sent_queue(dev, skb->len);
- 	priv->hw->dma->enable_dma_transmission(priv->ioaddr);
- 
- 	spin_unlock(&priv->tx_lock);
--- 
-2.1.4
-
+Nicolin
