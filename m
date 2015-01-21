@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754442AbbAUPGt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 10:06:49 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:59021 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753601AbbAUPGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 10:06:40 -0500
-From: Paul Moore <pmoore@redhat.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Guenter Roeck <linux@roeck-us.net>, Sabrina Dubroca <sd@queasysnail.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-audit@redhat.com, Richard Guy Briggs <rgb@redhat.com>
-Subject: Re: linux-next: Tree for Jan 20 -- Kernel panic - Unable to mount root fs
-Date: Wed, 21 Jan 2015 10:06:18 -0500
-Message-ID: <7861867.gzT8obfGnK@sifl>
-Organization: Red Hat
-User-Agent: KMail/4.14.3 (Linux/3.16.7-gentoo; KDE/4.14.3; x86_64; ; )
-In-Reply-To: <20150121043637.GO29656@ZenIV.linux.org.uk>
-References: <20150120165655.GA10904@kria> <54BF2496.4000807@roeck-us.net> <20150121043637.GO29656@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+	id S1754472AbbAUPHG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 10:07:06 -0500
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:37895 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753726AbbAUPGn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 10:06:43 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-7a-54bfbff0e631
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+To: linux-kernel@vger.kernel.org, Tom Lendacky <thomas.lendacky@amd.com>,
+        Herbert Xu <herbert@gondor.apana.org.au>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-crypto@vger.kernel.org (open list:AMD CRYPTOGRAPHIC...)
+Cc: Andrey Ryabinin <a.ryabinin@samsung.com>
+Subject: [PATCH] crypto: ccp: terminate ccp_support array with empty element
+Date: Wed, 21 Jan 2015 18:06:31 +0300
+Message-id: <1421852791-29679-1-git-send-email-a.ryabinin@samsung.com>
+X-Mailer: git-send-email 2.2.1
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrOJMWRmVeSWpSXmKPExsVy+t/xy7of9u8PMZiyhcti269HbBZzzrew
+	WHS/krG4f+8nk8XlXXPYLI5M2cfqwObReukvm8eWlTeZPLYdUPXo27KK0ePzJrkA1igum5TU
+	nMyy1CJ9uwSujBPbb7AV3GCpmDvpKFsD41fmLkZODgkBE4mH304zQdhiEhfurWfrYuTiEBJY
+	yiix8PhLRginj0ni6+x5LCBVbAJ6Ev9mbWcDsUUEHjBKTGjyAbGZBXQkNl5rBZskLOAjselo
+	MyuIzSKgKtH+6jdYL6+Am8TFOzsZIbbJSWy8s4J1AiP3AkaGVYyiqaXJBcVJ6bmGesWJucWl
+	eel6yfm5mxghgfFlB+PiY1aHGAU4GJV4eCtC94cIsSaWFVfmHmKU4GBWEuFdBQwrId6UxMqq
+	1KL8+KLSnNTiQ4xMHJxSDYwz9u9hOmNwKuj9xjOdM48baa8sm8Va0y66KX3ilU+MGRwOPw6o
+	NObGLEnntV0TO3HhtH7+r/v2aEsoVLDnBxTJJ2tdi64Rcz+eyPzf6MfblPDJx12XHJVJD598
+	N2dva98bsfU7crhi/0610OWddWF/BeOaKasdVmiVOzbeYN4jkhkVsaXnn5ESS3FGoqEWc1Fx
+	IgCbDj2q6gEAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, January 21, 2015 04:36:38 AM Al Viro wrote:
-> Another thing I really do not understand is
-> +               if (inode->i_ino) {
-> +                       /* valid inode number, use that for the ...
-> +                       if (n->ino != inode->i_ino ||
-> +                           n->dev != inode->i_sb->s_dev)
-> +                               continue;
-> in __audit_inode().  We don't *have* dentries with dentry->d_inode->i_ino ==
-> 0. Ever.  WTF is that about?  Paul?
+x86_match_cpu() expects array of x86_cpu_ids terminated
+with empty element.
 
-Likely stupidity on my part.  It looks like a typo, that first if conditional 
-should check "n->ino" instead of "inode->i_ino"; in __audit_getname() we 
-record names without any inode numbers, so we need to see if this is one of 
-those records.  Interesting that it passed my testing; either my testing is 
-crap (always a strong possibility) or something else came to the rescue.  I'm 
-still coming up to speed on the audit/VFS code ...
+Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+---
+ drivers/crypto/ccp/ccp-dev.c | 1 +
+ 1 file changed, 1 insertion(+)
 
-I'll fix that up and include in the next patchset once we resolve this issue.
-
+diff --git a/drivers/crypto/ccp/ccp-dev.c b/drivers/crypto/ccp/ccp-dev.c
+index c6e6171..ca29c12 100644
+--- a/drivers/crypto/ccp/ccp-dev.c
++++ b/drivers/crypto/ccp/ccp-dev.c
+@@ -583,6 +583,7 @@ bool ccp_queues_suspended(struct ccp_device *ccp)
+ #ifdef CONFIG_X86
+ static const struct x86_cpu_id ccp_support[] = {
+ 	{ X86_VENDOR_AMD, 22, },
++	{ },
+ };
+ #endif
+ 
 -- 
-paul moore
-security @ redhat
+2.2.1
 
