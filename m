@@ -1,104 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750889AbbAUOWC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 09:22:02 -0500
-Received: from mail-pa0-f49.google.com ([209.85.220.49]:65203 "EHLO
-	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751758AbbAUOVx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 09:21:53 -0500
-Date: Wed, 21 Jan 2015 01:21:57 -0400
-From: Eduardo Valentin <edubezval@gmail.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: pali.rohar@gmail.com, sre@debian.org, sre@ring0.de,
-        kernel list <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-omap@vger.kernel.org, tony@atomide.com, khilman@kernel.org,
-        aaro.koskinen@iki.fi, ivo.g.dimitrov.75@gmail.com, rui.zhang@intel.com,
-        linux-pm@vger.kernel.org
-Subject: Re: [PATCH] ti-soc-thermal: implement eocz bit to make driver useful
- on omap3
-Message-ID: <20150121052156.GB13468@developer.hsd1.ca.comcast.net>
-References: <20150103114632.GA21883@amd>
- <20150103122634.GB22356@developer>
- <20150103162241.GA26680@amd>
- <20150105213557.GD31536@developer>
- <20150118201821.GA28530@amd>
+	id S1750883AbbAUF0b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 00:26:31 -0500
+Received: from mga09.intel.com ([134.134.136.24]:58813 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750736AbbAUF03 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 00:26:29 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,439,1418112000"; 
+   d="scan'208";a="640230034"
+Message-ID: <54BF3881.9000708@linux.intel.com>
+Date: Wed, 21 Jan 2015 13:26:25 +0800
+From: Jiang Liu <jiang.liu@linux.intel.com>
+Organization: Intel
+User-Agent: Mozilla/5.0 (Windows NT 6.2; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="kORqDWCi7qDJ0mEj"
-Content-Disposition: inline
-In-Reply-To: <20150118201821.GA28530@amd>
-User-Agent: Mutt/1.5.22 (2013-10-16)
+To: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+CC: Thomas Gleixner <tglx@linutronix.de>, Bjorn Helgaas <bhelgaas@google.com>,
+        Yinghai Lu <yinghai@kernel.org>, Borislav Petkov <bp@alien8.de>,
+        Len Brown <lenb@kernel.org>, Tony Luck <tony.luck@intel.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [RFC Patch 08/19] ACPI: Add prefetch decoding to the address
+ space parser
+References: <1420684386-5975-1-git-send-email-jiang.liu@linux.intel.com> <1420684386-5975-9-git-send-email-jiang.liu@linux.intel.com> <1593565.fJ4zH7YgDd@vostro.rjw.lan>
+In-Reply-To: <1593565.fJ4zH7YgDd@vostro.rjw.lan>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 2015/1/21 8:35, Rafael J. Wysocki wrote:
+> On Thursday, January 08, 2015 10:32:55 AM Jiang Liu wrote:
+>> From: Thomas Gleixner <tglx@linutronix.de>
+>>
+>> Add support of PREFETCH attributre to ACPI address space and extended
+>> address space parser.
+> 
+> This potentially enables untested configurations which tends to uncover bugs,
+> so I'm concerned.
+> 
+> What's the possible impact of this?
+Hi Rafael,
+	I have analyzed all call sites related to this change, most
+users just care about resource type(IO, MEM, IRQ etc) and ignore
+the prefetch property. Seems only PCI subsystem cares about PREFETCH.
+Regards,
+Gerry
 
---kORqDWCi7qDJ0mEj
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Sun, Jan 18, 2015 at 09:18:21PM +0100, Pavel Machek wrote:
-> Hi!
->=20
-> > > Ok, what do you suggest? AFAICT, without MODE_CONFIG, continuous ADC
-> > > mode is not available, so we have to force it periodically, so this
-> > > should be correct.
-> >=20
-> > I will have a better look and let you know. for now, adding a single
-> > read should not hurt ( but I will double check)
->=20
-> Any news there?
-
-I believe it is OK to keep your code the way you posted.
-
-Thanks.
-
->=20
-> > > > > +		if (ret)
-> > > > > +			return ret;
-> > > > > +	}
-> > > > > +
-> > > > >  	spin_lock(&bgp->lock);
-> > > > >  	temp =3D ti_bandgap_read_temp(bgp, id);
-> > > > >  	spin_unlock(&bgp->lock);
-> > > > > =20
-> > > > > -	ret |=3D ti_bandgap_adc_to_mcelsius(bgp, temp, &temp);
-> > > > > +	ret =3D ti_bandgap_adc_to_mcelsius(bgp, temp, &temp);
-> > > >=20
-> > > > this one should be part of your clean up patch
-> > >=20
-> > > Ok, can you apply the cleanup patch and I'll prepare one on the top of
-> > > it?
-> >=20
-> > I mean, you should resend the cleanup patch including the above '|=3D' =
-removal, as you are already doing in the cleanup patch.
-> >=20
->=20
-> Ok, little patch-editing can not hurt :-).
->=20
-> 									Pavel
-> --=20
-> (english) http://www.livejournal.com/~pavelmachek
-> (cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/b=
-log.html
-
---kORqDWCi7qDJ0mEj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQEcBAEBAgAGBQJUvzdpAAoJEMLUO4d9pOJWwjcH/32vXc//2M5ZyN6q35OPXZ93
-iOMnoRkEzBrUVtLrCShZ/48Q+eJcofcvSba5IYXfd4a2KBBfp+mKJFPvnYOvdzox
-AOGFKidlnmtX4fGYET7dj75e2Z+qnOY3rA0V0OsDbL6wgvX7/oRVZUa/FnCq6Ejx
-jhpd7kMAyrzfNDRFGLqt+PT/DYNCGP2hsLf7H6oAdzItvDeHXW1/hWrCfTluwZzr
-8IyNfBZKuoB7lwPpvKPQQkjbndxQLAYjZmwTPIilbOymRa1puCbvJOlgI6e/LSGe
-Mr1XNcyRVWaQ649K8xA4FtC6b9k5ffCWYGvhf35zJjHTYxw79enTCNB38h7uuiI=
-=tStF
------END PGP SIGNATURE-----
-
---kORqDWCi7qDJ0mEj--
+> 
+>> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+>> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+>> ---
+>>  drivers/acpi/resource.c |    3 +++
+>>  1 file changed, 3 insertions(+)
+>>
+>> diff --git a/drivers/acpi/resource.c b/drivers/acpi/resource.c
+>> index a56a64164410..abe3a29ad802 100644
+>> --- a/drivers/acpi/resource.c
+>> +++ b/drivers/acpi/resource.c
+>> @@ -200,6 +200,9 @@ static bool acpi_decode_space(struct resource *res,
+>>  	if (base->producer_consumer == ACPI_PRODUCER)
+>>  		res->flags |= IORESOURCE_WINDOW;
+>>  
+>> +	if (base->info.mem.caching == ACPI_PREFETCHABLE_MEMORY)
+>> +		res->flags |= IORESOURCE_PREFETCH;
+>> +
+>>  	return !(res->flags & IORESOURCE_DISABLED);
+>>  }
+>>  
+>>
+> 
