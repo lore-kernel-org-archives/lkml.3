@@ -1,105 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754001AbbAUDSo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 22:18:44 -0500
-Received: from ozlabs.org ([103.22.144.67]:37183 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753161AbbAUDSn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 22:18:43 -0500
-Date: Wed, 21 Jan 2015 14:18:36 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jens Axboe <axboe@kernel.dk>, Brian Norris <computersforpeace@gmail.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Christoph Hellwig <hch@lst.de>
-Subject: linux-next: manual merge of the block tree with the l2-mtd tree
-Message-ID: <20150121141836.50c26e27@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1753266AbbAUD3r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 22:29:47 -0500
+Received: from szxga01-in.huawei.com ([119.145.14.64]:32909 "EHLO
+	szxga01-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751683AbbAUD3q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 22:29:46 -0500
+From: Wang Nan <wangnan0@huawei.com>
+To: <jolsa@redhat.com>
+CC: <jeremie.galarneau@efficios.com>, <bigeasy@linutronix.de>,
+        <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/2] perf: convert: fix duplicate field names and avoid reserved keywords.
+Date: Wed, 21 Jan 2015 11:23:54 +0800
+Message-ID: <1421810634-1373-1-git-send-email-wangnan0@huawei.com>
+X-Mailer: git-send-email 1.8.4
+In-Reply-To: <20150120130609.GC15315@krava.brq.redhat.com>
+References: <20150120130609.GC15315@krava.brq.redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/zO6cReBlcjg6gvTlXQeXoZV"; protocol="application/pgp-signature"
+Content-Type: text/plain
+X-Originating-IP: [10.107.197.247]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/zO6cReBlcjg6gvTlXQeXoZV
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+Some parameters of syscall tracepoints named as 'nr', 'event', etc.
+When dealing with them, perf convert to ctf meets some problem:
 
-Hi Jens,
+ 1. If a parameter with name 'nr', it will duplicate syscall's
+    common field 'nr'. One such syscall is io_submit().
 
-Today's linux-next merge of the block tree got a conflict in
-drivers/mtd/mtdcore.c between commit 3efe41be224c ("mtd: implement
-common reboot notifier boilerplate") from the  tree and commit
-b4caecd48005 ("fs: introduce f_op->mmap_capabilities for nommu mmap
-support") from the block tree.
+ 2. If a parameter with name 'event', it is denied to be inserted
+    because 'event' is a babeltrace keywork. One such syscall is
+    epoll_ctl.
 
-I fixed it up (see below) and can carry the fix as necessary (no action
-is required).
+This patch appends '_dupl_X' suffix to avoid problem 1, prepend a '_'
+prefix to avoid problem 2.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Signed-off-by: Wang Nan <wangnan0@huawei.com>
+---
+ tools/perf/util/data-convert-bt.c | 65 ++++++++++++++++++++++++++++++++++++---
+ 1 file changed, 61 insertions(+), 4 deletions(-)
 
-diff --cc drivers/mtd/mtdcore.c
-index cbc0fc46d2d6,ff38a1df22f7..000000000000
---- a/drivers/mtd/mtdcore.c
-+++ b/drivers/mtd/mtdcore.c
-@@@ -366,17 -339,22 +340,33 @@@ static struct device_type mtd_devtype=20
-  	.release	=3D mtd_release,
-  };
- =20
- +static int mtd_reboot_notifier(struct notifier_block *n, unsigned long st=
-ate,
- +			       void *cmd)
- +{
- +	struct mtd_info *mtd;
- +
- +	mtd =3D container_of(n, struct mtd_info, reboot_notifier);
- +	mtd->_reboot(mtd);
- +
- +	return NOTIFY_DONE;
- +}
- +
-+ #ifndef CONFIG_MMU
-+ unsigned mtd_mmap_capabilities(struct mtd_info *mtd)
-+ {
-+ 	switch (mtd->type) {
-+ 	case MTD_RAM:
-+ 		return NOMMU_MAP_COPY | NOMMU_MAP_DIRECT | NOMMU_MAP_EXEC |
-+ 			NOMMU_MAP_READ | NOMMU_MAP_WRITE;
-+ 	case MTD_ROM:
-+ 		return NOMMU_MAP_COPY | NOMMU_MAP_DIRECT | NOMMU_MAP_EXEC |
-+ 			NOMMU_MAP_READ;
-+ 	default:
-+ 		return NOMMU_MAP_COPY;
-+ 	}
-+ }
-+ #endif
-+=20
-  /**
-   *	add_mtd_device - register an MTD device
-   *	@mtd: pointer to new MTD device info structure
+diff --git a/tools/perf/util/data-convert-bt.c b/tools/perf/util/data-convert-bt.c
+index ddecce8..b0a042d 100644
+--- a/tools/perf/util/data-convert-bt.c
++++ b/tools/perf/util/data-convert-bt.c
+@@ -567,6 +567,38 @@ static int process_sample_event(struct perf_tool *tool,
+ 	return cs ? 0 : -1;
+ }
+ 
++/* If dup < 0, add a prefix. Else, add _dupl_X suffix. */
++static char *change_name(char *name, char *orig_name, int dup)
++{
++	char *new_name = NULL;
++	size_t len;
++
++	if (!name)
++		name = orig_name;
++
++	if (dup >= 10)
++		goto out;
++
++	if (dup < 0)
++		len = strlen(name) + sizeof("_");
++	else
++		len = strlen(orig_name) + sizeof("_dupl_X");
++
++	new_name = malloc(len);
++	if (!new_name)
++		goto out;
++
++	if (dup < 0)
++		snprintf(new_name, len, "_%s", name);
++	else
++		snprintf(new_name, len, "%s_dupl_%d", orig_name, dup);
++
++out:
++	if (name != orig_name)
++		free(name);
++	return new_name;
++}
++
+ static int add_tracepoint_fields_types(struct ctf_writer *cw,
+ 				       struct format_field *fields,
+ 				       struct bt_ctf_event_class *event_class)
+@@ -577,6 +609,9 @@ static int add_tracepoint_fields_types(struct ctf_writer *cw,
+ 	for (field = fields; field; field = field->next) {
+ 		struct bt_ctf_field_type *type;
+ 		unsigned long flags = field->flags;
++		struct bt_ctf_field_type *f = NULL;
++		char *name;
++		int dup = 1;
+ 
+ 		pr2("  field '%s'\n", field->name);
+ 
+@@ -595,14 +630,36 @@ static int add_tracepoint_fields_types(struct ctf_writer *cw,
+ 		if (flags & FIELD_IS_ARRAY)
+ 			type = bt_ctf_field_type_array_create(type, field->arraylen);
+ 
+-		ret = bt_ctf_event_class_add_field(event_class, type,
+-				field->name);
++		/* Check name duplication */
++		name = field->name;
++		while (f = bt_ctf_event_class_get_field_by_name(event_class, name)) {
++			bt_ctf_field_type_put(f);
++			name = change_name(name, field->name, dup++);
++			if (!name) {
++				pr_err("Failed to create dup name for '%s'\n", field->name);
++				return -1;
++			}
++		}
++
++		ret = bt_ctf_event_class_add_field(event_class, type, name);
++		/* if failed, we may hit a keywork. try again with a '_' prefix */
++		if (ret) {
++			name = change_name(name, field->name, -1);
++			if (!name) {
++				pr_err("Failed to alloc name for '_%s'\n", field->name);
++				return -1;
++			}
++			ret = bt_ctf_event_class_add_field(event_class, type, name);
++		}
++		if (name != field->name)
++			free(name);
+ 
+ 		if (flags & FIELD_IS_ARRAY)
+ 			bt_ctf_field_type_put(type);
+ 
+ 		if (ret) {
+-			pr_err("Failed to add field '%s\n", field->name);
++			pr_err("Failed to add field '%s': %d\n",
++					field->name, ret);
+ 			return -1;
+ 		}
+ 	}
+@@ -646,7 +703,7 @@ static int add_generic_types(struct ctf_writer *cw, struct perf_evsel *evsel,
+ 	do {								\
+ 		pr2("  field '%s'\n", n);				\
+ 		if (bt_ctf_event_class_add_field(cl, t, n)) {		\
+-			pr_err("Failed to add field '%s;\n", n);	\
++			pr_err("Failed to add field '%s';\n", n);	\
+ 			return -1;					\
+ 		}							\
+ 	} while (0)
+-- 
+1.8.4
 
---Sig_/zO6cReBlcjg6gvTlXQeXoZV
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUvxqRAAoJEMDTa8Ir7ZwVYqwP/3TI1LdOdHBNbCTlZgmtGN2N
-n1zj7/DMNaIZvEYfnpY/R2pkgkj8mhcN1uJwV11SyxRK3e9LzftYVTl04ByFYqry
-Q1I4HiNnEvtpVke6rHp6QmWy+Y77fItb5wINdFbx1Lc0mMI/p8W5W1/FwY4nhe46
-LzPlSYdsf/pLlkXTvKwy/DKRoHfSsiCup87mA8rY3saCZnWthWaCA2w/CdR8IVhq
-6CK9tF86jdTP8BhurxPAa3pajb7qbv+xhZzZlEZA8QO/dNtkpGyU1YjHwZ3jFLcG
-jOUwAwUoO66UWt5ussUzw5fu20gG2rD2d+mTADh750oqlrGL7D9tKYussebiX1or
-e3hQbgPgdffCDn4dh8EqWel40PQwShNDpIteRqcUpvN3+N5DHyFc88AXHzxGQv0h
-AtXrLC+lP+R+fUSVjJwpIfTN+dmCBf2kuuD03HDEg9vA/3zpcyEoxx7GMg+usssY
-F5zjaZhzMGW/xnq7Uh4KG4pXfNlb3vLJEchFSAVdOVJi8jV+eLdqfZFXpR9HMEsU
-4cUUfrSK9nOaQPLLuHnxWPAFRJB9xrTYhQw8cMFf5Fp/e0i5qQocQ9w+lca114o/
-exeZZSx0a9RNsX1nLDTKOQqUsGl/PG2jHUHVvZ6q9fxrkjQR+rkTx7oStg5RqtkG
-+Ir27pM13YBt5GWjMDWc
-=v+Mz
------END PGP SIGNATURE-----
-
---Sig_/zO6cReBlcjg6gvTlXQeXoZV--
