@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754475AbbAUXqd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 18:46:33 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:38442 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753593AbbAUXoo (ORCPT
+	id S1754327AbbAUXqC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 18:46:02 -0500
+Received: from mailout1.samsung.com ([203.254.224.24]:54584 "EHLO
+	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753917AbbAUXow (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 18:44:44 -0500
-X-AuditID: cbfee690-f79ab6d0000046f7-22-54c039e8ff8f
+	Wed, 21 Jan 2015 18:44:52 -0500
+X-AuditID: cbfee690-f79ab6d0000046f7-23-54c039e84e53
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: s.nawrocki@samsung.com, tomasz.figa@gmail.com, mturquette@linaro.org
 Cc: kgene@kernel.org, pankaj.dubey@samsung.com, inki.dae@samsung.com,
         chanho61.park@samsung.com, sw0312.kim@samsung.com,
         cw00.choi@samsung.com, linux-samsung-soc@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 4/9] clk: samsung: exynos5433: Add clocks for CMU_MFC domain
-Date: Thu, 22 Jan 2015 08:44:33 +0900
-Message-id: <1421883878-4980-5-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCH 5/9] clk: samsung: exynos5433: Add clocks for CMU_HEVC domain
+Date: Thu, 22 Jan 2015 08:44:34 +0900
+Message-id: <1421883878-4980-6-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.5.5
 In-reply-to: <1421883878-4980-1-git-send-email-cw00.choi@samsung.com>
 References: <1421883878-4980-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsWyRsSkUPeF5YEQg4Yb4haX92tbXP/ynNVi
-	0v0JLBb9j18zW1zeNYfNYsb5fUwWTydcZLNYtPULu8XhN+2sFjMmv2SzWLXrD6MDt8fOWXfZ
-	PTat6mTzuHNtD5tH35ZVjB6fN8kFsEZx2aSk5mSWpRbp2yVwZWy89o29YJFtxebnm1kbGB8a
-	dzFyckgImEg86z3PAmGLSVy4t56ti5GLQ0hgKaNE8/u/7DBFty98YIVITGeUeDKjgw0kISTQ
-	xCRx5IoZiM0moCWx/8UNsLiIgIfE6Wc3WUAamAUuM0qs7jzFDJIQFvCReHT7G9g6FgFViW3v
-	joI18Aq4SLz88xPqDAWJZctnsoLYnAKuEs2dE1kglrlILFx/nAlkqITALnaJLzu7mSEGCUh8
-	m3wIqIgDKCErsekAM8QcSYmDK26wTGAUXsDIsIpRNLUguaA4Kb3IRK84Mbe4NC9dLzk/dxMj
-	MB5O/3s2YQfjvQPWhxgFOBiVeHhfKO4PEWJNLCuuzD3EaAq0YSKzlGhyPjDq8kriDY3NjCxM
-	TUyNjcwtzZTEeV9L/QwWEkhPLEnNTk0tSC2KLyrNSS0+xMjEwSnVwOhi86SctdumWmDKsksP
-	92+NSNxx8PgWFjmGz8YtpgdkPP+x3is57LXOnaPKOdHukR7Ly4TNVwyXnLN8cZNHyUPv7iLj
-	XPPKdN7SpoakyvuzpIv+M8V0BtWX2vgKGd4+G/qCL8xx4447CUsCw5NaYn5kq/i8iytacsbs
-	e7XpNb7k/L8B6wLClFiKMxINtZiLihMB9XpCLIICAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJIsWRmVeSWpSXmKPExsVy+t9jQd0XlgdCDJ4s5bO4vF/b4vqX56wW
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrHLMWRmVeSWpSXmKPExsWyRsSkSPeF5YEQg12nJC0u79e2uP7lOavF
+	pPsTWCz6H79mtri8aw6bxYzz+5gsnk64yGaxaOsXdovDb9pZLWZMfslmsWrXH0YHbo+ds+6y
+	e2xa1cnmcefaHjaPvi2rGD0+b5ILYI3isklJzcksSy3St0vgytg85yxLQZ99xbOua+wNjPtN
+	uxg5OSQETCR+r1/CAmGLSVy4t56ti5GLQ0hgKaPEj6v3GWGK+g7+ZIZITGeUWDNjHhtIQkig
+	iUniyBUzEJtNQEti/4sbYHERAQ+J089usoA0MAtcZpRY3XmKGSQhLOAr8WHdEbCpLAKqEtsO
+	bGMHsXkFXCQmz2qGOkNBYtnymawgNqeAq0Rz50QWiGUuEgvXH2eCqNnFLnHoSiLEHAGJb5MP
+	AdVwAMVlJTYdYIYokZQ4uOIGywRG4QWMDKsYRVMLkguKk9KLTPSKE3OLS/PS9ZLzczcxAqPh
+	9L9nE3Yw3jtgfYhRgINRiYf3heL+ECHWxLLiytxDjKZAGyYyS4km5wNjLq8k3tDYzMjC1MTU
+	2Mjc0kxJnPe11M9gIYH0xJLU7NTUgtSi+KLSnNTiQ4xMHJxSDYzFSZ/T6l6d6rhUyq5064PP
+	90excrPfOF1iMrtSeMJX83fDzYd6j1SEZ5edMYzdwmJnsUlHmTMgmPGhnXvIitzfbvvuLtQ1
+	rvD68ObIqUSPHd0LTD6HrS9uzlL5vdjZVDx54ppLzpeuruDZyLHOJLxQ7ozgx9kOv41mNC3y
+	u2IlLHzUi1tN+ZYSS3FGoqEWc1FxIgBSu3eCgQIAAA==
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrJIsWRmVeSWpSXmKPExsVy+t9jQd0XlgdCDBZM5Le4vF/b4vqX56wW
 	k+5PYLHof/ya2eLyrjlsFjPO72OyeDrhIpvFoq1f2C0Ov2lntZgx+SWbxapdfxgduD12zrrL
 	7rFpVSebx51re9g8+rasYvT4vEkugDWqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX
 	0NLCXEkhLzE31VbJxSdA1y0zB+g0JYWyxJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+IUFwPUYG
-	aCBhDWPGxmvf2AsW2VZsfr6ZtYHxoXEXIyeHhICJxO0LH1ghbDGJC/fWs3UxcnEICUxnlHgy
-	o4MNJCEk0MQkceSKGYjNJqAlsf/FDbC4iICHxOlnN1lAGpgFLjNKrO48xQySEBbwkXh0+xsL
-	iM0ioCqx7d1RsAZeAReJl39+skBsU5BYtnwm2GZOAVeJ5s6JLBDLXCQWrj/ONIGRdwEjwypG
-	0dSC5ILipPRcI73ixNzi0rx0veT83E2M4Gh7Jr2DcVWDxSFGAQ5GJR7eF4r7Q4RYE8uKK3MP
-	MUpwMCuJ8HpoHAgR4k1JrKxKLcqPLyrNSS0+xGgKdNVEZinR5HxgIsgriTc0NjEzsjQyN7Qw
-	MjZXEudVsm8LERJITyxJzU5NLUgtgulj4uCUamAUPK3TsMu3csWE3Sv+9izSlT5ZKlBs0Sax
-	lmnWXAXvcJlpobMf5IgzhR6+bxR69ZH8NS1FhWbXj0rbF173njt9huI9Z47D/+bG3dmT8fBH
-	vP2RjHU+RXwSD9V2ab778Ggfh4duMLeF/bR3e26zvo/M9FpY+SyB5X/HuUXb9cumrvexnnls
-	5dd1SizFGYmGWsxFxYkAw6NkP8wCAAA=
+	aCBhDWPG5jlnWQr67CuedV1jb2Dcb9rFyMkhIWAi0XfwJzOELSZx4d56ti5GLg4hgemMEmtm
+	zGMDSQgJNDFJHLliBmKzCWhJ7H9xAywuIuAhcfrZTRaQBmaBy4wSqztPgU0SFvCV+LDuCCOI
+	zSKgKrHtwDZ2EJtXwEVi8qxmFohtChLLls9kBbE5BVwlmjsnskAsc5FYuP440wRG3gWMDKsY
+	RVMLkguKk9JzDfWKE3OLS/PS9ZLzczcxgqPtmdQOxpUNFocYBTgYlXh4XyjuDxFiTSwrrsw9
+	xCjBwawkwuuhcSBEiDclsbIqtSg/vqg0J7X4EKMp0FUTmaVEk/OBiSCvJN7Q2MTMyNLI3NDC
+	yNhcSZxXyb4tREggPbEkNTs1tSC1CKaPiYNTqoFRk1e5XPHNbBHZ48x10uWJZ84stWB6I1Ea
+	vn7atifxiZOnz3iX4fTBLGPFjHb1T/O22L478VTNqPLtRGn71a0P13YzT7X91Pb2udGm89vm
+	y29r/u673H0W64tpnNN6yh1bfqjnHuK8J/Td/sxMa93l5g9mOQfPf3l9ml7zmlbnVbqvkwOL
+	fG8KKrEUZyQaajEXFScCAHVccGjMAgAA
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -52,214 +52,217 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the mux/divider/gate clocks for CMU_MFC domain which
-generates the clocks for MFC(Multi-Format Codec) IP.
+This patch adds the mux/divider/gate clocks for CMU_HEVC domain which
+generates the clocks for HEVC(High Efficiency Video Codec) decoder IP.
 
 Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
 Cc: Tomasz Figa <tomasz.figa@gmail.com>
 Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
 Acked-by: Inki Dae <inki.dae@samsung.com>
 ---
- .../devicetree/bindings/clock/exynos5433-clock.txt |   7 ++
- drivers/clk/samsung/clk-exynos5433.c               | 113 +++++++++++++++++++++
+ .../devicetree/bindings/clock/exynos5433-clock.txt |   8 ++
+ drivers/clk/samsung/clk-exynos5433.c               | 115 +++++++++++++++++++++
  include/dt-bindings/clock/exynos5433.h             |  27 ++++-
- 3 files changed, 146 insertions(+), 1 deletion(-)
+ 3 files changed, 149 insertions(+), 1 deletion(-)
 
 diff --git a/Documentation/devicetree/bindings/clock/exynos5433-clock.txt b/Documentation/devicetree/bindings/clock/exynos5433-clock.txt
-index 790d93b..d3deaaf 100644
+index d3deaaf..10908d2 100644
 --- a/Documentation/devicetree/bindings/clock/exynos5433-clock.txt
 +++ b/Documentation/devicetree/bindings/clock/exynos5433-clock.txt
-@@ -39,6 +39,8 @@ Required Properties:
-     L2 cache controller.
-   - "samsung,exynos5433-cmu-mscl" - clock controller compatible for CMU_MSCL
+@@ -41,6 +41,8 @@ Required Properties:
      which generates clocks for M2M (Memory to Memory) scaler and JPEG IPs.
-+  - "samsung,exynos5433-cmu-mfc"  - clock controller compatible for CMU_MFC
-+    which generates clocks for MFC(Multi-Format Codec) IP.
+   - "samsung,exynos5433-cmu-mfc"  - clock controller compatible for CMU_MFC
+     which generates clocks for MFC(Multi-Format Codec) IP.
++  - "samsung,exynos5433-cmu-hevc" - clock controller compatible for CMU_HEVC
++    which generates clocks for HEVC(High Efficiency Video Codec) decoder IP.
  
  - reg: physical base address of the controller and length of memory mapped
    region.
-@@ -156,6 +158,11 @@ Example 1: Examples of clock controller nodes are listed below.
+@@ -164,6 +166,12 @@ Example 1: Examples of clock controller nodes are listed below.
  		#clock-cells = <1>;
  	};
  
-+	cmu_mfc: clock-controller@15280000 {
-+		compatible = "samsung,exynos5433-cmu-mfc";
-+		reg = <0x15280000 0x0b08>;
++	cmu_hevc: clock-controller@14f80000 {
++		compatible = "samsung,exynos5433-cmu-hevc";
++		reg = <0x14f80000 0x0b08>;
 +		#clock-cells = <1>;
 +	};
- 
++
  Example 2: UART controller node that consumes the clock generated by the clock
  	   controller.
+ 
 diff --git a/drivers/clk/samsung/clk-exynos5433.c b/drivers/clk/samsung/clk-exynos5433.c
-index 60ac4c7..b64f703 100644
+index b64f703..1c2e5c8 100644
 --- a/drivers/clk/samsung/clk-exynos5433.c
 +++ b/drivers/clk/samsung/clk-exynos5433.c
 @@ -560,6 +560,9 @@ static struct samsung_gate_clock top_gate_clks[] __initdata = {
  	GATE(CLK_ACLK_GSCL_333, "aclk_gscl_333", "div_aclk_gscl_333",
  			ENABLE_ACLK_TOP, 14,
  			CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_MFC_400, "aclk_mfc_400", "div_aclk_mfc_400",
-+			ENABLE_ACLK_TOP, 3,
++	GATE(CLK_ACLK_HEVC_400, "aclk_hevc_400", "div_aclk_hevc_400",
++			ENABLE_ACLK_TOP, 5,
 +			CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED, 0),
- 	GATE(CLK_ACLK_G2D_266, "aclk_g2d_266", "div_aclk_g2d_266",
- 			ENABLE_ACLK_TOP, 2,
+ 	GATE(CLK_ACLK_MFC_400, "aclk_mfc_400", "div_aclk_mfc_400",
+ 			ENABLE_ACLK_TOP, 3,
  			CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED, 0),
-@@ -3990,3 +3993,113 @@ static void __init exynos5433_cmu_mscl_init(struct device_node *np)
+@@ -4103,3 +4106,115 @@ static void __init exynos5433_cmu_mfc_init(struct device_node *np)
  }
- CLK_OF_DECLARE(exynos5433_cmu_mscl, "samsung,exynos5433-cmu-mscl",
- 		exynos5433_cmu_mscl_init);
+ CLK_OF_DECLARE(exynos5433_cmu_mfc, "samsung,exynos5433-cmu-mfc",
+ 		exynos5433_cmu_mfc_init);
 +
 +/*
-+ * Register offset definitions for CMU_MFC
++ * Register offset definitions for CMU_HEVC
 + */
-+#define MUX_SEL_MFC				0x0200
-+#define MUX_ENABLE_MFC				0x0300
-+#define MUX_STAT_MFC				0x0400
-+#define DIV_MFC					0x0600
-+#define DIV_STAT_MFC				0x0700
-+#define ENABLE_ACLK_MFC				0x0800
-+#define ENABLE_ACLK_MFC_SECURE_SMMU_MFC		0x0804
-+#define ENABLE_PCLK_MFC				0x0900
-+#define ENABLE_PCLK_MFC_SECURE_SMMU_MFC		0x0904
-+#define ENABLE_IP_MFC0				0x0b00
-+#define ENABLE_IP_MFC1				0x0b04
-+#define ENABLE_IP_MFC_SECURE_SMMU_MFC		0x0b08
++#define MUX_SEL_HEVC				0x0200
++#define MUX_ENABLE_HEVC				0x0300
++#define MUX_STAT_HEVC				0x0400
++#define DIV_HEVC				0x0600
++#define DIV_STAT_HEVC				0x0700
++#define ENABLE_ACLK_HEVC			0x0800
++#define ENABLE_ACLK_HEVC_SECURE_SMMU_HEVC	0x0804
++#define ENABLE_PCLK_HEVC			0x0900
++#define ENABLE_PCLK_HEVC_SECURE_SMMU_HEVC	0x0904
++#define ENABLE_IP_HEVC0				0x0b00
++#define ENABLE_IP_HEVC1				0x0b04
++#define ENABLE_IP_HEVC_SECURE_SMMU_HEVC		0x0b08
 +
-+static unsigned long mfc_clk_regs[] __initdata = {
-+	MUX_SEL_MFC,
-+	MUX_ENABLE_MFC,
-+	MUX_STAT_MFC,
-+	DIV_MFC,
-+	DIV_STAT_MFC,
-+	ENABLE_ACLK_MFC,
-+	ENABLE_ACLK_MFC_SECURE_SMMU_MFC,
-+	ENABLE_PCLK_MFC,
-+	ENABLE_PCLK_MFC_SECURE_SMMU_MFC,
-+	ENABLE_IP_MFC0,
-+	ENABLE_IP_MFC1,
-+	ENABLE_IP_MFC_SECURE_SMMU_MFC,
++static unsigned long hevc_clk_regs[] __initdata = {
++	MUX_SEL_HEVC,
++	MUX_ENABLE_HEVC,
++	MUX_STAT_HEVC,
++	DIV_HEVC,
++	DIV_STAT_HEVC,
++	ENABLE_ACLK_HEVC,
++	ENABLE_ACLK_HEVC_SECURE_SMMU_HEVC,
++	ENABLE_PCLK_HEVC,
++	ENABLE_PCLK_HEVC_SECURE_SMMU_HEVC,
++	ENABLE_IP_HEVC0,
++	ENABLE_IP_HEVC1,
++	ENABLE_IP_HEVC_SECURE_SMMU_HEVC,
 +};
 +
-+PNAME(mout_aclk_mfc_400_user_p)		= { "fin_pll", "aclk_mfc_400", };
++PNAME(mout_aclk_hevc_400_user_p)	= { "fin_pll", "aclk_hevc_400", };
 +
-+static struct samsung_mux_clock mfc_mux_clks[] __initdata = {
-+	/* MUX_SEL_MFC */
-+	MUX(CLK_MOUT_ACLK_MFC_400_USER, "mout_aclk_mfc_400_user",
-+			mout_aclk_mfc_400_user_p, MUX_SEL_MFC, 0, 0),
++static struct samsung_mux_clock hevc_mux_clks[] __initdata = {
++	/* MUX_SEL_HEVC */
++	MUX(CLK_MOUT_ACLK_HEVC_400_USER, "mout_aclk_hevc_400_user",
++			mout_aclk_hevc_400_user_p, MUX_SEL_HEVC, 0, 0),
 +};
 +
-+static struct samsung_div_clock mfc_div_clks[] __initdata = {
-+	/* DIV_MFC */
-+	DIV(CLK_DIV_PCLK_MFC, "div_pclk_mfc", "mout_aclk_mfc_400_user",
-+			DIV_MFC, 0, 2),
++static struct samsung_div_clock hevc_div_clks[] __initdata = {
++	/* DIV_HEVC */
++	DIV(CLK_DIV_PCLK_HEVC, "div_pclk_hevc", "mout_aclk_hevc_400_user",
++			DIV_HEVC, 0, 2),
 +};
 +
-+static struct samsung_gate_clock mfc_gate_clks[] __initdata = {
-+	/* ENABLE_ACLK_MFC */
-+	GATE(CLK_ACLK_BTS_MFC_1, "aclk_bts_mfc_1", "mout_aclk_mfc_400_user",
-+			ENABLE_ACLK_MFC, 6, 0, 0),
-+	GATE(CLK_ACLK_BTS_MFC_0, "aclk_bts_mfc_0", "mout_aclk_mfc_400_user",
-+			ENABLE_ACLK_MFC, 5, 0, 0),
-+	GATE(CLK_ACLK_AHB2APB_MFCP, "aclk_ahb2apb_mfcp", "div_pclk_mfc",
-+			ENABLE_ACLK_MFC, 4, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_XIU_MFCX, "aclk_xiu_mfcx", "mout_aclk_mfc_400_user",
-+			ENABLE_ACLK_MFC, 3, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_MFCNP_100, "aclk_mfcnp_100", "div_pclk_mfc",
-+			ENABLE_ACLK_MFC, 2, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_MFCND_400, "aclk_mfcnd_400", "mout_aclk_mfc_400_user",
-+			ENABLE_ACLK_MFC, 1, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_MFC, "aclk_mfc", "mout_aclk_mfc_400_user",
-+			ENABLE_ACLK_MFC, 0, 0, 0),
++static struct samsung_gate_clock hevc_gate_clks[] __initdata = {
++	/* ENABLE_ACLK_HEVC */
++	GATE(CLK_ACLK_BTS_HEVC_1, "aclk_bts_hevc_1", "mout_aclk_hevc_400_user",
++			ENABLE_ACLK_HEVC, 6, 0, 0),
++	GATE(CLK_ACLK_BTS_HEVC_0, "aclk_bts_hevc_0", "mout_aclk_hevc_400_user",
++			ENABLE_ACLK_HEVC, 5, 0, 0),
++	GATE(CLK_ACLK_AHB2APB_HEVCP, "aclk_ahb2apb_hevcp", "div_pclk_hevc",
++			ENABLE_ACLK_HEVC, 4, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_XIU_HEVCX, "aclk_xiu_hevcx", "mout_aclk_hevc_400_user",
++			ENABLE_ACLK_HEVC, 3, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_HEVCNP_100, "aclk_hevcnp_100", "div_pclk_hevc",
++			ENABLE_ACLK_HEVC, 2, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_HEVCND_400, "aclk_hevcnd_400", "mout_aclk_hevc_400_user",
++			ENABLE_ACLK_HEVC, 1, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_HEVC, "aclk_hevc", "mout_aclk_hevc_400_user",
++			ENABLE_ACLK_HEVC, 0, 0, 0),
 +
-+	/* ENABLE_ACLK_MFC_SECURE_SMMU_MFC */
-+	GATE(CLK_ACLK_SMMU_MFC_1, "aclk_smmu_mfc_1", "mout_aclk_mfc_400_user",
-+			ENABLE_ACLK_MFC_SECURE_SMMU_MFC,
++	/* ENABLE_ACLK_HEVC_SECURE_SMMU_HEVC */
++	GATE(CLK_ACLK_SMMU_HEVC_1, "aclk_smmu_hevc_1",
++			"mout_aclk_hevc_400_user",
++			ENABLE_ACLK_HEVC_SECURE_SMMU_HEVC,
 +			1, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_SMMU_MFC_0, "aclk_smmu_mfc_0", "mout_aclk_mfc_400_user",
-+			ENABLE_ACLK_MFC_SECURE_SMMU_MFC,
++	GATE(CLK_ACLK_SMMU_HEVC_0, "aclk_smmu_hevc_0",
++			"mout_aclk_hevc_400_user",
++			ENABLE_ACLK_HEVC_SECURE_SMMU_HEVC,
 +			0, CLK_IGNORE_UNUSED, 0),
 +
-+	/* ENABLE_PCLK_MFC */
-+	GATE(CLK_PCLK_BTS_MFC_1, "pclk_bts_mfc_1", "div_pclk_mfc",
-+			ENABLE_PCLK_MFC, 4, 0, 0),
-+	GATE(CLK_PCLK_BTS_MFC_0, "pclk_bts_mfc_0", "div_pclk_mfc",
-+			ENABLE_PCLK_MFC, 3, 0, 0),
-+	GATE(CLK_PCLK_PMU_MFC, "pclk_pmu_mfc", "div_pclk_mfc",
-+			ENABLE_PCLK_MFC, 2, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_PCLK_SYSREG_MFC, "pclk_sysreg_mfc", "div_pclk_mfc",
-+			ENABLE_PCLK_MFC, 1, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_PCLK_MFC, "pclk_mfc", "div_pclk_mfc",
-+			ENABLE_PCLK_MFC, 4, CLK_IGNORE_UNUSED, 0),
++	/* ENABLE_PCLK_HEVC */
++	GATE(CLK_PCLK_BTS_HEVC_1, "pclk_bts_hevc_1", "div_pclk_hevc",
++			ENABLE_PCLK_HEVC, 4, 0, 0),
++	GATE(CLK_PCLK_BTS_HEVC_0, "pclk_bts_hevc_0", "div_pclk_hevc",
++			ENABLE_PCLK_HEVC, 3, 0, 0),
++	GATE(CLK_PCLK_PMU_HEVC, "pclk_pmu_hevc", "div_pclk_hevc",
++			ENABLE_PCLK_HEVC, 2, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_PCLK_SYSREG_HEVC, "pclk_sysreg_hevc", "div_pclk_hevc",
++			ENABLE_PCLK_HEVC, 1, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_PCLK_HEVC, "pclk_hevc", "div_pclk_hevc",
++			ENABLE_PCLK_HEVC, 4, CLK_IGNORE_UNUSED, 0),
 +
-+	/* ENABLE_PCLK_MFC_SECURE_SMMU_MFC */
-+	GATE(CLK_PCLK_SMMU_MFC_1, "pclk_smmu_mfc_1", "div_pclk_mfc",
-+			ENABLE_PCLK_MFC_SECURE_SMMU_MFC,
++	/* ENABLE_PCLK_HEVC_SECURE_SMMU_HEVC */
++	GATE(CLK_PCLK_SMMU_HEVC_1, "pclk_smmu_hevc_1", "div_pclk_hevc",
++			ENABLE_PCLK_HEVC_SECURE_SMMU_HEVC,
 +			1, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_PCLK_SMMU_MFC_0, "pclk_smmu_mfc_0", "div_pclk_mfc",
-+			ENABLE_PCLK_MFC_SECURE_SMMU_MFC,
++	GATE(CLK_PCLK_SMMU_HEVC_0, "pclk_smmu_hevc_0", "div_pclk_hevc",
++			ENABLE_PCLK_HEVC_SECURE_SMMU_HEVC,
 +			0, CLK_IGNORE_UNUSED, 0),
 +};
 +
-+static struct samsung_cmu_info mfc_cmu_info __initdata = {
-+	.mux_clks		= mfc_mux_clks,
-+	.nr_mux_clks		= ARRAY_SIZE(mfc_mux_clks),
-+	.div_clks		= mfc_div_clks,
-+	.nr_div_clks		= ARRAY_SIZE(mfc_div_clks),
-+	.gate_clks		= mfc_gate_clks,
-+	.nr_gate_clks		= ARRAY_SIZE(mfc_gate_clks),
-+	.nr_clk_ids		= MFC_NR_CLK,
-+	.clk_regs		= mfc_clk_regs,
-+	.nr_clk_regs		= ARRAY_SIZE(mfc_clk_regs),
++static struct samsung_cmu_info hevc_cmu_info __initdata = {
++	.mux_clks		= hevc_mux_clks,
++	.nr_mux_clks		= ARRAY_SIZE(hevc_mux_clks),
++	.div_clks		= hevc_div_clks,
++	.nr_div_clks		= ARRAY_SIZE(hevc_div_clks),
++	.gate_clks		= hevc_gate_clks,
++	.nr_gate_clks		= ARRAY_SIZE(hevc_gate_clks),
++	.nr_clk_ids		= HEVC_NR_CLK,
++	.clk_regs		= hevc_clk_regs,
++	.nr_clk_regs		= ARRAY_SIZE(hevc_clk_regs),
 +};
 +
-+static void __init exynos5433_cmu_mfc_init(struct device_node *np)
++static void __init exynos5433_cmu_hevc_init(struct device_node *np)
 +{
-+	samsung_cmu_register_one(np, &mfc_cmu_info);
++	samsung_cmu_register_one(np, &hevc_cmu_info);
 +}
-+CLK_OF_DECLARE(exynos5433_cmu_mfc, "samsung,exynos5433-cmu-mfc",
-+		exynos5433_cmu_mfc_init);
++CLK_OF_DECLARE(exynos5433_cmu_hevc, "samsung,exynos5433-cmu-hevc",
++		exynos5433_cmu_hevc_init);
 diff --git a/include/dt-bindings/clock/exynos5433.h b/include/dt-bindings/clock/exynos5433.h
-index 757c419..dfeb9d6 100644
+index dfeb9d6..2b3ac5a 100644
 --- a/include/dt-bindings/clock/exynos5433.h
 +++ b/include/dt-bindings/clock/exynos5433.h
-@@ -153,8 +153,9 @@
- #define CLK_ACLK_GSCL_333		233
+@@ -154,8 +154,9 @@
  #define CLK_SCLK_JPEG_MSCL		234
  #define CLK_ACLK_MSCL_400		235
-+#define CLK_ACLK_MFC_400		236
+ #define CLK_ACLK_MFC_400		236
++#define CLK_ACLK_HEVC_400		237
  
--#define TOP_NR_CLK			236
-+#define TOP_NR_CLK			237
+-#define TOP_NR_CLK			237
++#define TOP_NR_CLK			238
  
  /* CMU_CPIF */
  #define CLK_FOUT_MPHY_PLL		1
-@@ -976,4 +977,28 @@
+@@ -1001,4 +1002,28 @@
  
- #define MSCL_NR_CLK					30
+ #define MFC_NR_CLK					19
  
-+/* CMU_MFC */
-+#define CLK_MOUT_ACLK_MFC_400_USER			1
++/* CMU_HEVC */
++#define CLK_MOUT_ACLK_HEVC_400_USER			1
 +
-+#define CLK_DIV_PCLK_MFC				2
++#define CLK_DIV_PCLK_HEVC				2
 +
-+#define CLK_ACLK_BTS_MFC_1				3
-+#define CLK_ACLK_BTS_MFC_0				4
-+#define CLK_ACLK_AHB2APB_MFCP				5
-+#define CLK_ACLK_XIU_MFCX				6
-+#define CLK_ACLK_MFCNP_100				7
-+#define CLK_ACLK_MFCND_400				8
-+#define CLK_ACLK_MFC					9
-+#define CLK_ACLK_SMMU_MFC_1				10
-+#define CLK_ACLK_SMMU_MFC_0				11
-+#define CLK_PCLK_BTS_MFC_1				12
-+#define CLK_PCLK_BTS_MFC_0				13
-+#define CLK_PCLK_PMU_MFC				14
-+#define CLK_PCLK_SYSREG_MFC				15
-+#define CLK_PCLK_MFC					16
-+#define CLK_PCLK_SMMU_MFC_1				17
-+#define CLK_PCLK_SMMU_MFC_0				18
++#define CLK_ACLK_BTS_HEVC_1				3
++#define CLK_ACLK_BTS_HEVC_0				4
++#define CLK_ACLK_AHB2APB_HEVCP				5
++#define CLK_ACLK_XIU_HEVCX				6
++#define CLK_ACLK_HEVCNP_100				7
++#define CLK_ACLK_HEVCND_400				8
++#define CLK_ACLK_HEVC					9
++#define CLK_ACLK_SMMU_HEVC_1				10
++#define CLK_ACLK_SMMU_HEVC_0				11
++#define CLK_PCLK_BTS_HEVC_1				12
++#define CLK_PCLK_BTS_HEVC_0				13
++#define CLK_PCLK_PMU_HEVC				14
++#define CLK_PCLK_SYSREG_HEVC				15
++#define CLK_PCLK_HEVC					16
++#define CLK_PCLK_SMMU_HEVC_1				17
++#define CLK_PCLK_SMMU_HEVC_0				18
 +
-+#define MFC_NR_CLK					19
++#define HEVC_NR_CLK					19
 +
  #endif /* _DT_BINDINGS_CLOCK_EXYNOS5433_H */
 -- 
