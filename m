@@ -1,76 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753958AbbAUUZG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 15:25:06 -0500
-Received: from ozlabs.org ([103.22.144.67]:59286 "EHLO ozlabs.org"
+	id S1753299AbbAUU21 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 15:28:27 -0500
+Received: from quartz.orcorp.ca ([184.70.90.242]:54038 "EHLO quartz.orcorp.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753667AbbAUUY4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 15:24:56 -0500
-Date: Thu, 22 Jan 2015 07:24:48 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: green@linuxhacker.ru, Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
-        "<linux-kernel@vger.kernel.org> Mailing List" 
-	<linux-kernel@vger.kernel.org>,
-        Andreas Dilger <andreas.dilger@intel.com>,
-        Christoph Hellwig <hch@lst.de>
-Subject: Re: [PATCH] staging/lustre/llite: get rid of backing_dev_info
-Message-ID: <20150122072448.1af839ea@canb.auug.org.au>
-In-Reply-To: <54BFE4AC.5010609@kernel.dk>
-References: <20150121144558.79cb2056@canb.auug.org.au>
-	<1421827847-8371-1-git-send-email-green@linuxhacker.ru>
-	<54BFE4AC.5010609@kernel.dk>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1751941AbbAUU2Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 15:28:16 -0500
+Date: Wed, 21 Jan 2015 13:27:00 -0700
+From: Jason Gunthorpe <jgunthorpe@obsidianresearch.com>
+To: Pantelis Antoniou <pantelis.antoniou@konsulko.com>
+Cc: One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        atull <atull@opensource.altera.com>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Pavel Machek <pavel@denx.de>, hpa@zytor.com,
+        Michal Simek <monstr@monstr.eu>,
+        Michal Simek <michal.simek@xilinx.com>,
+        Randy Dunlap <rdunlap@infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        devicetree@vger.kernel.org, robh+dt@kernel.org,
+        Grant Likely <grant.likely@linaro.org>, iws@ovro.caltech.edu,
+        linux-doc@vger.kernel.org, Mark Brown <broonie@kernel.org>,
+        philip@balister.org, rubini@gnudd.com,
+        Steffen Trumtrar <s.trumtrar@pengutronix.de>, jason@lakedaemon.net,
+        kyle.teske@ni.com, nico@linaro.org, Felipe Balbi <balbi@ti.com>,
+        m.chehab@samsung.com, davidb@codeaurora.org,
+        Rob Landley <rob@landley.net>, davem@davemloft.net, cesarb@cesarb.net,
+        sameo@linux.intel.com, Andrew Morton <akpm@linux-foundation.org>,
+        Linus Walleij <linus.walleij@linaro.org>, pawel.moll@arm.com,
+        mark.rutland@arm.com, ijc+devicetree@hellion.org.uk,
+        galak@codeaurora.org, devel@driverdev.osuosl.org,
+        Alan Tull <delicious.quinoa@gmail.com>, dinguyen@opensource.altera.com,
+        yvanderv@opensource.altera.com
+Subject: Re: [PATCH v8 2/4] fpga manager: add sysfs interface document
+Message-ID: <20150121202700.GB4942@obsidianresearch.com>
+References: <20150113162847.2778b5a5@lxorguk.ukuu.org.uk>
+ <20150113200032.GA16205@obsidianresearch.com>
+ <alpine.DEB.2.02.1501131455130.30192@linuxheads99>
+ <20150113222450.GA17475@obsidianresearch.com>
+ <alpine.DEB.2.02.1501150936390.16760@linuxheads99>
+ <20150115184726.GA23247@obsidianresearch.com>
+ <20150115204502.591bca1d@lxorguk.ukuu.org.uk>
+ <A3B5BC9B-EB88-4C0E-B235-E9C86D23DC34@konsulko.com>
+ <20150121160151.453ba403@lxorguk.ukuu.org.uk>
+ <D466D9FF-25DA-4765-9469-128733BEBC4D@konsulko.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/2sdZxFO2XtpBIPP=Ao4t_9H"; protocol="application/pgp-signature"
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <D466D9FF-25DA-4765-9469-128733BEBC4D@konsulko.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Broken-Reverse-DNS: no host name found for IP address 10.0.0.183
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/2sdZxFO2XtpBIPP=Ao4t_9H
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On Wed, Jan 21, 2015 at 06:33:12PM +0200, Pantelis Antoniou wrote:
+> Hi Alan,
+> 
+> > On Jan 21, 2015, at 18:01 , One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk> wrote:
+> > 
+> > On Thu, 15 Jan 2015 22:54:46 +0200
+> > Pantelis Antoniou <pantelis.antoniou@konsulko.com> wrote:
+> > 
+> >> Hi Alan,
+> >> 
+> >>> On Jan 15, 2015, at 22:45 , One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk> wrote:
+> >>> 
+> >>> On Thu, 15 Jan 2015 11:47:26 -0700
+> >>> Jason Gunthorpe <jgunthorpe@obsidianresearch.com> wrote:
+> >>>> It is a novel idea, my concern would be that embedding the FPGA in the
+> >>>> DT makes it permanent unswappable kernel memory.
+> >>>> Not having the kernel hold the FPGA is best for many uses.
+> >>> 
+> >>> If you have a filesysytem before the FPGA is set up then it belongs in
+> >>> the file system. As you presumably loaded the kernel from somewhere there
+> >>> ought to be a file system (even an initrd).
+> >>> 
+> >> 
+> >> Request firmware does not imply keeping it around. You can always re-request
+> >> when reloading (although there’s a nasty big of caching that needs to be
+> >> resolved with the firmware loader).
+> > 
+> > Which comes down to the same thing. Unless you can prove that there is a
+> > path to recover the firmware file that does not have any dependancies
+> > upon the firmware executing (and those can be subtle and horrid at times)
+> > you need to keep it around for suspend/resume at least and potentially
+> > any unexpected error/reset.
+> > 
+> 
+> In that case the only safe place to put it is in the kernel image itself, which
+> is something the firmware loader already supports.
 
-Hi Jens,
+My point is that the current firmware layer is overly cautious and
+FPGAs are very big. My current project on small Xilinx device has a
+10MB programming file. The biggest Xilinx device today has a max
+bitfile size around 122MB.
 
-On Wed, 21 Jan 2015 10:41:00 -0700 Jens Axboe <axboe@kernel.dk> wrote:
->
-> On 01/21/2015 01:10 AM, green@linuxhacker.ru wrote:
-> > From: Oleg Drokin <green@linuxhacker.ru>
-> >
-> > With removal of backing_dev_info from struct address_space,
-> > we don't need to assign it in Lustre either.
->=20
-> Thanks Oleg, applied. Stephen, you should be able to drop the BROKEN=20
-> lustre patch again.
+So keeping that much memory pinned in the kernel when I can prove it
+is uncessary for my system (either because there is no suspend/resume
+possibility, or because I know the CPU can always access the
+filesytem) is very undesirable.
 
-Will do, thanks.
+Other systems might have to take the ram hit.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Since it seems like the kernel has no way to know, we probably have
+have a way to tell it not to cache the bitfile.
 
---Sig_/2sdZxFO2XtpBIPP=Ao4t_9H
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUwAsVAAoJEMDTa8Ir7ZwVeBoP/2CIvhy5rpOy++x9BlRt2mtI
-3GVxJMN7/4Bd3B4LZnKXREArwM99WXFy3OLIt0QxtzN07tfuaEFaJtKckc50/Q1h
-JMPsNovBdoj5Gr1DoZc3U975CiBULqtYdDbT2Mp1cHK2Sn9owEDFRCH3D73mOCS/
-BCZEfRMOm3E75tRTUr6gyGGJLEdG2Dx8I7IbMxFyQgzh7wS0fFlrrGRFHclxpKf6
-1Ci91GcyCWdMACx+jMzz0TO+juEkIUTEifdD9xDizHnO7GWSdzw4t7jl+7Nh0rGs
-mRdOu3QsBjKyc+YX0aZswVQALnchIxuXR/5ecrtBntMSAZl6EkJWE6/VFidrtW9y
-B2nON1Jh9KiHA9CfZ32xmIIqCgXwkjGVwzrVXwksH722QqF9Qc9Zx0YDtVUBeVyT
-2UNuz/xMquhBUc1Tz/H9WyPBZYucGjdCWE+JzJkuMk/inEUqxhbq3FVFy+WSAdMf
-Nlhvl8zf5ook5/D+sW++lTBeQNLAUal4trBX3++nA3wWVjSUcdnQjgnNnito/lmh
-HTgjJcmRhO4zXk+60M6RaOTqJlRlQZSnDQphRr+49gUYQ6w+RPFmTeBV8KI3xTkV
-KZilb5RVPRefLFDTRCozu8GpNNIfT6lD4TCDR/f5wJG22AzcDJ6/tA33R4DQQnLh
-4MndE2yKVEYH4Q4Uur9+
-=X2tG
------END PGP SIGNATURE-----
-
---Sig_/2sdZxFO2XtpBIPP=Ao4t_9H--
+Jason
