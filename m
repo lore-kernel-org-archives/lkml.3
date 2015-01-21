@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692AbbAUAl1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 19:41:27 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:41161 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751037AbbAUAl0 (ORCPT
+	id S1752530AbbAUATq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 19:19:46 -0500
+Received: from v094114.home.net.pl ([79.96.170.134]:64234 "HELO
+	v094114.home.net.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750717AbbAUATo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 19:41:26 -0500
-Date: Wed, 21 Jan 2015 00:41:17 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Paul Moore <pmoore@redhat.com>
-Cc: Sabrina Dubroca <sd@queasysnail.net>, Guenter Roeck <linux@roeck-us.net>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-audit@redhat.com, Richard Guy Briggs <rgb@redhat.com>
-Subject: Re: linux-next: Tree for Jan 20 -- Kernel panic - Unable to mount
- root fs
-Message-ID: <20150121004117.GM29656@ZenIV.linux.org.uk>
-References: <20150120165655.GA10904@kria>
- <20150120232726.GA16913@kria>
- <1517211.UYLV49hvpg@sifl>
- <1528536.jyty2pu4Mz@sifl>
+	Tue, 20 Jan 2015 19:19:44 -0500
+From: "Rafael J. Wysocki" <rjw@rjwysocki.net>
+To: Jiang Liu <jiang.liu@linux.intel.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Bjorn Helgaas <bhelgaas@google.com>,
+        Yinghai Lu <yinghai@kernel.org>, Borislav Petkov <bp@alien8.de>,
+        Len Brown <lenb@kernel.org>, Tony Luck <tony.luck@intel.com>,
+        x86@kernel.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-acpi@vger.kernel.org
+Subject: Re: [RFC Patch 09/19] ACPI: Fix a bug in parsing ACPI Memroy24 resource
+Date: Wed, 21 Jan 2015 01:42:20 +0100
+Message-ID: <1633329.njF7Ian1Kn@vostro.rjw.lan>
+User-Agent: KMail/4.11.5 (Linux/3.16.0-rc5+; KDE/4.11.5; x86_64; ; )
+In-Reply-To: <1420684386-5975-10-git-send-email-jiang.liu@linux.intel.com>
+References: <1420684386-5975-1-git-send-email-jiang.liu@linux.intel.com> <1420684386-5975-10-git-send-email-jiang.liu@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1528536.jyty2pu4Mz@sifl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7Bit
+Content-Type: text/plain; charset="utf-8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jan 20, 2015 at 07:14:46PM -0500, Paul Moore wrote:
-> > > with the patch applied (+panic)
-> > > 
-> > > 
-> > > and:
-> > > 
-> > > stat("/dev/root") -> 0
-> > > stat("dev") -> 0
-> > > with the old version of do_path_lookup.
-> > 
-> > Wait a minute ... at this early stage of boot, I'm pretty sure we don't have
-> > a valid current->audit_context since we haven't fork'd anything.  If the
-> > audit context was non-NULL garbage that might explain the panic ...
+On Thursday, January 08, 2015 10:32:56 AM Jiang Liu wrote:
+> According to ACPI spec 5, section 6.4.3.1 "24-Bit Memory Range Descriptor",
+> minimum, maximum and address_length field in struct acpi_resource_memory24
+> is in granularity of 256-bytes. So shift 8-bit left to get correct address.
 
-Not really - the panic is predicatable result of not finding /dev/root (hell,
-not even /dev there!) in mount_block_root().
- 
-> Could you try initializing the init_task's audit_context to NULL in the 
-> INIT_TASK macro in include/linux/init_task.h?
+Are you sure about this?
 
-Missing fields in struct initializer are treated as zeroes.
+I'm reading ACPI 5.1 ATM and (on page 316) it only says about the range length
+being in 256 byte blocks.
 
-The shit hits the fan earlier - when we end up missing /dev.  There are
-two places where it could've been created (depending on CONFIG_BLK_DEV_INITRD);
-	sys_mkdir(collected, mode);
-in init/initramfs.c (line 353 in linux-next) and
-        err = sys_mkdir((const char __user __force *) "/dev", 0755);
-in init/noinitramfs.c (line 32).  The latter would've screamed on failure;
-could you printk of collected (%s), mode (%o) and return value (%d) in the
-former and see what happens?
+> Signed-off-by: Jiang Liu <jiang.liu@linux.intel.com>
+> ---
+>  drivers/acpi/resource.c |    4 ++--
+>  1 file changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/acpi/resource.c b/drivers/acpi/resource.c
+> index abe3a29ad802..f4aeef22a9d8 100644
+> --- a/drivers/acpi/resource.c
+> +++ b/drivers/acpi/resource.c
+> @@ -90,8 +90,8 @@ bool acpi_dev_resource_memory(struct acpi_resource *ares, struct resource *res)
+>  	switch (ares->type) {
+>  	case ACPI_RESOURCE_TYPE_MEMORY24:
+>  		memory24 = &ares->data.memory24;
+> -		acpi_dev_get_memresource(res, memory24->minimum,
+> -					 memory24->address_length,
+> +		acpi_dev_get_memresource(res, memory24->minimum << 8,
+> +					 memory24->address_length << 8,
+>  					 memory24->write_protect);
+>  		break;
+>  	case ACPI_RESOURCE_TYPE_MEMORY32:
+> 
+
+-- 
+I speak only for myself.
+Rafael J. Wysocki, Intel Open Source Technology Center.
