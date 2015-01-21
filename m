@@ -1,216 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752970AbbAULjK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 06:39:10 -0500
-Received: from TYO201.gate.nec.co.jp ([210.143.35.51]:42254 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751562AbbAULjB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 06:39:01 -0500
-From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-To: "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
-        =?utf-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>
-CC: "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Choi, Sy Jong" <sy.jong.choi@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Hayato Momma <h-momma@ce.jp.nec.com>
-Subject: RE: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast promiscuous
-	mode control
-Thread-Topic: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast
- promiscuous	mode control
-Thread-Index: AQHQNRDn9S7pwXLQtk+h+o1qNyzJQpzJuLsg//955YCAATlDQA==
-Date: Wed, 21 Jan 2015 11:38:26 +0000
-Message-ID: <7F861DC0615E0C47A872E6F3C5FCDDBD05E08FF6@BPXM14GP.gisp.nec.co.jp>
-References: <7F861DC0615E0C47A872E6F3C5FCDDBD05E0734E@BPXM14GP.gisp.nec.co.jp>
-	<874mrlu18e.fsf@nemi.mork.no>
- <7F861DC0615E0C47A872E6F3C5FCDDBD05E07B7C@BPXM14GP.gisp.nec.co.jp>
- <F6FB0E698C9B3143BDF729DF222866469129B7F5@ORSMSX110.amr.corp.intel.com>
- <7F861DC0615E0C47A872E6F3C5FCDDBD05E07F09@BPXM14GP.gisp.nec.co.jp>
- <F6FB0E698C9B3143BDF729DF222866469129B844@ORSMSX110.amr.corp.intel.com>
-In-Reply-To: <F6FB0E698C9B3143BDF729DF222866469129B844@ORSMSX110.amr.corp.intel.com>
-Accept-Language: ja-JP, en-US
-Content-Language: ja-JP
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.205.5.123]
-Content-Type: text/plain; charset="utf-8"
+	id S1753042AbbAULmZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 06:42:25 -0500
+Received: from mga11.intel.com ([192.55.52.93]:34981 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752135AbbAULmL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 06:42:11 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,441,1418112000"; 
+   d="scan'208";a="665171960"
+Date: Wed, 21 Jan 2015 13:39:58 +0200
+From: Heikki Krogerus <heikki.krogerus@linux.intel.com>
+To: Felipe Balbi <balbi@ti.com>,
+        Alexander Shishkin <alexander.shishkin@linux.intel.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>,
+        Baolu Lu <baolu.lu@linux.intel.com>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] phy: ulpi: add driver for TI TUSB1210
+Message-ID: <20150121113958.GC22716@kuha.fi.intel.com>
+References: <1421745502-169447-1-git-send-email-heikki.krogerus@linux.intel.com>
+ <1421745502-169447-4-git-send-email-heikki.krogerus@linux.intel.com>
+ <20150120154539.GB8988@saruman>
+ <20150121091749.GB22716@kuha.fi.intel.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150121091749.GB22716@kuha.fi.intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by nfs id t0LBdGv1019363
 
-> Subject: RE: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast promiscuous mode control
-> 
-> 
-> 
-> > -----Original Message-----
-> > From: Hiroshi Shimamoto [mailto:h-shimamoto@ct.jp.nec.com]
-> > Sent: Tuesday, January 20, 2015 5:07 PM
-> > To: Skidmore, Donald C; BjÃ¸rn Mork
-> > Cc: e1000-devel@lists.sourceforge.net; netdev@vger.kernel.org; Choi, Sy
-> > Jong; linux-kernel@vger.kernel.org; Hayato Momma
-> > Subject: RE: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast promiscuous
-> > mode control
-> >
-> > > Subject: RE: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast
-> > > promiscuous mode control
-> > >
-> > >
-> > >
-> > > > -----Original Message-----
-> > > > From: Hiroshi Shimamoto [mailto:h-shimamoto@ct.jp.nec.com]
-> > > > Sent: Tuesday, January 20, 2015 3:40 PM
-> > > > To: BjÃ¸rn Mork
-> > > > Cc: e1000-devel@lists.sourceforge.net; netdev@vger.kernel.org; Choi,
-> > > > Sy Jong; linux-kernel@vger.kernel.org; Hayato Momma
-> > > > Subject: Re: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast
-> > > > promiscuous mode control
-> > > >
-> > > > > Subject: Re: [PATCH 1/2] if_link: Add VF multicast promiscuous
-> > > > > mode control
-> > > > >
-> > > > > Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com> writes:
-> > > > >
-> > > > > > From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
-> > > > > >
-> > > > > > Add netlink directives and ndo entry to control VF multicast
-> > > > > > promiscuous
-> > > > mode.
-> > > > > >
-> > > > > > Intel ixgbe and ixgbevf driver can handle only 30 multicast MAC
-> > > > > > addresses per VF. It means that we cannot assign over 30 IPv6
-> > > > > > addresses to a single VF interface on VM. We want thousands IPv6
-> > > > addresses in VM.
-> > > > > >
-> > > > > > There is capability of multicast promiscuous mode in Intel 82599 chip.
-> > > > > > It enables all multicast packets are delivered to the target VF.
-> > > > > >
-> > > > > > This patch prepares to control that VF multicast promiscuous
-> > > > functionality.
-> > > > >
-> > > > > Adding a new hook for this seems over-complicated to me.  And it
-> > > > > still doesn't solve the real problems that
-> > > > >  a) the user has to know about this limit, and
-> > > > >  b) manually configure the feature
-> > > > >
-> > > > > Most of us, lacking the ability to imagine such arbitrary hardware
-> > > > > limitations, will go through a few hours of frustrating debugging
-> > > > > before we figure this one out...
-> > > > >
-> > > > > Why can't the ixgbevf driver just automatically signal the ixgbe
-> > > > > driver to enable multicast promiscuous mode whenever the list
-> > > > > grows past the limit?
-> > > >
-> > > > I had submitted a patch to change ixgbe and ixgbevf driver for this issue.
-> > > > https://lkml.org/lkml/2014/11/27/269
-> > > >
-> > > > The previous patch introduces API between ixgbe and ixgbevf driver
-> > > > to enable multicast promiscuous mode, and ixgbevf enables it
-> > > > automatically if the number of addresses is over than 30.
-> > >
-> > > I believe the issue is with allowing a VF to automatically enter
-> > > Promiscuous Multicast without the PF's ok is concern
-> >
-> > So you mean that we should take care about enabling VF multicast
-> > promiscuous mode in host side, right? The host allows multicast promiscuous
-> > and VF requests it too, then enables VF multicast promiscuous mode.
-> > So, what is preferred way to do in host do you think?
-> 
-> I think we are saying the same thing.  I believe it would be fine if the VF requests this to happen (threw a mailbox message
-> like you set up) and the PF will do it if the systems policy has been set up that way (as you did with the control mode).
-> 
-> This way the behavior (related to multicast) is the same as it has been, unless the system has been setup specifically
-> to allow VF multicast promiscuous mode.
+Hi,
 
-Now I understand what you're saying.
-Will make patches that make knob in host/PF and ixgbe/ixgbevf interface.
-I think I should try to find whether there is a way to make the know without ndo.
-
+On Wed, Jan 21, 2015 at 11:17:49AM +0200, Heikki Krogerus wrote:
+> On Tue, Jan 20, 2015 at 09:45:39AM -0600, Felipe Balbi wrote:
+> > > diff --git a/drivers/phy/ulpi/tusb1210.c b/drivers/phy/ulpi/tusb1210.c
+> > > new file mode 100644
+> > > index 0000000..ac77f98
+> > > --- /dev/null
+> > > +++ b/drivers/phy/ulpi/tusb1210.c
+> > 
+> > do you really need this extra ulpi directory ?
+> > 
+> > I wonder if phy-tusb1210.c as a name would be enough.
 > 
-> I know it's been mentioned that this is onerous on those who want this behavior to be automatic, but I don't see how else
-> it could be done and take account for people that are concerned about allowing a (possibly untrusted) VM promoting itself
-> in to multicast promiscuous mode.
+> IMO grouping the ULPI PHY drivers and other ULPI bus code into
+> separate folder from the start is the right thing to do.
 
-I didn't mind its onerousness so much.
-My concern is what is the real issue that VF multicast promiscuous mode can cause.
-I think there is the 4k entries to filter multicast address, and the current ixgbe/ixgbevf
-can turn all bits on from VM. That is almost same as enabling multicast promiscuous mode.
-I mean that we can receive all multicast addresses by an onerous operation in untrusted VM.
-I think we should clarify what is real security issue in this context.
+A correction to this comment. I probable don't need this folder. Like
+you said, phy-tusb1210.c should be enough..
 
-thanks,
-Hiroshi
+<snip>
 
+> > In fact, we might decide to add an entire ULPI bus, eventually, though
+> > I'm still considering if there's any benefit to that.
 > 
-> >
-> > > over VM isolation.   Of course that isolation, when it comes to multicast, is
-> > rather limited anyway given that our multicast
-> > > filter uses only 12-bit of the address for a match.  Still this (or
-> > > doing it by default) would only open that up considerably more (all
-> > > multicasts).  I assume for your application you're not concerned, but are
-> > there other use cases that would worry about such things?
-> >
-> > Sorry I couldn't catch the point.
-> >
-> > What is the issue? I think there is no difference for the users who don't want
-> > many multicast addresses in guest. In the current implementation,
-> > overflowed multicast addresses silently discarded in ixgbevf. I believe there
-> > is no user who want to use over 30 multicast addresses now. If VF multicast
-> > promiscuous mode is enabled in certain VF, the behavior of other VFs is not
-> > changed.
-> >
-> > thanks,
-> > Hiroshi
-> >
-> > >
-> > > Thanks,
-> > > -Don Skidmore <donald.c.skidmore@intel.com>
-> > >
-> > > >
-> > > > I got some comment and I would like to clarify the point, but there
-> > > > was no answer.
-> > > > That's the reason I submitted this patch.
-> > > >
-> > > > Do you think a patch for the ixgbe/ixgbevf driver is preferred?
-> > > >
-> > > >
-> > > > thanks,
-> > > > Hiroshi
-> > > >
-> > > > >
-> > > > > I'd also like to note that this comment in
-> > > > > drivers/net/ethernet/intel/ixgbevf/vf.c
-> > > > > indicates that the author had some ideas about how more than 30
-> > > > > addresses could/should be handled:
-> > > > >
-> > > > > static s32 ixgbevf_update_mc_addr_list_vf(struct ixgbe_hw *hw,
-> > > > > 					  struct net_device *netdev)
-> > > > > {
-> > > > > 	struct netdev_hw_addr *ha;
-> > > > > 	u32 msgbuf[IXGBE_VFMAILBOX_SIZE];
-> > > > > 	u16 *vector_list = (u16 *)&msgbuf[1];
-> > > > > 	u32 cnt, i;
-> > > > >
-> > > > > 	/* Each entry in the list uses 1 16 bit word.  We have 30
-> > > > > 	 * 16 bit words available in our HW msg buffer (minus 1 for the
-> > > > > 	 * msg type).  That's 30 hash values if we pack 'em right.  If
-> > > > > 	 * there are more than 30 MC addresses to add then punt the
-> > > > > 	 * extras for now and then add code to handle more than 30 later.
-> > > > > 	 * It would be unusual for a server to request that many multi-cast
-> > > > > 	 * addresses except for in large enterprise network environments.
-> > > > > 	 */
-> > > > >
-> > > > >
-> > > > >
-> > > > > The last 2 lines of that comment are of course totally bogus and
-> > > > > pointless and should be deleted in any case...  It's obvious that
-> > > > > 30 multicast addresses is ridiculously low for lots of normal use cases.
-> > > > >
-> > > > >
-> > > > > BjÃ¸rn
+> I don't think I understand this comment? ULPI bus is what I'm
+> introducing in this set (the first patch in it)?
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+..I talked with Alex about this :). So I think the bus belongs under
+drivers/usb/core/ instead of driver/phy/. It's not really tied to the
+Generic PHY framework in any way, but ULPI is of course USB specific.
+
+
+Cheers,
+
+-- 
+heikki
