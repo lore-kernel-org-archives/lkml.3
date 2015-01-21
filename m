@@ -1,79 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752869AbbAULPV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 06:15:21 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:46381 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751478AbbAULPM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 06:15:12 -0500
-Date: Wed, 21 Jan 2015 19:14:04 +0800
-From: Fam Zheng <famz@redhat.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-        Andy Lutomirski <luto@amacapital.net>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        David Drysdale <drysdale@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Vivek Goyal <vgoyal@redhat.com>, Mike Frysinger <vapier@gentoo.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        Hugh Dickins <hughd@google.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-api@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>
-Subject: Re: [PATCH RFC 5/6] epoll: Add implementation for epoll_mod_wait
-Message-ID: <20150121111404.GA3804@ad.nay.redhat.com>
-References: <1421747878-30744-1-git-send-email-famz@redhat.com>
- <1421747878-30744-6-git-send-email-famz@redhat.com>
- <54BE4F1D.7090807@gmail.com>
- <20150121045903.GA2858@fam-t430.nay.redhat.com>
- <54BF5ACE.6030206@gmail.com>
- <20150121085827.GB23024@ad.nay.redhat.com>
- <54BF814F.7090703@redhat.com>
+	id S1752735AbbAULRO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 06:17:14 -0500
+Received: from szxga02-in.huawei.com ([119.145.14.65]:48432 "EHLO
+	szxga02-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751502AbbAULRG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 06:17:06 -0500
+Message-ID: <54BF8A97.6050402@huawei.com>
+Date: Wed, 21 Jan 2015 19:16:39 +0800
+From: Wang Nan <wangnan0@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:24.0) Gecko/20100101 Thunderbird/24.0.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54BF814F.7090703@redhat.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: <jolsa@redhat.com>
+CC: <jeremie.galarneau@efficios.com>, <bigeasy@linutronix.de>,
+        <lizefan@huawei.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] perf: convert: fix duplicate field names and avoid
+ reserved keywords.
+References: <20150120130609.GC15315@krava.brq.redhat.com> <1421810634-1373-1-git-send-email-wangnan0@huawei.com>
+In-Reply-To: <1421810634-1373-1-git-send-email-wangnan0@huawei.com>
+Content-Type: text/plain; charset="GB2312"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.69.129]
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 01/21 11:37, Paolo Bonzini wrote:
+Hi Jiri,
+
+I found that only this patch is not enough. When converting such tracepoints,
+it uses add_tracepoint_fields_values(..., struct format_field *fields ...),
+and fields->name is still the original one.
+
+If 'struct format_field' has a field like 'dup_name' we can make things simpler.
+However, struct format_field is part of traceevent, not only used by perf.
+
+I have no enough time to think on it. Jiri, could you please give me some hints
+so I can implement another patch tomorrow?
+
+Thank you.
+
+On 2015/1/21 11:23, Wang Nan wrote:
+> Some parameters of syscall tracepoints named as 'nr', 'event', etc.
+> When dealing with them, perf convert to ctf meets some problem:
 > 
+>  1. If a parameter with name 'nr', it will duplicate syscall's
+>     common field 'nr'. One such syscall is io_submit().
 > 
-> On 21/01/2015 09:58, Fam Zheng wrote:
-> >> > See my comment in the earlier mail. If you split this into two 
-> >> > APIs, and epoll_ctl_batch() is guaranteed to execute 'cmds' in order, 
-> >> > then the return value of epoll_ctl_batch() could be used to tell
-> >> > user space how many commands succeeded. Much simpler!
-> > Yes it is much simpler. However the reason to add batching in the first place is
-> > to make epoll faster, by reducing syscalls. Splitting makes the result
-> > sub-optimal: we still need at least 2 calls instead of 1.  Each one of the three
-> > proposed new call *is* a step forward, but I don't think we will have everything
-> > solved even by implementing them all. Compromise needed between performance or
-> > complexity.
-> > 
-> > My take for simplicity will be leaving epoll_ctl as-is, and my take for
-> > performance will be epoll_pwait1. And I don't really like putting my time on
-> > epoll_ctl_batch, thinking it as a ambivalent compromise in between.
+>  2. If a parameter with name 'event', it is denied to be inserted
+>     because 'event' is a babeltrace keywork. One such syscall is
+>     epoll_ctl.
 > 
-> I agree with Michael actually.  The big change is going from O(n)
-> epoll_ctl calls to O(1), and epoll_ctl_batch achieves that just fine.
-> Changing 2 syscalls to 1 is the icing on the cake, but we're talking of
-> a fraction of a microsecond.
+> This patch appends '_dupl_X' suffix to avoid problem 1, prepend a '_'
+> prefix to avoid problem 2.
+> 
+> Signed-off-by: Wang Nan <wangnan0@huawei.com>
+> ---
+>  tools/perf/util/data-convert-bt.c | 65 ++++++++++++++++++++++++++++++++++++---
+>  1 file changed, 61 insertions(+), 4 deletions(-)
+> 
+> diff --git a/tools/perf/util/data-convert-bt.c b/tools/perf/util/data-convert-bt.c
+> index ddecce8..b0a042d 100644
+> --- a/tools/perf/util/data-convert-bt.c
+> +++ b/tools/perf/util/data-convert-bt.c
+> @@ -567,6 +567,38 @@ static int process_sample_event(struct perf_tool *tool,
+>  	return cs ? 0 : -1;
+>  }
+>  
+> +/* If dup < 0, add a prefix. Else, add _dupl_X suffix. */
+> +static char *change_name(char *name, char *orig_name, int dup)
+> +{
+> +	char *new_name = NULL;
+> +	size_t len;
+> +
+> +	if (!name)
+> +		name = orig_name;
+> +
+> +	if (dup >= 10)
+> +		goto out;
+> +
+> +	if (dup < 0)
+> +		len = strlen(name) + sizeof("_");
+> +	else
+> +		len = strlen(orig_name) + sizeof("_dupl_X");
+> +
+> +	new_name = malloc(len);
+> +	if (!new_name)
+> +		goto out;
+> +
+> +	if (dup < 0)
+> +		snprintf(new_name, len, "_%s", name);
+> +	else
+> +		snprintf(new_name, len, "%s_dupl_%d", orig_name, dup);
+> +
+> +out:
+> +	if (name != orig_name)
+> +		free(name);
+> +	return new_name;
+> +}
+> +
+>  static int add_tracepoint_fields_types(struct ctf_writer *cw,
+>  				       struct format_field *fields,
+>  				       struct bt_ctf_event_class *event_class)
+> @@ -577,6 +609,9 @@ static int add_tracepoint_fields_types(struct ctf_writer *cw,
+>  	for (field = fields; field; field = field->next) {
+>  		struct bt_ctf_field_type *type;
+>  		unsigned long flags = field->flags;
+> +		struct bt_ctf_field_type *f = NULL;
+> +		char *name;
+> +		int dup = 1;
+>  
+>  		pr2("  field '%s'\n", field->name);
+>  
+> @@ -595,14 +630,36 @@ static int add_tracepoint_fields_types(struct ctf_writer *cw,
+>  		if (flags & FIELD_IS_ARRAY)
+>  			type = bt_ctf_field_type_array_create(type, field->arraylen);
+>  
+> -		ret = bt_ctf_event_class_add_field(event_class, type,
+> -				field->name);
+> +		/* Check name duplication */
+> +		name = field->name;
+> +		while (f = bt_ctf_event_class_get_field_by_name(event_class, name)) {
+> +			bt_ctf_field_type_put(f);
+> +			name = change_name(name, field->name, dup++);
+> +			if (!name) {
+> +				pr_err("Failed to create dup name for '%s'\n", field->name);
+> +				return -1;
+> +			}
+> +		}
+> +
+> +		ret = bt_ctf_event_class_add_field(event_class, type, name);
+> +		/* if failed, we may hit a keywork. try again with a '_' prefix */
+> +		if (ret) {
+> +			name = change_name(name, field->name, -1);
+> +			if (!name) {
+> +				pr_err("Failed to alloc name for '_%s'\n", field->name);
+> +				return -1;
+> +			}
+> +			ret = bt_ctf_event_class_add_field(event_class, type, name);
+> +		}
+> +		if (name != field->name)
+> +			free(name);
+>  
+>  		if (flags & FIELD_IS_ARRAY)
+>  			bt_ctf_field_type_put(type);
+>  
+>  		if (ret) {
+> -			pr_err("Failed to add field '%s\n", field->name);
+> +			pr_err("Failed to add field '%s': %d\n",
+> +					field->name, ret);
+>  			return -1;
+>  		}
+>  	}
+> @@ -646,7 +703,7 @@ static int add_generic_types(struct ctf_writer *cw, struct perf_evsel *evsel,
+>  	do {								\
+>  		pr2("  field '%s'\n", n);				\
+>  		if (bt_ctf_event_class_add_field(cl, t, n)) {		\
+> -			pr_err("Failed to add field '%s;\n", n);	\
+> +			pr_err("Failed to add field '%s';\n", n);	\
+>  			return -1;					\
+>  		}							\
+>  	} while (0)
 > 
 
-Maybe I'm missing something, but in common cases, the set of fds for epoll_wait
-doesn't change that radically from one iteration to another, does it?
 
-Fam
