@@ -1,124 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560AbbAUGxE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 01:53:04 -0500
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:9830 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601AbbAUGxB (ORCPT
+	id S1754181AbbAUGyx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 01:54:53 -0500
+Received: from szxga03-in.huawei.com ([119.145.14.66]:18975 "EHLO
+	szxga03-in.huawei.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750917AbbAUGyw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 01:53:01 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-fc-54bf4cca01c6
-Date: Wed, 21 Jan 2015 09:52:57 +0300
-From: Sergey Dyasly <s.dyasly@samsung.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Dmitry Safonov <d.safonov@partner.samsung.com>, linux-mm@kvack.org,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Dyasly Sergey <s.dyasly@samsung.com>,
-        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
-        James Bottomley <JBottomley@parallels.com>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        Guan Xuetao <gxt@mprc.pku.edu.cn>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: Re: [RFC][PATCH RESEND] mm: vmalloc: remove ioremap align constraint
-Message-id: <20150121095257.ce97fb984ed7b9572cb1cc6a@samsung.com>
-In-reply-to: <5891256.RkdjYUxedq@wuerfel>
-References: <1419328813-2211-1-git-send-email-d.safonov@partner.samsung.com>
- <11656044.WGcPr1b8t8@wuerfel>
- <20150103185946.1d4fad32bb3de9ac9bdcfb88@gmail.com>
- <5891256.RkdjYUxedq@wuerfel>
-X-Mailer: Sylpheed 3.5.0beta2 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
-MIME-version: 1.0
-Content-type: text/plain; charset=US-ASCII
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgkeLIzCtJLcpLzFFi42I5/e/4Zd1TPvtDDJZPsbSYs34Nm8XKHm+L
-	v5OOsVu8X9bDaPFp5VM2i4M3vrFbXOpdwmqx6fE1VovLu+awWdxb85/V4vZlXotPz/6xW0ye
-	LWXx8uMJFgc+jzXz1jB6tDT3sHn8/jWJ0WPTp0nsHneu7WHzODHjN4vH5iX1Ho/3WnqcnPeT
-	zePguz1MHn1bVjF6fN4kF8ATxWWTkpqTWZZapG+XwJXR/+4hY8FWiYoVZ+YyNzDOFO5i5OSQ
-	EDCR2PKykw3CFpO4cG89kM3FISSwlFFizdVuRginhUli67lV7F2MHBwsAqoSv546gTSwCWhJ
-	nF28nRnEFhFQlJj64hkzSD2zQDOLxNL21YwgCWEBX4mfOz6BFfEKOEqc697LDmJzCmhK3Nm2
-	HmrBQUaJSws2skKc4SjxeeEXdogGQYkfk++xgNjMQNs2b2tihbDlJTavecs8gVFgFpKyWUjK
-	ZiEpW8DIvIpRNLU0uaA4KT3XUK84Mbe4NC9dLzk/dxMjJNa+7GBcfMzqEKMAB6MSDy/Hin0h
-	QqyJZcWVuYcYJTiYlUR4FSX2hwjxpiRWVqUW5ccXleakFh9iZOLglGpgXF27/ELCtNw/OptX
-	bJoUtWQ1T0vsgpSn05Rm/6ue9yQl0ONk9JuzUw7F8IUk52y6IXm3v2v6bLWUCXnF8nZBwpJi
-	861e9tbp+PQtExXm3FFx1U+IY3JI3N+z5kZtgf+NanaeV273fD79/rn5IafZqnc+vVszeZL/
-	7RXyfLn9P8LOh7dLummaKbEUZyQaajEXFScCAAaq6E6TAgAA
+	Wed, 21 Jan 2015 01:54:52 -0500
+Message-ID: <54BF4D0D.3090500@huawei.com>
+Date: Wed, 21 Jan 2015 14:54:05 +0800
+From: Zhang Zhen <zhenzhang.zhang@huawei.com>
+User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:16.0) Gecko/20121010 Thunderbird/16.0.1
+MIME-Version: 1.0
+To: Don Zickus <dzickus@redhat.com>
+CC: <paulmck@linux.vnet.ibm.com>, <linux-kernel@vger.kernel.org>,
+        <morgan.wang@huawei.com>, <josh@freedesktop.org>,
+        <dipankar@in.ibm.com>
+Subject: Re: RCU CPU stall console spews  leads to soft lockup disabled is
+ reasonable ?
+References: <54BCBB33.6060608@huawei.com> <20150119084200.GE9719@linux.vnet.ibm.com> <54BCC89D.9040702@huawei.com> <20150119140612.GI116159@redhat.com> <54BDC6DF.6000602@huawei.com> <20150120152531.GR116159@redhat.com> <54BF0E53.5040409@huawei.com> <54BF1957.6080606@huawei.com>
+In-Reply-To: <54BF1957.6080606@huawei.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.111.68.57]
+X-CFilter-Loop: Reflected
+X-Mirapoint-Virus-RAPID-Raw: score=unknown(0),
+	refid=str=0001.0A020203.54BF4D19.00D8,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0,
+	ip=0.0.0.0,
+	so=2013-05-26 15:14:31,
+	dmn=2013-03-21 17:37:32
+X-Mirapoint-Loop-Id: 7361b06e8afe42c1ac4b936e9833438f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 04 Jan 2015 17:38:06 +0100
-Arnd Bergmann <arnd@arndb.de> wrote:
-
-> On Saturday 03 January 2015 18:59:46 Sergey Dyasly wrote:
-> > Hi Arnd,
-> > 
-> > First, some background information. We originally encountered high fragmentation
-> > issue in vmalloc area:
-> > 
-> > 	1. Total size of vmalloc area was 400 MB.
-> > 	2. 200 MB of vmalloc area was consumed by ioremaps of various sizes.
-> > 	3. Largest contiguous chunk of vmalloc area was 12 MB.
-> > 	4. ioremap of 10 MB failed due to 8 MB alignment requirement.
+On 2015/1/21 11:13, Zhang Zhen wrote:
+> On 2015/1/21 10:26, Zhang Zhen wrote:
+>> On 2015/1/20 23:25, Don Zickus wrote:
+>>> On Tue, Jan 20, 2015 at 11:09:19AM +0800, Zhang Zhen wrote:
+>>>>
+>>>>> Of course back then, touch_nmi_watchdog touched all cpus.  So a problem
+>>>>> like this was masked.  I believe this upstream commit 62572e29bc53, solved
+>>>>> the problem.
+>>>>
+>>>> Thanks for your suggestion.
+>>>>
+>>>> Commit 62572e29bc53 changed the semantics of touch_nmi_watchdog and make it
+>>>> only touch local cpu not every one.
+>>>> But watchdog_nmi_touch = true only guarantee no hard lockup check on this cpu.
+>>>>
+>>>> Commit 62572e29bc53 didn't changed the semantics of touch_softlockup_watchdog.
+>>>
+>>> Ah, yes.  I reviewed the commit to quickly yesterday.  I thought
+>>> touch_softlockup_watchdog was called on every cpu and that commit changed
+>>> it to the local cpu.  But that was incorrect.
+>>>
+>>>>>
+>>>>> You can apply that commit and see if you if you get both RCU stall
+>>>>> messages _and_ softlockup messages.  I believe that is what you were
+>>>>> expecting, correct?
+>>>>>
+>>>> Correct, i expect i can get  both RCU stall messages _and_ softlockup messages.
+>>>> I applied that commit, and i only got RCU stall messages.
+>>>
+>>> Hmm, I believe the act of printing to the console calls touch_nmi_watchdog
+>>> which calls touch_softlockup_watchdog.  I think that is the problem there.
+>>>
+>> Yeah, you are right.
+>>
+>>> This may not cause other problems but what happens if you comment out the
+>>> 'touch_softlockup_watchdog' from the touch_nmi_watchdog function like
+>>> below (based on latest upstream cb59670870)?
+>>>
+>>> The idea is that console printing for that cpu won't reset the softlockup
+>>> detector.  Again other bad things might happen and this patch may not be a
+>>> good final solution, but it can help give me a clue about what is going
+>>> on.
+>>
+>> I commented out the 'touch_softlockup_watchdog' from the touch_nmi_watchdog function
+>> (based on latest upstream ec6f34e5b552).
+>> This triggered RCU stall and softlockup, but softlockup just printk only once.
+>> As you mentioned "other bad things" lead to softlockup just printk only once.
+>> What's the bad thing ?
+>>
+>> / #
+>> / # echo 60 > /proc/sys/kernel/watchdog_thresh
+>> / # busybox insmod softlockup_test.ko &
+>> / # [   39.044058] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=21002 jiffies, g=78, c=77, q=4)
+>> [   39.044058] INFO: Stall ended before state dump start
+>> [  102.049045] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=84007 jiffies, g=78, c=77, q=4)
+>> [  102.049045] INFO: Stall ended before state dump start
+>> [  160.482123] BUG: soft lockup - CPU#0 stuck for 134s! [busybox:54]
+>> [  165.054075] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=147012 jiffies, g=78, c=77, q=4)
+>> [  165.054075] INFO: Stall ended before state dump start
+>> [  228.059045] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=210017 jiffies, g=78, c=77, q=4)
+>> [  228.059045] INFO: Stall ended before state dump start
+>> [  291.064099] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=273022 jiffies, g=78, c=77, q=4)
+>> [  291.064099] INFO: Stall ended before state dump start
+>> [  354.069074] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=336027 jiffies, g=78, c=77, q=4)
+>> [  354.069099] INFO: Stall ended before state dump start
+>> [  417.074045] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=399032 jiffies, g=78, c=77, q=4)
+>> [  417.074045] INFO: Stall ended before state dump start
+>> [  480.079099] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=462037 jiffies, g=78, c=77, q=4)
+>> [  480.079099] INFO: Stall ended before state dump start
+>> [  543.084099] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=525042 jiffies, g=78, c=77, q=4)
+>> [  543.084099] INFO: Stall ended before state dump start
+>> [  606.089101] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=588047 jiffies, g=78, c=77, q=4)
+>> [  606.089101] INFO: Stall ended before state dump start
+>> [  669.094099] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=651052 jiffies, g=78, c=77, q=4)
+>> [  669.094099] INFO: Stall ended before state dump start
+>> [  732.099045] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=714057 jiffies, g=78, c=77, q=4)
+>> [  732.099045] INFO: Stall ended before state dump start
+>> [  795.104074] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=777062 jiffies, g=78, c=77, q=4)
+>> [  795.104098] INFO: Stall ended before state dump start
+>> [  858.109046] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=840067 jiffies, g=78, c=77, q=4)
+>> [  858.109046] INFO: Stall ended before state dump start
+>> [  921.114100] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=903072 jiffies, g=78, c=77, q=4)
+>> [  921.114100] INFO: Stall ended before state dump start
+>> [  984.119099] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=966077 jiffies, g=78, c=77, q=4)
+>> [  984.119099] INFO: Stall ended before state dump start
+>> [ 1047.124075] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=1029082 jiffies, g=78, c=77, q=4)
+>> [ 1047.124099] INFO: Stall ended before state dump start
+>> [ 1110.129046] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=1092087 jiffies, g=78, c=77, q=4)
+>> [ 1110.129046] INFO: Stall ended before state dump start
+>> [ 1173.134045] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=1155092 jiffies, g=78, c=77, q=4)
+>> [ 1173.134045] INFO: Stall ended before state dump start
+>> [ 1236.139101] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=1218097 jiffies, g=78, c=77, q=4)
+>> [ 1236.139101] INFO: Stall ended before state dump start
+>> [ 1299.144059] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=1281102 jiffies, g=78, c=77, q=4)
+>> [ 1299.144059] INFO: Stall ended before state dump start
+>> [ 1362.149099] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=1344107 jiffies, g=78, c=77, q=4)
+>> [ 1362.149099] INFO: Stall ended before state dump start
+>> [ 1425.154059] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=1407112 jiffies, g=78, c=77, q=4)
+>> [ 1425.154059] INFO: Stall ended before state dump start
+>> [ 1488.159046] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=1470117 jiffies, g=78, c=77, q=4)
+>> [ 1488.159046] INFO: Stall ended before state dump start
+>> [ 1551.164045] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=1533122 jiffies, g=78, c=77, q=4)
+>> [ 1551.164045] INFO: Stall ended before state dump start
+>> [ 1614.169057] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=1596127 jiffies, g=78, c=77, q=4)
+>> [ 1614.169057] INFO: Stall ended before state dump start
+>> [ 1677.174060] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=1659132 jiffies, g=78, c=77, q=4)
+>> [ 1677.174060] INFO: Stall ended before state dump start
+>> [ 1740.179045] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=1722137 jiffies, g=78, c=77, q=4)
+>> [ 1740.179045] INFO: Stall ended before state dump start
+>> [ 1803.184075] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=1785142 jiffies, g=78, c=77, q=4)
+>> [ 1803.184101] INFO: Stall ended before state dump start
+>> [ 1866.189046] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=1848147 jiffies, g=78, c=77, q=4)
+>> [ 1866.189046] INFO: Stall ended before state dump start
+>> [ 1929.194045] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=1911152 jiffies, g=78, c=77, q=4)
+>> [ 1929.194045] INFO: Stall ended before state dump start
+>> [ 1992.199083] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=1974157 jiffies, g=78, c=77, q=4)
+>> [ 1992.199083] INFO: Stall ended before state dump start
+>> [ 2055.204098] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=2037162 jiffies, g=78, c=77, q=4)
+>> [ 2055.204098] INFO: Stall ended before state dump start
+>> [ 2118.209045] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=2100167 jiffies, g=78, c=77, q=4)
+>> [ 2118.209045] INFO: Stall ended before state dump start
+>> [ 2181.214098] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=2163172 jiffies, g=78, c=77, q=4)
+>> [ 2181.214098] INFO: Stall ended before state dump start
 > 
-> Interesting, can you describe how you end up with that many ioremap mappings?
-> 200MB seems like a lot. Do you perhaps get a lot of duplicate entries for the
-> same hardware registers, or maybe a leak?
-> 
-> Can you send the output of /proc/vmallocinfo?
->  
-> > It was decided to further increase the size of vmalloc area to resolve the above
-> > issue. And I don't like that solution because it decreases the amount of lowmem.
-> 
-> If all the mappings are in fact required, have you considered using
-> CONFIG_VMSPLIT_2G split to avoid the use of highmem?
-> 
-> > Now let's see how ioremap uses supersections. Judging from current implementation
-> > of __arm_ioremap_pfn_caller:
-> > 
-> > 	#if !defined(CONFIG_SMP) && !defined(CONFIG_ARM_LPAE)
-> > 		if (pfn >= 0x100000 && !((paddr | size | addr) & ~SUPERSECTION_MASK)) {
-> > 			remap_area_supersections();
-> > 		} else if (!((paddr | size | addr) & ~PMD_MASK)) {
-> > 			remap_area_sections();
-> > 		} else
-> > 	#endif
-> > 			err = ioremap_page_range();
-> > 
-> > supersections and sections mappings are used only in !SMP && !LPAE case.
-> > Otherwise, mapping is created using the usual 4K pages (and we are using SMP).
-> > The suggested patch removes alignment requirements for ioremap but it means that
-> > sections will not be used in !SMP case. So another solution is required.
-> > 
-> > __get_vm_area_node has align parameter, maybe it can be used to specify the
-> > required alignment of ioremap operation? Because I find current generic fls
-> > algorithm to be very restrictive in cases when it's not necessary to use such
-> > a big alignment.
-> 
-> I think using next-power-of-two alignment generally helps limit the effects of
-> fragmentation the same way that the buddy allocator works.
-> 
-> Since the section and supersection maps are only used with non-SMP non-LPAE
-> (why is that the case btw?),
+> Sorry, i made a mistake, the log above is based on v3.10.63.
+> I have tested the latest upstream kernel (based on ec6f34e5b552),
+> but my test case can't triggered RCU stall warning.
+>
 
-vmap/vunmap mechanism works that way. ARM is using 2 levels of page tables:
-PGD and PTE; and that provides the needed level of indirection. Every mm
-contains a copy of init_mm's pgd mappings for kernel and they point to the same
-set of PTEs. vmap/vunmap manipulates only with *pgd->pte and the change becomes
-visible to every mm. This is impossible to do for sections because they use
-PGD entries directly.
+I used git bisect to find the bad commit, but found a irrelevant
+commit(db5d711e2db776 zram: avoid null access when fail to alloc meta).
+Before this commit, my test case can easily trigger RCU stall warning,
+but after this commit, my test case can't trigger RCU stall warning.
 
-> it would however make sense to use the default
-> (7 + PAGE_SHIFT) instead of the ARM-specific 24 here if one of them is set,
-> I don't see any downsides to that.
+I'm totally confused.
 
-This makes sense. I'll prepare a patch for that.
+My test case:
 
+//
+#include <linux/kernel.h>
+#include <linux/module.h>
+#include <linux/spinlock.h>
+#include <linux/slab.h>
+#include <linux/kthread.h>
+
+struct foo {
+        int a;
+        char b;
+        long c;
+};
+
+struct foo gbl_foo = {1, 'a', 2};
+struct foo *pgbl_foo = &gbl_foo;
+
+static int my_kthread(void *data)
+{
+        DEFINE_SPINLOCK(foo_mutex);
+        struct foo *new_fp;
+        struct foo *old_fp;
+
+        new_fp = kmalloc(sizeof(*new_fp), GFP_KERNEL);
+        spin_lock(&foo_mutex);
+        old_fp = pgbl_foo;
+        *new_fp = *old_fp;
+        new_fp->a = 2;
+        rcu_assign_pointer(pgbl_foo, new_fp);
+        spin_unlock(&foo_mutex);
+        synchronize_rcu();
+        kfree(old_fp);
+
+        return 0;
+}
+
+static int hello_start(void)
+{
+        struct task_struct *my_task = NULL;
+        DEFINE_SPINLOCK(hello_lock);
+
+        my_task = kthread_run(my_kthread, NULL, "my_thread%d", 1);
+
+        spin_lock_init(&hello_lock);
+        spin_lock(&hello_lock);
+        spin_lock(&hello_lock);
+        return 0;
+}
+
+static int __init test_init(void)
+{
+        hello_start();
+
+        printk(KERN_INFO "Module init\n");
+        return 0;
+}
+
+static void __exit test_exit(void)
+{
+        printk(KERN_INFO "Module exit!\n");
+}
+
+module_init(test_init)
+module_exit(test_exit)
+MODULE_LICENSE("GPL");
+//
+>>>
+>>> Cheers,
+>>> Don
+>>>
+>>> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+>>> index 70bf118..833c015 100644
+>>> --- a/kernel/watchdog.c
+>>> +++ b/kernel/watchdog.c
+>>> @@ -209,7 +209,7 @@ void touch_nmi_watchdog(void)
+>>>  	 * going off.
+>>>  	 */
+>>>  	raw_cpu_write(watchdog_nmi_touch, true);
+>>> -	touch_softlockup_watchdog();
+>>> +	//touch_softlockup_watchdog();
+>>>  }
+>>>  EXPORT_SYMBOL(touch_nmi_watchdog);
+>>>  
+>>>
+>>> .
+>>>
+>>
 > 
-> 	Arnd
 
 
--- 
-Sergey Dyasly <s.dyasly@samsung.com>
