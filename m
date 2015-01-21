@@ -1,311 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754528AbbAUGwk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 01:52:40 -0500
-Received: from mailout4.samsung.com ([203.254.224.34]:50252 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753743AbbAUGwJ (ORCPT
+	id S1754560AbbAUGxE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 01:53:04 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:9830 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751601AbbAUGxB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 01:52:09 -0500
-X-AuditID: cbfee68d-f79296d000004278-67-54bf4c942716
-From: Chanwoo Choi <cw00.choi@samsung.com>
-To: s.nawrocki@samsung.com, tomasz.figa@gmail.com
-Cc: mturquette@linaro.org, kgene@kernel.org, pankaj.dubey@samsung.com,
-        inki.dae@samsung.com, chanho61.park@samsung.com,
-        sw0312.kim@samsung.com, cw00.choi@samsung.com,
-        linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 12/12] clk: samsung: exynos5433: Add clocks for CMU_GSCL domain
-Date: Wed, 21 Jan 2015 15:52:00 +0900
-Message-id: <1421823120-11448-3-git-send-email-cw00.choi@samsung.com>
-X-Mailer: git-send-email 1.8.5.5
-In-reply-to: <1421821618-8627-1-git-send-email-cw00.choi@samsung.com>
-References: <1421821618-8627-1-git-send-email-cw00.choi@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrDLMWRmVeSWpSXmKPExsWyRsSkUHeKz/4Qg60t+haX92tbXP/ynNVi
-	0v0JLBb9j18zW1zeNYfNYsb5fUwWTydcZLNYtPULu8XhN+2sFjMmv2SzWLXrD6MDt8fOWXfZ
-	PTat6mTzuHNtD5tH35ZVjB6fN8kFsEZx2aSk5mSWpRbp2yVwZdz6uJ29oMO/YsfMBrYGxovO
-	XYycHBICJhKLGqezQthiEhfurWfrYuTiEBJYyigxYeIG5i5GDrCih/9FIOKLGCXu3vsMVdTE
-	JDH9+hs2kG42AS2J/S9usIE0iAgYStw8pARSwyzwhlGi+/1vsA3CAv4SZ6/OZAaxWQRUJVo2
-	vWIEsXkFXCV2fdzICHGFgsSy5TNZQeZwAsXbbzOBmEICLhLntpSAjJQQ2MYusfNCDyvEGAGJ
-	b5MPsUDcKSux6QAzxBRJiYMrbrBMYBRewMiwilE0tSC5oDgpvchQrzgxt7g0L10vOT93EyMw
-	Ek7/e9a7g/H2AetDjAIcjEo8vC8U94cIsSaWFVfmHmI0BdowkVlKNDkfGG95JfGGxmZGFqYm
-	psZG5pZmSuK8ilI/g4UE0hNLUrNTUwtSi+KLSnNSiw8xMnFwSjUwLpfMj1p+aN6WVr+afWEH
-	/H9uiPJ2NEo47HCoSdx9fcf7l4zs/yR/zAuv7dA7yPN45bFDL88fXPF7Rvf8PYXHUxrf5//3
-	nSH3rckz18tHo0Fc7TtD8697gnvO/j+7dk2hBJPTO1/21quhB53Kql3W/LFPkw2RMpvyZwbj
-	HetbXv3Pftx2PNDipsRSnJFoqMVcVJwIANCl+3d/AgAA
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrGIsWRmVeSWpSXmKPExsVy+t9jAd0pPvtDDPZcVrG4vF/b4vqX56wW
-	k+5PYLHof/ya2eLyrjlsFjPO72OyeDrhIpvFoq1f2C0Ov2lntZgx+SWbxapdfxgduD12zrrL
-	7rFpVSebx51re9g8+rasYvT4vEkugDWqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX
-	0NLCXEkhLzE31VbJxSdA1y0zB+g0JYWyxJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+IUFwPUYG
-	aCBhDWPGrY/b2Qs6/Ct2zGxga2C86NzFyMEhIWAi8fC/SBcjJ5ApJnHh3nq2LkYuDiGBRYwS
-	d+99hnKamCSmX3/DBlLFJqAlsf/FDTaQZhEBQ4mbh5RAapgF3jBKdL//zQpSIyzgL3H26kxm
-	EJtFQFWiZdMrRhCbV8BVYtfHjYwQ2xQkli2fyQoyhxMo3n6bCcQUEnCROLelZAIj7wJGhlWM
-	oqkFyQXFSem5hnrFibnFpXnpesn5uZsYwXH2TGoH48oGi0OMAhyMSjy8LxT3hwixJpYVV+Ye
-	YpTgYFYS4VWUAArxpiRWVqUW5ccXleakFh9iNAW6aSKzlGhyPjAF5JXEGxqbmBlZGpkbWhgZ
-	myuJ8yrZt4UICaQnlqRmp6YWpBbB9DFxcEo1MC7gOGdwbtO6z7yLMkpc5607cqRW0i10/a+9
-	JZ2Rep/MeN9n1NffEPz5qGRFwBb5iDCL/90xymZ3ZitUtWxvFxXcxOmaclfEe4b9kRNyLJOO
-	vfoj8yjzWb+9yosS7f+/ucT/6s074ytUcSzFjzXIdOOs2d32jy8c61qT+z/NvU2UVbExaMmF
-	r0osxRmJhlrMRcWJANFY0CDJAgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 21 Jan 2015 01:53:01 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-fc-54bf4cca01c6
+Date: Wed, 21 Jan 2015 09:52:57 +0300
+From: Sergey Dyasly <s.dyasly@samsung.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Dmitry Safonov <d.safonov@partner.samsung.com>, linux-mm@kvack.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Dyasly Sergey <s.dyasly@samsung.com>,
+        Will Deacon <will.deacon@arm.com>, linux-kernel@vger.kernel.org,
+        James Bottomley <JBottomley@parallels.com>,
+        Arnd Bergmann <arnd.bergmann@linaro.org>,
+        Guan Xuetao <gxt@mprc.pku.edu.cn>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [RFC][PATCH RESEND] mm: vmalloc: remove ioremap align constraint
+Message-id: <20150121095257.ce97fb984ed7b9572cb1cc6a@samsung.com>
+In-reply-to: <5891256.RkdjYUxedq@wuerfel>
+References: <1419328813-2211-1-git-send-email-d.safonov@partner.samsung.com>
+ <11656044.WGcPr1b8t8@wuerfel>
+ <20150103185946.1d4fad32bb3de9ac9bdcfb88@gmail.com>
+ <5891256.RkdjYUxedq@wuerfel>
+X-Mailer: Sylpheed 3.5.0beta2 (GTK+ 2.24.10; x86_64-pc-linux-gnu)
+MIME-version: 1.0
+Content-type: text/plain; charset=US-ASCII
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpgkeLIzCtJLcpLzFFi42I5/e/4Zd1TPvtDDJZPsbSYs34Nm8XKHm+L
+	v5OOsVu8X9bDaPFp5VM2i4M3vrFbXOpdwmqx6fE1VovLu+awWdxb85/V4vZlXotPz/6xW0ye
+	LWXx8uMJFgc+jzXz1jB6tDT3sHn8/jWJ0WPTp0nsHneu7WHzODHjN4vH5iX1Ho/3WnqcnPeT
+	zePguz1MHn1bVjF6fN4kF8ATxWWTkpqTWZZapG+XwJXR/+4hY8FWiYoVZ+YyNzDOFO5i5OSQ
+	EDCR2PKykw3CFpO4cG89kM3FISSwlFFizdVuRginhUli67lV7F2MHBwsAqoSv546gTSwCWhJ
+	nF28nRnEFhFQlJj64hkzSD2zQDOLxNL21YwgCWEBX4mfOz6BFfEKOEqc697LDmJzCmhK3Nm2
+	HmrBQUaJSws2skKc4SjxeeEXdogGQYkfk++xgNjMQNs2b2tihbDlJTavecs8gVFgFpKyWUjK
+	ZiEpW8DIvIpRNLU0uaA4KT3XUK84Mbe4NC9dLzk/dxMjJNa+7GBcfMzqEKMAB6MSDy/Hin0h
+	QqyJZcWVuYcYJTiYlUR4FSX2hwjxpiRWVqUW5ccXleakFh9iZOLglGpgXF27/ELCtNw/OptX
+	bJoUtWQ1T0vsgpSn05Rm/6ue9yQl0ONk9JuzUw7F8IUk52y6IXm3v2v6bLWUCXnF8nZBwpJi
+	861e9tbp+PQtExXm3FFx1U+IY3JI3N+z5kZtgf+NanaeV273fD79/rn5IafZqnc+vVszeZL/
+	7RXyfLn9P8LOh7dLummaKbEUZyQaajEXFScCAAaq6E6TAgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the divider/gate of CMU_GSCL domain which contains gscaler
-clocks.
+On Sun, 04 Jan 2015 17:38:06 +0100
+Arnd Bergmann <arnd@arndb.de> wrote:
 
-Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: Tomasz Figa <tomasz.figa@gmail.com>
-Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
-Acked-by: Inki Dae <inki.dae@samsung.com>
----
- .../devicetree/bindings/clock/exynos5433-clock.txt |   8 ++
- drivers/clk/samsung/clk-exynos5433.c               | 146 +++++++++++++++++++++
- include/dt-bindings/clock/exynos5433.h             |  37 +++++-
- 3 files changed, 190 insertions(+), 1 deletion(-)
+> On Saturday 03 January 2015 18:59:46 Sergey Dyasly wrote:
+> > Hi Arnd,
+> > 
+> > First, some background information. We originally encountered high fragmentation
+> > issue in vmalloc area:
+> > 
+> > 	1. Total size of vmalloc area was 400 MB.
+> > 	2. 200 MB of vmalloc area was consumed by ioremaps of various sizes.
+> > 	3. Largest contiguous chunk of vmalloc area was 12 MB.
+> > 	4. ioremap of 10 MB failed due to 8 MB alignment requirement.
+> 
+> Interesting, can you describe how you end up with that many ioremap mappings?
+> 200MB seems like a lot. Do you perhaps get a lot of duplicate entries for the
+> same hardware registers, or maybe a leak?
+> 
+> Can you send the output of /proc/vmallocinfo?
+>  
+> > It was decided to further increase the size of vmalloc area to resolve the above
+> > issue. And I don't like that solution because it decreases the amount of lowmem.
+> 
+> If all the mappings are in fact required, have you considered using
+> CONFIG_VMSPLIT_2G split to avoid the use of highmem?
+> 
+> > Now let's see how ioremap uses supersections. Judging from current implementation
+> > of __arm_ioremap_pfn_caller:
+> > 
+> > 	#if !defined(CONFIG_SMP) && !defined(CONFIG_ARM_LPAE)
+> > 		if (pfn >= 0x100000 && !((paddr | size | addr) & ~SUPERSECTION_MASK)) {
+> > 			remap_area_supersections();
+> > 		} else if (!((paddr | size | addr) & ~PMD_MASK)) {
+> > 			remap_area_sections();
+> > 		} else
+> > 	#endif
+> > 			err = ioremap_page_range();
+> > 
+> > supersections and sections mappings are used only in !SMP && !LPAE case.
+> > Otherwise, mapping is created using the usual 4K pages (and we are using SMP).
+> > The suggested patch removes alignment requirements for ioremap but it means that
+> > sections will not be used in !SMP case. So another solution is required.
+> > 
+> > __get_vm_area_node has align parameter, maybe it can be used to specify the
+> > required alignment of ioremap operation? Because I find current generic fls
+> > algorithm to be very restrictive in cases when it's not necessary to use such
+> > a big alignment.
+> 
+> I think using next-power-of-two alignment generally helps limit the effects of
+> fragmentation the same way that the buddy allocator works.
+> 
+> Since the section and supersection maps are only used with non-SMP non-LPAE
+> (why is that the case btw?),
 
-diff --git a/Documentation/devicetree/bindings/clock/exynos5433-clock.txt b/Documentation/devicetree/bindings/clock/exynos5433-clock.txt
-index 589ed93..bf72817 100644
---- a/Documentation/devicetree/bindings/clock/exynos5433-clock.txt
-+++ b/Documentation/devicetree/bindings/clock/exynos5433-clock.txt
-@@ -30,6 +30,8 @@ Required Properties:
-     which generates global data buses clock and global peripheral buses clock.
-   - "samsung,exynos5433-cmu-g3d"  - clock controller compatible for CMU_G3D
-     which generates clocks for 3D Graphics Engine IP.
-+  - "samsung,exynos5433-cmu-gscl"  - clock controller compatible for CMU_GSCL
-+    which generates clocks for GSCALER IPs.
- 
- - reg: physical base address of the controller and length of memory mapped
-   region.
-@@ -123,6 +125,12 @@ Example 1: Examples of clock controller nodes are listed below.
- 		#clock-cells = <1>;
- 	};
- 
-+	cmu_gscl: clock-controller@0x13cf0000 {
-+		compatible = "samsung,exynos5433-cmu-gscl";
-+		reg = <0x13cf0000 0x0b10>;
-+		#clock-cells = <1>;
-+	};
-+
- Example 2: UART controller node that consumes the clock generated by the clock
- 	   controller.
- 
-diff --git a/drivers/clk/samsung/clk-exynos5433.c b/drivers/clk/samsung/clk-exynos5433.c
-index 27dda68..1d8d67a 100644
---- a/drivers/clk/samsung/clk-exynos5433.c
-+++ b/drivers/clk/samsung/clk-exynos5433.c
-@@ -545,6 +545,12 @@ static struct samsung_gate_clock top_gate_clks[] __initdata = {
- 	GATE(CLK_ACLK_FSYS_200, "aclk_fsys_200", "div_aclk_fsys_200",
- 			ENABLE_ACLK_TOP, 18,
- 			CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_GSCL_111, "aclk_gscl_111", "div_aclk_gscl_111",
-+			ENABLE_ACLK_TOP, 15,
-+			CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_GSCL_333, "aclk_gscl_333", "div_aclk_gscl_333",
-+			ENABLE_ACLK_TOP, 14,
-+			CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED, 0),
- 	GATE(CLK_ACLK_G2D_266, "aclk_g2d_266", "div_aclk_g2d_266",
- 			ENABLE_ACLK_TOP, 2,
- 			CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED, 0),
-@@ -3247,3 +3253,143 @@ static void __init exynos5433_cmu_g3d_init(struct device_node *np)
- }
- CLK_OF_DECLARE(exynos5433_cmu_g3d, "samsung,exynos5433-cmu-g3d",
- 		exynos5433_cmu_g3d_init);
-+
-+/*
-+ * Register offset definitions for CMU_GSCL
-+ */
-+#define MUX_SEL_GSCL				0x0200
-+#define MUX_ENABLE_GSCL				0x0300
-+#define MUX_STAT_GSCL				0x0400
-+#define ENABLE_ACLK_GSCL			0x0800
-+#define ENABLE_ACLK_GSCL_SECURE_SMMU_GSCL0	0x0804
-+#define ENABLE_ACLK_GSCL_SECURE_SMMU_GSCL1	0x0808
-+#define ENABLE_ACLK_GSCL_SECURE_SMMU_GSCL2	0x080c
-+#define ENABLE_PCLK_GSCL			0x0900
-+#define ENABLE_PCLK_GSCL_SECURE_SMMU_GSCL0	0x0904
-+#define ENABLE_PCLK_GSCL_SECURE_SMMU_GSCL1	0x0908
-+#define ENABLE_PCLK_GSCL_SECURE_SMMU_GSCL2	0x090c
-+#define ENABLE_IP_GSCL0				0x0b00
-+#define ENABLE_IP_GSCL1				0x0b04
-+#define ENABLE_IP_GSCL_SECURE_SMMU_GSCL0	0x0b08
-+#define ENABLE_IP_GSCL_SECURE_SMMU_GSCL1	0x0b0c
-+#define ENABLE_IP_GSCL_SECURE_SMMU_GSCL2	0x0b10
-+
-+static unsigned long gscl_clk_regs[] __initdata = {
-+	MUX_SEL_GSCL,
-+	MUX_ENABLE_GSCL,
-+	MUX_STAT_GSCL,
-+	ENABLE_ACLK_GSCL,
-+	ENABLE_ACLK_GSCL_SECURE_SMMU_GSCL0,
-+	ENABLE_ACLK_GSCL_SECURE_SMMU_GSCL1,
-+	ENABLE_ACLK_GSCL_SECURE_SMMU_GSCL2,
-+	ENABLE_PCLK_GSCL,
-+	ENABLE_PCLK_GSCL_SECURE_SMMU_GSCL0,
-+	ENABLE_PCLK_GSCL_SECURE_SMMU_GSCL1,
-+	ENABLE_PCLK_GSCL_SECURE_SMMU_GSCL2,
-+	ENABLE_IP_GSCL0,
-+	ENABLE_IP_GSCL1,
-+	ENABLE_IP_GSCL_SECURE_SMMU_GSCL0,
-+	ENABLE_IP_GSCL_SECURE_SMMU_GSCL1,
-+	ENABLE_IP_GSCL_SECURE_SMMU_GSCL2,
-+};
-+
-+/* list of all parent clock list */
-+PNAME(aclk_gscl_111_user_p)	= { "fin_pll", "aclk_gscl_111", };
-+PNAME(aclk_gscl_333_user_p)	= { "fin_pll", "aclk_gscl_333", };
-+
-+static struct samsung_mux_clock gscl_mux_clks[] __initdata = {
-+	/* MUX_SEL_GSCL */
-+	MUX(CLK_MOUT_ACLK_GSCL_111_USER, "mout_aclk_gscl_111_user",
-+			aclk_gscl_111_user_p, MUX_SEL_GSCL, 4, 1),
-+	MUX(CLK_MOUT_ACLK_GSCL_333_USER, "mout_aclk_gscl_333_user",
-+			aclk_gscl_333_user_p, MUX_SEL_GSCL, 0, 1),
-+};
-+
-+static struct samsung_gate_clock gscl_gate_clks[] __initdata = {
-+	/* ENABLE_ACLK_GSCL */
-+	GATE(CLK_ACLK_BTS_GSCL2, "aclk_bts_gscl2", "mout_aclk_gscl_333_user",
-+			ENABLE_ACLK_GSCL, 11, 0, 0),
-+	GATE(CLK_ACLK_BTS_GSCL1, "aclk_bts_gscl1", "mout_aclk_gscl_333_user",
-+			ENABLE_ACLK_GSCL, 10, 0, 0),
-+	GATE(CLK_ACLK_BTS_GSCL0, "aclk_bts_gscl0", "mout_aclk_gscl_333_user",
-+			ENABLE_ACLK_GSCL, 9, 0, 0),
-+	GATE(CLK_ACLK_AHB2APB_GSCLP, "aclk_ahb2apb_gsclp",
-+			"mout_aclk_gscl_111_user", ENABLE_ACLK_GSCL,
-+			8, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_XIU_GSCLX, "aclk_xiu_gsclx", "mout_aclk_gscl_333_user",
-+			ENABLE_ACLK_GSCL, 7, 0, 0),
-+	GATE(CLK_ACLK_GSCLNP_111, "aclk_gsclnp_111", "mout_aclk_gscl_111_user",
-+			ENABLE_ACLK_GSCL, 6, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_ACLK_GSCLRTND_333, "aclk_gsclrtnd_333",
-+			"mout_aclk_gscl_333_user", ENABLE_ACLK_GSCL, 5, 0, 0),
-+	GATE(CLK_ACLK_GSCLBEND_333, "aclk_gsclbend_333",
-+			"mout_aclk_gscl_333_user", ENABLE_ACLK_GSCL, 4, 0, 0),
-+	GATE(CLK_ACLK_GSD, "aclk_gsd", "mout_aclk_gscl_333_user",
-+			ENABLE_ACLK_GSCL, 3, 0, 0),
-+	GATE(CLK_ACLK_GSCL2, "aclk_gscl2", "mout_aclk_gscl_333_user",
-+			ENABLE_ACLK_GSCL, 2, 0, 0),
-+	GATE(CLK_ACLK_GSCL1, "aclk_gscl1", "mout_aclk_gscl_333_user",
-+			ENABLE_ACLK_GSCL, 1, 0, 0),
-+	GATE(CLK_ACLK_GSCL0, "aclk_gscl0", "mout_aclk_gscl_333_user",
-+			ENABLE_ACLK_GSCL, 0, 0, 0),
-+
-+	/* ENABLE_ACLK_GSCL_SECURE_SMMU_GSCL0 */
-+	GATE(CLK_ACLK_SMMU_GSCL0, "aclk_smmu_gscl0", "mout_aclk_gscl_333_user",
-+			ENABLE_ACLK_GSCL_SECURE_SMMU_GSCL0, 0, 0, 0),
-+
-+	/* ENABLE_ACLK_GSCL_SECURE_SMMU_GSCL1 */
-+	GATE(CLK_ACLK_SMMU_GSCL1, "aclk_smmu_gscl1", "mout_aclk_gscl_333_user",
-+			ENABLE_ACLK_GSCL_SECURE_SMMU_GSCL1, 0, 0, 0),
-+
-+	/* ENABLE_ACLK_GSCL_SECURE_SMMU_GSCL2 */
-+	GATE(CLK_ACLK_SMMU_GSCL2, "aclk_smmu_gscl2", "mout_aclk_gscl_333_user",
-+			ENABLE_ACLK_GSCL_SECURE_SMMU_GSCL2, 0, 0, 0),
-+
-+	/* ENABLE_PCLK_GSCL */
-+	GATE(CLK_PCLK_BTS_GSCL2, "pclk_bts_gscl2", "mout_aclk_gscl_111_user",
-+			ENABLE_PCLK_GSCL, 7, 0, 0),
-+	GATE(CLK_PCLK_BTS_GSCL1, "pclk_bts_gscl1", "mout_aclk_gscl_111_user",
-+			ENABLE_PCLK_GSCL, 6, 0, 0),
-+	GATE(CLK_PCLK_BTS_GSCL0, "pclk_bts_gscl0", "mout_aclk_gscl_111_user",
-+			ENABLE_PCLK_GSCL, 5, 0, 0),
-+	GATE(CLK_PCLK_PMU_GSCL, "pclk_pmu_gscl", "mout_aclk_gscl_111_user",
-+			ENABLE_PCLK_GSCL, 4, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_PCLK_SYSREG_GSCL, "pclk_sysreg_gscl",
-+			"mout_aclk_gscl_111_user", ENABLE_PCLK_GSCL,
-+			3, CLK_IGNORE_UNUSED, 0),
-+	GATE(CLK_PCLK_GSCL2, "pclk_gscl2", "mout_aclk_gscl_111_user",
-+			ENABLE_PCLK_GSCL, 2, 0, 0),
-+	GATE(CLK_PCLK_GSCL1, "pclk_gscl1", "mout_aclk_gscl_111_user",
-+			ENABLE_PCLK_GSCL, 1, 0, 0),
-+	GATE(CLK_PCLK_GSCL0, "pclk_gscl0", "mout_aclk_gscl_111_user",
-+			ENABLE_PCLK_GSCL, 0, 0, 0),
-+
-+	/* ENABLE_PCLK_GSCL_SECURE_SMMU_GSCL0 */
-+	GATE(CLK_PCLK_SMMU_GSCL0, "pclk_smmu_gscl0", "mout_aclk_gscl_111_user",
-+		ENABLE_PCLK_GSCL_SECURE_SMMU_GSCL0, 0, 0, 0),
-+
-+	/* ENABLE_PCLK_GSCL_SECURE_SMMU_GSCL1 */
-+	GATE(CLK_PCLK_SMMU_GSCL1, "pclk_smmu_gscl1", "mout_aclk_gscl_111_user",
-+		ENABLE_PCLK_GSCL_SECURE_SMMU_GSCL0, 0, 0, 0),
-+
-+	/* ENABLE_PCLK_GSCL_SECURE_SMMU_GSCL2 */
-+	GATE(CLK_PCLK_SMMU_GSCL2, "pclk_smmu_gscl2", "mout_aclk_gscl_111_user",
-+		ENABLE_PCLK_GSCL_SECURE_SMMU_GSCL0, 0, 0, 0),
-+};
-+
-+static struct samsung_cmu_info gscl_cmu_info __initdata = {
-+	.mux_clks		= gscl_mux_clks,
-+	.nr_mux_clks		= ARRAY_SIZE(gscl_mux_clks),
-+	.gate_clks		= gscl_gate_clks,
-+	.nr_gate_clks		= ARRAY_SIZE(gscl_gate_clks),
-+	.nr_clk_ids		= GSCL_NR_CLK,
-+	.clk_regs		= gscl_clk_regs,
-+	.nr_clk_regs		= ARRAY_SIZE(gscl_clk_regs),
-+};
-+
-+static void __init exynos5433_cmu_gscl_init(struct device_node *np)
-+{
-+	samsung_cmu_register_one(np, &gscl_cmu_info);
-+}
-+CLK_OF_DECLARE(exynos5433_cmu_gscl, "samsung,exynos5433-cmu-gscl",
-+		exynos5433_cmu_gscl_init);
-diff --git a/include/dt-bindings/clock/exynos5433.h b/include/dt-bindings/clock/exynos5433.h
-index dae83cc..f855859 100644
---- a/include/dt-bindings/clock/exynos5433.h
-+++ b/include/dt-bindings/clock/exynos5433.h
-@@ -147,8 +147,10 @@
- #define CLK_SCLK_UFSUNIPRO_FSYS		229
- #define CLK_SCLK_USBHOST30_FSYS		230
- #define CLK_SCLK_USBDRD30_FSYS		231
-+#define CLK_ACLK_GSCL_111		232
-+#define CLK_ACLK_GSCL_333		233
- 
--#define TOP_NR_CLK			232
-+#define TOP_NR_CLK			234
- 
- /* CMU_CPIF */
- #define CLK_FOUT_MPHY_PLL		1
-@@ -819,4 +821,37 @@
- 
- #define G3D_NR_CLK					20
- 
-+/* CMU_GSCL */
-+#define CLK_MOUT_ACLK_GSCL_111_USER			1
-+#define CLK_MOUT_ACLK_GSCL_333_USER			2
-+
-+#define CLK_ACLK_BTS_GSCL2				3
-+#define CLK_ACLK_BTS_GSCL1				4
-+#define CLK_ACLK_BTS_GSCL0				5
-+#define CLK_ACLK_AHB2APB_GSCLP				6
-+#define CLK_ACLK_XIU_GSCLX				7
-+#define CLK_ACLK_GSCLNP_111				8
-+#define CLK_ACLK_GSCLRTND_333				9
-+#define CLK_ACLK_GSCLBEND_333				10
-+#define CLK_ACLK_GSD					11
-+#define CLK_ACLK_GSCL2					12
-+#define CLK_ACLK_GSCL1					13
-+#define CLK_ACLK_GSCL0					14
-+#define CLK_ACLK_SMMU_GSCL0				15
-+#define CLK_ACLK_SMMU_GSCL1				16
-+#define CLK_ACLK_SMMU_GSCL2				17
-+#define CLK_PCLK_BTS_GSCL2				18
-+#define CLK_PCLK_BTS_GSCL1				19
-+#define CLK_PCLK_BTS_GSCL0				20
-+#define CLK_PCLK_PMU_GSCL				21
-+#define CLK_PCLK_SYSREG_GSCL				22
-+#define CLK_PCLK_GSCL2					23
-+#define CLK_PCLK_GSCL1					24
-+#define CLK_PCLK_GSCL0					25
-+#define CLK_PCLK_SMMU_GSCL0				26
-+#define CLK_PCLK_SMMU_GSCL1				27
-+#define CLK_PCLK_SMMU_GSCL2				28
-+
-+#define GSCL_NR_CLK					29
-+
- #endif /* _DT_BINDINGS_CLOCK_EXYNOS5433_H */
+vmap/vunmap mechanism works that way. ARM is using 2 levels of page tables:
+PGD and PTE; and that provides the needed level of indirection. Every mm
+contains a copy of init_mm's pgd mappings for kernel and they point to the same
+set of PTEs. vmap/vunmap manipulates only with *pgd->pte and the change becomes
+visible to every mm. This is impossible to do for sections because they use
+PGD entries directly.
+
+> it would however make sense to use the default
+> (7 + PAGE_SHIFT) instead of the ARM-specific 24 here if one of them is set,
+> I don't see any downsides to that.
+
+This makes sense. I'll prepare a patch for that.
+
+> 
+> 	Arnd
+
+
 -- 
-1.8.5.5
-
+Sergey Dyasly <s.dyasly@samsung.com>
