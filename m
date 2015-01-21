@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754390AbbAUP1B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 10:27:01 -0500
-Received: from mail-ig0-f176.google.com ([209.85.213.176]:56317 "EHLO
-	mail-ig0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753188AbbAUPYu (ORCPT
+	id S1753366AbbAUP0z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 10:26:55 -0500
+Received: from mail-ig0-f182.google.com ([209.85.213.182]:61402 "EHLO
+	mail-ig0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752971AbbAUPYx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 10:24:50 -0500
+	Wed, 21 Jan 2015 10:24:53 -0500
 From: Lee Jones <lee.jones@linaro.org>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: lee.jones@linaro.org, kernel@stlinux.com, linux-mtd@lists.infradead.org,
         computersforpeace@gmail.com, Angus Clark <angus.clark@st.com>,
         Carmelo Amoroso <carmelo.amoroso@st.com>
-Subject: [PATCH v4 04/10] mtd: st_spi_fsm: Add support for N25Q512 and N25Q00A devices
-Date: Wed, 21 Jan 2015 15:24:22 +0000
-Message-Id: <1421853868-8262-5-git-send-email-lee.jones@linaro.org>
+Subject: [PATCH v4 05/10] mtd: st_spi_fsm: Update the JEDEC probe to handle extended READIDs
+Date: Wed, 21 Jan 2015 15:24:23 +0000
+Message-Id: <1421853868-8262-6-git-send-email-lee.jones@linaro.org>
 X-Mailer: git-send-email 1.9.1
 In-Reply-To: <1421853868-8262-1-git-send-email-lee.jones@linaro.org>
 References: <1421853868-8262-1-git-send-email-lee.jones@linaro.org>
@@ -22,208 +22,350 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Angus Clark <angus.clark@st.com>
+The previous code was based on 3-byte JEDEC IDs, with a possible 2-byte
+extension.  However, devices are now emerging that return 6 or more bytes of
+READID data and the additional bytes are required to differentiate between
+variants or generations of similar devices.
 
-This patch adds support for the Micron N25Q512 and N25Q00A Serial Flash devices.
-Unlike previous Micron devices, it is now mandatory to check the Flags Status
-Register following a Write or Erase operation.  The N25Q512A device presents a
-further complication in that different variants of the device use different
-opcodes for the WRITE_1_4_4 operation.  Since there is no easy way to determine
-at runtime which variant is being used, FLASH_CAPS_WRITE_1_4_4 support is
-removed for N25Q512 devices, resulting in WRITE_1_1_4 being used instead.
-
-The following devices have been tested:
-
-    b2000C + N25Q512A13GSF40G
-    b2000C + N25Q00AA13GSF40G
-    b2147A + N25Q512A83GSF40X
+This patch refactors the device table and JEDEC probe code to handle arbitrary
+length READIDs, with the standard JEDEC definition now becoming a special case.
+Functionally, there should be no change in behaviour.  A subsequent patch will
+update the table with extended READIDs where applicable.
 
 Signed-off-by: Angus Clark <angus.clark@st.com>
 Signed-off-by: Carmelo Amoroso <carmelo.amoroso@st.com>
 Signed-off-by: Lee Jones <lee.jones@linaro.org>
 ---
- drivers/mtd/devices/st_spi_fsm.c | 96 +++++++++++++++++++++++++++++++++++++---
- 1 file changed, 91 insertions(+), 5 deletions(-)
+ drivers/mtd/devices/st_spi_fsm.c | 206 ++++++++++++++++++++++-----------------
+ 1 file changed, 119 insertions(+), 87 deletions(-)
 
 diff --git a/drivers/mtd/devices/st_spi_fsm.c b/drivers/mtd/devices/st_spi_fsm.c
-index bb8e9a4..f4d971a 100644
+index f4d971a..e2b1240 100644
 --- a/drivers/mtd/devices/st_spi_fsm.c
 +++ b/drivers/mtd/devices/st_spi_fsm.c
-@@ -240,12 +240,25 @@
+@@ -21,6 +21,7 @@
+ #include <linux/mtd/partitions.h>
+ #include <linux/mtd/spi-nor.h>
+ #include <linux/sched.h>
++#include <linux/sort.h>
+ #include <linux/delay.h>
+ #include <linux/io.h>
+ #include <linux/of.h>
+@@ -236,6 +237,11 @@
+ #define FLASH_STATUS_BP2       0x10
+ #define FLASH_STATUS_SRWP0     0x80
+ #define FLASH_STATUS_TIMEOUT   0xff
++
++/* Maximum READID length */
++#define MAX_READID_LEN         6
++#define MAX_READID_LEN_ALIGNED ALIGN(MAX_READID_LEN, 4)
++
+ /* S25FL Error Flags */
  #define S25FL_STATUS_E_ERR     0x20
  #define S25FL_STATUS_P_ERR     0x40
+@@ -326,13 +332,9 @@ struct stfsm_boot_dev {
+ /* SPI Flash Device Table */
+ struct flash_info {
+ 	char            *name;
+-	/*
+-	 * JEDEC id zero means "no ID" (most older chips); otherwise it has
+-	 * a high byte of zero plus three data bytes: the manufacturer id,
+-	 * then a two byte device id.
+-	 */
+-	u32             jedec_id;
+-	u16             ext_id;
++	/* READID data, as returned by 'SPINOR_OP_RDID' (0x9f). */
++	u8              readid[MAX_READID_LEN];
++	int             readid_len;
+ 	/*
+ 	 * The size listed here is what works with SPINOR_OP_SE, which isn't
+ 	 * necessarily called a "sector" by the vendor.
+@@ -366,6 +368,37 @@ static struct stfsm_boot_dev stfsm_stih416_data = {
+ 	.mask = STIH416_SYSCON_BOOT_DEV_MASK,
+ };
  
-+/* N25Q - READ/WRITE/CLEAR NON/VOLATILE STATUS/CONFIG Registers */
-+#define N25Q_CMD_RFSR          0x70
-+#define N25Q_CMD_CLFSR         0x50
- #define N25Q_CMD_WRVCR         0x81
- #define N25Q_CMD_RDVCR         0x85
- #define N25Q_CMD_RDVECR        0x65
- #define N25Q_CMD_RDNVCR        0xb5
- #define N25Q_CMD_WRNVCR        0xb1
- 
-+/* N25Q Flags Status Register: Error Flags */
-+#define N25Q_FLAGS_ERR_ERASE   BIT(5)
-+#define N25Q_FLAGS_ERR_PROG    BIT(4)
-+#define N25Q_FLAGS_ERR_VPP     BIT(3)
-+#define N25Q_FLAGS_ERR_PROT    BIT(1)
-+#define N25Q_FLAGS_ERROR	(N25Q_FLAGS_ERR_ERASE   | \
-+				N25Q_FLAGS_ERR_PROG    | \
-+				N25Q_FLAGS_ERR_VPP     | \
-+				N25Q_FLAGS_ERR_PROT)
++/* Device with standard 3-byte JEDEC ID */
++#define JEDEC_INFO(_name, _jedec_id, _sector_size, _n_sectors,	\
++		   _flags, _max_freq, _config)			\
++	{							\
++		.name = (_name),				\
++		.readid[0] = ((_jedec_id) >> 16 & 0xff),	\
++		.readid[1] = ((_jedec_id) >>  8 & 0xff),	\
++		.readid[2] = ((_jedec_id) >>  0 & 0xff),	\
++		.readid_len = 3,				\
++		.sector_size = (_sector_size),			\
++		.n_sectors = (_n_sectors),			\
++		.flags = (_flags),				\
++		.max_freq = (_max_freq),			\
++		.config = (_config)				\
++	}
 +
- #define FLASH_PAGESIZE         256			/* In Bytes    */
- #define FLASH_PAGESIZE_32      (FLASH_PAGESIZE / 4)	/* In uint32_t */
- #define FLASH_MAX_BUSY_WAIT    (300 * HZ)	/* Maximum 'CHIPERASE' time */
-@@ -257,6 +270,7 @@
- #define CFG_WRITE_TOGGLE_32BIT_ADDR    0x00000002
- #define CFG_ERASESEC_TOGGLE_32BIT_ADDR 0x00000008
- #define CFG_S25FL_CHECK_ERROR_FLAGS    0x00000010
-+#define CFG_N25Q_CHECK_ERROR_FLAGS     0x00000020
++/* Device with arbitrary-length READID */
++#define RDID(...) __VA_ARGS__  /* Dummy macro to protect array argument. */
++#define RDID_INFO(_name, _readid, _readid_len, _sector_size,	\
++		  _n_sectors, _flags, _max_freq, _config)	\
++	{							\
++		.name = (_name),				\
++		.readid = _readid,				\
++		.readid_len = _readid_len,			\
++		.sector_size = (_sector_size),			\
++		.n_sectors = (_n_sectors),			\
++		.flags = (_flags),				\
++		.max_freq = (_max_freq),			\
++		.config = (_config)				\
++	}
++
+ static int stfsm_n25q_config(struct stfsm *fsm);
+ static int stfsm_mx25_config(struct stfsm *fsm);
+ static int stfsm_s25fl_config(struct stfsm *fsm);
+@@ -378,19 +411,19 @@ static struct flash_info flash_types[] = {
+ 	 * (eg faster operating frequency)
+ 	 */
+ #define M25P_FLAG (FLASH_FLAG_READ_WRITE | FLASH_FLAG_READ_FAST)
+-	{ "m25p40",  0x202013, 0,  64 * 1024,   8, M25P_FLAG, 25, NULL },
+-	{ "m25p80",  0x202014, 0,  64 * 1024,  16, M25P_FLAG, 25, NULL },
+-	{ "m25p16",  0x202015, 0,  64 * 1024,  32, M25P_FLAG, 25, NULL },
+-	{ "m25p32",  0x202016, 0,  64 * 1024,  64, M25P_FLAG, 50, NULL },
+-	{ "m25p64",  0x202017, 0,  64 * 1024, 128, M25P_FLAG, 50, NULL },
+-	{ "m25p128", 0x202018, 0, 256 * 1024,  64, M25P_FLAG, 50, NULL },
++	JEDEC_INFO("m25p40",  0x202013,  64 * 1024,   8, M25P_FLAG, 25, NULL),
++	JEDEC_INFO("m25p80",  0x202014,  64 * 1024,  16, M25P_FLAG, 25, NULL),
++	JEDEC_INFO("m25p16",  0x202015,  64 * 1024,  32, M25P_FLAG, 25, NULL),
++	JEDEC_INFO("m25p32",  0x202016,  64 * 1024,  64, M25P_FLAG, 50, NULL),
++	JEDEC_INFO("m25p64",  0x202017,  64 * 1024, 128, M25P_FLAG, 50, NULL),
++	JEDEC_INFO("m25p128", 0x202018, 256 * 1024,  64, M25P_FLAG, 50, NULL),
  
- struct stfsm_seq {
- 	uint32_t data_size;
-@@ -399,6 +413,7 @@ static struct flash_info flash_types[] = {
- 	  (MX25_FLAG | FLASH_FLAG_32BIT_ADDR | FLASH_FLAG_RESET), 70,
- 	  stfsm_mx25_config},
+ #define M25PX_FLAG (FLASH_FLAG_READ_WRITE      |	\
+ 		    FLASH_FLAG_READ_FAST        |	\
+ 		    FLASH_FLAG_READ_1_1_2       |	\
+ 		    FLASH_FLAG_WRITE_1_1_2)
+-	{ "m25px32", 0x207116, 0,  64 * 1024,  64, M25PX_FLAG, 75, NULL },
+-	{ "m25px64", 0x207117, 0,  64 * 1024, 128, M25PX_FLAG, 75, NULL },
++	JEDEC_INFO("m25px32", 0x207116,  64 * 1024,  64, M25PX_FLAG, 75, NULL),
++	JEDEC_INFO("m25px64", 0x207117,  64 * 1024, 128, M25PX_FLAG, 75, NULL),
  
-+	/* Micron N25Qxxx */
+ 	/* Macronix MX25xxx
+ 	 *     - Support for 'FLASH_FLAG_WRITE_1_4_4' is omitted for devices
+@@ -403,15 +436,12 @@ static struct flash_info flash_types[] = {
+ 		   FLASH_FLAG_READ_1_1_4        |	\
+ 		   FLASH_FLAG_SE_4K             |	\
+ 		   FLASH_FLAG_SE_32K)
+-	{ "mx25l3255e",  0xc29e16, 0, 64 * 1024, 64,
+-	  (MX25_FLAG | FLASH_FLAG_WRITE_1_4_4), 86,
+-	  stfsm_mx25_config},
+-	{ "mx25l25635e", 0xc22019, 0, 64*1024, 512,
+-	  (MX25_FLAG | FLASH_FLAG_32BIT_ADDR | FLASH_FLAG_RESET), 70,
+-	  stfsm_mx25_config },
+-	{ "mx25l25655e", 0xc22619, 0, 64*1024, 512,
+-	  (MX25_FLAG | FLASH_FLAG_32BIT_ADDR | FLASH_FLAG_RESET), 70,
+-	  stfsm_mx25_config},
++	JEDEC_INFO("mx25l3255e",  0xc29e16, 64 * 1024, 64,
++		   (MX25_FLAG | FLASH_FLAG_WRITE_1_4_4), 86, stfsm_mx25_config),
++	JEDEC_INFO("mx25l25635e", 0xc22019, 64 * 1024, 512,
++		   (MX25_FLAG | FLASH_FLAG_RESET), 70, stfsm_mx25_config),
++	JEDEC_INFO("mx25l25655e", 0xc22619, 64 * 1024, 512,
++		   (MX25_FLAG | FLASH_FLAG_RESET), 70, stfsm_mx25_config),
+ 
+ 	/* Micron N25Qxxx */
  #define N25Q_FLAG (FLASH_FLAG_READ_WRITE       |	\
- 		   FLASH_FLAG_READ_FAST         |	\
- 		   FLASH_FLAG_READ_1_1_2        |	\
-@@ -411,10 +426,29 @@ static struct flash_info flash_types[] = {
+@@ -424,8 +454,8 @@ static struct flash_info flash_types[] = {
+ 		   FLASH_FLAG_WRITE_1_2_2       |	\
+ 		   FLASH_FLAG_WRITE_1_1_4       |	\
  		   FLASH_FLAG_WRITE_1_4_4)
- 	{ "n25q128", 0x20ba18, 0, 64 * 1024,  256, N25Q_FLAG, 108,
- 	  stfsm_n25q_config },
--	{ "n25q256", 0x20ba19, 0, 64 * 1024,  512,
--	  N25Q_FLAG | FLASH_FLAG_32BIT_ADDR, 108, stfsm_n25q_config },
--	{ "n25q512", 0x20ba20, 0, 64 * 1024,  1024,
--	  N25Q_FLAG | FLASH_FLAG_32BIT_ADDR, 108, stfsm_n25q_config},
-+
-+	/* Micron N25Q256/N25Q512/N25Q00A (32-bit ADDR devices)
-+	*
-+	* Versions are available with or without a dedicated RESET# pin
-+	* (e.g. N25Q512A83GSF40G vs. N25Q512A13GSF40G).  To complicate matters,
-+	* the versions that include a RESET# pin (Feature Set = 8) require a
-+	* different opcode for the FLASH_CMD_WRITE_1_4_4 command.
-+	* Unfortunately it is not possible to determine easily at run-time
-+	* which version is being used.  We therefore remove support for
-+	* FLASH_FLAG_WRITE_1_4_4 (falling back to FLASH_FLAG_WRITE_1_1_4), and
-+	* defer overall support for RESET# to the board-level platform/Device
-+	* Tree property "reset-signal".
-+	*/
-+#define N25Q_32BIT_ADDR_FLAG  ((N25Q_FLAG              |	\
-+				FLASH_FLAG_32BIT_ADDR  |	\
-+				FLASH_FLAG_RESET)      &	\
-+			       ~FLASH_FLAG_WRITE_1_4_4)
-+	{ "n25q256", 0x20ba19,      0, 64 * 1024,   512,
-+	  N25Q_32BIT_ADDR_FLAG, 108, stfsm_n25q_config},
-+	{ "n25q512", 0x20ba20, 0x1000, 64 * 1024,  1024,
-+	  N25Q_32BIT_ADDR_FLAG, 108, stfsm_n25q_config},
-+	{ "n25q00a", 0x20ba21, 0x1000, 64 * 1024,  2048,
-+	  N25Q_32BIT_ADDR_FLAG, 108, stfsm_n25q_config},
+-	{ "n25q128", 0x20ba18, 0, 64 * 1024,  256, N25Q_FLAG, 108,
+-	  stfsm_n25q_config },
++	JEDEC_INFO("n25q128", 0x20ba18, 64 * 1024,  256,
++		   N25Q_FLAG, 108, stfsm_n25q_config),
+ 
+ 	/* Micron N25Q256/N25Q512/N25Q00A (32-bit ADDR devices)
+ 	*
+@@ -443,12 +473,12 @@ static struct flash_info flash_types[] = {
+ 				FLASH_FLAG_32BIT_ADDR  |	\
+ 				FLASH_FLAG_RESET)      &	\
+ 			       ~FLASH_FLAG_WRITE_1_4_4)
+-	{ "n25q256", 0x20ba19,      0, 64 * 1024,   512,
+-	  N25Q_32BIT_ADDR_FLAG, 108, stfsm_n25q_config},
+-	{ "n25q512", 0x20ba20, 0x1000, 64 * 1024,  1024,
+-	  N25Q_32BIT_ADDR_FLAG, 108, stfsm_n25q_config},
+-	{ "n25q00a", 0x20ba21, 0x1000, 64 * 1024,  2048,
+-	  N25Q_32BIT_ADDR_FLAG, 108, stfsm_n25q_config},
++	JEDEC_INFO("n25q256", 0x20ba19, 64 * 1024,   512,
++		   N25Q_32BIT_ADDR_FLAG, 108, stfsm_n25q_config),
++	RDID_INFO("n25q512", RDID({0x20, 0xba, 0x20, 0x10, 0x00}), 5, 64 * 1024,
++		  1024, N25Q_32BIT_ADDR_FLAG, 108, stfsm_n25q_config),
++	RDID_INFO("n25q00a", RDID({0x20, 0xba, 0x21, 0x10, 0x00}), 5, 64 * 1024,
++		  2048, N25Q_32BIT_ADDR_FLAG, 108, stfsm_n25q_config),
  
  	/*
  	 * Spansion S25FLxxxP
-@@ -892,6 +926,30 @@ static int stfsm_write_fifo(struct stfsm *fsm, const uint32_t *buf,
- 	return size;
+@@ -461,12 +491,12 @@ static struct flash_info flash_types[] = {
+ 			FLASH_FLAG_READ_1_4_4   |	\
+ 			FLASH_FLAG_WRITE_1_1_4  |	\
+ 			FLASH_FLAG_READ_FAST)
+-	{ "s25fl032p",  0x010215, 0x4d00,  64 * 1024,  64, S25FLXXXP_FLAG, 80,
+-	  stfsm_s25fl_config},
+-	{ "s25fl129p0", 0x012018, 0x4d00, 256 * 1024,  64, S25FLXXXP_FLAG, 80,
+-	  stfsm_s25fl_config },
+-	{ "s25fl129p1", 0x012018, 0x4d01,  64 * 1024, 256, S25FLXXXP_FLAG, 80,
+-	  stfsm_s25fl_config },
++	RDID_INFO("s25fl032p", RDID({0x01, 0x02, 0x15, 0x4d, 0x00}), 5,
++		  64 * 1024,  64, S25FLXXXP_FLAG, 80, stfsm_s25fl_config),
++	RDID_INFO("s25fl129p0", RDID({0x01, 0x20, 0x18, 0x4d, 0x00}), 5,
++		  256 * 1024,  64, S25FLXXXP_FLAG, 80, stfsm_s25fl_config),
++	RDID_INFO("s25fl129p1", RDID({0x01, 0x20, 0x18, 0x4d, 0x01}), 5,
++		  64 * 1024, 256, S25FLXXXP_FLAG, 80, stfsm_s25fl_config),
+ 
+ 	/*
+ 	 * Spansion S25FLxxxS
+@@ -480,25 +510,24 @@ static struct flash_info flash_types[] = {
+ #define S25FLXXXS_FLAG (S25FLXXXP_FLAG         |	\
+ 			FLASH_FLAG_RESET        |	\
+ 			FLASH_FLAG_DYB_LOCKING)
+-	{ "s25fl128s0", 0x012018, 0x0300,  256 * 1024, 64, S25FLXXXS_FLAG, 80,
+-	  stfsm_s25fl_config },
+-	{ "s25fl128s1", 0x012018, 0x0301,  64 * 1024, 256, S25FLXXXS_FLAG, 80,
+-	  stfsm_s25fl_config },
+-	{ "s25fl256s0", 0x010219, 0x4d00, 256 * 1024, 128,
+-	  S25FLXXXS_FLAG | FLASH_FLAG_32BIT_ADDR, 80, stfsm_s25fl_config },
+-	{ "s25fl256s1", 0x010219, 0x4d01,  64 * 1024, 512,
+-	  S25FLXXXS_FLAG | FLASH_FLAG_32BIT_ADDR, 80, stfsm_s25fl_config },
+-
+-	/* Winbond -- w25x "blocks" are 64K, "sectors" are 4KiB */
++	RDID_INFO("s25fl128s0", RDID({0x01, 0x20, 0x18, 0x03, 0x00}), 5,
++		  256 * 1024, 64, S25FLXXXS_FLAG, 80, stfsm_s25fl_config),
++	RDID_INFO("s25fl128s1", RDID({0x01, 0x20, 0x18, 0x03, 0x01}), 5,
++		  64 * 1024, 256, S25FLXXXS_FLAG, 80, stfsm_s25fl_config),
++	RDID_INFO("s25fl256s0", RDID({0x01, 0x02, 0x19, 0x4d, 0x00}), 5,
++		  256 * 1024, 128, S25FLXXXS_FLAG, 80, stfsm_s25fl_config),
++	RDID_INFO("s25fl256s1", RDID({0x01, 0x02, 0x19, 0x4d, 0x01}), 5,
++		  64 * 1024, 512, S25FLXXXS_FLAG, 80, stfsm_s25fl_config),
++
+ #define W25X_FLAG (FLASH_FLAG_READ_WRITE       |	\
+ 		   FLASH_FLAG_READ_FAST         |	\
+ 		   FLASH_FLAG_READ_1_1_2        |	\
+ 		   FLASH_FLAG_WRITE_1_1_2)
+-	{ "w25x40",  0xef3013, 0,  64 * 1024,   8, W25X_FLAG, 75, NULL },
+-	{ "w25x80",  0xef3014, 0,  64 * 1024,  16, W25X_FLAG, 75, NULL },
+-	{ "w25x16",  0xef3015, 0,  64 * 1024,  32, W25X_FLAG, 75, NULL },
+-	{ "w25x32",  0xef3016, 0,  64 * 1024,  64, W25X_FLAG, 75, NULL },
+-	{ "w25x64",  0xef3017, 0,  64 * 1024, 128, W25X_FLAG, 75, NULL },
++	JEDEC_INFO("w25x40", 0xef3013, 64 * 1024,   8, W25X_FLAG, 75, NULL),
++	JEDEC_INFO("w25x80", 0xef3014, 64 * 1024,  16, W25X_FLAG, 75, NULL),
++	JEDEC_INFO("w25x16", 0xef3015, 64 * 1024,  32, W25X_FLAG, 75, NULL),
++	JEDEC_INFO("w25x32", 0xef3016, 64 * 1024,  64, W25X_FLAG, 75, NULL),
++	JEDEC_INFO("w25x64", 0xef3017, 64 * 1024, 128, W25X_FLAG, 75, NULL),
+ 
+ 	/* Winbond -- w25q "blocks" are 64K, "sectors" are 4KiB */
+ #define W25Q_FLAG (FLASH_FLAG_READ_WRITE       |	\
+@@ -508,17 +537,16 @@ static struct flash_info flash_types[] = {
+ 		   FLASH_FLAG_READ_1_1_4        |	\
+ 		   FLASH_FLAG_READ_1_4_4        |	\
+ 		   FLASH_FLAG_WRITE_1_1_4)
+-	{ "w25q80",  0xef4014, 0,  64 * 1024,  16, W25Q_FLAG, 80,
+-	  stfsm_w25q_config },
+-	{ "w25q16",  0xef4015, 0,  64 * 1024,  32, W25Q_FLAG, 80,
+-	  stfsm_w25q_config },
+-	{ "w25q32",  0xef4016, 0,  64 * 1024,  64, W25Q_FLAG, 80,
+-	  stfsm_w25q_config },
+-	{ "w25q64",  0xef4017, 0,  64 * 1024, 128, W25Q_FLAG, 80,
+-	  stfsm_w25q_config },
+-
+-	/* Sentinel */
+-	{ NULL, 0x000000, 0, 0, 0, 0, 0, NULL },
++	JEDEC_INFO("w25q80", 0xef4014, 64 * 1024,  16,
++		   W25Q_FLAG, 80, stfsm_w25q_config),
++	JEDEC_INFO("w25q16", 0xef4015, 64 * 1024,  32,
++		   W25Q_FLAG, 80, stfsm_w25q_config),
++	JEDEC_INFO("w25q32", 0xef4016, 64 * 1024,  64,
++		   W25Q_FLAG, 80, stfsm_w25q_config),
++	JEDEC_INFO("w25q64", 0xef4017, 64 * 1024, 128,
++		   W25Q_FLAG, 80, stfsm_w25q_config),
++
++	{ },
+ };
+ 
+ /*
+@@ -649,7 +677,7 @@ static struct seq_rw_config stfsm_s25fl_write4_configs[] = {
+ #define W25Q_STATUS_QE			(0x1 << 1)
+ 
+ static struct stfsm_seq stfsm_seq_read_jedec = {
+-	.data_size = TRANSFER_SIZE(8),
++	.data_size = TRANSFER_SIZE(MAX_READID_LEN_ALIGNED),
+ 	.seq_opc[0] = (SEQ_OPC_PADS_1 |
+ 		       SEQ_OPC_CYCLES(8) |
+ 		       SEQ_OPC_OPCODE(SPINOR_OP_RDID)),
+@@ -1967,45 +1995,49 @@ out1:
+ static void stfsm_read_jedec(struct stfsm *fsm, uint8_t *jedec)
+ {
+ 	const struct stfsm_seq *seq = &stfsm_seq_read_jedec;
+-	uint32_t tmp[2];
++	uint32_t tmp[MAX_READID_LEN_ALIGNED / 4];
+ 
+ 	stfsm_load_seq(fsm, seq);
+ 
+-	stfsm_read_fifo(fsm, tmp, 8);
++	stfsm_read_fifo(fsm, tmp, MAX_READID_LEN_ALIGNED);
+ 
+-	memcpy(jedec, tmp, 5);
++	memcpy(jedec, tmp, MAX_READID_LEN);
+ 
+ 	stfsm_wait_seq(fsm);
  }
  
-+static int n25q_clear_flags(struct stfsm *fsm)
++static int stfsm_cmp_flash_info_readid_len(const void *a, const void *b)
 +{
-+	struct stfsm_seq seq = {
-+		.seq_opc[0] = (SEQ_OPC_PADS_1 |
-+			       SEQ_OPC_CYCLES(8) |
-+			       SEQ_OPC_OPCODE(N25Q_CMD_CLFSR) |
-+			       SEQ_OPC_CSDEASSERT),
-+		.seq = {
-+			STFSM_INST_CMD1,
-+			STFSM_INST_STOP,
-+		},
-+		.seq_cfg = (SEQ_CFG_PADS_1 |
-+			    SEQ_CFG_READNOTWRITE |
-+			    SEQ_CFG_CSDEASSERT |
-+			    SEQ_CFG_STARTSEQ),
-+	};
-+
-+	stfsm_load_seq(fsm, &seq);
-+
-+	stfsm_wait_seq(fsm);
-+
-+	return 0;
++	return ((struct flash_info *)b)->readid_len -
++		((struct flash_info *)a)->readid_len;
 +}
 +
- static int stfsm_enter_32bit_addr(struct stfsm *fsm, int enter)
+ static struct flash_info *stfsm_jedec_probe(struct stfsm *fsm)
  {
- 	struct stfsm_seq *seq = &fsm->stfsm_seq_en_32bit_addr;
-@@ -1252,10 +1310,18 @@ static int stfsm_mx25_config(struct stfsm *fsm)
- static int stfsm_n25q_config(struct stfsm *fsm)
- {
- 	uint32_t flags = fsm->info->flags;
--	uint8_t vcr;
-+	uint8_t vcr, sta;
- 	int ret = 0;
- 	bool soc_reset;
+-	struct flash_info	*info;
+-	u16                     ext_jedec;
+-	u32			jedec;
+-	u8			id[5];
++	uint8_t readid[MAX_READID_LEN];
++	char readid_str[MAX_READID_LEN * 3 + 1];
++	struct flash_info *info;
  
-+	/*
-+	 * Check/Clear Error Flags
+-	stfsm_read_jedec(fsm, id);
++	stfsm_read_jedec(fsm, readid);
+ 
+-	jedec     = id[0] << 16 | id[1] << 8 | id[2];
+-	/*
+-	 * JEDEC also defines an optional "extended device information"
+-	 * string for after vendor-specific data, after the three bytes
+-	 * we use here. Supporting some chips might require using it.
+-	 */
+-	ext_jedec = id[3] << 8  | id[4];
++	hex_dump_to_buffer(readid, MAX_READID_LEN, 16, 1,
++			   readid_str, sizeof(readid_str), 0);
+ 
+-	dev_dbg(fsm->dev, "JEDEC =  0x%08x [%02x %02x %02x %02x %02x]\n",
+-		jedec, id[0], id[1], id[2], id[3], id[4]);
++	dev_dbg(fsm->dev, "READID = %s\n", readid_str);
++
++	/* The 'readid' may match multiple entries in the table.  To ensure we
++	 * retrieve the most specific match, the table is sorted in order of
++	 * 'readid_len'.
 +	 */
-+	fsm->configuration |= CFG_N25Q_CHECK_ERROR_FLAGS;
-+	stfsm_read_status(fsm, N25Q_CMD_RFSR, &sta, 1);
-+	if (sta & N25Q_FLAGS_ERROR)
-+		n25q_clear_flags(fsm);
++	sort(flash_types, ARRAY_SIZE(flash_types) - 1,
++	     sizeof(struct flash_info), stfsm_cmp_flash_info_readid_len, NULL);
+ 
+ 	for (info = flash_types; info->name; info++) {
+-		if (info->jedec_id == jedec) {
+-			if (info->ext_id && info->ext_id != ext_jedec)
+-				continue;
++		if (memcmp(info->readid, readid, info->readid_len) == 0)
+ 			return info;
+-		}
+ 	}
+-	dev_err(fsm->dev, "Unrecognized JEDEC id %06x\n", jedec);
 +
- 	/* Configure 'READ' sequence */
- 	if (flags & FLASH_FLAG_32BIT_ADDR)
- 		ret = stfsm_search_prepare_rw_seq(fsm, &fsm->stfsm_seq_read,
-@@ -1631,6 +1697,7 @@ static int stfsm_write(struct stfsm *fsm, const uint8_t *buf,
- 	uint32_t page_buf[FLASH_PAGESIZE_32];
- 	uint8_t *t = (uint8_t *)&tmp;
- 	const uint8_t *p;
-+	uint8_t sta;
- 	int ret;
++	dev_err(fsm->dev, "Unrecognized READID [%s]\n", readid_str);
  
- 	dev_dbg(fsm->dev, "writing %d bytes to 0x%08x\n", size, offset);
-@@ -1701,6 +1768,15 @@ static int stfsm_write(struct stfsm *fsm, const uint8_t *buf,
- 	if (ret && fsm->configuration & CFG_S25FL_CHECK_ERROR_FLAGS)
- 		stfsm_s25fl_clear_status_reg(fsm);
- 
-+	/* N25Q: Check/Clear Error Flags */
-+	if (fsm->configuration & CFG_N25Q_CHECK_ERROR_FLAGS) {
-+		stfsm_read_status(fsm, N25Q_CMD_RFSR, &sta, 1);
-+		if (sta & N25Q_FLAGS_ERROR) {
-+			n25q_clear_flags(fsm);
-+			ret = -EPROTO;
-+		}
-+	}
-+
- 	/* Exit 32-bit address mode, if required */
- 	if (fsm->configuration & CFG_WRITE_TOGGLE_32BIT_ADDR)
- 		stfsm_enter_32bit_addr(fsm, 0);
-@@ -1743,6 +1819,7 @@ static int stfsm_mtd_read(struct mtd_info *mtd, loff_t from, size_t len,
- static int stfsm_erase_sector(struct stfsm *fsm, uint32_t offset)
- {
- 	struct stfsm_seq *seq = &stfsm_seq_erase_sector;
-+	uint8_t sta;
- 	int ret;
- 
- 	dev_dbg(fsm->dev, "erasing sector at 0x%08x\n", offset);
-@@ -1763,6 +1840,15 @@ static int stfsm_erase_sector(struct stfsm *fsm, uint32_t offset)
- 	if (ret && fsm->configuration & CFG_S25FL_CHECK_ERROR_FLAGS)
- 		stfsm_s25fl_clear_status_reg(fsm);
- 
-+	/* N25Q: Check/Clear Error Flags */
-+	if (fsm->configuration & CFG_N25Q_CHECK_ERROR_FLAGS) {
-+		stfsm_read_status(fsm, N25Q_CMD_RFSR, &sta, 1);
-+		if (sta & N25Q_FLAGS_ERROR) {
-+			n25q_clear_flags(fsm);
-+			ret = -EPROTO;
-+		}
-+	}
-+
- 	/* Exit 32-bit address mode, if required */
- 	if (fsm->configuration & CFG_ERASESEC_TOGGLE_32BIT_ADDR)
- 		stfsm_enter_32bit_addr(fsm, 0);
+ 	return NULL;
+ }
 -- 
 1.9.1
 
