@@ -1,50 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753595AbbAUS3T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 13:29:19 -0500
-Received: from zeniv.linux.org.uk ([195.92.253.2]:44371 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752275AbbAUS3L (ORCPT
+	id S1752886AbbAUSar (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 13:30:47 -0500
+Received: from smtprelay0053.hostedemail.com ([216.40.44.53]:52134 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751941AbbAUSaj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 13:29:11 -0500
-Date: Wed, 21 Jan 2015 18:29:05 +0000
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Guenter Roeck <linux@roeck-us.net>
-Cc: Sabrina Dubroca <sd@queasysnail.net>, Paul Moore <pmoore@redhat.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-audit@redhat.com, Richard Guy Briggs <rgb@redhat.com>
-Subject: Re: linux-next: Tree for Jan 20 -- Kernel panic - Unable to mount
- root fs
-Message-ID: <20150121182905.GQ29656@ZenIV.linux.org.uk>
-References: <20150120232726.GA16913@kria>
- <1517211.UYLV49hvpg@sifl>
- <1528536.jyty2pu4Mz@sifl>
- <20150121004117.GM29656@ZenIV.linux.org.uk>
- <54BF1292.2080902@roeck-us.net>
- <20150121033600.GN29656@ZenIV.linux.org.uk>
- <54BF2496.4000807@roeck-us.net>
- <20150121043637.GO29656@ZenIV.linux.org.uk>
- <20150121110539.GA8924@kria>
- <54BFAA5D.4040108@roeck-us.net>
+	Wed, 21 Jan 2015 13:30:39 -0500
+X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::::::,RULES_HIT:41:355:379:541:599:800:960:966:968:973:988:989:1042:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2196:2199:2393:2538:2559:2562:3138:3139:3140:3141:3142:3353:3865:3866:3867:3868:3871:3872:3873:3874:4321:4385:5007:6261:7875:7903:10004:10400:10848:11026:11232:11658:11914:12043:12296:12438:12517:12519:12555:13069:13311:13357:13618:14096:14097:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: cars24_571620012004
+X-Filterd-Recvd-Size: 2459
+Date: Wed, 21 Jan 2015 13:30:36 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Ingo Molnar <mingo@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC][PATCH 1/5] tracefs: Add new tracefs file system
+Message-ID: <20150121133036.6d90fc73@gandalf.local.home>
+In-Reply-To: <20150121172101.503176929@goodmis.org>
+References: <20150121171953.823177070@goodmis.org>
+	<20150121172101.503176929@goodmis.org>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <54BFAA5D.4040108@roeck-us.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 05:32:13AM -0800, Guenter Roeck wrote:
-> Another data point (though I have no idea if it is useful or what it means):
-> 
-> In the working case, path_init sets nd->flags to 0x50 or 0x51.
-> In the non-working case (ie for all files with a '/' in the name),
-> it sets nd->flags to 0x10 or 0x11, even though it is always called
-> with the LOOKUP_RCU bit set in flags.
+I need to learn how to use git better :-/
 
-Umm...  Are those path_init() succeeding or failing?  Note that path_init()
-includes "walk everything except for the last component", so your non-working
-case is "have it walk anything at all".  What's failing there?  path_init()
-or handling the remaining component?
+I forgot to git add include/linux/tracefs.h:
+
+-- Steve
+
+---
+ include/linux/tracefs.h    |  41 ++++
+ create mode 100644 include/linux/tracefs.h
+
+diff --git a/include/linux/tracefs.h b/include/linux/tracefs.h
+new file mode 100644
+index 000000000000..23e04ce21749
+--- /dev/null
++++ b/include/linux/tracefs.h
+@@ -0,0 +1,41 @@
++/*
++ *  tracefs.h - a pseudo file system for activating tracing
++ *
++ * Based on debugfs by: 2004 Greg Kroah-Hartman <greg@kroah.com>
++ *
++ *  Copyright (C) 2014 Red Hat Inc, author: Steven Rostedt <srostedt@redhat.com>
++ *
++ *	This program is free software; you can redistribute it and/or
++ *	modify it under the terms of the GNU General Public License version
++ *	2 as published by the Free Software Foundation.
++ *
++ * tracefs is the file system that is used by the tracing infrastructure.
++ *
++ */
++
++#ifndef _TRACEFS_H_
++#define _TRACEFS_H_
++
++#include <linux/fs.h>
++#include <linux/seq_file.h>
++
++#include <linux/types.h>
++
++struct file_operations;
++
++#ifdef CONFIG_TRACING
++
++struct dentry *tracefs_create_file(const char *name, umode_t mode,
++				   struct dentry *parent, void *data,
++				   const struct file_operations *fops);
++
++struct dentry *tracefs_create_dir(const char *name, struct dentry *parent);
++
++void tracefs_remove(struct dentry *dentry);
++void tracefs_remove_recursive(struct dentry *dentry);
++
++bool tracefs_initialized(void);
++
++#endif /* CONFIG_TRACING */
++
++#endif
