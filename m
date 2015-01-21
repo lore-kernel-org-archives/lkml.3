@@ -1,193 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753541AbbAUSpM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 13:45:12 -0500
-Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:40451 "EHLO
-	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751484AbbAUSpI (ORCPT
+	id S1753598AbbAUSqT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 13:46:19 -0500
+Received: from outbound-smtp01.blacknight.com ([81.17.249.7]:54057 "EHLO
+	outbound-smtp01.blacknight.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751546AbbAUSqL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 13:45:08 -0500
-Date: Wed, 21 Jan 2015 18:44:56 +0000
-From: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-To: Bjorn Helgaas <bhelgaas@google.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Michal Simek <monstr@monstr.eu>,
-        Martin Wilck <martin.wilck@ts.fujitsu.com>,
-        Linux PCI <linux-pci@vger.kernel.org>
-Subject: Re: [RFC PATCH v3 1/2] drivers: pci: fix pci_mmap_fits()
- implementation for procfs mmap
-Message-ID: <20150121184456.GA30346@red-moon>
-References: <1415877558-8906-1-git-send-email-lorenzo.pieralisi@arm.com>
- <1415877558-8906-2-git-send-email-lorenzo.pieralisi@arm.com>
- <20141121175114.GC6578@google.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20141121175114.GC6578@google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 21 Jan 2015 13:46:11 -0500
+From: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
+        dvhart@infradead.org, andy.shevchenko@gmail.com,
+        boon.leong.ong@intel.com, linux-kernel@vger.kernel.org
+Cc: "Bryan O'Donoghue" <pure.logic@nexus-software.ie>
+Subject: [PATCH v2 0/1] x86: Add IMR support to Quark/Galileo
+Date: Wed, 21 Jan 2015 18:46:07 +0000
+Message-Id: <1421865968-7373-1-git-send-email-pure.logic@nexus-software.ie>
+X-Mailer: git-send-email 1.9.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bjorn,
+This patchset adds support for Isolated Memory Regions to the kernel.
 
-On Fri, Nov 21, 2014 at 05:51:14PM +0000, Bjorn Helgaas wrote:
-> On Thu, Nov 13, 2014 at 11:19:15AM +0000, Lorenzo Pieralisi wrote:
-> > The introduction of pci_mmap_fits() in commit:
-> > 
-> > b5ff7df3df9efab511244d5a299fce706c71af48
-> > "Check mapped ranges on sysfs resource files"
-> > 
-> > allowed to check for valid range mappings of PCI resources to user space
-> > when mapping PCI resources through the sysfs filesystem.
-> > 
-> > The mapping of resources through the sysfs expects the offset passed
-> > by the user through the mmap syscall to be 0, and the pgoff is adjusted
-> > by the kernel to memory map the resource to the CPU physical address
-> > corresponding to the PCI resource in question.
-> > 
-> > The usage of procfs mapping of PCI resources (/proc/bus/pci files)
-> > is more controversial in that userspace programs mapping PCI resources
-> > are expected to pass in the mmap offset field either a CPU physical address
-> > or a PCI bar value, depending on the architecture.
-> > 
-> > By the time pci_mmap_fits() was used to check PCI resource ranges for
-> > procfs PCI resources mapping in commit:
-> > 
-> > 9eff02e2042f96fb2aedd02e032eca1c5333d7
-> > "PCI: check mmap range of /proc/bus/pci files too"
-> > 
-> > the procfs interface for mmapping resources to user space broke, since
-> > pci_mmap_fits() expected the offset passed from user space in the mmap
-> > call to be 0, not the CPU physical address or PCI BAR value of the
-> > resource in question.
-> > 
-> > Subsequent attempts at fixing the pci_mmap_fits() implementation failed
-> > to fix the issue (or fixed the issue in some architectures but not for
-> > all of them, ARM and SPARC procfs interface PCI resources mapping stayed
-> > broken throughout) in particular commits:
-> > 
-> > 8c05cd08a7504b855c265263e84af61aabafa329
-> > "PCI: fix offset check for sysfs mmapped files"
-> > 
-> > and
-> > 
-> > 3b519e4ea618b6943a82931630872907f9ac2c2b
-> > "PCI: fix size checks for mmap() on /proc/bus/pci files"
-> > 
-> > fixed procfs PCI resources mapping checks in pci_mmap_fits for some
-> > architectures, but not for architectures like SPARC that expects
-> > the offset value passed from user space through the mmap syscall
-> > (when mapping through procfs) to represent the PCI BAR value of the
-> > resource to be mapped.
-> > 
-> > The reason behind the breakage is the following. The addresses stored
-> > in PCI device resources for memory spaces correspond to CPU physical
-> > addresses, which do not necessarily map 1:1 to PCI bus addresses as
-> > programmed in PCI devices configuration spaces.
-> > 
-> > This implies that the sanity checks carried out in pci_mmap_fits() to
-> > ensure that the user executes an mmap of a "real" pci resource are
-> > erroneous when executed through procfs. Some platforms (ie SPARC)
-> > expect the offset value to be passed in (procfs mapping) to be the
-> > PCI BAR configuration value as read from the PCI device configuration
-> > space, not the fixed-up CPU physical address that is present in PCI
-> > device resources.
-> > 
-> > The required pgoff (offset in mmap syscall) value passed from userspace
-> > is supposed to represent the resource value exported through
-> > /proc/bus/pci/devices when the resource is mmapped though procfs (and 0
-> > when the mapping is carried out through sysfs resource files), which
-> > corresponds to the PCI resource filtered through the pci_resource_to_user()
-> > API.
-> > 
-> > This patch converts the PCI resource to the expected "user visible"
-> > value through pci_resource_to_user() before carrying out sanity checks
-> > in pci_mmap_fits() so that the check is carried out on the resource
-> > values as expected from the userspace mmap API.
-> > 
-> > Cc: Arnd Bergmann <arnd@arndb.de>
-> > Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-> > Cc: Bjorn Helgaas <bhelgaas@google.com>
-> > Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> > Cc: Russell King <linux@arm.linux.org.uk>
-> > Cc: David S. Miller <davem@davemloft.net>
-> > Cc: Michal Simek <monstr@monstr.eu>
-> > Cc: Martin Wilck <martin.wilck@ts.fujitsu.com>
-> > Signed-off-by: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
-> 
-> Hi Lorenzo,
-> 
-> I think this patch is the right thing to do.  I'm going to try to write
-> patches for microblaze, mips, powerpc, and sparc that implement their
-> pci_resource_to_user() in terms of pcibios_resource_to_bus() (the patches
-> are easy; it's the arguments for correctness that take time).  Then I'll
-> try to convince myself that those arches are currently broken and will be
-> fixed by your patch below.
-> 
-> But I'll be on vacation all next week, so this will take me some time and
-> it may not make the next merge window.
+Quark SoC X1000 contains a set of registers called Isolated Memory Regions.
+IMRs provide fine grained memory access control to various system agents
+within the SoC such as CPU SMM/non-SMM mode, PCIe virtual channels, CPU
+snoop cycles, eSRAM flush cycles and the RMU. In simple terms, IMRs provide
+a mechanism to protect memory regions from unwarranted access by system
+agents that should not have access to that memory.
 
-I do not know if you had time to implement the patches above, I would
-like to ask Russell to merge patch 2 of this series though, since (1) it
-is a fix in the first place given the current proc/sys interface, and
-(2) we need it to remove dependency on pcibios for arm64 drivers; I am
-just waiting to merge patch 2 upstream since in a way it depends on your
-decision on what the final proc/sys interface should look like and how
-we implement it.
+IMRs support a lock bit. Once a lock bit is set for an individual IMR it is
+not possible to tear down that IMR without performing a cold boot of the
+system. IMRs support reporting of violations. The SoC system can be
+configured to reboot immediately when an IMR violation has taken place.
+Immediate reboot of the system on IMR violation is recommended and is
+currently how Quark BIOS configures the system.
 
-As things stand, patch 2 can be merged and fixes the current API on ARM.
+An example of IMRs in use is given with Arduino compatiable Galileo boards
+which ship with an IMR around the ACPI runtime services memory. If a DMA
+read/write cycle were to occur to this region of memory this would trigger
+the IMR violation mechansim.
 
-Thanks,
-Lorenzo
+As part of the IMR init code all unlocked IMRs are removed to ensure the
+EFI memory map and IMR memory map are consistent. This is necessary since at
+various stages during the boot of Quark systems firmware and second stage
+bootloader will place unlocked IMRs around various assets in memory, with
+the expectation that subsequent phases of boot will tear-down unlocked/stale
+IMRs before proceeding. The kernel needs to tear-down unlocked IMRs placed
+around the boot params structure and compressed kernel in memory. Without
+doing so DMA addresses given out by the kernel to DMA capable hardware runs
+the risk of triggering an IMR fault when DMA happens to those addresses.
+As a result any unlocked IMR must be torn down by the kernel early in the
+boot process to sanitize the memory map. 
 
-> 
-> Bjorn
-> 
-> > ---
-> >  drivers/pci/pci-sysfs.c | 13 ++++++++-----
-> >  1 file changed, 8 insertions(+), 5 deletions(-)
-> > 
-> > diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-> > index 2c6643f..e4634e3 100644
-> > --- a/drivers/pci/pci-sysfs.c
-> > +++ b/drivers/pci/pci-sysfs.c
-> > @@ -963,17 +963,20 @@ void pci_remove_legacy_files(struct pci_bus *b)
-> >  int pci_mmap_fits(struct pci_dev *pdev, int resno, struct vm_area_struct *vma,
-> >  		  enum pci_mmap_api mmap_api)
-> >  {
-> > -	unsigned long nr, start, size, pci_start;
-> > +	unsigned long nr, start, size, pci_offset;
-> > +	resource_size_t pci_start, pci_end;
-> >  
-> >  	if (pci_resource_len(pdev, resno) == 0)
-> >  		return 0;
-> >  	nr = vma_pages(vma);
-> >  	start = vma->vm_pgoff;
-> > +	pci_resource_to_user(pdev, resno, &pdev->resource[resno],
-> > +			     &pci_start, &pci_end);
-> >  	size = ((pci_resource_len(pdev, resno) - 1) >> PAGE_SHIFT) + 1;
-> > -	pci_start = (mmap_api == PCI_MMAP_PROCFS) ?
-> > -			pci_resource_start(pdev, resno) >> PAGE_SHIFT : 0;
-> > -	if (start >= pci_start && start < pci_start + size &&
-> > -			start + nr <= pci_start + size)
-> > +	pci_offset = (mmap_api == PCI_MMAP_PROCFS) ?
-> > +			pci_start >> PAGE_SHIFT : 0;
-> > +	if (start >= pci_offset && start < pci_offset + size &&
-> > +			start + nr <= pci_offset + size)
-> >  		return 1;
-> >  	return 0;
-> >  }
-> > -- 
-> > 2.1.2
-> > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+As an additional protection to the run-time kernel from unwarranted memory
+transactions an IMR is placed around the kernel's .text and .rodata
+sections. 
+
+Changes since v1:
+ - Galileo platform code
+    Removed completely. Policy to tear-down unlocked IMRs and setup IMR
+    around kernel .text and .rodata as part of IMR init code.
+    Darren Hart/Ong, Boon Leong
+ - imr_add/imr_del
+    Renamed to imr_add_range and imr_del_range respectively.
+    Andy Shevchenko
+ - x86_match_cpu
+    Used in place of DMI strings specific to Galileo.
+    Andy Shevchenko/Ong, Boon Leong
+ - Expanded git log definitions of IMRs
+    Addition of more descriptive text to deliniate between different IMR
+    types.
+    Ong, Boon Leong
+ - struct imr
+    Renamed to struct imr_regs
+    Andy Shevchenko/Darren Hart
+ - imr_read/imr_write
+    Flow reworked flow of register indexing
+    Andy Shevchenko
+ - debugfs hooks changed
+    Andy Shevchenko
+ - imr_enabled
+    Definition of an enabled IMR updated to include read/write mask values
+    present in IMR. Address @ zero and read/write mask in conjunction will
+    be the definition of a disabled IMR on X1000 to be consistent with
+    firmware both old and current which also defines a disabled IMR this
+    way.
+    Darren Hart/Ong, Boon Leong
+ - Overlapping
+    Comment added to code to explain the design decision not to allow IMR
+    overlaps.
+    Darren Hart/Ong, Boon Leong
+ - CONFIG_DEBUG_IMR_SELFTEST
+    Automated IMR self test moved from removed Galileo platform code and
+    added to IMR init code. Option exists in the kernel hacking section.
+    Darren Hart
+ - IMR self test
+    Expanded to over more scenarios
+    Bryan O'Donoghue
+ - Remove reference to IMR_ENABLE bit
+    Undocumented bit with respect to Quark X1000
+    Ong, Boon Leong
+ - Expanded kernel IMR to encompass .text and .rodata
+    IMR protecting both .text and .rodata as in the same way as .text and
+    .rodata are marked read-only in the relevant page-table entries.
+    Bryan O'Donoghue
+ - Overlap bounds checking
+    Moved range checking of overlap into a function
+    Andy Shevchenko
+ 
+Bryan O'Donoghue (1):
+  x86: Add Isolated Memory Regions for Quark X1000
+
+ arch/x86/Kconfig           |  25 ++
+ arch/x86/Kconfig.debug     |  12 +
+ arch/x86/include/asm/imr.h |  60 ++++
+ arch/x86/kernel/Makefile   |   1 +
+ arch/x86/kernel/imr.c      | 682 +++++++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 780 insertions(+)
+ create mode 100644 arch/x86/include/asm/imr.h
+ create mode 100644 arch/x86/kernel/imr.c
+
+-- 
+1.9.1
+
