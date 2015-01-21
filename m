@@ -1,69 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752361AbbAUKfp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 05:35:45 -0500
-Received: from mail-la0-f46.google.com ([209.85.215.46]:36954 "EHLO
-	mail-la0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750754AbbAUKfe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 05:35:34 -0500
+	id S1752904AbbAUKiY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 05:38:24 -0500
+Received: from mx1.redhat.com ([209.132.183.28]:46207 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750812AbbAUKiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 05:38:12 -0500
+Message-ID: <54BF814F.7090703@redhat.com>
+Date: Wed, 21 Jan 2015 11:37:03 +0100
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-In-Reply-To: <A9667DDFB95DB7438FA9D7D576C3D87E0AC26363@SHSMSX104.ccr.corp.intel.com>
-References: <CACzj_yWxK9d_47a9ZHqtk2HSJBN6+LvtDScQqWd5znfSt8ia0Q@mail.gmail.com>
- <A9667DDFB95DB7438FA9D7D576C3D87E0AC2629C@SHSMSX104.ccr.corp.intel.com>
- <CACzj_yWDkuNxu=-Fqy3aPJJ_sveeCtmjKJRAvEjsNb+-7kdjAQ@mail.gmail.com> <A9667DDFB95DB7438FA9D7D576C3D87E0AC26363@SHSMSX104.ccr.corp.intel.com>
-From: Wincy Van <fanwenyi0529@gmail.com>
-Date: Wed, 21 Jan 2015 18:35:12 +0800
-Message-ID: <CACzj_yVsW=CTxTMFJ3wig9a1r_Hx3Y3svywEJ1CVJ5Ge2jNs_w@mail.gmail.com>
-Subject: Re: [PATCH v2 5/5] KVM: nVMX: Enable nested posted interrupt processing.
-To: "Zhang, Yang Z" <yang.z.zhang@intel.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, "gleb@kernel.org" <gleb@kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Wanpeng Li <wanpeng.li@linux.intel.com>,
-        Jan Kiszka <jan.kiszka@web.de>
-Content-Type: text/plain; charset=UTF-8
+To: Fam Zheng <famz@redhat.com>,
+        "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
+        Andy Lutomirski <luto@amacapital.net>
+CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        x86@kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Kees Cook <keescook@chromium.org>,
+        David Herrmann <dh.herrmann@gmail.com>,
+        Alexei Starovoitov <ast@plumgrid.com>,
+        Miklos Szeredi <mszeredi@suse.cz>,
+        David Drysdale <drysdale@google.com>, Oleg Nesterov <oleg@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Vivek Goyal <vgoyal@redhat.com>, Mike Frysinger <vapier@gentoo.org>,
+        "Theodore Ts'o" <tytso@mit.edu>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Rashika Kheria <rashika.kheria@gmail.com>,
+        Hugh Dickins <hughd@google.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-api@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>
+Subject: Re: [PATCH RFC 5/6] epoll: Add implementation for epoll_mod_wait
+References: <1421747878-30744-1-git-send-email-famz@redhat.com> <1421747878-30744-6-git-send-email-famz@redhat.com> <54BE4F1D.7090807@gmail.com> <20150121045903.GA2858@fam-t430.nay.redhat.com> <54BF5ACE.6030206@gmail.com> <20150121085827.GB23024@ad.nay.redhat.com>
+In-Reply-To: <20150121085827.GB23024@ad.nay.redhat.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 4:49 PM, Zhang, Yang Z <yang.z.zhang@intel.com> wrote:
->>>> +       if (vector == vmcs12->posted_intr_nv && +
->>>> nested_cpu_has_posted_intr(vmcs12)) { +               if (vcpu->mode
->>>> == IN_GUEST_MODE) + apic->send_IPI_mask(get_cpu_mask(vcpu->cpu), +
->>>>                           POSTED_INTR_VECTOR); +               else {
->>>> +                       r = -1; +                       goto out; +
->>>>            } + +               /* +                * if posted intr is
->>>> done by hardware, the +                * corresponding eoi was sent to
->>>> L0. Thus +                * we should send eoi to L1 manually. +
->>>>          */ +               kvm_apic_set_eoi_accelerated(vcpu, +
->>>>                 vmcs12->posted_intr_nv);
->>>
->>> Why this is necessary? As your comments mentioned, it is done by
->>> hardware not L1, why L1 should aware of it?
->>>
->>
->> According to SDM 29.6, if the processor recognizes a posted interrupt,
->> it will send an EOI to LAPIC.
->> If the posted intr is done by hardware, the processor will send eoi to
->> hardware LAPIC, not L1's, just like the none-nested case(the physical
->> interrupt is dismissed). So we should take care of the L1's LAPIC and send an eoi to it.
->
-> No. You are not emulating the PI feature. You just reuse the hardware's capability. So you don't need to let L1 know it.
->
-
-Agreed, I had thought we have already set L1's IRR before this, I was wrong.
-
-BTW, I was trying to complete the nested posted intr manually if the
-dest vcpu is in_guest_mode but not IN_GUEST_MODE, but I found that
-it is difficult to set RVI of the destination vcpu timely, because we
-should keep the RVI, PIR and ON in sync : (
-
-I think it is better to do a nested vmexit in the case above, rather
-than emulate it, because that case is much less than the hardware
-case.
 
 
-Thanks,
+On 21/01/2015 09:58, Fam Zheng wrote:
+>> > See my comment in the earlier mail. If you split this into two 
+>> > APIs, and epoll_ctl_batch() is guaranteed to execute 'cmds' in order, 
+>> > then the return value of epoll_ctl_batch() could be used to tell
+>> > user space how many commands succeeded. Much simpler!
+> Yes it is much simpler. However the reason to add batching in the first place is
+> to make epoll faster, by reducing syscalls. Splitting makes the result
+> sub-optimal: we still need at least 2 calls instead of 1.  Each one of the three
+> proposed new call *is* a step forward, but I don't think we will have everything
+> solved even by implementing them all. Compromise needed between performance or
+> complexity.
+> 
+> My take for simplicity will be leaving epoll_ctl as-is, and my take for
+> performance will be epoll_pwait1. And I don't really like putting my time on
+> epoll_ctl_batch, thinking it as a ambivalent compromise in between.
 
-Wincy.
+I agree with Michael actually.  The big change is going from O(n)
+epoll_ctl calls to O(1), and epoll_ctl_batch achieves that just fine.
+Changing 2 syscalls to 1 is the icing on the cake, but we're talking of
+a fraction of a microsecond.
+
+Paolo
