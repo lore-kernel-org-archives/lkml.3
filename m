@@ -1,327 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752000AbbAUHxE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 02:53:04 -0500
-Received: from mail-wi0-f174.google.com ([209.85.212.174]:59781 "EHLO
-	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750803AbbAUHw4 (ORCPT
+	id S1752798AbbAUHxU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 02:53:20 -0500
+Received: from e34.co.us.ibm.com ([32.97.110.152]:34584 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751552AbbAUHxB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 02:52:56 -0500
-Message-ID: <54BF5ACE.6030206@gmail.com>
-Date: Wed, 21 Jan 2015 08:52:46 +0100
-From: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	Wed, 21 Jan 2015 02:53:01 -0500
+Date: Tue, 20 Jan 2015 23:52:54 -0800
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Huang Ying <ying.huang@intel.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, LKP ML <lkp@01.org>
+Subject: Re: [LKP] [rcu] 00f5159aeb6: +55.3%
+ will-it-scale.time.involuntary_context_switches
+Message-ID: <20150121075254.GC9719@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1421825564.6126.29.camel@intel.com>
 MIME-Version: 1.0
-To: Fam Zheng <famz@redhat.com>
-CC: mtk.manpages@gmail.com, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kees Cook <keescook@chromium.org>,
-        Andy Lutomirski <luto@amacapital.net>,
-        David Herrmann <dh.herrmann@gmail.com>,
-        Alexei Starovoitov <ast@plumgrid.com>,
-        Miklos Szeredi <mszeredi@suse.cz>,
-        David Drysdale <drysdale@google.com>, Oleg Nesterov <oleg@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Vivek Goyal <vgoyal@redhat.com>, Mike Frysinger <vapier@gentoo.org>,
-        "Theodore Ts'o" <tytso@mit.edu>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Rasmus Villemoes <linux@rasmusvillemoes.dk>,
-        Rashika Kheria <rashika.kheria@gmail.com>,
-        Hugh Dickins <hughd@google.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-api@vger.kernel.org, Josh Triplett <josh@joshtriplett.org>,
-        Paolo Bonzini <pbonzini@redhat.com>
-Subject: Re: [PATCH RFC 5/6] epoll: Add implementation for epoll_mod_wait
-References: <1421747878-30744-1-git-send-email-famz@redhat.com> <1421747878-30744-6-git-send-email-famz@redhat.com> <54BE4F1D.7090807@gmail.com> <20150121045903.GA2858@fam-t430.nay.redhat.com>
-In-Reply-To: <20150121045903.GA2858@fam-t430.nay.redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1421825564.6126.29.camel@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-TM-AS-MML: disable
+X-Content-Scanned: Fidelis XPS MAILER
+x-cbid: 15012107-0017-0000-0000-0000081B3053
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Fam Zheng,
-
-On 01/21/2015 05:59 AM, Fam Zheng wrote:
-> On Tue, 01/20 13:50, Michael Kerrisk (man-pages) wrote:
->> Hello Fam Zheng,
->>
->> On 01/20/2015 10:57 AM, Fam Zheng wrote:
->>> This syscall is a sequence of
->>>
->>> 1) a number of epoll_ctl calls
->>> 2) a epoll_pwait, with timeout enhancement.
->>>
->>> The epoll_ctl operations are embeded so that application doesn't have to use
->>> separate syscalls to insert/delete/update the fds before poll. It is more
->>> efficient if the set of fds varies from one poll to another, which is the
->>> common pattern for certain applications. 
->>
->> Which applications? Could we have some specific examples? This is a 
->> complex API, and it needs good justification.
+On Wed, Jan 21, 2015 at 03:32:44PM +0800, Huang Ying wrote:
+> FYI, we noticed the below changes on
 > 
-> OK, I'll explain more in v2.
+> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git stall.2015.01.06a
+> commit 00f5159aeb68f08ce29597be86be87d6db0c1ba1 ("rcu: Run grace-period kthreads at real-time priority")
 
-Okay.
+Glad this helps!
 
-[...]
+However, the version that I am pushing during the upcoming merge window
+requires a boot parameter rcutree.kthread_prio= set to a value in the
+range 1..99 to have effect.  The reason is that we need to focus any
+risks from this change on the people needing it.
 
->>> The only complexity is returning the result of each operation.  For each
->>> epoll_mod_cmd in cmds, the field "error" is an output field that will be stored
->>> the return code *iff* the command is executed (0 for success and -errno of the
->>> equivalent epoll_ctl call), and will be left unchanged if the command is not
->>> executed because some earlier error, for example due to failure of
->>> copy_from_user to copy the array.
->>>
->>> Applications can utilize this fact to do error handling: they could initialize
->>> all the epoll_mod_wait.error to a positive value, which is by definition not a
->>> possible output value from epoll_mod_wait. Then when the syscall returned, they
->>> know whether or not the command is executed by comparing each error with the
->>> init value, if they're different, they have the result of the command.
->>> More roughly, they can put any non-zero and not distinguish "not run" from
->>> failure.
->>
->> The "cmds' are not executed in a specified order plus the need to
->> initialize the 'errors' fields to a positive value feels a bit ugly.
->> And indeed the whole "command list was only partially run" case
->> is not pretty. Am I correct to understand that if an error is found
->> during execution of one of the "epoll_ctl" commands in 'cmds' then
->> the system call will return -1 with errno set, indicating an error,
->> even though the epoll interest list may have changed because some
->> of the earlier 'cmds' executed successfully? This all seems a bit of
->> a headache for user space.
+							Thanx, Paul
+
+> testbox/testcase/testparams: lkp-a03/will-it-scale/performance-lock1
 > 
-> This is the trade-off for batching. The best we can do is probably make this
-> transactional: none or all of the commands succeeds. It will require a much
-> more complex implementation, though. 
-
-Transactional would be more comfortable for user-space, and while I 
-can see that it would be complex to implement, perhaps the greater
-point might be that the implementation is CPU expensive.
-
-> But even with that, the error reporting on
-> which command failed is a complication.
-
-My suggestions below could make the error reporting much simpler...
-
->> I have a couple of questions:
->>
->> Q1. I can see that batching "epoll_ctl" commands might be useful,
->> since it results in fewer systems calls. But, does it really
->> need to be bound together with the "epoll_pwait" functionality?
->> (Perhaps this point was covered in previous discussions, but
->> neither the message accompanying this patch nor the 0/6 man page
->> provide a compelling rationale for the need to bind these two
->> operations together.)
->>
->> Yes, I realize you might save a system call, but it makes for a
->> cumbersome API that has the above headache, and also forces the 
->> need for double pointer indirection in the 'spec' argument (i.e., 
->> spec is a pointer to an array of structures where each element
->> in turn includes an 'events' pointer that points to another array).
->>
->> Why not a simpler API with two syscalls such as:
->>
->> epoll_ctl_batch(int epfd, int flags,
->>                 int ncmds, struct epoll_mod_cmd *cmds);
->>
->> epoll_pwait1(int epfd, struct epoll_event *events, int maxevents, 
->>              struct timespec *timeout, int clock_id, 
->>              const sigset_t *sigmask, size_t sigsetsize);
+> e3663b1024d1f946  00f5159aeb68f08ce29597be86  
+> ----------------  --------------------------  
+>          %stddev     %change         %stddev
+>              \          |                \  
+>      11321 ±  5%     +55.3%      17582 ± 14%  will-it-scale.time.involuntary_context_switches
+>      28999 ± 44%    +109.3%      60700 ± 25%  sched_debug.cpu#1.ttwu_count
+>      58384 ± 44%    +103.6%     118851 ± 24%  sched_debug.cpu#1.nr_switches
+>      26144 ± 48%     +90.3%      49762 ± 26%  sched_debug.cpu#1.sched_goidle
+>        827 ± 34%     -57.3%        353 ± 21%  cpuidle.C2-ATM.usage
+>      58976 ± 43%    +103.0%     119712 ± 24%  sched_debug.cpu#1.sched_count
+>        503 ± 29%     -56.5%        219 ± 27%  cpuidle.C4-ATM.usage
+>      11321 ±  5%     +55.3%      17582 ± 14%  time.involuntary_context_switches
+>        156 ± 14%     -29.6%        110 ± 19%  cpuidle.POLL.usage
+>      50583 ±  2%     -21.7%      39630 ±  4%  cpuidle.C6-ATM.usage
+>   51597156 ±  2%     +23.7%   63848564 ±  3%  cpuidle.C1E-ATM.time
+>      39349 ±  2%     -12.0%      34622 ±  2%  softirqs.SCHED
+>     758790 ±  8%     -15.3%     642336 ± 12%  sched_debug.cpu#2.sched_count
+>     378981 ±  8%     -15.6%     319776 ± 12%  sched_debug.cpu#2.ttwu_count
+>     374440 ±  8%     -15.5%     316513 ± 12%  sched_debug.cpu#2.ttwu_local
+>       5307 ±  0%      -1.0%       5255 ±  0%  vmstat.system.in
 > 
-> The problem is that there is no room for flags field in epoll_pwait1, which is
-> asked for, in previous discussion thread [1].
-
-Ahh yes, I certainly should not have forgotten that. But that's easily solved.
-Do as for pselect6():
-
-strcut sigargs {
-    const sigset_t *ss;
-    size_t          ss_len; /* Size (in bytes) of object pointed
-                               to by 'ss' */
-}
-
-epoll_pwait1(int epfd, struct epoll_event *events, int maxevents, 
-             struct timespec *timeout, int clock_id, int flags,
-             int timeout,
-             const struct sigargs *sargs);
-
-> I don't see epoll_mod_wait as a *significantly more* complicated interface
-> compared to epoll_ctl_batch and epoll_pwait1 above. 
-
-My biggest problem with epoll_ctl_wait() is the complexity of error 
-handling. epoll_ctl_batch and epoll_pwait1 would simplify that, as I 
-note below.
-
-Aside from that, I do think that epoll_ctl_wait() passes a certain
-threshold of complexity that warrants good justification, which
-I haven't really seen yet.
-
-> In epoll_mod_wait, if you
-> leave out ncmds and cmds, it is effectively a poll without batch; and if
-> leaving out spec, it is effectively a batch without poll.
+> testbox/testcase/testparams: wsm/will-it-scale/performance-open2
 > 
-> The most important change here is the timeout. IMO I wouldn't mind leaving out
-> batching. Integrating it is requested by Andy:
+> e3663b1024d1f946  00f5159aeb68f08ce29597be86  
+> ----------------  --------------------------  
+>      22128 ±  3%    +120.2%      48719 ±  8%  will-it-scale.time.involuntary_context_switches
+>       5577 ± 45%   +1492.2%      88802 ± 33%  sched_debug.cpu#6.sched_count
+>       5457 ± 46%   +1526.2%      88751 ± 33%  sched_debug.cpu#6.nr_switches
+>       0.45 ± 43%     -73.3%       0.12 ± 15%  turbostat.%c3
+>         10 ± 24%     -55.8%          4 ± 40%  sched_debug.cpu#9.nr_uninterruptible
+>        147 ± 11%     -58.5%         61 ± 32%  sched_debug.cpu#11.load
+>        147 ± 11%     -58.5%         61 ± 32%  sched_debug.cfs_rq[11]:/.load
+>   10821106 ± 39%     -59.8%    4347430 ± 20%  cpuidle.C3-NHM.time
+>        356 ± 41%     +76.6%        629 ±  3%  sched_debug.cfs_rq[6]:/.blocked_load_avg
+>      22128 ±  3%    +120.2%      48719 ±  8%  time.involuntary_context_switches
+>        145 ± 36%     -35.9%         93 ± 30%  sched_debug.cpu#5.load
+>        469 ± 29%     +55.9%        732 ±  4%  sched_debug.cfs_rq[6]:/.tg_load_contrib
+>        145 ± 36%     -34.0%         95 ± 29%  sched_debug.cfs_rq[5]:/.load
+>         99 ±  8%     -27.8%         72 ± 24%  sched_debug.cpu#9.load
+>         99 ±  8%     -27.8%         72 ± 24%  sched_debug.cfs_rq[9]:/.load
+>     219871 ±  6%     -33.3%     146545 ± 19%  sched_debug.cpu#3.ttwu_local
+>     224610 ±  6%     -31.3%     154342 ± 18%  sched_debug.cpu#3.sched_goidle
+>     451877 ±  6%     -31.1%     311378 ± 18%  sched_debug.cpu#3.sched_count
+>     451737 ±  6%     -31.1%     311279 ± 18%  sched_debug.cpu#3.nr_switches
+>     225208 ±  6%     -31.3%     154688 ± 18%  sched_debug.cpu#3.ttwu_count
+>       4122 ±  7%     -23.6%       3148 ± 17%  cpuidle.C3-NHM.usage
+>         84 ± 11%     -27.4%         61 ±  5%  sched_debug.cpu#7.cpu_load[0]
+>     154565 ±  2%     -29.6%     108768 ±  9%  cpuidle.C6-NHM.usage
+>     124949 ± 25%     +41.4%     176670 ± 15%  sched_debug.cpu#2.sched_goidle
+>      74177 ±  2%     -23.6%      56653 ±  4%  sched_debug.cpu#3.nr_load_updates
+>         79 ±  6%     -23.1%         60 ±  5%  sched_debug.cpu#7.cpu_load[1]
+>      50107 ±  6%     -20.9%      39621 ±  7%  sched_debug.cfs_rq[3]:/.exec_clock
+>         76 ±  4%     -20.6%         60 ±  6%  sched_debug.cpu#7.cpu_load[2]
+>     385983 ±  9%     -20.4%     307347 ± 12%  sched_debug.cfs_rq[3]:/.min_vruntime
+>         74 ±  2%     -18.5%         60 ±  6%  sched_debug.cpu#7.cpu_load[3]
+>       1.50 ±  6%     -10.0%       1.35 ±  9%  perf-profile.cpu-cycles.selinux_file_free_security.security_file_free.__fput.____fput.task_work_run
+>      46086 ±  1%     -25.7%      34260 ±  5%  softirqs.SCHED
+>         72 ±  1%     -15.9%         60 ±  7%  sched_debug.cpu#7.cpu_load[4]
+>         74 ± 13%     -17.7%         61 ±  2%  sched_debug.cfs_rq[7]:/.runnable_load_avg
+>         65 ±  2%     +16.9%         76 ±  4%  sched_debug.cpu#1.cpu_load[3]
+>       1.94 ±  5%      -9.9%       1.74 ±  6%  perf-profile.cpu-cycles.security_file_free.__fput.____fput.task_work_run.do_notify_resume
+>      58851 ±  1%     +20.5%      70942 ±  9%  sched_debug.cfs_rq[1]:/.exec_clock
+>      69880 ±  1%     -16.9%      58047 ± 11%  sched_debug.cpu#7.nr_load_updates
+>         60 ±  5%      +9.5%         66 ±  3%  sched_debug.cpu#9.cpu_load[4]
+>      12064 ±  7%     +12.4%      13561 ±  5%  slabinfo.kmalloc-64.num_objs
+>         67 ±  4%     +14.9%         77 ±  4%  sched_debug.cpu#1.cpu_load[2]
+>      53070 ±  7%     +18.3%      62803 ±  5%  sched_debug.cfs_rq[9]:/.exec_clock
+>         64 ±  1%     +16.3%         74 ±  4%  sched_debug.cpu#1.cpu_load[4]
+>      11895 ±  7%     +12.9%      13429 ±  5%  slabinfo.kmalloc-64.active_objs
+>      67415 ±  1%     -16.4%      56345 ± 11%  sched_debug.cfs_rq[7]:/.exec_clock
+>      58403 ±  4%     +12.0%      65434 ±  6%  sched_debug.cpu#9.nr_load_updates
+>     428535 ±  8%     +18.3%     507136 ±  6%  sched_debug.cfs_rq[9]:/.min_vruntime
+>     505551 ±  1%     +16.3%     588207 ±  8%  sched_debug.cfs_rq[1]:/.min_vruntime
+>       1818 ±  5%      -8.4%       1665 ±  3%  slabinfo.proc_inode_cache.active_objs
+>       1818 ±  5%      -8.4%       1665 ±  3%  slabinfo.proc_inode_cache.num_objs
+>        616 ±  0%     +11.4%        686 ±  4%  sched_debug.cfs_rq[1]:/.tg_runnable_contrib
+>       2259 ± 14%     +23.5%       2790 ±  5%  sched_debug.cpu#3.curr->pid
+>      28336 ±  0%     +11.2%      31517 ±  4%  sched_debug.cfs_rq[1]:/.avg->runnable_avg_sum
+>     576795 ±  1%     -14.6%     492717 ± 10%  sched_debug.cfs_rq[7]:/.min_vruntime
+>       7176 ±  0%      +2.1%       7323 ±  0%  vmstat.system.cs
+>      10798 ±  0%      -1.1%      10675 ±  0%  vmstat.system.in
 > 
-> [1]: http://thread.gmane.org/gmane.linux.kernel/1861430/focus=91591
+> lkp-a03: Atom
+> Memory: 8G
 > 
-> which also made sense to me; I do have a patch in QEMU to call epoll_ctl for a
-> number of times right before epoll_wait.
+> wsm: Westmere
+> Memory: 6G
 > 
-> [Sorry for not putting anything into cover letter changelog, but it is also
-> interesting to see people's reaction on the patch itself without bias of
-> others' opinions. This indeed brings in more points. :]
-
-But it also has the downside that the same discussions
-may be repeated.
-
->> This gives us much of the benefit of reducing system calls, but 
->> with greater simplicity. And epoll_ctl_batch() could simply return
->> the number of 'cmds' that were successfully executed.)
->>
->> Q2. In the man page in 0/6 you said that the 'cmds' were not 
->> guaranteed to be executed in order. Why not? If you did provide
->> such a guarantee, then, when using your current epoll_mod_wait(),
->> user space could do the following:
 > 
-> I guess we can make a guarentee on that.
-
-I'm puzzled by that response. Surely you *must* guarantee it.
-If there's no defined order, then if the batch includes multiple 
-commands that operate on the same FD, the result is undefined 
-unless you provide that guarantee. (Unless, of course, you want to
-explicitly specify that using the same FD multiple times in the
-batch gives undefined behavior.)
-
->> 1. Initialize the cmd.errors fields to zero.
->> 2. Call epoll_ctl_mod()
->> 3. Iterate through cmd.errors looking for the first nonzero 
->>    field.
 > 
-> It's close, but zero is not good enough, if copy_from_user of cmds failed in
-> the first place. Impossible value, or error value, will be safer.
+> 
+>                    will-it-scale.time.involuntary_context_switches
+> 
+>   70000 ++------------------------------------------------------------------+
+>         |                                                                   |
+>   60000 ++                                                         O        |
+>         O        O    O                  O    O   O    O    O   O      O    |
+>   50000 ++   O O    O        O                           O    O           O O
+>         | O                    O  O        O    O                    O      |
+>   40000 ++              O  O        O O              O                      |
+>         |                                                                   |
+>   30000 ++                                                                  |
+>         |     .*.                       .*.*..                      .*      |
+>   20000 *+*..*   *..*.*    *.*.*..*.*.*.      *.*.*..*.*.*..*.*.*..*        |
+>         |              :  :                                                 |
+>   10000 ++             :  :                                                 |
+>         |               ::                                                  |
+>       0 ++--------------*---------------------------------------------------+
+> 
+> 
+> 	[*] bisect-good sample
+> 	[O] bisect-bad  sample
+> 
+> To reproduce:
+> 
+> 	apt-get install ruby ruby-oj
+> 	git clone git://git.kernel.org/pub/scm/linux/kernel/git/wfg/lkp-tests.git
+> 	cd lkp-tests
+> 	bin/setup-local job.yaml # the job file attached in this email
+> 	bin/run-local   job.yaml
+> 
+> 
+> Disclaimer:
+> Results have been estimated based on internal Intel analysis and are provided
+> for informational purposes only. Any difference in system hardware or software
+> design or configuration may affect actual performance.
+> 
+> 
+> Thanks,
+> Huang, Ying
+> 
+> 
 
-See my comment in the earlier mail. If you split this into two 
-APIs, and epoll_ctl_batch() is guaranteed to execute 'cmds' in order, 
-then the return value of epoll_ctl_batch() could be used to tell
-user space how many commands succeeded. Much simpler!
+> ---
+> testcase: will-it-scale
+> default-monitors:
+>   wait: pre-test
+>   uptime: 
+>   iostat: 
+>   vmstat: 
+>   numa-numastat: 
+>   numa-vmstat: 
+>   numa-meminfo: 
+>   proc-vmstat: 
+>   proc-stat: 
+>   meminfo: 
+>   slabinfo: 
+>   interrupts: 
+>   lock_stat: 
+>   latency_stats: 
+>   softirqs: 
+>   bdi_dev_mapping: 
+>   diskstats: 
+>   cpuidle: 
+>   cpufreq: 
+>   turbostat: 
+>   sched_debug:
+>     interval: 10
+>   pmeter: 
+> default_watchdogs:
+>   watch-oom: 
+>   watchdog: 
+> cpufreq_governor:
+> - performance
+> commit: 634b0bd490b7ebd7a054cea4f7e0d25748bde678
+> model: Westmere
+> memory: 6G
+> nr_hdd_partitions: 1
+> hdd_partitions: 
+> swap_partitions: 
+> rootfs_partition: 
+> netconsole_port: 6667
+> perf-profile:
+>   freq: 800
+> will-it-scale:
+>   test:
+>   - open2
+> testbox: wsm
+> tbox_group: wsm
+> kconfig: x86_64-rhel
+> enqueue_time: 2015-01-16 17:43:47.976990621 +08:00
+> head_commit: 634b0bd490b7ebd7a054cea4f7e0d25748bde678
+> base_commit: eaa27f34e91a14cdceed26ed6c6793ec1d186115
+> branch: next/master
+> kernel: "/kernel/x86_64-rhel/634b0bd490b7ebd7a054cea4f7e0d25748bde678/vmlinuz-3.19.0-rc4-next-20150116-g634b0bd"
+> user: lkp
+> queue: cyclic
+> rootfs: debian-x86_64-2015-01-13.cgz
+> result_root: "/result/wsm/will-it-scale/performance-open2/debian-x86_64-2015-01-13.cgz/x86_64-rhel/634b0bd490b7ebd7a054cea4f7e0d25748bde678/0"
+> job_file: "/lkp/scheduled/wsm/cyclic_will-it-scale-performance-open2-x86_64-rhel-HEAD-634b0bd490b7ebd7a054cea4f7e0d25748bde678-0.yaml"
+> dequeue_time: 2015-01-16 23:50:07.247065623 +08:00
+> nr_cpu: "$(nproc)"
+> job_state: finished
+> loadavg: 8.12 4.97 2.06 1/146 6693
+> start_time: '1421423439'
+> end_time: '1421423743'
+> version: "/lkp/lkp/.src-20150116-113525"
 
->>> Also, timeout parameter is enhanced: timespec is used, compared to the old ms
->>> scalar. This provides higher precision. 
->>
->> Yes, that change seemed inevitable. It slightly puzzled me at the time when
->> Davide Libenzi added epoll_wait() that the timeout was milliseconds, even
->> though pselect() already had demonstrated the need for higher precision.
->> I should have called it out way back then :-{.
->>
->>> The parameter field in struct
->>> epoll_wait_spec, "clockid", also makes it possible for users to use a different
->>> clock than the default when it makes more sense.
->>>
->>> Signed-off-by: Fam Zheng <famz@redhat.com>
->>> ---
->>>  fs/eventpoll.c           | 60 ++++++++++++++++++++++++++++++++++++++++++++++++
->>>  include/linux/syscalls.h |  5 ++++
->>>  2 files changed, 65 insertions(+)
->>>
->>> diff --git a/fs/eventpoll.c b/fs/eventpoll.c
->>> index e7a116d..2cc22c9 100644
->>> --- a/fs/eventpoll.c
->>> +++ b/fs/eventpoll.c
->>> @@ -2067,6 +2067,66 @@ SYSCALL_DEFINE6(epoll_pwait, int, epfd, struct epoll_event __user *, events,
->>>  			      sigmask ? &ksigmask : NULL);
->>>  }
->>>  
->>> +SYSCALL_DEFINE5(epoll_mod_wait, int, epfd, int, flags,
->>> +		int, ncmds, struct epoll_mod_cmd __user *, cmds,
->>> +		struct epoll_wait_spec __user *, spec)
->>> +{
->>> +	struct epoll_mod_cmd *kcmds = NULL;
->>> +	int i, ret = 0;
->>> +	int cmd_size = sizeof(struct epoll_mod_cmd) * ncmds;
->>> +
->>> +	if (flags)
->>> +		return -EINVAL;
->>> +	if (ncmds) {
->>> +		if (!cmds)
->>> +			return -EINVAL;
->>> +		kcmds = kmalloc(cmd_size, GFP_KERNEL);
->>> +		if (!kcmds)
->>> +			return -ENOMEM;
->>> +		if (copy_from_user(kcmds, cmds, cmd_size)) {
->>> +			ret = -EFAULT;
->>> +			goto out;
->>> +		}
->>> +	}
->>> +	for (i = 0; i < ncmds; i++) {
->>> +		struct epoll_event ev = (struct epoll_event) {
->>> +			.events = kcmds[i].events,
->>> +			.data = kcmds[i].data,
->>> +		};
->>> +		if (kcmds[i].flags) {
->>> +			kcmds[i].error = ret = -EINVAL;
->>
->> To make the 'ret' change a little more obvious, maybe it's better to write
->>
->> 			ret = kcmds[i].error = -EINVAL;
->>
->>> +			goto out;
->>> +		}
->>> +		kcmds[i].error = ret = ep_ctl_do(epfd, kcmds[i].op, kcmds[i].fd, ev);
->>
->> Likewise:
->> 		ret = kcmds[i].error = ep_ctl_do(epfd, kcmds[i].op, kcmds[i].fd, ev);
->>
->>> +		if (ret)
->>> +			goto out;
->>> +	}
->>> +	if (spec) {
->>> +		sigset_t ksigmask;
->>> +		struct epoll_wait_spec kspec;
->>> +		ktime_t timeout;
->>> +
->>> +		if(copy_from_user(&kspec, spec, sizeof(struct epoll_wait_spec)))
->>
->> Cosmetic point: s/if(/if (/
->>
->>> +			return -EFAULT;
->>> +		if (kspec.sigmask) {
->>> +			if (kspec.sigsetsize != sizeof(sigset_t))
->>> +				return -EINVAL;
->>> +			if (copy_from_user(&ksigmask, kspec.sigmask, sizeof(ksigmask)))
->>> +				return -EFAULT;
->>> +		}
->>> +		timeout = timespec_to_ktime(kspec.timeout);
->>> +		ret = epoll_pwait_do(epfd, kspec.events, kspec.maxevents,
->>> +				     kspec.clockid, timeout,
->>> +				     kspec.sigmask ? &ksigmask : NULL);
->>
->> If I understand correctly, the implementation means that the
->> 'size_t sigsetsize' field will probably need to be exposed to 
->> applications. In the existing epoll_pwait() call (as in  ppoll()
->> and pselect()) the 'size_t sigsetsize' argument is hidden by glibc.
->> However, unless we expect glibc to do some structure copying to/from
->> a structure that hides this field, then we're going end up exposing
->> 'size_t sigsetsize' to applications. (This could be avoided, if we
->> split the API as I suggest above. glibc would do the same thing 
->> in epoll_pwait1() that it currently does in epoll_pwait().)
+> ./runtest.py open2 32 1 6 9 12
 
-You missed responding to this point; I think it matters.
-(There were also some other points to consider in my reply 
-to your 0/6 mail.)
+> _______________________________________________
+> LKP mailing list
+> LKP@linux.intel.com
+> 
 
-Cheers,
-
-Michael
-
-
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Linux/UNIX System Programming Training: http://man7.org/training/
