@@ -1,147 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752604AbbAUBBB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 20:01:01 -0500
-Received: from e35.co.us.ibm.com ([32.97.110.153]:33586 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750801AbbAUBA7 (ORCPT
+	id S1752483AbbAUBID (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 20:08:03 -0500
+Received: from TYO201.gate.nec.co.jp ([210.143.35.51]:42078 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751859AbbAUBIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 20:00:59 -0500
-Date: Tue, 20 Jan 2015 17:00:48 -0800
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Jiri Olsa <jolsa@redhat.com>,
-        Vince Weaver <vince@deater.net>, Ingo Molnar <mingo@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>,
+	Tue, 20 Jan 2015 20:08:00 -0500
+From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+To: "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
+        =?utf-8?B?QmrDuHJuIE1vcms=?= <bjorn@mork.no>
+CC: "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "Choi, Sy Jong" <sy.jong.choi@intel.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, Borislav Petkov <bp@suse.de>,
-        Will Deacon <Will.Deacon@arm.com>
-Subject: Re: perf fuzzer crash [PATCH] perf: Get group events reference
- before moving the group
-Message-ID: <20150121010048.GU9719@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20150116075746.GB2658@krava.brq.redhat.com>
- <20150116104644.GW23965@worktop.programming.kicks-ass.net>
- <20150116141104.GD21958@worktop.programming.kicks-ass.net>
- <20150119144028.GF21553@leverpostej>
- <20150119174009.GI21553@leverpostej>
- <20150120133947.GD15924@leverpostej>
- <20150120143508.GE15924@leverpostej>
+        Hayato Momma <h-momma@ce.jp.nec.com>
+Subject: RE: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast promiscuous
+	mode control
+Thread-Topic: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast
+ promiscuous	mode control
+Thread-Index: AQHQNRDn9S7pwXLQtk+h+o1qNyzJQpzJuLsg
+Date: Wed, 21 Jan 2015 01:07:13 +0000
+Message-ID: <7F861DC0615E0C47A872E6F3C5FCDDBD05E07F09@BPXM14GP.gisp.nec.co.jp>
+References: <7F861DC0615E0C47A872E6F3C5FCDDBD05E0734E@BPXM14GP.gisp.nec.co.jp>
+	<874mrlu18e.fsf@nemi.mork.no>
+ <7F861DC0615E0C47A872E6F3C5FCDDBD05E07B7C@BPXM14GP.gisp.nec.co.jp>
+ <F6FB0E698C9B3143BDF729DF222866469129B7F5@ORSMSX110.amr.corp.intel.com>
+In-Reply-To: <F6FB0E698C9B3143BDF729DF222866469129B7F5@ORSMSX110.amr.corp.intel.com>
+Accept-Language: ja-JP, en-US
+Content-Language: ja-JP
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.205.5.123]
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150120143508.GE15924@leverpostej>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-TM-AS-MML: disable
-X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15012101-0013-0000-0000-00000814EFB4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0L1899t016358
 
-On Tue, Jan 20, 2015 at 02:35:09PM +0000, Mark Rutland wrote:
-> On Tue, Jan 20, 2015 at 01:39:47PM +0000, Mark Rutland wrote:
-> > On Mon, Jan 19, 2015 at 05:40:09PM +0000, Mark Rutland wrote:
-> > > On Mon, Jan 19, 2015 at 02:40:28PM +0000, Mark Rutland wrote:
-> > > > On Fri, Jan 16, 2015 at 02:11:04PM +0000, Peter Zijlstra wrote:
-> > > > > On Fri, Jan 16, 2015 at 11:46:44AM +0100, Peter Zijlstra wrote:
-> > > > > > Its a bandaid at best :/ The problem is (again) that we changes
-> > > > > > event->ctx without any kind of serialization.
-> > > > > >
-> > > > > > The issue came up before:
-> > > > > >
-> > > > > >   https://lkml.org/lkml/2014/9/5/397
-> > > > 
-> > > > In the end neither the CCI or CCN perf drivers migrate events on
-> > > > hotplug, so ARM is currently safe from the perf_pmu_migrate_context
-> > > > case, but I see that you fix the move_group handling too.
-> > > > 
-> > > > I had a go at testing this by hacking migration back into the CCI PMU
-> > > > driver (atop of v3.19-rc5), but I'm seeing lockups after a few minutes
-> > > > with my original test case (https://lkml.org/lkml/2014/9/1/569 with
-> > > > PMU_TYPE and PMU_EVENT fixed up).
-> > > > 
-> > > > I unfortunately don't have a suitable x86 box spare to run that on.
-> > > > Would someone be able to give it a spin on something with an uncore PMU?
-> > > > 
-> > > > I'll go and dig a bit further. I may just be hitting another latent
-> > > > issue on my board.
-> > > 
-> > > I'm able to trigger the lockups even without both your patch and the
-> > > call to perf_pmu_migrate_context, so there is a latent issue.
-> > > 
-> > > On vanilla v3.19-rc5 and vanilla v3.18, I'm able to get my hotplug
-> > > script hung when run concurrently with the test case against the CCI PMU
-> > > driver (without migration). The v3.18 and v3.19-rc5 lockups are
-> > > identical:
-> > > 
-> > > INFO: task hpall.sh:1506 blocked for more than 120 seconds.
-> > >       Not tainted 3.19.0-rc5 #9
-> > > "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-> > > hpall.sh        D 804a6ffc     0  1506   1497 0x00000000
-> > > [<804a6ffc>] (__schedule) from [<80022308>] (cpu_hotplug_begin+0xa0/0xac)
-> > > [<80022308>] (cpu_hotplug_begin) from [<8002236c>] (_cpu_up+0x24/0x180)
-> > > [<8002236c>] (_cpu_up) from [<8002253c>] (cpu_up+0x74/0x98)
-> > > [<8002253c>] (cpu_up) from [<802bce60>] (device_online+0x64/0x90)
-> > > [<802bce60>] (device_online) from [<802bcef4>] (online_store+0x68/0x74)
-> > > [<802bcef4>] (online_store) from [<8014059c>] (kernfs_fop_write+0xbc/0x1a0)
-> > > [<8014059c>] (kernfs_fop_write) from [<800e71b0>] (vfs_write+0xa0/0x1ac)
-> > > [<800e71b0>] (vfs_write) from [<800e7808>] (SyS_write+0x44/0x9c)
-> > > [<800e7808>] (SyS_write) from [<8000e560>] (ret_fast_syscall+0x0/0x48)
-> > > 7 locks held by hpall.sh/1506:
-> > >  #0:  (sb_writers#6){.+.+.+}, at: [<800e729c>] vfs_write+0x18c/0x1ac
-> > >  #1:  (&of->mutex){+.+.+.}, at: [<8014052c>] kernfs_fop_write+0x4c/0x1a0
-> > >  #2:  (s_active#15){.+.+.+}, at: [<80140534>] kernfs_fop_write+0x54/0x1a0
-> > >  #3:  (device_hotplug_lock){+.+.+.}, at: [<802bbe44>] lock_device_hotplug_sysfs+0xc/0x4c
-> > >  #4:  (&dev->mutex){......}, at: [<802bce14>] device_online+0x18/0x90
-> > >  #5:  (cpu_add_remove_lock){+.+.+.}, at: [<80022508>] cpu_up+0x40/0x98
-> > >  #6:  (cpu_hotplug.lock){++++++}, at: [<80022268>] cpu_hotplug_begin+0x0/0xac
-> > > 
-> > > I guess that lockup is my fundamental issue, and with your patch the
-> > > perf_rwsem manages to spread a transitive dependency on one of those
-> > > locks all over the perf subsystem. I haven't considered that in great
-> > > detail, however.
-> > 
-> > I found that I couldn't trigger the issue with v3.17, and I was able to
-> > bisect down to commit b2c4623dcd07af4b ("rcu: More on deadlock between
-> > CPU hotplug and expedited grace periods").
-> > 
-> > I'm currently stressing b2c4623dcd07af4b~1 to make sure my bisect hasn't
-> > mislead me.
+> Subject: RE: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast promiscuous mode control
 > 
-> That seems to be solid, and I think I see what's going on.
 > 
-> The task doing hotplug (hpall.sh:1506) gets to cpu_hotplug_begin(), and
-> sets cpu_hotplug.active_writer to current (I assume writes to this are
-> protected by cpu_add_remove_lock from cpu_up()?). Then it loops, acquiring
-> cpu_hotplug.lock and testing the refcount, and if non-zero dropping the
-> lock and going into uninterruptible sleep, expecting to be woken by
-> put_online_cpus().
 > 
-> Concurrently a task holding the refcount non-zero calls
-> put_online_cpus(), and finds there to be contention on cpu_hotplug.lock.
-> Thus it increments cpu_hotplug.puts_pending and goes of on its merry
-> way, without trying to wake the writer.
+> > -----Original Message-----
+> > From: Hiroshi Shimamoto [mailto:h-shimamoto@ct.jp.nec.com]
+> > Sent: Tuesday, January 20, 2015 3:40 PM
+> > To: BjÃ¸rn Mork
+> > Cc: e1000-devel@lists.sourceforge.net; netdev@vger.kernel.org; Choi, Sy
+> > Jong; linux-kernel@vger.kernel.org; Hayato Momma
+> > Subject: Re: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast promiscuous
+> > mode control
+> >
+> > > Subject: Re: [PATCH 1/2] if_link: Add VF multicast promiscuous mode
+> > > control
+> > >
+> > > Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com> writes:
+> > >
+> > > > From: Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>
+> > > >
+> > > > Add netlink directives and ndo entry to control VF multicast promiscuous
+> > mode.
+> > > >
+> > > > Intel ixgbe and ixgbevf driver can handle only 30 multicast MAC
+> > > > addresses per VF. It means that we cannot assign over 30 IPv6
+> > > > addresses to a single VF interface on VM. We want thousands IPv6
+> > addresses in VM.
+> > > >
+> > > > There is capability of multicast promiscuous mode in Intel 82599 chip.
+> > > > It enables all multicast packets are delivered to the target VF.
+> > > >
+> > > > This patch prepares to control that VF multicast promiscuous
+> > functionality.
+> > >
+> > > Adding a new hook for this seems over-complicated to me.  And it still
+> > > doesn't solve the real problems that
+> > >  a) the user has to know about this limit, and
+> > >  b) manually configure the feature
+> > >
+> > > Most of us, lacking the ability to imagine such arbitrary hardware
+> > > limitations, will go through a few hours of frustrating debugging
+> > > before we figure this one out...
+> > >
+> > > Why can't the ixgbevf driver just automatically signal the ixgbe
+> > > driver to enable multicast promiscuous mode whenever the list grows
+> > > past the limit?
+> >
+> > I had submitted a patch to change ixgbe and ixgbevf driver for this issue.
+> > https://lkml.org/lkml/2014/11/27/269
+> >
+> > The previous patch introduces API between ixgbe and ixgbevf driver to
+> > enable multicast promiscuous mode, and ixgbevf enables it automatically if
+> > the number of addresses is over than 30.
 > 
-> So the writer is never woken and never gets to handle the non-zero
-> cpu_hotplug.puts_pending.
-> 
-> I'm not sure what the right fix for that is. It looks like the writer
-> could observe the change to puts_pending and so
-> cpu_hotplug.active_writer could change under our feet unless we hold
-> cpu_hotplug.lock. But holding that would reintroduce the deadlock
-> b2c4623dcd07af4b was trying to avoid.
-> 
-> Any ideas?
+> I believe the issue is with allowing a VF to automatically enter Promiscuous Multicast without the PF's ok is concern
 
-You need 87af9e7ff9d90 (hotplugcpu: Avoid deadlocks by waking active_writer),
-which is in -rcu at:
+So you mean that we should take care about enabling VF multicast promiscuous mode
+in host side, right? The host allows multicast promiscuous and VF requests it too,
+then enables VF multicast promiscuous mode.
+So, what is preferred way to do in host do you think?
 
-git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
+> over VM isolation.   Of course that isolation, when it comes to multicast, is rather limited anyway given that our multicast
+> filter uses only 12-bit of the address for a match.  Still this (or doing it by default) would only open that up considerably
+> more (all multicasts).  I assume for your application you're not concerned, but are there other use cases that would worry
+> about such things?
 
-With some luck, this will be in -tip soon, and hit mainline during
-the next merge window.
+Sorry I couldn't catch the point.
 
-							Thanx, Paul
+What is the issue? I think there is no difference for the users who don't want
+many multicast addresses in guest. In the current implementation, overflowed
+multicast addresses silently discarded in ixgbevf. I believe there is no user
+who want to use over 30 multicast addresses now. If VF multicast promiscuous mode
+is enabled in certain VF, the behavior of other VFs is not changed.
 
+thanks,
+Hiroshi
+
+> 
+> Thanks,
+> -Don Skidmore <donald.c.skidmore@intel.com>
+> 
+> >
+> > I got some comment and I would like to clarify the point, but there was no
+> > answer.
+> > That's the reason I submitted this patch.
+> >
+> > Do you think a patch for the ixgbe/ixgbevf driver is preferred?
+> >
+> >
+> > thanks,
+> > Hiroshi
+> >
+> > >
+> > > I'd also like to note that this comment in
+> > > drivers/net/ethernet/intel/ixgbevf/vf.c
+> > > indicates that the author had some ideas about how more than 30
+> > > addresses could/should be handled:
+> > >
+> > > static s32 ixgbevf_update_mc_addr_list_vf(struct ixgbe_hw *hw,
+> > > 					  struct net_device *netdev)
+> > > {
+> > > 	struct netdev_hw_addr *ha;
+> > > 	u32 msgbuf[IXGBE_VFMAILBOX_SIZE];
+> > > 	u16 *vector_list = (u16 *)&msgbuf[1];
+> > > 	u32 cnt, i;
+> > >
+> > > 	/* Each entry in the list uses 1 16 bit word.  We have 30
+> > > 	 * 16 bit words available in our HW msg buffer (minus 1 for the
+> > > 	 * msg type).  That's 30 hash values if we pack 'em right.  If
+> > > 	 * there are more than 30 MC addresses to add then punt the
+> > > 	 * extras for now and then add code to handle more than 30 later.
+> > > 	 * It would be unusual for a server to request that many multi-cast
+> > > 	 * addresses except for in large enterprise network environments.
+> > > 	 */
+> > >
+> > >
+> > >
+> > > The last 2 lines of that comment are of course totally bogus and
+> > > pointless and should be deleted in any case...  It's obvious that 30
+> > > multicast addresses is ridiculously low for lots of normal use cases.
+> > >
+> > >
+> > > BjÃ¸rn
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
