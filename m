@@ -1,46 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753819AbbAUQQB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 11:16:01 -0500
-Received: from mga09.intel.com ([134.134.136.24]:34060 "EHLO mga09.intel.com"
+	id S1753547AbbAUQN4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 11:13:56 -0500
+Received: from pluto.manitu.net ([217.11.48.9]:44015 "EHLO pluto.manitu.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752225AbbAUQPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 11:15:53 -0500
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="5.09,442,1418112000"; 
-   d="scan'208";a="515468361"
-Subject: [PATCH] MAINTAINERS: Remove self as isci maintainer
-From: Dave Jiang <dave.jiang@intel.com>
-To: linux-scsi@vger.kernel.org
-Cc: artur.paszkiewicz@intel.com, linux-kernel@vger.kernel.org,
-        daniej.j.thompson@intel.com
-Date: Wed, 21 Jan 2015 09:13:41 -0700
-Message-ID: <20150121161341.85869.90957.stgit@djiang5-desk2.amr.corp.intel.com>
-User-Agent: StGit/0.17.1-dirty
+	id S1751742AbbAUQNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 11:13:48 -0500
+To: "Ahmed S. Darwish" <darwish.07@gmail.com>
+Subject: Re: [PATCH v5 2/5] can: =?UTF-8?Q?kvaser=5Fusb=3A=20Consolidate?=  =?UTF-8?Q?=20and=20unify=20state=20change=20handling?=
+X-PHP-Originating-Script: 1000:func.inc
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: text/plain;
+ charset=UTF-8
 Content-Transfer-Encoding: 7bit
+Date: Wed, 21 Jan 2015 17:13:45 +0100
+From: Wolfgang Grandegger <wg@grandegger.com>
+Cc: Andri Yngvason <andri.yngvason@marel.com>,
+        Olivier Sobrie <olivier@sobrie.be>,
+        Oliver Hartkopp <socketcan@hartkopp.net>,
+        Marc Kleine-Budde <mkl@pengutronix.de>,
+        Linux-CAN <linux-can@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20150121153647.GB17070@linux>
+References: <20141223154654.GB6460@vivalin-002>
+ <20150120214409.GA16828@linux> <20150120214537.GB16828@linux>
+ <20150121103319.14511.57709@shannon>
+ <e5439ed067931dc01bda70592eb6ed52@grandegger.com>
+ <20150121144323.GA17070@linux> <20150121150015.31351.6605@shannon>
+ <20150121153647.GB17070@linux>
+Message-ID: <49707d45a389a1acb9ccec4295d05762@grandegger.com>
+User-Agent: RoundCube Webmail/0.2-beta
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removing myself as a maintainer.
+On Wed, 21 Jan 2015 10:36:47 -0500, "Ahmed S. Darwish"
+<darwish.07@gmail.com> wrote:
+> On Wed, Jan 21, 2015 at 03:00:15PM +0000, Andri Yngvason wrote:
+>> Quoting Ahmed S. Darwish (2015-01-21 14:43:23)
+>> > Hi!
+> 
+> ...
+> 
+>> > <-- Unplug the cable -->
+>> > 
+>> >  (000.009106)  can0  20000080   [8]  00 00 00 00 00 00 08 00  
+>> >  ERRORFRAME
+>> >         bus-error
+>> >         error-counter-tx-rx{{8}{0}}
+>> >  (000.001872)  can0  20000080   [8]  00 00 00 00 00 00 10 00  
 
-Signed-off-by: Dave Jiang <dave.jiang@intel.com>
----
- MAINTAINERS |    1 -
- 1 file changed, 1 deletion(-)
+For a bus-errors I would also expcect some more information in the
+data[2..3] fields. But these are always zero.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 93409ad..7e3d97a 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -4946,7 +4946,6 @@ K:	\b(ABS|SYN)_MT_
- INTEL C600 SERIES SAS CONTROLLER DRIVER
- M:	Intel SCU Linux support <intel-linux-scu@intel.com>
- M:	Artur Paszkiewicz <artur.paszkiewicz@intel.com>
--M:	Dave Jiang <dave.jiang@intel.com>
- L:	linux-scsi@vger.kernel.org
- T:	git git://git.code.sf.net/p/intel-sas/isci
- S:	Supported
+>> >  ERRORFRAME
+>> >         bus-error
+>> >         error-counter-tx-rx{{16}{0}}
+>> [...]
+>> >         error-counter-tx-rx{{80}{0}}
+>> >  (000.001910)  can0  20000080   [8]  00 00 00 00 00 00 58 00  
+>> >  ERRORFRAME
+>> >         bus-error
+>> >         error-counter-tx-rx{{88}{0}}
+>> >  (000.001753)  can0  20000084   [8]  00 08 00 00 00 00 60 00  
+>> >  ERRORFRAME
+>> >         controller-problem{tx-error-warning}
+>> Good.
+>> >         bus-error
+>> >         error-counter-tx-rx{{96}{0}}
+> 
+> Nice.
+> 
+>> >  (000.001720)  can0  20000080   [8]  00 00 00 00 00 00 68 00  
+>> >  ERRORFRAME
+>> >         bus-error
+>> >         error-counter-tx-rx{{104}{0}}
+>> >  (000.001876)  can0  20000080   [8]  00 00 00 00 00 00 70 00  
+>> >  ERRORFRAME
+>> >         bus-error
+>> >         error-counter-tx-rx{{112}{0}}
+>> >  (000.001749)  can0  20000080   [8]  00 00 00 00 00 00 78 00  
+>> >  ERRORFRAME
+>> >         bus-error
+>> >         error-counter-tx-rx{{120}{0}}
+>> >  (000.001771)  can0  20000084   [8]  00 20 00 00 00 00 80 00  
+>> >  ERRORFRAME
+>> >         controller-problem{tx-error-passive}
+>> Also good.
+>> >         bus-error
+>> >         error-counter-tx-rx{{128}{0}}
+> 
+> Also nice :-)
+> 
+>> >  (000.001868)  can0  20000080   [8]  00 00 00 00 00 00 80 00  
+>> >  ERRORFRAME
+>> >         bus-error
+>> >         error-counter-tx-rx{{128}{0}}
+>> >  (000.001982)  can0  20000080   [8]  00 00 00 00 00 00 80 00  
+>> >  ERRORFRAME
+>> >         bus-error
+>> >         error-counter-tx-rx{{128}{0}}
+>> > 
+>> > (( Then a continous flood, exactly similar to the above packet,
+>> > appears.
+>> >    Unfortunately this flooding is a firmware problem. ))
+>> > 
+>> > <-- Replug the cable, after a good amount of time -->
+>> >
+>> Where are the reverse state transitions?
+>> > 
+> 
+> Hmmm...
+> 
+> [ ... ]
+>> 
+>> Reverse state transitions are missing from the logs. See comments
+above.
+>> 
+> 
+> When the device is on the _receiving_ end, and I unplug the CAN cable
+after
+> introducing some noise to the level of reaching WARNING or PASSIVE, I
+> receive a BUS_ERROR event with the rxerr count reset back to 0 or 1. In
+> that case, the driver correctly transitions back the state to
+ERROR_ACTIVE
+> and candump produces something similar to:
+> 
+>     (000.000362)  can0  2000008C   [8]  00 40 40 00 00 00 00 01  
+>     ERRORFRAME
+>     controller-problem{}
+>     protocol-violation{{back-to-error-active}{}}
+>     bus-error
+>     error-counter-tx-rx{{0}{1}}
+> 
+> which is, AFAIK, the correct behaviour from the driver side.
+> 
+> Meanwhile, when the device is on the _sending_ end and I re-plug the CAN
+> cable again. Sometimes I receive events with txerr reset to 0 or 1, and
+> the driver correctly reverts back to ERROR_ACTIVE in that case. But on
+> another times like the quoted case above, I don't receive any events
+> resetting txerr back -- only data packets on the bus.
+
+Well, the firmware seems to report *only* bus-errors via
+CMD_CAN_ERROR_EVENT
+messages, also carrying the new state, but no CMD_CHIP_STATE_EVENT just
+for
+the state changes.
+
+> So, What can the driver do given the above?
+
+Little if the notification does not come.
+
+Wolfgang.
 
