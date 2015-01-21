@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753463AbbAUNhh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 08:37:37 -0500
-Received: from mail-ig0-f172.google.com ([209.85.213.172]:56002 "EHLO
-	mail-ig0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752225AbbAUNhc (ORCPT
+	id S1753522AbbAUNhy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 08:37:54 -0500
+Received: from smtprelay0073.hostedemail.com ([216.40.44.73]:43537 "EHLO
+	smtprelay.hostedemail.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752225AbbAUNhl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 08:37:32 -0500
+	Wed, 21 Jan 2015 08:37:41 -0500
+X-Session-Marker: 6E657665747340676F6F646D69732E6F7267
+X-Spam-Summary: 2,0,0,,d41d8cd98f00b204,rostedt@goodmis.org,:::::,RULES_HIT:41:355:379:541:599:800:960:973:988:989:1260:1277:1311:1313:1314:1345:1359:1437:1515:1516:1518:1534:1541:1593:1594:1711:1730:1747:1777:1792:2393:2553:2559:2562:2693:2895:3138:3139:3140:3141:3142:3352:3622:3865:3866:3867:3868:3870:3871:3872:3873:3874:4362:5007:6261:7875:7903:7904:9040:10004:10400:10848:10967:11232:11658:11914:12043:12517:12519:12663:12740:13069:13311:13357:13618:14096:14097:21060:21080,0,RBL:none,CacheIP:none,Bayesian:0.5,0.5,0.5,Netcheck:none,DomainCache:0,MSF:not bulk,SPF:fn,MSBL:0,DNSBL:none,Custom_rules:0:0:0
+X-HE-Tag: owner25_42ef9237f6e0a
+X-Filterd-Recvd-Size: 1841
+Date: Wed, 21 Jan 2015 08:37:39 -0500
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: <linux-next@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: tidy up of trees
+Message-ID: <20150121083739.1b29cfca@gandalf.local.home>
+In-Reply-To: <20150121151009.0cb88a21@canb.auug.org.au>
+References: <20150121151009.0cb88a21@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <CACRpkdYww-6HbmM9uViyB6ZRp2MQnkTYz-7ZxAVN_GsRTNqaoA@mail.gmail.com>
-References: <1421316574-10022-1-git-send-email-dbaryshkov@gmail.com>
-	<CACRpkdYww-6HbmM9uViyB6ZRp2MQnkTYz-7ZxAVN_GsRTNqaoA@mail.gmail.com>
-Date: Wed, 21 Jan 2015 17:37:31 +0400
-Message-ID: <CALT56yOuSV9X3m5fkjv16=7PXd8SrkKoy_TyH6DkMpQv68YaEA@mail.gmail.com>
-Subject: Re: [PATCH 1/5] ARM: sa1100: add platform functions to handle PWER settings
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jason Cooper <jason@lakedaemon.net>,
-        Andrea Adami <andrea.adami@gmail.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, 21 Jan 2015 15:10:09 +1100
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-2015-01-21 13:05 GMT+03:00 Linus Walleij <linus.walleij@linaro.org>:
->
-> On Thu, Jan 15, 2015 at 11:09 AM, Dmitry Eremin-Solenikov
-> <dbaryshkov@gmail.com> wrote:
->
-> > PWER settings logically belongs neither to GPIO nor to system IRQ code.
-> > Add special functions to handle PWER (for GPIO and for system IRQs)
-> > from platform code.
-> >
-> > Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
->
-> > diff --git a/arch/arm/mach-sa1100/generic.c b/arch/arm/mach-sa1100/generic.c
-> (...)
-> > +int sa11x0_gpio_set_wake(unsigned int gpio, unsigned int on)
-> (...)
-> > +int sa11x0_sc_set_wake(unsigned int irq, unsigned int on)
->
-> Why are these two functions not added to any .h file?
->
-> Did you miss to commit something or are there compile
-> warnings about this?
+> Hi all,
+> 
+> [affected tree contacts are bcc'd on this email]
+> 
 
-I thought quite a while about adding them to any header. In the end I ended
-adding them to the irqchip header file. PWER handling is (a bit) related to IRQ
-handling. The only other user of those functions would be a gpio (or pinctrl
-if it ends that way) driver.
+> kconfig
+> Git URL: git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-kconfig.git#for-next
+> 
 
--- 
-With best wishes
-Dmitry
+This is my localmodconfig repo. I only use it when someone points out
+something broke or I find a better way of doing something.
+
+It doesn't get updated much because so far, I hear localmodconfig and
+localyesconfig are doing everything that people like. It may not ever
+get updated again if everyone (including myself) stays happy with it :-)
+
+But in case that changes, and I need to restructure it, this will be
+needed again. Should I just let this go out of next, but I'll probably
+forget that it does, and still think my for-next branch is active.
+
+If it is any extra burden on you to keep it, then I'm fine with it
+falling off the radar. But if it's just "I have X repos in next, and
+I'm trying to make it Y", I'd rather keep it in.
+
+Thanks!
+
+-- Steve
