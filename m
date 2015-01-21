@@ -1,352 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247AbbAUUEp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 15:04:45 -0500
-Received: from e36.co.us.ibm.com ([32.97.110.154]:39446 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752328AbbAUUEh (ORCPT
+	id S1753351AbbAUUGT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 15:06:19 -0500
+Received: from e38.co.us.ibm.com ([32.97.110.159]:33819 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752328AbbAUUGK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 15:04:37 -0500
-Date: Wed, 21 Jan 2015 12:04:28 -0800
+	Wed, 21 Jan 2015 15:06:10 -0500
+Date: Wed, 21 Jan 2015 12:06:01 -0800
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Zhang Zhen <zhenzhang.zhang@huawei.com>
-Cc: Don Zickus <dzickus@redhat.com>, linux-kernel@vger.kernel.org,
+To: Don Zickus <dzickus@redhat.com>
+Cc: Zhang Zhen <zhenzhang.zhang@huawei.com>, linux-kernel@vger.kernel.org,
         morgan.wang@huawei.com, josh@freedesktop.org, dipankar@in.ibm.com
 Subject: Re: RCU CPU stall console spews  leads to soft lockup disabled is
  reasonable ?
-Message-ID: <20150121200428.GG9719@linux.vnet.ibm.com>
+Message-ID: <20150121200601.GH9719@linux.vnet.ibm.com>
 Reply-To: paulmck@linux.vnet.ibm.com
-References: <20150119140612.GI116159@redhat.com>
+References: <54BCBB33.6060608@huawei.com>
+ <20150119084200.GE9719@linux.vnet.ibm.com>
+ <54BCC89D.9040702@huawei.com>
+ <20150119140612.GI116159@redhat.com>
  <54BDC6DF.6000602@huawei.com>
  <20150120152531.GR116159@redhat.com>
  <54BF0E53.5040409@huawei.com>
- <54BF1957.6080606@huawei.com>
- <54BF4D0D.3090500@huawei.com>
- <20150121070246.GB9719@linux.vnet.ibm.com>
- <54BF6BEE.2050505@huawei.com>
- <20150121101613.GE9719@linux.vnet.ibm.com>
- <54BF8977.6030901@huawei.com>
+ <20150121151051.GE116159@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <54BF8977.6030901@huawei.com>
+In-Reply-To: <20150121151051.GE116159@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 X-TM-AS-MML: disable
 X-Content-Scanned: Fidelis XPS MAILER
-x-cbid: 15012120-0021-0000-0000-000007F4AC80
+x-cbid: 15012120-0029-0000-0000-0000075CDA38
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 07:11:51PM +0800, Zhang Zhen wrote:
-> On 2015/1/21 18:16, Paul E. McKenney wrote:
-> > On Wed, Jan 21, 2015 at 05:05:50PM +0800, Zhang Zhen wrote:
-> >> On 2015/1/21 15:02, Paul E. McKenney wrote:
-> >>> On Wed, Jan 21, 2015 at 02:54:05PM +0800, Zhang Zhen wrote:
-> >>>> On 2015/1/21 11:13, Zhang Zhen wrote:
-> >>>>> On 2015/1/21 10:26, Zhang Zhen wrote:
-> >>>>>> On 2015/1/20 23:25, Don Zickus wrote:
-> >>>
-> >>> [ . . . ]
-> >>>
-> >>>>> Sorry, i made a mistake, the log above is based on v3.10.63.
-> >>>>> I have tested the latest upstream kernel (based on ec6f34e5b552),
-> >>>>> but my test case can't triggered RCU stall warning.
-> >>>>>
-> >>>>
-> >>>> I used git bisect to find the bad commit, but found a irrelevant
-> >>>> commit(db5d711e2db776 zram: avoid null access when fail to alloc meta).
-> >>>> Before this commit, my test case can easily trigger RCU stall warning,
-> >>>> but after this commit, my test case can't trigger RCU stall warning.
-> >>>
-> >>> I have lost track of exactly what kernel you are using.  If you are
-> >>> using a recent kernel (v3.18 or thereabouts), one thing to try is to
-> >>> apply my stack of RCU CPU stall-warning changes that are on their way
-> >>> in, please see v3.19-rc1..630181c4a915 in -rcu, which is at:
-> >>>
-> >>> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-rcu.git
-> >>>
-> >>> These handle the problems that Dave Jones and a few others located this
-> >>> past December.  Could you please give them a spin?
-> >>>
-> >>
-> >> Yeah, my test case can easily trigger RCU stall-warning based on commit 630181c4a915
-> >> in your linux-rcu git tree.
-> >>
-> >> In my .config, CONFIG_RCU_CPU_STALL_TIMEOUT=21.
-> >> Before commented out touch_softlockup_watchdog() in touch_nmi_watchdog:
-> >>
-> >> / #
-> >> / # echo 60 > /proc/sys/kernel/watchdog_thresh
-> >> [   21.885200] NMI watchdog: disabled (cpu0): hardware events not enabled
-> >> / #  busybox insmod softlockup_test.ko
-> >> [   47.900117] INFO: rcu_sched detected stalls on CPUs/tasks:
-> >> [   47.900117] 	(detected by 0, t=5252 jiffies, g=-202, c=-203, q=7)
-> >> [   47.900117] All QSes seen, last rcu_sched kthread activity 5252 (4294904271-4294899019), jiffies_till_next_fqs=1
+On Wed, Jan 21, 2015 at 10:10:51AM -0500, Don Zickus wrote:
+> On Wed, Jan 21, 2015 at 10:26:27AM +0800, Zhang Zhen wrote:
+> > > This may not cause other problems but what happens if you comment out the
+> > > 'touch_softlockup_watchdog' from the touch_nmi_watchdog function like
+> > > below (based on latest upstream cb59670870)?
+> > > 
+> > > The idea is that console printing for that cpu won't reset the softlockup
+> > > detector.  Again other bad things might happen and this patch may not be a
+> > > good final solution, but it can help give me a clue about what is going
+> > > on.
 > > 
-> > Looks like you are starving RCU's grace-period kthreads.  What happens if
-> > you boot with rcutree.kthread_prio=1 in order to run them at real-time
-> > priority?
-> > 
-> >> [   47.900117] busybox         R  running task        0    42     41 0x00000008
-> >> [   47.900117]  ffffffff81afaf40 ffff88007fa03d98 ffffffff810781c0 ffffffff81a5e5f8
-> >> [   47.900117]  ffffffff81a45d80 ffff88007fa03dd8 ffffffff810af723 0000000000000083
-> >> [   47.900117]  ffff88007fa13580 ffffffff81a45d80 ffffffff81a45d80 ffffffff810c43e0
-> >> [   47.900117] Call Trace:
-> >> [   47.900117]  <IRQ>  [<ffffffff810781c0>] sched_show_task+0xb0/0x110
-> >> [   47.900117]  [<ffffffff810af723>] print_other_cpu_stall+0x2d3/0x2f0
-> >> [   47.900117]  [<ffffffff810c43e0>] ? tick_nohz_handler+0xc0/0xc0
-> >> [   47.900117]  [<ffffffff810af8b8>] __rcu_pending+0x178/0x220
-> >> [   47.900117]  [<ffffffff810b02a5>] rcu_check_callbacks+0x105/0x190
-> >> [   47.900117]  [<ffffffff810c43e0>] ? tick_nohz_handler+0xc0/0xc0
-> >> [   47.900117]  [<ffffffff810b3582>] update_process_times+0x32/0x60
-> >> [   47.900117]  [<ffffffff810c41e2>] tick_sched_handle+0x32/0x80
-> >> [   47.900117]  [<ffffffff810c442d>] tick_sched_timer+0x4d/0x90
-> >> [   47.900117]  [<ffffffff810b5b57>] __run_hrtimer+0xc7/0x1c0
-> >> [   47.900117]  [<ffffffff810b5e37>] hrtimer_interrupt+0xe7/0x220
-> >> [   47.900117]  [<ffffffffa0005000>] ? 0xffffffffa0005000
-> >> [   47.900117]  [<ffffffff81035654>] local_apic_timer_interrupt+0x34/0x60
-> >> [   47.900117]  [<ffffffff81035d8c>] smp_apic_timer_interrupt+0x3c/0x60
-> >> [   47.900117]  [<ffffffff814ff02a>] apic_timer_interrupt+0x6a/0x70
-> >> [   47.900117]  <EOI>  [<ffffffff814fdaa0>] ? _raw_spin_lock+0x20/0x30
-> >> [   47.900117]  [<ffffffffa000505d>] test_init+0x5d/0x1000 [softlockup_test]
-> >> [   47.900117]  [<ffffffffa0005000>] ? 0xffffffffa0005000
-> >> [   47.900117]  [<ffffffff81000288>] do_one_initcall+0xb8/0x1d0
-> >> [   47.900117]  [<ffffffff81168794>] ? __vunmap+0x94/0xf0
-> >> [   47.900117]  [<ffffffff810ce36b>] do_init_module+0x2b/0x1b0
-> >> [   47.900117]  [<ffffffff810d09b5>] load_module+0x585/0x5f0
-> >> [   47.900117]  [<ffffffff810cdd40>] ? mod_sysfs_teardown+0x150/0x150
-> >> [   47.900117]  [<ffffffff810d0bbb>] SyS_init_module+0x9b/0xc0
-> >> [   47.900117]  [<ffffffff814fe252>] system_call_fastpath+0x12/0x17
-> >> [   47.900117] rcu_sched kthread starved for 5252 jiffies!
-> >>
-> >> After commented out touch_softlockup_watchdog() in touch_nmi_watchdog:
-> >>
-> >> / #
-> >> / # echo 60 > /proc/sys/kernel/watchdog_thresh
-> >> [  123.011980] NMI watchdog: disabled (cpu0): hardware events not enabled
-> >> / # busybox insmod softlockup_test.ko
-> >> [  150.912055] INFO: rcu_sched detected stalls on CPUs/tasks:
-> >> [  150.912055] 	(detected by 0, t=5252 jiffies, g=-198, c=-199, q=6)
-> >> [  150.912055] All QSes seen, last rcu_sched kthread activity 5252 (4294930024-4294924772), jiffies_till_next_fqs=1
-> > 
-> > Same here, looks like RCU's grace-period kthreads haven't gotten a chance
-> > to run for more than 5,000 jiffies.
-> > 
-> >> [  150.912055] busybox         R  running task        0    42     41 0x00000008
-> >> [  150.912055]  ffffffff81afaf40 ffff88007fa03d98 ffffffff810781c0 ffffffff81a5e5f8
-> >> [  150.912055]  ffffffff81a45d80 ffff88007fa03dd8 ffffffff810af723 0000000000000083
-> >> [  150.912055]  ffff88007fa13580 ffffffff81a45d80 ffffffff81a45d80 ffffffff810c43e0
-> >> [  150.912055] Call Trace:
-> >> [  150.912055]  <IRQ>  [<ffffffff810781c0>] sched_show_task+0xb0/0x110
-> >> [  150.912055]  [<ffffffff810af723>] print_other_cpu_stall+0x2d3/0x2f0
-> >> [  150.912055]  [<ffffffff810c43e0>] ? tick_nohz_handler+0xc0/0xc0
-> >> [  150.912055]  [<ffffffff810af8b8>] __rcu_pending+0x178/0x220
-> >> [  150.912055]  [<ffffffff810b02a5>] rcu_check_callbacks+0x105/0x190
-> >> [  150.912055]  [<ffffffff810c43e0>] ? tick_nohz_handler+0xc0/0xc0
-> >> [  150.912055]  [<ffffffff810b3582>] update_process_times+0x32/0x60
-> >> [  150.912055]  [<ffffffff810c41e2>] tick_sched_handle+0x32/0x80
-> >> [  150.912055]  [<ffffffff810c442d>] tick_sched_timer+0x4d/0x90
-> >> [  150.912055]  [<ffffffff810b5b57>] __run_hrtimer+0xc7/0x1c0
-> >> [  150.912055]  [<ffffffff810b5e37>] hrtimer_interrupt+0xe7/0x220
-> >> [  150.912055]  [<ffffffffa0005000>] ? 0xffffffffa0005000
-> >> [  150.912055]  [<ffffffff81035654>] local_apic_timer_interrupt+0x34/0x60
-> >> [  150.912055]  [<ffffffff81035d8c>] smp_apic_timer_interrupt+0x3c/0x60
-> >> [  150.912055]  [<ffffffff814ff02a>] apic_timer_interrupt+0x6a/0x70
-> >> [  150.912055]  <EOI>  [<ffffffff814fda90>] ? _raw_spin_lock+0x20/0x30
-> >> [  150.912055]  [<ffffffffa000505d>] test_init+0x5d/0x1000 [softlockup_test]
-> >> [  150.912055]  [<ffffffffa0005000>] ? 0xffffffffa0005000
-> >> [  150.912055]  [<ffffffff81000288>] do_one_initcall+0xb8/0x1d0
-> >> [  150.912055]  [<ffffffff81168784>] ? __vunmap+0x94/0xf0
-> >> [  150.912055]  [<ffffffff810ce36b>] do_init_module+0x2b/0x1b0
-> >> [  150.912055]  [<ffffffff810d09b5>] load_module+0x585/0x5f0
-> >> [  150.912055]  [<ffffffff810cdd40>] ? mod_sysfs_teardown+0x150/0x150
-> >> [  150.912055]  [<ffffffff810d0bbb>] SyS_init_module+0x9b/0xc0
-> >> [  150.912055]  [<ffffffff814fe252>] system_call_fastpath+0x12/0x17
-> >> [  150.912055] rcu_sched kthread starved for 5252 jiffies!
-> >> ...
-> >> ...
-> >> [  291.009857] NMI watchdog: BUG: soft lockup - CPU#0 stuck for 135s! [busybox:42]
-> >> [  291.010286] Modules linked in: softlockup_test(O+)
-> >> [  291.010944] CPU: 0 PID: 42 Comm: busybox Tainted: G           O   3.19.0-rc1-0.27-default+ #3
-> >> [  291.011356] Hardware name: Bochs Bochs, BIOS Bochs 01/01/2007
-> >> [  291.011674] task: ffff88007d3e61d0 ti: ffff88007d3fc000 task.ti: ffff88007d3fc000
-> >> [  291.012066] RIP: 0010:[<ffffffff814fda90>]  [<ffffffff814fda90>] _raw_spin_lock+0x20/0x30
-> >> [  291.012205] RSP: 0018:ffff88007d3ffdd8  EFLAGS: 00000202
-> >> [  291.012205] RAX: 0000000000000000 RBX: ffff88007cc1e250 RCX: 0000000000012a40
-> >> [  291.012205] RDX: 0000000000000001 RSI: 0000000000000246 RDI: ffff88007d3ffde8
-> >> [  291.012205] RBP: ffff88007d3ffdd8 R08: ffff88007fa12a40 R09: 000000000000b806
-> >> [  291.012205] R10: 0000000000000000 R11: ffff88007d3ffcd8 R12: ffffffff8107b1a4
-> >> [  291.012205] R13: ffff88007d3ffd68 R14: 0000000000000000 R15: 0000000000000000
-> >> [  291.012205] FS:  00000000007fd880(0063) GS:ffff88007fa00000(0000) knlGS:0000000000000000
-> >> [  291.012205] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> >> [  291.012205] CR2: 000000000081c87f CR3: 000000007d3f1000 CR4: 00000000000006f0
-> >> [  291.012205] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> >> [  291.012205] DR3: 0000000000000000 DR6: 0000000000000000 DR7: 0000000000000000
-> >> [  291.012205] Stack:
-> >> [  291.012205]  ffff88007d3ffe08 ffffffffa000505d ffff880000020000 0000000000000000
-> >> [  291.012205]  ffffffffa0005000 ffffffff81a19250 ffff88007d3ffe78 ffffffff81000288
-> >> [  291.012205]  ffff88007d317540 0000000000000020 ffff88007d317540 0000000000000001
-> >> [  291.012205] Call Trace:
-> >> [  291.012205]  [<ffffffffa000505d>] test_init+0x5d/0x1000 [softlockup_test]
-> >> [  291.012205]  [<ffffffffa0005000>] ? 0xffffffffa0005000
-> >> [  291.012205]  [<ffffffff81000288>] do_one_initcall+0xb8/0x1d0
-> >> [  291.012205]  [<ffffffff81168784>] ? __vunmap+0x94/0xf0
-> >> [  291.012205]  [<ffffffff810ce36b>] do_init_module+0x2b/0x1b0
-> >> [  291.012205]  [<ffffffff810d09b5>] load_module+0x585/0x5f0
-> >> [  291.012205]  [<ffffffff810cdd40>] ? mod_sysfs_teardown+0x150/0x150
-> >> [  291.012205]  [<ffffffff810d0bbb>] SyS_init_module+0x9b/0xc0
-> >> [  291.012205]  [<ffffffff814fe252>] system_call_fastpath+0x12/0x17
-> >> [  291.012205] Code: 89 d0 c9 c3 0f 1f 80 00 00 00 00 55 48 89 e5 b8 00 00 01 00 3e 0f c1 07 89 c2 c1 ea 10 66 39 d0 75 0b eb 11 0f 1f 80 00 00 00 00 <f3> 90 0f b7 07 66 39 c2 75 f6 c9 c3 0f 1f 40 00 55 48 89 e5 9c
-> >>
-> >>>                                                         Thanx, Paul
-> >>>
-> >>>> I'm totally confused.
-> >>>>
-> >>>> My test case:
-> >>>>
-> >>>> //
-> >>>> #include <linux/kernel.h>
-> >>>> #include <linux/module.h>
-> >>>> #include <linux/spinlock.h>
-> >>>> #include <linux/slab.h>
-> >>>> #include <linux/kthread.h>
-> >>>>
-> >>>> struct foo {
-> >>>>         int a;
-> >>>>         char b;
-> >>>>         long c;
-> >>>> };
-> >>>>
-> >>>> struct foo gbl_foo = {1, 'a', 2};
-> >>>> struct foo *pgbl_foo = &gbl_foo;
-> >>>>
-> >>>> static int my_kthread(void *data)
-> >>>> {
-> >>>>         DEFINE_SPINLOCK(foo_mutex);
-> > 
-> > This defines a spinlock on the stack, which means that each of your
-> > kthreads have their own lock, which means that acquiring the lock has
-> > no effect.  Given that you spawn only one kthread, no problem now,
-> > but big problems when you spawn multiple kthreads.
-> > 
-> >>>>         struct foo *new_fp;
-> >>>>         struct foo *old_fp;
-> >>>>
-> >>>>         new_fp = kmalloc(sizeof(*new_fp), GFP_KERNEL);
-> >>>>         spin_lock(&foo_mutex);
-> >>>>         old_fp = pgbl_foo;
-> >>>>         *new_fp = *old_fp;
-> >>>>         new_fp->a = 2;
-> >>>>         rcu_assign_pointer(pgbl_foo, new_fp);
-> > 
-> > You are planning to add RCU readers some time later?
+> > I commented out the 'touch_softlockup_watchdog' from the touch_nmi_watchdog function
+> > (based on latest upstream ec6f34e5b552).
+> > This triggered RCU stall and softlockup, but softlockup just printk only once.
 > 
-> I did this test is try to reproduce this problem and give Don a clue about what is going
-> on.
-> This will help him to solve this problem.
+> Yes, as expected.  Instead of flooding the console with the same message,
+> report only once until the high priority task is re-kicked and can re-arm
+> the softlockup timer again.  So this makes sense.  Based on your double
+> spin lock test, I don't ever expect this to get re-armed, so you should
+> not expect to see another message.
 > 
-> > 
-> >>>>         spin_unlock(&foo_mutex);
-> >>>>         synchronize_rcu();
-> >>>>         kfree(old_fp);
-> >>>>
-> >>>>         return 0;
-> >>>> }
-> >>>>
-> >>>> static int hello_start(void)
-> >>>> {
-> >>>>         struct task_struct *my_task = NULL;
-> >>>>         DEFINE_SPINLOCK(hello_lock);
-> >>>>
-> >>>>         my_task = kthread_run(my_kthread, NULL, "my_thread%d", 1);
-> >>>>
-> >>>>         spin_lock_init(&hello_lock);
-> >>>>         spin_lock(&hello_lock);
-> >>>>         spin_lock(&hello_lock);
-> > 
-> > And this is the cause of the RCU CPU stall warnings.
-> > 
-> > If you only have one CPU and have built with CONFIG_PREEMPT=n, what
-> > you have above is expected behavior.
-> > 
-> You are right, this qemu virtual machine has one CPU and built with CONFIG_PREEMPT=n.
+> 
+> > As you mentioned "other bad things" lead to softlockup just printk only once.
+> > What's the bad thing ?
+> 
+> Well, one of the assumptions here is that if you are going to have
+> interrupts disabled for a long time and purposely kick the hardlockup
+> detector (with touch_nmi_watchdog), then you can reasonably assume that
+> softlockups will go off too if you don't also kick the softlockup detector
+> (even though there is a window where this isn't true: 2*thresh - thresh).
+> 
+> 
+> So the patch I gave you, can lead to false softlockup warnings.
+> 
+> 
+> On the flip side, printing to the console also blocks hardlockups from
+> showing up.  But I believe loooong ago, Paul adjusted the rcu stalls to be
+> longer than a hardlockup/softlockup timeout to prevent such scenarios.
+> 
+> 
+> 
+> I am not sure what to do here.  Printing to the console has traditionally
+> been slow (especially if doing so with interrupts disabled), so a
+> touch_nmi_watchdog has been necessary.  But a side effect of that, is it
+> prevents the lockup detectors from going off if printing repeatedly.
+> 
+> 
+> Now we can hack up rcu stall to only print once until it is re-armed.
+> This would show rcu stall printing first, followed two minutes later by
+> a softlockup, which sorta achieves what you want.
+> 
+> 
+> 
+> However, at the end of the day, an rcu stall, softlockup or hardlockup is
+> a bad thing, does it matter if you get one or all of them?  One should be
+> enough to start an investigation, no?
 
-So what is probably happening is that your my_kthread() started
-running immediately after being spawned, and then ran through to the
-synchronize_rcu().  Either of the two context switches (to my_kthread()
-and back from it) would serve as the quiescent state, waking up the
-grace-period kthread, which, if allowed to run, would have cleaned up
-after the grace period and possibly started a new one.  However, your
-hello_start() kthread got to run instead, and it never let go of the CPU.
-So the grace period remained stuck, having gotten all the quiescent
-states it needed, but with out the needed cleanup processing.
+Hear, hear!!!
 
 							Thanx, Paul
 
-> Thanks!
-> > 							Thanx, Paul
-> > 
-> >>>>         return 0;
-> >>>> }
-> >>>>
-> >>>> static int __init test_init(void)
-> >>>> {
-> >>>>         hello_start();
-> >>>>
-> >>>>         printk(KERN_INFO "Module init\n");
-> >>>>         return 0;
-> >>>> }
-> >>>>
-> >>>> static void __exit test_exit(void)
-> >>>> {
-> >>>>         printk(KERN_INFO "Module exit!\n");
-> >>>> }
-> >>>>
-> >>>> module_init(test_init)
-> >>>> module_exit(test_exit)
-> >>>> MODULE_LICENSE("GPL");
-> >>>> //
-> >>>>>>>
-> >>>>>>> Cheers,
-> >>>>>>> Don
-> >>>>>>>
-> >>>>>>> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-> >>>>>>> index 70bf118..833c015 100644
-> >>>>>>> --- a/kernel/watchdog.c
-> >>>>>>> +++ b/kernel/watchdog.c
-> >>>>>>> @@ -209,7 +209,7 @@ void touch_nmi_watchdog(void)
-> >>>>>>>  	 * going off.
-> >>>>>>>  	 */
-> >>>>>>>  	raw_cpu_write(watchdog_nmi_touch, true);
-> >>>>>>> -	touch_softlockup_watchdog();
-> >>>>>>> +	//touch_softlockup_watchdog();
-> >>>>>>>  }
-> >>>>>>>  EXPORT_SYMBOL(touch_nmi_watchdog);
-> >>>>>>>  
-> >>>>>>>
-> >>>>>>> .
-> >>>>>>>
-> >>>>>>
-> >>>>>
-> >>>>
-> >>>>
-> >>>
-> >>>
-> >>> .
-> >>>
-> >>
-> >>
-> > 
-> > 
-> > .
-> > 
+> I don't know.  I am leaning towards 'working as expected' and nothing to
+> really fix here.  Does anyone have any suggestions on what assumptions we
+> could change to handle this better?
 > 
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Cheers,
+> Don
+> 
+> > 
+> > / #
+> > / # echo 60 > /proc/sys/kernel/watchdog_thresh
+> > / # busybox insmod softlockup_test.ko &
+> > / # [   39.044058] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=21002 jiffies, g=78, c=77, q=4)
+> > [   39.044058] INFO: Stall ended before state dump start
+> > [  102.049045] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=84007 jiffies, g=78, c=77, q=4)
+> > [  102.049045] INFO: Stall ended before state dump start
+> > [  160.482123] BUG: soft lockup - CPU#0 stuck for 134s! [busybox:54]
+> > [  165.054075] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=147012 jiffies, g=78, c=77, q=4)
+> > [  165.054075] INFO: Stall ended before state dump start
+> > [  228.059045] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=210017 jiffies, g=78, c=77, q=4)
+> > [  228.059045] INFO: Stall ended before state dump start
+> > [  291.064099] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=273022 jiffies, g=78, c=77, q=4)
+> > [  291.064099] INFO: Stall ended before state dump start
+> > [  354.069074] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=336027 jiffies, g=78, c=77, q=4)
+> > [  354.069099] INFO: Stall ended before state dump start
+> > [  417.074045] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=399032 jiffies, g=78, c=77, q=4)
+> > [  417.074045] INFO: Stall ended before state dump start
+> > [  480.079099] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=462037 jiffies, g=78, c=77, q=4)
+> > [  480.079099] INFO: Stall ended before state dump start
+> > [  543.084099] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=525042 jiffies, g=78, c=77, q=4)
+> > [  543.084099] INFO: Stall ended before state dump start
+> > [  606.089101] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=588047 jiffies, g=78, c=77, q=4)
+> > [  606.089101] INFO: Stall ended before state dump start
+> > [  669.094099] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=651052 jiffies, g=78, c=77, q=4)
+> > [  669.094099] INFO: Stall ended before state dump start
+> > [  732.099045] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=714057 jiffies, g=78, c=77, q=4)
+> > [  732.099045] INFO: Stall ended before state dump start
+> > [  795.104074] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=777062 jiffies, g=78, c=77, q=4)
+> > [  795.104098] INFO: Stall ended before state dump start
+> > [  858.109046] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=840067 jiffies, g=78, c=77, q=4)
+> > [  858.109046] INFO: Stall ended before state dump start
+> > [  921.114100] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=903072 jiffies, g=78, c=77, q=4)
+> > [  921.114100] INFO: Stall ended before state dump start
+> > [  984.119099] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=966077 jiffies, g=78, c=77, q=4)
+> > [  984.119099] INFO: Stall ended before state dump start
+> > [ 1047.124075] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=1029082 jiffies, g=78, c=77, q=4)
+> > [ 1047.124099] INFO: Stall ended before state dump start
+> > [ 1110.129046] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=1092087 jiffies, g=78, c=77, q=4)
+> > [ 1110.129046] INFO: Stall ended before state dump start
+> > [ 1173.134045] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=1155092 jiffies, g=78, c=77, q=4)
+> > [ 1173.134045] INFO: Stall ended before state dump start
+> > [ 1236.139101] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=1218097 jiffies, g=78, c=77, q=4)
+> > [ 1236.139101] INFO: Stall ended before state dump start
+> > [ 1299.144059] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=1281102 jiffies, g=78, c=77, q=4)
+> > [ 1299.144059] INFO: Stall ended before state dump start
+> > [ 1362.149099] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=1344107 jiffies, g=78, c=77, q=4)
+> > [ 1362.149099] INFO: Stall ended before state dump start
+> > [ 1425.154059] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=1407112 jiffies, g=78, c=77, q=4)
+> > [ 1425.154059] INFO: Stall ended before state dump start
+> > [ 1488.159046] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=1470117 jiffies, g=78, c=77, q=4)
+> > [ 1488.159046] INFO: Stall ended before state dump start
+> > [ 1551.164045] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=1533122 jiffies, g=78, c=77, q=4)
+> > [ 1551.164045] INFO: Stall ended before state dump start
+> > [ 1614.169057] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=1596127 jiffies, g=78, c=77, q=4)
+> > [ 1614.169057] INFO: Stall ended before state dump start
+> > [ 1677.174060] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=1659132 jiffies, g=78, c=77, q=4)
+> > [ 1677.174060] INFO: Stall ended before state dump start
+> > [ 1740.179045] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=1722137 jiffies, g=78, c=77, q=4)
+> > [ 1740.179045] INFO: Stall ended before state dump start
+> > [ 1803.184075] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=1785142 jiffies, g=78, c=77, q=4)
+> > [ 1803.184101] INFO: Stall ended before state dump start
+> > [ 1866.189046] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=1848147 jiffies, g=78, c=77, q=4)
+> > [ 1866.189046] INFO: Stall ended before state dump start
+> > [ 1929.194045] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=1911152 jiffies, g=78, c=77, q=4)
+> > [ 1929.194045] INFO: Stall ended before state dump start
+> > [ 1992.199083] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=1974157 jiffies, g=78, c=77, q=4)
+> > [ 1992.199083] INFO: Stall ended before state dump start
+> > [ 2055.204098] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=2037162 jiffies, g=78, c=77, q=4)
+> > [ 2055.204098] INFO: Stall ended before state dump start
+> > [ 2118.209045] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=2100167 jiffies, g=78, c=77, q=4)
+> > [ 2118.209045] INFO: Stall ended before state dump start
+> > [ 2181.214098] INFO: rcu_preempt detected stalls on CPUs/tasks: {} (detected by 0, t=2163172 jiffies, g=78, c=77, q=4)
+> > [ 2181.214098] INFO: Stall ended before state dump start
+> > > 
+> > > Cheers,
+> > > Don
+> > > 
+> > > diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+> > > index 70bf118..833c015 100644
+> > > --- a/kernel/watchdog.c
+> > > +++ b/kernel/watchdog.c
+> > > @@ -209,7 +209,7 @@ void touch_nmi_watchdog(void)
+> > >  	 * going off.
+> > >  	 */
+> > >  	raw_cpu_write(watchdog_nmi_touch, true);
+> > > -	touch_softlockup_watchdog();
+> > > +	//touch_softlockup_watchdog();
+> > >  }
+> > >  EXPORT_SYMBOL(touch_nmi_watchdog);
+> > >  
+> > > 
+> > > .
+> > > 
+> > 
+> > 
 > 
 
