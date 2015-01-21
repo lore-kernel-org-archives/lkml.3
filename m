@@ -1,79 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753624AbbAUPdF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 10:33:05 -0500
-Received: from mx1.redhat.com ([209.132.183.28]:42325 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752683AbbAUPdA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 10:33:00 -0500
-Message-ID: <54BFC5F0.3020500@redhat.com>
-Date: Wed, 21 Jan 2015 10:29:52 -0500
-From: Jon Masters <jcm@redhat.com>
-Organization: Red Hat, Inc.
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.2.0
+	id S1752849AbbAUPby (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 10:31:54 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:52029 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883AbbAUPbr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 10:31:47 -0500
+Date: Wed, 21 Jan 2015 16:31:31 +0100
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Yingjoe Chen <yingjoe.chen@mediatek.com>
+Cc: Eddie Huang <eddie.huang@mediatek.com>,
+        Mark Rutland <mark.rutland@arm.com>, Wolfram Sang <wsa@the-dreams.de>,
+        Andrew Bresticker <abrestic@chromium.org>,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+        Lee Jones <lee.jones@linaro.org>, Jean Delvare <jdelvare@suse.de>,
+        Xudong Chen <xudong.chen@mediatek.com>,
+        Boris BREZILLON <boris.brezillon@free-electrons.com>,
+        Arnd Bergmann <arnd@arndb.de>, yh.chen@mediatek.com,
+        Wei Yan <sledge.yanwei@huawei.com>,
+        Bjorn Andersson <bjorn.andersson@sonymobile.com>,
+        Grant Likely <grant.likely@linaro.org>, devicetree@vger.kernel.org,
+        Pawel Moll <pawel.moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Beniamino Galvani <b.galvani@gmail.com>,
+        Neelesh Gupta <neelegup@linux.vnet.ibm.com>,
+        Rob Herring <robh+dt@kernel.org>,
+        Matthias Brugger <matthias.bgg@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, srv_heupstream@mediatek.com,
+        Anders Berg <anders.berg@avagotech.com>,
+        Jim Cromie <jim.cromie@gmail.com>, Simon Glass <sjg@chromium.org>,
+        Max Schwarz <max.schwarz@online.de>,
+        Doug Anderson <dianders@chromium.org>,
+        Sascha Hauer <kernel@pengutronix.de>,
+        Kumar Gala <galak@codeaurora.org>
+Subject: Re: [PATCH v4 2/2] I2C: mediatek: Add driver for MediaTek I2C
+ controller
+Message-ID: <20150121153131.GV22880@pengutronix.de>
+References: <1421404418-50718-1-git-send-email-eddie.huang@mediatek.com>
+ <1421404418-50718-3-git-send-email-eddie.huang@mediatek.com>
+ <20150118101816.GF22880@pengutronix.de>
+ <1421810004.15468.825.camel@mtksdaap41>
+ <1421821809.11671.117.camel@mtksdaap41>
+ <20150121081519.GS22880@pengutronix.de>
+ <1421844580.11671.145.camel@mtksdaap41>
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: "hanjun.guo@linaro.org" <hanjun.guo@linaro.org>,
-        Mark Rutland <Mark.Rutland@arm.com>,
-        "grant.likely@linaro.org" <grant.likely@linaro.org>,
-        Ard Biesheuvel <ard.biesheuvel@linaro.org>,
-        "linaro-acpi@lists.linaro.org" <linaro-acpi@lists.linaro.org>,
-        Will Deacon <Will.Deacon@arm.com>,
-        "wangyijing@huawei.com" <wangyijing@huawei.com>,
-        Rob Herring <robh@kernel.org>,
-        Lorenzo Pieralisi <Lorenzo.Pieralisi@arm.com>,
-        Al Stone <al.stone@linaro.org>, Timur Tabi <timur@codeaurora.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Charles Garcia-Tobin <Charles.Garcia-Tobin@arm.com>,
-        "phoenix.liyi@huawei.com" <phoenix.liyi@huawei.com>,
-        Robert Richter <rric@kernel.org>, Jason Cooper <jason@lakedaemon.net>,
-        Arnd Bergmann <arnd@arndb.de>, Marc Zyngier <Marc.Zyngier@arm.com>,
-        Mark Brown <broonie@kernel.org>, Bjorn Helgaas <bhelgaas@google.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "graeme.gregory@linaro.org" <graeme.gregory@linaro.org>,
-        Randy Dunlap <rdunlap@infradead.org>,
-        "Rafael J. Wysocki" <rjw@rjwysocki.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "suravee.suthikulpanit@amd.com" <suravee.suthikulpanit@amd.com>,
-        Sudeep Holla <Sudeep.Holla@arm.com>, Olof Johansson <olof@lixom.net>,
-        "christoffer.dall@linaro.org" <christoffer.dall@linaro.org>,
-        "parth.dixit@linaro.org" <parth.dixit@linaro.org>,
-        Leif Lindholm <leif.lindholm@linaro.org>
-Subject: Re: [PATCH v7 04/17] ARM64 / ACPI: Introduce early_param for "acpi"
- and pass acpi=force to enable ACPI
-References: <1421247905-3749-5-git-send-email-hanjun.guo@linaro.org> <20150119114255.GF11835@e104818-lin.cambridge.arm.com> <CAKv+Gu8vPKAdsNg7QC7xW+i8_BemWEx4mvBx6NrnAHi8Y+bNtw@mail.gmail.com> <20150119135144.GI11835@e104818-lin.cambridge.arm.com> <20150119151350.21B65C40948@trevor.secretlab.ca> <54BD3803.6020307@redhat.com> <20150119175233.GK11835@e104818-lin.cambridge.arm.com> <20150119180122.GJ21553@leverpostej> <54BE1FEA.5040109@linaro.org> <alpine.DEB.2.02.1501201901190.12653@kaball.uk.xensource.com> <20150121152326.GD6358@e104818-lin.cambridge.arm.com>
-In-Reply-To: <20150121152326.GD6358@e104818-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1421844580.11671.145.camel@mtksdaap41>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/21/2015 10:23 AM, Catalin Marinas wrote:
+Hello,
 
-> I have some questions for the ACPI and EFI folk:
+On Wed, Jan 21, 2015 at 08:49:40PM +0800, Yingjoe Chen wrote:
+> On Wed, 2015-01-21 at 09:15 +0100, Uwe Kleine-König wrote:
+> > On Wed, Jan 21, 2015 at 02:30:09PM +0800, Yingjoe Chen wrote:
+> > > On Wed, 2015-01-21 at 11:13 +0800, Eddie Huang wrote:
+> > > <...>
+> > > > > > +		ret = -EINVAL;
+> > > > > > +		goto err_exit;
+> > > > > > +	}
+> > > > > > +
+> > > > > > +	if (msgs->buf == NULL) {
+> > > > > > +		dev_dbg(i2c->dev, " data buffer is NULL.\n");
+> > > > > > +		ret = -EINVAL;
+> > > > > > +		goto err_exit;
+> > > > > > +	}
+> > > > > > +
+> > > > > > +	i2c->addr = msgs->addr;
+> > > > > > +	i2c->msg_len = msgs->len;
+> > > > > > +	i2c->msg_buf = msgs->buf;
+> > > > > > +
+> > > > > > +	if (msgs->flags & I2C_M_RD)
+> > > > > > +		i2c->op = I2C_MASTER_RD;
+> > > > > > +	else
+> > > > > > +		i2c->op = I2C_MASTER_WR;
+> > > > > > +
+> > > > > > +	/* combined two messages into one transaction */
+> > > > > > +	if (num > 1) {
+> > > > > > +		i2c->msg_aux_len = (msgs + 1)->len;
+> > > > > > +		i2c->op = I2C_MASTER_WRRD;
+> > > > > > +	}
+> > > > > This means "write then read", right? You should check here that the
+> > > > > first message is really a write and the 2nd a read then.
+> > > > > Can this happen at all with the quirks defined below (.max_num_msgs =
+> > > > > 1)?
+> > > > Yes, mean write then read. Indeed, add check is better.
+> > > > If msg number is 1, means normal write or read, not "write then read".
+> > > 
+> > > The quirks will increase the message count and check 'write then read'
+> > > for us. We don't have to add check here.
+> > I have to admit I don't know that quirks stuff, so it's well possible
+> > that I'm wrong here.
+> >  
+> > > > > > +static int mtk_i2c_remove(struct platform_device *pdev)
+> > > > > > +{
+> > > > > > +	struct mtk_i2c *i2c = platform_get_drvdata(pdev);
+> > > > > > +
+> > > > > > +	i2c_del_adapter(&i2c->adap);
+> > > > > > +	free_i2c_dma_bufs(i2c);
+> > > > > > +	platform_set_drvdata(pdev, NULL);
+> > > > > > +
+> > > > > Here you need to make sure that no irq is running when i2c_del_adapter
+> > > > > is called.
+> > > > OK, add check here
+> > > 
+> > > I thought after i2c_del_adapter() is complete, all i2c_transfer for this
+> > > adapter is completed. If this is true, then i2c clock is already off and
+> > > we won't have any on-going transfer/pending irq.
+> > Consider that there is an ongoing transaction and before it completes
+> > the adapter-device is unbound from the driver. Then i2c_del_adapter is
+> > called which frees the resources managed by the core, then the device's
+> > completion irq triggers and the freed adapter is used which probably
+> > results in an oops.
 > 
-> 1. When booting with ACPI, are the EFI run-time services required for
->    anything? If yes, Xen may have a bigger problem
+> Not sure if I missed anything. i2c_transfer() is a synchronize call. If
+> we fixed timeout issue you mentioned in mtk_i2c_transfer(), it will turn
+> off clock before it return, which disable any transaction and clear all
+> pending irq.
+There is no synchronization to prevent unbinding the i2c-bus device
+while there is a i2c transfer on the wire. i2c_del_adapter only takes
+i2c-core.c's &core_lock while i2c_transfer takes &adapter->bus_lock.
+If you want to test for it: do something like that:
 
-Yes. At least for some things. For example, installing an Operating
-System would require that you make runtime services calls to set the
-BootOrder/BootNext variables, and so on. Further, we use the GetTime
-service and EFI based reboot to avoid having special drivers. I had
-those added to SBBR as requirements for that reason.
+	while true; do dd if=/sys/bus/i2c/.../eeprom of=/dev/null; done
 
-> 2. Could a boot loader (either kernel doing kexec or Xen) emulate the
->    EFI system/config tables and still make them useful to the kernel but
->    without EFI_BOOT or EFI_RUNTIME_SERVICES?
+and while this is running do:
 
-Yes. But again, without the other required pieces (including the
-services function pointers in the systab which are required) you'd crash
-soon after boot trying to make those calls. We saw this with e.g. RTC in
-early firmwares. One of the reasons we've been hitting every service and
-establishing a reliance upon them immediately is to allow third party
-EFI vendors to notice when they've got any firmware bugs.
+	cd /sys/bus/platform/drivers/mt-i2c
+	while true; do
+		echo 1100d000.i2c > unbind;
+		sleep 1;
+		echo 1100d000.i2c > bind;
+		sleep 1;
+	done
+ 
+> Your scenario can only happens when one thread is still running in
+> i2c_transfer/algo->master_xfer and the other thread is trying to remove
+> the device. If that happened, then every device data access in
+> mtk_i2c_transfer might cause oops. I looked at some i2c drivers and
+> can't find any checking for this case, I can't find anything prevent i2c
+> device removal before pending i2c_transfer complete either. Would you
+> give me an example?
+I just noticed that even "my" driver is affected. If the above recipe
+makes your driver barf there is something to fix, if not ... hmm, then
+maybe there is more synchronization than I'm aware of or my recipe is
+wrong.
 
-Jon.
+At least another driver author believed me:
+http://thread.gmane.org/gmane.linux.drivers.i2c/21531/focus=21662
 
+Best regards
+Uwe
+
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
