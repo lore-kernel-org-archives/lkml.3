@@ -1,91 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057AbbAUDvN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 22:51:13 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:47438 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751856AbbAUDvM (ORCPT
+	id S1754088AbbAUDxM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 22:53:12 -0500
+Received: from mail-qa0-f47.google.com ([209.85.216.47]:36587 "EHLO
+	mail-qa0-f47.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752338AbbAUDxK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 22:51:12 -0500
-Message-ID: <54BF221E.8000409@roeck-us.net>
-Date: Tue, 20 Jan 2015 19:50:54 -0800
-From: Guenter Roeck <linux@roeck-us.net>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Tue, 20 Jan 2015 22:53:10 -0500
 MIME-Version: 1.0
-To: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
-        netdev@vger.kernel.org
-CC: "David S . Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-        kernel@savoirfairelinux.com
-Subject: Re: [PATCH] net: dsa: set parent of hwmon device
-References: <1421799212-2028-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-In-Reply-To: <1421799212-2028-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Authenticated_sender: linux@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Suspect
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 512
-X-CTCH-RefID: str=0001.0A020206.54BF222F.00CF,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=512,sb=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 2
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 2
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <54BE61F0.202@tycho.nsa.gov>
+References: <1421745518-18790-1-git-send-email-ethan.zhao@oracle.com>
+	<54BE61F0.202@tycho.nsa.gov>
+Date: Wed, 21 Jan 2015 11:53:09 +0800
+Message-ID: <CABawtvPrhVWV3bC-=wygqfHJzctvrmd1WxDD1ciuLE7F7-_yaQ@mail.gmail.com>
+Subject: Re: [PATCH] Selinux/hooks.c: Fix a NULL pointer dereference caused by semop()
+From: Ethan Zhao <ethan.kernel@gmail.com>
+To: Stephen Smalley <sds@tycho.nsa.gov>
+Cc: Ethan Zhao <ethan.zhao@oracle.com>, james.l.morris@oracle.com,
+        serge@hallyn.com, eparis@parisplace.org, paul@paul-moore.com,
+        selinux@tycho.nsa.gov, linux-security-module@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, ethan.kernel@gmail.conm,
+        manfred@colorfullife.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/20/2015 04:13 PM, Vivien Didelot wrote:
-> Set the dsa device as the parent of the hwmon device, in order to link
-> the hwmon subsystem under the corresponding /sys/devices/platform/dsa.X/
-> sysfs directory.
+On Tue, Jan 20, 2015 at 10:10 PM, Stephen Smalley <sds@tycho.nsa.gov> wrote:
+> On 01/20/2015 04:18 AM, Ethan Zhao wrote:
+>> A NULL pointer dereference was observed as following panic:
+>>
+>> BUG: unable to handle kernel NULL pointer dereference at (null)
+>> IP: [<ffffffff812735eb>] ipc_has_perm+0x4b/0x60
+>> ...
+>> Process opcmon (pid: 30712, threadinfo ffff880237f2a000,
+>> task ffff88022ac70e40)
+>> Stack:
+>> ffff880237f2bc04 ffffffff01020953 ffff880237f2bce8
+>> ffffffff8125818e
+>> 0000000000000001 0000000037f78004 ffff880237f2bcd8
+>> ffffffff81273619
+>> ffff880237f2bce8 ffffffff8126e3e6 ffff880237f2bf68
+>> ffffffff8125c206
+>> Call Trace:
+>> [<ffffffff8125818e>] ? ipcperms+0xae/0x110
+>> [<ffffffff81273619>] selinux_sem_semop+0x19/0x20
+>> [<ffffffff8126e3e6>] security_sem_semop+0x16/0x20
+>> [<ffffffff8125c206>] sys_semtimedop+0x346/0x750
+>> [<ffffffff81188c0c>] ? handle_pte_fault+0x1dc/0x200
+>> [<ffffffff8161d830>] ? __do_page_fault+0x280/0x500
+>> [<ffffffff810d97d0>] ? __lock_release+0x90/0x1b0
+>> [<ffffffff8161d830>] ? __do_page_fault+0x280/0x500
+>> [<ffffffff8109a763>] ? up_read+0x23/0x40
+>> [<ffffffff8161d830>] ? __do_page_fault+0x280/0x500
+>> [<ffffffff81182f1c>] ? might_fault+0x5c/0xb0
+>> [<ffffffff81081f96>] ? sys_newuname+0x66/0xf0
+>> [<ffffffff810d97d0>] ? __lock_release+0x90/0x1b0
+>> [<ffffffff81081f96>] ? sys_newuname+0x66/0xf0
+>> [<ffffffff81622f45>] ? sysret_check+0x22/0x5d
+>> [<ffffffff8125c620>] sys_semop+0x10/0x20
+>> [<ffffffff81622f19>] system_call_fastpath+0x16/0x1b
+>> Code: b8 00 00 48 8b 80 48 06 00 00 41 8b 54 24 40 4c 8d
+>> 45 d0 89 d9 45 31 c9 48 8b 40 70 8b 78 04 49 8b 44 24 60 c6 45 d0 04 89 55 d8
+>> <0f> b7 10 8b 70 04 e8 0a dc ff ff 48 83 c4 20 5b 41 5c c9 c3 90
+>> RIP  [<ffffffff812735eb>] ipc_has_perm+0x4b/0x60
+>> RSP <ffff880237f2bc98>
+>> CR2: 0000000000000000
+>>
+>> The root cause is semtimedop() was called after semget() without checking its
+>> return value in process opcmon. and semget() failed to check permission in
+>> function avc_has_perm() then sem_perm->security was freed shown as following:
+>>
+>>      sys_semget()
+>>      ->newary()
+>>          ->security_sem_alloc()
+>>            ->sem_alloc_security()
+>>                  selinux_sem_alloc_security()
+>>                  ->ipc_alloc_security() {
+>>                    ->rc = avc_has_perm()
+>>                               if (rc) {
+>>                                       ipc_free_security(&sma->sem_perm);
+>>                                       return rc;
 >
-> Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-> ---
->   net/dsa/dsa.c | 2 +-
->   1 file changed, 1 insertion(+), 1 deletion(-)
->
-> diff --git a/net/dsa/dsa.c b/net/dsa/dsa.c
-> index 3731714..363102a 100644
-> --- a/net/dsa/dsa.c
-> +++ b/net/dsa/dsa.c
-> @@ -347,7 +347,7 @@ dsa_switch_setup(struct dsa_switch_tree *dst, int index,
->   		hname[j] = '\0';
->   		scnprintf(ds->hwmon_name, sizeof(ds->hwmon_name), "%s_dsa%d",
->   			  hname, index);
-> -		ds->hwmon_dev = hwmon_device_register_with_groups(NULL,
-> +		ds->hwmon_dev = hwmon_device_register_with_groups(parent,
->   					ds->hwmon_name, ds, dsa_hwmon_groups);
->   		if (IS_ERR(ds->hwmon_dev))
->   			ds->hwmon_dev = NULL;
->
+> We free the security structure here to avoid a memory leak on a
+> failed/denied semaphore set creation.  In this situation, we return an
+> error to the caller (ultimately to newary), it does an
+> ipc_rcu_putref(sma, ipc_rcu_free), and it returns an error to the
+> caller.  Thus, it never calls ipc_addid() and the semaphore set is not
+> created.  So how then can you call semtimedop() on it?
 
-Looking into my old e-mail, turns out we did not add the parent device because
-it affected the output of the "sensors" command, and we wanted the device
-to be handled as 'virtual device' (which implies no parent). That was an explicit
-part of the patch set (v2 of 'net: dsa: Add support for reporting switch chip
-temperatures'), compared to v1, which did set the parent device.
-
-I would suggest to keep the code as is.
+Seems it wouldn't happen after commit e8577d1f0329d4842e8302e289fb2c22156abef4 ?
 
 Thanks,
-Guenter
-
+Ethan
+>
+>>      So ipc_perms->security was NULL, then semtimedop() was called as
+>>      following:
+>>
+>>         sys_semtimedop() / semop()
+>>         ->selinux_sem_semop()
+>>          ->ipc_has_perm()
+>>            ->avc_has_perm(sid, isec->sid, isec->sclass, perms, &ad);
+>>                                           ^- NULL pointer dereference happens
+>>
+>> The test kernel was running on VMware.
+>> This patch use to fix this serious security issue could be triggered by user space.
+>> This patch was tested with v3.19-rc5.
+>>
+>> Signed-off-by: Ethan Zhao <ethan.zhao@oracle.com>
+>> ---
+>>  security/selinux/hooks.c | 2 ++
+>>  1 file changed, 2 insertions(+)
+>>
+>> diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+>> index 6da7532..bbe76f5 100644
+>> --- a/security/selinux/hooks.c
+>> +++ b/security/selinux/hooks.c
+>> @@ -5129,6 +5129,8 @@ static int ipc_has_perm(struct kern_ipc_perm *ipc_perms,
+>>       u32 sid = current_sid();
+>>
+>>       isec = ipc_perms->security;
+>> +     if (!isec)
+>> +             return -EACCES;
+>>
+>>       ad.type = LSM_AUDIT_DATA_IPC;
+>>       ad.u.ipc_id = ipc_perms->key;
+>>
+>
+> That is not the correct fix; it just hides a bug.  If we reach
+> ipc_has_perm() with a NULL isec, it is a bug in the ipc code.
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
