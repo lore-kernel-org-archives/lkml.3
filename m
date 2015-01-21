@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753513AbbAUAOH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 19:14:07 -0500
-Received: from mail.savoirfairelinux.com ([209.172.62.77]:58218 "EHLO
-	mail.savoirfairelinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751585AbbAUAOE (ORCPT
+	id S1753621AbbAUAOV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 19:14:21 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:33811 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751602AbbAUAOR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 19:14:04 -0500
-From: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
-To: netdev@vger.kernel.org
-Cc: Vivien Didelot <vivien.didelot@savoirfairelinux.com>,
-        "David S . Miller" <davem@davemloft.net>,
-        Florian Fainelli <f.fainelli@gmail.com>, linux-kernel@vger.kernel.org,
-        kernel@savoirfairelinux.com
-Subject: [PATCH] net: dsa: set slave MII bus PHY mask
-Date: Tue, 20 Jan 2015 19:13:32 -0500
-Message-Id: <1421799212-2028-2-git-send-email-vivien.didelot@savoirfairelinux.com>
-X-Mailer: git-send-email 2.2.2
-In-Reply-To: <1421799212-2028-1-git-send-email-vivien.didelot@savoirfairelinux.com>
-References: <1421799212-2028-1-git-send-email-vivien.didelot@savoirfairelinux.com>
+	Tue, 20 Jan 2015 19:14:17 -0500
+Date: Tue, 20 Jan 2015 16:14:15 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Cc: linux-kernel@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v10 2/3] clk: Make clk API return per-user struct clk
+ instances
+Message-ID: <20150121001415.GE27202@codeaurora.org>
+References: <1421760306-6301-1-git-send-email-tomeu.vizoso@collabora.com>
+ <1421760306-6301-3-git-send-email-tomeu.vizoso@collabora.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421760306-6301-3-git-send-email-tomeu.vizoso@collabora.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When registering a mdio bus, Linux assumes than every port has a PHY and tries
-to scan it. If a switch port has no PHY registered, DSA will fail to register
-the slave MII bus. To fix this, set the slave MII bus PHY mask to the switch
-PHYs mask.
+On 01/20, Tomeu Vizoso wrote:
+> diff --git a/drivers/clk/clk.c b/drivers/clk/clk.c
+> index 97f3425..e867d6a 100644
+> --- a/drivers/clk/clk.c
+> +++ b/drivers/clk/clk.c
+> @@ -1719,6 +1817,31 @@ out:
+>  
+>  	return ret;
+>  }
+> +
+> +/**
+> + * clk_set_parent - switch the parent of a mux clk
+> + * @clk: the mux clk whose input we are switching
+> + * @parent: the new input to clk
+> + *
+> + * Re-parent clk to use parent as its new input source.  If clk is in
+> + * prepared state, the clk will get enabled for the duration of this call. If
+> + * that's not acceptable for a specific clk (Eg: the consumer can't handle
+> + * that, the reparenting is glitchy in hardware, etc), use the
+> + * CLK_SET_PARENT_GATE flag to allow reparenting only when clk is unprepared.
+> + *
+> + * After successfully changing clk's parent clk_set_parent will update the
+> + * clk topology, sysfs topology and propagate rate recalculation via
+> + * __clk_recalc_rates.
+> + *
+> + * Returns 0 on success, -EERROR otherwise.
+> + */
+> +int clk_set_parent(struct clk *clk, struct clk *parent)
+> +{
+> +	if (!clk || !parent)
+> +		return 0;
 
-As an example, if we use a Marvell MV88E6352 (which is a 7-port switch with no
-registered PHYs for port 5 and port 6), with the following declared names:
+This is a behavior change, although it's very possible nobody
+cares besides clk.c itself. Before this change
+clk_set_parent(clk, NULL) would orphan the clock and move it to
+the orphan list. Now we're going to do nothing. We should keep
+the original behavior, although I don't know why anybody would
+want to orphan a clock from a driver. The only place I think
+we're using this correctly is on the clock unregistration path.
 
-	static struct dsa_chip_data switch_cdata = {
-		[...]
-		.port_names[0] = "sw0",
-		.port_names[1] = "sw1",
-		.port_names[2] = "sw2",
-		.port_names[3] = "sw3",
-		.port_names[4] = "sw4",
-		.port_names[5] = "cpu",
-	};
+> +
+> +	return clk_core_set_parent(clk->core, parent->core);
+> +}
+>  EXPORT_SYMBOL_GPL(clk_set_parent);
+>  
+>  /**
 
-DSA will fail to create the switch instance. With the PHY mask set for the
-slave MII bus, only the PHY for ports 0-4 will be scanned and the instance will
-be successfully created.
-
-Signed-off-by: Vivien Didelot <vivien.didelot@savoirfairelinux.com>
----
- net/dsa/slave.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/net/dsa/slave.c b/net/dsa/slave.c
-index 515569f..589aafd 100644
---- a/net/dsa/slave.c
-+++ b/net/dsa/slave.c
-@@ -46,6 +46,7 @@ void dsa_slave_mii_bus_init(struct dsa_switch *ds)
- 	snprintf(ds->slave_mii_bus->id, MII_BUS_ID_SIZE, "dsa-%d:%.2x",
- 			ds->index, ds->pd->sw_addr);
- 	ds->slave_mii_bus->parent = ds->master_dev;
-+	ds->slave_mii_bus->phy_mask = ~ds->phys_mii_mask;
- }
- 
- 
 -- 
-2.2.2
-
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+a Linux Foundation Collaborative Project
