@@ -1,66 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752362AbbAUTMa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 14:12:30 -0500
-Received: from mail-gw2-out.broadcom.com ([216.31.210.63]:42510 "EHLO
-	mail-gw2-out.broadcom.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752521AbbAUTMW (ORCPT
+	id S1750914AbbAUTOn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 14:14:43 -0500
+Received: from mail-pd0-f174.google.com ([209.85.192.174]:36010 "EHLO
+	mail-pd0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753583AbbAUTOb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 14:12:22 -0500
-X-IronPort-AV: E=Sophos;i="5.09,443,1418112000"; 
-   d="scan'208";a="55279774"
-Message-ID: <54BFFA42.4010506@broadcom.com>
-Date: Wed, 21 Jan 2015 11:13:06 -0800
-From: Arun Ramamurthy <arun.ramamurthy@broadcom.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
+	Wed, 21 Jan 2015 14:14:31 -0500
+Date: Wed, 21 Jan 2015 11:14:22 -0800
+From: Omar Sandoval <osandov@osandov.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Trond Myklebust <trond.myklebust@primarydata.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, linux-nfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/5] clean up and generalize swap-over-NFS
+Message-ID: <20150121191422.GA4775@mew>
+References: <cover.1419044605.git.osandov@osandov.com>
+ <20150114031836.GA21198@mew>
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: <linux@prisktech.co.nz>, <gregkh@linuxfoundation.org>,
-        <linux-usb@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>, <sbranden@broadcom.com>,
-        <rjui@broadcom.com>, Arun Ramamurthy <arunrama@broadcom.com>
-Subject: Re: [PATCHv3 1/2] usb: ehci-platform: add support for multiple phys
- per controller
-References: <Pine.LNX.4.44L0.1501211002380.1670-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1501211002380.1670-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="windows-1252"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150114031836.GA21198@mew>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jan 13, 2015 at 07:18:36PM -0800, Omar Sandoval wrote:
+> On Fri, Dec 19, 2014 at 07:18:24PM -0800, Omar Sandoval wrote:
+> > Hi,
+> > 
+> > This patch series (based on ecb5ec0 in Linus' tree) contains all of the
+> > non-BTRFS work that I've done to implement swapfiles on BTRFS. The BTRFS
+> > portion is still undergoing development and is now outweighed by the
+> > non-BTRFS changes, so I want to get these in separately.
+> > 
+> > Version 2 changes the generic swapfile interface to use ->read_iter and
+> > ->write_iter instead of using ->direct_IO directly in response to
+> > discussion on the previous submission. It also adds the iov_iter_is_bvec
+> > helper to factor out some common checks.
+> > 
+> > Version 1 can be found here: https://lkml.org/lkml/2014/12/15/7
+> > 
+> > Omar Sandoval (5):
+> >   iov_iter: add ITER_BVEC helpers
+> >   direct-io: don't dirty ITER_BVEC pages on read
+> >   nfs: don't dirty ITER_BVEC pages read through direct I/O
+> >   swapfile: use ->read_iter and ->write_iter
+> >   vfs: update swap_{,de}activate documentation
+> > 
+> >  Documentation/filesystems/Locking |  7 ++++---
+> >  Documentation/filesystems/vfs.txt |  7 ++++---
+> >  fs/direct-io.c                    |  8 ++++---
+> >  fs/nfs/direct.c                   |  5 ++++-
+> >  fs/splice.c                       |  7 ++-----
+> >  include/linux/uio.h               |  7 +++++++
+> >  mm/iov_iter.c                     | 12 +++++++++++
+> >  mm/page_io.c                      | 44 +++++++++++++++++++++++++--------------
+> >  mm/swapfile.c                     | 11 +++++++++-
+> >  9 files changed, 76 insertions(+), 32 deletions(-)
+> > 
+> > -- 
+> > 2.2.1
+> > 
+> 
+> Hi, everyone,
+> 
+> Thanks for all of the feedback on the last few iterations of this
+> series. If it's alright, I'd like to revive the conversation around
+> these patches.
+> 
+> There are a couple of issues which we were discussing before the
+> holidays:
+> 
+> One concern that Al mentioned was ->read_iter and ->write_iter falling
+> back to the buffered I/O case. Like Christoph mentioned, this can be
+> prevented by doing the proper checks on the filesystem side (usually
+> just making sure that all blocks of a swapfile are allocated, but on
+> BTRFS, for example, we also have to check for compressed extents).
+> 
+> The other concern which Al brought up was that ->read_iter is passed a
+> locked page in the iter_bvec and could end up trying to lock it. I'm not
+> too sure under what conditions that would happen -- could someone give
+> an example? My intuition is that there's no path which will lead us to
+> deadlock on a page in the swapcache, but I don't have anything solid to
+> back that up.
+> 
+> Thanks!
+> -- 
+> Omar
 
-Thanks Alan. I did run check patch and I had no errors or warnings.
+Hi,
 
-I explained my changes in v3 in the cover patch, did that not come 
-through or is it convention to do it in the individual patch?
+Any updates on this?
 
-Is the ack for the ohci patch as well? Thanks
-
-Arun Ramamurthy
-
-On 15-01-21 07:03 AM, Alan Stern wrote:
-> On Mon, 19 Jan 2015 arun.ramamurthy@broadcom.com wrote:
->
->> From: Arun Ramamurthy <arunrama@broadcom.com>
->>
->> Added support for cases where one controller is connected
->> to multiple phys.
->>
->> Signed-off-by: Arun Ramamurthy <arunrama@broadcom.com>
->> Reviewed-by: Ray Jui <rjui@broadcom.com>
->> Reviewed-by: Scott Branden <sbranden@broadcom.com>
->> Tested-by: Scott Branden <sbranden@broadcom.com>
->> ---
->
-> Right here is where you should explain how v3 of this patch is
-> different from v2.
->
-> Anyway, it looks good.
->
-> Acked-by: Alan Stern <stern@rowland.harvard.edu>
->
-> Did you run it through checkpatch.pl?
->
-> Alan Stern
->
+Thanks,
+-- 
+Omar
