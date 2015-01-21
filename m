@@ -1,397 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754779AbbAUP4Q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 10:56:16 -0500
-Received: from emvm-gh1-uea08.nsa.gov ([63.239.67.9]:57790 "EHLO
-	emvm-gh1-uea08.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753329AbbAUPz6 (ORCPT
+	id S1754437AbbAUP4D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 10:56:03 -0500
+Received: from hqemgate16.nvidia.com ([216.228.121.65]:3954 "EHLO
+	hqemgate16.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754374AbbAUPzj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 10:55:58 -0500
-X-TM-IMSS-Message-ID: <13ad446600020357@nsa.gov>
-From: Stephen Smalley <sds@tycho.nsa.gov>
-To: linux-kernel@vger.kernel.org
-Cc: gregkh@linuxfoundation.org, arve@android.com, nnk@google.com,
-        paul@paul-moore.com, selinux@tycho.nsa.gov,
-        linux-security-module@vger.kernel.org, jmorris@namei.org,
-        Stephen Smalley <sds@tycho.nsa.gov>
-Subject: [PATCH] Add security hooks to binder and implement the hooks for SELinux.
-Date: Wed, 21 Jan 2015 10:54:10 -0500
-Message-Id: <1421855650-22522-1-git-send-email-sds@tycho.nsa.gov>
-X-Mailer: git-send-email 1.9.3
+	Wed, 21 Jan 2015 10:55:39 -0500
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 21 Jan 2015 07:46:21 -0800
+Date: Wed, 21 Jan 2015 16:55:21 +0100
+From: Thierry Reding <treding@nvidia.com>
+To: Tejun Heo <tj@kernel.org>
+CC: Paul Walmsley <paul@pwsan.com>, <gregory.clement@free-electrons.com>,
+        <hdegoede@redhat.com>, <pwalmsley@nvidia.com>,
+        <linux-tegra@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
+        <linux-kernel@vger.kernel.org>, <linux-next@vger.kernel.org>,
+        <linux-ide@vger.kernel.org>
+Subject: Re: next-20150120 broken on Tegra by "ata: libahci: Allow using
+ multiple regulators"
+Message-ID: <20150121155519.GA25166@ulmo.nvidia.com>
+References: <alpine.DEB.2.02.1501210003010.5450@utopia.booyaka.com>
+ <20150121105001.GA9921@ulmo.nvidia.com>
+ <20150121123134.GD8684@htj.dyndns.org>
+MIME-Version: 1.0
+In-Reply-To: <20150121123134.GD8684@htj.dyndns.org>
+X-NVConfidentiality: public
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-Originating-IP: [10.2.68.160]
+X-ClientProxiedBy: UKMAIL102.nvidia.com (10.26.138.15) To
+ UKMAIL101.nvidia.com (10.26.138.13)
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IrhDeMKUP4DT/M7F"
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add security hooks to the binder and implement the hooks for SELinux.
-The security hooks enable security modules such as SELinux to implement
-controls over binder IPC.  The security hooks include support for
-controlling what process can become the binder context manager
-(binder_set_context_mgr), controlling the ability of a process
-to invoke a binder transaction/IPC to another process (binder_transaction),
-controlling the ability of a process to transfer a binder reference to
-another process (binder_transfer_binder), and controlling the ability
-of a process to transfer an open file to another process (binder_transfer_file).
+--IrhDeMKUP4DT/M7F
+Content-Type: multipart/mixed; boundary="SLDf9lqlvOQaIe6s"
+Content-Disposition: inline
 
-These hooks have been included in the Android kernel trees since Android 4.3.
 
-(Updated to reflect upstream relocation and changes to the binder driver,
-changes to the LSM audit data structures, coding style cleanups, and
-to add inline documentation for the hooks).
+--SLDf9lqlvOQaIe6s
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Stephen Smalley <sds@tycho.nsa.gov>
+On Wed, Jan 21, 2015 at 07:31:34AM -0500, Tejun Heo wrote:
+> On Wed, Jan 21, 2015 at 11:50:03AM +0100, Thierry Reding wrote:
+> > Tejun, preferably the attached patch should be squashed into commit
+> > c7d7ddee7e24 ("ata: libahci: Allow using multiple regulators") to avoid
+> > breaking bisectability. If you don't want to rewrite history, let me
+> > know and I can turn it into a proper patch.
+>=20
+> Yes, please make it a proper patch.
+>=20
+> Thanks a lot!
+
+Attaching the patch.
+
+Thierry
+
+--SLDf9lqlvOQaIe6s
+Content-Type: text/x-diff; charset=us-ascii
+Content-Disposition: inline; filename="0001-ata-libahci-Fix-devres-cleanup-on-failure.patch"
+Content-Transfer-Encoding: quoted-printable
+
+=46rom a4f78e3ec05f1b2ad86aa44d6bd5394d75a23a06 Mon Sep 17 00:00:00 2001
+=46rom: Thierry Reding <treding@nvidia.com>
+Date: Wed, 21 Jan 2015 11:50:52 +0100
+Subject: [PATCH] ata: libahci: Fix devres cleanup on failure
+
+Commit c7d7ddee7e24 ("ata: libahci: Allow using multiple regulators")
+releases regulators during ahci_platform_put_resources(). That doesn't
+work because the function is run as part of the devres machinery. Such
+resources are torn down in reverse order. Since the array that holds
+pointers to the regulators is allocated using devres after the device
+context to which ahci_platform_put_resources() is attached, the memory
+will be freed before calling ahci_platform_put_resources() and thereby
+causing a use-after-free error.
+
+This commit fixes this by using regular allocations for the array. The
+memory can then be freed after the regulators have been released. This
+conserves the advantages of using the managed API.
+
+Reported-by: Paul Walmsley <paul@pwsan.com>
+Signed-off-by: Thierry Reding <treding@nvidia.com>
 ---
- drivers/android/binder.c            | 26 +++++++++++++
- include/linux/security.h            | 58 +++++++++++++++++++++++++++++
- security/capability.c               | 27 ++++++++++++++
- security/security.c                 | 23 ++++++++++++
- security/selinux/hooks.c            | 73 +++++++++++++++++++++++++++++++++++++
- security/selinux/include/classmap.h |  2 +
- 6 files changed, 209 insertions(+)
+ drivers/ata/libahci_platform.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-diff --git a/drivers/android/binder.c b/drivers/android/binder.c
-index 8c43521..33b09b6 100644
---- a/drivers/android/binder.c
-+++ b/drivers/android/binder.c
-@@ -37,6 +37,7 @@
- #include <linux/vmalloc.h>
- #include <linux/slab.h>
- #include <linux/pid_namespace.h>
-+#include <linux/security.h>
- 
- #ifdef CONFIG_ANDROID_BINDER_IPC_32BIT
- #define BINDER_IPC_32BIT 1
-@@ -1400,6 +1401,11 @@ static void binder_transaction(struct binder_proc *proc,
- 			return_error = BR_DEAD_REPLY;
- 			goto err_dead_binder;
- 		}
-+		if (security_binder_transaction(proc->tsk,
-+						target_proc->tsk) < 0) {
-+			return_error = BR_FAILED_REPLY;
-+			goto err_invalid_target_handle;
-+		}
- 		if (!(tr->flags & TF_ONE_WAY) && thread->transaction_stack) {
- 			struct binder_transaction *tmp;
- 
-@@ -1551,6 +1557,11 @@ static void binder_transaction(struct binder_proc *proc,
- 				return_error = BR_FAILED_REPLY;
- 				goto err_binder_get_ref_for_node_failed;
- 			}
-+			if (security_binder_transfer_binder(proc->tsk,
-+							    target_proc->tsk)) {
-+				return_error = BR_FAILED_REPLY;
-+				goto err_binder_get_ref_for_node_failed;
-+			}
- 			ref = binder_get_ref_for_node(target_proc, node);
- 			if (ref == NULL) {
- 				return_error = BR_FAILED_REPLY;
-@@ -1581,6 +1592,11 @@ static void binder_transaction(struct binder_proc *proc,
- 				return_error = BR_FAILED_REPLY;
- 				goto err_binder_get_ref_failed;
- 			}
-+			if (security_binder_transfer_binder(proc->tsk,
-+							    target_proc->tsk)) {
-+				return_error = BR_FAILED_REPLY;
-+				goto err_binder_get_ref_failed;
-+			}
- 			if (ref->node->proc == target_proc) {
- 				if (fp->type == BINDER_TYPE_HANDLE)
- 					fp->type = BINDER_TYPE_BINDER;
-@@ -1638,6 +1654,13 @@ static void binder_transaction(struct binder_proc *proc,
- 				return_error = BR_FAILED_REPLY;
- 				goto err_fget_failed;
- 			}
-+			if (security_binder_transfer_file(proc->tsk,
-+							  target_proc->tsk,
-+							  file) < 0) {
-+				fput(file);
-+				return_error = BR_FAILED_REPLY;
-+				goto err_get_unused_fd_failed;
-+			}
- 			target_fd = task_get_unused_fd_flags(target_proc, O_CLOEXEC);
- 			if (target_fd < 0) {
- 				fput(file);
-@@ -2675,6 +2698,9 @@ static int binder_ioctl_set_ctx_mgr(struct file *filp)
- 		ret = -EBUSY;
- 		goto out;
- 	}
-+	ret = security_binder_set_context_mgr(proc->tsk);
-+	if (ret < 0)
-+		goto out;
- 	if (uid_valid(binder_context_mgr_uid)) {
- 		if (!uid_eq(binder_context_mgr_uid, curr_euid)) {
- 			pr_err("BINDER_SET_CONTEXT_MGR bad uid %d != %d\n",
-diff --git a/include/linux/security.h b/include/linux/security.h
-index ba96471..a1b7dbd 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -1281,6 +1281,25 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
-  *	@alter contains the flag indicating whether changes are to be made.
-  *	Return 0 if permission is granted.
-  *
-+ * @binder_set_context_mgr
-+ *	Check whether @mgr is allowed to be the binder context manager.
-+ *	@mgr contains the task_struct for the task being registered.
-+ *	Return 0 if permission is granted.
-+ * @binder_transaction
-+ *	Check whether @from is allowed to invoke a binder transaction call
-+ *	to @to.
-+ *	@from contains the task_struct for the sending task.
-+ *	@to contains the task_struct for the receiving task.
-+ * @binder_transfer_binder
-+ *	Check whether @from is allowed to transfer a binder reference to @to.
-+ *	@from contains the task_struct for the sending task.
-+ *	@to contains the task_struct for the receiving task.
-+ * @binder_transfer_file
-+ *	Check whether @from is allowed to transfer @file to @to.
-+ *	@from contains the task_struct for the sending task.
-+ *	@file contains the struct file being transferred.
-+ *	@to contains the task_struct for the receiving task.
-+ *
-  * @ptrace_access_check:
-  *	Check permission before allowing the current process to trace the
-  *	@child process.
-@@ -1441,6 +1460,14 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
- struct security_operations {
- 	char name[SECURITY_NAME_MAX + 1];
- 
-+	int (*binder_set_context_mgr) (struct task_struct *mgr);
-+	int (*binder_transaction) (struct task_struct *from,
-+				   struct task_struct *to);
-+	int (*binder_transfer_binder) (struct task_struct *from,
-+				       struct task_struct *to);
-+	int (*binder_transfer_file) (struct task_struct *from,
-+				     struct task_struct *to, struct file *file);
-+
- 	int (*ptrace_access_check) (struct task_struct *child, unsigned int mode);
- 	int (*ptrace_traceme) (struct task_struct *parent);
- 	int (*capget) (struct task_struct *target,
-@@ -1739,6 +1766,13 @@ extern void __init security_fixup_ops(struct security_operations *ops);
- 
- 
- /* Security operations */
-+int security_binder_set_context_mgr(struct task_struct *mgr);
-+int security_binder_transaction(struct task_struct *from,
-+				struct task_struct *to);
-+int security_binder_transfer_binder(struct task_struct *from,
-+				    struct task_struct *to);
-+int security_binder_transfer_file(struct task_struct *from,
-+				  struct task_struct *to, struct file *file);
- int security_ptrace_access_check(struct task_struct *child, unsigned int mode);
- int security_ptrace_traceme(struct task_struct *parent);
- int security_capget(struct task_struct *target,
-@@ -1927,6 +1961,30 @@ static inline int security_init(void)
- 	return 0;
+diff --git a/drivers/ata/libahci_platform.c b/drivers/ata/libahci_platform.c
+index 73a086664ee7..504d534ccbfe 100644
+--- a/drivers/ata/libahci_platform.c
++++ b/drivers/ata/libahci_platform.c
+@@ -276,6 +276,7 @@ static void ahci_platform_put_resources(struct device *=
+dev, void *res)
+ 		if (hpriv->target_pwrs && hpriv->target_pwrs[c])
+ 			regulator_put(hpriv->target_pwrs[c]);
+=20
++	kfree(hpriv->target_pwrs);
  }
- 
-+static inline int security_binder_set_context_mgr(struct task_struct *mgr)
-+{
-+	return 0;
-+}
-+
-+static inline int security_binder_transaction(struct task_struct *from,
-+					      struct task_struct *to)
-+{
-+	return 0;
-+}
-+
-+static inline int security_binder_transfer_binder(struct task_struct *from,
-+						  struct task_struct *to)
-+{
-+	return 0;
-+}
-+
-+static inline int security_binder_transfer_file(struct task_struct *from,
-+						struct task_struct *to,
-+						struct file *file)
-+{
-+	return 0;
-+}
-+
- static inline int security_ptrace_access_check(struct task_struct *child,
- 					     unsigned int mode)
- {
-diff --git a/security/capability.c b/security/capability.c
-index d68c57a..070dd46 100644
---- a/security/capability.c
-+++ b/security/capability.c
-@@ -12,6 +12,29 @@
- 
- #include <linux/security.h>
- 
-+static int cap_binder_set_context_mgr(struct task_struct *mgr)
-+{
-+	return 0;
-+}
-+
-+static int cap_binder_transaction(struct task_struct *from,
-+				  struct task_struct *to)
-+{
-+	return 0;
-+}
-+
-+static int cap_binder_transfer_binder(struct task_struct *from,
-+				      struct task_struct *to)
-+{
-+	return 0;
-+}
-+
-+static int cap_binder_transfer_file(struct task_struct *from,
-+				    struct task_struct *to, struct file *file)
-+{
-+	return 0;
-+}
-+
- static int cap_syslog(int type)
- {
- 	return 0;
-@@ -930,6 +953,10 @@ static void cap_audit_rule_free(void *lsmrule)
- 
- void __init security_fixup_ops(struct security_operations *ops)
- {
-+	set_to_cap_if_null(ops, binder_set_context_mgr);
-+	set_to_cap_if_null(ops, binder_transaction);
-+	set_to_cap_if_null(ops, binder_transfer_binder);
-+	set_to_cap_if_null(ops, binder_transfer_file);
- 	set_to_cap_if_null(ops, ptrace_access_check);
- 	set_to_cap_if_null(ops, ptrace_traceme);
- 	set_to_cap_if_null(ops, capget);
-diff --git a/security/security.c b/security/security.c
-index 18b35c6..b196de3 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -135,6 +135,29 @@ int __init register_security(struct security_operations *ops)
- 
- /* Security operations */
- 
-+int security_binder_set_context_mgr(struct task_struct *mgr)
-+{
-+	return security_ops->binder_set_context_mgr(mgr);
-+}
-+
-+int security_binder_transaction(struct task_struct *from,
-+				struct task_struct *to)
-+{
-+	return security_ops->binder_transaction(from, to);
-+}
-+
-+int security_binder_transfer_binder(struct task_struct *from,
-+				    struct task_struct *to)
-+{
-+	return security_ops->binder_transfer_binder(from, to);
-+}
-+
-+int security_binder_transfer_file(struct task_struct *from,
-+				  struct task_struct *to, struct file *file)
-+{
-+	return security_ops->binder_transfer_file(from, to, file);
-+}
-+
- int security_ptrace_access_check(struct task_struct *child, unsigned int mode)
- {
- #ifdef CONFIG_SECURITY_YAMA_STACKED
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 6da7532..9d984bf 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -1933,6 +1933,74 @@ static inline u32 open_file_to_av(struct file *file)
- 
- /* Hook functions begin here. */
- 
-+static int selinux_binder_set_context_mgr(struct task_struct *mgr)
-+{
-+	u32 mysid = current_sid();
-+	u32 mgrsid = task_sid(mgr);
-+
-+	return avc_has_perm(mysid, mgrsid, SECCLASS_BINDER,
-+			    BINDER__SET_CONTEXT_MGR, NULL);
-+}
-+
-+static int selinux_binder_transaction(struct task_struct *from,
-+				      struct task_struct *to)
-+{
-+	u32 mysid = current_sid();
-+	u32 fromsid = task_sid(from);
-+	u32 tosid = task_sid(to);
-+	int rc;
-+
-+	if (mysid != fromsid) {
-+		rc = avc_has_perm(mysid, fromsid, SECCLASS_BINDER,
-+				  BINDER__IMPERSONATE, NULL);
-+		if (rc)
-+			return rc;
-+	}
-+
-+	return avc_has_perm(fromsid, tosid, SECCLASS_BINDER, BINDER__CALL,
-+			    NULL);
-+}
-+
-+static int selinux_binder_transfer_binder(struct task_struct *from,
-+					  struct task_struct *to)
-+{
-+	u32 fromsid = task_sid(from);
-+	u32 tosid = task_sid(to);
-+
-+	return avc_has_perm(fromsid, tosid, SECCLASS_BINDER, BINDER__TRANSFER,
-+			    NULL);
-+}
-+
-+static int selinux_binder_transfer_file(struct task_struct *from,
-+					struct task_struct *to,
-+					struct file *file)
-+{
-+	u32 sid = task_sid(to);
-+	struct file_security_struct *fsec = file->f_security;
-+	struct inode *inode = file->f_path.dentry->d_inode;
-+	struct inode_security_struct *isec = inode->i_security;
-+	struct common_audit_data ad;
-+	int rc;
-+
-+	ad.type = LSM_AUDIT_DATA_PATH;
-+	ad.u.path = file->f_path;
-+
-+	if (sid != fsec->sid) {
-+		rc = avc_has_perm(sid, fsec->sid,
-+				  SECCLASS_FD,
-+				  FD__USE,
-+				  &ad);
-+		if (rc)
-+			return rc;
-+	}
-+
-+	if (unlikely(IS_PRIVATE(inode)))
-+		return 0;
-+
-+	return avc_has_perm(sid, isec->sid, isec->sclass, file_to_av(file),
-+			    &ad);
-+}
-+
- static int selinux_ptrace_access_check(struct task_struct *child,
- 				     unsigned int mode)
- {
-@@ -5810,6 +5878,11 @@ static int selinux_key_getsecurity(struct key *key, char **_buffer)
- static struct security_operations selinux_ops = {
- 	.name =				"selinux",
- 
-+	.binder_set_context_mgr =	selinux_binder_set_context_mgr,
-+	.binder_transaction =		selinux_binder_transaction,
-+	.binder_transfer_binder =	selinux_binder_transfer_binder,
-+	.binder_transfer_file =		selinux_binder_transfer_file,
-+
- 	.ptrace_access_check =		selinux_ptrace_access_check,
- 	.ptrace_traceme =		selinux_ptrace_traceme,
- 	.capget =			selinux_capget,
-diff --git a/security/selinux/include/classmap.h b/security/selinux/include/classmap.h
-index be491a7..eccd61b 100644
---- a/security/selinux/include/classmap.h
-+++ b/security/selinux/include/classmap.h
-@@ -151,5 +151,7 @@ struct security_class_mapping secclass_map[] = {
- 	{ "kernel_service", { "use_as_override", "create_files_as", NULL } },
- 	{ "tun_socket",
- 	  { COMMON_SOCK_PERMS, "attach_queue", NULL } },
-+	{ "binder", { "impersonate", "call", "set_context_mgr", "transfer",
-+		      NULL } },
- 	{ NULL }
-   };
--- 
-1.9.3
+=20
+ static int ahci_platform_get_phy(struct ahci_host_priv *hpriv, u32 port,
+@@ -412,7 +413,7 @@ struct ahci_host_priv *ahci_platform_get_resources(stru=
+ct platform_device *pdev)
+ 		goto err_out;
+ 	}
+ 	sz =3D hpriv->nports * sizeof(*hpriv->target_pwrs);
+-	hpriv->target_pwrs =3D devm_kzalloc(dev, sz, GFP_KERNEL);
++	hpriv->target_pwrs =3D kzalloc(sz, GFP_KERNEL);
+ 	if (!hpriv->target_pwrs) {
+ 		rc =3D -ENOMEM;
+ 		goto err_out;
+--=20
+2.1.3
 
+
+--SLDf9lqlvOQaIe6s--
+
+--IrhDeMKUP4DT/M7F
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBAgAGBQJUv8vnAAoJEN0jrNd/PrOhEwIQAMLBYpKKV58MUIA2O91w3pdr
+2jYzWy2Dl8iBQOeoYurUIU+MdVt1tqY6ISnaBiSlH+8w2AF7vEo/GbQXUaIiFroW
+/9u/QQLQndO/a40/EdWB4lGs2a3vp8sk+pNDK8LpHbtxfNCdERKgHMyfDpbJWpjC
+XEiGit0dktT7jrqg8JIaQ3veCvp/6iaByvU4pO+wH92krl2us7NXtweyaF5IKNmv
+fliUxmEVXLpM2Jmhogr5UQqS16+nhT6heTK5L7NS69WZd2bOUhYZMPoW4TuwQG6l
+SL7dmKaj5fjsmGufmGiccdcF0UN3s/O5ZIUVm3fCTrdjUEg3jleAK9JPdDRGJdqR
+p8q4crc+4g3V0tWg5bR/PlLu/HY5U/GDvucMqgM/gXYvg5HFNkpIOzGFoD1rl/Is
+VSe9l4uIIZm34kVO/jwaSDdAAMB7PKp7B5YWT7TB81G7H0WnoqwC+vtvj/0iIuJO
+UT3jXArYHxf20snTP6Bvt9zCCk2XWS6qvc0F0he2vm3ICTnqs9U/Fu5bgaqe2GDQ
+Hgx38ScAzp8614ouv0Jjn5vzrEzZVqKHIcH9eZSw8ssirX1QLodT+6DR3sXjxIwy
+WqCLdVHaQlLuyEL4u5mZbhndMUCiPlBnMKk7MrvJeIXi8Z09QbdguR2FwiSlZvDX
+tCmZUCv3I3/zgOR4erVW
+=1neP
+-----END PGP SIGNATURE-----
+
+--IrhDeMKUP4DT/M7F--
