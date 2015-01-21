@@ -1,81 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242AbbAUH5N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 02:57:13 -0500
-Received: from mailout1.samsung.com ([203.254.224.24]:26558 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752376AbbAUH4W (ORCPT
+	id S1753013AbbAUH4p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 02:56:45 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:40393 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752838AbbAUH4a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 02:56:22 -0500
-X-AuditID: cbfee68d-f79296d000004278-22-54bf5b96711a
-From: Jaewon Kim <jaewon02.kim@samsung.com>
-To: Kukjin Kim <kgene@kernel.org>
-Cc: Chanwoo Choi <cw00.choi@samsung.com>, linux-samsung-soc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-        Jaewon Kim <jaewon02.kim@samsung.com>
-Subject: [PATCH RESEND 2/2] ARM: dts: exynos3250-monk: Add regulator-haptic
- node for haptics
-Date: Wed, 21 Jan 2015 16:56:00 +0900
-Message-id: <1421826960-26491-3-git-send-email-jaewon02.kim@samsung.com>
-X-Mailer: git-send-email 1.7.9.5
-In-reply-to: <1421826960-26491-1-git-send-email-jaewon02.kim@samsung.com>
-References: <1421826960-26491-1-git-send-email-jaewon02.kim@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrFLMWRmVeSWpSXmKPExsWyRsSkUHda9P4Qg4XL+C2uf3nOarGj4Qir
-	Rf/j18wWNz99Y7W4vGsOm8WM8/uYHNg8Nq3qZPPo27KK0ePzJrkA5igum5TUnMyy1CJ9uwSu
-	jL+3HrIXnGOt+DZtGXsD43mWLkZODgkBE4m/xyezQthiEhfurWcDsYUEljJKHPzKB1NzrX85
-	UD0XUHwRo8SO5ydYIZw2JonNzX+YQarYBLQlvq9fDJTg4BARUJTYvEABpIZZYCOjxJ9tfWDb
-	hAXiJF6vuA62gUVAVeLNykeMIDavgIfEzU997CC9EgIKEnMm2YCYnAKeEldnykHc4yFx4P0D
-	sLUSAs3sEh0ztrJCjBGQ+Db5EAtEq6zEpgPMEDdLShxccYNlAqPwAkaGVYyiqQXJBcVJ6UWG
-	esWJucWleel6yfm5mxiBQXz637PeHYy3D1gfYhTgYFTi4X2huD9EiDWxrLgy9xCjKdCGicxS
-	osn5wFjJK4k3NDYzsjA1MTU2Mrc0UxLnVZT6GSwkkJ5YkpqdmlqQWhRfVJqTWnyIkYmDU6qB
-	cXYqv+QNu96UHRYW5dPNFyn/XSWpvWveDcbXcbfU2nZWaDcnyk/eyqZ7JiWo4035mc0BFa2H
-	XS7LPPxe8uhQJJvkrfYAu/mLDLMEnjN5/G39YprXK/lsce3po38CU4OC6jZs/PHJ+sAh1bOH
-	FwurBr/p263oPydbMkQswVw8uMf+EI/Ahvp4JZbijERDLeai4kQA3dQG5F0CAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprKIsWRmVeSWpSXmKPExsVy+t9jAd1p0ftDDHq2cFhc//Kc1WJHwxFW
-	i/7Hr5ktbn76xmpxedccNosZ5/cxObB5bFrVyebRt2UVo8fnTXIBzFENjDYZqYkpqUUKqXnJ
-	+SmZeem2St7B8c7xpmYGhrqGlhbmSgp5ibmptkouPgG6bpk5QIuVFMoSc0qBQgGJxcVK+naY
-	JoSGuOlawDRG6PqGBMH1GBmggYQ1jBl/bz1kLzjHWvFt2jL2BsbzLF2MnBwSAiYS1/qXQ9li
-	EhfurWfrYuTiEBJYxCix4/kJVginjUlic/MfZpAqNgFtie/rFwMlODhEBBQlNi9QAKlhFtjI
-	KPFnWx/YJGGBOInXK66zgdgsAqoSb1Y+YgSxeQU8JG5+6mMH6ZUQUJCYM8kGxOQU8JS4OlMO
-	pEIIqOLA+wesExh5FzAyrGIUTS1ILihOSs810itOzC0uzUvXS87P3cQIjpJn0jsYVzVYHGIU
-	4GBU4uF9obg/RIg1say4MvcQowQHs5IIr6IEUIg3JbGyKrUoP76oNCe1+BCjKdBNE5mlRJPz
-	gRGcVxJvaGxiZmRpZG5oYWRsriTOq2TfFiIkkJ5YkpqdmlqQWgTTx8TBKdXAmFbXsGNerkj1
-	ggXVYcfVN3UoXJjv0b4876TC3V21boXel8zU5L4aXl/+aKZrzZTpT458dp4zc4foNov5nMxh
-	jF8WPlWaf8JtuYipZJ/t0qV/k1OanKVE7/e39+QWM0SvnmNyV9LZs2lZYuh6w1+RhyVfu2xk
-	W925cP2nsuUB4nGs/DvcTn98pcRSnJFoqMVcVJwIAMcYTNCoAgAA
-DLP-Filter: Pass
-X-MTR: 20000000000000000@CPGS
-X-CFilter-Loop: Reflected
+	Wed, 21 Jan 2015 02:56:30 -0500
+From: Bob Liu <bob.liu@oracle.com>
+To: xen-devel@lists.xen.org
+Cc: david.vrabel@citrix.com, linux-kernel@vger.kernel.org,
+        roger.pau@citrix.com, konrad.wilk@oracle.com,
+        Bob Liu <bob.liu@oracle.com>
+Subject: [RESEND PATCH] xen/blkfront: increase the default value of xen_blkif_max_segments
+Date: Wed, 21 Jan 2015 15:56:03 +0800
+Message-Id: <1421826963-6497-1-git-send-email-bob.liu@oracle.com>
+X-Mailer: git-send-email 1.7.10.4
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds regulator-haptic device node controlled by regulator.
+The default max-segments of indirect requests was 32, so IO operations with
+bigger block size(>32*4k) would be split and make performance drop.
 
-Signed-off-by: Jaewon Kim <jaewon02.kim@samsung.com>
-Reviewed-by: Chanwoo Choi <cw00.choi@samsung.com>
+Nowadays backend device usually support 512k max_sectors_kb on desktop,
+and usually larger on server machines connected with high-end storage system.
+The default max size(128k) is not appropriate anymore, this patch increases it
+to 128(128*4k=512k).
+
+Signed-off-by: Bob Liu <bob.liu@oracle.com>
 ---
- arch/arm/boot/dts/exynos3250-monk.dts |    7 +++++++
- 1 file changed, 7 insertions(+)
+ drivers/block/xen-blkfront.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/boot/dts/exynos3250-monk.dts b/arch/arm/boot/dts/exynos3250-monk.dts
-index 24822aa..7102d88 100644
---- a/arch/arm/boot/dts/exynos3250-monk.dts
-+++ b/arch/arm/boot/dts/exynos3250-monk.dts
-@@ -109,6 +109,13 @@
- 			};
- 		};
- 	};
-+
-+	haptics {
-+		compatible = "regulator-haptic";
-+		haptic-supply = <&motor_reg>;
-+		min-microvolt = <1100000>;
-+		max-microvolt = <2700000>;
-+	};
- };
+diff --git a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+index 2236c6f..1bf2429 100644
+--- a/drivers/block/xen-blkfront.c
++++ b/drivers/block/xen-blkfront.c
+@@ -94,9 +94,9 @@ static const struct block_device_operations xlvbd_block_fops;
+  * by the backend driver.
+  */
  
- &adc {
+-static unsigned int xen_blkif_max_segments = 32;
++static unsigned int xen_blkif_max_segments = 128;
+ module_param_named(max, xen_blkif_max_segments, int, S_IRUGO);
+-MODULE_PARM_DESC(max, "Maximum amount of segments in indirect requests (default is 32)");
++MODULE_PARM_DESC(max, "Maximum amount of segments in indirect requests (default is 128)");
+ 
+ #define BLK_RING_SIZE __CONST_RING_SIZE(blkif, PAGE_SIZE)
+ 
 -- 
-1.7.9.5
+1.7.10.4
 
