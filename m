@@ -1,47 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754385AbbAUPZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 10:25:57 -0500
-Received: from mailrelay7.public.one.com ([91.198.169.215]:13138 "EHLO
-	mailrelay7.public.one.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754188AbbAUPZG (ORCPT
+	id S1754581AbbAUP10 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 10:27:26 -0500
+Received: from mail-ie0-f180.google.com ([209.85.223.180]:49165 "EHLO
+	mail-ie0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754149AbbAUP0s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 10:25:06 -0500
-X-HalOne-Cookie: de7c209597658a54ad4e0e6482373d498968be9f
-X-HalOne-ID: ab3002fe-a181-11e4-bf9a-b82a72cffc46
-Message-ID: <54BFC4D3.6090607@bitmath.org>
-Date: Wed, 21 Jan 2015 16:25:07 +0100
-From: Henrik Rydberg <rydberg@bitmath.org>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Wed, 21 Jan 2015 10:26:48 -0500
+Date: Wed, 21 Jan 2015 15:26:41 +0000
+From: Lee Jones <lee.jones@linaro.org>
+To: Maxime Coquelin <maxime.coquelin@st.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        devicetree@vger.kernel.org, kernel@stlinux.com, wsa@the-dreams.de
+Subject: Re: [STLinux Kernel] [PATCH 1/1] i2c: i2c-st: Rename clock reference
+ to something that exists
+Message-ID: <20150121152641.GE22024@x1>
+References: <1409234523-20240-1-git-send-email-lee.jones@linaro.org>
+ <53FF3D55.40006@st.com>
 MIME-Version: 1.0
-To: Peter Hutterer <peter.hutterer@who-t.net>
-CC: Benjamin Tissoires <benjamin.tissoires@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
-        Joe Perches <joe@perches.com>,
-        Mauro Carvalho Chehab <mchehab@osg.samsung.com>,
-        linux-input <linux-input@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] MAINTAINERS: Update rydberg's addresses
-References: <1418979967-2134-1-git-send-email-rydberg@bitmath.org> <CAN+gG=Gmgk+wKSnHkSAERoWt+1PqAojNSZt6jo=qmzPOqJs+3Q@mail.gmail.com> <54BED60C.3030303@bitmath.org> <20150121043520.GB17900@jelly.redhat.com>
-In-Reply-To: <20150121043520.GB17900@jelly.redhat.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <53FF3D55.40006@st.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On Thu, 28 Aug 2014, Maxime Coquelin wrote:
+> On 08/28/2014 04:02 PM, Lee Jones wrote:
+> >CLK_S_ICN_REG_0 hasn't existed for a while now.  This was renamed
+> >over a few commits, then finally removed in commit 5aa02b9 (ARM:
+> >STi: DT: STiH415: Remove unused CLK_S_ICN_REG_0 fixed clock).
+> >
+> >Signed-off-by: Lee Jones <lee.jones@linaro.org>
+> 
+> Maybe it will be part of my next pull-requests, but in case it is
+> not, you can add my:
+> Acked-by: Maxime Coquelin <maxime.coquelin@st.com>
 
-> it wasn't the first reaction. it was the third, after we hacked up
-> synaptics [1], then libinput [2], both rather unsatisfactory. Not sure what
-> chromeos does but they'll probably would need similar code. And any other
-> users of the evdev API of course.
+Still nothing from the big man.
 
-So if this approach did not work very well in userland, why would it work any
-better in the kernel?
+Can you just take this please Maxime?
 
-Henrik
+> >---
+> >  Documentation/devicetree/bindings/i2c/i2c-st.txt | 2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> >
+> >diff --git a/Documentation/devicetree/bindings/i2c/i2c-st.txt b/Documentation/devicetree/bindings/i2c/i2c-st.txt
+> >index 437e0db..4c26fda 100644
+> >--- a/Documentation/devicetree/bindings/i2c/i2c-st.txt
+> >+++ b/Documentation/devicetree/bindings/i2c/i2c-st.txt
+> >@@ -31,7 +31,7 @@ i2c0: i2c@fed40000 {
+> >  	compatible	= "st,comms-ssc4-i2c";
+> >  	reg		= <0xfed40000 0x110>;
+> >  	interrupts	=  <GIC_SPI 187 IRQ_TYPE_LEVEL_HIGH>;
+> >-	clocks		= <&CLK_S_ICN_REG_0>;
+> >+	clocks		= <&clk_s_a0_ls CLK_ICN_REG>;
+> >  	clock-names	= "ssc";
+> >  	clock-frequency = <400000>;
+> >  	pinctrl-names	= "default";
+> >
 
+-- 
+Lee Jones
+Linaro STMicroelectronics Landing Team Lead
+Linaro.org │ Open source software for ARM SoCs
+Follow Linaro: Facebook | Twitter | Blog
