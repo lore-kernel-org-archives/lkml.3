@@ -1,78 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752913AbbAUWpP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 17:45:15 -0500
-Received: from bh-25.webhostbox.net ([208.91.199.152]:32962 "EHLO
-	bh-25.webhostbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752707AbbAUWpI (ORCPT
+	id S1752660AbbAUWo6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 17:44:58 -0500
+Received: from mail-ig0-f175.google.com ([209.85.213.175]:40380 "EHLO
+	mail-ig0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751546AbbAUWov (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 17:45:08 -0500
-From: Guenter Roeck <linux@roeck-us.net>
-To: Alexander Viro <viro@zeniv.linux.org.uk>
-Cc: Sabrina Dubroca <sd@queasysnail.net>, Paul Moore <pmoore@redhat.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Guenter Roeck <linux@roeck-us.net>
-Subject: [PATCH RESEND] fs: namei: Use memcpy instead of strlcpy
-Date: Wed, 21 Jan 2015 14:44:25 -0800
-Message-Id: <1421880265-26647-1-git-send-email-linux@roeck-us.net>
-X-Mailer: git-send-email 2.1.0
-X-Authenticated_sender: guenter@roeck-us.net
-X-OutGoing-Spam-Status: No, score=-1.0
-X-CTCH-PVer: 0000001
-X-CTCH-Spam: Unknown
-X-CTCH-VOD: Unknown
-X-CTCH-Flags: 0
-X-CTCH-RefID: str=0001.0A020203.54C02BF4.0003,ss=1,re=0.001,recu=0.000,reip=0.000,cl=1,cld=1,fgs=0
-X-CTCH-Score: 0.001
-X-CTCH-ScoreCust: 0.000
-X-CTCH-Rules: C_4847,
-X-CTCH-SenderID: linux@roeck-us.net
-X-CTCH-SenderID-Flags: 0
-X-CTCH-SenderID-TotalMessages: 5
-X-CTCH-SenderID-TotalSpam: 0
-X-CTCH-SenderID-TotalSuspected: 0
-X-CTCH-SenderID-TotalConfirmed: 0
-X-CTCH-SenderID-TotalBulk: 0
-X-CTCH-SenderID-TotalVirus: 0
-X-CTCH-SenderID-TotalRecipients: 0
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - bh-25.webhostbox.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - roeck-us.net
-X-Get-Message-Sender-Via: bh-25.webhostbox.net: mailgid no entry from get_relayhosts_entry
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Wed, 21 Jan 2015 17:44:51 -0500
+Date: Wed, 21 Jan 2015 14:44:49 -0800 (PST)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Bryton Lee <brytonlee01@gmail.com>
+cc: Christoph Lameter <cl@linux.com>, iamjoonsoo.kim@lge.com,
+        penberg@kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] mm: move MACRO SLAB_NEVER_MERGE and SLAB_MERGE_SAME to
+ file linux/slab.h
+In-Reply-To: <CAC2pzGd_p37Pi53ZEQShMj9BAECPXZCsxQwm=kKLACwmSBB99w@mail.gmail.com>
+Message-ID: <alpine.DEB.2.10.1501211443410.2716@chino.kir.corp.google.com>
+References: <CAC2pzGe9Q+19LpyFPwr8+TZ02XfCqwrQzsEsJA8WWB6XhuJyeQ@mail.gmail.com> <alpine.DEB.2.11.1501062114240.5674@gentwo.org> <CAC2pzGd_p37Pi53ZEQShMj9BAECPXZCsxQwm=kKLACwmSBB99w@mail.gmail.com>
+User-Agent: Alpine 2.10 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the string length is known, there is no need to use strlcpy.
-Use memcpy instead.
+On Wed, 7 Jan 2015, Bryton Lee wrote:
 
-Signed-off-by: Guenter Roeck <linux@roeck-us.net>
----
-Nitpick, but still a bit faster. Applies on top of -next.
+> thanks for review my patch.
+> 
+> I want to move these macros to linux/slab.h cause I don't want perform
+> merge in slab level.   for example. ss read /proc/slabinfo to finger out
+> how many requests pending in the TCP listern queue.  it  use slabe name
+> "tcp_timewait_sock_ops" search in /proc/slabinfo, although the name is
+> obsolete. so I committed other patch  to iproute2, replaced
+> tcp_timewait_sock_ops by request_sock_TCP, but it still not work, because
+> slab request_sock_TCP  merge into kmalloc-256.
+> 
+> how could I prevent this merge happen.  I'm new to kernel, this is my first
+> time submit a kernel patch, thanks!
+> 
 
-Resending with correct cc:. Sorry for the noise.
-
- fs/namei.c | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/fs/namei.c b/fs/namei.c
-index 323957f..2e09219 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -233,7 +233,7 @@ getname_kernel(const char * filename)
- 		__putname(result);
- 		return ERR_PTR(-ENAMETOOLONG);
- 	}
--	strlcpy((char *)result->name, filename, len);
-+	memcpy((char *)result->name, filename, len);
- 	result->uptr = NULL;
- 	result->aname = NULL;
- 	result->refcnt = 1;
--- 
-2.1.0
-
+Any bit in SLAB_NEVER_MERGE will cause the allocator to not merge the slab 
+caches, it's not necessary to all of them be set as it seems you're 
+implying.
