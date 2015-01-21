@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754883AbbAUQ4W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 11:56:22 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:42795 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753990AbbAUQwY (ORCPT
+	id S1754898AbbAUQ4b (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 11:56:31 -0500
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:37326 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753695AbbAUQwW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 11:52:24 -0500
-X-AuditID: cbfec7f4-b7f126d000001e9a-8b-54bfd8acf197
+	Wed, 21 Jan 2015 11:52:22 -0500
+X-AuditID: cbfec7f5-b7fc86d0000066b7-8d-54bfd8ada642
 From: Andrey Ryabinin <a.ryabinin@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
@@ -23,64 +23,99 @@ Cc: Andrey Ryabinin <a.ryabinin@samsung.com>,
         Dave Hansen <dave.hansen@intel.com>, Andi Kleen <andi@firstfloor.org>,
         x86@kernel.org, linux-mm@kvack.org, Pekka Enberg <penberg@kernel.org>,
         David Rientjes <rientjes@google.com>
-Subject: [PATCH v9 05/17] mm: slub: share object_err function
-Date: Wed, 21 Jan 2015 19:51:33 +0300
-Message-id: <1421859105-25253-6-git-send-email-a.ryabinin@samsung.com>
+Subject: [PATCH v9 06/17] mm: slub: introduce
+ metadata_access_enable()/metadata_access_disable()
+Date: Wed, 21 Jan 2015 19:51:34 +0300
+Message-id: <1421859105-25253-7-git-send-email-a.ryabinin@samsung.com>
 X-Mailer: git-send-email 2.2.1
 In-reply-to: <1421859105-25253-1-git-send-email-a.ryabinin@samsung.com>
 References: <1404905415-9046-1-git-send-email-a.ryabinin@samsung.com>
  <1421859105-25253-1-git-send-email-a.ryabinin@samsung.com>
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrPLMWRmVeSWpSXmKPExsVy+t/xq7prbuwPMWhexG2x7dcjNovfe2ey
-	WsxZv4bN4si17+wW17+9YbT49PIBo8Xzhw/ZLSY8bGO3WNndzGax/dlbJouVnQ9YLS7vmsNm
-	cW/Nf1aLts//gMSSjUwWi4/cZrZ492wys8WPDY9ZHYQ85u/8yOixc9Zddo8Fm0o9Fu95yeSx
-	aVUnm8emT5PYPbreXmHyODHjN4vHkyvTmTw+Pr3F4tG3ZRWjx+dNcgE8UVw2Kak5mWWpRfp2
-	CVwZFzb+Zy7o5qzYdHktUwPjBvYuRk4OCQETiY1bHrNC2GISF+6tZ+ti5OIQEljKKHHnwXxG
-	CKePSWLyrV6wDjYBPYl/s7azgdgiAgoSm3ufsYIUMQt8ZpF43HUNKMHBISxgK/GrTQDEZBFQ
-	lTi9KgSknFfATWLe6TVMEMvkJDbeWQG2mFPAXWLm+YlMELuaGCU+H9nONoGRdwEjwypG0dTS
-	5ILipPRcQ73ixNzi0rx0veT83E2MkEj4soNx8TGrQ4wCHIxKPLwVoftDhFgTy4orcw8xSnAw
-	K4nwzr8OFOJNSaysSi3Kjy8qzUktPsTIxMEp1cC4eWNH/BW7k0fVnh/sV9deXPLc4O2MM7uF
-	6nfqr1DcVnrFxyQ7RM2R6aDj8WoRiR/qt88bve/hXr322qm9RmvecWYLrL3/SHCpuYjuhZwV
-	HW9y1/KdOmbCekNeUN3wgtGi/tBD89etUK/J2CKe5+nYlf9Ka06Q1PJDmULfE1jMjT54HGQ5
-	M4VLiaU4I9FQi7moOBEAgQTWuGICAAA=
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrILMWRmVeSWpSXmKPExsVy+t/xq7prb+wPMfi+RsZi269HbBa/985k
+	tZizfg2bxZFr39ktrn97w2jx6eUDRovnDx+yW0x42MZusbK7mc1i+7O3TBYrOx+wWlzeNYfN
+	4t6a/6wWbZ//AYklG5ksFh+5zWzx7tlkZosfGx6zOgh5zN/5kdFj56y77B4LNpV6LN7zkslj
+	06pONo9Nnyaxe3S9vcLkcWLGbxaPJ1emM3l8fHqLxaNvyypGj8+b5AJ4orhsUlJzMstSi/Tt
+	ErgylpzbyVJwmr/ixotWxgbGyzxdjJwcEgImEkuefWSHsMUkLtxbz9bFyMUhJLCUUeLP5StM
+	EE4fk8Tc5l42kCo2AT2Jf7O2g9kiAgoSm3ufsYIUMQt8ZpF43HUNLCEskCSxesFVFhCbRUBV
+	4uWeNkYQm1fATWLa7XfMEOvkJDbeWcEKYnMKuEvMPD8RalsTo8TnI9vZJjDyLmBkWMUomlqa
+	XFCclJ5rpFecmFtcmpeul5yfu4kREg1fdzAuPWZ1iFGAg1GJh1fCZ3+IEGtiWXFl7iFGCQ5m
+	JRHe+deBQrwpiZVVqUX58UWlOanFhxiZODilGhgvVC9uP/95OefWhwHcTB5Hfi5/UlU1ZWbN
+	btWbVpbL7vpkdb6NO9NkXylSf2zuxYDz7KfEnJzUdsi7yy990hKVEyMV+Loi63DgenuW6dnr
+	LU2SL/bd23b99W/Du4ZWp/he1pRv0JrU5Blx3ON7iT3nDF61T6kPzzEXR8ve7ypbbfJyYfv7
+	aXOUWIozEg21mIuKEwFVS8SZZAIAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove static and add function declarations to
-linux/slub_def.h so it could be used by kernel
-address sanitizer.
+Wrap access to object's metadata in external functions with
+metadata_access_enable()/metadata_access_disable() function calls.
+
+This hooks separates payload accesses from metadata accesses
+which might be useful for different checkers (e.g. KASan).
 
 Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
 ---
- include/linux/slub_def.h | 3 +++
- mm/slub.c                | 2 +-
- 2 files changed, 4 insertions(+), 1 deletion(-)
+ mm/slub.c | 16 ++++++++++++++++
+ 1 file changed, 16 insertions(+)
 
-diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
-index c75bc1d..d7d9f26 100644
---- a/include/linux/slub_def.h
-+++ b/include/linux/slub_def.h
-@@ -115,4 +115,7 @@ static inline void *virt_to_obj(struct kmem_cache *s, void *slab_page, void *x)
- 	return x - ((x - slab_page) % s->size);
- }
- 
-+void object_err(struct kmem_cache *s, struct page *page,
-+		u8 *object, char *reason);
-+
- #endif /* _LINUX_SLUB_DEF_H */
 diff --git a/mm/slub.c b/mm/slub.c
-index fe376fe..18777c9 100644
+index 18777c9..9747976 100644
 --- a/mm/slub.c
 +++ b/mm/slub.c
-@@ -629,7 +629,7 @@ static void print_trailer(struct kmem_cache *s, struct page *page, u8 *p)
- 	dump_stack();
+@@ -467,13 +467,23 @@ static int slub_debug;
+ static char *slub_debug_slabs;
+ static int disable_higher_order_debug;
+ 
++static inline void metadata_access_enable(void)
++{
++}
++
++static inline void metadata_access_disable(void)
++{
++}
++
+ /*
+  * Object debugging
+  */
+ static void print_section(char *text, u8 *addr, unsigned int length)
+ {
++	metadata_access_enable();
+ 	print_hex_dump(KERN_ERR, text, DUMP_PREFIX_ADDRESS, 16, 1, addr,
+ 			length, 1);
++	metadata_access_disable();
  }
  
--static void object_err(struct kmem_cache *s, struct page *page,
-+void object_err(struct kmem_cache *s, struct page *page,
- 			u8 *object, char *reason)
- {
- 	slab_bug(s, "%s", reason);
+ static struct track *get_track(struct kmem_cache *s, void *object,
+@@ -503,7 +513,9 @@ static void set_track(struct kmem_cache *s, void *object,
+ 		trace.max_entries = TRACK_ADDRS_COUNT;
+ 		trace.entries = p->addrs;
+ 		trace.skip = 3;
++		metadata_access_enable();
+ 		save_stack_trace(&trace);
++		metadata_access_disable();
+ 
+ 		/* See rant in lockdep.c */
+ 		if (trace.nr_entries != 0 &&
+@@ -677,7 +689,9 @@ static int check_bytes_and_report(struct kmem_cache *s, struct page *page,
+ 	u8 *fault;
+ 	u8 *end;
+ 
++	metadata_access_enable();
+ 	fault = memchr_inv(start, value, bytes);
++	metadata_access_disable();
+ 	if (!fault)
+ 		return 1;
+ 
+@@ -770,7 +784,9 @@ static int slab_pad_check(struct kmem_cache *s, struct page *page)
+ 	if (!remainder)
+ 		return 1;
+ 
++	metadata_access_enable();
+ 	fault = memchr_inv(end - remainder, POISON_INUSE, remainder);
++	metadata_access_disable();
+ 	if (!fault)
+ 		return 1;
+ 	while (end > fault && end[-1] == POISON_INUSE)
 -- 
 2.2.1
 
