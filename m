@@ -1,86 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454AbbAUOGL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 09:06:11 -0500
-Received: from mail-vc0-f180.google.com ([209.85.220.180]:36644 "EHLO
-	mail-vc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751597AbbAUOGF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 09:06:05 -0500
+	id S1753505AbbAUOGt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 09:06:49 -0500
+Received: from cantor2.suse.de ([195.135.220.15]:54083 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751597AbbAUOGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 09:06:40 -0500
+Date: Wed, 21 Jan 2015 15:06:38 +0100 (CET)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Li Bin <huawei.libin@huawei.com>
+cc: Josh Poimboeuf <jpoimboe@redhat.com>, Seth Jennings <sjenning@redhat.com>,
+        Vojtech Pavlik <vojtech@suse.cz>, Jiri Slaby <jslaby@suse.cz>,
+        Miroslav Benes <mbenes@suse.cz>, live-patching@vger.kernel.org,
+        linux-kernel@vger.kernel.org, lizefan@huawei.com, guohanjun@huawei.com,
+        zhangdianfang@huawei.com, xiexiuqi@huawei.com
+Subject: Re: [PATCH 1/2] livepatch: Revert "livepatch: enforce patch stacking
+ semantics"
+In-Reply-To: <1421831262-27869-2-git-send-email-huawei.libin@huawei.com>
+Message-ID: <alpine.LNX.2.00.1501211505180.10817@pobox.suse.cz>
+References: <1421831262-27869-1-git-send-email-huawei.libin@huawei.com> <1421831262-27869-2-git-send-email-huawei.libin@huawei.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20150121132308.GB23700@dhcp22.suse.cz>
-References: <20150121132308.GB23700@dhcp22.suse.cz>
-Date: Wed, 21 Jan 2015 15:06:03 +0100
-Message-ID: <CAJKOXPdgSsd8cr7ctKOGCwFTRMxcq71k7Pb5mQgYy--tGW8+_w@mail.gmail.com>
-Subject: Re: mmotm: mm-slub-optimize-alloc-free-fastpath-by-removing-preemption-on-off.patch
- is causing preemptible splats
-From: =?UTF-8?Q?Krzysztof_Koz=C5=82owski?= <k.kozlowski.k@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Christoph Lameter <cl@linux.com>,
-        Jesper Dangaard Brouer <brouer@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2015-01-21 14:23 GMT+01:00 Michal Hocko <mhocko@suse.cz>:
-> Hi,
-> I am getting tons of splats like this:
-> [ 187.593291] BUG: using smp_processor_id() in preemptible [00000000] code: kworker/u4:1/24
-> [ 187.593293] caller is debug_smp_processor_id+0x17/0x19
-> [ 187.599127] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.7.5-20140531_083030-gandalf 04/01/2014
-> [  187.601997]  ffffffff8181786e ffff8800068a3d78 ffffffff8151a4b8 ffffffff81078e0e
-> [  187.604373]  0000000000000000 ffff8800068a3da8 ffffffff81280ac0 ffff8800068acac8
-> [  187.606619]  00000000000029b2 ffff880007401500 00000000000000d0 ffff8800068a3db8
-> [  187.608869] Call Trace:
-> [  187.609602]  [<ffffffff8151a4b8>] dump_stack+0x4f/0x7c
-> [  187.615881]  [<ffffffff81078e0e>] ? down_trylock+0x2d/0x37
-> [  187.617468]  [<ffffffff81280ac0>] check_preemption_disabled+0xe7/0xf9
-> [  187.619295]  [<ffffffff81280ae9>] debug_smp_processor_id+0x17/0x19
-> [  187.621055]  [<ffffffff8113b2f6>] kmem_cache_alloc_trace+0x78/0x22e
-> [  187.622854]  [<ffffffff81088d36>] ? do_syslog+0xb2/0x452
-> [  187.624376]  [<ffffffff81088d36>] do_syslog+0xb2/0x452
-> [  187.626030]  [<ffffffff811675b4>] ? __fdget_pos+0x3d/0x43
-> [  187.627557]  [<ffffffff810745ac>] ? wait_woken+0x5d/0x5d
-> [  187.629073]  [<ffffffff811675b4>] ? __fdget_pos+0x3d/0x43
-> [  187.630611]  [<ffffffff811a787b>] kmsg_read+0x2d/0x54
-> [  187.632069]  [<ffffffff8119c4ff>] proc_reg_read+0x4a/0x6c
-> [  187.633775]  [<ffffffff8114e4d8>] vfs_read+0xa5/0x141
-> [  187.635242]  [<ffffffff8114ee35>] SyS_read+0x51/0x8f
-> [  187.636666]  [<ffffffff81522892>] system_call_fastpath+0x12/0x17
+On Wed, 21 Jan 2015, Li Bin wrote:
 
-Same here :) [1] . So actually only ARM seems affected (both armv7 and
-armv8) because it is the only one which uses smp_processor_id() in
-my_cpu_offset.
+> This reverts commit 83a90bb1345767f0cb96d242fd8b9db44b2b0e17.
+> 
+> The method that only allowing the topmost patch on the stack to be
+> enabled or disabled is unreasonable. Such as the following case:
+> 
+> 	- do live patch1
+> 	- disable patch1
+> 	- do live patch2 //error
+>
+> Now, we will never be able to do new live patch unless disabing the
+> patch1 although there is no dependencies.
 
-[1] https://lkml.org/lkml/2015/1/20/162
+Unregistering disabled patch still works and removes it from the list no 
+matter the position.
 
-Best regards,
-Krzysztof
+So what exactly is the problem?
 
->
-> $ grep "BUG: using smp_processor_id" mmap.qcow_serial.log | wc -l
-> 660
-> after few minutes of runtime when running the current mmotm tree
-> (https://git.kernel.org/cgit/linux/kernel/git/mhocko/mm.git/log/?h=since-3.18).
->
-> The warning seems to come from this_cpu_ptr which is using my_cpu_offset
-> which is
-> #define my_cpu_offset per_cpu_offset(smp_processor_id())
-> if CONFIG_DEBUG_PREEMPT
->
-> So it matches the following code in slab_alloc_node resp. slab_free:
->         do {
->                 tid = this_cpu_read(s->cpu_slab->tid);
->                 c = this_cpu_ptr(s->cpu_slab); <<< HERE
->         } while (IS_ENABLED(CONFIG_PREEMPT) && unlikely(tid != c->tid));
->
-> This is with:
-> CONFIG_PREEMPT=y
-> CONFIG_PREEMPT_COUNT=y
-> CONFIG_DEBUG_PREEMPT=y
->
-> I am not sure how to fix this but it sounds like this_cpu_ptr should
-> offer the same preempt expectations as other this_cpu_* functions.
+-- 
+Jiri Kosina
+SUSE Labs
