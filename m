@@ -1,99 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995AbbAUDqH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 22:46:07 -0500
-Received: from ozlabs.org ([103.22.144.67]:55822 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751887AbbAUDqF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 22:46:05 -0500
-Date: Wed, 21 Jan 2015 14:45:58 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jens Axboe <axboe@kernel.dk>, Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Oleg Drokin <oleg.drokin@intel.com>,
-        Andreas Dilger <andreas.dilger@intel.com>,
-        Christoph Hellwig <hch@lst.de>
-Subject: linux-next: build failure after merge of the block tree
-Message-ID: <20150121144558.79cb2056@canb.auug.org.au>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+	id S1754011AbbAUDtL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 22:49:11 -0500
+Received: from userp1040.oracle.com ([156.151.31.81]:28223 "EHLO
+	userp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751880AbbAUDtI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 22:49:08 -0500
+Message-ID: <54BF21AA.5010601@oracle.com>
+Date: Tue, 20 Jan 2015 22:48:58 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/xTXcvTiRVXiAda2gd6Tm9Jj"; protocol="application/pgp-signature"
+To: Paul Moore <pmoore@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-audit@redhat.com
+CC: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] fs: create proper filename objects using getname_kernel()
+References: <20150119200408.29706.24386.stgit@localhost> <20150119200808.29706.73419.stgit@localhost>
+In-Reply-To: <20150119200808.29706.73419.stgit@localhost>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/xTXcvTiRVXiAda2gd6Tm9Jj
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+On 01/19/2015 03:08 PM, Paul Moore wrote:
+> There are several areas in the kernel that create temporary filename
+> objects using the following pattern:
+> 
+> 	int func(const char *name)
+> 	{
+> 		struct filename *file = { .name = name };
+> 		...
+> 		return 0;
+> 	}
+> 
+> ... which for the most part works okay, but it causes havoc within the
+> audit subsystem as the filename object does not persist beyond the
+> lifetime of the function.  This patch converts all of these temporary
+> filename objects into proper filename objects using getname_kernel()
+> and putname() which ensure that the filename object persists until the
+> audit subsystem is finished with it.
 
-Hi Jens,
+Hi Paul,
 
-After merging the block tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
+With this patch (bisected) my vm fails to boot with a virtio-9p rootfs:
 
-drivers/staging/lustre/lustre/llite/llite_lib.c: In function 'll_read_inode=
-2':
-drivers/staging/lustre/lustre/llite/llite_lib.c:1774:18: error: 'struct add=
-ress_space' has no member named 'backing_dev_info'
-  inode->i_mapping->backing_dev_info =3D &s2lsi(inode->i_sb)->lsi_bdi;
-                  ^
+[   27.313687] fa00         2097152 vda  driver: virtio_blk
+[   27.314218] 103:00000       8192 sda  driver: sd
+[   27.314714] DEBUG_BLOCK_EXT_DEVT is enabled, you need to specify explicit textual name for "root=" boot option.
+[   27.315963] Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(0,0)
+[   27.316885] CPU: 29 PID: 1 Comm: swapper/0 Not tainted 3.19.0-rc5-next-20150120-sasha-00053-gb2e3c55-dirty #1772
+[   27.316885]  ffffffffffffffff ffff88005cb8bd28 ffffffffb14522b5 000000000000004e
+[   27.316885]  ffffffffb26d4950 ffff88005cb8bda8 ffffffffb144c298 ffff88005cb8bd48
+[   27.316885]  ffffffff00000010 ffff88005cb8bdb8 ffff88005cb8bd58 fffffffffffffffe
+[   27.316885] Call Trace:
+[   27.316885]  [<ffffffffb14522b5>] dump_stack+0x4f/0x7b
+[   27.316885]  [<ffffffffb144c298>] panic+0xd2/0x216
+[   27.316885]  [<ffffffffb431558b>] mount_block_root+0x18b/0x244
+[   27.316885]  [<ffffffffb43158ae>] mount_root+0x128/0x133
+[   27.316885]  [<ffffffffb4315a1b>] prepare_namespace+0x162/0x19b
+[   27.316885]  [<ffffffffb4315223>] kernel_init_freeable+0x285/0x29a
+[   27.316885]  [<ffffffffb14472b0>] ? rest_init+0xd0/0xd0
+[   27.316885]  [<ffffffffb14472be>] kernel_init+0xe/0xf0
+[   27.316885]  [<ffffffffb148007c>] ret_from_fork+0x7c/0xb0
+[   27.316885]  [<ffffffffb14472b0>] ? rest_init+0xd0/0xd0
+[   27.316885] Dumping ftrace buffer:
+[   27.316885]    (ftrace buffer empty)
+[   27.316885] Kernel Offset: 0x2d000000 from 0xffffffff81000000 (relocation range: 0xffffffff80000000-0xffffffffbfffffff)
+[   27.316885] Rebooting in 1 seconds..
 
-Caused by commit b83ae6d42143 ("fs: remove mapping->backing_dev_info")
-not updating the lustre code in the staging tree.
+virtio-9p is not even listed as an option now.
 
-I have disabled the lustre code for today using the following.  Please
-let me know if you fix the lustre code so that I can reenable it.
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Wed, 21 Jan 2015 14:36:21 +1100
-Subject: [PATCH] disable the lustre code for now
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/staging/lustre/lustre/Kconfig | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/staging/lustre/lustre/Kconfig b/drivers/staging/lustre=
-/lustre/Kconfig
-index 6725467ef4d0..37dd33f6597e 100644
---- a/drivers/staging/lustre/lustre/Kconfig
-+++ b/drivers/staging/lustre/lustre/Kconfig
-@@ -1,6 +1,7 @@
- config LUSTRE_FS
- 	tristate "Lustre file system client support"
- 	depends on INET && m && !MIPS && !XTENSA && !SUPERH
-+	depends on BROKEN
- 	select LNET
- 	select CRYPTO
- 	select CRYPTO_CRC32
---=20
-2.1.4
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/xTXcvTiRVXiAda2gd6Tm9Jj
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUvyD7AAoJEMDTa8Ir7ZwVMZ4P+QGvKVp/QpLbIJg52ORh7rQ6
-RJqX0T1aW3dQ41IpqBMBARjztctWxUinr93AwMVHSUPso1I1rA58c6R0r4ivpoAS
-+an8UyMAJ67qG4r+ULnL9mnUjpRofPT/itKovR2OFJiLPKN7HAW5sVkFiG7KmogT
-Ws8PSQL8JJmL4GNKWYikmiIdsYr2nt55pzdpLVoa9fZcj0yKPiEl2RrHpW8uYQqd
-ACNhWHO842StArl8kE4vGtFMbUdtnf3jM2C7+pv+W41cppZMeLYBdlg9bZ5XEebj
-nEJMyfILjopBAa+2reKM08NJWLgQT+/Qbn++90YtSKvAT/V1sdCdO9Nap3PT6Ows
-2guEdmzM2HZOVuYKy9FOmOnzFIwUjye3rCQ+8lG4QPXNbAT56/Pn5bUKUbTTRQNr
-wyjM8BGTmXgMo9fawVBccu+F8jOC6lfWNpcZxuHjLJGXKgJgmnP7Ran6VW9Ir4aB
-gqbFOIgMdgMB8wNzGH7Ff3PfcagOR/glFqiR5E8bAT82akyyITiYYEC5Krc+QLfD
-BQBE2qE0FlXAa6Ni1eJQt1bHy7G6jlcmhaCVh4usF9T9D+L+8qiqjU9LXPgtRTQu
-u9Ljihyzv3DMy/l5tfLOdCGRhiGp0CbhJWLZux2jNA1u3zgwQxROUXeu2vyQaxTm
-wbGfxPCJhqiHSfyWcTR2
-=5urv
------END PGP SIGNATURE-----
-
---Sig_/xTXcvTiRVXiAda2gd6Tm9Jj--
+Thanks,
+Sasha
