@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754018AbbAUERZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 23:17:25 -0500
-Received: from mail-pa0-f45.google.com ([209.85.220.45]:60050 "EHLO
-	mail-pa0-f45.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751853AbbAUERY (ORCPT
+	id S1754166AbbAUERe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 23:17:34 -0500
+Received: from mail-pa0-f49.google.com ([209.85.220.49]:37899 "EHLO
+	mail-pa0-f49.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754060AbbAUER3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 23:17:24 -0500
+	Tue, 20 Jan 2015 23:17:29 -0500
 From: Sumit Semwal <sumit.semwal@linaro.org>
 To: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
         dri-devel@lists.freedesktop.org, linaro-mm-sig@lists.linaro.org,
@@ -14,49 +14,79 @@ To: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
 Cc: linaro-kernel@lists.linaro.org, robdclark@gmail.com, daniel@ffwll.ch,
         m.szyprowski@samsung.com, t.stanislaws@samsung.com,
         Sumit Semwal <sumit.semwal@linaro.org>
-Subject: [RFCv2 0/2] dma-parms, constraints and helpers for dma-buf
-Date: Wed, 21 Jan 2015 09:46:45 +0530
-Message-Id: <1421813807-9178-1-git-send-email-sumit.semwal@linaro.org>
+Subject: [RFCv2 1/2] device: add dma_params->max_segment_count
+Date: Wed, 21 Jan 2015 09:46:46 +0530
+Message-Id: <1421813807-9178-2-git-send-email-sumit.semwal@linaro.org>
 X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1421813807-9178-1-git-send-email-sumit.semwal@linaro.org>
+References: <1421813807-9178-1-git-send-email-sumit.semwal@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Everyone,
+From: Rob Clark <robdclark@gmail.com>
 
-Based on review comments received, I've split my earlier patchset on
-'dma-buf constraints-enabled allocation' [1] into 2 sets:
-- first one is this one, to use dma_parms and related parameters from
-   struct device to share constraints, and then to use these constraints in
-   dma-buf to help find the least common constraint set that could then be
-   used by exporters to decide on allocation.
+For devices which have constraints about maximum number of segments in
+an sglist.  For example, a device which could only deal with contiguous
+buffers would set max_segment_count to 1.
 
-   This is a partial re-write of what Rob Clark proposed some while ago [2];
-   I've tried to take care of review comments on his patchset, but any errors
-   and omissions are, ofcourse, mine.
+The initial motivation is for devices sharing buffers via dma-buf,
+to allow the buffer exporter to know the constraints of other
+devices which have attached to the buffer.  The dma_mask and fields
+in 'struct device_dma_parameters' tell the exporter everything else
+that is needed, except whether the importer has constraints about
+maximum number of segments.
 
-- Second part, one which I'm working on, and will post soon, aims at adding
-   allocator-helpers in dma-buf framework which could use this constraint
-   information to help choose the right allocator from a list.
+Signed-off-by: Rob Clark <robdclark@gmail.com>
+ [sumits: Minor updates wrt comments on the first version]
+Signed-off-by: Sumit Semwal <sumit.semwal@linaro.org>
+---
+ include/linux/device.h      |  1 +
+ include/linux/dma-mapping.h | 19 +++++++++++++++++++
+ 2 files changed, 20 insertions(+)
 
-While I work on the second part, I thought of sending the RFC for this one,
-to get feedback on whether this mechanism seems ok to everyone.
-
-[1] https://lkml.org/lkml/2014/10/10/340
-[2] https://lkml.org/lkml/2012/7/19/285
-
-Rob Clark (1):
-  device: add dma_params->max_segment_count
-
-Sumit Semwal (1):
-  dma-buf: add helpers for sharing attacher constraints with dma-parms
-
- drivers/dma-buf/dma-buf.c   | 134 +++++++++++++++++++++++++++++++++++++++++++-
- include/linux/device.h      |   1 +
- include/linux/dma-buf.h     |  22 ++++++++
- include/linux/dma-mapping.h |  19 +++++++
- 4 files changed, 175 insertions(+), 1 deletion(-)
-
+diff --git a/include/linux/device.h b/include/linux/device.h
+index fb50673..a32f9b6 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -647,6 +647,7 @@ struct device_dma_parameters {
+ 	 * sg limitations.
+ 	 */
+ 	unsigned int max_segment_size;
++	unsigned int max_segment_count;    /* INT_MAX for unlimited */
+ 	unsigned long segment_boundary_mask;
+ };
+ 
+diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
+index c3007cb..38e2835 100644
+--- a/include/linux/dma-mapping.h
++++ b/include/linux/dma-mapping.h
+@@ -154,6 +154,25 @@ static inline unsigned int dma_set_max_seg_size(struct device *dev,
+ 		return -EIO;
+ }
+ 
++#define DMA_SEGMENTS_MAX_SEG_COUNT ((unsigned int) INT_MAX)
++
++static inline unsigned int dma_get_max_seg_count(struct device *dev)
++{
++	return dev->dma_parms ?
++			dev->dma_parms->max_segment_count :
++			DMA_SEGMENTS_MAX_SEG_COUNT;
++}
++
++static inline int dma_set_max_seg_count(struct device *dev,
++						unsigned int count)
++{
++	if (dev->dma_parms) {
++		dev->dma_parms->max_segment_count = count;
++		return 0;
++	} else
++		return -EIO;
++}
++
+ static inline unsigned long dma_get_seg_boundary(struct device *dev)
+ {
+ 	return dev->dma_parms ?
 -- 
 1.9.1
 
