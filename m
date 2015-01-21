@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753898AbbAUXot (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 18:44:49 -0500
+	id S1754502AbbAUXqr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 18:46:47 -0500
 Received: from mailout1.samsung.com ([203.254.224.24]:54584 "EHLO
 	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753186AbbAUXom (ORCPT
+	with ESMTP id S1753451AbbAUXon (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 18:44:42 -0500
-X-AuditID: cbfee68d-f79296d000004278-ea-54c039e7833b
+	Wed, 21 Jan 2015 18:44:43 -0500
+X-AuditID: cbfee68f-f791c6d000004834-10-54c039e8ac88
 From: Chanwoo Choi <cw00.choi@samsung.com>
 To: s.nawrocki@samsung.com, tomasz.figa@gmail.com, mturquette@linaro.org
 Cc: kgene@kernel.org, pankaj.dubey@samsung.com, inki.dae@samsung.com,
         chanho61.park@samsung.com, sw0312.kim@samsung.com,
         cw00.choi@samsung.com, linux-samsung-soc@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 0/9] clk: samsung: Add clocks for remaining domains of
- Exynos5433
-Date: Thu, 22 Jan 2015 08:44:29 +0900
-Message-id: <1421883878-4980-1-git-send-email-cw00.choi@samsung.com>
+Subject: [PATCH 1/9] clk: samsung: exynos5433: Add clocks for CMU_APOLLO domain
+Date: Thu, 22 Jan 2015 08:44:30 +0900
+Message-id: <1421883878-4980-2-git-send-email-cw00.choi@samsung.com>
 X-Mailer: git-send-email 1.8.5.5
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFrrMLMWRmVeSWpSXmKPExsWyRsSkRPeF5YEQgwttTBaX92tbXP/ynNVi
-	0v0JLBb9j18zW1zeNYfNYsb5fUwWTydcZLNYtPULu8XhN+2sFjMmv2SzWLXrD6MDt8fOWXfZ
-	PTat6mTzuHNtD5tH35ZVjB6fN8kFsEZx2aSk5mSWpRbp2yVwZcxc9JOx4D1vxZH9qQ2M7dxd
-	jJwcEgImEhPuL2SEsMUkLtxbz9bFyMUhJLCUUWLylNWsMEX79y9i7mLkAEpMZ5Q47wESFhJo
-	YpI4csUMxGYT0JLY/+IGG4gtIuAhcfrZTRaQOcwClxklVneeAusVFgiWOPAGbBeLgKrEzbtz
-	wOp5BVwk2h6vYIFYpSCxbPlMVpBeCYF57BLv++4xQTQISHybfIgFZI6EgKzEpgPMEPWSEgdX
-	3GCZwCi4gJFhFaNoakFyQXFSepGhXnFibnFpXrpecn7uJkZgWJ/+96x3B+PtA9aHGAU4GJV4
-	eF8o7g8RYk0sK67MPcRoCrRhIrOUaHI+MHrySuINjc2MLExNTI2NzC3NlMR5FaV+BgsJpCeW
-	pGanphakFsUXleakFh9iZOLglGpgjFgifGv1p5boRSd/n+X4K3PlnfA2nphjvad8zggulVoS
-	8Xz6hddXD2hG+a2tVeMvvTPBPiXr5j6X/bvj4yOWT3MNcpBqb5YI/XOaz2VN1roC/nC7F3cT
-	ptYWtidU19yIP1m47k2GYO+kQxI1V6enisnFvzx7vCPPSE0kSffUNm7BzI+xKaKnlViKMxIN
-	tZiLihMBpKFPC2YCAAA=
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFprLIsWRmVeSWpSXmKPExsVy+t9jQd3nlgdCDN7ONbO4vF/b4vqX56wW
-	k+5PYLHof/ya2eLyrjlsFjPO72OyeDrhIpvFoq1f2C0Ov2lntZgx+SWbxapdfxgduD12zrrL
-	7rFpVSebx51re9g8+rasYvT4vEkugDWqgdEmIzUxJbVIITUvOT8lMy/dVsk7ON453tTMwFDX
-	0NLCXEkhLzE31VbJxSdA1y0zB+g0JYWyxJxSoFBAYnGxkr4dpgmhIW66FjCNEbq+IUFwPUYG
-	aCBhDWPGzEU/GQve81Yc2Z/awNjO3cXIySEhYCKxf/8iZghbTOLCvfVsXYwcHEIC0xklznuA
-	hIUEmpgkjlwxA7HZBLQk9r+4wQZiiwh4SJx+dpOli5GLg1ngMqPE6s5TzCC9wgLBEgfeMILU
-	sAioSty8OwesnlfARaLt8QoWiFUKEsuWz2SdwMi9gJFhFaNoakFyQXFSeq6hXnFibnFpXrpe
-	cn7uJkZw1DyT2sG4ssHiEKMAB6MSD+8Lxf0hQqyJZcWVuYcYJTiYlUR4PTQOhAjxpiRWVqUW
-	5ccXleakFh9iNAXaPpFZSjQ5HxjReSXxhsYmZkaWRuaGFkbG5krivEr2bSFCAumJJanZqakF
-	qUUwfUwcnFINjO5cP25NLlM90VzRa+4/K2dJsMyBW2HcV//eLJ2fobj27JbHX+e9/Pvp5f1I
-	ay7RX0menbePLplyLrrI4Mr9AzadPW/fCVTatLbbKKqkZwTkyfVc5JbQeJ71PKHRwGnLFZPn
-	Oj9MeHxeM7PdEhGdMzVjUUDDj6fv+0VrDx/fLKUxXc7W1/yFhRJLcUaioRZzUXEiAJH2EVWw	AgAA
+In-reply-to: <1421883878-4980-1-git-send-email-cw00.choi@samsung.com>
+References: <1421883878-4980-1-git-send-email-cw00.choi@samsung.com>
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrPLMWRmVeSWpSXmKPExsWyRsSkRPeF5YEQgztfuC0u79e2uP7lOavF
+	pPsTWCz6H79mtri8aw6bxYzz+5gsnk64yGaxaOsXdovDb9pZLWZMfslmsWrXH0YHbo+ds+6y
+	e2xa1cnmcefaHjaPvi2rGD0+b5ILYI3isklJzcksSy3St0vgytjwq5et4HBIxdzXS1gbGKd7
+	dDFyckgImEhs/TeVEcIWk7hwbz1bFyMXh5DAUkaJGW/3ssAU/Xq2igkiMZ1R4vqiFWAdQgJN
+	TBJHrpiB2GwCWhL7X9xgA7FFBDwkTj+7yQLSwCxwmVFidecpZpCEsIC/xM+uVewgNouAqsTD
+	6+2sIDavgIvEj84tUGcoSCxbPhMszingKtHcOZEFYpmLxML1x8GukBDYxS6x88J3JohBAhLf
+	Jh8CKuIASshKbDrADDFHUuLgihssExiFFzAyrGIUTS1ILihOSi8y1itOzC0uzUvXS87P3cQI
+	jIfT/57172C8e8D6EKMAB6MSD+8Lxf0hQqyJZcWVuYcYTYE2TGSWEk3OB0ZdXkm8obGZkYWp
+	iamxkbmlmZI470Kpn8FCAumJJanZqakFqUXxRaU5qcWHGJk4OKUaGN1D17LMeXrxvnuJ/4w3
+	1y8XRLCv8ukwdtR9ucx2orR6JvdUrrwNj3REpqjf9DQ9JSDMYu0nYr5Gq5L16ROT9LiZkTeD
+	+iy3brqv+fmFxQaF9pQiZt321VusdS5tndB8k2WrYZtGANu/0HLVf/9s1TOl2wor9u88cEI6
+	9ERgdEN02Am5M1OuKbEUZyQaajEXFScCAAHUfEWCAgAA
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFtrBIsWRmVeSWpSXmKPExsVy+t9jQd0XlgdCDLrtLS7v17a4/uU5q8Wk
+	+xNYLPofv2a2uLxrDpvFjPP7mCyeTrjIZrFo6xd2i8Nv2lktZkx+yWaxatcfRgduj52z7rJ7
+	bFrVyeZx59oeNo++LasYPT5vkgtgjWpgtMlITUxJLVJIzUvOT8nMS7dV8g6Od443NTMw1DW0
+	tDBXUshLzE21VXLxCdB1y8wBukxJoSwxpxQoFJBYXKykb4dpQmiIm64FTGOErm9IEFyPkQEa
+	SFjDmLHhVy9bweGQirmvl7A2ME736GLk5JAQMJH49WwVE4QtJnHh3nq2LkYuDiGB6YwS1xet
+	YARJCAk0MUkcuWIGYrMJaEnsf3GDDcQWEfCQOP3sJgtIA7PAZUaJ1Z2nmEESwgL+Ej+7VrGD
+	2CwCqhIPr7ezgti8Ai4SPzq3MEJsU5BYtnwmWJxTwFWiuXMiC8QyF4mF648zTWDkXcDIsIpR
+	NLUguaA4KT3XUK84Mbe4NC9dLzk/dxMjONaeSe1gXNlgcYhRgINRiYf3heL+ECHWxLLiytxD
+	jBIczEoivB4aB0KEeFMSK6tSi/Lji0pzUosPMZoCXTWRWUo0OR+YBvJK4g2NTcyMLI3MDS2M
+	jM2VxHmV7NtChATSE0tSs1NTC1KLYPqYODilGhg553y63O/ZOK05QmJdy1rhWuv+EJ5F8lEb
+	JvGcmrVTq2Dn082GrCs+/j9qUjpLw7HIae4podkNfMWH1KILI77YavuXsDQeCDM+dqy5sunI
+	6Vqet4y5xyYvMjGX/ctt8jnxrmT9jCO2V1uEDp3a0Pwq8JUG44eDE72/HEzwrGUoaPl70v5V
+	TrESS3FGoqEWc1FxIgD4KlsWywIAAA==
 DLP-Filter: Pass
 X-MTR: 20000000000000000@CPGS
 X-CFilter-Loop: Reflected
@@ -50,43 +52,292 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset adds the support for following clock domains of Exynos5433
-and clkout drvier.
+This patch adds the mux/divider/gate clocks for CMU_APOLLO domain which
+generates the clocks for Cortex-A53 Quad-core processsor.
 
-Following clock domains has clocks for each IP.
-- CMU_APOLLO : clocks for Cortex-A53 Quad-core processor.
-- CMU_ATLAS  : clocks for Cortex-A57 Quad-core processor, CoreSight and
-               L2 cache controller.
-- CMU_MSCL   : clocks for M2M (Memory to Memory) scaler and JPEG IPs.
-- CMU_MFC    : clocks for MFC (Multi-Format Codec) IP.
-- CMU_HEVC   : clocks for HEVC(High Efficiency Video Codec) decoder IP.
-- CMU_ISP    : clocks for FIMC-ISP/DRC/SCLC/DIS/3DNR IPs.
-- CMU_CAM0   : clocks for MIPI_CSIS{0|1}/FIMC_LITE_{A|B|D}/FIMC_3AA{0|1} IPs.
-- CMU_CAM1   : clocks for COrtex-A5/MIPI_CSIS2/FIMC_LITE_C/FIMC-FD IPs.
+Cc: Sylwester Nawrocki <s.nawrocki@samsung.com>
+Cc: Tomasz Figa <tomasz.figa@gmail.com>
+Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+Acked-by: Inki Dae <inki.dae@samsung.com>
+---
+ .../devicetree/bindings/clock/exynos5433-clock.txt |   8 +
+ drivers/clk/samsung/clk-exynos5433.c               | 193 +++++++++++++++++++++
+ include/dt-bindings/clock/exynos5433.h             |  37 ++++
+ 3 files changed, 238 insertions(+)
 
-Depend on:
-[PATCH v3 00/12] clk: samsung: Add the support for exynos5433 clocks
-- https://lkml.org/lkml/2015/1/21/44
-
-Chanwoo Choi (8):
-  clk: samsung: exynos5433: Add clocks for CMU_APOLLO domain
-  clk: samsung: exynos5433: Add clocks for CMU_ATLAS domain
-  clk: samsung: exynos5433: Add clocks for CMU_MSCL domain
-  clk: samsung: exynos5433: Add clocks for CMU_MFC domain
-  clk: samsung: exynos5433: Add clocks for CMU_HEVC domain
-  clk: samsung: exynos5433: Add clocks for CMU_ISP domain
-  clk: samsung: exynos5433: Add clocks for CMU_CAM0 domain
-  clk: samsung: exynos5433: Add clocks for CMU_CAM1 domain
-
-Inha Song (1):
-  clk: samsung: Add CLKOUT driver support for Exynos5433 SoC.
-
- .../devicetree/bindings/clock/exynos5433-clock.txt |   66 +
- drivers/clk/samsung/clk-exynos-clkout.c            |    2 +
- drivers/clk/samsung/clk-exynos5433.c               | 2028 ++++++++++++++++++++
- include/dt-bindings/clock/exynos5433.h             |  548 +++++-
- 4 files changed, 2643 insertions(+), 1 deletion(-)
-
+diff --git a/Documentation/devicetree/bindings/clock/exynos5433-clock.txt b/Documentation/devicetree/bindings/clock/exynos5433-clock.txt
+index bf72817..18c51c1 100644
+--- a/Documentation/devicetree/bindings/clock/exynos5433-clock.txt
++++ b/Documentation/devicetree/bindings/clock/exynos5433-clock.txt
+@@ -32,6 +32,8 @@ Required Properties:
+     which generates clocks for 3D Graphics Engine IP.
+   - "samsung,exynos5433-cmu-gscl"  - clock controller compatible for CMU_GSCL
+     which generates clocks for GSCALER IPs.
++  - "samsung,exynos5433-cmu-apollo"- clock controller compatible for CMU_APOLLO
++    which generates clocks for Cortex-A53 Quad-core processor.
+ 
+ - reg: physical base address of the controller and length of memory mapped
+   region.
+@@ -131,6 +133,12 @@ Example 1: Examples of clock controller nodes are listed below.
+ 		#clock-cells = <1>;
+ 	};
+ 
++	cmu_apollo: clock-controller@11900000 {
++		compatible = "samsung,exynos5433-cmu-apollo";
++		reg = <0x11900000 0x1088>;
++		#clock-cells = <1>;
++	};
++
+ Example 2: UART controller node that consumes the clock generated by the clock
+ 	   controller.
+ 
+diff --git a/drivers/clk/samsung/clk-exynos5433.c b/drivers/clk/samsung/clk-exynos5433.c
+index 1d8d67a..37a5e78 100644
+--- a/drivers/clk/samsung/clk-exynos5433.c
++++ b/drivers/clk/samsung/clk-exynos5433.c
+@@ -3393,3 +3393,196 @@ static void __init exynos5433_cmu_gscl_init(struct device_node *np)
+ }
+ CLK_OF_DECLARE(exynos5433_cmu_gscl, "samsung,exynos5433-cmu-gscl",
+ 		exynos5433_cmu_gscl_init);
++
++/*
++ * Register offset definitions for CMU_APOLLO
++ */
++#define APOLLO_PLL_LOCK				0x0000
++#define APOLLO_PLL_CON0				0x0100
++#define APOLLO_PLL_CON1				0x0104
++#define APOLLO_PLL_FREQ_DET			0x010c
++#define MUX_SEL_APOLLO0				0x0200
++#define MUX_SEL_APOLLO1				0x0204
++#define MUX_SEL_APOLLO2				0x0208
++#define MUX_ENABLE_APOLLO0			0x0300
++#define MUX_ENABLE_APOLLO1			0x0304
++#define MUX_ENABLE_APOLLO2			0x0308
++#define MUX_STAT_APOLLO0			0x0400
++#define MUX_STAT_APOLLO1			0x0404
++#define MUX_STAT_APOLLO2			0x0408
++#define DIV_APOLLO0				0x0600
++#define DIV_APOLLO1				0x0604
++#define DIV_APOLLO_PLL_FREQ_DET			0x0608
++#define DIV_STAT_APOLLO0			0x0700
++#define DIV_STAT_APOLLO1			0x0704
++#define DIV_STAT_APOLLO_PLL_FREQ_DET		0x0708
++#define ENABLE_ACLK_APOLLO			0x0800
++#define ENABLE_PCLK_APOLLO			0x0900
++#define ENABLE_SCLK_APOLLO			0x0a00
++#define ENABLE_IP_APOLLO0			0x0b00
++#define ENABLE_IP_APOLLO1			0x0b04
++#define CLKOUT_CMU_APOLLO			0x0c00
++#define CLKOUT_CMU_APOLLO_DIV_STAT		0x0c04
++#define ARMCLK_STOPCTRL				0x1000
++#define APOLLO_PWR_CTRL				0x1020
++#define APOLLO_PWR_CTRL2			0x1024
++#define APOLLO_INTR_SPREAD_ENABLE		0x1080
++#define APOLLO_INTR_SPREAD_USE_STANDBYWFI	0x1084
++#define APOLLO_INTR_SPREAD_BLOCKING_DURATION	0x1088
++
++static unsigned long apollo_clk_regs[] __initdata = {
++	APOLLO_PLL_LOCK,
++	APOLLO_PLL_CON0,
++	APOLLO_PLL_CON1,
++	APOLLO_PLL_FREQ_DET,
++	MUX_SEL_APOLLO0,
++	MUX_SEL_APOLLO1,
++	MUX_SEL_APOLLO2,
++	MUX_ENABLE_APOLLO0,
++	MUX_ENABLE_APOLLO1,
++	MUX_ENABLE_APOLLO2,
++	MUX_STAT_APOLLO0,
++	MUX_STAT_APOLLO1,
++	MUX_STAT_APOLLO2,
++	DIV_APOLLO0,
++	DIV_APOLLO1,
++	DIV_APOLLO_PLL_FREQ_DET,
++	DIV_STAT_APOLLO0,
++	DIV_STAT_APOLLO1,
++	DIV_STAT_APOLLO_PLL_FREQ_DET,
++	ENABLE_ACLK_APOLLO,
++	ENABLE_PCLK_APOLLO,
++	ENABLE_SCLK_APOLLO,
++	ENABLE_IP_APOLLO0,
++	ENABLE_IP_APOLLO1,
++	CLKOUT_CMU_APOLLO,
++	CLKOUT_CMU_APOLLO_DIV_STAT,
++	ARMCLK_STOPCTRL,
++	APOLLO_PWR_CTRL,
++	APOLLO_PWR_CTRL2,
++	APOLLO_INTR_SPREAD_ENABLE,
++	APOLLO_INTR_SPREAD_USE_STANDBYWFI,
++	APOLLO_INTR_SPREAD_BLOCKING_DURATION,
++};
++
++/* list of all parent clock list */
++PNAME(mout_apollo_pll_p)		= { "fin_pll", "fout_apollo_pll", };
++PNAME(mout_bus_pll_apollo_user_p)	= { "fin_pll", "sclk_bus_pll_apollo", };
++PNAME(mout_apollo_p)			= { "mout_apollo_pll",
++					    "mout_bus_pll_apollo_user", };
++
++static struct samsung_pll_clock apollo_pll_clks[] __initdata = {
++	PLL(pll_35xx, CLK_FOUT_APOLLO_PLL, "fout_apollo_pll", "fin_pll",
++		APOLLO_PLL_LOCK, APOLLO_PLL_CON0, exynos5443_pll_rates),
++};
++
++static struct samsung_mux_clock apollo_mux_clks[] __initdata = {
++	/* MUX_SEL_APOLLO0 */
++	MUX_F(CLK_MOUT_APOLLO_PLL, "mout_apollo_pll", mout_apollo_pll_p,
++			MUX_SEL_APOLLO0, 0, 1, 0, CLK_MUX_READ_ONLY),
++
++	/* MUX_SEL_APOLLO1 */
++	MUX(CLK_MOUT_BUS_PLL_APOLLO_USER, "mout_bus_pll_apollo_user",
++			mout_bus_pll_apollo_user_p, MUX_SEL_APOLLO1, 0, 1),
++
++	/* MUX_SEL_APOLLO2 */
++	MUX_F(CLK_MOUT_APOLLO, "mout_apollo", mout_apollo_p, MUX_SEL_APOLLO2,
++			0, 1, 0, CLK_MUX_READ_ONLY),
++};
++
++static struct samsung_div_clock apollo_div_clks[] __initdata = {
++	/* DIV_APOLLO0 */
++	DIV_F(CLK_DIV_CNTCLK_APOLLO, "div_cntclk_apollo", "div_apollo2",
++			DIV_APOLLO0, 24, 3, CLK_GET_RATE_NOCACHE,
++			CLK_DIVIDER_READ_ONLY),
++	DIV_F(CLK_DIV_PCLK_DBG_APOLLO, "div_pclk_dbg_apollo", "div_apollo2",
++			DIV_APOLLO0, 20, 3, CLK_GET_RATE_NOCACHE,
++			CLK_DIVIDER_READ_ONLY),
++	DIV_F(CLK_DIV_ATCLK_APOLLO, "div_atclk_apollo", "div_apollo2",
++			DIV_APOLLO0, 16, 3, CLK_GET_RATE_NOCACHE,
++			CLK_DIVIDER_READ_ONLY),
++	DIV_F(CLK_DIV_PCLK_APOLLO, "div_pclk_apollo", "div_apollo2",
++			DIV_APOLLO0, 12, 3, CLK_GET_RATE_NOCACHE,
++			CLK_DIVIDER_READ_ONLY),
++	DIV_F(CLK_DIV_ACLK_APOLLO, "div_aclk_apollo", "div_apollo2",
++			DIV_APOLLO0, 8, 3, CLK_GET_RATE_NOCACHE,
++			CLK_DIVIDER_READ_ONLY),
++	DIV_F(CLK_DIV_APOLLO2, "div_apollo2", "div_apollo1",
++			DIV_APOLLO0, 4, 3, CLK_GET_RATE_NOCACHE,
++			CLK_DIVIDER_READ_ONLY),
++	DIV_F(CLK_DIV_APOLLO1, "div_apollo1", "mout_apollo",
++			DIV_APOLLO0, 0, 3, CLK_GET_RATE_NOCACHE,
++			CLK_DIVIDER_READ_ONLY),
++
++	/* DIV_APOLLO1 */
++	DIV_F(CLK_DIV_SCLK_HPM_APOLLO, "div_sclk_hpm_apollo", "mout_apollo",
++			DIV_APOLLO1, 4, 3, CLK_GET_RATE_NOCACHE,
++			CLK_DIVIDER_READ_ONLY),
++	DIV_F(CLK_DIV_APOLLO_PLL, "div_apollo_pll", "mout_apollo",
++			DIV_APOLLO1, 0, 3, CLK_GET_RATE_NOCACHE,
++			CLK_DIVIDER_READ_ONLY),
++};
++
++static struct samsung_gate_clock apollo_gate_clks[] __initdata = {
++	/* ENABLE_ACLK_APOLLO */
++	GATE(CLK_ACLK_ASATBSLV_APOLLO_3_CSSYS, "aclk_asatbslv_apollo_3_cssys",
++			"div_atclk_apollo", ENABLE_ACLK_APOLLO,
++			6, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_ASATBSLV_APOLLO_2_CSSYS, "aclk_asatbslv_apollo_2_cssys",
++			"div_atclk_apollo", ENABLE_ACLK_APOLLO,
++			5, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_ASATBSLV_APOLLO_1_CSSYS, "aclk_asatbslv_apollo_1_cssys",
++			"div_atclk_apollo", ENABLE_ACLK_APOLLO,
++			4, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_ASATBSLV_APOLLO_0_CSSYS, "aclk_asatbslv_apollo_0_cssys",
++			"div_atclk_apollo", ENABLE_ACLK_APOLLO,
++			3, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_ASYNCACES_APOLLO_CCI, "aclk_asyncaces_apollo_cci",
++			"div_aclk_apollo", ENABLE_ACLK_APOLLO,
++			2, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_AHB2APB_APOLLOP, "aclk_ahb2apb_apollop",
++			"div_pclk_apollo", ENABLE_ACLK_APOLLO,
++			1, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_ACLK_APOLLONP_200, "aclk_apollonp_200",
++			"div_pclk_apollo", ENABLE_ACLK_APOLLO,
++			0, CLK_IGNORE_UNUSED, 0),
++
++	/* ENABLE_PCLK_APOLLO */
++	GATE(CLK_PCLK_ASAPBMST_CSSYS_APOLLO, "pclk_asapbmst_cssys_apollo",
++			"div_pclk_dbg_apollo", ENABLE_PCLK_APOLLO,
++			2, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_PCLK_PMU_APOLLO, "pclk_pmu_apollo", "div_pclk_apollo",
++			ENABLE_PCLK_APOLLO, 1, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_PCLK_SYSREG_APOLLO, "pclk_pmu_sysreg_apollo",
++			"div_pclk_apollo", ENABLE_PCLK_APOLLO,
++			0, CLK_IGNORE_UNUSED, 0),
++
++	/* ENABLE_SCLK_APOLLO */
++	GATE(CLK_CNTCLK_APOLLO, "cntclk_apollo", "div_cntclk_apollo",
++			ENABLE_SCLK_APOLLO, 3, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_SCLK_HPM_APOLLO, "sclk_hpm_apollo", "div_sclk_hpm_apollo",
++			ENABLE_SCLK_APOLLO, 1, CLK_IGNORE_UNUSED, 0),
++	GATE(CLK_SCLK_APOLLO, "sclk_apollo", "div_apollo_pll",
++			ENABLE_SCLK_APOLLO, 0, CLK_IGNORE_UNUSED, 0),
++};
++
++static struct samsung_cmu_info apollo_cmu_info __initdata = {
++	.pll_clks		= apollo_pll_clks,
++	.nr_pll_clks		= ARRAY_SIZE(apollo_pll_clks),
++	.mux_clks		= apollo_mux_clks,
++	.nr_mux_clks		= ARRAY_SIZE(apollo_mux_clks),
++	.div_clks		= apollo_div_clks,
++	.nr_div_clks		= ARRAY_SIZE(apollo_div_clks),
++	.gate_clks		= apollo_gate_clks,
++	.nr_gate_clks		= ARRAY_SIZE(apollo_gate_clks),
++	.nr_clk_ids		= APOLLO_NR_CLK,
++	.clk_regs		= apollo_clk_regs,
++	.nr_clk_regs		= ARRAY_SIZE(apollo_clk_regs),
++};
++
++static void __init exynos5433_cmu_apollo_init(struct device_node *np)
++{
++	samsung_cmu_register_one(np, &apollo_cmu_info);
++}
++CLK_OF_DECLARE(exynos5433_cmu_apollo, "samsung,exynos5433-cmu-apollo",
++		exynos5433_cmu_apollo_init);
+diff --git a/include/dt-bindings/clock/exynos5433.h b/include/dt-bindings/clock/exynos5433.h
+index f855859..9d3b76f 100644
+--- a/include/dt-bindings/clock/exynos5433.h
++++ b/include/dt-bindings/clock/exynos5433.h
+@@ -854,4 +854,41 @@
+ 
+ #define GSCL_NR_CLK					29
+ 
++/* CMU_APOLLO */
++#define CLK_FOUT_APOLLO_PLL				1
++
++#define CLK_MOUT_APOLLO_PLL				2
++#define CLK_MOUT_BUS_PLL_APOLLO_USER			3
++#define CLK_MOUT_APOLLO					4
++
++#define CLK_DIV_CNTCLK_APOLLO				5
++#define CLK_DIV_PCLK_DBG_APOLLO				6
++#define CLK_DIV_ATCLK_APOLLO				7
++#define CLK_DIV_PCLK_APOLLO				8
++#define CLK_DIV_ACLK_APOLLO				9
++#define CLK_DIV_APOLLO2					10
++#define CLK_DIV_APOLLO1					11
++#define CLK_DIV_SCLK_HPM_APOLLO				12
++#define CLK_DIV_APOLLO_PLL				13
++
++#define CLK_ACLK_ATBDS_APOLLO_3				14
++#define CLK_ACLK_ATBDS_APOLLO_2				15
++#define CLK_ACLK_ATBDS_APOLLO_1				16
++#define CLK_ACLK_ATBDS_APOLLO_0				17
++#define CLK_ACLK_ASATBSLV_APOLLO_3_CSSYS		18
++#define CLK_ACLK_ASATBSLV_APOLLO_2_CSSYS		19
++#define CLK_ACLK_ASATBSLV_APOLLO_1_CSSYS		20
++#define CLK_ACLK_ASATBSLV_APOLLO_0_CSSYS		21
++#define CLK_ACLK_ASYNCACES_APOLLO_CCI			22
++#define CLK_ACLK_AHB2APB_APOLLOP			23
++#define CLK_ACLK_APOLLONP_200				24
++#define CLK_PCLK_ASAPBMST_CSSYS_APOLLO			25
++#define CLK_PCLK_PMU_APOLLO				26
++#define CLK_PCLK_SYSREG_APOLLO				27
++#define CLK_CNTCLK_APOLLO				28
++#define CLK_SCLK_HPM_APOLLO				29
++#define CLK_SCLK_APOLLO					30
++
++#define APOLLO_NR_CLK					31
++
+ #endif /* _DT_BINDINGS_CLOCK_EXYNOS5433_H */
 -- 
 1.8.5.5
 
