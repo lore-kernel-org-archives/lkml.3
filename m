@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752708AbbAUL1u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 06:27:50 -0500
-Received: from smtp.ispras.ru ([83.149.199.79]:36237 "EHLO smtp.ispras.ru"
+	id S1752677AbbAULUJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 06:20:09 -0500
+Received: from mga09.intel.com ([134.134.136.24]:26805 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750862AbbAUL1n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 06:27:43 -0500
-X-Greylist: delayed 608 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Jan 2015 06:27:43 EST
+	id S1750871AbbAULUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 06:20:03 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.97,862,1389772800"; 
+   d="scan'208";a="443137941"
+Date: Wed, 21 Jan 2015 19:19:45 +0800
+From: kbuild test robot <fengguang.wu@intel.com>
+To: Vincent Yang <vincent.yang.fujitsu@gmail.com>
+Cc: kbuild-all@01.org, Ulf Hansson <ulf.hansson@linaro.org>,
+        Andy Green <andy.green@linaro.org>,
+        Tetsuya Takinishi <t.takinishi@jp.fujitsu.com>,
+        Chris Ball <chris@printf.net>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] mmc: sdhci: host: fix odd_ptr_err.cocci warnings
+Message-ID: <20150121111944.GA229257@athens>
+References: <201501211941.NPuKVMjL%fengguang.wu@intel.com>
 MIME-Version: 1.0
-Content-Type: multipart/mixed;
- boundary="=_61ee8a927c2a454bf0ecf69a816f6e88"
-Date: Wed, 21 Jan 2015 14:17:33 +0300
-From: koloskov <koloskov@ispras.ru>
-To: <dwmw2@infradead.org>, <linux-mtd@lists.infradead.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: jffs2: Do not rewrite =?UTF-8?Q?posix=5Facl=5Fequiv=5Fmode=28=29?=
- =?UTF-8?Q?=20result=20in=20=20jffs=32=5Fset=5Facl=28=29?=
-Message-ID: <f75d56ff5d79c7a3b16e3579ed10ca4c@ispras.ru>
-User-Agent: Roundcube Webmail/0.8.5
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201501211941.NPuKVMjL%fengguang.wu@intel.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: fengguang.wu@intel.com
+X-SA-Exim-Scanned: No (on bee); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=_61ee8a927c2a454bf0ecf69a816f6e88
-Content-Transfer-Encoding: base64
-Content-Type: text/x-mail;
- name=0001-jffs2-Do-not-rewrite-posix_acl_equiv_mode-result-in.patch
-Content-Disposition: attachment;
- filename=0001-jffs2-Do-not-rewrite-posix_acl_equiv_mode-result-in.patch;
- size=1747
+drivers/mmc/host/sdhci_f_sdh30.c:143:5-11: inconsistent IS_ERR and PTR_ERR, PTR_ERR on line 144
 
-RnJvbSBhZDAzZmU3NDM5NTljMDRhOWU3ZDYxMWMwMjZjMjAxYTE0Y2UwZWQ2IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBBbmRyZXkgS29sb3Nrb3YgPGtvbG9za292QGlzcHJhcy5ydT4K
-VG86IERhdmlkIFdvb2Rob3VzZSA8ZHdtdzJAaW5mcmFkZWFkLm9yZz4KQ2M6IGxpbnV4LW10ZEBs
-aXN0cy5pbmZyYWRlYWQub3JnCkNjOiBsaW51eC1rZXJuZWxAdmdlci5rZXJuZWwub3JnCgpEYXRl
-OiBUdWUsIDEzIEphbiAyMDE1IDE0OjM3OjE4ICswNDAwClN1YmplY3Q6IFtQQVRDSF0gamZmczI6
-IERvIG5vdCByZXdyaXRlIHBvc2l4X2FjbF9lcXVpdl9tb2RlKCkgcmVzdWx0IGluCiBqZmZzMl9z
-ZXRfYWNsKCkKClJlc3VsdCBvZiBwb3NpeF9hY2xfZXF1aXZfbW9kZSgpIGlzIHJld3JpdHRlbiB3
-aXRoIG9uZSBvZiBqZmZzMl9kb19zZXRhdHRyKCksCnNvIGl0IGlzIGFsd2F5cyBhc3N1bWVkIHRo
-YXQgYWNsIGNhbiBiZSBleGFjdGx5IHJlcHJlc2VudGVkIGJ5IHRoZQp0cmFkaXRpb25hbCBmaWxl
-IG1vZGUgcGVybWlzc2lvbiBiaXRzLgoKVGhlIHBhdGNoIGFkZHMgYSBuZXcgdmFyaWFibGUgZm9y
-IHN0b3JlIHJlc3VsdCBvZiBwb3NpeF9hY2xfZXF1aXZfbW9kZSgpLgoKRm91bmQgYnkgTGludXgg
-RmlsZSBTeXN0ZW0gVmVyaWZpY2F0aW9uIHByb2plY3QgKGxpbnV4dGVzdGluZy5vcmcpLgoKU2ln
-bmVkLW9mZi1ieTogQW5kcmV5IEtvbG9za292IDxrb2xvc2tvdkBpc3ByYXMucnU+Ci0tLQogZnMv
-amZmczIvYWNsLmMgfCAgIDEwICsrKysrLS0tLS0KIDEgZmlsZSBjaGFuZ2VkLCA1IGluc2VydGlv
-bnMoKyksIDUgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvZnMvamZmczIvYWNsLmMgYi9mcy9q
-ZmZzMi9hY2wuYwppbmRleCAyZjdhM2MwLi42MzcwNWJkIDEwMDY0NAotLS0gYS9mcy9qZmZzMi9h
-Y2wuYworKysgYi9mcy9qZmZzMi9hY2wuYwpAQCAtMjI5LDE2ICsyMjksMTYgQEAgc3RhdGljIGlu
-dCBfX2pmZnMyX3NldF9hY2woc3RydWN0IGlub2RlICppbm9kZSwgaW50IHhwcmVmaXgsIHN0cnVj
-dCBwb3NpeF9hY2wgKmEKIAogaW50IGpmZnMyX3NldF9hY2woc3RydWN0IGlub2RlICppbm9kZSwg
-c3RydWN0IHBvc2l4X2FjbCAqYWNsLCBpbnQgdHlwZSkKIHsKLQlpbnQgcmMsIHhwcmVmaXg7CisJ
-aW50IHJjLCB4cHJlZml4LCBub3RfZXF1aXY7CiAKIAlzd2l0Y2ggKHR5cGUpIHsKIAljYXNlIEFD
-TF9UWVBFX0FDQ0VTUzoKIAkJeHByZWZpeCA9IEpGRlMyX1hQUkVGSVhfQUNMX0FDQ0VTUzsKIAkJ
-aWYgKGFjbCkgewogCQkJdW1vZGVfdCBtb2RlID0gaW5vZGUtPmlfbW9kZTsKLQkJCXJjID0gcG9z
-aXhfYWNsX2VxdWl2X21vZGUoYWNsLCAmbW9kZSk7Ci0JCQlpZiAocmMgPCAwKQotCQkJCXJldHVy
-biByYzsKKwkJCW5vdF9lcXVpdiA9IHBvc2l4X2FjbF9lcXVpdl9tb2RlKGFjbCwgJm1vZGUpOwor
-CQkJaWYgKG5vdF9lcXVpdiA8IDApCisJCQkJcmV0dXJuIG5vdF9lcXVpdjsKIAkJCWlmIChpbm9k
-ZS0+aV9tb2RlICE9IG1vZGUpIHsKIAkJCQlzdHJ1Y3QgaWF0dHIgYXR0cjsKIApAQCAtMjQ5LDcg
-KzI0OSw3IEBAIGludCBqZmZzMl9zZXRfYWNsKHN0cnVjdCBpbm9kZSAqaW5vZGUsIHN0cnVjdCBw
-b3NpeF9hY2wgKmFjbCwgaW50IHR5cGUpCiAJCQkJaWYgKHJjIDwgMCkKIAkJCQkJcmV0dXJuIHJj
-OwogCQkJfQotCQkJaWYgKHJjID09IDApCisJCQlpZiAobm90X2VxdWl2ID09IDApCiAJCQkJYWNs
-ID0gTlVMTDsKIAkJfQogCQlicmVhazsKLS0gCjEuNy45LjUKCg==
---=_61ee8a927c2a454bf0ecf69a816f6e88--
+ PTR_ERR should access the value just tested by IS_ERR
 
+Semantic patch information:
+ There can be false positives in the patch case, where it is the call
+ IS_ERR that is wrong.
+
+Generated by: scripts/coccinelle/tests/odd_ptr_err.cocci
+
+CC: Vincent Yang <vincent.yang.fujitsu@gmail.com>
+Signed-off-by: Fengguang Wu <fengguang.wu@intel.com>
+---
+
+ sdhci_f_sdh30.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/drivers/mmc/host/sdhci_f_sdh30.c
++++ b/drivers/mmc/host/sdhci_f_sdh30.c
+@@ -141,7 +141,7 @@ static int sdhci_f_sdh30_probe(struct pl
+ 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	host->ioaddr = devm_ioremap_resource(&pdev->dev, res);
+ 	if (IS_ERR(host->ioaddr)) {
+-		ret = PTR_ERR(host);
++		ret = PTR_ERR(host->ioaddr);
+ 		goto err;
+ 	}
+ 
