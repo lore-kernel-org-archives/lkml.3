@@ -1,78 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752604AbbAUNXT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 08:23:19 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:53126 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752100AbbAUNXK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 08:23:10 -0500
-Date: Wed, 21 Jan 2015 14:23:08 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Joonsoo Kim <iamjoonsoo.kim@lge.com>
-Cc: Christoph Lameter <cl@linux.com>,
-        Jesper Dangaard Brouer <brouer@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: mmotm:
- mm-slub-optimize-alloc-free-fastpath-by-removing-preemption-on-off.patch is
- causing preemptible splats
-Message-ID: <20150121132308.GB23700@dhcp22.suse.cz>
+	id S1752852AbbAUNZN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 08:25:13 -0500
+Received: from aserp1040.oracle.com ([141.146.126.69]:42396 "EHLO
+	aserp1040.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750888AbbAUNZI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 08:25:08 -0500
+Message-ID: <54BFA8AE.2070902@oracle.com>
+Date: Wed, 21 Jan 2015 08:25:02 -0500
+From: Sasha Levin <sasha.levin@oracle.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101 Thunderbird/31.3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.23 (2014-03-12)
+To: Jeff Layton <jeff.layton@primarydata.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>, dhowells@redhat.com
+Subject: Re: fs: locks: WARNING: CPU: 16 PID: 4296 at fs/locks.c:236 locks_free_lock_context+0x10d/0x240()
+References: <54B4A909.9060206@oracle.com>	<20150113164441.5b210f48@tlielax.poochiereds.net>	<54B5A145.6060108@oracle.com>	<20150114092705.39bd4881@tlielax.poochiereds.net>	<54B6FF69.3080705@oracle.com>	<20150115152247.5e660000@tlielax.poochiereds.net>	<54B920BB.3010205@oracle.com>	<20150116094028.4ffd675f@tlielax.poochiereds.net>	<54B95426.5020509@oracle.com>	<20150116135304.0feeaf15@tlielax.poochiereds.net> <20150116161635.3678ad23@tlielax.poochiereds.net>
+In-Reply-To: <20150116161635.3678ad23@tlielax.poochiereds.net>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
+X-Source-IP: ucsinet22.oracle.com [156.151.31.94]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-I am getting tons of splats like this:
-[  187.593291] BUG: using smp_processor_id() in preemptible [00000000] code: kworker/u4:1/24
-[  187.593293] caller is debug_smp_processor_id+0x17/0x19
-[  187.599127] Hardware name: QEMU Standard PC (i440FX + PIIX, 1996), BIOS 1.7.5-20140531_083030-gandalf 04/01/2014
-[  187.601997]  ffffffff8181786e ffff8800068a3d78 ffffffff8151a4b8 ffffffff81078e0e
-[  187.604373]  0000000000000000 ffff8800068a3da8 ffffffff81280ac0 ffff8800068acac8
-[  187.606619]  00000000000029b2 ffff880007401500 00000000000000d0 ffff8800068a3db8
-[  187.608869] Call Trace:
-[  187.609602]  [<ffffffff8151a4b8>] dump_stack+0x4f/0x7c
-[  187.615881]  [<ffffffff81078e0e>] ? down_trylock+0x2d/0x37
-[  187.617468]  [<ffffffff81280ac0>] check_preemption_disabled+0xe7/0xf9
-[  187.619295]  [<ffffffff81280ae9>] debug_smp_processor_id+0x17/0x19
-[  187.621055]  [<ffffffff8113b2f6>] kmem_cache_alloc_trace+0x78/0x22e
-[  187.622854]  [<ffffffff81088d36>] ? do_syslog+0xb2/0x452
-[  187.624376]  [<ffffffff81088d36>] do_syslog+0xb2/0x452
-[  187.626030]  [<ffffffff811675b4>] ? __fdget_pos+0x3d/0x43
-[  187.627557]  [<ffffffff810745ac>] ? wait_woken+0x5d/0x5d
-[  187.629073]  [<ffffffff811675b4>] ? __fdget_pos+0x3d/0x43
-[  187.630611]  [<ffffffff811a787b>] kmsg_read+0x2d/0x54
-[  187.632069]  [<ffffffff8119c4ff>] proc_reg_read+0x4a/0x6c
-[  187.633775]  [<ffffffff8114e4d8>] vfs_read+0xa5/0x141
-[  187.635242]  [<ffffffff8114ee35>] SyS_read+0x51/0x8f
-[  187.636666]  [<ffffffff81522892>] system_call_fastpath+0x12/0x17
+On 01/16/2015 04:16 PM, Jeff Layton wrote:
+> On Fri, 16 Jan 2015 13:53:04 -0500
+> Jeff Layton <jlayton@primarydata.com> wrote:
+> 
+>> > On Fri, 16 Jan 2015 13:10:46 -0500
+>> > Sasha Levin <sasha.levin@oracle.com> wrote:
+>> > 
+>>> > > On 01/16/2015 09:40 AM, Jeff Layton wrote:
+>>>> > > > On Fri, 16 Jan 2015 09:31:23 -0500
+>>>> > > > Sasha Levin <sasha.levin@oracle.com> wrote:
+>>>> > > > 
+>>>>> > > >> On 01/15/2015 03:22 PM, Jeff Layton wrote:
+>>>>>> > > >>> Ok, I tried to reproduce it with that and several variations but it
+>>>>>> > > >>> still doesn't seem to do it for me. Can you try the latest linux-next
+>>>>>> > > >>> tree and see if it's still reproducible there?
+>>>>> > > >>
+>>>>> > > >> It's still not in in today's -next, could you send me a patch for testing
+>>>>> > > >> instead?
+>>>>> > > >>
+>>>> > > > 
+>>>> > > > Seems to be there for me:
+>>>> > > > 
+>>>> > > > ----------------------[snip]-----------------------
+>>>> > > > /*
+>>>> > > >  * This function is called on the last close of an open file.
+>>>> > > >  */
+>>>> > > > void locks_remove_file(struct file *filp)
+>>>> > > > {
+>>>> > > >         /* ensure that we see any assignment of i_flctx */
+>>>> > > >         smp_rmb();
+>>>> > > > 
+>>>> > > >         /* remove any OFD locks */
+>>>> > > >         locks_remove_posix(filp, filp);
+>>>> > > > ----------------------[snip]-----------------------
+>>>> > > > 
+>>>> > > > That's actually the right place to put the barrier, I think. We just
+>>>> > > > need to ensure that this function sees any assignment to i_flctx that
+>>>> > > > occurred before this point. By the time we're here, we shouldn't be
+>>>> > > > getting any new locks that matter to this close since the fcheck call
+>>>> > > > should fail on any new requests.
+>>>> > > > 
+>>>> > > > If that works, then I'll probably make some other changes to the set
+>>>> > > > and re-post it next week.
+>>>> > > > 
+>>>> > > > Many thanks for helping me test this!
+>>> > > 
+>>> > > You're right, I somehow missed that.
+>>> > > 
+>>> > > But it doesn't fix the issue, I still see it happening, but it seems
+>>> > > to be less frequent(?).
+>>> > > 
+>> > 
+>> > Ok, that was my worry (and one of the reasons I really would like to
+>> > find some way to reproduce this on my own). I think what I'll do at
+>> > this point is pull the patchset from linux-next until I can consult
+>> > with someone who understands this sort of cache-coherency problem
+>> > better than I do.
+>> > 
+>> > Once I get it resolved, I'll push it back to my linux-next branch and
+>> > let you know and we can give it another go.
+>> > 
+>> > Thanks for the testing so far!
+> Actually, I take it back. One more try...
+> 
+> I dragooned David Howells into helping me look at this and he talked me
+> into just going back to using the i_lock to protect the i_flctx
+> assignment.
+> 
+> My hope is that will work around whatever strange effect is causing
+> this. Can you test tomorrow's -next tree (once it's been merged) and see
+> whether this is still reproducible?
 
-$ grep "BUG: using smp_processor_id" mmap.qcow_serial.log | wc -l
-660
-after few minutes of runtime when running the current mmotm tree 
-(https://git.kernel.org/cgit/linux/kernel/git/mhocko/mm.git/log/?h=since-3.18).
+I've updated and re-tested with the latest -next, and it seems that the
+issue is gone.
 
-The warning seems to come from this_cpu_ptr which is using my_cpu_offset
-which is
-#define my_cpu_offset per_cpu_offset(smp_processor_id())
-if CONFIG_DEBUG_PREEMPT
+I'll update if I end up seeing it again.
 
-So it matches the following code in slab_alloc_node resp. slab_free:
-        do {
-                tid = this_cpu_read(s->cpu_slab->tid);
-                c = this_cpu_ptr(s->cpu_slab); <<< HERE
-        } while (IS_ENABLED(CONFIG_PREEMPT) && unlikely(tid != c->tid));
 
-This is with:
-CONFIG_PREEMPT=y
-CONFIG_PREEMPT_COUNT=y
-CONFIG_DEBUG_PREEMPT=y
-
-I am not sure how to fix this but it sounds like this_cpu_ptr should
-offer the same preempt expectations as other this_cpu_* functions.
--- 
-Michal Hocko
-SUSE Labs
+Thanks,
+Sasha
