@@ -1,66 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753516AbbAUPTn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 10:19:43 -0500
-Received: from imap.thunk.org ([74.207.234.97]:53250 "EHLO imap.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750878AbbAUPTf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 10:19:35 -0500
-Date: Wed, 21 Jan 2015 10:19:13 -0500
-From: "Theodore Ts'o" <tytso@mit.edu>
-To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
-Cc: Daniel Mack <daniel@zonque.org>,
-        Greg Kroah-Hartman <gregkh@linuxfoundation.org>, arnd@arndb.de,
-        ebiederm@xmission.com, gnomes@lxorguk.ukuu.org.uk, teg@jklm.no,
-        jkosina@suse.cz, luto@amacapital.net, linux-api@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dh.herrmann@gmail.com, tixxdz@opendz.org,
-        Johannes Stezenbach <js@sig21.net>
-Subject: Re: [PATCH 01/13] kdbus: add documentation
-Message-ID: <20150121151913.GA4798@thunk.org>
-Mail-Followup-To: Theodore Ts'o <tytso@mit.edu>,
-	"Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>,
-	Daniel Mack <daniel@zonque.org>,
-	Greg Kroah-Hartman <gregkh@linuxfoundation.org>, arnd@arndb.de,
-	ebiederm@xmission.com, gnomes@lxorguk.ukuu.org.uk, teg@jklm.no,
-	jkosina@suse.cz, luto@amacapital.net, linux-api@vger.kernel.org,
-	linux-kernel@vger.kernel.org, dh.herrmann@gmail.com,
-	tixxdz@opendz.org, Johannes Stezenbach <js@sig21.net>
-References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>
- <1421435777-25306-2-git-send-email-gregkh@linuxfoundation.org>
- <54BE5DC8.70706@gmail.com>
- <54BE9D08.7010804@zonque.org>
- <54BF805B.4000609@gmail.com>
+	id S1752852AbbAUPVm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 10:21:42 -0500
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:24330
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751938AbbAUPVe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 10:21:34 -0500
+X-IronPort-AV: E=Sophos;i="5.09,442,1418079600"; 
+   d="scan'208";a="97218249"
+Date: Wed, 21 Jan 2015 16:21:12 +0100
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Herrmann <dh.herrmann@gmail.com>, jslaby@suse.cz,
+        Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
+        linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
+        Arnaud Patard <arnaud.patard@rtp-net.org>,
+        Peter Korsgaard <jacmet@sunsite.dk>,
+        Sascha Hauer <s.hauer@pengutronix.de>, Rob Clark <robdclark@gmail.com>,
+        Niels de Vos <devos@fedoraproject.org>,
+        linux-arm-kernel@lists.infradead.org, blogic@openwrt.org,
+        Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+Subject: Re: [PATCHv5 0/2] INPUT: Route keyboard LEDs through the generic
+ LEDs layer
+Message-ID: <20150121152112.GA24789@type.bordeaux.inria.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	Pavel Machek <pavel@ucw.cz>,
+	Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	David Herrmann <dh.herrmann@gmail.com>, jslaby@suse.cz,
+	Bryan Wu <cooloney@gmail.com>, rpurdie@rpsys.net,
+	linux-kernel@vger.kernel.org, Evan Broder <evan@ebroder.net>,
+	Arnaud Patard <arnaud.patard@rtp-net.org>,
+	Peter Korsgaard <jacmet@sunsite.dk>,
+	Sascha Hauer <s.hauer@pengutronix.de>,
+	Rob Clark <robdclark@gmail.com>,
+	Niels de Vos <devos@fedoraproject.org>,
+	linux-arm-kernel@lists.infradead.org, blogic@openwrt.org,
+	Pali =?iso-8859-1?Q?Roh=E1r?= <pali.rohar@gmail.com>
+References: <20141226232116.GA5069@type>
+ <20150102195350.GB27538@amd>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <54BF805B.4000609@gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on imap.thunk.org); SAEximRunCond expanded to false
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20150102195350.GB27538@amd>
+User-Agent: Mutt/1.5.21+34 (58baf7c9f32f) (2010-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 11:32:59AM +0100, Michael Kerrisk (man-pages) wrote:
-> It's rather an optional driver than a core kernel feature.
-> 
-> Given the various things that I've seen said about kdbus, the
-> preceding sentence makes little sense to me:
-> 
-> * kdbus will be the framework supporting user-space D-Bus in the
->   future, and also used by systemd, and so on pretty much every 
->   desktop system.
+Hello,
 
-I have to agree with Michael here; it's really, **really**
-disengenuous to say that that if you don't want kdbus, you can just
-#ifconfig it out.  The fact that it systemd will be using it means
-that it will very shortly become a core kernel feature which is
-absolutely mandatory.  Sure, maybe it can be configured out for "tiny
-kernels", just as in theory we can configure out the VM system for
-really tiny embedded systems.  But we should be treating this as
-something that is not optional, because the reality is that's the way
-it's going to be in very short order.  So if that means to use proper
-system calls instead of ioctls, we should do that.
+Pavel Machek, le Fri 02 Jan 2015 20:53:51 +0100, a écrit :
+> > Here is v5 coming, with separate patches for the kbd and the input
+> > parts.
+> 
+> After booting with this, capslock led does not seem to work on text
+> console.
+> 
+> input4::capsl/trigger was none by default, that can't be right, right?
+> 
+> I tried putting kbd-capslock and input4-capsl there, but that did not
+> seem to help.
+> 
+> It works with heartbeat trigger, but not with input4-numl
+> trigger. (But numlock led works ok with that trigger, weird).
+> 
+> vt::capsl/brightness controls capslock led, even when
+> input4-capsl/trigger is set to input4-numl.
 
-       	     	     		   - Ted
+I have just tried what you described on a thinkpad lenovo T500, without
+any problem, except that the thinkpad BIOS does a couple of funky
+things:
+
+- depending on the numlock bios setting, the numlock led will be
+  driven by the OS (synchronized mode) or handled internally in the BIOS
+  (independent mode).
+- in synchronized mode, whenever the internal numlock led is lit, the
+  right part of the internal keyboard acts as the keypad keys.
+
+Samuel
