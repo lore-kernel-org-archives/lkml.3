@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753671AbbAUSEk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 13:04:40 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:58739 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752733AbbAUSEd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 13:04:33 -0500
-Date: Wed, 21 Jan 2015 19:04:30 +0100
-From: Borislav Petkov <bp@suse.de>
-To: Alexander van Heukelum <heukelum@fastmail.fm>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>,
-        Andy Lutomirski <luto@amacapital.net>, X86 ML <x86@kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Oleg Nesterov <oleg@redhat.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCHv2 1/4] x86_64: cleanup THREAD_INFO(reg,offset) macro
-Message-ID: <20150121180429.GB31527@pd.tnic>
-References: <1421581520-2816-1-git-send-email-heukelum@fastmail.fm>
- <1421581520-2816-2-git-send-email-heukelum@fastmail.fm>
- <CAK1hOcMqp8pHVLRPfH9ui1UFvnU1M2bUpdkecdGW-cmSHth9_Q@mail.gmail.com>
- <1421857209.171127.216796445.0DC88E13@webmail.messagingengine.com>
+	id S1753889AbbAUSFM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 13:05:12 -0500
+Received: from mail-qg0-f41.google.com ([209.85.192.41]:54057 "EHLO
+	mail-qg0-f41.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752015AbbAUSFH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 13:05:07 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1421857209.171127.216796445.0DC88E13@webmail.messagingengine.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <1421862883.14076.99.camel@arm.com>
+References: <1415292718-19785-1-git-send-email-pawel.moll@arm.com>
+	<1415292718-19785-4-git-send-email-pawel.moll@arm.com>
+	<20150105134514.GS30905@twins.programming.kicks-ass.net>
+	<1421860365.14076.91.camel@arm.com>
+	<CALAqxLV6ggCO81ntWuYuDjrqNeMePkZBpq92G9-iwMHm7ONuFg@mail.gmail.com>
+	<1421862883.14076.99.camel@arm.com>
+Date: Wed, 21 Jan 2015 10:05:06 -0800
+Message-ID: <CALAqxLXjhpU0Q+edFkJg7RY7giqhojEy53rKQbppQmYAhJ34ZQ@mail.gmail.com>
+Subject: Re: [PATCH v4 3/3] perf: Sample additional clock value
+From: John Stultz <john.stultz@linaro.org>
+To: Pawel Moll <pawel.moll@arm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Richard Cochran <richardcochran@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Christopher Covington <cov@codeaurora.org>,
+        Namhyung Kim <namhyung@kernel.org>, David Ahern <dsahern@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Tomeu Vizoso <tomeu@tomeuvizoso.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-api@vger.kernel.org" <linux-api@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 05:20:09PM +0100, Alexander van Heukelum wrote:
-> On Wed, Jan 21, 2015, at 14:40, Denys Vlasenko wrote:
-> > On Sun, Jan 18, 2015 at 12:45 PM, Alexander van Heukelum
-> > <heukelum@fastmail.fm> wrote:
-> > > The macro THREAD_INFO(reg,offset) is used in assembly to compute the
-> > > offset between the user ptregs and the thread_info struct. Change
-> > > the macro and all its uses so that offset is given as the current
-> > > top of stack in the pt_regs frame. The generated code is identical.
-> > 
-> > What is the purpose of doing this?
-> > 
-> > I don't mean to say that it's pointless, but it is also not obvious
-> > why it's better than the code before patch.
-> 
-> Just because I had a hard time understanding what the offset
-> parameter means. Turns out Borislav did another variant in his
-> patchset. Quoting him from the commit message which made
-> that the change:
-> > Semi-mysterious expressions THREAD_INFO(%rsp,RIP) - "why RIP??"
-> > are now replaced by more logical THREAD_INFO(%rsp,SIZEOF_PTREGS) -
-> > "rsp is SIZEOF_PTREGS bytes below the top, calculate
-> > thread_info's address using that information"
-> 
-> Borislav expresses "offset" as an offset from the stack's page
-> boundary,while I chose the offset from the start of struct
-> pt_regs on the stack.
+On Wed, Jan 21, 2015 at 9:54 AM, Pawel Moll <pawel.moll@arm.com> wrote:
+> On Wed, 2015-01-21 at 17:44 +0000, John Stultz wrote:
+>> That said, there is the dynamic posix clockids. I'm not sure if it
+>> would make sense, but even if we don't bump MAX_CLOCKS, might there
+>> be some case where someone wants to use a dynamic posix clock for the
+>> perf reference?
+>
+> If I remember correctly, last time I tried to use dynamic posix clocks
+> in the perf context, one needed to open a ptp character device in order
+> to get a file descriptor, than translated into a clockid_t value -
+> correct me if I'm wrong. But here you get the fd from the
+> sys_perf_open() and clock_*() doesn't know anything about such
+> descriptor.
 
-I've never done any such thing :-)
+Sorry for losing context here then. Yes, the dynamic clockid has to be
+exported via some other interface to userland (likely via the driver
+that provides it), but once the id is known it can be used via the
+clock_*() functions.   I was thinking here since the perf_event_attr
+wants to associate with a clockid, including the possibility for
+dynamic clockids would be wise, but I didn't read closely enough to
+see how that clockid was specified.
 
-s/Borislav/Denys/g.
+> I was looking into a way of associating a random clock with a random fd,
+> so that perf could "attach" itself to the clock API at will, but it
+> turned out not to be trivial (I'd have to dig through old threads to
+> remember all the nasty details).
+>
+> The good thing is that it looks like the immediate need for this was no
+> more, with perf using monotonic clock as the clock source. It will come
+> back when we get into hardware trace correlation, but one step at a
+> time...
 
--- 
-Regards/Gruss,
-    Boris.
+Ok. I'm eager to see this settled (and the current approach I don't
+have any objections to, although I'm not paying super close attention
+now that its all in the perf core).   I know this has taken far longer
+then you'd have liked, so thanks for your persistence!
 
-ECO tip #101: Trim your mails when you reply.
---
+-john
