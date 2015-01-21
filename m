@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493AbbAUPHN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 10:07:13 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:37919 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754445AbbAUPHA (ORCPT
+	id S1754509AbbAUPH2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 10:07:28 -0500
+Received: from casper.infradead.org ([85.118.1.10]:37189 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752225AbbAUPHV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 10:07:00 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-17-54bfc0013bf9
-From: Andrey Ryabinin <a.ryabinin@samsung.com>
-To: linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com (open list:REAL TIME CLOCK (...))
-Cc: Andrey Ryabinin <a.ryabinin@samsung.com>
-Subject: [PATCH] rtc: s5m: terminate s5m_rtc_id array with empty element
-Date: Wed, 21 Jan 2015 18:06:49 +0300
-Message-id: <1421852809-29733-1-git-send-email-a.ryabinin@samsung.com>
-X-Mailer: git-send-email 2.2.1
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFjrOJMWRmVeSWpSXmKPExsVy+t/xy7qMB/aHGNz5Lmex7dcjNoslF6+y
-	W1zeNYfNYn9nB6MDi8eeiSfZPPq2rGL0mD7vJ5PH501yASxRXDYpqTmZZalF+nYJXBmTrt9n
-	KuhjrVh39Q97A+NCli5GTg4JAROJljUTmCBsMYkL99azgdhCAksZJfZ+zYKw+5gkVr8vArHZ
-	BPQk/s3aDlTDxSEi0Mko8WP/a0aQBLOAjsTGa61gg4QFPCTWfTjN3MXIwcEioCrxcm0qiMkr
-	4CbxudENYpWcxMY7K1gnMHIvYGRYxSiaWppcUJyUnmukV5yYW1yal66XnJ+7iRHi+a87GJce
-	szrEKMDBqMTDK+GzP0SINbGsuDL3EKMEB7OSCK/1FqAQb0piZVVqUX58UWlOavEhRiYOTqkG
-	xgaOd74zv/pknJoVsf94lTJjb/UdTf3D8yJ2H2vKEOgX3rPwzoaSA37nzj/487/zQtKEicer
-	Whd+Wz63es9Z28V1agERGVOjFi/rKYjLfvp3c2Op4lSGlf6HvhxctE993ROrpzNrv0zYH+ns
-	ckDe2l6hZJHIVvX+WYfs7l/vS4j0iVrwoeHbVBYlluKMREMt5qLiRAAApvIr2gEAAA==
+	Wed, 21 Jan 2015 10:07:21 -0500
+Date: Wed, 21 Jan 2015 16:07:16 +0100
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Paul Mackerras <paulus@samba.org>, Marcelo Tosatti <mtosatti@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org,
+        Luiz Capitulino <lcapitulino@redhat.com>,
+        Rik van Riel <riel@redhat.com>, Steven Rostedt <srostedt@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, kvm@vger.kernel.org,
+        Paolo Bonzini <pbonzini@redhat.com>
+Subject: Re: [patch -rt 1/2] KVM: use simple waitqueue for vcpu->wq
+Message-ID: <20150121150716.GD11596@twins.programming.kicks-ass.net>
+References: <20150114171251.882318257@redhat.com>
+ <20150114171459.593877145@redhat.com>
+ <20150116114846.4e7b718d@gandalf.local.home>
+ <20150119144100.GA10794@amt.cnet>
+ <20150120054653.GA6473@iris.ozlabs.ibm.com>
+ <20150120131613.009903a0@gandalf.local.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20150120131613.009903a0@gandalf.local.home>
+User-Agent: Mutt/1.5.21 (2012-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Array of platform_device_id elements should be terminated
-with empty element.
+On Tue, Jan 20, 2015 at 01:16:13PM -0500, Steven Rostedt wrote:
+> I'm actually wondering if we should just nuke the _interruptible()
+> version of swait. As it should only be all interruptible or all not
+> interruptible, that the swait_wake() should just do the wake up
+> regardless. In which case, swait_wake() is good enough. No need to have
+> different versions where people may think do something special.
+> 
+> Peter?
 
-Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
----
- drivers/rtc/rtc-s5m.c | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/rtc/rtc-s5m.c b/drivers/rtc/rtc-s5m.c
-index b5e7c46..89ac1d5 100644
---- a/drivers/rtc/rtc-s5m.c
-+++ b/drivers/rtc/rtc-s5m.c
-@@ -832,6 +832,7 @@ static SIMPLE_DEV_PM_OPS(s5m_rtc_pm_ops, s5m_rtc_suspend, s5m_rtc_resume);
- static const struct platform_device_id s5m_rtc_id[] = {
- 	{ "s5m-rtc",		S5M8767X },
- 	{ "s2mps14-rtc",	S2MPS14X },
-+	{ },
- };
- 
- static struct platform_driver s5m_rtc_driver = {
--- 
-2.2.1
-
+Yeah, I think the lastest thing I have sitting here on my disk only has
+the swake_up() which does TASK_NORMAL, no choice there.
