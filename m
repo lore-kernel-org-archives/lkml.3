@@ -1,46 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753695AbbAUOLt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 09:11:49 -0500
-Received: from cantor2.suse.de ([195.135.220.15]:54157 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753641AbbAUOLk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 09:11:40 -0500
-Date: Wed, 21 Jan 2015 15:11:38 +0100
-From: Michal Hocko <mhocko@suse.cz>
-To: Krzysztof =?utf-8?Q?Koz=C5=82owski?= <k.kozlowski.k@gmail.com>
-Cc: Joonsoo Kim <iamjoonsoo.kim@lge.com>, Christoph Lameter <cl@linux.com>,
-        Jesper Dangaard Brouer <brouer@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: mmotm:
- mm-slub-optimize-alloc-free-fastpath-by-removing-preemption-on-off.patch is
- causing preemptible splats
-Message-ID: <20150121141138.GC23700@dhcp22.suse.cz>
-References: <20150121132308.GB23700@dhcp22.suse.cz>
- <CAJKOXPdgSsd8cr7ctKOGCwFTRMxcq71k7Pb5mQgYy--tGW8+_w@mail.gmail.com>
+	id S1753702AbbAUOPT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 09:15:19 -0500
+Received: from mail-qc0-f175.google.com ([209.85.216.175]:34790 "EHLO
+	mail-qc0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753474AbbAUOPK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jan 2015 09:15:10 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAJKOXPdgSsd8cr7ctKOGCwFTRMxcq71k7Pb5mQgYy--tGW8+_w@mail.gmail.com>
-User-Agent: Mutt/1.5.23 (2014-03-12)
+In-Reply-To: <54BFAF7E.1030703@collabora.com>
+References: <1421338359-27467-1-git-send-email-tomeu.vizoso@collabora.com>
+	<1421338359-27467-9-git-send-email-tomeu.vizoso@collabora.com>
+	<54B7F9FB.7030100@wwwdotorg.org>
+	<CAPDyKFoO6evBoAbEE30XiZg51KsM-sD4viFMvqaDwGoHeVL-6w@mail.gmail.com>
+	<54BFAF7E.1030703@collabora.com>
+Date: Wed, 21 Jan 2015 15:15:09 +0100
+Message-ID: <CAPDyKFoYj3xBoYsn87mxjoqDDnCtopAugX5JbzYritxWn-7XaA@mail.gmail.com>
+Subject: Re: [PATCH v2 08/11] mmc: pwrseq_simple: Add support for a delay
+From: Ulf Hansson <ulf.hansson@linaro.org>
+To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Cc: Stephen Warren <swarren@wwwdotorg.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Dylan Reid <dgreid@chromium.org>, Simon Glass <sjg@chromium.org>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
+        Mark Rutland <mark.rutland@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Chris Ball <chris@printf.net>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 21-01-15 15:06:03, Krzysztof Kozłowski wrote:
-[...]
-> Same here :) [1] . So actually only ARM seems affected (both armv7 and
-> armv8) because it is the only one which uses smp_processor_id() in
-> my_cpu_offset.
+On 21 January 2015 at 14:54, Tomeu Vizoso <tomeu.vizoso@collabora.com> wrote:
+> On 01/21/2015 11:44 AM, Ulf Hansson wrote:
+>> On 15 January 2015 at 18:33, Stephen Warren <swarren@wwwdotorg.org> wrote:
+>>> On 01/15/2015 09:12 AM, Tomeu Vizoso wrote:
+>>>>
+>>>> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+>>>
+>>>
+>>> Ah, having read the explanation in the next patch, I think ...
+>>>
+>>>> diff --git a/Documentation/devicetree/bindings/mmc/mmc,pwrseq-simple.txt
+>>>> b/Documentation/devicetree/bindings/mmc/mmc,pwrseq-simple.txt
+>>>
+>>>
+>>>> +- delay : delay to wait after driving the reset gpio active [ms].
+>>>
+>>>
+>>> ... delay is the wrong name. reset-pulse-width or reset-pulse-length would
+>>> be better. delay sounds like a delay after resetting the device before it
+>>> can be accessed.
+>>
+>> I agree with Stephen's proposal.
+>
+> Cool.
+>
+>> This patch needs to be rebased and retested on latest version the
+>> mmc-pwrseq patches.
+>
+> Sure.
+>
+>> Moreover, if you think the patchset which $subject
+>> patch is a part of is material for 3.20, I will need to share an
+>> immutable branch with the mmc-pwrseq patches for ARM SOC to pull in,
+>> tell me if you need that.
+>
+> I don't think this will make 3.20 as I have other series with higher
+> priority and there's quite some work left to do on this one.
 
-This was on x86_64 with CONFIG_DEBUG_PREEMPT so it is not only ARM
-specific.
- 
-> [1] https://lkml.org/lkml/2015/1/20/162
+If that's the case, I might as well consider this patch separately and
+take it through my mmc tree. Of course, that means you anyway need to
+rebase/test it.
 
-Sorry, have missed this post.
--- 
-Michal Hocko
-SUSE Labs
+Kind regards
+Uffe
