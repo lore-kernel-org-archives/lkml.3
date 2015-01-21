@@ -1,89 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754369AbbAUDkp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jan 2015 22:40:45 -0500
-Received: from mail-wi0-f172.google.com ([209.85.212.172]:55478 "EHLO
-	mail-wi0-f172.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751991AbbAUDkn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jan 2015 22:40:43 -0500
-Message-ID: <1421811639.5285.25.camel@marge.simpson.net>
-Subject: Re: [PATCH] ksoftirqd: Enable IRQs and call cond_resched() before
- poking RCU
-From: Mike Galbraith <umgwanakikbuti@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Thomas Gleixner <tglx@linutronix.de>, Calvin Owens <calvinowens@fb.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org, kernel-team@fb.com
-Date: Wed, 21 Jan 2015 04:40:39 +0100
-In-Reply-To: <20150120203022.GR9719@linux.vnet.ibm.com>
-References: <20150107014906.GA27996@mail.thefacebook.com>
-	 <20150107021926.GT5280@linux.vnet.ibm.com>
-	 <20150107165223.GA21555@linux.vnet.ibm.com>
-	 <20150108043329.GB27996@mail.thefacebook.com>
-	 <20150108045306.GJ5280@linux.vnet.ibm.com>
-	 <20150108214644.GC27996@mail.thefacebook.com>
-	 <alpine.DEB.2.11.1501131215380.5526@nanos>
-	 <20150113184301.GO9719@linux.vnet.ibm.com>
-	 <20150113211618.GA21498@mail.thefacebook.com>
-	 <alpine.DEB.2.11.1501201419550.5526@nanos>
-	 <20150120203022.GR9719@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.2.3 
-Content-Transfer-Encoding: 7bit
-Mime-Version: 1.0
+	id S1753995AbbAUDqH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jan 2015 22:46:07 -0500
+Received: from ozlabs.org ([103.22.144.67]:55822 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751887AbbAUDqF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jan 2015 22:46:05 -0500
+Date: Wed, 21 Jan 2015 14:45:58 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jens Axboe <axboe@kernel.dk>, Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Oleg Drokin <oleg.drokin@intel.com>,
+        Andreas Dilger <andreas.dilger@intel.com>,
+        Christoph Hellwig <hch@lst.de>
+Subject: linux-next: build failure after merge of the block tree
+Message-ID: <20150121144558.79cb2056@canb.auug.org.au>
+X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha256;
+ boundary="Sig_/xTXcvTiRVXiAda2gd6Tm9Jj"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2015-01-20 at 12:30 -0800, Paul E. McKenney wrote: 
-> On Tue, Jan 20, 2015 at 02:21:51PM +0100, Thomas Gleixner wrote:
+--Sig_/xTXcvTiRVXiAda2gd6Tm9Jj
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-> > > diff --git a/kernel/softirq.c b/kernel/softirq.c
-> > > index 501baa9..9e787d8 100644
-> > > --- a/kernel/softirq.c
-> > > +++ b/kernel/softirq.c
-> > > @@ -656,9 +656,13 @@ static void run_ksoftirqd(unsigned int cpu)
-> > >  		 * in the task stack here.
-> > >  		 */
-> > >  		__do_softirq();
-> > > -		rcu_note_context_switch(cpu);
-> > >  		local_irq_enable();
-> > >  		cond_resched();
-> > > +
-> > > +		preempt_disable();
-> > > +		rcu_note_context_switch(cpu);
-> > > +		preempt_enable();
-> > > +
-> > 
-> > The whole rcu_note_context_switch() in run_ksoftirqd() is silly.
-> > 
-> >     cond_resched()
-> > 	__preempt_count_add(PREEMPT_ACTIVE);
-> > 
-> > 	__schedule();
-> > 	     preempt_disable();
-> > 	     rcu_note_context_switch();
-> > 	     ....
-> > 
-> > 	__preempt_count_sub(PREEMPT_ACTIVE);
-> 
-> I agree that if should_resched() returns true as assumed above, then there
-> is no point to invoking rcu_note_context_switch().  However, the case that
-> this code applies to is when should_resched() returns false, but RCU is
-> waiting for a quiescent state from the current CPU.  In that case,
-> cond_resched() won't do anything for RCU, and we do need the
-> rcu_note_context_switch().
+Hi Jens,
 
-I've been curious about this for ages, so now is a great time to bite
-the bullet and ask TheMan.  A context switch is not far away, why do we
-need that quiescent state badly enough to tell what looks like a little
-white lie to get it immediately?
+After merging the block tree, today's linux-next build (x86_64 allmodconfig)
+failed like this:
 
-(I commented it out in an -rt kernel I was testing yesterday, beat it
-enthusiastically for a while, and box didn't _seem_ to notice that it
-was missing anything)
+drivers/staging/lustre/lustre/llite/llite_lib.c: In function 'll_read_inode=
+2':
+drivers/staging/lustre/lustre/llite/llite_lib.c:1774:18: error: 'struct add=
+ress_space' has no member named 'backing_dev_info'
+  inode->i_mapping->backing_dev_info =3D &s2lsi(inode->i_sb)->lsi_bdi;
+                  ^
 
--Mike
+Caused by commit b83ae6d42143 ("fs: remove mapping->backing_dev_info")
+not updating the lustre code in the staging tree.
 
+I have disabled the lustre code for today using the following.  Please
+let me know if you fix the lustre code so that I can reenable it.
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 21 Jan 2015 14:36:21 +1100
+Subject: [PATCH] disable the lustre code for now
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/staging/lustre/lustre/Kconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/staging/lustre/lustre/Kconfig b/drivers/staging/lustre=
+/lustre/Kconfig
+index 6725467ef4d0..37dd33f6597e 100644
+--- a/drivers/staging/lustre/lustre/Kconfig
++++ b/drivers/staging/lustre/lustre/Kconfig
+@@ -1,6 +1,7 @@
+ config LUSTRE_FS
+ 	tristate "Lustre file system client support"
+ 	depends on INET && m && !MIPS && !XTENSA && !SUPERH
++	depends on BROKEN
+ 	select LNET
+ 	select CRYPTO
+ 	select CRYPTO_CRC32
+--=20
+2.1.4
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+--Sig_/xTXcvTiRVXiAda2gd6Tm9Jj
+Content-Type: application/pgp-signature
+Content-Description: OpenPGP digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
+
+iQIcBAEBCAAGBQJUvyD7AAoJEMDTa8Ir7ZwVMZ4P+QGvKVp/QpLbIJg52ORh7rQ6
+RJqX0T1aW3dQ41IpqBMBARjztctWxUinr93AwMVHSUPso1I1rA58c6R0r4ivpoAS
++an8UyMAJ67qG4r+ULnL9mnUjpRofPT/itKovR2OFJiLPKN7HAW5sVkFiG7KmogT
+Ws8PSQL8JJmL4GNKWYikmiIdsYr2nt55pzdpLVoa9fZcj0yKPiEl2RrHpW8uYQqd
+ACNhWHO842StArl8kE4vGtFMbUdtnf3jM2C7+pv+W41cppZMeLYBdlg9bZ5XEebj
+nEJMyfILjopBAa+2reKM08NJWLgQT+/Qbn++90YtSKvAT/V1sdCdO9Nap3PT6Ows
+2guEdmzM2HZOVuYKy9FOmOnzFIwUjye3rCQ+8lG4QPXNbAT56/Pn5bUKUbTTRQNr
+wyjM8BGTmXgMo9fawVBccu+F8jOC6lfWNpcZxuHjLJGXKgJgmnP7Ran6VW9Ir4aB
+gqbFOIgMdgMB8wNzGH7Ff3PfcagOR/glFqiR5E8bAT82akyyITiYYEC5Krc+QLfD
+BQBE2qE0FlXAa6Ni1eJQt1bHy7G6jlcmhaCVh4usF9T9D+L+8qiqjU9LXPgtRTQu
+u9Ljihyzv3DMy/l5tfLOdCGRhiGp0CbhJWLZux2jNA1u3zgwQxROUXeu2vyQaxTm
+wbGfxPCJhqiHSfyWcTR2
+=5urv
+-----END PGP SIGNATURE-----
+
+--Sig_/xTXcvTiRVXiAda2gd6Tm9Jj--
