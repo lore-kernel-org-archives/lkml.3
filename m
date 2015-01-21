@@ -1,165 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610AbbAUQye (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jan 2015 11:54:34 -0500
-Received: from mail-we0-f180.google.com ([74.125.82.180]:42286 "EHLO
-	mail-we0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754325AbbAUQyX (ORCPT
+	id S1754692AbbAUQzG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jan 2015 11:55:06 -0500
+Received: from foss-mx-na.foss.arm.com ([217.140.108.86]:40287 "EHLO
+	foss-mx-na.foss.arm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754639AbbAUQyw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jan 2015 11:54:23 -0500
-From: Daniel Thompson <daniel.thompson@linaro.org>
-To: John Stultz <john.stultz@linaro.org>
-Cc: Daniel Thompson <daniel.thompson@linaro.org>, linux-kernel@vger.kernel.org,
-        patches@linaro.org, linaro-kernel@lists.linaro.org,
-        Sumit Semwal <sumit.semwal@linaro.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Stephen Boyd <sboyd@codeaurora.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: [RFC PATCH] sched_clock: Avoid tearing during read from NMI
-Date: Wed, 21 Jan 2015 16:53:56 +0000
-Message-Id: <1421859236-19782-1-git-send-email-daniel.thompson@linaro.org>
-X-Mailer: git-send-email 1.9.3
+	Wed, 21 Jan 2015 11:54:52 -0500
+Date: Wed, 21 Jan 2015 16:54:27 +0000
+From: Mark Rutland <mark.rutland@arm.com>
+To: David Daney <ddaney.cavm@gmail.com>
+Cc: Aleksey Makarov <aleksey.makarov@auriga.com>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>,
+        "linux-mips@linux-mips.org" <linux-mips@linux-mips.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        David Daney <david.daney@cavium.com>,
+        Anton Vorontsov <avorontsov@ru.mvista.com>,
+        Vinita Gupta <vgupta@caviumnetworks.com>,
+        Rob Herring <robh+dt@kernel.org>, Pawel Moll <Pawel.Moll@arm.com>,
+        Ian Campbell <ijc+devicetree@hellion.org.uk>,
+        Kumar Gala <galak@codeaurora.org>, Ralf Baechle <ralf@linux-mips.org>,
+        Tejun Heo <tj@kernel.org>, Hans de Goede <hdegoede@redhat.com>,
+        "devicetree@vger.kernel.org" <devicetree@vger.kernel.org>
+Subject: Re: [PATCH] SATA: OCTEON: support SATA on OCTEON platform
+Message-ID: <20150121165427.GA8722@leverpostej>
+References: <1421681040-3392-1-git-send-email-aleksey.makarov@auriga.com>
+ <20150119154357.GH21553@leverpostej>
+ <54BD580C.6030701@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <54BD580C.6030701@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently it is possible for an NMI (or FIQ on ARM) to come in and
-read sched_clock() whilst update_sched_clock() has half updated the
-state. This results in a bad time value being observed.
+On Mon, Jan 19, 2015 at 07:16:28PM +0000, David Daney wrote:
+> On 01/19/2015 07:43 AM, Mark Rutland wrote:
+> > On Mon, Jan 19, 2015 at 03:23:58PM +0000, Aleksey Makarov wrote:
+> >> The OCTEON SATA controller is currently found on cn71XX devices.
+> >>
+> >> Signed-off-by: David Daney <david.daney@cavium.com>
+> >> Signed-off-by: Vinita Gupta <vgupta@caviumnetworks.com>
+> >> [aleksey.makarov@auriga.com: preparing for submission,
+> >> conflict resolution, fixes for the platform code]
+> >> Signed-off-by: Aleksey Makarov <aleksey.makarov@auriga.com>
+> >> ---
+> >>   .../devicetree/bindings/ata/ahci-platform.txt      |   1 +
+> >>   .../devicetree/bindings/mips/cavium/sata-uctl.txt  |  31 ++++++
+> >>   arch/mips/cavium-octeon/octeon-platform.c          |   1 +
+> >>   drivers/ata/Kconfig                                |   9 ++
+> >>   drivers/ata/Makefile                               |   1 +
+> >>   drivers/ata/ahci_platform.c                        |  10 ++
+> >>   drivers/ata/sata_octeon.c                          | 107 +++++++++++++++++++++
+> >>   7 files changed, 160 insertions(+)
+> >>   create mode 100644 Documentation/devicetree/bindings/mips/cavium/sata-uctl.txt
+> >>   create mode 100644 drivers/ata/sata_octeon.c
+> >>
+> >> diff --git a/Documentation/devicetree/bindings/ata/ahci-platform.txt b/Documentation/devicetree/bindings/ata/ahci-platform.txt
+> >> index 4ab09f2..1a5d3be 100644
+> >> --- a/Documentation/devicetree/bindings/ata/ahci-platform.txt
+> >> +++ b/Documentation/devicetree/bindings/ata/ahci-platform.txt
+> >> @@ -11,6 +11,7 @@ Required properties:
+> >>   - compatible        : compatible string, one of:
+> >>     - "allwinner,sun4i-a10-ahci"
+> >>     - "hisilicon,hisi-ahci"
+> >> +  - "cavium,octeon-7130-ahci"
+> >>     - "ibm,476gtr-ahci"
+> >>     - "marvell,armada-380-ahci"
+> >>     - "snps,dwc-ahci"
+> >> diff --git a/Documentation/devicetree/bindings/mips/cavium/sata-uctl.txt b/Documentation/devicetree/bindings/mips/cavium/sata-uctl.txt
+> >> new file mode 100644
+> >> index 0000000..222e66e
+> >> --- /dev/null
+> >> +++ b/Documentation/devicetree/bindings/mips/cavium/sata-uctl.txt
+> >> @@ -0,0 +1,31 @@
+> >> +* UCTL SATA controller glue
+> >
+> > I'm not sure I follow. What does this mean?
+> 
+> Well, UCTL is the internal name of the hardware block.  It functions to 
+> connect a standard AHCI controller to the internal busses of the OCTEON SoC.
+> 
+> >
+> >> +
+> >> +Properties:
+> >> +- compatible: "cavium,octeon-7130-sata-uctl"
+> >> +
+> >> +  Compatibility with the cn7130 SOC.
+> >> +
+> >> +- reg: The base address of the UCTL register bank.
+> >> +
+> >> +- #address-cells: Must be <2>.
+> >> +
+> >> +- #size-cells: Must be <2>.
+> >> +
+> >> +- ranges: Empty to signify direct mapping of the children.
+> >
+> > Why can't these be any values which are sufficient to map children?
+> 
+> They can.  It happens to be the case that it is always empty.
 
-This patch fixes that problem in a similar manner to Thomas Gleixner's
-4396e058c52e("timekeeping: Provide fast and NMI safe access to
-CLOCK_MONOTONIC").
+Then why does the binding mandate those particular values? Whether or
+not it currently happens to be the case is independent from the contract
+that the binding defines.
 
-Note that ripping out the seqcount lock from sched_clock_register() and
-replacing it with a large comment is not nearly as bad as it looks! The
-locking here is actually pretty useless since most of the variables
-modified within the write lock are not covered by the read lock. As a
-result a big comment and the sequence bump implicit in the call
-to update_epoch() should work pretty much the same.
+Why does it not say something like:
 
-Suggested-by: Stephen Boyd <sboyd@codeaurora.org>
-Signed-off-by: Daniel Thompson <daniel.thompson@linaro.org>
----
+#address-cells, #size-cells, and ranges must be present and hold
+suitable values to map all child nodes.
 
-Notes:
-    This patch has only had fairly light testing at this point. However it
-    survives basic tests. In particular I am running perf from FIQ/NMI and
-    have instrumented it with some monotonicity tests none of which have
-    reported any problem.
-    
+[...]
 
- kernel/time/sched_clock.c | 63 +++++++++++++++++++++++++++++++++++++----------
- 1 file changed, 50 insertions(+), 13 deletions(-)
+> >> diff --git a/drivers/ata/ahci_platform.c b/drivers/ata/ahci_platform.c
+> >> index 18d5398..bb36396 100644
+> >> --- a/drivers/ata/ahci_platform.c
+> >> +++ b/drivers/ata/ahci_platform.c
+> >> @@ -22,6 +22,12 @@
+> >>   #include <linux/ahci_platform.h>
+> >>   #include "ahci.h"
+> >>
+> >> +#if IS_ENABLED(CONFIG_SATA_OCTEON)
+> >> +void ahci_octeon_config(struct platform_device *pdev);
+> >> +#else
+> >> +static inline void ahci_octeon_config(struct platform_device *pdev) {}
+> >> +#endif
+> >> +
+> >>   static const struct ata_port_info ahci_port_info = {
+> >>   	.flags		= AHCI_FLAG_COMMON,
+> >>   	.pio_mask	= ATA_PIO4,
+> >> @@ -46,6 +52,9 @@ static int ahci_probe(struct platform_device *pdev)
+> >>   	if (of_device_is_compatible(dev->of_node, "hisilicon,hisi-ahci"))
+> >>   		hpriv->flags |= AHCI_HFLAG_NO_FBS | AHCI_HFLAG_NO_NCQ;
+> >>
+> >> +	if (of_device_is_compatible(dev->of_node, "cavium,octeon-7130-ahci"))
+> >> +		ahci_octeon_config(pdev);
+> >> +
+> >
+> > If we really need this kind of thing, make a new struct and associate it
+> > with of_device_id::data in the table below. Then we make this path free
+> > from any device-specific code.
+> >
+> 
+> Good idea.
+> 
+> We will attempt to factor this into a separate driver module for the 
+> "cavium,octeon-7130-sata-uctl" block.  If that turns out to be too ugly, 
+> I would like to keep the code in this file, but with the change you suggest.
+> 
+> >>   	rc = ahci_platform_init_host(pdev, hpriv, &ahci_port_info);
+> >>   	if (rc)
+> >>   		goto disable_resources;
+> >> @@ -67,6 +76,7 @@ static const struct of_device_id ahci_of_match[] = {
+> >>   	{ .compatible = "ibm,476gtr-ahci", },
+> >>   	{ .compatible = "snps,dwc-ahci", },
+> >>   	{ .compatible = "hisilicon,hisi-ahci", },
+> >> +	{ .compatible = "cavium,octeon-7130-ahci", },
+> >>   	{},
+> >
+> > I was under the impression that the strings other than "generic-ahci"
+> > were only for compatibility with existing DTBs. Why do we need to add
+> > new platform-specific strings here?
+> 
+> Because it is an "existing DTB", The device tree doesn't contain the 
+> compatible property of "generic-ahci", only "cavium,octeon-7130-ahci".
 
-diff --git a/kernel/time/sched_clock.c b/kernel/time/sched_clock.c
-index 01d2d15aa662..485d5070259c 100644
---- a/kernel/time/sched_clock.c
-+++ b/kernel/time/sched_clock.c
-@@ -27,6 +27,10 @@ struct clock_data {
- 	u32 mult;
- 	u32 shift;
- 	bool suspended;
-+
-+	/* Used only temporarily whilst we are updating the primary copy */
-+	u64 old_epoch_ns;
-+	u64 old_epoch_cyc;
- };
+While the DTB may already exist, the string "cavium,octeon-7130-ahci"
+isn't in mainline, and as far as I can see has never been supported. We
+_maintain_ support for existing DTBs, we don't just copy what some
+forked kernel happens to do.
 
- static struct hrtimer sched_clock_timer;
-@@ -67,9 +71,14 @@ unsigned long long notrace sched_clock(void)
- 		return cd.epoch_ns;
+Trying to push that under the "don't break existing DTBs" rule is
+bending the definition.
 
- 	do {
--		seq = raw_read_seqcount_begin(&cd.seq);
--		epoch_cyc = cd.epoch_cyc;
--		epoch_ns = cd.epoch_ns;
-+		seq = raw_read_seqcount(&cd.seq);
-+		if (likely(0 == (seq & 1))) {
-+			epoch_cyc = cd.epoch_cyc;
-+			epoch_ns = cd.epoch_ns;
-+		} else {
-+			epoch_cyc = cd.old_epoch_cyc;
-+			epoch_ns = cd.old_epoch_ns;
-+		}
- 	} while (read_seqcount_retry(&cd.seq, seq));
-
- 	cyc = read_sched_clock();
-@@ -78,6 +87,35 @@ unsigned long long notrace sched_clock(void)
- }
-
- /*
-+ * Update the epoch without allowing sched_clock to observe
-+ * a mismatched epoch pair even if called from NMI.
-+ *
-+ * We do this by maintaining and odd/even copy of the epoch data and
-+ * steering sched_clock to one or the other using a sequence counter.
-+ * In order to preserve the (average case) data cache profile of
-+ * sched_clock the system reverts back to the even copy as soon as
-+ * possible; the odd copy is used *only* during an update.
-+ *
-+ * The caller is responsible for avoiding simultaneous updates.
-+ */
-+static void notrace update_epoch(u64 cyc, u64 ns)
-+{
-+	/* Update the backup copy */
-+	cd.old_epoch_cyc = cd.epoch_cyc;
-+	cd.old_epoch_ns = cd.epoch_ns;
-+
-+	/* Force readers to use the backup (odd) copy */
-+	raw_write_seqcount_latch(&cd.seq);
-+
-+	/* Update the primary copy */
-+	cd.epoch_cyc = cyc;
-+	cd.epoch_ns = ns;
-+
-+	/* Steer readers back the primary (even) copy */
-+	raw_write_seqcount_latch(&cd.seq);
-+}
-+
-+/*
-  * Atomically update the sched_clock epoch.
-  */
- static void notrace update_sched_clock(void)
-@@ -91,12 +129,7 @@ static void notrace update_sched_clock(void)
- 		cyc_to_ns((cyc - cd.epoch_cyc) & sched_clock_mask,
- 			  cd.mult, cd.shift);
-
--	raw_local_irq_save(flags);
--	raw_write_seqcount_begin(&cd.seq);
--	cd.epoch_ns = ns;
--	cd.epoch_cyc = cyc;
--	raw_write_seqcount_end(&cd.seq);
--	raw_local_irq_restore(flags);
-+	update_epoch(cyc, ns);
- }
-
- static enum hrtimer_restart sched_clock_poll(struct hrtimer *hrt)
-@@ -135,16 +168,20 @@ void __init sched_clock_register(u64 (*read)(void), int bits,
- 	ns = cd.epoch_ns + cyc_to_ns((cyc - cd.epoch_cyc) & sched_clock_mask,
- 			  cd.mult, cd.shift);
-
--	raw_write_seqcount_begin(&cd.seq);
-+	/*
-+	 * sched_clock will report a bad value if it executes
-+	 * concurrently with the following code. No locking exists to
-+	 * prevent this; we rely mostly on this function being called
-+	 * early during kernel boot up before we have lots of other
-+	 * stuff going on.
-+	 */
- 	read_sched_clock = read;
- 	sched_clock_mask = new_mask;
- 	cd.rate = rate;
- 	cd.wrap_kt = new_wrap_kt;
- 	cd.mult = new_mult;
- 	cd.shift = new_shift;
--	cd.epoch_cyc = new_epoch;
--	cd.epoch_ns = ns;
--	raw_write_seqcount_end(&cd.seq);
-+	update_epoch(new_epoch, ns);
-
- 	r = rate;
- 	if (r >= 4000000) {
---
-1.9.3
-
+Thanks,
+Mark.
+ 
