@@ -1,441 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751711AbbAVKyn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 05:54:43 -0500
-Received: from ns.pmeerw.net ([84.19.176.92]:56504 "EHLO pmeerw.net"
+	id S1751595AbbAVKww (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 05:52:52 -0500
+Received: from mga01.intel.com ([192.55.52.88]:17675 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750789AbbAVKyg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 05:54:36 -0500
-X-Greylist: delayed 370 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Jan 2015 05:54:35 EST
-Date: Thu, 22 Jan 2015 11:48:23 +0100 (CET)
-From: Peter Meerwald <pmeerw@pmeerw.net>
-To: Daniel Baluta <daniel.baluta@intel.com>
-cc: jic23@kernel.org, ktsai@capellamicro.com, knaack.h@gmx.de, lars@metafoo.de,
-        linux-iio@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iio: light: Add support for Capella CM3323 color/light
- sensor
-In-Reply-To: <1421921412-7710-1-git-send-email-daniel.baluta@intel.com>
-Message-ID: <alpine.DEB.2.02.1501221133140.11308@pmeerw.net>
-References: <1421921412-7710-1-git-send-email-daniel.baluta@intel.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1750759AbbAVKwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 05:52:47 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,448,1418112000"; 
+   d="asc'?scan'208";a="640926179"
+Message-ID: <1421923966.2560.30.camel@jtkirshe-mobl>
+Subject: Re: [E1000-devel] [PATCH 1/2] if_link: Add VF multicast promiscuous
+	mode control
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: David Laight <David.Laight@ACULAB.COM>
+Cc: "'Skidmore, Donald C'" <donald.c.skidmore@intel.com>,
+        Hiroshi Shimamoto <h-shimamoto@ct.jp.nec.com>,
+        =?ISO-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "Choi, Sy Jong" <sy.jong.choi@intel.com>,
+        Hayato Momma <h-momma@ce.jp.nec.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 22 Jan 2015 02:52:46 -0800
+In-Reply-To: <063D6719AE5E284EB5DD2968C1650D6D1CAD0C8A@AcuExch.aculab.com>
+References: <7F861DC0615E0C47A872E6F3C5FCDDBD05E0734E@BPXM14GP.gisp.nec.co.jp>
+	 <874mrlu18e.fsf@nemi.mork.no>
+	 <7F861DC0615E0C47A872E6F3C5FCDDBD05E07B7C@BPXM14GP.gisp.nec.co.jp>
+	 <F6FB0E698C9B3143BDF729DF222866469129B7F5@ORSMSX110.amr.corp.intel.com>
+	 <7F861DC0615E0C47A872E6F3C5FCDDBD05E07F09@BPXM14GP.gisp.nec.co.jp>
+	 <F6FB0E698C9B3143BDF729DF222866469129B844@ORSMSX110.amr.corp.intel.com>
+	 <7F861DC0615E0C47A872E6F3C5FCDDBD05E08FF6@BPXM14GP.gisp.nec.co.jp>
+	 <063D6719AE5E284EB5DD2968C1650D6D1CAD01D6@AcuExch.aculab.com>
+	 <7F861DC0615E0C47A872E6F3C5FCDDBD05E090FE@BPXM14GP.gisp.nec.co.jp>
+	 <F6FB0E698C9B3143BDF729DF222866469129BC03@ORSMSX110.amr.corp.intel.com>
+	 <063D6719AE5E284EB5DD2968C1650D6D1CAD0C8A@AcuExch.aculab.com>
+Content-Type: multipart/signed; micalg="pgp-sha512";
+	protocol="application/pgp-signature"; boundary="=-IdTBaB5t0ET6dPIfMMBX"
+X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Minimal implementation providing raw light intensity and illuminance
-> readings. For illuminance user can compute lux values using raw readings
-> and scale.
 
-minor comments below
-the driver does more locking than other implementations; nothing wrong 
-with that
- 
-> This driver also supports CM3323E sensor chip.
-> 
-> Cc: Kevin Tsai <ktsai@capellamicro.com>
-> Signed-off-by: Daniel Baluta <daniel.baluta@intel.com>
-> ---
->  drivers/iio/light/Kconfig  |  10 ++
->  drivers/iio/light/Makefile |   1 +
->  drivers/iio/light/cm3323.c | 345 +++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 356 insertions(+)
->  create mode 100644 drivers/iio/light/cm3323.c
-> 
-> diff --git a/drivers/iio/light/Kconfig b/drivers/iio/light/Kconfig
-> index 5bea821..aeaf1c7 100644
-> --- a/drivers/iio/light/Kconfig
-> +++ b/drivers/iio/light/Kconfig
-> @@ -48,6 +48,16 @@ config CM32181
->  	 To compile this driver as a module, choose M here:
->  	 the module will be called cm32181.
->  
-> +config CM3323
-> +	depends on I2C
-> +	tristate "Capella CM3323 color/ambient light sensor"
-> +	help
-> +	 Say Y here if you want to build a driver for Capela CM3323
-> +	 color sensor. This driver also supports CM3323E sensor.
-> +
-> +	 To compile this driver as a module, choose M here: the module will
-> +	 be called cm3323.
-> +
->  config CM36651
->  	depends on I2C
->  	tristate "CM36651 driver"
-> diff --git a/drivers/iio/light/Makefile b/drivers/iio/light/Makefile
-> index 47877a3..0815b38 100644
-> --- a/drivers/iio/light/Makefile
-> +++ b/drivers/iio/light/Makefile
-> @@ -7,6 +7,7 @@ obj-$(CONFIG_ADJD_S311)		+= adjd_s311.o
->  obj-$(CONFIG_AL3320A)		+= al3320a.o
->  obj-$(CONFIG_APDS9300)		+= apds9300.o
->  obj-$(CONFIG_CM32181)		+= cm32181.o
-> +obj-$(CONFIG_CM3323)		+= cm3323.o
->  obj-$(CONFIG_CM36651)		+= cm36651.o
->  obj-$(CONFIG_GP2AP020A00F)	+= gp2ap020a00f.o
->  obj-$(CONFIG_HID_SENSOR_ALS)	+= hid-sensor-als.o
-> diff --git a/drivers/iio/light/cm3323.c b/drivers/iio/light/cm3323.c
-> new file mode 100644
-> index 0000000..5e9b32d
-> --- /dev/null
-> +++ b/drivers/iio/light/cm3323.c
-> @@ -0,0 +1,345 @@
-> +/*
-> + * CM3323/CM3323E - Capella Color/Ambient Light Sensor
-> + *
-> + * Copyright (c) 2015, Intel Corporation.
-> + *
-> + * This file is subject to the terms and conditions of version 2 of
-> + * the GNU General Public License.  See the file COPYING in the main
-> + * directory of this archive for more details.
-> + *
-> + * IIO driver for CM3323/CM3323E (7-bit I2C slave address 0x10)
-> + *
-> + * TODO: calibscale to correct the lens factor
-> + */
-> +#include <linux/module.h>
-> +#include <linux/init.h>
-> +#include <linux/i2c.h>
-> +#include <linux/mutex.h>
-> +
-> +#include <linux/iio/iio.h>
-> +#include <linux/iio/sysfs.h>
-> +
-> +#define CM3323_DRV_NAME "cm3323"
-> +
-> +#define CM3323_CMD_CONF		0x00
-> +#define CM3323_CMD_RED_DATA	0x08
-> +#define CM3323_CMD_GREEN_DATA	0x09
-> +#define CM3323_CMD_BLUE_DATA	0x0A
-> +#define CM3323_CMD_CLEAR_DATA	0x0B
-> +
-> +#define CM3323_CONF_SD_BIT	BIT(0) /* sensor disable */
-> +#define CM3323_CONF_AF_BIT	BIT(1) /* auto/manual force mode */
-> +#define CM3323_CONF_IT_MASK	(BIT(4) | BIT(5) | BIT(6))
-> +#define CM3323_CONF_IT_SHIFT	4
-> +
-> +#define CM3323_INT_TIME_AVAILABLE "0.04 0.08 0.16 0.32 0.64 1.28"
-> +#define CM3323_SCALE_AVAILABLE "0.18 0.09 0.045 0.0225 0.01125 0.005625"
-> +
-> +static const struct {
-> +	int val;
-> +	int val2;
-> +} cm3323_int_time[] = {
-> +	{0, 40000},  /* 40 ms */
-> +	{0, 80000},  /* 80 ms */
-> +	{0, 160000}, /* 160 ms */
-> +	{0, 320000}, /* 320 ms */
-> +	{0, 640000}, /* 640 ms */
-> +	{1, 280000}, /* 1280 ms */
-> +};
-> +
-> +/* scale depends on integration time */
-> +static int cm3323_uscale[] = {
-> +	180000, /* 40 ms */
-> +	 90000, /* 80 ms */
-> +	 45000, /* 160 ms */
-> +	 22500, /* 320 ms */
-> +	 11250, /* 640 ms */
-> +	 5625,  /* 1280 ms */
-> +};
-> +
-> +struct cm3323_data {
-> +	struct i2c_client *client;
-> +	u16 reg_conf;
-> +	struct mutex mutex;
-> +};
-> +
-> +#define CM3323_COLOR_CHANNEL(_color, _addr) {\
+--=-IdTBaB5t0ET6dPIfMMBX
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-perhaps a space between { and \ (here and below)
+On Thu, 2015-01-22 at 09:50 +0000, David Laight wrote:
+> From: Skidmore, Donald C=20
+> > > > From: Hiroshi Shimamoto
+> > > > > My concern is what is the real issue that VF multicast
+> promiscuous mode
+> > > can cause.
+> > > > > I think there is the 4k entries to filter multicast address,
+> and the
+> > > > > current ixgbe/ixgbevf can turn all bits on from VM. That is
+> almost same as
+> > > enabling multicast promiscuous mode.
+> > > > > I mean that we can receive all multicast addresses by an
+> onerous
+> > > operation in untrusted VM.
+> > > > > I think we should clarify what is real security issue in this
+> context.
+> > > >
+> > > > If you are worried about passing un-enabled multicasts to users
+> then
+> > > > what about doing a software hash of received multicasts and
+> checking
+> > > > against an actual list of multicasts enabled for that hash
+> entry.
+> > > > Under normal conditions there is likely to be only a single
+> address to check.
+> > > >
+> > > > It may (or may not) be best to use the same hash as any hashing
+> > > > hardware filter uses.
+> > >
+> > > thanks for the comment. But I don't think that is the point.
+> > >
+> > > I guess, introducing VF multicast promiscuous mode seems to add
+> new
+> > > privilege to peek every multicast packet in VM and that doesn't
+> look good.
+> > > On the other hand, I think that there has been the same privilege
+> in the
+> > > current ixgbe/ixgbevf implementation already. Or I'm reading the
+> code
+> > > wrongly.
+> > > I'd like to clarify what is the issue of allowing to receive all
+> multicast packets.
+> >=20
+> > Allowing a VM to give itself the privilege of seeing every multicast
+> packet
+> > could be seen as a hole in VM isolation.
+> > Now if the host system allows this policy I don't see this as an
+> issue as
+> > someone specifically allowed this to happen and then must not be
+> concerned.
+> > We could even log that it has occurred, which I believe your patch
+> did do.
+> > The issue is also further muddied, as you mentioned above, since
+> some of
+> > these multicast packets are leaking anyway (the HW currently uses a
+> 12 bit mask).
+> > It's just that this change would greatly enlarge that hole from a
+> fraction to
+> > all multicast packets.
+>=20
+> Why does it have anything to do with VM isolation?
+> Isn't is just the same as if the VM were connected directly to the
+> ethernet cable?
 
-> +	.type = IIO_INTENSITY, \
-> +	.modified = 1, \
-> +	.info_mask_separate = BIT(IIO_CHAN_INFO_RAW), \
-> +	.info_mask_shared_by_all = BIT(IIO_CHAN_INFO_INT_TIME), \
-> +	.channel2 = IIO_MOD_LIGHT_##_color, \
-> +	.address = _addr, \
-> +}
-> +
-> +/*
-> + * CM3323's GREEN channel is used for reading illuminance
-> + */
-> +#define CM3323_LIGHT_CHANNEL(_addr) {\
-> +	.type = IIO_LIGHT, \
-> +	.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) | \
-> +			      BIT(IIO_CHAN_INFO_SCALE), \
-> +	.info_mask_shared_by_all = BIT(IIO_CHAN_INFO_INT_TIME), \
-> +	.address = _addr, \
-> +}
-> +
-> +static const struct iio_chan_spec cm3323_channels[] = {
-> +	CM3323_COLOR_CHANNEL(RED, CM3323_CMD_RED_DATA),
-> +	CM3323_COLOR_CHANNEL(GREEN, CM3323_CMD_GREEN_DATA),
-> +	CM3323_COLOR_CHANNEL(BLUE, CM3323_CMD_BLUE_DATA),
-> +	CM3323_COLOR_CHANNEL(CLEAR, CM3323_CMD_CLEAR_DATA),
-> +	CM3323_LIGHT_CHANNEL(CM3323_CMD_GREEN_DATA),
-> +};
-> +
-> +static IIO_CONST_ATTR(in_illuminance_scale_available, CM3323_SCALE_AVAILABLE);
-> +static IIO_CONST_ATTR_INT_TIME_AVAIL(CM3323_INT_TIME_AVAILABLE);
-> +
-> +static struct attribute *cm3323_attributes[] = {
-> +	&iio_const_attr_integration_time_available.dev_attr.attr,
-> +	&iio_const_attr_in_illuminance_scale_available.dev_attr.attr,
-> +	NULL
-> +};
-> +
-> +static const struct attribute_group cm3323_attribute_group = {
-> +	.attrs = cm3323_attributes,
-> +};
-> +
-> +static int cm3323_init(struct iio_dev *indio_dev)
-> +{
-> +	int ret;
-> +	struct cm3323_data *data = iio_priv(indio_dev);
-> +
-> +	ret = i2c_smbus_read_word_data(data->client, CM3323_CMD_CONF);
-> +	if (ret < 0) {
-> +		dev_err(&data->client->dev, "Error reading reg_conf\n");
-> +		return ret;
-> +	}
-> +
-> +	/* enable sensor and set auto force mode */
-> +	ret &= ~(CM3323_CONF_SD_BIT | CM3323_CONF_AF_BIT);
-> +
-> +	ret = i2c_smbus_write_word_data(data->client, CM3323_CMD_CONF, ret);
-> +	if (ret < 0) {
-> +		dev_err(&data->client->dev, "Error writing reg_conf\n");
-> +		return ret;
-> +	}
-> +
-> +	data->reg_conf = ret;
-> +
-> +	return 0;
-> +}
-> +
-> +static int cm3323_set_it_bits(struct cm3323_data *data, int val, int val2)
-> +{
-> +	int i, ret;
-> +	u16 reg_conf;
-> +
-> +	for (i = 0; i < ARRAY_SIZE(cm3323_int_time); i++) {
-> +		if (val == cm3323_int_time[i].val &&
-> +			val2 == cm3323_int_time[i].val2) {
-> +			reg_conf = data->reg_conf;
-> +			reg_conf |= i << CM3323_CONF_IT_SHIFT;
-> +
-> +			ret = i2c_smbus_write_word_data(data->client,
-> +				 CM3323_CMD_CONF, reg_conf);
-> +			if (ret < 0)
-> +				return ret;
-> +
-> +			data->reg_conf = reg_conf;
-> +			return 0;
-> +		}
-> +	}
-> +	return -EINVAL;
-> +}
-> +
-> +static int cm3323_set_scale(struct cm3323_data *data, int val, int val2)
-> +{
-> +	int i, ret;
-> +	u16 reg_conf;
-> +
-> +	if (val != 0)
-> +		return 0;
-> +
-> +	for (i = 0; i < ARRAY_SIZE(cm3323_uscale); i++) {
-> +		if (val2 == cm3323_uscale[i]) {
-> +			reg_conf = data->reg_conf;
-> +			reg_conf |= i << CM3323_CONF_IT_SHIFT;
-> +
-> +			ret = i2c_smbus_write_word_data(data->client,
-> +				 CM3323_CMD_CONF, reg_conf);
-> +			if (ret < 0)
-> +				return ret;
-> +
-> +			data->reg_conf = reg_conf;
-> +			return 0;
-> +		}
-> +	}
-> +	return -EINVAL;
-> +}
-> +
-> +static int cm3323_get_it_bits(struct cm3323_data *data)
-> +{
-> +	int bits;
-> +
-> +	bits = (data->reg_conf & CM3323_CONF_IT_MASK) >>
-> +		CM3323_CONF_IT_SHIFT;
-> +
-> +	if (bits >= ARRAY_SIZE(cm3323_int_time))
-> +		return -EINVAL;
-> +	return bits;
-> +}
-> +
-> +static int cm3323_read_raw(struct iio_dev *indio_dev,
-> +			    struct iio_chan_spec const *chan, int *val,
-> +			    int *val2, long mask)
-> +{
-> +	int i, ret;
-> +	struct cm3323_data *data = iio_priv(indio_dev);
-> +
-> +	switch (mask) {
-> +	case IIO_CHAN_INFO_RAW:
-> +		mutex_lock(&data->mutex);
-> +		ret = i2c_smbus_read_word_data(data->client, chan->address);
-> +		if (ret < 0) {
-> +			mutex_unlock(&data->mutex);
-> +			return ret;
-> +		}
-> +		*val = ret;
-> +		mutex_unlock(&data->mutex);
-> +
-> +		return IIO_VAL_INT;
-> +	case IIO_CHAN_INFO_INT_TIME:
-> +		mutex_lock(&data->mutex);
-> +		i = cm3323_get_it_bits(data);
-> +		if (i < 0) {
-> +			mutex_unlock(&data->mutex);
-> +			return -EINVAL;
-> +		}
-> +
-> +		*val = cm3323_int_time[i].val;
-> +		*val2 = cm3323_int_time[i].val2;
-> +		mutex_unlock(&data->mutex);
-> +
-> +		return IIO_VAL_INT_PLUS_MICRO;
-> +	case IIO_CHAN_INFO_SCALE:
-> +		if (chan->type != IIO_LIGHT)
-> +			return -EINVAL;
-> +
-> +		mutex_lock(&data->mutex);
-> +		i = cm3323_get_it_bits(data);
-> +		if (i < 0) {
-> +			mutex_unlock(&data->mutex);
-> +			return -EINVAL;
-> +		}
-> +		*val = 0;
-> +		*val2 = cm3323_uscale[i];
-> +		mutex_unlock(&data->mutex);
-> +
-> +		return IIO_VAL_INT_PLUS_MICRO;
-> +	}
-> +	return -EINVAL;
-> +}
-> +
-> +static int cm3323_write_raw(struct iio_dev *indio_dev,
-> +			    struct iio_chan_spec const *chan, int val,
-> +			    int val2, long mask)
-> +{
-> +	struct cm3323_data *data = iio_priv(indio_dev);
-> +	int ret;
-> +
-> +	switch (mask) {
-> +	case IIO_CHAN_INFO_INT_TIME:
-> +		mutex_lock(&data->mutex);
-> +		ret = cm3323_set_it_bits(data, val, val2);
-> +		mutex_unlock(&data->mutex);
-> +
-> +		return ret;
-> +	case IIO_CHAN_INFO_SCALE:
-> +		if (chan->type != IIO_LIGHT)
-> +			return -EINVAL;
-> +		mutex_lock(&data->mutex);
-> +		ret = cm3323_set_scale(data, val, val2);
-> +		mutex_unlock(&data->mutex);
-> +		return ret;
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +}
-> +
-> +static const struct iio_info cm3323_info = {
-> +	.driver_module	= THIS_MODULE,
-> +	.read_raw	= cm3323_read_raw,
-> +	.write_raw	= cm3323_write_raw,
-> +	.attrs		= &cm3323_attribute_group,
-> +};
-> +
-> +static int cm3323_probe(struct i2c_client *client,
-> +			 const struct i2c_device_id *id)
-> +{
-> +	struct cm3323_data *data;
-> +	struct iio_dev *indio_dev;
-> +	int ret;
-> +
-> +	indio_dev = devm_iio_device_alloc(&client->dev, sizeof(*data));
-> +	if (!indio_dev)
-> +		return -ENOMEM;
-> +
-> +	data = iio_priv(indio_dev);
-> +	i2c_set_clientdata(client, indio_dev);
-> +	data->client = client;
-> +
-> +	mutex_init(&data->mutex);
-> +
-> +	indio_dev->dev.parent = &client->dev;
-> +	indio_dev->info = &cm3323_info;
-> +	indio_dev->name = CM3323_DRV_NAME;
-> +	indio_dev->channels = cm3323_channels;
-> +	indio_dev->num_channels = ARRAY_SIZE(cm3323_channels);
-> +	indio_dev->modes = INDIO_DIRECT_MODE;
-> +
-> +	ret = cm3323_init(indio_dev);
-> +	if (ret < 0) {
-> +		dev_err(&client->dev, "cm3323 chip init failed\n");
-> +		return ret;
-> +	}
-> +	return devm_iio_device_register(&client->dev, indio_dev);
-> +}
-> +
-> +static int cm3323_remove(struct i2c_client *client)
-> +{
-> +	struct iio_dev *indio_dev = i2c_get_clientdata(client);
-> +	struct cm3323_data *data  = iio_priv(indio_dev);
-> +	int ret;
-> +
-> +	mutex_lock(&data->mutex);
-> +	/* disable sensor */
-> +	ret = i2c_smbus_write_word_data(client, CM3323_CMD_CONF,
-> +					CM3323_CONF_SD_BIT);
-> +	if (ret < 0)
-> +		dev_err(&client->dev, "Error writing reg_conf\n");
-> +
-> +	mutex_unlock(&data->mutex);
-> +	return ret;
-> +}
-> +
-> +static const struct i2c_device_id cm3323_id[] = {
-> +	{"cm3323", 0},
-> +	{"cm3323e", 0},
+So give an example of when the VF driver is connected directly to the
+ethernet cable and a PF driver (ixgbe) does not exist, at least that is
+what you are suggesting.
 
-no need to have two IDs I think
+--=-IdTBaB5t0ET6dPIfMMBX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+Content-Transfer-Encoding: 7bit
 
-> +	{}
-> +};
-> +MODULE_DEVICE_TABLE(i2c, cm3323_id);
-> +
-> +static struct i2c_driver cm3323_driver = {
-> +	.driver = {
-> +		.name = CM3323_DRV_NAME,
-> +	},
-> +	.probe		= cm3323_probe,
-> +	.remove		= cm3323_remove,
-> +	.id_table	= cm3323_id,
-> +};
-> +
-> +module_i2c_driver(cm3323_driver);
-> +
-> +MODULE_AUTHOR("Daniel Baluta <daniel.baluta@intel.com>");
-> +MODULE_DESCRIPTION("Capella CM3323 Color/Ambient Light Sensor driver");
-> +MODULE_LICENSE("GPL v2");
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2
 
--- 
+iQIcBAABCgAGBQJUwNZ+AAoJEOVv75VaS+3OCt8P/2rvvVTRA0BOZOM8roh22K93
+qv5xQOTKEU8awcpp1akhpL1fCZ6maucb67euJI5lm1BOZ5JrZ3amR+CFE4ChOLYG
+/1+JIFG4rm3OXhI72gozoTOaOmz9OokKTU26gFaz6QAvkIresWEQwfXBM4nnuh3C
+TLx6lbzvlrOgaj9lvQWacCxUKmbtETyKvWaIyMk/LalM0E/REQLZcqVQX56OSDtA
+Bn4TMWPtdINoVT/P+0UsdtNhJ4yC+02rcEggjOhBTNTX/TF7vQt4OrYTajbkZQl/
+uIHZKRN+16js55BH0EyWJBqXk9UnLnXOATQa0wCfLN079xyyTjZ4j7MDgtxhGJwW
+7ZxEGzeh2rrkir6hQEaF5fJ3QvnEEV6yOZutfir4CBaJfT8BrDIWPedsN7jHFXUw
+15jgylZAa2R7H2dNeacccdYp8kz9Xf1T65aIYau3E5JHb5vDeFbMncqMcDaLfs9Q
+A7cvkAdGqPFVm56NPW2/HO2eVzY7jSmy9+f/syzEW10bI4hVlg/nnFBW0O2Fa0ah
+E2EwZdcabsMpcM/e1ZlV/0qrTVq7QJDvywm4hO6lTgvharQARy03YaQLLrqC7dPm
+h4T2l1xaXFxqHxyNaD6KPu0cSm90UkmSzolj28EPCVCWeatwTSyPdtOX4CaQo9ap
+QMIDvLN0Ph12sTBFaEC4
+=RxGs
+-----END PGP SIGNATURE-----
 
-Peter Meerwald
-+43-664-2444418 (mobile)
+--=-IdTBaB5t0ET6dPIfMMBX--
+
