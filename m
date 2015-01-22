@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752234AbbAVMCk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 07:02:40 -0500
-Received: from mail-qc0-f170.google.com ([209.85.216.170]:48575 "EHLO
-	mail-qc0-f170.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751299AbbAVMC0 (ORCPT
+	id S1751649AbbAVMB3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 07:01:29 -0500
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:13328 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750915AbbAVMB2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 07:02:26 -0500
-From: Xunlei Pang <pang.xunlei@linaro.org>
-To: linux-kernel@vger.kernel.org
-Cc: rtc-linux@googlegroups.com, Thomas Gleixner <tglx@linutronix.de>,
-        Alessandro Zummo <a.zummo@towertech.it>,
-        John Stultz <john.stultz@linaro.org>,
-        Arnd Bergmann <arnd.bergmann@linaro.org>,
-        Xunlei Pang <pang.xunlei@linaro.org>
-Subject: [PATCH v2 3/3] time: clocksource: Add a comment to CLOCK_SOURCE_SUSPEND_NONSTOP
-Date: Thu, 22 Jan 2015 12:01:17 +0000
-Message-Id: <1421928077-4698-3-git-send-email-pang.xunlei@linaro.org>
-X-Mailer: git-send-email 2.2.1
-In-Reply-To: <1421928077-4698-1-git-send-email-pang.xunlei@linaro.org>
-References: <1421928077-4698-1-git-send-email-pang.xunlei@linaro.org>
+	Thu, 22 Jan 2015 07:01:28 -0500
+X-AuditID: cbfec7f4-b7f126d000001e9a-ec-54c0e6051e36
+Message-id: <54C0E692.7000806@samsung.com>
+Date: Thu, 22 Jan 2015 15:01:22 +0300
+From: Andrey Ryabinin <a.ryabinin@samsung.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:31.0) Gecko/20100101
+ Thunderbird/31.3.0
+MIME-version: 1.0
+To: Krzysztof Kozlowski <k.kozlowski@samsung.com>, rtc-linux@googlegroups.com
+Cc: linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>
+Subject: Re: [rtc-linux] [PATCH] rtc: s5m: terminate s5m_rtc_id array with
+ empty element
+References: <1421852809-29733-1-git-send-email-a.ryabinin@samsung.com>
+ <CAJKOXPfuxD91=hEYoTQ2Vdes+cf-FXGUZRD2HUbeNzS3czKobA@mail.gmail.com>
+In-reply-to: <CAJKOXPfuxD91=hEYoTQ2Vdes+cf-FXGUZRD2HUbeNzS3czKobA@mail.gmail.com>
+Content-type: text/plain; charset=utf-8
+Content-transfer-encoding: 7bit
+X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFlrGLMWRmVeSWpSXmKPExsVy+t/xK7qszw6EGOw8z2Kx5OJVdovXLwwt
+	Lu+aw2axv7OD0YHFY8/Ek2wefVtWMXpMn/eTyePzJrkAligum5TUnMyy1CJ9uwSujGu/igou
+	sFa03HnP3sB4gqWLkZNDQsBEYuO7P8wQtpjEhXvr2boYuTiEBJYySnw/OI0Jwmlmkjj+ZzpY
+	Fa+AlsSilZPZQGwWAVWJh6/62EFsNgE9iX+ztoPFRQUiJD6s+soGUS8o8WPyPbBtIgK+Eg9W
+	HgWzmQU8Jc50PgGzhQWiJM6d+sIOsayXUWJO4xLWLkYODk6BYImtbyNATGYBdYkpU3IhWuUl
+	Nq95yzyBUWAWkg2zEKpmIalawMi8ilE0tTS5oDgpPddQrzgxt7g0L10vOT93EyMkbL/sYFx8
+	zOoQowAHoxIPb8DKAyFCrIllxZW5hxglOJiVRHi33QcK8aYkVlalFuXHF5XmpBYfYmTi4JRq
+	YKyVjDM0ex6+zefh6s8VTMdf7Fx/Plhlz32+7Mga/gNmi4Q11lawydb99Vf7rcdrey35Om9z
+	ac7SYr6nf3VtYzkeNReemZsVxz0vb73q58ePXU22tuYzM3qn3eI60Gv1ea4gy4xzt358mr6l
+	4c/lhRdkU0vOcIsYNlivSnytuczR7ubnvIwd7UosxRmJhlrMRcWJAGv+Dvk5AgAA
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When doing timekeeping_resume(), if the nonstop clocksource
-wraps back, "cycle_delta" will miss the wrap time.
+On 01/22/2015 12:37 PM, Krzysztof Kozlowski wrote:
+> 2015-01-21 16:06 GMT+01:00 Andrey Ryabinin <a.ryabinin@samsung.com>:
+>> Array of platform_device_id elements should be terminated
+>> with empty element.
+>>
+>> Signed-off-by: Andrey Ryabinin <a.ryabinin@samsung.com>
+>> ---
+>>  drivers/rtc/rtc-s5m.c | 1 +
+>>  1 file changed, 1 insertion(+)
+> 
+> 
+> Right, good catch.
+> 
+> Reviewed-by: Krzysztof Kozlowski <k.kozlowski@samsung.com>
+> 
+> Maybe also cc stable for fixing 5bccae6ec458 ("rtc: s5m-rtc: add
+> real-time clock driver for s5m8767")?
+> 
 
-It's hard to determine the right CLOCKSOURCE_MASK(xxx) or
-something to add code for inspecting such behavior, and we
-don't have many existent nonstop clocksources, so just add
-a comment to indicate that if have this flag set, people
-are aware that this nonstop clocksource won't wrap back
-during system suspend/resume.
-
-Signed-off-by: Xunlei Pang <pang.xunlei@linaro.org>
----
- include/linux/clocksource.h | 5 +++++
- 1 file changed, 5 insertions(+)
-
-diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
-index abcafaa..8680189 100644
---- a/include/linux/clocksource.h
-+++ b/include/linux/clocksource.h
-@@ -207,6 +207,11 @@ struct clocksource {
- #define CLOCK_SOURCE_WATCHDOG			0x10
- #define CLOCK_SOURCE_VALID_FOR_HRES		0x20
- #define CLOCK_SOURCE_UNSTABLE			0x40
-+
-+/*
-+ * When setting this flag, you're also supposed to mean that it doesn't
-+ * wrap back during system suspend/resume. See timekeeping_resume().
-+ */
- #define CLOCK_SOURCE_SUSPEND_NONSTOP		0x80
- #define CLOCK_SOURCE_RESELECT			0x100
- 
--- 
-1.9.1
+Probably. I didn't add stable tag because, I have no idea what are runtime
+effects of this bug, so I don't know whether this worth for stable or not.
 
