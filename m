@@ -1,146 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752436AbbAVNqI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 08:46:08 -0500
-Received: from gum.cmpxchg.org ([85.214.110.215]:48812 "EHLO gum.cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751299AbbAVNqG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 08:46:06 -0500
-Date: Thu, 22 Jan 2015 08:45:50 -0500
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Will Deacon <will.deacon@arm.com>
-Cc: "Suzuki K. Poulose" <Suzuki.Poulose@arm.com>,
-        Vladimir Davydov <vdavydov@parallels.com>, Tejun Heo <tj@kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mhocko@suse.cz" <mhocko@suse.cz>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [Regression] 3.19-rc3 : memcg: Hang in mount memcg
-Message-ID: <20150122134550.GA13876@phnom.home.cmpxchg.org>
-References: <54B01335.4060901@arm.com>
- <20150110085525.GD2110@esperanza>
- <54BCFDCF.9090603@arm.com>
- <20150121163955.GM4549@arm.com>
+	id S1752578AbbAVNqs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 08:46:48 -0500
+Received: from mail-ie0-f175.google.com ([209.85.223.175]:34996 "EHLO
+	mail-ie0-f175.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236AbbAVNqq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 08:46:46 -0500
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20150121163955.GM4549@arm.com>
+In-Reply-To: <54C0CE8A.5080805@gmail.com>
+References: <1421435777-25306-1-git-send-email-gregkh@linuxfoundation.org>
+	<1421435777-25306-2-git-send-email-gregkh@linuxfoundation.org>
+	<54BE5DC8.70706@gmail.com>
+	<54BE9D08.7010804@zonque.org>
+	<54BF805B.4000609@gmail.com>
+	<54BFDAAA.50203@zonque.org>
+	<54C0CE8A.5080805@gmail.com>
+Date: Thu, 22 Jan 2015 14:46:41 +0100
+Message-ID: <CANq1E4S=3qNw599L85uj-8aXwxeV+mcurB_Nu_rHH8opAeePjw@mail.gmail.com>
+Subject: Re: [PATCH 01/13] kdbus: add documentation
+From: David Herrmann <dh.herrmann@gmail.com>
+To: "Michael Kerrisk (man-pages)" <mtk.manpages@gmail.com>
+Cc: Daniel Mack <daniel@zonque.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>,
+        Arnd Bergmann <arnd@arndb.de>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        One Thousand Gnomes <gnomes@lxorguk.ukuu.org.uk>,
+        Tom Gundersen <teg@jklm.no>, Jiri Kosina <jkosina@suse.cz>,
+        Andy Lutomirski <luto@amacapital.net>,
+        Linux API <linux-api@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Djalal Harouni <tixxdz@opendz.org>, Johannes Stezenbach <js@sig21.net>,
+        "Theodore T'so" <tytso@mit.edu>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jan 21, 2015 at 04:39:55PM +0000, Will Deacon wrote:
-> On Mon, Jan 19, 2015 at 12:51:27PM +0000, Suzuki K. Poulose wrote:
-> > On 10/01/15 08:55, Vladimir Davydov wrote:
-> > > The problem is that the memory cgroup controller takes a css reference
-> > > per each charged page and does not reparent charged pages on css
-> > > offline, while cgroup_mount/cgroup_kill_sb expect all css references to
-> > > offline cgroups to be gone soon, restarting the syscall if the ref count
-> > > != 0. As a result, if you create a memory cgroup, charge some page cache
-> > > to it, and then remove it, unmount/mount will hang forever.
-> > >
-> > > May be, we should kill the ref counter to the memory controller root in
-> > > cgroup_kill_sb only if there is no children at all, neither online nor
-> > > offline.
-> > >
-> > 
-> > Still reproducible on 3.19-rc5 with the same setup.
-> 
-> Yeah, I'm seeing the same failure on my setup too.
-> 
-> > From git bisect, the last good commit is :
-> > 
-> > commit 8df0c2dcf61781d2efa8e6e5b06870f6c6785735
-> > Author: Pranith Kumar <bobby.prani@gmail.com>
-> > Date:   Wed Dec 10 15:42:28 2014 -0800
-> > 
-> >      slab: replace smp_read_barrier_depends() with lockless_dereference()
-> 
-> So that points at 3e32cb2e0a12 ("mm: memcontrol: lockless page counters")
-> as the offending commit.
+Hi Michael
 
-With b2052564e66d ("mm: memcontrol: continue cache reclaim from
-offlined groups"), page cache can pin an old css and its ancestors
-indefinitely, making that hang in a second mount() very likely.
+On Thu, Jan 22, 2015 at 11:18 AM, Michael Kerrisk (man-pages)
+<mtk.manpages@gmail.com> wrote:
+> On 01/21/2015 05:58 PM, Daniel Mack wrote:
+>>>> Also, the context the kdbus commands operate on originate from a
+>>>> mountable special-purpose file system.
+>>>
+>>> It's not clear to me how this point implies any particular API design
+>>> choice.
+>>
+>> It emphasizes the fact that our ioctl API can only be used with the
+>> nodes exposed by kdbusfs, and vice versa. I think operations on
+>> driver-specific files do not justify a new 'generic' syscall API.
+>
+> I see your (repeated) use of words like "driver" as just a distraction,
+> I'm sorry. "Driver-specific files" is an implementation detail. The
+> point is that kdbus provides a complex, general-purpose feature for all
+> of userland. It is core infrastructure that will be used by key pieces
+> of the plumbing layer, and likely by many other applications as well.
+> *Please* stop suggesting that it is not core infrastructure: kdbus
+> has the potential to be a great IPC that will be very useful to many,
+> many user-space developers.
 
-However, swap entries have also been doing that for quite a while now,
-and as Vladimir pointed out, the same is true for kernel memory.  This
-latest change just makes this existing bug easier to trigger.
+We called it an 'ipc driver' so far. It is in no way meant as
+distraction. Feel free to call it 'core infrastructure'. I think we
+can agree that we want it to be generically useful, like other ipc
+mechanisms, including UDS and netlink.
 
-I think we have to update the lifetime rules to reflect reality here:
-memory and swap lifetime is indefinite, so once the memory controller
-is used, it has state that is independent from whether its mounted or
-not.  We can support an identical remount, but have to fail mounting
-with new parameters that would change the behavior of the controller.
+> (By the way, we have precedents for device/filesystem-specific system
+> calls. Even a recent one, in memfd_create().)
 
-Suzuki, Will, could you give the following patch a shot?
+memfd_create() is in no way file-system specific. Internally, it uses
+shmem, but that's an implementation detail. The API does not expose
+this in any way. If you were referring to sealing, it's implemented as
+fcntl(), not as a separate syscall. Furthermore, sealing is only
+limited to shmem as it's the only volatile storage. It's not an API
+restriction. Other volatile file-systems are free to implement
+sealing.
 
-Tejun, would that route be acceptable to you?
+>>> ioctl() is a get-out-of-jail free card when it comes to API design.
+>>
+>> And how are syscalls different in that regard when they would both
+>> transport the same data structures?
+>
+> My general impression is that when it comes to system calls,
+> there's usually a lot more up front thought about API design.
+
+This is no technical reason why to use syscalls over ioctls. Imho,
+it's rather a reason to improve the kernel's ioctl-review process.
+
+>> Also note that all kdbus ioctls
+>> necessarily operate on a file descriptor context, which an ioctl passes
+>> along by default.
+>
+> I fail to see your point here. The same statement applies to multiple
+> special-purpose system calls (epoll, inotify, various shared memory APIs,
+> and so on).
+
+epoll and inotify don't have a 'parent' object living in the
+file-system. They *need* an entry-point. We can use open() for that.
+
+You're right, from a technical viewpoint, there's no restriction.
+There're examples for both (eg., see Solaris /dev/poll, as
+ioctl()-based 'epoll').
+
+>>> Rather
+>>> than thinking carefully and long about a set of coherent, stable APIs that
+>>> provide some degree of type-safety to user-space, one just adds/changes/removes
+>>> an ioctl.
+>>
+>> Adding another ioctl in the future for cases we didn't think about
+>> earlier would of course be considered a workaround; and even though such
+>> things happen all the time, it's certainly something we'd like to avoid.
+>>
+>> However, we would also need to add another syscall in such cases, which
+>> is even worse IMO. So that's really not an argument against ioctls after
+>> all. What fundamental difference between a raw syscall and a ioctl,
+>> especially with regards to type safety, is there which would help us here?
+>
+> Type safety helps user-space application developers. System calls have
+> it, ioctl() does not.
+
+This is simply not true. There is no type-safety in:
+    syscall(__NR_xyz, some, random, arguments)
+
+The only way a syscall gets 'type-safe', is to provide a wrapper
+function. Same applies to ioctls. But people tend to not do that for
+ioctls, which is, again, not a technical argument against ioctls. It's
+a matter of psychology, though.
+
+I still don't see a technical reason to use syscalls. API proposals welcome!
+
+We're now working on a small kdbus helper library, which provides
+type-safe ioctl wrappers, item-iterators and documented examples. But,
+like syscalls, nobody is forced to use the wrappers. The API design is
+not affected by this.
+
+>>> And that process seems to be frequent and ongoing even now. (And
+>>> it's to your great credit that the API/ABI breaks are clearly and honestly
+>>> marked in the kdbus.h changelog.) All of this lightens the burden of API
+>>> design for kernel developers, but I'm concerned that the long-term pain
+>>> for user-space developers who use an API which (in my estimation) may
+>>> come to be widely used will be enormous.
+>>
+>> Yes, we've jointly reviewed the API details again until just recently to
+>> unify structs and enums etc, and added fields to make the ioctls structs
+>> more versatile for possible future additions. By that, we effectively
+>> broke the ABI, but we did that because we know we can't do such things
+>> again in the future.
+>>
+>> But again - I don't see how this would be different when using syscalls
+>> rather than ioctls to transport information between the driver and
+>> userspace. Could you elaborate?
+>
+> My suspicion is that not nearly enough thinking has yet been done about
+> the design of the API. That's based on these observations:
+>
+> * Documentation that is, considering the size of the API, *way* too thin.
+
+Ok, working on that.
+
+> * Some parts of the API not documented at all (various kdbus_item blobs)
+
+All public structures have documentation in kdbus.h. It may need
+improvements, though.
+
+> * ABI changes happening even quite recently
+
+Please elaborate why 'recent ABI-changes' are a sign of a premature API.
+
+I seriously doubt any API can be called 'perfect'. On the contrary, I
+believe that all APIs could be improved continuously. The fact that
+we, at one point, settle on an API is an admission of
+backwards-compatibility. I in no way think it's a sign of
+'perfection'.
+With kdbus our plan is to give API-guarantees starting with upstream
+inclusion. We know, that our API will not be perfect, none is. But we
+will try hard to fix anything that comes up, as long as we can. And
+this effort will manifest in ABI-breaks.
+
+> * API oddities such as the 'kernel_flags' fields. Why do I need to
+>   be told what flags the kernel supports on *every* operation?
+
+If we only returned EINVAL on invalid arguments, user-space had to
+probe for each flag to see whether it's supported. By returning the
+set of supported flags, user-space can cache those and _reliably_ know
+which flags are supported.
+We decided the overhead of a single u64 copy on each ioctl is
+preferred over a separate syscall/ioctl to query kernel flags. If you
+disagree, please elaborate (preferably with a suggestion how to do it
+better).
+
+> The above is just after a day of looking hard at kdbus.txt. I strongly
+> suspect I'd find a lot of other issues if I spent more time on kdbus.
+
+If you find the time, please do! Any hints how a specific part of the
+API could be done better, is highly appreciated. A lot of the more or
+less recent changes were done due to reviews from glib developers.
+More help is always welcome!
 
 Thanks
-
----
->From c5e88d02d185c52748df664aa30a2c5f8949b0f7 Mon Sep 17 00:00:00 2001
-From: Johannes Weiner <hannes@cmpxchg.org>
-Date: Thu, 22 Jan 2015 08:16:31 -0500
-Subject: [patch] kernel: cgroup: prevent mount hang due to memory controller
- lifetime
-
-Since b2052564e66d ("mm: memcontrol: continue cache reclaim from
-offlined groups"), re-mounting the memory controller after using it is
-very likely to hang.
-
-The cgroup core assumes that any remaining references after deleting a
-cgroup are temporary in nature, and synchroneously waits for them, but
-the above-mentioned commit has left-over page cache pin its css until
-it is reclaimed naturally.  That being said, swap entries and charged
-kernel memory have been doing the same indefinite pinning forever, the
-bug is just more likely to trigger with left-over page cache.
-
-Reparenting kernel memory is highly impractical, which leaves changing
-the cgroup assumptions to reflect this: once a controller has been
-mounted and used, it has internal state that is independent from mount
-and cgroup lifetime.  It can be unmounted and remounted, but it can't
-be reconfigured during subsequent mounts.
-
-Don't offline the controller root as long as there are any children,
-dead or alive.  A remount will no longer wait for these old references
-to drain, it will simply mount the persistent controller state again.
-
-Reported-by: "Suzuki K. Poulose" <Suzuki.Poulose@arm.com>
-Reported-by: Will Deacon <will.deacon@arm.com>
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
- kernel/cgroup.c | 9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
-
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index bb263d0caab3..9a09308c8066 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1819,8 +1819,11 @@ static struct dentry *cgroup_mount(struct file_system_type *fs_type,
- 			goto out_unlock;
- 		}
- 
--		if (root->flags ^ opts.flags)
--			pr_warn("new mount options do not match the existing superblock, will be ignored\n");
-+		if (root->flags ^ opts.flags) {
-+			pr_warn("new mount options do not match the existing superblock\n");
-+			ret = -EBUSY;
-+			goto out_unlock;
-+		}
- 
- 		/*
- 		 * We want to reuse @root whose lifetime is governed by its
-@@ -1909,7 +1912,7 @@ static void cgroup_kill_sb(struct super_block *sb)
- 	 *
- 	 * And don't kill the default root.
- 	 */
--	if (css_has_online_children(&root->cgrp.self) ||
-+	if (!list_empty(&root->cgrp.self.children) ||
- 	    root == &cgrp_dfl_root)
- 		cgroup_put(&root->cgrp);
- 	else
--- 
-2.2.0
-
+David
