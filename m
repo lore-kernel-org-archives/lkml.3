@@ -1,59 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754056AbbAVUii (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 15:38:38 -0500
-Received: from mail-qc0-f180.google.com ([209.85.216.180]:51321 "EHLO
-	mail-qc0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752715AbbAVUig (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 15:38:36 -0500
-Date: Thu, 22 Jan 2015 21:38:34 +0100
-From: Stephane Eranian <eranian@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: peterz@infradead.org, mingo@elte.hu, vincent.weaver@maine.edu,
-        cl@linux.com, paulus@samba.org, acme@redhat.com
-Subject: [PATCH] perf/rapl: fix crash in rapl_scale()
-Message-ID: <20150122203834.GA10228@thinkpad>
+	id S1754922AbbAVUly (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 15:41:54 -0500
+Received: from sauhun.de ([89.238.76.85]:42459 "EHLO pokefinder.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753429AbbAVUlw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 15:41:52 -0500
+Date: Thu, 22 Jan 2015 21:41:47 +0100
+From: Wolfram Sang <wsa@the-dreams.de>
+To: Max Filippov <jcmvbkbc@gmail.com>
+Cc: Peter Korsgaard <peter@korsgaard.com>, Peter Korsgaard <jacmet@sunsite.dk>,
+        linux-i2c@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] i2c-ocores: add common clock support
+Message-ID: <20150122204147.GA16770@katana>
+References: <1421230899-7843-1-git-send-email-jcmvbkbc@gmail.com>
+ <20150122144522.GF3413@katana>
+ <CAMo8Bf+XJY_bY+OB2i_SZQmAavwERG39BR8FVj202V-E3UidPg@mail.gmail.com>
+ <20150122150717.GJ3413@katana>
+ <87wq4e7jqy.fsf@dell.be.48ers.dk>
+ <20150122185711.GA14880@katana>
+ <CAMo8BfJCPQWa-AGODDO5o2XZU3d-BbaxjSSG9SOoMzoXpYtr-A@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="jRHKVT23PllUwdXP"
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CAMo8BfJCPQWa-AGODDO5o2XZU3d-BbaxjSSG9SOoMzoXpYtr-A@mail.gmail.com>
+User-Agent: Mutt/1.5.23 (2014-03-12)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-This patch fixes a systematic crash in rapl_scale()
-due to an invalid pointer.
+--jRHKVT23PllUwdXP
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The bug was introduced by commit:
-commit 89cbc76768c2fa4ed95545bf961f3a14ddfeed21
-Author: Christoph Lameter <cl@linux.com>
-Date:   Sun Aug 17 12:30:40 2014 -0500
+On Thu, Jan 22, 2015 at 11:36:25PM +0300, Max Filippov wrote:
+> On Thu, Jan 22, 2015 at 9:57 PM, Wolfram Sang <wsa@the-dreams.de> wrote:
+> > 2?) a new binding is present to specify the IP clock speed:
+> >         - is this needed? is somebody using the driver without CCF?
+> >         - if so, the new binding is parsed and evaluated
+> >         - I couldn't find an existing binding to specify a clock speed.
+> >           Please have a look, too. Otherwise we need to introduce sth
+> >           like "opencores,ip-clock-khz" probably.
+> >         - "clock-frequency" is describing the bus speed as usual
+>=20
+> ePAPR document says that clock-frequency 'specifies the frequency
+> of a clock in Hz', not identifying which clock. Outside i2c drivers
+> subtree it is commonly used to specify input clock frequency of IP
+> blocks, even for bus controllers, e.g. SPI.
 
-    x86: Replace __get_cpu_var uses
+I know; it was established in I2C this way before I took over.
+I don't think it is a good idea to change that.
 
 
-The fix is simple. Just put the parenthesis where it needs
-to be, i.e., around rapl_pmu. To my surprise, the compiler
-was not complaining about passing an integer instead of a
-pointer.
+--jRHKVT23PllUwdXP
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
-Reported-by: Vince Weaver <vincent.weaver@maine.edu>
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Tested-by: Vince Weaver <vincent.weaver@maine.edu>
---
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1
 
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_rapl.c b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-index 6e434f8..c4bb8b8 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_rapl.c
-@@ -142,7 +142,7 @@ static inline u64 rapl_scale(u64 v)
- 	 * or use ldexp(count, -32).
- 	 * Watts = Joules/Time delta
- 	 */
--	return v << (32 - __this_cpu_read(rapl_pmu->hw_unit));
-+	return v << (32 - __this_cpu_read(rapl_pmu)->hw_unit);
- }
- 
- static u64 rapl_event_update(struct perf_event *event)
+iQIcBAEBAgAGBQJUwWCKAAoJEBQN5MwUoCm2/agQAIyKeAeSIClpWpxMXtPJ10ky
+pF6WLHz1Knpvq/nYPDN5DvQLycwll4J5qDaXYtn+vMJJnw/E7wHIB6uI7y0NdEh+
+scyMKudbHWXBCm3Gzac5te7OMuJARDgOROyLzB+nLmq/hZmkRcSD+70LLNx/VZb7
+my0Cygv+a4k1F6UGqkhDJWc23BHCwo3vPvhp3QgEiRvKIEYBF5U1V1pKJbVRLdl3
+fMx6LAkTP/oSzQB41P8aGQmWyLtUu98bTITavNRHsKqr9nowQ3tzlzSjQSWds9dt
+xEtXi4IEC7gVOQsveYlfVY2ugwWnb/sWVoMBiwyzWJHmuycOLcPs/2us41cwUjpx
+jWy/bKtSetH20EAM6orJw7bIXQ4FItlefuDlbX1xh6OTRfXGzYRPOyCmPQVJlTYK
+MZ3nru5SvM0ex/TwW88IK3gZ8bQA6vksANnydY28fJiTvlN//OkcSZrH3qFz3qKw
+K9EwKct88W3+BCu/4VUAyuq1CjdBdm1V1eO1q64okS+aJq/fvzM5ueys8jPSYueD
+KyyPAdnYknDuhU8lI01DbIv1Ik6P1/+1K5YI1sqrugElmq2FapgRogufds7UKq00
+AkKihxiHbq9BYfHnch2bRuc6I7eopPuL9c7bDfzjhrK0uA+IEJjmeulTRfdf2r4/
+rlnWP5hp3OlLl+2x97bz
+=Cqjn
+-----END PGP SIGNATURE-----
+
+--jRHKVT23PllUwdXP--
