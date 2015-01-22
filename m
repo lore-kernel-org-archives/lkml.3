@@ -1,71 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754117AbbAVTy3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 14:54:29 -0500
-Received: from g2t2354.austin.hp.com ([15.217.128.53]:48987 "EHLO
-	g2t2354.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752479AbbAVTy1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 14:54:27 -0500
-Message-ID: <1421955490.2493.9.camel@misato.fc.hp.com>
-Subject: Re: [PATCH] x86: change cachemode symbols to non-gpl to avoid
- breaking out-of-tree modules
-From: Toshi Kani <toshi.kani@hp.com>
-To: Juergen Gross <jgross@suse.com>
-Cc: hpa@zytor.com, x86@kernel.org, tglx@linutronix.de, mingo@redhat.com,
-        linux-kernel@vger.kernel.org, steven@uplinklabs.net
-Date: Thu, 22 Jan 2015 12:38:10 -0700
-In-Reply-To: <1421926997-28615-1-git-send-email-jgross@suse.com>
-References: <1421926997-28615-1-git-send-email-jgross@suse.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.10.4 (3.10.4-4.fc20) 
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754083AbbAVTo2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 14:44:28 -0500
+Received: from mga09.intel.com ([134.134.136.24]:20761 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753185AbbAVToZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 14:44:25 -0500
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="5.09,450,1418112000"; 
+   d="scan'208";a="655077539"
+From: "Dugger, Donald D" <donald.d.dugger@intel.com>
+To: Alex Williamson <alex.williamson@redhat.com>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+CC: "bhelgaas@google.com" <bhelgaas@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH] PCI: Add Wellsburg (X99) to Intel PCH root port ACS
+ quirk
+Thread-Topic: [PATCH] PCI: Add Wellsburg (X99) to Intel PCH root port ACS
+ quirk
+Thread-Index: AQHQNnEOxOUUpyxvgEq2jahlkIAfeZzMio4w
+Date: Thu, 22 Jan 2015 19:44:22 +0000
+Message-ID: <6AF484C0160C61439DE06F17668F3BCB5348FE8C@ORSMSX114.amr.corp.intel.com>
+References: <20150122181524.1586.14496.stgit@gimli.home>
+In-Reply-To: <20150122181524.1586.14496.stgit@gimli.home>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.22.254.140]
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by nfs id t0MJiYKY029206
 
-On Thu, 2015-01-22 at 12:43 +0100, Juergen Gross wrote:
-> Commit 281d4078bec366d60990add9d91a952953bd0d72 ("x86: Make page
-> cache mode a real type") introduced the symbols __cachemode2pte_tbl
-> and __pte2cachemode_tbl and exported them via EXPORT_SYMBOL_GPL.
-> This will break building out-of-tree non-gpl modules which need to
-> set caching mode in ptes.
-> 
-> Change EXPORT_SYMBOL_GPL to EXPORT-SYMBOL for these two symbols.
-> 
-> Reported-by: Stevan Noonan <steven@uplinklabs.net>
-> Signed-off-by: Juergen Gross <jgross@suse.com>
+Ack-by: Don Dugger <donald.d.dugger@intel.com>
 
-Reviewed-by: Toshi Kani <toshi.kani@hp.com>
+--
+Don Dugger
+"Censeo Toto nos in Kansa esse decisse." - D. Gale
+Ph: 303/443-3786
 
--Toshi
+-----Original Message-----
+From: Alex Williamson [mailto:alex.williamson@redhat.com] 
+Sent: Thursday, January 22, 2015 11:16 AM
+To: linux-pci@vger.kernel.org
+Cc: bhelgaas@google.com; Dugger, Donald D; linux-kernel@vger.kernel.org
+Subject: [PATCH] PCI: Add Wellsburg (X99) to Intel PCH root port ACS quirk
 
-> ---
->  arch/x86/mm/init.c | 4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-> index 08a7d31..079c3b6 100644
-> --- a/arch/x86/mm/init.c
-> +++ b/arch/x86/mm/init.c
-> @@ -43,7 +43,7 @@ uint16_t __cachemode2pte_tbl[_PAGE_CACHE_MODE_NUM] = {
->  	[_PAGE_CACHE_MODE_WT]		= _PAGE_PCD,
->  	[_PAGE_CACHE_MODE_WP]		= _PAGE_PCD,
->  };
-> -EXPORT_SYMBOL_GPL(__cachemode2pte_tbl);
-> +EXPORT_SYMBOL(__cachemode2pte_tbl);
->  uint8_t __pte2cachemode_tbl[8] = {
->  	[__pte2cm_idx(0)] = _PAGE_CACHE_MODE_WB,
->  	[__pte2cm_idx(_PAGE_PWT)] = _PAGE_CACHE_MODE_WC,
-> @@ -54,7 +54,7 @@ uint8_t __pte2cachemode_tbl[8] = {
->  	[__pte2cm_idx(_PAGE_PCD | _PAGE_PAT)] = _PAGE_CACHE_MODE_UC_MINUS,
->  	[__pte2cm_idx(_PAGE_PWT | _PAGE_PCD | _PAGE_PAT)] = _PAGE_CACHE_MODE_UC,
->  };
-> -EXPORT_SYMBOL_GPL(__pte2cachemode_tbl);
-> +EXPORT_SYMBOL(__pte2cachemode_tbl);
->  
->  static unsigned long __initdata pgt_buf_start;
->  static unsigned long __initdata pgt_buf_end;
+Intel has confirmed that the Wellsburg chipset, while not reporting ACS, does provide the proper isolation through the RCBA/BSPR registers, so the same quirk works for this set of device IDs.
 
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+Cc: Don Dugger <donald.d.dugger@intel.com>
+---
 
+ drivers/pci/quirks.c |    3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c index ed6f89b..2cdb789 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -3630,6 +3630,9 @@ static const u16 pci_quirk_intel_pch_acs_ids[] = {
+ 	0x9c98, 0x9c99, 0x9c9a, 0x9c9b,
+ 	/* Patsburg (X79) PCH */
+ 	0x1d10, 0x1d12, 0x1d14, 0x1d16, 0x1d18, 0x1d1a, 0x1d1c, 0x1d1e,
++	/* Wellsburg (X99) PCH */
++	0x8d10, 0x8d11, 0x8d12, 0x8d13, 0x8d14, 0x8d15, 0x8d16, 0x8d17,
++	0x8d18, 0x8d19, 0x8d1a, 0x8d1b, 0x8d1c, 0x8d1d, 0x8d1e,
+ };
+ 
+ static bool pci_quirk_intel_pch_acs_match(struct pci_dev *dev)
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
