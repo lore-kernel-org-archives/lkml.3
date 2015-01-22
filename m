@@ -1,99 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753747AbbAVXFg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 18:05:36 -0500
-Received: from ozlabs.org ([103.22.144.67]:53048 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752338AbbAVXFd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 18:05:33 -0500
-Date: Fri, 23 Jan 2015 10:05:27 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mark Rutland <mark.rutland@arm.com>
-Cc: Marc Zyngier <Marc.Zyngier@arm.com>,
-        Christoffer Dall <cdall@cs.columbia.edu>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <Catalin.Marinas@arm.com>, Wei Huang <wei@redhat.com>
-Subject: Re: linux-next: manual merge of the kvm-arm tree with the arm64
- tree
-Message-ID: <20150123100527.5d1ce089@canb.auug.org.au>
-In-Reply-To: <20150122102920.GA12911@leverpostej>
-References: <20150122160704.5ad5aeb9@canb.auug.org.au>
-	<87r3unfb9x.fsf@approximate.cambridge.arm.com>
-	<20150122102920.GA12911@leverpostej>
-X-Mailer: Claws Mail 3.11.1 (GTK+ 2.24.25; i586-pc-linux-gnu)
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha256;
- boundary="Sig_/CrJyI9rpB+ZdN400eLvJu8o"; protocol="application/pgp-signature"
+	id S1754418AbbAVXKQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 18:10:16 -0500
+Received: from mail-lb0-f181.google.com ([209.85.217.181]:55780 "EHLO
+	mail-lb0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752338AbbAVXKN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jan 2015 18:10:13 -0500
+From: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+To: Lars-Peter Clausen <lars@metafoo.de>, Jonathan Cameron <jic23@kernel.org>,
+        Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Rasmus Villemoes <linux@rasmusvillemoes.dk>,
+        Hartmut Knaack <knaack.h@gmx.de>, Peter Meerwald <pmeerw@pmeerw.net>,
+        linux-iio@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: iio: ad2s1200: Fix sign extension
+Date: Fri, 23 Jan 2015 00:09:56 +0100
+Message-Id: <1421968196-17193-1-git-send-email-linux@rasmusvillemoes.dk>
+X-Mailer: git-send-email 2.1.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/CrJyI9rpB+ZdN400eLvJu8o
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+The line above makes vel a 12-bit quantity (st->rx[] is u8). The
+intention is to sign-extend vel using bit 11 as the sign bit. But
+because of C's promotion rules "vel = (vel << 4) >> 4;" is actually a
+no-op, since vel is promoted to int before the inner
+shift. sign_extend32 works equally well for 8 and 16 bits types, so
+use that.
 
-Hi Mark,
+Signed-off-by: Rasmus Villemoes <linux@rasmusvillemoes.dk>
+---
+ drivers/staging/iio/resolver/ad2s1200.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-On Thu, 22 Jan 2015 10:29:20 +0000 Mark Rutland <mark.rutland@arm.com> wrot=
-e:
->
-> On Thu, Jan 22, 2015 at 08:51:54AM +0000, Marc Zyngier wrote:
-> > On Thu, Jan 22 2015 at  5:07:04 am GMT, Stephen Rothwell <sfr@canb.auug=
-.org.au> wrote:
-> >=20
-> > > Today's linux-next merge of the kvm-arm tree got a conflict in
-> > > arch/arm64/include/asm/kvm_arm.h between commit 6e53031ed840 ("arm64:
-> > > kvm: remove ESR_EL2_* macros") from the arm64 tree and commit
-> > > 0d97f8848104 ("arm/arm64: KVM: add tracing support for arm64 exit
-> > > handler") from the kvm-arm tree.
-> > >
-> > > I fixed it up (see below, but this probably requires more work) and c=
-an
-> > > carry the fix as necessary (no action is required).
-> >=20
-> > Thanks for dealing with this. I think the following patch should be
-> > applied on top of your resolution, making the new macro part of the
-> > asm/esr.h file.
-> >=20
-> > Mark, Wei: does it match your expectations?
->=20
-> The below patch looks fine to me.
->=20
-> I suspected we mighh see something like this, so I kept my
-> arm64/common-esr-macros branch [1] stable. Catalin merged this into the
-> arm64 for-next/core branch.
->=20
-> I guess the easiest way to solve the conflict would be if the kvm-arm
-> tree also merged that and fixed the fallout there?
+diff --git a/drivers/staging/iio/resolver/ad2s1200.c b/drivers/staging/iio/resolver/ad2s1200.c
+index 017d2f8379b7..c17893b4918c 100644
+--- a/drivers/staging/iio/resolver/ad2s1200.c
++++ b/drivers/staging/iio/resolver/ad2s1200.c
+@@ -18,6 +18,7 @@
+ #include <linux/delay.h>
+ #include <linux/gpio.h>
+ #include <linux/module.h>
++#include <linux/bitops.h>
+ 
+ #include <linux/iio/iio.h>
+ #include <linux/iio/sysfs.h>
+@@ -68,7 +69,7 @@ static int ad2s1200_read_raw(struct iio_dev *indio_dev,
+ 		break;
+ 	case IIO_ANGL_VEL:
+ 		vel = (((s16)(st->rx[0])) << 4) | ((st->rx[1] & 0xF0) >> 4);
+-		vel = (vel << 4) >> 4;
++		vel = sign_extend32(vel, 11);
+ 		*val = vel;
+ 		break;
+ 	default:
+-- 
+2.1.3
 
-Yes, that would be a good resolution.  In the mean time, I will apply
-the merge fix patch to my tree (I will remove it when the above
-resolution is done).
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Sig_/CrJyI9rpB+ZdN400eLvJu8o
-Content-Type: application/pgp-signature
-Content-Description: OpenPGP digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2
-
-iQIcBAEBCAAGBQJUwYI7AAoJEMDTa8Ir7ZwVlkEP/1kDMq0YOZE693rQUemP+KEv
-/pngfHgZPtXLfMyfmDgsiTCyoY3ZFwtx78+8ssZdEdgYg/Oq1sezCApX1c81LUXS
-gpyj/MxKxDwJw/GojPwcKuikwjNP25pYUoYj5WeuhCdLIFlRRP8prCjaZovuoJvW
-ZgHa6BYTEPJH6p3Snq6FL22KCd5kYnfsKdTNddYJMZvzv6Tw8l9raS3f0ZTHhShq
-BUxLsoMenQbCNNqtfIKqt68IRqo9ww82/wwyMqbqoGFDCVnWmL40sg7OsKQpGdf6
-rw29vVjGzKqUURvARYQd8uhNeTDRqW4rpRfnuHNQ5SkPskyOCOyjLdVM3fP+WKq9
-Fy9O7GPczx9X3sxeIjgt3CskmOglz01QlJw8ZJyq2Tl3Uz38DW0jQ1XIHj9tambE
-+L5AjU+QSRJGq9eC5PoXk7N39b2AgayLXBBon1DQSfrtrTqbu2+ofjBiswNQGTEM
-HB5J35R6oMqOS8Sp3DO8xHn5T+L1KI0pgjDPbQbBCFBalicbgGNwjATTd56EalhR
-Gin3rmc18Z24O/oscXCSuHy/IHVyEHBUQO6xd/O14hMhL3PfKMVB9outmFL3+Yuq
-wzDLSYXp4vrj1ZIEISjfEQAJS4SrB76yFBQep9Q38IsVTlVXnL0IWSo1tnXmuBfI
-J8mvsUXd/17W7fodl7kF
-=YgFc
------END PGP SIGNATURE-----
-
---Sig_/CrJyI9rpB+ZdN400eLvJu8o--
