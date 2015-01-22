@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754616AbbAVWnV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 17:43:21 -0500
-Received: from www.linutronix.de ([62.245.132.108]:33798 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753070AbbAVWnT (ORCPT
+	id S1754328AbbAVWm6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 17:42:58 -0500
+Received: from smtp.codeaurora.org ([198.145.11.231]:59833 "EHLO
+	smtp.codeaurora.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751911AbbAVWmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 17:43:19 -0500
-Date: Thu, 22 Jan 2015 23:42:49 +0100 (CET)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andy Lutomirski <luto@amacapital.net>
-cc: Peter Zijlstra <peterz@infradead.org>,
-        Valdis Kletnieks <Valdis.Kletnieks@vt.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@kernel.org>,
-        Ingo Molnar <mingo@redhat.com>, Kees Cook <keescook@chromium.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Vince Weaver <vince@deater.net>, "hillf.zj" <hillf.zj@alibaba-inc.com>,
-        X86 ML <x86@kernel.org>
-Subject: Re: [PATCH v2 0/8] CR4 handling improvements
-In-Reply-To: <CALCETrWMh0G9=vC3A8565y9hKdUYDKsrO6CcsEyVB5ULTv0ZOA@mail.gmail.com>
-Message-ID: <alpine.DEB.2.11.1501222334390.5526@nanos>
-References: <cover.1414190806.git.luto@amacapital.net> <20141031150911.GO23531@worktop.programming.kicks-ass.net> <CALCETrWMh0G9=vC3A8565y9hKdUYDKsrO6CcsEyVB5ULTv0ZOA@mail.gmail.com>
-User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
+	Thu, 22 Jan 2015 17:42:55 -0500
+Date: Thu, 22 Jan 2015 14:42:51 -0800
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+Cc: linux-kernel@vger.kernel.org, Mike Turquette <mturquette@linaro.org>,
+        Javier Martinez Canillas <javier.martinez@collabora.co.uk>,
+        Paul Walmsley <paul@pwsan.com>, Tony Lindgren <tony@atomide.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v12 3/6] clk: Make clk API return per-user struct clk
+ instances
+Message-ID: <20150122224250.GP27202@codeaurora.org>
+References: <1421943207-5180-1-git-send-email-tomeu.vizoso@collabora.com>
+ <1421943207-5180-4-git-send-email-tomeu.vizoso@collabora.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421943207-5180-4-git-send-email-tomeu.vizoso@collabora.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Jan 2015, Andy Lutomirski wrote:
-> On Fri, Oct 31, 2014 at 8:09 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> >
-> >
-> > This looks ok I suppose, although the x86 people should pass verdict on
-> > the first few patches.
+On 01/22, Tomeu Vizoso wrote:
+> Moves clock state to struct clk_core, but takes care to change as little API as
+> possible.
 > 
-> Hi all-
+> struct clk_hw still has a pointer to a struct clk, which is the
+> implementation's per-user clk instance, for backwards compatibility.
 > 
-> What's the status of this series?
+> The struct clk that clk_get_parent() returns isn't owned by the caller, but by
+> the clock implementation, so the former shouldn't call clk_put() on it.
+> 
+> Because some boards in mach-omap2 still register clocks statically, their clock
+> registration had to be updated to take into account that the clock information
+> is stored in struct clk_core now.
+> 
+> Signed-off-by: Tomeu Vizoso <tomeu.vizoso@collabora.com>
+> 
+> ---
 
-I've reviewed the x86 parts except for the perf stuff. So if Peter is
-happy with that he should take it via perf as I expect conflicts there
-rather than in the non perf areas
+My comment on v11 still stands about __clk_create_clk() in
+clkdev.c, but otherwise I don't see problems. You can have my
+reviewed-by anyway.
 
-Thanks,
+Reviewed-by: Stephen Boyd <sboyd@codeaurora.org>
 
-	tglx
-
+-- 
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum,
+a Linux Foundation Collaborative Project
