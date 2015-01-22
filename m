@@ -1,75 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753559AbbAVSJF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 13:09:05 -0500
-Received: from smtp107.biz.mail.bf1.yahoo.com ([98.139.244.55]:32612 "EHLO
-	smtp107.biz.mail.bf1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752869AbbAVSJD (ORCPT
+	id S1753423AbbAVSIW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 13:08:22 -0500
+Received: from mail-qg0-f43.google.com ([209.85.192.43]:57592 "EHLO
+	mail-qg0-f43.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752903AbbAVSIU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 13:09:03 -0500
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: XcdeYVkVM1loBxdNZ4zjOtPcRoh1k5WgQO9MSdIDm6ESb6h
- ZXWhRx1dZAGoQsiUjGuZUccft0ay1o77hKtMOu6Uln4eUC4j5tYrhFmCp97n
- Z2zTHmxdybA7MoBTfXFRHN2UsKL2NFKtmRTYt69gLzTywF9A9W9_3GV6umZl
- NF_8DqQ8lh_eL0UE0HY9aAU0CDAwuSxEkYjKTjGfuCHBGooNqlA7boLGZ9Ga
- 6zhS1n88ByVg5PVmHUhVhP3XRTcPXZiVoBFHoOyhcVe7nxmARPPTDDhdQ2xE
- 7ZCofYCfOM7le9vbbxU6vFpQlC3.f.JQY73iuLhSrllBx669oOHErslJJfsb
- 5a3f9O6vb3QK4_WG0AonlNb6X8UdVhJCj86GXJzWTLHuaFodkX63uUZXivxQ
- KmHweU91Y_4Tdrw2wU70Jcl.nnz3HqviH9xgxZRJWGYdfiBmS.DMqZ5qpnw9
- Eb5xufc1Ng0OD5k30BIKIOmGtwvHl0mPJ5evQIJO7kh_vhdTnebeR_0YSqQe
- i0P6UW9Wha1Bm06qIVuV7Qy.IoAk-
-X-Yahoo-SMTP: OIJXglSswBDfgLtXluJ6wiAYv6_cnw--
-Message-ID: <54C13CBC.3050004@schaufler-ca.com>
-Date: Thu, 22 Jan 2015 10:09:00 -0800
-From: Casey Schaufler <casey@schaufler-ca.com>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:31.0) Gecko/20100101 Thunderbird/31.4.0
+	Thu, 22 Jan 2015 13:08:20 -0500
+From: Vince Weaver <vincent.weaver@maine.edu>
+X-Google-Original-From: Vince Weaver <vince@vincent-weaver-1.umelst.maine.edu>
+Date: Thu, 22 Jan 2015 13:09:11 -0500 (EST)
+To: Jiri Olsa <jolsa@redhat.com>
+cc: Vince Weaver <vincent.weaver@maine.edu>, linux-kernel@vger.kernel.org,
+        Jiri Olsa <jolsa@kernel.org>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Ingo Molnar <mingo@kernel.org>, Paul Mackerras <paulus@samba.org>
+Subject: Re: perf: behavior of poll() changed in 3.18
+In-Reply-To: <20150122133455.GC2473@krava.brq.redhat.com>
+Message-ID: <alpine.DEB.2.11.1501221305150.14136@vincent-weaver-1.umelst.maine.edu>
+References: <alpine.DEB.2.11.1501201155380.18043@vincent-weaver-1.umelst.maine.edu> <20150120181316.GA12860@krava.brq.redhat.com> <alpine.DEB.2.11.1501210058090.21805@vincent-weaver-1.umelst.maine.edu> <20150121162108.GD6835@krava.brq.redhat.com>
+ <alpine.DEB.2.11.1501220026210.12767@vincent-weaver-1.umelst.maine.edu> <20150122133455.GC2473@krava.brq.redhat.com>
+User-Agent: Alpine 2.11 (DEB 23 2013-08-11)
 MIME-Version: 1.0
-To: Greg KH <gregkh@linuxfoundation.org>, Stephen Smalley <sds@tycho.nsa.gov>
-CC: linux-kernel@vger.kernel.org, arve@android.com, nnk@google.com,
-        paul@paul-moore.com, selinux@tycho.nsa.gov,
-        linux-security-module@vger.kernel.org, jmorris@namei.org,
-        Casey Schaufler <casey@schaufler-ca.com>
-Subject: Re: [PATCH] Add security hooks to binder and implement the hooks
- for SELinux.
-References: <1421855650-22522-1-git-send-email-sds@tycho.nsa.gov> <20150122085150.GB1268@kroah.com>
-In-Reply-To: <20150122085150.GB1268@kroah.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1/22/2015 12:51 AM, Greg KH wrote:
-> On Wed, Jan 21, 2015 at 10:54:10AM -0500, Stephen Smalley wrote:
->> Add security hooks to the binder and implement the hooks for SELinux.
->> The security hooks enable security modules such as SELinux to implement
->> controls over binder IPC.  The security hooks include support for
->> controlling what process can become the binder context manager
->> (binder_set_context_mgr), controlling the ability of a process
->> to invoke a binder transaction/IPC to another process (binder_transaction),
->> controlling the ability of a process to transfer a binder reference to
->> another process (binder_transfer_binder), and controlling the ability
->> of a process to transfer an open file to another process (binder_transfer_file).
->>
->> These hooks have been included in the Android kernel trees since Android 4.3.
-> Very interesting, I missed the fact that these were added in that tree,
-> thanks for digging it out and submitting it.
->
-> I'd like some acks from some Android developers before I take these.
-> Or, if it's easier for them to go through the security tree, that's fine
-> with me as well.
+On Thu, 22 Jan 2015, Jiri Olsa wrote:
 
-My only concern is that we're about to see a set of hooks proposed
-for kdbus as well, and it would be a shame if we had two sets of hooks
-that do roughly the same thing (ok, *very roughly*) introduced back to back.
+> > So what happens if you are using a signal handler to monitor a child and 
+> > the child exits?
+> 
+> AFAICS wrt to SIGIO, we notify only with POLL_IN if there's new data
+> and POLL_HUP if we reached the event_limit - the one you set with
+> PERF_EVENT_IOC_REFRESH ioctl
 
->
-> thanks,
->
-> greg k-h
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+I wrote a test for this: if you are monitoring another process with a 
+SIGIO handler and the other process dies, then you get no signal for this 
+at all, and in  fact depending on the timing the last valid SIGIO overflow 
+event signal might get lost (in my test I usually get one fewer 
+POLL_IN signal than I would get from the equivelent poll() code).
 
+> I've actually never used the SIGIO interface in perf other than
+> when I was checking your gi repo with test code ;-)
+
+Yes, it seems that PAPI is really the only infrastructure that tries to do 
+self-monitoring using the SIGIO interface.  Which shows, as it breaks now 
+and then.  That was the whole reason I started writing my perf_event_test 
+infrastructure in the first place.
+
+Vince
