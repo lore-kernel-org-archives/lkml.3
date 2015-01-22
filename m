@@ -1,96 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753436AbbAVIrM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 03:47:12 -0500
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:58822 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236AbbAVIrF (ORCPT
+	id S1752626AbbAVItp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 03:49:45 -0500
+Received: from mail-wi0-f174.google.com ([209.85.212.174]:41835 "EHLO
+	mail-wi0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374AbbAVItg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 03:47:05 -0500
-X-AuditID: cbfec7f5-b7fc86d0000066b7-3b-54c0b87574a8
-Message-id: <54C0B905.3010002@samsung.com>
-Date: Thu, 22 Jan 2015 09:47:01 +0100
-From: Jacek Anaszewski <j.anaszewski@samsung.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:17.0) Gecko/20130804
- Thunderbird/17.0.8
-MIME-version: 1.0
-To: Sylwester Nawrocki <s.nawrocki@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-leds@vger.kernel.org,
-        linux-media@vger.kernel.org, devicetree@vger.kernel.org,
-        kyungmin.park@samsung.com, b.zolnierkie@samsung.com, pavel@ucw.cz,
-        cooloney@gmail.com, rpurdie@rpsys.net, sakari.ailus@iki.fi,
-        Rob Herring <robh+dt@kernel.org>, Pawel Moll <pawel.moll@arm.com>,
-        Mark Rutland <mark.rutland@arm.com>,
-        Ian Campbell <ijc+devicetree@hellion.org.uk>,
-        Kumar Gala <galak@codeaurora.org>
-Subject: Re: [PATCH/RFC v10 17/19] DT: Add documentation for exynos4-is
- 'flashes' property
-References: <1420816989-1808-1-git-send-email-j.anaszewski@samsung.com>
- <1420816989-1808-18-git-send-email-j.anaszewski@samsung.com>
- <54BFD4B9.8030707@samsung.com>
-In-reply-to: <54BFD4B9.8030707@samsung.com>
-Content-type: text/plain; charset=windows-1252; format=flowed
-Content-transfer-encoding: 7bit
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFmpmkeLIzCtJLcpLzFFi42I5/e/4Nd3SHQdCDLauU7HYOGM9q8XRnROZ
-	LOYfOcdq0f9mIavFuVcrGS3ONr1ht7i8aw6bxdY36xgtejZsZbVYev0ik8XdU0fZLCZMX8ti
-	0br3CLvF7l1PWS0Ov2lntTizfyWbg4DHmnlrGD0u9/UyeeycdZfdY+XyL2weh78uZPHYtKqT
-	zWPP/B+sHn1bVjF6rFj9nd3j8ya5AK4oLpuU1JzMstQifbsErozLm/8wFszhq+h7t5ulgfEe
-	dxcjJ4eEgInE/79nmSBsMYkL99azdTFycQgJLGWU2LJ1NjOE85FRomn9KrAqXgEtiXON84Fs
-	Dg4WAVWJzw/UQcJsAoYSP1+8BisRFYiQ+HN6HytEuaDEj8n3WEBsEQF9iSWrLoItYBbYySyx
-	/tIdRpA5wgIxEoufuYDUCAksZ5T40+APYnMKaEs0zH7GBmIzC9hKLHi/jgXClpfYvOYt8wRG
-	gVlIVsxCUjYLSdkCRuZVjKKppckFxUnpuUZ6xYm5xaV56XrJ+bmbGCER93UH49JjVocYBTgY
-	lXh4IzYcCBFiTSwrrsw9xCjBwawkwrsTJMSbklhZlVqUH19UmpNafIiRiYNTqoFxo0vwrcXz
-	DnyWvH3j+fKHDs9TY/o5iyPL98T7rL577F5ulPJK7VWTJWt0pyt8lWG0lbnZkfhfa4Uph+rt
-	6bsnvklUOHuQo/T1u8l5r4qWputKmqTl3MrUjjrFtVJRl/2LssXsGeyTLr779+HIpzcejH7i
-	i/IPH751gitp2TZLBRH9R4Ip8/neKbEUZyQaajEXFScCAB6o9HWWAgAA
+	Thu, 22 Jan 2015 03:49:36 -0500
+Date: Thu, 22 Jan 2015 09:49:41 +0100
+From: Quentin Lambert <lambert.quentin@gmail.com>
+To: Zhang Rui <rui.zhang@intel.com>, Robert Moore <robert.moore@intel.com>,
+        Lv Zheng <lv.zheng@intel.com>,
+        "Rafael J. Wysocki" <rafael.j.wysocki@intel.com>,
+        Len Brown <lenb@kernel.org>, Shaohua Li <shaohua.li@intel.com>
+Cc: linux-acpi@vger.kernel.org, devel@acpica.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4] int to bool conversion
+Message-ID: <20150122084941.GA14651@sloth>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+These patches convert local variables from int to bool when relevant.
 
-On 01/21/2015 05:32 PM, Sylwester Nawrocki wrote:
-> Hi,
->
-> On 09/01/15 16:23, Jacek Anaszewski wrote:
->> This patch adds a description of 'flashes' property
->> to the samsung-fimc.txt.
->>
->> Signed-off-by: Jacek Anaszewski <j.anaszewski@samsung.com>
->> Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
->
->> ---
->>   .../devicetree/bindings/media/samsung-fimc.txt     |    7 +++++++
->>   1 file changed, 7 insertions(+)
->>
->> diff --git a/Documentation/devicetree/bindings/media/samsung-fimc.txt b/Documentation/devicetree/bindings/media/samsung-fimc.txt
->> index 922d6f8..22a6b2f 100644
->> --- a/Documentation/devicetree/bindings/media/samsung-fimc.txt
->> +++ b/Documentation/devicetree/bindings/media/samsung-fimc.txt
->> @@ -40,6 +40,12 @@ should be inactive. For the "active-a" state the camera port A must be activated
->>   and the port B deactivated and for the state "active-b" it should be the other
->>   way around.
->>
->> +Optional properties:
->> +
->> +- flashes - Array of phandles to flash LED devices, or their sub-nodes
->> +	    representing sub-leds.
->> +	    (see Documentation/devicetree/bindings/leds/common.txt)
->
-> How about renaming this to "illuminators" or something else more generic?
-> The "torch" LED (for video recording illumination?) is not really a flash.
+The first patch proposes straight forward cases where the conversion
+do not suggest changes beyond the function.
 
-OK, currently I can't think of a better substitute for 'illuminators'.
+The second patch deals with cases where the conversion is propagated
+to function parameters.
 
-Since it has been agreed that a discrete LED component requires a child
-node in a LED device binding, even if there is only one current output
-exposed by the LED device, this description has to be modified as follows:
+The third patch is a single case where the variable is given as a
+parameter to a kernel macro.
 
-- illuminators - Array of phandles to the child nodes of a flash LED
-	device related binding.
-	(see Documentation/devicetree/bindings/leds/common.txt).
+Finally, the fourth patch is a case in which the conversion is
+propagated to the field of a structure.
 
+
+Quentin Lambert (4):
+  ACPI: Convert non-returned local variable to boolean when relevant
+  ACPI: Convert int variable to bool and propagate to function
+    parameters
+  ACPI: Convert int to bool for variable later used int kernel macro
+  ACPI: Convert int to bool and propagete to struct field
+
+ drivers/acpi/acpi_pad.c         |  6 +++---
+ drivers/acpi/acpi_processor.c   |  5 +++--
+ drivers/acpi/acpica/acutils.h   |  3 ++-
+ drivers/acpi/acpica/utaddress.c |  3 ++-
+ drivers/acpi/acpica/utstring.c  | 10 +++++-----
+ drivers/acpi/acpica/utxface.c   |  2 +-
+ drivers/acpi/dock.c             |  4 ++--
+ drivers/acpi/osl.c              |  4 ++--
+ drivers/acpi/pci_link.c         |  4 ++--
+ drivers/acpi/processor_core.c   | 12 ++++++------
+ drivers/acpi/processor_pdc.c    |  5 +++--
+ drivers/acpi/scan.c             |  4 ++--
+ drivers/acpi/thermal.c          | 10 +++++-----
+ 13 files changed, 38 insertions(+), 34 deletions(-)
 
 -- 
-Best Regards,
-Jacek Anaszewski
+1.9.1
+
