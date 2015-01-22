@@ -1,115 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752148AbbAVJMm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 04:12:42 -0500
-Received: from mail-la0-f53.google.com ([209.85.215.53]:46424 "EHLO
-	mail-la0-f53.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751006AbbAVJMi convert rfc822-to-8bit (ORCPT
+	id S1751520AbbAVJNn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 04:13:43 -0500
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42617 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751006AbbAVJNh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 04:12:38 -0500
+	Thu, 22 Jan 2015 04:13:37 -0500
+Date: Thu, 22 Jan 2015 10:13:30 +0100
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Robin Gong <b38343@freescale.com>
+Cc: dan.j.williams@intel.com, vinod.koul@intel.com, dmaengine@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] dma: imx-sdma: switch to dynamic context mode after
+ script loaded
+Message-ID: <20150122091330.GT12209@pengutronix.de>
+References: <1421911420-31821-1-git-send-email-b38343@freescale.com>
 MIME-Version: 1.0
-In-Reply-To: <54C0BDEB.80809@codesourcery.com>
-References: <54C0A357.4070701@gmail.com>
-	<CAFiDJ58imeQEZxySFOYoYd27YU4wCYrsw+oDe8Pi3j3n13o2mg@mail.gmail.com>
-	<54C0B19D.4020804@codesourcery.com>
-	<CAFiDJ58=zM5Vk9M_z6tuW0nROjougVS+KYuZkhm0sgKw-vq=7w@mail.gmail.com>
-	<54C0BDEB.80809@codesourcery.com>
-Date: Thu, 22 Jan 2015 17:12:36 +0800
-X-Google-Sender-Auth: kpblreVd4ReyLacEcwgD5KWb_cc
-Message-ID: <CAFiDJ59LenBqAG_y9zyH+Y+r66bk+gPzggLho--DtXKxtXOMBQ@mail.gmail.com>
-Subject: Re: [PATCH] nios2: __kuser_sigtramp placement fix
-From: Ley Foon Tan <lftan@altera.com>
-To: Chung-Lin Tang <cltang@codesourcery.com>
-Cc: Chung-Lin Tang <chunglin.tang@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tobias Klauser <tklauser@distanz.ch>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1421911420-31821-1-git-send-email-b38343@freescale.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 10:13:04 up 98 days, 20:26, 131 users,  load average: 0.00, 0.04,
+ 0.05
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:67c:670:100:1d::c0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jan 22, 2015 at 5:07 PM, Chung-Lin Tang <cltang@codesourcery.com> wrote:
-> On 2015/1/22 下午 04:43, Ley Foon Tan wrote:
->> On Thu, Jan 22, 2015 at 4:15 PM, Chung-Lin Tang <cltang@codesourcery.com> wrote:
->>> On 2015/1/22 03:54 PM, Ley Foon Tan wrote:
->>>> On Thu, Jan 22, 2015 at 3:14 PM, Chung-Lin Tang <chunglin.tang@gmail.com> wrote:
->>>>> The address of __kuser_sigtramp is wrong by one word, due to padding
->>>>> __kuser_cmpxchg to fully 64 bytes. The version word at the start of the
->>>>> page displaces __kuser_sigtramp to 0x1044, instead of the intended 0x1040.
->>>>>
->>>>> Fixed by counting the 64-byte frame from the start of the page instead
->>>>> of __kuser_cmpxchg. This shortens the __kuser_cmpxchg frame to 60-bytes,
->>>>> but that's likely enough.
->>>>>
->>>>> The zero-byte padding parts of the kuser_pad macro has been removed, due
->>>>> to the .if command refusing to behave properly when there are other
->>>>> .word directives in between. Probably a binutils gas bug.
->>>>>
->>>>> Thanks,
->>>>> Chung-Lin
->>>>>
->>>>> Cc: Ley Foon Tan <lftan@altera.com>
->>>>> Cc: Tobias Klauser <tklauser@distanz.ch>
->>>>> Signed-off-by: Chung-Lin Tang <cltang@codesourcery.com>
->>>>>
->>>>> diff --git a/arch/nios2/kernel/entry.S b/arch/nios2/kernel/entry.S
->>>>> index 0bdfd13..3224839 100644
->>>>> --- a/arch/nios2/kernel/entry.S
->>>>> +++ b/arch/nios2/kernel/entry.S
->>>>> @@ -492,14 +492,7 @@ ENTRY(ret_from_kernel_thread)
->>>>>
->>>>>   /* Filling pads with undefined instructions. */
->>>>>  .macro kuser_pad sym size
->>>>> -       .if     ((. - \sym) & 3)
->>>>> -       .rept   (4 - (. - \sym) & 3)
->>>>> -       .byte   0
->>>>> -       .endr
->>>>> -       .endif
->>>>> -       .rept   ((\size - (. - \sym)) / 4)
->>>>> -       .word   0xdeadbeef
->>>>> -       .endr
->>>>> +       .fill   ((\size - (. - \sym)) / 4), 4, 0xdeadbeef
->>>>>  .endm
->>>>>
->>>>>         .align  6
->>>>> @@ -526,7 +519,10 @@ cmpxchg_stw:
->>>>>  cmpxchg_ret:
->>>>>         ret
->>>>>
->>>>> -       kuser_pad __kuser_cmpxchg, 64
->>>>> +       /* The first 64-byte frame contains the version word, so note
->>>>> +          that the first padding entry is based from the start of the kuser
->>>>> +          page, instead of __kuser_cmpxchg.  */
->>>>> +       kuser_pad __kuser_helper_start, 64
->>>>>
->>>>>         .globl  __kuser_sigtramp
->>>>>  __kuser_sigtramp:
->>>>> --
->>>> Hi Chung-Lin
->>>>
->>>> I thought this is our original intention for it.
->>>>
->>>> First 4 bytes is the __kuser_version and each __kuser function will
->>>> have 64 bytes size.
->>>>
->>>> 0x1000 __kuser_helper_version
->>>> 0x1004 __kuser_cmpxchg
->>>> 0x1044 __kuser_sigtramp
->>>>
->>>> Any reason you can't use __kuser_sigtramp @ 0x1044?
->>>
->>> Well, that's okay as well, as the main place which sets this is the
->>> signal frame construction in arch/nios2/kernel/signal.c. The user space
->>> is mostly oblivious to the exact location.  You'll need to update it
->>> that way if you prefer 0x1044, as it's currently set at 0x1040.
->>>
->>> I suggested 0x1040 because 64b frames aligned at 64b seemed more
->>> intuitive; __kuser_cmpxchg would be a special case.
->>
->> I think I will change to 0x1044 in arch/nios2/kernel/signal.c. I can
->> submit the fix.
->> Do you need to update toolchain for this change?
->
-> No, the toolchain is not affected by this change.
-Okay, will fix this.
+On Thu, Jan 22, 2015 at 03:23:40PM +0800, Robin Gong wrote:
+> Below comments got from Page4724 of Reference Manual of i.mx6q:
+> http://cache.freescale.com/files/32bit/doc/ref_manual/IMX6DQRM.pdf
+> 
+> --"Static context mode should be used for the first channel called
+> after reset to ensure that the all context RAM for that channel is
+> initialized during the context SAVE phase when the channel is
+> done or yields. Subsequent calls to the same channel or
+> different channels may use any of the dynamic context modes.
+> This will ensure that all context locations for the bootload
+> channel are initialized, and prevent undefined values in context
+> RAM from being loaded during the context restore if the
+> channel is re-started later"
+> 
+> Unfortunately, the rule was broken by commit(5b28aa319bba96987316425a1131813d87cbab35)
+> .This patch just take them back.
+> 
+> Signed-off-by: Robin Gong <b38343@freescale.com>
+
+Acked-by: Sascha Hauer <s.hauer@pengutronix.de>
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
