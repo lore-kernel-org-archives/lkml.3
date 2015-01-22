@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754724AbbAVWVX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jan 2015 17:21:23 -0500
-Received: from mail-wi0-f169.google.com ([209.85.212.169]:60729 "EHLO
-	mail-wi0-f169.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753861AbbAVWUx (ORCPT
+	id S1754765AbbAVWV1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jan 2015 17:21:27 -0500
+Received: from mail-we0-f176.google.com ([74.125.82.176]:43388 "EHLO
+	mail-we0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753898AbbAVWUz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jan 2015 17:20:53 -0500
+	Thu, 22 Jan 2015 17:20:55 -0500
 From: "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
 To: LMML <linux-media@vger.kernel.org>,
         Scott Jiang <scott.jiang.linux@gmail.com>,
@@ -14,9 +14,9 @@ To: LMML <linux-media@vger.kernel.org>,
 Cc: LKML <linux-kernel@vger.kernel.org>,
         Mauro Carvalho Chehab <m.chehab@samsung.com>,
         "Lad, Prabhakar" <prabhakar.csengg@gmail.com>
-Subject: [PATCH v2 07/15] media: blackfin: bfin_capture: use v4l2_fh_open and vb2_fop_release
-Date: Thu, 22 Jan 2015 22:18:40 +0000
-Message-Id: <1421965128-10470-8-git-send-email-prabhakar.csengg@gmail.com>
+Subject: [PATCH v2 08/15] media: blackfin: bfin_capture: use vb2_ioctl_* helpers
+Date: Thu, 22 Jan 2015 22:18:41 +0000
+Message-Id: <1421965128-10470-9-git-send-email-prabhakar.csengg@gmail.com>
 X-Mailer: git-send-email 2.1.0
 In-Reply-To: <1421965128-10470-1-git-send-email-prabhakar.csengg@gmail.com>
 References: <1421965128-10470-1-git-send-email-prabhakar.csengg@gmail.com>
@@ -24,158 +24,176 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-this patch adds support to use v4l2_fh_open() and vb2_fop_release,
-which allows to drop driver specific struct bcap_fh, as this is handled
-by core.
+this patch adds support to vb2_ioctl_* helpers.
 
 Signed-off-by: Lad, Prabhakar <prabhakar.csengg@gmail.com>
 ---
- drivers/media/platform/blackfin/bfin_capture.c | 79 +-------------------------
- 1 file changed, 2 insertions(+), 77 deletions(-)
+ drivers/media/platform/blackfin/bfin_capture.c | 108 ++++++-------------------
+ 1 file changed, 23 insertions(+), 85 deletions(-)
 
 diff --git a/drivers/media/platform/blackfin/bfin_capture.c b/drivers/media/platform/blackfin/bfin_capture.c
-index 8ddff32..b2eeace 100644
+index b2eeace..04b85e3 100644
 --- a/drivers/media/platform/blackfin/bfin_capture.c
 +++ b/drivers/media/platform/blackfin/bfin_capture.c
-@@ -105,12 +105,6 @@ struct bcap_device {
- 	bool stop;
- };
- 
--struct bcap_fh {
--	struct v4l2_fh fh;
--	/* indicates whether this file handle is doing IO */
--	bool io_allowed;
--};
--
- static const struct bcap_format bcap_formats[] = {
- 	{
- 		.desc        = "YCbCr 4:2:2 Interleaved UYVY",
-@@ -200,50 +194,6 @@ static void bcap_free_sensor_formats(struct bcap_device *bcap_dev)
- 	bcap_dev->sensor_formats = NULL;
- }
- 
--static int bcap_open(struct file *file)
--{
--	struct bcap_device *bcap_dev = video_drvdata(file);
--	struct video_device *vfd = bcap_dev->video_dev;
--	struct bcap_fh *bcap_fh;
--
--	if (!bcap_dev->sd) {
--		v4l2_err(&bcap_dev->v4l2_dev, "No sub device registered\n");
--		return -ENODEV;
--	}
--
--	bcap_fh = kzalloc(sizeof(*bcap_fh), GFP_KERNEL);
--	if (!bcap_fh) {
--		v4l2_err(&bcap_dev->v4l2_dev,
--			 "unable to allocate memory for file handle object\n");
--		return -ENOMEM;
--	}
--
--	v4l2_fh_init(&bcap_fh->fh, vfd);
--
--	/* store pointer to v4l2_fh in private_data member of file */
--	file->private_data = &bcap_fh->fh;
--	v4l2_fh_add(&bcap_fh->fh);
--	bcap_fh->io_allowed = false;
--	return 0;
--}
--
--static int bcap_release(struct file *file)
--{
--	struct bcap_device *bcap_dev = video_drvdata(file);
--	struct v4l2_fh *fh = file->private_data;
--	struct bcap_fh *bcap_fh = container_of(fh, struct bcap_fh, fh);
--
--	/* if this instance is doing IO */
--	if (bcap_fh->io_allowed)
--		vb2_queue_release(&bcap_dev->buffer_queue);
--
--	file->private_data = NULL;
--	v4l2_fh_del(&bcap_fh->fh);
--	v4l2_fh_exit(&bcap_fh->fh);
--	kfree(bcap_fh);
--	return 0;
--}
--
- #ifndef CONFIG_MMU
- static unsigned long bcap_get_unmapped_area(struct file *file,
- 					    unsigned long addr,
-@@ -432,13 +382,6 @@ static int bcap_reqbufs(struct file *file, void *priv,
- {
- 	struct bcap_device *bcap_dev = video_drvdata(file);
- 	struct vb2_queue *vq = &bcap_dev->buffer_queue;
--	struct v4l2_fh *fh = file->private_data;
--	struct bcap_fh *bcap_fh = container_of(fh, struct bcap_fh, fh);
--
--	if (vb2_is_busy(vq))
--		return -EBUSY;
--
--	bcap_fh->io_allowed = true;
- 
- 	return vb2_reqbufs(vq, req_buf);
- }
-@@ -455,11 +398,6 @@ static int bcap_qbuf(struct file *file, void *priv,
- 			struct v4l2_buffer *buf)
- {
- 	struct bcap_device *bcap_dev = video_drvdata(file);
--	struct v4l2_fh *fh = file->private_data;
--	struct bcap_fh *bcap_fh = container_of(fh, struct bcap_fh, fh);
--
--	if (!bcap_fh->io_allowed)
--		return -EBUSY;
- 
- 	return vb2_qbuf(&bcap_dev->buffer_queue, buf);
- }
-@@ -468,11 +406,6 @@ static int bcap_dqbuf(struct file *file, void *priv,
- 			struct v4l2_buffer *buf)
- {
- 	struct bcap_device *bcap_dev = video_drvdata(file);
--	struct v4l2_fh *fh = file->private_data;
--	struct bcap_fh *bcap_fh = container_of(fh, struct bcap_fh, fh);
--
--	if (!bcap_fh->io_allowed)
--		return -EBUSY;
- 
- 	return vb2_dqbuf(&bcap_dev->buffer_queue,
- 				buf, file->f_flags & O_NONBLOCK);
-@@ -523,14 +456,10 @@ static int bcap_streamon(struct file *file, void *priv,
- 				enum v4l2_buf_type buf_type)
- {
- 	struct bcap_device *bcap_dev = video_drvdata(file);
--	struct bcap_fh *fh = file->private_data;
+@@ -272,15 +272,26 @@ static int bcap_start_streaming(struct vb2_queue *vq, unsigned int count)
  	struct ppi_if *ppi = bcap_dev->ppi;
- 	dma_addr_t addr;
+ 	struct bcap_buffer *buf, *tmp;
+ 	struct ppi_params params;
++	dma_addr_t addr;
  	int ret;
  
--	if (!fh->io_allowed)
--		return -EBUSY;
+ 	/* enable streamon on the sub device */
+ 	ret = v4l2_subdev_call(bcap_dev->sd, video, s_stream, 1);
+ 	if (ret && (ret != -ENOIOCTLCMD)) {
+ 		v4l2_err(&bcap_dev->v4l2_dev, "stream on failed in subdev\n");
++		bcap_dev->cur_frm = NULL;
+ 		goto err;
+ 	}
+ 
++	/* get the next frame from the dma queue */
++	bcap_dev->cur_frm = list_entry(bcap_dev->dma_queue.next,
++					struct bcap_buffer, list);
++	/* remove buffer from the dma queue */
++	list_del_init(&bcap_dev->cur_frm->list);
++	addr = vb2_dma_contig_plane_dma_addr(&bcap_dev->cur_frm->vb, 0);
++	/* update DMA address */
++	ppi->ops->update_addr(ppi, (unsigned long)addr);
++
+ 	/* set ppi params */
+ 	params.width = bcap_dev->fmt.width;
+ 	params.height = bcap_dev->fmt.height;
+@@ -320,6 +331,9 @@ static int bcap_start_streaming(struct vb2_queue *vq, unsigned int count)
+ 		goto err;
+ 	}
+ 
++	/* enable ppi */
++	ppi->ops->start(ppi);
++
+ 	/* attach ppi DMA irq handler */
+ 	ret = ppi->ops->attach_irq(ppi, bcap_isr);
+ 	if (ret < 0) {
+@@ -334,6 +348,9 @@ static int bcap_start_streaming(struct vb2_queue *vq, unsigned int count)
+ 	return 0;
+ 
+ err:
++	if (bcap_dev->cur_frm)
++		vb2_buffer_done(&bcap_dev->cur_frm->vb, VB2_BUF_STATE_QUEUED);
++
+ 	list_for_each_entry_safe(buf, tmp, &bcap_dev->dma_queue, list) {
+ 		list_del(&buf->list);
+ 		vb2_buffer_done(&buf->vb, VB2_BUF_STATE_QUEUED);
+@@ -377,40 +394,6 @@ static struct vb2_ops bcap_video_qops = {
+ 	.stop_streaming         = bcap_stop_streaming,
+ };
+ 
+-static int bcap_reqbufs(struct file *file, void *priv,
+-			struct v4l2_requestbuffers *req_buf)
+-{
+-	struct bcap_device *bcap_dev = video_drvdata(file);
+-	struct vb2_queue *vq = &bcap_dev->buffer_queue;
 -
- 	/* call streamon to start streaming in videobuf */
- 	ret = vb2_streamon(&bcap_dev->buffer_queue, buf_type);
- 	if (ret)
-@@ -564,10 +493,6 @@ static int bcap_streamoff(struct file *file, void *priv,
- 				enum v4l2_buf_type buf_type)
+-	return vb2_reqbufs(vq, req_buf);
+-}
+-
+-static int bcap_querybuf(struct file *file, void *priv,
+-				struct v4l2_buffer *buf)
+-{
+-	struct bcap_device *bcap_dev = video_drvdata(file);
+-
+-	return vb2_querybuf(&bcap_dev->buffer_queue, buf);
+-}
+-
+-static int bcap_qbuf(struct file *file, void *priv,
+-			struct v4l2_buffer *buf)
+-{
+-	struct bcap_device *bcap_dev = video_drvdata(file);
+-
+-	return vb2_qbuf(&bcap_dev->buffer_queue, buf);
+-}
+-
+-static int bcap_dqbuf(struct file *file, void *priv,
+-			struct v4l2_buffer *buf)
+-{
+-	struct bcap_device *bcap_dev = video_drvdata(file);
+-
+-	return vb2_dqbuf(&bcap_dev->buffer_queue,
+-				buf, file->f_flags & O_NONBLOCK);
+-}
+-
+ static irqreturn_t bcap_isr(int irq, void *dev_id)
+ {
+ 	struct ppi_if *ppi = dev_id;
+@@ -452,51 +435,6 @@ static irqreturn_t bcap_isr(int irq, void *dev_id)
+ 	return IRQ_HANDLED;
+ }
+ 
+-static int bcap_streamon(struct file *file, void *priv,
+-				enum v4l2_buf_type buf_type)
+-{
+-	struct bcap_device *bcap_dev = video_drvdata(file);
+-	struct ppi_if *ppi = bcap_dev->ppi;
+-	dma_addr_t addr;
+-	int ret;
+-
+-	/* call streamon to start streaming in videobuf */
+-	ret = vb2_streamon(&bcap_dev->buffer_queue, buf_type);
+-	if (ret)
+-		return ret;
+-
+-	/* if dma queue is empty, return error */
+-	if (list_empty(&bcap_dev->dma_queue)) {
+-		v4l2_err(&bcap_dev->v4l2_dev, "dma queue is empty\n");
+-		ret = -EINVAL;
+-		goto err;
+-	}
+-
+-	/* get the next frame from the dma queue */
+-	bcap_dev->cur_frm = list_entry(bcap_dev->dma_queue.next,
+-					struct bcap_buffer, list);
+-	/* remove buffer from the dma queue */
+-	list_del_init(&bcap_dev->cur_frm->list);
+-	addr = vb2_dma_contig_plane_dma_addr(&bcap_dev->cur_frm->vb, 0);
+-	/* update DMA address */
+-	ppi->ops->update_addr(ppi, (unsigned long)addr);
+-	/* enable ppi */
+-	ppi->ops->start(ppi);
+-
+-	return 0;
+-err:
+-	vb2_streamoff(&bcap_dev->buffer_queue, buf_type);
+-	return ret;
+-}
+-
+-static int bcap_streamoff(struct file *file, void *priv,
+-				enum v4l2_buf_type buf_type)
+-{
+-	struct bcap_device *bcap_dev = video_drvdata(file);
+-
+-	return vb2_streamoff(&bcap_dev->buffer_queue, buf_type);
+-}
+-
+ static int bcap_querystd(struct file *file, void *priv, v4l2_std_id *std)
  {
  	struct bcap_device *bcap_dev = video_drvdata(file);
--	struct bcap_fh *fh = file->private_data;
--
--	if (!fh->io_allowed)
--		return -EBUSY;
- 
- 	return vb2_streamoff(&bcap_dev->buffer_queue, buf_type);
- }
-@@ -870,8 +795,8 @@ static const struct v4l2_ioctl_ops bcap_ioctl_ops = {
- 
- static struct v4l2_file_operations bcap_fops = {
- 	.owner = THIS_MODULE,
--	.open = bcap_open,
--	.release = bcap_release,
-+	.open = v4l2_fh_open,
-+	.release = vb2_fop_release,
- 	.unlocked_ioctl = video_ioctl2,
- 	.mmap = vb2_fop_mmap,
- #ifndef CONFIG_MMU
+@@ -782,12 +720,12 @@ static const struct v4l2_ioctl_ops bcap_ioctl_ops = {
+ 	.vidioc_g_dv_timings     = bcap_g_dv_timings,
+ 	.vidioc_query_dv_timings = bcap_query_dv_timings,
+ 	.vidioc_enum_dv_timings  = bcap_enum_dv_timings,
+-	.vidioc_reqbufs          = bcap_reqbufs,
+-	.vidioc_querybuf         = bcap_querybuf,
+-	.vidioc_qbuf             = bcap_qbuf,
+-	.vidioc_dqbuf            = bcap_dqbuf,
+-	.vidioc_streamon         = bcap_streamon,
+-	.vidioc_streamoff        = bcap_streamoff,
++	.vidioc_reqbufs          = vb2_ioctl_reqbufs,
++	.vidioc_querybuf         = vb2_ioctl_querybuf,
++	.vidioc_qbuf             = vb2_ioctl_qbuf,
++	.vidioc_dqbuf            = vb2_ioctl_dqbuf,
++	.vidioc_streamon         = vb2_ioctl_streamon,
++	.vidioc_streamoff        = vb2_ioctl_streamoff,
+ 	.vidioc_g_parm           = bcap_g_parm,
+ 	.vidioc_s_parm           = bcap_s_parm,
+ 	.vidioc_log_status       = bcap_log_status,
 -- 
 2.1.0
 
